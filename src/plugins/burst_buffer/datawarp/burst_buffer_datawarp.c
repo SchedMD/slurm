@@ -263,7 +263,7 @@ static void	_purge_vestigial_bufs(void);
 static void	_python2json(char *buf);
 static void	_recover_bb_state(void);
 static int	_queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job);
-static int	_queue_stage_out(bb_job_t *bb_job);
+static int	_queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job);
 static void	_queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
 static void	_reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 				 int new_state, uint64_t buf_size);
@@ -518,6 +518,14 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 			while (isspace(tok[0]))
 				tok++;
 		}
+
+		/*
+		 * Is % symbol replacement required? Only done on "#DW" / "#BB"
+		 * lines.
+		 */
+		if (bb_flag && strchr(tok, (int) '%'))
+			bb_job->need_symbol_replacement = true;
+
 		if (bb_flag == BB_FLAG_BB_OP) {
 			if (!xstrncmp(tok, "create_persistent", 17)) {
 				have_bb = true;
@@ -1483,7 +1491,7 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	xstrfmtcat(setup_argv[12], "%s:%s",
 		   job_pool, bb_get_size_str(bb_job->total_size));
 	setup_argv[13] = xstrdup("--job");
-	xstrfmtcat(setup_argv[14], "%s/script", job_dir);
+	setup_argv[14] = bb_handle_job_script(job_ptr, bb_job);
 	if (client_nodes_file_nid) {
 #if defined(HAVE_NATIVE_CRAY)
 		setup_argv[15] = xstrdup("--nidlistfile");
@@ -1502,7 +1510,7 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	data_in_argv[3] = xstrdup("--token");
 	xstrfmtcat(data_in_argv[4], "%u", job_ptr->job_id);
 	data_in_argv[5] = xstrdup("--job");
-	xstrfmtcat(data_in_argv[6], "%s/script", job_dir);
+	data_in_argv[6] = bb_handle_job_script(job_ptr, bb_job);
 
 	stage_args = xmalloc(sizeof(stage_args_t));
 	stage_args->bb_size = bb_job->total_size;
@@ -1845,7 +1853,7 @@ static void *_start_stage_in(void *x)
 	return NULL;
 }
 
-static int _queue_stage_out(bb_job_t *bb_job)
+static int _queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
 {
 	char *hash_dir = NULL, *job_dir = NULL;
 	char **post_run_argv, **data_out_argv;
@@ -1863,7 +1871,7 @@ static int _queue_stage_out(bb_job_t *bb_job)
 	data_out_argv[3] = xstrdup("--token");
 	xstrfmtcat(data_out_argv[4], "%u", bb_job->job_id);
 	data_out_argv[5] = xstrdup("--job");
-	xstrfmtcat(data_out_argv[6], "%s/script", job_dir);
+	data_out_argv[6] = bb_handle_job_script(job_ptr, bb_job);
 
 	post_run_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	post_run_argv[0] = xstrdup("dw_wlm_cli");
@@ -1872,7 +1880,7 @@ static int _queue_stage_out(bb_job_t *bb_job)
 	post_run_argv[3] = xstrdup("--token");
 	xstrfmtcat(post_run_argv[4], "%u", bb_job->job_id);
 	post_run_argv[5] = xstrdup("--job");
-	xstrfmtcat(post_run_argv[6], "%s/script", job_dir);
+	post_run_argv[6] = bb_handle_job_script(job_ptr, bb_job);
 
 	stage_args = xmalloc(sizeof(stage_args_t));
 	stage_args->args1   = data_out_argv;
@@ -4320,7 +4328,7 @@ extern int bb_p_job_start_stage_out(job_record_t *job_ptr)
 		xfree(job_ptr->state_desc);
 		xstrfmtcat(job_ptr->state_desc, "%s: Stage-out in progress",
 			   plugin_type);
-		_queue_stage_out(bb_job);
+		_queue_stage_out(job_ptr, bb_job);
 	}
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 

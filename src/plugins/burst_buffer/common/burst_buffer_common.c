@@ -46,6 +46,7 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <stdlib.h>
+#include <sys/mman.h>	/* memfd_create */
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -319,6 +320,123 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_state_t *state_ptr)
 	user_ptr->user_id = user_id;
 	state_ptr->bb_uhash[inx] = user_ptr;
 	return user_ptr;
+}
+
+char *_handle_replacement(job_record_t *job_ptr)
+{
+	char *replaced = NULL, *p, *q;
+
+	if (!job_ptr->burst_buffer)
+		return xstrdup("");
+
+	/* throw a script header on in case something downstream cares */
+	xstrcat(replaced, "#!/bin/sh\n");
+
+	p = q = job_ptr->burst_buffer;
+
+	while (*p != '\0') {
+		if (*p == '%') {
+			xmemcat(replaced, q, p);
+			p++;
+
+			switch (*p) {
+			case '%':	/* '%%' -> '%' */
+				xstrcatchar(replaced, '%');
+				break;
+			case 'A':	/* '%A' => array master job id */
+				xstrfmtcat(replaced, "%u",
+					   job_ptr->array_job_id);
+				break;
+			case 'a':	/* '%a' => array task id */
+				xstrfmtcat(replaced, "%u",
+					   job_ptr->array_task_id);
+				break;
+			case 'd':	/* '%d' => workdir */
+				xstrcat(replaced, job_ptr->details->work_dir);
+				break;
+			case 'j':	/* '%j' => jobid */
+				xstrfmtcat(replaced, "%u", job_ptr->job_id);
+				break;
+			case 'u':	/* '%u' => user name */
+				if (!job_ptr->user_name)
+					job_ptr->user_name =
+						uid_to_string_or_null(
+							job_ptr->user_id);
+				xstrcat(replaced, job_ptr->user_name);
+				break;
+			case 'x':	/* '%x' => job name */
+				xstrcat(replaced, job_ptr->name);
+				break;
+			default:
+				break;
+			}
+
+			q = ++p;
+		} else if (*p == '\\' && *(p+1) == '\\') {
+			/* '\\' => stop further symbol processing */
+			xstrcat(replaced, p);
+			q = p;
+			break;
+		} else
+			p++;
+	}
+
+	if (p != q)
+		xmemcat(replaced, q, p);
+
+	/* throw an extra terminating newline in for good measure */
+	xstrcat(replaced, "\n");
+
+	return replaced;
+}
+
+char *bb_handle_job_script(job_record_t *job_ptr, bb_job_t *bb_job)
+{
+	char *script = NULL;
+
+	if (bb_job->memfd_path) {
+		/*
+		 * Already have an existing symbol-replaced script, so use it.
+		 */
+		return xstrdup(bb_job->memfd_path);
+	}
+
+	if (bb_job->need_symbol_replacement) {
+		/*
+		 * Create a memfd-backed temporary file to write out the
+		 * symbol-replaced BB script. memfd files will automatically be
+		 * cleaned up on process termination. This will be recreated if
+		 * the slurmctld restarts, otherwise kept in memory for the
+		 * lifespan of the job.
+		 */
+		char *filename = NULL, *bb;
+		pid_t pid = getpid();
+
+		xstrfmtcat(filename, "bb_job_script.%u", job_ptr->job_id);
+
+		bb_job->memfd = memfd_create(filename, MFD_CLOEXEC);
+		if (bb_job->memfd < 0)
+			fatal("%s: failed memfd_create: %m", __func__);
+		xstrfmtcat(bb_job->memfd_path, "/proc/%lu/fd/%d",
+			   (unsigned long) pid, bb_job->memfd);
+
+		bb = _handle_replacement(job_ptr);
+		safe_write(bb_job->memfd, bb, strlen(bb));
+		xfree(bb);
+
+		return xstrdup(bb_job->memfd_path);
+
+	rwfail:
+		xfree(bb);
+		fatal("%s: could not write script file, likely out of memory",
+		      __func__);
+	}
+
+	xstrfmtcat(script, "%s/hash.%d/job.%u/script",
+		   slurmctld_conf.state_save_location, (job_ptr->job_id % 10),
+		   job_ptr->job_id);
+
+	return script;
 }
 
 #if _SUPPORT_ALT_POOL
@@ -1094,6 +1212,8 @@ static void _bb_job_del2(bb_job_t *bb_job)
 	int i;
 
 	if (bb_job) {
+		(void) close(bb_job->memfd);
+
 		xfree(bb_job->account);
 		for (i = 0; i < bb_job->buf_cnt; i++) {
 			xfree(bb_job->buf_ptr[i].access);
@@ -1103,6 +1223,7 @@ static void _bb_job_del2(bb_job_t *bb_job)
 		}
 		xfree(bb_job->buf_ptr);
 		xfree(bb_job->job_pool);
+		xfree(bb_job->memfd_path);
 		xfree(bb_job->partition);
 		xfree(bb_job->qos);
 		xfree(bb_job);

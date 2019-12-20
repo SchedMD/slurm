@@ -155,6 +155,10 @@ typedef struct bb_job {
 	uint32_t   job_id;
 	char      *job_pool;	/* Pool in which to create job buffers */
 	uint32_t   magic;
+	int memfd;		/* memfd descriptor for symbol-replaced
+				 * burst-buffer script */
+	char *memfd_path;	/* path to memfd file */
+	bool need_symbol_replacement; /* '%' characters found in script */
 	struct bb_job *next;
 	char      *partition;	/* Associated partition (for limits) */
 	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
@@ -298,6 +302,12 @@ extern void bb_job_queue_del(void *x);
 
 /* Sort job queue by expected start time */
 extern int bb_job_queue_sort(void *x, void *y);
+
+/*
+ * Returns the script, or a symbol-replaced version of the script,
+ * that can be used as an argument to exec().
+ */
+char *bb_handle_job_script(job_record_t *job_ptr, bb_job_t *bb_job);
 
 /* Load and process configuration parameters */
 extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type);
