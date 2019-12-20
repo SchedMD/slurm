@@ -3789,6 +3789,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			     "JobAcctGatherParams", hashtbl);
 
 	conf->job_acct_oom_kill = false;
+	bool param_found = false;
 	if (conf->job_acct_gather_params) {
 		char *save_ptr = NULL;
 		char *tmp = xstrdup(conf->job_acct_gather_params);
@@ -3797,11 +3798,30 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		while (tok) {
 			if (xstrcasecmp(tok, "OverMemoryKill") == 0) {
 				conf->job_acct_oom_kill = true;
+				param_found = true;
 				break;
 			}
 			tok = strtok_r(NULL, ",", &save_ptr);
 		}
 		xfree(tmp);
+	}
+
+	if (s_p_get_string(&temp_str, "MemLimitEnforce", hashtbl)) {
+		if (run_in_daemon("slurmctld,slurmd"))
+			error("MemLimitEnforce will be removed in 20.02. The MemLimitEnforce=yes functionality is available through the JobAcctGatherParams=OverMemoryKill which will be set now. Please consider changing your configuration now.");
+		if (xstrncasecmp(temp_str, "yes", 2) == 0) {
+			conf->job_acct_oom_kill = true;
+			if (conf->job_acct_gather_params && !param_found) {
+				char *new_j_params;
+				xstrfmtcat(new_j_params, "%s,OverMemoryKill",
+					   conf->job_acct_gather_params);
+				xfree(conf->job_acct_gather_params);
+				conf->job_acct_gather_params = new_j_params;
+			} else if (!conf->job_acct_gather_params)
+				xstrfmtcat(conf->job_acct_gather_params,
+					   "OverMemoryKill");
+		}
+		xfree(temp_str);
 	}
 
 	if (!s_p_get_string(&conf->job_ckpt_dir, "JobCheckpointDir", hashtbl))
