@@ -2845,6 +2845,11 @@ Higher values result in less overhead and better responsiveness.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 Default: 60, Min: 1, Max: 3600 (1 hour).
 .TP
+\fBbf_running_job_reserve\fR
+Add an extra step to backfill logic, which creates backfill reservations
+for jobs running on whole nodes.
+This option is disabled by default.
+.TP
 \fBbf_window=#\fR
 The number of minutes into the future to look when considering jobs to schedule.
 Higher values result in more overhead and less responsiveness.

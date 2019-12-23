@@ -131,6 +131,11 @@ typedef struct node_space_map {
 	int next;	/* next record, by time, zero termination */
 } node_space_map_t;
 
+typedef struct node_space_handler {
+	node_space_map_t *node_space;
+	int *node_space_recs;
+} node_space_handler_t;
+
 /*
  * HetJob scheduling structures
  * NOTE: An individial hetjob component can be submitted to multiple
@@ -184,6 +189,7 @@ static int backfill_window = BACKFILL_WINDOW;
 static int bf_job_part_count_reserve = 0;
 static int bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
 static int bf_min_age_reserve = 0;
+static bool bf_running_job_reserve = false;
 static uint32_t bf_min_prio_reserve = 0;
 static List deadlock_global_list;
 static bool bf_hetjob_immediate = false;
@@ -890,6 +896,11 @@ static void _load_config(void)
 	else
 		bf_one_resv_per_job = false;
 
+	if (xstrcasestr(sched_params, "bf_running_job_reserve"))
+		bf_running_job_reserve = true;
+	else
+		bf_running_job_reserve = false;
+
 	if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_cnt=")))
 		max_rpc_cnt = atoi(tmp_ptr + 12);
 	else if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_count=")))
@@ -1284,6 +1295,36 @@ static int _foreach_het_job_details(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _bf_reserve_running(void *x, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *) x;
+	node_space_handler_t *ns_h = (node_space_handler_t *) arg;
+	node_space_map_t *node_space = ns_h->node_space;
+	int *ns_recs_ptr = ns_h->node_space_recs;
+	time_t start_time = job_ptr->start_time;
+	time_t end_time = job_ptr->end_time;
+
+	if (!job_ptr || ! IS_JOB_RUNNING(job_ptr))
+		return SLURM_SUCCESS;
+	if (!job_ptr->job_resrcs || !(job_ptr->job_resrcs->whole_node ==
+				      WHOLE_NODE_REQUIRED))
+		return SLURM_SUCCESS;
+	if (slurm_job_preempt_mode(job_ptr) != PREEMPT_MODE_OFF)
+		return SLURM_SUCCESS;
+
+	bitstr_t *tmp_bitmap = bit_copy(job_ptr->node_bitmap);
+
+	bit_not(tmp_bitmap);
+	end_time = (end_time / backfill_resolution) * backfill_resolution;
+
+	_add_reservation(start_time, end_time, tmp_bitmap, node_space,
+			 ns_recs_ptr);
+
+	FREE_NULL_BITMAP(tmp_bitmap);
+
+	return SLURM_SUCCESS;
+}
+
 static int _set_hetjob_details(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
@@ -1584,6 +1625,16 @@ static int _attempt_backfill(void)
 
 	node_space[0].next = 0;
 	node_space_recs = 1;
+
+	if (bf_running_job_reserve) {
+		node_space_handler_t node_space_handler;
+		node_space_handler.node_space = node_space;
+		node_space_handler.node_space_recs = &node_space_recs;
+
+		list_for_each(job_list, _bf_reserve_running,
+			      &node_space_handler);
+	}
+
 	if (debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 		_dump_node_space_table(node_space);
 
