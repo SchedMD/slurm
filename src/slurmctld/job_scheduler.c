@@ -2811,6 +2811,7 @@ extern int test_job_dependency(job_record_t *job_ptr)
 	bool run_now;
 	int results = 0;
 	job_record_t *qjob_ptr, *djob_ptr;
+	bool is_complete, is_completed, is_pending;
 
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->depend_list == NULL) ||
@@ -2856,41 +2857,46 @@ extern int test_job_dependency(job_record_t *job_ptr)
 			    (djob_ptr->array_job_id != dep_ptr->job_id))) {
 			/* job is gone, dependency lifted */
 			clear_dep = true;
-		} else if (dep_ptr->array_task_id == INFINITE) {
-			bool array_complete, array_completed, array_pending;
-			array_complete=test_job_array_complete(dep_ptr->job_id);
-			array_completed=test_job_array_completed(
-				dep_ptr->job_id);
-			array_pending  =test_job_array_pending(dep_ptr->job_id);
+		} else {
 			/* Special case, apply test to job array as a whole */
-			(void)_test_job_dependency_common(
-				array_complete,
-				array_completed,
-				array_pending,
-				&clear_dep, &depends, &failure,
-				job_ptr, dep_ptr);
-		} else if (_test_job_dependency_common(
-				   IS_JOB_COMPLETE(djob_ptr),
-				   IS_JOB_COMPLETED(djob_ptr),
-				   IS_JOB_PENDING(djob_ptr),
-				   &clear_dep, &depends, &failure,
-				   job_ptr, dep_ptr)) {
-		} else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER) {
-			if (IS_JOB_COMPLETED(djob_ptr) &&
-			    (bb_g_job_test_stage_out(djob_ptr) == 1)) {
-				clear_dep = true;
+			if (dep_ptr->array_task_id == INFINITE) {
+				is_complete = test_job_array_complete(
+					dep_ptr->job_id);
+				is_completed = test_job_array_completed(
+					dep_ptr->job_id);
+				is_pending = test_job_array_pending(
+					dep_ptr->job_id);
+			} else {
+				/* Normal job */
+				is_complete = IS_JOB_COMPLETE(djob_ptr);
+				is_completed = IS_JOB_COMPLETED(djob_ptr);
+				is_pending = IS_JOB_PENDING(djob_ptr);
+			}
+
+			if (_test_job_dependency_common(
+				    is_complete, is_completed, is_pending,
+				    &clear_dep, &depends, &failure,
+				    job_ptr, dep_ptr)) {
+			} else if (dep_ptr->depend_type ==
+				   SLURM_DEPEND_BURST_BUFFER) {
+				if (is_completed &&
+				    (bb_g_job_test_stage_out(djob_ptr) == 1))
+					clear_dep = true;
+				else
+					depends = true;
+			} else if (dep_ptr->depend_type ==
+				   SLURM_DEPEND_STAGING) {
+				time_t now = time(NULL);
+				if (djob_ptr->start_time &&
+				    ((now - djob_ptr->start_time) >=
+				     dep_ptr->depend_time)) {
+					clear_dep = true;
+				} else
+					depends = true;
 			} else
-				depends = true;
-		} else if (dep_ptr->depend_type == SLURM_DEPEND_STAGING) {
-			time_t now = time(NULL);
-			if (djob_ptr->start_time &&
-			    ((now - djob_ptr->start_time) >=
-			     dep_ptr->depend_time)) {
-				clear_dep = true;
-			} else
-				depends = true;
-		} else
-			failure = true;
+				failure = true;
+		}
+
 		if (failure) {
 			job_ptr->bit_flags |= INVALID_DEPEND;
 			if ((dep_ptr->depend_flags & SLURM_FLAGS_OR) &&
