@@ -56,6 +56,7 @@ documents those changes that are of interest to users and administrators.
     than one backfill reservation per job.
  -- Allow sacctmgr to filter node events by states that are flags.
  -- Allow sacctmgr to filter node events by REBOOT state/flag.
+ -- Add ability to set MailType and MailUser of job with scontrol.
 
 * Changes in Slurm 19.05.6
 ==========================
