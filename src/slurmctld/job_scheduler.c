@@ -1595,8 +1595,8 @@ next_task:
 
 		if (!job_ptr->part_ptr)
 			continue;
-		i = bit_overlap_any(avail_node_bitmap,
-				    job_ptr->part_ptr->node_bitmap);
+		i = bit_overlap(avail_node_bitmap,
+				job_ptr->part_ptr->node_bitmap);
 		if ((job_ptr->details &&
 		     (job_ptr->details->min_nodes != NO_VAL) &&
 		     (job_ptr->details->min_nodes >  i)) ||
