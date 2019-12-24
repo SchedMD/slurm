@@ -1,0 +1,156 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate scontrol update of MailType and MailUser
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2019, SchedMD, LLC.
+# Written by Gavin Howard <gavin@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id          "2.27"
+set exit_code        0
+set job_id           0
+set node_cnt         1
+
+print_header $test_id
+
+if {[test_front_end]} {
+	log_warn "This test is incompatible with front-end systems"
+	exit $exit_code
+}
+
+set available [available_nodes $partition ""]
+if {$available < $node_cnt} {
+	log_warn "not enough nodes currently available ($available avail, $node_cnt needed)"
+	exit $exit_code
+}
+
+proc end_it { exit_code } {
+	global test_id job_id
+	cancel_job $job_id
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+#
+# Run job to determine what nodes are available
+#
+spawn $sbatch -N$node_cnt -J "test$test_id" -t1 -H --output=/dev/null --wrap="hostname"
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		log_error "sbatch not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	log_error "job not submitted"
+	end_it 1
+}
+
+set matches 0
+set mail_user ""
+set mail_type "NONE"
+spawn $scontrol -o show job $job_id
+expect {
+	-re "MailUser= MailType=NONE" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	log_error "didn't find MailUser=$mail_user MailType=$mail_type"
+	end_it 1
+}
+
+
+set matches 0
+set mail_user "blah"
+set mail_type "BEGIN,END"
+exec $scontrol update JobId=$job_id mailuser=$mail_user mailtype=$mail_type
+exec $scontrol update JobId=$job_id timelimit=2
+spawn $scontrol -o show job $job_id
+expect {
+	-re "MailUser=$mail_user MailType=$mail_type" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	log_error "didn't find MailUser=$mail_user MailType=$mail_type"
+	end_it 1
+}
+
+
+# Test clearing
+set matches 0
+set mail_user ""
+set mail_type "NONE"
+exec $scontrol update JobId=$job_id mailuser= mailtype=NONE
+spawn $scontrol -o show job $job_id
+expect {
+	-re "MailUser= MailType=NONE" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	log_error "didn't find MailUser=$mail_user MailType=$mail_type"
+	end_it 1
+}
+
+end_it 0
+

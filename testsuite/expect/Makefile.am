@@ -161,6 +161,7 @@ EXTRA_DIST = \
 	test2.24			\
 	test2.25			\
 	test2.26			\
+	test2.27			\
 	test3.1				\
 	test3.2				\
 	test3.3				\
