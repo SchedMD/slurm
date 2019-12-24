@@ -2624,12 +2624,12 @@ extern void print_job_dependency(job_record_t *job_ptr)
 			dep_str = "expand";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER)
 			dep_str = "afterburstbuffer";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_STAGING) {
-			dep_str = "afterstaging";
-			dep_time_sep = xstrdup_printf(
-				":%u", dep_ptr->depend_time / 60);
-		} else
+		else
 			dep_str = "unknown";
+
+		if (dep_ptr->depend_time)
+			dep_time_sep = xstrdup_printf(
+				"+%u", dep_ptr->depend_time / 60);
 
 		if (dep_ptr->array_task_id == INFINITE)
 			info("  %s:%u_*%s %s",
@@ -2690,8 +2690,6 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 			dep_str = "expand";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER)
 			dep_str = "afterburstbuffer";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_STAGING)
-			dep_str = "afterstaging";
 		else
 			dep_str = "unknown";
 
@@ -2706,9 +2704,9 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 				   sep, dep_str, dep_ptr->job_id,
 				   dep_ptr->array_task_id);
 
-		if (dep_ptr->depend_type == SLURM_DEPEND_STAGING)
+		if (dep_ptr->depend_time)
 			xstrfmtcat(job_ptr->details->dependency,
-				   ":%u", dep_ptr->depend_time / 60);
+				   "+%u", dep_ptr->depend_time / 60);
 		if (set_or_flag)
 			dep_ptr->depend_flags |= SLURM_FLAGS_OR;
 		if (dep_ptr->depend_flags & SLURM_FLAGS_OR)
@@ -2726,16 +2724,22 @@ static int _test_job_dependency_common(
 {
 	int rc = 0;
 	job_record_t *djob_ptr = dep_ptr->job_ptr;
+	time_t now = time(NULL);
 
 	xassert(clear_dep);
 	xassert(depends);
 	xassert(failure);
 
-
 	if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
-		if (!is_pending)
-			*clear_dep = true;
-		else
+		if (!is_pending) {
+			if (!dep_ptr->depend_time ||
+			    (djob_ptr->start_time &&
+			     ((now - djob_ptr->start_time) >=
+			      dep_ptr->depend_time))) {
+				*clear_dep = true;
+			} else
+				*depends = true;
+		} else
 			*depends = true;
 		rc = 1;
 	} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY) {
@@ -2880,20 +2884,10 @@ extern int test_job_dependency(job_record_t *job_ptr)
 				is_pending = IS_JOB_PENDING(djob_ptr);
 			}
 
-			if (_test_job_dependency_common(
+			if (!_test_job_dependency_common(
 				    is_complete, is_completed, is_pending,
 				    &clear_dep, &depends, &failure,
-				    job_ptr, dep_ptr)) {
-			} else if (dep_ptr->depend_type ==
-				   SLURM_DEPEND_STAGING) {
-				time_t now = time(NULL);
-				if (djob_ptr->start_time &&
-				    ((now - djob_ptr->start_time) >=
-				     dep_ptr->depend_time)) {
-					clear_dep = true;
-				} else
-					depends = true;
-			} else
+				    job_ptr, dep_ptr))
 				failure = true;
 		}
 
@@ -3173,8 +3167,6 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 			depend_type = SLURM_DEPEND_AFTER_OK;
 		else if (xstrncasecmp(tok, "afterburstbuffer", 10) == 0)
 			depend_type = SLURM_DEPEND_BURST_BUFFER;
-		else if (xstrncasecmp(tok, "afterstaging", 9) == 0)
-			depend_type = SLURM_DEPEND_STAGING;
 		else if (xstrncasecmp(tok, "after", 5) == 0)
 			depend_type = SLURM_DEPEND_AFTER;
 		else if (xstrncasecmp(tok, "expand", 6) == 0) {
@@ -3200,10 +3192,12 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 				}
 			} else
 				array_task_id = NO_VAL;
+
 			if ((sep_ptr2 == NULL) ||
 			    (job_id == 0) || (job_id == job_ptr->job_id) ||
 			    ((sep_ptr2[0] != '\0') && (sep_ptr2[0] != ',') &&
-			     (sep_ptr2[0] != '?')  && (sep_ptr2[0] != ':'))) {
+			     (sep_ptr2[0] != '?')  && (sep_ptr2[0] != ':') &&
+			     (sep_ptr2[0] != '+'))) {
 				rc = ESLURM_DEPENDENCY;
 				break;
 			}
@@ -3237,6 +3231,18 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 				rc = ESLURM_DEPENDENCY;
 				break;
 			}
+
+			if ((sep_ptr = strchr(sep_ptr2, '+'))) {
+				sep_ptr++; /* skip over "+" */
+				depend_time = strtol(sep_ptr, &sep_ptr2, 10);
+
+				if (depend_time <= 0) {
+					rc = ESLURM_DEPENDENCY;
+					break;
+				}
+				depend_time *= 60;
+			}
+
 			if (depend_type == SLURM_DEPEND_EXPAND) {
 				assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 				uint16_t sockets_per_node = NO_VAL16;
@@ -3292,21 +3298,6 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 						job_ptr->tres_req_cnt,
 						TRES_STR_FLAG_SIMPLE, true);
 				assoc_mgr_unlock(&locks);
-			} else if (depend_type == SLURM_DEPEND_STAGING) {
-				sep_ptr = strchr(sep_ptr2, ':');
-				if (!sep_ptr) {
-					rc = ESLURM_DEPENDENCY;
-					break;
-				}
-
-				sep_ptr++; /* skip over ":" */
-				depend_time = strtol(sep_ptr, &sep_ptr2, 10);
-
-				if (depend_time <= 0) {
-					rc = ESLURM_DEPENDENCY;
-					break;
-				}
-				depend_time *= 60;
 			}
 
 			if (dep_job_ptr) {	/* job still active */

@@ -1345,7 +1345,7 @@ static void _usage(void)
 "            [--licenses=names] [--clusters=cluster_names]\n"
 "            [--qos=qos] [--time-min=minutes]\n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
-"            [--mpi=type] [--account=name] [--dependency=type:jobid[:time]]\n"
+"            [--mpi=type] [--account=name] [--dependency=type:jobid[+time]]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
 "            [--cpu-bind=...] [--mem-bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n] [reservation=name]\n"
