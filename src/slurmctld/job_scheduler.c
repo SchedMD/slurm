@@ -2790,6 +2790,13 @@ static int _test_job_dependency_common(
 				*failure = true;
 		}
 		rc = 1;
+	} else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER) {
+		if (is_completed &&
+		    (bb_g_job_test_stage_out(djob_ptr) == 1))
+			*clear_dep = true;
+		else
+			*depends = true;
+		rc = 1;
 	}
 
 	return rc;
@@ -2877,13 +2884,6 @@ extern int test_job_dependency(job_record_t *job_ptr)
 				    is_complete, is_completed, is_pending,
 				    &clear_dep, &depends, &failure,
 				    job_ptr, dep_ptr)) {
-			} else if (dep_ptr->depend_type ==
-				   SLURM_DEPEND_BURST_BUFFER) {
-				if (is_completed &&
-				    (bb_g_job_test_stage_out(djob_ptr) == 1))
-					clear_dep = true;
-				else
-					depends = true;
 			} else if (dep_ptr->depend_type ==
 				   SLURM_DEPEND_STAGING) {
 				time_t now = time(NULL);
