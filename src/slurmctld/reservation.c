@@ -5155,7 +5155,6 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			 */
 			if ((job_ptr->warn_time <= resv_ptr->max_start_delay) &&
 			    (job_ptr->warn_flags & KILL_JOB_RESV)) {
-				info("we have a start delay!!!");
 				continue;
 			}
 
