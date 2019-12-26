@@ -2455,6 +2455,10 @@ typedef struct reserve_info {
 	char *features;		/* required node features */
 	uint64_t flags;		/* see RESERVE_FLAG_* above */
 	char *licenses;		/* names of licenses to be reserved */
+	uint32_t max_start_delay;/* Maximum delay in which jobs outside of the
+				  * reservation will be permitted to overlap
+				  * once any jobs are queued for the
+				  * reservation */
 	char *name;		/* name of reservation */
 	uint32_t node_cnt;	/* count of nodes required */
 	int32_t *node_inx;	/* list index pairs into node_table for *nodes:
@@ -2483,6 +2487,10 @@ typedef struct resv_desc_msg {
 	char *features;		/* required node features */
 	uint64_t flags;		/* see RESERVE_FLAG_* above */
 	char *licenses;		/* names of licenses to be reserved */
+	uint32_t max_start_delay;/* Maximum delay in which jobs outside of the
+				  * reservation will be permitted to overlap
+				  * once any jobs are queued for the
+				  * reservation */
 	char *name;		/* name of reservation (optional on create) */
 	uint32_t *node_cnt;	/* Count of nodes required. Specify set of job
 				 * sizes with trailing zero to optimize layout

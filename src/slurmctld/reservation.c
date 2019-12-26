@@ -1550,6 +1550,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		packstr(resv_ptr->features,	buffer);
 		pack64(resv_ptr->flags,		buffer);
 		packstr(resv_ptr->licenses,	buffer);
+		pack32(resv_ptr->max_start_delay, buffer);
 		packstr(resv_ptr->name,		buffer);
 		pack32(resv_ptr->node_cnt,	buffer);
 		packstr(resv_ptr->node_list,	buffer);
@@ -1701,6 +1702,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpack64(&resv_ptr->flags,		buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->licenses,
 				       &uint32_tmp, 	buffer);
+		safe_unpack32(&resv_ptr->max_start_delay, buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->name,	&uint32_tmp, buffer);
 
 		safe_unpack32(&resv_ptr->node_cnt,	buffer);
@@ -2008,12 +2010,12 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 		name2 = val2 = "";
 
 	sched_info("%s reservation=%s%s%s%s%s nodes=%s cores=%u "
-		   "licenses=%s tres=%s watts=%u start=%s end=%s",
+		   "licenses=%s tres=%s watts=%u start=%s end=%s MaxStartDelay=%u",
 		   old_resv_ptr ? "Updated" : "Created",
 		   resv_ptr->name, name1, val1, name2, val2,
 		   resv_ptr->node_list, resv_ptr->core_cnt, resv_ptr->licenses,
 		   resv_ptr->tres_fmt_str, resv_ptr->resv_watts,
-		   start_time, end_time);
+		   start_time, end_time, resv_ptr->max_start_delay);
 	if (old_resv_ptr)
 		_post_resv_update(resv_ptr, old_resv_ptr);
 	else
@@ -2351,6 +2353,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_desc_ptr->licenses = NULL;		/* Nothing left to free */
 	resv_ptr->license_list	= license_list;
 	license_list = NULL;
+
+	if (resv_desc_ptr->max_start_delay != NO_VAL)
+		resv_ptr->max_start_delay = resv_desc_ptr->max_start_delay;
+
 	resv_ptr->resv_id       = top_suffix;
 	xassert((resv_ptr->magic = RESV_MAGIC));	/* Sets value */
 	resv_ptr->name		= xstrdup(resv_desc_ptr->name);
@@ -2536,6 +2542,10 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_HOLD_JOBS)
 			resv_ptr->flags |= RESERVE_FLAG_NO_HOLD_JOBS;
 	}
+
+	if (resv_desc_ptr->max_start_delay != NO_VAL)
+		resv_ptr->max_start_delay = resv_desc_ptr->max_start_delay;
+
 	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')) {
 		/* Clear the partition */
 		xfree(resv_desc_ptr->partition);

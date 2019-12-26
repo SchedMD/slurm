@@ -220,6 +220,15 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 						PLUS_MINUS(plus_minus);
 				plus_minus = '\0';
 			}
+		} else if (!xstrncasecmp(tag, "MaxStartDelay",
+					 MAX(taglen, 2))) {
+			duration = time_str2mins(val);
+			if (duration < 0) {
+				exit_code = 1;
+				error("Invalid duration %s.  %s", argv[i], msg);
+				return SLURM_ERROR;
+			}
+			resv_msg_ptr->max_start_delay = (uint32_t)duration;
 		} else if (xstrncasecmp(tag, "NodeCnt", MAX(taglen,5)) == 0 ||
 			   xstrncasecmp(tag, "NodeCount", MAX(taglen,5)) == 0) {
 

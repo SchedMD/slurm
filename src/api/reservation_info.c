@@ -157,6 +157,11 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 		   "Watts=%s", resv_ptr->users, resv_ptr->accounts,
 		   resv_ptr->licenses, state, resv_ptr->burst_buffer, watts_str);
 	xfree(watts_str);
+	xstrcat(out, line_end);
+
+	/****** Line ******/
+
+	xstrfmtcat(out, "MaxStartDelay=%u", resv_ptr->max_start_delay);
 
 	if (one_liner)
 		xstrcat(out, "\n");

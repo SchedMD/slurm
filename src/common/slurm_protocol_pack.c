@@ -1860,6 +1860,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, Buf buffer,
 		packstr(msg->node_list,    buffer);
 		packstr(msg->features,     buffer);
 		packstr(msg->licenses,     buffer);
+		pack32(msg->max_start_delay, buffer);
 		packstr(msg->partition,    buffer);
 
 		pack32(msg->resv_watts,    buffer);
@@ -1952,6 +1953,9 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->licenses,
 				       &uint32_tmp, buffer);
+
+		safe_unpack32(&tmp_ptr->max_start_delay, buffer);
+
 		safe_unpackstr_xmalloc(&tmp_ptr->partition,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&tmp_ptr->resv_watts, buffer);
@@ -1999,6 +2003,7 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->licenses,
 				       &uint32_tmp, buffer);
+		tmp_ptr->max_start_delay = NO_VAL;
 		safe_unpackstr_xmalloc(&tmp_ptr->partition,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&tmp_ptr->resv_watts, buffer);
@@ -2906,6 +2911,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer,
 		safe_unpackstr_xmalloc(&resv->features,	&uint32_tmp, buffer);
 		safe_unpack64(&resv->flags,		buffer);
 		safe_unpackstr_xmalloc(&resv->licenses, &uint32_tmp, buffer);
+		safe_unpack32(&resv->max_start_delay, buffer);
 		safe_unpackstr_xmalloc(&resv->name,	&uint32_tmp, buffer);
 		safe_unpack32(&resv->node_cnt,		buffer);
 		safe_unpackstr_xmalloc(&resv->node_list, &uint32_tmp, buffer);
@@ -2937,6 +2943,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer,
 		safe_unpackstr_xmalloc(&resv->features,	&uint32_tmp, buffer);
 		safe_unpack64(&resv->flags,		buffer);
 		safe_unpackstr_xmalloc(&resv->licenses, &uint32_tmp, buffer);
+		resv->max_start_delay = NO_VAL;
 		safe_unpackstr_xmalloc(&resv->name,	&uint32_tmp, buffer);
 		safe_unpack32(&resv->node_cnt,		buffer);
 		safe_unpackstr_xmalloc(&resv->node_list, &uint32_tmp, buffer);
