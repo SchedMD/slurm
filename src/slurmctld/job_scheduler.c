@@ -119,7 +119,6 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 static void	_depend_list_del(void *dep_ptr);
 static void	_job_queue_append(List job_queue, job_record_t *job_ptr,
 				  part_record_t *part_ptr, uint32_t priority);
-static void	_job_queue_rec_del(void *x);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
 static bool	_job_runnable_test2(job_record_t *job_ptr, bool check_min_time);
 static void *	_run_epilog(void *arg);
@@ -232,20 +231,17 @@ static List _build_user_job_list(uint32_t user_id, char* job_name)
 static void _job_queue_append(List job_queue, job_record_t *job_ptr,
 			      part_record_t *part_ptr, uint32_t prio)
 {
-	job_queue_rec_t *job_queue_rec;
+	job_queue_req_t job_queue_req = { .job_ptr = job_ptr,
+					  .job_queue = job_queue,
+					  .part_ptr = part_ptr,
+					  .prio = prio };
 
-	job_queue_rec = xmalloc(sizeof(job_queue_rec_t));
-	job_queue_rec->array_task_id = job_ptr->array_task_id;
-	job_queue_rec->job_id   = job_ptr->job_id;
-	job_queue_rec->job_ptr  = job_ptr;
-	job_queue_rec->part_ptr = part_ptr;
-	job_queue_rec->priority = prio;
-	list_append(job_queue, job_queue_rec);
-}
+	job_queue_append_internal(&job_queue_req);
 
-static void _job_queue_rec_del(void *x)
-{
-	xfree(x);
+	if (job_ptr->resv_name)
+		return;
+
+	job_resv_append_promiscuous(&job_queue_req);
 }
 
 /* Return true if the job has some step still in a cleaning state, which
@@ -388,6 +384,33 @@ static bool _job_runnable_test3(job_record_t *job_ptr, part_record_t *part_ptr)
 	return true;
 }
 
+extern void job_queue_rec_del(void *x)
+{
+	job_queue_rec_t *job_queue_rec = x;
+
+	if (!x)
+		return;
+
+	xfree(job_queue_rec);
+}
+
+extern void job_queue_rec_prom_resv(job_queue_rec_t *job_queue_rec)
+{
+	job_record_t *job_ptr;
+
+	if (!job_queue_rec->resv_ptr)
+		return;
+
+	xassert(job_queue_rec->job_ptr);
+	xassert(!job_queue_rec->job_ptr->resv_name);
+
+	job_ptr = job_queue_rec->job_ptr;
+	job_ptr->resv_ptr = job_queue_rec->resv_ptr;
+	job_ptr->resv_name = xstrdup(job_ptr->resv_ptr->name);
+	job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
+	job_queue_rec->job_ptr->bit_flags |= JOB_PROM;
+}
+
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
  * IN clear_start - if set then clear the start_time for pending jobs,
@@ -412,7 +435,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 
 	/* init the timer */
 	(void) slurm_delta_tv(&start_tv);
-	job_queue = list_create(_job_queue_rec_del);
+	job_queue = list_create(job_queue_rec_del);
 
 	/* Create individual job records for job arrays that need burst buffer
 	 * staging */
@@ -942,6 +965,25 @@ extern void fill_array_reasons(job_record_t *job_ptr,
 	}
 }
 
+extern void job_queue_append_internal(job_queue_req_t *job_queue_req)
+{
+	job_queue_rec_t *job_queue_rec;
+
+	xassert(job_queue_req);
+	xassert(job_queue_req->job_ptr);
+	xassert(job_queue_req->job_queue);
+	xassert(job_queue_req->part_ptr);
+
+	job_queue_rec = xmalloc(sizeof(job_queue_rec_t));
+	job_queue_rec->array_task_id = job_queue_req->job_ptr->array_task_id;
+	job_queue_rec->job_id   = job_queue_req->job_ptr->job_id;
+	job_queue_rec->job_ptr  = job_queue_req->job_ptr;
+	job_queue_rec->part_ptr = job_queue_req->part_ptr;
+	job_queue_rec->priority = job_queue_req->prio;
+	job_queue_rec->resv_ptr = job_queue_req->resv_ptr;
+	list_append(job_queue_req->job_queue, job_queue_rec);
+}
+
 static int _schedule(uint32_t job_limit)
 {
 	ListIterator job_iterator = NULL, part_iterator = NULL;
@@ -1317,8 +1359,11 @@ static int _schedule(uint32_t job_limit)
 	wait_on_resv = false;
 	while (1) {
 		/* Run some final guaranteed logic after each job iteration */
-		if (job_ptr)
+		if (job_ptr) {
+			job_resv_clear_promiscous_flag(job_ptr);
 			fill_array_reasons(job_ptr, reject_array_job);
+		}
+
 		if (fifo_sched) {
 			if (job_ptr && part_iterator &&
 			    IS_JOB_PENDING(job_ptr)) /* test job in next part */
@@ -1370,7 +1415,10 @@ next_part:
 			job_ptr  = job_queue_rec->job_ptr;
 			part_ptr = job_queue_rec->part_ptr;
 			job_ptr->priority = job_queue_rec->priority;
-			xfree(job_queue_rec);
+
+			job_queue_rec_prom_resv(job_queue_rec);
+			job_queue_rec_del(job_queue_rec);
+
 			if (!avail_front_end(job_ptr)) {
 				job_ptr->state_reason = WAIT_FRONT_END;
 				xfree(job_ptr->state_desc);
@@ -1952,9 +2000,11 @@ extern int sort_job_queue2(void *x, void *y)
 		if ((details = job_rec1->job_ptr->pack_details))
 			has_resv1 = details->any_resv;
 		else
-			has_resv1 = (job_rec1->job_ptr->resv_id != 0);
+			has_resv1 = (job_rec1->job_ptr->resv_id != 0) ||
+				job_rec1->resv_ptr;
 	} else
-		has_resv1 = (job_rec1->job_ptr->resv_id != 0);
+		has_resv1 = (job_rec1->job_ptr->resv_id != 0) ||
+			job_rec1->resv_ptr;
 
 	if (bf_hetjob_prio && job_rec2->job_ptr->pack_job_id &&
 	    (job_rec2->job_ptr->pack_job_id !=
@@ -1962,9 +2012,11 @@ extern int sort_job_queue2(void *x, void *y)
 		if ((details = job_rec2->job_ptr->pack_details))
 			has_resv2 = details->any_resv;
 		else
-			has_resv2 = (job_rec2->job_ptr->resv_id != 0);
+			has_resv2 = (job_rec2->job_ptr->resv_id != 0) ||
+				job_rec2->resv_ptr;
 	} else
-		has_resv2 = (job_rec2->job_ptr->resv_id != 0);
+		has_resv2 = (job_rec2->job_ptr->resv_id != 0) ||
+			job_rec2->resv_ptr;
 
 	if (has_resv1 && !has_resv2)
 		return -1;

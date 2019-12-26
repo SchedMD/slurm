@@ -98,6 +98,7 @@ typedef struct resv_thread_args {
 
 time_t    last_resv_update = (time_t) 0;
 List      resv_list = (List) NULL;
+static List prom_resv_list = NULL;
 uint32_t  top_suffix = 0;
 
 /*
@@ -139,6 +140,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr);
 static void _del_resv_rec(void *x);
 static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode);
 static int  _find_resv_id(void *x, void *key);
+static int _find_resv_ptr(void *x, void *key);
 static int  _find_resv_name(void *x, void *key);
 static void *_fork_script(void *x);
 static void _free_script_arg(resv_thread_args_t *args);
@@ -427,6 +429,9 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	xfree(dest_resv->user_list);
 	dest_resv->user_list = src_resv->user_list;
 	src_resv->user_list = NULL;
+
+	if (dest_resv->flags & RESERVE_FLAG_PROM)
+		list_append(prom_resv_list, dest_resv);
 }
 
 static void _del_resv_rec(void *x)
@@ -435,6 +440,10 @@ static void _del_resv_rec(void *x)
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
 
 	if (resv_ptr) {
+		if (resv_ptr->flags & RESERVE_FLAG_PROM)
+			(void)list_remove_first(
+				prom_resv_list, _find_resv_ptr, resv_ptr);
+
 		xassert(resv_ptr->magic == RESV_MAGIC);
 		resv_ptr->magic = 0;
 		xfree(resv_ptr->accounts);
@@ -460,6 +469,46 @@ static void _del_resv_rec(void *x)
 	}
 }
 
+static void _create_resv_lists(bool flush)
+{
+	if (flush && resv_list) {
+		list_flush(prom_resv_list);
+		list_flush(resv_list);
+		return;
+	}
+
+	if (!resv_list)
+		resv_list = list_create(_del_resv_rec);
+	if (!prom_resv_list)
+		prom_resv_list = list_create(NULL);
+}
+
+static void _add_resv_to_lists(slurmctld_resv_t *resv_ptr)
+{
+	xassert(resv_list);
+	xassert(prom_resv_list);
+
+	list_append(resv_list, resv_ptr);
+	if (resv_ptr->flags & RESERVE_FLAG_PROM)
+		list_append(prom_resv_list, resv_ptr);
+}
+
+static int _queue_prom_resv(void *x, void *key)
+{
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
+	job_queue_req_t *job_queue_req = (job_queue_req_t *) key;
+
+	xassert(resv_ptr->magic == RESV_MAGIC);
+
+	if (!(resv_ptr->flags & RESERVE_FLAG_PROM))
+		return 0;
+
+	job_queue_req->resv_ptr = resv_ptr;
+	job_queue_append_internal(job_queue_req);
+
+	return 0;
+}
+
 static int _find_resv_id(void *x, void *key)
 {
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
@@ -468,6 +517,19 @@ static int _find_resv_id(void *x, void *key)
 	xassert(resv_ptr->magic == RESV_MAGIC);
 
 	if (resv_ptr->resv_id != *resv_id)
+		return 0;
+	else
+		return 1;	/* match */
+}
+
+static int _find_resv_ptr(void *x, void *key)
+{
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
+	slurmctld_resv_t *resv_ptr_key = (slurmctld_resv_t *) key;
+
+	xassert(resv_ptr->magic == RESV_MAGIC);
+
+	if (resv_ptr != resv_ptr_key)
 		return 0;
 	else
 		return 1;	/* match */
@@ -2067,8 +2129,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	uint32_t total_node_cnt = 0;
 	bool account_not = false, user_not = false;
 
-	if (!resv_list)
-		resv_list = list_create(_del_resv_rec);
+	_create_resv_lists(false);
 	_dump_resv_req(resv_desc_ptr, "create_resv");
 
 	/* Validate the request */
@@ -2117,7 +2178,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_PURGE_COMP  |
 					RESERVE_FLAG_REPLACE     |
 					RESERVE_FLAG_REPLACE_DOWN |
-					RESERVE_FLAG_NO_HOLD_JOBS;
+					RESERVE_FLAG_NO_HOLD_JOBS |
+					RESERVE_FLAG_PROM;
 	}
 	if ((resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) ||
 	    (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
@@ -2410,7 +2472,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 
 	_set_tres_cnt(resv_ptr, NULL);
 
-	list_append(resv_list, resv_ptr);
+	_add_resv_to_lists(resv_ptr);
 	last_resv_update = now;
 	schedule_resv_save();
 
@@ -2430,6 +2492,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 /* Purge all reservation data structures */
 extern void resv_fini(void)
 {
+	FREE_NULL_LIST(prom_resv_list);
 	FREE_NULL_LIST(resv_list);
 }
 
@@ -2441,8 +2504,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_desc_msg_t resv_desc;
 	int error_code = SLURM_SUCCESS, i, rc;
 
-	if (!resv_list)
-		resv_list = list_create(_del_resv_rec);
+	_create_resv_lists(false);
 	_dump_resv_req(resv_desc_ptr, "update_resv");
 
 	/* Find the specified reservation */
@@ -2552,6 +2614,13 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags &= (~RESERVE_FLAG_PURGE_COMP);
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_HOLD_JOBS)
 			resv_ptr->flags |= RESERVE_FLAG_NO_HOLD_JOBS;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_PROM)
+			resv_ptr->flags |= RESERVE_FLAG_PROM;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_PROM) {
+			resv_ptr->flags &= (~RESERVE_FLAG_PROM);
+			(void)list_remove_first(
+				prom_resv_list, _find_resv_ptr, resv_ptr);
+		}
 	}
 
 	if (resv_desc_ptr->max_start_delay != NO_VAL)
@@ -2986,8 +3055,7 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (!resv_list)
-		resv_list = list_create(_del_resv_rec);
+	_create_resv_lists(false);
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -3100,8 +3168,7 @@ extern int dump_all_resv_state(void)
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (!resv_list)
-		resv_list = list_create(_del_resv_rec);
+	_create_resv_lists(false);
 
 	/* write header: time */
 	packstr(RESV_STATE_VERSION, buffer);
@@ -3563,10 +3630,7 @@ extern int load_all_resv_state(int recover)
 	}
 
 	/* Read state file and validate */
-	if (resv_list)
-		list_flush(resv_list);
-	else
-		resv_list = list_create(_del_resv_rec);
+	_create_resv_lists(true);
 
 	/* read the file */
 	lock_state_files();
@@ -3605,7 +3669,7 @@ extern int load_all_resv_state(int recover)
 		if (!resv_ptr)
 			break;
 
-		list_append(resv_list, resv_ptr);
+		_add_resv_to_lists(resv_ptr);
 		info("Recovered state of reservation %s", resv_ptr->name);
 	}
 
@@ -5029,8 +5093,13 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		 */
 		if (job_ptr->resv_id != resv_ptr->resv_id) {
 			job_ptr->resv_id = resv_ptr->resv_id;
-			/* Update the database */
-			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+			/*
+			 * Update the database if not using a promiscuous
+			 * reservation
+			 */
+			if (!(job_ptr->bit_flags & JOB_PROM))
+				jobacct_storage_g_job_start(
+					acct_db_conn, job_ptr);
 		}
 		if (resv_ptr->flags & RESERVE_FLAG_FLEX) {
 			/* Job not bound to reservation nodes or time */
@@ -5874,4 +5943,24 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 				slurmctld_conf.slurm_user_id);
 		}
 	}
+}
+
+extern void job_resv_append_promiscuous(job_queue_req_t *job_queue_req)
+{
+	if (!prom_resv_list || !list_count(prom_resv_list))
+		return;
+
+	list_for_each(prom_resv_list, _queue_prom_resv, job_queue_req);
+}
+
+extern void job_resv_clear_promiscous_flag(job_record_t *job_ptr)
+{
+	if (!(job_ptr->bit_flags & JOB_PROM) ||
+	    (job_ptr->job_state & JOB_RUNNING))
+		return;
+
+	xfree(job_ptr->resv_name);
+	job_ptr->resv_id = 0;
+	job_ptr->resv_ptr = NULL;
+	job_ptr->bit_flags &= (~JOB_PROM);
 }

@@ -1025,6 +1025,8 @@ enum ctx_keys {
 #define USE_DEFAULT_QOS    0x08000000	/* Job submitted with default QOS */
 #define USE_DEFAULT_WCKEY  0x10000000	/* Job submitted with default WCKEY */
 #define JOB_DEPENDENT      0x20000000	/* Job dependent or invalid depend */
+#define JOB_PROM           0x40000000	/* Job attempting to run in a
+					 * promiscuous reservation */
 
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
 #define X11_FORWARD_BATCH	0x0002  /* only the batch node */
@@ -2442,6 +2444,13 @@ typedef struct will_run_response_msg {
 #define RESERVE_FLAG_REPLACE_DOWN  0x0000000040000000	/* Replace DOWN or
 							 * DRAINED nodes */
 #define RESERVE_FLAG_NO_PURGE_COMP 0x0000000080000000	/* Clear PURGE flag */
+
+#define RESERVE_FLAG_PROM	   0x0000000100000000	/* Allow jobs to run
+							 * without specifying
+							 * the reservation name
+							 * if they meet
+							 * eligibility status */
+#define RESERVE_FLAG_NO_PROM	   0x0000000200000000	/* Clear PROM flag */
 
 typedef struct resv_core_spec {
 	char *node_name;	/* Name of reserved node */

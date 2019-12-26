@@ -51,6 +51,9 @@ typedef struct job_queue_rec {
 	part_record_t *part_ptr;	/* Pointer to partition record. Each
 					 * job may have multiple partitions. */
 	uint32_t priority;		/* Job priority in THIS partition */
+	slurmctld_resv_t *resv_ptr;     /* If job didn't ask for a reservation,
+					 * this reservation is one it can run
+					 * in without requesting */
 } job_queue_rec_t;
 
 /*
@@ -60,6 +63,17 @@ typedef struct job_queue_rec {
  * RET error code
  */
 extern int build_feature_list(job_record_t *job_ptr);
+
+/*
+ * Free memory from a job_queue_rec_t
+ */
+extern void job_queue_rec_del(void *x);
+
+/*
+ * Set up job_queue_rec->job_ptr to use a promiscous reservation if the
+ * job_queue_rec has resv_name filled in.
+ */
+extern void job_queue_rec_prom_resv(job_queue_rec_t *job_queue_rec);
 
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
@@ -237,5 +251,9 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend);
  */
 extern void fill_array_reasons(struct job_record *job_ptr,
 			       struct job_record *reject_arr_job);
+
+
+/* Add a job_queue_rec_t to job_queue */
+extern void job_queue_append_internal(job_queue_req_t *job_queue_req);
 
 #endif /* !_JOB_SCHEDULER_H */

@@ -15255,6 +15255,9 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	xfree(job_ptr->nodes_completing);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
+
+	job_resv_clear_promiscous_flag(job_ptr);
+
 	if (job_ptr->details) {
 		time_t now = time(NULL);
 		/* The time stamp on the new batch launch credential must be

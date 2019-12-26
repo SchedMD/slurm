@@ -1822,6 +1822,10 @@ reservation.
 This flag can be used to reserve all nodes within the specified
 partition.  PartitionName and Nodes=ALL must be specified with this flag.
 .TP
+\fIPROMISCUOUS\fR
+This flag allows jobs to be considered for this reservation even if they didn't
+request it.
+.TP
 \fIPURGE_COMP\fR
 Purge the reservation once the last associated job has completed.
 Once the reservation has been created, it must be populated within 5 minutes

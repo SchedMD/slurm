@@ -1605,8 +1605,10 @@ static int _attempt_backfill(void)
 		bool get_boot_time = false;
 
 		/* Run some final guaranteed logic after each job iteration */
-		if (job_ptr)
+		if (job_ptr) {
+			job_resv_clear_promiscous_flag(job_ptr);
 			fill_array_reasons(job_ptr, reject_array_job);
+		}
 		job_queue_rec = (job_queue_rec_t *) list_pop(job_queue);
 		if (!job_queue_rec) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL)
@@ -1618,8 +1620,9 @@ static int _attempt_backfill(void)
 		part_ptr         = job_queue_rec->part_ptr;
 		bf_job_priority  = job_queue_rec->priority;
 		bf_array_task_id = job_queue_rec->array_task_id;
-		xfree(job_queue_rec);
 
+		job_queue_rec_prom_resv(job_queue_rec);
+		job_queue_rec_del(job_queue_rec);
 		if (slurmctld_config.shutdown_time ||
 		    (difftime(time(NULL),orig_sched_start) >= bf_max_time)){
 			break;
@@ -2666,7 +2669,8 @@ skip_start:
 			job_ptr->sched_nodes = bitmap2node_name(avail_bitmap);
 		}
 		bit_not(avail_bitmap);
-		if (!bf_one_resv_per_job || !orig_start_time) {
+		if ((!bf_one_resv_per_job || !orig_start_time) &&
+		    !(job_ptr->bit_flags & JOB_PROM)) {
 			_add_reservation(start_time, end_reserve, avail_bitmap,
 					 node_space, &node_space_recs);
 		}
