@@ -212,7 +212,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			}
 			resv_msg_ptr->duration = (uint32_t)duration;
 			if (plus_minus) {
-				if (resv_msg_ptr->flags == NO_VAL)
+				if (resv_msg_ptr->flags == NO_VAL64)
 					resv_msg_ptr->flags =
 						PLUS_MINUS(plus_minus);
 				else
@@ -435,7 +435,7 @@ scontrol_create_res(int argc, char **argv)
 	 */
 	if ((resv_msg.partition != NULL) && (resv_msg.node_list != NULL) &&
 	    (xstrcasecmp(resv_msg.node_list, "ALL") == 0)) {
-		if (resv_msg.flags == NO_VAL)
+		if (resv_msg.flags == NO_VAL64)
 			resv_msg.flags = RESERVE_FLAG_PART_NODES;
 		else
 			resv_msg.flags |= RESERVE_FLAG_PART_NODES;
@@ -447,7 +447,7 @@ scontrol_create_res(int argc, char **argv)
 	 */
 	if ((resv_msg.partition == NULL) && (resv_msg.node_list != NULL) &&
 	    (xstrcasecmp(resv_msg.node_list, "ALL") == 0) &&
-	    (resv_msg.flags != NO_VAL) &&
+	    (resv_msg.flags != NO_VAL64) &&
 	    (resv_msg.flags & RESERVE_FLAG_PART_NODES)) {
 		exit_code = 1;
 		error("Part_Nodes flag requires specifying a Partition.  No reservation created.");
@@ -470,7 +470,7 @@ scontrol_create_res(int argc, char **argv)
 			error("CoreCnt, Nodes, NodeCnt, BurstBuffer, Licenses or Watts must be specified.  No reservation created.");
 			goto SCONTROL_CREATE_RES_CLEANUP;
 		}
-		if (resv_msg.flags == NO_VAL)
+		if (resv_msg.flags == NO_VAL64)
 			resv_msg.flags = RESERVE_FLAG_PART_NODES;
 		else
 			resv_msg.flags |= RESERVE_FLAG_PART_NODES;

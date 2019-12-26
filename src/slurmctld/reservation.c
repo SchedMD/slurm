@@ -187,7 +187,7 @@ static void _set_core_resrcs(slurmctld_resv_t *resv_ptr);
 static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			  slurmctld_resv_t *old_resv_ptr);
 static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
-			     uint64_t flags, bool reset_all);
+			     uint32_t flags, bool reset_all);
 static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 				 char *accounts);
 static int  _update_uid_list(slurmctld_resv_t *resv_ptr, char *users);
@@ -2239,7 +2239,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		total_node_cnt = bit_set_count(node_bitmap);
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) &&
 		    !resv_desc_ptr->core_cnt) {
-			uint32_t flags = resv_desc_ptr->flags;
+			uint64_t flags = resv_desc_ptr->flags;
 
 			/*
 			 * Need to clear this flag before _job_overlap()
@@ -5799,7 +5799,7 @@ extern bool job_borrow_from_resv_check(job_record_t *job_ptr,
 }
 
 static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
-			     uint64_t flags, bool reset_all)
+			     uint32_t flags, bool reset_all)
 {
 	int i, i_first, i_last;
 	node_record_t *node_ptr;
