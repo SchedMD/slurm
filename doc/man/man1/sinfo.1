@@ -1,4 +1,4 @@
-.TH sinfo "1" "Slurm Commands" "November 2016" "Slurm Commands"
+.TH sinfo "1" "Slurm Commands" "December 2019" "Slurm Commands"
 
 .SH "NAME"
 sinfo \- view information about Slurm nodes and partitions.
@@ -535,7 +535,9 @@ Print version information and exit.
 .SH "OUTPUT FIELD DESCRIPTIONS"
 .TP
 \fBAVAIL\fR
-Partition state: \fBup\fR or \fBdown\fR.
+Partition state. Can be either \fBup\fR, \fBdown\fR, \fBdrain\fR, or \fBinact\fR
+(for INACTIVE). See the partition definition's \fBState\fR parameter in the
+\fBslurm.conf\fR(5) man page for more information.
 .TP
 \fBCPUS\fR
 Count of CPUs (processors) on each node.
