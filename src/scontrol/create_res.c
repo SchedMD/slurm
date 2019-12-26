@@ -155,7 +155,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			}
 			if (f == INFINITE64) {
 				return SLURM_ERROR;
-			} else if (resv_msg_ptr->flags == NO_VAL)
+			} else if (resv_msg_ptr->flags == NO_VAL64)
 				resv_msg_ptr->flags = f;
 			else
 				resv_msg_ptr->flags |= f;
