@@ -5792,8 +5792,8 @@ extern bool job_borrow_from_resv_check(job_record_t *job_ptr,
 	    preemptor_ptr->resv_ptr->node_bitmap &&
 	    (job_ptr->warn_flags & KILL_JOB_RESV) &&
 	    job_ptr->node_bitmap &&
-	    bit_overlap(job_ptr->node_bitmap,
-			preemptor_ptr->resv_ptr->node_bitmap))
+	    bit_overlap_any(job_ptr->node_bitmap,
+			    preemptor_ptr->resv_ptr->node_bitmap))
 		return true;
 	return false;
 }
