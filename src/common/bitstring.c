@@ -813,13 +813,9 @@ bit_set_count_range(bitstr_t *b, int32_t start, int32_t end)
 	return count;
 }
 
-/*
- * return number of bits set in b1 that are also set in b2, 0 if no overlap
- */
-extern int32_t
-bit_overlap(bitstr_t *b1, bitstr_t *b2)
+static int32_t _bit_overlap_internal(bitstr_t *b1, bitstr_t *b2, bool count_it)
 {
-	int32_t count = 0;
+	int32_t count = 0, anded;
 	bitoff_t bit, bit_cnt;
 	int32_t word_size = sizeof(bitstr_t) * 8;
 
@@ -831,39 +827,39 @@ bit_overlap(bitstr_t *b1, bitstr_t *b2)
 	for (bit = 0; bit < bit_cnt; bit += word_size) {
 		if ((bit + word_size - 1) >= bit_cnt)
 			break;
-		count += hweight(b1[_bit_word(bit)] & b2[_bit_word(bit)]);
+		anded = b1[_bit_word(bit)] & b2[_bit_word(bit)];
+		if (count_it)
+			count += hweight(anded);
+		else if (anded)
+			return 1;
 	}
 	for ( ; bit < bit_cnt; bit++) {
-		if (bit_test(b1, bit) && bit_test(b2, bit))
-			count++;
+		if (bit_test(b1, bit) && bit_test(b2, bit)) {
+			if (count_it)
+				count++;
+			else
+				return 1;
+		}
 	}
 
 	return count;
 }
 
-extern int32_t
-bit_overlap_any(bitstr_t *b1, bitstr_t *b2)
+/*
+ * return number of bits set in b1 that are also set in b2, 0 if no overlap
+ */
+extern int32_t bit_overlap(bitstr_t *b1, bitstr_t *b2)
 {
-	bitoff_t bit, bit_cnt;
-	int32_t word_size = sizeof(bitstr_t) * 8;
+	return _bit_overlap_internal(b1, b2, 1);
+}
 
-	_assert_bitstr_valid(b1);
-	_assert_bitstr_valid(b2);
-	xassert(_bitstr_bits(b1) == _bitstr_bits(b2));
-
-	bit_cnt = _bitstr_bits(b1);
-	for (bit = 0; bit < bit_cnt; bit += word_size) {
-		if ((bit + word_size - 1) >= bit_cnt)
-			break;
-		if (b1[_bit_word(bit)] & b2[_bit_word(bit)])
-			return 1;
-	}
-	for ( ; bit < bit_cnt; bit++) {
-		if (bit_test(b1, bit) && bit_test(b2, bit))
-			return 1;
-	}
-
-	return 0;
+/*
+ * return 1 if there is at least one bit set in b1 that is also set in b2, 0 if
+ * no overlap
+ */
+extern int32_t bit_overlap_any(bitstr_t *b1, bitstr_t *b2)
+{
+	return _bit_overlap_internal(b1, b2, 0);
 }
 
 /*
