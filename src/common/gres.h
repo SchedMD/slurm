@@ -410,6 +410,11 @@ extern void gres_plugin_recv_stepd(int fd);
 extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 					List *gres_list);
 
+/*
+ * Return how many gres Names are on the system.
+ */
+extern int gres_plugin_get_gres_cnt(void);
+
 /* Add a GRES record. This is used by the node_features plugin after the
  * slurm.conf file is read and the initial GRES records are built by
  * gres_plugin_init(). */

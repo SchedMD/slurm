@@ -630,6 +630,22 @@ fini:	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
 }
 
+extern int gres_plugin_get_gres_cnt(void)
+{
+	static int cnt = -1;
+
+	if (cnt != -1)
+		return cnt;
+
+	gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	cnt = gres_context_cnt;
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return cnt;
+}
+
 /*
  * Add a GRES record. This is used by the node_features plugin after the
  * slurm.conf file is read and the initial GRES records are built by
