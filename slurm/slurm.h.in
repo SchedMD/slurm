@@ -2386,59 +2386,59 @@ typedef struct will_run_response_msg {
  * Resource reservation data structures.
  * Create, show, modify and delete functions are required
  */
-#define RESERVE_FLAG_MAINT		0x00000001	/* Set MAINT flag */
-#define RESERVE_FLAG_NO_MAINT		0x00000002	/* Clear MAINT flag */
-#define RESERVE_FLAG_DAILY		0x00000004	/* Set DAILY flag */
-#define RESERVE_FLAG_NO_DAILY		0x00000008	/* Clear DAILY flag */
-#define RESERVE_FLAG_WEEKLY		0x00000010	/* Set WEEKLY flag */
-#define RESERVE_FLAG_NO_WEEKLY		0x00000020	/* Clear WEEKLY flag */
-#define RESERVE_FLAG_IGN_JOBS		0x00000040	/* Ignore running jobs */
-#define RESERVE_FLAG_NO_IGN_JOB		0x00000080	/* Clear ignore running
+#define RESERVE_FLAG_MAINT	   0x0000000000000001	/* Set MAINT flag */
+#define RESERVE_FLAG_NO_MAINT	   0x0000000000000002	/* Clear MAINT flag */
+#define RESERVE_FLAG_DAILY	   0x0000000000000004	/* Set DAILY flag */
+#define RESERVE_FLAG_NO_DAILY	   0x0000000000000008	/* Clear DAILY flag */
+#define RESERVE_FLAG_WEEKLY	   0x0000000000000010	/* Set WEEKLY flag */
+#define RESERVE_FLAG_NO_WEEKLY	   0x0000000000000020	/* Clear WEEKLY flag */
+#define RESERVE_FLAG_IGN_JOBS	   0x0000000000000040	/* Ignore running jobs */
+#define RESERVE_FLAG_NO_IGN_JOB	   0x0000000000000080	/* Clear ignore running
 							 * jobs flag */
-#define RESERVE_FLAG_ANY_NODES		0x00000100	/* Use any compute
+#define RESERVE_FLAG_ANY_NODES	   0x0000000000000100	/* Use any compute
 							 * nodes */
-#define RESERVE_FLAG_NO_ANY_NODES	0x00000200	/* Clear any compute
+#define RESERVE_FLAG_NO_ANY_NODES  0x0000000000000200	/* Clear any compute
 							 * node flag */
-#define RESERVE_FLAG_STATIC     	0x00000400	/* Static node allocation */
-#define RESERVE_FLAG_NO_STATIC  	0x00000800	/* Clear static node
+#define RESERVE_FLAG_STATIC        0x0000000000000400	/* Static node allocation */
+#define RESERVE_FLAG_NO_STATIC     0x0000000000000800	/* Clear static node
 							 * allocation */
-#define RESERVE_FLAG_PART_NODES		0x00001000	/* Use partition nodes
+#define RESERVE_FLAG_PART_NODES	   0x0000000000001000	/* Use partition nodes
 							 * only */
-#define RESERVE_FLAG_NO_PART_NODES	0x00002000	/* Clear partition
+#define RESERVE_FLAG_NO_PART_NODES 0x0000000000002000	/* Clear partition
 							 * nodes only flag */
-#define RESERVE_FLAG_OVERLAP		0x00004000	/* Permit to overlap
+#define RESERVE_FLAG_OVERLAP	   0x0000000000004000	/* Permit to overlap
 							 * others */
-#define RESERVE_FLAG_SPEC_NODES		0x00008000	/* Contains specific
+#define RESERVE_FLAG_SPEC_NODES	   0x0000000000008000	/* Contains specific
 							 * nodes */
-#define RESERVE_FLAG_FIRST_CORES	0x00010000	/* Use only first cores
+#define RESERVE_FLAG_FIRST_CORES   0x0000000000010000	/* Use only first cores
 							 * on each node */
-#define RESERVE_FLAG_TIME_FLOAT		0x00020000	/* Time offset is
+#define RESERVE_FLAG_TIME_FLOAT	   0x0000000000020000	/* Time offset is
 							 * relative */
-#define RESERVE_FLAG_REPLACE		0x00040000	/* Replace resources
+#define RESERVE_FLAG_REPLACE	   0x0000000000040000	/* Replace resources
 							 * as assigned to jobs */
-#define RESERVE_FLAG_ALL_NODES		0x00080000	/* Use all compute
+#define RESERVE_FLAG_ALL_NODES	   0x0000000000080000	/* Use all compute
 							 * nodes */
-#define RESERVE_FLAG_PURGE_COMP		0x00100000	/* Purge reservation
+#define RESERVE_FLAG_PURGE_COMP	   0x0000000000100000	/* Purge reservation
 							 * after last job done */
-#define RESERVE_FLAG_WEEKDAY		0x00200000	/* Set WEEKDAY flag */
-#define RESERVE_FLAG_NO_WEEKDAY		0x00400000	/* Clear WEEKDAY flag */
-#define RESERVE_FLAG_WEEKEND		0x00800000	/* Set WEEKEND flag */
-#define RESERVE_FLAG_NO_WEEKEND		0x01000000	/* Clear WEEKEND flag */
-#define RESERVE_FLAG_FLEX		0x02000000	/* Set FLEX flag */
-#define RESERVE_FLAG_NO_FLEX		0x04000000	/* Clear FLEX flag */
-#define RESERVE_FLAG_DUR_PLUS		0x08000000	/* Add duration time,
+#define RESERVE_FLAG_WEEKDAY	   0x0000000000200000	/* Set WEEKDAY flag */
+#define RESERVE_FLAG_NO_WEEKDAY	   0x0000000000400000	/* Clear WEEKDAY flag */
+#define RESERVE_FLAG_WEEKEND	   0x0000000000800000	/* Set WEEKEND flag */
+#define RESERVE_FLAG_NO_WEEKEND	   0x0000000001000000	/* Clear WEEKEND flag */
+#define RESERVE_FLAG_FLEX	   0x0000000002000000	/* Set FLEX flag */
+#define RESERVE_FLAG_NO_FLEX	   0x0000000004000000	/* Clear FLEX flag */
+#define RESERVE_FLAG_DUR_PLUS	   0x0000000008000000	/* Add duration time,
 							 * only used on
 							 * modifying a
 							 * reservation */
-#define RESERVE_FLAG_DUR_MINUS		0x10000000	/* Remove duration time,
+#define RESERVE_FLAG_DUR_MINUS	   0x0000000010000000	/* Remove duration time,
 							 * only used on
 							 * modifying a
 							 * reservation */
-#define RESERVE_FLAG_NO_HOLD_JOBS	0x20000000	/* No hold jobs after
+#define RESERVE_FLAG_NO_HOLD_JOBS  0x0000000020000000	/* No hold jobs after
 							 * end of reservation */
-#define RESERVE_FLAG_REPLACE_DOWN	0x40000000	/* Replace DOWN or
+#define RESERVE_FLAG_REPLACE_DOWN  0x0000000040000000	/* Replace DOWN or
 							 * DRAINED nodes */
-#define RESERVE_FLAG_NO_PURGE_COMP	0x80000000	/* Clear PURGE flag */
+#define RESERVE_FLAG_NO_PURGE_COMP 0x0000000080000000	/* Clear PURGE flag */
 
 typedef struct resv_core_spec {
 	char *node_name;	/* Name of reserved node */
