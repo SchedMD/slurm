@@ -1627,7 +1627,7 @@ CoreSpecCount and use the specialized resources on nodes it is allocated.
 This option can not be used with the \fB\-\-thread\-spec\fR option.
 
 .TP
-\fB\-\-signal\fR=[B:]<\fIsig_num\fR>[@<\fIsig_time\fR>]
+\fB\-\-signal\fR=[[R][B]:]<\fIsig_num\fR>[@<\fIsig_time\fR>]
 When a job is within \fIsig_time\fR seconds of its end time,
 send it the signal \fIsig_num\fR.
 Due to the resolution of event handling by Slurm, the signal may
@@ -1640,6 +1640,8 @@ the default time will be 60 seconds.
 Use the "B:" option to signal only the batch shell, none of the other
 processes will be signaled. By default all job steps will be signaled,
 but not the batch shell itself.
+Use the "R:" option to signal the scheduler this job is will to overlap with a
+promiscuous reservation.
 To have the signal sent at preemption time see the
 \fBpreempt_send_user_signal\fR \fBSlurmctldParameter\fR.
 

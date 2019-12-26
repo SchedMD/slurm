@@ -1165,7 +1165,7 @@ static void _help(void)
 "      --requeue               if set, permit the job to be requeued\n"
 "  -s, --oversubscribe         over subscribe resources with other jobs\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
-"      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
+"      --signal=[[R][B]:]num[@time] send signal when time limit within time seconds\n"
 "      --spread-job            spread job across as many nodes as possible\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"

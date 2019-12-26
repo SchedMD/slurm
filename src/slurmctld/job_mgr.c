@@ -11038,18 +11038,23 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t pack_job_offset)
 			    !part_policy_job_runnable_state(job_ptr2) ||
 			    !job_independent(job_ptr2))
 				continue;
-			if ((job_ptr2->resv_name && (!job_ptr->resv_name)) ||
-			    ((!job_ptr2->resv_name) && job_ptr->resv_name))
-				continue;	/* different reservation */
-			if (job_ptr2->resv_name && job_ptr->resv_name &&
-			    (!xstrcmp(job_ptr2->resv_name,
-				      job_ptr->resv_name))) {
+
+			if (!xstrcmp(job_ptr2->resv_name, job_ptr->resv_name) ||
+			    (job_ptr2->resv_ptr &&
+			     (job_ptr->warn_time <=
+			      job_ptr2->resv_ptr->max_start_delay) &&
+			     (job_ptr->warn_flags & KILL_JOB_RESV))) {
 				/* same reservation */
 				if (job_ptr2->priority <= job_ptr->priority)
 					continue;
 				top = false;
 				break;
-			}
+			} else if ((job_ptr2->resv_name &&
+				    (!job_ptr->resv_name)) ||
+				   ((!job_ptr2->resv_name) &&
+				    job_ptr->resv_name))
+				continue;	/* different reservation */
+
 
 			if (bb_g_job_test_stage_in(job_ptr2, true) != 1)
 				continue;	/* Waiting for buffer */
@@ -17863,8 +17868,8 @@ extern void send_job_warn_signal(job_record_t *job_ptr, bool ignore_time)
 		 * If --signal B option was not specified,
 		 * signal only the steps but not the batch step.
 		 */
-		if (job_ptr->warn_flags == 0)
-			job_ptr->warn_flags = KILL_STEPS_ONLY;
+		if (!(job_ptr->warn_flags & KILL_JOB_BATCH))
+			job_ptr->warn_flags |= KILL_STEPS_ONLY;
 
 		debug("%s: warning signal %u to %pJ",
 		      __func__, job_ptr->warn_signal, job_ptr);

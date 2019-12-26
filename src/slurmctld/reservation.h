@@ -214,4 +214,11 @@ extern void job_time_adj_resv(job_record_t *job_ptr);
  */
 extern void job_resv_check(void);
 
+/*
+ * Tests if job_ptr is borrowing from a reservation a preempting job
+ * (preemptor_ptr) wants to use or not.
+ */
+extern bool job_borrow_from_resv_check(job_record_t *job_ptr,
+				       job_record_t *preemptor_ptr);
+
 #endif /* !_RESERVATION_H */
