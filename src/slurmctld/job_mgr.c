@@ -10796,6 +10796,30 @@ static inline bool _purge_complete_het_job(job_record_t *het_job_leader)
 }
 
 /*
+ * If the job or slurm.conf requests to not kill on invalid dependency,
+ * then set the job state reason to WAIT_DEP_INVALID. Otherwise, kill the
+ * job.
+ */
+void handle_invalid_dependency(job_record_t *job_ptr)
+{
+	if (job_ptr->bit_flags & KILL_INV_DEP) {
+		_kill_dependent(job_ptr);
+	} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
+		debug("%s: %pJ job dependency never satisfied",
+		      __func__, job_ptr);
+		job_ptr->state_reason = WAIT_DEP_INVALID;
+		xfree(job_ptr->state_desc);
+	} else if (kill_invalid_dep) {
+		_kill_dependent(job_ptr);
+	} else {
+		debug("%s: %pJ job dependency never satisfied",
+		      __func__, job_ptr);
+		job_ptr->state_reason = WAIT_DEP_INVALID;
+		xfree(job_ptr->state_desc);
+	}
+}
+
+/*
  * purge_old_job - purge old job records.
  *	The jobs must have completed at least MIN_JOB_AGE minutes ago.
  *	Test job dependencies, handle after_ok, after_not_ok before
@@ -10826,21 +10850,7 @@ void purge_old_job(void)
 			/* Check what are the job disposition
 			 * to deal with invalid dependecies
 			 */
-			if (job_ptr->bit_flags & KILL_INV_DEP) {
-				_kill_dependent(job_ptr);
-			} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
-				debug("%s: %pJ job dependency never satisfied",
-				      __func__, job_ptr);
-				job_ptr->state_reason = WAIT_DEP_INVALID;
-				xfree(job_ptr->state_desc);
-			} else if (kill_invalid_dep) {
-				_kill_dependent(job_ptr);
-			} else {
-				debug("%s: %pJ job dependency never satisfied",
-				      __func__, job_ptr);
-				job_ptr->state_reason = WAIT_DEP_INVALID;
-				xfree(job_ptr->state_desc);
-			}
+			handle_invalid_dependency(job_ptr);
 		}
 
 		if (job_ptr->state_reason == WAIT_DEP_INVALID) {
@@ -15567,21 +15577,7 @@ extern bool job_independent(job_record_t *job_ptr)
 		xfree(job_ptr->state_desc);
 		return false;
 	} else if (depend_rc == FAIL_DEPEND) {
-		if (job_ptr->bit_flags & KILL_INV_DEP) {
-			_kill_dependent(job_ptr);
-		} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
-			debug("%s: %pJ job dependency never satisfied",
-			      __func__, job_ptr);
-			job_ptr->state_reason = WAIT_DEP_INVALID;
-			xfree(job_ptr->state_desc);
-		} else if (kill_invalid_dep) {
-			_kill_dependent(job_ptr);
-		} else {
-			debug("%s: %pJ job dependency never satisfied",
-			      __func__, job_ptr);
-			job_ptr->state_reason = WAIT_DEP_INVALID;
-			xfree(job_ptr->state_desc);
-		}
+		handle_invalid_dependency(job_ptr);
 		return false;
 	}
 	/* Job is eligible to start now */

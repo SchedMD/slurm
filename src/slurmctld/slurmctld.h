@@ -2127,6 +2127,13 @@ extern int pick_batch_host(job_record_t *job_ptr);
 extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code);
 
 /*
+ * If the job or slurm.conf requests to not kill on invalid dependency,
+ * then set the job state reason to WAIT_DEP_INVALID. Otherwise, kill the
+ * job.
+ */
+extern void handle_invalid_dependency(job_record_t *job_ptr);
+
+/*
  * purge_old_job - purge old job records.
  *	The jobs must have completed at least MIN_JOB_AGE minutes ago.
  *	Test job dependencies, handle after_ok, after_not_ok before
