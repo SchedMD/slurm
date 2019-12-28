@@ -22,6 +22,9 @@ and can be made to start most, if not all, types.
 <li><a href="#k8s">Kubernetes Pods (k8s)</a></li>
 <li><a href="#shifter">Shifter</a></li>
 <li><a href="#singularity">Singularity</a></li>
+<li><a href="#enroot">ENROOT</a></li>
+<li><a href="#podman">podman</a></li>
+<li><a href="#sarus">Sarus</a></li>
 </ul>
 
 Please note this list is not exhaustive as new containers types are being
@@ -32,23 +35,36 @@ created all the time.
 <h2>Container Types</h2>
 <h3 name="charliecloud"><a href="https://github.com/hpc/charliecloud">Charliecloud</a></h3>
 
-<p>Charliecloud is stand alone user namespace container out of
-<a href="https://lanl.gov/">LANL</a> to provide HPC containers. Charliecloud does
-does not have/require any Slurm integration as it requires no special
-permissions to run as a user.</p>
+<p>Charliecloud is user namespace container system sponsored by
+<a href="https://lanl.gov/">LANL</a> to provide HPC containers.
+Charliecloud supports the following:
+
+<ul>
+	<li>
+		<a href="https://hpc.github.io/charliecloud/tutorial.html?highlight=slurm">
+			Directly called by users</a>
+		via user namespace support.
+	</li>
+	<li>Direct Slurm support currently
+		<a href="https://github.com/hpc/charliecloud/tree/slurm-plugin">
+			in development</a>.
+	</li>
+	<li>OCI Image support (via wrapper)</li>
+</ul>
+</p>
 
 <h3 name="docker"><a href="https://www.docker.com/">Docker</a></h3>
 
 <p>Docker currently has multiple design points that make it unfriendly to HPC
-systems.  The issue that usually stops most sites from using Docker is the
+systems. The issue that usually stops most sites from using Docker is the
 requirement of "only trusted users should be allowed to control your Docker
 daemon"
 <a href="https://docs.docker.com/engine/security/security/">[Docker Security]</a>
 which is not acceptable to most HPC systems.</p>
 
 <p>Sites with trusted users can add them to the docker Unix group and allow them
-control Docker directly from inside of jobs. There is currently no support for
-starting or stopping docker containers directly in Slurm.</p>
+control Docker directly from inside of jobs. There is currently no direct
+support for starting or stopping docker containers in Slurm.</p>
 
 <h3 name="udocker"><a href="https://github.com/indigo-dc/udocker">UDOCKER</a></h3>
 
@@ -64,7 +80,40 @@ docker commands without increased user privileges.</p>
 <p> Kubernetes is a container orchestration system that uses PODs, which are
 generally a logical grouping of containers for singular purpose. </p>
 
-<p>There is currently no support for Kubernetes Pods in Slurm.</p>
+<p>There is currently no support for Kubernetes Pods in Slurm.
+Users wishing to run OCI images contained in Pods via Slurm might consider
+one of the following instead:
+<ul>
+	<li>
+		<a href="#charliecloud">Charliecloud</a>
+	</li>
+	<li>
+		<a href="#podman">podman</a>
+	</li>
+	<li>
+		<a href="#singularity">Singularity</a>
+	</li>
+</ul>
+</p>
+
+<p>Kubernetes requires root privileges but users could consider using rootless Kubernetes inside of jobs:
+<ul>
+	<li>
+		<a href="https://github.com/rootless-containers/usernetes">Usernetes</a>
+	</li>
+	<li>
+		<a href="https://github.com/kubernetes/minikube">Minikube</a>
+	</li>
+	<li>
+		<a href="https://github.com/rancher/k3s">k3s</a>
+	</li>
+	<li>
+		<a href="https://archive.fosdem.org/2019/schedule/event/containers_k8s_rootless/">
+			Rootless Kubernetes (via user namespaces)
+		</a>
+	</li>
+</ul>
+</p>
 
 <h3 name="shifter"><a href="https://github.com/NERSC/shifter">Shifter</a></h3>
 
@@ -72,10 +121,9 @@ generally a logical grouping of containers for singular purpose. </p>
 to provide HPC containers with full scheduler integration.
 
 <ul>
-	<li>Shifter provides full 
+	<li>Shifter provides full
 		<a href="https://github.com/NERSC/shifter/wiki/SLURM-Integration">
-			instructions to integrate with Slurm
-		</a>.
+			instructions to integrate with Slurm</a>.
 	</li>
 	<li>Presentations about Shifter and Slurm:
 		<ul>
@@ -106,8 +154,63 @@ to provide HPC containers with full scheduler integration.
 </ul>
 </p>
 
+<h3 name="enroot">
+	<a href="https://github.com/NVIDIA/enroot">ENROOT</a>
+</h3>
+
+<p>Enroot is a user namespace container system sponsored by
+	<a href="https://www.nvidia.com">NVIDIA</a>
+	that supports:
+<ul>
+	<li>Slurm integration via
+		<a href="https://github.com/NVIDIA/pyxis">pyxis</a>
+	</li>
+	<li>Native support for Nvidia GPUs</li>
+	<li>Faster Docker image imports</li>
+</ul>
+</p>
+
+<h3 name="podman">
+	<a href="https://podman.io/">podman</a>
+</h3>
+
+<p>podman is a user namespace container system sponsored by
+	<a href="https://developers.redhat.com/blog/2018/08/29/intro-to-podman/">
+		Redhat/IBM</a>
+	that supports:
+<ul>
+	<li>Drop in replacement of Docker.</li>
+	<li>Called directly by users. (Currently lacks direct Slurm support).</li>
+	<li>Rootless image building via
+		<a href="https://buildah.io/">buildah</a>
+	</li>
+	<li>Native OCI Image support</li>
+</ul>
+</p>
+
+<h3 name="sarus">
+	<a href="https://github.com/eth-cscs/sarus">Sarus</a>
+</h3>
+<p>Sarus is a privileged container system sponsored by
+	ETH Zurich /
+	<a href="https://user.cscs.ch/tools/containers/sarus/">CSCS</a>
+	that supports:
+<ul>
+	<li>
+		<a href="https://sarus.readthedocs.io/en/latest/config/slurm-global-sync-hook.html">
+			Slurm image synchronization via OCI hook</a>
+	</li>
+	<li>Native OCI Image support</li>
+	<li>NVIDIA GPU Support</li>
+	<li>Similar design to <a href="#shifter">Shifter</a></li>
+</ul>
+Overview slides of Sarus are
+<a href="http://hpcadvisorycouncil.com/events/2019/swiss-workshop/pdf/030419/K_Mariotti_CSCS_SARUS_OCI_ContainerRuntime_04032019.pdf">
+	here</a>.
+</p>
+
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified November 2018</p>
+<p style="text-align:center;">Last modified February 2020</p>
 
 <!--#include virtual="footer.txt"-->
