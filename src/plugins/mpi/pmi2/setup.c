@@ -382,7 +382,7 @@ _setup_stepd_kvs(char ***env)
 	 * For PMI11.
 	 * A better logic would be to put PMI_process_mapping in KVS only if
 	 * the task distribution method is not "arbitrary", because in
-	 * "arbitrary" distribution the process mapping varible is not correct.
+	 * "arbitrary" distribution the process mapping variable is not correct.
 	 * MPICH2 may deduce the clique info from the hostnames. But that
 	 * is rather costly.
 	 */
