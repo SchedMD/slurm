@@ -3223,7 +3223,8 @@ cleanup:
 
 	if (error_code != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(job_ptr->node_bitmap);
-		if (job_ptr->gres_list != gres_list_pre) {
+		if (gres_list_pre &&
+		    (job_ptr->gres_list != gres_list_pre)) {
 			FREE_NULL_LIST(job_ptr->gres_list);
 			job_ptr->gres_list = gres_list_pre;
 		}
