@@ -427,10 +427,10 @@ char * xstrndup(const char *str, size_t n)
 	siz = strlen(str);
 	if (n < siz)
 		siz = n;
-	siz++;
-	result = xmalloc(siz);
+	result = xmalloc(siz + 1);
 
-	(void) strlcpy(result, str, siz);
+	(void) memcpy(result, str, siz);
+	result[siz] = '\0';
 
 	return result;
 }
