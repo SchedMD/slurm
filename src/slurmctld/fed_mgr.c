@@ -2258,7 +2258,10 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	job_ptr->details = xmalloc(sizeof *(job_ptr->details));
 	job_ptr->details->magic = DETAILS_MAGIC;
 	job_ptr->job_id = remote_dep_info->job_id;
-	job_ptr->name = xstrdup(remote_dep_info->job_name);
+	job_ptr->name = remote_dep_info->job_name;
+
+	/* NULL string so it doesn't get free'd since it's used by job_ptr */
+	remote_dep_info->job_name = NULL;
 
 	/*
 	 * Initialize array info. Allocate space for job_ptr->array_recs if
@@ -5641,8 +5644,11 @@ extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
 	/* dep_msg will get free'd, so copy it */
 	remote_dependency = xmalloc(sizeof *remote_dependency);
 	remote_dependency->job_id = dep_msg->job_id;
-	remote_dependency->job_name = xstrdup(dep_msg->job_name);
-	remote_dependency->dependency = xstrdup(dep_msg->dependency);
+	remote_dependency->job_name = dep_msg->job_name;
+	remote_dependency->dependency = dep_msg->dependency;
+	/* NULL strings so they don't get free'd */
+	dep_msg->job_name = NULL;
+	dep_msg->dependency = NULL;
 	remote_dependency->array_task_id = dep_msg->array_task_id;
 	remote_dependency->array_job_id = dep_msg->array_job_id;
 	remote_dependency->is_array = dep_msg->is_array;
