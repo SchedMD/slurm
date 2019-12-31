@@ -1602,10 +1602,10 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	debug3("_rpc_launch_tasks: call to _forkexec_slurmstepd");
+	debug3("%s: call to _forkexec_slurmstepd", __func__);
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self,
 				      step_hset, msg->protocol_version);
-	debug3("_rpc_launch_tasks: return from _forkexec_slurmstepd");
+	debug3("%s: return from _forkexec_slurmstepd", __func__);
 	_launch_complete_add(req->job_id);
 
 done:
@@ -1616,9 +1616,8 @@ done:
 		char addr_str[32];
 		slurm_print_slurm_addr(&msg->address, addr_str,
 				       sizeof(addr_str));
-		error("_rpc_launch_tasks: unable to send return code to "
-		      "address:port=%s msg_type=%u: %m",
-		      addr_str, msg->msg_type);
+		error("%s: unable to send return code to address:port=%s msg_type=%u: %m",
+		      __func__, addr_str, msg->msg_type);
 
 		/*
 		 * Rewind credential so that srun may perform retry
