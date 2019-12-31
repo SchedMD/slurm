@@ -56,7 +56,6 @@
 
 #include "src/common/macros.h"
 #include "src/common/slurm_time.h"
-#include "src/common/strlcpy.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -377,7 +376,6 @@ char * xbasename(char *path)
 char * xstrdup(const char *str)
 {
 	size_t siz;
-	size_t rsiz;
 	char   *result;
 
 	if (str == NULL) {
@@ -386,9 +384,8 @@ char * xstrdup(const char *str)
 	siz = strlen(str) + 1;
 	result = xmalloc(siz);
 
-	rsiz = strlcpy(result, str, siz);
-	if (rsiz)
-		xassert(rsiz == siz-1);
+	/* includes terminating NUL from source string */
+	(void) memcpy(result, str, siz);
 
 	return result;
 }
