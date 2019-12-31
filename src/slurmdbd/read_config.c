@@ -204,6 +204,7 @@ extern int read_slurmdbd_conf(void)
 		bool a_events = false, a_jobs = false, a_resv = false;
 		bool a_steps = false, a_suspend = false, a_txn = false;
 		bool a_usage = false;
+		uid_t conf_path_uid;
 		debug3("Checking slurmdbd.conf file:%s access permissions",
 		       conf_path);
 		if ((buf.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO)) != 0600)
@@ -219,6 +220,8 @@ extern int read_slurmdbd_conf(void)
 			fatal("Could not open/read/parse slurmdbd.conf file %s",
 			      conf_path);
 		}
+		conf_path_uid = buf.st_uid;
+
 
 		if (!s_p_get_string(&slurmdbd_conf->archive_dir, "ArchiveDir",
 				    tbl))
@@ -469,6 +472,21 @@ extern int read_slurmdbd_conf(void)
 		}
 
 		s_p_get_string(&slurm_conf.slurm_user_name, "SlurmUser", tbl);
+
+		if (slurm_conf.slurm_user_name) {
+			struct passwd *conf_owner;
+			if ((conf_owner = getpwuid(conf_path_uid))) {
+				if (xstrcmp(conf_owner->pw_name,
+					    slurm_conf.slurm_user_name)) {
+					fatal("slurmdbd.conf not owned by SlurmUser %s!=%s",
+					      conf_owner->pw_name,
+					      slurm_conf.slurm_user_name);
+				}
+			} else
+				fatal("No user entry for uid(%d) owning slurmdbd.conf file %s found",
+				      conf_path_uid,
+				      conf_path);
+		}
 
 		if (s_p_get_uint32(&slurmdbd_conf->purge_step,
 				   "StepPurge", tbl)) {
