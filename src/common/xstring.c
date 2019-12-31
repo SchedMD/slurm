@@ -373,14 +373,14 @@ char * xbasename(char *path)
  *   str (IN)		string to duplicate
  *   RETURN		copy of string
  */
-char * xstrdup(const char *str)
+char *xstrdup(const char *str)
 {
 	size_t siz;
-	char   *result;
+	char *result;
 
-	if (str == NULL) {
+	if (!str)
 		return NULL;
-	}
+
 	siz = strlen(str) + 1;
 	result = xmalloc(siz);
 
