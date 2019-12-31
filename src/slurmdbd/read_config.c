@@ -204,6 +204,13 @@ extern int read_slurmdbd_conf(void)
 		bool a_events = false, a_jobs = false, a_resv = false;
 		bool a_steps = false, a_suspend = false, a_txn = false;
 		bool a_usage = false;
+		debug3("Checking slurmdbd.conf file:%s access permissions",
+		       conf_path);
+		if ((buf.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO)) != 0600)
+			fatal("slurmdbd.conf file %s should be 600 is %o accessible for group or others",
+			      conf_path,
+			      buf.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO));
+
 		debug("Reading slurmdbd.conf file %s", conf_path);
 
 		tbl = s_p_hashtbl_create(options);
