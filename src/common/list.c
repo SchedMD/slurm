@@ -56,6 +56,7 @@ strong_alias(list_create,	slurm_list_create);
 strong_alias(list_destroy,	slurm_list_destroy);
 strong_alias(list_is_empty,	slurm_list_is_empty);
 strong_alias(list_count,	slurm_list_count);
+strong_alias(list_shallow_copy,	slurm_list_shallow_copy);
 strong_alias(list_append,	slurm_list_append);
 strong_alias(list_append_list,	slurm_list_append_list);
 strong_alias(list_transfer,	slurm_list_transfer);
@@ -229,6 +230,27 @@ int list_count(List l)
 	slurm_mutex_unlock(&l->mutex);
 
 	return n;
+}
+
+List list_shallow_copy(List l)
+{
+	List m = list_create(NULL);
+	ListNode p;
+
+	xassert(l != NULL);
+	xassert(l->magic == LIST_MAGIC);
+	slurm_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&m->mutex);
+
+	p = l->head;
+	while (p) {
+		_list_append_locked(m, p->data);
+		p = p->next;
+	}
+
+	slurm_mutex_unlock(&m->mutex);
+	slurm_mutex_unlock(&l->mutex);
+	return m;
 }
 
 /* list_append()

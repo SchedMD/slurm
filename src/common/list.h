@@ -119,6 +119,17 @@ int list_is_empty(List l);
  */
 int list_count(List l);
 
+/*
+ *  Create new shallow copy of list [l] pointers, without destructor.
+ *
+ *  The list created is intended to allow manipulation of the list without
+ *  affecting the real list (such as sorting).
+ *
+ *  Warning: destruction of this list will not free members of [l].
+ *  Warning: This list is only valid while [l] is unchanged.
+ */
+List list_shallow_copy(List l);
+
 /***************************
  *  List Access Functions  *
  ***************************/
