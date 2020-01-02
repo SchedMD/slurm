@@ -3863,29 +3863,12 @@ end_features:
 	return rc;
 }
 
-static int _add_to_send_list(void *object, void *arg)
-{
-	struct depend_spec *dependency = (struct depend_spec *)object;
-	uint64_t *send_sib_bits = (uint64_t *)arg;
-	uint32_t cluster_id;
-
-	if (!(dependency->depend_flags & SLURM_FLAGS_REMOTE))
-		return SLURM_SUCCESS;
-	cluster_id = fed_mgr_get_cluster_id(dependency->job_id);
-	*send_sib_bits |= FED_SIBLING_BIT(cluster_id);
-	return SLURM_SUCCESS;
-}
-
 /*
  * Send dependencies of job_ptr to siblings.
- * Only send dependencies to siblings that own the remote jobs that job_ptr
- * depends on. I.e., if a sibling doesn't own any jobs that job_ptr depends on,
- * we won't send job_ptr's dependencies to that sibling.
  */
 extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	uint64_t send_sib_bits;
 	ListIterator sib_itr;
 	slurm_msg_t req_msg;
 	dep_msg_t dep_msg = { 0 };
@@ -3906,19 +3889,9 @@ extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr)
 	req_msg.msg_type = REQUEST_SEND_DEP;
 	req_msg.data = &dep_msg;
 
-	send_sib_bits = 0;
-	list_for_each(job_ptr->details->depend_list, _add_to_send_list,
-		      &send_sib_bits);
-
 	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 	while ((sibling = list_next(sib_itr))) {
 		if (sibling == fed_mgr_cluster_rec)
-			continue;
-		/*
-		 * If there isn't a dependency on this sibling, don't send
-		 * an RPC to this sibling.
-		 */
-		if (!(send_sib_bits & FED_SIBLING_BIT(sibling->fed.id)))
 			continue;
 
 		req_msg.protocol_version = sibling->rpc_version;
