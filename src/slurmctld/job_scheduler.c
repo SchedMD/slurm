@@ -3529,10 +3529,8 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
 	}
-	/*
-	 * TODO: Submit the job to its siblings.
-	 * Probably can just call _prepare_submit_siblings()
-	 */
+	/* Submit the job to its siblings. */
+	fed_mgr_job_requeue(job_ptr);
 	return SLURM_SUCCESS;
 }
 
