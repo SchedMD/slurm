@@ -1285,7 +1285,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		 *  Become --uid user
 		 */
 		if (_become_user () < 0)
-			info("Warning: Unable to assume uid=%u", opt.uid);
+			fatal("Unable to assume uid=%u", opt.uid);
 		if (_create_job_step(job, true, srun_job_list, pack_jobid,
 				     pack_nodelist) < 0) {
 			slurm_complete_job(my_job_id, 1);
@@ -1309,7 +1309,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	 *  Become --uid user
 	 */
 	if (_become_user () < 0)
-		info("Warning: Unable to assume uid=%u", opt.uid);
+		fatal("Unable to assume uid=%u", opt.uid);
 
 	if (!slurm_started) {
 		/*
@@ -1564,16 +1564,14 @@ _normalize_hostlist(const char *hostlist)
 static int _become_user (void)
 {
 	char *user;
-	gid_t gid = gid_from_uid(opt.uid);
+
+	/* Already the user, so there's nothing to change. Return early. */
+	if (opt.uid == getuid())
+		return 0;
 
 	if (!(user = uid_to_string_or_null(opt.uid))) {
 		xfree(user);
 		return (error ("Invalid user id %u: %m", opt.uid));
-	}
-
-	if (opt.uid == getuid ()) {
-		xfree(user);
-		return (0);
 	}
 
 	if ((opt.gid != getgid()) && (setgid(opt.gid) < 0)) {
@@ -1581,7 +1579,9 @@ static int _become_user (void)
 		return (error ("setgid: %m"));
 	}
 
-	(void) initgroups(user, gid); /* Ignore errors */
+	if (initgroups(user, gid_from_uid(opt.uid)))
+		return (error ("initgroups: %m"));
+
 	xfree(user);
 
 	if (setuid (opt.uid) < 0)
