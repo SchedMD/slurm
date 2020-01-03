@@ -281,11 +281,11 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		}
 		break;
 	case SORTID_DURATION:
+		type = "duration";
 		temp_int = time_str2mins((char *)new_text);
 		if (temp_int <= 0)
 			goto return_error;
 		resv_msg->duration = temp_int;
-		type = "duration";
 		break;
 	case SORTID_TIME_END:
 		resv_msg->end_time = parse_time((char *)new_text, 0);
@@ -346,6 +346,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "users";
 		break;
 	case SORTID_TRES:
+		type = "TRES";
 		if (state_control_parse_resv_tres((char *)new_text, resv_msg,
 						  &free_tres_license,
 						  &free_tres_bb,
