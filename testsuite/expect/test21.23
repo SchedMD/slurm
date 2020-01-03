@@ -95,7 +95,7 @@ expect {
 		exp_continue
 	}
 	-re "Nothing new added" {
-		send_user "\nWARNING: vestigial account $test_acct found\n"
+		send_user "\nWARNING: vestigial account $ta found\n"
 		incr aamatches
 		exp_continue
 	}
