@@ -40,9 +40,20 @@ set file_err     "test$test_id.error"
 set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
 set job_id1      0
+set job_id2      0
 set nodelist_name ""
+set hostname     ""
+set gpu_cnt      0
+set job_tres_cnt 0
 
 print_header $test_id
+
+set timeout $max_job_delay
+
+if {![get_node_config 2] < 0} {
+	log_warn "This test requires 2 or more GPUs per node in the default partition. Skipping.\n"
+	exit $exit_code
+}
 
 #
 # Submit a job and get the node's NodeName from the nodelist
@@ -142,6 +153,61 @@ if {$waited == 0} {
 }
 if {$waited == 0} {
 	send_user "\nFAILURE: srun failed to wait for non-sharing job to complete\n"
+	set exit_code 1
+}
+
+#
+# Verify that all GPUs are allocated with the --exclusive flag
+#
+set sbatch_pid2 [spawn $sbatch -t1 -N1 -w $hostname --gres=gpu --exclusive --output=$file_out $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		log_error "sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id2 == 0} {
+	log_error "sbatch failed to report jobid\n"
+	set exit_code 1
+}
+
+if {[wait_for_job $job_id2 "RUNNING"] != 0} {
+	log_error "waiting for job to start running\n"
+	set exit_code 1
+}
+
+spawn $scontrol show job $job_id2
+expect {
+	-re "TRES=($alpha_numeric_special)gres/gpu=($number)" {
+		set job_tres_cnt $expect_out(2,string)
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$gpu_cnt != $job_tres_cnt} {
+	log_error "Job didn't allocate all GPUs ($job_tres_cnt != $gpu_cnt)"
+	set exit_code 1
+} else {
+	log_info "Node GPU count matches Job GPU count ($job_tres_cnt == $gpu_cnt)"
+}
+
+if {[wait_for_job $job_id2 "DONE"] != 0} {
+	log_error "job wasn't able to complete\n"
+	cancel_job $job_id2
 	set exit_code 1
 }
 

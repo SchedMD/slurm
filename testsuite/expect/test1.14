@@ -39,13 +39,20 @@ set file_in2        "test$test_id.input2"
 set file_out        "test$test_id.output"
 set file_out2       "test$test_id.output2"
 set job_id           0
-
+set gpu_cnt          0
+set job_tres_cnt     0
+set hostname         ""
 
 print_header $test_id
 
 if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
+}
+
+if {![get_node_config 2] < 0} {
+	log_warn "This test requires 2 or more GPUs per node in the default partition. Skipping.\n"
+	exit $exit_code
 }
 
 #
@@ -227,6 +234,54 @@ expect {
 if { $matches != 1 } {
 	send_user "\nFAILURE: Problem --exclusive and --immediate option for step ($matches != 1)\n"
 	set exit_code 1
+}
+
+#
+# Verify that all GPUs are allocated with the --exclusive flag
+#
+set job_id 0
+
+spawn $srun -N1 -w $hostname --gres=gpu --exclusive $bin_printenv SLURM_JOBID
+expect {
+	-re "($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		log_error "srun not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $scontrol show job $job_id
+expect {
+	-re "TRES=($alpha_numeric_special)gres/gpu=($number)" {
+		set job_tres_cnt $expect_out(2,string)
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$gpu_cnt != $job_tres_cnt} {
+	log_error "Job didn't allocate all GPUs ($job_tres_cnt != $gpu_cnt)"
+	set exit_code 1
+} else {
+	log_info "Node GPU count matches Job GPU count ($job_tres_cnt == $gpu_cnt)"
+}
+
+if {[wait_for_job $job_id "DONE"] != 0} {
+	log_error "job wasn't able to complete\n"
+	cancel_job $job_id
+	set_exit_code 1
 }
 
 if {$exit_code == 0} {

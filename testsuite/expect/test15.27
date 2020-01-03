@@ -36,6 +36,9 @@ set nodes          ""
 set cputot         0
 set scontrol_cpu   0
 set sacct_cpu      0
+set gpu_cnt        0
+set hostname       ""
+set job_tres_cnt   0
 set exit_code      0
 
 print_header $test_id
@@ -127,6 +130,11 @@ if {[test_using_slurmdbd] == 0 } {
 	exit 0
 }
 
+if {![get_node_config 2] < 0} {
+	log_warn "This test requires 2 or more GPUs per node in the default partition. Skipping.\n"
+	exit $exit_code
+}
+
 spawn $salloc -t1 -n1 --exclusive $srun -l $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Granted job allocation ($number)" {
@@ -168,6 +176,54 @@ expect {
 }
 
 check_alloc
+
+#
+# Verify that all GPUs are allocated with the --exclusive flag
+#
+set job_id 0
+
+spawn $salloc -t1 -n1 -w $hostname --gres=gpu --exclusive $srun -l $bin_printenv SLURMD_NODENAME
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		log_error "salloc not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $scontrol show job $job_id
+expect {
+	-re "TRES=($alpha_numeric_special)gres/gpu=($number)" {
+		set job_tres_cnt $expect_out(2,string)
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$gpu_cnt != $job_tres_cnt} {
+	log_error "Job didn't allocate all GPUs ($job_tres_cnt != $gpu_cnt)"
+	set exit_code 1
+} else {
+	log_info "Node GPU count matches Job GPU count ($job_tres_cnt == $gpu_cnt)"
+}
+
+if {[wait_for_job $job_id "DONE"] != 0} {
+	log_error "job wasn't able to complete\n"
+	cancel_job $job_id
+	set exit_code 1
+}
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
