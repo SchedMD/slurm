@@ -222,7 +222,8 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			}
 		} else if (!xstrncasecmp(tag, "MaxStartDelay",
 					 MAX(taglen, 2))) {
-			duration = time_str2mins(val);
+			duration = time_str2secs(val);
+
 			if (duration < 0) {
 				exit_code = 1;
 				error("Invalid duration %s.  %s", argv[i], msg);
