@@ -17599,6 +17599,17 @@ extern bool job_hold_requeue(job_record_t *job_ptr)
 	if (!fed_mgr_is_origin_job(job_ptr))
 		return false;
 
+	/*
+	 * A job may be canceled during its epilog in which case we need to
+	 * check that the job (or base job in the case of an array) was not
+	 * canceled before attemping to requeue.
+	 */
+	if (IS_JOB_CANCELLED(job_ptr) ||
+	    (((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) &&
+	     (base_job_ptr = find_job_record(job_ptr->array_job_id)) &&
+	     base_job_ptr->array_recs && IS_JOB_CANCELLED(base_job_ptr)))
+		return false;
+
 	/* Check if the job exit with one of the
 	 * configured requeue values. */
 	_set_job_requeue_exit_value(job_ptr);
