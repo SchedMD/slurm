@@ -1923,7 +1923,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	int i;
 	uint64_t cpu_cnt = 0;
 	node_record_t *node_ptr = node_record_table_ptr;
-	char start_time[32], end_time[32];
+	char start_time[32], end_time[32], tmp_msd[40];
 	char *name1, *name2, *val1, *val2;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
@@ -2009,13 +2009,17 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	} else
 		name2 = val2 = "";
 
+	if (resv_ptr->max_start_delay)
+		secs2time_str(resv_ptr->max_start_delay,
+			      tmp_msd, sizeof(tmp_msd));
+
 	sched_info("%s reservation=%s%s%s%s%s nodes=%s cores=%u "
-		   "licenses=%s tres=%s watts=%u start=%s end=%s MaxStartDelay=%u",
+		   "licenses=%s tres=%s watts=%u start=%s end=%s MaxStartDelay=%s",
 		   old_resv_ptr ? "Updated" : "Created",
 		   resv_ptr->name, name1, val1, name2, val2,
 		   resv_ptr->node_list, resv_ptr->core_cnt, resv_ptr->licenses,
 		   resv_ptr->tres_fmt_str, resv_ptr->resv_watts,
-		   start_time, end_time, resv_ptr->max_start_delay);
+		   start_time, end_time, tmp_msd);
 	if (old_resv_ptr)
 		_post_resv_update(resv_ptr, old_resv_ptr);
 	else
