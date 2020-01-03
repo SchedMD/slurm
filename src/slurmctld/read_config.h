@@ -70,8 +70,8 @@ extern void cluster_rec_free(void);
 extern int read_slurm_conf(int recover, bool reconfig);
 
 /*
- * restore_job_dependencies - Build depend_list and license_list for every job
- *	also reset the running job count for scheduling policy
+ * Build depend_list for every job and submit remote dependencies to siblings.
+ * This function must be called after fed_mgr_init().
  */
 extern int restore_job_dependencies(void);
 

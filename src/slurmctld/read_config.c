@@ -1392,7 +1392,7 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	init_requeue_policy();
 
-	/* NOTE: Run restore_node_features before restore_job_dependencies */
+	/* NOTE: Run restore_node_features before _restore_job_accounting */
 	restore_node_features(recover);
 
 	if ((node_features_g_count() > 0) &&
@@ -1425,7 +1425,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	load_part_uid_allow_list(1);
 
-	/* NOTE: Run load_all_resv_state() before restore_job_dependencies */
+	/* NOTE: Run load_all_resv_state() before _restore_job_accounting */
 	if (reconfig) {
 		load_all_resv_state(0);
 	} else {
@@ -2670,8 +2670,10 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 			int save_accounting_enforce;
 			info("Removing failed node %s from %pJ",
 			     node_ptr->name, job_ptr);
-			/* Disable accounting here. Accounting reset for all
-			 * jobs in restore_job_dependencies() */
+			/*
+			 * Disable accounting here. Accounting reset for all
+			 * jobs in _restore_job_accounting()
+			 */
 			save_accounting_enforce = accounting_enforce;
 			accounting_enforce &= (~ACCOUNTING_ENFORCE_LIMITS);
 			job_pre_resize_acctg(job_ptr);
@@ -2715,6 +2717,12 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 	return;
 }
 
+/*
+ * Build license_list for every job.
+ * Reset accounting for every job.
+ * Reset the running job count for scheduling policy.
+ * This must be called after load_all_resv_state() and restore_node_features().
+ */
 static void _restore_job_accounting(void)
 {
 	job_record_t *job_ptr;
