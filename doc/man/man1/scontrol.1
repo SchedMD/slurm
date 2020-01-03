@@ -1659,6 +1659,16 @@ Jobs using this reservation are not restricted to these licenses, but may
 use these reserved licenses plus any which are generally available.
 
 .TP
+\fIMaxStartDelay\fP[=<timespec>]
+Change MaxStartDelay value which specifies the maximum time an eligible job not
+requesting this reservation can delay a job requesting it. Default is none.
+Valid formats are minutes, minutes:seconds,
+hours:minutes:seconds, days\-hours, days\-hours:minutes,
+days\-hours:minutes:seconds.  Time resolution is one minute and
+second values are rounded up to the next minute. Output format is always
+[days\-]hours:minutes:seconds.
+
+.TP
 \fINodeCnt\fP=<num>[,num,...]
 Identify number of nodes to be reserved. The number can include a suffix of
 "k" or "K", in which case the number specified is multiplied by 1024.

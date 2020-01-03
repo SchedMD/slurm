@@ -1640,8 +1640,8 @@ the default time will be 60 seconds.
 Use the "B:" option to signal only the batch shell, none of the other
 processes will be signaled. By default all job steps will be signaled,
 but not the batch shell itself.
-Use the "R:" option to signal the scheduler this job is will to overlap with a
-promiscuous reservation.
+Use the "R:" option to allow this job to overlap with a reservation with
+MaxStartDelay set.
 To have the signal sent at preemption time see the
 \fBpreempt_send_user_signal\fR \fBSlurmctldParameter\fR.
 
