@@ -2403,8 +2403,8 @@ static void *_test_dep_job_thread(void *arg)
 {
 	time_t last_test = 0;
 	time_t now;
-	slurmctld_lock_t job_write_lock = {
-		.job = WRITE_LOCK, .fed = READ_LOCK };
+	slurmctld_lock_t job_read_lock = {
+		.job = READ_LOCK, .fed = READ_LOCK };
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "fed_test_dep", NULL, NULL, NULL) < 0) {
@@ -2417,9 +2417,9 @@ static void *_test_dep_job_thread(void *arg)
 		now = time(NULL);
 		if (((now - last_test) > TEST_REMOTE_DEP_FREQ)) {
 			last_test = now;
-			lock_slurmctld(job_write_lock);
+			lock_slurmctld(job_read_lock);
 			fed_mgr_test_remote_dependencies();
-			unlock_slurmctld(job_write_lock);
+			unlock_slurmctld(job_read_lock);
 		}
 		sleep(2);
 	}
@@ -5804,7 +5804,7 @@ extern void fed_mgr_test_remote_dependencies(void)
 	job_record_t *job_ptr;
 	ListIterator itr;
 
-	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
 	if (!list_count(remote_dep_job_list))
