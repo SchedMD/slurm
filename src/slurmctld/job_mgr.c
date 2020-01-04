@@ -13491,7 +13491,13 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 					   __func__,
 					   job_ptr->details->dependency,
 					   job_ptr);
-				job_independent(job_ptr);
+				/*
+				 * If the job isn't independent, remove pending
+				 * remote sibling jobs
+				 */
+				if (!job_independent(job_ptr) &&
+				    !IS_JOB_REVOKED(job_ptr))
+					fed_mgr_job_revoke_sibs(job_ptr);
 			}
 		}
 	}
