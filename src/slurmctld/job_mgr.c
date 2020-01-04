@@ -13466,7 +13466,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		goto fini;
 
 	if (job_specs->dependency) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL))
+		/* Can't update dependency of revoked job */
+		if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL) ||
+		    IS_JOB_REVOKED(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
 			int rc;
@@ -13495,8 +13497,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				 * If the job isn't independent, remove pending
 				 * remote sibling jobs
 				 */
-				if (!job_independent(job_ptr) &&
-				    !IS_JOB_REVOKED(job_ptr))
+				if (!job_independent(job_ptr))
 					fed_mgr_job_revoke_sibs(job_ptr);
 			}
 		}
