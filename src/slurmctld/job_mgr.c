@@ -13477,7 +13477,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			if (rc != SLURM_SUCCESS)
 				error_code = rc;
 			/*
-			 * Because the dependencies and we don't know where
+			 * Because dependencies updated and we don't know where
 			 * they used to be, send dependencies to all siblings
 			 * so the siblings can update their dependency list.
 			 */
