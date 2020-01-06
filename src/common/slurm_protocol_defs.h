@@ -1288,6 +1288,7 @@ typedef struct {
 	uint64_t fed_siblings;	/* sibling bitmap of job */
 	uint32_t job_id;	/* job_id of job - set in job_desc on receiving
 				 * side */
+	uint32_t job_state;     /* state of job */
 	uint32_t return_code;   /* return code of job */
 	time_t   start_time;    /* time sibling job started */
 	char    *resp_host;     /* response host for interactive allocations */
