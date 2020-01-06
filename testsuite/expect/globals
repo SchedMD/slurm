@@ -5418,23 +5418,28 @@ proc create_part { part_name num_nodes_in } {
 #
 # Proc: get_node_config
 #
-# Determine the configuration of a node containing at least 1 GPU
+# Determine the configuration of a node containing at least desired_gpus, one
+# gpu id desired_gpus is not specified.
 #
 # Set the following global variables
 # cores_per_socket - Cores per socet
 # cpus_per_socket - CPUs per socket
 # cpus_tot - Total count of CPUs on the node
 # exit_code - Set to 1 on failure
+# gpu_cnt - GPUs in the node
 # hostname - Name of the node referenced
 # mem_size - Real memory size
 # sockets_per_node - Sockets per node
 #
+# Returns true if node with the desired_gpus was found, false otherwise.
+#
 ################################################################
-proc get_node_config { } {
+proc get_node_config { {desired_gpus 1} } {
 	global cores_per_socket cpus_per_socket sockets_per_node mem_size
-	global hostname exit_code max_job_delay number srun scontrol
-	global alpha_numeric_nodelist bin_rm
+	global hostname exit_code max_job_delay number srun scontrol gpu_cnt
+	global alpha_numeric_nodelist bin_rm gres_regex
 
+	set node_found false
 	set cpus_tot 1
 	set file_in  "test_gloabls"
 	set hostname "UNKNOWN"
@@ -5444,10 +5449,11 @@ proc get_node_config { } {
 	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODELIST"
 	set timeout $max_job_delay
 	log_user 0
-	set srun_pid [spawn $srun --gres=gpu:1 -n1 -t1 ./$file_in]
+	set srun_pid [spawn $srun --gres=gpu:$desired_gpus -n1 -t1 ./$file_in]
 	expect {
 		-re "NodeName=($alpha_numeric_nodelist)" {
 			set hostname $expect_out(1,string)
+			set node_found true
 			exp_continue
 		}
 		-re "CoresPerSocket=($number)" {
@@ -5456,6 +5462,22 @@ proc get_node_config { } {
 		}
 		-re "CPUTot=($number)" {
 			set cpus_tot $expect_out(1,string)
+			exp_continue
+		}
+		-re "Gres=($gres_regex)" {
+			set name $expect_out(2,string)
+			# Assume typed GRES of format gpu:1080:5 to start out
+			set type $expect_out(3,string)
+			set gpu_cnt $expect_out(4,string)
+
+			# Skip all GRES of different names
+			if {$name != "gpu"} {
+				exp_continue
+			}
+			if {$gpu_cnt == ""} {
+				# Now assume GRES format gpu:5
+				set gpu_cnt $type
+			}
 			exp_continue
 		}
 		-re "RealMemory=($number)" {
@@ -5478,4 +5500,5 @@ proc get_node_config { } {
 	exec $bin_rm -f $file_in
 	log_user 1
 	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
+	return $node_found
 }
