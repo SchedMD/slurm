@@ -3664,22 +3664,9 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 {
 	slurmdb_event_cond_t *object = (slurmdb_event_cond_t *)in;
 
-	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
-		if (!object) {
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack16(0, buffer);
-			pack32(NO_VAL, buffer);
-			packnull(buffer);
-			pack_time(0, buffer);
-			pack_time(0, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			return;
-		}
+	xassert(object);
 
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		_pack_list_of_str(object->cluster_list, buffer);
 
 		pack32(object->cpus_max, buffer);
@@ -3698,21 +3685,6 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 		_pack_list_of_str(object->state_list, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		List tmp_list = NULL;
-
-		if (!object) {
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack16(0, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack_time(0, buffer);
-			pack_time(0, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			return;
-		}
 
 		_pack_list_of_str(object->cluster_list, buffer);
 
