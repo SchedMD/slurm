@@ -964,7 +964,7 @@ $ cd ~/tests
 
 # Run
 $ srun -n1 --pty --x11 xclock
-adam@node1's password:
+alex@node1's password:
 </pre>
 
 <p><a name="unbuffered_cr"><b>34. Why is the srun --u/--unbuffered option adding
