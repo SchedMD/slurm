@@ -2808,7 +2808,13 @@ static int _test_job_dependency_common(
 			if (!dep_ptr->depend_time ||
 			    (djob_ptr->start_time &&
 			     ((now - djob_ptr->start_time) >=
-			      dep_ptr->depend_time))) {
+			      dep_ptr->depend_time)) ||
+			    /* Job is running on other cluster */
+			    (fed_mgr_cluster_rec && djob_ptr->fed_details &&
+			     fed_mgr_is_origin_job(djob_ptr) &&
+			     IS_JOB_REVOKED(djob_ptr) &&
+			     (djob_ptr->fed_details->cluster_lock !=
+			      fed_mgr_cluster_rec->fed.id))) {
 				*clear_dep = true;
 			} else
 				*depends = true;
