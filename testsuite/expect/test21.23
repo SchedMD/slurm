@@ -37,7 +37,9 @@ set exit_code   0
 set cwd          "[$bin_pwd]"
 set file_in     "test.$test_id.input"
 set ta		"test$test_id-account.1"
-set wk          twckey
+set wk          "test$test_id-wckey"
+set wk2         "test$test_id-wckey2"
+set wk3         "test$test_id-wckey3"
 set timeout 60
 set config_path [get_conf_path]
 
@@ -344,6 +346,117 @@ expect {
 if {$damatches != 1} {
 	log_error "sacctmgr had a problem deleting account"
 	set exit_code 1
+}
+
+#
+# Add more test WCKeys the user
+#
+set awmatches 0
+set saadd_pid [spawn $sacctmgr -i add user $user_name wckey=$wk,$wk2,$wk3]
+
+expect {
+	-re "W ="	{
+		incr awmatches
+		exp_continue
+	}
+	-re "Nothing new added" {
+		log_error "WCKeys used in test already existed"
+		set exit_code 1
+	}
+	timeout {
+		log_error "sacctmgr add not responding"
+		slow_kill $saadd_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# $wk should be there before, so only $wk2 and $wk3 was added
+if {$awmatches!=2} {
+	log_error "sacctmgr had problems adding two WCKey at once"
+	set exit_code 1
+}
+
+#
+# Verify that we have 3 WCKeys in DB
+#
+set swmatches 0
+set salist_pid [spawn $sacctmgr list -p wckey user=$user_name]
+expect {
+	-ex "\n$wk\|$cn\|$user_name\|"  {
+		incr swmatches
+		exp_continue
+	}
+	-ex "\n$wk2\|$cn\|$user_name\|" {
+		incr swmatches
+		exp_continue
+	}
+	-ex "\n$wk3\|$cn\|$user_name\|" {
+		incr swmatches
+		exp_continue
+	}
+	timeout {
+		log_error "sacctmgr list not responding"
+		slow_kill $salist_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$swmatches!=3} {
+	log_error "We should have 3 test WCKeys configured we have $swmatches\n"
+	set exit_code 1
+}
+
+#
+# Use sacctmgr to delete test WCKeys
+#
+set dwmatches 0
+set sadel_pid [spawn $sacctmgr -i delete user $user_name wckey=$wk,$wk2,$wk3]
+expect {
+	-re "Deleteing WCKeys" {
+		incr dwmatches
+		exp_continue
+	}
+	timeout {
+		log_error "sacctmgr delete not responding"
+		slow_kill $sadel_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Use sacctmgr to verify if WCKeys were removed
+#
+set salist_pid [spawn $sacctmgr -p list wckey where user=$user_name]
+expect {
+	-ex "\n$wk\|$cn\|$user_name\|" {
+		set exit_code 1
+		log_error "WCKey = $wk should be deleted, but was not"
+	}
+	-ex "\n$wk2\|$cn\|$user_name\|" {
+		set exit_code 1
+		log_error "WCKey = $wk2 should be deleted, but was not"
+	}
+	-ex "\n$wk3\|$cn\|$user_name\|" {
+		set exit_code 1
+		log_error "WCKey = $wk3 should be deleted, but was not"
+	}
+	timeout {
+		log_error "sacctmgr list not responding"
+		slow_kill $salist_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
 }
 
 if {$reconfigured} {
