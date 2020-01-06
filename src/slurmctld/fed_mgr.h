@@ -78,6 +78,7 @@ extern int       fed_mgr_job_requeue(job_record_t *job_ptr);
 extern int       fed_mgr_job_requeue_test(job_record_t *job_ptr,
 					  uint32_t flags);
 extern int       fed_mgr_job_revoke(job_record_t *job_ptr, bool job_complete,
+				    uint32_t completed_state,
 				    uint32_t exit_code, time_t start_time);
 extern int       fed_mgr_job_revoke_sibs(job_record_t *job_ptr);
 extern int       fed_mgr_job_start(job_record_t *job_ptr, time_t start_time);
