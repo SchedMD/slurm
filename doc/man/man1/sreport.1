@@ -491,6 +491,19 @@ Account, Cluster, Login, Proper, Used
 .TP
 All commands and options are case-insensitive.
 
+.SH "PERFORMANCE"
+.PP
+Executing \fBsreport\fR sends a remote procedure call to \fBslurmdbd\fR. If
+enough calls from \fBsreport\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmdbd\fR daemon come in at once, it can result in a
+degradation of performance of the \fBslurmdbd\fR daemon, possibly resulting in a
+denial of service.
+.PP
+Do not run \fBsreport\fR or other Slurm client commands that send remote
+procedure calls to \fBslurmdbd\fR from loops in shell scripts or other programs.
+Ensure that programs limit calls to \fBsreport\fR to the minimum necessary for
+the information you are trying to gather.
+
 .SH "ENVIRONMENT VARIABLES"
 .PP
 Some \fBsreport\fR options may be set via environment variables. These

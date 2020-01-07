@@ -1027,6 +1027,19 @@ specified.
 NOTE: With \fB\-v/\-\-verbose\fR a message about the actual time
 window in use is shown.
 
+.SH "PERFORMANCE"
+.PP
+Executing \fBsacct\fR sends a remote procedure call to \fBslurmdbd\fR. If
+enough calls from \fBsacct\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmdbd\fR daemon come in at once, it can result in a
+degradation of performance of the \fBslurmdbd\fR daemon, possibly resulting in a
+denial of service.
+.PP
+Do not run \fBsacct\fR or other Slurm client commands that send remote procedure
+calls to \fBslurmdbd\fR from loops in shell scripts or other programs. Ensure
+that programs limit calls to \fBsacct\fR to the minimum necessary for the
+information you are trying to gather.
+
 .SH "ENVIRONMENT VARIABLES"
 .PP
 Some \fBsacct\fR options may
