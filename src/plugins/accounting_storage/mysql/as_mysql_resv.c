@@ -403,15 +403,17 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 				       resv->cluster, resv_table,
 				       extra, resv->id, start);
 	} else {
-		/* time_start is already done above and we
-		 * changed something that is in need on a new
-		 * entry. */
-		query = xstrdup_printf("update \"%s_%s\" set time_end=%ld "
-				       "where deleted=0 && id_resv=%u "
-				       "and time_start=%ld;",
-				       resv->cluster, resv_table,
-				       resv->time_start,
-				       resv->id, start);
+		if (start != resv->time_start)
+			/* time_start is already done above and we
+			 * changed something that is in need on a new
+			 * entry. */
+			query = xstrdup_printf(
+				"update \"%s_%s\" set time_end=%ld "
+				"where deleted=0 && id_resv=%u "
+				"and time_start=%ld;",
+				resv->cluster, resv_table,
+				resv->time_start,
+				resv->id, start);
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" (id_resv%s) "
 			   "values (%u%s) "
