@@ -2790,6 +2790,14 @@ static int _find_dep_by_state(void *arg, void *key)
 	return dep_ptr->depend_state == state;
 }
 
+static int _set_depend_to_state(void *arg, void *key)
+{
+	struct depend_spec *dep_ptr = (struct depend_spec *) arg;
+	uint32_t state = *((uint32_t *) key);
+	dep_ptr->depend_state = state;
+	return SLURM_SUCCESS;
+}
+
 static int _test_job_dependency_common(
 	bool is_complete, bool is_completed, bool is_pending,
 	bool *clear_dep, bool *depends, bool *failure,
@@ -2907,6 +2915,7 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 	bool run_now;
 	bool has_local_depend = false;
 	int results = NO_DEPEND;
+	uint32_t state;
 	job_record_t *qjob_ptr, *djob_ptr;
 	bool is_complete, is_completed, is_pending;
 
@@ -2986,7 +2995,7 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 		}
 
 		if (failure) {
-			uint32_t state = DEPEND_NOT_FULFILLED;
+			state = DEPEND_NOT_FULFILLED;
 			dep_ptr->depend_state = DEPEND_FAILED;
 			if (was_changed)
 				*was_changed = true;
@@ -3019,8 +3028,17 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 		}
 	}
 	list_iterator_destroy(depend_iter);
-	if (or_satisfied)
-		list_flush(job_ptr->details->depend_list);
+	if (or_satisfied) {
+		/*
+		 * Set the state of every dependency to fulfilled so the
+		 * dependency string will clear, but don't flush the list
+		 * because we need to send the dependencies back to the origin
+		 * if we're a sibling testing remote dependencies.
+		 */
+		state = DEPEND_FULFILLED;
+		list_for_each(job_ptr->details->depend_list,
+			      _set_depend_to_state, &state);
+	}
 	if (rebuild_str)
 		_depend_list2str(job_ptr, false);
 
@@ -3475,6 +3493,8 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 			xfree(job_ptr->state_desc);
 		}
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
+		/* Submit the job to its siblings. */
+		fed_mgr_job_requeue(job_ptr);
 		return SLURM_SUCCESS;
 	}
 	_depend_list2str(job_ptr, false);
