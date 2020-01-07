@@ -189,9 +189,9 @@ if { [test_account_storage] == 0 } {
 	exit 0
 }
 
-set wc_key_track [check_wckey_tracking]
+set wc_key_track [check_wckey_tracking_slurmdbd]
 if { $wc_key_track == 0 } {
-	send_user "\nWARNING: Portions of this test will not work without TrackWCKey\n"
+	send_user "\nWARNING: Portions of this test will not work without TrackWCKey set in slurmdbd.conf.\n"
 	exit 0
 }
 

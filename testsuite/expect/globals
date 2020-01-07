@@ -1581,7 +1581,7 @@ proc test_mem_affinity { } {
 
 ################################################################
 #
-# Proc: test_track_wckey
+# Proc: test_track_wckey_slurmctld
 #
 # Purpose: Determine if we track workload characterization keys.
 # This is based upon the value of TrackWCKey in the slurm.conf.
@@ -1589,7 +1589,7 @@ proc test_mem_affinity { } {
 # Returns value of TrackWCKey
 #
 ################################################################
-proc test_track_wckey { } {
+proc test_track_wckey_slurmctld { } {
 	global scontrol number
 
 	log_user 0

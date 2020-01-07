@@ -45,16 +45,17 @@ print_header $test_id
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	log_warn "This test can't be run without a usable AccountStorageType"
 	exit 0
 }
-if { [test_track_wckey] == 0} {
-	send_user "\nWARNING: This test can't be run without TrackWCKey being set\n"
+if { [test_track_wckey_slurmctld] == 0} {
+	send_user "\nWARNING: This test can't be run without TrackWCKey being set in slurm.conf.\n"
 	exit 0
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
+	log_warn "This test can't be run without being an Accounting administrator."
+	log_warn "Use: sacctmgr mod user \$USER set admin=admin."
 	exit 0
 }
 
@@ -75,7 +76,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "FAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $s_pid
 		exit 1
 	}
@@ -95,12 +96,12 @@ expect {
 		exp_continue
 	}
 	-re "Nothing new added" {
-		send_user "\nWARNING: vestigial account $test_acct found\n"
+		log_warn "vestigial account $ta found"
 		incr aamatches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
 		set exit_code 1
 	}
@@ -109,7 +110,7 @@ expect {
 	}
 }
 if {$aamatches != 1} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding account.\n"
+	log_error "sacctmgr had a problem adding account."
 	exit 1
 }
 
@@ -119,7 +120,7 @@ if {$aamatches != 1} {
 set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$ta cluster=$cn wckeys=$wk]
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
 		set exit_code 1
 	}
@@ -147,7 +148,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		set exit_code 1
 	}
 	eof {
@@ -166,7 +167,7 @@ spawn $sacct -p -j $job_id --format=wckey
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -174,10 +175,10 @@ spawn $sacct -p -j $job_id --format=wckey
 		}
 	}
 if {$job_id == 0} {
-	send_user "\nFAILURE: salloc failed to initiate job\n"
+	log_error "salloc failed to initiate job"
 	set exit_code 1
 } elseif {$matches != 2} {
-	send_user "\nFAILURE: salloc failed to use desired wckey\n"
+	log_error "salloc failed to use desired wckey"
 	set exit_code 1
 }
 
@@ -193,7 +194,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -201,7 +202,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: did not get sbatch job_id\n"
+	log_error "did not get sbatch job_id"
 	set exit_code 1
 } else {
 	set matches 0
@@ -212,7 +213,7 @@ if {$job_id == 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -230,7 +231,7 @@ if {$job_id == 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -238,7 +239,7 @@ if {$job_id == 0} {
 		}
 	}
 	if {$matches != 2} {
-		send_user "\nFAILURE: sbatch failed to use specified wckey\n"
+		log_error "sbatch failed to use specified wckey"
 		set exit_code 1
 	}
 }
@@ -254,7 +255,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {
@@ -262,7 +263,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: did not get srun job_id\n"
+	log_error "did not get srun job_id"
 	set exit_code 1
 } else {
 	set matches 0
@@ -273,7 +274,7 @@ if {$job_id == 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -292,7 +293,7 @@ if {$job_id == 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -300,7 +301,7 @@ if {$job_id == 0} {
 		}
 	}
 	if {$matches != 2} {
-		send_user "\nFAILURE: srun failed to use specified wckey\n"
+		log_error "srun failed to use specified wckey"
 		set exit_code 1
 	}
 }
@@ -316,7 +317,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -325,7 +326,7 @@ expect {
 	}
 }
 if {$damatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting account\n"
+	log_error "sacctmgr had a problem deleting account"
 	set exit_code 1
 }
 
