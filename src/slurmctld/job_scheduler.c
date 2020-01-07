@@ -2786,7 +2786,7 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 static int _find_dep_by_state(void *arg, void *key)
 {
 	struct depend_spec *dep_ptr = (struct depend_spec *) arg;
-	int state = *((int *) key);
+	uint32_t state = *((uint32_t *) key);
 	return dep_ptr->depend_state == state;
 }
 
@@ -2986,7 +2986,7 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 		}
 
 		if (failure) {
-			int state = DEPEND_NOT_FULFILLED;
+			uint32_t state = DEPEND_NOT_FULFILLED;
 			dep_ptr->depend_state = DEPEND_FAILED;
 			if (was_changed)
 				*was_changed = true;
@@ -3450,7 +3450,7 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) object;
 	struct depend_spec *dep_ptr = NULL;
-	int dep_state;
+	uint32_t dep_state;
 
 	/*
 	 * If there is a fulfilled dependency and it is OR satisfied, then
