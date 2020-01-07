@@ -1694,14 +1694,18 @@ proc test_enforce_limits { } {
 #
 ################################################################
 proc test_allow_spec_resc { } {
-	global exit_code number scontrol
+	global exit_code alpha scontrol
 
 	log_user 0
 	set allow_spec_resc 2
 	spawn $scontrol show config
 	expect {
-		-re "AllowSpecResourcesUsage *= ($number)" {
-			set allow_spec_resc $expect_out(1,string)
+		-re "AllowSpecResourcesUsage *= ($alpha)" {
+			if {[string equal $expect_out(1,string) Yes]} {
+				set allow_spec_resc 1
+			} elseif {[string equal $expect_out(1,string) No]} {
+				set allow_spec_resc 0
+			}
 			exp_continue
 		}
 		timeout {
