@@ -2655,6 +2655,55 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Get the dimensions of this cluster so we know how to deal with the hostlists.
+ *
+ * IN mysql_conn - mysql connection
+ * IN cluster_name - name of cluster to get dimensions for
+ * OUT dims - dimenions of cluster
+ *
+ * RET return SLURM_SUCCESS on success, SLURM_FAILURE otherwise.
+ */
+extern int get_cluster_dims(mysql_conn_t *mysql_conn, char *cluster_name,
+			    int *dims)
+{
+	char *query;
+	MYSQL_ROW row;
+	MYSQL_RES *result = NULL;
+
+	query = xstrdup_printf("select dimensions, flags from %s where "
+			       "name='%s'",
+			       cluster_table, cluster_name);
+
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	if (!(row = mysql_fetch_row(result))) {
+		error("Couldn't get the dimensions of cluster '%s'.",
+		      cluster_name);
+		mysql_free_result(result);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * On a Cray System when dealing with hostlists as we are here this
+	 * always needs to be 1.
+	 */
+	if (slurm_atoul(row[1]) & CLUSTER_FLAG_CRAY_A)
+		*dims = 1;
+	else
+		*dims = atoi(row[0]);
+
+	mysql_free_result(result);
+
+	return SLURM_SUCCESS;
+}
+
 extern void *acct_storage_p_get_connection(
 	const slurm_trigger_callbacks_t *cb,
 	int conn_num, uint16_t *persist_conn_flags,

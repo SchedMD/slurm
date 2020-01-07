@@ -162,6 +162,17 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
 			 char *cur_par, char *name, char **vals,
 			 uint32_t id, bool assoc);
 
+/*
+ * Get the dimensions of this cluster so we know how to deal with the hostlists.
+ *
+ * IN mysql_conn - mysql connection
+ * IN cluster_name - name of cluster to get dimensions for
+ * OUT dims - dimenions of cluster
+ *
+ * RET return SLURM_SUCCESS on success, SLURM_FAILURE otherwise.
+ */
+extern int get_cluster_dims(mysql_conn_t *mysql_conn, char *cluster_name,
+			    int *dims);
 
 /*local api functions */
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
