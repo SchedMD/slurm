@@ -5837,7 +5837,6 @@ extern void fed_mgr_test_remote_dependencies(void)
 	slurm_mutex_lock(&dep_job_list_mutex);
 	itr = list_iterator_create(remote_dep_job_list);
 	while ((job_ptr = list_next(itr))) {
-		was_changed = false;
 		rc = test_job_dependency(job_ptr, &was_changed);
 		if (rc == LOCAL_DEPEND) {
 			info("XXX%sXXX: %pJ has at least 1 local dependency left",

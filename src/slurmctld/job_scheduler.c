@@ -2919,6 +2919,9 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 	job_record_t *qjob_ptr, *djob_ptr;
 	bool is_complete, is_completed, is_pending;
 
+	if (was_changed)
+		*was_changed = false;
+
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->depend_list == NULL) ||
 	    (list_count(job_ptr->details->depend_list) == 0)) {
