@@ -1682,6 +1682,45 @@ proc test_enforce_limits { } {
 
 ################################################################
 #
+# Proc: test_allow_spec_resources
+#
+# Purpose: Return value of AllowSpecResources
+#
+# Returns 1 if AllowSpecResources is set, 0 if not and 2 in case of error
+# It also sets the global variable exit_code to 1 in case of error.
+#
+################################################################
+proc test_allow_spec_resc { } {
+	global exit_code number scontrol
+
+	log_user 0
+	set allow_spec_resc 2
+	spawn $scontrol show config
+	expect {
+		-re "AllowSpecResourcesUsage *= ($number)" {
+			set allow_spec_resc $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			log_error "scontrol show config time out"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$allow_spec_resc == 2} {
+		log_error "AllowSpecResourcesUsage not found in scontrol show config"
+		set exit_code 1
+	}
+
+	log_user 1
+	return $allow_spec_resc
+}
+
+################################################################
+#
 # Proc: test_enforce_safe_set
 #
 # Purpose: Determine if AccountingStorageEnforce=safe is set in the slurm.conf.

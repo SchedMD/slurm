@@ -166,23 +166,7 @@ if {[test_select_type_params "CR_SOCKET"]} {
 	exit 0
 }
 
-log_user 0
-set allow_spec 0
-spawn $scontrol show config
-expect {
-	-re "AllowSpecResourcesUsage = ($number)" {
-		set allow_spec $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
+set allow_spec [test_allow_spec_resc]
 if {$allow_spec == 0} {
 	send_user "WARNING: AllowSpecResourcesUsage not configured to permit thread specialization\n"
 	exit $exit_code
