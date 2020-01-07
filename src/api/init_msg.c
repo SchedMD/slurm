@@ -70,6 +70,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->max_cpus		= NO_VAL;
 	job_desc_msg->max_nodes		= NO_VAL;
 	job_desc_msg->mem_bind_type	= NO_VAL16;
+	job_desc_msg->mail_type		= NO_VAL16;
 	job_desc_msg->min_cpus		= NO_VAL;
 	job_desc_msg->min_nodes		= NO_VAL;
 	job_desc_msg->nice		= NO_VAL;

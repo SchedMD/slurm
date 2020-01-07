@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
  -- Allow sacctmgr to filter node events by states that are flags.
  -- Allow sacctmgr to filter node events by REBOOT state/flag.
  -- Add ability to set MailType and MailUser of job with scontrol.
+ -- slurm_init_job_desc_msg() initializes mail_type as uint16_t. This allows
+    mail_type to be set to NONE with scontrol.
 
 * Changes in Slurm 19.05.6
 ==========================
