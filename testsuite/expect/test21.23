@@ -34,10 +34,12 @@ source ./globals
 
 set test_id     "21.23"
 set exit_code   0
+set cwd          "[$bin_pwd]"
 set file_in     "test.$test_id.input"
 set ta		"test$test_id-account.1"
 set wk          twckey
 set timeout 60
+set config_path [get_conf_path]
 
 print_header $test_id
 
@@ -46,10 +48,6 @@ print_header $test_id
 #
 if { [test_account_storage] == 0 } {
 	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
-}
-if { [test_track_wckey_slurmctld] == 0} {
-	send_user "\nWARNING: This test can't be run without TrackWCKey being set in slurm.conf.\n"
 	exit 0
 }
 
@@ -127,6 +125,24 @@ expect {
 	eof {
 		wait
 	}
+}
+
+#
+# Enable TrackWCKey
+#
+set reconfigured false
+if {![test_track_wckey_slurmctld]} {
+	log_info "Enabling TrackWCKey..."
+
+	copy_conf $config_path $cwd
+	if { $exit_code != 0 } {
+		exit $exit_code
+	}
+
+	exec $bin_sed -i /^\[\t\s\]*TrackWCKey\[\t\s\]*=/Id $config_path/slurm.conf
+	exec $bin_echo TrackWCKey=Yes >> $config_path/slurm.conf
+	reconfigure
+	set reconfigured true
 }
 
 #
@@ -328,6 +344,12 @@ expect {
 if {$damatches != 1} {
 	log_error "sacctmgr had a problem deleting account"
 	set exit_code 1
+}
+
+if {$reconfigured} {
+	log_info "Changing slurm.conf back"
+	exec $bin_cp -v $cwd/slurm.conf.orig $config_path/slurm.conf
+	reconfigure
 }
 
 if {$exit_code == 0} {
