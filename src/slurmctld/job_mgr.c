@@ -15612,6 +15612,9 @@ extern bool job_independent(job_record_t *job_ptr)
 	if (job_ptr->state_reason == WAIT_DEPENDENCY) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
+		/* Submit the job to its siblings. */
+		if (job_ptr->details)
+			fed_mgr_job_requeue(job_ptr);
 	}
 
 	/* Check for maximum number of running tasks in a job array */

@@ -4037,10 +4037,6 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		return SLURM_ERROR;
 	}
 
-	/* If the job has a dependency, don't start it right away */
-	if ((job_desc->priority == 0) || (job_desc->dependency))
-		job_held = true;
-
 	/* get job_id now. Can't submit job to get job_id as job_allocate will
 	 * change the job_desc. */
 	job_desc->job_id = get_next_job_id(false);
@@ -4086,6 +4082,16 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	*job_id_ptr = job_ptr->job_id;
 
+	/*
+	 * Don't submit a job with dependencies to siblings - the origin will
+	 * test job dependencies and submit the job to siblings when all
+	 * dependencies are fulfilled.
+	 * job_allocate() calls job_independent() which sets the JOB_DEPENDENT
+	 * flag if the job is dependent, so check this after job_allocate().
+	 */
+	if ((job_desc->priority == 0) || (job_ptr->bit_flags & JOB_DEPENDENT))
+		job_held = true;
+
 	if (job_held) {
 		info("Submitted held federated %pJ to %s(self)",
 		     job_ptr, fed_mgr_cluster_rec->name);
@@ -4107,7 +4113,8 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				job_ptr->fed_details->siblings_viable))
 		info("failed to submit sibling job to one or more siblings");
 	/* Send remote dependencies to siblings */
-	if (job_ptr->details && job_ptr->details->dependency)
+	if ((job_ptr->bit_flags & JOB_DEPENDENT) &&
+	    job_ptr->details && job_ptr->details->dependency)
 		if (fed_mgr_submit_remote_dependencies(job_ptr, false, false))
 			error("XXX%sXXX: _submit_remote_dependencies() returned error",
 			      __func__);
@@ -5488,6 +5495,12 @@ static int _q_sib_job_submission(slurm_msg_t *msg, bool interactive_job)
 	job_desc->job_id              = sib_msg->job_id;
 	job_desc->fed_siblings_viable = sib_msg->fed_siblings;
 	job_desc->alloc_node          = sib_msg->submit_host;
+	/*
+	 * If the job has a dependency, it won't be submitted to siblings
+	 * or it will be revoked from siblings if it became dependent.
+	 * So, the sibling should ignore job_desc->dependency since it's
+	 */
+	xfree(job_desc->dependency);
 	if (interactive_job)
 		job_desc->resp_host = xstrdup(sib_msg->resp_host);
 
