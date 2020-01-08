@@ -1279,9 +1279,15 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(event_cond->state_list);
 		while ((object = list_next(itr))) {
+			uint32_t tmp_state = strtol(object, NULL, 10);
 			if (set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "state='%s'", object);
+			if (tmp_state & NODE_STATE_BASE)
+				xstrfmtcat(extra, "(state&%u)=%u",
+					   NODE_STATE_BASE,
+					   tmp_state & NODE_STATE_BASE);
+			else
+				xstrfmtcat(extra, "state&%u", tmp_state);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
