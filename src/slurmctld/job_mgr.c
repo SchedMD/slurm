@@ -13470,7 +13470,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL) ||
 		    IS_JOB_REVOKED(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else {
+		else if (!fed_mgr_is_origin_job(job_ptr)) {
+			/*
+			 * If the job became independent because of a dependency
+			 * update, that job gets requeued on siblings and then
+			 * the dependency update gets sent to siblings. So we
+			 * silently ignore this update on the sibling.
+			 */
+		} else {
 			int rc;
 			rc = update_job_dependency(job_ptr,
 						   job_specs->dependency);
