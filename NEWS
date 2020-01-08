@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
  -- Add SchedulerParameters option bf_one_resv_per_job to disallow adding more
     than one backfill reservation per job.
  -- Allow sacctmgr to filter node events by states that are flags.
+ -- Allow sacctmgr to filter node events by REBOOT state/flag.
 
 * Changes in Slurm 19.05.6
 ==========================
