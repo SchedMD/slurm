@@ -2725,6 +2725,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	assoc_mgr_lock_t job_read_locks =
 		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
 	List gres_list_pre = NULL;
+	bool gres_list_pre_set = false;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -2864,6 +2865,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 		job_ptr->node_cnt_wag = selected_node_cnt;
 
 		if (gres_list_whole_node) {
+			gres_list_pre_set = true;
 			gres_list_pre = job_ptr->gres_list;
 			job_ptr->gres_list = gres_list_whole_node;
 		}
@@ -3223,7 +3225,7 @@ cleanup:
 
 	if (error_code != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(job_ptr->node_bitmap);
-		if (gres_list_pre &&
+		if (gres_list_pre_set &&
 		    (job_ptr->gres_list != gres_list_pre)) {
 			FREE_NULL_LIST(job_ptr->gres_list);
 			job_ptr->gres_list = gres_list_pre;
