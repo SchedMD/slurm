@@ -13481,12 +13481,21 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			 * they used to be, send dependencies to all siblings
 			 * so the siblings can update their dependency list.
 			 */
-			else if ((rc =
-				  fed_mgr_submit_remote_dependencies(job_ptr,
-								     true,
-								     false)))
-				error_code = rc;
 			else {
+				rc = fed_mgr_submit_remote_dependencies(job_ptr,
+									true,
+									false);
+				if (rc) {
+					error("%s: Failed to submit some or all remote dependencies for %pJ",
+					      __func__, job_ptr);
+					error_code = rc;
+				}
+				/*
+				 * Even if we fail to send remote dependencies,
+				 * we already succeeded in updating the job's
+				 * dependency locally, so we still need to
+				 * do these things.
+				 */
 				job_ptr->details->orig_dependency =
 					xstrdup(job_ptr->details->dependency);
 				sched_info("%s: setting dependency to %s for %pJ",
