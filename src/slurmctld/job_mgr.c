@@ -82,6 +82,7 @@
 #include "src/common/track_script.h"
 #include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
+#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
@@ -261,6 +262,23 @@ static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
 static void _xmit_new_end_time(job_record_t *job_ptr);
 
+
+static char *_get_mail_user(const char *user_name, uid_t user_id)
+{
+	char *mail_user = NULL;
+	if (!user_name || (user_name[0] == '\0')) {
+		mail_user = uid_to_string(user_id);
+		/* unqualified sender, append MailDomain if set */
+		if (slurmctld_conf.mail_domain) {
+			xstrfmtcat(mail_user, "@%s",
+				   slurmctld_conf.mail_domain);
+		}
+	} else {
+		mail_user = xstrdup(user_name);
+	}
+
+	return mail_user;
+}
 
 static int _job_fail_account(job_record_t *job_ptr, const char *func_name)
 {
@@ -2275,7 +2293,10 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	licenses              = NULL;	/* reused, nothing left to free */
 	job_ptr->mail_type    = mail_type;
 	xfree(job_ptr->mail_user);
-	job_ptr->mail_user    = mail_user;
+	if (mail_user)
+		job_ptr->mail_user    = mail_user;
+	else if (mail_type)
+		job_ptr->mail_user = _get_mail_user(NULL, user_id);
 	mail_user             = NULL;	/* reused, nothing left to free */
 	xfree(job_ptr->mcs_label);
 	job_ptr->mcs_label    = mcs_label;
@@ -8035,9 +8056,13 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->derived_ec = 0;
 
 	job_ptr->licenses  = xstrdup(job_desc->licenses);
-	if (job_ptr->mail_type != NO_VAL16)
+	if (job_desc->mail_type &&
+	    (job_desc->mail_type != NO_VAL16)) {
 		job_ptr->mail_type = job_desc->mail_type;
-	job_ptr->mail_user = xstrdup(job_desc->mail_user);
+		job_ptr->mail_user = _get_mail_user(job_desc->mail_user,
+						    job_ptr->user_id);
+	}
+
 	job_ptr->bit_flags = job_desc->bitflags;
 	job_ptr->bit_flags &= ~BACKFILL_TEST;
 	job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
@@ -13740,20 +13765,26 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 
 	if (job_specs->mail_type != NO_VAL16) {
 		job_ptr->mail_type = job_specs->mail_type;
+		if (!job_specs->mail_user) {
+			char *tmp = job_ptr->mail_user;
+			if (job_ptr->mail_type) {
+				job_ptr->mail_user =
+					_get_mail_user(tmp, job_ptr->user_id);
+			}
+			xfree(tmp);
+		}
 		sched_info("%s: setting mail_type to %u for %pJ",
 			   __func__, job_ptr->mail_type, job_ptr);
 	}
 
 	if (job_specs->mail_user) {
 		xfree(job_ptr->mail_user);
-		if (!strlen(job_specs->mail_user)) {
-			sched_info("%s: setting mail_user to job's user for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->mail_user = xstrdup(job_specs->mail_user);
-			sched_info("%s: setting mail_user to %s for %pJ",
-				   __func__, job_ptr->mail_user, job_ptr);
-		}
+		if (job_ptr->mail_type)
+			job_ptr->mail_user =
+				_get_mail_user(job_specs->mail_user,
+					       job_ptr->user_id);
+		sched_info("%s: setting mail_user to %s for %pJ",
+			   __func__, job_ptr->mail_user, job_ptr);
 	}
 
 	/*
