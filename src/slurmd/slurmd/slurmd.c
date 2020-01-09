@@ -1093,6 +1093,7 @@ _read_config(void)
 	conf->use_pam = cf->conf_flags & CTL_CONF_PAM;
 	conf->task_plugin_param = cf->task_plugin_param;
 	conf->health_check_interval = cf->health_check_interval;
+	conf->job_acct_oom_kill = cf->job_acct_oom_kill;
 
 	slurm_mutex_unlock(&conf->config_mutex);
 
