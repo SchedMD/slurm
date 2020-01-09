@@ -844,7 +844,7 @@ extern bitstr_t **common_mark_avail_cores(
 		rem_core_spec = node_core_spec;
 		if (node_ptr->node_spec_bitmap) {
 			for (int i = 0; i < node_res_ptr->tot_cores; i++) {
-				if (!bit_test(node_ptr->node_spec_bitmap, 1)) {
+				if (!bit_test(node_ptr->node_spec_bitmap, i)) {
 					bit_clear(core_map, c + i);
 					if (!use_spec_cores)
 						continue;
