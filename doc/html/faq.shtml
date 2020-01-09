@@ -4,7 +4,7 @@
 
 <h2>For Management</h2>
 <ol>
-<li><a href="#foss">Why should I use Slurm or other Free Open Source Software (FOSS)</a></li>
+<li><a href="#foss">Why should I use Slurm or other Free Open Source Software (FOSS)?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -116,7 +116,7 @@
   &quot;Unable to accept new connection: Too many open files&quot;?</a></li>
 <li><a href="#slurmd_log">Why does the setting of <i>SlurmdDebug</i> fail
   to log job step information at the appropriate level?</a></li>
-<li><a href="#rpm">Why isn't auth_none.so (or other file) in a
+<li><a href="#rpm">Why aren't pam_slurm.so, auth_none.so, or other components in a
   Slurm RPM?</a></li>
 <li><a href="#slurmdbd">Why should I use the slurmdbd instead of the
   regular database plugins?</a></li>
@@ -126,7 +126,8 @@
 <li><a href="#health_check">Why doesn't the <i>HealthCheckProgram</i>
   execute on DOWN nodes?</a></li>
 <li><a href="#batch_lost">What is the meaning of the error
-  &quot;Batch JobId=# missing from master node, killing it&quot;?</a></li>
+  &quot;Batch JobId=# missing from batch node &lt;node&gt; (not found
+  BatchStartTime after startup)&quot;?</a></li>
 <li><a href="#accept_again">What does the message
   &quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot;
   indicate?</a></li>
@@ -162,7 +163,7 @@ script for Slurm?</a></li>
   launch a shell on a node in the job's allocation?</a></li>
 <li><a href="#upgrade">What should I be aware of when upgrading Slurm?</a></li>
 <li><a href="#torque">How easy is it to switch from PBS or Torque to Slurm?</a></li>
-<li><a href="#sssd">I am having trouble using SSSD with Slurm.</a></li>
+<li><a href="#sssd">How can I get SSSD to work with Slurm?</a></li>
 <li><a href="#ha_db">How critical is configuring high availability for my
   database?</a></li>
 <li><a href="#sql">How can I use double quotes in MySQL queries?</a></li>
@@ -277,8 +278,8 @@ the resource limit should be propagated or the srun command is running
 with verbose logging of actions from the slurmd daemon (e.g. "srun -d6 ...").</p>
 
 <p><a name="pending"><b>3. Why is my job not running?</b></a><br>
-The answer to this question depends on a lot of factors. The main one relies upon
-the scheduler used by Slurm. Executing the command</p>
+The answer to this question depends on a lot of factors. The main one is which
+scheduler is used by Slurm. Executing the command</p>
 <blockquote>
 <p> <span class="commandline">scontrol show config | grep SchedulerType</span></p>
 </blockquote>
@@ -806,7 +807,7 @@ Slurm supports requeueing jobs in a done or failed state. Use the
 command:</p>
 <p align=left><b>scontrol requeue job_id</b></p>
 </head>
-<p>The job will be requeued back in the PENDING state and scheduled again.
+<p>The job will then be requeued back in the PENDING state and scheduled again.
 See man(1) scontrol.
 </p>
 <p>Consider a simple job like this:</p>
@@ -1348,8 +1349,8 @@ default 5 seconds.</p>
 in the <i>SlurmctldLogFile</i> indicate?</b></a><br>
 This error is indicative of some operation taking an unexpectedly
 long time to complete, over one second to be specific.
-Setting the value of <i>SlurmctldDebug</i> configuration parameter
-a value of six or higher should identify which operation(s) are
+Setting the value of the <i>SlurmctldDebug</i> configuration parameter
+to <i>debug2</i> or higher should identify which operation(s) are
 experiencing long delays.
 This message typically indicates long delays in file system access
 (writing state information or getting user information).
@@ -1429,13 +1430,13 @@ open file hard limit to 8192 across the cluster.
 fail to log job step information at the appropriate level?</b></a><br>
 There are two programs involved here. One is <b>slurmd</b>, which is
 a persistent daemon running at the desired debug level. The second
-program is <b>slurmstep</b>, which executed the user job and its
+program is <b>slurmstepd</b>, which executes the user job and its
 debug level is controlled by the user. Submitting the job with
 an option of <i>--debug=#</i> will result in the desired level of
 detail being logged in the <i>SlurmdLogFile</i> plus the output
 of the program.
 
-<p><a name="rpm"><b>26. Why isn't pam_slurm.so (or other component) in a
+<p><a name="rpm"><b>26. Why aren't pam_slurm.so, auth_none.so, or other components in a
 Slurm RPM?</b></a><br>
 It is possible that at build time the required dependencies for building the
 library are missing. If you want to build the library then install pam-devel
@@ -1502,27 +1503,11 @@ execution of the <i>HealthCheckProgram</i> across the cluster, which
 could adversely impact performance of parallel applications.
 The use of CRON or node startup scripts may be better suited to ensure
 that <i>HealthCheckProgram</i> gets executed on nodes that are DOWN
-in Slurm. If you still want to have Slurm try to execute
-<i>HealthCheckProgram</i> on DOWN nodes, apply the following patch:
-<pre>
-Index: src/slurmctld/ping_nodes.c
-===================================================================
---- src/slurmctld/ping_nodes.c  (revision 15166)
-+++ src/slurmctld/ping_nodes.c  (working copy)
-@@ -283,9 +283,6 @@
-		node_ptr   = &node_record_table_ptr[i];
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-
--               if (base_state == NODE_STATE_DOWN)
--                       continue;
--
- #ifdef HAVE_FRONT_END          /* Operate only on front-end */
-		if (i > 0)
-			continue;
-</pre>
+in Slurm.
 
 <p><a name="batch_lost"><b>30. What is the meaning of the error
-&quot;Batch JobId=# missing from master node, killing it&quot;?</b></a><br>
+&quot;Batch JobId=# missing from batch node &lt;node&gt; (not found
+  BatchStartTime after startup)&quot;?</b></a><br>
 A shell is launched on node zero of a job's allocation to execute
 the submitted program. The <i>slurmd</i> daemon executing on each compute
 node will periodically report to the <i>slurmctld</i> what programs it
@@ -1530,9 +1515,7 @@ is executing. If a batch program is expected to be running on some
 node (i.e. node zero of the job's allocation) and is not found, the
 message above will be logged and the job canceled. This typically is
 associated with exhausting memory on the node or some other critical
-failure that cannot be recovered from. The equivalent message in
-earlier releases of Slurm is
-&quot;Master node lost JobId=#, killing it&quot;.
+failure that cannot be recovered from.
 
 <p><a name="accept_again"><b>31. What does the message
 &quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot;
@@ -1645,7 +1628,7 @@ simple first-login script that configures the virtual cluster for me.</p>
 
 <p><a name="core_dump"><b>39. If a Slurm daemon core dumps, where can I find the
 core file?</b></a></br>
-For <i>slurmctld</i>, if started with the -D option then the core file will be
+If <i>slurmctld</i> is started with the -D option, then the core file will be
 written to the current working directory. If <i>SlurmctldLogFile</i> is an
 absolute path, the core file will be written to this directory. Otherwise the
 core file will be written to the <i>StateSaveLocation</i>, or "/var/tmp/" as a
@@ -1655,7 +1638,7 @@ directories have write permission for SlurmUser, no core file will be produced.
 For testing purposes the command "scontrol abort" can be used to abort the
 slurmctld daemon and generate a core file.
 
-<p>For <i>slurmd</i>, if started with the -D option then the core file will be
+<p>If <i>slurmd</i> is started with the -D option, then the core file will also be
 written to the current working directory. If <i>SlurmdLogFile</i> is an
 absolute path, the core file will be written to the this directory.
 Otherwise the core file will be written to the <i>SlurmdSpoolDir</i>, or
@@ -1664,7 +1647,7 @@ If none of the above directories can be written, no core file will be produced.
 </p>
 
 <p>For <i>slurmstepd</i>, the core file will depend upon when the failure
-occurs. If it is running in a privileged phase it will be in the same location
+occurs. If it is running in a privileged phase, it will be in the same location
 as that described above for the slurmd daemon. If it is running in an
 unprivileged phase, it will be in the spawned job's working directory.</p>
 
@@ -1891,12 +1874,12 @@ The plugin will be installed in<br>
 &lt;install_directory&gt;/lib/slurm/spank_pbs.so<br>
 See the SPANK man page for configuration details.</p>
 
-<p><a name="sssd"><b>50. I am having trouble using SSSD with Slurm.</b></a></br>
+<p><a name="sssd"><b>50. How can I get SSSD to work with Slurm?</b></a></br>
 SSSD or System Security Services Deamon does not allow enumeration of
 group members by default. Note that enabling enumeration in large
 environments might not be feasible. However, Slurm does not need enumeration
 except for some specific quirky configurations (multiple groups with the same
-GID), so probably it's perfectly safe to leave enumeration disabled.
+GID), so it's probably safe to leave enumeration disabled.
 SSSD is also case sensitive by default for some configurations, which could
 possibly raise other issues. Add the following lines
 to <i>/etc/sssd/sssd.conf</i> on your head node to address these issues:</p>
@@ -2012,7 +1995,7 @@ echo "Done `date`" >> $LOG 2>&1
 exit 0
 </pre>
 <p>
-Using the exitme script as an example we have it exit with value 8 on
+Using the exitme script as an example, we have it exit with a value of 8 on
 the first run, then when it gets requeued in hold with SpecialExit state
 we touch the file /tmp/myfile, then release the job which will finish
 in a COMPLETE state.
@@ -2261,6 +2244,6 @@ cray_netroot_preload.settings.load.data.compute.size_limit: 0
 accessed files within jobs.</p>
 
 
-<p style="text-align:center;">Last modified 13 December 2019</p>
+<p style="text-align:center;">Last modified 16 December 2019</p>
 
 <!--#include virtual="footer.txt"-->
