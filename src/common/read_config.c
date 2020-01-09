@@ -2564,29 +2564,30 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address)
 
 	idx = _get_hash_idx(node_name);
 	p = node_to_host_hashtbl[idx];
-	while (p) {
-		if (xstrcmp(p->alias, node_name) == 0) {
-			if (!p->port)
-				p->port = (uint16_t) conf_ptr->slurmd_port;
-			if (!p->addr_initialized) {
-				slurm_set_addr(&p->addr, p->port, p->address);
-				if (p->addr.sin_family == 0 &&
-				    p->addr.sin_port == 0) {
-					slurm_conf_unlock();
-					return SLURM_ERROR;
-				}
-				if (!no_addr_cache)
-					p->addr_initialized = true;
-			}
-			*address = p->addr;
-			slurm_conf_unlock();
-			return SLURM_SUCCESS;
-		}
+	while (p && xstrcmp(p->alias, node_name))
 		p = p->next_alias;
-	}
-	slurm_conf_unlock();
 
-	return SLURM_ERROR;
+	if (!p) {
+		slurm_conf_unlock();
+		return SLURM_ERROR;
+	}
+
+	if (!p->port)
+		p->port = (uint16_t) conf_ptr->slurmd_port;
+
+	if (!p->addr_initialized) {
+		slurm_set_addr(&p->addr, p->port, p->address);
+		if (p->addr.sin_family == 0 && p->addr.sin_port == 0) {
+			slurm_conf_unlock();
+			return SLURM_ERROR;
+		}
+		if (!no_addr_cache)
+			p->addr_initialized = true;
+	}
+
+	*address = p->addr;
+	slurm_conf_unlock();
+	return SLURM_SUCCESS;
 }
 
 /*
