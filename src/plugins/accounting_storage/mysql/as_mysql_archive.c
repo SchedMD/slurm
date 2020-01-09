@@ -120,6 +120,8 @@ typedef struct {
 	char *gres_alloc;
 	char *gres_req;
 	char *gres_used;
+	char *het_job_id;
+	char *het_job_offset;
 	char *job_db_inx;
 	char *jobid;
 	char *kill_requid;
@@ -128,8 +130,6 @@ typedef struct {
 	char *name;
 	char *nodelist;
 	char *node_inx;
-	char *pack_job_id;
-	char *pack_job_offset;
 	char *partition;
 	char *priority;
 	char *qos;
@@ -177,6 +177,8 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->gres_alloc);
 		xfree(object->gres_req);
 		xfree(object->gres_used);
+		xfree(object->het_job_id);
+		xfree(object->het_job_offset);
 		xfree(object->job_db_inx);
 		xfree(object->jobid);
 		xfree(object->kill_requid);
@@ -185,8 +187,6 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->name);
 		xfree(object->nodelist);
 		xfree(object->node_inx);
-		xfree(object->pack_job_id);
-		xfree(object->pack_job_offset);
 		xfree(object->partition);
 		xfree(object->priority);
 		xfree(object->qos);
@@ -477,6 +477,8 @@ static char *job_req_inx[] = {
 	"gres_alloc",
 	"gres_req",
 	"gres_used",
+	"het_job_id",
+	"het_job_offset",
 	"job_db_inx",
 	"id_job",
 	"kill_requid",
@@ -485,8 +487,6 @@ static char *job_req_inx[] = {
 	"job_name",
 	"nodelist",
 	"node_inx",
-	"pack_job_id",
-	"pack_job_offset",
 	"`partition`",
 	"priority",
 	"id_qos",
@@ -532,6 +532,8 @@ enum {
 	JOB_REQ_GRES_ALLOC,
 	JOB_REQ_GRES_REQ,
 	JOB_REQ_GRES_USED,
+	JOB_REQ_HET_JOB_ID,
+	JOB_REQ_HET_JOB_OFFSET,
 	JOB_REQ_DB_INX,
 	JOB_REQ_JOBID,
 	JOB_REQ_KILL_REQUID,
@@ -540,8 +542,6 @@ enum {
 	JOB_REQ_NAME,
 	JOB_REQ_NODELIST,
 	JOB_REQ_NODE_INX,
-	JOB_REQ_PACK_JOB_ID,
-	JOB_REQ_PACK_JOB_OFFSET,
 	JOB_REQ_PARTITION,
 	JOB_REQ_PRIORITY,
 	JOB_REQ_QOS,
@@ -879,8 +879,8 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->name, buffer);
 	packstr(object->nodelist, buffer);
 	packstr(object->node_inx, buffer);
-	packstr(object->pack_job_id, buffer);
-	packstr(object->pack_job_offset, buffer);
+	packstr(object->het_job_id, buffer);
+	packstr(object->het_job_offset, buffer);
 	packstr(object->partition, buffer);
 	packstr(object->priority, buffer);
 	packstr(object->qos, buffer);
@@ -963,8 +963,8 @@ static int _unpack_local_job(local_job_t *object,
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->pack_job_id, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->pack_job_offset, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_offset, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
@@ -1009,8 +1009,8 @@ static int _unpack_local_job(local_job_t *object,
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->pack_job_id, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->pack_job_offset, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_offset, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
@@ -1053,8 +1053,8 @@ static int _unpack_local_job(local_job_t *object,
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->pack_job_id, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->pack_job_offset, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_offset, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
@@ -1096,8 +1096,8 @@ static int _unpack_local_job(local_job_t *object,
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->pack_job_id, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->pack_job_offset, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_offset, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
@@ -1137,8 +1137,8 @@ static int _unpack_local_job(local_job_t *object,
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
-		object->pack_job_id = xstrdup("0");
-		object->pack_job_offset = xstrdup("4294967294");
+		object->het_job_id = xstrdup("0");
+		object->het_job_offset = xstrdup("4294967294");
 		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
@@ -1194,8 +1194,8 @@ static int _unpack_local_job(local_job_t *object,
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
-		object->pack_job_id = xstrdup("0");
-		object->pack_job_offset = xstrdup("4294967294");
+		object->het_job_id = xstrdup("0");
+		object->het_job_offset = xstrdup("4294967294");
 		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
@@ -1278,8 +1278,8 @@ static int _unpack_local_job(local_job_t *object,
 			xfree(tmp_char);
 		}
 		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
-		object->pack_job_id = xstrdup("0");
-		object->pack_job_offset = xstrdup("4294967294");
+		object->het_job_id = xstrdup("0");
+		object->het_job_offset = xstrdup("4294967294");
 		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
@@ -1335,8 +1335,8 @@ static int _unpack_local_job(local_job_t *object,
 			xfree(tmp_char);
 		}
 		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
-		object->pack_job_id = xstrdup("0");
-		object->pack_job_offset = xstrdup("4294967294");
+		object->het_job_id = xstrdup("0");
+		object->het_job_offset = xstrdup("4294967294");
 		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
@@ -1373,8 +1373,8 @@ static int _unpack_local_job(local_job_t *object,
 		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
-		object->pack_job_id = xstrdup("0");
-		object->pack_job_offset = xstrdup("4294967294");
+		object->het_job_id = xstrdup("0");
+		object->het_job_offset = xstrdup("4294967294");
 		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
@@ -2853,6 +2853,8 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.gres_alloc = row[JOB_REQ_GRES_ALLOC];
 		job.gres_req = row[JOB_REQ_GRES_REQ];
 		job.gres_used = row[JOB_REQ_GRES_USED];
+		job.het_job_id = row[JOB_REQ_HET_JOB_ID];
+		job.het_job_offset = row[JOB_REQ_HET_JOB_OFFSET];
 		job.job_db_inx = row[JOB_REQ_DB_INX];
 		job.jobid = row[JOB_REQ_JOBID];
 		job.kill_requid = row[JOB_REQ_KILL_REQUID];
@@ -2861,8 +2863,6 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.name = row[JOB_REQ_NAME];
 		job.nodelist = row[JOB_REQ_NODELIST];
 		job.node_inx = row[JOB_REQ_NODE_INX];
-		job.pack_job_id = row[JOB_REQ_PACK_JOB_ID];
-		job.pack_job_offset = row[JOB_REQ_PACK_JOB_OFFSET];
 		job.partition = row[JOB_REQ_PARTITION];
 		job.priority = row[JOB_REQ_PRIORITY];
 		job.qos = row[JOB_REQ_QOS];
@@ -2912,13 +2912,13 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 		JOB_REQ_GRES_ALLOC,
 		JOB_REQ_GRES_REQ,
 		JOB_REQ_GRES_USED,
+		JOB_REQ_HET_JOB_ID,
+		JOB_REQ_HET_JOB_OFFSET,
 		JOB_REQ_DB_INX,
 		JOB_REQ_JOBID,
 		JOB_REQ_KILL_REQUID,
 		JOB_REQ_MOD_TIME,
 		JOB_REQ_NAME,
-		JOB_REQ_PACK_JOB_ID,
-		JOB_REQ_PACK_JOB_OFFSET,
 		JOB_REQ_PARTITION,
 		JOB_REQ_PRIORITY,
 		JOB_REQ_QOS,
@@ -3044,13 +3044,13 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.gres_alloc,
 			   object.gres_req,
 			   object.gres_used,
+			   object.het_job_id,
+			   object.het_job_offset,
 			   object.job_db_inx,
 			   object.jobid,
 			   object.kill_requid,
 			   object.mod_time,
 			   object.name,
-			   object.pack_job_id,
-			   object.pack_job_offset,
 			   object.partition,
 			   object.priority,
 			   object.qos,

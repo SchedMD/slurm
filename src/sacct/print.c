@@ -1049,11 +1049,11 @@ extern void print_fields(type_t type, void *object)
 						 "%u_%u",
 						 job->array_job_id,
 						 job->array_task_id);
-				} else if (job->pack_job_id) {
+				} else if (job->het_job_id) {
 					snprintf(id, FORMAT_STRING_SIZE,
 						 "%u+%u",
-						 job->pack_job_id,
-						 job->pack_job_offset);
+						 job->het_job_id,
+						 job->het_job_offset);
 				} else {
 					snprintf(id, FORMAT_STRING_SIZE,
 						 "%u",

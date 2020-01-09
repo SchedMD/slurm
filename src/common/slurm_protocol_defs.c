@@ -671,18 +671,18 @@ static int _addto_step_list_internal(List step_list, char *names,
 			selected_step->array_task_id = atoi(under);
 		else
 			fatal("Bad job array element specified: %s", name);
-		selected_step->pack_job_offset = NO_VAL;
+		selected_step->het_job_offset = NO_VAL;
 	} else if ((plus = strstr(name, "+"))) {
 		selected_step->array_task_id = NO_VAL;
 		*plus++ = 0;
 		if (isdigit(*plus))
-			selected_step->pack_job_offset = atoi(plus);
+			selected_step->het_job_offset = atoi(plus);
 		else
 			fatal("Bad pack job offset specified: %s", name);
 	} else {
 		debug2("No jobarray or pack job requested");
 		selected_step->array_task_id = NO_VAL;
-		selected_step->pack_job_offset = NO_VAL;
+		selected_step->het_job_offset = NO_VAL;
 	}
 
 	selected_step->jobid = atoi(name);

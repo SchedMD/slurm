@@ -3124,11 +3124,11 @@ extern char *slurmdb_get_selected_step_id(
 			 "%u_%u",
 			 selected_step->jobid,
 			 selected_step->array_task_id);
-	} else if (selected_step->pack_job_offset != NO_VAL) {
+	} else if (selected_step->het_job_offset != NO_VAL) {
 		snprintf(id, FORMAT_STRING_SIZE,
 			 "%u+%u",
 			 selected_step->jobid,
-			 selected_step->pack_job_offset);
+			 selected_step->het_job_offset);
 	} else {
 		snprintf(id, FORMAT_STRING_SIZE,
 			 "%u",
@@ -4139,7 +4139,7 @@ extern int slurmdb_find_selected_step_in_list(void *x, void *key)
 	if ((query_step->jobid == selected_step->jobid) &&
 	    (query_step->stepid == selected_step->stepid) &&
 	    (query_step->array_task_id == selected_step->array_task_id) &&
-	    (query_step->pack_job_offset == selected_step->pack_job_offset))
+	    (query_step->het_job_offset == selected_step->het_job_offset))
 		return 1;
 
 	return 0;

@@ -44,8 +44,9 @@
  * Any time you have to add to an existing convert update this number.
  * NOTE: 6 was the first version of 18.08.
  * NOTE: 7 was the first version of 19.05.
+ * NOTE: 8 was the first version of 20.02.
  */
-#define CONVERT_VERSION 7
+#define CONVERT_VERSION 8
 
 typedef struct {
 	uint64_t count;
@@ -93,6 +94,37 @@ static void _set_tres_value(char *tres_str, uint64_t *tres_array)
 
 		tmp_str++;
 	}
+}
+
+static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
+{
+	int rc = SLURM_SUCCESS;
+	char *query = NULL;
+
+	if (db_curr_ver < 8) {
+		/*
+		 * Change the names pack_job_id and pack_job_offset to be het_*
+		 */
+		query = xstrdup_printf(
+			"alter table \"%s_%s\" "
+			"change pack_job_id het_job_id int unsigned not null, "
+			"change pack_job_offset het_job_offset "
+			"int unsigned not null;",
+			cluster_name, job_table);
+	}
+
+	if (query) {
+		if (debug_flags & DEBUG_FLAG_DB_QUERY)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		if (rc != SLURM_SUCCESS)
+			error("%s: Can't convert %s_%s info: %m",
+			      __func__, cluster_name, job_table);
+	}
+
+	return rc;
 }
 
 static int _convert_step_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
@@ -630,6 +662,10 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 	/* make it up to date */
 	itr = list_iterator_create(as_mysql_total_cluster_list);
 	while ((cluster_name = list_next(itr))) {
+		info("pre-converting job table for %s", cluster_name);
+		if ((rc = _convert_job_table_pre(mysql_conn, cluster_name)
+		     != SLURM_SUCCESS))
+			break;
 		info("pre-converting step table for %s", cluster_name);
 		if ((rc = _convert_step_table_pre(mysql_conn, cluster_name)
 		     != SLURM_SUCCESS))
