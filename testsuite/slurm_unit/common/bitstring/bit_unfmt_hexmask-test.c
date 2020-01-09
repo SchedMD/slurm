@@ -91,10 +91,10 @@ END_TEST
  * TEST SUITE                                                                *
  ****************************************************************************/
 
-Suite* suite(void)
+Suite *suite(void)
 {
-	Suite* s = suite_create("bit_unfmt_hexmask test");
-	TCase* tc_core = tcase_create("Testing bit_unfmt_hexmask");
+	Suite *s = suite_create("bit_unfmt_hexmask test");
+	TCase *tc_core = tcase_create("Testing bit_unfmt_hexmask");
 	tcase_add_test(tc_core, null_test);
 	tcase_add_test(tc_core, bounds_test);
 	tcase_add_test(tc_core, good_test);
@@ -109,7 +109,7 @@ Suite* suite(void)
 int main(void)
 {
 	int number_failed;
-	SRunner* sr = srunner_create(suite());
+	SRunner *sr = srunner_create(suite());
 
 	//srunner_set_fork_status(sr, CK_NOFORK);
 

@@ -221,10 +221,10 @@ END_TEST
  * TEST SUITE                                                                *
  ****************************************************************************/
 
-Suite* suite(SRunner *sr)
+Suite *suite(SRunner *sr)
 {
-	Suite* s = suite_create("Pack slurmdb_assoc_rec_t");
-	TCase* tc_core = tcase_create("Pack slurmdb_assoc_rec_t");
+	Suite *s = suite_create("Pack slurmdb_assoc_rec_t");
+	TCase *tc_core = tcase_create("Pack slurmdb_assoc_rec_t");
 	tcase_add_test(tc_core, invalid_protocol);
 
 #ifndef NDEBUG
@@ -244,7 +244,7 @@ Suite* suite(SRunner *sr)
 int main(void)
 {
     int number_failed;
-    SRunner* sr = srunner_create(NULL);
+    SRunner *sr = srunner_create(NULL);
     //srunner_set_fork_status(sr, CK_NOFORK);
     srunner_add_suite(sr, suite(sr));
 

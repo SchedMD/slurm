@@ -137,7 +137,7 @@ END_TEST
  * TEST SUITE                                                                *
  ****************************************************************************/
 
-Suite* suite(void)
+Suite *suite(void)
 {
 	Suite *s = suite_create("Pack slurmdb_event_cond_t");
 	TCase *tc_core = tcase_create("Pack slurmdb_event_cond_t");

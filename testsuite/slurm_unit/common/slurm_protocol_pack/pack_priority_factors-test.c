@@ -166,8 +166,8 @@ END_TEST
 
 Suite *suite(SRunner *sr)
 {
-	Suite* s = suite_create("Pack priority_factors_objects_t");
-	TCase* tc_core = tcase_create("Pack priority_factors_objects_t");
+	Suite *s = suite_create("Pack priority_factors_objects_t");
+	TCase *tc_core = tcase_create("Pack priority_factors_objects_t");
 	tcase_add_unchecked_fixture(tc_core, setup, teardown);
 #ifdef NDEBUG
        printf("Can't perform pack_null_resp test with NDEBUG set.\n");
@@ -189,7 +189,7 @@ Suite *suite(SRunner *sr)
 int main(void)
 {
 	int number_failed;
-	SRunner* sr = srunner_create(NULL);
+	SRunner *sr = srunner_create(NULL);
 	//srunner_set_fork_status(sr, CK_NOFORK);
 	srunner_add_suite(sr, suite(sr));
 

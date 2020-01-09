@@ -177,10 +177,10 @@ END_TEST
  * TEST SUITE                                                                *
  ****************************************************************************/
 
-Suite* suite(SRunner *sr)
+Suite *suite(SRunner *sr)
 {
-	Suite* s = suite_create("Pack job_alloc_info_msg_t");
-	TCase* tc_core = tcase_create("Pack pack_job_alloc_info_msg_t");
+	Suite *s = suite_create("Pack job_alloc_info_msg_t");
+	TCase *tc_core = tcase_create("Pack pack_job_alloc_info_msg_t");
 	tcase_add_test(tc_core, invalid_protocol);
 #ifdef NDEBUG
        printf("Can't perform pack_null_req test with NDEBUG set.\n");
@@ -203,7 +203,7 @@ Suite* suite(SRunner *sr)
 int main(void)
 {
 	int number_failed;
-	SRunner* sr = srunner_create(NULL);
+	SRunner *sr = srunner_create(NULL);
 	//srunner_set_fork_status(sr, CK_NOFORK);
 	srunner_add_suite(sr, suite(sr));
 

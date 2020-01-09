@@ -238,10 +238,10 @@ END_TEST
  * TEST SUITE                                                                *
  ****************************************************************************/
 
-Suite* xhash_suite(void)
+Suite *xhash_suite(void)
 {
-	Suite* s = suite_create("xhash");
-	TCase* tc_core = tcase_create("Core");
+	Suite *s = suite_create("xhash");
+	TCase *tc_core = tcase_create("Core");
 	tcase_add_checked_fixture(tc_core, setup, teardown);
 	tcase_add_test(tc_core, test_init_free);
 	tcase_add_test(tc_core, test_add);
@@ -260,7 +260,7 @@ Suite* xhash_suite(void)
 int main(void)
 {
     int number_failed;
-    SRunner* sr = srunner_create(xhash_suite());
+    SRunner *sr = srunner_create(xhash_suite());
 
     srunner_run_all(sr, CK_NORMAL);
     number_failed = srunner_ntests_failed(sr);

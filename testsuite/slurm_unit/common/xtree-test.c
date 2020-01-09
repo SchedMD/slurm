@@ -866,10 +866,10 @@ END_TEST
  * TEST SUITE                                                                *
  ****************************************************************************/
 
-Suite* xtree_suite(void)
+Suite *xtree_suite(void)
 {
-    Suite* s = suite_create("xtree");
-    TCase* tc_core = tcase_create("Core");
+    Suite *s = suite_create("xtree");
+    TCase *tc_core = tcase_create("Core");
 
     tcase_add_checked_fixture(tc_core, setup, teardown);
     tcase_add_test(tc_core, test_xtree_creation_unmanaged);
@@ -896,7 +896,7 @@ Suite* xtree_suite(void)
 int main(void)
 {
     int number_failed;
-    SRunner* sr = srunner_create(xtree_suite());
+    SRunner *sr = srunner_create(xtree_suite());
 
     srunner_run_all(sr, CK_NORMAL);
     number_failed = srunner_ntests_failed(sr);
