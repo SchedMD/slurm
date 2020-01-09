@@ -421,9 +421,7 @@ char * xstrndup(const char *str, size_t n)
 	if (str == NULL)
 		return NULL;
 
-	siz = strlen(str);
-	if (n < siz)
-		siz = n;
+	siz = strnlen(str, n);
 	result = xmalloc(siz + 1);
 
 	(void) memcpy(result, str, siz);
