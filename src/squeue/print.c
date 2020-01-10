@@ -627,9 +627,9 @@ int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 		snprintf(id, FORMAT_STRING_SIZE, "%u_%u",
 			 job->array_job_id, job->array_task_id);
 		_print_str(id, width, right, true);
-	} else if (job->pack_job_id) {
+	} else if (job->het_job_id) {
 		snprintf(id, FORMAT_STRING_SIZE, "%u+%u",
-			 job->pack_job_id, job->pack_job_offset);
+			 job->het_job_id, job->het_job_offset);
 		_print_str(id, width, right, true);
 	} else {
 		snprintf(id, FORMAT_STRING_SIZE, "%u", job->job_id);
@@ -856,10 +856,10 @@ int _print_job_pack_job_offset(job_info_t * job, int width, bool right,
 
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("PACK_JOB_OFFSET", width, right, true);
-	else if (job->pack_job_id == 0)
+	else if (job->het_job_id == 0)
 		_print_str("N/A", width, right, true);
 	else {
-		snprintf(id, FORMAT_STRING_SIZE, "%u", job->pack_job_offset);
+		snprintf(id, FORMAT_STRING_SIZE, "%u", job->het_job_offset);
 		_print_str(id, width, right, true);
 	}
 	if (suffix)
@@ -874,10 +874,10 @@ int _print_job_pack_job_id(job_info_t * job, int width, bool right,
 
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("PACK_JOB_ID", width, right, true);
-	else if (job->pack_job_id == 0)
+	else if (job->het_job_id == 0)
 		_print_str("N/A", width, right, true);
 	else {
-		snprintf(id, FORMAT_STRING_SIZE, "%u", job->pack_job_id);
+		snprintf(id, FORMAT_STRING_SIZE, "%u", job->het_job_id);
 		_print_str(id, width, right, true);
 	}
 	if (suffix)
@@ -890,10 +890,10 @@ int _print_job_pack_job_id_set(job_info_t * job, int width, bool right,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("PACK_JOB_ID_SET", width, right, true);
-	else if (job->pack_job_id == 0)
+	else if (job->het_job_id == 0)
 		_print_str("N/A", width, right, true);
 	else
-		_print_str(job->pack_job_id_set, width, right, true);
+		_print_str(job->het_job_id_set, width, right, true);
 
 	if (suffix)
 		printf("%s", suffix);
@@ -2817,7 +2817,7 @@ static int _filter_job(job_info_t * job)
 				partial_array = true;
 				break;
 			}
-			if (job_step_id->job_id == job->pack_job_id) {
+			if (job_step_id->job_id == job->het_job_id) {
 				filter = 0;
 				break;
 			}

@@ -3396,10 +3396,10 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack32(&job->job_id,   buffer);
 		safe_unpack32(&job->user_id,  buffer);
 		safe_unpack32(&job->group_id, buffer);
-		safe_unpack32(&job->pack_job_id, buffer);
-		safe_unpackstr_xmalloc(&job->pack_job_id_set, &uint32_tmp,
+		safe_unpack32(&job->het_job_id, buffer);
+		safe_unpackstr_xmalloc(&job->het_job_id_set, &uint32_tmp,
 				       buffer);
-		safe_unpack32(&job->pack_job_offset, buffer);
+		safe_unpack32(&job->het_job_offset, buffer);
 		safe_unpack32(&job->profile,  buffer);
 
 		safe_unpack32(&job->job_state,    buffer);
@@ -3580,10 +3580,10 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack32(&job->job_id,   buffer);
 		safe_unpack32(&job->user_id,  buffer);
 		safe_unpack32(&job->group_id, buffer);
-		safe_unpack32(&job->pack_job_id, buffer);
-		safe_unpackstr_xmalloc(&job->pack_job_id_set, &uint32_tmp,
+		safe_unpack32(&job->het_job_id, buffer);
+		safe_unpackstr_xmalloc(&job->het_job_id_set, &uint32_tmp,
 				       buffer);
-		safe_unpack32(&job->pack_job_offset, buffer);
+		safe_unpack32(&job->het_job_offset, buffer);
 		safe_unpack32(&job->profile,  buffer);
 
 		safe_unpack32(&job->job_state,    buffer);
@@ -3760,10 +3760,10 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack32(&job->job_id,   buffer);
 		safe_unpack32(&job->user_id,  buffer);
 		safe_unpack32(&job->group_id, buffer);
-		safe_unpack32(&job->pack_job_id, buffer);
-		safe_unpackstr_xmalloc(&job->pack_job_id_set, &uint32_tmp,
+		safe_unpack32(&job->het_job_id, buffer);
+		safe_unpackstr_xmalloc(&job->het_job_id_set, &uint32_tmp,
 				       buffer);
-		safe_unpack32(&job->pack_job_offset, buffer);
+		safe_unpack32(&job->het_job_offset, buffer);
 		safe_unpack32(&job->profile,  buffer);
 
 		safe_unpack32(&job->job_state,    buffer);

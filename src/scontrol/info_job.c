@@ -279,7 +279,7 @@ scontrol_get_job_state(uint32_t job_id)
 static bool _pack_id_match(job_info_t *job_ptr, uint32_t pack_job_offset)
 {
 	if ((pack_job_offset == NO_VAL) ||
-	    (pack_job_offset == job_ptr->pack_job_offset))
+	    (pack_job_offset == job_ptr->het_job_offset))
 		return true;
 	return false;
 }

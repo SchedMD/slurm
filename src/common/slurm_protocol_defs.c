@@ -1143,6 +1143,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 				xfree(job->gres_detail_str[i]);
 			xfree(job->gres_detail_str);
 		}
+		xfree(job->het_job_id_set);
 		xfree(job->licenses);
 		xfree(job->mail_user);
 		xfree(job->mcs_label);
@@ -1152,7 +1153,6 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->node_inx);
 		xfree(job->nodes);
 		xfree(job->sched_nodes);
-		xfree(job->pack_job_id_set);
 		xfree(job->partition);
 		xfree(job->qos);
 		xfree(job->req_node_inx);

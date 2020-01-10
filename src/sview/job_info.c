@@ -1448,10 +1448,10 @@ static void _layout_job_record(GtkTreeView *treeview,
 		snprintf(tmp_char, sizeof(tmp_char), "%u_%u (%u)",
 			 job_ptr->array_job_id, job_ptr->array_task_id,
 			 job_ptr->job_id);
-	} else if (job_ptr->pack_job_id) {
+	} else if (job_ptr->het_job_id) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u+%u (%u)",
-			 job_ptr->pack_job_id,
-			 job_ptr->pack_job_offset,
+			 job_ptr->het_job_id,
+			 job_ptr->het_job_offset,
 			 job_ptr->job_id);
 	} else {
 		snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->job_id);
@@ -1583,9 +1583,9 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_OVER_SUBSCRIBE),
 				   job_share_string(job_ptr->shared));
 
-	if (job_ptr->pack_job_id) {
+	if (job_ptr->het_job_id) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u",
-			 job_ptr->pack_job_id);
+			 job_ptr->het_job_id);
 	} else {
 		snprintf(tmp_char, sizeof(tmp_char), "N/A");
 	}
@@ -1594,9 +1594,9 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_PACK_JOB_ID),
 				   tmp_char);
 
-	if (job_ptr->pack_job_offset) {
+	if (job_ptr->het_job_offset) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u",
-			 job_ptr->pack_job_offset);
+			 job_ptr->het_job_offset);
 	} else {
 		snprintf(tmp_char, sizeof(tmp_char), "N/A");
 	}
@@ -1605,9 +1605,9 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_PACK_JOB_OFFSET),
 				   tmp_char);
 
-	if (job_ptr->pack_job_id_set) {
+	if (job_ptr->het_job_id_set) {
 		snprintf(tmp_char, sizeof(tmp_char), "%s",
-			 job_ptr->pack_job_id_set);
+			 job_ptr->het_job_id_set);
 	} else {
 		snprintf(tmp_char, sizeof(tmp_char), "N/A");
 	}
@@ -1888,13 +1888,13 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		sview_job_info_ptr->task_hl_str =
 			hostlist_ranged_string_xmalloc(
 				sview_job_info_ptr->task_hl);
-		if (!job_ptr->pack_job_id) {
+		if (!job_ptr->het_job_id) {
 			snprintf(tmp_job_id, sizeof(tmp_job_id), "%u_%s",
 				 job_ptr->array_job_id,
 				 sview_job_info_ptr->task_hl_str);
 		} else {
 			snprintf(tmp_job_id, sizeof(tmp_job_id), "%u+%s",
-				 job_ptr->pack_job_id,
+				 job_ptr->het_job_id,
 				 sview_job_info_ptr->task_hl_str);
 		}
 		xfree(sview_job_info_ptr->task_hl_str);
@@ -1906,13 +1906,13 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		sview_job_info_ptr->task_pending_hl_str =
 			hostlist_ranged_string_xmalloc(
 				sview_job_info_ptr->task_pending_hl);
-		if (!job_ptr->pack_job_id) {
+		if (!job_ptr->het_job_id) {
 			snprintf(tmp_job_id, sizeof(tmp_job_id), "%u_%s",
 				 job_ptr->array_job_id,
 				 sview_job_info_ptr->task_pending_hl_str);
 		} else {
 			snprintf(tmp_job_id, sizeof(tmp_job_id), "%u+%s",
-				 job_ptr->pack_job_id,
+				 job_ptr->het_job_id,
 				 sview_job_info_ptr->task_pending_hl_str);
 		}
 		xfree(sview_job_info_ptr->task_pending_hl_str);
@@ -1921,7 +1921,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	}
 
 	if (handle_pending &&
-	    (job_ptr->pack_job_id || job_ptr->array_job_id)) {
+	    (job_ptr->het_job_id || job_ptr->array_job_id)) {
 		if (job_ptr->array_task_str ||
 		    (job_ptr->array_task_id != NO_VAL)) {
 			snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
@@ -1931,12 +1931,12 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			snprintf(tmp_array_task_id,
 				 sizeof(tmp_array_task_id), "%s",
 				 sview_job_info_ptr->task_pending_hl_str);
-		} else if (job_ptr->pack_job_id) {
+		} else if (job_ptr->het_job_id) {
 			snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
 				 sview_job_info_ptr->task_pending_hl_str);
 		}
 	} else if (check_task &&
-		   (job_ptr->pack_job_id || job_ptr->array_job_id)) {
+		   (job_ptr->het_job_id || job_ptr->array_job_id)) {
 		if (job_ptr->array_task_str ||
 		    (job_ptr->array_task_id != NO_VAL)) {
 			snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
@@ -1946,7 +1946,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			snprintf(tmp_array_task_id,
 				 sizeof(tmp_array_task_id), "%s",
 				 sview_job_info_ptr->task_hl_str);
-		} else if (job_ptr->pack_job_id)
+		} else if (job_ptr->het_job_id)
 			snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
 					sview_job_info_ptr->task_hl_str);
 	} else if (job_ptr->array_task_str) {
@@ -1963,22 +1963,22 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			 job_ptr->array_job_id);
 		snprintf(tmp_array_task_id, sizeof(tmp_array_task_id), "%u",
 			 job_ptr->array_task_id);
-	} else if (job_ptr->pack_job_id) {
+	} else if (job_ptr->het_job_id) {
 		snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
 			 sview_job_info_ptr->job_id_str);
 		snprintf(tmp_pack_job_id,      sizeof(tmp_pack_job_id),
-			 "%u", job_ptr->pack_job_id);
+			 "%u", job_ptr->het_job_id);
 		snprintf(tmp_pack_job_id_set,  sizeof(tmp_pack_job_id_set),
-			 "%s", job_ptr->pack_job_id_set);
+			 "%s", job_ptr->het_job_id_set);
 		snprintf(tmp_pack_job_offset,  sizeof(tmp_pack_job_offset),
-			 "%u", job_ptr->pack_job_offset);
+			 "%u", job_ptr->het_job_offset);
 	 } else {
 		snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
 			 sview_job_info_ptr->job_id_str);
 	}
 
 
-	if (!job_ptr->pack_job_id) {
+	if (!job_ptr->het_job_id) {
 		snprintf(tmp_pack_job_id,
 			 sizeof(tmp_pack_job_id),      "N/A");
 		snprintf(tmp_pack_job_id_set,
@@ -2208,7 +2208,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	if ((handle_pending || check_task) &&
 	    (job_ptr->array_task_str || (job_ptr->array_task_id != NO_VAL) ||
-	     job_ptr->pack_job_id)) {
+	     job_ptr->het_job_id)) {
 		gtk_tree_store_set(treestore, iter,
 				   SORTID_ACCOUNT,      job_ptr->account,
 				   SORTID_ALLOC,        1,
@@ -2346,7 +2346,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	if (check_task &&
 	    (job_ptr->array_task_str ||
-	     ((job_ptr->array_task_id != NO_VAL) || job_ptr->pack_job_id))) {
+	     ((job_ptr->array_task_id != NO_VAL) || job_ptr->het_job_id))) {
 		if (gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
 						 &step_iter,
 						 iter))
@@ -2360,7 +2360,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	} else if (handle_pending &&
 		   (job_ptr->array_task_str ||
 		    (job_ptr->array_task_id != NO_VAL ||
-		     job_ptr->pack_job_id))) {
+		     job_ptr->het_job_id))) {
 		if (gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
 						 &step_iter,
 						 iter))
@@ -2962,7 +2962,7 @@ static void _update_info_job(List info_list,
 
 			if ((jobid != job_ptr->job_id)
 			    && (jobid != job_ptr->array_job_id) &&
-				(jobid != job_ptr->pack_job_id)) {
+				(jobid != job_ptr->het_job_id)) {
 				/* Bad pointer */
 				sview_job_info->iter_set = false;
 			}
@@ -3026,7 +3026,7 @@ static int _pack_job_id_match(void *x, void *key)
 	sview_job_info_t *sview_job_info_ptr = (sview_job_info_t *) x;
 	job_info_t *job_ptr = (job_info_t *) key;
 
-	if (sview_job_info_ptr->job_ptr->pack_job_id  == job_ptr->pack_job_id)
+	if (sview_job_info_ptr->job_ptr->het_job_id  == job_ptr->het_job_id)
 		return 1;
 
 	return 0;
@@ -3147,10 +3147,10 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 					 job_ptr->array_task_id,
 					 job_ptr->job_id);
 			}
-		} else if (job_ptr->pack_job_id) {
+		} else if (job_ptr->het_job_id) {
 			char comp_str[64];
 			snprintf(comp_str, sizeof(comp_str), "%u",
-				 job_ptr->pack_job_offset);
+				 job_ptr->het_job_offset);
 			sview_job_info_t *first_job_info_ptr =
 				list_find_first(info_list,
 						_pack_job_id_match, job_ptr);
@@ -3170,8 +3170,8 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 					    sview_job_info_ptr);
 			sview_job_info_ptr->job_id_str =
 				xstrdup_printf("%u+%u (%u)",
-				 job_ptr->pack_job_id,
-				 job_ptr->pack_job_offset,
+				 job_ptr->het_job_id,
+				 job_ptr->het_job_offset,
 				 job_ptr->job_id);
 		} else
 			sview_job_info_ptr->job_id_str =
