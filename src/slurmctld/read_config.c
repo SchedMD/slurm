@@ -974,7 +974,7 @@ static int _test_pack_used(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
 
-	if ((job_ptr->pack_job_id == 0) || IS_JOB_FINISHED(job_ptr))
+	if ((job_ptr->het_job_id == 0) || IS_JOB_FINISHED(job_ptr))
 		return 0;
 	if (job_ptr->bit_flags & JOB_PACK_FLAG)
 		return 0;
@@ -989,8 +989,8 @@ static int _test_pack_used(void *x, void *arg)
  * Validate heterogeneous jobs
  *
  * Make sure that every active (not yet complete) job has all of its components
- * and they are all in the same state. Also rebuild pack_job_list.
- * If pack job is corrupted, aborts and removes it from job_list.
+ * and they are all in the same state. Also rebuild het_job_list.
+ * If hetjob is corrupted, aborts and removes it from job_list.
  */
 static void _validate_pack_jobs(void)
 {
@@ -1005,12 +1005,12 @@ static void _validate_pack_jobs(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
-		/* Checking for corrupted job pack components */
-		if (job_ptr->pack_job_offset != 0) {
-			pack_job_ptr = find_job_record(job_ptr->pack_job_id);
+		/* Checking for corrupted hetjob components */
+		if (job_ptr->het_job_offset != 0) {
+			pack_job_ptr = find_job_record(job_ptr->het_job_id);
 			if (!pack_job_ptr) {
 				error("Could not find pack leader (JobId=%u) of %pJ. Aborting and removing job as it is corrupted.",
-				      job_ptr->pack_job_id, job_ptr);
+				      job_ptr->het_job_id, job_ptr);
 				_abort_job(job_ptr, JOB_FAILED, FAIL_SYSTEM,
 					   "invalid pack_job_id_set");
 				if (list_delete_item(job_iterator) != 1)
@@ -1019,26 +1019,26 @@ static void _validate_pack_jobs(void)
 			}
 		}
 
-		if ((job_ptr->pack_job_id == 0) ||
-		    (job_ptr->pack_job_offset != 0))
+		if ((job_ptr->het_job_id == 0) ||
+		    (job_ptr->het_job_offset != 0))
 			continue;
 		/* active pack job leader found */
-		FREE_NULL_LIST(job_ptr->pack_job_list);
+		FREE_NULL_LIST(job_ptr->het_job_list);
 		job_id_str = NULL;
 		/* Need to wrap numbers with brackets for hostset functions */
-		xstrfmtcat(job_id_str, "[%s]", job_ptr->pack_job_id_set);
+		xstrfmtcat(job_id_str, "[%s]", job_ptr->het_job_id_set);
 		hs = hostset_create(job_id_str);
 		xfree(job_id_str);
 		if (!hs) {
-			error("%pJ has invalid pack_job_id_set(%s). Aborting and removing job as it is corrupted.",
-			      job_ptr, job_ptr->pack_job_id_set);
+			error("%pJ has invalid het_job_id_set(%s). Aborting and removing job as it is corrupted.",
+			      job_ptr, job_ptr->het_job_id_set);
 			_abort_job(job_ptr, JOB_FAILED, FAIL_SYSTEM,
 				   "invalid pack_job_id_set");
 			if (list_delete_item(job_iterator) != 1)
 				error("Not able to remove the job.");
 			continue;
 		}
-		job_ptr->pack_job_list = list_create(NULL);
+		job_ptr->het_job_list = list_create(NULL);
 		pack_job_valid = true;	/* assume valid for now */
 		while (pack_job_valid && (job_id_str = hostset_shift(hs))) {
 			job_id = (uint32_t) strtoll(job_id_str, NULL, 10);
@@ -1047,20 +1047,20 @@ static void _validate_pack_jobs(void)
 				error("Could not find JobId=%u, part of pack JobId=%u",
 				      job_id, job_ptr->job_id);
 				pack_job_valid = false;
-			} else if (pack_job_ptr->pack_job_id !=
+			} else if (pack_job_ptr->het_job_id !=
 				   job_ptr->job_id) {
 				error("Invalid state of JobId=%u, part of pack JobId=%u",
 				      job_id, job_ptr->job_id);
 				pack_job_valid = false;
 			} else {
-				list_append(job_ptr->pack_job_list,
+				list_append(job_ptr->het_job_list,
 					    pack_job_ptr);
 			}
 			free(job_id_str);
 		}
 		hostset_destroy(hs);
 		if (pack_job_valid) {
-			list_for_each(job_ptr->pack_job_list, _mark_pack_used,
+			list_for_each(job_ptr->het_job_list, _mark_pack_used,
 				      NULL);
 		}
 	}

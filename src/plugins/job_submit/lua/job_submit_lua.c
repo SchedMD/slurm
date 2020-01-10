@@ -373,11 +373,11 @@ static int _job_rec_field(const job_record_t *job_ptr, const char *name)
 		else
 			lua_pushnumber (L, NO_VAL16);
 	} else if (!xstrcmp(name, "pack_job_id")) {
-		lua_pushnumber (L, job_ptr->pack_job_id);
+		lua_pushnumber (L, job_ptr->het_job_id);
 	} else if (!xstrcmp(name, "pack_job_id_set")) {
-		lua_pushstring (L, job_ptr->pack_job_id_set);
+		lua_pushstring (L, job_ptr->het_job_id_set);
 	} else if (!xstrcmp(name, "pack_job_offset")) {
-		lua_pushnumber (L, job_ptr->pack_job_offset);
+		lua_pushnumber (L, job_ptr->het_job_offset);
 	} else if (!xstrcmp(name, "partition")) {
 		lua_pushstring (L, job_ptr->partition);
 	} else if (!xstrcmp(name, "pn_min_cpus")) {

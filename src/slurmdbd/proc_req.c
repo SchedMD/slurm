@@ -2618,14 +2618,14 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	details.begin_time = job_start_msg->eligible_time;
 	job.user_id = job_start_msg->uid;
 	job.group_id = job_start_msg->gid;
+	job.het_job_id = job_start_msg->het_job_id;
+	job.het_job_offset = job_start_msg->het_job_offset;
 	job.job_id = job_start_msg->job_id;
 	job.job_state = job_start_msg->job_state;
 	job.mcs_label = _replace_double_quotes(job_start_msg->mcs_label);
 	job.name = _replace_double_quotes(job_start_msg->name);
 	job.nodes = job_start_msg->nodes;
 	job.network = job_start_msg->node_inx;
-	job.pack_job_id = job_start_msg->het_job_id;
-	job.pack_job_offset = job_start_msg->het_job_offset;
 	job.partition = job_start_msg->partition;
 	details.min_cpus = job_start_msg->req_cpus;
 	details.pn_min_memory = job_start_msg->req_mem;

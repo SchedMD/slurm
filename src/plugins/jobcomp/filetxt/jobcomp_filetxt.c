@@ -304,10 +304,10 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 		array_id[0] = '\0';
 	}
 
-	if (job_ptr->pack_job_id) {
+	if (job_ptr->het_job_id) {
 		snprintf(pack_id, sizeof(pack_id),
 			 " PackJobId=%u PackJobOffset=%u",
-			 job_ptr->pack_job_id, job_ptr->pack_job_offset);
+			 job_ptr->het_job_id, job_ptr->het_job_offset);
 	} else {
 		pack_id[0] = '\0';
 	}

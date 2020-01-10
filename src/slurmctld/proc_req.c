@@ -1492,8 +1492,8 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 			hostset_insert(jobid_hostset, tmp_str);
 		else
 			jobid_hostset = hostset_create(tmp_str);
-		job_ptr->pack_job_id     = pack_job_id;
-		job_ptr->pack_job_offset = pack_job_offset++;
+		job_ptr->het_job_id     = pack_job_id;
+		job_ptr->het_job_offset = pack_job_offset++;
 		list_append(submit_job_list, job_ptr);
 	}
 	list_iterator_destroy(iter);
@@ -1518,10 +1518,10 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 				&pack_job_id_set);
 
 	if (first_job_ptr)
-		first_job_ptr->pack_job_list = submit_job_list;
+		first_job_ptr->het_job_list = submit_job_list;
 	iter = list_iterator_create(submit_job_list);
 	while ((job_ptr = list_next(iter))) {
-		job_ptr->pack_job_id_set = xstrdup(pack_job_id_set);
+		job_ptr->het_job_id_set = xstrdup(pack_job_id_set);
 	}
 	list_iterator_destroy(iter);
 	xfree(pack_job_id_set);
@@ -3253,7 +3253,7 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 
 	/* return result */
 	if ((error_code == SLURM_SUCCESS) && job_ptr &&
-	    (job_ptr->pack_job_id && !job_ptr->pack_job_list))
+	    (job_ptr->het_job_id && !job_ptr->het_job_list))
 		error_code = ESLURM_NOT_PACK_JOB_LEADER;
 	if (error_code || (job_ptr == NULL) || (job_ptr->job_resrcs == NULL)) {
 		unlock_slurmctld(job_read_lock);
@@ -3266,7 +3266,7 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 	debug("%s: JobId=%u NodeList=%s %s", __func__,
 	      job_info_msg->job_id, job_ptr->nodes, TIME_STR);
 
-	if (!job_ptr->pack_job_list) {
+	if (!job_ptr->het_job_list) {
 		resp = list_create(_pack_alloc_list_del);
 		job_info_resp_msg = build_job_info_resp(job_ptr);
 		set_remote_working_response(job_info_resp_msg, job_ptr,
@@ -3274,10 +3274,10 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 		list_append(resp, job_info_resp_msg);
 	} else {
 		resp = list_create(_pack_alloc_list_del);
-		iter = list_iterator_create(job_ptr->pack_job_list);
+		iter = list_iterator_create(job_ptr->het_job_list);
 		while ((pack_job = list_next(iter))) {
-			if (job_ptr->pack_job_id != pack_job->pack_job_id) {
-				error("%s: Bad pack_job_list for %pJ",
+			if (job_ptr->het_job_id != pack_job->het_job_id) {
+				error("%s: Bad het_job_list for %pJ",
 				      __func__, job_ptr);
 				continue;
 			}
@@ -3386,9 +3386,9 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		ListIterator iter;
 		error_code = job_alloc_info(uid, job_info_msg->job_id,
 					    &job_ptr);
-		if (job_ptr && job_ptr->pack_job_list) {  /* Do full pack job */
+		if (job_ptr && job_ptr->het_job_list) {  /* Do full HetJob */
 			job_info_msg->step_id = NO_VAL;
-			iter = list_iterator_create(job_ptr->pack_job_list);
+			iter = list_iterator_create(job_ptr->het_job_list);
 			while ((job_pack_ptr = list_next(iter))) {
 				error_code = job_alloc_info_ptr(uid,
 							        job_pack_ptr);
@@ -3493,7 +3493,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	 */
 	memset(&sbcast_arg, 0, sizeof(sbcast_arg));
 	sbcast_arg.job_id = job_ptr->job_id;
-	sbcast_arg.pack_jobid = job_ptr->pack_job_id;
+	sbcast_arg.pack_jobid = job_ptr->het_job_id;
 	sbcast_arg.uid = job_ptr->user_id;
 	sbcast_arg.gid = job_ptr->group_id;
 	sbcast_arg.nodes = node_list; /* avoid extra copy */
@@ -4294,8 +4294,8 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 				hostset_insert(jobid_hostset, tmp_str);
 			else
 				jobid_hostset = hostset_create(tmp_str);
-			job_ptr->pack_job_id     = pack_job_id;
-			job_ptr->pack_job_offset = pack_job_offset++;
+			job_ptr->het_job_id     = pack_job_id;
+			job_ptr->het_job_offset = pack_job_offset++;
 			job_ptr->batch_flag      = 1;
 			list_append(submit_job_list, job_ptr);
 		}
@@ -4330,11 +4330,11 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	_create_pack_job_id_set(jobid_hostset, pack_job_offset,
 				&pack_job_id_set);
 	if (first_job_ptr)
-		first_job_ptr->pack_job_list = submit_job_list;
+		first_job_ptr->het_job_list = submit_job_list;
 
 	iter = list_iterator_create(submit_job_list);
 	while ((job_ptr = list_next(iter))) {
-		job_ptr->pack_job_id_set = xstrdup(pack_job_id_set);
+		job_ptr->het_job_id_set = xstrdup(pack_job_id_set);
 		if ((error_code == SLURM_SUCCESS) &&
 		    (slurmctld_conf.debug_flags & DEBUG_FLAG_HETERO_JOBS)) {
 			info("Submit %pJ", job_ptr);
@@ -4373,7 +4373,7 @@ send_msg:
 			(void) list_for_each(submit_job_list, _pack_job_cancel,
 					     NULL);
 			if (first_job_ptr)
-				first_job_ptr->pack_job_list = submit_job_list;
+				first_job_ptr->het_job_list = submit_job_list;
 			else
 				FREE_NULL_LIST(submit_job_list);
 		}

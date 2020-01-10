@@ -2066,10 +2066,10 @@ extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type)
 	mail_info_t *mi;
 
 	/*
-	 * Send mail only for first component of a pack job,
-	 * not the individual job records
+	 * Send mail only for first component (leader) of a hetjob,
+	 * not the individual job components.
 	 */
-	if (job_ptr->pack_job_id && (job_ptr->pack_job_offset != 0))
+	if (job_ptr->het_job_id && (job_ptr->het_job_offset != 0))
 		return;
 
 	mi = _mail_alloc();

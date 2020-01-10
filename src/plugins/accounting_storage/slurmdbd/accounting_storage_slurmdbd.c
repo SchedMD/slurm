@@ -188,9 +188,9 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->job_id        = job_ptr->job_id;
 	req->array_job_id  = job_ptr->array_job_id;
 	req->array_task_id = job_ptr->array_task_id;
-	if (job_ptr->pack_job_id) {
-		req->het_job_id     = job_ptr->pack_job_id;
-		req->het_job_offset = job_ptr->pack_job_offset;
+	if (job_ptr->het_job_id) {
+		req->het_job_id     = job_ptr->het_job_id;
+		req->het_job_offset = job_ptr->het_job_offset;
 	} else {
 		//req->het_job_id   = 0;
 		req->het_job_offset = NO_VAL;

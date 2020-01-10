@@ -215,8 +215,8 @@ static struct jobcomp_info *_jobcomp_info_create(job_record_t *job)
 		j->qos = NULL;
 	j->array_job_id = job->array_job_id;
 	j->array_task_id = job->array_task_id;
-	j->het_job_id = job->pack_job_id;
-	j->het_job_offset = job->pack_job_offset;
+	j->het_job_id = job->het_job_id;
+	j->het_job_offset = job->het_job_offset;
 
 	if (IS_JOB_RESIZING(job)) {
 		state = JOB_RESIZING;

@@ -728,6 +728,11 @@ struct job_record {
 					 * to be passed to slurmdbd */
 	uint32_t group_id;		/* group submitted under */
 	het_job_details_t *het_details;	/* HetJob details */
+	uint32_t het_job_id;		/* job ID of HetJob leader */
+	char *het_job_id_set;		/* job IDs for all components */
+	uint32_t het_job_offset;	/* HetJob component index */
+	List het_job_list;		/* List of job pointers to all
+					 * components */
 	uint32_t job_id;		/* job ID */
 	job_record_t *job_next;		/* next entry with same hash index */
 	job_record_t *job_array_next_j;	/* job array linked list by job_id */
@@ -774,11 +779,6 @@ struct job_record {
 	char *origin_cluster;		/* cluster name that the job was
 					 * submitted from */
 	uint16_t other_port;		/* port for client communications */
-	uint32_t pack_job_id;		/* lead job ID of pack job leader */
-	char *pack_job_id_set;		/* job IDs for all components */
-	uint32_t pack_job_offset;	/* pack job index */
-	List pack_job_list;		/* List of job pointers to all
-					 * components */
 	char *partition;		/* name of job partition(s) */
 	List part_ptr_list;		/* list of pointers to partition recs */
 	bool part_nodes_missing;	/* set if job's nodes removed from this

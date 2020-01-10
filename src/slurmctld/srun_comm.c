@@ -78,23 +78,23 @@ static bool _pending_pack_jobs(job_record_t *job_ptr)
 	ListIterator iter;
 	bool pending_job = false;
 
-	if (job_ptr->pack_job_id == 0)
+	if (job_ptr->het_job_id == 0)
 		return false;
 
-	pack_leader = find_job_record(job_ptr->pack_job_id);
+	pack_leader = find_job_record(job_ptr->het_job_id);
 	if (!pack_leader) {
 		error("Job pack leader %pJ not found", job_ptr);
 		return false;
 	}
-	if (!pack_leader->pack_job_list) {
+	if (!pack_leader->het_job_list) {
 		error("Job pack leader %pJ lacks pack_job_list",
 		      job_ptr);
 		return false;
 	}
 
-	iter = list_iterator_create(pack_leader->pack_job_list);
+	iter = list_iterator_create(pack_leader->het_job_list);
 	while ((pack_job = list_next(iter))) {
-		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
+		if (pack_leader->het_job_id != pack_job->het_job_id) {
 			error("%s: Bad pack_job_list for %pJ",
 			      __func__, pack_leader);
 			continue;
@@ -137,7 +137,7 @@ extern void srun_allocate(job_record_t *job_ptr)
 	    !job_ptr->job_resrcs->cpu_array_cnt)
 		return;
 
-	if (job_ptr->pack_job_id == 0) {
+	if (job_ptr->het_job_id == 0) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->alloc_resp_port,
 			job_ptr->resp_host);
@@ -148,14 +148,14 @@ extern void srun_allocate(job_record_t *job_ptr)
 				   job_ptr->start_protocol_ver);
 	} else if (_pending_pack_jobs(job_ptr)) {
 		return;
-	} else if ((pack_leader = find_job_record(job_ptr->pack_job_id))) {
+	} else if ((pack_leader = find_job_record(job_ptr->het_job_id))) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, pack_leader->alloc_resp_port,
 			       pack_leader->resp_host);
 		job_resp_list = list_create(_free_srun_alloc);
-		iter = list_iterator_create(pack_leader->pack_job_list);
+		iter = list_iterator_create(pack_leader->het_job_list);
 		while ((pack_job = list_next(iter))) {
-			if (pack_leader->pack_job_id != pack_job->pack_job_id) {
+			if (pack_leader->het_job_id != pack_job->het_job_id) {
 				error("%s: Bad pack_job_list for %pJ",
 				      __func__, pack_leader);
 				continue;

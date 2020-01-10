@@ -519,7 +519,7 @@ no_rollup_change:
 			   "'%s', %u, %u, %u, %u, %u, %"PRIu64", %u, %u",
 			   job_ptr->job_id,
 			   job_ptr->array_job_id, array_task_id,
-			   job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			   job_ptr->het_job_id, job_ptr->het_job_offset,
 			   job_ptr->assoc_id, job_ptr->qos_id,
 			   job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
@@ -590,7 +590,7 @@ no_rollup_change:
 			   job_ptr->total_nodes,
 			   job_ptr->details->pn_min_memory,
 			   job_ptr->array_job_id, array_task_id,
-			   job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			   job_ptr->het_job_id, job_ptr->het_job_offset,
 			   job_ptr->db_flags,
 			   job_ptr->state_reason_prev_db);
 
@@ -718,7 +718,7 @@ no_rollup_change:
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   job_ptr->details->pn_min_memory,
 			   job_ptr->array_job_id, array_task_id,
-			   job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			   job_ptr->het_job_id, job_ptr->het_job_offset,
 			   job_ptr->db_flags, job_ptr->state_reason_prev_db,
 			   begin_time, job_ptr->db_index);
 

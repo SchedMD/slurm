@@ -142,7 +142,7 @@ static void _add_usage_node_bitmap(job_record_t *job_ptr,
 	xassert(grp_used_tres);
 
 	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
-		if (IS_JOB_PENDING(job_ptr) && job_ptr->pack_job_id) {
+		if (IS_JOB_PENDING(job_ptr) && job_ptr->het_job_id) {
 			/*
 			 * Hetjobs reach here as part of testing before any
 			 * resource allocation. See _pack_job_limit_check()
@@ -194,7 +194,7 @@ static void _rm_usage_node_bitmap(job_record_t *job_ptr,
 	xassert(grp_used_tres);
 
 	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
-		if (IS_JOB_PENDING(job_ptr) && job_ptr->pack_job_id) {
+		if (IS_JOB_PENDING(job_ptr) && job_ptr->het_job_id) {
 			/*
 			 * Hetjobs reach here as part of testing before any
 			 * resource allocation. See _pack_job_limit_check()

@@ -659,11 +659,11 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 			   (unsigned long) job_ptr->array_task_id);
 	}
 
-	if (job_ptr->pack_job_id != NO_VAL) {
+	if (job_ptr->het_job_id != NO_VAL) {
 		xstrfmtcat(json_str, ",\"pack_job_id\":%lu",
-			   (unsigned long) job_ptr->pack_job_id);
+			   (unsigned long) job_ptr->het_job_id);
 		xstrfmtcat(json_str, ",\"pack_job_offset\":%lu",
-			   (unsigned long) job_ptr->pack_job_offset);
+			   (unsigned long) job_ptr->het_job_offset);
 	}
 
 	if (job_ptr->details && job_ptr->details->submit_time) {

@@ -2547,10 +2547,10 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
 					    step_specs->step_id);
 		job_ptr->next_step_id++;
-	} else if (job_ptr->pack_job_id &&
-		   (job_ptr->pack_job_id != job_ptr->job_id)) {
+	} else if (job_ptr->het_job_id &&
+		   (job_ptr->het_job_id != job_ptr->job_id)) {
 		job_record_t *pack_job;
-		pack_job = find_job_record(job_ptr->pack_job_id);
+		pack_job = find_job_record(job_ptr->het_job_id);
 		if (pack_job)
 			step_ptr->step_id = pack_job->next_step_id++;
 		else
@@ -4129,7 +4129,7 @@ static void _signal_step_timelimit(job_record_t *job_ptr, step_record_t *step_pt
 	agent_args->hostlist = hostlist_create(NULL);
 	kill_step = xmalloc(sizeof(kill_job_msg_t));
 	kill_step->job_id    = job_ptr->job_id;
-	kill_step->pack_jobid = job_ptr->pack_job_id;
+	kill_step->pack_jobid = job_ptr->het_job_id;
 	kill_step->step_id   = step_ptr->step_id;
 	kill_step->job_state = job_ptr->job_state;
 	kill_step->job_uid   = job_ptr->user_id;
@@ -4505,10 +4505,10 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
 
-	if (job_ptr_in->pack_job_id) {
-		job_ptr = find_job_record(job_ptr_in->pack_job_id);
+	if (job_ptr_in->het_job_id) {
+		job_ptr = find_job_record(job_ptr_in->het_job_id);
 		if (!job_ptr) {
-			error("%s: hetjob master is corrupt! This should never happen",
+			error("%s: hetjob leader is corrupt! This should never happen",
 			      __func__);
 			job_ptr = job_ptr_in;
 		}
