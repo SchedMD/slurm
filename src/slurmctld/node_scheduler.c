@@ -3263,7 +3263,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	prolog_msg_ptr->job_gres_info =
 		 gres_plugin_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
 	prolog_msg_ptr->job_id = job_ptr->job_id;
-	prolog_msg_ptr->pack_job_id = job_ptr->pack_job_id;
+	prolog_msg_ptr->het_job_id = job_ptr->pack_job_id;
 	prolog_msg_ptr->uid = job_ptr->user_id;
 	prolog_msg_ptr->gid = job_ptr->group_id;
 	if (!job_ptr->user_name)

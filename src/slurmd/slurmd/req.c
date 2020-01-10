@@ -2090,7 +2090,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->ntasks		= req->nnodes;
 	launch_req->ofname		= "/dev/null";
 
-	launch_req->pack_jobid		= req->pack_job_id;
+	launch_req->pack_jobid		= req->het_job_id;
 	launch_req->pack_nnodes		= NO_VAL;
 
 	launch_req->partition		= req->partition;
@@ -2251,7 +2251,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.jobid = req->job_id;
 		job_env.step_id = 0;	/* not available */
 		job_env.node_list = req->nodes;
-		job_env.pack_jobid = req->pack_job_id;
+		job_env.pack_jobid = req->het_job_id;
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
@@ -2259,8 +2259,8 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.user_name = req->user_name;
 
 #ifdef HAVE_NATIVE_CRAY
-		if (req->pack_job_id && (req->pack_job_id != NO_VAL))
-			jobid = req->pack_job_id;
+		if (req->het_job_id && (req->het_job_id != NO_VAL))
+			jobid = req->het_job_id;
 		else
 			jobid = req->job_id;
 #else
