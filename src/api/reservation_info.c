@@ -162,10 +162,9 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	/****** Line ******/
 	if (resv_ptr->max_start_delay)
 		secs2time_str(resv_ptr->max_start_delay, tmp3, sizeof(tmp3));
-	else
-		snprintf(tmp3, sizeof(tmp3), "N/A");
 
-	xstrfmtcat(out, "MaxStartDelay=%s", tmp3);
+	xstrfmtcat(out, "MaxStartDelay=%s",
+		   resv_ptr->max_start_delay ? tmp3 : NULL);
 
 	if (one_liner)
 		xstrcat(out, "\n");
