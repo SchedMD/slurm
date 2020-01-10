@@ -48,20 +48,21 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
+
 if { $job_id1 == 0 } {
-	send_user "\nFAILURE: sbatch did not submit job\n"
+	log_error "sbatch did not submit job"
 	exit 1
 }
 
 if {[wait_for_job $job_id1 "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id1 to start\n"
+	log_error "error waiting for job $job_id1 to start"
 	cancel_job $job_id1
 	set exit_code 1
 }
@@ -74,20 +75,21 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
+
 if { $job_id2 == 0 } {
-	send_user "\nFAILURE: sbatch did not submit job\n"
+	log_error "sbatch did not submit job"
 	exit 1
 }
 
 if {[wait_for_job $job_id1 "DONE"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id1 to complete\n"
+	log_error "error waiting for job $job_id1 to complete"
 	cancel_job $job_id1
 	set exit_code 1
 }
@@ -101,51 +103,68 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
+
 if { $match != 1 } {
-	send_user "\nFAILURE: Job $job_id1 did not exit with exit code 0\n"
-	send_user "\nFAILURE: Could be due to small configured MinJobAge value\n"
+	log_error "Job $job_id1 did not exit with exit code 0, which could be due to a small configured MinJobAge value\n"
 	set exit_code 1
 }
-
-# Wait for job 2 reason to populate
-sleep 10
 
 # Check that the job with dependency is in the correct state and has correct
 # reason
 set match 0
-spawn $squeue --job=$job_id2 -o"%t|%r" --noheader
-expect {
-	-re "PD|DependencyNeverSatisfied" {
-		incr match 1
-		exp_continue
+if {[test_scheduler_params "kill_invalid_depend"]} {
+	spawn $scontrol show job $job_id2
+	expect {
+		-re "JobState=CANCELLED Reason=Dependency Dependency=afternotok:${job_id1}" {
+			incr match 1
+		}
+		timeout {
+			log_error "scontrol is not responding"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+		if { $match != 1 } {
+			log_error "Job $job_id2 should be in cancelled state and should have Reason=DependencyNeverSatisfied"
+			set exit_code 1
+		}
 	}
-	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
+} else {
+	# Wait for job 2 reason to populate
+	sleep 10
+	spawn $squeue --job=$job_id2 -o"%t|%r" --noheader
+	expect {
+		-re "PD|DependencyNeverSatisfied" {
+			incr match 1
+		}
+		timeout {
+			log_error "squeue is not responding"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if { $match != 1 } {
+		log_error "Job $job_id2 should be in pending state and should have Reason=DependencyNeverSatisfied, which could be due to a small configured MinJobAge value"
 		set exit_code 1
 	}
-	eof {
-		wait
+	if {[cancel_job $job_id2] != 0} {
+		set exit_code 1
 	}
-}
-if { $match != 2 } {
-	send_user "\nFAILURE: Job $job_id2 should be in pending state and "
-	send_user "should have DependencyNeverSatisfied for a reason\n"
-	send_user "\nFAILURE: Could be due to small configured MinJobAge value\n"
-	set exit_code 1
-}
-if {[cancel_job $job_id2] != 0} {
-	set exit_code 1
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $script
-	send_user "\nSUCCESS\n"
+	print_success $test_id
 }
+
 exit $exit_code
