@@ -7138,7 +7138,7 @@ _pack_step_alloc_info_msg(step_alloc_info_msg_t * job_desc_ptr, Buf buffer,
 	/* load the data values */
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job_desc_ptr->job_id, buffer);
-		pack32(job_desc_ptr->pack_job_offset, buffer);
+		pack32(job_desc_ptr->het_job_offset, buffer);
 		pack32(job_desc_ptr->step_id, buffer);
 	}
 }
@@ -7158,7 +7158,7 @@ _unpack_step_alloc_info_msg(step_alloc_info_msg_t **
 	/* load the data values */
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job_desc_ptr->job_id, buffer);
-		safe_unpack32(&job_desc_ptr->pack_job_offset, buffer);
+		safe_unpack32(&job_desc_ptr->het_job_offset, buffer);
 		safe_unpack32(&job_desc_ptr->step_id, buffer);
 	} else {
 		goto unpack_error;

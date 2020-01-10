@@ -2225,7 +2225,7 @@ typedef struct update_layout_msg {
 
 typedef struct step_alloc_info_msg {
 	uint32_t job_id;		/* job ID (or pack job ID) */
-	uint32_t pack_job_offset;	/* pack job index (or NO_VAL) */
+	uint32_t het_job_offset;	/* HetJob component index (or NO_VAL) */
 	uint32_t step_id;		/* step ID (or NO_VAL for whole job) */
 } step_alloc_info_msg_t;
 

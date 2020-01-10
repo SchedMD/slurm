@@ -3381,7 +3381,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 
 	/* do RPC call */
 	lock_slurmctld(job_read_lock);
-	if (job_info_msg->pack_job_offset == NO_VAL) {
+	if (job_info_msg->het_job_offset == NO_VAL) {
 		bitstr_t *node_bitmap = NULL;
 		ListIterator iter;
 		error_code = job_alloc_info(uid, job_info_msg->job_id,
@@ -3420,7 +3420,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		}
 	} else {
 		job_ptr = find_job_pack_record(job_info_msg->job_id,
-					       job_info_msg->pack_job_offset);
+					       job_info_msg->het_job_offset);
 		if (job_ptr) {
 			job_info_msg->job_id = job_ptr->job_id;
 			error_code = job_alloc_info(uid, job_info_msg->job_id,
