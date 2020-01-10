@@ -1276,10 +1276,10 @@ static bool _hetjob_any_resv(job_record_t *het_leader)
 	return any_resv;
 }
 
-static int _set_hetjob_pack_details(void *x, void *arg)
+static int _foreach_het_job_details(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
-	job_ptr->pack_details = (pack_details_t *)arg;
+	job_ptr->het_details = (het_job_details_t *)arg;
 
 	return SLURM_SUCCESS;
 }
@@ -1287,25 +1287,26 @@ static int _set_hetjob_pack_details(void *x, void *arg)
 static int _set_hetjob_details(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
-	pack_details_t *details = NULL;
+	het_job_details_t *details = NULL;
 
 	if (IS_JOB_PENDING(job_ptr) && job_ptr->pack_job_id &&
 	    !job_ptr->pack_job_offset && job_ptr->pack_job_list) {
 		/*
 		 * Pending hetjob leader component. Do calculations only once
-		 * for whole hetjob. xmalloc memory for 1 pack_details struct,
+		 * for whole hetjob. xmalloc memory for 1 het_details struct,
 		 * but make the pointer accessible in all hetjob components.
 		 */
-		if (!job_ptr->pack_details)
-			job_ptr->pack_details = xmalloc(sizeof(pack_details_t));
+		if (!job_ptr->het_details)
+			job_ptr->het_details =
+				xmalloc(sizeof(het_job_details_t));
 
-		details = job_ptr->pack_details;
+		details = job_ptr->het_details;
 		details->any_resv = _hetjob_any_resv(job_ptr);
 		details->priority_tier = _hetjob_calc_prio_tier(job_ptr);
 		details->priority = _hetjob_calc_prio(job_ptr);
 
 		list_for_each(job_ptr->pack_job_list,
-			      _set_hetjob_pack_details, details);
+			      _foreach_het_job_details, details);
 	}
 
 	return SLURM_SUCCESS;

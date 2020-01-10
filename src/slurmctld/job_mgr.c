@@ -9310,12 +9310,12 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->origin_cluster);
-	if (job_ptr->pack_details && job_ptr->pack_job_id) {
+	if (job_ptr->het_details && job_ptr->pack_job_id) {
 		/* xfree struct if hetjob leader and NULL ptr otherwise. */
 		if (job_ptr->pack_job_offset == 0)
-			xfree(job_ptr->pack_details);
+			xfree(job_ptr->het_details);
 		else
-			job_ptr->pack_details = NULL;
+			job_ptr->het_details = NULL;
 	}
 	xfree(job_ptr->pack_job_id_set);
 	FREE_NULL_LIST(job_ptr->pack_job_list);
