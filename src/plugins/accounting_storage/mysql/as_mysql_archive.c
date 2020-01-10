@@ -4486,6 +4486,7 @@ unpack_error:
 	}
 
 cleanup:
+	xfree(cluster_name);
 	FREE_NULL_BUFFER(buffer);
 
 	if (error_code)
