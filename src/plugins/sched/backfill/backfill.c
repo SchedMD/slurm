@@ -151,7 +151,7 @@ typedef struct het_job_map {
 } het_job_map_t;
 
 typedef struct deadlock_job_struct {
-	uint32_t pack_job_id;
+	uint32_t het_job_id;
 	time_t start_time;
 } deadlock_job_struct_t;
 
@@ -3627,7 +3627,7 @@ static int _deadlock_part_list_srch(void *x, void *key)
 {
 	deadlock_job_struct_t *dl_job = (deadlock_job_struct_t *) x;
 	job_record_t *job_ptr = (job_record_t *) key;
-	if (dl_job->pack_job_id == job_ptr->pack_job_id)
+	if (dl_job->het_job_id == job_ptr->pack_job_id)
 		return 1;
 	return 0;
 }
@@ -3636,7 +3636,7 @@ static int _deadlock_part_list_srch2(void *x, void *key)
 {
 	deadlock_job_struct_t *dl_job = (deadlock_job_struct_t *) x;
 	deadlock_job_struct_t *dl_job2 = (deadlock_job_struct_t *) key;
-	if (dl_job->pack_job_id == dl_job2->pack_job_id)
+	if (dl_job->het_job_id == dl_job2->het_job_id)
 		return 1;
 	return 0;
 }
@@ -3711,7 +3711,7 @@ static bool _job_pack_deadlock_test(job_record_t *job_ptr)
 	}
 	if (!dl_job_ptr) {
 		dl_job_ptr = xmalloc(sizeof(deadlock_job_struct_t));
-		dl_job_ptr->pack_job_id = job_ptr->pack_job_id;
+		dl_job_ptr->het_job_id = job_ptr->pack_job_id;
 		dl_job_ptr->start_time = job_ptr->start_time;
 		list_append(dl_part_ptr->deadlock_job_list, dl_job_ptr);
 	} else if (dl_job_ptr->start_time < job_ptr->start_time) {
@@ -3733,7 +3733,7 @@ static bool _job_pack_deadlock_test(job_record_t *job_ptr)
 			while ((dl_job_ptr2 = (deadlock_job_struct_t *)
 					      list_next(job_iter))) {
 				info("   PackJob %u to start at %"PRIu64,
-				     dl_job_ptr2->pack_job_id,
+				     dl_job_ptr2->het_job_id,
 				     (uint64_t) dl_job_ptr2->start_time);
 			}
 			list_iterator_destroy(job_iter);
@@ -3758,7 +3758,7 @@ static bool _job_pack_deadlock_test(job_record_t *job_ptr)
 		job_iter = list_iterator_create(dl_part_ptr->deadlock_job_list);
 		while ((dl_job_ptr2 = (deadlock_job_struct_t *)
 				      list_next(job_iter))) {
-			if (dl_job_ptr2->pack_job_id == dl_job_ptr->pack_job_id)
+			if (dl_job_ptr2->het_job_id == dl_job_ptr->het_job_id)
 				break;	/* Self */
 			dl_job_ptr3 = list_find_first(
 						dl_part_ptr2->deadlock_job_list,
@@ -3775,9 +3775,9 @@ static bool _job_pack_deadlock_test(job_record_t *job_ptr)
 		if (have_deadlock && (debug_flags & DEBUG_FLAG_BACKFILL)) {
 			info("Pack job %u in partition %s would deadlock "
 			     "with pack job %u in partition %s, skipping it",
-			     dl_job_ptr->pack_job_id,
+			     dl_job_ptr->het_job_id,
 			     dl_part_ptr->part_ptr->name,
-			     dl_job_ptr3->pack_job_id,
+			     dl_job_ptr3->het_job_id,
 			     dl_part_ptr2->part_ptr->name);
 		}
 		if (have_deadlock)
