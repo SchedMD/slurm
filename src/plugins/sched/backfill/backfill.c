@@ -132,22 +132,22 @@ typedef struct node_space_map {
 } node_space_map_t;
 
 /*
- * Pack job scheduling structures
- * NOTE: An individial pack job component can be submitted to multiple
+ * HetJob scheduling structures
+ * NOTE: An individial hetjob component can be submitted to multiple
  *       partitions and have different start times in each
  */
-typedef struct pack_job_rec {
+typedef struct het_job_rec {
 	uint32_t job_id;
 	job_record_t *job_ptr;
 	time_t latest_start;		/* Time when expected to start */
 	part_record_t *part_ptr;
-} pack_job_rec_t;
+} het_job_rec_t;
 
 typedef struct pack_job_map {
 	uint32_t comp_time_limit;	/* Time limit for pack job */
 	time_t prev_start;		/* Expected start time from last test */
 	uint32_t pack_job_id;
-	List pack_job_list;		/* List of pack_job_rec_t */
+	List pack_job_list;		/* List of het_job_rec_t */
 } pack_job_map_t;
 
 typedef struct deadlock_job_struct {
@@ -3057,11 +3057,11 @@ static int _pack_find_map(void *x, void *key)
 }
 
 /*
- * Return 1 if a pack_job_rec_t record with a specific job_id is found.
+ * Return 1 if a het_job_rec_t record with a specific job_id is found.
  */
 static int _pack_find_rec(void *x, void *key)
 {
-	pack_job_rec_t *rec = (pack_job_rec_t *) x;
+	het_job_rec_t *rec = (het_job_rec_t *) x;
 	uint32_t *job_id = (uint32_t *) key;
 
 	if (rec->job_id == *job_id)
@@ -3101,11 +3101,11 @@ static void _pack_start_clear(void)
 static time_t _pack_start_compute(pack_job_map_t *map, uint32_t exclude_job_id)
 {
 	ListIterator iter;
-	pack_job_rec_t *rec;
+	het_job_rec_t *rec;
 	time_t latest_start = map->prev_start;
 
 	iter = list_iterator_create(map->pack_job_list);
-	while ((rec = (pack_job_rec_t *) list_next(iter))) {
+	while ((rec = (het_job_rec_t *) list_next(iter))) {
 		if (rec->job_id == exclude_job_id)
 			continue;
 		latest_start = MAX(latest_start, rec->latest_start);
@@ -3172,7 +3172,7 @@ static void _pack_start_set(job_record_t *job_ptr, time_t latest_start,
 			    uint32_t comp_time_limit)
 {
 	pack_job_map_t *map;
-	pack_job_rec_t *rec;
+	het_job_rec_t *rec;
 
 	if (comp_time_limit == NO_VAL)
 		comp_time_limit = job_ptr->time_limit;
@@ -3199,7 +3199,7 @@ static void _pack_start_set(job_record_t *job_ptr, time_t latest_start,
 				rec->latest_start = latest_start;
 				rec->part_ptr = job_ptr->part_ptr;
 			} else {
-				rec = xmalloc(sizeof(pack_job_rec_t));
+				rec = xmalloc(sizeof(het_job_rec_t));
 				rec->job_id = job_ptr->job_id;
 				rec->job_ptr = job_ptr;
 				rec->latest_start = latest_start;
@@ -3207,7 +3207,7 @@ static void _pack_start_set(job_record_t *job_ptr, time_t latest_start,
 				list_append(map->pack_job_list, rec);
 			}
 		} else {
-			rec = xmalloc(sizeof(pack_job_rec_t));
+			rec = xmalloc(sizeof(het_job_rec_t));
 			rec->job_id = job_ptr->job_id;
 			rec->job_ptr = job_ptr;
 			rec->latest_start = latest_start;
@@ -3284,7 +3284,7 @@ static bool _pack_job_full(pack_job_map_t *map)
 static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 {
 	job_record_t *job_ptr;
-	pack_job_rec_t *rec;
+	het_job_rec_t *rec;
 	ListIterator iter;
 	int begun_jobs = 0, fini_jobs = 0, slurmctld_tres_size;
 	bool runnable = true;
@@ -3296,7 +3296,7 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 				  list_count(map->pack_job_list));
 	slurmctld_tres_size = sizeof(uint64_t) * slurmctld_tres_cnt;
 	iter = list_iterator_create(map->pack_job_list);
-	while ((rec = (pack_job_rec_t *) list_next(iter))) {
+	while ((rec = (het_job_rec_t *) list_next(iter))) {
 		assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 			READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
@@ -3343,7 +3343,7 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 	}
 
 	list_iterator_reset(iter);
-	while ((rec = (pack_job_rec_t *) list_next(iter))) {
+	while ((rec = (het_job_rec_t *) list_next(iter))) {
 		job_ptr = rec->job_ptr;
 		if (begun_jobs > fini_jobs) {
 			time_t end_time_exp = job_ptr->end_time_exp;
@@ -3375,7 +3375,7 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 	job_record_t *job_ptr;
 	bitstr_t *avail_bitmap = NULL, *exc_core_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL, *used_bitmap = NULL;
-	pack_job_rec_t *rec;
+	het_job_rec_t *rec;
 	ListIterator iter;
 	int mcs_select, rc = SLURM_SUCCESS;
 	bool resv_overlap = false;
@@ -3383,7 +3383,7 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 	uint32_t hard_limit;
 
 	iter = list_iterator_create(map->pack_job_list);
-	while ((rec = (pack_job_rec_t *) list_next(iter))) {
+	while ((rec = (het_job_rec_t *) list_next(iter))) {
 		bool reset_time = false;
 		job_ptr = rec->job_ptr;
 		job_ptr->part_ptr = rec->part_ptr;
@@ -3479,7 +3479,7 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 static void _pack_kill_now(pack_job_map_t *map)
 {
 	job_record_t *job_ptr;
-	pack_job_rec_t *rec;
+	het_job_rec_t *rec;
 	ListIterator iter;
 	time_t now = time(NULL);
 	int cred_lifetime = 1200;
@@ -3489,7 +3489,7 @@ static void _pack_kill_now(pack_job_map_t *map)
 				  SLURM_CRED_OPT_EXPIRY_WINDOW,
 				  &cred_lifetime);
 	iter = list_iterator_create(map->pack_job_list);
-	while ((rec = (pack_job_rec_t *) list_next(iter))) {
+	while ((rec = (het_job_rec_t *) list_next(iter))) {
 		job_ptr = rec->job_ptr;
 		if (IS_JOB_PENDING(job_ptr))
 			continue;
