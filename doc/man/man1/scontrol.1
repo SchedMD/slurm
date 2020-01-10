@@ -1204,6 +1204,28 @@ Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
+\fINodeAddr\fP=<node address>
+Name that a node should be referred to in establishing a communications path.
+This name will be used as an argument to the gethostbyname() function for
+identification. If a node range expression is used to designate multiple nodes,
+they must exactly match the entries in the \fINodeName\fP
+(e.g. "NodeName=lx[0\-7] NodeAddr=elx[0\-7]"). \fINodeAddr\fP may also contain
+IP addresses.
+
+.TP
+\fINodeHostname\fP=<node hostname>
+Typically this would be the string that "/bin/hostname \-s" returns.
+It may also be the fully qualified domain name as returned by
+"/bin/hostname \-f" (e.g. "foo1.bar.com"), or any valid domain name associated
+with the host through the host database (/etc/hosts) or DNS, depending on the
+resolver settings. Note that if the short form of the hostname is not used, it
+may prevent use of hostlist expressions (the numeric portion in brackets must be
+at the end of the string). A node range expression can be used to specify a set
+of nodes. If an expression is used, the number of nodes identified by
+\fINodeHostname\fP must be identical to the number of nodes identified by
+\fINodeName\fP.
+
+.TP
 \fIReason\fP=<reason>
 Identify the reason the node is in a "DOWN", "DRAINED", "DRAINING",
 "FAILING" or "FAIL" state.
