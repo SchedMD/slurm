@@ -80,8 +80,8 @@ typedef struct {
 	int step_id;
 	int array_job_id;
 	int array_task_id;
-	int pack_job_id;
-	int pack_job_offset;
+	int het_job_id;
+	int het_job_offset;
 } jobs_foreach_t;
 
 typedef struct {
@@ -4520,8 +4520,8 @@ static void selected_foreach_build_list(GtkTreeModel  *model,
 	fe_ptr->state = state;
 	fe_ptr->array_job_id = array_job_id;
 	fe_ptr->array_task_id = array_task_id;
-	fe_ptr->pack_job_id = pack_job_id;
-	fe_ptr->pack_job_offset = pack_job_offset;
+	fe_ptr->het_job_id = pack_job_id;
+	fe_ptr->het_job_offset = pack_job_offset;
 
 	list_append(foreach_list, fe_ptr); /* stuff target away*/
 
