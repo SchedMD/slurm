@@ -2894,24 +2894,82 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			char *cluster_name, uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
+	int safe_attributes[] = {
+		JOB_REQ_ARRAY_MAX,
+		JOB_REQ_ARRAY_TASK_PENDING,
+		JOB_REQ_ALLOC_NODES,
+		JOB_REQ_ASSOCID,
+		JOB_REQ_ARRAYJOBID,
+		JOB_REQ_ARRAYTASKID,
+		JOB_REQ_DELETED,
+		JOB_REQ_DERIVED_EC,
+		JOB_REQ_EXIT_CODE,
+		JOB_REQ_FLAGS,
+		JOB_REQ_TIMELIMIT,
+		JOB_REQ_ELIGIBLE,
+		JOB_REQ_END,
+		JOB_REQ_GID,
+		JOB_REQ_GRES_ALLOC,
+		JOB_REQ_GRES_REQ,
+		JOB_REQ_GRES_USED,
+		JOB_REQ_DB_INX,
+		JOB_REQ_JOBID,
+		JOB_REQ_KILL_REQUID,
+		JOB_REQ_MOD_TIME,
+		JOB_REQ_NAME,
+		JOB_REQ_PACK_JOB_ID,
+		JOB_REQ_PACK_JOB_OFFSET,
+		JOB_REQ_PARTITION,
+		JOB_REQ_PRIORITY,
+		JOB_REQ_QOS,
+		JOB_REQ_REQ_CPUS,
+		JOB_REQ_REQ_MEM,
+		JOB_REQ_RESVID,
+		JOB_REQ_START,
+		JOB_REQ_STATE,
+		JOB_REQ_STATE_REASON,
+		JOB_REQ_SUBMIT,
+		JOB_REQ_SUSPENDED,
+		JOB_REQ_TRACKSTEPS,
+		JOB_REQ_UID,
+		JOB_REQ_WCKEY,
+		JOB_REQ_WCKEYID,
+		JOB_REQ_WORK_DIR,
+		JOB_REQ_TRESA,
+		JOB_REQ_TRESR,
+		JOB_REQ_COUNT };
+
+	/* Sync w/ job_table_fields where text/tinytext can be NULL */
+	int null_attributes[] = {
+		JOB_REQ_ACCOUNT,
+		JOB_REQ_ADMIN_COMMENT,
+		JOB_REQ_ARRAY_TASK_STR,
+		JOB_REQ_BLOCKID,
+		JOB_REQ_CONSTRAINTS,
+		JOB_REQ_DERIVED_ES,
+		JOB_REQ_MCS_LABEL,
+		JOB_REQ_NODELIST,
+		JOB_REQ_NODE_INX,
+		JOB_REQ_SYSTEM_COMMENT,
+		JOB_REQ_COUNT };
+
 	local_job_t object;
 	int i = 0;
 
 	xstrfmtcat(insert, "insert into \"%s_%s\" (%s",
-		   cluster_name, job_table, job_req_inx[0]);
-	xstrcat(format, "('%s'");
-	for(i=1; i<JOB_REQ_COUNT; i++) {
-		xstrfmtcat(insert, ", %s", job_req_inx[i]);
-		xstrcat(format, ", '%s'");
-	}
+		   cluster_name, job_table,job_req_inx[safe_attributes[0]]);
+	for (i = 1; safe_attributes[i] < JOB_REQ_COUNT; i++)
+		xstrfmtcat(insert, ", %s", job_req_inx[safe_attributes[i]]);
+	/* Some attributes that might be NULL require special handling */
+	for (i = 0; null_attributes[i] < JOB_REQ_COUNT; i++)
+		xstrfmtcat(insert, ", %s", job_req_inx[null_attributes[i]]);
 	xstrcat(insert, ") values ");
-	xstrcat(format, ")");
-	for(i = 0; i < rec_cnt; i++) {
+
+	for (i = 0; i < rec_cnt; i++) {
 
 		if (_unpack_local_job(&object, rpc_version, buffer)
 		    != SLURM_SUCCESS) {
 			error("issue unpacking");
-			xfree(format);
 			xfree(insert);
 			break;
 		}
@@ -2919,21 +2977,64 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 		if (i)
 			xstrcat(insert, ", ");
 
+		xstrcat(format, "('%s'");
+		for(int j = 1; safe_attributes[j] < JOB_REQ_COUNT; j++) {
+			xstrcat(format, ", '%s'");
+		}
+
+		/* special handling for NULL attributes */
+		if (object.account == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		if (object.admin_comment == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		if (object.array_task_str == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		if (object.blockid == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		if (object.constraints == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		if (object.derived_es == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		if (object.mcs_label == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		if (object.nodelist == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		if (object.node_inx == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		if (object.system_comment == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+
+		xstrcat(format, ")");
+
 		xstrfmtcat(insert, format,
-			   object.account,
-			   object.admin_comment,
 			   object.array_max_tasks,
 			   object.array_task_pending,
-			   object.array_task_str,
 			   object.alloc_nodes,
 			   object.associd,
 			   object.array_jobid,
 			   object.array_taskid,
-			   object.blockid,
-			   object.constraints,
 			   object.deleted,
 			   object.derived_ec,
-			   object.derived_es,
 			   object.exit_code,
 			   object.flags,
 			   object.timelimit,
@@ -2946,11 +3047,8 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.job_db_inx,
 			   object.jobid,
 			   object.kill_requid,
-			   object.mcs_label,
 			   object.mod_time,
 			   object.name,
-			   object.nodelist,
-			   object.node_inx,
 			   object.pack_job_id,
 			   object.pack_job_offset,
 			   object.partition,
@@ -2962,7 +3060,6 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.start,
 			   object.state,
 			   object.state_reason_prev,
-			   object.system_comment,
 			   object.submit,
 			   object.suspended,
 			   object.track_steps,
@@ -2971,13 +3068,33 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.wckey_id,
 			   object.work_dir,
 			   object.tres_alloc_str,
-			   object.tres_req_str);
+			   object.tres_req_str,
+			   (object.account == NULL) ?
+				"NULL" : object.account,
+			   (object.admin_comment == NULL) ?
+				"NULL" : object.admin_comment,
+			   (object.array_task_str == NULL) ?
+				"NULL" : object.array_task_str,
+			   (object.blockid == NULL) ?
+				"NULL" : object.blockid,
+			   (object.constraints == NULL) ?
+				"NULL" : object.constraints,
+			   (object.derived_es == NULL) ?
+				"NULL" : object.derived_es,
+			   (object.mcs_label == NULL) ?
+				"NULL" : object.mcs_label,
+			   (object.nodelist == NULL) ?
+				"NULL" : object.nodelist,
+			   (object.node_inx == NULL) ?
+				"NULL" : object.node_inx,
+			   (object.system_comment == NULL) ?
+				"NULL" : object.system_comment);
 
 		_free_local_job_members(&object);
+		xfree(format);
 	}
 //	END_TIMER2("step query");
 //	info("job query took %s", TIME_STR);
-	xfree(format);
 
 	return insert;
 }
