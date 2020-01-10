@@ -152,10 +152,10 @@ struct jobcomp_info {
 	uint32_t exit_code;
 	uint32_t db_flags;
 	uint32_t derived_ec;
-	uint32_t pack_job_id;
-	uint32_t pack_job_offset;
 	uint32_t uid;
 	uint32_t gid;
+	uint32_t het_job_id;
+	uint32_t het_job_offset;
 	uint32_t limit;
 	uint32_t nprocs;
 	uint32_t nnodes;
@@ -215,8 +215,8 @@ static struct jobcomp_info *_jobcomp_info_create(job_record_t *job)
 		j->qos = NULL;
 	j->array_job_id = job->array_job_id;
 	j->array_task_id = job->array_task_id;
-	j->pack_job_id = job->pack_job_id;
-	j->pack_job_offset = job->pack_job_offset;
+	j->het_job_id = job->pack_job_id;
+	j->het_job_offset = job->pack_job_offset;
 
 	if (IS_JOB_RESIZING(job)) {
 		state = JOB_RESIZING;
@@ -403,9 +403,9 @@ static char ** _create_environment (struct jobcomp_info *job)
 	_env_append_fmt (&env, "DERIVED_EC", "%d:%d", tmp_int, tmp_int2);
 	_env_append_fmt (&env, "ARRAYJOBID", "%u", job->array_job_id);
 	_env_append_fmt (&env, "ARRAYTASKID", "%u", job->array_task_id);
-	if (job->pack_job_id) {
-		_env_append_fmt (&env, "PACKJOBID", "%u", job->pack_job_id);
-		_env_append_fmt (&env, "PACKJOBOFFSET", "%u", job->pack_job_offset);
+	if (job->het_job_id) {
+		_env_append_fmt (&env, "PACKJOBID", "%u", job->het_job_id);
+		_env_append_fmt (&env, "PACKJOBOFFSET", "%u", job->het_job_offset);
 	}
 	_env_append_fmt (&env, "UID",   "%u",  job->uid);
 	_env_append_fmt (&env, "GID",   "%u",  job->gid);
