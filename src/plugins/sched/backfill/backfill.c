@@ -145,9 +145,9 @@ typedef struct het_job_rec {
 
 typedef struct het_job_map {
 	uint32_t comp_time_limit;	/* Time limit for hetjob */
-	time_t prev_start;		/* Expected start time from last test */
 	uint32_t het_job_id;
 	List het_job_rec_list;		/* List of het_job_rec_t */
+	time_t prev_start;		/* Expected start time from last test */
 } het_job_map_t;
 
 typedef struct deadlock_job_struct {
