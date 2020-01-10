@@ -853,7 +853,7 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 	} else if (!xstrcmp(name, "num_tasks")) {
 		lua_pushnumber (L, job_desc->num_tasks);
 	} else if (!xstrcmp(name, "pack_job_offset")) {
-		lua_pushnumber (L, job_desc->pack_job_offset);
+		lua_pushnumber (L, job_desc->het_job_offset);
 	} else if (!xstrcmp(name, "partition")) {
 		lua_pushstring (L, job_desc->partition);
 	} else if (!xstrcmp(name, "power_flags")) {

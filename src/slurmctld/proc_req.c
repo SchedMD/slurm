@@ -1455,7 +1455,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		}
 
 		/* Locks are for job_submit plugin use */
-		job_desc_msg->pack_job_offset = pack_job_offset;
+		job_desc_msg->het_job_offset = pack_job_offset;
 		error_code = validate_job_create_req(job_desc_msg, uid,
 						     &job_submit_user_msg[inx++]);
 		if (error_code)
@@ -1471,7 +1471,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 			job_desc_msg->mail_type = 0;
 			xfree(job_desc_msg->mail_user);
 		}
-		job_desc_msg->pack_job_offset = pack_job_offset;
+		job_desc_msg->het_job_offset = pack_job_offset;
 		error_code = job_allocate(job_desc_msg, false, false, NULL,
 					  true, uid, &job_ptr, &err_msg,
 					  msg->protocol_version);
@@ -1676,7 +1676,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* Locks are for job_submit plugin use */
 		lock_slurmctld(job_read_lock);
-		job_desc_msg->pack_job_offset = NO_VAL;
+		job_desc_msg->het_job_offset = NO_VAL;
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
@@ -1721,7 +1721,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 				error_code = SLURM_ERROR;
 			}
 		} else {
-			job_desc_msg->pack_job_offset = NO_VAL;
+			job_desc_msg->het_job_offset = NO_VAL;
 			error_code = job_allocate(job_desc_msg, immediate,
 						  false, NULL, true, uid,
 						  &job_ptr, &err_msg,
@@ -2965,7 +2965,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* Locks are for job_submit plugin use */
 		lock_slurmctld(job_read_lock);
-		job_desc_msg->pack_job_offset = NO_VAL;
+		job_desc_msg->het_job_offset = NO_VAL;
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
@@ -2981,7 +2981,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		if (error_code == SLURM_SUCCESS) {
 			lock_slurmctld(job_write_lock);
 			if (job_desc_msg->job_id == NO_VAL) {
-				job_desc_msg->pack_job_offset = NO_VAL;
+				job_desc_msg->het_job_offset = NO_VAL;
 				error_code = job_allocate(job_desc_msg, false,
 							  true, &resp, true,
 							  uid, &job_ptr,
@@ -4002,7 +4002,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* Locks are for job_submit plugin use */
 		lock_slurmctld(job_read_lock);
-		job_desc_msg->pack_job_offset = NO_VAL;
+		job_desc_msg->het_job_offset = NO_VAL;
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
@@ -4036,7 +4036,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 			reject_job = true;
 	} else {
 		/* Create new job allocation */
-		job_desc_msg->pack_job_offset = NO_VAL;
+		job_desc_msg->het_job_offset = NO_VAL;
 		error_code = job_allocate(job_desc_msg,
 					  job_desc_msg->immediate,
 					  false, NULL, 0, uid, &job_ptr,
@@ -4200,7 +4200,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 
 		dump_job_desc(job_desc_msg);
 
-		job_desc_msg->pack_job_offset = pack_job_offset;
+		job_desc_msg->het_job_offset = pack_job_offset;
 		error_code = validate_job_create_req(job_desc_msg, uid,
 						     &err_msg);
 		if (err_msg) {
@@ -4274,7 +4274,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 				break;
 			}
 		}
-		job_desc_msg->pack_job_offset = pack_job_offset;
+		job_desc_msg->het_job_offset = pack_job_offset;
 		error_code = job_allocate(job_desc_msg,
 					  job_desc_msg->immediate, false,
 					  NULL, alloc_only, uid, &job_ptr,

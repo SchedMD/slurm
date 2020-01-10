@@ -4988,7 +4988,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		too_fragmented = false;
 
 	if (independent && (!too_fragmented) && !defer_sched)
-		top_prio = _top_priority(job_ptr, job_specs->pack_job_offset);
+		top_prio = _top_priority(job_ptr, job_specs->het_job_offset);
 	else
 		top_prio = true;	/* don't bother testing,
 					 * it is not runable anyway */
@@ -5053,7 +5053,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
 		   (!top_prio) || (!independent) || !avail_front_end(job_ptr) ||
-		   (job_specs->pack_job_offset != NO_VAL) || defer_sched;
+		   (job_specs->het_job_offset != NO_VAL) || defer_sched;
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
 
@@ -6594,7 +6594,7 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 #ifndef HAVE_FRONT_END
 	/* Zero node count OK for persistent burst buffer create or destroy */
 	if ((job_desc->min_nodes == 0) &&
-	    (job_desc->array_inx || (job_desc->pack_job_offset != NO_VAL) ||
+	    (job_desc->array_inx || (job_desc->het_job_offset != NO_VAL) ||
 	     (!job_desc->burst_buffer && !job_desc->script))) {
 		info("%s: min_nodes is zero", __func__);
 		rc = ESLURM_INVALID_NODE_COUNT;
@@ -6912,7 +6912,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	/* Zero node count OK for persistent burst buffer create or destroy */
 	if ((job_desc->max_nodes == 0) &&
-	    (job_desc->array_inx || (job_desc->pack_job_offset != NO_VAL) ||
+	    (job_desc->array_inx || (job_desc->het_job_offset != NO_VAL) ||
 	     (!job_desc->burst_buffer && !job_desc->script))) {
 		info("%s: max_nodes is zero", __func__);
 		error_code = ESLURM_INVALID_NODE_COUNT;
