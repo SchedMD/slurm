@@ -720,9 +720,9 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	params->job_id = job->jobid;
 	params->force = true;
 	if (srun_opt->pack_grp_bits)
-		params->pack_job_offset = bit_ffs(srun_opt->pack_grp_bits);
+		params->het_job_offset = bit_ffs(srun_opt->pack_grp_bits);
 	else
-		params->pack_job_offset = NO_VAL;
+		params->het_job_offset = NO_VAL;
 	params->preserve = true;
 	params->src_fname = srun_opt->argv[0];
 	params->step_id = job->stepid;

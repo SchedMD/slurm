@@ -108,7 +108,7 @@ extern void parse_command_line(int argc, char **argv)
 		params.force = true;
 
 	params.job_id  = NO_VAL;
-	params.pack_job_offset = NO_VAL;
+	params.het_job_offset = NO_VAL;
 	params.step_id = NO_VAL;
 
 	if (getenv("SBCAST_PRESERVE"))
@@ -141,7 +141,7 @@ extern void parse_command_line(int argc, char **argv)
 		case (int)'j':
 			params.job_id = strtol(optarg, &end_ptr, 10);
 			if (end_ptr[0] == '+') {
-				params.pack_job_offset =
+				params.het_job_offset =
 					strtol(end_ptr+1, &end_ptr, 10);
 			}
 			if (end_ptr[0] == '.')
@@ -252,19 +252,19 @@ static void _print_options( void )
 	info("force      = %s", params.force ? "true" : "false");
 	info("fanout     = %d", params.fanout);
 	if (params.step_id == NO_VAL) {
-		if (params.pack_job_offset == NO_VAL) {
+		if (params.het_job_offset == NO_VAL) {
 			info("jobid      = %u", params.job_id);
 		} else {
 			info("jobid      = %u+%u",
-			     params.job_id, params.pack_job_offset);
+			     params.job_id, params.het_job_offset);
 		}
 	} else {
-		if (params.pack_job_offset == NO_VAL) {
+		if (params.het_job_offset == NO_VAL) {
 			info("jobid      = %u.%u", params.job_id,
 			     params.step_id);
 		} else {
 			info("jobid      = %u+%u.%u",
-			     params.job_id, params.pack_job_offset,
+			     params.job_id, params.het_job_offset,
 			     params.step_id);
 		}
 	}
