@@ -50,7 +50,7 @@ if {[test_front_end]} {
         exit $exit_code
 }
 
-if {![get_node_config 2] < 0} {
+if {![get_node_config 2]} {
 	log_warn "This test requires 2 or more GPUs per node in the default partition. Skipping.\n"
 	exit $exit_code
 }
@@ -281,7 +281,7 @@ if {$gpu_cnt != $job_tres_cnt} {
 if {[wait_for_job $job_id "DONE"] != 0} {
 	log_error "job wasn't able to complete\n"
 	cancel_job $job_id
-	set_exit_code 1
+	set exit_code 1
 }
 
 if {$exit_code == 0} {
