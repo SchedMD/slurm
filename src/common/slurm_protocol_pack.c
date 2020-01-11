@@ -6308,6 +6308,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+/*
+ * If this changes, then _pack_remote_dep_job() in fed_mgr.c probably
+ * needs to change.
+ */
 static void _pack_dep_msg(dep_msg_t *dep_msg, Buf buffer,
 			  uint16_t protocol_version)
 {
@@ -6324,6 +6328,10 @@ static void _pack_dep_msg(dep_msg_t *dep_msg, Buf buffer,
 	}
 }
 
+/*
+ * If this changes, then _unpack_remote_dep_job() in fed_mgr.c probably
+ * needs to change.
+ */
 static int _unpack_dep_msg(dep_msg_t **dep_msg_buffer_ptr, Buf buffer,
 			   uint16_t protocol_version)
 {

@@ -3114,6 +3114,129 @@ unpack_error:
 	return NULL;
 }
 
+/*
+ * If this changes, then _pack_dep_msg() in slurm_protocol_pack.c probably
+ * needs to change.
+ */
+static void _pack_remote_dep_job(job_record_t *job_ptr, Buf buffer,
+				 uint16_t protocol_version)
+{
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		pack32(job_ptr->array_job_id, buffer);
+		pack32(job_ptr->array_task_id, buffer);
+		packstr(job_ptr->details->dependency, buffer);
+		packbool(job_ptr->array_recs ? true : false, buffer);
+		pack32(job_ptr->job_id, buffer);
+		packstr(job_ptr->name, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported.",
+		      __func__, protocol_version);
+	}
+}
+
+/*
+ * If this changes, then _unpack_dep_msg() in slurm_protocol_pack.c probably
+ * needs to change.
+ */
+static int _unpack_remote_dep_job(job_record_t **job_pptr, Buf buffer,
+				  uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	bool is_array;
+	job_record_t *job_ptr;
+
+	xassert(job_pptr);
+
+	job_ptr = xmalloc(sizeof *job_ptr);
+	job_ptr->magic = JOB_MAGIC;
+	job_ptr->details = xmalloc(sizeof *(job_ptr->details));
+	job_ptr->details->magic = DETAILS_MAGIC;
+	job_ptr->fed_details = xmalloc(sizeof *(job_ptr->fed_details));
+	*job_pptr = job_ptr;
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpack32(&job_ptr->array_job_id, buffer);
+		safe_unpack32(&job_ptr->array_task_id, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->details->dependency,
+				       &uint32_tmp, buffer);
+		safe_unpackbool(&is_array, buffer);
+		if (is_array)
+			job_ptr->array_recs =
+				xmalloc(sizeof *(job_ptr->array_recs));
+		safe_unpack32(&job_ptr->job_id, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->name, &uint32_tmp, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported.",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	_destroy_dep_job(job_ptr);
+	*job_pptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _dump_remote_dep_job_list(Buf buffer, uint16_t protocol_version)
+{
+	uint32_t count = NO_VAL;
+	job_record_t *job_ptr;
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		slurm_mutex_lock(&dep_job_list_mutex);
+		if (remote_dep_job_list)
+			count = list_count(remote_dep_job_list);
+		else
+			count = NO_VAL;
+		pack32(count, buffer);
+		if (count && (count != NO_VAL)) {
+			ListIterator itr =
+				list_iterator_create(remote_dep_job_list);
+			while ((job_ptr = list_next(itr)))
+				_pack_remote_dep_job(job_ptr, buffer,
+						     protocol_version);
+			list_iterator_destroy(itr);
+		}
+		slurm_mutex_unlock(&dep_job_list_mutex);
+	} else {
+		error("%s: protocol_version %hu not supported.",
+		      __func__, protocol_version);
+	}
+}
+
+static List _load_remote_dep_job_list(Buf buffer, uint16_t protocol_version)
+{
+	uint32_t count, i;
+	List tmp_list = NULL;
+	job_record_t *job_ptr = NULL;
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count != NO_VAL) {
+			tmp_list = list_create(_destroy_dep_job);
+			for (i = 0; i < count; i++) {
+				if (_unpack_remote_dep_job(&job_ptr, buffer,
+							   protocol_version))
+					goto unpack_error;
+				list_append(tmp_list, job_ptr);
+			}
+		}
+	} else {
+		error("%s: protocol_version %hu not supported.",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+	return tmp_list;
+
+unpack_error:
+	FREE_NULL_LIST(tmp_list);
+	return NULL;
+}
+
 extern int fed_mgr_state_save(char *state_save_location)
 {
 	int error_code = 0, log_fd;
@@ -3137,6 +3260,7 @@ extern int fed_mgr_state_save(char *state_save_location)
 	unlock_slurmctld(fed_read_lock);
 
 	_dump_fed_job_list(buffer, SLURM_PROTOCOL_VERSION);
+	_dump_remote_dep_job_list(buffer, SLURM_PROTOCOL_VERSION);
 
 	/* write the buffer to file */
 	reg_file = xstrdup_printf("%s/%s", state_save_location,
@@ -3270,6 +3394,31 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location)
 		}
 		slurm_mutex_unlock(&fed_job_list_mutex);
 
+	}
+	FREE_NULL_LIST(tmp_list);
+
+	/*
+	 * Load in remote_dep_job_list and transfer to actual
+	 * remote_dep_job_list. If the actual list already has that job,
+	 * just throw away this one.
+	 */
+	if ((tmp_list = _load_remote_dep_job_list(buffer, ver))) {
+		job_record_t *tmp_dep_job;
+		slurm_mutex_lock(&dep_job_list_mutex);
+		while ((tmp_dep_job = list_pop(tmp_list))) {
+			if (!remote_dep_job_list)
+				remote_dep_job_list =
+					list_create(_destroy_dep_job);
+			if (!list_find_first(remote_dep_job_list,
+					    _find_job_by_id,
+					    &tmp_dep_job->job_id)) {
+				(void) update_job_dependency(
+					tmp_dep_job,
+					tmp_dep_job->details->dependency);
+				list_append(remote_dep_job_list, tmp_dep_job);
+			} /* else it will get free'd with FREE_NULL_LIST */
+		}
+		slurm_mutex_unlock(&dep_job_list_mutex);
 	}
 	FREE_NULL_LIST(tmp_list);
 
