@@ -318,4 +318,19 @@ void	sched_verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 			sched_log_var(LOG_LEVEL_DEBUG3, fmt, ##__VA_ARGS__); \
 	} while (0)
 
+/*
+ * Used to print log messages only when a specific DEBUG_FLAG_* option has
+ * been enabled. Automatically prepends 'DEBUG_FLAG_' to the flag option name
+ * to save space. E.g., to print a message only when DEBUG_FLAG_STEPS is
+ * enabled, call `log_flag(STEPS, "%s: my important message", __func__);`.
+ *
+ * As this is implemented in a macro, this is no slower than the equivalent
+ * conditional check.
+ */
+#define log_flag(flag, fmt, ...)					\
+	do {								\
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_##flag)	\
+			log_var(LOG_LEVEL_INFO, fmt, ##__VA_ARGS__);	\
+	} while (0)
+
 #endif /* !_LOG_H */
