@@ -2236,17 +2236,7 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 		 * have happened before we got here, but handle
 		 * this just in case.
 		 */
-		/*
-		 * job_ptr->details should always be non-NULL
-		 * here, but do a sanity check anyway.
-		 */
-		if (job_ptr->details) {
-			FREE_NULL_LIST(job_ptr->details->depend_list);
-		}
-		xfree(job_ptr->fed_details);
-		xfree(job_ptr->name);
-		xfree(job_ptr->details);
-		xfree(job_ptr);
+		_destroy_dep_job(job_ptr);
 	} else {
 		print_job_dependency(job_ptr);
 		list_append(remote_dep_job_list, job_ptr);
@@ -2307,7 +2297,6 @@ static void *_remote_dep_update_thread(void *arg)
 			_handle_recv_remote_dep(remote_dep_info);
 		}
 	}
-
 	return NULL;
 }
 
