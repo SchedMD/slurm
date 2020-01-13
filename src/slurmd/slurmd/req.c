@@ -4197,8 +4197,8 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 		return ESLURMD_INVALID_JOB_CREDENTIAL;
 
 #ifdef HAVE_NATIVE_CRAY
-	if (cred_arg->pack_jobid && (cred_arg->pack_jobid != NO_VAL))
-		key.job_id = cred_arg->pack_jobid;
+	if (cred_arg->het_job_id && (cred_arg->het_job_id != NO_VAL))
+		key.job_id = cred_arg->het_job_id;
 	else
 		key.job_id = cred_arg->job_id;
 #else

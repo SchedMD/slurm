@@ -2264,7 +2264,7 @@ sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 	sbcast_cred->ctime = time(NULL);
 	sbcast_cred->expiration = arg->expiration;
 	sbcast_cred->jobid = arg->job_id;
-	sbcast_cred->het_job_id = arg->pack_jobid;
+	sbcast_cred->het_job_id = arg->het_job_id;
 	sbcast_cred->uid = arg->uid;
 	sbcast_cred->gid = arg->gid;
 	sbcast_cred->user_name = xstrdup(arg->user_name);
