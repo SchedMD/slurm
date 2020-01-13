@@ -3839,7 +3839,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	 *       maybe only send remote dependencies to the siblings whose
 	 *       cluster_id matches the job_id's cluster id?
 	 */
-	if (job_desc->dependency)
+	if (job_ptr->details && job_ptr->details->dependency)
 		if (_submit_remote_dependencies(job_ptr))
 			error("XXX%sXXX: _submit_remote_dependencies() returned error",
 			      __func__);
