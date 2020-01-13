@@ -2251,17 +2251,6 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 		print_job_dependency(job_ptr);
 		list_append(remote_dep_job_list, job_ptr);
 	}
-	/*
-	 * Still TODO:
-	 * - If the dependency doesn't have any jobs on this
-	 *   cluster,then free it and don't add it to our list.
-	 * - If the dependency has at least one job on this
-	 *   cluster, then add this job to our list of remote
-	 *   dependencies. We will have another thread test
-	 *   the dependencies.
-	 * I can probably search job_ptr->details->depend_list
-	 * for a remote dependency with list_find_first()
-	 */
 	_destroy_dep_msg(remote_dep_info);
 }
 
