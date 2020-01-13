@@ -3672,7 +3672,7 @@ static void _het_job_deadlock_fini(void)
 
 /*
  * Determine if job can run at it's "start_time" or later.
- * job_ptr IN - job to test, set reason to "PACK_DEADLOCK" if it will deadlock
+ * job_ptr IN - job to test, set reason to "HET_JOB_DEADLOCK" if it will deadlock
  * RET true if the job can not run due to possible deadlock with other hetjob
  *
  * NOTE: If there are a large number of hetjobs this will be painfully slow
