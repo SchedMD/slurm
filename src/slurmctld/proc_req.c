@@ -1506,10 +1506,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 				    build_alloc_msg(
 					    job_ptr, error_code,
 					    job_submit_user_msg[inx++]));
-			if (slurmctld_conf.debug_flags &
-			    DEBUG_FLAG_HETERO_JOBS) {
-				info("Submit %pJ", job_ptr);
-			}
+			log_flag(HETERO_JOBS, "Submit %pJ", job_ptr);
 		}
 		list_iterator_destroy(iter);
 	}
@@ -2277,10 +2274,8 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 		lock_slurmctld(job_write_lock);
 	}
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
-		info("_slurm_rpc_epilog_complete: "
-		     "node_name = %s, JobId=%u", epilog_msg->node_name,
-		     epilog_msg->job_id);
+	log_flag(ROUTE, "%s: node_name = %s, JobId=%u",
+		 __func__, epilog_msg->node_name, epilog_msg->job_id);
 
 	if (job_epilog_complete(epilog_msg->job_id, epilog_msg->node_name,
 				epilog_msg->return_code))
@@ -2331,11 +2326,9 @@ static void _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg)
 	job_step_kill_msg_t *job_step_kill_msg =
 		(job_step_kill_msg_t *) msg->data;
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS) {
-		info("Processing RPC: REQUEST_CANCEL_JOB_STEP JobId=%u StepId=%u uid=%u",
-		     job_step_kill_msg->job_id, job_step_kill_msg->job_step_id,
-		     uid);
-	}
+	log_flag(STEPS, "Processing RPC: REQUEST_CANCEL_JOB_STEP JobId=%u StepId=%u uid=%u",
+		 job_step_kill_msg->job_id, job_step_kill_msg->job_step_id,
+		 uid);
 	_throttle_start(&active_rpc_cnt);
 
 	error_code = kill_job_step(job_step_kill_msg, uid);
@@ -2710,9 +2703,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	START_TIMER;
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-		info("Processing RPC: REQUEST_JOB_STEP_CREATE from uid=%d",
-				uid);
+	log_flag(STEPS, "Processing RPC: REQUEST_JOB_STEP_CREATE from uid=%d",
+		 uid);
 
 	dump_step_desc(req_step_msg);
 	if (uid && (uid != req_step_msg->user_id)) {
