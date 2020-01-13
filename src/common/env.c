@@ -1342,8 +1342,8 @@ env_array_for_step(char ***dest,
 	node_cnt = step->step_layout->node_cnt;
 	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u", step->job_step_id);
 
-	if (launch->pack_node_list) {
-		tmp = launch->pack_node_list;
+	if (launch->het_job_node_list) {
+		tmp = launch->het_job_node_list;
 		env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", tmp);
 		env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", tmp);
 	} else {
@@ -1352,23 +1352,23 @@ env_array_for_step(char ***dest,
 	}
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NODELIST", "%s", tmp);
 
-	if (launch->pack_nnodes && (launch->pack_nnodes != NO_VAL))
-		node_cnt = launch->pack_nnodes;
+	if (launch->het_job_nnodes && (launch->het_job_nnodes != NO_VAL))
+		node_cnt = launch->het_job_nnodes;
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_NODES", "%u", node_cnt);
 
-	if (launch->pack_ntasks && (launch->pack_ntasks != NO_VAL))
-		task_cnt = launch->pack_ntasks;
+	if (launch->het_job_ntasks && (launch->het_job_ntasks != NO_VAL))
+		task_cnt = launch->het_job_ntasks;
 	else
 		task_cnt = step->step_layout->task_cnt;
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_TASKS", "%u", task_cnt);
 
-	if (launch->pack_task_cnts) {
-		tpn = uint16_array_to_str(launch->pack_nnodes,
-					  launch->pack_task_cnts);
+	if (launch->het_job_task_cnts) {
+		tpn = uint16_array_to_str(launch->het_job_nnodes,
+					  launch->het_job_task_cnts);
 		env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s",
 					tpn);
 		env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u",
-					launch->pack_nnodes);
+					launch->het_job_nnodes);
 	} else {
 		tpn = uint16_array_to_str(step->step_layout->node_cnt,
 					  step->step_layout->tasks);

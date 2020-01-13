@@ -342,40 +342,44 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->env     = _array_copy(msg->envc, msg->env);
 	job->array_job_id  = msg->job_id;
 	job->array_task_id = NO_VAL;
-	job->node_offset = msg->node_offset;	/* Used for env vars */
-	job->pack_step_cnt = msg->pack_step_cnt;
-	job->pack_jobid  = msg->pack_jobid;	/* Used for env vars */
-	job->pack_nnodes = msg->pack_nnodes;	/* Used for env vars */
-	if (msg->pack_nnodes && msg->pack_ntasks && msg->pack_task_cnts) {
-		job->pack_ntasks = msg->pack_ntasks;	/* Used for env vars */
-		job->pack_task_cnts = xcalloc(msg->pack_nnodes,
+	job->node_offset = msg->het_job_node_offset; /* Used for env vars */
+	job->pack_step_cnt = msg->het_job_step_cnt;
+	job->pack_jobid  = msg->het_job_id;	/* Used for env vars */
+	job->pack_nnodes = msg->het_job_nnodes;	/* Used for env vars */
+	if (msg->het_job_nnodes && msg->het_job_ntasks &&
+	    msg->het_job_task_cnts) {
+		job->pack_ntasks = msg->het_job_ntasks;	/* Used for env vars */
+		job->pack_task_cnts = xcalloc(msg->het_job_nnodes,
 					      sizeof(uint16_t));
-		memcpy(job->pack_task_cnts, msg->pack_task_cnts,
-		       sizeof(uint16_t) * msg->pack_nnodes);
-		if (msg->pack_tids) {
-			/* pack_tids == NULL if request from pre-v19.05 srun */
-			job->pack_tids = xcalloc(msg->pack_nnodes,
+		memcpy(job->pack_task_cnts, msg->het_job_task_cnts,
+		       sizeof(uint16_t) * msg->het_job_nnodes);
+		if (msg->het_job_tids) {
+			/*
+			 * het_job_tids == NULL if request from pre-v19.05
+			 * srun
+			 */
+			job->pack_tids = xcalloc(msg->het_job_nnodes,
 						 sizeof(uint32_t *));
-			for (i = 0; i < msg->pack_nnodes; i++) {
+			for (i = 0; i < msg->het_job_nnodes; i++) {
 				job->pack_tids[i] =
 					xcalloc(job->pack_task_cnts[i],
 						sizeof(uint32_t));
-				memcpy(job->pack_tids[i], msg->pack_tids[i],
+				memcpy(job->pack_tids[i], msg->het_job_tids[i],
 				       sizeof(uint32_t) *
 				       job->pack_task_cnts[i]);
 			}
 		}
-		if (msg->pack_tid_offsets) {
+		if (msg->het_job_tid_offsets) {
 			job->pack_tid_offsets = xcalloc(job->pack_ntasks,
 							sizeof(uint32_t));
-			memcpy(job->pack_tid_offsets, msg->pack_tid_offsets,
+			memcpy(job->pack_tid_offsets, msg->het_job_tid_offsets,
 			       job->pack_ntasks * sizeof(uint32_t));
 		}
 	}
-	job->pack_offset = msg->pack_offset;	/* Used for env vars & labels */
-	job->pack_task_offset = msg->pack_task_offset;	/* Used for env vars &
-							 * labels */
-	job->pack_node_list = xstrdup(msg->pack_node_list);
+	job->pack_offset = msg->het_job_offset;	/* Used for env vars & labels */
+	job->pack_task_offset = msg->het_job_task_offset; /* Used for env vars &
+							   * labels */
+	job->pack_node_list = xstrdup(msg->het_job_node_list);
 	for (i = 0; i < msg->envc; i++) {
 		/*                         1234567890123456789 */
 		if (!xstrncmp(msg->env[i], "SLURM_ARRAY_JOB_ID=", 19))

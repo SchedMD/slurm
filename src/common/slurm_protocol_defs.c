@@ -1452,15 +1452,15 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 		xfree(msg->global_task_ids);
 	}
 	xfree(msg->gids);
-	xfree(msg->pack_node_list);
-	xfree(msg->pack_task_cnts);
-	if ((msg->pack_nnodes != NO_VAL) && msg->pack_tids) {
-		/* pack_tids == NULL if request from pre-v19.05 srun */
-		for (i = 0; i < msg->pack_nnodes; i++)
-			xfree(msg->pack_tids[i]);
-		xfree(msg->pack_tids);
+	xfree(msg->het_job_node_list);
+	xfree(msg->het_job_task_cnts);
+	if ((msg->het_job_nnodes != NO_VAL) && msg->het_job_tids) {
+		/* het_job_tids == NULL if request from pre-v19.05 srun */
+		for (i = 0; i < msg->het_job_nnodes; i++)
+			xfree(msg->het_job_tids[i]);
+		xfree(msg->het_job_tids);
 	}
-	xfree(msg->pack_tid_offsets);
+	xfree(msg->het_job_tid_offsets);
 	xfree(msg->tasks_to_launch);
 	xfree(msg->resp_port);
 	xfree(msg->io_port);

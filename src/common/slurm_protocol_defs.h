@@ -801,17 +801,18 @@ typedef struct job_step_create_response_msg {
 typedef struct launch_tasks_request_msg {
 	uint32_t  job_id;
 	uint32_t  job_step_id;
-	uint32_t  node_offset;	/* pack job node offset of NO_VAL */
-	uint32_t  pack_jobid;	/* pack job ID or NO_VAL */
-	uint32_t  pack_nnodes;	/* total task count for entire pack job */
-	uint32_t  pack_ntasks;	/* total task count for entire pack job */
-	uint16_t *pack_task_cnts; /* Number of tasks on each node in pack job */
-	uint32_t **pack_tids;   /* Task IDs on each node of pack job */
-	uint32_t *pack_tid_offsets;/* map of tasks (by id) to originating pack*/
-	uint32_t  pack_offset;	/* pack job offset of NO_VAL */
-	uint32_t  pack_step_cnt; /* number of steps for entire pack job */
-	uint32_t  pack_task_offset;/* pack job task ID offset of NO_VAL */
-	char     *pack_node_list;  /* Pack step node list */
+	uint32_t  het_job_node_offset;	/* Hetjob node offset or NO_VAL */
+	uint32_t  het_job_id;		/* Hetjob ID or NO_VAL */
+	uint32_t  het_job_nnodes;	/* total node count for entire hetjob */
+	uint32_t  het_job_ntasks;	/* total task count for entire hetjob */
+	uint16_t *het_job_task_cnts;	/* Tasks count on each node in hetjob */
+	uint32_t **het_job_tids;	/* Task IDs on each node of hetjob */
+	uint32_t *het_job_tid_offsets;	/* map of tasks (by id) to originating
+					 * hetjob */
+	uint32_t  het_job_offset;	/* Hetjob offset or NO_VAL */
+	uint32_t  het_job_step_cnt;	/* number of steps for entire hetjob */
+	uint32_t  het_job_task_offset;	/* Hetjob task ID offset or NO_VAL */
+	char     *het_job_node_list;	/* Hetjob step node list */
 	uint32_t  nnodes;	/* number of nodes in this job step       */
 	uint32_t  ntasks;	/* number of tasks in this job step   */
 	uint16_t  ntasks_per_board;/* number of tasks to invoke on each board */

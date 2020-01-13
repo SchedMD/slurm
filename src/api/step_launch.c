@@ -259,17 +259,17 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
-	launch.node_offset = params->node_offset;
-	launch.pack_step_cnt = params->pack_step_cnt;
-	launch.pack_jobid  = params->pack_jobid;
-	launch.pack_nnodes = params->pack_nnodes;
-	launch.pack_ntasks = params->pack_ntasks;
-	launch.pack_offset = params->pack_offset;
-	launch.pack_task_offset = params->pack_task_offset;
-	launch.pack_task_cnts = params->pack_task_cnts;
-	launch.pack_tids = params->pack_tids;
-	launch.pack_tid_offsets = params->pack_tid_offsets;
-	launch.pack_node_list = params->pack_node_list;
+	launch.het_job_node_offset = params->node_offset;
+	launch.het_job_step_cnt = params->pack_step_cnt;
+	launch.het_job_id = params->pack_jobid;
+	launch.het_job_nnodes = params->pack_nnodes;
+	launch.het_job_ntasks = params->pack_ntasks;
+	launch.het_job_offset = params->pack_offset;
+	launch.het_job_task_offset = params->pack_task_offset;
+	launch.het_job_task_cnts = params->pack_task_cnts;
+	launch.het_job_tids = params->pack_tids;
+	launch.het_job_tid_offsets = params->pack_tid_offsets;
+	launch.het_job_node_list = params->pack_node_list;
 	if (params->env == NULL) {
 		/*
 		 * If the user didn't specify an environment, then use the
@@ -457,16 +457,16 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
-	launch.pack_step_cnt = params->pack_step_cnt;
-	launch.pack_jobid  = params->pack_jobid;
-	launch.pack_nnodes = params->pack_nnodes;
-	launch.pack_ntasks = params->pack_ntasks;
-	launch.pack_offset = params->pack_offset;
-	launch.pack_task_offset = params->pack_task_offset;
-	launch.pack_task_cnts = params->pack_task_cnts;
-	launch.pack_tids = params->pack_tids;
-	launch.pack_tid_offsets = params->pack_tid_offsets;
-	launch.pack_node_list = params->pack_node_list;
+	launch.het_job_step_cnt = params->pack_step_cnt;
+	launch.het_job_id = params->pack_jobid;
+	launch.het_job_nnodes = params->pack_nnodes;
+	launch.het_job_ntasks = params->pack_ntasks;
+	launch.het_job_offset = params->pack_offset;
+	launch.het_job_task_offset = params->pack_task_offset;
+	launch.het_job_task_cnts = params->pack_task_cnts;
+	launch.het_job_tids = params->pack_tids;
+	launch.het_job_tid_offsets = params->pack_tid_offsets;
+	launch.het_job_node_list = params->pack_node_list;
 	if (params->env == NULL) {
 		/*
 		 * if the user didn't specify an environment, grab the
