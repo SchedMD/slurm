@@ -3718,7 +3718,6 @@ static int _submit_remote_dependencies(struct job_record *job_ptr)
 	xassert(job_ptr->details->dependency); /* char* */
 	xassert(job_ptr->details->depend_list); /* List of struct depend_spec */
 
-	memset(&dep_msg, 0, sizeof(dep_msg));
 	dep_msg.dependency = job_ptr->details->dependency;
 	dep_msg.job_id = job_ptr->job_id;
 	dep_msg.job_name = job_ptr->name;
