@@ -10857,6 +10857,7 @@ void purge_old_job(void)
 		}
 	}
 	list_iterator_destroy(job_iterator);
+	fed_mgr_test_remote_dependencies();
 
 	i = list_delete_all(job_list, &_list_find_job_old, "");
 	if (i) {

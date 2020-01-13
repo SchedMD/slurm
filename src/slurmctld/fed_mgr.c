@@ -61,6 +61,7 @@
 
 #define FED_MGR_STATE_FILE       "fed_mgr_state"
 #define FED_MGR_CLUSTER_ID_BEGIN 26
+#define TEST_REMOTE_DEP_FREQ 30 /* seconds */
 
 #define FED_SIBLING_BIT(x) ((uint64_t)1 << (x - 1))
 
@@ -93,6 +94,10 @@ static List remote_dep_update_list = NULL;
 static pthread_t remote_dep_thread_id = (pthread_t) 0;
 static pthread_cond_t remote_dep_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t remote_dep_update_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static List remote_dep_job_list = NULL;
+static pthread_t dep_job_thread_id = (pthread_t) 0;
+static pthread_mutex_t dep_job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct {
 	Buf        buffer;
@@ -1309,6 +1314,18 @@ static void _destroy_dep_msg(void *object)
 	slurm_free_dep_msg((dep_msg_t *)object);
 }
 
+static void _destroy_dep_job(void *object)
+{
+	struct job_record *job_ptr = (struct job_record *)object;
+
+	if (job_ptr) {
+		xfree(job_ptr->fed_details);
+		xfree(job_ptr->name);
+		xfree(job_ptr->details);
+		xfree(job_ptr);
+	}
+}
+
 extern slurmdb_cluster_rec_t *fed_mgr_get_cluster_by_id(uint32_t id)
 {
 	uint32_t key = id;
@@ -2211,8 +2228,21 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 		 * have happened before we got here, but handle
 		 * this just in case.
 		 */
-	} else
+		/*
+		 * job_ptr->details should always be non-NULL
+		 * here, but do a sanity check anyway.
+		 */
+		if (job_ptr->details) {
+			FREE_NULL_LIST(job_ptr->details->depend_list);
+		}
+		xfree(job_ptr->fed_details);
+		xfree(job_ptr->name);
+		xfree(job_ptr->details);
+		xfree(job_ptr);
+	} else {
 		print_job_dependency(job_ptr);
+		list_append(remote_dep_job_list, job_ptr);
+	}
 	/*
 	 * Still TODO:
 	 * - If the dependency doesn't have any jobs on this
@@ -2224,24 +2254,34 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	 * I can probably search job_ptr->details->depend_list
 	 * for a remote dependency with list_find_first()
 	 */
-	/*
-	 * TODO: On success, add the job_ptr to a list of
-	 * jobs with remote dependencies on this cluster.
-	 * For now, just free everything.
-	 */
-	/*
-	 * job_ptr->details should always be non-NULL here, but
-	 * do a sanity check anyway.
-	 */
-	if (job_ptr->details) {
-		FREE_NULL_LIST(job_ptr->details->depend_list);
-	}
-	xfree(job_ptr->fed_details);
-	xfree(job_ptr->name);
-	xfree(job_ptr->details);
-	xfree(job_ptr);
 	_destroy_dep_msg(remote_dep_info);
+}
 
+static void *_test_dep_job_thread(void *arg)
+{
+	time_t last_test = 0;
+	time_t now;
+	slurmctld_lock_t job_write_lock = {
+		.job = WRITE_LOCK, .fed = READ_LOCK };
+
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "fed_test_dep", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__,
+		      "fed_test_dep");
+	}
+#endif
+
+	while (!slurmctld_config.shutdown_time) {
+		now = time(NULL);
+		if (((now - last_test) > TEST_REMOTE_DEP_FREQ)) {
+			last_test = now;
+			lock_slurmctld(job_write_lock);
+			fed_mgr_test_remote_dependencies();
+			unlock_slurmctld(job_write_lock);
+		}
+		sleep(2);
+	}
+	return NULL;
 }
 
 static void *_remote_dep_update_thread(void *arg)
@@ -2500,6 +2540,10 @@ static void _spawn_threads(void)
 	slurm_thread_create(&remote_dep_thread_id,
 			    _remote_dep_update_thread, NULL);
 	slurm_mutex_unlock(&remote_dep_update_mutex);
+
+	slurm_mutex_lock(&dep_job_list_mutex);
+	slurm_thread_create(&dep_job_thread_id, _test_dep_job_thread, NULL);
+	slurm_mutex_unlock(&dep_job_list_mutex);
 }
 
 static void _add_missing_fed_job_info()
@@ -2566,6 +2610,9 @@ extern int fed_mgr_init(void *db_conn)
 	 */
 	if (!remote_dep_update_list)
 		remote_dep_update_list = list_create(_destroy_dep_msg);
+
+	if (!remote_dep_job_list)
+		remote_dep_job_list = list_create(_destroy_dep_job);
 
 	slurm_persist_conn_recv_server_init();
 	_spawn_threads();
@@ -5501,4 +5548,43 @@ extern bool fed_mgr_sibs_synced()
 	}
 
 	return true;
+}
+
+extern void fed_mgr_test_remote_dependencies(void)
+{
+	int rc;
+	job_record_t *job_ptr;
+	ListIterator itr;
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
+
+	if (!list_count(remote_dep_job_list))
+		return;
+
+	slurm_mutex_lock(&dep_job_list_mutex);
+	itr = list_iterator_create(remote_dep_job_list);
+	while ((job_ptr = list_next(itr))) {
+		rc = test_job_dependency(job_ptr);
+		if (rc == 1) {
+			info("XXX%sXXX: %pJ has at least 1 dependency left",
+			     __func__, job_ptr);
+			/*
+			 * TODO: Test if there are any dependencies left on this
+			 * cluster; if not, then tell origin cluster that we've
+			 * cleared the dependencies on this cluster
+			 */
+		} else if (rc == 2) {
+			info("XXX%sXXX: %pJ test_job_dependency() failed, dependency never satisfied",
+			     __func__, job_ptr);
+			/* TODO: tell origin cluster */
+		} else {
+			/* TODO: We need to tell the origin cluster */
+			info("XXX%sXXX: %pJ has no dependencies left, removing job from list",
+			     __func__, job_ptr);
+			list_remove(itr);
+		}
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&dep_job_list_mutex);
 }
