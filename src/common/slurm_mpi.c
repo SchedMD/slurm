@@ -126,8 +126,8 @@ static void _log_mpi_rec(const mpi_plugin_client_info_t *job)
 
 	info("MPI_PLUGIN_CLIENT_INFO");
 	info("job_id:%u step_id:%u", job->jobid, job->stepid);
-	if ((job->pack_jobid != 0) && (job->pack_jobid != NO_VAL)) {
-		info("pack_job_id:%u step_id:%u", job->pack_jobid, job->stepid);
+	if ((job->het_job_id != 0) && (job->het_job_id != NO_VAL)) {
+		info("het_job_id:%u step_id:%u", job->het_job_id, job->stepid);
 	}
 	if (layout) {
 		info("node_cnt:%u task_cnt:%u", layout->node_cnt,

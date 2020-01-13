@@ -169,8 +169,8 @@ static void _rebuild_mpi_layout(slurm_step_ctx_t *ctx,
 {
 	slurm_step_layout_t *new_step_layout, *orig_step_layout;
 
-	ctx->launch_state->mpi_info->pack_jobid = params->pack_jobid;
-	ctx->launch_state->mpi_info->pack_task_offset =
+	ctx->launch_state->mpi_info->het_job_id = params->pack_jobid;
+	ctx->launch_state->mpi_info->het_job_task_offset =
 		params->pack_task_offset;
 	new_step_layout = xmalloc(sizeof(slurm_step_layout_t));
 	orig_step_layout = ctx->launch_state->mpi_info->step_layout;
@@ -974,8 +974,8 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->abort_action_taken = false;
 	/* NOTE: No malloc() of sls->mpi_info required */
 	sls->mpi_info->jobid = ctx->step_req->job_id;
-	sls->mpi_info->pack_jobid = NO_VAL;
-	sls->mpi_info->pack_task_offset = NO_VAL;
+	sls->mpi_info->het_job_id = NO_VAL;
+	sls->mpi_info->het_job_task_offset = NO_VAL;
 	sls->mpi_info->stepid = ctx->step_resp->job_step_id;
 	sls->mpi_info->step_layout = layout;
 	sls->mpi_state = NULL;

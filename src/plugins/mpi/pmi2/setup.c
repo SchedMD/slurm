@@ -581,8 +581,8 @@ _setup_srun_job_info(const mpi_plugin_client_info_t *job)
 
 	memset(&job_info, 0, sizeof(job_info));
 
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
-		job_info.jobid  = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
+		job_info.jobid  = job->het_job_id;
 		job_info.stepid = job->stepid;
 		job_info.nnodes = job->step_layout->node_cnt;
 		job_info.ntasks = job->step_layout->task_cnt;
@@ -789,7 +789,7 @@ pmi2_setup_srun(const mpi_plugin_client_info_t *job, char ***env)
 	int rc = SLURM_SUCCESS;
 
 	run_in_stepd = false;
-	if ((job->pack_jobid == NO_VAL) || (job->pack_task_offset == 0)) {
+	if ((job->het_job_id == NO_VAL) || (job->het_job_task_offset == 0)) {
 		rc = _setup_srun_job_info(job);
 		if (rc == SLURM_SUCCESS)
 			rc = _setup_srun_tree_info();
