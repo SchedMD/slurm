@@ -72,34 +72,34 @@ static void _srun_agent_launch(slurm_addr_t *addr, char *host,
 	agent_queue_request(agent_args);
 }
 
-static bool _pending_pack_jobs(job_record_t *job_ptr)
+static bool _pending_het_jobs(job_record_t *job_ptr)
 {
-	job_record_t *pack_leader, *pack_job;
+	job_record_t *het_job_leader, *het_job;
 	ListIterator iter;
 	bool pending_job = false;
 
 	if (job_ptr->het_job_id == 0)
 		return false;
 
-	pack_leader = find_job_record(job_ptr->het_job_id);
-	if (!pack_leader) {
-		error("Job pack leader %pJ not found", job_ptr);
+	het_job_leader = find_job_record(job_ptr->het_job_id);
+	if (!het_job_leader) {
+		error("Hetjob leader %pJ not found", job_ptr);
 		return false;
 	}
-	if (!pack_leader->het_job_list) {
-		error("Job pack leader %pJ lacks pack_job_list",
+	if (!het_job_leader->het_job_list) {
+		error("Hetjob leader %pJ lacks het_job_list",
 		      job_ptr);
 		return false;
 	}
 
-	iter = list_iterator_create(pack_leader->het_job_list);
-	while ((pack_job = list_next(iter))) {
-		if (pack_leader->het_job_id != pack_job->het_job_id) {
-			error("%s: Bad pack_job_list for %pJ",
-			      __func__, pack_leader);
+	iter = list_iterator_create(het_job_leader->het_job_list);
+	while ((het_job = list_next(iter))) {
+		if (het_job_leader->het_job_id != het_job->het_job_id) {
+			error("%s: Bad het_job_list for %pJ",
+			      __func__, het_job_leader);
 			continue;
 		}
-		if (IS_JOB_PENDING(pack_job)) {
+		if (IS_JOB_PENDING(het_job)) {
 			pending_job = true;
 			break;
 		}
@@ -125,7 +125,7 @@ static void _free_srun_alloc(void *x)
  */
 extern void srun_allocate(job_record_t *job_ptr)
 {
-	job_record_t *pack_job, *pack_leader;
+	job_record_t *het_job, *het_job_leader;
 	resource_allocation_response_msg_t *msg_arg = NULL;
 	slurm_addr_t *addr;
 	ListIterator iter;
@@ -146,21 +146,22 @@ extern void srun_allocate(job_record_t *job_ptr)
 		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   RESPONSE_RESOURCE_ALLOCATION, msg_arg,
 				   job_ptr->start_protocol_ver);
-	} else if (_pending_pack_jobs(job_ptr)) {
+	} else if (_pending_het_jobs(job_ptr)) {
 		return;
-	} else if ((pack_leader = find_job_record(job_ptr->het_job_id))) {
+	} else if ((het_job_leader = find_job_record(job_ptr->het_job_id))) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
-		slurm_set_addr(addr, pack_leader->alloc_resp_port,
-			       pack_leader->resp_host);
+		slurm_set_addr(addr, het_job_leader->alloc_resp_port,
+			       het_job_leader->resp_host);
 		job_resp_list = list_create(_free_srun_alloc);
-		iter = list_iterator_create(pack_leader->het_job_list);
-		while ((pack_job = list_next(iter))) {
-			if (pack_leader->het_job_id != pack_job->het_job_id) {
-				error("%s: Bad pack_job_list for %pJ",
-				      __func__, pack_leader);
+		iter = list_iterator_create(het_job_leader->het_job_list);
+		while ((het_job = list_next(iter))) {
+			if (het_job_leader->het_job_id !=
+				het_job->het_job_id) {
+				error("%s: Bad het_job_list for %pJ",
+				      __func__, het_job_leader);
 				continue;
 			}
-			msg_arg = build_alloc_msg(pack_job, SLURM_SUCCESS,
+			msg_arg = build_alloc_msg(het_job, SLURM_SUCCESS,
 						  NULL);
 			list_append(job_resp_list, msg_arg);
 			msg_arg = NULL;
@@ -170,7 +171,7 @@ extern void srun_allocate(job_record_t *job_ptr)
 				   RESPONSE_JOB_PACK_ALLOCATION, job_resp_list,
 				   job_ptr->start_protocol_ver);
 	} else {
-		error("%s: Can not find pack job leader %pJ",
+		error("%s: Can not find hetjob leader %pJ",
 		      __func__, job_ptr);
 	}
 }
