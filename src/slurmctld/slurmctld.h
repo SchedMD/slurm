@@ -178,7 +178,7 @@ typedef struct diag_stats {
 
 	uint32_t backfilled_jobs;
 	uint32_t last_backfilled_jobs;
-	uint32_t backfilled_pack_jobs;
+	uint32_t backfilled_het_jobs;
 	uint32_t bf_active;
 	uint32_t bf_cycle_counter;
 	uint32_t bf_cycle_last;

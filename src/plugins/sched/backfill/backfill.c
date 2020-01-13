@@ -2795,7 +2795,7 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 		slurmctld_diag_stats.backfilled_jobs++;
 		slurmctld_diag_stats.last_backfilled_jobs++;
 		if (job_ptr->het_job_id)
-			slurmctld_diag_stats.backfilled_pack_jobs++;
+			slurmctld_diag_stats.backfilled_het_jobs++;
 		if (debug_flags & DEBUG_FLAG_BACKFILL) {
 			info("backfill: Jobs backfilled since boot: %u",
 			     slurmctld_diag_stats.backfilled_jobs);
