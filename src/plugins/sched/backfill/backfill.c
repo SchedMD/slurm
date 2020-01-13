@@ -201,7 +201,7 @@ static bool assoc_limit_stop = false;
 static int max_rpc_cnt = 0;
 static int yield_interval = YIELD_INTERVAL;
 static int yield_sleep   = YIELD_SLEEP;
-static List pack_job_list = NULL;
+static List het_job_list = NULL;
 static xhash_t *user_usage_map = NULL; /* look up user usage when no assoc */
 
 /*********************** local functions *********************/
@@ -220,8 +220,8 @@ static uint32_t _get_job_max_tl(job_record_t *job_ptr, time_t now,
 static bool _hetjob_any_resv(job_record_t *het_leader);
 static uint32_t _hetjob_calc_prio(job_record_t *het_leader);
 static uint32_t _hetjob_calc_prio_tier(job_record_t *het_leader);
-static void _job_pack_deadlock_fini(void);
-static bool _job_pack_deadlock_test(job_record_t *job_ptr);
+static void _het_job_deadlock_fini(void);
+static bool _het_job_deadlock_test(job_record_t *job_ptr);
 static bool _job_part_valid(job_record_t *job_ptr, part_record_t *part_ptr);
 static void _load_config(void);
 static bool _many_pending_rpcs(void);
@@ -229,17 +229,17 @@ static bool _more_work(time_t last_backfill_time);
 static uint32_t _my_sleep(int64_t usec);
 static int  _num_feature_count(job_record_t *job_ptr, bool *has_xand,
 			       bool *has_xor);
-static int  _pack_find_map(void *x, void *key);
-static void _pack_map_del(void *x);
-static void _pack_start_clear(void);
-static time_t _pack_start_find(job_record_t *job_ptr, time_t now);
-static void _pack_start_set(job_record_t *job_ptr, time_t latest_start,
-			    uint32_t comp_time_limit);
-static void _pack_start_test_single(node_space_map_t *node_space,
-				    het_job_map_t *map, bool single);
-static int  _pack_start_test_list(void *map, void *node_space);
-static void _pack_start_test(node_space_map_t *node_space,
-			     uint32_t pack_job_id);
+static int  _het_job_find_map(void *x, void *key);
+static void _het_job_map_del(void *x);
+static void _het_job_start_clear(void);
+static time_t _het_job_start_find(job_record_t *job_ptr, time_t now);
+static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
+			       uint32_t comp_time_limit);
+static void _het_job_start_test_single(node_space_map_t *node_space,
+				       het_job_map_t *map, bool single);
+static int  _het_job_start_test_list(void *map, void *node_space);
+static void _het_job_start_test(node_space_map_t *node_space,
+				uint32_t het_job_id);
 static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 				  node_space_map_t *node_space);
 static int  _set_hetjob_details(void *x, void *arg);
@@ -964,7 +964,7 @@ extern void *backfill_agent(void *args)
 #endif
 	_load_config();
 	last_backfill_time = time(NULL);
-	pack_job_list = list_create(_pack_map_del);
+	het_job_list = list_create(_het_job_map_del);
 	while (!stop_backfill) {
 		if (short_sleep)
 			_my_sleep(USEC_IN_SEC);
@@ -976,7 +976,7 @@ extern void *backfill_agent(void *args)
 		if (slurmctld_config.scheduling_disabled)
 			continue;
 
-		list_flush(pack_job_list);
+		list_flush(het_job_list);
 		slurm_mutex_lock(&config_lock);
 		if (config_flag) {
 			config_flag = false;
@@ -1002,7 +1002,7 @@ extern void *backfill_agent(void *args)
 
 		lock_slurmctld(all_locks);
 		if ((backfill_cnt++ % 2) == 0)
-			_pack_start_clear();
+			_het_job_start_clear();
 		(void) _attempt_backfill();
 		last_backfill_time = time(NULL);
 		(void) bb_g_job_try_stage_in();
@@ -1014,7 +1014,7 @@ extern void *backfill_agent(void *args)
 
 		short_sleep = false;
 	}
-	FREE_NULL_LIST(pack_job_list);
+	FREE_NULL_LIST(het_job_list);
 	xhash_free(user_usage_map); /* May have been init'ed if used */
 
 	return NULL;
@@ -1497,7 +1497,7 @@ static int _attempt_backfill(void)
 	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL, *resv_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res, resv_end, window_end;
-	time_t pack_time, orig_sched_start, orig_start_time = (time_t) 0;
+	time_t het_job_time, orig_sched_start, orig_start_time = (time_t) 0;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
 	int rc = 0, error_code;
@@ -1680,10 +1680,10 @@ static int _attempt_backfill(void)
 				       &tmp_preempt_in_progress);
 
 		/*
-		 * Establish baseline (worst case) start time for pack job
+		 * Establish baseline (worst case) start time for hetjob
 		 * Update time once start time estimate established
 		 */
-		_pack_start_set(job_ptr, (now + YEAR_SECONDS), NO_VAL);
+		_het_job_start_set(job_ptr, (now + YEAR_SECONDS), NO_VAL);
 
 		if (job_ptr->het_job_id &&
 		    (job_ptr->state_reason == WAIT_NO_REASON)) {
@@ -1700,8 +1700,8 @@ static int _attempt_backfill(void)
 		job_ptr->part_ptr = part_ptr;
 		job_ptr->priority = bf_job_priority;
 		mcs_select = slurm_mcs_get_select(job_ptr);
-		pack_time = _pack_start_find(job_ptr, now);
-		if (pack_time > (now + backfill_window))
+		het_job_time = _het_job_start_find(job_ptr, now);
+		if (het_job_time > (now + backfill_window))
 			continue;
 
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
@@ -2057,7 +2057,7 @@ next_task:
 
 		FREE_NULL_BITMAP(avail_bitmap);
 		FREE_NULL_BITMAP(exc_core_bitmap);
-		start_res = MAX(later_start, pack_time);
+		start_res = MAX(later_start, het_job_time);
 		resv_end = 0;
 		later_start = 0;
 		/* Determine impact of any advance reservations */
@@ -2485,14 +2485,14 @@ skip_start:
 			comp_time_limit = MIN(comp_time_limit, max_time_limit);
 			job_ptr->node_cnt_wag =
 					MAX(bit_set_count(avail_bitmap), 1);
-			_pack_start_set(job_ptr, job_ptr->start_time,
-					comp_time_limit);
+			_het_job_start_set(job_ptr, job_ptr->start_time,
+					   comp_time_limit);
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (bf_hetjob_immediate &&
 			    (!max_backfill_jobs_start ||
 			     (job_start_cnt < max_backfill_jobs_start)))
-				_pack_start_test(node_space,
-						 job_ptr->het_job_id);
+				_het_job_start_test(node_space,
+						    job_ptr->het_job_id);
 		}
 
 		if ((job_ptr->start_time > now) && (job_no_reserve != 0)) {
@@ -2584,7 +2584,7 @@ skip_start:
 			goto TRY_LATER;
 		}
 
-		if (_job_pack_deadlock_test(job_ptr)) {
+		if (_het_job_deadlock_test(job_ptr)) {
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			continue;
 		}
@@ -2710,11 +2710,11 @@ skip_start:
 	_restore_preempt_state(job_ptr, &tmp_preempt_start_time,
 			       &tmp_preempt_in_progress);
 
-	_job_pack_deadlock_fini();
+	_het_job_deadlock_fini();
 	if (!bf_hetjob_immediate &&
 	    (!max_backfill_jobs_start ||
 	     (job_start_cnt < max_backfill_jobs_start)))
-		_pack_start_test(node_space, 0);
+		_het_job_start_test(node_space, 0);
 
 	FREE_NULL_BITMAP(avail_bitmap);
 	FREE_NULL_BITMAP(exc_core_bitmap);
@@ -3032,9 +3032,9 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 }
 
 /*
- * Delete het_job_map_t record from pack_job_list
+ * Delete het_job_map_t record from het_job_list
  */
-static void _pack_map_del(void *x)
+static void _het_job_map_del(void *x)
 {
 	het_job_map_t *map = (het_job_map_t *) x;
 	FREE_NULL_LIST(map->het_job_rec_list);
@@ -3042,16 +3042,16 @@ static void _pack_map_del(void *x)
 }
 
 /*
- * Return 1 if a het_job_map_t record with a specific pack_job_id is found.
+ * Return 1 if a het_job_map_t record with a specific het_job_id is found.
  * Always return 1 if "key" is zero.
  */
-static int _pack_find_map(void *x, void *key)
+static int _het_job_find_map(void *x, void *key)
 {
 	het_job_map_t *map = (het_job_map_t *) x;
-	uint32_t *pack_job_id = (uint32_t *) key;
+	uint32_t *het_job_id = (uint32_t *) key;
 
-	if ((pack_job_id == NULL) ||
-	    (map->het_job_id == *pack_job_id))
+	if ((het_job_id == NULL) ||
+	    (map->het_job_id == *het_job_id))
 		return 1;
 	return 0;
 }
@@ -3059,7 +3059,7 @@ static int _pack_find_map(void *x, void *key)
 /*
  * Return 1 if a het_job_rec_t record with a specific job_id is found.
  */
-static int _pack_find_rec(void *x, void *key)
+static int _het_job_find_rec(void *x, void *key)
 {
 	het_job_rec_t *rec = (het_job_rec_t *) x;
 	uint32_t *job_id = (uint32_t *) key;
@@ -3070,17 +3070,17 @@ static int _pack_find_rec(void *x, void *key)
 }
 
 /*
- * Remove vestigial elements from pack_job_list. For still active element,
+ * Remove vestigial elements from het_job_list. For still active element,
  * clear the previously computted start time. This is used to periodically clear
- * history so that heterogeneous/pack jobs do not keep getting deferred based
+ * history so that heterogeneous jobs do not keep getting deferred based
  * upon old system state
  */
-static void _pack_start_clear(void)
+static void _het_job_start_clear(void)
 {
 	het_job_map_t *map;
 	ListIterator iter;
 
-	iter = list_iterator_create(pack_job_list);
+	iter = list_iterator_create(het_job_list);
 	while ((map = (het_job_map_t *) list_next(iter))) {
 		if (map->prev_start == 0) {
 			list_delete_item(iter);
@@ -3095,10 +3095,11 @@ static void _pack_start_clear(void)
 /*
  * For a given het_job_map_t record, determine the earliest that it can start,
  * which is the time at which it's latest starting component begins. The
- * "exclude_job_id" is used to exclude a pack job component currntly being
+ * "exclude_job_id" is used to exclude a hetjob component currntly being
  * tested to start, presumably in a different partition.
  */
-static time_t _pack_start_compute(het_job_map_t *map, uint32_t exclude_job_id)
+static time_t _het_job_start_compute(het_job_map_t *map,
+				     uint32_t exclude_job_id)
 {
 	ListIterator iter;
 	het_job_rec_t *rec;
@@ -3117,27 +3118,27 @@ static time_t _pack_start_compute(het_job_map_t *map, uint32_t exclude_job_id)
 
 /*
  * Return the earliest that a job can start based upon _other_ components of
- * that same heterogeneous/pack job. Return 0 if no limitation.
+ * that same heterogeneous job. Return 0 if no limitation.
  *
- * If the job's state reason is BeginTime (the way all pack jobs start) and that
+ * If the job's state reason is BeginTime (the way all hetjobs start) and that
  * time is passed, then clear the reason field.
  */
-static time_t _pack_start_find(job_record_t *job_ptr, time_t now)
+static time_t _het_job_start_find(job_record_t *job_ptr, time_t now)
 {
 	het_job_map_t *map;
 	time_t latest_start = (time_t) 0;
 
 	if (job_ptr->het_job_id) {
-		map = (het_job_map_t *) list_find_first(pack_job_list,
-							 _pack_find_map,
+		map = (het_job_map_t *) list_find_first(het_job_list,
+							_het_job_find_map,
 							 &job_ptr->het_job_id);
 		if (map) {
-			latest_start = _pack_start_compute(map,
-							   job_ptr->job_id);
+			latest_start = _het_job_start_compute(map,
+							      job_ptr->job_id);
 		}
 
 		/*
-		 * All pack jobs are submitted with a begin time in the future
+		 * All hetjobs are submitted with a begin time in the future
 		 * so that all components can be submitted before any of them
 		 * are scheduled, but we want to clear the BeginTime reason
 		 * as soon as possible to avoid confusing users
@@ -3164,12 +3165,12 @@ static time_t _pack_start_find(job_record_t *job_ptr, time_t now)
 }
 
 /*
- * Record the earliest that a pack job component can start. If it can be
+ * Record the earliest that a hetjob component can start. If it can be
  * started in multiple partitions, we only record the earliest start time
  * for the job in any partition.
  */
-static void _pack_start_set(job_record_t *job_ptr, time_t latest_start,
-			    uint32_t comp_time_limit)
+static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
+			       uint32_t comp_time_limit)
 {
 	het_job_map_t *map;
 	het_job_rec_t *rec;
@@ -3177,8 +3178,8 @@ static void _pack_start_set(job_record_t *job_ptr, time_t latest_start,
 	if (comp_time_limit == NO_VAL)
 		comp_time_limit = job_ptr->time_limit;
 	if (job_ptr->het_job_id) {
-		map = (het_job_map_t *) list_find_first(pack_job_list,
-							 _pack_find_map,
+		map = (het_job_map_t *) list_find_first(het_job_list,
+							_het_job_find_map,
 							 &job_ptr->het_job_id);
 		if (map) {
 			if (!map->comp_time_limit) {
@@ -3188,7 +3189,7 @@ static void _pack_start_set(job_record_t *job_ptr, time_t latest_start,
 							   comp_time_limit);
 			}
 			rec = list_find_first(map->het_job_rec_list,
-					      _pack_find_rec,
+					      _het_job_find_rec,
 					      &job_ptr->job_id);
 			if (rec && (rec->latest_start <= latest_start)) {
 				/*
@@ -3218,11 +3219,11 @@ static void _pack_start_set(job_record_t *job_ptr, time_t latest_start,
 			map->het_job_id = job_ptr->het_job_id;
 			map->het_job_rec_list = list_create(list_xfree_item);
 			list_append(map->het_job_rec_list, rec);
-			list_append(pack_job_list, map);
+			list_append(het_job_list, map);
 		}
 
 		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-			time_t latest_start = _pack_start_compute(map, 0);
+			time_t latest_start = _het_job_start_compute(map, 0);
 			long int delay = MAX(0, latest_start - time(NULL));
 			info("%pJ in partition %s set to start in %ld secs",
 			     job_ptr, job_ptr->part_ptr->name, delay);
@@ -3231,26 +3232,26 @@ static void _pack_start_set(job_record_t *job_ptr, time_t latest_start,
 }
 
 /*
- * Return TRUE if we have expected start times for all components of a pack job
+ * Return TRUE if we have expected start times for all components of a hetjob
  * and all components are valid and runable.
  *
  * NOTE: This should never happen, but we will also start the job if all of the
  * other components are already running,
  */
-static bool _pack_job_full(het_job_map_t *map)
+static bool _het_job_full(het_job_map_t *map)
 {
-	job_record_t *pack_job_ptr, *job_ptr;
+	job_record_t *het_job_ptr, *job_ptr;
 	ListIterator iter;
 	bool rc = true;
 
-	pack_job_ptr = find_job_record(map->het_job_id);
-	if (!pack_job_ptr || !pack_job_ptr->het_job_list ||
-	    (!IS_JOB_RUNNING(pack_job_ptr) &&
-	     !_job_runnable_now(pack_job_ptr))) {
+	het_job_ptr = find_job_record(map->het_job_id);
+	if (!het_job_ptr || !het_job_ptr->het_job_list ||
+	    (!IS_JOB_RUNNING(het_job_ptr) &&
+	     !_job_runnable_now(het_job_ptr))) {
 		return false;
 	}
 
-	iter = list_iterator_create(pack_job_ptr->het_job_list);
+	iter = list_iterator_create(het_job_ptr->het_job_list);
 	while ((job_ptr = list_next(iter))) {
 		if ((job_ptr->magic != JOB_MAGIC) ||
 		    (job_ptr->het_job_id != map->het_job_id)) {
@@ -3259,7 +3260,7 @@ static bool _pack_job_full(het_job_map_t *map)
 		}
 		if (IS_JOB_RUNNING(job_ptr))
 			continue;
-		if (!list_find_first(map->het_job_rec_list, _pack_find_rec,
+		if (!list_find_first(map->het_job_rec_list, _het_job_find_rec,
 				     &job_ptr->job_id) ||
 		    !_job_runnable_now(job_ptr)) {
 			rc = false;
@@ -3272,16 +3273,16 @@ static bool _pack_job_full(het_job_map_t *map)
 }
 
 /*
- * Determine if all components of a pack job can be started now or are
+ * Determine if all components of a hetjob can be started now or are
  * prevented from doing so because of association or QOS limits.
  * Return true if they can all start.
  *
- * NOTE: That a pack job passes this test does not mean that it will be able
+ * NOTE: That a hetjob passes this test does not mean that it will be able
  * to run. For example, this test assumues resource allocation at the CPU level.
  * If each task is allocated one core, with 2 CPUs, then the CPU limit test
  * would not be accurate.
  */
-static bool _pack_job_limit_check(het_job_map_t *map, time_t now)
+static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 {
 	job_record_t *job_ptr;
 	het_job_rec_t *rec;
@@ -3368,9 +3369,9 @@ static bool _pack_job_limit_check(het_job_map_t *map, time_t now)
 }
 
 /*
- * Start all components of a pack job now
+ * Start all components of a hetjob now
  */
-static int _pack_start_now(het_job_map_t *map, node_space_map_t *node_space)
+static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 {
 	job_record_t *job_ptr;
 	bitstr_t *avail_bitmap = NULL, *exc_core_bitmap = NULL;
@@ -3474,9 +3475,9 @@ static int _pack_start_now(het_job_map_t *map, node_space_map_t *node_space)
 }
 
 /*
- * Deallocate all components if failed pack job start
+ * Deallocate all components if failed hetjob start
  */
-static void _pack_kill_now(het_job_map_t *map)
+static void _het_job_kill_now(het_job_map_t *map)
 {
 	job_record_t *job_ptr;
 	het_job_rec_t *rec;
@@ -3493,7 +3494,7 @@ static void _pack_kill_now(het_job_map_t *map)
 		job_ptr = rec->job_ptr;
 		if (IS_JOB_PENDING(job_ptr))
 			continue;
-		info("Deallocate %pJ due to pack job start failure",
+		info("Deallocate %pJ due to hetjob start failure",
 		     job_ptr);
 		job_ptr->details->begin_time = now + cred_lifetime + 1;
 		job_ptr->end_time   = now;
@@ -3523,8 +3524,8 @@ static void _pack_kill_now(het_job_map_t *map)
  * map IN - info about this heterogeneous job
  * single IN - true if testing single heterogeneous jobs
  */
-static void _pack_start_test_single(node_space_map_t *node_space,
-				    het_job_map_t *map, bool single)
+static void _het_job_start_test_single(node_space_map_t *node_space,
+				       het_job_map_t *map, bool single)
 {
 	time_t now = time(NULL);
 	int rc;
@@ -3532,9 +3533,9 @@ static void _pack_start_test_single(node_space_map_t *node_space,
 	if (!map)
 		return;
 
-	if (!_pack_job_full(map)) {
+	if (!_het_job_full(map)) {
 		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-			info("Pack job %u has indefinite start time",
+			info("Hetjob %u has indefinite start time",
 			     map->het_job_id);
 		}
 		if (!single)
@@ -3542,19 +3543,19 @@ static void _pack_start_test_single(node_space_map_t *node_space,
 		return;
 	}
 
-	map->prev_start = _pack_start_compute(map, 0);
+	map->prev_start = _het_job_start_compute(map, 0);
 	if (map->prev_start > now) {
 		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-			info("Pack job %u should be able to start in %u seconds",
+			info("Hetjob %u should be able to start in %u seconds",
 			     map->het_job_id,
 			     (uint32_t) (map->prev_start - now));
 		}
 		return;
 	}
 
-	if (!_pack_job_limit_check(map, now)) {
+	if (!_het_job_limit_check(map, now)) {
 		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-			info("Pack job %u prevented from starting by account/QOS limit",
+			info("Hetjob %u prevented from starting by account/QOS limit",
 			     map->het_job_id);
 		}
 		map->prev_start = now + YEAR_SECONDS;
@@ -3562,15 +3563,15 @@ static void _pack_start_test_single(node_space_map_t *node_space,
 	}
 
 	if (debug_flags & DEBUG_FLAG_HETERO_JOBS)
-		info("Attempting to start pack job %u", map->het_job_id);
+		info("Attempting to start hetjob %u", map->het_job_id);
 
-	rc = _pack_start_now(map, node_space);
+	rc = _het_job_start_now(map, node_space);
 	if (rc != SLURM_SUCCESS) {
 		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-			info("Failed to start pack job %u",
+			info("Failed to start hetjob %u",
 			     map->het_job_id);
 		}
-		_pack_kill_now(map);
+		_het_job_kill_now(map);
 	} else {
 		job_start_cnt += list_count(map->het_job_rec_list);
 		if (max_backfill_jobs_start &&
@@ -3583,11 +3584,11 @@ static void _pack_start_test_single(node_space_map_t *node_space,
 
 }
 
-static int _pack_start_test_list(void *map, void *node_space)
+static int _het_job_start_test_list(void *map, void *node_space)
 {
 	if (!max_backfill_jobs_start ||
 	    (job_start_cnt < max_backfill_jobs_start))
-		_pack_start_test_single(node_space, map, false);
+		_het_job_start_test_single(node_space, map, false);
 
 	return SLURM_SUCCESS;
 }
@@ -3596,23 +3597,23 @@ static int _pack_start_test_list(void *map, void *node_space)
 /*
  * If all components of a heterogeneous job can start now, then do so
  * node_space IN - map of available resources through time
- * pack_job_id IN - the ID of the heterogeneous job to evaluate,
+ * het_job_id IN - the ID of the heterogeneous job to evaluate,
  *		    if zero then evaluate all heterogeneous jobs
  */
-static void _pack_start_test(node_space_map_t *node_space, uint32_t pack_job_id)
+static void _het_job_start_test(node_space_map_t *node_space, uint32_t het_job_id)
 {
 	het_job_map_t *map = NULL;
 
-	if (!pack_job_id) {
+	if (!het_job_id) {
 		/* Test all maps. */
-		(void)list_for_each(pack_job_list,
-				    _pack_start_test_list, node_space);
+		(void)list_for_each(het_job_list,
+				    _het_job_start_test_list, node_space);
 	} else {
 		/* Test single map. */
-		map = (het_job_map_t *)list_find_first(pack_job_list,
-							_pack_find_map,
-							&pack_job_id);
-		_pack_start_test_single(node_space, map, true);
+		map = (het_job_map_t *)list_find_first(het_job_list,
+						       _het_job_find_map,
+							&het_job_id);
+		_het_job_start_test_single(node_space, map, true);
 	}
 }
 
@@ -3662,9 +3663,9 @@ static int _deadlock_job_list_sort(void *x, void *y)
 
 /*
  * Call at end of backup execution to release memory allocated by
- * _job_pack_deadlock_test()
+ * _het_job_deadlock_test()
  */
-static void _job_pack_deadlock_fini(void)
+static void _het_job_deadlock_fini(void)
 {
 	FREE_NULL_LIST(deadlock_global_list);
 }
@@ -3672,12 +3673,12 @@ static void _job_pack_deadlock_fini(void)
 /*
  * Determine if job can run at it's "start_time" or later.
  * job_ptr IN - job to test, set reason to "PACK_DEADLOCK" if it will deadlock
- * RET true if the job can not run due to possible deadlock with other pack job
+ * RET true if the job can not run due to possible deadlock with other hetjob
  *
- * NOTE: If there are a large number of pack jobs this will be painfully slow
+ * NOTE: If there are a large number of hetjobs this will be painfully slow
  *       as the algorithm must be order n^2
  */
-static bool _job_pack_deadlock_test(job_record_t *job_ptr)
+static bool _het_job_deadlock_test(job_record_t *job_ptr)
 {
 	deadlock_job_struct_t  *dl_job_ptr  = NULL, *dl_job_ptr2 = NULL;
 	deadlock_job_struct_t  *dl_job_ptr3 = NULL;
@@ -3720,19 +3721,19 @@ static bool _job_pack_deadlock_test(job_record_t *job_ptr)
 	list_sort(dl_part_ptr->deadlock_job_list, _deadlock_job_list_sort);
 
 	/*
-	 * Log current table of pack job start times by partition
+	 * Log current table of hetjob start times by partition
 	 */
 	if (debug_flags & DEBUG_FLAG_BACKFILL) {
 		part_iter = list_iterator_create(deadlock_global_list);
 		while ((dl_part_ptr2 = (deadlock_part_struct_t *)
 				       list_next(part_iter))){
-			info("Partition %s PackJobs:",
+			info("Partition %s Hetjobs:",
 			     dl_part_ptr2->part_ptr->name);
 			job_iter = list_iterator_create(dl_part_ptr2->
 							deadlock_job_list);
 			while ((dl_job_ptr2 = (deadlock_job_struct_t *)
 					      list_next(job_iter))) {
-				info("   PackJob %u to start at %"PRIu64,
+				info("   Hetjob %u to start at %"PRIu64,
 				     dl_job_ptr2->het_job_id,
 				     (uint64_t) dl_job_ptr2->start_time);
 			}
@@ -3742,7 +3743,7 @@ static bool _job_pack_deadlock_test(job_record_t *job_ptr)
 	}
 
 	/*
-	 * Determine if any pack jobs scheduled to start earlier than this job
+	 * Determine if any hetjobs scheduled to start earlier than this job
 	 * in this partition are scheduled to start after it in some other
 	 * partition
 	 */
@@ -3753,7 +3754,7 @@ static bool _job_pack_deadlock_test(job_record_t *job_ptr)
 		dl_job_ptr2 = list_find_first(dl_part_ptr2->deadlock_job_list,
 					      _deadlock_part_list_srch,
 					      job_ptr);
-		if (!dl_job_ptr2) /* Pack job not in this partition, no check */
+		if (!dl_job_ptr2) /* Hetjob not in this partition, no check */
 			continue;
 		job_iter = list_iterator_create(dl_part_ptr->deadlock_job_list);
 		while ((dl_job_ptr2 = (deadlock_job_struct_t *)
@@ -3773,8 +3774,8 @@ static bool _job_pack_deadlock_test(job_record_t *job_ptr)
 		list_iterator_destroy(job_iter);
 
 		if (have_deadlock && (debug_flags & DEBUG_FLAG_BACKFILL)) {
-			info("Pack job %u in partition %s would deadlock "
-			     "with pack job %u in partition %s, skipping it",
+			info("Hetjob %u in partition %s would deadlock "
+			     "with hetjob %u in partition %s, skipping it",
 			     dl_job_ptr->het_job_id,
 			     dl_part_ptr->part_ptr->name,
 			     dl_job_ptr3->het_job_id,
