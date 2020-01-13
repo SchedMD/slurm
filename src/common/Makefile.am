@@ -38,6 +38,7 @@ libcommon_la_SOURCES = 			\
 	net.c net.h                     \
 	log.c log.h			\
 	cbuf.c cbuf.h			\
+	data.c data.h			\
 	bitstring.c bitstring.h 	\
 	slurm_mpi.c slurm_mpi.h         \
 	pack.c pack.h			\

@@ -162,7 +162,7 @@ libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	node_features.lo xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	strnatcmp.lo forward.lo msg_aggr.lo strlcpy.lo list.lo \
-	xtree.lo xhash.lo net.lo log.lo cbuf.lo bitstring.lo \
+	xtree.lo xhash.lo net.lo log.lo cbuf.lo data.lo bitstring.lo \
 	slurm_mpi.lo pack.lo parse_config.lo parse_value.lo plugin.lo \
 	plugrack.lo power.lo print_fields.lo read_config.lo \
 	node_select.lo env.lo fd.lo slurm_cred.lo slurm_errno.lo \
@@ -231,25 +231,25 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/bitstring.Plo ./$(DEPDIR)/callerid.Plo \
 	./$(DEPDIR)/cbuf.Plo ./$(DEPDIR)/cli_filter.Plo \
 	./$(DEPDIR)/cpu_frequency.Plo ./$(DEPDIR)/daemonize.Plo \
-	./$(DEPDIR)/eio.Plo ./$(DEPDIR)/entity.Plo ./$(DEPDIR)/env.Plo \
-	./$(DEPDIR)/fd.Plo ./$(DEPDIR)/forward.Plo \
-	./$(DEPDIR)/global_defaults.Plo ./$(DEPDIR)/gpu.Plo \
-	./$(DEPDIR)/gres.Plo ./$(DEPDIR)/group_cache.Plo \
-	./$(DEPDIR)/half_duplex.Plo ./$(DEPDIR)/hostlist.Plo \
-	./$(DEPDIR)/io_hdr.Plo ./$(DEPDIR)/job_options.Plo \
-	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/layout.Plo \
-	./$(DEPDIR)/layouts_mgr.Plo ./$(DEPDIR)/list.Plo \
-	./$(DEPDIR)/log.Plo ./$(DEPDIR)/mapping.Plo \
-	./$(DEPDIR)/msg_aggr.Plo ./$(DEPDIR)/net.Plo \
-	./$(DEPDIR)/node_conf.Plo ./$(DEPDIR)/node_features.Plo \
-	./$(DEPDIR)/node_select.Plo ./$(DEPDIR)/optz.Plo \
-	./$(DEPDIR)/pack.Plo ./$(DEPDIR)/parse_config.Plo \
-	./$(DEPDIR)/parse_time.Plo ./$(DEPDIR)/parse_value.Plo \
-	./$(DEPDIR)/plugin.Plo ./$(DEPDIR)/plugrack.Plo \
-	./$(DEPDIR)/plugstack.Plo ./$(DEPDIR)/power.Plo \
-	./$(DEPDIR)/print_fields.Plo ./$(DEPDIR)/proc_args.Plo \
-	./$(DEPDIR)/read_config.Plo ./$(DEPDIR)/run_command.Plo \
-	./$(DEPDIR)/site_factor.Plo \
+	./$(DEPDIR)/data.Plo ./$(DEPDIR)/eio.Plo \
+	./$(DEPDIR)/entity.Plo ./$(DEPDIR)/env.Plo ./$(DEPDIR)/fd.Plo \
+	./$(DEPDIR)/forward.Plo ./$(DEPDIR)/global_defaults.Plo \
+	./$(DEPDIR)/gpu.Plo ./$(DEPDIR)/gres.Plo \
+	./$(DEPDIR)/group_cache.Plo ./$(DEPDIR)/half_duplex.Plo \
+	./$(DEPDIR)/hostlist.Plo ./$(DEPDIR)/io_hdr.Plo \
+	./$(DEPDIR)/job_options.Plo ./$(DEPDIR)/job_resources.Plo \
+	./$(DEPDIR)/layout.Plo ./$(DEPDIR)/layouts_mgr.Plo \
+	./$(DEPDIR)/list.Plo ./$(DEPDIR)/log.Plo \
+	./$(DEPDIR)/mapping.Plo ./$(DEPDIR)/msg_aggr.Plo \
+	./$(DEPDIR)/net.Plo ./$(DEPDIR)/node_conf.Plo \
+	./$(DEPDIR)/node_features.Plo ./$(DEPDIR)/node_select.Plo \
+	./$(DEPDIR)/optz.Plo ./$(DEPDIR)/pack.Plo \
+	./$(DEPDIR)/parse_config.Plo ./$(DEPDIR)/parse_time.Plo \
+	./$(DEPDIR)/parse_value.Plo ./$(DEPDIR)/plugin.Plo \
+	./$(DEPDIR)/plugrack.Plo ./$(DEPDIR)/plugstack.Plo \
+	./$(DEPDIR)/power.Plo ./$(DEPDIR)/print_fields.Plo \
+	./$(DEPDIR)/proc_args.Plo ./$(DEPDIR)/read_config.Plo \
+	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/site_factor.Plo \
 	./$(DEPDIR)/slurm_accounting_storage.Plo \
 	./$(DEPDIR)/slurm_acct_gather.Plo \
 	./$(DEPDIR)/slurm_acct_gather_energy.Plo \
@@ -614,6 +614,7 @@ libcommon_la_SOURCES = \
 	net.c net.h                     \
 	log.c log.h			\
 	cbuf.c cbuf.h			\
+	data.c data.h			\
 	bitstring.c bitstring.h 	\
 	slurm_mpi.c slurm_mpi.h         \
 	pack.c pack.h			\
@@ -818,6 +819,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cli_filter.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpu_frequency.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/daemonize.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eio.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/entity.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/env.Plo@am__quote@ # am--include-marker
@@ -1077,6 +1079,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
 	-rm -f ./$(DEPDIR)/cpu_frequency.Plo
 	-rm -f ./$(DEPDIR)/daemonize.Plo
+	-rm -f ./$(DEPDIR)/data.Plo
 	-rm -f ./$(DEPDIR)/eio.Plo
 	-rm -f ./$(DEPDIR)/entity.Plo
 	-rm -f ./$(DEPDIR)/env.Plo
@@ -1222,6 +1225,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
 	-rm -f ./$(DEPDIR)/cpu_frequency.Plo
 	-rm -f ./$(DEPDIR)/daemonize.Plo
+	-rm -f ./$(DEPDIR)/data.Plo
 	-rm -f ./$(DEPDIR)/eio.Plo
 	-rm -f ./$(DEPDIR)/entity.Plo
 	-rm -f ./$(DEPDIR)/env.Plo
