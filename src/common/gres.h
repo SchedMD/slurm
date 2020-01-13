@@ -63,8 +63,6 @@ typedef struct {
 	char *path;
 } gres_device_t;
 
-#define GRES_CONF_OLD_FILE	0x01	/* File= is configured. No independent
-					 * information about Type= option.*/
 #define GRES_CONF_HAS_FILE	0x02	/* File= is configured */
 #define GRES_CONF_HAS_TYPE	0x04	/* Type= is configured */
 

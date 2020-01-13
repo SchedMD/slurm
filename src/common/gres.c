@@ -1892,12 +1892,6 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 			     node_name, tmp_name, tmp_type,
 			     gres_flags2str(config_flags), tmp_cpus, cpu_cnt,
 			     count64, tmp_links);
-			}
-		if (config_flags & GRES_CONF_OLD_FILE) {
-			/* Old RPC, possibly with "Type=" */
-			config_flags = GRES_CONF_HAS_FILE;
-			if (tmp_type)
-				config_flags |= GRES_CONF_HAS_TYPE;
 		}
 	 	for (j = 0; j < gres_context_cnt; j++) {
 			bool new_has_file,  new_has_type;
