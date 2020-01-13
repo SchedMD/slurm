@@ -959,14 +959,14 @@ static void _abort_job(job_record_t *job_ptr, uint32_t job_state,
 static int _mark_pack_unused(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
-	job_ptr->bit_flags &= (~JOB_PACK_FLAG);
+	job_ptr->bit_flags &= (~HET_JOB_FLAG);
 	return 0;
 }
 
 static int _mark_pack_used(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
-	job_ptr->bit_flags |= JOB_PACK_FLAG;
+	job_ptr->bit_flags |= HET_JOB_FLAG;
 	return 0;
 }
 
@@ -976,7 +976,7 @@ static int _test_pack_used(void *x, void *arg)
 
 	if ((job_ptr->het_job_id == 0) || IS_JOB_FINISHED(job_ptr))
 		return 0;
-	if (job_ptr->bit_flags & JOB_PACK_FLAG)
+	if (job_ptr->bit_flags & HET_JOB_FLAG)
 		return 0;
 
 	error("Incomplete hetjob being aborted %pJ", job_ptr);
