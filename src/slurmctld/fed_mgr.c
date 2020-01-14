@@ -2289,7 +2289,13 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 		_destroy_dep_job(job_ptr);
 	} else {
 		print_job_dependency(job_ptr);
+		/*
+		 * We iterate over remote_dep_job_list in
+		 * another thread, so we need to use this lock
+		 */
+		slurm_mutex_lock(&dep_job_list_mutex);
 		list_append(remote_dep_job_list, job_ptr);
+		slurm_mutex_unlock(&dep_job_list_mutex);
 	}
 	_destroy_dep_msg(remote_dep_info);
 }
@@ -2672,9 +2678,7 @@ static void _spawn_threads(void)
 			    _remote_dep_update_thread, NULL);
 	slurm_mutex_unlock(&remote_dep_update_mutex);
 
-	slurm_mutex_lock(&dep_job_list_mutex);
 	slurm_thread_create(&dep_job_thread_id, _test_dep_job_thread, NULL);
-	slurm_mutex_unlock(&dep_job_list_mutex);
 
 	slurm_mutex_lock(&origin_dep_update_mutex);
 	slurm_thread_create(&origin_dep_thread_id, _origin_dep_update_thread,
@@ -2747,11 +2751,18 @@ extern int fed_mgr_init(void *db_conn)
 	if (!remote_dep_update_list)
 		remote_dep_update_list = list_create(_destroy_dep_msg);
 
+	/*
+	 * origin_dep_update_list should only be appended to and popped from.
+	 * So rely on the list's lock. If there are ever changes to iterate the
+	 * list, then a lock will be needed around the list.
+	 */
 	if (!origin_dep_update_list)
 		origin_dep_update_list = list_create(_destroy_dep_update_msg);
 
+	slurm_mutex_lock(&dep_job_list_mutex);
 	if (!remote_dep_job_list)
 		remote_dep_job_list = list_create(_destroy_dep_job);
+	slurm_mutex_unlock(&dep_job_list_mutex);
 
 	slurm_persist_conn_recv_server_init();
 	_spawn_threads();
