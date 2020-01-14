@@ -13472,6 +13472,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 						   job_specs->dependency);
 			if (rc != SLURM_SUCCESS)
 				error_code = rc;
+			else if ((rc =
+				  fed_mgr_submit_remote_dependencies(job_ptr)))
+				error_code = rc;
 			else {
 				job_ptr->details->orig_dependency =
 					xstrdup(job_ptr->details->dependency);

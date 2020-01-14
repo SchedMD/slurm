@@ -2309,12 +2309,20 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	} else {
 		print_job_dependency(job_ptr);
 		/*
-		 * We iterate over remote_dep_job_list in
-		 * another thread, so we need to use this lock
+		 * If we were sent a list of 0 dependencies, that means
+		 * the dependency was updated and cleared, so don't
+		 * add it to the list to test.
 		 */
-		slurm_mutex_lock(&dep_job_list_mutex);
-		list_append(remote_dep_job_list, job_ptr);
-		slurm_mutex_unlock(&dep_job_list_mutex);
+		if (list_count(job_ptr->details->depend_list)) {
+			/*
+			 * We need to lock this mutex since we iterate over
+			 * this list in another thread.
+			 */
+			slurm_mutex_lock(&dep_job_list_mutex);
+			list_append(remote_dep_job_list, job_ptr);
+			slurm_mutex_unlock(&dep_job_list_mutex);
+		} else
+			_destroy_dep_job(job_ptr);
 	}
 	_destroy_dep_msg(remote_dep_info);
 }
@@ -3865,6 +3873,9 @@ end_features:
 
 /*
  * Send dependencies of job_ptr to siblings.
+ *
+ * If the dependency string is NULL, that means we're telling the siblings
+ * to delete that dependency. Send empty string to indicate that.
  */
 extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr)
 {
@@ -3873,17 +3884,23 @@ extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr)
 	slurm_msg_t req_msg;
 	dep_msg_t dep_msg = { 0 };
 	slurmdb_cluster_rec_t *sibling;
+	uint32_t origin_id;
+
+	if (!_is_fed_job(job_ptr, &origin_id))
+		return SLURM_SUCCESS;
 
 	xassert(job_ptr->details);
-	xassert(job_ptr->details->dependency); /* char* */
-	xassert(job_ptr->details->depend_list); /* List of struct depend_spec */
 
-	dep_msg.dependency = job_ptr->details->dependency;
 	dep_msg.job_id = job_ptr->job_id;
 	dep_msg.job_name = job_ptr->name;
 	dep_msg.array_job_id = job_ptr->array_job_id;
 	dep_msg.array_task_id = job_ptr->array_task_id;
 	dep_msg.is_array = job_ptr->array_recs ? true : false;
+
+	if (!job_ptr->details->dependency)
+		dep_msg.dependency = "";
+	else
+		dep_msg.dependency = job_ptr->details->dependency;
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_SEND_DEP;
