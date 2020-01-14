@@ -35,6 +35,8 @@ HIGHLIGHTS
     stored in the slurmctld before throwing them away when the slurmdbd is down.
  -- The checkpoint plugin interface and all associated API calls have been
     removed.
+ -- slurm_init_job_desc_msg() initializes mail_type as uint16_t. This allows
+    mail_type to be set to NONE with scontrol.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

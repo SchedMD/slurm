@@ -1106,6 +1106,17 @@ extern int scontrol_update_job(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "WorkDir", MAX(taglen, 2))) {
 			job_msg.work_dir = val;
 			update_cnt++;
+		} else if (!xstrncasecmp(tag, "MailType", MAX(taglen, 5))) {
+			job_msg.mail_type = parse_mail_type(val);
+			if (job_msg.mail_type == INFINITE16) {
+				fprintf(stderr, "Invalid MailType: %s\n", val);
+				exit_code = 1;
+				return 0;
+			}
+			update_cnt++;
+		} else if (!xstrncasecmp(tag, "MailUser", MAX(taglen, 5))) {
+			job_msg.mail_user = val;
+			update_cnt++;
 		}
 		else {
 			exit_code = 1;

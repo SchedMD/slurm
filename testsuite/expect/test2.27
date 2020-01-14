@@ -1,0 +1,216 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate scontrol update of MailType and MailUser
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2019, SchedMD, LLC.
+# Written by Gavin Howard <gavin@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id          "2.27"
+set exit_code        0
+set job_id           0
+set node_cnt         1
+set user             [get_my_user_name]
+
+set cwd "[$bin_pwd]"
+
+print_header $test_id
+
+if {[test_front_end]} {
+	log_warn "This test is incompatible with front-end systems"
+	exit $exit_code
+}
+
+set available [available_nodes $partition ""]
+if {$available < $node_cnt} {
+	log_warn "not enough nodes currently available ($available avail, $node_cnt needed)"
+	exit $exit_code
+}
+
+proc end_it { exit_code } {
+	global test_id job_id config_path cwd bin_cp
+	cancel_job $job_id
+
+	log_info "Changing slurm.conf back"
+	exec $bin_cp -v $cwd/slurm.conf.orig $config_path/slurm.conf
+	reconfigure
+
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+proc submit { args regex } {
+	global sbatch scontrol number
+	set matches 0
+	set jobid 0
+
+	spawn $sbatch --wrap=hostname {*}$args
+	expect {
+		-re "Submitted batch job ($number)" {
+			set jobid $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$jobid == 0} {
+		log_error "did not get sbatch jobid"
+		end_it 1
+	}
+
+	spawn $scontrol show job $jobid
+	expect {
+		-re $regex {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$matches} {
+		log_error "scontrol show job $jobid failed to match '$regex'"
+		end_it 1
+	}
+
+	cancel_job $jobid
+}
+
+proc update { job_id args regex } {
+	global scontrol
+	set matches 0
+
+	spawn $scontrol update job $job_id {*}$args
+	expect {
+		timeout {
+			log_error "scontrol not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	spawn $scontrol show job $job_id
+	expect {
+		-re $regex {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			log_error "scontrol not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$matches} {
+		log_error "scontrol update job $args failed to match '$regex'"
+		end_it 1
+	}
+}
+
+set config_path [get_conf_path]
+if { $exit_code != 0 } {
+	exit $exit_code
+}
+
+copy_conf $config_path $cwd
+if { $exit_code != 0 } {
+	exit $exit_code
+}
+
+proc test_it {} {
+	global test_id sbatch job_id number user domain
+
+	set domain_str ""
+	if {$domain != ""} {
+		set domain_str "@$domain"
+	}
+
+	submit "-H" "MailUser=\\(null\\) MailType=NONE"
+	submit "-H --mail-type=begin,end" "MailUser=$user$domain_str MailType=BEGIN,END"
+	submit "-H --mail-user=blah" "MailUser=\\(null\\) MailType=NONE"
+
+	spawn $sbatch -J "test$test_id" --wrap=hostname -H
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	update $job_id "mailuser=blah mailtype=begin" "MailUser=blah MailType=BEGIN"
+	update $job_id "mailuser= mailtype=begin,end" "MailUser=$user$domain_str MailType=BEGIN,END"
+	update $job_id "mailtype=begin" "MailUser=$user$domain_str MailType=BEGIN"
+	update $job_id "mailuser=blah mailtype=begin" "MailUser=blah MailType=BEGIN"
+	update $job_id "mailuser=blah mailtype=none" "MailUser=\\(null\\) MailType=NONE"
+
+	cancel_job $job_id
+}
+
+# Test w/out MailDomain
+set domain ""
+exec $bin_sed -i "s/^\\(MailDomain.*\\)/#\\1/Ig" $config_path/slurm.conf
+reconfigure
+test_it
+
+
+# Test w/ MailDomain
+set domain "blah.com"
+set mail_conf "
+MailDomain = $domain
+"
+exec $bin_echo $mail_conf >> $config_path/slurm.conf
+reconfigure
+test_it
+
+end_it 0
+
