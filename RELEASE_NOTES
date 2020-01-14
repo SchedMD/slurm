@@ -37,6 +37,8 @@ HIGHLIGHTS
     removed.
  -- slurm_init_job_desc_msg() initializes mail_type as uint16_t. This allows
     mail_type to be set to NONE with scontrol.
+ -- Add new slurm_spank_log() function to print messages back to the user from
+    within a SPANK plugin without prepending "error: " from slurm_error().
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

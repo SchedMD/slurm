@@ -59,6 +59,10 @@ documents those changes that are of interest to users and administrators.
  -- Add ability to set MailType and MailUser of job with scontrol.
  -- slurm_init_job_desc_msg() initializes mail_type as uint16_t. This allows
     mail_type to be set to NONE with scontrol.
+ -- Add new slurm_spank_log() function to print messages back to the user from
+    within a SPANK plugin. (This can be done with slurm_error() instead, but
+    that will always prepend "error: " to every message which may lead to
+    confusion.)
 
 * Changes in Slurm 19.05.6
 ==========================

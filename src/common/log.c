@@ -87,7 +87,7 @@
 	    (sched && (level <= highest_sched_log_level))) {	\
 		va_list ap;					\
 		va_start(ap, fmt);				\
-		_log_msg(level, sched, fmt, ap);		\
+		_log_msg(level, sched, false, fmt, ap);		\
 		va_end(ap);					\
 	}							\
 }
@@ -112,6 +112,7 @@ strong_alias(log_var,		slurm_log_var);
 strong_alias(fatal,		slurm_fatal) __attribute__((noreturn));
 strong_alias(fatal_abort,	slurm_fatal_abort) __attribute__((noreturn));
 strong_alias(error,		slurm_error);
+strong_alias(spank_log,		slurm_spank_log);
 strong_alias(info,		slurm_info);
 strong_alias(verbose,		slurm_verbose);
 strong_alias(sched_error,	slurm_sched_error);
@@ -1134,7 +1135,7 @@ static void _log_printf(log_t *log, cbuf_t *cb, FILE *stream,
  * log a message at the specified level to facilities that have been
  * configured to receive messages at that level
  */
-static void _log_msg(log_level_t level, bool sched, const char *fmt, va_list args)
+static void _log_msg(log_level_t level, bool sched, bool spank, const char *fmt, va_list args)
 {
 	char *pfx = "";
 	char *buf = NULL;
@@ -1174,6 +1175,7 @@ static void _log_msg(log_level_t level, bool sched, const char *fmt, va_list arg
 		case LOG_LEVEL_ERROR:
 			priority = LOG_ERR;
 			pfx = sched? "error: sched: " : "error: ";
+			pfx = spank ? "" : pfx;
 			break;
 
 		case LOG_LEVEL_INFO:
@@ -1224,7 +1226,9 @@ static void _log_msg(log_level_t level, bool sched, const char *fmt, va_list arg
 	if (level <= log->opt.stderr_level) {
 
 		fflush(stdout);
-		if (log->fmt == LOG_FMT_THREAD_ID) {
+		if (spank) {
+			_log_printf(log, log->buf, stderr, "%s\n", buf);
+		} else if (log->fmt == LOG_FMT_THREAD_ID) {
 			char tmp[64];
 			_set_idbuf(tmp, sizeof(tmp));
 			_log_printf(log, log->buf, stderr, "%s: %s%s\n",
@@ -1338,6 +1342,18 @@ int error(const char *fmt, ...)
 	 *    do "return error (...);"
 	 */
 	return SLURM_ERROR;
+}
+
+/*
+ * Like error(), but printed without the error: prefix so SPANK plugins
+ * can have a convenient way to return messages to the user.
+ */
+void spank_log(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	_log_msg(LOG_LEVEL_ERROR, false, true, fmt, ap);
+	va_end(ap);
 }
 
 void info(const char *fmt, ...)

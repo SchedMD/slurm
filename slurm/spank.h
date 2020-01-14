@@ -423,6 +423,14 @@ extern void slurm_debug2 (const char *format, ...)
 extern void slurm_debug3 (const char *format, ...)
   __attribute__ ((format (printf, 1, 2)));
 
+/*
+ * Print at the same log level as error(), but without prefixing the message
+ * with "error: ". Useful to report back to srun commands from SPANK plugins,
+ * as info() will only go to the logs.
+ */
+extern void slurm_spank_log(const char *, ...)
+  __attribute__ ((format (printf, 1, 2)));
+
 #ifdef __cplusplus
 }
 #endif

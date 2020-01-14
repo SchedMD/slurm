@@ -319,6 +319,14 @@ void	sched_verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 	} while (0)
 
 /*
+ * Print at the same log level as error(), but without prefixing the message
+ * with "error: ". Useful to report back to srun commands from SPANK plugins,
+ * as info() will only go to the logs.
+ */
+void spank_log(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+
+
+/*
  * Used to print log messages only when a specific DEBUG_FLAG_* option has
  * been enabled. Automatically prepends 'DEBUG_FLAG_' to the flag option name
  * to save space. E.g., to print a message only when DEBUG_FLAG_STEPS is
