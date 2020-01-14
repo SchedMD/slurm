@@ -417,16 +417,6 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 
 	xfree(job->envtp->task_count);
 
-	if (task->argv[0] && *task->argv[0] != '/') {
-		/*
-		 * Normally the client (srun) expands the command name
-		 * to a fully qualified path, but in --multi-prog mode it
-		 * is left up to the server to search the PATH for the
-		 * executable.
-		 */
-		task->argv[0] = _build_path(task->argv[0], job->env, NULL);
-	}
-
 	if (!job->batch && (job->stepid != SLURM_EXTERN_CONT)) {
 		if (switch_g_job_attach(job->switch_job, &job->env,
 					job->nodeid, (uint32_t) local_proc_id,
@@ -504,6 +494,18 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 		error("No executable program specified for this task");
 		exit(2);
 	}
+
+	if (*task->argv[0] != '/') {
+		/*
+		 * Handle PATH resolution for the command to launch.
+		 * Need to handle this late so that SPANK and other plugins
+		 * have a chance to manipulate the PATH and/or change the
+		 * filesystem namespaces into the final arrangement, which
+		 * may affect which executable we select.
+		 */
+		task->argv[0] = _build_path(task->argv[0], job->env, NULL);
+	}
+
 
 	/* Do this last so you don't worry too much about the users
 	   limits including the slurmstepd in with it.
