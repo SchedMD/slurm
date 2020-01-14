@@ -126,19 +126,6 @@ static uint64_t _get_latest_stats(int type)
 	return data;
 }
 
-static bool _run_in_daemon(void)
-{
-	static bool set = false;
-	static bool run = false;
-
-	if (!set) {
-		set = 1;
-		run = run_in_daemon("slurmd,slurmstepd");
-	}
-
-	return run;
-}
-
 static void _get_joules_task(acct_gather_energy_t *energy)
 {
 	uint64_t curr_energy, diff_energy = 0;
@@ -235,7 +222,7 @@ extern int acct_gather_energy_p_update_node_energy(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmdstepd());
 
 	if (!local_energy || local_energy->current_watts == NO_VAL)
 		return rc;
@@ -262,7 +249,7 @@ extern int init(void)
 
 extern int fini(void)
 {
-	if (!_run_in_daemon())
+	if (!running_in_slurmdstepd())
 		return SLURM_SUCCESS;
 
 	acct_gather_energy_destroy(local_energy);
@@ -278,7 +265,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	time_t *last_poll = (time_t *)data;
 	uint16_t *sensor_cnt = (uint16_t *)data;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmdstepd());
 
 	if (!local_energy) {
 		debug("%s: trying to get data %d, but no local_energy yet.",
@@ -318,7 +305,7 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 {
 	int rc = SLURM_SUCCESS;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmdstepd());
 
 	switch (data_type) {
 	case ENERGY_DATA_RECONFIG:
@@ -347,7 +334,7 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 {
 	static bool flag_init = 0;
 
-	if (!_run_in_daemon())
+	if (!running_in_slurmdstepd())
 		return;
 
 	/* Already been here, we shouldn't need to visit again */

@@ -112,7 +112,7 @@ extern int init(void)
 	}
 	xfree(topotype);
 	debug_flags = slurm_get_debug_flags();
-	run_in_slurmctld = run_in_daemon("slurmctld");
+	run_in_slurmctld = running_in_slurmctld();
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }

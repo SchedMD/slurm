@@ -5323,7 +5323,7 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 		char *comm_params = slurm_get_comm_parameters();
 		char *var;
 
-		if (run_in_daemon("slurmctld"))
+		if (running_in_slurmctld())
 			var = "NoCtldInAddrAny";
 		else
 			var = "NoInAddrAny";

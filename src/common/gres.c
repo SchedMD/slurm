@@ -621,7 +621,7 @@ extern int gres_plugin_init(void)
 				&select_plugin_type) != SLURM_SUCCESS)) {
 		select_plugin_type = NO_VAL;	/* error */
 	}
-	if (have_mps && run_in_daemon("slurmctld") &&
+	if (have_mps && running_in_slurmctld() &&
 	    (select_plugin_type != SELECT_TYPE_CONS_TRES)) {
 		fatal("Use of gres/mps requires the use of select/cons_tres");
 	}
@@ -902,19 +902,6 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 	return 0;
 }
 
-static bool _run_in_daemon(void)
-{
-	static bool set = false;
-	static bool run = false;
-
-	if (!set) {
-		set = 1;
-		run = run_in_daemon("slurmd,slurmstepd");
-	}
-
-	return run;
-}
-
 /* Make sure that specified file name exists, wait up to 20 seconds or generate
  * fatal error and exit. */
 static void _my_stat(char *file_name)
@@ -923,7 +910,7 @@ static void _my_stat(char *file_name)
 	bool sent_msg = false;
 	int i;
 
-	if (!_run_in_daemon())
+	if (!running_in_slurmdstepd())
 		return;
 
 	for (i = 0; i < 20; i++) {

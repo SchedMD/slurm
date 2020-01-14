@@ -550,7 +550,7 @@ extern int jobacct_gather_init(void)
 	slurm_mutex_unlock(&init_run_mutex);
 
 	/* only print the WARNING messages if in the slurmctld */
-	if (!run_in_daemon("slurmctld"))
+	if (!running_in_slurmctld())
 		goto done;
 
 	plugin_type = type;

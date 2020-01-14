@@ -139,7 +139,7 @@ static void _set_collectors(char *this_node_name)
 	return; /* on a FrontEnd system this would never be useful. */
 #endif
 
-	if (!run_in_daemon("slurmd"))
+	if (!running_in_slurmd())
 		return; /* Only compute nodes have collectors */
 
 	/*

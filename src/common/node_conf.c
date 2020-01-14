@@ -372,8 +372,9 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 	int count;
 	int i, rc, max_rc = SLURM_SUCCESS;
 	bool in_daemon;
+	static bool daemon_run = false, daemon_set = false;
 
-	in_daemon = run_in_daemon("slurmctld,slurmd");
+	in_daemon = run_in_daemon(&daemon_run, &daemon_set, "slurmctld,slurmd");
 
 	count = slurm_conf_nodename_array(&ptr_array);
 	if (count == 0)

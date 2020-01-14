@@ -271,19 +271,6 @@ static void _hardware(void)
 		info("RAPL Found: %d packages", nb_pkg);
 }
 
-static bool _run_in_daemon(void)
-{
-	static bool set = false;
-	static bool run = false;
-
-	if (!set) {
-		set = 1;
-		run = run_in_daemon("slurmd,slurmstepd");
-	}
-
-	return run;
-}
-
 /*
  * _send_drain_request()
  */
@@ -448,7 +435,7 @@ extern int acct_gather_energy_p_update_node_energy(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmdstepd());
 
 	if (!local_energy) {
 		debug("%s: trying to update node energy, but no local_energy "
@@ -485,7 +472,7 @@ extern int fini(void)
 {
 	int i;
 
-	if (!_run_in_daemon())
+	if (!running_in_slurmdstepd())
 		return SLURM_SUCCESS;
 
 	for (i = 0; i < nb_pkg; i++) {
@@ -508,7 +495,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	time_t *last_poll = (time_t *)data;
 	uint16_t *sensor_cnt = (uint16_t *)data;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmdstepd());
 
 	if (!local_energy) {
 		debug("%s: trying to get data %d, but no local_energy yet.",
@@ -548,7 +535,7 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 {
 	int rc = SLURM_SUCCESS;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmdstepd());
 
 	switch (data_type) {
 	case ENERGY_DATA_RECONFIG:
@@ -578,7 +565,7 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 	int i;
 	uint64_t result;
 
-	if (!_run_in_daemon())
+	if (!running_in_slurmdstepd())
 		return;
 
 	/* Already been here, we shouldn't need to visit again */

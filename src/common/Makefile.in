@@ -165,9 +165,9 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	xtree.lo xhash.lo net.lo log.lo cbuf.lo data.lo bitstring.lo \
 	slurm_mpi.lo pack.lo parse_config.lo parse_value.lo plugin.lo \
 	plugrack.lo power.lo print_fields.lo read_config.lo \
-	node_select.lo env.lo fd.lo slurm_cred.lo slurm_errno.lo \
-	slurm_ext_sensors.lo slurm_mcs.lo slurm_priority.lo \
-	slurm_protocol_api.lo slurm_protocol_pack.lo \
+	run_in_daemon.lo node_select.lo env.lo fd.lo slurm_cred.lo \
+	slurm_errno.lo slurm_ext_sensors.lo slurm_mcs.lo \
+	slurm_priority.lo slurm_protocol_api.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket.lo \
 	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdb_defs.lo \
 	slurmdb_pack.lo slurmdbd_defs.lo slurmdbd_pack.lo \
@@ -249,7 +249,8 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/plugrack.Plo ./$(DEPDIR)/plugstack.Plo \
 	./$(DEPDIR)/power.Plo ./$(DEPDIR)/print_fields.Plo \
 	./$(DEPDIR)/proc_args.Plo ./$(DEPDIR)/read_config.Plo \
-	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/site_factor.Plo \
+	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
+	./$(DEPDIR)/site_factor.Plo \
 	./$(DEPDIR)/slurm_accounting_storage.Plo \
 	./$(DEPDIR)/slurm_acct_gather.Plo \
 	./$(DEPDIR)/slurm_acct_gather_energy.Plo \
@@ -625,6 +626,7 @@ libcommon_la_SOURCES = \
 	power.c power.h			\
 	print_fields.c print_fields.h	\
 	read_config.c read_config.h	\
+	run_in_daemon.c run_in_daemon.h	\
 	node_select.c node_select.h	\
 	env.c env.h      		\
 	fd.c fd.h       		\
@@ -857,6 +859,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_args.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_command.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_in_daemon.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/site_factor.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_accounting_storage.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_acct_gather.Plo@am__quote@ # am--include-marker
@@ -1117,6 +1120,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/proc_args.Plo
 	-rm -f ./$(DEPDIR)/read_config.Plo
 	-rm -f ./$(DEPDIR)/run_command.Plo
+	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
 	-rm -f ./$(DEPDIR)/site_factor.Plo
 	-rm -f ./$(DEPDIR)/slurm_accounting_storage.Plo
 	-rm -f ./$(DEPDIR)/slurm_acct_gather.Plo
@@ -1263,6 +1267,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/proc_args.Plo
 	-rm -f ./$(DEPDIR)/read_config.Plo
 	-rm -f ./$(DEPDIR)/run_command.Plo
+	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
 	-rm -f ./$(DEPDIR)/site_factor.Plo
 	-rm -f ./$(DEPDIR)/slurm_accounting_storage.Plo
 	-rm -f ./$(DEPDIR)/slurm_acct_gather.Plo

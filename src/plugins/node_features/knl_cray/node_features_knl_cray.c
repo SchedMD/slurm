@@ -1966,7 +1966,7 @@ extern int init(void)
 	}
 	gres_plugin_add("hbm");
 
-	if (ume_check_interval && run_in_daemon("slurmd")) {
+	if (ume_check_interval && running_in_slurmd()) {
 		slurm_mutex_lock(&ume_mutex);
 		slurm_thread_create(&ume_thread, _ume_agent, NULL);
 		slurm_mutex_unlock(&ume_mutex);

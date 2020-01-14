@@ -108,6 +108,7 @@ extern int slurm_auth_init(char *auth_type)
 	char *auth_alt_types = NULL, *list = NULL;
 	char *auth_plugin_type = NULL, *type, *last = NULL;
 	char *plugin_type = "auth";
+	static bool daemon_run = false, daemon_set = false;
 
 	if (init_run && (g_context_num > 0))
 		return retval;
@@ -121,7 +122,7 @@ extern int slurm_auth_init(char *auth_type)
 		slurm_set_auth_type(auth_type);
 
 	type = auth_plugin_type = slurm_get_auth_type();
-	if (run_in_daemon("slurmctld,slurmdbd"))
+	if (run_in_daemon(&daemon_run, &daemon_set, "slurmctld,slurmdbd"))
 		list = auth_alt_types = slurm_get_auth_alt_types();
 	g_context_num = 0;
 	if (!auth_plugin_type || auth_plugin_type[0] == '\0')

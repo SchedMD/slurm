@@ -685,7 +685,7 @@ static void _start_aeld_thread(void)
 	debug("cray: %s", __func__);
 
 	// Spawn the aeld thread, only in slurmctld.
-	if (!aeld_running && run_in_daemon("slurmctld")) {
+	if (!aeld_running && running_in_slurmctld()) {
 		aeld_running = 1;
 		slurm_thread_create(&aeld_thread, _aeld_event_loop, NULL);
 	}
@@ -868,12 +868,12 @@ extern int init ( void )
 
 #if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 	/* Read and store the CCM configured partition name(s). */
-	if (run_in_daemon("slurmctld")) {
+	if (running_in_slurmctld()) {
 		/* Get any CCM configuration information */
 		ccm_get_config();
 	}
 #endif
-	if (run_in_daemon("slurmctld") && !slurmctld_primary) {
+	if (running_in_slurmctld() && !slurmctld_primary) {
 		START_TIMER;
 		if (slurmctld_config.scheduling_disabled) {
 			info("Scheduling disabled on backup");

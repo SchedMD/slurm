@@ -291,7 +291,7 @@ cpu_freq_init(slurmd_conf_t *conf)
 	xfree(slurmd_spooldir);
 	slurmd_spooldir = xstrdup(conf->spooldir);
 
-	if (run_in_daemon("slurmstepd"))
+	if (running_in_slurmstepd())
 		return;
 
 	/* check for cpufreq support */

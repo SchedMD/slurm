@@ -1723,7 +1723,7 @@ static void _stop_power_agent(void)
  */
 extern int init(void)
 {
-	if (!run_in_daemon("slurmctld"))
+	if (!running_in_slurmctld())
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&thread_flag_mutex);

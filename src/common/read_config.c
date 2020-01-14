@@ -96,7 +96,6 @@ strong_alias(destroy_config_plugin_params, slurm_destroy_config_plugin_params);
 strong_alias(destroy_config_key_pair, slurm_destroy_config_key_pair);
 strong_alias(get_extra_conf_path, slurm_get_extra_conf_path);
 strong_alias(sort_key_pairs, slurm_sort_key_pairs);
-strong_alias(run_in_daemon, slurm_run_in_daemon);
 
 /*
  * Instantiation of the "extern slurm_ctl_conf_t slurmctld_conf" and
@@ -3636,7 +3635,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->fs_dampening_factor = 1;
 
 	if (s_p_get_uint16(&uint16_tmp, "FastSchedule", hashtbl) &&
-	    run_in_daemon("slurmctld")) {
+	    running_in_slurmctld()) {
 		if (uint16_tmp == 1)
 			error("Ignoring obsolete FastSchedule=1 option. Please remove from your configuration.");
 		else if (uint16_tmp == 2)
@@ -3954,7 +3953,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	else if (!xstrcmp(conf->mpi_default, "openmpi")) {
 		xfree(conf->mpi_default);
 		conf->mpi_default = xstrdup("none");
-		if (run_in_daemon("slurmctld"))
+		if (running_in_slurmctld())
 			error("Translating obsolete 'MpiDefault=openmpi' option to 'MpiDefault=none'. Please update your configuration.");
 	}
 
@@ -5738,38 +5737,6 @@ extern char *get_extra_conf_path(char *conf_name)
 	xstrcat(rc, conf_name);
 
 	return rc;
-}
-
-extern bool run_in_daemon(char *daemons)
-{
-	char *full, *start_char, *end_char;
-
-	xassert(slurm_prog_name);
-
-	if (!xstrcmp(daemons, slurm_prog_name))
-		return true;
-
-	full = xstrdup(daemons);
-	start_char = full;
-
-	while (start_char && (end_char = strstr(start_char, ","))) {
-		*end_char = 0;
-		if (!xstrcmp(start_char, slurm_prog_name)) {
-			xfree(full);
-			return true;
-		}
-
-		start_char = end_char + 1;
-	}
-
-	if (start_char && !xstrcmp(start_char, slurm_prog_name)) {
-		xfree(full);
-		return true;
-	}
-
-	xfree(full);
-
-	return false;
 }
 
 /*

@@ -48,6 +48,7 @@
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/parse_config.h"
+#include "src/common/run_in_daemon.h"
 
 extern slurm_ctl_conf_t slurmctld_conf;
 extern char *default_slurm_config_file;
@@ -638,13 +639,6 @@ extern int sort_key_pairs(void *v1, void *v2);
  * return value must be xfreed
  */
 extern char *get_extra_conf_path(char *conf_name);
-
-/* Determine slurm_prog_name (calling process) is in list of daemons
- *
- * in - daemons (comma separated list of daemons i.e. slurmd,slurmstepd
- * returns true if slurm_prog_name (set in log.c) is in list, false otherwise.
- */
-extern bool run_in_daemon(char *daemons);
 
 /* Translate a job constraint specification into a node feature specification
  * RET - String MUST be xfreed */

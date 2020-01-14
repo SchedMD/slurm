@@ -161,19 +161,6 @@ static int _load_plugins(void *x, void *arg)
 	return 0;
 }
 
-static bool _running_in_slurmctld(void)
-{
-	static bool set = false;
-	static bool run = false;
-
-	if (!set) {
-		set = 1;
-		run = run_in_daemon("slurmctld");
-	}
-
-	return run;
-}
-
 extern int select_char2coord(char coord)
 {
 	if ((coord >= '0') && (coord <= '9'))
@@ -793,7 +780,7 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 	 * relevant to this cluster.
 	 */
 	if ((nodeinfo_ptr->plugin_id != select_context_default) &&
-	    _running_in_slurmctld()) {
+	    running_in_slurmctld()) {
 		select_g_select_nodeinfo_free(nodeinfo_ptr);
 		*nodeinfo = select_g_select_nodeinfo_alloc();
 	}
@@ -1061,7 +1048,7 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 	 * relevant to this cluster.
 	 */
 	if ((jobinfo_ptr->plugin_id != select_context_default) &&
-	    _running_in_slurmctld()) {
+	    running_in_slurmctld()) {
 		select_g_select_jobinfo_free(jobinfo_ptr);
 		*jobinfo = select_g_select_jobinfo_alloc();
 	}

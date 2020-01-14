@@ -322,20 +322,6 @@ static int _update_node_interconnect(void)
 						     ofed_sens.update_time);
 }
 
-static bool _run_in_daemon(void)
-{
-	static bool set = false;
-	static bool run = false;
-
-	if (!set) {
-		set = 1;
-		run = run_in_daemon("slurmstepd");
-	}
-
-	return run;
-}
-
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -344,7 +330,7 @@ extern int init(void)
 {
 	slurmdb_tres_rec_t tres_rec;
 
-	if (!_run_in_daemon())
+	if (!running_in_slurmstepd())
 		return SLURM_SUCCESS;
 
 	debug_flags = slurm_get_debug_flags();
@@ -359,7 +345,7 @@ extern int init(void)
 
 extern int fini(void)
 {
-	if (!_run_in_daemon())
+	if (!running_in_slurmstepd())
 		return SLURM_SUCCESS;
 
 	if ((srcport) && (!(dataset_id < 0))) {
@@ -408,7 +394,7 @@ extern void acct_gather_interconnect_p_conf_set(s_p_hashtbl_t *tbl)
 			ofed_conf.port = INTERCONNECT_DEFAULT_PORT;
 	}
 
-	if (!_run_in_daemon())
+	if (!running_in_slurmstepd())
 		return;
 
 	debug("%s loaded", plugin_name);

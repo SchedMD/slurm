@@ -200,26 +200,13 @@ static int _create_directories(void)
 	return SLURM_SUCCESS;
 }
 
-static bool _run_in_daemon(void)
-{
-	static bool set = false;
-	static bool run = false;
-
-	if (!set) {
-		set = 1;
-		run = run_in_daemon("slurmstepd");
-	}
-
-	return run;
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
 extern int init(void)
 {
-	if (!_run_in_daemon())
+	if (!running_in_slurmstepd())
 		return SLURM_SUCCESS;
 
 	debug_flags = slurm_get_debug_flags();
@@ -305,7 +292,7 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	char *profile_file_name;
 	char *profile_str;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmstepd());
 
 	g_job = job;
 
@@ -408,7 +395,7 @@ extern int acct_gather_profile_p_node_step_end(void)
 	int rc = SLURM_SUCCESS;
 	size_t i;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmstepd());
 
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
@@ -451,7 +438,7 @@ extern int acct_gather_profile_p_task_start(uint32_t taskid)
 {
 	int rc = SLURM_SUCCESS;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmstepd());
 	xassert(g_job);
 
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
@@ -607,7 +594,7 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 	}
 
 	/* ensure that we have to record something */
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmstepd());
 	xassert(g_job);
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
