@@ -3174,7 +3174,7 @@ static void _add_dependency_to_list(List depend_list,
  * One char past the end of valid job id's is returned in (*sep_ptr2).
  * Set (*rc) to ESLURM_DEPENDENCY for invalid job id's.
  */
-static void _parse_dependency_jobid_new(struct job_record *job_ptr,
+static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 					List new_depend_list, char *sep_ptr,
 					char **sep_ptr2, char *tok,
 					uint16_t depend_type, int select_hetero,
@@ -3346,12 +3346,12 @@ static void _parse_dependency_jobid_new(struct job_record *job_ptr,
  * One char past the end of a valid job id will be returned in (*sep_ptr).
  * For an invalid job id, (*rc) will be set to ESLURM_DEPENDENCY.
  */
-static void _parse_dependency_jobid_old(struct job_record *job_ptr,
+static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 					List new_depend_list, char **sep_ptr,
 					char *tok, int *rc)
 {
 	struct depend_spec *dep_ptr;
-	struct job_record *dep_job_ptr = NULL;
+	job_record_t *dep_job_ptr = NULL;
 	uint32_t job_id, array_task_id;
 	char *tmp = NULL;
 

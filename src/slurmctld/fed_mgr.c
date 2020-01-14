@@ -1330,7 +1330,7 @@ static void _destroy_dep_update_msg(void *object)
 
 static void _destroy_dep_job(void *object)
 {
-	struct job_record *job_ptr = (struct job_record *)object;
+	job_record_t *job_ptr = (job_record_t *)object;
 
 	if (job_ptr) {
 		xassert(job_ptr->magic == JOB_MAGIC);
