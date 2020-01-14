@@ -693,12 +693,12 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	slurm_step_launch_params_t_init(&launch_params);
 	memcpy(&callbacks, step_callbacks, sizeof(callbacks));
 
-	task_state = task_state_find(job->jobid, job->stepid, job->pack_offset,
-				     task_state_list);
+	task_state = task_state_find(job->jobid, job->stepid,
+				     job->het_job_offset, task_state_list);
 	if (!task_state) {
 		task_state = task_state_create(job->jobid, job->stepid,
-					       job->pack_offset, job->ntasks,
-					       job->pack_task_offset);
+					       job->het_job_offset, job->ntasks,
+					       job->het_job_task_offset);
 		slurm_mutex_lock(&pack_lock);
 		if (!local_job_list)
 			local_job_list = list_create(NULL);
@@ -728,16 +728,16 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.remote_input_filename  = fname_remote_string(job->ifname);
 	launch_params.remote_error_filename  = fname_remote_string(job->efname);
 	launch_params.node_offset = job->node_offset;
-	launch_params.pack_jobid  = job->pack_jobid;
-	launch_params.pack_nnodes = job->pack_nnodes;
-	launch_params.pack_ntasks = job->pack_ntasks;
-	launch_params.pack_offset = job->pack_offset;
+	launch_params.pack_jobid  = job->het_job_id;
+	launch_params.pack_nnodes = job->het_job_nnodes;
+	launch_params.pack_ntasks = job->het_job_ntasks;
+	launch_params.pack_offset = job->het_job_offset;
 	launch_params.pack_step_cnt = srun_opt->pack_step_cnt;
-	launch_params.pack_task_offset = job->pack_task_offset;
-	launch_params.pack_task_cnts = job->pack_task_cnts;
-	launch_params.pack_tids = job->pack_tids;
-	launch_params.pack_tid_offsets = job->pack_tid_offsets;
-	launch_params.pack_node_list = job->pack_node_list;
+	launch_params.pack_task_offset = job->het_job_task_offset;
+	launch_params.pack_task_cnts = job->het_job_task_cnts;
+	launch_params.pack_tids = job->het_job_tids;
+	launch_params.pack_tid_offsets = job->het_job_tid_offsets;
+	launch_params.pack_node_list = job->het_job_node_list;
 	launch_params.partition = job->partition;
 	launch_params.profile = opt_local->profile;
 	launch_params.task_prolog = srun_opt->task_prolog;
@@ -855,7 +855,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 					    launch_params.argv[0]);
 		} else {
 			mpir_set_executable_names(launch_params.argv[0],
-						  job->pack_task_offset,
+						  job->het_job_task_offset,
 						  job->ntasks);
 		}
 
@@ -882,7 +882,7 @@ extern int launch_p_step_wait(srun_job_t *job, bool got_alloc,
 	slurm_step_launch_wait_finish(job->step_ctx);
 	if ((MPIR_being_debugged == 0) && retry_step_begin &&
 	    (retry_step_cnt < MAX_STEP_RETRIES) &&
-	     (job->pack_jobid == NO_VAL)) {	/* Not pack step */
+	     (job->het_job_id == NO_VAL)) {	/* Not hetjob step */
 		retry_step_begin = false;
 		slurm_step_ctx_destroy(job->step_ctx);
 		if (got_alloc) 

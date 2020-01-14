@@ -83,15 +83,16 @@ typedef struct srun_job {
 	uint32_t stepid;	/* assigned step id 	                  */
 	uint32_t node_offset;	/* pack job node offset or NO_VAL */
 
-	uint32_t pack_jobid;	/* pack job leader or NO_VAL */
-	char    *pack_node_list;/* node list for combined pack job */
-	uint32_t pack_nnodes;	/* total node count for entire pack job */
-	uint32_t pack_ntasks;	/* total task count for entire pack job */
-	uint32_t pack_offset;	/* pack job offset or NO_VAL */
-	uint32_t pack_task_offset;/* pack job task offset or NO_VAL */
-	uint16_t *pack_task_cnts; /* tasks invoked on each node of pack job */
-	uint32_t **pack_tids;	/* Task IDs on each node of pack job */
-	uint32_t *pack_tid_offsets;/* map of tasks (by id) to originating pack*/
+	uint32_t het_job_id;	/* Hetjob leader or NO_VAL */
+	char    *het_job_node_list; /* node list for combined hetjob */
+	uint32_t het_job_nnodes; /* total node count for entire hetjob */
+	uint32_t het_job_ntasks; /* total task count for entire hetjob */
+	uint32_t het_job_offset; /* Hetjob offset or NO_VAL */
+	uint32_t het_job_task_offset; /* Hetjob task offset or NO_VAL */
+	uint16_t *het_job_task_cnts; /* tasks invoked on each node of hetjob */
+	uint32_t **het_job_tids;	/* Task IDs on each node of hetjob */
+	uint32_t *het_job_tid_offsets;/* map of tasks (by id) to originating
+				       * hetjob */
 
 	uint32_t cpu_count;	/* allocated CPUs */
 	uint32_t nhosts;	/* node count */

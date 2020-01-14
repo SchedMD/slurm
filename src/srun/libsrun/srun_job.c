@@ -749,7 +749,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 		job_iter = list_iterator_create(srun_job_list);
 		while ((job = list_next(job_iter))) {
 			if (pack_jobid)
-				job->pack_jobid = pack_jobid;
+				job->het_job_id = pack_jobid;
 			job->stepid = NO_VAL;
 			pack_nnodes += job->nhosts;
 			pack_ntasks += job->ntasks;
@@ -762,9 +762,9 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			if (!opt_local)
 				fatal("%s: opt_list too short", __func__);
 			job->node_offset = node_offset;
-			job->pack_nnodes = pack_nnodes;
-			job->pack_ntasks = pack_ntasks;
-			job->pack_task_offset = task_offset;
+			job->het_job_nnodes = pack_nnodes;
+			job->het_job_ntasks = pack_ntasks;
+			job->het_job_task_offset = task_offset;
 			if (step_id != NO_VAL)
 				job->stepid = step_id;
 			rc = create_job_step(job, use_all_cpus, opt_local);
@@ -822,10 +822,10 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 		return rc;
 	} else if (job) {
 		if (pack_jobid) {
-			job->pack_jobid  = pack_jobid;
-			job->pack_nnodes = job->nhosts;
-			job->pack_ntasks = job->ntasks;
-			job->pack_task_offset = 0;
+			job->het_job_id  = pack_jobid;
+			job->het_job_nnodes = job->nhosts;
+			job->het_job_ntasks = job->ntasks;
+			job->het_job_task_offset = 0;
 		}
 		return create_job_step(job, use_all_cpus, &opt);
 	} else {
@@ -1177,7 +1177,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 				if (!job)
 					exit(error_exit);
 				if (max_pack_offset > 0)
-					job->pack_offset = pack_offset;
+					job->het_job_offset = pack_offset;
 				list_append(srun_job_list, job);
 			}	/* While more option structures */
 			pack_offset++;
@@ -1254,7 +1254,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 					exit(error_exit);
 				}
 				job = job_create_allocation(resp, opt_local);
-				job->pack_offset = pack_offset;
+				job->het_job_offset = pack_offset;
 				list_append(srun_job_list, job);
 				_set_step_opts(opt_local);
 			}
@@ -1478,11 +1478,11 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
  	job->nodelist = xstrdup(ainfo->nodelist);
  	job->partition = xstrdup(ainfo->partition);
 	job->stepid  = ainfo->stepid;
-	job->pack_jobid  = NO_VAL;
-	job->pack_nnodes = NO_VAL;
-	job->pack_ntasks = NO_VAL;
- 	job->pack_offset = NO_VAL;
-	job->pack_task_offset = NO_VAL;
+	job->het_job_id  = NO_VAL;
+	job->het_job_nnodes = NO_VAL;
+	job->het_job_ntasks = NO_VAL;
+ 	job->het_job_offset = NO_VAL;
+	job->het_job_task_offset = NO_VAL;
 	job->nhosts   = ainfo->nnodes;
 
 #if defined HAVE_FRONT_END
