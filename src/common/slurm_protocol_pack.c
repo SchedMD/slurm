@@ -6247,7 +6247,10 @@ static void _pack_dep_msg(dep_msg_t *dep_msg, Buf buffer,
 			  uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		pack32(dep_msg->array_job_id, buffer);
+		pack32(dep_msg->array_task_id, buffer);
 		packstr(dep_msg->dependency, buffer);
+		packbool(dep_msg->is_array, buffer);
 		pack32(dep_msg->job_id, buffer);
 		packstr(dep_msg->job_name, buffer);
 	} else {
@@ -6267,8 +6270,12 @@ static int _unpack_dep_msg(dep_msg_t **dep_msg_buffer_ptr, Buf buffer,
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		dep_msg_ptr = xmalloc(sizeof(*dep_msg_ptr));
 		*dep_msg_buffer_ptr = dep_msg_ptr;
+
+		safe_unpack32(&dep_msg_ptr->array_job_id, buffer);
+		safe_unpack32(&dep_msg_ptr->array_task_id, buffer);
 		safe_unpackstr_xmalloc(&dep_msg_ptr->dependency, &tmp_uint32,
 				       buffer);
+		safe_unpackbool(&dep_msg_ptr->is_array, buffer);
 		safe_unpack32(&dep_msg_ptr->job_id, buffer);
 		safe_unpackstr_xmalloc(&dep_msg_ptr->job_name, &tmp_uint32,
 				       buffer);

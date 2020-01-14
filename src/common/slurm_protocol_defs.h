@@ -1300,7 +1300,10 @@ typedef struct {
 } sib_msg_t;
 
 typedef struct {
+	uint32_t array_job_id;
+	uint32_t array_task_id;
 	char *dependency;
+	bool is_array;
 	uint32_t job_id;
 	char *job_name;
 } dep_msg_t;

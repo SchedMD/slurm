@@ -4619,8 +4619,17 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	details_new->work_dir = xstrdup(job_details->work_dir);
 	details_new->x11_magic_cookie = xstrdup(job_details->x11_magic_cookie);
 
-	if (job_ptr->fed_details)
+	if (job_ptr->fed_details) {
 		add_fed_job_info(job_ptr);
+		/*
+		 * The new (split) job needs its remote dependencies tested
+		 * separately from just the meta job, so send remote
+		 * dependencies to siblings if needed.
+		 */
+		if (job_ptr->details && job_ptr->details->dependency &&
+		    job_ptr->details->depend_list)
+			fed_mgr_submit_remote_dependencies(job_ptr);
+	}
 
 	return job_ptr_pend;
 }

@@ -1338,6 +1338,8 @@ static void _destroy_dep_job(void *object)
 			FREE_NULL_LIST(job_ptr->details->depend_list);
 			xfree(job_ptr->details);
 		}
+		if (job_ptr->array_recs)
+			xfree(job_ptr->array_recs);
 		job_ptr->magic = 0;
 		job_ptr->job_id = 0;
 		xfree(job_ptr);
@@ -2257,8 +2259,22 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	job_ptr->details->magic = DETAILS_MAGIC;
 	job_ptr->job_id = remote_dep_info->job_id;
 	job_ptr->name = xstrdup(remote_dep_info->job_name);
-	/* TODO: handle array jobs */
-	job_ptr->array_task_id = NO_VAL;
+
+	/*
+	 * Initialize array info. Allocate space for job_ptr->array_recs if
+	 * the job is an array so it's recognized as an array, but it's not used
+	 * anywhere.
+	 */
+	job_ptr->array_job_id = remote_dep_info->array_job_id;
+	job_ptr->array_task_id = remote_dep_info->array_task_id;
+
+	/*
+	 * We need to allocate space for job_ptr->array_recs if
+	 * it's an array job, but we don't use anything in it.
+	 */
+	if (remote_dep_info->is_array)
+		job_ptr->array_recs = xmalloc(sizeof *(job_ptr->array_recs));
+
 	/*
 	 * We need to allocate space for fed_details so
 	 * other places know this is a fed job, but we don't
@@ -2266,10 +2282,10 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	 */
 	job_ptr->fed_details = xmalloc(sizeof *(job_ptr->fed_details));
 
-	info("%s: Got Job %u name \"%s\" depedency \"%s\"",
-	     __func__, remote_dep_info->job_id,
-	     remote_dep_info->job_name,
-	     remote_dep_info->dependency);
+	info("XXX%sXXX: Got Job %u name \"%s\" array_task_id %u dependency \"%s\" is_array %s",
+	     __func__, remote_dep_info->job_id, remote_dep_info->job_name,
+	     remote_dep_info->array_task_id, remote_dep_info->dependency,
+	     remote_dep_info->is_array ? "yes" : "no");
 
 	/* Create and validate the dependency. */
 	lock_slurmctld(job_read_lock);
@@ -3863,7 +3879,7 @@ static int _add_to_send_list(void *object, void *arg)
  * depends on. I.e., if a sibling doesn't own any jobs that job_ptr depends on,
  * we won't send job_ptr's dependencies to that sibling.
  */
-static int _submit_remote_dependencies(struct job_record *job_ptr)
+extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	uint64_t send_sib_bits;
@@ -3879,6 +3895,9 @@ static int _submit_remote_dependencies(struct job_record *job_ptr)
 	dep_msg.dependency = job_ptr->details->dependency;
 	dep_msg.job_id = job_ptr->job_id;
 	dep_msg.job_name = job_ptr->name;
+	dep_msg.array_job_id = job_ptr->array_job_id;
+	dep_msg.array_task_id = job_ptr->array_task_id;
+	dep_msg.is_array = job_ptr->array_recs ? true : false;
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_SEND_DEP;
@@ -4020,7 +4039,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		info("failed to submit sibling job to one or more siblings");
 	/* Send remote dependencies to siblings */
 	if (job_ptr->details && job_ptr->details->dependency)
-		if (_submit_remote_dependencies(job_ptr))
+		if (fed_mgr_submit_remote_dependencies(job_ptr))
 			error("XXX%sXXX: _submit_remote_dependencies() returned error",
 			      __func__);
 
@@ -5624,6 +5643,9 @@ extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
 	remote_dependency->job_id = dep_msg->job_id;
 	remote_dependency->job_name = xstrdup(dep_msg->job_name);
 	remote_dependency->dependency = xstrdup(dep_msg->dependency);
+	remote_dependency->array_task_id = dep_msg->array_task_id;
+	remote_dependency->array_job_id = dep_msg->array_job_id;
+	remote_dependency->is_array = dep_msg->is_array;
 
 	list_append(remote_dep_update_list, remote_dependency);
 	slurm_mutex_lock(&remote_dep_update_mutex);
