@@ -306,16 +306,16 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		char *p = rpc_num2string(msg->msg_type);
 		if (msg->conn) {
-			info("%s: received opcode %s from persist conn on (%s)%s",
+			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
 			     __func__, p, msg->conn->cluster_name,
-			     msg->conn->rem_host);
+			     msg->conn->rem_host, rpc_uid);
 		} else if (arg) {
 			char inetbuf[64];
 			slurm_print_slurm_addr(&arg->cli_addr,
 					       inetbuf,
 					       sizeof(inetbuf));
-			info("%s: received opcode %s from %s",
-			     __func__, p, inetbuf);
+			info("%s: received opcode %s from %s uid %u",
+			     __func__, p, inetbuf, rpc_uid);
 		} else {
 			error("%s: No arg given and this doesn't appear to be a persistent connection, this should never happen", __func__);
 		}
