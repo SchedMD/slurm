@@ -5446,6 +5446,7 @@ proc get_node_config { {desired_gpus 1} } {
 	set mem_size 1
 	set sockets_per_node 1
 	set cpus_per_socket 1
+	set gpu_cnt 0
 	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODELIST"
 	set timeout $max_job_delay
 	log_user 0
@@ -5464,20 +5465,26 @@ proc get_node_config { {desired_gpus 1} } {
 			set cpus_tot $expect_out(1,string)
 			exp_continue
 		}
-		-re "Gres=($gres_regex)" {
+		-re "(Gres=|,)$gres_regex" {
+			set count 0
+			set line $expect_out(1,string)
 			set name $expect_out(2,string)
 			# Assume typed GRES of format gpu:1080:5 to start out
 			set type $expect_out(3,string)
-			set gpu_cnt $expect_out(4,string)
+			set count $expect_out(4,string)
 
 			# Skip all GRES of different names
 			if {$name != "gpu"} {
 				exp_continue
 			}
-			if {$gpu_cnt == ""} {
+			if {$count == ""} {
 				# Now assume GRES format gpu:5
-				set gpu_cnt $type
+				set count $type
 			}
+			if { $count } {
+				incr gpu_cnt $count
+			}
+
 			exp_continue
 		}
 		-re "RealMemory=($number)" {
