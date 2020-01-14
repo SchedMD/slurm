@@ -336,6 +336,7 @@ typedef enum {
 	REQUEST_SIB_JOB_LOCK,
 	REQUEST_SIB_JOB_UNLOCK,
 	REQUEST_SEND_DEP,
+	REQUEST_UPDATE_ORIGIN_DEP,
 
 	REQUEST_JOB_STEP_CREATE = 5001,
 	RESPONSE_JOB_STEP_CREATE,
@@ -1305,6 +1306,12 @@ typedef struct {
 } dep_msg_t;
 
 typedef struct {
+	uint16_t cnt;
+	List depend_list;
+	uint32_t job_id;
+} dep_update_origin_msg_t;
+
+typedef struct {
 	List my_list;		/* this list could be of any type as long as it
 				 * is handled correctly on both ends */
 } ctld_list_msg_t;
@@ -1365,6 +1372,7 @@ extern int slurm_sort_char_list_desc(void *, void *);
 
 /* free message functions */
 extern void slurm_free_dep_msg(dep_msg_t *msg);
+extern void slurm_free_dep_update_origin_msg(dep_update_origin_msg_t *msg);
 extern void slurm_free_last_update_msg(last_update_msg_t * msg);
 extern void slurm_free_return_code_msg(return_code_msg_t * msg);
 extern void slurm_free_reroute_msg(reroute_msg_t *msg);

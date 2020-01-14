@@ -6286,6 +6286,111 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_dep_list(List dep_list, Buf buffer, uint16_t protocol_version)
+{
+	struct depend_spec *dep_ptr;
+	ListIterator itr;
+
+	xassert(dep_list);
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		itr = list_iterator_create(dep_list);
+		while ((dep_ptr = list_next(itr))) {
+			pack32(dep_ptr->array_task_id, buffer);
+			pack16(dep_ptr->depend_type, buffer);
+			pack16(dep_ptr->depend_flags, buffer);
+			pack32(dep_ptr->depend_state, buffer);
+			pack32(dep_ptr->depend_time, buffer);
+			pack32(dep_ptr->job_id, buffer);
+			packbool(dep_ptr->depend_remote, buffer);
+		}
+		list_iterator_destroy(itr);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+static int _unpack_dep_list(List *dep_list, uint16_t cnt, Buf buffer,
+			    uint16_t protocol_version)
+{
+	struct depend_spec *dep_ptr;
+
+	xassert(dep_list);
+
+	/*
+	 * No need to use _depend_list_del() in job_scheduler.c as the list
+	 * destructor because we don't unpack anything that we need to free.
+	 */
+	*dep_list = list_create(NULL);
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		for (int i = 0; i < cnt; i++) {
+			dep_ptr = xmalloc(sizeof *dep_ptr);
+			list_push(*dep_list, dep_ptr);
+
+			safe_unpack32(&dep_ptr->array_task_id, buffer);
+			safe_unpack16(&dep_ptr->depend_type, buffer);
+			safe_unpack16(&dep_ptr->depend_flags, buffer);
+			safe_unpack32(&dep_ptr->depend_state, buffer);
+			safe_unpack32(&dep_ptr->depend_time, buffer);
+			safe_unpack32(&dep_ptr->job_id, buffer);
+			safe_unpackbool(&dep_ptr->depend_remote, buffer);
+		}
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	FREE_NULL_LIST(*dep_list);
+	return SLURM_ERROR;
+}
+
+static void _pack_dep_update_origin_msg(dep_update_origin_msg_t *msg,
+					Buf buffer, uint16_t protocol_version)
+{
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		pack16(msg->cnt, buffer);
+		_pack_dep_list(msg->depend_list, buffer, protocol_version);
+		pack32(msg->job_id, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+static int _unpack_dep_update_origin_msg(dep_update_origin_msg_t **msg_pptr,
+					 Buf buffer, uint16_t protocol_version)
+{
+	dep_update_origin_msg_t *msg_ptr = NULL;
+
+	xassert(msg_pptr);
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		msg_ptr = xmalloc(sizeof *msg_ptr);
+		*msg_pptr = msg_ptr;
+		safe_unpack16(&msg_ptr->cnt, buffer);
+		if (_unpack_dep_list(&msg_ptr->depend_list, msg_ptr->cnt,
+				     buffer, protocol_version))
+			goto unpack_error;
+		safe_unpack32(&msg_ptr->job_id, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_dep_update_origin_msg(msg_ptr);
+	*msg_pptr = NULL;
+	return SLURM_ERROR;
+}
+
 /* _pack_job_desc_msg
  * packs a job_desc struct
  * IN job_desc_ptr - pointer to the job descriptor to pack
@@ -11887,6 +11992,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_dep_msg((dep_msg_t *)msg->data, buffer,
 			      msg->protocol_version);
 		break;
+	case REQUEST_UPDATE_ORIGIN_DEP:
+		 _pack_dep_update_origin_msg(
+				(dep_update_origin_msg_t *) msg->data, buffer,
+				msg->protocol_version);
+		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		_pack_update_job_step_msg((step_update_request_msg_t *)
 					  msg->data, buffer,
@@ -12549,6 +12659,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_SEND_DEP:
 		rc = _unpack_dep_msg((dep_msg_t **)&(msg->data), buffer,
 				     msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_ORIGIN_DEP:
+		rc = _unpack_dep_update_origin_msg(
+				(dep_update_origin_msg_t **) &(msg->data),
+				buffer, msg->protocol_version);
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		rc = _unpack_update_job_step_msg(
