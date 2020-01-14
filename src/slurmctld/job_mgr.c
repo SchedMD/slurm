@@ -4628,7 +4628,8 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 		 */
 		if (job_ptr->details && job_ptr->details->dependency &&
 		    job_ptr->details->depend_list)
-			fed_mgr_submit_remote_dependencies(job_ptr, false);
+			fed_mgr_submit_remote_dependencies(job_ptr, false,
+							   false);
 	}
 
 	return job_ptr_pend;
@@ -5308,6 +5309,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 		} else if (origin && (origin == fed_mgr_cluster_rec)) {
 			/* cancel origin job and revoke sibling jobs */
 			fed_mgr_job_revoke_sibs(job_ptr);
+			fed_mgr_remove_remote_dependencies(job_ptr);
 		} else if (!origin ||
 			   !origin->fed.send ||
 			   (((slurm_persist_conn_t *)origin->fed.send)->fd
@@ -13479,7 +13481,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			 */
 			else if ((rc =
 				  fed_mgr_submit_remote_dependencies(job_ptr,
-								     true)))
+								     true,
+								     false)))
 				error_code = rc;
 			else {
 				job_ptr->details->orig_dependency =

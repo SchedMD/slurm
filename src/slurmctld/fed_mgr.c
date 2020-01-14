@@ -3880,6 +3880,19 @@ end_features:
 	return rc;
 }
 
+extern void fed_mgr_remove_remote_dependencies(job_record_t *job_ptr)
+{
+	if (!fed_mgr_is_origin_job(job_ptr) ||
+	    !job_ptr->details || !job_ptr->details->dependency)
+		return;
+
+	/*
+	 * A failure here isn't harmful and the error is logged in the callee,
+	 * so ignore the return code.
+	 */
+	(void) fed_mgr_submit_remote_dependencies(job_ptr, false, true);
+}
+
 static int _add_to_send_list(void *object, void *arg)
 {
 	struct depend_spec *dependency = (struct depend_spec *)object;
@@ -3903,9 +3916,15 @@ static int _add_to_send_list(void *object, void *arg)
  * only send dependencies to siblings that own the remote jobs that job_ptr
  * depends on. I.e., if a sibling doesn't own any jobs that job_ptr depends on,
  * we won't send job_ptr's dependencies to that sibling.
+ *
+ * If clear_dependencies == true, then clear the dependencies on the siblings
+ * where dependencies reside. In this case, use the job's dependency list to
+ * find out which siblings to send the RPC to if the list is non-NULL. If the
+ * list is NULL, then we have to send to all siblings.
  */
 extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
-					      bool send_all_sibs)
+					      bool send_all_sibs,
+					      bool clear_dependencies)
 {
 	int rc = SLURM_SUCCESS;
 	uint64_t send_sib_bits = 0;
@@ -3926,7 +3945,12 @@ extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
 	dep_msg.array_task_id = job_ptr->array_task_id;
 	dep_msg.is_array = job_ptr->array_recs ? true : false;
 
-	if (!job_ptr->details->dependency)
+	if (!job_ptr->details->dependency || clear_dependencies)
+		/*
+		 * Since we have to pack these values, set dependency to empty
+		 * string and set depend_list to an empty list so we have
+		 * data to pack.
+		 */
 		dep_msg.dependency = "";
 	else
 		dep_msg.dependency = job_ptr->details->dependency;
@@ -4076,7 +4100,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		info("failed to submit sibling job to one or more siblings");
 	/* Send remote dependencies to siblings */
 	if (job_ptr->details && job_ptr->details->dependency)
-		if (fed_mgr_submit_remote_dependencies(job_ptr, false))
+		if (fed_mgr_submit_remote_dependencies(job_ptr, false, false))
 			error("XXX%sXXX: _submit_remote_dependencies() returned error",
 			      __func__);
 

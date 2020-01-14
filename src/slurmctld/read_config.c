@@ -2795,6 +2795,7 @@ extern int restore_job_dependencies(void)
 				job_ptr, new_depend);
 			error_code = rc;
 		} else if ((rc = fed_mgr_submit_remote_dependencies(job_ptr,
+								    false,
 								    false)))
 			error_code = rc;
 		xfree(new_depend);
