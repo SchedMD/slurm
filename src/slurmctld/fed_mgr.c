@@ -2335,6 +2335,9 @@ static void _handle_dep_update_origin_msgs(void)
 		}
 		info("XXX%sXXX: update %pJ dependencies",
 		     __func__, job_ptr);
+		update_job_dependency_list(job_ptr,
+					   dep_update_msg->depend_list);
+		print_job_dependency(job_ptr);
 		slurm_free_dep_update_origin_msg(dep_update_msg);
 	}
 	/*

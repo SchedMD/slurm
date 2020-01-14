@@ -241,6 +241,15 @@ extern int test_job_dependency(job_record_t *job_ptr);
 extern int update_job_dependency(job_record_t *job_ptr, char *new_depend);
 
 /*
+ * new_depend_list is a dependency list that came from a sibling cluster. It
+ * has updates to the job dependencies on that cluster. Use those changes to
+ * update the dependency list of job_ptr.
+ * Return true if a dependency was updated, false if not.
+ */
+extern bool update_job_dependency_list(job_record_t *job_ptr,
+				       List new_depend_list);
+
+/*
  * When an array job is rejected for some reason, the remaining array tasks will
  * get skipped by both the main scheduler and the backfill scheduler (it's an
  * optimization). Hence, their reasons should match the reason of the first job.

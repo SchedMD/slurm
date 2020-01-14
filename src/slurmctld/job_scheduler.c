@@ -3387,6 +3387,64 @@ static void _parse_dependency_jobid_old(struct job_record *job_ptr,
 	}
 }
 
+extern bool update_job_dependency_list(job_record_t *job_ptr,
+				       List new_depend_list)
+{
+	struct depend_spec *dep_ptr, *job_depend;
+	ListIterator itr;
+	List job_depend_list;
+	bool was_changed = false;
+
+	xassert(job_ptr);
+	xassert(job_ptr->details);
+	xassert(job_ptr->details->depend_list);
+
+	job_depend_list = job_ptr->details->depend_list;
+
+	itr = list_iterator_create(new_depend_list);
+	while ((dep_ptr = list_next(itr))) {
+		/*
+		 * If the dependency is marked as remote, then it wasn't updated
+		 * by the sibling cluster. Skip it.
+		 */
+		if (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) {
+			continue;
+		}
+		/*
+		 * Find the dependency in job_ptr that matches this one.
+		 * Then update job_ptr's dependency state (not fulfilled,
+		 * fulfilled, or failed) to match this one.
+		 */
+		job_depend = list_find_first(job_depend_list, _find_dependency,
+					     dep_ptr);
+		if (!job_depend) {
+			/*
+			 * This can happen if the job's dependency is updated
+			 * and the update doesn't get to the sibling before
+			 * the sibling sends back an update to the origin (us).
+			 */
+			info("XXX%sXXX: Cannot find dependency %s:%u for %pJ, it may have been cleared before we got here.",
+			      __func__, _depend_type2str(dep_ptr),
+			      dep_ptr->job_id, job_ptr);
+			continue;
+		}
+
+		/*
+		 * If the dependency is already fulfilled, don't update it.
+		 * Otherwise update the dependency state.
+		 */
+		if ((job_depend->depend_state == DEPEND_FULFILLED) ||
+		    (job_depend->depend_state == dep_ptr->depend_state))
+			continue;
+		job_depend->depend_state = dep_ptr->depend_state;
+		was_changed = true;
+	}
+	list_iterator_destroy(itr);
+	if (was_changed)
+		_depend_list2str(job_ptr, false);
+	return was_changed;
+}
+
 /*
  * Parse a job dependency string and use it to establish a "depend_spec"
  * list of dependencies. We accept both old format (a single job ID) and
