@@ -852,8 +852,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		 */
 		if (srun_opt->multi_prog) {
 			mpir_set_multi_name(job->ntasks,
-					    launch_params.argv[0],
-					    launch_params.cwd);
+					    launch_params.argv[0]);
 		} else {
 			mpir_set_executable_names(launch_params.argv[0],
 						  job->pack_task_offset,

@@ -64,68 +64,6 @@
 #include "multi_prog.h"
 #include "opt.h"
 
-/* Given a program name, translate it to a fully qualified pathname
- * as needed based upon the PATH environment variable */
-static char *
-_build_path(const char * cwd, char* fname)
-{
-	int i;
-	char *path_env = NULL, *dir = NULL, *ptrptr = NULL;
-	char *file_name = NULL, *file_path = NULL;
-	struct stat buf;
-
-	/* make copy of file name (end at white space) */
-	file_name = xstrdup(fname);
-	for (i = 0; i < strlen(file_name); i++) {
-		if (file_name[i] == '\0')
-			break;
-		if (!isspace(file_name[i]))
-			continue;
-		file_name[i] = '\0';
-		break;
-	}
-
-	/* check if already absolute path */
-	if ((file_name[0] == '/') || (file_name[0] == '.'))
-		return file_name;
-
-	/* search for the file using cwd*/
-	xstrfmtcat(file_path, "%s/%s", cwd, file_name);
-	if ((stat(file_path, &buf) == 0)
-	    && (! S_ISDIR(buf.st_mode))) {
-		xfree(file_name);
-		return file_path;
-	}
-	xfree(file_path);
-
-	/* search for the file using PATH environment variable */
-	dir = getenv("PATH");
-	if (!dir) {
-		error("No PATH environment variable");
-		xfree(file_name);
-		return NULL;
-	}
-	path_env = xstrdup(dir);
-	/* FIXME: this walks PATH backwards which isn't the normal behavior */
-	dir = strtok_r(path_env, ":", &ptrptr);
-	while (dir) {
-		xstrfmtcat(file_path, "%s/%s", dir, file_name);
-		if ((stat(file_path, &buf) == 0)
-		    && (! S_ISDIR(buf.st_mode)))
-			break;
-		dir = strtok_r(NULL, ":", &ptrptr);
-		xfree(file_path);
-	}
-	if (dir == NULL) {	/* not found */
-		error("Could not find executable %s", file_name);
-		file_path = file_name;
-		file_name = NULL;
-	}
-	xfree(path_env);
-	xfree(file_name);
-	return file_path;
-}
-
 static void
 _set_range(int low_num, int high_num, char *exec_name, bool ignore_duplicates)
 {
@@ -143,18 +81,15 @@ _set_range(int low_num, int high_num, char *exec_name, bool ignore_duplicates)
 	}
 }
 
-static void
-_set_exec_names(char *ranks, const char *cwd, char *exec_name, int ntasks)
+static void _set_exec_names(char *ranks, char *exec_name, int ntasks)
 {
-	char *ptrptr = NULL, *exec_path = NULL;
+	char *ptrptr = NULL;
 	int low_num, high_num, num, i;
 
-	exec_path = _build_path(cwd, exec_name);
 	if ((ranks[0] == '*') && (ranks[1] == '\0')) {
 		low_num = 0;
 		high_num = ntasks - 1;
-		_set_range(low_num, high_num, exec_path, true);
-		xfree(exec_path);
+		_set_range(low_num, high_num, exec_name, true);
 		return;
 	}
 
@@ -168,31 +103,28 @@ _set_exec_names(char *ranks, const char *cwd, char *exec_name, int ntasks)
 		if ((ptrptr[0] == ',') || (ptrptr[0] == '\0')) {
 			low_num = MAX(0, num);
 			high_num = MIN((ntasks-1), num);
-			_set_range(low_num, high_num, exec_path, false);
+			_set_range(low_num, high_num, exec_name, false);
 		} else if (ptrptr[0] == '-') {
 			low_num = MAX(0, num);
 			num = strtol(ptrptr+1, &ptrptr, 10);
 			if ((ptrptr[0] != ',') && (ptrptr[0] != '\0'))
 				goto invalid;
 			high_num = MIN((ntasks-1), num);
-			_set_range(low_num, high_num, exec_path, false);
+			_set_range(low_num, high_num, exec_name, false);
 		} else
 			goto invalid;
 		if (ptrptr[0] == '\0')
 			break;
 		ptrptr++;
 	}
-	xfree(exec_path);
 	return;
 
   invalid:
 	error ("Invalid task range specification (%s) ignored.", ranks);
-	xfree(exec_path);
 	return;
 }
 
-extern int
-mpir_set_multi_name(int ntasks, const char *config_fname, const char * cwd)
+extern int mpir_set_multi_name(int ntasks, const char *config_fname)
 {
 	FILE *config_fd;
 	char line[BUF_SIZE];
@@ -252,7 +184,7 @@ mpir_set_multi_name(int ntasks, const char *config_fname, const char * cwd)
 			fclose(config_fd);
 			return -1;
 		}
-		_set_exec_names(ranks, cwd, exec_name, ntasks);
+		_set_exec_names(ranks, exec_name, ntasks);
 	}
 	fclose(config_fd);
 	return 0;
