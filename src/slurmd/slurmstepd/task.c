@@ -264,7 +264,7 @@ _run_script_and_set_env(const char *name, const char *path,
 /* Given a program name, translate it to a fully qualified pathname as needed
  * based upon the PATH environment variable and current working directory
  * Returns xmalloc()'d string that must be xfree()'d */
-extern char *_build_path(char *fname, char **prog_env, char *cwd)
+static char *_build_path(char *fname, char **prog_env)
 {
 	char *path_env = NULL, *dir;
 	char *file_name;
@@ -284,15 +284,11 @@ extern char *_build_path(char *fname, char **prog_env, char *cwd)
 	}
 
 	if (fname[0] == '.') {
-		if (cwd) {
-			snprintf(file_name, len, "%s/%s", cwd, fname);
-		} else {
-			dir = (char *) xmalloc(len);
-			if (!getcwd(dir, len))
-				error("getcwd failed: %m");
-			snprintf(file_name, len, "%s/%s", dir, fname);
-			xfree(dir);
-		}
+		dir = xmalloc(len);
+		if (!getcwd(dir, len))
+			error("getcwd failed: %m");
+		snprintf(file_name, len, "%s/%s", dir, fname);
+		xfree(dir);
 		return file_name;
 	}
 
@@ -503,7 +499,7 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 		 * filesystem namespaces into the final arrangement, which
 		 * may affect which executable we select.
 		 */
-		task->argv[0] = _build_path(task->argv[0], job->env, NULL);
+		task->argv[0] = _build_path(task->argv[0], job->env);
 	}
 
 
