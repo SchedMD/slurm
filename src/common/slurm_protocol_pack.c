@@ -6293,6 +6293,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _depend_list_del(void *dep_ptr)
+{
+	xfree(dep_ptr);
+}
+
 static void _pack_dep_list(List dep_list, Buf buffer, uint16_t protocol_version)
 {
 	struct depend_spec *dep_ptr;
@@ -6324,11 +6329,7 @@ static int _unpack_dep_list(List *dep_list, uint16_t cnt, Buf buffer,
 
 	xassert(dep_list);
 
-	/*
-	 * No need to use _depend_list_del() in job_scheduler.c as the list
-	 * destructor because we don't unpack anything that we need to free.
-	 */
-	*dep_list = list_create(NULL);
+	*dep_list = list_create(_depend_list_del);
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		for (int i = 0; i < cnt; i++) {
 			dep_ptr = xmalloc(sizeof *dep_ptr);
