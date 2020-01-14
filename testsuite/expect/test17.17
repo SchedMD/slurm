@@ -50,8 +50,8 @@ print_header $test_id
 
 set timeout $max_job_delay
 
-if {![get_node_config 2] < 0} {
-	log_warn "This test requires 2 or more GPUs per node in the default partition. Skipping.\n"
+if {![get_node_config 2]} {
+	log_warn "This test requires 2 or more GPUs in a node of the default partition. Skipping.\n"
 	exit $exit_code
 }
 
