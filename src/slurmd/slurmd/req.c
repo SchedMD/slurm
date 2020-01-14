@@ -1747,8 +1747,8 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 	uint32_t jobid;
 
 #ifdef HAVE_NATIVE_CRAY
-	if (req->pack_jobid && (req->pack_jobid != NO_VAL))
-		jobid = req->pack_jobid;
+	if (req->het_job_id && (req->het_job_id != NO_VAL))
+		jobid = req->het_job_id;
 	else
 		jobid = req->job_id;
 #else
@@ -2457,7 +2457,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		job_env.jobid = req->job_id;
 		job_env.step_id = req->step_id;
 		job_env.node_list = req->nodes;
-		job_env.pack_jobid = req->pack_jobid;
+		job_env.pack_jobid = req->het_job_id;
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
@@ -2468,8 +2468,8 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 	 	 */
 
 #ifdef HAVE_NATIVE_CRAY
-		if (req->pack_jobid && (req->pack_jobid != NO_VAL))
-			jobid = req->pack_jobid;
+		if (req->het_job_id && (req->het_job_id != NO_VAL))
+			jobid = req->het_job_id;
 		else
 			jobid = req->job_id;
 #else

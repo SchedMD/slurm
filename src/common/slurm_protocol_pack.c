@@ -9373,7 +9373,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
-		pack32(msg->pack_jobid, buffer);
+		pack32(msg->het_job_id, buffer);
 		pack32(msg->step_id, buffer);
 
 		pack32(msg->uid, buffer);
@@ -9462,7 +9462,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 		char *temp_str;
 
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
-		safe_unpack32(&launch_msg_ptr->pack_jobid, buffer);
+		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->step_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);

@@ -2139,7 +2139,7 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	launch_msg_ptr = (batch_job_launch_msg_t *)
 		xmalloc(sizeof(batch_job_launch_msg_t));
 	launch_msg_ptr->job_id = job_ptr->job_id;
-	launch_msg_ptr->pack_jobid = job_ptr->het_job_id;
+	launch_msg_ptr->het_job_id = job_ptr->het_job_id;
 	launch_msg_ptr->step_id = NO_VAL;
 	launch_msg_ptr->array_job_id = job_ptr->array_job_id;
 	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
