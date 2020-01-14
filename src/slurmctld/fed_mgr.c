@@ -2252,7 +2252,7 @@ static int _update_origin_job_dep(job_record_t *job_ptr)
 
 static int _find_local_dep(void *arg, void *key)
 {
-	struct depend_spec *dep_ptr = (struct depend_spec *) arg;
+	depend_spec_t *dep_ptr = (depend_spec_t *) arg;
 	return !(dep_ptr->depend_flags & SLURM_FLAGS_REMOTE);
 }
 
@@ -4052,7 +4052,7 @@ extern void fed_mgr_remove_remote_dependencies(job_record_t *job_ptr)
 
 static int _add_to_send_list(void *object, void *arg)
 {
-	struct depend_spec *dependency = (struct depend_spec *)object;
+	depend_spec_t *dependency = (depend_spec_t *)object;
 	uint64_t *send_sib_bits = (uint64_t *)arg;
 	uint32_t cluster_id;
 

@@ -415,7 +415,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	ListIterator depend_iter, job_iterator, part_iterator;
 	job_record_t *job_ptr = NULL, *new_job_ptr;
 	part_record_t *part_ptr;
-	struct depend_spec *dep_ptr;
+	depend_spec_t *dep_ptr;
 	int i, pend_cnt, reason, dep_corr;
 	struct timeval start_tv = {0, 0};
 	int tested_jobs = 0;
@@ -2624,7 +2624,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
  */
 extern List depended_list_copy(List depend_list_src)
 {
-	struct depend_spec *dep_src, *dep_dest;
+	depend_spec_t *dep_src, *dep_dest;
 	ListIterator iter;
 	List depend_list_dest = NULL;
 
@@ -2634,15 +2634,15 @@ extern List depended_list_copy(List depend_list_src)
 	depend_list_dest = list_create(xfree_ptr);
 	iter = list_iterator_create(depend_list_src);
 	while ((dep_src = list_next(iter))) {
-		dep_dest = xmalloc(sizeof(struct depend_spec));
-		memcpy(dep_dest, dep_src, sizeof(struct depend_spec));
+		dep_dest = xmalloc(sizeof(depend_spec_t));
+		memcpy(dep_dest, dep_src, sizeof(depend_spec_t));
 		list_append(depend_list_dest, dep_dest);
 	}
 	list_iterator_destroy(iter);
 	return depend_list_dest;
 }
 
-static char *_depend_type2str(struct depend_spec *dep_ptr)
+static char *_depend_type2str(depend_spec_t *dep_ptr)
 {
 	xassert(dep_ptr);
 
@@ -2670,7 +2670,7 @@ static char *_depend_type2str(struct depend_spec *dep_ptr)
 extern void print_job_dependency(job_record_t *job_ptr)
 {
 	ListIterator depend_iter;
-	struct depend_spec *dep_ptr;
+	depend_spec_t *dep_ptr;
 	char *dep_flags, *dep_str, *dep_time_sep = NULL;
 
 	info("Dependency information for %pJ", job_ptr);
@@ -2731,7 +2731,7 @@ extern void print_job_dependency(job_record_t *job_ptr)
 static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 {
 	ListIterator depend_iter;
-	struct depend_spec *dep_ptr;
+	depend_spec_t *dep_ptr;
 	char *dep_str, *sep = "";
 
 	if (job_ptr->details == NULL)
@@ -2785,14 +2785,14 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 
 static int _find_dep_by_state(void *arg, void *key)
 {
-	struct depend_spec *dep_ptr = (struct depend_spec *) arg;
+	depend_spec_t *dep_ptr = (depend_spec_t *) arg;
 	uint32_t state = *((uint32_t *) key);
 	return dep_ptr->depend_state == state;
 }
 
 static int _set_depend_to_state(void *arg, void *key)
 {
-	struct depend_spec *dep_ptr = (struct depend_spec *) arg;
+	depend_spec_t *dep_ptr = (depend_spec_t *) arg;
 	uint32_t state = *((uint32_t *) key);
 	dep_ptr->depend_state = state;
 	return SLURM_SUCCESS;
@@ -2908,7 +2908,7 @@ static int _test_job_dependency_common(
 extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 {
 	ListIterator depend_iter, job_iterator;
-	struct depend_spec *dep_ptr;
+	depend_spec_t *dep_ptr;
 	bool failure = false, depends = false, rebuild_str = false;
 	bool or_satisfied = false;
 	List job_queue = NULL;
@@ -3146,8 +3146,8 @@ static void _copy_tres_opts(job_record_t *job_ptr, job_record_t *dep_job_ptr)
 static int _find_dependency(void *arg, void *key)
 {
 	/* Does arg (dependency in the list) match key (new dependency)? */
-	struct depend_spec *dep_ptr = (struct depend_spec *)arg;
-	struct depend_spec *new_dep = (struct depend_spec *)key;
+	depend_spec_t *dep_ptr = (depend_spec_t *)arg;
+	depend_spec_t *new_dep = (depend_spec_t *)key;
 	return (dep_ptr->job_id == new_dep->job_id) &&
 		(dep_ptr->depend_type == new_dep->depend_type);
 }
@@ -3158,7 +3158,7 @@ static int _find_dependency(void *arg, void *key)
  * depend_type.
  */
 static void _add_dependency_to_list(List depend_list,
-				    struct depend_spec *dep_ptr)
+				    depend_spec_t *dep_ptr)
 {
 	if (!list_find_first(depend_list, _find_dependency, dep_ptr))
 		list_append(depend_list, dep_ptr);
@@ -3180,7 +3180,7 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 					uint16_t depend_type, int select_hetero,
 					int *rc)
 {
-	struct depend_spec *dep_ptr;
+	depend_spec_t *dep_ptr;
 	job_record_t *dep_job_ptr = NULL;
 	int expand_cnt = 0;
 	uint32_t job_id, array_task_id;
@@ -3307,7 +3307,7 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 			assoc_mgr_unlock(&locks);
 		}
 
-		dep_ptr = xmalloc(sizeof(struct depend_spec));
+		dep_ptr = xmalloc(sizeof(depend_spec_t));
 		dep_ptr->array_task_id = array_task_id;
 		dep_ptr->depend_type = depend_type;
 		if (job_ptr->fed_details && !fed_mgr_is_origin_job_id(job_id)) {
@@ -3350,7 +3350,7 @@ static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 					List new_depend_list, char **sep_ptr,
 					char *tok, int *rc)
 {
-	struct depend_spec *dep_ptr;
+	depend_spec_t *dep_ptr;
 	job_record_t *dep_job_ptr = NULL;
 	uint32_t job_id, array_task_id;
 	char *tmp = NULL;
@@ -3388,7 +3388,7 @@ static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 	} else {
 		dep_job_ptr = find_job_array_rec(job_id, array_task_id);
 	}
-	dep_ptr = xmalloc(sizeof(struct depend_spec));
+	dep_ptr = xmalloc(sizeof(depend_spec_t));
 	dep_ptr->array_task_id = array_task_id;
 	dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;
 	if (job_ptr->fed_details &&
@@ -3412,7 +3412,7 @@ static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 extern bool update_job_dependency_list(job_record_t *job_ptr,
 				       List new_depend_list)
 {
-	struct depend_spec *dep_ptr, *job_depend;
+	depend_spec_t *dep_ptr, *job_depend;
 	ListIterator itr;
 	List job_depend_list;
 	bool was_changed = false;
@@ -3470,7 +3470,7 @@ extern bool update_job_dependency_list(job_record_t *job_ptr,
 extern int handle_job_dependency_updates(void *object, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) object;
-	struct depend_spec *dep_ptr = NULL;
+	depend_spec_t *dep_ptr = NULL;
 	uint32_t dep_state;
 
 	/*
@@ -3578,7 +3578,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 	uint16_t depend_type = 0;
 	char *tok, *new_array_dep, *sep_ptr, *sep_ptr2 = NULL;
 	List new_depend_list = NULL;
-	struct depend_spec *dep_ptr;
+	depend_spec_t *dep_ptr;
 	bool or_flag = false;
 
 	if (job_ptr->details == NULL)
@@ -3620,7 +3620,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 		/* test singleton dependency flag */
 		if (xstrncasecmp(tok, "singleton", 9) == 0) {
 			depend_type = SLURM_DEPEND_SINGLETON;
-			dep_ptr = xmalloc(sizeof(struct depend_spec));
+			dep_ptr = xmalloc(sizeof(depend_spec_t));
 			dep_ptr->depend_type = depend_type;
 			/* dep_ptr->job_id = 0;		set by xmalloc */
 			/* dep_ptr->job_ptr = NULL;	set by xmalloc */
@@ -3721,7 +3721,7 @@ static bool _scan_depend(List dependency_list, uint32_t job_id)
 	static int job_counter = 0;
 	bool rc = false;
 	ListIterator iter;
-	struct depend_spec *dep_ptr;
+	depend_spec_t *dep_ptr;
 
 	if (sched_update != slurmctld_conf.last_update) {
 		char *sched_params = slurm_get_sched_params();

@@ -6373,7 +6373,7 @@ static void _depend_list_del(void *dep_ptr)
 
 static void _pack_dep_list(List dep_list, Buf buffer, uint16_t protocol_version)
 {
-	struct depend_spec *dep_ptr;
+	depend_spec_t *dep_ptr;
 	ListIterator itr;
 
 	xassert(dep_list);
@@ -6398,7 +6398,7 @@ static void _pack_dep_list(List dep_list, Buf buffer, uint16_t protocol_version)
 static int _unpack_dep_list(List *dep_list, uint16_t cnt, Buf buffer,
 			    uint16_t protocol_version)
 {
-	struct depend_spec *dep_ptr;
+	depend_spec_t *dep_ptr;
 
 	xassert(dep_list);
 

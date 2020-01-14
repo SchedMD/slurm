@@ -902,14 +902,14 @@ typedef enum {
 #define SLURM_FLAGS_OR		0x0001	/* OR job dependencies */
 #define SLURM_FLAGS_REMOTE      0x0002  /* Is a remote dependency */
 
-/* Used as values for depend_state in struct depend_spec */
+/* Used as values for depend_state in depend_spec_t */
 enum {
 	DEPEND_NOT_FULFILLED = 0,
 	DEPEND_FULFILLED,
 	DEPEND_FAILED
 };
 
-struct	depend_spec {
+typedef struct depend_spec {
 	uint32_t	array_task_id;	/* INFINITE for all array tasks */
 	uint16_t	depend_type;	/* SLURM_DEPEND_* type */
 	uint16_t	depend_flags;	/* SLURM_FLAGS_* type */
@@ -917,7 +917,7 @@ struct	depend_spec {
 	uint32_t        depend_time;    /* time to wait (mins) */
 	uint32_t	job_id;		/* Slurm job_id */
 	job_record_t   *job_ptr;	/* pointer to this job */
-};
+} depend_spec_t;
 
 #define STEP_FLAG 0xbbbb
 #define STEP_MAGIC 0xcafecafe
