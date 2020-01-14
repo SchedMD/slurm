@@ -76,7 +76,7 @@ extern bool run_in_daemon(bool *run, bool *set, char *daemons)
 
 	if (start_char && !xstrcmp(start_char, slurm_prog_name)) {
 		xfree(full);
-		*run = true;
+		return *run = true;
 	}
 
 	xfree(full);
