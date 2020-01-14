@@ -902,6 +902,7 @@ typedef enum {
 #define SLURM_FLAGS_OR		0x0001	/* OR job dependencies */
 #define SLURM_FLAGS_REMOTE      0x0002  /* Is a remote dependency */
 
+/* Used as values for depend_state in struct depend_spec */
 enum {
 	DEPEND_NOT_FULFILLED = 0,
 	DEPEND_FULFILLED,
