@@ -99,6 +99,11 @@ static List remote_dep_job_list = NULL;
 static pthread_t dep_job_thread_id = (pthread_t) 0;
 static pthread_mutex_t dep_job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static List origin_dep_update_list = NULL;
+static pthread_t origin_dep_thread_id = (pthread_t) 0;
+static pthread_cond_t origin_dep_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t origin_dep_update_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 typedef struct {
 	Buf        buffer;
 	uint32_t   job_id;
@@ -1314,6 +1319,11 @@ static void _destroy_dep_msg(void *object)
 	slurm_free_dep_msg((dep_msg_t *)object);
 }
 
+static void _destroy_dep_update_msg(void *object)
+{
+	slurm_free_dep_update_origin_msg((dep_update_origin_msg_t *)object);
+}
+
 static void _destroy_dep_job(void *object)
 {
 	struct job_record *job_ptr = (struct job_record *)object;
@@ -2311,6 +2321,73 @@ static void *_test_dep_job_thread(void *arg)
 	return NULL;
 }
 
+static void *_origin_dep_update_thread(void *arg)
+{
+	struct timespec ts = {0, 0};
+	dep_update_origin_msg_t *dep_update_msg;
+
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "fed_update_dep", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__,
+		      "fed_update_dep");
+	}
+#endif
+
+	while (!slurmctld_config.shutdown_time) {
+		slurm_mutex_lock(&origin_dep_update_mutex);
+		ts.tv_sec = time(NULL) + 2;
+		slurm_cond_timedwait(&origin_dep_cond,
+				     &origin_dep_update_mutex, &ts);
+		slurm_mutex_unlock(&origin_dep_update_mutex);
+
+		if (slurmctld_config.shutdown_time)
+			break;
+
+		while ((dep_update_msg = list_pop(origin_dep_update_list))) {
+			slurmctld_lock_t job_write_lock = {
+				.job = WRITE_LOCK, .fed = READ_LOCK };
+			job_record_t *job_ptr;
+
+			lock_slurmctld(job_write_lock);
+			if (!(job_ptr =
+			      find_job_record(dep_update_msg->job_id))) {
+				/*
+				 * Maybe the job was cancelled and purged before
+				 * the dependency update got here or was able
+				 * to be processed. Regardless, this job doesn't
+				 * exist here, so we have to throw out this
+				 * dependency update message.
+				 * TODO: Should this be an info instead of an
+				 * error?
+				 */
+				error("%s: Could not find job %u, cannot process dependency update",
+				      __func__, dep_update_msg->job_id);
+				slurm_free_dep_update_origin_msg(dep_update_msg);
+				unlock_slurmctld(job_write_lock);
+				continue;
+			}
+			/*
+			 * TODO:
+			 * Update that job's dependency list:
+			 *   - I'm not sure how to do this yet
+			 *   - Any dependencies in dep_update_msg that are
+			 *     NO_DEPEND or FAIL_DEPEND can be updated here?
+			 *   - Do I need to send the cluster ID as part of
+			 *     dep_update_msg so I only update dependencies
+			 *     on that cluster?
+			 * That's all we want to do here. Whenever we try to
+			 * schedule that job, it will call job_independent()
+			 * and use the updated job dependency list
+			 */
+			info("XXX%sXXX: update %pJ dependencies",
+			     __func__, job_ptr);
+			unlock_slurmctld(job_write_lock);
+			slurm_free_dep_update_origin_msg(dep_update_msg);
+		}
+	}
+	return NULL;
+}
+
 static void *_remote_dep_update_thread(void *arg)
 {
 	struct timespec ts = {0, 0};
@@ -2570,6 +2647,11 @@ static void _spawn_threads(void)
 	slurm_mutex_lock(&dep_job_list_mutex);
 	slurm_thread_create(&dep_job_thread_id, _test_dep_job_thread, NULL);
 	slurm_mutex_unlock(&dep_job_list_mutex);
+
+	slurm_mutex_lock(&origin_dep_update_mutex);
+	slurm_thread_create(&origin_dep_thread_id, _origin_dep_update_thread,
+			    NULL);
+	slurm_mutex_unlock(&origin_dep_update_mutex);
 }
 
 static void _add_missing_fed_job_info()
@@ -2636,6 +2718,9 @@ extern int fed_mgr_init(void *db_conn)
 	 */
 	if (!remote_dep_update_list)
 		remote_dep_update_list = list_create(_destroy_dep_msg);
+
+	if (!origin_dep_update_list)
+		origin_dep_update_list = list_create(_destroy_dep_update_msg);
 
 	if (!remote_dep_job_list)
 		remote_dep_job_list = list_create(_destroy_dep_job);
@@ -5461,6 +5546,34 @@ static int _q_sib_job_sync(slurm_msg_t *msg)
 	_append_job_update(job_update_info);
 
 	return rc;
+}
+
+extern int fed_mgr_q_update_origin_dep_msg(slurm_msg_t *msg)
+{
+	dep_update_origin_msg_t *update_deps;
+	dep_update_origin_msg_t *update_msg = msg->data;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("%s: Got REQUEST_UPDATE_ORIGIN_DEP for job %u",
+		     __func__, update_msg->job_id);
+
+	/* update_msg will get free'd, so copy it */
+	update_deps = xmalloc(sizeof *update_deps);
+	update_deps->cnt = update_msg->cnt;
+	update_deps->depend_list = update_msg->depend_list;
+	update_deps->job_id = update_msg->job_id;
+	/*
+	 * NULL update_msg->depend_list so it doesn't get free'd; we're
+	 * using it later.
+	 */
+	update_msg->depend_list = NULL;
+
+	list_append(origin_dep_update_list, update_deps);
+	slurm_mutex_lock(&origin_dep_update_mutex);
+	slurm_cond_broadcast(&origin_dep_cond);
+	slurm_mutex_unlock(&origin_dep_update_mutex);
+
+	return SLURM_SUCCESS;
 }
 
 extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)

@@ -83,6 +83,7 @@ extern int       fed_mgr_job_revoke_sibs(job_record_t *job_ptr);
 extern int       fed_mgr_job_start(job_record_t *job_ptr, time_t start_time);
 extern int       fed_mgr_q_dep_msg(slurm_msg_t *msg);
 extern int       fed_mgr_q_sib_msg(slurm_msg_t *sib_msg, uint32_t rpc_uid);
+extern int       fed_mgr_q_update_origin_dep_msg(slurm_msg_t *msg);
 extern int       fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name);
 extern void      fed_mgr_remove_fed_job_info(uint32_t job_id);
 extern bool      fed_mgr_sibs_synced();

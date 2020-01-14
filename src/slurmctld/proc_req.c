@@ -6716,7 +6716,7 @@ static void _slurm_rpc_update_origin_dep_msg(uint32_t uid, slurm_msg_t *msg)
 		return;
 	}
 
-	info("XXX%sXXX: Got REQUEST_UPDATE_ORIGIN_DEP", __func__);
+	fed_mgr_q_update_origin_dep_msg(msg);
 }
 
 static Buf _build_rc_buf(int rc, uint16_t rpc_version)
