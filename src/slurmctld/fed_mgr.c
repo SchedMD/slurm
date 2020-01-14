@@ -5736,6 +5736,7 @@ extern bool fed_mgr_sibs_synced()
 extern void fed_mgr_test_remote_dependencies(void)
 {
 	int rc;
+	bool was_changed;
 	job_record_t *job_ptr;
 	ListIterator itr;
 
@@ -5748,10 +5749,13 @@ extern void fed_mgr_test_remote_dependencies(void)
 	slurm_mutex_lock(&dep_job_list_mutex);
 	itr = list_iterator_create(remote_dep_job_list);
 	while ((job_ptr = list_next(itr))) {
-		rc = test_job_dependency(job_ptr);
+		was_changed = false;
+		rc = test_job_dependency(job_ptr, &was_changed);
 		if (rc == LOCAL_DEPEND) {
 			info("XXX%sXXX: %pJ has at least 1 local dependency left",
 			     __func__, job_ptr);
+			if (was_changed)
+				_update_origin_job_dep(job_ptr);
 		} else if (rc == FAIL_DEPEND) {
 			info("XXX%sXXX: %pJ test_job_dependency() failed, dependency never satisfied",
 			     __func__, job_ptr);

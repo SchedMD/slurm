@@ -2881,13 +2881,17 @@ static int _test_job_dependency_common(
 
 /*
  * Determine if a job's dependencies are met
+ * Inputs: job_ptr
+ * Outputs: was_changed (optional) -
+ *          If it exists, set it to true if at least 1 dependency changed
+ *          state, otherwise false.
  * RET: NO_DEPEND = no dependencies
  *      LOCAL_DEPEND = local dependencies remain
  *      FAIL_DEPEND = failure (job completion code not per dependency),
  *                    delete the job
  *      REMOTE_DEPEND = only remote dependencies remain
  */
-extern int test_job_dependency(job_record_t *job_ptr)
+extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 {
 	ListIterator depend_iter, job_iterator;
 	struct depend_spec *dep_ptr;
@@ -2978,6 +2982,8 @@ extern int test_job_dependency(job_record_t *job_ptr)
 		if (failure) {
 			int state = DEPEND_NOT_FULFILLED;
 			dep_ptr->depend_state = DEPEND_FAILED;
+			if (was_changed)
+				*was_changed = true;
 			/*
 			 * If the job used OR dependencies and there's another
 			 * non-fulfilled dependency, don't fail yet. The other
@@ -2992,6 +2998,8 @@ extern int test_job_dependency(job_record_t *job_ptr)
 				break;
 		} else if (clear_dep) {
 			dep_ptr->depend_state = DEPEND_FULFILLED;
+			if (was_changed)
+				*was_changed = true;
 			rebuild_str = true;
 			if (dep_ptr->depend_flags & SLURM_FLAGS_OR) {
 				or_satisfied = true;

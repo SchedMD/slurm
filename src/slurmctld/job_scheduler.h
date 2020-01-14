@@ -233,12 +233,16 @@ extern int sort_job_queue2(void *x, void *y);
 
 /*
  * Determine if a job's dependencies are met
+ * Inputs: job_ptr
+ * Outputs: was_changed (optional) -
+ *          If it exists, set it to true if at least 1 dependency changed
+ *          state, otherwise false.
  * RET: NO_DEPEND = no dependencies
  *      LOCAL_DEPEND = dependencies remain
  *      FAIL_DEPEND = failure (job completion code not per dependency),
  *                    delete the job
  */
-extern int test_job_dependency(job_record_t *job_ptr);
+extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed);
 
 /*
  * Parse a job dependency string and use it to establish a "depend_spec"

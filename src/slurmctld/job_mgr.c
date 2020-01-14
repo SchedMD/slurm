@@ -10855,7 +10855,7 @@ void purge_old_job(void)
 			continue;
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;
-		if (test_job_dependency(job_ptr) == FAIL_DEPEND) {
+		if (test_job_dependency(job_ptr, NULL) == FAIL_DEPEND) {
 			/* Check what are the job disposition
 			 * to deal with invalid dependecies
 			 */
@@ -15576,7 +15576,7 @@ extern bool job_independent(job_record_t *job_ptr)
 
 	/* Test dependencies first so we can cancel jobs before dependent
 	 * job records get purged (e.g. afterok, afternotok) */
-	depend_rc = test_job_dependency(job_ptr);
+	depend_rc = test_job_dependency(job_ptr, NULL);
 	if ((depend_rc == LOCAL_DEPEND) || (depend_rc == REMOTE_DEPEND)) {
 		/* start_time has passed but still has dependency which
 		 * makes it ineligible */
