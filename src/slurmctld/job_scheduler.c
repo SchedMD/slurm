@@ -3445,6 +3445,102 @@ extern bool update_job_dependency_list(job_record_t *job_ptr,
 	return was_changed;
 }
 
+extern int handle_job_dependency_updates(void *object, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *) object;
+	struct depend_spec *dep_ptr = NULL;
+	int dep_state;
+
+	/*
+	 * If there is a fulfilled dependency and it is OR satisfied, then
+	 * flush the dependency list and clear the job dependency.
+	 */
+	dep_state = DEPEND_FULFILLED;
+	if ((dep_ptr = list_find_first(job_ptr->details->depend_list,
+				       _find_dep_by_state, &dep_state)) &&
+	    (dep_ptr->depend_flags & SLURM_FLAGS_OR)) {
+		list_flush(job_ptr->details->depend_list);
+		_depend_list2str(job_ptr, false);
+		print_job_dependency(job_ptr);
+		/*
+		 * TODO:
+		 * I got this from test_job_dependency. Why set the reason
+		 * to WAIT_NO_REASON only if it is already WAIT_DEP_INVALID?
+		 * Why not also set it to WAIT_NO_REASON if it is also
+		 * WAIT_DEPENDENCY?
+		 */
+		if (job_ptr->state_reason == WAIT_DEP_INVALID) {
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
+		}
+		job_ptr->bit_flags &= ~JOB_DEPENDENT;
+		return SLURM_SUCCESS;
+	}
+	_depend_list2str(job_ptr, false);
+	print_job_dependency(job_ptr);
+
+	/*
+	 * Test failed dependencies:
+	 * - If it's not OR dependent, fail the job.
+	 * - If it's OR dependent and all dependencies failed, fail the job.
+	 * - If not all dependencies failed, then we handle this below.
+	 */
+	dep_state = DEPEND_FAILED;
+	if ((dep_ptr = list_find_first(job_ptr->details->depend_list,
+				       _find_dep_by_state, &dep_state))) {
+		/* Not OR dependent: fail job */
+		if (!(dep_ptr->depend_flags & SLURM_FLAGS_OR)) {
+			handle_invalid_dependency(job_ptr);
+			job_ptr->bit_flags |= JOB_DEPENDENT;
+			acct_policy_remove_accrue_time(job_ptr, false);
+			return SLURM_SUCCESS;
+		}
+
+		/*
+		 * OR dependent: fail job if all dependencies failed.
+		 * We already searched for fulfilled and OR'd dependencies,
+		 * so just look for at least one unfulfilled dependency.
+		 */
+		dep_state = DEPEND_NOT_FULFILLED;
+		if (!(list_find_first(job_ptr->details->depend_list,
+				      _find_dep_by_state, &dep_state))) {
+			handle_invalid_dependency(job_ptr);
+			job_ptr->bit_flags |= JOB_DEPENDENT;
+			acct_policy_remove_accrue_time(job_ptr, false);
+			return SLURM_SUCCESS;
+		}
+	}
+
+	/*
+	 * If there is at least one unfulfilled dependency, mark the job
+	 * as dependent.
+	 */
+	dep_state = DEPEND_NOT_FULFILLED;
+	if (list_find_first(job_ptr->details->depend_list,
+			    _find_dep_by_state,
+			    &dep_state)) {
+		job_ptr->state_reason = WAIT_DEPENDENCY;
+		xfree(job_ptr->state_desc);
+		job_ptr->bit_flags |= JOB_DEPENDENT;
+		acct_policy_remove_accrue_time(job_ptr, false);
+		return SLURM_SUCCESS;
+	}
+
+	/*
+	 * All dependencies are fulfilled.
+	 */
+	job_ptr->bit_flags &= ~JOB_DEPENDENT;
+	if (job_ptr->state_reason == WAIT_DEPENDENCY) {
+		job_ptr->state_reason = WAIT_NO_REASON;
+		xfree(job_ptr->state_desc);
+	}
+	/*
+	 * TODO: Submit the job to its siblings.
+	 * Probably can just call _prepare_submit_siblings()
+	 */
+	return SLURM_SUCCESS;
+}
+
 /*
  * Parse a job dependency string and use it to establish a "depend_spec"
  * list of dependencies. We accept both old format (a single job ID) and

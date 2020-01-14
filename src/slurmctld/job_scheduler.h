@@ -111,6 +111,16 @@ extern void epilog_slurmctld(job_record_t *job_ptr);
 extern void feature_list_delete(void *x);
 
 /*
+ * Update a job's state_reason, state_desc, and dependency string based on the
+ * states of its dependencies.
+ *
+ * This is called by list_for_each() and thus has 2 void* parameters:
+ * object is a pointer to job_record_t.
+ * arg is unused.
+ */
+extern int handle_job_dependency_updates(void *object, void *arg);
+
+/*
  * job_is_completing - Determine if jobs are in the process of completing.
  * IN/OUT  eff_cg_bitmap - optional bitmap of all relevent completing nodes,
  *                         relevenace determined by filtering via CompleteWait

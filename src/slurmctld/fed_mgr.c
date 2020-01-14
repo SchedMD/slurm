@@ -2300,10 +2300,18 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	_destroy_dep_msg(remote_dep_info);
 }
 
+static int _find_job_by_id(void *arg, void *key)
+{
+	job_record_t *job_ptr = (job_record_t *) arg;
+	uint32_t job_id = *((uint32_t *) key);
+	return job_ptr->job_id == job_id;
+}
+
 static void _handle_dep_update_origin_msgs(void)
 {
 	job_record_t *job_ptr;
 	dep_update_origin_msg_t *dep_update_msg;
+	List update_job_list = NULL;
 	slurmctld_lock_t job_write_lock = {
 		.job = WRITE_LOCK, .fed = READ_LOCK };
 
@@ -2335,40 +2343,23 @@ static void _handle_dep_update_origin_msgs(void)
 		}
 		info("XXX%sXXX: update %pJ dependencies",
 		     __func__, job_ptr);
-		update_job_dependency_list(job_ptr,
-					   dep_update_msg->depend_list);
-		print_job_dependency(job_ptr);
+		if (update_job_dependency_list(job_ptr,
+					       dep_update_msg->depend_list)) {
+			if (!update_job_list) {
+				update_job_list = list_create(NULL);
+				list_append(update_job_list, job_ptr);
+			} else if (!list_find_first(update_job_list,
+						    _find_job_by_id,
+						    &job_ptr->job_id))
+				list_append(update_job_list, job_ptr);
+		}
 		slurm_free_dep_update_origin_msg(dep_update_msg);
 	}
-	/*
-	 * TODO:
-	 * * Update the dependency string.
-	 *   - Right now I call _depend_list2str() inside of
-	 *     update_job_dependency_list() if any of the
-	 *     dependencies changed.
-	 *   - I could call test_job_dependency() and also see
-	 *     if the job is independent. However, I'd need to
-	 *     modify test_job_dependency() to update the
-	 *     dependency string even if there weren't any
-	 *     changes like so:
-	 *       rebuild_str = rebuild_str || !depends;
-	 *   - It needs to happen now because the dependency
-	 *     string is what is saved in StateSaveLocation, so
-	 *     we can't wait for test_job_dependency() to do it.
-	 *     (test_job_dependency() is called by
-	 *     job_independent() when scheduling, which will
-	 *     take a non-zero amount of time to happen.)
-	 * * Update the job state reason and reason string.
-	 *   - test_job_dependency() and job_independent() both
-	 *     do this. I can use those as models.
-	 * * Submit the job to siblings if all dependencies are
-	 *   fulfilled.
-	 *
-	 *
-	 * Maybe I need to build a list of jobs with changed
-	 * dependencies, then I can do these things after the
-	 * while loop. That way I only do them once per job.
-	 */
+	if (update_job_list) {
+		list_for_each(update_job_list, handle_job_dependency_updates,
+			      NULL);
+		FREE_NULL_LIST(update_job_list);
+	}
 	unlock_slurmctld(job_write_lock);
 }
 
