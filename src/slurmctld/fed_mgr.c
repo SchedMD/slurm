@@ -2191,6 +2191,46 @@ static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 	return SLURM_SUCCESS;
 }
 
+static int _update_origin_job_dep(job_record_t *job_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t origin_id;
+	slurmdb_cluster_rec_t *origin;
+	slurm_msg_t req_msg;
+	dep_update_origin_msg_t dep_update_msg = { 0 };
+
+	xassert(job_ptr);
+	xassert(job_ptr->details);
+	xassert(job_ptr->details->depend_list);
+
+	origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
+	origin = fed_mgr_get_cluster_by_id(origin_id);
+	if (!origin) {
+		error("%s: Couldn't find cluster rec by id %u; %pJ has no more dependencies, but we don't know how to tell the origin cluster about it.",
+		      __func__, origin_id, job_ptr);
+		/*
+		 * TODO: What to do if this fails? Should I
+		 * leave this job_ptr in and let it be tested
+		 * again? I'm afraid that logs may be spammed.
+		 * But I imagine this might happen if clusters
+		 * drop out of federation for whatever reason.
+		 */
+		return SLURM_ERROR;
+	}
+
+	dep_update_msg.cnt = list_count(job_ptr->details->depend_list);
+	dep_update_msg.depend_list = job_ptr->details->depend_list;
+	dep_update_msg.job_id = job_ptr->job_id;
+
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type = REQUEST_UPDATE_ORIGIN_DEP;
+	req_msg.data = &dep_update_msg;
+
+	rc = _queue_rpc(origin, &req_msg, 0, false);
+
+	return rc;
+}
+
 static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 {
 	/*
@@ -5547,15 +5587,14 @@ extern void fed_mgr_test_remote_dependencies(void)
 		} else if (rc == FAIL_DEPEND) {
 			info("XXX%sXXX: %pJ test_job_dependency() failed, dependency never satisfied",
 			     __func__, job_ptr);
-			/* TODO: tell origin cluster */
+			if (_update_origin_job_dep(job_ptr))
+				continue;
 			list_delete_item(itr);
 		} else { /* ((rc == REMOTE_DEPEND) || (rc == NO_DEPEND)) */
 			info("XXX%sXXX: %pJ has no more dependencies left on this cluster",
 			     __func__, job_ptr);
-			/*
-			 * TODO: Tell the origin cluster that we've
-			 * cleared the dependencies on this cluster
-			 */
+			if (_update_origin_job_dep(job_ptr))
+				continue;
 			list_delete_item(itr);
 		}
 	}

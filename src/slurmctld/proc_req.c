@@ -6707,6 +6707,18 @@ static void _slurm_rpc_dependency_msg(uint32_t uid, slurm_msg_t *msg)
 	fed_mgr_q_dep_msg(msg);
 }
 
+static void _slurm_rpc_update_origin_dep_msg(uint32_t uid, slurm_msg_t *msg)
+{
+	if (!msg->conn || !validate_slurm_user(uid)) {
+		error("Security violation, REQUEST_UPDATE_ORIGIN_DEP RPC from uid=%d",
+		      uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+
+	info("XXX%sXXX: Got REQUEST_UPDATE_ORIGIN_DEP", __func__);
+}
+
 static Buf _build_rc_buf(int rc, uint16_t rpc_version)
 {
 	Buf buf = NULL;
@@ -6784,6 +6796,11 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			break;
 		case REQUEST_SEND_DEP:
 			_slurm_rpc_dependency_msg(rpc_uid, &sub_msg);
+			ret_buf = _build_rc_buf(SLURM_SUCCESS,
+						msg->protocol_version);
+			break;
+		case REQUEST_UPDATE_ORIGIN_DEP:
+			_slurm_rpc_update_origin_dep_msg(rpc_uid, &sub_msg);
 			ret_buf = _build_rc_buf(SLURM_SUCCESS,
 						msg->protocol_version);
 			break;
