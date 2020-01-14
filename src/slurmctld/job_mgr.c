@@ -4628,7 +4628,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 		 */
 		if (job_ptr->details && job_ptr->details->dependency &&
 		    job_ptr->details->depend_list)
-			fed_mgr_submit_remote_dependencies(job_ptr);
+			fed_mgr_submit_remote_dependencies(job_ptr, false);
 	}
 
 	return job_ptr_pend;
@@ -13472,8 +13472,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 						   job_specs->dependency);
 			if (rc != SLURM_SUCCESS)
 				error_code = rc;
+			/*
+			 * Because the dependencies and we don't know where
+			 * they used to be, send dependencies to all siblings
+			 * so the siblings can update their dependency list.
+			 */
 			else if ((rc =
-				  fed_mgr_submit_remote_dependencies(job_ptr)))
+				  fed_mgr_submit_remote_dependencies(job_ptr,
+								     true)))
 				error_code = rc;
 			else {
 				job_ptr->details->orig_dependency =

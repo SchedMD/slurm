@@ -2794,7 +2794,8 @@ extern int restore_job_dependencies(void)
 			error("Invalid dependencies discarded for %pJ: %s",
 				job_ptr, new_depend);
 			error_code = rc;
-		} else if ((rc = fed_mgr_submit_remote_dependencies(job_ptr)))
+		} else if ((rc = fed_mgr_submit_remote_dependencies(job_ptr,
+								    false)))
 			error_code = rc;
 		xfree(new_depend);
 	}

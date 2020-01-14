@@ -3880,15 +3880,35 @@ end_features:
 	return rc;
 }
 
+static int _add_to_send_list(void *object, void *arg)
+{
+	struct depend_spec *dependency = (struct depend_spec *)object;
+	uint64_t *send_sib_bits = (uint64_t *)arg;
+	uint32_t cluster_id;
+
+	if (!(dependency->depend_flags & SLURM_FLAGS_REMOTE))
+		return SLURM_SUCCESS;
+	cluster_id = fed_mgr_get_cluster_id(dependency->job_id);
+	*send_sib_bits |= FED_SIBLING_BIT(cluster_id);
+	return SLURM_SUCCESS;
+}
+
 /*
  * Send dependencies of job_ptr to siblings.
  *
  * If the dependency string is NULL, that means we're telling the siblings
  * to delete that dependency. Send empty string to indicate that.
+ *
+ * If send_all_sibs == true, then send dependencies to all siblings. Otherwise,
+ * only send dependencies to siblings that own the remote jobs that job_ptr
+ * depends on. I.e., if a sibling doesn't own any jobs that job_ptr depends on,
+ * we won't send job_ptr's dependencies to that sibling.
  */
-extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr)
+extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
+					      bool send_all_sibs)
 {
 	int rc = SLURM_SUCCESS;
+	uint64_t send_sib_bits = 0;
 	ListIterator sib_itr;
 	slurm_msg_t req_msg;
 	dep_msg_t dep_msg = { 0 };
@@ -3915,9 +3935,24 @@ extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr)
 	req_msg.msg_type = REQUEST_SEND_DEP;
 	req_msg.data = &dep_msg;
 
+	if (!job_ptr->details->depend_list)
+		send_all_sibs = true;
+	if (!send_all_sibs) {
+		list_for_each(job_ptr->details->depend_list,
+			      _add_to_send_list, &send_sib_bits);
+	}
+
 	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 	while ((sibling = list_next(sib_itr))) {
 		if (sibling == fed_mgr_cluster_rec)
+			continue;
+		/*
+		 * If we aren't sending the dependency to all siblings and
+		 * there isn't a dependency on this sibling, don't send
+		 * an RPC to this sibling.
+		 */
+		if (!send_all_sibs &&
+		    !(send_sib_bits & FED_SIBLING_BIT(sibling->fed.id)))
 			continue;
 
 		req_msg.protocol_version = sibling->rpc_version;
@@ -4041,7 +4076,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		info("failed to submit sibling job to one or more siblings");
 	/* Send remote dependencies to siblings */
 	if (job_ptr->details && job_ptr->details->dependency)
-		if (fed_mgr_submit_remote_dependencies(job_ptr))
+		if (fed_mgr_submit_remote_dependencies(job_ptr, false))
 			error("XXX%sXXX: _submit_remote_dependencies() returned error",
 			      __func__);
 
