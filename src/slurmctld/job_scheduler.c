@@ -2642,6 +2642,30 @@ extern List depended_list_copy(List depend_list_src)
 	return depend_list_dest;
 }
 
+static char *_depend_type2str(struct depend_spec *dep_ptr)
+{
+	xassert(dep_ptr);
+
+	switch (dep_ptr->depend_type) {
+	case SLURM_DEPEND_AFTER:
+		return "after";
+	case SLURM_DEPEND_AFTER_ANY:
+		return "afterany";
+	case SLURM_DEPEND_AFTER_NOT_OK:
+		return "afternotok";
+	case SLURM_DEPEND_AFTER_OK:
+		return "afterok";
+	case SLURM_DEPEND_AFTER_CORRESPOND:
+		return "aftercorr";
+	case SLURM_DEPEND_EXPAND:
+		return "expand";
+	case SLURM_DEPEND_BURST_BUFFER:
+		return "afterburstbuffer";
+	default:
+		return "unknown";
+	}
+}
+
 /* Print a job's dependency information based upon job_ptr->depend_list */
 extern void print_job_dependency(job_record_t *job_ptr)
 {
@@ -2671,23 +2695,7 @@ extern void print_job_dependency(job_record_t *job_ptr)
 			dep_flags = "OR";
 		else
 			dep_flags = "";
-
-		if      (dep_ptr->depend_type == SLURM_DEPEND_AFTER)
-			dep_str = "after";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY)
-			dep_str = "afterany";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK)
-			dep_str = "afternotok";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK)
-			dep_str = "afterok";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_CORRESPOND)
-			dep_str = "aftercorr";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND)
-			dep_str = "expand";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER)
-			dep_str = "afterburstbuffer";
-		else
-			dep_str = "unknown";
+		dep_str = _depend_type2str(dep_ptr);
 
 		if (dep_ptr->depend_time)
 			dep_time_sep = xstrdup_printf(
@@ -2749,23 +2757,7 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 			sep = ",";
 			continue;
 		}
-
-		if      (dep_ptr->depend_type == SLURM_DEPEND_AFTER)
-			dep_str = "after";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY)
-			dep_str = "afterany";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK)
-			dep_str = "afternotok";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK)
-			dep_str = "afterok";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_CORRESPOND)
-			dep_str = "aftercorr";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND)
-			dep_str = "expand";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER)
-			dep_str = "afterburstbuffer";
-		else
-			dep_str = "unknown";
+		dep_str = _depend_type2str(dep_ptr);
 
 		if (dep_ptr->array_task_id == INFINITE)
 			xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_*",
