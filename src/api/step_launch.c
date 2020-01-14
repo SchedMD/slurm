@@ -140,13 +140,13 @@ extern void slurm_step_launch_params_t_init(slurm_step_launch_params_t *ptr)
 	ptr->cpu_freq_min = NO_VAL;
 	ptr->cpu_freq_max = NO_VAL;
 	ptr->cpu_freq_gov = NO_VAL;
-	ptr->node_offset  = NO_VAL;
-	ptr->pack_jobid   = NO_VAL;
-	ptr->pack_nnodes  = NO_VAL;
-	ptr->pack_ntasks  = NO_VAL;
-	ptr->pack_offset  = NO_VAL;
-	ptr->pack_step_cnt = NO_VAL;
-	ptr->pack_task_offset = NO_VAL;
+	ptr->het_job_node_offset  = NO_VAL;
+	ptr->het_job_id   = NO_VAL;
+	ptr->het_job_nnodes  = NO_VAL;
+	ptr->het_job_ntasks  = NO_VAL;
+	ptr->het_job_offset  = NO_VAL;
+	ptr->het_job_step_cnt = NO_VAL;
+	ptr->het_job_task_offset = NO_VAL;
 }
 
 /*
@@ -161,7 +161,7 @@ extern int slurm_mpi_plugin_init(char *plugin_name)
 }
 
 /*
- * For a pack job step, rebuild the MPI data structure to show what is running
+ * For a hetjob step, rebuild the MPI data structure to show what is running
  * in a single MPI_COMM_WORLD
  */
 static void _rebuild_mpi_layout(slurm_step_ctx_t *ctx,
@@ -169,9 +169,9 @@ static void _rebuild_mpi_layout(slurm_step_ctx_t *ctx,
 {
 	slurm_step_layout_t *new_step_layout, *orig_step_layout;
 
-	ctx->launch_state->mpi_info->het_job_id = params->pack_jobid;
+	ctx->launch_state->mpi_info->het_job_id = params->het_job_id;
 	ctx->launch_state->mpi_info->het_job_task_offset =
-		params->pack_task_offset;
+		params->het_job_task_offset;
 	new_step_layout = xmalloc(sizeof(slurm_step_layout_t));
 	orig_step_layout = ctx->launch_state->mpi_info->step_layout;
 	ctx->launch_state->mpi_info->step_layout = new_step_layout;
@@ -179,15 +179,15 @@ static void _rebuild_mpi_layout(slurm_step_ctx_t *ctx,
 		new_step_layout->front_end =
 			xstrdup(orig_step_layout->front_end);
 	}
-	new_step_layout->node_cnt = params->pack_nnodes;
-	new_step_layout->node_list = xstrdup(params->pack_node_list);
+	new_step_layout->node_cnt = params->het_job_nnodes;
+	new_step_layout->node_list = xstrdup(params->het_job_node_list);
 	new_step_layout->plane_size = orig_step_layout->plane_size;
 	new_step_layout->start_protocol_ver =
 		orig_step_layout->start_protocol_ver;
-	new_step_layout->tasks = params->pack_task_cnts;
-	new_step_layout->task_cnt = params->pack_ntasks;
+	new_step_layout->tasks = params->het_job_task_cnts;
+	new_step_layout->task_cnt = params->het_job_ntasks;
 	new_step_layout->task_dist = orig_step_layout->task_dist;
-	new_step_layout->tids = params->pack_tids;
+	new_step_layout->tids = params->het_job_tids;
 }
 
 /*
@@ -232,7 +232,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		return SLURM_ERROR;
 	}
 
-	if (params->pack_jobid && (params->pack_jobid != NO_VAL))
+	if (params->het_job_id && (params->het_job_id != NO_VAL))
 		_rebuild_mpi_layout(ctx, params);
 
 	mpi_env = xmalloc(sizeof(char *));  /* Needed for setenvf used by MPI */
@@ -259,17 +259,17 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
-	launch.het_job_node_offset = params->node_offset;
-	launch.het_job_step_cnt = params->pack_step_cnt;
-	launch.het_job_id = params->pack_jobid;
-	launch.het_job_nnodes = params->pack_nnodes;
-	launch.het_job_ntasks = params->pack_ntasks;
-	launch.het_job_offset = params->pack_offset;
-	launch.het_job_task_offset = params->pack_task_offset;
-	launch.het_job_task_cnts = params->pack_task_cnts;
-	launch.het_job_tids = params->pack_tids;
-	launch.het_job_tid_offsets = params->pack_tid_offsets;
-	launch.het_job_node_list = params->pack_node_list;
+	launch.het_job_node_offset = params->het_job_node_offset;
+	launch.het_job_step_cnt = params->het_job_step_cnt;
+	launch.het_job_id = params->het_job_id;
+	launch.het_job_nnodes = params->het_job_nnodes;
+	launch.het_job_ntasks = params->het_job_ntasks;
+	launch.het_job_offset = params->het_job_offset;
+	launch.het_job_task_offset = params->het_job_task_offset;
+	launch.het_job_task_cnts = params->het_job_task_cnts;
+	launch.het_job_tids = params->het_job_tids;
+	launch.het_job_tid_offsets = params->het_job_tid_offsets;
+	launch.het_job_node_list = params->het_job_node_list;
 	if (params->env == NULL) {
 		/*
 		 * If the user didn't specify an environment, then use the
@@ -279,7 +279,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	} else {
 		env_array_merge(&env, (const char **)params->env);
 	}
-	if (params->pack_ntasks != NO_VAL)
+	if (params->het_job_ntasks != NO_VAL)
 		preserve_env = true;
 	env_array_for_step(&env, ctx->step_resp, &launch,
 			   ctx->launch_state->resp_port[0], preserve_env);
@@ -357,8 +357,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 						 launch.nnodes,
 						 ctx->step_resp->cred,
 						 params->labelio,
-						 params->pack_offset,
-						 params->pack_task_offset);
+						 params->het_job_offset,
+						 params->het_job_task_offset);
 		if (ctx->launch_state->io.normal == NULL) {
 			rc = SLURM_ERROR;
 			goto fail1;
@@ -457,16 +457,16 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
-	launch.het_job_step_cnt = params->pack_step_cnt;
-	launch.het_job_id = params->pack_jobid;
-	launch.het_job_nnodes = params->pack_nnodes;
-	launch.het_job_ntasks = params->pack_ntasks;
-	launch.het_job_offset = params->pack_offset;
-	launch.het_job_task_offset = params->pack_task_offset;
-	launch.het_job_task_cnts = params->pack_task_cnts;
-	launch.het_job_tids = params->pack_tids;
-	launch.het_job_tid_offsets = params->pack_tid_offsets;
-	launch.het_job_node_list = params->pack_node_list;
+	launch.het_job_step_cnt = params->het_job_step_cnt;
+	launch.het_job_id = params->het_job_id;
+	launch.het_job_nnodes = params->het_job_nnodes;
+	launch.het_job_ntasks = params->het_job_ntasks;
+	launch.het_job_offset = params->het_job_offset;
+	launch.het_job_task_offset = params->het_job_task_offset;
+	launch.het_job_task_cnts = params->het_job_task_cnts;
+	launch.het_job_tids = params->het_job_tids;
+	launch.het_job_tid_offsets = params->het_job_tid_offsets;
+	launch.het_job_node_list = params->het_job_node_list;
 	if (params->env == NULL) {
 		/*
 		 * if the user didn't specify an environment, grab the
@@ -478,7 +478,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	}
 	if (first_ctx->launch_state->resp_port)
 		resp_port = first_ctx->launch_state->resp_port[0];
-	if (params->pack_ntasks != NO_VAL)
+	if (params->het_job_ntasks != NO_VAL)
 		preserve_env = true;
 	env_array_for_step(&env, ctx->step_resp, &launch, resp_port,
 			   preserve_env);
@@ -550,8 +550,8 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 						 launch.nnodes,
 						 ctx->step_resp->cred,
 						 params->labelio,
-						 params->pack_offset,
-						 params->pack_task_offset);
+						 params->het_job_offset,
+						 params->het_job_task_offset);
 		if (ctx->launch_state->io.normal == NULL) {
 			rc = SLURM_ERROR;
 			goto fail1;
