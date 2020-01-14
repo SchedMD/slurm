@@ -1264,6 +1264,12 @@ extern part_record_t *find_part_record(char *name);
 extern step_record_t *find_step_record(job_record_t *job_ptr, uint32_t step_id);
 
 /*
+ * free_null_array_recs - free an xmalloc'd job_array_struct_t structure inside
+ *                        of a job_record_t and set job_ptr->array_recs to NULL.
+ */
+extern void free_null_array_recs(job_record_t *array_recs);
+
+/*
  * get_job_env - return the environment variables and their count for a
  *	given job
  * IN job_ptr - pointer to job for which data is required

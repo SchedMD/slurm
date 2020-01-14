@@ -1342,8 +1342,7 @@ static void _destroy_dep_job(void *object)
 			FREE_NULL_LIST(job_ptr->details->depend_list);
 			xfree(job_ptr->details);
 		}
-		if (job_ptr->array_recs)
-			xfree(job_ptr->array_recs);
+		free_null_array_recs(job_ptr);
 		job_ptr->magic = 0;
 		job_ptr->job_id = 0;
 		xfree(job_ptr);

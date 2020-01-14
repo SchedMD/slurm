@@ -9253,6 +9253,16 @@ static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 	return cc;
 }
 
+extern void free_null_array_recs(job_record_t *job_ptr)
+{
+	if (!job_ptr || !job_ptr->array_recs)
+		return;
+
+	FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
+	xfree(job_ptr->array_recs->task_id_str);
+	xfree(job_ptr->array_recs);
+}
+
 /*
  * _list_delete_job - delete a job record and its corresponding job_details,
  *	see common/list.h for documentation
@@ -9290,6 +9300,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->admin_comment);
 	xfree(job_ptr->alias_list);
 	xfree(job_ptr->alloc_node);
+	free_null_array_recs(job_ptr);
 	if (job_ptr->array_recs) {
 		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
 		xfree(job_ptr->array_recs->task_id_str);
