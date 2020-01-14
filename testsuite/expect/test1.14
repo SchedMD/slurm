@@ -256,10 +256,35 @@ expect {
 	}
 }
 
-spawn $scontrol show job $job_id
+set job_tres_cnt 0
+array set gpu_type_found {}
+spawn $scontrol show job -d $job_id
 expect {
-	-re "TRES=($alpha_numeric_special)gres/gpu=($number)" {
-		set job_tres_cnt $expect_out(2,string)
+	-re "(JOB_GRES=|,)$gres_regex" {
+		set count 0
+		set name $expect_out(2,string)
+		# Assume typed GRES of format gpu:1080:5 to start out
+		set type $expect_out(3,string)
+		set count $expect_out(4,string)
+
+		# Skip all GRES of different names
+		if {$name != "gpu"} {
+			exp_continue
+		}
+		if {$count == ""} {
+			# Now assume GRES format gpu:5
+			set count $type
+			set type "notype"
+		}
+		# Skip if type already found (in another GRES line)
+		if {[info exists gpu_type_found($type)]} {
+			exp_continue
+		}
+		if { $count } {
+			incr job_tres_cnt $count
+			set gpu_type_found($type) true
+		}
+
 		exp_continue
 	}
 	timeout {
@@ -272,10 +297,10 @@ expect {
 }
 
 if {$gpu_cnt != $job_tres_cnt} {
-	log_error "Job didn't allocate all GPUs ($job_tres_cnt != $gpu_cnt)"
+	log_error "Job didn't allocate all GPUs ($gpu_cnt != $job_tres_cnt)"
 	set exit_code 1
 } else {
-	log_info "Node GPU count matches Job GPU count ($job_tres_cnt == $gpu_cnt)"
+	log_info "Node GPU count matches Job GPU count ($gpu_cnt == $job_tres_cnt)"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
