@@ -3817,7 +3817,7 @@ static int _add_to_send_list(void *object, void *arg)
 	uint64_t *send_sib_bits = (uint64_t *)arg;
 	uint32_t cluster_id;
 
-	if (!dependency->depend_remote)
+	if (!(dependency->depend_flags & SLURM_FLAGS_REMOTE))
 		return SLURM_SUCCESS;
 	cluster_id = fed_mgr_get_cluster_id(dependency->job_id);
 	*send_sib_bits |= FED_SIBLING_BIT(cluster_id);

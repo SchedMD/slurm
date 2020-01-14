@@ -2700,20 +2700,23 @@ extern void print_job_dependency(job_record_t *job_ptr)
 			     dep_str, dep_ptr->job_id,
 			     dep_time_sep ? dep_time_sep : "",
 			     dep_flags,
-			     dep_ptr->depend_remote ? " (remote)" : "");
+			     (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) ?
+			     " (remote)" : "");
 		else if (dep_ptr->array_task_id == NO_VAL)
 			info("  %s:%u%s %s%s",
 			     dep_str, dep_ptr->job_id,
 			     dep_time_sep ? dep_time_sep : "",
 			     dep_flags,
-			     dep_ptr->depend_remote ? " (remote)" : "");
+			     (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) ?
+			     " (remote)" : "");
 		else
 			info("  %s:%u_%u:%s %s%s",
 			     dep_str, dep_ptr->job_id,
 			     dep_ptr->array_task_id,
 			     dep_time_sep ? dep_time_sep : "",
 			     dep_flags,
-			     dep_ptr->depend_remote ? " (remote)" : "");
+			     (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) ?
+			     " (remote)" : "");
 		xfree(dep_time_sep);
 	}
 	list_iterator_destroy(depend_iter);
@@ -2922,7 +2925,7 @@ extern int test_job_dependency(job_record_t *job_ptr)
 		/* Don't test if the dependency is fulfilled or failed */
 		if (dep_ptr->depend_state != DEPEND_NOT_FULFILLED)
 			continue;
-		if (dep_ptr->depend_remote) {
+		if ((dep_ptr->depend_flags & SLURM_FLAGS_REMOTE)) {
 			depends = true;
 			continue;
 		}
@@ -3168,7 +3171,7 @@ static void _parse_dependency_jobid_new(struct job_record *job_ptr,
 		if (job_ptr->fed_details &&
 		    !fed_mgr_is_origin_job_id(job_id)) {
 			dep_ptr = xmalloc(sizeof(struct depend_spec));
-			dep_ptr->depend_remote = true;
+			dep_ptr->depend_flags |= SLURM_FLAGS_REMOTE;
 			dep_ptr->depend_type = depend_type;
 			dep_ptr->array_task_id = array_task_id;
 			dep_ptr->job_id = job_id;
@@ -3338,7 +3341,7 @@ static void _parse_dependency_jobid_old(struct job_record *job_ptr,
 	if (job_ptr->fed_details &&
 	    !fed_mgr_is_origin_job_id(job_id)) {
 		dep_ptr = xmalloc(sizeof(struct depend_spec));
-		dep_ptr->depend_remote = true;
+		dep_ptr->depend_flags |= SLURM_FLAGS_REMOTE;
 		dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;
 		dep_ptr->array_task_id = array_task_id;
 		dep_ptr->job_id = job_id;
@@ -3572,7 +3575,7 @@ static bool _scan_depend(List dependency_list, uint32_t job_id)
 		 * cluster. For example, if that job is running or held, we
 		 * won't have the job_ptr.
 		 */
-		if (dep_ptr->depend_remote)
+		if ((dep_ptr->depend_flags & SLURM_FLAGS_REMOTE))
 			continue;
 		if (dep_ptr->job_id == job_id)
 			rc = true;

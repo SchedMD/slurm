@@ -6302,7 +6302,6 @@ static void _pack_dep_list(List dep_list, Buf buffer, uint16_t protocol_version)
 			pack32(dep_ptr->depend_state, buffer);
 			pack32(dep_ptr->depend_time, buffer);
 			pack32(dep_ptr->job_id, buffer);
-			packbool(dep_ptr->depend_remote, buffer);
 		}
 		list_iterator_destroy(itr);
 	} else {
@@ -6334,7 +6333,6 @@ static int _unpack_dep_list(List *dep_list, uint16_t cnt, Buf buffer,
 			safe_unpack32(&dep_ptr->depend_state, buffer);
 			safe_unpack32(&dep_ptr->depend_time, buffer);
 			safe_unpack32(&dep_ptr->job_id, buffer);
-			safe_unpackbool(&dep_ptr->depend_remote, buffer);
 		}
 	} else {
 		error("%s: protocol_version %hu not supported",

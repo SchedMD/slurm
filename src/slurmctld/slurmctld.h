@@ -901,6 +901,7 @@ typedef enum {
 } slurm_depend_types_t;
 
 #define SLURM_FLAGS_OR		0x0001	/* OR job dependencies */
+#define SLURM_FLAGS_REMOTE      0x0002  /* Is a remote dependency */
 
 enum {
 	DEPEND_NOT_FULFILLED = 0,
@@ -915,7 +916,6 @@ struct	depend_spec {
 	uint32_t        depend_state;   /* Status of the dependency */
 	uint32_t        depend_time;    /* time to wait (mins) */
 	uint32_t	job_id;		/* Slurm job_id */
-	bool 		depend_remote;	/* Is a remote dependency */
 	job_record_t   *job_ptr;	/* pointer to this job */
 };
 
