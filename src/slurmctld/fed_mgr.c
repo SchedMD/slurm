@@ -2243,6 +2243,12 @@ static int _update_origin_job_dep(job_record_t *job_ptr)
 	return rc;
 }
 
+static int _find_local_dep(void *arg, void *key)
+{
+	struct depend_spec *dep_ptr = (struct depend_spec *) arg;
+	return !(dep_ptr->depend_flags & SLURM_FLAGS_REMOTE);
+}
+
 static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 {
 	/*
@@ -2250,7 +2256,7 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	 * - read the job list (need job read lock)
 	 * - call fed_mgr_is_origin_job_id (need fed read lock)
 	 */
-	int rc;
+	int rc, tmp;
 	slurmctld_lock_t job_read_lock = { .job = READ_LOCK, .fed = READ_LOCK };
 	job_record_t *job_ptr = xmalloc(sizeof *job_ptr);
 
@@ -2311,9 +2317,12 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 		/*
 		 * If we were sent a list of 0 dependencies, that means
 		 * the dependency was updated and cleared, so don't
-		 * add it to the list to test.
+		 * add it to the list to test. Also only add it if
+		 * there are dependencies local to this cluster.
 		 */
-		if (list_count(job_ptr->details->depend_list)) {
+		if (list_count(job_ptr->details->depend_list) &&
+		    list_find_first(job_ptr->details->depend_list,
+				    _find_local_dep, &tmp)) {
 			/*
 			 * We need to lock this mutex since we iterate over
 			 * this list in another thread.
