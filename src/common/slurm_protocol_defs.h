@@ -966,12 +966,12 @@ typedef struct control_status_msg {
 #define SIG_NODE_FAIL	998	/* Dummy signal value to signify node failure */
 #define SIG_FAILURE	999	/* Dummy signal value to signify sys failure */
 typedef struct kill_job_msg {
+	uint32_t het_job_id;
 	List job_gres_info;	/* Used to set Epilog environment variables */
 	uint32_t job_id;
 	uint32_t job_state;
 	uint32_t job_uid;
 	char *nodes;
-	uint32_t pack_jobid;
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
