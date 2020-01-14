@@ -2294,6 +2294,75 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	_destroy_dep_msg(remote_dep_info);
 }
 
+static void _handle_dep_update_origin_msgs(void)
+{
+	job_record_t *job_ptr;
+	dep_update_origin_msg_t *dep_update_msg;
+	slurmctld_lock_t job_write_lock = {
+		.job = WRITE_LOCK, .fed = READ_LOCK };
+
+	lock_slurmctld(job_write_lock);
+	while ((dep_update_msg = list_pop(origin_dep_update_list))) {
+		if (!(job_ptr = find_job_record(dep_update_msg->job_id))) {
+			/*
+			 * Maybe the job was cancelled and purged before
+			 * the dependency update got here or was able
+			 * to be processed. Regardless, this job doesn't
+			 * exist here, so we have to throw out this
+			 * dependency update message.
+			 */
+			debug("%s: Could not find job %u, cannot process dependency update. Perhaps the jobs was purged before we got here.",
+			      __func__, dep_update_msg->job_id);
+			slurm_free_dep_update_origin_msg(dep_update_msg);
+			continue;
+		} else if (!job_ptr->details ||
+			   !job_ptr->details->depend_list) {
+			/*
+			 * This might happen if the job's dependencies
+			 * were updated to be none before the dependency
+			 * update came from the sibling cluster.
+			 */
+			debug("%s: %pJ doesn't have dependencies, cannot process dependency update",
+			      __func__, job_ptr);
+			slurm_free_dep_update_origin_msg(dep_update_msg);
+			continue;
+		}
+		info("XXX%sXXX: update %pJ dependencies",
+		     __func__, job_ptr);
+		slurm_free_dep_update_origin_msg(dep_update_msg);
+	}
+	/*
+	 * TODO:
+	 * * Update the dependency string.
+	 *   - Right now I call _depend_list2str() inside of
+	 *     update_job_dependency_list() if any of the
+	 *     dependencies changed.
+	 *   - I could call test_job_dependency() and also see
+	 *     if the job is independent. However, I'd need to
+	 *     modify test_job_dependency() to update the
+	 *     dependency string even if there weren't any
+	 *     changes like so:
+	 *       rebuild_str = rebuild_str || !depends;
+	 *   - It needs to happen now because the dependency
+	 *     string is what is saved in StateSaveLocation, so
+	 *     we can't wait for test_job_dependency() to do it.
+	 *     (test_job_dependency() is called by
+	 *     job_independent() when scheduling, which will
+	 *     take a non-zero amount of time to happen.)
+	 * * Update the job state reason and reason string.
+	 *   - test_job_dependency() and job_independent() both
+	 *     do this. I can use those as models.
+	 * * Submit the job to siblings if all dependencies are
+	 *   fulfilled.
+	 *
+	 *
+	 * Maybe I need to build a list of jobs with changed
+	 * dependencies, then I can do these things after the
+	 * while loop. That way I only do them once per job.
+	 */
+	unlock_slurmctld(job_write_lock);
+}
+
 static void *_test_dep_job_thread(void *arg)
 {
 	time_t last_test = 0;
@@ -2324,7 +2393,6 @@ static void *_test_dep_job_thread(void *arg)
 static void *_origin_dep_update_thread(void *arg)
 {
 	struct timespec ts = {0, 0};
-	dep_update_origin_msg_t *dep_update_msg;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "fed_update_dep", NULL, NULL, NULL) < 0) {
@@ -2343,47 +2411,7 @@ static void *_origin_dep_update_thread(void *arg)
 		if (slurmctld_config.shutdown_time)
 			break;
 
-		while ((dep_update_msg = list_pop(origin_dep_update_list))) {
-			slurmctld_lock_t job_write_lock = {
-				.job = WRITE_LOCK, .fed = READ_LOCK };
-			job_record_t *job_ptr;
-
-			lock_slurmctld(job_write_lock);
-			if (!(job_ptr =
-			      find_job_record(dep_update_msg->job_id))) {
-				/*
-				 * Maybe the job was cancelled and purged before
-				 * the dependency update got here or was able
-				 * to be processed. Regardless, this job doesn't
-				 * exist here, so we have to throw out this
-				 * dependency update message.
-				 * TODO: Should this be an info instead of an
-				 * error?
-				 */
-				error("%s: Could not find job %u, cannot process dependency update",
-				      __func__, dep_update_msg->job_id);
-				slurm_free_dep_update_origin_msg(dep_update_msg);
-				unlock_slurmctld(job_write_lock);
-				continue;
-			}
-			/*
-			 * TODO:
-			 * Update that job's dependency list:
-			 *   - I'm not sure how to do this yet
-			 *   - Any dependencies in dep_update_msg that are
-			 *     NO_DEPEND or FAIL_DEPEND can be updated here?
-			 *   - Do I need to send the cluster ID as part of
-			 *     dep_update_msg so I only update dependencies
-			 *     on that cluster?
-			 * That's all we want to do here. Whenever we try to
-			 * schedule that job, it will call job_independent()
-			 * and use the updated job dependency list
-			 */
-			info("XXX%sXXX: update %pJ dependencies",
-			     __func__, job_ptr);
-			unlock_slurmctld(job_write_lock);
-			slurm_free_dep_update_origin_msg(dep_update_msg);
-		}
+		_handle_dep_update_origin_msgs();
 	}
 	return NULL;
 }
