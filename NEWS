@@ -67,6 +67,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 19.05.6
 ==========================
  -- Fix OverMemoryKill.
+ -- Fix memory leak in scontrol show config.
 
 * Changes in Slurm 19.05.5
 ==========================
