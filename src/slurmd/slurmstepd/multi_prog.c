@@ -491,8 +491,8 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 
 	job->mpmd_set = xmalloc(sizeof(mpmd_set_t));
 
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-		jobid = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
 	else
 		jobid = job->jobid;
 

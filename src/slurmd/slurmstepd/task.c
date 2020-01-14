@@ -315,14 +315,14 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
 {
 	mpi_plugin_task_info_t info[1];
 
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
-		info->jobid   = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
+		info->jobid   = job->het_job_id;
 		info->stepid  = job->stepid;
-		info->nnodes  = job->pack_nnodes;
-		info->nodeid  = job->node_offset + job->nodeid;
-		info->ntasks  = job->pack_ntasks ;
+		info->nnodes  = job->het_job_nnodes;
+		info->nodeid  = job->het_job_node_offset + job->nodeid;
+		info->ntasks  = job->het_job_ntasks;
 		info->ltasks  = job->node_tasks;
-		info->gtaskid = job->pack_task_offset +
+		info->gtaskid = job->het_job_task_offset +
 				job->task[ltaskid]->gtid;
 		info->ltaskid = job->task[ltaskid]->id;
 		info->self    = job->envtp->self;
@@ -355,10 +355,10 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 	int saved_errno;
 	uint32_t node_offset = 0, task_offset = 0;
 
-	if (job->node_offset != NO_VAL)
-		node_offset = job->node_offset;
-	if (job->pack_task_offset != NO_VAL)
-		task_offset = job->pack_task_offset;
+	if (job->het_job_node_offset != NO_VAL)
+		node_offset = job->het_job_node_offset;
+	if (job->het_job_task_offset != NO_VAL)
+		task_offset = job->het_job_task_offset;
 
 	gtids = xmalloc(job->node_tasks * sizeof(uint32_t));
 	for (j = 0; j < job->node_tasks; j++)
@@ -366,8 +366,8 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 	job->envtp->sgtids = _uint32_array_to_str(job->node_tasks, gtids);
 	xfree(gtids);
 
-	if (job->pack_jobid != NO_VAL)
-		job->envtp->jobid = job->pack_jobid;
+	if (job->het_job_id != NO_VAL)
+		job->envtp->jobid = job->het_job_id;
 	else
 		job->envtp->jobid = job->jobid;
 	job->envtp->stepid = job->stepid;

@@ -447,14 +447,14 @@ extern int create_apinfo(const stepd_step_rec_t *job)
 	}
 
 	// Get relevant information from job
-	if (job->pack_jobid != NO_VAL) {
-		ntasks = job->pack_ntasks;
-		ncmds = job->pack_step_cnt;
-		nnodes = job->pack_nnodes;
-		task_cnts = job->pack_task_cnts;
-		tids = job->pack_tids;
-		tid_offsets = job->pack_tid_offsets;
-		nodelist = job->pack_node_list;
+	if (job->het_job_id != NO_VAL) {
+		ntasks = job->het_job_ntasks;
+		ncmds = job->het_job_step_cnt;
+		nnodes = job->het_job_nnodes;
+		task_cnts = job->het_job_task_cnts;
+		tids = job->het_job_tids;
+		tid_offsets = job->het_job_tid_offsets;
+		nodelist = job->het_job_node_list;
 	} else {
 		ntasks = job->ntasks;
 		nnodes = job->nnodes;

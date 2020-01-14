@@ -106,17 +106,17 @@ _setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
 
 	memset(&job_info, 0, sizeof(job_info));
 
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
-		job_info.jobid  = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
+		job_info.jobid  = job->het_job_id;
 		job_info.stepid = job->stepid;
-		job_info.nnodes = job->pack_nnodes;
-		job_info.nodeid = job->nodeid + job->node_offset;
-		job_info.ntasks = job->pack_ntasks;
+		job_info.nnodes = job->het_job_nnodes;
+		job_info.nodeid = job->nodeid + job->het_job_node_offset;
+		job_info.ntasks = job->het_job_ntasks;
 		job_info.ltasks = job->node_tasks;
 		job_info.gtids = xmalloc(job_info.ltasks * sizeof(uint32_t));
 		for (i = 0; i < job_info.ltasks; i ++) {
 			job_info.gtids[i] = job->task[i]->gtid +
-					    job->pack_task_offset;
+					    job->het_job_task_offset;
 		}
 	} else {
 		job_info.jobid  = job->jobid;

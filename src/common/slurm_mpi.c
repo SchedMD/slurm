@@ -107,15 +107,16 @@ static void _log_step_rec(const stepd_step_rec_t *job)
 	for (i = 0; i < job->nnodes; i++)
 		info("task_cnts[%d]:%u", i, job->task_cnts[i]);
 
-	if ((job->pack_jobid != 0) && (job->pack_jobid != NO_VAL)) {
-		info("pack_job_id:%u step_id:%u", job->pack_jobid, job->stepid);
-		info("pack_ntasks:%u pack_nnodes:%u", job->pack_ntasks,
-		     job->pack_nnodes);
-		info("pack_node_offset:%u pack_task_offset:%u",
-		     job->node_offset, job->pack_task_offset);
-		for (i = 0; i < job->pack_nnodes; i++)
-			info("pack_task_cnts[%d]:%u", i,job->pack_task_cnts[i]);
-		info("pack_node_list:%s", job->pack_node_list);
+	if ((job->het_job_id != 0) && (job->het_job_id != NO_VAL)) {
+		info("het_job_id:%u step_id:%u", job->het_jobid, job->stepid);
+		info("het_job_ntasks:%u het_job_nnodes:%u", job->het_job_ntasks,
+		     job->het_job_nnodes);
+		info("het_job_node_offset:%u het_job_task_offset:%u",
+		     job->het_job_offset, job->het_job_task_offset);
+		for (i = 0; i < job->het_job_nnodes; i++)
+			info("het_job_task_cnts[%d]:%u", i,
+			     job->het_job_task_cnts[i]);
+		info("het_job_node_list:%s", job->het_job_node_list);
 	}
 }
 

@@ -263,8 +263,8 @@ try_again:
 
 #ifdef HAVE_NATIVE_CRAY
 	// Set apid for this pid
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-		jobid = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
 	else
 		jobid = job->jobid;
 	if (job_setapid(pid, SLURM_ID_HASH(jobid, job->stepid)) == -1) {
