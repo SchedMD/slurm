@@ -142,10 +142,10 @@ typedef struct {
 
 typedef struct {
 	char **gres_job_env;
+	uint32_t het_job_id;
 	uint32_t jobid;
 	uint32_t step_id;
 	char *node_list;
-	uint32_t pack_jobid;
 	char *partition;
 	char *resv_id;
 	char **spank_job_env;
@@ -1521,7 +1521,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.jobid = req->job_id;
 		job_env.step_id = req->job_step_id;
 		job_env.node_list = req->complete_nodelist;
-		job_env.pack_jobid = req->het_job_id;
+		job_env.het_job_id = req->het_job_id;
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
@@ -2251,7 +2251,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.jobid = req->job_id;
 		job_env.step_id = 0;	/* not available */
 		job_env.node_list = req->nodes;
-		job_env.pack_jobid = req->het_job_id;
+		job_env.het_job_id = req->het_job_id;
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
@@ -2457,7 +2457,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		job_env.jobid = req->job_id;
 		job_env.step_id = req->step_id;
 		job_env.node_list = req->nodes;
-		job_env.pack_jobid = req->het_job_id;
+		job_env.het_job_id = req->het_job_id;
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
@@ -5809,8 +5809,8 @@ static char **_build_env(job_env_t *job_env, bool is_epilog)
 
 	setenvf(&env, "SLURM_JOBID", "%u", job_env->jobid);
 
-	if (job_env->pack_jobid && (job_env->pack_jobid != NO_VAL))
-		setenvf(&env, "SLURM_PACK_JOB_ID", "%u", job_env->pack_jobid);
+	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL))
+		setenvf(&env, "SLURM_PACK_JOB_ID", "%u", job_env->het_job_id);
 
 	setenvf(&env, "SLURM_UID", "%u", job_env->uid);
 
@@ -6037,8 +6037,8 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	START_TIMER;
 
 #ifdef HAVE_NATIVE_CRAY
-	if (job_env->pack_jobid && (job_env->pack_jobid != NO_VAL))
-		jobid = job_env->pack_jobid;
+	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL))
+		jobid = job_env->het_job_id;
 	else
 		jobid = job_env->jobid;
 #else
@@ -6120,8 +6120,8 @@ _run_epilog(job_env_t *job_env)
 	}
 
 #ifdef HAVE_NATIVE_CRAY
-	if (job_env->pack_jobid && (job_env->pack_jobid != NO_VAL))
-		jobid = job_env->pack_jobid;
+	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL))
+		jobid = job_env->het_job_id;
 	else
 		jobid = job_env->jobid;
 #else
