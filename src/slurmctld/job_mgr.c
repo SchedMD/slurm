@@ -5295,9 +5295,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 			fed_mgr_get_cluster_by_id(origin_id);
 
 		if (origin && (origin == fed_mgr_cluster_rec) &&
-		    job_ptr->fed_details->cluster_lock &&
-		    (job_ptr->fed_details->cluster_lock !=
-		     fed_mgr_cluster_rec->fed.id)) {
+		    fed_mgr_job_started_on_sib(job_ptr)) {
 			/*
 			 * If the job is running on a remote cluster then wait
 			 * for the job to report back that it's completed,

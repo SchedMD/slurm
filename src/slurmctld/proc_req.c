@@ -5225,12 +5225,7 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 	}
 	if (!job_ptr)
 		error_code = ESLURM_INVALID_JOB_ID;
-	else if (fed_mgr_cluster_rec && job_ptr->fed_details &&
-		 fed_mgr_is_origin_job(job_ptr) &&
-		 IS_JOB_REVOKED(job_ptr) &&
-		 job_ptr->fed_details->cluster_lock &&
-		 (job_ptr->fed_details->cluster_lock !=
-		  fed_mgr_cluster_rec->fed.id)) {
+	else if (fed_mgr_job_started_on_sib(job_ptr)) {
 
 		/* Route to the cluster that is running the job. */
 		slurmdb_cluster_rec_t *dst =
@@ -5600,12 +5595,7 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 	if (!job_ptr)
 		error_code = ESLURM_INVALID_JOB_ID;
 	else if (job_ptr->batch_flag &&
-		 fed_mgr_cluster_rec && job_ptr->fed_details &&
-		 fed_mgr_is_origin_job(job_ptr) &&
-		 IS_JOB_REVOKED(job_ptr) &&
-		 job_ptr->fed_details->cluster_lock &&
-		 (job_ptr->fed_details->cluster_lock !=
-		  fed_mgr_cluster_rec->fed.id)) {
+		 fed_mgr_job_started_on_sib(job_ptr)) {
 
 		/* Route to the cluster that is running the batch job. srun jobs
 		 * don't need to be routed to the running cluster since the
@@ -6236,9 +6226,7 @@ _slurm_rpc_kill_job(slurm_msg_t *msg)
 		    (((slurm_persist_conn_t *)origin->fed.send)->fd != -1) &&
 		    (origin != fed_mgr_cluster_rec) &&
 		    (!(job_ptr = find_job_record(job_id)) ||
-		     (job_ptr && job_ptr->fed_details &&
-		      (job_ptr->fed_details->cluster_lock !=
-		       fed_mgr_cluster_rec->fed.id)))) {
+		     (job_ptr && fed_mgr_job_started_on_sib(job_ptr)))) {
 
 			slurmdb_cluster_rec_t *dst =
 				fed_mgr_get_cluster_by_id(origin_id);

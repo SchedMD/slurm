@@ -73,6 +73,7 @@ extern bool      fed_mgr_job_is_self_owned(job_record_t *job_ptr);
 extern int       fed_mgr_job_lock(job_record_t *job_ptr);
 extern int       fed_mgr_job_lock_set(uint32_t job_id, uint32_t cluster_id);
 extern int       fed_mgr_job_lock_unset(uint32_t job_id, uint32_t cluster_id);
+extern bool      fed_mgr_job_started_on_sib(job_record_t *job_ptr);
 extern int       fed_mgr_job_unlock(job_record_t *job_ptr);
 extern int       fed_mgr_job_requeue(job_record_t *job_ptr);
 extern int       fed_mgr_job_requeue_test(job_record_t *job_ptr,

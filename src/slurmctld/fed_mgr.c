@@ -5163,6 +5163,26 @@ extern int fed_mgr_job_cancel(job_record_t *job_ptr, uint16_t signal,
 	return SLURM_SUCCESS;
 }
 
+extern bool fed_mgr_job_started_on_sib(job_record_t *job_ptr)
+{
+	uint32_t origin_id;
+
+	xassert(job_ptr);
+
+	/*
+	 * When a sibling starts the job, the job becomes revoked on the origin
+	 * and the job's cluster_lock is set to that sibling's id.
+	 * Don't use fed_mgr_is_origin_job() because that return true if
+	 * _is_fed_job() returns false (the job isn't federated), and that's
+	 * the opposite of what we want here.
+	 */
+	return _is_fed_job(job_ptr, &origin_id) &&
+		(fed_mgr_cluster_rec->fed.id == origin_id) &&
+		IS_JOB_REVOKED(job_ptr) && job_ptr->fed_details->cluster_lock &&
+		(job_ptr->fed_details->cluster_lock !=
+		 fed_mgr_cluster_rec->fed.id);
+}
+
 extern int fed_mgr_is_origin_job(job_record_t *job_ptr)
 {
 	uint32_t origin_id;
