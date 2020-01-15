@@ -5577,7 +5577,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			return ESLURM_ACCESS_DENIED;
 		}
 		if (IS_JOB_PENDING(job_ptr))
-			return ESLURM_NOT_PACK_WHOLE;
+			return ESLURM_NOT_WHOLE_HET_JOB;
 		return job_signal(job_ptr, signal, flags, uid,preempt);
 	}
 
@@ -5610,7 +5610,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			      __func__, job_ptr);
 		}
 		if (job_ptr && job_ptr->het_job_id && IS_JOB_PENDING(job_ptr))
-			return ESLURM_NOT_PACK_WHOLE;	/* Hetjob child */
+			return ESLURM_NOT_WHOLE_HET_JOB;/* Hetjob child */
 		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
 		    (job_ptr->array_recs == NULL)) {
 			/* This is a regular job, not a job array */
@@ -16125,7 +16125,7 @@ static int _job_suspend(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 	ListIterator iter;
 
 	if (job_ptr->het_job_id && !job_ptr->het_job_list)
-		return ESLURM_NOT_PACK_WHOLE;
+		return ESLURM_NOT_WHOLE_HET_JOB;
 
 	/* Notify salloc/srun of suspend/resume */
 	srun_job_suspend(job_ptr, op);
@@ -16256,7 +16256,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 
 	long_id = strtol(sus_ptr->job_id_str, &end_ptr, 10);
 	if (end_ptr[0] == '+')
-		rc = ESLURM_NOT_PACK_WHOLE;
+		rc = ESLURM_NOT_WHOLE_HET_JOB;
 	else if ((long_id <= 0) || (long_id == LONG_MAX) ||
 		 ((end_ptr[0] != '\0') && (end_ptr[0] != '_')))
 		rc = ESLURM_INVALID_JOB_ID;
@@ -16637,7 +16637,7 @@ static int _job_requeue(uid_t uid, job_record_t *job_ptr, bool preempt,
 	ListIterator iter;
 
 	if (job_ptr->het_job_id && !job_ptr->het_job_list)
-		return ESLURM_NOT_PACK_JOB_LEADER;
+		return ESLURM_NOT_HET_JOB_LEADER;
 
 	if (job_ptr->het_job_list) {
 		iter = list_iterator_create(job_ptr->het_job_list);

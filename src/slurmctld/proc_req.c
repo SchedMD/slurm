@@ -3257,7 +3257,7 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t * msg)
 	/* return result */
 	if ((error_code == SLURM_SUCCESS) && job_ptr &&
 	    (job_ptr->het_job_id && !job_ptr->het_job_list))
-		error_code = ESLURM_NOT_PACK_JOB_LEADER;
+		error_code = ESLURM_NOT_HET_JOB_LEADER;
 	if (error_code || (job_ptr == NULL) || (job_ptr->job_resrcs == NULL)) {
 		unlock_slurmctld(job_read_lock);
 		debug2("%s: JobId=%u, uid=%u: %s", __func__,
