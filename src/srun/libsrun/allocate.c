@@ -655,7 +655,7 @@ extern List existing_allocation(void)
 		return NULL;
 
 	old_job_id = (uint32_t) sropt.jobid;
-	if (slurm_pack_job_lookup(old_job_id, &job_resp_list) < 0) {
+	if (slurm_het_job_lookup(old_job_id, &job_resp_list) < 0) {
 		if (sropt.parallel_debug)
 			return NULL;    /* create new allocation as needed */
 		if (errno == ESLURM_ALREADY_DONE)

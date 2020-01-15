@@ -3246,7 +3246,7 @@ extern int slurm_allocation_lookup(uint32_t job_id,
 				   resource_allocation_response_msg_t **resp);
 
 /*
- * slurm_pack_job_lookup - retrieve info for an existing heterogeneous job
+ * slurm_het_job_lookup - retrieve info for an existing heterogeneous job
  * 			   allocation without the addrs and such
  * IN jobid - job allocation identifier
  * OUT resp - list of job allocation information, type
@@ -3255,7 +3255,7 @@ extern int slurm_allocation_lookup(uint32_t job_id,
  * NOTE: returns information an individual job as well
  * NOTE: free the response using list_destroy()
  */
-extern int slurm_pack_job_lookup(uint32_t jobid, List *resp);
+extern int slurm_het_job_lookup(uint32_t jobid, List *resp);
 
 /*
  * slurm_read_hostfile - Read a Slurm hostfile specified by "filename".

@@ -4,7 +4,7 @@
 slurm_allocate_het_job_blocking,
 slurm_allocate_resources, slurm_allocate_resources_blocking,
 slurm_allocation_msg_thr_create, slurm_allocation_msg_thr_destroy,
-slurm_allocation_lookup, slurm_pack_job_lookup, slurm_confirm_allocation,
+slurm_allocation_lookup, slurm_het_job_lookup, slurm_confirm_allocation,
 slurm_free_submit_response_response_msg, slurm_init_job_desc_msg,
 slurm_job_will_run, slurm_pack_job_will_run, slurm_job_will_run2,
 slurm_read_hostfile, slurm_submit_batch_job, slurm_submit_batch_pack_job
@@ -59,7 +59,7 @@ int \fBslurm_allocation_lookup\fR {
 .br
 );
 .LP
-int \fBslurm_pack_job_lookup\fR {
+int \fBslurm_het_job_lookup\fR {
 .br
 	uint32_t \fIjobid\fP,
 .br
@@ -243,7 +243,7 @@ owner or user root.
 \fBslurm_allocation_lookup\fP Returns detailed information about an existing
 job allocation.
 .LP
-\fBslurm_pack_job_lookup\fP Returns detailed information about an existing
+\fBslurm_het_job_lookup\fP Returns detailed information about an existing
 heterogeneous job allocation. Each element in the list represents a component
 of the job in sequential order. The returned list should be freed using the
 \fBlist_destroy\fP function.

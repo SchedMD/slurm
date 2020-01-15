@@ -65,7 +65,7 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_load_reservations.3 \
 	slurm_load_slurmd_status.3 \
 	slurm_notify_job.3 \
-	slurm_pack_job_lookup.3 \
+	slurm_het_job_lookup.3 \
 	slurm_pack_job_will_run.3 \
 	slurm_perror.3 \
 	slurm_pid2jobid.3 \

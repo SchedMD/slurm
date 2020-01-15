@@ -827,7 +827,7 @@ extern int slurm_allocation_lookup(uint32_t jobid,
 }
 
 /*
- * slurm_pack_job_lookup - retrieve info for an existing heterogeneous job
+ * slurm_het_job_lookup - retrieve info for an existing heterogeneous job
  * 			   allocation without the addrs and such
  * IN jobid - job allocation identifier
  * OUT info - job allocation information
@@ -835,7 +835,7 @@ extern int slurm_allocation_lookup(uint32_t jobid,
  * NOTE: returns information an individual job as well
  * NOTE: free the response using list_destroy()
  */
-extern int slurm_pack_job_lookup(uint32_t jobid, List *info)
+extern int slurm_het_job_lookup(uint32_t jobid, List *info)
 {
 	job_alloc_info_msg_t req;
 	slurm_msg_t req_msg;
@@ -1310,7 +1310,7 @@ static void _wait_for_allocation_response(uint32_t job_id,
 					resp) >= 0)
 				return;
 		} else if (msg_type == RESPONSE_HET_JOB_ALLOCATION) {
-			if (slurm_pack_job_lookup(job_id, (List *) resp) >= 0)
+			if (slurm_het_job_lookup(job_id, (List *) resp) >= 0)
 				return;
 		} else {
 			error("%s: Invalid msg_type (%u)", __func__, msg_type);
