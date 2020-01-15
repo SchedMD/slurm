@@ -414,7 +414,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_JOB_ALLOCATION_INFO:
 		_slurm_rpc_job_alloc_info(msg);
 		break;
-	case REQUEST_JOB_PACK_ALLOC_INFO:
+	case REQUEST_HET_JOB_ALLOC_INFO:
 		_slurm_rpc_job_pack_alloc_info(msg);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
@@ -3244,7 +3244,7 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_JOB_PACK_ALLOC_INFO from uid=%d", uid);
+	debug2("Processing RPC: REQUEST_HET_JOB_ALLOC_INFO from uid=%d", uid);
 
 	/* do RPC call */
 	lock_slurmctld(job_read_lock);

@@ -11844,7 +11844,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_PACK_ALLOC_INFO:
+	case REQUEST_HET_JOB_ALLOC_INFO:
 		_pack_job_alloc_info_msg((job_alloc_info_msg_t *) msg->data,
 					 buffer, msg->protocol_version);
 		break;
@@ -12503,7 +12503,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_PACK_ALLOC_INFO:
+	case REQUEST_HET_JOB_ALLOC_INFO:
 		rc = _unpack_job_alloc_info_msg((job_alloc_info_msg_t **) &
 						(msg->data), buffer,
 						msg->protocol_version);

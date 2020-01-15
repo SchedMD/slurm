@@ -846,7 +846,7 @@ extern int slurm_pack_job_lookup(uint32_t jobid, List *info)
 	req.req_cluster  = slurmctld_conf.cluster_name;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
-	req_msg.msg_type = REQUEST_JOB_PACK_ALLOC_INFO;
+	req_msg.msg_type = REQUEST_HET_JOB_ALLOC_INFO;
 	req_msg.data     = &req;
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,

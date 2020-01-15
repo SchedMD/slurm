@@ -4830,7 +4830,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_PACK_ALLOC_INFO:
+	case REQUEST_HET_JOB_ALLOC_INFO:
 		slurm_free_job_alloc_info_msg(data);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
@@ -5473,8 +5473,8 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_CTLD_MULT_MSG";
 	case REQUEST_SIB_MSG:
 		return "REQUEST_SIB_MSG";
-	case REQUEST_JOB_PACK_ALLOC_INFO:
-		return "REQUEST_JOB_PACK_ALLOC_INFO";
+	case REQUEST_HET_JOB_ALLOC_INFO:
+		return "REQUEST_HET_JOB_ALLOC_INFO";
 	case REQUEST_SUBMIT_BATCH_JOB_PACK:
 		return "REQUEST_SUBMIT_BATCH_JOB_PACK";
 
