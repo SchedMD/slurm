@@ -270,7 +270,7 @@ int main(int argc, char **argv)
 
 	if (sbopt.test_only) {
 		if (job_req_list)
-			rc = slurm_pack_job_will_run(job_req_list);
+			rc = slurm_het_job_will_run(job_req_list);
 		else
 			rc = slurm_job_will_run(desc);
 

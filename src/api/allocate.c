@@ -597,13 +597,13 @@ int slurm_job_will_run(job_desc_msg_t *req)
 }
 
 /*
- * slurm_pack_job_will_run - determine if a heterogeneous job would execute
+ * slurm_het_job_will_run - determine if a heterogeneous job would execute
  *	immediately if submitted now
  * IN job_req_list - List of job_desc_msg_t structures describing the resource
  *		allocation request
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_pack_job_will_run(List job_req_list)
+extern int slurm_het_job_will_run(List job_req_list)
 {
 	job_desc_msg_t *req;
 	will_run_response_msg_t *will_run_resp;
