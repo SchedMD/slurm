@@ -3457,8 +3457,6 @@ extern bool update_job_dependency_list(job_record_t *job_ptr,
 		was_changed = true;
 	}
 	list_iterator_destroy(itr);
-	if (was_changed)
-		_depend_list2str(job_ptr, false);
 	return was_changed;
 }
 
