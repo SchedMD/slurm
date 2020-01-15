@@ -3213,7 +3213,7 @@ extern resource_allocation_response_msg_t *slurm_allocate_resources_blocking(
 extern void slurm_free_resource_allocation_response_msg(resource_allocation_response_msg_t *msg);
 
 /*
- * slurm_allocate_pack_job_blocking
+ * slurm_allocate_het_job_blocking
  *	allocate resources for a list of job requests.  This call will block
  *	until the entire allocation is granted, or the specified timeout limit
  *	is reached.
@@ -3231,7 +3231,7 @@ extern void slurm_free_resource_allocation_response_msg(resource_allocation_resp
  *      with no allocation granted)
  * NOTE: free the response using list_destroy()
  */
-List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
+List slurm_allocate_het_job_blocking(List job_req_list, time_t timeout,
 				      void(*pending_callback)(uint32_t job_id));
 
 /*

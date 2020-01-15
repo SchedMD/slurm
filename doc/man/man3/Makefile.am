@@ -1,7 +1,7 @@
 man3_MANS = slurm_hostlist_create.3 \
 	slurm_hostlist_destroy.3 \
 	slurm_hostlist_shift.3 \
-	slurm_allocate_pack_job_blocking.3 \
+	slurm_allocate_het_job_blocking.3 \
 	slurm_allocate_resources.3 \
 	slurm_allocate_resources_blocking.3 \
 	slurm_allocation_lookup.3 \

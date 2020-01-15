@@ -407,7 +407,7 @@ static void _pack_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
 }
 
 /*
- * slurm_allocate_pack_job_blocking
+ * slurm_allocate_het_job_blocking
  *	allocate resources for a list of job requests.  This call will block
  *	until the entire allocation is granted, or the specified timeout limit
  *	is reached.
@@ -425,8 +425,8 @@ static void _pack_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
  *      with no allocation granted)
  * NOTE: free the response using list_destroy()
  */
-List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
-				      void(*pending_callback)(uint32_t job_id))
+List slurm_allocate_het_job_blocking(List job_req_list, time_t timeout,
+				     void(*pending_callback)(uint32_t job_id))
 {
 	int rc;
 	slurm_msg_t req_msg;

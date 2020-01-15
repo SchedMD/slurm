@@ -550,7 +550,7 @@ List allocate_pack_nodes(bool handle_signals)
 	}
 
 	while (first_opt && !job_resp_list) {
-		job_resp_list = slurm_allocate_pack_job_blocking(job_req_list,
+		job_resp_list = slurm_allocate_het_job_blocking(job_req_list,
 				 first_opt->immediate, _set_pending_job_id);
 		if (destroy_job) {
 			/* cancelled by signal */

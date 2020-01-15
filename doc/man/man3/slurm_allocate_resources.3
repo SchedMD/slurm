@@ -1,7 +1,7 @@
 .TH "Slurm API" "3" "Slurm job initiation functions" "March 2019" "Slurm job initiation functions"
 
 .SH "NAME"
-slurm_allocate_pack_job_blocking,
+slurm_allocate_het_job_blocking,
 slurm_allocate_resources, slurm_allocate_resources_blocking,
 slurm_allocation_msg_thr_create, slurm_allocation_msg_thr_destroy,
 slurm_allocation_lookup, slurm_pack_job_lookup, slurm_confirm_allocation,
@@ -29,7 +29,7 @@ resource_allocation_response_msg_t *\fBslurm_allocate_resources_blocking\fR (
 .br
 );
 .LP
-List *\fBslurm_allocate_pack_job_blocking\fR (
+List *\fBslurm_allocate_het_job_blocking\fR (
 .br
 	List \fIjob_desc_msg_list\fP,
 .br
@@ -211,7 +211,7 @@ immediately and the immediate flag is not set in the request.  This can
 be used to get the jobid of the job while waiting for the allocation
 to become available.  On failure NULL is returned and errno is set.
 .LP
-\fBslurm_allocate_pack_job_blocking\fR Request a set of resource allocations
+\fBslurm_allocate_het_job_blocking\fR Request a set of resource allocations
 for a heterogeneous job.
 This call will block until the allocation is granted, an error
 occurs, or the specified timeout limit is reached.  The \fIpending_callback\fP

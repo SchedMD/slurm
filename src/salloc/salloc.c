@@ -385,7 +385,7 @@ int main(int argc, char **argv)
 	while (true) {
 		if (job_req_list) {
 			is_pack_job = true;
-			job_resp_list = slurm_allocate_pack_job_blocking(
+			job_resp_list = slurm_allocate_het_job_blocking(
 					job_req_list, opt.immediate,
 					_pending_callback);
 			if (job_resp_list)
