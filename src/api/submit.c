@@ -130,7 +130,7 @@ extern int slurm_submit_batch_pack_job(List job_req_list,
 	}
 	list_iterator_destroy(iter);
 
-	req_msg.msg_type = REQUEST_SUBMIT_BATCH_JOB_PACK;
+	req_msg.msg_type = REQUEST_SUBMIT_BATCH_HET_JOB;
 	req_msg.data     = job_req_list;
 
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,

@@ -441,7 +441,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_SUBMIT_BATCH_JOB:
 		_slurm_rpc_submit_batch_job(msg);
 		break;
-	case REQUEST_SUBMIT_BATCH_JOB_PACK:
+	case REQUEST_SUBMIT_BATCH_HET_JOB:
 		_slurm_rpc_submit_batch_pack_job(msg);
 		break;
 	case REQUEST_UPDATE_FRONT_END:
@@ -4137,10 +4137,10 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	char *pack_job_id_set = NULL;
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d",
+	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_HET_JOB from uid=%d",
 	       uid);
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
-		info("REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d with empty job list",
+		info("REQUEST_SUBMIT_BATCH_HET_JOB from uid=%d with empty job list",
 		     uid);
 		error_code = SLURM_ERROR;
 		reject_job = true;
@@ -4158,7 +4158,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
-		info("REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d with empty job list",
+		info("REQUEST_SUBMIT_BATCH_HET_JOB from uid=%d with empty job list",
 		     uid);
 		error_code = SLURM_ERROR;
 		reject_job = true;
@@ -4192,7 +4192,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
-			error("REQUEST_SUBMIT_BATCH_PACK_JOB lacks alloc_node from uid=%d",
+			error("REQUEST_SUBMIT_BATCH_HET_JOB lacks alloc_node from uid=%d",
 			      uid);
 			error_code = ESLURM_INVALID_NODE_NAME;
 			break;

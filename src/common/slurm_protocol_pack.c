@@ -11823,7 +11823,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				   msg->protocol_version);
 		break;
 	case REQUEST_HET_JOB_ALLOCATION:
-	case REQUEST_SUBMIT_BATCH_JOB_PACK:
+	case REQUEST_SUBMIT_BATCH_HET_JOB:
 		_pack_job_desc_list_msg((List) msg->data, buffer,
 					msg->protocol_version);
 		break;
@@ -12482,7 +12482,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					  buffer, msg->protocol_version);
 		break;
 	case REQUEST_HET_JOB_ALLOCATION:
-	case REQUEST_SUBMIT_BATCH_JOB_PACK:
+	case REQUEST_SUBMIT_BATCH_HET_JOB:
 		rc = _unpack_job_desc_list_msg((List *) &(msg->data),
 					       buffer, msg->protocol_version);
 		break;
