@@ -13689,9 +13689,12 @@ extern void gres_build_job_details(List job_gres_list,
 		                                job_gres_data->
 						gres_bit_alloc[j]);
 					xstrfmtcat(my_gres_details[j],
-						   "%s%s%s%s(IDX:%s)", sep1,
+						   "%s%s%s%s:%"PRIu64"(IDX:%s)",
+						   sep1,
 						   gres_context[i].gres_name,
-						   sep2, type, tmp_str);
+						   sep2, type, job_gres_data->
+						   gres_cnt_node_alloc[j],
+						   tmp_str);
 				} else if (job_gres_data->
 					   gres_cnt_node_alloc[j]) {
 					xstrfmtcat(my_gres_details[j],
