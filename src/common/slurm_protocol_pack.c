@@ -4065,6 +4065,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		packstr(build_ptr->job_comp_host, buffer);
 		packstr(build_ptr->job_comp_loc, buffer);
+		packstr(build_ptr->job_comp_params, buffer);
 		pack32((uint32_t)build_ptr->job_comp_port, buffer);
 		packstr(build_ptr->job_comp_type, buffer);
 		packstr(build_ptr->job_comp_user, buffer);
@@ -4978,6 +4979,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->job_comp_host,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->job_comp_loc,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->job_comp_params,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->job_comp_port, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->job_comp_type,

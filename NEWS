@@ -76,6 +76,7 @@ documents those changes that are of interest to users and administrators.
  -- PMIx - improve performance of proc map generation.
  -- If any component of a HetJob is preemptable all other components of the
     job inherit the same.
+ -- Added JobCompParams to slurm.conf.
 
 * Changes in Slurm 19.05.6
 ==========================

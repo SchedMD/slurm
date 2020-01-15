@@ -2725,6 +2725,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t job_acct_oom_kill; /* Enforce mem limit at runtime y|n */
 	char *job_comp_host;	/* job completion logging host */
 	char *job_comp_loc;	/* job completion logging location */
+	char *job_comp_params;	/* job completion parameters for plugin */
 	char *job_comp_pass;	/* job completion storage password */
 	uint32_t job_comp_port;	/* job completion storage port */
 	char *job_comp_type;	/* job completion storage type */

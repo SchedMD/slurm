@@ -267,6 +267,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobCheckpointDir", S_P_STRING},
 	{"JobCompHost", S_P_STRING},
 	{"JobCompLoc", S_P_STRING},
+	{"JobCompParams", S_P_STRING},
 	{"JobCompPass", S_P_STRING},
 	{"JobCompPort", S_P_UINT32},
 	{"JobCompType", S_P_STRING},
@@ -2758,6 +2759,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_acct_gather_params);
 	xfree (ctl_conf_ptr->job_comp_host);
 	xfree (ctl_conf_ptr->job_comp_loc);
+	xfree(ctl_conf_ptr->job_comp_params);
 	xfree (ctl_conf_ptr->job_comp_pass);
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_comp_user);
@@ -2915,6 +2917,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_acct_gather_params);
 	xfree (ctl_conf_ptr->job_comp_loc);
+	xfree(ctl_conf_ptr->job_comp_params);
 	xfree (ctl_conf_ptr->job_comp_pass);
 	ctl_conf_ptr->job_comp_port             = 0;
 	xfree (ctl_conf_ptr->job_comp_type);
@@ -3763,6 +3766,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		else
 			conf->job_comp_user = xstrdup(DEFAULT_STORAGE_USER);
 	}
+	s_p_get_string(&conf->job_comp_params, "JobCompParams", hashtbl);
 	if (!s_p_get_string(&conf->job_comp_pass, "JobCompPass",
 			    hashtbl)) {
 		if (default_storage_pass)

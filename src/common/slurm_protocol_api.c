@@ -2411,6 +2411,20 @@ char *slurm_get_jobcomp_host(void)
 	return storage_host;
 }
 
+char *slurm_get_jobcomp_param(void)
+{
+	char *param = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		param = xstrdup(conf->job_comp_params);
+		slurm_conf_unlock();
+	}
+	return param;
+}
+
 /* slurm_get_jobcomp_pass
  * returns the storage password from slurmctld_conf object
  * RET char *    - storage password,  MUST be xfreed by caller
