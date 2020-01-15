@@ -761,7 +761,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 				opt_local = list_next(opt_iter);
 			if (!opt_local)
 				fatal("%s: opt_list too short", __func__);
-			job->node_offset = node_offset;
+			job->het_job_node_offset = node_offset;
 			job->het_job_nnodes = pack_nnodes;
 			job->het_job_ntasks = pack_ntasks;
 			job->het_job_task_offset = task_offset;

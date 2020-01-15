@@ -727,7 +727,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.remote_output_filename = fname_remote_string(job->ofname);
 	launch_params.remote_input_filename  = fname_remote_string(job->ifname);
 	launch_params.remote_error_filename  = fname_remote_string(job->efname);
-	launch_params.het_job_node_offset = job->node_offset;
+	launch_params.het_job_node_offset = job->het_job_node_offset;
 	launch_params.het_job_id  = job->het_job_id;
 	launch_params.het_job_nnodes = job->het_job_nnodes;
 	launch_params.het_job_ntasks = job->het_job_ntasks;
