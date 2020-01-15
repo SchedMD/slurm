@@ -42,6 +42,7 @@ source ./inc3.11.7
 source ./inc3.11.8
 source ./inc3.11.9
 source ./inc3.11.10
+source ./inc3.11.11
 
 set test_id		"3.11"
 set file_in		"test$test_id.input"
@@ -51,6 +52,8 @@ set res_name_save	""
 set res_nodes		""
 set res_nodecnt		0
 set res_thread_cnt	0
+set res_partition	""
+set res_flags		""
 set user_name		""
 set def_oversubscribe_force 0
 set def_partition	""
@@ -63,60 +66,18 @@ set log_cpu_cnt		0
 
 print_header $test_id
 
-#
-# Procedure to create a new reservation and validate it.
-# Modifies the global var res_name in the process
-#
-proc create_res { res_params failure_expected } {
-	#exp_internal 1
+
+proc get_res_attrs {} {
+
 	global scontrol
-	global alpha_numeric_under number alpha_numeric_nodelist
+	global alpha_numeric_under alpha_numeric_nodelist
 	global res_name
 	global res_nodes
 	global res_nodecnt
 	global res_corecnt
 	global res_thread_cnt
-	global log_cpu_cnt
-
-	set ret_code 0
-	set res_name ""
-
-	#
-	# Create a reservation using the list of params in res_params
-	#
-	set arglist [linsert $res_params 0 $scontrol create res]
-	eval spawn $arglist
-	expect {
-		-re "Reservation created: ($alpha_numeric_under)" {
-			set res_name $expect_out(1,string)
-		}
-		-re "Error creating the reservation: Invalid user" {
-			if {!$failure_expected} {
-				send_user "\nFAILURE: user not authorized "
-				send_user "to create reservation\n"
-			}
-			set ret_code 1
-			exp_continue
-		}
-		-nocase "Error" {
-			if {!$failure_expected} {
-				send_user "\nFAILURE: problem creating "
-				send_user "reservation with args: $res_params\n"
-			}
-			set ret_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
-			set ret_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if { $ret_code != 0 } {
-		return $ret_code
-	}
+	global res_partition
+	global res_flags
 
 	spawn $scontrol show res $res_name
 	expect {
@@ -162,6 +123,14 @@ proc create_res { res_params failure_expected } {
 			set res_corecnt $expect_out(1,string)
 			exp_continue
 		}
+		-re "PartitionName=(\\S+)" {
+			set res_partition $expect_out(1,string)
+			exp_continue
+		}
+		-re "Flags=(\\S+)" {
+			set res_flags $expect_out(1,string)
+			exp_continue
+		}
 		timeout {
 			send_user "\nFAILURE: scontrol not responding\n"
 			set ret_code 1
@@ -170,6 +139,67 @@ proc create_res { res_params failure_expected } {
 			wait
 		}
 	}
+}
+
+
+#
+# Procedure to create a new reservation and validate it.
+# Modifies the global var res_name in the process
+#
+proc create_res { res_params failure_expected } {
+	#exp_internal 1
+	global scontrol
+	global alpha_numeric_under number alpha_numeric_nodelist
+	global res_name
+	global res_nodes
+	global res_nodecnt
+	global res_corecnt
+	global res_thread_cnt
+	global log_cpu_cnt
+	global res_partition
+	global res_flags
+
+	set ret_code 0
+	set res_name ""
+
+	#
+	# Create a reservation using the list of params in res_params
+	#
+	set arglist [linsert $res_params 0 $scontrol create res]
+	eval spawn $arglist
+	expect {
+		-re "Reservation created: ($alpha_numeric_under)" {
+			set res_name $expect_out(1,string)
+		}
+		-re "Error creating the reservation: Invalid user" {
+			if {!$failure_expected} {
+				send_user "\nFAILURE: user not authorized "
+				send_user "to create reservation\n"
+			}
+			set ret_code 1
+			exp_continue
+		}
+		-nocase "Error" {
+			if {!$failure_expected} {
+				send_user "\nFAILURE: problem creating "
+				send_user "reservation with args: $res_params\n"
+			}
+			set ret_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			set ret_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if { $ret_code != 0 } {
+		return $ret_code
+	}
+
+	get_res_attrs
 
 	lassign [get_node_cpus $res_nodes] cpu_tot res_thread_cnt
 	#exp_internal 0
@@ -440,6 +470,7 @@ if {$cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclus
 }
 
 inc3_11_10
+inc3_11_11
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"

@@ -1,0 +1,142 @@
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Partition Reservations
+#
+############################################################################
+# Copyright (C) 2020 SchedMD LLC.
+# Written by Brian Christiansen <brian@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc3_11_11_delete_resv {} {
+
+    global res_name
+
+	set ret_code [delete_res $res_name]
+	if {$ret_code != 0} {
+		exit $ret_code
+	}
+}
+
+proc inc3_11_11_fini { msg ret_code } {
+
+    if {$ret_code} {
+        log_error $msg
+        inc3_11_11_delete_resv
+        exit $ret_code
+    } else {
+        log_info $msg
+    }
+}
+
+proc inc3_11_11_resv_create { args } {
+
+    global user_name
+
+	set cmd "StartTime=now+60minutes Duration=1 User=$user_name $args"
+	set ret_code [create_res $cmd 0]
+	if {$ret_code != 0} {
+		inc3_11_11_fini "Unable to create a valid reservation (Within: inc3.11.11)" 1
+	}
+}
+
+proc inc3_11_11_resv_update_s { args } {
+
+    global user_name res_name
+
+	set ret_code [update_res $res_name $args 1]
+	if {$ret_code != 0} {
+		inc3_11_11_fini "Reservation should have failed update with $args (Within: inc3.11.11)" 1
+	}
+}
+
+proc inc3_11_11_resv_update_f { args } {
+
+    global user_name res_name
+
+	set ret_code [update_res $res_name $args 1]
+	if {$ret_code == 0} {
+		inc3_11_11_fini "Reservation should have failed update with $args (Within: inc3.11.11)" 1
+	}
+}
+
+proc inc3_11_11_resv_test {part flags nodes } {
+
+    global res_partition res_flags res_nodes
+
+    if {[string compare $flags $res_flags] == -1} {
+		inc3_11_11_fini "failed to get reservation flags $flags!=$res_flags (Within: inc3.11.11)" 1
+    }
+    if {[string compare $part $res_partition]} {
+		inc3_11_11_fini "failed to get partition $part!=$res_partition (Within: inc3.11.11)" 1
+    }
+    if {[string compare $nodes $res_nodes]} {
+		inc3_11_11_fini "failed to get partition nodes $nodes!=$res_nodes (Within: inc3.11.11)" 1
+    }
+}
+
+proc inc3_11_11 {} {
+
+    global def_partition
+
+	send_user "\n+++++ STARTING TEST 11 (Within: inc3.11.11) +++++\n"
+
+    set part_nodes [available_nodes_hostnames $def_partition]
+    set one_node [get_idle_node_in_part $def_partition]
+
+    inc3_11_11_resv_create "partition=$def_partition"
+    inc3_11_11_resv_test $def_partition "SPEC_NODES,PART_NODES" $part_nodes
+    inc3_11_11_delete_resv
+
+    inc3_11_11_resv_create partition=$def_partition nodes=$one_node
+    inc3_11_11_resv_test $def_partition "SPEC_NODES" $one_node
+    inc3_11_11_delete_resv
+
+    inc3_11_11_resv_create partition=$def_partition nodes=ALL
+    inc3_11_11_resv_test $def_partition "SPEC_NODES,PART_NODES" $part_nodes
+    inc3_11_11_delete_resv
+
+    inc3_11_11_resv_create nodes=$one_node
+    inc3_11_11_resv_update_f flags=part_nodes
+    inc3_11_11_resv_update_f flags=part_nodes nodes=ALL
+    inc3_11_11_resv_update_s flags=part_nodes partition=$def_partition nodes=ALL
+    get_res_attrs
+    inc3_11_11_resv_test $def_partition "SPEC_NODES,PART_NODES" $part_nodes
+    inc3_11_11_resv_update_s nodes=$one_node
+    get_res_attrs
+    inc3_11_11_resv_test $def_partition "SPEC_NODES" $one_node
+    inc3_11_11_delete_resv
+
+    inc3_11_11_resv_create nodes=$one_node
+    inc3_11_11_resv_update_s partition=$def_partition
+    inc3_11_11_resv_update_s flags=part_nodes nodes=ALL
+    get_res_attrs
+    inc3_11_11_resv_test $def_partition "SPEC_NODES,PART_NODES" $part_nodes
+    inc3_11_11_resv_update_s nodes=$one_node
+    get_res_attrs
+    inc3_11_11_resv_test $def_partition "SPEC_NODES" $one_node
+    inc3_11_11_delete_resv
+
+    inc3_11_11_resv_create partition=$def_partition nodes=$one_node flags=part_nodes
+    inc3_11_11_resv_test $def_partition "SPEC_NODES" $one_node
+    inc3_11_11_delete_resv
+
+    inc3_11_11_fini "inc3_11_1 all good" 0
+}
