@@ -7,7 +7,7 @@ slurm_allocation_msg_thr_create, slurm_allocation_msg_thr_destroy,
 slurm_allocation_lookup, slurm_het_job_lookup, slurm_confirm_allocation,
 slurm_free_submit_response_response_msg, slurm_init_job_desc_msg,
 slurm_job_will_run, slurm_pack_job_will_run, slurm_job_will_run2,
-slurm_read_hostfile, slurm_submit_batch_job, slurm_submit_batch_pack_job
+slurm_read_hostfile, slurm_submit_batch_job, slurm_submit_batch_het_job
 \- Slurm job initiation functions
 .SH "SYNTAX"
 .LP
@@ -127,7 +127,7 @@ int \fBslurm_submit_batch_job\fR (
 .br
 );
 .LP
-int \fBslurm_submit_batch_pack_job\fR (
+int \fBslurm_submit_batch_het_job\fR (
 .br
 	List \fIjob_desc_msg_list\fP,
 .br
@@ -280,7 +280,7 @@ queued until the partition's limits are changed and resources are available.
 Always release the response message when no longer required using the function
 \fBslurm_free_submit_response_msg\fR.
 .LP
-\fBslurm_submit_batch_pack_job\fR Submit a heterogeneous job for later execution. Note that if
+\fBslurm_submit_batch_het_job\fR Submit a heterogeneous job for later execution. Note that if
 the job's requested node count or time allocation are outside of the partition's
 limits then a job entry will be created, a warning indication will be placed in
 the \fIerror_code\fP field of the response message, and the job will be left

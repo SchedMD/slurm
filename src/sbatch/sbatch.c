@@ -284,7 +284,7 @@ int main(int argc, char **argv)
 	while (true) {
 		static char *msg;
 		if (job_req_list)
-			rc = slurm_submit_batch_pack_job(job_req_list, &resp);
+			rc = slurm_submit_batch_het_job(job_req_list, &resp);
 		else
 			rc = slurm_submit_batch_job(desc, &resp);
 		if (rc >= 0)

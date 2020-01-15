@@ -101,14 +101,14 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 }
 
 /*
- * slurm_submit_batch_pack_job - issue RPC to submit a heterogeneous job for
- *				 later execution
+ * slurm_submit_batch_het_job - issue RPC to submit a heterogeneous job for
+ *				later execution
  * NOTE: free the response using slurm_free_submit_response_response_msg
  * IN job_req_list - List of resource allocation requests, type job_desc_msg_t
  * OUT resp - response to request
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_submit_batch_pack_job(List job_req_list,
+extern int slurm_submit_batch_het_job(List job_req_list,
 				       submit_response_msg_t **resp)
 {
 	int rc;
