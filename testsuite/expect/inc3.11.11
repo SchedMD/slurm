@@ -57,6 +57,17 @@ proc inc3_11_11_resv_create { args } {
 	}
 }
 
+proc inc3_11_11_resv_fail { args } {
+
+    global user_name
+
+	set cmd "StartTime=now+60minutes Duration=1 User=$user_name $args"
+	set ret_code [create_res $cmd 0]
+	if {$ret_code == 0} {
+		inc3_11_11_fini "Reservation should have failed to create (Within: inc3.11.11)" 1
+	}
+}
+
 proc inc3_11_11_resv_update_s { args } {
 
     global user_name res_name
@@ -134,8 +145,14 @@ proc inc3_11_11 {} {
     inc3_11_11_resv_test $def_partition "SPEC_NODES" $one_node
     inc3_11_11_delete_resv
 
-    inc3_11_11_resv_create partition=$def_partition nodes=$one_node flags=part_nodes
-    inc3_11_11_resv_test $def_partition "SPEC_NODES" $one_node
+    inc3_11_11_resv_fail flags=part_nodes
+    inc3_11_11_resv_fail flags=part_nodes partition=$def_partition
+    inc3_11_11_resv_fail flags=part_nodes nodes=$one_node
+    inc3_11_11_resv_fail flags=part_nodes nodes=ALL
+    inc3_11_11_resv_fail flags=part_nodes partition=$def_partition nodes=$one_node
+
+    inc3_11_11_resv_create partition=$def_partition nodes=ALL flags=part_nodes
+    inc3_11_11_resv_test $def_partition "SPEC_NODES,PART_NODES" $part_nodes
     inc3_11_11_delete_resv
 
     inc3_11_11_fini "inc3_11_1 all good" 0
