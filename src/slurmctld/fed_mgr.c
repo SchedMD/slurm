@@ -2255,6 +2255,13 @@ static int _find_local_dep(void *arg, void *key)
 	return !(dep_ptr->depend_flags & SLURM_FLAGS_REMOTE);
 }
 
+static int _find_job_by_id(void *arg, void *key)
+{
+	job_record_t *job_ptr = (job_record_t *) arg;
+	uint32_t job_id = *((uint32_t *) key);
+	return job_ptr->job_id == job_id;
+}
+
 static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 {
 	/*
@@ -2319,7 +2326,25 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 		 */
 		_destroy_dep_job(job_ptr);
 	} else {
+		job_record_t *tmp_job;
+		ListIterator itr;
+
 		print_job_dependency(job_ptr);
+
+		/*
+		 * Remove the old reference to this job from remote_dep_job_list
+		 * so that we don't continue testing the old dependencies.
+		 */
+		slurm_mutex_lock(&dep_job_list_mutex);
+		itr = list_iterator_create(remote_dep_job_list);
+		while ((tmp_job = list_next(itr))) {
+			if (tmp_job->job_id == job_ptr->job_id) {
+				list_delete_item(itr);
+				break;
+			}
+		}
+		list_iterator_destroy(itr);
+
 		/*
 		 * If we were sent a list of 0 dependencies, that means
 		 * the dependency was updated and cleared, so don't
@@ -2328,25 +2353,14 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 		 */
 		if (list_count(job_ptr->details->depend_list) &&
 		    list_find_first(job_ptr->details->depend_list,
-				    _find_local_dep, &tmp)) {
-			/*
-			 * We need to lock this mutex since we iterate over
-			 * this list in another thread.
-			 */
-			slurm_mutex_lock(&dep_job_list_mutex);
+				    _find_local_dep, &tmp))
 			list_append(remote_dep_job_list, job_ptr);
-			slurm_mutex_unlock(&dep_job_list_mutex);
-		} else
+		else
 			_destroy_dep_job(job_ptr);
+
+		slurm_mutex_unlock(&dep_job_list_mutex);
 	}
 	_destroy_dep_msg(remote_dep_info);
-}
-
-static int _find_job_by_id(void *arg, void *key)
-{
-	job_record_t *job_ptr = (job_record_t *) arg;
-	uint32_t job_id = *((uint32_t *) key);
-	return job_ptr->job_id == job_id;
 }
 
 static void _handle_dep_update_origin_msgs(void)
