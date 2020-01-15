@@ -3466,95 +3466,76 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) object;
 	depend_spec_t *dep_ptr = NULL;
-	uint32_t dep_state;
+	ListIterator itr;
+	bool or_satisfied = false, and_failed = false, or_flag = false,
+	     has_unfulfilled = false;
+
+	xassert(job_ptr->details);
+	xassert(job_ptr->details->depend_list);
 
 	/*
-	 * If there is a fulfilled dependency and it is OR satisfied, then
-	 * flush the dependency list and clear the job dependency.
+	 * Check the depend_state of each dependency.
+	 * All dependencies are OR'd or AND'd - we don't allow a mix.
+	 * OR'd dependencies:
+	 *   - If one dependency succeeded, the whole thing passes.
+	 *   - If there is at least one unfulfilled dependency,
+	 *     the job is still dependent.
+	 *   - All dependencies failed == dependency never satisfied.
+	 * AND'd dependencies:
+	 *   - One failure == dependency never satisfied
+	 *   - One+ not fulfilled == still dependent
+	 *   - All succeeded == dependency fulfilled
 	 */
-	dep_state = DEPEND_FULFILLED;
-	if ((dep_ptr = list_find_first(job_ptr->details->depend_list,
-				       _find_dep_by_state, &dep_state)) &&
-	    (dep_ptr->depend_flags & SLURM_FLAGS_OR)) {
+	itr = list_iterator_create(job_ptr->details->depend_list);
+	while ((dep_ptr = list_next(itr))) {
+		if (dep_ptr->depend_flags & SLURM_FLAGS_OR) {
+			or_flag = true;
+			if (dep_ptr->depend_state == DEPEND_FULFILLED) {
+				or_satisfied = true;
+				break;
+			} else if (dep_ptr->depend_state ==
+				   DEPEND_NOT_FULFILLED) {
+				has_unfulfilled = true;
+			}
+		} else { /* AND'd dependencies */
+			or_flag = false;
+			if (dep_ptr->depend_state == DEPEND_FAILED) {
+				and_failed = true;
+				break;
+			} else if (dep_ptr->depend_state ==
+				   DEPEND_NOT_FULFILLED) {
+				has_unfulfilled = true;
+			}
+		}
+	}
+	list_iterator_destroy(itr);
+
+	if (or_satisfied ||
+	    (!or_flag && !and_failed && !has_unfulfilled)) {
+		/* Dependency fulfilled */
+		job_ptr->bit_flags &= ~JOB_DEPENDENT;
 		list_flush(job_ptr->details->depend_list);
-		_depend_list2str(job_ptr, false);
-		print_job_dependency(job_ptr);
-		/*
-		 * TODO:
-		 * I got this from test_job_dependency. Why set the reason
-		 * to WAIT_NO_REASON only if it is already WAIT_DEP_INVALID?
-		 * Why not also set it to WAIT_NO_REASON if it is also
-		 * WAIT_DEPENDENCY?
-		 */
-		if (job_ptr->state_reason == WAIT_DEP_INVALID) {
+		if ((job_ptr->state_reason == WAIT_DEP_INVALID) ||
+		    (job_ptr->state_reason == WAIT_DEPENDENCY)) {
 			job_ptr->state_reason = WAIT_NO_REASON;
 			xfree(job_ptr->state_desc);
 		}
-		job_ptr->bit_flags &= ~JOB_DEPENDENT;
-		/* Submit the job to its siblings. */
+		_depend_list2str(job_ptr, false);
 		fed_mgr_job_requeue(job_ptr);
-		return SLURM_SUCCESS;
-	}
-	_depend_list2str(job_ptr, false);
-	print_job_dependency(job_ptr);
-
-	/*
-	 * Test failed dependencies:
-	 * - If it's not OR dependent, fail the job.
-	 * - If it's OR dependent and all dependencies failed, fail the job.
-	 * - If not all dependencies failed, then we handle this below.
-	 */
-	dep_state = DEPEND_FAILED;
-	if ((dep_ptr = list_find_first(job_ptr->details->depend_list,
-				       _find_dep_by_state, &dep_state))) {
-		/* Not OR dependent: fail job */
-		if (!(dep_ptr->depend_flags & SLURM_FLAGS_OR)) {
-			handle_invalid_dependency(job_ptr);
-			job_ptr->bit_flags |= JOB_DEPENDENT;
-			acct_policy_remove_accrue_time(job_ptr, false);
-			return SLURM_SUCCESS;
-		}
-
-		/*
-		 * OR dependent: fail job if all dependencies failed.
-		 * We already searched for fulfilled and OR'd dependencies,
-		 * so just look for at least one unfulfilled dependency.
-		 */
-		dep_state = DEPEND_NOT_FULFILLED;
-		if (!(list_find_first(job_ptr->details->depend_list,
-				      _find_dep_by_state, &dep_state))) {
-			handle_invalid_dependency(job_ptr);
-			job_ptr->bit_flags |= JOB_DEPENDENT;
-			acct_policy_remove_accrue_time(job_ptr, false);
-			return SLURM_SUCCESS;
-		}
-	}
-
-	/*
-	 * If there is at least one unfulfilled dependency, mark the job
-	 * as dependent.
-	 */
-	dep_state = DEPEND_NOT_FULFILLED;
-	if (list_find_first(job_ptr->details->depend_list,
-			    _find_dep_by_state,
-			    &dep_state)) {
-		job_ptr->state_reason = WAIT_DEPENDENCY;
-		xfree(job_ptr->state_desc);
+	} else {
+		_depend_list2str(job_ptr, false);
 		job_ptr->bit_flags |= JOB_DEPENDENT;
 		acct_policy_remove_accrue_time(job_ptr, false);
-		return SLURM_SUCCESS;
+		if (and_failed || (or_flag && !has_unfulfilled)) {
+			/* Dependency failed */
+			handle_invalid_dependency(job_ptr);
+		} else {
+			/* Still dependent */
+			job_ptr->state_reason = WAIT_DEPENDENCY;
+			xfree(job_ptr->state_desc);
+		}
 	}
 
-	/*
-	 * All dependencies are fulfilled.
-	 */
-	job_ptr->bit_flags &= ~JOB_DEPENDENT;
-	if (job_ptr->state_reason == WAIT_DEPENDENCY) {
-		job_ptr->state_reason = WAIT_NO_REASON;
-		xfree(job_ptr->state_desc);
-	}
-	/* Submit the job to its siblings. */
-	fed_mgr_job_requeue(job_ptr);
 	return SLURM_SUCCESS;
 }
 
