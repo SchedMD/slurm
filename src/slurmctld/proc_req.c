@@ -331,7 +331,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_RESOURCE_ALLOCATION:
 		_slurm_rpc_allocate_resources(msg);
 		break;
-	case REQUEST_JOB_PACK_ALLOCATION:
+	case REQUEST_HET_JOB_ALLOCATION:
 		_slurm_rpc_allocate_pack(msg);
 		break;
 	case REQUEST_BUILD_INFO:
@@ -1375,7 +1375,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		goto send_msg;
 	}
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
-		info("REQUEST_JOB_PACK_ALLOCATION from uid=%d with empty job list",
+		info("REQUEST_HET_JOB_ALLOCATION from uid=%d with empty job list",
 		     uid);
 		error_code = SLURM_ERROR;
 		goto send_msg;
@@ -1383,13 +1383,13 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	if (slurm_get_peer_addr(msg->conn_fd, &resp_addr) == 0) {
 		slurm_get_ip_str(&resp_addr, &port,resp_host,sizeof(resp_host));
 	} else {
-		info("REQUEST_JOB_PACK_ALLOCATION from uid=%d , can't get peer addr",
+		info("REQUEST_HET_JOB_ALLOCATION from uid=%d , can't get peer addr",
 		     uid);
 		error_code = SLURM_ERROR;
 		goto send_msg;
 	}
 
-	sched_debug2("Processing RPC: REQUEST_JOB_PACK_ALLOCATION from uid=%d",
+	sched_debug2("Processing RPC: REQUEST_HET_JOB_ALLOCATION from uid=%d",
 		     uid);
 
 	/*
@@ -1409,7 +1409,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		if (job_uid == NO_VAL)
 			job_uid = job_desc_msg->user_id;
 
-		if ((error_code = _valid_id("REQUEST_JOB_PACK_ALLOCATION",
+		if ((error_code = _valid_id("REQUEST_HET_JOB_ALLOCATION",
 					    job_desc_msg, uid, gid))) {
 			break;
 		}
@@ -1439,7 +1439,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
 			error_code = ESLURM_INVALID_NODE_NAME;
-			error("REQUEST_JOB_PACK_ALLOCATION lacks alloc_node from uid=%d",
+			error("REQUEST_HET_JOB_ALLOCATION lacks alloc_node from uid=%d",
 			      uid);
 			break;
 		}
@@ -1553,7 +1553,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	if (resp) {
 		slurm_msg_t response_msg;
 		response_init(&response_msg, msg);
-		response_msg.msg_type = RESPONSE_JOB_PACK_ALLOCATION;
+		response_msg.msg_type = RESPONSE_HET_JOB_ALLOCATION;
 		response_msg.data = resp;
 
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
@@ -3301,7 +3301,7 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 	unlock_slurmctld(job_read_lock);
 
 	response_init(&response_msg, msg);
-	response_msg.msg_type = RESPONSE_JOB_PACK_ALLOCATION;
+	response_msg.msg_type = RESPONSE_HET_JOB_ALLOCATION;
 	response_msg.data     = resp;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	FREE_NULL_LIST(resp);

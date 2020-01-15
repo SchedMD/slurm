@@ -383,7 +383,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	return SLURM_SUCCESS;
 }
 
-/* Get total node count and lead job ID from RESPONSE_JOB_PACK_ALLOCATION */
+/* Get total node count and lead job ID from RESPONSE_HET_JOB_ALLOCATION */
 static void _pack_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
 {
 	resource_allocation_response_msg_t *alloc;
@@ -465,7 +465,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 	}
 	list_iterator_destroy(iter);
 
-	req_msg.msg_type = REQUEST_JOB_PACK_ALLOCATION;
+	req_msg.msg_type = REQUEST_HET_JOB_ALLOCATION;
 	req_msg.data     = job_req_list;
 
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
@@ -491,7 +491,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 			errnum = SLURM_ERROR;
 		}
 		break;
-	case RESPONSE_JOB_PACK_ALLOCATION:
+	case RESPONSE_HET_JOB_ALLOCATION:
 		/* Yay, the controller has acknowledged our request!
 		 * Test if we have an allocation yet? */
 		resp = (List) resp_msg.data;
@@ -507,7 +507,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 			if (pending_callback != NULL)
 				pending_callback(job_id);
 			_wait_for_allocation_response(job_id, listen,
-						RESPONSE_JOB_PACK_ALLOCATION,
+						RESPONSE_HET_JOB_ALLOCATION,
 						timeout, (void **) &resp);
 			/* If NULL, we didn't get the allocation in
 			 * the time desired, so just free the job id */
@@ -861,7 +861,7 @@ extern int slurm_pack_job_lookup(uint32_t jobid, List *info)
 			return SLURM_ERROR;
 		*info = NULL;
 		break;
-	case RESPONSE_JOB_PACK_ALLOCATION:
+	case RESPONSE_HET_JOB_ALLOCATION:
 		*info = (List) resp_msg.data;
 		return SLURM_SUCCESS;
 		break;
@@ -1191,7 +1191,7 @@ _handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp)
 
 /* Accept RPC from slurmctld and process it.
  * IN slurmctld_fd: file descriptor for slurmctld communications
- * IN msg_type: RESPONSE_RESOURCE_ALLOCATION or RESPONSE_JOB_PACK_ALLOCATION
+ * IN msg_type: RESPONSE_RESOURCE_ALLOCATION or RESPONSE_HET_JOB_ALLOCATION
  * OUT resp: resource allocation response message or List
  * RET 1 if resp is filled in, 0 otherwise */
 static int
@@ -1309,7 +1309,7 @@ static void _wait_for_allocation_response(uint32_t job_id,
 					(resource_allocation_response_msg_t **)
 					resp) >= 0)
 				return;
-		} else if (msg_type == RESPONSE_JOB_PACK_ALLOCATION) {
+		} else if (msg_type == RESPONSE_HET_JOB_ALLOCATION) {
 			if (slurm_pack_job_lookup(job_id, (List *) resp) >= 0)
 				return;
 		} else {

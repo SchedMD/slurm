@@ -598,7 +598,7 @@ static void *_wdog(void *args)
 	     (agent_ptr->msg_type == SRUN_TIMEOUT)			||
 	     (agent_ptr->msg_type == SRUN_USER_MSG)			||
 	     (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION)	||
-	     (agent_ptr->msg_type == RESPONSE_JOB_PACK_ALLOCATION) )
+	     (agent_ptr->msg_type == RESPONSE_HET_JOB_ALLOCATION) )
 		srun_agent = true;
 
 	thd_comp.max_delay = 0;
@@ -681,7 +681,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 			*agent_ptr->msg_args_pptr;
 		job_id  = msg->job_id;
 		step_id = NO_VAL;
-	} else if (agent_ptr->msg_type == RESPONSE_JOB_PACK_ALLOCATION) {
+	} else if (agent_ptr->msg_type == RESPONSE_HET_JOB_ALLOCATION) {
 		List pack_alloc_list = *agent_ptr->msg_args_pptr;
 		resource_allocation_response_msg_t *msg;
 		if (!pack_alloc_list || (list_count(pack_alloc_list) == 0))
@@ -1067,7 +1067,7 @@ static void *_thread_per_group_rpc(void *args)
 				     false, false, _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
-		} else if ((msg_type == RESPONSE_JOB_PACK_ALLOCATION) &&
+		} else if ((msg_type == RESPONSE_HET_JOB_ALLOCATION) &&
 			   (rc == SLURM_COMMUNICATIONS_CONNECTION_ERROR)) {
 			/* Communication issue to srun that launched the job
 			 * Cancel rather than leave a stray-but-empty job
@@ -1816,7 +1816,7 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 			slurm_free_resource_allocation_response_msg(
 					agent_arg_ptr->msg_args);
 		} else if (agent_arg_ptr->msg_type ==
-				RESPONSE_JOB_PACK_ALLOCATION) {
+				RESPONSE_HET_JOB_ALLOCATION) {
 			List alloc_list = agent_arg_ptr->msg_args;
 			FREE_NULL_LIST(alloc_list);
 		} else if ((agent_arg_ptr->msg_type == REQUEST_ABORT_JOB)    ||

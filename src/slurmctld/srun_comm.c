@@ -168,7 +168,7 @@ extern void srun_allocate(job_record_t *job_ptr)
 		}
 		list_iterator_destroy(iter);
 		_srun_agent_launch(addr, job_ptr->alloc_node,
-				   RESPONSE_JOB_PACK_ALLOCATION, job_resp_list,
+				   RESPONSE_HET_JOB_ALLOCATION, job_resp_list,
 				   job_ptr->start_protocol_ver);
 	} else {
 		error("%s: Can not find hetjob leader %pJ",
