@@ -2317,13 +2317,6 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 		error("%s: Invalid dependency %s for %pJ: %s",
 		      __func__, remote_dep_info->dependency, job_ptr,
 		      slurm_strerror(rc));
-		/*
-		 * TODO:
-		 * We need to tell the origin cluster that
-		 * dependency isn't valid. This probably should
-		 * have happened before we got here, but handle
-		 * this just in case.
-		 */
 		_destroy_dep_job(job_ptr);
 	} else {
 		job_record_t *tmp_job;
