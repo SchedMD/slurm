@@ -263,10 +263,6 @@ static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn)
 	_check_data_list_node_parent(dl, dn);
 	data_list_node_t *prev;
 
-	_release(dn->data);
-	xassert(!(dn->data = 0));
-	xfree(dn->key);
-
 	/* walk list to find new previous */
 	for (prev = dl->begin; prev && prev != dn; ) {
 		_check_data_list_node_magic(prev);
@@ -296,6 +292,9 @@ static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn)
 	}
 
 	dl->count--;
+	_release(dn->data);
+	xassert(!(dn->data = 0));
+	xfree(dn->key);
 
 	xassert((dn->magic = ~DATA_LIST_NODE_MAGIC));
 	xfree(dn);
