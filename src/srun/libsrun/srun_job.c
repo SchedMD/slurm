@@ -731,13 +731,13 @@ static void _set_step_opts(slurm_opt_t *opt_local)
  * the job allocation request with its requested options.
  */
 static int _create_job_step(srun_job_t *job, bool use_all_cpus,
-			    List srun_job_list, uint32_t pack_jobid,
-			    char *pack_nodelist)
+			    List srun_job_list, uint32_t het_job_id,
+			    char *het_job_nodelist)
 {
 	ListIterator opt_iter = NULL, job_iter;
 	slurm_opt_t *opt_local = &opt;
-	uint32_t node_offset = 0, pack_nnodes = 0, step_id = NO_VAL;
-	uint32_t pack_ntasks = 0, task_offset = 0;
+	uint32_t node_offset = 0, het_job_nnodes = 0, step_id = NO_VAL;
+	uint32_t het_job_ntasks = 0, task_offset = 0;
 
 	job_step_create_response_msg_t *step_resp;
 	char *resv_ports = NULL;
@@ -748,11 +748,11 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			opt_iter = list_iterator_create(opt_list);
 		job_iter = list_iterator_create(srun_job_list);
 		while ((job = list_next(job_iter))) {
-			if (pack_jobid)
-				job->het_job_id = pack_jobid;
+			if (het_job_id)
+				job->het_job_id = het_job_id;
 			job->stepid = NO_VAL;
-			pack_nnodes += job->nhosts;
-			pack_ntasks += job->ntasks;
+			het_job_nnodes += job->nhosts;
+			het_job_ntasks += job->ntasks;
 		}
 
 		list_iterator_reset(job_iter);
@@ -762,8 +762,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			if (!opt_local)
 				fatal("%s: opt_list too short", __func__);
 			job->het_job_node_offset = node_offset;
-			job->het_job_nnodes = pack_nnodes;
-			job->het_job_ntasks = pack_ntasks;
+			job->het_job_nnodes = het_job_nnodes;
+			job->het_job_ntasks = het_job_ntasks;
 			job->het_job_task_offset = task_offset;
 			if (step_id != NO_VAL)
 				job->stepid = step_id;
@@ -821,8 +821,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			list_iterator_destroy(opt_iter);
 		return rc;
 	} else if (job) {
-		if (pack_jobid) {
-			job->het_job_id  = pack_jobid;
+		if (het_job_id) {
+			job->het_job_id  = het_job_id;
 			job->het_job_nnodes = job->nhosts;
 			job->het_job_ntasks = job->ntasks;
 			job->het_job_task_offset = 0;
@@ -1020,9 +1020,9 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	List used_resp_list = NULL;
 	ListIterator opt_iter, resp_iter;
 	srun_job_t *job = NULL;
-	int i, max_list_offset, max_pack_offset, pack_offset = -1;
-	uint32_t my_job_id = 0, pack_jobid = 0;
-	char *pack_nodelist = NULL;
+	int i, max_list_offset, max_het_job_offset, het_job_offset = -1;
+	uint32_t my_job_id = 0, het_job_id = 0;
+	char *het_job_nodelist = NULL;
 	bool begin_error_logged = false;
 	bool core_spec_error_logged = false;
 #ifdef HAVE_NATIVE_CRAY
@@ -1059,7 +1059,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		slurm_opt_t *opt_local;
 
 		max_list_offset = 0;
-		max_pack_offset = list_count(job_resp_list) - 1;
+		max_het_job_offset = list_count(job_resp_list) - 1;
 		if (opt_list) {
 			opt_iter = list_iterator_create(opt_list);
 			while ((opt_local = list_next(opt_iter))) {
@@ -1072,17 +1072,17 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 				}
 			}
 			list_iterator_destroy(opt_iter);
-			if (max_list_offset > max_pack_offset) {
+			if (max_list_offset > max_het_job_offset) {
 				error("Attempt to run a job step with pack group value of %d, "
 				      "but the job allocation has maximum value of %d",
-				      max_list_offset, max_pack_offset);
+				      max_list_offset, max_het_job_offset);
 				exit(1);
 			}
 		}
 		srun_job_list = list_create(NULL);
 		used_resp_list = list_create(NULL);
-		if (max_pack_offset > 0)
-			pack_offset = 0;
+		if (max_het_job_offset > 0)
+			het_job_offset = 0;
 		resp_iter = list_iterator_create(job_resp_list);
 		while ((resp = list_next(resp_iter))) {
 			bool merge_nodelist = true;
@@ -1093,7 +1093,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			}
 			_print_job_information(resp);
 			(void) get_next_opt(-2);
-			while ((opt_local = get_next_opt(pack_offset))) {
+			while ((opt_local = get_next_opt(het_job_offset))) {
 				srun_opt_t *srun_opt = opt_local->srun_opt;
 				xassert(srun_opt);
 				if (merge_nodelist) {
@@ -1160,7 +1160,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 #endif
 				if (srun_opt->exclusive)
 					_step_opt_exclusive(opt_local);
-				_set_env_vars(resp, pack_offset);
+				_set_env_vars(resp, het_job_offset);
 				if (_validate_relative(resp, opt_local))
 					exit(error_exit);
 				if (opt_local->begin && !begin_error_logged) {
@@ -1176,44 +1176,44 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 								 opt_local);
 				if (!job)
 					exit(error_exit);
-				if (max_pack_offset > 0)
-					job->het_job_offset = pack_offset;
+				if (max_het_job_offset > 0)
+					job->het_job_offset = het_job_offset;
 				list_append(srun_job_list, job);
 			}	/* While more option structures */
-			pack_offset++;
-		}	/* More pack job components */
+			het_job_offset++;
+		}	/* More hetjob components */
 		list_iterator_destroy(resp_iter);
 
-		max_pack_offset = get_max_pack_group();
-		pack_offset = list_count(job_resp_list) - 1;
-		if (max_pack_offset > pack_offset) {
-			error("Requested pack-group offset exceeds highest pack job index (%d > %d)",
-			      max_pack_offset, pack_offset);
+		max_het_job_offset = get_max_pack_group();
+		het_job_offset = list_count(job_resp_list) - 1;
+		if (max_het_job_offset > het_job_offset) {
+			error("Requested pack-group offset exceeds highest hetjob index (%d > %d)",
+			      max_het_job_offset, het_job_offset);
 			exit(error_exit);
 		}
 		i = list_count(srun_job_list);
 		if (i == 0) {
-			error("No directives to start application on any available "
-			      "pack job components");
+			error("No directives to start application on any available hetjob components");
 			exit(error_exit);
 		}
 		if (i == 1)
 			FREE_NULL_LIST(srun_job_list);	/* Just use "job" */
 		if (list_count(job_resp_list) > 1) {
 			if (my_job_id)
-				pack_jobid = my_job_id;
-			pack_nodelist = _compress_pack_nodelist(used_resp_list);
+				het_job_id = my_job_id;
+			het_job_nodelist =
+				_compress_pack_nodelist(used_resp_list);
 		}
 		list_destroy(used_resp_list);
-		if (_create_job_step(job, false, srun_job_list, pack_jobid,
-				     pack_nodelist) < 0) {
+		if (_create_job_step(job, false, srun_job_list, het_job_id,
+				     het_job_nodelist) < 0) {
 			if (*got_alloc)
 				slurm_complete_job(my_job_id, 1);
 			else
 				_cancel_steps(srun_job_list);
 			exit(error_exit);
 		}
-		xfree(pack_nodelist);
+		xfree(het_job_nodelist);
 	} else {
 		/* Combined job allocation and job step launch */
 #if defined HAVE_FRONT_END
@@ -1247,20 +1247,20 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 				if (!opt_local)
 					break;
 				_print_job_information(resp);
-				_set_env_vars(resp, ++pack_offset);
-				_set_env_vars2(resp, pack_offset);
+				_set_env_vars(resp, ++het_job_offset);
+				_set_env_vars2(resp, het_job_offset);
 				if (_validate_relative(resp, opt_local)) {
 					slurm_complete_job(my_job_id, 1);
 					exit(error_exit);
 				}
 				job = job_create_allocation(resp, opt_local);
-				job->het_job_offset = pack_offset;
+				job->het_job_offset = het_job_offset;
 				list_append(srun_job_list, job);
 				_set_step_opts(opt_local);
 			}
 			list_iterator_destroy(opt_iter);
 			list_iterator_destroy(resp_iter);
-			setenvfs("SLURM_PACK_SIZE=%d", pack_offset + 1);
+			setenvfs("SLURM_PACK_SIZE=%d", het_job_offset + 1);
 		} else {
 			if (!(resp = allocate_nodes(handle_signals, &opt)))
 				exit(error_exit);
@@ -1277,8 +1277,9 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		}
 		if (srun_job_list && (list_count(srun_job_list) > 1) &&
 		    opt_list && (list_count(opt_list) > 1) && my_job_id) {
-			pack_jobid = my_job_id;
-			pack_nodelist = _compress_pack_nodelist(job_resp_list);
+			het_job_id = my_job_id;
+			het_job_nodelist =
+				_compress_pack_nodelist(job_resp_list);
 		}
 
 		/*
@@ -1286,12 +1287,12 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		 */
 		if (_become_user () < 0)
 			fatal("Unable to assume uid=%u", opt.uid);
-		if (_create_job_step(job, true, srun_job_list, pack_jobid,
-				     pack_nodelist) < 0) {
+		if (_create_job_step(job, true, srun_job_list, het_job_id,
+				     het_job_nodelist) < 0) {
 			slurm_complete_job(my_job_id, 1);
 			exit(error_exit);
 		}
-		xfree(pack_nodelist);
+		xfree(het_job_nodelist);
 
 		if (opt_list) {
 			resp_iter = list_iterator_create(job_resp_list);
