@@ -384,26 +384,26 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 }
 
 /* Get total node count and lead job ID from RESPONSE_HET_JOB_ALLOCATION */
-static void _pack_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
+static void _het_job_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
 {
 	resource_allocation_response_msg_t *alloc;
-	uint32_t inx = 0, pack_node_cnt = 0, pack_job_id = 0;
+	uint32_t inx = 0, het_job_node_cnt = 0, het_job_id = 0;
 	ListIterator iter;
 
 	xassert(resp);
 	iter = list_iterator_create(resp);
 	while ((alloc = (resource_allocation_response_msg_t *)list_next(iter))){
-		pack_node_cnt += alloc->node_cnt;
-		if (pack_job_id == 0)
-			pack_job_id = alloc->job_id;
+		het_job_node_cnt += alloc->node_cnt;
+		if (het_job_id == 0)
+			het_job_id = alloc->job_id;
 		print_multi_line_string(alloc->job_submit_user_msg,
 					inx, LOG_LEVEL_INFO);
 		inx++;
 	}
 	list_iterator_destroy(iter);
 
-	*job_id   = pack_job_id;
-	*node_cnt = pack_node_cnt;
+	*job_id   = het_job_id;
+	*node_cnt = het_job_node_cnt;
 }
 
 /*
@@ -495,7 +495,7 @@ List slurm_allocate_het_job_blocking(List job_req_list, time_t timeout,
 		/* Yay, the controller has acknowledged our request!
 		 * Test if we have an allocation yet? */
 		resp = (List) resp_msg.data;
-		_pack_alloc_test(resp, &node_cnt, &job_id);
+		_het_job_alloc_test(resp, &node_cnt, &job_id);
 		if (node_cnt > 0) {
 			/* yes, allocation has been granted */
 			errno = SLURM_SUCCESS;
