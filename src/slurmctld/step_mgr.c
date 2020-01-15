@@ -2549,10 +2549,10 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		job_ptr->next_step_id++;
 	} else if (job_ptr->het_job_id &&
 		   (job_ptr->het_job_id != job_ptr->job_id)) {
-		job_record_t *pack_job;
-		pack_job = find_job_record(job_ptr->het_job_id);
-		if (pack_job)
-			step_ptr->step_id = pack_job->next_step_id++;
+		job_record_t *het_job;
+		het_job = find_job_record(job_ptr->het_job_id);
+		if (het_job)
+			step_ptr->step_id = het_job->next_step_id++;
 		else
 			step_ptr->step_id = job_ptr->next_step_id++;
 		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
@@ -2706,19 +2706,19 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	}
 
 #ifdef HAVE_NATIVE_CRAY
-	if (job_ptr->pack_job_id && (job_ptr->pack_job_id != NO_VAL)) {
-		jobid = job_ptr->pack_job_id;
+	if (job_ptr->het_job_id && (job_ptr->het_job_id != NO_VAL)) {
+		jobid = job_ptr->het_job_id;
 
 		/*
 		 * We only want to set up the Aries switch for the first
 		 * job with all the nodes in the total allocation along
 		 * with that node count.
 		 */
-		if (job_ptr->job_id == job_ptr->pack_job_id) {
+		if (job_ptr->job_id == job_ptr->het_job_id) {
 			job_record_t *het_job_ptr;
 			hostlist_t hl = hostlist_create(NULL);
 			ListIterator itr = list_iterator_create(
-				job_ptr->pack_job_list);
+				job_ptr->het_job_list);
 
 			while ((het_job_ptr = list_next(itr)))
 				hostlist_push(hl, het_job_ptr->nodes);
@@ -2737,7 +2737,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 			/* assume that job offset 0 has already run! */
 			step_record_t *het_step_ptr;
 			job_record_t *het_job_ptr =
-				find_het_job_record(job_ptr->pack_job_id, 0);
+				find_het_job_record(job_ptr->het_job_id, 0);
 			ListIterator itr =
 				list_iterator_create(het_job_ptr->step_list);
 
