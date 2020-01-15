@@ -4456,7 +4456,7 @@ static void *_run_prolog(void *arg)
 			srun_user_message(job_ptr,
 					  "PrologSlurmctld failed, job killed");
 			if (job_ptr->het_job_list) {
-				(void) pack_job_signal(job_ptr, SIGKILL, 0, 0,
+				(void) het_job_signal(job_ptr, SIGKILL, 0, 0,
 						       false);
 			} else {
 				job_signal(job_ptr, SIGKILL, 0, 0, false);

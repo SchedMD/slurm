@@ -474,7 +474,7 @@ extern uint32_t slurm_job_preempt(job_record_t *job_ptr,
 
 	if (mode == PREEMPT_MODE_CANCEL) {
 		if (job_ptr->het_job_list)
-			rc = pack_job_signal(job_ptr, SIGKILL, 0, 0, true);
+			rc = het_job_signal(job_ptr, SIGKILL, 0, 0, true);
 		else
 			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
 		if (rc == SLURM_SUCCESS) {
@@ -493,7 +493,7 @@ extern uint32_t slurm_job_preempt(job_record_t *job_ptr,
 
 	if (rc != SLURM_SUCCESS) {
 		if (job_ptr->het_job_list)
-			rc = pack_job_signal(job_ptr, SIGKILL, 0, 0, true);
+			rc = het_job_signal(job_ptr, SIGKILL, 0, 0, true);
 		else
 			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
 		if (rc == SLURM_SUCCESS) {

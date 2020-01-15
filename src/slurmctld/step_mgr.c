@@ -2737,7 +2737,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 			/* assume that job offset 0 has already run! */
 			step_record_t *het_step_ptr;
 			job_record_t *het_job_ptr =
-				find_job_pack_record(job_ptr->pack_job_id, 0);
+				find_het_job_record(job_ptr->pack_job_id, 0);
 			ListIterator itr =
 				list_iterator_create(het_job_ptr->step_list);
 

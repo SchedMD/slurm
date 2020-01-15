@@ -3422,8 +3422,8 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 			FREE_NULL_BITMAP(node_bitmap);
 		}
 	} else {
-		job_ptr = find_job_pack_record(job_info_msg->job_id,
-					       job_info_msg->het_job_offset);
+		job_ptr = find_het_job_record(job_info_msg->job_id,
+					      job_info_msg->het_job_offset);
 		if (job_ptr) {
 			job_info_msg->job_id = job_ptr->job_id;
 			error_code = job_alloc_info(uid, job_info_msg->job_id,

@@ -1218,12 +1218,12 @@ extern job_record_t *find_job_array_rec(uint32_t array_job_id,
 					uint32_t array_task_id);
 
 /*
- * find_job_pack_record - return a pointer to the job record with the given ID
+ * find_het_job_record - return a pointer to the job record with the given ID
  * IN job_id - requested job's ID
- * in pack_id - pack job component ID
+ * in het_job_id - hetjob component ID
  * RET pointer to the job's record, NULL on error
  */
-extern job_record_t *find_job_pack_record(uint32_t job_id, uint32_t pack_id);
+extern job_record_t *find_het_job_record(uint32_t job_id, uint32_t het_job_id);
 
 /*
  * find_job_record - return a pointer to the job record with the given job_id
@@ -1529,15 +1529,15 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 extern int job_signal_id(uint32_t job_id, uint16_t signal, uint16_t flags,
 			 uid_t uid, bool preempt);
 /*
- * pack_job_signal - signal all components of a pack job
- * IN pack_leader - job record of job pack leader
+ * het_job_signal - signal all components of a hetjob
+ * IN het_job_leader - job record of job hetjob leader
  * IN signal - signal to send, SIGKILL == cancel the job
  * IN flags  - see KILL_JOB_* flags in slurm.h
  * IN uid - uid of requesting user
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int pack_job_signal(job_record_t *pack_leader, uint16_t signal,
+extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
 			   uint16_t flags, uid_t uid, bool preempt);
 
 /*
