@@ -352,7 +352,7 @@ if {$damatches != 1} {
 # Add more test WCKeys the user
 #
 set awmatches 0
-set saadd_pid [spawn $sacctmgr -i add user $user_name wckey=$wk,$wk2,$wk3]
+set saadd_pid [spawn $sacctmgr -i add user $user_name cluster=$cn wckey=$wk,$wk2,$wk3]
 
 expect {
 	-re "W ="	{
