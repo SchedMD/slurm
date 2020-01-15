@@ -269,6 +269,8 @@ static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn)
 	for (prev = dl->begin; prev && prev->next != dn; ) {
 		_check_data_list_node_magic(prev);
 		prev = prev->next;
+		if (prev)
+			_check_data_list_node_magic(prev);
 	}
 
 	if (dn == dl->begin) {
@@ -330,6 +332,7 @@ static data_list_node_t *_new_data_list_node(data_t *d, const char *key)
 {
 	data_list_node_t *dn = xmalloc(sizeof(*dn));
 	xassert((dn->magic = DATA_LIST_NODE_MAGIC));
+	_check_magic(d);
 
 	dn->data = d;
 	if (key)
@@ -350,6 +353,8 @@ static void _data_list_append(data_list_t *dl, data_t *d, const char *key)
 	if (dl->end) {
 		xassert(!dl->end->next);
 		_check_data_list_node_magic(dl->end);
+		_check_data_list_node_magic(dl->begin);
+
 		dl->end->next = n;
 		dl->end = n;
 	} else {
