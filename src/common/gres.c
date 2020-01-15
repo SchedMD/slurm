@@ -13656,7 +13656,6 @@ extern void gres_build_job_details(List job_gres_list,
 
 	(void) gres_plugin_init();
 
-	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		job_gres_data = (gres_job_state_t *) job_gres_ptr->gres_data;
@@ -13666,51 +13665,45 @@ extern void gres_build_job_details(List job_gres_list,
 			my_gres_cnt = job_gres_data->node_cnt;
 			my_gres_details = xcalloc(my_gres_cnt, sizeof(char *));
 		}
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (job_gres_ptr->plugin_id !=
-			    gres_context[i].plugin_id)
-				continue;
-			for (j = 0; j < my_gres_cnt; j++) {
-				if (j >= job_gres_data->node_cnt)
-					break;	/* node count mismatch */
-				if (my_gres_details[j])
-					sep1 = ",";
-				else
-					sep1 = "";
-				if (job_gres_data->type_name) {
-					sep2 = ":";
-					type = job_gres_data->type_name;
-				} else {
-					sep2 = "";
-					type = "";
-				}
-				if (job_gres_data->gres_bit_alloc[j]) {
-					bit_fmt(tmp_str, sizeof(tmp_str),
-		                                job_gres_data->
-						gres_bit_alloc[j]);
-					xstrfmtcat(my_gres_details[j],
-						   "%s%s%s%s:%"PRIu64"(IDX:%s)",
-						   sep1,
-						   gres_context[i].gres_name,
-						   sep2, type, job_gres_data->
-						   gres_cnt_node_alloc[j],
-						   tmp_str);
-				} else if (job_gres_data->
-					   gres_cnt_node_alloc[j]) {
-					xstrfmtcat(my_gres_details[j],
-						   "%s%s%s%s(CNT:%"PRIu64")",
-						   sep1,
-						   gres_context[i].gres_name,
-						   sep2, type,
-						   job_gres_data->
-						   gres_cnt_node_alloc[j]);
-				}
+
+		for (j = 0; j < my_gres_cnt; j++) {
+			if (j >= job_gres_data->node_cnt)
+				break;	/* node count mismatch */
+			if (my_gres_details[j])
+				sep1 = ",";
+			else
+				sep1 = "";
+			if (job_gres_data->type_name) {
+				sep2 = ":";
+				type = job_gres_data->type_name;
+			} else {
+				sep2 = "";
+				type = "";
 			}
-			break;
+
+
+			if (job_gres_data->gres_bit_alloc[j]) {
+				bit_fmt(tmp_str, sizeof(tmp_str),
+					job_gres_data->gres_bit_alloc[j]);
+				xstrfmtcat(my_gres_details[j],
+					   "%s%s%s%s:%"PRIu64"(IDX:%s)",
+					   sep1,
+					   job_gres_data->gres_name,
+					   sep2, type, job_gres_data->
+					   gres_cnt_node_alloc[j],
+					   tmp_str);
+			} else if (job_gres_data->gres_cnt_node_alloc[j]) {
+				xstrfmtcat(my_gres_details[j],
+					   "%s%s%s%s(CNT:%"PRIu64")",
+					   sep1,
+					   job_gres_data->gres_name,
+					   sep2, type,
+					   job_gres_data->
+					   gres_cnt_node_alloc[j]);
+			}
 		}
 	}
 	list_iterator_destroy(job_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 	*gres_detail_cnt = my_gres_cnt;
 	*gres_detail_str = my_gres_details;
 }
