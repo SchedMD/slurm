@@ -225,13 +225,13 @@ static void _check_data_list_magic(const data_list_t *dl)
 	if (dl->begin) {
 		/* walk forwards verify */
 		int c = 0;
-		data_list_node_t *i, *in = dl->begin;
+		data_list_node_t *i = dl->begin;
 
-		while ((i = in)) {
-			in = i->next;
+		while (i) {
 			c++;
 			_check_data_list_node_magic(i);
 			end = i;
+			i = i->next;
 		}
 
 		xassert(c == dl->count);
@@ -246,11 +246,11 @@ static void _check_data_list_node_parent(const data_list_t *dl,
 					 const data_list_node_t *dn)
 {
 #ifndef NDEBUG
-	data_list_node_t *i, *in = dl->begin;
-	while ((i = in)) {
+	data_list_node_t *i = dl->begin;
+	while (i) {
 		if (i == dn)
 			return;
-		in = i->next;
+		i = i->next;
 	}
 
 	/* found an orphan? */
@@ -626,11 +626,13 @@ const data_t *data_key_get_const(const data_t *data, const char *key)
 
 	_check_data_list_magic(data->data.dict_u);
 	i = data->data.dict_u->begin;
-	while ((i = i->next)) {
+	while (i) {
 		_check_data_list_node_magic(i);
 
 		if (!xstrcmp(key, i->key))
 			break;
+
+		i = i->next;
 	}
 
 	if (i)
@@ -654,11 +656,13 @@ data_t *data_key_get(data_t *data, const char *key)
 
 	_check_data_list_magic(data->data.dict_u);
 	i = data->data.dict_u->begin;
-	while ((i = i->next)) {
+	while (i) {
 		_check_data_list_node_magic(i);
 
 		if (!xstrcmp(key, i->key))
 			break;
+
+		i = i->next;
 	}
 
 	if (i)
@@ -713,11 +717,13 @@ bool data_key_unset(data_t *data, const char *key)
 
 	_check_data_list_magic(data->data.dict_u);
 	i = data->data.dict_u->begin;
-	while ((i = i->next)) {
+	while (i) {
 		_check_data_list_node_magic(i);
 
 		if (!xstrcmp(key, i->key))
 			break;
+
+		i = i->next;
 	}
 
 	if (!i) {
@@ -895,7 +901,7 @@ size_t data_get_list_length(const data_t *data)
 extern int data_list_for_each_const(const data_t *d, DataListForFConst f, void *arg)
 {
 	int count = 0;
-	const data_list_node_t *i, *n;
+	const data_list_node_t *i;
 
 	_check_magic(d);
 
@@ -905,11 +911,10 @@ extern int data_list_for_each_const(const data_t *d, DataListForFConst f, void *
 		return -1;
 	}
 
-	n = d->data.list_u->begin;
+	i = d->data.list_u->begin;
 	_check_data_list_magic(d->data.list_u);
-	while ((i = n)) {
+	while (i) {
 		_check_data_list_node_magic(i);
-		n = i->next;
 
 		xassert(!i->key);
 		data_for_each_cmd_t cmd = f(i->data, arg);
@@ -928,11 +933,14 @@ extern int data_list_for_each_const(const data_t *d, DataListForFConst f, void *
 		case DATA_FOR_EACH_FAIL: /* fall through */
 			count *= -1;
 		case DATA_FOR_EACH_STOP:
-			n = NULL;
+			i = NULL;
 			break;
 		default:
 			fatal_abort("%s: invalid cmd", __func__);
 		}
+
+		if (i)
+			i = i->next;
 	}
 
 	return count;
@@ -941,7 +949,7 @@ extern int data_list_for_each_const(const data_t *d, DataListForFConst f, void *
 extern int data_list_for_each(data_t *d, DataListForF f, void *arg)
 {
 	int count = 0;
-	data_list_node_t *i, *n;
+	data_list_node_t *i;
 
 	_check_magic(d);
 
@@ -951,11 +959,10 @@ extern int data_list_for_each(data_t *d, DataListForF f, void *arg)
 		return -1;
 	}
 
-	n = d->data.list_u->begin;
+	i = d->data.list_u->begin;
 	_check_data_list_magic(d->data.list_u);
-	while ((i = n)) {
+	while (i) {
 		_check_data_list_node_magic(i);
-		n = i->next;
 
 		xassert(!i->key);
 		data_for_each_cmd_t cmd = f(i->data, arg);
@@ -973,11 +980,14 @@ extern int data_list_for_each(data_t *d, DataListForF f, void *arg)
 		case DATA_FOR_EACH_FAIL: /* fall through */
 			count *= -1;
 		case DATA_FOR_EACH_STOP:
-			n = NULL;
+			i = NULL;
 			break;
 		default:
 			fatal_abort("%s: invalid cmd", __func__);
 		}
+
+		if (i)
+			i = i->next;
 	}
 
 	return count;
@@ -986,7 +996,7 @@ extern int data_list_for_each(data_t *d, DataListForF f, void *arg)
 extern int data_dict_for_each_const(const data_t *d, DataDictForFConst f, void *arg)
 {
 	int count = 0;
-	const data_list_node_t *i, *n;
+	const data_list_node_t *i;
 
 	_check_magic(d);
 
@@ -996,14 +1006,13 @@ extern int data_dict_for_each_const(const data_t *d, DataDictForFConst f, void *
 		return -1;
 	}
 
-	n = d->data.dict_u->begin;
+	i = d->data.dict_u->begin;
 	_check_data_list_magic(d->data.dict_u);
-	while ((i = n)) {
+	while (i) {
 		data_for_each_cmd_t cmd;
 
 		_check_data_list_node_magic(i);
 
-		n = i->next;
 		cmd = f(i->key, i->data, arg);
 
 		xassert(cmd > DATA_FOR_EACH_INVALID);
@@ -1020,11 +1029,14 @@ extern int data_dict_for_each_const(const data_t *d, DataDictForFConst f, void *
 		case DATA_FOR_EACH_FAIL: /* fall through */
 			count *= -1;
 		case DATA_FOR_EACH_STOP:
-			n = NULL;
+			i = NULL;
 			break;
 		default:
 			fatal_abort("%s: invalid cmd", __func__);
 		}
+
+		if (i)
+			i = i->next;
 	}
 
 	return count;
@@ -1033,7 +1045,7 @@ extern int data_dict_for_each_const(const data_t *d, DataDictForFConst f, void *
 extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg)
 {
 	int count = 0;
-	data_list_node_t *i, *n;
+	data_list_node_t *i;
 
 	_check_magic(d);
 
@@ -1043,11 +1055,10 @@ extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg)
 		return -1;
 	}
 
-	n = d->data.dict_u->begin;
+	i = d->data.dict_u->begin;
 	_check_data_list_magic(d->data.dict_u);
-	while ((i = n)) {
+	while (i) {
 		_check_data_list_node_magic(i);
-		n = i->next;
 
 		data_for_each_cmd_t cmd = f(i->key, i->data, arg);
 
@@ -1064,11 +1075,14 @@ extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg)
 		case DATA_FOR_EACH_FAIL: /* fall through */
 			count *= -1;
 		case DATA_FOR_EACH_STOP:
-			n = NULL;
+			i = NULL;
 			break;
 		default:
 			fatal_abort("%s: invalid cmd", __func__);
 		}
+
+		if (i)
+			i = i->next;
 	}
 
 	return count;
@@ -1569,29 +1583,29 @@ data_t *data_copy(data_t *dest, const data_t *src)
 		return data_set_null(dest);
 	case DATA_TYPE_LIST:
 	{
-		data_list_node_t *i, *n = src->data.list_u->begin;
+		data_list_node_t *i = src->data.list_u->begin;
 
 		data_set_list(dest);
 
-		while ((i = n)) {
+		while (i) {
 			_check_data_list_node_magic(i);
 			xassert(!i->key);
-			n = i->next;
 			data_copy(data_list_append(dest), i->data);
+			i = i->next;
 		}
 
 		return dest;
 	}
 	case DATA_TYPE_DICT:
 	{
-		data_list_node_t *i, *n = src->data.dict_u->begin;
+		data_list_node_t *i = src->data.dict_u->begin;
 
 		data_set_dict(dest);
 
-		while ((i = n)) {
+		while (i) {
 			_check_data_list_node_magic(i);
-			n = i->next;
 			data_copy(data_key_set(dest, i->key), i->data);
+			i = i->next;
 		}
 
 		return dest;
