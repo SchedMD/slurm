@@ -174,7 +174,7 @@ extern char *x11_get_xauth(void)
 	 */
 	static char *cookie_pattern = "^[[:alnum:]./-]+:[[:digit:]]+"
 				      "[[:space:]]+MIT-MAGIC-COOKIE-1"
-				      "[[:space:]]+([[:xdigit:]]+)\n$";
+				      "[[:space:]]+([[:xdigit:]]+)$";
 
 	xauth_argv = xmalloc(sizeof(char *) * 10);
 	xauth_argv[0] = xstrdup("xauth");
@@ -195,7 +195,7 @@ extern char *x11_get_xauth(void)
 
 	}
 
-	regcomp(&reg, cookie_pattern, REG_EXTENDED);
+	regcomp(&reg, cookie_pattern, REG_EXTENDED|REG_NEWLINE);
 	if (regexec(&reg, result, 2, regmatch, 0) == REG_NOMATCH) {
 		error("%s: Could not retrieve magic cookie. "
 		      "Cannot use X11 forwarding.", __func__);
