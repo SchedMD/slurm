@@ -182,6 +182,7 @@ EXTRA_DIST = \
 	inc3.11.8			\
 	inc3.11.9			\
 	inc3.11.10			\
+	inc3.11.11			\
 	test3.12			\
 	test3.13			\
 	test3.14			\

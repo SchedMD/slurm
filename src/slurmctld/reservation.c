@@ -2216,6 +2216,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			    (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES)) {
 				node_bitmap = bit_copy(part_ptr->node_bitmap);
 			} else {
+				resv_desc_ptr->flags &=
+					(~RESERVE_FLAG_PART_NODES);
 				resv_desc_ptr->flags |= RESERVE_FLAG_ALL_NODES;
 				node_bitmap = bit_alloc(node_record_count);
 				bit_nset(node_bitmap, 0,(node_record_count-1));
@@ -2224,6 +2226,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_desc_ptr->node_list =
 				bitmap2node_name(node_bitmap);
 		} else {
+			resv_desc_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
 			if (node_name2bitmap(resv_desc_ptr->node_list,
 					    false, &node_bitmap)) {
 				rc = ESLURM_INVALID_NODE_NAME;
@@ -2287,6 +2290,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 				goto bad_parse;
 		}
 	} else if (!(resv_desc_ptr->flags & RESERVE_FLAG_ANY_NODES)) {
+		resv_desc_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
+
 		if ((!resv_desc_ptr->node_cnt || !resv_desc_ptr->node_cnt[0]) &&
 		    !resv_desc_ptr->core_cnt) {
 			info("Reservation request lacks node specification");
