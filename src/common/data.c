@@ -264,7 +264,7 @@ static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn)
 	data_list_node_t *prev;
 
 	/* walk list to find new previous */
-	for (prev = dl->begin; prev && prev != dn; ) {
+	for (prev = dl->begin; prev && prev->next != dn; ) {
 		_check_data_list_node_magic(prev);
 		prev = prev->next;
 	}
