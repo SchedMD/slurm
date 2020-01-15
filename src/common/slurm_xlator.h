@@ -288,7 +288,14 @@
 #define destroy_config_key_pair	slurm_destroy_config_key_pair
 #define get_extra_conf_path	slurm_get_extra_conf_path
 #define sort_key_pairs		slurm_sort_key_pairs
+
+/* run_in_daemon.[ch] functions */
 #define run_in_daemon           slurm_run_in_daemon
+#define running_in_slurmctld    slurm_running_in_slurmctld
+#define running_in_slurmd       slurm_running_in_slurmd
+#define running_in_slurmdbd     slurm_running_in_slurmdbd
+#define running_in_slurmdstepd  slurm_running_in_slurmdstepd
+#define running_in_slurmstepd   slurm_running_in_slurmstepd
 
 /* slurm_auth.[ch] functions
  * None exported today.
