@@ -876,14 +876,14 @@ extern int slurm_het_job_lookup(uint32_t jobid, List *info)
 /*
  * slurm_sbcast_lookup - retrieve info for an existing resource allocation
  *	including a credential needed for sbcast
- * IN job_id - job allocation identifier (or pack job ID)
- * IN pack_job_offset - pack job  index (or NO_VAL if not pack job)
+ * IN job_id - job allocation identifier (or hetjob ID)
+ * IN het_job_offset - hetjob index (or NO_VAL if not hetjob)
  * IN step_id - step allocation identifier (or NO_VAL for entire job)
  * OUT info - job allocation information including a credential for sbcast
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the "resp" using slurm_free_sbcast_cred_msg
  */
-extern int slurm_sbcast_lookup(uint32_t job_id, uint32_t pack_job_offset,
+extern int slurm_sbcast_lookup(uint32_t job_id, uint32_t het_job_offset,
 			       uint32_t step_id, job_sbcast_cred_msg_t **info)
 {
 	step_alloc_info_msg_t req;
@@ -892,7 +892,7 @@ extern int slurm_sbcast_lookup(uint32_t job_id, uint32_t pack_job_offset,
 
 	memset(&req, 0, sizeof(req));
 	req.job_id = job_id;
-	req.het_job_offset = pack_job_offset;
+	req.het_job_offset = het_job_offset;
 	req.step_id = step_id;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
