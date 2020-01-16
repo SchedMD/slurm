@@ -3698,6 +3698,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		debug("Ignoring obsolete JobCheckpointDir option.");
 	}
 
+	if (s_p_get_string(&temp_str, "MemLimitEnforce", hashtbl)) {
+		fatal("Invalid parameter MemLimitEnforce. The option is no longer supported, please use OverMemoryKill instead.");
+	}
+
 	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl)) {
 		if (default_storage_type) {
 			if (!xstrcasecmp("slurmdbd", default_storage_type)) {
