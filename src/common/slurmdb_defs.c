@@ -3289,7 +3289,7 @@ static local_cluster_rec_t * _pack_job_will_run(List job_req_list)
  * working_cluster_rec to pack the job_desc's jobinfo. See previous commit for
  * an example of how to thread this.
  */
-extern int slurmdb_get_first_pack_cluster(List job_req_list,
+extern int slurmdb_get_first_het_job_cluster(List job_req_list,
 	char *cluster_names, slurmdb_cluster_rec_t **cluster_rec)
 {
 	job_desc_msg_t *req;

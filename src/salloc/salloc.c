@@ -345,7 +345,7 @@ int main(int argc, char **argv)
 	 * and run it there */
 	if (opt.clusters) {
 		if (job_req_list) {
-			rc = slurmdb_get_first_pack_cluster(job_req_list,
+			rc = slurmdb_get_first_het_job_cluster(job_req_list,
 					opt.clusters, &working_cluster_rec);
 		} else {
 			rc = slurmdb_get_first_avail_cluster(desc,

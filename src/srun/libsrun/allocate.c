@@ -523,8 +523,9 @@ List allocate_het_job_nodes(bool handle_signals)
 	}
 
 	if (first_opt && first_opt->clusters &&
-	    (slurmdb_get_first_pack_cluster(job_req_list, first_opt->clusters,
-					    &working_cluster_rec)
+	    (slurmdb_get_first_het_job_cluster(job_req_list,
+					       first_opt->clusters,
+					       &working_cluster_rec)
 	     != SLURM_SUCCESS)) {
 		print_db_notok(first_opt->clusters, 0);
 		return NULL;

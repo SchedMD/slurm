@@ -1775,7 +1775,7 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
  * working_cluster_rec to pack the job_desc's jobinfo. See previous commit for
  * an example of how to thread this.
  */
-extern int slurmdb_get_first_pack_cluster(List job_req_list,
+extern int slurmdb_get_first_het_job_cluster(List job_req_list,
 	char *cluster_names, slurmdb_cluster_rec_t **cluster_rec);
 
 /************** helper functions **************/
