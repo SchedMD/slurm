@@ -1076,8 +1076,8 @@ _estimate_nports(int nclients, int cli_per_port)
 
 client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 				      int num_nodes, slurm_cred_t *cred,
-				      bool label, uint32_t pack_offset,
-				      uint32_t task_offset)
+				      bool label, uint32_t het_job_offset,
+				      uint32_t het_job_task_offset)
 {
 	client_io_t *cio;
 	int i;
@@ -1092,8 +1092,8 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 
 	cio->num_tasks   = num_tasks;
 	cio->num_nodes   = num_nodes;
-	cio->het_job_offset = pack_offset;
-	cio->het_job_offset = task_offset;
+	cio->het_job_offset = het_job_offset;
+	cio->het_job_task_offset = het_job_task_offset;
 
 	cio->label = label;
 	if (cio->label)
