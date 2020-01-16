@@ -4272,7 +4272,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		}
 		if (!job_desc_msg->burst_buffer) {
 			xfree(job_desc_msg->script);
-			if (!(job_desc_msg->script = bb_g_build_pack_script(
+			if (!(job_desc_msg->script = bb_g_build_het_job_script(
 				      script, het_job_offset))) {
 				error_code =
 					ESLURM_INVALID_BURST_BUFFER_REQUEST;
