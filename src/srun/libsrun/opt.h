@@ -53,7 +53,7 @@
 #include "src/common/slurm_opt.h"
 
 #define DEFAULT_IMMEDIATE	1
-#define MAX_PACK_COUNT		128
+#define MAX_HET_JOB_COMPONENTS	128
 
 /* global variables relating to user options */
 

@@ -367,7 +367,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 
 		if (opt_found || (i > 0)) {
 			xstrfmtcat(sropt.pack_group, "%d", i);
-			sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
+			sropt.pack_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
 			bit_set(sropt.pack_grp_bits, i);
 		}
 
@@ -608,7 +608,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 {
 	int i, opt_char, option_index = 0;
 	char *tmp = NULL;
-	bitstr_t *pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
+	bitstr_t *pack_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
 	hostlist_t hl;
 	char *opt_string = NULL;
 	struct option *optz = slurm_option_table_create(&opt, &opt_string);
@@ -643,7 +643,8 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	while ((tmp = hostlist_shift(hl))) {
 		char *end_ptr = NULL;
 		i = strtol(tmp, &end_ptr, 10);
-		if ((i < 0) || (i >= MAX_PACK_COUNT) || (end_ptr[0] != '\0')) {
+		if ((i < 0) || (i >= MAX_HET_JOB_COMPONENTS) ||
+		    (end_ptr[0] != '\0')) {
 			error("Invalid --pack-group value: %s",
 			       sropt.pack_group);
 			exit(error_exit);
@@ -685,7 +686,7 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	char **rest = NULL;
 	char *fullpath, *launch_params;
 
-	sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
+	sropt.pack_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
 	bit_set(sropt.pack_grp_bits, het_job_offset);
 
 	validate_memory_options(&opt);
