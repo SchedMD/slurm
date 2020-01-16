@@ -678,9 +678,9 @@ static int _addto_step_list_internal(List step_list, char *names,
 		if (isdigit(*plus))
 			selected_step->het_job_offset = atoi(plus);
 		else
-			fatal("Bad pack job offset specified: %s", name);
+			fatal("Bad hetjob offset specified: %s", name);
 	} else {
-		debug2("No jobarray or pack job requested");
+		debug2("No jobarray or hetjob requested");
 		selected_step->array_task_id = NO_VAL;
 		selected_step->het_job_offset = NO_VAL;
 	}
