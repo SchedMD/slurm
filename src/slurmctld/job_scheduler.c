@@ -2348,7 +2348,7 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 			cpus_per_task = het_job->details->cpus_per_task;
 		}
 		if (het_job->account) {
-			(void) env_array_overwrite_pack_fmt(
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_JOB_ACCOUNT",
 				het_job_offset, "%s", het_job->account);
@@ -2359,30 +2359,30 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 				het_job->job_resrcs->cpu_array_cnt,
 				het_job->job_resrcs->cpu_array_value,
 				het_job->job_resrcs->cpu_array_reps);
-			(void) env_array_overwrite_pack_fmt(
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_JOB_CPUS_PER_NODE",
 				het_job_offset, "%s", tmp_str);
 			xfree(tmp_str);
 		}
-		(void) env_array_overwrite_pack_fmt(
+		(void) env_array_overwrite_het_fmt(
 			&launch_msg_ptr->environment,
 			"SLURM_JOB_ID",
 			het_job_offset, "%u", het_job->job_id);
-		(void) env_array_overwrite_pack_fmt(
+		(void) env_array_overwrite_het_fmt(
 			&launch_msg_ptr->environment,
 			"SLURM_JOB_NAME",
 			het_job_offset, "%s", het_job->name);
-		(void) env_array_overwrite_pack_fmt(
+		(void) env_array_overwrite_het_fmt(
 			&launch_msg_ptr->environment,
 			"SLURM_JOB_NODELIST",
 			het_job_offset, "%s", het_job->nodes);
-		(void) env_array_overwrite_pack_fmt(
+		(void) env_array_overwrite_het_fmt(
 			&launch_msg_ptr->environment,
 			"SLURM_JOB_NUM_NODES",
 			het_job_offset, "%u", het_job->node_cnt);
 		if (het_job->partition) {
-			(void) env_array_overwrite_pack_fmt(
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_JOB_PARTITION",
 				het_job_offset, "%s", het_job->partition);
@@ -2396,13 +2396,13 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 				qos_name = "normal";
 			else
 				qos_name = qos->description;
-			(void) env_array_overwrite_pack_fmt(
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_JOB_QOS",
 				het_job_offset, "%s", qos_name);
 		}
 		if (het_job->resv_name) {
-			(void) env_array_overwrite_pack_fmt(
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_JOB_RESERVATION",
 				het_job_offset, "%s", het_job->resv_name);
@@ -2411,18 +2411,18 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 			tmp_mem = het_job->details->pn_min_memory;
 		if (tmp_mem & MEM_PER_CPU) {
 			tmp_mem &= (~MEM_PER_CPU);
-			(void) env_array_overwrite_pack_fmt(
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_MEM_PER_CPU",
 				het_job_offset, "%"PRIu64"", tmp_mem);
 		} else if (tmp_mem) {
-			(void) env_array_overwrite_pack_fmt(
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_MEM_PER_NODE",
 				het_job_offset, "%"PRIu64"", tmp_mem);
 		}
 		if (het_job->alias_list) {
-			(void) env_array_overwrite_pack_fmt(
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_NODE_ALIASES", het_job_offset,
 				"%s", het_job->alias_list);
@@ -2474,7 +2474,7 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 					step_layout->node_cnt,
 					step_layout->tasks);
 				slurm_step_layout_destroy(step_layout);
-				(void) env_array_overwrite_pack_fmt(
+				(void) env_array_overwrite_het_fmt(
 					&launch_msg_ptr->environment,
 					"SLURM_TASKS_PER_NODE",
 					het_job_offset,"%s", tmp_str);

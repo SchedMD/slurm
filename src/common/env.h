@@ -285,8 +285,9 @@ int env_array_overwrite_fmt(char ***array_ptr, const char *name,
  *
  * Return 1 on success, and 0 on error.
  */
-int env_array_overwrite_pack_fmt(char ***array_ptr, const char *name,
-				 int pack_offset, const char *value_fmt, ...)
+int env_array_overwrite_het_fmt(char ***array_ptr, const char *name,
+				int het_job_offset,
+				const char *value_fmt, ...)
   __attribute__ ((format (printf, 4, 5)));
 
 /*

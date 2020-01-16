@@ -1275,73 +1275,73 @@ extern void set_envs(char ***array_ptr, sbatch_env_t *local_env,
 		     int het_job_offset)
 {
 	if ((local_env->cpus_per_task != NO_VAL) &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_CPUS_PER_TASK",
-					  het_job_offset, "%u",
-					  local_env->cpus_per_task)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_CPUS_PER_TASK",
+					 het_job_offset, "%u",
+					 local_env->cpus_per_task)) {
 		error("Can't set SLURM_CPUS_PER_TASK env variable");
 	}
 	if (local_env->dist &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_DISTRIBUTION",
-					  het_job_offset, "%s",
-					  local_env->dist)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_DISTRIBUTION",
+					 het_job_offset, "%s",
+					 local_env->dist)) {
 		error("Can't set SLURM_DISTRIBUTION env variable");
 	}
 	if (local_env->mem_bind &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_MEM_BIND",
-					  het_job_offset, "%s",
-					  local_env->mem_bind)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_MEM_BIND",
+					 het_job_offset, "%s",
+					 local_env->mem_bind)) {
 		error("Can't set SLURM_MEM_BIND env variable");
 	}
 	if (local_env->mem_bind_sort &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_MEM_BIND_SORT",
-					  het_job_offset, "%s",
-					  local_env->mem_bind_sort)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_MEM_BIND_SORT",
+					 het_job_offset, "%s",
+					 local_env->mem_bind_sort)) {
 		error("Can't set SLURM_MEM_BIND_SORT env variable");
 	}
 	if (local_env->mem_bind_verbose &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_MEM_BIND_VERBOSE",
-					  het_job_offset, "%s",
-					  local_env->mem_bind_verbose)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_MEM_BIND_VERBOSE",
+					 het_job_offset, "%s",
+					 local_env->mem_bind_verbose)) {
 		error("Can't set SLURM_MEM_BIND_VERBOSE env variable");
 	}
 	if (local_env->dist_lllp &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_DIST_LLLP",
-					  het_job_offset, "%s",
-					  local_env->dist_lllp)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_DIST_LLLP",
+					 het_job_offset, "%s",
+					 local_env->dist_lllp)) {
 		error("Can't set SLURM_DIST_LLLP env variable");
 	}
 	if (local_env->ntasks != NO_VAL) {
-		if (!env_array_overwrite_pack_fmt(array_ptr, "SLURM_NPROCS",
-						  het_job_offset, "%u",
-						  local_env->ntasks))
+		if (!env_array_overwrite_het_fmt(array_ptr, "SLURM_NPROCS",
+						 het_job_offset, "%u",
+						 local_env->ntasks))
 			error("Can't set SLURM_NPROCS env variable");
-		if (!env_array_overwrite_pack_fmt(array_ptr, "SLURM_NTASKS",
-						  het_job_offset, "%u",
-						  local_env->ntasks))
+		if (!env_array_overwrite_het_fmt(array_ptr, "SLURM_NTASKS",
+						 het_job_offset, "%u",
+						 local_env->ntasks))
 			error("Can't set SLURM_NTASKS env variable");
 	}
 	if ((local_env->ntasks_per_core != NO_VAL) &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_NTASKS_PER_CORE",
-					  het_job_offset, "%u",
-					  local_env->ntasks_per_core)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_NTASKS_PER_CORE",
+					 het_job_offset, "%u",
+					 local_env->ntasks_per_core)) {
 		error("Can't set SLURM_NTASKS_PER_CORE env variable");
 	}
 	if ((local_env->ntasks_per_node != NO_VAL) &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_NTASKS_PER_NODE",
-					  het_job_offset, "%u",
-					  local_env->ntasks_per_node)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_NTASKS_PER_NODE",
+					 het_job_offset, "%u",
+					 local_env->ntasks_per_node)) {
 		error("Can't set SLURM_NTASKS_PER_NODE env variable");
 	}
 	if ((local_env->ntasks_per_socket != NO_VAL) &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_NTASKS_PER_SOCKET",
-					  het_job_offset, "%u",
-					  local_env->ntasks_per_socket)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_NTASKS_PER_SOCKET",
+					 het_job_offset, "%u",
+					 local_env->ntasks_per_socket)) {
 		error("Can't set SLURM_NTASKS_PER_SOCKET env variable");
 	}
 	if ((local_env->plane_size != NO_VAL) &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_DIST_PLANESIZE",
-					  het_job_offset, "%u",
-					  local_env->plane_size)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_DIST_PLANESIZE",
+					 het_job_offset, "%u",
+					 local_env->plane_size)) {
 		error("Can't set SLURM_DIST_PLANESIZE env variable");
 	}
 }
