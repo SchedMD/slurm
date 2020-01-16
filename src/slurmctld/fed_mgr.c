@@ -4055,15 +4055,13 @@ end_features:
 
 extern void fed_mgr_remove_remote_dependencies(job_record_t *job_ptr)
 {
-	if (!fed_mgr_is_origin_job(job_ptr) ||
-	    !job_ptr->details || !job_ptr->details->dependency)
+	uint32_t origin_id;
+
+	if (!_is_fed_job(job_ptr, &origin_id) ||
+	    !fed_mgr_is_origin_job(job_ptr) || !job_ptr->details)
 		return;
 
-	/*
-	 * A failure here isn't harmful and the error is logged in the callee,
-	 * so ignore the return code.
-	 */
-	(void) fed_mgr_submit_remote_dependencies(job_ptr, false, true);
+	fed_mgr_submit_remote_dependencies(job_ptr, true, true);
 }
 
 static int _add_to_send_list(void *object, void *arg)

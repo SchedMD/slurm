@@ -3539,6 +3539,7 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 			xfree(job_ptr->state_desc);
 		}
 		_depend_list2str(job_ptr, false);
+		fed_mgr_remove_remote_dependencies(job_ptr);
 		fed_mgr_job_requeue(job_ptr);
 	} else {
 		_depend_list2str(job_ptr, false);
