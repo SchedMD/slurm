@@ -64,6 +64,7 @@ documents those changes that are of interest to users and administrators.
     that will always prepend "error: " to every message which may lead to
     confusion.)
  -- Enforce specification of partition and ALL nodes with PART_NODES flag.
+ -- Add 'promiscuous' flag to a reservation.
 
 * Changes in Slurm 19.05.6
 ==========================

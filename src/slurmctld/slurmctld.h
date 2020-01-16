@@ -973,6 +973,14 @@ typedef struct {
 	char *tres_per_task;		/* semicolon delimited list of TRES=# values */
 } step_record_t;
 
+typedef struct {
+	job_record_t *job_ptr;
+	List job_queue;
+	part_record_t *part_ptr;
+	uint32_t prio;
+	slurmctld_resv_t *resv_ptr;
+} job_queue_req_t;
+
 extern List job_list;			/* list of job_record entries */
 extern List purge_files_list;		/* list of job ids to purge files of */
 

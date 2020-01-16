@@ -3109,6 +3109,18 @@ extern char *reservation_flags_string(uint64_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_HOLD_JOBS_AFTER_END");
 	}
+	if (flags & RESERVE_FLAG_PROM) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "PROMISCUOUS");
+	}
+	if (flags & RESERVE_FLAG_NO_PROM) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_PROMISCUOUS");
+	}
+
+
 	return flag_str;
 }
 
