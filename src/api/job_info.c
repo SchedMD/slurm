@@ -706,7 +706,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if (job_resrcs && job_resrcs->core_bitmap &&
 	    ((last = bit_fls(job_resrcs->core_bitmap)) != -1)) {
 
-		xstrfmtcat(out, "GRES=%s", job_ptr->gres_total);
+		xstrfmtcat(out, "JOB_GRES=%s", job_ptr->gres_total);
 		xstrcat(out, line_end);
 
 		hl = hostlist_create(job_resrcs->nodes);
@@ -784,6 +784,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 					hostlist_destroy(hl_last);
 					hl_last = hostlist_create(NULL);
 				}
+
 				strcpy(tmp2, tmp1);
 				if (rel_node_inx < job_ptr->gres_detail_cnt) {
 					gres_last = job_ptr->
