@@ -658,10 +658,6 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	xstrcat(out, line_end);
 
-	/****** Line 15a ******/
-	xstrfmtcat(out, "GRES=%s", job_ptr->gres_total);
-	xstrcat(out, line_end);
-
 	/****** Line 16 ******/
 	/* Tres should already of been converted at this point from simple */
 	xstrfmtcat(out, "TRES=%s",
@@ -709,6 +705,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	if (job_resrcs && job_resrcs->core_bitmap &&
 		   ((last = bit_fls(job_resrcs->core_bitmap)) != -1)) {
+
+		xstrfmtcat(out, "GRES=%s", job_ptr->gres_total);
+		xstrcat(out, line_end);
+
 		hl = hostlist_create(job_resrcs->nodes);
 		if (!hl) {
 			error("slurm_sprint_job_info: hostlist_create: %s",
