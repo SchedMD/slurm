@@ -397,10 +397,13 @@ extern struct option *slurm_option_table_create(slurm_opt_t *opt,
 extern void slurm_option_table_destroy(struct option *optz);
 
 /*
- * Warning: this will permute the state of a global common_options table,
- * and thus is not thread-safe. The expectation is that it is called from
- * within a single thread in salloc/sbatch/srun, and that this restriction
- * should not be problematic. If it is, please refactor.
+ * Process individual argument for the current job component
+ * IN opt - current component
+ * IN optval - argument identifier
+ * IN arg - argument value
+ * IN set_by_env - flag if set by environment (and not cli)
+ * IN early_pass - early vs. late pass for HetJob option inheritance
+ * RET SLURM_SUCCESS or error
  */
 extern int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 				bool set_by_env, bool early_pass);
