@@ -361,7 +361,8 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 	if (action != 2) {
 		gres_build_job_details(job_ptr->gres_list,
 				       &job_ptr->gres_detail_cnt,
-				       &job_ptr->gres_detail_str);
+				       &job_ptr->gres_detail_str,
+				       &job_ptr->gres_used);
 	}
 
 	/* add cores */
