@@ -1510,7 +1510,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 	/* Validate limits on hetjob as a whole */
 	if ((error_code == SLURM_SUCCESS) &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    !acct_policy_validate_pack(submit_job_list)) {
+	    !acct_policy_validate_het_job(submit_job_list)) {
 		info("Hetjob %u exceeded association/QOS limit for user %u",
 		     het_job_id, job_uid);
 		error_code = ESLURM_ACCOUNTING_POLICY;
@@ -4326,7 +4326,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	/* Validate limits on hetjob as a whole */
 	if (!reject_job &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    !acct_policy_validate_pack(submit_job_list)) {
+	    !acct_policy_validate_het_job(submit_job_list)) {
 		info("Hetjob JobId=%u exceeded association/QOS limit for user %u",
 		     het_job_id, job_uid);
 		error_code = ESLURM_ACCOUNTING_POLICY;

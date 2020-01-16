@@ -99,13 +99,13 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 bool update_call);
 
 /*
- * acct_policy_validate_pack - validate that a pack job as a whole (all
+ * acct_policy_validate_het_job - validate that a hetjob as a whole (all
  * components at once) can be satisfied without exceeding any association or
  * QOS limit.
  * submit_job_list IN - list of job_record_t entries (already created)
  * RET true if valid
  */
-extern bool acct_policy_validate_pack(List submit_job_list);
+extern bool acct_policy_validate_het_job(List submit_job_list);
 
 /*
  * acct_policy_job_runnable_pre_select - Determine of the specified

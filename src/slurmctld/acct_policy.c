@@ -62,12 +62,12 @@ typedef enum {
 	TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE
 } acct_policy_tres_usage_t;
 
-typedef struct pack_limits {
+typedef struct het_job_limits {
 	slurmdb_assoc_rec_t *assoc_ptr;
 	job_record_t *job_ptr;
 	slurmdb_qos_rec_t *qos_ptr_1;
 	slurmdb_qos_rec_t *qos_ptr_2;
-} pack_limits_t;
+} het_job_limits_t;
 
 /*
  * Update a job's allocated node count to reflect only nodes that are not
@@ -145,7 +145,7 @@ static void _add_usage_node_bitmap(job_record_t *job_ptr,
 		if (IS_JOB_PENDING(job_ptr) && job_ptr->het_job_id) {
 			/*
 			 * Hetjobs reach here as part of testing before any
-			 * resource allocation. See _pack_job_limit_check()
+			 * resource allocation. See _het_job_limit_check()
 			 * in src/plugins/sched/backfill/backfill.c
 			 */
 		} else if (job_ptr->node_cnt == 0) {
@@ -197,7 +197,7 @@ static void _rm_usage_node_bitmap(job_record_t *job_ptr,
 		if (IS_JOB_PENDING(job_ptr) && job_ptr->het_job_id) {
 			/*
 			 * Hetjobs reach here as part of testing before any
-			 * resource allocation. See _pack_job_limit_check()
+			 * resource allocation. See _het_job_limit_check()
 			 * in src/plugins/sched/backfill/backfill.c
 			 */
 		} else if (job_ptr->node_cnt == 0) {
@@ -3258,7 +3258,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 }
 
 /*
- * acct_policy_validate_pack - validate that a pack job as a whole (all
+ * acct_policy_validate_het_job - validate that a hetjob as a whole (all
  * components at once) can be satisfied without exceeding any association
  * limit. Build a list of every job's association and QOS information then combine
  * usage information for every job sharing an association and test that against
@@ -3268,10 +3268,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
  * to test (association, job QOS and partition QOS). Ideally each would be tested
  * independently, but that is complicated due to QOS limits overriding the
  * association limits and the ability to have 3 sets of limits for each job.
- * This only tests the association limit for each pack job component based
+ * This only tests the association limit for each hetjob component based
  * upon that component's job and partition QOS.
  *
- * NOTE: That a pack job passes this test does not mean that it will be able
+ * NOTE: That a hetjob passes this test does not mean that it will be able
  * to run. For example, this test assumues resource allocation at the CPU level.
  * If each task is allocated one core, with 2 CPUs, then the CPU limit test
  * would not be accurate.
@@ -3279,15 +3279,15 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
  * submit_job_list IN - list of job_record_t entries (already created)
  * RET true if valid
  */
-extern bool acct_policy_validate_pack(List submit_job_list)
+extern bool acct_policy_validate_het_job(List submit_job_list)
 {
 	assoc_mgr_lock_t locks =
 		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
-	List pack_limit_list;
+	List het_job_limit_list;
 	ListIterator iter1, iter2;
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	job_record_t *job_ptr1, *job_ptr2;
-	pack_limits_t *job_limit1, *job_limit2;
+	het_job_limits_t *job_limit1, *job_limit2;
 	bool rc = true;
 	job_desc_msg_t job_desc;
 	bool build_job_desc = true;
@@ -3301,24 +3301,24 @@ extern bool acct_policy_validate_pack(List submit_job_list)
 		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
 
 	/* Build list of QOS, association, and job pointers */
-	pack_limit_list = list_create(list_xfree_item);
+	het_job_limit_list = list_create(list_xfree_item);
 	iter1 = list_iterator_create(submit_job_list);
 	assoc_mgr_lock(&locks);
 	while ((job_ptr1 = list_next(iter1))) {
 		qos_ptr_1 = NULL;
 		qos_ptr_2 = NULL;
 		acct_policy_set_qos_order(job_ptr1, &qos_ptr_1, &qos_ptr_2);
-		job_limit1 = xmalloc(sizeof(pack_limits_t));
+		job_limit1 = xmalloc(sizeof(het_job_limits_t));
 		job_limit1->assoc_ptr = job_ptr1->assoc_ptr;
 		job_limit1->job_ptr   = job_ptr1;
 		job_limit1->qos_ptr_1 = qos_ptr_1;
 		job_limit1->qos_ptr_2 = qos_ptr_2;
-		list_append(pack_limit_list, job_limit1);
+		list_append(het_job_limit_list, job_limit1);
 	}
 	assoc_mgr_unlock(&locks);
 	list_iterator_destroy(iter1);
 
-	iter1 = list_iterator_create(pack_limit_list);
+	iter1 = list_iterator_create(het_job_limit_list);
 	while ((job_limit1 = list_next(iter1))) {
 		job_ptr1 = job_limit1->job_ptr;
 		if (build_job_desc) {
@@ -3331,7 +3331,7 @@ extern bool acct_policy_validate_pack(List submit_job_list)
 			job_cnt = 1;
 			memcpy(job_desc.tres_req_cnt, job_ptr1->tres_req_cnt,
 			       tres_req_size);
-			iter2 = list_iterator_create(pack_limit_list);
+			iter2 = list_iterator_create(het_job_limit_list);
 			while ((job_limit2 = list_next(iter2))) {
 				if ((job_limit2 == job_limit1) ||
 				    (job_limit2->assoc_ptr !=
@@ -3370,7 +3370,7 @@ extern bool acct_policy_validate_pack(List submit_job_list)
 	list_iterator_destroy(iter1);
 
 	xfree(job_desc.tres_req_cnt);
-	list_destroy(pack_limit_list);
+	list_destroy(het_job_limit_list);
 	xfree(acct_policy_limit_set.tres);
 
 	return rc;
