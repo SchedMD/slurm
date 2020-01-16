@@ -205,7 +205,8 @@ static double _get_system_usage(void)
  * RET the job queue
  * NOTE: the caller must call FREE_NULL_LIST() on RET value to free memory
  */
-static List _build_user_job_list(uint32_t user_id, char* job_name)
+static List _build_user_job_list(uint32_t user_id, char* job_name,
+				 uint32_t job_id)
 {
 	List job_queue;
 	ListIterator job_iterator;
@@ -215,6 +216,9 @@ static List _build_user_job_list(uint32_t user_id, char* job_name)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
+		if (job_ptr->job_id == job_id)
+			/* Don't need to test ourselves. */
+			continue;
 		if (job_ptr->user_id != user_id)
 			continue;
 		if (job_name && job_ptr->name &&
@@ -2944,7 +2948,8 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 		    job_ptr->name) {
 			/* get user jobs with the same user and name */
 			job_queue = _build_user_job_list(job_ptr->user_id,
-							 job_ptr->name);
+							 job_ptr->name,
+							 job_ptr->job_id);
 			run_now = true;
 			job_iterator = list_iterator_create(job_queue);
 			while ((qjob_ptr = list_next(job_iterator))) {
