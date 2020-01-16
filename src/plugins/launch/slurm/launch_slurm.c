@@ -645,9 +645,9 @@ static void _task_state_del(void *x)
 }
 
 /*
- * Return only after all pack job components reach this point (or timeout)
+ * Return only after all hetjob components reach this point (or timeout)
  */
-static void _wait_all_pack_started(slurm_opt_t *opt_local)
+static void _wait_all_het_job_comps_started(slurm_opt_t *opt_local)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	static int start_cnt = 0;
@@ -859,7 +859,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 						  job->ntasks);
 		}
 
-		_wait_all_pack_started(opt_local);
+		_wait_all_het_job_comps_started(opt_local);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 		if (srun_opt->debugger_test)
 			mpir_dump_proctable();
