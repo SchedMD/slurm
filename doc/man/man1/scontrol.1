@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "August 2019" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "February 2020" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -1516,7 +1516,10 @@ have already begun execution.
 Set the minimum number of nodes which will be allocated to any single job
 in the partition.
 Changing the \fIMinNodes\fP of a partition has no effect upon jobs that
-have already begun execution.
+have already begun execution. Increasing this value may prevent pending jobs
+from starting, even if they were submitted without -N/--nodes specification.
+If you do get in that situation, updating the \fIMinNodes\fP value of a
+pending job using the scontrol command will allow that job to be scheduled.
 
 .TP
 \fINodes\fP=<name>
