@@ -704,7 +704,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrcat(out, line_end);
 
 	if (job_resrcs && job_resrcs->core_bitmap &&
-		   ((last = bit_fls(job_resrcs->core_bitmap)) != -1)) {
+	    ((last = bit_fls(job_resrcs->core_bitmap)) != -1)) {
 
 		xstrfmtcat(out, "GRES=%s", job_ptr->gres_total);
 		xstrcat(out, line_end);
