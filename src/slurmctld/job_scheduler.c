@@ -2692,15 +2692,15 @@ extern void print_job_dependency(job_record_t *job_ptr)
 		 */
 		if (dep_ptr->depend_state == DEPEND_FULFILLED)
 			continue;
-		if      (dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) {
-			info("  singleton");
-			continue;
-		}
-
 		if (dep_ptr->depend_flags & SLURM_FLAGS_OR)
 			dep_flags = "OR";
 		else
 			dep_flags = "";
+		if      (dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) {
+			info("  singleton %s", dep_flags);
+			continue;
+		}
+
 		dep_str = _depend_type2str(dep_ptr);
 
 		if (dep_ptr->depend_time)
@@ -2760,25 +2760,24 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 		if      (dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) {
 			xstrfmtcat(job_ptr->details->dependency,
 				   "%ssingleton", sep);
-			sep = ",";
-			continue;
+		} else {
+			dep_str = _depend_type2str(dep_ptr);
+
+			if (dep_ptr->array_task_id == INFINITE)
+				xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_*",
+					   sep, dep_str, dep_ptr->job_id);
+			else if (dep_ptr->array_task_id == NO_VAL)
+				xstrfmtcat(job_ptr->details->dependency, "%s%s:%u",
+					   sep, dep_str, dep_ptr->job_id);
+			else
+				xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_%u",
+					   sep, dep_str, dep_ptr->job_id,
+					   dep_ptr->array_task_id);
+
+			if (dep_ptr->depend_time)
+				xstrfmtcat(job_ptr->details->dependency,
+					   "+%u", dep_ptr->depend_time / 60);
 		}
-		dep_str = _depend_type2str(dep_ptr);
-
-		if (dep_ptr->array_task_id == INFINITE)
-			xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_*",
-				   sep, dep_str, dep_ptr->job_id);
-		else if (dep_ptr->array_task_id == NO_VAL)
-			xstrfmtcat(job_ptr->details->dependency, "%s%s:%u",
-				   sep, dep_str, dep_ptr->job_id);
-		else
-			xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_%u",
-				   sep, dep_str, dep_ptr->job_id,
-				   dep_ptr->array_task_id);
-
-		if (dep_ptr->depend_time)
-			xstrfmtcat(job_ptr->details->dependency,
-				   "+%u", dep_ptr->depend_time / 60);
 		if (set_or_flag)
 			dep_ptr->depend_flags |= SLURM_FLAGS_OR;
 		if (dep_ptr->depend_flags & SLURM_FLAGS_OR)
@@ -3630,6 +3629,10 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 			}
 			if (tok[9] == ',') {
 				tok += 10;
+				continue;
+			} else if (tok[9] == '?') {
+				tok += 10;
+				or_flag = true;
 				continue;
 			}
 			if (tok[9] != '\0')
