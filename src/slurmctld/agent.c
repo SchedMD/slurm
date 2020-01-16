@@ -682,11 +682,11 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 		job_id  = msg->job_id;
 		step_id = NO_VAL;
 	} else if (agent_ptr->msg_type == RESPONSE_HET_JOB_ALLOCATION) {
-		List pack_alloc_list = *agent_ptr->msg_args_pptr;
+		List het_alloc_list = *agent_ptr->msg_args_pptr;
 		resource_allocation_response_msg_t *msg;
-		if (!pack_alloc_list || (list_count(pack_alloc_list) == 0))
+		if (!het_alloc_list || (list_count(het_alloc_list) == 0))
 			return;
-		msg = list_peek(pack_alloc_list);
+		msg = list_peek(het_alloc_list);
 		job_id  = msg->job_id;
 		step_id = NO_VAL;
 	} else if ((agent_ptr->msg_type == SRUN_JOB_COMPLETE)		||
@@ -1072,12 +1072,12 @@ static void *_thread_per_group_rpc(void *args)
 			/* Communication issue to srun that launched the job
 			 * Cancel rather than leave a stray-but-empty job
 			 * behind on the allocated nodes. */
-			List pack_alloc_list = task_ptr->msg_args_ptr;
+			List het_alloc_list = task_ptr->msg_args_ptr;
 			resource_allocation_response_msg_t *msg_ptr;
-			if (!pack_alloc_list ||
-			    (list_count(pack_alloc_list) == 0))
+			if (!het_alloc_list ||
+			    (list_count(het_alloc_list) == 0))
 				continue;
-			msg_ptr = list_peek(pack_alloc_list);
+			msg_ptr = list_peek(het_alloc_list);
 			job_id = msg_ptr->job_id;
 			info("Killing interactive JobId=%u: %s",
 			     job_id, slurm_strerror(rc));
