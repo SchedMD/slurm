@@ -276,10 +276,10 @@ scontrol_get_job_state(uint32_t job_id)
 	return NO_VAL16;
 }
 
-static bool _pack_id_match(job_info_t *job_ptr, uint32_t pack_job_offset)
+static bool _het_job_offset_match(job_info_t *job_ptr, uint32_t het_job_offset)
 {
-	if ((pack_job_offset == NO_VAL) ||
-	    (pack_job_offset == job_ptr->het_job_offset))
+	if ((het_job_offset == NO_VAL) ||
+	    (het_job_offset == job_ptr->het_job_offset))
 		return true;
 	return false;
 }
@@ -312,7 +312,7 @@ extern void scontrol_print_job(char * job_id_str)
 {
 	int error_code = SLURM_SUCCESS, i, print_cnt = 0;
 	uint32_t job_id = 0;
-	uint32_t array_id = NO_VAL, pack_job_offset = NO_VAL;
+	uint32_t array_id = NO_VAL, het_job_offset = NO_VAL;
 	job_info_msg_t * job_buffer_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	char *end_ptr = NULL;
@@ -337,7 +337,7 @@ extern void scontrol_print_job(char * job_id_str)
 		if (end_ptr[0] == '_')
 			array_id = strtol(end_ptr + 1, &end_ptr, 10);
 		if (end_ptr[0] == '+')
-			pack_job_offset = strtol(end_ptr + 1, &end_ptr, 10);
+			het_job_offset = strtol(end_ptr + 1, &end_ptr, 10);
 	}
 
 	error_code = scontrol_load_job(&job_buffer_ptr, job_id);
@@ -359,7 +359,7 @@ extern void scontrol_print_job(char * job_id_str)
 	     i < job_buffer_ptr->record_count; i++, job_ptr++) {
 		char *save_array_str = NULL;
 		uint32_t save_task_id = 0;
-		if (!_pack_id_match(job_ptr, pack_job_offset))
+		if (!_het_job_offset_match(job_ptr, het_job_offset))
 			continue;
 		if (!_task_id_in_job(job_ptr, array_id))
 			continue;
@@ -384,9 +384,9 @@ extern void scontrol_print_job(char * job_id_str)
 				if (array_id != NO_VAL) {
 					printf("Job %u_%u not found\n",
 					       job_id, array_id);
-				} else if (pack_job_offset != NO_VAL) {
+				} else if (het_job_offset != NO_VAL) {
 					printf("Job %u+%u not found\n",
-					       job_id, pack_job_offset);
+					       job_id, het_job_offset);
 				} else {
 					printf("Job %u not found\n", job_id);
 				}
