@@ -3468,6 +3468,13 @@ slurm.conf, Slurm will tell the client command, after waiting for all nodes to
 boot, each node's ip address. However, in environments where the nodes are in
 DNS, this step can be avoided by configuring this option.
 .TP
+\fBdisable_multicluster_singleton\fR
+By default, when a federated job has a singleton dependeny, each cluster in the
+federation must clear the singleton dependency before the job's singleton
+dependency is considered satisfied. Enabling this option means that only the
+origin cluster must clear the singleton dependency. This option must be set
+in every slurm.conf in the cluster.
+.TP
 \fBenable_configless\fR
 Permit "configless" operation by the slurmd, slurmstepd, and user commands.
 When enabled the slurmd will be permitted to retrieve config files from the

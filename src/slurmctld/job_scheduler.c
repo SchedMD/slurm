@@ -3614,13 +3614,20 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 	while (rc == SLURM_SUCCESS) {
 		/* test singleton dependency flag */
 		if (xstrncasecmp(tok, "singleton", 9) == 0) {
-			depend_type = SLURM_DEPEND_SINGLETON;
-			dep_ptr = xmalloc(sizeof(depend_spec_t));
-			dep_ptr->depend_type = depend_type;
-			/* dep_ptr->job_id = 0;		set by xmalloc */
-			/* dep_ptr->job_ptr = NULL;	set by xmalloc */
-			/* dep_ptr->singleton_bits = 0; set by xmalloc */
-			_add_dependency_to_list(new_depend_list, dep_ptr);
+			if (xstrcasestr(slurmctld_conf.slurmctld_params,
+					"disable_multicluster_singleton") &&
+			    !fed_mgr_is_origin_job(job_ptr)) {
+				/* Singleton disabled for non-origin cluster */
+			} else {
+				depend_type = SLURM_DEPEND_SINGLETON;
+				dep_ptr = xmalloc(sizeof(depend_spec_t));
+				dep_ptr->depend_type = depend_type;
+				/* dep_ptr->job_id = 0;	set by xmalloc */
+				/* dep_ptr->job_ptr = NULL; set by xmalloc */
+				/* dep_ptr->singleton_bits = 0;set by xmalloc */
+				_add_dependency_to_list(new_depend_list,
+							dep_ptr);
+			}
 			if (tok[9] == ',') {
 				tok += 10;
 				continue;

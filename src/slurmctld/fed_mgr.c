@@ -2366,7 +2366,7 @@ static void _handle_dep_update_origin_msgs(void)
 	dep_update_origin_msg_t *dep_update_msg;
 	List update_job_list = NULL;
 	slurmctld_lock_t job_write_lock = {
-		.job = WRITE_LOCK, .fed = READ_LOCK };
+		.conf = READ_LOCK, .job = WRITE_LOCK, .fed = READ_LOCK };
 
 	lock_slurmctld(job_write_lock);
 	while ((dep_update_msg = list_pop(origin_dep_update_list))) {
@@ -2420,8 +2420,12 @@ static void *_test_dep_job_thread(void *arg)
 {
 	time_t last_test = 0;
 	time_t now;
+	/*
+	 * conf read lock is needed to test singleton dependencies to check
+	 * for SlurmctldParameter disable_multicluster_singleton.
+	 */
 	slurmctld_lock_t job_read_lock = {
-		.job = READ_LOCK, .fed = READ_LOCK };
+		.conf = READ_LOCK, .job = READ_LOCK, .fed = READ_LOCK };
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "fed_test_dep", NULL, NULL, NULL) < 0) {
@@ -5252,8 +5256,11 @@ extern bool fed_mgr_is_singleton_satisfied(job_record_t *job_ptr,
 
 	xassert(job_ptr);
 	xassert(dep_ptr);
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
-	if (!_is_fed_job(job_ptr, &origin_id))
+	if (!_is_fed_job(job_ptr, &origin_id) ||
+	    xstrcasestr(slurmctld_conf.slurmctld_params,
+			"disable_multicluster_singleton"))
 		return true;
 	if (dep_ptr->depend_type != SLURM_DEPEND_SINGLETON) {
 		error("%s: Got non-singleton dependency (type %u) for %pJ. This should never happen.",
@@ -6070,6 +6077,7 @@ extern void fed_mgr_test_remote_dependencies(void)
 
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 	if (!list_count(remote_dep_job_list))
 		return;
