@@ -156,7 +156,7 @@ expect {
 
 check_alloc
 
-spawn $salloc -t1 -n1 --mem-per-node=100 --exclusive $srun -l $bin_printenv SLURMD_NODENAME
+spawn $salloc -t1 -n1 --mem=100 --exclusive $srun -l $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
