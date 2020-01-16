@@ -2655,6 +2655,7 @@ fini:	for (i = 0; i < switch_record_cnt; i++) {
 			FREE_NULL_BITMAP(picked_node_bitmap);
 			picked_node_bitmap = NULL;
 		} else {
+			FREE_NULL_BITMAP(*core_bitmap);
 			*core_bitmap =
 				_array_to_core_bitmap(picked_core_bitmap);
 		}
