@@ -658,6 +658,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	xstrcat(out, line_end);
 
+	/****** Line 15a ******/
+	xstrfmtcat(out, "GRES=%s", job_ptr->gres_total);
+	xstrcat(out, line_end);
+
 	/****** Line 16 ******/
 	/* Tres should already of been converted at this point from simple */
 	xstrfmtcat(out, "TRES=%s",
