@@ -89,10 +89,10 @@ int main(int argc, char **argv)
 	submit_response_msg_t *resp = NULL;
 	char *script_name;
 	char *script_body;
-	char **pack_argv;
-	int script_size = 0, pack_argc, pack_argc_off = 0, pack_inx;
-	int i, rc = SLURM_SUCCESS, retries = 0, pack_limit = 0;
-	bool pack_fini = false;
+	char **het_job_argv;
+	int script_size = 0, het_job_argc, het_job_argc_off = 0, het_job_inx;
+	int i, rc = SLURM_SUCCESS, retries = 0, het_job_limit = 0;
+	bool het_job_fini = false;
 	List job_env_list = NULL, job_req_list = NULL;
 	sbatch_env_t *local_env = NULL;
 	bool quiet = false;
@@ -138,23 +138,24 @@ int main(int argc, char **argv)
 	if (script_body == NULL)
 		exit(error_exit);
 
-	pack_argc = argc - sbopt.script_argc;
-	pack_argv = argv;
-	for (pack_inx = 0; !pack_fini; pack_inx++) {
-		bool more_packs = false;
-		init_envs(&pack_env);
-		process_options_second_pass(pack_argc, pack_argv,
-					    &pack_argc_off, pack_inx,
-					    &more_packs, script_name ?
+	het_job_argc = argc - sbopt.script_argc;
+	het_job_argv = argv;
+	for (het_job_inx = 0; !het_job_fini; het_job_inx++) {
+		bool more_het_comps = false;
+		init_envs(&het_job_env);
+		process_options_second_pass(het_job_argc, het_job_argv,
+					    &het_job_argc_off, het_job_inx,
+					    &more_het_comps, script_name ?
 					    xbasename (script_name) : "stdin",
 					    script_body, script_size);
-		if ((pack_argc_off >= 0) && (pack_argc_off < pack_argc) &&
-		    !xstrcmp(pack_argv[pack_argc_off], ":")) {
-			/* pack_argv[0] moves from "salloc" to ":" */
-			pack_argc -= pack_argc_off;
-			pack_argv += pack_argc_off;
-		} else if (!more_packs) {
-			pack_fini = true;
+		if ((het_job_argc_off >= 0) &&
+		    (het_job_argc_off < het_job_argc) &&
+		    !xstrcmp(het_job_argv[het_job_argc_off], ":")) {
+			/* het_job_argv[0] moves from "salloc" to ":" */
+			het_job_argc -= het_job_argc_off;
+			het_job_argv += het_job_argc_off;
+		} else if (!more_het_comps) {
+			het_job_fini = true;
 		}
 
 		/*
@@ -203,16 +204,16 @@ int main(int argc, char **argv)
 			list_append(job_req_list, desc);
 		}
 		local_env = xmalloc(sizeof(sbatch_env_t));
-		memcpy(local_env, &pack_env, sizeof(sbatch_env_t));
+		memcpy(local_env, &het_job_env, sizeof(sbatch_env_t));
 		desc = xmalloc(sizeof(job_desc_msg_t));
 		slurm_init_job_desc_msg(desc);
 		if (_fill_job_desc_from_opts(desc) == -1)
 			exit(error_exit);
 		if (!first_desc)
 			first_desc = desc;
-		if (pack_inx || !pack_fini) {
+		if (het_job_inx || !het_job_fini) {
 			set_env_from_opts(&opt, &first_desc->environment,
-					  pack_inx);
+					  het_job_inx);
 		} else
 			set_env_from_opts(&opt, &first_desc->environment, -1);
 		if (!job_req_list) {
@@ -222,7 +223,7 @@ int main(int argc, char **argv)
 			list_append(job_req_list, desc);
 		}
 	}
-	pack_limit = pack_inx;
+	het_job_limit = het_job_inx;
 	if (!desc) {	/* For CLANG false positive */
 		error("Internal parsing error");
 		exit(1);
@@ -242,7 +243,7 @@ int main(int argc, char **argv)
 		list_iterator_destroy(desc_iter);
 
 	} else {
-		set_envs(&desc->environment, &pack_env, -1);
+		set_envs(&desc->environment, &het_job_env, -1);
 		desc->env_size = envcount(desc->environment);
 	}
 	if (!desc) {	/* For CLANG false positive */
@@ -321,7 +322,7 @@ int main(int argc, char **argv)
 	print_multi_line_string(resp->job_submit_user_msg, -1, LOG_LEVEL_INFO);
 
 	/* run cli_filter post_submit */
-	for (i = 0; i < pack_limit; i++)
+	for (i = 0; i < het_job_limit; i++)
 		cli_filter_plugin_post_submit(i, resp->job_id, NO_VAL);
 
 	if (!quiet) {
