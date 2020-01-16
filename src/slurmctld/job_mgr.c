@@ -3835,6 +3835,7 @@ static void _clear_job_gres_details(job_record_t *job_ptr)
 {
 	int i;
 
+	xfree(job_ptr->gres_used);
 	for (i = 0; i < job_ptr->gres_detail_cnt; i++)
 		xfree(job_ptr->gres_detail_str[i]);
 	xfree(job_ptr->gres_detail_str);
