@@ -94,7 +94,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static List local_job_list = NULL;
 static uint32_t *local_global_rc = NULL;
 static pthread_mutex_t launch_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t pack_lock   = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t het_job_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  start_cond  = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t start_mutex = PTHREAD_MUTEX_INITIALIZER;
 static slurm_opt_t *opt_save = NULL;
@@ -699,12 +699,12 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		task_state = task_state_create(job->jobid, job->stepid,
 					       job->het_job_offset, job->ntasks,
 					       job->het_job_task_offset);
-		slurm_mutex_lock(&pack_lock);
+		slurm_mutex_lock(&het_job_lock);
 		if (!local_job_list)
 			local_job_list = list_create(NULL);
 		if (!task_state_list)
 			task_state_list = list_create(_task_state_del);
-		slurm_mutex_unlock(&pack_lock);
+		slurm_mutex_unlock(&het_job_lock);
 		local_srun_job = job;
 		local_global_rc = global_rc;
 		list_append(local_job_list, local_srun_job);
