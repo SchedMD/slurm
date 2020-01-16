@@ -113,7 +113,7 @@ int	setup_env(env_t *env, bool preserve_env);
  * dest OUT - array in which to the set environment variables
  * alloc IN - resource allocation response
  * desc IN - job allocation request
- * pack_offset IN - component offset into pack job, -1 if not pack job
+ * het_job_offset IN - component offset into hetjob, -1 if not hetjob
  *
  * Sets the variables:
  *	SLURM_JOB_ID
@@ -127,7 +127,7 @@ int	setup_env(env_t *env, bool preserve_env);
  */
 extern int env_array_for_job(char ***dest,
 			     const resource_allocation_response_msg_t *alloc,
-			     const job_desc_msg_t *desc, int pack_offset);
+			     const job_desc_msg_t *desc, int het_job_offset);
 
 /*
  * Set in "dest" the environment variables relevant to a Slurm batch
@@ -358,9 +358,10 @@ char *uint32_compressed_to_str(uint32_t array_len,
  *
  * opt IN - options set by command parsing
  * dest IN/OUT - location to write environment variables
- * pack_offset IN - component offset into pack job, -1 if not pack job
+ * het_job_offset IN - component offset into hetjob, -1 if not hetjob
  */
-extern void set_env_from_opts(slurm_opt_t *opt, char ***dest, int pack_offset);
+extern void set_env_from_opts(slurm_opt_t *opt, char ***dest,
+			      int het_job_offset);
 
 /*
  * Parse token's skipping nested commas.
