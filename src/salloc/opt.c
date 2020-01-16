@@ -92,7 +92,7 @@ int immediate_exit = 1;
 typedef struct env_vars env_vars_t;
 
 static void  _opt_env(void);
-static void  _opt_args(int argc, char **argv, int pack_offset);
+static void  _opt_args(int argc, char **argv, int het_job_offset);
 static bool  _opt_verify(void);
 static void  _set_options(int argc, char **argv);
 
@@ -107,10 +107,10 @@ static void  _set_options(int argc, char **argv);
  * argc      IN - Count of elements in argv
  * argv      IN - Array of elements to parse
  * argc_off OUT - Offset of first non-parsable element
- * pack_inx  IN - offset of job pack
+ * het_job_inx  IN - offset of hetjob
  */
 extern int initialize_and_process_args(int argc, char **argv, int *argc_off,
-				       int pack_inx)
+				       int het_job_inx)
 {
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, first_pass);
@@ -127,7 +127,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off,
 	_opt_env();
 
 	/* initialize options with argv */
-	_opt_args(argc, argv, pack_inx);
+	_opt_args(argc, argv, het_job_inx);
 	if (argc_off)
 		*argc_off = optind;
 
@@ -272,7 +272,7 @@ static void _set_options(int argc, char **argv)
 /*
  * _opt_args() : set options via commandline args and popt
  */
-static void _opt_args(int argc, char **argv, int pack_offset)
+static void _opt_args(int argc, char **argv, int het_job_offset)
 {
 	int i;
 	char **rest = NULL;
@@ -280,7 +280,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	_set_options(argc, argv);
 
 	if ((optind < argc) && !xstrcmp(argv[optind], ":")) {
-		debug("pack job separator");
+		debug("hetjob component separator");
 	} else {
 		command_argc = 0;
 		if (optind < argc) {
@@ -298,7 +298,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 		command_argv[i] = NULL;	/* End of argv's (for possible execv) */
 	}
 
-	if (cli_filter_plugin_pre_submit(&opt, pack_offset)) {
+	if (cli_filter_plugin_pre_submit(&opt, het_job_offset)) {
 		error("cli_filter plugin terminated with error");
 		exit(error_exit);
 	}
