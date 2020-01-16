@@ -154,7 +154,7 @@ void cfmakeraw(struct termios *attr)
 }
 #endif
 
-static bool _enable_pack_steps(void)
+static bool _enable_het_job_steps(void)
 {
 	bool enabled = true;
 	char *sched_params = slurm_get_sched_params();
@@ -191,7 +191,7 @@ int srun(int ac, char **av)
 
 	init_srun(ac, av, &logopt, debug_level, 1);
 	if (opt_list) {
-		if (!_enable_pack_steps())
+		if (!_enable_het_job_steps())
 			fatal("Job steps that span multiple components of a heterogeneous job are not currently supported");
 		create_srun_job((void **) &srun_job_list, &got_alloc, 0, 1);
 	} else
@@ -233,7 +233,7 @@ static void *_launch_one_app(void *data)
 	step_callbacks.step_signal = launch_g_fwd_signal;
 
 	/*
-	 * Run pre-launch once for entire pack job
+	 * Run pre-launch once for entire hetjob
 	 */
 	slurm_mutex_lock(&launch_mutex);
 	if (!launch_begin) {
@@ -271,11 +271,12 @@ relaunch:
 }
 
 /*
- * The pack_node_list may not be ordered across multiple components, which can
- * cause problems for some MPI implementations. Put the pack_node_list records
- * in alphabetic order and reorder pack_task_cnts pack_tids to match
+ * The het_job_node_list may not be ordered across multiple components, which
+ * can cause problems for some MPI implementations. Put the het_job_node_list
+ * records in alphabetic order and reorder het_job_task_cnts het_job_tids to
+ * match
  */
-static void _reorder_pack_recs(char **in_node_list, uint16_t **in_task_cnts,
+static void _reorder_het_job_recs(char **in_node_list, uint16_t **in_task_cnts,
 			       uint32_t ***in_tids, int total_nnodes)
 {
 	hostlist_t in_hl, out_hl;
@@ -356,11 +357,11 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 	pthread_mutex_t step_mutex = PTHREAD_MUTEX_INITIALIZER;
 	pthread_cond_t step_cond   = PTHREAD_COND_INITIALIZER;
 	srun_job_t *first_job = NULL;
-	char *launch_type, *pack_node_list = NULL;
+	char *launch_type, *het_job_node_list = NULL;
 	bool need_mpir = false;
-	uint16_t *tmp_task_cnt = NULL, *pack_task_cnts = NULL;
-	uint32_t **tmp_tids = NULL, **pack_tids = NULL;
-	uint32_t *pack_tid_offsets = NULL;
+	uint16_t *tmp_task_cnt = NULL, *het_job_task_cnts = NULL;
+	uint32_t **tmp_tids = NULL, **het_job_tids = NULL;
+	uint32_t *het_job_tid_offsets = NULL;
 
 	launch_type = slurm_get_launch_type();
 	if (launch_type && strstr(launch_type, "slurm"))
@@ -368,7 +369,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 	xfree(launch_type);
 
 	if (srun_job_list) {
-		int pack_step_cnt = list_count(srun_job_list);
+		int het_job_step_cnt = list_count(srun_job_list);
 		first_job = (srun_job_t *) list_peek(srun_job_list);
 		if (!opt_list) {
 			if (first_job)
@@ -384,27 +385,29 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			total_ntasks += job->ntasks;
 			total_nnodes += job->nhosts;
 
-			xrealloc(pack_task_cnts, sizeof(uint16_t)*total_nnodes);
+			xrealloc(het_job_task_cnts,
+				 sizeof(uint16_t)*total_nnodes);
 			(void) slurm_step_ctx_get(job->step_ctx,
 						  SLURM_STEP_CTX_TASKS,
 						  &tmp_task_cnt);
-			xrealloc(pack_tid_offsets,
+			xrealloc(het_job_tid_offsets,
 				 sizeof(uint32_t) * total_ntasks);
 
 			for (i = total_ntasks - job->ntasks;
 			     i < total_ntasks;
 			     i++)
-				pack_tid_offsets[i] = job->het_job_offset;
+				het_job_tid_offsets[i] = job->het_job_offset;
 
 			if (!tmp_task_cnt) {
 				fatal("%s: job %u has NULL task array",
 				      __func__, job->jobid);
 				break;	/* To eliminate CLANG error */
 			}
-			memcpy(pack_task_cnts + node_offset, tmp_task_cnt,
+			memcpy(het_job_task_cnts + node_offset, tmp_task_cnt,
 			       sizeof(uint16_t) * job->nhosts);
 
-			xrealloc(pack_tids, sizeof(uint32_t *) * total_nnodes);
+			xrealloc(het_job_tids,
+				 sizeof(uint32_t *) * total_nnodes);
 			(void) slurm_step_ctx_get(job->step_ctx,
 						  SLURM_STEP_CTX_TIDS,
 						  &tmp_tids);
@@ -421,7 +424,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 					node_tids[i] = tmp_tids[node_inx][i] +
 						       job->het_job_task_offset;
 				}
-				pack_tids[node_offset + node_inx] =
+				het_job_tids[node_offset + node_inx] =
 					node_tids;
 			}
 
@@ -432,23 +435,23 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 				fatal("%s: job %u has NULL hostname",
 				      __func__, job->jobid);
 			}
-			if (pack_node_list)
-				xstrfmtcat(pack_node_list, ",%s", node_list);
+			if (het_job_node_list)
+				xstrfmtcat(het_job_node_list, ",%s", node_list);
 			else
-				pack_node_list = xstrdup(node_list);
+				het_job_node_list = xstrdup(node_list);
 			xfree(node_list);
 			node_offset += job->nhosts;
 		}
 		list_iterator_reset(job_iter);
-		_reorder_pack_recs(&pack_node_list, &pack_task_cnts,
-				   &pack_tids, total_nnodes);
+		_reorder_het_job_recs(&het_job_node_list, &het_job_task_cnts,
+				   &het_job_tids, total_nnodes);
 
 		if (need_mpir)
 			mpir_init(total_ntasks);
 
 		opt_iter = list_iterator_create(opt_list);
 
-		/* copy aggregated pack data back into each sub-job */
+		/* copy aggregated hetjob data back into each sub-job */
 		while ((opt_local = list_next(opt_iter))) {
 			srun_opt_t *srun_opt = opt_local->srun_opt;
 			xassert(srun_opt);
@@ -471,25 +474,26 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			slurm_mutex_lock(&step_mutex);
 			step_cnt++;
 			slurm_mutex_unlock(&step_mutex);
-			job->het_job_node_list = xstrdup(pack_node_list);
-			if ((pack_step_cnt > 1) && pack_task_cnts &&
-			    pack_tid_offsets) {
+			job->het_job_node_list = xstrdup(het_job_node_list);
+			if ((het_job_step_cnt > 1) && het_job_task_cnts &&
+			    het_job_tid_offsets) {
 				xassert(node_offset == job->het_job_nnodes);
 				job->het_job_task_cnts =
 					xcalloc(job->het_job_nnodes,
 						sizeof(uint16_t));
-				memcpy(job->het_job_task_cnts, pack_task_cnts,
+				memcpy(job->het_job_task_cnts,
+				       het_job_task_cnts,
 				       sizeof(uint16_t) * job->het_job_nnodes);
 				job->het_job_tids = xcalloc(job->het_job_nnodes,
 							    sizeof(uint32_t *));
-				memcpy(job->het_job_tids, pack_tids,
+				memcpy(job->het_job_tids, het_job_tids,
 				       sizeof(uint32_t *) *
 				       job->het_job_nnodes);
 
 				job->het_job_tid_offsets = xcalloc(
 					total_ntasks, sizeof(uint32_t));
 				memcpy(job->het_job_tid_offsets,
-				       pack_tid_offsets,
+				       het_job_tid_offsets,
 				       sizeof(uint32_t) * total_ntasks);
 			}
 
@@ -500,14 +504,14 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			opts->step_cond   = &step_cond;
 			opts->step_cnt    = &step_cnt;
 			opts->step_mutex  = &step_mutex;
-			srun_opt->pack_step_cnt = pack_step_cnt;
+			srun_opt->pack_step_cnt = het_job_step_cnt;
 
 			slurm_thread_create_detached(NULL, _launch_one_app,
 						     opts);
 		}
-		xfree(pack_node_list);
-		xfree(pack_task_cnts);
-		xfree(pack_tid_offsets);
+		xfree(het_job_node_list);
+		xfree(het_job_task_cnts);
+		xfree(het_job_tid_offsets);
 		list_iterator_destroy(job_iter);
 		list_iterator_destroy(opt_iter);
 		slurm_mutex_lock(&step_mutex);

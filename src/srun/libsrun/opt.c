@@ -100,19 +100,19 @@ bool	tres_freq_err_log = true;
 
 /*---- forward declarations of static variables and functions  ----*/
 
-static slurm_opt_t *_get_first_opt(int pack_offset);
-static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last);
+static slurm_opt_t *_get_first_opt(int het_job_offset);
+static slurm_opt_t *_get_next_opt(int het_job_offset, slurm_opt_t *opt_last);
 
 static bitstr_t *_get_pack_group(const int argc, char **argv,
-				 int default_pack_offset, bool *opt_found);
+				 int default_het_job_offset, bool *opt_found);
 
 /* fill in default options  */
 static void _opt_default(void);
 
 /* set options based upon env vars  */
-static void _opt_env(int pack_offset);
+static void _opt_env(int het_job_offset);
 
-static void _opt_args(int argc, char **argv, int pack_offset);
+static void _opt_args(int argc, char **argv, int het_job_offset);
 
 /* verify options sanity  */
 static bool _opt_verify(void);
@@ -124,22 +124,22 @@ static bool  _valid_node_list(char **node_list_pptr);
 /*---[ end forward declarations of static functions ]---------------------*/
 
 /*
- * Find first option structure for a given pack job offset
- * pack_offset IN - Offset into pack job or -1 if regular job
+ * Find first option structure for a given het job offset
+ * het_job_offset IN - Offset into hetjob or -1 if regular job
  * RET - Pointer to option structure or NULL if none found
  */
-static slurm_opt_t *_get_first_opt(int pack_offset)
+static slurm_opt_t *_get_first_opt(int het_job_offset)
 {
 	ListIterator opt_iter;
 	slurm_opt_t *opt_local;
 
 	if (!opt_list) {
-		if (!sropt.pack_grp_bits && (pack_offset == -1))
+		if (!sropt.pack_grp_bits && (het_job_offset == -1))
 			return &opt;
 		if (sropt.pack_grp_bits &&
-		    (pack_offset >= 0) &&
-		    (pack_offset < bit_size(sropt.pack_grp_bits)) &&
-		    bit_test(sropt.pack_grp_bits, pack_offset))
+		    (het_job_offset >= 0) &&
+		    (het_job_offset < bit_size(sropt.pack_grp_bits)) &&
+		    bit_test(sropt.pack_grp_bits, het_job_offset))
 			return &opt;
 		return NULL;
 	}
@@ -148,9 +148,9 @@ static slurm_opt_t *_get_first_opt(int pack_offset)
 	while ((opt_local = list_next(opt_iter))) {
 		srun_opt_t *srun_opt = opt_local->srun_opt;
 		xassert(srun_opt);
-		if (srun_opt->pack_grp_bits && (pack_offset >= 0)
-		    && (pack_offset < bit_size(srun_opt->pack_grp_bits))
-		    && bit_test(srun_opt->pack_grp_bits, pack_offset))
+		if (srun_opt->pack_grp_bits && (het_job_offset >= 0)
+		    && (het_job_offset < bit_size(srun_opt->pack_grp_bits))
+		    && bit_test(srun_opt->pack_grp_bits, het_job_offset))
 			break;
 	}
 	list_iterator_destroy(opt_iter);
@@ -159,12 +159,12 @@ static slurm_opt_t *_get_first_opt(int pack_offset)
 }
 
 /*
- * Find next option structure for a given pack job offset
- * pack_offset IN - Offset into pack job or -1 if regular job
- * opt_last IN - past option structure found for this pack offset
+ * Find next option structure for a given hetjob offset
+ * het_job_offset IN - Offset into hetjob or -1 if regular job
+ * opt_last IN - past option structure found for this het_job_offset
  * RET - Pointer to option structure or NULL if none found
  */
-static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last)
+static slurm_opt_t *_get_next_opt(int het_job_offset, slurm_opt_t *opt_last)
 {
 	ListIterator opt_iter;
 	slurm_opt_t *opt_local;
@@ -183,9 +183,9 @@ static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last)
 			continue;
 		}
 
-		if (srun_opt->pack_grp_bits && (pack_offset >= 0)
-		    && (pack_offset < bit_size(srun_opt->pack_grp_bits))
-		    && bit_test(srun_opt->pack_grp_bits, pack_offset))
+		if (srun_opt->pack_grp_bits && (het_job_offset >= 0)
+		    && (het_job_offset < bit_size(srun_opt->pack_grp_bits))
+		    && bit_test(srun_opt->pack_grp_bits, het_job_offset))
 			break;
 	}
 	list_iterator_destroy(opt_iter);
@@ -194,26 +194,26 @@ static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last)
 }
 
 /*
- * Find option structure for a given pack job offset
- * pack_offset IN - Offset into pack job, -1 if regular job, -2 to reset
+ * Find option structure for a given hetjob offset
+ * het_job_offset IN - Offset into hetjob, -1 if regular job, -2 to reset
  * RET - Pointer to next matching option structure or NULL if none found
  */
-extern slurm_opt_t *get_next_opt(int pack_offset)
+extern slurm_opt_t *get_next_opt(int het_job_offset)
 {
 	static int offset_last = -2;
 	static slurm_opt_t *opt_last = NULL;
 
-	if (pack_offset == -2) {
+	if (het_job_offset == -2) {
 		offset_last = -2;
 		opt_last = NULL;
 		return NULL;
 	}
 
-	if (offset_last != pack_offset) {
-		offset_last = pack_offset;
-		opt_last = _get_first_opt(pack_offset);
+	if (offset_last != het_job_offset) {
+		offset_last = het_job_offset;
+		opt_last = _get_first_opt(het_job_offset);
 	} else {
-		opt_last = _get_next_opt(pack_offset, opt_last);
+		opt_last = _get_next_opt(het_job_offset, opt_last);
 	}
 	return opt_last;
 }
@@ -225,7 +225,7 @@ extern int get_max_pack_group(void)
 {
 	ListIterator opt_iter;
 	slurm_opt_t *opt_local;
-	int max_pack_offset = 0, pack_offset = 0;
+	int max_het_job_offset = 0, het_job_offset = 0;
 
 	if (opt_list) {
 		opt_iter = list_iterator_create(opt_list);
@@ -233,17 +233,18 @@ extern int get_max_pack_group(void)
 			srun_opt_t *srun_opt = opt_local->srun_opt;
 			xassert(srun_opt);
 			if (srun_opt->pack_grp_bits)
-				pack_offset = bit_fls(srun_opt->pack_grp_bits);
-			if (pack_offset >= max_pack_offset)
-				max_pack_offset = pack_offset;
+				het_job_offset =
+					bit_fls(srun_opt->pack_grp_bits);
+			if (het_job_offset >= max_het_job_offset)
+				max_het_job_offset = het_job_offset;
 		}
 		list_iterator_destroy(opt_iter);
 	} else {
 		if (sropt.pack_grp_bits)
-			max_pack_offset = bit_fls(sropt.pack_grp_bits);
+			max_het_job_offset = bit_fls(sropt.pack_grp_bits);
 	}
 
-	return max_pack_offset;
+	return max_het_job_offset;
 }
 
 /*
@@ -331,13 +332,13 @@ static slurm_opt_t *_opt_copy(void)
  */
 extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 {
-	static int default_pack_offset = 0;
+	static int default_het_job_offset = 0;
 	static bool pending_append = false;
 	bitstr_t *pack_grp_bits;
 	int i, i_first, i_last;
 	bool opt_found = false;
 
-	pack_grp_bits = _get_pack_group(argc, argv, default_pack_offset++,
+	pack_grp_bits = _get_pack_group(argc, argv, default_het_job_offset++,
 					&opt_found);
 	i_first = bit_ffs(pack_grp_bits);
 	i_last  = bit_fls(pack_grp_bits);
@@ -561,7 +562,7 @@ env_vars_t env_vars[] = {
  *            environment variables. See comments above for how to
  *            extend srun to process different vars
  */
-static void _opt_env(int pack_offset)
+static void _opt_env(int het_job_offset)
 {
 	char       key[64], *val = NULL;
 	env_vars_t *e   = env_vars;
@@ -569,11 +570,11 @@ static void _opt_env(int pack_offset)
 	while (e->var) {
 		if ((val = getenv(e->var)))
 			slurm_process_option(&opt, e->type, val, true, false);
-		if ((pack_offset >= 0) &&
+		if ((het_job_offset >= 0) &&
 		    strcmp(e->var, "SLURM_JOBID") &&
 		    strcmp(e->var, "SLURM_JOB_ID")) {
 			snprintf(key, sizeof(key), "%s_PACK_GROUP_%d",
-				 e->var, pack_offset);
+				 e->var, het_job_offset);
 			if ((val = getenv(key)))
 				slurm_process_option(&opt, e->type, val,
 						     true, false);
@@ -598,12 +599,12 @@ static void _opt_env(int pack_offset)
  * If --pack-group option found, return a bitmap representing their IDs
  * argc IN - Argument count
  * argv IN - Arguments
- * default_pack_offset IN - Default offset
+ * default_het_job_offset IN - Default offset
  * opt_found OUT - Set to true if --pack-group option found
  * RET bitmap if pack groups to run
  */
 static bitstr_t *_get_pack_group(const int argc, char **argv,
-				 int default_pack_offset, bool *opt_found)
+				 int default_het_job_offset, bool *opt_found)
 {
 	int i, opt_char, option_index = 0;
 	char *tmp = NULL;
@@ -624,7 +625,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	*opt_found = (sropt.pack_group);
 
 	if (*opt_found == false) {
-		bit_set(pack_grp_bits, default_pack_offset);
+		bit_set(pack_grp_bits, default_het_job_offset);
 		return pack_grp_bits;
 	}
 
@@ -678,14 +679,14 @@ static void _set_options(const int argc, char **argv)
 /*
  * _opt_args() : set options via commandline args and popt
  */
-static void _opt_args(int argc, char **argv, int pack_offset)
+static void _opt_args(int argc, char **argv, int het_job_offset)
 {
 	int i, command_pos = 0, command_args = 0;
 	char **rest = NULL;
 	char *fullpath, *launch_params;
 
 	sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
-	bit_set(sropt.pack_grp_bits, pack_offset);
+	bit_set(sropt.pack_grp_bits, het_job_offset);
 
 	validate_memory_options(&opt);
 
