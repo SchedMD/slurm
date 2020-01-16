@@ -133,7 +133,7 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 {
 	int          i, node_id = job->nodeid;
 	char        *in, *out, *err;
-	uint32_t     pack_offset = 0;
+	uint32_t     het_job_offset = 0;
 
 	if (job->node_tasks == 0) {
 		error("User requested launch of zero tasks!");
@@ -142,7 +142,7 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 	}
 
 	if (job->het_job_offset != NO_VAL)
-		pack_offset = job->het_job_offset;
+		het_job_offset = job->het_job_offset;
 
 #if defined(HAVE_NATIVE_CRAY)
 	for (i = 0; i < job->nnodes; i++) {
@@ -161,13 +161,13 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 
 	for (i = 0; i < job->node_tasks; i++) {
 		in  = _expand_stdio_filename(ifname,
-					     gtid[node_id][i] + pack_offset,
+					     gtid[node_id][i] + het_job_offset,
 					     job);
 		out = _expand_stdio_filename(ofname,
-					     gtid[node_id][i] + pack_offset,
+					     gtid[node_id][i] + het_job_offset,
 					     job);
 		err = _expand_stdio_filename(efname,
-					     gtid[node_id][i] + pack_offset,
+					     gtid[node_id][i] + het_job_offset,
 					     job);
 		job->task[i] = _task_info_create(i, gtid[node_id][i], in, out,
 						 err);
