@@ -600,8 +600,8 @@ static int _file_write(eio_obj_t *obj, List objs)
 		if ((n = write_labelled_message(obj->fd, ptr,
 					        info->out_remaining,
 					        info->out_msg->header.gtaskid,
-					        info->cio->pack_offset,
-					        info->cio->task_offset,
+					        info->cio->het_job_offset,
+					        info->cio->het_job_task_offset,
 					        info->cio->label,
 					        info->cio->taskid_width)) < 0) {
 			list_enqueue(info->cio->free_outgoing, info->out_msg);
@@ -1092,8 +1092,8 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 
 	cio->num_tasks   = num_tasks;
 	cio->num_nodes   = num_nodes;
-	cio->pack_offset = pack_offset;
-	cio->task_offset = task_offset;
+	cio->het_job_offset = pack_offset;
+	cio->het_job_offset = task_offset;
 
 	cio->label = label;
 	if (cio->label)

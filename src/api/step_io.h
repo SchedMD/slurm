@@ -45,8 +45,9 @@ struct client_io {
 	int num_nodes;
 	bool label;
 	int taskid_width;	/* characters needed for task_id label */
-	uint32_t pack_offset;	/* offset within a pack-job or NO_VAL */
-	uint32_t task_offset;	/* task offset within a pack-job or NO_VAL */
+	uint32_t het_job_offset;	/* offset within a pack-job or NO_VAL */
+	uint32_t het_job_task_offset;	/* task offset within a hetjob or
+					 * NO_VAL */
 
 	char *io_key;
 
