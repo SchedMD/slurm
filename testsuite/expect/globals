@@ -5444,6 +5444,51 @@ proc get_node_config { {desired_gpus 1} } {
 	return $node_found
 }
 
+proc get_job_gpu_cnt { job_id } {
+	global scontrol gres_regex
+	set job_gpu_cnt 0
+	array set gpu_type_found {}
+	spawn $scontrol show job -d $job_id
+	expect {
+		-re "(JOB_GRES=|,)$gres_regex" {
+			set count 0
+			set name $expect_out(2,string)
+			# Assume typed GRES of format gpu:1080:5 to start out
+			set type $expect_out(3,string)
+			set count $expect_out(4,string)
+
+			# Skip all GRES of different names
+			if {$name != "gpu"} {
+				exp_continue
+			}
+			if {$count == ""} {
+				# Now assume GRES format gpu:5
+				set count $type
+				set type "notype"
+			}
+			# Skip if type already found (in another GRES line)
+			if {[info exists gpu_type_found($type)]} {
+				exp_continue
+			}
+			if { $count } {
+				incr job_gpu_cnt $count
+				set gpu_type_found($type) true
+			}
+
+			exp_continue
+		}
+		timeout {
+			log_error "scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	return $job_gpu_cnt
+}
+
 proc check_reason { job_id reason } {
 	global squeue
 
