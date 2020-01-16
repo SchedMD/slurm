@@ -3248,9 +3248,9 @@ end_it:
 	return rc;
 }
 
-/* Report the latest start time for any pack job component on this cluster.
+/* Report the latest start time for any hetjob component on this cluster.
  * Return NULL if any component can not run here */
-static local_cluster_rec_t * _pack_job_will_run(List job_req_list)
+static local_cluster_rec_t * _het_job_will_run(List job_req_list)
 {
 	local_cluster_rec_t *local_cluster = NULL, *tmp_cluster;
 	job_desc_msg_t *req;
@@ -3259,7 +3259,7 @@ static local_cluster_rec_t * _pack_job_will_run(List job_req_list)
 	iter = list_iterator_create(job_req_list);
 	while ((req = (job_desc_msg_t *) list_next(iter))) {
 		tmp_cluster = _job_will_run(req);
-		if (!tmp_cluster) {	/* Some pack job can't run here */
+		if (!tmp_cluster) {	/* Some het component can't run here */
 			xfree(local_cluster);
 			break;
 		}
@@ -3332,7 +3332,7 @@ extern int slurmdb_get_first_het_job_cluster(List job_req_list,
 		    list_find_first(tried_feds, slurm_find_char_in_list,
 				    working_cluster_rec->fed.name))
 			continue;
-		if ((local_cluster = _pack_job_will_run(job_req_list))) {
+		if ((local_cluster = _het_job_will_run(job_req_list))) {
 			list_append(ret_list, local_cluster);
 			if (working_cluster_rec->fed.id)
 				list_append(tried_feds,
