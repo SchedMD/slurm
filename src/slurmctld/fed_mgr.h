@@ -57,6 +57,9 @@ extern uint32_t  fed_mgr_get_local_id(uint32_t id);
 extern int       fed_mgr_init(void *db_conn);
 extern int       fed_mgr_is_origin_job(job_record_t *job_ptr);
 extern bool      fed_mgr_is_origin_job_id(uint32_t job_id);
+extern bool      fed_mgr_is_singleton_satisfied(job_record_t *job_ptr,
+						depend_spec_t *dep_ptr,
+						bool set_cluster_bit);
 extern bool      fed_mgr_is_tracker_only_job(job_record_t *job_ptr);
 extern int       fed_mgr_job_allocate(slurm_msg_t *msg,
 				      job_desc_msg_t *job_desc, bool alloc_only,

@@ -1307,6 +1307,7 @@ typedef struct {
 	bool is_array;
 	uint32_t job_id;
 	char *job_name;
+	uint32_t user_id;
 } dep_msg_t;
 
 typedef struct {

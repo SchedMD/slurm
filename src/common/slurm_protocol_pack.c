@@ -6322,6 +6322,7 @@ static void _pack_dep_msg(dep_msg_t *dep_msg, Buf buffer,
 		packbool(dep_msg->is_array, buffer);
 		pack32(dep_msg->job_id, buffer);
 		packstr(dep_msg->job_name, buffer);
+		pack32(dep_msg->user_id, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -6352,6 +6353,7 @@ static int _unpack_dep_msg(dep_msg_t **dep_msg_buffer_ptr, Buf buffer,
 		safe_unpack32(&dep_msg_ptr->job_id, buffer);
 		safe_unpackstr_xmalloc(&dep_msg_ptr->job_name, &tmp_uint32,
 				       buffer);
+		safe_unpack32(&dep_msg_ptr->user_id, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -6387,6 +6389,7 @@ static void _pack_dep_list(List dep_list, Buf buffer, uint16_t protocol_version)
 			pack32(dep_ptr->depend_state, buffer);
 			pack32(dep_ptr->depend_time, buffer);
 			pack32(dep_ptr->job_id, buffer);
+			pack64(dep_ptr->singleton_bits, buffer);
 		}
 		list_iterator_destroy(itr);
 	} else {
@@ -6414,6 +6417,7 @@ static int _unpack_dep_list(List *dep_list, uint16_t cnt, Buf buffer,
 			safe_unpack32(&dep_ptr->depend_state, buffer);
 			safe_unpack32(&dep_ptr->depend_time, buffer);
 			safe_unpack32(&dep_ptr->job_id, buffer);
+			safe_unpack64(&dep_ptr->singleton_bits, buffer);
 		}
 	} else {
 		error("%s: protocol_version %hu not supported",

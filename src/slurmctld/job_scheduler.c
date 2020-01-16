@@ -2661,6 +2661,8 @@ static char *_depend_type2str(depend_spec_t *dep_ptr)
 		return "expand";
 	case SLURM_DEPEND_BURST_BUFFER:
 		return "afterburstbuffer";
+	case SLURM_DEPEND_SINGLETON:
+		return "singleton";
 	default:
 		return "unknown";
 	}
@@ -2958,9 +2960,10 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 			}
 			list_iterator_destroy(job_iterator);
 			FREE_NULL_LIST(job_queue);
-			/* job can run now, delete dependency */
-			if (run_now)
-				list_delete_item(depend_iter);
+			if (run_now &&
+			    fed_mgr_is_singleton_satisfied(job_ptr, dep_ptr,
+							   true))
+				clear_dep = true;
 			else
 				depends = true;
 		} else if ((djob_ptr == NULL) ||
@@ -3453,6 +3456,19 @@ extern bool update_job_dependency_list(job_record_t *job_ptr,
 		if ((job_depend->depend_state == DEPEND_FULFILLED) ||
 		    (job_depend->depend_state == dep_ptr->depend_state))
 			continue;
+		if (job_depend->depend_type == SLURM_DEPEND_SINGLETON) {
+			/*
+			 * We need to update the singleton dependency with
+			 * the cluster bit, but test_job_dependency() will test
+			 * if it is fulfilled, so don't change the depend_state
+			 * here.
+			 */
+			job_depend->singleton_bits |=
+				dep_ptr->singleton_bits;
+			if (!fed_mgr_is_singleton_satisfied(job_ptr, job_depend,
+							    false))
+			    continue;
+		}
 		job_depend->depend_state = dep_ptr->depend_state;
 		was_changed = true;
 	}
@@ -3598,6 +3614,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 			dep_ptr->depend_type = depend_type;
 			/* dep_ptr->job_id = 0;		set by xmalloc */
 			/* dep_ptr->job_ptr = NULL;	set by xmalloc */
+			/* dep_ptr->singleton_bits = 0; set by xmalloc */
 			_add_dependency_to_list(new_depend_list, dep_ptr);
 			if (tok[9] == ',') {
 				tok += 10;

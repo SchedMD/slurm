@@ -1345,6 +1345,7 @@ static void _destroy_dep_job(void *object)
 		free_null_array_recs(job_ptr);
 		job_ptr->magic = 0;
 		job_ptr->job_id = 0;
+		job_ptr->user_id = 0;
 		xfree(job_ptr);
 	}
 }
@@ -2278,9 +2279,7 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	job_ptr->details->magic = DETAILS_MAGIC;
 	job_ptr->job_id = remote_dep_info->job_id;
 	job_ptr->name = remote_dep_info->job_name;
-
-	/* NULL string so it doesn't get free'd since it's used by job_ptr */
-	remote_dep_info->job_name = NULL;
+	job_ptr->user_id = remote_dep_info->user_id;
 
 	/*
 	 * Initialize array info. Allocate space for job_ptr->array_recs if
@@ -2304,15 +2303,20 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	 */
 	job_ptr->fed_details = xmalloc(sizeof *(job_ptr->fed_details));
 
-	info("XXX%sXXX: Got Job %u name \"%s\" array_task_id %u dependency \"%s\" is_array %s",
+	info("XXX%sXXX: Got Job %u name \"%s\" array_task_id %u dependency \"%s\" is_array %s, user_id %u",
 	     __func__, remote_dep_info->job_id, remote_dep_info->job_name,
 	     remote_dep_info->array_task_id, remote_dep_info->dependency,
-	     remote_dep_info->is_array ? "yes" : "no");
+	     remote_dep_info->is_array ? "yes" : "no",
+	     remote_dep_info->user_id);
+
+	/* NULL string so it doesn't get free'd since it's used by job_ptr */
+	remote_dep_info->job_name = NULL;
 
 	/* Create and validate the dependency. */
 	lock_slurmctld(job_read_lock);
 	rc = update_job_dependency(job_ptr, remote_dep_info->dependency);
 	unlock_slurmctld(job_read_lock);
+
 	if (rc) {
 		error("%s: Invalid dependency %s for %pJ: %s",
 		      __func__, remote_dep_info->dependency, job_ptr,
@@ -3134,6 +3138,7 @@ static void _pack_remote_dep_job(job_record_t *job_ptr, Buf buffer,
 		packbool(job_ptr->array_recs ? true : false, buffer);
 		pack32(job_ptr->job_id, buffer);
 		packstr(job_ptr->name, buffer);
+		pack32(job_ptr->user_id, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported.",
 		      __func__, protocol_version);
@@ -3171,6 +3176,7 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, Buf buffer,
 				xmalloc(sizeof *(job_ptr->array_recs));
 		safe_unpack32(&job_ptr->job_id, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->name, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->user_id, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported.",
 		      __func__, protocol_version);
@@ -4062,6 +4068,11 @@ static int _add_to_send_list(void *object, void *arg)
 	uint64_t *send_sib_bits = (uint64_t *)arg;
 	uint32_t cluster_id;
 
+	if (dependency->depend_type == SLURM_DEPEND_SINGLETON) {
+		*send_sib_bits |= _get_all_sibling_bits();
+		/* Negative value short-circuits list_for_each */
+		return -1;
+	}
 	if (!(dependency->depend_flags & SLURM_FLAGS_REMOTE))
 		return SLURM_SUCCESS;
 	cluster_id = fed_mgr_get_cluster_id(dependency->job_id);
@@ -4107,6 +4118,7 @@ extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
 	dep_msg.array_job_id = job_ptr->array_job_id;
 	dep_msg.array_task_id = job_ptr->array_task_id;
 	dep_msg.is_array = job_ptr->array_recs ? true : false;
+	dep_msg.user_id = job_ptr->user_id;
 
 	if (!job_ptr->details->dependency || clear_dependencies)
 		/*
@@ -5223,6 +5235,45 @@ extern bool fed_mgr_is_origin_job_id(uint32_t job_id)
 }
 
 /*
+ * Check if all siblings have fulfilled the singleton dependency.
+ * Return true if all clusters have checked in that they've fulfilled this
+ * singleton dependency.
+ *
+ * IN job_ptr - job with dependency to check
+ * IN dep_ptr - dependency to check. If it's not singleton, just return true.
+ * IN set_cluster_bit - if true, set the bit for this cluster indicating
+ *                      that this cluster has fulfilled the dependency.
+ */
+extern bool fed_mgr_is_singleton_satisfied(job_record_t *job_ptr,
+					   depend_spec_t *dep_ptr,
+					   bool set_cluster_bit)
+{
+	uint32_t origin_id;
+
+	xassert(job_ptr);
+	xassert(dep_ptr);
+
+	if (!_is_fed_job(job_ptr, &origin_id))
+		return true;
+	if (dep_ptr->depend_type != SLURM_DEPEND_SINGLETON) {
+		error("%s: Got non-singleton dependency (type %u) for %pJ. This should never happen.",
+		      __func__, dep_ptr->depend_type, job_ptr);
+		return true;
+	}
+
+	/* Set the bit for this cluster indicating that it has been satisfied */
+	if (set_cluster_bit)
+		dep_ptr->singleton_bits |=
+			FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id);
+
+	if (fed_mgr_cluster_rec->fed.id != origin_id) {
+		return true;
+	}
+
+	return dep_ptr->singleton_bits == _get_all_sibling_bits();
+}
+
+/*
  * Update a job's required clusters.
  *
  * Results in siblings being removed and added.
@@ -5922,6 +5973,7 @@ extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
 	remote_dependency->array_task_id = dep_msg->array_task_id;
 	remote_dependency->array_job_id = dep_msg->array_job_id;
 	remote_dependency->is_array = dep_msg->is_array;
+	remote_dependency->user_id = dep_msg->user_id;
 
 	list_append(remote_dep_update_list, remote_dependency);
 	slurm_mutex_lock(&remote_dep_update_mutex);
