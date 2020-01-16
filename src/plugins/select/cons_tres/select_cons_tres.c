@@ -329,7 +329,7 @@ static bitstr_t **_core_bitmap_to_array(bitstr_t *core_bitmap)
 {
 	bitstr_t **core_array = NULL;
 	int i, i_first, i_last, j, c;
-	int node_inx, last_node_inx = 0, core_offset;
+	int node_inx = 0, core_offset;
 	char tmp[128];
 
 	if (!core_bitmap)
@@ -348,9 +348,10 @@ static bitstr_t **_core_bitmap_to_array(bitstr_t *core_bitmap)
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(core_bitmap, i))
 			continue;
-		for (j = last_node_inx; j < select_node_cnt; j++) {
+		for (j = node_inx; j < select_node_cnt; j++) {
 			if (i < select_node_record[j].cume_cores) {
 				node_inx = j;
+				i = select_node_record[j].cume_cores - 1;
 				break;
 			}
 		}
@@ -369,6 +370,7 @@ static bitstr_t **_core_bitmap_to_array(bitstr_t *core_bitmap)
 			if (bit_test(core_bitmap, core_offset + c))
 				bit_set(core_array[node_inx], c);
 		}
+		node_inx++;
 	}
 
 #if _DEBUG
@@ -849,6 +851,7 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 			     plugin_type, __func__);
 			FREE_NULL_BITMAP(picked_node_bitmap);
 			free_core_array(&local_cores);
+			free_core_array(&avail_cores);
 		} else {
 			free_core_array(exc_cores);
 			*exc_cores = avail_cores;

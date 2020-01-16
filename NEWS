@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix deprecation of MemLimitEnforce parameter.
  -- X11 forwarding - alter Xauthority regex to work when "FamilyWild" cookies
     are present in the "xauth list" output.
+ -- Fix memory leak when utilizing core reservations.
 
 * Changes in Slurm 19.05.5
 ==========================
