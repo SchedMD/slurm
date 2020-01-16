@@ -850,6 +850,7 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 			FREE_NULL_BITMAP(picked_node_bitmap);
 			free_core_array(&local_cores);
 		} else {
+			free_core_array(exc_cores);
 			*exc_cores = avail_cores;
 		}
 	} else { /* Reservation is using full nodes */
