@@ -211,7 +211,7 @@ static int _addto_job_list(List job_list, char *names)
 						selected_step->het_job_offset =
 							atoi(plus);
 					} else {
-						debug2("No array/pack job requested");
+						debug2("No array/hetjob requested");
 					}
 
 					selected_step->jobid =
@@ -273,7 +273,7 @@ static int _addto_job_list(List job_list, char *names)
 				*plus++ = 0;
 				selected_step->het_job_offset = atoi(plus);
 			} else {
-				debug2("No array/pack job requested");
+				debug2("No array/hetjob requested");
 			}
 
 			selected_step->jobid = slurm_xlate_job_id(name);
