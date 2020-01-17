@@ -354,6 +354,7 @@ void *_fwd_tree_thread(void *arg)
 
 	slurm_msg_t_init(&send_msg);
 	send_msg.msg_type = fwd_tree->orig_msg->msg_type;
+	send_msg.flags = fwd_tree->orig_msg->flags;
 	send_msg.data = fwd_tree->orig_msg->data;
 	send_msg.protocol_version = fwd_tree->orig_msg->protocol_version;
 
