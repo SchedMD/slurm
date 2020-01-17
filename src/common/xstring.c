@@ -300,6 +300,7 @@ void _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
 	if (!*str) {
 		*str = p;
 		*pos = p + append_len;
+		return;
 	}
 
 	if (!*pos) {
