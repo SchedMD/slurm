@@ -270,6 +270,12 @@ void _xstrfmtcat(char **str, const char *fmt, ...)
 	if (!p)
 		return;
 
+	/* If str does not exist yet, just give it back p directly */
+	if (!*str) {
+		*str = p;
+		return;
+	}
+
 	xstrcat(*str, p);
 	xfree(p);
 }
