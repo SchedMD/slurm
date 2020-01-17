@@ -849,13 +849,13 @@ int _print_job_time_limit(job_info_t * job, int width, bool right,
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
-int _print_job_pack_job_offset(job_info_t * job, int width, bool right,
-			  char* suffix)
+int _print_job_het_job_offset(job_info_t * job, int width, bool right,
+			      char* suffix)
 {
 	char id[FORMAT_STRING_SIZE];
 
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("PACK_JOB_OFFSET", width, right, true);
+		_print_str("HET_JOB_OFFSET", width, right, true);
 	else if (job->het_job_id == 0)
 		_print_str("N/A", width, right, true);
 	else {
@@ -867,13 +867,13 @@ int _print_job_pack_job_offset(job_info_t * job, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_pack_job_id(job_info_t * job, int width, bool right,
+int _print_job_het_job_id(job_info_t * job, int width, bool right,
 			  char* suffix)
 {
 	char id[FORMAT_STRING_SIZE];
 
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("PACK_JOB_ID", width, right, true);
+		_print_str("HET_JOB_ID", width, right, true);
 	else if (job->het_job_id == 0)
 		_print_str("N/A", width, right, true);
 	else {
@@ -885,11 +885,11 @@ int _print_job_pack_job_id(job_info_t * job, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_pack_job_id_set(job_info_t * job, int width, bool right,
-			  char* suffix)
+int _print_job_het_job_id_set(job_info_t * job, int width, bool right,
+			      char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("PACK_JOB_ID_SET", width, right, true);
+		_print_str("HET_JOB_ID_SET", width, right, true);
 	else if (job->het_job_id == 0)
 		_print_str("N/A", width, right, true);
 	else

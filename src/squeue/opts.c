@@ -1690,21 +1690,25 @@ extern int parse_long_format( char* format_long )
 							field_size,
 							right_justify,
 							suffix );
-			else if (!xstrcasecmp(token, "packjobid"))
-				job_format_add_pack_job_id(params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "packjoboffset"))
-				job_format_add_pack_job_offset(params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "packjobidset"))
-				job_format_add_pack_job_id_set(params.format_list,
-							field_size,
-							right_justify,
-							suffix );
+			/* Maintaining "pack*" for retrocompatibility */
+			else if (!xstrcasecmp(token, "packjobid") ||
+				 !xstrcasecmp(token, "hetjobid"))
+				job_format_add_het_job_id(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!xstrcasecmp(token, "packjoboffset") ||
+				 !xstrcasecmp(token, "hetjoboffset"))
+				job_format_add_het_job_offset(params.format_list,
+							      field_size,
+							      right_justify,
+							      suffix );
+			else if (!xstrcasecmp(token, "packjobidset") ||
+				 !xstrcasecmp(token, "hetjobidset"))
+				job_format_add_het_job_id_set(params.format_list,
+							      field_size,
+							      right_justify,
+							      suffix );
 			else {
 				job_format_add_invalid( params.format_list,
 							field_size,
