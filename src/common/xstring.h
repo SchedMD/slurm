@@ -107,10 +107,9 @@ void _xstrfmtcat(char **str, const char *fmt, ...)
 
 /*
  * Concatenate printf-style formatted string onto str at position pos.
- * Return value is result from vsnprintf(3).
  */
-int _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
-	__attribute__ ((format (printf, 3, 4)));
+void _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
+	__attribute__((format(printf, 3, 4)));
 
 /*
 ** concatenate range of memory from start to end (not including end)

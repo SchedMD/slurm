@@ -283,7 +283,7 @@ void _xstrfmtcat(char **str, const char *fmt, ...)
  * sensitive, as xstrfmtcat() needs to re-seek to the end of str making the
  * string construction worse by another O(log(strlen)) factor.
  */
-int _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
+void _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
 {
 	size_t orig_len, append_len;
 	char *p = NULL;
@@ -294,7 +294,7 @@ int _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
 	va_end(ap);
 
 	if (!p)
-		return 0;
+		return;
 
 	append_len = strlen(p);
 
@@ -302,7 +302,6 @@ int _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
 	if (!*str) {
 		*str = p;
 		*pos = p + append_len;
-		return append_len;
 	}
 
 	if (!*pos) {
@@ -323,8 +322,6 @@ int _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
 	 * changed *str to a different address.
 	 */
 	*pos = *str + orig_len + append_len;
-
-	return append_len;
 }
 
 /*
