@@ -372,11 +372,15 @@ static int _job_rec_field(const job_record_t *job_ptr, const char *name)
 			lua_pushnumber (L, job_ptr->details->nice);
 		else
 			lua_pushnumber (L, NO_VAL16);
-	} else if (!xstrcmp(name, "pack_job_id")) {
+	/* Continue support for old hetjob terminology. */
+	} else if (!xstrcmp(name, "pack_job_id") ||
+		   !xstrcmp(name, "het_job_id")) {
 		lua_pushnumber (L, job_ptr->het_job_id);
-	} else if (!xstrcmp(name, "pack_job_id_set")) {
+	} else if (!xstrcmp(name, "pack_job_id_set") ||
+		   !xstrcmp(name, "het_job_id_set")) {
 		lua_pushstring (L, job_ptr->het_job_id_set);
-	} else if (!xstrcmp(name, "pack_job_offset")) {
+	} else if (!xstrcmp(name, "pack_job_offset") ||
+		   !xstrcmp(name, "het_job_offset")) {
 		lua_pushnumber (L, job_ptr->het_job_offset);
 	} else if (!xstrcmp(name, "partition")) {
 		lua_pushstring (L, job_ptr->partition);
@@ -852,7 +856,9 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushnumber (L, job_desc->ntasks_per_socket);
 	} else if (!xstrcmp(name, "num_tasks")) {
 		lua_pushnumber (L, job_desc->num_tasks);
-	} else if (!xstrcmp(name, "pack_job_offset")) {
+	/* Continue support for old hetjob terminology. */
+	} else if (!xstrcmp(name, "pack_job_offset") ||
+		   !xstrcmp(name, "het_job_offset")) {
 		lua_pushnumber (L, job_desc->het_job_offset);
 	} else if (!xstrcmp(name, "partition")) {
 		lua_pushstring (L, job_desc->partition);
