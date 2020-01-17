@@ -2478,6 +2478,10 @@ typedef struct reserve_info {
 				 * start_range_2, .., -1  */
 	char *node_list;	/* list of reserved nodes or ALL */
 	char *partition;	/* name of partition to be used */
+	uint32_t purge_comp_time; /* If PURGE_COMP flag is set the amount of
+				   * minutes this reservation will sit idle
+				   * until it is revoked.
+				   */
 	time_t start_time;	/* start time of reservation */
 	uint32_t resv_watts;    /* amount of power to reserve  */
 	char *tres_str;         /* list of TRES's used by reservation */
@@ -2511,6 +2515,10 @@ typedef struct resv_desc_msg {
 				 * {512,512,1024,0} OR {2048,0}. */
 	char *node_list;	/* list of reserved nodes or ALL */
 	char *partition;	/* name of partition to be used */
+	uint32_t purge_comp_time; /* If PURGE_COMP flag is set the amount of
+				   * minutes this reservation will sit idle
+				   * until it is revoked.
+				   */
 	time_t start_time;	/* start time of reservation */
 	uint32_t resv_watts;    /* amount of power to reserve  */
 	char *tres_str;         /* list of TRES's used by reservation */

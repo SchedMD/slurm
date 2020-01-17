@@ -1604,6 +1604,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack32(resv_ptr->node_cnt,	buffer);
 		packstr(resv_ptr->node_list,	buffer);
 		packstr(resv_ptr->partition,	buffer);
+		pack32(resv_ptr->purge_comp_time, buffer);
 		pack32(resv_ptr->resv_watts,    buffer);
 		pack_time(start_relative,	buffer);
 		packstr(resv_ptr->tres_fmt_str,	buffer);
@@ -1759,6 +1760,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 				       &uint32_tmp,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->partition,
 				       &uint32_tmp, 	buffer);
+		safe_unpack32(&resv_ptr->purge_comp_time, buffer);
 		safe_unpack32(&resv_ptr->resv_watts,    buffer);
 		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->tres_fmt_str,
@@ -1781,6 +1783,8 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpackstr_xmalloc(&resv_ptr->tres_str,
 				       &uint32_tmp, 	buffer);
 		safe_unpack8((uint8_t *)&resv_ptr->user_not,	buffer);
+		if (!resv_ptr->purge_comp_time)
+			resv_ptr->purge_comp_time = 300;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv_ptr->accounts,
 				       &uint32_tmp,	buffer);
@@ -1822,6 +1826,8 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpackstr_xmalloc(&resv_ptr->tres_str,
 				       &uint32_tmp, 	buffer);
 		safe_unpack8((uint8_t *)&resv_ptr->user_not,	buffer);
+		if (!resv_ptr->purge_comp_time)
+			resv_ptr->purge_comp_time = 300;
 	} else
 		goto unpack_error;
 
@@ -2413,6 +2419,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->burst_buffer	= resv_desc_ptr->burst_buffer;
 	resv_desc_ptr->burst_buffer = NULL;	/* Nothing left to free */
 	resv_ptr->duration      = resv_desc_ptr->duration;
+	if (resv_desc_ptr->purge_comp_time != NO_VAL)
+		resv_ptr->purge_comp_time = resv_desc_ptr->purge_comp_time;
+	else
+		resv_ptr->purge_comp_time = 300; /* default to 5 minutes */
 	resv_ptr->end_time	= resv_desc_ptr->end_time;
 	resv_ptr->features	= resv_desc_ptr->features;
 	resv_desc_ptr->features = NULL;		/* Nothing left to free */
@@ -2610,8 +2620,11 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 		if (resv_desc_ptr->flags & RESERVE_FLAG_PURGE_COMP)
 			resv_ptr->flags |= RESERVE_FLAG_PURGE_COMP;
-		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_PURGE_COMP)
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_PURGE_COMP) {
 			resv_ptr->flags &= (~RESERVE_FLAG_PURGE_COMP);
+			if (resv_desc_ptr->purge_comp_time == NO_VAL)
+				resv_ptr->purge_comp_time = 300;
+		}
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_HOLD_JOBS)
 			resv_ptr->flags |= RESERVE_FLAG_NO_HOLD_JOBS;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_PROM)
@@ -2625,6 +2638,9 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 
 	if (resv_desc_ptr->max_start_delay != NO_VAL)
 		resv_ptr->max_start_delay = resv_desc_ptr->max_start_delay;
+
+	if (resv_desc_ptr->purge_comp_time != NO_VAL)
+		resv_ptr->purge_comp_time = resv_desc_ptr->purge_comp_time;
 
 	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')) {
 		/* Clear the partition */

@@ -448,6 +448,10 @@ typedef struct slurmctld_resv {
 	char *node_list;	/* list of reserved nodes or ALL	*/
 	char *partition;	/* name of partition to be used		*/
 	part_record_t *part_ptr;/* pointer to partition used		*/
+	uint32_t purge_comp_time; /* If PURGE_COMP flag is set the amount of
+				   * minutes this reservation will sit idle
+				   * until it is revoked.
+				   */
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
 	uint32_t resv_watts;	/* amount of power to reserve */
 	bool run_epilog;	/* set if epilog has been executed	*/
