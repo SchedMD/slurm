@@ -827,11 +827,6 @@ variables, and \fIARG1\fR=test.
 .TP
 Example: \fB\-\-export\fR=ALL,EDITOR=/bin/emacs
 .br
-In this example, all of the users environment will be loaded and if
-\fIEDITOR\fR is not set, then \fIEDITOR\fR will be set to value given.
-.TP
-Example: \fB\-\-export\fR=ALL,EDITOR=/bin/emacs
-.br
 In this example, the propagated environment will only contain the
 variable \fIEDITOR\fR if user does not have \fIEDITOR\fR exported, along with
 \fISLURM_*\fR environment variables. Environment variables propagated from the
