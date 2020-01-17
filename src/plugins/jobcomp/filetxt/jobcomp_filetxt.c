@@ -190,7 +190,7 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 	char usr_str[32], grp_str[32], start_str[32], end_str[32], lim_str[32];
 	char *resv_name, *gres, *account, *qos, *wckey, *cluster;
 	char *exit_code_str = NULL, *derived_ec_str = NULL;
-	char submit_time[32], eligible_time[32], array_id[64], pack_id[64];
+	char submit_time[32], eligible_time[32], array_id[64], het_id[64];
 	char select_buf[128], *state_string, *work_dir;
 	size_t offset = 0, tot_size, wrote;
 	uint32_t job_state;
@@ -305,11 +305,11 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 	}
 
 	if (job_ptr->het_job_id) {
-		snprintf(pack_id, sizeof(pack_id),
-			 " PackJobId=%u PackJobOffset=%u",
+		snprintf(het_id, sizeof(het_id),
+			 " HetJobId=%u HetJobOffset=%u",
 			 job_ptr->het_job_id, job_ptr->het_job_offset);
 	} else {
-		pack_id[0] = '\0';
+		het_id[0] = '\0';
 	}
 
 	tmp_int = tmp_int2 = 0;
@@ -340,7 +340,7 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 		 state_string, job_ptr->partition, lim_str, start_str,
 		 end_str, job_ptr->nodes, job_ptr->node_cnt,
 		 job_ptr->total_cpus, work_dir, resv_name, gres, account, qos,
-		 wckey, cluster, submit_time, eligible_time, array_id, pack_id,
+		 wckey, cluster, submit_time, eligible_time, array_id, het_id,
 		 derived_ec_str, exit_code_str, select_buf);
 	tot_size = strlen(job_rec);
 
