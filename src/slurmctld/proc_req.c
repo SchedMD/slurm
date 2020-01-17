@@ -1545,7 +1545,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 				    build_alloc_msg(
 					    job_ptr, error_code,
 					    job_submit_user_msg[inx++]));
-			log_flag(HETERO_JOBS, "Submit %pJ", job_ptr);
+			log_flag(HETJOB, "Submit %pJ", job_ptr);
 		}
 		list_iterator_destroy(iter);
 	}
@@ -4342,7 +4342,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	while ((job_ptr = list_next(iter))) {
 		job_ptr->het_job_id_set = xstrdup(het_job_id_set);
 		if ((error_code == SLURM_SUCCESS) &&
-		    (slurmctld_conf.debug_flags & DEBUG_FLAG_HETERO_JOBS)) {
+		    (slurmctld_conf.debug_flags & DEBUG_FLAG_HETJOB)) {
 			info("Submit %pJ", job_ptr);
 		}
 	}

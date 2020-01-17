@@ -2292,7 +2292,7 @@ static job_record_t *_het_job_ready(job_record_t *job_ptr)
 	}
 	list_iterator_destroy(iter);
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_HETJOB) {
 		if (het_job_leader) {
 			info("Batch hetjob %pJ being launched", het_job_leader);
 		} else if (het_job) {

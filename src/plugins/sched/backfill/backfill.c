@@ -3154,7 +3154,7 @@ static time_t _het_job_start_find(job_record_t *job_ptr, time_t now)
 			}
 		}
 
-		if (latest_start && (debug_flags & DEBUG_FLAG_HETERO_JOBS)) {
+		if (latest_start && (debug_flags & DEBUG_FLAG_HETJOB)) {
 			long int delay = MAX(0, latest_start - time(NULL));
 			info("%pJ in partition %s expected to start in %ld secs",
 			     job_ptr, job_ptr->part_ptr->name, delay);
@@ -3222,7 +3222,7 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			list_append(het_job_list, map);
 		}
 
-		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+		if (debug_flags & DEBUG_FLAG_HETJOB) {
 			time_t latest_start = _het_job_start_compute(map, 0);
 			long int delay = MAX(0, latest_start - time(NULL));
 			info("%pJ in partition %s set to start in %ld secs",
@@ -3434,7 +3434,7 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 			 * cluster actually started the job
 			 */
 			fed_mgr_job_start(job_ptr, job_ptr->start_time);
-			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+			if (debug_flags & DEBUG_FLAG_HETJOB) {
 				info("%pJ started", job_ptr);
 			}
 			if (!used_bitmap && job_ptr->node_bitmap)
@@ -3534,7 +3534,7 @@ static void _het_job_start_test_single(node_space_map_t *node_space,
 		return;
 
 	if (!_het_job_full(map)) {
-		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+		if (debug_flags & DEBUG_FLAG_HETJOB) {
 			info("Hetjob %u has indefinite start time",
 			     map->het_job_id);
 		}
@@ -3545,7 +3545,7 @@ static void _het_job_start_test_single(node_space_map_t *node_space,
 
 	map->prev_start = _het_job_start_compute(map, 0);
 	if (map->prev_start > now) {
-		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+		if (debug_flags & DEBUG_FLAG_HETJOB) {
 			info("Hetjob %u should be able to start in %u seconds",
 			     map->het_job_id,
 			     (uint32_t) (map->prev_start - now));
@@ -3554,7 +3554,7 @@ static void _het_job_start_test_single(node_space_map_t *node_space,
 	}
 
 	if (!_het_job_limit_check(map, now)) {
-		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+		if (debug_flags & DEBUG_FLAG_HETJOB) {
 			info("Hetjob %u prevented from starting by account/QOS limit",
 			     map->het_job_id);
 		}
@@ -3562,12 +3562,12 @@ static void _het_job_start_test_single(node_space_map_t *node_space,
 		return;
 	}
 
-	if (debug_flags & DEBUG_FLAG_HETERO_JOBS)
+	if (debug_flags & DEBUG_FLAG_HETJOB)
 		info("Attempting to start hetjob %u", map->het_job_id);
 
 	rc = _het_job_start_now(map, node_space);
 	if (rc != SLURM_SUCCESS) {
-		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+		if (debug_flags & DEBUG_FLAG_HETJOB) {
 			info("Failed to start hetjob %u",
 			     map->het_job_id);
 		}

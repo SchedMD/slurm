@@ -5258,10 +5258,10 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Gres");
 	}
-	if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+	if (debug_flags & DEBUG_FLAG_HETJOB) {
 		if (rc)
 			xstrcat(rc, ",");
-		xstrcat(rc, "HeteroJobs");
+		xstrcat(rc, "Hetjob");
 	}
 	if (debug_flags & DEBUG_FLAG_INTERCONNECT) {
 		if (rc)
@@ -5444,8 +5444,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_GANG;
 		else if (xstrcasecmp(tok, "Gres") == 0)
 			(*flags_out) |= DEBUG_FLAG_GRES;
-		else if (xstrcasecmp(tok, "HeteroJobs") == 0)
-			(*flags_out) |= DEBUG_FLAG_HETERO_JOBS;
+		else if (xstrcasecmp(tok, "Hetjob") == 0)
+			(*flags_out) |= DEBUG_FLAG_HETJOB;
 		else if (xstrcasecmp(tok, "Federation") == 0)
 			(*flags_out) |= DEBUG_FLAG_FEDR;
 		else if (xstrcasecmp(tok, "Interconnect") == 0)

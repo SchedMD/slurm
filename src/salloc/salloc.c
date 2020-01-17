@@ -448,7 +448,7 @@ int main(int argc, char **argv)
 				my_job_id = alloc->job_id;
 				info("Granted job allocation %u", my_job_id);
 			}
-			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+			if (debug_flags & DEBUG_FLAG_HETJOB) {
 				info("Hetjob ID %u+%u (%u) on nodes %s",
 				     my_job_id, i, alloc->job_id,
 				     alloc->node_list);
