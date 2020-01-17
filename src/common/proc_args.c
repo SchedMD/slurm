@@ -1481,9 +1481,11 @@ void print_db_notok(const char *cname, bool isenv)
  *
  * flagstr IN - reservation flag string
  * msg IN - string to append to error message (e.g. function name)
+ * resv_msg_ptr IN/OUT - sets flags and times in ptr.
  * RET equivalent reservation flag bits
  */
-extern uint64_t parse_resv_flags(const char *flagstr, const char *msg)
+extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
+				 resv_desc_msg_t  *resv_msg_ptr)
 {
 	int flip;
 	uint64_t outflags = 0;
@@ -1617,6 +1619,14 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg)
 			curr++;
 		}
 	}
+
+	if (resv_msg_ptr && (outflags != INFINITE64)) {
+		if (resv_msg_ptr->flags == NO_VAL64)
+			resv_msg_ptr->flags = outflags;
+		else
+			resv_msg_ptr->flags |= outflags;
+	}
+
 	return outflags;
 }
 

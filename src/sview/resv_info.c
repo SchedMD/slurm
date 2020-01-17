@@ -296,11 +296,10 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "features";
 		break;
 	case SORTID_FLAGS:
-		f = parse_resv_flags(new_text, __func__);
+		f = parse_resv_flags(new_text, __func__, resv_msg);
 		type = "flags";
 		if (f == INFINITE64)
 			goto return_error;
-		resv_msg->flags = f;
 		break;
 	case SORTID_LICENSES:
 		resv_msg->licenses = xstrdup(new_text);

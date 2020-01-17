@@ -147,18 +147,14 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			if (plus_minus) {
 				char *tmp =
 					_process_plus_minus(plus_minus, val);
-				f = parse_resv_flags(tmp, msg);
+				f = parse_resv_flags(tmp, msg, resv_msg_ptr);
 				xfree(tmp);
 				plus_minus = '\0';
 			} else {
-				f = parse_resv_flags(val, msg);
+				f = parse_resv_flags(val, msg, resv_msg_ptr);
 			}
-			if (f == INFINITE64) {
+			if (f == INFINITE64)
 				return SLURM_ERROR;
-			} else if (resv_msg_ptr->flags == NO_VAL64)
-				resv_msg_ptr->flags = f;
-			else
-				resv_msg_ptr->flags |= f;
 		} else if (!xstrncasecmp(tag, "Users", MAX(taglen, 1))) {
 			if (resv_msg_ptr->users) {
 				exit_code = 1;
