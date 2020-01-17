@@ -2983,9 +2983,10 @@ extern char *trigger_type(uint32_t trig_type)
 }
 
 /* user needs to xfree return value */
-extern char *reservation_flags_string(uint64_t flags)
+extern char *reservation_flags_string(reserve_info_t * resv_ptr)
 {
 	char *flag_str = xstrdup("");
+	uint64_t flags = resv_ptr->flags;
 
 	if (flags & RESERVE_FLAG_MAINT)
 		xstrcat(flag_str, "MAINT");

@@ -123,7 +123,7 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	xstrcat(out, line_end);
 
 	/****** Line ******/
-	flag_str = reservation_flags_string(resv_ptr->flags);
+	flag_str = reservation_flags_string(resv_ptr);
 
 	xstrfmtcat(out, "Nodes=%s NodeCnt=%u CoreCnt=%u Features=%s "
 		   "PartitionName=%s Flags=%s",

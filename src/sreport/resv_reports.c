@@ -460,10 +460,16 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_FLAGS:
-			temp_char = reservation_flags_string(resv_ptr->flags);
+		{
+			reserve_info_t resv_info = {
+				.flags = resv_ptr->flags,
+			};
+
+			temp_char = reservation_flags_string(&resv_info);
 			field->print_routine(field, temp_char,
 					     (curr_inx == field_count));
 			break;
+		}
 		case PRINT_RESV_TIME:
 			field->print_routine(field, (uint32_t)total_time,
 					     (curr_inx == field_count));

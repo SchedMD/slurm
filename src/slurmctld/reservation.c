@@ -570,9 +570,12 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 		snprintf(watts_str, sizeof(watts_str), "%u",
 			 resv_ptr->resv_watts);
 	}
-	if (resv_ptr->flags != NO_VAL64)
-		flag_str = reservation_flags_string(resv_ptr->flags);
-
+	if (resv_ptr->flags != NO_VAL64) {
+		reserve_info_t resv_info = {
+			.flags = resv_ptr->flags,
+		};
+		flag_str = reservation_flags_string(&resv_info);
+	}
 	if (resv_ptr->duration == NO_VAL)
 		duration = -1;
 	else

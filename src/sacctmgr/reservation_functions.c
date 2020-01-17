@@ -263,14 +263,20 @@ int sacctmgr_list_reservation(int argc, char **argv)
 					(curr_inx == field_count));
 				break;
 			case PRINT_FLAGS:
+			{
+				reserve_info_t resv_info = {
+					.flags = reservation->flags,
+				};
+
 				tmp_char = reservation_flags_string(
-					reservation->flags);
+					&resv_info);
 				field->print_routine(
 					field,
 					tmp_char,
 					(curr_inx == field_count));
 				xfree(tmp_char);
 				break;
+			}
 			case PRINT_ID:
 				field->print_routine(field,
 						     reservation->id,

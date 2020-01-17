@@ -541,7 +541,7 @@ static void _layout_resv_record(GtkTreeView *treeview,
 						 SORTID_FEATURES),
 				   resv_ptr->features);
 
-	temp_char = reservation_flags_string(resv_ptr->flags);
+	temp_char = reservation_flags_string(resv_ptr);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_resv,
 						 SORTID_FLAGS),
@@ -629,7 +629,7 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 	slurm_make_time_str((time_t *)&resv_ptr->end_time, tmp_end,
 			    sizeof(tmp_end));
 
-	tmp_flags = reservation_flags_string(resv_ptr->flags);
+	tmp_flags = reservation_flags_string(resv_ptr);
 
 	convert_num_unit((float)resv_ptr->core_cnt,
 			 tmp_cores, sizeof(tmp_cores), UNIT_NONE, NO_VAL,
