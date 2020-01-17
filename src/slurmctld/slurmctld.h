@@ -429,6 +429,8 @@ typedef struct slurmctld_resv {
 	uint32_t duration;	/* time in seconds for this
 				 * reservation to last                  */
 	time_t end_time;	/* end time of reservation		*/
+	time_t idle_start_time;	/* first time when reservation had no jobs
+				 * running on it */
 	char *features;		/* required node features		*/
 	uint64_t flags;		/* see RESERVE_FLAG_* in slurm.h	*/
 	bool full_nodes;	/* when reservation uses full nodes or not */

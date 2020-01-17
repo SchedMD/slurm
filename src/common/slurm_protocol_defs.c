@@ -48,6 +48,7 @@
 #include "src/common/job_options.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
+#include "src/common/parse_time.h"
 #include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_acct_gather_energy.h"
@@ -3103,7 +3104,13 @@ extern char *reservation_flags_string(reserve_info_t * resv_ptr)
 	if (flags & RESERVE_FLAG_PURGE_COMP) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "PURGE_COMP");
+		if (resv_ptr->purge_comp_time) {
+			char tmp_pct[40];
+			secs2time_str(resv_ptr->purge_comp_time,
+				      tmp_pct, sizeof(tmp_pct));
+			xstrfmtcat(flag_str, "PURGE_COMP=%s", tmp_pct);
+		} else
+			xstrcat(flag_str, "PURGE_COMP");
 	}
 	if (flags & RESERVE_FLAG_NO_HOLD_JOBS) {
 		if (flag_str[0])
