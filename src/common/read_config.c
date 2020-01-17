@@ -5226,6 +5226,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "DB_WCKey");
 	}
+	if (debug_flags & DEBUG_FLAG_DEPENDENCY) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Dependency");
+	}
 	if (debug_flags & DEBUG_FLAG_ESEARCH) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5438,6 +5443,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_DB_USAGE;
 		else if (xstrcasecmp(tok, "DB_WCKey") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_WCKEY;
+		else if (xstrcasecmp(tok, "Dependency") == 0)
+			(*flags_out) |= DEBUG_FLAG_DEPENDENCY;
 		else if (xstrcasecmp(tok, "Elasticsearch") == 0)
 			(*flags_out) |= DEBUG_FLAG_ESEARCH;
 		else if (xstrcasecmp(tok, "Energy") == 0)
