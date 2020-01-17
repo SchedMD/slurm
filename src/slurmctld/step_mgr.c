@@ -3292,20 +3292,12 @@ extern int kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 #else
 	static bool front_end = false;
 #endif
-	static int launch_slurm = -1;
 	ListIterator step_iterator;
 	step_record_t *step_ptr;
 	int i, i_first, i_last;
 	uint32_t step_rc = 0;
 	int bit_position, found = 0, rem = 0, step_node_inx;
 	step_complete_msg_t req;
-
-	if (launch_slurm == -1) {
-		if (!xstrcmp(slurmctld_conf.launch_type, "launch/slurm"))
-			launch_slurm = 1;
-		else
-			launch_slurm = 0;
-	}
 
 	if ((job_ptr == NULL) || (node_ptr == NULL))
 		return found;
@@ -3341,11 +3333,10 @@ extern int kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 			     node_ptr->name);
 
 			/*
-			 * Never signal tasks on a front_end system or not using
-			 * Slurm task launcher (i.e. BGQ and ALPS) system.
+			 * Never signal tasks on a front_end system.
 			 * Otherwise signal step on all nodes
 			 */
-			if (!front_end && launch_slurm) {
+			if (!front_end) {
 				signal_step_tasks(step_ptr, SIGKILL,
 						  REQUEST_TERMINATE_TASKS);
 			}
@@ -4128,22 +4119,8 @@ static void _signal_step_timelimit(job_record_t *job_ptr, step_record_t *step_pt
 #endif
 	kill_job_msg_t *kill_step;
 	agent_arg_t *agent_args = NULL;
-	static int notify_srun = -1;
-
-	if (notify_srun == -1) {
-		/* do this for all but slurm (poe, aprun, etc...) */
-		if (xstrcmp(slurmctld_conf.launch_type, "launch/slurm"))
-			notify_srun = 1;
-		else
-			notify_srun = 0;
-	}
 
 	step_ptr->state = JOB_TIMEOUT;
-
-	if (notify_srun) {	/* Handle termination from srun, not slurmd */
-		srun_step_timeout(step_ptr, now);
-		return;
-	}
 
 	xassert(step_ptr);
 	agent_args = xmalloc(sizeof(agent_arg_t));
