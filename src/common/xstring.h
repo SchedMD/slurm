@@ -100,11 +100,10 @@ void _xiso8601timecat(char **str, bool);
 void _xrfc5424timecat(char **str, bool);
 
 /*
-** concatenate printf-style formatted string onto str
-** return value is result from vsnprintf(3)
-*/
-int _xstrfmtcat(char **str, const char *fmt, ...)
-  __attribute__ ((format (printf, 2, 3)));
+ * Concatenate printf-style formatted string onto str
+ */
+void _xstrfmtcat(char **str, const char *fmt, ...)
+	__attribute__((format(printf, 2, 3)));
 
 /*
  * Concatenate printf-style formatted string onto str at position pos.

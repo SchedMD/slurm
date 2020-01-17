@@ -258,9 +258,8 @@ void _xrfc5424timecat(char **buf, bool msec)
  * append formatted string with printf-style args to buf, expanding
  * buf as needed
  */
-int _xstrfmtcat(char **str, const char *fmt, ...)
+void _xstrfmtcat(char **str, const char *fmt, ...)
 {
-	int n;
 	char *p = NULL;
 	va_list ap;
 
@@ -268,14 +267,11 @@ int _xstrfmtcat(char **str, const char *fmt, ...)
 	p = _xstrdup_vprintf(fmt, ap);
 	va_end(ap);
 
-	if (p == NULL)
-		return 0;
+	if (!p)
+		return;
 
-	n = strlen(p);
 	xstrcat(*str, p);
 	xfree(p);
-
-	return n;
 }
 
 /*
