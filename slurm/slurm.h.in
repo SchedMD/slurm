@@ -2646,7 +2646,7 @@ typedef struct slurm_ctl_conf {
 					 * location */
 	char *accounting_storage_pass;	/* accounting storage
 					 * password */
-	uint32_t accounting_storage_port;/* node accountinging storage port */
+	uint32_t accounting_storage_port;/* node accounting storage port */
 	char *accounting_storage_type; /* accounting storage type */
 	char *accounting_storage_user; /* accounting storage user */
 	void *acct_gather_conf; /* account gather config */
