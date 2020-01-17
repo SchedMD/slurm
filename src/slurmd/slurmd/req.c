@@ -5809,8 +5809,11 @@ static char **_build_env(job_env_t *job_env, bool is_epilog)
 
 	setenvf(&env, "SLURM_JOBID", "%u", job_env->jobid);
 
-	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL))
+	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL)) {
+		/* Continue support for old hetjob terminology. */
 		setenvf(&env, "SLURM_PACK_JOB_ID", "%u", job_env->het_job_id);
+		setenvf(&env, "SLURM_HET_JOB_ID", "%u", job_env->het_job_id);
+	}
 
 	setenvf(&env, "SLURM_UID", "%u", job_env->uid);
 

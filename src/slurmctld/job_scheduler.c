@@ -3847,9 +3847,14 @@ static char **_build_env(job_record_t *job_ptr, bool is_epilog)
 	}
 
 	if (job_ptr->het_job_id) {
+		/* Continue support for old hetjob terminology. */
 		setenvf(&my_env, "SLURM_PACK_JOB_ID", "%u",
 			job_ptr->het_job_id);
 		setenvf(&my_env, "SLURM_PACK_JOB_OFFSET", "%u",
+			job_ptr->het_job_offset);
+		setenvf(&my_env, "SLURM_HET_JOB_ID", "%u",
+			job_ptr->het_job_id);
+		setenvf(&my_env, "SLURM_HET_JOB_OFFSET", "%u",
 			job_ptr->het_job_offset);
 		if ((job_ptr->het_job_offset == 0) && job_ptr->het_job_list) {
 			job_record_t *het_job = NULL;
@@ -3883,7 +3888,10 @@ static char **_build_env(job_record_t *job_ptr, bool is_epilog)
 			if (hs) {
 				char *buf = xmalloc(hs_len);
 				(void) hostset_ranged_string(hs, hs_len, buf);
+				/* Support for old hetjob terminology. */
 				setenvf(&my_env, "SLURM_PACK_JOB_NODELIST",
+					"%s", buf);
+				setenvf(&my_env, "SLURM_HET_JOB_NODELIST",
 					"%s", buf);
 				xfree(buf);
 				hostset_destroy(hs);
