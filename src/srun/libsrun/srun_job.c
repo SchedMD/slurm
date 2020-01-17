@@ -538,7 +538,7 @@ static void _pack_grp_test(List opt_list)
 		FREE_NULL_BITMAP(master_map);
 		list_iterator_destroy(iter);
 		list_destroy(missing_argv_list);
-	} else if (!sropt.pack_group && !getenv("SLURM_PACK_SIZE")) {
+	} else if (!sropt.pack_group && !getenv("SLURM_HET_SIZE")) {
 		FREE_NULL_BITMAP(sropt.pack_grp_bits);
 		/* pack_group is already NULL */
 	} else if (!sropt.pack_group && sropt.pack_grp_bits) {
@@ -1263,7 +1263,9 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			}
 			list_iterator_destroy(opt_iter);
 			list_iterator_destroy(resp_iter);
+			/* Continue support for old hetjob terminology. */
 			setenvfs("SLURM_PACK_SIZE=%d", het_job_offset + 1);
+			setenvfs("SLURM_HET_SIZE=%d", het_job_offset + 1);
 		} else {
 			if (!(resp = allocate_nodes(handle_signals, &opt)))
 				exit(error_exit);

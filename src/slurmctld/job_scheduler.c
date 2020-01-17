@@ -2484,8 +2484,11 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 		het_job_offset++;
 	}
 	list_iterator_destroy(iter);
+	/* Continue support for old hetjob terminology. */
 	(void) env_array_overwrite_fmt(&launch_msg_ptr->environment,
 				       "SLURM_PACK_SIZE", "%d", het_job_offset);
+	(void) env_array_overwrite_fmt(&launch_msg_ptr->environment,
+				       "SLURM_HET_SIZE", "%d", het_job_offset);
 
 	for (i = 0; launch_msg_ptr->environment[i]; i++)
 		;
