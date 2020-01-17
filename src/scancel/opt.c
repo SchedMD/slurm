@@ -520,7 +520,7 @@ _xlate_job_step_ids(char **rest)
 				exit (1);
 			}
 			opt.array_id[buf_offset] = tmp_l;
-		} else if (next_str[0] == '+') {	/* Pack job component */
+		} else if (next_str[0] == '+') {	/* Hetjob component */
 			tmp_l = strtol(&next_str[1], &next_str, 10);
 			if (tmp_l < 0) {
 				error ("Invalid job id %s", id_args[i]);
