@@ -106,7 +106,7 @@ static int _tcp_connect(void *_priv, void *ep_data, size_t ep_len,
 	int fd, i, conn_timeout = 5;
 	char *nodename = pmixp_info_job_host(priv->nodeid);
 
-	if (slurm_conf_get_addr(nodename, &address) == SLURM_ERROR) {
+	if (slurm_conf_get_addr(nodename, &address, 0) == SLURM_ERROR) {
 		PMIXP_ERROR("Can't find address for host "
 			    "%s, check slurm.conf", nodename);
 		xfree(nodename);

@@ -109,7 +109,8 @@ void *_forward_thread(void *arg)
 
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(hl))) {
-		if (slurm_conf_get_addr(name, &addr) == SLURM_ERROR) {
+		if (slurm_conf_get_addr(name, &addr, fwd_msg->header.flags)
+		    == SLURM_ERROR) {
 			error("forward_thread: can't find address for host "
 			      "%s, check slurm.conf", name);
 			slurm_mutex_lock(&fwd_struct->forward_mutex);
@@ -358,7 +359,7 @@ void *_fwd_tree_thread(void *arg)
 
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(fwd_tree->tree_hl))) {
-		if (slurm_conf_get_addr(name, &send_msg.address)
+		if (slurm_conf_get_addr(name, &send_msg.address, send_msg.flags)
 		    == SLURM_ERROR) {
 			error("fwd_tree_thread: can't find address for host "
 			      "%s, check slurm.conf", name);

@@ -585,7 +585,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 			/* Find the slurm_addr_t of this node's parent slurmd
 			 * in the step host list */
 			parent_alias = hostset_nth(step_hset, parent_rank);
-			rc = slurm_conf_get_addr(parent_alias, &parent_addr);
+			rc = slurm_conf_get_addr(parent_alias, &parent_addr, 0);
 			if (rc != SLURM_SUCCESS) {
 				error("Failed looking up address for "
 				      "NodeName %s", parent_alias);

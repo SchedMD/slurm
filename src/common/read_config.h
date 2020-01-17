@@ -512,7 +512,8 @@ extern uint16_t slurm_conf_get_port(const char *node_name);
  *
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
-extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address);
+extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
+			       uint16_t flags);
 
 /*
  * slurm_conf_get_cpus_bsct -

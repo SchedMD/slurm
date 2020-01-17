@@ -103,7 +103,8 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 	slurm_msg_t_init(&msg);
 	msg.msg_type = REQUEST_SIGNAL_TASKS;
 	msg.data = &rpc;
-	if (slurm_conf_get_addr(name, &msg.address) == SLURM_ERROR) {
+	if (slurm_conf_get_addr(name, &msg.address, msg.flags)
+	    == SLURM_ERROR) {
 		error("_signal_batch_script_step: "
 		      "can't find address for host %s, check slurm.conf",
 		      name);
@@ -160,7 +161,8 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
 	msg.msg_type = REQUEST_TERMINATE_TASKS;
 	msg.data = &rpc;
 
-	if (slurm_conf_get_addr(name, &msg.address) == SLURM_ERROR) {
+	if (slurm_conf_get_addr(name, &msg.address, msg.flags)
+	    == SLURM_ERROR) {
 		error("_terminate_batch_script_step: "
 		      "can't find address for host %s, check slurm.conf",
 		      name);

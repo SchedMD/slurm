@@ -958,7 +958,8 @@ static void *_thread_per_group_rpc(void *args)
 		} else {
 			//info("no address given");
 			if (slurm_conf_get_addr(thread_ptr->nodelist,
-					       &msg.address) == SLURM_ERROR) {
+					        &msg.address, msg.flags)
+			    == SLURM_ERROR) {
 				error("%s: can't find address for host %s, check slurm.conf",
 				      __func__, thread_ptr->nodelist);
 				goto cleanup;

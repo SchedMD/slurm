@@ -395,7 +395,8 @@ static int _pmix_p2p_send_core(const char *nodename, const char *address,
 	msg.msg_type = REQUEST_FORWARD_DATA;
 	msg.data = &req;
 
-	if (slurm_conf_get_addr(nodename, &msg.address) == SLURM_ERROR) {
+	if (slurm_conf_get_addr(nodename, &msg.address, msg.flags)
+	    == SLURM_ERROR) {
 		PMIXP_ERROR("Can't find address for host "
 			    "%s, check slurm.conf", nodename);
 		return SLURM_ERROR;

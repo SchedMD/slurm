@@ -1473,7 +1473,8 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 
 	if (cluster_flags & CLUSTER_FLAG_MULTSD) {
 		if ((this_addr = getenv("SLURMD_NODENAME"))) {
-			slurm_conf_get_addr(this_addr, &req_msg.address);
+			slurm_conf_get_addr(this_addr, &req_msg.address,
+					    req_msg.flags);
 		} else {
 			this_addr = "localhost";
 			slurm_set_addr(&req_msg.address,

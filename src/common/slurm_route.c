@@ -196,7 +196,7 @@ static void _set_collectors(char *this_node_name)
 				slurm_set_addr(msg_collect_node, parent_port,
 					       parent);
 			} else {
-				slurm_conf_get_addr(parent, msg_collect_node);
+				slurm_conf_get_addr(parent, msg_collect_node, 0);
 				msg_collect_node->sin_port = htons(parent_port);
 			}
 			if (debug_flags & DEBUG_FLAG_ROUTE) {
@@ -216,7 +216,7 @@ static void _set_collectors(char *this_node_name)
 						       backup_port, backup[i]);
 				} else {
 					slurm_conf_get_addr(backup[i],
-						msg_collect_backup[i-1]);
+						msg_collect_backup[i-1], 0);
 					msg_collect_backup[i-1]->sin_port =
 						htons(backup_port);
 				}

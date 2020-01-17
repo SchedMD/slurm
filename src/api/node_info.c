@@ -821,10 +821,11 @@ extern int slurm_get_node_energy(char *host, uint16_t delta,
 	slurm_msg_t_init(&resp_msg);
 
 	if (host)
-		slurm_conf_get_addr(host, &req_msg.address);
+		slurm_conf_get_addr(host, &req_msg.address, req_msg.flags);
 	else if (cluster_flags & CLUSTER_FLAG_MULTSD) {
 		if ((this_addr = getenv("SLURMD_NODENAME"))) {
-			slurm_conf_get_addr(this_addr, &req_msg.address);
+			slurm_conf_get_addr(this_addr, &req_msg.address,
+					    req_msg.flags);
 		} else {
 			this_addr = "localhost";
 			slurm_set_addr(&req_msg.address,

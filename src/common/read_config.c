@@ -2554,7 +2554,8 @@ extern void slurm_reset_alias(char *node_name, char *node_addr,
  * slurm_conf_get_addr - Return the slurm_addr_t for a given NodeName
  * Returns SLURM_SUCCESS on success, SLURM_ERROR on failure.
  */
-extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address)
+extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
+			       uint16_t flags)
 {
 	int idx;
 	names_ll_t *p;
