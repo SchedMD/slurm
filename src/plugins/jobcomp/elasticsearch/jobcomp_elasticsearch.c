@@ -660,9 +660,14 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 	}
 
 	if (job_ptr->het_job_id != NO_VAL) {
+		/* Continue supporting the old terms. */
 		xstrfmtcat(json_str, ",\"pack_job_id\":%lu",
 			   (unsigned long) job_ptr->het_job_id);
 		xstrfmtcat(json_str, ",\"pack_job_offset\":%lu",
+			   (unsigned long) job_ptr->het_job_offset);
+		xstrfmtcat(json_str, ",\"het_job_id\":%lu",
+			   (unsigned long) job_ptr->het_job_id);
+		xstrfmtcat(json_str, ",\"het_job_offset\":%lu",
 			   (unsigned long) job_ptr->het_job_offset);
 	}
 

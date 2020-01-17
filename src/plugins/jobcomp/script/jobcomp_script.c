@@ -404,8 +404,11 @@ static char ** _create_environment (struct jobcomp_info *job)
 	_env_append_fmt (&env, "ARRAYJOBID", "%u", job->array_job_id);
 	_env_append_fmt (&env, "ARRAYTASKID", "%u", job->array_task_id);
 	if (job->het_job_id) {
+		/* Continue supporting the old terms. */
 		_env_append_fmt (&env, "PACKJOBID", "%u", job->het_job_id);
 		_env_append_fmt (&env, "PACKJOBOFFSET", "%u", job->het_job_offset);
+		_env_append_fmt (&env, "HETJOBID", "%u", job->het_job_id);
+		_env_append_fmt (&env, "HETJOBOFFSET", "%u", job->het_job_offset);
 	}
 	_env_append_fmt (&env, "UID",   "%u",  job->uid);
 	_env_append_fmt (&env, "GID",   "%u",  job->gid);
