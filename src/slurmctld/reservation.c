@@ -5412,10 +5412,10 @@ static int _job_resv_check(void *x, void *arg)
 
 	xassert(job_ptr->resv_ptr->magic == RESV_MAGIC);
 
-	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
-		job_ptr->resv_ptr->job_run_cnt++;
-	else if (IS_JOB_PENDING(job_ptr))
+	if (IS_JOB_PENDING(job_ptr))
 		job_ptr->resv_ptr->job_pend_cnt++;
+	else if (!IS_JOB_FINISHED(job_ptr))
+		job_ptr->resv_ptr->job_run_cnt++;
 
 	return SLURM_SUCCESS;
 }
