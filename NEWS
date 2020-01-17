@@ -72,6 +72,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leak in scontrol show config.
  -- Remove PART_NODES reservation flag after ignoring it at creation.
  -- Fix deprecation of MemLimitEnforce parameter.
+ -- X11 forwarding - alter Xauthority regex to work when "FamilyWild" cookies
+    are present in the "xauth list" output.
 
 * Changes in Slurm 19.05.5
 ==========================
