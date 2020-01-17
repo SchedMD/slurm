@@ -253,11 +253,12 @@ set alpha_numeric_nodelist "$alpha_numeric_under\\\[?\[$alpha_numeric_comma\]?\\
 set controlmachine_regex "\[a-zA-Z0-9,\-\.\]+"
 # Any characters except ( , : newline
 set no_delim             "\[^(,:\r\n\]"
+set no_delim_slash       "\[^(,:/\r\n\]"
 # The first group matches GRES name
 # The second **optional** group matches GRES type.
 # The third group matches GRES count.
 # Test out the regex here: https://regex101.com/r/FlNYKM/7
-set gres_regex "($no_delim*):($no_delim*)?:?($no_delim*)"
+set gres_regex "($no_delim_slash*):($no_delim*)?:?($no_delim*)"
 
 #
 # Cache SlurmUser to check for SuperUser requests
