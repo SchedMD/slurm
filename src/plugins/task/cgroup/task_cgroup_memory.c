@@ -569,7 +569,6 @@ static int _register_oom_notifications(char * cgpath)
 {
 	char *control_file = NULL, *event_file = NULL, *line = NULL;
 	int rc = SLURM_SUCCESS, event_fd = -1, cfd = -1, efd = -1;
-	size_t ret;
 	oom_event_args_t *event_args;
 
 	if ((cgpath == NULL) || (cgpath[0] == '\0')) {
@@ -600,17 +599,11 @@ static int _register_oom_notifications(char * cgpath)
 		goto fini;
 	}
 
-	ret = xstrfmtcat(line, "%d %d", event_fd, cfd);
-
-	if (ret >= LINE_MAX) {
-		error("%s: line is too long: %s", __func__, line);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
+	xstrfmtcat(line, "%d %d", event_fd, cfd);
 
 	oom_kill_count = 0;
 
-	if (write(efd, line, ret + 1) == -1) {
+	if (write(efd, line, strlen(line) + 1) == -1) {
 		error("%s: Cannot write to %s", __func__, event_file);
 		rc = SLURM_ERROR;
 		goto fini;
