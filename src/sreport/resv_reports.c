@@ -118,7 +118,7 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Flags",
 					 MAX(command_len, 2))) {
 			resv_cond->flags = parse_resv_flags(argv[i]+end,
-							    __func__);
+							    __func__, NULL);
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 2))) {
@@ -460,10 +460,16 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_FLAGS:
-			temp_char = reservation_flags_string(resv_ptr->flags);
+		{
+			reserve_info_t resv_info = {
+				.flags = resv_ptr->flags,
+			};
+
+			temp_char = reservation_flags_string(&resv_info);
 			field->print_routine(field, temp_char,
 					     (curr_inx == field_count));
 			break;
+		}
 		case PRINT_RESV_TIME:
 			field->print_routine(field, (uint32_t)total_time,
 					     (curr_inx == field_count));

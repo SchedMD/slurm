@@ -429,6 +429,8 @@ typedef struct slurmctld_resv {
 	uint32_t duration;	/* time in seconds for this
 				 * reservation to last                  */
 	time_t end_time;	/* end time of reservation		*/
+	time_t idle_start_time;	/* first time when reservation had no jobs
+				 * running on it */
 	char *features;		/* required node features		*/
 	uint64_t flags;		/* see RESERVE_FLAG_* in slurm.h	*/
 	bool full_nodes;	/* when reservation uses full nodes or not */
@@ -448,6 +450,10 @@ typedef struct slurmctld_resv {
 	char *node_list;	/* list of reserved nodes or ALL	*/
 	char *partition;	/* name of partition to be used		*/
 	part_record_t *part_ptr;/* pointer to partition used		*/
+	uint32_t purge_comp_time; /* If PURGE_COMP flag is set the amount of
+				   * minutes this reservation will sit idle
+				   * until it is revoked.
+				   */
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
 	uint32_t resv_watts;	/* amount of power to reserve */
 	bool run_epilog;	/* set if epilog has been executed	*/

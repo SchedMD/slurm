@@ -570,9 +570,13 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 		snprintf(watts_str, sizeof(watts_str), "%u",
 			 resv_ptr->resv_watts);
 	}
-	if (resv_ptr->flags != NO_VAL64)
-		flag_str = reservation_flags_string(resv_ptr->flags);
-
+	if (resv_ptr->flags != NO_VAL64) {
+		reserve_info_t resv_info = {
+			.flags = resv_ptr->flags,
+			.purge_comp_time = resv_ptr->purge_comp_time
+		};
+		flag_str = reservation_flags_string(&resv_info);
+	}
 	if (resv_ptr->duration == NO_VAL)
 		duration = -1;
 	else
@@ -1604,6 +1608,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack32(resv_ptr->node_cnt,	buffer);
 		packstr(resv_ptr->node_list,	buffer);
 		packstr(resv_ptr->partition,	buffer);
+		pack32(resv_ptr->purge_comp_time, buffer);
 		pack32(resv_ptr->resv_watts,    buffer);
 		pack_time(start_relative,	buffer);
 		packstr(resv_ptr->tres_fmt_str,	buffer);
@@ -1627,6 +1632,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 			pack32(resv_ptr->resv_id,	buffer);
 			pack_time(resv_ptr->start_time_prev, buffer);
 			pack_time(resv_ptr->start_time,	buffer);
+			pack_time(resv_ptr->idle_start_time, buffer);
 			packstr(resv_ptr->tres_str,	buffer);
 			pack8(resv_ptr->user_not,	buffer);
 		} else {
@@ -1759,6 +1765,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 				       &uint32_tmp,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->partition,
 				       &uint32_tmp, 	buffer);
+		safe_unpack32(&resv_ptr->purge_comp_time, buffer);
 		safe_unpack32(&resv_ptr->resv_watts,    buffer);
 		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->tres_fmt_str,
@@ -1778,9 +1785,12 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpack32(&resv_ptr->resv_id,	buffer);
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
 		safe_unpack_time(&resv_ptr->start_time, buffer);
+		safe_unpack_time(&resv_ptr->idle_start_time, buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->tres_str,
 				       &uint32_tmp, 	buffer);
 		safe_unpack8((uint8_t *)&resv_ptr->user_not,	buffer);
+		if (!resv_ptr->purge_comp_time)
+			resv_ptr->purge_comp_time = 300;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv_ptr->accounts,
 				       &uint32_tmp,	buffer);
@@ -1822,6 +1832,8 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpackstr_xmalloc(&resv_ptr->tres_str,
 				       &uint32_tmp, 	buffer);
 		safe_unpack8((uint8_t *)&resv_ptr->user_not,	buffer);
+		if (!resv_ptr->purge_comp_time)
+			resv_ptr->purge_comp_time = 300;
 	} else
 		goto unpack_error;
 
@@ -2413,6 +2425,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->burst_buffer	= resv_desc_ptr->burst_buffer;
 	resv_desc_ptr->burst_buffer = NULL;	/* Nothing left to free */
 	resv_ptr->duration      = resv_desc_ptr->duration;
+	if (resv_desc_ptr->purge_comp_time != NO_VAL)
+		resv_ptr->purge_comp_time = resv_desc_ptr->purge_comp_time;
+	else
+		resv_ptr->purge_comp_time = 300; /* default to 5 minutes */
 	resv_ptr->end_time	= resv_desc_ptr->end_time;
 	resv_ptr->features	= resv_desc_ptr->features;
 	resv_desc_ptr->features = NULL;		/* Nothing left to free */
@@ -2610,8 +2626,11 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 		if (resv_desc_ptr->flags & RESERVE_FLAG_PURGE_COMP)
 			resv_ptr->flags |= RESERVE_FLAG_PURGE_COMP;
-		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_PURGE_COMP)
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_PURGE_COMP) {
 			resv_ptr->flags &= (~RESERVE_FLAG_PURGE_COMP);
+			if (resv_desc_ptr->purge_comp_time == NO_VAL)
+				resv_ptr->purge_comp_time = 300;
+		}
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_HOLD_JOBS)
 			resv_ptr->flags |= RESERVE_FLAG_NO_HOLD_JOBS;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_PROM)
@@ -2625,6 +2644,9 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 
 	if (resv_desc_ptr->max_start_delay != NO_VAL)
 		resv_ptr->max_start_delay = resv_desc_ptr->max_start_delay;
+
+	if (resv_desc_ptr->purge_comp_time != NO_VAL)
+		resv_ptr->purge_comp_time = resv_desc_ptr->purge_comp_time;
 
 	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')) {
 		/* Clear the partition */
@@ -3718,6 +3740,7 @@ extern int validate_job_resv(job_record_t *job_ptr)
 	if (rc == SLURM_SUCCESS) {
 		job_ptr->resv_id    = resv_ptr->resv_id;
 		job_ptr->resv_ptr   = resv_ptr;
+		resv_ptr->idle_start_time = 0;
 		_validate_node_choice(resv_ptr);
 	}
 	return rc;
@@ -5393,10 +5416,10 @@ static int _job_resv_check(void *x, void *arg)
 
 	xassert(job_ptr->resv_ptr->magic == RESV_MAGIC);
 
-	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
-		job_ptr->resv_ptr->job_run_cnt++;
-	else if (IS_JOB_PENDING(job_ptr))
+	if (IS_JOB_PENDING(job_ptr))
 		job_ptr->resv_ptr->job_pend_cnt++;
+	else if (!IS_JOB_FINISHED(job_ptr))
+		job_ptr->resv_ptr->job_run_cnt++;
 
 	return SLURM_SUCCESS;
 }
@@ -5585,24 +5608,6 @@ static void _run_script(char *script, slurmctld_resv_t *resv_ptr)
 	slurm_thread_create_detached(NULL, _fork_script, args);
 }
 
-/* Return the count of incomplete jobs associated with a given reservation */
-static int _resv_job_count(slurmctld_resv_t *resv_ptr)
-{
-	int cnt = 0;
-	ListIterator iter;
-	job_record_t *job_ptr;
-
-	iter = list_iterator_create(job_list);
-	while ((job_ptr = list_next(iter))) {
-		if (!IS_JOB_FINISHED(job_ptr) &&
-		    !xstrcmp(job_ptr->resv_name, resv_ptr->name))
-			cnt++;
-	}
-	list_iterator_destroy(iter);
-
-	return cnt;
-}
-
 static int _resv_list_reset_cnt(void *x, void *arg)
 {
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
@@ -5633,12 +5638,20 @@ extern void job_resv_check(void)
 
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
-		if ((resv_ptr->start_time <= (now - 300)) &&
+		if (resv_ptr->job_run_cnt || resv_ptr->job_pend_cnt)
+			resv_ptr->idle_start_time = 0;
+		else if (!resv_ptr->idle_start_time)
+			resv_ptr->idle_start_time = now;
+		if ((resv_ptr->flags & RESERVE_FLAG_PURGE_COMP) &&
+		    resv_ptr->idle_start_time &&
 		    (resv_ptr->end_time > now) &&
-		    (resv_ptr->flags & RESERVE_FLAG_PURGE_COMP) &&
-		    (_resv_job_count(resv_ptr) == 0)) {
-			info("Reservation %s has no more jobs, ending it",
-			     resv_ptr->name);
+		    (resv_ptr->purge_comp_time <=
+		     (now - resv_ptr->idle_start_time))) {
+			char tmp_pct[40];
+			secs2time_str(resv_ptr->purge_comp_time,
+				      tmp_pct, sizeof(tmp_pct));
+			info("Reservation %s has no more jobs for %s, ending it",
+			     resv_ptr->name, tmp_pct);
 			resv_backup = _copy_resv(resv_ptr);
 			resv_ptr->end_time = now;
 			_post_resv_update(resv_ptr, resv_backup); /* accounting */

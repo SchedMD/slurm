@@ -58,6 +58,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/proc_args.h"
+#include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/xmalloc.h"
@@ -1481,13 +1482,15 @@ void print_db_notok(const char *cname, bool isenv)
  *
  * flagstr IN - reservation flag string
  * msg IN - string to append to error message (e.g. function name)
+ * resv_msg_ptr IN/OUT - sets flags and times in ptr.
  * RET equivalent reservation flag bits
  */
-extern uint64_t parse_resv_flags(const char *flagstr, const char *msg)
+extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
+				 resv_desc_msg_t  *resv_msg_ptr)
 {
 	int flip;
 	uint64_t outflags = 0;
-	const char *curr = flagstr;
+	char *curr = xstrdup(flagstr), *start = curr;
 	int taglen = 0;
 
 	while (*curr != '\0') {
@@ -1499,7 +1502,8 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg)
 			curr++;
 		}
 		taglen = 0;
-		while (curr[taglen] != ',' && curr[taglen] != '\0')
+		while (curr[taglen] != ',' && curr[taglen] != '\0'
+		       && curr[taglen] != '=')
 			taglen++;
 
 		if (xstrncasecmp(curr, "Maintenance", MAX(taglen,1)) == 0) {
@@ -1581,8 +1585,24 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg)
 				outflags |= RESERVE_FLAG_NO_PROM;
 			else
 				outflags |= RESERVE_FLAG_PROM;
-		} else if (xstrncasecmp(curr, "PURGE_COMP", MAX(taglen, 2))
-			   == 0) {
+		} else if (!xstrncasecmp(curr, "PURGE_COMP", MAX(taglen, 2))) {
+			if (curr[taglen] == '=') {
+				int num_end;
+				taglen++;
+
+				num_end = taglen;
+				while (curr[num_end] != ',' &&
+				       curr[num_end] != '\0')
+					num_end++;
+				if (curr[num_end] == ',') {
+					curr[num_end] = '\0';
+					num_end++;
+				}
+				if (resv_msg_ptr)
+					resv_msg_ptr->purge_comp_time =
+						time_str2secs(curr+taglen);
+				taglen = num_end;
+			}
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_PURGE_COMP;
@@ -1617,6 +1637,14 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg)
 			curr++;
 		}
 	}
+
+	if (resv_msg_ptr && (outflags != INFINITE64)) {
+		if (resv_msg_ptr->flags == NO_VAL64)
+			resv_msg_ptr->flags = outflags;
+		else
+			resv_msg_ptr->flags |= outflags;
+	}
+	xfree(start);
 	return outflags;
 }
 
