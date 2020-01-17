@@ -63,7 +63,7 @@
 #define XFGETS_CHUNKSIZE 64
 
 /* Static functions. */
-static char *_xstrdup_vprintf(const char *_fmt, va_list _ap);
+static size_t _xstrdup_vprintf(char **str, const char *_fmt, va_list _ap);
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -264,7 +264,7 @@ void _xstrfmtcat(char **str, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	p = _xstrdup_vprintf(fmt, ap);
+	_xstrdup_vprintf(&p, fmt, ap);
 	va_end(ap);
 
 	if (!p)
@@ -290,13 +290,11 @@ void _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	p = _xstrdup_vprintf(fmt, ap);
+	append_len = _xstrdup_vprintf(&p, fmt, ap);
 	va_end(ap);
 
 	if (!p)
 		return;
-
-	append_len = strlen(p);
 
 	/* No string yet to append to, so just return p. */
 	if (!*str) {
@@ -394,7 +392,7 @@ char *xstrdup_printf(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	result = _xstrdup_vprintf(fmt, ap);
+	_xstrdup_vprintf(&result, fmt, ap);
 	va_end(ap);
 
 	return result;
@@ -641,7 +639,7 @@ char *xstrcasestr(const char *haystack, const char *needle)
  *   fmt (IN)		format of string and args if any
  *   RETURN		copy of formated string
  */
-static char *_xstrdup_vprintf(const char *fmt, va_list ap)
+static size_t _xstrdup_vprintf(char **str, const char *fmt, va_list ap)
 {
 	/* Start out with a size of 100 bytes. */
 	int n, size = 100;
@@ -654,8 +652,10 @@ static char *_xstrdup_vprintf(const char *fmt, va_list ap)
 		n = vsnprintf(p, size, fmt, our_ap);
 		va_end(our_ap);
 		/* If that worked, return the string. */
-		if (n > -1 && n < size)
-			return p;
+		if (n > -1 && n < size) {
+			*str = p;
+			return n;
+		}
 		/* Else try again with more space. */
 		if (n > -1)               /* glibc 2.1 */
 			size = n + 1;           /* precisely what is needed */
