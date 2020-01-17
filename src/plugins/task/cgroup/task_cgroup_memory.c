@@ -578,13 +578,7 @@ static int _register_oom_notifications(char * cgpath)
 		goto fini;
 	}
 
-	ret = xstrfmtcat(control_file, "%s/%s", cgpath, OOM_CONTROL);
-
-	if (ret >= PATH_MAX) {
-		error("%s: path to %s is too long.", __func__, OOM_CONTROL);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
+	xstrfmtcat(control_file, "%s/%s", cgpath, OOM_CONTROL);
 
 	if ((cfd = open(control_file, O_RDONLY | O_CLOEXEC)) == -1) {
 		error("%s: Cannot open %s: %m", __func__, control_file);
@@ -592,13 +586,7 @@ static int _register_oom_notifications(char * cgpath)
 		goto fini;
 	}
 
-	ret = xstrfmtcat(event_file, "%s/%s", cgpath, EVENT_CONTROL);
-
-	if (ret >= PATH_MAX) {
-		error("%s: path to %s is too long.", __func__, EVENT_CONTROL);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
+	xstrfmtcat(event_file, "%s/%s", cgpath, EVENT_CONTROL);
 
 	if ((efd = open(event_file, O_WRONLY | O_CLOEXEC)) == -1) {
 		error("%s: Cannot open %s: %m", __func__, event_file);
