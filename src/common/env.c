@@ -1560,11 +1560,15 @@ int env_array_overwrite_het_fmt(char ***array_ptr, const char *name,
 	va_end(ap);
 	if (het_job_offset != -1) {
 		char *het_comp_name = NULL;
+		/* Continue support for old hetjob terminology. */
 		xstrfmtcat(het_comp_name, "%s_PACK_GROUP_%d", name,
 			   het_job_offset);
 		rc = env_array_overwrite(array_ptr, het_comp_name, value);
 		xfree(het_comp_name);
-
+		xstrfmtcat(het_comp_name, "%s_HET_GROUP_%d", name,
+			   het_job_offset);
+		rc = env_array_overwrite(array_ptr, het_comp_name, value);
+		xfree(het_comp_name);
 	} else
 		rc = env_array_overwrite(array_ptr, name, value);
 	xfree(value);

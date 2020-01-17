@@ -497,7 +497,7 @@ error: Attempt to run a job step with pack-group value of 2,
 <h2><a name="env_var">Environment Variables</a></h2>
 
 <p>Slurm environment variables will be set independently for each component of
-the job by appending "_PACK_GROUP_" and a sequence number the usual name.
+the job by appending "_HET_GROUP_" and a sequence number the usual name.
 In addition, the "SLURM_JOB_ID" environment variable will contain the job ID
 of the heterogeneous job leader and "SLURM_HET_SIZE" will contain the number of
 components in the job. If using srun with a single specific pack group (for
@@ -511,12 +511,12 @@ salloc: job 11741 has been allocated resources
 $ env | grep SLURM
 SLURM_JOB_ID=11741
 SLURM_HET_SIZE=2
-SLURM_JOB_ID_PACK_GROUP_0=11741
-SLURM_JOB_ID_PACK_GROUP_1=11742
-SLURM_JOB_NODES_PACK_GROUP_0=1
-SLURM_JOB_NODES_PACK_GROUP_1=2
-SLURM_JOB_NODELIST_PACK_GROUP_0=nid00001
-SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
+SLURM_JOB_ID_HET_GROUP_0=11741
+SLURM_JOB_ID_HET_GROUP_1=11742
+SLURM_JOB_NODES_HET_GROUP_0=1
+SLURM_JOB_NODES_HET_GROUP_1=2
+SLURM_JOB_NODELIST_HET_GROUP_0=nid00001
+SLURM_JOB_NODELIST_HET_GROUP_1=nid[00011-00012]
 ...
 $ srun --pack-group=1 printenv SLURM_JOB_ID
 11742
@@ -537,10 +537,10 @@ salloc: job 11751 has been allocated resources
 $ env | grep SLURM
 SLURM_JOB_ID=11751
 SLURM_HET_SIZE=2
-SLURM_JOB_ID_PACK_GROUP_0=11751
-SLURM_JOB_ID_PACK_GROUP_1=11752
-SLURM_JOB_NODELIST_PACK_GROUP_0=nid00001
-SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
+SLURM_JOB_ID_HET_GROUP_0=11751
+SLURM_JOB_ID_HET_GROUP_1=11752
+SLURM_JOB_NODELIST_HET_GROUP_0=nid00001
+SLURM_JOB_NODELIST_HET_GROUP_1=nid[00011-00012]
 ...
 $ srun --pack-group=0,1 env | grep SLURM
 SLURM_JOB_ID=11751

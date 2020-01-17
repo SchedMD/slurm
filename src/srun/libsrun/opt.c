@@ -573,7 +573,13 @@ static void _opt_env(int het_job_offset)
 		if ((het_job_offset >= 0) &&
 		    strcmp(e->var, "SLURM_JOBID") &&
 		    strcmp(e->var, "SLURM_JOB_ID")) {
+			/* Continue supporting old hetjob terminology. */
 			snprintf(key, sizeof(key), "%s_PACK_GROUP_%d",
+				 e->var, het_job_offset);
+			if ((val = getenv(key)))
+				slurm_process_option(&opt, e->type, val,
+						     true, false);
+			snprintf(key, sizeof(key), "%s_HET_GROUP_%d",
 				 e->var, het_job_offset);
 			if ((val = getenv(key)))
 				slurm_process_option(&opt, e->type, val,
