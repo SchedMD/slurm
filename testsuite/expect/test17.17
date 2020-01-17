@@ -43,7 +43,7 @@ set job_id1      0
 set job_id2      0
 set nodelist_name ""
 set hostname     ""
-set gpu_cnt      0
+set gpu_tot      0
 set job_tres_cnt 0
 
 print_header $test_id
@@ -185,11 +185,11 @@ if {[wait_for_job $job_id2 "RUNNING"] != 0} {
 
 set job_gpu_cnt [get_job_gpu_cnt $job_id2]
 
-if {$gpu_cnt != $job_gpu_cnt} {
-	log_error "Job didn't allocate all GPUs ($gpu_cnt != $job_gpu_cnt)"
+if {$gpu_tot != $job_gpu_cnt} {
+	log_error "Job didn't allocate all GPUs ($gpu_tot != $job_gpu_cnt)"
 	set exit_code 1
 } else {
-	log_info "Node GPU count matches Job GPU count ($gpu_cnt == $job_gpu_cnt)"
+	log_info "Node GPU count matches Job GPU count ($gpu_tot == $job_gpu_cnt)"
 }
 
 if {[wait_for_job $job_id2 "DONE"] != 0} {

@@ -36,7 +36,7 @@ set nodes          ""
 set cputot         0
 set scontrol_cpu   0
 set sacct_cpu      0
-set gpu_cnt        0
+set gpu_tot        0
 set hostname       ""
 set job_tres_cnt   0
 set exit_code      0
@@ -199,11 +199,11 @@ expect {
 
 set job_gpu_cnt [get_job_gpu_cnt $job_id]
 
-if {$gpu_cnt != $job_gpu_cnt} {
-	log_error "Job didn't allocate all GPUs ($gpu_cnt != $job_gpu_cnt)"
+if {$gpu_tot != $job_gpu_cnt} {
+	log_error "Job didn't allocate all GPUs ($gpu_tot != $job_gpu_cnt)"
 	set exit_code 1
 } else {
-	log_info "Node GPU count matches Job GPU count ($gpu_cnt == $job_gpu_cnt)"
+	log_info "Node GPU count matches Job GPU count ($gpu_tot == $job_gpu_cnt)"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
