@@ -827,11 +827,11 @@ variables, and \fIARG1\fR=test.
 .TP
 Example: \fB\-\-export\fR=ALL,EDITOR=/bin/emacs
 .br
-In this example, the propagated environment will only contain the
-variable \fIEDITOR\fR if user does not have \fIEDITOR\fR exported, along with
-\fISLURM_*\fR environment variables. Environment variables propagated from the
-submission environment will always override environment variables found in the
-user environment on the node when \fIALL\fR is included.
+There are two possible outcomes for this example. If the caller has the
+\fIEDITOR\fR environment variable defined, then the job's environment will
+inherit the variable from the caller's environment.  If the caller doesn't
+have an environment variable defined for \fIEDITOR\fR, then the job's
+environment will use the value given by \fB--export\fR.
 .RE
 .RE
 
