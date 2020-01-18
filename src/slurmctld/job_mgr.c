@@ -13502,7 +13502,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 									true,
 									false);
 				if (rc) {
-					error("%s: Failed to submit some or all remote dependencies for %pJ",
+					error("%s: %pJ Failed to send remote dependencies to some or all siblings.",
 					      __func__, job_ptr);
 					error_code = rc;
 				}

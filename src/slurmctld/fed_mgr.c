@@ -2225,7 +2225,7 @@ static int _update_origin_job_dep(job_record_t *job_ptr)
 	origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
 	origin = fed_mgr_get_cluster_by_id(origin_id);
 	if (!origin) {
-		error("%s: Couldn't find cluster rec by id %u; %pJ has no more dependencies, but we don't know how to tell the origin cluster about it.",
+		error("%s: Couldn't find cluster rec by id %u; we don't know how to tell the origin about dependency update for %pJ.",
 		      __func__, origin_id, job_ptr);
 		/*
 		 * TODO: What to do if this fails? Should I
@@ -4284,8 +4284,8 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if ((job_ptr->bit_flags & JOB_DEPENDENT) &&
 	    job_ptr->details && job_ptr->details->dependency)
 		if (fed_mgr_submit_remote_dependencies(job_ptr, false, false))
-			error("XXX%sXXX: _submit_remote_dependencies() returned error",
-			      __func__);
+			error("%s: %pJ Failed to send remote dependencies to some or all siblings.",
+			      __func__, job_ptr);
 
 	job_ptr->fed_details->siblings_active = job_desc->fed_siblings_active;
 	update_job_fed_details(job_ptr);
@@ -5934,8 +5934,9 @@ extern int fed_mgr_q_update_origin_dep_msg(slurm_msg_t *msg)
 	dep_update_origin_msg_t *update_msg = msg->data;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("%s: Got REQUEST_UPDATE_ORIGIN_DEP for job %u",
-		     __func__, update_msg->job_id);
+		info("%s: Got %s: Job %u",
+		     __func__, rpc_num2string(msg->msg_type),
+		     update_msg->job_id);
 
 	/* update_msg will get free'd, so copy it */
 	update_deps = xmalloc(sizeof *update_deps);
@@ -5962,9 +5963,8 @@ extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
 	dep_msg_t *dep_msg = msg->data;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("%s: Got %s: Job %u name \"%s\" dependency \"%s\"",
-		     __func__, rpc_num2string(msg->msg_type), dep_msg->job_id,
-		     dep_msg->job_name, dep_msg->dependency);
+		info("%s: Got %s: Job %u",
+		     __func__, rpc_num2string(msg->msg_type), dep_msg->job_id);
 
 	/* dep_msg will get free'd, so copy it */
 	remote_dependency = xmalloc(sizeof *remote_dependency);
