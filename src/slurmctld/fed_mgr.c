@@ -90,10 +90,10 @@ static pthread_mutex_t fed_job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  job_update_cond    = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t job_update_mutex   = PTHREAD_MUTEX_INITIALIZER;
 
-static List remote_dep_update_list = NULL;
+static List remote_dep_recv_list = NULL;
 static pthread_t remote_dep_thread_id = (pthread_t) 0;
 static pthread_cond_t remote_dep_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t remote_dep_update_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t remote_dep_recv_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static List remote_dep_job_list = NULL;
 static pthread_t dep_job_thread_id = (pthread_t) 0;
@@ -2472,7 +2472,7 @@ static void *_origin_dep_update_thread(void *arg)
 	return NULL;
 }
 
-static void *_remote_dep_update_thread(void *arg)
+static void *_remote_dep_recv_thread(void *arg)
 {
 	struct timespec ts = {0, 0};
 	dep_msg_t *remote_dep_info;
@@ -2485,16 +2485,16 @@ static void *_remote_dep_update_thread(void *arg)
 #endif
 
 	while (!slurmctld_config.shutdown_time) {
-		slurm_mutex_lock(&remote_dep_update_mutex);
+		slurm_mutex_lock(&remote_dep_recv_mutex);
 		ts.tv_sec = time(NULL) + 2;
 		slurm_cond_timedwait(&remote_dep_cond,
-				     &remote_dep_update_mutex, &ts);
-		slurm_mutex_unlock(&remote_dep_update_mutex);
+				     &remote_dep_recv_mutex, &ts);
+		slurm_mutex_unlock(&remote_dep_recv_mutex);
 
 		if (slurmctld_config.shutdown_time)
 			break;
 
-		while ((remote_dep_info = list_pop(remote_dep_update_list))) {
+		while ((remote_dep_info = list_pop(remote_dep_recv_list))) {
 			_handle_recv_remote_dep(remote_dep_info);
 		}
 	}
@@ -2723,10 +2723,10 @@ static void _spawn_threads(void)
 			    _fed_job_update_thread, NULL);
 	slurm_mutex_unlock(&job_update_mutex);
 
-	slurm_mutex_lock(&remote_dep_update_mutex);
+	slurm_mutex_lock(&remote_dep_recv_mutex);
 	slurm_thread_create(&remote_dep_thread_id,
-			    _remote_dep_update_thread, NULL);
-	slurm_mutex_unlock(&remote_dep_update_mutex);
+			    _remote_dep_recv_thread, NULL);
+	slurm_mutex_unlock(&remote_dep_recv_mutex);
 
 	slurm_thread_create(&dep_job_thread_id, _test_dep_job_thread, NULL);
 
@@ -2794,12 +2794,12 @@ extern int fed_mgr_init(void *db_conn)
 		fed_job_update_list = list_create(_destroy_fed_job_update_info);
 
 	/*
-	 * remote_dep_update_list should only be appended to and popped from.
+	 * remote_dep_recv_list should only be appended to and popped from.
 	 * So rely on the list's lock. If there are ever changes to iterate the
 	 * list, then a lock will be needed around the list.
 	 */
-	if (!remote_dep_update_list)
-		remote_dep_update_list = list_create(_destroy_dep_msg);
+	if (!remote_dep_recv_list)
+		remote_dep_recv_list = list_create(_destroy_dep_msg);
 
 	/*
 	 * origin_dep_update_list should only be appended to and popped from.
@@ -5979,10 +5979,10 @@ extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
 	remote_dependency->is_array = dep_msg->is_array;
 	remote_dependency->user_id = dep_msg->user_id;
 
-	list_append(remote_dep_update_list, remote_dependency);
-	slurm_mutex_lock(&remote_dep_update_mutex);
+	list_append(remote_dep_recv_list, remote_dependency);
+	slurm_mutex_lock(&remote_dep_recv_mutex);
 	slurm_cond_broadcast(&remote_dep_cond);
-	slurm_mutex_unlock(&remote_dep_update_mutex);
+	slurm_mutex_unlock(&remote_dep_recv_mutex);
 	return SLURM_SUCCESS;
 }
 
