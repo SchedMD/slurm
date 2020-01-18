@@ -813,10 +813,12 @@ extern int data_copy_bool_converted(const data_t *d, bool *buffer)
 			rc = SLURM_SUCCESS;
 		}
 		FREE_NULL_DATA(dclone);
-	} else
-		*buffer = data_get_bool(d);
 
-	return rc;
+		return rc;
+	}
+
+	*buffer = data_get_bool(d);
+	return SLURM_SUCCESS;
 }
 
 extern int data_get_bool_converted(data_t *d, bool *buffer)
