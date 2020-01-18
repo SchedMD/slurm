@@ -174,7 +174,7 @@ extern bool node_features_reboot_test(job_record_t *job_ptr,
 				      bitstr_t *node_bitmap);
 
 /* Print a job's dependency information based upon job_ptr->depend_list */
-extern void print_job_dependency(job_record_t *job_ptr);
+extern void print_job_dependency(job_record_t *job_ptr, const char *func);
 
 /* Decrement a job's prolog_running counter and launch the job if zero */
 extern void prolog_running_decr(job_record_t *job_ptr);

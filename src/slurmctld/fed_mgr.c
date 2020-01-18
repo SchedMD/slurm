@@ -2303,11 +2303,12 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	 */
 	job_ptr->fed_details = xmalloc(sizeof *(job_ptr->fed_details));
 
-	info("XXX%sXXX: Got Job %u name \"%s\" array_task_id %u dependency \"%s\" is_array %s, user_id %u",
-	     __func__, remote_dep_info->job_id, remote_dep_info->job_name,
-	     remote_dep_info->array_task_id, remote_dep_info->dependency,
-	     remote_dep_info->is_array ? "yes" : "no",
-	     remote_dep_info->user_id);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+		info("%s: Got job_id: %u, name: \"%s\", array_task_id: %u, dependency: \"%s\", is_array? %s, user_id: %u",
+		     __func__, remote_dep_info->job_id, remote_dep_info->job_name,
+		     remote_dep_info->array_task_id, remote_dep_info->dependency,
+		     remote_dep_info->is_array ? "yes" : "no",
+		     remote_dep_info->user_id);
 
 	/* NULL string so it doesn't get free'd since it's used by job_ptr */
 	remote_dep_info->job_name = NULL;
@@ -2325,8 +2326,6 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	} else {
 		job_record_t *tmp_job;
 		ListIterator itr;
-
-		print_job_dependency(job_ptr);
 
 		/*
 		 * Remove the old reference to this job from remote_dep_job_list
@@ -2378,8 +2377,9 @@ static void _handle_dep_update_origin_msgs(void)
 			 * exist here, so we have to throw out this
 			 * dependency update message.
 			 */
-			debug("%s: Could not find job %u, cannot process dependency update. Perhaps the jobs was purged before we got here.",
-			      __func__, dep_update_msg->job_id);
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+				info("%s: Could not find job %u, cannot process dependency update. Perhaps the jobs was purged before we got here.",
+				     __func__, dep_update_msg->job_id);
 			slurm_free_dep_update_origin_msg(dep_update_msg);
 			continue;
 		} else if (!job_ptr->details ||
@@ -2389,13 +2389,12 @@ static void _handle_dep_update_origin_msgs(void)
 			 * were updated to be none before the dependency
 			 * update came from the sibling cluster.
 			 */
-			debug("%s: %pJ doesn't have dependencies, cannot process dependency update",
-			      __func__, job_ptr);
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+				info("%s: %pJ doesn't have dependencies, cannot process dependency update",
+				     __func__, job_ptr);
 			slurm_free_dep_update_origin_msg(dep_update_msg);
 			continue;
 		}
-		info("XXX%sXXX: update %pJ dependencies",
-		     __func__, job_ptr);
 		if (update_job_dependency_list(job_ptr,
 					       dep_update_msg->depend_list)) {
 			if (!update_job_list) {
@@ -6085,19 +6084,24 @@ extern void fed_mgr_test_remote_dependencies(void)
 	while ((job_ptr = list_next(itr))) {
 		rc = test_job_dependency(job_ptr, &was_changed);
 		if (rc == LOCAL_DEPEND) {
-			info("XXX%sXXX: %pJ has at least 1 local dependency left",
-			     __func__, job_ptr);
-			if (was_changed)
+			if (was_changed) {
+				if (slurmctld_conf.debug_flags &
+				    DEBUG_FLAG_DEPENDENCY)
+					info("%s: %pJ has at least 1 local dependency left.",
+					     __func__, job_ptr);
 				_update_origin_job_dep(job_ptr);
+			}
 		} else if (rc == FAIL_DEPEND) {
-			info("XXX%sXXX: %pJ test_job_dependency() failed, dependency never satisfied",
-			     __func__, job_ptr);
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+				info("%s: %pJ test_job_dependency() failed, dependency never satisfied.",
+				     __func__, job_ptr);
 			if (_update_origin_job_dep(job_ptr))
 				continue;
 			list_delete_item(itr);
 		} else { /* ((rc == REMOTE_DEPEND) || (rc == NO_DEPEND)) */
-			info("XXX%sXXX: %pJ has no more dependencies left on this cluster",
-			     __func__, job_ptr);
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+				info("%s: %pJ has no more dependencies left on this cluster.",
+				     __func__, job_ptr);
 			if (_update_origin_job_dep(job_ptr))
 				continue;
 			list_delete_item(itr);

@@ -94,7 +94,6 @@
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/powercapping.h"
 
-#define _DEBUG 0
 #ifndef CORRESPOND_ARRAY_TASK_CNT
 #  define CORRESPOND_ARRAY_TASK_CNT 10
 #endif
@@ -2673,13 +2672,13 @@ static char *_depend_type2str(depend_spec_t *dep_ptr)
 }
 
 /* Print a job's dependency information based upon job_ptr->depend_list */
-extern void print_job_dependency(job_record_t *job_ptr)
+extern void print_job_dependency(job_record_t *job_ptr, const char *func)
 {
 	ListIterator depend_iter;
 	depend_spec_t *dep_ptr;
 	char *dep_flags, *dep_str, *dep_time_sep = NULL;
 
-	info("Dependency information for %pJ", job_ptr);
+	info("%s: Dependency information for %pJ:", func, job_ptr);
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->depend_list == NULL))
 		return;
@@ -3044,8 +3043,11 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 		list_for_each(job_ptr->details->depend_list,
 			      _set_depend_to_state, &state);
 	}
-	if (rebuild_str)
+	if (rebuild_str) {
 		_depend_list2str(job_ptr, false);
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+			print_job_dependency(job_ptr, __func__);
+	}
 
 	if (failure)
 		results = FAIL_DEPEND;
@@ -3447,9 +3449,10 @@ extern bool update_job_dependency_list(job_record_t *job_ptr,
 			 * and the update doesn't get to the sibling before
 			 * the sibling sends back an update to the origin (us).
 			 */
-			info("XXX%sXXX: Cannot find dependency %s:%u for %pJ, it may have been cleared before we got here.",
-			      __func__, _depend_type2str(dep_ptr),
-			      dep_ptr->job_id, job_ptr);
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+				info("%s: Cannot find dependency %s:%u for %pJ, it may have been cleared before we got here.",
+				     __func__, _depend_type2str(dep_ptr),
+				     dep_ptr->job_id, job_ptr);
 			continue;
 		}
 
@@ -3554,6 +3557,8 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 			xfree(job_ptr->state_desc);
 		}
 	}
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+		print_job_dependency(job_ptr, __func__);
 
 	return SLURM_SUCCESS;
 }
@@ -3708,9 +3713,8 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 		FREE_NULL_LIST(job_ptr->details->depend_list);
 		job_ptr->details->depend_list = new_depend_list;
 		_depend_list2str(job_ptr, or_flag);
-#if _DEBUG
-		print_job_dependency(job_ptr);
-#endif
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+			print_job_dependency(job_ptr, __func__);
 	} else {
 		FREE_NULL_LIST(new_depend_list);
 	}
