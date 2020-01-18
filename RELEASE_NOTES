@@ -41,6 +41,9 @@ HIGHLIGHTS
     within a SPANK plugin without prepending "error: " from slurm_error().
  -- Enforce having partition name and nodelist=ALL when creating reservations
     with flags=PART_NODES.
+ -- SPANK - removed never-implemented slurm_spank_slurmd_init() interface. This
+    hook has always been accessible through slurm_spank_init() in the
+    S_CTX_SLURMD context instead.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

@@ -68,7 +68,6 @@
 
 struct spank_plugin_operations {
 	spank_f *init;
-	spank_f *slurmd_init;
 	spank_f *job_prolog;
 	spank_f *init_post_opt;
 	spank_f *local_user_init;
@@ -85,7 +84,6 @@ struct spank_plugin_operations {
 const int n_spank_syms = 13;
 const char *spank_syms[] = {
 	"slurm_spank_init",
-	"slurm_spank_slurmd_init",
 	"slurm_spank_job_prolog",
 	"slurm_spank_init_post_opt",
 	"slurm_spank_local_user_init",
@@ -143,8 +141,7 @@ enum spank_context_type {
  */
 typedef enum step_fn {
 	SPANK_INIT = 0,
-	SPANK_SLURMD_INIT,
-	SPANK_JOB_PROLOG,
+	SPANK_JOB_PROLOG = 2,
 	SPANK_INIT_POST_OPT,
 	LOCAL_USER_INIT,
 	STEP_USER_INIT,
@@ -448,7 +445,7 @@ spank_stack_plugin_valid_for_context (struct spank_stack *stack,
 			return (1);
 		break;
 	case S_TYPE_SLURMD:
-		if (p->ops.slurmd_init || p->ops.slurmd_exit)
+		if (p->ops.slurmd_exit)
 			return (1);
 		break;
 	case S_TYPE_LOCAL:
@@ -649,8 +646,6 @@ static const char *_step_fn_name(step_fn_t type)
 	switch (type) {
 	case SPANK_INIT:
 		return ("init");
-	case SPANK_SLURMD_INIT:
-		return ("slurmd_init");
 	case SPANK_JOB_PROLOG:
 		return ("job_prolog");
 	case SPANK_INIT_POST_OPT:
@@ -684,8 +679,6 @@ static spank_f *spank_plugin_get_fn (struct spank_plugin *sp, step_fn_t type)
 	switch (type) {
 	case SPANK_INIT:
 		return (sp->ops.init);
-	case SPANK_SLURMD_INIT:
-		return (sp->ops.slurmd_init);
 	case SPANK_JOB_PROLOG:
 		return (sp->ops.job_prolog);
 	case SPANK_INIT_POST_OPT:
@@ -1590,7 +1583,6 @@ spank_option_getopt (spank_t sp, struct spank_option *opt, char **argp)
 	}
 
 	if ((sp->phase == SPANK_INIT) ||
-	    (sp->phase == SPANK_SLURMD_INIT) ||
 	    (sp->phase == SPANK_INIT_POST_OPT) ||
 	    (sp->phase == STEP_TASK_POST_FORK) ||
 	    (sp->phase == SPANK_SLURMD_EXIT) ||

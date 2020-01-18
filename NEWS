@@ -66,6 +66,9 @@ documents those changes that are of interest to users and administrators.
  -- Enforce specification of partition and ALL nodes with PART_NODES flag.
  -- Add 'promiscuous' flag to a reservation.
  -- Implement the idea of PURGE_COMP=timespec.
+ -- SPANK - removed never-implemented slurm_spank_slurmd_init() interface. This
+    hook has always been accessible through slurm_spank_init() in the
+    S_CTX_SLURMD context instead.
 
 * Changes in Slurm 19.05.6
 ==========================
