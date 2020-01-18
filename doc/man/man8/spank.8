@@ -1,4 +1,4 @@
-.TH SPANK "8" "Slurm Component" "August 2017" "Slurm Component"
+.TH SPANK "8" "Slurm Component" "January 2020" "Slurm Component"
 
 .SH "NAME"
 \fBSPANK\fR \- Slurm Plug\-in Architecture for Node and job (K)control
@@ -58,7 +58,7 @@ and subsequent calls.
 In local context, only the \fBinit\fR, \fBexit\fR, \fBinit_post_opt\fR, and
 \fBlocal_user_init\fR functions are called. In allocator context, only the
 \fBinit\fR, \fBexit\fR, and \fBinit_post_opt\fR functions are called.
-Similarly, in slurmd context, only the \fBslurmd_init\fR and \fBslurmd_exit\fR
+Similarly, in slurmd context, only the \fBinit\fR and \fBslurmd_exit\fR
 callbacks are active, and in the job_script context, only the \fBjob_prolog\fR
 and \fBjob_epilog\fR callbacks are used.
 Plugins may query the context in which they are running with the
@@ -71,10 +71,7 @@ launch. A plugin may define the following functions:
 \fBslurm_spank_init\fR
 Called just after plugins are loaded. In remote context, this is just
 after job step is initialized. This function is called before any plugin
-option processing. This function is not called in slurmd context.
-.TP
-\fBslurm_spank_slurmd_init\fR
-Called in slurmd just after the daemon is started.
+option processing.
 .TP
 \fBslurm_spank_job_prolog\fR
 Called at the same time as the job prolog. If this function returns a
