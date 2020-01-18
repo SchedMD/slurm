@@ -52,7 +52,7 @@ typedef int (spank_f) (spank_t spank, int ac, char *argv[]);
  *  Plug-in callbacks are completed at the following points in slurmd:
  *
  *   slurmd
- *        `-> slurmd_init()
+ *        `-> init()
  *        |
  *        `-> job_prolog()
  *        |
@@ -92,7 +92,7 @@ typedef int (spank_f) (spank_t spank, int ac, char *argv[]);
  *   In sbatch/salloc only the init(), init_post_opt(), and exit() callbacks
  *    are used.
  *
- *   In slurmd proper, only the slurmd_init(), slurmd_exit(), and
+ *   In slurmd proper, only the init(), slurmd_exit(), and
  *    job_prolog/epilog callbacks are used.
  *
  */
