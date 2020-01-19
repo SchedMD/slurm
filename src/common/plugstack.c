@@ -81,7 +81,7 @@ struct spank_plugin_operations {
 	spank_f *exit;
 };
 
-const int n_spank_syms = 13;
+const int n_spank_syms = 12;
 const char *spank_syms[] = {
 	"slurm_spank_init",
 	"slurm_spank_job_prolog",
