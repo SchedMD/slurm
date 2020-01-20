@@ -60,7 +60,6 @@ if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
 	exit 0
 }
-get_node_config
 send_user "\nGPU count is $gpu_cnt\n"
 send_user "Default partition node count $nb_nodes\n"
 
