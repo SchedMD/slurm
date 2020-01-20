@@ -859,6 +859,7 @@ _massage_pathname(char **path)
 static void
 _read_config(void)
 {
+	char *bcast_address;
 	char *path_pubkey = NULL;
 	slurm_ctl_conf_t *cf = NULL;
 	int cc;
@@ -920,6 +921,14 @@ _read_config(void)
 
 	if (conf->node_name == NULL)
 		fatal("Unable to determine this slurmd's NodeName");
+
+	if ((bcast_address = slurm_conf_get_bcast_address(conf->node_name))) {
+		char *comm_params = slurm_get_comm_parameters();
+		if (xstrcasestr(comm_params, "NoInAddrAny"))
+			fatal("Cannot use BcastAddr option on this node with CommunicationParameters=NoInAddrAny");
+		xfree(comm_params);
+		xfree(bcast_address);
+	}
 
 	_massage_pathname(&conf->logfile);
 
