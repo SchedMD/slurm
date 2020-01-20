@@ -1000,16 +1000,6 @@ extern int sock_bind_range(int, uint16_t *, bool local);
 
 /* In the socket implementation it creates a socket, binds to it, and
  *	listens for connections.
- *
- * IN  addr_name        - address to bind the msg server to (NULL means any)
- * IN port		- port to bind the msg server to
- * RET slurm_fd		- file descriptor of the connection created
- */
-extern int slurm_init_msg_engine_addrname_port(char *addr_name,
-						    uint16_t port);
-
-/* In the socket implementation it creates a socket, binds to it, and
- *	listens for connections.
  * IN slurm_address 	- slurm_addr_t to bind the msg server to
  * RET slurm_fd		- file descriptor of the connection created
  */

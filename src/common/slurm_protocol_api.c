@@ -3142,22 +3142,6 @@ int slurm_init_msg_engine_ports(uint16_t *ports)
 	return s;
 }
 
-/* In the socket implementation it creates a socket, binds to it, and
- *	listens for connections.
- *
- * IN  addr_name - address to bind the msg server to (NULL means any)
- * IN  port      - port to bind the msg server to
- * RET int       - file descriptor of the connection created
- */
-int slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
-{
-	slurm_addr_t addr;
-
-	slurm_setup_sockaddr(&addr, port);
-
-	return slurm_init_msg_engine(&addr);
-}
-
 /**********************************************************************\
  * msg connection establishment functions used by msg clients
 \**********************************************************************/

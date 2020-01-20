@@ -108,7 +108,6 @@ typedef struct slurmd_config {
 					 * build parameters */
 	int           nice;		/* command line nice value spec    */
 	char         *node_name;	/* node name                       */
-	char         *node_addr;	/* node's address                  */
 	char         *node_topo_addr;   /* node's topology address         */
 	char         *node_topo_pattern;/* node's topology address pattern */
 	char         *conffile;		/* config filename                 */

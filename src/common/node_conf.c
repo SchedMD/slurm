@@ -333,8 +333,8 @@ extern int build_all_frontend_info (bool is_slurmd_context)
 }
 
 static void _check_callback(char *alias, char *hostname,
-			    char *address, uint16_t port,
-			    int state_val,
+			    char *address, char *bcast_address,
+			    uint16_t port, int state_val,
 			    slurm_conf_node_t *node_ptr,
 			    config_record_t *config_ptr)
 {
@@ -351,6 +351,7 @@ static void _check_callback(char *alias, char *hostname,
 	node_rec->comm_name = xstrdup(address);
 	node_rec->cpu_bind  = node_ptr->cpu_bind;
 	node_rec->node_hostname = xstrdup(hostname);
+	node_rec->bcast_address = xstrdup(bcast_address);
 	node_rec->port      = port;
 	node_rec->weight    = node_ptr->weight;
 	node_rec->features  = xstrdup(node_ptr->feature);
@@ -443,22 +444,24 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 			       bool test_config,
 			       void (*_callback) (
 				       char *alias, char *hostname,
-				       char *address, uint16_t port,
-				       int state_val,
+				       char *address, char *bcast_address,
+				       uint16_t port, int state_val,
 				       slurm_conf_node_t *node_ptr,
 				       config_record_t *config_ptr))
 {
 	int error_code = SLURM_SUCCESS;
 	hostlist_t address_list = NULL;
 	hostlist_t alias_list = NULL;
+	hostlist_t bcast_list = NULL;
 	hostlist_t hostname_list = NULL;
 	hostlist_t port_list = NULL;
 	char *address = NULL;
 	char *alias = NULL;
+	char *bcast_address = NULL;
 	char *hostname = NULL;
 	char *port_str = NULL;
 	int state_val = NODE_STATE_UNKNOWN;
-	int address_count, alias_count, hostname_count, port_count;
+	int address_count, alias_count, bcast_count, hostname_count, port_count;
 	uint16_t port = 0;
 
 	if ((node_ptr->nodenames == NULL) || (node_ptr->nodenames[0] == '\0'))
@@ -478,6 +481,10 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 	if (!(alias_list = hostlist_create(node_ptr->nodenames)))
 		fatal("Unable to create NodeName list from %s",
 		      node_ptr->nodenames);
+
+	if (!(bcast_list = hostlist_create(node_ptr->bcast_addresses)))
+		fatal("Unable to create BcastAddr list from %s",
+		      node_ptr->bcast_addresses);
 
 	if (!(hostname_list = hostlist_create(node_ptr->hostnames)))
 		fatal("Unable to create NodeHostname list from %s",
@@ -499,6 +506,7 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 
 	/* some sanity checks */
 	address_count  = hostlist_count(address_list);
+	bcast_count = hostlist_count(bcast_list);
 	alias_count    = hostlist_count(alias_list);
 	hostname_count = hostlist_count(hostname_list);
 	port_count     = hostlist_count(port_list);
@@ -512,9 +520,14 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 #ifdef MULTIPLE_SLURMD
 	if ((address_count != alias_count) && (address_count != 1))
 		fatal("NodeAddr count must equal that of NodeName records of there must be no more than one");
+	if (bcast_count && (bcast_count != alias_count) && (bcast_count != 1))
+		fatal("BcastAddr count must equal that of NodeName records, or there must be no more than one");
 #else
 	if (address_count < alias_count)
 		fatal("At least as many NodeAddr are required as NodeName");
+
+	if (bcast_count && (bcast_count < alias_count))
+		fatal("At least as many BcastAddr are required as NodeName");
 
 	if (hostname_count < alias_count)
 		fatal("At least as many NodeHostname are required as NodeName");
@@ -531,6 +544,12 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 			if (address)
 				free(address);
 			address = hostlist_shift(address_list);
+		}
+		if (bcast_count > 0) {
+			bcast_count--;
+			if (bcast_address)
+				free(bcast_address);
+			bcast_address = hostlist_shift(bcast_list);
 		}
 		if (hostname_count > 0) {
 			hostname_count--;
@@ -556,7 +575,7 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 			port = port_int;
 		}
 
-		(*_callback)(alias, hostname, address,
+		(*_callback)(alias, hostname, address, bcast_address,
 			     port, state_val, node_ptr, config_ptr);
 
 		free(alias);
@@ -564,6 +583,8 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 	/* free allocated storage */
 	if (address)
 		free(address);
+	if (bcast_address)
+		free(bcast_address);
 	if (hostname)
 		free(hostname);
 	if (port_str)
@@ -572,6 +593,8 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 		hostlist_destroy(address_list);
 	if (alias_list)
 		hostlist_destroy(alias_list);
+	if (bcast_list)
+		hostlist_destroy(bcast_list);
 	if (hostname_list)
 		hostlist_destroy(hostname_list);
 	if (port_list)

@@ -923,6 +923,7 @@ static void _pack_node(node_record_t *dump_node_ptr, Buf buffer,
 		packstr(dump_node_ptr->name, buffer);
 		packstr(dump_node_ptr->node_hostname, buffer);
 		packstr(dump_node_ptr->comm_name, buffer);
+		packstr(dump_node_ptr->bcast_address, buffer);
 		pack16(dump_node_ptr->port, buffer);
 		pack32(dump_node_ptr->next_state, buffer);
 		pack32(dump_node_ptr->node_state, buffer);
