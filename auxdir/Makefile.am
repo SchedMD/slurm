@@ -23,6 +23,7 @@ EXTRA_DIST = \
     x_ac_http_parser.m4 \
     x_ac_hwloc.m4 \
     x_ac_json.m4 \
+    x_ac_jwt.m4 \
     x_ac_lua.m4 \
     x_ac_man2html.m4 \
     x_ac_munge.m4 \

@@ -136,6 +136,9 @@ X_AC_UID_GID_SIZE_CHECK
 dnl Check for JSON parser
 X_AC_JSON
 
+dnl Check for JWT library
+X_AC_JWT
+
 dnl Check for HTTP parser
 X_AC_HTTP_PARSER
 

@@ -115,6 +115,9 @@
 /* Define if headers in include/json. */
 #undef HAVE_JSON_INC
 
+/* Define if you are compiling with jwt. */
+#undef HAVE_JWT
+
 /* Define to 1 if you have the <kstat.h> header file. */
 #undef HAVE_KSTAT_H
 

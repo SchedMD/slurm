@@ -774,6 +774,10 @@ WITH_HTTP_PARSER_FALSE
 WITH_HTTP_PARSER_TRUE
 HTTP_PARSER_LDFLAGS
 HTTP_PARSER_CPPFLAGS
+WITH_JWT_FALSE
+WITH_JWT_TRUE
+JWT_LDFLAGS
+JWT_CPPFLAGS
 WITH_JSON_PARSER_FALSE
 WITH_JSON_PARSER_TRUE
 JSON_LDFLAGS
@@ -969,6 +973,7 @@ with_pam_dir
 with_shared_libslurm
 enable_load_env_no_login
 with_json
+with_jwt
 with_http_parser
 with_yaml
 with_dimensions
@@ -1731,6 +1736,7 @@ Optional Packages:
                           libslurm lib - can dramatically increase the
                           footprint of Slurm.
   --with-json=PATH        Specify path to json-c installation
+  --with-jwt=PATH         Specify path to jwt installation
   --with-http-parser=PATH Specify path to HTTP Parser installation
   --with-yaml=PATH        Specify path to libyaml installation
   --with-dimensions=N     set system dimension count for generic computer
@@ -19264,6 +19270,96 @@ fi
 
 
 
+  _x_ac_jwt_dirs="/usr /usr/local"
+  _x_ac_jwt_libs="lib64 lib"
+
+
+# Check whether --with-jwt was given.
+if test "${with_jwt+set}" = set; then :
+  withval=$with_jwt; if test "x$with_jwt" != xno; then :
+  _x_ac_jwt_dirs="$with_jwt $_x_ac_jwt_dirs"
+fi
+fi
+
+
+  if test "x$with_jwt" = xno; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for jwt disabled" >&5
+$as_echo "$as_me: WARNING: support for jwt disabled" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for jwt installation" >&5
+$as_echo_n "checking for jwt installation... " >&6; }
+if ${x_ac_cv_jwt_dir+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+        for d in $_x_ac_jwt_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include" || continue
+          test -f "$d/include/jwt.h" || continue
+          for bit in $_x_ac_jwt_libs; do
+            test -d "$d/$bit" || continue
+            _x_ac_jwt_libs_save="$LIBS"
+            LIBS="-L$d/$bit -ljwt $LIBS"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char jwt_new ();
+int
+main ()
+{
+return jwt_new ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  x_ac_cv_jwt_dir=$d
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+            LIBS="$_x_ac_jwt_libs_save"
+            test -n "$x_ac_cv_jwt_dir" && break
+          done
+          test -n "$x_ac_cv_jwt_dir" && break
+        done
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_jwt_dir" >&5
+$as_echo "$x_ac_cv_jwt_dir" >&6; }
+
+    if test -z "$x_ac_cv_jwt_dir"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate jwt library" >&5
+$as_echo "$as_me: WARNING: unable to locate jwt library" >&2;}
+    else
+
+$as_echo "#define HAVE_JWT 1" >>confdefs.h
+
+      JWT_CPPFLAGS="-I$x_ac_cv_jwt_dir/include"
+      JWT_LDFLAGS="-L$x_ac_cv_jwt_dir/$bit -ljwt"
+    fi
+
+
+
+  fi
+
+   if test -n "$x_ac_cv_jwt_dir"; then
+  WITH_JWT_TRUE=
+  WITH_JWT_FALSE='#'
+else
+  WITH_JWT_TRUE='#'
+  WITH_JWT_FALSE=
+fi
+
+
+
+
+
 	_x_ac_http_parser_dirs="/usr /usr/local"
 	_x_ac_http_parser_libs="lib64 lib"
 
@@ -24808,6 +24904,10 @@ fi
 
 if test -z "${WITH_JSON_PARSER_TRUE}" && test -z "${WITH_JSON_PARSER_FALSE}"; then
   as_fn_error $? "conditional \"WITH_JSON_PARSER\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_JWT_TRUE}" && test -z "${WITH_JWT_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_JWT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_HTTP_PARSER_TRUE}" && test -z "${WITH_HTTP_PARSER_FALSE}"; then

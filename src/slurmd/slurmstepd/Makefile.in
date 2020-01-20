@@ -120,6 +120,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_http_parser.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_json.m4 \
+	$(top_srcdir)/auxdir/x_ac_jwt.m4 \
 	$(top_srcdir)/auxdir/x_ac_lua.m4 \
 	$(top_srcdir)/auxdir/x_ac_lz4.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
@@ -313,6 +314,8 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 JSON_CPPFLAGS = @JSON_CPPFLAGS@
 JSON_LDFLAGS = @JSON_LDFLAGS@
+JWT_CPPFLAGS = @JWT_CPPFLAGS@
+JWT_LDFLAGS = @JWT_LDFLAGS@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBCURL = @LIBCURL@
