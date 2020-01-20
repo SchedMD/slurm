@@ -5250,6 +5250,20 @@ extern bool fed_mgr_job_started_on_sib(job_record_t *job_ptr)
 		 fed_mgr_cluster_rec->fed.id);
 }
 
+extern bool fed_mgr_is_job_id_in_fed(uint32_t job_id)
+{
+	uint32_t cluster_id;
+
+	if (!fed_mgr_cluster_rec)
+		return false;
+
+	cluster_id = fed_mgr_get_cluster_id(job_id);
+	if (!cluster_id)
+		return false;
+
+	return FED_SIBLING_BIT(cluster_id) & _get_all_sibling_bits();
+}
+
 extern int fed_mgr_is_origin_job(job_record_t *job_ptr)
 {
 	uint32_t origin_id;

@@ -2918,11 +2918,31 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
 		bool clear_dep = false, depends = false, failure = false;
+		bool remote;
 
-		if (!(dep_ptr->depend_flags & SLURM_FLAGS_REMOTE))
-			has_local_depend = true;
-		if ((dep_ptr->depend_state != DEPEND_NOT_FULFILLED) ||
-		    (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE)) {
+		remote = (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) ?
+			true : false;
+		/*
+		 * If the job id is for a cluster that's not in the federation
+		 * (it's likely the cluster left the federation), then set
+		 * this dependency's state to failed.
+		 */
+		if (remote) {
+			if (fed_mgr_is_origin_job(job_ptr) &&
+			    (dep_ptr->depend_state == DEPEND_NOT_FULFILLED) &&
+			    (dep_ptr->depend_type != SLURM_DEPEND_SINGLETON) &&
+			    (!fed_mgr_is_job_id_in_fed(dep_ptr->job_id))) {
+				if (slurmctld_conf.debug_flags &
+				    DEBUG_FLAG_DEPENDENCY)
+					info("%s: %pJ dependency %s:%u failed due to job_id not in federation.",
+					     __func__, job_ptr,
+					     _depend_type2str(dep_ptr),
+					     dep_ptr->job_id);
+				changed = true;
+				dep_ptr->depend_state = DEPEND_FAILED;
+			}
+		}
+		if ((dep_ptr->depend_state != DEPEND_NOT_FULFILLED) || remote) {
 			_test_dependency_state(dep_ptr, &or_satisfied,
 					       &and_failed, &or_flag,
 					       &has_unfulfilled);
@@ -2930,6 +2950,7 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 		}
 
 		/* Test local, unfulfilled dependency: */
+		has_local_depend = true;
 		dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
 						      dep_ptr->array_task_id);
 		djob_ptr = dep_ptr->job_ptr;
