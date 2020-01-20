@@ -3013,9 +3013,19 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 		if (failure) {
 			dep_ptr->depend_state = DEPEND_FAILED;
 			changed = true;
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+				info("%s: %pJ dependency %s:%u failed.",
+				     __func__, job_ptr,
+				     _depend_type2str(dep_ptr),
+				     dep_ptr->job_id);
 		} else if (clear_dep) {
 			dep_ptr->depend_state = DEPEND_FULFILLED;
 			changed = true;
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+				info("%s: %pJ dependency %s:%u fulfilled.",
+				     __func__, job_ptr,
+				     _depend_type2str(dep_ptr),
+				     dep_ptr->job_id);
 		}
 
 		_test_dependency_state(dep_ptr, &or_satisfied, &and_failed,
