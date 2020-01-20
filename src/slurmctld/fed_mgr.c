@@ -1498,6 +1498,16 @@ static void _cleanup_removed_origin_jobs(void)
 		job_completion_logger(job_ptr, false);
 	}
 	list_iterator_destroy(job_itr);
+
+	/* Don't test these jobs for remote dependencies anymore */
+	if (remote_dep_job_list) {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+			info("%s: Remove all jobs in remote_dep_job_list",
+			     __func__);
+		slurm_mutex_lock(&dep_job_list_mutex);
+		list_flush(remote_dep_job_list);
+		slurm_mutex_unlock(&dep_job_list_mutex);
+	}
 }
 
 /*
