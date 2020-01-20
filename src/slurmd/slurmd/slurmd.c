@@ -1527,18 +1527,11 @@ _process_cmdline(int ac, char **av)
 static void
 _create_msg_socket(void)
 {
-	char* node_addr;
-
 	int ld = slurm_init_msg_engine_port(conf->port);
 
-	if (conf->node_addr == NULL)
-		node_addr = "*";
-	else
-		node_addr = conf->node_addr;
-
 	if (ld < 0) {
-		error("Unable to bind listen port (%s:%d): %m",
-		      node_addr, conf->port);
+		error("Unable to bind listen port (%u): %m",
+		      conf->port);
 		exit(1);
 	}
 
@@ -1546,8 +1539,7 @@ _create_msg_socket(void)
 
 	conf->lfd = ld;
 
-	debug3("successfully opened slurm listen port %s:%d",
-	       node_addr, conf->port);
+	debug3("Successfully opened slurm listen port %u", conf->port);
 
 	return;
 }
