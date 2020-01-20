@@ -138,7 +138,9 @@ typedef struct names_ll_s {
 	uint16_t core_spec_cnt;
 	uint64_t mem_spec_limit;
 	slurm_addr_t addr;
+	slurm_addr_t bcast_addr;
 	bool addr_initialized;
+	bool bcast_addr_initialized;
 	struct names_ll_s *next_alias;
 	struct names_ll_s *next_hostname;
 } names_ll_t;
@@ -2587,6 +2589,27 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
 
 	if (!p->port)
 		p->port = (uint16_t) conf_ptr->slurmd_port;
+
+	/*
+	 * Only use BcastAddr if USE_BCAST_NETWORK flag set and BcastAddr
+	 * exists. Otherwise fall through to using NodeAddr value below.
+	 */
+	if (p->bcast_address && (flags & USE_BCAST_NETWORK)) {
+		if (!p->bcast_addr_initialized) {
+			slurm_set_addr(&p->bcast_addr, p->port,
+				       p->bcast_address);
+			if (p->bcast_addr.sin_family == 0 &&
+			    p->bcast_addr.sin_port == 0) {
+				slurm_conf_unlock();
+				return SLURM_ERROR;
+			}
+		}
+		if (!no_addr_cache)
+			p->bcast_addr_initialized = true;
+		*address = p->bcast_addr;
+		slurm_conf_unlock();
+		return SLURM_SUCCESS;
+	}
 
 	if (!p->addr_initialized) {
 		slurm_set_addr(&p->addr, p->port, p->address);
