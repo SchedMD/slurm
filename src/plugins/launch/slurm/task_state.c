@@ -49,7 +49,7 @@
 struct task_state_struct {
 	uint32_t job_id;
 	uint32_t step_id;
-	uint32_t pack_group;
+	uint32_t het_group;
 	uint32_t task_offset;
 	int n_tasks;
 	int n_started;
@@ -76,7 +76,7 @@ extern task_state_t task_state_create(uint32_t job_id, uint32_t step_id,
 	/* ts is zero filled by xmalloc() */
 	ts->job_id = job_id;
 	ts->step_id = step_id;
-	ts->pack_group = pack_group;
+	ts->het_group = pack_group;
 	ts->task_offset = task_offset;
 	ts->n_tasks = ntasks;
 	ts->running = bit_alloc(ntasks);
@@ -105,7 +105,7 @@ extern task_state_t task_state_find(uint32_t job_id, uint32_t step_id,
 	while ((ts = list_next(iter))) {
 		if (((job_id     == ts->job_id)     || (job_id  == NO_VAL)) &&
 		    ((step_id    == ts->step_id)    || (step_id == NO_VAL)) &&
-		    ((pack_group == ts->pack_group) || (pack_group == NO_VAL)))
+		    ((pack_group == ts->het_group) || (pack_group == NO_VAL)))
 			break;
 	}
 	list_iterator_destroy(iter);
@@ -169,13 +169,13 @@ extern void task_state_update(task_state_t ts, int task_id, task_state_type_t t)
 	xassert(task_id >= 0);
 	xassert(task_id < ts->n_tasks);
 
-	if (ts->pack_group == NO_VAL) {
+	if (ts->het_group == NO_VAL) {
 		debug3("%s: step=%u.%u task_id=%d, %s", __func__,
 		       ts->job_id, ts->step_id, task_id,
 		       _task_state_type_str(t));
 	} else {
 		debug3("%s: step=%u.%u pack_group=%u task_id=%d, %s", __func__,
-		       ts->job_id, ts->step_id, ts->pack_group, task_id,
+		       ts->job_id, ts->step_id, ts->het_group, task_id,
 		       _task_state_type_str(t));
 	}
 
@@ -296,13 +296,13 @@ static void _do_log_msg(task_state_t ts, bitstr_t *b, log_f fn,
 {
 	char buf[4096];
 	char *s = bit_set_count (b) == 1 ? "" : "s";
-	if (ts->pack_group == NO_VAL) {
+	if (ts->het_group == NO_VAL) {
 		(*fn) ("step:%u.%u task%s %s: %s",
 		       ts->job_id, ts->step_id,
 		       s, bit_fmt(buf, sizeof(buf), b), msg);
 	} else {
 		(*fn) ("step:%u.%u pack_group:%u task%s %s: %s",
-		       ts->job_id, ts->step_id, ts->pack_group,
+		       ts->job_id, ts->step_id, ts->het_group,
 		       s, bit_fmt(buf, sizeof(buf), b), msg);
 	}
 }
