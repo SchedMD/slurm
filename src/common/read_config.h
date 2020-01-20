@@ -500,6 +500,16 @@ extern char *slurm_conf_get_nodename_from_addr(const char *node_addr);
 extern char *slurm_conf_get_aliased_nodename(void);
 
 /*
+ * Return BcastAddr (if set) for a given NodeName, or NULL
+ *
+ * Returned string was allocated with xmalloc(), and must be freed by
+ * the caller using xfree().
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char *slurm_conf_get_bcast_address(const char *node_name);
+
+/*
  * slurm_conf_get_port - Return the port for a given NodeName
  *
  * NOTE: Caller must NOT be holding slurm_conf_lock().
