@@ -37,7 +37,7 @@ $ sbatch --cpus-per-task=4 --mem-per-cpu=1  --ntasks=128 : \
 <p>Options specified for one component of a heterogeneous job (or job step) will
 be used for subsequent components to the extent which is expected to be helpful.
 Propagated options can be reset as desired for each component (e.g. a different
-account name could be specified for each job component.
+account name could be specified for each hetjob component.
 For example, <i>--immediate</i> and <i>--job-name</i> are propagated, while
 <i>--ntasks</i> and <i>--mem-per-cpu</i> are reset to default values for each
 component.
@@ -119,10 +119,10 @@ fashion on nodes "nid00003" and "nid00004" as shown below.</p>
 </table>
 <br>
 
-<p>Some options should be specified only in the first job component.
-For example, specifying a batch job output file in the second job component's
-options will result in the first job component (where the batch script executes)
-using the default output file name.</p>
+<p>Some options should be specified only in the first hetjob component.
+For example, specifying a batch job output file in the second hetjob component's
+options will result in the first hetjob component (where the batch script
+executes) using the default output file name.</p>
 
 <p>Environment variables used to specify default options for the job submit
 command will be applied to every component of the heterogeneous job
@@ -233,23 +233,23 @@ exit 0
 <ul>
 <li><i>job_id</i>: Each component of a heterogeneous job will have its own
 unique <i>job_id</i>.</li>
-<li><i>pack_job_id</i>: This identification number applies to all components
+<li><i>het_job_id</i>: This identification number applies to all components
 of the heterogeneous job. All components of the same job will have the same
-<i>pack_job_id</i> value and it will be equal to the <i>job_id</i> of the
+<i>het_job_id</i> value and it will be equal to the <i>job_id</i> of the
 first component. We refer to this as the "heterogeneous job leader".</li>
-<li><i>pack_job_id_set</i>: Regular expression identifying all <i>job_id</i>
+<li><i>het_job_id_set</i>: Regular expression identifying all <i>job_id</i>
 values associated with the job.</li>
-<li><i>pack_job_offset</i>: A unique sequence number applied to each component
-of the heterogeneous job. The first component will have a <i>pack_job_offset</i>
+<li><i>het_job_offset</i>: A unique sequence number applied to each component
+of the heterogeneous job. The first component will have a <i>het_job_offset</i>
 value of 0, the next a value of 1, etc.</li>
 </ul>
 
 <table width="100%" border=1 cellspacing=0 cellpadding=4>
 <tr>
   <th width="25%"><b>job_id</b></th>
-  <th width="25%"><b>pack_job_id</b></th>
-  <th width="25%"><b>pack_job_offset</b></th>
-  <th width="25%"><b>pack_job_id_set</b></th>
+  <th width="25%"><b>het_job_id</b></th>
+  <th width="25%"><b>het_job_offset</b></th>
+  <th width="25%"><b>het_job_id_set</b></th>
  </tr>
 
 <tr><td>123</td><td>123</td><td>0</td><td>123-127</td></tr>
@@ -262,9 +262,9 @@ value of 0, the next a value of 1, etc.</li>
 
 <p>The <i>squeue</i> and <i>sview</i> commands report the
 components of a heterogeneous job using the format
-"&lt;pack_job_id&gt;+&lt;pack_job_offset&gt;".
+"&lt;het_job_id&gt;+&lt;het_job_offset&gt;".
 For example "123+4" would represent heterogeneous job id 123 and it's fifth
-component (note: the first component has a <i>pack_job_offset</i> value of 0).</p>
+component (note: the first component has a <i>het_job_offset</i> value of 0).</p>
 
 <p>A request for a specific job ID that identifies a ID of the first component
 of a heterogeneous job (i.e. the "heterogeneous job leader") will return
@@ -310,7 +310,7 @@ ignored.</p>
 
 <p>Requests to modify an individual component of a job using the scontrol
 command must specify the job ID with the "#+#" notation.
-A request to modify a job by specifying the pack_job_id will modify all
+A request to modify a job by specifying the het_job_id will modify all
 components of a heterogeneous job.
 For example:</p>
 <pre>
@@ -346,7 +346,7 @@ with the application to be launched as specified by the --het-group option.</p>
 <p>Slurm has a configuration option to control behavior of some commands with
 respect to heterogeneous jobs.
 By default a request to cancel, hold or release a job ID that is not the
-pack_job_id, but that of a job component will only operate that one component
+het_job_id, but that of a job component will only operate that one component
 of the heterogeneous job.
 If SchedulerParameters configuration parameter includes the option
 "whole_hetjob" then the operation would apply to all components of the job if
@@ -368,16 +368,16 @@ $ scancel 94 (where job ID 94 is equivalent to 93+1)
 
 <h3>Accounting</h3>
 
-<p>Slurm's accounting database records the pack_job_id and pack_job_offset
+<p>Slurm's accounting database records the het_job_id and het_job_offset
 fields.
 The sacct command reports job's using the format
-"&lt;pack_job_id&gt;+&lt;pack_job_offset&gt;" and can accept a job ID
+"&lt;het_job_id&gt;+&lt;het_job_offset&gt;" and can accept a job ID
 specification for filtering using the same format.
-If a pack_job_id value is specified as a job filter, then information about
+If a het_job_id value is specified as a job filter, then information about
 all components of that job will be reported as shown below by default.
 The <i>--whole-hetjob=[yes|no]</i> option can be used to force to report
 the information about all the components of that job or just about the specific
-component requested, no matter if the job filter includes the pack_job_id
+component requested, no matter if the job filter includes the het_job_id
 (leader) or not.
 </p>
 
@@ -411,7 +411,7 @@ $ sacct -j 67767+1 --whole-hetjob=yes
 By default, the application is launched only on the first component of a
 heterogeneous job, but options are available to support different behaviors.</p>
 
-<p>srun's "--het-group" option defines which pack job component(s) are to have
+<p>srun's "--het-group" option defines which hetjob component(s) are to have
 applications launched for them. The --het-group option takes an expression
 defining which component(s) are to launch an application for an individual
 execution of the srun command. The expression can contain one or more component
@@ -710,6 +710,6 @@ Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
 
-<p style="text-align:center;">Last modified 23 September 2019</p>
+<p style="text-align:center;">Last modified 20 January 2020</p>
 
 <!--#include virtual="footer.txt"-->
