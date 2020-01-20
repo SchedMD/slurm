@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
-#          Validate sbcast for a pack job allocation.
+#          Validate sbcast for a hetjob allocation.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -41,9 +41,9 @@ set node2      ""
 set prompt	"PROMPT: "
 
 proc end_it { exit_code } {
-	global pack_job_id scancel
-	if {$pack_job_id > 0} {
-		exec $scancel $pack_job_id
+	global het_job_id scancel
+	if {$het_job_id > 0} {
+		exec $scancel $het_job_id
 	}
 	exit $exit_code
 }
@@ -87,14 +87,14 @@ if {![string compare $node1 ""] || ![string compare $node2 ""]} {
 	exit 0
 }
 
-set pack_job_id 0
+set het_job_id 0
 set matches 0
 set index 0
 set timeout $max_job_delay
 spawn $salloc -t2 -N1 : -N1 $bin_bash
 expect {
 	-re "job ($number) has been allocated resources" {
-		set pack_job_id $expect_out(1,string)
+		set het_job_id $expect_out(1,string)
 		send "export PS1=\"$prompt\"\r"
 		exp_continue
 	}
@@ -113,55 +113,55 @@ expect {
 		wait
 	}
 }
-if {$pack_job_id == 0} {
+if {$het_job_id == 0} {
 	log_error "salloc failure\n"
 	end_it 1
 }
 
 make_bash_script $script1 "
-$srun --pack-group=0 $bin_rm -f  /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
-$srun --pack-group=1 $bin_rm -f  /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
-$srun --pack-group=0 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
-$srun --pack-group=0 $bin_rm -fr /tmp/test_${test_id}/$node1
-$srun --pack-group=1 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
-$srun --pack-group=1 $bin_rm -fr /tmp/test_${test_id}/$node2
-$srun --pack-group=1 $bin_rm -fr /tmp/test_${test_id}
+$srun --het-group=0 $bin_rm -f  /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
+$srun --het-group=1 $bin_rm -f  /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
+$srun --het-group=0 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
+$srun --het-group=0 $bin_rm -fr /tmp/test_${test_id}/$node1
+$srun --het-group=1 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
+$srun --het-group=1 $bin_rm -fr /tmp/test_${test_id}/$node2
+$srun --het-group=1 $bin_rm -fr /tmp/test_${test_id}
 
-$srun -N1 -n1 --pack-group=0 mkdir /tmp/test_${test_id}
-$srun -N1 -n1 --pack-group=1 mkdir /tmp/test_${test_id}
-$srun -N1 -n1 --pack-group=0 mkdir /tmp/test_${test_id}/$node1
-$srun -N1 -n1 --pack-group=1 mkdir /tmp/test_${test_id}/$node2
+$srun -N1 -n1 --het-group=0 mkdir /tmp/test_${test_id}
+$srun -N1 -n1 --het-group=1 mkdir /tmp/test_${test_id}
+$srun -N1 -n1 --het-group=0 mkdir /tmp/test_${test_id}/$node1
+$srun -N1 -n1 --het-group=1 mkdir /tmp/test_${test_id}/$node2
 
-$sbcast -f -j$pack_job_id $srun /tmp/test_${test_id}/test$test_id\_file
-$sbcast -f -j${pack_job_id}+0 $srun /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
-$sbcast -f -j${pack_job_id}+1 $srun /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
+$sbcast -f -j$het_job_id $srun /tmp/test_${test_id}/test$test_id\_file
+$sbcast -f -j${het_job_id}+0 $srun /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
+$sbcast -f -j${het_job_id}+1 $srun /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
 
 echo -n \"\nChecking node 1: \"
-$srun -Q -N1 -n1 --pack-group=1 ls /tmp/test_${test_id}/test$test_id\_file
+$srun -Q -N1 -n1 --het-group=1 ls /tmp/test_${test_id}/test$test_id\_file
 
 echo -n \"\nChecking node 0: \"
-$srun -Q -N1 -n1 --pack-group=0 ls /tmp/test_${test_id}/test$test_id\_file
+$srun -Q -N1 -n1 --het-group=0 ls /tmp/test_${test_id}/test$test_id\_file
 
 echo -n \"\nChecking node 1 again: \"
-$srun -Q -N1 -n1 --pack-group=1 ls /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
+$srun -Q -N1 -n1 --het-group=1 ls /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
 
 echo -n \"\nChecking node 0 again: \"
-$srun -Q -N1 -n1 --pack-group=0 ls /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
+$srun -Q -N1 -n1 --het-group=0 ls /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
 
 echo -n \"\nChecking node 1 for lack: \"
-$srun -Q -N1 -n1 --pack-group=1 ls /tmp/test_${test_id}/$node2/test$test_id\_file\_comp0
+$srun -Q -N1 -n1 --het-group=1 ls /tmp/test_${test_id}/$node2/test$test_id\_file\_comp0
 
 echo -n \"\nChecking node 0 for lack: \"
-$srun -Q -N1 -n1 --pack-group=0 ls /tmp/test_${test_id}/$node1/test$test_id\_file\_comp1
+$srun -Q -N1 -n1 --het-group=0 ls /tmp/test_${test_id}/$node1/test$test_id\_file\_comp1
 
-$srun --pack-group=0 $bin_rm -f  /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
-$srun --pack-group=1 $bin_rm -f  /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
-$srun --pack-group=0 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
-$srun --pack-group=0 $bin_rm -fr /tmp/test_${test_id}/$node1
-$srun --pack-group=1 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
-$srun --pack-group=1 $bin_rm -fr /tmp/test_${test_id}/$node2
-$srun --pack-group=1 $bin_rm -fr /tmp/test_${test_id}
-$srun --pack-group=0 $bin_rm -fr /tmp/test_${test_id}
+$srun --het-group=0 $bin_rm -f  /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
+$srun --het-group=1 $bin_rm -f  /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
+$srun --het-group=0 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
+$srun --het-group=0 $bin_rm -fr /tmp/test_${test_id}/$node1
+$srun --het-group=1 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
+$srun --het-group=1 $bin_rm -fr /tmp/test_${test_id}/$node2
+$srun --het-group=1 $bin_rm -fr /tmp/test_${test_id}
+$srun --het-group=0 $bin_rm -fr /tmp/test_${test_id}
 "
 
 set timeout $max_job_delay

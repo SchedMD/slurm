@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test label option with pack job allocation.
+# Purpose: Test label option with hetjob allocation.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -41,7 +41,7 @@ if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
 }
-if {[test_pack_step] == 0} {
+if {[test_hetjob_step] == 0} {
 	send_user "\nWARNING: heterogeneous steps not currently supported\n"
 	exit $exit_code
 }
@@ -54,14 +54,14 @@ if {$nb_nodes < 3} {
 }
 
 proc end_it { exit_code } {
-	global pack_job_id scancel
-	if {$pack_job_id > 0} {
-		exec $scancel $pack_job_id
+	global het_job_id scancel
+	if {$het_job_id > 0} {
+		exec $scancel $het_job_id
 	}
 	exit $exit_code
 }
 
-set pack_job_id 0
+set het_job_id 0
 set component(0) 0
 set matches 0
 set index 0
@@ -69,7 +69,7 @@ set timeout $max_job_delay
 spawn $salloc -t1 -N1 : -N1 : -N1 $bin_bash
 expect {
 	-re "job ($number) has been allocated resources" {
-		set pack_job_id $expect_out(1,string)
+		set het_job_id $expect_out(1,string)
 		send "export PS1=\"$prompt\"\r"
 		exp_continue
 	}
@@ -88,14 +88,14 @@ expect {
 		wait
 	}
 }
-if {$pack_job_id == 0} {
+if {$het_job_id == 0} {
 	log_error "salloc failure\n"
 	end_it 1
 }
 
 send_user "\n\nCollect Nodenames\n\n"
 
-send "$squeue -j $pack_job_id -o\"NAME=%N\" --noheader\r"
+send "$squeue -j $het_job_id -o\"NAME=%N\" --noheader\r"
 expect {
 	-re "--noheader" {
 		exp_continue
@@ -121,7 +121,7 @@ if {$index != 3} {
 send_user "\n\nTest Sending Srun w/ --label To Various Components\n\n"
 
 set matches 0
-send "$srun --label --mpi=none --pack-group=0-2 printenv SLURMD_NODENAME\r"
+send "$srun --label --mpi=none --het-group=0-2 printenv SLURMD_NODENAME\r"
 expect {
 	-re "2: $component(2)" {
 		incr matches
@@ -145,7 +145,7 @@ if {$matches != 1} {
 }
 
 set matches 0
-send "$srun --label --mpi=none --pack-group=1-2 printenv SLURMD_NODENAME\r"
+send "$srun --label --mpi=none --het-group=1-2 printenv SLURMD_NODENAME\r"
 expect {
 	-re "1: $component(2)" {
 		incr matches
@@ -243,7 +243,7 @@ if {$matches != 3} {
 for {set inx 0} {$inx < 3} {incr inx} {
 	send_user "\n\n"
 	set matches 0
-	send "$srun -O -n3 --label --mpi=none --pack-group=$inx printenv SLURMD_NODENAME\r"
+	send "$srun -O -n3 --label --mpi=none --het-group=$inx printenv SLURMD_NODENAME\r"
 	expect {
 		-re "\[0-2\]: $component($inx)" {
 			incr matches

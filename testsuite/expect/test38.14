@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test pack job step output file labling and different commands/args
+# Purpose: Test hetjob step output file labling and different commands/args
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -33,11 +33,11 @@ source ./globals
 set test_id	"38.14"
 set exit_code	0
 set file_out    test${test_id}.output
-set pack_job_id	0
+set het_job_id	0
 
 print_header $test_id
 
-if {[test_pack_step] == 0} {
+if {[test_hetjob_step] == 0} {
 	send_user "\nWARNING: heterogeneous steps not currently supported\n"
 	exit $exit_code
 }

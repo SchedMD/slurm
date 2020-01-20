@@ -4450,17 +4450,17 @@ proc expect_extern_step { } {
 
 ################################################################
 #
-# Proc: test_pack_step
+# Proc: test_hetjob_step
 #
-# Returns 1 if steps can span multiple heterogeneous job allocations,
+# Returns 1 if steps can span multiple heterogeneous job components,
 #	  0 otherwise
 #
 ################################################################
-proc test_pack_step { } {
+proc test_hetjob_step { } {
 	global scontrol number
 
 	log_user 0
-	set pack_step 0
+	set hetjob_step 0
 	set major 0
 	set minor 0
 	spawn $scontrol -V
@@ -4478,13 +4478,13 @@ proc test_pack_step { } {
 		}
 	}
 	if {$version_major >= 19} {
-		set pack_step 1
+		set hetjob_step 1
 	} elseif {$version_major >= 18} {
-		set pack_step 1
+		set hetjob_step 1
 		spawn $scontrol show config
 		expect {
 			-re "select/cray" {
-				set pack_step 0
+				set hetjob_step 0
 				exp_continue
 			}
 			timeout {
@@ -4498,15 +4498,15 @@ proc test_pack_step { } {
 		spawn $scontrol show config
 		expect {
 			-re "select/cray" {
-				set pack_step 0
+				set hetjob_step 0
 				exp_continue
 			}
-			-re "disable_hetero_steps" {
-				set pack_step 0
+			-re "disable_hetjob_steps" {
+				set hetjob_step 0
 				exp_continue
 			}
-			-re "enable_hetero_steps" {
-				set pack_step 1
+			-re "enable_hetjob_steps" {
+				set hetjob_step 1
 				exp_continue
 			}
 			timeout {
@@ -4518,7 +4518,7 @@ proc test_pack_step { } {
 		}
 	}
 	log_user 1
-	return $pack_step
+	return $hetjob_step
 }
 
 ################################################################

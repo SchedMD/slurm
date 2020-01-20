@@ -35,9 +35,9 @@
 
 source ./globals
 
-# parse the string contained in PACK_JOB_ID_SET
+# parse the string contained in HET_JOB_ID_SET
 # only use if there are three components to 
-# pack_job
+# het_job
 
 proc parse_id_set {id_set job_id} {
 

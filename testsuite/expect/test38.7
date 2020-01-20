@@ -91,10 +91,10 @@ if {![file exists $test_prog]} {
 }
 
 ########################################################################
-# TEST OF PACK GROUP 0
+# TEST OF HET GROUP 0
 ########################################################################
 
-send_user "\n\nTEST OF PACK GROUP 0\n\n"
+send_user "\n\nTEST OF HET GROUP 0\n\n"
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -104,8 +104,8 @@ file delete $file_out $file_err
 #
 make_bash_script $file_in "
   $bin_date
-  $bin_echo PACK GROUP 0
-  $srun --pack-group=0 ./$test_prog
+  $bin_echo HET GROUP 0
+  $srun --het-group=0 ./$test_prog
   $bin_date
   $bin_echo TEST_COMPLETE
 "
@@ -207,10 +207,10 @@ if {[wait_for_file $file_out] == 0} {
 }
 
 ########################################################################
-# TEST OF PACK GROUP 1
+# TEST OF HET GROUP 1
 ########################################################################
 
-send_user "\n\nTEST OF PACK GROUP 1\n\n"
+send_user "\n\nTEST OF HET GROUP 1\n\n"
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -220,8 +220,8 @@ file delete $file_out $file_err
 #
 make_bash_script $file_in "
   $bin_date
-  $bin_echo PACK GROUP 1
-  $srun --pack-group=1 ./$test_prog
+  $bin_echo HET GROUP 1
+  $srun --het-group=1 ./$test_prog
   $bin_date
   $bin_echo TEST_COMPLETE
 "
@@ -322,10 +322,10 @@ if {[wait_for_file $file_out] == 0} {
 }
 
 ########################################################################
-# TEST OF PACK GROUP 0,1
+# TEST OF HET GROUP 0,1
 ########################################################################
 
-if {[test_pack_step] == 0} {
+if {[test_hetjob_step] == 0} {
 	if {$exit_code == 0} {
 		exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
 	}
@@ -350,7 +350,7 @@ if {[test_multiple_slurmd]} {
 	exit $exit_code
 }
 
-send_user "\n\nTEST OF PACK GROUP 0,1\n\n"
+send_user "\n\nTEST OF HET GROUP 0,1\n\n"
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -360,8 +360,8 @@ file delete $file_out $file_err
 #
 make_bash_script $file_in "
   $bin_date
-  $bin_echo PACK GROUP 0,1
-  $srun --pack-group=0,1 ./$test_prog
+  $bin_echo HET GROUP 0,1
+  $srun --het-group=0,1 ./$test_prog
   $bin_date
   $bin_echo TEST_COMPLETE
 "
@@ -462,10 +462,10 @@ if {[wait_for_file $file_out] == 0} {
 }
 
 ########################################################################
-# TEST OF PACK GROUP 1 THEN 0,1
+# TEST OF HET GROUP 1 THEN 0,1
 ########################################################################
 
-send_user "\n\nTEST OF PACK GROUP 1 THEN 0,1\n\n"
+send_user "\n\nTEST OF HET GROUP 1 THEN 0,1\n\n"
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -475,10 +475,10 @@ file delete $file_out $file_err
 #
 make_bash_script $file_in "
   $bin_date
-  $bin_echo PACK GROUP 1
-  $srun --pack-group=1 ./$test_prog
-  $bin_echo PACK GROUP 0,1
-  $srun --pack-group=0,1 ./$test_prog
+  $bin_echo HET GROUP 1
+  $srun --het-group=1 ./$test_prog
+  $bin_echo HET GROUP 0,1
+  $srun --het-group=0,1 ./$test_prog
   $bin_date
   $bin_echo TEST_COMPLETE
 "

@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Validate salloc pack job options.
+# Purpose: Validate salloc hetjob options.
 #
 # Reqs:    1. Using slurmdbd accounting storage type and is up
 #          2. controllers are up and running.
@@ -32,7 +32,7 @@
 ############################################################################
 
 source ./globals
-source ./globals_hetero_jobs
+source ./globals_het_jobs
 
 set timeout 60
 
@@ -116,7 +116,7 @@ proc end_it { exit_code } {
 #start test
 
 send_user "\n################################################################\n"
-send_user "Salloc packjob and verify output from scontrol show job"
+send_user "Salloc hetjob and verify output from scontrol show job"
 send_user "\n################################################################\n"
 
 set job_id 0
@@ -128,11 +128,11 @@ set matches 0
 set id_set  0
 set id_regex "\[0-9,-\]+"
 
-# scontrol will show all components of the pack job, but we just look at the
-# first set (pack job leader).
+# scontrol will show all components of the hetjob, but we just look at the
+# first set (hetjob leader).
 spawn $scontrol show job $job_id
 expect {
-	-re "JobId=$job_id\\s+PackJobId=$job_id\\s+PackJobOffset=0\\s+JobName=sleep\\s+PackJobIdSet=($id_regex)" {
+	-re "JobId=$job_id\\s+HetJobId=$job_id\\s+HetJobOffset=0\\s+JobName=sleep\\s+HetJobIdSet=($id_regex)" {
 		incr matches
 		set id_set $expect_out(1,string)
 		exp_continue
@@ -167,15 +167,15 @@ set matches 0
 
 spawn $scontrol show job $j2
 expect {
-	-re "JobId=$j2\\s+PackJobId=$job_id" {
+	-re "JobId=$j2\\s+HetJobId=$job_id" {
 		incr matches
 		exp_continue
 	}
-	-re "PackJobOffset=1" {
+	-re "HetJobOffset=1" {
 		incr matches
 		exp_continue
 	}
-	-re "PackJobIdSet=$id_set" {
+	-re "HetJobIdSet=$id_set" {
 		incr matches
 		exp_continue
 	}
@@ -201,15 +201,15 @@ set matches 0
 
 spawn $scontrol show job $j3
 expect {
-	-re "JobId=$j3\\s+PackJobId=$job_id" {
+	-re "JobId=$j3\\s+HetJobId=$job_id" {
 		incr matches
 		exp_continue
 	}
-	-re "PackJobOffset=2" {
+	-re "HetJobOffset=2" {
 		incr matches
 		exp_continue
 	}
-	-re "PackJobIdSet=$id_set" {
+	-re "HetJobIdSet=$id_set" {
 		incr matches
 		exp_continue
 	}

@@ -51,9 +51,9 @@ if {$nb_nodes < 3} {
 }
 
 proc end_it { exit_code } {
-	global pack_job_id scancel
-	if {$pack_job_id > 0} {
-		exec $scancel $pack_job_id
+	global het_job_id scancel
+	if {$het_job_id > 0} {
+		exec $scancel $het_job_id
 	}
 	exit $exit_code
 }
@@ -83,12 +83,12 @@ proc check { id tl matches } {
 	}
 }
 
-set pack_job_id 0
+set het_job_id 0
 set timeout $max_job_delay
 spawn $salloc -t9 -N1 : -N1 : -N1 $bin_bash
 expect {
 	-re "job ($number) has been allocated resources" {
-		set pack_job_id $expect_out(1,string)
+		set het_job_id $expect_out(1,string)
 		send "export PS1=\"$prompt\"\r"
 		exp_continue
 	}
@@ -107,7 +107,7 @@ expect {
 		wait
 	}
 }
-if {$pack_job_id == 0} {
+if {$het_job_id == 0} {
 	log_error "salloc failure\n"
 	end_it 1
 }
@@ -116,22 +116,22 @@ expect *
 
 set timeout 3
 
-check $pack_job_id 9 3
+check $het_job_id 9 3
 
-exec $scontrol update job=$pack_job_id Timelimit=8
-check $pack_job_id 8 3
+exec $scontrol update job=$het_job_id Timelimit=8
+check $het_job_id 8 3
 
-exec $scontrol update job=$pack_job_id+0 Timelimit=5
-check $pack_job_id+0 5 1
+exec $scontrol update job=$het_job_id+0 Timelimit=5
+check $het_job_id+0 5 1
 
-exec $scontrol update job=$pack_job_id+1 Timelimit=6
-check $pack_job_id+1 6 1
+exec $scontrol update job=$het_job_id+1 Timelimit=6
+check $het_job_id+1 6 1
 
-exec $scontrol update job=$pack_job_id+2 Timelimit=7
-check $pack_job_id+2 7 1
+exec $scontrol update job=$het_job_id+2 Timelimit=7
+check $het_job_id+2 7 1
 
-check $pack_job_id+1 6 1
-check $pack_job_id+0 5 1
+check $het_job_id+1 6 1
+check $het_job_id+0 5 1
 
 send_user "\nSUCCESS\n"
 end_it 0

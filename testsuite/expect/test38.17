@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test for multiple, out of order srun --pack-group options
+# Purpose: Test for multiple, out of order srun --het-group options
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -64,12 +64,12 @@ if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
 }
-if {[test_pack_step] == 0} {
+if {[test_hetjob_step] == 0} {
 	send_user "\nWARNING: Heterogeneous steps not currently supported\n"
 	exit $exit_code
 }
 
-make_bash_script $file_in1 "$srun -l --mpi=none --pack-group=0,2 ./$file_in2 : --pack-group=1 ./$file_in3"
+make_bash_script $file_in1 "$srun -l --mpi=none --het-group=0,2 ./$file_in2 : --het-group=1 ./$file_in3"
 make_bash_script $file_in2 "$bin_echo FILE2"
 make_bash_script $file_in3 "$bin_echo FILE3"
 
