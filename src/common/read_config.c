@@ -2515,7 +2515,7 @@ extern char *slurm_conf_get_bcast_address(const char *node_name)
 
 	idx = _get_hash_idx(node_name);
 	p = node_to_host_hashtbl[idx];
-	while (xstrcmp(p->alias, node_name))
+	while (p && xstrcmp(p->alias, node_name))
 		p = p->next_alias;
 
 	if (!p) {
