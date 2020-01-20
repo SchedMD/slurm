@@ -134,12 +134,12 @@ static slurm_opt_t *_get_first_opt(int het_job_offset)
 	slurm_opt_t *opt_local;
 
 	if (!opt_list) {
-		if (!sropt.pack_grp_bits && (het_job_offset == -1))
+		if (!sropt.het_grp_bits && (het_job_offset == -1))
 			return &opt;
-		if (sropt.pack_grp_bits &&
+		if (sropt.het_grp_bits &&
 		    (het_job_offset >= 0) &&
-		    (het_job_offset < bit_size(sropt.pack_grp_bits)) &&
-		    bit_test(sropt.pack_grp_bits, het_job_offset))
+		    (het_job_offset < bit_size(sropt.het_grp_bits)) &&
+		    bit_test(sropt.het_grp_bits, het_job_offset))
 			return &opt;
 		return NULL;
 	}
@@ -148,9 +148,9 @@ static slurm_opt_t *_get_first_opt(int het_job_offset)
 	while ((opt_local = list_next(opt_iter))) {
 		srun_opt_t *srun_opt = opt_local->srun_opt;
 		xassert(srun_opt);
-		if (srun_opt->pack_grp_bits && (het_job_offset >= 0)
-		    && (het_job_offset < bit_size(srun_opt->pack_grp_bits))
-		    && bit_test(srun_opt->pack_grp_bits, het_job_offset))
+		if (srun_opt->het_grp_bits && (het_job_offset >= 0)
+		    && (het_job_offset < bit_size(srun_opt->het_grp_bits))
+		    && bit_test(srun_opt->het_grp_bits, het_job_offset))
 			break;
 	}
 	list_iterator_destroy(opt_iter);
@@ -183,9 +183,9 @@ static slurm_opt_t *_get_next_opt(int het_job_offset, slurm_opt_t *opt_last)
 			continue;
 		}
 
-		if (srun_opt->pack_grp_bits && (het_job_offset >= 0)
-		    && (het_job_offset < bit_size(srun_opt->pack_grp_bits))
-		    && bit_test(srun_opt->pack_grp_bits, het_job_offset))
+		if (srun_opt->het_grp_bits && (het_job_offset >= 0)
+		    && (het_job_offset < bit_size(srun_opt->het_grp_bits))
+		    && bit_test(srun_opt->het_grp_bits, het_job_offset))
 			break;
 	}
 	list_iterator_destroy(opt_iter);
@@ -232,16 +232,16 @@ extern int get_max_pack_group(void)
 		while ((opt_local = list_next(opt_iter))) {
 			srun_opt_t *srun_opt = opt_local->srun_opt;
 			xassert(srun_opt);
-			if (srun_opt->pack_grp_bits)
+			if (srun_opt->het_grp_bits)
 				het_job_offset =
-					bit_fls(srun_opt->pack_grp_bits);
+					bit_fls(srun_opt->het_grp_bits);
 			if (het_job_offset >= max_het_job_offset)
 				max_het_job_offset = het_job_offset;
 		}
 		list_iterator_destroy(opt_iter);
 	} else {
-		if (sropt.pack_grp_bits)
-			max_het_job_offset = bit_fls(sropt.pack_grp_bits);
+		if (sropt.het_grp_bits)
+			max_het_job_offset = bit_fls(sropt.het_grp_bits);
 	}
 
 	return max_het_job_offset;
@@ -302,8 +302,8 @@ static slurm_opt_t *_opt_copy(void)
 	opt.network = NULL;		/* Moved by memcpy */
 	opt.nodelist = NULL;		/* Moved by memcpy */
 	opt_dup->ofname = xstrdup(opt.ofname);
-	sropt.pack_group = NULL;	/* Moved by memcpy */
-	sropt.pack_grp_bits = NULL;	/* Moved by memcpy */
+	sropt.het_group = NULL;		/* Moved by memcpy */
+	sropt.het_grp_bits = NULL;	/* Moved by memcpy */
 	opt.partition = NULL;		/* Moved by memcpy */
 	opt_dup->srun_opt->prolog = xstrdup(sropt.prolog);
 	opt_dup->srun_opt->propagate = xstrdup(sropt.propagate);
@@ -366,9 +366,9 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		}
 
 		if (opt_found || (i > 0)) {
-			xstrfmtcat(sropt.pack_group, "%d", i);
-			sropt.pack_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
-			bit_set(sropt.pack_grp_bits, i);
+			xstrfmtcat(sropt.het_group, "%d", i);
+			sropt.het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
+			bit_set(sropt.het_grp_bits, i);
 		}
 
 		/* initialize options with env vars */
@@ -450,8 +450,8 @@ static void _opt_default(void)
 	 */
 	opt.job_flags			= 0;
 	sropt.multi_prog_cmds		= 0;
-	sropt.pack_group		= NULL;
-	sropt.pack_grp_bits		= NULL;
+	sropt.het_group			= NULL;
+	sropt.het_grp_bits		= NULL;
 	opt.spank_job_env_size		= 0;
 	opt.spank_job_env		= NULL;
 
@@ -628,20 +628,20 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	slurm_option_table_destroy(optz);
 	xfree(opt_string);
 
-	*opt_found = (sropt.pack_group);
+	*opt_found = (sropt.het_group);
 
 	if (*opt_found == false) {
 		bit_set(pack_grp_bits, default_het_job_offset);
 		return pack_grp_bits;
 	}
 
-	if (sropt.pack_group[0] == '[')
-		tmp = xstrdup(sropt.pack_group);
+	if (sropt.het_group[0] == '[')
+		tmp = xstrdup(sropt.het_group);
 	else
-		xstrfmtcat(tmp, "[%s]", sropt.pack_group);
+		xstrfmtcat(tmp, "[%s]", sropt.het_group);
 	hl = hostlist_create(tmp);
 	if (!hl) {
-		error("Invalid --pack-group value: %s", sropt.pack_group);
+		error("Invalid --pack-group value: %s", sropt.het_group);
 		exit(error_exit);
 	}
 	xfree(tmp);
@@ -652,7 +652,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 		if ((i < 0) || (i >= MAX_HET_JOB_COMPONENTS) ||
 		    (end_ptr[0] != '\0')) {
 			error("Invalid --pack-group value: %s",
-			       sropt.pack_group);
+			       sropt.het_group);
 			exit(error_exit);
 		}
 		bit_set(pack_grp_bits, i);
@@ -660,7 +660,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	}
 	hostlist_destroy(hl);
 	if (bit_ffs(pack_grp_bits) == -1) {	/* No bits set */
-		error("Invalid --pack-group value: %s", sropt.pack_group);
+		error("Invalid --pack-group value: %s", sropt.het_group);
 		exit(error_exit);
 	}
 
@@ -692,8 +692,8 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	char **rest = NULL;
 	char *fullpath, *launch_params;
 
-	sropt.pack_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
-	bit_set(sropt.pack_grp_bits, het_job_offset);
+	sropt.het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
+	bit_set(sropt.het_grp_bits, het_job_offset);
 
 	validate_memory_options(&opt);
 

@@ -659,7 +659,7 @@ static void _wait_all_het_job_comps_started(slurm_opt_t *opt_local)
 
 	slurm_mutex_lock(&start_mutex);
 	if (total_cnt == -1)
-		total_cnt = srun_opt->pack_step_cnt;
+		total_cnt = srun_opt->het_step_cnt;
 	start_cnt++;
 	while (start_cnt < total_cnt) {
 		gettimeofday(&now, NULL);
@@ -732,7 +732,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.het_job_nnodes = job->het_job_nnodes;
 	launch_params.het_job_ntasks = job->het_job_ntasks;
 	launch_params.het_job_offset = job->het_job_offset;
-	launch_params.het_job_step_cnt = srun_opt->pack_step_cnt;
+	launch_params.het_job_step_cnt = srun_opt->het_step_cnt;
 	launch_params.het_job_task_offset = job->het_job_task_offset;
 	launch_params.het_job_task_cnts = job->het_job_task_cnts;
 	launch_params.het_job_tids = job->het_job_tids;

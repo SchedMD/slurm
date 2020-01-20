@@ -504,7 +504,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			opts->step_cond   = &step_cond;
 			opts->step_cnt    = &step_cnt;
 			opts->step_mutex  = &step_mutex;
-			srun_opt->pack_step_cnt = het_job_step_cnt;
+			srun_opt->het_step_cnt = het_job_step_cnt;
 
 			slurm_thread_create_detached(NULL, _launch_one_app,
 						     opts);
@@ -559,7 +559,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		opts->got_alloc   = got_alloc;
 		opts->job         = job;
 		opts->opt_local   = &opt;
-		sropt.pack_step_cnt = 1;
+		sropt.het_step_cnt = 1;
 		_launch_one_app(opts);
 		fini_srun(job, got_alloc, &global_rc, 0);
 	}
@@ -726,8 +726,8 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	params->fanout = 0;
 	params->job_id = job->jobid;
 	params->force = true;
-	if (srun_opt->pack_grp_bits)
-		params->het_job_offset = bit_ffs(srun_opt->pack_grp_bits);
+	if (srun_opt->het_grp_bits)
+		params->het_job_offset = bit_ffs(srun_opt->het_grp_bits);
 	else
 		params->het_job_offset = NO_VAL;
 	params->preserve = true;

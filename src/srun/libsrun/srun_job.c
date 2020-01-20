@@ -511,24 +511,24 @@ static void _pack_grp_test(List opt_list)
 				list_append(missing_argv_list, opt_local);
 			else
 				_copy_args(missing_argv_list, opt_local);
-			xfree(srun_opt->pack_group);
-			if (srun_opt->pack_grp_bits &&
+			xfree(srun_opt->het_group);
+			if (srun_opt->het_grp_bits &&
 			    ((het_job_offset =
-			      bit_ffs(srun_opt->pack_grp_bits)) >= 0)) {
-				xstrfmtcat(srun_opt->pack_group, "%d",
+			      bit_ffs(srun_opt->het_grp_bits)) >= 0)) {
+				xstrfmtcat(srun_opt->het_group, "%d",
 					   het_job_offset);
 			}
-			if (!srun_opt->pack_grp_bits) {
+			if (!srun_opt->het_grp_bits) {
 				error("%s: pack_grp_bits is NULL", __func__);
 			} else if (!master_map) {
 				master_map
-					= bit_copy(srun_opt->pack_grp_bits);
+					= bit_copy(srun_opt->het_grp_bits);
 			} else {
 				if (bit_overlap_any(master_map,
-						    srun_opt->pack_grp_bits)) {
+						    srun_opt->het_grp_bits)) {
 					fatal("Duplicate pack groups in single srun not supported");
 				}
-				bit_or(master_map, srun_opt->pack_grp_bits);
+				bit_or(master_map, srun_opt->het_grp_bits);
 			}
 			if (srun_opt->multi_prog)
 				multi_prog = true;
@@ -538,17 +538,17 @@ static void _pack_grp_test(List opt_list)
 		FREE_NULL_BITMAP(master_map);
 		list_iterator_destroy(iter);
 		list_destroy(missing_argv_list);
-	} else if (!sropt.pack_group && !getenv("SLURM_HET_SIZE")) {
-		FREE_NULL_BITMAP(sropt.pack_grp_bits);
+	} else if (!sropt.het_group && !getenv("SLURM_HET_SIZE")) {
+		FREE_NULL_BITMAP(sropt.het_grp_bits);
 		/* pack_group is already NULL */
-	} else if (!sropt.pack_group && sropt.pack_grp_bits) {
-		if ((het_job_offset = bit_ffs(sropt.pack_grp_bits)) < 0)
+	} else if (!sropt.het_group && sropt.het_grp_bits) {
+		if ((het_job_offset = bit_ffs(sropt.het_grp_bits)) < 0)
 			het_job_offset = 0;
-		else if (bit_set_count(sropt.pack_grp_bits) > 1)
+		else if (bit_set_count(sropt.het_grp_bits) > 1)
 			multi_comp = true;
 		if (sropt.multi_prog)
 			multi_prog = true;
-		xstrfmtcat(sropt.pack_group, "%d", het_job_offset);
+		xstrfmtcat(sropt.het_group, "%d", het_job_offset);
 	}
 
 	if (multi_comp && multi_prog)
@@ -590,10 +590,10 @@ static int _sort_by_offset(void *x, void *y)
 	slurm_opt_t *opt_local2 = *(slurm_opt_t **) y;
 	int offset1 = -1, offset2 = -1;
 
-	if (opt_local1->srun_opt->pack_grp_bits)
-		offset1 = bit_ffs(opt_local1->srun_opt->pack_grp_bits);
-	if (opt_local2->srun_opt->pack_grp_bits)
-		offset2 = bit_ffs(opt_local2->srun_opt->pack_grp_bits);
+	if (opt_local1->srun_opt->het_grp_bits)
+		offset1 = bit_ffs(opt_local1->srun_opt->het_grp_bits);
+	if (opt_local2->srun_opt->het_grp_bits)
+		offset2 = bit_ffs(opt_local2->srun_opt->het_grp_bits);
 	if (offset1 < offset2)
 		return -1;
 	if (offset1 > offset2)
@@ -1048,7 +1048,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 
 	} else if (sropt.no_alloc) {
 		if (opt_list ||
-		    (sropt.pack_grp_bits && (bit_fls(sropt.pack_grp_bits) > 0)))
+		    (sropt.het_grp_bits && (bit_fls(sropt.het_grp_bits) > 0)))
 			fatal("--no-allocation option not supported for heterogeneous jobs");
 		info("do not allocate resources");
 		job = job_create_noalloc();
@@ -1068,8 +1068,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			while ((opt_local = list_next(opt_iter))) {
 				srun_opt_t *srun_opt = opt_local->srun_opt;
 				xassert(srun_opt);
-				if (srun_opt->pack_grp_bits) {
-					i = bit_fls(srun_opt->pack_grp_bits);
+				if (srun_opt->het_grp_bits) {
+					i = bit_fls(srun_opt->het_grp_bits);
 					max_list_offset = MAX(max_list_offset,
 							      i);
 				}

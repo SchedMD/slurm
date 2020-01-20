@@ -2387,8 +2387,8 @@ static int arg_set_pack_group(slurm_opt_t *opt, const char *arg)
 	if (!opt->srun_opt)
 		return SLURM_ERROR;
 
-	xfree(opt->srun_opt->pack_group);
-	opt->srun_opt->pack_group = xstrdup(arg);
+	xfree(opt->srun_opt->het_group);
+	opt->srun_opt->het_group = xstrdup(arg);
 
 	return SLURM_SUCCESS;
 }
@@ -2397,12 +2397,12 @@ static char *arg_get_pack_group(slurm_opt_t *opt)
 	if (!opt->srun_opt)
 		return xstrdup("invalid-context");
 
-	return xstrdup(opt->srun_opt->pack_group);
+	return xstrdup(opt->srun_opt->het_group);
 }
 static void arg_reset_pack_group(slurm_opt_t *opt)
 {
 	if (opt->srun_opt)
-		xfree(opt->srun_opt->pack_group);
+		xfree(opt->srun_opt->het_group);
 }
 static slurm_cli_opt_t slurm_opt_pack_group = {
 	.name = "pack-group",
