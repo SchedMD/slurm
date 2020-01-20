@@ -130,12 +130,12 @@ command will be applied to every component of the heterogeneous job
 
 <p>Batch job options can be included in the submitted script for multiple
 heterogeneous job components. Each component should be separated by a line
-containing the line "#SBATCH packjob" as shown below.</p>
+containing the line "#SBATCH hetjob" as shown below.</p>
 <pre>
 $ cat new.bash
 #!/bin/bash
 #SBATCH --cpus-per-task=4 --mem-per-cpu=16g --ntasks=1
-#SBATCH packjob
+#SBATCH hetjob
 #SBATCH --cpus-per-task=2 --mem-per-cpu=1g  --ntasks=8
 
 srun run.app
@@ -188,14 +188,14 @@ A sample batch script demonstrating this for a Cray system is appended.</p>
 #SBATCH --nodes=1 --constraint=haswell
 #BB create_persistent name=alpha capacity=10 access=striped type=scratch
 #DW persistentdw name=alpha
-#SBATCH packjob
+#SBATCH hetjob
 #SBATCH --nodes=16 --constraint=knl
 #DW persistentdw name=alpha
 ...
 </pre>
 
 <p><b>NOTE:</b> Cray's DataWarp interface directly reads the job script, but
-has no knowledge of "Slurm's "packjob" directive, so Slurm internally rebuilds
+has no knowledge of "Slurm's "hetjob" directive, so Slurm internally rebuilds
 the script for each job component so that only that job components burst buffer
 directives are included in that script. The batch script first component of the
 job will be modified in order to replace the "#DW" directives of other
@@ -213,7 +213,7 @@ above. An example is shown below:</p>
 #SBATCH --nodes=1 --constraint=haswell
 #BB create_persistent name=alpha capacity=10 access=striped type=scratch
 #DW persistentdw name=alpha
-#SBATCH packjob
+#SBATCH hetjob
 #SBATCH --nodes=16 --constraint=knl
 #EXCLUDED DW persistentdw name=alpha
 ...

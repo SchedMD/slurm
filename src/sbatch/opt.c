@@ -454,13 +454,21 @@ extern char *get_argument(const char *file, int lineno, const char *line,
 	char q_char = '\0';
 	bool escape_flag = false;
 	bool quoted = false;
+	static bool logged = false;
 	int i;
 
 	ptr = line;
 	*skipped = 0;
 
-	if ((argument = strcasestr(line, "packjob")))
+	if ((argument = strcasestr(line, "packjob"))) {
+		if (!logged) {
+			info("Warning: the \"packjob\" component separator is being deprecated. Please, use \"hetjob\" instead.");
+			logged = true;
+		}
 		memcpy(argument, "       ", 7);
+	} else if ((argument = strcasestr(line, "hetjob"))) {
+		memcpy(argument, "      ", 6);
+	}
 
 	/* skip whitespace */
 	while (isspace(*ptr) && *ptr != '\0') {
@@ -575,8 +583,11 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 		}
 
 		/* this line starts with the magic word */
-		if (strcasestr(line, "packjob"))
+		if (strcasestr(line, "packjob")) {
 			het_job_scan_inx++;
+		} else if (strcasestr(line, "hetjob")) {
+			het_job_scan_inx++;
+		}
 		if (het_job_scan_inx < het_job_inx) {
 			xfree(line);
 			continue;
