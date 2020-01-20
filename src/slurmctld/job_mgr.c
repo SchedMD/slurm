@@ -10867,6 +10867,12 @@ void purge_old_job(void)
 			continue;
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;
+		/*
+		 * If the dependency is already invalid there's no reason to
+		 * keep checking it.
+		 */
+		if (job_ptr->state_reason == WAIT_DEP_INVALID)
+			continue;
 		if (test_job_dependency(job_ptr, NULL) == FAIL_DEPEND) {
 			/* Check what are the job disposition
 			 * to deal with invalid dependecies
