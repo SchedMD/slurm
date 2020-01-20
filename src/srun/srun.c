@@ -159,9 +159,12 @@ static bool _enable_het_job_steps(void)
 	bool enabled = true;
 	char *sched_params = slurm_get_sched_params();
 
-	if (xstrcasestr(sched_params, "disable_hetero_steps"))
+	/* Continue supporting old terminology */
+	if (xstrcasestr(sched_params, "disable_hetero_steps") ||
+	    xstrcasestr(sched_params, "disable_hetjob_steps"))
 		enabled = false;
-	else if (xstrcasestr(sched_params, "enable_hetero_steps"))
+	else if (xstrcasestr(sched_params, "enable_hetero_steps") ||
+		 xstrcasestr(sched_params, "enable_hetjob_steps"))
 		enabled = true;
 
 	xfree(sched_params);

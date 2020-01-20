@@ -427,7 +427,7 @@ component number zero. Some examples follow:</p>
 <p><b>IMPORTANT:</b> The ability to execute a single application across more
 than one job allocation does not work with all MPI implementations or Slurm MPI
 plugins. Slurm's ability to execute such an application can be disabled on the
-entire cluster by adding "disable_hetero_steps" to Slurm's SchedulerParameters
+entire cluster by adding "disable_hetjob_steps" to Slurm's SchedulerParameters
 configuration parameter.</p>
 
 <p><b>IMPORTANT:</b> While the srun command can be used to launch heterogeneous
