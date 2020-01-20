@@ -289,7 +289,7 @@ Usage: sbcast [OPTIONS] SOURCE DEST\n\
   -C, --compress[=lib]  compress the file being transmitted\n\
   -f, --force           replace destination file as required\n\
   -F, --fanout=num      specify message fanout\n\
-  -j, --jobid=#[+#][.#] specify job ID with optional pack job offset and/or step ID\n\
+  -j, --jobid=#[+#][.#] specify job ID with optional hetjob offset and/or step ID\n\
   -p, --preserve        preserve modes and times of source file\n\
   -s, --size=num        block size in bytes (rounded off)\n\
   -t, --timeout=secs    specify message timeout (seconds)\n\
