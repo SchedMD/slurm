@@ -1529,8 +1529,8 @@ _create_msg_socket(void)
 {
 	char* node_addr;
 
-	int ld = slurm_init_msg_engine_addrname_port(conf->node_addr,
-						     conf->port);
+	int ld = slurm_init_msg_engine_port(conf->port);
+
 	if (conf->node_addr == NULL)
 		node_addr = "*";
 	else

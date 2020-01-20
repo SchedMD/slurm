@@ -358,13 +358,9 @@ static void *_background_rpc_mgr(void *no_data)
 	/* initialize port for RPCs */
 	lock_slurmctld(config_read_lock);
 
-	if ((sockfd =
-	     slurm_init_msg_engine_addrname_port(slurmctld_conf.
-						 control_machine[backup_inx],
-						 slurmctld_conf.
-						 slurmctld_port))
+	if ((sockfd = slurm_init_msg_engine_port(slurmctld_conf.slurmctld_port))
 	    == SLURM_ERROR)
-		fatal("slurm_init_msg_engine_addrname_port error %m");
+		fatal("slurm_init_msg_engine_port error %m");
 	unlock_slurmctld(config_read_lock);
 
 	/*

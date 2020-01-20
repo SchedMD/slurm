@@ -1111,7 +1111,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	int sigarray[] = {SIGUSR1, 0};
-	char *node_addr = NULL;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "rpcmgr", NULL, NULL, NULL) < 0) {
@@ -1123,12 +1122,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	debug3("%s pid = %u", __func__, getpid());
 
-	/* set node_addr to bind to (NULL means any) */
-	if (xstrcmp(slurmctld_conf.control_machine[backup_inx],
-		    slurmctld_conf.control_addr[backup_inx])) {
-		node_addr = slurmctld_conf.control_addr[backup_inx];
-	}
-
 	/* initialize ports for RPCs */
 	lock_slurmctld(config_read_lock);
 	nports = slurmctld_conf.slurmctld_port_count;
@@ -1138,11 +1131,11 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	}
 	fds = xcalloc(nports, sizeof(struct pollfd));
 	for (i = 0; i < nports; i++) {
-		fds[i].fd = slurm_init_msg_engine_addrname_port(node_addr,
+		fds[i].fd = slurm_init_msg_engine_port(
 			slurmctld_conf.slurmctld_port + i);
 		fds[i].events = POLLIN;
 		if (fds[i].fd == SLURM_ERROR) {
-			fatal("slurm_init_msg_engine_addrname_port error %m");
+			fatal("slurm_init_msg_engine_port error %m");
 			return NULL;	/* Fix CLANG false positive */
 		}
 		fd_set_close_on_exec(fds[i].fd);
