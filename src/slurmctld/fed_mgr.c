@@ -2220,34 +2220,16 @@ static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 	return SLURM_SUCCESS;
 }
 
-static int _update_origin_job_dep(job_record_t *job_ptr)
+static void _update_origin_job_dep(job_record_t *job_ptr,
+				   slurmdb_cluster_rec_t *origin)
 {
-	int rc = SLURM_SUCCESS;
-	uint32_t origin_id;
-	slurmdb_cluster_rec_t *origin;
 	slurm_msg_t req_msg;
 	dep_update_origin_msg_t dep_update_msg = { 0 };
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
 	xassert(job_ptr->details->depend_list);
-	xassert(fed_mgr_fed_rec);
-	xassert(fed_mgr_fed_rec->cluster_list);
-
-	origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
-	origin = fed_mgr_get_cluster_by_id(origin_id);
-	if (!origin) {
-		error("%s: Couldn't find cluster rec by id %u; we don't know how to tell the origin about dependency update for %pJ.",
-		      __func__, origin_id, job_ptr);
-		/*
-		 * TODO: What to do if this fails? Should I
-		 * leave this job_ptr in and let it be tested
-		 * again? I'm afraid that logs may be spammed.
-		 * But I imagine this might happen if clusters
-		 * drop out of federation for whatever reason.
-		 */
-		return SLURM_ERROR;
-	}
+	xassert(origin);
 
 	dep_update_msg.cnt = list_count(job_ptr->details->depend_list);
 	dep_update_msg.depend_list = job_ptr->details->depend_list;
@@ -2257,9 +2239,9 @@ static int _update_origin_job_dep(job_record_t *job_ptr)
 	req_msg.msg_type = REQUEST_UPDATE_ORIGIN_DEP;
 	req_msg.data = &dep_update_msg;
 
-	rc = _queue_rpc(origin, &req_msg, 0, false);
-
-	return rc;
+	if (_queue_rpc(origin, &req_msg, 0, false))
+		error("%s: Failed to send dependency update for %pJ",
+		      __func__, job_ptr);
 }
 
 static int _find_local_dep(void *arg, void *key)
@@ -6143,9 +6125,11 @@ extern bool fed_mgr_sibs_synced()
 extern void fed_mgr_test_remote_dependencies(void)
 {
 	int rc;
+	uint32_t origin_id;
 	bool was_changed;
 	job_record_t *job_ptr;
 	ListIterator itr;
+	slurmdb_cluster_rec_t *origin;
 
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
@@ -6157,6 +6141,21 @@ extern void fed_mgr_test_remote_dependencies(void)
 	slurm_mutex_lock(&dep_job_list_mutex);
 	itr = list_iterator_create(remote_dep_job_list);
 	while ((job_ptr = list_next(itr))) {
+		origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
+		origin = fed_mgr_get_cluster_by_id(origin_id);
+		if (!origin) {
+			/*
+			 * The origin probably left the federation. If it comes
+			 * back there's no guarantee it will have the same
+			 * cluster id as before.
+			 */
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+				info("%s: Couldn't find the origin cluster (id %u); it probably left the federation. Stop testing dependency for %pJ.",
+				     __func__, origin_id, job_ptr);
+			list_delete_item(itr);
+			continue;
+		}
+
 		rc = test_job_dependency(job_ptr, &was_changed);
 		if (rc == LOCAL_DEPEND) {
 			if (was_changed) {
@@ -6164,21 +6163,19 @@ extern void fed_mgr_test_remote_dependencies(void)
 				    DEBUG_FLAG_DEPENDENCY)
 					info("%s: %pJ has at least 1 local dependency left.",
 					     __func__, job_ptr);
-				_update_origin_job_dep(job_ptr);
+				_update_origin_job_dep(job_ptr, origin);
 			}
 		} else if (rc == FAIL_DEPEND) {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
 				info("%s: %pJ test_job_dependency() failed, dependency never satisfied.",
 				     __func__, job_ptr);
-			if (_update_origin_job_dep(job_ptr))
-				continue;
+			_update_origin_job_dep(job_ptr, origin);
 			list_delete_item(itr);
 		} else { /* ((rc == REMOTE_DEPEND) || (rc == NO_DEPEND)) */
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
 				info("%s: %pJ has no more dependencies left on this cluster.",
 				     __func__, job_ptr);
-			if (_update_origin_job_dep(job_ptr))
-				continue;
+			_update_origin_job_dep(job_ptr, origin);
 			list_delete_item(itr);
 		}
 	}
