@@ -70,6 +70,7 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 	pack16(conf->propagate_prio, buffer);
 	pack64(conf->debug_flags, buffer);
 	pack32(conf->debug_level, buffer);
+	pack32(conf->syslog_debug, buffer);
 	pack32(conf->daemonize, buffer);
 	pack32((uint32_t)conf->slurm_user_id, buffer);
 	pack16(conf->use_pam, buffer);
@@ -123,6 +124,8 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 		safe_unpack64(&conf->debug_flags, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		conf->debug_level = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		conf->syslog_debug = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
 		conf->daemonize = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
