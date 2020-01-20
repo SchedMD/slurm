@@ -488,11 +488,11 @@ static void _copy_args(List missing_argc_list, slurm_opt_t *opt_master)
 }
 
 /*
- * Build "pack_group" string. If set on execute line, it may need to be
- * rebuilt for multiple option structures ("--pack-group=1,2" becomes two
- * opt structures). Clear "pack_grp_bits".if determined to not be a hetjob.
+ * Build "het_group" string. If set on execute line, it may need to be
+ * rebuilt for multiple option structures ("--het-group=1,2" becomes two
+ * opt structures). Clear "het_grp_bits".if determined to not be a hetjob.
  */
-static void _pack_grp_test(List opt_list)
+static void _het_grp_test(List opt_list)
 {
 	ListIterator iter;
 	int het_job_offset;
@@ -519,14 +519,14 @@ static void _pack_grp_test(List opt_list)
 					   het_job_offset);
 			}
 			if (!srun_opt->het_grp_bits) {
-				error("%s: pack_grp_bits is NULL", __func__);
+				error("%s: het_grp_bits is NULL", __func__);
 			} else if (!master_map) {
 				master_map
 					= bit_copy(srun_opt->het_grp_bits);
 			} else {
 				if (bit_overlap_any(master_map,
 						    srun_opt->het_grp_bits)) {
-					fatal("Duplicate pack groups in single srun not supported");
+					fatal("Duplicate het groups in single srun not supported");
 				}
 				bit_or(master_map, srun_opt->het_grp_bits);
 			}
@@ -540,7 +540,7 @@ static void _pack_grp_test(List opt_list)
 		list_destroy(missing_argv_list);
 	} else if (!sropt.het_group && !getenv("SLURM_HET_SIZE")) {
 		FREE_NULL_BITMAP(sropt.het_grp_bits);
-		/* pack_group is already NULL */
+		/* het_group is already NULL */
 	} else if (!sropt.het_group && sropt.het_grp_bits) {
 		if ((het_job_offset = bit_ffs(sropt.het_grp_bits)) < 0)
 			het_job_offset = 0;
@@ -552,7 +552,7 @@ static void _pack_grp_test(List opt_list)
 	}
 
 	if (multi_comp && multi_prog)
-		fatal("--multi-prog option not supported with multiple pack groups");
+		fatal("--multi-prog option not supported with multiple het groups");
 }
 
 /*
@@ -603,7 +603,7 @@ static int _sort_by_offset(void *x, void *y)
 
 static void _post_opts(List opt_list)
 {
-	_pack_grp_test(opt_list);
+	_het_grp_test(opt_list);
 	_match_job_name(opt_list);
 	if (opt_list)
 		list_sort(opt_list, _sort_by_offset);
@@ -1076,7 +1076,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			}
 			list_iterator_destroy(opt_iter);
 			if (max_list_offset > max_het_job_offset) {
-				error("Attempt to run a job step with pack group value of %d, "
+				error("Attempt to run a job step with het group value of %d, "
 				      "but the job allocation has maximum value of %d",
 				      max_list_offset, max_het_job_offset);
 				exit(1);
@@ -1187,10 +1187,10 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		}	/* More hetjob components */
 		list_iterator_destroy(resp_iter);
 
-		max_het_job_offset = get_max_pack_group();
+		max_het_job_offset = get_max_het_group();
 		het_job_offset = list_count(job_resp_list) - 1;
 		if (max_het_job_offset > het_job_offset) {
-			error("Requested pack-group offset exceeds highest hetjob index (%d > %d)",
+			error("Requested het-group offset exceeds highest hetjob index (%d > %d)",
 			      max_het_job_offset, het_job_offset);
 			exit(error_exit);
 		}

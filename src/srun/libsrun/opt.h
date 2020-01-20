@@ -103,8 +103,8 @@ extern void init_spank_env(void);
 extern slurm_opt_t *get_next_opt(int het_job_offset);
 
 /*
- * Return maximum pack_group value for any step launch option request
+ * Return maximum het_group value for any step launch option request
  */
-extern int get_max_pack_group(void);
+extern int get_max_het_group(void);
 
 #endif	/* _HAVE_OPT_H */

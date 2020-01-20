@@ -2382,7 +2382,7 @@ static slurm_cli_opt_t slurm_opt_oversubscribe = {
 	.reset_each_pass = true,
 };
 
-static int arg_set_pack_group(slurm_opt_t *opt, const char *arg)
+static int arg_set_het_group(slurm_opt_t *opt, const char *arg)
 {
 	if (!opt->srun_opt)
 		return SLURM_ERROR;
@@ -2392,26 +2392,38 @@ static int arg_set_pack_group(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
-static char *arg_get_pack_group(slurm_opt_t *opt)
+static char *arg_get_het_group(slurm_opt_t *opt)
 {
 	if (!opt->srun_opt)
 		return xstrdup("invalid-context");
 
 	return xstrdup(opt->srun_opt->het_group);
 }
-static void arg_reset_pack_group(slurm_opt_t *opt)
+static void arg_reset_het_group(slurm_opt_t *opt)
 {
 	if (opt->srun_opt)
 		xfree(opt->srun_opt->het_group);
 }
+
+/* Continue support for pack-group */
 static slurm_cli_opt_t slurm_opt_pack_group = {
 	.name = "pack-group",
 	.has_arg = required_argument,
-	.val = LONG_OPT_PACK_GROUP,
+	.val = LONG_OPT_HET_GROUP,
 	.srun_early_pass = true,
-	.set_func_srun = arg_set_pack_group,
-	.get_func = arg_get_pack_group,
-	.reset_func = arg_reset_pack_group,
+	.set_func_srun = arg_set_het_group,
+	.get_func = arg_get_het_group,
+	.reset_func = arg_reset_het_group,
+};
+
+static slurm_cli_opt_t slurm_opt_het_group = {
+	.name = "het-group",
+	.has_arg = required_argument,
+	.val = LONG_OPT_HET_GROUP,
+	.srun_early_pass = true,
+	.set_func_srun = arg_set_het_group,
+	.get_func = arg_get_het_group,
+	.reset_func = arg_reset_het_group,
 };
 
 static int arg_set_parsable(slurm_opt_t *opt, const char *arg)
@@ -3513,6 +3525,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_gres,
 	&slurm_opt_gres_flags,
 	&slurm_opt_help,
+	&slurm_opt_het_group,
 	&slurm_opt_hint,
 	&slurm_opt_hold,
 	&slurm_opt_ignore_pbs,

@@ -1853,14 +1853,14 @@ Otherwise the default value is specified by the system configuration parameter
 \fIJobFileAppend\fR. This option applies to job and step allocations.
 
 .TP
-\fB\-\-pack\-group\fR=<\fIexpr\fR>
-Identify each job in a heterogeneous job allocation for which a step is
+\fB\-\-het\-group\fR=<\fIexpr\fR>
+Identify each component in a heterogeneous job allocation for which a step is
 to be created. Applies only to srun commands issued inside a salloc allocation
 or sbatch script.
 \fR<\fIexpr\fR> is a set of integers corresponding to one or more options
-indexes on the salloc or sbatch command line.
-Examples: "\-\-pack\-group=2", "\-\-pack\-group=0,4", "\-\-pack\-group=1,3\-5".
-The default value is \-\-pack\-group=0.
+offsets on the salloc or sbatch command line.
+Examples: "\-\-het\-group=2", "\-\-het\-group=0,4", "\-\-het\-group=1,3\-5".
+The default value is \-\-het\-group=0.
 
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_names\fR>

@@ -103,8 +103,8 @@ bool	tres_freq_err_log = true;
 static slurm_opt_t *_get_first_opt(int het_job_offset);
 static slurm_opt_t *_get_next_opt(int het_job_offset, slurm_opt_t *opt_last);
 
-static bitstr_t *_get_pack_group(const int argc, char **argv,
-				 int default_het_job_offset, bool *opt_found);
+static bitstr_t *_get_het_group(const int argc, char **argv,
+				int default_het_job_offset, bool *opt_found);
 
 /* fill in default options  */
 static void _opt_default(void);
@@ -219,9 +219,9 @@ extern slurm_opt_t *get_next_opt(int het_job_offset)
 }
 
 /*
- * Return maximum pack_group value for any step launch option request
+ * Return maximum het_group value for any step launch option request
  */
-extern int get_max_pack_group(void)
+extern int get_max_het_group(void)
 {
 	ListIterator opt_iter;
 	slurm_opt_t *opt_local;
@@ -334,16 +334,16 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 {
 	static int default_het_job_offset = 0;
 	static bool pending_append = false;
-	bitstr_t *pack_grp_bits;
+	bitstr_t *het_grp_bits;
 	int i, i_first, i_last;
 	bool opt_found = false;
 
-	pack_grp_bits = _get_pack_group(argc, argv, default_het_job_offset++,
-					&opt_found);
-	i_first = bit_ffs(pack_grp_bits);
-	i_last  = bit_fls(pack_grp_bits);
+	het_grp_bits = _get_het_group(argc, argv, default_het_job_offset++,
+				      &opt_found);
+	i_first = bit_ffs(het_grp_bits);
+	i_last  = bit_fls(het_grp_bits);
 	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(pack_grp_bits, i))
+		if (!bit_test(het_grp_bits, i))
 			continue;
 		pass_number++;
 		if (pending_append) {
@@ -398,7 +398,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		}
 		pending_append = true;
 	}
-	bit_free(pack_grp_bits);
+	bit_free(het_grp_bits);
 
 	if (opt_list && pending_append) {		/* Last record */
 		list_append(opt_list, _opt_copy());
@@ -602,19 +602,19 @@ static void _opt_env(int het_job_offset)
 }
 
 /*
- * If --pack-group option found, return a bitmap representing their IDs
+ * If --het-group option found, return a bitmap representing their IDs
  * argc IN - Argument count
  * argv IN - Arguments
  * default_het_job_offset IN - Default offset
- * opt_found OUT - Set to true if --pack-group option found
- * RET bitmap if pack groups to run
+ * opt_found OUT - Set to true if --het-group option found
+ * RET bitmap if het groups to run
  */
-static bitstr_t *_get_pack_group(const int argc, char **argv,
+static bitstr_t *_get_het_group(const int argc, char **argv,
 				 int default_het_job_offset, bool *opt_found)
 {
 	int i, opt_char, option_index = 0;
 	char *tmp = NULL;
-	bitstr_t *pack_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
+	bitstr_t *het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
 	hostlist_t hl;
 	char *opt_string = NULL;
 	struct option *optz = slurm_option_table_create(&opt, &opt_string);
@@ -631,8 +631,8 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	*opt_found = (sropt.het_group);
 
 	if (*opt_found == false) {
-		bit_set(pack_grp_bits, default_het_job_offset);
-		return pack_grp_bits;
+		bit_set(het_grp_bits, default_het_job_offset);
+		return het_grp_bits;
 	}
 
 	if (sropt.het_group[0] == '[')
@@ -641,7 +641,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 		xstrfmtcat(tmp, "[%s]", sropt.het_group);
 	hl = hostlist_create(tmp);
 	if (!hl) {
-		error("Invalid --pack-group value: %s", sropt.het_group);
+		error("Invalid --het-group value: %s", sropt.het_group);
 		exit(error_exit);
 	}
 	xfree(tmp);
@@ -651,20 +651,20 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 		i = strtol(tmp, &end_ptr, 10);
 		if ((i < 0) || (i >= MAX_HET_JOB_COMPONENTS) ||
 		    (end_ptr[0] != '\0')) {
-			error("Invalid --pack-group value: %s",
+			error("Invalid --het-group value: %s",
 			       sropt.het_group);
 			exit(error_exit);
 		}
-		bit_set(pack_grp_bits, i);
+		bit_set(het_grp_bits, i);
 		free(tmp);
 	}
 	hostlist_destroy(hl);
-	if (bit_ffs(pack_grp_bits) == -1) {	/* No bits set */
-		error("Invalid --pack-group value: %s", sropt.het_group);
+	if (bit_ffs(het_grp_bits) == -1) {	/* No bits set */
+		error("Invalid --het-group value: %s", sropt.het_group);
 		exit(error_exit);
 	}
 
-	return pack_grp_bits;
+	return het_grp_bits;
 }
 
 static void _set_options(const int argc, char **argv)
@@ -1370,7 +1370,7 @@ static void _usage(void)
 "            [--bcast=<dest_path>] [--compress[=library]]\n"
 "            [--acctg-freq=<datatype>=<interval>] [--delay-boot=mins]\n"
 "            [-w hosts...] [-x hosts...] [--use-min-nodes]\n"
-"            [--mpi-combine=yes|no] [--pack-group=value]\n"
+"            [--mpi-combine=yes|no] [--het-group=value]\n"
 "            [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "            [--gpus-per-node=n] [--gpus-per-socket=n]  [--gpus-per-task=n]\n"
 "            [--mem-per-gpu=MB]\n"
@@ -1441,7 +1441,7 @@ static void _help(void)
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -o, --output=out            location of stdout redirection\n"
 "  -O, --overcommit            overcommit resources\n"
-"      --pack-group=value      pack job allocation(s) in which to launch\n"
+"      --het-group=value       hetjob component allocation(s) in which to launch\n"
 "                              application\n"
 "  -p, --partition=partition   partition requested\n"
 "      --power=flags           power management options\n"
