@@ -117,6 +117,7 @@ struct node_record {
 	void **part_pptr;		/* array of pointers to partitions
 					 * associated with this node*/
 	char *comm_name;		/* communications path name to node */
+	char *bcast_address;		/* BcastAddr */
 	uint16_t port;			/* TCP port number of the slurmd */
 	slurm_addr_t slurm_addr;	/* network address */
 	uint16_t comp_job_cnt;		/* count of jobs completing on node */
@@ -241,8 +242,8 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 			       bool test_config,
 			       void (*_callback) (
 				       char *alias, char *hostname,
-				       char *address, uint16_t port,
-				       int state_val,
+				       char *address, char *bcast_addr,
+				       uint16_t port, int state_val,
 				       slurm_conf_node_t *node_ptr,
 				       config_record_t *config_ptr));
 

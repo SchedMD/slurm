@@ -127,6 +127,7 @@ typedef struct names_ll_s {
 	char *alias;	/* NodeName */
 	char *hostname;	/* NodeHostname */
 	char *address;	/* NodeAddr */
+	char *bcast_address; /* BcastAddress */
 	uint16_t port;
 	uint16_t cpus;
 	uint16_t boards;
@@ -626,6 +627,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	s_p_hashtbl_t *tbl, *dflt;
 	slurm_conf_node_t *n;
 	static s_p_options_t _nodename_options[] = {
+		{"BcastAddr", S_P_STRING},
 		{"Boards", S_P_UINT16},
 		{"CoreSpecCount", S_P_UINT16},
 		{"CoresPerSocket", S_P_UINT16},
@@ -665,6 +667,14 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			s_p_hashtbl_destroy(tbl);
 			return -1;
 		}
+
+		if (s_p_get_string(&tmp, "BcastAddr", tbl)) {
+			error("BcastAddr not allowed with NodeName=DEFAULT");
+			xfree(tmp);
+			s_p_hashtbl_destroy(tbl);
+			return -1;
+		}
+
 		if (s_p_get_string(&tmp, "NodeAddr", tbl)) {
 			error("NodeAddr not allowed with NodeName=DEFAULT");
 			xfree(tmp);
@@ -699,6 +709,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			n->hostnames = xstrdup(n->nodenames);
 		if (!s_p_get_string(&n->addresses, "NodeAddr", tbl))
 			n->addresses = xstrdup(n->hostnames);
+		s_p_get_string(&n->bcast_addresses, "BcastAddr", tbl);
 
 		if (!s_p_get_uint16(&n->boards, "Boards", tbl)
 		    && !s_p_get_uint16(&n->boards, "Boards", dflt)) {
@@ -2051,8 +2062,8 @@ static int _get_hash_idx(const char *name)
 	return index;
 }
 
-static void _push_to_hashtbls(char *alias, char *hostname,
-			      char *address, uint16_t port,
+static void _push_to_hashtbls(char *alias, char *hostname, char *address,
+			      char *bcast_address, uint16_t port,
 			      uint16_t cpus, uint16_t boards,
 			      uint16_t sockets, uint16_t cores,
 			      uint16_t threads, bool front_end,
@@ -2112,6 +2123,7 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 	new->alias	= xstrdup(alias);
 	new->hostname	= xstrdup(hostname);
 	new->address	= xstrdup(address);
+	new->bcast_address = xstrdup(bcast_address);
 	new->port	= port;
 	new->cpus	= cpus;
 	new->boards	= boards;
@@ -2182,7 +2194,7 @@ static int _register_front_ends(slurm_conf_frontend_t *front_end_ptr)
 
 	while ((hostname = hostlist_shift(hostname_list))) {
 		address = hostlist_shift(address_list);
-		_push_to_hashtbls(hostname, hostname, address,
+		_push_to_hashtbls(hostname, hostname, address, NULL,
 				  front_end_ptr->port, 1, 1, 1, 1, 1, 1,
 				  NULL, 0, 0, NULL, false);
 		free(hostname);
@@ -2199,11 +2211,11 @@ cleanup:
 }
 
 static void _check_callback(char *alias, char *hostname, char *address,
-			    uint16_t port, int state_val,
+			    char *bcast_address, uint16_t port, int state_val,
 			    slurm_conf_node_t *node_ptr,
 			    config_record_t *config_ptr)
 {
-	_push_to_hashtbls(alias, hostname, address, port,
+	_push_to_hashtbls(alias, hostname, address, bcast_address, port,
 			  node_ptr->cpus, node_ptr->boards,
 			  node_ptr->sockets, node_ptr->cores,
 			  node_ptr->threads, 0, node_ptr->cpu_spec_list,
@@ -5780,7 +5792,7 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 
 	while ((hostname = hostlist_shift(host_list))) {
 		_push_to_hashtbls(hostname, hostname,
-				  NULL, 0, 0,
+				  NULL, NULL, 0, 0,
 				  0, 0, 0, 0, false, NULL, 0,
 				  0, &node_addrs[i++], true);
 		free(hostname);

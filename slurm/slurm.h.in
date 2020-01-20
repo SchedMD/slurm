@@ -2110,6 +2110,7 @@ typedef struct {
 
 typedef struct node_info {
 	char *arch;		/* computer architecture */
+	char *bcast_address;	/* BcastAddr (optional) */
 	uint16_t boards;        /* total number of boards per node  */
 	time_t boot_time;	/* time of node boot */
 	char *cluster_name;	/* Cluster name ONLY set in federation */

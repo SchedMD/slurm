@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "November 2019" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "January 2020" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4351,6 +4351,17 @@ they must exactly match the entries in the \fBNodeName\fR
 \fBNodeAddr\fR may also contain IP addresses.
 By default, the \fBNodeAddr\fR will be identical in value to
 \fBNodeHostname\fR.
+
+.TP
+\fBBcastAddr\fR
+Alternate network path to be used for sbcast network traffic to a given node.
+This name will be used as an argument to the gethostbyname() function.
+If a node range expression is used to designate multiple nodes,
+they must exactly match the entries in the \fBNodeName\fR
+(e.g. "NodeName=lx[0\-7] BcastAddr=elx[0\-7]").
+\fBBcastAddr\fR may also contain IP addresses.
+By default, the \fBBcastAddr\fR is unset, and sbcast traffic will be routed
+to the \fBNodeAddr\fR for a given node.
 
 .TP
 \fBBoards\fR

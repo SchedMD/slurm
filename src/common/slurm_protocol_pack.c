@@ -1640,6 +1640,8 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&node->node_addr, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->bcast_address, &uint32_tmp,
+				       buffer);
 		safe_unpack16(&node->port, buffer);
 		safe_unpack32(&node->next_state, buffer);
 		safe_unpack32(&node->node_state, buffer);

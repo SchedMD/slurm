@@ -286,6 +286,11 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 			line_used = true;
 		}
 
+		if (node_ptr->bcast_address) {
+			xstrfmtcat(out, "BcastAddr=%s ", node_ptr->bcast_address);
+			line_used = true;
+		}
+
 		if (node_ptr->port != slurm_get_slurmd_port()) {
 			xstrfmtcat(out, "Port=%u ", node_ptr->port);
 			line_used = true;

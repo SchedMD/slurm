@@ -204,6 +204,7 @@ typedef struct slurm_conf_node {
 	char *nodenames;
 	char *hostnames;
 	char *addresses;
+	char *bcast_addresses;
 	char *gres;		/* arbitrary list of node's generic resources */
 	char *feature;		/* arbitrary list of node's features */
 	char *port_str;
