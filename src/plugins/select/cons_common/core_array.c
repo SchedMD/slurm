@@ -248,7 +248,7 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 {
 	bitstr_t **core_array = NULL;
 	int i, i_first, i_last, j, c;
-	int node_inx, last_node_inx = 0, core_offset;
+	int node_inx = 0, core_offset;
 	char tmp[128];
 
 	if (!core_bitmap)
@@ -275,9 +275,10 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(core_bitmap, i))
 			continue;
-		for (j = last_node_inx; j < select_node_cnt; j++) {
+		for (j = node_inx; j < select_node_cnt; j++) {
 			if (i < select_node_record[j].cume_cores) {
 				node_inx = j;
+				i = select_node_record[j].cume_cores - 1;
 				break;
 			}
 		}
@@ -296,6 +297,7 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 			if (bit_test(core_bitmap, core_offset + c))
 				bit_set(core_array[node_inx], c);
 		}
+		node_inx++;
 	}
 
 #if _DEBUG
