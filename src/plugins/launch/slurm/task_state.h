@@ -54,20 +54,20 @@ typedef enum {
 typedef void (*log_f) (const char *, ...);
 
 /*
- * Given a pack group and task count, return a task_state structure
+ * Given a het group and task count, return a task_state structure
  * Free memory using task_state_destroy()
  */
 extern task_state_t task_state_create(uint32_t job_id, uint32_t step_id,
-				      uint32_t pack_group, int ntasks,
+				      uint32_t het_group, int ntasks,
 				      uint32_t task_offset);
 
 /*
- * Find the task_state structure for a given job_id, step_id and/or pack group
+ * Find the task_state structure for a given job_id, step_id and/or het group
  * on a list. Specify values of NO_VAL for values that are not to be matched
  * Returns NULL if not found
  */
 extern task_state_t task_state_find(uint32_t job_id, uint32_t step_id,
-				    uint32_t pack_group, List task_state_list);
+				    uint32_t het_group, List task_state_list);
 
 /*
  * Modify the task count for a previously created task_state structure
@@ -86,13 +86,14 @@ extern void task_state_update(task_state_t ts, int task_id,
 			      task_state_type_t t);
 
 /*
- * Return TRUE if this is the first task exit for this job step (ALL pack jobs)
+ * Return TRUE if this is the first task exit for this job step
+ * (ALL hetjob components)
  */
 extern bool task_state_first_exit(List task_state_list);
 
 /*
  * Return TRUE if this is the first abnormal task exit for this job step
- * (ALL pack jobs)
+ * (ALL hetjob components)
  */
 extern bool task_state_first_abnormal_exit(List task_state_list);
 
@@ -102,7 +103,7 @@ extern bool task_state_first_abnormal_exit(List task_state_list);
 extern void task_state_print(List task_state_list, log_f fn);
 
 /*
- * Translate pack-job local task ID to a global task ID
+ * Translate hetjob local task ID to a global task ID
  */
 extern uint32_t task_state_global_id(task_state_t ts, uint32_t local_task_id);
 
