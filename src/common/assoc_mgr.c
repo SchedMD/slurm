@@ -201,7 +201,8 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 	slurmdb_assoc_rec_t *assoc_ptr;
 	int inx;
 
-	if (assoc->id)
+	/* We can only use _find_assoc_rec_id if we are not on the slurmdbd */
+	if (assoc->id && assoc_mgr_cluster_name)
 		return _find_assoc_rec_id(assoc->id);
 
 	if (!assoc_hash) {
@@ -2926,6 +2927,21 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 
 	itr = list_iterator_create(assoc_mgr_wckey_list);
 	while ((found_wckey = list_next(itr))) {
+		/* only and always check for on the slurmdbd */
+		if (!assoc_mgr_cluster_name) {
+			if (!wckey->cluster) {
+				error("No cluster name was given "
+				      "to check against, "
+				      "we need one to get a wckey.");
+				continue;
+			}
+
+			if (xstrcasecmp(wckey->cluster, found_wckey->cluster)) {
+				debug4("not the right cluster");
+				continue;
+			}
+		}
+
 		if (wckey->id) {
 			if (wckey->id == found_wckey->id) {
 				ret_wckey = found_wckey;
@@ -2950,23 +2966,6 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 				debug4("not the right name %s != %s",
 				       wckey->name, found_wckey->name);
 				continue;
-			}
-
-			/* only check for on the slurmdbd */
-			if (!assoc_mgr_cluster_name) {
-				if (!wckey->cluster) {
-					error("No cluster name was given "
-					      "to check against, "
-					      "we need one to get a wckey.");
-					continue;
-				}
-
-				if (found_wckey->cluster
-				    && xstrcasecmp(wckey->cluster,
-						   found_wckey->cluster)) {
-					debug4("not the right cluster");
-					continue;
-				}
 			}
 		}
 		ret_wckey = found_wckey;
@@ -4184,6 +4183,12 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 
 		list_iterator_reset(itr);
 		while ((rec = list_next(itr))) {
+			/* only and always check for on the slurmdbd */
+			if (!assoc_mgr_cluster_name &&
+			    xstrcasecmp(object->cluster, rec->cluster)) {
+				debug4("not the right cluster");
+				continue;
+			}
 			if (object->id) {
 				if (object->id == rec->id) {
 					break;
@@ -4200,15 +4205,6 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 					|| xstrcasecmp(object->name,
 						       rec->name))) {
 					debug4("not the right wckey");
-					continue;
-				}
-
-				/* only check for on the slurmdbd */
-				if (!assoc_mgr_cluster_name && object->cluster
-				    && (!rec->cluster
-					|| xstrcasecmp(object->cluster,
-						       rec->cluster))) {
-					debug4("not the right cluster");
 					continue;
 				}
 				break;
@@ -4843,6 +4839,10 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 	return rc;
 }
 
+/*
+ * NOTE: This function only works when assoc_mgr_cluster_name is defined.  This
+ * does not currently work for the slurmdbd.
+ */
 extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 {
 	slurmdb_res_rec_t *rec = NULL;
