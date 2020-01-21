@@ -220,7 +220,7 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 	char tmp[128];
 	bitstr_t **tmp_cores;
 #endif
-	bitstr_t **avail_cores, **local_cores = NULL;
+	bitstr_t **avail_cores = NULL, **local_cores = NULL;
 	bitstr_t *picked_node_bitmap;
 	char str[300];
 	int cores_per_node = 0, extra_cores_needed = -1;
