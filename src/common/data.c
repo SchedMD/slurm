@@ -254,7 +254,7 @@ static void _check_data_list_node_parent(const data_list_t *dl,
 	}
 
 	/* found an orphan? */
-	xassert(i == dn);
+	fatal_abort("%s: unexpected orphan node", __func__);
 #endif /* !NDEBUG */
 }
 
