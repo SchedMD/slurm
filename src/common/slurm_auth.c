@@ -73,6 +73,7 @@ typedef struct {
 	void *		(*unpack)	(Buf buf, uint16_t protocol_version);
 	int		(*thread_config) (const char *token, const char *username);
 	void		(*thread_clear) (void);
+	char *		(*token_generate) (const char *username, int lifespan);
 } slurm_auth_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -91,6 +92,7 @@ static const char *syms[] = {
 	"slurm_auth_unpack",
 	"slurm_auth_thread_config",
 	"slurm_auth_thread_clear",
+	"slurm_auth_token_generate",
 };
 
 /*
@@ -381,4 +383,19 @@ void g_slurm_auth_thread_clear(void)
 		return;
 
 	(*(ops[0].thread_clear))();
+}
+
+char *g_slurm_auth_token_generate(int plugin_id, const char *username,
+				  int lifespan)
+{
+	if (slurm_auth_init(NULL) < 0)
+		return NULL;
+
+	for (int i = 0; i < g_context_num; i++) {
+		if (plugin_id == *(ops[i].plugin_id)) {
+			return (*(ops[i].token_generate))(username, lifespan);
+		}
+	}
+
+	return NULL;
 }

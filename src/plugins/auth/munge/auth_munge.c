@@ -513,3 +513,8 @@ void slurm_auth_thread_clear(void)
 {
 	/* no op */
 }
+
+char *slurm_auth_token_generate(const char *username, int lifespan)
+{
+	return NULL;
+}

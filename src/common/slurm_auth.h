@@ -98,4 +98,7 @@ extern char *g_slurm_auth_get_host(void *cred);
 extern int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version);
 extern void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version);
 
+extern char *g_slurm_auth_token_generate(int plugin_id, const char *username,
+					 int lifespan);
+
 #endif /*__SLURM_AUTHENTICATION_H__*/
