@@ -374,6 +374,8 @@ typedef enum {
 	RESPONSE_NETWORK_CALLERID,
 	REQUEST_STEP_COMPLETE_AGGR,
 	REQUEST_TOP_JOB,		/* 5038 */
+	REQUEST_AUTH_TOKEN,
+	RESPONSE_AUTH_TOKEN,
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -1440,6 +1442,8 @@ extern void slurm_free_srun_user_msg(srun_user_msg_t * msg);
 extern void slurm_free_suspend_msg(suspend_msg_t *msg);
 extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg);
 extern void slurm_free_top_job_msg(top_job_msg_t *msg);
+extern void slurm_free_token_request_msg(token_request_msg_t *msg);
+extern void slurm_free_token_response_msg(token_response_msg_t *msg);
 extern void slurm_free_update_step_msg(step_update_request_msg_t * msg);
 extern void slurm_free_resource_allocation_response_msg_members (
 	resource_allocation_response_msg_t * msg);

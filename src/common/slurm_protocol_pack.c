@@ -10060,6 +10060,69 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_token_request_msg(token_request_msg_t *msg, Buf buffer,
+				   uint16_t protocol_version)
+{
+	xassert(msg);
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		pack32(msg->lifespan, buffer);
+		packstr(msg->username, buffer);
+	}
+}
+
+static int _unpack_token_request_msg(token_request_msg_t **msg_ptr, Buf buffer,
+				     uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	token_request_msg_t *msg = xmalloc(sizeof(*msg));
+	xassert(msg_ptr);
+	*msg_ptr = msg;
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->lifespan, buffer);
+		safe_unpackstr_xmalloc(&msg->username, &uint32_tmp, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	*msg_ptr = NULL;
+	slurm_free_token_request_msg(msg);
+	return SLURM_ERROR;
+}
+
+static void _pack_token_response_msg(token_response_msg_t *msg, Buf buffer,
+				     uint16_t protocol_version)
+{
+	xassert(msg);
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		packstr(msg->token, buffer);
+	}
+}
+
+static int _unpack_token_response_msg(token_response_msg_t **msg_ptr,
+				      Buf buffer,
+				      uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	token_response_msg_t *msg = xmalloc(sizeof(*msg));
+	xassert(msg_ptr);
+	*msg_ptr = msg;
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg->token, &uint32_tmp, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	*msg_ptr = NULL;
+	slurm_free_token_response_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_forward_data_msg(forward_data_msg_t *msg,
 				   Buf buffer, uint16_t protocol_version)
 {
@@ -11995,6 +12058,15 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_top_job_msg((top_job_msg_t *)msg->data, buffer,
 				  msg->protocol_version);
 		break;
+	case REQUEST_AUTH_TOKEN:
+		_pack_token_request_msg((token_request_msg_t *) msg->data,
+					buffer,
+					msg->protocol_version);
+		break;
+	case RESPONSE_AUTH_TOKEN:
+		_pack_token_response_msg((token_response_msg_t *) msg->data,
+					 buffer, msg->protocol_version);
+		break;
 	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
@@ -12663,6 +12735,16 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_TOP_JOB:
 		rc = _unpack_top_job_msg((top_job_msg_t **) &msg->data, buffer,
 					 msg->protocol_version);
+		break;
+	case REQUEST_AUTH_TOKEN:
+		rc = _unpack_token_request_msg((token_request_msg_t **)
+					       &msg->data,
+					       buffer, msg->protocol_version);
+		break;
+	case RESPONSE_AUTH_TOKEN:
+		rc = _unpack_token_response_msg((token_response_msg_t **)
+						&msg->data,
+					        buffer, msg->protocol_version);
 		break;
 	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:

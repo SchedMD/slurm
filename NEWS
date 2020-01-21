@@ -72,6 +72,7 @@ documents those changes that are of interest to users and administrators.
  -- sbcast - add new BcastAddr option to NodeName lines to allow sbcast traffic
     to flow over an alternate network path.
  -- Add auth/jwt plugin.
+ -- Add new 'scontrol token' subcommand.
 
 * Changes in Slurm 19.05.6
 ==========================

@@ -137,6 +137,7 @@ inline static void  _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg);
 inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg);
 inline static void  _slurm_rpc_allocate_pack(slurm_msg_t * msg);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
+inline static void  _slurm_rpc_auth_token(slurm_msg_t *msg);
 inline static void  _slurm_rpc_burst_buffer_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_burst_buffer_status(slurm_msg_t *msg);
 inline static void  _slurm_rpc_control_status(slurm_msg_t * msg);
@@ -485,6 +486,9 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_TOP_JOB:
 		_slurm_rpc_top_job(msg);
+		break;
+	case REQUEST_AUTH_TOKEN:
+		_slurm_rpc_auth_token(msg);
 		break;
 	case REQUEST_JOB_REQUEUE:
 		_slurm_rpc_requeue(msg);
@@ -5220,6 +5224,54 @@ inline static void _slurm_rpc_top_job(slurm_msg_t * msg)
 		info("%s for %s %s",
 		     __func__, top_ptr->job_id_str, TIME_STR);
 	}
+}
+
+inline static void _slurm_rpc_auth_token(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	token_request_msg_t *request_msg = (token_request_msg_t *) msg->data;
+	slurm_msg_t response_msg;
+	token_response_msg_t *resp_data;
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
+	char *username = NULL;
+	int lifespan = 0;
+
+	debug("Processing RPC: REQUEST_AUTH_TOKEN from uid=%u", uid);
+
+	START_TIMER;
+	if (request_msg->username) {
+		if (validate_slurm_user(uid))
+			username = request_msg->username;
+		else {
+			error("%s: attempt to retrieve a token for a different user by UID=%u",
+			      __func__, uid);
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+			return;
+		}
+	} else {
+		if (!(username = uid_to_string_or_null(uid))) {
+			error("%s: attempt to retrieve a token for a missing username by UID=%u",
+			      __func__, uid);
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+			return;
+		}
+	}
+
+	if (request_msg->lifespan)
+		lifespan = request_msg->lifespan;
+	else
+		lifespan = DEFAULT_AUTH_TOKEN_LIFESPAN;
+
+	resp_data = xmalloc(sizeof(*resp_data));
+	resp_data->token = g_slurm_auth_token_generate(AUTH_PLUGIN_JWT,
+						       username, lifespan);
+	END_TIMER2(__func__);
+
+	response_init(&response_msg, msg);
+	response_msg.msg_type = RESPONSE_AUTH_TOKEN;
+	response_msg.data = resp_data;
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	slurm_free_token_response_msg(resp_data);
 }
 
 inline static void _slurm_rpc_requeue(slurm_msg_t * msg)

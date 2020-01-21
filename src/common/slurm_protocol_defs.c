@@ -1503,6 +1503,22 @@ extern void slurm_free_top_job_msg(top_job_msg_t *msg)
 	}
 }
 
+extern void slurm_free_token_request_msg(token_request_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->username);
+		xfree(msg);
+	}
+}
+
+extern void slurm_free_token_response_msg(token_response_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->token);
+		xfree(msg);
+	}
+}
+
 extern void
 slurm_free_requeue_msg(requeue_msg_t *msg)
 {
@@ -4752,6 +4768,12 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_TOP_JOB:
 		slurm_free_top_job_msg(data);
 		break;
+	case REQUEST_AUTH_TOKEN:
+		slurm_free_token_request_msg(data);
+		break;
+	case RESPONSE_AUTH_TOKEN:
+		slurm_free_token_response_msg(data);
+		break;
 	case REQUEST_JOB_REQUEUE:
 		slurm_free_requeue_msg(data);
 		break;
@@ -5384,6 +5406,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_STEP_COMPLETE_AGGR";
 	case REQUEST_TOP_JOB:
 		return "REQUEST_TOP_JOB";
+	case REQUEST_AUTH_TOKEN:
+		return "REQUEST_AUTH_TOKEN";
+	case RESPONSE_AUTH_TOKEN:
+		return "RESPONSE_AUTH_TOKEN";
 
 	case REQUEST_LAUNCH_TASKS:				/* 6001 */
 		return "REQUEST_LAUNCH_TASKS";

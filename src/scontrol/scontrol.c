@@ -80,6 +80,7 @@ slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
 static void	_create_it(int argc, char **argv);
 static void	_delete_it(int argc, char **argv);
 static void     _show_it(int argc, char **argv);
+static void	_fetch_token(int argc, char **argv);
 static int	_get_command(int *argc, char **argv);
 static void     _ping_slurmctld(uint32_t control_cnt, char **control_machine);
 static void	_print_config(char *config_param);
@@ -759,6 +760,34 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 	}
 }
 
+static void _fetch_token(int argc, char **argv)
+{
+	char *username = NULL, *token;
+	int lifespan = 0;
+
+	for (int i = 1; i < argc; i++) {
+		if (!xstrncasecmp("lifespan=", argv[i], 9))
+			lifespan = atoi(argv[i] + 9);
+		else if (!xstrncasecmp("username=", argv[i], 9))
+			username = argv[i] + 9;
+		else {
+			fprintf(stderr, "Invalid option: `%s`\n", argv[i]);
+			exit_code = 1;
+			return;
+		}
+	}
+
+	if (!(token = slurm_fetch_token(username, lifespan))) {
+		fprintf(stderr, "Error fetching token\n");
+		exit_code = 1;
+		return;
+	}
+
+	printf("SLURM_JWT=%s\n", token);
+
+	xfree(token);
+}
+
 /*
  * _process_command - process the user's command
  * IN argc - count of arguments
@@ -1067,7 +1096,7 @@ static int _process_command (int argc, char **argv)
 			}
 		}
 	}
-	else if (xstrncasecmp(tag, "top", MAX(tag_len, 2)) == 0) {
+	else if (xstrncasecmp(tag, "top", MAX(tag_len, 3)) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -1083,6 +1112,8 @@ static int _process_command (int argc, char **argv)
 		} else {
 			scontrol_top_job(argv[1]);
 		}
+	} else if (!xstrncasecmp(tag, "token", MAX(tag_len, 3))) {
+		_fetch_token(argc, argv);
 	}
 	else if (xstrncasecmp(tag, "wait_job", MAX(tag_len, 2)) == 0) {
 		if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
@@ -1924,6 +1955,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 			      (the primary controller will be stopped)     \n\
      suspend <job_list>       susend specified job (see resume)            \n\
      top <job_list>           Put specified job first in queue for user    \n\
+     token [lifespan=] [username=] fetch an auth token                     \n\
      takeover                 ask slurm backup controller to take over     \n\
      uhold <jobid_list>       place user hold on specified job (see hold)  \n\
      update <SPECIFICATIONS>  update job, node, partition, reservation, or \n\

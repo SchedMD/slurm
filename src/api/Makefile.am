@@ -120,6 +120,7 @@ slurmapi_src =           \
 	step_launch.h    \
 	submit.c         \
 	suspend.c        \
+	token.c          \
 	topo_info.c      \
 	triggers.c       \
 	reconfigure.c    \

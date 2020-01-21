@@ -214,8 +214,8 @@ am__objects_2 = allocate.lo allocate_msg.lo block_info.lo \
 	license_info.lo node_info.lo partition_info.lo pmi_server.lo \
 	powercap_info.lo reservation_info.lo signal.lo \
 	slurm_get_statistics.lo slurm_pmi.lo step_ctx.lo step_io.lo \
-	step_launch.lo submit.lo suspend.lo topo_info.lo triggers.lo \
-	reconfigure.lo update_config.lo $(am__objects_1)
+	step_launch.lo submit.lo suspend.lo token.lo topo_info.lo \
+	triggers.lo reconfigure.lo update_config.lo $(am__objects_1)
 am_libslurmhelper_la_OBJECTS = $(am__objects_2)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
 libslurmhelper_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
@@ -266,10 +266,10 @@ am__depfiles_remade = ./$(DEPDIR)/account_functions.Plo \
 	./$(DEPDIR)/slurm_get_statistics.Plo ./$(DEPDIR)/slurm_pmi.Plo \
 	./$(DEPDIR)/step_ctx.Plo ./$(DEPDIR)/step_io.Plo \
 	./$(DEPDIR)/step_launch.Plo ./$(DEPDIR)/submit.Plo \
-	./$(DEPDIR)/suspend.Plo ./$(DEPDIR)/topo_info.Plo \
-	./$(DEPDIR)/tres_functions.Plo ./$(DEPDIR)/triggers.Plo \
-	./$(DEPDIR)/update_config.Plo ./$(DEPDIR)/usage_functions.Plo \
-	./$(DEPDIR)/user_functions.Plo \
+	./$(DEPDIR)/suspend.Plo ./$(DEPDIR)/token.Plo \
+	./$(DEPDIR)/topo_info.Plo ./$(DEPDIR)/tres_functions.Plo \
+	./$(DEPDIR)/triggers.Plo ./$(DEPDIR)/update_config.Plo \
+	./$(DEPDIR)/usage_functions.Plo ./$(DEPDIR)/user_functions.Plo \
 	./$(DEPDIR)/user_report_functions.Plo \
 	./$(DEPDIR)/wckey_functions.Plo
 am__mv = mv -f
@@ -687,6 +687,7 @@ slurmapi_src = \
 	step_launch.h    \
 	submit.c         \
 	suspend.c        \
+	token.c          \
 	topo_info.c      \
 	triggers.c       \
 	reconfigure.c    \
@@ -919,6 +920,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_launch.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/submit.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/suspend.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/token.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topo_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tres_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/triggers.Plo@am__quote@ # am--include-marker
@@ -1137,6 +1139,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/step_launch.Plo
 	-rm -f ./$(DEPDIR)/submit.Plo
 	-rm -f ./$(DEPDIR)/suspend.Plo
+	-rm -f ./$(DEPDIR)/token.Plo
 	-rm -f ./$(DEPDIR)/topo_info.Plo
 	-rm -f ./$(DEPDIR)/tres_functions.Plo
 	-rm -f ./$(DEPDIR)/triggers.Plo
@@ -1232,6 +1235,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/step_launch.Plo
 	-rm -f ./$(DEPDIR)/submit.Plo
 	-rm -f ./$(DEPDIR)/suspend.Plo
+	-rm -f ./$(DEPDIR)/token.Plo
 	-rm -f ./$(DEPDIR)/topo_info.Plo
 	-rm -f ./$(DEPDIR)/tres_functions.Plo
 	-rm -f ./$(DEPDIR)/triggers.Plo

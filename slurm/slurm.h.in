@@ -2968,6 +2968,15 @@ typedef struct job_sbcast_cred_msg {
 	sbcast_cred_t *sbcast_cred;	/* opaque data structure */
 } job_sbcast_cred_msg_t;
 
+typedef struct {
+	uint32_t lifespan;
+	char *username;
+} token_request_msg_t;
+
+typedef struct {
+	char *token;
+} token_response_msg_t;
+
 /* Opaque data type for slurm_step_ctx_* functions */
 typedef struct slurm_step_ctx_struct slurm_step_ctx_t;
 
@@ -4985,6 +4994,13 @@ extern int slurm_network_callerid(network_callerid_msg_t req,
  * IN job_id_str - a job id
  * RET 0 or -1 on error */
 extern int slurm_top_job(char *job_id_str);
+
+/*
+ * Fetch an auth token for a given username.
+ * IN username - NULL, or a specific username if run as SlurmUser/root.
+ * IN lifespan - lifespan the token should be valid for.
+ */
+extern char *slurm_fetch_token(char *username, int lifespan);
 
 /*****************************************************************************\
  *      SLURM FEDERATION FUNCTIONS

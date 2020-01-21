@@ -357,7 +357,7 @@ void slurm_auth_thread_clear(void)
 	xfree(thread_username);
 }
 
-char *slurm_auth_token_generate(char *username, int lifespan)
+char *slurm_auth_token_generate(const char *username, int lifespan)
 {
 	auth_token_t *cred = xmalloc(sizeof(*cred));
 	jwt_alg_t opt_alg = JWT_ALG_HS256;
