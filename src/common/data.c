@@ -43,6 +43,7 @@
 
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -196,7 +197,8 @@ static data_list_t *_data_list_new(void)
 	data_list_t *dl = xmalloc(sizeof(*dl));
 	xassert((dl->magic = DATA_LIST_MAGIC));
 
-	debug5("%s: new data list (0x%"PRIXPTR")", __func__, (uintptr_t) dl);
+	log_flag(DATA, "%s: new data list (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) dl);
 
 	return dl;
 }
@@ -333,7 +335,8 @@ static data_list_node_t *_new_data_list_node(data_t *d, const char *key)
 	if (key)
 		dn->key = xstrdup(key);
 
-	debug5("%s: new data list node (0x%"PRIXPTR")", __func__, (uintptr_t) dn);
+	log_flag(DATA, "%s: new data list node (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) dn);
 
 	return dn;
 }
@@ -383,7 +386,8 @@ data_t *data_new(void)
 	xassert((data->magic = DATA_MAGIC));
 	data->type = DATA_TYPE_NULL;
 
-	debug5("%s: new data (0x%"PRIXPTR")", __func__, (uintptr_t) data);
+	log_flag(DATA, "%s: new data (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) data);
 
 	return data;
 }
@@ -432,7 +436,8 @@ extern void data_free(data_t *data)
 	if (!data)
 		return;
 
-	debug5("%s: free data (0x%"PRIXPTR")", __func__, (uintptr_t) data);
+	log_flag(DATA, "%s: free data (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) data);
 
 	_check_magic(data);
 	_release(data);
@@ -457,7 +462,7 @@ extern data_t *data_set_float(data_t *data, double value)
 	if (!data)
 		return NULL;
 
-	debug5("%s: set data (0x%"PRIXPTR") to float: %lf",
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to float: %lf",
 	       __func__, (uintptr_t) data, value);
 
 	data->type = DATA_TYPE_FLOAT;
@@ -473,7 +478,7 @@ extern data_t *data_set_null(data_t *data)
 		return NULL;
 	_release(data);
 
-	debug5("%s: set data (0x%"PRIXPTR") to null",
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to null",
 	       __func__, (uintptr_t) data);
 
 	data->type = DATA_TYPE_NULL;
@@ -489,7 +494,7 @@ extern data_t *data_set_bool(data_t *data, bool value)
 		return NULL;
 	_release(data);
 
-	debug5("%s: set data (0x%"PRIXPTR") to bool: %d",
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to bool: %d",
 	       __func__, (uintptr_t) data, value);
 
 	data->type = DATA_TYPE_BOOL;
@@ -505,7 +510,7 @@ extern data_t *data_set_int(data_t *data, int64_t value)
 		return NULL;
 	_release(data);
 
-	debug5("%s: set data (0x%"PRIXPTR") to int64_t: %"PRId64,
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to int64_t: %"PRId64,
 	       __func__, (uintptr_t) data, value);
 
 	data->type = DATA_TYPE_INT_64;
@@ -522,7 +527,7 @@ extern data_t *data_set_string(data_t *data, const char *value)
 		return NULL;
 	_release(data);
 
-	debug5("%s: set data (0x%"PRIXPTR") to string: %s",
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to string: %s",
 	       __func__, (uintptr_t) data, value);
 
 	data->type = DATA_TYPE_STRING;
@@ -539,8 +544,8 @@ extern data_t *data_set_dict(data_t *data)
 		return NULL;
 	_release(data);
 
-	debug5("%s: set data (0x%"PRIXPTR") to dictionary",
-	       __func__, (uintptr_t) data);
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to dictionary",
+		 __func__, (uintptr_t) data);
 
 	data->type = DATA_TYPE_DICT;
 	data->data.dict_u = _data_list_new();
@@ -556,8 +561,8 @@ extern data_t *data_set_list(data_t *data)
 		return NULL;
 	_release(data);
 
-	debug5("%s: set data (0x%"PRIXPTR") to list",
-	       __func__, (uintptr_t) data);
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to list",
+		 __func__, (uintptr_t) data);
 
 	data->type = DATA_TYPE_LIST;
 	data->data.dict_u = _data_list_new();
@@ -577,8 +582,8 @@ extern data_t *data_list_append(data_t *data)
 	ndata = data_new();
 	_data_list_append(data->data.list_u, ndata, NULL);
 
-	debug5("%s: list append data (0x%"PRIXPTR") to (0x%"PRIXPTR")",
-	       __func__, (uintptr_t) ndata, (uintptr_t) data);
+	log_flag(DATA, "%s: list append data (0x%"PRIXPTR") to (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) ndata, (uintptr_t) data);
 
 	return ndata;
 }
@@ -595,8 +600,8 @@ extern data_t *data_list_prepend(data_t *data)
 	ndata = data_new();
 	_data_list_prepend(data->data.list_u, ndata, NULL);
 
-	debug5("%s: list prepend data (0x%"PRIXPTR") to (0x%"PRIXPTR")",
-	       __func__, (uintptr_t) ndata, (uintptr_t) data);
+	log_flag(DATA, "%s: list prepend data (0x%"PRIXPTR") to (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) ndata, (uintptr_t) data);
 
 	return ndata;
 }
@@ -668,16 +673,16 @@ data_t *data_key_set(data_t *data, const char *key)
 		return NULL;
 
 	if ((d = data_key_get(data, key))) {
-		debug5("%s: set existing key in data (0x%"PRIXPTR") key: %s data (0x%"PRIXPTR")",
-		       __func__, (uintptr_t) data, key, (uintptr_t) d);
+		log_flag(DATA, "%s: set existing key in data (0x%"PRIXPTR") key: %s data (0x%"PRIXPTR")",
+			 __func__, (uintptr_t) data, key, (uintptr_t) d);
 		return d;
 	}
 
 	d = data_new();
 	_data_list_append(data->data.dict_u, d, key);
 
-	debug5("%s: set new key in data (0x%"PRIXPTR") key: %s data (0x%"PRIXPTR")",
-	       __func__, (uintptr_t) data, key, (uintptr_t) d);
+	log_flag(DATA, "%s: set new key in data (0x%"PRIXPTR") key: %s data (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) data, key, (uintptr_t) d);
 
 	return d;
 }
@@ -711,15 +716,15 @@ bool data_key_unset(data_t *data, const char *key)
 	}
 
 	if (!i) {
-		debug5("%s: remove non-existent key in data (0x%"PRIXPTR") key: %s",
-		       __func__, (uintptr_t) data, key);
+		log_flag(DATA, "%s: remove non-existent key in data (0x%"PRIXPTR") key: %s",
+			 __func__, (uintptr_t) data, key);
 		return false;
 	}
 
 	_release_data_list_node(data->data.dict_u, i);
 
-	debug5("%s: remove existing key in data (0x%"PRIXPTR") key: %s",
-	       __func__, (uintptr_t) data, key);
+	log_flag(DATA, "%s: remove existing key in data (0x%"PRIXPTR") key: %s",
+		 __func__, (uintptr_t) data, key);
 
 	return true;
 }
@@ -1150,8 +1155,9 @@ static int _convert_data_null(data_t *data)
 	case DATA_TYPE_STRING:
 		if (_regex_quick_match(data->data.string_u,
 				       &bool_pattern_null_re)) {
-			debug5("%s: convert data (0x%"PRIXPTR") to null: %s->null",
-			       __func__, (uintptr_t) data, data->data.string_u);
+			log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to null: %s->null",
+				 __func__, (uintptr_t) data,
+				 data->data.string_u);
 			data_set_null(data);
 			return SLURM_SUCCESS;
 		} else {
@@ -1174,14 +1180,16 @@ static int _convert_data_bool(data_t *data)
 	case DATA_TYPE_STRING:
 		if (_regex_quick_match(data->data.string_u,
 				       &bool_pattern_true_re)) {
-			debug5("%s: convert data (0x%"PRIXPTR") to bool: %s->true",
-			       __func__, (uintptr_t) data, data->data.string_u);
+			log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to bool: %s->true",
+				 __func__, (uintptr_t) data,
+				 data->data.string_u);
 			data_set_bool(data, true);
 			return SLURM_SUCCESS;
 		} else if (_regex_quick_match(data->data.string_u,
 					      &bool_pattern_false_re)) {
-			debug5("%s: convert data (0x%"PRIXPTR") to bool: %s->false",
-			       __func__, (uintptr_t) data, data->data.string_u);
+			log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to bool: %s->false",
+				 __func__, (uintptr_t) data,
+				 data->data.string_u);
 			data_set_bool(data, false);
 			return SLURM_SUCCESS;
 		} else {
@@ -1206,9 +1214,9 @@ static int _convert_data_int(data_t *data)
 				       &bool_pattern_int_re)) {
 			int64_t x;
 			if (sscanf(data->data.string_u, "%"SCNd64, &x) == 1) {
-				debug5("%s: converted data (0x%"PRIXPTR") to int: %s->%"PRId64,
-				       __func__, (uintptr_t) data,
-				       data->data.string_u, x);
+				log_flag(DATA, "%s: converted data (0x%"PRIXPTR") to int: %s->%"PRId64,
+					 __func__, (uintptr_t) data,
+					 data->data.string_u, x);
 				data_set_int(data, x);
 				return SLURM_SUCCESS;
 			} else { /* failed */
@@ -1238,9 +1246,9 @@ static int _convert_data_float(data_t *data)
 				       &bool_pattern_float_re)) {
 			double x;
 			if (sscanf(data->data.string_u, "%lf", &x) == 1) {
-				debug5("%s: convert data (0x%"PRIXPTR") to float: %s->%lf",
-				       __func__, (uintptr_t) data,
-				       data->data.string_u, x);
+				log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to float: %s->%lf",
+					 __func__, (uintptr_t) data,
+					 data->data.string_u, x);
 				data_set_float(data, x);
 				return SLURM_SUCCESS;
 			} else { /* failed */
@@ -1491,11 +1499,11 @@ extern const data_t *data_resolve_dict_path(const data_t *data, const char *path
 	xfree(str);
 
 	if (found)
-		debug5("%s: data (0x%"PRIXPTR") resolved dictionary path \"%s\" to (0x%"PRIXPTR")",
-		       __func__, (uintptr_t) data, path, (uintptr_t) found);
+		log_flag(DATA, "%s: data (0x%"PRIXPTR") resolved dictionary path \"%s\" to (0x%"PRIXPTR")",
+			 __func__, (uintptr_t) data, path, (uintptr_t) found);
 	else
-		debug5("%s: data (0x%"PRIXPTR") failed to resolve dictionary path \"%s\"",
-		       __func__, (uintptr_t) data, path);
+		log_flag(DATA, "%s: data (0x%"PRIXPTR") failed to resolve dictionary path \"%s\"",
+			 __func__, (uintptr_t) data, path);
 
 	return found;
 }
@@ -1526,11 +1534,11 @@ extern data_t *data_define_dict_path(data_t *data, const char *path)
 	xfree(str);
 
 	if (found)
-		debug5("%s: data (0x%"PRIXPTR") defined dictionary path \"%s\" to (0x%"PRIXPTR")",
-		       __func__, (uintptr_t) data, path, (uintptr_t) found);
+		log_flag(DATA, "%s: data (0x%"PRIXPTR") defined dictionary path \"%s\" to (0x%"PRIXPTR")",
+			 __func__, (uintptr_t) data, path, (uintptr_t) found);
 	else
-		debug5("%s: data (0x%"PRIXPTR") failed to define dictionary path \"%s\"",
-		       __func__, (uintptr_t) data, path);
+		log_flag(DATA, "%s: data (0x%"PRIXPTR") failed to define dictionary path \"%s\"",
+			 __func__, (uintptr_t) data, path);
 
 	return found;
 }
@@ -1540,7 +1548,7 @@ data_t *data_copy(data_t *dest, const data_t *src)
 	_check_magic(src);
 	_check_magic(dest);
 
-	debug5("%s: copy data (0x%"PRIXPTR") to (0x%"PRIXPTR")",
+	log_flag(DATA, "%s: copy data (0x%"PRIXPTR") to (0x%"PRIXPTR")",
 	       __func__, (uintptr_t) src, (uintptr_t) dest);
 
 	switch (data_get_type(src)) {
@@ -1601,8 +1609,8 @@ extern int data_retrieve_dict_path_string(const data_t *data, const char *path,
 
 	rc = data_get_string_converted(d, ptr_buffer);
 
-	debug5("%s: data (0x%"PRIXPTR") resolved string at path %s to \"%s\"",
-	       __func__, (uintptr_t) data, path, *ptr_buffer);
+	log_flag(DATA, "%s: data (0x%"PRIXPTR") resolved string at path %s to \"%s\"",
+		 __func__, (uintptr_t) data, path, *ptr_buffer);
 
 	return rc;
 }
@@ -1619,9 +1627,9 @@ extern int data_retrieve_dict_path_bool(const data_t *data, const char *path,
 
 	rc = data_copy_bool_converted(d, ptr_buffer);
 
-	debug5("%s: data (0x%"PRIXPTR") resolved string at path %s to %s",
-	       __func__, (uintptr_t) data, path,
-	       (*ptr_buffer ? "true" : "false"));
+	log_flag(DATA, "%s: data (0x%"PRIXPTR") resolved string at path %s to %s",
+		 __func__, (uintptr_t) data, path,
+		 (*ptr_buffer ? "true" : "false"));
 
 	return rc;
 }
@@ -1638,8 +1646,8 @@ extern int data_retrieve_dict_path_int(const data_t *data, const char *path,
 
 	rc = data_get_int_converted(d, ptr_buffer);
 
-	debug5("%s: data (0x%"PRIXPTR") resolved string at path %s to %"PRId64,
-	       __func__, (uintptr_t) data, path, *ptr_buffer);
+	log_flag(DATA, "%s: data (0x%"PRIXPTR") resolved string at path %s to %"PRId64,
+		 __func__, (uintptr_t) data, path, *ptr_buffer);
 
 	return rc;
 }
