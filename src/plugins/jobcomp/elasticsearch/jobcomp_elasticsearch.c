@@ -142,6 +142,9 @@ static pthread_t job_handler_thread;
 static List jobslist = NULL;
 static bool thread_shutdown = false;
 
+static long curl_timeout = 0;
+static long curl_connecttimeout = 0;
+
 /* Get the user name for the give user_id */
 static void _get_user_name(uint32_t user_id, char *user_name, int buf_size)
 {
@@ -939,6 +942,25 @@ static void _jobslist_del(void *x)
  */
 extern int init(void)
 {
+	char *tmp_ptr = NULL;
+
+	/*			    12345678 */
+	if ((tmp_ptr = xstrcasestr(slurmctld_conf.job_comp_params,
+				   "timeout="))) {
+		curl_timeout = xstrntol(tmp_ptr + 8, NULL, 10, 10);
+
+		log_flag(ESEARCH, "%s: setting curl timeout: %lds",
+			 plugin_type, curl_timeout);
+	}
+	/*			    1234567890123456 */
+	if ((tmp_ptr = xstrcasestr(slurmctld_conf.job_comp_params,
+				   "connect_timeout="))) {
+		curl_timeout = xstrntol(tmp_ptr + 16, NULL, 10, 10);
+
+		log_flag(ESEARCH, "%s: setting curl connect timeout: %lds",
+			 plugin_type, curl_timeout);
+	}
+
 	jobslist = list_create(_jobslist_del);
 	slurm_thread_create(&job_handler_thread, _process_jobs, NULL);
 	slurm_mutex_lock(&pend_jobs_lock);
@@ -985,6 +1007,13 @@ extern int slurm_jobcomp_set_location(char *location)
 	if (curl_handle) {
 		curl_easy_setopt(curl_handle, CURLOPT_URL, log_url);
 		curl_easy_setopt(curl_handle, CURLOPT_NOBODY, 1);
+		curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, curl_timeout);
+		curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT,
+				 curl_connecttimeout);
+
+		if ((curl_timeout > 0) || (curl_connecttimeout > 0))
+			curl_easy_setopt(curl_handle, CURLOPT_NOSIGNAL, 1);
+
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
 			error("%s: Could not connect to: %s", plugin_type,
