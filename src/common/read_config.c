@@ -5193,6 +5193,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "CPU_Bind");
 	}
+	if (debug_flags & DEBUG_FLAG_DATA) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Data");
+	}
 	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5439,6 +5444,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_BURST_BUF;
 		else if (xstrcasecmp(tok, "CPU_Bind") == 0)
 			(*flags_out) |= DEBUG_FLAG_CPU_BIND;
+		else if (xstrcasecmp(tok, "Data") == 0)
+			(*flags_out) |= DEBUG_FLAG_DATA;
 		else if (xstrcasecmp(tok, "DB_Archive") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_ARCHIVE;
 		else if (xstrcasecmp(tok, "DB_Assoc") == 0)
