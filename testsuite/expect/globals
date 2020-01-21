@@ -252,11 +252,12 @@ set alpha_numeric_nodelist "$alpha_numeric_under\\\[?\[$alpha_numeric_comma\]?\\
 set controlmachine_regex "\[a-zA-Z0-9,\-\.\]+"
 # Any characters except ( , : newline
 set no_delim             "\[^(,:\r\n\]"
+set no_delim_slash       "\[^(,:/\r\n\]"
 # The first group matches GRES name
 # The second **optional** group matches GRES type.
 # The third group matches GRES count.
 # Test out the regex here: https://regex101.com/r/FlNYKM/7
-set gres_regex "($no_delim*):($no_delim*)?:?($no_delim*)"
+set gres_regex "($no_delim_slash*):($no_delim*)?:?($no_delim*)"
 
 #
 # Cache SlurmUser to check for SuperUser requests
@@ -5360,7 +5361,7 @@ proc create_part { part_name num_nodes_in } {
 # cpus_per_socket - CPUs per socket
 # cpus_tot - Total count of CPUs on the node
 # exit_code - Set to 1 on failure
-# gpu_cnt - GPUs in the node
+# gpu_tot - GPUs in the node
 # hostname - Name of the node referenced
 # mem_size - Real memory size
 # sockets_per_node - Sockets per node
@@ -5370,7 +5371,7 @@ proc create_part { part_name num_nodes_in } {
 ################################################################
 proc get_node_config { {desired_gpus 1} } {
 	global cores_per_socket cpus_per_socket sockets_per_node mem_size
-	global hostname exit_code max_job_delay number srun scontrol gpu_cnt
+	global hostname exit_code max_job_delay number srun scontrol gpu_tot
 	global alpha_numeric_nodelist bin_rm gres_regex
 
 	set node_found false
@@ -5380,7 +5381,7 @@ proc get_node_config { {desired_gpus 1} } {
 	set mem_size 1
 	set sockets_per_node 1
 	set cpus_per_socket 1
-	set gpu_cnt 0
+	set gpu_tot 0
 	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODELIST"
 	set timeout $max_job_delay
 	log_user 0
@@ -5416,7 +5417,7 @@ proc get_node_config { {desired_gpus 1} } {
 				set count $type
 			}
 			if { $count } {
-				incr gpu_cnt $count
+				incr gpu_tot $count
 			}
 
 			exp_continue
