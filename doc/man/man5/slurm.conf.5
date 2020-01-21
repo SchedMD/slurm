@@ -374,8 +374,7 @@ The maximum time (in seconds) that a batch job is permitted for
 launching before being considered missing and releasing the
 allocation. The default value is 10 (seconds). Larger values may be
 required if more time is required to execute the \fBProlog\fR, load
-user environment variables (for Moab spawned jobs), or if the slurmd
-daemon gets paged from memory.
+user environment variables, or if the slurmd daemon gets paged from memory.
 .br
 .br
 \fBNote\fR: The test for a job being successfully launched is only performed when
@@ -856,11 +855,10 @@ Also see \fBMaxJobId\fR
 
 .TP
 \fBGetEnvTimeout\fR
-Used for Moab scheduled jobs only. Controls how long job should wait
-in seconds for loading the user's environment before attempting to
-load it from a cache file. Applies when the srun or sbatch
-\fI\-\-get\-user\-env\fR option is used. If set to 0 then always load
-the user's environment from the cache file.
+Controls how long the job should wait (in seconds) to load the user's
+environment before attempting to load it from a cache file.
+Applies when the salloc or sbatch \fI\-\-get\-user\-env\fR option is used.
+If set to 0 then always load the user's environment from the cache file.
 The default value is 2 seconds.
 
 .TP
