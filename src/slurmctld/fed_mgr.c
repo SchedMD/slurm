@@ -3426,7 +3426,8 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location)
 					list_create(_destroy_dep_job);
 			if (!list_find_first(remote_dep_job_list,
 					    _find_job_by_id,
-					    &tmp_dep_job->job_id)) {
+					    &tmp_dep_job->job_id) &&
+			    tmp_dep_job->details->dependency) {
 				(void) update_job_dependency(
 					tmp_dep_job,
 					tmp_dep_job->details->dependency);
