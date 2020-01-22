@@ -4075,7 +4075,8 @@ static int _add_to_send_list(void *object, void *arg)
 		/* Negative value short-circuits list_for_each */
 		return -1;
 	}
-	if (!(dependency->depend_flags & SLURM_FLAGS_REMOTE))
+	if (!(dependency->depend_flags & SLURM_FLAGS_REMOTE) ||
+	    (dependency->depend_state != DEPEND_NOT_FULFILLED))
 		return SLURM_SUCCESS;
 	cluster_id = fed_mgr_get_cluster_id(dependency->job_id);
 	*send_sib_bits |= FED_SIBLING_BIT(cluster_id);
