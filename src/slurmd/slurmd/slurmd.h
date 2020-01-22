@@ -126,7 +126,7 @@ typedef struct slurmd_config {
 	char         *stepd_loc;	/* slurmstepd path                 */
 	char         *task_prolog;	/* per-task prolog script          */
 	char         *task_epilog;	/* per-task epilog script          */
-	int           port;		/* local slurmd port               */
+	uint16_t      port;		/* local slurmd port               */
 	int           lfd;		/* slurmd listen file descriptor   */
 	pid_t         pid;		/* server pid                      */
 	log_options_t log_opts;         /* current logging options         */
