@@ -122,10 +122,8 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 				       buffer);
 		safe_unpack16(&conf->propagate_prio, buffer);
 		safe_unpack64(&conf->debug_flags, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		conf->debug_level = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		conf->syslog_debug = uint32_tmp;
+		safe_unpack32(&conf->debug_level, buffer);
+		safe_unpack32(&conf->syslog_debug, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		conf->daemonize = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);

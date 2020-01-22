@@ -112,7 +112,7 @@ typedef struct slurmd_config {
 	char         *node_topo_pattern;/* node's topology address pattern */
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */
-	int          syslog_debug;	/* send output to both logfile and
+	uint32_t     syslog_debug;	/* send output to both logfile and
 					 * syslog */
 	char         *spooldir;		/* SlurmdSpoolDir		   */
 	char         *pidfile;		/* PidFile location		   */
@@ -131,7 +131,7 @@ typedef struct slurmd_config {
 	pid_t         pid;		/* server pid                      */
 	log_options_t log_opts;         /* current logging options         */
 	uint16_t      log_fmt;          /* Log file timestamp format flag  */
-	int           debug_level;	/* logging detail level            */
+	uint32_t      debug_level;	/* logging detail level            */
 	uint16_t      debug_level_set;	/* debug_level set on command line */
 	uint64_t      debug_flags;	/* DebugFlags configured           */
 	int	      boot_time:1;      /* Report node boot time now (-b)  */
