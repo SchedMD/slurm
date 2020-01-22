@@ -2157,7 +2157,7 @@ extern step_record_t *build_extern_step(job_record_t *job_ptr);
 /*
  * Create the batch step and add it to the job.
  */
-extern step_record_t *build_batch_step(job_record_t *job_ptr);
+extern step_record_t *build_batch_step(job_record_t *job_ptr_in);
 
 /* update first assigned job id as needed on reconfigure */
 extern void reset_first_job_id(void);

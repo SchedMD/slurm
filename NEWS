@@ -85,6 +85,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leak when utilizing core reservations.
  -- Fix issue where adding WCKeys and then using them right away didn't always
     work.
+ -- Add cosmetic batch step to correct component in a hetjob.
 
 * Changes in Slurm 19.05.5
 ==========================
