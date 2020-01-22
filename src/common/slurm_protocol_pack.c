@@ -4028,6 +4028,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		pack64(build_ptr->def_mem_per_cpu, buffer);
 		pack64(build_ptr->debug_flags, buffer);
+		packstr(build_ptr->dependency_params, buffer);
 
 		pack16(build_ptr->eio_timeout, buffer);
 		pack16(build_ptr->enforce_part_limits, buffer);
@@ -4929,6 +4930,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack64(&build_ptr->def_mem_per_cpu, buffer);
 		safe_unpack64(&build_ptr->debug_flags, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->dependency_params,
+				       &uint32_tmp, buffer);
 
 		safe_unpack16(&build_ptr->eio_timeout, buffer);
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);

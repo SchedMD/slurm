@@ -746,6 +746,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->def_mem_per_cpu     = conf->def_mem_per_cpu;
 	conf_ptr->debug_flags         = conf->debug_flags;
+	conf_ptr->dependency_params = xstrdup(conf->dependency_params);
 
 	conf_ptr->eio_timeout         = conf->eio_timeout;
 	conf_ptr->enforce_part_limits = conf->enforce_part_limits;
