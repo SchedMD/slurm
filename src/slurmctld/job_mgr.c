@@ -10872,19 +10872,6 @@ void purge_old_job(void)
 			 */
 			handle_invalid_dependency(job_ptr);
 		}
-
-		if (job_ptr->state_reason == WAIT_DEP_INVALID) {
-			if (job_ptr->bit_flags & KILL_INV_DEP) {
-				/* The job got the WAIT_DEP_INVALID
-				 * before slurmctld was reconfigured.
-				 */
-				_kill_dependent(job_ptr);
-			} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
-				continue;
-			} else if (kill_invalid_dep) {
-				_kill_dependent(job_ptr);
-			}
-		}
 	}
 	list_iterator_destroy(job_iterator);
 	fed_mgr_test_remote_dependencies();
