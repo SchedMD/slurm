@@ -850,8 +850,9 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 			info("%s: %s: reservation request can not be satisfied",
 			     plugin_type, __func__);
 			FREE_NULL_BITMAP(picked_node_bitmap);
+			if (local_cores != avail_cores)
+				free_core_array(&avail_cores);
 			free_core_array(&local_cores);
-			free_core_array(&avail_cores);
 		} else {
 			free_core_array(exc_cores);
 			*exc_cores = avail_cores;
