@@ -101,4 +101,16 @@ extern void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version);
 extern char *g_slurm_auth_token_generate(int plugin_id, const char *username,
 					 int lifespan);
 
+/*
+ * Set local thread security context
+ * IN token - security token - may be general token, or per user token, or NULL
+ * IN username - username to run as (only available for SlurmUser/root),
+ *		 or NULL
+ */
+extern int g_slurm_auth_thread_config(const char *token, const char *username);
+/*
+ * clear local thread security context
+ */
+extern void g_slurm_auth_thread_clear(void);
+
 #endif /*__SLURM_AUTHENTICATION_H__*/
