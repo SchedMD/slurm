@@ -352,11 +352,11 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 }
 
 static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
-			       uint32_t start, uint32_t end)
+			       slurmdb_job_cond_t *job_cond)
 {
 	int base_state = state;
 
-	if (!start && !end) {
+	if (!job_cond->usage_start && !job_cond->usage_end) {
 		xstrfmtcat(*extra, "t1.state='%u'", state);
 		return;
 	}
@@ -375,24 +375,25 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 */
 		xstrfmtcat(*extra,
 			   "(t1.time_eligible && "
-			   "(( t1.time_start && (%d < t1.time_start)) || "
-			   " (!t1.time_start &&  t1.time_end && (%d < t1.time_end)) || "
+			   "(( t1.time_start && (%ld < t1.time_start)) || "
+			   " (!t1.time_start &&  t1.time_end && (%ld < t1.time_end)) || "
 			   " (!t1.time_start && !t1.time_end && (t1.state=%d))) && "
-			   "(%d > t1.time_eligible))",
-			   start,
-			   start,
+			   "(%ld > t1.time_eligible))",
+			   job_cond->usage_start,
+			   job_cond->usage_start,
 			   base_state,
-			   end);
+			   job_cond->usage_end);
 		break;
 	case JOB_SUSPENDED:
 		xstrfmtcat(*extra,
 			   "(select count(time_start) from "
 			   "\"%s_%s\" where "
-			   "(time_start <= %u && (time_end >= %u "
+			   "(time_start <= %ld && (time_end >= %ld "
 			   "|| time_end = 0)) && job_db_inx=t1.job_db_inx)",
 			   cluster_name, suspend_table,
-			   end ? end : start,
-			   start);
+			   job_cond->usage_end ?
+			   job_cond->usage_end : job_cond->usage_start,
+			   job_cond->usage_start);
 		break;
 	case JOB_RUNNING:
 		/*
@@ -405,10 +406,10 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 */
 		xstrfmtcat(*extra,
 			   "(t1.time_start && "
-			   "((%d < t1.time_end || (!t1.time_end && t1.state=%d))) && "
-			   "((%d > t1.time_start)))",
-			   start, base_state,
-			   end);
+			   "((%ld < t1.time_end || (!t1.time_end && t1.state=%d))) && "
+			   "((%ld > t1.time_start)))",
+			   job_cond->usage_start, base_state,
+			   job_cond->usage_end);
 		break;
 	case JOB_COMPLETE:
 	case JOB_CANCELLED:
@@ -430,8 +431,9 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 */
 		xstrfmtcat(*extra,
 		           "(t1.state='%u' && (t1.time_end && "
-		           "(t1.time_end between %d and %d)))",
-		           base_state, start, end);
+		           "(t1.time_end between %ld and %ld)))",
+		           base_state, job_cond->usage_start,
+			   job_cond->usage_end);
 		break;
 	default:
 		error("Unsupported state requested: %s",
@@ -676,7 +678,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			job->mcs_label = xstrdup("");
 		if (row[JOB_REQ_USER_NAME])
 			job->user = xstrdup(row[JOB_REQ_USER_NAME]);
-		else
+
+		if (!job->user || (job_cond->flags & JOBCOND_FLAG_DBD_UID))
 			job->uid = slurm_atoul(row[JOB_REQ_UID]);
 
 		if (row[JOB_REQ_LFT])
@@ -803,6 +806,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		if ((int)job->elapsed < 0)
 			job->elapsed = 0;
 
+		job->db_index = slurm_atoull(db_inx_char);
 		job->jobid = curr_id;
 		job->jobname = xstrdup(row[JOB_REQ_NAME]);
 		job->gid = slurm_atoul(row[JOB_REQ_GID]);
@@ -1347,8 +1351,7 @@ no_resv:
 
 			_state_time_string(extra, cluster_name,
 					   (uint32_t)slurm_atoul(object),
-					   job_cond->usage_start,
-					   job_cond->usage_end);
+					   job_cond);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -1612,21 +1615,22 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (!job_cond->state_list || !list_count(job_cond->state_list)) {
 		/*
 		 * There's an explicit list of jobs, so don't hide
-		 * non-eligible ones. Assuming that
-		 * slurmdb_job_cond_def_start_end is already called.
-		 * Else handle normal time query of only eligible jobs
+		 * non-eligible ones. Else handle normal time query of only
+		 * eligible jobs.
 		 */
 		if (job_cond->step_list && list_count(job_cond->step_list)) {
-			if (*extra)
-				xstrcat(*extra, " && (");
-			else
-				xstrcat(*extra, " where (");
+			if (!(job_cond->flags &
+			      JOBCOND_FLAG_NO_DEFAULT_USAGE)) {
+				if (*extra)
+					xstrcat(*extra, " && (");
+				else
+					xstrcat(*extra, " where (");
 
-			xstrfmtcat(*extra,
-			           "(t1.time_submit <= %ld) && "
-				   "(t1.time_end >= %ld || t1.time_end = 0))",
-			           job_cond->usage_end,
-				   job_cond->usage_start);
+				xstrfmtcat(*extra,
+					   "(t1.time_submit <= %ld) && (t1.time_end >= %ld || t1.time_end = 0))",
+					   job_cond->usage_end,
+					   job_cond->usage_start);
+			}
 		} else if (job_cond->usage_start) {
 			if (*extra)
 				xstrcat(*extra, " && (");

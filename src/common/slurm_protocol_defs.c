@@ -58,6 +58,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 #include "src/common/switch.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -92,6 +93,28 @@ static void _free_all_partitions (partition_info_msg_t *msg);
 static void  _free_all_reservations(reserve_info_msg_t *msg);
 
 static void _free_all_step_info (job_step_info_response_msg_t *msg);
+
+static char *_convert_to_id(char *name, bool gid)
+{
+	if (gid) {
+		gid_t gid;
+		if (gid_from_string( name, &gid )) {
+			error("Invalid group id: %s\n", name);
+			return NULL;
+		}
+		xfree(name);
+		name = xstrdup_printf( "%d", (int) gid );
+	} else {
+		uid_t uid;
+		if (uid_from_string( name, &uid )) {
+			error("Invalid user id: %s\n", name);
+			return NULL;
+		}
+		xfree(name);
+		name = xstrdup_printf( "%d", (int) uid );
+	}
+	return name;
+}
 
 /*
  * slurm_msg_t_init - initialize a slurm message
@@ -402,6 +425,88 @@ endit:
 	return count;
 }
 
+/* Parses string and converts names to either uid or gid list */
+extern int slurm_addto_id_char_list(List char_list, char *names, bool gid)
+{
+	int i=0, start=0;
+	char *name = NULL, *tmp_char = NULL;
+	ListIterator itr = NULL;
+	char quote_c = '\0';
+	int quote = 0;
+	int count = 0;
+
+	if (!char_list) {
+		error("No list was given to fill in");
+		return 0;
+	}
+
+	itr = list_iterator_create(char_list);
+	if (names) {
+		if (names[i] == '\"' || names[i] == '\'') {
+			quote_c = names[i];
+			quote = 1;
+			i++;
+		}
+		start = i;
+		while (names[i]) {
+			//info("got %d - %d = %d", i, start, i-start);
+			if (quote && names[i] == quote_c)
+				break;
+			else if (names[i] == '\"' || names[i] == '\'')
+				names[i] = '`';
+			else if (names[i] == ',') {
+				if ((i-start) > 0) {
+					name = xmalloc((i-start+1));
+					memcpy(name, names+start, (i-start));
+					//info("got %s %d", name, i-start);
+					name = _convert_to_id(name, gid);
+					if (!name)
+						return 0;
+					while ((tmp_char = list_next(itr))) {
+						if (!xstrcasecmp(tmp_char,
+								 name))
+							break;
+					}
+
+					if (!tmp_char) {
+						list_append(char_list, name);
+						count++;
+					} else
+						xfree(name);
+					list_iterator_reset(itr);
+				}
+				i++;
+				start = i;
+				if (!names[i]) {
+					info("There is a problem with your request.  It appears you have spaces inside your list.");
+					break;
+				}
+			}
+			i++;
+		}
+		if ((i-start) > 0) {
+			name = xmalloc((i-start)+1);
+			memcpy(name, names+start, (i-start));
+			name = _convert_to_id(name, gid);
+			if (!name)
+				return 0;
+
+			while ((tmp_char = list_next(itr))) {
+				if (!xstrcasecmp(tmp_char, name))
+					break;
+			}
+
+			if (!tmp_char) {
+				list_append(char_list, name);
+				count++;
+			} else
+				xfree(name);
+		}
+	}
+	list_iterator_destroy(itr);
+	return count;
+}
+
 /* Parses strings such as stra,+strb,-strc and appends the default mode to each
  * string in the list if no specific mode is listed.
  * RET: returns the number of items added to the list. -1 on error. */
@@ -536,7 +641,6 @@ end_it:
 	list_iterator_destroy(itr);
 	return count;
 }
-
 
 static int _addto_step_list_internal(List step_list, char *names,
 				     int start, int end)

@@ -2240,8 +2240,8 @@ static int   _modify_job(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	if (get_msg->cond &&
-	    (((slurmdb_job_modify_cond_t *)get_msg->cond)->flags &
-	     SLURMDB_MODIFY_NO_WAIT)) {
+	    (((slurmdb_job_cond_t *)get_msg->cond)->flags &
+	     JOBCOND_FLAG_NO_WAIT)) {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 							rc, comment,
 							DBD_MODIFY_JOB);

@@ -693,7 +693,10 @@ static void _pack_modify_msg(dbd_modify_msg_t *msg,
 		my_rec = slurmdb_pack_federation_rec;
 		break;
 	case DBD_MODIFY_JOB:
-		my_cond = slurmdb_pack_job_modify_cond;
+		if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION)
+			my_cond = slurmdb_pack_job_cond;
+		else
+			my_cond = slurmdb_pack_job_modify_cond;
 		my_rec = slurmdb_pack_job_rec;
 		break;
 	case DBD_MODIFY_QOS:
@@ -746,7 +749,10 @@ static int _unpack_modify_msg(dbd_modify_msg_t **msg,
 		my_rec = slurmdb_unpack_federation_rec;
 		break;
 	case DBD_MODIFY_JOB:
-		my_cond = slurmdb_unpack_job_modify_cond;
+		if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION)
+			my_cond = slurmdb_unpack_job_cond;
+		else
+			my_cond = slurmdb_unpack_job_modify_cond;
 		my_rec = slurmdb_unpack_job_rec;
 		break;
 	case DBD_MODIFY_QOS:

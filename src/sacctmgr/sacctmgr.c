@@ -994,8 +994,10 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             (where options) Names=                         \n\
        delete federation  - Names=                                         \n\
                                                                            \n\
-       modify job         - (set options) DerivedExitCode=, Comment=       \n\
-                            (where options) JobID=, Cluster=               \n\
+       modify job         - (set options) DerivedExitCode=, Comment=,      \n\
+                            NewWCKey=                                      \n\
+                            (where options) JobID=, Cluster=, EndTime=,    \n\
+                            StartTime=, WCKey=, User=                      \n\
                                                                            \n\
        list qos           - Descriptions=, Format=, Id=, Names=,           \n\
                             PreemptMode=, and WithDeleted                  \n\

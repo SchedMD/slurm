@@ -1548,23 +1548,39 @@ static void _update_system_comment(job_record_t *job_ptr, char *operation,
 	xfree(sep);
 
 	if (update_database) {
-		slurmdb_job_modify_cond_t job_cond;
+		slurmdb_job_cond_t job_cond;
 		slurmdb_job_rec_t job_rec;
+		slurmdb_selected_step_t selected_step;
 		List ret_list;
 
-		memset(&job_cond, 0, sizeof(slurmdb_job_modify_cond_t));
+		memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
 		memset(&job_rec, 0, sizeof(slurmdb_job_rec_t));
+		memset(&selected_step, 0, sizeof(slurmdb_selected_step_t));
 
-		job_cond.job_id = job_ptr->job_id;
-		job_cond.flags = SLURMDB_MODIFY_NO_WAIT;
-		job_cond.cluster = slurmctld_conf.cluster_name;
-		job_cond.submit_time = job_ptr->details->submit_time;
+		selected_step.array_task_id = NO_VAL;
+		selected_step.jobid = job_ptr->job_id;
+		selected_step.pack_job_offset = NO_VAL;
+		selected_step.stepid = NO_VAL;
+		job_cond.step_list = list_create(NULL);
+		list_append(job_cond.step_list, &selected_step);
+
+		job_cond.flags = JOBCOND_FLAG_NO_WAIT |
+			JOBCOND_FLAG_DBD_UID |
+			JOBCOND_FLAG_NO_DEFAULT_USAGE;
+
+		job_cond.cluster_list = list_create(NULL);
+		list_append(job_cond.cluster_list, slurmctld_conf.cluster_name);
+
+		job_cond.usage_start = job_ptr->details->submit_time;
 
 		job_rec.system_comment = job_ptr->system_comment;
 
 		ret_list = acct_storage_g_modify_job(
 			acct_db_conn, slurmctld_conf.slurm_user_id,
 			&job_cond, &job_rec);
+
+		FREE_NULL_LIST(job_cond.cluster_list);
+		FREE_NULL_LIST(job_cond.step_list);
 		FREE_NULL_LIST(ret_list);
 	}
 }

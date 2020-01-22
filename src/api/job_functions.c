@@ -43,12 +43,12 @@
 
 /*
  * modify existing job in the accounting system
- * IN:  slurmdb_job_modify_cond_t *job_cond
+ * IN:  slurmdb_job_cond_t *job_cond
  * IN:  slurmdb_job_rec_t *job
  * RET: List containing (char *'s) else NULL on error
  */
 extern List slurmdb_job_modify(void *db_conn,
-			       slurmdb_job_modify_cond_t *job_cond,
+			       slurmdb_job_cond_t *job_cond,
 			       slurmdb_job_rec_t *job)
 {
 	if (db_api_uid == -1)

@@ -42,7 +42,6 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_time.h"
-#include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "sacct.h"
 #include <time.h>
@@ -101,109 +100,6 @@ static void _help_fields_msg(void)
 	}
 	printf("\n");
 	return;
-}
-
-static char *_convert_to_id(char *name, bool gid)
-{
-	if (gid) {
-		gid_t gid;
-		if ( gid_from_string( name, &gid ) != 0 ) {
-			fprintf(stderr, "Invalid group id: %s\n", name);
-			exit(1);
-		}
-		xfree(name);
-		name = xstrdup_printf( "%d", (int) gid );
-	} else {
-		uid_t uid;
-		if ( uid_from_string( name, &uid ) != 0 ) {
-			fprintf(stderr, "Invalid user id: %s\n", name);
-			exit(1);
-		}
-		xfree(name);
-		name = xstrdup_printf( "%d", (int) uid );
-	}
-	return name;
-}
-
-/* returns number of objects added to list */
-static int _addto_id_char_list(List char_list, char *names, bool gid)
-{
-	int i=0, start=0;
-	char *name = NULL, *tmp_char = NULL;
-	ListIterator itr = NULL;
-	char quote_c = '\0';
-	int quote = 0;
-	int count = 0;
-
-	if (!char_list) {
-		error("No list was given to fill in");
-		return 0;
-	}
-
-	itr = list_iterator_create(char_list);
-	if (names) {
-		if (names[i] == '\"' || names[i] == '\'') {
-			quote_c = names[i];
-			quote = 1;
-			i++;
-		}
-		start = i;
-		while (names[i]) {
-			//info("got %d - %d = %d", i, start, i-start);
-			if (quote && names[i] == quote_c)
-				break;
-			else if (names[i] == '\"' || names[i] == '\'')
-				names[i] = '`';
-			else if (names[i] == ',') {
-				if ((i-start) > 0) {
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
-					//info("got %s %d", name, i-start);
-					name = _convert_to_id( name, gid );
-
-					while ((tmp_char = list_next(itr))) {
-						if (!xstrcasecmp(tmp_char,
-								 name))
-							break;
-					}
-
-					if (!tmp_char) {
-						list_append(char_list, name);
-						count++;
-					} else
-						xfree(name);
-					list_iterator_reset(itr);
-				}
-				i++;
-				start = i;
-				if (!names[i]) {
-					info("There is a problem with "
-					     "your request.  It appears you "
-					     "have spaces inside your list.");
-					break;
-				}
-			}
-			i++;
-		}
-		if ((i-start) > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-			name = _convert_to_id(name, gid);
-
-			while ((tmp_char = list_next(itr))) {
-				if (!xstrcasecmp(tmp_char, name))
-					break;
-			}
-
-			if (!tmp_char) {
-				list_append(char_list, name);
-				count++;
-			} else
-				xfree(name);
-		}
-	}
-	list_iterator_destroy(itr);
-	return count;
 }
 
 /* returns number of objects added to list */
@@ -931,7 +827,8 @@ extern void parse_command_line(int argc, char **argv)
 			if (!job_cond->groupid_list)
 				job_cond->groupid_list =
 					list_create(slurm_destroy_char);
-			_addto_id_char_list(job_cond->groupid_list, optarg, 1);
+			slurm_addto_id_char_list(job_cond->groupid_list,
+						 optarg, 1);
 			break;
 		case 'h':
 			params.opt_help = 1;
@@ -1097,7 +994,8 @@ extern void parse_command_line(int argc, char **argv)
 			if (!job_cond->userid_list)
 				job_cond->userid_list =
 					list_create(slurm_destroy_char);
-			_addto_id_char_list(job_cond->userid_list, optarg, 0);
+			slurm_addto_id_char_list(job_cond->userid_list,
+						 optarg, 0);
 			break;
 		case 'v':
 			/* Handle -vvv thusly...
