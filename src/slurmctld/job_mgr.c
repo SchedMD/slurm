@@ -144,6 +144,11 @@ typedef struct {
 	uid_t     uid;
 } _foreach_pack_job_info_t;
 
+typedef struct {
+	bitstr_t *node_map;
+	int rc;
+} job_overlap_args_t;
+
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -18175,3 +18180,40 @@ extern void send_job_warn_signal(job_record_t *job_ptr, bool ignore_time)
 	}
 }
 
+static int _overlap_and_running_internal(void *x, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *)x;
+	job_overlap_args_t *overlap_args = (job_overlap_args_t *)arg;
+
+	/* We always break if we find something not running */
+	if ((!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) {
+		overlap_args->rc = 0;
+		return 1;
+	}
+
+	/*
+	 * We are just looking for something overlapping.  On a hetjob we need
+	 * to check everything.
+	 */
+	if (job_ptr->node_bitmap &&
+	    bit_overlap_any(overlap_args->node_map, job_ptr->node_bitmap))
+		overlap_args->rc = 1;
+
+	return 0;
+}
+
+extern bool job_overlap_and_running(bitstr_t *node_map, job_record_t *job_ptr)
+{
+	job_overlap_args_t overlap_args = {
+		.node_map = node_map
+	};
+
+	if (!job_ptr->pack_job_list)
+		(void)_overlap_and_running_internal(job_ptr, &overlap_args);
+	else
+		(void)list_for_each(job_ptr->pack_job_list,
+				    _overlap_and_running_internal,
+				    &overlap_args);
+
+	return overlap_args.rc;
+}
