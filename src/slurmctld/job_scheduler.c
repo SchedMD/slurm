@@ -2697,69 +2697,6 @@ static char *_depend_state2str(depend_spec_t *dep_ptr)
 	}
 }
 
-/* Print a job's dependency information based upon job_ptr->depend_list */
-extern void print_job_dependency(job_record_t *job_ptr, const char *func)
-{
-	ListIterator depend_iter;
-	depend_spec_t *dep_ptr;
-	char *dep_flags, *dep_str, *dep_time_sep = NULL;
-
-	info("%s: Dependency information for %pJ:", func, job_ptr);
-	if ((job_ptr->details == NULL) ||
-	    (job_ptr->details->depend_list == NULL))
-		return;
-
-	depend_iter = list_iterator_create(job_ptr->details->depend_list);
-	while ((dep_ptr = list_next(depend_iter))) {
-		/*
-		 * Show non-fulfilled (including failed) dependencies, but don't
-		 * show fulfilled dependencies.
-		 */
-		if (dep_ptr->depend_state == DEPEND_FULFILLED)
-			continue;
-		if (dep_ptr->depend_flags & SLURM_FLAGS_OR)
-			dep_flags = "OR";
-		else
-			dep_flags = "";
-		if      (dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) {
-			info("  singleton %s(%s)",
-			     dep_flags, _depend_state2str(dep_ptr));
-			continue;
-		}
-
-		dep_str = _depend_type2str(dep_ptr);
-
-		if (dep_ptr->depend_time)
-			dep_time_sep = xstrdup_printf(
-				"+%u", dep_ptr->depend_time / 60);
-
-		if (dep_ptr->array_task_id == INFINITE)
-			info("  %s:%u_*%s %s%s(%s)",
-			     dep_str, dep_ptr->job_id,
-			     dep_time_sep ? dep_time_sep : "",
-			     dep_flags,
-			     (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) ?
-			     " (remote)" : "", _depend_state2str(dep_ptr));
-		else if (dep_ptr->array_task_id == NO_VAL)
-			info("  %s:%u%s %s%s(%s)",
-			     dep_str, dep_ptr->job_id,
-			     dep_time_sep ? dep_time_sep : "",
-			     dep_flags,
-			     (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) ?
-			     " (remote)" : "", _depend_state2str(dep_ptr));
-		else
-			info("  %s:%u_%u:%s %s%s(%s)",
-			     dep_str, dep_ptr->job_id,
-			     dep_ptr->array_task_id,
-			     dep_time_sep ? dep_time_sep : "",
-			     dep_flags,
-			     (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) ?
-			     " (remote)" : "", _depend_state2str(dep_ptr));
-		xfree(dep_time_sep);
-	}
-	list_iterator_destroy(depend_iter);
-}
-
 static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 {
 	ListIterator depend_iter;
@@ -2815,6 +2752,19 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 			sep = ",";
 	}
 	list_iterator_destroy(depend_iter);
+}
+
+/* Print a job's dependency information based upon job_ptr->depend_list */
+extern void print_job_dependency(job_record_t *job_ptr, const char *func)
+{
+	if ((job_ptr->details == NULL) ||
+	    (job_ptr->details->depend_list == NULL)) {
+		info("%s: %pJ has no dependency.", func, job_ptr);
+		return;
+	}
+	_depend_list2str(job_ptr, false);
+	info("%s: Dependency information for %pJ:\n  %s",
+	     func, job_ptr, job_ptr->details->dependency);
 }
 
 static int _test_job_dependency_common(
