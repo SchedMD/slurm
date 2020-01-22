@@ -591,7 +591,7 @@ _run_test "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey1
 _run_test "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey2" [list $jobid02 $jobid04 $jobid02 $jobid04 $jobid06 $jobid08 $jobid06 $jobid08]
 
 # 2 clusters, 2 accounts, 2 wckeys
-_run_test "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey2" [list $jobid01 $jobid03 $jobid01 $jobid03 $jobid05 $jobid07 $jobid05 $jobid07 $jobid02 $jobid04 $jobid02 $jobid04 $jobid06 $jobid08 $jobid06 $jobid08]
+_run_test "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey1,$wckey2" [list $jobid01 $jobid03 $jobid01 $jobid03 $jobid05 $jobid07 $jobid05 $jobid07 $jobid02 $jobid04 $jobid02 $jobid04 $jobid06 $jobid08 $jobid06 $jobid08]
 
 
 # 1 cluster, 1 user
