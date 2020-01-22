@@ -95,7 +95,11 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 	safe_unpack16(&protocol_version, buffer);
 	xfree(ver_str);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	/*
+	 * No cross-version support is required here. slurmd and slurmstepd
+	 * must always be on the same release.
+	 */
+	if (protocol_version >= SLURM_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&conf->hostname, &uint32_tmp, buffer);
 		safe_unpack16(&conf->cpus, buffer);
 		safe_unpack16(&conf->boards, buffer);
