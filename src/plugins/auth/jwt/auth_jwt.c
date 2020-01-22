@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  auth_token.c - token-based slurm authentication plugin
+ *  auth_jwt.c - JWT token-based slurm authentication plugin
  *****************************************************************************
  *  Copyright (C) 2019 SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>
