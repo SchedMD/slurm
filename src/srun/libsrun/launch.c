@@ -405,8 +405,9 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					"being configured, please wait",
 					job->ctx_params.job_id);
 			} else {
-				info("Job %u step creation temporarily disabled, retrying",
-				     job->ctx_params.job_id);
+				info("Job %u step creation temporarily disabled, retrying (%s)",
+				     job->ctx_params.job_id,
+				     slurm_strerror(rc));
 			}
 			xsignal_unblock(sig_array);
 			for (j = 0; sig_array[j]; j++)
