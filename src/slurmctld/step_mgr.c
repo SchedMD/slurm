@@ -4872,9 +4872,22 @@ extern struct step_record *build_extern_step(struct job_record *job_ptr)
 	return step_ptr;
 }
 
-extern struct step_record *build_batch_step(struct job_record *job_ptr)
+extern struct step_record *build_batch_step(struct job_record *job_ptr_in)
 {
-	struct step_record *step_ptr = _create_step_record(job_ptr, 0);
+	struct job_record *job_ptr;
+	struct step_record *step_ptr;
+
+	if (job_ptr_in->pack_job_id) {
+		job_ptr = find_job_record(job_ptr_in->pack_job_id);
+		if (!job_ptr) {
+			error("%s: hetjob master is corrupt! This should never happen",
+			      __func__);
+			job_ptr = job_ptr_in;
+		}
+	} else
+		job_ptr = job_ptr_in;
+
+	step_ptr = _create_step_record(job_ptr, 0);
 
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		job_ptr->batch_host, NULL, NULL, 1, 1);
