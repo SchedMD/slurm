@@ -3009,6 +3009,7 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 
 	if (or_satisfied || (!or_flag && !and_failed && !has_unfulfilled)) {
 		/* Dependency fulfilled */
+		fed_mgr_remove_remote_dependencies(job_ptr);
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
 		_depend_list2str(job_ptr, false);
 		results = NO_DEPEND;
@@ -3517,6 +3518,7 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 
 	if (or_satisfied || (!or_flag && !and_failed && !has_unfulfilled)) {
 		/* Dependency fulfilled */
+		fed_mgr_remove_remote_dependencies(job_ptr);
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
 		list_flush(job_ptr->details->depend_list);
 		if ((job_ptr->state_reason == WAIT_DEP_INVALID) ||
@@ -3525,7 +3527,6 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 			xfree(job_ptr->state_desc);
 		}
 		_depend_list2str(job_ptr, false);
-		fed_mgr_remove_remote_dependencies(job_ptr);
 		fed_mgr_job_requeue(job_ptr);
 	} else {
 		_depend_list2str(job_ptr, false);

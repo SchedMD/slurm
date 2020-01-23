@@ -15626,7 +15626,6 @@ extern bool job_independent(job_record_t *job_ptr)
 		xfree(job_ptr->state_desc);
 		/* Submit the job to its siblings. */
 		if (job_ptr->details) {
-			fed_mgr_remove_remote_dependencies(job_ptr);
 			fed_mgr_job_requeue(job_ptr);
 		}
 	}

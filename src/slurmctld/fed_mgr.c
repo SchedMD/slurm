@@ -4057,7 +4057,7 @@ extern void fed_mgr_remove_remote_dependencies(job_record_t *job_ptr)
 	    !fed_mgr_is_origin_job(job_ptr) || !job_ptr->details)
 		return;
 
-	fed_mgr_submit_remote_dependencies(job_ptr, true, true);
+	fed_mgr_submit_remote_dependencies(job_ptr, false, true);
 }
 
 static int _add_to_send_list(void *object, void *arg)
