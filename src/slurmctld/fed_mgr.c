@@ -2369,6 +2369,9 @@ static void _handle_dep_update_origin_msgs(void)
 	slurmctld_lock_t job_write_lock = {
 		.conf = READ_LOCK, .job = WRITE_LOCK, .fed = READ_LOCK };
 
+	if (!list_count(origin_dep_update_list))
+		return;
+
 	lock_slurmctld(job_write_lock);
 	while ((dep_update_msg = list_pop(origin_dep_update_list))) {
 		if (!(job_ptr = find_job_record(dep_update_msg->job_id))) {
@@ -2839,7 +2842,8 @@ extern int fed_mgr_init(void *db_conn)
 		remote_dep_recv_list = list_create(_destroy_dep_msg);
 
 	/*
-	 * origin_dep_update_list should only be appended to and popped from.
+	 * origin_dep_update_list should only be read from or modified with
+	 * list_* functions (such as append, pop, count).
 	 * So rely on the list's lock. If there are ever changes to iterate the
 	 * list, then a lock will be needed around the list.
 	 */
