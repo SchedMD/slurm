@@ -3762,23 +3762,32 @@ proc get_srun_ports { } {
 #
 # Proc: available_nodes_hostnames
 #
-# Purpose: Get all idle nodes in the system
+# Purpose: Get all available nodes in the system.
 #
-# Returns: idle nodes
+# Input: partition -- to only return nodes of an specific partition
+#        also_power_save -- to include POWERING_DOWN and POWER_DOWN
+#                           nodes
+#
+# Returns: idle nodes, and also_power_save nodes if specified
 #
 #####################################################################
 
-proc available_nodes_hostnames { partition } {
+proc available_nodes_hostnames { partition {also_power_save false} } {
 
 	global sinfo alpha_numeric_nodelist exit_code
 
 	log_user 0
 	set idle_nodelist ""
 	set sep ""
-	if {[string compare $partition ""] == 0} {
-		spawn $sinfo -tidle -h -o%N
+	if {$also_power_save} {
+		set avail_states "idle,power_down,powering_down"
 	} else {
-		spawn $sinfo -tidle -h -o%N -p$partition
+		set avail_states "idle"
+	}
+	if {[string compare $partition ""] == 0} {
+		spawn $sinfo -t$avail_states -h -o%N
+	} else {
+		spawn $sinfo -t$avail_states -h -o%N -p$partition
 	}
 	expect {
 		-re "($alpha_numeric_nodelist)" {
