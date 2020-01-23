@@ -50,8 +50,8 @@ set cluster1      [format "%s%s" $test_name "clus1"]
 set cluster2      [format "%s%s" $test_name "clus2"]
 set account1      [format "%s%s" $test_name "acct1"]
 set account2      [format "%s%s" $test_name "acct2"]
-set user1         [format "%s%s" $test_name "user1"]
-set user2         [format "%s%s" $test_name "user2"]
+set user1         [get_my_user_name]
+set user2         "root"
 set wckey1        [format "%s%s" $test_name "wckey1"]
 set wckey2        [format "%s%s" $test_name "wckey2"]
 set wckey_new     [format "%s%s" $test_name "wckeynew"]
@@ -86,7 +86,7 @@ proc clean_it {} {
 
 	incr exit_code [archive_load $sql_rem_clus1]
 	incr exit_code [archive_load $sql_rem_clus2]
-	remove_user    "" "" $users
+	remove_user    $clusters $accounts $users
 	remove_acct    "" $accounts
 	remove_cluster $clusters
 
@@ -167,13 +167,13 @@ proc create_sql {cluster sql_in sql_rem} {
 	puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, `partition`, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, tres_alloc, nodelist, kill_requid, qos, deleted) values"
 	puts $file "('$jobid01', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
 	puts $file "('$jobid02', '$user1acct1', '$wckey2', '$user1wckey2', '$uid', '$gid', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
-	puts $file "('$jobid03', '$user2acct1', '$wckey1', '$user2wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
-	puts $file "('$jobid04', '$user2acct1', '$wckey2', '$user2wckey2', '$uid', '$gid', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
+	puts $file "('$jobid03', '$user2acct1', '$wckey1', '$user2wckey1',    '0',    '0', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
+	puts $file "('$jobid04', '$user2acct1', '$wckey2', '$user2wckey2',    '0',    '0', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
 
 	puts $file "('$jobid05', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
 	puts $file "('$jobid06', '$user1acct2', '$wckey2', '$user1wckey2', '$uid', '$gid', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
-	puts $file "('$jobid07', '$user2acct2', '$wckey1', '$user2wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
-	puts $file "('$jobid08', '$user2acct2', '$wckey2', '$user2wckey2', '$uid', '$gid', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
+	puts $file "('$jobid07', '$user2acct2', '$wckey1', '$user2wckey1',    '0',    '0', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
+	puts $file "('$jobid08', '$user2acct2', '$wckey2', '$user2wckey2',    '0',    '0', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
 	puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), tres_alloc=VALUES(tres_alloc), wckey=VALUES(wckey), wckeyid=VALUES(wckeyid);";
 	close $file
 
@@ -247,7 +247,7 @@ proc test_job_update {sacctmgr_args expected_jobs} {
 
 	set matches_right 0
 	set matches_wrong 0
-	set my_pid [eval spawn $sacct -n --cluster=$clusters --wckey=$wckey_new --start=2000-01-01 --end=now --format=jobid]
+	set my_pid [eval spawn $sacct -a -n --cluster=$clusters --wckey=$wckey_new --start=2000-01-01 --end=now --format=jobid]
 	expect {
 		-re "($number)" {
 			set jobid $expect_out(1,string)
@@ -333,7 +333,7 @@ set user_req(wckey)   $wckeys
 #
 # Remove previous test clusters, accounts and users
 #
-remove_user    "" "" $users
+remove_user    $clusters $accounts $users
 remove_acct    "" $accounts
 remove_cluster $clusters
 
@@ -374,13 +374,58 @@ expect {
 		set user1acct1 $expect_out(1,string)
 		exp_continue
 	}
+	timeout {
+		log_error "sacctmgr list associations not responding"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"]
+expect {
+	-re "There was a problem" {
+		log_error "there was a problem with the sacctmgr command"
+		incr exit_code 1
+	}
 	-re "$user1.$account2.($number)." {
 		set user1acct2 $expect_out(1,string)
 		exp_continue
 	}
+	timeout {
+		log_error "sacctmgr list associations not responding"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"]
+expect {
+	-re "There was a problem" {
+		log_error "there was a problem with the sacctmgr command"
+		incr exit_code 1
+	}
 	-re "$user2.$account1.($number)." {
 		set user2acct1 $expect_out(1,string)
 		exp_continue
+	}
+	timeout {
+		log_error "sacctmgr list associations not responding"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"]
+expect {
+	-re "There was a problem" {
+		log_error "there was a problem with the sacctmgr command"
+		incr exit_code 1
 	}
 	-re "$user2.$account2.($number)." {
 		set user2acct2 $expect_out(1,string)
@@ -457,6 +502,110 @@ create_sql $cluster2 $sql_in_clus2 $sql_rem_clus2
 #
 # Tests
 #
+
+# 1 cluster1, 1 user1
+_run_test "cluster=$cluster1 user=$user1" [list $jobid01 $jobid02 $jobid05 $jobid06]
+
+# 1 cluster1, 1 user2
+_run_test "cluster=$cluster1 user=$user2" [list $jobid03 $jobid04 $jobid07 $jobid08]
+
+# 1 cluster1, 2 users
+_run_test "cluster=$cluster1 user=$user1,$user2" [list $jobid01 $jobid02 $jobid05 $jobid06 $jobid03 $jobid04 $jobid07 $jobid08]
+
+# 1 cluster2, 1 user1
+_run_test "cluster=$cluster2 user=$user1" [list $jobid01 $jobid02 $jobid05 $jobid06]
+
+# 1 cluster2, 1 user2
+_run_test "cluster=$cluster2 user=$user2" [list $jobid03 $jobid04 $jobid07 $jobid08]
+
+# 1 cluster2, 2 users
+_run_test "cluster=$cluster2 user=$user1,$user2" [list $jobid01 $jobid02 $jobid05 $jobid06 $jobid03 $jobid04 $jobid07 $jobid08]
+
+
+# 1 cluster1, 1 account1, 1 user1
+_run_test "cluster=$cluster1 account=$account1 user=$user1" [list $jobid01 $jobid02]
+
+# 1 cluster1, 1 account1, 1 user2
+_run_test "cluster=$cluster1 account=$account1 user=$user2" [list $jobid03 $jobid04]
+
+# 1 cluster1, 1 account1, 2 users
+_run_test "cluster=$cluster1 account=$account1 user=$user1,$user2" [list $jobid01 $jobid02 $jobid03 $jobid04]
+
+# 1 cluster1, 1 account2, 1 user1
+_run_test "cluster=$cluster1 account=$account2 user=$user1" [list $jobid05 $jobid06]
+
+# 1 cluster1, 1 account2, 1 user2
+_run_test "cluster=$cluster1 account=$account2 user=$user2" [list $jobid07 $jobid08]
+
+# 1 cluster1, 1 account2, 2 users
+_run_test "cluster=$cluster1 account=$account2 user=$user1,$user2" [list $jobid05 $jobid06 $jobid07 $jobid08]
+
+# 1 cluster1, 2 accounts, 1 user1
+_run_test "cluster=$cluster1 account=$account1,$account2 user=$user1" [list $jobid01 $jobid02 $jobid05 $jobid06]
+
+# 1 cluster1, 2 accounts, 1 user2
+_run_test "cluster=$cluster1 account=$account1,$account2 user=$user2" [list $jobid03 $jobid04 $jobid07 $jobid08]
+
+# 1 cluster1, 2 accounts, 2 users
+_run_test "cluster=$cluster1 account=$account1,$account2 user=$user1,$user2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
+
+
+# 1 cluster1, 1 wckey1, 1 user1
+_run_test "cluster=$cluster1 wckey=$wckey1 user=$user1" [list $jobid01 $jobid05]
+
+# 1 cluster1, 1 wckey1, 1 user2
+_run_test "cluster=$cluster1 wckey=$wckey1 user=$user2" [list $jobid03 $jobid07]
+
+# 1 cluster1, 1 wckey1, 2 users
+_run_test "cluster=$cluster1 wckey=$wckey1 user=$user1,$user2" [list $jobid01 $jobid05 $jobid03 $jobid07]
+
+# 1 cluster1, 1 wckey2, 1 user1
+_run_test "cluster=$cluster1 wckey=$wckey2 user=$user1" [list $jobid02 $jobid06]
+
+# 1 cluster1, 1 wckey2, 1 user2
+_run_test "cluster=$cluster1 wckey=$wckey2 user=$user2" [list $jobid04 $jobid08]
+
+# 1 cluster1, 1 wckey2, 2 users
+_run_test "cluster=$cluster1 wckey=$wckey2 user=$user1,$user2" [list $jobid02 $jobid06 $jobid04 $jobid08]
+
+# 1 cluster1, 2 wckeys, 1 user1
+_run_test "cluster=$cluster1 wckey=$wckey1,$wckey2 user=$user1" [list $jobid01 $jobid02 $jobid05 $jobid06]
+
+# 1 cluster1, 2 wckeys, 1 user2
+_run_test "cluster=$cluster1 wckey=$wckey1,$wckey2 user=$user2" [list $jobid03 $jobid04 $jobid07 $jobid08]
+
+# 1 cluster1, 2 wckeys, 2 users
+_run_test "cluster=$cluster1 wckey=$wckey1,$wckey2 user=$user1,$user2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
+
+
+# 1 cluster1, 1account1, 1 wckey1, 1 user1
+_run_test "cluster=$cluster1 wckey=$wckey1 account=$account1 user=$user1" [list $jobid01]
+
+# 1 cluster1, 1account1, 1 wckey1, 1 user2
+_run_test "cluster=$cluster1 wckey=$wckey1 account=$account1 user=$user2" [list $jobid03]
+
+# 1 cluster1, 1account1, 1 wckey1, 2 users
+_run_test "cluster=$cluster1 wckey=$wckey1 account=$account1 user=$user1,$user2" [list $jobid01 $jobid03]
+
+# 1 cluster1, 1account1, 1 wckey2, 1 user1
+_run_test "cluster=$cluster1 wckey=$wckey2 account=$account1 user=$user1" [list $jobid02]
+
+# 1 cluster1, 1account1, 1 wckey2, 1 user2
+_run_test "cluster=$cluster1 wckey=$wckey2 account=$account1 user=$user2" [list $jobid04]
+
+# 1 cluster1, 1account1, 1 wckey2, 2 users
+_run_test "cluster=$cluster1 wckey=$wckey2 account=$account1 user=$user1,$user2" [list $jobid02 $jobid04]
+
+# 1 cluster1, 1account1, 2 wckeys, 1 user1
+_run_test "cluster=$cluster1 wckey=$wckey1,$wckey2 account=$account1 user=$user1" [list $jobid01 $jobid02]
+
+# 1 cluster1, 1account1, 2 wckeys, 1 user2
+_run_test "cluster=$cluster1 wckey=$wckey1,$wckey2 account=$account1 user=$user2" [list $jobid03 $jobid04]
+
+# 1 cluster1, 1account1, 2 wckeys, 2 users
+_run_test "cluster=$cluster1 wckey=$wckey1,$wckey2 account=$account1 user=$user1,$user2" [list $jobid01 $jobid02 $jobid03 $jobid04]
+
+
 # 1 cluster1, 1 account1
 _run_test "cluster=$cluster1 account=$account1" [list $jobid01 $jobid02 $jobid03 $jobid04]
 
@@ -595,23 +744,6 @@ _run_test "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey2
 
 # 2 clusters, 2 accounts, 2 wckeys
 _run_test "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey1,$wckey2" [list $jobid01 $jobid03 $jobid01 $jobid03 $jobid05 $jobid07 $jobid05 $jobid07 $jobid02 $jobid04 $jobid02 $jobid04 $jobid06 $jobid08 $jobid06 $jobid08]
-
-
-# 1 cluster, 1 user
-#
-# TODO: Fails because User= works for job_cond->userid_list and not
-#       job_cond->associd_list. That means we need a real UID not faked SQL.
-#
-# incr exit_code [archive_load $sql_rem_clus1]
-# incr exit_code [archive_load $sql_rem_clus2]
-# incr exit_code [archive_load $sql_in_clus1]
-# incr exit_code [archive_load $sql_in_clus2]
-#
-# set expected_jobs [list $jobid01 $jobid02 $jobid05 $jobid06]
-# if {[test_job_update "cluster=$cluster1 users=$user1" $expected_jobs]  != 0} {
-# 	log_error      "cluster=$cluster1 users=$user1"
-# 	incr exit_code
-# }
 
 #
 # Finish
