@@ -5297,6 +5297,7 @@ extern bool fed_mgr_is_singleton_satisfied(job_record_t *job_ptr,
 					   bool set_cluster_bit)
 {
 	uint32_t origin_id;
+	uint64_t sib_bits;
 
 	xassert(job_ptr);
 	xassert(dep_ptr);
@@ -5318,7 +5319,13 @@ extern bool fed_mgr_is_singleton_satisfied(job_record_t *job_ptr,
 		return true;
 	}
 
-	return dep_ptr->singleton_bits == _get_all_sibling_bits();
+	/*
+	 * Only test for current siblings; if a sibling was removed but
+	 * previously had passed a singleton dependency, that bit may be
+	 * set in dep_ptr->singleton_bits.
+	 */
+	sib_bits = _get_all_sibling_bits();
+	return (dep_ptr->singleton_bits & sib_bits) == sib_bits;
 }
 
 /*
