@@ -1490,7 +1490,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	struct job_details *details_ptr = job_ptr->details;
 	bool gres_per_job, sufficient = false;
 	uint16_t *avail_cpu_per_node = NULL;
-	int64_t time_waiting = 0;
+	time_t time_waiting = 0;
 	int leaf_switch_count = 0;
 	int top_switch_inx = -1;
 	int prev_rem_nodes;
@@ -2129,7 +2129,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	struct job_details *details_ptr = job_ptr->details;
 	bool gres_per_job, sufficient = false;
 	uint16_t *avail_cpu_per_node = NULL;
-	int64_t time_waiting = 0;
+	time_t time_waiting = 0;
 	int leaf_switch_count = 0;
 	int top_switch_inx = -1;
 	int prev_rem_nodes;
