@@ -2471,8 +2471,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->full_nodes = 1;
 	} else {
 #if _DEBUG
-		info("reservation using partial nodes: core count %"PRIu64,
-		     cpu_cnt);
+		info("reservation using partial nodes");
 #endif
 		resv_ptr->full_nodes = 0;
 	}
@@ -4159,7 +4158,7 @@ static void _check_job_compatibility(job_record_t *job_ptr,
 {
 	char str[200];
 	bit_fmt(str, sizeof(str), job_res->core_bitmap);
-	info("Checking %d nodes (of %d) for %pJ, core_bitmap:%s core_bitmap_size:%d",
+	info("Checking %d nodes (of %"PRIu64") for %pJ, core_bitmap:%s core_bitmap_size:%"PRIu64,
 	     total_nodes, bit_size(job_res->node_bitmap),
 	     job_ptr, str, bit_size(job_res->core_bitmap));
 }
