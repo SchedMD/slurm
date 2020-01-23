@@ -10837,6 +10837,7 @@ void handle_invalid_dependency(job_record_t *job_ptr)
 		job_ptr->state_reason = WAIT_DEP_INVALID;
 		xfree(job_ptr->state_desc);
 	}
+	fed_mgr_remove_remote_dependencies(job_ptr);
 }
 
 /*
