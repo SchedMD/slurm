@@ -670,6 +670,12 @@ char *slurm_get_mcs_plugin(void);
  * RET mcs_plugin_params name, must be xfreed by caller */
 char *slurm_get_mcs_plugin_params(void);
 
+/*
+ * slurm_get_dependency_params
+ * RET dependency_params must be xfreed by caller
+ */
+char *slurm_get_dependency_params(void);
+
 /* slurm_get_preempt_mode
  * returns the PreemptMode value from slurmctld_conf object
  * RET uint16_t   - PreemptMode value (See PREEMPT_MODE_* in slurm.h)

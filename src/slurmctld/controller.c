@@ -172,6 +172,7 @@ int	backup_inx;
 int	batch_sched_delay = 3;
 uint32_t cluster_cpus = 0;
 time_t	control_time = 0;
+bool disable_remote_singleton = false;
 time_t	last_proc_req_start = 0;
 bool	ping_nodes_now = false;
 pthread_cond_t purge_thread_cond = PTHREAD_COND_INITIALIZER;

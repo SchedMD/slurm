@@ -3609,8 +3609,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 				rc = ESLURM_DEPENDENCY;
 				break;
 			}
-			if (xstrcasestr(slurmctld_conf.slurmctld_params,
-					"disable_multicluster_singleton") &&
+			if (disable_remote_singleton &&
 			    !fed_mgr_is_origin_job(job_ptr)) {
 				/* Singleton disabled for non-origin cluster */
 			} else {

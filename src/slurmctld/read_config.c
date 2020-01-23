@@ -1391,6 +1391,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 
 	init_requeue_policy();
+	init_depend_policy();
 
 	/* NOTE: Run restore_node_features before _restore_job_accounting */
 	restore_node_features(recover);

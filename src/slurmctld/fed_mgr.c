@@ -2419,12 +2419,8 @@ static void *_test_dep_job_thread(void *arg)
 {
 	time_t last_test = 0;
 	time_t now;
-	/*
-	 * conf read lock is needed to test singleton dependencies to check
-	 * for SlurmctldParameter disable_multicluster_singleton.
-	 */
 	slurmctld_lock_t job_read_lock = {
-		.conf = READ_LOCK, .job = READ_LOCK, .fed = READ_LOCK };
+		.job = READ_LOCK, .fed = READ_LOCK };
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "fed_test_dep", NULL, NULL, NULL) < 0) {
@@ -4070,7 +4066,8 @@ static int _add_to_send_list(void *object, void *arg)
 	uint64_t *send_sib_bits = (uint64_t *)arg;
 	uint32_t cluster_id;
 
-	if (dependency->depend_type == SLURM_DEPEND_SINGLETON) {
+	if ((dependency->depend_type == SLURM_DEPEND_SINGLETON) &&
+	    !disable_remote_singleton) {
 		*send_sib_bits |= _get_all_sibling_bits();
 		/* Negative value short-circuits list_for_each */
 		return -1;
@@ -5255,11 +5252,8 @@ extern bool fed_mgr_is_singleton_satisfied(job_record_t *job_ptr,
 
 	xassert(job_ptr);
 	xassert(dep_ptr);
-	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
-	if (!_is_fed_job(job_ptr, &origin_id) ||
-	    xstrcasestr(slurmctld_conf.slurmctld_params,
-			"disable_multicluster_singleton"))
+	if (!_is_fed_job(job_ptr, &origin_id) || disable_remote_singleton)
 		return true;
 	if (dep_ptr->depend_type != SLURM_DEPEND_SINGLETON) {
 		error("%s: Got non-singleton dependency (type %u) for %pJ. This should never happen.",
@@ -6076,7 +6070,6 @@ extern void fed_mgr_test_remote_dependencies(void)
 
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
-	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 	if (!list_count(remote_dep_job_list))
 		return;

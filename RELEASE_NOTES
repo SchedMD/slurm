@@ -48,6 +48,8 @@ HIGHLIGHTS
     to flow over an alternate network path.
  -- Added auth/jwt plugin, and 'scontrol token' subcommand.
  -- PMIx - improve performance of proc map generation.
+ -- Deprecate kill_invalid_depend in SchedulerParameters and move it to a new
+    option called DependencyParameters.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

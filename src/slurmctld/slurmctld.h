@@ -224,6 +224,7 @@ extern int   backup_inx;		/* BackupController# index */
 extern int   batch_sched_delay;
 extern time_t control_time;		/* Time when became primary controller */
 extern uint32_t   cluster_cpus;
+extern bool disable_remote_singleton;
 extern bool node_features_updated;
 extern pthread_cond_t purge_thread_cond;
 extern pthread_mutex_t purge_thread_lock;
@@ -1304,6 +1305,12 @@ extern uint32_t get_next_job_id(bool test_only);
  * NOTE: Caller must free err_part
  */
 extern List get_part_list(char *name, char **err_part);
+
+/*
+ * init_depend_policy()
+ * Initialize variables from DependencyParameters
+ */
+extern void init_depend_policy(void);
 
 /*
  * init_job_conf - initialize the job configuration tables and values.

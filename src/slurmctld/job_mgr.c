@@ -17615,13 +17615,44 @@ extern bool job_hold_requeue(job_record_t *job_ptr)
 	return true;
 }
 
+extern void init_depend_policy(void)
+{
+	char *depend_params = slurm_get_dependency_params();
+	char *sched_params = slurm_get_sched_params();
+
+	disable_remote_singleton =
+		(xstrcasestr(depend_params, "disable_remote_singleton")) ?
+		true : false;
+
+	/*
+	 * kill_invalid_depend is moving from SchedulerParameters to
+	 * DependencyParameters. Support both for 20.02, then remove it
+	 * from SchedulerParameters in 20.11.
+	 */
+	if (xstrcasestr(sched_params, "kill_invalid_depend")) {
+		info("kill_invalid_depend is deprecated in SchedulerParameters and moved to DependencyParameters");
+		kill_invalid_dep = true;
+	} else
+		kill_invalid_dep =
+			(xstrcasestr(depend_params, "kill_invalid_depend")) ?
+			true : false;
+
+	xfree(depend_params);
+	xfree(sched_params);
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+		info("%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d",
+		     __func__, kill_invalid_dep, disable_remote_singleton);
+	else
+		debug2("%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d",
+		       __func__, kill_invalid_dep, disable_remote_singleton);
+}
+
 /* init_requeue_policy()
  * Initialize the requeue exit/hold bitmaps.
  */
 extern void init_requeue_policy(void)
 {
-	char *sched_params = slurm_get_sched_params();
-
 	/* clean first as we can be reconfiguring */
 	FREE_NULL_BITMAP(requeue_exit);
 	FREE_NULL_BITMAP(requeue_exit_hold);
@@ -17629,16 +17660,6 @@ extern void init_requeue_policy(void)
 	requeue_exit = _make_requeue_array(slurmctld_conf.requeue_exit);
 	requeue_exit_hold = _make_requeue_array(
 		slurmctld_conf.requeue_exit_hold);
-	/* Check if users want to kill a job whose dependency
-	 * can never be satisfied.
-	 */
-	kill_invalid_dep = false;
-	if (xstrcasestr(sched_params, "kill_invalid_depend"))
-		kill_invalid_dep = true;
-	xfree(sched_params);
-
-	debug2("%s: kill_invalid_depend is set to %d",
-	       __func__, kill_invalid_dep);
 }
 
 /* _make_requeue_array()

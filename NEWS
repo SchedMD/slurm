@@ -78,6 +78,8 @@ documents those changes that are of interest to users and administrators.
     job inherit the same.
  -- Added JobCompParams to slurm.conf.
  -- Add configuration parameter DependencyParameters to slurm.conf.
+ -- Deprecate kill_invalid_depend in SchedulerParameters and move it to new
+    DependencyParameters.
 
 * Changes in Slurm 19.05.6
 ==========================
