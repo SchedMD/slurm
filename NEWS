@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leak when pinging backup controller.
  -- Fix issue with 'scontrol update' not enforcing all QoS / Association limits.
  -- Fix to properly schedule certain jobs with cons_tres plugin.
+ -- Fix FIRST_CORES for reservations when using cons_tres.
 
 * Changes in Slurm 19.05.5
 ==========================

@@ -644,7 +644,8 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 		if (fini ||
 		    !avail_cores[i] ||
 		    !bit_test(avail_node_bitmap, i) ||
-		    (bit_set_count(avail_cores[i]) <
+		    (bit_set_count_range(avail_cores[i], 0,
+					 core_cnt[local_node_offset]) <
 		     core_cnt[local_node_offset])) {
 			FREE_NULL_BITMAP(avail_cores[i]);
 			continue;
