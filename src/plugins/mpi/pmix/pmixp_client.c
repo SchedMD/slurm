@@ -412,7 +412,6 @@ static int _set_mapsinfo(List lresp)
 		/* for each node - run through all tasks and
 		 * record taskid's that reside on this node
 		 */
-		int first = 1;
 		for (j = 0; j < nsptr->ntasks; j++) {
 			if (nsptr->task_map[j] == i) {
 				xstrfmtcatat(map, &pos, "%s%u",
