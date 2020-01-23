@@ -2221,6 +2221,8 @@ static int _update_origin_job_dep(job_record_t *job_ptr)
 	xassert(job_ptr);
 	xassert(job_ptr->details);
 	xassert(job_ptr->details->depend_list);
+	xassert(fed_mgr_fed_rec);
+	xassert(fed_mgr_fed_rec->cluster_list);
 
 	origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
 	origin = fed_mgr_get_cluster_by_id(origin_id);
@@ -2431,7 +2433,9 @@ static void *_test_dep_job_thread(void *arg)
 
 	while (!slurmctld_config.shutdown_time) {
 		now = time(NULL);
-		if (((now - last_test) > TEST_REMOTE_DEP_FREQ)) {
+		/* Only test after joining a federation. */
+		if (fed_mgr_fed_rec && fed_mgr_cluster_rec &&
+		    ((now - last_test) > TEST_REMOTE_DEP_FREQ)) {
 			last_test = now;
 			lock_slurmctld(job_read_lock);
 			fed_mgr_test_remote_dependencies();
@@ -2463,6 +2467,10 @@ static void *_origin_dep_update_thread(void *arg)
 		if (slurmctld_config.shutdown_time)
 			break;
 
+		/* Wait for fed_mgr_init() */
+		if (!fed_mgr_fed_rec || !fed_mgr_cluster_rec)
+			continue;
+
 		_handle_dep_update_origin_msgs();
 	}
 	return NULL;
@@ -2489,6 +2497,10 @@ static void *_remote_dep_recv_thread(void *arg)
 
 		if (slurmctld_config.shutdown_time)
 			break;
+
+		/* Wait for fed_mgr_init() */
+		if (!fed_mgr_fed_rec || !fed_mgr_cluster_rec)
+			continue;
 
 		while ((remote_dep_info = list_pop(remote_dep_recv_list))) {
 			_handle_recv_remote_dep(remote_dep_info);
@@ -6071,7 +6083,8 @@ extern void fed_mgr_test_remote_dependencies(void)
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
-	if (!list_count(remote_dep_job_list))
+	if (!list_count(remote_dep_job_list) || !fed_mgr_fed_rec ||
+	    !fed_mgr_cluster_rec)
 		return;
 
 	slurm_mutex_lock(&dep_job_list_mutex);
