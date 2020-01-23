@@ -2770,6 +2770,35 @@ static void _add_missing_fed_job_info()
 	unlock_slurmctld(job_read_lock);
 }
 
+/*
+ * Setup the dependency list from the dependency string for each job in
+ * remote_dep_job_list, similar to restore_job_dependencies().
+ * We need to call this after fed_mgr_cluster_rec is set so that we can
+ * know if a dependency is remote or not.
+ */
+static void _restore_remote_job_dependencies()
+{
+	ListIterator itr;
+	job_record_t *job_ptr;
+
+	slurm_mutex_lock(&dep_job_list_mutex);
+	if (!remote_dep_job_list) {
+		slurm_mutex_unlock(&dep_job_list_mutex);
+		return;
+	}
+
+	itr = list_iterator_create(remote_dep_job_list);
+	while ((job_ptr = list_next(itr))) {
+		/*
+		 * _state_load ensures that each job_ptr in remote_dep_job_list
+		 * has non-NULL details and dependency.
+		 */
+		update_job_dependency(job_ptr, job_ptr->details->dependency);
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&dep_job_list_mutex);
+}
+
 extern int fed_mgr_init(void *db_conn)
 {
 	int rc = SLURM_SUCCESS;
@@ -2905,6 +2934,9 @@ extern int fed_mgr_init(void *db_conn)
 end_it:
 	/* Call whether state file existed or not. */
 	_add_missing_fed_job_info();
+
+	/* Must call after fed_mgr_cluster_rec is set */
+	_restore_remote_job_dependencies();
 
 	inited = true;
 	slurm_mutex_unlock(&init_mutex);
@@ -3436,9 +3468,6 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location)
 					    _find_job_by_id,
 					    &tmp_dep_job->job_id) &&
 			    tmp_dep_job->details->dependency) {
-				(void) update_job_dependency(
-					tmp_dep_job,
-					tmp_dep_job->details->dependency);
 				list_append(remote_dep_job_list, tmp_dep_job);
 			} /* else it will get free'd with FREE_NULL_LIST */
 		}
