@@ -2455,7 +2455,8 @@ fini:	for (i = 0; i < switch_record_cnt; i++) {
 			     i < select_node_record[inx].tot_cores;
 			     i++) {
 				int set = coff + i;
-				if (!bit_test(use_exc_bitmap, set) &&
+				if ((!use_exc_bitmap ||
+				     !bit_test(use_exc_bitmap, set)) &&
 				    !bit_test(use_picked_bitmap, set)) {
 					bit_set(use_picked_bitmap, set);
 					rem_cores--;
