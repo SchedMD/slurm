@@ -3011,6 +3011,14 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 		/* Dependency fulfilled */
 		fed_mgr_remove_remote_dependencies(job_ptr);
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
+		/*
+		 * Don't flush the list if this job isn't on the origin - that
+		 * means that we were called from
+		 * fed_mgr_test_remote_dependencies() and need to send back the
+		 * dependency list to the origin.
+		 */
+		if (fed_mgr_is_origin_job(job_ptr))
+			list_flush(job_ptr->details->depend_list);
 		_depend_list2str(job_ptr, false);
 		results = NO_DEPEND;
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
