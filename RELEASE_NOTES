@@ -70,3 +70,4 @@ COMMAND CHANGES (see man pages for details)
  -- MPMD in srun will now defer PATH resolution for the commands to launch to
     slurmstepd. Previously it would handle resolution client-side, but with
     a non-standard approach that walked PATH in reverse.
+ -- squeue - added "--me" option, equivalent to --user=$USER.

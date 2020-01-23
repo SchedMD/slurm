@@ -64,6 +64,7 @@
 #define OPT_LONG_LOCAL        0x106
 #define OPT_LONG_SIBLING      0x107
 #define OPT_LONG_FEDR         0x108
+#define OPT_LONG_ME           0x109
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -111,6 +112,7 @@ parse_command_line( int argc, char* *argv )
 		{"licenses",   required_argument, 0, 'L'},
 		{"cluster",    required_argument, 0, 'M'},
 		{"clusters",   required_argument, 0, 'M'},
+		{"me",         no_argument,       0, OPT_LONG_ME},
 		{"name",       required_argument, 0, 'n'},
                 {"noconvert",  no_argument,       0, OPT_LONG_NOCONVERT},
 		{"node",       required_argument, 0, 'w'},
@@ -329,6 +331,11 @@ parse_command_line( int argc, char* *argv )
 			break;
 		case OPT_LONG_LOCAL:
 			params.local_flag = true;
+			break;
+		case OPT_LONG_ME:
+			xfree(params.users);
+			xstrfmtcat(params.users, "%u", geteuid());
+			params.user_list = _build_user_list(params.users);
 			break;
 		case OPT_LONG_SIBLING:
 			params.sibling_flag = true;

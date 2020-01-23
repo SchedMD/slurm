@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "April 2019" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "January 2020" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -92,6 +92,10 @@ subject to any constraints specified.
 \fB\-L\fR, \fB\-\-licenses=<license_list>\fR
 Request jobs requesting or using one or more of the named licenses.
 The license list consists of a comma separated list of license names.
+
+.TP
+\fB\-\-me\fR
+Equivalent to \fB\-\-user=<my username>\fR.
 
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
