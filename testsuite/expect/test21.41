@@ -79,7 +79,8 @@ set jobid08       "1008"
 #
 ###############################################################################
 proc clean_it {} {
-	global exit_code
+	global exit_code bin_rm
+	global sql_in_clus1 sql_in_clus2
 	global sql_rem_clus1 sql_rem_clus2
 	global clusters accounts users
 
@@ -88,6 +89,8 @@ proc clean_it {} {
 	remove_user    "" "" $users
 	remove_acct    "" $accounts
 	remove_cluster $clusters
+
+	exec $bin_rm $sql_in_clus1 $sql_in_clus2 $sql_rem_clus1 $sql_rem_clus2
 }
 
 ###############################################################################
