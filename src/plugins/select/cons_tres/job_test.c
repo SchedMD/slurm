@@ -1490,7 +1490,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	struct job_details *details_ptr = job_ptr->details;
 	bool gres_per_job, sufficient = false;
 	uint16_t *avail_cpu_per_node = NULL;
-	int64_t time_waiting = 0;
+	time_t time_waiting = 0;
 	int leaf_switch_count = 0;
 	int top_switch_inx = -1;
 	int prev_rem_nodes;
@@ -1996,7 +1996,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	if (job_ptr->req_switch > 0) {
 		if (time_waiting >= job_ptr->wait4switch) {
 			job_ptr->best_switch = true;
-			debug3("%pJ waited %ld sec for switches use=%d",
+			debug3("%pJ waited %"PRIu64" sec for switches use=%d",
 				job_ptr, time_waiting, leaf_switch_count);
 		} else if (leaf_switch_count > job_ptr->req_switch) {
 			/*
@@ -2004,7 +2004,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			 * switches.
 			 */
 			job_ptr->best_switch = false;
-			debug3("%pJ waited %ld sec for switches=%u found=%d wait %u",
+			debug3("%pJ waited %"PRIu64" sec for switches=%u found=%d wait %u",
 				job_ptr, time_waiting, job_ptr->req_switch,
 				leaf_switch_count, job_ptr->wait4switch);
 		} else {
@@ -2129,7 +2129,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	struct job_details *details_ptr = job_ptr->details;
 	bool gres_per_job, sufficient = false;
 	uint16_t *avail_cpu_per_node = NULL;
-	int64_t time_waiting = 0;
+	time_t time_waiting = 0;
 	int leaf_switch_count = 0;
 	int top_switch_inx = -1;
 	int prev_rem_nodes;
@@ -2580,7 +2580,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	if (job_ptr->req_switch > 0) {
 		if (time_waiting >= job_ptr->wait4switch) {
 			job_ptr->best_switch = true;
-			debug3("%pJ waited %ld sec for switches use=%d",
+			debug3("%pJ waited %"PRIu64" sec for switches use=%d",
 				job_ptr, time_waiting, leaf_switch_count);
 		} else if (leaf_switch_count > job_ptr->req_switch) {
 			/*
@@ -2588,7 +2588,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			 * switches.
 			 */
 			job_ptr->best_switch = false;
-			debug3("%pJ waited %ld sec for switches=%u found=%d wait %u",
+			debug3("%pJ waited %"PRIu64" sec for switches=%u found=%d wait %u",
 				job_ptr, time_waiting, job_ptr->req_switch,
 				leaf_switch_count, job_ptr->wait4switch);
 		} else {
