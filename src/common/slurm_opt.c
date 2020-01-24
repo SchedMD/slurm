@@ -255,7 +255,7 @@ static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
 		exit(-1);					\
 	}							\
 								\
-        return SLURM_SUCCESS;					\
+	return SLURM_SUCCESS;					\
 }
 #define COMMON_MBYTES_OPTION_GET_AND_RESET(field)		\
 COMMON_MBYTES_OPTION_GET(field)					\
