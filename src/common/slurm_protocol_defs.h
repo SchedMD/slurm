@@ -1127,6 +1127,7 @@ typedef struct {
 	char *knl_generic_config;
 	char *plugstack_config;
 	char *topology_config;
+	char *slurmd_spooldir;
 } config_response_msg_t;
 
 typedef struct srun_exec_msg {

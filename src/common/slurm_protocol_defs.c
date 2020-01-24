@@ -867,6 +867,7 @@ extern void slurm_free_config_response_msg(config_response_msg_t *msg)
 		xfree(msg->knl_generic_config);
 		xfree(msg->plugstack_config);
 		xfree(msg->topology_config);
+		xfree(msg->slurmd_spooldir);
 		xfree(msg);
 	}
 }
