@@ -73,13 +73,13 @@ static bool initialized = false; /* protected by init_mutex */
 #define DATA_LIST_NODE_MAGIC 0x1921F89F
 
 typedef struct data_list_node_s data_list_node_t;
-typedef struct data_list_node_s {
+struct data_list_node_s {
 	int magic;
 	data_list_node_t *next;
 
 	data_t *data;
 	char *key; /* key for dictionary (only) */
-} data_list_node_t;
+};
 
 /* single forward linked list */
 typedef struct data_list_s {
