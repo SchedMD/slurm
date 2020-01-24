@@ -1,3 +1,4 @@
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Partition Reservations
