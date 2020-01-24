@@ -557,7 +557,7 @@ int pmixp_fixrights(char *path, uid_t uid, mode_t mode)
 	char nested_path[PATH_MAX];
 	DIR *dp;
 	struct dirent *ent;
-	int rc;
+	int rc = 0;
 
 	/*
 	 * Make sure that "directory" exists and is a directory.
@@ -585,7 +585,7 @@ int pmixp_fixrights(char *path, uid_t uid, mode_t mode)
 				PMIXP_ERROR_STD("cannot fix permissions for "
 						"\"%s\"",
 						nested_path);
-				return -1;
+				goto exit;
 			}
 			pmixp_rmdir_recursively(nested_path);
 		} else {
@@ -593,12 +593,14 @@ int pmixp_fixrights(char *path, uid_t uid, mode_t mode)
 				PMIXP_ERROR_STD("cannot fix permissions for "
 						"\"%s\"",
 						nested_path);
-				return -1;
+				goto exit;
 			}
 		}
 	}
+
+exit:
 	closedir(dp);
-	return 0;
+	return rc;
 }
 
 int pmixp_mkdir(char *path, mode_t rights)

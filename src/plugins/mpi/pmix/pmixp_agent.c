@@ -134,7 +134,9 @@ static int _server_conn_read(eio_obj_t *obj, List objs)
 				    fd);
 			/* read command from socket and handle it */
 			pmixp_server_direct_conn(fd);
-
+		} else {
+			/* Unexpected trigger */
+			close(fd);
 		}
 	}
 	return 0;
