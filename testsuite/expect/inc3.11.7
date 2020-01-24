@@ -86,6 +86,7 @@ proc inc3_11_7 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.7)\033\[m\n"
+		delete_res $res_name
 		exit 1
 	}
 
@@ -117,6 +118,7 @@ proc inc3_11_7 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.7)\033\[m\n"
+		delete_res $res_name
 		exit 1
 	}
 
@@ -149,6 +151,7 @@ proc inc3_11_7 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.7)\033\[m\n"
+		delete_res $res_name
 		exit 1
 	}
 
@@ -180,6 +183,7 @@ proc inc3_11_7 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.7)\033\[m\n"
+		delete_res $res_name
 		exit 1
 	}
 
@@ -231,6 +235,7 @@ proc inc3_11_7 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.7)\033\[m\n"
+		delete_res $res_name
 		exit 1
 	}
 
@@ -266,6 +271,7 @@ proc inc3_11_7 {} {
 	# Delete the reservation
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
+		cancel_job $job_id
 		exit $ret_code
 	}
 
