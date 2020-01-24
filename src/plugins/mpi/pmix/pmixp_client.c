@@ -385,6 +385,33 @@ static size_t _proc_map_buffer_size(uint32_t ntasks)
 	return (pmixp_count_digits_base10(ntasks) + 1) * ntasks;
 }
 
+/* Build a sequence of ranks sorted by nodes */
+static void _build_node2task_map(pmixp_namespace_t *nsptr, uint32_t *node2tasks)
+{
+	uint32_t *node_offs = xcalloc(nsptr->nnodes, sizeof(*node_offs));
+	uint32_t *node_tasks = xcalloc(nsptr->nnodes, sizeof(*node_tasks));
+
+	/* Build the offsets structure needed to fill the node-to-tasks map */
+	for (int i = 1; i < nsptr->nnodes; i++)
+		node_offs[i] = node_offs[i - 1] + nsptr->task_cnts[i - 1];
+
+	xassert(nsptr->ntasks == (node_offs[nsptr->nnodes - 1] +
+				  nsptr->task_cnts[nsptr->nnodes - 1]));
+
+	/* Fill the node-to-task map */
+	for (int i = 0; i < nsptr->ntasks; i++) {
+		int node = nsptr->task_map[i], offset;
+		xassert(node < nsptr->nnodes);
+		offset = node_offs[node] + node_tasks[node]++;
+		xassert(nsptr->task_cnts[node] >= node_tasks[node]);
+		node2tasks[offset] = i;
+	}
+
+	/* Cleanup service structures */
+	xfree(node_offs);
+	xfree(node_tasks);
+}
+
 static int _set_mapsinfo(List lresp)
 {
 	pmix_info_t *kvp;
@@ -393,6 +420,7 @@ static int _set_mapsinfo(List lresp)
 	hostlist_t hl = nsptr->hl;
 	int rc, i, j;
 	int count = hostlist_count(hl);
+	uint32_t *node2tasks = NULL, *cur_task = NULL;
 
 	input = hostlist_deranged_string_malloc(hl);
 	rc = PMIx_generate_regex(input, &regexp);
@@ -407,17 +435,17 @@ static int _set_mapsinfo(List lresp)
 	/* Preallocate the buffer to avoid constant xremalloc() calls. */
 	map = xmalloc(_proc_map_buffer_size(nsptr->ntasks));
 
-	for (i = 0; i < count; i++) {
+	/* Build a node-to-tasks map that can be traversed in O(n) steps */
+	node2tasks = xcalloc(nsptr->ntasks, sizeof(*node2tasks));
+	_build_node2task_map(nsptr, node2tasks);
+	cur_task = node2tasks;
+
+	for (i = 0; i < nsptr->nnodes; i++) {
 		char *sep = "";
-		/* for each node - run through all tasks and
-		 * record taskid's that reside on this node
-		 */
-		for (j = 0; j < nsptr->ntasks; j++) {
-			if (nsptr->task_map[j] == i) {
-				xstrfmtcatat(map, &pos, "%s%u",
-					     sep, j);
-				sep = ",";
-			}
+		/* For each node, provide IDs of the tasks residing on it */
+		for (j = 0; j < nsptr->task_cnts[i]; j++){
+			xstrfmtcatat(map, &pos, "%s%u", sep, *(cur_task++));
+			sep = ",";
 		}
 		if (i < (count - 1)) {
 			xstrfmtcatat(map, &pos, ";");
@@ -425,6 +453,8 @@ static int _set_mapsinfo(List lresp)
 	}
 	rc = PMIx_generate_ppn(map, &regexp);
 	xfree(map);
+	xfree(node2tasks);
+
 	if (PMIX_SUCCESS != rc) {
 		return SLURM_ERROR;
 	}
