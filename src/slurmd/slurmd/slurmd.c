@@ -208,7 +208,7 @@ static int       _restore_cred_state(slurm_cred_ctx_t ctx);
 static void      _select_spec_cores(void);
 static void     *_service_connection(void *);
 static void      _set_msg_aggr_params(void);
-static int       _set_slurmd_spooldir(void);
+static int       _set_slurmd_spooldir(const char *dir);
 static int       _set_topo_info(void);
 static int       _slurmd_init(void);
 static int       _slurmd_fini(void);
@@ -1642,7 +1642,7 @@ _slurmd_init(void)
 	/*
 	 * Create slurmd spool directory if necessary.
 	 */
-	if (_set_slurmd_spooldir() < 0) {
+	if (_set_slurmd_spooldir(conf->spooldir) < 0) {
 		error("Unable to initialize slurmd spooldir");
 		return SLURM_ERROR;
 	}
@@ -1990,14 +1990,13 @@ Usage: %s [OPTIONS]\n\
 }
 
 /*
- * create spool directory as needed and "cd" to it
+ * create spool directory as needed
  */
-static int
-_set_slurmd_spooldir(void)
+static int _set_slurmd_spooldir(const char *dir)
 {
-	debug3("initializing slurmd spool directory");
+	debug3("%s: initializing slurmd spool directory `%s`", __func__, dir);
 
-	if (mkdir(conf->spooldir, 0755) < 0) {
+	if (mkdir(dir, 0755) < 0) {
 		if (errno != EEXIST) {
 			fatal("mkdir(%s): %m", conf->spooldir);
 			return SLURM_ERROR;
@@ -2007,7 +2006,7 @@ _set_slurmd_spooldir(void)
 	/*
 	 * Ensure spool directory permissions are correct.
 	 */
-	if (chmod(conf->spooldir, 0755) < 0) {
+	if (chmod(dir, 0755) < 0) {
 		error("chmod(%s, 0755): %m", conf->spooldir);
 		return SLURM_ERROR;
 	}
