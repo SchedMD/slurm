@@ -954,6 +954,13 @@ _read_config(void)
 	 */
 	_free_and_set(conf->spooldir, xstrdup(cf->slurmd_spooldir));
 	_massage_pathname(&conf->spooldir);
+	/*
+	 * Only rebuild this if running configless, which is indicated by
+	 * the presence of a conf_server value.
+	 */
+	if (conf->conf_server)
+		_free_and_set(conf->conf_cache,
+			      xstrdup_printf("%s/conf-cache", conf->spooldir));
 
 	_update_logging();
 	_update_nice();
@@ -1331,6 +1338,7 @@ _destroy_conf(void)
 		xfree(conf->cluster_name);
 		xfree(conf->conffile);
 		xfree(conf->conf_server);
+		xfree(conf->conf_cache);
 		xfree(conf->cpu_spec_list);
 		xfree(conf->epilog);
 		xfree(conf->health_check_program);
