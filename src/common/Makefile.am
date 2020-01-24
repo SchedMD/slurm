@@ -49,6 +49,7 @@ libcommon_la_SOURCES = 			\
 	power.c power.h			\
 	print_fields.c print_fields.h	\
 	slurm_resolv.c slurm_resolv.h	\
+	fetch_config.c fetch_config.h	\
 	read_config.c read_config.h	\
 	run_in_daemon.c run_in_daemon.h	\
 	node_select.c node_select.h	\
