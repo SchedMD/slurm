@@ -847,6 +847,30 @@ extern void slurm_free_job_id_request_msg(job_id_request_msg_t * msg)
 	xfree(msg);
 }
 
+extern void slurm_free_config_request_msg(config_request_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg);
+	}
+}
+
+extern void slurm_free_config_response_msg(config_response_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->config);
+		xfree(msg->acct_gather_config);
+		xfree(msg->cgroup_config);
+		xfree(msg->cgroup_allowed_devices_file_config);
+		xfree(msg->ext_sensors_config);
+		xfree(msg->gres_config);
+		xfree(msg->knl_cray_config);
+		xfree(msg->knl_generic_config);
+		xfree(msg->plugstack_config);
+		xfree(msg->topology_config);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_update_step_msg(step_update_request_msg_t * msg)
 {
 	if (msg) {
@@ -4937,6 +4961,12 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_JOB_ID:
 		slurm_free_job_id_request_msg(data);
 		break;
+	case REQUEST_CONFIG:
+		slurm_free_config_request_msg(data);
+		break;
+	case RESPONSE_CONFIG:
+		slurm_free_config_response_msg(data);
+		break;
 	case REQUEST_FILE_BCAST:
 		slurm_free_file_bcast_msg(data);
 		break;
@@ -5285,7 +5315,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_JOB_ID";
 	case RESPONSE_JOB_ID:
 		return "RESPONSE_JOB_ID";
-
+	case REQUEST_CONFIG:
+		return "REQUEST_CONFIG";
+	case RESPONSE_CONFIG:
+		return "RESPONSE_CONFIG";
 	case REQUEST_TRIGGER_SET:				/* 2017 */
 		return "REQUEST_TRIGGER_SET";
 	case REQUEST_TRIGGER_GET:
