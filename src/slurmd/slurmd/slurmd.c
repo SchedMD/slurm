@@ -1330,6 +1330,7 @@ _destroy_conf(void)
 		FREE_NULL_BUFFER(conf->buf);
 		xfree(conf->cluster_name);
 		xfree(conf->conffile);
+		xfree(conf->conf_server);
 		xfree(conf->cpu_spec_list);
 		xfree(conf->epilog);
 		xfree(conf->health_check_program);
@@ -1445,7 +1446,13 @@ _process_cmdline(int ac, char **av)
 	int c;
 	char *tmp_char;
 
+	enum {
+		LONG_OPT_ENUM_START = 0x100,
+		LONG_OPT_CONF_SERVER,
+	};
+
 	static struct option long_options[] = {
+		{"conf-server",		required_argument, 0, LONG_OPT_CONF_SERVER},
 		{"version",		no_argument,       0, 'V'},
 		{NULL,			0,                 0, 0}
 	};
@@ -1507,6 +1514,9 @@ _process_cmdline(int ac, char **av)
 		case 'V':
 			print_slurm_version();
 			exit(0);
+			break;
+		case LONG_OPT_CONF_SERVER:
+			conf->conf_server = xstrdup(optarg);
 			break;
 		default:
 			_usage();
