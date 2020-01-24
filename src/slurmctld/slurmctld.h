@@ -731,6 +731,7 @@ struct job_record {
 	job_record_t *job_next;		/* next entry with same hash index */
 	job_record_t *job_array_next_j;	/* job array linked list by job_id */
 	job_record_t *job_array_next_t;	/* job array linked list by task_id */
+	job_record_t *job_preempt_comp; /* het job preempt component */
 	job_resources_t *job_resrcs;	/* details of allocated cores */
 	uint32_t job_state;		/* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on
@@ -2709,5 +2710,13 @@ extern void send_job_warn_signal(job_record_t *job_ptr, bool ignore_time);
  * RET return true if still expecting the node to boot, false otherwise.
  */
 extern bool waiting_for_node_boot(struct node_record *node_ptr);
+/*
+ * Check if any part of job_ptr is overlaping node_map.
+ * IN node_map - bitstr of nodes set.
+ * IN job_ptr (hetjob or not) to check.
+ *
+ * RET true if we overlap, false otherwise
+ */
+extern bool job_overlap_and_running(bitstr_t *node_map, job_record_t *job_ptr);
 
 #endif /* !_HAVE_SLURMCTLD_H */

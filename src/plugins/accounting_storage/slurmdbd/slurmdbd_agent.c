@@ -703,7 +703,7 @@ static void _print_agent_list_msg_types(void)
 
 	if ((processed = list_for_each_max(agent_list, &max_msgs,
 					   _print_agent_list_msg_type,
-					   mlist)) < 0) {
+					   mlist, true)) < 0) {
 		error("%s: unable to create msg type list", __func__);
 		xfree(mlist);
 		return;

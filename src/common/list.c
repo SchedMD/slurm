@@ -441,10 +441,17 @@ int
 list_for_each (List l, ListForF f, void *arg)
 {
 	int max = -1;	/* all values */
-	return list_for_each_max(l, &max, f, arg);
+	return list_for_each_max(l, &max, f, arg, 1);
 }
 
-int list_for_each_max(List l, int *max, ListForF f, void *arg)
+int list_for_each_nobreak(List l, ListForF f, void *arg)
+{
+	int max = -1;	/* all values */
+	return list_for_each_max(l, &max, f, arg, 0);
+}
+
+int list_for_each_max(List l, int *max, ListForF f, void *arg,
+		      int break_on_fail)
 {
 	ListNode p;
 	int n = 0;
@@ -459,7 +466,8 @@ int list_for_each_max(List l, int *max, ListForF f, void *arg)
 		n++;
 		if (f(p->data, arg) < 0) {
 			failed = true;
-			break;
+			if (break_on_fail)
+				break;
 		}
 	}
 	*max = l->count - n;

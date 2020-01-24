@@ -210,13 +210,22 @@ int list_for_each(List l, ListForF f, void *arg);
 
 /*
  *  For each item in list [l], invokes the function [f] with [arg].
+ *  Returns a count of the number of items on which [f] was invoked.
+ *  If [f] returns <0 for a given item, the iteration is NOT aborted but the
+ *  function will return -1, else return 0.
+ */
+int list_for_each_nobreak(List l, ListForF f, void *arg);
+
+/*
+ *  For each item in list [l], invokes the function [f] with [arg].
  *  Will process up to [max] number of list items, or set [max] to -1 for all.
  *  [max] will be return to the number of unprocessed items remaining.
  *  Returns a count of the number of items on which [f] was invoked.
  *  If [f] returns <0 for a given item, the iteration is aborted and the
  *    function returns the negative of that item's position in the list.
  */
-int list_for_each_max(List l, int *max, ListForF f, void *arg);
+int list_for_each_max(List l, int *max, ListForF f, void *arg,
+		      int break_on_fail);
 
 /*
  *  Traverses list [l] and removes all items in list
