@@ -51,7 +51,7 @@ make_bash_script $file_in "$srun $bin_sleep 600"
 #
 set timeout 20
 for {set ii 0} {$ii < $num_procs} {incr ii} {
-	set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -n1 -N1 $file_in]
+	set sbatch_pid [spawn $sbatch -J $test_name --output=/dev/null --error=/dev/null -n1 -N1 $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -81,7 +81,7 @@ for {set ii 0} {$ii < $num_procs} {incr ii} {
 # Only put jobs into the map if they were submitted by this test.
 #
 
-spawn $squeue -h -t running -u $env(USER) -o "%10i %40N"
+spawn $squeue -h -t running -n $test_name  -o "%10i %40N"
 expect {
 	-re "($number) *($re_word_str) *\r\n" {
 		set job_id $expect_out(1,string)
@@ -122,9 +122,9 @@ for {set ii 0} {$ii < [llength $job_map]} {incr ii} {
 	set job_list  [lindex [lindex $job_map $ii] 1]
 
 	if {$ii == 0} {
-		spawn $scancel -v -u $env(USER) --nodelist $node_name
+		spawn $scancel -v -n $test_name --nodelist $node_name
 	} else {
-		spawn $scancel -v -u $env(USER) -w $node_name
+		spawn $scancel -v -n $test_name -w $node_name
 	}
 	expect {
 		-re "scancel: Terminating job ($number)" {
