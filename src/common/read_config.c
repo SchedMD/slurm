@@ -529,7 +529,7 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 	if (local_test_config) {
 		error("Use of FrontendName in slurm.conf without Slurm being "
 		      "configured/built with the --enable-front-end option");
-		local_test_config = 1;
+		local_test_config_rc = 1;
 	} else {
 		fatal("Use of FrontendName in slurm.conf without Slurm being "
 		      "configured/built with the --enable-front-end option");
@@ -571,7 +571,7 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 			if (local_test_config) {
 				error("FrontEnd options AllowGroups and DenyGroups "
 				      "are incompatible");
-				local_test_config = 1;
+				local_test_config_rc = 1;
 			} else {
 				fatal("FrontEnd options AllowGroups and DenyGroups "
 				      "are incompatible");
@@ -581,7 +581,7 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 			if (local_test_config) {
 				error("FrontEnd options AllowUsers and DenyUsers "
 				      "are incompatible");
-				local_test_config = 1;
+				local_test_config_rc = 1;
 			} else {
 				fatal("FrontEnd options AllowUsers and DenyUsers "
 				      "are incompatible");
@@ -1057,7 +1057,7 @@ int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
 			    (node_count == 0)) {
 				if (local_test_config) {
 					error("No front end nodes configured");
-					local_test_config = 1;
+					local_test_config_rc = 1;
 				} else {
 					fatal("No front end nodes configured");
 				}
@@ -2100,7 +2100,7 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 					error("Frontend not configured correctly "
 					      "in slurm.conf.  See man slurm.conf "
 					      "look for frontendname.");
-					local_test_config = 1;
+					local_test_config_rc = 1;
 				} else {
 					fatal("Frontend not configured correctly "
 					      "in slurm.conf.  See man slurm.conf "
@@ -2110,7 +2110,7 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 			if (local_test_config) {
 				error("Duplicated NodeName %s in the config file",
 				      p->alias);
-				local_test_config = 1;
+				local_test_config_rc = 1;
 			} else {
 				fatal("Duplicated NodeName %s in the config file",
 				      p->alias);
