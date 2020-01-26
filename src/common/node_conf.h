@@ -239,7 +239,7 @@ extern int build_all_frontend_info (bool is_slurmd_context);
  */
 extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 			       config_record_t *config_ptr,
-			       bool test_config,
+			       log_level_t lvl,
 			       void (*_callback) (
 				       char *alias, char *hostname,
 				       char *address, char *bcast_addr,

@@ -115,7 +115,7 @@ static bool conf_initialized = false;
 static s_p_hashtbl_t *default_frontend_tbl;
 static s_p_hashtbl_t *default_nodename_tbl;
 static s_p_hashtbl_t *default_partition_tbl;
-static bool	local_test_config = false;
+static log_level_t lvl = LOG_LEVEL_FATAL;
 static int	local_test_config_rc = SLURM_SUCCESS;
 static bool     no_addr_cache = false;
 
@@ -526,14 +526,8 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 	};
 
 #ifndef HAVE_FRONT_END
-	if (local_test_config) {
-		error("Use of FrontendName in slurm.conf without Slurm being "
-		      "configured/built with the --enable-front-end option");
-		local_test_config_rc = 1;
-	} else {
-		fatal("Use of FrontendName in slurm.conf without Slurm being "
-		      "configured/built with the --enable-front-end option");
-	}
+	log_var(lvl, "Use of FrontendName in slurm.conf without Slurm being configured/built with the --enable-front-end option");
+	local_test_config_rc = 1;
 #endif
 
 	tbl = s_p_hashtbl_create(_frontend_options);
@@ -568,24 +562,12 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 		(void) s_p_get_string(&n->deny_groups,  "DenyGroups", tbl);
 		(void) s_p_get_string(&n->deny_users,   "DenyUsers", tbl);
 		if (n->allow_groups && n->deny_groups) {
-			if (local_test_config) {
-				error("FrontEnd options AllowGroups and DenyGroups "
-				      "are incompatible");
-				local_test_config_rc = 1;
-			} else {
-				fatal("FrontEnd options AllowGroups and DenyGroups "
-				      "are incompatible");
-			}
+			log_var(lvl, "FrontEnd options AllowGroups and DenyGroups are incompatible");
+			local_test_config_rc = 1;
 		}
 		if (n->allow_users && n->deny_users) {
-			if (local_test_config) {
-				error("FrontEnd options AllowUsers and DenyUsers "
-				      "are incompatible");
-				local_test_config_rc = 1;
-			} else {
-				fatal("FrontEnd options AllowUsers and DenyUsers "
-				      "are incompatible");
-			}
+			log_var(lvl, "FrontEnd options AllowUsers and DenyUsers are incompatible");
+			local_test_config_rc = 1;
 		}
 
 		if (!s_p_get_string(&n->addresses, "FrontendAddr", tbl))
@@ -1055,12 +1037,8 @@ int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
 			if (!s_p_get_array((void ***)&node_ptr, &node_count,
 					   "NodeName", conf_hashtbl) ||
 			    (node_count == 0)) {
-				if (local_test_config) {
-					error("No front end nodes configured");
-					local_test_config_rc = 1;
-				} else {
-					fatal("No front end nodes configured");
-				}
+				log_var(lvl, "No front end nodes configured");
+				local_test_config_rc = 1;
 			}
 			strlcpy(addresses, node_ptr[0]->addresses,
 				sizeof(addresses));
@@ -2095,26 +2073,13 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 	p = node_to_host_hashtbl[alias_idx];
 	while (p) {
 		if (xstrcmp(p->alias, alias) == 0) {
-			if (front_end) {
-				if (local_test_config) {
-					error("Frontend not configured correctly "
-					      "in slurm.conf.  See man slurm.conf "
-					      "look for frontendname.");
-					local_test_config_rc = 1;
-				} else {
-					fatal("Frontend not configured correctly "
-					      "in slurm.conf.  See man slurm.conf "
-					      "look for frontendname.");
-				}
-			}
-			if (local_test_config) {
-				error("Duplicated NodeName %s in the config file",
-				      p->alias);
-				local_test_config_rc = 1;
-			} else {
-				fatal("Duplicated NodeName %s in the config file",
-				      p->alias);
-			}
+			if (front_end)
+				log_var(lvl, "Frontend not configured correctly in slurm.conf. See FrontEndName in slurm.conf man page.");
+			else
+				log_var(lvl, "Duplicated NodeName %s in the config file",
+					p->alias);
+			local_test_config_rc = 1;
+
 			return;
 		}
 		p = p->next_alias;
@@ -2238,12 +2203,8 @@ static void _init_slurmd_nodehash(void)
 
 	if (!conf_initialized) {
 		if (_init_slurm_conf(NULL) != SLURM_SUCCESS) {
-			if (local_test_config) {
-				error("Unable to process slurm.conf file");
-				local_test_config_rc = 1;
-			} else {
-				fatal("Unable to process slurm.conf file");
-			}
+			log_var(lvl, "Unable to process slurm.conf file");
+			local_test_config_rc = 1;
 		}
 		conf_initialized = true;
 	}
@@ -2251,8 +2212,7 @@ static void _init_slurmd_nodehash(void)
 	count = slurm_conf_nodename_array(&ptr_array);
 	for (i = 0; i < count; i++) {
 		if ((check_nodeline_info(ptr_array[i],
-					 NULL,
-					 local_test_config,
+					 NULL, lvl,
 					 _check_callback) == SLURM_SUCCESS) &&
 		    (slurmdb_setup_cluster_name_dims() > 1) &&
 		    !conf_ptr->node_prefix)
@@ -3189,12 +3149,8 @@ slurm_conf_init(const char *file_name)
 
 	init_slurm_conf(conf_ptr);
 	if (_init_slurm_conf(file_name) != SLURM_SUCCESS) {
-		if (local_test_config) {
-			error("Unable to process configuration file");
-			local_test_config_rc = 1;
-		} else {
-			fatal("Unable to process configuration file");
-		}
+		log_var(lvl, "Unable to process configuration file");
+		local_test_config_rc = 1;
 	}
 	conf_initialized = true;
 
@@ -3219,12 +3175,8 @@ static int _internal_reinit(const char *file_name)
 	}
 
 	if (_init_slurm_conf(name) != SLURM_SUCCESS) {
-		if (local_test_config) {
-			error("Unable to process configuration file");
-			local_test_config_rc = 1;
-		} else {
-			fatal("Unable to process configuration file");
-		}
+		log_var(lvl, "Unable to process configuration file");
+		local_test_config_rc = 1;
 	}
 	conf_initialized = true;
 
@@ -5802,6 +5754,6 @@ extern int config_test_result(void)
  */
 extern void config_test_start(void)
 {
-	local_test_config = true;
+	lvl = LOG_LEVEL_ERROR;
 	local_test_config_rc = 0;
 }
