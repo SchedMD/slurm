@@ -2206,7 +2206,6 @@ static void _init_slurmd_nodehash(void)
 			log_var(lvl, "Unable to process slurm.conf file");
 			local_test_config_rc = 1;
 		}
-		conf_initialized = true;
 	}
 
 	count = slurm_conf_nodename_array(&ptr_array);
@@ -3083,6 +3082,8 @@ static int _init_slurm_conf(const char *file_name)
 	if (xstrcasestr("NoAddrCache", conf_ptr->comm_params))
 		no_addr_cache = true;
 
+	conf_initialized = true;
+
 	return rc;
 }
 
@@ -3152,7 +3153,6 @@ slurm_conf_init(const char *file_name)
 		log_var(lvl, "Unable to process configuration file");
 		local_test_config_rc = 1;
 	}
-	conf_initialized = true;
 
 	slurm_mutex_unlock(&conf_lock);
 	return SLURM_SUCCESS;
@@ -3178,7 +3178,6 @@ static int _internal_reinit(const char *file_name)
 		log_var(lvl, "Unable to process configuration file");
 		local_test_config_rc = 1;
 	}
-	conf_initialized = true;
 
 
 	return rc;
@@ -3257,7 +3256,6 @@ slurm_conf_lock(void)
 				xfree(conf_ptr->control_addr[i]);
 			xfree(conf_ptr->control_addr);
 		}
-		conf_initialized = true;
 	}
 
 	return conf_ptr;
