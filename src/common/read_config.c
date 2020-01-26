@@ -2744,6 +2744,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 		xfree(ctl_conf_ptr->control_addr[i]);
 		xfree(ctl_conf_ptr->control_machine[i]);
 	}
+	ctl_conf_ptr->control_cnt = 0;
 
 	xfree (ctl_conf_ptr->comm_params);
 	xfree (ctl_conf_ptr->control_addr);
@@ -3255,6 +3256,7 @@ slurm_conf_lock(void)
 			for (i = 0; i < conf_ptr->control_cnt; i++)
 				xfree(conf_ptr->control_addr[i]);
 			xfree(conf_ptr->control_addr);
+			conf_ptr->control_cnt = 0;
 		}
 	}
 
