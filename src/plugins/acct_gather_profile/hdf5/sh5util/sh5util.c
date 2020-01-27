@@ -289,11 +289,6 @@ _free_options(void)
 	xfree(params.user);
 }
 
-static void _void_free(void *str)
-{
-	xfree(str);
-}
-
 static int _str_cmp(void *str1, void *str2)
 {
 	return !xstrcmp((const char *)str1, (const char *)str2);
@@ -1164,7 +1159,7 @@ static int _extract_series(void)
 	}
 
 	/* Find the fields to be extracted */
-	fields = list_create(_void_free);
+	fields = list_create(list_xfree_item);
 	if ((rc = _fields_intersection(fid_job, tables, fields))
 	    != SLURM_SUCCESS) {
 		error("Failed to find data items for series %s", params.series);
@@ -1742,7 +1737,7 @@ static int _list_items(void)
 		return rc;
 	}
 
-	fields = list_create(_void_free);
+	fields = list_create(list_xfree_item);
 	if ((rc = _fields_intersection(fid_job, tables, fields))
 	    != SLURM_SUCCESS) {
 		error("Failed to intersect fields");
