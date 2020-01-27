@@ -544,13 +544,6 @@ static void _job_info_list_del(void *object)
 	}
 }
 
-static void _destroy_jobs_foreach(void *object)
-{
-	jobs_foreach_t *jobs_foreach = (jobs_foreach_t *)object;
-
-	xfree(jobs_foreach);
-}
-
 /* translate signal name to number */
 static uint16_t _xlate_signal_name(const char *signal_name)
 {
@@ -4648,7 +4641,7 @@ static void _edit_jobs(GtkTreeModel *model, GtkTreeIter *iter,
 	job_foreach_common.edit_type = EDIT_EDIT;
 
 	/* create a list to stack the selected jobs */
-	foreach_list = list_create(_destroy_jobs_foreach);
+	foreach_list = list_create(list_xfree_item);
 	/* build array of job(s) to process */
 	if (treeview) {
 		gtk_tree_selection_selected_foreach(
@@ -4792,7 +4785,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 		job_foreach_common.job_msg = job_msg;
 
 		/* create a list to stack the selected jobs */
-		foreach_list = list_create(_destroy_jobs_foreach);
+		foreach_list = list_create(list_xfree_item);
 		/* build array of job(s) to process */
 		if (treeview)
 			gtk_tree_selection_selected_foreach(
