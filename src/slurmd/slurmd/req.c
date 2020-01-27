@@ -159,7 +159,6 @@ static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
 static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(uint32_t job_id);
-static void _job_limits_free(void *x);
 static int  _job_limits_match(void *x, void *key);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig,
@@ -1568,7 +1567,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		step_loc_t step_info;
 		slurm_mutex_lock(&job_limits_mutex);
 		if (!job_limits_list)
-			job_limits_list = list_create(_job_limits_free);
+			job_limits_list = list_create(list_xfree_item);
 		step_info.jobid  = req->job_id;
 		step_info.stepid = req->job_step_id;
 		job_limits_ptr = list_find_first(job_limits_list,
@@ -2032,7 +2031,7 @@ static void _make_prolog_mem_container(slurm_msg_t *msg)
 	if (req->job_mem_limit) {
 		slurm_mutex_lock(&job_limits_mutex);
 		if (!job_limits_list)
-			job_limits_list = list_create(_job_limits_free);
+			job_limits_list = list_create(list_xfree_item);
 		step_info.jobid  = req->job_id;
 		step_info.stepid = SLURM_EXTERN_CONT;
 		job_limits_ptr = list_find_first(job_limits_list,
@@ -2839,11 +2838,6 @@ _rpc_reboot(slurm_msg_t *msg)
 	/* slurm_send_rc_msg(msg, rc); */
 }
 
-static void _job_limits_free(void *x)
-{
-	xfree(x);
-}
-
 static int _job_limits_match(void *x, void *key)
 {
 	job_mem_limits_t *job_limits_ptr = (job_mem_limits_t *) x;
@@ -2876,7 +2870,7 @@ _load_job_limits(void)
 	slurmstepd_mem_info_t stepd_mem_info;
 
 	if (!job_limits_list)
-		job_limits_list = list_create(_job_limits_free);
+		job_limits_list = list_create(list_xfree_item);
 	job_limits_loaded = true;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
