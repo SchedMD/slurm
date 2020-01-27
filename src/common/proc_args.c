@@ -1003,16 +1003,10 @@ char *print_mail_type(const uint16_t type)
 	return buf;
 }
 
-static void
-_freeF(void *data)
-{
-	xfree(data);
-}
-
 static List
 _create_path_list(void)
 {
-	List l = list_create(_freeF);
+	List l = list_create(list_xfree_item);
 	char *path;
 	char *c, *lc;
 
