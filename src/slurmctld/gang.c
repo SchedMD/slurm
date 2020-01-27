@@ -590,11 +590,6 @@ static void _resume_job(job_record_t *job_ptr)
 	}
 }
 
-static void _preempt_job_list_del(void *x)
-{
-	xfree(x);
-}
-
 static void _preempt_job_queue(uint32_t job_id)
 {
 	uint32_t *tmp_id = xmalloc(sizeof(uint32_t));
@@ -1137,7 +1132,7 @@ extern void gs_init(void)
 		info("gang: entering gs_init");
 	timeslicer_seconds = slurmctld_conf.sched_time_slice;
 	gr_type = _get_gr_type();
-	preempt_job_list = list_create(_preempt_job_list_del);
+	preempt_job_list = list_create(list_xfree_item);
 
 	/* load the physical resource count data */
 	_load_phys_res_cnt();
