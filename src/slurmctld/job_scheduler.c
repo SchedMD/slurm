@@ -384,16 +384,6 @@ static bool _job_runnable_test3(job_record_t *job_ptr, part_record_t *part_ptr)
 	return true;
 }
 
-extern void job_queue_rec_del(void *x)
-{
-	job_queue_rec_t *job_queue_rec = x;
-
-	if (!x)
-		return;
-
-	xfree(job_queue_rec);
-}
-
 extern void job_queue_rec_prom_resv(job_queue_rec_t *job_queue_rec)
 {
 	job_record_t *job_ptr;
@@ -435,7 +425,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 
 	/* init the timer */
 	(void) slurm_delta_tv(&start_tv);
-	job_queue = list_create(job_queue_rec_del);
+	job_queue = list_create(list_xfree_item);
 
 	/* Create individual job records for job arrays that need burst buffer
 	 * staging */
@@ -1417,7 +1407,7 @@ next_part:
 			job_ptr->priority = job_queue_rec->priority;
 
 			job_queue_rec_prom_resv(job_queue_rec);
-			job_queue_rec_del(job_queue_rec);
+			xfree(job_queue_rec);
 
 			if (!avail_front_end(job_ptr)) {
 				job_ptr->state_reason = WAIT_FRONT_END;
