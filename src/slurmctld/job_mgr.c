@@ -4363,7 +4363,7 @@ int init_job_conf(void)
 	last_job_update = time(NULL);
 
 	if (!purge_files_list) {
-		purge_files_list = list_create(slurm_destroy_uint32_ptr);
+		purge_files_list = list_create(list_xfree_item);
 	}
 
 	return SLURM_SUCCESS;

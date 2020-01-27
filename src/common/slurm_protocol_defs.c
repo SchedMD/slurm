@@ -160,12 +160,6 @@ extern void slurm_destroy_char(void *object)
 	xfree(tmp);
 }
 
-extern void slurm_destroy_uint32_ptr(void *object)
-{
-	uint32_t *tmp = (uint32_t *)object;
-	xfree(tmp);
-}
-
 /* here to add \\ to all \" in a string this needs to be xfreed later */
 extern char *slurm_add_slash_to_quotes(char *str)
 {

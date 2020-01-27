@@ -826,8 +826,7 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->job_id_list =
-				list_create(slurm_destroy_uint32_ptr);
+			object_ptr->job_id_list = list_create(list_xfree_item);
 			for (i = 0; i < count; i++) {
 				uint32_tmp = xmalloc(sizeof(uint32_t));
 				safe_unpack32(uint32_tmp, buffer);
@@ -840,8 +839,7 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->uid_list =
-				list_create(slurm_destroy_uint32_ptr);
+			object_ptr->uid_list = list_create(list_xfree_item);
 			for (i = 0; i < count; i++) {
 				uint32_tmp = xmalloc(sizeof(uint32_t));
 				safe_unpack32(uint32_tmp, buffer);
@@ -8837,8 +8835,7 @@ _unpack_job_info_request_msg(job_info_request_msg_t** msg,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			job_info->job_ids =
-				list_create(slurm_destroy_uint32_ptr);
+			job_info->job_ids = list_create(list_xfree_item);
 			for (i = 0; i < count; i++) {
 				uint32_ptr = xmalloc(sizeof(uint32_t));
 				safe_unpack32(uint32_ptr, buffer);

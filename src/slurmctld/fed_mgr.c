@@ -260,7 +260,7 @@ static List _get_sync_jobid_list(uint32_t sib_id, time_t sync_time)
 	ListIterator job_itr;
 	job_record_t *job_ptr;
 
-	jobids = list_create(slurm_destroy_uint32_ptr);
+	jobids = list_create(list_xfree_item);
 
 	/*
 	 * Only look at jobs that:
