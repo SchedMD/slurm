@@ -177,6 +177,7 @@
 
 /* list.[ch] functions */
 #define	list_create		slurm_list_create
+#define	list_xfree_item		slurm_list_xfree_item
 #define	list_destroy		slurm_list_destroy
 #define	list_is_empty		slurm_list_is_empty
 #define	list_count		slurm_list_count
