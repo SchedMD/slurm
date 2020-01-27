@@ -2864,7 +2864,7 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 		safe_unpackstr_xmalloc(&part->tres_fmt_str, &uint32_tmp,
 				       buffer);
 		if (slurm_unpack_list(&part->job_defaults_list,
-				job_defaults_unpack, job_defaults_free,
+				job_defaults_unpack, list_xfree_item,
 				buffer, protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 	} else {
@@ -4993,7 +4993,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       job_credential_public_certificate,
 				       &uint32_tmp, buffer);
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
-				      job_defaults_unpack, job_defaults_free,
+				      job_defaults_unpack, list_xfree_item,
 				      buffer,protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack16(&build_ptr->job_file_append, buffer);
@@ -5400,7 +5400,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       job_credential_public_certificate,
 				       &uint32_tmp, buffer);
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
-				      job_defaults_unpack, job_defaults_free,
+				      job_defaults_unpack, list_xfree_item,
 				      buffer,protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack16(&build_ptr->job_file_append, buffer);
@@ -5807,7 +5807,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       job_credential_public_certificate,
 				       &uint32_tmp, buffer);
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
-				      job_defaults_unpack, job_defaults_free,
+				      job_defaults_unpack, list_xfree_item,
 				      buffer,protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack16(&build_ptr->job_file_append, buffer);
