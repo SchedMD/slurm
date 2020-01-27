@@ -483,6 +483,10 @@ int main(int argc, char **argv)
 			slurmctld_config.scheduling_disabled = true;
 	}
 
+	slurmctld_config.configless_enabled =
+		xstrcasestr(slurmctld_conf.slurmctld_params,
+			    "enable_configless");
+
 	/*
 	 * Initialize plugins.
 	 * If running configuration test, report ALL failures.

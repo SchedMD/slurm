@@ -134,6 +134,7 @@ typedef struct slurmctld_config {
 	char *	auth_info;
 	pthread_cond_t backup_finish_cond; /* use thread_count_lock */
 	time_t	boot_time;
+	bool	configless_enabled;
 	int	daemonize;
 	char    node_name_long[MAX_SLURM_NAME];
 	char    node_name_short[MAX_SLURM_NAME];

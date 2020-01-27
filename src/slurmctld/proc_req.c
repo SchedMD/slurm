@@ -3532,6 +3532,13 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
 	START_TIMER;
 	debug("Processing RPC: REQUEST_CONFIG from %u", uid);
 
+	if (!slurmctld_config.configless_enabled) {
+		error("%s: Rejected request as configless is disabled",
+		      __func__, uid);
+		slurm_send_rc_msg(msg, ESLURM_CONFIGLESS_DISABLED);
+		return;
+	}
+
 	if ((req->flags & CONFIG_REQUEST_SLURMD) && !validate_slurm_user(uid)) {
 		error("%s: Rejected request for slurmd configs by uid=%u",
 		      __func__, uid);
