@@ -68,11 +68,6 @@
 
 #include "power_common.h"
 
-static void _job_power_del(void *x)
-{
-	xfree(x);
-}
-
 /* For all nodes in a cluster
  * 1) set default values and
  * 2) return global power allocation/consumption information */
@@ -127,7 +122,7 @@ extern List get_job_power(List job_list, node_record_t *node_record_table_ptr)
 	power_by_job_t *power_ptr;
 	int i, i_first, i_last;
 	uint64_t debug_flag = slurm_get_debug_flags();
-	List job_power_list = list_create(_job_power_del);
+	List job_power_list = list_create(list_xfree_item);
 	time_t now = time(NULL);
 
 	job_iterator = list_iterator_create(job_list);
