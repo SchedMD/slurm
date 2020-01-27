@@ -729,7 +729,7 @@ char *slurm_get_jobcomp_host(void);
  * returns the jobcomp parameters from slurmctld_conf object
  * RET char *    - arbitrary jobcomp parameters, MUST be xfreed by caller
  */
-char *slurm_get_jobcomp_param(void);
+char *slurm_get_jobcomp_params(void);
 
 /* slurm_get_jobcomp_pass
  * returns the storage password from slurmctld_conf object

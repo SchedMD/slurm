@@ -2411,7 +2411,7 @@ char *slurm_get_jobcomp_host(void)
 	return storage_host;
 }
 
-char *slurm_get_jobcomp_param(void)
+char *slurm_get_jobcomp_params(void)
 {
 	char *param = NULL;
 	slurm_ctl_conf_t *conf;
