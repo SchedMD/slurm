@@ -122,11 +122,6 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id);
 static void  _shutdown_power(void);
 static bool  _valid_prog(char *file_name);
 
-static void _proc_track_list_del(void *x)
-{
-	xfree(x);
-}
-
 static void _exc_node_part_free(void *x)
 {
 	exc_node_partital_t *ext_part_struct = (exc_node_partital_t *) x;
@@ -978,7 +973,7 @@ extern void start_power_mgr(pthread_t *thread_id)
 		return;
 	}
 	power_save_started = true;
-	proc_track_list = list_create(_proc_track_list_del);
+	proc_track_list = list_create(list_xfree_item);
 	slurm_mutex_unlock(&power_mutex);
 
 	slurm_thread_create(thread_id, _init_power_save, NULL);
