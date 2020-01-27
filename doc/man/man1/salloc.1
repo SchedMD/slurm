@@ -1815,7 +1815,7 @@ Also see \fBSLURM_EXIT_ERROR\fR.
 salloc will set the following environment variables in the environment of
 the executed program:
 .TP
-\fBSLURM_*_PACK_GROUP_#\fR
+\fBSLURM_*_HET_GROUP_#\fR
 For a heterogeneous job allocation, the environment variables are set separately
 for each component.
 .TP
@@ -1916,7 +1916,7 @@ Only set if the \fB\-\-mem\-per\-gpu\fR option is specified.
 \fBSLURM_MEM_PER_NODE\fR
 Same as \fB\-\-mem\fR
 .TP
-\fBSLURM_PACK_SIZE\fR
+\fBSLURM_HET_SIZE\fR
 Set to count of components in heterogeneous job.
 .TP
 \fBSLURM_SUBMIT_DIR\fR

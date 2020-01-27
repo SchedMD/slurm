@@ -46,8 +46,8 @@ struct bcast_parameters {
 	char *dst_fname;
 	int fanout;
 	bool force;
-	uint32_t job_id;		/* Job ID or Pack Job ID */
-	uint32_t pack_job_offset;	/* Pack Job Offset or NO_VAL */
+	uint32_t het_job_offset;	/* HetJob offset or NO_VAL */
+	uint32_t job_id;		/* Job ID or hetjob ID */
 	bool preserve;
 	char *src_fname;
 	uint32_t step_id;

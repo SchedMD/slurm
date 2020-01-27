@@ -178,7 +178,7 @@ typedef struct diag_stats {
 
 	uint32_t backfilled_jobs;
 	uint32_t last_backfilled_jobs;
-	uint32_t backfilled_pack_jobs;
+	uint32_t backfilled_het_jobs;
 	uint32_t bf_active;
 	uint32_t bf_cycle_counter;
 	uint32_t bf_cycle_last;
@@ -645,7 +645,7 @@ typedef struct {
 	bool any_resv;			/* at least one component with resv */
 	uint32_t priority_tier;		/* whole hetjob calculated tier */
 	uint32_t priority;		/* whole hetjob calculated priority */
-} pack_details_t;
+} het_job_details_t;
 
 /*
  * NOTE: When adding fields to the job_record, or any underlying structures,
@@ -727,6 +727,12 @@ struct job_record {
 	char *gres_used;		/* Actual GRES use added over all nodes
 					 * to be passed to slurmdbd */
 	uint32_t group_id;		/* group submitted under */
+	het_job_details_t *het_details;	/* HetJob details */
+	uint32_t het_job_id;		/* job ID of HetJob leader */
+	char *het_job_id_set;		/* job IDs for all components */
+	uint32_t het_job_offset;	/* HetJob component index */
+	List het_job_list;		/* List of job pointers to all
+					 * components */
 	uint32_t job_id;		/* job ID */
 	job_record_t *job_next;		/* next entry with same hash index */
 	job_record_t *job_array_next_j;	/* job array linked list by job_id */
@@ -773,12 +779,6 @@ struct job_record {
 	char *origin_cluster;		/* cluster name that the job was
 					 * submitted from */
 	uint16_t other_port;		/* port for client communications */
-	pack_details_t *pack_details;	/* hetjob details */
-	uint32_t pack_job_id;		/* lead job ID of pack job leader */
-	char *pack_job_id_set;		/* job IDs for all components */
-	uint32_t pack_job_offset;	/* pack job index */
-	List pack_job_list;		/* List of job pointers to all
-					 * components */
 	char *partition;		/* name of job partition(s) */
 	List part_ptr_list;		/* list of pointers to partition recs */
 	bool part_nodes_missing;	/* set if job's nodes removed from this
@@ -1218,12 +1218,12 @@ extern job_record_t *find_job_array_rec(uint32_t array_job_id,
 					uint32_t array_task_id);
 
 /*
- * find_job_pack_record - return a pointer to the job record with the given ID
+ * find_het_job_record - return a pointer to the job record with the given ID
  * IN job_id - requested job's ID
- * in pack_id - pack job component ID
+ * in het_job_id - hetjob component ID
  * RET pointer to the job's record, NULL on error
  */
-extern job_record_t *find_job_pack_record(uint32_t job_id, uint32_t pack_id);
+extern job_record_t *find_het_job_record(uint32_t job_id, uint32_t het_job_id);
 
 /*
  * find_job_record - return a pointer to the job record with the given job_id
@@ -1529,15 +1529,15 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 extern int job_signal_id(uint32_t job_id, uint16_t signal, uint16_t flags,
 			 uid_t uid, bool preempt);
 /*
- * pack_job_signal - signal all components of a pack job
- * IN pack_leader - job record of job pack leader
+ * het_job_signal - signal all components of a hetjob
+ * IN het_job_leader - job record of job hetjob leader
  * IN signal - signal to send, SIGKILL == cancel the job
  * IN flags  - see KILL_JOB_* flags in slurm.h
  * IN uid - uid of requesting user
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int pack_job_signal(job_record_t *pack_leader, uint16_t signal,
+extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
 			   uint16_t flags, uid_t uid, bool preempt);
 
 /*

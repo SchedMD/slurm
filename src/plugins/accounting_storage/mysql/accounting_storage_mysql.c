@@ -1286,8 +1286,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "id_wckey", "int unsigned not null" },
 		{ "id_user", "int unsigned not null" },
 		{ "id_group", "int unsigned not null" },
-		{ "pack_job_id", "int unsigned not null" },
-		{ "pack_job_offset", "int unsigned not null" },
+		{ "het_job_id", "int unsigned not null" },
+		{ "het_job_offset", "int unsigned not null" },
 		{ "kill_requid", "int default -1 not null" },
 		{ "state_reason_prev", "int unsigned not null" },
 		{ "mcs_label", "tinytext default ''" },
@@ -1474,6 +1474,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, job_table);
+
 	/*
 	 * sacct_def is the index for query's with state as time_start is used
 	 * in these queries. sacct_def2 is for plain sacct queries.
@@ -1490,7 +1491,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  "key qos (id_qos), "
 				  "key association (id_assoc), "
 				  "key array_job (id_array_job), "
-				  "key pack_job (pack_job_id), "
+				  "key het_job (het_job_id), "
 				  "key reserv (id_resv), "
 				  "key sacct_def (id_user, time_start, "
 				  "time_end), "

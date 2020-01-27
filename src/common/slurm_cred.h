@@ -355,7 +355,7 @@ void slurm_cred_print(slurm_cred_t *cred);
 
 typedef struct {
 	uint32_t job_id;
-	uint32_t pack_jobid;
+	uint32_t het_job_id;
 	uid_t uid;
 	gid_t gid;
 	char *user_name;

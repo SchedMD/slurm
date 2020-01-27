@@ -3124,11 +3124,11 @@ extern char *slurmdb_get_selected_step_id(
 			 "%u_%u",
 			 selected_step->jobid,
 			 selected_step->array_task_id);
-	} else if (selected_step->pack_job_offset != NO_VAL) {
+	} else if (selected_step->het_job_offset != NO_VAL) {
 		snprintf(id, FORMAT_STRING_SIZE,
 			 "%u+%u",
 			 selected_step->jobid,
-			 selected_step->pack_job_offset);
+			 selected_step->het_job_offset);
 	} else {
 		snprintf(id, FORMAT_STRING_SIZE,
 			 "%u",
@@ -3248,9 +3248,9 @@ end_it:
 	return rc;
 }
 
-/* Report the latest start time for any pack job component on this cluster.
+/* Report the latest start time for any hetjob component on this cluster.
  * Return NULL if any component can not run here */
-static local_cluster_rec_t * _pack_job_will_run(List job_req_list)
+static local_cluster_rec_t * _het_job_will_run(List job_req_list)
 {
 	local_cluster_rec_t *local_cluster = NULL, *tmp_cluster;
 	job_desc_msg_t *req;
@@ -3259,7 +3259,7 @@ static local_cluster_rec_t * _pack_job_will_run(List job_req_list)
 	iter = list_iterator_create(job_req_list);
 	while ((req = (job_desc_msg_t *) list_next(iter))) {
 		tmp_cluster = _job_will_run(req);
-		if (!tmp_cluster) {	/* Some pack job can't run here */
+		if (!tmp_cluster) {	/* Some het component can't run here */
 			xfree(local_cluster);
 			break;
 		}
@@ -3289,7 +3289,7 @@ static local_cluster_rec_t * _pack_job_will_run(List job_req_list)
  * working_cluster_rec to pack the job_desc's jobinfo. See previous commit for
  * an example of how to thread this.
  */
-extern int slurmdb_get_first_pack_cluster(List job_req_list,
+extern int slurmdb_get_first_het_job_cluster(List job_req_list,
 	char *cluster_names, slurmdb_cluster_rec_t **cluster_rec)
 {
 	job_desc_msg_t *req;
@@ -3332,7 +3332,7 @@ extern int slurmdb_get_first_pack_cluster(List job_req_list,
 		    list_find_first(tried_feds, slurm_find_char_in_list,
 				    working_cluster_rec->fed.name))
 			continue;
-		if ((local_cluster = _pack_job_will_run(job_req_list))) {
+		if ((local_cluster = _het_job_will_run(job_req_list))) {
 			list_append(ret_list, local_cluster);
 			if (working_cluster_rec->fed.id)
 				list_append(tried_feds,
@@ -4139,7 +4139,7 @@ extern int slurmdb_find_selected_step_in_list(void *x, void *key)
 	if ((query_step->jobid == selected_step->jobid) &&
 	    (query_step->stepid == selected_step->stepid) &&
 	    (query_step->array_task_id == selected_step->array_task_id) &&
-	    (query_step->pack_job_offset == selected_step->pack_job_offset))
+	    (query_step->het_job_offset == selected_step->het_job_offset))
 		return 1;
 
 	return 0;

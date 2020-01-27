@@ -1060,8 +1060,8 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	jobacct_gather_set_proctrack_container_id(job->cont_id);
 	jobacct_gather_add_task(pid, &jobacct_id, 1);
 #ifdef HAVE_NATIVE_CRAY
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-		jobid = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
 	else
 		jobid = job->jobid;
 #else
@@ -1913,8 +1913,8 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	}
 //	jobacct_gather_set_proctrack_container_id(job->cont_id);
 #ifdef HAVE_NATIVE_CRAY
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-		jobid = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
 	else
 		jobid = job->jobid;
 #else
@@ -2060,8 +2060,8 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 	char **tmp_env;
 	uint32_t task_offset = 0;
 
-	if (job->pack_task_offset != NO_VAL)
-		task_offset = job->pack_task_offset;
+	if (job->het_job_task_offset != NO_VAL)
+		task_offset = job->het_job_task_offset;
 	do {
 		pid = wait3(&status, waitflag ? 0 : WNOHANG, &rusage);
 		if (pid == -1) {
@@ -2807,8 +2807,8 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 		uint32_t jobid;
 
 #ifdef HAVE_NATIVE_CRAY
-		if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-			jobid = job->pack_jobid;
+		if (job->het_job_id && (job->het_job_id != NO_VAL))
+			jobid = job->het_job_id;
 		else
 			jobid = job->jobid;
 #else

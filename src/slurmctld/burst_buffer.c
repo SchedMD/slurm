@@ -403,26 +403,27 @@ extern int bb_g_job_validate2(job_record_t *job_ptr, char **err_msg)
 }
 
 
-/* Return true if pack job separator in the script */
-static bool _pack_check(char *tok)
+/* Return true if hetjob separator in the script */
+static bool _hetjob_check(char *tok)
 {
 	if (strncmp(tok + 1, "SLURM",  5) &&
 	    strncmp(tok + 1, "SBATCH", 6))
 		return false;
-	if (!strstr(tok+6, "packjob"))
+	if (!strstr(tok+6, "packjob") &&
+	    !strstr(tok+6, "hetjob"))
 		return false;
 	return true;
 }
 
 /*
- * Convert a pack job batch script into a script containing only the portions
- * relevant to a specific pack job component.
+ * Convert a hetjob batch script into a script containing only the portions
+ * relevant to a specific hetjob component.
  *
  * script IN - Whole job batch script
- * pack_job_offset IN - Zero origin pack job component ID
+ * het_job_offset IN - Zero origin hetjob component ID
  * RET script for that job component, call xfree() to release memory
  */
-extern char *bb_g_build_pack_script(char *script, uint32_t pack_job_offset)
+extern char *bb_g_build_het_job_script(char *script, uint32_t het_job_offset)
 {
 	char *result = NULL, *tmp = NULL;
 	char *tok, *save_ptr = NULL;
@@ -443,11 +444,11 @@ extern char *bb_g_build_pack_script(char *script, uint32_t pack_job_offset)
 			xstrfmtcat(result, "%s\n", tok);
 		} else if (tok[0] != '#') {
 			fini = true;
-		} else if (_pack_check(tok)) {
+		} else if (_hetjob_check(tok)) {
 			cur_offset++;
-			if (cur_offset > pack_job_offset)
+			if (cur_offset > het_job_offset)
 				fini = true;
-		} else if (cur_offset == pack_job_offset) {
+		} else if (cur_offset == het_job_offset) {
 			xstrfmtcat(result, "%s\n", tok);
 		}
 		if (fini)
@@ -455,7 +456,7 @@ extern char *bb_g_build_pack_script(char *script, uint32_t pack_job_offset)
 		tok = strtok_r(NULL, "\n", &save_ptr);
 	}
 
-	if (pack_job_offset == 0) {
+	if (het_job_offset == 0) {
 		while (tok) {
 			char *sep = "";
 			if ((tok[0] == '#') &&

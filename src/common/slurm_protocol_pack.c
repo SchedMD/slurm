@@ -2404,7 +2404,7 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer, uint16_t protocol_version)
 		gres_plugin_job_alloc_pack(msg->job_gres_info, buffer,
 					   protocol_version);
 		pack32(msg->job_id,  buffer);
-		pack32(msg->pack_jobid,  buffer);
+		pack32(msg->het_job_id, buffer);
 		pack32(msg->job_state, buffer);
 		pack32(msg->job_uid, buffer);
 		packstr(msg->nodes, buffer);
@@ -2417,7 +2417,7 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer, uint16_t protocol_version)
 		pack_time(msg->time, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id,  buffer);
-		pack32(msg->pack_jobid,  buffer);
+		pack32(msg->het_job_id, buffer);
 		pack32(msg->job_state, buffer);
 		pack32(msg->job_uid, buffer);
 		packstr(msg->nodes, buffer);
@@ -2451,7 +2451,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 						 buffer, protocol_version))
 			goto unpack_error;
 		safe_unpack32(&(tmp_ptr->job_id),  buffer);
-		safe_unpack32(&(tmp_ptr->pack_jobid),  buffer);
+		safe_unpack32(&(tmp_ptr->het_job_id),  buffer);
 		safe_unpack32(&(tmp_ptr->job_state),  buffer);
 		safe_unpack32(&(tmp_ptr->job_uid), buffer);
 		safe_unpackstr_xmalloc(&(tmp_ptr->nodes),
@@ -2466,7 +2466,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 		safe_unpack_time(&(tmp_ptr->time), buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&(tmp_ptr->job_id),  buffer);
-		safe_unpack32(&(tmp_ptr->pack_jobid),  buffer);
+		safe_unpack32(&(tmp_ptr->het_job_id),  buffer);
 		safe_unpack32(&(tmp_ptr->job_state),  buffer);
 		safe_unpack32(&(tmp_ptr->job_uid), buffer);
 		safe_unpackstr_xmalloc(&(tmp_ptr->nodes),
@@ -3396,10 +3396,10 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack32(&job->job_id,   buffer);
 		safe_unpack32(&job->user_id,  buffer);
 		safe_unpack32(&job->group_id, buffer);
-		safe_unpack32(&job->pack_job_id, buffer);
-		safe_unpackstr_xmalloc(&job->pack_job_id_set, &uint32_tmp,
+		safe_unpack32(&job->het_job_id, buffer);
+		safe_unpackstr_xmalloc(&job->het_job_id_set, &uint32_tmp,
 				       buffer);
-		safe_unpack32(&job->pack_job_offset, buffer);
+		safe_unpack32(&job->het_job_offset, buffer);
 		safe_unpack32(&job->profile,  buffer);
 
 		safe_unpack32(&job->job_state,    buffer);
@@ -3580,10 +3580,10 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack32(&job->job_id,   buffer);
 		safe_unpack32(&job->user_id,  buffer);
 		safe_unpack32(&job->group_id, buffer);
-		safe_unpack32(&job->pack_job_id, buffer);
-		safe_unpackstr_xmalloc(&job->pack_job_id_set, &uint32_tmp,
+		safe_unpack32(&job->het_job_id, buffer);
+		safe_unpackstr_xmalloc(&job->het_job_id_set, &uint32_tmp,
 				       buffer);
-		safe_unpack32(&job->pack_job_offset, buffer);
+		safe_unpack32(&job->het_job_offset, buffer);
 		safe_unpack32(&job->profile,  buffer);
 
 		safe_unpack32(&job->job_state,    buffer);
@@ -3760,10 +3760,10 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack32(&job->job_id,   buffer);
 		safe_unpack32(&job->user_id,  buffer);
 		safe_unpack32(&job->group_id, buffer);
-		safe_unpack32(&job->pack_job_id, buffer);
-		safe_unpackstr_xmalloc(&job->pack_job_id_set, &uint32_tmp,
+		safe_unpack32(&job->het_job_id, buffer);
+		safe_unpackstr_xmalloc(&job->het_job_id_set, &uint32_tmp,
 				       buffer);
-		safe_unpack32(&job->pack_job_offset, buffer);
+		safe_unpack32(&job->het_job_offset, buffer);
 		safe_unpack32(&job->profile,  buffer);
 
 		safe_unpack32(&job->job_state,    buffer);
@@ -7138,7 +7138,7 @@ _pack_step_alloc_info_msg(step_alloc_info_msg_t * job_desc_ptr, Buf buffer,
 	/* load the data values */
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job_desc_ptr->job_id, buffer);
-		pack32(job_desc_ptr->pack_job_offset, buffer);
+		pack32(job_desc_ptr->het_job_offset, buffer);
 		pack32(job_desc_ptr->step_id, buffer);
 	}
 }
@@ -7158,7 +7158,7 @@ _unpack_step_alloc_info_msg(step_alloc_info_msg_t **
 	/* load the data values */
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job_desc_ptr->job_id, buffer);
-		safe_unpack32(&job_desc_ptr->pack_job_offset, buffer);
+		safe_unpack32(&job_desc_ptr->het_job_offset, buffer);
 		safe_unpack32(&job_desc_ptr->step_id, buffer);
 	} else {
 		goto unpack_error;
@@ -7589,36 +7589,45 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr(msg->user_name, buffer);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
-		pack32(msg->node_offset, buffer);
-		pack32(msg->pack_jobid, buffer);
-		pack32(msg->pack_nnodes, buffer);
-		if ((msg->pack_nnodes != NO_VAL) && msg->pack_tids) {
-			/* pack_tids == NULL if request from pre-v19.05 srun */
+		pack32(msg->het_job_node_offset, buffer);
+		pack32(msg->het_job_id, buffer);
+		pack32(msg->het_job_nnodes, buffer);
+		if ((msg->het_job_nnodes != NO_VAL) && msg->het_job_tids) {
+			/*
+			 * het_job_tids == NULL if request from pre-v19.05
+			 * srun
+			 */
 			pack8((uint8_t) 1, buffer);
-			for (i = 0; i < msg->pack_nnodes; i++) {
-				pack16(msg->pack_task_cnts[i], buffer);
-				pack32_array(msg->pack_tids[i],
-					     (uint32_t) msg->pack_task_cnts[i],
-					     buffer);
+			for (i = 0; i < msg->het_job_nnodes; i++) {
+				pack16(msg->het_job_task_cnts[i], buffer);
+				pack32_array(
+					msg->het_job_tids[i],
+					(uint32_t)msg->het_job_task_cnts[i],
+					buffer);
 			}
-		} else if (msg->pack_nnodes != NO_VAL) {
+		} else if (msg->het_job_nnodes != NO_VAL) {
 			pack8((uint8_t) 0, buffer);
-			pack16_array(msg->pack_task_cnts, msg->pack_nnodes,
+			pack16_array(msg->het_job_task_cnts,
+				     msg->het_job_nnodes,
 				     buffer);
 		}
-		pack32(msg->pack_ntasks, buffer);
-		if ((msg->pack_ntasks != NO_VAL) && msg->pack_tid_offsets) {
-			/* pack_tids == NULL if request from pre-v19.05 srun */
+		pack32(msg->het_job_ntasks, buffer);
+		if ((msg->het_job_ntasks != NO_VAL) &&
+		     msg->het_job_tid_offsets) {
+			/*
+			 * het_job_tids == NULL if request from pre-v19.05
+			 * srun
+			 */
 			pack8((uint8_t) 1, buffer);
-			for (i = 0; i < msg->pack_ntasks; i++)
-				pack32(msg->pack_tid_offsets[i], buffer);
-		} else if (msg->pack_ntasks != NO_VAL)
+			for (i = 0; i < msg->het_job_ntasks; i++)
+				pack32(msg->het_job_tid_offsets[i], buffer);
+		} else if (msg->het_job_ntasks != NO_VAL)
 			pack8((uint8_t) 0, buffer);
 
-		pack32(msg->pack_offset, buffer);
-		pack32(msg->pack_step_cnt, buffer);
-		pack32(msg->pack_task_offset, buffer);
-		packstr(msg->pack_node_list, buffer);
+		pack32(msg->het_job_offset, buffer);
+		pack32(msg->het_job_step_cnt, buffer);
+		pack32(msg->het_job_task_offset, buffer);
+		packstr(msg->het_job_node_list, buffer);
 		pack32(msg->ntasks, buffer);
 		pack16(msg->ntasks_per_board, buffer);
 		pack16(msg->ntasks_per_core, buffer);
@@ -7700,17 +7709,18 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr(msg->user_name, buffer);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
-		pack32(msg->node_offset, buffer);
-		pack32(msg->pack_jobid, buffer);
-		pack32(msg->pack_nnodes, buffer);
-		if (msg->pack_nnodes != NO_VAL) {
-			pack16_array(msg->pack_task_cnts, msg->pack_nnodes,
+		pack32(msg->het_job_offset, buffer);
+		pack32(msg->het_job_id, buffer);
+		pack32(msg->het_job_nnodes, buffer);
+		if (msg->het_job_nnodes != NO_VAL) {
+			pack16_array(msg->het_job_task_cnts,
+				     msg->het_job_nnodes,
 				     buffer);
 		}
-		pack32(msg->pack_ntasks, buffer);
-		pack32(msg->pack_offset, buffer);
-		pack32(msg->pack_task_offset, buffer);
-		packstr(msg->pack_node_list, buffer);
+		pack32(msg->het_job_ntasks, buffer);
+		pack32(msg->het_job_offset, buffer);
+		pack32(msg->het_job_task_offset, buffer);
+		packstr(msg->het_job_node_list, buffer);
 		pack32(msg->ntasks, buffer);
 		pack16(msg->ntasks_per_board, buffer);
 		pack16(msg->ntasks_per_core, buffer);
@@ -7810,45 +7820,51 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr_xmalloc(&msg->user_name, &uint32_tmp, buffer);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
 
-		safe_unpack32(&msg->node_offset, buffer);
-		safe_unpack32(&msg->pack_jobid, buffer);
-		safe_unpack32(&msg->pack_nnodes, buffer);
-		if (msg->pack_nnodes != NO_VAL)
+		safe_unpack32(&msg->het_job_node_offset, buffer);
+		safe_unpack32(&msg->het_job_id, buffer);
+		safe_unpack32(&msg->het_job_nnodes, buffer);
+		if (msg->het_job_nnodes != NO_VAL)
 			safe_unpack8(&uint8_tmp, buffer);
-		if ((msg->pack_nnodes != NO_VAL) && (uint8_tmp == 1)) {
-			/* pack_tids == NULL if request from pre-v19.05 srun */
-			safe_xcalloc(msg->pack_task_cnts, msg->pack_nnodes,
+		if ((msg->het_job_nnodes != NO_VAL) && (uint8_tmp == 1)) {
+			/*
+			 * het_job_tids == NULL if request from pre-v19.05
+			 * srun
+			 */
+			safe_xcalloc(msg->het_job_task_cnts,
+				     msg->het_job_nnodes,
 				     sizeof(uint16_t));
-			safe_xcalloc(msg->pack_tids, msg->pack_nnodes,
+			safe_xcalloc(msg->het_job_tids, msg->het_job_nnodes,
 				     sizeof(uint32_t *));
-			for (i = 0; i < msg->pack_nnodes; i++) {
-				safe_unpack16(&msg->pack_task_cnts[i], buffer);
-				safe_unpack32_array(&msg->pack_tids[i],
+			for (i = 0; i < msg->het_job_nnodes; i++) {
+				safe_unpack16(&msg->het_job_task_cnts[i],
+					      buffer);
+				safe_unpack32_array(&msg->het_job_tids[i],
 						    &uint32_tmp,
 						    buffer);
-				if (msg->pack_task_cnts[i] != uint32_tmp)
+				if (msg->het_job_task_cnts[i] != uint32_tmp)
 					goto unpack_error;
 			}
-		} else if (msg->pack_nnodes != NO_VAL) {
-			safe_unpack16_array(&msg->pack_task_cnts,
+		} else if (msg->het_job_nnodes != NO_VAL) {
+			safe_unpack16_array(&msg->het_job_task_cnts,
 					    &uint32_tmp, buffer);
-			if (uint32_tmp != msg->pack_nnodes)
+			if (uint32_tmp != msg->het_job_nnodes)
 				goto unpack_error;
 		}
-		safe_unpack32(&msg->pack_ntasks, buffer);
-		if (msg->pack_ntasks != NO_VAL)
+		safe_unpack32(&msg->het_job_ntasks, buffer);
+		if (msg->het_job_ntasks != NO_VAL)
 			safe_unpack8(&uint8_tmp, buffer);
-		if ((msg->pack_ntasks != NO_VAL) && (uint8_tmp == 1)) {
-			safe_xcalloc(msg->pack_tid_offsets, msg->pack_ntasks,
+		if ((msg->het_job_ntasks != NO_VAL) && (uint8_tmp == 1)) {
+			safe_xcalloc(msg->het_job_tid_offsets,
+				     msg->het_job_ntasks,
 				     sizeof(uint32_t));
-			for (i = 0; i < msg->pack_ntasks; i++)
-				safe_unpack32(&msg->pack_tid_offsets[i],
+			for (i = 0; i < msg->het_job_ntasks; i++)
+				safe_unpack32(&msg->het_job_tid_offsets[i],
 					      buffer);
 		}
-		safe_unpack32(&msg->pack_offset, buffer);
-		safe_unpack32(&msg->pack_step_cnt, buffer);
-		safe_unpack32(&msg->pack_task_offset, buffer);
-		safe_unpackstr_xmalloc(&msg->pack_node_list, &uint32_tmp,
+		safe_unpack32(&msg->het_job_offset, buffer);
+		safe_unpack32(&msg->het_job_step_cnt, buffer);
+		safe_unpack32(&msg->het_job_task_offset, buffer);
+		safe_unpackstr_xmalloc(&msg->het_job_node_list, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&msg->ntasks, buffer);
 		safe_unpack16(&msg->ntasks_per_board, buffer);
@@ -7974,19 +7990,19 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr_xmalloc(&msg->user_name, &uint32_tmp, buffer);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
 
-		safe_unpack32(&msg->node_offset, buffer);
-		safe_unpack32(&msg->pack_jobid, buffer);
-		safe_unpack32(&msg->pack_nnodes, buffer);
-		if (msg->pack_nnodes != NO_VAL) {
-			safe_unpack16_array(&msg->pack_task_cnts,
+		safe_unpack32(&msg->het_job_node_offset, buffer);
+		safe_unpack32(&msg->het_job_id, buffer);
+		safe_unpack32(&msg->het_job_nnodes, buffer);
+		if (msg->het_job_nnodes != NO_VAL) {
+			safe_unpack16_array(&msg->het_job_task_cnts,
 					    &uint32_tmp, buffer);
-			if (uint32_tmp != msg->pack_nnodes)
+			if (uint32_tmp != msg->het_job_nnodes)
 				goto unpack_error;
 		}
-		safe_unpack32(&msg->pack_ntasks, buffer);
-		safe_unpack32(&msg->pack_offset, buffer);
-		safe_unpack32(&msg->pack_task_offset, buffer);
-		safe_unpackstr_xmalloc(&msg->pack_node_list, &uint32_tmp,
+		safe_unpack32(&msg->het_job_ntasks, buffer);
+		safe_unpack32(&msg->het_job_offset, buffer);
+		safe_unpack32(&msg->het_job_task_offset, buffer);
+		safe_unpackstr_xmalloc(&msg->het_job_node_list, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&msg->ntasks, buffer);
 		safe_unpack16(&msg->ntasks_per_board, buffer);
@@ -8443,7 +8459,7 @@ static void _pack_prolog_launch_msg(prolog_launch_msg_t *msg,
 		gres_plugin_job_alloc_pack(msg->job_gres_info, buffer,
 					   protocol_version);
 		pack32(msg->job_id, buffer);
-		pack32(msg->pack_job_id, buffer);
+		pack32(msg->het_job_id, buffer);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 
@@ -8467,7 +8483,7 @@ static void _pack_prolog_launch_msg(prolog_launch_msg_t *msg,
 		packstr(msg->user_name, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
-		pack32(msg->pack_job_id, buffer);
+		pack32(msg->het_job_id, buffer);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 
@@ -8506,7 +8522,7 @@ static int _unpack_prolog_launch_msg(prolog_launch_msg_t **msg,
 						 buffer, protocol_version))
 			goto unpack_error;
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
-		safe_unpack32(&launch_msg_ptr->pack_job_id, buffer);
+		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
 
@@ -8544,7 +8560,7 @@ static int _unpack_prolog_launch_msg(prolog_launch_msg_t **msg,
 				       buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
-		safe_unpack32(&launch_msg_ptr->pack_job_id, buffer);
+		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
 
@@ -9357,7 +9373,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
-		pack32(msg->pack_jobid, buffer);
+		pack32(msg->het_job_id, buffer);
 		pack32(msg->step_id, buffer);
 
 		pack32(msg->uid, buffer);
@@ -9446,7 +9462,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 		char *temp_str;
 
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
-		safe_unpack32(&launch_msg_ptr->pack_jobid, buffer);
+		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->step_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
@@ -11130,7 +11146,7 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 			safe_unpack32(&msg->bf_table_size_sum,	buffer);
 
 			safe_unpack32(&msg->bf_active,		buffer);
-			safe_unpack32(&msg->bf_backfilled_pack_jobs, buffer);
+			safe_unpack32(&msg->bf_backfilled_het_jobs, buffer);
 		}
 
 		safe_unpack32(&msg->rpc_type_size,		buffer);
@@ -11202,7 +11218,7 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 			safe_unpack32(&msg->bf_queue_len_sum,	buffer);
 
 			safe_unpack32(&msg->bf_active,		buffer);
-			safe_unpack32(&msg->bf_backfilled_pack_jobs, buffer);
+			safe_unpack32(&msg->bf_backfilled_het_jobs, buffer);
 		}
 
 		safe_unpack32(&msg->rpc_type_size,		buffer);
@@ -11806,12 +11822,12 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_job_desc_msg((job_desc_msg_t *) msg->data, buffer,
 				   msg->protocol_version);
 		break;
-	case REQUEST_JOB_PACK_ALLOCATION:
-	case REQUEST_SUBMIT_BATCH_JOB_PACK:
+	case REQUEST_HET_JOB_ALLOCATION:
+	case REQUEST_SUBMIT_BATCH_HET_JOB:
 		_pack_job_desc_list_msg((List) msg->data, buffer,
 					msg->protocol_version);
 		break;
-	case RESPONSE_JOB_PACK_ALLOCATION:
+	case RESPONSE_HET_JOB_ALLOCATION:
 		_pack_job_info_list_msg((List) msg->data, buffer,
 					msg->protocol_version);
 		break;
@@ -11828,7 +11844,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_PACK_ALLOC_INFO:
+	case REQUEST_HET_JOB_ALLOC_INFO:
 		_pack_job_alloc_info_msg((job_alloc_info_msg_t *) msg->data,
 					 buffer, msg->protocol_version);
 		break;
@@ -12465,12 +12481,12 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_job_desc_msg((job_desc_msg_t **) & (msg->data),
 					  buffer, msg->protocol_version);
 		break;
-	case REQUEST_JOB_PACK_ALLOCATION:
-	case REQUEST_SUBMIT_BATCH_JOB_PACK:
+	case REQUEST_HET_JOB_ALLOCATION:
+	case REQUEST_SUBMIT_BATCH_HET_JOB:
 		rc = _unpack_job_desc_list_msg((List *) &(msg->data),
 					       buffer, msg->protocol_version);
 		break;
-	case RESPONSE_JOB_PACK_ALLOCATION:
+	case RESPONSE_HET_JOB_ALLOCATION:
 		rc = _unpack_job_info_list_msg((List *) &(msg->data),
 					       buffer, msg->protocol_version);
 		break;
@@ -12487,7 +12503,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_PACK_ALLOC_INFO:
+	case REQUEST_HET_JOB_ALLOC_INFO:
 		rc = _unpack_job_alloc_info_msg((job_alloc_info_msg_t **) &
 						(msg->data), buffer,
 						msg->protocol_version);

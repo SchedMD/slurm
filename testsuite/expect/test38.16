@@ -42,7 +42,7 @@ if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
 }
-if {[test_pack_step] == 0} {
+if {[test_hetjob_step] == 0} {
 	send_user "\nWARNING: heterogeneous steps not currently supported\n"
 	exit $exit_code
 }
@@ -63,14 +63,14 @@ make_bash_script $file_in "
 exec $bin_rm -f $file_out
 
 proc end_it { exit_code } {
-	global pack_job_id scancel
-	if {$pack_job_id > 0} {
-		exec $scancel $pack_job_id
+	global het_job_id scancel
+	if {$het_job_id > 0} {
+		exec $scancel $het_job_id
 	}
 	exit $exit_code
 }
 
-set pack_job_id 0
+set het_job_id 0
 set component(0) 0
 set matches 0
 set index 0
@@ -78,7 +78,7 @@ set timeout $max_job_delay
 spawn $salloc -t2 -N1 : -N1 $bin_bash
 expect {
 	-re "job ($number) has been allocated resources" {
-		set pack_job_id $expect_out(1,string)
+		set het_job_id $expect_out(1,string)
 		send "export PS1=\"$prompt\"\r"
 		exp_continue
 	}
@@ -97,14 +97,14 @@ expect {
 		wait
 	}
 }
-if {$pack_job_id == 0} {
+if {$het_job_id == 0} {
 	log_error "salloc failure\n"
 	end_it 1
 }
 
 send_user "\n\nCollect Nodename for each job component\n\n"
 
-send "$squeue -j $pack_job_id -o\"NAME=%N\" --noheader\r"
+send "$squeue -j $het_job_id -o\"NAME=%N\" --noheader\r"
 expect {
 	-re "--noheader" {
 		exp_continue
@@ -130,7 +130,7 @@ if {$index != 2} {
 send_user "\n\nTest environment variables needed by MPI\n\n"
 
 set matches 0
-send "$srun --label --mpi=none --pack-group=0,1 -l -o$file_out $file_in\r"
+send "$srun --label --mpi=none --het-group=0,1 -l -o$file_out $file_in\r"
 expect {
 	-re "$prompt" {
 		send_user "\n\n"
@@ -149,22 +149,22 @@ if {[wait_for_file $file_out] != 0} {
 	end_it 1
 }
 
-set pack_nodelist ""
+set het_nodelist ""
 send "$bin_sort -d $file_out\r"
 expect {
-	-re "0: SLURM_NODELIST_PACK_GROUP_0=$component(0)" {
+	-re "0: SLURM_NODELIST_HET_GROUP_0=$component(0)" {
 		incr matches
 		exp_continue
 	}
-	-re "0: SLURM_NODELIST_PACK_GROUP_1=$component(1)" {
+	-re "0: SLURM_NODELIST_HET_GROUP_1=$component(1)" {
 		incr matches
 		exp_continue
 	}
-	-re "1: SLURM_NODELIST_PACK_GROUP_0=$component(0)" {
+	-re "1: SLURM_NODELIST_HET_GROUP_0=$component(0)" {
 		incr matches
 		exp_continue
 	}
-	-re "1: SLURM_NODELIST_PACK_GROUP_1=$component(1)" {
+	-re "1: SLURM_NODELIST_HET_GROUP_1=$component(1)" {
 		incr matches
 		exp_continue
 	}
@@ -184,11 +184,11 @@ log_user 0
 send "$bin_sort $file_out\r"
 expect {
 	-re "0: SLURM_NODELIST=($alpha_numeric_nodelist)" {
-		set pack_nodelist $expect_out(1,string)
+		set het_nodelist $expect_out(1,string)
 		incr matches
 		exp_continue
 	}
-	-re "1: SLURM_NODELIST=$pack_nodelist" {
+	-re "1: SLURM_NODELIST=$het_nodelist" {
 		incr matches
 		exp_continue
 	}
@@ -224,7 +224,7 @@ expect {
 send_user "\n\nValidate combined hostlist\n\n"
 
 set matches 0
-spawn $scontrol show hostnames $pack_nodelist
+spawn $scontrol show hostnames $het_nodelist
 expect {
 	-re "$component(0)|$component(1)" {
 		incr matches

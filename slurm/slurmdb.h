@@ -799,14 +799,14 @@ typedef struct {
 	uint32_t flags;
 	void *first_step_ptr;
 	uint32_t gid;
+	uint32_t het_job_id;
+	uint32_t het_job_offset;
 	uint32_t jobid;
 	char	*jobname;
 	uint32_t lft;
 	char 	*mcs_label;
 	char	*nodes;
 	char	*partition;
-	uint32_t pack_job_id;
-	uint32_t pack_job_offset;
 	uint32_t priority;
 	uint32_t qosid;
 	uint32_t req_cpus;
@@ -1051,8 +1051,8 @@ typedef struct {
 
 typedef struct {
 	uint32_t array_task_id;		/* task_id of a job array or NO_VAL */
+	uint32_t het_job_offset;	/* het_job_offset or NO_VAL */
 	uint32_t jobid;
-	uint32_t pack_job_offset;	/* pack_job_offset or NO_VAL */
 	uint32_t stepid;
 } slurmdb_selected_step_t;
 
@@ -1775,7 +1775,7 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
  * working_cluster_rec to pack the job_desc's jobinfo. See previous commit for
  * an example of how to thread this.
  */
-extern int slurmdb_get_first_pack_cluster(List job_req_list,
+extern int slurmdb_get_first_het_job_cluster(List job_req_list,
 	char *cluster_names, slurmdb_cluster_rec_t **cluster_rec);
 
 /************** helper functions **************/

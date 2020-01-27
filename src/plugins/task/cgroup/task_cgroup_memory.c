@@ -678,8 +678,8 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 	xfree(slurm_cgpath);
 
 	/* build job cgroup relative path if no set (should not be) */
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-		jobid = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
 	else
 		jobid = job->jobid;
 	if (*job_cgroup_path == '\0') {
@@ -845,8 +845,8 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 		goto fail_xcgroup_lock;
 	}
 
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-		jobid = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
 	else
 		jobid = job->jobid;
 	if (job->stepid == SLURM_BATCH_SCRIPT)

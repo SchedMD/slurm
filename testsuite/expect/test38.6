@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SPANK plugin with pack jobs
+# Purpose: Test of SPANK plugin with hetjobs
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -48,7 +48,7 @@ if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
 }
-if {[test_pack_step] == 0} {
+if {[test_hetjob_step] == 0} {
 	send_user "\nWARNING: heterogeneous steps not currently supported\n"
 	exit $exit_code
 }
@@ -194,7 +194,7 @@ expect {
 send_user "\n\n"
 
 make_bash_script $file_in "
-  $srun --mpi=none --test_suite_srun=5 --pack-group=0,1 $bin_sum $spank_conf_file
+  $srun --mpi=none --test_suite_srun=5 --het-group=0,1 $bin_sum $spank_conf_file
 "
 
 set job_id 0

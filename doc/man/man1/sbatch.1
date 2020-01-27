@@ -2099,7 +2099,7 @@ Possible values are "none", "rank", "map_map", "mask_mem" and "local".
 Set to "verbose" if the \-\-mem\-bind\fR option includes the verbose option.
 Set to "quiet" otherwise.
 .TP
-\fBSLURM_*_PACK_GROUP_#\fR
+\fBSLURM_*_HET_GROUP_#\fR
 For a heterogeneous job allocation, the environment variables are set separately
 for each component.
 .TP
@@ -2240,7 +2240,7 @@ Only set if the \fB\-\-ntasks\-per\-node\fR option is specified.
 Number of tasks requested per socket.
 Only set if the \fB\-\-ntasks\-per\-socket\fR option is specified.
 .TP
-\fBSLURM_PACK_SIZE\fR
+\fBSLURM_HET_SIZE\fR
 Set to count of components in heterogeneous job.
 .TP
 \fBSLURM_PRIO_PROCESS\fR

@@ -48,8 +48,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-static char *_build_label(int task_id, int task_id_width, uint32_t pack_offset,
-			  uint32_t task_offset);
+static char *_build_label(int task_id, int task_id_width,
+			  uint32_t het_job_offset,
+			  uint32_t het_job_task_offset);
 static int _write_line(int fd, char *prefix, char *suffix, void *buf, int len);
 
 /*
@@ -57,8 +58,8 @@ static int _write_line(int fd, char *prefix, char *suffix, void *buf, int len);
  * buf            is the char buffer to write
  * len            is the buffer length in bytes
  * task_id        is will be used in the label
- * pack_offset    is the offset within a pack-job or NO_VAL
- * task_offset    is the task offset within a pack-job or NO_VAL
+ * het_job_offset is the offset within a hetjob or NO_VAL
+ * het_job_task_offset is the task offset within a hetjob or NO_VAL
  * label          if true, prepend each line of the buffer with a
  *                label for the task id
  * task_id_width  is the number of digits to use for the task id
@@ -72,7 +73,8 @@ static int _write_line(int fd, char *prefix, char *suffix, void *buf, int len);
  * in label mode.
  */
 extern int write_labelled_message(int fd, void *buf, int len, int task_id,
-				  uint32_t pack_offset, uint32_t task_offset,
+				  uint32_t het_job_offset,
+				  uint32_t het_job_task_offset,
 				  bool label, int task_id_width)
 {
 	void *start, *end;
@@ -83,8 +85,8 @@ extern int write_labelled_message(int fd, void *buf, int len, int task_id,
 	int rc = -1;
 
 	if (label) {
-		prefix = _build_label(task_id, task_id_width, pack_offset,
-				      task_offset);
+		prefix = _build_label(task_id, task_id_width, het_job_offset,
+				      het_job_task_offset);
 	}
 
 	while (remaining > 0) {
@@ -124,17 +126,18 @@ done:
  * Build line label. Call xfree() to release returned memory
  */
 static char *_build_label(int task_id, int task_id_width,
-			  uint32_t pack_offset, uint32_t task_offset)
+			  uint32_t het_job_offset,
+			  uint32_t het_job_task_offset)
 {
 	char *buf = NULL;
 
-	if (pack_offset != NO_VAL) {
-		if (task_offset != NO_VAL) {
+	if (het_job_offset != NO_VAL) {
+		if (het_job_task_offset != NO_VAL) {
 			xstrfmtcat(buf, "%*d: ", task_id_width,
-				   (task_id + task_offset));
+				   (task_id + het_job_task_offset));
 		} else {
-			xstrfmtcat(buf, "P%u %*d: ", pack_offset, task_id_width,
-				   task_id);
+			xstrfmtcat(buf, "P%u %*d: ", het_job_offset,
+				   task_id_width, task_id);
 		}
 	} else {
 		xstrfmtcat(buf, "%*d: ", task_id_width, task_id);
@@ -146,8 +149,9 @@ static char *_build_label(int task_id, int task_id_width,
 /*
  * Blocks until write is complete, regardless of the file descriptor being in
  * non-blocking mode.
- * I/O from multiple pack-jobs may be present, so add prefix/suffix to buffer
- * before issuing write to avoid interleaved output from multiple components.
+ * I/O from multiple hetjob components may be present, so add prefix/suffix to
+ * buffer before issuing write to avoid interleaved output from multiple
+ * components.
  */
 static int _write_line(int fd, char *prefix, char *suffix, void *buf, int len)
 {

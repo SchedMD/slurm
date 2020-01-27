@@ -1273,8 +1273,8 @@ cpu_freq_reset(stepd_step_rec_t *job)
 		return;
 
 #ifdef HAVE_NATIVE_CRAY
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-		jobid = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
 	else
 		jobid = job->jobid;
 #else

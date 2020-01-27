@@ -1749,10 +1749,10 @@ static int _get_usable_nodes(bitstr_t *node_map, job_record_t *job_ptr)
 		.node_map = node_map
 	};
 
-	if (!job_ptr->pack_job_list)
+	if (!job_ptr->het_job_list)
 		(void)_wrapper_get_usable_nodes(job_ptr, &wargs);
 	else
-		(void)list_for_each_nobreak(job_ptr->pack_job_list,
+		(void)list_for_each_nobreak(job_ptr->het_job_list,
 					    _wrapper_get_usable_nodes,
 					    &wargs);
 	return wargs.rc;
@@ -1792,10 +1792,10 @@ static int _job_res_rm_job(part_res_record_t *part_record_ptr,
 	if (!job_overlap_and_running(node_map, job_ptr))
 		return 1;
 
-	if (!job_ptr->pack_job_list)
+	if (!job_ptr->het_job_list)
 		(void)_wrapper_job_res_rm_job(job_ptr, &wargs);
 	else
-		(void)list_for_each(job_ptr->pack_job_list,
+		(void)list_for_each(job_ptr->het_job_list,
 				    _wrapper_job_res_rm_job,
 				    &wargs);
 	return 0;

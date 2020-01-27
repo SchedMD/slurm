@@ -121,9 +121,9 @@ static config_response_msg_t *config_for_clients = NULL;
 static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
 
-static void         _create_pack_job_id_set(hostset_t jobid_hostset,
-					    uint32_t pack_job_offset,
-					    char **pack_job_id_set);
+static void         _create_het_job_id_set(hostset_t jobid_hostset,
+					    uint32_t het_job_offset,
+					    char **het_job_id_set);
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int          _is_prolog_finished(uint32_t job_id);
@@ -139,7 +139,7 @@ static void         _throttle_start(int *active_rpc_cnt);
 inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg);
 inline static void  _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg);
 inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg);
-inline static void  _slurm_rpc_allocate_pack(slurm_msg_t * msg);
+inline static void  _slurm_rpc_allocate_het_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_auth_token(slurm_msg_t *msg);
 inline static void  _slurm_rpc_burst_buffer_info(slurm_msg_t * msg);
@@ -180,7 +180,7 @@ inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_get_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info(slurm_msg_t * msg);
-inline static void  _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg);
+inline static void  _slurm_rpc_het_job_alloc_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_kill_job(slurm_msg_t *msg);
 inline static void  _slurm_rpc_node_registration(slurm_msg_t *msg,
 						 bool running_composite);
@@ -210,7 +210,7 @@ inline static void  _slurm_rpc_step_complete(slurm_msg_t * msg,
 inline static void  _slurm_rpc_step_layout(slurm_msg_t * msg);
 inline static void  _slurm_rpc_step_update(slurm_msg_t * msg);
 inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg);
-inline static void  _slurm_rpc_submit_batch_pack_job(slurm_msg_t * msg);
+inline static void  _slurm_rpc_submit_batch_het_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_suspend(slurm_msg_t * msg);
 inline static void  _slurm_rpc_top_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg);
@@ -331,8 +331,8 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_RESOURCE_ALLOCATION:
 		_slurm_rpc_allocate_resources(msg);
 		break;
-	case REQUEST_JOB_PACK_ALLOCATION:
-		_slurm_rpc_allocate_pack(msg);
+	case REQUEST_HET_JOB_ALLOCATION:
+		_slurm_rpc_allocate_het_job(msg);
 		break;
 	case REQUEST_BUILD_INFO:
 		_slurm_rpc_dump_conf(msg);
@@ -414,8 +414,8 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_JOB_ALLOCATION_INFO:
 		_slurm_rpc_job_alloc_info(msg);
 		break;
-	case REQUEST_JOB_PACK_ALLOC_INFO:
-		_slurm_rpc_job_pack_alloc_info(msg);
+	case REQUEST_HET_JOB_ALLOC_INFO:
+		_slurm_rpc_het_job_alloc_info(msg);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
 		_slurm_rpc_job_sbcast_cred(msg);
@@ -441,8 +441,8 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_SUBMIT_BATCH_JOB:
 		_slurm_rpc_submit_batch_job(msg);
 		break;
-	case REQUEST_SUBMIT_BATCH_JOB_PACK:
-		_slurm_rpc_submit_batch_pack_job(msg);
+	case REQUEST_SUBMIT_BATCH_HET_JOB:
+		_slurm_rpc_submit_batch_het_job(msg);
 		break;
 	case REQUEST_UPDATE_FRONT_END:
 		_slurm_rpc_update_front_end(msg);
@@ -1136,12 +1136,12 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 	return SLURM_SUCCESS;
 }
 
-static int _pack_job_cancel(void *x, void *arg)
+static int _het_job_cancel(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
 	time_t now = time(NULL);
 
-	info("Cancelling aborted pack job submit: %pJ", job_ptr);
+	info("Cancelling aborted hetjob submit: %pJ", job_ptr);
 	job_ptr->job_state	= JOB_CANCELLED;
 	job_ptr->start_time	= now;
 	job_ptr->end_time	= now;
@@ -1240,7 +1240,7 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 	return alloc_msg;
 }
 
-static void _del_alloc_pack_msg(void *x)
+static void _del_alloc_het_job_msg(void *x)
 {
 	resource_allocation_response_msg_t *alloc_msg;
 
@@ -1272,15 +1272,15 @@ static bool _sched_backfill(void)
  * If any job component has required nodes, those nodes must be excluded
  * from all other components to avoid scheduling deadlock
 */
-static void _exclude_pack_nodes(List job_req_list)
+static void _exclude_het_job_nodes(List job_req_list)
 {
 	job_desc_msg_t *job_desc_msg;
 	ListIterator iter;
-	int pack_cnt, req_cnt = 0, i;
+	int het_job_cnt, req_cnt = 0, i;
 	char **req_nodes, *sep;
 
-	pack_cnt = list_count(job_req_list);
-	req_nodes = xmalloc(sizeof(char *) * pack_cnt);
+	het_job_cnt = list_count(job_req_list);
+	req_nodes = xmalloc(sizeof(char *) * het_job_cnt);
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = list_next(iter))) {
 		if (!job_desc_msg->req_nodes || !job_desc_msg->req_nodes[0])
@@ -1308,15 +1308,15 @@ static void _exclude_pack_nodes(List job_req_list)
 }
 
 /*
- * _create_pack_job_id_set - Obtain the pack_job_id_set
- * pack_job_id_set OUT - allocated in the function and must be xfreed
+ * _create_het_job_id_set - Obtain the het_job_id_set
+ * het_job_id_set OUT - allocated in the function and must be xfreed
  *                       be the caller.
  */
-static void _create_pack_job_id_set(hostset_t jobid_hostset,
-				    uint32_t pack_job_offset,
-				    char **pack_job_id_set)
+static void _create_het_job_id_set(hostset_t jobid_hostset,
+				    uint32_t het_job_offset,
+				    char **het_job_id_set)
 {
-	int buf_size = pack_job_offset * 16;
+	int buf_size = het_job_offset * 16;
 	char *tmp_str = xmalloc(buf_size);
 	char *tmp_offset = tmp_str;
 
@@ -1331,15 +1331,15 @@ static void _create_pack_job_id_set(hostset_t jobid_hostset,
 		tmp_offset = tmp_str + 1;
 	}
 
-	*pack_job_id_set = xstrdup(tmp_offset);
+	*het_job_id_set = xstrdup(tmp_offset);
 	xfree(tmp_str);
 }
 
-/* _slurm_rpc_allocate_pack: process RPC to allocate a pack job resources */
-static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
+/* _slurm_rpc_allocate_het_job: process RPC to allocate a hetjob resources */
+static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 {
 	static int active_rpc_cnt = 0;
-	int error_code = SLURM_SUCCESS, inx, pack_cnt = -1;
+	int error_code = SLURM_SUCCESS, inx, het_job_cnt = -1;
 	DEF_TIMERS;
 	job_desc_msg_t *job_desc_msg;
 	List job_req_list = (List) msg->data;
@@ -1354,14 +1354,14 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	char *err_msg = NULL, **job_submit_user_msg = NULL;
 	ListIterator iter;
 	List submit_job_list = NULL;
-	uint32_t pack_job_id = 0, pack_job_offset = 0;
+	uint32_t het_job_id = 0, het_job_offset = 0;
 	hostset_t jobid_hostset = NULL;
 	char tmp_str[32];
 	List resp = NULL;
 	slurm_addr_t resp_addr;
 	char resp_host[16];
 	uint16_t port;	/* dummy value */
-	char *pack_job_id_set = NULL;
+	char *het_job_id_set = NULL;
 
 	START_TIMER;
 
@@ -1375,7 +1375,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		goto send_msg;
 	}
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
-		info("REQUEST_JOB_PACK_ALLOCATION from uid=%d with empty job list",
+		info("REQUEST_HET_JOB_ALLOCATION from uid=%d with empty job list",
 		     uid);
 		error_code = SLURM_ERROR;
 		goto send_msg;
@@ -1383,23 +1383,23 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	if (slurm_get_peer_addr(msg->conn_fd, &resp_addr) == 0) {
 		slurm_get_ip_str(&resp_addr, &port,resp_host,sizeof(resp_host));
 	} else {
-		info("REQUEST_JOB_PACK_ALLOCATION from uid=%d , can't get peer addr",
+		info("REQUEST_HET_JOB_ALLOCATION from uid=%d , can't get peer addr",
 		     uid);
 		error_code = SLURM_ERROR;
 		goto send_msg;
 	}
 
-	sched_debug2("Processing RPC: REQUEST_JOB_PACK_ALLOCATION from uid=%d",
+	sched_debug2("Processing RPC: REQUEST_HET_JOB_ALLOCATION from uid=%d",
 		     uid);
 
 	/*
 	 * If any job component has required nodes, those nodes must be excluded
 	 * from all other components to avoid scheduling deadlock
 	 */
-	_exclude_pack_nodes(job_req_list);
+	_exclude_het_job_nodes(job_req_list);
 
-	pack_cnt = list_count(job_req_list);
-	job_submit_user_msg = xmalloc(sizeof(char *) * pack_cnt);
+	het_job_cnt = list_count(job_req_list);
+	job_submit_user_msg = xmalloc(sizeof(char *) * het_job_cnt);
 	submit_job_list = list_create(NULL);
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
@@ -1409,7 +1409,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		if (job_uid == NO_VAL)
 			job_uid = job_desc_msg->user_id;
 
-		if ((error_code = _valid_id("REQUEST_JOB_PACK_ALLOCATION",
+		if ((error_code = _valid_id("REQUEST_HET_JOB_ALLOCATION",
 					    job_desc_msg, uid, gid))) {
 			break;
 		}
@@ -1439,7 +1439,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
 			error_code = ESLURM_INVALID_NODE_NAME;
-			error("REQUEST_JOB_PACK_ALLOCATION lacks alloc_node from uid=%d",
+			error("REQUEST_HET_JOB_ALLOCATION lacks alloc_node from uid=%d",
 			      uid);
 			break;
 		}
@@ -1455,7 +1455,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		}
 
 		/* Locks are for job_submit plugin use */
-		job_desc_msg->pack_job_offset = pack_job_offset;
+		job_desc_msg->het_job_offset = het_job_offset;
 		error_code = validate_job_create_req(job_desc_msg, uid,
 						     &job_submit_user_msg[inx++]);
 		if (error_code)
@@ -1466,12 +1466,15 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		job_ptr = NULL;
 		if (!job_desc_msg->resp_host)
 			job_desc_msg->resp_host = xstrdup(resp_host);
-		if (pack_job_offset) {
-			/* Email notifications disable except for pack leader */
+		if (het_job_offset) {
+			/*
+			 * Email notifications disable except for the
+			 * hetjob leader
+			 */
 			job_desc_msg->mail_type = 0;
 			xfree(job_desc_msg->mail_user);
 		}
-		job_desc_msg->pack_job_offset = pack_job_offset;
+		job_desc_msg->het_job_offset = het_job_offset;
 		error_code = job_allocate(job_desc_msg, false, false, NULL,
 					  true, uid, &job_ptr, &err_msg,
 					  msg->protocol_version);
@@ -1483,8 +1486,8 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		if (error_code && (job_ptr->job_state == JOB_FAILED))
 			break;
 		error_code = SLURM_SUCCESS;	/* Non-fatal error */
-		if (pack_job_id == 0) {
-			pack_job_id = job_ptr->job_id;
+		if (het_job_id == 0) {
+			het_job_id = job_ptr->job_id;
 			first_job_ptr = job_ptr;
 		}
 		snprintf(tmp_str, sizeof(tmp_str), "%u", job_ptr->job_id);
@@ -1492,43 +1495,43 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 			hostset_insert(jobid_hostset, tmp_str);
 		else
 			jobid_hostset = hostset_create(tmp_str);
-		job_ptr->pack_job_id     = pack_job_id;
-		job_ptr->pack_job_offset = pack_job_offset++;
+		job_ptr->het_job_id     = het_job_id;
+		job_ptr->het_job_offset = het_job_offset++;
 		list_append(submit_job_list, job_ptr);
 	}
 	list_iterator_destroy(iter);
 	xfree(hostname);
 
 	if ((error_code == 0) && (!first_job_ptr)) {
-		error("%s: No error, but no pack_job_id", __func__);
+		error("%s: No error, but no het_job_id", __func__);
 		error_code = SLURM_ERROR;
 	}
 
-	/* Validate limits on pack-job as a whole */
+	/* Validate limits on hetjob as a whole */
 	if ((error_code == SLURM_SUCCESS) &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    !acct_policy_validate_pack(submit_job_list)) {
-		info("Pack job %u exceeded association/QOS limit for user %u",
-		     pack_job_id, job_uid);
+	    !acct_policy_validate_het_job(submit_job_list)) {
+		info("Hetjob %u exceeded association/QOS limit for user %u",
+		     het_job_id, job_uid);
 		error_code = ESLURM_ACCOUNTING_POLICY;
         }
 
-	/* Set the pack_job_id_set */
-	_create_pack_job_id_set(jobid_hostset, pack_job_offset,
-				&pack_job_id_set);
+	/* Set the het_job_id_set */
+	_create_het_job_id_set(jobid_hostset, het_job_offset,
+				&het_job_id_set);
 
 	if (first_job_ptr)
-		first_job_ptr->pack_job_list = submit_job_list;
+		first_job_ptr->het_job_list = submit_job_list;
 	iter = list_iterator_create(submit_job_list);
 	while ((job_ptr = list_next(iter))) {
-		job_ptr->pack_job_id_set = xstrdup(pack_job_id_set);
+		job_ptr->het_job_id_set = xstrdup(het_job_id_set);
 	}
 	list_iterator_destroy(iter);
-	xfree(pack_job_id_set);
+	xfree(het_job_id_set);
 
 	if (error_code) {
 		/* Cancel remaining job records */
-		(void) list_for_each(submit_job_list, _pack_job_cancel, NULL);
+		(void) list_for_each(submit_job_list, _het_job_cancel, NULL);
 		if (!first_job_ptr)
 			FREE_NULL_LIST(submit_job_list);
 	} else {
@@ -1537,27 +1540,27 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		iter = list_iterator_create(submit_job_list);
 		while ((job_ptr = list_next(iter))) {
 			if (!resp)
-				resp = list_create(_del_alloc_pack_msg);
+				resp = list_create(_del_alloc_het_job_msg);
 			list_append(resp,
 				    build_alloc_msg(
 					    job_ptr, error_code,
 					    job_submit_user_msg[inx++]));
-			log_flag(HETERO_JOBS, "Submit %pJ", job_ptr);
+			log_flag(HETJOB, "Submit %pJ", job_ptr);
 		}
 		list_iterator_destroy(iter);
 	}
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini(&active_rpc_cnt);
-	END_TIMER2("_slurm_rpc_allocate_pack");
+	END_TIMER2("_slurm_rpc_allocate_het_job");
 
 	if (resp) {
 		slurm_msg_t response_msg;
 		response_init(&response_msg, msg);
-		response_msg.msg_type = RESPONSE_JOB_PACK_ALLOCATION;
+		response_msg.msg_type = RESPONSE_HET_JOB_ALLOCATION;
 		response_msg.data = resp;
 
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
-			_kill_job_on_msg_fail(pack_job_id);
+			_kill_job_on_msg_fail(het_job_id);
 		list_destroy(resp);
 	} else {
 		char *aggregate_user_msg;
@@ -1569,7 +1572,7 @@ send_msg:	info("%s: %s ", __func__, slurm_strerror(error_code));
 		 * If job is rejected, add the job submit message to the error
 		 * message to avoid it getting lost. Was saved off earlier.
 		 */
-		for (inx = 0; inx < pack_cnt; inx++) {
+		for (inx = 0; inx < het_job_cnt; inx++) {
 			char *line = NULL, *last = NULL;
 
 			if (!job_submit_user_msg[inx])
@@ -1602,7 +1605,7 @@ send_msg:	info("%s: %s ", __func__, slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 	}
 	xfree(err_msg);
-	for (inx = 0; inx < pack_cnt; inx++)
+	for (inx = 0; inx < het_job_cnt; inx++)
 		xfree(job_submit_user_msg[inx]);
 	xfree(job_submit_user_msg);
 
@@ -1676,7 +1679,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* Locks are for job_submit plugin use */
 		lock_slurmctld(job_read_lock);
-		job_desc_msg->pack_job_offset = NO_VAL;
+		job_desc_msg->het_job_offset = NO_VAL;
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
@@ -1721,7 +1724,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 				error_code = SLURM_ERROR;
 			}
 		} else {
-			job_desc_msg->pack_job_offset = NO_VAL;
+			job_desc_msg->het_job_offset = NO_VAL;
 			error_code = job_allocate(job_desc_msg, immediate,
 						  false, NULL, true, uid,
 						  &job_ptr, &err_msg,
@@ -2965,7 +2968,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* Locks are for job_submit plugin use */
 		lock_slurmctld(job_read_lock);
-		job_desc_msg->pack_job_offset = NO_VAL;
+		job_desc_msg->het_job_offset = NO_VAL;
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
@@ -2981,7 +2984,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		if (error_code == SLURM_SUCCESS) {
 			lock_slurmctld(job_write_lock);
 			if (job_desc_msg->job_id == NO_VAL) {
-				job_desc_msg->pack_job_offset = NO_VAL;
+				job_desc_msg->het_job_offset = NO_VAL;
 				error_code = job_allocate(job_desc_msg, false,
 							  true, &resp, true,
 							  uid, &job_ptr,
@@ -3212,7 +3215,7 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 	}
 }
 
-static void _pack_alloc_list_del(void *x)
+static void _het_job_alloc_list_del(void *x)
 {
 	resource_allocation_response_msg_t *job_info_resp_msg;
 
@@ -3224,14 +3227,14 @@ static void _pack_alloc_list_del(void *x)
 }
 
 /*
- * _slurm_rpc_job_pack_alloc_info - process RPC to get details on existing pack
- * job
+ * _slurm_rpc_het_job_alloc_info - process RPC to get details on existing
+ *				       hetjob.
  */
-static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
+static void _slurm_rpc_het_job_alloc_info(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
-	job_record_t *job_ptr, *pack_job;
+	job_record_t *job_ptr, *het_job;
 	ListIterator iter;
 	void *working_cluster_rec = NULL;
 	List resp;
@@ -3244,17 +3247,17 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_JOB_PACK_ALLOC_INFO from uid=%d", uid);
+	debug2("Processing RPC: REQUEST_HET_JOB_ALLOC_INFO from uid=%d", uid);
 
 	/* do RPC call */
 	lock_slurmctld(job_read_lock);
 	error_code = job_alloc_info(uid, job_info_msg->job_id, &job_ptr);
-	END_TIMER2("_slurm_rpc_job_pack_alloc_info");
+	END_TIMER2("_slurm_rpc_job_het_job_alloc_info");
 
 	/* return result */
 	if ((error_code == SLURM_SUCCESS) && job_ptr &&
-	    (job_ptr->pack_job_id && !job_ptr->pack_job_list))
-		error_code = ESLURM_NOT_PACK_JOB_LEADER;
+	    (job_ptr->het_job_id && !job_ptr->het_job_list))
+		error_code = ESLURM_NOT_HET_JOB_LEADER;
 	if (error_code || (job_ptr == NULL) || (job_ptr->job_resrcs == NULL)) {
 		unlock_slurmctld(job_read_lock);
 		debug2("%s: JobId=%u, uid=%u: %s", __func__,
@@ -3266,30 +3269,30 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 	debug("%s: JobId=%u NodeList=%s %s", __func__,
 	      job_info_msg->job_id, job_ptr->nodes, TIME_STR);
 
-	if (!job_ptr->pack_job_list) {
-		resp = list_create(_pack_alloc_list_del);
+	if (!job_ptr->het_job_list) {
+		resp = list_create(_het_job_alloc_list_del);
 		job_info_resp_msg = build_job_info_resp(job_ptr);
 		set_remote_working_response(job_info_resp_msg, job_ptr,
 					    job_info_msg->req_cluster);
 		list_append(resp, job_info_resp_msg);
 	} else {
-		resp = list_create(_pack_alloc_list_del);
-		iter = list_iterator_create(job_ptr->pack_job_list);
-		while ((pack_job = list_next(iter))) {
-			if (job_ptr->pack_job_id != pack_job->pack_job_id) {
-				error("%s: Bad pack_job_list for %pJ",
+		resp = list_create(_het_job_alloc_list_del);
+		iter = list_iterator_create(job_ptr->het_job_list);
+		while ((het_job = list_next(iter))) {
+			if (job_ptr->het_job_id != het_job->het_job_id) {
+				error("%s: Bad het_job_list for %pJ",
 				      __func__, job_ptr);
 				continue;
 			}
-			if (pack_job->job_id != job_info_msg->job_id)
-				(void) job_alloc_info_ptr(uid, pack_job);
-			job_info_resp_msg = build_job_info_resp(pack_job);
+			if (het_job->job_id != job_info_msg->job_id)
+				(void) job_alloc_info_ptr(uid, het_job);
+			job_info_resp_msg = build_job_info_resp(het_job);
 			if (working_cluster_rec) {
 				job_info_resp_msg->working_cluster_rec =
 					working_cluster_rec;
 			} else {
 				set_remote_working_response(job_info_resp_msg,
-						pack_job,
+						het_job,
 						job_info_msg->req_cluster);
 				working_cluster_rec =
 					job_info_resp_msg->working_cluster_rec;
@@ -3301,7 +3304,7 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 	unlock_slurmctld(job_read_lock);
 
 	response_init(&response_msg, msg);
-	response_msg.msg_type = RESPONSE_JOB_PACK_ALLOCATION;
+	response_msg.msg_type = RESPONSE_HET_JOB_ALLOCATION;
 	response_msg.data     = resp;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	FREE_NULL_LIST(resp);
@@ -3309,7 +3312,7 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 
 #ifndef HAVE_FRONT_END
 static slurm_addr_t *_build_node_addr(char *node_list, uint32_t node_cnt,
-				      uint32_t pack_job_id)
+				      uint32_t het_job_id)
 {
 	hostlist_t host_list = NULL;
 	node_record_t *node_ptr;
@@ -3318,8 +3321,8 @@ static slurm_addr_t *_build_node_addr(char *node_list, uint32_t node_cnt,
 	int error_code = SLURM_SUCCESS, node_inx = 0;
 
 	if ((host_list = hostlist_create(node_list)) == NULL) {
-		error("%s hostlist_create error for pack JobId=%u (%s): %m",
-		      __func__, pack_job_id, node_list);
+		error("%s hostlist_create error for hetjob JobId=%u (%s): %m",
+		      __func__, het_job_id, node_list);
 		return NULL;
 	}
 
@@ -3331,8 +3334,8 @@ static slurm_addr_t *_build_node_addr(char *node_list, uint32_t node_cnt,
 			       &node_ptr->slurm_addr, sizeof(slurm_addr_t));
 			node_inx++;
 		} else {
-			error("%s: Invalid node %s in pack JobId=%u",
-			      __func__, this_node_name, pack_job_id);
+			error("%s: Invalid node %s in hetjob JobId=%u",
+			      __func__, this_node_name, het_job_id);
 			error_code = SLURM_ERROR;
 		}
 		free(this_node_name);
@@ -3356,7 +3359,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 #else
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
-	job_record_t *job_ptr = NULL, *job_pack_ptr;
+	job_record_t *job_ptr = NULL, *het_job_ptr;
 	step_record_t *step_ptr;
 	char *local_node_list = NULL, *node_list = NULL;
 	node_record_t *node_ptr;
@@ -3381,28 +3384,28 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 
 	/* do RPC call */
 	lock_slurmctld(job_read_lock);
-	if (job_info_msg->pack_job_offset == NO_VAL) {
+	if (job_info_msg->het_job_offset == NO_VAL) {
 		bitstr_t *node_bitmap = NULL;
 		ListIterator iter;
 		error_code = job_alloc_info(uid, job_info_msg->job_id,
 					    &job_ptr);
-		if (job_ptr && job_ptr->pack_job_list) {  /* Do full pack job */
+		if (job_ptr && job_ptr->het_job_list) {  /* Do full HetJob */
 			job_info_msg->step_id = NO_VAL;
-			iter = list_iterator_create(job_ptr->pack_job_list);
-			while ((job_pack_ptr = list_next(iter))) {
+			iter = list_iterator_create(job_ptr->het_job_list);
+			while ((het_job_ptr = list_next(iter))) {
 				error_code = job_alloc_info_ptr(uid,
-							        job_pack_ptr);
+							        het_job_ptr);
 				if (error_code)
 					break;
-				if (!job_pack_ptr->node_bitmap) {
+				if (!het_job_ptr->node_bitmap) {
 					debug("%s: %pJ lacks node bitmap",
-					      __func__, job_pack_ptr);
+					      __func__, het_job_ptr);
 				} else if (!node_bitmap) {
 					node_bitmap = bit_copy(
-						     job_pack_ptr->node_bitmap);
+						     het_job_ptr->node_bitmap);
 				} else {
 					bit_or(node_bitmap,
-					       job_pack_ptr->node_bitmap);
+					       het_job_ptr->node_bitmap);
 				}
 			}
 			list_iterator_destroy(iter);
@@ -3419,8 +3422,8 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 			FREE_NULL_BITMAP(node_bitmap);
 		}
 	} else {
-		job_ptr = find_job_pack_record(job_info_msg->job_id,
-					       job_info_msg->pack_job_offset);
+		job_ptr = find_het_job_record(job_info_msg->job_id,
+					      job_info_msg->het_job_offset);
 		if (job_ptr) {
 			job_info_msg->job_id = job_ptr->job_id;
 			error_code = job_alloc_info(uid, job_info_msg->job_id,
@@ -3493,7 +3496,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	 */
 	memset(&sbcast_arg, 0, sizeof(sbcast_arg));
 	sbcast_arg.job_id = job_ptr->job_id;
-	sbcast_arg.pack_jobid = job_ptr->pack_job_id;
+	sbcast_arg.het_job_id = job_ptr->het_job_id;
 	sbcast_arg.uid = job_ptr->user_id;
 	sbcast_arg.gid = job_ptr->group_id;
 	sbcast_arg.nodes = node_list; /* avoid extra copy */
@@ -4002,7 +4005,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* Locks are for job_submit plugin use */
 		lock_slurmctld(job_read_lock);
-		job_desc_msg->pack_job_offset = NO_VAL;
+		job_desc_msg->het_job_offset = NO_VAL;
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
@@ -4036,7 +4039,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 			reject_job = true;
 	} else {
 		/* Create new job allocation */
-		job_desc_msg->pack_job_offset = NO_VAL;
+		job_desc_msg->het_job_offset = NO_VAL;
 		error_code = job_allocate(job_desc_msg,
 					  job_desc_msg->immediate,
 					  false, NULL, 0, uid, &job_ptr,
@@ -4105,14 +4108,14 @@ send_msg:
 	xfree(job_submit_user_msg);
 }
 
-/* _slurm_rpc_submit_batch_pack_job - process RPC to submit a batch pack job */
-static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
+/* _slurm_rpc_submit_batch_het_job - process RPC to submit a batch hetjob */
+static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	ListIterator iter;
 	int error_code = SLURM_SUCCESS, alloc_only = 0;
 	DEF_TIMERS;
-	uint32_t pack_job_id = 0, pack_job_offset = 0;
+	uint32_t het_job_id = 0, het_job_offset = 0;
 	job_record_t *job_ptr = NULL, *first_job_ptr = NULL;
 	slurm_msg_t response_msg;
 	submit_response_msg_t submit_msg;
@@ -4134,13 +4137,13 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	List submit_job_list = NULL;
 	hostset_t jobid_hostset = NULL;
 	char tmp_str[32];
-	char *pack_job_id_set = NULL;
+	char *het_job_id_set = NULL;
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d",
+	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_HET_JOB from uid=%d",
 	       uid);
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
-		info("REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d with empty job list",
+		info("REQUEST_SUBMIT_BATCH_HET_JOB from uid=%d with empty job list",
 		     uid);
 		error_code = SLURM_ERROR;
 		reject_job = true;
@@ -4158,7 +4161,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
-		info("REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d with empty job list",
+		info("REQUEST_SUBMIT_BATCH_HET_JOB from uid=%d with empty job list",
 		     uid);
 		error_code = SLURM_ERROR;
 		reject_job = true;
@@ -4169,7 +4172,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	 * If any job component has required nodes, those nodes must be excluded
 	 * from all other components to avoid scheduling deadlock
 	 */
-	_exclude_pack_nodes(job_req_list);
+	_exclude_het_job_nodes(job_req_list);
 
 	/* Validate the individual request */
 	lock_slurmctld(job_read_lock);     /* Locks for job_submit plugin use */
@@ -4192,7 +4195,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
-			error("REQUEST_SUBMIT_BATCH_PACK_JOB lacks alloc_node from uid=%d",
+			error("REQUEST_SUBMIT_BATCH_HET_JOB lacks alloc_node from uid=%d",
 			      uid);
 			error_code = ESLURM_INVALID_NODE_NAME;
 			break;
@@ -4200,7 +4203,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 
 		dump_job_desc(job_desc_msg);
 
-		job_desc_msg->pack_job_offset = pack_job_offset;
+		job_desc_msg->het_job_offset = het_job_offset;
 		error_code = validate_job_create_req(job_desc_msg, uid,
 						     &err_msg);
 		if (err_msg) {
@@ -4211,7 +4214,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 				if (job_submit_user_msg)
 					sep = "\n";
 				xstrfmtcat(job_submit_user_msg, "%s%d: %s",
-					   sep, pack_job_offset, tok);
+					   sep, het_job_offset, tok);
 				tok = strtok_r(NULL, "\n", &save_ptr);
 			}
 			xfree(err_msg);
@@ -4222,7 +4225,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			break;
 		}
 
-		pack_job_offset++;
+		het_job_offset++;
 	}
 	list_iterator_destroy(iter);
 	xfree(hostname);
@@ -4245,7 +4248,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 
 	/* Create new job allocations */
 	submit_job_list = list_create(NULL);
-	pack_job_offset = 0;
+	het_job_offset = 0;
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
 	START_TIMER;	/* Restart after we have locks */
@@ -4253,28 +4256,31 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	while ((job_desc_msg = list_next(iter))) {
 		if (!script)
 			script = xstrdup(job_desc_msg->script);
-		if (pack_job_offset && job_desc_msg->script) {
-			info("%s: Pack job %u offset %u has script, being ignored",
-			     __func__, pack_job_id, pack_job_offset);
+		if (het_job_offset && job_desc_msg->script) {
+			info("%s: Hetjob %u offset %u has script, being ignored",
+			     __func__, het_job_id, het_job_offset);
 			xfree(job_desc_msg->script);
 
 		}
-		if (pack_job_offset) {
-			/* Email notifications disable except for pack leader */
+		if (het_job_offset) {
+			/*
+			 * Email notifications disabled except for
+			 * hetjob leader
+			 */
 			job_desc_msg->mail_type = 0;
 			xfree(job_desc_msg->mail_user);
 		}
 		if (!job_desc_msg->burst_buffer) {
 			xfree(job_desc_msg->script);
-			if (!(job_desc_msg->script = bb_g_build_pack_script(
-				      script, pack_job_offset))) {
+			if (!(job_desc_msg->script = bb_g_build_het_job_script(
+				      script, het_job_offset))) {
 				error_code =
 					ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				reject_job = true;
 				break;
 			}
 		}
-		job_desc_msg->pack_job_offset = pack_job_offset;
+		job_desc_msg->het_job_offset = het_job_offset;
 		error_code = job_allocate(job_desc_msg,
 					  job_desc_msg->immediate, false,
 					  NULL, alloc_only, uid, &job_ptr,
@@ -4283,8 +4289,8 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		    (error_code && job_ptr->job_state == JOB_FAILED)) {
 			reject_job = true;
 		} else {
-			if (pack_job_id == 0) {
-				pack_job_id = job_ptr->job_id;
+			if (het_job_id == 0) {
+				het_job_id = job_ptr->job_id;
 				first_job_ptr = job_ptr;
 				alloc_only = 1;
 			}
@@ -4294,8 +4300,8 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 				hostset_insert(jobid_hostset, tmp_str);
 			else
 				jobid_hostset = hostset_create(tmp_str);
-			job_ptr->pack_job_id     = pack_job_id;
-			job_ptr->pack_job_offset = pack_job_offset++;
+			job_ptr->het_job_id     = het_job_id;
+			job_ptr->het_job_offset = het_job_offset++;
 			job_ptr->batch_flag      = 1;
 			list_append(submit_job_list, job_ptr);
 		}
@@ -4311,43 +4317,43 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	list_iterator_destroy(iter);
 	xfree(script);
 
-	if ((pack_job_id == 0) && !reject_job) {
-		info("%s: No error, but no pack_job_id", __func__);
+	if ((het_job_id == 0) && !reject_job) {
+		info("%s: No error, but no het_job_id", __func__);
 		error_code = SLURM_ERROR;
 		reject_job = true;
 	}
 
-	/* Validate limits on pack-job as a whole */
+	/* Validate limits on hetjob as a whole */
 	if (!reject_job &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    !acct_policy_validate_pack(submit_job_list)) {
-		info("Pack JobId=%u exceeded association/QOS limit for user %u",
-		     pack_job_id, job_uid);
+	    !acct_policy_validate_het_job(submit_job_list)) {
+		info("Hetjob JobId=%u exceeded association/QOS limit for user %u",
+		     het_job_id, job_uid);
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		reject_job = true;
 	}
 
-	_create_pack_job_id_set(jobid_hostset, pack_job_offset,
-				&pack_job_id_set);
+	_create_het_job_id_set(jobid_hostset, het_job_offset,
+			       &het_job_id_set);
 	if (first_job_ptr)
-		first_job_ptr->pack_job_list = submit_job_list;
+		first_job_ptr->het_job_list = submit_job_list;
 
 	iter = list_iterator_create(submit_job_list);
 	while ((job_ptr = list_next(iter))) {
-		job_ptr->pack_job_id_set = xstrdup(pack_job_id_set);
+		job_ptr->het_job_id_set = xstrdup(het_job_id_set);
 		if ((error_code == SLURM_SUCCESS) &&
-		    (slurmctld_conf.debug_flags & DEBUG_FLAG_HETERO_JOBS)) {
+		    (slurmctld_conf.debug_flags & DEBUG_FLAG_HETJOB)) {
 			info("Submit %pJ", job_ptr);
 		}
 	}
 	list_iterator_destroy(iter);
-	xfree(pack_job_id_set);
+	xfree(het_job_id_set);
 
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini(&active_rpc_cnt);
 
 send_msg:
-	END_TIMER2("_slurm_rpc_submit_batch_pack_job");
+	END_TIMER2("_slurm_rpc_submit_batch_het_job");
 	if (reject_job) {
 		info("%s: %s", __func__, slurm_strerror(error_code));
 
@@ -4370,18 +4376,18 @@ send_msg:
 		else
 			slurm_send_rc_msg(msg, error_code);
 		if (submit_job_list) {
-			(void) list_for_each(submit_job_list, _pack_job_cancel,
+			(void) list_for_each(submit_job_list, _het_job_cancel,
 					     NULL);
 			if (first_job_ptr)
-				first_job_ptr->pack_job_list = submit_job_list;
+				first_job_ptr->het_job_list = submit_job_list;
 			else
 				FREE_NULL_LIST(submit_job_list);
 		}
 	} else {
-		info("%s: JobId=%u %s", __func__, pack_job_id, TIME_STR);
+		info("%s: JobId=%u %s", __func__, het_job_id, TIME_STR);
 		/* send job_ID */
 		memset(&submit_msg, 0, sizeof(submit_msg));
-		submit_msg.job_id     = pack_job_id;
+		submit_msg.job_id     = het_job_id;
 		submit_msg.step_id    = SLURM_BATCH_SCRIPT;
 		submit_msg.error_code = error_code;
 		submit_msg.job_submit_user_msg = job_submit_user_msg;

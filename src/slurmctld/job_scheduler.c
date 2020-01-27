@@ -1434,7 +1434,7 @@ next_part:
 		if (job_ptr->preempt_in_progress)
 			continue;	/* scheduled in another partition */
 
-		if (job_ptr->pack_job_id) {
+		if (job_ptr->het_job_id) {
 			fail_by_part = true;
 			goto fail_this_part;
 		}
@@ -1963,7 +1963,7 @@ extern int sort_job_queue2(void *x, void *y)
 {
 	job_queue_rec_t *job_rec1 = *(job_queue_rec_t **) x;
 	job_queue_rec_t *job_rec2 = *(job_queue_rec_t **) y;
-	pack_details_t *details = NULL;
+	het_job_details_t *details = NULL;
 	bool has_resv1, has_resv2;
 	static time_t config_update = 0;
 	static bool preemption_enabled = true;
@@ -1983,10 +1983,10 @@ extern int sort_job_queue2(void *x, void *y)
 			return 1;
 	}
 
-	if (bf_hetjob_prio && job_rec1->job_ptr->pack_job_id &&
-	    (job_rec1->job_ptr->pack_job_id !=
-	     job_rec2->job_ptr->pack_job_id)) {
-		if ((details = job_rec1->job_ptr->pack_details))
+	if (bf_hetjob_prio && job_rec1->job_ptr->het_job_id &&
+	    (job_rec1->job_ptr->het_job_id !=
+	     job_rec2->job_ptr->het_job_id)) {
+		if ((details = job_rec1->job_ptr->het_details))
 			has_resv1 = details->any_resv;
 		else
 			has_resv1 = (job_rec1->job_ptr->resv_id != 0) ||
@@ -1995,10 +1995,10 @@ extern int sort_job_queue2(void *x, void *y)
 		has_resv1 = (job_rec1->job_ptr->resv_id != 0) ||
 			job_rec1->resv_ptr;
 
-	if (bf_hetjob_prio && job_rec2->job_ptr->pack_job_id &&
-	    (job_rec2->job_ptr->pack_job_id !=
-	     job_rec1->job_ptr->pack_job_id)) {
-		if ((details = job_rec2->job_ptr->pack_details))
+	if (bf_hetjob_prio && job_rec2->job_ptr->het_job_id &&
+	    (job_rec2->job_ptr->het_job_id !=
+	     job_rec1->job_ptr->het_job_id)) {
+		if ((details = job_rec2->job_ptr->het_details))
 			has_resv2 = details->any_resv;
 		else
 			has_resv2 = (job_rec2->job_ptr->resv_id != 0) ||
@@ -2013,20 +2013,20 @@ extern int sort_job_queue2(void *x, void *y)
 		return 1;
 
 	if (job_rec1->part_ptr && job_rec2->part_ptr) {
-		if (bf_hetjob_prio && job_rec1->job_ptr->pack_job_id &&
-		    (job_rec1->job_ptr->pack_job_id !=
-		     job_rec2->job_ptr->pack_job_id)) {
-			if ((details = job_rec1->job_ptr->pack_details))
+		if (bf_hetjob_prio && job_rec1->job_ptr->het_job_id &&
+		    (job_rec1->job_ptr->het_job_id !=
+		     job_rec2->job_ptr->het_job_id)) {
+			if ((details = job_rec1->job_ptr->het_details))
 				p1 = details->priority_tier;
 			else
 				p1 = job_rec1->part_ptr->priority_tier;
 		} else
 			p1 = job_rec1->part_ptr->priority_tier;
 
-		if (bf_hetjob_prio && job_rec2->job_ptr->pack_job_id &&
-		    (job_rec2->job_ptr->pack_job_id !=
-		     job_rec1->job_ptr->pack_job_id)) {
-			if ((details = job_rec2->job_ptr->pack_details))
+		if (bf_hetjob_prio && job_rec2->job_ptr->het_job_id &&
+		    (job_rec2->job_ptr->het_job_id !=
+		     job_rec1->job_ptr->het_job_id)) {
+			if ((details = job_rec2->job_ptr->het_details))
 				p2 = details->priority_tier;
 			else
 				p2 = job_rec2->part_ptr->priority_tier;
@@ -2039,10 +2039,10 @@ extern int sort_job_queue2(void *x, void *y)
 			return -1;
 	}
 
-	if (bf_hetjob_prio && job_rec1->job_ptr->pack_job_id &&
-	    (job_rec1->job_ptr->pack_job_id !=
-	     job_rec2->job_ptr->pack_job_id)) {
-		if ((details = job_rec1->job_ptr->pack_details))
+	if (bf_hetjob_prio && job_rec1->job_ptr->het_job_id &&
+	    (job_rec1->job_ptr->het_job_id !=
+	     job_rec2->job_ptr->het_job_id)) {
+		if ((details = job_rec1->job_ptr->het_details))
 			p1 = details->priority;
 		else {
 			if (job_rec1->job_ptr->part_ptr_list &&
@@ -2059,10 +2059,10 @@ extern int sort_job_queue2(void *x, void *y)
 			p1 = job_rec1->job_ptr->priority;
 	}
 
-	if (bf_hetjob_prio && job_rec2->job_ptr->pack_job_id &&
-	    (job_rec2->job_ptr->pack_job_id !=
-	     job_rec1->job_ptr->pack_job_id)) {
-		if ((details = job_rec2->job_ptr->pack_details))
+	if (bf_hetjob_prio && job_rec2->job_ptr->het_job_id &&
+	    (job_rec2->job_ptr->het_job_id !=
+	     job_rec1->job_ptr->het_job_id)) {
+		if ((details = job_rec2->job_ptr->het_details))
 			p2 = details->priority;
 		else {
 			if (job_rec2->job_ptr->part_ptr_list &&
@@ -2116,7 +2116,7 @@ extern int sort_job_queue2(void *x, void *y)
 }
 
 /* The environment" variable is points to one big xmalloc. In order to
- * manipulate the array for a pack job, we need to split it into an array
+ * manipulate the array for a hetjob, we need to split it into an array
  * containing multiple xmalloc variables */
 static void _split_env(batch_job_launch_msg_t *launch_msg_ptr)
 {
@@ -2139,7 +2139,7 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	launch_msg_ptr = (batch_job_launch_msg_t *)
 		xmalloc(sizeof(batch_job_launch_msg_t));
 	launch_msg_ptr->job_id = job_ptr->job_id;
-	launch_msg_ptr->pack_jobid = job_ptr->pack_job_id;
+	launch_msg_ptr->het_job_id = job_ptr->het_job_id;
 	launch_msg_ptr->step_id = NO_VAL;
 	launch_msg_ptr->array_job_id = job_ptr->array_job_id;
 	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
@@ -2251,185 +2251,185 @@ job_failed:
 
 /* Validate the job is ready for launch
  * RET pointer to batch job to launch or NULL if not ready yet */
-static job_record_t *_pack_job_ready(job_record_t *job_ptr)
+static job_record_t *_het_job_ready(job_record_t *job_ptr)
 {
-	job_record_t *pack_leader, *pack_job;
+	job_record_t *het_job_leader, *het_job;
 	ListIterator iter;
 
-	if (job_ptr->pack_job_id == 0)	/* Not a pack job */
+	if (job_ptr->het_job_id == 0)	/* Not a hetjob */
 		return job_ptr;
 
-	pack_leader = find_job_record(job_ptr->pack_job_id);
-	if (!pack_leader) {
-		error("Job pack leader %pJ not found", job_ptr);
+	het_job_leader = find_job_record(job_ptr->het_job_id);
+	if (!het_job_leader) {
+		error("Hetjob leader %pJ not found", job_ptr);
 		return NULL;
 	}
-	if (!pack_leader->pack_job_list) {
-		error("Job pack leader %pJ lacks pack_job_list", job_ptr);
+	if (!het_job_leader->het_job_list) {
+		error("Hetjob leader %pJ lacks het_job_list", job_ptr);
 		return NULL;
 	}
 
-	iter = list_iterator_create(pack_leader->pack_job_list);
-	while ((pack_job = list_next(iter))) {
+	iter = list_iterator_create(het_job_leader->het_job_list);
+	while ((het_job = list_next(iter))) {
 		uint8_t prolog = 0;
-		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
-			error("%s: Bad pack_job_list for %pJ",
-			      __func__, pack_leader);
+		if (het_job_leader->het_job_id != het_job->het_job_id) {
+			error("%s: Bad het_job_list for %pJ",
+			      __func__, het_job_leader);
 			continue;
 		}
 		if (job_ptr->details)
-			prolog = pack_job->details->prolog_running;
-		if (prolog || IS_JOB_CONFIGURING(pack_job) ||
-		    !test_job_nodes_ready(pack_job)) {
-			pack_leader = NULL;
+			prolog = het_job->details->prolog_running;
+		if (prolog || IS_JOB_CONFIGURING(het_job) ||
+		    !test_job_nodes_ready(het_job)) {
+			het_job_leader = NULL;
 			break;
 		}
 		if ((job_ptr->batch_flag == 0) ||
 		    (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) {
-			pack_leader = NULL;
+			het_job_leader = NULL;
 			break;
 		}
 	}
 	list_iterator_destroy(iter);
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-		if (pack_leader) {
-			info("Batch pack %pJ being launched", pack_leader);
-		} else if (pack_job) {
-			info("Batch pack %pJ waiting for job to be ready",
-			     pack_job);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_HETJOB) {
+		if (het_job_leader) {
+			info("Batch hetjob %pJ being launched", het_job_leader);
+		} else if (het_job) {
+			info("Batch hetjob %pJ waiting for job to be ready",
+			     het_job);
 		}
 	}
 
-	return pack_leader;
+	return het_job_leader;
 }
 
 /*
- * Set some pack job environment variables. This will include information
+ * Set some hetjob environment variables. This will include information
  * about multiple job components (i.e. different slurmctld job records).
  */
-static void _set_pack_env(job_record_t *pack_leader,
-			  batch_job_launch_msg_t *launch_msg_ptr)
+static void _set_het_job_env(job_record_t *het_job_leader,
+			     batch_job_launch_msg_t *launch_msg_ptr)
 {
-	job_record_t *pack_job;
-	int i, pack_offset = 0;
+	job_record_t *het_job;
+	int i, het_job_offset = 0;
 	ListIterator iter;
 
-	if (pack_leader->pack_job_id == 0)
+	if (het_job_leader->het_job_id == 0)
 		return;
 	if (!launch_msg_ptr->environment) {
-		error("%pJ lacks environment", pack_leader);
+		error("%pJ lacks environment", het_job_leader);
 		return;
 	}
-	if (!pack_leader->pack_job_list) {
-		error("Job pack leader %pJ lacks pack_job_list",
-		      pack_leader);
+	if (!het_job_leader->het_job_list) {
+		error("Hetjob leader %pJ lacks het_job_list",
+		      het_job_leader);
 		return;
 	}
 
 	/* "environment" needs NULL terminator */
 	xrealloc(launch_msg_ptr->environment,
 		 sizeof(char *) * (launch_msg_ptr->envc + 1));
-	iter = list_iterator_create(pack_leader->pack_job_list);
-	while ((pack_job = list_next(iter))) {
+	iter = list_iterator_create(het_job_leader->het_job_list);
+	while ((het_job = list_next(iter))) {
 		uint16_t cpus_per_task = 1;
 		uint32_t num_cpus = 0;
 		uint64_t tmp_mem = 0;
 		char *tmp_str = NULL;
 
-		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
-			error("%s: Bad pack_job_list for %pJ",
-			      __func__, pack_leader);
+		if (het_job_leader->het_job_id != het_job->het_job_id) {
+			error("%s: Bad het_job_list for %pJ",
+			      __func__, het_job_leader);
 			continue;
 		}
-		if (pack_job->details &&
-		    (pack_job->details->cpus_per_task > 0) &&
-		    (pack_job->details->cpus_per_task != NO_VAL16)) {
-			cpus_per_task = pack_job->details->cpus_per_task;
+		if (het_job->details &&
+		    (het_job->details->cpus_per_task > 0) &&
+		    (het_job->details->cpus_per_task != NO_VAL16)) {
+			cpus_per_task = het_job->details->cpus_per_task;
 		}
-		if (pack_job->account) {
-			(void) env_array_overwrite_pack_fmt(
+		if (het_job->account) {
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_JOB_ACCOUNT",
-				pack_offset, "%s", pack_job->account);
+				het_job_offset, "%s", het_job->account);
 		}
 
-		if (pack_job->job_resrcs) {
+		if (het_job->job_resrcs) {
 			tmp_str = uint32_compressed_to_str(
-				pack_job->job_resrcs->cpu_array_cnt,
-				pack_job->job_resrcs->cpu_array_value,
-				pack_job->job_resrcs->cpu_array_reps);
-			(void) env_array_overwrite_pack_fmt(
+				het_job->job_resrcs->cpu_array_cnt,
+				het_job->job_resrcs->cpu_array_value,
+				het_job->job_resrcs->cpu_array_reps);
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_JOB_CPUS_PER_NODE",
-				pack_offset, "%s", tmp_str);
+				het_job_offset, "%s", tmp_str);
 			xfree(tmp_str);
 		}
-		(void) env_array_overwrite_pack_fmt(
+		(void) env_array_overwrite_het_fmt(
 			&launch_msg_ptr->environment,
 			"SLURM_JOB_ID",
-			pack_offset, "%u", pack_job->job_id);
-		(void) env_array_overwrite_pack_fmt(
+			het_job_offset, "%u", het_job->job_id);
+		(void) env_array_overwrite_het_fmt(
 			&launch_msg_ptr->environment,
 			"SLURM_JOB_NAME",
-			pack_offset, "%s", pack_job->name);
-		(void) env_array_overwrite_pack_fmt(
+			het_job_offset, "%s", het_job->name);
+		(void) env_array_overwrite_het_fmt(
 			&launch_msg_ptr->environment,
 			"SLURM_JOB_NODELIST",
-			pack_offset, "%s", pack_job->nodes);
-		(void) env_array_overwrite_pack_fmt(
+			het_job_offset, "%s", het_job->nodes);
+		(void) env_array_overwrite_het_fmt(
 			&launch_msg_ptr->environment,
 			"SLURM_JOB_NUM_NODES",
-			pack_offset, "%u", pack_job->node_cnt);
-		if (pack_job->partition) {
-			(void) env_array_overwrite_pack_fmt(
+			het_job_offset, "%u", het_job->node_cnt);
+		if (het_job->partition) {
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_JOB_PARTITION",
-				pack_offset, "%s", pack_job->partition);
+				het_job_offset, "%s", het_job->partition);
 		}
-		if (pack_job->qos_ptr) {
+		if (het_job->qos_ptr) {
 			slurmdb_qos_rec_t *qos;
 			char *qos_name;
 
-			qos = (slurmdb_qos_rec_t *) pack_job->qos_ptr;
+			qos = (slurmdb_qos_rec_t *) het_job->qos_ptr;
 			if (!xstrcmp(qos->description, "Normal QOS default"))
 				qos_name = "normal";
 			else
 				qos_name = qos->description;
-			(void) env_array_overwrite_pack_fmt(
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_JOB_QOS",
-				pack_offset, "%s", qos_name);
+				het_job_offset, "%s", qos_name);
 		}
-		if (pack_job->resv_name) {
-			(void) env_array_overwrite_pack_fmt(
+		if (het_job->resv_name) {
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_JOB_RESERVATION",
-				pack_offset, "%s", pack_job->resv_name);
+				het_job_offset, "%s", het_job->resv_name);
 		}
-		if (pack_job->details)
-			tmp_mem = pack_job->details->pn_min_memory;
+		if (het_job->details)
+			tmp_mem = het_job->details->pn_min_memory;
 		if (tmp_mem & MEM_PER_CPU) {
 			tmp_mem &= (~MEM_PER_CPU);
-			(void) env_array_overwrite_pack_fmt(
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_MEM_PER_CPU",
-				pack_offset, "%"PRIu64"", tmp_mem);
+				het_job_offset, "%"PRIu64"", tmp_mem);
 		} else if (tmp_mem) {
-			(void) env_array_overwrite_pack_fmt(
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_MEM_PER_NODE",
-				pack_offset, "%"PRIu64"", tmp_mem);
+				het_job_offset, "%"PRIu64"", tmp_mem);
 		}
-		if (pack_job->alias_list) {
-			(void) env_array_overwrite_pack_fmt(
+		if (het_job->alias_list) {
+			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
-				"SLURM_NODE_ALIASES", pack_offset,
-				"%s", pack_job->alias_list);
+				"SLURM_NODE_ALIASES", het_job_offset,
+				"%s", het_job->alias_list);
 		}
-		if (pack_job->details && pack_job->job_resrcs) {
+		if (het_job->details && het_job->job_resrcs) {
 			/* Both should always be set for active jobs */
-			struct job_resources *resrcs_ptr = pack_job->job_resrcs;
+			struct job_resources *resrcs_ptr = het_job->job_resrcs;
 			slurm_step_layout_t *step_layout = NULL;
 			slurm_step_layout_req_t step_layout_req;
 			uint16_t cpus_per_task_array[1];
@@ -2441,30 +2441,30 @@ static void _set_pack_env(job_record_t *pack_leader,
 					resrcs_ptr->cpu_array_reps[i];
 			}
 
-			if (pack_job->details->num_tasks) {
+			if (het_job->details->num_tasks) {
 				step_layout_req.num_tasks =
-					pack_job->details->num_tasks;
+					het_job->details->num_tasks;
 			} else {
 				step_layout_req.num_tasks = num_cpus /
 					cpus_per_task;
 			}
-			step_layout_req.num_hosts = pack_job->node_cnt;
+			step_layout_req.num_hosts = het_job->node_cnt;
 
 			if ((step_layout_req.node_list =
 			     getenvp(launch_msg_ptr->environment,
 				     "SLURM_ARBITRARY_NODELIST"))) {
 				task_dist = SLURM_DIST_ARBITRARY;
 			} else {
-				step_layout_req.node_list = pack_job->nodes;
+				step_layout_req.node_list = het_job->nodes;
 				task_dist = SLURM_DIST_BLOCK;
 			}
 			step_layout_req.cpus_per_node =
-				pack_job->job_resrcs->cpu_array_value;
+				het_job->job_resrcs->cpu_array_value;
 			step_layout_req.cpu_count_reps =
-				pack_job->job_resrcs->cpu_array_reps;
+				het_job->job_resrcs->cpu_array_reps;
 			cpus_per_task_array[0] = cpus_per_task;
 			step_layout_req.cpus_per_task = cpus_per_task_array;
-			cpus_task_reps[0] = pack_job->node_cnt;
+			cpus_task_reps[0] = het_job->node_cnt;
 			step_layout_req.cpus_task_reps = cpus_task_reps;
 			step_layout_req.task_dist = task_dist;
 			step_layout_req.plane_size = NO_VAL16;
@@ -2474,18 +2474,21 @@ static void _set_pack_env(job_record_t *pack_leader,
 					step_layout->node_cnt,
 					step_layout->tasks);
 				slurm_step_layout_destroy(step_layout);
-				(void) env_array_overwrite_pack_fmt(
+				(void) env_array_overwrite_het_fmt(
 					&launch_msg_ptr->environment,
 					"SLURM_TASKS_PER_NODE",
-					pack_offset,"%s", tmp_str);
+					het_job_offset,"%s", tmp_str);
 				xfree(tmp_str);
 			}
 		}
-		pack_offset++;
+		het_job_offset++;
 	}
 	list_iterator_destroy(iter);
+	/* Continue support for old hetjob terminology. */
 	(void) env_array_overwrite_fmt(&launch_msg_ptr->environment,
-				       "SLURM_PACK_SIZE", "%d", pack_offset);
+				       "SLURM_PACK_SIZE", "%d", het_job_offset);
+	(void) env_array_overwrite_fmt(&launch_msg_ptr->environment,
+				       "SLURM_HET_SIZE", "%d", het_job_offset);
 
 	for (i = 0; launch_msg_ptr->environment[i]; i++)
 		;
@@ -2514,7 +2517,7 @@ extern void launch_job(job_record_t *job_ptr)
 	if (job_ptr->total_cpus == 0)
 		return;
 
-	launch_job_ptr = _pack_job_ready(job_ptr);
+	launch_job_ptr = _het_job_ready(job_ptr);
 	if (!launch_job_ptr)
 		return;
 
@@ -2536,8 +2539,8 @@ extern void launch_job(job_record_t *job_ptr)
 	launch_msg_ptr = _build_launch_job_msg(launch_job_ptr,protocol_version);
 	if (launch_msg_ptr == NULL)
 		return;
-	if (launch_job_ptr->pack_job_id)
-		_set_pack_env(launch_job_ptr, launch_msg_ptr);
+	if (launch_job_ptr->het_job_id)
+		_set_het_job_env(launch_job_ptr, launch_msg_ptr);
 
 	agent_arg_ptr = xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->protocol_version = protocol_version;
@@ -3843,44 +3846,52 @@ static char **_build_env(job_record_t *job_ptr, bool is_epilog)
 			slurmctld_conf.cluster_name);
 	}
 
-	if (job_ptr->pack_job_id) {
+	if (job_ptr->het_job_id) {
+		/* Continue support for old hetjob terminology. */
 		setenvf(&my_env, "SLURM_PACK_JOB_ID", "%u",
-			job_ptr->pack_job_id);
+			job_ptr->het_job_id);
 		setenvf(&my_env, "SLURM_PACK_JOB_OFFSET", "%u",
-			job_ptr->pack_job_offset);
-		if ((job_ptr->pack_job_offset == 0) && job_ptr->pack_job_list) {
-			job_record_t *pack_job = NULL;
+			job_ptr->het_job_offset);
+		setenvf(&my_env, "SLURM_HET_JOB_ID", "%u",
+			job_ptr->het_job_id);
+		setenvf(&my_env, "SLURM_HET_JOB_OFFSET", "%u",
+			job_ptr->het_job_offset);
+		if ((job_ptr->het_job_offset == 0) && job_ptr->het_job_list) {
+			job_record_t *het_job = NULL;
 			ListIterator iter;
 			hostset_t hs = NULL;
 			int hs_len = 0;
-			iter = list_iterator_create(job_ptr->pack_job_list);
-			while ((pack_job = list_next(iter))) {
-				if (job_ptr->pack_job_id !=
-				    pack_job->pack_job_id) {
-					error("%s: Bad pack_job_list for %pJ",
+			iter = list_iterator_create(job_ptr->het_job_list);
+			while ((het_job = list_next(iter))) {
+				if (job_ptr->het_job_id !=
+				    het_job->het_job_id) {
+					error("%s: Bad het_job_list for %pJ",
 					      __func__, job_ptr);
 					continue;
 				}
 
-				if (!pack_job->nodes) {
-					debug("%s: %pJ pack_job->nodes == NULL.  Usually this means the job was canceled while it was starting and shouldn't be a real issue.",
+				if (!het_job->nodes) {
+					debug("%s: %pJ het_job->nodes == NULL.  Usually this means the job was canceled while it was starting and shouldn't be a real issue.",
 					      __func__, job_ptr);
 					continue;
 				}
 
 				if (hs) {
 					(void) hostset_insert(hs,
-							      pack_job->nodes);
+							      het_job->nodes);
 				} else {
-					hs = hostset_create(pack_job->nodes);
+					hs = hostset_create(het_job->nodes);
 				}
-				hs_len += strlen(pack_job->nodes) + 2;
+				hs_len += strlen(het_job->nodes) + 2;
 			}
 			list_iterator_destroy(iter);
 			if (hs) {
 				char *buf = xmalloc(hs_len);
 				(void) hostset_ranged_string(hs, hs_len, buf);
+				/* Support for old hetjob terminology. */
 				setenvf(&my_env, "SLURM_PACK_JOB_NODELIST",
+					"%s", buf);
+				setenvf(&my_env, "SLURM_HET_JOB_NODELIST",
 					"%s", buf);
 				xfree(buf);
 				hostset_destroy(hs);
@@ -4455,8 +4466,8 @@ static void *_run_prolog(void *arg)
 		if (kill_job) {
 			srun_user_message(job_ptr,
 					  "PrologSlurmctld failed, job killed");
-			if (job_ptr->pack_job_list) {
-				(void) pack_job_signal(job_ptr, SIGKILL, 0, 0,
+			if (job_ptr->het_job_list) {
+				(void) het_job_signal(job_ptr, SIGKILL, 0, 0,
 						       false);
 			} else {
 				job_signal(job_ptr, SIGKILL, 0, 0, false);

@@ -149,8 +149,8 @@ static int _setup_local_step_rec(local_step_rec_t *step_rec,
 	xassert(step_rec);
 	xassert(job);
 
-	if ((job->pack_jobid != NO_VAL) && !job->pack_tids) {
-		/* pack_tids == NULL if request from pre-v19.05 srun */
+	if ((job->het_job_id != NO_VAL) && !job->het_job_tids) {
+		/* het_job_tids == NULL if request from pre-v19.05 srun */
 		CRAY_ERR("Old version of srun does not support heterogeneous jobs");
 		return SLURM_ERROR;
 	}
@@ -159,12 +159,12 @@ static int _setup_local_step_rec(local_step_rec_t *step_rec,
 
 	step_rec->stepd_step_rec = job;
 
-	if (job->pack_jobid != NO_VAL) {
-		step_rec->nnodes = job->pack_nnodes;
-		step_rec->ntasks = job->pack_ntasks;
-		step_rec->nodelist = job->pack_node_list;
-		step_rec->tasks_to_launch = job->pack_task_cnts;
-		step_rec->tids = job->pack_tids;
+	if (job->het_job_id != NO_VAL) {
+		step_rec->nnodes = job->het_job_nnodes;
+		step_rec->ntasks = job->het_job_ntasks;
+		step_rec->nodelist = job->het_job_node_list;
+		step_rec->tasks_to_launch = job->het_job_task_cnts;
+		step_rec->tids = job->het_job_tids;
 	} else {
 		step_rec->nnodes = job->nnodes;
 		step_rec->ntasks = job->ntasks;
@@ -203,8 +203,8 @@ static int _get_first_pe(stepd_step_rec_t *job)
 	uint32_t taskid = 0;
 	uint32_t offset = 0;
 
-	if (job->pack_task_offset != NO_VAL)
-		offset = job->pack_task_offset;
+	if (job->het_job_task_offset != NO_VAL)
+		offset = job->het_job_task_offset;
 
 	first_pe = offset + job->task[0]->gtid;
 
@@ -261,15 +261,15 @@ static int *_get_cmd_map(local_step_rec_t *step_rec)
 				return NULL;
 			}
 		}
-	} else if (step_rec->stepd_step_rec->pack_jobid != NO_VAL) {
-		if (!step_rec->stepd_step_rec->pack_tid_offsets) {
-			CRAY_ERR("Missing pack_tid_offsets for HetJob");
+	} else if (step_rec->stepd_step_rec->het_job_id != NO_VAL) {
+		if (!step_rec->stepd_step_rec->het_job_tid_offsets) {
+			CRAY_ERR("Missing het_job_tid_offsets for HetJob");
 			xfree(cmd_map);
 			return NULL;
 		}
 		memset(cmd_map, 0, size);
 		for (pe = 0; pe < step_rec->ntasks; pe++)
-			cmd_map[pe] = step_rec->stepd_step_rec->pack_tid_offsets[pe];
+			cmd_map[pe] = step_rec->stepd_step_rec->het_job_tid_offsets[pe];
 	} else {
 		// Only one program, index 0
 		memset(cmd_map, 0, size);
@@ -379,8 +379,8 @@ static int _get_cmd_index(stepd_step_rec_t *job)
 		// If we've made it here we didn't find any on this node
 		CRAY_ERR("No command found on this node");
 		return -1;
-	} else if (job->pack_jobid != NO_VAL) {
-		return job->pack_offset;
+	} else if (job->het_job_id != NO_VAL) {
+		return job->het_job_offset;
 	}
 
 	// Not an MPMD job, the one command has index 0

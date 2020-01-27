@@ -49,9 +49,9 @@ typedef struct slurm_mpi_context *slurm_mpi_context_t;
 typedef void mpi_plugin_client_state_t;
 
 typedef struct {
+	uint32_t het_job_id;		/* Hetjob leader id or NO_VAL */
+	uint32_t het_job_task_offset;	/* Hetjob task offset or NO_VAL */
 	uint32_t jobid;
-	uint32_t pack_jobid;	/* pack job leader or NO_VAL */
-	uint32_t pack_task_offset;   /* Task offset within pack job or NO_VAL */
 	uint32_t stepid;
 	slurm_step_layout_t *step_layout;
 } mpi_plugin_client_info_t;

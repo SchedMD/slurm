@@ -201,17 +201,17 @@ static int _addto_job_list(List job_list, char *names)
 					}
 
 					selected_step->array_task_id = NO_VAL;
-					selected_step->pack_job_offset = NO_VAL;
+					selected_step->het_job_offset = NO_VAL;
 					if ((under = strstr(name, "_"))) {
 						*under++ = 0;
 						selected_step->array_task_id =
 							atoi(under);
 					} else if ((plus = strstr(name, "+"))) {
 						*plus++ = 0;
-						selected_step->pack_job_offset =
+						selected_step->het_job_offset =
 							atoi(plus);
 					} else {
-						debug2("No array/pack job requested");
+						debug2("No array/hetjob requested");
 					}
 
 					selected_step->jobid =
@@ -265,15 +265,15 @@ static int _addto_job_list(List job_list, char *names)
 			}
 
 			selected_step->array_task_id = NO_VAL;
-			selected_step->pack_job_offset = NO_VAL;
+			selected_step->het_job_offset = NO_VAL;
 			if ((under = strstr(name, "_"))) {
 				*under++ = 0;
 				selected_step->array_task_id = atoi(under);
 			} else if ((plus = strstr(name, "+"))) {
 				*plus++ = 0;
-				selected_step->pack_job_offset = atoi(plus);
+				selected_step->het_job_offset = atoi(plus);
 			} else {
-				debug2("No array/pack job requested");
+				debug2("No array/hetjob requested");
 			}
 
 			selected_step->jobid = slurm_xlate_job_id(name);

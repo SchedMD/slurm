@@ -478,14 +478,14 @@ relinquish:
 }
 
 /*
- * Allocate nodes for heterogeneous/pack job from the slurm controller -- 
+ * Allocate nodes for heterogeneous job from the slurm controller --
  * retrying the attempt if the controller appears to be down, and optionally
  * waiting for resources if none are currently available (see opt.immediate)
  *
  * Returns a pointer to a resource_allocation_response_msg which must
  * be freed with slurm_free_resource_allocation_response_msg()
  */
-List allocate_pack_nodes(bool handle_signals)
+List allocate_het_job_nodes(bool handle_signals)
 {
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j, *first_job = NULL;
@@ -523,8 +523,9 @@ List allocate_pack_nodes(bool handle_signals)
 	}
 
 	if (first_opt && first_opt->clusters &&
-	    (slurmdb_get_first_pack_cluster(job_req_list, first_opt->clusters,
-					    &working_cluster_rec)
+	    (slurmdb_get_first_het_job_cluster(job_req_list,
+					       first_opt->clusters,
+					       &working_cluster_rec)
 	     != SLURM_SUCCESS)) {
 		print_db_notok(first_opt->clusters, 0);
 		return NULL;
@@ -550,7 +551,7 @@ List allocate_pack_nodes(bool handle_signals)
 	}
 
 	while (first_opt && !job_resp_list) {
-		job_resp_list = slurm_allocate_pack_job_blocking(job_req_list,
+		job_resp_list = slurm_allocate_het_job_blocking(job_req_list,
 				 first_opt->immediate, _set_pending_job_id);
 		if (destroy_job) {
 			/* cancelled by signal */
@@ -655,7 +656,7 @@ extern List existing_allocation(void)
 		return NULL;
 
 	old_job_id = (uint32_t) sropt.jobid;
-	if (slurm_pack_job_lookup(old_job_id, &job_resp_list) < 0) {
+	if (slurm_het_job_lookup(old_job_id, &job_resp_list) < 0) {
 		if (sropt.parallel_debug)
 			return NULL;    /* create new allocation as needed */
 		if (errno == ESLURM_ALREADY_DONE)

@@ -256,7 +256,7 @@ static int _set_cond(int *start, int argc, char **argv,
 				selected_step = xmalloc(
 					sizeof(slurmdb_selected_step_t));
 				selected_step->array_task_id = NO_VAL;
-				selected_step->pack_job_offset = NO_VAL;
+				selected_step->het_job_offset = NO_VAL;
 				list_append(job_cond->step_list, selected_step);
 
 				dot = strstr(start_char, ".");

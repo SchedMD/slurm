@@ -70,8 +70,8 @@ char *job_req_inx[] = {
 	"t1.id_block",
 	"t1.id_group",
 	"t1.id_job",
-	"t1.pack_job_id",
-	"t1.pack_job_offset",
+	"t1.het_job_id",
+	"t1.het_job_offset",
 	"t1.id_qos",
 	"t1.id_resv",
 	"t3.resv_name",
@@ -126,8 +126,8 @@ enum {
 	JOB_REQ_BLOCKID,
 	JOB_REQ_GID,
 	JOB_REQ_JOBID,
-	JOB_REQ_PACK_JOB_ID,
-	JOB_REQ_PACK_JOB_OFFSET,
+	JOB_REQ_HET_JOB_ID,
+	JOB_REQ_HET_JOB_OFFSET,
 	JOB_REQ_QOS,
 	JOB_REQ_RESVID,
 	JOB_REQ_RESV_NAME,
@@ -265,7 +265,7 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 	if (job_cond->step_list && list_count(job_cond->step_list)) {
 		char *job_ids = NULL, *sep = "";
 		char *array_job_ids = NULL, *array_task_ids = NULL;
-		char *pack_job_ids = NULL, *pack_job_offset = NULL;
+		char *het_job_ids = NULL, *het_job_offset = NULL;
 
 		if (*extra)
 			xstrcat(*extra, " && (");
@@ -280,15 +280,15 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 				xstrfmtcat(array_task_ids, "(%u, %u)",
 					   selected_step->jobid,
 					   selected_step->array_task_id);
-			} else if (selected_step->pack_job_offset != NO_VAL) {
-				if (pack_job_ids)
-					xstrcat(pack_job_ids, " ,");
-				if (pack_job_offset)
-					xstrcat(pack_job_offset, " ,");
-				xstrfmtcat(pack_job_ids, "%u",
+			} else if (selected_step->het_job_offset != NO_VAL) {
+				if (het_job_ids)
+					xstrcat(het_job_ids, " ,");
+				if (het_job_offset)
+					xstrcat(het_job_offset, " ,");
+				xstrfmtcat(het_job_ids, "%u",
 					   selected_step->jobid);
-				xstrfmtcat(pack_job_offset, "%u",
-					   selected_step->pack_job_offset);
+				xstrfmtcat(het_job_offset, "%u",
+					   selected_step->het_job_offset);
 			} else {
 				if (job_ids)
 					xstrcat(job_ids, " ,");
@@ -305,9 +305,9 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 		if (job_ids) {
 			if (job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB)
 				xstrfmtcat(*extra, "t1.id_job in (%s) || "
-					   "(t1.pack_job_offset<>%u && "
-					   "t1.pack_job_id in (select "
-					   "t4.pack_job_id from \"%s_%s\" as "
+					   "(t1.het_job_offset<>%u && "
+					   "t1.het_job_id in (select "
+					   "t4.het_job_id from \"%s_%s\" as "
 					   "t4 where t4.id_job in (%s)))",
 					   job_ids, NO_VAL, cluster_name,
 					   job_table, job_ids);
@@ -316,18 +316,18 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 					   job_ids);
 			else
 				xstrfmtcat(*extra,
-				   "t1.id_job in (%s) || t1.pack_job_id in (%s)",
+				   "t1.id_job in (%s) || t1.het_job_id in (%s)",
 				   job_ids, job_ids);
 			sep = " || ";
 		}
-		if (pack_job_offset) {
+		if (het_job_offset) {
 			if (job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB)
-				xstrfmtcat(*extra, "%s(t1.pack_job_id in (%s))",
-					   sep, pack_job_ids);
+				xstrfmtcat(*extra, "%s(t1.het_job_id in (%s))",
+					   sep, het_job_ids);
 			else
-				xstrfmtcat(*extra, "%s(t1.pack_job_id in (%s) "
-					   "&& t1.pack_job_offset in (%s))",
-					   sep, pack_job_ids, pack_job_offset);
+				xstrfmtcat(*extra, "%s(t1.het_job_id in (%s) "
+					   "&& t1.het_job_offset in (%s))",
+					   sep, het_job_ids, het_job_offset);
 			sep = " || ";
 		}
 		if (array_job_ids) {
@@ -346,8 +346,8 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 		xfree(job_ids);
 		xfree(array_job_ids);
 		xfree(array_task_ids);
-		xfree(pack_job_ids);
-		xfree(pack_job_offset);
+		xfree(het_job_ids);
+		xfree(het_job_offset);
 	}
 }
 
@@ -651,8 +651,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->associd = slurm_atoul(row[JOB_REQ_ASSOCID]);
 		job->array_job_id = slurm_atoul(row[JOB_REQ_ARRAYJOBID]);
 		job->array_task_id = slurm_atoul(row[JOB_REQ_ARRAYTASKID]);
-		job->pack_job_id = slurm_atoul(row[JOB_REQ_PACK_JOB_ID]);
-		job->pack_job_offset = slurm_atoul(row[JOB_REQ_PACK_JOB_OFFSET]);
+		job->het_job_id = slurm_atoul(row[JOB_REQ_HET_JOB_ID]);
+		job->het_job_offset = slurm_atoul(row[JOB_REQ_HET_JOB_OFFSET]);
 		job->resvid = slurm_atoul(row[JOB_REQ_RESVID]);
 
 		/* This shouldn't happen with new jobs, but older jobs
@@ -859,7 +859,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			itr = list_iterator_create(job_cond->step_list);
 			while ((selected_step = list_next(itr))) {
 				if ((selected_step->jobid != job->jobid) &&
-				    (selected_step->jobid != job->pack_job_id)&&
+				    (selected_step->jobid != job->het_job_id)&&
 				    (selected_step->jobid !=
 				     job->array_job_id)) {
 					continue;
@@ -868,10 +868,10 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					   (selected_step->array_task_id !=
 					    job->array_task_id)) {
 					continue;
-				} else if ((selected_step->pack_job_offset !=
+				} else if ((selected_step->het_job_offset !=
 					    NO_VAL) &&
-					   (selected_step->pack_job_offset !=
-					    job->pack_job_offset)) {
+					   (selected_step->het_job_offset !=
+					    job->het_job_offset)) {
 					continue;
 				} else if (selected_step->stepid == NO_VAL) {
 					job->show_full = 1;

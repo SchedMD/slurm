@@ -671,18 +671,18 @@ static int _addto_step_list_internal(List step_list, char *names,
 			selected_step->array_task_id = atoi(under);
 		else
 			fatal("Bad job array element specified: %s", name);
-		selected_step->pack_job_offset = NO_VAL;
+		selected_step->het_job_offset = NO_VAL;
 	} else if ((plus = strstr(name, "+"))) {
 		selected_step->array_task_id = NO_VAL;
 		*plus++ = 0;
 		if (isdigit(*plus))
-			selected_step->pack_job_offset = atoi(plus);
+			selected_step->het_job_offset = atoi(plus);
 		else
-			fatal("Bad pack job offset specified: %s", name);
+			fatal("Bad hetjob offset specified: %s", name);
 	} else {
-		debug2("No jobarray or pack job requested");
+		debug2("No jobarray or hetjob requested");
 		selected_step->array_task_id = NO_VAL;
-		selected_step->pack_job_offset = NO_VAL;
+		selected_step->het_job_offset = NO_VAL;
 	}
 
 	selected_step->jobid = atoi(name);
@@ -1143,6 +1143,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 				xfree(job->gres_detail_str[i]);
 			xfree(job->gres_detail_str);
 		}
+		xfree(job->het_job_id_set);
 		xfree(job->licenses);
 		xfree(job->mail_user);
 		xfree(job->mcs_label);
@@ -1152,7 +1153,6 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->node_inx);
 		xfree(job->nodes);
 		xfree(job->sched_nodes);
-		xfree(job->pack_job_id_set);
 		xfree(job->partition);
 		xfree(job->qos);
 		xfree(job->req_node_inx);
@@ -1452,15 +1452,15 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 		xfree(msg->global_task_ids);
 	}
 	xfree(msg->gids);
-	xfree(msg->pack_node_list);
-	xfree(msg->pack_task_cnts);
-	if ((msg->pack_nnodes != NO_VAL) && msg->pack_tids) {
-		/* pack_tids == NULL if request from pre-v19.05 srun */
-		for (i = 0; i < msg->pack_nnodes; i++)
-			xfree(msg->pack_tids[i]);
-		xfree(msg->pack_tids);
+	xfree(msg->het_job_node_list);
+	xfree(msg->het_job_task_cnts);
+	if ((msg->het_job_nnodes != NO_VAL) && msg->het_job_tids) {
+		/* het_job_tids == NULL if request from pre-v19.05 srun */
+		for (i = 0; i < msg->het_job_nnodes; i++)
+			xfree(msg->het_job_tids[i]);
+		xfree(msg->het_job_tids);
 	}
-	xfree(msg->pack_tid_offsets);
+	xfree(msg->het_job_tid_offsets);
 	xfree(msg->tasks_to_launch);
 	xfree(msg->resp_port);
 	xfree(msg->io_port);
@@ -4830,7 +4830,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_PACK_ALLOC_INFO:
+	case REQUEST_HET_JOB_ALLOC_INFO:
 		slurm_free_job_alloc_info_msg(data);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
@@ -5108,9 +5108,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_JOB_INFO:
 		slurm_free_job_info(data);
 		break;
-	case REQUEST_JOB_PACK_ALLOCATION:
-	case REQUEST_SUBMIT_BATCH_JOB_PACK:
-	case RESPONSE_JOB_PACK_ALLOCATION:
+	case REQUEST_HET_JOB_ALLOCATION:
+	case REQUEST_SUBMIT_BATCH_HET_JOB:
+	case RESPONSE_HET_JOB_ALLOCATION:
 		FREE_NULL_LIST(data);
 		break;
 	case REQUEST_SET_FS_DAMPENING_FACTOR:
@@ -5444,10 +5444,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_JOB_ALLOCATION_INFO";
 	case RESPONSE_JOB_ALLOCATION_INFO:
 		return "RESPONSE_JOB_ALLOCATION_INFO";
-	case REQUEST_JOB_PACK_ALLOCATION:
-		return "REQUEST_JOB_PACK_ALLOCATION";
-	case RESPONSE_JOB_PACK_ALLOCATION:
-		return "RESPONSE_JOB_PACK_ALLOCATION";
+	case REQUEST_HET_JOB_ALLOCATION:
+		return "REQUEST_HET_JOB_ALLOCATION";
+	case RESPONSE_HET_JOB_ALLOCATION:
+		return "RESPONSE_HET_JOB_ALLOCATION";
 	case REQUEST_UPDATE_JOB_TIME:
 		return "REQUEST_UPDATE_JOB_TIME";
 	case REQUEST_JOB_READY:
@@ -5473,10 +5473,10 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_CTLD_MULT_MSG";
 	case REQUEST_SIB_MSG:
 		return "REQUEST_SIB_MSG";
-	case REQUEST_JOB_PACK_ALLOC_INFO:
-		return "REQUEST_JOB_PACK_ALLOC_INFO";
-	case REQUEST_SUBMIT_BATCH_JOB_PACK:
-		return "REQUEST_SUBMIT_BATCH_JOB_PACK";
+	case REQUEST_HET_JOB_ALLOC_INFO:
+		return "REQUEST_HET_JOB_ALLOC_INFO";
+	case REQUEST_SUBMIT_BATCH_HET_JOB:
+		return "REQUEST_SUBMIT_BATCH_HET_JOB";
 
 	case REQUEST_JOB_STEP_CREATE:				/* 5001 */
 		return "REQUEST_JOB_STEP_CREATE";

@@ -138,7 +138,7 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			pack32(slurmctld_diag_stats.bf_table_size_sum, buffer);
 
 			pack32(slurmctld_diag_stats.bf_active, buffer);
-			pack32(slurmctld_diag_stats.backfilled_pack_jobs,
+			pack32(slurmctld_diag_stats.backfilled_het_jobs,
 			       buffer);
 		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -204,7 +204,7 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			pack32(slurmctld_diag_stats.bf_queue_len_sum, buffer);
 
 			pack32(slurmctld_diag_stats.bf_active, buffer);
-			pack32(slurmctld_diag_stats.backfilled_pack_jobs,
+			pack32(slurmctld_diag_stats.backfilled_het_jobs,
 			       buffer);
 		}
 	}
@@ -234,7 +234,7 @@ extern void reset_stats(int level)
 		slurmctld_diag_stats.backfilled_jobs = 0;
 
 	slurmctld_diag_stats.last_backfilled_jobs = 0;
-	slurmctld_diag_stats.backfilled_pack_jobs = 0;
+	slurmctld_diag_stats.backfilled_het_jobs = 0;
 	slurmctld_diag_stats.bf_cycle_counter = 0;
 	slurmctld_diag_stats.bf_cycle_sum = 0;
 	slurmctld_diag_stats.bf_cycle_last = 0;

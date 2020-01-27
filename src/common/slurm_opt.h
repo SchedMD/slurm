@@ -135,7 +135,7 @@ enum {
 	LONG_OPT_NTASKSPERNODE,
 	LONG_OPT_NTASKSPERSOCKET,
 	LONG_OPT_OPEN_MODE,
-	LONG_OPT_PACK_GROUP,
+	LONG_OPT_HET_GROUP,
 	LONG_OPT_PARSABLE,
 	LONG_OPT_POWER,
 	LONG_OPT_PRIORITY,
@@ -244,9 +244,9 @@ typedef struct {
 	int32_t multi_prog_cmds;	/* number of commands in multi prog file */
 	bool no_alloc;			/* --no-allocate		*/
 	uint8_t open_mode;		/* --open-mode=append|truncate	*/
-	char *pack_group;		/* --pack-group			*/
-	bitstr_t *pack_grp_bits;	/* --pack-group in bitmap form	*/
-	int pack_step_cnt;		/* Total count of pack groups to launch */
+	char *het_group;		/* --het-group			*/
+	bitstr_t *het_grp_bits;		/* --het-group in bitmap form	*/
+	int het_step_cnt;		/* Total count of het groups to launch */
 	bool parallel_debug;		/* srun controlled by debugger	*/
 	bool preserve_env;		/* --preserve-env		*/
 	char *prolog;			/* --prolog			*/

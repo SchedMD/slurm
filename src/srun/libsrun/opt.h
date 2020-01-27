@@ -53,7 +53,7 @@
 #include "src/common/slurm_opt.h"
 
 #define DEFAULT_IMMEDIATE	1
-#define MAX_PACK_COUNT		128
+#define MAX_HET_JOB_COMPONENTS	128
 
 /* global variables relating to user options */
 
@@ -96,15 +96,15 @@ extern int   spank_unset_job_env(const char *name);
 extern void init_spank_env(void);
 
 /*
- * Find option structure for a given pack job offset
- * pack_offset IN - Offset into pack job, -1 if regular job, -2 to reset
+ * Find option structure for a given hetjob offset
+ * het_job_offset IN - Offset into hetjob, -1 if regular job, -2 to reset
  * RET - Pointer to next matching option structure or NULL if none found
  */
-extern slurm_opt_t *get_next_opt(int pack_offset);
+extern slurm_opt_t *get_next_opt(int het_job_offset);
 
 /*
- * Return maximum pack_group value for any step launch option request
+ * Return maximum het_group value for any step launch option request
  */
-extern int get_max_pack_group(void);
+extern int get_max_het_group(void);
 
 #endif	/* _HAVE_OPT_H */

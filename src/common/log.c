@@ -726,9 +726,9 @@ static char *_jobid2fmt(job_record_t *job_ptr, char *buf, int buf_size)
 	if (job_ptr->magic != JOB_MAGIC)
 		return "%.0sJobId=CORRUPT";
 
-	if (job_ptr->pack_job_id) {
+	if (job_ptr->het_job_id) {
 		snprintf(buf, buf_size, "%%.0sJobId=%u+%u(%u)",
-			 job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			 job_ptr->het_job_id, job_ptr->het_job_offset,
 			 job_ptr->job_id);
 	} else if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL)) {
 		snprintf(buf, buf_size, "%%.0sJobId=%u_*",

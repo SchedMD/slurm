@@ -1007,7 +1007,7 @@ enum ctx_keys {
 #define TRES_STR_CALC      0x00000800   /* Avoid calculating TRES strings at the
 					 * end of a job. */
 #define SIB_JOB_FLUSH      0x00001000   /* Don't send complete to origin */
-#define JOB_PACK_FLAG      0x00002000	/* Heterogeneous job management flag */
+#define HET_JOB_FLAG       0x00002000	/* Heterogeneous job management flag */
 #define JOB_NTASKS_SET     0x00004000	/* --ntasks explicitly set */
 #define JOB_CPUS_SET       0x00008000	/* --cpus-per-tasks explicitly set */
 #define BF_WHOLE_NODE_TEST 0x00010000	/* Backfill test in progress */
@@ -1437,6 +1437,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint64_t fed_siblings_active; /* Bitmap of active fed sibling ids */
 	uint64_t fed_siblings_viable; /* Bitmap of viable fed sibling ids */
 	uint32_t group_id;	/* group to assume, if run as root. */
+	uint32_t het_job_offset; /* HetJob component offset */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
 	uint32_t job_id;	/* job ID, default set by Slurm */
@@ -1461,7 +1462,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *origin_cluster;	/* cluster name that initiated the job. */
 	uint16_t other_port;	/* port to send various notification msg to */
 	uint8_t overcommit;	/* over subscribe resources, for batch only */
-	uint32_t pack_job_offset; /* pack job index */
 	char *partition;	/* name of requested partition,
 				 * default in Slurm config */
 	uint16_t plane_size;	/* plane size when task_dist =
@@ -1615,6 +1615,9 @@ typedef struct job_info {
 	char **gres_detail_str;	/* Details of GRES count/index alloc per node */
 	char *gres_total;       /* Total count of gres used with names */
 	uint32_t group_id;	/* group job submitted as */
+	uint32_t het_job_id;	/* job ID of hetjob leader */
+	char *het_job_id_set;	/* job IDs for all components */
+	uint32_t het_job_offset; /* HetJob component offset from leader */
 	uint32_t job_id;	/* job ID */
 	job_resources_t *job_resrcs; /* opaque data type, job resources */
 	uint32_t job_state;	/* state of the job, see enum job_states */
@@ -1640,9 +1643,6 @@ typedef struct job_info {
 	uint32_t num_cpus;	/* minimum number of cpus required by job */
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
 	uint32_t num_tasks;	/* requested task count */
-	uint32_t pack_job_id;	/* lead job ID of pack job leader */
-	char *pack_job_id_set;	/* job IDs for all components */
-	uint32_t pack_job_offset; /* pack job index */
 	char *partition;	/* name of assigned partition */
 	uint64_t pn_min_memory; /* minimum real memory per node, default=0 */
 	uint16_t pn_min_cpus;   /* minimum # CPUs per node, default=0 */
@@ -1965,17 +1965,18 @@ typedef struct {
 	bool multi_prog;
 	bool no_alloc;
 	uint32_t slurmd_debug;  /* remote slurmd debug level */
-	uint32_t node_offset;	/* Pack job node offset or NO_VAL */
-	uint32_t pack_jobid;	/* pack job ID or NO_VAL */
-	uint32_t pack_nnodes;	/* total task count for entire pack job */
-	uint32_t pack_ntasks;	/* total task count for entire pack job */
-	uint32_t pack_step_cnt;	/* total step count for entire pack job */
-	uint16_t *pack_task_cnts; /* Number of tasks on each node in pack job */
-	uint32_t **pack_tids;	/* Task IDs on each node in pack job */
-	uint32_t *pack_tid_offsets;/* map of tasks (by id) to originating pack*/
-	uint32_t pack_offset;	/* Pack job offset or NO_VAL */
-	uint32_t pack_task_offset; /* Pack job task offset or NO_VAL */
-	char *pack_node_list;	/* Pack step node list */
+	uint32_t het_job_node_offset;	/* Hetjob node offset or NO_VAL */
+	uint32_t het_job_id;	/* Hetjob ID or NO_VAL */
+	uint32_t het_job_nnodes;/* total task count for entire hetjob */
+	uint32_t het_job_ntasks;/* total task count for entire hetjob */
+	uint32_t het_job_step_cnt;/* total step count for entire hetjob */
+	uint16_t *het_job_task_cnts; /* Number of tasks on each node in hetjob */
+	uint32_t **het_job_tids;	/* Task IDs on each node in hetjob */
+	uint32_t *het_job_tid_offsets;/* map of tasks (by id) to originating
+				       * hetjob */
+	uint32_t het_job_offset;/* Hetjob offset or NO_VAL */
+	uint32_t het_job_task_offset; /* Hetjob task offset or NO_VAL */
+	char *het_job_node_list;	/* Hetjob step node list */
 	bool parallel_debug;
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *task_prolog;
@@ -2224,8 +2225,8 @@ typedef struct update_layout_msg {
 } update_layout_msg_t;
 
 typedef struct step_alloc_info_msg {
-	uint32_t job_id;		/* job ID (or pack job ID) */
-	uint32_t pack_job_offset;	/* pack job index (or NO_VAL) */
+	uint32_t het_job_offset;	/* HetJob component index (or NO_VAL) */
+	uint32_t job_id;		/* job ID (or hetjob ID) */
 	uint32_t step_id;		/* step ID (or NO_VAL for whole job) */
 } step_alloc_info_msg_t;
 
@@ -2599,7 +2600,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_ESEARCH      0x0000400000000000 /* Elasticsearch debug */
 #define DEBUG_FLAG_NODE_FEATURES 0x0000800000000000 /* Node Features debug */
 #define DEBUG_FLAG_FEDR         0x0001000000000000 /* Federation debug */
-#define DEBUG_FLAG_HETERO_JOBS  0x0002000000000000 /* Heterogeneous job debug */
+#define DEBUG_FLAG_HETJOB	0x0002000000000000 /* Heterogeneous job debug */
 #define DEBUG_FLAG_ACCRUE       0x0004000000000000 /* Accrue counters debug */
 #define DEBUG_FLAG_POWER_SAVE   0x0008000000000000 /* Power Save debug */
 #define DEBUG_FLAG_AGENT	0x0010000000000000 /* RPC Agent debug */
@@ -3016,7 +3017,7 @@ typedef struct stats_info_response_msg {
 
 	uint32_t bf_backfilled_jobs;
 	uint32_t bf_last_backfilled_jobs;
-	uint32_t bf_backfilled_pack_jobs;
+	uint32_t bf_backfilled_het_jobs;
 	uint32_t bf_cycle_counter;
 	uint64_t bf_cycle_sum;
 	uint32_t bf_cycle_last;
@@ -3212,7 +3213,7 @@ extern resource_allocation_response_msg_t *slurm_allocate_resources_blocking(
 extern void slurm_free_resource_allocation_response_msg(resource_allocation_response_msg_t *msg);
 
 /*
- * slurm_allocate_pack_job_blocking
+ * slurm_allocate_het_job_blocking
  *	allocate resources for a list of job requests.  This call will block
  *	until the entire allocation is granted, or the specified timeout limit
  *	is reached.
@@ -3230,7 +3231,7 @@ extern void slurm_free_resource_allocation_response_msg(resource_allocation_resp
  *      with no allocation granted)
  * NOTE: free the response using list_destroy()
  */
-List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
+List slurm_allocate_het_job_blocking(List job_req_list, time_t timeout,
 				      void(*pending_callback)(uint32_t job_id));
 
 /*
@@ -3245,7 +3246,7 @@ extern int slurm_allocation_lookup(uint32_t job_id,
 				   resource_allocation_response_msg_t **resp);
 
 /*
- * slurm_pack_job_lookup - retrieve info for an existing heterogeneous job
+ * slurm_het_job_lookup - retrieve info for an existing heterogeneous job
  * 			   allocation without the addrs and such
  * IN jobid - job allocation identifier
  * OUT resp - list of job allocation information, type
@@ -3254,7 +3255,7 @@ extern int slurm_allocation_lookup(uint32_t job_id,
  * NOTE: returns information an individual job as well
  * NOTE: free the response using list_destroy()
  */
-extern int slurm_pack_job_lookup(uint32_t jobid, List *resp);
+extern int slurm_het_job_lookup(uint32_t jobid, List *resp);
 
 /*
  * slurm_read_hostfile - Read a Slurm hostfile specified by "filename".
@@ -3304,15 +3305,15 @@ extern int slurm_submit_batch_job(job_desc_msg_t *job_desc_msg,
 				  submit_response_msg_t **slurm_alloc_msg);
 
 /*
- * slurm_submit_batch_pack_job - issue RPC to submit a heterogeneous job for
+ * slurm_submit_batch_het_job - issue RPC to submit a heterogeneous job for
  *				 later execution
  * NOTE: free the response using slurm_free_submit_response_response_msg
  * IN job_req_list - List of resource allocation requests, type job_desc_msg_t
  * OUT slurm_alloc_msg - response to request
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_submit_batch_pack_job(List job_req_list,
-				       submit_response_msg_t **slurm_alloc_msg);
+extern int slurm_submit_batch_het_job(List job_req_list,
+				      submit_response_msg_t **slurm_alloc_msg);
 
 /*
  * slurm_free_submit_response_response_msg - free slurm
@@ -3337,13 +3338,13 @@ extern int slurm_job_batch_script(FILE *out, uint32_t jobid);
 extern int slurm_job_will_run(job_desc_msg_t *job_desc_msg);
 
 /*
- * slurm_pack_job_will_run - determine if a heterogeneous job would execute
+ * slurm_het_job_will_run - determine if a heterogeneous job would execute
  *	immediately if submitted now
  * IN job_req_list - List of job_desc_msg_t structures describing the resource
  *		allocation request
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_pack_job_will_run(List job_req_list);
+extern int slurm_het_job_will_run(List job_req_list);
 
 
 /*
@@ -3360,14 +3361,14 @@ extern int slurm_job_will_run2(job_desc_msg_t *req,
 /*
  * slurm_sbcast_lookup - retrieve info for an existing resource allocation
  *	including a credential needed for sbcast
- * IN job_id - job allocation identifier (or pack job ID)
- * IN pack_job_offset - pack job index (or NO_VAL if not pack job)
+ * IN job_id - job allocation identifier (or hetjob ID)
+ * IN het_job_offset - hetjob index (or NO_VAL if not hetjob)
  * IN step_id - step allocation identifier (or NO_VAL for entire job)
  * OUT info - job allocation information including a credential for sbcast
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the "resp" using slurm_free_sbcast_cred_msg
  */
-extern int slurm_sbcast_lookup(uint32_t job_id, uint32_t pack_job_offset,
+extern int slurm_sbcast_lookup(uint32_t job_id, uint32_t het_job_offset,
 			       uint32_t step_id, job_sbcast_cred_msg_t **info);
 
 extern void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t *msg);
@@ -3612,7 +3613,7 @@ extern void slurm_step_launch_params_t_init(slurm_step_launch_params_t *ptr);
  * IN ctx - job step context generated by slurm_step_ctx_create
  * IN params - job step parameters
  * IN callbacks - Identify functions to be called when various events occur
- * IN pack_job_cnt - Total count of pack job steps to be launched, -1 otherwise
+ * IN het_job_step_cnt - Total count of hetjob steps to be launched, -1 otherwise
  * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
  */
 extern int slurm_step_launch(slurm_step_ctx_t *ctx,

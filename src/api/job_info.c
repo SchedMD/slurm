@@ -390,16 +390,16 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			xstrfmtcat(out, "ArrayTaskThrottle=%u ",
 				   job_ptr->array_max_tasks);
 		}
-	} else if (job_ptr->pack_job_id) {
-		xstrfmtcat(out, "PackJobId=%u PackJobOffset=%u ",
-			   job_ptr->pack_job_id, job_ptr->pack_job_offset);
+	} else if (job_ptr->het_job_id) {
+		xstrfmtcat(out, "HetJobId=%u HetJobOffset=%u ",
+			   job_ptr->het_job_id, job_ptr->het_job_offset);
 	}
 	xstrfmtcat(out, "JobName=%s", job_ptr->name);
 	xstrcat(out, line_end);
 
 	/****** Line ******/
-	if (job_ptr->pack_job_id_set) {
-		xstrfmtcat(out, "PackJobIdSet=%s", job_ptr->pack_job_id_set);
+	if (job_ptr->het_job_id_set) {
+		xstrfmtcat(out, "HetJobIdSet=%s", job_ptr->het_job_id_set);
 		xstrcat(out, line_end);
 	}
 

@@ -46,8 +46,8 @@
  * buf            is the char buffer to write
  * len            is the buffer length in bytes
  * task_id        is will be used in the label
- * pack_offset    is the offset within a pack-job or NO_VAL
- * task_offset    is the task offset within a pack-job or NO_VAL
+ * het_job_offset is the offset within a hetjob or NO_VAL
+ * het_job_task_offset is the task offset within a hetjob or NO_VAL
  * label          if true, prepend each line of the buffer with a
  *                label for the task id
  * task_id_width  is the number of digits to use for the task id
@@ -61,7 +61,8 @@
  * in label mode.
  */
 extern int write_labelled_message(int fd, void *buf, int len, int task_id,
-				  uint32_t pack_offset, uint32_t task_offset,
+				  uint32_t het_job_offset,
+				  uint32_t het_job_task_offset,
 				  bool label, int task_id_width);
 
 #endif

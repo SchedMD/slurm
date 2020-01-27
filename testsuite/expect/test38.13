@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test that job arrays of pack jobs are rejected
+# Purpose: Test that job arrays of hetjobs are rejected
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -33,14 +33,14 @@ source ./globals
 set test_id	"38.13"
 set exit_code	0
 set matches	0
-set pack_job_id	0
+set het_job_id	0
 
 print_header $test_id
 
 set sbatch_pid [spawn $sbatch -a 0-1 -t1 -N1 -o /dev/null : -N1 --wrap "date"]
 expect {
 	-re "Submitted batch job ($number)" {
-		set pack_job_id $expect_out(1,string)
+		set het_job_id $expect_out(1,string)
 		exp_continue
 	}
 	-re "Invalid job array" {
@@ -56,9 +56,9 @@ expect {
 		wait
 	}
 }
-if {$pack_job_id != 0} {
+if {$het_job_id != 0} {
 	send_user "FAILURE: Heterogeneous job array should not be accepted\n"
-	cancel_job $pack_job_id
+	cancel_job $het_job_id
 	set exit_code 1
 } elseif {$matches != 1} {
 	send_user "FAILURE: Heterogeneous job array should not be accepted ($matches != 1)\n"

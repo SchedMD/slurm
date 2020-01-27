@@ -440,8 +440,8 @@ static void _initialize_event(alpsc_ev_app_t *event, step_record_t *step_ptr,
 
 	START_TIMER;
 
-	if (job_ptr->pack_job_id && (job_ptr->pack_job_id != NO_VAL))
-		jobid = job_ptr->pack_job_id;
+	if (job_ptr->het_job_id && (job_ptr->het_job_id != NO_VAL))
+		jobid = job_ptr->het_job_id;
 	else
 		jobid = job_ptr->job_id;
 
@@ -606,8 +606,8 @@ static void _update_app(step_record_t *step_ptr, alpsc_ev_app_state_e state)
 		// Search for the app matching this apid
 		found = 0;
 
-		if (job_ptr->pack_job_id && (job_ptr->pack_job_id != NO_VAL))
-			jobid = job_ptr->pack_job_id;
+		if (job_ptr->het_job_id && (job_ptr->het_job_id != NO_VAL))
+			jobid = job_ptr->het_job_id;
 		else
 			jobid = job_ptr->job_id;
 
@@ -640,8 +640,8 @@ static void _update_app(step_record_t *step_ptr, alpsc_ev_app_state_e state)
 	case ALPSC_EV_SUSPEND:
 	case ALPSC_EV_RESUME:
 		// Search for the app matching this apid
-		if (job_ptr->pack_job_id && (job_ptr->pack_job_id != NO_VAL))
-			jobid = job_ptr->pack_job_id;
+		if (job_ptr->het_job_id && (job_ptr->het_job_id != NO_VAL))
+			jobid = job_ptr->het_job_id;
 		else
 			jobid = job_ptr->job_id;
 

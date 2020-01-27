@@ -456,8 +456,8 @@ static void _pack_job_start_msg(void *in,
 		packstr(msg->name, buffer);
 		packstr(msg->nodes, buffer);
 		packstr(msg->node_inx, buffer);
-		pack32(msg->pack_job_id, buffer);
-		pack32(msg->pack_job_offset, buffer);
+		pack32(msg->het_job_id, buffer);
+		pack32(msg->het_job_offset, buffer);
 		packstr(msg->partition, buffer);
 		pack32(msg->priority, buffer);
 		pack32(msg->qos_id, buffer);
@@ -494,8 +494,8 @@ static void _pack_job_start_msg(void *in,
 		packstr(msg->name, buffer);
 		packstr(msg->nodes, buffer);
 		packstr(msg->node_inx, buffer);
-		pack32(msg->pack_job_id, buffer);
-		pack32(msg->pack_job_offset, buffer);
+		pack32(msg->het_job_id, buffer);
+		pack32(msg->het_job_offset, buffer);
 		packstr(msg->partition, buffer);
 		pack32(msg->priority, buffer);
 		pack32(msg->qos_id, buffer);
@@ -553,8 +553,8 @@ static int _unpack_job_start_msg(void **msg,
 		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->node_inx, &uint32_tmp, buffer);
-		safe_unpack32(&msg_ptr->pack_job_id, buffer);
-		safe_unpack32(&msg_ptr->pack_job_offset, buffer);
+		safe_unpack32(&msg_ptr->het_job_id, buffer);
+		safe_unpack32(&msg_ptr->het_job_offset, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->partition,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->priority, buffer);
@@ -601,8 +601,8 @@ static int _unpack_job_start_msg(void **msg,
 		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->node_inx, &uint32_tmp, buffer);
-		safe_unpack32(&msg_ptr->pack_job_id, buffer);
-		safe_unpack32(&msg_ptr->pack_job_offset, buffer);
+		safe_unpack32(&msg_ptr->het_job_id, buffer);
+		safe_unpack32(&msg_ptr->het_job_offset, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->partition,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->priority, buffer);

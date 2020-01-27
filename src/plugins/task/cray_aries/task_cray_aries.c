@@ -321,9 +321,9 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
-		jobid = job->pack_jobid;
-		offset = job->pack_task_offset;
+	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
+		jobid = job->het_job_id;
+		offset = job->het_job_task_offset;
 	} else {
 		jobid = job->jobid;
 		offset = 0;
@@ -450,8 +450,8 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-		jobid = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
 	else
 		jobid = job->jobid;
 	if (track_status) {
@@ -598,8 +598,8 @@ static int _make_status_file(stepd_step_rec_t *job)
 	uint32_t jobid;
 	uint64_t apid;
 
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-		jobid = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
 	else
 		jobid = job->jobid;
 	apid = SLURM_ID_HASH(jobid, job->stepid);
@@ -671,9 +671,9 @@ static int _check_status_file(stepd_step_rec_t *job,
 	if (!WIFEXITED(task->estatus) || (WEXITSTATUS(task->estatus) != 0))
 		return SLURM_SUCCESS;
 
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
-		jobid = job->pack_jobid;
-		offset = job->pack_task_offset;
+	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
+		jobid = job->het_job_id;
+		offset = job->het_job_task_offset;
 	} else {
 		jobid = job->jobid;
 		offset = 0;

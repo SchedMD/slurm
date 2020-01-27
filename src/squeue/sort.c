@@ -395,27 +395,27 @@ static int _sort_job_by_id(void *void1, void *void2)
 
 	_get_job_info_from_void(&job1, &job2, void1, void2);
 
-	if (job1->pack_job_id)
-		job_id1 = job1->pack_job_id;
+	if (job1->het_job_id)
+		job_id1 = job1->het_job_id;
 	else if (job1->array_task_id == NO_VAL)
 		job_id1 = job1->job_id;
 	else
 		job_id1 = job1->array_job_id;
 
-	if (job2->pack_job_id)
-		job_id2 = job2->pack_job_id;
+	if (job2->het_job_id)
+		job_id2 = job2->het_job_id;
 	else if (job2->array_task_id == NO_VAL)
 		job_id2 = job2->job_id;
 	else
 		job_id2 = job2->array_job_id;
 
 	if (job_id1 == job_id2) {
-		if (job1->pack_job_id)
-			job_id1 = job1->pack_job_offset;
+		if (job1->het_job_id)
+			job_id1 = job1->het_job_offset;
 		else
 			job_id1 = job1->array_task_id;
-		if (job2->pack_job_id)
-			job_id2 = job2->pack_job_offset;
+		if (job2->het_job_id)
+			job_id2 = job2->het_job_offset;
 		else
 			job_id2 = job2->array_task_id;
 	}

@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Validate sbatch pack job environment variables.
+# Purpose: Validate sbatch hetjob environment variables.
 #
 # Reqs:    1. Using slurmdbd accounting storage type and is up
 #          2. controllers are up and running.
@@ -133,15 +133,15 @@ proc end_it { exit_code } {
 exec $bin_rm -f $file_out
 
 make_bash_script $file_in "#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1
-#SBATCH packjob
+#SBATCH hetjob
 #SBATCH --cpus-per-task=2 --mem-per-cpu=2  --ntasks=1 -t1
-#SBATCH packjob
+#SBATCH hetjob
 #SBATCH --cpus-per-task=1 --mem-per-cpu=6  --ntasks=1 -t1
 
 env"
 
 send_user "\n################################################################\n"
-send_user "Submit packjob and verify output from scontrol show job"
+send_user "Submit hetjob and verify output from scontrol show job"
 send_user "\n################################################################\n"
 
 set job_id 0
@@ -168,7 +168,7 @@ set matches 0
 
 spawn $bin_cat $file_out
 expect {
-	-re "SLURM_PACK_SIZE=3" {
+	-re "SLURM_HET_SIZE=3" {
 		#once
 		incr matches
 		exp_continue
@@ -178,7 +178,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	log_error "output of env incorrect matches: SLURM_PACK_SIZE=3 ($matches != 1)"
+	log_error "output of env incorrect matches: SLURM_HET_SIZE=3 ($matches != 1)"
 	end_it 1
 }
 
@@ -186,7 +186,7 @@ set matches 0
 log_user 0
 spawn $bin_cat $file_out
 expect {
-	-re "SLURM_JOB_PARTITION_PACK_GROUP" {
+	-re "SLURM_JOB_PARTITION_HET_GROUP" {
 		#three
 		incr matches
 		exp_continue
@@ -197,25 +197,25 @@ expect {
 }
 log_user 1
 if {$matches != 3} {
-	log_error "output of env incorrect matches: SLURM_JOB_PARTITION_PACK_GROUP ($matches != 3)"
+	log_error "output of env incorrect matches: SLURM_JOB_PARTITION_HET_GROUP ($matches != 3)"
 	end_it 1
 }
 
-test_env "SLURM_CPUS_PER_TASK_PACK_GROUP_0=4"
-test_env "SLURM_CPUS_PER_TASK_PACK_GROUP_1=2"
-test_env "SLURM_CPUS_PER_TASK_PACK_GROUP_2=1"
+test_env "SLURM_CPUS_PER_TASK_HET_GROUP_0=4"
+test_env "SLURM_CPUS_PER_TASK_HET_GROUP_1=2"
+test_env "SLURM_CPUS_PER_TASK_HET_GROUP_2=1"
 
-test_env "SLURM_JOB_ID_PACK_GROUP_0=$job_id"
-test_env "SLURM_JOB_ID_PACK_GROUP_1="
-test_env "SLURM_JOB_ID_PACK_GROUP_2="
+test_env "SLURM_JOB_ID_HET_GROUP_0=$job_id"
+test_env "SLURM_JOB_ID_HET_GROUP_1="
+test_env "SLURM_JOB_ID_HET_GROUP_2="
 
-test_env "SLURM_MEM_PER_CPU_PACK_GROUP_0=10"
-test_env "SLURM_MEM_PER_CPU_PACK_GROUP_1=2"
-test_env "SLURM_MEM_PER_CPU_PACK_GROUP_2=6"
+test_env "SLURM_MEM_PER_CPU_HET_GROUP_0=10"
+test_env "SLURM_MEM_PER_CPU_HET_GROUP_1=2"
+test_env "SLURM_MEM_PER_CPU_HET_GROUP_2=6"
 
-test_env "SLURM_NTASKS_PACK_GROUP_0=1"
-test_env "SLURM_NTASKS_PACK_GROUP_1=1"
-test_env "SLURM_NTASKS_PACK_GROUP_2=1"
+test_env "SLURM_NTASKS_HET_GROUP_0=1"
+test_env "SLURM_NTASKS_HET_GROUP_1=1"
+test_env "SLURM_NTASKS_HET_GROUP_2=1"
 
 # All Done
 end_it 0

@@ -325,10 +325,10 @@ typedef enum {
 	REQUEST_JOB_NOTIFY,
 	REQUEST_JOB_SBCAST_CRED,
 	RESPONSE_JOB_SBCAST_CRED,
-	REQUEST_JOB_PACK_ALLOCATION,
-	RESPONSE_JOB_PACK_ALLOCATION,
-	REQUEST_JOB_PACK_ALLOC_INFO,
-	REQUEST_SUBMIT_BATCH_JOB_PACK,
+	REQUEST_HET_JOB_ALLOCATION,
+	RESPONSE_HET_JOB_ALLOCATION,
+	REQUEST_HET_JOB_ALLOC_INFO,
+	REQUEST_SUBMIT_BATCH_HET_JOB,
 
 	REQUEST_CTLD_MULT_MSG = 4500,
 	RESPONSE_CTLD_MULT_MSG,
@@ -801,17 +801,18 @@ typedef struct job_step_create_response_msg {
 typedef struct launch_tasks_request_msg {
 	uint32_t  job_id;
 	uint32_t  job_step_id;
-	uint32_t  node_offset;	/* pack job node offset of NO_VAL */
-	uint32_t  pack_jobid;	/* pack job ID or NO_VAL */
-	uint32_t  pack_nnodes;	/* total task count for entire pack job */
-	uint32_t  pack_ntasks;	/* total task count for entire pack job */
-	uint16_t *pack_task_cnts; /* Number of tasks on each node in pack job */
-	uint32_t **pack_tids;   /* Task IDs on each node of pack job */
-	uint32_t *pack_tid_offsets;/* map of tasks (by id) to originating pack*/
-	uint32_t  pack_offset;	/* pack job offset of NO_VAL */
-	uint32_t  pack_step_cnt; /* number of steps for entire pack job */
-	uint32_t  pack_task_offset;/* pack job task ID offset of NO_VAL */
-	char     *pack_node_list;  /* Pack step node list */
+	uint32_t  het_job_node_offset;	/* Hetjob node offset or NO_VAL */
+	uint32_t  het_job_id;		/* Hetjob ID or NO_VAL */
+	uint32_t  het_job_nnodes;	/* total node count for entire hetjob */
+	uint32_t  het_job_ntasks;	/* total task count for entire hetjob */
+	uint16_t *het_job_task_cnts;	/* Tasks count on each node in hetjob */
+	uint32_t **het_job_tids;	/* Task IDs on each node of hetjob */
+	uint32_t *het_job_tid_offsets;	/* map of tasks (by id) to originating
+					 * hetjob */
+	uint32_t  het_job_offset;	/* Hetjob offset or NO_VAL */
+	uint32_t  het_job_step_cnt;	/* number of steps for entire hetjob */
+	uint32_t  het_job_task_offset;	/* Hetjob task ID offset or NO_VAL */
+	char     *het_job_node_list;	/* Hetjob step node list */
 	uint32_t  nnodes;	/* number of nodes in this job step       */
 	uint32_t  ntasks;	/* number of tasks in this job step   */
 	uint16_t  ntasks_per_board;/* number of tasks to invoke on each board */
@@ -965,12 +966,12 @@ typedef struct control_status_msg {
 #define SIG_NODE_FAIL	998	/* Dummy signal value to signify node failure */
 #define SIG_FAILURE	999	/* Dummy signal value to signify sys failure */
 typedef struct kill_job_msg {
+	uint32_t het_job_id;
 	List job_gres_info;	/* Used to set Epilog environment variables */
 	uint32_t job_id;
 	uint32_t job_state;
 	uint32_t job_uid;
 	char *nodes;
-	uint32_t pack_jobid;
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
@@ -1009,12 +1010,12 @@ typedef struct prolog_launch_msg {
 	char *alias_list;		/* node name/address/hostname aliases */
 	slurm_cred_t *cred;
 	uint32_t gid;
+	uint32_t het_job_id;		/* HetJob id or NO_VAL */
 	List job_gres_info;		/* Used to set Prolog env vars */
 	uint32_t job_id;		/* slurm job_id */
 	uint64_t job_mem_limit;		/* job's memory limit, passed via cred */
 	uint32_t nnodes;			/* count of nodes, passed via cred */
 	char *nodes;			/* list of nodes allocated to job_step */
-	uint32_t pack_job_id;		/* pack job_id or NO_VAL */
 	char *partition;		/* partition the job is running in */
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
 	char **spank_job_env;		/* SPANK job environment variables */
@@ -1041,8 +1042,8 @@ typedef struct batch_job_launch_msg {
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
+	uint32_t het_job_id;
 	uint32_t job_id;
-	uint32_t pack_jobid;
 	uint32_t step_id;
 	uint32_t uid;
 	uint32_t gid;

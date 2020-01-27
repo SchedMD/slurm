@@ -111,14 +111,14 @@ static bool _is_job_preempt_exempt(job_record_t *preemptee_ptr,
 	xassert(preemptee_ptr);
 	xassert(preemptor_ptr);
 
-	if (!preemptee_ptr->pack_job_list)
+	if (!preemptee_ptr->het_job_list)
 		return _is_job_preempt_exempt_internal(
 			preemptee_ptr, preemptor_ptr);
 	/*
 	 * All components of a job must be preemptable otherwise it is
 	 * preempt exempt
 	 */
-        return list_find_first(preemptee_ptr->pack_job_list,
+        return list_find_first(preemptee_ptr->het_job_list,
 			       _is_job_preempt_exempt_internal,
 			       preemptor_ptr) ? true : false;
 }
@@ -159,7 +159,7 @@ static int _add_preemptable_job(void *x, void *arg)
 	 * We only want to look at the master component of a hetjob.  Since all
 	 * components have to be preemptable it should be here at some point.
 	 */
-	if (candidate->pack_job_id && !candidate->pack_job_list)
+	if (candidate->het_job_id && !candidate->het_job_list)
 		return 0;
 
 	/*
@@ -312,7 +312,7 @@ extern uint16_t slurm_job_preempt_mode(job_record_t *job_ptr)
 {
 	uint16_t data;
 
-	if (job_ptr->pack_job_list && !job_ptr->job_preempt_comp) {
+	if (job_ptr->het_job_list && !job_ptr->job_preempt_comp) {
 		/*
 		 * Find the component job to use as the template for
 		 * setting the preempt mode for all other components.
@@ -335,7 +335,7 @@ extern uint16_t slurm_job_preempt_mode(job_record_t *job_ptr)
 		     pm_index++) {
 			data = preempt_modes[pm_index];
 			if ((job_ptr->job_preempt_comp = list_find_first(
-				     job_ptr->pack_job_list,
+				     job_ptr->het_job_list,
 				     _find_job_by_preempt_mode,
 				     &data)))
 				break;
@@ -435,8 +435,8 @@ static int _job_check_grace_internal(void *x, void *arg)
  */
 static int _job_check_grace(job_record_t *job_ptr, job_record_t *preemptor_ptr)
 {
-	if (job_ptr->pack_job_list)
-		return list_for_each_nobreak(job_ptr->pack_job_list,
+	if (job_ptr->het_job_list)
+		return list_for_each_nobreak(job_ptr->het_job_list,
 					     _job_check_grace_internal,
 					     preemptor_ptr) <= 0 ? 1 : 0;
 
@@ -464,8 +464,8 @@ extern uint32_t slurm_job_preempt(job_record_t *job_ptr,
 		return SLURM_ERROR;
 
 	if (preempt_send_user_signal) {
-		if (job_ptr->pack_job_list)
-			(void)list_for_each(job_ptr->pack_job_list,
+		if (job_ptr->het_job_list)
+			(void)list_for_each(job_ptr->het_job_list,
 					    _job_warn_signal_wrapper,
 					    &ignore_time);
 		else
@@ -473,9 +473,8 @@ extern uint32_t slurm_job_preempt(job_record_t *job_ptr,
 	}
 
 	if (mode == PREEMPT_MODE_CANCEL) {
-		if (job_ptr->pack_job_list)
-			rc = pack_job_signal(job_ptr,
-					     SIGKILL, 0, 0, true);
+		if (job_ptr->het_job_list)
+			rc = het_job_signal(job_ptr, SIGKILL, 0, 0, true);
 		else
 			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
 		if (rc == SLURM_SUCCESS) {
@@ -493,9 +492,8 @@ extern uint32_t slurm_job_preempt(job_record_t *job_ptr,
 	}
 
 	if (rc != SLURM_SUCCESS) {
-		if (job_ptr->pack_job_list)
-			rc = pack_job_signal(job_ptr,
-					     SIGKILL, 0, 0, true);
+		if (job_ptr->het_job_list)
+			rc = het_job_signal(job_ptr, SIGKILL, 0, 0, true);
 		else
 			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
 		if (rc == SLURM_SUCCESS) {

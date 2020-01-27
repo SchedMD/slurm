@@ -507,7 +507,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	kill_job->job_gres_info =
 		 gres_plugin_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
 	kill_job->job_id    = job_ptr->job_id;
-	kill_job->pack_jobid = job_ptr->pack_job_id;
+	kill_job->het_job_id = job_ptr->het_job_id;
 	kill_job->step_id   = NO_VAL;
 	kill_job->job_state = job_ptr->job_state;
 	kill_job->job_uid   = job_ptr->user_id;
@@ -3263,7 +3263,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	prolog_msg_ptr->job_gres_info =
 		 gres_plugin_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
 	prolog_msg_ptr->job_id = job_ptr->job_id;
-	prolog_msg_ptr->pack_job_id = job_ptr->pack_job_id;
+	prolog_msg_ptr->het_job_id = job_ptr->het_job_id;
 	prolog_msg_ptr->uid = job_ptr->user_id;
 	prolog_msg_ptr->gid = job_ptr->group_id;
 	if (!job_ptr->user_name)
@@ -4599,7 +4599,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 	kill_job->job_gres_info	=
 		gres_plugin_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
 	kill_job->job_id    = job_ptr->job_id;
-	kill_job->pack_jobid = job_ptr->pack_job_id;
+	kill_job->het_job_id = job_ptr->het_job_id;
 	kill_job->step_id   = NO_VAL;
 	kill_job->job_uid   = job_ptr->user_id;
 	kill_job->job_state = job_ptr->job_state;

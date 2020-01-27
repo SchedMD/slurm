@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
-#          Test of --pack-group option.
+#          Test of --het-group option.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -41,7 +41,7 @@ if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
 }
-if {[test_pack_step] == 0} {
+if {[test_hetjob_step] == 0} {
 	send_user "\nWARNING: heterogeneous steps not currently supported\n"
 	exit $exit_code
 }
@@ -54,14 +54,14 @@ if {$nb_nodes < 3} {
 }
 
 proc end_it { exit_code } {
-	global pack_job_id scancel
-	if {$pack_job_id > 0} {
-		exec $scancel $pack_job_id
+	global het_job_id scancel
+	if {$het_job_id > 0} {
+		exec $scancel $het_job_id
 	}
 	exit $exit_code
 }
 
-set pack_job_id 0
+set het_job_id 0
 set matches 0
 set index 0
 set component(0) 0
@@ -69,7 +69,7 @@ set timeout $max_job_delay
 set sid [spawn $salloc -t1 -N1 : -N1 : -N1 $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
-		set pack_job_id $expect_out(1,string)
+		set het_job_id $expect_out(1,string)
 		send "export PS1=\"$prompt\"\r"
 		exp_continue
 	}
@@ -86,7 +86,7 @@ expect {
 	}
 }
 
-if {$pack_job_id == 0} {
+if {$het_job_id == 0} {
 	log_error "salloc failure"
 	end_it 1
 }
@@ -106,7 +106,7 @@ set timeout 30
 
 send_user "\n\nCollect Nodenames\n\n"
 
-send "$squeue -j $pack_job_id -o\"NAME=%N\" --noheader \r"
+send "$squeue -j $het_job_id -o\"NAME=%N\" --noheader \r"
 expect {
 	-re "--noheader" {
 		exp_continue
@@ -134,7 +134,7 @@ send_user "\n\nTest Sending Jobs To Various Components\n\n"
 set timeout 3
 set matches 0
 
-send "$srun --mpi=none --pack-group=0 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --het-group=0 printenv SLURMD_NODENAME\r"
 expect {
 	-re $component(0) {
 		incr matches
@@ -155,7 +155,7 @@ if { $matches != 1} {
 
 set matches 0
 
-send "$srun --mpi=none --pack-group=1 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --het-group=1 printenv SLURMD_NODENAME\r"
 expect {
 	-re $component(1) {
 		incr matches
@@ -176,7 +176,7 @@ if { $matches != 1} {
 
 set matches 0
 
-send "$srun --mpi=none --pack-group=2 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --het-group=2 printenv SLURMD_NODENAME\r"
 expect {
 	-re $component(2) {
 		incr matches
@@ -197,7 +197,7 @@ if { $matches != 1} {
 
 set matches 0
 
-send "$srun --mpi=none --pack-group=0-2 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --het-group=0-2 printenv SLURMD_NODENAME\r"
 expect {
 	-re $component(0)|$component(1)|$component(2) {
 		incr matches
@@ -218,7 +218,7 @@ if { $matches != 3} {
 
 set matches 0
 
-send "$srun --mpi=none --pack-group=0,2 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --het-group=0,2 printenv SLURMD_NODENAME\r"
 expect {
 	-re $component(2)|$component(0) {
 		incr matches
@@ -242,9 +242,9 @@ send_user "\n\nTesting Error Messages\n\n"
 
 set matches 0
 
-send "$srun --mpi=none --pack-group=0-3 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --het-group=0-3 printenv SLURMD_NODENAME\r"
 expect {
-	-re "srun: error: Attempt to run a job step with pack group value of 3, but the job allocation has maximum value of 2" {
+	-re "srun: error: Attempt to run a job step with het group value of 3, but the job allocation has maximum value of 2" {
 		send_user "Error is expected, no worries.\n\n"
 		incr matches
 		exp_continue
@@ -263,9 +263,9 @@ if { $matches != 1} {
 }
 
 set matches 0
-send "$srun --mpi=none --pack-group=0,5 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --het-group=0,5 printenv SLURMD_NODENAME\r"
 expect {
-	-re "srun: error: Attempt to run a job step with pack group value of 5, but the job allocation has maximum value of 2" {
+	-re "srun: error: Attempt to run a job step with het group value of 5, but the job allocation has maximum value of 2" {
 		send_user "Error is expected, no worries.\n\n"
 		incr matches
 		exp_continue
@@ -284,9 +284,9 @@ if { $matches != 1} {
 }
 
 set matches 0
-send "$srun --mpi=none --pack-group=0 printenv SLURMD_NODENAME : --pack-group=0 env\r"
+send "$srun --mpi=none --het-group=0 printenv SLURMD_NODENAME : --het-group=0 env\r"
 expect {
-	-re "srun: fatal: Duplicate pack groups in single srun not supported" {
+	-re "srun: fatal: Duplicate het groups in single srun not supported" {
 		send_user "Error is expected, no worries.\n\n"
 		incr matches
 		exp_continue

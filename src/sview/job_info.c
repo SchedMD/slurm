@@ -80,8 +80,8 @@ typedef struct {
 	int step_id;
 	int array_job_id;
 	int array_task_id;
-	int pack_job_id;
-	int pack_job_offset;
+	int het_job_id;
+	int het_job_offset;
 } jobs_foreach_t;
 
 typedef struct {
@@ -137,6 +137,9 @@ enum {
 	SORTID_FED_VIABLE_SIBS,
 	SORTID_GRES,
 	SORTID_GROUP_ID,
+	SORTID_HET_JOB_ID,
+	SORTID_HET_JOB_ID_SET,
+	SORTID_HET_JOB_OFFSET,
 	SORTID_JOBID,
 	SORTID_JOBID_FORMATTED,
 	SORTID_LAST_SCHED_EVAL,
@@ -161,9 +164,6 @@ enum {
 /* 	SORTID_NTASKS_PER_NODE, */
 /* 	SORTID_NTASKS_PER_SOCKET, */
 	SORTID_OVER_SUBSCRIBE,
-	SORTID_PACK_JOB_ID,
-	SORTID_PACK_JOB_ID_SET,
-	SORTID_PACK_JOB_OFFSET,
 	SORTID_PARTITION,
 	SORTID_PREEMPT_TIME,
 	SORTID_PRIORITY,
@@ -234,11 +234,11 @@ static display_data_t display_data_job[] = {
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition", false,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_PACK_JOB_ID, "Pack JobID", false,
+	{G_TYPE_STRING, SORTID_HET_JOB_ID, "Hetjob JobID", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_PACK_JOB_ID_SET, "Pack JobID Set", false,
+	{G_TYPE_STRING, SORTID_HET_JOB_ID_SET, "Hetjob JobID Set", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_PACK_JOB_OFFSET, "Pack Job Offset", false,
+	{G_TYPE_STRING, SORTID_HET_JOB_OFFSET, "Hetjob Offset", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_USER_ID, "UserID", false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
@@ -863,17 +863,17 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->name = xstrdup(new_text);
 		type = "name";
 		break;
-	case SORTID_PACK_JOB_ID:
+	case SORTID_HET_JOB_ID:
 		job_msg->name = xstrdup(new_text);
-		type = "pack jobid";
+		type = "hetjob jobid";
 		break;
-	case SORTID_PACK_JOB_ID_SET:
+	case SORTID_HET_JOB_ID_SET:
 		job_msg->name = xstrdup(new_text);
-		type = "pack job id set";
+		type = "hetjob id set";
 		break;
-	case SORTID_PACK_JOB_OFFSET:
+	case SORTID_HET_JOB_OFFSET:
 		job_msg->name = xstrdup(new_text);
-		type = "pack job offset";
+		type = "hetjob offset";
 		break;
 	case SORTID_WCKEY:
 		job_msg->wckey = xstrdup(new_text);
@@ -1448,10 +1448,10 @@ static void _layout_job_record(GtkTreeView *treeview,
 		snprintf(tmp_char, sizeof(tmp_char), "%u_%u (%u)",
 			 job_ptr->array_job_id, job_ptr->array_task_id,
 			 job_ptr->job_id);
-	} else if (job_ptr->pack_job_id) {
+	} else if (job_ptr->het_job_id) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u+%u (%u)",
-			 job_ptr->pack_job_id,
-			 job_ptr->pack_job_offset,
+			 job_ptr->het_job_id,
+			 job_ptr->het_job_offset,
 			 job_ptr->job_id);
 	} else {
 		snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->job_id);
@@ -1583,37 +1583,37 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_OVER_SUBSCRIBE),
 				   job_share_string(job_ptr->shared));
 
-	if (job_ptr->pack_job_id) {
+	if (job_ptr->het_job_id) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u",
-			 job_ptr->pack_job_id);
+			 job_ptr->het_job_id);
 	} else {
 		snprintf(tmp_char, sizeof(tmp_char), "N/A");
 	}
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
-						 SORTID_PACK_JOB_ID),
+						 SORTID_HET_JOB_ID),
 				   tmp_char);
 
-	if (job_ptr->pack_job_offset) {
+	if (job_ptr->het_job_offset) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u",
-			 job_ptr->pack_job_offset);
+			 job_ptr->het_job_offset);
 	} else {
 		snprintf(tmp_char, sizeof(tmp_char), "N/A");
 	}
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
-						 SORTID_PACK_JOB_OFFSET),
+						 SORTID_HET_JOB_OFFSET),
 				   tmp_char);
 
-	if (job_ptr->pack_job_id_set) {
+	if (job_ptr->het_job_id_set) {
 		snprintf(tmp_char, sizeof(tmp_char), "%s",
-			 job_ptr->pack_job_id_set);
+			 job_ptr->het_job_id_set);
 	} else {
 		snprintf(tmp_char, sizeof(tmp_char), "N/A");
 	}
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
-						 SORTID_PACK_JOB_ID_SET),
+						 SORTID_HET_JOB_ID_SET),
 				   tmp_char);
 
 	add_display_treestore_line(update, treestore, &iter,
@@ -1859,8 +1859,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_prio[40],      tmp_nice[40],        tmp_preempt_time[40];
 	char tmp_rqswitch[40],  tmp_core_spec[40],   tmp_job_id[40];
 	char tmp_std_err[128],  tmp_std_in[128],     tmp_std_out[128];
-	char tmp_thread_spec[40], tmp_time_deadline[40], tmp_pack_job_id[40];
-	char tmp_pack_job_id_set[40], tmp_pack_job_offset[40];
+	char tmp_thread_spec[40], tmp_time_deadline[40], tmp_het_job_id[40];
+	char tmp_het_job_id_set[40], tmp_het_job_offset[40];
 	char tmp_time_accrue[40];
 	char *tmp_batch,  *tmp_cont, *tmp_requeue, *tmp_uname;
 	char *tmp_reboot, *tmp_reason, *tmp_nodes;
@@ -1888,13 +1888,13 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		sview_job_info_ptr->task_hl_str =
 			hostlist_ranged_string_xmalloc(
 				sview_job_info_ptr->task_hl);
-		if (!job_ptr->pack_job_id) {
+		if (!job_ptr->het_job_id) {
 			snprintf(tmp_job_id, sizeof(tmp_job_id), "%u_%s",
 				 job_ptr->array_job_id,
 				 sview_job_info_ptr->task_hl_str);
 		} else {
 			snprintf(tmp_job_id, sizeof(tmp_job_id), "%u+%s",
-				 job_ptr->pack_job_id,
+				 job_ptr->het_job_id,
 				 sview_job_info_ptr->task_hl_str);
 		}
 		xfree(sview_job_info_ptr->task_hl_str);
@@ -1906,13 +1906,13 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		sview_job_info_ptr->task_pending_hl_str =
 			hostlist_ranged_string_xmalloc(
 				sview_job_info_ptr->task_pending_hl);
-		if (!job_ptr->pack_job_id) {
+		if (!job_ptr->het_job_id) {
 			snprintf(tmp_job_id, sizeof(tmp_job_id), "%u_%s",
 				 job_ptr->array_job_id,
 				 sview_job_info_ptr->task_pending_hl_str);
 		} else {
 			snprintf(tmp_job_id, sizeof(tmp_job_id), "%u+%s",
-				 job_ptr->pack_job_id,
+				 job_ptr->het_job_id,
 				 sview_job_info_ptr->task_pending_hl_str);
 		}
 		xfree(sview_job_info_ptr->task_pending_hl_str);
@@ -1921,7 +1921,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	}
 
 	if (handle_pending &&
-	    (job_ptr->pack_job_id || job_ptr->array_job_id)) {
+	    (job_ptr->het_job_id || job_ptr->array_job_id)) {
 		if (job_ptr->array_task_str ||
 		    (job_ptr->array_task_id != NO_VAL)) {
 			snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
@@ -1931,12 +1931,12 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			snprintf(tmp_array_task_id,
 				 sizeof(tmp_array_task_id), "%s",
 				 sview_job_info_ptr->task_pending_hl_str);
-		} else if (job_ptr->pack_job_id) {
+		} else if (job_ptr->het_job_id) {
 			snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
 				 sview_job_info_ptr->task_pending_hl_str);
 		}
 	} else if (check_task &&
-		   (job_ptr->pack_job_id || job_ptr->array_job_id)) {
+		   (job_ptr->het_job_id || job_ptr->array_job_id)) {
 		if (job_ptr->array_task_str ||
 		    (job_ptr->array_task_id != NO_VAL)) {
 			snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
@@ -1946,7 +1946,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			snprintf(tmp_array_task_id,
 				 sizeof(tmp_array_task_id), "%s",
 				 sview_job_info_ptr->task_hl_str);
-		} else if (job_ptr->pack_job_id)
+		} else if (job_ptr->het_job_id)
 			snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
 					sview_job_info_ptr->task_hl_str);
 	} else if (job_ptr->array_task_str) {
@@ -1963,28 +1963,28 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			 job_ptr->array_job_id);
 		snprintf(tmp_array_task_id, sizeof(tmp_array_task_id), "%u",
 			 job_ptr->array_task_id);
-	} else if (job_ptr->pack_job_id) {
+	} else if (job_ptr->het_job_id) {
 		snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
 			 sview_job_info_ptr->job_id_str);
-		snprintf(tmp_pack_job_id,      sizeof(tmp_pack_job_id),
-			 "%u", job_ptr->pack_job_id);
-		snprintf(tmp_pack_job_id_set,  sizeof(tmp_pack_job_id_set),
-			 "%s", job_ptr->pack_job_id_set);
-		snprintf(tmp_pack_job_offset,  sizeof(tmp_pack_job_offset),
-			 "%u", job_ptr->pack_job_offset);
+		snprintf(tmp_het_job_id,      sizeof(tmp_het_job_id),
+			 "%u", job_ptr->het_job_id);
+		snprintf(tmp_het_job_id_set,  sizeof(tmp_het_job_id_set),
+			 "%s", job_ptr->het_job_id_set);
+		snprintf(tmp_het_job_offset,  sizeof(tmp_het_job_offset),
+			 "%u", job_ptr->het_job_offset);
 	 } else {
 		snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
 			 sview_job_info_ptr->job_id_str);
 	}
 
 
-	if (!job_ptr->pack_job_id) {
-		snprintf(tmp_pack_job_id,
-			 sizeof(tmp_pack_job_id),      "N/A");
-		snprintf(tmp_pack_job_id_set,
-			 sizeof(tmp_pack_job_id_set),  "N/A");
-		snprintf(tmp_pack_job_offset,
-			 sizeof(tmp_pack_job_offset),  "N/A");
+	if (!job_ptr->het_job_id) {
+		snprintf(tmp_het_job_id,
+			 sizeof(tmp_het_job_id),      "N/A");
+		snprintf(tmp_het_job_id_set,
+			 sizeof(tmp_het_job_id_set),  "N/A");
+		snprintf(tmp_het_job_offset,
+			 sizeof(tmp_het_job_offset),  "N/A");
 	 }
 
 	if (!job_ptr->array_job_id) {
@@ -2208,7 +2208,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	if ((handle_pending || check_task) &&
 	    (job_ptr->array_task_str || (job_ptr->array_task_id != NO_VAL) ||
-	     job_ptr->pack_job_id)) {
+	     job_ptr->het_job_id)) {
 		gtk_tree_store_set(treestore, iter,
 				   SORTID_ACCOUNT,      job_ptr->account,
 				   SORTID_ALLOC,        1,
@@ -2228,9 +2228,9 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_CONTIGUOUS,   tmp_cont,
 				   SORTID_JOBID,        tmp_job_id,
 				   SORTID_JOBID_FORMATTED, tmp_job_id,
-				   SORTID_PACK_JOB_ID,     tmp_pack_job_id,
-				   SORTID_PACK_JOB_ID_SET, tmp_pack_job_id_set,
-				   SORTID_PACK_JOB_OFFSET, tmp_pack_job_offset,
+				   SORTID_HET_JOB_ID,     tmp_het_job_id,
+				   SORTID_HET_JOB_ID_SET, tmp_het_job_id_set,
+				   SORTID_HET_JOB_OFFSET, tmp_het_job_offset,
 				   SORTID_PARTITION,    job_ptr->partition,
 				   SORTID_UPDATED,      1,
 				   SORTID_USER_ID,      tmp_uname,
@@ -2296,9 +2296,9 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_NODES_MIN,    tmp_nodes_min,
 				   SORTID_OVER_SUBSCRIBE,
 				   job_share_string(job_ptr->shared),
-				   SORTID_PACK_JOB_ID,     tmp_pack_job_id,
-				   SORTID_PACK_JOB_ID_SET, tmp_pack_job_id_set,
-				   SORTID_PACK_JOB_OFFSET, tmp_pack_job_offset,
+				   SORTID_HET_JOB_ID,     tmp_het_job_id,
+				   SORTID_HET_JOB_ID_SET, tmp_het_job_id_set,
+				   SORTID_HET_JOB_OFFSET, tmp_het_job_offset,
 				   SORTID_PARTITION,    job_ptr->partition,
 				   SORTID_PREEMPT_TIME, tmp_preempt_time,
 				   SORTID_PRIORITY,     tmp_prio,
@@ -2346,7 +2346,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	if (check_task &&
 	    (job_ptr->array_task_str ||
-	     ((job_ptr->array_task_id != NO_VAL) || job_ptr->pack_job_id))) {
+	     ((job_ptr->array_task_id != NO_VAL) || job_ptr->het_job_id))) {
 		if (gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
 						 &step_iter,
 						 iter))
@@ -2360,7 +2360,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	} else if (handle_pending &&
 		   (job_ptr->array_task_str ||
 		    (job_ptr->array_task_id != NO_VAL ||
-		     job_ptr->pack_job_id))) {
+		     job_ptr->het_job_id))) {
 		if (gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
 						 &step_iter,
 						 iter))
@@ -2454,9 +2454,9 @@ static void _layout_step_record(GtkTreeView *treeview,
 			 step_ptr->array_job_id, step_ptr->array_task_id,
 			 step_ptr->step_id,
 			 step_ptr->job_id, step_ptr->step_id);
-//	} else if (step_ptr->pack_job_id) {
+//	} else if (step_ptr->het_job_id) {
 //		snprintf(tmp_char, sizeof(tmp_char), "%u+%u.%u (%u.%u)",
-//			 step_ptr->pack_job_id, step_ptr->pack_job_offset,
+//			 step_ptr->het_job_id, step_ptr->het_job_offset,
 //			 step_ptr->step_id,
 //			 step_ptr->job_id, step_ptr->step_id);
 	} else {
@@ -2637,9 +2637,9 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			 step_ptr->array_job_id, step_ptr->array_task_id,
 			 step_ptr->step_id,
 			 step_ptr->job_id, step_ptr->step_id);
-//	} else if (step_ptr->pack_job_id) {
+//	} else if (step_ptr->het_job_id) {
 //		snprintf(tmp_job_id, sizeof(tmp_job_id), "%u+%u.%u (%u.%u)",
-//			 step_ptr->pack_job_id, step_ptr->pack_job_offset,
+//			 step_ptr->het_job_id, step_ptr->het_job_offset,
 //			 step_ptr->step_id,
 //			 step_ptr->job_id, step_ptr->step_id);
 	} else {
@@ -2962,7 +2962,7 @@ static void _update_info_job(List info_list,
 
 			if ((jobid != job_ptr->job_id)
 			    && (jobid != job_ptr->array_job_id) &&
-				(jobid != job_ptr->pack_job_id)) {
+				(jobid != job_ptr->het_job_id)) {
 				/* Bad pointer */
 				sview_job_info->iter_set = false;
 			}
@@ -3021,12 +3021,12 @@ static int _task_array_match(void *x, void *key)
 	return 0;
 }
 
-static int _pack_job_id_match(void *x, void *key)
+static int _het_job_id_match(void *x, void *key)
 {
 	sview_job_info_t *sview_job_info_ptr = (sview_job_info_t *) x;
 	job_info_t *job_ptr = (job_info_t *) key;
 
-	if (sview_job_info_ptr->job_ptr->pack_job_id  == job_ptr->pack_job_id)
+	if (sview_job_info_ptr->job_ptr->het_job_id  == job_ptr->het_job_id)
 		return 1;
 
 	return 0;
@@ -3147,13 +3147,13 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 					 job_ptr->array_task_id,
 					 job_ptr->job_id);
 			}
-		} else if (job_ptr->pack_job_id) {
+		} else if (job_ptr->het_job_id) {
 			char comp_str[64];
 			snprintf(comp_str, sizeof(comp_str), "%u",
-				 job_ptr->pack_job_offset);
+				 job_ptr->het_job_offset);
 			sview_job_info_t *first_job_info_ptr =
 				list_find_first(info_list,
-						_pack_job_id_match, job_ptr);
+						_het_job_id_match, job_ptr);
 			if (!first_job_info_ptr) {
 				sview_job_info_ptr->task_list =
 					list_create(NULL);
@@ -3170,8 +3170,8 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 					    sview_job_info_ptr);
 			sview_job_info_ptr->job_id_str =
 				xstrdup_printf("%u+%u (%u)",
-				 job_ptr->pack_job_id,
-				 job_ptr->pack_job_offset,
+				 job_ptr->het_job_id,
+				 job_ptr->het_job_offset,
 				 job_ptr->job_id);
 		} else
 			sview_job_info_ptr->job_id_str =
@@ -4477,7 +4477,7 @@ static void selected_foreach_build_list(GtkTreeModel  *model,
 	uint32_t jobid = NO_VAL;
 	uint32_t stepid = NO_VAL;
 	uint32_t array_job_id = NO_VAL, array_task_id = NO_VAL;
-	uint32_t pack_job_id = NO_VAL,  pack_job_offset = NO_VAL;
+	uint32_t het_job_id = NO_VAL,  het_job_offset = NO_VAL;
 	int state;
 	jobs_foreach_t *fe_ptr = NULL;
 	char *tmp_jobid, *offset, *end_ptr;
@@ -4493,8 +4493,8 @@ static void selected_foreach_build_list(GtkTreeModel  *model,
 			array_job_id  = strtol(tmp_jobid, &end_ptr, 10);
 			array_task_id = strtol(end_ptr+1, NULL, 10);
 		} else {
-			pack_job_id  = strtol(tmp_jobid, &end_ptr, 10);
-			pack_job_offset = strtol(end_ptr+1, NULL, 10);
+			het_job_id  = strtol(tmp_jobid, &end_ptr, 10);
+			het_job_offset = strtol(end_ptr+1, NULL, 10);
 		}
 		offset++;
 	} else
@@ -4520,8 +4520,8 @@ static void selected_foreach_build_list(GtkTreeModel  *model,
 	fe_ptr->state = state;
 	fe_ptr->array_job_id = array_job_id;
 	fe_ptr->array_task_id = array_task_id;
-	fe_ptr->pack_job_id = pack_job_id;
-	fe_ptr->pack_job_offset = pack_job_offset;
+	fe_ptr->het_job_id = het_job_id;
+	fe_ptr->het_job_offset = het_job_offset;
 
 	list_append(foreach_list, fe_ptr); /* stuff target away*/
 
@@ -4530,11 +4530,11 @@ static void selected_foreach_build_list(GtkTreeModel  *model,
 	else
 		xstrcat(stacked_job_list, ": ");
 
-	if (array_task_id == NO_VAL && pack_job_id == NO_VAL)
+	if (array_task_id == NO_VAL && het_job_id == NO_VAL)
 		xstrfmtcat(stacked_job_list, "%u", jobid);
-	else if (pack_job_id != NO_VAL)
-		xstrfmtcat(stacked_job_list, "%u+%u", pack_job_id,
-			   pack_job_offset);
+	else if (het_job_id != NO_VAL)
+		xstrfmtcat(stacked_job_list, "%u+%u", het_job_id,
+			   het_job_offset);
 	else
 		xstrfmtcat(stacked_job_list, "%u_%u",
 			   array_job_id, array_task_id);

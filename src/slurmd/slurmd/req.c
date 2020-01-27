@@ -142,10 +142,10 @@ typedef struct {
 
 typedef struct {
 	char **gres_job_env;
+	uint32_t het_job_id;
 	uint32_t jobid;
 	uint32_t step_id;
 	char *node_list;
-	uint32_t pack_jobid;
 	char *partition;
 	char *resv_id;
 	char **spank_job_env;
@@ -1453,9 +1453,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 	slurm_get_ip_str(cli, &port, host, sizeof(host));
-	if (req->pack_jobid && (req->pack_jobid != NO_VAL)) {
+	if (req->het_job_id && (req->het_job_id != NO_VAL)) {
 		info("launch task %u+%u.%u (%u.%u) request from UID:%u GID:%u HOST:%s PORT:%hu",
-		     req->pack_jobid, req->pack_offset, req->job_step_id,
+		     req->het_job_id, req->het_job_offset, req->job_step_id,
 		     req->job_id, req->job_step_id, req->uid, req->gid,
 		     host, port);
 	} else {
@@ -1499,8 +1499,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		slurm_mutex_unlock(&prolog_mutex);
 
 #ifdef HAVE_NATIVE_CRAY
-		if (req->pack_jobid && (req->pack_jobid != NO_VAL))
-			jobid = req->pack_jobid;
+		if (req->het_job_id && (req->het_job_id != NO_VAL))
+			jobid = req->het_job_id;
 		else
 			jobid = req->job_id;
 #else
@@ -1521,7 +1521,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.jobid = req->job_id;
 		job_env.step_id = req->job_step_id;
 		job_env.node_list = req->complete_nodelist;
-		job_env.pack_jobid = req->pack_jobid;
+		job_env.het_job_id = req->het_job_id;
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
@@ -1747,8 +1747,8 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 	uint32_t jobid;
 
 #ifdef HAVE_NATIVE_CRAY
-	if (req->pack_jobid && (req->pack_jobid != NO_VAL))
-		jobid = req->pack_jobid;
+	if (req->het_job_id && (req->het_job_id != NO_VAL))
+		jobid = req->het_job_id;
 	else
 		jobid = req->job_id;
 #else
@@ -2090,8 +2090,8 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->ntasks		= req->nnodes;
 	launch_req->ofname		= "/dev/null";
 
-	launch_req->pack_jobid		= req->pack_job_id;
-	launch_req->pack_nnodes		= NO_VAL;
+	launch_req->het_job_id		= req->het_job_id;
+	launch_req->het_job_nnodes	= NO_VAL;
 
 	launch_req->partition		= req->partition;
 	launch_req->spank_job_env_size	= req->spank_job_env_size;
@@ -2251,7 +2251,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.jobid = req->job_id;
 		job_env.step_id = 0;	/* not available */
 		job_env.node_list = req->nodes;
-		job_env.pack_jobid = req->pack_job_id;
+		job_env.het_job_id = req->het_job_id;
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
@@ -2259,8 +2259,8 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.user_name = req->user_name;
 
 #ifdef HAVE_NATIVE_CRAY
-		if (req->pack_job_id && (req->pack_job_id != NO_VAL))
-			jobid = req->pack_job_id;
+		if (req->het_job_id && (req->het_job_id != NO_VAL))
+			jobid = req->het_job_id;
 		else
 			jobid = req->job_id;
 #else
@@ -2457,7 +2457,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		job_env.jobid = req->job_id;
 		job_env.step_id = req->step_id;
 		job_env.node_list = req->nodes;
-		job_env.pack_jobid = req->pack_jobid;
+		job_env.het_job_id = req->het_job_id;
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
@@ -2468,8 +2468,8 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 	 	 */
 
 #ifdef HAVE_NATIVE_CRAY
-		if (req->pack_jobid && (req->pack_jobid != NO_VAL))
-			jobid = req->pack_jobid;
+		if (req->het_job_id && (req->het_job_id != NO_VAL))
+			jobid = req->het_job_id;
 		else
 			jobid = req->job_id;
 #else
@@ -4197,8 +4197,8 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 		return ESLURMD_INVALID_JOB_CREDENTIAL;
 
 #ifdef HAVE_NATIVE_CRAY
-	if (cred_arg->pack_jobid && (cred_arg->pack_jobid != NO_VAL))
-		key.job_id = cred_arg->pack_jobid;
+	if (cred_arg->het_job_id && (cred_arg->het_job_id != NO_VAL))
+		key.job_id = cred_arg->het_job_id;
 	else
 		key.job_id = cred_arg->job_id;
 #else
@@ -5193,8 +5193,8 @@ _rpc_abort_job(slurm_msg_t *msg)
 	_free_job_env(&job_env);
 
 #ifdef HAVE_NATIVE_CRAY
-	if (req->pack_jobid && (req->pack_jobid != NO_VAL))
-		jobid = req->pack_jobid;
+	if (req->het_job_id && (req->het_job_id != NO_VAL))
+		jobid = req->het_job_id;
 	else
 		jobid = req->job_id;
 #else
@@ -5316,8 +5316,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 
 	/* Use this when dealing with the job container */
 #ifdef HAVE_NATIVE_CRAY
-	if (req->pack_jobid && (req->pack_jobid != NO_VAL))
-		jobid = req->pack_jobid;
+	if (req->het_job_id && (req->het_job_id != NO_VAL))
+		jobid = req->het_job_id;
 	else
 		jobid = req->job_id;
 #else
@@ -5809,8 +5809,11 @@ static char **_build_env(job_env_t *job_env, bool is_epilog)
 
 	setenvf(&env, "SLURM_JOBID", "%u", job_env->jobid);
 
-	if (job_env->pack_jobid && (job_env->pack_jobid != NO_VAL))
-		setenvf(&env, "SLURM_PACK_JOB_ID", "%u", job_env->pack_jobid);
+	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL)) {
+		/* Continue support for old hetjob terminology. */
+		setenvf(&env, "SLURM_PACK_JOB_ID", "%u", job_env->het_job_id);
+		setenvf(&env, "SLURM_HET_JOB_ID", "%u", job_env->het_job_id);
+	}
 
 	setenvf(&env, "SLURM_UID", "%u", job_env->uid);
 
@@ -6037,8 +6040,8 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	START_TIMER;
 
 #ifdef HAVE_NATIVE_CRAY
-	if (job_env->pack_jobid && (job_env->pack_jobid != NO_VAL))
-		jobid = job_env->pack_jobid;
+	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL))
+		jobid = job_env->het_job_id;
 	else
 		jobid = job_env->jobid;
 #else
@@ -6120,8 +6123,8 @@ _run_epilog(job_env_t *job_env)
 	}
 
 #ifdef HAVE_NATIVE_CRAY
-	if (job_env->pack_jobid && (job_env->pack_jobid != NO_VAL))
-		jobid = job_env->pack_jobid;
+	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL))
+		jobid = job_env->het_job_id;
 	else
 		jobid = job_env->jobid;
 #else

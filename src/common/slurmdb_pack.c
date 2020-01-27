@@ -4532,7 +4532,7 @@ extern int slurmdb_unpack_job_modify_cond(void **object,
 	selected_step = xmalloc(sizeof(slurmdb_selected_step_t));
 	selected_step->array_task_id = NO_VAL;
 	safe_unpack32(&selected_step->jobid, buffer);
-	selected_step->pack_job_offset = NO_VAL;
+	selected_step->het_job_offset = NO_VAL;
 	selected_step->stepid = NO_VAL;
 
 	object_ptr->step_list = list_create(slurmdb_destroy_selected_step);
@@ -4587,8 +4587,8 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->lft, buffer);
 		packstr(job->mcs_label, buffer);
 		packstr(job->nodes, buffer);
-		pack32(job->pack_job_id, buffer);
-		pack32(job->pack_job_offset, buffer);
+		pack32(job->het_job_id, buffer);
+		pack32(job->het_job_offset, buffer);
 		packstr(job->partition, buffer);
 		pack32(job->priority, buffer);
 		pack32(job->qosid, buffer);
@@ -4668,8 +4668,8 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->lft, buffer);
 		packstr(job->mcs_label, buffer);
 		packstr(job->nodes, buffer);
-		pack32(job->pack_job_id, buffer);
-		pack32(job->pack_job_offset, buffer);
+		pack32(job->het_job_id, buffer);
+		pack32(job->het_job_offset, buffer);
 		packstr(job->partition, buffer);
 		pack32(job->priority, buffer);
 		pack32(job->qosid, buffer);
@@ -4747,8 +4747,8 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->lft, buffer);
 		packstr(job->mcs_label, buffer);
 		packstr(job->nodes, buffer);
-		pack32(job->pack_job_id, buffer);
-		pack32(job->pack_job_offset, buffer);
+		pack32(job->het_job_id, buffer);
+		pack32(job->het_job_offset, buffer);
 		packstr(job->partition, buffer);
 		pack32(job->priority, buffer);
 		pack32(job->qosid, buffer);
@@ -4850,8 +4850,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&job_ptr->mcs_label,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->nodes, &uint32_tmp, buffer);
-		safe_unpack32(&job_ptr->pack_job_id, buffer);
-		safe_unpack32(&job_ptr->pack_job_offset, buffer);
+		safe_unpack32(&job_ptr->het_job_id, buffer);
+		safe_unpack32(&job_ptr->het_job_offset, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->partition, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&job_ptr->priority, buffer);
@@ -4943,8 +4943,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&job_ptr->mcs_label,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->nodes, &uint32_tmp, buffer);
-		safe_unpack32(&job_ptr->pack_job_id, buffer);
-		safe_unpack32(&job_ptr->pack_job_offset, buffer);
+		safe_unpack32(&job_ptr->het_job_id, buffer);
+		safe_unpack32(&job_ptr->het_job_offset, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->partition, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&job_ptr->priority, buffer);
@@ -5032,8 +5032,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&job_ptr->mcs_label,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->nodes, &uint32_tmp, buffer);
-		safe_unpack32(&job_ptr->pack_job_id, buffer);
-		safe_unpack32(&job_ptr->pack_job_offset, buffer);
+		safe_unpack32(&job_ptr->het_job_id, buffer);
+		safe_unpack32(&job_ptr->het_job_offset, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->partition, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&job_ptr->priority, buffer);
@@ -5410,7 +5410,7 @@ extern void slurmdb_pack_selected_step(void *in, uint16_t protocol_version,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step->array_task_id, buffer);
 		pack32(step->jobid, buffer);
-		pack32(step->pack_job_offset, buffer);
+		pack32(step->het_job_offset, buffer);
 		pack32(step->stepid, buffer);
 	}
 }
@@ -5428,7 +5428,7 @@ extern int slurmdb_unpack_selected_step(slurmdb_selected_step_t **step,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&step_ptr->array_task_id, buffer);
 		safe_unpack32(&step_ptr->jobid, buffer);
-		safe_unpack32(&step_ptr->pack_job_offset, buffer);
+		safe_unpack32(&step_ptr->het_job_offset, buffer);
 		safe_unpack32(&step_ptr->stepid, buffer);
 	} else
 		goto unpack_error;

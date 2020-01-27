@@ -100,19 +100,19 @@ bool	tres_freq_err_log = true;
 
 /*---- forward declarations of static variables and functions  ----*/
 
-static slurm_opt_t *_get_first_opt(int pack_offset);
-static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last);
+static slurm_opt_t *_get_first_opt(int het_job_offset);
+static slurm_opt_t *_get_next_opt(int het_job_offset, slurm_opt_t *opt_last);
 
-static bitstr_t *_get_pack_group(const int argc, char **argv,
-				 int default_pack_offset, bool *opt_found);
+static bitstr_t *_get_het_group(const int argc, char **argv,
+				int default_het_job_offset, bool *opt_found);
 
 /* fill in default options  */
 static void _opt_default(void);
 
 /* set options based upon env vars  */
-static void _opt_env(int pack_offset);
+static void _opt_env(int het_job_offset);
 
-static void _opt_args(int argc, char **argv, int pack_offset);
+static void _opt_args(int argc, char **argv, int het_job_offset);
 
 /* verify options sanity  */
 static bool _opt_verify(void);
@@ -124,22 +124,22 @@ static bool  _valid_node_list(char **node_list_pptr);
 /*---[ end forward declarations of static functions ]---------------------*/
 
 /*
- * Find first option structure for a given pack job offset
- * pack_offset IN - Offset into pack job or -1 if regular job
+ * Find first option structure for a given het job offset
+ * het_job_offset IN - Offset into hetjob or -1 if regular job
  * RET - Pointer to option structure or NULL if none found
  */
-static slurm_opt_t *_get_first_opt(int pack_offset)
+static slurm_opt_t *_get_first_opt(int het_job_offset)
 {
 	ListIterator opt_iter;
 	slurm_opt_t *opt_local;
 
 	if (!opt_list) {
-		if (!sropt.pack_grp_bits && (pack_offset == -1))
+		if (!sropt.het_grp_bits && (het_job_offset == -1))
 			return &opt;
-		if (sropt.pack_grp_bits &&
-		    (pack_offset >= 0) &&
-		    (pack_offset < bit_size(sropt.pack_grp_bits)) &&
-		    bit_test(sropt.pack_grp_bits, pack_offset))
+		if (sropt.het_grp_bits &&
+		    (het_job_offset >= 0) &&
+		    (het_job_offset < bit_size(sropt.het_grp_bits)) &&
+		    bit_test(sropt.het_grp_bits, het_job_offset))
 			return &opt;
 		return NULL;
 	}
@@ -148,9 +148,9 @@ static slurm_opt_t *_get_first_opt(int pack_offset)
 	while ((opt_local = list_next(opt_iter))) {
 		srun_opt_t *srun_opt = opt_local->srun_opt;
 		xassert(srun_opt);
-		if (srun_opt->pack_grp_bits && (pack_offset >= 0)
-		    && (pack_offset < bit_size(srun_opt->pack_grp_bits))
-		    && bit_test(srun_opt->pack_grp_bits, pack_offset))
+		if (srun_opt->het_grp_bits && (het_job_offset >= 0)
+		    && (het_job_offset < bit_size(srun_opt->het_grp_bits))
+		    && bit_test(srun_opt->het_grp_bits, het_job_offset))
 			break;
 	}
 	list_iterator_destroy(opt_iter);
@@ -159,12 +159,12 @@ static slurm_opt_t *_get_first_opt(int pack_offset)
 }
 
 /*
- * Find next option structure for a given pack job offset
- * pack_offset IN - Offset into pack job or -1 if regular job
- * opt_last IN - past option structure found for this pack offset
+ * Find next option structure for a given hetjob offset
+ * het_job_offset IN - Offset into hetjob or -1 if regular job
+ * opt_last IN - past option structure found for this het_job_offset
  * RET - Pointer to option structure or NULL if none found
  */
-static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last)
+static slurm_opt_t *_get_next_opt(int het_job_offset, slurm_opt_t *opt_last)
 {
 	ListIterator opt_iter;
 	slurm_opt_t *opt_local;
@@ -183,9 +183,9 @@ static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last)
 			continue;
 		}
 
-		if (srun_opt->pack_grp_bits && (pack_offset >= 0)
-		    && (pack_offset < bit_size(srun_opt->pack_grp_bits))
-		    && bit_test(srun_opt->pack_grp_bits, pack_offset))
+		if (srun_opt->het_grp_bits && (het_job_offset >= 0)
+		    && (het_job_offset < bit_size(srun_opt->het_grp_bits))
+		    && bit_test(srun_opt->het_grp_bits, het_job_offset))
 			break;
 	}
 	list_iterator_destroy(opt_iter);
@@ -194,56 +194,57 @@ static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last)
 }
 
 /*
- * Find option structure for a given pack job offset
- * pack_offset IN - Offset into pack job, -1 if regular job, -2 to reset
+ * Find option structure for a given hetjob offset
+ * het_job_offset IN - Offset into hetjob, -1 if regular job, -2 to reset
  * RET - Pointer to next matching option structure or NULL if none found
  */
-extern slurm_opt_t *get_next_opt(int pack_offset)
+extern slurm_opt_t *get_next_opt(int het_job_offset)
 {
 	static int offset_last = -2;
 	static slurm_opt_t *opt_last = NULL;
 
-	if (pack_offset == -2) {
+	if (het_job_offset == -2) {
 		offset_last = -2;
 		opt_last = NULL;
 		return NULL;
 	}
 
-	if (offset_last != pack_offset) {
-		offset_last = pack_offset;
-		opt_last = _get_first_opt(pack_offset);
+	if (offset_last != het_job_offset) {
+		offset_last = het_job_offset;
+		opt_last = _get_first_opt(het_job_offset);
 	} else {
-		opt_last = _get_next_opt(pack_offset, opt_last);
+		opt_last = _get_next_opt(het_job_offset, opt_last);
 	}
 	return opt_last;
 }
 
 /*
- * Return maximum pack_group value for any step launch option request
+ * Return maximum het_group value for any step launch option request
  */
-extern int get_max_pack_group(void)
+extern int get_max_het_group(void)
 {
 	ListIterator opt_iter;
 	slurm_opt_t *opt_local;
-	int max_pack_offset = 0, pack_offset = 0;
+	int max_het_job_offset = 0, het_job_offset = 0;
 
 	if (opt_list) {
 		opt_iter = list_iterator_create(opt_list);
 		while ((opt_local = list_next(opt_iter))) {
 			srun_opt_t *srun_opt = opt_local->srun_opt;
 			xassert(srun_opt);
-			if (srun_opt->pack_grp_bits)
-				pack_offset = bit_fls(srun_opt->pack_grp_bits);
-			if (pack_offset >= max_pack_offset)
-				max_pack_offset = pack_offset;
+			if (srun_opt->het_grp_bits)
+				het_job_offset =
+					bit_fls(srun_opt->het_grp_bits);
+			if (het_job_offset >= max_het_job_offset)
+				max_het_job_offset = het_job_offset;
 		}
 		list_iterator_destroy(opt_iter);
 	} else {
-		if (sropt.pack_grp_bits)
-			max_pack_offset = bit_fls(sropt.pack_grp_bits);
+		if (sropt.het_grp_bits)
+			max_het_job_offset = bit_fls(sropt.het_grp_bits);
 	}
 
-	return max_pack_offset;
+	return max_het_job_offset;
 }
 
 /*
@@ -301,8 +302,8 @@ static slurm_opt_t *_opt_copy(void)
 	opt.network = NULL;		/* Moved by memcpy */
 	opt.nodelist = NULL;		/* Moved by memcpy */
 	opt_dup->ofname = xstrdup(opt.ofname);
-	sropt.pack_group = NULL;	/* Moved by memcpy */
-	sropt.pack_grp_bits = NULL;	/* Moved by memcpy */
+	sropt.het_group = NULL;		/* Moved by memcpy */
+	sropt.het_grp_bits = NULL;	/* Moved by memcpy */
 	opt.partition = NULL;		/* Moved by memcpy */
 	opt_dup->srun_opt->prolog = xstrdup(sropt.prolog);
 	opt_dup->srun_opt->propagate = xstrdup(sropt.propagate);
@@ -331,18 +332,18 @@ static slurm_opt_t *_opt_copy(void)
  */
 extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 {
-	static int default_pack_offset = 0;
+	static int default_het_job_offset = 0;
 	static bool pending_append = false;
-	bitstr_t *pack_grp_bits;
+	bitstr_t *het_grp_bits;
 	int i, i_first, i_last;
 	bool opt_found = false;
 
-	pack_grp_bits = _get_pack_group(argc, argv, default_pack_offset++,
-					&opt_found);
-	i_first = bit_ffs(pack_grp_bits);
-	i_last  = bit_fls(pack_grp_bits);
+	het_grp_bits = _get_het_group(argc, argv, default_het_job_offset++,
+				      &opt_found);
+	i_first = bit_ffs(het_grp_bits);
+	i_last  = bit_fls(het_grp_bits);
 	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(pack_grp_bits, i))
+		if (!bit_test(het_grp_bits, i))
 			continue;
 		pass_number++;
 		if (pending_append) {
@@ -365,9 +366,9 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		}
 
 		if (opt_found || (i > 0)) {
-			xstrfmtcat(sropt.pack_group, "%d", i);
-			sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
-			bit_set(sropt.pack_grp_bits, i);
+			xstrfmtcat(sropt.het_group, "%d", i);
+			sropt.het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
+			bit_set(sropt.het_grp_bits, i);
 		}
 
 		/* initialize options with env vars */
@@ -397,7 +398,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		}
 		pending_append = true;
 	}
-	bit_free(pack_grp_bits);
+	bit_free(het_grp_bits);
 
 	if (opt_list && pending_append) {		/* Last record */
 		list_append(opt_list, _opt_copy());
@@ -449,8 +450,8 @@ static void _opt_default(void)
 	 */
 	opt.job_flags			= 0;
 	sropt.multi_prog_cmds		= 0;
-	sropt.pack_group		= NULL;
-	sropt.pack_grp_bits		= NULL;
+	sropt.het_group			= NULL;
+	sropt.het_grp_bits		= NULL;
 	opt.spank_job_env_size		= 0;
 	opt.spank_job_env		= NULL;
 
@@ -561,7 +562,7 @@ env_vars_t env_vars[] = {
  *            environment variables. See comments above for how to
  *            extend srun to process different vars
  */
-static void _opt_env(int pack_offset)
+static void _opt_env(int het_job_offset)
 {
 	char       key[64], *val = NULL;
 	env_vars_t *e   = env_vars;
@@ -569,11 +570,17 @@ static void _opt_env(int pack_offset)
 	while (e->var) {
 		if ((val = getenv(e->var)))
 			slurm_process_option(&opt, e->type, val, true, false);
-		if ((pack_offset >= 0) &&
+		if ((het_job_offset >= 0) &&
 		    strcmp(e->var, "SLURM_JOBID") &&
 		    strcmp(e->var, "SLURM_JOB_ID")) {
+			/* Continue supporting old hetjob terminology. */
 			snprintf(key, sizeof(key), "%s_PACK_GROUP_%d",
-				 e->var, pack_offset);
+				 e->var, het_job_offset);
+			if ((val = getenv(key)))
+				slurm_process_option(&opt, e->type, val,
+						     true, false);
+			snprintf(key, sizeof(key), "%s_HET_GROUP_%d",
+				 e->var, het_job_offset);
 			if ((val = getenv(key)))
 				slurm_process_option(&opt, e->type, val,
 						     true, false);
@@ -595,19 +602,19 @@ static void _opt_env(int pack_offset)
 }
 
 /*
- * If --pack-group option found, return a bitmap representing their IDs
+ * If --het-group option found, return a bitmap representing their IDs
  * argc IN - Argument count
  * argv IN - Arguments
- * default_pack_offset IN - Default offset
- * opt_found OUT - Set to true if --pack-group option found
- * RET bitmap if pack groups to run
+ * default_het_job_offset IN - Default offset
+ * opt_found OUT - Set to true if --het-group option found
+ * RET bitmap if het groups to run
  */
-static bitstr_t *_get_pack_group(const int argc, char **argv,
-				 int default_pack_offset, bool *opt_found)
+static bitstr_t *_get_het_group(const int argc, char **argv,
+				 int default_het_job_offset, bool *opt_found)
 {
 	int i, opt_char, option_index = 0;
 	char *tmp = NULL;
-	bitstr_t *pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
+	bitstr_t *het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
 	hostlist_t hl;
 	char *opt_string = NULL;
 	struct option *optz = slurm_option_table_create(&opt, &opt_string);
@@ -621,20 +628,20 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	slurm_option_table_destroy(optz);
 	xfree(opt_string);
 
-	*opt_found = (sropt.pack_group);
+	*opt_found = (sropt.het_group);
 
 	if (*opt_found == false) {
-		bit_set(pack_grp_bits, default_pack_offset);
-		return pack_grp_bits;
+		bit_set(het_grp_bits, default_het_job_offset);
+		return het_grp_bits;
 	}
 
-	if (sropt.pack_group[0] == '[')
-		tmp = xstrdup(sropt.pack_group);
+	if (sropt.het_group[0] == '[')
+		tmp = xstrdup(sropt.het_group);
 	else
-		xstrfmtcat(tmp, "[%s]", sropt.pack_group);
+		xstrfmtcat(tmp, "[%s]", sropt.het_group);
 	hl = hostlist_create(tmp);
 	if (!hl) {
-		error("Invalid --pack-group value: %s", sropt.pack_group);
+		error("Invalid --het-group value: %s", sropt.het_group);
 		exit(error_exit);
 	}
 	xfree(tmp);
@@ -642,21 +649,22 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	while ((tmp = hostlist_shift(hl))) {
 		char *end_ptr = NULL;
 		i = strtol(tmp, &end_ptr, 10);
-		if ((i < 0) || (i >= MAX_PACK_COUNT) || (end_ptr[0] != '\0')) {
-			error("Invalid --pack-group value: %s",
-			       sropt.pack_group);
+		if ((i < 0) || (i >= MAX_HET_JOB_COMPONENTS) ||
+		    (end_ptr[0] != '\0')) {
+			error("Invalid --het-group value: %s",
+			       sropt.het_group);
 			exit(error_exit);
 		}
-		bit_set(pack_grp_bits, i);
+		bit_set(het_grp_bits, i);
 		free(tmp);
 	}
 	hostlist_destroy(hl);
-	if (bit_ffs(pack_grp_bits) == -1) {	/* No bits set */
-		error("Invalid --pack-group value: %s", sropt.pack_group);
+	if (bit_ffs(het_grp_bits) == -1) {	/* No bits set */
+		error("Invalid --het-group value: %s", sropt.het_group);
 		exit(error_exit);
 	}
 
-	return pack_grp_bits;
+	return het_grp_bits;
 }
 
 static void _set_options(const int argc, char **argv)
@@ -678,14 +686,14 @@ static void _set_options(const int argc, char **argv)
 /*
  * _opt_args() : set options via commandline args and popt
  */
-static void _opt_args(int argc, char **argv, int pack_offset)
+static void _opt_args(int argc, char **argv, int het_job_offset)
 {
 	int i, command_pos = 0, command_args = 0;
 	char **rest = NULL;
 	char *fullpath, *launch_params;
 
-	sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
-	bit_set(sropt.pack_grp_bits, pack_offset);
+	sropt.het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
+	bit_set(sropt.het_grp_bits, het_job_offset);
 
 	validate_memory_options(&opt);
 
@@ -1362,7 +1370,7 @@ static void _usage(void)
 "            [--bcast=<dest_path>] [--compress[=library]]\n"
 "            [--acctg-freq=<datatype>=<interval>] [--delay-boot=mins]\n"
 "            [-w hosts...] [-x hosts...] [--use-min-nodes]\n"
-"            [--mpi-combine=yes|no] [--pack-group=value]\n"
+"            [--mpi-combine=yes|no] [--het-group=value]\n"
 "            [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "            [--gpus-per-node=n] [--gpus-per-socket=n]  [--gpus-per-task=n]\n"
 "            [--mem-per-gpu=MB]\n"
@@ -1433,7 +1441,7 @@ static void _help(void)
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -o, --output=out            location of stdout redirection\n"
 "  -O, --overcommit            overcommit resources\n"
-"      --pack-group=value      pack job allocation(s) in which to launch\n"
+"      --het-group=value       hetjob component allocation(s) in which to launch\n"
 "                              application\n"
 "  -p, --partition=partition   partition requested\n"
 "      --power=flags           power management options\n"

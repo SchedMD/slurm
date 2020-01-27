@@ -85,7 +85,7 @@ strong_alias(env_array_append,		slurm_env_array_append);
 strong_alias(env_array_append_fmt,	slurm_env_array_append_fmt);
 strong_alias(env_array_overwrite,	slurm_env_array_overwrite);
 strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
-strong_alias(env_array_overwrite_pack_fmt, slurm_env_array_overwrite_pack_fmt);
+strong_alias(env_array_overwrite_het_fmt, slurm_env_array_overwrite_het_fmt);
 strong_alias(env_unset_environment,	slurm_env_unset_environment);
 
 #define ENV_BUFSIZE (256 * 1024)
@@ -923,7 +923,7 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  * dest OUT - array in which to the set environment variables
  * alloc IN - resource allocation response
  * desc IN - job allocation request
- * pack_offset IN - component offset into pack job, -1 if not pack job
+ * het_job_offset IN - component offset into hetjob, -1 if not hetjob
  *
  * Sets OBSOLETE variables (needed for MPI, do not remove):
  *	SLURM_JOBID
@@ -933,7 +933,7 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  */
 extern int env_array_for_job(char ***dest,
 			     const resource_allocation_response_msg_t *alloc,
-			     const job_desc_msg_t *desc, int pack_offset)
+			     const job_desc_msg_t *desc, int het_job_offset)
 {
 	char *tmp = NULL;
 	char *dist = NULL, *lllp_dist = NULL;
@@ -953,61 +953,63 @@ extern int env_array_for_job(char ***dest,
 	cpus_per_task_array[0] = desc->cpus_per_task;
 	cpus_task_reps[0] = alloc->node_cnt;
 
-	if (pack_offset < 1) {
+	if (het_job_offset < 1) {
 		env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u",
 					alloc->job_id);
 	}
-	env_array_overwrite_pack_fmt(dest, "SLURM_JOB_ID", pack_offset,
-				     "%u", alloc->job_id);
-	env_array_overwrite_pack_fmt(dest, "SLURM_JOB_NAME", pack_offset,
-				     "%s", desc->name);
-	env_array_overwrite_pack_fmt(dest, "SLURM_JOB_NUM_NODES", pack_offset,
-				     "%u", step_layout_req.num_hosts);
-	env_array_overwrite_pack_fmt(dest, "SLURM_JOB_NODELIST", pack_offset,
-				     "%s", alloc->node_list);
-	env_array_overwrite_pack_fmt(dest, "SLURM_NODE_ALIASES", pack_offset,
-				     "%s", alloc->alias_list);
-	env_array_overwrite_pack_fmt(dest, "SLURM_JOB_PARTITION", pack_offset,
-				     "%s", alloc->partition);
+	env_array_overwrite_het_fmt(dest, "SLURM_JOB_ID", het_job_offset,
+				    "%u", alloc->job_id);
+	env_array_overwrite_het_fmt(dest, "SLURM_JOB_NAME", het_job_offset,
+				    "%s", desc->name);
+	env_array_overwrite_het_fmt(dest, "SLURM_JOB_NUM_NODES", het_job_offset,
+				    "%u", step_layout_req.num_hosts);
+	env_array_overwrite_het_fmt(dest, "SLURM_JOB_NODELIST", het_job_offset,
+				    "%s", alloc->node_list);
+	env_array_overwrite_het_fmt(dest, "SLURM_NODE_ALIASES", het_job_offset,
+				    "%s", alloc->alias_list);
+	env_array_overwrite_het_fmt(dest, "SLURM_JOB_PARTITION", het_job_offset,
+				    "%s", alloc->partition);
 
 	set_distribution(desc->task_dist, &dist, &lllp_dist);
 	if (dist) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_DISTRIBUTION",
-					     pack_offset, "%s", dist);
+		env_array_overwrite_het_fmt(dest, "SLURM_DISTRIBUTION",
+					    het_job_offset, "%s", dist);
 	}
 	if ((desc->task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_DIST_PLANESIZE",
-					     pack_offset, "%u",
-					     desc->plane_size);
+		env_array_overwrite_het_fmt(dest, "SLURM_DIST_PLANESIZE",
+					    het_job_offset, "%u",
+					    desc->plane_size);
 	}
 	if (lllp_dist) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_DIST_LLLP",
-					     pack_offset, "%s", lllp_dist);
+		env_array_overwrite_het_fmt(dest, "SLURM_DIST_LLLP",
+					    het_job_offset, "%s", lllp_dist);
 	}
 	tmp = uint32_compressed_to_str(alloc->num_cpu_groups,
 					alloc->cpus_per_node,
 					alloc->cpu_count_reps);
-	env_array_overwrite_pack_fmt(dest, "SLURM_JOB_CPUS_PER_NODE",
-				     pack_offset, "%s", tmp);
+	env_array_overwrite_het_fmt(dest, "SLURM_JOB_CPUS_PER_NODE",
+				    het_job_offset, "%s", tmp);
 	xfree(tmp);
 
 	if (alloc->pn_min_memory & MEM_PER_CPU) {
 		uint64_t tmp_mem = alloc->pn_min_memory & (~MEM_PER_CPU);
-		env_array_overwrite_pack_fmt(dest, "SLURM_MEM_PER_CPU",
-					     pack_offset, "%"PRIu64"", tmp_mem);
+		env_array_overwrite_het_fmt(dest, "SLURM_MEM_PER_CPU",
+					    het_job_offset, "%"PRIu64"",
+					    tmp_mem);
 	} else if (alloc->pn_min_memory) {
 		uint64_t tmp_mem = alloc->pn_min_memory;
-		env_array_overwrite_pack_fmt(dest, "SLURM_MEM_PER_NODE",
-					     pack_offset, "%"PRIu64"", tmp_mem);
+		env_array_overwrite_het_fmt(dest, "SLURM_MEM_PER_NODE",
+					    het_job_offset, "%"PRIu64"",
+					    tmp_mem);
 	}
 
 	/* OBSOLETE, but needed by MPI, do not remove */
-	env_array_overwrite_pack_fmt(dest, "SLURM_JOBID", pack_offset, "%u",
-				     alloc->job_id);
-	env_array_overwrite_pack_fmt(dest, "SLURM_NNODES", pack_offset, "%u",
-				     step_layout_req.num_hosts);
-	env_array_overwrite_pack_fmt(dest, "SLURM_NODELIST", pack_offset, "%s",
-				     alloc->node_list);
+	env_array_overwrite_het_fmt(dest, "SLURM_JOBID", het_job_offset, "%u",
+				    alloc->job_id);
+	env_array_overwrite_het_fmt(dest, "SLURM_NNODES", het_job_offset, "%u",
+				    step_layout_req.num_hosts);
+	env_array_overwrite_het_fmt(dest, "SLURM_NODELIST", het_job_offset, "%s",
+				    alloc->node_list);
 
 	if (step_layout_req.num_tasks == NO_VAL) {
 		/* If we know how many tasks we are going to do then
@@ -1030,8 +1032,8 @@ extern int env_array_for_job(char ***dest,
 
 	if ((desc->task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY) {
 		step_layout_req.node_list = desc->req_nodes;
-		env_array_overwrite_pack_fmt(dest, "SLURM_ARBITRARY_NODELIST",
-					     pack_offset, "%s",
+		env_array_overwrite_het_fmt(dest, "SLURM_ARBITRARY_NODELIST",
+					    het_job_offset, "%s",
 					     step_layout_req.node_list);
 	} else
 		step_layout_req.node_list = alloc->node_list;
@@ -1048,21 +1050,24 @@ extern int env_array_for_job(char ***dest,
 
 	tmp = uint16_array_to_str(step_layout->node_cnt, step_layout->tasks);
 	slurm_step_layout_destroy(step_layout);
-	env_array_overwrite_pack_fmt(dest, "SLURM_TASKS_PER_NODE", pack_offset,
-				     "%s", tmp);
+	env_array_overwrite_het_fmt(dest, "SLURM_TASKS_PER_NODE",
+				    het_job_offset,
+				    "%s", tmp);
 	xfree(tmp);
 
 	if (alloc->account) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_JOB_ACCOUNT",
-					     pack_offset, "%s", alloc->account);
+		env_array_overwrite_het_fmt(dest, "SLURM_JOB_ACCOUNT",
+					    het_job_offset, "%s",
+					    alloc->account);
 	}
 	if (alloc->qos) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_JOB_QOS", pack_offset,
-					     "%s", alloc->qos);
+		env_array_overwrite_het_fmt(dest, "SLURM_JOB_QOS",
+					    het_job_offset,
+					    "%s", alloc->qos);
 	}
 	if (alloc->resv_name) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_JOB_RESERVATION",
-					     pack_offset, "%s",
+		env_array_overwrite_het_fmt(dest, "SLURM_JOB_RESERVATION",
+					    het_job_offset, "%s",
 					     alloc->resv_name);
 	}
 
@@ -1074,47 +1079,51 @@ extern int env_array_for_job(char ***dest,
 			if (value) {
 				value[0] = '\0';
 				value++;
-				env_array_overwrite_pack_fmt(dest, key,
-							     pack_offset, "%s",
-							     value);
+				env_array_overwrite_het_fmt(dest, key,
+							    het_job_offset,
+							    "%s",
+							    value);
 			}
 			xfree(tmp);
 		}
 	}
 
 	if (desc->acctg_freq) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_ACCTG_FREQ",
-					     pack_offset, "%s",
+		env_array_overwrite_het_fmt(dest, "SLURM_ACCTG_FREQ",
+					    het_job_offset, "%s",
 					     desc->acctg_freq);
 	};
 
 	if (desc->network) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_NETWORK",
-					     pack_offset, "%s", desc->network);
+		env_array_overwrite_het_fmt(dest, "SLURM_NETWORK",
+					    het_job_offset, "%s",
+					    desc->network);
 	}
 
 	if (desc->overcommit != NO_VAL8) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_OVERCOMMIT",
-					     pack_offset, "%u",
+		env_array_overwrite_het_fmt(dest, "SLURM_OVERCOMMIT",
+					    het_job_offset, "%u",
 					     desc->overcommit);
 	}
 
 	/* Add default task counts for srun, if not already set */
 	if (desc->bitflags & JOB_NTASKS_SET) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_NTASKS", pack_offset,
-					     "%d", desc->num_tasks);
+		env_array_overwrite_het_fmt(dest, "SLURM_NTASKS",
+					    het_job_offset,
+					    "%d", desc->num_tasks);
 		/* maintain for old scripts */
-		env_array_overwrite_pack_fmt(dest, "SLURM_NPROCS", pack_offset,
-					     "%d", desc->num_tasks);
+		env_array_overwrite_het_fmt(dest, "SLURM_NPROCS",
+					    het_job_offset,
+					    "%d", desc->num_tasks);
 	}
 	if (desc->bitflags & JOB_CPUS_SET) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_CPUS_PER_TASK",
-					     pack_offset, "%d",
+		env_array_overwrite_het_fmt(dest, "SLURM_CPUS_PER_TASK",
+					    het_job_offset, "%d",
 					     desc->cpus_per_task);
 	}
 	if (desc->ntasks_per_node && (desc->ntasks_per_node != NO_VAL16)) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_NTASKS_PER_NODE",
-					     pack_offset, "%d",
+		env_array_overwrite_het_fmt(dest, "SLURM_NTASKS_PER_NODE",
+					    het_job_offset, "%d",
 					     desc->ntasks_per_node);
 	}
 
@@ -1342,8 +1351,8 @@ env_array_for_step(char ***dest,
 	node_cnt = step->step_layout->node_cnt;
 	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u", step->job_step_id);
 
-	if (launch->pack_node_list) {
-		tmp = launch->pack_node_list;
+	if (launch->het_job_node_list) {
+		tmp = launch->het_job_node_list;
 		env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", tmp);
 		env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", tmp);
 	} else {
@@ -1352,23 +1361,23 @@ env_array_for_step(char ***dest,
 	}
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NODELIST", "%s", tmp);
 
-	if (launch->pack_nnodes && (launch->pack_nnodes != NO_VAL))
-		node_cnt = launch->pack_nnodes;
+	if (launch->het_job_nnodes && (launch->het_job_nnodes != NO_VAL))
+		node_cnt = launch->het_job_nnodes;
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_NODES", "%u", node_cnt);
 
-	if (launch->pack_ntasks && (launch->pack_ntasks != NO_VAL))
-		task_cnt = launch->pack_ntasks;
+	if (launch->het_job_ntasks && (launch->het_job_ntasks != NO_VAL))
+		task_cnt = launch->het_job_ntasks;
 	else
 		task_cnt = step->step_layout->task_cnt;
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_TASKS", "%u", task_cnt);
 
-	if (launch->pack_task_cnts) {
-		tpn = uint16_array_to_str(launch->pack_nnodes,
-					  launch->pack_task_cnts);
+	if (launch->het_job_task_cnts) {
+		tpn = uint16_array_to_str(launch->het_job_nnodes,
+					  launch->het_job_task_cnts);
 		env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s",
 					tpn);
 		env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u",
-					launch->pack_nnodes);
+					launch->het_job_nnodes);
 	} else {
 		tpn = uint16_array_to_str(step->step_layout->node_cnt,
 					  step->step_layout->tasks);
@@ -1537,8 +1546,9 @@ int env_array_overwrite_fmt(char ***array_ptr, const char *name,
  *
  * Return 1 on success, and 0 on error.
  */
-int env_array_overwrite_pack_fmt(char ***array_ptr, const char *name,
-				 int pack_offset, const char *value_fmt, ...)
+int env_array_overwrite_het_fmt(char ***array_ptr, const char *name,
+				    int het_job_offset,
+				    const char *value_fmt, ...)
 {
 	int rc;
 	char *value;
@@ -1548,12 +1558,17 @@ int env_array_overwrite_pack_fmt(char ***array_ptr, const char *name,
 	va_start(ap, value_fmt);
 	vsnprintf (value, ENV_BUFSIZE, value_fmt, ap);
 	va_end(ap);
-	if (pack_offset != -1) {
-		char *pack_name = NULL;
-		xstrfmtcat(pack_name, "%s_PACK_GROUP_%d", name, pack_offset);
-		rc = env_array_overwrite(array_ptr, pack_name, value);
-		xfree(pack_name);
-
+	if (het_job_offset != -1) {
+		char *het_comp_name = NULL;
+		/* Continue support for old hetjob terminology. */
+		xstrfmtcat(het_comp_name, "%s_PACK_GROUP_%d", name,
+			   het_job_offset);
+		rc = env_array_overwrite(array_ptr, het_comp_name, value);
+		xfree(het_comp_name);
+		xstrfmtcat(het_comp_name, "%s_HET_GROUP_%d", name,
+			   het_job_offset);
+		rc = env_array_overwrite(array_ptr, het_comp_name, value);
+		xfree(het_comp_name);
 	} else
 		rc = env_array_overwrite(array_ptr, name, value);
 	xfree(value);
@@ -2192,49 +2207,50 @@ char **env_array_user_default(const char *username, int timeout, int mode,
  *
  * opt IN - options set by command parsing
  * dest IN/OUT - location to write environment variables
- * pack_offset IN - component offset into pack job, -1 if not pack job
+ * het_job_offset IN - component offset into hetjob, -1 if not hetjob
  */
-extern void set_env_from_opts(slurm_opt_t *opt, char ***dest, int pack_offset)
+extern void set_env_from_opts(slurm_opt_t *opt, char ***dest,
+			      int het_job_offset)
 {
 	if (opt->cpus_per_gpu) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_CPUS_PER_GPU",
-					     pack_offset, "%d",
-					     opt->cpus_per_gpu);
+		env_array_overwrite_het_fmt(dest, "SLURM_CPUS_PER_GPU",
+					    het_job_offset, "%d",
+					    opt->cpus_per_gpu);
 	}
 	if (opt->gpus) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_GPUS",
-					     pack_offset, "%s",
-					     opt->gpus);
+		env_array_overwrite_het_fmt(dest, "SLURM_GPUS",
+					    het_job_offset, "%s",
+					    opt->gpus);
 	}
 	if (opt->gpu_bind) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_GPU_BIND",
-					     pack_offset, "%s",
-					     opt->gpu_bind);
+		env_array_overwrite_het_fmt(dest, "SLURM_GPU_BIND",
+					    het_job_offset, "%s",
+					    opt->gpu_bind);
 	}
 	if (opt->gpu_freq) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_GPU_FREQ",
-					     pack_offset, "%s",
-					     opt->gpu_freq);
+		env_array_overwrite_het_fmt(dest, "SLURM_GPU_FREQ",
+					    het_job_offset, "%s",
+					    opt->gpu_freq);
 	}
 	if (opt->gpus_per_node) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_GPUS_PER_NODE",
-					     pack_offset, "%s",
-					     opt->gpus_per_node);
+		env_array_overwrite_het_fmt(dest, "SLURM_GPUS_PER_NODE",
+					    het_job_offset, "%s",
+					    opt->gpus_per_node);
 	}
 	if (opt->gpus_per_socket) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_GPUS_PER_SOCKET",
-					     pack_offset, "%s",
-					     opt->gpus_per_socket);
+		env_array_overwrite_het_fmt(dest, "SLURM_GPUS_PER_SOCKET",
+					    het_job_offset, "%s",
+					    opt->gpus_per_socket);
 	}
 	if (opt->gpus_per_task) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_GPUS_PER_TASK",
-					     pack_offset, "%s",
-					     opt->gpus_per_task);
+		env_array_overwrite_het_fmt(dest, "SLURM_GPUS_PER_TASK",
+					    het_job_offset, "%s",
+					    opt->gpus_per_task);
 	}
 	if (opt->mem_per_gpu != NO_VAL64) {
-		env_array_overwrite_pack_fmt(dest, "SLURM_MEM_PER_GPU",
-					     pack_offset, "%"PRIu64,
-					     opt->mem_per_gpu);
+		env_array_overwrite_het_fmt(dest, "SLURM_MEM_PER_GPU",
+					    het_job_offset, "%"PRIu64,
+					    opt->mem_per_gpu);
 	}
 }
 

@@ -193,8 +193,8 @@ jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 	gid = job->gid;
 	stepid = job->stepid;
 	taskid = jobacct_id->taskid;
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-		jobid = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
 	else
 		jobid = job->jobid;
 
