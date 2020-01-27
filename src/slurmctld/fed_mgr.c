@@ -1284,15 +1284,6 @@ static fed_job_info_t *_find_fed_job_info(uint32_t job_id)
 			       &job_id);
 }
 
-static void _destroy_fed_job_info(void *object)
-{
-	fed_job_info_t *job_info = (fed_job_info_t *)object;
-
-	if (job_info) {
-		xfree(job_info);
-	}
-}
-
 static void _destroy_fed_job_update_info(void *object)
 {
 	fed_job_update_info_t *job_update_info =
@@ -2434,7 +2425,7 @@ extern int fed_mgr_init(void *db_conn)
 
 	slurm_mutex_lock(&fed_job_list_mutex);
 	if (!fed_job_list)
-		fed_job_list = list_create(_destroy_fed_job_info);
+		fed_job_list = list_create(list_xfree_item);
 	slurm_mutex_unlock(&fed_job_list_mutex);
 
 	/*
@@ -2682,7 +2673,7 @@ static int _unpack_fed_job_info(fed_job_info_t **job_info_pptr, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	_destroy_fed_job_info(job_info);
+	xfree(job_info);
 	*job_info_pptr = NULL;
 	return SLURM_ERROR;
 }
@@ -2731,7 +2722,7 @@ static List _load_fed_job_list(Buf buffer, uint16_t protocol_version)
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			tmp_list = list_create(_destroy_fed_job_info);
+			tmp_list = list_create(list_xfree_item);
 
 			for (i = 0; i < count; i++) {
 				if (_unpack_fed_job_info(&tmp_job_info, buffer,
@@ -2902,7 +2893,7 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location)
 				if (find_job_record(tmp_info->job_id))
 					list_append(fed_job_list, tmp_info);
 				else
-					_destroy_fed_job_info(tmp_info);
+					xfree(tmp_info);
 			}
 			unlock_slurmctld(job_read_lock);
 		}
