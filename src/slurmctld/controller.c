@@ -483,6 +483,8 @@ int main(int argc, char **argv)
 			slurmctld_config.scheduling_disabled = true;
 	}
 
+	configless_setup();
+
 	/*
 	 * Initialize plugins.
 	 * If running configuration test, report ALL failures.
@@ -861,6 +863,7 @@ int main(int argc, char **argv)
 	slurm_sched_fini();	/* Stop all scheduling */
 
 	/* Purge our local data structures */
+	configless_clear();
 	xcgroup_fini_slurm_cgroup_conf();
 	power_save_fini();
 	job_fini();

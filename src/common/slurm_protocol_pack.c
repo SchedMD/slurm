@@ -9619,6 +9619,106 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_config_request_msg(config_request_msg_t *msg,
+				     Buf buffer, uint16_t protocol_version)
+{
+	xassert(msg);
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		pack32(msg->flags, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+static int _unpack_config_request_msg(config_request_msg_t **msg_ptr,
+				      Buf buffer, uint16_t protocol_version)
+{
+	config_request_msg_t *msg = xmalloc(sizeof(*msg));
+	xassert(msg_ptr);
+	*msg_ptr = msg;
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->flags, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_config_request_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_config_response_msg(config_response_msg_t *msg,
+				      Buf buffer, uint16_t protocol_version)
+{
+	xassert(msg);
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		packstr(msg->config, buffer);
+		packstr(msg->acct_gather_config, buffer);
+		packstr(msg->cgroup_config, buffer);
+		packstr(msg->cgroup_allowed_devices_file_config, buffer);
+		packstr(msg->ext_sensors_config, buffer);
+		packstr(msg->gres_config, buffer);
+		packstr(msg->knl_cray_config, buffer);
+		packstr(msg->knl_generic_config, buffer);
+		packstr(msg->plugstack_config, buffer);
+		packstr(msg->topology_config, buffer);
+		packstr(msg->slurmd_spooldir, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+static int _unpack_config_response_msg(config_response_msg_t **msg_ptr,
+				       Buf buffer, uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	config_response_msg_t *msg = xmalloc(sizeof(*msg));
+	xassert(msg_ptr);
+	*msg_ptr = msg;
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg->config, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->acct_gather_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->cgroup_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->cgroup_allowed_devices_file_config,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->ext_sensors_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->gres_config, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->knl_cray_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->knl_generic_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->plugstack_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->topology_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->slurmd_spooldir, &uint32_tmp,
+				       buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_config_response_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
 static void
 _pack_srun_exec_msg(srun_exec_msg_t * msg, Buf buffer,
 		    uint16_t protocol_version)
@@ -12006,6 +12106,15 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			buffer,
 			msg->protocol_version);
 		break;
+	case REQUEST_CONFIG:
+		_pack_config_request_msg((config_request_msg_t *) msg->data,
+					 buffer, msg->protocol_version);
+		break;
+	case REQUEST_RECONFIGURE_WITH_CONFIG:
+	case RESPONSE_CONFIG:
+		_pack_config_response_msg((config_response_msg_t *) msg->data,
+					  buffer, msg->protocol_version);
+		break;
 	case SRUN_EXEC:
 		_pack_srun_exec_msg((srun_exec_msg_t *)msg->data, buffer,
 				    msg->protocol_version);
@@ -12678,6 +12787,17 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(job_id_response_msg_t **) & msg->data,
 			buffer,
 			msg->protocol_version);
+		break;
+	case REQUEST_CONFIG:
+		_unpack_config_request_msg(
+			(config_request_msg_t **) &msg->data,
+			buffer, msg->protocol_version);
+		break;
+	case REQUEST_RECONFIGURE_WITH_CONFIG:
+	case RESPONSE_CONFIG:
+		_unpack_config_response_msg(
+			(config_response_msg_t **) &msg->data,
+			buffer, msg->protocol_version);
 		break;
 	case SRUN_EXEC:
 		rc = _unpack_srun_exec_msg((srun_exec_msg_t **) & msg->data,

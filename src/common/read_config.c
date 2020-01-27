@@ -66,6 +66,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/cpu_frequency.h"
+#include "src/common/fetch_config.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -80,6 +81,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/slurm_resolv.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_selecttype_info.h"
 #include "src/common/strlcpy.h"
@@ -3106,6 +3108,68 @@ _destroy_slurm_conf(void)
 }
 
 /*
+ * Precedence order for user commands:
+ *
+ * 1. direct file
+ *   a. argument if not NULL
+ *   b. SLURM_CONF if not NULL
+ *   c. default_slurm_config_file if it exists.
+ * 2. SLURM_CONF_SERVER env var (not documented, meant for testing only)
+ * 3. DNS SRV record
+ */
+static int _establish_config_source(char **config_file, int *memfd)
+{
+	char *file;
+	struct stat stat_buf;
+	config_response_msg_t *config = NULL;
+	char *memfd_path = NULL;
+
+	/*
+	 * If config_file was defined (e.g., through the -f option to slurmd)
+	 * or the SLURM_CONF variable is set we will always respect those,
+	 * and leave s_p_parse_file() to see if it can actually load the file.
+	 */
+	if (*config_file)
+		return SLURM_SUCCESS;
+	if ((file = getenv("SLURM_CONF"))) {
+		*config_file = xstrdup(file);
+		return SLURM_SUCCESS;
+	}
+
+	/*
+	 * Use default_slurm_config_file iff the file exists.
+	 * This is needed so the "configless" user commands do not get stuck
+	 * attempting to load a non-existent config file for an entire
+	 * minute in s_p_parse_file(), and we can fall back to our other
+	 * options.
+	 */
+	if (!stat(default_slurm_config_file, &stat_buf)) {
+		*config_file = xstrdup(default_slurm_config_file);
+		return SLURM_SUCCESS;
+	}
+
+	/*
+	 * One last shot - try the SLURM_CONF_SERVER envvar or DNS SRV
+	 * entries to fetch the configs from the slurmctld.
+	 */
+	if (!(config = fetch_config(NULL, CONFIG_REQUEST_SLURM_CONF)) ||
+	    !config->config) {
+		error("%s: failed to fetch config", __func__);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * memfd is always created successfully as any failure causes the
+	 * process to die with a fatal() error.
+	 */
+	*memfd = dump_to_memfd("slurm.conf", config->config, &memfd_path);
+	slurm_free_config_response_msg(config);
+	*config_file = memfd_path;
+
+	return SLURM_SUCCESS;
+}
+
+/*
  * slurm_conf_init - load the slurm configuration from the a file.
  * IN file_name - name of the slurm configuration file to be read
  *	If file_name is NULL, then this routine tries to use
@@ -3120,12 +3184,33 @@ _destroy_slurm_conf(void)
 extern int
 slurm_conf_init(const char *file_name)
 {
+	char *config_file = NULL;
+	int memfd = -1;
 	slurm_mutex_lock(&conf_lock);
 
 	if (conf_initialized) {
 		slurm_mutex_unlock(&conf_lock);
 		return SLURM_ERROR;
 	}
+
+	if (!file_name) {
+		/*
+		 * FIXME - need a better locking strategy.
+		 * Because _establish_config_source may end up trigger an RPC
+		 * to the slurmctld, and the RPC path requires access to a
+		 * number of functions locked behind conf_lock, we need to drop
+		 * it to avoid deadlock. This, while not ideal, works in
+		 * practice as each process will trigger slurm_conf_init()
+		 * while the process is still single-threaded.
+		 */
+		slurm_mutex_unlock(&conf_lock);
+		if (_establish_config_source(&config_file, &memfd)) {
+			log_var(lvl, "Could not establish a configuration source");
+			return SLURM_ERROR;
+		}
+		slurm_mutex_lock(&conf_lock);
+	} else
+		config_file = xstrdup(file_name);
 
 #ifndef NDEBUG
 	/*
@@ -3144,12 +3229,14 @@ slurm_conf_init(const char *file_name)
 #endif
 
 	init_slurm_conf(conf_ptr);
-	if (_init_slurm_conf(file_name) != SLURM_SUCCESS) {
+	if (_init_slurm_conf(config_file) != SLURM_SUCCESS) {
 		log_var(lvl, "Unable to process configuration file");
 		local_test_config_rc = 1;
 	}
 
 	slurm_mutex_unlock(&conf_lock);
+	if (memfd != -1)
+		close(memfd);
 	return SLURM_SUCCESS;
 }
 

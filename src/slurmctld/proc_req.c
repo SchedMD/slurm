@@ -56,6 +56,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
+#include "src/common/fetch_config.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
 #include "src/common/group_cache.h"
@@ -113,6 +114,9 @@ static int rpc_user_size = 0;	/* Size of rpc_user_* arrays */
 static uint32_t *rpc_user_id = NULL;
 static uint32_t *rpc_user_cnt = NULL;
 static uint64_t *rpc_user_time = NULL;
+
+static config_response_msg_t *config_for_slurmd = NULL;
+static config_response_msg_t *config_for_clients = NULL;
 
 static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
@@ -220,6 +224,7 @@ inline static void  _slurm_rpc_update_layout(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_powercap(slurm_msg_t * msg);
 inline static void  _update_cred_key(void);
+static void _slurm_rpc_config_request(slurm_msg_t *msg);
 
 static void  _slurm_rpc_composite_msg(slurm_msg_t *msg);
 static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
@@ -507,6 +512,9 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		_slurm_rpc_step_update(msg);
+		break;
+	case REQUEST_CONFIG:
+		_slurm_rpc_config_request(msg);
 		break;
 	case REQUEST_TRIGGER_SET:
 		_slurm_rpc_trigger_set(msg);
@@ -1033,6 +1041,31 @@ static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+extern void configless_setup(void)
+{
+	if (!xstrcasestr(slurmctld_conf.slurmctld_params,
+			 "enable_configless"))
+		return;
+
+	config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
+	config_for_clients = xmalloc(sizeof(*config_for_clients));
+
+	load_config_response_msg(config_for_slurmd, CONFIG_REQUEST_SLURMD);
+
+	/* just reuse what we already have */
+	config_for_clients->config = config_for_slurmd->config;
+}
+
+extern void configless_clear(void)
+{
+	slurm_free_config_response_msg(config_for_slurmd);
+	/*
+	 * config_for_clients uses a pointer into config_for_slurmd,
+	 * so DO NOT use slurm_free_config_response_msg()
+	 */
+	xfree(config_for_clients);
 }
 
 /* _kill_job_on_msg_fail - The request to create a job record successed,
@@ -3516,6 +3549,40 @@ static void _slurm_rpc_ping(slurm_msg_t * msg)
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
+static void _slurm_rpc_config_request(slurm_msg_t *msg)
+{
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
+	config_request_msg_t *req = (config_request_msg_t *) msg->data;
+	slurm_msg_t response_msg;
+	DEF_TIMERS;
+
+	START_TIMER;
+	debug("Processing RPC: REQUEST_CONFIG from %u", uid);
+
+	if (!config_for_slurmd) {
+		error("%s: Rejected request as configless is disabled",
+		      __func__);
+		slurm_send_rc_msg(msg, ESLURM_CONFIGLESS_DISABLED);
+		return;
+	}
+
+	if ((req->flags & CONFIG_REQUEST_SLURMD) && !validate_slurm_user(uid)) {
+		error("%s: Rejected request for slurmd configs by uid=%u",
+		      __func__, uid);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
+	}
+	END_TIMER2(__func__);
+
+	response_init(&response_msg, msg);
+	response_msg.msg_type = RESPONSE_CONFIG;
+	if (req->flags & CONFIG_REQUEST_SLURMD)
+		response_msg.data = config_for_slurmd;
+	else
+		response_msg.data = config_for_clients;
+
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+}
 
 /* _slurm_rpc_reconfigure_controller - process RPC to re-initialize
  *	slurmctld from configuration file
@@ -3553,7 +3620,12 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		if (error_code == SLURM_SUCCESS) {
 			_update_cred_key();
 			set_slurmctld_state_loc();
-			msg_to_slurmd(REQUEST_RECONFIGURE);
+			if (config_for_slurmd) {
+				configless_clear();
+				configless_setup();
+				push_reconfig_to_slurmd();
+			} else
+				msg_to_slurmd(REQUEST_RECONFIGURE);
 			node_features_updated = true;
 		}
 		in_progress = false;

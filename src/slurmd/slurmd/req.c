@@ -68,6 +68,7 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
+#include "src/common/fetch_config.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
 #include "src/common/group_cache.h"
@@ -189,6 +190,7 @@ static void _rpc_terminate_job(slurm_msg_t *);
 static void _rpc_update_time(slurm_msg_t *);
 static void _rpc_shutdown(slurm_msg_t *msg);
 static void _rpc_reconfig(slurm_msg_t *msg);
+static void _rpc_reconfig_with_config(slurm_msg_t *msg);
 static void _rpc_reboot(slurm_msg_t *msg);
 static void _rpc_pid2jid(slurm_msg_t *msg);
 static int  _rpc_file_bcast(slurm_msg_t *msg);
@@ -369,6 +371,11 @@ slurmd_req(slurm_msg_t *msg)
 	case REQUEST_RECONFIGURE:
 		debug2("Processing RPC: REQUEST_RECONFIGURE");
 		_rpc_reconfig(msg);
+		last_slurmctld_msg = time(NULL);
+		break;
+	case REQUEST_RECONFIGURE_WITH_CONFIG:
+		debug2("Processing RPC: REQUEST_RECONFIGURE_WITH_CONFIG");
+		_rpc_reconfig_with_config(msg);
 		last_slurmctld_msg = time(NULL);
 		break;
 	case REQUEST_REBOOT_NODES:
@@ -2748,6 +2755,31 @@ _rpc_reconfig(slurm_msg_t *msg)
 		      req_uid);
 	else
 		kill(conf->pid, SIGHUP);
+	forward_wait(msg);
+	/* Never return a message, slurmctld does not expect one */
+}
+
+static void _rpc_reconfig_with_config(slurm_msg_t *msg)
+{
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+
+	if (!_slurm_authorized_user(req_uid))
+		error("Security violation, reconfig RPC from uid %d",
+		      req_uid);
+	else {
+		if (conf->conf_cache) {
+			config_response_msg_t *configs =
+				(config_response_msg_t *) msg->data;
+			/*
+			 * Running in "configless" mode as indicated by the
+			 * cache directory's existance. Update those so
+			 * our reconfigure picks up the changes, and so
+			 * client commands see the changes as well.
+			 */
+			write_configs_to_conf_cache(configs, conf->conf_cache);
+		}
+		kill(conf->pid, SIGHUP);
+	}
 	forward_wait(msg);
 	/* Never return a message, slurmctld does not expect one */
 }

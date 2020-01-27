@@ -1870,6 +1870,9 @@ extern bool misc_policy_job_runnable_state(job_record_t *job_ptr);
 /* msg_to_slurmd - send given msg_type every slurmd, no args */
 extern void msg_to_slurmd (slurm_msg_type_t msg_type);
 
+/* request a "configless" RPC be send to all slurmd nodes */
+void push_reconfig_to_slurmd(void);
+
 /* node_fini - free all memory associated with node records */
 extern void node_fini (void);
 
@@ -2592,6 +2595,15 @@ extern void cleanup_completing(job_record_t *job_ptr);
  *               the DEBUG_FLAG_TRACE_JOBS is set
  */
 extern void trace_job(job_record_t *job_ptr, const char *, const char *);
+
+/*
+ * Determine if slurmctld will respond to "configless" RPCs. If so,
+ * load the internal cached config values to avoid regenerating on each
+ * RPC.
+ */
+extern void configless_setup(void);
+/* Free cached values to avoid memory leak. */
+extern void configless_clear(void);
 
 /*
  */

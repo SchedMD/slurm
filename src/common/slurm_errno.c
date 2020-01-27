@@ -373,6 +373,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_DEFER,
 	  "Immediate execution impossible. "
 	  "Individual job submission scheduling attempts deferred"},
+	{ ESLURM_CONFIGLESS_DISABLED,
+	  "ConfigLess mode is disabled"				},
 
 	/* slurmd error codes */
 	{ ESLURMD_PIPE_ERROR_ON_TASK_SPAWN,

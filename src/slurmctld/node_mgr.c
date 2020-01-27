@@ -54,6 +54,7 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/fd.h"
+#include "src/common/fetch_config.h"
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
@@ -3540,6 +3541,80 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		debug ("Spawning agent msg_type=%d", msg_type);
 		agent_queue_request(kill_agent_args);
 	}
+}
+
+/*
+ * Specialized version of msg_to_slurmd that handles cross-version issues
+ * when running configless.
+ *
+ * Since the REQUEST_RECONFIGURE message had no body, you could get away with
+ * sending under the oldest format of any slurmd attached to the system.
+ *
+ * For configless, this would mean nothing gets sent to anyone, and those
+ * older slurmds get REQUEST_RECONFIGURE_WITH_CONFIG and ignore it.
+ *
+ * So explicitly split the pool into two groups.
+ * (Note: may need to split this into three groups for future changes.)
+ * Note: DOES NOT SUPPORT FRONTEND.
+ */
+void push_reconfig_to_slurmd(void)
+{
+#ifndef HAVE_FRONT_END
+	agent_arg_t *new_args, *old_args;
+	node_record_t *node_ptr;
+	config_response_msg_t *config = xmalloc(sizeof(*config));
+
+	new_args = xmalloc(sizeof(*new_args));
+	new_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
+	new_args->retry = 0;
+	new_args->hostlist = hostlist_create(NULL);
+	new_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	new_args->msg_args = config;
+	load_config_response_msg(config, CONFIG_REQUEST_SLURMD);
+
+	old_args = xmalloc(sizeof(*old_args));
+	old_args->msg_type = REQUEST_RECONFIGURE;
+	old_args->retry = 0;
+	old_args->hostlist = hostlist_create(NULL);
+	old_args->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
+
+	node_ptr = node_record_table_ptr;
+	for (int i = 0; i < node_record_count; i++, node_ptr++) {
+		if (IS_NODE_FUTURE(node_ptr))
+			continue;
+		if (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
+			continue;
+
+		if (node_ptr->protocol_version == SLURM_PROTOCOL_VERSION) {
+			hostlist_push_host(new_args->hostlist, node_ptr->name);
+			new_args->node_count++;
+		} else {
+			hostlist_push_host(old_args->hostlist, node_ptr->name);
+			old_args->node_count++;
+		}
+	}
+
+	if (new_args->node_count == 0) {
+		hostlist_destroy(new_args->hostlist);
+		slurm_free_config_response_msg(config);
+		xfree(new_args);
+	} else {
+		debug("Spawning agent msg_type=%d", new_args->msg_type);
+		agent_queue_request(new_args);
+	}
+
+	if (old_args->node_count == 0) {
+		hostlist_destroy(old_args->hostlist);
+		xfree(old_args);
+	} else {
+		debug("Spawning agent msg_type=%d", old_args->msg_type);
+		agent_queue_request(old_args);
+	}
+#else
+	error("%s: Cannot use configless with FrontEnd mode! Sending normal reconfigure request.",
+	      __func__);
+	msg_to_slurmd(REQUEST_RECONFIGURE);
+#endif
 }
 
 
