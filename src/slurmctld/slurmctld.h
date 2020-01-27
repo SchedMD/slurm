@@ -2598,6 +2598,15 @@ extern void cleanup_completing(job_record_t *job_ptr);
 extern void trace_job(job_record_t *job_ptr, const char *, const char *);
 
 /*
+ * Determine if slurmctld will respond to "configless" RPCs. If so,
+ * load the internal cached config values to avoid regenerating on each
+ * RPC.
+ */
+extern void configless_setup(void);
+/* Free cached values to avoid memory leak. */
+extern void configless_clear(void);
+
+/*
  */
 int
 waitpid_timeout(const char *, pid_t, int *, int);

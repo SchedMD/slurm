@@ -115,6 +115,9 @@ static uint32_t *rpc_user_id = NULL;
 static uint32_t *rpc_user_cnt = NULL;
 static uint64_t *rpc_user_time = NULL;
 
+static config_response_msg_t *config_for_slurmd = NULL;
+static config_response_msg_t *config_for_clients = NULL;
+
 static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
 
@@ -1038,6 +1041,34 @@ static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+extern void configless_setup(void)
+{
+	slurmctld_config.configless_enabled =
+		xstrcasestr(slurmctld_conf.slurmctld_params,
+			    "enable_configless");
+
+	if (!slurmctld_config.configless_enabled)
+		return;
+
+	config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
+	config_for_clients = xmalloc(sizeof(*config_for_clients));
+
+	load_config_response_msg(config_for_slurmd, CONFIG_REQUEST_SLURMD);
+
+	/* just reuse what we already have */
+	config_for_clients->config = config_for_slurmd->config;
+}
+
+extern void configless_clear(void)
+{
+	slurm_free_config_response_msg(config_for_slurmd);
+	/*
+	 * config_for_clients uses a pointer into config_for_slurmd,
+	 * so DO NOT use slurm_free_config_response_msg()
+	 */
+	xfree(config_for_clients);
 }
 
 /* _kill_job_on_msg_fail - The request to create a job record successed,
@@ -3525,7 +3556,6 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
 {
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	config_request_msg_t *req = (config_request_msg_t *) msg->data;
-	config_response_msg_t *resp;
 	slurm_msg_t response_msg;
 	DEF_TIMERS;
 
@@ -3545,18 +3575,16 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
-
-	resp = xmalloc(sizeof(*resp));
-	load_config_response_msg(resp, req->flags);
 	END_TIMER2(__func__);
 
 	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_CONFIG;
-	response_msg.data = resp;
+	if (req->flags & CONFIG_REQUEST_SLURMD)
+		response_msg.data = config_for_slurmd;
+	else
+		response_msg.data = config_for_clients;
 
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
-
-	slurm_free_config_response_msg(resp);
 }
 
 /* _slurm_rpc_reconfigure_controller - process RPC to re-initialize
@@ -3595,9 +3623,11 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		if (error_code == SLURM_SUCCESS) {
 			_update_cred_key();
 			set_slurmctld_state_loc();
-			if (slurmctld_config.configless_enabled)
+			if (slurmctld_config.configless_enabled) {
+				configless_clear();
+				configless_setup();
 				push_reconfig_to_slurmd();
-			else
+			} else
 				msg_to_slurmd(REQUEST_RECONFIGURE);
 			node_features_updated = true;
 		}
