@@ -3465,11 +3465,6 @@ static bool _scan_depend(List dependency_list, uint32_t job_id)
 	return rc;
 }
 
-static void _pre_list_del(void *x)
-{
-	xfree(x);
-}
-
 /* If there are higher priority queued jobs in this job's partition, then
  * delay the job's expected initiation time as needed to run those jobs.
  * NOTE: This is only a rough estimate of the job's start time as it ignores
@@ -3719,7 +3714,8 @@ next_part:
 			ListIterator preemptee_iterator;
 			uint32_t *preemptee_jid;
 			job_record_t *tmp_job_ptr;
-			resp_data->preemptee_job_id=list_create(_pre_list_del);
+			resp_data->preemptee_job_id =
+				list_create(list_xfree_item);
 			preemptee_iterator = list_iterator_create(
 				preemptee_job_list);
 			while ((tmp_job_ptr = list_next(preemptee_iterator))) {
