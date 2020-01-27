@@ -4965,6 +4965,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_CONFIG:
 		slurm_free_config_request_msg(data);
 		break;
+	case REQUEST_RECONFIGURE_WITH_CONFIG:
 	case RESPONSE_CONFIG:
 		slurm_free_config_response_msg(data);
 		break;
@@ -5252,7 +5253,8 @@ rpc_num2string(uint16_t opcode)
 		return "MESSAGE_NODE_REGISTRATION_STATUS";
 	case REQUEST_RECONFIGURE:
 		return "REQUEST_RECONFIGURE";
-
+	case REQUEST_RECONFIGURE_WITH_CONFIG:
+		return "REQUEST_RECONFIGURE_WITH_CONFIG";
 	case REQUEST_SHUTDOWN:					/* 1005 */
 		return "REQUEST_SHUTDOWN";
 	case REQUEST_SHUTDOWN_IMMEDIATE:
