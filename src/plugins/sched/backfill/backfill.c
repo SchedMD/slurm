@@ -3622,12 +3622,6 @@ static void _deadlock_global_list_del(void *x)
 	xfree(dl_part_ptr);
 }
 
-static void _deadlock_part_list_del(void *x)
-{
-	deadlock_job_struct_t *dl_job_ptr = (deadlock_job_struct_t *) x;
-	xfree(dl_job_ptr);
-}
-
 static int _deadlock_part_list_srch(void *x, void *key)
 {
 	deadlock_job_struct_t *dl_job = (deadlock_job_struct_t *) x;
@@ -3706,8 +3700,7 @@ static bool _job_pack_deadlock_test(job_record_t *job_ptr)
 	}
 	if (!dl_part_ptr) {
 		dl_part_ptr = xmalloc(sizeof(deadlock_part_struct_t));
-		dl_part_ptr->deadlock_job_list =
-			list_create(_deadlock_part_list_del);
+		dl_part_ptr->deadlock_job_list = list_create(list_xfree_item);
 		dl_part_ptr->part_ptr = job_ptr->part_ptr;
 		list_append(deadlock_global_list, dl_part_ptr);
 	} else {
