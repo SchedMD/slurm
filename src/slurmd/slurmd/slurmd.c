@@ -71,6 +71,7 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
+#include "src/common/fetch_config.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
 #include "src/common/group_cache.h"
@@ -1602,6 +1603,91 @@ _stepd_cleanup_batch_dirs(const char *directory, const char *nodename)
 	closedir(dp);
 }
 
+/*
+ * See precedence rules before in comment for _establish_configuration().
+ */
+static bool _slurm_conf_file_exists(void)
+{
+	struct stat stat_buf;
+
+	if (conf->conffile)
+		return true;
+	if ((conf->conffile = xstrdup(getenv("SLURM_CONF"))))
+		return true;
+
+	if (!stat(default_slurm_config_file, &stat_buf)) {
+		conf->conffile = xstrdup(default_slurm_config_file);
+		return true;
+	}
+
+	return false;
+}
+
+/*
+ * Configuration precedence rules for slurmd:
+ * 1. conf_server if set
+ * 2. SLURM_CONF_SERVER if set (not documented, meant for testing only)
+ * 3. direct file
+ *   a. conffile (-f option) if not NULL
+ *   b. SLURM_CONF if not NULL
+ *   c. default_slurm_config_file if it exists
+ * 4. DNS SRV records if available
+ */
+static int _establish_configuration(void)
+{
+	config_response_msg_t *configs;
+
+	if (!conf->conf_server && _slurm_conf_file_exists()) {
+		debug("%s: config will load from file", __func__);
+		slurm_conf_init(conf->conffile);
+		return SLURM_SUCCESS;
+	}
+
+	if (!(configs = fetch_config(conf->conf_server,
+				     CONFIG_REQUEST_SLURMD))) {
+		error("%s: failed to load configs", __func__);
+		return SLURM_ERROR;
+	}
+
+	conf->spooldir = configs->slurmd_spooldir;
+	configs->slurmd_spooldir = NULL;
+	/*
+	 * One limitation - if node_name was not set through -N
+	 * the %n replacement here will not be possible since we can't
+	 * load the node tables yet.
+	 */
+	_massage_pathname(&conf->spooldir);
+	if (_set_slurmd_spooldir(conf->spooldir) < 0) {
+		error("Unable to initialize slurmd spooldir");
+		return SLURM_ERROR;
+	}
+
+	xfree(conf->conf_cache);
+	xstrfmtcat(conf->conf_cache, "%s/conf-cache", conf->spooldir);
+	if (_set_slurmd_spooldir(conf->conf_cache) < 0) {
+		error("Unable to initialize slurmd conf-cache dir");
+		return SLURM_ERROR;
+	}
+
+	if (write_configs_to_conf_cache(configs, conf->conf_cache))
+		return SLURM_ERROR;
+
+	slurm_free_config_response_msg(configs);
+	xfree(conf->conffile);
+	xstrfmtcat(conf->conffile, "%s/slurm.conf", conf->conf_cache);
+
+	/*
+	 * Be sure to force this in the environment as get_extra_conf_path()
+	 * will pull from there. Not setting it means the plugins may fail
+	 * to load their own configs... which may not cause problems for
+	 * slurmd but will cause slurmstepd to fail later on.
+	 */
+	setenv("SLURM_CONF", conf->conffile, 1);
+	slurm_conf_reinit(conf->conffile);
+
+	return SLURM_SUCCESS;
+}
+
 static int
 _slurmd_init(void)
 {
@@ -1619,12 +1705,18 @@ _slurmd_init(void)
 	_process_cmdline(*conf->argc, *conf->argv);
 
 	/*
+	 * Work out how this node is going to be configured. If running in
+	 * "configless" mode, also populate the conf-cache directory.
+	 */
+	if (_establish_configuration())
+		return SLURM_ERROR;
+
+	/*
 	 * Build nodes table like in slurmctld
 	 * This is required by the topology stack
 	 * Node tables setup must precede _read_config() so that the
 	 * proper hostname is set.
 	 */
-	slurm_conf_init(conf->conffile);
 	init_node_conf();
 
 	if (slurm_select_init(1) != SLURM_SUCCESS)

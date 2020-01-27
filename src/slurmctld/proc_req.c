@@ -3531,7 +3531,6 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
 
 	START_TIMER;
 	debug("Processing RPC: REQUEST_CONFIG from %u", uid);
-	resp = xmalloc(sizeof(*resp));
 
 	if ((req->flags & CONFIG_REQUEST_SLURMD) && !validate_slurm_user(uid)) {
 		error("%s: Rejected request for slurmd configs by uid=%u",
@@ -3540,6 +3539,7 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
 		return;
 	}
 
+	resp = xmalloc(sizeof(*resp));
 	load_config_response_msg(resp, req->flags);
 	END_TIMER2(__func__);
 
