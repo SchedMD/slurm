@@ -231,7 +231,6 @@ static int  _num_feature_count(job_record_t *job_ptr, bool *has_xand,
 			       bool *has_xor);
 static int  _pack_find_map(void *x, void *key);
 static void _pack_map_del(void *x);
-static void _pack_rec_del(void *x);
 static void _pack_start_clear(void);
 static time_t _pack_start_find(job_record_t *job_ptr, time_t now);
 static void _pack_start_set(job_record_t *job_ptr, time_t latest_start,
@@ -3034,15 +3033,6 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 /*
  * Delete pack_job_map_t record from pack_job_list
  */
-static void _pack_rec_del(void *x)
-{
-	pack_job_rec_t *rec = (pack_job_rec_t *) x;
-	xfree(rec);
-}
-
-/*
- * Delete pack_job_map_t record from pack_job_list
- */
 static void _pack_map_del(void *x)
 {
 	pack_job_map_t *map = (pack_job_map_t *) x;
@@ -3225,7 +3215,7 @@ static void _pack_start_set(job_record_t *job_ptr, time_t latest_start,
 			map = xmalloc(sizeof(pack_job_map_t));
 			map->comp_time_limit = comp_time_limit;
 			map->pack_job_id = job_ptr->pack_job_id;
-			map->pack_job_list = list_create(_pack_rec_del);
+			map->pack_job_list = list_create(list_xfree_item);
 			list_append(map->pack_job_list, rec);
 			list_append(pack_job_list, map);
 		}
