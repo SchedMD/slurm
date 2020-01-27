@@ -1045,11 +1045,8 @@ static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid)
 
 extern void configless_setup(void)
 {
-	slurmctld_config.configless_enabled =
-		xstrcasestr(slurmctld_conf.slurmctld_params,
-			    "enable_configless");
-
-	if (!slurmctld_config.configless_enabled)
+	if (!xstrcasestr(slurmctld_conf.slurmctld_params,
+			 "enable_configless"))
 		return;
 
 	config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
@@ -3562,7 +3559,7 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
 	START_TIMER;
 	debug("Processing RPC: REQUEST_CONFIG from %u", uid);
 
-	if (!slurmctld_config.configless_enabled) {
+	if (!config_for_slurmd) {
 		error("%s: Rejected request as configless is disabled",
 		      __func__);
 		slurm_send_rc_msg(msg, ESLURM_CONFIGLESS_DISABLED);
@@ -3623,7 +3620,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		if (error_code == SLURM_SUCCESS) {
 			_update_cred_key();
 			set_slurmctld_state_loc();
-			if (slurmctld_config.configless_enabled) {
+			if (config_for_slurmd) {
 				configless_clear();
 				configless_setup();
 				push_reconfig_to_slurmd();
