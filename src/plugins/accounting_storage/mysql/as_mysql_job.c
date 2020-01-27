@@ -57,11 +57,6 @@ typedef struct {
 	uint32_t old;
 } id_switch_t;
 
-static void _destroy_id_switch(void *object)
-{
-	xfree(object);
-}
-
 static int _find_id_switch(void *x, void *key)
 {
 	id_switch_t *id_switch = (id_switch_t *)x;
@@ -843,14 +838,9 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 			}
 			vals_mod = xstrdup_printf("%s, id_wckey='%u'",
 						  vals, wckeyid);
-			/*
-			 * Here we can use slurm_destroy_char since we are only
-			 * doing an xfree.
-			 */
 			id_switch = NULL;
 			if (!id_switch_list)
-				id_switch_list =
-					list_create(_destroy_id_switch);
+				id_switch_list = list_create(list_xfree_item);
 			else {
 				id_switch = list_find_first(
 					id_switch_list,
