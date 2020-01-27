@@ -3257,11 +3257,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	return rc;
 }
 
-static void _pack_list_del(void *x)
-{
-	xfree(x);
-}
-
 /*
  * acct_policy_validate_pack - validate that a pack job as a whole (all
  * components at once) can be satisfied without exceeding any association
@@ -3306,7 +3301,7 @@ extern bool acct_policy_validate_pack(List submit_job_list)
 		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
 
 	/* Build list of QOS, association, and job pointers */
-	pack_limit_list = list_create(_pack_list_del);
+	pack_limit_list = list_create(list_xfree_item);
 	iter1 = list_iterator_create(submit_job_list);
 	assoc_mgr_lock(&locks);
 	while ((job_ptr1 = list_next(iter1))) {
