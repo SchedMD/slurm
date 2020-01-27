@@ -53,7 +53,6 @@
 ** for details.
 */
 strong_alias(list_create,	slurm_list_create);
-strong_alias(list_xfree_item,	slurm_list_xfree_item);
 strong_alias(list_destroy,	slurm_list_destroy);
 strong_alias(list_is_empty,	slurm_list_is_empty);
 strong_alias(list_count,	slurm_list_count);
@@ -162,11 +161,6 @@ list_create (ListDelF f)
 	xassert((l->magic = LIST_MAGIC));      /* set magic via assert abuse */
 
 	return l;
-}
-
-void list_xfree_item(void *x)
-{
-	xfree(x);
 }
 
 /* list_destroy()

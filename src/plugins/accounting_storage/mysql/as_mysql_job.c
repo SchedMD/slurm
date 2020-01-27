@@ -820,7 +820,7 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 					job_rec->jobid, tmp_char);
 
 		if (!ret_list)
-			ret_list = list_create(list_xfree_item);
+			ret_list = list_create(xfree_ptr);
 		list_append(ret_list, object);
 
 		/*
@@ -840,7 +840,7 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 						  vals, wckeyid);
 			id_switch = NULL;
 			if (!id_switch_list)
-				id_switch_list = list_create(list_xfree_item);
+				id_switch_list = list_create(xfree_ptr);
 			else {
 				id_switch = list_find_first(
 					id_switch_list,

@@ -285,7 +285,7 @@ static int _set_cond(int *start, int argc, char **argv,
 	int all_time_flag = 0;
 
 	if (!event_cond->cluster_list)
-		event_cond->cluster_list = list_create(list_xfree_item);
+		event_cond->cluster_list = list_create(xfree_ptr);
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
 		if (!end)
@@ -309,7 +309,7 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!end || (!xstrncasecmp(argv[i], "Events",
 						  MAX(command_len, 1)))) {
 			ListIterator itr = NULL;
-			List tmp_list = list_create(list_xfree_item);
+			List tmp_list = list_create(xfree_ptr);
 			char *temp = NULL;
 
 			if (slurm_addto_char_list(tmp_list,
@@ -351,7 +351,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 1))) {
 			if (!event_cond->cluster_list)
 				event_cond->cluster_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			if (slurm_addto_char_list(event_cond->cluster_list,
 						 argv[i]+end))
 				set = 1;
@@ -381,7 +381,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 1))) {
 			if (!event_cond->reason_list)
 				event_cond->reason_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			if (slurm_addto_char_list(event_cond->reason_list,
 						 argv[i]+end))
 				set = 1;
@@ -392,8 +392,7 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "States",
 					 MAX(command_len, 4))) {
 			if (!event_cond->state_list)
-				event_cond->state_list =
-					list_create(list_xfree_item);
+				event_cond->state_list = list_create(xfree_ptr);
 			if (_addto_state_char_list(event_cond->state_list,
 						  argv[i]+end)) {
 				event_cond->event_type = SLURMDB_EVENT_NODE;
@@ -403,7 +402,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 1))) {
 			if (!event_cond->reason_uid_list)
 				event_cond->reason_uid_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			if (_addto_id_char_list(event_cond->reason_uid_list,
 					       argv[i]+end, 0)) {
 				event_cond->event_type = SLURMDB_EVENT_NODE;
@@ -461,7 +460,7 @@ extern int sacctmgr_list_event(int argc, char **argv)
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(list_xfree_item);
+	List format_list = list_create(xfree_ptr);
 	List print_fields_list; /* types are of print_field_t */
 
 	/* If we don't have any arguments make sure we set up the

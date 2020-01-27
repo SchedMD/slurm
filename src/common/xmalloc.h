@@ -112,4 +112,6 @@ void slurm_xfree(void **, const char *, int, const char *);
 void *slurm_xrecalloc(void **, size_t, size_t, bool, bool, const char *, int, const char *);
 size_t slurm_xsize(void *, const char *, int, const char *);
 
+void xfree_ptr(void *);
+
 #endif /* !_XMALLOC_H */

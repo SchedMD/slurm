@@ -4832,7 +4832,7 @@ extern int job_test_lic_resv(job_record_t *job_ptr, char *lic_name,
 
 static void _init_constraint_planning(constraint_planning_t* sched)
 {
-	sched->slot_list = list_create(list_xfree_item);
+	sched->slot_list = list_create(xfree_ptr);
 }
 
 static void _free_constraint_planning(constraint_planning_t* sched)

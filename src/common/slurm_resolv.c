@@ -82,7 +82,7 @@ extern List resolve_ctls_from_dns_srv(void)
 		return NULL;
 	}
 
-	controllers = list_create(list_xfree_item);
+	controllers = list_create(xfree_ptr);
 
 	for (int i = 0; i < ns_msg_count(handle, ns_s_an); i++) {
 		ctl_entry_t *ctl;

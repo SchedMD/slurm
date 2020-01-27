@@ -700,7 +700,7 @@ is_same_user:
 	if (use_cluster_list == as_mysql_cluster_list)
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
-	ret_list = list_create(list_xfree_item);
+	ret_list = list_create(xfree_ptr);
 	itr = list_iterator_create(use_cluster_list);
 	while ((object = list_next(itr))) {
 		if ((rc = _cluster_modify_wckeys(
@@ -762,7 +762,7 @@ empty:
 
 	if (use_cluster_list == as_mysql_cluster_list)
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
-	ret_list = list_create(list_xfree_item);
+	ret_list = list_create(xfree_ptr);
 	itr = list_iterator_create(use_cluster_list);
 	while ((object = list_next(itr))) {
 		if ((rc = _cluster_remove_wckeys(

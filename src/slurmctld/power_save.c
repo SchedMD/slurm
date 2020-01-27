@@ -973,7 +973,7 @@ extern void start_power_mgr(pthread_t *thread_id)
 		return;
 	}
 	power_save_started = true;
-	proc_track_list = list_create(list_xfree_item);
+	proc_track_list = list_create(xfree_ptr);
 	slurm_mutex_unlock(&power_mutex);
 
 	slurm_thread_create(thread_id, _init_power_save, NULL);

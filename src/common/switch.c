@@ -253,7 +253,7 @@ extern int switch_init(bool only_default)
 	plugin_args.default_plugin = switch_type;
 
 	if (only_default) {
-		plugin_names = list_create(list_xfree_item);
+		plugin_names = list_create(xfree_ptr);
 		list_append(plugin_names, xstrdup(switch_type));
 	} else {
 		plugin_names = plugin_get_plugins_of_type(plugin_type);

@@ -78,7 +78,7 @@ static List _build_cluster_list(slurmdb_federation_rec_t *fed)
 	ListIterator iter;
 	List cluster_list;
 
-	cluster_list = list_create(list_xfree_item);
+	cluster_list = list_create(xfree_ptr);
 	iter = list_iterator_create(fed->cluster_list);
 	while ((cluster = list_next(iter)))
 		(void) slurm_addto_char_list(cluster_list, cluster->name);
@@ -770,8 +770,7 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case 'A':
 			if (!job_cond->acct_list)
-				job_cond->acct_list =
-					list_create(list_xfree_item);
+				job_cond->acct_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->acct_list, optarg);
 			break;
 		case 'b':
@@ -786,7 +785,7 @@ extern void parse_command_line(int argc, char **argv)
 		case 'C':
 			if (!job_cond->constraint_list)
 				job_cond->constraint_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->constraint_list,
 					      optarg);
 			break;
@@ -799,8 +798,7 @@ extern void parse_command_line(int argc, char **argv)
 			all_clusters = false;
 			params.opt_local = true;
 			if (!job_cond->cluster_list)
-				job_cond->cluster_list =
-					list_create(list_xfree_item);
+				job_cond->cluster_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->cluster_list, optarg);
 			break;
 		case 'D':
@@ -825,8 +823,7 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case 'g':
 			if (!job_cond->groupid_list)
-				job_cond->groupid_list =
-					list_create(list_xfree_item);
+				job_cond->groupid_list = list_create(xfree_ptr);
 			slurm_addto_id_char_list(job_cond->groupid_list,
 						 optarg, 1);
 			break;
@@ -919,8 +916,7 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case OPT_LONG_NAME:
 			if (!job_cond->jobname_list)
-				job_cond->jobname_list =
-					list_create(list_xfree_item);
+				job_cond->jobname_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->jobname_list, optarg);
 			break;
 		case 'o':
@@ -945,8 +941,7 @@ extern void parse_command_line(int argc, char **argv)
 			}
 
 			if (!job_cond->qos_list)
-				job_cond->qos_list =
-					list_create(list_xfree_item);
+				job_cond->qos_list = list_create(xfree_ptr);
 
 			if (!slurmdb_addto_qos_char_list(job_cond->qos_list,
 							g_qos_list, optarg, 0))
@@ -955,22 +950,20 @@ extern void parse_command_line(int argc, char **argv)
 		case 'r':
 			if (!job_cond->partition_list)
 				job_cond->partition_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 
 			slurm_addto_char_list(job_cond->partition_list,
 					      optarg);
 			break;
 		case 'R':
 			if (!job_cond->reason_list)
-				job_cond->reason_list =
-					list_create(list_xfree_item);
+				job_cond->reason_list = list_create(xfree_ptr);
 
 			_addto_reason_char_list(job_cond->reason_list, optarg);
 			break;
 		case 's':
 			if (!job_cond->state_list)
-				job_cond->state_list =
-					list_create(list_xfree_item);
+				job_cond->state_list = list_create(xfree_ptr);
 
 			_addto_state_char_list(job_cond->state_list, optarg);
 			break;
@@ -992,8 +985,7 @@ extern void parse_command_line(int argc, char **argv)
 			}
 			all_users = false;
 			if (!job_cond->userid_list)
-				job_cond->userid_list =
-					list_create(list_xfree_item);
+				job_cond->userid_list = list_create(xfree_ptr);
 			slurm_addto_id_char_list(job_cond->userid_list,
 						 optarg, 0);
 			break;
@@ -1004,8 +996,7 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case 'W':
 			if (!job_cond->wckey_list)
-				job_cond->wckey_list =
-					list_create(list_xfree_item);
+				job_cond->wckey_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->wckey_list, optarg);
 			break;
 		case OPT_LONG_WHETJOB:
@@ -1026,8 +1017,7 @@ extern void parse_command_line(int argc, char **argv)
 			exit(0);
 		case 'x':
 			if (!job_cond->associd_list)
-				job_cond->associd_list =
-					list_create(list_xfree_item);
+				job_cond->associd_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->associd_list, optarg);
 			break;
 		case 't':
@@ -1190,7 +1180,7 @@ extern void parse_command_line(int argc, char **argv)
 	} else if (!job_cond->cluster_list
 		  || !list_count(job_cond->cluster_list)) {
 		if (!job_cond->cluster_list)
-			job_cond->cluster_list = list_create(list_xfree_item);
+			job_cond->cluster_list = list_create(xfree_ptr);
 		if ((start = slurm_get_cluster_name())) {
 			list_append(job_cond->cluster_list, start);
 			debug2("Clusters requested:\t%s", start);
@@ -1223,7 +1213,7 @@ extern void parse_command_line(int argc, char **argv)
 	} else if (!job_cond->userid_list
 		  || !list_count(job_cond->userid_list)) {
 		if (!job_cond->userid_list)
-			job_cond->userid_list = list_create(list_xfree_item);
+			job_cond->userid_list = list_create(xfree_ptr);
 		start = xstrdup_printf("%u", params.opt_uid);
 		list_append(job_cond->userid_list, start);
 		debug2("Userid requested\t: %s", start);

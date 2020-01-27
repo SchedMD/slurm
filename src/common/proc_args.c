@@ -1006,7 +1006,7 @@ char *print_mail_type(const uint16_t type)
 static List
 _create_path_list(void)
 {
-	List l = list_create(list_xfree_item);
+	List l = list_create(xfree_ptr);
 	char *path;
 	char *c, *lc;
 

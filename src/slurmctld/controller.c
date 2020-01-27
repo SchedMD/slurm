@@ -1574,7 +1574,7 @@ static int _init_tres(void)
 		return SLURM_ERROR;
 	}
 
-	char_list = list_create(list_xfree_item);
+	char_list = list_create(xfree_ptr);
 	slurm_addto_char_list(char_list, temp_char);
 	xfree(temp_char);
 

@@ -542,7 +542,7 @@ extern List plugin_get_plugins_of_type(char *plugin_type)
 				 type_slash, e->d_name + strlen(type_slash));
 
 			if (!plugin_names)
-				plugin_names = list_create(list_xfree_item);
+				plugin_names = list_create(xfree_ptr);
 			if (!list_find_first(plugin_names,
 					     slurm_find_char_in_list,
 					     full_name))

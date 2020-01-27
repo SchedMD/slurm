@@ -119,7 +119,7 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 	tres_names = resp->tres_names;
 	tres_cnt = resp->tres_cnt;
 
-	format_list = list_create(list_xfree_item);
+	format_list = list_create(xfree_ptr);
 	if (opt_field_list) {
 		slurm_addto_char_list(format_list, opt_field_list);
 	} else if (flags & PRIORITY_FLAGS_FAIR_TREE) {

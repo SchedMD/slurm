@@ -262,7 +262,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		/* This should only be the name of the cluster, and is
 		   only used in the plugin for rollback purposes.
 		*/
-		update_object->objects = list_create(list_xfree_item);
+		update_object->objects = list_create(xfree_ptr);
 		break;
 	case SLURMDB_ADD_RES:
 		xassert(res->name);

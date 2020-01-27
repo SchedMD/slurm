@@ -497,7 +497,7 @@ static int _unpack_shares_request_msg(shares_request_msg_t ** msg, Buf buffer,
 	if (count > NO_VAL)
 		goto unpack_error;
 	if (count != NO_VAL) {
-		object_ptr->acct_list = list_create(list_xfree_item);
+		object_ptr->acct_list = list_create(xfree_ptr);
 		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
@@ -509,7 +509,7 @@ static int _unpack_shares_request_msg(shares_request_msg_t ** msg, Buf buffer,
 	if (count > NO_VAL)
 		goto unpack_error;
 	if (count != NO_VAL) {
-		object_ptr->user_list = list_create(list_xfree_item);
+		object_ptr->user_list = list_create(xfree_ptr);
 		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
@@ -826,7 +826,7 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->job_id_list = list_create(list_xfree_item);
+			object_ptr->job_id_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				uint32_tmp = xmalloc(sizeof(uint32_t));
 				safe_unpack32(uint32_tmp, buffer);
@@ -839,7 +839,7 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->uid_list = list_create(list_xfree_item);
+			object_ptr->uid_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				uint32_tmp = xmalloc(sizeof(uint32_t));
 				safe_unpack32(uint32_tmp, buffer);
@@ -2864,7 +2864,7 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 		safe_unpackstr_xmalloc(&part->tres_fmt_str, &uint32_tmp,
 				       buffer);
 		if (slurm_unpack_list(&part->job_defaults_list,
-				job_defaults_unpack, list_xfree_item,
+				job_defaults_unpack, xfree_ptr,
 				buffer, protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 	} else {
@@ -4993,7 +4993,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       job_credential_public_certificate,
 				       &uint32_tmp, buffer);
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
-				      job_defaults_unpack, list_xfree_item,
+				      job_defaults_unpack, xfree_ptr,
 				      buffer,protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack16(&build_ptr->job_file_append, buffer);
@@ -5400,7 +5400,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       job_credential_public_certificate,
 				       &uint32_tmp, buffer);
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
-				      job_defaults_unpack, list_xfree_item,
+				      job_defaults_unpack, xfree_ptr,
 				      buffer,protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack16(&build_ptr->job_file_append, buffer);
@@ -5807,7 +5807,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       job_credential_public_certificate,
 				       &uint32_tmp, buffer);
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
-				      job_defaults_unpack, list_xfree_item,
+				      job_defaults_unpack, xfree_ptr,
 				      buffer,protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack16(&build_ptr->job_file_append, buffer);
@@ -8851,7 +8851,7 @@ _unpack_job_info_request_msg(job_info_request_msg_t** msg,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			job_info->job_ids = list_create(list_xfree_item);
+			job_info->job_ids = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				uint32_ptr = xmalloc(sizeof(uint32_t));
 				safe_unpack32(uint32_ptr, buffer);
@@ -10882,7 +10882,7 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, Buf buffer,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			msg->preemptee_job_id = list_create(list_xfree_item);
+			msg->preemptee_job_id = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpack32(&uint32_tmp, buffer);
 				job_id_ptr = xmalloc(sizeof(uint32_t));
@@ -11475,7 +11475,7 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 	if (count > NO_VAL)
 		goto unpack_error;
 	if (count != NO_VAL) {
-		object_ptr->acct_list = list_create(list_xfree_item);
+		object_ptr->acct_list = list_create(xfree_ptr);
 		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
@@ -11489,7 +11489,7 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 	if (count > NO_VAL)
 		goto unpack_error;
 	if (count != NO_VAL) {
-		object_ptr->qos_list = list_create(list_xfree_item);
+		object_ptr->qos_list = list_create(xfree_ptr);
 		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
@@ -11501,7 +11501,7 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 	if (count > NO_VAL)
 		goto unpack_error;
 	if (count != NO_VAL) {
-		object_ptr->user_list = list_create(list_xfree_item);
+		object_ptr->user_list = list_create(xfree_ptr);
 		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);

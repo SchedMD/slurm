@@ -182,7 +182,7 @@ extern List slurm_copy_char_list(List char_list)
 		return NULL;
 
 	itr = list_iterator_create(char_list);
-	ret_list = list_create(list_xfree_item);
+	ret_list = list_create(xfree_ptr);
 
 	while ((tmp_char = list_next(itr)))
 		list_append(ret_list, xstrdup(tmp_char));

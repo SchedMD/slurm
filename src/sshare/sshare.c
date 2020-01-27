@@ -114,8 +114,7 @@ int main (int argc, char **argv)
 			break;
 		case 'A':
 			if (!req_msg.acct_list)
-				req_msg.acct_list =
-					list_create(list_xfree_item);
+				req_msg.acct_list = list_create(xfree_ptr);
 			slurm_addto_char_list(req_msg.acct_list, optarg);
 			break;
 		case 'e':
@@ -161,8 +160,7 @@ int main (int argc, char **argv)
 			}
 			all_users = 0;
 			if (!req_msg.user_list)
-				req_msg.user_list =
-					list_create(list_xfree_item);
+				req_msg.user_list = list_create(xfree_ptr);
 			_addto_name_char_list(req_msg.user_list, optarg, 0);
 			break;
 		case 'U':
@@ -212,8 +210,7 @@ int main (int argc, char **argv)
 		struct passwd *pwd;
 		if ((pwd = getpwuid(getuid()))) {
 			if (!req_msg.user_list) {
-				req_msg.user_list =
-					list_create(list_xfree_item);
+				req_msg.user_list = list_create(xfree_ptr);
 			}
 			temp = xstrdup(pwd->pw_name);
 			list_append(req_msg.user_list, temp);

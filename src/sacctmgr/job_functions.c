@@ -75,15 +75,13 @@ static int _set_cond(int *start, int argc, char **argv,
 			   !xstrncasecmp(argv[i], "Accts",
 					 MAX(command_len, 1))) {
 			if (!job_cond->acct_list)
-				job_cond->acct_list =
-					list_create(list_xfree_item);
+				job_cond->acct_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->acct_list, argv[i]+end);
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Cluster",
 					 MAX(command_len, 1))) {
 			if (!job_cond->cluster_list)
-				job_cond->cluster_list =
-					list_create(list_xfree_item);
+				job_cond->cluster_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->cluster_list,
 					      argv[i]+end);
 		} else if (!xstrncasecmp(argv[i], "JobID",
@@ -113,16 +111,14 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "WCkeys",
 					 MAX(command_len, 1))) {
 			if (!job_cond->wckey_list)
-				job_cond->wckey_list =
-					list_create(list_xfree_item);
+				job_cond->wckey_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->wckey_list,
 					      argv[i]+end);
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Users",
 					 MAX(command_len, 1))) {
 			if (!job_cond->userid_list)
-				job_cond->userid_list =
-					list_create(list_xfree_item);
+				job_cond->userid_list = list_create(xfree_ptr);
 			slurm_addto_id_char_list(job_cond->userid_list,
 						 argv[i]+end, 0);
 			set = 1;
@@ -135,7 +131,7 @@ static int _set_cond(int *start, int argc, char **argv,
 	}
 
 	if (!job_cond->cluster_list) {
-		job_cond->cluster_list = list_create(list_xfree_item);
+		job_cond->cluster_list = list_create(xfree_ptr);
 		list_push(job_cond->cluster_list, slurm_get_cluster_name());
 	}
 

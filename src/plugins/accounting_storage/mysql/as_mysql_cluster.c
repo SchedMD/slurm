@@ -604,7 +604,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(extra);
 
-	ret_list = list_create(list_xfree_item);
+	ret_list = list_create(xfree_ptr);
 	user_name = uid_to_string((uid_t) uid);
 	while ((row = mysql_fetch_row(result))) {
 		char *tmp_vals = xstrdup(vals);
@@ -658,8 +658,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				xstrfmtcat(tmp_vals, ", features=''");
 			} else {
 				char *features = NULL, *feature = NULL;
-				List existing_features =
-					list_create(list_xfree_item);
+				List existing_features = list_create(xfree_ptr);
 
 				if ((feature =
 				     list_peek(cluster->fed.feature_list)) &&
@@ -773,7 +772,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 	rc = 0;
-	ret_list = list_create(list_xfree_item);
+	ret_list = list_create(xfree_ptr);
 
 	if (!mysql_num_rows(result)) {
 		mysql_free_result(result);
@@ -994,8 +993,7 @@ empty:
 		cluster->fed.name     = xstrdup(row[CLUSTER_REQ_FEDR]);
 		features              = row[CLUSTER_REQ_FEATURES];
 		if (features && *features) {
-			cluster->fed.feature_list =
-				list_create(list_xfree_item);
+			cluster->fed.feature_list = list_create(xfree_ptr);
 			slurm_addto_char_list(cluster->fed.feature_list,
 					      features);
 		}

@@ -117,7 +117,7 @@ static int _unpack_acct_coord_msg(dbd_acct_coord_msg_t **msg,
 
 	safe_unpack32(&count, buffer);
 	if (count) {
-		msg_ptr->acct_list = list_create(list_xfree_item);
+		msg_ptr->acct_list = list_create(xfree_ptr);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&acct, &uint32_tmp, buffer);
 			list_append(msg_ptr->acct_list, acct);
@@ -1306,7 +1306,7 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 		break;
 	case DBD_GOT_LIST:
 		my_function = _slurmdbd_unpackstr;
-		my_destroy = list_xfree_item;
+		my_destroy = xfree_ptr;
 		break;
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:

@@ -107,7 +107,7 @@ START_TEST(pack_1702_assoc_rec)
 	pack_arwu->parent_acct             = xstrdup("Parmenides");
 	pack_arwu->parent_id               = 8;
 	pack_arwu->partition               = xstrdup("Parmenides");
-	pack_arwu->qos_list                = list_create(list_xfree_item);
+	pack_arwu->qos_list                = list_create(xfree_ptr);
 	pack_arwu->rgt                     = 9;
 	pack_arwu->shares_raw              = 1;
 	pack_arwu->uid                     = 2;

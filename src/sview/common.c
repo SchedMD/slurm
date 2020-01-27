@@ -817,7 +817,7 @@ extern void set_page_opts(int page, display_data_t *display_data,
 	page_opts = &working_sview_config.page_opts[page];
 	if (!page_opts->col_list) {
 		page_opts->def_col_list = 1;
-		page_opts->col_list = list_create(list_xfree_item);
+		page_opts->col_list = list_create(xfree_ptr);
 		slurm_addto_char_list(page_opts->col_list, initial_opts);
 	}
 

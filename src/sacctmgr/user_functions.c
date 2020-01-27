@@ -76,7 +76,7 @@ static int _set_cond(int *start, int argc, char **argv,
 	 * exist.
 	 */
 	if (!assoc_cond->user_list)
-		assoc_cond->user_list = list_create(list_xfree_item);
+		assoc_cond->user_list = list_create(xfree_ptr);
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -135,7 +135,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 1))) {
 			if (!assoc_cond->cluster_list)
 				assoc_cond->cluster_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			if (slurm_addto_char_list(assoc_cond->cluster_list,
 						  argv[i]+end)) {
 				/*
@@ -149,7 +149,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 8))) {
 			if (!user_cond->def_acct_list) {
 				user_cond->def_acct_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			}
 			if (slurm_addto_char_list(user_cond->def_acct_list,
 						 argv[i]+end))
@@ -160,7 +160,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 8))) {
 			if (!user_cond->def_wckey_list) {
 				user_cond->def_wckey_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			}
 			if (slurm_addto_char_list(user_cond->def_wckey_list,
 						 argv[i]+end))
@@ -185,8 +185,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 
 			if (!wckey_cond->name_list)
-				wckey_cond->name_list =
-					list_create(list_xfree_item);
+				wckey_cond->name_list = list_create(xfree_ptr);
 
 			if (slurm_addto_char_list(wckey_cond->name_list,
 						  argv[i]+end))
@@ -395,13 +394,12 @@ static int _check_default_assocs(char *def_acct,
 				regret = xmalloc(sizeof(regret_t));
 				regret->user = user;
 				regret->cluster = cluster;
-				/* list_xfree_item just does an
+				/* xfree_ptr just does an
 				   xfree so we can override it here
 				   since we aren't allocating any
 				   extra memory */
 				if (!regret_list)
-					regret_list =
-						list_create(list_xfree_item);
+					regret_list = list_create(xfree_ptr);
 				list_append(regret_list, regret);
 				continue;
 			}
@@ -481,13 +479,12 @@ static int _check_default_wckeys(char *def_wckey,
 				regret = xmalloc(sizeof(regret_t));
 				regret->user = user;
 				regret->cluster = cluster;
-				/* list_xfree_item just does an
+				/* xfree_ptr just does an
 				   xfree so we can override it here
 				   since we aren't allocating any
 				   extra memory */
 				if (!regret_list)
-					regret_list =
-						list_create(list_xfree_item);
+					regret_list = list_create(xfree_ptr);
 				list_append(regret_list, regret);
 				continue;
 			}
@@ -714,14 +711,14 @@ extern int sacctmgr_add_user(int argc, char **argv)
 
 	assoc_cond = xmalloc(sizeof(slurmdb_assoc_cond_t));
 
-	assoc_cond->user_list = list_create(list_xfree_item);
-	assoc_cond->acct_list = list_create(list_xfree_item);
-	assoc_cond->cluster_list = list_create(list_xfree_item);
-	assoc_cond->partition_list = list_create(list_xfree_item);
+	assoc_cond->user_list = list_create(xfree_ptr);
+	assoc_cond->acct_list = list_create(xfree_ptr);
+	assoc_cond->cluster_list = list_create(xfree_ptr);
+	assoc_cond->partition_list = list_create(xfree_ptr);
 
 	wckey_cond = xmalloc(sizeof(slurmdb_wckey_cond_t));
 
-	wckey_cond->name_list = list_create(list_xfree_item);
+	wckey_cond->name_list = list_create(xfree_ptr);
 
 	for (i = 0; i < argc; i++) {
 		int end = parse_option_end(argv[i]);
@@ -1412,7 +1409,7 @@ extern int sacctmgr_list_user(int argc, char **argv)
 	print_field_t *field = NULL;
 	int field_count = 0;
 
-	List format_list = list_create(list_xfree_item);
+	List format_list = list_create(xfree_ptr);
 	List print_fields_list; /* types are of print_field_t */
 
 	user_cond->with_assocs = with_assoc_flag;
@@ -1693,7 +1690,7 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 	slurmdb_init_assoc_rec(assoc, 0);
 
 	user_cond->assoc_cond = xmalloc(sizeof(slurmdb_assoc_cond_t));
-	user_cond->assoc_cond->cluster_list = list_create(list_xfree_item);
+	user_cond->assoc_cond->cluster_list = list_create(xfree_ptr);
 	/*
 	 * We need this to make sure we only change users, not
 	 * accounts if this list didn't exist it would change
@@ -1701,7 +1698,7 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 	 * exist.  This also happens in _set_cond, but that doesn't
 	 * always happen.
 	 */
-	user_cond->assoc_cond->user_list = list_create(list_xfree_item);
+	user_cond->assoc_cond->user_list = list_create(xfree_ptr);
 
 	for (i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -1785,7 +1782,7 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 				   "DefaultAccounts?\n")) {
 				if (!user_cond->def_acct_list)
 					user_cond->def_acct_list =
-						list_create(list_xfree_item);
+						list_create(xfree_ptr);
 				list_transfer(user_cond->def_acct_list,
 					      user_cond->assoc_cond->acct_list);
 			}
@@ -2023,8 +2020,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 				}
 
 				if (!del_user_list)
-					del_user_list = list_create(
-						list_xfree_item);
+					del_user_list = list_create(xfree_ptr);
 				slurm_addto_char_list_with_case(del_user_list,
 								tmp,
 								user_case_norm);
@@ -2071,7 +2067,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 					}
 					if (!del_user_list) {
 						del_user_list = list_create(
-							list_xfree_item);
+							xfree_ptr);
 						printf(" Deleting users "
 						       "(No Associations)"
 						       "...\n");

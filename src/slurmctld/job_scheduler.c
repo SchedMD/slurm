@@ -424,7 +424,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 
 	/* init the timer */
 	(void) slurm_delta_tv(&start_tv);
-	job_queue = list_create(list_xfree_item);
+	job_queue = list_create(xfree_ptr);
 
 	/* Create individual job records for job arrays that need burst buffer
 	 * staging */
@@ -2631,7 +2631,7 @@ extern List depended_list_copy(List depend_list_src)
 	if (!depend_list_src)
 		return depend_list_dest;
 
-	depend_list_dest = list_create(list_xfree_item);
+	depend_list_dest = list_create(xfree_ptr);
 	iter = list_iterator_create(depend_list_src);
 	while ((dep_src = list_next(iter))) {
 		dep_dest = xmalloc(sizeof(struct depend_spec));
@@ -3127,7 +3127,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 
 	}
 
-	new_depend_list = list_create(list_xfree_item);
+	new_depend_list = list_create(xfree_ptr);
 	if ((new_array_dep = _xlate_array_dep(new_depend)))
 		tok = new_array_dep;
 	else
@@ -3717,8 +3717,7 @@ next_part:
 			ListIterator preemptee_iterator;
 			uint32_t *preemptee_jid;
 			job_record_t *tmp_job_ptr;
-			resp_data->preemptee_job_id =
-				list_create(list_xfree_item);
+			resp_data->preemptee_job_id = list_create(xfree_ptr);
 			preemptee_iterator = list_iterator_create(
 				preemptee_job_list);
 			while ((tmp_job_ptr = list_next(preemptee_iterator))) {

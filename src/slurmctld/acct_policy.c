@@ -3301,7 +3301,7 @@ extern bool acct_policy_validate_het_job(List submit_job_list)
 		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
 
 	/* Build list of QOS, association, and job pointers */
-	het_job_limit_list = list_create(list_xfree_item);
+	het_job_limit_list = list_create(xfree_ptr);
 	iter1 = list_iterator_create(submit_job_list);
 	assoc_mgr_lock(&locks);
 	while ((job_ptr1 = list_next(iter1))) {

@@ -91,7 +91,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					   MAX(command_len, 3))) {
 			if (!cluster_cond->cluster_list)
 				cluster_cond->cluster_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			if (slurm_addto_char_list(cluster_cond->cluster_list,
 						 argv[i]+end))
 				cond_set |= SA_SET_ASSOC;
@@ -99,7 +99,7 @@ static int _set_cond(int *start, int argc, char **argv,
 						MAX(command_len, 3))) {
 			if (!cluster_cond->federation_list)
 				cluster_cond->federation_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			if (slurm_addto_char_list(cluster_cond->federation_list,
 						  argv[i]+end))
 				cond_set |= SA_SET_ASSOC;
@@ -122,7 +122,7 @@ static int _set_cond(int *start, int argc, char **argv,
 						MAX(command_len, 1))) {
 			if (!cluster_cond->plugin_id_select_list)
 				cluster_cond->plugin_id_select_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			if (slurm_addto_char_list(
 				   cluster_cond->plugin_id_select_list,
 				   argv[i]+end))
@@ -131,7 +131,7 @@ static int _set_cond(int *start, int argc, char **argv,
 						MAX(command_len, 1))) {
 			if (!cluster_cond->rpc_version_list)
 				cluster_cond->rpc_version_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			if (slurm_addto_char_list(cluster_cond->rpc_version_list,
 						 argv[i]+end))
 				cond_set |= SA_SET_CLUST;
@@ -206,7 +206,7 @@ static int _set_rec(int *start, int argc, char **argv,
 
 			if (!cluster->fed.feature_list)
 				cluster->fed.feature_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			if ((slurm_addto_mode_char_list(cluster->fed.feature_list,
 						   argv[i]+end, option) < 0)) {
 				FREE_NULL_LIST(cluster->fed.feature_list);
@@ -278,7 +278,7 @@ extern int sacctmgr_add_cluster(int argc, char **argv)
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_cluster_rec_t *start_cluster =
 		xmalloc(sizeof(slurmdb_cluster_rec_t));
-	List name_list = list_create(list_xfree_item);
+	List name_list = list_create(xfree_ptr);
 	List cluster_list = NULL;
 	slurmdb_assoc_rec_t start_assoc;
 
@@ -353,7 +353,7 @@ extern int sacctmgr_add_cluster(int argc, char **argv)
 
 	if (start_cluster->fed.name) {
 		int rc;
-		List fed_list = list_create(list_xfree_item);
+		List fed_list = list_create(xfree_ptr);
 		list_append(fed_list, xstrdup(start_cluster->fed.name));
 		rc = verify_federations_exist(fed_list);
 		FREE_NULL_LIST(fed_list);
@@ -457,11 +457,11 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(list_xfree_item);
+	List format_list = list_create(xfree_ptr);
 	List print_fields_list; /* types are of print_field_t */
 
 	slurmdb_init_cluster_cond(cluster_cond, 0);
-	cluster_cond->cluster_list = list_create(list_xfree_item);
+	cluster_cond->cluster_list = list_create(xfree_ptr);
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
@@ -710,7 +710,7 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 
 	slurmdb_init_assoc_rec(assoc, 0);
 
-	assoc_cond->cluster_list = list_create(list_xfree_item);
+	assoc_cond->cluster_list = list_create(xfree_ptr);
 	assoc_cond->acct_list = list_create(NULL);
 
 	slurmdb_init_cluster_rec(cluster, 0);
@@ -756,7 +756,7 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 	if (cluster->fed.name && cluster->fed.name[0]) {
 		int rc;
 		/* Make sure federation exists. */
-		List fed_list = list_create(list_xfree_item);
+		List fed_list = list_create(xfree_ptr);
 		list_append(fed_list, xstrdup(cluster->fed.name));
 		rc = verify_federations_exist(fed_list);
 		FREE_NULL_LIST(fed_list);
@@ -904,7 +904,7 @@ extern int sacctmgr_delete_cluster(int argc, char **argv)
 	int cond_set = 0, prev_set;
 
 	slurmdb_init_cluster_cond(cluster_cond, 0);
-	cluster_cond->cluster_list = list_create(list_xfree_item);
+	cluster_cond->cluster_list = list_create(xfree_ptr);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);

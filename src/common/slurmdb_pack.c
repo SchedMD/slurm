@@ -889,8 +889,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->fed.feature_list =
-				list_create(list_xfree_item);
+			object_ptr->fed.feature_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				char *tmp_feature = NULL;
 				safe_unpackstr_xmalloc(&tmp_feature,
@@ -964,8 +963,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->fed.feature_list =
-				list_create(list_xfree_item);
+			object_ptr->fed.feature_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				char *tmp_feature = NULL;
 				safe_unpackstr_xmalloc(&tmp_feature,
@@ -1436,7 +1434,7 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		/* This needs to look for zero to tell if something
 		   has changed */
 		if (count != NO_VAL) {
-			object_ptr->qos_list = list_create(list_xfree_item);
+			object_ptr->qos_list = list_create(xfree_ptr);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -1513,7 +1511,7 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		/* This needs to look for zero to tell if something
 		   has changed */
 		if (count != NO_VAL) {
-			object_ptr->qos_list = list_create(list_xfree_item);
+			object_ptr->qos_list = list_create(xfree_ptr);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -2087,7 +2085,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->preempt_list = list_create(list_xfree_item);
+			object_ptr->preempt_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -2154,7 +2152,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->preempt_list = list_create(list_xfree_item);
+			object_ptr->preempt_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -2908,7 +2906,7 @@ extern int slurmdb_unpack_tres_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -2921,8 +2919,7 @@ extern int slurmdb_unpack_tres_cond(void **object, uint16_t protocol_version,
 			goto unpack_error;
 		if (count != NO_VAL) {
 			if (!object_ptr->id_list)
-				object_ptr->id_list =
-					list_create(list_xfree_item);
+				object_ptr->id_list = list_create(xfree_ptr);
 			for (i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(
 					&tmp_info, &uint32_tmp, buffer);
@@ -2936,8 +2933,7 @@ extern int slurmdb_unpack_tres_cond(void **object, uint16_t protocol_version,
 			goto unpack_error;
 		if (count != NO_VAL) {
 			if (!object_ptr->name_list)
-				object_ptr->name_list =
-					list_create(list_xfree_item);
+				object_ptr->name_list = list_create(xfree_ptr);
 			for (i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(
 					&tmp_info, &uint32_tmp, buffer);
@@ -2950,8 +2946,7 @@ extern int slurmdb_unpack_tres_cond(void **object, uint16_t protocol_version,
 			goto unpack_error;
 		if (count != NO_VAL) {
 			if (!object_ptr->type_list)
-				object_ptr->type_list =
-					list_create(list_xfree_item);
+				object_ptr->type_list = list_create(xfree_ptr);
 			for (i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(
 					&tmp_info, &uint32_tmp, buffer);
@@ -3090,7 +3085,7 @@ extern int slurmdb_unpack_user_cond(void **object, uint16_t protocol_version,
 		if (count != NO_VAL) {
 			if (!object_ptr->def_acct_list)
 				object_ptr->def_acct_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(
 					&tmp_info, &uint32_tmp, buffer);
@@ -3103,8 +3098,7 @@ extern int slurmdb_unpack_user_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->def_wckey_list =
-				list_create(list_xfree_item);
+			object_ptr->def_wckey_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -3174,8 +3168,7 @@ extern int slurmdb_unpack_account_cond(void **object, uint16_t protocol_version,
 
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
-			object_ptr->description_list =
-				list_create(list_xfree_item);
+			object_ptr->description_list = list_create(xfree_ptr);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -3185,8 +3178,7 @@ extern int slurmdb_unpack_account_cond(void **object, uint16_t protocol_version,
 		}
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
-			object_ptr->organization_list =
-				list_create(list_xfree_item);
+			object_ptr->organization_list = list_create(xfree_ptr);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -3266,7 +3258,7 @@ extern int slurmdb_unpack_cluster_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->cluster_list = list_create(list_xfree_item);
+			object_ptr->cluster_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -3278,8 +3270,7 @@ extern int slurmdb_unpack_cluster_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->federation_list =
-				list_create(list_xfree_item);
+			object_ptr->federation_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -3294,7 +3285,7 @@ extern int slurmdb_unpack_cluster_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3307,7 +3298,7 @@ extern int slurmdb_unpack_cluster_cond(void **object, uint16_t protocol_version,
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
 			object_ptr->plugin_id_select_list =
-				list_create(list_xfree_item);
+				list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -3320,8 +3311,7 @@ extern int slurmdb_unpack_cluster_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->rpc_version_list =
-				list_create(list_xfree_item);
+			object_ptr->rpc_version_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -3387,7 +3377,7 @@ extern int slurmdb_unpack_federation_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->cluster_list = list_create(list_xfree_item);
+			object_ptr->cluster_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -3400,8 +3390,7 @@ extern int slurmdb_unpack_federation_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->federation_list =
-				list_create(list_xfree_item);
+			object_ptr->federation_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -3414,7 +3403,7 @@ extern int slurmdb_unpack_federation_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3515,7 +3504,7 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->acct_list = list_create(list_xfree_item);
+			object_ptr->acct_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3526,7 +3515,7 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->cluster_list = list_create(list_xfree_item);
+			object_ptr->cluster_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3539,8 +3528,7 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->def_qos_id_list =
-				list_create(list_xfree_item);
+			object_ptr->def_qos_id_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3553,7 +3541,7 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3563,7 +3551,7 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
-			object_ptr->id_list = list_create(list_xfree_item);
+			object_ptr->id_list = list_create(xfree_ptr);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3577,8 +3565,7 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->partition_list =
-				list_create(list_xfree_item);
+			object_ptr->partition_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3591,8 +3578,7 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->parent_acct_list =
-				list_create(list_xfree_item);
+			object_ptr->parent_acct_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3605,7 +3591,7 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->qos_list = list_create(list_xfree_item);
+			object_ptr->qos_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3620,7 +3606,7 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->user_list = list_create(list_xfree_item);
+			object_ptr->user_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3684,7 +3670,7 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 		_pack_list_of_str(object->format_list, buffer);
 
 		if (object->node_list) {
-			tmp_list = list_create(list_xfree_item);
+			tmp_list = list_create(xfree_ptr);
 			slurm_addto_char_list(tmp_list, object->node_list);
 		}
 		_pack_list_of_str(tmp_list, buffer);
@@ -3715,7 +3701,7 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->cluster_list = list_create(list_xfree_item);
+			object_ptr->cluster_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3730,7 +3716,7 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3748,7 +3734,7 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->reason_list = list_create(list_xfree_item);
+			object_ptr->reason_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3760,8 +3746,7 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->reason_uid_list =
-				list_create(list_xfree_item);
+			object_ptr->reason_uid_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3774,8 +3759,7 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->state_list =
-				list_create(list_xfree_item);
+			object_ptr->state_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3787,7 +3771,7 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->cluster_list = list_create(list_xfree_item);
+			object_ptr->cluster_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3802,7 +3786,7 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3831,7 +3815,7 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->reason_list = list_create(list_xfree_item);
+			object_ptr->reason_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3843,8 +3827,7 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->reason_uid_list =
-				list_create(list_xfree_item);
+			object_ptr->reason_uid_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3857,7 +3840,7 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->state_list = list_create(list_xfree_item);
+			object_ptr->state_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4036,7 +4019,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->acct_list = list_create(list_xfree_item);
+			object_ptr->acct_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4048,7 +4031,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->associd_list = list_create(list_xfree_item);
+			object_ptr->associd_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4060,7 +4043,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->cluster_list = list_create(list_xfree_item);
+			object_ptr->cluster_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4072,8 +4055,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->constraint_list =
-				list_create(list_xfree_item);
+			object_ptr->constraint_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4093,7 +4075,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4105,7 +4087,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->groupid_list = list_create(list_xfree_item);
+			object_ptr->groupid_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4117,7 +4099,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->jobname_list = list_create(list_xfree_item);
+			object_ptr->jobname_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4132,8 +4114,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->partition_list =
-				list_create(list_xfree_item);
+			object_ptr->partition_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -4146,7 +4127,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->qos_list = list_create(list_xfree_item);
+			object_ptr->qos_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -4157,7 +4138,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
-			object_ptr->reason_list = list_create(list_xfree_item);
+			object_ptr->reason_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -4168,7 +4149,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
-			object_ptr->resv_list = list_create(list_xfree_item);
+			object_ptr->resv_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -4181,7 +4162,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->resvid_list = list_create(list_xfree_item);
+			object_ptr->resvid_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -4219,7 +4200,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->state_list = list_create(list_xfree_item);
+			object_ptr->state_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -4239,7 +4220,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->userid_list = list_create(list_xfree_item);
+			object_ptr->userid_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4251,7 +4232,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->wckey_list = list_create(list_xfree_item);
+			object_ptr->wckey_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4263,7 +4244,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->acct_list = list_create(list_xfree_item);
+			object_ptr->acct_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4275,7 +4256,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->associd_list = list_create(list_xfree_item);
+			object_ptr->associd_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4287,7 +4268,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->cluster_list = list_create(list_xfree_item);
+			object_ptr->cluster_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4307,7 +4288,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4319,7 +4300,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->groupid_list = list_create(list_xfree_item);
+			object_ptr->groupid_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4331,7 +4312,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->jobname_list = list_create(list_xfree_item);
+			object_ptr->jobname_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4346,8 +4327,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->partition_list =
-				list_create(list_xfree_item);
+			object_ptr->partition_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -4360,7 +4340,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->qos_list = list_create(list_xfree_item);
+			object_ptr->qos_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -4371,7 +4351,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
-			object_ptr->resv_list = list_create(list_xfree_item);
+			object_ptr->resv_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -4384,7 +4364,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->resvid_list = list_create(list_xfree_item);
+			object_ptr->resvid_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -4422,7 +4402,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->state_list = list_create(list_xfree_item);
+			object_ptr->state_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -4442,7 +4422,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->userid_list = list_create(list_xfree_item);
+			object_ptr->userid_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4454,7 +4434,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->wckey_list = list_create(list_xfree_item);
+			object_ptr->wckey_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -4524,7 +4504,7 @@ extern int slurmdb_unpack_job_modify_cond(void **object,
 
 	safe_unpackstr_xmalloc(&cluster, &uint32_tmp, buffer);
 
-	object_ptr->cluster_list = list_create(list_xfree_item);
+	object_ptr->cluster_list = list_create(xfree_ptr);
 	list_append(object_ptr->cluster_list, cluster);
 
 	safe_unpack32(&object_ptr->flags, buffer);
@@ -5145,8 +5125,7 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->description_list =
-				list_create(list_xfree_item);
+			object_ptr->description_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -5159,7 +5138,7 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -5171,7 +5150,7 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->id_list = list_create(list_xfree_item);
+			object_ptr->id_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -5183,7 +5162,7 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->name_list = list_create(list_xfree_item);
+			object_ptr->name_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -5281,7 +5260,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->cluster_list = list_create(list_xfree_item);
+			object_ptr->cluster_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -5295,7 +5274,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -5307,7 +5286,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->id_list = list_create(list_xfree_item);
+			object_ptr->id_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5319,7 +5298,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->name_list = list_create(list_xfree_item);
+			object_ptr->name_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5337,7 +5316,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->cluster_list = list_create(list_xfree_item);
+			object_ptr->cluster_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5355,7 +5334,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -5367,7 +5346,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->id_list = list_create(list_xfree_item);
+			object_ptr->id_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5379,7 +5358,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->name_list = list_create(list_xfree_item);
+			object_ptr->name_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5591,7 +5570,7 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->cluster_list = list_create(list_xfree_item);
+			object_ptr->cluster_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5603,8 +5582,7 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->description_list =
-				list_create(list_xfree_item);
+			object_ptr->description_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5619,7 +5597,7 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -5631,7 +5609,7 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->id_list = list_create(list_xfree_item);
+			object_ptr->id_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5643,7 +5621,7 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->manager_list = list_create(list_xfree_item);
+			object_ptr->manager_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5655,7 +5633,7 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->name_list = list_create(list_xfree_item);
+			object_ptr->name_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5667,7 +5645,7 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->percent_list = list_create(list_xfree_item);
+			object_ptr->percent_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5679,7 +5657,7 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->server_list = list_create(list_xfree_item);
+			object_ptr->server_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5691,7 +5669,7 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->type_list = list_create(list_xfree_item);
+			object_ptr->type_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5766,7 +5744,7 @@ extern int slurmdb_unpack_txn_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->acct_list = list_create(list_xfree_item);
+			object_ptr->acct_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5778,7 +5756,7 @@ extern int slurmdb_unpack_txn_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->action_list = list_create(list_xfree_item);
+			object_ptr->action_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5790,7 +5768,7 @@ extern int slurmdb_unpack_txn_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->actor_list = list_create(list_xfree_item);
+			object_ptr->actor_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5802,7 +5780,7 @@ extern int slurmdb_unpack_txn_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->cluster_list = list_create(list_xfree_item);
+			object_ptr->cluster_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5814,7 +5792,7 @@ extern int slurmdb_unpack_txn_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -5826,7 +5804,7 @@ extern int slurmdb_unpack_txn_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->id_list = list_create(list_xfree_item);
+			object_ptr->id_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5838,7 +5816,7 @@ extern int slurmdb_unpack_txn_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->info_list = list_create(list_xfree_item);
+			object_ptr->info_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5850,7 +5828,7 @@ extern int slurmdb_unpack_txn_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->name_list = list_create(list_xfree_item);
+			object_ptr->name_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5865,7 +5843,7 @@ extern int slurmdb_unpack_txn_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->user_list = list_create(list_xfree_item);
+			object_ptr->user_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -5943,7 +5921,7 @@ extern int slurmdb_unpack_wckey_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->cluster_list = list_create(list_xfree_item);
+			object_ptr->cluster_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -5956,7 +5934,7 @@ extern int slurmdb_unpack_wckey_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->format_list = list_create(list_xfree_item);
+			object_ptr->format_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -5968,7 +5946,7 @@ extern int slurmdb_unpack_wckey_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->id_list = list_create(list_xfree_item);
+			object_ptr->id_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -5980,7 +5958,7 @@ extern int slurmdb_unpack_wckey_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->name_list = list_create(list_xfree_item);
+			object_ptr->name_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -5997,7 +5975,7 @@ extern int slurmdb_unpack_wckey_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			object_ptr->user_list = list_create(list_xfree_item);
+			object_ptr->user_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);

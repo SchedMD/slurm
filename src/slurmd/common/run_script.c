@@ -173,7 +173,7 @@ static List _script_list_create (const char *pattern)
 	int rc = glob (pattern, GLOB_ERR, _ef, &gl);
 	switch (rc) {
 	case 0:
-		l = list_create(list_xfree_item);
+		l = list_create(xfree_ptr);
 		for (i = 0; i < gl.gl_pathc; i++)
 			list_push (l, xstrdup (gl.gl_pathv[i]));
 		break;

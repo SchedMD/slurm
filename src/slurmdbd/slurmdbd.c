@@ -483,7 +483,7 @@ static void _parse_commandline(int argc, char **argv)
 		case 'R':
 			reset_lft_rgt = 1;
 			if (optarg) {
-				lft_rgt_list = list_create(list_xfree_item);
+				lft_rgt_list = list_create(xfree_ptr);
 				slurm_addto_char_list(lft_rgt_list, optarg);
 			}
 			break;

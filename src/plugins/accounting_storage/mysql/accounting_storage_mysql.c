@@ -178,7 +178,7 @@ static List _get_cluster_names(mysql_conn_t *mysql_conn, bool with_deleted)
 	}
 	xfree(query);
 
-	ret_list = list_create(list_xfree_item);
+	ret_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		if (row[0] && row[0][0])
 			list_append(ret_list, xstrdup(row[0]));
@@ -993,7 +993,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	else {
 		int qos_id = 0;
 		if (slurmdbd_conf && slurmdbd_conf->default_qos) {
-			List char_list = list_create(list_xfree_item);
+			List char_list = list_create(xfree_ptr);
 			char *qos = NULL;
 			ListIterator itr = NULL;
 			slurm_addto_char_list(char_list,
@@ -1961,7 +1961,7 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrfmtcat(*vals, ", '%s,'", default_qos_str);
 		xstrfmtcat(*extra, ", qos='%s,'", default_qos_str);
 		if (!assoc->qos_list)
-			assoc->qos_list = list_create(list_xfree_item);
+			assoc->qos_list = list_create(xfree_ptr);
 		slurm_addto_char_list(assoc->qos_list, default_qos_str);
 	} else if (qos_level != QOS_LEVEL_MODIFY) {
 		/* clear the qos */

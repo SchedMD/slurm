@@ -344,7 +344,7 @@ static int _slurm_cred_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	sbcast_cache_list = list_create(list_xfree_item);
+	sbcast_cache_list = list_create(xfree_ptr);
 	init_run = true;
 
 done:
@@ -1570,7 +1570,7 @@ _verifier_ctx_init(slurm_cred_ctx_t ctx)
 	xassert(ctx->type == SLURM_CRED_VERIFIER);
 
 	ctx->job_list   = list_create((ListDelF) _job_state_destroy);
-	ctx->state_list = list_create(list_xfree_item);
+	ctx->state_list = list_create(xfree_ptr);
 
 	return;
 }

@@ -132,7 +132,7 @@ START_TEST(pack_1702_assoc_rec)
 	pack_ar->parent_acct             = xstrdup("Parmenides");
 	pack_ar->parent_id               = 8;
 	pack_ar->partition               = xstrdup("Parmenides");
-	pack_ar->qos_list                = list_create(list_xfree_item);
+	pack_ar->qos_list                = list_create(xfree_ptr);
 	pack_ar->rgt                     = 9;
 	pack_ar->shares_raw              = 1;
 	pack_ar->uid                     = 2;

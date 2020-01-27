@@ -1159,7 +1159,7 @@ static int _extract_series(void)
 	}
 
 	/* Find the fields to be extracted */
-	fields = list_create(list_xfree_item);
+	fields = list_create(xfree_ptr);
 	if ((rc = _fields_intersection(fid_job, tables, fields))
 	    != SLURM_SUCCESS) {
 		error("Failed to find data items for series %s", params.series);
@@ -1737,7 +1737,7 @@ static int _list_items(void)
 		return rc;
 	}
 
-	fields = list_create(list_xfree_item);
+	fields = list_create(xfree_ptr);
 	if ((rc = _fields_intersection(fid_job, tables, fields))
 	    != SLURM_SUCCESS) {
 		error("Failed to intersect fields");

@@ -85,7 +85,7 @@ START_TEST(pack_back2_rec)
 	pack_rec.name             = xstrdup("name");
 	pack_rec.nodes            = xstrdup("nodes");
 	pack_rec.plugin_id_select = 8;
-	pack_rec.fed.feature_list = list_create(list_xfree_item);
+	pack_rec.fed.feature_list = list_create(xfree_ptr);
 	slurm_addto_mode_char_list(pack_rec.fed.feature_list, "a,b,c", 0);
 	ck_assert_int_eq(list_count(pack_rec.fed.feature_list), 3);
 
@@ -263,7 +263,7 @@ START_TEST(pack_back1_rec)
 	pack_rec.name             = xstrdup("name");
 	pack_rec.nodes            = xstrdup("nodes");
 	pack_rec.plugin_id_select = 8;
-	pack_rec.fed.feature_list = list_create(list_xfree_item);
+	pack_rec.fed.feature_list = list_create(xfree_ptr);
 	slurm_addto_mode_char_list(pack_rec.fed.feature_list, "a,b,c", 0);
 	ck_assert_int_eq(list_count(pack_rec.fed.feature_list), 3);
 

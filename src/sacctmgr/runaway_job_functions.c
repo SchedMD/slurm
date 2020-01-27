@@ -61,8 +61,7 @@ static int _set_cond(int *start, int argc, char **argv,
 		if (!end ||
 		    !xstrncasecmp(argv[i], "Cluster", MAX(command_len, 1))) {
 			if (!job_cond->cluster_list)
-				job_cond->cluster_list =
-					list_create(list_xfree_item);
+				job_cond->cluster_list = list_create(xfree_ptr);
 			if (slurm_addto_char_list(job_cond->cluster_list,
 						  argv[i]+end))
 				set = 1;
@@ -97,7 +96,7 @@ static void _print_runaway_jobs(List format_list, List jobs)
 
 	if (!format_list || !list_count(format_list)) {
 		if (!format_list)
-			format_list = list_create(list_xfree_item);
+			format_list = list_create(xfree_ptr);
 		slurm_addto_char_list(
 			format_list,
 			"ID%-12,Name,Part,Cluster,State%10,Submit,Start,End");
@@ -225,7 +224,7 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 	if (!job_cond->cluster_list || !list_count(job_cond->cluster_list)) {
 		char *cluster = slurm_get_cluster_name();
 		if (!job_cond->cluster_list)
-			job_cond->cluster_list = list_create(list_xfree_item);
+			job_cond->cluster_list = list_create(xfree_ptr);
 		slurm_addto_char_list(job_cond->cluster_list, cluster);
 		xfree(cluster);
 	}
@@ -298,7 +297,7 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	int i=0;
 	char *cluster_str;
-	List format_list = list_create(list_xfree_item);
+	List format_list = list_create(xfree_ptr);
 	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
 	char *ask_msg = "\nWould you like to fix these runaway jobs?\n"
 			"(This will set the end time for each job to the "

@@ -1090,7 +1090,7 @@ extern List job_defaults_copy(List in_list)
 	if (!in_list)
 		return out_list;
 
-	out_list = list_create(list_xfree_item);
+	out_list = list_create(xfree_ptr);
 	iter = list_iterator_create(in_list);
 	while ((in_default = list_next(iter))) {
 		out_default = xmalloc(sizeof(job_defaults_t));
@@ -1144,7 +1144,7 @@ extern int job_defaults_list(char *in_str, List *out_list)
 	if (!in_str || (in_str[0] == '\0'))
 		return rc;
 
-	tmp_list = list_create(list_xfree_item);
+	tmp_list = list_create(xfree_ptr);
 	tmp_str = xstrdup(in_str);
 	tok = strtok_r(tmp_str, ",", &save_ptr);
 	while (tok) {
@@ -1399,8 +1399,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			job_defaults->type  = JOB_DEF_CPU_PER_GPU;
 			job_defaults->value = def_cpu_per_gpu;
 			if (!p->job_defaults_list) {
-				p->job_defaults_list =
-					list_create(list_xfree_item);
+				p->job_defaults_list = list_create(xfree_ptr);
 			}
 			list_append(p->job_defaults_list, job_defaults);
 		}
@@ -1410,8 +1409,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			job_defaults->type  = JOB_DEF_MEM_PER_GPU;
 			job_defaults->value = def_mem_per_gpu;
 			if (!p->job_defaults_list) {
-				p->job_defaults_list =
-					list_create(list_xfree_item);
+				p->job_defaults_list = list_create(xfree_ptr);
 			}
 			list_append(p->job_defaults_list, job_defaults);
 		}
@@ -3593,8 +3591,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		job_defaults->type  = JOB_DEF_CPU_PER_GPU;
 		job_defaults->value = def_cpu_per_gpu;
 		if (!conf->job_defaults_list) {
-			conf->job_defaults_list =
-				list_create(list_xfree_item);
+			conf->job_defaults_list = list_create(xfree_ptr);
 		}
 		list_append(conf->job_defaults_list, job_defaults);
 	}
@@ -3604,8 +3601,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		job_defaults->type  = JOB_DEF_MEM_PER_GPU;
 		job_defaults->value = def_mem_per_gpu;
 		if (!conf->job_defaults_list) {
-			conf->job_defaults_list =
-				list_create(list_xfree_item);
+			conf->job_defaults_list = list_create(xfree_ptr);
 		}
 		list_append(conf->job_defaults_list, job_defaults);
 	}

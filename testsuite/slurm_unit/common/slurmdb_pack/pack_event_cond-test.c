@@ -42,23 +42,23 @@ static void _init_event_cond(slurmdb_event_cond_t *pack)
 
 	pack->node_list = xstrdup("node1,node2");
 
-	pack->cluster_list = list_create(list_xfree_item);
+	pack->cluster_list = list_create(xfree_ptr);
 	list_append(pack->cluster_list, "cluster1");
 	list_append(pack->cluster_list, "cluster2");
 
-	pack->format_list = list_create(list_xfree_item);
+	pack->format_list = list_create(xfree_ptr);
 	list_append(pack->format_list, "format1");
 	list_append(pack->format_list, "format2");
 
-	pack->reason_list = list_create(list_xfree_item);
+	pack->reason_list = list_create(xfree_ptr);
 	list_append(pack->reason_list, "reason1");
 	list_append(pack->reason_list, "reason2");
 
-	pack->reason_uid_list = list_create(list_xfree_item);
+	pack->reason_uid_list = list_create(xfree_ptr);
 	list_append(pack->reason_uid_list, "uid1");
 	list_append(pack->reason_uid_list, "uid2");
 
-	pack->state_list = list_create(list_xfree_item);
+	pack->state_list = list_create(xfree_ptr);
 	list_append(pack->state_list, "state1");
 	list_append(pack->state_list, "state2");
 }

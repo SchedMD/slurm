@@ -3217,7 +3217,7 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			map = xmalloc(sizeof(het_job_map_t));
 			map->comp_time_limit = comp_time_limit;
 			map->het_job_id = job_ptr->het_job_id;
-			map->het_job_rec_list = list_create(list_xfree_item);
+			map->het_job_rec_list = list_create(xfree_ptr);
 			list_append(map->het_job_rec_list, rec);
 			list_append(het_job_list, map);
 		}
@@ -3702,7 +3702,7 @@ static bool _het_job_deadlock_test(job_record_t *job_ptr)
 	}
 	if (!dl_part_ptr) {
 		dl_part_ptr = xmalloc(sizeof(deadlock_part_struct_t));
-		dl_part_ptr->deadlock_job_list = list_create(list_xfree_item);
+		dl_part_ptr->deadlock_job_list = list_create(xfree_ptr);
 		dl_part_ptr->part_ptr = job_ptr->part_ptr;
 		list_append(deadlock_global_list, dl_part_ptr);
 	} else {

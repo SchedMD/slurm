@@ -1574,7 +1574,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		step_loc_t step_info;
 		slurm_mutex_lock(&job_limits_mutex);
 		if (!job_limits_list)
-			job_limits_list = list_create(list_xfree_item);
+			job_limits_list = list_create(xfree_ptr);
 		step_info.jobid  = req->job_id;
 		step_info.stepid = req->job_step_id;
 		job_limits_ptr = list_find_first(job_limits_list,
@@ -2038,7 +2038,7 @@ static void _make_prolog_mem_container(slurm_msg_t *msg)
 	if (req->job_mem_limit) {
 		slurm_mutex_lock(&job_limits_mutex);
 		if (!job_limits_list)
-			job_limits_list = list_create(list_xfree_item);
+			job_limits_list = list_create(xfree_ptr);
 		step_info.jobid  = req->job_id;
 		step_info.stepid = SLURM_EXTERN_CONT;
 		job_limits_ptr = list_find_first(job_limits_list,
@@ -2902,7 +2902,7 @@ _load_job_limits(void)
 	slurmstepd_mem_info_t stepd_mem_info;
 
 	if (!job_limits_list)
-		job_limits_list = list_create(list_xfree_item);
+		job_limits_list = list_create(xfree_ptr);
 	job_limits_loaded = true;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
@@ -5657,7 +5657,7 @@ static int _find_waiter(void *x, void *y)
 static int _waiter_init (uint32_t jobid)
 {
 	if (!waiters)
-		waiters = list_create(list_xfree_item);
+		waiters = list_create(xfree_ptr);
 
 	/*
 	 *  Exit this thread if another thread is waiting on job

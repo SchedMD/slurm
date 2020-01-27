@@ -111,8 +111,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			  || !xstrncasecmp(argv[i], "Acct",
 					   MAX(command_len, 4))) {
 			if (!assoc_cond->acct_list) {
-				assoc_cond->acct_list =
-					list_create(list_xfree_item);
+				assoc_cond->acct_list = list_create(xfree_ptr);
 			}
 			if (slurm_addto_char_list(
 				   assoc_cond->acct_list,
@@ -122,7 +121,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 1))) {
 			if (!acct_cond->description_list) {
 				acct_cond->description_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			}
 			if (slurm_addto_char_list(acct_cond->description_list,
 						 argv[i]+end))
@@ -135,7 +134,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 1))) {
 			if (!acct_cond->organization_list) {
 				acct_cond->organization_list =
-					list_create(list_xfree_item);
+					list_create(xfree_ptr);
 			}
 			if (slurm_addto_char_list(acct_cond->organization_list,
 						 argv[i]+end))
@@ -350,8 +349,8 @@ extern int sacctmgr_add_account(int argc, char **argv)
 	slurmdb_account_rec_t *acct = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_assoc_cond_t assoc_cond;
-	List name_list = list_create(list_xfree_item);
-	List cluster_list = list_create(list_xfree_item);
+	List name_list = list_create(xfree_ptr);
+	List cluster_list = list_create(xfree_ptr);
 	char *cluster = NULL;
 	char *name = NULL;
 	List acct_list = NULL;
@@ -447,7 +446,7 @@ extern int sacctmgr_add_account(int argc, char **argv)
 			return SLURM_ERROR;
 		}
 		if (!cluster_list)
-			list_create(list_xfree_item);
+			list_create(xfree_ptr);
 		else
 			list_flush(cluster_list);
 
@@ -678,7 +677,7 @@ extern int sacctmgr_list_account(int argc, char **argv)
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(list_xfree_item);
+	List format_list = list_create(xfree_ptr);
 	List print_fields_list; /* types are of print_field_t */
 
 	acct_cond->with_assocs = with_assoc_flag;

@@ -102,14 +102,6 @@ typedef int (*ListForF) (void *x, void *arg);
 List list_create(ListDelF f);
 
 /*
- * Generic xfree() against each item, used as a general-purpose ListDelF.
- * (You Cannot directly use "xfree" as a ListDelF as it is a macro for
- * _slurm_xfree(), which has additional arguments. So use this wrapper
- * instead.)
- */
-void list_xfree_item(void *x);
-
-/*
  *  Destroys list [l], freeing memory used for list iterators and the
  *    list itself; if a deletion function was specified when the list
  *    was created, it will be called for each item in the list.

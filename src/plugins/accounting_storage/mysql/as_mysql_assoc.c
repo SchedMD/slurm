@@ -782,7 +782,7 @@ static int _set_assoc_limits_for_add(
 		}
 		list_flush(assoc->qos_list);
 	} else
-		assoc->qos_list = list_create(list_xfree_item);
+		assoc->qos_list = list_create(xfree_ptr);
 
 	if (row[ASSOC2_REQ_QOS][0])
 		slurm_addto_char_list(assoc->qos_list, row[ASSOC2_REQ_QOS]+1);
@@ -982,14 +982,14 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			ListIterator qos_itr =
 				list_iterator_create(assoc->qos_list);
 			if (row[ASSOC_DELTA_QOS][0]) {
-				delta_qos_list = list_create(list_xfree_item);
+				delta_qos_list = list_create(xfree_ptr);
 				slurm_addto_char_list(delta_qos_list,
 						      row[ASSOC_DELTA_QOS]+1);
 				delta_itr =
 					list_iterator_create(delta_qos_list);
 			}
 
-			mod_assoc->qos_list = list_create(list_xfree_item);
+			mod_assoc->qos_list = list_create(xfree_ptr);
 			/* here we are making sure a child does not
 			   have the qos added or removed before we add
 			   it to the parent.
@@ -1591,7 +1591,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			char *new_qos = NULL, *tmp_qos = NULL;
 			bool adding_straight = 0;
 
-			mod_assoc->qos_list = list_create(list_xfree_item);
+			mod_assoc->qos_list = list_create(xfree_ptr);
 
 			while ((new_qos = list_next(new_qos_itr))) {
 				if (new_qos[0] == '-' || new_qos[0] == '+') {
@@ -2023,7 +2023,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	}
 
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
-	delta_qos_list = list_create(list_xfree_item);
+	delta_qos_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_assoc_rec_t *assoc =
 			xmalloc(sizeof(slurmdb_assoc_rec_t));
@@ -2263,7 +2263,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			&assoc->max_tres_run_mins, parent_mtrm,
 			TRES_STR_FLAG_SORT_ID);
 
-		assoc->qos_list = list_create(list_xfree_item);
+		assoc->qos_list = list_create(xfree_ptr);
 
 		/* do a plus 1 since a comma is the first thing there
 		 * in the list.  Also you can never have both a qos
@@ -3181,7 +3181,7 @@ is_same_user:
 	for(i=1; i<MASSOC_COUNT; i++)
 		xstrfmtcat(object, ", t1.%s", massoc_req_inx[i]);
 
-	ret_list = list_create(list_xfree_item);
+	ret_list = list_create(xfree_ptr);
 
 	if (assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
@@ -3296,7 +3296,7 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	for(i=1; i<RASSOC_COUNT; i++)
 		xstrfmtcat(object, ", %s", rassoc_req_inx[i]);
 
-	ret_list = list_create(list_xfree_item);
+	ret_list = list_create(xfree_ptr);
 
 	if (assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;

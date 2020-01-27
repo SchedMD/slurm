@@ -881,7 +881,7 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 	}
 
 	if (!assoc_cond->cluster_list)
-		assoc_cond->cluster_list = list_create(list_xfree_item);
+		assoc_cond->cluster_list = list_create(xfree_ptr);
 
 	if (!list_count(assoc_cond->cluster_list)) {
 		char *temp = slurm_get_cluster_name();
@@ -1013,7 +1013,7 @@ extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond)
 	qos_cond->description_list = NULL;
 
 	if (!cluster_list)
-		cluster_list = list_create(list_xfree_item);
+		cluster_list = list_create(xfree_ptr);
 
 	if (!list_count(cluster_list)) {
 		char *temp = slurm_get_cluster_name();

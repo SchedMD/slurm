@@ -1132,7 +1132,7 @@ extern void gs_init(void)
 		info("gang: entering gs_init");
 	timeslicer_seconds = slurmctld_conf.sched_time_slice;
 	gr_type = _get_gr_type();
-	preempt_job_list = list_create(list_xfree_item);
+	preempt_job_list = list_create(xfree_ptr);
 
 	/* load the physical resource count data */
 	_load_phys_res_cnt();

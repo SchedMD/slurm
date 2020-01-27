@@ -581,7 +581,7 @@ static int _grab_parents_qos(slurmdb_assoc_rec_t *assoc)
 	if (assoc->qos_list)
 		list_flush(assoc->qos_list);
 	else
-		assoc->qos_list = list_create(list_xfree_item);
+		assoc->qos_list = list_create(xfree_ptr);
 
 	parent_assoc = assoc->usage->parent_assoc_ptr;
 
@@ -1487,7 +1487,7 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 
 	/* If this exists we only want/care about tracking/caching these TRES */
 	if ((tres_req_str = slurm_get_accounting_storage_tres())) {
-		tres_q.type_list = list_create(list_xfree_item);
+		tres_q.type_list = list_create(xfree_ptr);
 		slurm_addto_char_list(tres_q.type_list, tres_req_str);
 		xfree(tres_req_str);
 	}

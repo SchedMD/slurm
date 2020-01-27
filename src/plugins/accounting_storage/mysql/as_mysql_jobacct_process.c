@@ -1312,7 +1312,7 @@ extern int setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
 		}
 		xfree(query);
 		if (!job_cond->resvid_list)
-			job_cond->resvid_list = list_create(list_xfree_item);
+			job_cond->resvid_list = list_create(xfree_ptr);
 		while ((row = mysql_fetch_row(result))) {
 			list_append(job_cond->resvid_list, xstrdup(row[0]));
 		}

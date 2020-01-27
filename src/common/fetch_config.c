@@ -68,7 +68,7 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 	if (env_conf_server || conf_server) {
 		char *server, *port;
 		ctl_entry_t *ctl = xmalloc(sizeof(*ctl));
-		controllers = list_create(list_xfree_item);
+		controllers = list_create(xfree_ptr);
 
 		if (!(server = env_conf_server))
 			server = conf_server;

@@ -4641,7 +4641,7 @@ static void _edit_jobs(GtkTreeModel *model, GtkTreeIter *iter,
 	job_foreach_common.edit_type = EDIT_EDIT;
 
 	/* create a list to stack the selected jobs */
-	foreach_list = list_create(list_xfree_item);
+	foreach_list = list_create(xfree_ptr);
 	/* build array of job(s) to process */
 	if (treeview) {
 		gtk_tree_selection_selected_foreach(
@@ -4785,7 +4785,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 		job_foreach_common.job_msg = job_msg;
 
 		/* create a list to stack the selected jobs */
-		foreach_list = list_create(list_xfree_item);
+		foreach_list = list_create(xfree_ptr);
 		/* build array of job(s) to process */
 		if (treeview)
 			gtk_tree_selection_selected_foreach(

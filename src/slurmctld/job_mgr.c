@@ -4362,7 +4362,7 @@ int init_job_conf(void)
 	last_job_update = time(NULL);
 
 	if (!purge_files_list) {
-		purge_files_list = list_create(list_xfree_item);
+		purge_files_list = list_create(xfree_ptr);
 	}
 
 	return SLURM_SUCCESS;
@@ -14868,7 +14868,7 @@ int sync_job_files(void)
 	if (!slurmctld_primary)	/* Don't purge files from backup slurmctld */
 		return SLURM_SUCCESS;
 
-	batch_dirs = list_create(list_xfree_item);
+	batch_dirs = list_create(xfree_ptr);
 	_get_batch_job_dir_ids(batch_dirs);
 	_validate_job_files(batch_dirs);
 	_remove_defunct_batch_dirs(batch_dirs);
@@ -16867,7 +16867,7 @@ static int _set_top(List top_job_list, uid_t uid)
 
 	xassert(job_list);
 	xassert(top_job_list);
-	prio_list = list_create(list_xfree_item);
+	prio_list = list_create(xfree_ptr);
 	(void) list_for_each(job_list, _top_job_flag_clear, NULL);
 
 	/* Validate the jobs in our "top" list */

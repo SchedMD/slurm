@@ -459,7 +459,7 @@ static uint64_t _build_mps_dev_info(List gres_conf_list)
 	mps_dev_info_t *mps_conf;
 	ListIterator iter;
 
-	mps_info = list_create(list_xfree_item);
+	mps_info = list_create(xfree_ptr);
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_conf = list_next(iter))) {
 		if (gres_conf->plugin_id != mps_plugin_id)
@@ -728,7 +728,7 @@ extern void recv_stepd(int fd)
 
 	safe_read(fd, &mps_cnt, sizeof(int));
 	if (mps_cnt) {
-		mps_info = list_create(list_xfree_item);
+		mps_info = list_create(xfree_ptr);
 		for (i = 0; i < mps_cnt; i++) {
 			mps_ptr = xmalloc(sizeof(mps_dev_info_t));
 			safe_read(fd, &mps_ptr->count, sizeof(uint64_t));

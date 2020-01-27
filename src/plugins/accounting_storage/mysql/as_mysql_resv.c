@@ -566,7 +566,7 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 		job_cond.usage_end = resv_cond->time_end;
 		job_cond.used_nodes = resv_cond->nodes;
 		if (!resv_cond->cluster_list)
-			resv_cond->cluster_list = list_create(list_xfree_item);
+			resv_cond->cluster_list = list_create(xfree_ptr);
 		/*
 		 * If they didn't specify a cluster, give them the one they are
 		 * calling from.

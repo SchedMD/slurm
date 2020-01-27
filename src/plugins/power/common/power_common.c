@@ -122,7 +122,7 @@ extern List get_job_power(List job_list, node_record_t *node_record_table_ptr)
 	power_by_job_t *power_ptr;
 	int i, i_first, i_last;
 	uint64_t debug_flag = slurm_get_debug_flags();
-	List job_power_list = list_create(list_xfree_item);
+	List job_power_list = list_create(xfree_ptr);
 	time_t now = time(NULL);
 
 	job_iterator = list_iterator_create(job_list);

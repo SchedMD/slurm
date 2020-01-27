@@ -216,7 +216,7 @@ extern int slurm_select_init(bool only_default)
 	plugin_args.default_plugin = select_type;
 
 	if (only_default) {
-		plugin_names = list_create(list_xfree_item);
+		plugin_names = list_create(xfree_ptr);
 		list_append(plugin_names, xstrdup(select_type));
 	} else {
 		plugin_names = plugin_get_plugins_of_type(plugin_type);

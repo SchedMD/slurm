@@ -52,6 +52,8 @@
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 
+strong_alias(xfree_ptr, slurm_xfree_ptr);
+
 #ifdef NDEBUG
 #  define xmalloc_assert(expr)  ((void) (0))
 #else
@@ -221,6 +223,16 @@ void slurm_xfree(void **item, const char *file, int line, const char *func)
 		free(p);
 		*item = NULL;
 	}
+}
+
+/*
+ * Since xfree() is a macro it cannot be used for the ListDelF in list_create()
+ * and a number of locations where handling it as a function-pointer is
+ * desired. Use this wrapper to get around that problem.
+ */
+void xfree_ptr(void *ptr)
+{
+	xfree(ptr);
 }
 
 #ifndef NDEBUG

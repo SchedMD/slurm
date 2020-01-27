@@ -322,7 +322,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	 * those clusters, otherwise check all clusters in the federation.
 	 */
 	if (req->clusters && xstrcasecmp(req->clusters, "all")) {
-		req_clusters = list_create(list_xfree_item);
+		req_clusters = list_create(xfree_ptr);
 		slurm_addto_char_list(req_clusters, req->clusters);
 	}
 

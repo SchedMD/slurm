@@ -260,7 +260,7 @@ static List _get_sync_jobid_list(uint32_t sib_id, time_t sync_time)
 	ListIterator job_itr;
 	job_record_t *job_ptr;
 
-	jobids = list_create(list_xfree_item);
+	jobids = list_create(xfree_ptr);
 
 	/*
 	 * Only look at jobs that:
@@ -2425,7 +2425,7 @@ extern int fed_mgr_init(void *db_conn)
 
 	slurm_mutex_lock(&fed_job_list_mutex);
 	if (!fed_job_list)
-		fed_job_list = list_create(list_xfree_item);
+		fed_job_list = list_create(xfree_ptr);
 	slurm_mutex_unlock(&fed_job_list_mutex);
 
 	/*
@@ -2722,7 +2722,7 @@ static List _load_fed_job_list(Buf buffer, uint16_t protocol_version)
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
-			tmp_list = list_create(list_xfree_item);
+			tmp_list = list_create(xfree_ptr);
 
 			for (i = 0; i < count; i++) {
 				if (_unpack_fed_job_info(&tmp_job_info, buffer,
@@ -3034,7 +3034,7 @@ static int _validate_cluster_names(char *clusters, uint64_t *cluster_bitmap)
 		goto end_it;
 	}
 
-	cluster_names = list_create(list_xfree_item);
+	cluster_names = list_create(xfree_ptr);
 	if (slurm_addto_char_list(cluster_names, clusters)) {
 		ListIterator itr = list_iterator_create(cluster_names);
 		char *cluster_name;
@@ -3460,7 +3460,7 @@ static int _validate_cluster_features(char *spec_features,
 		return rc;
 	}
 
-	req_features = list_create(list_xfree_item);
+	req_features = list_create(xfree_ptr);
 	slurm_addto_char_list(req_features, spec_features);
 
 	feature_itr = list_iterator_create(req_features);
