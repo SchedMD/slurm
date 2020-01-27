@@ -115,7 +115,7 @@ int main (int argc, char **argv)
 		case 'A':
 			if (!req_msg.acct_list)
 				req_msg.acct_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			slurm_addto_char_list(req_msg.acct_list, optarg);
 			break;
 		case 'e':
@@ -162,7 +162,7 @@ int main (int argc, char **argv)
 			all_users = 0;
 			if (!req_msg.user_list)
 				req_msg.user_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			_addto_name_char_list(req_msg.user_list, optarg, 0);
 			break;
 		case 'U':
@@ -213,7 +213,7 @@ int main (int argc, char **argv)
 		if ((pwd = getpwuid(getuid()))) {
 			if (!req_msg.user_list) {
 				req_msg.user_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			}
 			temp = xstrdup(pwd->pw_name);
 			list_append(req_msg.user_list, temp);

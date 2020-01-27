@@ -154,12 +154,6 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
 	return;
 }
 
-extern void slurm_destroy_char(void *object)
-{
-	char *tmp = (char *)object;
-	xfree(tmp);
-}
-
 /* here to add \\ to all \" in a string this needs to be xfreed later */
 extern char *slurm_add_slash_to_quotes(char *str)
 {
@@ -188,7 +182,7 @@ extern List slurm_copy_char_list(List char_list)
 		return NULL;
 
 	itr = list_iterator_create(char_list);
-	ret_list = list_create(slurm_destroy_char);
+	ret_list = list_create(list_xfree_item);
 
 	while ((tmp_char = list_next(itr)))
 		list_append(ret_list, xstrdup(tmp_char));

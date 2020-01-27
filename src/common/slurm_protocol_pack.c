@@ -497,7 +497,7 @@ static int _unpack_shares_request_msg(shares_request_msg_t ** msg, Buf buffer,
 	if (count > NO_VAL)
 		goto unpack_error;
 	if (count != NO_VAL) {
-		object_ptr->acct_list = list_create(slurm_destroy_char);
+		object_ptr->acct_list = list_create(list_xfree_item);
 		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
@@ -509,7 +509,7 @@ static int _unpack_shares_request_msg(shares_request_msg_t ** msg, Buf buffer,
 	if (count > NO_VAL)
 		goto unpack_error;
 	if (count != NO_VAL) {
-		object_ptr->user_list = list_create(slurm_destroy_char);
+		object_ptr->user_list = list_create(list_xfree_item);
 		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
@@ -11364,7 +11364,7 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 	if (count > NO_VAL)
 		goto unpack_error;
 	if (count != NO_VAL) {
-		object_ptr->acct_list = list_create(slurm_destroy_char);
+		object_ptr->acct_list = list_create(list_xfree_item);
 		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
@@ -11378,7 +11378,7 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 	if (count > NO_VAL)
 		goto unpack_error;
 	if (count != NO_VAL) {
-		object_ptr->qos_list = list_create(slurm_destroy_char);
+		object_ptr->qos_list = list_create(list_xfree_item);
 		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
@@ -11390,7 +11390,7 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 	if (count > NO_VAL)
 		goto unpack_error;
 	if (count != NO_VAL) {
-		object_ptr->user_list = list_create(slurm_destroy_char);
+		object_ptr->user_list = list_create(list_xfree_item);
 		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);

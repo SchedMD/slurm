@@ -76,7 +76,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					   MAX(command_len, 3))) {
 			if (!federation_cond->federation_list)
 				federation_cond->federation_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			if (slurm_addto_char_list(
 					federation_cond->federation_list,
 					argv[i]+end))
@@ -85,7 +85,7 @@ static int _set_cond(int *start, int argc, char **argv,
 						 MAX(command_len, 3))) {
 			if (!federation_cond->cluster_list)
 				federation_cond->cluster_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			if (slurm_addto_char_list(
 						  federation_cond->cluster_list,
 						  argv[i]+end))
@@ -155,7 +155,7 @@ static int _set_rec(int *start, int argc, char **argv,
 				break;
 			}
 
-			List cluster_names = list_create(slurm_destroy_char);
+			List cluster_names = list_create(list_xfree_item);
 			if (slurm_addto_mode_char_list(cluster_names,
 						       argv[i]+end, option) < 0)
 			{
@@ -299,7 +299,7 @@ extern int verify_fed_clusters(List cluster_list, const char *fed_name,
 
 	/* Get existing clusters from database */
 	slurmdb_init_cluster_cond(&cluster_cond, 0);
-	cluster_cond.cluster_list = list_create(slurm_destroy_char);
+	cluster_cond.cluster_list = list_create(list_xfree_item);
 	itr_c = list_iterator_create(cluster_list);
 	while ((cluster_rec = list_next(itr_c))) {
 		char *tmp_name = cluster_rec->name;
@@ -385,7 +385,7 @@ extern int sacctmgr_add_federation(int argc, char **argv)
 	int i = 0, limit_set = 0;
 	slurmdb_federation_rec_t *start_fed =
 		xmalloc(sizeof(slurmdb_federation_rec_t));
-	List name_list = list_create(slurm_destroy_char);
+	List name_list = list_create(list_xfree_item);
 	List federation_list;
 	ListIterator itr = NULL;
 	char *name = NULL;
@@ -523,11 +523,11 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(list_xfree_item);
 	List print_fields_list; /* types are of print_field_t */
 
 	slurmdb_init_federation_cond(federation_cond, 0);
-	federation_cond->federation_list = list_create(slurm_destroy_char);
+	federation_cond->federation_list = list_create(list_xfree_item);
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
@@ -717,7 +717,7 @@ static int _add_clusters_to_remove(List cluster_list, const char *federation)
 	slurmdb_cluster_rec_t    *db_cluster = NULL;
 
 	slurmdb_init_federation_cond(&db_cond, 0);
-	db_cond.federation_list = list_create(slurm_destroy_char);
+	db_cond.federation_list = list_create(list_xfree_item);
 	list_append(db_cond.federation_list, xstrdup(federation));
 
 	db_list = slurmdb_federations_get(db_conn, &db_cond);
@@ -934,7 +934,7 @@ extern int sacctmgr_delete_federation(int argc, char **argv)
 	int cond_set = 0, prev_set;
 
 	slurmdb_init_federation_cond(fed_cond, 0);
-	fed_cond->federation_list = list_create(slurm_destroy_char);
+	fed_cond->federation_list = list_create(list_xfree_item);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);

@@ -276,8 +276,8 @@ static int _assign_clusters_to_federation(mysql_conn_t *mysql_conn,
 		goto end_it;
 	}
 
-	add_list = list_create(slurm_destroy_char);
-	rem_list = list_create(slurm_destroy_char);
+	add_list = list_create(list_xfree_item);
+	rem_list = list_create(list_xfree_item);
 
 	itr = list_iterator_create(cluster_list);
 	while ((tmp_cluster = list_next(itr))) {
@@ -484,7 +484,7 @@ empty:
 
  		/* clusters in federation */
  		slurmdb_init_cluster_cond(&clus_cond, 0);
- 		clus_cond.federation_list = list_create(slurm_destroy_char);
+		clus_cond.federation_list = list_create(list_xfree_item);
  		list_append(clus_cond.federation_list, xstrdup(fed->name));
 
  		tmp_list = as_mysql_get_clusters(mysql_conn, uid, &clus_cond);
@@ -579,7 +579,7 @@ extern List as_mysql_modify_federations(
 	}
 	xfree(extra);
 
-	ret_list = list_create(slurm_destroy_char);
+	ret_list = list_create(list_xfree_item);
 	while ((row = mysql_fetch_row(result))) {
 		object = xstrdup(row[0]);
 
@@ -676,7 +676,7 @@ extern List as_mysql_remove_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 	rc = 0;
-	ret_list = list_create(slurm_destroy_char);
+	ret_list = list_create(list_xfree_item);
 
 	if (!mysql_num_rows(result)) {
 		mysql_free_result(result);

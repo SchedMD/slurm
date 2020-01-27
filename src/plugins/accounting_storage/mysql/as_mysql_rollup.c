@@ -1149,7 +1149,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			r_usage = xmalloc(sizeof(local_resv_usage_t));
 			r_usage->id = slurm_atoul(row[RESV_REQ_ID]);
 
-			r_usage->local_assocs = list_create(slurm_destroy_char);
+			r_usage->local_assocs = list_create(list_xfree_item);
 			slurm_addto_char_list(r_usage->local_assocs,
 					      row[RESV_REQ_ASSOCS]);
 			r_usage->loc_tres =

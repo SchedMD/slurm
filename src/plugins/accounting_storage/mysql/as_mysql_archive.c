@@ -4277,7 +4277,7 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		 * that.
 		 */
 		new_cluster_list = true;
-		use_cluster_list = list_create(slurm_destroy_char);
+		use_cluster_list = list_create(list_xfree_item);
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 		itr = list_iterator_create(as_mysql_cluster_list);
 		while ((cluster_name = list_next(itr)))

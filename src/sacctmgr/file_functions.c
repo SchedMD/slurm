@@ -257,7 +257,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 					 MAX(command_len, 2))) {
 			if (!file_opts->coord_list)
 				file_opts->coord_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			slurm_addto_char_list(file_opts->coord_list, option);
 		} else if (!xstrncasecmp(sub, "Classification",
 					 MAX(command_len, 2))) {
@@ -271,7 +271,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			file_opts->def_wckey = xstrdup(option);
 			if (!file_opts->wckey_list)
 				file_opts->wckey_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			slurm_addto_char_list(file_opts->wckey_list, option);
 		} else if (!xstrncasecmp(sub, "Description",
 					 MAX(command_len, 3))) {
@@ -286,7 +286,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 					 MAX(command_len, 2))) {
 			if (!file_opts->wckey_list)
 				file_opts->wckey_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			slurm_addto_char_list(file_opts->wckey_list, option);
 		} else if (!sacctmgr_set_assoc_rec(
 				   &file_opts->assoc_rec, sub, option,
@@ -334,7 +334,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 	if (!assoc_list || !list_count(assoc_list))
 		return rc;
 
-	format_list = list_create(slurm_destroy_char);
+	format_list = list_create(list_xfree_item);
 	if (user)
 		slurm_addto_char_list(format_list,
 				      "User,Account");
@@ -646,7 +646,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		char *now_qos = NULL, *new_qos = NULL;
 
 		if (!mod_assoc.qos_list)
-			mod_assoc.qos_list = list_create(slurm_destroy_char);
+			mod_assoc.qos_list = list_create(list_xfree_item);
 		while ((new_qos = list_next(new_qos_itr))) {
 			while ((now_qos = list_next(now_qos_itr))) {
 				if (!xstrcmp(new_qos, now_qos))
@@ -1717,7 +1717,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	mod_user_list = list_create(slurmdb_destroy_user_rec);
 	mod_assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
-	format_list = list_create(slurm_destroy_char);
+	format_list = list_create(list_xfree_item);
 
 	while ((num_lines = _get_next_line(line, BUFFER_SIZE, fd)) > 0) {
 		lc += num_lines;

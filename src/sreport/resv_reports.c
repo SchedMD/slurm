@@ -79,7 +79,7 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 	resv_cond->with_usage = 1;
 
 	if (!resv_cond->cluster_list)
-		resv_cond->cluster_list = list_create(slurm_destroy_char);
+		resv_cond->cluster_list = list_create(list_xfree_item);
 	if (cluster_flag)
 		slurm_addto_char_list(resv_cond->cluster_list, cluster_flag);
 
@@ -102,7 +102,7 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 					   MAX(command_len, 1))) {
 			if (!resv_cond->name_list)
 				resv_cond->name_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			slurm_addto_char_list(resv_cond->name_list,
 					      argv[i]+end);
 			set = 1;
@@ -129,7 +129,7 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 1))) {
 			if (!resv_cond->id_list)
 				resv_cond->id_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			slurm_addto_char_list(resv_cond->id_list, argv[i]+end);
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Nodes",
@@ -508,7 +508,7 @@ extern int resv_utilization(int argc, char **argv)
 	List resv_list = NULL;
 	List req_tres_list = tres_list;
 
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(list_xfree_item);
 
 	print_fields_list = list_create(destroy_print_field);
 

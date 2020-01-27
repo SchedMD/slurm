@@ -929,7 +929,7 @@ extern List as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(extra);
 
 	name_char = NULL;
-	ret_list = list_create(slurm_destroy_char);
+	ret_list = list_create(list_xfree_item);
 	while ((row = mysql_fetch_row(result))) {
 		char *name = NULL;
 		int curr_res = atoi(row[0]);
@@ -1133,7 +1133,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(extra);
 
 	name_char = NULL;
-	ret_list = list_create(slurm_destroy_char);
+	ret_list = list_create(list_xfree_item);
 	while ((row = mysql_fetch_row(result))) {
 		char *name = NULL;
 		int curr_res = atoi(row[0]);

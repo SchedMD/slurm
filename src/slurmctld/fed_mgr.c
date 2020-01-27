@@ -3043,7 +3043,7 @@ static int _validate_cluster_names(char *clusters, uint64_t *cluster_bitmap)
 		goto end_it;
 	}
 
-	cluster_names = list_create(slurm_destroy_char);
+	cluster_names = list_create(list_xfree_item);
 	if (slurm_addto_char_list(cluster_names, clusters)) {
 		ListIterator itr = list_iterator_create(cluster_names);
 		char *cluster_name;
@@ -3469,7 +3469,7 @@ static int _validate_cluster_features(char *spec_features,
 		return rc;
 	}
 
-	req_features = list_create(slurm_destroy_char);
+	req_features = list_create(list_xfree_item);
 	slurm_addto_char_list(req_features, spec_features);
 
 	feature_itr = list_iterator_create(req_features);

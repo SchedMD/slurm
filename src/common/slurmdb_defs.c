@@ -1435,7 +1435,7 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 
 	slurmdb_init_cluster_cond(&cluster_cond, 0);
 	if (cluster_names && !all_clusters) {
-		cluster_cond.cluster_list = list_create(slurm_destroy_char);
+		cluster_cond.cluster_list = list_create(list_xfree_item);
 		slurm_addto_char_list(cluster_cond.cluster_list, cluster_names);
 	}
 
@@ -2407,7 +2407,7 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 	    || !num_qos_list || !list_count(num_qos_list))
 		return xstrdup("");
 
-	temp_list = list_create(slurm_destroy_char);
+	temp_list = list_create(list_xfree_item);
 
 	itr = list_iterator_create(num_qos_list);
 	while((temp_char = list_next(itr))) {
@@ -3461,7 +3461,7 @@ extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
 
 	FREE_NULL_LIST(out->fed.feature_list);
 	if (in->fed.feature_list) {
-		out->fed.feature_list = list_create(slurm_destroy_char);
+		out->fed.feature_list = list_create(list_xfree_item);
 		slurm_char_list_copy(out->fed.feature_list,
 				     in->fed.feature_list);
 	}
@@ -3778,7 +3778,7 @@ extern char *slurmdb_make_tres_string_from_simple(
 
 		if (!(tres_str_flags & TRES_STR_FLAG_SORT_ID)) {
 			if (!char_list)
-				char_list = list_create(slurm_destroy_char);
+				char_list = list_create(list_xfree_item);
 			list_append(char_list, tres_str);
 			tres_str = NULL;
 		}

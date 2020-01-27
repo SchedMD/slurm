@@ -2012,18 +2012,18 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 	List config_list = (List)key_pairs;
 	ListIterator iter = NULL;
 	/* define lists of specific configuration sections */
-	List other_list = list_create(slurm_destroy_char);
-	List control_list = list_create(slurm_destroy_char);
-	List accounting_list = list_create(slurm_destroy_char);
-	List logging_list = list_create(slurm_destroy_char);
-	List power_list = list_create(slurm_destroy_char);
-	List sched_list = list_create(slurm_destroy_char);
-	List topology_list = list_create(slurm_destroy_char);
-	List timers_list = list_create(slurm_destroy_char);
-	List debug_list = list_create(slurm_destroy_char);
-	List proepilog_list = list_create(slurm_destroy_char);
-	List resconf_list = list_create(slurm_destroy_char);
-	List proctrac_list = list_create(slurm_destroy_char);
+	List other_list = list_create(list_xfree_item);
+	List control_list = list_create(list_xfree_item);
+	List accounting_list = list_create(list_xfree_item);
+	List logging_list = list_create(list_xfree_item);
+	List power_list = list_create(list_xfree_item);
+	List sched_list = list_create(list_xfree_item);
+	List topology_list = list_create(list_xfree_item);
+	List timers_list = list_create(list_xfree_item);
+	List debug_list = list_create(list_xfree_item);
+	List proepilog_list = list_create(list_xfree_item);
+	List resconf_list = list_create(list_xfree_item);
+	List proctrac_list = list_create(list_xfree_item);
 
 	if (!config_list)
 		return;

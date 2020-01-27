@@ -82,7 +82,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 	if (!user_cond->assoc_cond->cluster_list) {
 		delete_cluster_list = 1;
 		user_cond->assoc_cond->cluster_list =
-			list_create(slurm_destroy_char);
+			list_create(list_xfree_item);
 	}
 
 	user_cond->with_deleted = 1;
@@ -206,7 +206,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 							user->uid;
 						slurmdb_report_user->acct_list =
 							list_create
-							(slurm_destroy_char);
+							(list_xfree_item);
 						list_append(slurmdb_report_cluster->
 							    user_list,
 							    slurmdb_report_user);
@@ -230,7 +230,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 				slurmdb_report_user->name = xstrdup(assoc->user);
 				slurmdb_report_user->uid = user->uid;
 				slurmdb_report_user->acct_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 				list_append(slurmdb_report_cluster->user_list,
 					    slurmdb_report_user);
 			}

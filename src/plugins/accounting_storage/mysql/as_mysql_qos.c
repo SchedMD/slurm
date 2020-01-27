@@ -862,7 +862,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	rc = 0;
-	ret_list = list_create(slurm_destroy_char);
+	ret_list = list_create(list_xfree_item);
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_qos_rec_t *qos_rec = NULL;
 		uint32_t id = slurm_atoul(row[MQOS_ID]);
@@ -1121,7 +1121,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	name_char = NULL;
-	ret_list = list_create(slurm_destroy_char);
+	ret_list = list_create(list_xfree_item);
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_qos_rec_t *qos_rec = NULL;
 

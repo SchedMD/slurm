@@ -153,7 +153,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					   MAX(command_len, 1))) {
 			if (!qos_cond->name_list) {
 				qos_cond->name_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			}
 			if (slurm_addto_char_list(qos_cond->name_list,
 						 argv[i]+end))
@@ -166,7 +166,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			 */
 			if (!qos_cond->description_list) {
 				qos_cond->description_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			}
 			if (slurm_addto_char_list(qos_cond->description_list,
 						 argv[i]+end))
@@ -175,7 +175,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 1))) {
 			if (!qos_cond->description_list) {
 				qos_cond->description_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			}
 			if (slurm_addto_char_list(qos_cond->description_list,
 						 argv[i]+end))
@@ -191,7 +191,7 @@ static int _set_cond(int *start, int argc, char **argv,
 
 			if (!qos_cond->id_list) {
 				qos_cond->id_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 			}
 			if (slurm_addto_char_list(qos_cond->id_list,
 						 argv[i]+end))
@@ -672,7 +672,7 @@ static int _set_rec(int *start, int argc, char **argv,
 					 MAX(command_len, 7))) {
 			if (!qos->preempt_list)
 				qos->preempt_list =
-					list_create(slurm_destroy_char);
+					list_create(list_xfree_item);
 
 			if (!g_qos_list)
 				g_qos_list = slurmdb_qos_get(
@@ -751,7 +751,7 @@ static bool _isdefault(List qos_list)
 
 	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
 	assoc_cond.without_parent_info = 1;
-	assoc_cond.def_qos_id_list = list_create(slurm_destroy_char);
+	assoc_cond.def_qos_id_list = list_create(list_xfree_item);
 
 	itr = list_iterator_create(qos_list);
 	while ((name = list_next(itr))) {
@@ -810,7 +810,7 @@ extern int sacctmgr_add_qos(int argc, char **argv)
 	ListIterator itr = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
 	slurmdb_qos_rec_t *start_qos = xmalloc(sizeof(slurmdb_qos_rec_t));
-	List name_list = list_create(slurm_destroy_char);
+	List name_list = list_create(list_xfree_item);
 	char *description = NULL;
 	char *name = NULL;
 	List qos_list = NULL;
@@ -940,7 +940,7 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(list_xfree_item);
 	List print_fields_list; /* types are of print_field_t */
 
 	for (i=0; i<argc; i++) {

@@ -354,7 +354,7 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	rc = 0;
-	ret_list = list_create(slurm_destroy_char);
+	ret_list = list_create(list_xfree_item);
 	while ((row = mysql_fetch_row(result))) {
 		object = xstrdup(row[0]);
 		list_append(ret_list, object);
@@ -490,7 +490,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	rc = 0;
-	ret_list = list_create(slurm_destroy_char);
+	ret_list = list_create(list_xfree_item);
 	while ((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
