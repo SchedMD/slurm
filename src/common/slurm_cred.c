@@ -299,7 +299,6 @@ static void _job_state_pack_one(job_state_t *j, Buf buffer);
 static void _cred_state_pack_one(cred_state_t *s, Buf buffer);
 
 static void _sbast_cache_add(sbcast_cred_t *sbcast_cred);
-static void _sbcast_cache_del(void *x);
 
 static int _slurm_cred_init(void)
 {
@@ -346,7 +345,7 @@ static int _slurm_cred_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	sbcast_cache_list = list_create(_sbcast_cache_del);
+	sbcast_cache_list = list_create(list_xfree_item);
 	init_run = true;
 
 done:
@@ -2338,11 +2337,6 @@ static void _sbast_cache_add(sbcast_cred_t *sbcast_cred)
 	new_cache_rec->expire = sbcast_cred->expiration;
 	new_cache_rec->value  = sig_num;
 	list_append(sbcast_cache_list, new_cache_rec);
-}
-
-static void _sbcast_cache_del(void *x)
-{
-	xfree(x);
 }
 
 /* Extract contents of an sbcast credential verifying the digital signature.
