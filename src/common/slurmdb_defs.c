@@ -456,11 +456,6 @@ static uint32_t _str_2_job_flags(char *flags)
 	return SLURMDB_JOB_FLAG_NOTSET;
 }
 
-static void _destroy_local_cluster_rec(void *object)
-{
-	xfree(object);
-}
-
 static int _sort_local_cluster(void *v1, void *v2)
 {
 	local_cluster_rec_t* rec_a = *(local_cluster_rec_t**)v1;
@@ -3199,7 +3194,7 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	if (working_cluster_rec)
 		*cluster_rec = working_cluster_rec;
 
-	ret_list = list_create(_destroy_local_cluster_rec);
+	ret_list = list_create(list_xfree_item);
 	itr = list_iterator_create(cluster_list);
 	while ((working_cluster_rec = list_next(itr))) {
 		/* only try one cluster from each federation */
@@ -3334,7 +3329,7 @@ extern int slurmdb_get_first_pack_cluster(List job_req_list,
 	if (working_cluster_rec)
 		*cluster_rec = working_cluster_rec;
 
-	ret_list = list_create(_destroy_local_cluster_rec);
+	ret_list = list_create(list_xfree_item);
 	itr = list_iterator_create(cluster_list);
 	while ((working_cluster_rec = list_next(itr))) {
 		/* only try one cluster from each federation */
