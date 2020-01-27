@@ -162,7 +162,7 @@ rwfail:
 	fatal("%s: could not write conf file, likely out of memory", __func__);
 	return SLURM_ERROR;
 #else
-	fatal("%s: memfd_create() not found at compile time");
+	fatal("%s: memfd_create() not found at compile time", __func__);
 	return SLURM_ERROR;
 #endif
 }
