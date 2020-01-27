@@ -186,7 +186,6 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 static char *_copy_nodelist_no_dup(char *node_list);
 static job_record_t *_create_job_record(uint32_t num_jobs);
 static void _delete_job_details(job_record_t *job_entry);
-static void _del_batch_list_rec(void *x);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
@@ -14868,7 +14867,7 @@ int sync_job_files(void)
 	if (!slurmctld_primary)	/* Don't purge files from backup slurmctld */
 		return SLURM_SUCCESS;
 
-	batch_dirs = list_create(_del_batch_list_rec);
+	batch_dirs = list_create(list_xfree_item);
 	_get_batch_job_dir_ids(batch_dirs);
 	_validate_job_files(batch_dirs);
 	_remove_defunct_batch_dirs(batch_dirs);
@@ -14989,12 +14988,6 @@ static void _validate_job_files(List batch_dirs)
 	list_iterator_destroy(batch_dir_iter);
 
 	list_for_each(job_list, _test_state_dir_flag, NULL);
-}
-
-/* List entry deletion function, see common/list.h */
-static void _del_batch_list_rec(void *x)
-{
-	xfree(x);
 }
 
 /* Remove all batch_dir entries in the list */
