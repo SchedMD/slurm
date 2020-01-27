@@ -43,17 +43,16 @@ HUP, INT, KILL, or QUIT: it will return 0.
 
 .SH "COMMAND PATH RESOLUTION"
 
-.nr step 1 1
 If provided, the command is resolved in the following order:
 .br
-.IP \n[step]. 3
+.IP 1. 3
 If command starts with ".", then path is constructed as:
 current working directory / command
-.IP \n+[step].
+.IP 2.
 If command starts with a "/", then path is considered absolute.
-.IP \n+[step].
+.IP 3.
 If command can be resolved through PATH. See \fBpath_resolution\fR(7).
-.IP \n+[step].
+.IP 4.
 If command is in current working directory.
 .P
 Current working directory is the calling process working directory unless the
