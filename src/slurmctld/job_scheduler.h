@@ -65,11 +65,6 @@ typedef struct job_queue_rec {
 extern int build_feature_list(job_record_t *job_ptr);
 
 /*
- * Free memory from a job_queue_rec_t
- */
-extern void job_queue_rec_del(void *x);
-
-/*
  * Set up job_queue_rec->job_ptr to use a promiscous reservation if the
  * job_queue_rec has resv_name filled in.
  */
