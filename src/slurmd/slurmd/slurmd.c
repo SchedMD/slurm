@@ -1309,7 +1309,7 @@ _init_conf(void)
 
 	slurm_mutex_init(&conf->config_mutex);
 
-	conf->starting_steps = list_create(destroy_starting_step);
+	conf->starting_steps = list_create(list_xfree_item);
 	slurm_cond_init(&conf->starting_steps_cond, NULL);
 	conf->prolog_running_jobs = list_create(list_xfree_item);
 	slurm_cond_init(&conf->prolog_running_cond, NULL);

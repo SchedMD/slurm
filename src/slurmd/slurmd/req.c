@@ -6118,13 +6118,6 @@ _run_epilog(job_env_t *job_env)
 	return error_code;
 }
 
-extern void
-destroy_starting_step(void *x)
-{
-	xfree(x);
-}
-
-
 static int
 _add_starting_step(uint16_t type, void *req)
 {
