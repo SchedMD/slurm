@@ -3534,7 +3534,7 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
 
 	if (!slurmctld_config.configless_enabled) {
 		error("%s: Rejected request as configless is disabled",
-		      __func__, uid);
+		      __func__);
 		slurm_send_rc_msg(msg, ESLURM_CONFIGLESS_DISABLED);
 		return;
 	}
@@ -3595,7 +3595,10 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		if (error_code == SLURM_SUCCESS) {
 			_update_cred_key();
 			set_slurmctld_state_loc();
-			msg_to_slurmd(REQUEST_RECONFIGURE);
+			if (slurmctld_config.configless_enabled)
+				push_reconfig_to_slurmd();
+			else
+				msg_to_slurmd(REQUEST_RECONFIGURE);
 			node_features_updated = true;
 		}
 		in_progress = false;
