@@ -16853,11 +16853,6 @@ static int _top_job_prio_sort(void *x, void *y)
 	return 0;
 }
 
-static void _top_job_prio_del(void *x)
-{
-	xfree(x);
-}
-
 static int _set_top(List top_job_list, uid_t uid)
 {
 	List prio_list, other_job_list;
@@ -16871,7 +16866,7 @@ static int _set_top(List top_job_list, uid_t uid)
 
 	xassert(job_list);
 	xassert(top_job_list);
-	prio_list = list_create(_top_job_prio_del);
+	prio_list = list_create(list_xfree_item);
 	(void) list_for_each(job_list, _top_job_flag_clear, NULL);
 
 	/* Validate the jobs in our "top" list */
