@@ -5622,15 +5622,10 @@ static int _find_waiter(void *x, void *y)
 	return (w->jobid == *jp);
 }
 
-static void _waiter_destroy(void *wp)
-{
-	xfree(wp);
-}
-
 static int _waiter_init (uint32_t jobid)
 {
 	if (!waiters)
-		waiters = list_create(_waiter_destroy);
+		waiters = list_create(list_xfree_item);
 
 	/*
 	 *  Exit this thread if another thread is waiting on job
