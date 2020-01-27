@@ -1827,7 +1827,6 @@ extern void slurmdb_destroy_archive_cond(void *object);
 
 extern void slurmdb_destroy_update_object(void *object);
 extern void slurmdb_destroy_used_limits(void *object);
-extern void slurmdb_destroy_update_shares_rec(void *object);
 extern void slurmdb_destroy_print_tree(void *object);
 extern void slurmdb_destroy_hierarchical_rec(void *object);
 extern void slurmdb_destroy_selected_step(void *object);

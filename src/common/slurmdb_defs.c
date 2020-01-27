@@ -1339,11 +1339,6 @@ extern void slurmdb_destroy_used_limits(void *object)
 	}
 }
 
-extern void slurmdb_destroy_update_shares_rec(void *object)
-{
-	xfree(object);
-}
-
 extern void slurmdb_destroy_print_tree(void *object)
 {
 	slurmdb_print_tree_t *slurmdb_print_tree =
