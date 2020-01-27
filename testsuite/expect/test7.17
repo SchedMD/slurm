@@ -47,7 +47,7 @@ if {[test_cray]} {
 #
 file delete $test_prog
 
-set cmd "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl"
+set cmd "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl -lresolv"
 send_user "$cmd\n"
 eval exec $cmd
 

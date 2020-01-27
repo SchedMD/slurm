@@ -46,8 +46,8 @@ print_header $test_id
 file delete $test_prog
 
 send_user "build_dir is $build_dir\n"
-send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o -ldl -export-dynamic \n"
-exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o -ldl -export-dynamic
+send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o -ldl -export-dynamic -lresolv \n"
+exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o -ldl -export-dynamic -lresolv
 exec $bin_chmod 700 $test_prog
 
 set value -12345

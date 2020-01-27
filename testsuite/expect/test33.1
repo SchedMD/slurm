@@ -88,11 +88,11 @@ proc run_config { test_config } {
 file delete $test_prog
 
 if [file exists ${slurm_dir}/lib64/libslurm.so] {
-	send_user "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o  -ldl\n"
-	exec       $bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o  -ldl
+	send_user "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl -lresolv\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl -lresolv
 } else {
-	send_user "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o  -ldl\n"
-	exec       $bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o  -ldl
+	send_user "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl -lresolv\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl -lresolv
 }
 exec $bin_chmod 700 $test_prog
 
