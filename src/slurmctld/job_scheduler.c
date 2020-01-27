@@ -116,7 +116,6 @@ typedef struct wait_boot_arg {
 static char **_build_env(job_record_t *job_ptr, bool is_epilog);
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
-static void	_depend_list_del(void *dep_ptr);
 static void	_job_queue_append(List job_queue, job_record_t *job_ptr,
 				  part_record_t *part_ptr, uint32_t priority);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
@@ -2615,11 +2614,6 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	return SLURM_ERROR;
 }
 
-static void _depend_list_del(void *dep_ptr)
-{
-	xfree(dep_ptr);
-}
-
 /*
  * Copy a job's dependency list
  * IN depend_list_src - a job's depend_lst
@@ -2634,7 +2628,7 @@ extern List depended_list_copy(List depend_list_src)
 	if (!depend_list_src)
 		return depend_list_dest;
 
-	depend_list_dest = list_create(_depend_list_del);
+	depend_list_dest = list_create(list_xfree_item);
 	iter = list_iterator_create(depend_list_src);
 	while ((dep_src = list_next(iter))) {
 		dep_dest = xmalloc(sizeof(struct depend_spec));
@@ -3130,7 +3124,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 
 	}
 
-	new_depend_list = list_create(_depend_list_del);
+	new_depend_list = list_create(list_xfree_item);
 	if ((new_array_dep = _xlate_array_dep(new_depend)))
 		tok = new_array_dep;
 	else
