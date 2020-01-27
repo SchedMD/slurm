@@ -263,7 +263,6 @@ static bool _exkey_is_valid(slurm_cred_ctx_t ctx);
 
 static cred_state_t * _cred_state_create(slurm_cred_ctx_t ctx, slurm_cred_t *c);
 static job_state_t  * _job_state_create(uint32_t jobid);
-static void           _cred_state_destroy(cred_state_t *cs);
 static void           _job_state_destroy(job_state_t   *js);
 
 static job_state_t  * _find_job_state(slurm_cred_ctx_t ctx, uint32_t jobid);
@@ -1571,7 +1570,7 @@ _verifier_ctx_init(slurm_cred_ctx_t ctx)
 	xassert(ctx->type == SLURM_CRED_VERIFIER);
 
 	ctx->job_list   = list_create((ListDelF) _job_state_destroy);
-	ctx->state_list = list_create((ListDelF) _cred_state_destroy);
+	ctx->state_list = list_create(list_xfree_item);
 
 	return;
 }
@@ -2063,13 +2062,6 @@ _cred_state_create(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 }
 
 static void
-_cred_state_destroy(cred_state_t *s)
-{
-	xfree(s);
-}
-
-
-static void
 _cred_state_pack_one(cred_state_t *s, Buf buffer)
 {
 	pack32(s->jobid, buffer);
@@ -2091,7 +2083,7 @@ _cred_state_unpack_one(Buf buffer)
 	return s;
 
 unpack_error:
-	_cred_state_destroy(s);
+	xfree(s);
 	return NULL;
 }
 
@@ -2165,7 +2157,7 @@ _cred_state_unpack(slurm_cred_ctx_t ctx, Buf buffer)
 		if (now < s->expiration)
 			list_append(ctx->state_list, s);
 		else
-			_cred_state_destroy(s);
+			xfree(s);
 	}
 
 	return;
