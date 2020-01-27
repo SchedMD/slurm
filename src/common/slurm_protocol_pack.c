@@ -10746,11 +10746,6 @@ _pack_will_run_response_msg(will_run_response_msg_t *msg, Buf buffer,
 	}
 }
 
-static void _pre_list_del(void *x)
-{
-	xfree(x);
-}
-
 static int
 _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, Buf buffer,
 			      uint16_t protocol_version)
@@ -10771,7 +10766,7 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, Buf buffer,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			msg->preemptee_job_id = list_create(_pre_list_del);
+			msg->preemptee_job_id = list_create(list_xfree_item);
 			for (i = 0; i < count; i++) {
 				safe_unpack32(&uint32_tmp, buffer);
 				job_id_ptr = xmalloc(sizeof(uint32_t));
