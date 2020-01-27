@@ -118,7 +118,6 @@ typedef struct constraint_slot {
 /*
  * the associated functions are the following
  */
-static void _free_slot(void *x);
 static void _init_constraint_planning(constraint_planning_t* sched);
 static void _print_constraint_planning(constraint_planning_t* sched);
 static void _free_constraint_planning(constraint_planning_t* sched);
@@ -4831,15 +4830,9 @@ extern int job_test_lic_resv(job_record_t *job_ptr, char *lic_name,
 	return resv_cnt;
 }
 
-
-static void _free_slot(void *x)
-{
-	xfree(x);
-}
-
 static void _init_constraint_planning(constraint_planning_t* sched)
 {
-	sched->slot_list = list_create(_free_slot);
+	sched->slot_list = list_create(list_xfree_item);
 }
 
 static void _free_constraint_planning(constraint_planning_t* sched)
