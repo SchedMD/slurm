@@ -293,6 +293,27 @@ int setup_env(env_t *env, bool preserve_env)
 	if (env == NULL)
 		return SLURM_ERROR;
 
+	/*
+	 * Always force SLURM_CONF into the environment. This ensures the
+	 * "configless" operation is working, and prevents the client commands
+	 * from falling back to separate RPC requests in case the cache dir
+	 * is unresponsive.
+	 */
+	if (setenvf(&env->env, "SLURM_CONF", "%s", getenv("SLURM_CONF"))) {
+		error("Unable to set SLURM_CONF environment variable");
+		rc = SLURM_ERROR;
+	}
+	/*
+	 * Similarly, prevent this option from leaking in. SLURM_CONF would
+	 * always take precedence, but tidy it up anyways.
+	 */
+	unsetenvp(env->env, "SLURM_CONF_SERVER");
+
+	if (setenvf(&env->env, "SLURM_CONF", "%s", getenv("SLURM_CONF"))) {
+		error("Unable to set SLURM_CONF environment variable");
+		rc = SLURM_ERROR;
+	}
+
 	if (!preserve_env && env->ntasks) {
 		if (setenvf(&env->env, "SLURM_NTASKS", "%d", env->ntasks)) {
 			error("Unable to set SLURM_NTASKS environment variable");
