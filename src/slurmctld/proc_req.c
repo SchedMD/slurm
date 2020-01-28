@@ -1364,11 +1364,14 @@ static void _create_het_job_id_set(hostset_t jobid_hostset,
 				    char **het_job_id_set)
 {
 	int buf_size = het_job_offset * 16;
-	char *tmp_str = xmalloc(buf_size);
-	char *tmp_offset = tmp_str;
+	char *tmp_str = NULL;
+	char *tmp_offset = NULL;
 
 	if (!jobid_hostset)
 		return;
+
+	tmp_str = xmalloc(buf_size);
+	tmp_offset = tmp_str;
 
 	hostset_ranged_string(jobid_hostset, buf_size, tmp_str);
 	if (tmp_str[0] == '[') {
