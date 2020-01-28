@@ -273,6 +273,7 @@ int main(int argc, char **argv)
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	slurm_trigger_callbacks_t callbacks;
 	bool create_clustername_file;
+	char *conf_file;
 
 	/*
 	 * Make sure we have no extra open files which
@@ -290,7 +291,15 @@ int main(int argc, char **argv)
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
 	sched_log_init(argv[0], sched_log_opts, LOG_DAEMON, NULL);
 	slurmctld_pid = getpid();
-	slurm_conf_init(slurm_conf_filename);
+	/*
+	 * Must pass in an explicit filename to slurm_conf_init() to avoid
+	 * the "configless" mode of operation kicking in if no file is
+	 * currently available.
+	 */
+	if (!(conf_file = slurm_conf_filename))
+		if (!(conf_file = getenv("SLURM_CONF")))
+			conf_file = default_slurm_config_file;
+	slurm_conf_init(conf_file);
 
 	update_logging();
 
