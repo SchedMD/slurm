@@ -2653,6 +2653,7 @@ typedef struct slurm_ctl_conf {
 					      * user/account/partition/cluster */
 	char *accounting_storage_backup_host;	/* accounting storage
 						 * backup host */
+	char *accounting_storage_ext_host; /* accounting storage ext host */
 	char *accounting_storage_host;	/* accounting storage host */
 	char *accounting_storage_loc;	/* accounting storage (db table)
 					 * location */

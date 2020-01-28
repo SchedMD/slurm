@@ -52,6 +52,7 @@ HIGHLIGHTS
     option called DependencyParameters.
  -- Enable job dependencies for any job on any cluster in the same federation.
  -- Allow clusters to be added automatically to db at startup of ctld.
+ -- Add AccountingStorageExternalHost slurm.conf parameter.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

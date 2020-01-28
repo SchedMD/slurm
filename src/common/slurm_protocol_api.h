@@ -592,6 +592,12 @@ int slurm_set_accounting_storage_user(char *user);
  */
 char *slurm_get_accounting_storage_backup_host(void);
 
+/* slurm_get_accounting_storage_ext_host
+ * returns the external storage host from slurmctld_conf object
+ * RET char * - storage host str (host[:port][,...], MUST be xfreed by caller
+ */
+char *slurm_get_accounting_storage_ext_host(void);
+
 /* slurm_get_accounting_storage_host
  * returns the storage host from slurmctld_conf object
  * RET char *    - storage host,  MUST be xfreed by caller
