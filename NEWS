@@ -74,8 +74,8 @@ documents those changes that are of interest to users and administrators.
  -- Add auth/jwt plugin.
  -- Add new 'scontrol token' subcommand.
  -- PMIx - improve performance of proc map generation.
- -- If any component of a HetJob is preemptable all other components of the
-    job inherit the same.
+ -- For a heterogeneous job to be considered for preemption all components must
+    be eligible for preemption.
  -- Added JobCompParams to slurm.conf.
  -- Add configuration parameter DependencyParameters to slurm.conf.
  -- Deprecate kill_invalid_depend in SchedulerParameters and move it to new
