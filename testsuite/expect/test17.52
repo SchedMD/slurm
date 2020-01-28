@@ -119,11 +119,11 @@ expect {
 		exp_continue
 	}
 	timeout {
-	send_user "\nFAILURE: sbatch not responding\n"
-	exit 1
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
 	}
 	eof {
-	wait
+		wait
 	}
 }
 
@@ -151,7 +151,6 @@ expect {
 if {$job_id == 0} {
 	send_user "\nFAILURE: job was not submitted\n"
 	set exit_code 1
-	exit 1
 }
 
  spawn $bin_bash -c "exec groups \| sed \"s/ /\|/g\""
