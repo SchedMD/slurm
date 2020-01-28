@@ -409,24 +409,6 @@ static void *_background_rpc_mgr(void *no_data)
 }
 
 /*
- * Respond to request for backup slurmctld status
- */
-inline static void _slurm_rpc_control_status(slurm_msg_t * msg)
-{
-	slurm_msg_t response_msg;
-	control_status_msg_t data;
-
-	response_init(&response_msg, msg);
-	response_msg.msg_type = RESPONSE_CONTROL_STATUS;
-	response_msg.data = &data;
-	response_msg.data_size = sizeof(control_status_msg_t);
-	memset(&data, 0, sizeof(data));
-	data.backup_inx = backup_inx;
-	data.control_time = (time_t) 0;
-	slurm_send_node_msg(msg->conn_fd, &response_msg);
-}
-
-/*
  * _background_process_msg - process an RPC to the backup_controller
  */
 static int _background_process_msg(slurm_msg_t *msg)
@@ -461,7 +443,7 @@ static int _background_process_msg(slurm_msg_t *msg)
 			error_code = ESLURM_DISABLED;
 			last_controller_response = time(NULL);
 		} else if (msg->msg_type == REQUEST_CONTROL_STATUS) {
-			_slurm_rpc_control_status(msg);
+			slurm_rpc_control_status(msg, 0);
 			send_rc = false;
 		} else {
 			error("Invalid RPC received %d while in standby mode",

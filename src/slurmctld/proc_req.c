@@ -144,7 +144,6 @@ inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_auth_token(slurm_msg_t *msg);
 inline static void  _slurm_rpc_burst_buffer_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_burst_buffer_status(slurm_msg_t *msg);
-inline static void  _slurm_rpc_control_status(slurm_msg_t * msg);
 inline static void  _slurm_rpc_delete_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_complete_job_allocation(slurm_msg_t * msg);
 inline static void  _slurm_rpc_complete_batch_script(slurm_msg_t * msg,
@@ -585,7 +584,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_set_fs_dampening_factor(msg);
 		break;
 	case REQUEST_CONTROL_STATUS:
-		_slurm_rpc_control_status(msg);
+		slurm_rpc_control_status(msg, control_time);
 		break;
 	case REQUEST_BURST_BUFFER_STATUS:
 		_slurm_rpc_burst_buffer_status(msg);
@@ -6113,20 +6112,6 @@ inline static void _slurm_rpc_burst_buffer_status(slurm_msg_t *msg)
 			strlen(status_resp_msg.status_resp) + 1;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	xfree(status_resp_msg.status_resp);
-}
-
-inline static void _slurm_rpc_control_status(slurm_msg_t * msg)
-{
-	slurm_msg_t response_msg;
-	control_status_msg_t data;
-
-	response_init(&response_msg, msg);
-	response_msg.msg_type = RESPONSE_CONTROL_STATUS;
-	response_msg.data = &data;
-	response_msg.data_size = sizeof(control_status_msg_t);
-	data.backup_inx = backup_inx;
-	data.control_time = control_time;
-	slurm_send_node_msg(msg->conn_fd, &response_msg);
 }
 
 /* _slurm_rpc_dump_stats - process RPC for statistics information */

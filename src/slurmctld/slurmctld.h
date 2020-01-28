@@ -2762,4 +2762,9 @@ extern bool waiting_for_node_boot(struct node_record *node_ptr);
  */
 extern bool job_overlap_and_running(bitstr_t *node_map, job_record_t *job_ptr);
 
+/*
+ * Respond to request for backup slurmctld status
+ */
+extern void slurm_rpc_control_status(slurm_msg_t *msg, time_t control_time);
+
 #endif /* !_HAVE_SLURMCTLD_H */

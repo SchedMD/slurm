@@ -3505,3 +3505,22 @@ static void _run_primary_prog(bool primary_on)
 	wait_arg->prog_type = xstrdup(prog_type);
 	slurm_thread_create_detached(NULL, _wait_primary_prog, wait_arg);
 }
+
+/*
+ * Respond to request for backup slurmctld status
+ */
+extern void slurm_rpc_control_status(slurm_msg_t *msg, time_t control_time)
+{
+	slurm_msg_t response_msg;
+	control_status_msg_t data;
+
+	response_init(&response_msg, msg);
+	response_msg.msg_type = RESPONSE_CONTROL_STATUS;
+	response_msg.data = &data;
+	response_msg.data_size = sizeof(control_status_msg_t);
+	memset(&data, 0, sizeof(data));
+	data.backup_inx = backup_inx;
+	data.control_time = control_time;
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+}
+
