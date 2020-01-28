@@ -3385,7 +3385,7 @@ static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
 
 		if (rc == SLURM_SUCCESS) {
 			rc = proc_req(slurmdbd_conn, &sub_msg, &ret_buf, uid);
-			slurmdbd_free_msg((slurmdbd_msg_t *)&sub_msg);
+			slurmdbd_free_msg(&sub_msg);
 		}
 
 		if (ret_buf)

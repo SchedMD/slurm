@@ -1375,7 +1375,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
+extern Buf pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 {
 	Buf buffer;
 
@@ -1564,7 +1564,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	return buffer;
 }
 
-extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
+extern int unpack_slurmdbd_msg(persist_msg_t *resp,
 			       uint16_t rpc_version, Buf buffer)
 {
 	int rc = SLURM_SUCCESS;

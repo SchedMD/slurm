@@ -99,10 +99,10 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 	uint16_t msg_type = -1;
 	persist_rc_msg_t *msg;
 	dbd_id_rc_msg_t *id_msg;
-	slurmdbd_msg_t resp;
+	persist_msg_t resp;
 	int rc = SLURM_ERROR;
 
-	memset(&resp, 0, sizeof(slurmdbd_msg_t));
+	memset(&resp, 0, sizeof(persist_msg_t));
 	if ((rc = unpack_slurmdbd_msg(&resp, slurmdbd_conn->version, buffer))
 	    != SLURM_SUCCESS) {
 		error("%s: unpack message error", __func__);
@@ -727,7 +727,7 @@ static void *_agent(void *x)
 	struct timespec abs_time;
 	static time_t fail_time = 0;
 	int sigarray[] = {SIGUSR1, 0};
-	slurmdbd_msg_t list_req;
+	persist_msg_t list_req;
 	dbd_list_msg_t list_msg;
 	DEF_TIMERS;
 
@@ -1031,8 +1031,8 @@ extern int close_slurmdbd_conn(void)
  * The "resp" message must be freed by the caller.
  * Returns SLURM_SUCCESS or an error code */
 extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
-				  slurmdbd_msg_t *req,
-				  slurmdbd_msg_t *resp)
+				  persist_msg_t *req,
+				  persist_msg_t *resp)
 {
 	int rc = SLURM_SUCCESS;
 	Buf buffer;
@@ -1109,16 +1109,16 @@ end_it:
  * The RPC will not be queued if an error occurs.
  * Returns SLURM_SUCCESS or an error code */
 extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
-				     slurmdbd_msg_t *req,
+				     persist_msg_t *req,
 				     int *resp_code)
 {
 	int rc;
-	slurmdbd_msg_t resp;
+	persist_msg_t resp;
 
 	xassert(req);
 	xassert(resp_code);
 
-	memset(&resp, 0, sizeof(slurmdbd_msg_t));
+	memset(&resp, 0, sizeof(persist_msg_t));
 	rc = send_recv_slurmdbd_msg(rpc_version, req, &resp);
 	if (rc != SLURM_SUCCESS) {
 		;	/* error message already sent */
@@ -1174,7 +1174,7 @@ extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
  * NOTE: slurm_open_slurmdbd_conn() must have been called with callbacks set
  *
  * Returns SLURM_SUCCESS or an error code */
-extern int send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
+extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req)
 {
 	Buf buffer;
 	uint32_t cnt, rc = SLURM_SUCCESS;

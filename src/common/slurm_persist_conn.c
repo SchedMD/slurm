@@ -187,7 +187,7 @@ static void _persist_free_msg_members(slurm_persist_conn_t *persist_conn,
 				      persist_msg_t *persist_msg)
 {
 	if (persist_conn->flags & PERSIST_FLAG_DBD)
-		slurmdbd_free_msg((slurmdbd_msg_t *)persist_msg);
+		slurmdbd_free_msg(persist_msg);
 	else
 		slurm_free_msg_data(persist_msg->msg_type, persist_msg->data);
 }
@@ -946,8 +946,7 @@ extern Buf slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
 	xassert(persist_conn);
 
 	if (persist_conn->flags & PERSIST_FLAG_DBD)
-		buffer = pack_slurmdbd_msg((slurmdbd_msg_t *)req_msg,
-					   persist_conn->version);
+		buffer = pack_slurmdbd_msg(req_msg, persist_conn->version);
 	else {
 		slurm_msg_t msg;
 
@@ -980,7 +979,7 @@ extern int slurm_persist_msg_unpack(slurm_persist_conn_t *persist_conn,
 	xassert(resp_msg);
 
 	if (persist_conn->flags & PERSIST_FLAG_DBD) {
-		rc = unpack_slurmdbd_msg((slurmdbd_msg_t *)resp_msg,
+		rc = unpack_slurmdbd_msg(resp_msg,
 					 persist_conn->version,
 					 buffer);
 	} else {

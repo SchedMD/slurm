@@ -822,7 +822,7 @@ extern void slurmdbd_free_cluster_tres_msg(dbd_cluster_tres_msg_t *msg)
 	}
 }
 
-extern void slurmdbd_free_msg(slurmdbd_msg_t *msg)
+extern void slurmdbd_free_msg(persist_msg_t *msg)
 {
 	switch (msg->msg_type) {
 	case DBD_ADD_ACCOUNTS:

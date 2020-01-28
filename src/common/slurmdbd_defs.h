@@ -162,19 +162,6 @@ typedef enum {
  * Slurm DBD protocol data structures
 \*****************************************************************************/
 
-typedef struct slurmdbd_msg {
-	/*
-	 * msg_type and data need to be in the same order as persist_msg_t
-	 * because slurm_persist_msg_unpack() casts persist_msg_t as a
-	 * slurmdbd_msg_t to be passed into unpack_slurmdbd_msg().
-	 */
-	uint16_t msg_type;	/* see slurmdbd_msg_type_t above */
-	void * data;		/* pointer to a message type below */
-
-	/* Add new arguments that aren't packed/unpacked below */
-	void *conn;		/* slurm_persist_conn_t */
-} slurmdbd_msg_t;
-
 typedef struct {
 	List acct_list; /* list of account names (char *'s) */
 	slurmdb_user_cond_t *cond;
@@ -413,7 +400,7 @@ extern void slurmdbd_free_buffer(void *x);
 
 extern void slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg);
 extern void slurmdbd_free_cluster_tres_msg(dbd_cluster_tres_msg_t *msg);
-extern void slurmdbd_free_msg(slurmdbd_msg_t *msg);
+extern void slurmdbd_free_msg(persist_msg_t *msg);
 extern void slurmdbd_free_rec_msg(dbd_rec_msg_t *msg, slurmdbd_msg_type_t type);
 extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 				   slurmdbd_msg_type_t type);
