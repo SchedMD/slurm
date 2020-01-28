@@ -1057,6 +1057,14 @@ extern void configless_setup(void)
 
 	/* just reuse what we already have */
 	config_for_clients->config = config_for_slurmd->config;
+
+	/*
+	 * route/topology will cause srun to load topology.conf, so we'll
+	 * need to send that along with the rest.
+	 */
+	if (!xstrcmp(slurmctld_conf.route_plugin, "route/topology"))
+		config_for_clients->topology_config =
+			config_for_slurmd->topology_config;
 }
 
 extern void configless_clear(void)

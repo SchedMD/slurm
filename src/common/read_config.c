@@ -120,6 +120,8 @@ static s_p_hashtbl_t *default_partition_tbl;
 static log_level_t lvl = LOG_LEVEL_FATAL;
 static int	local_test_config_rc = SLURM_SUCCESS;
 static bool     no_addr_cache = false;
+static int topology_fd = -1;
+static char *topology_conf = NULL;
 
 inline static void _normalize_debug_level(uint16_t *level);
 static int _init_slurm_conf(const char *file_name);
@@ -3092,6 +3094,11 @@ static int _init_slurm_conf(const char *file_name)
 static void
 _destroy_slurm_conf(void)
 {
+	if (topology_conf) {
+		xfree(topology_conf);
+		close(topology_fd);
+	}
+
 	s_p_hashtbl_destroy(conf_hashtbl);
 	if (default_frontend_tbl != NULL) {
 		s_p_hashtbl_destroy(default_frontend_tbl);
@@ -3163,6 +3170,14 @@ static int _establish_config_source(char **config_file, int *memfd)
 	 * process to die with a fatal() error.
 	 */
 	*memfd = dump_to_memfd("slurm.conf", config->config, config_file);
+	/*
+	 * If we've been handed a topology.conf file then slurmctld thinks
+	 * we'll need it. Stash it in case of an eventual slurm_topo_init().
+	 */
+	if (config->topology_config)
+		topology_fd = dump_to_memfd("topology.conf",
+					    config->topology_config,
+					    &topology_conf);
 	slurm_free_config_response_msg(config);
 
 	return SLURM_SUCCESS;
@@ -5766,6 +5781,15 @@ extern char *get_extra_conf_path(char *conf_name)
 
 	if (!val)
 		val = default_slurm_config_file;
+
+	if (topology_conf && !xstrcmp(conf_name, "topology.conf")) {
+		/*
+		 * the topology.conf needs special handling in "configless"
+		 * operation as srun, when used with route/topology, will
+		 * need to load it.
+		 */
+		return xstrdup(topology_conf);
+	}
 
 	/* Replace file name on end of path */
 	rc = xstrdup(val);
