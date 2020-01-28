@@ -2719,6 +2719,7 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 	slurmdb_cluster_cond_t cluster_q;
 	slurmdb_cluster_rec_t cluster;
 	dbd_list_msg_t list_msg = { NULL };
+	List cluster_list;
 
 	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_REGISTER_CTLD message from invalid uid";
@@ -2756,6 +2757,38 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 	cluster.flags = register_ctld_msg->flags;
 	cluster.plugin_id_select = register_ctld_msg->plugin_id_select;
 	cluster.rpc_version = slurmdbd_conn->conn->version;
+
+	cluster_list = acct_storage_g_get_clusters(slurmdbd_conn->db_conn, *uid,
+						   &cluster_q);
+	if (!cluster_list || errno) {
+		comment = slurm_strerror(errno);
+		rc = errno;
+	} else if (!list_count(cluster_list)) {
+		slurmdb_assoc_rec_t root_assoc;
+		List add_list = list_create(NULL);
+		list_append(add_list, &cluster);
+
+		slurmdb_init_assoc_rec(&root_assoc, 0);
+		cluster.root_assoc = &root_assoc;
+		cluster.name = slurmdbd_conn->conn->cluster_name;
+		rc = acct_storage_g_add_clusters(slurmdbd_conn->db_conn, *uid,
+						 add_list);
+		if (rc == ESLURM_ACCESS_DENIED)
+			comment = "Your user doesn't have privilege to perform this action";
+		else if (rc != SLURM_SUCCESS)
+			comment = "Failed to add/register cluster.";
+		slurmdb_free_assoc_rec_members(&root_assoc);
+		FREE_NULL_LIST(add_list);
+	} else if ((cluster.flags != NO_VAL) &&
+		   (cluster.flags & CLUSTER_FLAG_EXT) &&
+		   !(((slurmdb_cluster_rec_t *)list_peek(cluster_list))->flags &
+		     CLUSTER_FLAG_EXT)) {
+		comment = "Can't register to non-external cluster";
+		rc = ESLURM_ACCESS_DENIED;
+	}
+	FREE_NULL_LIST(cluster_list);
+	if (rc)
+		goto end_it;
 
 	list_msg.my_list = acct_storage_g_modify_clusters(
 		slurmdbd_conn->db_conn, *uid, &cluster_q, &cluster);
