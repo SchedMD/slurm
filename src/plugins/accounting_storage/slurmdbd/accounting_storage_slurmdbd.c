@@ -58,6 +58,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/locks.h"
 
+#include "as_ext_dbd.h"
 #include "slurmdbd_agent.h"
 
 #define BUFFER_SIZE 4096
@@ -481,6 +482,9 @@ extern int init ( void )
 			slurm_thread_create(&db_inx_handler_thread,
 					    _set_db_inx_thread, NULL);
 		}
+
+		ext_dbd_init();
+
 		first = 0;
 	} else {
 		debug4("%s loaded", plugin_name);
@@ -507,6 +511,8 @@ extern int fini ( void )
 	/* Now join outside the lock */
 	if (db_inx_handler_thread)
 		pthread_join(db_inx_handler_thread, NULL);
+
+	ext_dbd_fini();
 
 	first = 1;
 
@@ -2518,7 +2524,6 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 	dbd_register_ctld_msg_t req;
 	int rc = SLURM_SUCCESS;
 
-	info("Registering slurmctld at port %u with slurmdbd.", port);
 	memset(&req, 0, sizeof(dbd_register_ctld_msg_t));
 
 	req.port         = port;
@@ -2528,6 +2533,16 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 
 	msg.msg_type     = DBD_REGISTER_CTLD;
 	msg.data         = &req;
+
+	if (db_conn && (db_conn != (void *)1)) {
+		msg.conn = db_conn;
+		req.flags |= CLUSTER_FLAG_EXT;
+		info("Registering slurmctld at port %u with slurmdbd %s:%d",
+		     port,
+		     ((slurm_persist_conn_t *)db_conn)->rem_host,
+		     ((slurm_persist_conn_t *)db_conn)->rem_port);
+	} else
+		info("Registering slurmctld at port %u with slurmdbd", port);
 
 	send_slurmdbd_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
 
@@ -3017,6 +3032,7 @@ extern int acct_storage_p_reconfig(void *db_conn, bool dbd)
 
 	if (!dbd) {
 		slurmdbd_agent_config_setup();
+		ext_dbd_reconfig();
 		return SLURM_SUCCESS;
 	}
 

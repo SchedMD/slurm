@@ -1036,6 +1036,7 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 {
 	int rc = SLURM_SUCCESS;
 	Buf buffer;
+	slurm_persist_conn_t *use_conn;
 
 	xassert(req);
 	xassert(resp);
@@ -1047,7 +1048,8 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 	halt_agent = 1;
 	slurm_mutex_lock(&slurmdbd_lock);
 	halt_agent = 0;
-	if (!slurmdbd_conn || (slurmdbd_conn->fd < 0)) {
+	if (!req->conn &&
+	    (!slurmdbd_conn || (slurmdbd_conn->fd < 0))) {
 		/* Either slurm_open_slurmdbd_conn() was not executed or
 		 * the connection to Slurm DBD has been closed */
 		if (req->msg_type == DBD_GET_CONFIG)
@@ -1060,12 +1062,14 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 		}
 	}
 
+	use_conn = (req->conn) ? req->conn : slurmdbd_conn;
+
 	if (!(buffer = pack_slurmdbd_msg(req, rpc_version))) {
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
 
-	rc = slurm_persist_send_msg(slurmdbd_conn, buffer);
+	rc = slurm_persist_send_msg(use_conn, buffer);
 	free_buf(buffer);
 	if (rc != SLURM_SUCCESS) {
 		error("slurmdbd: Sending message type %s: %d: %s",
@@ -1074,7 +1078,7 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 		goto end_it;
 	}
 
-	buffer = slurm_persist_recv_msg(slurmdbd_conn);
+	buffer = slurm_persist_recv_msg(use_conn);
 	if (buffer == NULL) {
 		error("slurmdbd: Getting response to message type: %s",
 		      slurmdbd_msg_type_2_str(req->msg_type, 1));
@@ -1133,7 +1137,8 @@ extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 			char *comment = msg->comment;
 			if (!comment)
 				comment = slurm_strerror(msg->rc);
-			if (msg->ret_info == DBD_REGISTER_CTLD &&
+			if (!req->conn &&
+			    (msg->ret_info == DBD_REGISTER_CTLD) &&
 			    slurm_get_accounting_storage_enforce()) {
 				error("slurmdbd: Issue with call "
 				      "%s(%u): %u(%s)",
