@@ -163,8 +163,15 @@ typedef enum {
 \*****************************************************************************/
 
 typedef struct slurmdbd_msg {
+	/*
+	 * msg_type and data need to be in the same order as persist_msg_t
+	 * because slurm_persist_msg_unpack() casts persist_msg_t as a
+	 * slurmdbd_msg_t to be passed into unpack_slurmdbd_msg().
+	 */
 	uint16_t msg_type;	/* see slurmdbd_msg_type_t above */
 	void * data;		/* pointer to a message type below */
+
+	/* Add new arguments that aren't packed/unpacked below */
 	void *conn;		/* slurm_persist_conn_t */
 } slurmdbd_msg_t;
 
