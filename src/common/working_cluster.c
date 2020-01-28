@@ -168,6 +168,12 @@ extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
 		xstrcat(cluster_flags, "Cray");
 	}
 
+	if (flags_in & CLUSTER_FLAG_EXT) {
+		if (cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "External");
+	}
+
 	if (!cluster_flags)
 		cluster_flags = xstrdup("None");
 
