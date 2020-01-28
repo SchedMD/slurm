@@ -677,7 +677,8 @@ static void _request_registrations(void *db_conn)
 		if (!cluster_rec->control_port
 		    || (cluster_rec->rpc_version < 9))
 			continue;
-		if (_send_slurmctld_register_req(cluster_rec) != SLURM_SUCCESS)
+		if ((cluster_rec->flags & CLUSTER_FLAG_EXT) ||
+		    (_send_slurmctld_register_req(cluster_rec) != SLURM_SUCCESS))
 			/* mark this cluster as unresponsive */
 			clusteracct_storage_g_fini_ctld(db_conn, cluster_rec);
 	}
