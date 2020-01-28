@@ -674,8 +674,7 @@ static void _request_registrations(void *db_conn)
 		return;
 	itr = list_iterator_create(cluster_list);
 	while ((cluster_rec = list_next(itr))) {
-		if (!cluster_rec->control_port
-		    || (cluster_rec->rpc_version < 9))
+		if (!cluster_rec->control_port)
 			continue;
 		if ((cluster_rec->flags & CLUSTER_FLAG_EXT) ||
 		    (_send_slurmctld_register_req(cluster_rec) != SLURM_SUCCESS))
