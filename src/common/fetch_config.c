@@ -332,7 +332,7 @@ extern int write_configs_to_conf_cache(config_response_msg_t *msg,
 	if (_write_conf(dir, "cgroup.conf", msg->cgroup_config))
 		return SLURM_ERROR;
 	if (_write_conf(dir, "cgroup_allowed_devices_file.conf",
-			msg->cgroup_config))
+			msg->cgroup_allowed_devices_file_config))
 		return SLURM_ERROR;
 	if (_write_conf(dir, "ext_sensors.conf", msg->ext_sensors_config))
 		return SLURM_ERROR;
