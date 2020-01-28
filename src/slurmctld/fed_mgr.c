@@ -1606,7 +1606,8 @@ static void _cleanup_removed_cluster_jobs(slurmdb_cluster_rec_t *cluster)
 	list_iterator_destroy(job_itr);
 }
 
-static void _handle_removed_clusters(slurmdb_federation_rec_t *db_fed)
+static void _handle_removed_clusters(slurmdb_federation_rec_t *db_fed,
+				     uint64_t *removed_clusters)
 {
 	ListIterator itr;
 	slurmdb_cluster_rec_t *tmp_cluster = NULL;
@@ -1619,6 +1620,8 @@ static void _handle_removed_clusters(slurmdb_federation_rec_t *db_fed)
 				      tmp_cluster->name))) {
 			info("cluster %s was removed from the federation",
 			     tmp_cluster->name);
+			*removed_clusters |=
+				FED_SIBLING_BIT(tmp_cluster->fed.id);
 			_cleanup_removed_cluster_jobs(tmp_cluster);
 		}
 	}
@@ -2909,7 +2912,7 @@ extern int fed_mgr_init(void *db_conn)
 			 * since the last time we got an update */
 			lock_slurmctld(fedr_jobw_lock);
 			if (state_fed && state_cluster && fed_mgr_fed_rec)
-				_handle_removed_clusters(state_fed);
+				_handle_removed_clusters(state_fed, &tmp);
 			unlock_slurmctld(fedr_jobw_lock);
 		} else {
 			slurmdb_destroy_federation_rec(fed);
@@ -2990,7 +2993,8 @@ extern int fed_mgr_fini(void)
 	return SLURM_SUCCESS;
 }
 
-static void _send_singleton_dependencies()
+static void _handle_dependencies_for_modified_fed(uint64_t added_clusters,
+						  uint64_t removed_clusters)
 {
 	uint32_t origin_id;
 	job_record_t *job_ptr;
@@ -3006,17 +3010,23 @@ static void _send_singleton_dependencies()
 	find_dep.depend_type = SLURM_DEPEND_SINGLETON;
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
-		if (_is_fed_job(job_ptr, &origin_id) &&
+		if (added_clusters && _is_fed_job(job_ptr, &origin_id) &&
 		    find_dependency(job_ptr, &find_dep))
 			fed_mgr_submit_remote_dependencies(job_ptr, true,
 							   false);
+		/*
+		 * Make sure any remote dependencies are immediately
+		 * marked as invalid.
+		 */
+		if (removed_clusters)
+			test_job_dependency(job_ptr, NULL);
 	}
 	list_iterator_destroy(itr);
 }
 
 extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 {
-	uint64_t added_clusters = 0;
+	uint64_t added_clusters = 0, removed_clusters = 0;
 	List feds;
 	slurmdb_federation_rec_t *fed   = NULL;
 	slurmdb_cluster_rec_t *cluster  = NULL;
@@ -3059,17 +3069,21 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 			 * since the last time we got an update */
 			lock_slurmctld(fedr_jobw_lock);
 			if (fed_mgr_fed_rec)
-				_handle_removed_clusters(fed);
+				_handle_removed_clusters(fed,
+							 &removed_clusters);
 			unlock_slurmctld(fedr_jobw_lock);
 			_join_federation(fed, cluster, &added_clusters);
 
-			if (added_clusters) {
+			if (added_clusters || removed_clusters) {
 				lock_slurmctld(fedr_jobw_lock);
 				if (slurmctld_conf.debug_flags &
 				    DEBUG_FLAG_DEPENDENCY)
-					info("%s: New cluster(s) added: 0x%lx",
-					     __func__, added_clusters);
-				_send_singleton_dependencies();
+					info("%s: Cluster(s) added: 0x%lx; removed: 0x%lx",
+					     __func__, added_clusters,
+					     removed_clusters);
+				_handle_dependencies_for_modified_fed(
+							added_clusters,
+							removed_clusters);
 				unlock_slurmctld(fedr_jobw_lock);
 			}
 			break;
