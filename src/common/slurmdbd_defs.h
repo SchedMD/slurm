@@ -165,6 +165,7 @@ typedef enum {
 typedef struct slurmdbd_msg {
 	uint16_t msg_type;	/* see slurmdbd_msg_type_t above */
 	void * data;		/* pointer to a message type below */
+	void *conn;		/* slurm_persist_conn_t */
 } slurmdbd_msg_t;
 
 typedef struct {
