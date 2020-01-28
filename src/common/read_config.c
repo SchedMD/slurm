@@ -3213,6 +3213,14 @@ slurm_conf_init(const char *file_name)
 	} else
 		config_file = xstrdup(file_name);
 
+	/*
+	 * Ensure this determination is propagated throughout. A number of
+	 * other internal functions will call getenv("SLURM_CONF") rather
+	 * than use slurmctld_conf.slurm_conf, and we want to ensure they
+	 * don't need to make similar decisions on where the configs live.
+	 */
+	setenv("SLURM_CONF", config_file, 1);
+
 #ifndef NDEBUG
 	/*
 	 * This is done here to ensure all user commands parse this once at
