@@ -224,6 +224,7 @@ extern int   backup_inx;		/* BackupController# index */
 extern int   batch_sched_delay;
 extern time_t control_time;		/* Time when became primary controller */
 extern uint32_t   cluster_cpus;
+extern bool disable_remote_singleton;
 extern bool node_features_updated;
 extern pthread_cond_t purge_thread_cond;
 extern pthread_mutex_t purge_thread_lock;
@@ -900,15 +901,26 @@ typedef enum {
 } slurm_depend_types_t;
 
 #define SLURM_FLAGS_OR		0x0001	/* OR job dependencies */
+#define SLURM_FLAGS_REMOTE      0x0002  /* Is a remote dependency */
 
-struct	depend_spec {
+/* Used as values for depend_state in depend_spec_t */
+enum {
+	DEPEND_NOT_FULFILLED = 0,
+	DEPEND_FULFILLED,
+	DEPEND_FAILED
+};
+
+typedef struct depend_spec {
 	uint32_t	array_task_id;	/* INFINITE for all array tasks */
 	uint16_t	depend_type;	/* SLURM_DEPEND_* type */
 	uint16_t	depend_flags;	/* SLURM_FLAGS_* type */
+	uint32_t        depend_state;   /* Status of the dependency */
 	uint32_t        depend_time;    /* time to wait (mins) */
 	uint32_t	job_id;		/* Slurm job_id */
 	job_record_t   *job_ptr;	/* pointer to this job */
-};
+	uint64_t 	singleton_bits; /* which clusters have satisfied the
+					   singleton dependency */
+} depend_spec_t;
 
 #define STEP_FLAG 0xbbbb
 #define STEP_MAGIC 0xcafecafe
@@ -1255,6 +1267,12 @@ extern part_record_t *find_part_record(char *name);
 extern step_record_t *find_step_record(job_record_t *job_ptr, uint32_t step_id);
 
 /*
+ * free_null_array_recs - free an xmalloc'd job_array_struct_t structure inside
+ *                        of a job_record_t and set job_ptr->array_recs to NULL.
+ */
+extern void free_null_array_recs(job_record_t *array_recs);
+
+/*
  * get_job_env - return the environment variables and their count for a
  *	given job
  * IN job_ptr - pointer to job for which data is required
@@ -1287,6 +1305,12 @@ extern uint32_t get_next_job_id(bool test_only);
  * NOTE: Caller must free err_part
  */
 extern List get_part_list(char *name, char **err_part);
+
+/*
+ * init_depend_policy()
+ * Initialize variables from DependencyParameters
+ */
+extern void init_depend_policy(void);
 
 /*
  * init_job_conf - initialize the job configuration tables and values.
@@ -2117,6 +2141,13 @@ extern int pick_batch_host(job_record_t *job_ptr);
  *	last_job_update - time of last job table update
  */
 extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code);
+
+/*
+ * If the job or slurm.conf requests to not kill on invalid dependency,
+ * then set the job state reason to WAIT_DEP_INVALID. Otherwise, kill the
+ * job.
+ */
+extern void handle_invalid_dependency(job_record_t *job_ptr);
 
 /*
  * purge_old_job - purge old job records.

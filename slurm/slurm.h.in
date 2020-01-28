@@ -1018,7 +1018,7 @@ enum ctx_keys {
 #define GRES_DISABLE_BIND  0x00080000	/* Disable CPU/GRES binding */
 #define JOB_WAS_RUNNING    0x00100000  /* Job was running */
 #define RESET_ACCRUE_TIME  0x00200000   /* Reset the job's accrue time */
-#define INVALID_DEPEND     0x00400000	/* Job has invalid dependency(ies). */
+/*                         0x00400000      Unused */
 #define JOB_MEM_SET        0x00800000	/* Memory limit explicity set by job */
 #define JOB_RESIZED        0x01000000	/* Running job added/removed nodes */
 #define USE_DEFAULT_ACCT   0x02000000	/* Job submitted to default account */
@@ -2604,6 +2604,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_ACCRUE       0x0004000000000000 /* Accrue counters debug */
 #define DEBUG_FLAG_POWER_SAVE   0x0008000000000000 /* Power Save debug */
 #define DEBUG_FLAG_AGENT	0x0010000000000000 /* RPC Agent debug */
+#define DEBUG_FLAG_DEPENDENCY	0x0020000000000000 /* Dependency debug */
 
 #define PREEMPT_MODE_OFF	0x0000	/* disable job preemption */
 #define PREEMPT_MODE_SUSPEND	0x0001	/* suspend jobs to preempt */
@@ -2691,6 +2692,7 @@ typedef struct slurm_ctl_conf {
 	char *cred_type;	/* credential signature plugin */
 	uint64_t debug_flags;	/* see DEBUG_FLAG_* above for values */
 	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
+	char *dependency_params; /* DependencyParameters */
 	uint16_t eio_timeout;     /* timeout for the eio thread */
 	uint16_t enforce_part_limits;	/* if set, reject job exceeding
 					 * partition size and/or time limits */

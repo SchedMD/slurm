@@ -569,6 +569,9 @@ Cpu frequency details for jobs and steps using the \-\-cpu\-freq option.
 \fBData\fR
 Generic data structure details.
 .TP
+\fBDependency\fR
+Job dependency debug info
+.TP
 \fBElasticsearch\fR
 Elasticsearch debug info
 .TP
@@ -731,6 +734,24 @@ The user account for accessing the accounting storage and/or job
 completion database.
 Only used for database type storage plugins, ignored otherwise.
 Also see \fBAccountingStorageUser\fR and \fBJobCompUser\fR.
+
+.TP
+\fBDependencyParameters\fR
+Multiple options may be comma-separated.
+
+.RS
+.TP
+\fBdisable_remote_singleton\fR
+By default, when a federated job has a singleton dependeny, each cluster in the
+federation must clear the singleton dependency before the job's singleton
+dependency is considered satisfied. Enabling this option means that only the
+origin cluster must clear the singleton dependency. This option must be set
+in every cluster in the federation.
+.TP
+\fBkill_invalid_depend\fR
+If a job has an invalid dependency and it can never run terminate it
+and set its state to be JOB_CANCELLED. By default the job stays pending
+with reason DependencyNeverSatisfied.
 
 .TP
 \fBDisableRootJobs\fR
@@ -2933,9 +2954,7 @@ window is as large as this setting.  In an HTC environment this setting is a
 must and we advise around 10 seconds.
 .TP
 \fBkill_invalid_depend\fR
-If a job has an invalid dependency and it can never run terminate it
-and set its state to be JOB_CANCELLED. By default the job stays pending
-with reason DependencyNeverSatisfied.
+Deprecated in SchedulerParameters and moved to DependencyParameters.
 .TP
 \fBmax_array_tasks\fR
 Specify the maximum number of tasks that be included in a job array.

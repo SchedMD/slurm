@@ -240,6 +240,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefMemPerCPU", S_P_UINT64},
 	{"DefMemPerGPU" , S_P_UINT64},
 	{"DefMemPerNode", S_P_UINT64},
+	{"DependencyParameters", S_P_STRING},
 	{"DisableRootJobs", S_P_BOOLEAN},
 	{"EioTimeout", S_P_UINT16},
 	{"EnforcePartLimits", S_P_STRING},
@@ -2746,6 +2747,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->core_spec_plugin);
 	xfree (ctl_conf_ptr->cred_type);
+	xfree (ctl_conf_ptr->dependency_params);
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->epilog_slurmctld);
 	FREE_NULL_LIST(ctl_conf_ptr->ext_sensors_conf);
@@ -2893,6 +2895,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->cred_type);
 	ctl_conf_ptr->def_mem_per_cpu           = 0;
 	ctl_conf_ptr->debug_flags		= 0;
+	xfree (ctl_conf_ptr->dependency_params);
 	ctl_conf_ptr->acct_gather_node_freq	= 0;
 	xfree (ctl_conf_ptr->acct_gather_energy_type);
 	xfree (ctl_conf_ptr->acct_gather_profile_type);
@@ -3626,6 +3629,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(temp_str);
 	} else	/* Default: no DebugFlags */
 		conf->debug_flags = 0;
+
+	(void) s_p_get_string(&conf->dependency_params,
+			      "DependencyParameters", hashtbl);
 
 	if (s_p_get_boolean(&truth, "DisableRootJobs", hashtbl) && truth)
 		conf->conf_flags |= CTL_CONF_DRJ;
@@ -5226,6 +5232,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "DB_WCKey");
 	}
+	if (debug_flags & DEBUG_FLAG_DEPENDENCY) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Dependency");
+	}
 	if (debug_flags & DEBUG_FLAG_ESEARCH) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5438,6 +5449,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_DB_USAGE;
 		else if (xstrcasecmp(tok, "DB_WCKey") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_WCKEY;
+		else if (xstrcasecmp(tok, "Dependency") == 0)
+			(*flags_out) |= DEBUG_FLAG_DEPENDENCY;
 		else if (xstrcasecmp(tok, "Elasticsearch") == 0)
 			(*flags_out) |= DEBUG_FLAG_ESEARCH;
 		else if (xstrcasecmp(tok, "Energy") == 0)

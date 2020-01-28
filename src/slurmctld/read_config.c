@@ -123,7 +123,7 @@ static void _purge_old_node_state(node_record_t *old_node_table_ptr,
 				  int old_node_record_count);
 static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
 static int  _reset_node_bitmaps(void *x, void *arg);
-static int  _restore_job_dependencies(void);
+static void _restore_job_accounting();
 
 static int  _restore_node_state(int recover, node_record_t *old_node_table_ptr,
 				int old_node_record_count);
@@ -1391,8 +1391,9 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 
 	init_requeue_policy();
+	init_depend_policy();
 
-	/* NOTE: Run restore_node_features before _restore_job_dependencies */
+	/* NOTE: Run restore_node_features before _restore_job_accounting */
 	restore_node_features(recover);
 
 	if ((node_features_g_count() > 0) &&
@@ -1425,6 +1426,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	load_part_uid_allow_list(1);
 
+	/* NOTE: Run load_all_resv_state() before _restore_job_accounting */
 	if (reconfig) {
 		load_all_resv_state(0);
 	} else {
@@ -1437,8 +1439,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	 if (test_config)
 		return error_code;
 
-	/* NOTE: Run load_all_resv_state() before _restore_job_dependencies */
-	_restore_job_dependencies();
+	_restore_job_accounting();
 
 	/* sort config_list by weight for scheduling */
 	list_sort(config_list, &list_compare_config);
@@ -2670,8 +2671,10 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 			int save_accounting_enforce;
 			info("Removing failed node %s from %pJ",
 			     node_ptr->name, job_ptr);
-			/* Disable accounting here. Accounting reset for all
-			 * jobs in _restore_job_dependencies() */
+			/*
+			 * Disable accounting here. Accounting reset for all
+			 * jobs in _restore_job_accounting()
+			 */
 			save_accounting_enforce = accounting_enforce;
 			accounting_enforce &= (~ACCOUNTING_ENFORCE_LIMITS);
 			job_pre_resize_acctg(job_ptr);
@@ -2716,15 +2719,15 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 }
 
 /*
- * _restore_job_dependencies - Build depend_list and license_list for every job
- *	also reset the running job count for scheduling policy
+ * Build license_list for every job.
+ * Reset accounting for every job.
+ * Reset the running job count for scheduling policy.
+ * This must be called after load_all_resv_state() and restore_node_features().
  */
-static int _restore_job_dependencies(void)
+static void _restore_job_accounting(void)
 {
-	int error_code = SLURM_SUCCESS, rc;
 	job_record_t *job_ptr;
 	ListIterator job_iterator;
-	char *new_depend;
 	bool valid = true;
 	List license_list;
 
@@ -2769,6 +2772,19 @@ static int _restore_job_dependencies(void)
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 			license_job_get(job_ptr);
 
+	}
+	list_iterator_destroy(job_iterator);
+}
+
+extern int restore_job_dependencies(void)
+{
+	job_record_t *job_ptr;
+	ListIterator job_iterator;
+	int error_code = SLURM_SUCCESS, rc;
+	char *new_depend;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = list_next(job_iterator))) {
 		if ((job_ptr->details == NULL) ||
 		    (job_ptr->details->dependency == NULL))
 			continue;
@@ -2779,11 +2795,13 @@ static int _restore_job_dependencies(void)
 			error("Invalid dependencies discarded for %pJ: %s",
 				job_ptr, new_depend);
 			error_code = rc;
-		}
+		} else if ((rc = fed_mgr_submit_remote_dependencies(job_ptr,
+								    false,
+								    false)))
+			error_code = rc;
 		xfree(new_depend);
 	}
 	list_iterator_destroy(job_iterator);
-
 	return error_code;
 }
 

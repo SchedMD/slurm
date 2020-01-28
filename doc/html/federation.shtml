@@ -183,6 +183,13 @@ When using both the <b>--cluster-constraint=</b> and
 sibling jobs to clusters that meet both requirements.
 </p>
 
+<p>
+Held or dependent jobs are kept on the origin cluster until they are released
+or are no longer dependent, at which time they are submitted to other viable
+clusters in the federation. If a job becomes held or dependent
+after being submitted, the job is removed from every cluster but the origin.
+</p>
+
 <h2><a name="jobscheduling">Job Scheduling</a></h2>
 <p>
 Each cluster in the federation independently attempts to schedule each job with
@@ -448,13 +455,12 @@ issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
 		submitted to other sibling clusters even if it could run on
 		them.</li>
 	<li>Job arrays only run on the cluster that they were submitted to.</li>
-	<li>Job dependencies are not supported across clusters.</li>
 	<li>Job modification must succeed on the origin cluster for the changes
 		to be pushed to the sibling jobs on remote clusters. </li>
 	<li>Modifications to anything other than jobs are disabled in sview.</li>
 	<li>sview grid is disabled in a federated view.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 15 June 2017</p>
+<p style="text-align:center;">Last modified 23 Jan 2020</p>
 
 <!--#include virtual="footer.txt"-->

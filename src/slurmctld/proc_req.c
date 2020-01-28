@@ -746,6 +746,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->def_mem_per_cpu     = conf->def_mem_per_cpu;
 	conf_ptr->debug_flags         = conf->debug_flags;
+	conf_ptr->dependency_params = xstrdup(conf->dependency_params);
 
 	conf_ptr->eio_timeout         = conf->eio_timeout;
 	conf_ptr->enforce_part_limits = conf->enforce_part_limits;
@@ -5225,12 +5226,7 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 	}
 	if (!job_ptr)
 		error_code = ESLURM_INVALID_JOB_ID;
-	else if (fed_mgr_cluster_rec && job_ptr->fed_details &&
-		 fed_mgr_is_origin_job(job_ptr) &&
-		 IS_JOB_REVOKED(job_ptr) &&
-		 job_ptr->fed_details->cluster_lock &&
-		 (job_ptr->fed_details->cluster_lock !=
-		  fed_mgr_cluster_rec->fed.id)) {
+	else if (fed_mgr_job_started_on_sib(job_ptr)) {
 
 		/* Route to the cluster that is running the job. */
 		slurmdb_cluster_rec_t *dst =
@@ -5600,12 +5596,7 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 	if (!job_ptr)
 		error_code = ESLURM_INVALID_JOB_ID;
 	else if (job_ptr->batch_flag &&
-		 fed_mgr_cluster_rec && job_ptr->fed_details &&
-		 fed_mgr_is_origin_job(job_ptr) &&
-		 IS_JOB_REVOKED(job_ptr) &&
-		 job_ptr->fed_details->cluster_lock &&
-		 (job_ptr->fed_details->cluster_lock !=
-		  fed_mgr_cluster_rec->fed.id)) {
+		 fed_mgr_job_started_on_sib(job_ptr)) {
 
 		/* Route to the cluster that is running the batch job. srun jobs
 		 * don't need to be routed to the running cluster since the
@@ -6236,9 +6227,7 @@ _slurm_rpc_kill_job(slurm_msg_t *msg)
 		    (((slurm_persist_conn_t *)origin->fed.send)->fd != -1) &&
 		    (origin != fed_mgr_cluster_rec) &&
 		    (!(job_ptr = find_job_record(job_id)) ||
-		     (job_ptr && job_ptr->fed_details &&
-		      (job_ptr->fed_details->cluster_lock !=
-		       fed_mgr_cluster_rec->fed.id)))) {
+		     (job_ptr && fed_mgr_job_started_on_sib(job_ptr)))) {
 
 			slurmdb_cluster_rec_t *dst =
 				fed_mgr_get_cluster_by_id(origin_id);
@@ -6695,6 +6684,30 @@ static void _slurm_rpc_sib_msg(uint32_t uid, slurm_msg_t *msg) {
 	fed_mgr_q_sib_msg(msg, uid);
 }
 
+static void _slurm_rpc_dependency_msg(uint32_t uid, slurm_msg_t *msg)
+{
+	if (!msg->conn || !validate_slurm_user(uid)) {
+		error("Security violation, REQUEST_SEND_DEP RPC from uid=%d",
+		      uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+
+	fed_mgr_q_dep_msg(msg);
+}
+
+static void _slurm_rpc_update_origin_dep_msg(uint32_t uid, slurm_msg_t *msg)
+{
+	if (!msg->conn || !validate_slurm_user(uid)) {
+		error("Security violation, REQUEST_UPDATE_ORIGIN_DEP RPC from uid=%d",
+		      uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+
+	fed_mgr_q_update_origin_dep_msg(msg);
+}
+
 static Buf _build_rc_buf(int rc, uint16_t rpc_version)
 {
 	Buf buf = NULL;
@@ -6767,6 +6780,16 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			break;
 		case REQUEST_SIB_MSG:
 			_slurm_rpc_sib_msg(rpc_uid, &sub_msg);
+			ret_buf = _build_rc_buf(SLURM_SUCCESS,
+						msg->protocol_version);
+			break;
+		case REQUEST_SEND_DEP:
+			_slurm_rpc_dependency_msg(rpc_uid, &sub_msg);
+			ret_buf = _build_rc_buf(SLURM_SUCCESS,
+						msg->protocol_version);
+			break;
+		case REQUEST_UPDATE_ORIGIN_DEP:
+			_slurm_rpc_update_origin_dep_msg(rpc_uid, &sub_msg);
 			ret_buf = _build_rc_buf(SLURM_SUCCESS,
 						msg->protocol_version);
 			break;

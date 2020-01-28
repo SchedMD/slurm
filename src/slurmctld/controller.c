@@ -172,6 +172,7 @@ int	backup_inx;
 int	batch_sched_delay = 3;
 uint32_t cluster_cpus = 0;
 time_t	control_time = 0;
+bool disable_remote_singleton = false;
 time_t	last_proc_req_start = 0;
 bool	ping_nodes_now = false;
 pthread_cond_t purge_thread_cond = PTHREAD_COND_INITIALIZER;
@@ -705,6 +706,14 @@ int main(int argc, char **argv)
 		 * control_host and control_port will be filled in.
 		 */
 		fed_mgr_init(acct_db_conn);
+
+		/*
+		 * For cross-cluster job dependencies to work, we need to have
+		 * initialized federation first. So rather than calling this
+		 * from read_slurm_conf() we call it here immediately after
+		 * fed_mgr_init().
+		 */
+		restore_job_dependencies();
 
 		if (slurm_priority_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");

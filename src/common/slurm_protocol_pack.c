@@ -4028,6 +4028,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		pack64(build_ptr->def_mem_per_cpu, buffer);
 		pack64(build_ptr->debug_flags, buffer);
+		packstr(build_ptr->dependency_params, buffer);
 
 		pack16(build_ptr->eio_timeout, buffer);
 		pack16(build_ptr->enforce_part_limits, buffer);
@@ -4929,6 +4930,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack64(&build_ptr->def_mem_per_cpu, buffer);
 		safe_unpack64(&build_ptr->debug_flags, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->dependency_params,
+				       &uint32_tmp, buffer);
 
 		safe_unpack16(&build_ptr->eio_timeout, buffer);
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
@@ -6088,7 +6091,39 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
 {
 	xassert(sib_msg_ptr);
 
-	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		pack32(sib_msg_ptr->cluster_id, buffer);
+		pack16(sib_msg_ptr->data_type, buffer);
+		pack16(sib_msg_ptr->data_version, buffer);
+		pack64(sib_msg_ptr->fed_siblings, buffer);
+		pack32(sib_msg_ptr->job_id, buffer);
+		pack32(sib_msg_ptr->job_state, buffer);
+		pack32(sib_msg_ptr->return_code, buffer);
+		pack_time(sib_msg_ptr->start_time, buffer);
+		packstr(sib_msg_ptr->resp_host, buffer);
+		pack32(sib_msg_ptr->req_uid, buffer);
+		pack16(sib_msg_ptr->sib_msg_type, buffer);
+		packstr(sib_msg_ptr->submit_host, buffer);
+
+		/* add already packed data_buffer to buffer */
+		if (sib_msg_ptr->data_buffer &&
+		    size_buf(sib_msg_ptr->data_buffer)) {
+			Buf dbuf = sib_msg_ptr->data_buffer;
+			uint32_t grow_size =
+				get_buf_offset(dbuf) - sib_msg_ptr->data_offset;
+
+			pack16(1, buffer);
+
+			grow_buf(buffer, grow_size);
+			memcpy(&buffer->head[get_buf_offset(buffer)],
+			       &dbuf->head[sib_msg_ptr->data_offset],
+			       grow_size);
+			set_buf_offset(buffer,
+				       get_buf_offset(buffer) + grow_size);
+		} else {
+			pack16(0, buffer);
+		}
+	} else if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		pack32(sib_msg_ptr->cluster_id, buffer);
 		pack16(sib_msg_ptr->data_type, buffer);
 		pack16(sib_msg_ptr->data_version, buffer);
@@ -6167,7 +6202,40 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 	xassert(sib_msg_buffer_ptr);
 
 	/* alloc memory for structure */
-	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		sib_msg_ptr = xmalloc(sizeof(sib_msg_t));
+		*sib_msg_buffer_ptr = sib_msg_ptr;
+
+		/* load the data values */
+		safe_unpack32(&sib_msg_ptr->cluster_id, buffer);
+		safe_unpack16(&sib_msg_ptr->data_type, buffer);
+		safe_unpack16(&sib_msg_ptr->data_version, buffer);
+		safe_unpack64(&sib_msg_ptr->fed_siblings, buffer);
+		safe_unpack32(&sib_msg_ptr->job_id, buffer);
+		safe_unpack32(&sib_msg_ptr->job_state, buffer);
+		safe_unpack32(&sib_msg_ptr->return_code, buffer);
+		safe_unpack_time(&sib_msg_ptr->start_time, buffer);
+		safe_unpackstr_xmalloc(&sib_msg_ptr->resp_host, &tmp_uint32,
+				       buffer);
+		safe_unpack32(&sib_msg_ptr->req_uid, buffer);
+		safe_unpack16(&sib_msg_ptr->sib_msg_type, buffer);
+		safe_unpackstr_xmalloc(&sib_msg_ptr->submit_host, &tmp_uint32,
+				       buffer);
+
+		safe_unpack16(&tmp_uint16, buffer);
+		if (tmp_uint16) {
+			slurm_msg_t_init(&tmp_msg);
+			tmp_msg.msg_type         = sib_msg_ptr->data_type;
+			tmp_msg.protocol_version = sib_msg_ptr->data_version;
+
+			if (unpack_msg(&tmp_msg, buffer))
+				goto unpack_error;
+
+			sib_msg_ptr->data = tmp_msg.data;
+			tmp_msg.data = NULL;
+			slurm_free_msg_members(&tmp_msg);
+		}
+	} else if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		sib_msg_ptr = xmalloc(sizeof(sib_msg_t));
 		*sib_msg_buffer_ptr = sib_msg_ptr;
 
@@ -6240,6 +6308,172 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 unpack_error:
 	slurm_free_sib_msg(sib_msg_ptr);
 	*sib_msg_buffer_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+/*
+ * If this changes, then _pack_remote_dep_job() in fed_mgr.c probably
+ * needs to change.
+ */
+static void _pack_dep_msg(dep_msg_t *dep_msg, Buf buffer,
+			  uint16_t protocol_version)
+{
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		pack32(dep_msg->array_job_id, buffer);
+		pack32(dep_msg->array_task_id, buffer);
+		packstr(dep_msg->dependency, buffer);
+		packbool(dep_msg->is_array, buffer);
+		pack32(dep_msg->job_id, buffer);
+		packstr(dep_msg->job_name, buffer);
+		pack32(dep_msg->user_id, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+/*
+ * If this changes, then _unpack_remote_dep_job() in fed_mgr.c probably
+ * needs to change.
+ */
+static int _unpack_dep_msg(dep_msg_t **dep_msg_buffer_ptr, Buf buffer,
+			   uint16_t protocol_version)
+{
+	dep_msg_t *dep_msg_ptr = NULL;
+	uint32_t tmp_uint32;
+
+	xassert(dep_msg_buffer_ptr);
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		dep_msg_ptr = xmalloc(sizeof(*dep_msg_ptr));
+		*dep_msg_buffer_ptr = dep_msg_ptr;
+
+		safe_unpack32(&dep_msg_ptr->array_job_id, buffer);
+		safe_unpack32(&dep_msg_ptr->array_task_id, buffer);
+		safe_unpackstr_xmalloc(&dep_msg_ptr->dependency, &tmp_uint32,
+				       buffer);
+		safe_unpackbool(&dep_msg_ptr->is_array, buffer);
+		safe_unpack32(&dep_msg_ptr->job_id, buffer);
+		safe_unpackstr_xmalloc(&dep_msg_ptr->job_name, &tmp_uint32,
+				       buffer);
+		safe_unpack32(&dep_msg_ptr->user_id, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_dep_msg(dep_msg_ptr);
+	*dep_msg_buffer_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _depend_list_del(void *dep_ptr)
+{
+	xfree(dep_ptr);
+}
+
+static void _pack_dep_list(List dep_list, Buf buffer, uint16_t protocol_version)
+{
+	depend_spec_t *dep_ptr;
+	ListIterator itr;
+
+	xassert(dep_list);
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		itr = list_iterator_create(dep_list);
+		while ((dep_ptr = list_next(itr))) {
+			pack32(dep_ptr->array_task_id, buffer);
+			pack16(dep_ptr->depend_type, buffer);
+			pack16(dep_ptr->depend_flags, buffer);
+			pack32(dep_ptr->depend_state, buffer);
+			pack32(dep_ptr->depend_time, buffer);
+			pack32(dep_ptr->job_id, buffer);
+			pack64(dep_ptr->singleton_bits, buffer);
+		}
+		list_iterator_destroy(itr);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+static int _unpack_dep_list(List *dep_list, uint16_t cnt, Buf buffer,
+			    uint16_t protocol_version)
+{
+	depend_spec_t *dep_ptr;
+
+	xassert(dep_list);
+
+	*dep_list = list_create(_depend_list_del);
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		for (int i = 0; i < cnt; i++) {
+			dep_ptr = xmalloc(sizeof *dep_ptr);
+			list_push(*dep_list, dep_ptr);
+
+			safe_unpack32(&dep_ptr->array_task_id, buffer);
+			safe_unpack16(&dep_ptr->depend_type, buffer);
+			safe_unpack16(&dep_ptr->depend_flags, buffer);
+			safe_unpack32(&dep_ptr->depend_state, buffer);
+			safe_unpack32(&dep_ptr->depend_time, buffer);
+			safe_unpack32(&dep_ptr->job_id, buffer);
+			safe_unpack64(&dep_ptr->singleton_bits, buffer);
+		}
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	FREE_NULL_LIST(*dep_list);
+	return SLURM_ERROR;
+}
+
+static void _pack_dep_update_origin_msg(dep_update_origin_msg_t *msg,
+					Buf buffer, uint16_t protocol_version)
+{
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		pack16(msg->cnt, buffer);
+		_pack_dep_list(msg->depend_list, buffer, protocol_version);
+		pack32(msg->job_id, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+static int _unpack_dep_update_origin_msg(dep_update_origin_msg_t **msg_pptr,
+					 Buf buffer, uint16_t protocol_version)
+{
+	dep_update_origin_msg_t *msg_ptr = NULL;
+
+	xassert(msg_pptr);
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		msg_ptr = xmalloc(sizeof *msg_ptr);
+		*msg_pptr = msg_ptr;
+		safe_unpack16(&msg_ptr->cnt, buffer);
+		if (_unpack_dep_list(&msg_ptr->depend_list, msg_ptr->cnt,
+				     buffer, protocol_version))
+			goto unpack_error;
+		safe_unpack32(&msg_ptr->job_id, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_dep_update_origin_msg(msg_ptr);
+	*msg_pptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -11840,6 +12074,15 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_sib_msg((sib_msg_t *)msg->data, buffer,
 			      msg->protocol_version);
 		break;
+	case REQUEST_SEND_DEP:
+		_pack_dep_msg((dep_msg_t *)msg->data, buffer,
+			      msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_ORIGIN_DEP:
+		 _pack_dep_update_origin_msg(
+				(dep_update_origin_msg_t *) msg->data, buffer,
+				msg->protocol_version);
+		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		_pack_update_job_step_msg((step_update_request_msg_t *)
 					  msg->data, buffer,
@@ -12498,6 +12741,15 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_SIB_MSG:
 		rc = _unpack_sib_msg((sib_msg_t **)&(msg->data), buffer,
 				     msg->protocol_version);
+		break;
+	case REQUEST_SEND_DEP:
+		rc = _unpack_dep_msg((dep_msg_t **)&(msg->data), buffer,
+				     msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_ORIGIN_DEP:
+		rc = _unpack_dep_update_origin_msg(
+				(dep_update_origin_msg_t **) &(msg->data),
+				buffer, msg->protocol_version);
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		rc = _unpack_update_job_step_msg(

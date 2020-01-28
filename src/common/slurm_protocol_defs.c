@@ -1016,6 +1016,21 @@ extern void slurm_free_sib_msg(sib_msg_t *msg)
 	}
 }
 
+extern void slurm_free_dep_msg(dep_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->dependency);
+		xfree(msg->job_name);
+	}
+}
+
+extern void slurm_free_dep_update_origin_msg(dep_update_origin_msg_t *msg)
+{
+	if (msg) {
+		FREE_NULL_LIST(msg->depend_list);
+	}
+}
+
 extern void slurm_free_event_log_msg(slurm_event_log_msg_t * msg)
 {
 	if (msg) {
@@ -4812,6 +4827,12 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SIB_MSG:
 		slurm_free_sib_msg(data);
 		break;
+	case REQUEST_SEND_DEP:
+		slurm_free_dep_msg(data);
+		break;
+	case REQUEST_UPDATE_ORIGIN_DEP:
+		slurm_free_dep_update_origin_msg(data);
+		break;
 	case RESPONSE_JOB_WILL_RUN:
 		slurm_free_will_run_response_msg(data);
 		break;
@@ -5467,6 +5488,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_SIB_JOB_LOCK";
 	case REQUEST_SIB_JOB_UNLOCK:
 		return "REQUEST_SIB_JOB_UNLOCK";
+	case REQUEST_SEND_DEP:
+		return "REQUEST_SEND_DEP";
+	case REQUEST_UPDATE_ORIGIN_DEP:
+		return "REQUEST_UPDATE_ORIGIN_DEP";
 	case REQUEST_CTLD_MULT_MSG:
 		return "REQUEST_CTLD_MULT_MSG";
 	case RESPONSE_CTLD_MULT_MSG:

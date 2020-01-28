@@ -2105,6 +2105,24 @@ int slurm_set_accounting_storage_port(uint32_t storage_port)
 	return 0;
 }
 
+/*
+ * slurm_get_dependency_params
+ * RET dependency_params must be xfreed by caller
+ */
+char *slurm_get_dependency_params(void)
+{
+	char *dependency_params = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		dependency_params = xstrdup(conf->dependency_params);
+		slurm_conf_unlock();
+	}
+	return dependency_params;
+}
+
 /* slurm_get_preempt_mode
  * returns the PreemptMode value from slurmctld_conf object
  * RET uint16_t   - PreemptMode value (See PREEMPT_MODE_* in slurm.h)

@@ -77,6 +77,10 @@ documents those changes that are of interest to users and administrators.
  -- If any component of a HetJob is preemptable all other components of the
     job inherit the same.
  -- Added JobCompParams to slurm.conf.
+ -- Add configuration parameter DependencyParameters to slurm.conf.
+ -- Deprecate kill_invalid_depend in SchedulerParameters and move it to new
+    DependencyParameters.
+ -- Enable job dependencies for any job on any cluster in the same federation.
 
 * Changes in Slurm 19.05.6
 ==========================

@@ -55,7 +55,13 @@ extern slurmdb_cluster_rec_t *fed_mgr_get_cluster_by_name(char *sib_name);
 extern uint32_t  fed_mgr_get_job_id(uint32_t orig);
 extern uint32_t  fed_mgr_get_local_id(uint32_t id);
 extern int       fed_mgr_init(void *db_conn);
+extern void      fed_mgr_init_depend_policy(void);
+extern bool      fed_mgr_is_job_id_in_fed(uint32_t job_id);
 extern int       fed_mgr_is_origin_job(job_record_t *job_ptr);
+extern bool      fed_mgr_is_origin_job_id(uint32_t job_id);
+extern bool      fed_mgr_is_singleton_satisfied(job_record_t *job_ptr,
+						depend_spec_t *dep_ptr,
+						bool set_cluster_bit);
 extern bool      fed_mgr_is_tracker_only_job(job_record_t *job_ptr);
 extern int       fed_mgr_job_allocate(slurm_msg_t *msg,
 				      job_desc_msg_t *job_desc, bool alloc_only,
@@ -72,19 +78,29 @@ extern bool      fed_mgr_job_is_self_owned(job_record_t *job_ptr);
 extern int       fed_mgr_job_lock(job_record_t *job_ptr);
 extern int       fed_mgr_job_lock_set(uint32_t job_id, uint32_t cluster_id);
 extern int       fed_mgr_job_lock_unset(uint32_t job_id, uint32_t cluster_id);
+extern bool      fed_mgr_job_started_on_sib(job_record_t *job_ptr);
 extern int       fed_mgr_job_unlock(job_record_t *job_ptr);
 extern int       fed_mgr_job_requeue(job_record_t *job_ptr);
 extern int       fed_mgr_job_requeue_test(job_record_t *job_ptr,
 					  uint32_t flags);
 extern int       fed_mgr_job_revoke(job_record_t *job_ptr, bool job_complete,
+				    uint32_t completed_state,
 				    uint32_t exit_code, time_t start_time);
 extern int       fed_mgr_job_revoke_sibs(job_record_t *job_ptr);
 extern int       fed_mgr_job_start(job_record_t *job_ptr, time_t start_time);
+extern int       fed_mgr_q_dep_msg(slurm_msg_t *msg);
 extern int       fed_mgr_q_sib_msg(slurm_msg_t *sib_msg, uint32_t rpc_uid);
+extern int       fed_mgr_q_update_origin_dep_msg(slurm_msg_t *msg);
 extern int       fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name);
 extern void      fed_mgr_remove_fed_job_info(uint32_t job_id);
+extern void      fed_mgr_remove_remote_dependencies(job_record_t *job_ptr);
 extern bool      fed_mgr_sibs_synced();
 extern int       fed_mgr_state_save(char *state_save_location);
+extern void      fed_mgr_test_remote_dependencies(void);
+extern int       fed_mgr_state_save(char *state_save_location);
+extern int       fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
+						    bool send_all_sibs,
+						    bool clear_dependencies);
 extern int       fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
 				    uint64_t update_sibs, uid_t uid);
 extern int       fed_mgr_update_job_clusters(job_record_t *job_ptr,

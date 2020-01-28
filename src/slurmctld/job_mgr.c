@@ -4619,8 +4619,18 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	details_new->work_dir = xstrdup(job_details->work_dir);
 	details_new->x11_magic_cookie = xstrdup(job_details->x11_magic_cookie);
 
-	if (job_ptr->fed_details)
+	if (job_ptr->fed_details) {
 		add_fed_job_info(job_ptr);
+		/*
+		 * The new (split) job needs its remote dependencies tested
+		 * separately from just the meta job, so send remote
+		 * dependencies to siblings if needed.
+		 */
+		if (job_ptr->details && job_ptr->details->dependency &&
+		    job_ptr->details->depend_list)
+			fed_mgr_submit_remote_dependencies(job_ptr, false,
+							   false);
+	}
 
 	return job_ptr_pend;
 }
@@ -5285,9 +5295,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 			fed_mgr_get_cluster_by_id(origin_id);
 
 		if (origin && (origin == fed_mgr_cluster_rec) &&
-		    job_ptr->fed_details->cluster_lock &&
-		    (job_ptr->fed_details->cluster_lock !=
-		     fed_mgr_cluster_rec->fed.id)) {
+		    fed_mgr_job_started_on_sib(job_ptr)) {
 			/*
 			 * If the job is running on a remote cluster then wait
 			 * for the job to report back that it's completed,
@@ -5299,6 +5307,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 		} else if (origin && (origin == fed_mgr_cluster_rec)) {
 			/* cancel origin job and revoke sibling jobs */
 			fed_mgr_job_revoke_sibs(job_ptr);
+			fed_mgr_remove_remote_dependencies(job_ptr);
 		} else if (!origin ||
 			   !origin->fed.send ||
 			   (((slurm_persist_conn_t *)origin->fed.send)->fd
@@ -9242,6 +9251,16 @@ static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 	return cc;
 }
 
+extern void free_null_array_recs(job_record_t *job_ptr)
+{
+	if (!job_ptr || !job_ptr->array_recs)
+		return;
+
+	FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
+	xfree(job_ptr->array_recs->task_id_str);
+	xfree(job_ptr->array_recs);
+}
+
 /*
  * _list_delete_job - delete a job record and its corresponding job_details,
  *	see common/list.h for documentation
@@ -9279,6 +9298,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->admin_comment);
 	xfree(job_ptr->alias_list);
 	xfree(job_ptr->alloc_node);
+	free_null_array_recs(job_ptr);
 	if (job_ptr->array_recs) {
 		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
 		xfree(job_ptr->array_recs->task_id_str);
@@ -10796,6 +10816,31 @@ static inline bool _purge_complete_het_job(job_record_t *het_job_leader)
 }
 
 /*
+ * If the job or slurm.conf requests to not kill on invalid dependency,
+ * then set the job state reason to WAIT_DEP_INVALID. Otherwise, kill the
+ * job.
+ */
+void handle_invalid_dependency(job_record_t *job_ptr)
+{
+	if (job_ptr->bit_flags & KILL_INV_DEP) {
+		_kill_dependent(job_ptr);
+	} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
+		debug("%s: %pJ job dependency never satisfied",
+		      __func__, job_ptr);
+		job_ptr->state_reason = WAIT_DEP_INVALID;
+		xfree(job_ptr->state_desc);
+	} else if (kill_invalid_dep) {
+		_kill_dependent(job_ptr);
+	} else {
+		debug("%s: %pJ job dependency never satisfied",
+		      __func__, job_ptr);
+		job_ptr->state_reason = WAIT_DEP_INVALID;
+		xfree(job_ptr->state_desc);
+	}
+	fed_mgr_remove_remote_dependencies(job_ptr);
+}
+
+/*
  * purge_old_job - purge old job records.
  *	The jobs must have completed at least MIN_JOB_AGE minutes ago.
  *	Test job dependencies, handle after_ok, after_not_ok before
@@ -10822,41 +10867,21 @@ void purge_old_job(void)
 			continue;
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;
-		if (test_job_dependency(job_ptr) == 2) {
+		/*
+		 * If the dependency is already invalid there's no reason to
+		 * keep checking it.
+		 */
+		if (job_ptr->state_reason == WAIT_DEP_INVALID)
+			continue;
+		if (test_job_dependency(job_ptr, NULL) == FAIL_DEPEND) {
 			/* Check what are the job disposition
 			 * to deal with invalid dependecies
 			 */
-			if (job_ptr->bit_flags & KILL_INV_DEP) {
-				_kill_dependent(job_ptr);
-			} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
-				debug("%s: %pJ job dependency never satisfied",
-				      __func__, job_ptr);
-				job_ptr->state_reason = WAIT_DEP_INVALID;
-				xfree(job_ptr->state_desc);
-			} else if (kill_invalid_dep) {
-				_kill_dependent(job_ptr);
-			} else {
-				debug("%s: %pJ job dependency never satisfied",
-				      __func__, job_ptr);
-				job_ptr->state_reason = WAIT_DEP_INVALID;
-				xfree(job_ptr->state_desc);
-			}
-		}
-
-		if (job_ptr->state_reason == WAIT_DEP_INVALID) {
-			if (job_ptr->bit_flags & KILL_INV_DEP) {
-				/* The job got the WAIT_DEP_INVALID
-				 * before slurmctld was reconfigured.
-				 */
-				_kill_dependent(job_ptr);
-			} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
-				continue;
-			} else if (kill_invalid_dep) {
-				_kill_dependent(job_ptr);
-			}
+			handle_invalid_dependency(job_ptr);
 		}
 	}
 	list_iterator_destroy(job_iterator);
+	fed_mgr_test_remote_dependencies();
 
 	i = list_delete_all(job_list, &_list_find_job_old, "");
 	if (i) {
@@ -13444,23 +13469,55 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		goto fini;
 
 	if (job_specs->dependency) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL))
+		/* Can't update dependency of revoked job */
+		if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL) ||
+		    IS_JOB_REVOKED(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else {
+		else if (!fed_mgr_is_origin_job(job_ptr)) {
+			/*
+			 * If the job became independent because of a dependency
+			 * update, that job gets requeued on siblings and then
+			 * the dependency update gets sent to siblings. So we
+			 * silently ignore this update on the sibling.
+			 */
+		} else {
 			int rc;
 			rc = update_job_dependency(job_ptr,
 						   job_specs->dependency);
 			if (rc != SLURM_SUCCESS)
 				error_code = rc;
+			/*
+			 * Because dependencies updated and we don't know where
+			 * they used to be, send dependencies to all siblings
+			 * so the siblings can update their dependency list.
+			 */
 			else {
-				job_ptr->bit_flags &= ~INVALID_DEPEND;
+				rc = fed_mgr_submit_remote_dependencies(job_ptr,
+									true,
+									false);
+				if (rc) {
+					error("%s: %pJ Failed to send remote dependencies to some or all siblings.",
+					      __func__, job_ptr);
+					error_code = rc;
+				}
+				/*
+				 * Even if we fail to send remote dependencies,
+				 * we already succeeded in updating the job's
+				 * dependency locally, so we still need to
+				 * do these things.
+				 */
 				job_ptr->details->orig_dependency =
 					xstrdup(job_ptr->details->dependency);
 				sched_info("%s: setting dependency to %s for %pJ",
 					   __func__,
 					   job_ptr->details->dependency,
 					   job_ptr);
-				job_independent(job_ptr);
+				/*
+				 * If the job isn't independent, remove pending
+				 * remote sibling jobs
+				 */
+				if (!job_independent(job_ptr))
+					fed_mgr_job_revoke_sibs(job_ptr);
 			}
 		}
 	}
@@ -15557,8 +15614,8 @@ extern bool job_independent(job_record_t *job_ptr)
 
 	/* Test dependencies first so we can cancel jobs before dependent
 	 * job records get purged (e.g. afterok, afternotok) */
-	depend_rc = test_job_dependency(job_ptr);
-	if (depend_rc == 1) {
+	depend_rc = test_job_dependency(job_ptr, NULL);
+	if ((depend_rc == LOCAL_DEPEND) || (depend_rc == REMOTE_DEPEND)) {
 		/* start_time has passed but still has dependency which
 		 * makes it ineligible */
 		if (detail_ptr->begin_time < now)
@@ -15566,28 +15623,18 @@ extern bool job_independent(job_record_t *job_ptr)
 		job_ptr->state_reason = WAIT_DEPENDENCY;
 		xfree(job_ptr->state_desc);
 		return false;
-	} else if (depend_rc == 2) {
-		if (job_ptr->bit_flags & KILL_INV_DEP) {
-			_kill_dependent(job_ptr);
-		} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
-			debug("%s: %pJ job dependency never satisfied",
-			      __func__, job_ptr);
-			job_ptr->state_reason = WAIT_DEP_INVALID;
-			xfree(job_ptr->state_desc);
-		} else if (kill_invalid_dep) {
-			_kill_dependent(job_ptr);
-		} else {
-			debug("%s: %pJ job dependency never satisfied",
-			      __func__, job_ptr);
-			job_ptr->state_reason = WAIT_DEP_INVALID;
-			xfree(job_ptr->state_desc);
-		}
+	} else if (depend_rc == FAIL_DEPEND) {
+		handle_invalid_dependency(job_ptr);
 		return false;
 	}
 	/* Job is eligible to start now */
 	if (job_ptr->state_reason == WAIT_DEPENDENCY) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
+		/* Submit the job to its siblings. */
+		if (job_ptr->details) {
+			fed_mgr_job_requeue(job_ptr);
+		}
 	}
 
 	/* Check for maximum number of running tasks in a job array */
@@ -17574,13 +17621,44 @@ extern bool job_hold_requeue(job_record_t *job_ptr)
 	return true;
 }
 
+extern void init_depend_policy(void)
+{
+	char *depend_params = slurm_get_dependency_params();
+	char *sched_params = slurm_get_sched_params();
+
+	disable_remote_singleton =
+		(xstrcasestr(depend_params, "disable_remote_singleton")) ?
+		true : false;
+
+	/*
+	 * kill_invalid_depend is moving from SchedulerParameters to
+	 * DependencyParameters. Support both for 20.02, then remove it
+	 * from SchedulerParameters in 20.11.
+	 */
+	if (xstrcasestr(sched_params, "kill_invalid_depend")) {
+		info("kill_invalid_depend is deprecated in SchedulerParameters and moved to DependencyParameters");
+		kill_invalid_dep = true;
+	} else
+		kill_invalid_dep =
+			(xstrcasestr(depend_params, "kill_invalid_depend")) ?
+			true : false;
+
+	xfree(depend_params);
+	xfree(sched_params);
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+		info("%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d",
+		     __func__, kill_invalid_dep, disable_remote_singleton);
+	else
+		debug2("%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d",
+		       __func__, kill_invalid_dep, disable_remote_singleton);
+}
+
 /* init_requeue_policy()
  * Initialize the requeue exit/hold bitmaps.
  */
 extern void init_requeue_policy(void)
 {
-	char *sched_params = slurm_get_sched_params();
-
 	/* clean first as we can be reconfiguring */
 	FREE_NULL_BITMAP(requeue_exit);
 	FREE_NULL_BITMAP(requeue_exit_hold);
@@ -17588,16 +17666,6 @@ extern void init_requeue_policy(void)
 	requeue_exit = _make_requeue_array(slurmctld_conf.requeue_exit);
 	requeue_exit_hold = _make_requeue_array(
 		slurmctld_conf.requeue_exit_hold);
-	/* Check if users want to kill a job whose dependency
-	 * can never be satisfied.
-	 */
-	kill_invalid_dep = false;
-	if (xstrcasestr(sched_params, "kill_invalid_depend"))
-		kill_invalid_dep = true;
-	xfree(sched_params);
-
-	debug2("%s: kill_invalid_depend is set to %d",
-	       __func__, kill_invalid_dep);
 }
 
 /* _make_requeue_array()

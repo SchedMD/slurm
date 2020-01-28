@@ -56,6 +56,14 @@ typedef struct job_queue_rec {
 					 * in without requesting */
 } job_queue_rec_t;
 
+/* Use as return values for test_job_dependency. */
+enum {
+	NO_DEPEND = 0,
+	LOCAL_DEPEND,
+	FAIL_DEPEND,
+	REMOTE_DEPEND
+};
+
 /*
  * build_feature_list - Translate a job's feature string into a feature_list
  * IN  details->features
@@ -101,6 +109,25 @@ extern void epilog_slurmctld(job_record_t *job_ptr);
  * Delete a record from a job's feature_list
  */
 extern void feature_list_delete(void *x);
+
+/*
+ * Return a pointer to the dependency in job_ptr's dependency list that
+ * matches dep_ptr, or NULL if none is found.
+ *
+ * A dependency "matches" when the job_id and depend_type are the same.
+ */
+extern depend_spec_t *find_dependency(job_record_t *job_ptr,
+				      depend_spec_t *dep_ptr);
+
+/*
+ * Update a job's state_reason, state_desc, and dependency string based on the
+ * states of its dependencies.
+ *
+ * This is called by list_for_each() and thus has 2 void* parameters:
+ * object is a pointer to job_record_t.
+ * arg is unused.
+ */
+extern int handle_job_dependency_updates(void *object, void *arg);
 
 /*
  * job_is_completing - Determine if jobs are in the process of completing.
@@ -156,7 +183,7 @@ extern bool node_features_reboot_test(job_record_t *job_ptr,
 				      bitstr_t *node_bitmap);
 
 /* Print a job's dependency information based upon job_ptr->depend_list */
-extern void print_job_dependency(job_record_t *job_ptr);
+extern void print_job_dependency(job_record_t *job_ptr, const char *func);
 
 /* Decrement a job's prolog_running counter and launch the job if zero */
 extern void prolog_running_decr(job_record_t *job_ptr);
@@ -215,11 +242,16 @@ extern int sort_job_queue2(void *x, void *y);
 
 /*
  * Determine if a job's dependencies are met
- * RET: 0 = no dependencies
- *      1 = dependencies remain
- *      2 = failure (job completion code not per dependency), delete the job
+ * Inputs: job_ptr
+ * Outputs: was_changed (optional) -
+ *          If it exists, set it to true if at least 1 dependency changed
+ *          state, otherwise false.
+ * RET: NO_DEPEND = no dependencies
+ *      LOCAL_DEPEND = dependencies remain
+ *      FAIL_DEPEND = failure (job completion code not per dependency),
+ *                    delete the job
  */
-extern int test_job_dependency(job_record_t *job_ptr);
+extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed);
 
 /*
  * Parse a job dependency string and use it to establish a "depend_spec"
@@ -230,6 +262,15 @@ extern int test_job_dependency(job_record_t *job_ptr);
  * RET returns an error code from slurm_errno.h
  */
 extern int update_job_dependency(job_record_t *job_ptr, char *new_depend);
+
+/*
+ * new_depend_list is a dependency list that came from a sibling cluster. It
+ * has updates to the job dependencies on that cluster. Use those changes to
+ * update the dependency list of job_ptr.
+ * Return true if a dependency was updated, false if not.
+ */
+extern bool update_job_dependency_list(job_record_t *job_ptr,
+				       List new_depend_list);
 
 /*
  * When an array job is rejected for some reason, the remaining array tasks will

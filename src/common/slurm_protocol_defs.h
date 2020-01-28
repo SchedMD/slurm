@@ -335,6 +335,8 @@ typedef enum {
 	REQUEST_SIB_MSG,
 	REQUEST_SIB_JOB_LOCK,
 	REQUEST_SIB_JOB_UNLOCK,
+	REQUEST_SEND_DEP,
+	REQUEST_UPDATE_ORIGIN_DEP,
 
 	REQUEST_JOB_STEP_CREATE = 5001,
 	RESPONSE_JOB_STEP_CREATE,
@@ -1286,6 +1288,7 @@ typedef struct {
 	uint64_t fed_siblings;	/* sibling bitmap of job */
 	uint32_t job_id;	/* job_id of job - set in job_desc on receiving
 				 * side */
+	uint32_t job_state;     /* state of job */
 	uint32_t return_code;   /* return code of job */
 	time_t   start_time;    /* time sibling job started */
 	char    *resp_host;     /* response host for interactive allocations */
@@ -1296,6 +1299,22 @@ typedef struct {
 	uint16_t sib_msg_type; /* fed_job_update_type */
 	char    *submit_host;   /* node job was submitted from */
 } sib_msg_t;
+
+typedef struct {
+	uint32_t array_job_id;
+	uint32_t array_task_id;
+	char *dependency;
+	bool is_array;
+	uint32_t job_id;
+	char *job_name;
+	uint32_t user_id;
+} dep_msg_t;
+
+typedef struct {
+	uint16_t cnt;
+	List depend_list;
+	uint32_t job_id;
+} dep_update_origin_msg_t;
 
 typedef struct {
 	List my_list;		/* this list could be of any type as long as it
@@ -1357,6 +1376,8 @@ extern int slurm_sort_char_list_asc(void *, void *);
 extern int slurm_sort_char_list_desc(void *, void *);
 
 /* free message functions */
+extern void slurm_free_dep_msg(dep_msg_t *msg);
+extern void slurm_free_dep_update_origin_msg(dep_update_origin_msg_t *msg);
 extern void slurm_free_last_update_msg(last_update_msg_t * msg);
 extern void slurm_free_return_code_msg(return_code_msg_t * msg);
 extern void slurm_free_reroute_msg(reroute_msg_t *msg);
