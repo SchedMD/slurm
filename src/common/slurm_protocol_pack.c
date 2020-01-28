@@ -9907,8 +9907,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_config_response_msg(config_response_msg_t *msg,
-				      Buf buffer, uint16_t protocol_version)
+extern void pack_config_response_msg(config_response_msg_t *msg,
+				     Buf buffer, uint16_t protocol_version)
 {
 	xassert(msg);
 
@@ -9930,8 +9930,8 @@ static void _pack_config_response_msg(config_response_msg_t *msg,
 	}
 }
 
-static int _unpack_config_response_msg(config_response_msg_t **msg_ptr,
-				       Buf buffer, uint16_t protocol_version)
+extern int unpack_config_response_msg(config_response_msg_t **msg_ptr,
+				      Buf buffer, uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
 	config_response_msg_t *msg = xmalloc(sizeof(*msg));
@@ -12374,8 +12374,8 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case REQUEST_RECONFIGURE_WITH_CONFIG:
 	case RESPONSE_CONFIG:
-		_pack_config_response_msg((config_response_msg_t *) msg->data,
-					  buffer, msg->protocol_version);
+		pack_config_response_msg((config_response_msg_t *) msg->data,
+					 buffer, msg->protocol_version);
 		break;
 	case SRUN_EXEC:
 		_pack_srun_exec_msg((srun_exec_msg_t *)msg->data, buffer,
@@ -13066,7 +13066,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case REQUEST_RECONFIGURE_WITH_CONFIG:
 	case RESPONSE_CONFIG:
-		_unpack_config_response_msg(
+		unpack_config_response_msg(
 			(config_response_msg_t **) &msg->data,
 			buffer, msg->protocol_version);
 		break;
