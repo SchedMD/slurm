@@ -2257,8 +2257,14 @@ extern int sacctmgr_validate_cluster_list(List cluster_list)
 
 		list_iterator_reset(itr);
 		while ((cluster_rec = list_next(itr))) {
-			if (!xstrcasecmp(cluster_rec->name, cluster))
+			if (!xstrcasecmp(cluster_rec->name, cluster)) {
+				if (cluster_rec->flags & CLUSTER_FLAG_EXT) {
+					fprintf(stderr, " The cluster '%s' is an external cluster. Can't work with it.\n",
+						cluster);
+					list_delete_item(itr_c);
+				}
 				break;
+			}
 		}
 		if (!cluster_rec) {
 			exit_code=1;
