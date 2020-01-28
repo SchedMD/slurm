@@ -2800,7 +2800,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		slurmdb_update_object_t *object = NULL;
 
 		xstrfmtcat(query, "select control_host, control_port, "
-			   "name, rpc_version "
+			   "name, rpc_version, flags "
 			   "from %s where deleted=0 && control_port != 0",
 			   cluster_table);
 		if (!(result = mysql_db_query_ret(
@@ -2810,6 +2810,8 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		xfree(query);
 		while ((row = mysql_fetch_row(result))) {
+			if (slurm_atoul(row[4]) & CLUSTER_FLAG_EXT)
+				continue;
 			(void) slurmdb_send_accounting_update(
 				mysql_conn->update_list,
 				row[2], row[0],
