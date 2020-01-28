@@ -92,8 +92,4 @@ proc inc3_11_6 {} {
 	#
 	# Remove the temporary job script
 	exec $bin_rm -f $file_in
-
-	if {$exit_code == 0} {
-		send_user "\n\033\[32mSUCCESS (Within: inc3.11.6)\033\[m\n"
-	}
 }
