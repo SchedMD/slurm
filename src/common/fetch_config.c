@@ -83,6 +83,15 @@ static void _fetch_child(List controllers, uint32_t flags)
 	buf_t *buffer = init_buf(1024 * 1024);
 	int len;
 
+	/*
+	 * Parent process was holding this, but we need to drop it before
+	 * issuing any RPC calls as the RPC stack will call into
+	 * several slurm_conf_get_() functions.
+	 *
+	 * This is safe as we're single-threaded due to the fork().
+	 */
+	slurm_conf_unlock();
+
 	_init_minimal_conf_server_config(controllers);
 	config = fetch_config_from_controller(flags);
 

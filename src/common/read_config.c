@@ -3198,21 +3198,10 @@ slurm_conf_init(const char *file_name)
 	}
 
 	if (!file_name) {
-		/*
-		 * FIXME - need a better locking strategy.
-		 * Because _establish_config_source may end up trigger an RPC
-		 * to the slurmctld, and the RPC path requires access to a
-		 * number of functions locked behind conf_lock, we need to drop
-		 * it to avoid deadlock. This, while not ideal, works in
-		 * practice as each process will trigger slurm_conf_init()
-		 * while the process is still single-threaded.
-		 */
-		slurm_mutex_unlock(&conf_lock);
 		if (_establish_config_source(&config_file, &memfd)) {
 			log_var(lvl, "Could not establish a configuration source");
 			return SLURM_ERROR;
 		}
-		slurm_mutex_lock(&conf_lock);
 	} else
 		config_file = xstrdup(file_name);
 
