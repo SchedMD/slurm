@@ -9923,6 +9923,7 @@ extern void pack_config_response_msg(config_response_msg_t *msg,
 		packstr(msg->knl_generic_config, buffer);
 		packstr(msg->plugstack_config, buffer);
 		packstr(msg->topology_config, buffer);
+		packstr(msg->xtra_config, buffer);
 		packstr(msg->slurmd_spooldir, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -9956,6 +9957,8 @@ extern int unpack_config_response_msg(config_response_msg_t **msg_ptr,
 		safe_unpackstr_xmalloc(&msg->plugstack_config, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&msg->topology_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->xtra_config, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&msg->slurmd_spooldir, &uint32_tmp,
 				       buffer);

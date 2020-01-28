@@ -1130,6 +1130,8 @@ typedef struct {
 	char *knl_generic_config;
 	char *plugstack_config;
 	char *topology_config;
+	char *xtra_config;	/* in case we forgot one ;) */
+
 	char *slurmd_spooldir;
 } config_response_msg_t;
 
