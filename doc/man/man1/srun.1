@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "December 2019" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "January 2020" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -590,7 +590,6 @@ This option applies to job and step allocations.
 \fB\-\-cpus\-per\-gpu\fR=<\fIncpus\fR>
 Advise Slurm that ensuing job steps will require \fIncpus\fR processors per
 allocated GPU.
-Requires the \fB\-\-gpus\fR option.
 Not compatible with the \fB\-\-cpus\-per\-task\fR option.
 
 .TP
@@ -966,6 +965,9 @@ Multiple options can be requested in a comma separated list, for example:
 Requires job to specify a task count (\-\-nodes).
 See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-socket\fR and
 \fB\-\-gpus\-per\-node\fR options.
+.br
+NOTE: This option will not have any impact on GPU binding, specifically
+it won't limit the number of devices set for CUDA_VISIBLE_DEVICES.
 
 .TP
 \fB\-\-gres\fR=<\fIlist\fR>
@@ -3023,7 +3025,7 @@ List of nodes allocated to the step.
 Number of nodes allocated to the step.
 .TP
 \fBSLURM_STEP_NUM_TASKS\fR
-Number of processes in the job step or heterogeneous job pack step.
+Number of processes in the job step or whole heterogeneous job step.
 .TP
 \fBSLURM_STEP_TASKS_PER_NODE\fR
 Number of processes per node within the step.
