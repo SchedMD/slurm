@@ -83,7 +83,7 @@ Name=mps Count=200  File=/dev/nvidia0
 Name=mps Count=200  File=/dev/nvidia1
 Name=mps Count=100  File=/dev/nvidia2
 Name=mps Count=100  File=/dev/nvidia3
-Name=bandwidth Type=lustre Count=4G
+Name=bandwidth Type=lustre Count=4G Flags=CountOnly
 </PRE>
 
 <p> In this example, since <i>AutoDetect=nvml</i> is specified, <i>Cores</i>

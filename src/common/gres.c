@@ -243,8 +243,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  int core_start_bit, int core_end_bit, bool *topo_set,
 			  uint32_t job_id, char *node_name, char *gres_name,
 			  uint32_t plugin_id);
-static int	_load_gres_plugin(char *plugin_name,
-				  slurm_gres_context_t *plugin_context);
+static int	_load_gres_plugin(slurm_gres_context_t *plugin_context);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
 static void	_my_stat(char *file_name);
 static int	_node_config_init(char *node_name, char *orig_config,
@@ -397,8 +396,7 @@ static int _gres_step_find_name(void *x, void *key)
 					state_ptr->plugin_id);
 }
 
-static int _load_gres_plugin(char *plugin_name,
-			     slurm_gres_context_t *plugin_context)
+static int _load_gres_plugin(slurm_gres_context_t *plugin_context)
 {
 	/*
 	 * Must be synchronized with slurm_gres_ops_t above.
@@ -421,10 +419,11 @@ static int _load_gres_plugin(char *plugin_name,
 	int n_syms = sizeof(syms) / sizeof(char *);
 
 	/* Find the correct plugin */
-	plugin_context->gres_type	= xstrdup("gres/");
-	xstrcat(plugin_context->gres_type, plugin_name);
-	plugin_context->plugin_list	= NULL;
-	plugin_context->cur_plugin	= PLUGIN_INVALID_HANDLE;
+	if (plugin_context->config_flags & GRES_CONF_COUNT_ONLY) {
+		debug("Plugin of type %s only tracks gres counts",
+		      plugin_context->gres_type);
+		return SLURM_SUCCESS;
+	}
 
 	plugin_context->cur_plugin = plugin_load_and_link(
 					plugin_context->gres_type,
@@ -457,6 +456,7 @@ static int _load_gres_plugin(char *plugin_name,
 	if (plugin_context->cur_plugin == PLUGIN_INVALID_HANDLE) {
 		debug("Cannot find plugin of type %s, just track gres counts",
 		      plugin_context->gres_type);
+		plugin_context->config_flags |= GRES_CONF_COUNT_ONLY;
 		return SLURM_ERROR;
 	}
 
@@ -499,19 +499,21 @@ static int _unload_gres_plugin(slurm_gres_context_t *plugin_context)
  */
 static void _add_gres_context(char *gres_name)
 {
+	slurm_gres_context_t *plugin_context;
+
 	if (!gres_name || !gres_name[0])
 		fatal("%s: invalid empty gres_name", __func__);
 
 	xrecalloc(gres_context, (gres_context_cnt + 1),
 		  sizeof(slurm_gres_context_t));
-	(void) _load_gres_plugin(gres_name, gres_context + gres_context_cnt);
-	/*
-	 * Ignore return code, as we will still support the gres with or
-	 * without the plugin.
-	 */
-	gres_context[gres_context_cnt].gres_name = xstrdup(gres_name);
-	gres_context[gres_context_cnt].plugin_id =
-		gres_plugin_build_id(gres_name);
+
+	plugin_context = &gres_context[gres_context_cnt];
+	plugin_context->gres_name = xstrdup(gres_name);
+	plugin_context->plugin_id = gres_plugin_build_id(gres_name);
+	plugin_context->gres_type = xstrdup_printf("gres/%s", gres_name);
+	plugin_context->plugin_list = NULL;
+	plugin_context->cur_plugin = PLUGIN_INVALID_HANDLE;
+
 	gres_context_cnt++;
 }
 
@@ -1035,6 +1037,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
 		{"File",  S_P_STRING},	/* Path to Gres device */
 		{"Files", S_P_STRING},	/* Path to Gres device */
+		{"Flags", S_P_STRING},	/* GRES Flags */
 		{"Link",  S_P_STRING},	/* Communication link IDs */
 		{"Links", S_P_STRING},	/* Communication link IDs */
 		{"Name",  S_P_STRING},	/* Gres name */
@@ -1106,6 +1109,12 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		p->config_flags |= GRES_CONF_HAS_FILE;
 	}
 
+	if (s_p_get_string(&tmp_str, "Flags", tbl)) {
+		if (xstrcasestr(tmp_str, "CountOnly"))
+			p->config_flags |= GRES_CONF_COUNT_ONLY;
+		xfree(tmp_str);
+	}
+
 	if (s_p_get_string(&p->links, "Link",  tbl) ||
 	    s_p_get_string(&p->links, "Links", tbl)) {
 		_validate_links(p);
@@ -1170,6 +1179,7 @@ static int _parse_gres_config2(void **dest, slurm_parser_enum_t type,
 		{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
 		{"File",  S_P_STRING},	/* Path to Gres device */
 		{"Files",  S_P_STRING},	/* Path to Gres device */
+		{"Flags", S_P_STRING},	/* GRES Flags */
 		{"Link",  S_P_STRING},	/* Communication link IDs */
 		{"Links", S_P_STRING},	/* Communication link IDs */
 		{"Name",  S_P_STRING},	/* Gres name */
@@ -1245,6 +1255,28 @@ static void _validate_gres_conf(List gres_conf_list,
 	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
 		if (gres_slurmd_conf->plugin_id != context_ptr->plugin_id)
 			continue;
+
+		/*
+		 * If any plugin of this type has this set it will virally set
+		 * any other to be the same as we use the context_ptr from here
+		 * on out.
+		 */
+		if (gres_slurmd_conf->config_flags & GRES_CONF_COUNT_ONLY)
+			context_ptr->config_flags |= GRES_CONF_COUNT_ONLY;
+
+		/*
+		 * Since there could be multiple types of the same plugin we
+		 * need to only make sure we load it once.
+		 */
+		if (!(context_ptr->config_flags & GRES_CONF_LOADED)) {
+			/*
+			 * Ignore return code, as we will still support the gres
+			 * with or without the plugin.
+			 */
+			(void) _load_gres_plugin(context_ptr);
+			context_ptr->config_flags |= GRES_CONF_LOADED;
+		}
+
 		rec_count++;
 		orig_has_file = gres_slurmd_conf->config_flags &
 				GRES_CONF_HAS_FILE;
@@ -1282,6 +1314,16 @@ static void _validate_gres_conf(List gres_conf_list,
 			context_ptr->config_flags |= GRES_CONF_HAS_FILE;
 	}
 	list_iterator_destroy(iter);
+
+	if (!(context_ptr->config_flags & GRES_CONF_LOADED))
+		/*
+		 * If we didn't have a line on this we will treat it as a count
+		 * only GRES since the stepd will try to load it elsewise.
+		 */
+		context_ptr->config_flags |= GRES_CONF_COUNT_ONLY;
+	else
+		/* Remove as this is only really used locally */
+		context_ptr->config_flags &= (~GRES_CONF_LOADED);
 }
 
 /*
@@ -13529,10 +13571,16 @@ extern void gres_plugin_send_stepd(int fd)
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
+		safe_write(fd, &gres_context[i].config_flags, sizeof(uint8_t));
 		if (gres_context[i].ops.send_stepd == NULL)
 			continue;	/* No plugin to call */
 		(*(gres_context[i].ops.send_stepd)) (fd);
 	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return;
+rwfail:
+	error("%s: failed", __func__);
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
@@ -13545,10 +13593,18 @@ extern void gres_plugin_recv_stepd(int fd)
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
+		safe_read(fd, &gres_context[i].config_flags, sizeof(uint8_t));
+		(void)_load_gres_plugin(&gres_context[i]);
+
 		if (gres_context[i].ops.recv_stepd == NULL)
 			continue;	/* No plugin to call */
 		(*(gres_context[i].ops.recv_stepd)) (fd);
 	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return;
+rwfail:
+	error("%s: failed", __func__);
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
@@ -14209,13 +14265,28 @@ extern char *gres_flags2str(uint8_t config_flags)
 	char *sep = "";
 
 	flag_str[0] = '\0';
+	if (config_flags & GRES_CONF_COUNT_ONLY) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "CountOnly");
+		sep = ",";
+	}
+
 	if (config_flags & GRES_CONF_HAS_FILE) {
+		strcat(flag_str, sep);
 		strcat(flag_str, "HAS_FILE");
 		sep = ",";
 	}
+
+	if (config_flags & GRES_CONF_LOADED) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "LOADED");
+		sep = ",";
+	}
+
 	if (config_flags & GRES_CONF_HAS_TYPE) {
 		strcat(flag_str, sep);
 		strcat(flag_str, "HAS_TYPE");
+		sep = ",";
 	}
 
 	return flag_str;
