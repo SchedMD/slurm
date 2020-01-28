@@ -50,6 +50,7 @@ HIGHLIGHTS
  -- PMIx - improve performance of proc map generation.
  -- Deprecate kill_invalid_depend in SchedulerParameters and move it to a new
     option called DependencyParameters.
+ -- Enable job dependencies for any job on any cluster in the same federation.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================
