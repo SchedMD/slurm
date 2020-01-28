@@ -309,11 +309,6 @@ int setup_env(env_t *env, bool preserve_env)
 	 */
 	unsetenvp(env->env, "SLURM_CONF_SERVER");
 
-	if (setenvf(&env->env, "SLURM_CONF", "%s", getenv("SLURM_CONF"))) {
-		error("Unable to set SLURM_CONF environment variable");
-		rc = SLURM_ERROR;
-	}
-
 	if (!preserve_env && env->ntasks) {
 		if (setenvf(&env->env, "SLURM_NTASKS", "%d", env->ntasks)) {
 			error("Unable to set SLURM_NTASKS environment variable");
