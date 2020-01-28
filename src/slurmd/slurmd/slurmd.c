@@ -1624,6 +1624,36 @@ static bool _slurm_conf_file_exists(void)
 }
 
 /*
+ * Create /run/slurm/ if it does not exist, and add a symlink from
+ * /run/slurm/conf to the conf-cache directory.
+ *
+ * User commands will test this if they've been unsuccessful locating
+ * an alternate config.
+ *
+ * In the future we may disable this with a setting in SlurmdParameters,
+ * but at the moment you would need to have enabled configless mode which
+ * implies you are probably okay with this.
+ *
+ * It is not considered a critical error if this does not work on your system,
+ * thus the minimized error handling.
+ *
+ * No attempt is made to deal with multiple-slurmd mode. Last slurmd started
+ * will win.
+ */
+static void _handle_slash_run(void)
+{
+	if (_set_slurmd_spooldir("/run/slurm") < 0) {
+		error("Unable to create /run/slurm dir");
+		return;
+	}
+
+	(void) unlink("/run/slurm/conf");
+
+	if (symlink(conf->conf_cache, "/run/slurm/conf"))
+		error("Unable to create /run/slurm/conf symlink: %m");
+}
+
+/*
  * Configuration precedence rules for slurmd:
  * 1. conf_server if set
  * 2. SLURM_CONF_SERVER if set (not documented, meant for testing only)
@@ -1683,6 +1713,8 @@ static int _establish_configuration(void)
 	 * slurmd but will cause slurmstepd to fail later on.
 	 */
 	setenv("SLURM_CONF", conf->conffile, 1);
+
+	_handle_slash_run();
 
 	return SLURM_SUCCESS;
 }

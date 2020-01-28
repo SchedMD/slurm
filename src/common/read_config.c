@@ -3156,6 +3156,15 @@ static int _establish_config_source(char **config_file, int *memfd)
 	}
 
 	/*
+	 * Check /run for a usable symlink. This will only exist if slurmd
+	 * is running in configless mode.
+	 */
+	if (!stat("/run/slurm/conf/slurm.conf", &stat_buf)) {
+		*config_file = xstrdup("/run/slurm/conf/slurm.conf");
+		return SLURM_SUCCESS;
+	}
+
+	/*
 	 * One last shot - try the SLURM_CONF_SERVER envvar or DNS SRV
 	 * entries to fetch the configs from the slurmctld.
 	 */
