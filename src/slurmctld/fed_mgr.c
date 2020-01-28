@@ -719,7 +719,8 @@ static int _clear_recv_conns(void *object, void *arg)
  * Must have FED unlocked prior to entering
  */
 static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
-			      slurmdb_cluster_rec_t *cluster)
+			      slurmdb_cluster_rec_t *cluster,
+			      uint64_t *added_clusters)
 {
 	ListIterator c_itr;
 	slurmdb_cluster_rec_t *tmp_cluster, *db_cluster;
@@ -748,6 +749,8 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 			}
 			if (!(tmp_cluster =
 			      fed_mgr_get_cluster_by_name(db_cluster->name))) {
+				*added_clusters |=
+					FED_SIBLING_BIT(db_cluster->fed.id);
 				/* don't worry about destroying the connection
 				 * here.  It will happen below when we free
 				 * fed_mgr_fed_rec (automagically).
@@ -882,12 +885,13 @@ static void _persist_callback_fini(void *arg)
 }
 
 static void _join_federation(slurmdb_federation_rec_t *fed,
-			     slurmdb_cluster_rec_t *cluster)
+			     slurmdb_cluster_rec_t *cluster,
+			     uint64_t *added_clusters)
 {
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
-	_fed_mgr_ptr_init(fed, cluster);
+	_fed_mgr_ptr_init(fed, cluster, added_clusters);
 
 	/* We must open the connections after we get out of the
 	 * write_lock or we will end up in deadlock.
@@ -2797,6 +2801,7 @@ static void _restore_remote_job_dependencies()
 extern int fed_mgr_init(void *db_conn)
 {
 	int rc = SLURM_SUCCESS;
+	uint64_t tmp;
 	slurmdb_federation_cond_t fed_cond;
 	List fed_list;
 	slurmdb_federation_rec_t *fed = NULL, *state_fed = NULL;
@@ -2898,7 +2903,7 @@ extern int fed_mgr_init(void *db_conn)
 		if ((cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
 					       slurmctld_conf.cluster_name))) {
-			_join_federation(fed, cluster);
+			_join_federation(fed, cluster, &tmp);
 
 			/* Find clusters that were removed from the federation
 			 * since the last time we got an update */
@@ -2985,8 +2990,33 @@ extern int fed_mgr_fini(void)
 	return SLURM_SUCCESS;
 }
 
+static void _send_singleton_dependencies()
+{
+	uint32_t origin_id;
+	job_record_t *job_ptr;
+	ListIterator itr;
+	depend_spec_t find_dep = { 0 };
+
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
+
+	if (!fed_mgr_cluster_rec)
+		return;
+
+	find_dep.depend_type = SLURM_DEPEND_SINGLETON;
+	itr = list_iterator_create(job_list);
+	while ((job_ptr = list_next(itr))) {
+		if (_is_fed_job(job_ptr, &origin_id) &&
+		    find_dependency(job_ptr, &find_dep))
+			fed_mgr_submit_remote_dependencies(job_ptr, true,
+							   false);
+	}
+	list_iterator_destroy(itr);
+}
+
 extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 {
+	uint64_t added_clusters = 0;
 	List feds;
 	slurmdb_federation_rec_t *fed   = NULL;
 	slurmdb_cluster_rec_t *cluster  = NULL;
@@ -3031,7 +3061,17 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 			if (fed_mgr_fed_rec)
 				_handle_removed_clusters(fed);
 			unlock_slurmctld(fedr_jobw_lock);
-			_join_federation(fed, cluster);
+			_join_federation(fed, cluster, &added_clusters);
+
+			if (added_clusters) {
+				lock_slurmctld(fedr_jobw_lock);
+				if (slurmctld_conf.debug_flags &
+				    DEBUG_FLAG_DEPENDENCY)
+					info("%s: New cluster(s) added: 0x%lx",
+					     __func__, added_clusters);
+				_send_singleton_dependencies();
+				unlock_slurmctld(fedr_jobw_lock);
+			}
 			break;
 		}
 		slurmdb_destroy_federation_rec(fed);

@@ -3168,6 +3168,15 @@ static int _find_dependency(void *arg, void *key)
 		(dep_ptr->depend_type == new_dep->depend_type);
 }
 
+extern depend_spec_t *find_dependency(job_record_t *job_ptr,
+				      depend_spec_t *dep_ptr)
+{
+	if (!job_ptr->details || !job_ptr->details->depend_list)
+		return NULL;
+	return list_find_first(job_ptr->details->depend_list,
+			       _find_dependency, dep_ptr);
+}
+
 /*
  * Add a new dependency to the list, ensuring that the list is unique.
  * Dependencies are uniquely identified by a combination of job_id and
