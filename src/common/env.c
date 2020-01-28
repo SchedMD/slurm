@@ -288,7 +288,6 @@ int setup_env(env_t *env, bool preserve_env)
 	int rc = SLURM_SUCCESS;
 	char *addr, *dist = NULL, *lllp_dist = NULL;
 	char addrbuf[INET_ADDRSTRLEN];
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (env == NULL)
 		return SLURM_ERROR;
@@ -635,36 +634,34 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
-	if (!(cluster_flags & CLUSTER_FLAG_CRAYXT)) {
-		/*
-		 * These aren't relevant to a system not using Slurm as the
-		 * launcher. Since there isn't a flag for that we check for
-		 * the flags we do have.
-		 */
-		if (env->task_pid &&
-		    setenvf(&env->env, "SLURM_TASK_PID", "%d",
-			       (int)env->task_pid)) {
-			error("Unable to set SLURM_TASK_PID environment "
-			      "variable");
-			rc = SLURM_ERROR;
-		}
-		if ((env->nodeid >= 0) &&
-		    setenvf(&env->env, "SLURM_NODEID", "%d", env->nodeid)) {
-			error("Unable to set SLURM_NODEID environment");
-			rc = SLURM_ERROR;
-		}
+	/*
+	 * These aren't relevant to a system not using Slurm as the
+	 * launcher. Since there isn't a flag for that we check for
+	 * the flags we do have.
+	 */
+	if (env->task_pid &&
+	    setenvf(&env->env, "SLURM_TASK_PID", "%d",
+		       (int)env->task_pid)) {
+		error("Unable to set SLURM_TASK_PID environment "
+		      "variable");
+		rc = SLURM_ERROR;
+	}
+	if ((env->nodeid >= 0) &&
+	    setenvf(&env->env, "SLURM_NODEID", "%d", env->nodeid)) {
+		error("Unable to set SLURM_NODEID environment");
+		rc = SLURM_ERROR;
+	}
 
-		if ((env->procid >= 0) &&
-		    setenvf(&env->env, "SLURM_PROCID", "%d", env->procid)) {
-			error("Unable to set SLURM_PROCID environment");
-			rc = SLURM_ERROR;
-		}
+	if ((env->procid >= 0) &&
+	    setenvf(&env->env, "SLURM_PROCID", "%d", env->procid)) {
+		error("Unable to set SLURM_PROCID environment");
+		rc = SLURM_ERROR;
+	}
 
-		if ((env->localid >= 0) &&
-		    setenvf(&env->env, "SLURM_LOCALID", "%d", env->localid)) {
-			error("Unable to set SLURM_LOCALID environment");
-			rc = SLURM_ERROR;
-		}
+	if ((env->localid >= 0) &&
+	    setenvf(&env->env, "SLURM_LOCALID", "%d", env->localid)) {
+		error("Unable to set SLURM_LOCALID environment");
+		rc = SLURM_ERROR;
 	}
 
 	if (env->stepid >= 0) {
