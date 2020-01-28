@@ -87,6 +87,19 @@ When \fBAccountingStorageEnforce\fR is changed, a restart of the slurmctld
 daemon is required (not just a "scontrol reconfig").
 
 .TP
+\fBAccountingStorageExternalHost\fR
+A comma separated list of external slurmdbds (<host/ip>[:port][,...]) to
+register with. If no port is given, the \fBAccountingStoragePort\fR will be
+used.
+
+This allows clusters registered with the external slurmdbd to communicate with
+each other using the \fI--cluster/-M\fR client command options.
+
+The cluster will add itself to the external slurmdbd if it doesn't exist. If a
+non-external cluster already exists on the external slurmdbd, the slurmctld
+will ignore registering to the external slurmdbd.
+
+.TP
 \fBAccountingStorageHost\fR
 The name of the machine hosting the accounting storage database.
 Only used with systems using SlurmDBD, ignored otherwise.

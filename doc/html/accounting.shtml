@@ -327,6 +327,17 @@ jobs will be executed based upon policies configured in Slurm on each
 cluster.</b>
 </li>
 
+<li><b>AccountingStorageExternalHost</b>:
+A comma separated list of external slurmdbds (&lt;host/ip&gt;[:port][,...]) to
+register with. If no port is given, the <b>AccountingStoragePort</b> will be
+used. This allows clusters registered with the external slurmdbd to communicate
+with each other using the <i>--cluster/-M</i> client command options.
+
+The cluster will add itself to the external slurmdbd if it doesn't exist.
+If a non-external cluster already exists on the external slurmdbd, the
+slurmctld will ignore registering to the external slurmdbd.
+</li>
+
 <li><b>AccountingStorageHost</b>: The name or address of the host where
 SlurmDBD executes</li>
 
@@ -562,7 +573,11 @@ You must define clusters before you add accounts and you must add accounts
 before you can add users.</p>
 
 <p>For example, to add a cluster named "snowflake" to the database
-execute this line:</p>
+execute this line
+(<b>NOTE:</b> as of 20.02, slurmctld will add the cluster to the database upon
+start if it doesn't exist. Associations still need to be created after
+addition):
+</p>
 <pre>
 sacctmgr add cluster snowflake
 </pre>
