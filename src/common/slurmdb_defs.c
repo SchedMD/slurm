@@ -3343,7 +3343,6 @@ extern int slurmdb_get_first_het_job_cluster(List job_req_list,
 		}
 	}
 	list_iterator_destroy(itr);
-	FREE_NULL_LIST(tried_feds);
 
 	/* restore working_cluster_rec in case it was already set */
 	if (*cluster_rec) {
@@ -3382,6 +3381,7 @@ extern int slurmdb_get_first_het_job_cluster(List job_req_list,
 end_it:
 	FREE_NULL_LIST(ret_list);
 	FREE_NULL_LIST(cluster_list);
+	FREE_NULL_LIST(tried_feds);
 
 	return rc;
 }
