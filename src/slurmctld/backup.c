@@ -508,6 +508,8 @@ static void *_ping_ctld_thread(void *arg)
 			break;
 		}
 		slurm_free_msg_data(resp.msg_type, resp.data);
+		if (resp.auth_cred)
+			g_slurm_auth_destroy(resp.auth_cred);
 	}
 
 	slurm_mutex_lock(&ping_mutex);

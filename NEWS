@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
     work.
  -- Add cosmetic batch step to correct component in a hetjob.
  -- Fix to make scontrol write config create a usable config without editing.
+ -- Fix memory leak when pinging backup controller.
 
 * Changes in Slurm 19.05.5
 ==========================
