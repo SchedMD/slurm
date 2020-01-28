@@ -3207,7 +3207,7 @@ static int _establish_config_source(char **config_file, int *memfd)
 extern int
 slurm_conf_init(const char *file_name)
 {
-	char *config_file = xstrdup(file_name);
+	char *config_file;
 	int memfd = -1;
 	slurm_mutex_lock(&conf_lock);
 
@@ -3216,6 +3216,7 @@ slurm_conf_init(const char *file_name)
 		return SLURM_ERROR;
 	}
 
+	config_file = xstrdup(file_name);
 	if (_establish_config_source(&config_file, &memfd)) {
 		log_var(lvl, "Could not establish a configuration source");
 		xfree(config_file);
