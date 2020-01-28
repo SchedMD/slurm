@@ -3764,10 +3764,12 @@ extern int dump_job_step_state(void *x, void *arg)
 	pack_slurm_step_layout(step_ptr->step_layout, buffer,
 			       SLURM_PROTOCOL_VERSION);
 
-	if (!step_ptr->batch_step) {
+	if (step_ptr->switch_job) {
+		pack8(1, buffer);
 		switch_g_pack_jobinfo(step_ptr->switch_job, buffer,
 				      SLURM_PROTOCOL_VERSION);
-	}
+	} else
+		pack8(0, buffer);
 
 	select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 				     SLURM_PROTOCOL_VERSION);
@@ -3797,7 +3799,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 {
 	step_record_t *step_ptr = NULL;
 	bitstr_t *exit_node_bitmap = NULL, *core_bitmap_job = NULL;
-	uint8_t no_kill;
+	uint8_t no_kill, uint8_tmp;
 	uint16_t cyclic_alloc, port, batch_step;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 	uint16_t cpus_per_task, resv_port_cnt, state;
@@ -3862,11 +3864,11 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 					     protocol_version))
 			goto unpack_error;
 
-		if (!batch_step) {
-			if (switch_g_unpack_jobinfo(&switch_tmp, buffer,
-						    protocol_version))
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp &&
+		    (switch_g_unpack_jobinfo(&switch_tmp, buffer,
+					     protocol_version)))
 				goto unpack_error;
-		}
 
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
 						   protocol_version))
