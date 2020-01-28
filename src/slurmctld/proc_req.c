@@ -1067,6 +1067,44 @@ extern void configless_setup(void)
 			config_for_slurmd->topology_config;
 }
 
+/*
+ * This trickery is to avoid contending any further on config_read.
+ * Without this _slurm_rpc_config_request() would need to hold
+ * conf_read until the response had finished sending (since we're using
+ * a single shared copy of the configs).
+ *
+ * Instead, swap the pointers as quickly as possible. There is, as always,
+ * a potential race here, but it's viewed as less problematic than
+ * slowing down slurmctld with additional locking pressure.
+ */
+extern void configless_update(void)
+{
+	config_response_msg_t *new = xmalloc(sizeof(*new));
+	config_response_msg_t *old = xmalloc(sizeof(*old));
+
+	load_config_response_msg(new, CONFIG_REQUEST_SLURMD);
+
+	memcpy(old, config_for_slurmd, sizeof(config_response_msg_t));
+	/* pseudo-atomic update of the pointers */
+	memcpy(config_for_slurmd, new, sizeof(config_response_msg_t));
+	/* only free "new", not the contents */
+	xfree(new);
+
+	/* just reuse what we already have */
+	config_for_clients->config = config_for_slurmd->config;
+
+	/*
+	 * route/topology will cause srun to load topology.conf, so we'll
+	 * need to send that along with the rest.
+	 */
+	if (!xstrcmp(slurmctld_conf.route_plugin, "route/topology"))
+		config_for_clients->topology_config =
+			config_for_slurmd->topology_config;
+
+	/* now free the old config */
+	slurm_free_config_response_msg(old);
+}
+
 extern void configless_clear(void)
 {
 	slurm_free_config_response_msg(config_for_slurmd);
@@ -3633,8 +3671,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 			_update_cred_key();
 			set_slurmctld_state_loc();
 			if (config_for_slurmd) {
-				configless_clear();
-				configless_setup();
+				configless_update();
 				push_reconfig_to_slurmd();
 			} else
 				msg_to_slurmd(REQUEST_RECONFIGURE);
