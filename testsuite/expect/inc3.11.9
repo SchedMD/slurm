@@ -592,12 +592,16 @@ proc inc3_11_9 {} {
 		return
 	}
 
-
-	set ret_code [delete_res $res_name1]
+	set ret_code1 [delete_res $res_name1]
+	if { $ret_code1 != 0 } {
+		log_error "failed to delete reservation $res_name1."
+	}
 	set ret_code [delete_res $res_name]
 	if { $ret_code != 0 } {
-		send_user "FAILURE: failed to delete reservations.\n"
-		exit $ret_code
+		log_error "failed to delete reservation $res_name."
+	}
+	if { $ret_code != 0 || $ret_code1 != 0 } {
+		exit 1
 	}
 
 	# Create a job that uses all cores in the node range and is not
