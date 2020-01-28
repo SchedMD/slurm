@@ -81,6 +81,7 @@ documents those changes that are of interest to users and administrators.
  -- Deprecate kill_invalid_depend in SchedulerParameters and move it to new
     DependencyParameters.
  -- Enable job dependencies for any job on any cluster in the same federation.
+ -- Stricter escaping of strings sent to Elasticsearch.
 
 * Changes in Slurm 19.05.6
 ==========================
