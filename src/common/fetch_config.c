@@ -234,7 +234,24 @@ rwfail:
 	fatal("%s: could not write conf file, likely out of memory", __func__);
 	return SLURM_ERROR;
 #else
-	fatal("%s: memfd_create() not found at compile time", __func__);
+	pid_t pid = getpid();
+	char template[] = "/tmp/fake-memfd-XXXXXX";
+	int fd = mkstemp(template);
+
+	if (fd < 0)
+		fatal("%s: could not create temp file", __func__);
+	/* immediately unlink the file so it doesn't get left around */
+	(void) unlink(template);
+
+	xfree(*filename);
+	xstrfmtcat(*filename, "/proc/%lu/fd/%d", (unsigned long) pid, fd);
+
+	safe_write(fd, config, strlen(config));
+
+	return fd;
+
+rwfail:
+	fatal("%s: could not write conf file", __func__);
 	return SLURM_ERROR;
 #endif
 }
