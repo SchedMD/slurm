@@ -158,6 +158,10 @@ proc inc3_11_9 {} {
 
 		# Delete the reservation
 		set ret_code [delete_res $res_name]
+		if {$ret_code != 0} {
+			cancel_job $job_id
+			exit $ret_code
+		}
 	}
 
 	# Make the reservation using more cores than free in a node (now)
@@ -170,6 +174,10 @@ proc inc3_11_9 {} {
 		send_user "\n\033\[32mSUCCESS: Reservation can be created as expected (Within: inc3.11.9)\033\[m\n"
 		# Delete the reservation
 		set ret_code [delete_res $res_name]
+		if {$ret_code != 0} {
+			cancel_job $job_id
+			exit $ret_code
+		}
 	}
 
 	# Make the reservation using more cores than free at reservation start time
@@ -179,9 +187,8 @@ proc inc3_11_9 {} {
 	} else {
 		send_user "\n\033\[31mFAILURE: Reservation can be created when it should not (Within: inc3.11.9)\033\[m\n"
 		set exit_code 1
-
 		# Delete the reservation
-		set ret_code [delete_res $res_name]
+		delete_res $res_name
 	}
 
 	cancel_job $job_id
@@ -252,8 +259,8 @@ proc inc3_11_9 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.9)\033\[m\n"
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -283,8 +290,8 @@ proc inc3_11_9 {} {
 	cancel_job $job_id
 
 	if { $exit_code == 1 } {
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -311,8 +318,8 @@ proc inc3_11_9 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.9)\033\[m\n"
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -346,8 +353,8 @@ proc inc3_11_9 {} {
 	cancel_job $job_id
 
 	if { $exit_code == 1 } {
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -371,8 +378,8 @@ proc inc3_11_9 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.9)\033\[m\n"
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -406,8 +413,8 @@ proc inc3_11_9 {} {
 	cancel_job $job_id
 
 	if { $exit_code == 1 } {
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -433,8 +440,8 @@ proc inc3_11_9 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.9)\033\[m\n"
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -468,8 +475,8 @@ proc inc3_11_9 {} {
 	cancel_job $job_id
 
 	if { $exit_code == 1 } {
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -492,8 +499,8 @@ proc inc3_11_9 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.9)\033\[m\n"
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -527,8 +534,8 @@ proc inc3_11_9 {} {
 	cancel_job $job_id
 
 	if { $exit_code == 1 } {
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -551,9 +558,8 @@ proc inc3_11_9 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
-		set exit_code 1
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -587,8 +593,8 @@ proc inc3_11_9 {} {
 	cancel_job $job_id
 
 	if { $exit_code == 1 } {
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		return
 	}
 
