@@ -53,11 +53,12 @@ static void _init_minimal_conf_server_config(List controllers);
 
 static int to_parent[2] = {-1, -1};
 
-static config_response_msg_t *_fetch_parent(void)
+static config_response_msg_t *_fetch_parent(pid_t pid)
 {
 	int len;
 	buf_t *buffer;
 	config_response_msg_t *config = NULL;
+	int status;
 
 	safe_read(to_parent[0], &len, sizeof(int));
 	buffer = init_buf(len);
@@ -69,10 +70,14 @@ static config_response_msg_t *_fetch_parent(void)
 		return NULL;
 	}
 
+	waitpid(pid, &status, 0);
+	debug2("%s: status from child %d", __func__, status);
 	return config;
 
 rwfail:
 	error("%s: failed to read from child: %m", __func__);
+	waitpid(pid, &status, 0);
+	debug2("%s: status from child %d", __func__, status);
 
 	return NULL;
 }
@@ -168,7 +173,7 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 		return NULL;
 	} else if (pid > 0) {
 		list_destroy(controllers);
-		return _fetch_parent();
+		return _fetch_parent(pid);
 	}
 
 	_fetch_child(controllers, flags);
