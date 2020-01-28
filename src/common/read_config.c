@@ -3123,10 +3123,8 @@ _destroy_slurm_conf(void)
  */
 static int _establish_config_source(char **config_file, int *memfd)
 {
-	char *file;
 	struct stat stat_buf;
 	config_response_msg_t *config = NULL;
-	char *memfd_path = NULL;
 
 	/*
 	 * If config_file was defined (e.g., through the -f option to slurmd)
@@ -3135,10 +3133,8 @@ static int _establish_config_source(char **config_file, int *memfd)
 	 */
 	if (*config_file)
 		return SLURM_SUCCESS;
-	if ((file = getenv("SLURM_CONF"))) {
-		*config_file = xstrdup(file);
+	if ((*config_file = xstrdup(getenv("SLURM_CONF"))))
 		return SLURM_SUCCESS;
-	}
 
 	/*
 	 * Use default_slurm_config_file iff the file exists.
@@ -3166,9 +3162,8 @@ static int _establish_config_source(char **config_file, int *memfd)
 	 * memfd is always created successfully as any failure causes the
 	 * process to die with a fatal() error.
 	 */
-	*memfd = dump_to_memfd("slurm.conf", config->config, &memfd_path);
+	*memfd = dump_to_memfd("slurm.conf", config->config, config_file);
 	slurm_free_config_response_msg(config);
-	*config_file = memfd_path;
 
 	return SLURM_SUCCESS;
 }
@@ -3188,7 +3183,7 @@ static int _establish_config_source(char **config_file, int *memfd)
 extern int
 slurm_conf_init(const char *file_name)
 {
-	char *config_file = NULL;
+	char *config_file = xstrdup(file_name);
 	int memfd = -1;
 	slurm_mutex_lock(&conf_lock);
 
@@ -3197,13 +3192,11 @@ slurm_conf_init(const char *file_name)
 		return SLURM_ERROR;
 	}
 
-	if (!file_name) {
-		if (_establish_config_source(&config_file, &memfd)) {
-			log_var(lvl, "Could not establish a configuration source");
-			return SLURM_ERROR;
-		}
-	} else
-		config_file = xstrdup(file_name);
+	if (_establish_config_source(&config_file, &memfd)) {
+		log_var(lvl, "Could not establish a configuration source");
+		xfree(config_file);
+		return SLURM_ERROR;
+	}
 
 	/*
 	 * Ensure this determination is propagated throughout. A number of
@@ -3238,6 +3231,7 @@ slurm_conf_init(const char *file_name)
 	slurm_mutex_unlock(&conf_lock);
 	if (memfd != -1)
 		close(memfd);
+	xfree(config_file);
 	return SLURM_SUCCESS;
 }
 
