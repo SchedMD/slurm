@@ -3760,9 +3760,11 @@ extern int dump_job_step_state(void *x, void *arg)
 					   SLURM_PROTOCOL_VERSION);
 
 	pack16(step_ptr->batch_step, buffer);
+
+	pack_slurm_step_layout(step_ptr->step_layout, buffer,
+			       SLURM_PROTOCOL_VERSION);
+
 	if (!step_ptr->batch_step) {
-		pack_slurm_step_layout(step_ptr->step_layout, buffer,
-				       SLURM_PROTOCOL_VERSION);
 		switch_g_pack_jobinfo(step_ptr->switch_job, buffer,
 				      SLURM_PROTOCOL_VERSION);
 	}
@@ -3855,10 +3857,12 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 			goto unpack_error;
 
 		safe_unpack16(&batch_step, buffer);
+
+		if (unpack_slurm_step_layout(&step_layout, buffer,
+					     protocol_version))
+			goto unpack_error;
+
 		if (!batch_step) {
-			if (unpack_slurm_step_layout(&step_layout, buffer,
-						     protocol_version))
-				goto unpack_error;
 			if (switch_g_unpack_jobinfo(&switch_tmp, buffer,
 						    protocol_version))
 				goto unpack_error;
