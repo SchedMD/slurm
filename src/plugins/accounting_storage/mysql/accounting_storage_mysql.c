@@ -2796,7 +2796,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		char *query = NULL;
 		MYSQL_RES *result = NULL;
 		MYSQL_ROW row;
-		ListIterator itr = NULL, itr2 = NULL, itr3 = NULL;
+		ListIterator itr = NULL;
 		slurmdb_update_object_t *object = NULL;
 
 		xstrfmtcat(query, "select control_host, control_port, "
@@ -2829,14 +2829,15 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			switch (object->type) {
 			case SLURMDB_REMOVE_CLUSTER:
 			{
+				ListIterator rem_itr = NULL;
 				char *rem_cluster = NULL;
-				itr3 = list_iterator_create(object->objects);
-				while ((rem_cluster = list_next(itr3))) {
+				rem_itr = list_iterator_create(object->objects);
+				while ((rem_cluster = list_next(rem_itr))) {
 					list_delete_all(as_mysql_cluster_list,
 							slurm_find_char_in_list,
 							rem_cluster);
 				}
-				list_iterator_destroy(itr3);
+				list_iterator_destroy(rem_itr);
 				break;
 			}
 			default:
