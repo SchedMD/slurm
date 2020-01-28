@@ -370,7 +370,7 @@ static void _load_dbd_state(void)
 				 * PROTOCOL_VERSION just so we keep
 				 * things up to date.
 				 */
-				slurmdbd_msg_t msg;
+				persist_msg_t msg = {0};
 				int rc;
 				set_buf_offset(buffer, 0);
 				rc = unpack_slurmdbd_msg(
@@ -727,7 +727,7 @@ static void *_agent(void *x)
 	struct timespec abs_time;
 	static time_t fail_time = 0;
 	int sigarray[] = {SIGUSR1, 0};
-	persist_msg_t list_req;
+	persist_msg_t list_req = {0};
 	dbd_list_msg_t list_msg;
 	DEF_TIMERS;
 
