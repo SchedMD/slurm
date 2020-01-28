@@ -1,7 +1,7 @@
 [Unit]
 Description=Slurm node daemon
 After=munge.service network.target remote-fs.target
-ConditionPathExists=@sysconfdir@/slurm.conf
+#ConditionPathExists=@sysconfdir@/slurm.conf
 
 [Service]
 Type=forking

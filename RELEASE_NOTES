@@ -53,6 +53,8 @@ HIGHLIGHTS
  -- Enable job dependencies for any job on any cluster in the same federation.
  -- Allow clusters to be added automatically to db at startup of ctld.
  -- Add AccountingStorageExternalHost slurm.conf parameter.
+ -- The "ConditionPathExists" condition in slurmd.service has been disabled by
+    default to permit simpler installation of a "configless" Slurm cluster.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================
