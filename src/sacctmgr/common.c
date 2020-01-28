@@ -2242,15 +2242,13 @@ extern int sacctmgr_validate_cluster_list(List cluster_list)
 	int rc = SLURM_SUCCESS;
 	ListIterator itr = NULL, itr_c = NULL;
 
-	if (cluster_list) {
-		slurmdb_cluster_cond_t cluster_cond;
-		slurmdb_init_cluster_cond(&cluster_cond, 0);
-		cluster_cond.cluster_list = cluster_list;
+	xassert(cluster_list);
 
-		temp_list = slurmdb_clusters_get(db_conn, &cluster_cond);
-	} else
-		temp_list = slurmdb_clusters_get(db_conn, NULL);
+	slurmdb_cluster_cond_t cluster_cond;
+	slurmdb_init_cluster_cond(&cluster_cond, 0);
+	cluster_cond.cluster_list = cluster_list;
 
+	temp_list = slurmdb_clusters_get(db_conn, &cluster_cond);
 
 	itr_c = list_iterator_create(cluster_list);
 	itr = list_iterator_create(temp_list);
@@ -2259,8 +2257,14 @@ extern int sacctmgr_validate_cluster_list(List cluster_list)
 
 		list_iterator_reset(itr);
 		while ((cluster_rec = list_next(itr))) {
-			if (!xstrcasecmp(cluster_rec->name, cluster))
+			if (!xstrcasecmp(cluster_rec->name, cluster)) {
+				if (cluster_rec->flags & CLUSTER_FLAG_EXT) {
+					fprintf(stderr, " The cluster '%s' is an external cluster. Can't work with it.\n",
+						cluster);
+					list_delete_item(itr_c);
+				}
 				break;
+			}
 		}
 		if (!cluster_rec) {
 			exit_code=1;

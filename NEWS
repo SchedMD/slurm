@@ -82,6 +82,8 @@ documents those changes that are of interest to users and administrators.
     DependencyParameters.
  -- Enable job dependencies for any job on any cluster in the same federation.
  -- Stricter escaping of strings sent to Elasticsearch.
+ -- Allow clusters to be added automatically to db at startup of ctld.
+ -- Add AccountingStorageExternalHost slurm.conf parameter.
 
 * Changes in Slurm 19.05.6
 ==========================

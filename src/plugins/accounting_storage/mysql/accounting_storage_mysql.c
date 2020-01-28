@@ -2796,12 +2796,11 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		char *query = NULL;
 		MYSQL_RES *result = NULL;
 		MYSQL_ROW row;
-		ListIterator itr = NULL, itr2 = NULL, itr3 = NULL;
-		char *rem_cluster = NULL, *cluster_name = NULL;
+		ListIterator itr = NULL;
 		slurmdb_update_object_t *object = NULL;
 
 		xstrfmtcat(query, "select control_host, control_port, "
-			   "name, rpc_version "
+			   "name, rpc_version, flags "
 			   "from %s where deleted=0 && control_port != 0",
 			   cluster_table);
 		if (!(result = mysql_db_query_ret(
@@ -2811,6 +2810,8 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		xfree(query);
 		while ((row = mysql_fetch_row(result))) {
+			if (slurm_atoul(row[4]) & CLUSTER_FLAG_EXT)
+				continue;
 			(void) slurmdb_send_accounting_update(
 				mysql_conn->update_list,
 				row[2], row[0],
@@ -2822,7 +2823,6 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		(void) assoc_mgr_update(mysql_conn->update_list, 0);
 
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
-		itr2 = list_iterator_create(as_mysql_cluster_list);
 		itr = list_iterator_create(mysql_conn->update_list);
 		while ((object = list_next(itr))) {
 			if (!object->objects || !list_count(object->objects))
@@ -2830,26 +2830,23 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			/* We only care about clusters removed here. */
 			switch (object->type) {
 			case SLURMDB_REMOVE_CLUSTER:
-				itr3 = list_iterator_create(object->objects);
-				while ((rem_cluster = list_next(itr3))) {
-					while ((cluster_name =
-						list_next(itr2))) {
-						if (!xstrcmp(cluster_name,
-							     rem_cluster)) {
-							list_delete_item(itr2);
-							break;
-						}
-					}
-					list_iterator_reset(itr2);
+			{
+				ListIterator rem_itr = NULL;
+				char *rem_cluster = NULL;
+				rem_itr = list_iterator_create(object->objects);
+				while ((rem_cluster = list_next(rem_itr))) {
+					list_delete_all(as_mysql_cluster_list,
+							slurm_find_char_in_list,
+							rem_cluster);
 				}
-				list_iterator_destroy(itr3);
+				list_iterator_destroy(rem_itr);
 				break;
+			}
 			default:
 				break;
 			}
 		}
 		list_iterator_destroy(itr);
-		list_iterator_destroy(itr2);
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 	}
 	xfree(mysql_conn->pre_commit_query);

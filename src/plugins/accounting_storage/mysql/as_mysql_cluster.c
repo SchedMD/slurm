@@ -227,6 +227,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	bool has_feds = false;
 	List assoc_list = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
+	bool external_cluster = false;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -250,6 +251,9 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			list_remove(itr);
 			continue;
 		}
+		if ((object->flags != NO_VAL) &&
+		    (object->flags & CLUSTER_FLAG_EXT))
+			external_cluster = true;
 		if ((rc = create_cluster_tables(mysql_conn,
 						object->name))
 		    != SLURM_SUCCESS) {
@@ -358,29 +362,34 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		xstrfmtcat(query,
-			   "insert into \"%s_%s\" (%s, lft, rgt) "
-			   "values (%s, 1, 2) "
-			   "on duplicate key update deleted=0, "
-			   "id_assoc=LAST_INSERT_ID(id_assoc)%s;",
-			   object->name, assoc_table, cols,
-			   vals,
-			   extra);
+		if (!external_cluster) {
+			/* Add root account */
+			xstrfmtcat(query,
+				   "insert into \"%s_%s\" (%s, lft, rgt) "
+				   "values (%s, 1, 2) "
+				   "on duplicate key update deleted=0, "
+				   "id_assoc=LAST_INSERT_ID(id_assoc)%s;",
+				   object->name, assoc_table, cols,
+				   vals,
+				   extra);
+			xfree(cols);
+			xfree(vals);
+			if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 
-		xfree(cols);
-		xfree(vals);
-		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			rc = mysql_db_query(mysql_conn, query);
+			xfree(query);
 
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-
-		if (rc != SLURM_SUCCESS) {
-			error("Couldn't add cluster root assoc");
-			xfree(extra);
-			xfree(features);
-			added=0;
-			break;
+			if (rc != SLURM_SUCCESS) {
+				error("Couldn't add cluster root assoc");
+				xfree(extra);
+				xfree(features);
+				added=0;
+				break;
+			}
+		} else {
+			xfree(cols);
+			xfree(vals);
 		}
 
 		/* Build up extra with cluster specfic values for txn table */
@@ -432,23 +441,26 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				      object->name);
 			slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 		}
-		/* Add user root by default to run from the root
-		 * association.  This gets popped off so we need to
-		 * read it every time here.
-		 */
-		assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-		slurmdb_init_assoc_rec(assoc, 0);
-		list_append(assoc_list, assoc);
 
-		assoc->cluster = xstrdup(object->name);
-		assoc->user = xstrdup("root");
-		assoc->acct = xstrdup("root");
-		assoc->is_def = 1;
+		if (!external_cluster) {
+			/* Add user root by default to run from the root
+			 * association.  This gets popped off so we need to
+			 * read it every time here.
+			 */
+			assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
+			slurmdb_init_assoc_rec(assoc, 0);
+			list_append(assoc_list, assoc);
 
-		if (as_mysql_add_assocs(mysql_conn, uid, assoc_list)
-		    == SLURM_ERROR) {
-			error("Problem adding root user association");
-			rc = SLURM_ERROR;
+			assoc->cluster = xstrdup(object->name);
+			assoc->user = xstrdup("root");
+			assoc->acct = xstrdup("root");
+			assoc->is_def = 1;
+
+			if (as_mysql_add_assocs(mysql_conn, uid, assoc_list)
+			    == SLURM_ERROR) {
+				error("Problem adding root user association");
+				rc = SLURM_ERROR;
+			}
 		}
 	}
 end_it:

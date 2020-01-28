@@ -1788,6 +1788,20 @@ char *slurm_get_accounting_storage_backup_host(void)
 	return storage_host;
 }
 
+char *slurm_get_accounting_storage_ext_host(void)
+{
+	char *ext_host = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		ext_host = xstrdup(conf->accounting_storage_ext_host);
+		slurm_conf_unlock();
+	}
+	return ext_host;
+}
+
 /* slurm_get_accounting_storage_host
  * returns the storage host from slurmctld_conf object
  * RET char *    - storage host,  MUST be xfreed by caller

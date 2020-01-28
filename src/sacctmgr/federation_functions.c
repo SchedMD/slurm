@@ -360,6 +360,9 @@ extern int verify_fed_clusters(List cluster_list, const char *fed_name,
 					"federation %s\n",
 				db_rec->name, fed_name);
 			list_delete_item(itr_c);
+		} else if (db_rec->flags & CLUSTER_FLAG_EXT) {
+			xstrfmtcat(missing_str, " The cluster %s is an external cluster and can't be added to a federation.\n",
+				   db_rec->name);
 		}
 	}
 

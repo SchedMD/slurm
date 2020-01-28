@@ -327,6 +327,8 @@ static int _check_and_set_cluster_list(List cluster_list)
 
 	itr_c = list_iterator_create(tmp_list);
 	while ((cluster_rec = list_next(itr_c))) {
+		if (cluster_rec->flags & CLUSTER_FLAG_EXT)
+			continue;
 		list_append(cluster_list, cluster_rec->name);
 		cluster_rec->name = NULL;
 	}
