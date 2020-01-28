@@ -1683,7 +1683,6 @@ static int _establish_configuration(void)
 	 * slurmd but will cause slurmstepd to fail later on.
 	 */
 	setenv("SLURM_CONF", conf->conffile, 1);
-	slurm_conf_reinit(conf->conffile);
 
 	return SLURM_SUCCESS;
 }
@@ -1717,6 +1716,7 @@ _slurmd_init(void)
 	 * Node tables setup must precede _read_config() so that the
 	 * proper hostname is set.
 	 */
+	slurm_conf_init(conf->conffile);
 	init_node_conf();
 
 	if (slurm_select_init(1) != SLURM_SUCCESS)

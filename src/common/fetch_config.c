@@ -51,11 +51,64 @@
 
 static void _init_minimal_conf_server_config(List controllers);
 
+static int to_parent[2] = {-1, -1};
+
+static config_response_msg_t *_fetch_parent(void)
+{
+	int len;
+	buf_t *buffer;
+	config_response_msg_t *config = NULL;
+
+	safe_read(to_parent[0], &len, sizeof(int));
+	buffer = init_buf(len);
+	safe_read(to_parent[0], buffer->head, len);
+
+	if (unpack_config_response_msg(&config, buffer,
+				       SLURM_PROTOCOL_VERSION)) {
+		error("%s: unpack failed", __func__);
+		return NULL;
+	}
+
+	return config;
+
+rwfail:
+	error("%s: failed to read from child: %m", __func__);
+
+	return NULL;
+}
+
+static void _fetch_child(List controllers, uint32_t flags)
+{
+	config_response_msg_t *config;
+	buf_t *buffer = init_buf(1024 * 1024);
+	int len;
+
+	_init_minimal_conf_server_config(controllers);
+	config = fetch_config_from_controller(flags);
+
+	if (!config) {
+		error("%s: failed to fetch remote configs", __func__);
+		exit(1);
+	}
+
+	pack_config_response_msg(config, buffer, SLURM_PROTOCOL_VERSION);
+
+	len = buffer->processed;
+	safe_write(to_parent[1], &len, sizeof(int));
+	safe_write(to_parent[1], buffer->head, len);
+
+	exit(0);
+
+rwfail:
+	error("%s: failed to write to parent: %m", __func__);
+	exit(1);
+}
+
 extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 {
 	char *env_conf_server = getenv("SLURM_CONF_SERVER");
 	List controllers = NULL;
-	config_response_msg_t *config = NULL;
+	pid_t pid;
 
 	/*
 	 * Two main processing options here: we are either given an explicit
@@ -94,13 +147,23 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 	 * Use that to build a memfd-backed minimal config file so we can
 	 * communicate with slurmctld and get the real configs.
 	 */
+	if (pipe(to_parent) < 0) {
+		error("%s: pipe failed: %m", __func__);
+		return NULL;
+	}
 
-	_init_minimal_conf_server_config(controllers);
-	list_destroy(controllers);
-	config = fetch_config_from_controller(flags);
-	slurm_conf_destroy();
+	if ((pid = fork()) < 0) {
+		error("%s: fork: %m", __func__);
+		close(to_parent[0]);
+		close(to_parent[1]);
+		return NULL;
+	} else if (pid > 0) {
+		list_destroy(controllers);
+		return _fetch_parent();
+	}
 
-	return config;
+	_fetch_child(controllers, flags);
+	return NULL;
 }
 
 extern config_response_msg_t *fetch_config_from_controller(uint32_t flags)
