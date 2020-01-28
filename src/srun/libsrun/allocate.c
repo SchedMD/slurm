@@ -506,8 +506,10 @@ List allocate_het_job_nodes(bool handle_signals)
 		if (srun_opt->relative != NO_VAL)
 			fatal("--relative option invalid for job allocation request");
 
-		if ((j = _job_desc_msg_create_from_opts(opt_local)) == NULL)
+		if ((j = _job_desc_msg_create_from_opts(opt_local)) == NULL) {
+			FREE_NULL_LIST(job_req_list);
 			return NULL;
+		}
 		if (!first_job)
 			first_job = j;
 
@@ -519,6 +521,7 @@ List allocate_het_job_nodes(bool handle_signals)
 
 	if (!first_job) {
 		error("%s: No job requests found", __func__);
+		FREE_NULL_LIST(job_req_list);
 		return NULL;
 	}
 
@@ -528,6 +531,7 @@ List allocate_het_job_nodes(bool handle_signals)
 					       &working_cluster_rec)
 	     != SLURM_SUCCESS)) {
 		print_db_notok(first_opt->clusters, 0);
+		FREE_NULL_LIST(job_req_list);
 		return NULL;
 	}
 
@@ -560,6 +564,7 @@ List allocate_het_job_nodes(bool handle_signals)
 			break;
 		}
 	}
+	FREE_NULL_LIST(job_req_list);
 
 	if (job_resp_list && !destroy_job) {
 		/*
