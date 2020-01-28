@@ -202,7 +202,7 @@ proc inc3_11_9 {} {
 
 	if {$core_res_num < 2} {
 		send_user "\n\033\[32mWARNING: not enough cores for remaining tests (Within: inc3.11.9)\033\[m\n"
-		set ret_code [delete_res $res_name]
+		set exit_code [delete_res $res_name]
 		return
 	}
 
