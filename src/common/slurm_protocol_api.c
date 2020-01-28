@@ -3953,6 +3953,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	msg->flags = header.flags;
 
 	if (header.msg_type == MESSAGE_COMPOSITE) {
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		msg_aggr_add_comp(buffer, auth_cred, &header);
 		goto total_return;
 	}

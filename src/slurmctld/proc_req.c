@@ -6351,6 +6351,8 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
 		info("Processing RPC: MESSAGE_COMPOSITE msg with %d messages",
 		     comp_msg->msg_list ? list_count(comp_msg->msg_list) : 0);
+	if (msg->protocol_version >= SLURM_20_02_PROTOCOL_VERSION)
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 	if (config_update != slurmctld_conf.last_update) {
 		char *sched_params = slurm_get_sched_params();
