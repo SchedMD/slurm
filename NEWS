@@ -94,6 +94,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where adding WCKeys and then using them right away didn't always
     work.
  -- Add cosmetic batch step to correct component in a hetjob.
+ -- Fix to make scontrol write config create a usable config without editing.
 
 * Changes in Slurm 19.05.5
 ==========================
