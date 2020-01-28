@@ -680,6 +680,8 @@ int main(int argc, char **argv)
 			acct_db_conn = acct_storage_g_get_connection(
 				&callbacks, 0, NULL, false,
 				slurmctld_conf.cluster_name);
+			clusteracct_storage_g_register_ctld(
+				acct_db_conn, slurmctld_conf.slurmctld_port);
 			/*
 			 * We only send in a variable the first time
 			 * we call this since we are setting up static
@@ -705,9 +707,6 @@ int main(int argc, char **argv)
 			trigger_primary_ctld_res_op();
 		}
 
-		clusteracct_storage_g_register_ctld(
-			acct_db_conn,
-			slurmctld_conf.slurmctld_port);
 		_accounting_cluster_ready();
 
 		/*
@@ -2336,6 +2335,8 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 	acct_db_conn = acct_storage_g_get_connection(
 		callbacks, 0, NULL, false,
 		slurmctld_conf.cluster_name);
+	clusteracct_storage_g_register_ctld(
+		acct_db_conn, slurmctld_conf.slurmctld_port);
 
 	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg, errno)) {
 		if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
