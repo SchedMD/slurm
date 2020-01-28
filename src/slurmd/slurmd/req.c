@@ -174,7 +174,6 @@ static void _note_batch_job_finished(uint32_t job_id);
 static int  _prolog_is_running (uint32_t jobid);
 static int  _step_limits_match(void *x, void *key);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
-static int  _receive_fd(int socket);
 static void _rpc_launch_tasks(slurm_msg_t *);
 static void _rpc_abort_job(slurm_msg_t *);
 static void _rpc_batch_job(slurm_msg_t *msg, bool new_msg);
@@ -220,7 +219,6 @@ static void _sync_messages_kill(kill_job_msg_t *req);
 static int  _waiter_init (uint32_t jobid);
 static int  _waiter_complete (uint32_t jobid);
 
-static void _send_back_fd(int socket, int fd);
 static bool _steps_completed_now(uint32_t jobid);
 static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
 					     uid_t req_uid,
@@ -1679,7 +1677,7 @@ static int _open_as_other(char *path_name, int flags, int mode,
 		close(pipe[0]);
 		(void) waitpid(child, &rc, 0);
 		if (WIFEXITED(rc) && (WEXITSTATUS(rc) == 0))
-			fd = _receive_fd(pipe[1]);
+			fd = receive_fd_over_pipe(pipe[1]);
 		close(pipe[1]);
 		return fd;
 	}
@@ -1732,7 +1730,7 @@ static int _open_as_other(char *path_name, int flags, int mode,
 			__func__, uid, path_name);
 		 exit(errno);
 	}
-	_send_back_fd(pipe[0], fd);
+	send_fd_over_pipe(pipe[0], fd);
 	close(fd);
 	exit(SLURM_SUCCESS);
 }
@@ -4292,58 +4290,6 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 		_file_bcast_close_file(&key);
 	}
 	return SLURM_SUCCESS;
-}
-
-/* pass an open file descriptor back to the parent process */
-static void _send_back_fd(int socket, int fd)
-{
-	struct msghdr msg = { 0 };
-	struct cmsghdr *cmsg;
-	char buf[CMSG_SPACE(sizeof(fd))];
-	memset(buf, '\0', sizeof(buf));
-
-	msg.msg_iov = NULL;
-	msg.msg_iovlen = 0;
-	msg.msg_control = buf;
-	msg.msg_controllen = sizeof(buf);
-
-	cmsg = CMSG_FIRSTHDR(&msg);
-	cmsg->cmsg_level = SOL_SOCKET;
-	cmsg->cmsg_type = SCM_RIGHTS;
-	cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
-
-	memmove(CMSG_DATA(cmsg), &fd, sizeof(fd));
-	msg.msg_controllen = cmsg->cmsg_len;
-
-	if (sendmsg(socket, &msg, 0) < 0)
-		error("%s: failed to send fd: %m", __func__);
-}
-
-/* receive an open file descriptor from fork()'d child over unix socket */
-static int _receive_fd(int socket)
-{
-	struct msghdr msg = {0};
-	struct cmsghdr *cmsg;
-	int fd;
-	msg.msg_iov = NULL;
-	msg.msg_iovlen = 0;
-	char c_buffer[256];
-	msg.msg_control = c_buffer;
-	msg.msg_controllen = sizeof(c_buffer);
-
-	if (recvmsg(socket, &msg, 0) < 0) {
-		error("%s: failed to receive fd: %m", __func__);
-		return -1;
-	}
-
-	cmsg = CMSG_FIRSTHDR(&msg);
-	if (!cmsg) {
-		error("%s: CMSG_FIRSTHDR error: %m", __func__);
-		return -1;
-	}
-	memmove(&fd, CMSG_DATA(cmsg), sizeof(fd));
-
-	return fd;
 }
 
 static int _file_bcast_register_file(slurm_msg_t *msg,

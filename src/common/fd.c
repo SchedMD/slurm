@@ -61,6 +61,8 @@
 strong_alias(fd_set_blocking,	slurm_fd_set_blocking);
 strong_alias(fd_set_nonblocking,slurm_fd_set_nonblocking);
 strong_alias(fd_get_socket_error, slurm_fd_get_socket_error);
+strong_alias(send_fd_over_pipe, slurm_send_fd_over_pipe);
+strong_alias(receive_fd_over_pipe, slurm_receive_fd_over_pipe);
 
 static int fd_get_lock(int fd, int cmd, int type);
 static pid_t fd_test_lock(int fd, int type);
@@ -309,4 +311,56 @@ extern char *poll_revents_to_str(const short revents)
 		xstrfmtcat(txt, "(0x%04" PRIx16 ")", revents);
 
 	return txt;
+}
+
+/* pass an open file descriptor back to the parent process */
+extern void send_fd_over_pipe(int socket, int fd)
+{
+	struct msghdr msg = { 0 };
+	struct cmsghdr *cmsg;
+	char buf[CMSG_SPACE(sizeof(fd))];
+	memset(buf, '\0', sizeof(buf));
+
+	msg.msg_iov = NULL;
+	msg.msg_iovlen = 0;
+	msg.msg_control = buf;
+	msg.msg_controllen = sizeof(buf);
+
+	cmsg = CMSG_FIRSTHDR(&msg);
+	cmsg->cmsg_level = SOL_SOCKET;
+	cmsg->cmsg_type = SCM_RIGHTS;
+	cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+
+	memmove(CMSG_DATA(cmsg), &fd, sizeof(fd));
+	msg.msg_controllen = cmsg->cmsg_len;
+
+	if (sendmsg(socket, &msg, 0) < 0)
+		error("%s: failed to send fd: %m", __func__);
+}
+
+/* receive an open file descriptor from fork()'d child over unix socket */
+extern int receive_fd_over_pipe(int socket)
+{
+	struct msghdr msg = {0};
+	struct cmsghdr *cmsg;
+	int fd;
+	msg.msg_iov = NULL;
+	msg.msg_iovlen = 0;
+	char c_buffer[256];
+	msg.msg_control = c_buffer;
+	msg.msg_controllen = sizeof(c_buffer);
+
+	if (recvmsg(socket, &msg, 0) < 0) {
+		error("%s: failed to receive fd: %m", __func__);
+		return -1;
+	}
+
+	cmsg = CMSG_FIRSTHDR(&msg);
+	if (!cmsg) {
+		error("%s: CMSG_FIRSTHDR error: %m", __func__);
+		return -1;
+	}
+	memmove(&fd, CMSG_DATA(cmsg), sizeof(fd));
+
+	return fd;
 }

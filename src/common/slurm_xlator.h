@@ -113,6 +113,8 @@
 /* fd.[ch] functions */
 #define fd_set_blocking		slurm_fd_set_blocking
 #define fd_set_nonblocking	slurm_fd_set_nonblocking
+#define send_fd_over_pipe	slurm_send_fd_over_pipe
+#define receive_fd_over_pipe	slurm_receive_fd_over_pipe
 
 /* hostlist.[ch] functions */
 #define	hostlist_create		slurm_hostlist_create
