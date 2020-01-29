@@ -86,6 +86,7 @@
 #include "src/common/pack.h"
 #include "src/common/parse_time.h"
 #include "src/common/plugstack.h"
+#include "src/common/prep.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
@@ -366,6 +367,8 @@ main (int argc, char **argv)
 		fatal("Unable to initialize job_container plugin.");
 	if (container_g_restore(conf->spooldir, !conf->cleanstart))
 		error("Unable to restore job_container state.");
+	if (prep_plugin_init(NULL) != SLURM_SUCCESS)
+		fatal("failed to initialize prep plugin");
 	if (core_spec_g_init() < 0)
 		fatal("Unable to initialize core specialization plugin.");
 	if (switch_g_node_init() < 0)
@@ -1187,6 +1190,7 @@ _reconfigure(void)
 	gres_plugin_reconfig();
 	(void) switch_g_reconfig();
 	container_g_reconfig();
+	prep_plugin_reconfig();
 	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 
 	init_node_conf();
@@ -1981,6 +1985,7 @@ _slurmd_fini(void)
 	slurm_auth_fini();
 	node_fini2();
 	gres_plugin_fini();
+	prep_plugin_fini();
 	slurm_topo_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	fini_setproctitle();
