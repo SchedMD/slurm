@@ -1,3 +1,4 @@
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          to be called from test3.11
@@ -48,7 +49,7 @@ proc inc3_11_4 {} {
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=root" 0]
 	if {$ret_code != 0} {
 		send_user "\n\033\[31mFAILURE: Unable to create a reservation (Within: inc3.11.4)\033\[m\n"
-		set exit_code 1
+		exit $ret_code
 	}
 
 	# Submit the batch job

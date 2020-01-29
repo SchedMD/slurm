@@ -1,3 +1,4 @@
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          to be called from test3.11
@@ -67,6 +68,7 @@ proc inc3_11_3 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.3)\033\[m\n"
+		delete_res $res_name
 		exit 1
 	}
 

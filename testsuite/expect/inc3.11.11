@@ -1,3 +1,4 @@
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Partition Reservations
@@ -109,7 +110,7 @@ proc inc3_11_11 {} {
 
 	send_user "\n+++++ STARTING TEST 11 (Within: inc3.11.11) +++++\n"
 
-    set part_nodes [available_nodes_hostnames $def_partition]
+    set part_nodes [available_nodes_hostnames $def_partition true]
     set one_node [get_idle_node_in_part $def_partition]
 
     inc3_11_11_resv_create "partition=$def_partition"

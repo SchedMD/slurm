@@ -1,3 +1,4 @@
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          to be called from test3.11
@@ -30,7 +31,7 @@ proc inc3_11_10 {} {
 	#
 	send_user "\n+++++ STARTING TEST 10 (Within: inc3.11.10) +++++\n"
 	# Make the reservation
-	set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=[available_nodes_hostnames ""] flags=DAILY user=$user_name" 0]
+	set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=[available_nodes_hostnames "" true] flags=DAILY user=$user_name" 0]
 	if {$ret_code != 0} {
 		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation (Within: inc3.11.10)\033\[m\n"
 		exit $ret_code

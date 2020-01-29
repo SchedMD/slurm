@@ -1,3 +1,4 @@
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          to be called from test3.11
@@ -119,16 +120,21 @@ proc inc3_11_9 {} {
 	set ret_code [create_res "StartTime=now Duration=60 Nodes=$def_node_name\[$min_node_inx\-$max_node_inx\] CoreCnt=1,1,1,1,1 User=$user_name" 0]
 	if {$ret_code != 0} {
 		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation (Within: inc3.11.9)\033\[m\n"
+		cancel_job $job_id
 		exit $ret_code
 	}
 
 	if {$res_nodecnt != 5} {
 		send_user "\n\033\[31mFAILURE: reservation created with $res_nodecnt nodes when 5 were requested (Within: inc3.11.9)\033\[m\n"
+		delete_res $res_name
+		cancel_job $job_id
 		exit 1
 	}
 
 	if {$res_corecnt != 5} {
 		send_user "\n\033\[31mFAILURE: reservation created with $res_corecnt cores when just 5 was requested (Within: inc3.11.9)\033\[m\n"
+		delete_res $res_name
+		cancel_job $job_id
 		exit 1
 	}
 
@@ -152,6 +158,10 @@ proc inc3_11_9 {} {
 
 		# Delete the reservation
 		set ret_code [delete_res $res_name]
+		if {$ret_code != 0} {
+			cancel_job $job_id
+			exit $ret_code
+		}
 	}
 
 	# Make the reservation using more cores than free in a node (now)
@@ -164,6 +174,10 @@ proc inc3_11_9 {} {
 		send_user "\n\033\[32mSUCCESS: Reservation can be created as expected (Within: inc3.11.9)\033\[m\n"
 		# Delete the reservation
 		set ret_code [delete_res $res_name]
+		if {$ret_code != 0} {
+			cancel_job $job_id
+			exit $ret_code
+		}
 	}
 
 	# Make the reservation using more cores than free at reservation start time
@@ -173,9 +187,8 @@ proc inc3_11_9 {} {
 	} else {
 		send_user "\n\033\[31mFAILURE: Reservation can be created when it should not (Within: inc3.11.9)\033\[m\n"
 		set exit_code 1
-
 		# Delete the reservation
-		set ret_code [delete_res $res_name]
+		delete_res $res_name
 	}
 
 	cancel_job $job_id
@@ -196,7 +209,7 @@ proc inc3_11_9 {} {
 
 	if {$core_res_num < 2} {
 		send_user "\n\033\[32mWARNING: not enough cores for remaining tests (Within: inc3.11.9)\033\[m\n"
-		set ret_code [delete_res $res_name]
+		set exit_code [delete_res $res_name]
 		return
 	}
 
@@ -208,8 +221,8 @@ proc inc3_11_9 {} {
 	if {$ret_code == 0} {
 		send_user "\n\033\[31mFAILURE: reservation was created when it should not (Within: inc3.11.9)\033\[m\n"
 		delete_res $res_name
-		set ret_code [delete_res $res_name1]
-		exit $ret_code
+		delete_res $res_name1
+		exit 1
 	}
 
 	send_user "\n\033\[32mSUCCESS: reservation was not created as expected (Within: inc3.11.9)\033\[m\n"
@@ -218,8 +231,8 @@ proc inc3_11_9 {} {
 	set ret_code [create_res "StartTime=now Duration=60 Nodes=$def_node_name\[$min_node_inx\-$max_node_inx\] CoreCnt=1,1,1,1,1 User=$user_name" 1]
 	if {$ret_code != 0} {
 		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation (Within: inc3.11.9)\033\[m\n"
-		set ret_code [delete_res $res_name1]
-		exit $ret_code
+		delete_res $res_name1
+		exit 1
 	}
 
 	send_user "\n\033\[32mSUCCESS: reservation was created as expected (Within: inc3.11.9)\033\[m\n"
@@ -246,8 +259,8 @@ proc inc3_11_9 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.9)\033\[m\n"
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -274,15 +287,16 @@ proc inc3_11_9 {} {
 		}
 	}
 
+	cancel_job $job_id
+
 	if { $exit_code == 1 } {
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
 	send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.9)\033\[m\n"
 
-	cancel_job $job_id
 
 	# Submit a batch job: a job using more cores than available in first 5 nodes
 	set core_res_num   [ expr $cores_per_node / 2 ]
@@ -304,8 +318,8 @@ proc inc3_11_9 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.9)\033\[m\n"
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -335,13 +349,14 @@ proc inc3_11_9 {} {
 			wait
 		}
 	}
-	if { $exit_code == 1 } {
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
-		exit 1
-	}
 
 	cancel_job $job_id
+
+	if { $exit_code == 1 } {
+		delete_res $res_name1
+		delete_res $res_name
+		exit 1
+	}
 
 	# Submit a batch job: a job using cores reserved in first reservation
 	set core_res_num   [ expr $cores_per_node / 2 ]
@@ -363,8 +378,8 @@ proc inc3_11_9 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.9)\033\[m\n"
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -394,13 +409,14 @@ proc inc3_11_9 {} {
 			wait
 		}
 	}
-	if { $exit_code == 1 } {
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
-		exit 1
-	}
 
 	cancel_job $job_id
+
+	if { $exit_code == 1 } {
+		delete_res $res_name1
+		delete_res $res_name
+		exit 1
+	}
 
 	# Submit a batch job: a job using more cores than reserved in first reservation
 	set core_res_num   [ expr $cores_per_node / 2 ]
@@ -424,8 +440,8 @@ proc inc3_11_9 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.9)\033\[m\n"
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -455,13 +471,14 @@ proc inc3_11_9 {} {
 			wait
 		}
 	}
-	if { $exit_code == 1 } {
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
-		exit 1
-	}
 
 	cancel_job $job_id
+
+	if { $exit_code == 1 } {
+		delete_res $res_name1
+		delete_res $res_name
+		exit 1
+	}
 
 	# Submit a batch job: a job using cores reserved in second reservation
 	set thread_res_num [ expr 1 * $res_thread_cnt ]
@@ -482,8 +499,8 @@ proc inc3_11_9 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.9)\033\[m\n"
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -513,13 +530,14 @@ proc inc3_11_9 {} {
 			wait
 		}
 	}
-	if { $exit_code == 1 } {
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
-		exit 1
-	}
 
 	cancel_job $job_id
+
+	if { $exit_code == 1 } {
+		delete_res $res_name1
+		delete_res $res_name
+		exit 1
+	}
 
 	# Submit a batch job: a job using more cores than reserved in second reservation
 	set thread_res_num [ expr 2 * $res_thread_cnt ]
@@ -540,9 +558,8 @@ proc inc3_11_9 {} {
 	}
 	if {$job_id == 0} {
 		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
-		set exit_code 1
+		delete_res $res_name1
+		delete_res $res_name
 		exit 1
 	}
 
@@ -572,19 +589,25 @@ proc inc3_11_9 {} {
 			wait
 		}
 	}
-	if { $exit_code == 1 } {
-		set ret_code [delete_res $res_name1]
-		set ret_code [delete_res $res_name]
-		return
-	}
 
 	cancel_job $job_id
 
-	set ret_code [delete_res $res_name1]
+	if { $exit_code == 1 } {
+		delete_res $res_name1
+		delete_res $res_name
+		return
+	}
+
+	set ret_code1 [delete_res $res_name1]
+	if { $ret_code1 != 0 } {
+		log_error "failed to delete reservation $res_name1."
+	}
 	set ret_code [delete_res $res_name]
 	if { $ret_code != 0 } {
-		send_user "FAILURE: failed to delete reservations.\n"
-		exit $ret_code
+		log_error "failed to delete reservation $res_name."
+	}
+	if { $ret_code != 0 || $ret_code1 != 0 } {
+		exit 1
 	}
 
 	# Create a job that uses all cores in the node range and is not
@@ -632,6 +655,7 @@ proc inc3_11_9 {} {
 		}
 	}
 	if { $exit_code == 1 } {
+		cancel_job $job_id
 		exit $exit_code
 	}
 
@@ -774,6 +798,7 @@ proc inc3_11_9 {} {
 		}
 	}
 	if { $exit_code == 1 } {
+		cancel_job $job_id
 		exit $exit_code
 	}
 
@@ -781,10 +806,11 @@ proc inc3_11_9 {} {
 	# to be created even though there are enough cores because the
 	# FIRST_CORES flag requires the lowest numbered cores.
 	set ret_code [create_res "StartTime=now Duration=60 Nodes=$def_node_name\[$min_node_inx\-$max_node_inx\] CoreCnt=1,1,1,1,1 User=$user_name Flags=FIRST_CORES" 1]
+	cancel_job $job_id
 	if {$ret_code == 0} {
 		send_user "\nFAILURE: Reservation can be created when it should not (Within: inc3.11.9)\n"
+		delete_res $res_name
 		exit 1
 	}
 	send_user "\nSUCCESS: Reservation can not be created as expected (Within 3.11.9)\n"
-	cancel_job $job_id
 }
