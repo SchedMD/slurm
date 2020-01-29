@@ -1273,8 +1273,8 @@ static void _validate_gres_conf(List gres_conf_list,
 			 * Ignore return code, as we will still support the gres
 			 * with or without the plugin.
 			 */
-			(void) _load_gres_plugin(context_ptr);
-			context_ptr->config_flags |= GRES_CONF_LOADED;
+			if (_load_gres_plugin(context_ptr) == SLURM_SUCCESS)
+				context_ptr->config_flags |= GRES_CONF_LOADED;
 		}
 
 		rec_count++;
@@ -1315,13 +1315,16 @@ static void _validate_gres_conf(List gres_conf_list,
 	}
 	list_iterator_destroy(iter);
 
-	if (!(context_ptr->config_flags & GRES_CONF_LOADED))
+	if (!(context_ptr->config_flags & GRES_CONF_LOADED)) {
 		/*
-		 * If we didn't have a line on this we will treat it as a count
+		 * This means there was no gre.conf line for this gres found.
+		 * We still need to try to load it for AutoDetect's sake.
+		 * If we fail loading we will treat it as a count
 		 * only GRES since the stepd will try to load it elsewise.
 		 */
-		context_ptr->config_flags |= GRES_CONF_COUNT_ONLY;
-	else
+		if (_load_gres_plugin(context_ptr) != SLURM_SUCCESS)
+			context_ptr->config_flags |= GRES_CONF_COUNT_ONLY;
+	} else
 		/* Remove as this is only really used locally */
 		context_ptr->config_flags &= (~GRES_CONF_LOADED);
 }
