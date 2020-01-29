@@ -5486,3 +5486,35 @@ proc check_reason { job_id reason } {
 	}
 	return $found
 }
+
+proc compile_against_libslurm { test_prog use_full use_valgrind } {
+	global slurm_dir bin_cc src_dir build_dir
+
+	if {$use_full} {
+		set libfile "libslurmfull.so"
+	} else {
+		set libfile "libslurm.so"
+	}
+
+	if [file exists $slurm_dir/lib64/slurm/$libfile] {
+		set libdir "lib64"
+	} else {
+		set libdir "lib"
+	}
+
+	if {$use_full} {
+		set libline "$slurm_dir/$libdir/slurm"
+		set libfile "slurmfull"
+	} else {
+		set libline "$slurm_dir/$libdir"
+		set libfile "slurm"
+	}
+
+	set build_cmd "$bin_cc ${test_prog}.c -g -pthread -o $test_prog -I$src_dir -I$build_dir -I$slurm_dir/include -Wl,-rpath=$libline -L$libline -l$libfile"
+
+	if {$use_valgrind} {
+		set build_cmd "$build_cmd -DUSING_VALGRIND"
+	}
+	send_user "$build_cmd\n"
+	eval exec $build_cmd
+}
