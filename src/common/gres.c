@@ -631,8 +631,8 @@ extern int gres_plugin_init(void)
 		gres_context[i].gres_name_colon_len =
 			strlen(gres_context[i].gres_name_colon);
 	}
-	init_run = true;
 
+fini:
 	if ((select_plugin_type == NO_VAL) &&
 	    (select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
 				&select_plugin_type) != SLURM_SUCCESS)) {
@@ -643,7 +643,9 @@ extern int gres_plugin_init(void)
 		fatal("Use of gres/mps requires the use of select/cons_tres");
 	}
 
-fini:	slurm_mutex_unlock(&gres_context_lock);
+	init_run = true;
+	slurm_mutex_unlock(&gres_context_lock);
+
 	return rc;
 }
 
