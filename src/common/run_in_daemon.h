@@ -46,6 +46,9 @@
  */
 extern bool run_in_daemon(bool *run, bool *set, char *daemons);
 
+/* check if running in a daemon */
+extern bool running_in_daemon(void);
+
 /* check if running in the slurmctld */
 extern bool running_in_slurmctld(void);
 
