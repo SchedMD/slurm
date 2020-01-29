@@ -71,6 +71,7 @@
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/power.h"
+#include "src/common/prep.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_acct_gather_profile.h"
@@ -272,6 +273,10 @@ int main(int argc, char **argv)
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	slurm_trigger_callbacks_t callbacks;
+	prep_callbacks_t prep_callbacks = {
+		.prolog_slurmctld = prep_prolog_slurmctld_callback,
+		.epilog_slurmctld = prep_epilog_slurmctld_callback,
+	};
 	bool create_clustername_file;
 	char *conf_file;
 
@@ -554,6 +559,14 @@ int main(int argc, char **argv)
 			test_config_rc = 1;
 		} else {
 			fatal("failed to initialize job_submit plugin");
+		}
+	}
+	if (prep_plugin_init(&prep_callbacks) != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize prep plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize prep plugin");
 		}
 	}
 	if (ext_sensors_init() != SLURM_SUCCESS) {
@@ -899,6 +912,7 @@ int main(int argc, char **argv)
 	ext_sensors_fini();
 	gres_plugin_fini();
 	job_submit_plugin_fini();
+	prep_plugin_fini();
 	slurm_preempt_fini();
 	jobacct_gather_fini();
 	acct_gather_conf_destroy();
