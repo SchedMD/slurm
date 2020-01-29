@@ -22,6 +22,7 @@ SUBDIRS = \
 	node_features		\
 	power			\
 	preempt			\
+	prep			\
 	priority		\
 	proctrack		\
 	route			\
