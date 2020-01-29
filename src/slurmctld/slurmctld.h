@@ -792,6 +792,9 @@ struct job_record {
 	bool preempt_in_progress;	/* Premption of other jobs in progress
 					 * in order to start this job,
 					 * (Internal use only, don't save) */
+	uint32_t prep_epilog_cnt;	/* count of epilog async tasks left */
+	uint32_t prep_prolog_cnt;	/* count of prolog async tasks left */
+	bool prep_prolog_failed;	/* any prolog_slurmctld failed */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
 	uint32_t *priority_array;	/* partition based priority */
