@@ -375,6 +375,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Individual job submission scheduling attempts deferred"},
 	{ ESLURM_CONFIGLESS_DISABLED,
 	  "ConfigLess mode is disabled"				},
+	{ ESLURM_ENVIRONMENT_MISSING,
+	  "Environment is missing in job"			},
 
 	/* slurmd error codes */
 	{ ESLURMD_PIPE_ERROR_ON_TASK_SPAWN,

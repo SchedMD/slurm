@@ -6890,6 +6890,12 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
+	if (!job_desc->environment || job_desc->env_size == 0) {
+		info("%s: job cannot run without an environment", __func__);
+		error_code = ESLURM_ENVIRONMENT_MISSING;
+		goto cleanup_fail;
+	}
+
 	/* ensure that selected nodes are in this partition */
 	if (job_desc->req_nodes) {
 		error_code = node_name2bitmap(job_desc->req_nodes, false,
