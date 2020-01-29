@@ -72,7 +72,7 @@ proc _submit_jobs { job_name test_file } {
 		set jobs_rem [expr $jobs_rem - $job_blocks]
 	}
 	log_user 1
-	if {[wait_for_all_jobs $job_name 0] != 0} {
+	if {[wait_for_all_jobs $job_name] != 0} {
 		send_user "\nFAILURE: some submitted jobs failed to terminate\n"
 		set exit_code 1
 	}

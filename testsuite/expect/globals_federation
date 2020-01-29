@@ -404,7 +404,7 @@ proc modify_federation_flags {fed_name mode flags} {
 # Proc: wait_for_fed_job
 #
 # Purpose:  Wait for a previously submitted Slurm job to reach
-# the desired state, exponential back-off 1 to 10 seconds
+#           the desired state. Polls every $poll_interval seconds.
 #
 # Returns: A non-zero return code indicates a failure.
 #
@@ -423,7 +423,7 @@ proc modify_federation_flags {fed_name mode flags} {
 ################################################################
 
 proc wait_for_fed_job { job_id desired_state clusters } {
-	global scontrol max_job_state_delay fedc1 fedc2 fedc3
+	global scontrol max_job_state_delay fedc1 fedc2 fedc3 poll_interval
 
 	# First verify that desired_state is supported
 	switch $desired_state {
@@ -444,7 +444,6 @@ proc wait_for_fed_job { job_id desired_state clusters } {
 		return ""
 	}
 
-	set sleep_time  1
 	set my_delay    0
 
 	set spec_clusters [list $fedc1 $fedc2 $fedc3]
@@ -540,11 +539,7 @@ proc wait_for_fed_job { job_id desired_state clusters } {
 			return ""
 		}
 
-		exec sleep $sleep_time
-		set my_delay [expr $my_delay + $sleep_time]
-		set sleep_time  [expr $sleep_time * 2]
-		if { $sleep_time > 10 } {
-			set sleep_time 10
-		}
+		exec sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
 	}
 }
