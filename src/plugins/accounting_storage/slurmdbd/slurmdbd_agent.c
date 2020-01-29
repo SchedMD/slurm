@@ -115,9 +115,9 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 		rc = id_msg->return_code;
 
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
-			info("%s: msg_type:DBD_ID_RC return_code:%s JobId=%u db_index=%"PRIu64,
-			     __func__, slurm_strerror(rc), id_msg->job_id,
-			     id_msg->db_index);
+			debug("%s: msg_type:DBD_ID_RC return_code:%s JobId=%u db_index=%"PRIu64,
+			      __func__, slurm_strerror(rc), id_msg->job_id,
+			      id_msg->db_index);
 
 		slurmdbd_free_id_rc_msg(id_msg);
 		if (rc != SLURM_SUCCESS)
@@ -128,9 +128,9 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 		rc = msg->rc;
 
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
-			info("%s: msg_type:PERSIST_RC return_code:%s ret_info:%hu flags=%#x comment:%s",
-			     __func__, slurm_strerror(rc), msg->ret_info,
-			     msg->flags, msg->comment);
+			debug("%s: msg_type:PERSIST_RC return_code:%s ret_info:%hu flags=%#x comment:%s",
+			      __func__, slurm_strerror(rc), msg->ret_info,
+			      msg->flags, msg->comment);
 
 		if (rc != SLURM_SUCCESS) {
 			if (msg->ret_info == DBD_REGISTER_CTLD &&
@@ -1097,10 +1097,10 @@ end_it:
 	slurm_mutex_unlock(&slurmdbd_lock);
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
-		info("%s: msg_type:%s protocol_version:%hu return_code:%d response_msg_type:%s",
-		     __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
-		     rpc_version, rc,
-		     slurmdbd_msg_type_2_str(resp->msg_type, 1));
+		debug("%s: msg_type:%s protocol_version:%hu return_code:%d response_msg_type:%s",
+		      __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
+		      rpc_version, rc,
+		      slurmdbd_msg_type_2_str(resp->msg_type, 1));
 
 	return rc;
 }
@@ -1162,9 +1162,9 @@ extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 	}
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
-		info("%s: msg_type:%s protocol_version:%hu return_code:%d",
-		     __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
-		     rpc_version, rc);
+		debug("%s: msg_type:%s protocol_version:%hu return_code:%d",
+		      __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
+		      rpc_version, rc);
 
 	return rc;
 }
@@ -1183,10 +1183,10 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req)
 	xassert(slurmctld_conf.max_dbd_msgs);
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
-		info("%s: msg_type:%s protocol_version:%hu agent_count:%d",
-		     __func__,
-		     slurmdbd_msg_type_2_str(req->msg_type, 1),
-		     rpc_version, list_count(agent_list));
+		debug("%s: msg_type:%s protocol_version:%hu agent_count:%d",
+		      __func__,
+		      slurmdbd_msg_type_2_str(req->msg_type, 1),
+		      rpc_version, list_count(agent_list));
 
 	buffer = slurm_persist_msg_pack(
 		slurmdbd_conn, (persist_msg_t *)req);
