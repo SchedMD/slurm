@@ -53,9 +53,6 @@ extern List license_list;
 extern List clus_license_list;
 extern time_t last_license_update;
 
-/* Get string of used license information. Caller must xfree return value */
-extern char *get_licenses_used(void);
-
 /* Initialize licenses on this system based upon slurm.conf */
 extern int license_init(char *licenses);
 

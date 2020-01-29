@@ -178,8 +178,6 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 
 	if (conf->licenses)
 		STORE_FIELD(hv, conf, licenses, charp);
-	if (conf->licenses_used)
-		STORE_FIELD(hv, conf, licenses_used, charp);
 
 	STORE_FIELD(hv, conf, log_fmt, uint16_t);
 
@@ -509,7 +507,6 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, launch_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, layouts, charp, FALSE);
 	FETCH_FIELD(hv, conf, licenses, charp, FALSE);
-	FETCH_FIELD(hv, conf, licenses_used, charp, FALSE);
 	FETCH_FIELD(hv, conf, log_fmt, uint16_t, FALSE);
 	FETCH_FIELD(hv, conf, mail_prog, charp, FALSE);
 	FETCH_FIELD(hv, conf, max_array_sz, uint16_t, TRUE);

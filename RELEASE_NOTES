@@ -79,3 +79,5 @@ COMMAND CHANGES (see man pages for details)
     slurmstepd. Previously it would handle resolution client-side, but with
     a non-standard approach that walked PATH in reverse.
  -- squeue - added "--me" option, equivalent to --user=$USER.
+ -- The LicensesUsed line has been removed from 'scontrol show config'.
+    Please see the 'scontrol show licenses' command as an alternative.

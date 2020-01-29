@@ -670,7 +670,6 @@ extern void response_init(slurm_msg_t *resp, slurm_msg_t *msg)
 static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
 	slurm_ctl_conf_t *conf = &slurmctld_conf;
-	char *licenses_used;
 	uint32_t next_job_id;
 	int i;
 
@@ -678,8 +677,6 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
-
-	licenses_used = get_licenses_used();
 
 	next_job_id   = get_next_job_id(true);
 
@@ -804,7 +801,6 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->launch_type         = xstrdup(conf->launch_type);
 	conf_ptr->layouts             = xstrdup(conf->layouts);
 	conf_ptr->licenses            = xstrdup(conf->licenses);
-	conf_ptr->licenses_used       = licenses_used;
 	conf_ptr->log_fmt             = conf->log_fmt;
 
 	conf_ptr->mail_domain         = xstrdup(conf->mail_domain);

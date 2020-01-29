@@ -972,11 +972,6 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("LicensesUsed");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->licenses_used);
-	list_append(ret_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("LogTimeFormat");
 	if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_ISO8601_MS)
 		key_pair->value = xstrdup("iso8601_ms");
@@ -2043,11 +2038,6 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		    !xstrcmp(key_pair->name, "NEXT_JOB_ID") ||
 		    !xstrcmp(key_pair->name, "SLURM_CONF") ||
 		    !xstrcmp(key_pair->name, "SLURM_VERSION")) {
-			debug("Ignoring %s (not written)", key_pair->name);
-			continue;
-		}
-
-		if (!xstrcmp(key_pair->name, "LicensesUsed")) {
 			debug("Ignoring %s (not written)", key_pair->name);
 			continue;
 		}
