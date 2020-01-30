@@ -140,20 +140,6 @@ typedef struct {
 	pthread_mutex_t *timer_mutex;
 } timer_struct_t;
 
-typedef struct {
-	char **gres_job_env;
-	uint32_t het_job_id;
-	uint32_t jobid;
-	uint32_t step_id;
-	char *node_list;
-	char *partition;
-	char *resv_id;
-	char **spank_job_env;
-	uint32_t spank_job_env_size;
-	uid_t uid;
-	char *user_name;
-} job_env_t;
-
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char **_build_env(job_env_t *job_env, bool is_epilog);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
