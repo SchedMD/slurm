@@ -72,8 +72,6 @@ const char plugin_name[] = "Script PrEp plugin";
 const char plugin_type[] = "prep/script";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static bool have_prolog = false;
-static bool have_epilog = false;
 static bool have_prolog_slurmctld = false;
 static bool have_epilog_slurmctld = false;
 
@@ -82,22 +80,6 @@ void (*epilog_slurmctld_callback)(int rc, uint32_t job_id) = NULL;
 
 extern int init(void)
 {
-	if (slurmctld_conf.prolog) {
-		if (access(slurmctld_conf.prolog, X_OK) < 0)
-			error("Invalid Prolog(`%s`): %m",
-			      slurmctld_conf.prolog);
-		else
-			have_prolog = true;
-	}
-
-	if (slurmctld_conf.epilog) {
-		if (access(slurmctld_conf.epilog, X_OK) < 0)
-			error("Invalid Epilog(`%s`): %m",
-			      slurmctld_conf.epilog);
-		else
-			have_epilog = true;
-	}
-
 	if (slurmctld_conf.prolog_slurmctld) {
 		if (access(slurmctld_conf.prolog_slurmctld, X_OK) < 0)
 			error("Invalid PrologSlurmctld(`%s`): %m",
@@ -137,17 +119,11 @@ extern void prep_p_register_callbacks(prep_callbacks_t *callbacks)
 
 extern int prep_p_prolog(void)
 {
-	if (!have_prolog)
-		return SLURM_SUCCESS;
-
 	return SLURM_SUCCESS;
 }
 
 extern int prep_p_epilog(void)
 {
-	if (!have_epilog)
-		return SLURM_SUCCESS;
-
 	return SLURM_SUCCESS;
 }
 
