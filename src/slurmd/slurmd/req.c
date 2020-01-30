@@ -457,7 +457,8 @@ slurmd_req(slurm_msg_t *msg)
 	}
 	return;
 }
-static int _send_slurmd_conf_lite (int fd, slurmd_conf_t *cf)
+
+extern int send_slurmd_conf_lite(int fd, slurmd_conf_t *cf)
 {
 	int len;
 
@@ -519,7 +520,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	slurm_msg_t_init(&msg);
 
 	/* send conf over to slurmstepd */
-	if (_send_slurmd_conf_lite(fd, conf) < 0)
+	if (send_slurmd_conf_lite(fd, conf) < 0)
 		goto rwfail;
 
 	/* send cgroup conf over to slurmstepd */
@@ -5853,7 +5854,7 @@ _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 
 	close (pfds[0]);
 
-	if (_send_slurmd_conf_lite (pfds[1], conf) < 0)
+	if (send_slurmd_conf_lite(pfds[1], conf) < 0)
 		error ("Failed to send slurmd conf to slurmstepd\n");
 	close (pfds[1]);
 
