@@ -12,6 +12,7 @@ pkglib_LTLIBRARIES = prep_script.la
 prep_script_la_SOURCES =		\
 	prep_script.c			\
 	prep_script.h			\
-	prep_script_slurmctld.c
+	prep_script_slurmctld.c		\
+	prep_script_slurmd.c
 
 prep_script_la_LDFLAGS = $(PLUGIN_FLAGS)

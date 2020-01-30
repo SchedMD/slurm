@@ -119,12 +119,12 @@ extern void prep_p_register_callbacks(prep_callbacks_t *callbacks)
 
 extern int prep_p_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
-	return SLURM_SUCCESS;
+	return slurmd_script(job_env, cred, false);
 }
 
 extern int prep_p_epilog(job_env_t *job_env, slurm_cred_t *cred)
 {
-	return SLURM_SUCCESS;
+	return slurmd_script(job_env, cred, true);
 }
 
 extern int prep_p_prolog_slurmctld(job_record_t *job_ptr, bool *async)
