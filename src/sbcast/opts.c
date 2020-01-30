@@ -121,7 +121,7 @@ extern void parse_command_line(int argc, char **argv)
 		params.timeout = (atoi(env_val) * 1000);
 
 	optind = 0;
-	while ((opt_char = getopt_long(argc, argv, "CfF:j:ps:t:vV",
+	while ((opt_char = getopt_long(argc, argv, "C::fF:j:ps:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
