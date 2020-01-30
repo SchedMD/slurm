@@ -80,6 +80,7 @@
 #include "src/common/node_features.h"
 #include "src/common/node_select.h"
 #include "src/common/plugstack.h"
+#include "src/common/prep.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
@@ -141,9 +142,7 @@ typedef struct {
 } timer_struct_t;
 
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
-static char **_build_env(job_env_t *job_env, bool is_epilog);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
-static void _destroy_env(char **env);
 static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(uint32_t job_id);
 static int  _job_limits_match(void *x, void *key);
@@ -5693,92 +5692,6 @@ done:
 	slurm_send_rc_msg(msg, rc);
 }
 
-/* NOTE: call _destroy_env() to free returned value */
-static char **_build_env(job_env_t *job_env, bool is_epilog)
-{
-	char **env = xmalloc(sizeof(char *));
-	bool user_name_set = 0;
-
-	env[0] = NULL;
-	if (!valid_spank_job_env(job_env->spank_job_env,
-				 job_env->spank_job_env_size,
-				 job_env->uid)) {
-		/* If SPANK job environment is bad, log it and do not use */
-		job_env->spank_job_env_size = 0;
-		job_env->spank_job_env = (char **) NULL;
-	}
-	/*
-	 * User-controlled environment variables, such as those set through
-	 * SPANK, must be prepended with SPANK_ or some other safe prefix.
-	 * Otherwise, a malicious user could cause arbitrary code to execute
-	 * during the prolog/epilog as root.
-	 */
-	if (job_env->spank_job_env_size)
-		env_array_merge(&env, (const char **) job_env->spank_job_env);
-	if (job_env->gres_job_env)
-		env_array_merge(&env, (const char **) job_env->gres_job_env);
-
-	slurm_mutex_lock(&conf->config_mutex);
-	setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
-	setenvf(&env, "SLURM_CONF", "%s", conf->conffile);
-	slurm_mutex_unlock(&conf->config_mutex);
-
-	setenvf(&env, "SLURM_CLUSTER_NAME", "%s", conf->cluster_name);
-	setenvf(&env, "SLURM_JOB_ID", "%u", job_env->jobid);
-	setenvf(&env, "SLURM_JOB_UID", "%u", job_env->uid);
-
-#ifndef HAVE_NATIVE_CRAY
-	/* uid_to_string on a cray is a heavy call, so try to avoid it */
-	if (!job_env->user_name) {
-		job_env->user_name = uid_to_string(job_env->uid);
-		user_name_set = 1;
-	}
-#endif
-
-	setenvf(&env, "SLURM_JOB_USER", "%s", job_env->user_name);
-	if (user_name_set)
-		xfree(job_env->user_name);
-
-	setenvf(&env, "SLURM_JOBID", "%u", job_env->jobid);
-
-	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL)) {
-		/* Continue support for old hetjob terminology. */
-		setenvf(&env, "SLURM_PACK_JOB_ID", "%u", job_env->het_job_id);
-		setenvf(&env, "SLURM_HET_JOB_ID", "%u", job_env->het_job_id);
-	}
-
-	setenvf(&env, "SLURM_UID", "%u", job_env->uid);
-
-	if (job_env->node_list)
-		setenvf(&env, "SLURM_NODELIST", "%s", job_env->node_list);
-
-	if (job_env->partition)
-		setenvf(&env, "SLURM_JOB_PARTITION", "%s", job_env->partition);
-
-	if (is_epilog) {
-		setenvf(&env, "SLURM_SCRIPT_CONTEXT", "epilog_slurmd");
-	} else {
-		setenvf(&env, "SLURM_SCRIPT_CONTEXT", "prolog_slurmd");
-	}
-
-	return env;
-}
-
-static void
-_destroy_env(char **env)
-{
-	int i = 0;
-
-	if (env) {
-		for (i = 0; env[i]; i++) {
-			xfree(env[i]);
-		}
-		xfree(env);
-	}
-
-	return;
-}
-
 static void _free_job_env(job_env_t *env_ptr)
 {
 	int i;
@@ -5790,94 +5703,6 @@ static void _free_job_env(job_env_t *env_ptr)
 	}
 	xfree(env_ptr->resv_id);
 	/* NOTE: spank_job_env is just a pointer without allocated memory */
-}
-
-/* Trigger srun of spank prolog or epilog in slurmstepd */
-static int
-_run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
-{
-	pid_t cpid;
-	int status = 0, timeout;
-	int pfds[2];
-
-	if (pipe (pfds) < 0) {
-		error ("_run_spank_job_script: pipe: %m");
-		return (-1);
-	}
-
-	fd_set_close_on_exec (pfds[1]);
-
-	debug ("Calling %s spank %s", conf->stepd_loc, mode);
-	if ((cpid = fork ()) < 0) {
-		error ("executing spank %s: %m", mode);
-		return (-1);
-	}
-	if (cpid == 0) {
-		/* Run slurmstepd spank [prolog|epilog] */
-		char *argv[4] = {
-			(char *) conf->stepd_loc,
-			"spank",
-			(char *) mode,
-			NULL };
-
-		/* container_g_join needs to be called in the
-		   forked process part of the fork to avoid a race
-		   condition where if this process makes a file or
-		   detacts itself from a child before we add the pid
-		   to the container in the parent of the fork.
-		*/
-		if (container_g_join(job_id, getuid())
-		    != SLURM_SUCCESS)
-			error("container_g_join(%u): %m", job_id);
-
-		if (dup2 (pfds[0], STDIN_FILENO) < 0)
-			fatal ("dup2: %m");
-		setpgid(0, 0);
-		execve(argv[0], argv, env);
-		error ("execve(%s): %m", argv[0]);
-		exit (127);
-	}
-
-	close (pfds[0]);
-
-	if (send_slurmd_conf_lite(pfds[1], conf) < 0)
-		error ("Failed to send slurmd conf to slurmstepd\n");
-	close (pfds[1]);
-
-	timeout = MAX(slurm_get_prolog_timeout(), 120); /* 120 secs in v15.08 */
-	if (waitpid_timeout (mode, cpid, &status, timeout) < 0) {
-		error ("spank/%s timed out after %u secs", mode, timeout);
-		return (-1);
-	}
-
-	if (status)
-		error ("spank/%s returned status 0x%04x", mode, status);
-
-	/*
-	 *  No longer need SPANK option env vars in environment
-	 */
-	spank_clear_remote_options_env (env);
-
-	return (status);
-}
-
-static int _run_job_script(const char *name, const char *path,
-			   uint32_t jobid, int timeout, char **env, uid_t uid)
-{
-	struct stat stat_buf;
-	int status = 0, rc;
-
-	/*
-	 *  Always run both spank prolog/epilog and real prolog/epilog script,
-	 *   even if spank plugins fail. (May want to alter this in the future)
-	 *   If both "script" mechanisms fail, prefer to return the "real"
-	 *   prolog/epilog status.
-	 */
-	if (conf->plugstack && (stat(conf->plugstack, &stat_buf) == 0))
-		status = _run_spank_job_script(name, env, jobid, uid);
-	if ((rc = run_script(name, path, jobid, timeout, env, uid)))
-		status = rc;
-	return (status);
 }
 
 static void *_prolog_timer(void *x)
@@ -5921,40 +5746,18 @@ static int
 _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 {
 	DEF_TIMERS;
-	int rc, diff_time;
-	char *my_prolog;
+	int diff_time, rc;
 	time_t start_time = time(NULL);
 	static uint16_t msg_timeout = 0;
-	static uint16_t timeout;
 	pthread_t       timer_id;
 	pthread_cond_t  timer_cond  = PTHREAD_COND_INITIALIZER;
 	pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 	timer_struct_t  timer_struct;
 	bool prolog_fini = false;
 	bool script_lock = false;
-	char **my_env;
-	uint32_t jobid;
-
-	my_env = _build_env(job_env, false);
-	setenvf(&my_env, "SLURM_STEP_ID", "%u", job_env->step_id);
-	if (cred) {
-		slurm_cred_arg_t cred_arg;
-		slurm_cred_get_args(cred, &cred_arg);
-		setenvf(&my_env, "SLURM_JOB_CONSTRAINTS", "%s",
-			cred_arg.job_constraints);
-		slurm_cred_free_args(&cred_arg);
-	}
-
 
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();
-
-	if (timeout == 0)
-		timeout = slurm_get_prolog_timeout();
-
-	slurm_mutex_lock(&conf->config_mutex);
-	my_prolog = xstrdup(conf->prolog);
-	slurm_mutex_unlock(&conf->config_mutex);
 
 	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
 		slurm_mutex_lock(&prolog_serial_mutex);
@@ -5970,22 +5773,8 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 
 	START_TIMER;
 
-#ifdef HAVE_NATIVE_CRAY
-	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL))
-		jobid = job_env->het_job_id;
-	else
-		jobid = job_env->jobid;
-#else
-	jobid = job_env->jobid;
-#endif
+	rc = prep_prolog(job_env, cred);
 
-	if (timeout == NO_VAL16) {
-		rc = _run_job_script("prolog", my_prolog, jobid,
-				     -1, my_env, job_env->uid);
-	} else {
-		rc = _run_job_script("prolog", my_prolog, jobid,
-				     timeout, my_env, job_env->uid);
-	}
 	END_TIMER;
 	info("%s: run job script took %s", __func__, TIME_STR);
 	slurm_mutex_lock(&timer_mutex);
@@ -6003,8 +5792,6 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 
 	if (remove_running)
 		_remove_job_running_prolog(job_env->jobid);
-	xfree(my_prolog);
-	_destroy_env(my_env);
 
 	if (timer_id)
 		pthread_join(timer_id, NULL);
@@ -6019,22 +5806,11 @@ _run_epilog(job_env_t *job_env)
 {
 	time_t start_time = time(NULL);
 	static uint16_t msg_timeout = 0;
-	static uint16_t timeout;
 	int error_code, diff_time;
-	char *my_epilog;
-	char **my_env = _build_env(job_env, true);
 	bool script_lock = false;
-	uint32_t jobid;
 
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();
-
-	if (timeout == 0)
-		timeout = slurm_get_prolog_timeout();
-
-	slurm_mutex_lock(&conf->config_mutex);
-	my_epilog = xstrdup(conf->epilog);
-	slurm_mutex_unlock(&conf->config_mutex);
 
 	_wait_for_job_running_prolog(job_env->jobid);
 
@@ -6043,24 +5819,7 @@ _run_epilog(job_env_t *job_env)
 		script_lock = true;
 	}
 
-#ifdef HAVE_NATIVE_CRAY
-	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL))
-		jobid = job_env->het_job_id;
-	else
-		jobid = job_env->jobid;
-#else
-	jobid = job_env->jobid;
-#endif
-
-	if (timeout == NO_VAL16)
-		error_code = _run_job_script("epilog", my_epilog, jobid,
-					     -1, my_env, job_env->uid);
-	else
-		error_code = _run_job_script("epilog", my_epilog, jobid,
-					     timeout, my_env, job_env->uid);
-
-	xfree(my_epilog);
-	_destroy_env(my_env);
+	error_code = prep_epilog(job_env, NULL);
 
 	diff_time = difftime(time(NULL), start_time);
 	if (diff_time >= (msg_timeout / 2)) {
