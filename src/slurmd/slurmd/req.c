@@ -5748,7 +5748,6 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	DEF_TIMERS;
 	int diff_time, rc;
 	time_t start_time = time(NULL);
-	static uint16_t msg_timeout = 0;
 	pthread_t       timer_id;
 	pthread_cond_t  timer_cond  = PTHREAD_COND_INITIALIZER;
 	pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -5756,16 +5755,13 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	bool prolog_fini = false;
 	bool script_lock = false;
 
-	if (msg_timeout == 0)
-		msg_timeout = slurm_get_msg_timeout();
-
 	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
 		slurm_mutex_lock(&prolog_serial_mutex);
 		script_lock = true;
 	}
 
 	timer_struct.job_id      = job_env->jobid;
-	timer_struct.msg_timeout = msg_timeout;
+	timer_struct.msg_timeout = slurmctld_conf.msg_timeout;
 	timer_struct.prolog_fini = &prolog_fini;
 	timer_struct.timer_cond  = &timer_cond;
 	timer_struct.timer_mutex = &timer_mutex;
@@ -5785,7 +5781,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	diff_time = difftime(time(NULL), start_time);
 	info("%s: prolog with lock for job %u ran for %d seconds",
 	     __func__, job_env->jobid, diff_time);
-	if (diff_time >= (msg_timeout / 2)) {
+	if (diff_time >= (slurmctld_conf.msg_timeout / 2)) {
 		info("prolog for job %u ran for %d seconds",
 		     job_env->jobid, diff_time);
 	}
@@ -5805,12 +5801,8 @@ static int
 _run_epilog(job_env_t *job_env)
 {
 	time_t start_time = time(NULL);
-	static uint16_t msg_timeout = 0;
 	int error_code, diff_time;
 	bool script_lock = false;
-
-	if (msg_timeout == 0)
-		msg_timeout = slurm_get_msg_timeout();
 
 	_wait_for_job_running_prolog(job_env->jobid);
 
@@ -5822,7 +5814,7 @@ _run_epilog(job_env_t *job_env)
 	error_code = prep_epilog(job_env, NULL);
 
 	diff_time = difftime(time(NULL), start_time);
-	if (diff_time >= (msg_timeout / 2)) {
+	if (diff_time >= (slurmctld_conf.msg_timeout / 2)) {
 		info("epilog for job %u ran for %d seconds",
 		     job_env->jobid, diff_time);
 	}
