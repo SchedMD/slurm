@@ -149,7 +149,7 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	space_remaining = false;
 	tid = 0;
 	for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
-		if (avail_cpus[n] || over_subscribe) {
+		if (avail_cpus[n]) {
 			/* Ignore gres_task_limit for first task per node */
 			tid++;
 			job_res->tasks_per_node[n]++;
