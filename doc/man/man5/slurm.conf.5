@@ -250,10 +250,10 @@ network traffic by the jobs.
 Configurable values at present are:
 .RS
 .TP 20
-\fBacct_gather_infiniband/none\fR
+\fBacct_gather_interconnect/none\fR
 No infiniband network data are collected.
 .TP
-\fBacct_gather_infiniband/ofed\fR
+\fBacct_gather_interconnect/ofed\fR
 Infiniband network traffic data are collected from the hardware monitoring
 counters of Infiniband devices through the OFED library.
 In order to account for per job network traffic, add the "ic/ofed" TRES to
@@ -1074,7 +1074,7 @@ for energy profiling using the acct_gather_energy plugin
 .TP
 \fBnetwork=\fI<interval>\fR
 where \fI<interval>\fR is the sampling interval in seconds
-for infiniband profiling using the acct_gather_infiniband
+for infiniband profiling using the acct_gather_interconnect
 plugin.
 .TP
 \fBfilesystem=\fI<interval>\fR

@@ -24,8 +24,8 @@ as a <b>Time Series</b> and also accumulate totals for each statistic for
 the job.</p>
 
 <p>Time Series are energy data collected by an acct_gather_energy plugin,
-I/O data from a network interface collected by an acct_gather_infiniband plugin,
-I/O data from parallel file systems such as Lustre collected by an
+I/O data from a network interface collected by an acct_gather_interconnect
+plugin, I/O data from parallel file systems such as Lustre collected by an
 acct_gather_filesystem plugin, and task performance data such as local disk I/O,
 cpu consumption, and memory use from a jobacct_gather plugin.
 Data from other sources may be added in the future.</p>
@@ -293,7 +293,7 @@ correlate activity with other sources such as logs.</DD></DT>
 </DL>
 
 <h3>Network (Infiniband Data)</h3>
-<p><b>JobAcctInfinibandType</b>=acct_gather_infiniband/ofed<p>
+<p><b>JobAcctInfinibandType</b>=acct_gather_interconnect/ofed<p>
 is required in slurm.conf to collect task data.
 Appropriately set network=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.</p>
@@ -348,6 +348,6 @@ correlate activity with other sources such as logs.</DD></DT>
 
 
 
-<p style="text-align:center;">Last modified 1 July 2013</p>
+<p style="text-align:center;">Last modified 30 January 2020</p>
 
 <!--#include virtual="footer.txt"-->

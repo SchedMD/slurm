@@ -110,7 +110,7 @@ present. Build dependencies for various plugins and commands are denoted below:
 <li> <b>IPMI Engergy Consumption</b> The <i>acct_gather_energy/ipmi</i>
 		accouting plugin will be built if the <i>freeimpi</i>
 		development library is present.</li>
-<li> <b>InfiniBand Accounting</b> The <i>acct_gather_infiniband/ofed</i>
+<li> <b>InfiniBand Accounting</b> The <i>acct_gather_interconnect/ofed</i>
 		InfiniBand accounting plugin will be built if the
 		<i>libibmad</i> and <i>libibumad</i> development libraries are
 		present.</li>
@@ -742,6 +742,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 23 September 2019</p>
+<p style="text-align:center;">Last modified 30 January 2020</p>
 
 <!--#include virtual="footer.txt"-->
