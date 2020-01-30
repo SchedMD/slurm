@@ -61,6 +61,7 @@
 #include "src/common/node_features.h"
 #include "src/common/node_select.h"
 #include "src/common/power.h"
+#include "src/common/prep.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_mcs.h"
@@ -1469,6 +1470,8 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	/* Update plugin parameters as possible */
 	rc = job_submit_plugin_reconfig();
+	error_code = MAX(error_code, rc);	/* not fatal */
+	rc = prep_plugin_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */
 	rc = switch_g_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */

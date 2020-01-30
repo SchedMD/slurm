@@ -166,17 +166,17 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	xtree.lo xhash.lo net.lo log.lo cbuf.lo data.lo bitstring.lo \
 	slurm_mpi.lo pack.lo parse_config.lo parse_value.lo plugin.lo \
 	plugrack.lo power.lo print_fields.lo slurm_resolv.lo \
-	fetch_config.lo read_config.lo run_in_daemon.lo node_select.lo \
-	env.lo fd.lo slurm_cred.lo slurm_errno.lo slurm_ext_sensors.lo \
-	slurm_mcs.lo slurm_priority.lo slurm_protocol_api.lo \
-	slurm_protocol_pack.lo slurm_protocol_util.lo \
-	slurm_protocol_socket.lo slurm_protocol_defs.lo \
-	slurm_rlimits_info.lo slurmdb_defs.lo slurmdb_pack.lo \
-	slurmdbd_defs.lo slurmdbd_pack.lo working_cluster.lo uid.lo \
-	util-net.lo slurm_auth.lo slurm_acct_gather.lo \
-	slurm_accounting_storage.lo slurm_jobacct_gather.lo \
-	slurm_acct_gather_energy.lo slurm_acct_gather_profile.lo \
-	slurm_acct_gather_interconnect.lo \
+	fetch_config.lo prep.lo read_config.lo run_in_daemon.lo \
+	node_select.lo env.lo fd.lo slurm_cred.lo slurm_errno.lo \
+	slurm_ext_sensors.lo slurm_mcs.lo slurm_priority.lo \
+	slurm_protocol_api.lo slurm_protocol_pack.lo \
+	slurm_protocol_util.lo slurm_protocol_socket.lo \
+	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdb_defs.lo \
+	slurmdb_pack.lo slurmdbd_defs.lo slurmdbd_pack.lo \
+	working_cluster.lo uid.lo util-net.lo slurm_auth.lo \
+	slurm_acct_gather.lo slurm_accounting_storage.lo \
+	slurm_jobacct_gather.lo slurm_acct_gather_energy.lo \
+	slurm_acct_gather_profile.lo slurm_acct_gather_interconnect.lo \
 	slurm_acct_gather_filesystem.lo slurm_jobcomp.lo slurm_opt.lo \
 	slurm_route.lo slurm_time.lo slurm_topology.lo switch.lo \
 	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
@@ -250,9 +250,10 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/parse_time.Plo ./$(DEPDIR)/parse_value.Plo \
 	./$(DEPDIR)/plugin.Plo ./$(DEPDIR)/plugrack.Plo \
 	./$(DEPDIR)/plugstack.Plo ./$(DEPDIR)/power.Plo \
-	./$(DEPDIR)/print_fields.Plo ./$(DEPDIR)/proc_args.Plo \
-	./$(DEPDIR)/read_config.Plo ./$(DEPDIR)/run_command.Plo \
-	./$(DEPDIR)/run_in_daemon.Plo ./$(DEPDIR)/site_factor.Plo \
+	./$(DEPDIR)/prep.Plo ./$(DEPDIR)/print_fields.Plo \
+	./$(DEPDIR)/proc_args.Plo ./$(DEPDIR)/read_config.Plo \
+	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
+	./$(DEPDIR)/site_factor.Plo \
 	./$(DEPDIR)/slurm_accounting_storage.Plo \
 	./$(DEPDIR)/slurm_acct_gather.Plo \
 	./$(DEPDIR)/slurm_acct_gather_energy.Plo \
@@ -632,6 +633,7 @@ libcommon_la_SOURCES = \
 	print_fields.c print_fields.h	\
 	slurm_resolv.c slurm_resolv.h	\
 	fetch_config.c fetch_config.h	\
+	prep.c prep.h			\
 	read_config.c read_config.h	\
 	run_in_daemon.c run_in_daemon.h	\
 	node_select.c node_select.h	\
@@ -863,6 +865,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugrack.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugstack.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/power.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prep.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print_fields.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_args.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Plo@am__quote@ # am--include-marker
@@ -1126,6 +1129,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/plugrack.Plo
 	-rm -f ./$(DEPDIR)/plugstack.Plo
 	-rm -f ./$(DEPDIR)/power.Plo
+	-rm -f ./$(DEPDIR)/prep.Plo
 	-rm -f ./$(DEPDIR)/print_fields.Plo
 	-rm -f ./$(DEPDIR)/proc_args.Plo
 	-rm -f ./$(DEPDIR)/read_config.Plo
@@ -1275,6 +1279,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/plugrack.Plo
 	-rm -f ./$(DEPDIR)/plugstack.Plo
 	-rm -f ./$(DEPDIR)/power.Plo
+	-rm -f ./$(DEPDIR)/prep.Plo
 	-rm -f ./$(DEPDIR)/print_fields.Plo
 	-rm -f ./$(DEPDIR)/proc_args.Plo
 	-rm -f ./$(DEPDIR)/read_config.Plo

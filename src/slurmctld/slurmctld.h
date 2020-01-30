@@ -792,6 +792,9 @@ struct job_record {
 	bool preempt_in_progress;	/* Premption of other jobs in progress
 					 * in order to start this job,
 					 * (Internal use only, don't save) */
+	uint32_t prep_epilog_cnt;	/* count of epilog async tasks left */
+	uint32_t prep_prolog_cnt;	/* count of prolog async tasks left */
+	bool prep_prolog_failed;	/* any prolog_slurmctld failed */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
 	uint32_t *priority_array;	/* partition based priority */
@@ -2766,5 +2769,11 @@ extern bool job_overlap_and_running(bitstr_t *node_map, job_record_t *job_ptr);
  * Respond to request for backup slurmctld status
  */
 extern void slurm_rpc_control_status(slurm_msg_t *msg, time_t control_time);
+
+/*
+ * Callbacks to let the PrEp plugins signal completion if running async.
+ */
+extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id);
+extern void prep_epilog_slurmctld_callback(int rc, uint32_t job_id);
 
 #endif /* !_HAVE_SLURMCTLD_H */
