@@ -64,6 +64,20 @@ typedef enum {
 	WINDOW_MSGS
 } msg_aggr_param_type_t;
 
+typedef struct {
+	char **gres_job_env;
+	uint32_t het_job_id;
+	uint32_t jobid;
+	uint32_t step_id;
+	char *node_list;
+	char *partition;
+	char *resv_id;
+	char **spank_job_env;
+	uint32_t spank_job_env_size;
+	uid_t uid;
+	char *user_name;
+} job_env_t;
+
 /*
  * Global config type
  */

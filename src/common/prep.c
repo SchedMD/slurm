@@ -45,8 +45,8 @@
 
 typedef struct {
 	int (*register_callbacks)(prep_callbacks_t *callbacks);
-	int (*prolog)(void);
-	int (*epilog)(void);
+	int (*prolog)(job_env_t *job_env, slurm_cred_t *cred);
+	int (*epilog)(job_env_t *job_env, slurm_cred_t *cred);
 	int (*prolog_slurmctld)(job_record_t *job_ptr, bool *async);
 	int (*epilog_slurmctld)(job_record_t *job_ptr, bool *async);
 } prep_ops_t;
@@ -199,7 +199,7 @@ extern int prep_plugin_reconfig(void)
  **************************************************************************
  */
 
-extern int prep_prolog(void)
+extern int prep_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	DEF_TIMERS;
 	int rc;
@@ -209,14 +209,14 @@ extern int prep_prolog(void)
 	rc = prep_plugin_init(NULL);
 	slurm_mutex_lock(&g_context_lock);
 	for (int i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].prolog))();
+		rc = (*(ops[i].prolog))(job_env, cred);
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
 
 	return rc;
 }
 
-extern int prep_epilog(void)
+extern int prep_epilog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	DEF_TIMERS;
 	int rc;
@@ -226,7 +226,7 @@ extern int prep_epilog(void)
 	rc = prep_plugin_init(NULL);
 	slurm_mutex_lock(&g_context_lock);
 	for (int i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].epilog))();
+		rc = (*(ops[i].epilog))(job_env, cred);
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
 
