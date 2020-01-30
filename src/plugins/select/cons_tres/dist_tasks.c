@@ -199,7 +199,7 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	 */
 	if (job_ptr->details->overcommit && (job_ptr->tres_per_task == 0))
 		maxtasks = 0;	/* Allocate have one_task_per_node */
-	for (i = 0; tid < maxtasks; i++) {
+	while (tid < maxtasks) {
 		bool space_remaining = false;
 		if (over_subscribe && log_over_subscribe) {
 			/*
