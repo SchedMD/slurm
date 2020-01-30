@@ -1280,7 +1280,7 @@ _salloc()
 		       --constraint=<list> --contiguous\
 		       --cores-per-socket=<number> --cpu-freq=<p1[-p2[:p3]]>\
 		       --cpus-per-task=<ncpus> --dependency=<deplist>\
-		       --chdir=<path> --exclusive=[user] --nodefile=<nodefile>\
+		       --chdir=<path> --exclusive<user> --nodefile=<nodefile>\
 		       --get-user-env --gid=<group> --gres=<list> --hold\
 		       --help --hint=<type> --immediate=<seconds>\
 		       --job-name=<jobname> --jobid=<jobid>\
@@ -1450,7 +1450,7 @@ _srun()
 			--cpu-freq<freq> --cpus-per-task<ncpus>\
 			--dependency=<dependency_list> --chdir=<path>\
 			--error<mode> --preserve-env --epilog<executable>\
-			--exclusive=<user> --export<var> --gid<group>\
+			--exclusive<user> --export<var> --gid<group>\
 			--gres<list> --hold --help --hint<type>\
 			--immediate=<seconds> --input<mode>\
 			--job-name<jobname> --jobid<jobid>\
