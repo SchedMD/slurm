@@ -117,12 +117,12 @@ extern void prep_p_register_callbacks(prep_callbacks_t *callbacks)
 		have_epilog_slurmctld = false;
 }
 
-extern int prep_p_prolog(void)
+extern int prep_p_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int prep_p_epilog(void)
+extern int prep_p_epilog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	return SLURM_SUCCESS;
 }

@@ -39,6 +39,7 @@
 #define _PREP_SCRIPT_H_
 
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
 extern void (*prolog_slurmctld_callback)(int rc, uint32_t job_id);
 extern void (*epilog_slurmctld_callback)(int rc, uint32_t job_id);

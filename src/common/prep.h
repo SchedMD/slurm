@@ -38,6 +38,7 @@
 #define _PREP_H_
 
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
 typedef struct {
 	void (*prolog_slurmctld)(int rc, uint32_t job_id);
@@ -71,12 +72,12 @@ extern int prep_plugin_reconfig(void);
 /*
  * Returns a Slurm errno.
  */
-extern int prep_prolog(void);
+extern int prep_prolog(job_env_t *job_env, slurm_cred_t *cred);
 
 /*
  * Returns a Slurm errno.
  */
-extern int prep_epilog(void);
+extern int prep_epilog(job_env_t *job_env, slurm_cred_t *cred);
 
 /*
  * No return code, will update job status through job_ptr if necessary,
