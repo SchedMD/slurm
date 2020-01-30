@@ -5934,7 +5934,7 @@ static int
 _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 {
 	DEF_TIMERS;
-	int i, diff_time, rc;
+	int rc, diff_time;
 	char *my_prolog;
 	time_t start_time = time(NULL);
 	static uint16_t msg_timeout = 0;
@@ -5943,7 +5943,6 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	pthread_cond_t  timer_cond  = PTHREAD_COND_INITIALIZER;
 	pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 	timer_struct_t  timer_struct;
-	bool fail_prolog = false;	/* Used for testing */
 	bool prolog_fini = false;
 	bool script_lock = false;
 	char **my_env;
@@ -5993,17 +5992,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	jobid = job_env->jobid;
 #endif
 
-	for (i = 0; i < job_env->spank_job_env_size; i++) {
-		if (!xstrcmp(job_env->spank_job_env[i],
-		    "SPANK__SLURM_SPANK_OPTION_test_suite_test_suite_prolog=0")) {
-			fail_prolog = true;
-			break;
-		}
-	}
-
-	if (fail_prolog)
-		rc = -1;
-	else if (timeout == NO_VAL16) {
+	if (timeout == NO_VAL16) {
 		rc = _run_job_script("prolog", my_prolog, jobid,
 				     -1, my_env, job_env->uid);
 	} else {
