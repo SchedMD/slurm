@@ -1780,12 +1780,33 @@ static int arg_set_gres(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_gres(slurm_opt_t *opt, const data_t *arg,
+			     data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else if (!xstrcasecmp(str, "help") || !xstrcasecmp(str, "list")) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("GRES \"help\" not supported", rc);
+	} else {
+		xfree(opt->gres);
+		opt->gres = str;
+		str = NULL;
+	}
+
+	xfree(str);
+	return rc;
+}
 COMMON_STRING_OPTION_GET_AND_RESET(gres);
 static slurm_cli_opt_t slurm_opt_gres = {
 	.name = "gres",
 	.has_arg = required_argument,
 	.val = LONG_OPT_GRES,
 	.set_func = arg_set_gres,
+	.set_func_data = arg_set_data_gres,
 	.get_func = arg_get_gres,
 	.reset_func = arg_reset_gres,
 	.reset_each_pass = true,
