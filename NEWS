@@ -111,6 +111,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix to properly schedule certain jobs with cons_tres plugin.
  -- Fix FIRST_CORES for reservations when using cons_tres.
  -- Fix sbcast -C argument parsing.
+ -- Replace/deprecate max_job_bf with bf_max_job_test and print error message.
 
 * Changes in Slurm 19.05.5
 ==========================
