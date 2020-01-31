@@ -4238,6 +4238,22 @@ static int arg_set_uid(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_uid(slurm_opt_t *opt, const data_t *arg,
+			    data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else if (uid_from_string(str, &opt->uid) < 0) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Invalid user id specification", rc);
+	}
+
+	xfree(str);
+	return rc;
+}
 COMMON_INT_OPTION_GET(uid);
 COMMON_OPTION_RESET(uid, getuid());
 static slurm_cli_opt_t slurm_opt_uid = {
@@ -4246,6 +4262,7 @@ static slurm_cli_opt_t slurm_opt_uid = {
 	.val = LONG_OPT_UID,
 	.sbatch_early_pass = true,
 	.set_func = arg_set_uid,
+	.set_func_data = arg_set_data_uid,
 	.get_func = arg_get_uid,
 	.reset_func = arg_reset_uid,
 };
