@@ -1827,6 +1827,30 @@ static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_gres_flags(slurm_opt_t *opt, const data_t *arg,
+				   data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else {
+		/* clear both flag options first */
+		opt->job_flags &= ~(GRES_DISABLE_BIND|GRES_ENFORCE_BIND);
+		if (!xstrcasecmp(str, "disable-binding")) {
+			opt->job_flags |= GRES_DISABLE_BIND;
+		} else if (!xstrcasecmp(str, "enforce-binding")) {
+			opt->job_flags |= GRES_ENFORCE_BIND;
+		} else {
+			rc = SLURM_ERROR;
+			ADD_DATA_ERROR("Invalid GRES flags", rc);
+		}
+	}
+
+	xfree(str);
+	return rc;
+}
 static char *arg_get_gres_flags(slurm_opt_t *opt)
 {
 	if (opt->job_flags & GRES_DISABLE_BIND)
@@ -1845,6 +1869,7 @@ static slurm_cli_opt_t slurm_opt_gres_flags = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_GRES_FLAGS,
 	.set_func = arg_set_gres_flags,
+	.set_func_data = arg_set_data_gres_flags,
 	.get_func = arg_get_gres_flags,
 	.reset_func = arg_reset_gres_flags,
 	.reset_each_pass = true,
