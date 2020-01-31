@@ -273,6 +273,31 @@ static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
 								\
 	return SLURM_SUCCESS;					\
 }
+
+#define COMMON_INT_OPTION_SET_DATA(field)			\
+static int arg_set_data_##field(slurm_opt_t *opt,		\
+			   const data_t *arg,			\
+			   data_t *errors)			\
+__attribute__((nonnull (1, 2)));				\
+static int arg_set_data_##field(slurm_opt_t *opt,		\
+			   const data_t *arg,			\
+			   data_t *errors)			\
+{								\
+	int64_t val;						\
+	int rc = data_get_int_converted(arg, &val);		\
+	if (rc)							\
+		ADD_DATA_ERROR("Unable to read integer value",	\
+			       rc);				\
+	else if (val >= INT_MAX) {				\
+		rc = SLURM_ERROR;				\
+		ADD_DATA_ERROR("Integer too large", rc);	\
+	} else if (val <= INT_MIN) {				\
+		rc = SLURM_ERROR;				\
+		ADD_DATA_ERROR("Integer too small", rc);	\
+	} else							\
+		opt->field = (int) val;				\
+	return rc;						\
+}
 #define COMMON_INT_OPTION_GET(field)				\
 static char *arg_get_##field(slurm_opt_t *opt)			\
 __attribute__((nonnull));					\
