@@ -3692,6 +3692,7 @@ static slurm_cli_opt_t slurm_opt_slurmd_debug = {
 };
 
 COMMON_INT_OPTION_SET(sockets_per_node, "--sockets-per-node");
+COMMON_INT_OPTION_SET_DATA(sockets_per_node);
 COMMON_INT_OPTION_GET(sockets_per_node);
 COMMON_OPTION_RESET(sockets_per_node, NO_VAL);
 static slurm_cli_opt_t slurm_opt_sockets_per_node = {
@@ -3699,6 +3700,7 @@ static slurm_cli_opt_t slurm_opt_sockets_per_node = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_SOCKETSPERNODE,
 	.set_func = arg_set_sockets_per_node,
+	.set_func_data = arg_set_data_sockets_per_node,
 	.get_func = arg_get_sockets_per_node,
 	.reset_func = arg_reset_sockets_per_node,
 	.reset_each_pass = true,
