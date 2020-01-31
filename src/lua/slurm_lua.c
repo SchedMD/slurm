@@ -45,7 +45,7 @@
  *  Common function to dlopen() the appropriate Lua libraries, and
  *   ensure the lua version matches what we compiled against.
  */
-int xlua_dlopen(void)
+extern int slurm_lua_dlopen(void)
 {
 	/*
 	 *  Need to dlopen() liblua.so with RTLD_GLOBAL in order to

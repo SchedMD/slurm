@@ -44,6 +44,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
 
-int xlua_dlopen();
+extern int slurm_lua_dlopen();
+
 
 #endif
