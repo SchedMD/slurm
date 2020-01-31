@@ -4003,6 +4003,19 @@ static int arg_set_test_only(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_test_only(slurm_opt_t *opt, const data_t *arg,
+				  data_t *errors)
+{
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return SLURM_ERROR;
+
+	if (opt->sbatch_opt)
+		opt->sbatch_opt->test_only = true;
+	if (opt->srun_opt)
+		opt->srun_opt->test_only = true;
+
+	return SLURM_SUCCESS;
+}
 static char *arg_get_test_only(slurm_opt_t *opt)
 {
 	bool tmp = false;
@@ -4030,6 +4043,7 @@ static slurm_cli_opt_t slurm_opt_test_only = {
 	.val = LONG_OPT_TEST_ONLY,
 	.set_func_sbatch = arg_set_test_only,
 	.set_func_srun = arg_set_test_only,
+	.set_func_data = arg_set_data_test_only,
 	.get_func = arg_get_test_only,
 	.reset_func = arg_reset_test_only,
 };
