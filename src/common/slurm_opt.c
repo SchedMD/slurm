@@ -893,6 +893,24 @@ static int arg_set_core_spec(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_core_spec(slurm_opt_t *opt, const data_t *arg,
+				  data_t *errors)
+{
+	int rc;
+	int64_t val;
+
+	if ((rc = data_get_int_converted(arg, &val)))
+		ADD_DATA_ERROR("Unable to read int", rc);
+	else if (val < 0)
+		ADD_DATA_ERROR("Invalid core specification", rc);
+	else {
+		if (opt->srun_opt)
+			opt->srun_opt->core_spec_set = (val > 0);
+		opt->core_spec = val;
+	}
+
+	return rc;
+}
 static char *arg_get_core_spec(slurm_opt_t *opt)
 {
 	if ((opt->core_spec == NO_VAL16) ||
@@ -912,6 +930,7 @@ static slurm_cli_opt_t slurm_opt_core_spec = {
 	.has_arg = required_argument,
 	.val = 'S',
 	.set_func = arg_set_core_spec,
+	.set_func_data = arg_set_data_core_spec,
 	.get_func = arg_get_core_spec,
 	.reset_func = arg_reset_core_spec,
 	.reset_each_pass = true,
