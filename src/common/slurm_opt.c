@@ -2533,6 +2533,11 @@ static int arg_set_profile(slurm_opt_t *opt, const char *arg)
 {
 	opt->profile = acct_gather_profile_from_string(arg);
 
+	if (opt->profile == ACCT_GATHER_PROFILE_NOT_SET) {
+		error("invalid --profile=%s option", arg);
+		exit(-1);
+	}
+
 	return SLURM_SUCCESS;
 }
 static char *arg_get_profile(slurm_opt_t *opt)
