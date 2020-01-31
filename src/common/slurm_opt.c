@@ -651,6 +651,22 @@ static int arg_set_begin(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_begin(slurm_opt_t *opt, const data_t *arg,
+			      data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else if (!(opt->begin = parse_time(str, 0))) {
+		rc = ESLURM_INVALID_TIME_VALUE;
+		ADD_DATA_ERROR("Unable to parse time", rc);
+	}
+
+	xfree(str);
+	return rc;
+}
 static char *arg_get_begin(slurm_opt_t *opt)
 {
 	char time_str[32];
@@ -663,6 +679,7 @@ static slurm_cli_opt_t slurm_opt_begin = {
 	.has_arg = required_argument,
 	.val = 'b',
 	.set_func = arg_set_begin,
+	.set_func_data = arg_set_data_begin,
 	.get_func = arg_get_begin,
 	.reset_func = arg_reset_begin,
 };
