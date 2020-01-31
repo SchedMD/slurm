@@ -3712,6 +3712,13 @@ static int arg_set_spread_job(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_spread_job(slurm_opt_t *opt, const data_t *arg,
+				   data_t *errors)
+{
+	opt->job_flags |= SPREAD_JOB;
+
+	return SLURM_SUCCESS;
+}
 static char *arg_get_spread_job(slurm_opt_t *opt)
 {
 	if (opt->job_flags & SPREAD_JOB)
@@ -3727,6 +3734,7 @@ static slurm_cli_opt_t slurm_opt_spread_job = {
 	.has_arg = no_argument,
 	.val = LONG_OPT_SPREAD_JOB,
 	.set_func = arg_set_spread_job,
+	.set_func_data = arg_set_data_spread_job,
 	.get_func = arg_get_spread_job,
 	.reset_func = arg_reset_spread_job,
 	.reset_each_pass = true,
