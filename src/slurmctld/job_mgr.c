@@ -4626,7 +4626,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 		 * separately from just the meta job, so send remote
 		 * dependencies to siblings if needed.
 		 */
-		if (job_ptr->details && job_ptr->details->dependency &&
+		if (job_ptr->details->dependency &&
 		    job_ptr->details->depend_list)
 			fed_mgr_submit_remote_dependencies(job_ptr, false,
 							   false);
