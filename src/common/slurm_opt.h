@@ -420,6 +420,13 @@ extern void slurm_print_set_options(slurm_opt_t *opt);
 extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass);
 
 /*
+ * Free all memory associated with opt members
+ * Note: assumes that opt, opt->salloc_opt, opt->sbatch_opt, and
+ * opt->srun_opt should not be xfreed.
+ */
+extern void slurm_free_options_members(slurm_opt_t *opt);
+
+/*
  * Was the option set by a cli argument?
  */
 extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval);

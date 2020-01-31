@@ -3695,6 +3695,17 @@ void slurm_option_table_destroy(struct option *optz)
 	optz_destroy(optz);
 }
 
+extern void slurm_free_options_members(slurm_opt_t *opt)
+{
+	if (!opt)
+		return;
+
+	slurm_reset_all_options(opt, true);
+
+	xfree(opt->chdir);
+	xfree(opt->state);
+}
+
 static void _init_state(slurm_opt_t *opt)
 {
 	if (opt->state)
