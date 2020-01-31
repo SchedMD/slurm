@@ -4056,6 +4056,27 @@ static int arg_set_thread_spec(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_thread_spec(slurm_opt_t *opt, const data_t *arg,
+				    data_t *errors)
+{
+	int rc;
+	int64_t val;
+
+	if ((rc = data_get_int_converted(arg, &val)))
+		ADD_DATA_ERROR("Unable to read integer", rc);
+	else if (val >= CORE_SPEC_THREAD) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("core_spec is too large", rc);
+	} else if (val <= 0) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("core_spec must be >0", rc);
+	} else {
+		opt->core_spec = val;
+		opt->core_spec |= CORE_SPEC_THREAD;
+	}
+
+	return rc;
+}
 static char *arg_get_thread_spec(slurm_opt_t *opt)
 {
 	if ((opt->core_spec == NO_VAL16) ||
@@ -4068,6 +4089,7 @@ static slurm_cli_opt_t slurm_opt_thread_spec = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_THREAD_SPEC,
 	.set_func = arg_set_thread_spec,
+	.set_func_data = arg_set_data_thread_spec,
 	.get_func = arg_get_thread_spec,
 	.reset_func = arg_reset_core_spec,
 	.reset_each_pass = true,
