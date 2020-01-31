@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  xlua.h - Lua integration common functions
+ *  slurm_lua.c - Lua integration common functions
  *****************************************************************************
- *  Copyright (C) 2015 SchedMD LLC.
+ *  Copyright (C) 2015-2020 SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
@@ -34,7 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/xlua.h"
+#include "src/lua/slurm_lua.h"
 
 #ifdef HAVE_LUA
 # include <lua.h>

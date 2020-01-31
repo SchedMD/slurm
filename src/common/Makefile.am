@@ -10,7 +10,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS     = -I$(top_srcdir) $(lua_CFLAGS) -DSBINDIR=\"$(sbindir)\"
+AM_CPPFLAGS     = -I$(top_srcdir) -DSBINDIR=\"$(sbindir)\"
 
 noinst_PROGRAMS = libcommon.o libeio.o libspank.o
 
@@ -124,7 +124,6 @@ libcommon_la_SOURCES = 			\
 	layouts_mgr.h layouts_mgr.c	\
 	mapping.c mapping.h		\
 	xcgroup_read_config.c xcgroup_read_config.h \
-	xlua.c xlua.h                   \
 	callerid.c callerid.h		\
 	group_cache.c group_cache.h	\
 	slurm_persist_conn.c slurm_persist_conn.h \

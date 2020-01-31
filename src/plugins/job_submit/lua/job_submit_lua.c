@@ -56,8 +56,8 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/assoc_mgr.h"
-#include "src/common/xlua.h"
 #include "src/common/uid.h"
+#include "src/lua/slurm_lua.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/reservation.h"
