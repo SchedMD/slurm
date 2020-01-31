@@ -120,6 +120,7 @@ static void arg_reset_##field(slurm_opt_t *opt)			\
 
 #define COMMON_SBATCH_STRING_OPTION(field)	\
 COMMON_SBATCH_STRING_OPTION_SET(field)		\
+COMMON_SBATCH_STRING_OPTION_SET_DATA(field)	\
 COMMON_SBATCH_STRING_OPTION_GET(field)		\
 COMMON_SBATCH_STRING_OPTION_RESET(field)
 #define COMMON_SBATCH_STRING_OPTION_SET(field)			\
@@ -572,6 +573,7 @@ static slurm_cli_opt_t slurm_opt_array = {
 	.has_arg = required_argument,
 	.val = 'a',
 	.set_func_sbatch = arg_set_array_inx,
+	.set_func_data = arg_set_data_array_inx,
 	.get_func = arg_get_array_inx,
 	.reset_func = arg_reset_array_inx,
 };
@@ -582,6 +584,7 @@ static slurm_cli_opt_t slurm_opt_batch = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_BATCH,
 	.set_func_sbatch = arg_set_batch_features,
+	.set_func_data = arg_set_data_batch_features,
 	.get_func = arg_get_batch_features,
 	.reset_func = arg_reset_batch_features,
 };
@@ -1293,6 +1296,7 @@ static slurm_cli_opt_t slurm_opt_export_file = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_EXPORT_FILE,
 	.set_func_sbatch = arg_set_export_file,
+	.set_func_data = arg_set_data_export_file,
 	.get_func = arg_get_export_file,
 	.reset_func = arg_reset_export_file,
 };
@@ -3572,6 +3576,7 @@ static slurm_cli_opt_t slurm_opt_wrap = {
 	.val = LONG_OPT_WRAP,
 	.sbatch_early_pass = true,
 	.set_func_sbatch = arg_set_wrap,
+	.set_func_data = arg_set_data_wrap,
 	.get_func = arg_get_wrap,
 	.reset_func = arg_reset_wrap,
 };
