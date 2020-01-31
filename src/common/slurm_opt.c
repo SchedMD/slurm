@@ -3827,6 +3827,112 @@ static int arg_set_switches(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+
+static int _handle_data_switches_str(slurm_opt_t *opt, char *arg,
+				     data_t *errors)
+{
+	int rc = SLURM_SUCCESS;
+	char *split = xstrchr(arg, '@');
+
+	if (split) {
+		split[0] = '\0';
+		split++;
+		opt->wait4switch = time_str2secs(split);
+
+		rc = _handle_data_switches_str(opt, arg, errors);
+	} else
+		opt->req_switch = atoi(arg);
+
+	return rc;
+}
+
+static int _handle_data_switches_data(slurm_opt_t *opt, const data_t *arg,
+				      data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else
+		rc = _handle_data_switches_str(opt, str, errors);
+
+	xfree(str);
+
+	return rc;
+}
+
+typedef struct {
+	slurm_opt_t *opt;
+	data_t *errors;
+} data_foreach_switches_t;
+
+data_for_each_cmd_t
+	_foreach_data_switches(const char *key, const data_t *data, void *arg)
+{
+	data_foreach_switches_t *args = arg;
+	data_t *errors = args->errors;
+
+	if (!xstrcasecmp("count", key)) {
+		int64_t val;
+
+		if (data_get_int_converted(data, &val)) {
+			ADD_DATA_ERROR("Invalid count specification",
+				       SLURM_ERROR);
+			return DATA_FOR_EACH_FAIL;
+		}
+
+		args->opt->req_switch = (int) val;
+	} else if (!xstrcasecmp("timeout", key)) {
+		char *str = NULL;
+
+		if (data_get_string_converted(data, &str)) {
+			return DATA_FOR_EACH_FAIL;
+			ADD_DATA_ERROR("Invalid timeout specification",
+				       SLURM_ERROR);
+		}
+
+		args->opt->wait4switch = time_str2secs(str);
+		xfree(str);
+	} else {
+		ADD_DATA_ERROR("unknown key in switches specification",
+				       SLURM_ERROR);
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static int arg_set_data_switches(slurm_opt_t *opt, const data_t *arg,
+				 data_t *errors)
+{
+	int rc = SLURM_SUCCESS;
+	int64_t val;
+
+	if (data_get_type(arg) == DATA_TYPE_DICT) {
+		data_foreach_switches_t args = {
+			.opt = opt,
+			.errors = errors,
+		};
+		if (data_dict_for_each_const(arg, _foreach_data_switches,
+					     &args) < 0) {
+			rc = SLURM_ERROR;
+			ADD_DATA_ERROR("Invalid switch specification", rc);
+		}
+	} else if ((rc = data_get_int_converted(arg, &val)))
+		return _handle_data_switches_data(opt, arg, errors);
+	else if (val >= INT_MAX) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Integer too large", rc);
+	} else if (val <= 0) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Must request at least 1 switch", rc);
+	} else
+		opt->req_switch = (int) val;
+
+	return rc;
+}
+
 static char *arg_get_switches(slurm_opt_t *opt)
 {
 	if (opt->wait4switch != -1) {
@@ -3848,6 +3954,7 @@ static slurm_cli_opt_t slurm_opt_switches = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_SWITCHES,
 	.set_func = arg_set_switches,
+	.set_func_data = arg_set_data_switches,
 	.get_func = arg_get_switches,
 	.reset_func = arg_reset_switches,
 	.reset_each_pass = true,
