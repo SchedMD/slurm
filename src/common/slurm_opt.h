@@ -50,6 +50,8 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/data.h"
+
 #define DEFAULT_IMMEDIATE	1
 #define DEFAULT_BELL_DELAY	10
 #define SRUN_MAX_THREADS	60
@@ -408,6 +410,16 @@ extern void slurm_option_table_destroy(struct option *optz);
  */
 extern int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 				bool set_by_env, bool early_pass);
+
+/*
+ * Process incoming single component of Job data entry
+ * IN opt - options to populate from job chunk
+ * IN job - data containing job request
+ * IN/OUT errors - data dictionary to populate with detailed errors
+ * RET SLURM_SUCCESS or error
+ */
+extern int slurm_process_option_data(slurm_opt_t *opt, int optval,
+				     const data_t *arg, data_t *errors);
 
 /*
  * Print all options that have been set through slurm_process_option()

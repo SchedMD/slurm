@@ -3726,6 +3726,49 @@ static void _init_state(slurm_opt_t *opt)
 			     sizeof(slurm_opt_state_t));
 }
 
+extern int slurm_process_option_data(slurm_opt_t *opt, int optval,
+				     const data_t *arg, data_t *errors)
+{
+	int i;
+	bool set = true;
+
+	if (!opt)
+		fatal("%s: missing slurm_opt_t struct", __func__);
+
+	for (i = 0; common_options[i]; i++) {
+		if (common_options[i]->val != optval)
+			continue;
+
+		/* Check that this is a valid match. */
+		if (!common_options[i]->set_func_data)
+			continue;
+
+		/* Match found */
+		break;
+	}
+
+	// TODO: implement data aware spank parsing
+
+	_init_state(opt);
+
+	if (!set) {
+		(common_options[i]->reset_func)(opt);
+		opt->state[i].set = false;
+		opt->state[i].set_by_data = false;
+		opt->state[i].set_by_env = false;
+		return SLURM_SUCCESS;
+	}
+
+	if (!(common_options[i]->set_func_data)(opt, arg, errors)) {
+		opt->state[i].set = true;
+		opt->state[i].set_by_data = true;
+		opt->state[i].set_by_env = false;
+		return SLURM_SUCCESS;
+	}
+
+	return SLURM_ERROR;
+}
+
 int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 			 bool set_by_env, bool early_pass)
 {
