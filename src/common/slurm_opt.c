@@ -75,6 +75,7 @@
 
 #define COMMON_STRING_OPTION(field)	\
 COMMON_STRING_OPTION_SET(field)		\
+COMMON_STRING_OPTION_SET_DATA(field)	\
 COMMON_STRING_OPTION_GET(field)		\
 COMMON_STRING_OPTION_RESET(field)
 #define COMMON_STRING_OPTION_GET_AND_RESET(field)	\
@@ -509,6 +510,7 @@ static slurm_cli_opt_t slurm_opt_account = {
 	.has_arg = required_argument,
 	.val = 'A',
 	.set_func = arg_set_account,
+	.set_func_data = arg_set_data_account,
 	.get_func = arg_get_account,
 	.reset_func = arg_reset_account,
 };
@@ -590,6 +592,7 @@ static slurm_cli_opt_t slurm_opt_bbf = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_BURST_BUFFER_FILE,
 	.set_func = arg_set_burst_buffer_file,
+	.set_func_data = arg_set_data_burst_buffer_file,
 	.get_func = arg_get_burst_buffer_file,
 	.reset_func = arg_reset_burst_buffer_file,
 };
@@ -698,6 +701,7 @@ static slurm_cli_opt_t slurm_opt_bb = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_BURST_BUFFER_SPEC,
 	.set_func = arg_set_burst_buffer,
+	.set_func_data = arg_set_data_burst_buffer,
 	.get_func = arg_get_burst_buffer,
 	.reset_func = arg_reset_burst_buffer,
 	.reset_each_pass = true,
@@ -709,6 +713,7 @@ static slurm_cli_opt_t slurm_opt_c_constraint = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_CLUSTER_CONSTRAINT,
 	.set_func = arg_set_c_constraint,
+	.set_func_data = arg_set_data_c_constraint,
 	.get_func = arg_get_c_constraint,
 	.reset_func = arg_reset_c_constraint,
 };
@@ -752,6 +757,7 @@ static slurm_cli_opt_t slurm_opt_clusters = {
 	.has_arg = required_argument,
 	.val = 'M',
 	.set_func = arg_set_clusters,
+	.set_func_data = arg_set_data_clusters,
 	.get_func = arg_get_clusters,
 	.reset_func = arg_reset_clusters,
 };
@@ -760,6 +766,7 @@ static slurm_cli_opt_t slurm_opt_cluster = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_CLUSTER,
 	.set_func = arg_set_clusters,
+	.set_func_data = arg_set_data_clusters,
 	.get_func = arg_get_clusters,
 	.reset_func = arg_reset_clusters,
 };
@@ -770,6 +777,7 @@ static slurm_cli_opt_t slurm_opt_comment = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_COMMENT,
 	.set_func = arg_set_comment,
+	.set_func_data = arg_set_data_comment,
 	.get_func = arg_get_comment,
 	.reset_func = arg_reset_comment,
 };
@@ -815,6 +823,7 @@ static slurm_cli_opt_t slurm_opt_constraint = {
 	.has_arg = required_argument,
 	.val = 'C',
 	.set_func = arg_set_constraint,
+	.set_func_data = arg_set_data_constraint,
 	.get_func = arg_get_constraint,
 	.reset_func = arg_reset_constraint,
 	.reset_each_pass = true,
@@ -1094,6 +1103,7 @@ static slurm_cli_opt_t slurm_opt_dependency = {
 	.has_arg = required_argument,
 	.val = 'd',
 	.set_func = arg_set_dependency,
+	.set_func_data = arg_set_data_dependency,
 	.get_func = arg_get_dependency,
 	.reset_func = arg_reset_dependency,
 };
@@ -1181,6 +1191,7 @@ static slurm_cli_opt_t slurm_opt_exclude = {
 	.has_arg = required_argument,
 	.val = 'x',
 	.set_func = arg_set_exclude,
+	.set_func_data = arg_set_data_exclude,
 	.get_func = arg_get_exclude,
 	.reset_func = arg_reset_exclude,
 };
@@ -1418,6 +1429,7 @@ static slurm_cli_opt_t slurm_opt_gpu_bind = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_GPU_BIND,
 	.set_func = arg_set_gpu_bind,
+	.set_func_data = arg_set_data_gpu_bind,
 	.get_func = arg_get_gpu_bind,
 	.reset_func = arg_reset_gpu_bind,
 	.reset_each_pass = true,
@@ -1429,6 +1441,7 @@ static slurm_cli_opt_t slurm_opt_gpu_freq = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_GPU_FREQ,
 	.set_func = arg_set_gpu_freq,
+	.set_func_data = arg_set_data_gpu_freq,
 	.get_func = arg_get_gpu_freq,
 	.reset_func = arg_reset_gpu_freq,
 	.reset_each_pass = true,
@@ -1440,6 +1453,7 @@ static slurm_cli_opt_t slurm_opt_gpus = {
 	.has_arg = required_argument,
 	.val = 'G',
 	.set_func = arg_set_gpus,
+	.set_func_data = arg_set_data_gpus,
 	.get_func = arg_get_gpus,
 	.reset_func = arg_reset_gpus,
 	.reset_each_pass = true,
@@ -1451,6 +1465,7 @@ static slurm_cli_opt_t slurm_opt_gpus_per_node = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_GPUS_PER_NODE,
 	.set_func = arg_set_gpus_per_node,
+	.set_func_data = arg_set_data_gpus_per_node,
 	.get_func = arg_get_gpus_per_node,
 	.reset_func = arg_reset_gpus_per_node,
 	.reset_each_pass = true,
@@ -1462,6 +1477,7 @@ static slurm_cli_opt_t slurm_opt_gpus_per_socket = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_GPUS_PER_SOCKET,
 	.set_func = arg_set_gpus_per_socket,
+	.set_func_data = arg_set_data_gpus_per_socket,
 	.get_func = arg_get_gpus_per_socket,
 	.reset_func = arg_reset_gpus_per_socket,
 	.reset_each_pass = true,
@@ -1473,6 +1489,7 @@ static slurm_cli_opt_t slurm_opt_gpus_per_task = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_GPUS_PER_TASK,
 	.set_func = arg_set_gpus_per_task,
+	.set_func_data = arg_set_data_gpus_per_task,
 	.get_func = arg_get_gpus_per_task,
 	.reset_func = arg_reset_gpus_per_task,
 	.reset_each_pass = true,
@@ -1573,6 +1590,7 @@ static slurm_cli_opt_t slurm_opt_hint = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_HINT,
 	.set_func = arg_set_hint,
+	.set_func_data = arg_set_data_hint,
 	.get_func = arg_get_hint,
 	.reset_func = arg_reset_hint,
 	.reset_each_pass = true,
@@ -1707,6 +1725,7 @@ static slurm_cli_opt_t slurm_opt_job_name = {
 	.has_arg = required_argument,
 	.val = 'J',
 	.set_func = arg_set_job_name,
+	.set_func_data = arg_set_data_job_name,
 	.get_func = arg_get_job_name,
 	.reset_func = arg_reset_job_name,
 };
@@ -1837,6 +1856,7 @@ static slurm_cli_opt_t slurm_opt_licenses = {
 	.has_arg = required_argument,
 	.val = 'L',
 	.set_func = arg_set_licenses,
+	.set_func_data = arg_set_data_licenses,
 	.get_func = arg_get_licenses,
 	.reset_func = arg_reset_licenses,
 	.reset_each_pass = true,
@@ -1873,6 +1893,7 @@ static slurm_cli_opt_t slurm_opt_mail_user = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_MAIL_USER,
 	.set_func = arg_set_mail_user,
+	.set_func_data = arg_set_data_mail_user,
 	.get_func = arg_get_mail_user,
 	.reset_func = arg_reset_mail_user,
 	.reset_each_pass = true,
@@ -1918,6 +1939,7 @@ static slurm_cli_opt_t slurm_opt_mcs_label = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_MCS_LABEL,
 	.set_func = arg_set_mcs_label,
+	.set_func_data = arg_set_data_mcs_label,
 	.get_func = arg_get_mcs_label,
 	.reset_func = arg_reset_mcs_label,
 };
@@ -2079,6 +2101,7 @@ static slurm_cli_opt_t slurm_opt_network = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_NETWORK,
 	.set_func = arg_set_network,
+	.set_func_data = arg_set_data_network,
 	.get_func = arg_get_network,
 	.reset_func = arg_reset_network,
 	.reset_each_pass = true,
@@ -2564,6 +2587,7 @@ static slurm_cli_opt_t slurm_opt_partition = {
 	.has_arg = required_argument,
 	.val = 'p',
 	.set_func = arg_set_partition,
+	.set_func_data = arg_set_data_partition,
 	.get_func = arg_get_partition,
 	.reset_func = arg_reset_partition,
 	.reset_each_pass = true,
@@ -2727,6 +2751,7 @@ static slurm_cli_opt_t slurm_opt_qos = {
 	.has_arg = required_argument,
 	.val = 'q',
 	.set_func = arg_set_qos,
+	.set_func_data = arg_set_data_qos,
 	.get_func = arg_get_qos,
 	.reset_func = arg_reset_qos,
 };
@@ -2825,6 +2850,7 @@ static slurm_cli_opt_t slurm_opt_reservation = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_RESERVATION,
 	.set_func = arg_set_reservation,
+	.set_func_data = arg_set_data_reservation,
 	.get_func = arg_get_reservation,
 	.reset_func = arg_reset_reservation,
 };
@@ -3534,6 +3560,7 @@ static slurm_cli_opt_t slurm_opt_wckey = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_WCKEY,
 	.set_func = arg_set_wckey,
+	.set_func_data = arg_set_data_wckey,
 	.get_func = arg_get_wckey,
 	.reset_func = arg_reset_wckey,
 };
