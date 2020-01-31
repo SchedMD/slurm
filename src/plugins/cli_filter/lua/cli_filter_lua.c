@@ -145,7 +145,7 @@ static int _setup_stringarray(lua_State *L, int limit, char **data) {
 	lua_newtable(L);
 	for (int i = 0; i < limit && data && data[i]; i++) {
 		/* lua indexes tables from 1 */
-		lua_pushinteger(L, i + 1);
+		lua_pushnumber(L, i + 1);
 		lua_pushstring(L, data[i]);
 		lua_settable(L, -3);
 	}
@@ -315,7 +315,7 @@ static int _store_data(lua_State *L)
 	int key = 0;
 	const char *data = NULL;
 
-	key = (int) lua_tointeger(L, -2);
+	key = (int) lua_tonumber(L, -2);
 	data = luaL_checkstring(L, -1);
 
 	if (key >= stored_sz) {
@@ -331,7 +331,7 @@ static int _store_data(lua_State *L)
 
 static int _retrieve_data(lua_State *L)
 {
-	int key = (int) lua_tointeger(L, -1);
+	int key = (int) lua_tonumber(L, -1);
 	if (key <= stored_n && stored_data[key])
 		lua_pushstring(L, stored_data[key]);
 	else
@@ -384,8 +384,8 @@ extern int setup_defaults(slurm_opt_t *opt, bool early) {
 		error("%s/lua: %s: %s", __func__, lua_script_path,
 		      lua_tostring(L, -1));
 	} else {
-		if (slurm_lua_isinteger(L, -1)) {
-			rc = lua_tointeger(L, -1);
+		if (lua_isnumber(L, -1)) {
+			rc = lua_tonumber(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code", __func__,
 			     lua_script_path);
@@ -415,7 +415,7 @@ extern int pre_submit(slurm_opt_t *opt, int offset)
 		goto out;
 
 	_push_options(opt, false);
-	lua_pushinteger(L, offset);
+	lua_pushnumber(L, (double) offset);
 
 	slurm_lua_stack_dump(
 		"cli_filter/lua", "pre_submit, before lua_pcall", L);
@@ -423,8 +423,8 @@ extern int pre_submit(slurm_opt_t *opt, int offset)
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else {
-		if (slurm_lua_isinteger(L, -1)) {
-			rc = lua_tointeger(L, -1);
+		if (lua_isnumber(L, -1)) {
+			rc = lua_tonumber(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code",
 			     __func__, lua_script_path);
@@ -447,17 +447,17 @@ extern int post_submit(int offset, uint32_t jobid, uint32_t stepid)
 	lua_getglobal(L, "slurm_cli_post_submit");
 	if (lua_isnil(L, -1))
 		goto out;
-	lua_pushinteger(L, offset);
-	lua_pushinteger(L, jobid);
-	lua_pushinteger(L, stepid);
+	lua_pushnumber(L, (double) offset);
+	lua_pushnumber(L, (double) jobid);
+	lua_pushnumber(L, (double) stepid);
 	slurm_lua_stack_dump(
 		"cli_filter/lua", "post_submit, before lua_pcall", L);
 	if (lua_pcall(L, 3, 1, 0) != 0) {
 		error("%s/lua: %s: %s", __func__, lua_script_path,
 		      lua_tostring(L, -1));
 	} else {
-		if (slurm_lua_isinteger(L, -1)) {
-			rc = lua_tointeger(L, -1);
+		if (lua_isnumber(L, -1)) {
+			rc = lua_tonumber(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code", __func__,
 			     lua_script_path);
