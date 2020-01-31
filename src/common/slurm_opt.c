@@ -1993,6 +1993,30 @@ static int arg_set_ifname(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_ifname(slurm_opt_t *opt, const data_t *arg,
+			       data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return SLURM_ERROR;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else {
+		xfree(opt->ifname);
+		if (!xstrcasecmp(str, "none"))
+			opt->ifname = xstrdup("/dev/null");
+		else {
+			opt->ifname = str;
+			str = NULL;
+		}
+	}
+
+	xfree(str);
+	return rc;
+}
 COMMON_STRING_OPTION_GET(ifname);
 COMMON_STRING_OPTION_RESET(ifname);
 static slurm_cli_opt_t slurm_opt_input = {
@@ -2001,6 +2025,7 @@ static slurm_cli_opt_t slurm_opt_input = {
 	.val = 'i',
 	.set_func_sbatch = arg_set_ifname,
 	.set_func_srun = arg_set_ifname,
+	.set_func_data = arg_set_data_ifname,
 	.get_func = arg_get_ifname,
 	.reset_func = arg_reset_ifname,
 };
