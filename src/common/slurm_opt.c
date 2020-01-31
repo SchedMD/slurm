@@ -528,11 +528,13 @@ static int arg_set_acctg_freq(slurm_opt_t *opt, const char *arg)
 	return SLURM_SUCCESS;
 }
 COMMON_STRING_OPTION_GET_AND_RESET(acctg_freq);
+COMMON_STRING_OPTION_SET_DATA(acctg_freq);
 static slurm_cli_opt_t slurm_opt_acctg_freq = {
 	.name = "acctg-freq",
 	.has_arg = required_argument,
 	.val = LONG_OPT_ACCTG_FREQ,
 	.set_func = arg_set_acctg_freq,
+	.set_func_data = arg_set_data_acctg_freq,
 	.get_func = arg_get_acctg_freq,
 	.reset_func = arg_reset_acctg_freq,
 };
