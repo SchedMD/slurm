@@ -134,6 +134,22 @@ static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
 								\
 	return SLURM_SUCCESS;					\
 }
+#define COMMON_SBATCH_STRING_OPTION_SET_DATA(field)		\
+static int arg_set_data_##field(slurm_opt_t *opt,		\
+				const data_t *arg,		\
+				data_t *errors)			\
+__attribute__((nonnull (1, 2)));				\
+static int arg_set_data_##field(slurm_opt_t *opt,		\
+				const data_t *arg,		\
+				data_t *errors)			\
+{								\
+	if (!opt->sbatch_opt)					\
+		return SLURM_ERROR;				\
+								\
+	xfree(opt->sbatch_opt->field);				\
+	return data_get_string_converted(arg,			\
+		&opt->sbatch_opt->field);			\
+}
 #define COMMON_SBATCH_STRING_OPTION_GET(field)			\
 static char *arg_get_##field(slurm_opt_t *opt)			\
 __attribute__((nonnull));					\
