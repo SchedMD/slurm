@@ -2616,6 +2616,27 @@ static int arg_set_no_kill(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_no_kill(slurm_opt_t *opt, const data_t *arg,
+			       data_t *errors)
+{
+	int rc = SLURM_SUCCESS;
+	char *str = NULL;
+
+	if (data_get_type(arg) == DATA_TYPE_NULL)
+		opt->no_kill = true;
+	else if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else if (!xstrcasecmp(str, "set"))
+		opt->no_kill = true;
+	else if (!xstrcasecmp(str, "off") || !xstrcasecmp(str, "no"))
+		opt->no_kill = false;
+	else {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Invalid no kill specification", rc);
+	}
+	xfree(str);
+	return rc;
+}
 static char *arg_get_no_kill(slurm_opt_t *opt)
 {
 	return xstrdup(opt->no_kill ? "set" : "unset");
@@ -2626,6 +2647,7 @@ static slurm_cli_opt_t slurm_opt_no_kill = {
 	.has_arg = optional_argument,
 	.val = 'k',
 	.set_func = arg_set_no_kill,
+	.set_func_data = arg_set_data_no_kill,
 	.get_func = arg_get_no_kill,
 	.reset_func = arg_reset_no_kill,
 };
