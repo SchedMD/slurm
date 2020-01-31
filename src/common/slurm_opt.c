@@ -3814,6 +3814,7 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 	if (!set) {
 		(common_options[i]->reset_func)(opt);
 		opt->state[i].set = false;
+		opt->state[i].set_by_data = false;
 		opt->state[i].set_by_env = false;
 		return SLURM_SUCCESS;
 	}
@@ -3821,24 +3822,28 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 	if (common_options[i]->set_func) {
 		if (!(common_options[i]->set_func)(opt, setarg)) {
 			opt->state[i].set = true;
+			opt->state[i].set_by_data = false;
 			opt->state[i].set_by_env = set_by_env;
 			return SLURM_SUCCESS;
 		}
 	} else if (opt->salloc_opt && common_options[i]->set_func_salloc) {
 		if (!(common_options[i]->set_func_salloc)(opt, setarg)) {
 			opt->state[i].set = true;
+			opt->state[i].set_by_data = false;
 			opt->state[i].set_by_env = set_by_env;
 			return SLURM_SUCCESS;
 		}
 	} else if (opt->sbatch_opt && common_options[i]->set_func_sbatch) {
 		if (!(common_options[i]->set_func_sbatch)(opt, setarg)) {
 			opt->state[i].set = true;
+			opt->state[i].set_by_data = false;
 			opt->state[i].set_by_env = set_by_env;
 			return SLURM_SUCCESS;
 		}
 	} else if (opt->srun_opt && common_options[i]->set_func_srun) {
 		if (!(common_options[i]->set_func_srun)(opt, setarg)) {
 			opt->state[i].set = true;
+			opt->state[i].set_by_data = false;
 			opt->state[i].set_by_env = set_by_env;
 			return SLURM_SUCCESS;
 		}
@@ -3919,6 +3924,33 @@ extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval)
 	 */
 
 	return (opt->state[i].set && !opt->state[i].set_by_env);
+}
+
+/*
+ * Was the option set by an data_t value?
+ */
+extern bool slurm_option_set_by_data(slurm_opt_t *opt, int optval)
+{
+	int i;
+
+	if (!opt) {
+		debug3("%s: opt=NULL optval=%u", __func__, optval);
+		return false;
+	}
+
+	for (i = 0; common_options[i]; i++) {
+		if (common_options[i]->val == optval)
+			break;
+	}
+
+	/* This should not happen... */
+	if (!common_options[i])
+		return false;
+
+	if (!opt->state)
+		return false;
+
+	return opt->state[i].set_by_data;
 }
 
 /*

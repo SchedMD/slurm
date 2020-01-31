@@ -266,6 +266,7 @@ typedef struct {
 typedef struct {
 	bool set;			/* Has the option been set */
 	bool set_by_env;		/* Has the option been set by env var */
+	bool set_by_data;		/* Has the option been set by data_t */
 } slurm_opt_state_t;
 
 typedef struct {
@@ -433,6 +434,11 @@ extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval);
 
 /*
  * Was the option set by an env var?
+ */
+extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval);
+
+/*
+ * Was the option set by an data_t value?
  */
 extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval);
 
