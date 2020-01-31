@@ -2232,6 +2232,22 @@ static int arg_set_mail_type(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_mail_type(slurm_opt_t *opt, const data_t *arg,
+				  data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else if ((opt->mail_type |= parse_mail_type(str)) == INFINITE16) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Invalid mail type specification", rc);
+	}
+
+	xfree(str);
+	return rc;
+}
 static char *arg_get_mail_type(slurm_opt_t *opt)
 {
 	return xstrdup(print_mail_type(opt->mail_type));
@@ -2242,6 +2258,7 @@ static slurm_cli_opt_t slurm_opt_mail_type = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_MAIL_TYPE,
 	.set_func = arg_set_mail_type,
+	.set_func_data = arg_set_data_mail_type,
 	.get_func = arg_get_mail_type,
 	.reset_func = arg_reset_mail_type,
 	.reset_each_pass = true,
