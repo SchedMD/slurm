@@ -751,6 +751,24 @@ static int arg_set_chdir(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_chdir(slurm_opt_t *opt, const data_t *arg,
+			      data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else if (is_full_path(str)) {
+		opt->chdir = str;
+		str = NULL;
+	} else
+		opt->chdir = make_full_path(str);
+
+	xfree(str);
+
+	return SLURM_SUCCESS;
+}
 COMMON_STRING_OPTION_GET(chdir);
 static void arg_reset_chdir(slurm_opt_t *opt)
 {
@@ -770,6 +788,7 @@ static slurm_cli_opt_t slurm_opt_chdir = {
 	.has_arg = required_argument,
 	.val = 'D',
 	.set_func = arg_set_chdir,
+	.set_func_data = arg_set_data_chdir,
 	.get_func = arg_get_chdir,
 	.reset_func = arg_reset_chdir,
 };
