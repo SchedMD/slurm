@@ -1279,6 +1279,27 @@ static int arg_set_distribution(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_distribution(slurm_opt_t *opt, const data_t *arg,
+				     data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else {
+		// FIXME: always ignore SLURM_DIST_PLANESIZE envvar
+		opt->distribution = verify_dist_type(str, &opt->plane_size);
+
+		if (opt->distribution == SLURM_DIST_UNKNOWN) {
+			rc = SLURM_ERROR;
+			ADD_DATA_ERROR("Invalid distribution", rc);
+		}
+	}
+
+	xfree(str);
+	return rc;
+}
 static char *arg_get_distribution(slurm_opt_t *opt)
 {
 	char *dist = xstrdup(format_task_dist_states(opt->distribution));
@@ -1296,6 +1317,7 @@ static slurm_cli_opt_t slurm_opt_distribution = {
 	.has_arg = required_argument,
 	.val = 'm',
 	.set_func = arg_set_distribution,
+	.set_func_data = arg_set_data_distribution,
 	.get_func = arg_get_distribution,
 	.reset_func = arg_reset_distribution,
 	.reset_each_pass = true,
