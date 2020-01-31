@@ -3470,6 +3470,7 @@ static int arg_set_quiet(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+COMMON_INT_OPTION_SET_DATA(quiet);
 COMMON_INT_OPTION_GET_AND_RESET(quiet);
 static slurm_cli_opt_t slurm_opt_quiet = {
 	.name = "quiet",
@@ -3477,6 +3478,7 @@ static slurm_cli_opt_t slurm_opt_quiet = {
 	.val = 'Q',
 	.sbatch_early_pass = true,
 	.set_func = arg_set_quiet,
+	.set_func_data = arg_set_data_quiet,
 	.get_func = arg_get_quiet,
 	.reset_func = arg_reset_quiet,
 };
