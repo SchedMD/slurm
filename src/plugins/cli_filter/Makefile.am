@@ -1,3 +1,3 @@
 # Makefile for cli_filter plugins
 
-SUBDIRS = common lua none
+SUBDIRS = common lua none syslog
