@@ -2337,12 +2337,28 @@ static int arg_set_mem(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_mem(slurm_opt_t *opt, const data_t *arg, data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else if ((opt->pn_min_memory = str_to_mbytes2(str)) == NO_VAL64) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Invalid memory specification", rc);
+	}
+
+	xfree(str);
+	return rc;
+}
 COMMON_MBYTES_OPTION_GET_AND_RESET(pn_min_memory);
 static slurm_cli_opt_t slurm_opt_mem = {
 	.name = "mem",
 	.has_arg = required_argument,
 	.val = LONG_OPT_MEM,
 	.set_func = arg_set_mem,
+	.set_func_data = arg_set_data_mem,
 	.get_func = arg_get_pn_min_memory,
 	.reset_func = arg_reset_pn_min_memory,
 };
