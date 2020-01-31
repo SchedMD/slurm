@@ -4536,6 +4536,27 @@ static int arg_set_wait_all_nodes(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_wait_all_nodes(slurm_opt_t *opt, const data_t *arg,
+				       data_t *errors)
+{
+	int64_t val;
+	int rc = data_get_int_converted(arg, &val);
+	if (rc)
+		ADD_DATA_ERROR("Unable to read integer value", rc);
+	else if (val > 1) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Wait all nodes too large", rc);
+	} else if (val < 0) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Wait all nodes too small", rc);
+	} else {
+		if (opt->salloc_opt)
+			opt->salloc_opt->wait_all_nodes = val;
+		if (opt->sbatch_opt)
+			opt->sbatch_opt->wait_all_nodes = val;
+	}
+	return rc;
+}
 static char *arg_get_wait_all_nodes(slurm_opt_t *opt)
 {
 	uint16_t tmp = NO_VAL16;
@@ -4563,6 +4584,7 @@ static slurm_cli_opt_t slurm_opt_wait_all_nodes = {
 	.val = LONG_OPT_WAIT_ALL_NODES,
 	.set_func_salloc = arg_set_wait_all_nodes,
 	.set_func_sbatch = arg_set_wait_all_nodes,
+	.set_func_data = arg_set_data_wait_all_nodes,
 	.get_func = arg_get_wait_all_nodes,
 	.reset_func = arg_reset_wait_all_nodes,
 };
