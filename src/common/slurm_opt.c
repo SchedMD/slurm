@@ -63,6 +63,16 @@
  * This takes one argument: the desired field in slurm_opt_t.
  * The function name will be automatically generated as arg_set_##field.
  */
+#define ADD_DATA_ERROR(str, rc)					\
+	do {							\
+		data_t *err = data_set_dict(			\
+			data_list_append(errors));		\
+		data_set_string(				\
+			data_key_set(err, "error"), str);	\
+		data_set_int(					\
+			data_key_set(err, "errno"), rc);	\
+	} while (0)
+
 #define COMMON_STRING_OPTION(field)	\
 COMMON_STRING_OPTION_SET(field)		\
 COMMON_STRING_OPTION_GET(field)		\
