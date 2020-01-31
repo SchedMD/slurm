@@ -2744,6 +2744,7 @@ static slurm_cli_opt_t slurm_opt_nodefile = {
 	.has_arg = required_argument,
 	.val = 'F',
 	.set_func = arg_set_nodefile,
+	.set_func_data = NULL, /* avoid security issues of reading user files */
 	.get_func = arg_get_nodefile,
 	.reset_func = arg_reset_nodefile,
 	.reset_each_pass = true,
