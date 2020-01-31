@@ -1447,7 +1447,7 @@ Suppress informational messages from salloc. Errors will still be displayed.
 \fB\-\-reboot\fR
 Force the allocated nodes to reboot before starting the job.
 This is only supported with some system configurations and will otherwise be
-silently ignored.
+silently ignored. Only root, \fISlurmUser\fR or admins can reboot nodes.
 
 .TP
 \fB\-\-reservation\fR=<\fIname\fR>

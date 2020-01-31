@@ -2040,7 +2040,8 @@ applies to step allocations.
 \fB\-\-reboot\fR
 Force the allocated nodes to reboot before starting the job.
 This is only supported with some system configurations and will otherwise be
-silently ignored. This option applies to job allocations.
+silently ignored. Only root, \fISlurmUser\fR or admins can reboot nodes. This
+option applies to job allocations.
 
 .TP
 \fB\-\-resv\-ports\fR[=\fIcount\fR]

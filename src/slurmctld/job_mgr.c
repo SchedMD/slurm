@@ -7455,9 +7455,16 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 			return ESLURM_INVALID_NICE;
 	}
 
-	/* AdminComment can only be set by an Admin. */
-	if (job_desc->admin_comment && !validate_super_user(submit_uid))
-		return ESLURM_ACCESS_DENIED;
+	if (!validate_super_user(submit_uid)) {
+		/* AdminComment can only be set by an Admin. */
+		if (job_desc->admin_comment)
+			return ESLURM_ACCESS_DENIED;
+
+		if (job_desc->reboot && (job_desc->reboot != NO_VAL16)) {
+			*err_msg = xstrdup("rebooting of nodes is only allowed for admins");
+			return ESLURM_ACCESS_DENIED;
+		}
+	}
 
 	rc = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid, err_msg);
 	if (rc != SLURM_SUCCESS)
@@ -13640,7 +13647,11 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	}
 
 	if (job_specs->reboot != NO_VAL16) {
-		if (!IS_JOB_PENDING(job_ptr)) {
+		if (!validate_super_user(uid)) {
+			error("%s: Attempt to change reboot for %pJ",
+			      __func__, job_ptr);
+			error_code = ESLURM_ACCESS_DENIED;
+		} else if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		} else {

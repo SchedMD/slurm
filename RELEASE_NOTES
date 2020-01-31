@@ -57,6 +57,7 @@ HIGHLIGHTS
     default to permit simpler installation of a "configless" Slurm cluster.
  -- In SchedulerParameters remove deprecated max_job_bf and replace with
     bf_max_job_test.
+ -- Disable sbatch, salloc, srun --reboot for non-admins.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

@@ -93,6 +93,7 @@ documents those changes that are of interest to users and administrators.
     reservations for jobs running on whole nodes
  -- salloc/sbatch/srun - error on invalid --profile option strings.
  -- Remove max_job_bf option and replace with bf_max_job_test.
+ -- Disable sbatch, salloc, srun --reboot for non-admins.
 
 * Changes in Slurm 19.05.6
 ==========================
