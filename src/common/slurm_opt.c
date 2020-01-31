@@ -2449,6 +2449,7 @@ static slurm_cli_opt_t slurm_opt_mem_per_gpu = {
 };
 
 COMMON_INT_OPTION_SET(pn_min_cpus, "--mincpus");
+COMMON_INT_OPTION_SET_DATA(pn_min_cpus);
 COMMON_INT_OPTION_GET(pn_min_cpus);
 COMMON_OPTION_RESET(pn_min_cpus, -1);
 static slurm_cli_opt_t slurm_opt_mincpus = {
@@ -2456,6 +2457,7 @@ static slurm_cli_opt_t slurm_opt_mincpus = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_MINCPUS,
 	.set_func = arg_set_pn_min_cpus,
+	.set_func_data = arg_set_data_pn_min_cpus,
 	.get_func = arg_get_pn_min_cpus,
 	.reset_func = arg_reset_pn_min_cpus,
 	.reset_each_pass = true,
