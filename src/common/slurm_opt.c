@@ -1346,6 +1346,27 @@ static int arg_set_efname(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_efname(slurm_opt_t *opt, const data_t *arg,
+			       data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else {
+		xfree(opt->efname);
+		if (!xstrcasecmp(str, "none"))
+			opt->efname = xstrdup("/dev/null");
+		else {
+			opt->efname = str;
+			str = NULL;
+		}
+	}
+
+	xfree(str);
+	return rc;
+}
 COMMON_STRING_OPTION_GET(efname);
 COMMON_STRING_OPTION_RESET(efname);
 static slurm_cli_opt_t slurm_opt_error = {
@@ -1354,6 +1375,7 @@ static slurm_cli_opt_t slurm_opt_error = {
 	.val = 'e',
 	.set_func_sbatch = arg_set_efname,
 	.set_func_srun = arg_set_efname,
+	.set_func_data = arg_set_data_efname,
 	.get_func = arg_get_efname,
 	.reset_func = arg_reset_efname,
 };
