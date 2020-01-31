@@ -174,7 +174,10 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-job_submit_lua_la_LIBADD =
+am__DEPENDENCIES_1 =
+@HAVE_LUA_TRUE@job_submit_lua_la_DEPENDENCIES =  \
+@HAVE_LUA_TRUE@	$(top_builddir)/src/lua/libslurm_lua.la \
+@HAVE_LUA_TRUE@	$(am__DEPENDENCIES_1)
 am__job_submit_lua_la_SOURCES_DIST = job_submit_lua.c
 @HAVE_LUA_TRUE@am_job_submit_lua_la_OBJECTS = job_submit_lua.lo
 am__EXTRA_job_submit_lua_la_SOURCES_DIST = job_submit_lua.c
@@ -512,7 +515,10 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 # Job submit lua plugin.
 @HAVE_LUA_TRUE@pkglib_LTLIBRARIES = job_submit_lua.la
 @HAVE_LUA_TRUE@job_submit_lua_la_SOURCES = job_submit_lua.c
-@HAVE_LUA_TRUE@job_submit_lua_la_LDFLAGS = $(PLUGIN_FLAGS) $(lua_LIBS)
+@HAVE_LUA_TRUE@job_submit_lua_la_LDFLAGS = $(PLUGIN_FLAGS)
+@HAVE_LUA_TRUE@job_submit_lua_la_LIBADD = $(top_builddir)/src/lua/libslurm_lua.la \
+@HAVE_LUA_TRUE@			    $(lua_LIBS)
+
 @HAVE_LUA_FALSE@EXTRA_job_submit_lua_la_SOURCES = job_submit_lua.c
 all: all-am
 
