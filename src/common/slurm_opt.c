@@ -271,6 +271,7 @@ static void arg_reset_##field(slurm_opt_t *opt)			\
 
 #define COMMON_INT_OPTION(field, option)			\
 COMMON_INT_OPTION_SET(field, option)				\
+COMMON_INT_OPTION_SET_DATA(field)				\
 COMMON_INT_OPTION_GET(field)					\
 COMMON_OPTION_RESET(field, 0)
 #define COMMON_INT_OPTION_GET_AND_RESET(field)			\
@@ -984,6 +985,7 @@ static slurm_cli_opt_t slurm_opt_cpus_per_gpu = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_CPUS_PER_GPU,
 	.set_func = arg_set_cpus_per_gpu,
+	.set_func_data = arg_set_data_cpus_per_gpu,
 	.get_func = arg_get_cpus_per_gpu,
 	.reset_func = arg_reset_cpus_per_gpu,
 	.reset_each_pass = true,
