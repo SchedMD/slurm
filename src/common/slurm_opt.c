@@ -321,6 +321,7 @@ static char *arg_get_##field(slurm_opt_t *opt)			\
 
 #define COMMON_MBYTES_OPTION(field, option)			\
 COMMON_MBYTES_OPTION_SET(field, option)				\
+COMMON_MBYTES_OPTION_SET_DATA(field, option)			\
 COMMON_MBYTES_OPTION_GET(field)					\
 COMMON_OPTION_RESET(field, NO_VAL64)
 #define COMMON_MBYTES_OPTION_SET(field, option)			\
@@ -333,20 +334,20 @@ static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
 								\
 	return SLURM_SUCCESS;					\
 }
-#define COMMON_MBYTES_OPTION_SET_DATA(field, option)                   \
-static int arg_set_data_##field(slurm_opt_t *opt, const data_t *arg,   \
-				data_t *errors)                        \
-{                                                                      \
-	char *str = NULL;                                              \
-	int rc;                                                        \
-	if ((rc = data_get_string_converted(arg, &str)))               \
-		ADD_DATA_ERROR("Invalid ##field specification string", \
-			       rc);                                    \
-	else if ((opt->field = str_to_mbytes2(str)) == NO_VAL64)       \
-		ADD_DATA_ERROR("Invalid ##field specification",        \
-			       (rc = SLURM_ERROR));                    \
-	xfree(str);                                                    \
-	return rc;                                                     \
+#define COMMON_MBYTES_OPTION_SET_DATA(field, option)			\
+static int arg_set_data_##field(slurm_opt_t *opt, const data_t *arg,	\
+				data_t *errors)				\
+{									\
+	char *str = NULL;						\
+	int rc;								\
+	if ((rc = data_get_string_converted(arg, &str)))		\
+		ADD_DATA_ERROR("Invalid ##field specification string",	\
+			       rc);					\
+	else if ((opt->field = str_to_mbytes2(str)) == NO_VAL64)	\
+		ADD_DATA_ERROR("Invalid ##field specification",		\
+			       (rc = SLURM_ERROR));			\
+	xfree(str);							\
+	return rc;							\
 }
 #define COMMON_MBYTES_OPTION_GET_AND_RESET(field)		\
 COMMON_MBYTES_OPTION_GET(field)					\
@@ -2022,6 +2023,7 @@ static slurm_cli_opt_t slurm_opt_mem_per_cpu = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_MEM_PER_CPU,
 	.set_func = arg_set_mem_per_cpu,
+	.set_func_data = arg_set_data_mem_per_cpu,
 	.get_func = arg_get_mem_per_cpu,
 	.reset_func = arg_reset_mem_per_cpu,
 	.reset_each_pass = true,
@@ -2033,6 +2035,7 @@ static slurm_cli_opt_t slurm_opt_mem_per_gpu = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_MEM_PER_GPU,
 	.set_func = arg_set_mem_per_gpu,
+	.set_func_data = arg_set_data_mem_per_gpu,
 	.get_func = arg_get_mem_per_gpu,
 	.reset_func = arg_reset_mem_per_gpu,
 	.reset_each_pass = true,
@@ -3262,6 +3265,7 @@ static slurm_cli_opt_t slurm_opt_tmp = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_TMP,
 	.set_func = arg_set_pn_min_tmp_disk,
+	.set_func_data = arg_set_data_pn_min_tmp_disk,
 	.get_func = arg_get_pn_min_tmp_disk,
 	.reset_func = arg_reset_pn_min_tmp_disk,
 	.reset_each_pass = true,
