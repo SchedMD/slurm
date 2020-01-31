@@ -1667,6 +1667,22 @@ static int arg_set_gid(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_gid(slurm_opt_t *opt, const data_t *arg,
+			    data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else if (gid_from_string(str, &opt->gid) < 0) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Invalid or unknown gid", rc);
+	}
+
+	xfree(str);
+	return rc;
+}
 COMMON_INT_OPTION_GET(gid);
 COMMON_OPTION_RESET(gid, getgid());
 static slurm_cli_opt_t slurm_opt_gid = {
@@ -1675,6 +1691,7 @@ static slurm_cli_opt_t slurm_opt_gid = {
 	.val = LONG_OPT_GID,
 	.sbatch_early_pass = true,
 	.set_func = arg_set_gid,
+	.set_func_data = arg_set_data_gid,
 	.get_func = arg_get_gid,
 	.reset_func = arg_reset_gid,
 };
