@@ -55,6 +55,7 @@ proc salloc {} {
 	set file [open $file_out w]
 	set matches 0
 	set job_id  0
+	log_file -noappend $file_out
 	set command "$salloc --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1 -t1 :\
 			     --cpus-per-task=2 --mem-per-cpu=2  --ntasks=1 -t1 :\
 			     --cpus-per-task=1 --mem-per-cpu=6  --ntasks=1 -t1 \
@@ -71,7 +72,6 @@ proc salloc {} {
 			if {$job_id == 0} {
 				set job_id $expect_out(1,string)
 			}
-			puts $file $expect_out(buffer)
 			exp_continue
 		}
 
@@ -79,20 +79,17 @@ proc salloc {} {
 			log_error "salloc not responding"
 			end_it 1
 		}
-		eof {
-			puts $file $expect_out(buffer)
-		}
 	}
 
 	close $file
 }
 
 proc test_env {value} {
-	global bin_cat file_out
+	global bin_grep file_out
 
 	set matches 0
 	log_user 0
-	spawn $bin_cat $file_out
+	spawn $bin_grep "$value" $file_out
 	expect {
 		-re "$value" {
 			incr matches
@@ -161,7 +158,7 @@ if {[wait_for_file $file_out] != 0} {
 }
 
 set matches 0
-spawn $bin_cat $file_out
+spawn $bin_grep "SLURM_PACK_SIZE" $file_out
 expect {
 	-re "SLURM_PACK_SIZE=3" {
 		#once
@@ -179,7 +176,7 @@ if {$matches != 1} {
 
 set matches 0
 log_user 0
-spawn $bin_cat $file_out
+spawn $bin_grep "SLURM_JOB_PARTITION_PACK_GROUP" $file_out
 expect {
 	-re "SLURM_JOB_PARTITION_PACK_GROUP" {
 		#three
