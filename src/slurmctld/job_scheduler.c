@@ -3339,9 +3339,7 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 			}
 			assoc_mgr_lock(&locks);
 			gres_set_job_tres_cnt(job_ptr->gres_list,
-					      job_ptr->details ?
-					      job_ptr->details->
-					      min_nodes : 0,
+					      job_ptr->details->min_nodes,
 					      job_ptr->tres_req_cnt,
 					      true);
 			xfree(job_ptr->tres_req_str);
