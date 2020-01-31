@@ -3130,11 +3130,23 @@ static int arg_set_oversubscribe(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_oversubscribe(slurm_opt_t *opt, const data_t *arg,
+				      data_t *errors)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->exclusive = false;
+
+	opt->shared = JOB_SHARED_OK;
+
+	return SLURM_SUCCESS;
+}
+
 static slurm_cli_opt_t slurm_opt_oversubscribe = {
 	.name = "oversubscribe",
 	.has_arg = no_argument,
 	.val = 's',
 	.set_func = arg_set_oversubscribe,
+	.set_func_data = arg_set_data_oversubscribe,
 	.get_func = arg_get_exclusive,
 	.reset_func = arg_reset_shared,
 	.reset_each_pass = true,
