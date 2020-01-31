@@ -2162,6 +2162,21 @@ static int arg_set_kill_on_invalid_dep(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_kill_on_invalid_dep(slurm_opt_t *opt, const data_t *arg,
+					    data_t *errors)
+{
+	int rc;
+	bool kill;
+
+	if ((rc = data_copy_bool_converted(arg, &kill)))
+		ADD_DATA_ERROR("Unable to read boolean", rc);
+	else if (kill)
+		opt->job_flags |= KILL_INV_DEP;
+	else
+		opt->job_flags |= NO_KILL_INV_DEP;
+
+	return rc;
+}
 static char *arg_get_kill_on_invalid_dep(slurm_opt_t *opt)
 {
 	if (opt->job_flags & KILL_INV_DEP)
@@ -2180,6 +2195,7 @@ static slurm_cli_opt_t slurm_opt_kill_on_invalid_dep = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_KILL_INV_DEP,
 	.set_func_sbatch = arg_set_kill_on_invalid_dep,
+	.set_func_data = arg_set_data_kill_on_invalid_dep,
 	.get_func = arg_get_kill_on_invalid_dep,
 	.reset_func = arg_reset_kill_on_invalid_dep,
 };
