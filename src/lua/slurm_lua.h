@@ -34,17 +34,63 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURM_XLUA_H
-#define _SLURM_XLUA_H
+#ifndef _SLURM_LUA_H
+#define _SLURM_LUA_H
 
-#include <dlfcn.h>
-#include <stdio.h>
+#ifdef HAVE_LUA
 
-#include "slurm/slurm.h"
-#include "slurm/slurm_errno.h"
-#include "src/common/log.h"
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
+#include "src/slurmctld/slurmctld.h"
 
-extern int slurm_lua_dlopen();
+/* Generic stack dump function for debugging purposes */
+extern void slurm_lua_stack_dump(const char *plugin,
+				 char *header, lua_State *L);
 
+/*
+ * function for create a new lua state object, loading a lua script, setting up
+ * basic slurm/lua integration and returning the lua state to the caller.
+ * If the script mtime is greater than *load_time, a new lua state will be
+ * allocated and configured, the caller should close the old one after
+ * completing any remaining setup.
+ *
+ * Parameters:
+ * curr (in)   - current lua state object, should be NULL on first call
+ * plugin (in) - string identifying the calling plugin, e.g. "job_submit/lua"
+ * script_path (in) - path to script file
+ * req_fxns (in) - NULL terminated array of functions that must exist in the
+ *                 script
+ * load_time (in/out) - mtime of script from the curr lua state object
+ *
+ * Returns:
+ * pointer to new lua_State object - the caller should complete setup of the
+ *                                   new environment, and possibly free any
+ *                                   existing.
+ * NULL -- an error occured, the caller should continue using the current object
+ * same value as curr - no error, or a strong suggestion that the caller should
+ *                      continue using the same state obj, with no further setup
+ */
+extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
+				       const char *script_path,
+				       const char **req_fxns,
+				       time_t *load_time);
+extern void slurm_lua_register_slurm_output_functions(lua_State *L);
+extern void slurm_lua_table_register(lua_State *L, const char *libname,
+				     const luaL_Reg *l);
+
+/*
+ * Get fields in an existing slurmctld job record.
+ *
+ * This is an incomplete list of job record fields. Add more as needed and
+ * send patches to slurm-dev@schedmd.com.
+ */
+extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
+				      const char *name);
+#else
+# define LUA_VERSION_NUM 0
+#endif
+
+extern int slurm_lua_dlopen(void);
 
 #endif

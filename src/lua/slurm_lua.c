@@ -34,13 +34,605 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <dlfcn.h>
+#include <stdio.h>
+#include "config.h"
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include "src/common/log.h"
+#include "src/common/xstring.h"
 #include "src/lua/slurm_lua.h"
 
 #ifdef HAVE_LUA
-# include <lua.h>
+
+/*
+ *  check that global symbol [name] in lua script is a function
+ */
+static int _check_lua_script_function(lua_State *L, const char *name)
+{
+	int rc = 0;
+	lua_getglobal(L, name);
+	if (!lua_isfunction(L, -1))
+		rc = -1;
+	lua_pop(L, -1);
+	return (rc);
+}
+
+/*
+ *   Verify all required functions are defined in the script
+ */
+static int _check_lua_script_functions(lua_State *L, const char *plugin,
+				       const char *script_path,
+				       const char **req_fxns)
+{
+	int rc = 0;
+	const char **ptr = NULL;
+	for (ptr = req_fxns; ptr && *ptr; ptr++) {
+		if (_check_lua_script_function(L, *ptr) < 0) {
+			error("%s: %s: missing required function %s",
+			      plugin, script_path, *ptr);
+			rc = -1;
+		}
+	}
+
+	return (rc);
+}
+
+/*
+ *  Lua interface to Slurm log facility:
+ */
+static int _log_lua_msg (lua_State *L)
+{
+	const char *prefix  = "lua";
+	int        level    = 0;
+	const char *msg;
+
+	/*
+	 *  Optional numeric prefix indicating the log level
+	 *  of the message.
+	 */
+
+	/* Pop message off the lua stack */
+	msg = lua_tostring(L, -1);
+	lua_pop (L, 1);
+
+	/* Pop level off stack: */
+	level = (int)lua_tonumber (L, -1);
+	lua_pop (L, 1);
+
+	/* Call appropriate slurm log function based on log-level argument */
+	if (level > 4)
+		debug4 ("%s: %s", prefix, msg);
+	else if (level == 4)
+		debug3 ("%s: %s", prefix, msg);
+	else if (level == 3)
+		debug2 ("%s: %s", prefix, msg);
+	else if (level == 2)
+		debug ("%s: %s", prefix, msg);
+	else if (level == 1)
+		verbose ("%s: %s", prefix, msg);
+	else if (level == 0)
+		info ("%s: %s", prefix, msg);
+	return (0);
+}
+
+static int _log_lua_error(lua_State *L)
+{
+	const char *prefix  = "lua";
+	const char *msg     = lua_tostring (L, -1);
+	error ("%s: %s", prefix, msg);
+	return (0);
+}
+
+static const struct luaL_Reg slurm_functions [] = {
+	{ "log", _log_lua_msg },
+	{ "error", _log_lua_error },
+	{ NULL, NULL }
+};
+
+extern void slurm_lua_table_register(lua_State *L, const char *libname,
+				     const luaL_Reg *l)
+{
+#if LUA_VERSION_NUM == 501
+	luaL_register(L, libname, l);
 #else
-# define LUA_VERSION_NUM 0
+	luaL_setfuncs(L, l, 0);
+	if (libname)
+		lua_setglobal(L, libname);
 #endif
+}
+
+extern void slurm_lua_register_slurm_output_functions(lua_State *L)
+{
+	char *unpack_str;
+	char tmp_string[100];
+
+#if LUA_VERSION_NUM == 501
+	unpack_str = "unpack";
+#else
+	unpack_str = "table.unpack";
+#endif
+	/*
+	 *  Register slurm output functions in a global "slurm" table
+	 */
+	lua_newtable (L);
+	slurm_lua_table_register(L, NULL, slurm_functions);
+	/*
+	 *  Create more user-friendly lua versions of Slurm log functions.
+	 */
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.error (string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
+	lua_setfield (L, -2, "log_error");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (0, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
+	lua_setfield (L, -2, "log_info");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (1, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
+	lua_setfield (L, -2, "log_verbose");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (2, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
+	lua_setfield (L, -2, "log_debug");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (3, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
+	lua_setfield (L, -2, "log_debug2");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (4, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
+	lua_setfield (L, -2, "log_debug3");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (5, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
+	lua_setfield (L, -2, "log_debug4");
+
+	/*
+	 * Error codes: slurm.SUCCESS, slurm.FAILURE, slurm.ERROR, etc.
+	 */
+	lua_pushnumber (L, SLURM_ERROR);
+	lua_setfield (L, -2, "ERROR");
+	lua_pushnumber (L, SLURM_ERROR);
+	lua_setfield (L, -2, "FAILURE");
+	lua_pushnumber (L, SLURM_SUCCESS);
+	lua_setfield (L, -2, "SUCCESS");
+	lua_pushnumber (L, ESLURM_ACCESS_DENIED);
+	lua_setfield (L, -2, "ESLURM_ACCESS_DENIED");
+	lua_pushnumber (L, ESLURM_ACCOUNTING_POLICY);
+	lua_setfield (L, -2, "ESLURM_ACCOUNTING_POLICY");
+	lua_pushnumber (L, ESLURM_INVALID_ACCOUNT);
+	lua_setfield (L, -2, "ESLURM_INVALID_ACCOUNT");
+	lua_pushnumber (L, ESLURM_INVALID_LICENSES);
+	lua_setfield (L, -2, "ESLURM_INVALID_LICENSES");
+	lua_pushnumber (L, ESLURM_INVALID_NODE_COUNT);
+	lua_setfield (L, -2, "ESLURM_INVALID_NODE_COUNT");
+	lua_pushnumber (L, ESLURM_INVALID_TIME_LIMIT);
+	lua_setfield (L, -2, "ESLURM_INVALID_TIME_LIMIT");
+	lua_pushnumber (L, ESLURM_JOB_MISSING_SIZE_SPECIFICATION);
+	lua_setfield (L, -2, "ESLURM_JOB_MISSING_SIZE_SPECIFICATION");
+	lua_pushnumber (L, ESLURM_MISSING_TIME_LIMIT);
+	lua_setfield (L, -2, "ESLURM_MISSING_TIME_LIMIT");
+
+	/*
+	 * Other definitions needed to interpret data
+	 * slurm.MEM_PER_CPU, slurm.NO_VAL, etc.
+	 */
+	lua_pushnumber (L, ALLOC_SID_ADMIN_HOLD);
+	lua_setfield (L, -2, "ALLOC_SID_ADMIN_HOLD");
+	lua_pushnumber (L, ALLOC_SID_USER_HOLD);
+	lua_setfield (L, -2, "ALLOC_SID_USER_HOLD");
+	lua_pushnumber (L, INFINITE);
+	lua_setfield (L, -2, "INFINITE");
+	lua_pushnumber (L, INFINITE64);
+	lua_setfield (L, -2, "INFINITE64");
+	lua_pushnumber (L, MAIL_JOB_BEGIN);
+	lua_setfield (L, -2, "MAIL_JOB_BEGIN");
+	lua_pushnumber (L, MAIL_JOB_END);
+	lua_setfield (L, -2, "MAIL_JOB_END");
+	lua_pushnumber (L, MAIL_JOB_FAIL);
+	lua_setfield (L, -2, "MAIL_JOB_FAIL");
+	lua_pushnumber (L, MAIL_JOB_REQUEUE);
+	lua_setfield (L, -2, "MAIL_JOB_REQUEUE");
+	lua_pushnumber (L, MAIL_JOB_TIME100);
+	lua_setfield (L, -2, "MAIL_JOB_TIME100");
+	lua_pushnumber (L, MAIL_JOB_TIME90);
+	lua_setfield (L, -2, "MAIL_JOB_TIME890");
+	lua_pushnumber (L, MAIL_JOB_TIME80);
+	lua_setfield (L, -2, "MAIL_JOB_TIME80");
+	lua_pushnumber (L, MAIL_JOB_TIME50);
+	lua_setfield (L, -2, "MAIL_JOB_TIME50");
+	lua_pushnumber (L, MAIL_JOB_STAGE_OUT);
+	lua_setfield (L, -2, "MAIL_JOB_STAGE_OUT");
+	lua_pushnumber (L, MEM_PER_CPU);
+	lua_setfield (L, -2, "MEM_PER_CPU");
+	lua_pushnumber (L, NICE_OFFSET);
+	lua_setfield (L, -2, "NICE_OFFSET");
+	lua_pushnumber (L, JOB_SHARED_NONE);
+	lua_setfield (L, -2, "JOB_SHARED_NONE");
+	lua_pushnumber (L, JOB_SHARED_OK);
+	lua_setfield (L, -2, "JOB_SHARED_OK");
+	lua_pushnumber (L, JOB_SHARED_USER);
+	lua_setfield (L, -2, "JOB_SHARED_USER");
+	lua_pushnumber (L, JOB_SHARED_MCS);
+	lua_setfield (L, -2, "JOB_SHARED_MCS");
+	lua_pushnumber (L, NO_VAL64);
+	lua_setfield (L, -2, "NO_VAL64");
+	lua_pushnumber (L, NO_VAL);
+	lua_setfield (L, -2, "NO_VAL");
+	lua_pushnumber (L, NO_VAL16);
+	lua_setfield (L, -2, "NO_VAL16");
+	lua_pushnumber (L, NO_VAL8);
+	lua_setfield (L, -2, "NO_VAL8");
+	lua_pushnumber (L, SHARED_FORCE);
+	lua_setfield (L, -2, "SHARED_FORCE");
+
+	/*
+	 * job_desc bitflags
+	 */
+	lua_pushnumber (L, GRES_DISABLE_BIND);
+	lua_setfield (L, -2, "GRES_DISABLE_BIND");
+	lua_pushnumber (L, GRES_ENFORCE_BIND);
+	lua_setfield (L, -2, "GRES_ENFORCE_BIND");
+	lua_pushnumber (L, KILL_INV_DEP);
+	lua_setfield (L, -2, "KILL_INV_DEP");
+	lua_pushnumber (L, NO_KILL_INV_DEP);
+	lua_setfield (L, -2, "NO_KILL_INV_DEP");
+	lua_pushnumber (L, SPREAD_JOB);
+	lua_setfield (L, -2, "SPREAD_JOB");
+	lua_pushnumber (L, USE_MIN_NODES);
+	lua_setfield (L, -2, "USE_MIN_NODES");
+
+	lua_setglobal (L, "slurm");
+}
+
+/*
+ * Get fields in an existing slurmctld job record.
+ *
+ * This is an incomplete list of job record fields. Add more as needed and
+ * send patches to slurm-dev@schedmd.com.
+ */
+extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
+				      const char *name)
+{
+	int i;
+
+	if (!job_ptr) {
+		error("_job_rec_field: job_ptr is NULL");
+		lua_pushnil (L);
+	} else if (!xstrcmp(name, "account")) {
+		lua_pushstring (L, job_ptr->account);
+	} else if (!xstrcmp(name, "admin_comment")) {
+		lua_pushstring (L, job_ptr->admin_comment);
+	} else if (!xstrcmp(name, "array_task_cnt")) {
+		if (job_ptr->array_recs)
+			lua_pushnumber (L, job_ptr->array_recs->task_cnt);
+		else
+			lua_pushnil (L);
+	} else if (!xstrcmp(name, "batch_features")) {
+		lua_pushstring (L, job_ptr->batch_features);
+	} else if (!xstrcmp(name, "burst_buffer")) {
+		lua_pushstring (L, job_ptr->burst_buffer);
+	} else if (!xstrcmp(name, "comment")) {
+		lua_pushstring (L, job_ptr->comment);
+	} else if (!xstrcmp(name, "cpus_per_tres")) {
+		lua_pushstring (L, job_ptr->cpus_per_tres);
+	} else if (!xstrcmp(name, "delay_boot")) {
+		lua_pushnumber (L, job_ptr->delay_boot);
+	} else if (!xstrcmp(name, "direct_set_prio")) {
+		lua_pushnumber (L, job_ptr->direct_set_prio);
+	} else if (!xstrcmp(name, "features")) {
+		if (job_ptr->details)
+			lua_pushstring (L, job_ptr->details->features);
+		else
+			lua_pushnil (L);
+	} else if (!xstrcmp(name, "gres")) {
+		/* "gres" replaced by "tres_per_node" in v18.08 */
+		lua_pushstring (L, job_ptr->tres_per_node);
+	} else if (!xstrcmp(name, "group_id")) {
+		lua_pushnumber (L, job_ptr->group_id);
+	} else if (!xstrcmp(name, "job_id")) {
+		lua_pushnumber (L, job_ptr->job_id);
+	} else if (!xstrcmp(name, "job_state")) {
+		lua_pushnumber (L, job_ptr->job_state);
+	} else if (!xstrcmp(name, "licenses")) {
+		lua_pushstring (L, job_ptr->licenses);
+	} else if (!xstrcmp(name, "max_cpus")) {
+		if (job_ptr->details)
+			lua_pushnumber (L, job_ptr->details->max_cpus);
+		else
+			lua_pushnumber (L, 0);
+	} else if (!xstrcmp(name, "max_nodes")) {
+		if (job_ptr->details)
+			lua_pushnumber (L, job_ptr->details->max_nodes);
+		else
+			lua_pushnumber (L, 0);
+	} else if (!xstrcmp(name, "mem_per_tres")) {
+		lua_pushstring (L, job_ptr->mem_per_tres);
+	} else if (!xstrcmp(name, "min_cpus")) {
+		if (job_ptr->details)
+			lua_pushnumber (L, job_ptr->details->min_cpus);
+		else
+			lua_pushnumber (L, 0);
+	} else if (!xstrcmp(name, "min_mem_per_node")) {
+		if (job_ptr->details &&
+		    (job_ptr->details->pn_min_memory != NO_VAL64) &&
+		    !(job_ptr->details->pn_min_memory & MEM_PER_CPU))
+			lua_pushnumber(L, job_ptr->details->pn_min_memory);
+		else
+			lua_pushnil(L);
+	} else if (!xstrcmp(name, "min_mem_per_cpu")) {
+		if (job_ptr->details &&
+		    (job_ptr->details->pn_min_memory != NO_VAL64) &&
+		    (job_ptr->details->pn_min_memory & MEM_PER_CPU))
+			lua_pushnumber(L, job_ptr->details->pn_min_memory &
+				       ~MEM_PER_CPU);
+		else
+			lua_pushnil(L);
+	} else if (!xstrcmp(name, "min_nodes")) {
+		if (job_ptr->details)
+			lua_pushnumber (L, job_ptr->details->min_nodes);
+		else
+			lua_pushnumber (L, 0);
+	} else if (!xstrcmp(name, "name")) {
+		lua_pushstring (L, job_ptr->name);
+	} else if (!xstrcmp(name, "nice")) {
+		if (job_ptr->details)
+			lua_pushnumber (L, job_ptr->details->nice);
+		else
+			lua_pushnumber (L, NO_VAL16);
+	/* Continue support for old hetjob terminology. */
+	} else if (!xstrcmp(name, "pack_job_id") ||
+		   !xstrcmp(name, "het_job_id")) {
+		lua_pushnumber (L, job_ptr->het_job_id);
+	} else if (!xstrcmp(name, "pack_job_id_set") ||
+		   !xstrcmp(name, "het_job_id_set")) {
+		lua_pushstring (L, job_ptr->het_job_id_set);
+	} else if (!xstrcmp(name, "pack_job_offset") ||
+		   !xstrcmp(name, "het_job_offset")) {
+		lua_pushnumber (L, job_ptr->het_job_offset);
+	} else if (!xstrcmp(name, "partition")) {
+		lua_pushstring (L, job_ptr->partition);
+	} else if (!xstrcmp(name, "pn_min_cpus")) {
+		if (job_ptr->details)
+			lua_pushnumber (L, job_ptr->details->pn_min_cpus);
+		else
+			lua_pushnumber (L, NO_VAL);
+	} else if (!xstrcmp(name, "pn_min_memory")) {
+		/*
+		 * FIXME: Remove this in the future, lua can't handle 64bit
+		 * numbers!!!.  Use min_mem_per_node|cpu instead.
+		 */
+		if (job_ptr->details)
+			lua_pushnumber (L, job_ptr->details->pn_min_memory);
+		else
+			lua_pushnumber (L, NO_VAL64);
+	} else if (!xstrcmp(name, "priority")) {
+		lua_pushnumber (L, job_ptr->priority);
+	} else if (!xstrcmp(name, "qos")) {
+		if (job_ptr->qos_ptr) {
+			lua_pushstring (L, job_ptr->qos_ptr->name);
+		} else {
+			lua_pushnil (L);
+		}
+	} else if (!xstrcmp(name, "reboot")) {
+		lua_pushnumber (L, job_ptr->reboot);
+	} else if (!xstrcmp(name, "req_switch")) {
+		lua_pushnumber (L, job_ptr->req_switch);
+	} else if (!xstrcmp(name, "site_factor")) {
+		if (job_ptr->site_factor == NO_VAL)
+			lua_pushnumber(L, job_ptr->site_factor);
+		else
+			lua_pushnumber(L,
+				       (((int64_t)job_ptr->site_factor)
+					- NICE_OFFSET));
+	} else if (!xstrcmp(name, "spank_job_env")) {
+		if ((job_ptr->spank_job_env_size == 0) ||
+		    (job_ptr->spank_job_env == NULL)) {
+			lua_pushnil (L);
+		} else {
+			lua_newtable(L);
+			for (i = 0; i < job_ptr->spank_job_env_size; i++) {
+				if (job_ptr->spank_job_env[i] != NULL) {
+					lua_pushnumber (L, i);
+					lua_pushstring (L,
+						job_ptr->spank_job_env[i]);
+					lua_settable (L, -3);
+				}
+			}
+		}
+	} else if (!xstrcmp(name, "spank_job_env_size")) {
+		lua_pushnumber (L, job_ptr->spank_job_env_size);
+	} else if (!xstrcmp(name, "time_limit")) {
+		lua_pushnumber (L, job_ptr->time_limit);
+	} else if (!xstrcmp(name, "time_min")) {
+		lua_pushnumber (L, job_ptr->time_min);
+	} else if (!xstrcmp(name, "tres_bind")) {
+		lua_pushstring (L, job_ptr->tres_bind);
+	} else if (!xstrcmp(name, "tres_freq")) {
+		lua_pushstring (L, job_ptr->tres_freq);
+	} else if (!xstrcmp(name, "tres_per_job")) {
+		lua_pushstring (L, job_ptr->tres_per_job);
+	} else if (!xstrcmp(name, "tres_per_node")) {
+		lua_pushstring (L, job_ptr->tres_per_node);
+	} else if (!xstrcmp(name, "tres_per_socket")) {
+		lua_pushstring (L, job_ptr->tres_per_socket);
+	} else if (!xstrcmp(name, "tres_per_task")) {
+		lua_pushstring (L, job_ptr->tres_per_task);
+	} else if (!xstrcmp(name, "user_id")) {
+		lua_pushnumber (L, job_ptr->user_id);
+	} else if (!xstrcmp(name, "user_name")) {
+		lua_pushstring (L, job_ptr->user_name);
+	} else if (!xstrcmp(name, "wait4switch")) {
+		lua_pushnumber (L, job_ptr->wait4switch);
+	} else if (!xstrcmp(name, "wckey")) {
+		lua_pushstring (L, job_ptr->wckey);
+	} else {
+		lua_pushnil (L);
+	}
+
+	return 1;
+}
+
+/* Generic stack dump function for debugging purposes */
+extern void slurm_lua_stack_dump(const char *plugin, char *header, lua_State *L)
+{
+#if _DEBUG
+	int i;
+	int top = lua_gettop(L);
+
+	info("%s: dumping %s stack, %d elements", plugin, header, top);
+	for (i = 1; i <= top; i++) {  /* repeat for each level */
+		int type = lua_type(L, i);
+		switch (type) {
+			case LUA_TSTRING:
+				info("string[%d]:%s", i, lua_tostring(L, i));
+				break;
+			case LUA_TBOOLEAN:
+				info("boolean[%d]:%s", i,
+				     lua_toboolean(L, i) ? "true" : "false");
+				break;
+			case LUA_TNUMBER:
+				info("number[%d]:%d", i,
+				     (int) lua_tonumber(L, i));
+				break;
+			default:
+				info("other[%d]:%s", i, lua_typename(L, type));
+				break;
+		}
+	}
+#endif
+}
+
+extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
+				       const char *script_path,
+				       const char **req_fxns,
+				       time_t *load_time)
+{
+
+	lua_State *new = NULL;
+	struct stat st;
+	int rc = 0;
+
+	if (stat(script_path, &st) != 0) {
+		if (curr) {
+			(void) error("%s: Unable to stat %s, using old script: %s",
+			             plugin, script_path, strerror(errno));
+			return curr;
+		}
+		(void) error("%s: Unable to stat %s: %s",
+		             plugin, script_path, strerror(errno));
+		return NULL;
+	}
+
+	if (st.st_mtime <= *load_time) {
+		debug3("%s: %s: skipping loading Lua script: %s", plugin,
+		       __func__, script_path);
+		return curr;
+	}
+	debug3("%s: %s: loading Lua script: %s", __func__, plugin, script_path);
+
+	/*
+	 *  Initilize lua
+	 */
+	if (!(new = luaL_newstate())) {
+		error("%s: %s: luaL_newstate() failed to allocate.",
+		      plugin, __func__);
+		return curr;
+	}
+
+	luaL_openlibs(new);
+	if (luaL_loadfile(new, script_path)) {
+		if (curr) {
+			error("%s: %s: %s, using previous script",
+			      plugin, script_path,
+			      lua_tostring(new, -1));
+			lua_close(new);
+			return curr;
+		}
+		error("%s: %s: %s", plugin, script_path,
+		      lua_tostring(new, -1));
+		lua_pop(new, 1);
+		lua_close(new);
+		return NULL;
+	}
+
+	/*
+	 *  Register Slurm functions in lua state:
+	 *  logging and slurm structure read/write functions
+	 */
+	slurm_lua_register_slurm_output_functions(new);
+
+	/*
+	 *  Run the user script:
+	 */
+	if (lua_pcall(new, 0, 1, 0)) {
+		if (curr) {
+			error("%s: %s: %s, using previous script",
+			      plugin, script_path,
+			      lua_tostring(new, -1));
+			lua_close(new);
+			return curr;
+		}
+		error("%s: %s: %s", plugin, script_path,
+		      lua_tostring(new, -1));
+		lua_pop(new, 1);
+		lua_close(new);
+		return NULL;
+	}
+
+	/*
+	 *  Get any return code from the lua script
+	 */
+	rc = (int) lua_tonumber(new, -1);
+	if (rc != SLURM_SUCCESS) {
+		if (curr) {
+			(void) error("%s: %s: returned %d on load, using previous script",
+			             plugin, script_path, rc);
+			lua_close(new);
+			return curr;
+		}
+		(void) error("%s: %s: returned %d on load", plugin,
+			     script_path, rc);
+		lua_pop(new, 1);
+		lua_close(new);
+		return NULL;
+	}
+
+	/*
+	 *  Check for required lua script functions:
+	 */
+	rc = _check_lua_script_functions(new, plugin, script_path, req_fxns);
+	if (rc != SLURM_SUCCESS) {
+		if (curr) {
+			(void) error("%s: %s: required function(s) not present, using previous script",
+			             plugin, script_path);
+			lua_close(new);
+			return curr;
+		}
+		lua_close(new);
+		return NULL;
+	}
+
+	*load_time = st.st_mtime;
+	return new;
+}
+#endif
+
 /*
  *  Common function to dlopen() the appropriate Lua libraries, and
  *   ensure the lua version matches what we compiled against.
