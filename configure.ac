@@ -499,6 +499,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/elasticsearch/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
+		 src/plugins/jobcomp/lua/Makefile
 		 src/plugins/jobcomp/none/Makefile
 		 src/plugins/jobcomp/script/Makefile
 		 src/plugins/jobcomp/mysql/Makefile
