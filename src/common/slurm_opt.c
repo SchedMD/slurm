@@ -4176,12 +4176,38 @@ static int arg_set_time_min(slurm_opt_t *opt, const char *arg)
 	opt->time_min = time_min;
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_time_min(slurm_opt_t *opt, const data_t *arg,
+				 data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return SLURM_ERROR;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else {
+		int time_limit = time_str2mins(str);
+		if (time_limit == NO_VAL) {
+			rc = SLURM_ERROR;
+			ADD_DATA_ERROR("Invalid time specification", rc);
+		} else if (time_limit == 0) {
+			opt->time_min = INFINITE;
+		} else
+			opt->time_min = time_limit;
+	}
+
+	xfree(str);
+	return rc;
+}
 COMMON_TIME_DURATION_OPTION_GET_AND_RESET(time_min);
 static slurm_cli_opt_t slurm_opt_time_min = {
 	.name = "time-min",
 	.has_arg = required_argument,
 	.val = LONG_OPT_TIME_MIN,
 	.set_func = arg_set_time_min,
+	.set_func_data = arg_set_data_time_min,
 	.get_func = arg_get_time_min,
 	.reset_func = arg_reset_time_min,
 };
