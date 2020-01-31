@@ -173,7 +173,7 @@ int slurm_auth_destroy(auth_token_t *cred)
 int slurm_auth_verify(auth_token_t *cred, char *auth_info)
 {
 	jwt_t *jwt = NULL;
-	char *username;
+	char *username = NULL;
 
 	if (!cred)
 		return SLURM_ERROR;
