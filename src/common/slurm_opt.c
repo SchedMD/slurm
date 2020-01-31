@@ -2985,6 +2985,40 @@ static int arg_set_open_mode(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_open_mode(slurm_opt_t *opt, const data_t *arg,
+				  data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return SLURM_ERROR;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else {
+		uint8_t tmp = 0;
+
+		if (str && (str[0] == 'a' || str[0] == 'A'))
+			tmp = OPEN_MODE_APPEND;
+		else if (str && (str[0] == 't' || str[0] == 'T'))
+			tmp = OPEN_MODE_TRUNCATE;
+		else {
+			rc = SLURM_ERROR;
+			ADD_DATA_ERROR("Invalid open mode specification", rc);
+		}
+
+		if (!rc) {
+			if (opt->sbatch_opt)
+				opt->sbatch_opt->open_mode = tmp;
+			if (opt->srun_opt)
+				opt->srun_opt->open_mode = tmp;
+		}
+	}
+
+	xfree(str);
+	return rc;
+}
 static char *arg_get_open_mode(slurm_opt_t *opt)
 {
 	uint8_t tmp = 0;
@@ -3016,6 +3050,7 @@ static slurm_cli_opt_t slurm_opt_open_mode = {
 	.val = LONG_OPT_OPEN_MODE,
 	.set_func_sbatch = arg_set_open_mode,
 	.set_func_srun = arg_set_open_mode,
+	.set_func_data = arg_set_data_open_mode,
 	.get_func = arg_get_open_mode,
 	.reset_func = arg_reset_open_mode,
 };
