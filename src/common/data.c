@@ -124,6 +124,10 @@ static bool _regex_quick_match(const char *str, const regex_t *preg)
 	size_t nmatch = 1;
 	regmatch_t pmatch[nmatch];
 
+	/* not possible to match a NULL string */
+	if (!str)
+		return false;
+
 	rc = regexec(preg, str, nmatch, pmatch, 0);
 	if (!rc) { /* matched */
 		return true;
