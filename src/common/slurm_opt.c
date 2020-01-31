@@ -1410,6 +1410,34 @@ static int arg_set_exclusive(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_exclusive(slurm_opt_t *opt, const data_t *arg,
+				  data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else {
+		if (!str || !xstrcasecmp(str, "exclusive")) {
+			if (opt->srun_opt)
+				opt->srun_opt->exclusive = true;
+			opt->shared = JOB_SHARED_NONE;
+		} else if (!xstrcasecmp(str, "oversubscribe")) {
+			opt->shared = JOB_SHARED_OK;
+		} else if (!xstrcasecmp(str, "user")) {
+			opt->shared = JOB_SHARED_USER;
+		} else if (!xstrcasecmp(str, "mcs")) {
+			opt->shared = JOB_SHARED_MCS;
+		} else {
+			rc = SLURM_ERROR;
+			ADD_DATA_ERROR("Invalid exclusive specification", rc);
+		}
+	}
+
+	xfree(str);
+	return rc;
+}
 static char *arg_get_exclusive(slurm_opt_t *opt)
 {
 	if (opt->shared == JOB_SHARED_NONE)
@@ -1436,6 +1464,7 @@ static slurm_cli_opt_t slurm_opt_exclusive = {
 	.has_arg = optional_argument,
 	.val = LONG_OPT_EXCLUSIVE,
 	.set_func = arg_set_exclusive,
+	.set_func_data = arg_set_data_exclusive,
 	.get_func = arg_get_exclusive,
 	.reset_func = arg_reset_shared,
 	.reset_each_pass = true,
