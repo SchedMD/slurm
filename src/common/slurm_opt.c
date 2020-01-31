@@ -3244,6 +3244,23 @@ static int arg_set_power(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_power(slurm_opt_t *opt, const data_t *arg,
+			      data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return SLURM_ERROR;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else
+		opt->power = power_flags_id(str);
+
+	xfree(str);
+	return rc;
+}
 static char *arg_get_power(slurm_opt_t *opt)
 {
 	if (opt->power)
@@ -3256,6 +3273,7 @@ static slurm_cli_opt_t slurm_opt_power = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_POWER,
 	.set_func = arg_set_power,
+	.set_func_data = arg_set_data_power,
 	.get_func = arg_get_power,
 	.reset_func = arg_reset_power,
 	.reset_each_pass = true,
