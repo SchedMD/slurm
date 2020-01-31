@@ -4285,6 +4285,30 @@ static int arg_set_umask(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_umask(slurm_opt_t *opt, const data_t *arg,
+			      data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+	int32_t umask;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else if (sscanf(str, "%"SCNo32, &umask) != 1) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Invalid octal umask", rc);
+	} else if (umask < 0) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("umask too small", rc);
+	} else if (umask < 0 || umask > 07777) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("umask too large", rc);
+	} else
+		opt->sbatch_opt->umask = umask;
+
+	xfree(str);
+	return rc;
+}
 static char *arg_get_umask(slurm_opt_t *opt)
 {
 	if (!opt->sbatch_opt)
@@ -4302,6 +4326,7 @@ static slurm_cli_opt_t slurm_opt_umask = {
 	.has_arg = no_argument,
 	.val = LONG_OPT_UMASK,
 	.set_func_sbatch = arg_set_umask,
+	.set_func_data = arg_set_data_umask,
 	.get_func = arg_get_umask,
 	.reset_func = arg_reset_umask,
 	.reset_each_pass = true,
