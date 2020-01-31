@@ -330,6 +330,21 @@ static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
 								\
 	return SLURM_SUCCESS;					\
 }
+#define COMMON_MBYTES_OPTION_SET_DATA(field, option)                   \
+static int arg_set_data_##field(slurm_opt_t *opt, const data_t *arg,   \
+				data_t *errors)                        \
+{                                                                      \
+	char *str = NULL;                                              \
+	int rc;                                                        \
+	if ((rc = data_get_string_converted(arg, &str)))               \
+		ADD_DATA_ERROR("Invalid ##field specification string", \
+			       rc);                                    \
+	else if ((opt->field = str_to_mbytes2(str)) == NO_VAL64)       \
+		ADD_DATA_ERROR("Invalid ##field specification",        \
+			       (rc = SLURM_ERROR));                    \
+	xfree(str);                                                    \
+	return rc;                                                     \
+}
 #define COMMON_MBYTES_OPTION_GET_AND_RESET(field)		\
 COMMON_MBYTES_OPTION_GET(field)					\
 COMMON_OPTION_RESET(field, NO_VAL64)
