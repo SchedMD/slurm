@@ -220,6 +220,16 @@ static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
 								\
 	return SLURM_SUCCESS;					\
 }								\
+static int arg_set_data_##field(slurm_opt_t *opt,		\
+				const data_t *arg,		\
+				data_t *errors)			\
+__attribute__((nonnull (1, 2)));				\
+static int arg_set_data_##field(slurm_opt_t *opt,		\
+				const data_t *arg,		\
+				data_t *errors)			\
+{								\
+	return data_copy_bool_converted(arg, &opt->field);	\
+}								\
 static char *arg_get_##field(slurm_opt_t *opt)			\
 __attribute__((nonnull));					\
 static char *arg_get_##field(slurm_opt_t *opt)			\
@@ -801,6 +811,7 @@ static slurm_cli_opt_t slurm_opt_contiguous = {
 	.has_arg = no_argument,
 	.val = LONG_OPT_CONTIGUOUS,
 	.set_func = arg_set_contiguous,
+	.set_func_data = arg_set_data_contiguous,
 	.get_func = arg_get_contiguous,
 	.reset_func = arg_reset_contiguous,
 	.reset_each_pass = true,
@@ -1558,6 +1569,7 @@ static slurm_cli_opt_t slurm_opt_hold = {
 	.has_arg = no_argument,
 	.val = 'H',
 	.set_func = arg_set_hold,
+	.set_func_data = arg_set_data_hold,
 	.get_func = arg_get_hold,
 	.reset_func = arg_reset_hold,
 };
@@ -2428,6 +2440,7 @@ static slurm_cli_opt_t slurm_opt_overcommit = {
 	.has_arg = no_argument,
 	.val = 'O',
 	.set_func = arg_set_overcommit,
+	.set_func_data = arg_set_data_overcommit,
 	.get_func = arg_get_overcommit,
 	.reset_func = arg_reset_overcommit,
 	.reset_each_pass = true,
@@ -2736,6 +2749,7 @@ static slurm_cli_opt_t slurm_opt_reboot = {
 	.has_arg = no_argument,
 	.val = LONG_OPT_REBOOT,
 	.set_func = arg_set_reboot,
+	.set_func_data = arg_set_data_reboot,
 	.get_func = arg_get_reboot,
 	.reset_func = arg_reset_reboot,
 };
