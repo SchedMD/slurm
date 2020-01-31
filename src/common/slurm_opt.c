@@ -305,9 +305,20 @@ typedef struct {
 	int (*set_func_salloc)(slurm_opt_t *, const char *);
 	int (*set_func_sbatch)(slurm_opt_t *, const char *);
 	int (*set_func_srun)(slurm_opt_t *, const char *);
+
+	/*
+	 * data_t handlers
+	 * IN opt - job component options
+	 * IN arg - job component entry
+	 * IN/OUT errors - appends new dictionary to list of error details
+	 */
+	int (*set_func_data)(slurm_opt_t *opt, const data_t *arg,
+			     data_t *errors);
+
 	/* Return must be xfree()'d */
 	char *(*get_func)(slurm_opt_t *);
 	void (*reset_func)(slurm_opt_t *);
+
 } slurm_cli_opt_t;
 
 /*
