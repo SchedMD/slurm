@@ -2933,6 +2933,7 @@ static slurm_cli_opt_t slurm_opt_ntasks_per_core = {
 };
 
 COMMON_INT_OPTION_SET(ntasks_per_node, "--ntasks-per-node");
+COMMON_INT_OPTION_SET_DATA(ntasks_per_node);
 COMMON_INT_OPTION_GET(ntasks_per_node);
 COMMON_OPTION_RESET(ntasks_per_node, NO_VAL);
 static slurm_cli_opt_t slurm_opt_ntasks_per_node = {
@@ -2940,6 +2941,7 @@ static slurm_cli_opt_t slurm_opt_ntasks_per_node = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_NTASKSPERNODE,
 	.set_func = arg_set_ntasks_per_node,
+	.set_func_data = arg_set_data_ntasks_per_node,
 	.get_func = arg_get_ntasks_per_node,
 	.reset_func = arg_reset_ntasks_per_node,
 	.reset_each_pass = true,
