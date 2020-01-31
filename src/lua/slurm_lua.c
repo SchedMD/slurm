@@ -51,6 +51,22 @@
 
 #ifdef HAVE_LUA
 
+static int _setup_stringarray(lua_State *L, int limit, char **data)
+{
+	/*
+	 * if limit/data empty this will create an empty array intentionally to
+	 * allow the client code to iterate over it
+	 */
+	lua_newtable(L);
+	for (int i = 0; i < limit && data && data[i]; i++) {
+		/* by convention lua indexes array tables from 1 */
+		lua_pushnumber(L, i + 1);
+		lua_pushstring(L, data[i]);
+		lua_settable(L, -3);
+	}
+	return 1;
+}
+
 /*
  *  check that global symbol [name] in lua script is a function
  */
@@ -318,13 +334,27 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushstring (L, job_ptr->account);
 	} else if (!xstrcmp(name, "admin_comment")) {
 		lua_pushstring (L, job_ptr->admin_comment);
+	} else if (!xstrcmp(name, "argv")) {
+		if (job_ptr->details)
+			_setup_stringarray(L, job_ptr->details->argc,
+					   job_ptr->details->argv);
+		else
+			lua_newtable(L);
+	} else if (!xstrcmp(name, "array_job_id")) {
+		lua_pushinteger(L, job_ptr->array_job_id);
 	} else if (!xstrcmp(name, "array_task_cnt")) {
 		if (job_ptr->array_recs)
 			lua_pushinteger (L, job_ptr->array_recs->task_cnt);
 		else
 			lua_pushnil (L);
+	} else if (!xstrcmp(name, "array_task_id")) {
+		lua_pushinteger(L, job_ptr->array_task_id);
 	} else if (!xstrcmp(name, "batch_features")) {
 		lua_pushstring (L, job_ptr->batch_features);
+	} else if (!xstrcmp(name, "batch_host")) {
+		lua_pushstring(L, job_ptr->batch_host);
+	} else if (!xstrcmp(name, "best_switch")) {
+		lua_pushinteger(L, job_ptr->best_switch);
 	} else if (!xstrcmp(name, "burst_buffer")) {
 		lua_pushstring (L, job_ptr->burst_buffer);
 	} else if (!xstrcmp(name, "comment")) {
@@ -333,8 +363,14 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushstring (L, job_ptr->cpus_per_tres);
 	} else if (!xstrcmp(name, "delay_boot")) {
 		lua_pushinteger (L, job_ptr->delay_boot);
+	} else if (!xstrcmp(name, "derived_ec")) {
+		lua_pushinteger(L, job_ptr->derived_ec);
 	} else if (!xstrcmp(name, "direct_set_prio")) {
 		lua_pushinteger (L, job_ptr->direct_set_prio);
+	} else if (!xstrcmp(name, "end_time")) {
+		lua_pushinteger(L, job_ptr->end_time);
+	} else if (!xstrcmp(name, "exit_code")) {
+		lua_pushinteger(L, job_ptr->exit_code);
 	} else if (!xstrcmp(name, "features")) {
 		if (job_ptr->details)
 			lua_pushstring (L, job_ptr->details->features);
@@ -343,6 +379,10 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 	} else if (!xstrcmp(name, "gres")) {
 		/* "gres" replaced by "tres_per_node" in v18.08 */
 		lua_pushstring (L, job_ptr->tres_per_node);
+	} else if (!xstrcmp(name, "gres_req")) {
+		lua_pushstring(L, job_ptr->gres_req);
+	} else if (!xstrcmp(name, "gres_used")) {
+		lua_pushstring(L, job_ptr->gres_used);
 	} else if (!xstrcmp(name, "group_id")) {
 		lua_pushinteger (L, job_ptr->group_id);
 	} else if (!xstrcmp(name, "job_id")) {
@@ -395,6 +435,10 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 			lua_pushinteger (L, job_ptr->details->nice);
 		else
 			lua_pushinteger (L, NO_VAL16);
+	} else if (!xstrcmp(name, "nodes")) {
+		lua_pushstring(L, job_ptr->nodes);
+	} else if (!xstrcmp(name, "origin_cluster")) {
+		lua_pushstring(L, job_ptr->origin_cluster);
 	/* Continue support for old hetjob terminology. */
 	} else if (!xstrcmp(name, "pack_job_id") ||
 		   !xstrcmp(name, "het_job_id")) {
@@ -433,7 +477,25 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushinteger (L, job_ptr->reboot);
 	} else if (!xstrcmp(name, "req_switch")) {
 		lua_pushinteger (L, job_ptr->req_switch);
-	} else if (!xstrcmp(name, "site_factor")) {
+	} else if (!xstrcmp(name, "resizing")) {
+		int resizing = IS_JOB_RESIZING(job_ptr) ? 1 : 0;
+		lua_pushinteger(L, resizing);
+	} else if (!xstrcmp(name, "restart_cnt")) {
+		lua_pushinteger(L, job_ptr->restart_cnt);
+	} else if (!xstrcmp(name, "resv_name")) {
+		lua_pushstring(L, job_ptr->resv_name);
+	} else if (!xstrcmp(name, "script")) {
+		Buf bscript = get_job_script(job_ptr);
+		if (bscript) {
+			char *script = bscript->head;
+			if (script && script[0] != '\0')
+				lua_pushstring(L, script);
+			else
+				lua_pushnil(L);
+		} else
+			lua_pushnil(L);
+		free_buf(bscript);
+ 	} else if (!xstrcmp(name, "site_factor")) {
 		if (job_ptr->site_factor == NO_VAL)
 			lua_pushinteger(L, job_ptr->site_factor);
 		else
@@ -457,10 +519,38 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		}
 	} else if (!xstrcmp(name, "spank_job_env_size")) {
 		lua_pushinteger (L, job_ptr->spank_job_env_size);
+	} else if (!xstrcmp(name, "start_time")) {
+		lua_pushinteger(L, job_ptr->start_time);
+	} else if (!xstrcmp(name, "std_err")) {
+		if (job_ptr->details)
+			lua_pushstring(L, job_ptr->details->std_err);
+		else
+			lua_pushnil(L);
+	} else if (!xstrcmp(name, "std_in")) {
+		if (job_ptr->details)
+			lua_pushstring(L, job_ptr->details->std_in);
+		else
+			lua_pushnil(L);
+	} else if (!xstrcmp(name, "std_out")) {
+		if (job_ptr->details)
+			lua_pushstring(L, job_ptr->details->std_out);
+		else
+			lua_pushnil(L);
+	} else if (!xstrcmp(name, "submit_time")) {
+		if (job_ptr->details)
+			lua_pushinteger(L, job_ptr->details->submit_time);
+		else
+			lua_pushnil(L);
 	} else if (!xstrcmp(name, "time_limit")) {
 		lua_pushinteger (L, job_ptr->time_limit);
 	} else if (!xstrcmp(name, "time_min")) {
 		lua_pushinteger (L, job_ptr->time_min);
+	} else if (!xstrcmp(name, "total_cpus")) {
+		lua_pushinteger(L, job_ptr->total_cpus);
+	} else if (!xstrcmp(name, "total_nodes")) {
+		lua_pushinteger(L, job_ptr->total_nodes);
+	} else if (!xstrcmp(name, "tres_alloc_str")) {
+		lua_pushstring(L, job_ptr->tres_alloc_str);
 	} else if (!xstrcmp(name, "tres_bind")) {
 		lua_pushstring (L, job_ptr->tres_bind);
 	} else if (!xstrcmp(name, "tres_freq")) {
@@ -479,8 +569,15 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushstring (L, job_ptr->user_name);
 	} else if (!xstrcmp(name, "wait4switch")) {
 		lua_pushinteger (L, job_ptr->wait4switch);
+	} else if (!xstrcmp(name, "wait4switch_start")) {
+		lua_pushinteger(L, job_ptr->wait4switch_start);
 	} else if (!xstrcmp(name, "wckey")) {
 		lua_pushstring (L, job_ptr->wckey);
+	} else if (!xstrcmp(name, "work_dir")) {
+		if (job_ptr->details)
+			lua_pushstring(L, job_ptr->details->work_dir);
+		else
+			lua_pushnil(L);
 	} else {
 		lua_pushnil (L);
 	}
