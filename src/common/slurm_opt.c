@@ -2881,6 +2881,25 @@ static int arg_set_ntasks(slurm_opt_t *opt, const char *arg)
 	opt->ntasks_set = true;
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_ntasks(slurm_opt_t *opt, const data_t *arg,
+			       data_t *errors)
+{
+	int64_t val;
+	int rc = data_get_int_converted(arg, &val);
+	if (rc)
+		ADD_DATA_ERROR("Unable to read integer value", rc);
+	else if (val >= INT_MAX) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("ntasks too large", rc);
+	} else if (val <= 0) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("ntasks too small", rc);
+	} else {
+		opt->ntasks = (int) val;
+		opt->ntasks_set = true;
+	}
+	return rc;
+}
 COMMON_INT_OPTION_GET(ntasks);
 static void arg_reset_ntasks(slurm_opt_t *opt)
 {
@@ -2892,6 +2911,7 @@ static slurm_cli_opt_t slurm_opt_ntasks = {
 	.has_arg = required_argument,
 	.val = 'n',
 	.set_func = arg_set_ntasks,
+	.set_func_data = arg_set_data_ntasks,
 	.get_func = arg_get_ntasks,
 	.reset_func = arg_reset_ntasks,
 	.reset_each_pass = true,
