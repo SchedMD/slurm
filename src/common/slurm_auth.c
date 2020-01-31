@@ -120,7 +120,9 @@ extern int slurm_auth_init(char *auth_type)
 	if (g_context_num > 0)
 		goto done;
 
-	if (auth_type)
+	if (getenv("SLURM_JWT")) {
+		slurm_set_auth_type("auth/jwt");
+	} else if (auth_type)
 		slurm_set_auth_type(auth_type);
 
 	type = auth_plugin_type = slurm_get_auth_type();
