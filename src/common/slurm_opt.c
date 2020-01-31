@@ -2371,6 +2371,26 @@ static int arg_set_mem_bind(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_mem_bind(slurm_opt_t *opt, const data_t *arg,
+				 data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	xfree(opt->mem_bind);
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else if (xstrcasestr(str, "help")) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("memory binding help not supported", rc);
+	} else if ((rc = slurm_verify_mem_bind(str, &opt->mem_bind,
+					       &opt->mem_bind_type)))
+		ADD_DATA_ERROR("Invalid memory binding specification", rc);
+
+	xfree(str);
+	return rc;
+}
 static char *arg_get_mem_bind(slurm_opt_t *opt)
 {
 	char *tmp;
@@ -2398,6 +2418,7 @@ static slurm_cli_opt_t slurm_opt_mem_bind = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_MEM_BIND,
 	.set_func = arg_set_mem_bind,
+	.set_func_data = arg_set_data_mem_bind,
 	.get_func = arg_get_mem_bind,
 	.reset_func = arg_reset_mem_bind,
 	.reset_each_pass = true,
