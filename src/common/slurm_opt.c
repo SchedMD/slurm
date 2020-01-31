@@ -3308,12 +3308,42 @@ static int arg_set_priority(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_priority(slurm_opt_t *opt, const data_t *arg,
+				 data_t *errors)
+{
+	int rc;
+	int64_t val;
+	char *str = NULL;
+
+	if ((rc = data_get_int_converted(arg, &val))) {
+		if ((rc = data_get_string_converted(arg, &str)))
+			ADD_DATA_ERROR("Unable to read string", rc);
+		else if (!xstrcasecmp(str, "TOP"))
+			opt->priority = NO_VAL - 1;
+		else {
+			rc = SLURM_ERROR;
+			ADD_DATA_ERROR("Invalid priority", rc);
+		}
+	} else if (val >= NO_VAL) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Priority too large", rc);
+	} else if (val <= 0) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Priority must be >0", rc);
+	} else
+		opt->priority = (int) val;
+
+	xfree(str);
+
+	return rc;
+}
 COMMON_INT_OPTION_GET_AND_RESET(priority);
 static slurm_cli_opt_t slurm_opt_priority = {
 	.name = "priority",
 	.has_arg = required_argument,
 	.val = LONG_OPT_PRIORITY,
 	.set_func = arg_set_priority,
+	.set_func_data = arg_set_data_priority,
 	.get_func = arg_get_priority,
 	.reset_func = arg_reset_priority,
 };
