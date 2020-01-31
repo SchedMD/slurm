@@ -1213,6 +1213,22 @@ static int arg_set_delay_boot(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_delay_boot(slurm_opt_t *opt, const data_t *arg,
+				   data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else if ((opt->delay_boot = time_str2secs(str)) == NO_VAL) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Invalid delay boot specification", rc);
+	}
+
+	xfree(str);
+	return rc;
+}
 static char *arg_get_delay_boot(slurm_opt_t *opt)
 {
 	char time_str[32];
@@ -1227,6 +1243,7 @@ static slurm_cli_opt_t slurm_opt_delay_boot = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_DELAY_BOOT,
 	.set_func = arg_set_delay_boot,
+	.set_func_data = arg_set_data_delay_boot,
 	.get_func = arg_get_delay_boot,
 	.reset_func = arg_reset_delay_boot,
 };
