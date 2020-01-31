@@ -956,11 +956,8 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->cpu_bind);
 		xfree(msg->cpus_per_tres);
 		xfree(msg->dependency);
-		if (msg->environment) {
-			for (i = 0; i < msg->env_size; i++)
-				xfree(msg->environment[i]);
-			xfree(msg->environment);
-		}
+		env_array_free(msg->environment);
+		msg->environment = NULL;
 		xfree(msg->extra);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
@@ -4007,8 +4004,6 @@ extern char *cray_nodelist2nids(hostlist_t hl_in, char *nodelist)
 extern void slurm_free_resource_allocation_response_msg_members (
 	resource_allocation_response_msg_t * msg)
 {
-	int i;
-
 	if (msg) {
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;
@@ -4016,11 +4011,8 @@ extern void slurm_free_resource_allocation_response_msg_members (
 		xfree(msg->alias_list);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
-		if (msg->environment) {
-			for (i = 0; i < msg->env_size; i++)
-				xfree(msg->environment[i]);
-			xfree(msg->environment);
-		}
+		env_array_free(msg->environment);
+		msg->environment = NULL;
 		xfree(msg->job_submit_user_msg);
 		xfree(msg->node_addr);
 		xfree(msg->node_list);
