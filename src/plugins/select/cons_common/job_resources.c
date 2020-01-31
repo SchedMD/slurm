@@ -152,8 +152,8 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 						return 0;
 				} else {
 					for (c = 0; c < cores_per_node; c++)
-						if (bit_test(job_resrcs_ptr->core_bitmap,
-							     c_off + c))
+						if (bit_test(use_core_array,
+							     core_begin + c))
 							return 0;
 				}
 				break;
