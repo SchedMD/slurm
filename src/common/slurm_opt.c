@@ -2544,6 +2544,23 @@ static int arg_set_nice(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_nice(slurm_opt_t *opt, const data_t *arg,
+			     data_t *errors)
+{
+	int64_t val;
+	int rc = SLURM_SUCCESS;
+
+	if (data_get_type(arg) == DATA_TYPE_NULL)
+		opt->nice = 100;
+	else if ((rc = data_get_int_converted(arg, &val)))
+		ADD_DATA_ERROR("Unable to read integer value", rc);
+	else if (llabs(val) >= (NICE_OFFSET - 3)) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Nice too large", rc);
+	} else
+		opt->nice = (int) val;
+	return rc;
+}
 static char *arg_get_nice(slurm_opt_t *opt)
 {
 	return xstrdup_printf("%d", opt->nice);
@@ -2554,6 +2571,7 @@ static slurm_cli_opt_t slurm_opt_nice = {
 	.has_arg = optional_argument,
 	.val = LONG_OPT_NICE,
 	.set_func = arg_set_nice,
+	.set_func_data = arg_set_data_nice,
 	.get_func = arg_get_nice,
 	.reset_func = arg_reset_nice,
 };
