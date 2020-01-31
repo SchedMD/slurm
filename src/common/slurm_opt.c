@@ -938,12 +938,14 @@ static slurm_cli_opt_t slurm_opt_core_spec = {
 
 COMMON_INT_OPTION_SET(cores_per_socket, "--cores-per-socket");
 COMMON_INT_OPTION_GET(cores_per_socket);
+COMMON_INT_OPTION_SET_DATA(cores_per_socket);
 COMMON_OPTION_RESET(cores_per_socket, NO_VAL);
 static slurm_cli_opt_t slurm_opt_cores_per_socket = {
 	.name = "cores-per-socket",
 	.has_arg = required_argument,
 	.val = LONG_OPT_CORESPERSOCKET,
 	.set_func = arg_set_cores_per_socket,
+	.set_func_data = arg_set_data_cores_per_socket,
 	.get_func = arg_get_cores_per_socket,
 	.reset_func = arg_reset_cores_per_socket,
 	.reset_each_pass = true,
