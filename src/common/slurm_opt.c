@@ -1017,6 +1017,22 @@ static int arg_set_cpu_freq(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_cpu_freq(slurm_opt_t *opt, const data_t *arg,
+				 data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else if ((rc = cpu_freq_verify_cmdline(str, &opt->cpu_freq_min,
+					       &opt->cpu_freq_max,
+					       &opt->cpu_freq_gov)))
+		ADD_DATA_ERROR("Unable to parse CPU frequency", rc);
+	xfree(str);
+
+	return rc;
+}
 static char *arg_get_cpu_freq(slurm_opt_t *opt)
 {
 	return cpu_freq_to_cmdline(opt->cpu_freq_min,
@@ -1034,6 +1050,7 @@ static slurm_cli_opt_t slurm_opt_cpu_freq = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_CPU_FREQ,
 	.set_func = arg_set_cpu_freq,
+	.set_func_data = arg_set_data_cpu_freq,
 	.get_func = arg_get_cpu_freq,
 	.reset_func = arg_reset_cpu_freq,
 	.reset_each_pass = true,
