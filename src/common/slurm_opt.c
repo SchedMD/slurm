@@ -3774,6 +3774,20 @@ static int arg_set_switch_wait(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_switch_wait(slurm_opt_t *opt, const data_t *arg,
+				    data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else
+		opt->wait4switch = time_str2secs(str);
+
+	xfree(str);
+	return rc;
+}
 static char *arg_get_switch_wait(slurm_opt_t *opt)
 {
 	char time_str[32];
@@ -3790,6 +3804,7 @@ static slurm_cli_opt_t slurm_opt_switch_wait = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_SWITCH_WAIT,
 	.set_func = arg_set_switch_wait,
+	.set_func_data = arg_set_data_switch_wait,
 	.get_func = arg_get_switch_wait,
 	.reset_func = arg_reset_switch_wait,
 	.reset_each_pass = true,
