@@ -316,7 +316,7 @@ static int _store_data(lua_State *L)
 	int key = 0;
 	const char *data = NULL;
 
-	key = (int) lua_tonumber(L, -2);
+	key = (int) lua_tointeger(L, -2);
 	data = luaL_checkstring(L, -1);
 
 	if (key >= stored_sz) {
@@ -332,7 +332,7 @@ static int _store_data(lua_State *L)
 
 static int _retrieve_data(lua_State *L)
 {
-	int key = (int) lua_tonumber(L, -1);
+	int key = (int) lua_tointeger(L, -1);
 	if (key <= stored_n && stored_data[key])
 		lua_pushstring(L, stored_data[key]);
 	else
@@ -385,8 +385,8 @@ extern int setup_defaults(slurm_opt_t *opt, bool early) {
 		error("%s/lua: %s: %s", __func__, lua_script_path,
 		      lua_tostring(L, -1));
 	} else {
-		if (lua_isnumber(L, -1)) {
-			rc = lua_tonumber(L, -1);
+		if (lua_isinteger(L, -1)) {
+			rc = lua_tointeger(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code", __func__,
 			     lua_script_path);
@@ -424,8 +424,8 @@ extern int pre_submit(slurm_opt_t *opt, int offset)
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else {
-		if (lua_isnumber(L, -1)) {
-			rc = lua_tonumber(L, -1);
+		if (lua_isinteger(L, -1)) {
+			rc = lua_tointeger(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code",
 			     __func__, lua_script_path);
@@ -457,8 +457,8 @@ extern int post_submit(int offset, uint32_t jobid, uint32_t stepid)
 		error("%s/lua: %s: %s", __func__, lua_script_path,
 		      lua_tostring(L, -1));
 	} else {
-		if (lua_isnumber(L, -1)) {
-			rc = lua_tonumber(L, -1);
+		if (lua_isinteger(L, -1)) {
+			rc = lua_tointeger(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code", __func__,
 			     lua_script_path);

@@ -777,9 +777,9 @@ static int _set_job_req_field(lua_State *L)
 		if (strlen(value_str))
 			job_desc->batch_features = xstrdup(value_str);
 	} else if (!xstrcmp(name, "begin_time")) {
-		job_desc->begin_time = luaL_checknumber(L, 3);
+		job_desc->begin_time = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "bitflags")) {
-		job_desc->bitflags = luaL_checknumber(L, 3);
+		job_desc->bitflags = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "burst_buffer")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->burst_buffer);
@@ -796,17 +796,17 @@ static int _set_job_req_field(lua_State *L)
 		if (strlen(value_str))
 			job_desc->comment = xstrdup(value_str);
 	} else if (!xstrcmp(name, "contiguous")) {
-		job_desc->contiguous = luaL_checknumber(L, 3);
+		job_desc->contiguous = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "cores_per_socket")) {
-		job_desc->cores_per_socket = luaL_checknumber(L, 3);
+		job_desc->cores_per_socket = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "cpu_freq_min")) {
-		job_desc->cpu_freq_min = luaL_checknumber(L, 3);
+		job_desc->cpu_freq_min = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "cpu_freq_max")) {
-		job_desc->cpu_freq_max = luaL_checknumber(L, 3);
+		job_desc->cpu_freq_max = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "cpu_freq_gov")) {
-		job_desc->cpu_freq_gov = luaL_checknumber(L, 3);
+		job_desc->cpu_freq_gov = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "cpus_per_task")) {
-		job_desc->cpus_per_task = luaL_checknumber(L, 3);
+		job_desc->cpus_per_task = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "cpus_per_tres")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->cpus_per_tres);
@@ -818,9 +818,9 @@ static int _set_job_req_field(lua_State *L)
 		if (strlen(value_str))
 			job_desc->dependency = xstrdup(value_str);
 	} else if (!xstrcmp(name, "delay_boot")) {
-		job_desc->delay_boot = luaL_checknumber(L, 3);
+		job_desc->delay_boot = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "end_time")) {
-		job_desc->end_time = luaL_checknumber(L, 3);
+		job_desc->end_time = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "extra")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->extra);
@@ -843,78 +843,78 @@ static int _set_job_req_field(lua_State *L)
 		if (strlen(value_str))
 			job_desc->tres_per_node = xstrdup(value_str);
 	} else if (!xstrcmp(name, "immediate")) {
-		job_desc->immediate = luaL_checknumber(L, 3);
+		job_desc->immediate = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "licenses")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->licenses);
 		if (strlen(value_str))
 			job_desc->licenses = xstrdup(value_str);
 	} else if (!xstrcmp(name, "max_cpus")) {
-		job_desc->max_cpus = luaL_checknumber(L, 3);
+		job_desc->max_cpus = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "max_nodes")) {
-		job_desc->max_nodes = luaL_checknumber(L, 3);
+		job_desc->max_nodes = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "mem_per_tres")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->mem_per_tres);
 		if (strlen(value_str))
 			job_desc->mem_per_tres = xstrdup(value_str);
 	} else if (!xstrcmp(name, "min_cpus")) {
-		job_desc->min_cpus = luaL_checknumber(L, 3);
+		job_desc->min_cpus = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "min_mem_per_cpu")) {
-		job_desc->pn_min_memory = luaL_checknumber(L, 3);
+		job_desc->pn_min_memory = luaL_checkinteger(L, 3);
 		job_desc->pn_min_memory |= MEM_PER_CPU;
 	} else if (!xstrcmp(name, "min_mem_per_node")) {
-		job_desc->pn_min_memory = luaL_checknumber(L, 3);
+		job_desc->pn_min_memory = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "min_nodes")) {
-		job_desc->min_nodes = luaL_checknumber(L, 3);
+		job_desc->min_nodes = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "name")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->name);
 		if (strlen(value_str))
 			job_desc->name = xstrdup(value_str);
 	} else if (!xstrcmp(name, "nice")) {
-		job_desc->nice = luaL_checknumber(L, 3);
+		job_desc->nice = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "ntasks_per_node")) {
-		job_desc->ntasks_per_node = luaL_checknumber(L, 3);
+		job_desc->ntasks_per_node = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "ntasks_per_socket")) {
-		job_desc->ntasks_per_socket = luaL_checknumber(L, 3);
+		job_desc->ntasks_per_socket = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "num_tasks")) {
-		job_desc->num_tasks = luaL_checknumber(L, 3);
+		job_desc->num_tasks = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "partition")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->partition);
 		if (strlen(value_str))
 			job_desc->partition = xstrdup(value_str);
 	} else if (!xstrcmp(name, "power_flags")) {
-		job_desc->power_flags = luaL_checknumber(L, 3);
+		job_desc->power_flags = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "pn_min_cpus")) {
-		job_desc->pn_min_cpus = luaL_checknumber(L, 3);
+		job_desc->pn_min_cpus = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
 		/*
 		 * FIXME: Remove this in the future, lua can't handle 64bit
-		 * numbers!!!.  Use min_mem_per_node|cpu instead.
+		 * integers!!!.  Use min_mem_per_node|cpu instead.
 		 */
-		job_desc->pn_min_memory = luaL_checknumber(L, 3);
+		job_desc->pn_min_memory = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "pn_min_tmp_disk")) {
-		job_desc->pn_min_tmp_disk = luaL_checknumber(L, 3);
+		job_desc->pn_min_tmp_disk = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "priority")) {
-		job_desc->priority = luaL_checknumber(L, 3);
+		job_desc->priority = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "qos")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->qos);
 		if (strlen(value_str))
 			job_desc->qos = xstrdup(value_str);
 	} else if (!xstrcmp(name, "reboot")) {
-		job_desc->reboot = luaL_checknumber(L, 3);
+		job_desc->reboot = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "req_nodes")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->req_nodes);
 		if (strlen(value_str))
 			job_desc->req_nodes = xstrdup(value_str);
 	} else if (!xstrcmp(name, "req_switch")) {
-		job_desc->req_switch = luaL_checknumber(L, 3);
+		job_desc->req_switch = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "requeue")) {
-		job_desc->requeue = luaL_checknumber(L, 3);
+		job_desc->requeue = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "reservation")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->reservation);
@@ -926,14 +926,14 @@ static int _set_job_req_field(lua_State *L)
 		if (strlen(value_str))
 			job_desc->script = xstrdup(value_str);
 	} else if (!xstrcmp(name, "shared")) {
-		job_desc->shared = luaL_checknumber(L, 3);
+		job_desc->shared = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "site_factor")) {
-		job_desc->site_factor = luaL_checknumber(L, 3);
+		job_desc->site_factor = luaL_checkinteger(L, 3);
 		if (job_desc->site_factor != NO_VAL)
 			job_desc->site_factor =
 				NICE_OFFSET + job_desc->site_factor;
 	} else if (!xstrcmp(name, "sockets_per_node")) {
-		job_desc->sockets_per_node = luaL_checknumber(L, 3);
+		job_desc->sockets_per_node = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "std_err")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->std_err);
@@ -950,11 +950,11 @@ static int _set_job_req_field(lua_State *L)
 		if (strlen(value_str))
 			job_desc->std_out = xstrdup(value_str);
 	} else if (!xstrcmp(name, "threads_per_core")) {
-		job_desc->threads_per_core = luaL_checknumber(L, 3);
+		job_desc->threads_per_core = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "time_limit")) {
-		job_desc->time_limit = luaL_checknumber(L, 3);
+		job_desc->time_limit = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "time_min")) {
-		job_desc->time_min = luaL_checknumber(L, 3);
+		job_desc->time_min = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "tres_bind")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->tres_bind);
@@ -986,7 +986,7 @@ static int _set_job_req_field(lua_State *L)
 		if (strlen(value_str))
 			job_desc->tres_per_task = xstrdup(value_str);
 	} else if (!xstrcmp(name, "wait4switch")) {
-		job_desc->wait4switch = luaL_checknumber(L, 3);
+		job_desc->wait4switch = luaL_checkinteger(L, 3);
 	} else if (!xstrcmp(name, "wckey")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->wckey);
@@ -1303,8 +1303,8 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else {
-		if (lua_isnumber(L, -1)) {
-			rc = lua_tonumber(L, -1);
+		if (lua_isinteger(L, -1)) {
+			rc = lua_tointeger(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code",
 			      __func__, lua_script_path);
@@ -1354,8 +1354,8 @@ extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else {
-		if (lua_isnumber(L, -1)) {
-			rc = lua_tonumber(L, -1);
+		if (lua_isinteger(L, -1)) {
+			rc = lua_tointeger(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code",
 			     __func__, lua_script_path);

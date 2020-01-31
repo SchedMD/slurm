@@ -103,7 +103,7 @@ static int _log_lua_msg (lua_State *L)
 	lua_pop (L, 1);
 
 	/* Pop level off stack: */
-	level = (int)lua_tonumber (L, -1);
+	level = (int)lua_tointeger (L, -1);
 	lua_pop (L, 1);
 
 	/* Call appropriate slurm log function based on log-level argument */
@@ -507,8 +507,8 @@ extern void slurm_lua_stack_dump(const char *plugin, char *header, lua_State *L)
 				     lua_toboolean(L, i) ? "true" : "false");
 				break;
 			case LUA_TNUMBER:
-				info("number[%d]:%d", i,
-				     (int) lua_tonumber(L, i));
+				info("integer[%d]:%d", i,
+				     (int) lua_tointeger(L, i));
 				break;
 			default:
 				info("other[%d]:%s", i, lua_typename(L, type));
@@ -598,7 +598,7 @@ extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
 	/*
 	 *  Get any return code from the lua script
 	 */
-	rc = (int) lua_tonumber(new, -1);
+	rc = (int) lua_tointeger(new, -1);
 	if (rc != SLURM_SUCCESS) {
 		if (curr) {
 			(void) error("%s: %s: returned %d on load, using previous script",
