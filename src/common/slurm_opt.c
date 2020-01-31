@@ -1597,6 +1597,36 @@ static int arg_set_get_user_env(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_get_user_env(slurm_opt_t *opt, const data_t *arg,
+				     data_t *errors)
+{
+	int rc = SLURM_SUCCESS;
+	char *str = NULL;
+
+	if ((data_get_type(arg) == DATA_TYPE_NULL))
+		opt->get_user_env_time = 0;
+	else if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else {
+		char *end_ptr;
+
+		opt->get_user_env_time = strtol(str, &end_ptr, 10);
+
+		if (!end_ptr || (end_ptr[0] == '\0'))
+			opt->get_user_env_mode = -1; /* not set */
+		else if ((end_ptr[0] == 's') || (end_ptr[0] == 'S'))
+			opt->get_user_env_mode = 1;
+		else if ((end_ptr[0] == 'l') || (end_ptr[0] == 'L'))
+			opt->get_user_env_mode = 2;
+		else {
+			rc = SLURM_ERROR;
+			ADD_DATA_ERROR("Invalid get user environment specification", rc);
+		}
+	}
+
+	xfree(str);
+	return rc;
+}
 static char *arg_get_get_user_env(slurm_opt_t *opt)
 {
 	if (opt->get_user_env_mode == 1)
@@ -1618,6 +1648,7 @@ static slurm_cli_opt_t slurm_opt_get_user_env = {
 	.val = LONG_OPT_GET_USER_ENV,
 	.set_func_salloc = arg_set_get_user_env,
 	.set_func_sbatch = arg_set_get_user_env,
+	.set_func_data = arg_set_data_get_user_env,
 	.get_func = arg_get_get_user_env,
 	.reset_func = arg_reset_get_user_env,
 };
