@@ -4096,6 +4096,7 @@ static slurm_cli_opt_t slurm_opt_thread_spec = {
 };
 
 COMMON_INT_OPTION_SET(threads_per_core, "--threads-per-core");
+COMMON_INT_OPTION_SET_DATA(threads_per_core);
 COMMON_INT_OPTION_GET(threads_per_core);
 COMMON_OPTION_RESET(threads_per_core, NO_VAL);
 static slurm_cli_opt_t slurm_opt_threads_per_core = {
@@ -4103,6 +4104,7 @@ static slurm_cli_opt_t slurm_opt_threads_per_core = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_THREADSPERCORE,
 	.set_func = arg_set_threads_per_core,
+	.set_func_data = arg_set_data_threads_per_core,
 	.get_func = arg_get_threads_per_core,
 	.reset_func = arg_reset_threads_per_core,
 	.reset_each_pass = true,
