@@ -92,6 +92,7 @@ enum {
 	LONG_OPT_DEADLINE,
 	LONG_OPT_DEBUGGER_TEST,
 	LONG_OPT_DELAY_BOOT,
+	LONG_OPT_ENVIRONMENT, /* only for data */
 	LONG_OPT_EPILOG,
 	LONG_OPT_EXCLUSIVE,
 	LONG_OPT_EXPORT,
@@ -356,6 +357,7 @@ typedef struct {
 	bool contiguous;		/* --contiguous			*/
 	char *nodefile;			/* --nodefile			*/
 	char *nodelist;			/* --nodelist=node1,node2,...	*/
+	char **environment;		/* job environment     		*/
 	char *exclude;			/* --exclude=node1,node2,...	*/
 
 	bool reboot;			/* --reboot			*/

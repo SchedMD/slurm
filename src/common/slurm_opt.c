@@ -1248,6 +1248,62 @@ static slurm_cli_opt_t slurm_opt_delay_boot = {
 	.reset_func = arg_reset_delay_boot,
 };
 
+static data_for_each_cmd_t _parse_env(const char *key, const data_t *data, void *arg)
+{
+	int rc = DATA_FOR_EACH_FAIL;
+	char ***env = arg;
+	char *ebuf = NULL;
+
+	if (!data_get_string_converted(data, &ebuf)) {
+		env_array_append(env, key, ebuf);
+		rc = DATA_FOR_EACH_CONT;
+	}
+	xfree(ebuf);
+
+	return rc;
+}
+
+static int arg_set_data_environment(slurm_opt_t *opt, const data_t *arg,
+				    data_t *errors)
+{
+	if (data_get_type(arg) != DATA_TYPE_DICT) {
+		ADD_DATA_ERROR("environment must be a dictionary", SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * always start with a fresh environment if client
+	 * provides one explicitly
+	 */
+	if (opt->environment)
+		env_array_free(opt->environment);
+	opt->environment = env_array_create();
+
+	if (data_dict_for_each_const(arg, _parse_env, &opt->environment) < 0) {
+		ADD_DATA_ERROR("failure parsing environment", SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+static void arg_reset_environment(slurm_opt_t *opt)
+{
+	env_array_free(opt->environment);
+	opt->environment = NULL;
+}
+static char *arg_get_environment(slurm_opt_t *opt)
+{
+	return NULL;
+}
+static slurm_cli_opt_t slurm_opt_environment = {
+	.name = "environment",
+	.val = LONG_OPT_ENVIRONMENT,
+	.has_arg = required_argument,
+	.set_func_data = arg_set_data_environment,
+	.get_func = arg_get_environment,
+	.reset_func = arg_reset_environment,
+};
+
 COMMON_STRING_OPTION(dependency);
 static slurm_cli_opt_t slurm_opt_dependency = {
 	.name = "dependency",
@@ -4675,6 +4731,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_deadline,
 	&slurm_opt_debugger_test,
 	&slurm_opt_delay_boot,
+	&slurm_opt_environment,
 	&slurm_opt_dependency,
 	&slurm_opt_disable_status,
 	&slurm_opt_distribution,
