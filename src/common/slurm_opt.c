@@ -3756,11 +3756,13 @@ static void arg_reset_switch_req(slurm_opt_t *opt)
 {
 	opt->req_switch = -1;
 }
+COMMON_INT_OPTION_SET_DATA(req_switch);
 static slurm_cli_opt_t slurm_opt_switch_req = {
 	.name = NULL, /* envvar only */
 	.has_arg = required_argument,
 	.val = LONG_OPT_SWITCH_REQ,
 	.set_func = arg_set_switch_req,
+	.set_func_data = arg_set_data_req_switch,
 	.get_func = arg_get_switch_req,
 	.reset_func = arg_reset_switch_req,
 	.reset_each_pass = true,
