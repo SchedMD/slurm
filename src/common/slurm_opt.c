@@ -2662,6 +2662,16 @@ static int arg_set_no_requeue(slurm_opt_t *opt, const char *arg)
 
 	return SLURM_SUCCESS;
 }
+static int arg_set_data_no_requeue(slurm_opt_t *opt, const data_t *arg,
+				   data_t *errors)
+{
+	if (!opt->sbatch_opt)
+		return SLURM_ERROR;
+
+	opt->sbatch_opt->requeue = 0;
+
+	return SLURM_SUCCESS;
+}
 static char *arg_get_requeue(slurm_opt_t *opt)
 {
 	if (!opt->sbatch_opt)
@@ -2683,6 +2693,7 @@ static slurm_cli_opt_t slurm_opt_no_requeue = {
 	.has_arg = no_argument,
 	.val = LONG_OPT_NO_REQUEUE,
 	.set_func_sbatch = arg_set_no_requeue,
+	.set_func_data = arg_set_data_no_requeue,
 	.get_func = arg_get_requeue,
 	.reset_func = arg_reset_requeue,
 };
