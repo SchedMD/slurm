@@ -50,6 +50,8 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/data.h"
+
 #define DEFAULT_IMMEDIATE	1
 #define DEFAULT_BELL_DELAY	10
 #define SRUN_MAX_THREADS	60
@@ -90,6 +92,7 @@ enum {
 	LONG_OPT_DEADLINE,
 	LONG_OPT_DEBUGGER_TEST,
 	LONG_OPT_DELAY_BOOT,
+	LONG_OPT_ENVIRONMENT, /* only for data */
 	LONG_OPT_EPILOG,
 	LONG_OPT_EXCLUSIVE,
 	LONG_OPT_EXPORT,
@@ -266,6 +269,7 @@ typedef struct {
 typedef struct {
 	bool set;			/* Has the option been set */
 	bool set_by_env;		/* Has the option been set by env var */
+	bool set_by_data;		/* Has the option been set by data_t */
 } slurm_opt_state_t;
 
 typedef struct {
@@ -353,6 +357,7 @@ typedef struct {
 	bool contiguous;		/* --contiguous			*/
 	char *nodefile;			/* --nodefile			*/
 	char *nodelist;			/* --nodelist=node1,node2,...	*/
+	char **environment;		/* job environment     		*/
 	char *exclude;			/* --exclude=node1,node2,...	*/
 
 	bool reboot;			/* --reboot			*/
@@ -409,6 +414,16 @@ extern int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 				bool set_by_env, bool early_pass);
 
 /*
+ * Process incoming single component of Job data entry
+ * IN opt - options to populate from job chunk
+ * IN job - data containing job request
+ * IN/OUT errors - data dictionary to populate with detailed errors
+ * RET SLURM_SUCCESS or error
+ */
+extern int slurm_process_option_data(slurm_opt_t *opt, int optval,
+				     const data_t *arg, data_t *errors);
+
+/*
  * Print all options that have been set through slurm_process_option()
  * in a form suitable for use with the -v flag to salloc/sbatch/srun.
  */
@@ -420,12 +435,24 @@ extern void slurm_print_set_options(slurm_opt_t *opt);
 extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass);
 
 /*
+ * Free all memory associated with opt members
+ * Note: assumes that opt, opt->salloc_opt, opt->sbatch_opt, and
+ * opt->srun_opt should not be xfreed.
+ */
+extern void slurm_free_options_members(slurm_opt_t *opt);
+
+/*
  * Was the option set by a cli argument?
  */
 extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval);
 
 /*
  * Was the option set by an env var?
+ */
+extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval);
+
+/*
+ * Was the option set by an data_t value?
  */
 extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval);
 
