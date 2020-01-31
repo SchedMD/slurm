@@ -2795,6 +2795,63 @@ static int arg_set_nodes(slurm_opt_t *opt, const char *arg)
 		exit(-1);
 	return SLURM_SUCCESS;
 }
+
+typedef struct {
+	int min;
+	int max;
+	data_t *errors;
+} node_cnt_t;
+
+static data_for_each_cmd_t _parse_nodes_counts(const data_t *data, void *arg)
+{
+	node_cnt_t *nodes = arg;
+	data_t *errors = nodes->errors;
+	int64_t val;
+	int rc;
+
+	if ((rc = data_get_int_converted(data, &val))) {
+		ADD_DATA_ERROR("Invalid node count", rc);
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	nodes->min = nodes->max;
+	nodes->max = (int) val;
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static int arg_set_data_nodes(slurm_opt_t *opt, const data_t *arg,
+			       data_t *errors)
+{
+	int rc = SLURM_SUCCESS;
+	char *str = NULL;
+
+	if (data_get_type(arg) == DATA_TYPE_LIST) {
+		node_cnt_t counts =
+			{ .min = NO_VAL, .max = NO_VAL, .errors = errors };
+
+		if (data_get_list_length(arg) != 2) {
+			rc = SLURM_ERROR;
+			ADD_DATA_ERROR("Invalid node count list size", rc);
+		} else if (data_list_for_each_const(arg, _parse_nodes_counts,
+						    &counts) < 0) {
+			rc = SLURM_ERROR;
+			ADD_DATA_ERROR("Invalid node count specification", rc);
+		} else {
+			opt->min_nodes = counts.min;
+			opt->max_nodes = counts.max;
+		}
+	} else if ((rc = data_get_string_converted(arg, &str))) {
+		ADD_DATA_ERROR("Unable to read string", rc);
+	} else if (!(opt->nodes_set = verify_node_count(str, &opt->min_nodes,
+						      &opt->max_nodes))) {
+		rc = SLURM_ERROR;
+		ADD_DATA_ERROR("Invalid node count string", rc);
+	}
+
+	xfree(str);
+	return rc;
+}
 static char *arg_get_nodes(slurm_opt_t *opt)
 {
 	if (opt->min_nodes != opt->max_nodes)
@@ -2812,6 +2869,7 @@ static slurm_cli_opt_t slurm_opt_nodes = {
 	.has_arg = required_argument,
 	.val = 'N',
 	.set_func = arg_set_nodes,
+	.set_func_data = arg_set_data_nodes,
 	.get_func = arg_get_nodes,
 	.reset_func = arg_reset_nodes,
 	.reset_each_pass = true,
