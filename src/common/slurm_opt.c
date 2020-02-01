@@ -4958,6 +4958,13 @@ extern int slurm_process_option_data(slurm_opt_t *opt, int optval,
 		break;
 	}
 
+	if (!common_options[i]) {
+		char str[1024];
+		snprintf(str, sizeof(str), "Unknown option: %u", optval);
+		ADD_DATA_ERROR(str, SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+
 	// TODO: implement data aware spank parsing
 
 	_init_state(opt);
