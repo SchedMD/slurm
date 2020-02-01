@@ -4942,7 +4942,6 @@ extern int slurm_process_option_data(slurm_opt_t *opt, int optval,
 				     const data_t *arg, data_t *errors)
 {
 	int i;
-	bool set = true;
 
 	if (!opt)
 		fatal("%s: missing slurm_opt_t struct", __func__);
@@ -4962,14 +4961,6 @@ extern int slurm_process_option_data(slurm_opt_t *opt, int optval,
 	// TODO: implement data aware spank parsing
 
 	_init_state(opt);
-
-	if (!set) {
-		(common_options[i]->reset_func)(opt);
-		opt->state[i].set = false;
-		opt->state[i].set_by_data = false;
-		opt->state[i].set_by_env = false;
-		return SLURM_SUCCESS;
-	}
 
 	if (!(common_options[i]->set_func_data)(opt, arg, errors)) {
 		opt->state[i].set = true;
