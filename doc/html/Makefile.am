@@ -86,6 +86,7 @@ generated_html = \
 	reservations.html \
 	resource_binding.html \
 	resource_limits.html \
+	rest.html \
 	rosetta.html \
 	route_plugin.html \
 	sched_config.html \
