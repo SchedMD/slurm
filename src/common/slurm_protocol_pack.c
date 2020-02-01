@@ -2407,6 +2407,7 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer, uint16_t protocol_version)
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->job_state, buffer);
 		pack32(msg->job_uid, buffer);
+		pack32(msg->job_gid, buffer);
 		packstr(msg->nodes, buffer);
 		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
 					     protocol_version);
@@ -2469,6 +2470,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 		safe_unpack32(&tmp_ptr->het_job_id, buffer);
 		safe_unpack32(&tmp_ptr->job_state, buffer);
 		safe_unpack32(&tmp_ptr->job_uid, buffer);
+		safe_unpack32(&tmp_ptr->job_gid, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->nodes, &uint32_tmp, buffer);
 		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
 						   buffer, protocol_version))
@@ -2486,6 +2488,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 		safe_unpack32(&(tmp_ptr->het_job_id),  buffer);
 		safe_unpack32(&(tmp_ptr->job_state),  buffer);
 		safe_unpack32(&(tmp_ptr->job_uid), buffer);
+		tmp_ptr->job_gid = SLURM_AUTH_NOBODY;
 		safe_unpackstr_xmalloc(&(tmp_ptr->nodes),
 				       &uint32_tmp, buffer);
 		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
@@ -2501,6 +2504,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 		safe_unpack32(&(tmp_ptr->het_job_id),  buffer);
 		safe_unpack32(&(tmp_ptr->job_state),  buffer);
 		safe_unpack32(&(tmp_ptr->job_uid), buffer);
+		tmp_ptr->job_gid = SLURM_AUTH_NOBODY;
 		safe_unpackstr_xmalloc(&(tmp_ptr->nodes),
 				       &uint32_tmp, buffer);
 		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
