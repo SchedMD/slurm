@@ -331,7 +331,7 @@ rwfail:
 	return (NULL);
 }
 
-static int _get_jobid_uid_from_env(uint32_t *jobid, uid_t *uid)
+static int _get_jobid_uid_gid_from_env(uint32_t *jobid, uid_t *uid, gid_t *gid)
 {
 	const char *val;
 	char *p;
@@ -350,6 +350,13 @@ static int _get_jobid_uid_from_env(uint32_t *jobid, uid_t *uid)
 	if (*p != '\0')
 		return error("Invalid SLURM_UID=%s", val);
 
+	if (!(val = getenv("SLURM_GID")))
+		return error("Unable to get SLURM_GID in env!");
+
+	*gid = (gid_t) strtoul(val, &p, 10);
+	if (*p != '\0')
+		return error("Invalid SLURM_GID=%s", val);
+
 	return SLURM_SUCCESS;
 }
 
@@ -358,6 +365,7 @@ static int _handle_spank_mode (int argc, char **argv)
 	char *prefix = NULL;
 	const char *mode = argv[2];
 	uid_t uid = (uid_t) -1;
+	gid_t gid = (gid_t) -1;
 	uint32_t jobid = (uint32_t) -1;
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 
@@ -386,17 +394,18 @@ static int _handle_spank_mode (int argc, char **argv)
 
 	slurm_conf_init(NULL);
 
-	if (_get_jobid_uid_from_env(&jobid, &uid))
+	if (_get_jobid_uid_gid_from_env(&jobid, &uid, &gid))
 		return error("spank environment invalid");
 
-	debug("Running spank/%s for jobid [%u] uid [%u]", mode, jobid, uid);
+	debug("Running spank/%s for jobid [%u] uid [%u] gid [%u]",
+	      mode, jobid, uid, gid);
 
 	if (xstrcmp (mode, "prolog") == 0) {
-		if (spank_job_prolog (jobid, uid) < 0)
+		if (spank_job_prolog(jobid, uid, gid) < 0)
 			return (-1);
 	}
 	else if (xstrcmp (mode, "epilog") == 0) {
-		if (spank_job_epilog (jobid, uid) < 0)
+		if (spank_job_epilog(jobid, uid, gid) < 0)
 			return (-1);
 	}
 	else {

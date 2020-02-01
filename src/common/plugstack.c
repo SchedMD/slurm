@@ -160,6 +160,7 @@ typedef enum step_fn {
 struct job_script_info {
 	uint32_t  jobid;
 	uid_t     uid;
+	gid_t gid;
 };
 
 struct spank_handle {
@@ -901,11 +902,11 @@ int spank_fini(stepd_step_rec_t * job)
 /*
  *  Run job_epilog or job_prolog callbacks in a private spank context.
  */
-static int spank_job_script (step_fn_t fn, uint32_t jobid, uid_t uid)
+static int spank_job_script(step_fn_t fn, uint32_t jobid, uid_t uid, gid_t gid)
 {
 	int rc = 0;
 	struct spank_stack *stack;
-	struct job_script_info jobinfo = { jobid, uid };
+	struct job_script_info jobinfo = { jobid, uid, gid };
 
 	stack = spank_stack_init (S_TYPE_JOB_SCRIPT);
 	if (!stack)
@@ -919,14 +920,14 @@ static int spank_job_script (step_fn_t fn, uint32_t jobid, uid_t uid)
 	return (rc);
 }
 
-int spank_job_prolog (uint32_t jobid, uid_t uid)
+int spank_job_prolog(uint32_t jobid, uid_t uid, gid_t gid)
 {
-	return spank_job_script (SPANK_JOB_PROLOG, jobid, uid);
+	return spank_job_script(SPANK_JOB_PROLOG, jobid, uid, gid);
 }
 
-int spank_job_epilog (uint32_t jobid, uid_t uid)
+int spank_job_epilog(uint32_t jobid, uid_t uid, gid_t gid)
 {
-	return spank_job_script (SPANK_JOB_EPILOG, jobid, uid);
+	return spank_job_script(SPANK_JOB_EPILOG, jobid, uid, gid);
 }
 
 /*
@@ -1824,7 +1825,7 @@ static spank_err_t _check_spank_item_validity (spank_t spank, spank_item_t item)
 	if (spank->stack->type == S_TYPE_SLURMD)
 		return ESPANK_NOT_AVAIL;
 	else if (spank->stack->type == S_TYPE_JOB_SCRIPT) {
-		if (item != S_JOB_UID && item != S_JOB_ID)
+		if (item != S_JOB_GID && item != S_JOB_UID && item != S_JOB_ID)
 			return ESPANK_NOT_AVAIL;
 	}
 	else if (spank->stack->type == S_TYPE_LOCAL) {
@@ -1991,6 +1992,8 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 			*p2gid = launcher_job->gid;
 		else if (spank->stack->type == S_TYPE_REMOTE)
 			*p2gid = slurmd_job->gid;
+		else if (spank->stack->type == S_TYPE_JOB_SCRIPT)
+			*p2gid = s_job_info->gid;
 		else
 			*p2gid = getgid();
 		break;
