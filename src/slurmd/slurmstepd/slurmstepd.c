@@ -331,26 +331,26 @@ rwfail:
 	return (NULL);
 }
 
-static int get_jobid_uid_from_env (uint32_t *jobidp, uid_t *uidp)
+static int _get_jobid_uid_from_env(uint32_t *jobid, uid_t *uid)
 {
 	const char *val;
 	char *p;
 
-	if (!(val = getenv ("SLURM_JOBID")))
-		return error ("Unable to get SLURM_JOBID in env!");
+	if (!(val = getenv("SLURM_JOBID")))
+		return error("Unable to get SLURM_JOBID in env!");
 
-	*jobidp = (uint32_t) strtoul (val, &p, 10);
+	*jobid = (uint32_t) strtoul(val, &p, 10);
 	if (*p != '\0')
-		return error ("Invalid SLURM_JOBID=%s", val);
+		return error("Invalid SLURM_JOBID=%s", val);
 
-	if (!(val = getenv ("SLURM_UID")))
-		return error ("Unable to get SLURM_UID in env!");
+	if (!(val = getenv("SLURM_UID")))
+		return error("Unable to get SLURM_UID in env!");
 
-	*uidp = (uid_t) strtoul (val, &p, 10);
+	*uid = (uid_t) strtoul(val, &p, 10);
 	if (*p != '\0')
-		return error ("Invalid SLURM_UID=%s", val);
+		return error("Invalid SLURM_UID=%s", val);
 
-	return (0);
+	return SLURM_SUCCESS;
 }
 
 static int _handle_spank_mode (int argc, char **argv)
@@ -386,8 +386,8 @@ static int _handle_spank_mode (int argc, char **argv)
 
 	slurm_conf_init(NULL);
 
-	if (get_jobid_uid_from_env (&jobid, &uid) < 0)
-		return error ("spank environment invalid");
+	if (_get_jobid_uid_from_env(&jobid, &uid))
+		return error("spank environment invalid");
 
 	debug("Running spank/%s for jobid [%u] uid [%u]", mode, jobid, uid);
 
