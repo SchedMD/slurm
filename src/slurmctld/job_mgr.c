@@ -14266,6 +14266,7 @@ static void _send_job_kill(job_record_t *job_ptr)
 	kill_job->step_id   = NO_VAL;
 	kill_job->job_state = job_ptr->job_state;
 	kill_job->job_uid   = job_ptr->user_id;
+	kill_job->job_gid   = job_ptr->group_id;
 	kill_job->nodes     = xstrdup(job_ptr->nodes);
 	kill_job->time      = time(NULL);
 	kill_job->start_time = job_ptr->start_time;
