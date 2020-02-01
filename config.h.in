@@ -506,6 +506,9 @@
 /* Define the default port number for slurmd */
 #undef SLURMD_PORT
 
+/* Define the default port number for slurmrestd */
+#undef SLURMRESTD_PORT
+
 /* API current age */
 #undef SLURM_API_AGE
 

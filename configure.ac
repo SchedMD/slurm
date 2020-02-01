@@ -302,6 +302,8 @@ else
 fi
 AC_SUBST(SLURM_PREFIX)
 
+X_AC_SLURMRESTD([6820])
+
 dnl check for netloc library
 dnl
 X_AC_NETLOC
@@ -434,6 +436,8 @@ AC_CONFIG_FILES([Makefile
 		 src/slurmd/slurmd/Makefile
 		 src/slurmd/slurmstepd/Makefile
 		 src/slurmdbd/Makefile
+		 src/slurmrestd/Makefile
+		 src/slurmrestd/ops/Makefile
 		 src/sprio/Makefile
 		 src/squeue/Makefile
 		 src/srun/Makefile
