@@ -12,6 +12,7 @@ man1_MANS = \
 	sdiag.1	\
 	sinfo.1   \
 	slurm.1 \
+	slurmrestd.1 \
 	sprio.1 \
 	squeue.1 \
 	sreport.1 \

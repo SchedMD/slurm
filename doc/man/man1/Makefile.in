@@ -460,9 +460,9 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 man1_MANS = sacct.1 sacctmgr.1 salloc.1 sattach.1 sbatch.1 sbcast.1 \
-	scancel.1 scontrol.1 sdiag.1 sinfo.1 slurm.1 sprio.1 squeue.1 \
-	sreport.1 srun.1 sshare.1 sstat.1 strigger.1 $(am__append_1) \
-	$(am__append_2)
+	scancel.1 scontrol.1 sdiag.1 sinfo.1 slurm.1 slurmrestd.1 \
+	sprio.1 squeue.1 sreport.1 srun.1 sshare.1 sstat.1 strigger.1 \
+	$(am__append_1) $(am__append_2)
 EXTRA_DIST = $(man1_MANS) $(am__append_5)
 @HAVE_MAN2HTML_TRUE@html_DATA = sacct.html sacctmgr.html salloc.html \
 @HAVE_MAN2HTML_TRUE@	sattach.html sbatch.html sbcast.html \
