@@ -96,6 +96,9 @@ documents those changes that are of interest to users and administrators.
  -- Disable sbatch, salloc, srun --reboot for non-admins.
  -- jobcomp/elasticsearch - added connect_timeout and timeout options to
     JobCompParams.
+ -- SPANK - added support for S_JOB_GID in the job script context with
+    spank_get_item().
+ -- Prolog/Epilog - add SLURM_JOB_GID environment variable.
 
 * Changes in Slurm 19.05.6
 ==========================

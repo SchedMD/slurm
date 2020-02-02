@@ -75,6 +75,7 @@ typedef struct {
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
 	uid_t uid;
+	gid_t gid;
 	char *user_name;
 } job_env_t;
 

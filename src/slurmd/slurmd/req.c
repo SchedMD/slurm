@@ -1510,6 +1510,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;
+		job_env.gid = req->gid;
 		job_env.user_name = req->user_name;
 		rc =  _run_prolog(&job_env, req->cred, true);
 		_free_job_env(&job_env);
@@ -2239,6 +2240,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;
+		job_env.gid = req->gid;
 		job_env.user_name = req->user_name;
 
 #ifdef HAVE_NATIVE_CRAY
@@ -2445,6 +2447,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;
+		job_env.gid = req->gid;
 		job_env.user_name = req->user_name;
 		/*
 	 	 * Run job prolog on this node
@@ -5119,6 +5122,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	job_env.spank_job_env = req->spank_job_env;
 	job_env.spank_job_env_size = req->spank_job_env_size;
 	job_env.uid = req->job_uid;
+	job_env.gid = req->job_gid;
 
 	_run_epilog(&job_env);
 	_free_job_env(&job_env);
@@ -5455,6 +5459,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	job_env.spank_job_env = req->spank_job_env;
 	job_env.spank_job_env_size = req->spank_job_env_size;
 	job_env.uid = req->job_uid;
+	job_env.gid = req->job_gid;
 
 	rc = _run_epilog(&job_env);
 	_free_job_env(&job_env);

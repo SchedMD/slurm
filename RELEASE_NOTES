@@ -58,6 +58,9 @@ HIGHLIGHTS
  -- In SchedulerParameters remove deprecated max_job_bf and replace with
     bf_max_job_test.
  -- Disable sbatch, salloc, srun --reboot for non-admins.
+ -- SPANK - added support for S_JOB_GID in the job script context with
+    spank_get_item().
+ -- Prolog/Epilog - add SLURM_JOB_GID environment variable.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

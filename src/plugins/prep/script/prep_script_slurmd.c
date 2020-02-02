@@ -65,8 +65,7 @@ slurmd_conf_t *conf = NULL;
 static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 			 bool is_epilog);
 static void _destroy_env(char **env);
-static int _run_spank_job_script(const char *mode, char **env,
-				 uint32_t job_id, uid_t uid);
+static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id);
 
 extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 			 bool is_epilog)
@@ -95,7 +94,7 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 	 *   prolog/epilog status.
 	 */
 	if (conf->plugstack && (stat(conf->plugstack, &stat_buf) == 0))
-		status = _run_spank_job_script(name, env, jobid, job_env->uid);
+		status = _run_spank_job_script(name, env, jobid);
 	if ((rc = run_script(name, path, jobid, timeout, env, job_env->uid)))
 		status = rc;
 
@@ -135,6 +134,7 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 	setenvf(&env, "SLURM_CLUSTER_NAME", "%s", conf->cluster_name);
 	setenvf(&env, "SLURM_JOB_ID", "%u", job_env->jobid);
 	setenvf(&env, "SLURM_JOB_UID", "%u", job_env->uid);
+	setenvf(&env, "SLURM_JOB_GID", "%u", job_env->gid);
 
 #ifndef HAVE_NATIVE_CRAY
 	/* uid_to_string on a cray is a heavy call, so try to avoid it */
@@ -190,8 +190,7 @@ static void _destroy_env(char **env)
 	xfree(env);
 }
 
-static int _run_spank_job_script(const char *mode, char **env,
-				 uint32_t job_id, uid_t uid)
+static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id)
 {
 	pid_t cpid;
 	int status = 0, timeout;
