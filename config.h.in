@@ -214,6 +214,9 @@
 /* Define if you are compiling with readline. */
 #undef HAVE_READLINE
 
+/* Define to 1 if RSMI library found */
+#undef HAVE_RSMI
+
 /* Define to 1 if you have the `sched_setaffinity' function. */
 #undef HAVE_SCHED_SETAFFINITY
 

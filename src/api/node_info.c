@@ -795,9 +795,10 @@ extern int slurm_load_node_single2(node_info_msg_t **resp, char *node_name,
 }
 
 /*
- * slurm_get_node_energy_n - issue RPC to get the energy data of all
+ * slurm_get_node_energy - issue RPC to get the energy data of all
  * configured sensors on the target machine
  * IN  host  - name of node to query, NULL if localhost
+ * IN  context_id - specific plugin to query.
  * IN  delta - Use cache if data is newer than this in seconds
  * OUT sensors_cnt - number of sensors
  * OUT energy - array of acct_gather_energy_t structures on success or
@@ -805,7 +806,8 @@ extern int slurm_load_node_single2(node_info_msg_t **resp, char *node_name,
  * RET 0 on success or a slurm error code
  * NOTE: free the response using xfree
  */
-extern int slurm_get_node_energy(char *host, uint16_t delta,
+extern int slurm_get_node_energy(char *host, uint16_t context_id,
+				 uint16_t delta,
 				 uint16_t *sensor_cnt,
 				 acct_gather_energy_t **energy)
 {
@@ -853,6 +855,7 @@ extern int slurm_get_node_energy(char *host, uint16_t delta,
 	}
 
 	memset(&req, 0, sizeof(req));
+	req.context_id   = context_id;
 	req.delta        = delta;
 	req_msg.msg_type = REQUEST_ACCT_GATHER_ENERGY;
 	req_msg.data     = &req;

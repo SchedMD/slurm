@@ -213,6 +213,7 @@ AX_CHECK_ZLIB([], [])
 X_AC_LZ4
 X_AC_HWLOC
 X_AC_NVML
+X_AC_RSMI
 X_AC_PMIX
 X_AC_FREEIPMI
 X_AC_RRDTOOL
@@ -447,10 +448,11 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/accounting_storage/slurmdbd/Makefile
 		 src/plugins/acct_gather_energy/Makefile
 		 src/plugins/acct_gather_energy/cray_aries/Makefile
-		 src/plugins/acct_gather_energy/rapl/Makefile
 		 src/plugins/acct_gather_energy/ibmaem/Makefile
 		 src/plugins/acct_gather_energy/ipmi/Makefile
 		 src/plugins/acct_gather_energy/none/Makefile
+		 src/plugins/acct_gather_energy/rapl/Makefile
+		 src/plugins/acct_gather_energy/rsmi/Makefile
 		 src/plugins/acct_gather_energy/xcc/Makefile
 		 src/plugins/acct_gather_interconnect/Makefile
 		 src/plugins/acct_gather_interconnect/ofed/Makefile
@@ -489,6 +491,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/gpu/Makefile
 		 src/plugins/gpu/generic/Makefile
 		 src/plugins/gpu/nvml/Makefile
+		 src/plugins/gpu/rsmi/Makefile
 		 src/plugins/gres/Makefile
 		 src/plugins/gres/common/Makefile
 		 src/plugins/gres/gpu/Makefile

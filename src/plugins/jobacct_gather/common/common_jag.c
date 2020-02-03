@@ -615,7 +615,7 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 		if (!npids) {
 			/* update consumed energy even if pids do not exist */
 			if (jobacct) {
-				acct_gather_energy_g_get_data(
+				acct_gather_energy_g_get_sum(
 					energy_profile,
 					&jobacct->energy);
 				jobacct->tres_usage_in_tot[TRES_ARRAY_ENERGY] =
@@ -1007,7 +1007,7 @@ extern void jag_common_poll_data(
 		 * in write fields.*/
 		debug2("energycounted = %d", energy_counted);
 		if (energy_counted == 0) {
-			acct_gather_energy_g_get_data(
+			acct_gather_energy_g_get_sum(
 				energy_profile,
 				&jobacct->energy);
 			prec->tres_data[TRES_ARRAY_ENERGY].size_read =

@@ -2252,6 +2252,7 @@ typedef struct acct_gather_node_resp_msg {
 } acct_gather_node_resp_msg_t;
 
 typedef struct acct_gather_energy_req_msg {
+	uint16_t context_id;
 	uint16_t delta;
 } acct_gather_energy_req_msg_t;
 
@@ -4191,7 +4192,7 @@ slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
 			       partition_info_msg_t *part_buffer_ptr);
 
 /*
- * slurm_get_node_energy_n - issue RPC to get the energy data of all
+ * slurm_get_node_energy - issue RPC to get the energy data of all
  * configured sensors on the target machine
  * IN  host  - name of node to query, NULL if localhost
  * IN  delta - Use cache if data is newer than this in seconds
@@ -4202,6 +4203,7 @@ slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
  * NOTE: free the response using xfree
  */
 extern int slurm_get_node_energy(char *host,
+				 uint16_t context_id,
 				 uint16_t delta,
 				 uint16_t *sensors_cnt,
 				 acct_gather_energy_t **energy);

@@ -65,7 +65,10 @@ extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
 				     bool need_alloc);
 
 extern int acct_gather_energy_g_update_node_energy(void);
-extern int acct_gather_energy_g_get_data(enum acct_energy_type data_type,
+extern int acct_gather_energy_g_get_sum(enum acct_energy_type data_type,
+					acct_gather_energy_t *energy);
+extern int acct_gather_energy_g_get_data(int context_id,
+					 enum acct_energy_type data_type,
 					 void *data);
 extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
 					 void *data);

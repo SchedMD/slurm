@@ -1775,6 +1775,8 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 		if (s_p_get_string(&autodetect_string, "Autodetect", tbl)) {
 			if (xstrcasestr(autodetect_string, "nvml"))
 				autodetect_types |= GRES_AUTODETECT_NVML;
+			if (xstrcasestr(autodetect_string, "rsmi"))
+				autodetect_types |= GRES_AUTODETECT_RSMI;
 			xfree(autodetect_string);
 		}
 

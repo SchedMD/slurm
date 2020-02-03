@@ -2,8 +2,9 @@
  *  slurm_acct_gather_energy.c - implementation-independent job energy
  *  accounting plugin definitions
  *****************************************************************************
+ *  Copyright (C) 2012-2019 SchedMD LLC
  *  Copyright (C) 2012 Bull-HN-PHX.
- *  Written by Bull-HN-PHX/d.rusak,
+ *  Written by Bull-HN-PHX/d.rusak, Danny Auble <da@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -68,7 +69,8 @@ typedef struct slurm_acct_gather_energy_ops {
 	int (*set_data)           (enum acct_energy_type data_type, void *data);
 	void (*conf_options)      (s_p_options_t **full_options,
 				   int *full_options_cnt);
-	void (*conf_set)          (s_p_hashtbl_t *tbl);
+	void (*conf_set)          (int context_id_in,
+				   s_p_hashtbl_t *tbl);
 	void (*conf_values)        (List *data);
 } slurm_acct_gather_energy_ops_t;
 /*
@@ -84,8 +86,9 @@ static const char *syms[] = {
 	"acct_gather_energy_p_conf_values",
 };
 
-static slurm_acct_gather_energy_ops_t ops;
-static plugin_context_t *g_context = NULL;
+static slurm_acct_gather_energy_ops_t *ops;
+static plugin_context_t **g_context = NULL;
+static int g_context_num = -1;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 static bool acct_shutdown = true;
@@ -108,7 +111,11 @@ static void *_watch_node(void *arg)
 	while (init_run && acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
 		slurm_mutex_lock(&g_context_lock);
-		(*(ops.set_data))(ENERGY_DATA_PROFILE, &delta);
+		for (int i = 0; i < g_context_num; i++) {
+			if (!g_context[i])
+				continue;
+			(*(ops[i].set_data))(ENERGY_DATA_PROFILE, &delta);
+		}
 		slurm_mutex_unlock(&g_context_lock);
 
 		slurm_mutex_lock(&profile_timer->notify_mutex);
@@ -125,28 +132,45 @@ extern int slurm_acct_gather_energy_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "acct_gather_energy";
-	char *type = NULL;
+	char *full_plugin_type = NULL;
+	char *last = NULL, *plugin_entry, *type = NULL;
 
-	if (init_run && g_context)
+	if (init_run && (g_context_num >= 0))
 		return retval;
 
 	slurm_mutex_lock(&g_context_lock);
 
-	if (g_context)
+	if (g_context_num >= 0)
 		goto done;
 
-	type = slurm_get_acct_gather_energy_type();
+	full_plugin_type = slurm_get_acct_gather_energy_type();
+	g_context_num = 0; /* mark it before anything else */
+	plugin_entry = full_plugin_type;
+	while ((type = strtok_r(plugin_entry, ",", &last))) {
+		xrealloc(ops, sizeof(slurm_acct_gather_energy_ops_t) *
+			 (g_context_num + 1));
+		xrealloc(g_context, (sizeof(plugin_context_t *) *
+				     (g_context_num + 1)));
+		if (!xstrncmp(type, "acct_gather_energy/", 19))
+			type += 19; /* backward compatibility */
+		type = xstrdup_printf("%s/%s", plugin_type, type);
+		g_context[g_context_num] = plugin_context_create(
+			plugin_type, type, (void **)&ops[g_context_num],
+			syms, sizeof(syms));
+		if (!g_context[g_context_num]) {
+			error("cannot create %s context for %s",
+			      plugin_type, type);
+			xfree(type);
+			retval = SLURM_ERROR;
+			break;
+		}
 
-	g_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
-
-	if (!g_context) {
-		error("cannot create %s context for %s", plugin_type, type);
-		retval = SLURM_ERROR;
-		goto done;
+		xfree(type);
+		g_context_num++;
+		plugin_entry = NULL; /* for next iteration */
 	}
+	xfree(full_plugin_type);
 	init_run = true;
-
 done:
 	slurm_mutex_unlock(&g_context_lock);
 	if (retval == SLURM_SUCCESS)
@@ -160,24 +184,37 @@ done:
 
 extern int acct_gather_energy_fini(void)
 {
-	int rc = SLURM_SUCCESS;
+	int rc2, rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&g_context_lock);
-	if (g_context) {
-		init_run = false;
+	init_run = false;
 
-		if (watch_node_thread_id) {
-			slurm_mutex_unlock(&g_context_lock);
-			slurm_mutex_lock(&profile_timer->notify_mutex);
-			slurm_cond_signal(&profile_timer->notify);
-			slurm_mutex_unlock(&profile_timer->notify_mutex);
-			pthread_join(watch_node_thread_id, NULL);
-			slurm_mutex_lock(&g_context_lock);
-		}
-
-		rc = plugin_context_destroy(g_context);
-		g_context = NULL;
+	if (watch_node_thread_id) {
+		slurm_mutex_unlock(&g_context_lock);
+		slurm_mutex_lock(&profile_timer->notify_mutex);
+		slurm_cond_signal(&profile_timer->notify);
+		slurm_mutex_unlock(&profile_timer->notify_mutex);
+		pthread_join(watch_node_thread_id, NULL);
+		slurm_mutex_lock(&g_context_lock);
 	}
+
+	for (int i = 0; i < g_context_num; i++) {
+		if (!g_context[i])
+			continue;
+
+		rc2 = plugin_context_destroy(g_context[i]);
+		if (rc2 != SLURM_SUCCESS) {
+			debug("%s: %s: %s", __func__,
+			      g_context[i]->type,
+			      slurm_strerror(rc2));
+			rc = SLURM_ERROR;
+		}
+	}
+
+	xfree(ops);
+	xfree(g_context);
+	g_context_num = -1;
+
 	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
@@ -256,12 +293,67 @@ extern int acct_gather_energy_g_update_node_energy(void)
 	if (slurm_acct_gather_energy_init() < 0)
 		return retval;
 
-	retval = (*(ops.update_node_energy))();
+	slurm_mutex_lock(&g_context_lock);
+	for (int i = 0; i < g_context_num; i++) {
+		if (!g_context[i])
+			continue;
+		retval = (*(ops[i].update_node_energy))();
+	}
+	slurm_mutex_unlock(&g_context_lock);
 
 	return retval;
 }
 
-extern int acct_gather_energy_g_get_data(enum acct_energy_type data_type,
+extern int acct_gather_energy_g_get_sum(enum acct_energy_type data_type,
+					acct_gather_energy_t *energy)
+{
+	int retval = SLURM_ERROR;
+	static acct_gather_energy_t *e, *energy_array;
+
+	if (slurm_acct_gather_energy_init() < 0)
+		return retval;
+
+	slurm_mutex_lock(&g_context_lock);
+
+	if (g_context_num == 1) {
+		retval = (*(ops[0].get_data))(data_type, energy);
+		slurm_mutex_unlock(&g_context_lock);
+		return retval;
+	}
+
+	energy_array = acct_gather_energy_alloc(g_context_num);
+	for (int i = 0; i < g_context_num; i++) {
+		if (!g_context[i])
+			continue;
+
+		e = &energy_array[i];
+
+		retval = (*(ops[i].get_data))(data_type, e);
+		if (retval != SLURM_SUCCESS || (e->consumed_energy == NO_VAL64))
+			continue;
+
+		energy->base_consumed_energy += e->base_consumed_energy;
+		energy->ave_watts += e->ave_watts;
+		energy->consumed_energy += e->consumed_energy;
+		energy->current_watts += e->current_watts;
+		energy->previous_consumed_energy += e->previous_consumed_energy;
+
+		/*
+		 * node poll_time is computed as the oldest poll_time of
+		 * the sensors
+		 */
+		if (!energy->poll_time || (energy->poll_time > e->poll_time))
+			energy->poll_time = e->poll_time;
+
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	acct_gather_energy_destroy(energy_array);
+
+	return retval;
+}
+
+extern int acct_gather_energy_g_get_data(int context_id,
+					 enum acct_energy_type data_type,
 					 void *data)
 {
 	int retval = SLURM_ERROR;
@@ -269,7 +361,14 @@ extern int acct_gather_energy_g_get_data(enum acct_energy_type data_type,
 	if (slurm_acct_gather_energy_init() < 0)
 		return retval;
 
-	retval = (*(ops.get_data))(data_type, data);
+	slurm_mutex_lock(&g_context_lock);
+
+	xassert((context_id < g_context_num) && (context_id >= 0));
+	xassert(g_context[context_id]);
+
+	retval = (*(ops[context_id].get_data))(data_type, data);
+
+	slurm_mutex_unlock(&g_context_lock);
 
 	return retval;
 }
@@ -282,7 +381,13 @@ extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
 	if (slurm_acct_gather_energy_init() < 0)
 		return retval;
 
-	retval = (*(ops.set_data))(data_type, data);
+	slurm_mutex_lock(&g_context_lock);
+	for (int i = 0; i < g_context_num; i++) {
+		if (!g_context[i])
+			continue;
+		retval = (*(ops[i].set_data))(data_type, data);
+	}
+	slurm_mutex_unlock(&g_context_lock);
 
 	return retval;
 }
@@ -295,8 +400,7 @@ extern int acct_gather_energy_startpoll(uint32_t frequency)
 		return SLURM_ERROR;
 
 	if (!acct_shutdown) {
-		error("acct_gather_energy_startpoll: "
-		      "poll already started!");
+		error("%s: poll already started!", __func__);
 		return retval;
 	}
 
@@ -305,14 +409,14 @@ extern int acct_gather_energy_startpoll(uint32_t frequency)
 	freq = frequency;
 
 	if (frequency == 0) {   /* don't want dynamic monitoring? */
-		debug2("acct_gather_energy dynamic logging disabled");
+		debug2("%s: dynamic logging disabled", __func__);
 		return retval;
 	}
 
 	/* create polling thread */
 	slurm_thread_create(&watch_node_thread_id, _watch_node, NULL);
 
-	debug3("acct_gather_energy dynamic logging enabled");
+	debug3("%s: dynamic logging enabled", __func__);
 
 	return retval;
 }
@@ -323,7 +427,13 @@ extern int acct_gather_energy_g_conf_options(s_p_options_t **full_options,
 	if (slurm_acct_gather_energy_init() < 0)
 		return SLURM_ERROR;
 
-	(*(ops.conf_options))(full_options, full_options_cnt);
+	slurm_mutex_lock(&g_context_lock);
+	for (int i = 0; i < g_context_num; i++) {
+		if (!g_context[i])
+			continue;
+		(*(ops[i].conf_options))(full_options, full_options_cnt);
+	}
+	slurm_mutex_unlock(&g_context_lock);
 	return SLURM_SUCCESS;
 }
 
@@ -332,7 +442,13 @@ extern int acct_gather_energy_g_conf_set(s_p_hashtbl_t *tbl)
 	if (slurm_acct_gather_energy_init() < 0)
 		return SLURM_ERROR;
 
-	(*(ops.conf_set))(tbl);
+	slurm_mutex_lock(&g_context_lock);
+	for (int i = 0; i < g_context_num; i++) {
+		if (!g_context[i])
+			continue;
+		(*(ops[i].conf_set))(i, tbl);
+	}
+	slurm_mutex_unlock(&g_context_lock);
 	return SLURM_SUCCESS;
 }
 
@@ -341,6 +457,12 @@ extern int acct_gather_energy_g_conf_values(void *data)
 	if (slurm_acct_gather_energy_init() < 0)
 		return SLURM_ERROR;
 
-	(*(ops.conf_values))(data);
+	slurm_mutex_lock(&g_context_lock);
+	for (int i = 0; i < g_context_num; i++) {
+		if (!g_context[i])
+			continue;
+		(*(ops[i].conf_values))(data);
+	}
+	slurm_mutex_unlock(&g_context_lock);
 	return SLURM_SUCCESS;
 }

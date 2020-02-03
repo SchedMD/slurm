@@ -3253,7 +3253,7 @@ _rpc_acct_gather_update(slurm_msg_t *msg)
 		acct_msg.node_name = conf->node_name;
 		acct_msg.sensor_cnt = 1;
 		acct_msg.energy = acct_gather_energy_alloc(acct_msg.sensor_cnt);
-		acct_gather_energy_g_get_data(
+		(void) acct_gather_energy_g_get_sum(
 			ENERGY_DATA_NODE_ENERGY, acct_msg.energy);
 
 		slurm_msg_t_copy(&resp_msg, msg);
@@ -3296,9 +3296,18 @@ _rpc_acct_gather_energy(slurm_msg_t *msg)
 		uint16_t sensor_cnt;
 		acct_gather_energy_req_msg_t *req = msg->data;
 
-		acct_gather_energy_g_get_data(ENERGY_DATA_LAST_POLL,
+		if (req->context_id == NO_VAL16) {
+			rc = SLURM_PROTOCOL_VERSION_ERROR;
+			if (slurm_send_rc_msg(msg, rc) < 0)
+				error("Error responding to energy request: %m");
+			return rc;
+		}
+
+		acct_gather_energy_g_get_data(req->context_id,
+					      ENERGY_DATA_LAST_POLL,
 					      &last_poll);
-		acct_gather_energy_g_get_data(ENERGY_DATA_SENSOR_CNT,
+		acct_gather_energy_g_get_data(req->context_id,
+					      ENERGY_DATA_SENSOR_CNT,
 					      &sensor_cnt);
 
 		/* If we polled later than delta seconds then force a
@@ -3311,7 +3320,9 @@ _rpc_acct_gather_energy(slurm_msg_t *msg)
 		acct_msg.sensor_cnt = sensor_cnt;
 		acct_msg.energy = acct_gather_energy_alloc(acct_msg.sensor_cnt);
 
-		acct_gather_energy_g_get_data(data_type, acct_msg.energy);
+		acct_gather_energy_g_get_data(req->context_id,
+					      data_type,
+					      acct_msg.energy);
 
 		slurm_msg_t_copy(&resp_msg, msg);
 		resp_msg.msg_type = RESPONSE_ACCT_GATHER_ENERGY;

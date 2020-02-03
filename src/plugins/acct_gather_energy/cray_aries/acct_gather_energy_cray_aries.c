@@ -85,7 +85,8 @@ enum {
 	GET_POWER
 };
 
-extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl);
+extern void acct_gather_energy_p_conf_set(int context_id_in,
+					  s_p_hashtbl_t *tbl);
 
 static uint64_t _get_latest_stats(int type)
 {
@@ -271,7 +272,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	if (!local_energy) {
 		debug("%s: trying to get data %d, but no local_energy yet.",
 		      __func__, data_type);
-		acct_gather_energy_p_conf_set(NULL);
+		acct_gather_energy_p_conf_set(0, NULL);
 	}
 
 	switch (data_type) {
@@ -335,7 +336,8 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 	return;
 }
 
-extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
+extern void acct_gather_energy_p_conf_set(int context_id_in,
+					  s_p_hashtbl_t *tbl)
 {
 	static bool flag_init = 0;
 
