@@ -50,6 +50,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
@@ -235,10 +236,22 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 extern char *sockaddr_to_string(const struct sockaddr *addr, socklen_t addrlen)
 {
 	int rc;
-	char *resp = xmalloc(NI_MAXHOST + NI_MAXSERV);
+	char *resp = NULL;
 	char host[NI_MAXHOST] = { 0 };
 	char serv[NI_MAXSERV] = { 0 };
 
+	if (addr->sa_family == AF_UNIX) {
+		const struct sockaddr_un *addr_un =
+			(const struct sockaddr_un *) addr;
+
+		/* path may not be set */
+		if (addr_un->sun_path[0])
+			return xstrdup_printf("unix:%s", addr_un->sun_path);
+		else
+			return NULL;
+	}
+
+	resp = xmalloc(NI_MAXHOST + NI_MAXSERV);
 	rc = getnameinfo(addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, 0);
 	if (rc == EAI_SYSTEM) {
 		error("Unable to get address: %m");
