@@ -448,10 +448,10 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/accounting_storage/slurmdbd/Makefile
 		 src/plugins/acct_gather_energy/Makefile
 		 src/plugins/acct_gather_energy/cray_aries/Makefile
-		 src/plugins/acct_gather_energy/rapl/Makefile
 		 src/plugins/acct_gather_energy/ibmaem/Makefile
 		 src/plugins/acct_gather_energy/ipmi/Makefile
 		 src/plugins/acct_gather_energy/none/Makefile
+		 src/plugins/acct_gather_energy/rapl/Makefile
 		 src/plugins/acct_gather_energy/xcc/Makefile
 		 src/plugins/acct_gather_interconnect/Makefile
 		 src/plugins/acct_gather_interconnect/ofed/Makefile

@@ -26291,10 +26291,10 @@ do
     "src/plugins/accounting_storage/slurmdbd/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/accounting_storage/slurmdbd/Makefile" ;;
     "src/plugins/acct_gather_energy/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/acct_gather_energy/Makefile" ;;
     "src/plugins/acct_gather_energy/cray_aries/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/acct_gather_energy/cray_aries/Makefile" ;;
-    "src/plugins/acct_gather_energy/rapl/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/acct_gather_energy/rapl/Makefile" ;;
     "src/plugins/acct_gather_energy/ibmaem/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/acct_gather_energy/ibmaem/Makefile" ;;
     "src/plugins/acct_gather_energy/ipmi/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/acct_gather_energy/ipmi/Makefile" ;;
     "src/plugins/acct_gather_energy/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/acct_gather_energy/none/Makefile" ;;
+    "src/plugins/acct_gather_energy/rapl/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/acct_gather_energy/rapl/Makefile" ;;
     "src/plugins/acct_gather_energy/xcc/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/acct_gather_energy/xcc/Makefile" ;;
     "src/plugins/acct_gather_interconnect/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/acct_gather_interconnect/Makefile" ;;
     "src/plugins/acct_gather_interconnect/ofed/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/acct_gather_interconnect/ofed/Makefile" ;;
