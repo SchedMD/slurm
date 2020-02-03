@@ -82,13 +82,13 @@ struct data_list_node_s {
 };
 
 /* single forward linked list */
-typedef struct data_list_s {
+struct data_list_s {
 	int magic;
 	size_t count;
 
 	data_list_node_t *begin;
 	data_list_node_t *end;
-} data_list_t;
+};
 
 static void _check_magic(const data_t *data);
 static void _release(data_t *data);
