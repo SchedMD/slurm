@@ -49,6 +49,8 @@
 #include "src/common/xstring.h"
 #include "src/lua/slurm_lua.h"
 
+static const char *cluster_name = NULL;
+
 #ifdef HAVE_LUA
 
 static int _setup_stringarray(lua_State *L, int limit, char **data)
@@ -312,6 +314,9 @@ extern void slurm_lua_register_slurm_output_functions(lua_State *L)
 	lua_setfield (L, -2, "SPREAD_JOB");
 	lua_pushinteger (L, USE_MIN_NODES);
 	lua_setfield (L, -2, "USE_MIN_NODES");
+
+	lua_pushstring (L, cluster_name);
+	lua_setfield (L, -2, "CLUSTER_NAME");
 
 	lua_setglobal (L, "slurm");
 }
@@ -737,6 +742,8 @@ extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
  */
 extern int slurm_lua_init(void)
 {
+	slurm_lua_fini();
+
 	/*
 	 *  Need to dlopen() liblua.so with RTLD_GLOBAL in order to
 	 *   ensure symbols from liblua are available to libs opened
@@ -764,6 +771,9 @@ extern int slurm_lua_init(void)
 		) {
 		return error("Failed to open liblua.so: %s", dlerror());
 	}
+
+	cluster_name = slurm_get_cluster_name();
+
 	return SLURM_SUCCESS;
 }
 
@@ -772,4 +782,5 @@ extern int slurm_lua_init(void)
  */
 extern void slurm_lua_fini(void)
 {
+	xfree(cluster_name);
 }
