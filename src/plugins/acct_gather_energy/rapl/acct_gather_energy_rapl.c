@@ -134,6 +134,8 @@ static char hostname[MAXHOSTNAMELEN];
 
 static int nb_pkg = 0;
 
+static stepd_step_rec_t *job = NULL;
+
 extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl);
 
 static char *_msr_string(int which)
@@ -544,6 +546,10 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 	case ENERGY_DATA_PROFILE:
 		_get_joules_task(local_energy);
 		_send_profile();
+		break;
+	case ENERGY_DATA_STEP_PTR:
+		/* set global job if needed later */
+		job = (stepd_step_rec_t *)data;
 		break;
 	default:
 		error("acct_gather_energy_p_set_data: unknown enum %d",

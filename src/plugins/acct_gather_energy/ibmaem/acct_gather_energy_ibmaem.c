@@ -76,6 +76,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static acct_gather_energy_t *local_energy = NULL;
 static uint64_t debug_flags = 0;
+static stepd_step_rec_t *job = NULL;
 
 enum {
 	GET_ENERGY,
@@ -304,6 +305,10 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 	case ENERGY_DATA_PROFILE:
 		_get_joules_task(local_energy);
 		_send_profile();
+		break;
+	case ENERGY_DATA_STEP_PTR:
+		/* set global job if needed later */
+		job = (stepd_step_rec_t *)data;
 		break;
 	default:
 		error("acct_gather_energy_p_set_data: unknown enum %d",

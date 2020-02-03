@@ -66,6 +66,7 @@
 #include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/setproctitle.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -172,6 +173,8 @@ main (int argc, char **argv)
 #endif
 	}
 	xfree(launch_params);
+
+	acct_gather_energy_g_set_data(ENERGY_DATA_STEP_PTR, job);
 
 	/* This does most of the stdio setup, then launches all the tasks,
 	 * and blocks until the step is complete */

@@ -132,6 +132,7 @@ char *sensor_config_file = NULL;
  */
 static time_t last_update_time = 0;
 static time_t previous_update_time = 0;
+static stepd_step_rec_t *job = NULL;
 
 /* array of struct to track the status of multiple sensors */
 typedef struct sensor_status {
@@ -1042,6 +1043,10 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 		_get_joules_task(*delta);
 		_ipmi_send_profile();
 		slurm_mutex_unlock(&ipmi_mutex);
+		break;
+	case ENERGY_DATA_STEP_PTR:
+		/* set global job if needed later */
+		job = (stepd_step_rec_t *)data;
 		break;
 	default:
 		error("acct_gather_energy_p_set_data: unknown enum %d",
