@@ -731,10 +731,11 @@ extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
 #endif
 
 /*
- *  Common function to dlopen() the appropriate Lua libraries, and
- *   ensure the lua version matches what we compiled against.
+ *  Init function to dlopen() the appropriate Lua libraries, and
+ *  ensure the lua version matches what we compiled against along with other
+ *  init things.
  */
-extern int slurm_lua_dlopen(void)
+extern int slurm_lua_init(void)
 {
 	/*
 	 *  Need to dlopen() liblua.so with RTLD_GLOBAL in order to

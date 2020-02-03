@@ -1251,11 +1251,7 @@ int init(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	/*
-	 * Need to dlopen() the Lua library to ensure plugins see
-	 * appropriate symptoms
-	 */
-	if ((rc = slurm_lua_dlopen()) != SLURM_SUCCESS)
+	if ((rc = slurm_lua_init()) != SLURM_SUCCESS)
 		return rc;
 
 	return _load_script();

@@ -91,6 +91,11 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 # define LUA_VERSION_NUM 0
 #endif
 
-extern int slurm_lua_dlopen(void);
+/*
+ *  Init function to dlopen() the appropriate Lua libraries, and
+ *  ensure the lua version matches what we compiled against along with other
+ *  init things.
+ */
+extern int slurm_lua_init(void);
 
 #endif
