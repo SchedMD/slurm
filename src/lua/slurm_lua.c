@@ -590,6 +590,17 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 	return 1;
 }
 
+extern int slurm_lua_isinteger(lua_State *L, int index)
+{
+	/* lua_isinteger didn't exist before lua5.3 */
+#if LUA_VERSION_NUM == 503
+	return lua_isinteger(L, index);
+#else
+	return lua_isnumber(L, index);
+#endif
+}
+
+
 /* Generic stack dump function for debugging purposes */
 extern void slurm_lua_stack_dump(const char *plugin, char *header, lua_State *L)
 {

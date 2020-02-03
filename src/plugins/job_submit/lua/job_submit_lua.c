@@ -1302,7 +1302,7 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else {
-		if (lua_isinteger(L, -1)) {
+		if (slurm_lua_isinteger(L, -1)) {
 			rc = lua_tointeger(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code",
@@ -1353,7 +1353,7 @@ extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else {
-		if (lua_isinteger(L, -1)) {
+		if (slurm_lua_isinteger(L, -1)) {
 			rc = lua_tointeger(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code",

@@ -384,7 +384,7 @@ extern int setup_defaults(slurm_opt_t *opt, bool early) {
 		error("%s/lua: %s: %s", __func__, lua_script_path,
 		      lua_tostring(L, -1));
 	} else {
-		if (lua_isinteger(L, -1)) {
+		if (slurm_lua_isinteger(L, -1)) {
 			rc = lua_tointeger(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code", __func__,
@@ -423,7 +423,7 @@ extern int pre_submit(slurm_opt_t *opt, int offset)
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else {
-		if (lua_isinteger(L, -1)) {
+		if (slurm_lua_isinteger(L, -1)) {
 			rc = lua_tointeger(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code",
@@ -456,7 +456,7 @@ extern int post_submit(int offset, uint32_t jobid, uint32_t stepid)
 		error("%s/lua: %s: %s", __func__, lua_script_path,
 		      lua_tostring(L, -1));
 	} else {
-		if (lua_isinteger(L, -1)) {
+		if (slurm_lua_isinteger(L, -1)) {
 			rc = lua_tointeger(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code", __func__,
