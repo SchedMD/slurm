@@ -691,55 +691,58 @@ extern void step_reset_env(char ***step_env_ptr, void *gres_ptr,
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */
-extern void send_stepd(int fd)
+extern void send_stepd(Buf buffer)
 {
 	int mps_cnt;
 	mps_dev_info_t *mps_ptr;
 	ListIterator itr;
 
-	common_send_stepd(fd, gres_devices);
+	common_send_stepd(buffer, gres_devices);
 
 	if (!mps_info) {
 		mps_cnt = 0;
-		safe_write(fd, &mps_cnt, sizeof(int));
+		pack32(mps_cnt, buffer);
 	} else {
 		mps_cnt = list_count(mps_info);
-		safe_write(fd, &mps_cnt, sizeof(int));
+		pack32(mps_cnt, buffer);
 		itr = list_iterator_create(mps_info);
 		while ((mps_ptr = (mps_dev_info_t *) list_next(itr))) {
-			safe_write(fd, &mps_ptr->count, sizeof(uint64_t));
-			safe_write(fd, &mps_ptr->id, sizeof(int));
+			pack64(mps_ptr->count, buffer);
+			pack64(mps_ptr->id, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
 	return;
-
-rwfail:	error("%s: failed", __func__);
-	return;
 }
 
 /* Receive GRES information from slurmd on the specified file descriptor */
-extern void recv_stepd(int fd)
+extern void recv_stepd(Buf buffer)
 {
 	int i, mps_cnt;
 	mps_dev_info_t *mps_ptr = NULL;
+	uint64_t uint64_tmp;
+	uint32_t cnt;
 
-	common_recv_stepd(fd, &gres_devices);
+	common_recv_stepd(buffer, &gres_devices);
 
-	safe_read(fd, &mps_cnt, sizeof(int));
-	if (mps_cnt) {
-		mps_info = list_create(xfree_ptr);
-		for (i = 0; i < mps_cnt; i++) {
-			mps_ptr = xmalloc(sizeof(mps_dev_info_t));
-			safe_read(fd, &mps_ptr->count, sizeof(uint64_t));
-			safe_read(fd, &mps_ptr->id, sizeof(int));
-			list_append(mps_info, mps_ptr);
-			mps_ptr = NULL;
-		}
+	safe_unpack32(&cnt, buffer);
+	mps_cnt = cnt;
+	if (!mps_cnt)
+		return;
+
+	mps_info = list_create(xfree_ptr);
+	for (i = 0; i < mps_cnt; i++) {
+		mps_ptr = xmalloc(sizeof(mps_dev_info_t));
+		safe_unpack64(&uint64_tmp, buffer);
+		mps_ptr->count = uint64_tmp;
+		safe_unpack64(&uint64_tmp, buffer);
+		mps_ptr->id = uint64_tmp;
+		list_append(mps_info, mps_ptr);
 	}
 	return;
 
-rwfail:	error("%s: failed", __func__);
+unpack_error:
+	error("%s: failed", __func__);
 	xfree(mps_ptr);
 	return;
 }

@@ -122,8 +122,8 @@ typedef struct slurm_gres_ops {
 	void		(*step_reset_env)	( char ***job_env_ptr,
 						  void *gres_ptr,
 						  bitstr_t *usable_gres );
-	void		(*send_stepd)		( int fd );
-	void		(*recv_stepd)		( int fd );
+	void		(*send_stepd)		( Buf buffer );
+	void		(*recv_stepd)		( Buf buffer );
 	int		(*job_info)		( gres_job_state_t *job_gres_data,
 						  uint32_t node_inx,
 						  enum gres_job_data_type data_type,
@@ -192,6 +192,7 @@ static bool have_gpu = false, have_mps = false;
 static uint32_t gpu_plugin_id = NO_VAL, mps_plugin_id = NO_VAL;
 static volatile uint32_t autodetect_types = GRES_AUTODETECT_NONE;
 static uint32_t select_plugin_type = NO_VAL;
+static Buf gres_context_buf = NULL;
 
 /* Local functions */
 static void _add_gres_context(char *gres_name);
@@ -759,6 +760,7 @@ extern int gres_plugin_fini(void)
 	xfree(gres_context);
 	xfree(gres_plugin_list);
 	FREE_NULL_LIST(gres_conf_list);
+	FREE_NULL_BUFFER(gres_context_buf);
 	gres_context_cnt = -1;
 
 fini:	slurm_mutex_unlock(&gres_context_lock);
@@ -1725,6 +1727,89 @@ static void _merge_config(node_config_load_t *node_conf, List gres_conf_list,
 	FREE_NULL_LIST(new_gres_list);
 }
 
+extern void _pack_gres_context(slurm_gres_context_t *ctx, Buf buffer)
+{
+	/* ctx->cur_plugin: DON'T PACK will be filled in on the other side */
+	pack8(ctx->config_flags, buffer);
+	packstr(ctx->gres_name, buffer);
+	packstr(ctx->gres_name_colon, buffer);
+	pack32((uint32_t)ctx->gres_name_colon_len, buffer);
+	packstr(ctx->gres_type, buffer);
+	/* ctx->ops: DON'T PACK will be filled in on the other side */
+	pack32(ctx->plugin_id, buffer);
+	/* ctx->plugin_list: DON'T PACK will be filled in on the other side */
+	pack64(ctx->total_cnt, buffer);
+}
+
+extern int _unpack_gres_context(slurm_gres_context_t* ctx, Buf buffer)
+{
+	uint32_t uint32_tmp;
+
+	/* ctx->cur_plugin: filled in later with _load_gres_plugin() */
+	unpack8(&ctx->config_flags, buffer);
+	safe_unpackstr_xmalloc(&ctx->gres_name, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&ctx->gres_name_colon, &uint32_tmp, buffer);
+	unpack32(&uint32_tmp, buffer);
+	ctx->gres_name_colon_len = (int)uint32_tmp;
+	safe_unpackstr_xmalloc(&ctx->gres_type, &uint32_tmp, buffer);
+	/* ctx->ops: filled in later with _load_gres_plugin() */
+	unpack32(&ctx->plugin_id, buffer);
+	/* ctx->plugin_list: filled in later with _load_gres_plugin() */
+	unpack64(&ctx->total_cnt, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("%s: unpack_error", __func__);
+	return SLURM_ERROR;
+}
+
+/* gres_context_lock should be locked before this */
+static void _pack_context_buf(void)
+{
+	FREE_NULL_BUFFER(gres_context_buf);
+
+	gres_context_buf = init_buf(0);
+	pack32(gres_context_cnt, gres_context_buf);
+	if (gres_context_cnt <= 0) {
+		debug3("%s: No GRES context count sent to stepd", __func__);
+		return;
+	}
+
+	for (int i = 0; i < gres_context_cnt; i++) {
+		slurm_gres_context_t *ctx = &gres_context[i];
+		_pack_gres_context(ctx, gres_context_buf);
+		if (ctx->ops.send_stepd)
+			(*(ctx->ops.send_stepd))(gres_context_buf);
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+}
+
+static int _unpack_context_buf(Buf buffer)
+{
+	uint32_t cnt;
+	safe_unpack32(&cnt, buffer);
+
+	gres_context_cnt = cnt;
+
+	if (!gres_context_cnt)
+		return SLURM_SUCCESS;
+
+	xrecalloc(gres_context, gres_context_cnt, sizeof(slurm_gres_context_t));
+	for (int i = 0; i < gres_context_cnt; i++) {
+		slurm_gres_context_t *ctx = &gres_context[i];
+		if (_unpack_gres_context(ctx, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		(void)_load_gres_plugin(ctx);
+		if (ctx->ops.recv_stepd)
+			(*(ctx->ops.recv_stepd))(buffer);
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("%s: failed", __func__);
+	return SLURM_ERROR;
+}
+
 /*
  * Load this node's configuration (how many resources it has, topology, etc.)
  * IN cpu_cnt - Number of CPUs configured on this node
@@ -1768,10 +1853,14 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 		xcpuinfo_ops.xcpuinfo_abs_to_mac = xcpuinfo_abs_to_mac;
 
 	rc = gres_plugin_init();
-	if (gres_context_cnt == 0)
-		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&gres_context_lock);
+
+	if (gres_context_cnt == 0) {
+		rc = SLURM_SUCCESS;
+		goto fini;
+	}
+
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(destroy_gres_slurmd_conf);
 	gres_conf_file = get_extra_conf_path("gres.conf");
@@ -1841,6 +1930,9 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 	}
 
 	list_for_each(gres_conf_list, _log_gres_slurmd_conf, NULL);
+
+fini:
+	_pack_context_buf();
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
@@ -13389,47 +13481,61 @@ extern int gres_plugin_node_count(List gres_list, int arr_len,
 /* Send GRES information to slurmstepd on the specified file descriptor */
 extern void gres_plugin_send_stepd(int fd)
 {
-	int i;
+	int len;
 
+	/* Setup the gres_device list and other plugin-specific data */
 	(void) gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
-	for (i = 0; i < gres_context_cnt; i++) {
-		safe_write(fd, &gres_context[i].config_flags, sizeof(uint8_t));
-		if (gres_context[i].ops.send_stepd == NULL)
-			continue;	/* No plugin to call */
-		(*(gres_context[i].ops.send_stepd)) (fd);
-	}
+	xassert(gres_context_buf);
+
+	len = get_buf_offset(gres_context_buf);
+	safe_write(fd, &len, sizeof(len));
+	safe_write(fd, get_buf_data(gres_context_buf), len);
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return;
 rwfail:
 	error("%s: failed", __func__);
 	slurm_mutex_unlock(&gres_context_lock);
+
+	return;
 }
 
 /* Receive GRES information from slurmd on the specified file descriptor */
 extern void gres_plugin_recv_stepd(int fd)
 {
-	int i;
-
-	(void) gres_plugin_init();
+	int len, rc;
+	Buf buffer = NULL;
 
 	slurm_mutex_lock(&gres_context_lock);
-	for (i = 0; i < gres_context_cnt; i++) {
-		safe_read(fd, &gres_context[i].config_flags, sizeof(uint8_t));
-		(void)_load_gres_plugin(&gres_context[i]);
 
-		if (gres_context[i].ops.recv_stepd == NULL)
-			continue;	/* No plugin to call */
-		(*(gres_context[i].ops.recv_stepd)) (fd);
-	}
+	safe_read(fd, &len, sizeof(int));
+
+	buffer = init_buf(len);
+	safe_read(fd, buffer->head, len);
+
+	rc = _unpack_context_buf(buffer);
+
+	if (rc == SLURM_ERROR)
+		goto rwfail;
+
+	FREE_NULL_BUFFER(buffer);
 	slurm_mutex_unlock(&gres_context_lock);
+
+	/* Set debug flags and init_run only */
+	(void) gres_plugin_init();
 
 	return;
 rwfail:
+	FREE_NULL_BUFFER(buffer);
 	error("%s: failed", __func__);
 	slurm_mutex_unlock(&gres_context_lock);
+
+	/* Set debug flags and init_run only */
+	(void) gres_plugin_init();
+
+	return;
 }
 
 /* Get generic GRES data types here. Call the plugin for others */
