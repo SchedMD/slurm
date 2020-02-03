@@ -101,6 +101,7 @@ documents those changes that are of interest to users and administrators.
  -- Prolog/Epilog - add SLURM_JOB_GID environment variable.
  -- Add gpu/rsmi plugin to support AMD GPUs
  -- Make it so you can "stack" the energy plugins
+ -- Add energy accounting plugin for AMD GPU
 
 * Changes in Slurm 19.05.6
 ==========================
