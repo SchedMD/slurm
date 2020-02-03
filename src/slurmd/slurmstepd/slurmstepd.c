@@ -350,12 +350,12 @@ static int _get_jobid_uid_gid_from_env(uint32_t *jobid, uid_t *uid, gid_t *gid)
 	if (*p != '\0')
 		return error("Invalid SLURM_UID=%s", val);
 
-	if (!(val = getenv("SLURM_GID")))
-		return error("Unable to get SLURM_GID in env!");
+	if (!(val = getenv("SLURM_JOB_GID")))
+		return error("Unable to get SLURM_JOB_GID in env!");
 
 	*gid = (gid_t) strtoul(val, &p, 10);
 	if (*p != '\0')
-		return error("Invalid SLURM_GID=%s", val);
+		return error("Invalid SLURM_JOB_GID=%s", val);
 
 	return SLURM_SUCCESS;
 }
