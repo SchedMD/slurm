@@ -184,10 +184,10 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	job_options.lo global_defaults.lo timers.lo track_script.lo \
 	stepd_api.lo write_labelled_message.lo proc_args.lo \
 	node_conf.lo gpu.lo gres.lo entity.lo layout.lo layouts_mgr.lo \
-	mapping.lo xcgroup_read_config.lo xlua.lo callerid.lo \
-	group_cache.lo slurm_persist_conn.lo run_command.lo \
-	x11_util.lo half_duplex.lo state_control.lo site_factor.lo \
-	cli_filter.lo tres_bind.lo tres_frequency.lo
+	mapping.lo xcgroup_read_config.lo callerid.lo group_cache.lo \
+	slurm_persist_conn.lo run_command.lo x11_util.lo \
+	half_duplex.lo state_control.lo site_factor.lo cli_filter.lo \
+	tres_bind.lo tres_frequency.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -289,9 +289,8 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/write_labelled_message.Plo \
 	./$(DEPDIR)/x11_util.Plo ./$(DEPDIR)/xassert.Plo \
 	./$(DEPDIR)/xcgroup_read_config.Plo ./$(DEPDIR)/xhash.Plo \
-	./$(DEPDIR)/xlua.Plo ./$(DEPDIR)/xmalloc.Plo \
-	./$(DEPDIR)/xsignal.Plo ./$(DEPDIR)/xstring.Plo \
-	./$(DEPDIR)/xtree.Plo
+	./$(DEPDIR)/xmalloc.Plo ./$(DEPDIR)/xsignal.Plo \
+	./$(DEPDIR)/xstring.Plo ./$(DEPDIR)/xtree.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -596,7 +595,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -I$(top_srcdir) $(lua_CFLAGS) -DSBINDIR=\"$(sbindir)\"
+AM_CPPFLAGS = -I$(top_srcdir) -DSBINDIR=\"$(sbindir)\"
 noinst_LTLIBRARIES = \
 	libcommon.la 			\
 	libdaemonize.la 		\
@@ -707,7 +706,6 @@ libcommon_la_SOURCES = \
 	layouts_mgr.h layouts_mgr.c	\
 	mapping.c mapping.h		\
 	xcgroup_read_config.c xcgroup_read_config.h \
-	xlua.c xlua.h                   \
 	callerid.c callerid.h		\
 	group_cache.c group_cache.h	\
 	slurm_persist_conn.c slurm_persist_conn.h \
@@ -923,7 +921,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xassert.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcgroup_read_config.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xhash.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xlua.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmalloc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xsignal.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xstring.Plo@am__quote@ # am--include-marker
@@ -1187,7 +1184,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/xassert.Plo
 	-rm -f ./$(DEPDIR)/xcgroup_read_config.Plo
 	-rm -f ./$(DEPDIR)/xhash.Plo
-	-rm -f ./$(DEPDIR)/xlua.Plo
 	-rm -f ./$(DEPDIR)/xmalloc.Plo
 	-rm -f ./$(DEPDIR)/xsignal.Plo
 	-rm -f ./$(DEPDIR)/xstring.Plo
@@ -1337,7 +1333,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/xassert.Plo
 	-rm -f ./$(DEPDIR)/xcgroup_read_config.Plo
 	-rm -f ./$(DEPDIR)/xhash.Plo
-	-rm -f ./$(DEPDIR)/xlua.Plo
 	-rm -f ./$(DEPDIR)/xmalloc.Plo
 	-rm -f ./$(DEPDIR)/xsignal.Plo
 	-rm -f ./$(DEPDIR)/xstring.Plo

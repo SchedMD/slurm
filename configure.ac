@@ -412,6 +412,7 @@ AC_CONFIG_FILES([Makefile
 		 src/layouts/Makefile
 		 src/layouts/power/Makefile
 		 src/layouts/unit/Makefile
+		 src/lua/Makefile
 		 src/sacct/Makefile
 		 src/sacctmgr/Makefile
 		 src/sreport/Makefile
@@ -471,7 +472,11 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/burst_buffer/datawarp/Makefile
 		 src/plugins/burst_buffer/generic/Makefile
 		 src/plugins/cli_filter/Makefile
+		 src/plugins/cli_filter/common/Makefile
+		 src/plugins/cli_filter/lua/Makefile
 		 src/plugins/cli_filter/none/Makefile
+		 src/plugins/cli_filter/syslog/Makefile
+		 src/plugins/cli_filter/user_defaults/Makefile
 		 src/plugins/core_spec/Makefile
 		 src/plugins/core_spec/cray_aries/Makefile
 		 src/plugins/core_spec/none/Makefile
@@ -498,6 +503,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/elasticsearch/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
+		 src/plugins/jobcomp/lua/Makefile
 		 src/plugins/jobcomp/none/Makefile
 		 src/plugins/jobcomp/script/Makefile
 		 src/plugins/jobcomp/mysql/Makefile

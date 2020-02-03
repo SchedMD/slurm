@@ -1,3 +1,3 @@
 # Makefile for jobcomp plugins
 
-SUBDIRS = elasticsearch filetxt none script mysql
+SUBDIRS = elasticsearch filetxt lua none script mysql

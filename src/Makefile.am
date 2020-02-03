@@ -4,6 +4,7 @@ SUBDIRS =		\
 	common		\
 	database	\
 	layouts		\
+	lua		\
 	plugins		\
 	sacct		\
 	sacctmgr	\

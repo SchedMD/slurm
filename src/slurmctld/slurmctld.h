@@ -1289,7 +1289,7 @@ extern char **get_job_env(job_record_t *job_ptr, uint32_t *env_size);
  * IN job_ptr - pointer to job for which data is required
  * RET Buf containing job script
  */
-extern Buf get_job_script(job_record_t *job_ptr);
+extern Buf get_job_script(const job_record_t *job_ptr);
 
 /*
  * Return the next available job_id to be used.

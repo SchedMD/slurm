@@ -476,9 +476,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = \
-	none
-
+SUBDIRS = common lua none syslog user_defaults
 all: all-recursive
 
 .SUFFIXES:

@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for job_submit/lua plugin
+# Makefile for cli_filter/defaults plugin
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -91,7 +91,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/job_submit/lua
+subdir = src/plugins/cli_filter/syslog
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_check_zlib.m4 \
@@ -174,23 +174,17 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-am__DEPENDENCIES_1 =
-@HAVE_LUA_TRUE@job_submit_lua_la_DEPENDENCIES =  \
-@HAVE_LUA_TRUE@	$(top_builddir)/src/lua/libslurm_lua.la \
-@HAVE_LUA_TRUE@	$(am__DEPENDENCIES_1)
-am__job_submit_lua_la_SOURCES_DIST = job_submit_lua.c
-@HAVE_LUA_TRUE@am_job_submit_lua_la_OBJECTS = job_submit_lua.lo
-am__EXTRA_job_submit_lua_la_SOURCES_DIST = job_submit_lua.c
-job_submit_lua_la_OBJECTS = $(am_job_submit_lua_la_OBJECTS)
+cli_filter_syslog_la_DEPENDENCIES = ../common/libcli_filter_common.la
+am_cli_filter_syslog_la_OBJECTS = cli_filter_syslog.lo
+cli_filter_syslog_la_OBJECTS = $(am_cli_filter_syslog_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-job_submit_lua_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+cli_filter_syslog_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(job_submit_lua_la_LDFLAGS) $(LDFLAGS) \
-	-o $@
-@HAVE_LUA_TRUE@am_job_submit_lua_la_rpath = -rpath $(pkglibdir)
+	$(AM_CFLAGS) $(CFLAGS) $(cli_filter_syslog_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -206,7 +200,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/job_submit_lua.Plo
+am__depfiles_remade = ./$(DEPDIR)/cli_filter_syslog.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -226,10 +220,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(job_submit_lua_la_SOURCES) \
-	$(EXTRA_job_submit_lua_la_SOURCES)
-DIST_SOURCES = $(am__job_submit_lua_la_SOURCES_DIST) \
-	$(am__EXTRA_job_submit_lua_la_SOURCES_DIST)
+SOURCES = $(cli_filter_syslog_la_SOURCES)
+DIST_SOURCES = $(cli_filter_syslog_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -507,19 +499,14 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -DDEFAULT_SCRIPT_DIR=\"$(sysconfdir)\" \
-	-I$(top_srcdir) -I$(top_srcdir)/src/common $(lua_CFLAGS)
-
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
+pkglib_LTLIBRARIES = cli_filter_syslog.la
 
-# Job submit lua plugin.
-@HAVE_LUA_TRUE@pkglib_LTLIBRARIES = job_submit_lua.la
-@HAVE_LUA_TRUE@job_submit_lua_la_SOURCES = job_submit_lua.c
-@HAVE_LUA_TRUE@job_submit_lua_la_LDFLAGS = $(PLUGIN_FLAGS)
-@HAVE_LUA_TRUE@job_submit_lua_la_LIBADD = $(top_builddir)/src/lua/libslurm_lua.la \
-@HAVE_LUA_TRUE@			    $(lua_LIBS)
-
-@HAVE_LUA_FALSE@EXTRA_job_submit_lua_la_SOURCES = job_submit_lua.c
+# Job submit defaults plugin.
+cli_filter_syslog_la_SOURCES = cli_filter_syslog.c
+cli_filter_syslog_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+cli_filter_syslog_la_LIBADD = ../common/libcli_filter_common.la
 all: all-am
 
 .SUFFIXES:
@@ -533,9 +520,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/job_submit/lua/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/cli_filter/syslog/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/job_submit/lua/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/cli_filter/syslog/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -589,8 +576,8 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-job_submit_lua.la: $(job_submit_lua_la_OBJECTS) $(job_submit_lua_la_DEPENDENCIES) $(EXTRA_job_submit_lua_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(job_submit_lua_la_LINK) $(am_job_submit_lua_la_rpath) $(job_submit_lua_la_OBJECTS) $(job_submit_lua_la_LIBADD) $(LIBS)
+cli_filter_syslog.la: $(cli_filter_syslog_la_OBJECTS) $(cli_filter_syslog_la_DEPENDENCIES) $(EXTRA_cli_filter_syslog_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(cli_filter_syslog_la_LINK) -rpath $(pkglibdir) $(cli_filter_syslog_la_OBJECTS) $(cli_filter_syslog_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -598,7 +585,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_submit_lua.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cli_filter_syslog.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -761,7 +748,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/job_submit_lua.Plo
+		-rm -f ./$(DEPDIR)/cli_filter_syslog.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -807,7 +794,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/job_submit_lua.Plo
+		-rm -f ./$(DEPDIR)/cli_filter_syslog.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
