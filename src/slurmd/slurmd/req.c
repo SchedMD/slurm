@@ -635,9 +635,6 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		safe_write(fd, &len, sizeof(int));
 	}
 
-	/* Send GRES information to slurmstepd */
-	gres_plugin_send_stepd(fd);
-
 	/* send cpu_frequency info to slurmstepd */
 	cpu_freq_send_info(fd);
 
@@ -668,6 +665,9 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	safe_write(fd, get_buf_data(buffer), len);
 	free_buf(buffer);
 	buffer = NULL;
+
+	/* Send GRES information to slurmstepd */
+	gres_plugin_send_stepd(fd);
 
 	return 0;
 
