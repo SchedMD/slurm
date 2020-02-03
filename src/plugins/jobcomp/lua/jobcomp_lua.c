@@ -197,6 +197,9 @@ extern int fini(void)
 		L = NULL;
 		lua_script_last_loaded = 0;
 	}
+
+	slurm_lua_fini();
+
 	return SLURM_SUCCESS;
 }
 

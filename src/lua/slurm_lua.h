@@ -98,4 +98,9 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
  */
 extern int slurm_lua_init(void);
 
+/*
+ * Close down the lib, free memory and such.
+ */
+extern void slurm_lua_fini(void);
+
 #endif

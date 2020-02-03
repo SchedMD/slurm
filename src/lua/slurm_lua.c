@@ -766,3 +766,10 @@ extern int slurm_lua_init(void)
 	}
 	return SLURM_SUCCESS;
 }
+
+/*
+ * Close down the lib, free memory and such.
+ */
+extern void slurm_lua_fini(void)
+{
+}

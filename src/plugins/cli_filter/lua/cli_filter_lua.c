@@ -130,6 +130,9 @@ int fini(void)
 	xfree(stored_data);
 
         lua_close (L);
+
+	slurm_lua_fini();
+
         return SLURM_SUCCESS;
 }
 
