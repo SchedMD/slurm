@@ -3076,11 +3076,9 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 
 			if (added_clusters || removed_clusters) {
 				lock_slurmctld(fedr_jobw_lock);
-				if (slurmctld_conf.debug_flags &
-				    DEBUG_FLAG_DEPENDENCY)
-					info("%s: Cluster(s) added: 0x%lx; removed: 0x%lx",
-					     __func__, added_clusters,
-					     removed_clusters);
+				log_flag(DEPENDENCY, "%s: Cluster(s) added: 0x%"PRIx64"; removed: 0x%"PRIx64,
+					 __func__, added_clusters,
+					 removed_clusters);
 				_handle_dependencies_for_modified_fed(
 							added_clusters,
 							removed_clusters);
