@@ -187,6 +187,11 @@ int slurm_auth_verify(auth_token_t *cred, char *auth_info)
 		return SLURM_SUCCESS;
 	}
 
+	if (!cred->token) {
+		error("%s: reject NULL token for jwt_decode", __func__);
+		goto fail;
+	}
+
 	if (jwt_decode(&jwt, cred->token,
 		       (unsigned char *) key->head, key->size) ||
 	    !jwt) {
