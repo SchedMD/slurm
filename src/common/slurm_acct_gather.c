@@ -68,7 +68,7 @@ static int _get_int(const char *my_str)
 	return value;
 }
 
-extern int _process_tbl(s_p_hashtbl_t *tbl)
+static int _process_tbl(s_p_hashtbl_t *tbl)
 {
 	int rc = 0;
 
