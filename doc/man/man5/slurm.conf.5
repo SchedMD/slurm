@@ -1463,8 +1463,12 @@ Also see \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBMaxMemPerNode\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
 
 NOTE: If a job specifies a memory per CPU limit that exceeds this system limit,
-that job's count of CPUs per task will automatically be increased. This may
-result in the job failing due to CPU count limits.
+that job's count of CPUs per task will try to automatically increase. This
+may result in the job failing due to CPU count limits. This auto-adjustment
+feature is a best-effort one and optimal assignment is not guaranteed due to the
+possibility of having heterogeneous configurations and multi-partition/qos jobs.
+If this is a concern it is advised to use a job submit LUA plugin instead to
+enforce auto-adjustments to your specific needs.
 
 .TP
 \fBMaxMemPerNode\fR
