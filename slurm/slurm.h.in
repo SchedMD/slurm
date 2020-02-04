@@ -896,7 +896,7 @@ enum ctx_keys {
 	SLURM_STEP_CTX_DEF_CPU_BIND_TYPE
 };
 
-/* CR_CPU, CR_SOCKET and CR_CORE are mututally exclusive
+/* CR_CPU, CR_SOCKET and CR_CORE are mutually exclusive
  * CR_MEMORY may be added to any of the above values or used by itself
  * CR_ONE_TASK_PER_CORE may also be added to any of the above values */
 #define CR_CPU		0x0001	/* Resources are shared down to the level of
