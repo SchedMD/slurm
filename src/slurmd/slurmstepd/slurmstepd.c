@@ -634,7 +634,7 @@ _init_from_slurmd(int sock, char **argv,
 	}
 
 	/* Receive GRES information from slurmd */
-	gres_plugin_recv_stepd(sock);
+	gres_plugin_recv_stepd(sock, msg);
 
 	_set_job_log_prefix(jobid, stepid);
 

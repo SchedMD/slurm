@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 20.11.0pre1
 ==============================
  -- Fix corner case issue with interrupted resource allocation requests.
+ -- Pack all gres information in the slurmd to send to the stepd to help
+    reduce calls in the stepd to read gres.conf.
 
 * Changes in Slurm 20.02.1
 ==========================

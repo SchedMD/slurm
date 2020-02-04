@@ -667,7 +667,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	buffer = NULL;
 
 	/* Send GRES information to slurmstepd */
-	gres_plugin_send_stepd(fd);
+	gres_plugin_send_stepd(fd, &msg);
 
 	return 0;
 

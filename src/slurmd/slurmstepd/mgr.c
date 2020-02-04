@@ -1229,20 +1229,6 @@ job_manager(stepd_step_rec_t *job)
 	if (job->stepid == SLURM_EXTERN_CONT)
 		return _spawn_job_container(job);
 
-	if (!job->batch && (job->accel_bind_type || job->tres_bind ||
-	    job->tres_freq)) {
-		List gres_list = NULL;
-		(void) gres_plugin_init_node_config(conf->node_name,
-						    conf->gres,
-						    &gres_list);
-		debug2("Running gres_plugin_node_config_load()!");
-		(void) gres_plugin_node_config_load(conf->cpus, conf->node_name,
-						gres_list,
-						(void *)&xcpuinfo_abs_to_mac,
-						(void *)&xcpuinfo_mac_to_abs);
-		FREE_NULL_LIST(gres_list);
-	}
-
 	debug2("Before call to spank_init()");
 	if (spank_init (job) < 0) {
 		error ("Plugin stack initialization failed.");

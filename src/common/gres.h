@@ -393,10 +393,10 @@ extern int gres_plugin_node_config_pack(Buf buffer);
 extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job);
 
 /* Send GRES information to slurmstepd on the specified file descriptor */
-extern void gres_plugin_send_stepd(int fd);
+extern void gres_plugin_send_stepd(int fd, slurm_msg_t *msg);
 
 /* Receive GRES information from slurmd on the specified file descriptor */
-extern void gres_plugin_recv_stepd(int fd);
+extern void gres_plugin_recv_stepd(int fd, slurm_msg_t *msg);
 
 /*
  **************************************************************************
