@@ -3427,8 +3427,9 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer)
 	}
 
 	if (rc != SLURM_SUCCESS) {
-		error("%s: %s has authentication error: %m",
-		      __func__, rpc_num2string(header.msg_type));
+		error("%s: %s has authentication error: %s",
+		      __func__, rpc_num2string(header.msg_type),
+		      slurm_strerror(rc));
 		(void) g_slurm_auth_destroy(auth_cred);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto total_return;
