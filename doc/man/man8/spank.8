@@ -104,7 +104,9 @@ Called for each task just after fork, but before all elevated privileges
 are dropped. (remote context only)
 .TP
 \fBslurm_spank_task_init\fR
-Called for each task just before execve (2). (remote context only)
+Called for each task just before execve (2). If you are restricing memory
+with cgroups, memory allocated here will be in the job's cgroup. (remote
+context only)
 .TP
 \fBslurm_spank_task_post_fork\fR
 Called for each task from parent process after fork (2) is complete.
