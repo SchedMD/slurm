@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "January 2020" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "February 2020" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -615,7 +615,7 @@ The specified deadline must be later than the current time.
 Only pending jobs can have the deadline updated.
 Only the Slurm administrator or root can change this parameter.
 .TP
-\fBDelayBoot\fP=<time_spec>
+\fIDelayBoot\fP=<time_spec>
 Change the time to decide whether to reboot nodes in order to satisfy job's
 feature specification if the job has been eligible to run for less than this
 time period. See salloc/sbatch man pages option \-\-delay\-boot.
@@ -814,7 +814,7 @@ Only the Slurm administrator or root can increase job's priority.
 Set the job's QOS (Quality Of Service) to the specified value.
 Value may be cleared with blank data value, "QOS=".
 .TP
-\fBReboot\fP=<yes|no>
+\fIReboot\fP=<yes|no>
 Set the job's flag that specifies whether to force the allocated nodes to reboot
 before starting the job. This is only supported with some system configurations
 and therefore it could be silently ignored.
@@ -1489,7 +1489,10 @@ have already begun execution.
 Set the minimum number of nodes which will be allocated to any single job
 in the partition.
 Changing the \fIMinNodes\fP of a partition has no effect upon jobs that
-have already begun execution.
+have already begun execution. Increasing this value may prevent pending jobs
+from starting, even if they were submitted without -N/--nodes specification.
+If you do get in that situation, updating the \fIMinNodes\fP value of a
+pending job using the scontrol command will allow that job to be scheduled.
 
 .TP
 \fINodes\fP=<name>

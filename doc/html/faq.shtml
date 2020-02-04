@@ -618,15 +618,17 @@ http://groups.google.com/group/slurm-users</a></p>
 
 <p><a name="job_size"><b>24. Can I change my job's size after it has started
 running?</b></a><br>
-Slurm supports the ability to both increase and decrease the size of running jobs.
+Slurm supports the ability to both increase and decrease the size of jobs.
 While the size of a pending job may be changed with few restrictions, several
-significant restrictions apply to changing the size of a running job as noted
+significant restrictions apply to changing the size of a running job, as noted
 below:
 <ol>
+<li>Requesting fewer hardware resources, and changing partition, qos,
+reservation, licenses, etc. is only allowed for pending jobs.</li>
 <li>Job(s) changing size must not be in a suspended state, including jobs
 suspended for gang scheduling. The jobs must be in a state of pending or
 running.</li>
-<li>Job expansion for runnings jobs is disabled by default.
+<li>Job expansion for running jobs is disabled by default.
 Site administrators can enable this capability by setting
 <i>SchedulerParameters=permit_job_expansion</i> in <i>slurm.conf</i></li>
 </ol>
@@ -646,8 +648,8 @@ reset local environment variables.
 You must retain the SLURM_JOB_ID environment variable in order for the
 <i>srun</i> command to gather information about the job's current state and
 specify the desired node and/or task count in subsequent <i>srun</i> invocations.
-A new accounting record is generated when a job is resized showing the to have
-been resubmitted and restarted at the new size.
+A new accounting record is generated when a job is resized, showing the job to
+have been resubmitted and restarted at the new size.
 An example is shown below.</p>
 <pre>
 #!/bin/bash
