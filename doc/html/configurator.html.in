@@ -484,7 +484,10 @@ control<BR>
 <H2>Resource Selection</H2>
 Define resource (node) selection algorithm to be used.<BR>
 Select one value for <B>SelectType</B>:<BR>
-<input type="radio" name="select_type" value="cons_res" checked>
+<input type="radio" name="select_type" value="cons_tres" checked>
+<b>cons_tres</b>: Allocate individual processors, memory, GPUs, and other
+trackable resources<br />
+<input type="radio" name="select_type" value="cons_res">
 <B>Cons_res</B>: Allocate individual processors and memory<BR>
 <input type="radio" name="select_type" value="cray_aries">
 <B>Cray XC</B>: Cray XC systems running native Slurm without ALPS<BR>
