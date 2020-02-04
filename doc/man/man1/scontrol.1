@@ -658,7 +658,7 @@ The specified deadline must be later than the current time.
 Only pending jobs can have the deadline updated.
 Only the Slurm administrator or root can change this parameter.
 .TP
-\fBDelayBoot\fP=<time_spec>
+\fIDelayBoot\fP=<time_spec>
 Change the time to decide whether to reboot nodes in order to satisfy job's
 feature specification if the job has been eligible to run for less than this
 time period. See salloc/sbatch man pages option \-\-delay\-boot.
@@ -841,7 +841,7 @@ Only the Slurm administrator or root can increase job's priority.
 Set the job's QOS (Quality Of Service) to the specified value.
 Value may be cleared with blank data value, "QOS=".
 .TP
-\fBReboot\fP=<yes|no>
+\fIReboot\fP=<yes|no>
 Set the job's flag that specifies whether to force the allocated nodes to reboot
 before starting the job. This is only supported with some system configurations
 and therefore it could be silently ignored.
