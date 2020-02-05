@@ -285,8 +285,7 @@ extern void print_fields_double(print_field_t *field, double value, int last)
 			xstrfmtcat(tmp, "%*f", abs_len, value);
 			length = strlen(tmp);
 			if (length > width) {
-				xstrfmtcat(tmp, "%*.*e", width,
-				           width, value);
+				xstrfmtcat(tmp, "%*.*e", width, width, value);
 				new_length = strlen(tmp) - length;
 				if (new_length > width)
 					width -= new_length - width;
