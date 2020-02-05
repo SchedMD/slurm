@@ -854,6 +854,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 .PRECIOUS: Makefile
 
 
+@HAVE_LUA_TRUE@force:
+@HAVE_LUA_TRUE@$(cli_filter_lua_la_LIBADD) : force
+@HAVE_LUA_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
+
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

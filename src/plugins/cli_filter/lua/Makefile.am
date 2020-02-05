@@ -18,6 +18,10 @@ cli_filter_lua_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 cli_filter_lua_la_LIBADD = ../common/libcli_filter_common.la \
 			   $(top_builddir)/src/lua/libslurm_lua.la \
 			   $(lua_LIBS)
+
+force:
+$(cli_filter_lua_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 else
 EXTRA_cli_filter_lua_la_SOURCES = cli_filter_lua.c
 endif
