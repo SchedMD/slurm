@@ -210,15 +210,18 @@ int slurm_auth_verify(auth_token_t *cred, char *auth_info)
 
 	if (!cred->username)
 		cred->username = username;
-	else {
+	else if (!xstrcmp(cred->username, username)) {
+		/* if they match, ignore it, they were being redundant */
+		xfree(username);
+	} else {
 		uid_t uid;
 		if (uid_from_string(username, &uid)) {
 			error("%s: uid_from_string failure", __func__);
 			goto fail;
 		}
 		if (!validate_slurm_user(uid)) {
-			error("%s: attempt to authenticate as alternate user from non-SlurmUser",
-			      __func__);
+			error("%s: attempt to authenticate as alternate user %s from non-SlurmUser %s",
+			      __func__, username, cred->username);
 			goto fail;
 		}
 		/* use the packed username instead of the token value */
