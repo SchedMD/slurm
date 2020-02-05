@@ -126,50 +126,6 @@ void *acct_db_conn = NULL;
  * please post it to slurm-dev@schedmd.com  Thanks!
 \*****************************************************************************/
 
-static int _log_lua_user_msg (lua_State *L)
-{
-	const char *msg = lua_tostring(L, -1);
-	char *tmp = NULL;
-
-	if (user_msg) {
-		xstrfmtcat(tmp, "%s\n%s", user_msg, msg);
-		xfree(user_msg);
-		user_msg = tmp;
-		tmp = NULL;
-	} else {
-		user_msg = xstrdup(msg);
-	}
-
-	return (0);
-}
-
-static const struct luaL_Reg slurm_functions [] = {
-	{ "user_msg",   _log_lua_user_msg },
-	{ NULL,         NULL        }
-};
-
-
-static void _register_local_output_functions(lua_State *L)
-{
-	char *unpack_str;
-	char tmp_string[100];
-
-#if LUA_VERSION_NUM == 501
-	unpack_str = "unpack";
-#else
-	unpack_str = "table.unpack";
-#endif
-
-	lua_getglobal(L, "slurm");
-	slurm_lua_table_register(L, NULL, slurm_functions);
-	snprintf(tmp_string, sizeof(tmp_string),
-		 "slurm.user_msg (string.format(%s({...})))",
-		 unpack_str);
-	luaL_loadstring(L, tmp_string);
-	lua_setfield(L, -2, "log_user");
-	lua_pop(L, -1);
-}
-
 /* Get the default account for a user (or NULL if not present) */
 static char *_get_default_account(uint32_t user_id)
 {
@@ -1193,6 +1149,51 @@ static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 		lua_setfield(L, -2, part_ptr->name);
 	}
 	list_iterator_destroy(part_iterator);
+}
+
+
+static int _log_lua_user_msg (lua_State *L)
+{
+	const char *msg = lua_tostring(L, -1);
+	char *tmp = NULL;
+
+	if (user_msg) {
+		xstrfmtcat(tmp, "%s\n%s", user_msg, msg);
+		xfree(user_msg);
+		user_msg = tmp;
+		tmp = NULL;
+	} else {
+		user_msg = xstrdup(msg);
+	}
+
+	return (0);
+}
+
+static const struct luaL_Reg slurm_functions [] = {
+	{ "user_msg",   _log_lua_user_msg },
+	{ NULL,         NULL        }
+};
+
+
+static void _register_local_output_functions(lua_State *L)
+{
+	char *unpack_str;
+	char tmp_string[100];
+
+#if LUA_VERSION_NUM == 501
+	unpack_str = "unpack";
+#else
+	unpack_str = "table.unpack";
+#endif
+
+	lua_getglobal(L, "slurm");
+	slurm_lua_table_register(L, NULL, slurm_functions);
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.user_msg (string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring(L, tmp_string);
+	lua_setfield(L, -2, "log_user");
+	lua_pop(L, -1);
 }
 
 static void _register_lua_slurm_struct_functions(lua_State *st)
