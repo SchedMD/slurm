@@ -339,6 +339,15 @@ static int _retrieve_data(lua_State *L)
 	return 1;
 }
 
+static void _loadscript_extra(lua_State *st)
+{
+        /* local setup */
+	slurm_lua_table_register(st, NULL, slurm_functions);
+
+	/* Must be always done after we register the slurm_functions */
+	lua_setglobal(L, "slurm");
+}
+
 static int _load_script(void)
 {
         lua_State *load = NULL;
@@ -351,16 +360,12 @@ static int _load_script(void)
         };
 
         load = slurm_lua_loadscript(L, "cli_filter/lua",
-				    lua_script_path, req_fxns, &load_time);
+				    lua_script_path, req_fxns, &load_time,
+				    _loadscript_extra);
         if (load == L)
                 return SLURM_SUCCESS;
         if (!load)
                 return SLURM_ERROR;
-
-        /* local setup */
-	lua_getglobal(load, "slurm");
-	slurm_lua_table_register(load, NULL, slurm_functions);
-	lua_pop(load, -1);
 
         /* since complete finished error free, swap the states */
         if (L)

@@ -100,16 +100,11 @@ static int _load_script(void)
 	};
 
 	load = slurm_lua_loadscript(L, "jobcomp/lua", lua_script_path,
-				    req_fxns, &load_time);
+				    req_fxns, &load_time, NULL);
 	if (load == L)
 		return SLURM_SUCCESS;
 	if (!load)
 		return SLURM_ERROR;
-
-	/* local setup */
-	lua_getglobal(load, "slurm");
-	slurm_lua_register_slurm_output_functions(load);
-	lua_pop(load, -1);
 
 	/* since complete finished error free, swap the states */
 	if (L)

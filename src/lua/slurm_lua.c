@@ -181,6 +181,7 @@ extern void slurm_lua_register_slurm_output_functions(lua_State *L)
 	 */
 	lua_newtable(L);
 	slurm_lua_table_register(L, NULL, slurm_functions);
+
 	/*
 	 *  Create more user-friendly lua versions of Slurm log functions.
 	 */
@@ -317,8 +318,6 @@ extern void slurm_lua_register_slurm_output_functions(lua_State *L)
 
 	lua_pushstring(L, cluster_name);
 	lua_setfield(L, -2, "CLUSTER_NAME");
-
-	lua_setglobal(L, "slurm");
 }
 
 /*
@@ -634,7 +633,8 @@ extern void slurm_lua_stack_dump(const char *plugin, char *header, lua_State *L)
 extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
 				       const char *script_path,
 				       const char **req_fxns,
-				       time_t *load_time)
+				       time_t *load_time,
+				       void (*local_options)(lua_State *L))
 {
 
 	lua_State *new = NULL;
@@ -689,6 +689,11 @@ extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
 	 *  logging and slurm structure read/write functions
 	 */
 	slurm_lua_register_slurm_output_functions(new);
+	if (*(local_options))
+		(*(local_options))(new);
+	else
+		lua_setglobal(new, "slurm"); /* done in local_options */
+
 
 	/*
 	 *  Run the user script:

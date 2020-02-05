@@ -1186,14 +1186,20 @@ static void _register_local_output_functions(lua_State *L)
 	unpack_str = "table.unpack";
 #endif
 
-	lua_getglobal(L, "slurm");
 	slurm_lua_table_register(L, NULL, slurm_functions);
 	snprintf(tmp_string, sizeof(tmp_string),
 		 "slurm.user_msg (string.format(%s({...})))",
 		 unpack_str);
 	luaL_loadstring(L, tmp_string);
 	lua_setfield(L, -2, "log_user");
-	lua_pop(L, -1);
+
+	/* Must be always done after we register the slurm_functions */
+	lua_setglobal(L, "slurm");
+
+	last_lua_jobs_update = 0;
+	_update_jobs_global(L);
+	last_lua_resv_update = 0;
+	_update_resvs_global(L);
 }
 
 static void _register_lua_slurm_struct_functions(lua_State *st)
@@ -1210,6 +1216,13 @@ static void _register_lua_slurm_struct_functions(lua_State *st)
 	lua_setglobal(st, "_get_part_rec_field");
 }
 
+static void _loadscript_extra(lua_State *st)
+{
+	/* local setup */
+	_register_local_output_functions(st);
+	_register_lua_slurm_struct_functions(st);
+}
+
 static int _load_script(void)
 {
 	lua_State *load = NULL;
@@ -1221,19 +1234,12 @@ static int _load_script(void)
 	};
 
 	load = slurm_lua_loadscript(L, "job_submit/lua",
-				    lua_script_path, req_fxns, &load_time);
+				    lua_script_path, req_fxns, &load_time,
+				    _loadscript_extra);
 	if (load == L)
 		return SLURM_SUCCESS;
 	if (!load)
 		return SLURM_ERROR;
-
-	/* local setup */
-	_register_local_output_functions(load);
-	_register_lua_slurm_struct_functions(load);
-	last_lua_jobs_update = 0;
-	_update_jobs_global(load);
-	last_lua_resv_update = 0;
-	_update_resvs_global(load);
 
 	/* since complete finished error free, swap the states */
 	if (L)
