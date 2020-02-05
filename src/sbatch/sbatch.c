@@ -351,6 +351,7 @@ int main(int argc, char **argv)
 	slurm_conf_destroy();
 	log_fini();
 #endif /* MEMORY_LEAK_DEBUG */
+	xfree(script_body);
 
 	return rc;
 }
