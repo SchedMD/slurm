@@ -154,19 +154,7 @@ static const struct luaL_Reg slurm_functions [] = {
 	{ NULL, NULL }
 };
 
-extern void slurm_lua_table_register(lua_State *L, const char *libname,
-				     const luaL_Reg *l)
-{
-#if LUA_VERSION_NUM == 501
-	luaL_register(L, libname, l);
-#else
-	luaL_setfuncs(L, l, 0);
-	if (libname)
-		lua_setglobal(L, libname);
-#endif
-}
-
-extern void slurm_lua_register_slurm_output_functions(lua_State *L)
+static void _register_slurm_output_functions(lua_State *L)
 {
 	char *unpack_str;
 	char tmp_string[100];
@@ -318,6 +306,18 @@ extern void slurm_lua_register_slurm_output_functions(lua_State *L)
 
 	lua_pushstring(L, cluster_name);
 	lua_setfield(L, -2, "CLUSTER_NAME");
+}
+
+extern void slurm_lua_table_register(lua_State *L, const char *libname,
+				     const luaL_Reg *l)
+{
+#if LUA_VERSION_NUM == 501
+	luaL_register(L, libname, l);
+#else
+	luaL_setfuncs(L, l, 0);
+	if (libname)
+		lua_setglobal(L, libname);
+#endif
 }
 
 /*
@@ -688,7 +688,7 @@ extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
 	 *  Register Slurm functions in lua state:
 	 *  logging and slurm structure read/write functions
 	 */
-	slurm_lua_register_slurm_output_functions(new);
+	_register_slurm_output_functions(new);
 	if (*(local_options))
 		(*(local_options))(new);
 	else

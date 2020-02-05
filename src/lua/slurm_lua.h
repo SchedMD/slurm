@@ -76,7 +76,6 @@ extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
 				       const char **req_fxns,
 				       time_t *load_time,
 				       void (*local_options)(lua_State *L));
-extern void slurm_lua_register_slurm_output_functions(lua_State *L);
 extern void slurm_lua_table_register(lua_State *L, const char *libname,
 				     const luaL_Reg *l);
 
