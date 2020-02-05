@@ -70,7 +70,7 @@ print_header $test_id
 
 # Create test assoc and accounts
 proc create_accounts {} {
-	global ta1 tq1 tq2 tu1 user_req_1 qos_1 qos_2
+	global ta1 acct_1 tq1 tq2 tu1 user_req_1 qos_1 qos_2
 	log_info "create account and QOS"
 
 	# Create test assoc and accounts
