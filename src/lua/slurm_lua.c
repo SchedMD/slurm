@@ -118,11 +118,11 @@ static int _log_lua_msg (lua_State *L)
 
 	/* Pop message off the lua stack */
 	msg = lua_tostring(L, -1);
-	lua_pop (L, 1);
+	lua_pop(L, 1);
 
 	/* Pop level off stack: */
 	level = (int)lua_tonumber(L, -1);
-	lua_pop (L, 1);
+	lua_pop(L, 1);
 
 	/* Call appropriate slurm log function based on log-level argument */
 	if (level > 4)
@@ -143,7 +143,7 @@ static int _log_lua_msg (lua_State *L)
 static int _log_lua_error(lua_State *L)
 {
 	const char *prefix  = "lua";
-	const char *msg     = lua_tostring (L, -1);
+	const char *msg     = lua_tostring(L, -1);
 	error ("%s: %s", prefix, msg);
 	return (0);
 }
@@ -179,7 +179,7 @@ extern void slurm_lua_register_slurm_output_functions(lua_State *L)
 	/*
 	 *  Register slurm output functions in a global "slurm" table
 	 */
-	lua_newtable (L);
+	lua_newtable(L);
 	slurm_lua_table_register(L, NULL, slurm_functions);
 	/*
 	 *  Create more user-friendly lua versions of Slurm log functions.
@@ -187,138 +187,138 @@ extern void slurm_lua_register_slurm_output_functions(lua_State *L)
 	snprintf(tmp_string, sizeof(tmp_string),
 		 "slurm.error (string.format(%s({...})))",
 		 unpack_str);
-	luaL_loadstring (L, tmp_string);
-	lua_setfield (L, -2, "log_error");
+	luaL_loadstring(L, tmp_string);
+	lua_setfield(L, -2, "log_error");
 	snprintf(tmp_string, sizeof(tmp_string),
 		 "slurm.log (0, string.format(%s({...})))",
 		 unpack_str);
-	luaL_loadstring (L, tmp_string);
-	lua_setfield (L, -2, "log_info");
+	luaL_loadstring(L, tmp_string);
+	lua_setfield(L, -2, "log_info");
 	snprintf(tmp_string, sizeof(tmp_string),
 		 "slurm.log (1, string.format(%s({...})))",
 		 unpack_str);
-	luaL_loadstring (L, tmp_string);
-	lua_setfield (L, -2, "log_verbose");
+	luaL_loadstring(L, tmp_string);
+	lua_setfield(L, -2, "log_verbose");
 	snprintf(tmp_string, sizeof(tmp_string),
 		 "slurm.log (2, string.format(%s({...})))",
 		 unpack_str);
-	luaL_loadstring (L, tmp_string);
-	lua_setfield (L, -2, "log_debug");
+	luaL_loadstring(L, tmp_string);
+	lua_setfield(L, -2, "log_debug");
 	snprintf(tmp_string, sizeof(tmp_string),
 		 "slurm.log (3, string.format(%s({...})))",
 		 unpack_str);
-	luaL_loadstring (L, tmp_string);
-	lua_setfield (L, -2, "log_debug2");
+	luaL_loadstring(L, tmp_string);
+	lua_setfield(L, -2, "log_debug2");
 	snprintf(tmp_string, sizeof(tmp_string),
 		 "slurm.log (4, string.format(%s({...})))",
 		 unpack_str);
-	luaL_loadstring (L, tmp_string);
-	lua_setfield (L, -2, "log_debug3");
+	luaL_loadstring(L, tmp_string);
+	lua_setfield(L, -2, "log_debug3");
 	snprintf(tmp_string, sizeof(tmp_string),
 		 "slurm.log (5, string.format(%s({...})))",
 		 unpack_str);
-	luaL_loadstring (L, tmp_string);
-	lua_setfield (L, -2, "log_debug4");
+	luaL_loadstring(L, tmp_string);
+	lua_setfield(L, -2, "log_debug4");
 
 	/*
 	 * Error codes: slurm.SUCCESS, slurm.FAILURE, slurm.ERROR, etc.
 	 */
 	lua_pushnumber(L, SLURM_ERROR);
-	lua_setfield (L, -2, "ERROR");
+	lua_setfield(L, -2, "ERROR");
 	lua_pushnumber(L, SLURM_ERROR);
-	lua_setfield (L, -2, "FAILURE");
+	lua_setfield(L, -2, "FAILURE");
 	lua_pushnumber(L, SLURM_SUCCESS);
-	lua_setfield (L, -2, "SUCCESS");
+	lua_setfield(L, -2, "SUCCESS");
 	lua_pushnumber(L, ESLURM_ACCESS_DENIED);
-	lua_setfield (L, -2, "ESLURM_ACCESS_DENIED");
+	lua_setfield(L, -2, "ESLURM_ACCESS_DENIED");
 	lua_pushnumber(L, ESLURM_ACCOUNTING_POLICY);
-	lua_setfield (L, -2, "ESLURM_ACCOUNTING_POLICY");
+	lua_setfield(L, -2, "ESLURM_ACCOUNTING_POLICY");
 	lua_pushnumber(L, ESLURM_INVALID_ACCOUNT);
-	lua_setfield (L, -2, "ESLURM_INVALID_ACCOUNT");
+	lua_setfield(L, -2, "ESLURM_INVALID_ACCOUNT");
 	lua_pushnumber(L, ESLURM_INVALID_LICENSES);
-	lua_setfield (L, -2, "ESLURM_INVALID_LICENSES");
+	lua_setfield(L, -2, "ESLURM_INVALID_LICENSES");
 	lua_pushnumber(L, ESLURM_INVALID_NODE_COUNT);
-	lua_setfield (L, -2, "ESLURM_INVALID_NODE_COUNT");
+	lua_setfield(L, -2, "ESLURM_INVALID_NODE_COUNT");
 	lua_pushnumber(L, ESLURM_INVALID_TIME_LIMIT);
-	lua_setfield (L, -2, "ESLURM_INVALID_TIME_LIMIT");
+	lua_setfield(L, -2, "ESLURM_INVALID_TIME_LIMIT");
 	lua_pushnumber(L, ESLURM_JOB_MISSING_SIZE_SPECIFICATION);
-	lua_setfield (L, -2, "ESLURM_JOB_MISSING_SIZE_SPECIFICATION");
+	lua_setfield(L, -2, "ESLURM_JOB_MISSING_SIZE_SPECIFICATION");
 	lua_pushnumber(L, ESLURM_MISSING_TIME_LIMIT);
-	lua_setfield (L, -2, "ESLURM_MISSING_TIME_LIMIT");
+	lua_setfield(L, -2, "ESLURM_MISSING_TIME_LIMIT");
 
 	/*
 	 * Other definitions needed to interpret data
 	 * slurm.MEM_PER_CPU, slurm.NO_VAL, etc.
 	 */
 	lua_pushnumber(L, ALLOC_SID_ADMIN_HOLD);
-	lua_setfield (L, -2, "ALLOC_SID_ADMIN_HOLD");
+	lua_setfield(L, -2, "ALLOC_SID_ADMIN_HOLD");
 	lua_pushnumber(L, ALLOC_SID_USER_HOLD);
-	lua_setfield (L, -2, "ALLOC_SID_USER_HOLD");
+	lua_setfield(L, -2, "ALLOC_SID_USER_HOLD");
 	lua_pushnumber(L, INFINITE);
-	lua_setfield (L, -2, "INFINITE");
+	lua_setfield(L, -2, "INFINITE");
 	lua_pushnumber(L, INFINITE64);
-	lua_setfield (L, -2, "INFINITE64");
+	lua_setfield(L, -2, "INFINITE64");
 	lua_pushnumber(L, MAIL_JOB_BEGIN);
-	lua_setfield (L, -2, "MAIL_JOB_BEGIN");
+	lua_setfield(L, -2, "MAIL_JOB_BEGIN");
 	lua_pushnumber(L, MAIL_JOB_END);
-	lua_setfield (L, -2, "MAIL_JOB_END");
+	lua_setfield(L, -2, "MAIL_JOB_END");
 	lua_pushnumber(L, MAIL_JOB_FAIL);
-	lua_setfield (L, -2, "MAIL_JOB_FAIL");
+	lua_setfield(L, -2, "MAIL_JOB_FAIL");
 	lua_pushnumber(L, MAIL_JOB_REQUEUE);
-	lua_setfield (L, -2, "MAIL_JOB_REQUEUE");
+	lua_setfield(L, -2, "MAIL_JOB_REQUEUE");
 	lua_pushnumber(L, MAIL_JOB_TIME100);
-	lua_setfield (L, -2, "MAIL_JOB_TIME100");
+	lua_setfield(L, -2, "MAIL_JOB_TIME100");
 	lua_pushnumber(L, MAIL_JOB_TIME90);
-	lua_setfield (L, -2, "MAIL_JOB_TIME890");
+	lua_setfield(L, -2, "MAIL_JOB_TIME890");
 	lua_pushnumber(L, MAIL_JOB_TIME80);
-	lua_setfield (L, -2, "MAIL_JOB_TIME80");
+	lua_setfield(L, -2, "MAIL_JOB_TIME80");
 	lua_pushnumber(L, MAIL_JOB_TIME50);
-	lua_setfield (L, -2, "MAIL_JOB_TIME50");
+	lua_setfield(L, -2, "MAIL_JOB_TIME50");
 	lua_pushnumber(L, MAIL_JOB_STAGE_OUT);
-	lua_setfield (L, -2, "MAIL_JOB_STAGE_OUT");
+	lua_setfield(L, -2, "MAIL_JOB_STAGE_OUT");
 	lua_pushnumber(L, MEM_PER_CPU);
-	lua_setfield (L, -2, "MEM_PER_CPU");
+	lua_setfield(L, -2, "MEM_PER_CPU");
 	lua_pushnumber(L, NICE_OFFSET);
-	lua_setfield (L, -2, "NICE_OFFSET");
+	lua_setfield(L, -2, "NICE_OFFSET");
 	lua_pushnumber(L, JOB_SHARED_NONE);
-	lua_setfield (L, -2, "JOB_SHARED_NONE");
+	lua_setfield(L, -2, "JOB_SHARED_NONE");
 	lua_pushnumber(L, JOB_SHARED_OK);
-	lua_setfield (L, -2, "JOB_SHARED_OK");
+	lua_setfield(L, -2, "JOB_SHARED_OK");
 	lua_pushnumber(L, JOB_SHARED_USER);
-	lua_setfield (L, -2, "JOB_SHARED_USER");
+	lua_setfield(L, -2, "JOB_SHARED_USER");
 	lua_pushnumber(L, JOB_SHARED_MCS);
-	lua_setfield (L, -2, "JOB_SHARED_MCS");
+	lua_setfield(L, -2, "JOB_SHARED_MCS");
 	lua_pushnumber(L, NO_VAL64);
-	lua_setfield (L, -2, "NO_VAL64");
+	lua_setfield(L, -2, "NO_VAL64");
 	lua_pushnumber(L, NO_VAL);
-	lua_setfield (L, -2, "NO_VAL");
+	lua_setfield(L, -2, "NO_VAL");
 	lua_pushnumber(L, NO_VAL16);
-	lua_setfield (L, -2, "NO_VAL16");
+	lua_setfield(L, -2, "NO_VAL16");
 	lua_pushnumber(L, NO_VAL8);
-	lua_setfield (L, -2, "NO_VAL8");
+	lua_setfield(L, -2, "NO_VAL8");
 	lua_pushnumber(L, SHARED_FORCE);
-	lua_setfield (L, -2, "SHARED_FORCE");
+	lua_setfield(L, -2, "SHARED_FORCE");
 
 	/*
 	 * job_desc bitflags
 	 */
 	lua_pushnumber(L, GRES_DISABLE_BIND);
-	lua_setfield (L, -2, "GRES_DISABLE_BIND");
+	lua_setfield(L, -2, "GRES_DISABLE_BIND");
 	lua_pushnumber(L, GRES_ENFORCE_BIND);
-	lua_setfield (L, -2, "GRES_ENFORCE_BIND");
+	lua_setfield(L, -2, "GRES_ENFORCE_BIND");
 	lua_pushnumber(L, KILL_INV_DEP);
-	lua_setfield (L, -2, "KILL_INV_DEP");
+	lua_setfield(L, -2, "KILL_INV_DEP");
 	lua_pushnumber(L, NO_KILL_INV_DEP);
-	lua_setfield (L, -2, "NO_KILL_INV_DEP");
+	lua_setfield(L, -2, "NO_KILL_INV_DEP");
 	lua_pushnumber(L, SPREAD_JOB);
-	lua_setfield (L, -2, "SPREAD_JOB");
+	lua_setfield(L, -2, "SPREAD_JOB");
 	lua_pushnumber(L, USE_MIN_NODES);
-	lua_setfield (L, -2, "USE_MIN_NODES");
+	lua_setfield(L, -2, "USE_MIN_NODES");
 
-	lua_pushstring (L, cluster_name);
-	lua_setfield (L, -2, "CLUSTER_NAME");
+	lua_pushstring(L, cluster_name);
+	lua_setfield(L, -2, "CLUSTER_NAME");
 
-	lua_setglobal (L, "slurm");
+	lua_setglobal(L, "slurm");
 }
 
 /*
@@ -334,11 +334,11 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 
 	if (!job_ptr) {
 		error("_job_rec_field: job_ptr is NULL");
-		lua_pushnil (L);
+		lua_pushnil(L);
 	} else if (!xstrcmp(name, "account")) {
-		lua_pushstring (L, job_ptr->account);
+		lua_pushstring(L, job_ptr->account);
 	} else if (!xstrcmp(name, "admin_comment")) {
-		lua_pushstring (L, job_ptr->admin_comment);
+		lua_pushstring(L, job_ptr->admin_comment);
 	} else if (!xstrcmp(name, "argv")) {
 		if (job_ptr->details)
 			_setup_stringarray(L, job_ptr->details->argc,
@@ -351,21 +351,21 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		if (job_ptr->array_recs)
 			lua_pushnumber(L, job_ptr->array_recs->task_cnt);
 		else
-			lua_pushnil (L);
+			lua_pushnil(L);
 	} else if (!xstrcmp(name, "array_task_id")) {
 		lua_pushnumber(L, job_ptr->array_task_id);
 	} else if (!xstrcmp(name, "batch_features")) {
-		lua_pushstring (L, job_ptr->batch_features);
+		lua_pushstring(L, job_ptr->batch_features);
 	} else if (!xstrcmp(name, "batch_host")) {
 		lua_pushstring(L, job_ptr->batch_host);
 	} else if (!xstrcmp(name, "best_switch")) {
 		lua_pushnumber(L, job_ptr->best_switch);
 	} else if (!xstrcmp(name, "burst_buffer")) {
-		lua_pushstring (L, job_ptr->burst_buffer);
+		lua_pushstring(L, job_ptr->burst_buffer);
 	} else if (!xstrcmp(name, "comment")) {
-		lua_pushstring (L, job_ptr->comment);
+		lua_pushstring(L, job_ptr->comment);
 	} else if (!xstrcmp(name, "cpus_per_tres")) {
-		lua_pushstring (L, job_ptr->cpus_per_tres);
+		lua_pushstring(L, job_ptr->cpus_per_tres);
 	} else if (!xstrcmp(name, "delay_boot")) {
 		lua_pushnumber(L, job_ptr->delay_boot);
 	} else if (!xstrcmp(name, "derived_ec")) {
@@ -378,12 +378,12 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushnumber(L, job_ptr->exit_code);
 	} else if (!xstrcmp(name, "features")) {
 		if (job_ptr->details)
-			lua_pushstring (L, job_ptr->details->features);
+			lua_pushstring(L, job_ptr->details->features);
 		else
-			lua_pushnil (L);
+			lua_pushnil(L);
 	} else if (!xstrcmp(name, "gres")) {
 		/* "gres" replaced by "tres_per_node" in v18.08 */
-		lua_pushstring (L, job_ptr->tres_per_node);
+		lua_pushstring(L, job_ptr->tres_per_node);
 	} else if (!xstrcmp(name, "gres_req")) {
 		lua_pushstring(L, job_ptr->gres_req);
 	} else if (!xstrcmp(name, "gres_used")) {
@@ -395,7 +395,7 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 	} else if (!xstrcmp(name, "job_state")) {
 		lua_pushnumber(L, job_ptr->job_state);
 	} else if (!xstrcmp(name, "licenses")) {
-		lua_pushstring (L, job_ptr->licenses);
+		lua_pushstring(L, job_ptr->licenses);
 	} else if (!xstrcmp(name, "max_cpus")) {
 		if (job_ptr->details)
 			lua_pushnumber(L, job_ptr->details->max_cpus);
@@ -407,7 +407,7 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		else
 			lua_pushnumber(L, 0);
 	} else if (!xstrcmp(name, "mem_per_tres")) {
-		lua_pushstring (L, job_ptr->mem_per_tres);
+		lua_pushstring(L, job_ptr->mem_per_tres);
 	} else if (!xstrcmp(name, "min_cpus")) {
 		if (job_ptr->details)
 			lua_pushnumber(L, job_ptr->details->min_cpus);
@@ -434,7 +434,7 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		else
 			lua_pushnumber(L, 0);
 	} else if (!xstrcmp(name, "name")) {
-		lua_pushstring (L, job_ptr->name);
+		lua_pushstring(L, job_ptr->name);
 	} else if (!xstrcmp(name, "nice")) {
 		if (job_ptr->details)
 			lua_pushnumber(L, job_ptr->details->nice);
@@ -444,18 +444,18 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushstring(L, job_ptr->nodes);
 	} else if (!xstrcmp(name, "origin_cluster")) {
 		lua_pushstring(L, job_ptr->origin_cluster);
-	/* Continue support for old hetjob terminology. */
+		/* Continue support for old hetjob terminology. */
 	} else if (!xstrcmp(name, "pack_job_id") ||
 		   !xstrcmp(name, "het_job_id")) {
 		lua_pushnumber(L, job_ptr->het_job_id);
 	} else if (!xstrcmp(name, "pack_job_id_set") ||
 		   !xstrcmp(name, "het_job_id_set")) {
-		lua_pushstring (L, job_ptr->het_job_id_set);
+		lua_pushstring(L, job_ptr->het_job_id_set);
 	} else if (!xstrcmp(name, "pack_job_offset") ||
 		   !xstrcmp(name, "het_job_offset")) {
 		lua_pushnumber(L, job_ptr->het_job_offset);
 	} else if (!xstrcmp(name, "partition")) {
-		lua_pushstring (L, job_ptr->partition);
+		lua_pushstring(L, job_ptr->partition);
 	} else if (!xstrcmp(name, "pn_min_cpus")) {
 		if (job_ptr->details)
 			lua_pushnumber(L, job_ptr->details->pn_min_cpus);
@@ -474,9 +474,9 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushnumber(L, job_ptr->priority);
 	} else if (!xstrcmp(name, "qos")) {
 		if (job_ptr->qos_ptr) {
-			lua_pushstring (L, job_ptr->qos_ptr->name);
+			lua_pushstring(L, job_ptr->qos_ptr->name);
 		} else {
-			lua_pushnil (L);
+			lua_pushnil(L);
 		}
 	} else if (!xstrcmp(name, "reboot")) {
 		lua_pushnumber(L, job_ptr->reboot);
@@ -510,15 +510,15 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 	} else if (!xstrcmp(name, "spank_job_env")) {
 		if ((job_ptr->spank_job_env_size == 0) ||
 		    (job_ptr->spank_job_env == NULL)) {
-			lua_pushnil (L);
+			lua_pushnil(L);
 		} else {
 			lua_newtable(L);
 			for (i = 0; i < job_ptr->spank_job_env_size; i++) {
 				if (job_ptr->spank_job_env[i] != NULL) {
 					lua_pushnumber(L, i);
-					lua_pushstring (L,
-						job_ptr->spank_job_env[i]);
-					lua_settable (L, -3);
+					lua_pushstring(
+						L, job_ptr->spank_job_env[i]);
+					lua_settable(L, -3);
 				}
 			}
 		}
@@ -557,34 +557,34 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 	} else if (!xstrcmp(name, "tres_alloc_str")) {
 		lua_pushstring(L, job_ptr->tres_alloc_str);
 	} else if (!xstrcmp(name, "tres_bind")) {
-		lua_pushstring (L, job_ptr->tres_bind);
+		lua_pushstring(L, job_ptr->tres_bind);
 	} else if (!xstrcmp(name, "tres_freq")) {
-		lua_pushstring (L, job_ptr->tres_freq);
+		lua_pushstring(L, job_ptr->tres_freq);
 	} else if (!xstrcmp(name, "tres_per_job")) {
-		lua_pushstring (L, job_ptr->tres_per_job);
+		lua_pushstring(L, job_ptr->tres_per_job);
 	} else if (!xstrcmp(name, "tres_per_node")) {
-		lua_pushstring (L, job_ptr->tres_per_node);
+		lua_pushstring(L, job_ptr->tres_per_node);
 	} else if (!xstrcmp(name, "tres_per_socket")) {
-		lua_pushstring (L, job_ptr->tres_per_socket);
+		lua_pushstring(L, job_ptr->tres_per_socket);
 	} else if (!xstrcmp(name, "tres_per_task")) {
-		lua_pushstring (L, job_ptr->tres_per_task);
+		lua_pushstring(L, job_ptr->tres_per_task);
 	} else if (!xstrcmp(name, "user_id")) {
 		lua_pushnumber(L, job_ptr->user_id);
 	} else if (!xstrcmp(name, "user_name")) {
-		lua_pushstring (L, job_ptr->user_name);
+		lua_pushstring(L, job_ptr->user_name);
 	} else if (!xstrcmp(name, "wait4switch")) {
 		lua_pushnumber(L, job_ptr->wait4switch);
 	} else if (!xstrcmp(name, "wait4switch_start")) {
 		lua_pushnumber(L, job_ptr->wait4switch_start);
 	} else if (!xstrcmp(name, "wckey")) {
-		lua_pushstring (L, job_ptr->wckey);
+		lua_pushstring(L, job_ptr->wckey);
 	} else if (!xstrcmp(name, "work_dir")) {
 		if (job_ptr->details)
 			lua_pushstring(L, job_ptr->details->work_dir);
 		else
 			lua_pushnil(L);
 	} else {
-		lua_pushnil (L);
+		lua_pushnil(L);
 	}
 
 	return 1;
@@ -612,20 +612,20 @@ extern void slurm_lua_stack_dump(const char *plugin, char *header, lua_State *L)
 	for (i = 1; i <= top; i++) {  /* repeat for each level */
 		int type = lua_type(L, i);
 		switch (type) {
-			case LUA_TSTRING:
-				info("string[%d]:%s", i, lua_tostring(L, i));
-				break;
-			case LUA_TBOOLEAN:
-				info("boolean[%d]:%s", i,
-				     lua_toboolean(L, i) ? "true" : "false");
-				break;
-			case LUA_TNUMBER:
-				info("number[%d]:%d", i,
-				     (int) lua_tonumber(L, i));
-				break;
-			default:
-				info("other[%d]:%s", i, lua_typename(L, type));
-				break;
+		case LUA_TSTRING:
+			info("string[%d]:%s", i, lua_tostring(L, i));
+			break;
+		case LUA_TBOOLEAN:
+			info("boolean[%d]:%s", i,
+			     lua_toboolean(L, i) ? "true" : "false");
+			break;
+		case LUA_TNUMBER:
+			info("number[%d]:%d", i,
+			     (int) lua_tonumber(L, i));
+			break;
+		default:
+			info("other[%d]:%s", i, lua_typename(L, type));
+			break;
 		}
 	}
 #endif

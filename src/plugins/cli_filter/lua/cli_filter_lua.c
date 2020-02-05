@@ -129,7 +129,7 @@ int fini(void)
 		xfree(stored_data[i]);
 	xfree(stored_data);
 
-        lua_close (L);
+        lua_close(L);
 
 	slurm_lua_fini();
 
@@ -419,9 +419,9 @@ extern int pre_submit(slurm_opt_t *opt, int offset)
 
 	slurm_lua_stack_dump(
 		"cli_filter/lua", "pre_submit, before lua_pcall", L);
-	if (lua_pcall (L, 2, 1, 0) != 0) {
+	if (lua_pcall(L, 2, 1, 0) != 0) {
 		error("%s/lua: %s: %s",
-		      __func__, lua_script_path, lua_tostring (L, -1));
+		      __func__, lua_script_path, lua_tostring(L, -1));
 	} else {
 		if (lua_isnumber(L, -1)) {
 			rc = lua_tonumber(L, -1);
