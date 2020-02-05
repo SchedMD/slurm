@@ -125,6 +125,7 @@ documents those changes that are of interest to users and administrators.
  -- Replace/deprecate max_job_bf with bf_max_job_test and print error message.
  -- sched/backfill - fix options parsing when bf_hetjob_prio enabled.
  -- Fix for --gpu-bind when no gpus requested.
+ -- Fix sshare -l crash with large values.
 
 * Changes in Slurm 19.05.5
 ==========================
