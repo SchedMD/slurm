@@ -2536,8 +2536,9 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 			msg_rc = slurm_send_recv_controller_rc_msg(&req_msg, &rc,
 							working_cluster_rec);
 		} else {
-			/* Send msg to slurmd, which forwards to slurmctld and
-			 * may get a new job to launch */
+			/*
+			 * Send msg to slurmd, which forwards to slurmctld.
+			 */
 			if (i == 0) {
 				slurm_set_addr_char(&req_msg.address,
 						    conf->port, conf->hostname);

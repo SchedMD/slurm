@@ -5241,26 +5241,11 @@ _rpc_abort_job(slurm_msg_t *msg)
 	_launch_complete_rm(req->job_id);
 }
 
-static void _handle_old_batch_job_launch(slurm_msg_t *msg)
-{
-	if (msg->msg_type != REQUEST_BATCH_JOB_LAUNCH) {
-		error("_handle_batch_job_launch: "
-		      "Invalid response msg_type (%u)", msg->msg_type);
-		return;
-	}
-
-	/* (resp_msg.msg_type == REQUEST_BATCH_JOB_LAUNCH) */
-	debug2("Processing RPC: REQUEST_BATCH_JOB_LAUNCH");
-	last_slurmctld_msg = time(NULL);
-	_rpc_batch_job(msg, false);
-	slurm_free_job_launch_msg(msg->data);
-	msg->data = NULL;
-
-}
-
-/* This complete batch RPC came from slurmstepd because we have select/serial
- * configured. Terminate the job here. Forward the batch completion RPC to
- * slurmctld and possible get a new batch launch RPC in response. */
+/*
+ * This complete batch RPC came from slurmstepd because we have message
+ * aggregation configured. Terminate the job here and forward the batch
+ * completion RPC to slurmctld.
+ */
 static void
 _rpc_complete_batch(slurm_msg_t *msg)
 {
@@ -5288,8 +5273,7 @@ _rpc_complete_batch(slurm_msg_t *msg)
 			req_msg->data = msg->data;
 			msg->data = NULL;
 
-			msg_aggr_add_msg(req_msg, 1,
-					 _handle_old_batch_job_launch);
+			msg_aggr_add_msg(req_msg, 1, NULL);
 			return;
 		} else {
 			slurm_msg_t req_msg;
@@ -5320,8 +5304,6 @@ _rpc_complete_batch(slurm_msg_t *msg)
 		}
 		return;
 	}
-
-	_handle_old_batch_job_launch(&resp_msg);
 }
 
 static void

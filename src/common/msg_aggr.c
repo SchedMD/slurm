@@ -429,7 +429,6 @@ extern void msg_aggr_resp(slurm_msg_t *msg)
 	while ((next_msg = list_next(itr))) {
 		switch (next_msg->msg_type) {
 		case RESPONSE_NODE_REGISTRATION:
-		case REQUEST_BATCH_JOB_LAUNCH:
 		case RESPONSE_SLURM_RC:
 			/* signal sending thread that slurmctld received this
 			 * msg */
