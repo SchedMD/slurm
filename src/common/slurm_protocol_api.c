@@ -3550,14 +3550,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 again:
 	pfd.fd = fd;
 	pfd.events = POLLIN;
-	/*
-	 * Wait for 1000 ms for shutdown to respond.  We found this is long
-	 * enough to get a response, but any longer would start to produce a
-	 * delay that could be compounded if many of these started stacking up.
-	 * We were easily able to create this kind of scenario when restarting
-	 * the slurmds over and over with message aggregation turned on.
-	 */
-	pollrc = poll(&pfd, 1, 1000);
+	pollrc = poll(&pfd, 1, (slurm_conf.msg_timeout * 1000));
 	if (pollrc == -1) {
 		if (errno == EINTR)
 			goto again;
