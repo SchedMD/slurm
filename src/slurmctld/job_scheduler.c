@@ -3279,8 +3279,8 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 			break;
 		}
 
-		if ((sep_ptr = strchr(tmp, '+'))) {
-			sep_ptr++; /* skip over "+" */
+		if (tmp[0] == '+') {
+			sep_ptr = &tmp[1]; /* skip over "+" */
 			depend_time = strtol(sep_ptr, &tmp, 10);
 
 			if (depend_time <= 0) {
