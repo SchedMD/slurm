@@ -81,6 +81,7 @@ typedef struct {
 
 typedef struct {
 	time_t end;
+	uint32_t flags;
 	int id;
 	List local_assocs; /* list of assocs to spread unused time
 			      over of type local_id_usage_t */
@@ -1023,7 +1024,6 @@ extern int _setup_resv_usage(mysql_conn_t *mysql_conn,
 	while ((row = mysql_fetch_row(result))) {
 		time_t row_start = slurm_atoul(row[RESV_REQ_START]);
 		time_t row_end = slurm_atoul(row[RESV_REQ_END]);
-		uint32_t row_flags = slurm_atoul(row[RESV_REQ_FLAGS]);
 		int unused;
 		int resv_seconds;
 		time_t orig_start = row_start;
@@ -1093,12 +1093,12 @@ extern int _setup_resv_usage(mysql_conn_t *mysql_conn,
 		 * We still need them for figuring out unused wall time,
 		 * but for cluster utilization we will just ignore them.
 		 */
-		if (!c_usage || (row_flags & RESERVE_FLAG_IGN_JOBS))
+		if (!c_usage || (r_usage->flags & RESERVE_FLAG_IGN_JOBS))
 			continue;
 
 		_add_time_tres_list(c_usage->loc_tres,
 				    r_usage->loc_tres,
-				    (row_flags & RESERVE_FLAG_MAINT) ?
+				    (r_usage->flags & RESERVE_FLAG_MAINT) ?
 				    TIME_PDOWN : TIME_ALLOC, 0, 0);
 
 		/* slurm_make_time_str(&r_usage->start, start_char, */
