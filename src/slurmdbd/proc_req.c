@@ -3296,6 +3296,7 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 				       &rollup_stats_list);
 	END_TIMER;
 	handle_rollup_stats(rollup_stats_list, DELTA_TIMER, 1);
+	FREE_NULL_LIST(rollup_stats_list);
 
 end_it:
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
