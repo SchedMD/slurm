@@ -2119,20 +2119,22 @@ _usage(void)
 {
 	fprintf(stderr, "\
 Usage: %s [OPTIONS]\n\
-   -b          Report node reboot now.\n\
-   -c          Force cleanup of slurmd shared memory.\n\
-   -C          Print node configuration information and exit.\n\
-   -d stepd    Pathname to the slurmstepd program.\n\
-   -D          Run daemon in foreground.\n\
-   -f config   Read configuration from the specified file.\n\
-   -G          Print node's GRES configuration and exit.\n\
-   -h          Print this help message.\n\
-   -L logfile  Log messages to the file `logfile'.\n\
-   -M          Use mlock() to lock slurmd pages into memory.\n\
-   -n value    Run the daemon at the specified nice value.\n\
-   -N node     Run the daemon for specified nodename.\n\
-   -v          Verbose mode. Multiple -v's increase verbosity.\n\
-   -V          Print version information and exit.\n", conf->prog);
+   -b                         Report node reboot now.\n\
+   -c                         Force cleanup of slurmd shared memory.\n\
+   -C                         Print node configuration information and exit.\n\
+   --conf-server host[:port]  Get confgs from slurmctld at `host[:port]`.\n\
+   -d stepd                   Pathname to the slurmstepd program.\n\
+   -D                         Run daemon in foreground.\n\
+   -f config                  Read configuration from the specified file.\n\
+   -G                         Print node's GRES configuration and exit.\n\
+   -h                         Print this help message.\n\
+   -L logfile                 Log messages to the file `logfile'.\n\
+   -M                         Use mlock() to lock slurmd pages into memory.\n\
+   -n value                   Run the daemon at the specified nice value.\n\
+   -N node                    Run the daemon for specified nodename.\n\
+   -v                         Verbose mode. Multiple -v's increase verbosity.\n\
+   -V                         Print version information and exit.\n",
+		conf->prog);
 	return;
 }
 
