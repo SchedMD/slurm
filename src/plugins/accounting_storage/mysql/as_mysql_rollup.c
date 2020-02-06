@@ -774,10 +774,57 @@ static void _create_id_usage_insert(char *cluster_name, int type,
 		   "alloc_secs=VALUES(alloc_secs);", now);
 }
 
+static int _add_resv_usage_to_cluster(void *object, void *arg)
+{
+	local_resv_usage_t *r_usage = (local_resv_usage_t *)object;
+	local_cluster_usage_t *c_usage = (local_cluster_usage_t *)arg;
+
+	xassert(c_usage);
+
+	/*
+	 * Only record time for the clusters that have
+	 * registered, or if a reservation has the IGNORE_JOBS
+	 * flag we don't have an easy way to distinguish the
+	 * cpus a job not running in the reservation, but on
+	 * it's cpus.
+	 * We still need them for figuring out unused wall time,
+	 * but for cluster utilization we will just ignore them.
+	 */
+	if (r_usage->flags & RESERVE_FLAG_IGN_JOBS)
+		return SLURM_SUCCESS;
+
+	/*
+	 * Since this reservation was added to the
+	 * cluster and only certain people could run
+	 * there we will use this as allocated time on
+	 * the system.  If the reservation was a
+	 * maintenance then we add the time to planned
+	 * down time.
+	 */
+
+	_add_time_tres_list(c_usage->loc_tres,
+			    r_usage->loc_tres,
+			    (r_usage->flags & RESERVE_FLAG_MAINT) ?
+			    TIME_PDOWN : TIME_ALLOC, 0, 0);
+
+	/* slurm_make_time_str(&r_usage->start, start_char, */
+	/* 		    sizeof(start_char)); */
+	/* slurm_make_time_str(&r_usage->end, end_char, */
+	/* 		    sizeof(end_char)); */
+	/* info("adding this much %lld to cluster %s " */
+	/*      "%d %d %s - %s", */
+	/*      r_usage->total_time, c_usage->name, */
+	/*      (row_flags & RESERVE_FLAG_MAINT),  */
+	/*      r_usage->id, start_char, end_char); */
+
+	return SLURM_SUCCESS;
+}
+
 static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 						   char *cluster_name,
 						   time_t curr_start,
 						   time_t curr_end,
+						   List resv_usage_list,
 						   List cluster_down_list)
 {
 	local_cluster_usage_t *c_usage = NULL;
@@ -950,6 +997,10 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 
 	list_iterator_destroy(d_itr);
 
+	if (c_usage)
+		(void)list_for_each(resv_usage_list,
+				    _add_resv_usage_to_cluster,
+				    c_usage);
 	return c_usage;
 }
 
@@ -958,8 +1009,7 @@ extern int _setup_resv_usage(mysql_conn_t *mysql_conn,
 			     time_t curr_start,
 			     time_t curr_end,
 			     List resv_usage_list,
-			     int dims,
-			     local_cluster_usage_t *c_usage)
+			     int dims)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1084,43 +1134,6 @@ extern int _setup_resv_usage(mysql_conn_t *mysql_conn,
 		r_usage->unused_wall = unused + resv_seconds;
 		r_usage->hl = hostlist_create_dims(row[RESV_REQ_NODES], dims);
 		list_append(resv_usage_list, r_usage);
-
-		/*
-		 * Since this reservation was added to the
-		 * cluster and only certain people could run
-		 * there we will use this as allocated time on
-		 * the system.  If the reservation was a
-		 * maintenance then we add the time to planned
-		 * down time.
-		 */
-
-
-		/*
-		 * Only record time for the clusters that have
-		 * registered, or if a reservation has the IGNORE_JOBS
-		 * flag we don't have an easy way to distinguish the
-		 * cpus a job not running in the reservation, but on
-		 * it's cpus.
-		 * We still need them for figuring out unused wall time,
-		 * but for cluster utilization we will just ignore them.
-		 */
-		if (!c_usage || (r_usage->flags & RESERVE_FLAG_IGN_JOBS))
-			continue;
-
-		_add_time_tres_list(c_usage->loc_tres,
-				    r_usage->loc_tres,
-				    (r_usage->flags & RESERVE_FLAG_MAINT) ?
-				    TIME_PDOWN : TIME_ALLOC, 0, 0);
-
-		/* slurm_make_time_str(&r_usage->start, start_char, */
-		/* 		    sizeof(start_char)); */
-		/* slurm_make_time_str(&r_usage->end, end_char, */
-		/* 		    sizeof(end_char)); */
-		/* info("adding this much %lld to cluster %s " */
-		/*      "%d %d %s - %s", */
-		/*      r_usage->total_time, c_usage->name, */
-		/*      (row_flags & RESERVE_FLAG_MAINT),  */
-		/*      r_usage->id, start_char, end_char); */
 	}
 	mysql_free_result(result);
 
@@ -1253,18 +1266,19 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 		info("start %s", slurm_ctime2(&curr_start)); */
 /* 		info("end %s", slurm_ctime2(&curr_end)); */
 
+		if ((rc = _setup_resv_usage(mysql_conn, cluster_name,
+					    curr_start, curr_end,
+					    resv_usage_list, dims))
+		    != SLURM_SUCCESS)
+			goto end_it;
+
 		c_usage = _setup_cluster_usage(mysql_conn, cluster_name,
 					       curr_start, curr_end,
+					       resv_usage_list,
 					       cluster_down_list);
 
 		if (c_usage)
 			xassert(c_usage->loc_tres);
-
-		if ((rc = _setup_resv_usage(mysql_conn, cluster_name,
-					    curr_start, curr_end,
-					    resv_usage_list, dims, c_usage))
-		    != SLURM_SUCCESS)
-			goto end_it;
 
 		/* now get the jobs during this time only  */
 		query = xstrdup_printf("select %s from \"%s_%s\" as job "
