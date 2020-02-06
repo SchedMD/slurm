@@ -41,6 +41,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="reservations.html">Advanced Resource Reservation Guide</a></li>
 <li><a href="burst_buffer.html">Burst Buffer Guide</a></li>
 <li><a href="cgroups.html">Cgroups Guide</a></li>
+<li><a href="configless_slurm.html">"Configless" Slurm Operation</a></li>
 <li><a href="configurator.html">Configuration Tool (Full version)</a></li>
 <li><a href="configurator.easy.html">Configuration Tool (Simplified version)</a></li>
 <li><a href="containers.html">Containers</a></li>

@@ -464,6 +464,7 @@ generated_html = \
 	cgroups.html \
 	classic_fair_share.html \
 	cli_filter_plugins.html \
+	configless_slurm.html \
 	cons_res.html \
 	cons_res_share.html \
 	containers.html \
