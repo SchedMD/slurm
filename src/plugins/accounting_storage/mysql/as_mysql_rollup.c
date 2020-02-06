@@ -927,7 +927,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 		while ((loc_c_usage = list_next(d_itr))) {
 			time_t temp_end = row_end;
 			time_t temp_start = row_start;
-			if (loc_c_usage->start > local_start)
+			if (loc_c_usage->start > temp_start)
 				temp_start = loc_c_usage->start;
 			if (loc_c_usage->end < temp_end)
 				temp_end = loc_c_usage->end;
