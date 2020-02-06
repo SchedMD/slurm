@@ -1,4 +1,4 @@
-.TH slurmd "8" "Slurm Daemon" "January 2019" "Slurm Daemon"
+.TH slurmd "8" "Slurm Daemon" "Februrary 2020" "Slurm Daemon"
 
 .SH "NAME"
 slurmd \- The compute node daemon for Slurm.
@@ -25,6 +25,12 @@ abnormally.
 \fB\-C\fR
 Print actual hardware configuration and exit. The format of output is the same
 as used in \fBslurm.conf\fR to describe a node's configuration plus it's uptime.
+
+.TP
+\fB\--conf-server <host>[:<port>]\fR
+Specify the host and (optionally) port number of the primary slurmctld. This
+host is where slurmd will fetch the configuration from when running in
+"configless" mode.
 
 .TP
 \fB\-d <file>\fR
