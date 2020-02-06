@@ -83,6 +83,7 @@ typedef struct {
 	time_t end;
 	uint32_t flags;
 	int id;
+	hostlist_t hl;
 	List local_assocs; /* list of assocs to spread unused time
 			      over of type local_id_usage_t */
 	List loc_tres;
@@ -121,6 +122,7 @@ static void _destroy_local_resv_usage(void *object)
 {
 	local_resv_usage_t *r_usage = (local_resv_usage_t *)object;
 	if (r_usage) {
+		FREE_NULL_HOSTLIST(r_usage->hl);
 		FREE_NULL_LIST(r_usage->local_assocs);
 		FREE_NULL_LIST(r_usage->loc_tres);
 		xfree(r_usage);
@@ -951,6 +953,7 @@ extern int _setup_resv_usage(mysql_conn_t *mysql_conn,
 			     time_t curr_start,
 			     time_t curr_end,
 			     List resv_usage_list,
+			     int dims,
 			     local_cluster_usage_t *c_usage)
 {
 	MYSQL_RES *result = NULL;
@@ -963,6 +966,7 @@ extern int _setup_resv_usage(mysql_conn_t *mysql_conn,
 		"id_resv",
 		"assoclist",
 		"flags",
+		"nodelist",
 		"tres",
 		"time_start",
 		"time_end",
@@ -972,6 +976,7 @@ extern int _setup_resv_usage(mysql_conn_t *mysql_conn,
 		RESV_REQ_ID,
 		RESV_REQ_ASSOCS,
 		RESV_REQ_FLAGS,
+		RESV_REQ_NODES,
 		RESV_REQ_TRES,
 		RESV_REQ_START,
 		RESV_REQ_END,
@@ -1072,6 +1077,7 @@ extern int _setup_resv_usage(mysql_conn_t *mysql_conn,
 		r_usage->start = row_start;
 		r_usage->end = row_end;
 		r_usage->unused_wall = unused + resv_seconds;
+		r_usage->hl = hostlist_create_dims(row[RESV_REQ_NODES], dims);
 		list_append(resv_usage_list, r_usage);
 
 		/*
@@ -1200,7 +1206,30 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		xstrfmtcat(suspend_str, ", %s", suspend_req_inx[i]);
 	}
 
+	/* We need to figure out the dimensions of this cluster */
+	query = xstrdup_printf("select dimensions from %s where name='%s'",
+			       cluster_table, cluster_name);
+	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+
+	if (!result) {
+		error("%s: error querying cluster_table", __func__);
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
+	row = mysql_fetch_row(result);
+
+	if (!row) {
+		error("%s: no cluster by name %s known",
+		      __func__, cluster_name);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	dims = atoi(row[0]);
+	mysql_free_result(result);
 
 /* 	info("begin start %s", slurm_ctime2(&curr_start)); */
 /* 	info("begin end %s", slurm_ctime2(&curr_end)); */
@@ -1228,7 +1257,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		if ((rc = _setup_resv_usage(mysql_conn, cluster_name,
 					    curr_start, curr_end,
-					    resv_usage_list, c_usage))
+					    resv_usage_list, dims, c_usage))
 		    != SLURM_SUCCESS)
 			goto end_it;
 
