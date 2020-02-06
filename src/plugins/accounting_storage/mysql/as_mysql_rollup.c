@@ -838,6 +838,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 		time_t row_start = slurm_atoul(row[EVENT_REQ_START]);
 		time_t row_end = slurm_atoul(row[EVENT_REQ_END]);
 		uint16_t state = slurm_atoul(row[EVENT_REQ_STATE]);
+		time_t local_start, local_end;
 		int seconds;
 
 		if (row_start < curr_start)
@@ -893,52 +894,56 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 			continue;
 		}
 
-		/* only record down time for the cluster we
-		   are looking for.  If it was during this
-		   time period we would already have it.
-		*/
-		if (c_usage) {
-			time_t local_start = row_start;
-			time_t local_end = row_end;
-			int seconds;
-			if (c_usage->start > local_start)
-				local_start = c_usage->start;
-			if (c_usage->end < local_end)
-				local_end = c_usage->end;
-			seconds = (local_end - local_start);
-			if (seconds > 0) {
-				_add_tres_time_2_list(c_usage->loc_tres,
-						      row[EVENT_REQ_TRES],
-						      TIME_DOWN,
-						      seconds, 0, 0);
+		/*
+		 * Only record down time for the cluster we
+		 * are looking for.  If it was during this
+		 * time period we would already have it.
+		 */
+		if (!c_usage)
+			continue;
 
-				/* Now remove this time if there was a
-				   disconnected slurmctld during the
-				   down time.
-				*/
-				list_iterator_reset(d_itr);
-				while ((loc_c_usage = list_next(d_itr))) {
-					int temp_end = row_end;
-					int temp_start = row_start;
-					if (loc_c_usage->start > local_start)
-						temp_start = loc_c_usage->start;
-					if (loc_c_usage->end < temp_end)
-						temp_end = loc_c_usage->end;
-					seconds = (temp_end - temp_start);
-					if (seconds < 1)
-						continue;
+		local_start = row_start;
+		local_end = row_end;
 
-					_remove_job_tres_time_from_cluster(
-						loc_c_usage->loc_tres,
-						c_usage->loc_tres, seconds);
-					/* info("Node %s was down for " */
-					/*      "%d seconds while " */
-					/*      "cluster %s's slurmctld " */
-					/*      "wasn't responding", */
-					/*      row[EVENT_REQ_NAME], */
-					/*      seconds, cluster_name); */
-				}
-			}
+		if (local_start < c_usage->start)
+			local_start = c_usage->start;
+		if (local_end > c_usage->end)
+			local_end = c_usage->end;
+
+		/* Don't worry about it if the time is less than 1 second. */
+		if ((seconds = (local_end - local_start)) < 1)
+			continue;
+
+		_add_tres_time_2_list(c_usage->loc_tres,
+				      row[EVENT_REQ_TRES],
+				      TIME_DOWN,
+				      seconds, 0, 0);
+
+		/*
+		 * Now remove this time if there was a
+		 * disconnected slurmctld during the down time.
+		 */
+		list_iterator_reset(d_itr);
+		while ((loc_c_usage = list_next(d_itr))) {
+			time_t temp_end = row_end;
+			time_t temp_start = row_start;
+			if (loc_c_usage->start > local_start)
+				temp_start = loc_c_usage->start;
+			if (loc_c_usage->end < temp_end)
+				temp_end = loc_c_usage->end;
+			seconds = (temp_end - temp_start);
+			if (seconds < 1)
+				continue;
+
+			_remove_job_tres_time_from_cluster(
+				loc_c_usage->loc_tres,
+				c_usage->loc_tres, seconds);
+			/* info("Node %s was down for " */
+			/*      "%d seconds while " */
+			/*      "cluster %s's slurmctld " */
+			/*      "wasn't responding", */
+			/*      row[EVENT_REQ_NAME], */
+			/*      seconds, cluster_name); */
 		}
 	}
 	mysql_free_result(result);
