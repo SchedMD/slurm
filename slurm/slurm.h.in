@@ -2552,7 +2552,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_TRES_NODE    0x0000000000000080 /* Print debug for limits
 						    * dealing with TRES=NODE */
 #define DEBUG_FLAG_DATA 	0x0000000000000100 /* data_t logging */
-/* #define DEBUG_FLAG_FREE 	0x0000000000000200 */
+#define DEBUG_FLAG_WORKQ 	0x0000000000000200 /* Work Queue */
 #define DEBUG_FLAG_NET		0x0000000000000400 /* Network logging */
 #define DEBUG_FLAG_PRIO 	0x0000000000000800 /* debug for priority
 						    * plugin */

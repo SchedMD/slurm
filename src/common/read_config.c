@@ -5405,6 +5405,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Triggers");
 	}
+	if (debug_flags & DEBUG_FLAG_WORKQ) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "WorkQueue");
+	}
 
 	return rc;
 }
@@ -5538,6 +5543,9 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_POWER_SAVE;
 		else if (xstrcasecmp(tok, "TimeCray") == 0)
 			(*flags_out) |= DEBUG_FLAG_TIME_CRAY;
+		else if (xstrcasecmp(tok, "WorkQueue") == 0 ||
+			 xstrcasecmp(tok, "WorkQ") == 0)
+			(*flags_out) |= DEBUG_FLAG_WORKQ;
 		else {
 			error("Invalid DebugFlag: %s", tok);
 			(*flags_out) = 0;
