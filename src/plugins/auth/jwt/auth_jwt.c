@@ -276,7 +276,7 @@ gid_t slurm_auth_get_gid(auth_token_t *cred)
 	if (cred->gid_set)
 		return cred->gid;
 
-	if (uid_from_string(cred->username, &cred->gid)) {
+	if (gid_from_string(cred->username, &cred->gid)) {
 		slurm_seterrno(ESLURM_USER_ID_MISSING);
 		return SLURM_AUTH_NOBODY;
 	}
