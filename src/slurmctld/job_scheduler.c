@@ -4444,16 +4444,47 @@ static void *_wait_boot(void *arg)
 #endif
 
 /*
+ * Deferring this setup ensures that all calling paths into select_nodes()
+ * have had a chance to update all appropriate job records.
+ * This works since select_nodes() will always be holding the job_write lock,
+ * and thus this new thread will be blocked waiting to acquire job_write
+ * until that has completed.
+ * For HetJobs in particular, this is critical to ensure that all components
+ * have been setup properly before prolog_slurmctld actually runs.
+ *
+ * FIXME: explore other ways to refactor slurmctld to avoid this extraneous
+ * thread
+ */
+static void *_start_prolog_slurmctld_thread(void *x)
+{
+	slurmctld_lock_t node_write_lock = {
+		.conf = READ_LOCK, .job = READ_LOCK,
+		.node = WRITE_LOCK, .fed = READ_LOCK };
+	uint32_t *job_id = (uint32_t *) x;
+	job_record_t *job_ptr;
+
+	lock_slurmctld(node_write_lock);
+	job_ptr = find_job_record(*job_id);
+	prep_prolog_slurmctld(job_ptr);
+	unlock_slurmctld(node_write_lock);
+	xfree(job_id);
+
+	return NULL;
+}
+
+/*
  * prolog_slurmctld - execute the prolog_slurmctld for a job that has just
  *	been allocated resources.
  * IN job_ptr - pointer to job that will be initiated
  */
 extern void prolog_slurmctld(job_record_t *job_ptr)
 {
+	uint32_t *job_id = xmalloc(sizeof(*job_id));
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 
-	prep_prolog_slurmctld(job_ptr);
+	*job_id = job_ptr->job_id;
+	slurm_thread_create_detached(NULL, _start_prolog_slurmctld_thread, job_id);
 }
 
 /* Decrement a job's prolog_running counter and launch the job if zero */
