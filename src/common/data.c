@@ -934,8 +934,12 @@ extern int data_list_for_each_const(const data_t *d, DataListForFConst f, void *
 			fatal_abort("%s: delete attempted against const",
 				    __func__);
 			break;
-		case DATA_FOR_EACH_FAIL: /* fall through */
-			count *= -1;
+		case DATA_FOR_EACH_FAIL:
+			if (!count)
+				count = -1;
+			else
+				count *= -1;
+			/* fall through */
 		case DATA_FOR_EACH_STOP:
 			i = NULL;
 			break;
@@ -981,8 +985,12 @@ extern int data_list_for_each(data_t *d, DataListForF f, void *arg)
 		case DATA_FOR_EACH_DELETE:
 			_release_data_list_node(d->data.list_u, i);
 			break;
-		case DATA_FOR_EACH_FAIL: /* fall through */
-			count *= -1;
+		case DATA_FOR_EACH_FAIL:
+			if (!count)
+				count = -1;
+			else
+				count *= -1;
+			/* fall through */
 		case DATA_FOR_EACH_STOP:
 			i = NULL;
 			break;
@@ -1030,8 +1038,9 @@ extern int data_dict_for_each_const(const data_t *d, DataDictForFConst f, void *
 			fatal_abort("%s: delete attempted against const",
 				    __func__);
 			break;
-		case DATA_FOR_EACH_FAIL: /* fall through */
+		case DATA_FOR_EACH_FAIL:
 			count *= -1;
+			/* fall through */
 		case DATA_FOR_EACH_STOP:
 			i = NULL;
 			break;
@@ -1076,8 +1085,12 @@ extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg)
 		case DATA_FOR_EACH_DELETE:
 			_release_data_list_node(d->data.dict_u, i);
 			break;
-		case DATA_FOR_EACH_FAIL: /* fall through */
-			count *= -1;
+		case DATA_FOR_EACH_FAIL:
+			if (!count)
+				count = -1;
+			else
+				count *= -1;
+		/* fall through */
 		case DATA_FOR_EACH_STOP:
 			i = NULL;
 			break;
