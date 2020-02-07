@@ -2877,6 +2877,9 @@ extern int fed_mgr_init(void *db_conn)
 		if ((cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
 					       slurmctld_conf.cluster_name))) {
+			job_record_t *job_ptr;
+			ListIterator itr;
+
 			_join_federation(fed, cluster, &tmp);
 
 			/* Find clusters that were removed from the federation
@@ -2884,6 +2887,20 @@ extern int fed_mgr_init(void *db_conn)
 			lock_slurmctld(fedr_jobw_lock);
 			if (state_fed && state_cluster && fed_mgr_fed_rec)
 				_handle_removed_clusters(state_fed, &tmp);
+
+			/* Send remote dependencies to siblings. */
+			itr = list_iterator_create(job_list);
+			while ((job_ptr = list_next(itr))) {
+				if (job_ptr->details &&
+				    job_ptr->details->dependency &&
+				    list_count(job_ptr->details->depend_list) &&
+				    fed_mgr_submit_remote_dependencies(job_ptr,
+								       false,
+								       false))
+					error("%s: Failed to send %pJ dependencies to some or all siblings",
+					      __func__, job_ptr);
+			}
+			list_iterator_destroy(itr);
 			unlock_slurmctld(fedr_jobw_lock);
 		} else {
 			slurmdb_destroy_federation_rec(fed);
