@@ -2238,6 +2238,12 @@ static void _update_origin_job_dep(job_record_t *job_ptr,
 	xassert(job_ptr->details->depend_list);
 	xassert(origin);
 
+	if (origin == fed_mgr_cluster_rec) {
+		error("%s: Cannot send dependency update of %pJ to self - were clusters removed then re-added to the federation in a different order?",
+		      __func__, job_ptr);
+		return;
+	}
+
 	dep_update_msg.depend_list = job_ptr->details->depend_list;
 	dep_update_msg.job_id = job_ptr->job_id;
 
