@@ -2238,7 +2238,6 @@ static void _update_origin_job_dep(job_record_t *job_ptr,
 	xassert(job_ptr->details->depend_list);
 	xassert(origin);
 
-	dep_update_msg.cnt = list_count(job_ptr->details->depend_list);
 	dep_update_msg.depend_list = job_ptr->details->depend_list;
 	dep_update_msg.job_id = job_ptr->job_id;
 
@@ -6038,7 +6037,6 @@ extern int fed_mgr_q_update_origin_dep_msg(slurm_msg_t *msg)
 
 	/* update_msg will get free'd, so copy it */
 	update_deps = xmalloc(sizeof *update_deps);
-	update_deps->cnt = update_msg->cnt;
 	update_deps->depend_list = update_msg->depend_list;
 	update_deps->job_id = update_msg->job_id;
 	/*
