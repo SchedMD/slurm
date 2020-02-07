@@ -6421,11 +6421,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _depend_list_del(void *dep_ptr)
-{
-	xfree(dep_ptr);
-}
-
 extern void pack_dep_list(List dep_list, Buf buffer, uint16_t protocol_version)
 {
 	uint32_t cnt;
@@ -6469,7 +6464,7 @@ extern int unpack_dep_list(List *dep_list, Buf buffer,
 		if (!cnt)
 			return SLURM_SUCCESS;
 
-		*dep_list = list_create(_depend_list_del);
+		*dep_list = list_create(xfree_ptr);
 		for (int i = 0; i < cnt; i++) {
 			dep_ptr = xmalloc(sizeof *dep_ptr);
 			list_push(*dep_list, dep_ptr);
