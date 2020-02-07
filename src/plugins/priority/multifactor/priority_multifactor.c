@@ -581,7 +581,8 @@ static uint32_t _get_priority_internal(time_t start_time,
 
 	tmp_64 = (uint64_t) priority;
 	if (tmp_64 > 0xffffffff) {
-		error("Job %u priority exceeds 32 bits", job_ptr->job_id);
+		error("%pJ priority '%"PRIu64"' exceeds 32 bits. Reducing it to 4294967295 (2^32 - 1)",
+		      job_ptr, tmp_64);
 		tmp_64 = 0xffffffff;
 		priority = (double) tmp_64;
 	}
@@ -638,8 +639,8 @@ static uint32_t _get_priority_internal(time_t start_time,
 
 			tmp_64 = (uint64_t) priority_part;
 			if (tmp_64 > 0xffffffff) {
-				error("Job %u priority exceeds 32 bits",
-				      job_ptr->job_id);
+				error("%pJ priority '%"PRIu64"' exceeds 32 bits. Reducing it to 4294967295 (2^32 - 1)",
+				      job_ptr, tmp_64);
 				tmp_64 = 0xffffffff;
 				priority_part = (double) tmp_64;
 			}
