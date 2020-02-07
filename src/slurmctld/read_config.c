@@ -2791,6 +2791,9 @@ extern int restore_job_dependencies(void)
 	ListIterator job_iterator;
 	int error_code = SLURM_SUCCESS, rc;
 	char *new_depend;
+	slurmctld_lock_t job_fed_lock = {.job = WRITE_LOCK, .fed = READ_LOCK};
+
+	lock_slurmctld(job_fed_lock);
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
@@ -2809,6 +2812,8 @@ extern int restore_job_dependencies(void)
 		xfree(new_depend);
 	}
 	list_iterator_destroy(job_iterator);
+	unlock_slurmctld(job_fed_lock);
+
 	return error_code;
 }
 
