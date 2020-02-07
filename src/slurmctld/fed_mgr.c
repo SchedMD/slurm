@@ -2772,35 +2772,6 @@ static void _add_missing_fed_job_info()
 	unlock_slurmctld(job_read_lock);
 }
 
-/*
- * Setup the dependency list from the dependency string for each job in
- * remote_dep_job_list, similar to restore_job_dependencies().
- * We need to call this after fed_mgr_cluster_rec is set so that we can
- * know if a dependency is remote or not.
- */
-static void _restore_remote_job_dependencies()
-{
-	ListIterator itr;
-	job_record_t *job_ptr;
-
-	slurm_mutex_lock(&dep_job_list_mutex);
-	if (!remote_dep_job_list) {
-		slurm_mutex_unlock(&dep_job_list_mutex);
-		return;
-	}
-
-	itr = list_iterator_create(remote_dep_job_list);
-	while ((job_ptr = list_next(itr))) {
-		/*
-		 * _state_load ensures that each job_ptr in remote_dep_job_list
-		 * has non-NULL details and dependency.
-		 */
-		update_job_dependency(job_ptr, job_ptr->details->dependency);
-	}
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&dep_job_list_mutex);
-}
-
 extern int fed_mgr_init(void *db_conn)
 {
 	int rc = SLURM_SUCCESS;
@@ -2938,9 +2909,6 @@ extern int fed_mgr_init(void *db_conn)
 end_it:
 	/* Call whether state file existed or not. */
 	_add_missing_fed_job_info();
-
-	/* Must call after fed_mgr_cluster_rec is set */
-	_restore_remote_job_dependencies();
 
 	inited = true;
 	slurm_mutex_unlock(&init_mutex);
@@ -3228,6 +3196,8 @@ static void _pack_remote_dep_job(job_record_t *job_ptr, Buf buffer,
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		pack32(job_ptr->array_job_id, buffer);
 		pack32(job_ptr->array_task_id, buffer);
+		pack_dep_list(job_ptr->details->depend_list, buffer,
+			      protocol_version);
 		packstr(job_ptr->details->dependency, buffer);
 		packbool(job_ptr->array_recs ? true : false, buffer);
 		pack32(job_ptr->job_id, buffer);
@@ -3262,6 +3232,8 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, Buf buffer,
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		safe_unpack32(&job_ptr->array_job_id, buffer);
 		safe_unpack32(&job_ptr->array_task_id, buffer);
+		unpack_dep_list(&job_ptr->details->depend_list, buffer,
+				protocol_version);
 		safe_unpackstr_xmalloc(&job_ptr->details->dependency,
 				       &uint32_tmp, buffer);
 		safe_unpackbool(&is_array, buffer);
