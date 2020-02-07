@@ -1314,7 +1314,6 @@ typedef struct {
 } dep_msg_t;
 
 typedef struct {
-	uint16_t cnt;
 	List depend_list;
 	uint32_t job_id;
 } dep_update_origin_msg_t;

@@ -6426,14 +6426,18 @@ static void _depend_list_del(void *dep_ptr)
 	xfree(dep_ptr);
 }
 
-static void _pack_dep_list(List dep_list, Buf buffer, uint16_t protocol_version)
+extern void pack_dep_list(List dep_list, Buf buffer, uint16_t protocol_version)
 {
+	uint32_t cnt;
 	depend_spec_t *dep_ptr;
 	ListIterator itr;
 
-	xassert(dep_list);
-
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		cnt = list_count(dep_list);
+		pack32(cnt, buffer);
+		if (!cnt)
+			return;
+
 		itr = list_iterator_create(dep_list);
 		while ((dep_ptr = list_next(itr))) {
 			pack32(dep_ptr->array_task_id, buffer);
@@ -6451,15 +6455,21 @@ static void _pack_dep_list(List dep_list, Buf buffer, uint16_t protocol_version)
 	}
 }
 
-static int _unpack_dep_list(List *dep_list, uint16_t cnt, Buf buffer,
-			    uint16_t protocol_version)
+extern int unpack_dep_list(List *dep_list, Buf buffer,
+			   uint16_t protocol_version)
 {
+	uint32_t cnt;
 	depend_spec_t *dep_ptr;
 
 	xassert(dep_list);
 
-	*dep_list = list_create(_depend_list_del);
+	*dep_list = NULL;
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpack32(&cnt, buffer);
+		if (!cnt)
+			return SLURM_SUCCESS;
+
+		*dep_list = list_create(_depend_list_del);
 		for (int i = 0; i < cnt; i++) {
 			dep_ptr = xmalloc(sizeof *dep_ptr);
 			list_push(*dep_list, dep_ptr);
@@ -6489,8 +6499,7 @@ static void _pack_dep_update_origin_msg(dep_update_origin_msg_t *msg,
 {
 
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
-		pack16(msg->cnt, buffer);
-		_pack_dep_list(msg->depend_list, buffer, protocol_version);
+		pack_dep_list(msg->depend_list, buffer, protocol_version);
 		pack32(msg->job_id, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -6508,9 +6517,8 @@ static int _unpack_dep_update_origin_msg(dep_update_origin_msg_t **msg_pptr,
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		msg_ptr = xmalloc(sizeof *msg_ptr);
 		*msg_pptr = msg_ptr;
-		safe_unpack16(&msg_ptr->cnt, buffer);
-		if (_unpack_dep_list(&msg_ptr->depend_list, msg_ptr->cnt,
-				     buffer, protocol_version))
+		if (unpack_dep_list(&msg_ptr->depend_list,
+				    buffer, protocol_version))
 			goto unpack_error;
 		safe_unpack32(&msg_ptr->job_id, buffer);
 	} else {

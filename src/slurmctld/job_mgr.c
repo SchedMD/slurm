@@ -2639,6 +2639,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->exc_nodes,  buffer);
 	packstr(detail_ptr->features,   buffer);
 	packstr(detail_ptr->cluster_features, buffer);
+	pack_dep_list(detail_ptr->depend_list, buffer, SLURM_PROTOCOL_VERSION);
 	packstr(detail_ptr->dependency, buffer);
 	packstr(detail_ptr->orig_dependency, buffer);	/* subject to change */
 
@@ -2677,6 +2678,7 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 	uint8_t share_res, whole_node;
 	time_t begin_time, accrue_time = 0, submit_time;
 	int i;
+	List depend_list = NULL;
 	multi_core_data_t *mc_ptr;
 
 	/* unpack the job's details from the buffer */
@@ -2723,6 +2725,7 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
 		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
 		safe_unpackstr_xmalloc(&cluster_features, &name_len, buffer);
+		unpack_dep_list(&depend_list, buffer, protocol_version);
 		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
 		safe_unpackstr_xmalloc(&orig_dependency, &name_len, buffer);
 
@@ -2825,6 +2828,7 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 		xfree(job_ptr->details->argv[i]);
 	xfree(job_ptr->details->argv);
 	xfree(job_ptr->details->cpu_bind);
+	FREE_NULL_LIST(job_ptr->details->depend_list);
 	xfree(job_ptr->details->dependency);
 	xfree(job_ptr->details->orig_dependency);
 	xfree(job_ptr->details->std_err);
@@ -2855,6 +2859,7 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 	job_ptr->details->cpu_freq_gov = cpu_freq_gov;
 	job_ptr->details->cpus_per_task = cpus_per_task;
 	job_ptr->details->orig_cpus_per_task = cpus_per_task;
+	job_ptr->details->depend_list = depend_list;
 	job_ptr->details->dependency = dependency;
 	job_ptr->details->orig_dependency = orig_dependency;
 	job_ptr->details->env_cnt = env_cnt;
