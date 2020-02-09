@@ -211,7 +211,6 @@ static void _check_data_list_node_magic(const data_list_node_t *dn)
 {
 	xassert(dn);
 	xassert(dn->magic == DATA_LIST_NODE_MAGIC);
-	_check_magic(dn->data);
 	/* make sure not linking to self */
 	xassert(dn->next != dn);
 	/* key can be NULL for list, but not NULL length string */
