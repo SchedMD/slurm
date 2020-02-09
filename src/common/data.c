@@ -299,8 +299,7 @@ static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn)
 	}
 
 	dl->count--;
-	_release(dn->data);
-	xassert(!(dn->data = 0));
+	FREE_NULL_DATA(dn->data);
 	xfree(dn->key);
 
 	xassert((dn->magic = ~DATA_LIST_NODE_MAGIC));
