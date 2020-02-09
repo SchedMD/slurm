@@ -439,9 +439,11 @@ static void _release(data_t *data)
 	switch (data->type) {
 	case DATA_TYPE_LIST:
 		_release_data_list(data->data.list_u);
+		xassert(!(data->data.list_u = 0));
 		break;
 	case DATA_TYPE_DICT:
 		_release_data_list(data->data.dict_u);
+		xassert(!(data->data.dict_u = 0));
 		break;
 	case DATA_TYPE_STRING:
 		xfree(data->data.string_u);
