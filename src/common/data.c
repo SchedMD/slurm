@@ -310,19 +310,35 @@ static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn)
 static void _release_data_list(data_list_t *dl)
 {
 	data_list_node_t *n = dl->begin, *i;
+#ifndef NDEBUG
+	int count = 0;
+	const int init_count = dl->count;
+#endif
 
 	_check_data_list_magic(dl);
 
-	if (!n)
+	if (!n) {
+		xassert(!dl->end);
 		return;
+	}
+
+	xassert(dl->end);
 
 	while((i = n)) {
 		n = i->next;
 		_release_data_list_node(dl, i);
+
+#ifndef NDEBUG
+		count++;
+#endif
 	}
 
+
+#ifndef NDEBUG
+	xassert(count == init_count);
 	xassert(!(dl->count = 0));
 	xassert((dl->magic = ~DATA_LIST_MAGIC));
+#endif
 	xfree(dl);
 }
 
