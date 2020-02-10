@@ -49,10 +49,11 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="slurmctld.html">slurmctld</a></td><td>The central management daemon of Slurm.</td></tr>
 <tr><td><a href="slurmd.html">slurmd</a></td><td>The compute node daemon for Slurm.</td></tr>
 <tr><td><a href="slurmdbd.html">slurmdbd</a></td><td>Slurm Database Daemon.</td></tr>
+<tr><td><a href="slurmrestd.html">slurmrestd</a></td><td>The Slurm REST API daemon.</td></tr>
 <tr><td><a href="slurmstepd.html">slurmstepd</a></td><td>The job step manager for Slurm.</td></tr>
 <tr><td><a href="spank.html">SPANK</a></td><td>Slurm Plug-in Architecture for Node and job (K)control</td></tr>
 </table>
 
-<p style="text-align:center;">Last modified 23 January 2020</p>
+<p style="text-align:center;">Last modified 20 February 2020</p>
 
 <!--#include virtual="footer.txt"-->
