@@ -207,9 +207,72 @@ if {$match == 0} {
 }
 
 cancel_job $job_id
-clean_up
+
+if {$exit_code} {
+	clean_up
+	exit $exit_code;
+}
+log_info "RESUMING NODE"
+spawn $scontrol update node=$test_node state=RESUME
+
+#Comment out SchedulerParameters
+exec $bin_sed -i {s/^\(SchedulerParameters=\)/#\1/gI} $config_dir/slurm.conf
+#Append SchedulerParameters=nohold_on_prolog_fail to SchedulerParameters
+exec $bin_echo "SchedulerParameters=nohold_on_prolog_fail" \
+	 >> $config_dir/slurm.conf
+reconfigure
+
+set job_id 0
+spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		log_error "sbatch is not responding"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	set exit_code 1
+}
+
+# Wait a bit for the pending reason to be set
+if {[wait_job_reason $job_id] != 0} {
+	log_error "error waiting for job $job_id to start"
+	set exit_code 1
+}
+
+# Check that the job doesn't have priority 0
+set priority 0
+spawn $squeue -h -j$job_id -o%t.%Q
+expect {
+	-re "($alpha).($number)" {
+		set priority $expect_out(2,string)
+	}
+	timeout {
+		log_error "squeue is not responding"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$priority == 0} {
+	log_error "job $job_id is held, while it shouldn't"
+	set exit_code 1
+}
+
+cancel_job $job_id
+
 
 if {$exit_code == 0} {
+	clean_up
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
