@@ -1418,6 +1418,15 @@ static int _topo_weight_find(void *x, void *key)
 	return 0;
 }
 
+static int _topo_node_find(void *x, void *key)
+{
+	topo_weight_info_t *nw = (topo_weight_info_t *) x;
+	bitstr_t *nw_key = (bitstr_t *) key;
+	if (bit_overlap_any(nw->node_bitmap, nw_key))
+		return 1;
+	return 0;
+}
+
 static void _topo_weight_free(void *x)
 {
 	topo_weight_info_t *nw = (topo_weight_info_t *) x;
@@ -1643,7 +1652,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			}
 		}
 		if (!req_nodes_bitmap &&
-		    bit_overlap_any(nw->node_bitmap, switch_node_bitmap[i])) {
+		    (list_find_first(node_weight_list, _topo_node_find,
+				    switch_node_bitmap[i]))) {
 			if ((top_switch_inx == -1) ||
 			    (switch_record_table[i].level >
 			     switch_record_table[top_switch_inx].level)) {
@@ -2239,8 +2249,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	switch_node_cnt    = xmalloc(sizeof(int)        * switch_record_cnt);
 	switch_required    = xmalloc(sizeof(int)        * switch_record_cnt);
 
-	if (!req_nodes_bitmap)
-		nw = list_peek(node_weight_list);
 	for (i = 0, switch_ptr = switch_record_table; i < switch_record_cnt;
 	     i++, switch_ptr++) {
 		switch_node_bitmap[i] = bit_copy(switch_ptr->node_bitmap);
@@ -2262,7 +2270,8 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 				   min_nodes, req_nodes))
 			continue;
 		if (!req_nodes_bitmap &&
-		    bit_overlap_any(nw->node_bitmap, switch_node_bitmap[i])) {
+		    (list_find_first(node_weight_list, _topo_node_find,
+				    switch_node_bitmap[i]))) {
 			if ((top_switch_inx == -1) ||
 			    (switch_record_table[i].level >
 			     switch_record_table[top_switch_inx].level)) {
