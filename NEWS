@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.02.0rc1
 =============================
+ -- cons_tres - allow jobs to be run on systems with root-less topologies.
 
 * Changes in Slurm 20.02.0pre1
 ==============================
