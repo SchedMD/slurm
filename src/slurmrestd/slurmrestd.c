@@ -128,6 +128,7 @@ static void _parse_env(void)
 			list_append(socket_listen, xstrdup(ptr1));
 			ptr1 = strtok_r(NULL, ",", &ptr2);
 		}
+		xfree(toklist);
 	}
 }
 
