@@ -59,6 +59,7 @@
 
 /* only set by init_rest_auth() */
 static rest_auth_type_t auth_type = AUTH_TYPE_INVALID;
+static pthread_mutex_t init_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #define MAGIC 0xDEDEDEDE
 #define HTTP_HEADER_USER_TOKEN "X-SLURM-USER-TOKEN"
@@ -72,18 +73,19 @@ static void _check_magic(rest_auth_context_t *ctx)
 
 extern void destroy_rest_auth(void)
 {
+	slurm_mutex_lock(&init_lock);
 	auth_type = AUTH_TYPE_INVALID;
+	slurm_mutex_unlock(&init_lock);
 }
 
 extern int init_rest_auth(rest_auth_type_t type)
 {
-	static volatile bool run_once = false;
 	int rc = SLURM_SUCCESS;
 
-	xassert(!run_once);
-	if (run_once)
-		return SLURM_ERROR;
-	run_once = true;
+	slurm_mutex_lock(&init_lock);
+
+	if (auth_type)
+		fatal_abort("%s: duplicate authentication init", __func__);
 
 	if (type == AUTH_TYPE_INVALID)
 		fatal("%s: invalid authentication type requested", __func__);
@@ -93,6 +95,8 @@ extern int init_rest_auth(rest_auth_type_t type)
 		debug3("%s: AUTH_TYPE_LOCAL activated", __func__);
 	if (type & AUTH_TYPE_USER_PSK)
 		debug3("%s: AUTH_TYPE_USER_PSK activated", __func__);
+
+	slurm_mutex_unlock(&init_lock);
 
 	return rc;
 }
