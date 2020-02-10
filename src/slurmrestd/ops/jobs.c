@@ -918,8 +918,9 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 			data_t *cores = data_key_set(node, "cores");
 			data_set_dict(sockets);
 			data_set_dict(cores);
-			const size_t bit_reps = j->sockets_per_node[sock_inx] *
-						j->cores_per_socket[sock_inx];
+			const size_t bit_reps =
+				((size_t) j->sockets_per_node[sock_inx]) *
+				((size_t) j->cores_per_socket[sock_inx]);
 
 			if (sock_reps >= j->sock_core_rep_count[sock_inx]) {
 				sock_inx++;
