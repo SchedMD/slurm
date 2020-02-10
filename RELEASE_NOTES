@@ -62,6 +62,17 @@ HIGHLIGHTS
     spank_get_item().
  -- Prolog/Epilog - add SLURM_JOB_GID environment variable.
  -- Add new slurmrestd command/daemon which implements the Slurm REST API.
+ -- The inconsistent terminology and environment variable naming for
+    Heterogeneous Job ("HetJob") support has been tidied up.
+    -- The correct term for these jobs are "HetJobs", references to "PackJob"
+       have been corrected.
+    -- The correct term for the separate constituent jobs are "components",
+       references to "packs" have been corrected.
+    -- Output from 'scontrol show job' and others has been made consistent
+       with this .
+    -- Relevant environment variables are all of the form SLURM_HET_JOB_*.
+       (Old forms are still supported for this release, but may be removed
+       in the future.)
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================
