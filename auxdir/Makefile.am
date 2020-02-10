@@ -8,6 +8,7 @@ EXTRA_DIST = \
     ax_lib_hdf5.m4 \
     ax_pthread.m4 \
     slurm.m4 \
+    slurmrestd.m4 \
     test-driver \
     x_ac_affinity.m4 \
     x_ac_bluegene.m4 \

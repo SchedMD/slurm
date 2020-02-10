@@ -129,7 +129,9 @@ extern int init(void)
 	} else {
 		/* we must be in a client command */
 		token = getenv("SLURM_JWT");
-		if (!token) {
+
+		/* slurmrestd can wait for the tokens from the clients */
+		if (!running_in_slurmrestd() && !token) {
 			error("Could not load SLURM_JWT environment variable.");
 			return SLURM_ERROR;
 		}

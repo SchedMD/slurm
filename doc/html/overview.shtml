@@ -32,6 +32,11 @@ The <b>slurmd</b> daemons provide fault-tolerant hierarchical communications.
 There is an optional <b>slurmdbd</b> (Slurm DataBase Daemon) which can be used
 to record accounting information for multiple Slurm-managed clusters in a
 single database.
+There is an optional
+<a href="rest.html"><b>slurmrestd</b> (Slurm REST API Daemon)</a>
+which can be used to interact with Slurm through its
+<a href="https://en.wikipedia.org/wiki/Representational_state_transfer">
+REST API</a>.
 User tools include <b>srun</b> to initiate jobs,
 <b>scancel</b> to terminate queued or running jobs,
 <b>sinfo</b> to report system status,
@@ -233,6 +238,6 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 23 September 2019</p>
+<p style="text-align:center;">Last modified 7 Februrary 2020</p>
 
 <!--#include virtual="footer.txt"-->

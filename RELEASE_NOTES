@@ -61,6 +61,7 @@ HIGHLIGHTS
  -- SPANK - added support for S_JOB_GID in the job script context with
     spank_get_item().
  -- Prolog/Epilog - add SLURM_JOB_GID environment variable.
+ -- Add new slurmrestd command/daemon which implements the Slurm REST API.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

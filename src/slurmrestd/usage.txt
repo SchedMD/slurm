@@ -1,0 +1,13 @@
+Usage: slurmrestd [OPTIONS] [host:port]...
+	-f file
+		Use specified file for slurmctld configuration
+	-h
+		Print this help message.
+	-t <thread count>
+		Number of threads to use for processing.
+	-u <user>
+		setuid() to user after opening sockets.
+	-v
+		Verbose mode. Multiple -v's increase verbosity.
+	-V
+		Print version information and exit.

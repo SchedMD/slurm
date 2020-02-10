@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- cons_tres - allow jobs to be run on systems with root-less topologies.
  -- Restore pre-20.02pre1 PrologSlurmctld synchonization behavior to avoid
     various race conditions, and ensure proper batch job launch.
+ -- Add new slurmrestd command/daemon which implements the Slurm REST API.
 
 * Changes in Slurm 20.02.0pre1
 ==============================

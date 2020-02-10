@@ -107,6 +107,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ltversion.m4 \
 	$(top_srcdir)/auxdir/lt~obsolete.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
+	$(top_srcdir)/auxdir/slurmrestd.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
 	$(top_srcdir)/auxdir/x_ac_c99.m4 \
 	$(top_srcdir)/auxdir/x_ac_cgroup.m4 \
@@ -320,6 +321,7 @@ NMEDIT = @NMEDIT@
 NUMA_LIBS = @NUMA_LIBS@
 NVML_CPPFLAGS = @NVML_CPPFLAGS@
 NVML_LIBS = @NVML_LIBS@
+OBJCOPY = @OBJCOPY@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OFED_CPPFLAGS = @OFED_CPPFLAGS@
@@ -369,6 +371,7 @@ SLURMCTLD_PORT = @SLURMCTLD_PORT@
 SLURMCTLD_PORT_COUNT = @SLURMCTLD_PORT_COUNT@
 SLURMDBD_PORT = @SLURMDBD_PORT@
 SLURMD_PORT = @SLURMD_PORT@
+SLURMRESTD_PORT = @SLURMRESTD_PORT@
 SLURM_API_AGE = @SLURM_API_AGE@
 SLURM_API_CURRENT = @SLURM_API_CURRENT@
 SLURM_API_MAJOR = @SLURM_API_MAJOR@
@@ -457,9 +460,9 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 man1_MANS = sacct.1 sacctmgr.1 salloc.1 sattach.1 sbatch.1 sbcast.1 \
-	scancel.1 scontrol.1 sdiag.1 sinfo.1 slurm.1 sprio.1 squeue.1 \
-	sreport.1 srun.1 sshare.1 sstat.1 strigger.1 $(am__append_1) \
-	$(am__append_2)
+	scancel.1 scontrol.1 sdiag.1 sinfo.1 slurm.1 slurmrestd.1 \
+	sprio.1 squeue.1 sreport.1 srun.1 sshare.1 sstat.1 strigger.1 \
+	$(am__append_1) $(am__append_2)
 EXTRA_DIST = $(man1_MANS) $(am__append_5)
 @HAVE_MAN2HTML_TRUE@html_DATA = sacct.html sacctmgr.html salloc.html \
 @HAVE_MAN2HTML_TRUE@	sattach.html sbatch.html sbcast.html \

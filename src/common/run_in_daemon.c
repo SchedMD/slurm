@@ -46,6 +46,7 @@ strong_alias(running_in_slurmctld, slurm_running_in_slurmctld);
 strong_alias(running_in_slurmd, slurm_running_in_slurmd);
 strong_alias(running_in_slurmdbd, slurm_running_in_slurmdbd);
 strong_alias(running_in_slurmdstepd, slurm_running_in_slurmdstepd);
+strong_alias(running_in_slurmrestd, slurm_running_in_slurmrestd);
 strong_alias(running_in_slurmstepd, slurm_running_in_slurmstepd);
 
 extern bool run_in_daemon(bool *run, bool *set, char *daemons)
@@ -114,6 +115,12 @@ extern bool running_in_slurmdstepd(void)
 {
 	static bool run = false, set = false;
 	return run_in_daemon(&run, &set, "slurmd,slurmstepd");
+}
+
+extern bool running_in_slurmrestd(void)
+{
+	static bool run = false, set = false;
+	return run_in_daemon(&run, &set, "slurmrestd");
 }
 
 extern bool running_in_slurmstepd(void)

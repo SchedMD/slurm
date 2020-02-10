@@ -27,3 +27,7 @@ SUBDIRS =		\
 	sstat		\
 	strigger	\
 	sview
+
+if WITH_SLURMRESTD
+SUBDIRS += slurmrestd
+endif
