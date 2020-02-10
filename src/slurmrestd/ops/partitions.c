@@ -216,6 +216,7 @@ static int _op_handler_partitions(const char *context_id,
 	}
 
 	slurm_free_partition_info_msg(part_info_ptr);
+	xfree(name);
 	return rc;
 }
 
