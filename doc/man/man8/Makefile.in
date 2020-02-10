@@ -458,6 +458,7 @@ top_srcdir = @top_srcdir@
 man8_MANS = slurmctld.8 \
 	slurmd.8 \
 	slurmdbd.8 \
+	slurmrestd.8 \
 	slurmstepd.8 \
 	spank.8
 
@@ -466,6 +467,7 @@ EXTRA_DIST = $(man8_MANS) $(am__append_1)
 @HAVE_MAN2HTML_TRUE@	slurmctld.html \
 @HAVE_MAN2HTML_TRUE@	slurmd.html \
 @HAVE_MAN2HTML_TRUE@	slurmdbd.html \
+@HAVE_MAN2HTML_TRUE@	slurmrestd.html \
 @HAVE_MAN2HTML_TRUE@	slurmstepd.html \
 @HAVE_MAN2HTML_TRUE@	spank.html
 
