@@ -126,31 +126,9 @@ if {$exit_code} {
 	exit $exit_code
 }
 
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to start\n"
-	set exit_code 1
-}
-
-# Check that the job was submitted with no error
-set match 0
-spawn $squeue -h -j$job_id -o%t|%r
-expect {
-	-re "R.None" {
-		set match 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$match == 0} {
-	send_user "\nFAILURE: job $job_id is not in the correct state."
-	send_user "Job $job_id should be Running and have reason: None\n"
+# Check that job starts running correctly
+if {[wait_job_reason $job_id "RUNNING" "None"] != 0} {
+	log_error "Job $job_id should be Running and have reason: None"
 	set exit_code 1
 }
 
@@ -191,63 +169,11 @@ if {$exit_code} {
 	exit $exit_code
 }
 
-
-# Wait a bit for the pending reason to be set
-sleep 10
-
 # Check that the job is held due to the failed prolog or JobHeldAdmin
 # Either state is possible due to race conditions
-set cleaning 0
-set match 0
-spawn $squeue -h -j$job_id -o%t|%r
-expect {
-	-re "PD.Cleaning" {
-		set cleaning 1
-		exp_continue
-	}
-	-re "PD.launch failed requeued held" {
-		set match 1
-		exp_continue
-	}
-	-re "PD.JobHeldAdmin" {
-		set match 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$cleaning == 1} {
-	send_user "\nWARNING: Waiting longer for job cleanup\n"
-	sleep 30
-	set match 0
-	spawn $squeue -h -j$job_id -o%t|%r
-	expect {
-		-re "PD.launch failed requeued held" {
-			set match 1
-			exp_continue
-		}
-		-re "PD.JobHeldAdmin" {
-			set match 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: squeue is not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-}
-if {$match == 0} {
-	send_user "\nFAILURE: job $job_id is not in the correct state. "
-	send_user "Job $job_id should be Pending and have reason: "
-	send_user "\"launch failed requeued held\" or \"JobHeldAdmin\"\n"
+if {[wait_job_reason $job_id "PENDING" {"launch_failed_requeued_held" \
+                                        "JobHeldAdmin"}]} {
+	log_error "Job $job_id is not in the correct state or reason."
 	set exit_code 1
 }
 
