@@ -4495,7 +4495,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			 * required for pam_slurm_adopt, but don't fatal if
 			 * using a different proctrack plugin.
 			 */
-			if (xstrcmp(conf->proctrack_type, "proctrack/cgroup") &&
+			if (running_in_slurmctld() &&
+			    xstrcmp(conf->proctrack_type, "proctrack/cgroup") &&
 			    xstrcmp(conf->proctrack_type,
 				    "proctrack/cray_aries"))
 				error("If using PrologFlags=Contain for pam_slurm_adopt, either proctrack/cgroup or proctrack/cray_aries is required.  If not using pam_slurm_adopt, please ignore error.");
