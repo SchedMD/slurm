@@ -250,12 +250,6 @@ extern void prep_prolog_slurmctld(job_record_t *job_ptr)
 		if (async)
 			job_ptr->prep_prolog_cnt++;
 	}
-
-	if (job_ptr->prep_prolog_cnt && job_ptr->details) {
-		job_ptr->details->prolog_running++;
-		job_ptr->job_state |= JOB_CONFIGURING;
-	}
-
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
 }

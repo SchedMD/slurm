@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
  -- Change scancel to only check job's base state when matching -t options.
  -- Save job dependency list in state files.
  -- cons_tres - allow jobs to be run on systems with root-less topologies.
+ -- Restore pre-20.02pre1 PrologSlurmctld synchonization behavior to avoid
+    various race conditions, and ensure proper batch job launch.
 
 * Changes in Slurm 20.02.0pre1
 ==============================

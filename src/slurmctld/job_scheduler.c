@@ -4458,7 +4458,7 @@ static void *_wait_boot(void *arg)
 static void *_start_prolog_slurmctld_thread(void *x)
 {
 	slurmctld_lock_t node_write_lock = {
-		.conf = READ_LOCK, .job = READ_LOCK,
+		.conf = READ_LOCK, .job = WRITE_LOCK,
 		.node = WRITE_LOCK, .fed = READ_LOCK };
 	uint32_t *job_id = (uint32_t *) x;
 	job_record_t *job_ptr;
@@ -4466,6 +4466,14 @@ static void *_start_prolog_slurmctld_thread(void *x)
 	lock_slurmctld(node_write_lock);
 	job_ptr = find_job_record(*job_id);
 	prep_prolog_slurmctld(job_ptr);
+
+	/*
+	 * No async prolog_slurmctld threads running, so decrement now to move
+	 * on with the job launch.
+	 */
+	if (!job_ptr->prep_prolog_cnt)
+		prolog_running_decr(job_ptr);
+
 	unlock_slurmctld(node_write_lock);
 	xfree(job_id);
 
@@ -4482,6 +4490,9 @@ extern void prolog_slurmctld(job_record_t *job_ptr)
 	uint32_t *job_id = xmalloc(sizeof(*job_id));
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+
+	job_ptr->details->prolog_running++;
+	job_ptr->job_state |= JOB_CONFIGURING;
 
 	*job_id = job_ptr->job_id;
 	slurm_thread_create_detached(NULL, _start_prolog_slurmctld_thread, job_id);
