@@ -2401,10 +2401,8 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				if (job->user)
 					tmp_char = job->user;
-				else if (job->uid != -1) {
-					if ((pw=getpwuid(job->uid)))
+				else if ((pw=getpwuid(job->uid)))
 						tmp_char = pw->pw_name;
-				}
 				break;
 			case JOBSTEP:
 
