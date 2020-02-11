@@ -786,7 +786,6 @@ static void _wrap_on_data(void *x)
 		return;
 	}
 
-	xassert(get_buf_offset(con->in) >= 0);
 	if (get_buf_offset(con->in) < size_buf(con->in)) {
 		if (get_buf_offset(con->in) > 0) {
 			/*
