@@ -1142,7 +1142,7 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 		data_set_int(data_key_set(jd, "time_limit"), job->time_limit);
 	else
 		data_set_null(data_key_set(jd, "time_limit"));
-	if (job->time_limit != INFINITE)
+	if (job->time_min != INFINITE)
 		data_set_int(data_key_set(jd, "time_minimum"), job->time_min);
 	else
 		data_set_null(data_key_set(jd, "time_minimum"));
