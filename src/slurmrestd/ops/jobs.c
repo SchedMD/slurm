@@ -55,6 +55,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/strlcpy.h"
 #include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xassert.h"
@@ -298,7 +299,7 @@ static data_for_each_cmd_t _per_job_param(const char *key, const data_t *data,
 	ENTRY *re = NULL;
 
 	/* clone key to force all lower characters */
-	strncpy(lkey, key, sizeof(lkey));
+	strlcpy(lkey, key, sizeof(lkey));
 	xstrtolower(lkey);
 
 	if (!(rc = hsearch_r(e, FIND, &re, &hash_params))) {
