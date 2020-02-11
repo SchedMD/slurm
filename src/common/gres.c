@@ -12887,7 +12887,6 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 				      bool ignore_alloc,
 				      uint32_t job_id, uint32_t step_id)
 {
-	int i;
 	uint64_t core_cnt, tmp_cnt;
 	ListIterator  job_gres_iter, step_gres_iter;
 	gres_state_t *job_gres_ptr, *step_gres_ptr;
@@ -12918,21 +12917,16 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 			break;
 		}
 
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (step_gres_ptr->plugin_id !=
-			    gres_context[i].plugin_id)
-				continue;
-			tmp_cnt = _step_test(step_gres_ptr->gres_data,
-					     job_gres_ptr->gres_data,
-					     node_offset, first_step_node,
-					     cpus_per_task, max_rem_nodes,
-					     ignore_alloc,
-					     job_id, step_id,
-					     step_gres_ptr->plugin_id);
-			if ((tmp_cnt != NO_VAL64) && (tmp_cnt < core_cnt))
-				core_cnt = tmp_cnt;
-			break;
-		}
+		tmp_cnt = _step_test(step_gres_ptr->gres_data,
+				     job_gres_ptr->gres_data,
+				     node_offset, first_step_node,
+				     cpus_per_task, max_rem_nodes,
+				     ignore_alloc,
+				     job_id, step_id,
+				     step_gres_ptr->plugin_id);
+		if ((tmp_cnt != NO_VAL64) && (tmp_cnt < core_cnt))
+			core_cnt = tmp_cnt;
+
 		if (core_cnt == 0)
 			break;
 	}
@@ -13150,7 +13144,7 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 				  uint16_t tasks_on_node, uint32_t rem_nodes,
 				  uint32_t job_id, uint32_t step_id)
 {
-	int i, rc, rc2;
+	int rc, rc2;
 	ListIterator step_gres_iter,  job_gres_iter;
 	gres_state_t *step_gres_ptr, *job_gres_ptr;
 
@@ -13167,19 +13161,6 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 	slurm_mutex_lock(&gres_context_lock);
 	step_gres_iter = list_iterator_create(step_gres_list);
 	while ((step_gres_ptr = (gres_state_t *) list_next(step_gres_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (step_gres_ptr->plugin_id ==
-			    gres_context[i].plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
-			error("%s: could not find GRES plugin %u for step %u.%u",
-			      __func__, step_gres_ptr->plugin_id,
-			      job_id, step_id);
-			rc = ESLURM_INVALID_GRES;
-			break;
-		}
-
 		job_gres_iter = list_iterator_create(job_gres_list);
 		while ((job_gres_ptr = (gres_state_t *)
 				list_next(job_gres_iter))) {
@@ -13201,8 +13182,6 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 		}
 		list_iterator_destroy(job_gres_iter);
 		if (job_gres_ptr == NULL) {
-			info("%s: job %u lacks gres/%s for step %u", __func__,
-			     job_id, gres_context[i].gres_name, step_id);
 			rc = ESLURM_INVALID_GRES;
 			break;
 		}
@@ -13310,7 +13289,7 @@ static int _step_dealloc(void *step_gres_data, void *job_gres_data,
 extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 				    uint32_t job_id, uint32_t step_id)
 {
-	int i, rc, rc2;
+	int rc, rc2;
 	ListIterator step_gres_iter,  job_gres_iter;
 	gres_state_t *step_gres_ptr, *job_gres_ptr;
 
@@ -13350,17 +13329,11 @@ extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 		if (job_gres_ptr == NULL)
 			continue;
 
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (step_gres_ptr->plugin_id !=
-			    gres_context[i].plugin_id)
-				continue;
-			rc2 = _step_dealloc(step_gres_ptr->gres_data,
-					   job_gres_ptr->gres_data,
-					   job_id, step_id);
-			if (rc2 != SLURM_SUCCESS)
-				rc = rc2;
-			break;
-		}
+		rc2 = _step_dealloc(step_gres_ptr->gres_data,
+				    job_gres_ptr->gres_data,
+				    job_id, step_id);
+		if (rc2 != SLURM_SUCCESS)
+			rc = rc2;
 	}
 	list_iterator_destroy(job_gres_iter);
 	list_iterator_destroy(step_gres_iter);
