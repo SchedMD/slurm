@@ -23909,11 +23909,11 @@ fi
 
 
   if test "x$x_ac_slurmrestd" != "xno"; then
-    if test -n "$x_ac_cv_http_parser_dir"; then
+    if test -n "$x_ac_cv_http_parser_dir" && test -n "$x_ac_cv_json_dir"; then
       x_ac_slurmrestd=yes
     else
       if test "x$x_ac_slurmrestd" = "xyes"; then
-        as_fn_error $? "unable to build slurmrestd without http-parser" "$LINENO" 5
+        as_fn_error $? "unable to build slurmrestd without http-parser and json libraries" "$LINENO" 5
       else
         x_ac_slurmrestd=no
       fi
