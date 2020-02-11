@@ -4464,7 +4464,11 @@ static void *_start_prolog_slurmctld_thread(void *x)
 	job_record_t *job_ptr;
 
 	lock_slurmctld(node_write_lock);
-	job_ptr = find_job_record(*job_id);
+	if (!(job_ptr = find_job_record(*job_id))) {
+		error("%s: missing JobId=%u", __func__, *job_id);
+		unlock_slurmctld(node_write_lock);
+		return NULL;
+	}
 	prep_prolog_slurmctld(job_ptr);
 
 	/*
