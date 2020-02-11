@@ -4471,8 +4471,10 @@ static void *_start_prolog_slurmctld_thread(void *x)
 	 * No async prolog_slurmctld threads running, so decrement now to move
 	 * on with the job launch.
 	 */
-	if (!job_ptr->prep_prolog_cnt)
+	if (!job_ptr->prep_prolog_cnt) {
+		debug2("%s: no async prolog_slurmctld running", __func__);
 		prolog_running_decr(job_ptr);
+	}
 
 	unlock_slurmctld(node_write_lock);
 	xfree(job_id);
