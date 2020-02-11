@@ -1335,12 +1335,12 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 	} else if (tag == URL_TAG_JOB &&
 		   method == HTTP_REQUEST_DELETE) {
 		int signal = 0;
-		data_t *_signal = data_key_get(query, "signal");
+		data_t *dsignal = data_key_get(query, "signal");
 
-		if (signal && data_get_type(_signal) == DATA_TYPE_INT_64)
-			signal = data_get_int(_signal);
-		else if (_signal && data_get_type(_signal) == DATA_TYPE_STRING)
-			signal = sig_name2num(data_get_string(_signal));
+		if (data_get_type(dsignal) == DATA_TYPE_INT_64)
+			signal = data_get_int(dsignal);
+		else if (data_get_type(dsignal) == DATA_TYPE_STRING)
+			signal = sig_name2num(data_get_string(dsignal));
 		else
 			signal = SIGKILL;
 
