@@ -3002,8 +3002,8 @@ static void _kill_old_slurmctld(void)
 /* NOTE: No need to lock the config data since we are still single-threaded */
 static void _init_pidfile(void)
 {
-	if (xstrcmp(slurmctld_conf.slurmctld_pidfile,
-		   slurmctld_conf.slurmd_pidfile) == 0)
+	if (!xstrcmp(slurmctld_conf.slurmctld_pidfile,
+		     slurmctld_conf.slurmd_pidfile))
 		error("SlurmctldPid == SlurmdPid, use different names");
 
 	/* Don't close the fd returned here since we need to keep the
