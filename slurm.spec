@@ -38,7 +38,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 #  Options that are off by default (enable with --with <opt>)
 %bcond_with cray
 %bcond_with cray_network
-%bcond_wuth slurmrestd
+%bcond_with slurmrestd
 %bcond_with slurmsmwd
 %bcond_with multiple_slurmd
 %bcond_with ucx
