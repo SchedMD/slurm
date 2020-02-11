@@ -160,10 +160,11 @@ static inline void _check_magic_fd(con_mgr_fd_t *con)
 static void _connection_fd_delete(void *x)
 {
 	con_mgr_fd_t *con = x;
-	con_mgr_t *mgr = con->mgr;
+	con_mgr_t *mgr;
 
 	if (!con)
 		return;
+	mgr = con->mgr;
 
 	_check_magic_mgr(mgr);
 	log_flag(NET, "%s: [%s] free connection input_fd=%d output_fd=%d",
