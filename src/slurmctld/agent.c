@@ -2145,8 +2145,12 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		return -1;	/* job cancelled while waiting */
 	}
 
-	if (job_ptr->details && job_ptr->details->prolog_running)
+	if (job_ptr->details && job_ptr->details->prolog_running) {
+		debug2("%s: JobId=%u still waiting on %u prologs",
+		       __func__, job_ptr->job_id,
+		       job_ptr->details->prolog_running);
 		return 1;
+	}
 
 	if (job_ptr->wait_all_nodes) {
 		(void) job_node_ready(launch_msg_ptr->job_id, &tmp);
