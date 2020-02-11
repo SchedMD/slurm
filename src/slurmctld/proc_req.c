@@ -2436,8 +2436,14 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	error_code = job_complete(comp_msg->job_id, uid,
 				  false, false, comp_msg->job_rc);
 	if (error_code) {
-		info("%s: %pJ error %s",
-		     __func__, job_ptr, slurm_strerror(error_code));
+		if (error_code == ESLURM_INVALID_JOB_ID) {
+			info("%s: JobId=%d error %s",
+			     __func__, comp_msg->job_id,
+			     slurm_strerror(error_code));
+		} else {
+			info("%s: %pJ error %s",
+			     __func__, job_ptr, slurm_strerror(error_code));
+		}
 	} else {
 		debug2("%s: %pJ %s", __func__, job_ptr, TIME_STR);
 	}
