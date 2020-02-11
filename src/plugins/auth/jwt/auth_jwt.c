@@ -377,6 +377,7 @@ char *slurm_auth_token_generate(const char *username, int lifespan)
 
 	if (!key) {
 		error("%s: cannot issue tokens, no key loaded", __func__);
+		xfree(cred);
 		return NULL;
 	}
 
