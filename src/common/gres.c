@@ -2343,6 +2343,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 	char *tmp_type = NULL;
 	char *tmp_unique_id = NULL;
 	gres_slurmd_conf_t *p;
+	bool locked = false;
 
 	rc = gres_init();
 
@@ -2358,6 +2359,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 		goto unpack_error;
 
 	slurm_mutex_lock(&gres_context_lock);
+	locked = true;
 	if (protocol_version < SLURM_MIN_PROTOCOL_VERSION) {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -2498,7 +2500,8 @@ unpack_error:
 	xfree(tmp_links);
 	xfree(tmp_name);
 	xfree(tmp_type);
-	slurm_mutex_unlock(&gres_context_lock);
+	if (locked)
+		slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
 }
 
@@ -4070,6 +4073,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 	uint16_t gres_bitmap_size = 0, rec_cnt = 0;
 	gres_state_t *gres_ptr;
 	gres_node_state_t *gres_node_ptr;
+	bool locked = false;
 
 	safe_unpack16(&rec_cnt, buffer);
 	if (rec_cnt == 0)
@@ -4078,6 +4082,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 	rc = gres_init();
 
 	slurm_mutex_lock(&gres_context_lock);
+	locked = true;
 	if ((gres_context_cnt > 0) && (*gres_list == NULL))
 		*gres_list = list_create(_gres_node_list_delete);
 
@@ -4128,7 +4133,8 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 
 unpack_error:
 	error("%s: unpack error from node %s", __func__, node_name);
-	slurm_mutex_unlock(&gres_context_lock);
+	if (locked)
+		slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
 }
 
@@ -6319,6 +6325,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 	uint8_t  has_more = 0;
 	gres_state_t *gres_ptr;
 	gres_job_state_t *gres_job_ptr = NULL;
+	bool locked = false;
 
 	safe_unpack16(&rec_cnt, buffer);
 	if (rec_cnt == 0)
@@ -6327,6 +6334,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 	rc = gres_init();
 
 	slurm_mutex_lock(&gres_context_lock);
+	locked = true;
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
 		*gres_list = list_create(gres_job_list_delete);
 	}
@@ -6498,7 +6506,8 @@ unpack_error:
 	error("%s: unpack error from job %u", __func__, job_id);
 	if (gres_job_ptr)
 		_job_state_delete(gres_job_ptr);
-	slurm_mutex_unlock(&gres_context_lock);
+	if (locked)
+		slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
 }
 
@@ -6598,6 +6607,7 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 	uint16_t rec_cnt = 0;
 	uint8_t filled = 0;
 	gres_epilog_info_t *gres_job_ptr = NULL;
+	bool locked = false;
 
 	safe_unpack16(&rec_cnt, buffer);
 	if (rec_cnt == 0)
@@ -6606,6 +6616,7 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 	rc = gres_init();
 
 	slurm_mutex_lock(&gres_context_lock);
+	locked = true;
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
 		*gres_list = list_create(_epilog_list_del);
 	}
@@ -6672,7 +6683,8 @@ unpack_error:
 	error("%s: unpack error", __func__);
 	if (gres_job_ptr)
 		_epilog_list_del(gres_job_ptr);
-	slurm_mutex_unlock(&gres_context_lock);
+	if (locked)
+		slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
 }
 
@@ -9110,6 +9122,7 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 	uint8_t data_flag = 0;
 	gres_state_t *gres_ptr;
 	gres_step_state_t *gres_step_ptr = NULL;
+	bool locked = false;
 
 	safe_unpack16(&rec_cnt, buffer);
 	if (rec_cnt == 0)
@@ -9118,6 +9131,7 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 	rc = gres_init();
 
 	slurm_mutex_lock(&gres_context_lock);
+	locked = true;
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
 		*gres_list = list_create(gres_step_list_delete);
 	}
@@ -9197,7 +9211,8 @@ unpack_error:
 	error("%s: unpack error from %ps", __func__, step_id);
 	if (gres_step_ptr)
 		_step_state_delete(gres_step_ptr);
-	slurm_mutex_unlock(&gres_context_lock);
+	if (locked)
+		slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
 }
 
