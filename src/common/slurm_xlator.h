@@ -230,6 +230,12 @@
 #define net_stream_listen	slurm_net_stream_listen
 #define net_set_low_water	slurm_net_set_low_water
 
+/* node_conf.[ch] functions */
+#define init_node_conf          slurm_init_node_conf
+#define build_all_nodeline_info slurm_build_all_nodeline_info
+#define rehash_node		slurm_rehash_node
+#define hostlist2bitmap		slurm_hostlist2bitmap
+
 /* pack.[ch] functions */
 #define	create_buf		slurm_create_buf
 #define	free_buf		slurm_free_buf
