@@ -421,48 +421,8 @@ static void *_handle_accept(void *arg)
 	debug3("%s: entering (new thread)", __func__);
 	xfree(arg);
 
-	/*
-	 * Prior to 19.05, REQUEST_CONNECT was the first thing written on
-	 * the socket, followed by an auth_cred. In 19.05, this changes over
-	 * to SLURM_PROTOCOL_VERSION from the client and the (unneeded)
-	 * credential is no longer received. The REQUEST_CONNECT block should
-	 * be removed two versions after 19.05.
-	 */
 	safe_read(fd, &req, sizeof(int));
-	if (req == REQUEST_CONNECT) {
-		int len;
-		void *auth_cred;
-		char *auth_info = slurm_get_auth_info();
-
-		/* assume oldest we can talk to */
-		client_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
-
-		safe_read(fd, &len, sizeof(int));
-		buffer = init_buf(len);
-		safe_read(fd, get_buf_data(buffer), len);
-
-		/* Unpack and verify the auth credential */
-		auth_cred = g_slurm_auth_unpack(buffer, SLURM_PROTOCOL_VERSION);
-		if (auth_cred == NULL) {
-			error("Unpacking authentication credential: %m");
-			FREE_NULL_BUFFER(buffer);
-			goto fail;
-		}
-		rc = g_slurm_auth_verify(auth_cred, auth_info);
-		if (rc != SLURM_SUCCESS) {
-			error("Verifying authentication credential: %m");
-			xfree(auth_info);
-			(void) g_slurm_auth_destroy(auth_cred);
-			FREE_NULL_BUFFER(buffer);
-			goto fail;
-		}
-		xfree(auth_info);
-
-		/* Get the uid from the credential, then destroy it. */
-		uid = g_slurm_auth_get_uid(auth_cred);
-		g_slurm_auth_destroy(auth_cred);
-		FREE_NULL_BUFFER(buffer);
-	} else if (req >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (req >= SLURM_MIN_PROTOCOL_VERSION) {
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 		gid_t tmp_gid;
 
