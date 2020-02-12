@@ -2407,3 +2407,11 @@ void sbcast_cred_arg_free(sbcast_cred_arg_t *arg)
 	xfree(arg->user_name);
 	xfree(arg);
 }
+
+extern bool slurm_cred_send_gids_enabled(void)
+{
+	if (_slurm_cred_init() < 0)
+		return SLURM_ERROR;
+
+	return enable_send_gids;
+}
