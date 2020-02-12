@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 20.02.0
+==========================
+
 * Changes in Slurm 20.02.0rc1
 =============================
  -- sbatch - fix segfault when no newline at the end of a burst buffer file.
