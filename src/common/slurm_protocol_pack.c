@@ -6550,9 +6550,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->het_job_nnodes, buffer);
 		if (msg->het_job_nnodes != NO_VAL) {
-			pack8((uint8_t) 1, buffer);
 			for (i = 0; i < msg->het_job_nnodes; i++) {
-				pack16(msg->het_job_task_cnts[i], buffer);
 				pack32_array(
 					msg->het_job_tids[i],
 					(uint32_t)msg->het_job_task_cnts[i],
@@ -6561,7 +6559,6 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		}
 		pack32(msg->het_job_ntasks, buffer);
 		if (msg->het_job_ntasks != NO_VAL) {
-			pack8((uint8_t) 1, buffer);
 			for (i = 0; i < msg->het_job_ntasks; i++)
 				pack32(msg->het_job_tid_offsets[i], buffer);
 		}
@@ -6778,25 +6775,20 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack32(&msg->het_job_id, buffer);
 		safe_unpack32(&msg->het_job_nnodes, buffer);
 		if (msg->het_job_nnodes != NO_VAL) {
-			safe_unpack8(&uint8_tmp, buffer);
 			safe_xcalloc(msg->het_job_task_cnts,
 				     msg->het_job_nnodes,
 				     sizeof(uint16_t));
 			safe_xcalloc(msg->het_job_tids, msg->het_job_nnodes,
 				     sizeof(uint32_t *));
 			for (i = 0; i < msg->het_job_nnodes; i++) {
-				safe_unpack16(&msg->het_job_task_cnts[i],
-					      buffer);
 				safe_unpack32_array(&msg->het_job_tids[i],
 						    &uint32_tmp,
 						    buffer);
-				if (msg->het_job_task_cnts[i] != uint32_tmp)
-					goto unpack_error;
+				msg->het_job_task_cnts[i] = uint32_tmp;
 			}
 		}
 		safe_unpack32(&msg->het_job_ntasks, buffer);
 		if (msg->het_job_ntasks != NO_VAL) {
-			safe_unpack8(&uint8_tmp, buffer);
 			safe_xcalloc(msg->het_job_tid_offsets,
 				     msg->het_job_ntasks,
 				     sizeof(uint32_t));
