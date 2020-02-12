@@ -1116,10 +1116,7 @@ static int _process_command (int argc, char **argv)
 		_fetch_token(argc, argv);
 	}
 	else if (xstrncasecmp(tag, "wait_job", MAX(tag_len, 2)) == 0) {
-		if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
-			fprintf(stderr,
-				"wait_job is handled automatically on Cray.\n");
-		} else if (argc > 2) {
+		if (argc > 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr,

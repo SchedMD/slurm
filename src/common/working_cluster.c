@@ -112,10 +112,6 @@ extern uint32_t slurmdb_setup_cluster_flags(void)
 
 static uint32_t _str_2_cluster_flags(char *flags_in)
 {
-	if (xstrcasestr(flags_in, "AlpsCray")
-	    || xstrcasestr(flags_in, "CrayXT"))
-		return CLUSTER_FLAG_CRAY_A;
-
 	if (xstrcasestr(flags_in, "FrontEnd"))
 		return CLUSTER_FLAG_FE;
 
