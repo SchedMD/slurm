@@ -127,8 +127,10 @@
 
 #define MAX_THREADS		256
 
-#define _free_and_set(__dst, __src) \
-	xfree(__dst); __dst = __src
+#define _free_and_set(__dst, __src)		\
+	do {					\
+		xfree(__dst); __dst = __src;	\
+	} while (0)
 
 /* global, copied to STDERR_FILENO in tasks before the exec */
 int devnull = -1;
