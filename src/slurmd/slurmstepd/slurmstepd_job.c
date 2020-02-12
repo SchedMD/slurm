@@ -315,12 +315,15 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->user_name	= xstrdup(msg->user_name);
 	_slurm_cred_to_step_rec(msg->cred, job);
 	/*
-	 * Favor the group info in the launch cred if available - for 19.05+
-	 * this is where it is managed, not in launch_tasks_request_msg_t.
-	 * For older versions, or for when send_gids is disabled, fall back
-	 * to the launch_tasks_request_msg_t info if necessary.
+	 * Favor the group info in the launch cred if available - fall back
+	 * to the launch_tasks_request_msg_t info if send_gids is disabled.
 	 */
 	if (!job->ngids) {
+		if (slurm_cred_send_gids_enabled()) {
+			error("No gids given in the cred.");
+			stepd_step_rec_destroy(job);
+			return NULL;
+		}
 		job->ngids = (int) msg->ngids;
 		job->gids = copy_gids(msg->ngids, msg->gids);
 	}
@@ -549,12 +552,15 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->user_name	= xstrdup(msg->user_name);
 	_slurm_cred_to_step_rec(msg->cred, job);
 	/*
-	 * Favor the group info in the launch cred if available - for 19.05+
-	 * this is where it is managed, not in batch_job_launch_msg_t.
-	 * For older versions, or for when send_gids is disabled, fall back
-	 * to the batch_job_launch_msg_t info if necessary.
+	 * Favor the group info in the launch cred if available - fall back
+	 * to the batch_job_launch_msg_t info if send_gids is disabled.
 	 */
 	if (!job->ngids) {
+		if (slurm_cred_send_gids_enabled()) {
+			error("No gids given in the cred.");
+			stepd_step_rec_destroy(job);
+			return NULL;
+		}
 		job->ngids = (int) msg->ngids;
 		job->gids = copy_gids(msg->ngids, msg->gids);
 	}
