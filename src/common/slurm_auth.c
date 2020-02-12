@@ -302,18 +302,8 @@ int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)
 	if (!wrap || slurm_auth_init(NULL) < 0)
 		return SLURM_ERROR;
 
-	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(*ops[wrap->index].plugin_id, buf);
-		return (*(ops[wrap->index].pack))(cred, buf, protocol_version);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		packstr(ops[wrap->index].plugin_type, buf);
-		/*
-		 * This next field was packed with plugin_version within each
-		 * individual auth plugin, but upon unpack was never checked
-		 * against anything. Rather than expose the protocol_version
-		 * symbol, just pack a zero here instead.
-		 */
-		pack32(0, buf);
 		return (*(ops[wrap->index].pack))(cred, buf, protocol_version);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -330,7 +320,7 @@ void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 	if (!buf || slurm_auth_init(NULL) < 0)
 		return NULL;
 
-	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&plugin_id, buf);
 		for (int i = 0; i < g_context_num; i++) {
 			if (plugin_id == *(ops[i].plugin_id)) {
@@ -344,24 +334,7 @@ void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 		error("%s: remote plugin_id %u not found",
 		      __func__, plugin_id);
 		return NULL;
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		char *plugin_type;
-		uint32_t uint32_tmp, version;
-		safe_unpackmem_ptr(&plugin_type, &uint32_tmp, buf);
-		safe_unpack32(&version, buf);
-		for (int i = 0; i < g_context_num; i++) {
-			if (!xstrcmp(plugin_type, ops[i].plugin_type)) {
-				cred = (*(ops[i].unpack))(buf,
-							  protocol_version);
-				if (cred)
-					cred->index = i;
-				return cred;
-			}
-		}
-		error("%s: remote plugin_type %s not found",
-		      __func__, plugin_type);
-		return NULL;
-	} else {
+	}  else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
 		return NULL;
