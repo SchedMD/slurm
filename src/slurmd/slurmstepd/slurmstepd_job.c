@@ -357,22 +357,16 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 					      sizeof(uint16_t));
 		memcpy(job->het_job_task_cnts, msg->het_job_task_cnts,
 		       sizeof(uint16_t) * msg->het_job_nnodes);
-		if (msg->het_job_tids) {
-			/*
-			 * het_job_tids == NULL if request from pre-v19.05
-			 * srun
-			 */
-			job->het_job_tids = xcalloc(msg->het_job_nnodes,
-						    sizeof(uint32_t *));
-			for (i = 0; i < msg->het_job_nnodes; i++) {
-				job->het_job_tids[i] =
-					xcalloc(job->het_job_task_cnts[i],
-						sizeof(uint32_t));
-				memcpy(job->het_job_tids[i],
-				       msg->het_job_tids[i],
-				       sizeof(uint32_t) *
-				       job->het_job_task_cnts[i]);
-			}
+		job->het_job_tids = xcalloc(msg->het_job_nnodes,
+					    sizeof(uint32_t *));
+		for (i = 0; i < msg->het_job_nnodes; i++) {
+			job->het_job_tids[i] =
+				xcalloc(job->het_job_task_cnts[i],
+					sizeof(uint32_t));
+			memcpy(job->het_job_tids[i],
+			       msg->het_job_tids[i],
+			       sizeof(uint32_t) *
+			       job->het_job_task_cnts[i]);
 		}
 		if (msg->het_job_tid_offsets) {
 			job->het_job_tid_offsets = xcalloc(job->het_job_ntasks,
@@ -683,8 +677,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	xfree(job->node_name);
 	mpmd_free(job);
 	xfree(job->het_job_task_cnts);
-	if ((job->het_job_nnodes != NO_VAL) && job->het_job_tids) {
-		/* het_job_tids == NULL if request from pre-v19.05 srun */
+	if (job->het_job_nnodes != NO_VAL) {
 		for (i = 0; i < job->het_job_nnodes; i++)
 			xfree(job->het_job_tids[i]);
 		xfree(job->het_job_tids);
