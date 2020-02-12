@@ -57,7 +57,7 @@
 /*
  * main - slurmctld main function, start various threads and process RPCs
  * test7.17.prog <TRES_PER_NODE> <CONFIG_DIR_HEAD> <CONFIG_SUB_DIR> <CPU_COUNT>
- * 
+ *
  */
 int main(int argc, char *argv[])
 {
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 
 	/* Setup slurm.conf and gres.conf test paths */
 	strcpy(config_dir, argv[2]);
-	strcpy(config_dir,strcat(config_dir, "/test7.17_configs"));
+	strcpy(config_dir, strcat(config_dir, "/test7.17_configs"));
 	strcpy(test, strcat(config_dir, argv[3]));
 	strcpy(slurm_conf, strcat(test, "/slurm.conf"));
 
