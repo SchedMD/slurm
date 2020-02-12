@@ -181,5 +181,5 @@ int main(int argc, char *argv[])
 		fatal("failure: gres_plugin_fini: %s", slurm_strerror(rc));
 
 	printf("Test %s ran to completion\n\n", argv[3]);
-	exit(0);
+	return rc;
 }
