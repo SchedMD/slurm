@@ -100,6 +100,7 @@ struct step_launch_state {
 					step_resp, do not free */
 	mpi_plugin_client_info_t mpi_info[1];
 	mpi_plugin_client_state_t *mpi_state;
+	int mpi_rc;
 
 	/* user registered callbacks */
 	slurm_step_launch_callbacks_t callback;

@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- Improve job state reason for jobs hitting partition_job_depth.
  -- Speed up testing of singleton dependencies.
  -- Fix negative loop bound in cons_tres.
+ -- srun - capture the MPI plugin return code from mpi_hook_client_fini() and
+    use as final return code for step failure.
 
 * Changes in Slurm 20.02.0
 ==========================

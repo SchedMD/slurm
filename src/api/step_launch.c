@@ -808,7 +808,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 		sls->io.normal = NULL;
 	}
 
-	mpi_hook_client_fini(sls->mpi_state);
+	sls->mpi_rc = mpi_hook_client_fini(sls->mpi_state);
 	slurm_mutex_unlock(&sls->lock);
 }
 
