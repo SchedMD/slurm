@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix minor memory leak in slurmd on reconfig.
  -- Fix invalid ptr reference when rolling up data in the database.
+ -- Change shtml2html.py to require python3 for RHEL8 support, and match
+    man2html.py.
 
 * Changes in Slurm 20.02.0rc1
 =============================
