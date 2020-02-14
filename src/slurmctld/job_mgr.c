@@ -10900,20 +10900,19 @@ static inline bool _purge_complete_het_job(job_record_t *het_job_leader)
  */
 void handle_invalid_dependency(job_record_t *job_ptr)
 {
+	job_ptr->state_reason = WAIT_DEP_INVALID;
+	xfree(job_ptr->state_desc);
 	if (job_ptr->bit_flags & KILL_INV_DEP) {
 		_kill_dependent(job_ptr);
 	} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
 		debug("%s: %pJ job dependency never satisfied",
 		      __func__, job_ptr);
-		job_ptr->state_reason = WAIT_DEP_INVALID;
-		xfree(job_ptr->state_desc);
 	} else if (kill_invalid_dep) {
 		_kill_dependent(job_ptr);
 	} else {
 		debug("%s: %pJ job dependency never satisfied",
 		      __func__, job_ptr);
 		job_ptr->state_reason = WAIT_DEP_INVALID;
-		xfree(job_ptr->state_desc);
 	}
 	fed_mgr_remove_remote_dependencies(job_ptr);
 }
@@ -18018,7 +18017,6 @@ static void _kill_dependent(job_record_t *job_ptr)
 	info("%s: Job dependency can't be satisfied, cancelling %pJ",
 	     __func__, job_ptr);
 	job_ptr->job_state = JOB_CANCELLED;
-	xfree(job_ptr->state_desc);
 	job_ptr->start_time = now;
 	job_ptr->end_time = now;
 	job_completion_logger(job_ptr, false);
