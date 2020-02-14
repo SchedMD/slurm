@@ -1546,12 +1546,31 @@ next_task:
 			}
 		} else if (_failed_partition(job_ptr->part_ptr, failed_parts,
 					     failed_part_cnt)) {
-			job_ptr->state_reason = WAIT_PRIORITY;
-			xfree(job_ptr->state_desc);
+			if ((job_ptr->state_reason == WAIT_NO_REASON) ||
+			    (job_ptr->state_reason == WAIT_RESOURCES)) {
+				sched_debug("%pJ unable to schedule in Partition=%s (per _failed_partition()). State=PENDING. Previous-Reason=%s. Previous-Desc=%s. New-Reason=Priority. Priority=%u.",
+					    job_ptr,
+					    job_ptr->partition,
+					    job_reason_string(
+						    job_ptr->state_reason),
+					    job_ptr->state_desc,
+					    job_ptr->priority);
+				job_ptr->state_reason = WAIT_PRIORITY;
+				xfree(job_ptr->state_desc);
+			} else {
+				/*
+				 * Log job can not run even though we are not
+				 * overriding the reason */
+				sched_debug2("%pJ. unable to schedule in Partition=%s (per _failed_partition()). Retaining previous scheduling Reason=%s. Desc=%s. Priority=%u.",
+					     job_ptr,
+					     job_ptr->partition,
+					     job_reason_string(
+						     job_ptr->state_reason),
+					     job_ptr->state_desc,
+					     job_ptr->priority);
+			}
 			last_job_update = now;
-			sched_debug("%pJ. State=PENDING. Reason=Priority, Priority=%u. Partition=%s.",
-				    job_ptr, job_ptr->priority,
-				    job_ptr->partition);
+
 			continue;
 		} else if (wait_on_resv &&
 			   (job_ptr->warn_flags & KILL_JOB_RESV)) {
