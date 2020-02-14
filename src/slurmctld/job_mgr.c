@@ -17655,19 +17655,29 @@ extern bool job_hold_requeue(job_record_t *job_ptr)
 	return true;
 }
 
+static void _parse_max_depend_depth(char *str)
+{
+	int i = atoi(str);
+	if (i < 0)
+		error("ignoring max_depend_depth value of %d", i);
+	else
+		max_depend_depth = i;
+}
+
 extern void init_depend_policy(void)
 {
 	char *depend_params = slurm_get_dependency_params();
 	char *sched_params = slurm_get_sched_params();
+	char *tmp_ptr;
 
 	disable_remote_singleton =
 		(xstrcasestr(depend_params, "disable_remote_singleton")) ?
 		true : false;
 
 	/*
-	 * kill_invalid_depend is moving from SchedulerParameters to
-	 * DependencyParameters. Support both for 20.02, then remove it
-	 * from SchedulerParameters in 20.11.
+	 * kill_invalid_depend and max_depend_depth are moving from
+	 * SchedulerParameters to DependencyParameters. Support both for 20.02,
+	 * then remove them from SchedulerParameters in a future release.
 	 */
 	if (xstrcasestr(sched_params, "kill_invalid_depend")) {
 		info("kill_invalid_depend is deprecated in SchedulerParameters and moved to DependencyParameters");
@@ -17677,15 +17687,26 @@ extern void init_depend_policy(void)
 			(xstrcasestr(depend_params, "kill_invalid_depend")) ?
 			true : false;
 
+	/* 					   01234567890123456 */
+	if ((tmp_ptr = xstrcasestr(depend_params, "max_depend_depth=")))
+		_parse_max_depend_depth(tmp_ptr + 17);
+	else if ((tmp_ptr = xstrcasestr(sched_params, "max_depend_depth="))) {
+		info("max_depend_depth is deprecated in SchedulerParameters and moved to DependencyParameters");
+		_parse_max_depend_depth(tmp_ptr + 17);
+	} else
+		max_depend_depth = 10;
+
 	xfree(depend_params);
 	xfree(sched_params);
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
-		info("%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d",
-		     __func__, kill_invalid_dep, disable_remote_singleton);
+		info("%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d; max_depend_depth is set to %d",
+		     __func__, kill_invalid_dep, disable_remote_singleton,
+		     max_depend_depth);
 	else
-		debug2("%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d",
-		       __func__, kill_invalid_dep, disable_remote_singleton);
+		debug2("%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d; max_depend_depth is set to %d",
+		       __func__, kill_invalid_dep, disable_remote_singleton,
+		       max_depend_depth);
 }
 
 /* init_requeue_policy()

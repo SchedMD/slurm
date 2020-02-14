@@ -48,8 +48,8 @@ HIGHLIGHTS
     to flow over an alternate network path.
  -- Added auth/jwt plugin, and 'scontrol token' subcommand.
  -- PMIx - improve performance of proc map generation.
- -- Deprecate kill_invalid_depend in SchedulerParameters and move it to a new
-    option called DependencyParameters.
+ -- Move kill_invalid_depend and max_depend_depth options to the new
+    DependencyParameters option, and deprecate use in SchedulerParameters.
  -- Enable job dependencies for any job on any cluster in the same federation.
  -- Allow clusters to be added automatically to db at startup of ctld.
  -- Add AccountingStorageExternalHost slurm.conf parameter.

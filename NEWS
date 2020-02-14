@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix accounting of jobs in IGNORE_JOBS reservations.
  -- Fix issue with batch steps state not loading correctly when upgrading from
     19.05.
+ -- Deprecate max_depend_depth in SchedulerParameters and move it to
+    DependencyParameters.
 
 * Changes in Slurm 20.02.0rc1
 =============================
