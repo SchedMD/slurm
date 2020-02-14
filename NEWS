@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix type mismatches in the perl API.
  -- Prevent use of uninitialized slurmctld_diag_stats.
  -- Fixed various Coverity issues.
+ -- Only show warning about root-less topology in daemons.
 
 * Changes in Slurm 20.02.0rc1
 =============================
