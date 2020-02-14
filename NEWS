@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix invalid ptr reference when rolling up data in the database.
  -- Change shtml2html.py to require python3 for RHEL8 support, and match
     man2html.py.
+ -- slurm.spec - override "hardening" linker flags to ensure RHEL8 builds
+    in a usable manner.
 
 * Changes in Slurm 20.02.0rc1
 =============================

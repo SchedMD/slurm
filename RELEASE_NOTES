@@ -73,6 +73,8 @@ HIGHLIGHTS
     -- Relevant environment variables are all of the form SLURM_HET_JOB_*.
        (Old forms are still supported for this release, but may be removed
        in the future.)
+ -- slurm.spec - override "hardening" linker flags to ensure RHEL8 builds
+    in a usable manner.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

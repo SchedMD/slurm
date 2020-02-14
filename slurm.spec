@@ -59,6 +59,11 @@ Source:		%{slurm_source_dir}.tar.bz2
 # Build with PAM by default on linux
 %bcond_without pam
 
+# Disable hardened builds. -z,now or -z,relro breaks the plugin stack
+%undefine _hardened_build
+%global _hardened_cflags "-Wl,-z,lazy"
+%global _hardened_ldflags "-Wl,-z,lazy"
+
 Requires: munge
 
 %{?systemd_requires}
