@@ -314,7 +314,6 @@ static avail_res_t **_get_res_avail(job_record_t *job_ptr,
 	int i, i_first, i_last;
 	avail_res_t **avail_res_array = NULL;
 	uint32_t s_p_n = _socks_per_node(job_ptr);
-
 	xassert(*cons_common_callbacks.can_job_run_on_node);
 
 	_set_gpu_defaults(job_ptr);
@@ -466,7 +465,6 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 	struct job_details *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	avail_res_t **avail_res_array;
-
 	xassert(*cons_common_callbacks.choose_nodes);
 
 	if (bit_set_count(node_bitmap) < min_nodes) {

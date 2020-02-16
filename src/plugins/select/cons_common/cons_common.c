@@ -611,6 +611,7 @@ fini:
 		avail_res->sock_cnt = sockets;
 		avail_res->spec_threads = spec_threads;
 		avail_res->vpus = select_node_record[node_i].vpus;
+		avail_res->avail_cpus = free_cpu_count;
 	}
 
 	return avail_res;

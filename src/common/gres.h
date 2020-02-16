@@ -1107,6 +1107,20 @@ extern void gres_plugin_job_set_defs(List job_gres_list, char *gres_name,
 				     uint64_t cpu_per_gpu,
 				     uint64_t mem_per_gpu);
 
+/* Return cumulative gres state for specified gres on job
+ * IN job_gres_list - job's gres_list
+ * IN gres_name - gres identifier
+ * OUT gpu - name of gres
+ */
+extern void gres_plugin_job_gres_state(List job_gres_list, char * gres_name, gres_job_state_t *gpuinfo);
+
+/* Return count of available gres on node
+ * IN node_gres_list - nodes's gres_list
+ * IN gres_name - gres identifier
+ * OUT number of available gres of specified type
+ */
+extern uint64_t gres_plugin_node_gres_avail(List node_gres_list, char * gres_name, bool use_total_gres);
+
 /*
  * Extract from the job record's gres_list the count of allocated resources of
  * 	the named gres type.

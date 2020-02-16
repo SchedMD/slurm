@@ -11262,6 +11262,79 @@ extern void gres_plugin_job_set_defs(List job_gres_list, char *gres_name,
 	list_iterator_destroy(gres_iter);
 }
 
+/** Return cumulative gres state for specified gres on job
+ * IN job_gres_list - job's gres_list
+ * IN gres_name - gres identifier
+ * OUT gpu - name of gres
+ */
+extern void gres_plugin_job_gres_state(List job_gres_list, char * gres_name, gres_job_state_t *gpuinfo)
+{
+	uint32_t plugin_id;
+	ListIterator gres_iter;
+	gres_state_t *gres_ptr = NULL;
+	gres_job_state_t *job_gres_data;
+	
+	if(!gpuinfo)
+		return;
+	memset(gpuinfo, 0, sizeof(gres_job_state_t));
+	
+	if (!job_gres_list || !gpuinfo)
+		return;
+
+	plugin_id = gres_plugin_build_id(gres_name);
+	gres_iter = list_iterator_create(job_gres_list);
+	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+		if (gres_ptr->plugin_id != plugin_id)
+			continue;
+		job_gres_data = (gres_job_state_t *) gres_ptr->gres_data;
+		if (!job_gres_data)
+			continue;
+		gpuinfo->cpus_per_gres += job_gres_data->cpus_per_gres;
+		gpuinfo->gres_per_job += job_gres_data->gres_per_job;
+		gpuinfo->gres_per_node += job_gres_data->gres_per_node;
+		gpuinfo->gres_per_socket += job_gres_data->gres_per_socket;
+		gpuinfo->gres_per_task += job_gres_data->gres_per_task;
+		gpuinfo->mem_per_gres += job_gres_data->mem_per_gres;
+		gpuinfo->total_gres += job_gres_data->total_gres;
+	}
+	list_iterator_destroy(gres_iter);
+}
+
+/** Return count of available gres on node
+ * IN node_gres_list - nodes's gres_list
+ * IN gres_name - gres identifier
+ * OUT number of available gres of specified type
+ */
+extern uint64_t gres_plugin_node_gres_avail(List node_gres_list, char * gres_name, bool use_total_gres)
+{
+	uint32_t plugin_id;
+	ListIterator gres_iter;
+	gres_state_t *gres_ptr = NULL;
+	gres_node_state_t *node_gres_data;
+	uint64_t total = 0;
+	
+	if (!node_gres_list)
+		return total;
+
+	plugin_id = gres_plugin_build_id(gres_name);
+	gres_iter = list_iterator_create(node_gres_list);
+	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+		if (gres_ptr->plugin_id != plugin_id)
+			continue;
+		node_gres_data = (gres_node_state_t *) gres_ptr->gres_data;
+		if (!node_gres_data)
+			continue;
+		
+		if(use_total_gres)
+			total += node_gres_data->gres_cnt_avail;
+		else
+			total += node_gres_data->gres_cnt_avail - node_gres_data->gres_cnt_alloc;
+	}
+	list_iterator_destroy(gres_iter);
+	return total;
+}
+
+
 /*
  * Translate GRES flag to string.
  * NOT reentrant
