@@ -267,6 +267,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	xstrfmtcat(out, "PriorityJobFactor=%u", part_ptr->priority_job_factor);
 	xstrfmtcat(out, " PriorityTier=%u", part_ptr->priority_tier);
 
+	xstrfmtcat(out, " ReservedCoresPerGPU=%u", part_ptr->reserved_cores_per_gpu);
+
 	if (part_ptr->flags & PART_FLAG_ROOT_ONLY)
 		xstrcat(out, " RootOnly=YES");
 	else

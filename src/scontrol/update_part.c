@@ -411,6 +411,13 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			part_msg_ptr->qos_char = val;
 			(*update_cnt_ptr)++;
 		}
+		else if (!xstrncasecmp(tag, "ReservedCoresPerGPU", MAX(taglen, 4))) {
+			if (parse_uint64(val, &part_msg_ptr->reserved_cores_per_gpu)) {
+				error ("Invalid ReservedCoresPerGPU value: %s", val);
+				return SLURM_ERROR;
+			}
+			(*update_cnt_ptr)++;
+		}		
 		else if (!xstrncasecmp(tag, "JobDefaults", MAX(taglen, 4))) {
 			part_msg_ptr->job_defaults_str = val;
 			(*update_cnt_ptr)++;

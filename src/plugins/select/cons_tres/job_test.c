@@ -3398,7 +3398,6 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 			common_free_avail_res(avail_res);
 			return NULL;
 		}
-		info("avail_res->avail_gpus %d",avail_res->avail_gpus);
 		/* Favor nodes with more co-located GPUs */
 		node_ptr->sched_weight =
 			(node_ptr->sched_weight & 0xffffffffffffff00) |
@@ -3467,7 +3466,8 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	}
 
 	//dkoes.  Get number of gpus needed by this job
-	if(node_gres_list) {
+	if(node_gres_list && job_ptr->part_ptr->reserved_cores_per_gpu > 0) {
+		unsigned nres = job_ptr->part_ptr->reserved_cores_per_gpu;
 		unsigned available_cores = avail_res->avail_cpus / avail_res->vpus;
 		unsigned required_cores = min_cpus_per_node/avail_res->vpus + min_cpus_per_node%avail_res->vpus;
 		gres_job_state_t gpuinfo = {0,};
@@ -3490,8 +3490,8 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 		
 		//calculate how many gpus will be left afer schedulding this job
 		remaining_gpus = avail_gpus - requested_gpus;
-		if(remaining_gpus > 0 && available_cores - remaining_gpus < required_cores) {
-			info("reserving gpus  avail_gpus %d  requested_gpus %d  available_cores %d  required_cores %d",avail_gpus, requested_gpus, available_cores, required_cores);
+		if(remaining_gpus > 0 && available_cores - nres*remaining_gpus < required_cores) {
+			info("reserving gpus  avail_gpus %ld  requested_gpus %d  available_cores %d  required_cores %d",avail_gpus, requested_gpus, available_cores, required_cores);
 			cpus = 0; //reserve one core for each remaining unallocated gpu - slurm does not appear to schedule different jobs on the same core
 		}
 	}

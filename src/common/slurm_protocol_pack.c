@@ -1830,6 +1830,7 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 		pack16(msg-> priority_job_factor, buffer);
 		pack16(msg-> priority_tier, buffer);
 		packstr(msg->qos_char,     buffer);
+		//pack32(msg-> reserved_cores_per_gpu, buffer);
 		pack16(msg-> state_up,     buffer);
 	} else {
 		error("%s: protocol_version %hu not supported", __func__,
@@ -1892,6 +1893,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 		safe_unpack16(&tmp_ptr->priority_tier, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->qos_char,
 				       &uint32_tmp, buffer);
+		//safe_unpack32(&tmp_ptr->reserved_cores_per_gpu, buffer);
 		safe_unpack16(&tmp_ptr->state_up,  buffer);
 	} else {
 		error("%s: protocol_version %hu not supported", __func__,
@@ -2890,6 +2892,7 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 		safe_unpack16(&part->preempt_mode, buffer);
 		safe_unpack16(&part->priority_job_factor, buffer);
 		safe_unpack16(&part->priority_tier, buffer);
+		//safe_unpack32(&part->reserved_cores_per_gpu, buffer);
 		safe_unpack16(&part->state_up,     buffer);
 		safe_unpack16(&part->cr_type ,     buffer);
 

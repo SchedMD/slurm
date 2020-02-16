@@ -133,6 +133,7 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 	update_part_msg->preempt_mode 	= NO_VAL16;
 	update_part_msg->priority_job_factor = NO_VAL16;
 	update_part_msg->priority_tier	= NO_VAL16;
+	update_part_msg->reserved_cores_per_gpu = NO_VAL;
 	update_part_msg->state_up 	= NO_VAL16;
 }
 

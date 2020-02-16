@@ -1287,6 +1287,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"QOS", S_P_STRING},
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"ReqResv", S_P_BOOLEAN}, /* YES or NO */
+		{"ReservedCoresPerGPU", S_P_UINT64},
 		{"SelectTypeParameters", S_P_STRING},
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
 		{"State", S_P_STRING}, /* UP, DOWN, INACTIVE or DRAIN */
@@ -1577,6 +1578,13 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&p->qos_char, "QOS", tbl)
 		    && !s_p_get_string(&p->qos_char, "QOS", dflt))
 			p->qos_char = NULL;
+
+		if (!s_p_get_uint64(&p->reserved_cores_per_gpu,
+				    "ReservedCoresPerGPU", tbl) &&
+		    !s_p_get_uint64(&p->reserved_cores_per_gpu,
+				    "ReservedCoresPerGPU", dflt)) {
+			p->reserved_cores_per_gpu = 0;
+		}
 
 		if (s_p_get_string(&tmp, "SelectTypeParameters", tbl)) {
 			if (xstrncasecmp(tmp, "CR_Core_Memory", 14) == 0)

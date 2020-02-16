@@ -824,6 +824,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->priority_job_factor = part->priority_job_factor;
 	part_ptr->priority_tier  = part->priority_tier;
 	part_ptr->qos_char       = xstrdup(part->qos_char);
+	part_ptr->reserved_cores_per_gpu = part->reserved_cores_per_gpu;
 	part_ptr->state_up       = part->state_up;
 	part_ptr->grace_time     = part->grace_time;
 	part_ptr->cr_type        = part->cr_type;
@@ -2321,6 +2322,11 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 					xstrdup(old_part_ptr->qos_char);
 				part_ptr->qos_ptr = old_part_ptr->qos_ptr;
 			}
+			if (part_ptr->reserved_cores_per_gpu != old_part_ptr->reserved_cores_per_gpu) {
+				error("Partition %s ReservedCoresPerGPU differs from "
+				      "slurm.conf", part_ptr->name);
+				part_ptr->reserved_cores_per_gpu = old_part_ptr->reserved_cores_per_gpu;
+			}			
 			if (part_ptr->state_up != old_part_ptr->state_up) {
 				error("Partition %s State differs from "
 				      "slurm.conf", part_ptr->name);
@@ -2386,6 +2392,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			part_ptr->qos_char =
 				xstrdup(old_part_ptr->qos_char);
 			part_ptr->qos_ptr = old_part_ptr->qos_ptr;
+			part_ptr->reserved_cores_per_gpu = old_part_ptr->reserved_cores_per_gpu;
 			part_ptr->state_up = old_part_ptr->state_up;
 		}
 	}

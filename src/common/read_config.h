@@ -273,6 +273,7 @@ typedef struct slurm_conf_partition {
 	char    *qos_char;      /* Name of QOS associated with partition */
 	bool     req_resv_flag; /* 1 if partition can only be used in a
 				 * reservation */
+	uint64_t reserved_cores_per_gpu; /* Number of cores to reserve per a GPU */
 	bool     root_only_flag;/* 1 if allocate/submit RPC can only be
 				   issued by user root */
 	uint16_t state_up;	/* for states see PARTITION_* in slurm.h */
