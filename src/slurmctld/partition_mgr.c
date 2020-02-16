@@ -1154,6 +1154,7 @@ void pack_part(part_record_t *part_ptr, Buf buffer, uint16_t protocol_version)
 		pack16(part_ptr->preempt_mode, buffer);
 		pack16(part_ptr->priority_job_factor, buffer);
 		pack16(part_ptr->priority_tier, buffer);
+		pack32(part_ptr->reserved_cores_per_gpu, buffer);
 		pack16(part_ptr->state_up, buffer);
 		pack16(part_ptr->cr_type, buffer);
 
