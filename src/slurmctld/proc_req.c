@@ -1459,22 +1459,6 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 			break;
 		}
 
-		/*
-		 * Old versions of Slurm don't work with het jobs and Cray
-		 * This can be removed 2 versions after 19.05.
-		 */
-		if ((msg->protocol_version < SLURM_19_05_PROTOCOL_VERSION) &&
-		    ((job_desc_msg->select_jobinfo->plugin_id ==
-		      SELECT_PLUGIN_CRAY_LINEAR) ||
-		     (job_desc_msg->select_jobinfo->plugin_id ==
-		      SELECT_PLUGIN_CRAY_CONS_RES) ||
-		     (job_desc_msg->select_jobinfo->plugin_id ==
-		      SELECT_PLUGIN_CRAY_CONS_TRES))) {
-			err_msg = xstrdup("Het jobs from old Slurm versions are not possible");
-			error_code = SLURM_PROTOCOL_VERSION_ERROR;
-			break;
-		}
-
 		/* use the credential to validate where we came from */
 		if (hostname) {
 			xfree(job_desc_msg->alloc_node);
@@ -2452,8 +2436,14 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	error_code = job_complete(comp_msg->job_id, uid,
 				  false, false, comp_msg->job_rc);
 	if (error_code) {
-		info("%s: %pJ error %s",
-		     __func__, job_ptr, slurm_strerror(error_code));
+		if (error_code == ESLURM_INVALID_JOB_ID) {
+			info("%s: JobId=%d error %s",
+			     __func__, comp_msg->job_id,
+			     slurm_strerror(error_code));
+		} else {
+			info("%s: %pJ error %s",
+			     __func__, job_ptr, slurm_strerror(error_code));
+		}
 	} else {
 		debug2("%s: %pJ %s", __func__, job_ptr, TIME_STR);
 	}
@@ -2598,14 +2588,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 		step_record_t *step_ptr =
 			find_step_record(job_ptr, SLURM_BATCH_SCRIPT);
 		if (!step_ptr) {
-			if (msg->protocol_version >=
-			    SLURM_19_05_PROTOCOL_VERSION) {
-				error("%s: Could not find batch step for %pJ, this should never happen",
-				      __func__, job_ptr);
-			} else {
-				debug2("%s: Batch step complete from old version of Slurm received for job %pJ",
-				       __func__, job_ptr);
-			}
+			error("%s: Could not find batch step for %pJ, this should never happen",
+			      __func__, job_ptr);
 			step_ptr = build_batch_step(job_ptr);
 		}
 

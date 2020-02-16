@@ -164,11 +164,7 @@ static bool _remove_from_assoc_list(slurmdb_assoc_rec_t *assoc)
 
 	return assoc_ptr ? 1 : 0;
 }
-/*
- * find_job_record - return a pointer to the job record with the given job_id
- * IN job_id - requested job's id
- * RET pointer to the job's record, NULL on error
- */
+
 static slurmdb_assoc_rec_t *_find_assoc_rec_id(uint32_t assoc_id)
 {
 	slurmdb_assoc_rec_t *assoc;

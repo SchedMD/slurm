@@ -90,9 +90,6 @@ const char * plugin_strerror(plugin_err_t e)
 			return ("Plugin init() callback failed");
 		case EPLUGIN_MISSING_NAME:
 			return ("Plugin name/type/version symbol missing");
-		case EPLUGIN_MISSING_SYMBOL:
-			return ("Plugin missing a required symbol use "
-				"debug3 to see");
 		case EPLUGIN_BAD_VERSION:
 			return ("Incompatible plugin version");
 	}

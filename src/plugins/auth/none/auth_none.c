@@ -229,13 +229,10 @@ int slurm_auth_pack(slurm_auth_credential_t *cred, Buf buf,
 		return SLURM_ERROR;
 	}
 
-	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32((uint32_t) cred->uid, buf);
 		pack32((uint32_t) cred->gid, buf);
 		packstr(cred->hostname, buf);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32((uint32_t) cred->uid, buf);
-		pack32((uint32_t) cred->gid, buf);
 	} else {
 		error("%s: Unknown protocol version %d",
 		      __func__, protocol_version);
@@ -263,7 +260,7 @@ slurm_auth_credential_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 	/* Allocate a new credential. */
 	cred = xmalloc(sizeof(*cred));
 
-	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/*
 		 * We do it the hard way because we don't know anything about
 		 * the size of uid_t or gid_t, only that they are integer
@@ -278,20 +275,6 @@ slurm_auth_credential_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 		safe_unpack32(&tmpint, buf);
 		cred->gid = tmpint;
 		safe_unpackstr_xmalloc(&cred->hostname, &uint32_tmp, buf);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		/*
-		 * We do it the hard way because we don't know anything about
-		 * the size of uid_t or gid_t, only that they are integer
-		 * values.  We pack them as 32-bit integers, but we can't pass
-		 * addresses to them directly to unpack as 32-bit integers
-		 * because there will be bad clobbering if they really aren't.
-		 * This technique ensures a warning at compile time if the sizes
-		 * are incompatible.
-		 */
-		safe_unpack32(&tmpint, buf);
-		cred->uid = tmpint;
-		safe_unpack32(&tmpint, buf);
-		cred->gid = tmpint;
 	} else {
 		error("%s: unknown protocol version %u",
 		      __func__, protocol_version);

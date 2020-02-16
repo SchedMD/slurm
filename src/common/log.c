@@ -1326,11 +1326,21 @@ void fatal_abort(const char *fmt, ...)
 void log_var(const log_level_t log_lvl, const char *fmt, ...)
 {
 	LOG_MACRO(log_lvl, false, fmt);
+
+	if (log_lvl == LOG_LEVEL_FATAL) {
+		log_flush();
+		exit(1);
+	}
 }
 
 void sched_log_var(const log_level_t log_lvl, const char *fmt, ...)
 {
 	LOG_MACRO(log_lvl, true, fmt);
+
+	if (log_lvl == LOG_LEVEL_FATAL) {
+		log_flush();
+		exit(1);
+	}
 }
 
 int error(const char *fmt, ...)

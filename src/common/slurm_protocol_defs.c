@@ -1467,8 +1467,7 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->gids);
 	xfree(msg->het_job_node_list);
 	xfree(msg->het_job_task_cnts);
-	if ((msg->het_job_nnodes != NO_VAL) && msg->het_job_tids) {
-		/* het_job_tids == NULL if request from pre-v19.05 srun */
+	if (msg->het_job_nnodes != NO_VAL) {
 		for (i = 0; i < msg->het_job_nnodes; i++)
 			xfree(msg->het_job_tids[i]);
 		xfree(msg->het_job_tids);

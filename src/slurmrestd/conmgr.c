@@ -55,6 +55,7 @@
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_common.h"
+#include "src/common/strlcpy.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -1738,7 +1739,7 @@ static int _create_socket(void *x, void *arg)
 			      __func__, hostport);
 
 		/* set value of socket path */
-		strncpy(addr.sun_path, unixsock, sizeof(addr.sun_path) - 1);
+		strlcpy(addr.sun_path, unixsock, sizeof(addr.sun_path));
 		if ((rc = bind(fd, (const struct sockaddr *) &addr,
 			       sizeof(addr))))
 			fatal("%s: [%s] Unable to bind UNIX socket: %m",

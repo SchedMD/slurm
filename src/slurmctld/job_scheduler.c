@@ -103,7 +103,6 @@
 
 typedef struct wait_boot_arg {
 	uint32_t job_id;
-	job_record_t *job_ptr;
 	bitstr_t *node_bitmap;
 } wait_boot_arg_t;
 
@@ -4245,7 +4244,6 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 
 	wait_boot_arg = xmalloc(sizeof(wait_boot_arg_t));
 	wait_boot_arg->job_id = job_ptr->job_id;
-	wait_boot_arg->job_ptr = job_ptr;
 	wait_boot_arg->node_bitmap = bit_alloc(node_record_count);
 
 	/* Modify state information for all nodes, KNL and others */
@@ -4364,7 +4362,7 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 static void *_wait_boot(void *arg)
 {
 	wait_boot_arg_t *wait_boot_arg = (wait_boot_arg_t *) arg;
-	job_record_t *job_ptr = wait_boot_arg->job_ptr;
+	job_record_t *job_ptr;
 	bitstr_t *boot_node_bitmap = wait_boot_arg->node_bitmap;
 	/* Locks: Write jobs; read nodes */
 	slurmctld_lock_t job_write_lock = {
@@ -4376,7 +4374,6 @@ static void *_wait_boot(void *arg)
 	node_record_t *node_ptr;
 	time_t start_time = time(NULL);
 	int i, total_node_cnt, wait_node_cnt;
-	uint32_t save_job_id = job_ptr->job_id;
 	bool job_timeout = false;
 
 	/*
@@ -4388,10 +4385,9 @@ static void *_wait_boot(void *arg)
 		sleep(5);
 		total_node_cnt = wait_node_cnt = 0;
 		lock_slurmctld(job_write_lock);
-		if ((job_ptr->magic != JOB_MAGIC) ||
-		    (job_ptr->job_id != save_job_id)) {
-			error("JobId=%u vanished while waiting for node boot",
-			      save_job_id);
+		if (!(job_ptr = find_job_record(wait_boot_arg->job_id))) {
+			error("%s: JobId=%u vanished while waiting for node boot",
+			      __func__, wait_boot_arg->job_id);
 			unlock_slurmctld(job_write_lock);
 			track_script_remove(pthread_self());
 			return NULL;
@@ -4431,9 +4427,14 @@ static void *_wait_boot(void *arg)
 	} while (wait_node_cnt);
 
 	lock_slurmctld(node_write_lock);
-	if (job_timeout)
-		(void) job_requeue(getuid(), job_ptr->job_id, NULL, false, 0);
-	prolog_running_decr(job_ptr);
+	if (!(job_ptr = find_job_record(wait_boot_arg->job_id))) {
+		error("%s: missing JobId=%u after node_write_lock acquired",
+		      __func__, wait_boot_arg->job_id);
+	} else {
+		if (job_timeout)
+			(void) job_requeue(getuid(), job_ptr->job_id, NULL, false, 0);
+		prolog_running_decr(job_ptr);
+	}
 	unlock_slurmctld(node_write_lock);
 
 	FREE_NULL_BITMAP(wait_boot_arg->node_bitmap);
@@ -4464,15 +4465,21 @@ static void *_start_prolog_slurmctld_thread(void *x)
 	job_record_t *job_ptr;
 
 	lock_slurmctld(node_write_lock);
-	job_ptr = find_job_record(*job_id);
+	if (!(job_ptr = find_job_record(*job_id))) {
+		error("%s: missing JobId=%u", __func__, *job_id);
+		unlock_slurmctld(node_write_lock);
+		return NULL;
+	}
 	prep_prolog_slurmctld(job_ptr);
 
 	/*
 	 * No async prolog_slurmctld threads running, so decrement now to move
 	 * on with the job launch.
 	 */
-	if (!job_ptr->prep_prolog_cnt)
+	if (!job_ptr->prep_prolog_cnt) {
+		debug2("%s: no async prolog_slurmctld running", __func__);
 		prolog_running_decr(job_ptr);
+	}
 
 	unlock_slurmctld(node_write_lock);
 	xfree(job_id);

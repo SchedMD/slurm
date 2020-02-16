@@ -224,78 +224,6 @@ _guess_nodename(void)
 }
 
 /*
- * Legacy version for connecting to pre-19.05 stepds.
- * Remove this two versions after 19.05 is released.
- */
-static int _stepd_connect_legacy(const char *directory, const char *nodename,
-				 uint32_t jobid, uint32_t stepid,
-				 uint16_t *protocol_version)
-{
-	int req = REQUEST_CONNECT;
-	int fd = -1;
-	int rc;
-	void *auth_cred;
-	char *auth_info;
-	char *local_nodename = NULL;
-	Buf buffer;
-	int len;
-
-	buffer = init_buf(0);
-	/* Create an auth credential */
-	auth_info = slurm_get_auth_info();
-	auth_cred = g_slurm_auth_create(AUTH_DEFAULT_INDEX, auth_info);
-	xfree(auth_info);
-	if (auth_cred == NULL) {
-		error("Creating authentication credential: %m");
-		slurm_seterrno(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
-		goto fail1;
-	}
-
-	/*
-	 * Pack the auth credential.
-	 * Always send SLURM_MIN_PROTOCOL_VERSION since we don't know the
-	 * version at the moment.
-	 */
-	rc = g_slurm_auth_pack(auth_cred, buffer, SLURM_MIN_PROTOCOL_VERSION);
-	(void) g_slurm_auth_destroy(auth_cred);
-	if (rc) {
-		error("Packing authentication credential: %m");
-		slurm_seterrno(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
-		goto fail1;
-	}
-
-	/* Connect to the step */
-	fd = _step_connect(directory, nodename, jobid, stepid);
-	if (fd == -1)
-		goto fail1;
-
-	safe_write(fd, &req, sizeof(int));
-	len = size_buf(buffer);
-	safe_write(fd, &len, sizeof(int));
-	safe_write(fd, get_buf_data(buffer), len);
-
-	safe_read(fd, &rc, sizeof(int));
-	if (rc < 0) {
-		error("slurmstepd refused authentication: %m");
-		slurm_seterrno(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
-		goto rwfail;
-	} else if (rc) {
-		*protocol_version = rc;
-	}
-
-	free_buf(buffer);
-	xfree(local_nodename);
-	return fd;
-
-rwfail:
-	close(fd);
-fail1:
-	free_buf(buffer);
-	xfree(local_nodename);
-	return -1;
-}
-
-/*
  * Connect to a slurmstepd proccess by way of its unix domain socket.
  *
  * Both "directory" and "nodename" may be null, in which case stepd_connect
@@ -346,15 +274,6 @@ extern int stepd_connect(const char *directory, const char *nodename,
 
 rwfail:
 	close(fd);
-	/*
-	 * Most likely case for ending up here is when connecting to a
-	 * pre-19.05 stepd. Assume that the stepd shut the connection down
-	 * since we sent SLURM_PROTOCOL_VERSION instead of SOCKET_CONNECT,
-	 * and retry with the older connection style. Remove this fallback
-	 * 2 versions after 19.05.
-	 */
-	fd = _stepd_connect_legacy(directory, nodename, jobid, stepid,
-				   protocol_version);
 fail1:
 	xfree(local_nodename);
 	return fd;

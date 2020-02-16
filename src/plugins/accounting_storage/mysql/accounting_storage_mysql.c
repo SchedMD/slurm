@@ -2672,8 +2672,7 @@ extern int get_cluster_dims(mysql_conn_t *mysql_conn, char *cluster_name,
 	MYSQL_ROW row;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select dimensions, flags from %s where "
-			       "name='%s'",
+	query = xstrdup_printf("select dimensions from %s where name='%s'",
 			       cluster_table, cluster_name);
 
 	debug4("%d(%s:%d) query\n%s",
@@ -2691,14 +2690,7 @@ extern int get_cluster_dims(mysql_conn_t *mysql_conn, char *cluster_name,
 		return SLURM_ERROR;
 	}
 
-	/*
-	 * On a Cray System when dealing with hostlists as we are here this
-	 * always needs to be 1.
-	 */
-	if (slurm_atoul(row[1]) & CLUSTER_FLAG_CRAY_A)
-		*dims = 1;
-	else
-		*dims = atoi(row[0]);
+	*dims = atoi(row[0]);
 
 	mysql_free_result(result);
 

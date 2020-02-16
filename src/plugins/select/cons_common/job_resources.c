@@ -85,7 +85,7 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 			   handle_job_res_t type)
 {
 	int i, i_first, i_last;
-	int c, c_off = 0, full_offset;
+	int c, c_off = 0;
 	bitstr_t **core_array;
 	bitstr_t *use_core_array;
 	uint32_t core_begin;
@@ -121,12 +121,10 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 			core_begin = 0;
 			core_end = select_node_record[i].tot_cores;
 			use_core_array = core_array[i];
-			full_offset = 0;
 		} else {
 			core_begin = cr_get_coremap_offset(i);
 			core_end = cr_get_coremap_offset(i+1);
 			use_core_array = core_array[0];
-			full_offset = cr_node_cores_offset[i];
 		}
 
 		if (job_resrcs_ptr->whole_node) {
@@ -152,8 +150,8 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 						return 0;
 				} else {
 					for (c = 0; c < cores_per_node; c++)
-						if (bit_test(job_resrcs_ptr->core_bitmap,
-							     c_off + c))
+						if (bit_test(use_core_array,
+							     core_begin + c))
 							return 0;
 				}
 				break;
@@ -172,13 +170,13 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 			}
 			switch (type) {
 			case HANDLE_JOB_RES_ADD:
-				bit_set(use_core_array, full_offset + c);
+				bit_set(use_core_array, core_begin + c);
 				break;
 			case HANDLE_JOB_RES_REM:
-				bit_clear(use_core_array, full_offset + c);
+				bit_clear(use_core_array, core_begin + c);
 				break;
 			case HANDLE_JOB_RES_TEST:
-				if (bit_test(use_core_array, full_offset + c))
+				if (bit_test(use_core_array, core_begin + c))
 					return 0;    /* Core conflict on node */
 				break;
 			}

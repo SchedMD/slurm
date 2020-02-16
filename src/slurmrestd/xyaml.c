@@ -109,7 +109,7 @@ static data_type_t _yaml_tag_to_type(yaml_token_t *token)
 {
 	data_type_t type = DATA_TYPE_NONE;
 
-	for (int i = 0; i < sizeof(tags); ++i) {
+	for (int i = 0; i < (sizeof(tags) / sizeof(yaml_tag_types_t)); ++i) {
 		const yaml_tag_types_t *tag = tags + i;
 
 		if (!xstrcmp(tag->suffix,

@@ -1497,6 +1497,23 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					loc_seconds = (temp_end - temp_start);
 
 					if (loc_seconds > 0) {
+						if (c_usage &&
+						    (r_usage->flags &
+						     RESERVE_FLAG_IGN_JOBS))
+							/*
+							 * job usage was not
+							 * bundled with resv
+							 * usage so need to
+							 * account for it
+							 * individually here
+							 */
+							_add_time_tres_list(
+								c_usage->
+								loc_tres,
+								loc_tres,
+								TIME_ALLOC,
+								loc_seconds, 0);
+
 						_add_time_tres_list(
 							r_usage->loc_tres,
 							loc_tres, TIME_ALLOC,

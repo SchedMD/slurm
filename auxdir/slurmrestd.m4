@@ -28,11 +28,11 @@ AC_DEFUN([X_AC_SLURMRESTD],
   )
 
   if test "x$x_ac_slurmrestd" != "xno"; then
-    if test -n "$x_ac_cv_http_parser_dir"; then
+    if test -n "$x_ac_cv_http_parser_dir" && test -n "$x_ac_cv_json_dir"; then
       x_ac_slurmrestd=yes
     else
       if test "x$x_ac_slurmrestd" = "xyes"; then
-        AC_MSG_ERROR([unable to build slurmrestd without http-parser])
+        AC_MSG_ERROR([unable to build slurmrestd without http-parser and json libraries])
       else
         x_ac_slurmrestd=no
       fi

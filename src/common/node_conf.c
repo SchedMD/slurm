@@ -74,6 +74,11 @@
 
 #define _DEBUG 0
 
+strong_alias(init_node_conf, slurm_init_node_conf);
+strong_alias(build_all_nodeline_info, slurm_build_all_nodeline_info);
+strong_alias(rehash_node, slurm_rehash_node);
+strong_alias(hostlist2bitmap, slurm_hostlist2bitmap);
+
 /* Global variables */
 List config_list  = NULL;	/* list of config_record entries */
 List front_end_list = NULL;	/* list of slurm_conf_frontend_t entries */

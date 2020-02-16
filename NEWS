@@ -1,6 +1,11 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 20.02.0
+==========================
+ -- Fix minor memory leak in slurmd on reconfig.
+ -- Fix invalid ptr reference when rolling up data in the database.
+
 * Changes in Slurm 20.02.0rc1
 =============================
  -- sbatch - fix segfault when no newline at the end of a burst buffer file.

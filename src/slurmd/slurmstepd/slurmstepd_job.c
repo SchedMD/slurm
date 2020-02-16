@@ -315,12 +315,15 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->user_name	= xstrdup(msg->user_name);
 	_slurm_cred_to_step_rec(msg->cred, job);
 	/*
-	 * Favor the group info in the launch cred if available - for 19.05+
-	 * this is where it is managed, not in launch_tasks_request_msg_t.
-	 * For older versions, or for when send_gids is disabled, fall back
-	 * to the launch_tasks_request_msg_t info if necessary.
+	 * Favor the group info in the launch cred if available - fall back
+	 * to the launch_tasks_request_msg_t info if send_gids is disabled.
 	 */
 	if (!job->ngids) {
+		if (slurm_cred_send_gids_enabled()) {
+			error("No gids given in the cred.");
+			stepd_step_rec_destroy(job);
+			return NULL;
+		}
 		job->ngids = (int) msg->ngids;
 		job->gids = copy_gids(msg->ngids, msg->gids);
 	}
@@ -354,22 +357,16 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 					      sizeof(uint16_t));
 		memcpy(job->het_job_task_cnts, msg->het_job_task_cnts,
 		       sizeof(uint16_t) * msg->het_job_nnodes);
-		if (msg->het_job_tids) {
-			/*
-			 * het_job_tids == NULL if request from pre-v19.05
-			 * srun
-			 */
-			job->het_job_tids = xcalloc(msg->het_job_nnodes,
-						    sizeof(uint32_t *));
-			for (i = 0; i < msg->het_job_nnodes; i++) {
-				job->het_job_tids[i] =
-					xcalloc(job->het_job_task_cnts[i],
-						sizeof(uint32_t));
-				memcpy(job->het_job_tids[i],
-				       msg->het_job_tids[i],
-				       sizeof(uint32_t) *
-				       job->het_job_task_cnts[i]);
-			}
+		job->het_job_tids = xcalloc(msg->het_job_nnodes,
+					    sizeof(uint32_t *));
+		for (i = 0; i < msg->het_job_nnodes; i++) {
+			job->het_job_tids[i] =
+				xcalloc(job->het_job_task_cnts[i],
+					sizeof(uint32_t));
+			memcpy(job->het_job_tids[i],
+			       msg->het_job_tids[i],
+			       sizeof(uint32_t) *
+			       job->het_job_task_cnts[i]);
 		}
 		if (msg->het_job_tid_offsets) {
 			job->het_job_tid_offsets = xcalloc(job->het_job_ntasks,
@@ -549,12 +546,15 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->user_name	= xstrdup(msg->user_name);
 	_slurm_cred_to_step_rec(msg->cred, job);
 	/*
-	 * Favor the group info in the launch cred if available - for 19.05+
-	 * this is where it is managed, not in batch_job_launch_msg_t.
-	 * For older versions, or for when send_gids is disabled, fall back
-	 * to the batch_job_launch_msg_t info if necessary.
+	 * Favor the group info in the launch cred if available - fall back
+	 * to the batch_job_launch_msg_t info if send_gids is disabled.
 	 */
 	if (!job->ngids) {
+		if (slurm_cred_send_gids_enabled()) {
+			error("No gids given in the cred.");
+			stepd_step_rec_destroy(job);
+			return NULL;
+		}
 		job->ngids = (int) msg->ngids;
 		job->gids = copy_gids(msg->ngids, msg->gids);
 	}
@@ -677,8 +677,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	xfree(job->node_name);
 	mpmd_free(job);
 	xfree(job->het_job_task_cnts);
-	if ((job->het_job_nnodes != NO_VAL) && job->het_job_tids) {
-		/* het_job_tids == NULL if request from pre-v19.05 srun */
+	if (job->het_job_nnodes != NO_VAL) {
 		for (i = 0; i < job->het_job_nnodes; i++)
 			xfree(job->het_job_tids[i]);
 		xfree(job->het_job_tids);
