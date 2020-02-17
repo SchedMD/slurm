@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
     man2html.py.
  -- slurm.spec - override "hardening" linker flags to ensure RHEL8 builds
     in a usable manner.
+ -- Fix type mismatches in the perl API.
 
 * Changes in Slurm 20.02.0rc1
 =============================
