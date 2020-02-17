@@ -144,6 +144,7 @@ documents those changes that are of interest to users and administrators.
  -- sched/backfill - fix options parsing when bf_hetjob_prio enabled.
  -- Fix for --gpu-bind when no gpus requested.
  -- Fix sshare -l crash with large values.
+ -- Fix printing NULL job and step pointers.
 
 * Changes in Slurm 19.05.5
 ==========================

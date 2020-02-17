@@ -3539,7 +3539,6 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 				bit_or(used_bitmap, job_ptr->node_bitmap);
 		} else {
 			fed_mgr_job_unlock(job_ptr);
-			error("%pJ failed to start", job_ptr);
 			break;
 		}
 		if (job_ptr->time_min) {

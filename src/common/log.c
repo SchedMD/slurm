@@ -876,14 +876,12 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					va_copy(ap_copy, ap);
 					for (i = 0; i < cnt; i++ )
 						ptr = va_arg(ap_copy, void *);
-					if (ptr) {
-						job_ptr = ptr;
-						xstrcat(intermediate_fmt,
-							_jobid2fmt(
-								job_ptr,
-								substitute_on_stack,
-								sizeof(substitute_on_stack)));
-					}
+					job_ptr = ptr;
+					xstrcat(intermediate_fmt,
+						_jobid2fmt(
+							job_ptr,
+							substitute_on_stack,
+							sizeof(substitute_on_stack)));
 					va_end(ap_copy);
 					break;
 				}
@@ -899,22 +897,20 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					va_copy(ap_copy, ap);
 					for (i = 0; i < cnt; i++ )
 						ptr = va_arg(ap_copy, void *);
-					if (ptr) {
-						step_ptr = ptr;
-						if (step_ptr &&
-						    (step_ptr->magic == STEP_MAGIC))
-							job_ptr = step_ptr->job_ptr;
-						xstrcat(intermediate_fmt,
-							_jobid2fmt(
-								job_ptr,
-								substitute_on_stack,
-								sizeof(substitute_on_stack)));
-						xstrcat(intermediate_fmt,
-							_stepid2fmt(
-								step_ptr,
-								substitute_on_stack,
-								sizeof(substitute_on_stack)));
-					}
+					step_ptr = ptr;
+					if (step_ptr &&
+					    (step_ptr->magic == STEP_MAGIC))
+						job_ptr = step_ptr->job_ptr;
+					xstrcat(intermediate_fmt,
+						_jobid2fmt(
+							job_ptr,
+							substitute_on_stack,
+							sizeof(substitute_on_stack)));
+					xstrcat(intermediate_fmt,
+						_stepid2fmt(
+							step_ptr,
+							substitute_on_stack,
+							sizeof(substitute_on_stack)));
 					va_end(ap_copy);
 					break;
 				}
