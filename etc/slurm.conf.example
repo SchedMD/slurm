@@ -60,6 +60,7 @@ Waittime=0
 SchedulerType=sched/backfill
 #SchedulerAuth=
 SelectType=select/cons_tres
+SelectTypeParameters=CR_Core
 #PriorityType=priority/multifactor
 #PriorityDecayHalfLife=14-0
 #PriorityUsageResetPeriod=14-0

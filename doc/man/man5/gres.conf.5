@@ -45,9 +45,15 @@ The overall configuration parameters available include:
 .TP
 \fBAutoDetect\fR
 The hardware detection mechanisms to enable for automatic GRES configuration.
-This should be on a line by itself.
-Currently, the only valid option is \fInvml\fR, which allows for automatically
-detecting NVIDIA GPUs.
+This should be on a line by itself. Current, options are:
+.RS
+.TP
+\fBnvml\fR
+Used to automatically detect NVIDIA GPUs
+.TP
+\fBrsmi\fR
+Used to automatically detect AMD GPUs
+.RE
 
 .TP
 \fBCount\fR

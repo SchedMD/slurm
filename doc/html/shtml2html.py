@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import re
 import sys
@@ -37,7 +37,7 @@ def include_virtual(matchobj):
         filename = matchobj.group(2)
 
     if os.access(filename, os.F_OK):
-        #print 'Including file', filename
+        #print('Including file', filename)
         lines = open(filename, 'r').read()
         return lines
     else:
@@ -64,7 +64,7 @@ def url_rewrite(matchobj):
             newname = location[:-6] + '.html'
         else:
             newname = location[:-6] + '.html' + matchobj.group(3)
-        #print 'Rewriting', location, 'to', newname
+        #print('Rewriting', location, 'to', newname)
         return matchobj.group(1) + newname + matchobj.group(4)
     else:
         return matchobj.group(0)
@@ -81,7 +81,7 @@ for f in sys.argv[2:]:
     if f[-6:] == '.shtml':
         files.append(f)
     else:
-        #print 'Skipping file %s (extension is not .shtml)' % f
+        #print('Skipping file ', f, ' (extension is not .shtml)')
         pass
 
 for filename in files:
