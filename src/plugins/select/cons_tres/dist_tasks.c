@@ -714,9 +714,11 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr,
 			    ((avail_cpus[n] - job_res->cpus[n]) <
 			     job_ptr->details->cpus_per_task))
 				break;
-			if (!_tres_tasks_avail(gres_task_limit, job_res, n))
+			if (!over_subscribe &&
+			    !_tres_tasks_avail(gres_task_limit, job_res, n))
 				break;
-			if (_at_tpn_limit(n, job_ptr, "fill allocated", false))
+			if (!over_subscribe &&
+			    _at_tpn_limit(n, job_ptr, "fill allocated", false))
 				break;
 			tid++;
 			job_res->tasks_per_node[n]++;
