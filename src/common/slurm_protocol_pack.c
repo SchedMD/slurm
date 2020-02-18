@@ -757,7 +757,7 @@ static int _unpack_priority_factors_object(void **object, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	_priority_factors_resp_list_del(object);
+	_priority_factors_resp_list_del(object_ptr);
 	*object = NULL;
 	return SLURM_ERROR;
 }
