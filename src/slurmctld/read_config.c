@@ -1100,7 +1100,7 @@ static void _test_cgroup_plugin_use(void)
 int read_slurm_conf(int recover, bool reconfig)
 {
 	DEF_TIMERS;
-	int error_code, i, rc, load_job_ret = SLURM_SUCCESS;
+	int error_code, i, rc = 0, load_job_ret = SLURM_SUCCESS;
 	int old_node_record_count = 0;
 	node_record_t *old_node_table_ptr = NULL, *node_ptr;
 	bool do_reorder_nodes = false;
