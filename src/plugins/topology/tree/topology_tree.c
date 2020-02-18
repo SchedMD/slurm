@@ -443,9 +443,10 @@ static void _validate_switches(void)
 			have_root = true;
 		}
 	}
-	if (!have_root) {
+
+	if (!have_root && running_in_daemon())
 		info("TOPOLOGY: warning -- no switch can reach all nodes through its descendants. If this is not intentional, fix the topology.conf file.");
-	}
+
 	s_p_hashtbl_destroy(conf_hashtbl);
 	_log_switches();
 }
