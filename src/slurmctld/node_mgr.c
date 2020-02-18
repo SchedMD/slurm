@@ -1949,7 +1949,6 @@ static int _update_node_gres(char *node_names, char *gres)
 	node_record_t *node_ptr;
 	int rc, rc2, overlap1, overlap2;
 	int i, i_first, i_last;
-	char *change_node_str;
 
 	rc = node_name2bitmap(node_names, false, &node_bitmap);
 	if (rc) {
@@ -2048,10 +2047,11 @@ static int _update_node_gres(char *node_names, char *gres)
 
 	/* Report changes nodes, may be subset of requested nodes */
 	if (changed_node_bitmap) {
-		change_node_str = bitmap2node_name(changed_node_bitmap);
+		char *change_node_str = bitmap2node_name(changed_node_bitmap);
 		info("%s: nodes %s gres set to: %s", __func__,
 		     change_node_str, gres);
 		FREE_NULL_BITMAP(changed_node_bitmap);
+		xfree(change_node_str);
 	}
 
 	return rc;
