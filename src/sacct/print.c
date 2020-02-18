@@ -271,7 +271,7 @@ static void _xlate_task_str(slurmdb_job_rec_t *job_ptr)
 		return;
 
 	task_bitmap = bit_alloc(i * 4);
-	bit_unfmt_hexmask(task_bitmap, in_buf);
+	(void)bit_unfmt_hexmask(task_bitmap, in_buf);
 
 	/* Check first for a step function */
 	i_first = bit_ffs(task_bitmap);
