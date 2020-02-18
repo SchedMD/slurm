@@ -877,6 +877,7 @@ static void _process_terminated(List job_list, char *f[], int lc,
 		      "%u preceded "
 		      "other job records at line %d\n",
 		      temp->header.jobnum, lc);
+		list_append(job_list, job);
 	} else if (job->job_terminated_seen) {
 		if (temp->status == JOB_NODE_FAIL) {
 			/* multiple node failures - extra TERMINATED records */
