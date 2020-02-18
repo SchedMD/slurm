@@ -4059,14 +4059,14 @@ TRY_AVAIL:
 			bit_and(tmp_avail_bitmap, feat_ptr->node_bitmap_avail);
 		tmp_bitmap = _pick_idle_nodes(tmp_avail_bitmap, resv_desc_ptr,
 					      core_bitmap);
-		bit_free(tmp_avail_bitmap);
+		FREE_NULL_BITMAP(tmp_avail_bitmap);
 		if (!tmp_bitmap) {
 			FREE_NULL_BITMAP(ret_bitmap);
 			break;
 		}
 		if (ret_bitmap) {
 			bit_or(ret_bitmap, tmp_bitmap);
-			bit_free(tmp_bitmap);
+			FREE_NULL_BITMAP(tmp_bitmap);
 		} else {
 			ret_bitmap = tmp_bitmap;
 			tmp_bitmap = NULL;
