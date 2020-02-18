@@ -4509,14 +4509,13 @@ extern int slurmdb_unpack_job_modify_cond(void **object,
 
 	safe_unpack32(&object_ptr->flags, buffer);
 
+	object_ptr->step_list = list_create(slurmdb_destroy_selected_step);
 	selected_step = xmalloc(sizeof(slurmdb_selected_step_t));
+	list_append(object_ptr->step_list, selected_step);
 	selected_step->array_task_id = NO_VAL;
 	safe_unpack32(&selected_step->jobid, buffer);
 	selected_step->het_job_offset = NO_VAL;
 	selected_step->stepid = NO_VAL;
-
-	object_ptr->step_list = list_create(slurmdb_destroy_selected_step);
-	list_append(object_ptr->step_list, selected_step);
 
 	safe_unpack_time(&object_ptr->usage_start, buffer);
 
