@@ -758,6 +758,7 @@ static void _process_step(List job_list, char *f[], int lc,
 		debug2("Note: JOB_STEP record %u.%u preceded "
 		       "JOB_START record at line %d\n",
 		       temp->header.jobnum, temp->stepnum, lc);
+		list_append(job_list, job);
 	}
 	job->show_full = show_full;
 
