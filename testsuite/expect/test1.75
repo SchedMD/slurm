@@ -101,7 +101,7 @@ proc sub_job { freq } {
 					send_user "\nFAILURE: This CPU frequency should be valid\n"
 					set exit_code 1
 				}
-				exp_continue	
+				exp_continue
 			}
 			-re "SLURM_JOB_ID=($number)" {
 				set job_id $expect_out(1,string)

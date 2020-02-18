@@ -245,7 +245,7 @@ expect {
 		} elseif {$last_cuda_val == -1} {
 			set last_cuda_val $val
 		} elseif {$last_cuda_val == $val} {
-			incr bad_cuda_val	
+			incr bad_cuda_val
 		}
 		exp_continue
 	}
@@ -336,7 +336,7 @@ expect {
 		} elseif {$last_cuda_val == -1} {
 			set last_cuda_val $val
 		} elseif {$last_cuda_val == $val} {
-			incr bad_cuda_val	
+			incr bad_cuda_val
 		}
 		exp_continue
 	}
@@ -429,7 +429,7 @@ if {$gpu_cnt > 2} {
 			} elseif {$last_cuda_val == -1} {
 				set last_cuda_val $val
 			} elseif {$last_cuda_val == $val} {
-				incr bad_cuda_val	
+				incr bad_cuda_val
 			}
 			exp_continue
 		}
@@ -443,7 +443,7 @@ if {$gpu_cnt > 2} {
 			} elseif {$last_cuda_val == -1} {
 				set last_cuda_val $val
 			} elseif {$last_cuda_val == $val} {
-				incr bad_cuda_val	
+				incr bad_cuda_val
 			}
 			exp_continue
 		}

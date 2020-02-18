@@ -56,7 +56,7 @@ proc check_update { job job_time } {
 		-re "JobId=($number) ArrayJobId" {
 			set new_job_id $expect_out(1,string)
 			exp_continue
-		}	
+		}
 		-re "TimeLimit=00:($number):00" {
 			if {$expect_out(1,string) == $job_time } {
 				incr time_match

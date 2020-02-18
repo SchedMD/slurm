@@ -217,7 +217,6 @@ proc test_freq {opt expmin expcur expmax expgov} {
 		log_user 1
 		return 1
 	}
-	
 	if {[string compare $sgov $egov] != 0} {
 		send_user "\nFAILURE: --cpu-freq=$opt -- starting governor $sgov not reset ($egov)\n"
 		log_user 1
@@ -235,7 +234,7 @@ proc test_freq {opt expmin expcur expmax expgov} {
 	}
 
 	log_user 1
-	return 0	
+	return 0
 }
 
 proc test_case {opt expmin expcur expmax expgov} {

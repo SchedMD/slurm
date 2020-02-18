@@ -210,7 +210,7 @@ expect {
 		if {$expect_out(1,string) == 0 && $expect_out(2,string) == 0 && $expect_out(3,string) == 0} {
 			incr matches
 		} elseif {$expect_out(1,string) == 3 && $expect_out(2,string) == 3 && $expect_out(3,string) == 1} {
-			incr matches	
+			incr matches
 		} else {
 			send_user "\nFAILURE: processing MPMD line continuation\n"
 			set exit_code 1
