@@ -685,7 +685,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 			if (found_itr)
 				list_iterator_destroy(found_itr);
 
-			if (res->percent_used > 100)
+			if (added && (res->percent_used > 100))
 				break;
 
 			list_iterator_reset(clus_itr);
