@@ -493,7 +493,9 @@ static void _save_dbd_state(void)
 end_it:
 	if (fd >= 0) {
 		verbose("slurmdbd: saved %d pending RPCs", wrote);
-		fsync_and_close(fd, "dbd.messages");
+		rc = fsync_and_close(fd, "dbd.messages");
+		if (rc)
+			error("slurmdbd: error from fsync_and_close");
 	}
 	xfree(dbd_fname);
 }
