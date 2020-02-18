@@ -116,10 +116,6 @@ static int  _init_all_slurm_conf(void);
 static void _list_delete_feature(void *feature_entry);
 static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr,
 					uint16_t old_select_type_p);
-static int _preserve_plugins(slurm_ctl_conf_t *ctl_conf_ptr,
-			     char *old_auth_type, char *old_cred_type,
-			     char *old_sched_type, char *old_select_type,
-			     char *old_switch_type, char *old_bb_type);
 static void _purge_old_node_state(node_record_t *old_node_table_ptr,
 				  int old_node_record_count);
 static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
@@ -1163,7 +1159,8 @@ int read_slurm_conf(int recover, bool reconfig)
 		node_record_count = old_node_record_count;
 		part_list = old_part_list;
 		default_part_name = old_def_part_name;
-		return error_code;
+		old_def_part_name = NULL;
+		goto end_it;
 	}
 
 	if (reconfig)
@@ -1256,7 +1253,8 @@ int read_slurm_conf(int recover, bool reconfig)
 		_purge_old_node_state(old_node_table_ptr,
 				      old_node_record_count);
 		_purge_old_part_state(old_part_list, old_def_part_name);
-		return EINVAL;
+		error_code = EINVAL;
+		goto end_it;
 	}
 
 	/*
@@ -1367,7 +1365,6 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 	}
 
-	xfree(state_save_dir);
 	_gres_reconfig(reconfig);
 	reset_job_bitmaps();		/* must follow select_g_job_init() */
 
@@ -1438,7 +1435,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 	}
 	 if (test_config)
-		return error_code;
+		goto end_it;
 
 	_restore_job_accounting();
 
@@ -1446,9 +1443,51 @@ int read_slurm_conf(int recover, bool reconfig)
 	list_sort(config_list, &list_compare_config);
 
 	/* Update plugins as possible */
-	rc = _preserve_plugins(&slurmctld_conf,
-			       old_auth_type, old_cred_type, old_sched_type,
-			       old_select_type, old_switch_type, old_bb_type);
+	if (xstrcmp(old_auth_type, slurmctld_conf.authtype)) {
+		xfree(slurmctld_conf.authtype);
+		slurmctld_conf.authtype = old_auth_type;
+		rc =  ESLURM_INVALID_AUTHTYPE_CHANGE;
+	}
+
+	if (xstrcmp(old_bb_type, slurmctld_conf.bb_type)) {
+		xfree(slurmctld_conf.bb_type);
+		slurmctld_conf.bb_type = old_bb_type;
+		old_bb_type = NULL;
+		rc =  ESLURM_INVALID_BURST_BUFFER_CHANGE;
+	}
+
+	if (xstrcmp(old_cred_type, slurmctld_conf.cred_type)) {
+		xfree(slurmctld_conf.cred_type);
+		slurmctld_conf.cred_type = old_cred_type;
+		old_cred_type = NULL;
+		rc = ESLURM_INVALID_CRED_TYPE_CHANGE;
+	}
+
+	if (xstrcmp(old_sched_type, slurmctld_conf.schedtype)) {
+		xfree(slurmctld_conf.schedtype);
+		slurmctld_conf.schedtype = old_sched_type;
+		old_sched_type = NULL;
+		rc =  ESLURM_INVALID_SCHEDTYPE_CHANGE;
+	}
+
+	if (xstrcmp(old_select_type, slurmctld_conf.select_type)) {
+		xfree(slurmctld_conf.select_type);
+		slurmctld_conf.select_type = old_select_type;
+		old_select_type = NULL;
+		rc =  ESLURM_INVALID_SELECTTYPE_CHANGE;
+	}
+
+	if (xstrcmp(old_switch_type, slurmctld_conf.switch_type)) {
+		xfree(slurmctld_conf.switch_type);
+		slurmctld_conf.switch_type = old_switch_type;
+		old_switch_type = NULL;
+		rc = ESLURM_INVALID_SWITCHTYPE_CHANGE;
+	}
+
+	if ((slurmctld_conf.control_cnt < 2) ||
+	    (slurmctld_conf.control_machine[1] == NULL))
+		info("%s: backup_controller not specified", __func__);
+
 	error_code = MAX(error_code, rc);	/* not fatal */
 
 	if (xstrcmp(old_preempt_type, slurmctld_conf.preempt_type)) {
@@ -1464,7 +1503,6 @@ int read_slurm_conf(int recover, bool reconfig)
 			}
 		}
 	}
-	xfree(old_preempt_type);
 	rc = _update_preempt(old_preempt_mode);
 	error_code = MAX(error_code, rc);	/* not fatal */
 
@@ -1503,8 +1541,19 @@ int read_slurm_conf(int recover, bool reconfig)
 	_set_response_cluster_rec();
 
 	slurmctld_conf.last_update = time(NULL);
+end_it:
+	xfree(old_auth_type);
+	xfree(old_bb_type);
+	xfree(old_cred_type);
+	xfree(old_preempt_type);
+	xfree(old_sched_type);
+	xfree(old_select_type);
+	xfree(old_switch_type);
+	xfree(state_save_dir);
+
 	END_TIMER2("read_slurm_conf");
 	return error_code;
+
 }
 
 /* Add feature to list
@@ -2464,76 +2513,6 @@ static int _update_preempt(uint16_t old_preempt_mode)
 	error("Invalid gang scheduling mode change");
 	return EINVAL;
 }
-
-/*
- * _preserve_plugins - preserve original plugin values over reconfiguration
- *	as required. daemons and/or commands must be restarted for some
- *	plugin value changes to take effect.
- * RET zero or error code
- */
-static int _preserve_plugins(slurm_ctl_conf_t *ctl_conf_ptr,
-			     char *old_auth_type, char *old_cred_type,
-			     char *old_sched_type, char *old_select_type,
-			     char *old_switch_type, char *old_bb_type)
-{
-	int rc = SLURM_SUCCESS;
-
-	if (xstrcmp(old_auth_type, ctl_conf_ptr->authtype)) {
-		xfree(ctl_conf_ptr->authtype);
-		ctl_conf_ptr->authtype = old_auth_type;
-		rc =  ESLURM_INVALID_AUTHTYPE_CHANGE;
-	} else {	/* free duplicate value */
-		xfree(old_auth_type);
-	}
-
-	if (xstrcmp(old_bb_type, ctl_conf_ptr->bb_type)) {
-		xfree(ctl_conf_ptr->bb_type);
-		ctl_conf_ptr->bb_type = old_bb_type;
-		rc =  ESLURM_INVALID_BURST_BUFFER_CHANGE;
-	} else {	/* free duplicate value */
-		xfree(old_bb_type);
-	}
-
-	if (xstrcmp(old_cred_type, ctl_conf_ptr->cred_type)) {
-		xfree(ctl_conf_ptr->cred_type);
-		ctl_conf_ptr->cred_type = old_cred_type;
-		rc = ESLURM_INVALID_CRED_TYPE_CHANGE;
-	} else {	/* free duplicate value */
-		xfree(old_cred_type);
-	}
-
-	if (xstrcmp(old_sched_type, ctl_conf_ptr->schedtype)) {
-		xfree(ctl_conf_ptr->schedtype);
-		ctl_conf_ptr->schedtype = old_sched_type;
-		rc =  ESLURM_INVALID_SCHEDTYPE_CHANGE;
-	} else {	/* free duplicate value */
-		xfree(old_sched_type);
-	}
-
-
-	if (xstrcmp(old_select_type, ctl_conf_ptr->select_type)) {
-		xfree(ctl_conf_ptr->select_type);
-		ctl_conf_ptr->select_type = old_select_type;
-		rc =  ESLURM_INVALID_SELECTTYPE_CHANGE;
-	} else {	/* free duplicate value */
-		xfree(old_select_type);
-	}
-
-	if (xstrcmp(old_switch_type, ctl_conf_ptr->switch_type)) {
-		xfree(ctl_conf_ptr->switch_type);
-		ctl_conf_ptr->switch_type = old_switch_type;
-		rc = ESLURM_INVALID_SWITCHTYPE_CHANGE;
-	} else {	/* free duplicate value */
-		xfree(old_switch_type);
-	}
-
-	if ((ctl_conf_ptr->control_cnt < 2) ||
-	    (ctl_conf_ptr->control_machine[1] == NULL))
-		info("%s: backup_controller not specified", __func__);
-
-	return rc;
-}
-
 
 /*
  * _sync_nodes_to_jobs - sync node state to job states on slurmctld restart.
