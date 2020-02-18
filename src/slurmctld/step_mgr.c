@@ -4097,7 +4097,6 @@ unpack_error:
 	FREE_NULL_LIST(gres_list);
 	bit_free(exit_node_bitmap);
 	bit_free(core_bitmap_job);
-	xfree(bit_fmt);
 	xfree(core_job);
 	if (switch_tmp)
 		switch_g_free_jobinfo(switch_tmp);
