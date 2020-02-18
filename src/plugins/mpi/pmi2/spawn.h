@@ -84,7 +84,7 @@ extern spawn_resp_t *spawn_resp_new(void);
 extern void spawn_resp_free(spawn_resp_t *resp);
 extern void spawn_resp_pack(spawn_resp_t *resp, Buf buf);
 extern int  spawn_resp_unpack(spawn_resp_t **resp_ptr, Buf buf);
-extern int  spawn_resp_send_to_stepd(spawn_resp_t *resp, char *node);
+extern int  spawn_resp_send_to_stepd(spawn_resp_t *resp, char **node);
 extern int  spawn_resp_send_to_fd(spawn_resp_t *resp, int fd);
 extern int  spawn_resp_send_to_srun(spawn_resp_t *resp);
 

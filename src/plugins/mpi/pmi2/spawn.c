@@ -365,7 +365,7 @@ unpack_error:
 }
 
 extern int
-spawn_resp_send_to_stepd(spawn_resp_t *resp, char *node)
+spawn_resp_send_to_stepd(spawn_resp_t *resp, char **node)
 {
 	Buf buf;
 	int rc;
@@ -377,7 +377,7 @@ spawn_resp_send_to_stepd(spawn_resp_t *resp, char *node)
 	pack16(cmd, buf);
 	spawn_resp_pack(resp, buf);
 
-	rc = slurm_forward_data(&node, tree_sock_addr,
+	rc = slurm_forward_data(node, tree_sock_addr,
 				get_buf_offset(buf),
 				get_buf_data(buf));
 	free_buf(buf);
