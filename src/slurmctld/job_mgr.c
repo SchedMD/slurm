@@ -14734,8 +14734,11 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	job_record_t *job_ptr = find_job_record(job_id);
 	node_record_t *node_ptr;
 
-	if (job_ptr == NULL)
+	if (job_ptr == NULL) {
+		debug("%s: unable to find JobId=%u for node=%s with return_code=%u.",
+		      __func__, job_id, node_name, return_code);
 		return true;
+	}
 
 	trace_job(job_ptr, __func__, "enter");
 
