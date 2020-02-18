@@ -272,6 +272,8 @@ static int _update_job(job_desc_msg_t * job_specs, uid_t uid)
 {
 	slurm_msg_t msg;
 
+	slurm_msg_t_init(&msg);
+
 	msg.data= job_specs;
 	msg.conn_fd = -1;
 	return update_job(&msg, uid, true);

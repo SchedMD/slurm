@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include "cons_common.h"
+#include "src/common/xstring.h"
 
 /*
  * Build an empty array of bitmaps, one per node
@@ -176,20 +177,27 @@ extern void core_array_log(char *loc, bitstr_t *node_map, bitstr_t **core_map)
 	if (!(select_debug_flags & DEBUG_FLAG_SELECT_TYPE))
 		return;
 
+	info("%s", loc);
+
 	if (node_map) {
-		bit_fmt(tmp, sizeof(tmp), node_map);
-		info("%s nodemap:%s", loc, tmp);
+		char *node_list = bitmap2node_name(node_map);
+		info("node_list:%s", node_list);
+		xfree(node_list);
 	}
 
 	if (core_map) {
-		int i;
+		char *core_list = NULL;
+		char *sep = "";
 
-		for (i = 0; i < core_array_size; i++) {
+		for (int i = 0; i < core_array_size; i++) {
 			if (!core_map[i] || (bit_ffs(core_map[i]) == -1))
 				continue;
 			bit_fmt(tmp, sizeof(tmp), core_map[i]);
-			info("%s coremap[%d]:%s", loc, i, tmp);
+			xstrfmtcat(core_list, "%snode[%d]:%s", sep, i, tmp);
+			sep = ",";
 		}
+		info("core_list:%s", core_list);
+		xfree(core_list);
 	}
 }
 

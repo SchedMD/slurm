@@ -274,8 +274,8 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *user_name = NULL;
 	char *extra = NULL, *tmp_extra = NULL;
 	int affect_rows = 0;
-	List assoc_list = list_create(slurmdb_destroy_assoc_rec);
-	List wckey_list = list_create(slurmdb_destroy_wckey_rec);
+	List assoc_list;
+	List wckey_list;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -297,6 +297,9 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * parent they are trying to add to
 		 */
 	}
+
+	assoc_list = list_create(slurmdb_destroy_assoc_rec);
+	wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(user_list);

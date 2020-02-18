@@ -376,6 +376,8 @@ extern int sacctmgr_add_account(int argc, char **argv)
 				      start_acct, start_assoc);
 	}
 	if (exit_code) {
+		FREE_NULL_LIST(name_list);
+		FREE_NULL_LIST(cluster_list);
 		slurmdb_destroy_assoc_rec(start_assoc);
 		slurmdb_destroy_account_rec(start_acct);
 		return SLURM_ERROR;

@@ -468,6 +468,7 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 		if (bitmap) {
 			trig_add->nodes_bitmap = bitmap;
 			trig_add->orig_bitmap  = bit_copy(bitmap);
+			bitmap = NULL;
 		}
 		trig_add->job_id = job_id;
 		trig_add->job_ptr = job_ptr;

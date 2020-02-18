@@ -758,6 +758,7 @@ static void _process_step(List job_list, char *f[], int lc,
 		debug2("Note: JOB_STEP record %u.%u preceded "
 		       "JOB_START record at line %d\n",
 		       temp->header.jobnum, temp->stepnum, lc);
+		list_append(job_list, job);
 	}
 	job->show_full = show_full;
 
@@ -845,6 +846,7 @@ static void _process_suspend(List job_list, char *f[], int lc,
 	if (!job)  {	/* fake it for now */
 		job = _create_filetxt_job_rec(temp->header);
 		job->jobname = xstrdup("(unknown)");
+		list_append(job_list, job);
 	}
 
 	job->show_full = show_full;
@@ -877,6 +879,7 @@ static void _process_terminated(List job_list, char *f[], int lc,
 		      "%u preceded "
 		      "other job records at line %d\n",
 		      temp->header.jobnum, lc);
+		list_append(job_list, job);
 	} else if (job->job_terminated_seen) {
 		if (temp->status == JOB_NODE_FAIL) {
 			/* multiple node failures - extra TERMINATED records */

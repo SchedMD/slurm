@@ -648,8 +648,10 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
 	 * name if provided otherwise first user name */
 	if (resv_ptr->accounts && resv_ptr->accounts[0])
 		key = resv_ptr->accounts;
-	else
+	else if (resv_ptr->users && resv_ptr->users[0])
 		key = resv_ptr->users;
+	else
+		key = "resv";
 	if (key[0] == '-')
 		key++;
 	sep = strchr(key, ',');
@@ -657,10 +659,6 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
 		len = sep - key;
 	else
 		len = strlen(key);
-	if (!len) {
-		key = "resv";
-		len = strlen(key);
-	}
 
 	name = xstrdup_printf("%.*s_%d", len, key, top_suffix);
 
@@ -4059,14 +4057,14 @@ TRY_AVAIL:
 			bit_and(tmp_avail_bitmap, feat_ptr->node_bitmap_avail);
 		tmp_bitmap = _pick_idle_nodes(tmp_avail_bitmap, resv_desc_ptr,
 					      core_bitmap);
-		bit_free(tmp_avail_bitmap);
+		FREE_NULL_BITMAP(tmp_avail_bitmap);
 		if (!tmp_bitmap) {
 			FREE_NULL_BITMAP(ret_bitmap);
 			break;
 		}
 		if (ret_bitmap) {
 			bit_or(ret_bitmap, tmp_bitmap);
-			bit_free(tmp_bitmap);
+			FREE_NULL_BITMAP(tmp_bitmap);
 		} else {
 			ret_bitmap = tmp_bitmap;
 			tmp_bitmap = NULL;

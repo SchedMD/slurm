@@ -395,7 +395,7 @@ _handle_spawn_resp(int fd, Buf buf)
 		spawned_srun_ports_size = spawn_resp->seq; /* seq start from 1 */
 		spawned_srun_ports[spawn_resp->seq - 1] = spawn_resp->pmi_port;
 		/* forward resp to stepd */
-		spawn_resp_send_to_stepd(spawn_resp, from_node);
+		spawn_resp_send_to_stepd(spawn_resp, &from_node);
 		xfree(from_node);
 	}
 	spawn_resp_free(spawn_resp);

@@ -1810,10 +1810,9 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					my_uid);
 				FREE_NULL_LIST(curr_user_list);
 				fclose(fd);
-				_destroy_sacctmgr_file_opts(file_opts);
 				xfree(cluster_name);
 				xfree(parent);
-				return;
+				goto end_it;
 
 			} else {
 				if (my_uid != slurm_get_slurm_user_id()
@@ -1827,10 +1826,9 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 						"privileges to load files.\n");
 					FREE_NULL_LIST(curr_user_list);
 					fclose(fd);
-					_destroy_sacctmgr_file_opts(file_opts);
 					xfree(cluster_name);
 					xfree(parent);
-					return;
+					goto end_it;
 				}
 			}
 			xfree(user_name);
@@ -2350,6 +2348,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			slurm_strerror(rc));
 	}
 
+end_it:
 	FREE_NULL_LIST(format_list);
 	FREE_NULL_LIST(mod_acct_list);
 	FREE_NULL_LIST(acct_list);
