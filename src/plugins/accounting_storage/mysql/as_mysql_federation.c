@@ -598,6 +598,7 @@ extern List as_mysql_modify_federations(
 		xfree(vals);
 		xfree(name_char);
 		xfree(query);
+		FREE_NULL_LIST(ret_list);
 		return NULL;
 	}
 
