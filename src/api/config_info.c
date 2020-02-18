@@ -2012,21 +2012,34 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 	List config_list = (List)key_pairs;
 	ListIterator iter = NULL;
 	/* define lists of specific configuration sections */
-	List other_list = list_create(xfree_ptr);
-	List control_list = list_create(xfree_ptr);
-	List accounting_list = list_create(xfree_ptr);
-	List logging_list = list_create(xfree_ptr);
-	List power_list = list_create(xfree_ptr);
-	List sched_list = list_create(xfree_ptr);
-	List topology_list = list_create(xfree_ptr);
-	List timers_list = list_create(xfree_ptr);
-	List debug_list = list_create(xfree_ptr);
-	List proepilog_list = list_create(xfree_ptr);
-	List resconf_list = list_create(xfree_ptr);
-	List proctrac_list = list_create(xfree_ptr);
+	List other_list;
+	List control_list;
+	List accounting_list;
+	List logging_list;
+	List power_list;
+	List sched_list;
+	List topology_list;
+	List timers_list;
+	List debug_list;
+	List proepilog_list;
+	List resconf_list;
+	List proctrac_list;
 
 	if (!config_list)
 		return;
+
+	other_list = list_create(xfree_ptr);
+	control_list = list_create(xfree_ptr);
+	accounting_list = list_create(xfree_ptr);
+	logging_list = list_create(xfree_ptr);
+	power_list = list_create(xfree_ptr);
+	sched_list = list_create(xfree_ptr);
+	topology_list = list_create(xfree_ptr);
+	timers_list = list_create(xfree_ptr);
+	debug_list = list_create(xfree_ptr);
+	proepilog_list = list_create(xfree_ptr);
+	resconf_list = list_create(xfree_ptr);
+	proctrac_list = list_create(xfree_ptr);
 
 	iter = list_iterator_create(config_list);
 	while ((key_pair = list_next(iter))) {
