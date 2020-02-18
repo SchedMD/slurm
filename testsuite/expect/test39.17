@@ -177,7 +177,7 @@ if {$match != 1} {
 # Test --gpus-per-task option by job step
 # Note that job is using --gpus-per-node, while step is using --gpus-per-task
 #
-send_user "\n\nTEST 2: --gpus-per-node for job and mutliple simultaneous steps using --gpus-per-task option\n"
+send_user "\n\nTEST 2: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
@@ -268,7 +268,7 @@ if {$bad_cuda_cnt != 0} {
 #
 # Test --gpus (per job or step) option by job step
 #
-send_user "\n\nTEST 3: --gpus-per-node for job and mutliple simultaneous steps using --gpus (per step) option\n"
+send_user "\n\nTEST 3: --gpus-per-node for job and multiple simultaneous steps using --gpus (per step) option\n"
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
@@ -360,7 +360,7 @@ if {$bad_cuda_cnt != 0} {
 # Test --gpus (per job or step) option by job step
 #
 if {$gpu_cnt > 2} {
-	send_user "\n\nTEST 4: --gpus-per-node for job and mutliple simultaneous steps using --gpus (per step) option\n"
+	send_user "\n\nTEST 4: --gpus-per-node for job and multiple simultaneous steps using --gpus (per step) option\n"
 
 	make_bash_script $file_in1 "
 		$scontrol -dd show job \${SLURM_JOBID}
@@ -468,7 +468,7 @@ if {$gpu_cnt > 2} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 2} {
-	send_user "\n\nTEST 5: --gpus-per-node for job and mutliple simultaneous steps using --gpus-per-task option\n"
+	send_user "\n\nTEST 5: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
 
 	set job_gpus 3
 	set step_gpus 2
@@ -584,7 +584,7 @@ if {$gpu_cnt > 2} {
 # Test --gpus option by job step
 #
 if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
-	send_user "\n\nTEST 6: --gpus-per-node for job and mutliple simultaneous steps using --gpus option\n"
+	send_user "\n\nTEST 6: --gpus-per-node for job and multiple simultaneous steps using --gpus option\n"
 
 	set job_gpus 2
 	set step_gpus 2
@@ -707,7 +707,7 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 # Test --gpus option by job step
 #
 if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
-	send_user "\n\nTEST 7: --gpus-per-node for job and mutliple simultaneous steps using --gpus option\n"
+	send_user "\n\nTEST 7: --gpus-per-node for job and multiple simultaneous steps using --gpus option\n"
 
 	set job_gpus 4
 
@@ -800,7 +800,7 @@ if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 3 && $nb_nodes >= 2} {
-	send_user "\n\nTEST 8: --gpus-per-node for job and mutliple simultaneous steps using --gpus-per-task option\n"
+	send_user "\n\nTEST 8: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
 
 	set job_gpus 4
 	set step_gpus 2
@@ -923,7 +923,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 3 && $nb_nodes >= 2} {
-	send_user "\n\nTEST 9: --gpus-per-node for job and mutliple simultaneous steps using --gpus-per-task option\n"
+	send_user "\n\nTEST 9: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
 
 	set job_gpus 4
 	set step_gpus 2
@@ -1029,7 +1029,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 3 && $nb_nodes >= 2} {
-	send_user "\n\nTEST 10: --gpus-per-node for job and mutliple simultaneous steps using --gpus-per-task option\n"
+	send_user "\n\nTEST 10: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
 
 	set job_gpus 3
 	set step_gpus 2
