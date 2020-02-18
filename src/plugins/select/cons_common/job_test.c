@@ -2265,9 +2265,8 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			   List *preemptee_job_list,
 			   bitstr_t **exc_cores)
 {
-	int i, rc = EINVAL;
+	int rc = EINVAL;
 	uint16_t job_node_req;
-	char tmp[128];
 
 	if (!(slurmctld_conf.conf_flags & CTL_CONF_ASRU))
 		job_ptr->details->core_spec = NO_VAL16;
@@ -2285,7 +2284,6 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		char *node_mode = "Unknown", *alloc_mode = "Unknown";
-		char *core_list = NULL, *node_list, *sep = "";
 		if (job_node_req == NODE_CR_RESERVED)
 			node_mode = "Exclusive";
 		else if (job_node_req == NODE_CR_AVAILABLE)
@@ -2300,23 +2298,9 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			alloc_mode = "Run_Now";
 		info("%s: %s: %pJ node_mode:%s alloc_mode:%s",
 		     plugin_type, __func__, job_ptr, node_mode, alloc_mode);
-		if (exc_cores) {
-			for (i = 0; i < core_array_size; i++) {
-				if (!exc_cores[i])
-					continue;
-				bit_fmt(tmp, sizeof(tmp), exc_cores[i]);
-				xstrfmtcat(core_list, "%snode[%d]:%s", sep, i,
-					   tmp);
-				sep = ",";
-			}
-		} else {
-			core_list = xstrdup("NONE");
-		}
-		node_list = bitmap2node_name(node_bitmap);
-		info("%s: %s: node_list:%s exc_cores:%s", plugin_type, __func__,
-		     node_list, core_list);
-		xfree(node_list);
-		xfree(core_list);
+
+		core_array_log("node_list & exc_cores", node_bitmap, exc_cores);
+
 		info("%s: %s: nodes: min:%u max:%u requested:%u avail:%u",
 		     plugin_type, __func__, min_nodes, max_nodes, req_nodes,
 		     bit_set_count(node_bitmap));
