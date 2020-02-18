@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
     in a usable manner.
  -- Fix type mismatches in the perl API.
  -- Prevent use of uninitialized slurmctld_diag_stats.
+ -- Fixed various Coverity issues.
 
 * Changes in Slurm 20.02.0rc1
 =============================
