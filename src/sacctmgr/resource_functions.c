@@ -805,17 +805,16 @@ extern int sacctmgr_list_res(int argc, char **argv)
 	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
-		FREE_NULL_LIST(print_fields_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 	res_list = slurmdb_res_get(db_conn, res_cond);
-	slurmdb_destroy_res_cond(res_cond);
 
 	if (!res_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with query.\n");
-		FREE_NULL_LIST(print_fields_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 	itr = list_iterator_create(res_list);
 	itr2 = list_iterator_create(print_fields_list);
@@ -839,7 +838,9 @@ extern int sacctmgr_list_res(int argc, char **argv)
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(res_list);
+end_it:
 	FREE_NULL_LIST(print_fields_list);
+	slurmdb_destroy_res_cond(res_cond);
 	return rc;
 }
 
