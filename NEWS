@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent use of uninitialized slurmctld_diag_stats.
  -- Fixed various Coverity issues.
  -- Only show warning about root-less topology in daemons.
+ -- Fix accounting of jobs in IGNORE_JOBS reservations.
 
 * Changes in Slurm 20.02.0rc1
 =============================
