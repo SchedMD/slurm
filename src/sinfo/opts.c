@@ -1190,7 +1190,6 @@ static int _parse_long_format (char* format_long)
 			       token );
 		}
 		token = strtok_r(NULL, ",", &str_tmp);
-		xfree(suffix);
 	}
 	xfree(tmp_format);
 	return SLURM_SUCCESS;
