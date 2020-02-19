@@ -3940,7 +3940,9 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 			if (switch_g_unpack_jobinfo(&switch_tmp, buffer,
 						    protocol_version))
 				goto unpack_error;
-		}
+		} else
+			step_layout = fake_slurm_step_layout_create(
+				job_ptr->batch_host, NULL, NULL, 1, 1);
 
 		/* fake out the former checkpoint plugin */
 		{

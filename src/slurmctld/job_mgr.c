@@ -1901,7 +1901,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 		safe_unpack16(&step_flag, buffer);
-
+		/*
+		 * The batch_host is needed to create a step_layout for the
+		 * batch step since that wasn't packed until 20.02.
+		 */
+		job_ptr->batch_host = batch_host;
 		while (step_flag == STEP_FLAG) {
 			/*
 			 * No need to put these into accounting if they
@@ -1913,6 +1917,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				goto unpack_error;
 			safe_unpack16(&step_flag, buffer);
 		}
+		job_ptr->batch_host = NULL;
 		safe_unpack32(&job_ptr->bit_flags, buffer);
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
 		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
