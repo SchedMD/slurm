@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
     of siblings when calculating FairTree fairshare.
  -- Fix cons_tres --exclusive=user to allocate only requested number of CPUs.
  -- Add MySQL deadlock detection and automatic retry mechanism.
+ -- Fix _verify_node_state memory requested as --mem-per-gpu DefMemPerGPU.
 
 * Changes in Slurm 19.05.6
 ==========================
