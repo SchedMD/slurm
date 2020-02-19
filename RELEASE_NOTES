@@ -48,8 +48,8 @@ HIGHLIGHTS
     to flow over an alternate network path.
  -- Added auth/jwt plugin, and 'scontrol token' subcommand.
  -- PMIx - improve performance of proc map generation.
- -- Deprecate kill_invalid_depend in SchedulerParameters and move it to a new
-    option called DependencyParameters.
+ -- Move kill_invalid_depend and max_depend_depth options to the new
+    DependencyParameters option, and deprecate use in SchedulerParameters.
  -- Enable job dependencies for any job on any cluster in the same federation.
  -- Allow clusters to be added automatically to db at startup of ctld.
  -- Add AccountingStorageExternalHost slurm.conf parameter.
@@ -75,6 +75,17 @@ HIGHLIGHTS
        in the future.)
  -- slurm.spec - override "hardening" linker flags to ensure RHEL8 builds
     in a usable manner.
+ -- Now when requesting exclusive access on a node the job will be given all the
+    GRES on a node whether or not they asked for it.
+    NOTE: Because of this change exclusive jobs submitted on previous versions
+    of Slurm may produce cosmetic errors such as
+    'error: _job_alloc_whole_node_internal: This should never happen, we
+     couldn't find the gres 7696487:3160171' and when the job finishes
+    'error: gres/gpu: job 17262 dealloc node snowflake0 GRES count underflow
+     (0 < 1)'
+    These should only exist while these older jobs are loading/finishing.
+    The error does not present an actual problem or impact future jobs and
+    should be ignored on pre-20.02 jobs.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

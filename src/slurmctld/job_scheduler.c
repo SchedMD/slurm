@@ -3754,31 +3754,10 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
  * Execute recursively for each dependent job */
 static bool _scan_depend(List dependency_list, uint32_t job_id)
 {
-	static time_t sched_update = 0;
-	static int max_depend_depth = 10;
 	static int job_counter = 0;
 	bool rc = false;
 	ListIterator iter;
 	depend_spec_t *dep_ptr;
-
-	if (sched_update != slurmctld_conf.last_update) {
-		char *sched_params = slurm_get_sched_params();
-		char *tmp_ptr;
-
-		if ((tmp_ptr = xstrcasestr(sched_params,
-					   "max_depend_depth="))) {
-			/* 01234567890123456 */
-			int i = atoi(tmp_ptr + 17);
-			if (i < 0) {
-				error("ignoring SchedulerParameters: "
-				      "max_depend_depth value of %d", i);
-			} else {
-				max_depend_depth = i;
-			}
-		}
-		xfree(sched_params);
-		sched_update = slurmctld_conf.last_update;
-	}
 
 	if (dependency_list == NULL) {
 		job_counter = 0;

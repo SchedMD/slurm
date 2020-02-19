@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "January 2020" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "February 2020" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -771,6 +771,10 @@ in every cluster in the federation.
 If a job has an invalid dependency and it can never run terminate it
 and set its state to be JOB_CANCELLED. By default the job stays pending
 with reason DependencyNeverSatisfied.
+\fBmax_depend_depth=#\fR
+Maximum number of jobs to test for a circular job dependency. Stop testing
+after this number of job dependencies have been tested. The default value is
+10 jobs.
 
 .TP
 \fBDisableRootJobs\fR
@@ -2980,20 +2984,12 @@ performance dramatically, but in the situation where a node changes state the
 window is as large as this setting.  In an HTC environment this setting is a
 must and we advise around 10 seconds.
 .TP
-\fBkill_invalid_depend\fR
-Deprecated in SchedulerParameters and moved to DependencyParameters.
-.TP
 \fBmax_array_tasks\fR
 Specify the maximum number of tasks that be included in a job array.
 The default limit is MaxArraySize, but this option can be used to set a lower
 limit. For example, max_array_tasks=1000 and MaxArraySize=100001 would permit
 a maximum task ID of 100000, but limit the number of tasks in any single job
 array to 1000.
-.TP
-\fBmax_depend_depth=#\fR
-Maximum number of jobs to test for a circular job dependency. Stop testing
-after this number of job dependencies have been tested. The default value is
-10 jobs.
 .TP
 \fBmax_rpc_cnt=#\fR
 If the number of active threads in the slurmctld daemon is equal to or

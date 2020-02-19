@@ -14,6 +14,10 @@ documents those changes that are of interest to users and administrators.
  -- Fixed various Coverity issues.
  -- Only show warning about root-less topology in daemons.
  -- Fix accounting of jobs in IGNORE_JOBS reservations.
+ -- Fix issue with batch steps state not loading correctly when upgrading from
+    19.05.
+ -- Deprecate max_depend_depth in SchedulerParameters and move it to
+    DependencyParameters.
  -- Silence erroneous error on slurmctld upgrade when loading federation state.
 
 * Changes in Slurm 20.02.0rc1
