@@ -2076,8 +2076,8 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->cwd			= req->work_dir;
 	launch_req->efname		= "/dev/null";
 	launch_req->gid			= req->gid;
-	launch_req->global_task_ids	= xmalloc(sizeof(uint32_t *)
-						  * req->nnodes);
+	launch_req->global_task_ids	= xcalloc(req->nnodes,
+						  sizeof(uint32_t *));
 	launch_req->ifname		= "/dev/null";
 	launch_req->job_id		= req->job_id;
 	launch_req->job_mem_lim		= req->job_mem_limit;
@@ -2093,8 +2093,8 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->spank_job_env_size	= req->spank_job_env_size;
 	launch_req->spank_job_env	= req->spank_job_env;
 	launch_req->step_mem_lim	= req->job_mem_limit;
-	launch_req->tasks_to_launch	= xmalloc(sizeof(uint16_t)
-						  * req->nnodes);
+	launch_req->tasks_to_launch	= xcalloc(req->nnodes,
+						  sizeof(uint16_t));
 	launch_req->uid			= req->uid;
 	launch_req->user_name		= req->user_name;
 
