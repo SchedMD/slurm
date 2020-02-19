@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- Fixed various Coverity issues.
  -- Only show warning about root-less topology in daemons.
  -- Fix accounting of jobs in IGNORE_JOBS reservations.
+ -- Silence erroneous error on slurmctld upgrade when loading federation state.
 
 * Changes in Slurm 20.02.0rc1
 =============================
