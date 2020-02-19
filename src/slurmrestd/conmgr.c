@@ -583,8 +583,8 @@ static void _wrap_work(void *x)
 static inline void _add_con_work_args(bool locked, con_mgr_fd_t *con,
 				      wrap_work_arg_t *args)
 {
-	log_flag(NET, "%s: [%s] locked=%hu func=%s",
-		 __func__, con->name, locked, args->tag);
+	log_flag(NET, "%s: [%s] locked=%s func=%s",
+		 __func__, con->name, (locked ? "T" : "F"), args->tag);
 
 	if (!locked)
 		slurm_mutex_lock(&con->mgr->mutex);
@@ -960,8 +960,9 @@ static inline void _handle_poll_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 		goto close;
 	}
 
-	log_flag(NET, "%s: [%s] fd=%u can_read=%hu can_write=%hu",
-		 __func__, con->name, fd, con->can_read, con->can_write);
+	log_flag(NET, "%s: [%s] fd=%u can_read=%s can_write=%s",
+		 __func__, con->name, fd, (con->can_read ? "T" : "F"),
+		 (con->can_write ? "T" : "F"));
 	return;
 close:
 	con->can_read = false;
@@ -1308,8 +1309,8 @@ static void _poll_connections(void *x)
 		    con->input_fd == -1)
 			continue;
 
-		log_flag(NET, "%s: [%s] poll read_eof=%hu input=%u output=%u",
-			 __func__, con->name, con->read_eof,
+		log_flag(NET, "%s: [%s] poll read_eof=%s input=%u output=%u",
+			 __func__, con->name, (con->read_eof ? "T" : "F"),
 			 get_buf_offset(con->in), get_buf_offset(con->out));
 
 		if (con->input_fd == con->output_fd) {
