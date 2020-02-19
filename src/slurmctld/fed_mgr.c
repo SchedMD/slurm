@@ -3325,6 +3325,13 @@ static List _load_remote_dep_job_list(Buf buffer, uint16_t protocol_version)
 				list_append(tmp_list, job_ptr);
 			}
 		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		/*
+		 * This function didn't exist until 20.02. Add this block
+		 * to silence errors caused by upgrading an 18.08 or 19.05
+		 * versioned state file.
+		 */
+		debug3("%s: old protocol version", __func__);
 	} else {
 		error("%s: protocol_version %hu not supported.",
 		      __func__, protocol_version);
