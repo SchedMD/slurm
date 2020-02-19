@@ -667,13 +667,11 @@ See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-node\fR and
 Specify the number of GPUs required for the job on each task to be spawned
 in the job's resource allocation.
 An optional GPU type specification can be supplied.
-This option requires the specification of a task count.
-For example "\-\-gpus\-per\-task=volta:1".
-Multiple options can be requested in a comma separated list, for example:
-"\-\-gpus\-per\-task=volta:3,kepler:1".
-Requires job to specify a task count (\-\-nodes).
-See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-socket\fR and
-\fB\-\-gpus\-per\-node\fR options.
+This option requires specification of a task count (e.g. \-n or \-\-ntasks
+options). For example "\-\-gpus\-per\-task=volta:1". Multiple options can be
+requested in a comma separated list, for example:
+"\-\-gpus\-per\-task=volta:3,kepler:1". See also the \fB\-\-gpus\fR,
+\fB\-\-gpus\-per\-socket\fR and \fB\-\-gpus\-per\-node\fR options.
 .br
 NOTE: This option will not have any impact on GPU binding, specifically
 it won't limit the number of devices set for CUDA_VISIBLE_DEVICES.

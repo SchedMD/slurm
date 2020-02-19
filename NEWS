@@ -155,6 +155,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix for --gpu-bind when no gpus requested.
  -- Fix sshare -l crash with large values.
  -- Fix printing NULL job and step pointers.
+ -- Break infinite loop in cons_tres dealing with incorrect tasks per tres
+    request resulting in slurmctld hang.
+ -- Improve handling of --gpus-per-task to make sure appropriate number of GPUs
+    is assigned to job.
 
 * Changes in Slurm 19.05.5
 ==========================

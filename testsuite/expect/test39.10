@@ -185,7 +185,7 @@ for {set inx 12} {$inx <= $mem_size} {set inx [expr $inx * 10]} {
 # Increase mem_per_gpu value 10x on each iteration
 #
 if {$gpu_cnt > 1} {
-	for {set inx 13} {$inx <= $mem_size} {set inx [expr $inx * 10]} {
+	for {set inx 13} {$inx <= [expr $mem_size / 2] } {set inx [expr $inx * 10]} {
 		run_gpu_per_task $inx 2
 		if {$exit_code != 0} {
 			break

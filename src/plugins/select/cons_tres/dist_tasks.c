@@ -175,10 +175,12 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 			    ((avail_cpus[n] - job_res->cpus[n]) <
 			     job_ptr->details->cpus_per_task))
 				break;
-			if (!dist_tasks_tres_tasks_avail(
+			if (!over_subscribe &&
+			    !dist_tasks_tres_tasks_avail(
 				    gres_task_limit, job_res, n))
 				break;
-			if (_at_tpn_limit(n, job_ptr, "fill allocated", false))
+			if (!over_subscribe &&
+			    _at_tpn_limit(n, job_ptr, "fill allocated", false))
 				break;
 			tid++;
 			job_res->tasks_per_node[n]++;

@@ -4464,17 +4464,25 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	 * Ensure gres_per_job is multiple of gres_per_task
 	 * Ensure task count is consistent with GRES parameters
 	 */
-	if (job_gres_data->gres_per_job && job_gres_data->gres_per_task) {
-		if (job_gres_data->gres_per_job % job_gres_data->gres_per_task){
-			/* gres_per_job not multiple of gres_per_task */
+	if (job_gres_data->gres_per_task) {
+		if(job_gres_data->gres_per_job) {
+			if (job_gres_data->gres_per_job %
+			    job_gres_data->gres_per_task) {
+				/* gres_per_job not multiple of gres_per_task */
+				return -1;
+			}
+			req_tasks = job_gres_data->gres_per_job /
+				    job_gres_data->gres_per_task;
+			if (*num_tasks == NO_VAL)
+				*num_tasks = req_tasks;
+			else if (*num_tasks != req_tasks)
+				return -1;
+		} else if (*num_tasks != NO_VAL) {
+			job_gres_data->gres_per_job = *num_tasks *
+						job_gres_data->gres_per_task;
+		} else {
 			return -1;
 		}
-		req_tasks = job_gres_data->gres_per_job /
-			    job_gres_data->gres_per_task;
-		if (*num_tasks == NO_VAL)
-			*num_tasks = req_tasks;
-		else if (*num_tasks != req_tasks)
-			return -1;
 	}
 
 	/*
