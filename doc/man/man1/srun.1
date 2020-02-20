@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "January 2020" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "February 2020" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -24,6 +24,8 @@ https://slurm.schedmd.com/cpu_management.html
 srun will return the highest exit code of all tasks run or the highest signal
 (with the high-order bit set in an 8-bit integer -- e.g. 128 + signal) of any
 task that exited with a signal.
+.br
+The value 253 is reserved for out-of-memory errors.
 
 .SH "EXECUTABLE PATH RESOLUTION"
 
