@@ -995,7 +995,7 @@ Job suspend/resume is most useful to get particularly large jobs initiated
 in a timely fashion with minimal overhead. Say you want to get a full-system
 job initiated. Normally you would need to either cancel all running jobs
 or wait for them to terminate. Canceling jobs results in the loss of
-their work to that point from either their beginning or last checkpoint.
+their work to that point from their beginning.
 Waiting for the jobs to terminate can take hours, depending upon your
 system configuration. A more attractive alternative is to suspend the
 running jobs, run the full-system job, then resume the suspended jobs.

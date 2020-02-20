@@ -110,7 +110,6 @@ behavior. A separate subdirectory is used for each plugin class:<br>
 <ul>
 <li><b>accounting_storage</b> for specifying the type of storage for accounting,<br>
 <li><b>auth</b> for user authentication,<br>
-<li><b>checkpoint</b> for system-initiated checkpoint and restart of user jobs,<br>
 <li><b>cred</b> for job credential functions,<br>
 <li><b>jobacct_gather</b> for job accounting,<br>
 <li><b>jobcomp</b> for job completion logging,<br>
