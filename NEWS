@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix error message for a regular user trying to update licenses on a running
     job.
  -- Fix backup slurmctld handling for logrotation via SIGUSR2.
+ -- Fix reservation feature specification when looking for inactive features
+    after active features fails.
 
 * Changes in Slurm 20.02.1
 ==========================

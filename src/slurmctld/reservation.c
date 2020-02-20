@@ -3963,15 +3963,19 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			 * First try to use nodes with the feature active.
 			 * If that fails, use nodes with the feature available.
 			 */
+			bitstr_t *tmp_bitmap;
+			tmp_bitmap = bit_copy(node_bitmap);
 			if (!valid_feature_counts(job_ptr, true, node_bitmap,
 						  &dummy)) {
 				rc = ESLURM_INVALID_FEATURE;
 			} else if (bit_set_count(node_bitmap) < total_node_cnt){
+				bit_or(node_bitmap, tmp_bitmap);
 				if (!valid_feature_counts(job_ptr, false,
 							  node_bitmap, &dummy)){
 					rc = ESLURM_INVALID_FEATURE;
 				}
 			}
+			FREE_NULL_BITMAP(tmp_bitmap);
 		}
 		FREE_NULL_LIST(job_ptr->details->feature_list);
 		xfree(job_ptr->details);
