@@ -45,14 +45,6 @@ an authentication plugin by the Slurm code itself, but provides a mechanism
 for the application to manage Kerberos V credentials.</li>
 </ul><br>
 
-<li><b>Checkpoint/Restart</b></li>
-<ul>
-<li><a href="http://dmtcp.sourceforge.net/">
-<b>DMTCP (Distributed MultiThreaded CheckPointing)</a></b></li>
-<li><a href="https://computation.llnl.gov/project/scr/">
-<b>Scalable Checkpoint/Restart (SCR) for MPI</a></b></li>
-</ul><br>
-
 <li><b>Databases</b> can be used to store accounting information.
 See our <a href="accounting.html">Accounting</a> web page for more information.
 <ul>
