@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "January 2020" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "February 2020" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -206,9 +206,8 @@ Number of nodes allocated to the job or the minimum number of nodes
 required by a pending job. The actual number of nodes allocated to a pending
 job may exceed this number if the job specified a node range count (e.g.
 minimum and maximum node counts) or the job specifies a processor
-count instead of a node count and the cluster contains nodes with varying
-processor counts. As a job is completing this number will reflect the
-current number of nodes allocated.
+count instead of a node count. As a job is completing this number will reflect
+the current number of nodes allocated.
 (Valid for jobs only)
 .TP
 \fB%e\fR
@@ -716,9 +715,8 @@ Number of nodes allocated to the job or the minimum number of nodes
 required by a pending job. The actual number of nodes allocated to a pending
 job may exceed this number if the job specified a node range count (e.g.
 minimum and maximum node counts) or the job specifies a processor
-count instead of a node count and the cluster contains nodes with varying
-processor counts. As a job is completing this number will reflect the
-current number of nodes allocated.
+count instead of a node count. As a job is completing this number will reflect
+the current number of nodes allocated.
 (Valid for jobs only)
 .TP
 \fBnumtasks\fR
