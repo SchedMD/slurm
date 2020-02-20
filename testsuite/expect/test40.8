@@ -180,7 +180,7 @@ if {[wait_for_file $file_out] == 0} {
 		if {$percent_time_diff > 20} {
 			send_user "\nFAILURE: CUDA MPS jobs appear to have not run in parallel\n"
 			send_user "FAILURE: Run time difference was $percent_time_diff percent\n"
-			set exit_code 1	
+			set exit_code 1
 		} else {
 			send_user "\nCUDA MPS jobs do appear to have not run in parallel\n"
 			send_user "Run time difference was $percent_time_diff percent\n"

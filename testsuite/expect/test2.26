@@ -58,7 +58,7 @@ proc top_enabled { } {
 	log_user 1
 	return $enabled
 }
-	
+
 proc submit_job { } {
 	global sbatch file_in job_name number
 

@@ -55,7 +55,7 @@ expect {
 	-re "Dropped pending I/O" {
 		incr match
 		exp_continue
-	}	
+	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		set exit_code 1
