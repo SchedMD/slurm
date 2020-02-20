@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix backup slurmctld handling for logrotation via SIGUSR2.
  -- Fix reservation feature specification when looking for inactive features
     after active features fails.
+ -- Prevent misleading error messages for reservation creation.
 
 * Changes in Slurm 20.02.1
 ==========================

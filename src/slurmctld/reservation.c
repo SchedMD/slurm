@@ -3976,6 +3976,9 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				}
 			}
 			FREE_NULL_BITMAP(tmp_bitmap);
+
+			if (bit_set_count(node_bitmap) < total_node_cnt)
+				rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		}
 		FREE_NULL_LIST(job_ptr->details->feature_list);
 		xfree(job_ptr->details);
