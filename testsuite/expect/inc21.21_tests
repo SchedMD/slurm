@@ -53,7 +53,7 @@ proc inc21_21_good { test_type limit } {
              [default_part_exclusive] != 0} {
 		send_user "\nWARNING: Unable to perform test with exclusive node allocations\n"
 		return $exit_code
-	}	
+	}
 	set partition [default_partition]
 	set select_type_param [get_select_type_params $partition]
 	if { [string first "CR_SOCKET" $select_type_param] != -1} {

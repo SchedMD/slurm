@@ -81,7 +81,7 @@ expect {
 if {$min_cpu_cnt < 3} {
 	send_user "\nWARNING: too few CPUs per node to test srun task distribution\n"
 	exit 0
-}	
+}
 
 #
 # Submit a two node job with "pack" distribution

@@ -27,7 +27,7 @@
 #include <math.h>
 
 #define SECOND2RUN 180
-#define BURNBUFSIZ 1024*1024	
+#define BURNBUFSIZ 1024*1024
 #define CPUBUSY_PCT 40
 #define READLOOP 10
 #define WRITELOOP 20
@@ -121,7 +121,7 @@ int main (int argc, char **argv)
 			task_id = atoi(env_str);
 		}
 	}
-	
+
 	burnbuf = malloc(sizeof(char)*BURNBUFSIZ);
 	memset(burnbuf,'\0',BURNBUFSIZ);
 	sprintf(burnpath,"/tmp/ioburn_%d_%d_%d",job_id,step_id,task_id);

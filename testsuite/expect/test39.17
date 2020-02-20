@@ -66,6 +66,13 @@ if {$gpu_cnt < 2} {
 	exit 0
 }
 
+set constrain_devices [test_constrain_devices]
+if {$constrain_devices} {
+	log_info "Devices files are constrained by cgroups\n"
+} else {
+	log_info "Devices files are NOT constrained by cgroups\n"
+}
+
 get_node_config
 set cpus_per_node [expr $sockets_per_node * $cpus_per_socket]
 
@@ -170,7 +177,7 @@ if {$match != 1} {
 # Test --gpus-per-task option by job step
 # Note that job is using --gpus-per-node, while step is using --gpus-per-task
 #
-send_user "\n\nTEST 2: --gpus-per-node for job and mutliple simultaneous steps using --gpus-per-task option\n"
+send_user "\n\nTEST 2: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
@@ -229,10 +236,16 @@ expect {
 		exp_continue
 	}
 	-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES:($number)" {
-		if {$last_cuda_val == -1} {
-			set last_cuda_val $expect_out(2,string)
-		} elseif {$last_cuda_val == $expect_out(2,string)} {
-			incr bad_cuda_val	
+		set val $expect_out(2,string)
+		if {$constrain_devices} {
+			if {$val != 0} {
+				log_error "Expected CUDA_VISIBLE_DEVICES:0 with cgroup-constrained devices"
+				set exit_code 1
+			}
+		} elseif {$last_cuda_val == -1} {
+			set last_cuda_val $val
+		} elseif {$last_cuda_val == $val} {
+			incr bad_cuda_val
 		}
 		exp_continue
 	}
@@ -255,7 +268,7 @@ if {$bad_cuda_cnt != 0} {
 #
 # Test --gpus (per job or step) option by job step
 #
-send_user "\n\nTEST 3: --gpus-per-node for job and mutliple simultaneous steps using --gpus (per step) option\n"
+send_user "\n\nTEST 3: --gpus-per-node for job and multiple simultaneous steps using --gpus (per step) option\n"
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
@@ -314,10 +327,16 @@ expect {
 		exp_continue
 	}
 	-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES:($number)" {
-		if {$last_cuda_val == -1} {
-			set last_cuda_val $expect_out(2,string)
-		} elseif {$last_cuda_val == $expect_out(2,string)} {
-			incr bad_cuda_val	
+		set val $expect_out(2,string)
+		if {$constrain_devices} {
+			if {$val != 0} {
+				log_error "Expected CUDA_VISIBLE_DEVICES:0 with cgroup-constrained devices"
+				set exit_code 1
+			}
+		} elseif {$last_cuda_val == -1} {
+			set last_cuda_val $val
+		} elseif {$last_cuda_val == $val} {
+			incr bad_cuda_val
 		}
 		exp_continue
 	}
@@ -341,7 +360,7 @@ if {$bad_cuda_cnt != 0} {
 # Test --gpus (per job or step) option by job step
 #
 if {$gpu_cnt > 2} {
-	send_user "\n\nTEST 4: --gpus-per-node for job and mutliple simultaneous steps using --gpus (per step) option\n"
+	send_user "\n\nTEST 4: --gpus-per-node for job and multiple simultaneous steps using --gpus (per step) option\n"
 
 	make_bash_script $file_in1 "
 		$scontrol -dd show job \${SLURM_JOBID}
@@ -400,18 +419,31 @@ if {$gpu_cnt > 2} {
 			exp_continue
 		}
 		-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES:($number),($number)" {
-			if {$last_cuda_val == -1} {
-				set last_cuda_val $expect_out(2,string)
-			} elseif {$last_cuda_val == $expect_out(2,string)} {
-				incr bad_cuda_val	
+			set val $expect_out(2,string)
+			set val2 $expect_out(3,string)
+			if {$constrain_devices} {
+				if {$val != 0 || $val2 != 1} {
+					log_error "Expected CUDA_VISIBLE_DEVICES:0,1 with cgroup-constrained devices"
+					set exit_code 1
+				}
+			} elseif {$last_cuda_val == -1} {
+				set last_cuda_val $val
+			} elseif {$last_cuda_val == $val} {
+				incr bad_cuda_val
 			}
 			exp_continue
 		}
 		-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES:($number)" {
-			if {$last_cuda_val == -1} {
-				set last_cuda_val $expect_out(2,string)
-			} elseif {$last_cuda_val == $expect_out(2,string)} {
-				incr bad_cuda_val	
+			set val $expect_out(2,string)
+			if {$constrain_devices} {
+				if {$val != 0} {
+					log_error "Expected CUDA_VISIBLE_DEVICES:0 with cgroup-constrained devices"
+					set exit_code 1
+				}
+			} elseif {$last_cuda_val == -1} {
+				set last_cuda_val $val
+			} elseif {$last_cuda_val == $val} {
+				incr bad_cuda_val
 			}
 			exp_continue
 		}
@@ -436,7 +468,7 @@ if {$gpu_cnt > 2} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 2} {
-	send_user "\n\nTEST 5: --gpus-per-node for job and mutliple simultaneous steps using --gpus-per-task option\n"
+	send_user "\n\nTEST 5: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
 
 	set job_gpus 3
 	set step_gpus 2
@@ -552,7 +584,7 @@ if {$gpu_cnt > 2} {
 # Test --gpus option by job step
 #
 if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
-	send_user "\n\nTEST 6: --gpus-per-node for job and mutliple simultaneous steps using --gpus option\n"
+	send_user "\n\nTEST 6: --gpus-per-node for job and multiple simultaneous steps using --gpus option\n"
 
 	set job_gpus 2
 	set step_gpus 2
@@ -637,7 +669,12 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 		set exit_code 1
 	}
 	if {$exit_code == 0} {
-		if {$cuda_val(0) == $cuda_val(1) && $cuda_val(1) == $cuda_val(2)} {
+		if {$constrain_devices} {
+			if {$cuda_val(0) != 0 || $cuda_val(1) != 0 || $cuda_val(2) != 0} {
+				log_error "Expected all steps with NODE_ID=0 to have CUDA_VISIBLE_DEVICES:0 with cgroup-constrained devices"
+				set exit_code 1
+			}
+		} elseif {$cuda_val(0) == $cuda_val(1) && $cuda_val(1) == $cuda_val(2)} {
 			send_user "\nFAILURE: Duplicated CUDA values for all 3 steps on node 0 of allocation\n"
 			set exit_code 1
 		}
@@ -670,7 +707,7 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 # Test --gpus option by job step
 #
 if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
-	send_user "\n\nTEST 7: --gpus-per-node for job and mutliple simultaneous steps using --gpus option\n"
+	send_user "\n\nTEST 7: --gpus-per-node for job and multiple simultaneous steps using --gpus option\n"
 
 	set job_gpus 4
 
@@ -763,7 +800,7 @@ if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 3 && $nb_nodes >= 2} {
-	send_user "\n\nTEST 8: --gpus-per-node for job and mutliple simultaneous steps using --gpus-per-task option\n"
+	send_user "\n\nTEST 8: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
 
 	set job_gpus 4
 	set step_gpus 2
@@ -886,7 +923,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 3 && $nb_nodes >= 2} {
-	send_user "\n\nTEST 9: --gpus-per-node for job and mutliple simultaneous steps using --gpus-per-task option\n"
+	send_user "\n\nTEST 9: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
 
 	set job_gpus 4
 	set step_gpus 2
@@ -992,7 +1029,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 3 && $nb_nodes >= 2} {
-	send_user "\n\nTEST 10: --gpus-per-node for job and mutliple simultaneous steps using --gpus-per-task option\n"
+	send_user "\n\nTEST 10: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
 
 	set job_gpus 3
 	set step_gpus 2

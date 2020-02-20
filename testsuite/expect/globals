@@ -2441,7 +2441,7 @@ proc test_select_type_params { type } {
 		if {![string compare $type "MEMORY"] &&
 		    [string first "_MEMORY" $item] != -1} {
 			set ret 1
-			break		
+			break
 		# i.e. Check for CR_CORE_MEMORY or CR_CORE
 		} elseif {[string first "MEMORY" $item] != -1 &&
 		          [string first $type $item] != -1} {
