@@ -95,7 +95,8 @@ TESTS = job-resources-test$(EXEEXT) log-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	 xhash-test \
 @HAVE_CHECK_TRUE@	 data-test \
 @HAVE_CHECK_TRUE@	 slurm_opt-test \
-@HAVE_CHECK_TRUE@	 xstring-test
+@HAVE_CHECK_TRUE@	 xstring-test \
+@HAVE_CHECK_TRUE@	 parse_time-test
 
 subdir = testsuite/slurm_unit/common
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -155,7 +156,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = xtree-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	xhash-test$(EXEEXT) data-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	slurm_opt-test$(EXEEXT) xstring-test$(EXEEXT)
+@HAVE_CHECK_TRUE@	slurm_opt-test$(EXEEXT) xstring-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	parse_time-test$(EXEEXT)
 am__EXEEXT_2 = job-resources-test$(EXEEXT) log-test$(EXEEXT) \
 	pack-test$(EXEEXT) $(am__EXEEXT_1)
 data_test_SOURCES = data-test.c
@@ -186,6 +188,13 @@ pack_test_OBJECTS = pack-test.$(OBJEXT)
 pack_test_LDADD = $(LDADD)
 pack_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
 	$(am__DEPENDENCIES_1)
+parse_time_test_SOURCES = parse_time-test.c
+parse_time_test_OBJECTS = parse_time_test-parse_time-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@parse_time_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
+parse_time_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(parse_time_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
 slurm_opt_test_SOURCES = slurm_opt-test.c
 slurm_opt_test_OBJECTS = slurm_opt_test-slurm_opt-test.$(OBJEXT)
 @HAVE_CHECK_TRUE@slurm_opt_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
@@ -229,6 +238,7 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/data_test-data-test.Po \
 	./$(DEPDIR)/job-resources-test.Po ./$(DEPDIR)/log-test.Po \
 	./$(DEPDIR)/pack-test.Po \
+	./$(DEPDIR)/parse_time_test-parse_time-test.Po \
 	./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po \
 	./$(DEPDIR)/xhash_test-xhash-test.Po \
 	./$(DEPDIR)/xstring_test-xstring-test.Po \
@@ -253,9 +263,11 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = data-test.c job-resources-test.c log-test.c pack-test.c \
-	slurm_opt-test.c xhash-test.c xstring-test.c xtree-test.c
+	parse_time-test.c slurm_opt-test.c xhash-test.c xstring-test.c \
+	xtree-test.c
 DIST_SOURCES = data-test.c job-resources-test.c log-test.c pack-test.c \
-	slurm_opt-test.c xhash-test.c xstring-test.c xtree-test.c
+	parse_time-test.c slurm_opt-test.c xhash-test.c xstring-test.c \
+	xtree-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -799,6 +811,8 @@ LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 @HAVE_CHECK_TRUE@slurm_opt_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@xstring_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@xstring_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@parse_time_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@parse_time_test_LDADD = $(LDADD) @CHECK_LIBS@
 all: all-recursive
 
 .SUFFIXES:
@@ -858,6 +872,10 @@ pack-test$(EXEEXT): $(pack_test_OBJECTS) $(pack_test_DEPENDENCIES) $(EXTRA_pack_
 	@rm -f pack-test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(pack_test_OBJECTS) $(pack_test_LDADD) $(LIBS)
 
+parse_time-test$(EXEEXT): $(parse_time_test_OBJECTS) $(parse_time_test_DEPENDENCIES) $(EXTRA_parse_time_test_DEPENDENCIES) 
+	@rm -f parse_time-test$(EXEEXT)
+	$(AM_V_CCLD)$(parse_time_test_LINK) $(parse_time_test_OBJECTS) $(parse_time_test_LDADD) $(LIBS)
+
 slurm_opt-test$(EXEEXT): $(slurm_opt_test_OBJECTS) $(slurm_opt_test_DEPENDENCIES) $(EXTRA_slurm_opt_test_DEPENDENCIES) 
 	@rm -f slurm_opt-test$(EXEEXT)
 	$(AM_V_CCLD)$(slurm_opt_test_LINK) $(slurm_opt_test_OBJECTS) $(slurm_opt_test_LDADD) $(LIBS)
@@ -884,6 +902,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job-resources-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_time_test-parse_time-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xhash_test-xhash-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xstring_test-xstring-test.Po@am__quote@ # am--include-marker
@@ -929,6 +948,20 @@ data_test-data-test.obj: data-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='data-test.c' object='data_test-data-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_test_CFLAGS) $(CFLAGS) -c -o data_test-data-test.obj `if test -f 'data-test.c'; then $(CYGPATH_W) 'data-test.c'; else $(CYGPATH_W) '$(srcdir)/data-test.c'; fi`
+
+parse_time_test-parse_time-test.o: parse_time-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(parse_time_test_CFLAGS) $(CFLAGS) -MT parse_time_test-parse_time-test.o -MD -MP -MF $(DEPDIR)/parse_time_test-parse_time-test.Tpo -c -o parse_time_test-parse_time-test.o `test -f 'parse_time-test.c' || echo '$(srcdir)/'`parse_time-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/parse_time_test-parse_time-test.Tpo $(DEPDIR)/parse_time_test-parse_time-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='parse_time-test.c' object='parse_time_test-parse_time-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(parse_time_test_CFLAGS) $(CFLAGS) -c -o parse_time_test-parse_time-test.o `test -f 'parse_time-test.c' || echo '$(srcdir)/'`parse_time-test.c
+
+parse_time_test-parse_time-test.obj: parse_time-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(parse_time_test_CFLAGS) $(CFLAGS) -MT parse_time_test-parse_time-test.obj -MD -MP -MF $(DEPDIR)/parse_time_test-parse_time-test.Tpo -c -o parse_time_test-parse_time-test.obj `if test -f 'parse_time-test.c'; then $(CYGPATH_W) 'parse_time-test.c'; else $(CYGPATH_W) '$(srcdir)/parse_time-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/parse_time_test-parse_time-test.Tpo $(DEPDIR)/parse_time_test-parse_time-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='parse_time-test.c' object='parse_time_test-parse_time-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(parse_time_test_CFLAGS) $(CFLAGS) -c -o parse_time_test-parse_time-test.obj `if test -f 'parse_time-test.c'; then $(CYGPATH_W) 'parse_time-test.c'; else $(CYGPATH_W) '$(srcdir)/parse_time-test.c'; fi`
 
 slurm_opt_test-slurm_opt-test.o: slurm_opt-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_opt_test_CFLAGS) $(CFLAGS) -MT slurm_opt_test-slurm_opt-test.o -MD -MP -MF $(DEPDIR)/slurm_opt_test-slurm_opt-test.Tpo -c -o slurm_opt_test-slurm_opt-test.o `test -f 'slurm_opt-test.c' || echo '$(srcdir)/'`slurm_opt-test.c
@@ -1288,6 +1321,13 @@ xstring-test.log: xstring-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+parse_time-test.log: parse_time-test$(EXEEXT)
+	@p='parse_time-test$(EXEEXT)'; \
+	b='parse_time-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -1411,6 +1451,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
 	-rm -f ./$(DEPDIR)/pack-test.Po
+	-rm -f ./$(DEPDIR)/parse_time_test-parse_time-test.Po
 	-rm -f ./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po
 	-rm -f ./$(DEPDIR)/xstring_test-xstring-test.Po
@@ -1464,6 +1505,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
 	-rm -f ./$(DEPDIR)/pack-test.Po
+	-rm -f ./$(DEPDIR)/parse_time_test-parse_time-test.Po
 	-rm -f ./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po
 	-rm -f ./$(DEPDIR)/xstring_test-xstring-test.Po

@@ -20,7 +20,8 @@ TESTS += xtree-test \
 	 xhash-test \
 	 data-test \
 	 slurm_opt-test \
-	 xstring-test
+	 xstring-test \
+	 parse_time-test
 xtree_test_CFLAGS = $(MYCFLAGS)
 xtree_test_LDADD  = $(LDADD) @CHECK_LIBS@
 xhash_test_CFLAGS = $(MYCFLAGS)
@@ -31,5 +32,7 @@ slurm_opt_test_CFLAGS = $(MYCFLAGS)
 slurm_opt_test_LDADD  = $(LDADD) @CHECK_LIBS@
 xstring_test_CFLAGS   = $(MYCFLAGS)
 xstring_test_LDADD    = $(LDADD) @CHECK_LIBS@
+parse_time_test_CFLAGS= $(MYCFLAGS)
+parse_time_test_LDADD = $(LDADD) @CHECK_LIBS@
 endif
 
