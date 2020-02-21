@@ -59,17 +59,17 @@ if {$gpu_cnt < 0} {
 	exit 1
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
+	send_user "\nWARNING: This test requires 1 or more GPUs per node for at least $nb_nodes nodes in the default partition\n"
 	exit 0
 }
 
-set craynetwork_count [get_craynetwork_count]
+set craynetwork_count [get_craynetwork_count $nb_nodes]
 if {$craynetwork_count < 0} {
 	send_user "\nFAILURE: Error getting craynetwork GRES count\n"
 	exit 1
 }
 if {$craynetwork_count < 1} {
-	send_user "\nWARNING: This test requires 1 or more craynetwork GRES in the default partition\n"
+	send_user "\nWARNING: This test requires 1 or more craynetwork GRES per node for at least $nb_nodes nodes in the default partition\n"
 	exit 0
 }
 
