@@ -825,7 +825,8 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 						   time_t curr_start,
 						   time_t curr_end,
 						   List resv_usage_list,
-						   List cluster_down_list)
+						   List cluster_down_list,
+						   int dims)
 {
 	local_cluster_usage_t *c_usage = NULL;
 	char *query = NULL;
@@ -833,7 +834,9 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	int i = 0;
 	ListIterator d_itr = NULL;
+	ListIterator r_itr = NULL;
 	local_cluster_usage_t *loc_c_usage;
+	local_resv_usage_t *loc_r_usage;
 
 	char *event_req_inx[] = {
 		"node_name",
@@ -881,12 +884,13 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	d_itr = list_iterator_create(cluster_down_list);
+	r_itr = list_iterator_create(resv_usage_list);
 	while ((row = mysql_fetch_row(result))) {
 		time_t row_start = slurm_atoul(row[EVENT_REQ_START]);
 		time_t row_end = slurm_atoul(row[EVENT_REQ_END]);
 		uint16_t state = slurm_atoul(row[EVENT_REQ_STATE]);
 		time_t local_start, local_end;
-		int seconds;
+		int seconds, resv_seconds;
 
 		if (row_start < curr_start)
 			row_start = curr_start;
@@ -949,6 +953,54 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 		if (!c_usage)
 			continue;
 
+		resv_seconds = 0;
+		/*
+		 * Now switch this time from any non-maint
+		 * reservations that may have had the node
+		 * allocated during this time.
+		 */
+		list_iterator_reset(r_itr);
+		while ((loc_r_usage = list_next(r_itr))) {
+			time_t temp_end = row_end;
+			time_t temp_start = row_start;
+			List loc_tres = NULL;
+
+			if (hostlist_find_dims(loc_r_usage->hl,
+					       row[EVENT_REQ_NAME], dims)
+			    < 0)
+				continue;
+
+			if (loc_r_usage->start > temp_start)
+				temp_start = loc_r_usage->start;
+			if (loc_r_usage->end < temp_end)
+				temp_end = loc_r_usage->end;
+			if ((resv_seconds = (temp_end - temp_start)) < 1)
+				continue;
+
+			loc_tres = list_create(_destroy_local_tres_usage);
+
+			_add_tres_time_2_list(loc_tres,
+					      row[EVENT_REQ_TRES],
+					      loc_r_usage->flags &
+					      RESERVE_FLAG_MAINT ?
+					      TIME_PDOWN : TIME_DOWN,
+					      resv_seconds,
+					      0, 0);
+			_add_tres_time_2_list(c_usage->loc_tres,
+					      row[EVENT_REQ_TRES],
+					      loc_r_usage->flags &
+					      RESERVE_FLAG_MAINT ?
+					      TIME_PDOWN : TIME_DOWN,
+					      resv_seconds,
+					      0, 0);
+
+			_remove_job_tres_time_from_cluster(
+				loc_r_usage->loc_tres,
+				loc_tres, resv_seconds);
+
+			FREE_NULL_LIST(loc_tres);
+		}
+
 		local_start = row_start;
 		local_end = row_end;
 
@@ -961,10 +1013,12 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 		if ((seconds = (local_end - local_start)) < 1)
 			continue;
 
-		_add_tres_time_2_list(c_usage->loc_tres,
-				      row[EVENT_REQ_TRES],
-				      TIME_DOWN,
-				      seconds, 0, 0);
+		seconds -= resv_seconds;
+		if (seconds > 0)
+			_add_tres_time_2_list(c_usage->loc_tres,
+					      row[EVENT_REQ_TRES],
+					      TIME_DOWN,
+					      seconds, 0, 0);
 
 		/*
 		 * Now remove this time if there was a
@@ -1275,7 +1329,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		c_usage = _setup_cluster_usage(mysql_conn, cluster_name,
 					       curr_start, curr_end,
 					       resv_usage_list,
-					       cluster_down_list);
+					       cluster_down_list,
+					       dims);
 
 		if (c_usage)
 			xassert(c_usage->loc_tres);
@@ -1495,7 +1550,6 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 						temp_end = r_usage->end;
 
 					loc_seconds = (temp_end - temp_start);
-
 					if (loc_seconds > 0) {
 						if (c_usage &&
 						    (r_usage->flags &
