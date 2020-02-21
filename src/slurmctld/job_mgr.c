@@ -13967,13 +13967,10 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 
 	if (job_specs->mail_type != NO_VAL16) {
 		job_ptr->mail_type = job_specs->mail_type;
-		if (!job_specs->mail_user) {
-			char *tmp = job_ptr->mail_user;
-			if (job_ptr->mail_type) {
-				job_ptr->mail_user =
-					_get_mail_user(tmp, job_ptr->user_id);
-			}
-			xfree(tmp);
+		if (!job_ptr->mail_user && !job_specs->mail_user &&
+		    job_ptr->mail_type) {
+			job_ptr->mail_user =
+				_get_mail_user(NULL, job_ptr->user_id);
 		}
 		sched_info("%s: setting mail_type to %u for %pJ",
 			   __func__, job_ptr->mail_type, job_ptr);
