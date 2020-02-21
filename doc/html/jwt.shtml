@@ -1,0 +1,50 @@
+<!--#include virtual="header.txt"-->
+
+<h1>JSON Web Tokens (JWT) Authentication</h1>
+
+<p>Slurm provides a RFC7519 compliant implementation of
+<a href="https://jwt.io/">JSON Web Tokens (JWT)</a>. This authentication can
+be used as an <b>AuthAltType</b>, usually alongside <b>auth/munge</b> as the
+<b>AuthType</b>.</p>
+
+<h2>Prerequisites</h2>
+<p>JWT requires <a href="https://github.com/benmcollins/libjwt">libjwt</a>.
+Both the library and the development headers must be available when Slurm is
+compiled.</p>
+
+<h2>Setup</h2>
+<ol>
+<li>Configure and build Slurm for JWT support</li>
+<li>Add JWT key to controller in StateSaveLocation:
+Here is an example with StateSaveLocation=/var/spool/slurm/statesave/
+<pre>
+openssl genrsa -out /var/spool/slurm/statesave/jwt_hs256.key 2048
+chown slurm /var/spool/slurm/statesave/jwt_hs256.key
+chmod 0700 /var/spool/slurm/statesave/jwt_hs256.key
+</pre>
+</li>
+<li>Add JWT as an alternative authentication in slurm.conf:
+<pre>
+AuthAltTypes=auth/jwt
+</pre>
+</li>
+<li>Restart slurmctld</li>
+<li>Create tokens for users as desired:
+<pre>
+scontrol token username=$USER
+</pre>
+An optional <b>lifespan=$LIFESPAN</b> option can be used to change the token
+lifespan from the default 1800 seconds. The root account, or <b>SlurmUser</b>
+account can be used to generate tokens for any user. Alternatively, a user
+may use the command to generate tokens for themselves by simply calling
+<pre>
+scontrol token
+</pre>
+</li>
+<li>Export the <b>SLURM_JWT</b> environment variable before calling any Slurm
+command.</li>
+</ol>
+
+<p style="text-align:center;">Last modified 21 February 2020</p>
+
+<!--#include virtual="footer.txt"-->

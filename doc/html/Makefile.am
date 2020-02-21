@@ -49,6 +49,7 @@ generated_html = \
 	job_launch.html \
 	job_submit_plugins.html \
 	jobcompplugins.html \
+	jwt.html \
 	launch_plugins.html \
 	licenses.html \
 	fair_tree.html \

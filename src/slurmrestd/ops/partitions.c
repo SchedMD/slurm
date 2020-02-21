@@ -144,7 +144,7 @@ static int _dump_part(data_t *p, partition_info_t *part)
 		data_set_int(data_key_set(d, "over_time_limit"),
 			     part->over_time_limit);
 
-	if (part->preempt_mode & PREEMPT_MODE_OFF)
+	if (part->preempt_mode == PREEMPT_MODE_OFF)
 		data_set_string(data_list_append(pm), "disabled");
 	if (part->preempt_mode & PREEMPT_MODE_SUSPEND)
 		data_set_string(data_list_append(pm), "suspend");

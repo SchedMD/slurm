@@ -47,6 +47,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="containers.html">Containers</a></li>
 <li><a href="cpu_management.html">CPU Management User and Administrator Guide</a></li>
 <li><a href="elasticsearch.html">Elasticsearch Guide</a></li>
+<li><a href="jwt.html">JSON Web Tokens Authentication</a></li>
 <li><a href="nonstop.html">Failure Management Support</a></li>
 <li><a href="federation.html">Federated Scheduling Guide</a></li>
 <li><a href="pam_slurm_adopt.html">Job Containment with pam_slurm_adopt</a></li>

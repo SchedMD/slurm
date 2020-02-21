@@ -1550,35 +1550,37 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 						temp_end = r_usage->end;
 
 					loc_seconds = (temp_end - temp_start);
-					if (loc_seconds > 0) {
-						if (c_usage &&
-						    (r_usage->flags &
-						     RESERVE_FLAG_IGN_JOBS))
-							/*
-							 * job usage was not
-							 * bundled with resv
-							 * usage so need to
-							 * account for it
-							 * individually here
-							 */
-							_add_time_tres_list(
-								c_usage->
-								loc_tres,
-								loc_tres,
-								TIME_ALLOC,
-								loc_seconds, 0);
 
-						_add_time_tres_list(
-							r_usage->loc_tres,
-							loc_tres, TIME_ALLOC,
-							loc_seconds, 1);
-						if ((rc = _update_unused_wall(
-							     r_usage,
-							     loc_tres,
-							     loc_seconds))
-						    != SLURM_SUCCESS)
-							goto end_it;
-					}
+					if (loc_seconds <= 0)
+						continue;
+
+					if (c_usage &&
+					    (r_usage->flags &
+					     RESERVE_FLAG_IGN_JOBS))
+						/*
+						 * job usage was not
+						 * bundled with resv
+						 * usage so need to
+						 * account for it
+						 * individually here
+						 */
+						_add_tres_time_2_list(
+							c_usage->loc_tres,
+							row[JOB_REQ_TRES],
+							TIME_ALLOC,
+							loc_seconds,
+							0, 0);
+
+					_add_time_tres_list(
+						r_usage->loc_tres,
+						loc_tres, TIME_ALLOC,
+						loc_seconds, 1);
+					if ((rc = _update_unused_wall(
+						     r_usage,
+						     loc_tres,
+						     loc_seconds))
+					    != SLURM_SUCCESS)
+						goto end_it;
 				}
 
 				_transfer_loc_tres(&loc_tres, a_usage);
