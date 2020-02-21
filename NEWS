@@ -6,6 +6,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix corner case issue with interrupted resource allocation requests.
  -- Pack all gres information in the slurmd to send to the stepd to help
     reduce calls in the stepd to read gres.conf.
+ -- The example systemd unit files have been changed to the "simple" type of
+    operation, and the daemon will now run in the foreground within systemd
+    instead of daemonizing itself.
 
 * Changes in Slurm 20.02.1
 ==========================
