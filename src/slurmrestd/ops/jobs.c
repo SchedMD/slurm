@@ -174,7 +174,6 @@ const params_t job_params[] = {
 	{ "nodefile", 'F', true },
 	{ "nodelist", 'w' },
 	{ "node_list", 'w' },
-	{ "required_nodes", 'w' },
 	{ "nodes", 'N' },
 	{ "no_kill", 'k' },
 	{ "no_requeue", LONG_OPT_NO_REQUEUE }, /* not in OAS */
