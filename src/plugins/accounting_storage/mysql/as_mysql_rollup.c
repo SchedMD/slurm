@@ -1509,12 +1509,12 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 						 * account for it
 						 * individually here
 						 */
-						_add_time_tres_list(
-							c_usage->
-							loc_tres,
-							loc_tres,
+						_add_tres_time_2_list(
+							c_usage->loc_tres,
+							row[JOB_REQ_TRES],
 							TIME_ALLOC,
-							loc_seconds, 0);
+							loc_seconds,
+							0, 0);
 
 					_add_time_tres_list(
 						r_usage->loc_tres,
