@@ -2805,8 +2805,8 @@ display_it:
 
 	_update_info_part(send_info_list,
 			  GTK_TREE_VIEW(spec_info->display_widget));
-	FREE_NULL_LIST(send_info_list);
 end_it:
+	FREE_NULL_LIST(send_info_list);
 	popup_win->toggled = 0;
 	popup_win->force_refresh = 0;
 
