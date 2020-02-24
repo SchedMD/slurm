@@ -460,7 +460,7 @@ extern int sacctmgr_list_event(int argc, char **argv)
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(xfree_ptr);
+	List format_list;
 	List print_fields_list; /* types are of print_field_t */
 
 	/* If we don't have any arguments make sure we set up the
@@ -485,6 +485,7 @@ extern int sacctmgr_list_event(int argc, char **argv)
 		event_cond->period_start = slurm_mktime(&start_tm);
 	}
 
+	format_list = list_create(xfree_ptr);
 	for (i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
