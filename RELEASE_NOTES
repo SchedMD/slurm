@@ -1,4 +1,4 @@
-RELEASE NOTES FOR SLURM VERSION 20.02
+RELEASE NOTES FOR SLURM VERSION 20.11
 
 IMPORTANT NOTES:
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
@@ -6,12 +6,12 @@ If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
 NOTE: If using a backup DBD you must start the primary first to do any
 database conversion, the backup will not start until this has happened.
 
-The 20.02 slurmdbd will work with Slurm daemons of version 18.08 and above.
+The 20.11 slurmdbd will work with Slurm daemons of version 19.05 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.
 
-Slurm can be upgraded from version 18.08 or 19.05 to version 20.02 without loss
+Slurm can be upgraded from version 19.05 or 20.02 to version 20.11 without loss
 of jobs or other state information. Upgrading directly from an earlier version
 of Slurm will result in loss of state information.
 
@@ -27,96 +27,9 @@ NOTE: The FastSchedule option has been removed. The FastSchedule=2 functionality
 
 HIGHLIGHTS
 ==========
- -- Drop slurm.spec-legacy from distribution.
- -- Removed the smap command.
- -- Exclusive behavior of a node includes all GRES on a node as well
-    as the cpus.
- -- Use python3 instead of python for internal build/test scripts.
-    The slurm.spec file has been updated to depend on python3 as well.
- -- Added new NodeSet configuration option to help simplify partition
-    configuration sections for heterogeneous / condo-style clusters.
- -- Added slurm.conf option MaxDBDMsgs to control how many messages will be
-    stored in the slurmctld before throwing them away when the slurmdbd is down.
- -- The checkpoint plugin interface and all associated API calls have been
-    removed.
- -- slurm_init_job_desc_msg() initializes mail_type as uint16_t. This allows
-    mail_type to be set to NONE with scontrol.
- -- Add new slurm_spank_log() function to print messages back to the user from
-    within a SPANK plugin without prepending "error: " from slurm_error().
- -- Enforce having partition name and nodelist=ALL when creating reservations
-    with flags=PART_NODES.
- -- SPANK - removed never-implemented slurm_spank_slurmd_init() interface. This
-    hook has always been accessible through slurm_spank_init() in the
-    S_CTX_SLURMD context instead.
- -- sbcast - add new BcastAddr option to NodeName lines to allow sbcast traffic
-    to flow over an alternate network path.
- -- Added auth/jwt plugin, and 'scontrol token' subcommand.
- -- PMIx - improve performance of proc map generation.
- -- Move kill_invalid_depend and max_depend_depth options to the new
-    DependencyParameters option, and deprecate use in SchedulerParameters.
- -- Enable job dependencies for any job on any cluster in the same federation.
- -- Allow clusters to be added automatically to db at startup of ctld.
- -- Add AccountingStorageExternalHost slurm.conf parameter.
- -- The "ConditionPathExists" condition in slurmd.service has been disabled by
-    default to permit simpler installation of a "configless" Slurm cluster.
- -- In SchedulerParameters remove deprecated max_job_bf and replace with
-    bf_max_job_test.
- -- Disable sbatch, salloc, srun --reboot for non-admins.
- -- SPANK - added support for S_JOB_GID in the job script context with
-    spank_get_item().
- -- Prolog/Epilog - add SLURM_JOB_GID environment variable.
- -- Add new slurmrestd command/daemon which implements the Slurm REST API.
- -- The inconsistent terminology and environment variable naming for
-    Heterogeneous Job ("HetJob") support has been tidied up.
-    -- The correct term for these jobs are "HetJobs", references to "PackJob"
-       have been corrected.
-    -- The correct term for the separate constituent jobs are "components",
-       references to "packs" have been corrected.
-    -- Output from 'scontrol show job' and others has been made consistent
-       with this .
-    -- Relevant environment variables are all of the form SLURM_HET_JOB_*.
-       (Old forms are still supported for this release, but may be removed
-       in the future.)
- -- slurm.spec - override "hardening" linker flags to ensure RHEL8 builds
-    in a usable manner.
- -- Now when requesting exclusive access on a node the job will be given all the
-    GRES on a node whether or not they asked for it.
-    NOTE: Because of this change exclusive jobs submitted on previous versions
-    of Slurm may produce cosmetic errors such as
-    'error: _job_alloc_whole_node_internal: This should never happen, we
-     couldn't find the gres 7696487:3160171' and when the job finishes
-    'error: gres/gpu: job 17262 dealloc node snowflake0 GRES count underflow
-     (0 < 1)'
-    These should only exist while these older jobs are loading/finishing.
-    The error does not present an actual problem or impact future jobs and
-    should be ignored on pre-20.02 jobs.
-
-SPECIAL NOTES FOR CRAY SYSTEMS
-==============================
- -- burst_buffer/datawarp - the OtherTimeout configuration option will now
-    apply to the stage-in "setup" and stage-out "dws_post_run" calls in to
-    dw_wlm_cli. (The StageInTimeout and StageOutTimeout were previously
-    used here by mistake.)
- -- burst_buffer/datawarp - add a set of % symbols that will be replaced by
-    job details. E.g., %d will be filled in with the WorkDir for the job.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
- -- The mpi/openmpi plugin has been removed as it does nothing.
-    MpiDefault=openmpi will be translated to the functionally-equivalent
-    MpiDefault=none.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- Display StepId=<jobid>.batch instead of StepId=<jobid>.4294967294 in output
-    of "scontrol show step". (slurm_sprint_job_step_info())
- -- MPMD in srun will now defer PATH resolution for the commands to launch to
-    slurmstepd. Previously it would handle resolution client-side, but with
-    a non-standard approach that walked PATH in reverse.
- -- squeue - added "--me" option, equivalent to --user=$USER.
- -- The LicensesUsed line has been removed from 'scontrol show config'.
-    Please see the 'scontrol show licenses' command as an alternative.
- -- sbatch - adjusted backoff times for "--wait" option to reduce load on
-    slurmctld. This results in a steady-state delay of 32s between queries,
-    instead of the prior 10s delay.
- -- Change 'scancel -t' to filter based only on job base state.
