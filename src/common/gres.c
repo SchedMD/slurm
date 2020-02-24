@@ -10860,6 +10860,7 @@ extern void gres_plugin_job_merge(List from_job_gres_list,
 	int from_inx, to_inx, new_inx;
 	bitstr_t **new_gres_bit_alloc, **new_gres_bit_step_alloc;
 	uint64_t *new_gres_cnt_step_alloc, *new_gres_cnt_node_alloc;
+	bool free_to_job_gres_list = false;
 
 	if (select_hetero == -1) {
 		/*
@@ -10963,6 +10964,7 @@ step2:	if (!from_job_gres_list)
 		goto step3;
 	if (!to_job_gres_list) {
 		to_job_gres_list = list_create(_gres_job_list_delete);
+		free_to_job_gres_list = true;
 	}
 	gres_iter = list_iterator_create(from_job_gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
@@ -11074,6 +11076,8 @@ step2:	if (!from_job_gres_list)
 	list_iterator_destroy(gres_iter);
 
 step3:	slurm_mutex_unlock(&gres_context_lock);
+	if (free_to_job_gres_list)
+		FREE_NULL_LIST(to_job_gres_list);
 	return;
 }
 
