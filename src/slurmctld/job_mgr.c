@@ -6145,6 +6145,7 @@ static int _get_job_parts(job_desc_msg_t *job_desc, part_record_t **part_pptr,
 					err_part);
 				xfree(err_part);
 			}
+			FREE_NULL_LIST(part_ptr_list);
 			return ESLURM_INVALID_PARTITION_NAME;
 		}
 	} else if (job_desc->reservation && job_desc->reservation[0] != '\0' ) {
