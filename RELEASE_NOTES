@@ -21,6 +21,10 @@ upgrading Slurm to a new major release.
 NOTE: Slurmctld is now set to fatal in case of computing node configured with
       CPUs == #Sockets. CPUs has to be either total number of cores or threads.
 
+NOTE: The FastSchedule option has been removed. The FastSchedule=2 functionality
+      (used for testing and development) is available as the new
+      SlurmdParameters=config_overrides option.
+
 HIGHLIGHTS
 ==========
  -- Drop slurm.spec-legacy from distribution.
