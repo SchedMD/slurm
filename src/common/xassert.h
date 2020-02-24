@@ -45,7 +45,6 @@
 
 #include "macros.h"
 
-#ifndef __COVERITY__
 #ifdef NDEBUG
 
 #  define xassert(expr)	((void) (0))
@@ -66,14 +65,4 @@ extern void __xassert_failed(char *, const char *, int, const char *)
 
 #endif /* NDEBUG. */
 
-#else /* __COVERITY__ */
-
-extern void __coverity_panic__(void);
-#define xassert(expr)			\
-do {					\
-	if (!(expr))			\
-		__coverity_panic__();	\
-} while (0)
-
-#endif /* __COVERITY__ */
 #endif /* !__XASSERT_H */
