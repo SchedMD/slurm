@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
     request resulting in slurmctld hang.
  -- Improve handling of --gpus-per-task to make sure appropriate number of GPUs
     is assigned to job.
+ -- Fix seg fault on cons_res when requesting --spread-job.
 
 * Changes in Slurm 20.02.0rc1
 =============================
