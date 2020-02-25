@@ -447,9 +447,11 @@ proc print_time { } {
 # Returns: A non-zero return code indicates a failure.
 #
 # Input: job_id  -- The Slurm job id of a job we want to cancel.
+#        het_job -- (optional) For a het job confirm each component
+#        job has completed.
 #
 ################################################################
-proc cancel_job { job_id } {
+proc cancel_job { job_id {het_job 0}} {
 	global scancel bin_sleep
 
 	if {$job_id == 0} {
@@ -459,7 +461,7 @@ proc cancel_job { job_id } {
 	send_user "cancelling $job_id\n"
 	set status [catch [exec $scancel -Q $job_id] result]
 	exec $bin_sleep 1
-	return [wait_for_job $job_id "DONE"]
+	return [wait_for_job $job_id "DONE" $het_job]
 }
 
 ################################################################
@@ -857,7 +859,7 @@ proc wait_for_file { file_name } {
 
 ################################################################
 #
-# Proc: wait_for_job
+# Proc: _wait_for_single_job
 #
 # Purpose:  Wait for a previously submitted Slurm job to reach
 # the desired state. Polls every $poll_interval seconds.
@@ -879,7 +881,7 @@ proc wait_for_file { file_name } {
 #
 ################################################################
 
-proc wait_for_job { job_id desired_state } {
+proc _wait_for_single_job { job_id desired_state } {
 	global scontrol max_job_state_delay poll_interval
 
 	# First verify that desired_state is supported
@@ -890,13 +892,13 @@ proc wait_for_job { job_id desired_state } {
 		"SPECIAL_EXIT" {}
 		"SUSPENDED" {}
 		default {
-			send_user "WARNING: wait_for_job with invalid state: $desired_state\n"
+			send_user "WARNING: wait_for_single_job with invalid state: $desired_state\n"
 			return 1
 		}
 	}
 
 	if {$job_id == 0} {
-		send_user "WARNING: wait_for_job with invalid job ID: $job_id\n"
+		send_user "WARNING: wait_for_single_job with invalid job ID: $job_id\n"
 		return 1
 	}
 
@@ -981,6 +983,53 @@ proc wait_for_job { job_id desired_state } {
 		exec sleep $poll_interval
 		set my_delay [expr $my_delay + $poll_interval]
 	}
+}
+
+################################################################
+#
+# Proc: wait_for_job
+#
+# Purpose: Wait for job to be in desired state. Can handle het job
+#          components.
+#
+# Input: job_id   -- The Slurm job id of a job we want to
+#                    wait for.
+#        desired_state -- The state you want the job to attain before
+#                         returning.  Currently supports:
+#                            DONE any terminated state
+#                            PENDING job is pending
+#                            RUNNING job is running
+#                            SPECIAL_EXIT
+#                            SUSPENDED job is suspended
+#        het_job (optional) -- If set, checks the state of each
+#                              component job if the job is a het one.
+#
+# Returns: A non-zero return code indicates a failure. See
+# wait_for_single_job.
+#
+################################################################
+proc wait_for_job { job_id desired_state {het_job 0}} {
+	set jid_list ""
+
+	if { $het_job } {
+		# get component job ids
+		set jid_list [get_het_job_ids $job_id 1]
+	}
+
+	set rc 0
+	if { $jid_list == "" } {
+		# non-het job
+		set jid_list $job_id
+	}
+
+	foreach jid $jid_list {
+		set rc [_wait_for_single_job $jid $desired_state]
+		if { $rc } {
+			# bail out on first failure
+			break
+		}
+	}
+	return $rc
 }
 
 ################################################################
@@ -4739,6 +4788,49 @@ proc expect_extern_step { } {
 
 ################################################################
 #
+# Proc: get_het_job_ids
+#
+# Purpose: Gets list of component job ids for a het job.
+#
+# Input: jobid - Slurm job id
+#        use_offset (optional) - If zero, returns list of
+#        integer job ids, else returns ids in the form of X+Y
+#        where X is het job master id and Y is the offset.
+#
+# Returns: A list of ids for a hetjob or an empty list if jobid
+# is not a het one.
+#
+################################################################
+proc get_het_job_ids { jobid {use_offset 0}} {
+	global scontrol number
+
+	set id_list ""
+	set log_user_save [log_user -info]
+	log_user 0
+	spawn $scontrol show job $jobid
+	expect {
+		-re "JobId=($number) PackJobId=($number) PackJobOffset=($number)" {
+			if { $use_offset } {
+				lappend id_list "$expect_out(2,string)+$expect_out(3,string)"
+			} else {
+				lappend id_list $expect_out(1,string)
+			}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set id_list ""
+		}
+		eof {
+			wait
+		}
+	}
+	log_user $log_user_save
+	return $id_list
+}
+
+################################################################
+#
 # Proc: test_pack_step
 #
 # Returns 1 if steps can span multiple heterogeneous job allocations,
@@ -4899,29 +4991,59 @@ proc in_fed {} {
 	return 0
 }
 
-# Checks the state of the job
-proc check_job_state { job state } {
+################################################################
+#
+# Proc: check_job_state
+#
+# Checks if the state of a job is the expected one.
+#
+# Input: job    : Job ID to check
+# Input: state  : Desired state of the job to match
+# Input: het_job: If set, checks state of each component job if the
+#                 job is a hetjob.
+#
+# Returns: 1 if job was on the desired state, or the number of job components
+#          on that state if it's a hetjob and het_job option enabled.
+#          0 otherwise.
+#          Also sets exit_code to 1 if job (or component) if there are some
+#          error in the called commands.
+#
+################################################################
+proc check_job_state { job state {het_job 0}} {
 
 	global scontrol exit_code
 
-	set state_match 0
-	spawn $scontrol show job $job
-	expect {
-		-re "JobState=($state)" {
-			incr state_match
-		}
-		timeout {
-			send_user "\nFAILURE scontrol not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+	set jid_list ""
+	if { $het_job } {
+		set jid_list [get_het_job_ids $job 1]
 	}
 
-	if {$state_match != 1} {
-		send_user "\nFAILURE job should be in $state state, but is not\n"
-		set exit_code 1
+	if { $jid_list == "" } {
+		# non-het job
+		set jid_list $job
+	}
+
+	foreach jid $jid_list {
+		set state_match 0
+		spawn $scontrol show job $jid
+		expect {
+			-re "JobState=($state)" {
+				incr state_match
+			}
+			timeout {
+				send_user "\nFAILURE scontrol not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$state_match != 1} {
+			send_user "\nFAILURE job $jid should be in $state state, but is not\n"
+			set exit_code 1
+			break
+		}
 	}
 }
 
