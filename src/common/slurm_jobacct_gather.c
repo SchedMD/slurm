@@ -1148,10 +1148,11 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 
 		safe_unpack32_array(&(*jobacct)->tres_ids,
 				    &(*jobacct)->tres_count, buffer);
-		slurm_unpack_list(&(*jobacct)->tres_list,
-				  slurmdb_unpack_tres_rec,
-				  slurmdb_destroy_tres_rec,
-				  buffer, rpc_version);
+		if (slurm_unpack_list(&(*jobacct)->tres_list,
+				      slurmdb_unpack_tres_rec,
+				      slurmdb_destroy_tres_rec,
+				      buffer, rpc_version) != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpack64_array(&(*jobacct)->tres_usage_in_max,
 				    &uint32_tmp, buffer);
 		safe_unpack64_array(&(*jobacct)->tres_usage_in_max_nodeid,
