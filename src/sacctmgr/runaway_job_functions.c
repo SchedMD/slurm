@@ -355,6 +355,7 @@ end_it:
 	xfree(cluster_str);
 	FREE_NULL_LIST(runaway_jobs);
 	FREE_NULL_LIST(process_jobs);
+	FREE_NULL_LIST(format_list);
 
 	return rc;
 }
