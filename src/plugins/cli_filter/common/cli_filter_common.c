@@ -172,33 +172,38 @@ char *cli_filter_json_set_options(slurm_opt_t *options)
 
 char *cli_filter_json_env(void)
 {
-	char **ptr = NULL;
-	char *json = xmalloc(4096);
-	size_t len = 0;
-	xstrcat(json, "{");
-	len = strlen(SPANK_OPTION_ENV_PREFIX);
-	for (ptr = environ; ptr && *ptr; ptr++) {
-		if (!strncmp(*ptr, "SLURM_", 6))
-			continue;
-		if (!strncmp(*ptr, "SPANK_", 6))
-			continue;
-		if (!strncmp(*ptr, SPANK_OPTION_ENV_PREFIX, len))
+	char *json = NULL, *sep = "{";
+	static size_t len = strlen(SPANK_OPTION_ENV_PREFIX);
+
+	for (char **ptr = environ; ptr && *ptr; ptr++) {
+		char *key, *value, *key_esc, *value_esc;
+
+		if (!xstrncmp(*ptr, "SLURM_", 6) ||
+		    !xstrncmp(*ptr, "SPANK_", 6) ||
+		    !xstrncmp(*ptr, SPANK_OPTION_ENV_PREFIX, len))
 			continue;
 
-		char *key = xstrdup(*ptr);
-		char *value = strchr(key, '=');
+		key = xstrdup(*ptr);
+
+		if (!(value = xstrchr(key, '='))) {
+			xfree(key);
+			continue;
+		}
 		*value++ = '\0';
-		char *key_esc = _json_escape(key);
-		char *value_esc = _json_escape(value);
-		xstrfmtcat(json, "\"%s\":\"%s\",", key_esc, value_esc);
+
+		key_esc = _json_escape(key);
+		value_esc = _json_escape(value);
+
+		xstrfmtcat(json, "%s\"%s\":\"%s\"", sep, key_esc, value_esc);
+		sep = ",";
+
 		xfree(key);
 		xfree(key_esc);
 		xfree(value_esc);
 	}
-	len = strlen(json);
-	if (len > 1)
-		json[len - 1] = '}';
-	else
-		xfree(json);
+
+	if (json)
+		xstrcatchar(json, '}');
+
 	return json;
 }
