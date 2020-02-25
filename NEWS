@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
     outside of the reservation allocation.
  -- Fix MPS without File with 1 GPU, and without GPUs.
  -- Add FreeBSD support to proctrack/pgid plugin.
+ -- Fix remote dependency testing for meta job in job array.
 
 * Changes in Slurm 20.02.1
 ==========================
