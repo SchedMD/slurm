@@ -90,6 +90,7 @@ HIGHLIGHTS
     These should only exist while these older jobs are loading/finishing.
     The error does not present an actual problem or impact future jobs and
     should be ignored on pre-20.02 jobs.
+ -- Both jobcomp and cli_filter now have lua interfaces.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================
