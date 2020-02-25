@@ -1139,7 +1139,7 @@ static void _help(void)
 "      --gres=list             required generic resources\n"
 "      --gres-flags=opts       flags related to GRES management\n"
 "  -H, --hold                  submit job in held state\n"
-"      --ignore-pbs            Ignore #PBS options in the batch script\n"
+"      --ignore-pbs            Ignore #PBS and #BSUB options in the batch script\n"
 "  -i, --input=in              file for batch script's standard input\n"
 "  -J, --job-name=jobname      name of job\n"
 "  -k, --no-kill               do not kill job on node failure\n"

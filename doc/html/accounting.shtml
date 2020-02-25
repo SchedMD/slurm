@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">Accounting and Resource Limits</h1>
+<h1><a id="top">Accounting and Resource Limits</a></h1>
 
 
 <h2>Contents</h2>
@@ -242,7 +242,7 @@ MySQL installation or rollback will not work.</b>
 script uses mysql_config to find out the information it needs
 about installed libraries and headers. You can specify where your
 mysql_config script is with the
-</i>--with-mysql_conf=/path/to/mysql_config</i> option when configuring your
+<i>--with-mysql_conf=/path/to/mysql_config</i> option when configuring your
 slurm build.
 On a successful configure, output is something like this: </p>
 <pre>
@@ -788,7 +788,7 @@ as deleted.
 If an entity has existed for less than 1 day, the entity will be removed
 completely. This is meant to clean up after typographic errors.</p>
 
-<p style="text-align:center;">Last modified 5 February 2020</p>
+<p style="text-align:center;">Last modified 25 February 2020</p>
 
 <!--#include virtual="footer.txt"-->
 

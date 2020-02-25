@@ -33,9 +33,8 @@ For more details, see <a href="slurm.conf.html#OPT_GresTypes">GresTypes</a> and 
 </P>
 
 <P>Note that the GRES specification for each node works in the same fashion
-as the other resources managed. Depending upon the value of the
-<I>FastSchedule</I> parameter, nodes which are found to have fewer resources
-than configured will be placed in a DOWN state.</P>
+as the other resources managed. Nodes which are found to have fewer resources
+than configured will be placed in a DRAIN state.</P>
 
 <P>Snippet from an example <I>slurm.conf</I> file:</P>
 <PRE>
@@ -425,6 +424,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 2 October 2019</p>
+<p style="text-align: center;">Last modified 25 February 2020</p>
 
 <!--#include virtual="footer.txt"-->
