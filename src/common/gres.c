@@ -11041,7 +11041,7 @@ step2:	if (!from_job_gres_list)
 						gres_bit_alloc
 						[from_inx] = NULL;
 				}
-				if (!gres_job_ptr->gres_bit_alloc) {
+				if (!gres_job_ptr->gres_cnt_node_alloc) {
 					;
 				} else if (select_hetero &&
 					   gres_job_ptr2->
