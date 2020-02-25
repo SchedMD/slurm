@@ -9,9 +9,7 @@
   Minor:	02
   Micro:	0
   Version:	20.02.0
-  Release:	0rc1
-
-# Include leading zero for all pre-releases
+  Release:	1
 
 ##
 #  When making a new Major/Minor version update
