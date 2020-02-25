@@ -75,6 +75,8 @@ static pthread_mutex_t sinfo_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 /*************
  * Functions *
  *************/
+static void _free_sinfo_format(void *object);
+static void _free_params(void);
 void *      _build_part_info(void *args);
 static int  _build_sinfo_data(List sinfo_list,
 			      partition_info_msg_t *partition_msg,
@@ -112,6 +114,8 @@ int main(int argc, char **argv)
 
 	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_USER, NULL);
+	memset(&params, 0, sizeof(params));
+	params.format_list = list_create(_free_sinfo_format);
 	parse_command_line(argc, argv);
 	if (params.verbose) {
 		opts.stderr_level += params.verbose;
@@ -135,7 +139,33 @@ int main(int argc, char **argv)
 			break;
 	}
 
+	_free_params();
+
 	exit(rc);
+}
+
+static void _free_sinfo_format(void *object)
+{
+	sinfo_format_t *x = (sinfo_format_t *)object;
+
+	if (!x)
+		return;
+	xfree(x->suffix);
+	xfree(x);
+}
+
+static void _free_params(void)
+{
+	FREE_NULL_LIST(params.clusters);
+	xfree(params.format);
+	xfree(params.nodes);
+	xfree(params.partition);
+	xfree(params.sort);
+	xfree(params.states);
+	FREE_NULL_LIST(params.part_list);
+	FREE_NULL_LIST(params.format_list);
+	FREE_NULL_LIST(params.state_list);
+	slurmdb_destroy_federation_rec(params.fed);
 }
 
 static int _list_find_func(void *x, void *key)

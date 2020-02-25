@@ -610,7 +610,6 @@ _parse_format( char* format )
 		exit( 1 );
 	}
 
-	params.format_list = list_create( NULL );
 	if ((prefix = _get_prefix(format)))
 		format_add_prefix( params.format_list, 0, 0, prefix);
 
@@ -910,14 +909,12 @@ static int _parse_long_format (char* format_long)
 		exit( 1 );
 	}
 
-	params.format_list = list_create(NULL);
 	tmp_format = xstrdup(format_long);
 	token = strtok_r(tmp_format, ",",&str_tmp);
 
 	while (token) {
 		_parse_long_token( token, sep, &field_size, &right_justify,
 				   &suffix);
-
 		if (!xstrcasecmp(token, "all")) {
 			_parse_format ("%all");
 		} else if (!xstrcasecmp(token, "allocmem")) {
@@ -1262,6 +1259,7 @@ _parse_long_token( char *token, char *sep, int *field_size, bool *right_justify,
 {
 	char *end_ptr = NULL, *ptr;
 
+	*suffix = NULL;
 	xassert(token);
 	ptr = strchr(token, ':');
 	if (ptr) {
