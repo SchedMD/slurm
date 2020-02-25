@@ -325,14 +325,20 @@ static avail_res_t **_get_res_avail(job_record_t *job_ptr,
 	else
 		i_last = -2;
 	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(node_map, i))
-			continue;
-		avail_res_array[i] =
-			(*cons_common_callbacks.can_job_run_on_node)(
-				job_ptr, core_map, i,
-				s_p_n, node_usage,
-				cr_type, test_only, will_run,
-				part_core_map);
+		if (bit_test(node_map, i))
+			avail_res_array[i] =
+				(*cons_common_callbacks.can_job_run_on_node)(
+					job_ptr, core_map, i,
+					s_p_n, node_usage,
+					cr_type, test_only, will_run,
+					part_core_map);
+		/*
+		 * FIXME: This is a hack to make cons_res more bullet proof as
+		 * there are places that don't always behave correctly with a
+		 * sparce array.
+		 */
+		if (!is_cons_tres && !avail_res_array[i])
+			avail_res_array[i] = xmalloc(sizeof(avail_res_t));
 	}
 
 	return avail_res_array;

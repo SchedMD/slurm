@@ -5,6 +5,8 @@ CLEANFILES = core.* *.bino
 
 REF = usage.txt openapi.json
 
+EXTRA_DIST = LICENSE-openapi.json
+
 SRCS = \
 	conmgr.h conmgr.c \
 	http.c http.h \
