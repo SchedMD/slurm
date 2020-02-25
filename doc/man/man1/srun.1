@@ -675,9 +675,10 @@ to job allocations.
 .RS
 .TP
 \fBafter:job_id[[+time][:jobid[+time]...]]\fR
-After the specified jobs start and 'time' in minutes from job start happens this
+After the specified jobs start or are cancelled and 'time' in minutes from job
+start or cancellation happens, this
 job can begin execution. If no 'time' is given then then there is no delay after
-start.
+start or cancellation.
 .TP
 \fBafterany:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated.
