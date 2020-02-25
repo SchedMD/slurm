@@ -323,7 +323,8 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	 * to the launch_tasks_request_msg_t info if send_gids is disabled.
 	 */
 	if (!job->ngids) {
-		if (slurm_cred_send_gids_enabled()) {
+		if (!(msg->flags & LAUNCH_NO_ALLOC) &&
+		    slurm_cred_send_gids_enabled()) {
 			error("No gids given in the cred.");
 			stepd_step_rec_destroy(job);
 			return NULL;
