@@ -496,25 +496,25 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 
 	/* make allocation for 50 sets of consecutive nodes, expand as needed */
 	consec_size = 50;
-	consec_cpus   = xmalloc(sizeof(int) * consec_size);
-	consec_nodes  = xmalloc(sizeof(int) * consec_size);
-	consec_start  = xmalloc(sizeof(int) * consec_size);
-	consec_end    = xmalloc(sizeof(int) * consec_size);
-	consec_req    = xmalloc(sizeof(int) * consec_size);
-	consec_weight = xmalloc(sizeof(uint64_t) * consec_size);
+	consec_cpus   = xcalloc(consec_size, sizeof(int));
+	consec_nodes  = xcalloc(consec_size, sizeof(int));
+	consec_start  = xcalloc(consec_size, sizeof(int));
+	consec_end    = xcalloc(consec_size, sizeof(int));
+	consec_req    = xcalloc(consec_size, sizeof(int));
+	consec_weight = xcalloc(consec_size, sizeof(uint64_t));
 
 	/* Build table with information about sets of consecutive nodes */
 	consec_index = 0;
 	consec_req[consec_index] = -1;	/* no required nodes here by default */
 	consec_weight[consec_index] = NO_VAL64;
 
-	avail_cpu_per_node = xmalloc(sizeof(uint16_t) * select_node_cnt);
+	avail_cpu_per_node = xcalloc(select_node_cnt, sizeof(uint16_t));
 	rem_cpus = details_ptr->min_cpus;
 	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if ((gres_per_job = gres_plugin_job_sched_init(job_ptr->gres_list))) {
 		rem_nodes = MIN(min_nodes, req_nodes);
-		consec_gres = xmalloc(sizeof(List) * consec_size);
+		consec_gres = xcalloc(consec_size, sizeof(List));
 	} else
 		rem_nodes = MAX(min_nodes, req_nodes);
 
@@ -576,16 +576,15 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	for (i = 0; i < select_node_cnt; i++) {		/* For each node */
 		if ((consec_index + 1) >= consec_size) {
 			consec_size *= 2;
-			xrealloc(consec_cpus,  sizeof(int) * consec_size);
-			xrealloc(consec_nodes, sizeof(int) * consec_size);
-			xrealloc(consec_start, sizeof(int) * consec_size);
-			xrealloc(consec_end,   sizeof(int) * consec_size);
-			xrealloc(consec_req,   sizeof(int) * consec_size);
-			xrealloc(consec_weight,
-			         sizeof(uint64_t) * consec_size);
+			xrecalloc(consec_cpus, consec_size, sizeof(int));
+			xrecalloc(consec_nodes, consec_size, sizeof(int));
+			xrecalloc(consec_start, consec_size, sizeof(int));
+			xrecalloc(consec_end, consec_size, sizeof(int));
+			xrecalloc(consec_req, consec_size, sizeof(int));
+			xrecalloc(consec_weight, consec_size, sizeof(uint64_t));
 			if (gres_per_job) {
-				xrealloc(consec_gres,
-					 sizeof(List) * consec_size);
+				xrecalloc(consec_gres,
+					  consec_size, sizeof(List));
 			}
 		}
 		if (req_map)
@@ -1554,7 +1553,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		goto fini;
 	}
 	i_last = bit_fls(node_map);
-	avail_cpu_per_node = xmalloc(sizeof(uint16_t) * select_node_cnt);
+	avail_cpu_per_node = xcalloc(select_node_cnt, sizeof(uint16_t));
 	node_weight_list = list_create(_topo_weight_free);
 	for (i = i_first; i <= i_last; i++) {
 		topo_weight_info_t nw_static;
@@ -1628,11 +1627,11 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	 * Identify the highest level switch to be used.
 	 * Note that nodes can be on multiple non-overlapping switches.
 	 */
-	switch_cpu_cnt     = xmalloc(sizeof(int)        * switch_record_cnt);
-	switch_gres        = xmalloc(sizeof(List)       * switch_record_cnt);
-	switch_node_bitmap = xmalloc(sizeof(bitstr_t *) * switch_record_cnt);
-	switch_node_cnt    = xmalloc(sizeof(int)        * switch_record_cnt);
-	switch_required    = xmalloc(sizeof(int)        * switch_record_cnt);
+	switch_cpu_cnt     = xcalloc(switch_record_cnt, sizeof(int));
+	switch_gres        = xcalloc(switch_record_cnt, sizeof(List));
+	switch_node_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
+	switch_node_cnt    = xcalloc(switch_record_cnt, sizeof(int));
+	switch_required    = xcalloc(switch_record_cnt, sizeof(int));
 
 	if (!req_nodes_bitmap)
 		nw = list_peek(node_weight_list);
@@ -2188,7 +2187,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		goto fini;
 	}
 	i_last = bit_fls(node_map);
-	avail_cpu_per_node = xmalloc(sizeof(uint16_t) * select_node_cnt);
+	avail_cpu_per_node = xcalloc(select_node_cnt, sizeof(uint16_t));
 	node_weight_list = list_create(_topo_weight_free);
 	for (i = i_first; i <= i_last; i++) {
 		topo_weight_info_t nw_static;
@@ -2243,11 +2242,11 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	 * Identify the highest level switch to be used.
 	 * Note that nodes can be on multiple non-overlapping switches.
 	 */
-	switch_cpu_cnt     = xmalloc(sizeof(int)        * switch_record_cnt);
-	switch_gres        = xmalloc(sizeof(List)       * switch_record_cnt);
-	switch_node_bitmap = xmalloc(sizeof(bitstr_t *) * switch_record_cnt);
-	switch_node_cnt    = xmalloc(sizeof(int)        * switch_record_cnt);
-	switch_required    = xmalloc(sizeof(int)        * switch_record_cnt);
+	switch_cpu_cnt     = xcalloc(switch_record_cnt, sizeof(int));
+	switch_gres        = xcalloc(switch_record_cnt, sizeof(List));
+	switch_node_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
+	switch_node_cnt    = xcalloc(switch_record_cnt, sizeof(int));
+	switch_required    = xcalloc(switch_record_cnt, sizeof(int));
 
 	for (i = 0, switch_ptr = switch_record_table; i < switch_record_cnt;
 	     i++, switch_ptr++) {
@@ -2795,7 +2794,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 	 */
 	if (max_nodes == 0)
 		all_done = true;
-	avail_cpu_per_node = xmalloc(sizeof(uint16_t) * select_node_cnt);
+	avail_cpu_per_node = xcalloc(select_node_cnt, sizeof(uint16_t));
 	node_weight_list = _build_node_weight_list(orig_node_map);
 	iter = list_iterator_create(node_weight_list);
 	while (!all_done && (nwt = (node_weight_type *) list_next(iter))) {
