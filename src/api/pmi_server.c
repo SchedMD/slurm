@@ -202,7 +202,7 @@ static void *_agent(void *x)
 	for (i=0; i<args->barrier_xmit_cnt; i++) {
 		if (args->barrier_xmit_ptr[i].port == 0)
 			continue;	/* already sent message to host */
-		kvs_host_list = xmalloc(sizeof(struct kvs_hosts) * pmi_fanout);
+		kvs_host_list = xcalloc(pmi_fanout, sizeof(struct kvs_hosts));
 		host_cnt = 0;
 
 		/* This code enables key-pair forwarding between
