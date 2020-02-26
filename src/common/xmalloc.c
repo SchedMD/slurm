@@ -222,5 +222,5 @@ void slurm_xfree(void **item)
  */
 void xfree_ptr(void *ptr)
 {
-	xfree(ptr);
+	slurm_xfree(&ptr);
 }
