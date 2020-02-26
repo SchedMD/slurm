@@ -104,25 +104,21 @@ struct listNode {
 };
 
 struct listIterator {
+	unsigned int          magic;        /* sentinel for asserting validity   */
 	struct xlist         *list;         /* the list being iterated           */
 	struct listNode      *pos;          /* the next node to be iterated      */
 	struct listNode     **prev;         /* addr of 'next' ptr to prv It node */
 	struct listIterator  *iNext;        /* iterator chain for list_destroy() */
-#ifndef NDEBUG
-	unsigned int          magic;        /* sentinel for asserting validity   */
-#endif /* !NDEBUG */
 };
 
 struct xlist {
+	unsigned int          magic;        /* sentinel for asserting validity   */
 	struct listNode      *head;         /* head of the list                  */
 	struct listNode     **tail;         /* addr of last node's 'next' ptr    */
 	struct listIterator  *iNext;        /* iterator chain for list_destroy() */
 	ListDelF              fDel;         /* function to delete node data      */
 	int                   count;        /* number of nodes in list           */
 	pthread_mutex_t       mutex;        /* mutex to protect access to list   */
-#ifndef NDEBUG
-	unsigned int          magic;        /* sentinel for asserting validity   */
-#endif /* !NDEBUG */
 };
 
 typedef struct listNode * ListNode;
@@ -152,13 +148,13 @@ list_create (ListDelF f)
 {
 	List l = list_alloc();
 
+	l->magic = LIST_MAGIC;
 	l->head = NULL;
 	l->tail = &l->head;
 	l->iNext = NULL;
 	l->fDel = f;
 	l->count = 0;
 	slurm_mutex_init(&l->mutex);
-	xassert((l->magic = LIST_MAGIC));      /* set magic via assert abuse */
 
 	return l;
 }
@@ -178,8 +174,8 @@ list_destroy (List l)
 	i = l->iNext;
 	while (i) {
 		xassert(i->magic == LIST_MAGIC);
+		i->magic = ~LIST_MAGIC;
 		iTmp = i->iNext;
-		xassert((i->magic = ~LIST_MAGIC)); /* clear magic via assert abuse */
 		list_iterator_free(i);
 		i = iTmp;
 	}
@@ -191,7 +187,7 @@ list_destroy (List l)
 		list_node_free(p);
 		p = pTmp;
 	}
-	xassert((l->magic = ~LIST_MAGIC));     /* clear magic via assert abuse */
+	l->magic = ~LIST_MAGIC;
 	slurm_mutex_unlock(&l->mutex);
 	slurm_mutex_destroy(&l->mutex);
 	list_free(l);
@@ -662,6 +658,7 @@ list_iterator_create (List l)
 	xassert(l != NULL);
 	i = list_iterator_alloc();
 
+	i->magic = LIST_MAGIC;
 	i->list = l;
 	slurm_mutex_lock(&l->mutex);
 	xassert(l->magic == LIST_MAGIC);
@@ -670,7 +667,6 @@ list_iterator_create (List l)
 	i->prev = &l->head;
 	i->iNext = l->iNext;
 	l->iNext = i;
-	xassert((i->magic = LIST_MAGIC));      /* set magic via assert abuse */
 
 	slurm_mutex_unlock(&l->mutex);
 
@@ -714,7 +710,7 @@ list_iterator_destroy (ListIterator i)
 	}
 	slurm_mutex_unlock(&i->list->mutex);
 
-	xassert((i->magic = ~LIST_MAGIC));     /* clear magic via assert abuse */
+	i->magic = ~LIST_MAGIC;
 	list_iterator_free(i);
 }
 
