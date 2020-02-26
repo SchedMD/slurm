@@ -120,10 +120,7 @@ static void _worker_delete(void *x)
 
 	log_flag(WORKQ, "%s: [%u] free worker", __func__, worker->id);
 
-	xassert((worker->magic = ~MAGIC_WORKER));
-	xassert((worker->tid = -1));
-	xassert((worker->id = -1));
-
+	worker->magic = ~MAGIC_WORKER;
 	xfree(worker);
 }
 
@@ -137,8 +134,8 @@ static void _work_delete(void *x)
 	_check_magic_work(work);
 
 	log_flag(WORKQ, "%s: free work", __func__);
-	xassert((work->magic = ~MAGIC_WORK));
 
+	work->magic = ~MAGIC_WORK;
 	xfree(work);
 }
 
@@ -148,7 +145,7 @@ extern workq_t *new_workq(int count)
 
 	xassert(count < 1024);
 
-	xassert((workq->magic = MAGIC_WORKQ));
+	workq->magic = MAGIC_WORKQ;
 	workq->workers = list_create(NULL);
 	workq->work = list_create(_work_delete);
 
@@ -159,7 +156,7 @@ extern workq_t *new_workq(int count)
 
 	for (int i = 0; i < count; i++) {
 		workq_worker_t *worker = xmalloc(sizeof(*worker));
-		xassert((worker->magic = MAGIC_WORKER));
+		worker->magic = MAGIC_WORKER;
 		worker->workq = workq;
 		worker->id = i + 1;
 
@@ -223,7 +220,7 @@ extern void free_workq(workq_t *workq)
 
 	FREE_NULL_LIST(workq->workers);
 	FREE_NULL_LIST(workq->work);
-	xassert((workq->magic = ~MAGIC_WORKQ));
+	workq->magic = ~MAGIC_WORKQ;
 	xfree(workq);
 }
 
@@ -235,7 +232,7 @@ extern int workq_add_work(workq_t *workq, work_func_t func, void *arg,
 	workq_work_t *work = xmalloc(sizeof(*work));
 	_check_magic_workq(workq);
 
-	xassert((work->magic = MAGIC_WORK));
+	work->magic = MAGIC_WORK;
 	work->func = func;
 	work->arg = arg;
 	work->tag = tag;
