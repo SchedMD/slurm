@@ -148,7 +148,8 @@ static int _create_app_dir(const stepd_step_rec_t *job)
 	return SLURM_SUCCESS;
 
 error:
-	rmdir(appdir);
+	if (rmdir(appdir) < 0)
+		error("rmdir(%s): %m",  appdir);
 	xfree(appdir);
 	appdir = NULL;
 	return SLURM_ERROR;
