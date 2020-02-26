@@ -40,7 +40,6 @@
 #define _GNU_SOURCE
 
 #include <arpa/inet.h>
-#include <assert.h>
 #include <errno.h>
 #include <limits.h>	/* for PATH_MAX */
 #include <netdb.h>
@@ -54,6 +53,7 @@
 #include "src/common/strlcpy.h"
 #include "src/common/util-net.h"
 #include "src/common/macros.h"
+#include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
 
@@ -81,8 +81,7 @@ struct hostent * get_host_by_name(const char *name,
 	struct hostent *hptr;
 	int n = 0;
 
-	assert(name != NULL);
-	assert(buf != NULL);
+	xassert(name && buf);
 
 	slurm_mutex_lock(&hostentLock);
 	/* It appears gethostbyname leaks memory once.  Under the covers it
@@ -114,8 +113,7 @@ struct hostent * get_host_by_addr(const char *addr, int len, int type,
 	struct hostent *hptr;
 	int n = 0;
 
-	assert(addr != NULL);
-	assert(buf != NULL);
+	xassert(addr && buf);
 
 	slurm_mutex_lock(&hostentLock);
 	if ((hptr = gethostbyaddr(addr, len, type)))
@@ -161,8 +159,7 @@ static int copy_hostent(const struct hostent *src, char *buf, int len)
 	int n;
 	char **p, **q;
 
-	assert(src != NULL);
-	assert(buf != NULL);
+	xassert(src && buf);
 
 	dst = (struct hostent *) buf;
 	if ((len -= sizeof(struct hostent)) < 0)
@@ -217,8 +214,8 @@ static int copy_hostent(const struct hostent *src, char *buf, int len)
 	if ((len -= n) < 0)
 		return(-1);
 
-	assert(validate_hostent_copy(src, dst) >= 0);
-	assert(buf != NULL);	/* Used only to eliminate CLANG error */
+	xassert(validate_hostent_copy(src, dst) >= 0);
+	xassert(buf);	/* Used only to eliminate CLANG error */
 	return(0);
 }
 
@@ -232,8 +229,7 @@ static int validate_hostent_copy(
  */
 	char **p, **q;
 
-	assert(src != NULL);
-	assert(dst != NULL);
+	xassert(src && dst);
 
 	if (!dst->h_name)
 		return(-1);
