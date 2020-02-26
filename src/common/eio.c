@@ -79,11 +79,9 @@ strong_alias(eio_signal_wakeup,		slurm_eio_signal_wakeup);
  * the eio thread will move them to the main obj_list the next time
  * it wakes up.
  */
+#define EIO_MAGIC 0xe1e10
 struct eio_handle_components {
-#ifndef NDEBUG
-#       define EIO_MAGIC 0xe1e10
 	int  magic;
-#endif
 	int  fds[2];
 	pthread_mutex_t shutdown_mutex;
 	time_t shutdown_time;
@@ -106,6 +104,8 @@ eio_handle_t *eio_handle_create(uint16_t shutdown_wait)
 {
 	eio_handle_t *eio = xmalloc(sizeof(*eio));
 
+	eio->magic = EIO_MAGIC;
+
 	if (pipe(eio->fds) < 0) {
 		error("%s: pipe: %m", __func__);
 		eio_handle_destroy(eio);
@@ -115,8 +115,6 @@ eio_handle_t *eio_handle_create(uint16_t shutdown_wait)
 	fd_set_nonblocking(eio->fds[0]);
 	fd_set_close_on_exec(eio->fds[0]);
 	fd_set_close_on_exec(eio->fds[1]);
-
-	xassert((eio->magic = EIO_MAGIC));
 
 	eio->obj_list = list_create(eio_obj_destroy);
 	eio->new_objs = list_create(eio_obj_destroy);
@@ -139,7 +137,7 @@ void eio_handle_destroy(eio_handle_t *eio)
 	FREE_NULL_LIST(eio->new_objs);
 	slurm_mutex_destroy(&eio->shutdown_mutex);
 
-	xassert((eio->magic = ~EIO_MAGIC));
+	eio->magic = ~EIO_MAGIC;
 	xfree(eio);
 }
 
