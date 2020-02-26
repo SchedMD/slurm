@@ -1601,13 +1601,11 @@ _slurm_cred_ctx_alloc(void)
 	/* Contents initialized to zero */
 
 	slurm_mutex_init(&ctx->mutex);
-	slurm_mutex_lock(&ctx->mutex);
 
 	ctx->magic = CRED_CTX_MAGIC;
 	ctx->expiry_window = cred_expire;
 	ctx->exkey_exp     = (time_t) -1;
 
-	slurm_mutex_unlock(&ctx->mutex);
 	return ctx;
 }
 
