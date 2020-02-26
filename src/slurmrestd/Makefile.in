@@ -90,7 +90,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-sbin_PROGRAMS = slurmrestd$(EXEEXT)
+@WITH_SLURMRESTD_TRUE@sbin_PROGRAMS = slurmrestd$(EXEEXT)
 subdir = src/slurmrestd
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -150,22 +150,35 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-libslurmrest_ref_la_DEPENDENCIES = libslurmrest_ref.lo
+@WITH_SLURMRESTD_TRUE@libslurmrest_ref_la_DEPENDENCIES =  \
+@WITH_SLURMRESTD_TRUE@	libslurmrest_ref.lo
 libslurmrest_ref_la_SOURCES = libslurmrest_ref.c
 libslurmrest_ref_la_OBJECTS = libslurmrest_ref.lo
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+@WITH_SLURMRESTD_TRUE@am_libslurmrest_ref_la_rpath =
+am__slurmrestd_SOURCES_DIST = conmgr.h conmgr.c http.c http.h \
+	http_content_type.c http_content_type.h http_url.c http_url.h \
+	openapi.c openapi.h operations.c operations.h slurmrestd.c \
+	ref.h rest_auth.h rest_auth.c workq.h workq.c xjson.h xjson.c \
+	xyaml.h xyaml.c
 am__objects_1 = conmgr.$(OBJEXT) http.$(OBJEXT) \
 	http_content_type.$(OBJEXT) http_url.$(OBJEXT) \
 	openapi.$(OBJEXT) operations.$(OBJEXT) slurmrestd.$(OBJEXT) \
 	rest_auth.$(OBJEXT) workq.$(OBJEXT) xjson.$(OBJEXT) \
 	xyaml.$(OBJEXT)
-am_slurmrestd_OBJECTS = $(am__objects_1)
+@WITH_SLURMRESTD_TRUE@am_slurmrestd_OBJECTS = $(am__objects_1)
+am__EXTRA_slurmrestd_SOURCES_DIST = conmgr.h conmgr.c http.c http.h \
+	http_content_type.c http_content_type.h http_url.c http_url.h \
+	openapi.c openapi.h operations.c operations.h slurmrestd.c \
+	ref.h rest_auth.h rest_auth.c workq.h workq.c xjson.h xjson.c \
+	xyaml.h xyaml.c
 slurmrestd_OBJECTS = $(am_slurmrestd_OBJECTS)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+@WITH_SLURMRESTD_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
+@WITH_SLURMRESTD_TRUE@	$(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -206,8 +219,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = libslurmrest_ref.c $(slurmrestd_SOURCES)
-DIST_SOURCES = libslurmrest_ref.c $(slurmrestd_SOURCES)
+SOURCES = libslurmrest_ref.c $(slurmrestd_SOURCES) \
+	$(EXTRA_slurmrestd_SOURCES)
+DIST_SOURCES = libslurmrest_ref.c $(am__slurmrestd_SOURCES_DIST) \
+	$(am__EXTRA_slurmrestd_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -550,22 +565,23 @@ SRCS = \
 	xjson.h xjson.c \
 	xyaml.h xyaml.c
 
-AM_CPPFLAGS = -I$(top_srcdir) $(JSON_CPPFLAGS)
-BIN_REF = $(REF:.txt=.bino)
-BIN_REF2 = $(BIN_REF:.json=.bino)
+@WITH_SLURMRESTD_TRUE@AM_CPPFLAGS = -I$(top_srcdir) $(JSON_CPPFLAGS)
+@WITH_SLURMRESTD_TRUE@BIN_REF = $(REF:.txt=.bino)
+@WITH_SLURMRESTD_TRUE@BIN_REF2 = $(BIN_REF:.json=.bino)
 
 # making a .la
-noinst_LTLIBRARIES = libslurmrest_ref.la
-slurmrestd_SOURCES = $(SRCS)
-convenience_libs = $(LIB_SLURM) $(DL_LIBS)
-slurmrestd_DEPENDENCIES = $(LIB_SLURM_BUILD) libslurmrest_ref.la
-libslurmrest_ref_la_LIBADD = libslurmrest_ref.lo
-slurmrestd_LDADD = \
-	$(convenience_libs) $(HTTP_PARSER_LDFLAGS) \
-	$(YAML_LDFLAGS) $(JSON_LDFLAGS) \
-	libslurmrest_ref.la \
-	ops/libslurmrest_ops.la
+@WITH_SLURMRESTD_TRUE@noinst_LTLIBRARIES = libslurmrest_ref.la
+@WITH_SLURMRESTD_TRUE@slurmrestd_SOURCES = $(SRCS)
+@WITH_SLURMRESTD_TRUE@convenience_libs = $(LIB_SLURM) $(DL_LIBS)
+@WITH_SLURMRESTD_TRUE@slurmrestd_DEPENDENCIES = $(LIB_SLURM_BUILD) libslurmrest_ref.la
+@WITH_SLURMRESTD_TRUE@libslurmrest_ref_la_LIBADD = libslurmrest_ref.lo
+@WITH_SLURMRESTD_TRUE@slurmrestd_LDADD = \
+@WITH_SLURMRESTD_TRUE@	$(convenience_libs) $(HTTP_PARSER_LDFLAGS) \
+@WITH_SLURMRESTD_TRUE@	$(YAML_LDFLAGS) $(JSON_LDFLAGS) \
+@WITH_SLURMRESTD_TRUE@	libslurmrest_ref.la \
+@WITH_SLURMRESTD_TRUE@	ops/libslurmrest_ops.la
 
+@WITH_SLURMRESTD_FALSE@EXTRA_slurmrestd_SOURCES = $(SRCS)
 all: all-recursive
 
 .SUFFIXES:
@@ -661,7 +677,7 @@ clean-noinstLTLIBRARIES:
 	}
 
 libslurmrest_ref.la: $(libslurmrest_ref_la_OBJECTS) $(libslurmrest_ref_la_DEPENDENCIES) $(EXTRA_libslurmrest_ref_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libslurmrest_ref_la_OBJECTS) $(libslurmrest_ref_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(LINK) $(am_libslurmrest_ref_la_rpath) $(libslurmrest_ref_la_OBJECTS) $(libslurmrest_ref_la_LIBADD) $(LIBS)
 
 slurmrestd$(EXEEXT): $(slurmrestd_OBJECTS) $(slurmrestd_DEPENDENCIES) $(EXTRA_slurmrestd_DEPENDENCIES) 
 	@rm -f slurmrestd$(EXEEXT)
@@ -1029,28 +1045,27 @@ uninstall-am: uninstall-sbinPROGRAMS
 .PRECIOUS: Makefile
 
 
-%.bino: %.txt
-	$(AM_V_GEN)pushd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; popd
-	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
+@WITH_SLURMRESTD_TRUE@%.bino: %.txt
+@WITH_SLURMRESTD_TRUE@	$(AM_V_GEN)pushd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; popd
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
 
-%.bino: %.json
-	$(AM_V_GEN)pushd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; popd
-	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
+@WITH_SLURMRESTD_TRUE@%.bino: %.json
+@WITH_SLURMRESTD_TRUE@	$(AM_V_GEN)pushd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; popd
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
 
-libslurmrest_ref.lo: $(BIN_REF2)
-	$(AM_V_at)echo "# $@ - a libtool object file" >"$@"
-	$(AM_V_at)echo "# Generated by $(shell @LIBTOOL@ --version | head -n 1)" >>"$@"
-	$(AM_V_at)echo "#" >>"$@"
-	$(AM_V_at)echo "# Please DO NOT delete this file!" >>"$@"
-	$(AM_V_at)echo "# It is necessary for linking the library." >>"$@"
-	$(AM_V_at)echo >>"$@"
-	$(AM_V_at)echo "# Name of the PIC object." >>"$@"
-	$(AM_V_at)echo "pic_object='$(BIN_REF2)'" >>"$@"
-	$(AM_V_at)echo >>"$@"
-	$(AM_V_at)echo "# Name of the non-PIC object" >>"$@"
-	$(AM_V_at)echo "non_pic_object=''" >>"$@"
-	$(AM_V_at)echo >>"$@"
-
+@WITH_SLURMRESTD_TRUE@libslurmrest_ref.lo: $(BIN_REF2)
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# $@ - a libtool object file" >"$@"
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# Generated by $(shell @LIBTOOL@ --version | head -n 1)" >>"$@"
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "#" >>"$@"
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# Please DO NOT delete this file!" >>"$@"
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# It is necessary for linking the library." >>"$@"
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo >>"$@"
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# Name of the PIC object." >>"$@"
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "pic_object='$(BIN_REF2)'" >>"$@"
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo >>"$@"
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# Name of the non-PIC object" >>"$@"
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "non_pic_object=''" >>"$@"
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo >>"$@"
 force:
 $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

@@ -147,13 +147,19 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libslurmrest_ops_la_LIBADD =
+am__libslurmrest_ops_la_SOURCES_DIST = api.h api.c diag.h diag.c \
+	jobs.c jobs.h nodes.c nodes.h partitions.c partitions.h
 am__objects_1 = api.lo diag.lo jobs.lo nodes.lo partitions.lo
-am_libslurmrest_ops_la_OBJECTS = $(am__objects_1)
+@WITH_SLURMRESTD_TRUE@am_libslurmrest_ops_la_OBJECTS =  \
+@WITH_SLURMRESTD_TRUE@	$(am__objects_1)
+am__EXTRA_libslurmrest_ops_la_SOURCES_DIST = api.h api.c diag.h diag.c \
+	jobs.c jobs.h nodes.c nodes.h partitions.c partitions.h
 libslurmrest_ops_la_OBJECTS = $(am_libslurmrest_ops_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+@WITH_SLURMRESTD_TRUE@am_libslurmrest_ops_la_rpath =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -191,8 +197,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libslurmrest_ops_la_SOURCES)
-DIST_SOURCES = $(libslurmrest_ops_la_SOURCES)
+SOURCES = $(libslurmrest_ops_la_SOURCES) \
+	$(EXTRA_libslurmrest_ops_la_SOURCES)
+DIST_SOURCES = $(am__libslurmrest_ops_la_SOURCES_DIST) \
+	$(am__EXTRA_libslurmrest_ops_la_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -483,8 +491,9 @@ SRCS = api.h api.c \
 	   nodes.c nodes.h \
 	   partitions.c partitions.h
 
-noinst_LTLIBRARIES = libslurmrest_ops.la
-libslurmrest_ops_la_SOURCES = $(SRCS)
+@WITH_SLURMRESTD_TRUE@noinst_LTLIBRARIES = libslurmrest_ops.la
+@WITH_SLURMRESTD_TRUE@libslurmrest_ops_la_SOURCES = $(SRCS)
+@WITH_SLURMRESTD_FALSE@EXTRA_libslurmrest_ops_la_SOURCES = $(SRCS)
 all: all-am
 
 .SUFFIXES:
@@ -531,7 +540,7 @@ clean-noinstLTLIBRARIES:
 	}
 
 libslurmrest_ops.la: $(libslurmrest_ops_la_OBJECTS) $(libslurmrest_ops_la_DEPENDENCIES) $(EXTRA_libslurmrest_ops_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libslurmrest_ops_la_OBJECTS) $(libslurmrest_ops_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(LINK) $(am_libslurmrest_ops_la_rpath) $(libslurmrest_ops_la_OBJECTS) $(libslurmrest_ops_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

@@ -88,7 +88,6 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@WITH_SLURMRESTD_TRUE@am__append_1 = slurmrestd
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -199,10 +198,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = api bcast common database layouts lua plugins sacct \
-	sacctmgr salloc sattach sbatch sbcast scancel scontrol sdiag \
-	sinfo slurmctld slurmd slurmdbd sprio squeue sreport srun \
-	sshare sstat strigger sview slurmrestd
+DIST_SUBDIRS = $(SUBDIRS)
 am__DIST_COMMON = $(srcdir)/Makefile.in
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
@@ -485,10 +481,37 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = api bcast common database layouts lua plugins sacct sacctmgr \
-	salloc sattach sbatch sbcast scancel scontrol sdiag sinfo \
-	slurmctld slurmd slurmdbd sprio squeue sreport srun sshare \
-	sstat strigger sview $(am__append_1)
+SUBDIRS = \
+	api		\
+	bcast		\
+	common		\
+	database	\
+	layouts		\
+	lua		\
+	plugins		\
+	sacct		\
+	sacctmgr	\
+	salloc		\
+	sattach		\
+	sbatch		\
+	sbcast		\
+	scancel		\
+	scontrol	\
+	sdiag		\
+	sinfo		\
+	slurmctld	\
+	slurmd		\
+	slurmdbd	\
+	slurmrestd	\
+	sprio		\
+	squeue		\
+	sreport		\
+	srun		\
+	sshare		\
+	sstat		\
+	strigger	\
+	sview
+
 all: all-recursive
 
 .SUFFIXES:
