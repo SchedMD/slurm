@@ -105,8 +105,6 @@ static void _clear_auth(rest_auth_context_t *ctxt)
 	xfree(ctxt->user_name);
 	xfree(ctxt->token);
 
-	_check_magic(ctxt);
-
 	rest_auth_context_clear();
 }
 
@@ -266,8 +264,6 @@ static void _auth_user_psk(on_http_request_args_t *args,
 	ctxt->type |= AUTH_TYPE_USER_PSK;
 	ctxt->user_name = xstrdup(user_name);
 	ctxt->token = xstrdup(key);
-
-	_check_magic(ctxt);
 }
 
 extern int rest_authenticate_http_request(on_http_request_args_t *args)
@@ -280,8 +276,6 @@ extern int rest_authenticate_http_request(on_http_request_args_t *args)
 		context = rest_auth_context_new();
 		args->context->auth = context;
 	}
-
-	_check_magic(context);
 
 	/* continue if already authenticated */
 	if (context->type)
@@ -312,9 +306,7 @@ extern rest_auth_context_t *rest_auth_context_new(void)
 {
 	rest_auth_context_t *context = xmalloc(sizeof(*context));
 
-	xassert((context->magic = MAGIC));
-
-	_check_magic(context);
+	context->magic = MAGIC;
 
 	return context;
 }
@@ -349,6 +341,6 @@ extern void rest_auth_context_free(rest_auth_context_t *context)
 
 	_clear_auth(context);
 
-	xassert((context->magic = ~MAGIC));
+	context->magic = ~MAGIC;
 	xfree(context);
 }
