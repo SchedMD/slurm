@@ -104,13 +104,11 @@
 #define xrealloc_nz(__p, __sz) \
         slurm_xrecalloc((void **)&(__p), 1, __sz, false, false, __FILE__, __LINE__, __func__)
 
-#define xsize(__p) \
-	slurm_xsize((void *)__p, __FILE__, __LINE__, __func__)
-
 void *slurm_xcalloc(size_t, size_t, bool, bool, const char *, int, const char *);
 void slurm_xfree(void **, const char *, int, const char *);
 void *slurm_xrecalloc(void **, size_t, size_t, bool, bool, const char *, int, const char *);
-size_t slurm_xsize(void *, const char *, int, const char *);
+
+size_t xsize(void *item);
 
 void xfree_ptr(void *);
 

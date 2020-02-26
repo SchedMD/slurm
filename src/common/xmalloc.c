@@ -54,6 +54,7 @@
 #include "src/common/xmalloc.h"
 
 strong_alias(xfree_ptr, slurm_xfree_ptr);
+strong_alias(xsize, slurm_xsize);
 
 #define XMALLOC_MAGIC 0x42
 
@@ -189,7 +190,7 @@ error:
  * Return the size of a buffer.
  *   item (IN)		pointer to allocated space
  */
-size_t slurm_xsize(void *item, const char *file, int line, const char *func)
+size_t xsize(void *item)
 {
 	size_t *p = (size_t *)item - 2;
 	xassert(item != NULL);

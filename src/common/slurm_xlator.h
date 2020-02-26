@@ -322,6 +322,7 @@
 #define	__xassert_failed	slurm_xassert_failed
 
 /* xmalloc.[ch] functions */
+#define xsize			slurm_xsize
 #define xfree_ptr		slurm_xfree_ptr
 
 /* xsignal.[ch] functions */
