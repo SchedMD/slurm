@@ -349,7 +349,8 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 				      job_ptr);
 			}
 		}
-		if ((powercap_get_cluster_current_cap() != 0) &&
+		if (job_ptr->details &&
+		    (powercap_get_cluster_current_cap() != 0) &&
 		    (which_power_layout() == 2)) {
 			adapt_layouts(job, job_ptr->details->cpu_freq_max, n,
 				      node_ptr->name, true);
