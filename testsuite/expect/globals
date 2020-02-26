@@ -199,6 +199,12 @@ cset bin_wc	"wc"
 cset max_job_delay 120
 
 #
+# Default timeout waiting for commands to return an expected output.
+# See wait_for_command.
+#
+cset max_command_delay 60
+
+#
 # Files must be propagated between nodes within this number of seconds.
 # The delay may be due to NFS.
 #
@@ -582,6 +588,89 @@ proc print_header { test_id } {
 	send_user "TEST: $test_id\n"
 }
 
+################################################################
+#
+# Proc: wait_for_command
+#
+# Executes a command every poll_interval until a regex pattern is
+# matched in the output, or timeout after max_delay.
+#
+# command    - The command to run via spawn.
+# args       - The arguments to the command, as a single string.
+# regex      - The regex pattern to search for in the command
+#              output. Can be a simple string.
+# matches_in - The number of times to match the regex. Defaults
+#              to 1.
+# or_more    - If 1, allow for matching the regex pattern
+#              match_cnt *or more* times, instead of exactly
+#              match_cnt times. Defaults to 0.
+# matches_out  - The upvar (a variable name to "pass by reference"
+#                in TCL) to set/return the number of matches found.
+#                Useful if or_more is 1 and the caller wants the
+#                matches found.
+# max_delay  - The timeout seconds to execute the command
+#              and wait on the output before giving up. Defaults
+#              to global max_command_delay.
+#
+# Returns: 0 on success and 1 on failure. On failure, an error is
+#          logged to the output. If matches_out is specified, the
+#          number of matches will be returned via the reference/upvar
+#          matches_out.
+#
+################################################################
+proc wait_for_command { command args regex {matches_in 1} {or_more 0}
+                        {matches_out ""} {max_delay max_command_delay} } {
+	global bin_sleep poll_interval max_command_delay
+
+	if {$matches_out != ""} {
+		upvar $matches_out matches
+	}
+	if {$max_delay == "max_command_delay"} {
+		set max_delay $max_command_delay
+	}
+
+	set delay 0
+	while {$delay < $max_delay} {
+		set matches 0
+		# `{*}` breaks apart a string into individual pieces
+		spawn $command {*}$args
+		expect {
+			-re $regex {
+				incr matches
+				exp_continue
+			}
+			timeout {
+				log_error "$command not responding after $delay seconds polling"
+				# Return failure
+				return 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {($matches == $matches_in) || ($or_more == 1 &&
+		                                 $matches >= $matches_in)} {
+			# Return success
+			return 0
+		}
+
+		log_info "[lindex [info level 0] 0] polled $matches matches of '$regex', but expecting $matches_in"
+		exec $bin_sleep $poll_interval
+		incr delay $poll_interval
+
+	}
+	if {$or_more == 1} {
+		set match_str "$matches_in or more times"
+	} elseif {$matches_in == 1} {
+		set match_str "exactly $matches_in time"
+	} else {
+		set match_str "exactly $matches_in times"
+	}
+	log_error "Failed to match regex `$regex` $match_str after $max_delay seconds for command `$command $args`."
+	# Return failure
+	return 1
+}
 
 ################################################################
 #
