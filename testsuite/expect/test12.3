@@ -237,14 +237,33 @@ if {$job_3_node_inx != 2} {
 #
 # Wait for accounting data to be propagated to slurmdbd
 #
-sleep 10
+if {[wait_for_command $sacct "-A 'slurm_test-account.1' --name=$job_name_1
+                              -X -n -P -j $job_id_1 -o jobid,jobname" \
+                              "$job_id_1.$job_name_1"]} {
+	set exit_code 1
+}
+if {[wait_for_command $sacct "-A 'slurm_test-account.1' --name=$job_name_2
+                              -X -n -P -j $job_id_2 -o jobid,jobname" \
+                              "$job_id_2.$job_name_2"]} {
+	set exit_code 1
+}
+if {[wait_for_command $sacct "-A 'slurm_test-account.1' --name=$job_name_3
+                              -X -n -P -j $job_id_3 -o jobid,jobname" \
+                              "$job_id_3.$job_name_3"]} {
+	set exit_code 1
+}
 
-#
-# Execute sub-tests based upon these jobs
-#
-inc12_3_1 $job_id_1 $job_id_2 $job_name_1 $job_name_2 $test_acct
+# Only run these sub-tests if we haven't failed already
+if {$exit_code == 0} {
+	#
+	# Execute sub-tests based upon these jobs
+	#
+	inc12_3_1 $job_id_1 $job_id_2 $job_name_1 $job_name_2 $test_acct
 
-inc12_3_2 $job_id_1 $job_id_2 $job_id_3 $job_name_1 $job_name_2 $test_acct $job_1_node(0) $job_1_node(1) $job_2_node(0) $job_2_node(1)
+	inc12_3_2 $job_id_1 $job_id_2 $job_id_3 $job_name_1 $job_name_2   \
+	          $test_acct $job_1_node(0) $job_1_node(1) $job_2_node(0) \
+	          $job_2_node(1)
+}
 
 #
 # Use sacctmgr to delete the test account
