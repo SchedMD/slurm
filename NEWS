@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Improve job state reason for jobs hitting partition_job_depth.
  -- Speed up testing of singleton dependencies.
+ -- Fix negative loop bound in cons_tres.
 
 * Changes in Slurm 20.02.0
 ==========================
