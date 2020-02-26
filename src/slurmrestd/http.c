@@ -707,7 +707,7 @@ extern http_context_t *_http_context_new(void)
 	http_context_t *context = xmalloc(sizeof(*context));
 	http_parser *parser = xmalloc(sizeof(*parser));
 
-	xassert((context->magic = MAGIC));
+	context->magic = MAGIC;
 	http_parser_init(parser, HTTP_REQUEST);
 	context->parser = parser;
 
@@ -864,6 +864,6 @@ extern void on_http_connection_finish(void *ctxt)
 	xfree(context->parser);
 	_free_request_t(context->request);
 	rest_auth_context_free(context->auth);
-	xassert((context->magic = ~MAGIC));
+	context->magic = ~MAGIC;
 	xfree(context);
 }
