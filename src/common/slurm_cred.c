@@ -140,11 +140,9 @@ struct sbcast_cred {
 /*
  * Credential context, slurm_cred_ctx_t:
  */
+#define CRED_CTX_MAGIC 0x0c0c0c
 struct slurm_cred_context {
-#ifndef NDEBUG
-#  define CRED_CTX_MAGIC 0x0c0c0c
 	int magic;
-#endif
 	pthread_mutex_t mutex;
 	enum ctx_type type;	/* context type (creator or verifier)	*/
 	void *key;		/* private or public key		*/
@@ -161,11 +159,9 @@ struct slurm_cred_context {
 /*
  * Completion of slurm job credential type, slurm_cred_t:
  */
+#define CRED_MAGIC 0x0b0b0b
 struct slurm_job_credential {
-#ifndef NDEBUG
-#  define CRED_MAGIC 0x0b0b0b
 	int      magic;
-#endif
 	pthread_mutex_t mutex;
 	uint32_t  jobid;	/* Job ID associated with this cred	*/
 	uint32_t  stepid;	/* Job step ID for this credential	*/
@@ -462,8 +458,7 @@ slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx)
 	FREE_NULL_LIST(ctx->job_list);
 	FREE_NULL_LIST(ctx->state_list);
 
-	xassert((ctx->magic = ~CRED_CTX_MAGIC));
-
+	ctx->magic = ~CRED_CTX_MAGIC;
 	slurm_mutex_unlock(&ctx->mutex);
 	slurm_mutex_destroy(&ctx->mutex);
 
@@ -986,8 +981,8 @@ slurm_cred_destroy(slurm_cred_t *cred)
 	FREE_NULL_LIST(cred->step_gres_list);
 	xfree(cred->step_hostlist);
 	xfree(cred->signature);
-	xassert((cred->magic = ~CRED_MAGIC));
 
+	cred->magic = ~CRED_MAGIC;
 	slurm_mutex_unlock(&cred->mutex);
 	slurm_mutex_destroy(&cred->mutex);
 
@@ -1608,10 +1603,9 @@ _slurm_cred_ctx_alloc(void)
 	slurm_mutex_init(&ctx->mutex);
 	slurm_mutex_lock(&ctx->mutex);
 
+	ctx->magic = CRED_CTX_MAGIC;
 	ctx->expiry_window = cred_expire;
 	ctx->exkey_exp     = (time_t) -1;
-
-	xassert((ctx->magic = CRED_CTX_MAGIC));
 
 	slurm_mutex_unlock(&ctx->mutex);
 	return ctx;
@@ -1627,7 +1621,7 @@ _slurm_cred_alloc(void)
 	cred->uid = (uid_t) -1;
 	cred->gid = (gid_t) -1;
 
-	xassert((cred->magic = CRED_MAGIC));
+	cred->magic = CRED_MAGIC;
 
 	return cred;
 }
