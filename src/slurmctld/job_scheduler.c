@@ -136,6 +136,34 @@ static int sched_min_interval = 2;
 static int bb_array_stage_cnt = 10;
 extern diag_stats_t slurmctld_diag_stats;
 
+static int _find_singleton_job (void *x, void *key)
+{
+	struct job_record *qjob_ptr = (struct job_record *) x;
+	struct job_record *job_ptr = (struct job_record *) key;
+
+	xassert (qjob_ptr->magic == JOB_MAGIC);
+
+	/*
+	 * get user jobs with the same user and name
+	 */
+	if (qjob_ptr->user_id != job_ptr->user_id)
+		return 0;
+	if (qjob_ptr->name && job_ptr->name &&
+	    xstrcmp(qjob_ptr->name, job_ptr->name))
+		return 0;
+	/*
+	 * already running/suspended job or previously
+	 * submitted pending job
+	 */
+	if (IS_JOB_RUNNING(qjob_ptr) || IS_JOB_SUSPENDED(qjob_ptr) ||
+	    (IS_JOB_PENDING(qjob_ptr) &&
+	     (qjob_ptr->job_id < job_ptr->job_id))) {
+		return 1;
+	}
+
+	return 0;
+}
+
 /*
  * Calculate how busy the system is by figuring out how busy each node is.
  */
@@ -185,40 +213,6 @@ static double _get_system_usage(void)
 	}
 
 	return sys_usage_per;
-}
-
-/*
- * _build_user_job_list - build list of jobs for a given user
- *			  and an optional job name
- * IN  user_id - user id
- * IN  job_name - job name constraint
- * RET the job queue
- * NOTE: the caller must call FREE_NULL_LIST() on RET value to free memory
- */
-static List _build_user_job_list(uint32_t user_id, char* job_name,
-				 uint32_t job_id)
-{
-	List job_queue;
-	ListIterator job_iterator;
-	job_record_t *job_ptr = NULL;
-
-	job_queue = list_create(NULL);
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		xassert (job_ptr->magic == JOB_MAGIC);
-		if (job_ptr->job_id == job_id)
-			/* Don't need to test ourselves. */
-			continue;
-		if (job_ptr->user_id != user_id)
-			continue;
-		if (job_name && job_ptr->name &&
-		    xstrcmp(job_name, job_ptr->name))
-			continue;
-		list_append(job_queue, job_ptr);
-	}
-	list_iterator_destroy(job_iterator);
-
-	return job_queue;
 }
 
 static void _job_queue_append(List job_queue, job_record_t *job_ptr,
@@ -1473,14 +1467,14 @@ next_task:
 				break;
 			}
 			if (skip_job) {
-				if (job_ptr->part_ptr == skip_part_ptr)
-					continue;
-				sched_debug2("reached partition %s job limit",
-					     job_ptr->part_ptr->name);
 				if (job_ptr->state_reason == WAIT_NO_REASON) {
 					xfree(job_ptr->state_desc);
 					job_ptr->state_reason = WAIT_PRIORITY;
 				}
+				if (job_ptr->part_ptr == skip_part_ptr)
+					continue;
+				sched_debug2("reached partition %s job limit",
+					     job_ptr->part_ptr->name);
 				skip_part_ptr = job_ptr->part_ptr;
 				continue;
 			}
@@ -2886,13 +2880,11 @@ static void _test_dependency_state(depend_spec_t *dep_ptr, bool *or_satisfied,
  */
 extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 {
-	ListIterator depend_iter, job_iterator;
+	ListIterator depend_iter;
 	depend_spec_t *dep_ptr;
-	List job_queue = NULL;
-	bool run_now;
 	bool has_local_depend = false;
 	int results = NO_DEPEND;
-	job_record_t *qjob_ptr, *djob_ptr;
+	job_record_t  *djob_ptr;
 	bool is_complete, is_completed, is_pending;
 	bool or_satisfied = false, and_failed = false, or_flag = false,
 	     has_unfulfilled = false, changed = false;
@@ -2947,31 +2939,13 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 		djob_ptr = dep_ptr->job_ptr;
 		if ((dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) &&
 		    job_ptr->name) {
-			/* get user jobs with the same user and name */
-			job_queue = _build_user_job_list(job_ptr->user_id,
-							 job_ptr->name,
-							 job_ptr->job_id);
-			run_now = true;
-			job_iterator = list_iterator_create(job_queue);
-			while ((qjob_ptr = list_next(job_iterator))) {
-				/* already running/suspended job or previously
-				 * submitted pending job */
-				if (IS_JOB_RUNNING(qjob_ptr) ||
-				    IS_JOB_SUSPENDED(qjob_ptr) ||
-				    (IS_JOB_PENDING(qjob_ptr) &&
-				     (qjob_ptr->job_id < job_ptr->job_id))) {
-					run_now = false;
-					break;
-				}
-			}
-			list_iterator_destroy(job_iterator);
-			FREE_NULL_LIST(job_queue);
-			if (run_now &&
-			    fed_mgr_is_singleton_satisfied(job_ptr, dep_ptr,
-							   true))
-				clear_dep = true;
-			else
+			if (list_find_first(job_list, _find_singleton_job,
+					    job_ptr) ||
+			    !fed_mgr_is_singleton_satisfied(job_ptr,
+							    dep_ptr, true))
 				depends = true;
+			else
+				clear_dep = true;
 		} else if ((djob_ptr == NULL) ||
 			   (djob_ptr->magic != JOB_MAGIC) ||
 			   ((djob_ptr->job_id != dep_ptr->job_id) &&
