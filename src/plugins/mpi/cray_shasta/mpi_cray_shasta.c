@@ -151,7 +151,6 @@ error:
 	if (rmdir(appdir) < 0)
 		error("rmdir(%s): %m",  appdir);
 	xfree(appdir);
-	appdir = NULL;
 	return SLURM_ERROR;
 }
 
