@@ -1533,9 +1533,6 @@ extern int init_op_jobs(void)
 			error("%s: unable to populate hash table: %m",
 			      __func__);
 			return rc;
-		} else {
-			xassert(!(re = NULL));
-			xassert(hsearch_r(e, FIND, &re, &hash_params));
 		}
 	}
 
