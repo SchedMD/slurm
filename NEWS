@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix bit overlap test function.
  -- Don't accrue time if job begin time is in the future.
  -- Remove accrue time when updating a job start/eligible time to the future.
+ -- Fix regression in 20.02.0 that broke --depend=expand.
 
 * Changes in Slurm 20.02.0
 ==========================
