@@ -19,6 +19,7 @@ SUBDIRS =		\
 	slurmctld	\
 	slurmd		\
 	slurmdbd	\
+	slurmrestd	\
 	sprio		\
 	squeue		\
 	sreport		\
@@ -27,7 +28,3 @@ SUBDIRS =		\
 	sstat		\
 	strigger	\
 	sview
-
-if WITH_SLURMRESTD
-SUBDIRS += slurmrestd
-endif
