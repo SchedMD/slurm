@@ -78,15 +78,14 @@ static void _check_path_magic(const path_t *path)
 
 static void _free_path(void *x)
 {
-	if (!x)
+	path_t *path = (path_t *) x;
+
+	if (!path)
 		return;
 
-	path_t *path = (path_t *) x;
 	_check_path_magic(path);
 
-	xassert((path->tag = -1));
-	xassert((path->magic = ~MAGIC));
-	xassert(!(path->callback = NULL));
+	path->magic = ~MAGIC;
 	xfree(path);
 }
 
@@ -150,7 +149,7 @@ extern int bind_operation_handler(const char *str_path,
 	debug4("%s: new path %s with tag %d", __func__, str_path, path_tag);
 
 	path = xmalloc(sizeof(*path));
-	xassert((path->magic = MAGIC));
+	path->magic = MAGIC;
 	path->tag = path_tag;
 	list_append(paths, path);
 
