@@ -81,7 +81,7 @@ body:before {
 	background: #FCFCFC;
 	border-bottom: 1px solid #D8D8D8;
 	padding: 14px 0 10px;
-	min-height: 70px;
+	height: 70px;
 }
 
 #cse * {
