@@ -203,7 +203,7 @@ size_t xsize(void *item)
  * object.
  *   item (IN/OUT)	double-pointer to allocated space
  */
-void slurm_xfree(void **item, const char *file, int line, const char *func)
+void slurm_xfree(void **item)
 {
 	if (*item != NULL) {
 		size_t *p = (size_t *)*item - 2;

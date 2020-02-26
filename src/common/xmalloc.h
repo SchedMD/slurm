@@ -89,8 +89,7 @@
 #define xmalloc_nz(__sz) \
 	slurm_xcalloc(1, __sz, false, false, __FILE__, __LINE__, __func__)
 
-#define xfree(__p) \
-	slurm_xfree((void **)&(__p), __FILE__, __LINE__, __func__)
+#define xfree(__p) slurm_xfree((void **)&(__p))
 
 #define xrecalloc(__p, __cnt, __sz) \
         slurm_xrecalloc((void **)&(__p), __cnt, __sz, true, false, __FILE__, __LINE__, __func__)
@@ -105,7 +104,7 @@
         slurm_xrecalloc((void **)&(__p), 1, __sz, false, false, __FILE__, __LINE__, __func__)
 
 void *slurm_xcalloc(size_t, size_t, bool, bool, const char *, int, const char *);
-void slurm_xfree(void **, const char *, int, const char *);
+void slurm_xfree(void **);
 void *slurm_xrecalloc(void **, size_t, size_t, bool, bool, const char *, int, const char *);
 
 size_t xsize(void *item);
