@@ -183,11 +183,9 @@ struct hostrange_components {
 typedef struct hostrange_components *hostrange_t;
 
 /* The hostlist type: An array based list of hostrange_t's */
+#define HOSTLIST_MAGIC 57005
 struct hostlist {
-#ifndef NDEBUG
-#define HOSTLIST_MAGIC    57005
 	int magic;
-#endif
 	pthread_mutex_t mutex;
 
 	/* current number of elements available in array */
@@ -213,10 +211,10 @@ struct hostset {
 	hostlist_t hl;
 };
 
+#define HOSTLIST_ITR_MAGIC 57007
 struct hostlist_iterator {
-#ifndef NDEBUG
 	int magic;
-#endif
+
 	/* hostlist we are traversing */
 	hostlist_t hl;
 
@@ -1216,7 +1214,7 @@ static hostlist_t hostlist_new(void)
 	if (!new)
 		goto fail1;
 
-	assert((new->magic = HOSTLIST_MAGIC));
+	new->magic = HOSTLIST_MAGIC;
 	slurm_mutex_init(&new->mutex);
 
 	new->hr = (hostrange_t *) malloc(HOSTLIST_CHUNK * sizeof(hostrange_t));
@@ -1917,9 +1915,9 @@ void hostlist_destroy(hostlist_t hl)
 	for (i = 0; i < hl->nranges; i++)
 		hostrange_destroy(hl->hr[i]);
 	free(hl->hr);
-	assert((hl->magic = 0x1));
 	UNLOCK_HOSTLIST(hl);
 	slurm_mutex_destroy(&hl->mutex);
+	hl->magic = ~HOSTLIST_MAGIC;
 	free(hl);
 }
 
@@ -3244,12 +3242,12 @@ static hostlist_iterator_t hostlist_iterator_new(void)
 	hostlist_iterator_t i = (hostlist_iterator_t) malloc(sizeof(*i));
 	if (!i)
 		out_of_memory("hostlist_iterator_new");
+	i->magic = HOSTLIST_ITR_MAGIC;
 	i->hl = NULL;
 	i->hr = NULL;
 	i->idx = 0;
 	i->depth = -1;
 	i->next = i;
-	assert((i->magic = HOSTLIST_MAGIC));
 	return i;
 }
 
@@ -3277,7 +3275,7 @@ hostlist_iterator_t hostset_iterator_create(hostset_t set)
 void hostlist_iterator_reset(hostlist_iterator_t i)
 {
 	assert(i != NULL);
-	assert(i->magic == HOSTLIST_MAGIC);
+	assert(i->magic == HOSTLIST_ITR_MAGIC);
 	i->idx = 0;
 	i->hr = i->hl->hr[0];
 	i->depth = -1;
@@ -3290,7 +3288,7 @@ void hostlist_iterator_destroy(hostlist_iterator_t i)
 	if (i == NULL)
 		return;
 	assert(i != NULL);
-	assert(i->magic == HOSTLIST_MAGIC);
+	assert(i->magic == HOSTLIST_ITR_MAGIC);
 	LOCK_HOSTLIST(i->hl);
 	for (pi = &i->hl->ilist; *pi; pi = &(*pi)->next) {
 		assert((*pi)->magic == HOSTLIST_MAGIC);
@@ -3300,14 +3298,14 @@ void hostlist_iterator_destroy(hostlist_iterator_t i)
 		}
 	}
 	UNLOCK_HOSTLIST(i->hl);
-	assert((i->magic = 0x1));
+	i->magic = ~HOSTLIST_ITR_MAGIC;
 	free(i);
 }
 
 static void _iterator_advance(hostlist_iterator_t i)
 {
 	assert(i != NULL);
-	assert(i->magic == HOSTLIST_MAGIC);
+	assert(i->magic == HOSTLIST_ITR_MAGIC);
 
 	if (i->idx > i->hl->nranges - 1)
 		return;
@@ -3327,7 +3325,7 @@ static void _iterator_advance_range(hostlist_iterator_t i)
 	int nr, j;
 	hostrange_t *hr;
 	assert(i != NULL);
-	assert(i->magic == HOSTLIST_MAGIC);
+	assert(i->magic == HOSTLIST_ITR_MAGIC);
 
 	nr = i->hl->nranges;
 	hr = i->hl->hr;
@@ -3347,7 +3345,7 @@ char *hostlist_next_dims(hostlist_iterator_t i, int dims)
 	int len = 0;
 
 	assert(i != NULL);
-	assert(i->magic == HOSTLIST_MAGIC);
+	assert(i->magic == HOSTLIST_ITR_MAGIC);
 	LOCK_HOSTLIST(i->hl);
 	_iterator_advance(i);
 
@@ -3398,7 +3396,7 @@ char *hostlist_next_range(hostlist_iterator_t i)
 	char *buf;
 
 	assert(i != NULL);
-	assert(i->magic == HOSTLIST_MAGIC);
+	assert(i->magic == HOSTLIST_ITR_MAGIC);
 	LOCK_HOSTLIST(i->hl);
 
 	_iterator_advance_range(i);
@@ -3427,7 +3425,7 @@ int hostlist_remove(hostlist_iterator_t i)
 {
 	hostrange_t new;
 	assert(i != NULL);
-	assert(i->magic == HOSTLIST_MAGIC);
+	assert(i->magic == HOSTLIST_ITR_MAGIC);
 	LOCK_HOSTLIST(i->hl);
 	new = hostrange_delete_host(i->hr, i->hr->lo + i->depth);
 	if (new) {
