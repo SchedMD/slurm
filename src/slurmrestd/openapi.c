@@ -613,18 +613,14 @@ static void _list_delete_path_t(void *x)
 
 			xfree(entry->entry);
 			xfree(entry->name);
-			xassert(!(entry->parameter = 0)); /* set value */
-			xassert(!(entry->type = 0)); /* set value */
 			entry++;
 		}
 
 		xfree(method->entries);
-		xassert(!(method->method = 0)); /* set value */
 		method++;
 	}
 
 	xfree(path->methods);
-	xassert((path->tag = -1)); /* set value */
 	xfree(path);
 }
 
