@@ -86,6 +86,7 @@ strong_alias(list_delete_item,	slurm_list_delete_item);
  *  Constants  *
  ***************/
 #define LIST_MAGIC 0xDEADBEEF
+#define LIST_ITR_MAGIC 0xDEADBEFF
 
 #define list_alloc() xmalloc(sizeof(struct xlist))
 #define list_free(_l) xfree(l)
@@ -173,8 +174,8 @@ list_destroy (List l)
 
 	i = l->iNext;
 	while (i) {
-		xassert(i->magic == LIST_MAGIC);
-		i->magic = ~LIST_MAGIC;
+		xassert(i->magic == LIST_ITR_MAGIC);
+		i->magic = ~LIST_ITR_MAGIC;
 		iTmp = i->iNext;
 		list_iterator_free(i);
 		i = iTmp;
@@ -571,7 +572,7 @@ list_sort(List l, ListCmpF f)
 	 * to the head of the list.
 	 */
 	for (i = l->iNext; i; i = i->iNext) {
-		xassert(i->magic == LIST_MAGIC);
+		xassert(i->magic == LIST_ITR_MAGIC);
 		i->pos = i->list->head;
 		i->prev = &i->list->head;
 	}
@@ -658,7 +659,7 @@ list_iterator_create (List l)
 	xassert(l != NULL);
 	i = list_iterator_alloc();
 
-	i->magic = LIST_MAGIC;
+	i->magic = LIST_ITR_MAGIC;
 	i->list = l;
 	slurm_mutex_lock(&l->mutex);
 	xassert(l->magic == LIST_MAGIC);
@@ -679,7 +680,7 @@ void
 list_iterator_reset (ListIterator i)
 {
 	xassert(i != NULL);
-	xassert(i->magic == LIST_MAGIC);
+	xassert(i->magic == LIST_ITR_MAGIC);
 	slurm_mutex_lock(&i->list->mutex);
 	xassert(i->list->magic == LIST_MAGIC);
 
@@ -697,12 +698,12 @@ list_iterator_destroy (ListIterator i)
 	ListIterator *pi;
 
 	xassert(i != NULL);
-	xassert(i->magic == LIST_MAGIC);
+	xassert(i->magic == LIST_ITR_MAGIC);
 	slurm_mutex_lock(&i->list->mutex);
 	xassert(i->list->magic == LIST_MAGIC);
 
 	for (pi = &i->list->iNext; *pi; pi = &(*pi)->iNext) {
-		xassert((*pi)->magic == LIST_MAGIC);
+		xassert((*pi)->magic == LIST_ITR_MAGIC);
 		if (*pi == i) {
 			*pi = (*pi)->iNext;
 			break;
@@ -710,7 +711,7 @@ list_iterator_destroy (ListIterator i)
 	}
 	slurm_mutex_unlock(&i->list->mutex);
 
-	i->magic = ~LIST_MAGIC;
+	i->magic = ~LIST_ITR_MAGIC;
 	list_iterator_free(i);
 }
 
@@ -722,7 +723,7 @@ list_next (ListIterator i)
 	ListNode p;
 
 	xassert(i != NULL);
-	xassert(i->magic == LIST_MAGIC);
+	xassert(i->magic == LIST_ITR_MAGIC);
 	slurm_mutex_lock(&i->list->mutex);
 	xassert(i->list->magic == LIST_MAGIC);
 
@@ -744,7 +745,7 @@ list_peek_next (ListIterator i)
 	ListNode p;
 
 	xassert(i != NULL);
-	xassert(i->magic == LIST_MAGIC);
+	xassert(i->magic == LIST_ITR_MAGIC);
 	slurm_mutex_lock(&i->list->mutex);
 	xassert(i->list->magic == LIST_MAGIC);
 
@@ -764,7 +765,7 @@ list_insert (ListIterator i, void *x)
 
 	xassert(i != NULL);
 	xassert(x != NULL);
-	xassert(i->magic == LIST_MAGIC);
+	xassert(i->magic == LIST_ITR_MAGIC);
 	slurm_mutex_lock(&i->list->mutex);
 	xassert(i->list->magic == LIST_MAGIC);
 
@@ -784,7 +785,7 @@ list_find (ListIterator i, ListFindF f, void *key)
 	xassert(i != NULL);
 	xassert(f != NULL);
 	xassert(key != NULL);
-	xassert(i->magic == LIST_MAGIC);
+	xassert(i->magic == LIST_ITR_MAGIC);
 
 	while ((v = list_next(i)) && !f(v,key)) {;}
 
@@ -799,7 +800,7 @@ list_remove (ListIterator i)
 	void *v = NULL;
 
 	xassert(i != NULL);
-	xassert(i->magic == LIST_MAGIC);
+	xassert(i->magic == LIST_ITR_MAGIC);
 	slurm_mutex_lock(&i->list->mutex);
 	xassert(i->list->magic == LIST_MAGIC);
 
@@ -818,7 +819,7 @@ list_delete_item (ListIterator i)
 	void *v;
 
 	xassert(i != NULL);
-	xassert(i->magic == LIST_MAGIC);
+	xassert(i->magic == LIST_ITR_MAGIC);
 
 	if ((v = list_remove(i))) {
 		if (i->list->fDel)
@@ -855,7 +856,7 @@ static void *_list_node_create(List l, ListNode *pp, void *x)
 	l->count++;
 
 	for (i = l->iNext; i; i = i->iNext) {
-		xassert(i->magic == LIST_MAGIC);
+		xassert(i->magic == LIST_ITR_MAGIC);
 		if (i->prev == pp)
 			i->prev = &p->next;
 		else if (i->pos == p->next)
@@ -894,7 +895,7 @@ static void *_list_node_destroy(List l, ListNode *pp)
 	l->count--;
 
 	for (i = l->iNext; i; i = i->iNext) {
-		xassert(i->magic == LIST_MAGIC);
+		xassert(i->magic == LIST_ITR_MAGIC);
 		if (i->pos == p)
 			i->pos = p->next, i->prev = pp;
 		else if (i->prev == &p->next)
