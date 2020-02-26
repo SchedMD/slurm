@@ -178,9 +178,6 @@ static void _connection_fd_delete(void *x)
 	else
 		xassert(!list_remove_first(mgr->connections, _find_by_ptr,
 					   con));
-	xassert((con->magic = ~MAGIC_CON_MGR_FD));
-	xassert((con->input_fd = -1));
-	xassert((con->output_fd = -1));
 	FREE_NULL_BUFFER(con->in);
 	FREE_NULL_BUFFER(con->out);
 	FREE_NULL_LIST(con->work);
@@ -188,6 +185,7 @@ static void _connection_fd_delete(void *x)
 	xfree(con->unix_socket);
 
 	xassert(!con->arg);
+	con->magic = ~MAGIC_CON_MGR_FD;
 	xfree(con);
 }
 
@@ -214,9 +212,9 @@ extern con_mgr_t *init_con_mgr(int thread_count)
 {
 	con_mgr_t *mgr = xmalloc(sizeof(*mgr));
 
+	mgr->magic = MAGIC_CON_MGR;
 	mgr->connections = list_create(NULL);
 	mgr->listen = list_create(NULL);
-	xassert((mgr->magic = MAGIC_CON_MGR));
 
 	slurm_mutex_init(&mgr->mutex);
 	slurm_cond_init(&mgr->cond, NULL);
@@ -313,8 +311,6 @@ extern void free_con_mgr(con_mgr_t *mgr)
 	xassert(!mgr->listen_active);
 	xassert(!mgr->inspecting);
 
-	xassert((mgr->magic = ~MAGIC_CON_MGR));
-
 	xassert(list_is_empty(mgr->connections));
 	xassert(list_is_empty(mgr->listen));
 	FREE_NULL_LIST(mgr->connections);
@@ -329,6 +325,7 @@ extern void free_con_mgr(con_mgr_t *mgr)
 	if (close(mgr->sigint_fd[0]) || close(mgr->sigint_fd[1]))
 		error("%s: unable to close sigint_fd: %m", __func__);
 
+	mgr->magic = ~MAGIC_CON_MGR;
 	xfree(mgr);
 }
 
@@ -570,11 +567,7 @@ static void _wrap_work(void *x)
 	_signal_change(mgr, true);
 	slurm_mutex_unlock(&mgr->mutex);
 
-	xassert(!(args->arg = NULL));
-	xassert(!(args->tag = NULL));
-	xassert(!(args->func = NULL));
-	xassert(!(args->con = NULL));
-	xassert((args->magic = ~MAGIC_WRAP_WORK));
+	args->magic = ~MAGIC_WRAP_WORK;
 	xfree(args);
 }
 
