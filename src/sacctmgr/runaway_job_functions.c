@@ -94,16 +94,7 @@ static void _print_runaway_jobs(List format_list, List jobs)
 	       "controller but have a start time and no end time "
 	       "in the database\n");
 
-	if (!format_list || !list_count(format_list)) {
-		if (!format_list)
-			format_list = list_create(xfree_ptr);
-		slurm_addto_char_list(
-			format_list,
-			"ID%-12,Name,Part,Cluster,State%10,Submit,Start,End");
-	}
-
 	print_fields_list = sacctmgr_process_format_list(format_list);
-	FREE_NULL_LIST(format_list);
 
 	print_fields_header(print_fields_list);
 	field_count = list_count(print_fields_list);
@@ -332,6 +323,11 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 		rc = SLURM_SUCCESS;
 		goto end_it;
 	}
+
+	if (!list_count(format_list))
+		slurm_addto_char_list(
+			format_list,
+			"ID%-12,Name,Part,Cluster,State%10,Submit,Start,End");
 
 	_print_runaway_jobs(format_list, runaway_jobs);
 
