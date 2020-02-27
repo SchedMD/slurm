@@ -3284,7 +3284,7 @@ void hostlist_iterator_destroy(hostlist_iterator_t i)
 	xassert(i->magic == HOSTLIST_ITR_MAGIC);
 	LOCK_HOSTLIST(i->hl);
 	for (pi = &i->hl->ilist; *pi; pi = &(*pi)->next) {
-		xassert((*pi)->magic == HOSTLIST_MAGIC);
+		xassert((*pi)->magic == HOSTLIST_ITR_MAGIC);
 		if (*pi == i) {
 			*pi = (*pi)->next;
 			break;
