@@ -1741,7 +1741,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 	uint32_t uint32_tmp = 0;
 
 	resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
-	xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
+	resv_ptr->magic = RESV_MAGIC;
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv_ptr->accounts,
 				       &uint32_tmp,	buffer);
@@ -2412,6 +2412,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 
 	/* Create a new reservation record */
 	resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
+	resv_ptr->magic = RESV_MAGIC;
 	resv_ptr->accounts	= resv_desc_ptr->accounts;
 	resv_desc_ptr->accounts = NULL;		/* Nothing left to free */
 	resv_ptr->account_cnt	= account_cnt;
@@ -2438,7 +2439,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->max_start_delay = resv_desc_ptr->max_start_delay;
 
 	resv_ptr->resv_id       = top_suffix;
-	xassert((resv_ptr->magic = RESV_MAGIC));	/* Sets value */
 	resv_ptr->name		= xstrdup(resv_desc_ptr->name);
 	resv_ptr->node_cnt	= total_node_cnt;
 	resv_ptr->node_list	= resv_desc_ptr->node_list;

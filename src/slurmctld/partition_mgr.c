@@ -293,7 +293,7 @@ part_record_t *create_part_record(const char *name)
 
 	last_part_update = time(NULL);
 
-	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
+	part_ptr->magic = PART_MAGIC;
 	part_ptr->name              = xstrdup(name);
 	part_ptr->alternate         = xstrdup(default_part.alternate);
 	part_ptr->cr_type	    = default_part.cr_type;

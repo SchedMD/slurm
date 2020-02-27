@@ -91,12 +91,10 @@ static int bad_cred_test = -1;
 /*
  * The Munge implementation of the slurm AUTH credential
  */
+#define MUNGE_MAGIC 0xfeed
 typedef struct _slurm_auth_credential {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
-#ifndef NDEBUG
-#       define MUNGE_MAGIC 0xfeed
-	int  magic;        /* magical munge validity magic                   */
-#endif
+	int magic;         /* magical munge validity magic                   */
 	char   *m_str;     /* munged string                                  */
 	struct in_addr addr; /* IP addr where cred was encoded               */
 	bool    verified;  /* true if this cred has been verified            */
@@ -160,10 +158,9 @@ slurm_auth_credential_t *slurm_auth_create(char *opts)
 		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
 
 	cred = xmalloc(sizeof(*cred));
+	cred->magic = MUNGE_MAGIC;
 	cred->verified = false;
 	cred->m_str    = NULL;
-
-	xassert((cred->magic = MUNGE_MAGIC));
 
 	/*
 	 *  Temporarily block SIGALARM to avoid misleading
@@ -377,10 +374,9 @@ slurm_auth_credential_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* Allocate and initialize credential. */
 		cred = xmalloc(sizeof(*cred));
+		cred->magic = MUNGE_MAGIC;
 		cred->verified = false;
 		cred->m_str = NULL;
-
-		xassert((cred->magic = MUNGE_MAGIC));
 
 		safe_unpackstr_malloc(&cred->m_str, &size, buf);
 	} else {

@@ -199,7 +199,7 @@ cleanup:
 static data_list_t *_data_list_new(void)
 {
 	data_list_t *dl = xmalloc(sizeof(*dl));
-	xassert((dl->magic = DATA_LIST_MAGIC));
+	dl->magic = DATA_LIST_MAGIC;
 
 	log_flag(DATA, "%s: new data list (0x%"PRIXPTR")",
 		 __func__, (uintptr_t) dl);
@@ -302,7 +302,7 @@ static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn)
 	FREE_NULL_DATA(dn->data);
 	xfree(dn->key);
 
-	xassert((dn->magic = ~DATA_LIST_NODE_MAGIC));
+	dn->magic = ~DATA_LIST_NODE_MAGIC;
 	xfree(dn);
 }
 
@@ -336,8 +336,8 @@ static void _release_data_list(data_list_t *dl)
 #ifndef NDEBUG
 	xassert(count == init_count);
 	xassert(!(dl->count = 0));
-	xassert((dl->magic = ~DATA_LIST_MAGIC));
 #endif
+	dl->magic = ~DATA_LIST_MAGIC;
 	xfree(dl);
 }
 
@@ -349,7 +349,7 @@ static void _release_data_list(data_list_t *dl)
 static data_list_node_t *_new_data_list_node(data_t *d, const char *key)
 {
 	data_list_node_t *dn = xmalloc(sizeof(*dn));
-	xassert((dn->magic = DATA_LIST_NODE_MAGIC));
+	dn->magic = DATA_LIST_NODE_MAGIC;
 	_check_magic(d);
 
 	dn->data = d;
@@ -406,7 +406,7 @@ static void _data_list_prepend(data_list_t *dl, data_t *d, const char *key)
 data_t *data_new(void)
 {
 	data_t *data = xmalloc(sizeof(*data));
-	xassert((data->magic = DATA_MAGIC));
+	data->magic = DATA_MAGIC;
 	data->type = DATA_TYPE_NULL;
 
 	log_flag(DATA, "%s: new data (0x%"PRIXPTR")",

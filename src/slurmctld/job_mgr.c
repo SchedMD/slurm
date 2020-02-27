@@ -619,7 +619,7 @@ static job_record_t *_create_job_record(uint32_t num_jobs)
 	job_ptr->site_factor = NICE_OFFSET;
 	job_ptr->step_list = list_create(NULL);
 
-	xassert (detail_ptr->magic = DETAILS_MAGIC); /* set value */
+	detail_ptr->magic = DETAILS_MAGIC;
 	detail_ptr->submit_time = time(NULL);
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet  */

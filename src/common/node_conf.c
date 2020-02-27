@@ -619,9 +619,9 @@ extern config_record_t *create_config_record(void)
 
 	last_node_update = time (NULL);
 
+	config_ptr->magic = CONFIG_MAGIC;
 	config_ptr->nodes = NULL;
 	config_ptr->node_bitmap = NULL;
-	xassert (config_ptr->magic = CONFIG_MAGIC);  /* set value */
 
 	list_append(config_list, config_ptr);
 
@@ -692,7 +692,8 @@ extern node_record_t *create_node_record(config_record_t *config_ptr,
 	node_ptr->mcs_label = NULL;
 	node_ptr->next_state = NO_VAL;
 	node_ptr->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
-	xassert (node_ptr->magic = NODE_MAGIC)  /* set value */;
+	node_ptr->magic = NODE_MAGIC;
+
 	return node_ptr;
 }
 
