@@ -900,6 +900,7 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid,
 	sep1 = strstr(cmd_ptr + 15, "NODE:");
 	if (!sep1) {
 		xstrfmtcat(resp, "%s ECMD", SLURM_VERSION_STRING);
+		slurm_mutex_lock(&job_fail_mutex);
 		goto fini;
 	}
 	node_name = sep1 + 5;
