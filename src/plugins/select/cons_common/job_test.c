@@ -525,19 +525,21 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 
 	/* If successful, sync up the avail_core with the node_map */
 	if (rc == SLURM_SUCCESS) {
+		int i_first, i_last, n, start;
+
+		i_first = bit_ffs(node_bitmap);
+		if (i_first != -1)
+			i_last = bit_fls(node_bitmap);
+		else
+			i_last = -2;
+
 		if (is_cons_tres) {
-			for (n = 0; n < select_node_cnt; n++) {
+			for (n = i_first; n < i_last; n++) {
 				if (!avail_res_array[n] ||
 				    !bit_test(node_bitmap, n))
 					FREE_NULL_BITMAP(avail_core[n]);
 			}
 		} else {
-			int i_first, i_last, n, start;
-			i_first = bit_ffs(node_bitmap);
-			if (i_first != -1)
-				i_last = bit_fls(node_bitmap);
-			else
-				i_last = -2;
 			start = 0;
 			for (n = i_first; n < i_last; n++) {
 				if (!avail_res_array[n] ||
