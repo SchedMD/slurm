@@ -551,7 +551,7 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 						(cr_get_coremap_offset(n)) - 1);
 				start = cr_get_coremap_offset(n + 1);
 			}
-			if ((n >= 0) && (cr_get_coremap_offset(n) != start))
+			if (cr_get_coremap_offset(n) != start)
 				bit_nclear(*avail_core, start,
 					   cr_get_coremap_offset(n) - 1);
 		}
