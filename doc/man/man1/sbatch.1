@@ -45,15 +45,16 @@ sbatch will return 0 on success or error code on failure.
 
 The batch script is resolved in the following order:
 .br
-.IP 1. 3
-If script starts with ".", then path is constructed as:
+
+1. If script starts with ".", then path is constructed as:
 current working directory / script
-.IP 2.
-If script starts with a "/", then path is considered absolute.
-.IP 3.
-If script is in current working directory.
-.IP 4.
-If script can be resolved through PATH. See \fBpath_resolution\fR(7).
+.br
+2. If script starts with a "/", then path is considered absolute.
+.br
+3. If script is in current working directory.
+.br
+4. If script can be resolved through PATH. See \fBpath_resolution\fR(7).
+.br
 .P
 Current working directory is the calling process working directory unless the
 \fB\-\-chdir\fR argument is passed, which will override the current working

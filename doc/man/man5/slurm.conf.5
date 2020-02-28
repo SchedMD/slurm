@@ -1970,16 +1970,18 @@ The default value is "priority/basic".
 .RS
 .nr step 1 1
 When not FIFO scheduling, jobs are prioritized in the following order:
-.IP \n[step]. 3
-Jobs that can preempt
-.IP \n+[step].
-Jobs with an advanced reservation
-.IP \n+[step].
-Partition Priority Tier
-.IP \n+[step].
-Job Priority
-.IP \n+[step].
-Job Id
+.br
+
+1. Jobs that can preempt
+.br
+2. Jobs with an advanced reservation
+.br
+3. Partition Priority Tier
+.br
+4. Job Priority
+.br
+5. Job Id
+.br
 .RE
 
 .TP
