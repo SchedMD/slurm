@@ -354,7 +354,7 @@ extern int write_configs_to_conf_cache(config_response_msg_t *msg,
 		return SLURM_ERROR;
 	if (_write_conf(dir, "knl_generic.conf", msg->knl_generic_config))
 		return SLURM_ERROR;
-	if (_write_conf(dir, "plugstack.conf", msg->topology_config))
+	if (_write_conf(dir, "plugstack.conf", msg->plugstack_config))
 		return SLURM_ERROR;
 	if (_write_conf(dir, "topology.conf", msg->topology_config))
 		return SLURM_ERROR;

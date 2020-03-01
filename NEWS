@@ -75,6 +75,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix nvml/rsmi debug statements making it to stderr.
  -- NodeSets - fix slurmctld segfault in newer glibc if any nodes have no
     defined features.
+ -- ConfigLess - write out plugstack config to correct config file name in
+    the config cache.
 
 * Changes in Slurm 20.02.1
 ==========================
