@@ -48,13 +48,13 @@ make_bash_script $test_timer "
 for i in \{1..10\}
 do
 	echo \"time \$i\"
-	sleep 5
+	sleep 3
 done
 echo \"Test finished\"
 "
 
 make_bash_script $stop_srun "
-$bin_sleep 15
+$bin_sleep 10
 srun_proc=\$1
 echo \"suspending job, pid=\$srun_proc\"
 kill -s stop \$srun_proc
@@ -70,7 +70,7 @@ bg
 if \[ \$? != 0 \]; then
 	echo \"BG Failed\"
 fi
-$bin_sleep 25
+$bin_sleep 10
 echo \"sending job to foreground\"
 fg
 if \[ \$? != 0 \]; then
