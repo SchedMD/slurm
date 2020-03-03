@@ -50,14 +50,14 @@ Source:		%{slurm_source_dir}.tar.bz2
 %bcond_with hdf5
 %bcond_with lua
 %bcond_with numa
-%bcond_with x11
 %bcond_with pmix
 
 # Use debug by default on all systems
 %bcond_without debug
 
-# Build with PAM by default on linux
+# Options enabled by default
 %bcond_without pam
+%bcond_without x11
 
 # Disable hardened builds. -z,now or -z,relro breaks the plugin stack
 %undefine _hardened_build
