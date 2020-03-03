@@ -87,13 +87,13 @@ fi
 exit 0"
 
 #
-# One GPU per task with node count range
+# One GPU per task with node count (without range)
 #
-send_user "\n\nTEST: One GPU with node count range\n"
+send_user "\n\nTEST: One GPU per task with node count (without range)\n"
 set timeout $max_job_delay
 set match 0
 set node_cnt -1
-set srun_pid [spawn $srun --nodes=1-$nb_nodes --gpus-per-task=1 -t1 -J "test$test_id" -l ./$file_in1]
+set srun_pid [spawn $srun --nodes=$nb_nodes --gpus-per-task=1 -t1 -J "test$test_id" -l ./$file_in1]
 expect {
 	-re "NODE_CNT:($number_commas) CUDA_VISIBLE_DEVICES:($number_commas)" {
 		set node_cnt $expect_out(1,string)
@@ -115,10 +115,10 @@ if {$match != $node_cnt} {
 }
 
 #
-# Two GPUs per task with node count range
+# Two GPUs per task with node count (without range)
 #
 if {$gpu_cnt > 1} {
-	send_user "\n\nTEST: Two GPUs with node count range\n"
+	send_user "\n\nTEST: Two GPUs per task with node count (without range)\n"
 	set match 0
 	if {$nb_nodes > 1} {
 		set min_nodes 2
@@ -126,7 +126,7 @@ if {$gpu_cnt > 1} {
 		set min_nodes 1
 	}
 	set node_cnt -1
-	set srun_pid [spawn $srun --nodes=$min_nodes-$nb_nodes --gpus-per-task=2 -t1 -J "test$test_id" -l ./$file_in1]
+	set srun_pid [spawn $srun --nodes=$nb_nodes --gpus-per-task=2 -t1 -J "test$test_id" -l ./$file_in1]
 	expect {
 		-re "NODE_CNT:($number_commas) CUDA_VISIBLE_DEVICES:($number_commas)" {
 			set node_cnt $expect_out(1,string)
