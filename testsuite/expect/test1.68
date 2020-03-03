@@ -48,26 +48,34 @@ make_bash_script $test_timer "
 for i in \{1..10\}
 do
 	echo \"time \$i\"
-	sleep 5
+	sleep 3
 done
 echo \"Test finished\"
 "
 
 make_bash_script $stop_srun "
-$bin_sleep 15
-srun_proc=\$(ps -C srun -o pid=)
-echo \"sending job to the background, pid=\$srun_proc\"
+$bin_sleep 10
+srun_proc=\$1
+echo \"suspending job, pid=\$srun_proc\"
 kill -s stop \$srun_proc
 "
 
 make_bash_script $test_srun "
 set -m
-./$stop_srun &
-$srun -v -t1 ./$test_timer
+$srun -v -t1 ./$test_timer &
+./$stop_srun \$! &
+wait
+echo \"sending job to the background\"
 bg
-$bin_sleep 25
+if \[ \$? != 0 \]; then
+	echo \"BG Failed\"
+fi
+$bin_sleep 10
 echo \"sending job to foreground\"
 fg
+if \[ \$? != 0 \]; then
+	echo \"FG Failed\"
+fi
 "
 
 make_bash_script $file_in "
@@ -105,6 +113,16 @@ expect {
 	}
 	-re "Test finished" {
 		set fini_match 1
+		exp_continue
+	}
+	-re "BG Failed" {
+		send_user "\nFAILURE: Failed to find suspended srun job in background\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "FG Failed" {
+		send_user "\nFAILURE: Failed to find background srun job to put in foreground\n"
+		set exit_code 1
 		exp_continue
 	}
 	timeout {
