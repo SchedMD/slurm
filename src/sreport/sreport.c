@@ -91,8 +91,7 @@ static void	_user_rep (int argc, char **argv);
 int
 main (int argc, char **argv)
 {
-	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count;
-	char **input_fields;
+	int error_code = SLURM_SUCCESS, i, opt_char;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	char *temp = NULL;
 	int option_index;
@@ -120,7 +119,6 @@ main (int argc, char **argv)
 	exit_code         = 0;
 	exit_flag         = 0;
 	federation_flag   = false;
-	input_field_count = 0;
 	local_flag        = false;
 	quiet_flag        = 0;
 	slurm_conf_init(NULL);
@@ -232,17 +230,6 @@ main (int argc, char **argv)
 		exit(1);
 	}
 
-	if (argc > MAX_INPUT_FIELDS)	/* bogus input, but continue anyway */
-		input_words = argc;
-	else
-		input_words = 128;
-	input_fields = (char **) xmalloc (sizeof (char *) * input_words);
-	if (optind < argc) {
-		for (i = optind; i < argc; i++) {
-			input_fields[input_field_count++] = argv[i];
-		}
-	}
-
 	if (federation_flag && !all_clusters_flag && !cluster_flag &&
 	    !local_flag)
 		cluster_flag = _build_cluster_string();
@@ -258,17 +245,27 @@ main (int argc, char **argv)
 
 	_build_tres_list();
 
-	if (input_field_count)
-		exit_flag = 1;
-	else
-		error_code = _get_command (&input_field_count, input_fields);
-	while (error_code == SLURM_SUCCESS) {
-		error_code = _process_command (input_field_count,
-					       input_fields);
-		if (error_code || exit_flag)
-			break;
-		error_code = _get_command (&input_field_count, input_fields);
+	/* We are only running a single command and exiting */
+	if (optind < argc)
+		error_code = _process_command(argc - optind, argv + optind);
+	else {
+		/* We are running interactively multiple commands */
+		int input_field_count = 0;
+		char **input_fields = xcalloc(MAX_INPUT_FIELDS, sizeof(char *));
+		while (error_code == SLURM_SUCCESS) {
+			error_code = _get_command(
+				&input_field_count, input_fields);
+			if (error_code || exit_flag)
+				break;
+
+			error_code = _process_command(
+				input_field_count, input_fields);
+			if (exit_flag)
+				break;
+		}
+		xfree(input_fields);
 	}
+
 	if (exit_flag == 2)
 		putchar('\n');
 
