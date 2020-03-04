@@ -665,9 +665,12 @@ again:
 		if ((rc == ESLURM_DB_CONNECTION) &&
 		    slurmdbd_conn->trigger_callbacks.db_fail)
 			(slurmdbd_conn->trigger_callbacks.db_fail)();
-
-		error("slurmdbd: Sending PersistInit msg: %m");
 		slurm_persist_conn_close(slurmdbd_conn);
+
+		/* This means errno was already set correctly */
+		if (rc != SLURM_ERROR)
+			errno = rc;
+		error("slurmdbd: Sending PersistInit msg: %m");
 	}
 }
 
