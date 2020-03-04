@@ -202,23 +202,6 @@ int main(int argc, char **argv)
 	errno = 0;
 	db_conn = slurmdb_connection_get2(&persist_conn_flags);
 
-	if (errno != SLURM_SUCCESS) {
-		int tmp_errno = errno;
-		if ((input_field_count == 2) &&
-		   (!xstrncasecmp(argv[2], "Configuration", strlen(argv[1]))) &&
-		   ((!xstrncasecmp(argv[1], "list", strlen(argv[0]))) ||
-		    (!xstrncasecmp(argv[1], "show", strlen(argv[0]))))) {
-			if (tmp_errno == ESLURM_DB_CONNECTION) {
-				tmp_errno = 0;
-				sacctmgr_list_config(true);
-			} else
-				sacctmgr_list_config(false);
-		}
-		errno = tmp_errno;
-		if (errno)
-			error("Problem talking to the database: %m");
-		exit(1);
-	}
 	my_uid = getuid();
 
 	if (persist_conn_flags & PERSIST_FLAG_P_USER_CASE)
