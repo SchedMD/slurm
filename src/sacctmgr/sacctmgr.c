@@ -49,7 +49,6 @@
 char *command_name;
 int exit_code;		/* sacctmgr's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
-int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int readonly_flag;      /* make it so you can only run list commands */
@@ -79,8 +78,7 @@ static void	_usage(void);
 
 int main(int argc, char **argv)
 {
-	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count;
-	char **input_fields;
+	int error_code = SLURM_SUCCESS, opt_char;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int local_exit_code = 0;
 	char *temp = NULL;
@@ -107,7 +105,6 @@ int main(int argc, char **argv)
 	rollback_flag     = 1;
 	exit_code         = 0;
 	exit_flag         = 0;
-	input_field_count = 0;
 	quiet_flag        = 0;
 	readonly_flag     = 0;
 	verbosity         = 0;
@@ -168,17 +165,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (argc > MAX_INPUT_FIELDS)	/* bogus input, but continue anyway */
-		input_words = argc;
-	else
-		input_words = 128;
-	input_fields = (char **) xmalloc (sizeof (char *) * input_words);
-	if (optind < argc) {
-		for (i = optind; i < argc; i++) {
-			input_fields[input_field_count++] = argv[i];
-		}
-	}
-
 	if (verbosity) {
 		opts.stderr_level += verbosity;
 		opts.prefix_level = 1;
@@ -207,25 +193,36 @@ int main(int argc, char **argv)
 	if (persist_conn_flags & PERSIST_FLAG_P_USER_CASE)
 		user_case_norm = false;
 
-	if (input_field_count)
-		exit_flag = 1;
-	else
-		error_code = _get_command (&input_field_count, input_fields);
-	while (error_code == SLURM_SUCCESS) {
-		error_code = _process_command (input_field_count,
-					       input_fields);
-		if (error_code || exit_flag)
-			break;
-		error_code = _get_command (&input_field_count, input_fields);
-		/* This is here so if someone made a mistake we allow
-		 * them to fix it and let the process happen since there
-		 * are checks for global exit_code we need to reset it.
-		 */
-		if (exit_code) {
-			local_exit_code = exit_code;
-			exit_code = 0;
+
+	/* We are only running a single command and exiting */
+	if (optind < argc)
+		error_code = _process_command(argc - optind, argv + optind);
+	else {
+		/* We are running interactively multiple commands */
+		int input_field_count = 0;
+		char **input_fields = xcalloc(MAX_INPUT_FIELDS, sizeof(char *));
+		while (error_code == SLURM_SUCCESS) {
+			error_code = _get_command(
+				&input_field_count, input_fields);
+			if (error_code || exit_flag)
+				break;
+
+			error_code = _process_command(
+				input_field_count, input_fields);
+			/* This is here so if someone made a mistake we allow
+			 * them to fix it and let the process happen since there
+			 * are checks for global exit_code we need to reset it.
+			 */
+			if (exit_code) {
+				local_exit_code = exit_code;
+				exit_code = 0;
+			}
+			if (exit_flag)
+				break;
 		}
+		xfree(input_fields);
 	}
+
 	/* readline library writes \n when echoes the input string, it does
 	 * not when it sees the EOF, so in that case we have to print it to
 	 * align the terminal prompt.
@@ -325,7 +322,7 @@ static int _get_command (int *argc, char **argv)
 			exit_code = 1;
 			fprintf (stderr,
 				 "%s: can not process over %d words\n",
-				 command_name, input_words);
+				 command_name, MAX_INPUT_FIELDS-1);
 			return E2BIG;
 		}
 		argv[(*argc)++] = &in_line[i];
