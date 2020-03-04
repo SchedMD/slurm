@@ -32,10 +32,6 @@ interest are <B>GresTypes</B> and <B>Gres</B>.
 For more details, see <a href="slurm.conf.html#OPT_GresTypes">GresTypes</a> and <a href="slurm.conf.html#OPT_Gres_1">Gres</a> in the <I>slurm.conf</I> man page.
 </P>
 
-<P>If a GRES can be fully described in slurm.conf (i.e. it does not require
-additional gres.conf-specific fields like Cores, File, Flags, or Links), then a
-corresponding entry in gres.conf is optional.</P>
-
 <P>Note that the GRES specification for each node works in the same fashion
 as the other resources managed. Nodes which are found to have fewer resources
 than configured will be placed in a DRAIN state.</P>
@@ -53,7 +49,7 @@ associated device files and cores which should be used with those resources.</P>
 
 <P>If <i>AutoDetect=nvml</i> is set in <I>gres.conf</I>,
 and the <i>NVIDIA Management Library</i> (NVML) is installed on the node and was
-found during Slurm configuration, configuration details will automatically be
+enabled during Slurm configuration, configuration details will automatically be
 filled in for any system-detected NVIDIA GPU. This removes the need to
 explicitly configure GPUs in gres.conf, though the <i>Gres=</i> line in
 slurm.conf is still required in order to tell slurmctld how many GRES to expect.

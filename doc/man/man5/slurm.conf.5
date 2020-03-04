@@ -4500,11 +4500,6 @@ A suffix of "K", "M", "G", "T" or "P" may be used to multiply the number by
 (e.g."Gres=gpu:tesla:1,gpu:kepler:1,bandwidth:lustre:no_consume:4G").
 By default a node has no generic resources and its maximum count is
 that of an unsigned 64bit integer.
-If <type> is specified, then the count is limited in size (currently 1024).
-If a GRES can be fully described here (i.e. it does not require additional
-gres.conf\-specific fields like Cores, File, Flags, or Links), then a
-corresponding entry in gres.conf is optional.
-
 Also see \fBFeature\fR.
 
 .TP
