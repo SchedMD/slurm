@@ -60,7 +60,6 @@ int future_flag = 0;	/* display future nodes */
 int exit_code = 0;	/* scontrol's exit code, =1 on any error at any time */
 int exit_flag = 0;	/* program to terminate if =1 */
 int federation_flag = 0;/* show federated jobs */
-int input_words = 128;	/* number of words of input permitted */
 int local_flag = 0;     /* show only local jobs -- not remote remote sib jobs */
 int one_liner = 0;	/* one record per line if =1 */
 int quiet_flag = 0;	/* quiet=1, verbose=-1, normal=0 */
@@ -356,7 +355,7 @@ static int _get_command (int *argc, char **argv)
 			exit_code = 1;
 			fprintf (stderr,
 				 "%s: can not process over %d words\n",
-				 command_name, input_words);
+				 command_name, MAX_INPUT_FIELDS - 1);
 			return E2BIG;
 		}
 		argv[(*argc)++] = &in_line[i];
