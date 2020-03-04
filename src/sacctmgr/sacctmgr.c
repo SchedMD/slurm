@@ -64,6 +64,7 @@ List g_tres_list = NULL;
 /* by default, normalize all usernames to lower case */
 bool user_case_norm = true;
 bool tree_display = 0;
+bool have_db_conn = false;
 
 static void	_add_it(int argc, char **argv);
 static void	_archive_it(int argc, char **argv);
@@ -187,6 +188,9 @@ int main(int argc, char **argv)
 
 	errno = 0;
 	db_conn = slurmdb_connection_get2(&persist_conn_flags);
+
+	if (!errno)
+		have_db_conn = true;
 
 	my_uid = getuid();
 
@@ -684,7 +688,7 @@ static void _show_it(int argc, char **argv)
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
 	} else if (xstrncasecmp(argv[0], "Configuration",
 				MAX(command_len, 2)) == 0) {
-		error_code = sacctmgr_list_config(true);
+		error_code = sacctmgr_list_config();
 	} else if (xstrncasecmp(argv[0], "Events",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_event((argc - 1), &argv[1]);

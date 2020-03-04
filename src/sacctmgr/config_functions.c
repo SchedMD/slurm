@@ -247,7 +247,7 @@ static int _print_rpc_obj(void *x, void *arg)
 	return 0;
 }
 
-extern int sacctmgr_list_config(bool have_db_conn)
+extern int sacctmgr_list_config(void)
 {
 	_load_slurm_config();
 	_print_slurm_config();

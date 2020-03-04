@@ -226,6 +226,7 @@ extern List g_tres_list;
 
 extern bool user_case_norm;
 extern bool tree_display;
+extern bool have_db_conn;
 
 extern bool sacctmgr_check_default_qos(uint32_t qos_id,
 				       slurmdb_assoc_cond_t *assoc_cond);
@@ -253,7 +254,7 @@ extern int sacctmgr_list_assoc(int argc, char **argv);
 extern int sacctmgr_list_user(int argc, char **argv);
 extern int sacctmgr_list_account(int argc, char **argv);
 extern int sacctmgr_list_cluster(int argc, char **argv);
-extern int sacctmgr_list_config(bool have_db_conn);
+extern int sacctmgr_list_config(void);
 extern int sacctmgr_list_event(int argc, char **argv);
 extern int sacctmgr_list_federation(int argc, char **argv);
 extern int sacctmgr_list_problem(int argc, char **argv);
