@@ -58,7 +58,6 @@ int exit_code;		/* sreport's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
 char *fed_name = NULL;	/* Operating in federation mode */
 bool federation_flag;	/* --federation option */
-int input_words;	/* number of words of input permitted */
 bool local_flag;	/* --local option */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 char *tres_str = NULL;	/* --tres= value */
@@ -588,7 +587,7 @@ _get_command (int *argc, char **argv)
 			exit_code = 1;
 			fprintf (stderr,
 				 "%s: can not process over %d words\n",
-				 command_name, input_words);
+				 command_name, MAX_INPUT_FIELDS - 1);
 			return E2BIG;
 		}
 		argv[(*argc)++] = &in_line[i];
