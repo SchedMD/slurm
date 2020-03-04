@@ -97,8 +97,8 @@ static void	_write_config(char *file_name);
 
 int main(int argc, char **argv)
 {
-	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count = 0;
-	char **input_fields, *env_val;
+	int error_code = SLURM_SUCCESS, opt_char;
+	char *env_val;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
 	int option_index;
@@ -237,32 +237,27 @@ int main(int argc, char **argv)
 		log_alter(opts, SYSLOG_FACILITY_USER, NULL);
 	}
 
-	if (argc > MAX_INPUT_FIELDS)	/* bogus input, but continue anyway */
-		input_words = argc;
-	else
-		input_words = 128;
-	input_fields = (char **) xmalloc (sizeof (char *) * input_words);
-	if (optind < argc) {
-		for (i = optind; i < argc; i++) {
-			input_fields[input_field_count++] = argv[i];
-		}
-	}
+	/* We are only running a single command and exiting */
+	if (optind < argc)
+		error_code = _process_command(argc - optind, argv + optind);
+	else {
+		/* We are running interactively multiple commands */
+		int input_field_count = 0;
+		char **input_fields = xcalloc(MAX_INPUT_FIELDS, sizeof(char *));
+		while (error_code == SLURM_SUCCESS) {
+			error_code = _get_command(
+				&input_field_count, input_fields);
+			if (error_code || exit_flag) {	/* EOF */
+				putchar('\n');
+				break;
+			}
 
-	if (input_field_count)
-		exit_flag = 1;
-	else
-		error_code = _get_command (&input_field_count, input_fields);
-
-	while (error_code == SLURM_SUCCESS) {
-		error_code = _process_command (input_field_count,
-					       input_fields);
-		if (error_code || exit_flag)
-			break;
-		error_code = _get_command (&input_field_count, input_fields);
-		if (exit_flag) {	/* EOF */
-			putchar('\n');
-			break;
+			error_code = _process_command(
+				input_field_count, input_fields);
+			if (exit_flag)
+				break;
 		}
+		xfree(input_fields);
 	}
 	FREE_NULL_LIST(clusters);
 	slurm_conf_destroy();
