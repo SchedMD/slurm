@@ -540,6 +540,11 @@ static void _add_it(int argc, char **argv)
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
 
+	if (!have_db_conn) {
+		exit_code = 1;
+		return;
+	}
+
 	if (readonly_flag) {
 		exit_code = 1;
 		fprintf(stderr, "Can't run this command in readonly mode.\n");
@@ -594,6 +599,11 @@ static void _archive_it(int argc, char **argv)
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
 
+	if (!have_db_conn) {
+		exit_code = 1;
+		return;
+	}
+
 	if (readonly_flag) {
 		exit_code = 1;
 		fprintf(stderr, "Can't run this command in readonly mode.\n");
@@ -635,6 +645,11 @@ static void _clear_it(int argc, char **argv)
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
 
+	if (!have_db_conn) {
+		exit_code = 1;
+		return;
+	}
+
 	if (!argv[0])
 		goto helpme;
 
@@ -672,6 +687,13 @@ static void _show_it(int argc, char **argv)
 		goto helpme;
 
 	command_len = strlen(argv[0]);
+	if (!have_db_conn &&
+	    xstrncasecmp(argv[0], "Configuration",
+			 MAX(command_len, 2))) {
+		exit_code = 1;
+		return;
+	}
+
 
 	/* reset the connection to get the most recent stuff */
 	slurmdb_connection_commit(db_conn, 0);
@@ -748,6 +770,11 @@ static void _modify_it(int argc, char **argv)
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
 
+	if (!have_db_conn) {
+		exit_code = 1;
+		return;
+	}
+
 	if (readonly_flag) {
 		exit_code = 1;
 		fprintf(stderr, "Can't run this command in readonly mode.\n");
@@ -802,6 +829,11 @@ static void _delete_it(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
+
+	if (!have_db_conn) {
+		exit_code = 1;
+		return;
+	}
 
 	if (readonly_flag) {
 		exit_code = 1;
