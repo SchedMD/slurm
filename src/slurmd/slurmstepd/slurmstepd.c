@@ -278,10 +278,12 @@ static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 	if (rc == SLURM_ERROR)
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
 
-	slurm_unpack_list(&tmp_list,
-			  slurmdb_unpack_tres_rec,
-			  slurmdb_destroy_tres_rec,
-			  buffer, SLURM_PROTOCOL_VERSION);
+	if (slurm_unpack_list(&tmp_list,
+			      slurmdb_unpack_tres_rec,
+			      slurmdb_destroy_tres_rec,
+			      buffer, SLURM_PROTOCOL_VERSION)
+	    != SLURM_SUCCESS)
+		fatal("slurmstepd: problem with unpack of tres list");
 
 	free_buf(buffer);
 
