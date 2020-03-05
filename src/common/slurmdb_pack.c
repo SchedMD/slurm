@@ -1043,6 +1043,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 			packnull(buffer);
 
 			pack32(NO_VAL, buffer);
+			pack16(0, buffer);
 
 			pack32(NO_VAL, buffer);
 
@@ -1090,6 +1091,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		packstr(object->cluster, buffer);
 
 		pack32(object->def_qos_id, buffer);
+		pack16(object->flags, buffer);
 
 		/* this used to be named fairshare to not have to redo
 		   the order of things just to be in alpha order we
@@ -1263,6 +1265,7 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 				       buffer);
 
 		safe_unpack32(&object_ptr->def_qos_id, buffer);
+		safe_unpack16(&object_ptr->flags, buffer);
 
 		safe_unpack32(&object_ptr->shares_raw, buffer);
 
