@@ -74,6 +74,7 @@ char *assoc_req_inx[] = {
 	"qos",
 	"delta_qos",
 	"is_def",
+	"deleted",
 };
 enum {
 	ASSOC_REQ_ID,
@@ -105,6 +106,7 @@ enum {
 	ASSOC_REQ_QOS,
 	ASSOC_REQ_DELTA_QOS,
 	ASSOC_REQ_DEFAULT,
+	ASSOC_REQ_DELETED,
 	ASSOC_REQ_COUNT
 };
 
@@ -1865,6 +1867,7 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 
 		rem_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
 		slurmdb_init_assoc_rec(rem_assoc, 0);
+		rem_assoc->flags |= ASSOC_FLAG_DELETED;
 		rem_assoc->id = slurm_atoul(row[RASSOC_ID]);
 		rem_assoc->cluster = xstrdup(cluster_name);
 		if (addto_update_list(mysql_conn->update_list,
@@ -2029,10 +2032,14 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			xmalloc(sizeof(slurmdb_assoc_rec_t));
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
-
+		uint16_t deleted = slurm_atoul(row[ASSOC_REQ_DELETED]);
 		list_append(assoc_list, assoc);
 		assoc->id = slurm_atoul(row[ASSOC_REQ_ID]);
 		assoc->is_def = slurm_atoul(row[ASSOC_REQ_DEFAULT]);
+
+		if (deleted)
+			assoc->flags |= ASSOC_FLAG_DELETED;
+
 		assoc->lft = slurm_atoul(row[ASSOC_REQ_LFT]);
 		assoc->rgt = slurm_atoul(row[ASSOC_REQ_RGT]);
 

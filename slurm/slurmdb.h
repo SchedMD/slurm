@@ -243,6 +243,9 @@ enum cluster_fed_states {
 #define CLUSTER_FLAG_CRAY   0x00000500 /* This cluster is a cray.
 					  Combo of CRAY_A | CRAY_N */
 
+
+/* Assoc flags */
+#define ASSOC_FLAG_DELETED  0x0001
 /********************************************/
 
 /* Association conditions used for queries of the database */
