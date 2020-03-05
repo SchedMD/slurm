@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix negative loop bound in cons_tres.
  -- srun - capture the MPI plugin return code from mpi_hook_client_fini() and
     use as final return code for step failure.
+ -- Fix segfault in cli_filter/lua.
 
 * Changes in Slurm 20.02.0
 ==========================
