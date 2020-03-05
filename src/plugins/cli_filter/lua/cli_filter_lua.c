@@ -345,7 +345,7 @@ static void _loadscript_extra(lua_State *st)
 	slurm_lua_table_register(st, NULL, slurm_functions);
 
 	/* Must be always done after we register the slurm_functions */
-	lua_setglobal(L, "slurm");
+	lua_setglobal(st, "slurm");
 }
 
 static int _load_script(void)
