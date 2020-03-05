@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Export SLURMD_NODENAME envvar to HealthCheckProgram.
  -- SlurmctldParameters=user_resv_delete which allows any user able to run
     in a reservation to delete it.
+ -- Set default unit when parsing #BSUB -M to KB to match LSF documentation.
 
 * Changes in Slurm 20.02.4
 ==========================
