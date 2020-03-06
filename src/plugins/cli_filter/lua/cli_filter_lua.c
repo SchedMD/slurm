@@ -91,10 +91,10 @@ static size_t stored_n = 0;
 static size_t stored_sz = 0;
 static time_t last_load_time = 0;
 
-static int _lua_cli_json(lua_State *L);
-static int _lua_cli_json_env(lua_State *L);
-static int _store_data(lua_State *L);
-static int _retrieve_data(lua_State *L);
+static int _lua_cli_json(lua_State *st);
+static int _lua_cli_json_env(lua_State *st);
+static int _store_data(lua_State *st);
+static int _retrieve_data(lua_State *st);
 static int _load_script(void);
 
 static const struct luaL_Reg slurm_functions[] = {
@@ -136,23 +136,23 @@ int fini(void)
         return SLURM_SUCCESS;
 }
 
-static int _setup_stringarray(lua_State *L, int limit, char **data) {
+static int _setup_stringarray(lua_State *st, int limit, char **data) {
 
 	/*
 	 * if limit/data empty this will create an empty array intentionally to
          * allow the client code to iterate over it
 	 */
-	lua_newtable(L);
+	lua_newtable(st);
 	for (int i = 0; i < limit && data && data[i]; i++) {
 		/* lua indexes tables from 1 */
-		lua_pushnumber(L, i + 1);
-		lua_pushstring(L, data[i]);
-		lua_settable(L, -3);
+		lua_pushnumber(st, i + 1);
+		lua_pushstring(st, data[i]);
+		lua_settable(st, -3);
 	}
 	return 1;
 }
 
-static int _setup_option_field_argv(lua_State *L, slurm_opt_t *opt)
+static int _setup_option_field_argv(lua_State *st, slurm_opt_t *opt)
 {
 	char **argv = NULL;
 	int  argc = 0;
@@ -165,36 +165,36 @@ static int _setup_option_field_argv(lua_State *L, slurm_opt_t *opt)
 		argc = opt->srun_opt->argc;
 	}
 
-	return _setup_stringarray(L, argc, argv);
+	return _setup_stringarray(st, argc, argv);
 }
 
-static int _setup_option_field_spank(lua_State *L)
+static int _setup_option_field_spank(lua_State *st)
 {
 	char **plugins = NULL;
 	size_t n_plugins = 0;
 
 	n_plugins = spank_get_plugin_names(&plugins);
 
-	lua_newtable(L); /* table to push */
+	lua_newtable(st); /* table to push */
 	for (size_t i = 0; i < n_plugins; i++) {
 		char **opts = NULL;
 		size_t n_opts = 0;
 		n_opts = spank_get_plugin_option_names(plugins[i], &opts);
 
-		lua_newtable(L);
+		lua_newtable(st);
 		for (size_t j = 0; j < n_opts; j++) {
 			char *value = spank_option_get(opts[j]);
 			if (value)
 				if (strlen(value) == 0)
-					lua_pushstring(L, "set");
+					lua_pushstring(st, "set");
 				else
-					lua_pushstring(L, value);
+					lua_pushstring(st, value);
 			else
-				lua_pushnil(L);
-			lua_setfield(L, -2, opts[j]);
+				lua_pushnil(st);
+			lua_setfield(st, -2, opts[j]);
 			xfree(opts[j]);
 		}
-		lua_setfield(L, -2, plugins[i]);
+		lua_setfield(st, -2, plugins[i]);
 
 		xfree(opts);
 		xfree(plugins[i]);
@@ -203,59 +203,59 @@ static int _setup_option_field_spank(lua_State *L)
 	return 1;
 }
 
-static int _get_option_field_index(lua_State *L)
+static int _get_option_field_index(lua_State *st)
 {
 	const char *name;
 	slurm_opt_t *options = NULL;
 	char *value = NULL;
 
-	name = luaL_checkstring(L, -1);
-	lua_getmetatable(L, -2);
-	lua_getfield(L, -1, "_opt");
-	options = (slurm_opt_t *) lua_touserdata(L, -1);
+	name = luaL_checkstring(st, -1);
+	lua_getmetatable(st, -2);
+	lua_getfield(st, -1, "_opt");
+	options = (slurm_opt_t *) lua_touserdata(st, -1);
 
 	/* getmetatable and getfield pushed two items onto the stack above
 	 * get rid of them here, and leave the name string at the top of
 	 * the stack */
-	lua_settop(L, -3);
+	lua_settop(st, -3);
 
 	if (!strcmp(name, "argv"))
-		return _setup_option_field_argv(L, options);
+		return _setup_option_field_argv(st, options);
 	else if (!strcmp(name, "spank"))
-		return _setup_option_field_spank(L);
+		return _setup_option_field_spank(st);
 	else if (!strcmp(name, "spank_job_env"))
-		return _setup_stringarray(L, options->spank_job_env_size,
+		return _setup_stringarray(st, options->spank_job_env_size,
 					  options->spank_job_env);
 
 	value = slurm_option_get(options, name);
 	if (!value)
-		lua_pushnil(L);
+		lua_pushnil(st);
 	else
-		lua_pushstring(L, value);
+		lua_pushstring(st, value);
 	xfree(value);
 	return 1;
 }
 
-static int _set_option_field(lua_State *L)
+static int _set_option_field(lua_State *st)
 {
 	slurm_opt_t *options = NULL;
 	const char *name = NULL;
 	const char *value = NULL;
 	bool early = false;
 
-	slurm_lua_stack_dump("cli_filter/lua", "early _set_option_field", L);
-	name = luaL_checkstring(L, -2);
-	value = luaL_checkstring(L, -1);
-	lua_getmetatable(L, -3);
-	lua_getfield(L, -1, "_opt");
-	options = (slurm_opt_t *) lua_touserdata(L, -1);
-	lua_getfield(L, -2, "_early");
-	early = lua_toboolean(L, -1);
+	slurm_lua_stack_dump("cli_filter/lua", "early _set_option_field", st);
+	name = luaL_checkstring(st, -2);
+	value = luaL_checkstring(st, -1);
+	lua_getmetatable(st, -3);
+	lua_getfield(st, -1, "_opt");
+	options = (slurm_opt_t *) lua_touserdata(st, -1);
+	lua_getfield(st, -2, "_early");
+	early = lua_toboolean(st, -1);
 
 	/* getmetatable and getfields pushed three items onto the stack above
 	 * get rid of them here, and leave the name string at the top of
 	 * the stack */
-	lua_settop(L, -4);
+	lua_settop(st, -4);
 
 	if (slurm_option_set(options, name, value, early))
 		return 1;
@@ -284,39 +284,39 @@ static void _push_options(slurm_opt_t *opt, bool early)
 
 }
 
-static int _lua_cli_json(lua_State *L)
+static int _lua_cli_json(lua_State *st)
 {
 	char *json = NULL;
 	slurm_opt_t *options = NULL;
-	lua_getmetatable(L, -1);
-	lua_getfield(L, -1, "_opt");
-	options = (slurm_opt_t *) lua_touserdata(L, -1);
-	lua_settop(L, -3);
+	lua_getmetatable(st, -1);
+	lua_getfield(st, -1, "_opt");
+	options = (slurm_opt_t *) lua_touserdata(st, -1);
+	lua_settop(st, -3);
 
 	json = cli_filter_json_set_options(options);
 	if (json)
-		lua_pushstring(L, json);
+		lua_pushstring(st, json);
 	else
-		lua_pushnil(L);
+		lua_pushnil(st);
 	xfree(json);
 	return 1;
 }
 
-static int _lua_cli_json_env(lua_State *L)
+static int _lua_cli_json_env(lua_State *st)
 {
 	char *output = cli_filter_json_env();
-	lua_pushstring(L, output);
+	lua_pushstring(st, output);
 	xfree(output);
 	return 1;
 }
 
-static int _store_data(lua_State *L)
+static int _store_data(lua_State *st)
 {
 	int key = 0;
 	const char *data = NULL;
 
-	key = (int) lua_tonumber(L, -2);
-	data = luaL_checkstring(L, -1);
+	key = (int) lua_tonumber(st, -2);
+	data = luaL_checkstring(st, -1);
 
 	if (key >= stored_sz) {
 		stored_data = xrealloc(stored_data,
@@ -329,13 +329,13 @@ static int _store_data(lua_State *L)
 	return 0;
 }
 
-static int _retrieve_data(lua_State *L)
+static int _retrieve_data(lua_State *st)
 {
-	int key = (int) lua_tonumber(L, -1);
+	int key = (int) lua_tonumber(st, -1);
 	if (key <= stored_n && stored_data[key])
-		lua_pushstring(L, stored_data[key]);
+		lua_pushstring(st, stored_data[key]);
 	else
-		lua_pushnil(L);
+		lua_pushnil(st);
 	return 1;
 }
 
