@@ -335,7 +335,6 @@ static void _release_data_list(data_list_t *dl)
 
 #ifndef NDEBUG
 	xassert(count == init_count);
-	xassert(!(dl->count = 0));
 #endif
 	dl->magic = ~DATA_LIST_MAGIC;
 	xfree(dl);
@@ -438,18 +437,15 @@ static void _release(data_t *data)
 	switch (data->type) {
 	case DATA_TYPE_LIST:
 		_release_data_list(data->data.list_u);
-		xassert(!(data->data.list_u = 0));
 		break;
 	case DATA_TYPE_DICT:
 		_release_data_list(data->data.dict_u);
-		xassert(!(data->data.dict_u = 0));
 		break;
 	case DATA_TYPE_STRING:
 		xfree(data->data.string_u);
 		break;
 	default:
 		/* other types don't need to be freed */
-		xassert(!(data->data.int_u = 0));
 		break;
 	}
 
