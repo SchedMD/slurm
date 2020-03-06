@@ -375,7 +375,8 @@ static int _load_script(void)
         return SLURM_SUCCESS;
 }
 
-extern int setup_defaults(slurm_opt_t *opt, bool early) {
+extern int cli_filter_p_setup_defaults(slurm_opt_t *opt, bool early)
+{
 	int rc = SLURM_ERROR;
 	(void) _load_script();
 
@@ -405,7 +406,7 @@ out:
 	return rc;
 }
 
-extern int pre_submit(slurm_opt_t *opt, int offset)
+extern int cli_filter_p_pre_submit(slurm_opt_t *opt, int offset)
 {
 	int rc = SLURM_ERROR;
 
@@ -444,7 +445,7 @@ out:
 	return rc;
 }
 
-extern int post_submit(int offset, uint32_t jobid, uint32_t stepid)
+extern int cli_filter_p_post_submit(int offset, uint32_t jobid, uint32_t stepid)
 {
 	int rc = SLURM_ERROR;
 	(void) _load_script();

@@ -131,12 +131,12 @@ extern int fini(void)
  * please post it to slurm-dev@schedmd.com  Thanks!
 \*****************************************************************************/
 
-extern int setup_defaults(slurm_opt_t *opt, bool early)
+extern int cli_filter_p_setup_defaults(slurm_opt_t *opt, bool early)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int pre_submit(slurm_opt_t *opt, int offset)
+extern int cli_filter_p_pre_submit(slurm_opt_t *opt, int offset)
 {
 	char *json = cli_filter_json_set_options(opt);
 	_store_data(offset, json);
@@ -144,7 +144,9 @@ extern int pre_submit(slurm_opt_t *opt, int offset)
 	return SLURM_SUCCESS;
 }
 
-extern void post_submit(int offset, uint32_t jobid, uint32_t stepid) {
+extern void cli_filter_p_post_submit(
+	int offset, uint32_t jobid, uint32_t stepid)
+{
 	char *json_env = cli_filter_json_env();
 	char *json_opt = _retrieve_data(offset);
 	char *json = NULL;

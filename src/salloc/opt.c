@@ -117,7 +117,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off,
 
 	/* cli_filter plugins can change the defaults */
 	if (first_pass) {
-		if (cli_filter_plugin_setup_defaults(&opt, false)) {
+		if (cli_filter_g_setup_defaults(&opt, false)) {
 			error("cli_filter plugin terminated with error");
 			exit(error_exit);
 		}
@@ -298,7 +298,7 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 		command_argv[i] = NULL;	/* End of argv's (for possible execv) */
 	}
 
-	if (cli_filter_plugin_pre_submit(&opt, het_job_offset)) {
+	if (cli_filter_g_pre_submit(&opt, het_job_offset)) {
 		error("cli_filter plugin terminated with error");
 		exit(error_exit);
 	}

@@ -282,7 +282,7 @@ extern char *process_options_first_pass(int argc, char **argv)
 	slurm_reset_all_options(&opt, true);
 
 	/* cli_filter plugins can change the defaults */
-	if (cli_filter_plugin_setup_defaults(&opt, true)) {
+	if (cli_filter_g_setup_defaults(&opt, true)) {
 		error("cli_filter plugin terminated with error");
 		exit(error_exit);
 	}
@@ -361,7 +361,7 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 	slurm_reset_all_options(&opt, false);
 
 	/* cli_filter plugins can change the defaults */
-	if (cli_filter_plugin_setup_defaults(&opt, false)) {
+	if (cli_filter_g_setup_defaults(&opt, false)) {
 		error("cli_filter plugin terminated with error");
 		exit(error_exit);
 	}
@@ -384,7 +384,7 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 	/* set options from command line */
 	*argc_off = _set_options(argc, argv);
 
-	if (cli_filter_plugin_pre_submit(&opt, het_job_inx)) {
+	if (cli_filter_g_pre_submit(&opt, het_job_inx)) {
 		error("cli_filter plugin terminated with error");
 		exit(error_exit);
 	}

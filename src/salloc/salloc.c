@@ -1074,7 +1074,7 @@ static void _salloc_cli_filter_post_submit(uint32_t jobid, uint32_t stepid)
 	if (_cli_filter_post_submit_run)
 		return;
 	for (idx = 0; idx < het_job_limit; idx++)
-		cli_filter_plugin_post_submit(idx, jobid, stepid);
+		cli_filter_g_post_submit(idx, jobid, stepid);
 
 	_cli_filter_post_submit_run = true;
 }

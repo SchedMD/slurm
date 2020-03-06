@@ -67,9 +67,9 @@ typedef struct cli_filter_ops {
  * Must be synchronized with cli_filter_ops_t above.
  */
 static const char *syms[] = {
-	"setup_defaults",
-	"pre_submit",
-	"post_submit"
+	"cli_filter_p_setup_defaults",
+	"cli_filter_p_pre_submit",
+	"cli_filter_p_post_submit"
 };
 
 static int g_context_cnt = -1;
@@ -84,7 +84,7 @@ static bool init_run = false;
  *
  * Returns a SLURM errno.
  */
-extern int cli_filter_plugin_init(void)
+extern int cli_filter_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *last = NULL, *names;
@@ -133,7 +133,7 @@ fini:
 	slurm_mutex_unlock(&g_context_lock);
 
 	if (rc != SLURM_SUCCESS)
-		cli_filter_plugin_fini();
+		cli_filter_fini();
 
 	return rc;
 }
@@ -143,7 +143,7 @@ fini:
  *
  * Returns a SLURM errno.
  */
-extern int cli_filter_plugin_fini(void)
+extern int cli_filter_fini(void)
 {
 	int i, j, rc = SLURM_SUCCESS;
 
@@ -175,13 +175,13 @@ fini:
  **************************************************************************
  */
 
-extern int cli_filter_plugin_setup_defaults(slurm_opt_t *opt, bool early)
+extern int cli_filter_g_setup_defaults(slurm_opt_t *opt, bool early)
 {
 	DEF_TIMERS;
 	int i, rc;
 
 	START_TIMER;
-	rc = cli_filter_plugin_init();
+	rc = cli_filter_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].setup_defaults))(opt, early);
@@ -191,13 +191,13 @@ extern int cli_filter_plugin_setup_defaults(slurm_opt_t *opt, bool early)
 	return rc;
 }
 
-extern int cli_filter_plugin_pre_submit(slurm_opt_t *opt, int offset)
+extern int cli_filter_g_pre_submit(slurm_opt_t *opt, int offset)
 {
 	DEF_TIMERS;
 	int i, rc;
 
 	START_TIMER;
-	rc = cli_filter_plugin_init();
+	rc = cli_filter_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].pre_submit))(opt, offset);
@@ -207,14 +207,14 @@ extern int cli_filter_plugin_pre_submit(slurm_opt_t *opt, int offset)
 	return rc;
 }
 
-extern void cli_filter_plugin_post_submit(int offset, uint32_t jobid,
-					  uint32_t stepid)
+extern void cli_filter_g_post_submit(int offset, uint32_t jobid,
+				     uint32_t stepid)
 {
 	DEF_TIMERS;
 	int i, rc;
 
 	START_TIMER;
-	rc = cli_filter_plugin_init();
+	rc = cli_filter_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		(*(ops[i].post_submit))(offset, jobid, stepid);

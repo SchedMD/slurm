@@ -80,19 +80,20 @@ const char plugin_name[]	= "cli filter none plugin";
 const char plugin_type[]	= "cli_filter/none";
 const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
-extern int setup_defaults(slurm_opt_t *opt, bool early)
+extern int cli_filter_p_setup_defaults(slurm_opt_t *opt, bool early)
 {
 	info("%s", __func__);
 	return SLURM_SUCCESS;
 }
 
-extern int pre_submit(slurm_opt_t *opt, int offset)
+extern int cli_filter_p_pre_submit(slurm_opt_t *opt, int offset)
 {
 	info("%s: %u", __func__, offset);
 	return SLURM_SUCCESS;
 }
 
-extern void post_submit(int offset, uint32_t jobid, uint32_t stepid)
+extern void cli_filter_p_post_submit(
+	int offset, uint32_t jobid, uint32_t stepid)
 {
 	info("%s: %u, %u, %u", __func__, offset, jobid, stepid);
 }

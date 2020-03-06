@@ -359,7 +359,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		/* do not set adjust defaults in an active allocation */
 		if (!getenv("SLURM_JOB_ID")) {
 			bool first = (pass_number == 1);
-			if (cli_filter_plugin_setup_defaults(&opt, first)) {
+			if (cli_filter_g_setup_defaults(&opt, first)) {
 				error("cli_filter plugin terminated with error");
 				exit(error_exit);
 			}
@@ -381,7 +381,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		if (argc_off)
 			*argc_off = optind;
 
-		if (cli_filter_plugin_pre_submit(&opt, i)) {
+		if (cli_filter_g_pre_submit(&opt, i)) {
 			error("cli_filter plugin terminated with error");
 			exit(error_exit);
 		}

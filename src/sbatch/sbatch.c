@@ -324,7 +324,7 @@ int main(int argc, char **argv)
 
 	/* run cli_filter post_submit */
 	for (i = 0; i < het_job_limit; i++)
-		cli_filter_plugin_post_submit(i, resp->job_id, NO_VAL);
+		cli_filter_g_post_submit(i, resp->job_id, NO_VAL);
 
 	if (!quiet) {
 		if (!sbopt.parsable) {
