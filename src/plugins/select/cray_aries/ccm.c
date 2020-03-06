@@ -44,6 +44,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/slurm_xlator.h"
+
 #include "src/common/pack.h"
 #include "src/slurmctld/locks.h"
 
