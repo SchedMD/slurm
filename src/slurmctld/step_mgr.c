@@ -1870,7 +1870,8 @@ static int _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap,
  *	and step's allocation */
 static void _pick_step_cores(struct step_record *step_ptr,
 			     job_resources_t *job_resrcs_ptr,
-			     int job_node_inx, uint16_t task_cnt)
+			     int job_node_inx, uint16_t task_cnt,
+			     uint16_t cpus_per_core)
 {
 	int bit_offset, core_inx, i, sock_inx;
 	uint16_t sockets, cores;
@@ -1890,8 +1891,11 @@ static void _pick_step_cores(struct step_record *step_ptr,
 		use_all_cores = true;
 	else
 		use_all_cores = false;
-	if (step_ptr->cpus_per_task > 0)
-		cpu_cnt *= step_ptr->cpus_per_task;
+
+	if (step_ptr->cpus_per_task > 0) {
+		cpu_cnt *= step_ptr->cpus_per_task + cpus_per_core - 1;
+		cpu_cnt	/= cpus_per_core;
+	}
 
 	/* select idle cores first */
 	for (sock_inx=0; sock_inx<sockets; sock_inx++) {
@@ -2050,10 +2054,21 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 			}
 		}
 		if (pick_step_cores) {
+			uint16_t cpus_per_core = 1;
+			/*
+			 * Here we're setting number of CPUs per core
+			 * if we don't enforce 1 thread per core
+			 *
+			 * TODO: move cpus_per_core to slurm_step_layout_t
+			 */
+			if (!_use_one_thread_per_core(job_ptr))
+				cpus_per_core =
+					node_record_table_ptr[i_node].threads;
 			_pick_step_cores(step_ptr, job_resrcs_ptr,
 					 job_node_inx,
 					 step_ptr->step_layout->
-					 tasks[step_node_inx]);
+					 tasks[step_node_inx],
+					 cpus_per_core);
 		}
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_CPU_BIND)
 			_dump_step_layout(step_ptr);
