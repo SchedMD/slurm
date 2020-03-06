@@ -445,9 +445,9 @@ out:
 	return rc;
 }
 
-extern int cli_filter_p_post_submit(int offset, uint32_t jobid, uint32_t stepid)
+extern void cli_filter_p_post_submit(
+	int offset, uint32_t jobid, uint32_t stepid)
 {
-	int rc = SLURM_ERROR;
 	(void) _load_script();
 
 	lua_getglobal(L, "slurm_cli_post_submit");
@@ -463,11 +463,10 @@ extern int cli_filter_p_post_submit(int offset, uint32_t jobid, uint32_t stepid)
 		      lua_tostring(L, -1));
 	} else {
 		if (lua_isnumber(L, -1)) {
-			rc = lua_tonumber(L, -1);
+			(void)lua_tonumber(L, -1);
 		} else {
 			info("%s/lua: %s: non-numeric return code", __func__,
 			     lua_script_path);
-			rc = SLURM_SUCCESS;
 		}
 		lua_pop(L, 1);
 	}
@@ -475,5 +474,5 @@ extern int cli_filter_p_post_submit(int offset, uint32_t jobid, uint32_t stepid)
 		"cli_filter/lua", "post_submit, after lua_pcall", L);
 
 out:
-	return rc;
+	return;
 }
