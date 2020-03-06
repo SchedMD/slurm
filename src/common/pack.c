@@ -180,7 +180,7 @@ void free_buf(Buf my_buf)
 {
 	if (!my_buf)
 		return;
-	assert(my_buf->magic == BUF_MAGIC);
+	xassert(my_buf->magic == BUF_MAGIC);
 	if (my_buf->mmaped)
 		munmap(my_buf->head, my_buf->size);
 	else
@@ -231,7 +231,7 @@ void *xfer_buf_data(Buf my_buf)
 {
 	void *data_ptr;
 
-	assert(my_buf->magic == BUF_MAGIC);
+	xassert(my_buf->magic == BUF_MAGIC);
 
 	if (my_buf->mmaped)
 		fatal_abort("attempt to grow mmap()'d buffer not supported");

@@ -40,13 +40,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_util.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmdbd/read_config.h"
 

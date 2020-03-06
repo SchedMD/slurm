@@ -35,7 +35,6 @@
  *  Refer to "fd.h" for documentation on public functions.
 \*****************************************************************************/
 
-#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>

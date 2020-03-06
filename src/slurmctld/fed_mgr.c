@@ -4784,7 +4784,7 @@ extern int fed_mgr_job_start(job_record_t *job_ptr, time_t start_time)
 	uint32_t origin_id, cluster_id;
 	fed_job_info_t *job_info;
 
-	assert(job_ptr);
+	xassert(job_ptr);
 
 	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;

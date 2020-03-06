@@ -1766,7 +1766,7 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify,
 {
 	int i = 0;
 
-	assert (token != NULL);
+	xassert(token);
 
 	if (token[i] == '.') {
 		*right_justify = true;
