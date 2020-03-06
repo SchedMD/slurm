@@ -1012,7 +1012,7 @@ static void _build_hypercube_switch_table(int num_curves)
 
 		hypercube_switch_table[i].distance = xmalloc(
 			sizeof(int32_t) * num_curves);
-		assert(num_curves >= hypercube_dimensions);
+		xassert(num_curves >= hypercube_dimensions);
 		for (j = 0; j < hypercube_dimensions; j++) {
 			hypercube_switch_table[i].distance[j] = 0;
 		}

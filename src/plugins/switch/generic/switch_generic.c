@@ -180,7 +180,7 @@ _hash_index(char *name)
 	int index = 0;
 	int j;
 
-	assert(name);
+	xassert(name);
 
 	/* Multiply each character by its numerical position in the
 	 * name string to add a bit of entropy, because host names such

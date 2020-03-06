@@ -118,7 +118,7 @@ static int _tcp_connect(void *_priv, void *ep_data, size_t ep_len,
 	 * the provided stepd's
 	* TODO: check carefully if there is an appropriate api for that
 	*/
-	assert(sizeof(address.sin_port) == ep_len);
+	xassert(sizeof(address.sin_port) == ep_len);
 	memcpy(&address.sin_port, ep_data, ep_len);
 	address.sin_port = htons(address.sin_port);
 
