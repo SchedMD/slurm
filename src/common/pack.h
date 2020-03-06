@@ -228,13 +228,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 		goto unpack_error;			\
 } while (0)
 
-#define safe_unpack64_array_from_32(valp,size_valp,buf) do {	\
-	xassert(sizeof(*size_valp) == sizeof(uint32_t));\
-	xassert(buf->magic == BUF_MAGIC);		\
-	if (unpack64_array_from_32(valp,size_valp,buf))	\
-		goto unpack_error;			\
-} while (0)
-
 #define safe_unpackdouble_array(valp,size_valp,buf) do {	\
 	xassert(sizeof(*size_valp) == sizeof(uint32_t));\
 	xassert(buf->magic == BUF_MAGIC);		\
