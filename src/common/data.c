@@ -467,7 +467,7 @@ extern void data_free(data_t *data)
 	_check_magic(data);
 	_release(data);
 
-	xassert((data->magic = 0) == 0);
+	data->magic = ~DATA_MAGIC;
 	xfree(data);
 }
 
