@@ -132,32 +132,32 @@ static void _push_job_rec(job_record_t *job_ptr)
 }
 
 /* Get fields in an existing slurmctld job_record */
-static int _job_rec_field_index(lua_State *L)
+static int _job_rec_field_index(lua_State *st)
 {
-	const char *name = luaL_checkstring(L, 2);
+	const char *name = luaL_checkstring(st, 2);
 	job_record_t *job_ptr;
 
-	lua_getmetatable(L, -2);
-	lua_getfield(L, -1, "_job_rec_ptr");
-	job_ptr = lua_touserdata(L, -1);
+	lua_getmetatable(st, -2);
+	lua_getfield(st, -1, "_job_rec_ptr");
+	job_ptr = lua_touserdata(st, -1);
 
-	return slurm_lua_job_record_field(L, job_ptr, name);
+	return slurm_lua_job_record_field(st, job_ptr, name);
 }
 
 /* Set fields in the job request structure on job submit or modify */
-static int _set_job_rec_field_index(lua_State *L)
+static int _set_job_rec_field_index(lua_State *st)
 {
 	const char *name, *value_str;
 	job_record_t *job_ptr;
 
-	name = luaL_checkstring(L, 2);
-	lua_getmetatable(L, -3);
-	lua_getfield(L, -1, "_job_rec_ptr");
-	job_ptr = lua_touserdata(L, -1);
+	name = luaL_checkstring(st, 2);
+	lua_getmetatable(st, -3);
+	lua_getfield(st, -1, "_job_rec_ptr");
+	job_ptr = lua_touserdata(st, -1);
 	if (job_ptr == NULL) {
 		error("%s: job_ptr is NULL", __func__);
 	} else if (!xstrcmp(name, "admin_comment")) {
-		value_str = luaL_checkstring(L, 3);
+		value_str = luaL_checkstring(st, 3);
 		xfree(job_ptr->admin_comment);
 		if (strlen(value_str))
 			job_ptr->admin_comment = xstrdup(value_str);
