@@ -12468,13 +12468,17 @@ static bitstr_t *_get_gres_map(char *map_gres, int local_proc_id)
 				task_mult = atoi(mult + 1);
 			} else
 				task_mult = 1;
-			if (task_mult == 0)
+			if (task_mult == 0) {
+				error("Repetition count of 0 not allowed in --gpu-bind=map_gpu, using 1 instead");
 				task_mult = 1;
+			}
 			if ((local_proc_id >= task_offset) &&
 			    (local_proc_id <= (task_offset + task_mult - 1))) {
 				map_value = strtol(tok, NULL, 0);
-				if ((map_value < 0) || (map_value >= MAX_GRES_BITMAP))
+				if ((map_value < 0) || (map_value >= MAX_GRES_BITMAP)) {
+					error("Invalid --gpu-bind=map_gpu value specified.");
 					goto end;	/* Bad value */
+				}
 				usable_gres = bit_alloc(MAX_GRES_BITMAP);
 				bit_set(usable_gres, map_value);
 				break;	/* All done */
