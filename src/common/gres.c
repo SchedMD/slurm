@@ -1638,6 +1638,10 @@ static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
 		gres_conf->config_flags = GRES_CONF_HAS_TYPE;
 		gres_conf->type_name = xstrdup(type_name);
 	}
+
+	if (gres_context->config_flags & GRES_CONF_COUNT_ONLY)
+		gres_conf->config_flags |= GRES_CONF_COUNT_ONLY;
+
 	list_append(new_list, gres_conf);
 }
 
