@@ -45,15 +45,15 @@ HUP, INT, KILL, or QUIT: it will return 0.
 
 If provided, the command is resolved in the following order:
 .br
-.IP 1. 3
-If command starts with ".", then path is constructed as:
+
+1. If command starts with ".", then path is constructed as:
 current working directory / command
-.IP 2.
-If command starts with a "/", then path is considered absolute.
-.IP 3.
-If command can be resolved through PATH. See \fBpath_resolution\fR(7).
-.IP 4.
-If command is in current working directory.
+.br
+2. If command starts with a "/", then path is considered absolute.
+.br
+3. If command can be resolved through PATH. See \fBpath_resolution\fR(7).
+.br
+4. If command is in current working directory.
 .P
 Current working directory is the calling process working directory unless the
 \fB\-\-chdir\fR argument is passed, which will override the current working
