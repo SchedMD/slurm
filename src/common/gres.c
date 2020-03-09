@@ -1748,16 +1748,16 @@ extern int _unpack_gres_context(slurm_gres_context_t* ctx, Buf buffer)
 	uint32_t uint32_tmp;
 
 	/* ctx->cur_plugin: filled in later with _load_gres_plugin() */
-	unpack8(&ctx->config_flags, buffer);
+	safe_unpack8(&ctx->config_flags, buffer);
 	safe_unpackstr_xmalloc(&ctx->gres_name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&ctx->gres_name_colon, &uint32_tmp, buffer);
-	unpack32(&uint32_tmp, buffer);
+	safe_unpack32(&uint32_tmp, buffer);
 	ctx->gres_name_colon_len = (int)uint32_tmp;
 	safe_unpackstr_xmalloc(&ctx->gres_type, &uint32_tmp, buffer);
 	/* ctx->ops: filled in later with _load_gres_plugin() */
-	unpack32(&ctx->plugin_id, buffer);
+	safe_unpack32(&ctx->plugin_id, buffer);
 	/* ctx->plugin_list: filled in later with _load_gres_plugin() */
-	unpack64(&ctx->total_cnt, buffer);
+	safe_unpack64(&ctx->total_cnt, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -1790,16 +1790,16 @@ static int _unpack_gres_slurmd_conf(void **object, uint16_t protocol_version,
 	gres_slurmd_conf_t *gres_conf = xmalloc(sizeof(*gres_conf));
 
 	/* Unpack gres_slurmd_conf_t */
-	unpack8(&gres_conf->config_flags, buffer);
-	unpack64(&gres_conf->count, buffer);
-	unpack32(&gres_conf->cpu_cnt, buffer);
+	safe_unpack8(&gres_conf->config_flags, buffer);
+	safe_unpack64(&gres_conf->count, buffer);
+	safe_unpack32(&gres_conf->cpu_cnt, buffer);
 	safe_unpackstr_xmalloc(&gres_conf->cpus, &uint32_tmp, buffer);
 	unpack_bit_str_hex(&gres_conf->cpus_bitmap, buffer);
 	safe_unpackstr_xmalloc(&gres_conf->file, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&gres_conf->links, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&gres_conf->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&gres_conf->type_name, &uint32_tmp, buffer);
-	unpack32(&gres_conf->plugin_id, buffer);
+	safe_unpack32(&gres_conf->plugin_id, buffer);
 
 	*object = gres_conf;
 	return SLURM_SUCCESS;
