@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
  -- srun - capture the MPI plugin return code from mpi_hook_client_fini() and
     use as final return code for step failure.
  -- Fix segfault in cli_filter/lua.
+ -- Fix --gpu-bind=map_gpu reusability if tasks > elements.
 
 * Changes in Slurm 20.02.0
 ==========================
