@@ -129,7 +129,7 @@ Display a description of scontrol options and commands.
 
 .TP
 \fBhold\fP \fIjob_list\fP
-Prevent a pending job from being started (sets it's priority to 0).
+Prevent a pending job from being started (sets its priority to 0).
 Use the \fIrelease\fP command to permit the job to be scheduled.
 The job_list argument is a comma separated list of job IDs OR
 "jobname=" with the job's name, which will attempt to hold all jobs having
@@ -437,7 +437,7 @@ may be used to request a token for a different username.
 
 .TP
 \fBuhold\fP \fIjob_list\fP
-Prevent a pending job from being started (sets it's priority to 0).
+Prevent a pending job from being started (sets its priority to 0).
 The job_list argument is a space separated list of job IDs or job names.
 Use the \fIrelease\fP command to permit the job to be scheduled.
 This command is designed for a system administrator to hold a job so that
@@ -768,7 +768,7 @@ value increases the priority, otherwise decreases it. The adjustment range is
 +/\- 2147483645. Only privileged users can specify a negative adjustment.
 .TP
 \fINodeList\fP=<nodes>
-Change the nodes allocated to a running job to shrink it's size.
+Change the nodes allocated to a running job to shrink its size.
 The specified list of nodes must be a subset of the nodes currently
 allocated to the job. Multiple node names may be specified using
 simple node range expressions (e.g. "lx[10\-20]"). After a job's allocation
@@ -1216,7 +1216,7 @@ If a node is in a "MIXED" state it usually means the node is in
 multiple states.  For instance if only part of the node is "ALLOCATED"
 and the rest of the node is "IDLE" the state will be "MIXED".
 If you want to remove a node from service, you typically want to set
-it's state to "DRAIN".
+its state to "DRAIN".
 "CANCEL_REBOOT" cancels a pending reboot on the node (same as "scontrol
 cancel_reboot <node>").
 "FAILING" is similar to "DRAIN" except that some applications will
@@ -1365,7 +1365,7 @@ Use quotes to enclose a reason having more than one word.
 Identify the state to be assigned to the front end node. Possible values are
 "DOWN", "DRAIN" or "RESUME".
 If you want to remove a front end node from service, you typically want to set
-it's state to "DRAIN".
+its state to "DRAIN".
 "RESUME" is not an actual node state, but will return a "DRAINED", "DRAINING",
 or "DOWN" front end node to service, either "IDLE" or "ALLOCATED" state as
 appropriate.

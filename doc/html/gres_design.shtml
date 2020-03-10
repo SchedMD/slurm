@@ -104,7 +104,7 @@ the current software is not compatible with having different GRES counts by
 node (a job can not have 2 GPUs on one node and 1 GPU on a second node),
 although that might be addressed at a later time.</p>
 
-<p>When a job or step is initiated, it's credential includes allocated GRES information.
+<p>When a job or step is initiated, its credential includes allocated GRES information.
 This can be used by the slurmd daemon to associate those resources with that
 job. Our plan is to use the Linux cgroups logic to bind a job and/or its
 tasks with specific GRES devices, however that logic does not currently exist.

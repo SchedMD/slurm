@@ -766,7 +766,7 @@ an existing resource allocation, where you want separate processors to
 be dedicated to each job step. If sufficient processors are not
 available to initiate the job step, it will be deferred. This can
 be thought of as providing a mechanism for resource management to the job
-within it's allocation.
+within its allocation.
 
 The exclusive allocation of CPUs only applies to job steps explicitly invoked
 with the \fB\-\-exclusive\fR option.
@@ -1298,7 +1298,7 @@ Optional control for task distribution over nodes:
 
 .TP
 .B Pack
-Rather than evenly distributing a job step's tasks evenly across it's allocated
+Rather than evenly distributing a job step's tasks evenly across its allocated
 nodes, pack them as tightly as possible on the nodes.
 .TP
 .B NoPack
@@ -1433,7 +1433,7 @@ be performed at the level of nodes, where the definition of "nodes"
 may differ from system to system.
 By default no memory binding is performed; any task using any CPU can use
 any memory. This option is typically used to ensure that each task is bound to
-the memory closest to it's assigned CPU. \fBThe use of any type other than
+the memory closest to its assigned CPU. \fBThe use of any type other than
 "none" or "local" is not recommended.\fR
 If you want greater control, try running a simple test code with the
 options "\-\-cpu\-bind=verbose,none \-\-mem\-bind=verbose,none" to determine
@@ -2010,7 +2010,7 @@ Request a quality of service for the job.  QOS values can be defined
 for each user/cluster/account association in the Slurm database.
 Users will be limited to their association's defined set of qos's when
 the Slurm configuration parameter, AccountingStorageEnforce, includes
-"qos" in it's definition. This option applies to job allocations.
+"qos" in its definition. This option applies to job allocations.
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
@@ -2238,7 +2238,7 @@ plugin is enabled. This option applies to job allocations.
 .TP
 \fB\-\-time\-min\fR=<\fItime\fR>
 Set a minimum time limit on the job allocation.
-If specified, the job may have it's \fB\-\-time\fR limit lowered to a value
+If specified, the job may have its \fB\-\-time\fR limit lowered to a value
 no lower than \fB\-\-time\-min\fR if doing so permits the job to begin
 execution earlier than otherwise possible.
 The job's time limit will not be changed after the job is allocated resources.

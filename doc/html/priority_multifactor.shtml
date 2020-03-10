@@ -54,7 +54,7 @@ influence job priority:</P>
 <DT> Site 
 <DD> a factor dictated by an administrator or a site-developed job_submit or site_factor plugin
 <DT> TRES
-<DD> each TRES Type has it's own factor for a job which represents the number of
+<DD> each TRES Type has its own factor for a job which represents the number of
 requested/allocated TRES Type in a given partition
 </DL>
 
@@ -357,7 +357,7 @@ PriorityType=priority/multifactor.
 <li>NO_NORMAL_TRES: If set, the QOS factor is not normalized against the job's
 	partition TRES counts.</li>
 <li>SMALL_RELATIVE_TO_TIME: If set, the job's size component will be based
-	upon not the job size alone, but the job's size divided by it's time
+	upon not the job size alone, but the job's size divided by its time
 	limit.</li>
 </ul>
 </DL>

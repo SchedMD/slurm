@@ -161,7 +161,7 @@ Given a configuration of
 Then "gres/gpu:tesla" and "gres/gpu:volta" will track jobs that explicitly
 request those GPU types.
 If a job requests GPUs, but does not explicitly specify the GPU type, then
-it's resource allocation will be accounted for as either "gres/gpu:tesla" or
+its resource allocation will be accounted for as either "gres/gpu:tesla" or
 "gres/gpu:volta", although the accounting may not match the actual GPU type
 allocated to the job and the GPUs allocated to the job could be heterogeneous.
 In an environment containing various GPU types, use of a job_submit plugin
@@ -799,7 +799,7 @@ until the partition limits are altered(Time and Node Limits).
 If set to "ANY" a job must satisfy any of the requested partitions
 to be submitted. The default value is "NO".
 NOTE: If set, then a job's QOS can not be used to exceed partition limits.
-NOTE: The partition limits being considered are it's configured MaxMemPerCPU,
+NOTE: The partition limits being considered are its configured MaxMemPerCPU,
 MaxMemPerNode, MinNodes, MaxNodes, MaxTime, AllocNodes, AllowAccounts,
 AllowGroups, AllowQOS, and QOS usage threshold.
 
@@ -833,7 +833,7 @@ The program executes as SlurmUser, which gives it permission to drain
 nodes and requeue the job if a failure occurs (See scontrol(1)).
 Exactly what the program does and how it accomplishes this is completely at
 the discretion of the system administrator.
-Information about the job being initiated, it's allocated nodes, etc. are
+Information about the job being initiated, its allocated nodes, etc. are
 passed to the program using environment variables.
 See \fBProlog and Epilog Scripts\fR for more information.
 
@@ -1055,7 +1055,7 @@ or "jobacct_gather/cgroup" must be configured.
 \fBNOTE:\fR Changing this configuration parameter changes the contents of
 the messages between Slurm daemons. Any previously running job steps are
 managed by a slurmstepd daemon that will persist through the lifetime of
-that job step and not change it's communication protocol. Only change this
+that job step and not change its communication protocol. Only change this
 configuration parameter when there are no running job steps.
 
 .TP
@@ -1717,7 +1717,7 @@ Also see the \-\-power=level option on the job submission commands.
 \fBjob_no_level\fR
 Disable the user's ability to set every node associated with a job to the same
 power cap.
-Each node will have it's power cap set independently.
+Each node will have its power cap set independently.
 This disables the \-\-power=level option on the job submission commands.
 .TP
 \fBlower_threshold=#\fR
@@ -1931,7 +1931,7 @@ counts.
 .TP
 \fBSMALL_RELATIVE_TO_TIME\fR
 If set, the job's size component will be based upon not the job size alone, but
-the job's size divided by it's time limit.
+the job's size divided by its time limit.
 .RE
 
 .TP
@@ -2236,7 +2236,7 @@ The program can be used to reboot nodes or perform other work to prepare
 resources for use.
 Exactly what the program does and how it accomplishes this is completely at
 the discretion of the system administrator.
-Information about the job being initiated, it's allocated nodes, etc. are
+Information about the job being initiated, its allocated nodes, etc. are
 passed to the program using environment variables.
 While this program is running, the nodes associated with the job will be
 have a POWER_UP/CONFIGURING flag set in their state, which can be readily
@@ -2614,7 +2614,7 @@ The default value is 3 seconds.
 \fBbb_array_stage_cnt=#\fR
 Number of tasks from a job array that should be available for burst buffer
 resource allocation. Higher values will increase the system overhead as each
-task from the job array will be moved to it's own job record in memory, so
+task from the job array will be moved to its own job record in memory, so
 relatively small values are generally recommended.
 The default value is 10.
 .TP
@@ -3343,7 +3343,7 @@ use the least loaded nodes in selected partitions.
 \fBCR_Pack_Nodes\fR
 If a job allocation contains more resources than will be used for launching
 tasks (e.g. if whole nodes are allocated to a job), then rather than
-distributing a job's tasks evenly across it's allocated nodes, pack them as
+distributing a job's tasks evenly across its allocated nodes, pack them as
 tightly as possible on these nodes.
 For example, consider a job allocation containing two \fBentire\fR nodes with
 eight CPUs each.
@@ -4456,7 +4456,7 @@ Number of logical processors on the node (e.g. "2").
 CPUs and Boards are mutually exclusive. It can be set to the total
 number of sockets(supported only by select/linear), cores or threads.
 This can be useful when you want to schedule only the cores on a hyper-threaded 
-node. If \fBCPUs\fR is omitted, it's default will be set equal to the product of
+node. If \fBCPUs\fR is omitted, its default will be set equal to the product of
 \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
 
 .TP
@@ -4587,8 +4587,8 @@ Also see the \fBDownNodes\fR parameter below.
 .TP 10
 \fBCLOUD\fP
 Indicates the node exists in the cloud.
-It's initial state will be treated as powered down.
-The node will be available for use after it's state is recovered from Slurm's
+Its initial state will be treated as powered down.
+The node will be available for use after its state is recovered from Slurm's
 state save file or the slurmd daemon starts on the compute node.
 .TP
 \fBDOWN\fP

@@ -175,7 +175,7 @@ using 180 watts.
 First we identify which nodes are consuming less than their lower_threshold
 of the power cap: 90% x 180 watts = 162 watts.
 One node falls in this category with 110 watts of power consumption.
-Its power cap is reduced by either half of the difference between it's current
+Its power cap is reduced by either half of the difference between its current
 power cap and power consumption ((180 watts - 110 watts) / 2 = 35 watts) OR
 decrease_rate, which is a percentage of the difference between the node's
 maximum and minimum power consumption ((200 watts - 100 watts) x 30% = 30 watts).
@@ -190,7 +190,7 @@ Assume that one of those nodes is still consuming 110 watts, a second node is
 consuming 115 watts and the other eight are using 183 watts.
 First we identify which nodes are consuming less than their lower_threshold.
 Our node using 110 watts has its cap reduced by half of the difference between
-it's current power cap and power consumption
+its current power cap and power consumption
 ((150 watts - 110 watts) / 2 = 20 watts);
 so that node's power cap is reduce from 150 watts to 130 watts.
 The node consuming 115 watts has its power cap reduced by 30 watts based
@@ -201,7 +201,7 @@ be distributed over 8 nodes or 189 watts per node.</p>
 <h3>State in 180 Seconds</h3>
 <p>The power consumption is then examined balance_interval (60) seconds later.
 Assume the node previously consuming 110 watts is now consuming 128 watts.
-Since that is over upper_threshold of it's power cap
+Since that is over upper_threshold of its power cap
 (98% x 130 watts = 127 watts), its power cap is increased by increase_rate
 ((200 watts - 100 watts) x 10% = 10 watts), so its power cap goes from
 130 watts to 140 watts.

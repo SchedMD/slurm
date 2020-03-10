@@ -263,7 +263,7 @@ value of 0, the next a value of 1, etc.</li>
 <p>The <i>squeue</i> and <i>sview</i> commands report the
 components of a heterogeneous job using the format
 "&lt;het_job_id&gt;+&lt;het_job_offset&gt;".
-For example "123+4" would represent heterogeneous job id 123 and it's fifth
+For example "123+4" would represent heterogeneous job id 123 and its fifth
 component (note: the first component has a <i>het_job_offset</i> value of 0).</p>
 
 <p>A request for a specific job ID that identifies a ID of the first component
@@ -298,7 +298,7 @@ JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
 </pre>
 
 <p>While a heterogeneous job is in pending state, only the entire job can be
-cancelled rather than it's individual components.
+cancelled rather than its individual components.
 A request to cancel an individual component of a heterogeneous job not in
 pending state will return an error.
 After the job has begun execution, the individual component can be cancelled.</p>

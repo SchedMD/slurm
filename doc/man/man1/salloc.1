@@ -153,7 +153,7 @@ option applies to job allocations.
 \fB\-\-bb\fR=<\fIspec\fR>
 Burst buffer specification. The form of the specification is system dependent.
 Note the burst buffer may not be accessible from a login node, but require
-that salloc spawn a shell on one of it's allocated compute nodes. See the
+that salloc spawn a shell on one of its allocated compute nodes. See the
 description of SallocDefaultCommand in the slurm.conf man page for more
 information about how to spawn a remote shell.
 
@@ -163,7 +163,7 @@ Path of file containing burst buffer specification.
 The form of the specification is system dependent.
 Also see \fB\-\-bb\fR.
 Note the burst buffer may not be accessible from a login node, but require
-that salloc spawn a shell on one of it's allocated compute nodes. See the
+that salloc spawn a shell on one of its allocated compute nodes. See the
 description of SallocDefaultCommand in the slurm.conf man page for more
 information about how to spawn a remote shell.
 
@@ -1027,7 +1027,7 @@ be performed at the level of nodes, where the definition of "nodes"
 may differ from system to system.
 By default no memory binding is performed; any task using any CPU can use
 any memory. This option is typically used to ensure that each task is bound to
-the memory closest to it's assigned CPU. \fBThe use of any type other than
+the memory closest to its assigned CPU. \fBThe use of any type other than
 "none" or "local" is not recommended.\fR
 If you want greater control, try running a simple test code with the
 options "\-\-cpu\-bind=verbose,none \-\-mem\-bind=verbose,none" to determine
@@ -1437,7 +1437,7 @@ Request a quality of service for the job.  QOS values can be defined
 for each user/cluster/account association in the Slurm database.
 Users will be limited to their association's defined set of qos's when
 the Slurm configuration parameter, AccountingStorageEnforce, includes
-"qos" in it's definition.
+"qos" in its definition.
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
@@ -1557,7 +1557,7 @@ plugin is enabled.
 .TP
 \fB\-\-time\-min\fR=<\fItime\fR>
 Set a minimum time limit on the job allocation.
-If specified, the job may have it's \fB\-\-time\fR limit lowered to a value
+If specified, the job may have its \fB\-\-time\fR limit lowered to a value
 no lower than \fB\-\-time\-min\fR if doing so permits the job to begin
 execution earlier than otherwise possible.
 The job's time limit will not be changed after the job is allocated resources.

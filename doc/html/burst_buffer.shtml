@@ -146,7 +146,7 @@ and all file stage-out happens after computation.</p>
 For both commands, the "--bb" or "--bbf" option is used to specify the job's
 burst buffer requirements. 
 Note the burst buffer may not be accessible from a login node, but require
-that salloc spawn a shell on one of it's allocated compute nodes. See the
+that salloc spawn a shell on one of its allocated compute nodes. See the
 description of SallocDefaultCommand in the slurm.conf man page for more
 information about how to spawn a remote shell.</p>
 
@@ -378,7 +378,7 @@ $ scontrol create reservation StartTime=16:00 duration=60 \
 
 <p>If two jobs use burst buffers and one is depend on the other (e.g.
 "sbatch --dependency=afterok:123 ...") then the second job will not begin until
-the first job completes and it's burst buffer stage out completes.
+the first job completes and its burst buffer stage out completes.
 If the second job does not use a burst buffer, but is dependent upon the first
 job's completion, then it will not wait for the stage out operation of the first
 job to complete.
