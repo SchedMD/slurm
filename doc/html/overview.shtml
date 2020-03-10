@@ -154,7 +154,7 @@ building block approach. These plugins presently include:
 </li>
 
 <li><a href="taskplugins.html">Task Affinity</a>:
-  Provides mechanism to bind a job and it's individual tasks to specific
+  Provides mechanism to bind a job and its individual tasks to specific
   processors.
 </li>
 

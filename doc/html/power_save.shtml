@@ -240,7 +240,7 @@ the <b>ResumeProgram</b> will be executed (possibly for a second time).</p>
 <h2>Booting Different Images</h2>
 
 <p>Slurm's <b>PrologSlurmctld</b> configuration parameter can identify a
-program to boot different operating system images for each job based upon it's
+program to boot different operating system images for each job based upon its
 constraint field (or possibly comment).
 If you want <b>ResumeProgram</b> to boot a various images according to
 job specifications, it will need to be a fairly sophisticated program

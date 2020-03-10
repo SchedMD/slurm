@@ -90,7 +90,7 @@ For example, a job with a 10 minute time limit may be allocated resources at
 If the nodes require rebooting, they might not be available for use until
 10:20:00, 20 minutes after allocation, and the job will begin execution at
 that time.
-The job must complete no later than 10:30:00 in order to satisfy it's time limit
+The job must complete no later than 10:30:00 in order to satisfy its time limit
 (10 minutes after execution actually begins).
 However, the job will be charged for 30 minutes of resource use, which includes
 the boot time.</p>

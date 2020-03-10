@@ -256,7 +256,7 @@ partitions.
 The active bitmap of these lower priority partitions are then rebuilt, with the shadow jobs added first.
 Any existing jobs that were replaced by one or more "shadow" jobs are
 suspended (preempted). Conversely, when a high priority running job completes,
-it's "shadow" goes away and the active bitmaps of the lower priority
+its "shadow" goes away and the active bitmaps of the lower priority
 partitions are rebuilt to see if any suspended jobs can be resumed.
 </P>
 <P>

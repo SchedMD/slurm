@@ -242,13 +242,13 @@ list) as in the following examples: </p>
 
 <ul>
 <li><b>Fairshare=</b> Integer value used for determining priority.
-  Essentially this is the amount of claim this association and it's
+  Essentially this is the amount of claim this association and its
   children have to the above system. Can also be the string "parent",
   when used on a user this means that the parent association is used
   for fairshare.  If Fairshare=parent is set on an account, that
   account's children will be effectively re-parented for fairshare
   calculations to the first parent of their parent that is not
-  Fairshare=parent.  Limits remain the same, only it's fairshare value
+  Fairshare=parent.  Limits remain the same, only its fairshare value
   is affected.
 </li>
 

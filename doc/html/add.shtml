@@ -30,7 +30,7 @@ we show which files would need to be modified in order to add a plugin named
 <li>Create a new directory for this plugin
 (e.g. "src/plugins/topology/4d_torus").</li>
 
-<li>Add this new directory to it's parent directory's "Makefile.am" file
+<li>Add this new directory to its parent directory's "Makefile.am" file
 (e.g. "src/plugins/topology/Makefile.am").</li>
 
 <li>Put your new file(s) in the appropriate directory
