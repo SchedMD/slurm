@@ -1644,6 +1644,10 @@ static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
 		gres_conf->config_flags = GRES_CONF_HAS_TYPE;
 		gres_conf->type_name = xstrdup(type_name);
 	}
+
+	if (gres_context->config_flags & GRES_CONF_COUNT_ONLY)
+		gres_conf->config_flags |= GRES_CONF_COUNT_ONLY;
+
 	list_append(new_list, gres_conf);
 }
 
@@ -2174,6 +2178,20 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 				config_flags |= GRES_CONF_HAS_TYPE;
 			}
 			gres_context[j].config_flags |= config_flags;
+
+			/*
+			 * On the slurmctld we need to load the plugins to
+			 * correctly set env vars.  We want to call this only
+			 * after we have the config_flags so we can tell if we
+			 * are CountOnly or not.
+			 */
+			if (!(gres_context[j].config_flags &
+			      GRES_CONF_LOADED)) {
+				(void)_load_gres_plugin(&gres_context[j]);
+				gres_context[j].config_flags |=
+					GRES_CONF_LOADED;
+			}
+
 			break;
 	 	}
 		if (j >= gres_context_cnt) {

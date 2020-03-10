@@ -16,6 +16,9 @@ documents those changes that are of interest to users and administrators.
     use as final return code for step failure.
  -- Fix segfault in cli_filter/lua.
  -- Fix --gpu-bind=map_gpu reusability if tasks > elements.
+ -- Make sure config_flags on a gres are sent to the slurmctld on node
+    registration.
+ -- Prolog/Epilog - Fix missing GPU information.
 
 * Changes in Slurm 20.02.0
 ==========================
