@@ -50,6 +50,7 @@
 #include "src/lua/slurm_lua.h"
 
 static const char *cluster_name = NULL;
+static void *lua_handle = NULL;
 
 #ifdef HAVE_LUA
 
@@ -760,6 +761,28 @@ extern int slurm_lua_init(void)
 {
 	slurm_lua_fini();
 
+	char *const lua_libs[] = {
+		"liblua.so",
+#if LUA_VERSION_NUM == 503
+		"liblua-5.3.so",
+		"liblua5.3.so",
+		"liblua5.3.so.0",
+		"liblua.so.5.3",
+#elif LUA_VERSION_NUM == 502
+		"liblua-5.2.so",
+		"liblua5.2.so",
+		"liblua5.2.so.0",
+		"liblua.so.5.2",
+#else
+		"liblua-5.1.so",
+		"liblua5.1.so",
+		"liblua5.1.so.0",
+		"liblua.so.5.1",
+#endif
+		NULL
+	};
+	int i = 0;
+
 	/*
 	 *  Need to dlopen() liblua.so with RTLD_GLOBAL in order to
 	 *   ensure symbols from liblua are available to libs opened
@@ -767,25 +790,15 @@ extern int slurm_lua_init(void)
 	 */
 	if (!LUA_VERSION_NUM) {
 		fatal("Slurm wasn't configured against any LUA lib but you are trying to use it like it was.  Please check config.log and reconfigure against liblua.  Make sure you have lua devel installed.");
-	} else if (!dlopen("liblua.so",       RTLD_NOW | RTLD_GLOBAL) &&
-#if LUA_VERSION_NUM == 503
-		   !dlopen("liblua-5.3.so",   RTLD_NOW | RTLD_GLOBAL) &&
-		   !dlopen("liblua5.3.so",    RTLD_NOW | RTLD_GLOBAL) &&
-		   !dlopen("liblua5.3.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
-		   !dlopen("liblua.so.5.3",   RTLD_NOW | RTLD_GLOBAL)
-#elif LUA_VERSION_NUM == 502
-		   !dlopen("liblua-5.2.so",   RTLD_NOW | RTLD_GLOBAL) &&
-		   !dlopen("liblua5.2.so",    RTLD_NOW | RTLD_GLOBAL) &&
-		   !dlopen("liblua5.2.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
-		   !dlopen("liblua.so.5.2",   RTLD_NOW | RTLD_GLOBAL)
-#else
-		   !dlopen("liblua-5.1.so",   RTLD_NOW | RTLD_GLOBAL) &&
-		   !dlopen("liblua5.1.so",    RTLD_NOW | RTLD_GLOBAL) &&
-		   !dlopen("liblua5.1.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
-		   !dlopen("liblua.so.5.1",   RTLD_NOW | RTLD_GLOBAL)
-#endif
-		) {
-		return error("Failed to open liblua.so: %s", dlerror());
+	}
+
+	while (lua_libs[i] &&
+	       !(lua_handle = dlopen(lua_libs[i], RTLD_NOW | RTLD_GLOBAL)))
+		i++;
+
+	if (!lua_handle) {
+		error("Failed to open liblua.so: %s", dlerror());
+		return SLURM_ERROR;
 	}
 
 	cluster_name = slurm_get_cluster_name();
@@ -799,4 +812,6 @@ extern int slurm_lua_init(void)
 extern void slurm_lua_fini(void)
 {
 	xfree(cluster_name);
+	if (lua_handle)
+		dlclose(lua_handle);
 }
