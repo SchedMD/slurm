@@ -1950,6 +1950,12 @@ static int _convert_job_mem(slurm_msg_t *msg)
 		return errno;
 	}
 
+	if (req->nnodes > arg.job_nhosts) {
+		error("%s: request node count:%u is larger than cred job node count:%u",
+		      __func__, req->nnodes, arg.job_nhosts);
+		return ESLURM_INVALID_NODE_COUNT;
+	}
+
 	req->nnodes = arg.job_nhosts;
 
 	if (arg.job_mem_limit == 0)

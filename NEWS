@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Add NetworkRaw debugflag.
  -- Make REQUEST_LAUNCH_PROLOG handler fail if PrologFlags includes Contain and
     the credential has already expired when setting the memory limits.
+ -- Reject jobs that request more nodes than provided in job credential if
+    PrologFlags includes Contain.
 
 * Changes in Slurm 20.02.3
 ==========================
