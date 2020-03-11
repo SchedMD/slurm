@@ -12661,8 +12661,8 @@ static bitstr_t *_get_gres_map(char *map_gres, int local_proc_id)
 	if (!map_gres || !map_gres[0])
 		return NULL;
 
+	tmp = xstrdup(map_gres);
 	while (usable_gres == NULL) {
-		tmp = xstrdup(map_gres);
 		tok = strtok_r(tmp, ",", &save_ptr);
 		while (tok) {
 			if ((mult = strchr(tok, '*'))) {
