@@ -1040,7 +1040,7 @@ extern int select_p_state_restore(char *dir_name)
 
 	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
-			fatal("Can not recover blade state, data version incompatible, start with '-i' to ignore this");
+			fatal("Can not recover blade state, data version incompatible, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 		error("***********************************************");
 		error("Can not recover blade state, "
 		      "data version incompatible");
@@ -1135,7 +1135,7 @@ unpack_error:
 	slurm_mutex_unlock(&blade_mutex);
 
 	if (!ignore_state_errors)
-		fatal("Incomplete blade data checkpoint file, you may get unexpected issues if jobs were running. Start with '-i' to ignore this");
+		fatal("Incomplete blade data checkpoint file, you may get unexpected issues if jobs were running. Start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete blade data checkpoint file, you may get "
 	      "unexpected issues if jobs were running.");
 	free_buf(buffer);

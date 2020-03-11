@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Reset begin time on job release if it's not in the future.
  -- Fix for recovering burst buffers when using high-availability.
  -- Fix invalid read due to freeing an incorrectly allocated env array.
+ -- Update slurmctld -i message to warn about losing data.
 
 * Changes in Slurm 20.02.0
 ==========================

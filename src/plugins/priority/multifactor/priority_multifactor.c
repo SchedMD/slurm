@@ -294,7 +294,7 @@ static void _read_last_decay_ran(time_t *last_ran, time_t *last_reset)
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete priority last decay file exiting, start with '-i' to ignore this");
+		fatal("Incomplete priority last decay file exiting, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete priority last decay file returning");
 	free_buf(buffer);
 	return;

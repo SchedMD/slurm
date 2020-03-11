@@ -950,7 +950,7 @@ extern void trigger_state_restore(void)
 
 	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
-			fatal("Can't recover trigger state, data version incompatible, start with '-i' to ignore this");
+			fatal("Can't recover trigger state, data version incompatible, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 		error("Can't recover trigger state, data version "
 		      "incompatible");
 		xfree(ver_str);
@@ -972,7 +972,7 @@ extern void trigger_state_restore(void)
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete trigger data checkpoint file, start with '-i' to ignore this");
+		fatal("Incomplete trigger data checkpoint file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete trigger data checkpoint file");
 fini:	verbose("State of %d triggers recovered", trigger_cnt);
 	free_buf(buffer);

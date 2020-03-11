@@ -5633,7 +5633,7 @@ extern int load_assoc_usage(void)
 	debug3("Version in assoc_usage header is %u", ver);
 	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
 		if (!ignore_state_errors)
-			fatal("Can not recover assoc_usage state, incompatible version, got %u need >= %u <= %u, start with '-i' to ignore this",
+			fatal("Can not recover assoc_usage state, incompatible version, got %u need >= %u <= %u, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.",
 			      ver, SLURM_MIN_PROTOCOL_VERSION,
 			      SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
@@ -5694,7 +5694,7 @@ extern int load_assoc_usage(void)
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete assoc usage state file, start with '-i' to ignore this");
+		fatal("Incomplete assoc usage state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete assoc usage state file");
 
 	free_buf(buffer);
@@ -5738,7 +5738,7 @@ extern int load_qos_usage(void)
 	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
 		if (!ignore_state_errors)
 			fatal("Can not recover qos_usage state, incompatible version, "
-			      "got %u need >= %u <= %u, start with '-i' to ignore this",
+			      "got %u need >= %u <= %u, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.",
 			      ver, SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		error("Can not recover qos_usage state, "
@@ -5786,7 +5786,7 @@ extern int load_qos_usage(void)
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete QOS usage state file, start with '-i' to ignore this");
+		fatal("Incomplete QOS usage state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete QOS usage state file");
 
 	free_buf(buffer);
@@ -5829,7 +5829,7 @@ extern int load_assoc_mgr_last_tres(void)
 	debug3("Version in last_tres header is %u", ver);
 	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
 		if (!ignore_state_errors)
-			fatal("Can not recover last_tres state, incompatible version, got %u need >= %u <= %u, start with '-i' to ignore this",
+			fatal("Can not recover last_tres state, incompatible version, got %u need >= %u <= %u, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.",
 			      ver, SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		error("Can not recover last_tres state, incompatible version, got %u need > %u <= %u", ver,
@@ -5861,7 +5861,7 @@ extern int load_assoc_mgr_last_tres(void)
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete last_tres state file, start with '-i' to ignore this");
+		fatal("Incomplete last_tres state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete last_tres state file");
 
 	free_buf(buffer);
@@ -5906,7 +5906,7 @@ extern int load_assoc_mgr_state(bool only_tres)
 	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
 		if (!ignore_state_errors)
 			fatal("Can not recover assoc_mgr state, incompatible version, "
-			      "got %u need >= %u <= %u, start with '-i' to ignore this",
+			      "got %u need >= %u <= %u, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.",
 			      ver, SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		error("Can not recover assoc_mgr state, incompatible version, "
@@ -6036,7 +6036,7 @@ extern int load_assoc_mgr_state(bool only_tres)
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete assoc mgr state file, start with '-i' to ignore this");
+		fatal("Incomplete assoc mgr state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete assoc mgr state file");
 
 	free_buf(buffer);

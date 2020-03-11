@@ -958,7 +958,7 @@ static void _recover_bb_state(void)
 	safe_unpack16(&protocol_version, buffer);
 	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
-			fatal("Can not recover burst_buffer/datawarp state, data version incompatible, start with '-i' to ignore this");
+			fatal("Can not recover burst_buffer/datawarp state, data version incompatible, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 		error("**********************************************************************");
 		error("Can not recover burst_buffer/datawarp state, data version incompatible");
 		error("**********************************************************************");
@@ -1031,7 +1031,7 @@ static void _recover_bb_state(void)
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete burst buffer data checkpoint file, start with '-i' to ignore this");
+		fatal("Incomplete burst buffer data checkpoint file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete burst buffer data checkpoint file");
 	xfree(account);
 	xfree(name);

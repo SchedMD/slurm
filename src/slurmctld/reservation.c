@@ -3669,7 +3669,7 @@ extern int load_all_resv_state(int recover)
 
 	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
-			fatal("Can not recover reservation state, data version incompatible, start with '-i' to ignore this");
+			fatal("Can not recover reservation state, data version incompatible, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 		error("************************************************************");
 		error("Can not recover reservation state, data version incompatible");
 		error("************************************************************");
@@ -3698,7 +3698,7 @@ extern int load_all_resv_state(int recover)
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete reservation data checkpoint file, start with '-i' to ignore this");
+		fatal("Incomplete reservation data checkpoint file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete reservation data checkpoint file");
 	_validate_all_reservations();
 	info("Recovered state of %d reservations", list_count(resv_list));
