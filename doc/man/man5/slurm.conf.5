@@ -2988,8 +2988,9 @@ If the number of active threads in the slurmctld daemon is equal to or
 larger than this value, defer scheduling of jobs. The scheduler will check
 this condition at certain points in code and yield locks if necessary.
 This can improve Slurm's ability to process requests at a cost of initiating
-new jobs less frequently.
-If a value is set, then a value of 10 or higher is recommended.
+new jobs less frequently. Default: 0 (option disabled), Min: 0, Max: 1000.
+
+.RS
 NOTE: The maximum number of threads (MAX_SERVER_THREADS) is internally set to
 256 and defines the number of served RPCs at a given time. Setting max_rpc_cnt
 to more than 256 will be only useful to let backfill continue scheduling work
@@ -2997,12 +2998,11 @@ after locks have been yielded (i.e. each 2 seconds) if there are a maximum of
 MAX(max_rpc_cnt/10, 20) RPCs in the queue. i.e. max_rpc_cnt=1000, the scheduler
 will be allowed to continue after yielding locks only when there are less than
 or equal to 100 pending RPCs.
-Default: 0 (option disabled), Min: 0, Max: 1000.
-The default value is zero, which disables this option.
 If a value is set, then a value of 10 or higher is recommended. It may require
 some tuning for each system, but needs to be high enough that scheduling isn't
 always disabled, and low enough that requests can get through in a reasonable
 period of time.
+.RE
 .TP
 \fBmax_sched_time=#\fR
 How long, in seconds, that the main scheduling loop will execute for before
