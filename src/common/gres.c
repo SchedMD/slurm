@@ -12665,8 +12665,8 @@ static bitstr_t *_get_gres_map(char *map_gres, int local_proc_id)
 	if (!map_gres || !map_gres[0])
 		return NULL;
 
+	tmp = xstrdup(map_gres);
 	while (usable_gres == NULL) {
-		tmp = xstrdup(map_gres);
 		tok = strtok_r(tmp, ",", &save_ptr);
 		while (tok) {
 			if ((mult = strchr(tok, '*'))) {
@@ -12681,7 +12681,8 @@ static bitstr_t *_get_gres_map(char *map_gres, int local_proc_id)
 			if ((local_proc_id >= task_offset) &&
 			    (local_proc_id <= (task_offset + task_mult - 1))) {
 				map_value = strtol(tok, NULL, 0);
-				if ((map_value < 0) || (map_value >= MAX_GRES_BITMAP)) {
+				if ((map_value < 0) ||
+				    (map_value >= MAX_GRES_BITMAP)) {
 					error("Invalid --gpu-bind=map_gpu value specified.");
 					goto end;	/* Bad value */
 				}
