@@ -12675,7 +12675,8 @@ static bitstr_t *_get_gres_map(char *map_gres, int local_proc_id)
 			if ((local_proc_id >= task_offset) &&
 			    (local_proc_id <= (task_offset + task_mult - 1))) {
 				map_value = strtol(tok, NULL, 0);
-				if ((map_value < 0) || (map_value >= MAX_GRES_BITMAP))
+				if ((map_value < 0) ||
+				    (map_value >= MAX_GRES_BITMAP))
 					goto end;	/* Bad value */
 				usable_gres = bit_alloc(MAX_GRES_BITMAP);
 				bit_set(usable_gres, map_value);
