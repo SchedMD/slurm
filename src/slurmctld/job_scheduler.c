@@ -2752,7 +2752,7 @@ extern void print_job_dependency(job_record_t *job_ptr, const char *func)
 
 static int _test_job_dependency_common(
 	bool is_complete, bool is_completed, bool is_pending,
-	bool *clear_dep, bool *depends, bool *failure,
+	bool *clear_dep, bool *failure,
 	job_record_t *job_ptr, struct depend_spec *dep_ptr)
 {
 	int rc = 0;
@@ -2760,7 +2760,6 @@ static int _test_job_dependency_common(
 	time_t now = time(NULL);
 
 	xassert(clear_dep);
-	xassert(depends);
 	xassert(failure);
 
 	if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
@@ -2771,31 +2770,26 @@ static int _test_job_dependency_common(
 			      dep_ptr->depend_time)) ||
 			    fed_mgr_job_started_on_sib(djob_ptr)) {
 				*clear_dep = true;
-			} else
-				*depends = true;
-		} else
-			*depends = true;
+			} /* else still depends */
+		} /* else still depends */
 		rc = 1;
 	} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY) {
 		if (is_completed)
 			*clear_dep = true;
-		else
-			*depends = true;
+		/* else still depends */
 		rc = 1;
 	} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK) {
 		if (djob_ptr->job_state & JOB_SPECIAL_EXIT)
 			*clear_dep = true;
-		else if (!is_completed)
-			*depends = true;
-		else if (!is_complete)
+		else if (!is_completed) { /* Still depends */
+		} else if (!is_complete)
 			*clear_dep = true;
 		else
 			*failure = true;
 		rc = 1;
 	} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) {
-		if (!is_completed)
-			*depends = true;
-		else if (is_complete)
+		if (!is_completed) { /* Still depends */
+		} else if (is_complete)
 			*clear_dep = true;
 		else
 			*failure = true;
@@ -2810,21 +2804,19 @@ static int _test_job_dependency_common(
 						       job_ptr->array_task_id);
 
 		if (dcjob_ptr) {
-			if (!IS_JOB_COMPLETED(dcjob_ptr))
-				*depends = true;
-			else if (IS_JOB_COMPLETE(dcjob_ptr))
+			if (!IS_JOB_COMPLETED(dcjob_ptr)) { /* Still depends */
+			} else if (IS_JOB_COMPLETE(dcjob_ptr))
 				*clear_dep = true;
 			else
 				*failure = true;
 		} else {
-			if (!is_completed)
-				*depends = true;
-			else if (is_complete)
+			if (!is_completed) { /* Still depends */
+			} else if (is_complete)
 				*clear_dep = true;
 			else if (job_ptr->array_recs &&
-				 (job_ptr->array_task_id == NO_VAL))
-				*depends = true;
-			else
+				 (job_ptr->array_task_id == NO_VAL)) {
+				/* Still depends */
+			} else
 				*failure = true;
 		}
 		rc = 1;
@@ -2832,13 +2824,11 @@ static int _test_job_dependency_common(
 		if (is_completed &&
 		    (bb_g_job_test_stage_out(djob_ptr) == 1))
 			*clear_dep = true;
-		else
-			*depends = true;
+		/* else still depends */
 		rc = 1;
 	} else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND) {
 		time_t now = time(NULL);
-		if (is_pending) {
-			*depends = true;
+		if (is_pending) { /* Still depends */
 		} else if (is_completed)
 			*failure = true;
 		else if ((djob_ptr->end_time != 0) &&
@@ -2917,7 +2907,7 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
-		bool clear_dep = false, depends = false, failure = false;
+		bool clear_dep = false, failure = false;
 		bool remote;
 
 		remote = (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) ?
@@ -2957,9 +2947,9 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 			if (list_find_first(job_list, _find_singleton_job,
 					    job_ptr) ||
 			    !fed_mgr_is_singleton_satisfied(job_ptr,
-							    dep_ptr, true))
-				depends = true;
-			else
+							    dep_ptr, true)) {
+				/* Still depends */
+			} else
 				clear_dep = true;
 		} else if ((djob_ptr == NULL) ||
 			   (djob_ptr->magic != JOB_MAGIC) ||
@@ -2985,7 +2975,7 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 
 			if (!_test_job_dependency_common(
 				    is_complete, is_completed, is_pending,
-				    &clear_dep, &depends, &failure,
+				    &clear_dep, &failure,
 				    job_ptr, dep_ptr))
 				failure = true;
 		}
