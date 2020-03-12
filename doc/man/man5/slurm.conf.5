@@ -1773,20 +1773,26 @@ By default, no power plugin is loaded.
 
 .TP
 \fBPreemptMode\fR
-Enables gang scheduling and/or controls the mechanism used to preempt
-jobs.  When the \fBPreemptType\fR parameter is set to enable preemption, the
-\fBPreemptMode\fR selects the default mechanism used to preempt the lower
-priority jobs for the cluster. \fBPreemptMode\fR may be specified on a
-per partition basis to override this default value if
-\fBPreemptType=preempt/partition_prio\fR, but a valid default \fBPreemptMode\fR
-value must be specified for the cluster as a whole when preemption is enabled.
-The \fBGANG\fR option is used to
-enable gang scheduling independent of whether preemption is enabled
-(the \fBPreemptType\fR setting).  The \fBGANG\fR option can be
-specified in addition to a \fBPreemptMode\fR setting with the two
-options comma separated.  The \fBSUSPEND\fR option requires that gang
-scheduling be enabled (i.e, "PreemptMode=SUSPEND,GANG").
-\fBNOTE:
+Mechanism used to preempt jobs or enable gang scheudling. When the
+\fBPreemptType\fR parameter is set to enable preemption, the
+\fBPreemptMode\fR selects the default mechanism used to preempt the eligible
+jobs for the cluster.
+.br
+\fBPreemptMode\fR may be specified on a per partition basis to override this
+default value if \fBPreemptType=preempt/partition_prio\fR. Alternatively, it
+can be specified on a per QOS basis if \fBPreemptType=preempt/qos\fR. In either
+case, a valid default \fBPreemptMode\fR value must be specified for the
+cluster as a whole when preemption is enabled.
+.br
+The \fBGANG\fR option is used to enable gang scheduling independent of
+whether preemption is enabled (i.e. independent of the \fBPreemptType\fR
+setting). It can be specified in addition to a \fBPreemptMode\fR setting with
+the two options comma separated (e.g. \fBPreemptMode=SUSPEND,GANG\fR).
+.br
+See <https://slurm.schedmd.com/preempt.html> and
+<https://slurm.schedmd.com/gang_scheduling.html> for more details.
+
+\fBNOTE:\fR
 For performance reasons, the backfill scheduler reserves whole nodes for jobs,
 not partial nodes. If during backfill scheduling a job preempts one or more
 other jobs, the whole nodes for those preempted jobs are reserved for the
@@ -1794,37 +1800,66 @@ preemptor job, even if the preemptor job requested fewer resources than that.
 These reserved nodes aren't available to other jobs during that backfill
 cycle, even if the other jobs could fit on the nodes. Therefore, jobs may
 preempt more resources during a single backfill iteration than they requested.
+
+\fBNOTE:\fR
+For heterogeneous job to be considered for preemption all components
+must be eligible for preemption. When a heterogeneous job is to be preempted
+the first identified component of the job with the highest order PreemptMode
+(\fBSUSPEND\fR (highest), \fBREQUEUE\fR, \fBCANCEL\fR (lowest)) will be
+used to set the PreemptMode for all components. The \fBGraceTime\fR and user
+warning signal for each component of the heterogeneous job remain unique.
 .RS
 .TP 12
 \fBOFF\fR
-is the default value and disables job preemption and gang scheduling.
+Is the default value and disables job preemption and gang scheduling.
+It is only compatible with \fBPreemptType=preempt/none\fR.
 .TP
 \fBCANCEL\fR
-always cancel the job.
+The preempted job will be cancelled.
 .TP
 \fBGANG\fR
-enables gang scheduling (time slicing) of jobs in the same partition.
-NOTE: Gang scheduling is performed independently for each partition, so
-configuring partitions with overlapping nodes and gang scheduling is generally
-not recommended.
+Enables gang scheduling (time slicing) of jobs in the same partition, and
+allows the resuming of suspended jobs.
+
+\fBNOTE:\fR
+Gang scheduling is performed independently for each partition, so
+if you only want time-slicing by \fBOverSubscribe\fR, without any preemption,
+then configuring partitions with overlapping nodes is not recommended.
+On the other hand, if you want to use \fBPreemptType=preempt/partition_prio\fR
+to allow jobs from higher PriorityTier partitions to Suspend jobs from lower
+PriorityTier partitions you will need overlapping partitions, and
+\fBPreemptMode=SUSPEND,GANG\fR to use the Gang scheduler to resume the suspended
+jobs(s).
+In any case, time-slicing won't happen between jobs on different partitions.
 .TP
 \fBREQUEUE\fR
-preempts jobs by requeuing them (if possible) or canceling them.
+Preempts jobs by requeuing them (if possible) or canceling them.
 For jobs to be requeued they must have the \-\-requeue sbatch option set
 or the cluster wide JobRequeue parameter in slurm.conf must be set to one.
 .TP
 \fBSUSPEND\fR
-If PreemptType=preempt/partition_prio is configured then suspend and
-automatically resume the low priority jobs.
-If PreemptType=preempt/qos is configured, then the jobs sharing resources
-will always time slice rather than one job remaining suspended.
-The \fBSUSPEND\fR may only be used with the \fBGANG\fR option
-(the gang scheduler module performs the job resume operation).
+The preempted jobs will be suspended, and later the Gang scheduler will resume
+them. Therefore the \fBSUSPEND\fR preemption mode always needs the \fBGANG\fR
+option to be specified at the cluster level. Also, because the suspended jobs
+will still use memory on the allocated nodes, Slurm needs to be able to track
+memory resources to be able to suspend jobs.
+
+\fBNOTE:\fR Because gang scheduling is performed independently for each
+partition, if using \fBPreemptType=preempt/partition_prio\fR then jobs in
+higher PriorityTier partitions will suspend jobs in lower PriorityTier
+partitions to run on the released resources. Only when the preemptor job ends
+will the suspended jobs will be resumed by the Gang scheduler.
+.br
+If \fBPreemptType=preempt/qos\fR is configured and if the preempted job(s) and
+the preemptor job are on the same partition, then they will share resources with
+the Gang scheduler (time-slicing). If not (i.e. if the preemptees and preemptor
+are on different partitions) then the preempted jobs will remain suspended until
+the preemptor ends.
 .RE
 
 .TP
 \fBPreemptType\fR
-This specifies the plugin used to identify which jobs can be
+Specifies the plugin used to identify which jobs can be
 preempted in order to start a pending job.
 .RS
 .TP
@@ -1833,9 +1868,9 @@ Job preemption is disabled.
 This is the default.
 .TP
 \fBpreempt/partition_prio\fR
-Job preemption is based upon partition priority tier.
-Jobs in higher priority partitions (queues) may preempt jobs from lower
-priority partitions.
+Job preemption is based upon partition \fBPriorityTier\fR.
+Jobs in higher \fBPriorityTier\fR partitions may preempt jobs from lower
+\fBPriorityTier\fR partitions.
 This is not compatible with \fBPreemptMode=OFF\fR.
 .TP
 \fBpreempt/qos\fR
@@ -1844,6 +1879,7 @@ in the Slurm database.
 This option is not compatible with \fBPreemptMode=OFF\fR.
 A configuration of \fBPreemptMode=SUSPEND\fR is only supported by the
 \fBSelectType=select/cons_res\fR and \fBSelectType=select/cons_tres\fR plugins.
+See the \fBsacctmgr\fR man page to configure the options for \fBpreempt/qos\fR.
 .RE
 
 .TP
@@ -5200,12 +5236,14 @@ For example "OverSubscribe=FORCE:4" enables each node, socket or
 core to oversubscribe each resource four ways.
 Recommended only for systems running with gang scheduling
 (\fBPreemptMode=suspend,gang\fR).
-NOTE: \fIPreemptType=QOS\fR will permit one additional job to be run
+
+NOTE: \fIPreemptType=preempt/qos\fR will permit one additional job to be run
 on the partition if started due to job preemption. For example, a configuration
 of \fIOverSubscribe=FORCE:1\fR will only permit one job per resources normally,
 but a second job can be started if done so through preemption based upon QOS.
-The use of \fIPreemptType=QOS\fR and \fIPreemptType=Suspend\fR only applies
-with \fBSelectType=select/cons_res\fR or \fBSelectType=select/cons_tres\fR.
+The use of \fIPreemptType=preempt/qos\fR and \fIPreemptMode=SUSPEND\fR only
+applies with \fBSelectType=select/cons_res\fR or
+\fBSelectType=select/cons_tres\fR.
 .TP
 \fBYES\fR
 Makes all resources in the partition available for sharing upon request by
@@ -5237,16 +5275,14 @@ default values and not a reinitialize the default values.
 
 .TP
 \fBPreemptMode\fR
-Mechanism used to preempt jobs from this partition when
-\fBPreemptType=preempt/partition_prio\fR is configured.
-This partition specific \fBPreemptMode\fR configuration parameter will override
-the \fBPreemptMode\fR configuration parameter set for the cluster as a whole.
-The cluster\-level \fBPreemptMode\fR must include the GANG option if
-\fBPreemptMode\fR is configured to SUSPEND for any partition.
-The cluster\-level \fBPreemptMode\fR must not be OFF if \fBPreemptMode\fR
-is enabled for any  partition.
-See the description of the cluster\-level \fBPreemptMode\fR configuration
-parameter above for further information.
+Mechanism used to preempt jobs or enable gang scheduling for this
+partition when \fBPreemptType=preempt/partition_prio\fR is configured.
+This partition\-specific \fBPreemptMode\fR configuration parameter will
+override the cluster\-wide \fBPreemptMode\fR for this partition.
+It can be set to OFF to disable preemption and gang scheduling for this
+partition.
+See also \fBPriorityTier\fR and the above description of the cluster\-wide
+\fBPreemptMode\fR parameter for further details.
 
 .TP
 \fBPriorityJobFactor\fR
