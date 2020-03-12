@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "February 2020" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "March 2020" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -3352,6 +3352,8 @@ If the job starts ten tasks across those two nodes without this option, it will
 start five tasks on each of the two nodes.
 With this option, eight tasks will be started on the first node and two tasks
 on the second node.
+This can be superseded by "NoPack" in srun's "--distribution" option.
+CR_Pack_Nodes only applies when the "block" task distribution method is used.
 .TP
 \fBCR_Socket\fR
 Sockets are consumable resources.
