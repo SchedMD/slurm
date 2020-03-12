@@ -710,6 +710,7 @@ test31.#   Test of Slurm Epilog and Prolog.
 ===========================================
 test31.1   Validate proper epilog and prolog child process management.
 test31.2   Validate that job is set to requeue held state at prolog failure.
+test31.3   Validate Prolog and Epilog Environment Variables.
 
 
 test32.#   Test of sgather command and options.
