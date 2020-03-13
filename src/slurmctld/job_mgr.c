@@ -11080,9 +11080,16 @@ static void _merge_job_licenses(job_record_t *shrink_job_ptr,
 static void _hold_job_rec(job_record_t *job_ptr, uid_t uid)
 {
 	int i, j;
+	time_t now = time(NULL);
 
 	job_ptr->direct_set_prio = 1;
 	job_ptr->priority = 0;
+
+	if (job_ptr->details && (job_ptr->details->begin_time < now))
+		job_ptr->details->begin_time = 0;
+
+	/* Update job with new begin_time. */
+	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	if (IS_JOB_PENDING(job_ptr))
 		acct_policy_remove_accrue_time(job_ptr, false);

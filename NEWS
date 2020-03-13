@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Pass SLURM_NO_CHANGE_IN_DATA to client as 403 (Not Modified).
  -- slurmrestd/v0.0.37 - Add update_time field to Jobs query to allow clients
     to only get jobs list based on change timestamp.
+ -- Reset job eligible time when job is manually held.
 
 * Changes in Slurm 20.11.3
 ==========================
