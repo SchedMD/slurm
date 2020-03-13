@@ -410,6 +410,36 @@ static int _addto_used_info(slurmdb_assoc_rec_t *assoc1,
 	assoc1->usage->used_submit_jobs += assoc2->usage->used_submit_jobs;
 	assoc1->usage->usage_raw += assoc2->usage->usage_raw;
 
+	/*
+	 * Basically copied from src/slurmctld/acct_policy.c
+	 * _add_usage_node_bitmap().
+	 */
+	if (assoc2->usage->grp_node_bitmap) {
+		int i_first, i_last;
+		if (assoc1->usage->grp_node_bitmap)
+			bit_or(assoc1->usage->grp_node_bitmap,
+			       assoc2->usage->grp_node_bitmap);
+		else
+			assoc1->usage->grp_node_bitmap =
+				bit_copy(assoc2->usage->grp_node_bitmap);
+
+		if (!assoc1->usage->grp_node_job_cnt)
+			assoc1->usage->grp_node_job_cnt = xcalloc(
+				bit_size(assoc1->usage->grp_node_bitmap),
+				sizeof(uint16_t));
+
+		i_first = bit_ffs(assoc2->usage->grp_node_bitmap);
+		if (i_first != -1) {
+			i_last = bit_fls(assoc2->usage->grp_node_bitmap);
+			for (int i = i_first; i <= i_last; i++) {
+				if (!bit_test(assoc2->usage->grp_node_bitmap,
+					      i))
+					continue;
+				assoc1->usage->grp_node_job_cnt[i] +=
+					assoc2->usage->grp_node_job_cnt[i];
+			}
+		}
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -428,6 +458,13 @@ static int _clear_used_assoc_info(slurmdb_assoc_rec_t *assoc)
 	assoc->usage->accrue_cnt = 0;
 	assoc->usage->used_jobs  = 0;
 	assoc->usage->used_submit_jobs = 0;
+
+	if (assoc->usage->grp_node_bitmap)
+		bit_clear_all(assoc->usage->grp_node_bitmap);
+	if (assoc->usage->grp_node_job_cnt)
+		memset(assoc->usage->grp_node_job_cnt, 0,
+		       sizeof(uint16_t) * node_record_count);
+
 	/* do not reset usage_raw or grp_used_wall.
 	 * if you need to reset it do it
 	 * else where since sometimes we call this and do not want
