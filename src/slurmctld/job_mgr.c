@@ -4155,7 +4155,7 @@ extern void rehash_jobs(void)
  * RET - The new job record, which is the new META job record. */
 extern job_record_t *job_array_split(job_record_t *job_ptr)
 {
-	job_record_t *job_ptr_pend = NULL, *save_job_next;
+	job_record_t *job_ptr_pend = NULL;
 	struct job_details *job_details, *details_new, *save_details;
 	uint32_t save_job_id;
 	uint64_t save_db_index = job_ptr->db_index;
@@ -4181,14 +4181,12 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	 * This could be done in parallel, but performance was worse.
 	 */
 	save_job_id   = job_ptr_pend->job_id;
-	save_job_next = job_ptr_pend->job_next;
 	save_details  = job_ptr_pend->details;
 	save_prio_factors = job_ptr_pend->prio_factors;
 	save_step_list = job_ptr_pend->step_list;
 	memcpy(job_ptr_pend, job_ptr, sizeof(job_record_t));
 
 	job_ptr_pend->job_id   = save_job_id;
-	job_ptr_pend->job_next = save_job_next;
 	job_ptr_pend->details  = save_details;
 	job_ptr_pend->db_flags = 0;
 	job_ptr_pend->step_list = save_step_list;
