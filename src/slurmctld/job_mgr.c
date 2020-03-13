@@ -3049,7 +3049,7 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 		}
 	}
 
-	if (job_pptr == NULL) {
+	if (job_pptr == NULL || *job_pptr == NULL) {
 		switch (type) {
 		case JOB_HASH_JOB:
 			error("%s: Could not find hash entry for JobId=%u",

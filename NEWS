@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't send remote non-pending singleton dependencies on federation update.
  -- slurmrestd - fix crash on empty query.
  -- Fix race condition which could lead to invalid references in backfill.
+ -- Fix edge case in _remove_job_hash().
 
 * Changes in Slurm 20.02.1
 ==========================
