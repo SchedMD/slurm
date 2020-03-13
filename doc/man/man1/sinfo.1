@@ -311,152 +311,152 @@ By default, output is left justified.
 Valid \fItype\fR specifications include:
 .RS
 .TP 6
-\fBall\fR
+\fBAll\fR
 Print all fields available in the \-o format for this data type with a
 vertical bar separating each field.
 .TP
-\fBallocmem\fR
+\fBAllocMem\fR
 Prints the amount of allocated memory on a node.
 .TP
-\fBallocnodes\fR
+\fBAllocNodes\fR
 Allowed allocating nodes.
 .TP
-\fBavailable\fR
+\fBAvailable\fR
 State/availability of a partition.
 .TP
-\fBcluster\fR
+\fBCluster\fR
 Print the cluster name if running in a federation
 .TP
-\fBcpus\fR
+\fBCPUs\fR
 Number of CPUs per node.
 .TP
-\fBcpusload\fR
+\fBCPUsLoad\fR
 CPU load of a node.
 .TP
-\fBfreemem\fR
+\fBFreeMem\fR
 Free memory of a node.
 .TP
-\fBcpusstate\fR
+\fBCPUsState\fR
 Number of CPUs by state in the format
 "allocated/idle/other/total". Do not use this with a node
 state option ("%t" or "%T") or the different node states will
 be placed on separate lines.
 .TP
-\fBcores\fR
+\fBCores\fR
 Number of cores per socket.
 .TP
-\fBdefaulttime\fR
+\fBDefaultTime\fR
 Default time for any job in the format "days\-hours:minutes:seconds".
 .TP
-\fBdisk\fR
+\fBDisk\fR
 Size of temporary disk space per node in megabytes.
 .TP
-\fBfeatures\fR
+\fBFeatures\fR
 Features available on the nodes. Also see \fBfeatures_act\fR.
 .TP
 \fBfeatures_act\fR
 Features currently active on the nodes. Also see \fBfeatures\fR.
 .TP
-\fBgroups\fR
+\fBGroups\fR
 Groups which may use the nodes.
 .TP
-\fBgres\fR
+\fBGres\fR
 Generic resources (gres) associated with the nodes.
 .TP
-\fBgresused\fR
+\fBGresUsed\fR
 Generic resources (gres) currently in use on the nodes.
 .TP
-\fBmaxcpuspernode\fR
+\fBMaxCPUsPerNode\fR
 The max number of CPUs per node available to jobs in the partition.
 .TP
-\fBmemory\fR
+\fBMemory\fR
 Size of memory per node in megabytes.
 .TP
-\fBnodes\fR
+\fBNodes\fR
 Number of nodes.
 .TP
-\fBnodeaddr\fR
+\fBNodeAddr\fR
 List of node communication addresses.
 .TP
-\fBnodeai\fR
+\fBNodeAI\fR
 Number of nodes by state in the format "allocated/idle".
 Do not use this with a node state option ("%t" or "%T") or
 the different node states will be placed on separate lines.
 .TP
-\fBnodeaiot\fR
+\fBNodeAIOT\fR
 Number of nodes by state in the format
 "allocated/idle/other/total".  Do not use this with a node
 state option ("%t" or "%T") or the different node states will
 be placed on separate lines.
 .TP
-\fBnodehost\fR
+\fBNodeHost\fR
 List of node hostnames.
 .TP
-\fBnodelist\fR
+\fBNodeList\fR
 List of node names.
 .TP
-\fBoversubscribe\fR
+\fBOverSubscribe\fR
 Jobs may oversubscribe compute resources (i.e. CPUs), "yes", "no", "exclusive"
 or "force".
 .TP
-\fBpartition\fR
+\fBPartition\fR
 Partition name followed by "*" for the default partition, also see \fB%R\fR.
 .TP
-\fBpartitionname\fR
+\fBPartitionName\fR
 Partition name, also see \fB%P\fR.
 .TP
-\fBport\fR
+\fBPort\fR
 Node TCP port.
 .TP
-\fBpreemptmode\fR
+\fBPreemptMode\fR
 PreemptionMode.
 .TP
-\fBpriorityjobfactor\fR
+\fBPriorityJobFactor\fR
 Partition factor used by priority/multifactor plugin in calculating job priority.
 .TP
-\fBprioritytier\fR or \fBpriority\fR
+\fBPriorityTier\fR or \fBPriority\fR
 Partition scheduling tier priority.
 .TP
-\fBreason\fR
+\fBReason\fR
 The reason a node is unavailable (down, drained, or draining states).
 .TP
-\fBroot\fR
+\fBRoot\fR
 Only user root may initiate jobs, "yes" or "no".
 .TP
-\fBsize\fR
+\fBSize\fR
 Maximum job size in nodes.
 .TP
-\fBstatecompact\fR
+\fBStateCompact\fR
 State of nodes, compact form.
 .TP
-\fBstatelong\fR
+\fBStateLong\fR
 State of nodes, extended form.
 .TP
-\fBsockets\fR
+\fBSockets\fR
 Number of sockets per node.
 .TP
-\fBsocketcorethread\fR
+\fBSocketCoreThread\fR
 Extended processor information: number of sockets, cores, threads (S:C:T) per node.
 .TP
-\fBtime\fR
+\fBTime\fR
 Maximum time for any job in the format "days\-hours:minutes:seconds".
 .TP
-\fBtimestamp\fR
+\fBTimeStamp\fR
 Print the timestamp of the reason a node is unavailable.
 .TP
-\fBthreads\fR
+\fBThreads\fR
 Number of threads per core.
 .TP
-\fBuser\fR
+\fBUser\fR
 Print the user name of who set the reason a node is unavailable.
 .TP
-\fBuserlong\fR
+\fBUserLong\fR
 Print the user name and uid of who set the reason a node is unavailable.
 .TP
-\fBversion\fR
+\fBVersion\fR
 Print the version of the running slurmd daemon.
 .TP
-\fBweight\fR
+\fBWeight\fR
 Scheduling weight of the nodes.
 .RE
 
