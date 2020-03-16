@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "February 2020" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "March 2020" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1297,6 +1297,7 @@ Optional control for task distribution over nodes:
 .B Pack
 Rather than evenly distributing a job step's tasks evenly across its allocated
 nodes, pack them as tightly as possible on the nodes.
+This only applies when the "block" task distribution method is used.
 .TP
 .B NoPack
 Rather than packing a job step's tasks as tightly as possible on the nodes,
