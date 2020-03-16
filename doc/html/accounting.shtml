@@ -438,8 +438,8 @@ and have the same UID as the hosts on which <i>slurmctld</i> execute.
 For security purposes, a user other than "root" is recommended.
 The default value is "root". This name should also be the same SlurmUser
 on all clusters reporting to the SlurmDBD.
-NOTE: If this user is different from the one set for \fBslurmctld\fR and is not
-root, it must be added to accounting with AdminLevel=Admin and \fBslurmctld\fR
+NOTE: If this user is different from the one set for <b>slurmctld</b> and is not
+root, it must be added to accounting with AdminLevel=Admin and <b>slurmctld</b>
 must be restarted.
 </li>
 
