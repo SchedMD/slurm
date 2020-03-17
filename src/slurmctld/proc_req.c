@@ -3930,8 +3930,8 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	if (error_code || (job_ptr == NULL)) {
 		unlock_slurmctld(job_read_lock);
 		if (error_code == ESLURM_ACCESS_DENIED) {
-			error("Security vioation, REQUEST_STEP_LAYOUT for "
-			      "JobId=%u from uid=%u", req->job_id, uid);
+			error("Security violation, REQUEST_STEP_LAYOUT for JobId=%u from uid=%u",
+			      req->job_id, uid);
 		} else {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
 				info("%s: JobId=%u, uid=%u: %s", __func__,
