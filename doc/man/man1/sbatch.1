@@ -1131,9 +1131,6 @@ By default no memory binding is performed; any task using any CPU can use
 any memory. This option is typically used to ensure that each task is bound to
 the memory closest to its assigned CPU. \fBThe use of any type other than
 "none" or "local" is not recommended.\fR
-If you want greater control, try running a simple test code with the
-options "\-\-cpu\-bind=verbose,none \-\-mem\-bind=verbose,none" to determine
-the specific configuration.
 
 NOTE: To have Slurm always report on the selected memory binding for
 all commands executed in a shell, you can enable verbose mode by
