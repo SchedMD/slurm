@@ -241,7 +241,7 @@
  */
 
 typedef struct s_p_values s_p_values_t;
-typedef s_p_values_t * s_p_hashtbl_t;
+typedef struct s_p_hashtbl s_p_hashtbl_t;
 
 typedef enum slurm_parser_enum {
 	S_P_IGNORE = 0,
