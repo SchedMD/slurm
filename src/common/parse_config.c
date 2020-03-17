@@ -216,10 +216,8 @@ s_p_hashtbl_t *s_p_hashtbl_create(const s_p_options_t options[])
 	}
 
 	hashtbl[0]->keyvalue_re = xmalloc(sizeof(regex_t));
-	if (regcomp(hashtbl[0]->keyvalue_re, keyvalue_pattern, REG_EXTENDED)) {
-		/* FIXME - should be fatal? */
-		error("keyvalue regex compilation failed");
-	}
+	if (regcomp(hashtbl[0]->keyvalue_re, keyvalue_pattern, REG_EXTENDED))
+		fatal("keyvalue regex compilation failed");
 
 	return hashtbl;
 }
@@ -559,9 +557,8 @@ s_p_hashtbl_t* _hashtbl_copy_keys(const s_p_hashtbl_t* from_hashtbl,
 				val_copy->keyvalue_re = xmalloc(
 					sizeof(regex_t));
 				if (regcomp(val_copy->keyvalue_re,
-					    keyvalue_pattern, REG_EXTENDED)) {
-					error("keyvalue regex compilation failed");
-				}
+					    keyvalue_pattern, REG_EXTENDED))
+					fatal("keyvalue regex compilation failed");
 			}
 			_conf_hashtbl_insert(to_hashtbl, val_copy);
 		}
@@ -1525,9 +1522,8 @@ static s_p_hashtbl_t* _parse_expline_adapt_table(const s_p_hashtbl_t* hashtbl)
 				val_copy->keyvalue_re = xmalloc(
 					sizeof(regex_t));
 				if (regcomp(val_copy->keyvalue_re,
-					    keyvalue_pattern, REG_EXTENDED)) {
-					error("keyvalue regex compilation failed");
-				}
+					    keyvalue_pattern, REG_EXTENDED))
+					fatal("keyvalue regex compilation failed");
 			}
 			_conf_hashtbl_insert(to_hashtbl, val_copy);
 		}
