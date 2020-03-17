@@ -340,6 +340,14 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 
 	het_grp_bits = _get_het_group(argc, argv, default_het_job_offset++,
 				      &opt_found);
+	/*
+	 * Put all these bits on the global grp bits to send with the step
+	 * requests.
+	 */
+	if (!g_het_grp_bits)
+		g_het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
+	bit_or(g_het_grp_bits, het_grp_bits);
+
 	i_first = bit_ffs(het_grp_bits);
 	i_last  = bit_fls(het_grp_bits);
 	for (i = i_first; i <= i_last; i++) {

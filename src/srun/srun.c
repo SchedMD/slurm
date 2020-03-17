@@ -107,6 +107,7 @@ bool srun_shutdown  = false;
 int sig_array[] = {
 	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0 };
+bitstr_t *g_het_grp_bits = NULL;
 
 typedef struct _launch_app_data
 {

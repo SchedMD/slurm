@@ -1023,7 +1023,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	List used_resp_list = NULL;
 	ListIterator opt_iter, resp_iter;
 	srun_job_t *job = NULL;
-	int i, max_list_offset, max_het_job_offset, het_job_offset = -1;
+	int i, max_list_offset, max_het_job_offset, het_job_offset = -1,
+		het_step_offset = 0;
 	uint32_t my_job_id = 0, het_job_id = 0;
 	char *het_job_nodelist = NULL;
 	bool begin_error_logged = false;
@@ -1096,6 +1097,10 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			}
 			_print_job_information(resp);
 			(void) get_next_opt(-2);
+			/*
+			 * Check using het_job_offset here, but we use
+			 * het_step_offset for the job being added.
+			 */
 			while ((opt_local = get_next_opt(het_job_offset))) {
 				srun_opt_t *srun_opt = opt_local->srun_opt;
 				xassert(srun_opt);
@@ -1160,10 +1165,21 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 					}
 					network_error_logged = true;
 				}
+				xfree(opt_local->network);
+				/*
+				 * Here we send the het job groups to the
+				 * slurmctld to set up the interconnect
+				 * correctly.  We only ever need to send it to
+				 * the first component of the step.
+				 */
 #endif
+				if (g_het_grp_bits)
+					opt_local->network = bit_fmt_hexmask(
+						g_het_grp_bits);
+
 				if (srun_opt->exclusive)
 					_step_opt_exclusive(opt_local);
-				_set_env_vars(resp, het_job_offset);
+				_set_env_vars(resp, het_step_offset);
 				if (_validate_relative(resp, opt_local))
 					exit(error_exit);
 				if (opt_local->begin && !begin_error_logged) {
@@ -1180,8 +1196,9 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 				if (!job)
 					exit(error_exit);
 				if (max_het_job_offset > 0)
-					job->het_job_offset = het_job_offset;
+					job->het_job_offset = het_step_offset;
 				list_append(srun_job_list, job);
+				het_step_offset++;
 			}	/* While more option structures */
 			het_job_offset++;
 		}	/* More hetjob components */

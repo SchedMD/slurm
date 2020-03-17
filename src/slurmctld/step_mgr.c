@@ -2361,9 +2361,6 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	slurm_step_layout_t *step_layout = NULL;
 	bool tmp_step_layout_used = false;
 
-#ifdef HAVE_NATIVE_CRAY
-	slurm_step_layout_t tmp_step_layout;
-#endif
 	*new_step_record = NULL;
 	job_ptr = find_job_record (step_specs->job_id);
 	if (job_ptr == NULL)
@@ -2707,22 +2704,59 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 
 #ifdef HAVE_NATIVE_CRAY
 	if (job_ptr->het_job_id && (job_ptr->het_job_id != NO_VAL)) {
-		jobid = job_ptr->het_job_id;
+		job_record_t *het_job_ptr;
+		step_record_t *het_step_ptr;
+		bitstr_t *het_grp_bits = NULL;
 
 		/*
-		 * We only want to set up the Aries switch for the first
-		 * job with all the nodes in the total allocation along
-		 * with that node count.
+		 * Het job compontents are sent across on the network
+		 * variable.
 		 */
-		if (job_ptr->job_id == job_ptr->het_job_id) {
-			job_record_t *het_job_ptr;
-			hostlist_t hl = hostlist_create(NULL);
-			ListIterator itr = list_iterator_create(
-				job_ptr->het_job_list);
+		if (!step_specs->network) {
+			het_job_ptr = find_job_record(job_ptr->het_job_id);
+		} else {
+			int first_bit = 0;
+			het_grp_bits = bit_alloc(128);
+			if (bit_unfmt_hexmask(het_grp_bits,
+					      step_specs->network)) {
+				error("%s: bad het group given", __func__);
+				FREE_NULL_BITMAP(het_grp_bits);
+				return ESLURM_INTERCONNECT_FAILURE;
+			}
+			xfree(step_ptr->network);
+			step_ptr->network = xstrdup(job_ptr->network);
+			if ((first_bit = bit_ffs(het_grp_bits)) == -1) {
+				error("%s: no components given from srun for hetstep %pS",
+				      __func__, step_ptr);
+				return ESLURM_INTERCONNECT_FAILURE;
+			}
+			/* The het step might not start on the 0 component. */
+			het_job_ptr = find_het_job_record(
+				job_ptr->het_job_id, first_bit);
+		}
 
-			while ((het_job_ptr = list_next(itr)))
-				hostlist_push(hl, het_job_ptr->nodes);
+		/* Get the step record from the first component in the step */
+		het_step_ptr = find_step_record(het_job_ptr, step_ptr->step_id);
+
+		jobid = job_ptr->het_job_id;
+		if (!het_step_ptr || !het_step_ptr->switch_job) {
+			slurm_step_layout_t tmp_step_layout;
+			job_record_t *het_job_comp_ptr;
+			hostlist_t hl = hostlist_create(NULL);
+			ListIterator itr;
+
+			/* Now let's get the real het_job_ptr */
+			het_job_ptr = find_job_record(job_ptr->het_job_id);
+			itr = list_iterator_create(het_job_ptr->het_job_list);
+			while ((het_job_comp_ptr = list_next(itr))) {
+				if (het_grp_bits &&
+				    !bit_test(het_grp_bits,
+					      het_job_comp_ptr->het_job_offset))
+					continue;
+				hostlist_push(hl, het_job_comp_ptr->nodes);
+			}
 			list_iterator_destroy(itr);
+			FREE_NULL_BITMAP(het_grp_bits);
 
 			hostlist_uniq(hl);
 
@@ -2734,22 +2768,12 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 			hostlist_destroy(hl);
 			tmp_step_layout_used = true;
 		} else {
-			/* assume that job offset 0 has already run! */
-			step_record_t *het_step_ptr;
-			job_record_t *het_job_ptr =
-				find_het_job_record(job_ptr->het_job_id, 0);
-			ListIterator itr =
-				list_iterator_create(het_job_ptr->step_list);
 
-			while ((het_step_ptr = list_next(itr)))
-				if (het_step_ptr->step_id == step_ptr->step_id)
-					break;
-			list_iterator_destroy(itr);
+			if (!het_step_ptr->switch_job)
+				return ESLURM_INTERCONNECT_FAILURE;
 
-			if (het_step_ptr)
-				switch_g_duplicate_jobinfo(
-					het_step_ptr->switch_job,
-					&step_ptr->switch_job);
+			switch_g_duplicate_jobinfo(het_step_ptr->switch_job,
+						   &step_ptr->switch_job);
 			/*
 			 * Prevent switch_g_build_jobinfo from getting a new
 			 * cookie below.
