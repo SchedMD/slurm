@@ -505,22 +505,11 @@ static int _get_next_line(char *buf, int buf_size,
 	return lines;
 }
 
-/* copy all the keys from 'from_hashtbl' along with their types, handler, and
+/*
+ * Copy all the keys from 'from_hashtbl' along with their types, handler, and
  * destroy fields. Omit values in the copy and initialize them to NULL/0.
- *
- * if change_* is true, corresponding field will be updated with the next
- * corresponding parameter. */
-s_p_hashtbl_t* _hashtbl_copy_keys(const s_p_hashtbl_t* from_hashtbl,
-				  bool change_type,
-				  slurm_parser_enum_t new_type,
-				  bool change_handler,
-				  int (*handler)(void **data,
-					  slurm_parser_enum_t type, const char
-					  *key, const char *value, const char
-					  *line, char **leftover),
-				  bool change_destroyer,
-				  void (*destroy)(void *data)
-				  )
+ */
+s_p_hashtbl_t *_hashtbl_copy_keys(const s_p_hashtbl_t *from_hashtbl)
 {
 	s_p_hashtbl_t* to_hashtbl = NULL;
 	s_p_values_t *val_ptr,* val_copy;
@@ -540,15 +529,6 @@ s_p_hashtbl_t* _hashtbl_copy_keys(const s_p_hashtbl_t* from_hashtbl,
 			val_copy->type = val_ptr->type;
 			val_copy->handler = val_ptr->handler;
 			val_copy->destroy = val_ptr->destroy;
-			if (change_type) {
-				val_copy->type = new_type;
-			}
-			if (change_handler) {
-				val_copy->handler = handler;
-			}
-			if (change_destroyer) {
-				val_copy->destroy = destroy;
-			}
 			/*
 			 * We cannot copy a regex since a regfree() on either
 			 * the original or the copy can affect the other one.
@@ -880,8 +860,7 @@ static int _handle_line(s_p_values_t* v, const char* value,
 	_expline_values_t* v_data = (_expline_values_t*)v->data;
 	s_p_hashtbl_t* newtable;
 
-	newtable = _hashtbl_copy_keys(v_data->template, false, S_P_IGNORE,
-				      false, NULL, false, NULL);
+	newtable = _hashtbl_copy_keys(v_data->template);
 	if (s_p_parse_line_complete(newtable, v->key, value, line,
 				    leftover) == SLURM_ERROR) {
 		s_p_hashtbl_destroy(newtable);
@@ -1734,10 +1713,7 @@ int s_p_parse_line_expanded(const s_p_hashtbl_t *hashtbl,
 	for (i = 0; i < tables_count; i++) {
 		free(value_str);
 		value_str = hostlist_shift(value_hl);
-		tables[i] = _hashtbl_copy_keys(hashtbl,
-					       false, S_P_IGNORE,
-					       false, NULL,
-					       false, NULL);
+		tables[i] = _hashtbl_copy_keys(hashtbl);
 		_hashtbl_plain_to_string(tables[i]);
 		if (!s_p_parse_pair(tables[i], key, value_str)) {
 			error("Error parsing '%s = %s', most left part of the"
