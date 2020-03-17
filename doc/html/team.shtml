@@ -22,7 +22,6 @@ Lead Slurm developers are:
 <li>Marcin Stolarek (SchedMD)</li>
 <li>Chad Vizino (SchedMD)</li>
 <li>Tim Wickberg (SchedMD)</li>
-<li>Douglas Wightman (SchedMD)</li>
 </ul>
 
 <p>Slurm contributors include:</p>
@@ -275,6 +274,7 @@ Lead Slurm developers are:
 <li>Nathan Weeks (Iowa State University)</li>
 <li>Andy Wettstein (University of Chicago)</li>
 <li>Jeff White</li>
+<li>Douglas Wightman (SchedMD)</li>
 <li>Chandler Wilkerson (Rice University)</li>
 <li>Ramiro Brito Willmersdorf (Universidade Federal de Pemambuco, Brazil)</li>
 <li>Jay Windley (Linux NetworX)</li>
@@ -287,6 +287,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 7 May 2019</p>
+<p style="text-align:center;">Last modified 10 May 2020</p>
 
 <!--#include virtual="footer.txt"-->

@@ -301,6 +301,7 @@ according to the Slurm
 Summary: Slurm REST API translator
 Group: System Environment/Base
 Requires: %{name}%{?_isa} = %{version}-%{release}
+BuildRequires: json-c-devel, http-parser-devel
 %description slurmrestd
 Provides a REST interface to Slurm.
 %endif
@@ -336,6 +337,7 @@ notifies slurm about failed nodes.
 	%{?_with_freeipmi} \
 	%{?_with_hdf5} \
 	%{?_with_shared_libslurm} \
+	%{!?_with_slurmrestd:--disable-slurmrestd} \
 	%{?_without_x11:--disable-x11} \
 	%{?_with_ucx} \
 	%{?_with_cflags}
@@ -384,11 +386,6 @@ install -D -m644 etc/slurmdbd.service  %{buildroot}/%{_unitdir}/slurmdbd.service
    rm -f %{buildroot}/%{_sbindir}/capmc_suspend
    rm -f %{buildroot}/%{_sbindir}/capmc_resume
    rm -f %{buildroot}/%{_sbindir}/slurmconfgen.py
-%endif
-
-%if %{with slurmrestd}
-%else
-   rm -f %{buildroot}/%{_sbindir}/slurmrestd
 %endif
 
 %if %{with slurmsmwd}
