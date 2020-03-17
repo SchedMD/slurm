@@ -462,12 +462,9 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 		mem_type   = "cpu";
 	}
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_CPU_FREQ) {
-		info("StepDesc: user_id=%u JobId=%u cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u",
-		     step_spec->user_id, step_spec->job_id,
-		     step_spec->cpu_freq_gov, step_spec->cpu_freq_max,
-		     step_spec->cpu_freq_min);
-	}
+	log_flag(CPU_FREQ, "StepDesc: user_id=%u JobId=%u cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u",
+		 step_spec->user_id, step_spec->job_id, step_spec->cpu_freq_gov,
+		 step_spec->cpu_freq_max, step_spec->cpu_freq_min);
 	debug3("StepDesc: user_id=%u JobId=%u StepId=%u node_count=%u-%u cpu_count=%u num_tasks=%u",
 	       step_spec->user_id, step_spec->job_id, step_spec->step_id,
 	       step_spec->min_nodes, step_spec->max_nodes,
@@ -1408,10 +1405,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 
 	if (step_spec->node_list) {
 		bitstr_t *selected_nodes = NULL;
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS) {
-			info("%s: selected nodelist is %s", __func__,
-			     step_spec->node_list);
-		}
+		log_flag(STEPS, "%s: selected nodelist is %s",
+			 __func__, step_spec->node_list);
 		error_code = node_name2bitmap(step_spec->node_list, false,
 					      &selected_nodes);
 		if (error_code) {
@@ -1592,10 +1587,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 
 		}
 		nodes_picked_cnt = bit_set_count(nodes_picked);
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS) {
-			verbose("%s: step picked %d of %u nodes", __func__,
-				nodes_picked_cnt, step_spec->min_nodes);
-		}
+		log_flag(STEPS, "%s: step picked %d of %u nodes",
+			 __func__, nodes_picked_cnt, step_spec->min_nodes);
 		if (nodes_idle)
 			node_avail_cnt = bit_set_count(nodes_idle);
 		else
@@ -2003,12 +1996,10 @@ extern void step_alloc_lps(step_record_t *step_ptr)
 		}
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_CPU_BIND)
 			_dump_step_layout(step_ptr);
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS) {
-			info("step alloc on job node %d (%s) used %u of %u CPUs",
-			     job_node_inx, node_record_table_ptr[i_node].name,
-			     job_resrcs_ptr->cpus_used[job_node_inx],
-			     job_resrcs_ptr->cpus[job_node_inx]);
-		}
+		log_flag(STEPS, "step alloc on job node %d (%s) used %u of %u CPUs",
+			 job_node_inx, node_record_table_ptr[i_node].name,
+			 job_resrcs_ptr->cpus_used[job_node_inx],
+			 job_resrcs_ptr->cpus[job_node_inx]);
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
 	}
@@ -2120,12 +2111,10 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 				job_resrcs_ptr->memory_used[job_node_inx] = 0;
 			}
 		}
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS) {
-			info("step dealloc on job node %d (%s) used: %u of %u CPUs",
-			     job_node_inx, node_record_table_ptr[i_node].name,
-			     job_resrcs_ptr->cpus_used[job_node_inx],
-			     job_resrcs_ptr->cpus[job_node_inx]);
-		}
+		log_flag(STEPS, "step dealloc on job node %d (%s) used: %u of %u CPUs",
+			 job_node_inx, node_record_table_ptr[i_node].name,
+			 job_resrcs_ptr->cpus_used[job_node_inx],
+			 job_resrcs_ptr->cpus[job_node_inx]);
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
 	}
@@ -2573,10 +2562,8 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		xfree(step_specs->node_list);
 		step_specs->node_list = xstrdup(step_node_list);
 	}
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS) {
-		verbose("Picked nodes %s when accumulating from %s",
-			step_node_list, step_specs->node_list);
-	}
+	log_flag(STEPS, "Picked nodes %s when accumulating from %s",
+		 step_node_list, step_specs->node_list);
 	step_ptr->step_node_bitmap = nodeset;
 
 	switch (step_specs->task_dist & SLURM_DIST_NODESOCKMASK) {
