@@ -511,19 +511,17 @@ static int _get_next_line(char *buf, int buf_size,
  */
 s_p_hashtbl_t *_hashtbl_copy_keys(const s_p_hashtbl_t *from_hashtbl)
 {
-	s_p_hashtbl_t* to_hashtbl = NULL;
-	s_p_values_t *val_ptr,* val_copy;
-	int len, i;
+	s_p_hashtbl_t *to_hashtbl = NULL;
 
 	xassert(from_hashtbl);
 
-	len = CONF_HASH_LEN * sizeof(s_p_values_t *);
-	to_hashtbl = xmalloc(len);
+	to_hashtbl = xcalloc(CONF_HASH_LEN, sizeof(s_p_values_t *));
 
-	for (i = 0; i < CONF_HASH_LEN; ++i) {
-		for (val_ptr = from_hashtbl[i]; val_ptr;
-		     val_ptr = val_ptr->next) {
-			val_copy = xmalloc(sizeof(s_p_values_t));
+	for (int i = 0; i < CONF_HASH_LEN; ++i) {
+		for (s_p_values_t *val_ptr = from_hashtbl[i];
+		     val_ptr; val_ptr = val_ptr->next) {
+			s_p_values_t *val_copy = xmalloc(sizeof(*val_copy));
+
 			val_copy->key = xstrdup(val_ptr->key);
 			val_copy->operator = val_ptr->operator;
 			val_copy->type = val_ptr->type;
