@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Send registration message immediately after a node is resumed.
  -- Cray - Fix hetjobs when using only a single component in the step launch.
  -- Cray - Fix hetjobs launched without component 0.
+ -- Cray - Quiet cookies missing message which is expected on for hetjobs.
 
 * Changes in Slurm 20.02.1
 ==========================
