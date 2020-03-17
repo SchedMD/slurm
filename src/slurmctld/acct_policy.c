@@ -4365,7 +4365,7 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 
 	uint32_t max_jobs_accrue = INFINITE;
 	int create_cnt = 0, i, rc = SLURM_SUCCESS;
-	time_t now;
+	time_t now = time(NULL);
 	bool parent = false;
 	static time_t sched_update = 0;
 	static uint16_t priority_flags = 0;
@@ -4398,8 +4398,12 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 		return SLURM_SUCCESS;
 	}
 
-	/* If Job is held or dependent don't accrue time */
-	if (!job_ptr->priority || (job_ptr->bit_flags & JOB_DEPENDENT))
+	/*
+	 * If the job is not eligible because it is either held, dependent or
+	 * because its begin time is in the future don't accrue time.
+	 */
+	if (!job_ptr->priority || (job_ptr->bit_flags & JOB_DEPENDENT) ||
+	    (details_ptr->begin_time && (details_ptr->begin_time > now)))
 		return SLURM_SUCCESS;
 
 	/* No accrue_time and the job isn't pending, bail */
@@ -4567,8 +4571,6 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 			     __func__, job_ptr);
 		goto endit;
 	}
-
-	now = time(NULL);
 
 	create_cnt = MIN(create_cnt, job_ptr->array_recs->task_cnt);
 
