@@ -141,7 +141,11 @@ static void _conf_hashtbl_insert(s_p_hashtbl_t *hashtbl,
 	int idx;
 
 	xassert(value);
-	idx = _conf_hashtbl_index(value->key);
+	if (!value->key && value->keyvalue_re)
+		/* Inserting a holder for the regex_t of the structure. */
+		idx = 0;
+	else
+		idx = _conf_hashtbl_index(value->key);
 	value->next = hashtbl[idx];
 	hashtbl[idx] = value;
 }
@@ -546,6 +550,18 @@ s_p_hashtbl_t* _hashtbl_copy_keys(const s_p_hashtbl_t* from_hashtbl,
 			}
 			if (change_destroyer) {
 				val_copy->destroy = destroy;
+			}
+			/*
+			 * We cannot copy a regex since a regfree() on either
+			 * the original or the copy can affect the other one.
+			 */
+			if (val_ptr->keyvalue_re != NULL) {
+				val_copy->keyvalue_re = xmalloc(
+					sizeof(regex_t));
+				if (regcomp(val_copy->keyvalue_re,
+					    keyvalue_pattern, REG_EXTENDED)) {
+					error("keyvalue regex compilation failed");
+				}
 			}
 			_conf_hashtbl_insert(to_hashtbl, val_copy);
 		}
@@ -1500,6 +1516,18 @@ static s_p_hashtbl_t* _parse_expline_adapt_table(const s_p_hashtbl_t* hashtbl)
 					_parse_line_expanded_handler;
 				val_copy->destroy =
 					_parse_line_expanded_destroyer;
+			}
+			/*
+			 * We cannot copy a regex since a regfree() on either
+			 * the original or the copy can affect the other one.
+			 */
+			if (val_ptr->keyvalue_re != NULL) {
+				val_copy->keyvalue_re = xmalloc(
+					sizeof(regex_t));
+				if (regcomp(val_copy->keyvalue_re,
+					    keyvalue_pattern, REG_EXTENDED)) {
+					error("keyvalue regex compilation failed");
+				}
 			}
 			_conf_hashtbl_insert(to_hashtbl, val_copy);
 		}
