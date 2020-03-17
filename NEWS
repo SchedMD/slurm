@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix segfault when using config parser for expanded lines.
  -- Fix bit overlap test function.
  -- Don't accrue time if job begin time is in the future.
+ -- Remove accrue time when updating a job start/eligible time to the future.
 
 * Changes in Slurm 20.02.0
 ==========================
