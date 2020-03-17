@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "February 2020" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "April 2020" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -693,7 +693,11 @@ elements in this list, elements in the list will be reused as needed starting
 from the beginning of the list. To simplify support for large task counts,
 the lists may follow a map with an asterisk and repetition count.
 For example "map_gpu:0*4,1*4".
-Not supported unless the entire node is allocated to the job.
+If the task/cgroup plugin is used and ConstrainDevices is set in cgroup.conf,
+then the GPU IDs are zero-based indexes relative to the GPUs allocated to the
+job (e.g. the first GPU is 0, even if the global ID is 3). Otherwise, the GPU
+IDs are global IDs, and all GPUs on each node in the job should be allocated for
+predictable binding results.
 .TP
 \fBmask_gpu:<list>\fR
 Bind by setting GPU masks on tasks (or ranks) as specified where <list> is
@@ -704,7 +708,11 @@ etc.). GPU masks are always interpreted as hexadecimal values but can be
 preceded with an optional '0x'. To simplify support for large task counts, the
 lists may follow a map with an asterisk and repetition count.
 For example "mask_gpu:0x0f*4,0xf0*4".
-Not supported unless the entire node is allocated to the job.
+If the task/cgroup plugin is used and ConstrainDevices is set in cgroup.conf,
+then the GPU IDs are zero-based indexes relative to the GPUs allocated to the
+job (e.g. the first GPU is 0, even if the global ID is 3). Otherwise, the GPU
+IDs are global IDs, and all GPUs on each node in the job should be allocated for
+predictable binding results.
 .RE
 
 .TP
@@ -1173,7 +1181,8 @@ the list.
 To simplify support for large task counts, the lists may follow a map with an
 asterisk and repetition count.
 For example "map_mem:0x0f*4,0xf0*4".
-Not supported unless the entire node is allocated to the job.
+For predictable binding results, all CPUs for each node in the job should be
+allocated to the job.
 .TP
 .B mask_mem:<list>
 Bind by setting memory masks on tasks (or ranks) as specified where <list> is
@@ -1190,7 +1199,8 @@ the list.
 To simplify support for large task counts, the lists may follow a mask with an
 asterisk and repetition count.
 For example "mask_mem:0*4,1*4".
-Not supported unless the entire node is allocated to the job.
+For predictable binding results, all CPUs for each node in the job should be
+allocated to the job.
 .TP
 .B no[ne]
 don't bind tasks to memory (default)
