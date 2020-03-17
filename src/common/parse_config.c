@@ -41,12 +41,12 @@
 
 #include <ctype.h>
 #include <regex.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "src/common/hostlist.h"
@@ -57,9 +57,9 @@
 #include "src/common/parse_value.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_interface.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/xassert.h"
 
 #include "slurm/slurm.h"
 
@@ -173,13 +173,10 @@ static s_p_values_t *_conf_hashtbl_lookup(const s_p_hashtbl_t *tbl,
 
 s_p_hashtbl_t *s_p_hashtbl_create(const s_p_options_t options[])
 {
-	const s_p_options_t *op = NULL;
-	s_p_values_t *value = NULL;
 	s_p_hashtbl_t *tbl = xmalloc(sizeof(*tbl));
-	_expline_values_t* expdata;
 
-	for (op = options; op->key != NULL; op++) {
-		value = xmalloc(sizeof(s_p_values_t));
+	for (const s_p_options_t *op = options; op->key; op++) {
+		s_p_values_t *value = xmalloc(sizeof(*value));
 		value->key = xstrdup(op->key);
 		value->operator = S_P_OPERATOR_SET;
 		value->type = op->type;
@@ -190,8 +187,8 @@ s_p_hashtbl_t *s_p_hashtbl_create(const s_p_options_t options[])
 		value->destroy = op->destroy;
 		if (op->type == S_P_LINE || op->type == S_P_EXPLINE) {
 			/* line_options mandatory for S_P_*LINE */
+			_expline_values_t *expdata = xmalloc(sizeof(*expdata));
 			xassert(op->line_options);
-			expdata = xmalloc(sizeof(_expline_values_t));
 			expdata->template =
 				s_p_hashtbl_create(op->line_options);
 			expdata->index = xcalloc(CONF_HASH_LEN,
@@ -2284,14 +2281,13 @@ extern void transfer_s_p_options(s_p_options_t **full_options,
 				 s_p_options_t *options,
 				 int *full_options_cnt)
 {
-	s_p_options_t *op = NULL;
 	s_p_options_t *full_options_ptr;
 	int cnt = *full_options_cnt;
 
 	xassert(full_options);
 
-	for (op = options; op->key != NULL; op++, cnt++) {
-		xrealloc(*full_options, ((cnt + 1) * sizeof(s_p_options_t)));
+	for (s_p_options_t *op = options; op->key; op++, cnt++) {
+		xrecalloc(*full_options, cnt + 1, sizeof(s_p_options_t));
 		full_options_ptr = &(*full_options)[cnt];
 		memcpy(full_options_ptr, op, sizeof(s_p_options_t));
 		full_options_ptr->key = xstrdup(op->key);
