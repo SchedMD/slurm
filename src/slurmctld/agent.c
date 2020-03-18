@@ -259,12 +259,11 @@ void *agent(void *args)
 	}
 #endif
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
-		info("%s: Agent_cnt=%d agent_thread_cnt=%d with msg_type=%s retry_list_size=%d",
-		     __func__, agent_cnt, agent_thread_cnt,
-		     rpc_num2string(agent_arg_ptr->msg_type),
-		     retry_list_size());
-	}
+	log_flag(AGENT, "%s: Agent_cnt=%d agent_thread_cnt=%d with msg_type=%s retry_list_size=%d",
+		 __func__, agent_cnt, agent_thread_cnt,
+		 rpc_num2string(agent_arg_ptr->msg_type),
+		 retry_list_size());
+
 	slurm_mutex_lock(&agent_cnt_mutex);
 
 	if (sched_update != slurmctld_conf.last_update) {
@@ -314,15 +313,14 @@ void *agent(void *args)
 	/* start the watchdog thread */
 	slurm_thread_create(&thread_wdog, _wdog, agent_info_ptr);
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
-		info("%s: New agent thread_count:%d threads_active:%d retry:%c get_reply:%c msg_type:%s protocol_version:%hu",
-		     __func__, agent_info_ptr->thread_count,
-		     agent_info_ptr->threads_active,
-		     agent_info_ptr->retry ? 'T' : 'F',
-		     agent_info_ptr->get_reply ? 'T' : 'F',
-		     rpc_num2string(agent_arg_ptr->msg_type),
-		     agent_info_ptr->protocol_version);
-	}
+	log_flag(AGENT, "%s: New agent thread_count:%d threads_active:%d retry:%c get_reply:%c msg_type:%s protocol_version:%hu",
+		 __func__, agent_info_ptr->thread_count,
+		 agent_info_ptr->threads_active,
+		 agent_info_ptr->retry ? 'T' : 'F',
+		 agent_info_ptr->get_reply ? 'T' : 'F',
+		 rpc_num2string(agent_arg_ptr->msg_type),
+		 agent_info_ptr->protocol_version);
+
 	/* start all the other threads (up to AGENT_THREAD_COUNT active) */
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		/* wait until "room" for another thread */
@@ -360,15 +358,13 @@ void *agent(void *args)
 	}
 	slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
-		info("%s: end agent thread_count:%d threads_active:%d retry:%c get_reply:%c msg_type:%s protocol_version:%hu",
-		     __func__, agent_info_ptr->thread_count,
-		     agent_info_ptr->threads_active,
-		     agent_info_ptr->retry ? 'T' : 'F',
-		     agent_info_ptr->get_reply ? 'T' : 'F',
-		     rpc_num2string(agent_arg_ptr->msg_type),
-		     agent_info_ptr->protocol_version);
-	}
+	log_flag(AGENT, "%s: end agent thread_count:%d threads_active:%d retry:%c get_reply:%c msg_type:%s protocol_version:%hu",
+		 __func__, agent_info_ptr->thread_count,
+		 agent_info_ptr->threads_active,
+		 agent_info_ptr->retry ? 'T' : 'F',
+		 agent_info_ptr->get_reply ? 'T' : 'F',
+		 rpc_num2string(agent_arg_ptr->msg_type),
+		 agent_info_ptr->protocol_version);
 
 cleanup:
 	_purge_agent_args(agent_arg_ptr);
@@ -505,12 +501,9 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		thread_ptr[thr_count].nodelist =
 			hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
-			info("%s: sending msg_type %s to nodes %s",
-			     __func__, rpc_num2string(agent_arg_ptr->msg_type),
-			     thread_ptr[thr_count].nodelist);
-
-		}
+		log_flag(AGENT, "%s: sending msg_type %s to nodes %s",
+			 __func__, rpc_num2string(agent_arg_ptr->msg_type),
+			 thread_ptr[thr_count].nodelist);
 		thr_count++;
 	}
 	xfree(span);
@@ -543,10 +536,8 @@ static void _update_wdog_state(thd_t *thread_ptr,
 	case DSH_ACTIVE:
 		thd_comp->work_done = false;
 		if (thread_ptr->end_time <= thd_comp->now) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
-				info("%s: agent thread %lu timed out", __func__,
-				     (unsigned long) thread_ptr->thread);
-			}
+			log_flag(AGENT, "%s: agent thread %lu timed out",
+				 __func__, (unsigned long) thread_ptr->thread);
 			if (pthread_kill(thread_ptr->thread, SIGUSR1) == ESRCH)
 				*state = DSH_NO_RESP;
 			else
@@ -650,11 +641,9 @@ static void *_wdog(void *args)
 		xfree(thread_ptr[i].nodelist);
 	}
 
-	if (thd_comp.max_delay &&
-	    (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)) {
-		info("%s: agent maximum delay %d seconds", __func__,
-		     thd_comp.max_delay);
-	}
+	if (thd_comp.max_delay)
+		log_flag(AGENT, "%s: agent maximum delay %d seconds",
+			 __func__, thd_comp.max_delay);
 
 	slurm_mutex_unlock(&agent_ptr->thread_mutex);
 	return (void *) NULL;
@@ -931,10 +920,8 @@ static void *_thread_per_group_rpc(void *args)
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
-		info("%s: sending %s to %s", __func__, rpc_num2string(msg_type),
-		     thread_ptr->nodelist);
-	}
+	log_flag(AGENT, "%s: sending %s to %s",
+		 __func__, rpc_num2string(msg_type), thread_ptr->nodelist);
 
 	if (task_ptr->get_reply) {
 		if (thread_ptr->addr) {
@@ -1156,10 +1143,8 @@ static void *_thread_per_group_rpc(void *args)
 			/* Not indicative of a real error */
 		case ESLURMD_JOB_NOTRUNNING:
 			/* Not indicative of a real error */
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
-				info("%s: RPC to node %s failed, job not running",
-				     __func__, ret_data_info->node_name);
-			}
+			log_flag(AGENT, "%s: RPC to node %s failed, job not running",
+				 __func__, ret_data_info->node_name);
 			thread_state = DSH_DONE;
 			break;
 		default:
@@ -1243,8 +1228,8 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 
 	itr = list_iterator_create(thread_ptr->ret_list);
 	while ((ret_data_info = list_next(itr))) {
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
-			info("%s: got err of %d", __func__, ret_data_info->err);
+		log_flag(AGENT, "%s: got err of %d",
+			 __func__, ret_data_info->err);
 		if (ret_data_info->err != DSH_NO_RESP)
 			continue;
 
@@ -1442,14 +1427,10 @@ extern void agent_init(void)
  */
 extern void agent_trigger(int min_wait, bool mail_too)
 {
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
-		info("%s: pending_wait_time=%d->%d mail_too=%c->%c Agent_cnt=%d agent_thread_cnt=%d retry_list_size=%d",
-		     __func__, pending_wait_time, min_wait,
-		     mail_too ?  'T' : 'F',
-		     pending_mail ? 'T' : 'F',
-		     agent_cnt, agent_thread_cnt,
-		     retry_list_size());
-	}
+	log_flag(AGENT, "%s: pending_wait_time=%d->%d mail_too=%c->%c Agent_cnt=%d agent_thread_cnt=%d retry_list_size=%d",
+		 __func__, pending_wait_time, min_wait,
+		 mail_too ?  'T' : 'F', pending_mail ? 'T' : 'F',
+		 agent_cnt, agent_thread_cnt, retry_list_size());
 
 	slurm_mutex_lock(&pending_mutex);
 	if ((pending_wait_time == NO_VAL16) ||

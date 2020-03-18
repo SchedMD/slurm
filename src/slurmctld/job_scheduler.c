@@ -2280,14 +2280,12 @@ static job_record_t *_het_job_ready(job_record_t *job_ptr)
 	}
 	list_iterator_destroy(iter);
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_HETJOB) {
-		if (het_job_leader) {
-			info("Batch hetjob %pJ being launched", het_job_leader);
-		} else if (het_job) {
-			info("Batch hetjob %pJ waiting for job to be ready",
-			     het_job);
-		}
-	}
+	if (het_job_leader)
+		log_flag(HETJOB, "Batch hetjob %pJ being launched",
+			 het_job_leader);
+	else if (het_job)
+		log_flag(HETJOB, "Batch hetjob %pJ waiting for job to be ready",
+			 het_job);
 
 	return het_job_leader;
 }
@@ -2915,12 +2913,10 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 			    (dep_ptr->depend_state == DEPEND_NOT_FULFILLED) &&
 			    (dep_ptr->depend_type != SLURM_DEPEND_SINGLETON) &&
 			    (!fed_mgr_is_job_id_in_fed(dep_ptr->job_id))) {
-				if (slurmctld_conf.debug_flags &
-				    DEBUG_FLAG_DEPENDENCY)
-					info("%s: %pJ dependency %s:%u failed due to job_id not in federation.",
-					     __func__, job_ptr,
-					     _depend_type2str(dep_ptr),
-					     dep_ptr->job_id);
+				log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u failed due to job_id not in federation.",
+					 __func__, job_ptr,
+					 _depend_type2str(dep_ptr),
+					 dep_ptr->job_id);
 				changed = true;
 				dep_ptr->depend_state = DEPEND_FAILED;
 			}
@@ -2978,19 +2974,15 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 		if (failure) {
 			dep_ptr->depend_state = DEPEND_FAILED;
 			changed = true;
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
-				info("%s: %pJ dependency %s:%u failed.",
-				     __func__, job_ptr,
-				     _depend_type2str(dep_ptr),
-				     dep_ptr->job_id);
+			log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u failed.",
+				 __func__, job_ptr, _depend_type2str(dep_ptr),
+				 dep_ptr->job_id);
 		} else if (clear_dep) {
 			dep_ptr->depend_state = DEPEND_FULFILLED;
 			changed = true;
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
-				info("%s: %pJ dependency %s:%u fulfilled.",
-				     __func__, job_ptr,
-				     _depend_type2str(dep_ptr),
-				     dep_ptr->job_id);
+			log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u fulfilled.",
+				 __func__, job_ptr, _depend_type2str(dep_ptr),
+				 dep_ptr->job_id);
 		}
 
 		_test_dependency_state(dep_ptr, &or_satisfied, &and_failed,
@@ -3017,8 +3009,8 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 			list_flush(job_ptr->details->depend_list);
 		_depend_list2str(job_ptr, false);
 		results = NO_DEPEND;
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
-			info("%s: %pJ dependency fulfilled", __func__, job_ptr);
+		log_flag(DEPENDENCY, "%s: %pJ dependency fulfilled",
+			 __func__, job_ptr);
 	} else {
 		if (changed) {
 			_depend_list2str(job_ptr, false);
@@ -3462,10 +3454,9 @@ extern bool update_job_dependency_list(job_record_t *job_ptr,
 			 * and the update doesn't get to the sibling before
 			 * the sibling sends back an update to the origin (us).
 			 */
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
-				info("%s: Cannot find dependency %s:%u for %pJ, it may have been cleared before we got here.",
-				     __func__, _depend_type2str(dep_ptr),
-				     dep_ptr->job_id, job_ptr);
+			log_flag(DEPENDENCY, "%s: Cannot find dependency %s:%u for %pJ, it may have been cleared before we got here.",
+				 __func__, _depend_type2str(dep_ptr),
+				 dep_ptr->job_id, job_ptr);
 			continue;
 		}
 

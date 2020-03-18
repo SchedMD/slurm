@@ -4352,10 +4352,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	iter = list_iterator_create(submit_job_list);
 	while ((job_ptr = list_next(iter))) {
 		job_ptr->het_job_id_set = xstrdup(het_job_id_set);
-		if ((error_code == SLURM_SUCCESS) &&
-		    (slurmctld_conf.debug_flags & DEBUG_FLAG_HETJOB)) {
-			info("Submit %pJ", job_ptr);
-		}
+		if (error_code == SLURM_SUCCESS)
+			log_flag(HETJOB, "Submit %pJ", job_ptr);
 	}
 	list_iterator_destroy(iter);
 	xfree(het_job_id_set);
@@ -6315,9 +6313,8 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 
 	comp_msg = (composite_msg_t *) msg->data;
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
-		info("Processing RPC: MESSAGE_COMPOSITE msg with %d messages",
-		     comp_msg->msg_list ? list_count(comp_msg->msg_list) : 0);
+	log_flag(ROUTE, "Processing RPC: MESSAGE_COMPOSITE msg with %d messages",
+		 comp_msg->msg_list ? list_count(comp_msg->msg_list) : 0);
 	if (msg->protocol_version >= SLURM_20_02_PROTOCOL_VERSION)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
@@ -6411,10 +6408,8 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 	while ((next_msg = list_next(itr))) {
 		if (slurm_delta_tv(start_tv) >= timeout) {
 			END_TIMER;
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
-				info("composite message processing "
-				     "yielding locks after running for %s",
-				     TIME_STR);
+			log_flag(ROUTE, "composite message processing yielding locks after running for %s",
+				 TIME_STR);
 			unlock_slurmctld(job_write_lock);
 			usleep(10);
 			lock_slurmctld(job_write_lock);
@@ -6433,11 +6428,9 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 				list_create(_slurmctld_free_comp_msg_list);
 
 			ncomp_msg = (composite_msg_t *) next_msg->data;
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
-				info("Processing embedded MESSAGE_COMPOSITE "
-				     "msg with %d direct "
-				     "messages", ncomp_msg->msg_list ?
-				     list_count(ncomp_msg->msg_list) : 0);
+			log_flag(ROUTE, "Processing embedded MESSAGE_COMPOSITE msg with %d direct messages",
+				 ncomp_msg->msg_list ?
+				 list_count(ncomp_msg->msg_list) : 0);
 			_slurm_rpc_comp_msg_list(ncomp_msg, run_scheduler,
 						 comp_resp_msg->msg_list,
 						 start_tv, timeout);
@@ -6768,10 +6761,8 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 		sub_msg.auth_cred = msg->auth_cred;
 		ret_buf = NULL;
 
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
-			char *p = rpc_num2string(sub_msg.msg_type);
-			info("%s: received opcode %s", __func__, p);
-		}
+		log_flag(PROTOCOL, "%s: received opcode %s",
+			 __func__, rpc_num2string(sub_msg.msg_type));
 
 		switch (sub_msg.msg_type) {
 		case REQUEST_PING:

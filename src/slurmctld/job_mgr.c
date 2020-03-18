@@ -3191,25 +3191,18 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 
 		/* return result */
 		if (error_code) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-				info("Signal %u %pJ by UID=%u: %s",
-				     job_step_kill_msg->signal, job_ptr, uid,
-				     slurm_strerror(error_code));
+			log_flag(STEPS, "Signal %u %pJ by UID=%u: %s",
+				 job_step_kill_msg->signal, job_ptr, uid,
+				 slurm_strerror(error_code));
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL) {
-				if (slurmctld_conf.debug_flags &
-						DEBUG_FLAG_STEPS)
-					info("%s: Cancel of %pJ by UID=%u, %s",
-					     __func__, job_ptr, uid, TIME_STR);
+				log_flag(STEPS, "%s: Cancel of %pJ by UID=%u, %s",
+					 __func__, job_ptr, uid, TIME_STR);
 				slurmctld_diag_stats.jobs_canceled++;
-			} else {
-				if (slurmctld_conf.debug_flags &
-						DEBUG_FLAG_STEPS)
-					info("%s: Signal %u of %pJ by UID=%u, %s",
-					     __func__,
-					     job_step_kill_msg->signal,
-					     job_ptr, uid, TIME_STR);
-			}
+			} else
+				log_flag(STEPS, "%s: Signal %u of %pJ by UID=%u, %s",
+					 __func__, job_step_kill_msg->signal,
+					 job_ptr, uid, TIME_STR);
 
 			/* Below function provides its own locking */
 			schedule_job_save();
@@ -3225,31 +3218,23 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 
 		/* return result */
 		if (error_code) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-				info("Signal %u of JobId=%u StepId=%u by UID=%u: %s",
-				     job_step_kill_msg->signal,
-				     job_step_kill_msg->job_id,
-				     job_step_kill_msg->job_step_id, uid,
-				     slurm_strerror(error_code));
+			log_flag(STEPS, "Signal %u of JobId=%u StepId=%u by UID=%u: %s",
+				 job_step_kill_msg->signal,
+				 job_step_kill_msg->job_id,
+				 job_step_kill_msg->job_step_id, uid,
+				 slurm_strerror(error_code));
 		} else {
-			if (job_step_kill_msg->signal == SIGKILL) {
-				if (slurmctld_conf.debug_flags &
-						DEBUG_FLAG_STEPS)
-					info("%s: Cancel of JobId=%u StepId=%u by UID=%u %s",
-					     __func__,
-					     job_step_kill_msg->job_id,
-					     job_step_kill_msg->job_step_id,
-					     uid, TIME_STR);
-			} else {
-				if (slurmctld_conf.debug_flags &
-						DEBUG_FLAG_STEPS)
-					info("%s: Signal %u of JobId=%u StepId=%u by UID=%u %s",
-					     __func__,
-					     job_step_kill_msg->signal,
-					     job_step_kill_msg->job_id,
-					     job_step_kill_msg->job_step_id,
-					     uid, TIME_STR);
-			}
+			if (job_step_kill_msg->signal == SIGKILL)
+				log_flag(STEPS, "%s: Cancel of JobId=%u StepId=%u by UID=%u %s",
+					 __func__, job_step_kill_msg->job_id,
+					 job_step_kill_msg->job_step_id, uid,
+					 TIME_STR);
+			else
+				log_flag(STEPS, "%s: Signal %u of JobId=%u StepId=%u by UID=%u %s",
+					 __func__, job_step_kill_msg->signal,
+					 job_step_kill_msg->job_id,
+					 job_step_kill_msg->job_step_id, uid,
+					 TIME_STR);
 
 			/* Below function provides its own locking */
 			schedule_job_save();
@@ -17724,9 +17709,8 @@ extern double calc_job_billable_tres(job_record_t *job_ptr, time_t start_time,
 	    difftime(job_ptr->resize_time, start_time) < 0.0)
 		return job_ptr->billable_tres;
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PRIO)
-		info("BillingWeight: %pJ is either new or it was resized",
-		     job_ptr);
+	log_flag(PRIO, "BillingWeight: %pJ is either new or it was resized",
+		 job_ptr);
 
 	/* No billing weights defined. Return CPU count */
 	if (!part_ptr || !part_ptr->billing_weights) {
@@ -17734,10 +17718,9 @@ extern double calc_job_billable_tres(job_record_t *job_ptr, time_t start_time,
 		return job_ptr->billable_tres;
 	}
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PRIO)
-		info("BillingWeight: %pJ using \"%s\" from partition %s",
-		     job_ptr, part_ptr->billing_weights_str,
-		     job_ptr->part_ptr->name);
+	log_flag(PRIO, "BillingWeight: %pJ using \"%s\" from partition %s",
+		 job_ptr, part_ptr->billing_weights_str,
+		 job_ptr->part_ptr->name);
 
 	job_ptr->billable_tres =
 		assoc_mgr_tres_weighted(job_ptr->tres_alloc_cnt,
@@ -17745,12 +17728,11 @@ extern double calc_job_billable_tres(job_record_t *job_ptr, time_t start_time,
 					slurmctld_conf.priority_flags,
 					assoc_mgr_locked);
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PRIO)
-		info("BillingWeight: %pJ %s = %f",
-		     job_ptr,
-		     (slurmctld_conf.priority_flags & PRIORITY_FLAGS_MAX_TRES) ?
-		     "MAX(node TRES) + SUM(Global TRES)" : "SUM(TRES)",
-		     job_ptr->billable_tres);
+	log_flag(PRIO, "BillingWeight: %pJ %s = %f",
+		 job_ptr,
+		 (slurmctld_conf.priority_flags & PRIORITY_FLAGS_MAX_TRES) ?
+		 "MAX(node TRES) + SUM(Global TRES)" : "SUM(TRES)",
+		 job_ptr->billable_tres);
 
 	return job_ptr->billable_tres;
 }
