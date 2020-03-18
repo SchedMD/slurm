@@ -815,7 +815,8 @@ bit_set_count_range(bitstr_t *b, int32_t start, int32_t end)
 
 static int32_t _bit_overlap_internal(bitstr_t *b1, bitstr_t *b2, bool count_it)
 {
-	int32_t count = 0, anded;
+	int32_t count = 0;
+	int64_t anded;
 	bitoff_t bit, bit_cnt;
 	int32_t word_size = sizeof(bitstr_t) * 8;
 

@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
     registration.
  -- Prolog/Epilog - Fix missing GPU information.
  -- Fix segfault when using config parser for expanded lines.
+ -- Fix bit overlap test function.
 
 * Changes in Slurm 20.02.0
 ==========================
