@@ -738,7 +738,7 @@ static int _add_clusters_to_remove(List cluster_list, const char *federation)
 		ListIterator orig_itr = list_iterator_create(cluster_list);
 
 		/* Figure out if cluster in cluster_list is already on the
-		 * federation. If if is, don't add to list to remove */
+		 * federation. If it is, don't add to list to remove */
 		while ((orig_cluster = list_next(orig_itr))) {
 			char *db_name = db_cluster->name;
 			if (*db_name == '+' || *db_name == '-')
