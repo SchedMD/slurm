@@ -3752,7 +3752,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 			node_bitmap = job_ptr->node_bitmap;
 	}
 
-	trace_job(job_ptr, __func__, "enter");
+	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	xassert(node_ptr);
 	if (node_bitmap && (bit_test(node_bitmap, inx))) {

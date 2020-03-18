@@ -2430,7 +2430,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(comp_msg->job_id);
-	trace_job(job_ptr, __func__, "enter");
+	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	/* Mark job and/or job step complete */
 	error_code = job_complete(comp_msg->job_id, uid,
@@ -2468,7 +2468,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 		(void) schedule_node_save();	/* Has own locking */
 	}
 
-	trace_job(job_ptr, __func__, "return");
+	log_flag(TRACE_JOBS, "%s: return %pJ", __func__, job_ptr);
 }
 
 /* _slurm_rpc_complete_prolog - process RPC to note the

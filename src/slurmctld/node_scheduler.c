@@ -486,7 +486,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	xassert(job_ptr);
 	xassert(job_ptr->details);
 
-	trace_job(job_ptr, __func__, "");
+	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 
 	acct_policy_job_fini(job_ptr);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)

@@ -713,7 +713,7 @@ extern int license_job_return(job_record_t *job_ptr)
 		return rc;
 
 	last_license_update = time(NULL);
-	trace_job(job_ptr, __func__, "");
+	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = list_next(iter))) {

@@ -4899,7 +4899,7 @@ void cleanup_completing(job_record_t *job_ptr)
 {
 	time_t delay;
 
-	trace_job(job_ptr, __func__, "");
+	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 
 	delay = last_job_update - job_ptr->end_time;
 	if (delay > 60) {

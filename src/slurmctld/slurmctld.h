@@ -2626,11 +2626,6 @@ extern bool validate_operator(uid_t uid);
  */
 extern void cleanup_completing(job_record_t *job_ptr);
 
-/* trace_job() - print the job details if
- *               the DEBUG_FLAG_TRACE_JOBS is set
- */
-extern void trace_job(job_record_t *job_ptr, const char *, const char *);
-
 /*
  * Determine if slurmctld will respond to "configless" RPCs. If so,
  * load the internal cached config values to avoid regenerating on each

@@ -3177,7 +3177,7 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 	START_TIMER;
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(job_step_kill_msg->job_id);
-	trace_job(job_ptr, __func__, "enter");
+	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	/* do RPC call */
 	if (job_step_kill_msg->job_step_id == SLURM_BATCH_SCRIPT) {
@@ -3256,7 +3256,7 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		}
 	}
 
-	trace_job(job_ptr, __func__, "return");
+	log_flag(TRACE_JOBS, "%s: return %pJ", __func__, job_ptr);
 	return error_code;
 }
 
@@ -5047,7 +5047,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 	uint16_t job_term_state;
 	time_t now = time(NULL);
 
-	trace_job(job_ptr, __func__, "enter");
+	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	if (IS_JOB_STAGE_OUT(job_ptr) && (flags & KILL_HURRY)) {
 		job_ptr->bit_flags |= JOB_KILL_HURRY;
@@ -5224,7 +5224,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 		__func__, job_ptr, signal,
 		job_state_string(job_ptr->job_state));
 
-	trace_job(job_ptr, __func__, "return");
+	log_flag(TRACE_JOBS, "%s: return %pJ", __func__, job_ptr);
 
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 }
@@ -14746,7 +14746,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		return true;
 	}
 
-	trace_job(job_ptr, __func__, "enter");
+	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	/*
 	 * There is a potential race condition this handles.
@@ -17356,17 +17356,6 @@ extern void job_end_time_reset(job_record_t *job_ptr)
 				    (job_ptr->time_limit * 60);	/* secs */
 	}
 	job_ptr->end_time_exp = job_ptr->end_time;
-}
-
-/* trace_job() - print the job details if
- *               the DEBUG_FLAG_TRACE_JOBS is set
- */
-extern void trace_job(job_record_t *job_ptr, const char *func,
-		      const char *extra)
-{
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_TRACE_JOBS) {
-		info("%s: %s %pJ", func, extra, job_ptr);
-	}
 }
 
 /* If this is a job array meta-job, prepare it for being scheduled */
