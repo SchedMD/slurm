@@ -1113,6 +1113,12 @@ static bool _valid_features_act(char *features_act, char *features)
 	return valid_subset;
 }
 
+static void _undo_reboot_asap(node_record_t *node_ptr)
+{
+	node_ptr->node_state &= (~NODE_STATE_DRAIN);
+	xfree(node_ptr->reason);
+}
+
 /*
  * update_node - update the configuration data for one or more nodes
  * IN update_node_msg - update node request
@@ -1543,6 +1549,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 					node_ptr->node_state &=
 						(~NODE_STATE_REBOOT);
 					state_val = base_state;
+					if (!xstrcmp(node_ptr->reason,
+					             "Reboot ASAP"))
+						_undo_reboot_asap(node_ptr);
 				} else {
 					info("REBOOT on node %s already in progress -- unable to cancel",
 					     this_node_name);

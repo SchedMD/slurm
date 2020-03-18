@@ -90,7 +90,9 @@ written.
 
 .TP
 \fBcancel_reboot \fI<NodeList>\fP
-Cancel pending reboots on nodes.
+Cancel pending reboots on nodes. If the node reason is "Reboot ASAP" (the
+default reason set by reboot_nodes's \fIASAP\fP keyword), then the DRAIN state
+flag will be removed and the node reason will be cleared.
 
 .TP
 \fBcluster\fR \fICLUSTER_NAME\fP

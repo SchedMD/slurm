@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix for recovering burst buffers when using high-availability.
  -- Fix invalid read due to freeing an incorrectly allocated env array.
  -- Update slurmctld -i message to warn about losing data.
+ -- Fix scontrol cancel_reboot so it clears the DRAIN flag and node reason for a
+    pending ASAP reboot.
 
 * Changes in Slurm 20.02.0
 ==========================
