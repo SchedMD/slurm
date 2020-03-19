@@ -62,6 +62,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix update of First_Cores flag in a reservation.
  -- Fix parsing of update reservation flags.
  -- Fix --switches for cons_tres.
+ -- Retry connection on ETIMEDOUT in slurm_send_addr_recv_msgs.
 
 * Changes in Slurm 20.02.5
 ==========================
