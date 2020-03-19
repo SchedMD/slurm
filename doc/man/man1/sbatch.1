@@ -701,9 +701,13 @@ Bind by setting GPU masks on tasks (or ranks) as specified where <list> is
 a node and identical mapping is applied to the tasks on every node (i.e. the
 lowest task ID on each node is mapped to the first mask specified in the list,
 etc.). GPU masks are always interpreted as hexadecimal values but can be
-preceded with an optional '0x'. To simplify support for large task counts, the
-lists may follow a map with an asterisk and repetition count.
-For example "mask_gpu:0x0f*4,0xf0*4".
+preceded with an optional '0x'. Not supported unless the entire node is
+allocated to the job.
+If the number of tasks (or ranks) exceeds the number of elements in this list,
+elements in the list will be reused as needed starting from the beginning of the
+list.
+To simplify support for large task counts, the lists may follow a map with an
+asterisk and repetition count. For example "mask_gpu:0x0f*4,0xf0*4".
 Not supported unless the entire node is allocated to the job.
 .RE
 
