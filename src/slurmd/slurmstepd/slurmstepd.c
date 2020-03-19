@@ -116,6 +116,8 @@ main (int argc, char **argv)
 	if (_process_cmdline (argc, argv) < 0)
 		fatal ("Error in slurmstepd command line");
 
+	slurm_conf_init(NULL);
+
 	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));
 	conf->argv = &argv;
