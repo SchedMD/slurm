@@ -2835,6 +2835,25 @@ static int _test_job_dependency_common(
 		else
 			*depends = true;
 		rc = 1;
+	} else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND) {
+		time_t now = time(NULL);
+		if (is_pending) {
+			*depends = true;
+		} else if (is_completed)
+			*failure = true;
+		else if ((djob_ptr->end_time != 0) &&
+			 (djob_ptr->end_time > now)) {
+			job_ptr->time_limit = djob_ptr->end_time - now;
+			job_ptr->time_limit /= 60;  /* sec to min */
+			*clear_dep = true;
+		}
+		if (!*failure && job_ptr->details && djob_ptr->details) {
+			job_ptr->details->share_res =
+				djob_ptr->details->share_res;
+			job_ptr->details->whole_node =
+				djob_ptr->details->whole_node;
+		}
+		rc = 1;
 	}
 
 	return rc;
