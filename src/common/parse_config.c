@@ -1438,11 +1438,9 @@ static void _parse_line_expanded_destroyer(void* data)
  */
 static s_p_hashtbl_t *_parse_expline_adapt_table(const s_p_hashtbl_t *tbl)
 {
-	s_p_hashtbl_t *to_tbl = NULL;
+	s_p_hashtbl_t *to_tbl = xmalloc(sizeof(*to_tbl));
 
 	xassert(tbl);
-
-	to_tbl = xcalloc(CONF_HASH_LEN, sizeof(s_p_values_t *));
 
 	for (int i = 0; i < CONF_HASH_LEN; ++i) {
 		for (s_p_values_t *val_ptr = tbl->hash[i];
@@ -2197,7 +2195,7 @@ extern s_p_hashtbl_t *s_p_unpack_hashtbl(Buf buffer)
 
 	safe_unpack32(&cnt, buffer);
 
-	hashtbl = xcalloc(CONF_HASH_LEN, sizeof(s_p_values_t *));
+	hashtbl = xmalloc(sizeof(*hashtbl));
 
 	for (i = 0; i < cnt; i++) {
 		value = xmalloc(sizeof(s_p_values_t));
