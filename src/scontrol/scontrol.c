@@ -527,8 +527,6 @@ _print_ping (void)
 	uint32_t control_cnt, i;
 	char **control_machine;
 
-	slurm_conf_init(NULL);
-
 	conf = slurm_conf_lock();
 	control_cnt = conf->control_cnt;
 	control_machine = xmalloc(sizeof(char *) * control_cnt);
@@ -588,7 +586,6 @@ _print_daemons (void)
 	int actld = 0, ctld = 0, d = 0, i;
 	char *daemon_list = NULL;
 
-	slurm_conf_init(NULL);
 	conf = slurm_conf_lock();
 
 	gethostname_short(node_name_short, MAX_SLURM_NAME);
@@ -642,7 +639,6 @@ _print_aliases (char* node_hostname)
 	char me[MAX_SLURM_NAME], *n = NULL, *a = NULL;
 	char *s;
 
-	slurm_conf_init(NULL);
 	if (!node_hostname) {
 		gethostname_short(me, MAX_SLURM_NAME);
 		s = me;
