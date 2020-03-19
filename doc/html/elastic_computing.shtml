@@ -1,15 +1,13 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">Slurm Elastic Computing (Cloud Bursting)</a></h1>
+<h1><a name="top">Cloud Scheduling Guide</a></h1>
 
 <h2>Overview</h2>
 
 <p>Slurm has the ability to support a cluster that grows and
 shrinks on demand, typically relying upon a service such as
 <a href="http://aws.amazon.com/ec2/">Amazon Elastic Computing Cloud (Amazon EC2)</a>
-and <a href="https://cloud.google.com">Google Cloud Platform</a> (GCP
-integration scripts can be found at
-<a href="https://github.com/SchedMD/slurm-gcp">https://github.com/SchedMD/slurm-gcp</a>)
+and <a href="https://cloud.google.com">Google Cloud Platform</a>
 for resources.
 These resources can be combined with an existing cluster to process excess
 workload (cloud bursting) or it can operate as an independent self-contained
@@ -18,18 +16,18 @@ Good responsiveness and throughput can be achieved while you only pay for the
 resources needed.</p>
 
 <p>The rest of this document describes details about Slurm's infrastructure that
-can be used to support Elastic Computing.</p>
+can be used to support cloud scheduling.</p>
 
-<p>Slurm's Elastic Computing logic relies heavily upon the existing power save
+<p>Slurm's cloud scheduling logic relies heavily upon the existing power save
 logic.
 Review of Slurm's <a href="power_save.html">Power Saving Guide</a> is strongly
 recommended.
 This logic initiates programs when nodes are required for use and another
 program when those nodes are no longer required.
-For Elastic Computing, these programs will need to provision the resources
+For cloud scheduling, these programs will need to provision the resources
 from the cloud and notify Slurm of the node's name and network address and
 later relinquish the nodes back to the cloud.
-Most of the Slurm changes to support Elastic Computing were changes to
+Most of the Slurm changes to support cloud scheduling were changes to
 support node addressing that can change.</p>
 
 <h2>Slurm Configuration</h2>
@@ -188,6 +186,6 @@ expands (adds resources).</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 11 November 2019</p>
+<p style="text-align:center;">Last modified 19 March 2020</p>
 
 <!--#include virtual="footer.txt"-->
