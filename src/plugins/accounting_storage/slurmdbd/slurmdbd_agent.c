@@ -114,10 +114,9 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 		id_msg = resp.data;
 		rc = id_msg->return_code;
 
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
-			debug("%s: msg_type:DBD_ID_RC return_code:%s JobId=%u db_index=%"PRIu64,
-			      __func__, slurm_strerror(rc), id_msg->job_id,
-			      id_msg->db_index);
+		log_flag(PROTOCOL, "%s: msg_type:DBD_ID_RC return_code:%s JobId=%u db_index=%"PRIu64,
+			 __func__, slurm_strerror(rc), id_msg->job_id,
+			 id_msg->db_index);
 
 		slurmdbd_free_id_rc_msg(id_msg);
 		if (rc != SLURM_SUCCESS)
@@ -127,10 +126,9 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 		msg = resp.data;
 		rc = msg->rc;
 
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
-			debug("%s: msg_type:PERSIST_RC return_code:%s ret_info:%hu flags=%#x comment:%s",
-			      __func__, slurm_strerror(rc), msg->ret_info,
-			      msg->flags, msg->comment);
+		log_flag(PROTOCOL, "%s: msg_type:PERSIST_RC return_code:%s ret_info:%hu flags=%#x comment:%s",
+			 __func__, slurm_strerror(rc), msg->ret_info,
+			 msg->flags, msg->comment);
 
 		if (rc != SLURM_SUCCESS) {
 			if (msg->ret_info == DBD_REGISTER_CTLD &&
@@ -745,17 +743,15 @@ static void *_agent(void *x)
 	xsignal(SIGUSR1, _sig_handler);
 	xsignal_unblock(sigarray);
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
-		info("%s: slurmdbd agent_count=%d with msg_type=%s",
-		     __func__, list_count(agent_list),
-		     slurmdbd_msg_type_2_str(list_req.msg_type, 1));
+	log_flag(AGENT, "%s: slurmdbd agent_count=%d with msg_type=%s",
+		 __func__, list_count(agent_list),
+		 slurmdbd_msg_type_2_str(list_req.msg_type, 1));
 
 	while (*slurmdbd_conn->shutdown == 0) {
 		slurm_mutex_lock(&slurmdbd_lock);
 		if (halt_agent) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
-				info("%s: slurmdbd agent halt with agent_count=%d",
-				     __func__, list_count(agent_list));
+			log_flag(AGENT, "%s: slurmdbd agent halt with agent_count=%d",
+				 __func__, list_count(agent_list));
 
 			slurm_cond_wait(&slurmdbd_cond, &slurmdbd_lock);
 		}
@@ -768,9 +764,8 @@ static void *_agent(void *x)
 			if (slurmdbd_conn->fd < 0) {
 				fail_time = time(NULL);
 
-				if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
-					info("%s: slurmdbd disconnected with agent_count=%d",
-					     __func__, list_count(agent_list));
+				log_flag(AGENT, "%s: slurmdbd disconnected with agent_count=%d",
+					 __func__, list_count(agent_list));
 			}
 		}
 
@@ -781,9 +776,8 @@ static void *_agent(void *x)
 			slurm_mutex_unlock(&slurmdbd_lock);
 			_max_dbd_msg_action(&cnt);
 			END_TIMER2("slurmdbd agent: sleep");
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
-				info("%s: slurmdbd agent sleeping with agent_count=%d",
-				     __func__, list_count(agent_list));
+			log_flag(AGENT, "%s: slurmdbd agent sleeping with agent_count=%d",
+				 __func__, list_count(agent_list));
 			abs_time.tv_sec  = time(NULL) + 10;
 			abs_time.tv_nsec = 0;
 			slurm_cond_timedwait(&agent_cond, &agent_lock,
@@ -902,9 +896,8 @@ static void *_agent(void *x)
 	slurm_mutex_lock(&agent_lock);
 	_save_dbd_state();
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
-		info("%s: slurmdbd agent ending with agent_count=%d",
-		     __func__, list_count(agent_list));
+	log_flag(AGENT, "%s: slurmdbd agent ending with agent_count=%d",
+		 __func__, list_count(agent_list));
 
 	FREE_NULL_LIST(agent_list);
 	slurm_mutex_unlock(&agent_lock);
@@ -1101,11 +1094,9 @@ end_it:
 	slurm_cond_signal(&slurmdbd_cond);
 	slurm_mutex_unlock(&slurmdbd_lock);
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
-		debug("%s: msg_type:%s protocol_version:%hu return_code:%d response_msg_type:%s",
-		      __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
-		      rpc_version, rc,
-		      slurmdbd_msg_type_2_str(resp->msg_type, 1));
+	log_flag(PROTOCOL, "%s: msg_type:%s protocol_version:%hu return_code:%d response_msg_type:%s",
+		 __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
+		 rpc_version, rc, slurmdbd_msg_type_2_str(resp->msg_type, 1));
 
 	return rc;
 }
@@ -1166,10 +1157,9 @@ extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 		slurm_persist_free_rc_msg(msg);
 	}
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
-		debug("%s: msg_type:%s protocol_version:%hu return_code:%d",
-		      __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
-		      rpc_version, rc);
+	log_flag(PROTOCOL, "%s: msg_type:%s protocol_version:%hu return_code:%d",
+		 __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
+		 rpc_version, rc);
 
 	return rc;
 }
@@ -1187,11 +1177,9 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req)
 
 	xassert(slurmctld_conf.max_dbd_msgs);
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
-		debug("%s: msg_type:%s protocol_version:%hu agent_count:%d",
-		      __func__,
-		      slurmdbd_msg_type_2_str(req->msg_type, 1),
-		      rpc_version, list_count(agent_list));
+	log_flag(PROTOCOL, "%s: msg_type:%s protocol_version:%hu agent_count:%d",
+		 __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
+		 rpc_version, list_count(agent_list));
 
 	buffer = slurm_persist_msg_pack(
 		slurmdbd_conn, (persist_msg_t *)req);

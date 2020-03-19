@@ -3008,8 +3008,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 	int rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION)
-		info("delete_resv: Name=%s", resv_desc_ptr->name);
+	log_flag(RESERVATION, "%s: Name=%s", __func__, resv_desc_ptr->name);
 
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
@@ -5186,15 +5185,11 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 				continue;
 			if (bit_overlap_any(*node_bitmap,
 					    res2_ptr->node_bitmap)) {
-				if (slurmctld_conf.debug_flags &
-				    DEBUG_FLAG_RESERVATION)
-					info("%s: reservation %s overlaps %s with %u nodes",
-					       __func__,
-					       resv_ptr->name,
-					       res2_ptr->name,
-					       bit_overlap(*node_bitmap,
-							   res2_ptr->
-								node_bitmap));
+				log_flag(RESERVATION, "%s: reservation %s overlaps %s with %u nodes",
+					 __func__, resv_ptr->name,
+					 res2_ptr->name,
+					 bit_overlap(*node_bitmap,
+						     res2_ptr->node_bitmap));
 				*resv_overlap = true;
 				bit_and_not(*node_bitmap,res2_ptr->node_bitmap);
 			}
@@ -5432,10 +5427,8 @@ static int _set_job_resvid(void *object, void *arg)
 	if ((job_ptr->resv_ptr != resv_ptr) || !IS_JOB_PENDING(job_ptr))
 		return SLURM_SUCCESS;
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION)
-		info("updating %pJ to correct resv_id (%u->%u) of reoccurring reservation '%s'",
-		     job_ptr, job_ptr->resv_id, resv_ptr->resv_id,
-		     resv_ptr->name);
+	log_flag(RESERVATION, "updating %pJ to correct resv_id (%u->%u) of reoccurring reservation '%s'",
+		 job_ptr, job_ptr->resv_id, resv_ptr->resv_id, resv_ptr->name);
 	job_ptr->resv_id = resv_ptr->resv_id;
 	/* Update the database */
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);

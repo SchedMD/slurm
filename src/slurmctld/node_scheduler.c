@@ -230,9 +230,8 @@ static int _get_gres_config(job_record_t *job_ptr)
 		i_first = bit_ffs(node_bitmap);
 		i_last  = bit_fls(node_bitmap);
 	} else {
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
-			debug("%s: %pJ -- No nodes in bitmap of job_record!",
-			      __func__, job_ptr);
+		log_flag(GRES, "%s: %pJ -- No nodes in bitmap of job_record!",
+			 __func__, job_ptr);
 		return rv;
 	}
 	if (i_first == -1)      /* job has no nodes */
@@ -256,18 +255,16 @@ static int _get_gres_config(job_record_t *job_ptr)
 		else
 			count = 0;
 
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
-			debug("%s %pJ -- Count of GRES types in the gres_list is: %d",
-			      __func__, job_ptr, count);
+		log_flag(GRES, "%s %pJ -- Count of GRES types in the gres_list is: %d",
+			 __func__, job_ptr, count);
 
 		/*
 		 * Only reallocate when there is an increase in size of the
 		 * local arrays.
 		 */
 		if (count > oldcount) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
-				debug("%s %pJ -- Old GRES count: %d New GRES count: %d",
-				      __func__, job_ptr, oldcount, count);
+			log_flag(GRES, "%s %pJ -- Old GRES count: %d New GRES count: %d",
+				 __func__, job_ptr, oldcount, count);
 
 			/*
 			 * Allocate arrays to hold each GRES type and its
@@ -3382,10 +3379,8 @@ static int _fill_in_gres_fields(job_record_t *job_ptr)
 
 	/* First build the GRES requested field. */
 	if (!job_ptr->gres_list || (list_count(job_ptr->gres_list) == 0)) {
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
-			debug("%s: %pJ GRES list is empty or NULL; this is OK if no GRES requested",
-			      __func__, job_ptr);
-		}
+		log_flag(GRES, "%s: %pJ GRES list is empty or NULL; this is OK if no GRES requested",
+			 __func__, job_ptr);
 		if (job_ptr->gres_req == NULL)
 			xstrcat(job_ptr->gres_req, "");
 	} else if ((job_ptr->node_cnt > 0) && !job_ptr->gres_req) {
