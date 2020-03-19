@@ -75,7 +75,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="sched_config.html">Scheduling Configuration Guide</a></li>
 <li><a href="cons_res.html">Consumable Resources Guide</a></li>
 <li><a href="core_spec.html">Core Specialization</a></li>
-<li><a href="elastic_computing.html">Elastic Computing (Cloud Bursting)</a></li>
 <li><a href="gang_scheduling.html">Gang Scheduling</a></li>
 <li><a href="gres.html">Generic Resource (GRES) Scheduling</a></li>
 <li><a href="high_throughput.html">High Throughput Computing Guide</a></li>
@@ -91,6 +90,12 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li>Specific Systems
 <ul>
 <li><a href="cray.html">Cray User and Administrator Guide with Native Slurm</a></li>
+</ul>
+</li>
+<li>Cloud
+<ul>
+<li><a href="elastic_computing.html">Cloud Scheduling Guide</a></li>
+<li><a href="https://github.com/schedmd/slurm-gcp">Slurm on Google Cloud Platform</a></li>
 </ul>
 </li>
 </ul>
@@ -144,6 +149,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 24 April 2019</p>
+<p style="text-align:center;">Last modified 19 March 2020</p>
 
 <!--#include virtual="footer.txt"-->
