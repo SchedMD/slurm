@@ -2253,6 +2253,15 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto bad_parse;
 		}
 	}
+	if ((resv_desc_ptr->flags & RESERVE_FLAG_TIME_FLOAT) &&
+	    (resv_desc_ptr->flags & (RESERVE_FLAG_DAILY   |
+				     RESERVE_FLAG_WEEKDAY |
+				     RESERVE_FLAG_WEEKEND |
+				     RESERVE_FLAG_WEEKLY))) {
+		info("Reservation request has mutually exclusive flags. Repeating floating reservations are not supported.");
+		rc = ESLURM_NOT_SUPPORTED;
+		goto bad_parse;
+	}
 
 	/* Sort the list of node counts in order descending size */
 	if (resv_desc_ptr->node_cnt) {

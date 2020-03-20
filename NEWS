@@ -81,6 +81,7 @@ documents those changes that are of interest to users and administrators.
     of siblings when calculating FairTree fairshare.
  -- Fix cons_tres --exclusive=user to allocate only requested number of CPUs.
  -- Add MySQL deadlock detection and automatic retry mechanism.
+ -- Reject repeating floating reservations as they aren't supported.
 
 * Changes in Slurm 20.02.1
 ==========================
