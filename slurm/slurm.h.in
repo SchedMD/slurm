@@ -2771,7 +2771,6 @@ typedef struct {
 	char *mpi_params;	/* MPI parameters */
 	char *msg_aggr_params;  /* Message aggregation parameters */
 	uint16_t msg_timeout;	/* message timeout */
-	uint16_t tcp_timeout;	/* tcp timeout */
 	uint32_t next_job_id;	/* next slurm generated job_id to assign */
 	void *node_features_conf; /* Node Features Plugin config file */
 	char *node_features_plugins; /* List of node_features plugins to use */
@@ -2899,6 +2898,7 @@ typedef struct {
 	char *task_plugin;	/* task launch plugin */
 	uint32_t task_plugin_param;	/* see CPU_BIND_* */
 	char *task_prolog;	/* pathname of task launch prolog */
+	uint16_t tcp_timeout;	/* tcp timeout */
 	char *tmp_fs;		/* pathname of temporary file system */
 	char *topology_param;	/* network topology parameters */
 	char *topology_plugin;	/* network topology plugin */

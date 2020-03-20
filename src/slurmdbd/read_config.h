@@ -73,7 +73,6 @@ typedef struct {
 	char *	 	default_qos;	/* default qos setting when
 					 * adding clusters              */
 	char *		log_file;	/* Log file			*/
-	uint16_t	syslog_debug;	/* output to both logfile and syslog*/
 	uint16_t        log_fmt;        /* Log file timestamt format    */
 	uint32_t	max_time_range;	/* max time range for user queries */
 	uint16_t        msg_timeout;    /* message timeout		*/
@@ -108,6 +107,7 @@ typedef struct {
 	uint16_t	storage_port;	/* port DB is listening to	*/
 	char *		storage_type;	/* DB to be used for storage	*/
 	char *		storage_user;	/* user authorized to write DB	*/
+	uint16_t	syslog_debug;	/* output to both logfile and syslog*/
 	uint16_t        track_wckey;    /* Whether or not to track wckey*/
 	uint16_t        track_ctld;     /* Whether or not track when a
 					 * slurmctld goes down or not   */
