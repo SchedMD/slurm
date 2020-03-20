@@ -124,7 +124,7 @@ static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
 static void         _create_het_job_id_set(hostset_t jobid_hostset,
 					    uint32_t het_job_offset,
 					    char **het_job_id_set);
-static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
+static void         _fill_ctld_conf(slurm_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int          _is_prolog_finished(uint32_t job_id);
 static int          _make_step_cred(step_record_t *step_rec,
@@ -667,9 +667,9 @@ extern void response_init(slurm_msg_t *resp, slurm_msg_t *msg)
  *	this is done with locks set so the data can change at other times
  * OUT conf_ptr - place to copy configuration to
  */
-static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
+static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 {
-	slurm_ctl_conf_t *conf = &slurmctld_conf;
+	slurm_conf_t *conf = &slurmctld_conf;
 	uint32_t next_job_id;
 	int i;
 
@@ -680,7 +680,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	next_job_id   = get_next_job_id(true);
 
-	memset(conf_ptr, 0, sizeof(slurm_ctl_conf_t));
+	memset(conf_ptr, 0, sizeof(*conf_ptr));
 
 	conf_ptr->last_update         = time(NULL);
 	conf_ptr->accounting_storage_enforce =

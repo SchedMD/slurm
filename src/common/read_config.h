@@ -50,7 +50,7 @@
 #include "src/common/parse_config.h"
 #include "src/common/run_in_daemon.h"
 
-extern slurm_ctl_conf_t slurmctld_conf;
+extern slurm_conf_t slurmctld_conf;
 extern char *default_slurm_config_file;
 extern char *default_plugin_path;
 extern char *default_plugstack;
@@ -394,7 +394,7 @@ void slurm_conf_install_fork_handlers(void);
  */
 extern int slurm_conf_destroy(void);
 
-extern slurm_ctl_conf_t *slurm_conf_lock(void);
+extern slurm_conf_t *slurm_conf_lock(void);
 
 extern void slurm_conf_unlock(void);
 
@@ -558,16 +558,15 @@ extern int slurm_conf_get_res_spec_info(const char *node_name,
  *	file pathname (slurm_conf) is not changed.
  * IN/OUT ctl_conf_ptr - pointer to data structure to be initialized
  */
-extern void init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
+extern void init_slurm_conf(slurm_conf_t *ctl_conf_ptr);
 
 /*
- * free_slurm_conf - free all storage associated with a slurm_ctl_conf_t.
+ * free_slurm_conf - free all storage associated with a slurm_conf_t.
  * IN/OUT ctl_conf_ptr - pointer to data structure to be freed
  * IN purge_node_hash - purge system-wide node hash table if set,
  *			set to zero if clearing private copy of config data
  */
-extern void free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr,
-			     bool purge_node_hash);
+extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash);
 
 /*
  * gethostname_short - equivalent to gethostname(), but return only the first

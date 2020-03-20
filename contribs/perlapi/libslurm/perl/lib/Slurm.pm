@@ -599,7 +599,7 @@ Issue RPC to get Slurm control configuration information if changed.
     
 =item * IN $update_time: time of current configuration data.
 
-=item * RET: Slurm configuration data, with structure of C<slurm_ctl_conf_t>. On failure C<undef> is returned with errno set.
+=item * RET: Slurm configuration data, with structure of C<slurm_ctl_t>. On failure C<undef> is returned with errno set.
 
 =back
 
@@ -611,7 +611,7 @@ Output the contents of Slurm control configuration message as loaded using C<loa
     
 =item * IN $out: file to write to.
     
-=item * IN $conf: Slurm control configuration, with structure of C<slurm_ctl_conf_t>.
+=item * IN $conf: Slurm control configuration, with structure of C<slurm_conf_t>.
 
 =back
 
@@ -621,7 +621,7 @@ Put the Slurm configuration data into a List of opaque data type C<config_key_pa
 
 =over 2
     
-=item * IN $conf: Slurm control configuration, with structure of C<slurm_ctl_conf_t>.
+=item * IN $conf: Slurm control configuration, with structure of C<slurm_conf_t>.
     
 =item * RET: List of opaque data type C<config_key_pair_t>.
 

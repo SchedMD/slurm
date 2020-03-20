@@ -489,7 +489,7 @@ void slurm_print_ctl_conf ( FILE* out,
 			      select_title);
 
 }
-extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
+extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 {
 	List ret_list = NULL;
 	config_key_pair_t *key_pair;
@@ -1828,8 +1828,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_ctl_conf
  */
-int
-slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp)
+int slurm_load_ctl_conf(time_t update_time, slurm_conf_t **confp)
 {
 	int rc;
 	slurm_msg_t req_msg;

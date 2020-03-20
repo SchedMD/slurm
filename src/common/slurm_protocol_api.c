@@ -125,7 +125,7 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 {
 	slurm_protocol_config_t *proto_conf = NULL;
 	slurm_addr_t controller_addr;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 	int i;
 
 	conf = slurm_conf_lock();
@@ -191,7 +191,7 @@ void slurm_api_clear_config(void)
 uint16_t slurm_get_complete_wait(void)
 {
 	uint16_t complete_wait = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -208,7 +208,7 @@ uint16_t slurm_get_complete_wait(void)
 uint32_t slurm_get_cpu_freq_def(void)
 {
 	uint32_t cpu_freq_def = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -225,7 +225,7 @@ uint32_t slurm_get_cpu_freq_def(void)
 uint32_t slurm_get_cpu_freq_govs(void)
 {
 	uint32_t cpu_freq_govs = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -242,7 +242,7 @@ uint32_t slurm_get_cpu_freq_govs(void)
 uint16_t slurm_get_batch_start_timeout(void)
 {
 	uint16_t batch_start_timeout = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -261,7 +261,7 @@ uint16_t slurm_get_batch_start_timeout(void)
 uint32_t slurm_get_control_cnt(void)
 {
 	uint32_t control_cnt = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -278,7 +278,7 @@ uint32_t slurm_get_control_cnt(void)
 uint16_t slurm_get_suspend_timeout(void)
 {
 	uint16_t suspend_timeout = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -295,7 +295,7 @@ uint16_t slurm_get_suspend_timeout(void)
 uint16_t slurm_get_resume_timeout(void)
 {
 	uint16_t resume_timeout = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -312,7 +312,7 @@ uint16_t slurm_get_resume_timeout(void)
 uint32_t slurm_get_suspend_time(void)
 {
 	uint32_t suspend_time = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -329,7 +329,7 @@ uint32_t slurm_get_suspend_time(void)
 uint64_t slurm_get_def_mem_per_cpu(void)
 {
 	uint64_t mem_per_cpu = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -346,7 +346,7 @@ uint64_t slurm_get_def_mem_per_cpu(void)
 uint16_t slurm_get_kill_on_bad_exit(void)
 {
 	uint16_t kill_on_bad_exit = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -363,7 +363,7 @@ uint16_t slurm_get_kill_on_bad_exit(void)
 uint32_t slurm_get_prolog_flags(void)
 {
 	uint32_t prolog_flags = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -380,7 +380,7 @@ uint32_t slurm_get_prolog_flags(void)
 uint64_t slurm_get_debug_flags(void)
 {
 	uint64_t debug_flags = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		debug_flags = slurmdbd_conf->debug_flags;
@@ -396,7 +396,7 @@ uint64_t slurm_get_debug_flags(void)
  */
 void slurm_set_debug_flags(uint64_t debug_flags)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -412,7 +412,7 @@ void slurm_set_debug_flags(uint64_t debug_flags)
 uint64_t slurm_get_max_mem_per_cpu(void)
 {
 	uint64_t mem_per_cpu = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -429,7 +429,7 @@ uint64_t slurm_get_max_mem_per_cpu(void)
 uint32_t slurm_get_epilog_msg_time(void)
 {
 	uint32_t epilog_msg_time = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
  	if (slurmdbd_conf) {
 	} else {
@@ -446,7 +446,7 @@ uint32_t slurm_get_epilog_msg_time(void)
 extern int slurm_get_env_timeout(void)
 {
 	int timeout = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -463,7 +463,7 @@ extern int slurm_get_env_timeout(void)
 extern uint32_t slurm_get_max_array_size(void)
 {
 	int max_array_size = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -482,7 +482,7 @@ extern uint32_t slurm_get_max_array_size(void)
 char *slurm_get_mpi_default(void)
 {
 	char *mpi_default = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -500,7 +500,7 @@ char *slurm_get_mpi_default(void)
 char *slurm_get_mpi_params(void)
 {
 	char *mpi_params = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -519,7 +519,7 @@ char *slurm_get_mpi_params(void)
 char *slurm_get_msg_aggr_params(void)
 {
 	char *msg_aggr_params = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -536,7 +536,7 @@ char *slurm_get_msg_aggr_params(void)
 extern char *slurm_get_reboot_program(void)
 {
 	char *reboot_program = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -553,7 +553,7 @@ extern char *slurm_get_reboot_program(void)
 uint16_t slurm_get_tcp_timeout(void)
 {
 	uint16_t tcp_timeout = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
  	if (slurmdbd_conf) {
 		tcp_timeout = slurmdbd_conf->tcp_timeout;
@@ -571,7 +571,7 @@ uint16_t slurm_get_tcp_timeout(void)
 uint16_t slurm_get_msg_timeout(void)
 {
 	uint16_t msg_timeout = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
  	if (slurmdbd_conf) {
 		msg_timeout = slurmdbd_conf->msg_timeout;
@@ -593,7 +593,7 @@ uint16_t slurm_get_msg_timeout(void)
 char *slurm_get_plugin_dir(void)
 {
 	char *plugin_dir = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		plugin_dir = xstrdup(slurmdbd_conf->plugindir);
@@ -612,7 +612,7 @@ char *slurm_get_plugin_dir(void)
 uint32_t slurm_get_priority_decay_hl(void)
 {
 	uint32_t priority_hl = NO_VAL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -631,7 +631,7 @@ uint32_t slurm_get_priority_decay_hl(void)
 uint32_t slurm_get_priority_calc_period(void)
 {
 	uint32_t calc_period = NO_VAL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -650,7 +650,7 @@ uint32_t slurm_get_priority_calc_period(void)
 bool slurm_get_priority_favor_small(void)
 {
 	bool factor = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -669,7 +669,7 @@ bool slurm_get_priority_favor_small(void)
 uint16_t slurm_get_priority_flags(void)
 {
 	uint16_t flags = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -688,7 +688,7 @@ uint16_t slurm_get_priority_flags(void)
 uint32_t slurm_get_priority_max_age(void)
 {
 	uint32_t age = NO_VAL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -705,7 +705,7 @@ uint32_t slurm_get_priority_max_age(void)
 char *slurm_get_priority_params(void)
 {
 	char *params = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
  	if (slurmdbd_conf) {
 	} else {
@@ -723,7 +723,7 @@ char *slurm_get_priority_params(void)
 uint16_t slurm_get_priority_reset_period(void)
 {
 	uint16_t reset_period = (uint16_t) 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -742,7 +742,7 @@ uint16_t slurm_get_priority_reset_period(void)
 char *slurm_get_priority_site_factor_params(void)
 {
 	char *params = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -761,7 +761,7 @@ char *slurm_get_priority_site_factor_params(void)
 char *slurm_get_priority_site_factor_plugin(void)
 {
 	char *plugin = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -780,7 +780,7 @@ char *slurm_get_priority_site_factor_plugin(void)
 char *slurm_get_priority_type(void)
 {
 	char *priority_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -799,7 +799,7 @@ char *slurm_get_priority_type(void)
 uint32_t slurm_get_priority_weight_age(void)
 {
 	uint32_t factor = NO_VAL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -819,7 +819,7 @@ uint32_t slurm_get_priority_weight_age(void)
 uint32_t slurm_get_priority_weight_assoc(void)
 {
 	uint32_t factor = NO_VAL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -839,7 +839,7 @@ uint32_t slurm_get_priority_weight_assoc(void)
 uint32_t slurm_get_priority_weight_fairshare(void)
 {
 	uint32_t factor = NO_VAL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -858,7 +858,7 @@ uint32_t slurm_get_priority_weight_fairshare(void)
 uint16_t slurm_get_fs_dampening_factor(void)
 {
 	uint16_t factor = 1;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -875,7 +875,7 @@ uint16_t slurm_get_fs_dampening_factor(void)
  */
 void slurm_set_fs_dampening_factor(uint16_t factor)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -891,7 +891,7 @@ void slurm_set_fs_dampening_factor(uint16_t factor)
 uint32_t slurm_get_priority_weight_job_size(void)
 {
 	uint32_t factor = NO_VAL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -910,7 +910,7 @@ uint32_t slurm_get_priority_weight_job_size(void)
 uint32_t slurm_get_priority_weight_partition(void)
 {
 	uint32_t factor = NO_VAL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -930,7 +930,7 @@ uint32_t slurm_get_priority_weight_partition(void)
 uint32_t slurm_get_priority_weight_qos(void)
 {
 	uint32_t factor = NO_VAL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -949,7 +949,7 @@ uint32_t slurm_get_priority_weight_qos(void)
 char *slurm_get_priority_weight_tres(void)
 {
 	char *weights = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -968,7 +968,7 @@ char *slurm_get_priority_weight_tres(void)
 char *slurm_get_prep_plugins(void)
 {
 	char *plugins = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1087,7 +1087,7 @@ double *slurm_get_tres_weight_array(char *weights_str, int tres_cnt, bool fail)
 uint16_t slurm_get_private_data(void)
 {
 	uint16_t private_data = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		private_data = slurmdbd_conf->private_data;
@@ -1106,7 +1106,7 @@ uint16_t slurm_get_private_data(void)
 char *slurm_get_resume_fail_program(void)
 {
 	char *resume_fail_program = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1124,7 +1124,7 @@ char *slurm_get_resume_fail_program(void)
 char *slurm_get_resume_program(void)
 {
 	char *resume_program = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1142,7 +1142,7 @@ char *slurm_get_resume_program(void)
 char *slurm_get_state_save_location(void)
 {
 	char *state_save_loc = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1175,7 +1175,7 @@ extern char *slurm_get_stepd_loc(void)
 extern char *slurm_get_tmp_fs(char *node_name)
 {
 	char *tmp_fs = NULL;
-	slurm_ctl_conf_t *conf = NULL;
+	slurm_conf_t *conf = NULL;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1197,7 +1197,7 @@ extern char *slurm_get_tmp_fs(char *node_name)
 char *slurm_get_auth_alt_types(void)
 {
 	char *auth_alt_types = NULL;
-	slurm_ctl_conf_t *conf = NULL;
+	slurm_conf_t *conf = NULL;
 
 	if (slurmdbd_conf) {
 		auth_alt_types = xstrdup(slurmdbd_conf->auth_alt_types);
@@ -1216,7 +1216,7 @@ char *slurm_get_auth_alt_types(void)
 char *slurm_get_auth_type(void)
 {
 	char *auth_type = NULL;
-	slurm_ctl_conf_t *conf = NULL;
+	slurm_conf_t *conf = NULL;
 
 	if (slurmdbd_conf) {
 		auth_type = xstrdup(slurmdbd_conf->auth_type);
@@ -1235,7 +1235,7 @@ char *slurm_get_auth_type(void)
 extern char *slurm_get_bb_type(void)
 {
 	char *bb_type = NULL;
-	slurm_ctl_conf_t *conf = NULL;
+	slurm_conf_t *conf = NULL;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1253,7 +1253,7 @@ extern char *slurm_get_bb_type(void)
 char *slurm_get_cluster_name(void)
 {
 	char *name = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1271,7 +1271,7 @@ char *slurm_get_cluster_name(void)
 extern char *slurm_get_comm_parameters(void)
 {
 	char *comm_params = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1290,7 +1290,7 @@ extern char *slurm_get_comm_parameters(void)
 extern char *slurm_get_cred_type(void)
 {
 	char *cred_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1308,7 +1308,7 @@ extern char *slurm_get_cred_type(void)
 extern char *slurm_get_power_parameters(void)
 {
 	char *power_parameters = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1324,7 +1324,7 @@ extern char *slurm_get_power_parameters(void)
  */
 extern void slurm_set_power_parameters(char *power_parameters)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1342,7 +1342,7 @@ extern void slurm_set_power_parameters(char *power_parameters)
 extern char *slurm_get_power_plugin(void)
 {
 	char *power_plugin = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1360,7 +1360,7 @@ extern char *slurm_get_power_plugin(void)
 extern char * slurm_get_topology_param(void)
 {
 	char *topology_param = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1378,7 +1378,7 @@ extern char * slurm_get_topology_param(void)
 extern char * slurm_get_topology_plugin(void)
 {
 	char *topology_plugin = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1395,7 +1395,7 @@ extern char * slurm_get_topology_plugin(void)
 extern uint16_t slurm_get_propagate_prio_process(void)
 {
 	uint16_t propagate_prio = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
  	if (slurmdbd_conf) {
 	} else {
@@ -1413,7 +1413,7 @@ extern uint16_t slurm_get_propagate_prio_process(void)
 extern char * slurm_get_route_plugin(void)
 {
 	char *route_plugin = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1431,7 +1431,7 @@ extern char * slurm_get_route_plugin(void)
 extern uint16_t slurm_get_track_wckey(void)
 {
 	uint16_t track_wckey = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		track_wckey = slurmdbd_conf->track_wckey;
@@ -1449,7 +1449,7 @@ extern uint16_t slurm_get_track_wckey(void)
  */
 extern int slurm_set_tree_width(uint16_t tree_width)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1471,7 +1471,7 @@ extern uint16_t slurm_get_tree_width(void)
 	/* initialize to 1 to silence later warnings
 	 * about potential division by zero */
 	uint16_t tree_width = 1;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1488,7 +1488,7 @@ extern uint16_t slurm_get_tree_width(void)
 extern uint16_t slurm_get_vsize_factor(void)
 {
 	uint16_t vsize_factor = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1506,7 +1506,7 @@ extern uint16_t slurm_get_vsize_factor(void)
  */
 extern int slurm_set_auth_type(char *auth_type)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		xfree(slurmdbd_conf->auth_type);
@@ -1528,7 +1528,7 @@ extern int slurm_set_auth_type(char *auth_type)
 uint32_t slurm_get_hash_val(void)
 {
 	uint32_t hash_val;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		hash_val = NO_VAL;
@@ -1548,7 +1548,7 @@ uint32_t slurm_get_hash_val(void)
 char *slurm_get_health_check_program(void)
 {
 	char *health_check_program = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1567,7 +1567,7 @@ char *slurm_get_health_check_program(void)
 char *slurm_get_gres_plugins(void)
 {
 	char *gres_plugins = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1586,7 +1586,7 @@ char *slurm_get_gres_plugins(void)
 char *slurm_get_job_submit_plugins(void)
 {
 	char *job_submit_plugins = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1605,7 +1605,7 @@ char *slurm_get_job_submit_plugins(void)
 char *slurm_get_cli_filter_plugins(void)
 {
 	char *cli_filter_plugins = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1623,7 +1623,7 @@ char *slurm_get_cli_filter_plugins(void)
 char *slurm_get_job_slurmctld_logfile(void)
 {
 	char *slurmctld_logfile = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1641,7 +1641,7 @@ char *slurm_get_job_slurmctld_logfile(void)
 char *slurm_get_node_features_plugins(void)
 {
 	char *knl_plugins = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1660,7 +1660,7 @@ char *slurm_get_node_features_plugins(void)
 char *slurm_get_slurmctld_plugstack(void)
 {
 	char *slurmctld_plugstack = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1679,7 +1679,7 @@ char *slurm_get_slurmctld_plugstack(void)
 uint16_t slurm_get_slurmctld_timeout(void)
 {
 	uint16_t slurmctld_timeout = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1697,7 +1697,7 @@ uint16_t slurm_get_slurmctld_timeout(void)
 char *slurm_get_accounting_storage_type(void)
 {
 	char *accounting_type;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		accounting_type = xstrdup(slurmdbd_conf->storage_type);
@@ -1717,7 +1717,7 @@ char *slurm_get_accounting_storage_type(void)
 char *slurm_get_accounting_storage_tres(void)
 {
 	char *accounting_tres;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		accounting_tres = NULL;
@@ -1736,7 +1736,7 @@ char *slurm_get_accounting_storage_tres(void)
  */
 extern int slurm_set_accounting_storage_tres(char *tres)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1756,7 +1756,7 @@ extern int slurm_set_accounting_storage_tres(char *tres)
 char *slurm_get_accounting_storage_user(void)
 {
 	char *storage_user;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		storage_user = xstrdup(slurmdbd_conf->storage_user);
@@ -1774,7 +1774,7 @@ char *slurm_get_accounting_storage_user(void)
  */
 int slurm_set_accounting_storage_user(char *user)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		xfree(slurmdbd_conf->storage_user);
@@ -1795,7 +1795,7 @@ int slurm_set_accounting_storage_user(char *user)
 char *slurm_get_accounting_storage_backup_host(void)
 {
 	char *storage_host;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		storage_host = xstrdup(slurmdbd_conf->storage_backup_host);
@@ -1810,7 +1810,7 @@ char *slurm_get_accounting_storage_backup_host(void)
 char *slurm_get_accounting_storage_ext_host(void)
 {
 	char *ext_host = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1828,7 +1828,7 @@ char *slurm_get_accounting_storage_ext_host(void)
 char *slurm_get_accounting_storage_host(void)
 {
 	char *storage_host;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		storage_host = xstrdup(slurmdbd_conf->storage_host);
@@ -1846,7 +1846,7 @@ char *slurm_get_accounting_storage_host(void)
  */
 int slurm_set_accounting_storage_host(char *host)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		xfree(slurmdbd_conf->storage_host);
@@ -1867,7 +1867,7 @@ int slurm_set_accounting_storage_host(char *host)
 char *slurm_get_accounting_storage_loc(void)
 {
 	char *storage_loc;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		storage_loc = xstrdup(slurmdbd_conf->storage_loc);
@@ -1885,7 +1885,7 @@ char *slurm_get_accounting_storage_loc(void)
  */
 int slurm_set_accounting_storage_loc(char *loc)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		xfree(slurmdbd_conf->storage_loc);
@@ -1905,7 +1905,7 @@ int slurm_set_accounting_storage_loc(char *loc)
 uint16_t slurm_get_accounting_storage_enforce(void)
 {
 	uint16_t enforce = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -1923,7 +1923,7 @@ uint16_t slurm_get_accounting_storage_enforce(void)
 int slurm_get_is_association_based_accounting(void)
 {
 	int enforce = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		return 1;
@@ -1947,7 +1947,7 @@ int slurm_get_is_association_based_accounting(void)
 char *slurm_get_accounting_storage_pass(void)
 {
 	char *storage_pass;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		storage_pass = xstrdup(slurmdbd_conf->storage_pass);
@@ -1966,7 +1966,7 @@ char *slurm_get_accounting_storage_pass(void)
 extern char *slurm_get_auth_info(void)
 {
 	char *auth_info;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		auth_info = xstrdup(slurmdbd_conf->auth_info);
@@ -2016,7 +2016,7 @@ extern char *slurm_auth_opts_to_socket(char *opts)
 char *slurm_get_sbcast_parameters(void)
 {
 	char *sbcast_parameters = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (!slurmdbd_conf) {
 		conf = slurm_conf_lock();
@@ -2080,7 +2080,7 @@ static char *_global_auth_key(void)
 			storage_pass_ptr = storage_pass;
 		}
 	} else {
-		slurm_ctl_conf_t *conf = slurm_conf_lock();
+		slurm_conf_t *conf = slurm_conf_lock();
 		if (conf->accounting_storage_pass) {
 			if (strlcpy(storage_pass, conf->accounting_storage_pass,
 				    sizeof(storage_pass))
@@ -2102,7 +2102,7 @@ static char *_global_auth_key(void)
 uint32_t slurm_get_accounting_storage_port(void)
 {
 	uint32_t storage_port;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		storage_port = slurmdbd_conf->storage_port;
@@ -2121,7 +2121,7 @@ uint32_t slurm_get_accounting_storage_port(void)
  */
 int slurm_set_accounting_storage_port(uint32_t storage_port)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		slurmdbd_conf->storage_port = storage_port;
@@ -2145,7 +2145,7 @@ int slurm_set_accounting_storage_port(uint32_t storage_port)
 char *slurm_get_dependency_params(void)
 {
 	char *dependency_params = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2163,7 +2163,7 @@ char *slurm_get_dependency_params(void)
 uint16_t slurm_get_preempt_mode(void)
 {
 	uint16_t preempt_mode = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2181,7 +2181,7 @@ uint16_t slurm_get_preempt_mode(void)
 char *slurm_get_jobacct_gather_type(void)
 {
 	char *jobacct_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2199,7 +2199,7 @@ char *slurm_get_jobacct_gather_type(void)
 char *slurm_get_jobacct_gather_params(void)
 {
 	char *jobacct_params = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2218,7 +2218,7 @@ char *slurm_get_jobacct_gather_params(void)
 bool slurm_get_job_acct_oom_kill(void)
 {
         uint16_t enabled = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2236,7 +2236,7 @@ bool slurm_get_job_acct_oom_kill(void)
 char *slurm_get_jobacct_gather_freq(void)
 {
 	char *freq = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2254,7 +2254,7 @@ char *slurm_get_jobacct_gather_freq(void)
 char *slurm_get_acct_gather_energy_type(void)
 {
 	char *acct_gather_energy_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2273,7 +2273,7 @@ char *slurm_get_acct_gather_energy_type(void)
 char *slurm_get_acct_gather_profile_type(void)
 {
 	char *acct_gather_profile_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2292,7 +2292,7 @@ char *slurm_get_acct_gather_profile_type(void)
 char *slurm_get_acct_gather_interconnect_type(void)
 {
 	char *acct_gather_interconnect_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2311,7 +2311,7 @@ char *slurm_get_acct_gather_interconnect_type(void)
 char *slurm_get_acct_gather_filesystem_type(void)
 {
 	char *acct_gather_filesystem_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2327,7 +2327,7 @@ char *slurm_get_acct_gather_filesystem_type(void)
 extern uint16_t slurm_get_acct_gather_node_freq(void)
 {
 	uint16_t freq = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2345,7 +2345,7 @@ extern uint16_t slurm_get_acct_gather_node_freq(void)
 char *slurm_get_ext_sensors_type(void)
 {
 	char *ext_sensors_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2360,7 +2360,7 @@ char *slurm_get_ext_sensors_type(void)
 extern uint16_t slurm_get_ext_sensors_freq(void)
 {
 	uint16_t freq = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2378,7 +2378,7 @@ extern uint16_t slurm_get_ext_sensors_freq(void)
 char *slurm_get_gpu_freq_def(void)
 {
 	char *gpu_freq_def = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2397,7 +2397,7 @@ char *slurm_get_gpu_freq_def(void)
 char *slurm_get_jobcomp_type(void)
 {
 	char *jobcomp_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2415,7 +2415,7 @@ char *slurm_get_jobcomp_type(void)
 char *slurm_get_jobcomp_loc(void)
 {
 	char *jobcomp_loc = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2433,7 +2433,7 @@ char *slurm_get_jobcomp_loc(void)
 char *slurm_get_jobcomp_user(void)
 {
 	char *storage_user = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2451,7 +2451,7 @@ char *slurm_get_jobcomp_user(void)
 char *slurm_get_jobcomp_host(void)
 {
 	char *storage_host = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2465,7 +2465,7 @@ char *slurm_get_jobcomp_host(void)
 char *slurm_get_jobcomp_params(void)
 {
 	char *param = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2483,7 +2483,7 @@ char *slurm_get_jobcomp_params(void)
 char *slurm_get_jobcomp_pass(void)
 {
 	char *storage_pass = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2501,7 +2501,7 @@ char *slurm_get_jobcomp_pass(void)
 uint32_t slurm_get_jobcomp_port(void)
 {
 	uint32_t storage_port = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2519,7 +2519,7 @@ uint32_t slurm_get_jobcomp_port(void)
  */
 int slurm_set_jobcomp_port(uint32_t port)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2542,7 +2542,7 @@ int slurm_set_jobcomp_port(uint32_t port)
 uint16_t slurm_get_keep_alive_time(void)
 {
 	uint16_t keep_alive_time = NO_VAL16;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2561,7 +2561,7 @@ uint16_t slurm_get_keep_alive_time(void)
 uint16_t slurm_get_kill_wait(void)
 {
 	uint16_t kill_wait = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2579,7 +2579,7 @@ uint16_t slurm_get_kill_wait(void)
 char *slurm_get_launch_params(void)
 {
 	char *launch_params = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2597,7 +2597,7 @@ char *slurm_get_launch_params(void)
 char *slurm_get_launch_type(void)
 {
 	char *launch_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2614,7 +2614,7 @@ char *slurm_get_launch_type(void)
  */
 int slurm_set_launch_type(char *launch_type)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2631,7 +2631,7 @@ int slurm_set_launch_type(char *launch_type)
 char *slurm_get_mcs_plugin(void)
 {
 	char *mcs_plugin = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2647,7 +2647,7 @@ char *slurm_get_mcs_plugin(void)
 char *slurm_get_mcs_plugin_params(void)
 {
 	char *mcs_plugin_params = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2665,7 +2665,7 @@ char *slurm_get_mcs_plugin_params(void)
 char *slurm_get_preempt_type(void)
 {
 	char *preempt_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2683,7 +2683,7 @@ char *slurm_get_preempt_type(void)
 char *slurm_get_proctrack_type(void)
 {
 	char *proctrack_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2701,7 +2701,7 @@ char *slurm_get_proctrack_type(void)
 uint16_t slurm_get_slurmd_port(void)
 {
 	uint16_t slurmd_port = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2719,7 +2719,7 @@ uint16_t slurm_get_slurmd_port(void)
 uint32_t slurm_get_slurm_user_id(void)
 {
 	uint32_t slurm_uid = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		slurm_uid = slurmdbd_conf->slurm_user_id;
@@ -2738,7 +2738,7 @@ uint32_t slurm_get_slurm_user_id(void)
 uint32_t slurm_get_slurmd_user_id(void)
 {
 	uint32_t slurmd_uid = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2756,7 +2756,7 @@ uint32_t slurm_get_slurmd_user_id(void)
 char *slurm_get_slurmd_params(void)
 {
 	char *slurmd_params = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2774,7 +2774,7 @@ char *slurm_get_slurmd_params(void)
 char *slurm_get_slurmctld_params(void)
 {
 	char *slurmctld_params = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2790,7 +2790,7 @@ char *slurm_get_slurmctld_params(void)
 extern char *slurm_get_sched_params(void)
 {
 	char *params = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
  	if (slurmdbd_conf) {
 	} else {
@@ -2808,7 +2808,7 @@ extern char *slurm_get_sched_params(void)
 char *slurm_get_sched_type(void)
 {
 	char *sched_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2826,7 +2826,7 @@ char *slurm_get_sched_type(void)
 char *slurm_get_select_type(void)
 {
 	char *select_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2844,7 +2844,7 @@ char *slurm_get_select_type(void)
 uint16_t slurm_get_select_type_param(void)
 {
 	uint16_t select_type_param = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2861,7 +2861,7 @@ uint16_t slurm_get_select_type_param(void)
  */
 void slurm_set_select_type_param(uint16_t select_type_param)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2878,7 +2878,7 @@ bool is_cray_select_type(void)
 
 	if (slurmdbd_conf) {
 	} else {
-		slurm_ctl_conf_t *conf = slurm_conf_lock();
+		slurm_conf_t *conf = slurm_conf_lock();
 		result = !xstrcasecmp(conf->select_type, "select/cray_aries");
 		slurm_conf_unlock();
 	}
@@ -2892,7 +2892,7 @@ bool is_cray_select_type(void)
 char *slurm_get_switch_type(void)
 {
 	char *switch_type = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	conf = slurm_conf_lock();
 	switch_type = xstrdup(conf->switch_type);
@@ -2907,7 +2907,7 @@ char *slurm_get_switch_type(void)
 uint16_t slurm_get_wait_time(void)
 {
 	uint16_t wait_time = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2925,7 +2925,7 @@ uint16_t slurm_get_wait_time(void)
 char *slurm_get_srun_prolog(void)
 {
 	char *prolog = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2943,7 +2943,7 @@ char *slurm_get_srun_prolog(void)
 char *slurm_get_srun_epilog(void)
 {
 	char *epilog = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2959,7 +2959,7 @@ char *slurm_get_srun_epilog(void)
 char *slurm_get_task_epilog(void)
 {
 	char *task_epilog = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2975,7 +2975,7 @@ char *slurm_get_task_epilog(void)
 char *slurm_get_task_prolog(void)
 {
 	char *task_prolog = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -2992,7 +2992,7 @@ uint16_t *
 slurm_get_srun_port_range(void)
 {
 	uint16_t *ports = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -3008,7 +3008,7 @@ slurm_get_srun_port_range(void)
 char *slurm_get_task_plugin(void)
 {
 	char *task_plugin = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	conf = slurm_conf_lock();
 	task_plugin = xstrdup(conf->task_plugin);
@@ -3020,7 +3020,7 @@ char *slurm_get_task_plugin(void)
 uint32_t slurm_get_task_plugin_param(void)
 {
 	uint32_t task_plugin_param = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -3035,7 +3035,7 @@ uint32_t slurm_get_task_plugin_param(void)
 uint16_t slurm_get_time_slice(void)
 {
 	uint16_t sched_time_slice = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -3051,7 +3051,7 @@ uint16_t slurm_get_time_slice(void)
 char *slurm_get_core_spec_plugin(void)
 {
 	char *core_spec_plugin = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	conf = slurm_conf_lock();
 	core_spec_plugin = xstrdup(conf->core_spec_plugin);
@@ -3064,7 +3064,7 @@ char *slurm_get_core_spec_plugin(void)
 char *slurm_get_job_container_plugin(void)
 {
 	char *job_container_plugin = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	conf = slurm_conf_lock();
 	job_container_plugin = xstrdup(conf->job_container_plugin);
@@ -3077,7 +3077,7 @@ char *slurm_get_job_container_plugin(void)
 char *slurm_get_slurmd_spooldir(char *node_name)
 {
 	char *slurmd_spooldir = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -3097,7 +3097,7 @@ char *slurm_get_slurmd_spooldir(char *node_name)
 char *slurm_get_layouts(void)
 {
 	char* layouts = NULL;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		layouts = xstrdup("");
@@ -3115,7 +3115,7 @@ int16_t
 slurm_get_srun_eio_timeout(void)
 {
 	int16_t eio_timeout = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
@@ -4597,7 +4597,7 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	int rc = 0;
 	time_t start_time = time(NULL);
 	int retry = 1;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 	bool have_backup;
 	uint16_t slurmctld_timeout;
 	slurm_addr_t ctrl_addr;
@@ -5470,7 +5470,7 @@ static bool _is_port_ok(int s, uint16_t port, bool local)
 uint16_t slurm_get_prolog_timeout(void)
 {
 	uint16_t timeout = 0;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {

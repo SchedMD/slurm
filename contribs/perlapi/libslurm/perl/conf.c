@@ -11,10 +11,9 @@
 
 
 /*
- * convert slurm_ctl_conf_t into perl HV
+ * convert slurm_conf_t into perl HV
  */
-int
-slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
+int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 {
 	AV *av;
 	int i;
@@ -390,17 +389,16 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 }
 
 /*
- * convert perl HV to slurm_ctl_conf_t
+ * convert perl HV to slurm_conf_t
  */
-int
-hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
+int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 {
 	SV **svp;
 	AV *av;
 	STRLEN len;
 	int i, n;
 
-	memset(conf, 0, sizeof(slurm_ctl_conf_t));
+	memset(conf, 0, sizeof(*conf));
 
 	FETCH_FIELD(hv, conf, last_update, time_t, FALSE);
 	FETCH_FIELD(hv, conf, acct_gather_conf, charp, FALSE);

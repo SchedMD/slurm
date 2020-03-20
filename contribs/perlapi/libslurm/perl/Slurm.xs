@@ -829,7 +829,7 @@ slurm_api_version(slurm_t self, OUTLIST int major, OUTLIST int minor, OUTLIST in
 HV *
 slurm_load_ctl_conf(slurm_t self, time_t update_time=0)
 	PREINIT:
-		slurm_ctl_conf_t *ctl_conf;
+		slurm_conf_t *ctl_conf;
 		int rc;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
@@ -855,7 +855,7 @@ slurm_load_ctl_conf(slurm_t self, time_t update_time=0)
 void
 slurm_print_ctl_conf(slurm_t self, FILE *out, HV *conf)
 	PREINIT:
-		slurm_ctl_conf_t cc;
+		slurm_conf_t cc;
 	INIT:
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
@@ -878,7 +878,7 @@ slurm_print_ctl_conf(slurm_t self, FILE *out, HV *conf)
 List
 slurm_ctl_conf_2_key_pairs(slurm_t self, HV *conf)
 	PREINIT:
-		slurm_ctl_conf_t cc;
+		slurm_conf_t cc;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self

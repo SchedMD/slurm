@@ -323,7 +323,7 @@ static char *_get_shell(void)
 
 static int _salloc_default_command(int *argcp, char **argvp[])
 {
-	slurm_ctl_conf_t *cf = slurm_conf_lock();
+	slurm_conf_t *cf = slurm_conf_lock();
 
 	if (cf->salloc_default_command) {
 		/*
@@ -781,7 +781,7 @@ static void _usage(void)
 
 static void _help(void)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
         printf (
 "Usage: salloc [OPTIONS...] [command [args...]]\n"

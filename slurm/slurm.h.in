@@ -2648,7 +2648,7 @@ typedef struct reservation_name_msg {
 #define LOG_FMT_SHORT           5
 #define LOG_FMT_THREAD_ID       6
 
-typedef struct slurm_ctl_conf {
+typedef struct {
 	time_t last_update;	/* last update time of the build parameters */
 	char *accounting_storage_tres; /* list of tres */
 	uint16_t accounting_storage_enforce; /* job requires valid association:
@@ -2912,7 +2912,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t vsize_factor;	/* virtual memory limit size factor */
 	uint16_t wait_time;	/* default job --wait time */
 	char *x11_params;	/* X11Parameters */
-} slurm_ctl_conf_t;
+} slurm_conf_t;
 
 typedef struct slurmd_status_msg {
 	time_t booted;			/* when daemon was started */
@@ -3698,14 +3698,14 @@ extern long slurm_api_version(void);
  * NOTE: free the response using slurm_free_ctl_conf
  */
 extern int slurm_load_ctl_conf(time_t update_time,
-			       slurm_ctl_conf_t **slurm_ctl_conf_ptr);
+                               slurm_conf_t **slurm_ctl_conf_ptr);
 
 /*
  * slurm_free_ctl_conf - free slurm control information response message
  * IN msg - pointer to slurm control information response message
  * NOTE: buffer is loaded by slurm_load_ctl_conf
  */
-extern void slurm_free_ctl_conf(slurm_ctl_conf_t *slurm_ctl_conf_ptr);
+extern void slurm_free_ctl_conf(slurm_conf_t *slurm_ctl_conf_ptr);
 
 /*
  * slurm_print_ctl_conf - output the contents of slurm control configuration
@@ -3713,8 +3713,7 @@ extern void slurm_free_ctl_conf(slurm_ctl_conf_t *slurm_ctl_conf_ptr);
  * IN out - file to write to
  * IN slurm_ctl_conf_ptr - slurm control configuration pointer
  */
-extern void slurm_print_ctl_conf(FILE *out,
-				 slurm_ctl_conf_t *slurm_ctl_conf_ptr);
+extern void slurm_print_ctl_conf(FILE *out, slurm_conf_t *slurm_ctl_conf_ptr);
 
 /*
  * slurm_write_ctl_conf - write the contents of slurm control configuration
@@ -3724,17 +3723,17 @@ extern void slurm_print_ctl_conf(FILE *out,
  * IN node_info_ptr - pointer to node table of information
  * IN part_info_ptr - pointer to partition information
  */
-extern void slurm_write_ctl_conf(slurm_ctl_conf_t *slurm_ctl_conf_ptr,
-				 node_info_msg_t *node_info_ptr,
-				 partition_info_msg_t *part_info_ptr);
+extern void slurm_write_ctl_conf(slurm_conf_t *slurm_ctl_conf_ptr,
+                                 node_info_msg_t *node_info_ptr,
+                                 partition_info_msg_t *part_info_ptr);
 
 /*
- * slurm_ctl_conf_2_key_pairs - put the slurm_ctl_conf_t variables into
+ * slurm_ctl_conf_2_key_pairs - put the slurm_conf_t variables into
  *	a List of opaque data type config_key_pair_t
  * IN slurm_ctl_conf_ptr - slurm control configuration pointer
  * RET List of opaque data type config_key_pair_t
  */
-extern void *slurm_ctl_conf_2_key_pairs(slurm_ctl_conf_t *slurm_ctl_conf_ptr);
+extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr);
 
 /*
  * slurm_print_key_pairs - output the contents of key_pairs

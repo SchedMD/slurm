@@ -1380,7 +1380,7 @@ static void _usage(void)
 
 static void _help(void)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf = slurm_conf_lock();
 
         printf (
 "Usage: srun [OPTIONS...] executable [args...]\n"
@@ -1517,7 +1517,6 @@ static void _help(void)
 "\n"
 "      --ntasks-per-core=n     number of tasks to invoke on each core\n"
 "      --ntasks-per-socket=n   number of tasks to invoke on each socket\n");
-	conf = slurm_conf_lock();
 	if (xstrstr(conf->task_plugin, "affinity") ||
 	    xstrstr(conf->task_plugin, "cgroup")) {
 		printf(

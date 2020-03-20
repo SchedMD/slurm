@@ -57,7 +57,7 @@ static int _call_external_program(stepd_step_rec_t *job);
 
 void step_terminate_monitor_start(stepd_step_rec_t *job)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 
 	slurm_mutex_lock(&lock);
 

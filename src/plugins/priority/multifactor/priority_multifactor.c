@@ -84,7 +84,7 @@ extern void *acct_db_conn  __attribute__((weak_import));
 extern uint32_t cluster_cpus __attribute__((weak_import));
 extern List job_list  __attribute__((weak_import));
 extern time_t last_job_update __attribute__((weak_import));
-extern slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
+extern slurm_conf_t slurmctld_conf __attribute__((weak_import));
 extern int slurmctld_tres_cnt __attribute__((weak_import));
 extern uint16_t accounting_enforce __attribute__((weak_import));
 #else
@@ -92,7 +92,7 @@ void *acct_db_conn = NULL;
 uint32_t cluster_cpus = NO_VAL;
 List job_list = NULL;
 time_t last_job_update = (time_t) 0;
-slurm_ctl_conf_t slurmctld_conf;
+slurm_conf_t slurmctld_conf;
 int slurmctld_tres_cnt = 0;
 uint16_t accounting_enforce = 0;
 #endif

@@ -214,7 +214,7 @@ static void spank_stack_destroy (struct spank_stack *stack)
 static struct spank_stack *
 spank_stack_create (const char *file, enum spank_context_type type)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 	struct spank_stack *stack = xmalloc (sizeof (*stack));
 
 	conf = slurm_conf_lock();
@@ -757,7 +757,7 @@ static int _do_call_stack(struct spank_stack *stack,
 
 struct spank_stack *spank_stack_init(enum spank_context_type context)
 {
-	slurm_ctl_conf_t *conf = slurm_conf_lock();
+	slurm_conf_t *conf = slurm_conf_lock();
 	const char *path = conf->plugstack;
 	slurm_conf_unlock();
 

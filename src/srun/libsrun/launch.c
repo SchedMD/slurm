@@ -462,8 +462,7 @@ extern void launch_common_set_stdio_fds(srun_job_t *job,
 	else if (srun_opt->open_mode == OPEN_MODE_TRUNCATE)
 		file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
 	else {
-		slurm_ctl_conf_t *conf;
-		conf = slurm_conf_lock();
+		slurm_conf_t *conf = slurm_conf_lock();
 		if (conf->job_file_append)
 			file_flags = O_CREAT|O_WRONLY|O_APPEND;
 		else

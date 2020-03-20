@@ -2792,7 +2792,7 @@ _rpc_reboot(slurm_msg_t *msg)
 {
 	char *reboot_program, *cmd = NULL, *sp;
 	reboot_msg_t *reboot_msg;
-	slurm_ctl_conf_t *cfg;
+	slurm_conf_t *cfg;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 	int exit_code;
 
@@ -3897,7 +3897,7 @@ _rpc_timelimit(slurm_msg_t *msg)
 	msg->conn_fd = -1;
 
 	if (req->step_id != NO_VAL) {
-		slurm_ctl_conf_t *cf;
+		slurm_conf_t *cf;
 		int delay;
 		/* A jobstep has timed out:
 		 * - send the container a SIG_TIME_LIMIT or SIG_PREEMPTED

@@ -49,7 +49,7 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-extern slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
+extern slurm_conf_t slurmctld_conf __attribute__((weak_import));
 extern node_record_t *node_record_table_ptr __attribute__((weak_import));
 extern List part_list __attribute__((weak_import));
 extern List job_list __attribute__((weak_import));
@@ -63,7 +63,7 @@ extern uint32_t *cr_node_cores_offset __attribute__((weak_import));
 extern int slurmctld_tres_cnt __attribute__((weak_import));
 extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
 #else
-slurm_ctl_conf_t slurmctld_conf;
+slurm_conf_t slurmctld_conf;
 node_record_t *node_record_table_ptr;
 List part_list;
 List job_list;

@@ -867,7 +867,7 @@ _read_config(void)
 {
 	char *bcast_address;
 	char *path_pubkey = NULL;
-	slurm_ctl_conf_t *cf = NULL;
+	slurm_conf_t *cf = NULL;
 	int cc;
 	bool cgroup_mem_confinement = false;
 
@@ -1228,7 +1228,7 @@ _reconfigure(void)
 static void
 _print_conf(void)
 {
-	slurm_ctl_conf_t *cf;
+	slurm_conf_t *cf;
 	char *str = NULL, time_str[32];
 	int i;
 
@@ -2194,7 +2194,7 @@ static void _update_logging(void)
 	ListIterator i;
 	step_loc_t *stepd;
 	log_options_t *o = &conf->log_opts;
-	slurm_ctl_conf_t *cf;
+	slurm_conf_t *cf;
 
 	_update_log = 0;
 	/* Preserve execute line verbose arguments (if any) */

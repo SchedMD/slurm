@@ -114,8 +114,8 @@ static int  _compare_hostnames(node_record_t *old_node_table,
 static void _gres_reconfig(bool reconfig);
 static int  _init_all_slurm_conf(void);
 static void _list_delete_feature(void *feature_entry);
-static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr,
-					uint16_t old_select_type_p);
+static int _preserve_select_type_param(slurm_conf_t *ctl_conf_ptr,
+                                       uint16_t old_select_type_p);
 static void _purge_old_node_state(node_record_t *old_node_table_ptr,
 				  int old_node_record_count);
 static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
@@ -2472,8 +2472,8 @@ static void _purge_old_part_state(List old_part_list, char *old_def_part_name)
  *	select plugin value changes to take effect.
  * RET zero or error code
  */
-static int  _preserve_select_type_param(slurm_ctl_conf_t *ctl_conf_ptr,
-					uint16_t old_select_type_p)
+static int _preserve_select_type_param(slurm_conf_t *ctl_conf_ptr,
+                                       uint16_t old_select_type_p)
 {
 	int rc = SLURM_SUCCESS;
 

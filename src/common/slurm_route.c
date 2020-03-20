@@ -122,7 +122,7 @@ static hostlist_t _get_all_nodes( void )
  */
 static void _set_collectors(char *this_node_name)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 	hostlist_t  nodes;
 	hostlist_t *hll = NULL;
 	uint32_t backup_cnt;

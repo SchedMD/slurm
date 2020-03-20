@@ -1027,7 +1027,7 @@ _cpu_freq_setup_data(stepd_step_rec_t *job, int cpx)
 	    && (job->cpu_freq_max == NO_VAL || job->cpu_freq_max==0)
 	    && (job->cpu_freq_gov == NO_VAL || job->cpu_freq_gov==0)) {
 		/* If no --cpu-freq, use default governor from conf file.  */
-		slurm_ctl_conf_t *conf = slurm_conf_lock();
+		slurm_conf_t *conf = slurm_conf_lock();
 		job->cpu_freq_gov = conf->cpu_freq_def;
 		slurm_conf_unlock();
 		if (job->cpu_freq_gov == NO_VAL)

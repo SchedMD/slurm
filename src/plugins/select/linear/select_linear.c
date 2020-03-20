@@ -86,7 +86,7 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-extern slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
+extern slurm_conf_t slurmctld_conf __attribute__((weak_import));
 extern node_record_t *node_record_table_ptr __attribute__((weak_import));
 extern List part_list __attribute__((weak_import));
 extern List job_list __attribute__((weak_import));
@@ -102,7 +102,7 @@ extern int hypercube_switch_cnt __attribute__((weak_import));
 extern struct hypercube_switch ***hypercube_switches __attribute__((weak_import));
 
 #else
-slurm_ctl_conf_t slurmctld_conf;
+slurm_conf_t slurmctld_conf;
 node_record_t *node_record_table_ptr;
 List part_list;
 List job_list;

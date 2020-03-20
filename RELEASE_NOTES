@@ -39,3 +39,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+
+API CHANGES
+===========
+ -- slurm_ctl_conf_t has been renamed to slurm_conf_t.

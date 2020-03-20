@@ -84,9 +84,8 @@ static bool
 _slurm_authorized_user()
 {
 	uid_t uid, slurm_user_id;
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf = slurm_conf_lock();
 
-	conf = slurm_conf_lock();
 	slurm_user_id = (uid_t)conf->slurm_user_id;
 	slurm_conf_unlock();
 
@@ -251,7 +250,7 @@ extern int stepd_connect(const char *directory, const char *nodename,
 		nodename = local_nodename;
 	}
 	if (directory == NULL) {
-		slurm_ctl_conf_t *cf = slurm_conf_lock();
+		slurm_conf_t *cf = slurm_conf_lock();
 		directory = slurm_conf_expand_slurmd_path(cf->slurmd_spooldir,
 							  nodename);
 		slurm_conf_unlock();
@@ -524,9 +523,7 @@ stepd_available(const char *directory, const char *nodename)
 		}
 	}
 	if (directory == NULL) {
-		slurm_ctl_conf_t *cf;
-
-		cf = slurm_conf_lock();
+		slurm_conf_t *cf = slurm_conf_lock();
 		directory = slurm_conf_expand_slurmd_path(
 			cf->slurmd_spooldir, nodename);
 		slurm_conf_unlock();

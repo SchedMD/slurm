@@ -2081,7 +2081,6 @@ io_find_filename_pattern( stepd_step_rec_t *job,
 int
 io_get_file_flags(stepd_step_rec_t *job)
 {
-	slurm_ctl_conf_t *conf;
 	int file_flags;
 
 	/* set files for opening stdout/err */
@@ -2090,7 +2089,7 @@ io_get_file_flags(stepd_step_rec_t *job)
 	else if (job->open_mode == OPEN_MODE_TRUNCATE)
 		file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
 	else {
-		conf = slurm_conf_lock();
+		slurm_conf_t *conf = slurm_conf_lock();
 		if (conf->job_file_append)
 			file_flags = O_CREAT|O_WRONLY|O_APPEND;
 		else

@@ -4360,10 +4360,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 {
 	uint32_t uint32_tmp = 0;
 	uint16_t uint16_tmp = 0;
-	slurm_ctl_conf_info_msg_t *build_ptr;
-
-	/* alloc memory for structure */
-	build_ptr = xmalloc(sizeof(slurm_ctl_conf_t));
+	slurm_ctl_conf_info_msg_t *build_ptr = xmalloc(sizeof(*build_ptr));
 	*build_buffer_ptr = build_ptr;
 
 	/* initialize this so we don't check for those not sending it */

@@ -1341,7 +1341,7 @@ typedef struct {
 	char **spank_job_env;	/* spank environment */
 } spank_env_responce_msg_t;
 
-typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;
+typedef slurm_conf_t slurm_ctl_conf_info_msg_t;
 /*****************************************************************************\
  *	SLURM MESSAGE INITIALIZATION
 \*****************************************************************************/

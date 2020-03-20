@@ -288,7 +288,7 @@ int _setup_assoc_list(void)
 int main (int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	slurm_ctl_conf_t *conf = NULL;
+	slurm_conf_t *conf = NULL;
 	shares_response_msg_t resp;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
