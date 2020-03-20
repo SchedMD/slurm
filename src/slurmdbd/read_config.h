@@ -54,7 +54,6 @@
 
 /* SlurmDBD configuration parameters */
 typedef struct {
-	time_t		last_update;	/* time slurmdbd.conf read	*/
 	char *		archive_dir;    /* location to locally store
 					 * data if not using a script   */
 	char *		archive_script;	/* script to archive old data	*/
