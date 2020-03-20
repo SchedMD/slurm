@@ -11000,6 +11000,9 @@ static void _hold_job(job_record_t *job_ptr, uid_t uid)
 
 static void _release_job_rec(job_record_t *job_ptr, uid_t uid)
 {
+	time_t now = time(NULL);
+	if (job_ptr->details && (job_ptr->details->begin_time < now))
+		job_ptr->details->begin_time = 0;
 	job_ptr->direct_set_prio = 0;
 	set_job_prio(job_ptr);
 	job_ptr->state_reason = WAIT_NO_REASON;

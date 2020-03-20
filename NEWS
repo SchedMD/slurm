@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't accrue time if job begin time is in the future.
  -- Remove accrue time when updating a job start/eligible time to the future.
  -- Fix regression in 20.02.0 that broke --depend=expand.
+ -- Reset begin time on job release if it's not in the future.
 
 * Changes in Slurm 20.02.0
 ==========================
