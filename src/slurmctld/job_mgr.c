@@ -17221,14 +17221,9 @@ extern void init_depend_policy(void)
 	xfree(depend_params);
 	xfree(sched_params);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
-		info("%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d; max_depend_depth is set to %d",
-		     __func__, kill_invalid_dep, disable_remote_singleton,
-		     max_depend_depth);
-	else
-		debug2("%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d; max_depend_depth is set to %d",
-		       __func__, kill_invalid_dep, disable_remote_singleton,
-		       max_depend_depth);
+	log_flag(DEPENDENCY, "%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d; max_depend_depth is set to %d",
+	         __func__, kill_invalid_dep, disable_remote_singleton,
+	         max_depend_depth);
 }
 
 /* init_requeue_policy()
