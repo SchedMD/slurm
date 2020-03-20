@@ -112,14 +112,10 @@ typedef struct rsmiPciInfo_st {
 const char	*plugin_name		= "GPU RSMI plugin";
 const char	*plugin_type		= "gpu/rsmi";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
-static log_level_t log_lvl              = LOG_LEVEL_QUIET;
 
 extern int init(void)
 {
 	debug("%s: %s loaded", __func__, plugin_name);
-
-	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
-		log_lvl = LOG_LEVEL_INFO;
 
 	return SLURM_SUCCESS;
 }
@@ -428,15 +424,15 @@ static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
 	unsigned int i;
 
 	if (!freq || !(*freq)) {
-		log_var(log_lvl, "%s: No frequency supplied", __func__);
+		log_flag(GRES, "%s: No frequency supplied", __func__);
 		return;
 	}
 	if (!freqs || !(*freqs)) {
-		log_var(log_lvl, "%s: No frequency list supplied", __func__);
+		log_flag(GRES, "%s: No frequency list supplied", __func__);
 		return;
 	}
 	if (freqs_size <= 0) {
-		log_var(log_lvl, "%s: Frequency list is empty", __func__);
+		log_flag(GRES, "%s: Frequency list is empty", __func__);
 		return;
 	}
 
@@ -472,13 +468,13 @@ static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
 
 	/* check if freq is out of bounds of freqs */
 	if (*freq > freqs[0]) {
-		log_var(log_lvl, "Rounding frequency %u MHz down to %u MHz",
-			*freq, freqs[0]);
+		log_flag(GRES, "Rounding frequency %u MHz down to %u MHz",
+		         *freq, freqs[0]);
 		*freq = freqs[0];
 		return;
 	} else if (*freq < freqs[freqs_size - 1]) {
-		log_var(log_lvl, "Rounding frequency %u MHz up to %u MHz",
-			*freq, freqs[freqs_size - 1]);
+		log_flag(GRES, "Rounding frequency %u MHz up to %u MHz",
+		         *freq, freqs[freqs_size - 1]);
 		*freq = freqs[freqs_size - 1];
 		return;
 	}
@@ -495,8 +491,8 @@ static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
 		 * Safe to advance due to bounds checks above here
 		 */
 		if (*freq > freqs[i]) {
-			log_var(log_lvl, "Rounding frequency %u MHz up to %u MHz",
-				*freq, freqs[i - 1]);
+			log_flag(GRES, "Rounding frequency %u MHz up to %u MHz",
+			         *freq, freqs[i - 1]);
 			*freq = freqs[i - 1];
 			return;
 		}
@@ -759,17 +755,16 @@ static void _reset_freq(bitstr_t *gpus)
 		// TODO: Check to make sure that the frequency reset
 
 		if (freq_reset) {
-			log_var(log_lvl, "Successfully reset GPU[%d]", i);
+			log_flag(GRES, "Successfully reset GPU[%d]", i);
 			count_set++;
 		} else {
-			log_var(log_lvl, "Failed to reset GPU[%d]", i);
+			log_flag(GRES, "Failed to reset GPU[%d]", i);
 		}
 	}
 
 	if (count_set != count) {
-		log_var(log_lvl,
-			"%s: Could not reset frequencies for all GPUs %d/%d total GPUs",
-			__func__, count_set, count);
+		log_flag(GRES, "%s: Could not reset frequencies for all GPUs %d/%d total GPUs",
+		         __func__, count_set, count);
 		fprintf(stderr, "Could not reset frequencies for all GPUs %d/%d total GPUs\n",
 			count_set, count);
 	}
@@ -878,10 +873,10 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 		}
 
 		if (freq_set) {
-			log_var(log_lvl, "Successfully set GPU[%d] %s", i, tmp);
+			log_flag(GRES, "Successfully set GPU[%d] %s", i, tmp);
 			count_set++;
 		} else {
-			log_var(log_lvl, "Failed to set GPU[%d] %s", i, tmp);
+			log_flag(GRES, "Failed to set GPU[%d] %s", i, tmp);
 		}
 
 		if (verbose_flag && !freq_logged) {
@@ -892,9 +887,8 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	}
 
 	if (count_set != count) {
-		log_var(log_lvl,
-			"%s: Could not set frequencies for all GPUs %d/%d total GPUs",
-			__func__, count_set, count);
+		log_flag(GRES, "%s: Could not set frequencies for all GPUs %d/%d total GPUs",
+		         __func__, count_set, count);
 		fprintf(stderr, "Could not set frequencies for all GPUs %d/%d total GPUs\n",
 			count_set, count);
 	}
@@ -1121,14 +1115,8 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 
 extern int gpu_p_reconfig(void)
 {
-	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
-		log_lvl = LOG_LEVEL_INFO;
-	else
-		log_lvl = LOG_LEVEL_QUIET;
-
 	return SLURM_SUCCESS;
 }
-
 
 extern List gpu_p_get_system_gpu_list(node_config_load_t *node_config)
 {
