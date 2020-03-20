@@ -548,12 +548,6 @@ extern int slurm_set_accounting_storage_tres(char *tres);
  */
 char *slurm_get_accounting_storage_user(void);
 
-/* slurm_set_accounting_storage_user
- * IN: char *user (name of file or database)
- * RET 0 or error code
- */
-int slurm_set_accounting_storage_user(char *user);
-
 /* slurm_get_accounting_storage_backup_host
  * returns the storage host from slurm_conf object
  * RET char *    - storage backup host,  MUST be xfreed by caller

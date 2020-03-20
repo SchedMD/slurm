@@ -1636,26 +1636,6 @@ char *slurm_get_accounting_storage_user(void)
 	return storage_user;
 }
 
-/* slurm_set_accounting_storage_user
- * IN: char *user (name of file or database)
- * RET 0 or error code
- */
-int slurm_set_accounting_storage_user(char *user)
-{
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-		xfree(slurmdbd_conf->storage_user);
-		slurmdbd_conf->storage_user = xstrdup(user);
-	} else {
-		conf = slurm_conf_lock();
-		xfree(conf->accounting_storage_user);
-		conf->accounting_storage_user = xstrdup(user);
-		slurm_conf_unlock();
-	}
-	return 0;
-}
-
 /* slurm_get_accounting_storage_backup_host
  * returns the storage backup host from slurm_conf object
  * RET char *    - storage backup host,  MUST be xfreed by caller
