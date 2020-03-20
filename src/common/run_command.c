@@ -64,6 +64,12 @@ static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define MAX_POLL_WAIT 500
 
+/* used to initialize run_command module */
+extern void run_command_init(void)
+{
+	shutdown = 0;
+}
+
 /* used to terminate any outstanding commands */
 extern void run_command_shutdown(void)
 {

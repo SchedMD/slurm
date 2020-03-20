@@ -3161,6 +3161,7 @@ extern int init(void)
 	if (!state_save_loc)
 		state_save_loc = slurm_get_state_save_location();
 	bb_alloc_cache(&bb_state);
+	run_command_init();
 	slurm_thread_create(&bb_state.bb_thread, _bb_agent, NULL);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 

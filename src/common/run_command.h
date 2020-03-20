@@ -39,6 +39,13 @@
 
 #include "src/common/track_script.h"
 
+/*
+ * Used to initialize this run_command module.
+ * Needed in cases of high-availability when the backup controllers are
+ * returning to function and must recover from a previously issued shutdown.
+ */
+extern void run_command_init(void);
+
 /* used to terminate any outstanding commands */
 extern void run_command_shutdown(void);
 

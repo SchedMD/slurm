@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove accrue time when updating a job start/eligible time to the future.
  -- Fix regression in 20.02.0 that broke --depend=expand.
  -- Reset begin time on job release if it's not in the future.
+ -- Fix for recovering burst buffers when using high-availability.
 
 * Changes in Slurm 20.02.0
 ==========================
