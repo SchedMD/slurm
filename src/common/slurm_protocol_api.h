@@ -583,10 +583,10 @@ int slurm_set_accounting_storage_host(char *host);
  */
 uint16_t slurm_get_accounting_storage_enforce(void);
 
-/* slurm_get_is_association_based_accounting
- * returns if we are doing accounting by associations
+/* slurm_with_slurmdbd
+ * returns true if operating with slurmdbd
  */
-int slurm_get_is_association_based_accounting(void);
+bool slurm_with_slurmdbd(void);
 
 /* slurm_get_accounting_storage_pass
  * returns the storage password from slurm_conf object

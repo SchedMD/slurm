@@ -545,7 +545,7 @@ extern int read_slurmdbd_conf(void)
 		slurm_conf.slurm_user_id = 0;
 	}
 
-	if (!slurmdbd_conf.accounting_storage_type)
+	if (!slurm_conf.accounting_storage_type)
 		fatal("StorageType must be specified");
 	if (!xstrcmp(slurm_conf.accounting_storage_type,
 	             "accounting_storage/slurmdbd")) {

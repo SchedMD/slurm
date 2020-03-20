@@ -427,8 +427,7 @@ int main(int argc, char **argv)
 	if (xsignal_block(controller_sigarray) < 0)
 		error("Unable to block signals");
 
-	association_based_accounting =
-		slurm_get_is_association_based_accounting();
+	association_based_accounting = slurm_with_slurmdbd();
 	accounting_enforce = slurm_conf.accounting_storage_enforce;
 	if (!xstrcasecmp(slurm_conf.accounting_storage_type,
 	                 "accounting_storage/slurmdbd")) {

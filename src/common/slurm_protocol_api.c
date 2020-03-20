@@ -1785,27 +1785,17 @@ uint16_t slurm_get_accounting_storage_enforce(void)
 
 }
 
-/* slurm_get_is_association_based_accounting
- * returns if we are doing accounting by associations
+/* slurm_with_slurmdbd
+ * returns true if operating with slurmdbd
  */
-int slurm_get_is_association_based_accounting(void)
+bool slurm_with_slurmdbd(void)
 {
-	int enforce = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-		return 1;
-	} else {
-		conf = slurm_conf_lock();
-		if (!xstrcasecmp(conf->accounting_storage_type,
-				 "accounting_storage/slurmdbd") ||
-		    !xstrcasecmp(conf->accounting_storage_type,
-				 "accounting_storage/mysql"))
-			enforce = 1;
-		slurm_conf_unlock();
-	}
-	return enforce;
-
+	bool with_slurmdbd;
+	slurm_conf_t *conf = slurm_conf_lock();
+	with_slurmdbd = !xstrcasecmp(conf->accounting_storage_type,
+	                             "accounting_storage/slurmdbd");
+	slurm_conf_unlock();
+	return with_slurmdbd;
 }
 
 /* slurm_get_accounting_storage_pass

@@ -161,7 +161,7 @@ int main(int argc, char **argv)
 	}
 	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s accounting storage plugin",
-		      slurmdbd_conf->storage_type);
+		      slurm_conf.accounting_storage_type);
 	}
 
 	_become_slurm_user();

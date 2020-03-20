@@ -1271,7 +1271,7 @@ static GtkWidget *_create_cluster_combo(void)
 	ListIterator itr;
 	slurmdb_cluster_rec_t *cluster_rec;
 	GtkCellRenderer *renderer = NULL;
-	bool got_db = slurm_get_is_association_based_accounting();
+	bool got_db = slurm_with_slurmdbd();
 	int count = 0, spot = 0;
 	List fed_list = NULL;
 
