@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
-#          Test for the qsub -V and -v options 
+#          Test for the qsub -V and -v options
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -14,8 +14,8 @@ set file_err   "test$test_id.error"
 set file_in    "test$test_id.input"
 set file_out   "test$test_id.output"
 set exit_code  0
-set variable1_value "DOYOUWANTTO"
-set variable2_value "BUILDASNOWMAN"
+set variable1_value "var1"
+set variable2_value "var2"
 
 print_header $test_id
 
@@ -30,7 +30,8 @@ proc make_random_var_name {} {
 	return $randvar
 }
 
-proc run_qsub { variable1_name variable1_expect_val variable2_name variable2_expect_val qsub_extra_options extra_batch_header } {
+proc run_qsub { variable1_name variable1_expect_val variable2_name
+                variable2_expect_val qsub_extra_options extra_batch_header } {
 	global file_err file_in file_out
 	global exit_code
 	global test_var_value
@@ -47,13 +48,17 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name variable2_exp
 
 	set job_id 0
 	exec rm -f $file_err $file_out
-	make_bash_script $file_in "$extra_batch_header\n$bin_echo $variable1_name=\$$variable1_name\n$bin_echo $variable2_name=\$$variable2_name\n"
+	make_bash_script $file_in "
+		$extra_batch_header
+		$bin_echo $variable1_name=\$$variable1_name
+		$bin_echo $variable2_name=\$$variable2_name"
 
 	# Set our 2 test variables
 	set env($variable1_name) $variable1_value
 	set env($variable2_name) $variable2_value
 
-	set qsub_base_options [concat -l walltime=1:00 -r $file_err -o $file_out ./$file_in]
+	set qsub_base_options [concat -l walltime=1:00 -r $file_err -o \
+	                       $file_out ./$file_in]
 	set qsub_options [concat $qsub_extra_options $qsub_base_options]
 
 	eval spawn $qsub [lrange $qsub_options 0 end]
@@ -116,38 +121,49 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name variable2_exp
 
 # Test -V
 set subtest_name "Test -V"
-run_qsub [make_random_var_name] $variable1_value [make_random_var_name] $variable2_value "-V" ""
+set var1_name [make_random_var_name]
+set var2_name "${var1_name}_2"
+run_qsub $var1_name $variable1_value $var2_name $variable2_value "-V" ""
+unset var1_name var2_name
 
 # Test -V w/sbatch --export=NONE
 set subtest_name "Test -V w/sbatch --export=NONE"
-run_qsub [make_random_var_name] $variable1_value [make_random_var_name] $variable2_value "-V" "#SBATCH --export=NONE"
+set var1_name [make_random_var_name]
+set var2_name "${var1_name}_2"
+run_qsub $var1_name $variable1_value $var2_name $variable2_value \
+         "-V" "#SBATCH --export=NONE"
+unset var1_name var2_name
 
 # Test -V, -v var
 set subtest_name "Test -V, -v var"
 set var1_name [make_random_var_name]
-set var2_name [make_random_var_name]
-run_qsub $var1_name $variable1_value $var2_name $variable2_value "-V -v $var1_name" "" 
+set var2_name "${var1_name}_2"
+run_qsub $var1_name $variable1_value $var2_name $variable2_value \
+         "-V -v $var1_name" ""
 unset var1_name var2_name
 
 # Test -V, -v var w/sbatch --export=NONE
 set subtest_name "Test -V, -v var w/sbatch --export=NONE"
 set var1_name [make_random_var_name]
-set var2_name [make_random_var_name]
-run_qsub $var1_name $variable1_value $var2_name $variable2_value "-V -v $var1_name" "#SBATCH --export=NONE" 
+set var2_name "${var1_name}_2"
+run_qsub $var1_name $variable1_value $var2_name $variable2_value \
+         "-V -v $var1_name" "#SBATCH --export=NONE"
 unset var1_name var2_name
 
 # Test -V, -v var=val
 set subtest_name "Test -V, -v var=val"
 set var1_name [make_random_var_name]
-set var2_name [make_random_var_name]
-run_qsub $var1_name "LETITGOOO" $var2_name $variable2_value "-V -v $var1_name=LETITGOOO" ""
+set var2_name "${var1_name}_2"
+run_qsub $var1_name "another_value" $var2_name $variable2_value \
+         "-V -v $var1_name=another_value" ""
 unset var1_name var2_name
 
 # Test -V, -v var=val w/sbatch --export=NONE
 set subtest_name "Test -V, -v var=val w/sbatch --export=NONE"
 set var1_name [make_random_var_name]
-set var2_name [make_random_var_name]
-run_qsub $var1_name "LETITGOOO" $var2_name $variable2_value "-V -v $var1_name=LETITGOOO" "#SBATCH --export=NONE"
+set var2_name "${var1_name}_2"
+run_qsub $var1_name "another_value" $var2_name $variable2_value \
+         "-V -v $var1_name=another_value" "#SBATCH --export=NONE"
 
 send_user "\nSUCCESS\n"
 exit 0
