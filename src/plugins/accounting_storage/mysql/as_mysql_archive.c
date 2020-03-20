@@ -3836,8 +3836,7 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 
 	xfree(cols);
 
-	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_ARCHIVE, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -3926,8 +3925,7 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 		break;
 	}
 
-	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_ARCHIVE, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -4093,9 +4091,8 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		} else
 			tmp_end = curr_end;
 
-		if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
-			debug("Purging %s_%s before %ld",
-			      cluster_name, sql_table, tmp_end);
+		log_flag(DB_ARCHIVE, "Purging %s_%s before %ld",
+			 cluster_name, sql_table, tmp_end);
 
 		/* Do archive */
 		if (SLURMDB_PURGE_ARCHIVE_SET(purge_attr)) {
@@ -4143,8 +4140,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 				tmp_end, col_name, MAX_PURGE_LIMIT);
 			break;
 		}
-		if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		DB_DEBUG(DB_ARCHIVE, mysql_conn->conn, "query\n%s", query);
 
 		/*
 		 * Don't loop this query, just do it once, since we are only
@@ -4387,9 +4383,8 @@ extern int as_mysql_jobacct_process_archive_load(
 	data = NULL;	/* Moved to "buffer" */
 
 	safe_unpack16(&ver, buffer);
-	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
-		DB_DEBUG(mysql_conn->conn,
-			 "Version in archive header is %u", ver);
+	DB_DEBUG(DB_ARCHIVE, mysql_conn->conn,
+	         "Version in archive header is %u", ver);
 	/*
 	 * Don't verify the lower limit as we should be keeping all
 	 * older versions around here just to support super old
@@ -4420,10 +4415,10 @@ extern int as_mysql_jobacct_process_archive_load(
 pass:
 	rec_cnt = MIN(rec_cnt_left, RECORDS_PER_PASS);
 
-	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
-		DB_DEBUG(mysql_conn->conn, "%s: Pass %u: loaded %u/%u records. Attempting partial load %u.",
-			 __func__, pass_cnt, rec_cnt_total - rec_cnt_left,
-			 rec_cnt_total, rec_cnt);
+	DB_DEBUG(DB_ARCHIVE, mysql_conn->conn,
+	         "%s: Pass %u: loaded %u/%u records. Attempting partial load %u.",
+	         __func__, pass_cnt, rec_cnt_total - rec_cnt_left,
+	         rec_cnt_total, rec_cnt);
 
 	rec_cnt_left -= rec_cnt;
 
@@ -4470,9 +4465,8 @@ got_sql:
 		error_code = SLURM_ERROR;
 		goto cleanup;
 	}
-	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE &&
-	    debug_flags & DEBUG_FLAG_DB_QUERY)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", data);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_DB_ARCHIVE)
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", data);
 	error_code = mysql_db_query_check_after(mysql_conn, data);
 	xfree(data);
 	if (error_code != SLURM_SUCCESS) {
@@ -4493,9 +4487,9 @@ cleanup:
 	if (error_code)
 		error("%s: failure loading archive: %s", __func__,
 		      slurm_strerror(error_code));
-	else if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
-		DB_DEBUG(mysql_conn->conn, "%s: archive loaded successfully.",
-			 __func__);
+	else
+		DB_DEBUG(DB_ARCHIVE, mysql_conn->conn,
+		         "%s: archive loaded successfully.", __func__);
 
 	return error_code;
 }

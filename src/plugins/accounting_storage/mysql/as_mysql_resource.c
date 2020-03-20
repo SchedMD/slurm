@@ -302,8 +302,7 @@ static uint32_t _get_res_used(mysql_conn_t *mysql_conn, uint32_t res_id,
 	if (extra)
 		xstrfmtcat(query, " && !(%s)", extra);
 
-	if (debug_flags & DEBUG_FLAG_DB_RES)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return percent_used;
@@ -374,8 +373,7 @@ static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
 
 	xfree(tmp);
 
-	if (debug_flags & DEBUG_FLAG_DB_RES)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -447,8 +445,7 @@ static int _add_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *object,
 		   res_table, cols, vals, extra);
 
 
-	if (debug_flags & DEBUG_FLAG_DB_RES)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 	object->id = (uint32_t)mysql_db_insert_ret_id(mysql_conn, query);
 	xfree(query);
 	if (!object->id) {
@@ -484,8 +481,7 @@ static int _add_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *object,
 	xfree(cols);
 	xfree(extra);
 	xfree(vals);
-	if (debug_flags & DEBUG_FLAG_DB_RES)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 	if (rc != SLURM_SUCCESS)
@@ -525,17 +521,10 @@ static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
 		res->percent_used += object->percent_allowed;
 		if (res->percent_used > 100) {
 			rc = ESLURM_OVER_ALLOCATE;
-			if (debug_flags & DEBUG_FLAG_DB_RES)
-				DB_DEBUG(mysql_conn->conn,
-					 "Adding a new cluster with %u%% "
-					 "allowed to "
-					 "resource %s@%s would put the usage "
-					 "at %u%%, (which is over 100%%).  "
-					 "Please redo your math "
-					 "and resubmit.",
-					 object->percent_allowed,
-					 res->name, res->server,
-					 res->percent_used);
+			DB_DEBUG(DB_RES, mysql_conn->conn,
+			         "Adding a new cluster with %u%% allowed to resource %s@%s would put the usage at %u%%, (which is over 100%%). Please redo your math and resubmit.",
+			         object->percent_allowed, res->name,
+			         res->server, res->percent_used);
 			break;
 		}
 		xfree(extra);
@@ -547,8 +536,7 @@ static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
 			   clus_res_table, cols, vals,
 			   object->cluster, object->percent_allowed, extra);
 
-		if (debug_flags & DEBUG_FLAG_DB_RES)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
@@ -572,8 +560,7 @@ static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
 		xfree(name);
 		xfree(tmp_extra);
 		xfree(extra);
-		if (debug_flags & DEBUG_FLAG_DB_RES)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS)
@@ -640,8 +627,7 @@ static List _get_clus_res(mysql_conn_t *mysql_conn, uint32_t res_id,
 		"select %s from %s as t2 where %s && (res_id=%u);",
 		tmp, clus_res_table, extra, res_id);
 	xfree(tmp);
-	if (debug_flags & DEBUG_FLAG_DB_RES)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
@@ -789,8 +775,7 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 	xfree(tmp);
 	xfree(extra);
 
-	if (debug_flags & DEBUG_FLAG_DB_RES)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
@@ -901,8 +886,7 @@ extern List as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			       extra, clus_extra);
 	xfree(clus_extra);
 
-	if (debug_flags & DEBUG_FLAG_DB_RES)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
@@ -915,8 +899,7 @@ extern List as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		query = xstrdup_printf("select id, name, server "
 				       "from %s as t1 %s;",
 				       res_table, extra);
-		if (debug_flags & DEBUG_FLAG_DB_RES)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 			xfree(query);
 			xfree(extra);
@@ -980,9 +963,8 @@ extern List as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		if (debug_flags & DEBUG_FLAG_DB_RES)
-			DB_DEBUG(mysql_conn->conn,
-				 "didn't effect anything\n%s", query);
+		DB_DEBUG(DB_RES, mysql_conn->conn,
+		         "didn't affect anything\n%s", query);
 		xfree(query);
 		xfree(name_char);
 		xfree(clus_extra);
@@ -1083,8 +1065,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 				       "from %s as t1 %s;",
 				       res_table, extra);
 
-	if (debug_flags & DEBUG_FLAG_DB_RES)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(extra);
 		xfree(vals);
@@ -1118,8 +1099,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		query = xstrdup_printf("select id, name, server "
 				       "from %s as t1 %s;",
 				       res_table, extra);
-		if (debug_flags & DEBUG_FLAG_DB_RES)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 			xfree(extra);
 			xfree(vals);
@@ -1174,17 +1154,10 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			if (res->percent_used != NO_VAL16)
 				percent_used += res->percent_used;
 			if (percent_used > 100) {
-				if (debug_flags & DEBUG_FLAG_DB_RES)
-					DB_DEBUG(mysql_conn->conn,
-						 "Modifying resource %s@%s "
-						 "with %u%% allowed to each "
-						 "cluster would put the usage "
-						 "at %u%%, (which is "
-						 "over 100%%).  Please redo "
-						 "your math and resubmit.",
-						 row[1], row[2],
-						 res->percent_used,
-						 percent_used);
+				DB_DEBUG(DB_RES, mysql_conn->conn,
+				         "Modifying resource %s@%s with %u%% allowed to each cluster would put the usage at %u%%, (which is over 100%%). Please redo your math and resubmit.",
+				         row[1], row[2], res->percent_used,
+				         percent_used);
 
 				mysql_free_result(result);
 				xfree(clus_extra);
@@ -1229,9 +1202,8 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		if (debug_flags & DEBUG_FLAG_DB_RES)
-			DB_DEBUG(mysql_conn->conn,
-				 "didn't effect anything\n%s", query);
+		DB_DEBUG(DB_RES, mysql_conn->conn,
+		         "didn't affect anything\n%s", query);
 		xfree(query);
 		xfree(vals);
 		xfree(name_char);

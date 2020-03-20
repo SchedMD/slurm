@@ -150,8 +150,7 @@ static void *_cluster_rollup_usage(void *arg)
 				"where node_name='' order by "
 				"time_start asc limit 1;",
 				local_rollup->cluster_name, event_table);
-			if (debug_flags & DEBUG_FLAG_DB_USAGE)
-				DB_DEBUG(mysql_conn.conn, "query\n%s", query);
+			DB_DEBUG(DB_USAGE, mysql_conn.conn, "query\n%s", query);
 			if (!(result = mysql_db_query_ret(
 				      &mysql_conn, query, 0))) {
 				xfree(query);
@@ -178,8 +177,7 @@ static void *_cluster_rollup_usage(void *arg)
 				local_rollup->cluster_name, last_ran_table,
 				lowest, lowest, lowest);
 
-			if (debug_flags & DEBUG_FLAG_DB_USAGE)
-				DB_DEBUG(mysql_conn.conn, "query\n%s", query);
+			DB_DEBUG(DB_USAGE, mysql_conn.conn, "query\n%s", query);
 			rc = mysql_db_query(&mysql_conn, query);
 			xfree(query);
 			if (rc != SLURM_SUCCESS) {
@@ -381,8 +379,7 @@ static void *_cluster_rollup_usage(void *arg)
 		       local_rollup->cluster_name, month_end, month_start);
 
 	if (query) {
-		if (debug_flags & DEBUG_FLAG_DB_USAGE)
-			DB_DEBUG(mysql_conn.conn, "query\n%s", query);
+		DB_DEBUG(DB_USAGE, mysql_conn.conn, "query\n%s", query);
 		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 	}
@@ -478,8 +475,7 @@ static int _get_object_usage(mysql_conn_t *mysql_conn,
 	}
 	xfree(tmp);
 
-	if (debug_flags & DEBUG_FLAG_DB_USAGE)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s", query);
 	result = mysql_db_query_ret(mysql_conn, query, 0);
 	xfree(query);
 
@@ -581,8 +577,7 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		tmp, cluster_rec->name, my_usage_table, end, start);
 
 	xfree(tmp);
-	if (debug_flags & DEBUG_FLAG_DB_USAGE)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s", query);
 
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);

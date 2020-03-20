@@ -155,8 +155,7 @@ static int _remove_all_clusters_from_fed(mysql_conn_t *mysql_conn,
 	if (exception_names)
 		xstrfmtcat(query, " AND name NOT IN (%s)", exception_names);
 
-	if (debug_flags & DEBUG_FLAG_FEDR)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(FEDR, mysql_conn->conn, "query\n%s", query);
 
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
@@ -188,8 +187,7 @@ static int _remove_clusters_from_fed(mysql_conn_t *mysql_conn, List clusters)
 			  "WHERE name IN (%s) and deleted=0",
 		   cluster_table, CLUSTER_FED_STATE_NA, names);
 
-	if (debug_flags & DEBUG_FLAG_FEDR)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(FEDR, mysql_conn->conn, "query\n%s", query);
 
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
@@ -240,8 +238,7 @@ static int _add_clusters_to_fed(mysql_conn_t *mysql_conn, List clusters,
 		   cluster_table, fed, CLUSTER_FED_STATE_ACTIVE, indexes, fed,
 		   names);
 
-	if (debug_flags & DEBUG_FLAG_FEDR)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(FEDR, mysql_conn->conn, "query\n%s", query);
 
 	rc = mysql_db_query(mysql_conn, query);
 	if (rc)
@@ -355,8 +352,7 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 			   "insert into %s (%s) values (%s) "
 			   "on duplicate key update deleted=0%s",
 			   federation_table, cols, vals, extra);
-		if (debug_flags & DEBUG_FLAG_FEDR)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		DB_DEBUG(FEDR, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
@@ -462,8 +458,7 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 
-	if (debug_flags & DEBUG_FLAG_FEDR)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(FEDR, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);
@@ -568,8 +563,7 @@ extern List as_mysql_modify_federations(
 		   fed_items, federation_table, extra);
 	xfree(fed_items);
 
-	if (debug_flags & DEBUG_FLAG_FEDR)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(FEDR, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		xfree(vals);
@@ -604,9 +598,8 @@ extern List as_mysql_modify_federations(
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		if (debug_flags & DEBUG_FLAG_FEDR)
-			DB_DEBUG(mysql_conn->conn,
-				 "didn't effect anything\n%s", query);
+		DB_DEBUG(FEDR, mysql_conn->conn,
+		         "didn't affect anything\n%s", query);
 		xfree(vals);
 		xfree(name_char);
 		xfree(query);
@@ -682,9 +675,8 @@ extern List as_mysql_remove_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (!mysql_num_rows(result)) {
 		mysql_free_result(result);
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		if (debug_flags & DEBUG_FLAG_FEDR)
-			DB_DEBUG(mysql_conn->conn,
-				 "didn't effect anything\n%s", query);
+		DB_DEBUG(FEDR, mysql_conn->conn,
+		         "didn't affect anything\n%s", query);
 		xfree(query);
 		return ret_list;
 	}

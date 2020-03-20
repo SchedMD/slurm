@@ -498,8 +498,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			}
 			list_iterator_destroy(itr);
 		}
-		if (debug_flags & DEBUG_FLAG_DB_JOB)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(extra);
@@ -583,8 +582,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	*/
 	xstrcat(query, " order by id_job, time_submit desc");
 
-	if (debug_flags & DEBUG_FLAG_DB_JOB)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		rc = SLURM_ERROR;
@@ -910,8 +908,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			xfree(extra);
 		}
 
-		if (debug_flags & DEBUG_FLAG_DB_STEP)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		DB_DEBUG(DB_STEP, mysql_conn->conn, "query\n%s", query);
 
 		if (!(step_result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
@@ -1179,8 +1176,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 
-	if (debug_flags & DEBUG_FLAG_DB_JOB)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		goto no_hosts;

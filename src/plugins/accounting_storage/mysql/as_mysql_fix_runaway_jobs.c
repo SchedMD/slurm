@@ -88,8 +88,7 @@ static int _first_job_roll_up(mysql_conn_t *mysql_conn, time_t first_start)
 		   mysql_conn->cluster_name, wckey_month_table,
 		   month_start);
 
-	if (debug_flags & DEBUG_FLAG_DB_QUERY)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	if (rc != SLURM_SUCCESS)
 		error("%s Failed to rollup at the end of previous month",
@@ -174,8 +173,7 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 			       mysql_conn->cluster_name, job_table,
 			       JOB_COMPLETE, job_ids);
 
-	if (debug_flags & DEBUG_FLAG_DB_QUERY)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 

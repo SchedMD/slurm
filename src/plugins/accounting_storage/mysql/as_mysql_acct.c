@@ -181,8 +181,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			"on duplicate key update deleted=0, mod_time=%ld %s;",
 			acct_table, cols, vals,
 			now, extra);
-		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(cols);
 		xfree(vals);
@@ -193,12 +192,11 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 		affect_rows = last_affected_rows(mysql_conn);
-		/* if (debug_flags & DEBUG_FLAG_DB_ASSOC) */
-		/* 	DB_DEBUG(mysql_conn->conn, "affected %d", affect_rows); */
+		//DB_DEBUG(DB_ASSOC, mysql_conn->conn, "affected %d",
+		//         affect_rows);
 
 		if (!affect_rows) {
-			if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-				DB_DEBUG(mysql_conn->conn, "nothing changed");
+			DB_DEBUG(DB_ASSOC, mysql_conn->conn, "nothing changed");
 			xfree(extra);
 			continue;
 		}
@@ -345,8 +343,7 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	query = xstrdup_printf("select name from %s %s;", acct_table, extra);
 	xfree(extra);
-	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);
@@ -371,9 +368,8 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-			DB_DEBUG(mysql_conn->conn,
-				 "didn't effect anything\n%s", query);
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+		         "didn't affect anything\n%s", query);
 		xfree(query);
 		xfree(vals);
 		return ret_list;
@@ -508,9 +504,8 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-			DB_DEBUG(mysql_conn->conn,
-				 "didn't effect anything\n%s", query);
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+		         "didn't affect anything\n%s", query);
 		xfree(query);
 		return ret_list;
 	}
@@ -691,8 +686,7 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 
-	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);
