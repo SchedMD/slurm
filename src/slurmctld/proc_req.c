@@ -5664,7 +5664,6 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	slurm_conf.last_update = time(NULL);
 
 	/* Reset cached debug_flags values */
-	log_set_debug_flags();
 	gs_reconfig();
 	gres_plugin_reconfig();
 	priority_g_reconfig(false);

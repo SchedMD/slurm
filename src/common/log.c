@@ -132,7 +132,6 @@ typedef struct {
 	log_options_t opt;
 	unsigned initialized:1;
 	uint16_t fmt;            /* Flag for specifying timestamp format */
-	uint64_t debug_flags;
 }	log_t;
 
 char *slurm_prog_name = NULL;
@@ -582,21 +581,7 @@ int log_alter(log_options_t opt, log_facility_t fac, char *logfile)
 	slurm_mutex_lock(&log_lock);
 	rc = _log_init(NULL, opt, fac, logfile);
 	slurm_mutex_unlock(&log_lock);
-	log_set_debug_flags();
 	return rc;
-}
-
-/* log_set_debug_flags()
- * Set or reset the debug flags based on the configuration
- * file or the scontrol command.
- */
-void log_set_debug_flags(void)
-{
-	uint64_t debug_flags = slurm_get_debug_flags();
-
-	slurm_mutex_lock(&log_lock);
-	log->debug_flags = debug_flags;
-	slurm_mutex_unlock(&log_lock);
 }
 
 /* reinitialize log data structures. Like log_init, but do not init
