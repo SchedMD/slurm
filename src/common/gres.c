@@ -459,11 +459,9 @@ static int _load_gres_plugin(slurm_gres_context_t *plugin_context)
 
 	/* Get plugin list */
 	if (plugin_context->plugin_list == NULL) {
-		char *plugin_dir;
 		plugin_context->plugin_list = plugrack_create("gres");
-		plugin_dir = slurm_get_plugin_dir();
-		plugrack_read_dir(plugin_context->plugin_list, plugin_dir);
-		xfree(plugin_dir);
+		plugrack_read_dir(plugin_context->plugin_list,
+		                  slurm_conf.plugindir);
 	}
 
 	plugin_context->cur_plugin = plugrack_use_by_type(

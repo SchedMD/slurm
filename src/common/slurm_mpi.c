@@ -45,6 +45,7 @@
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_mpi.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -188,10 +189,8 @@ int _mpi_init (char *mpi_type)
 	}
 
 	if (!xstrcmp(mpi_type, "list")) {
-		char *plugin_dir;
 		plugrack_t *mpi_rack = plugrack_create("mpi");
-		plugin_dir = slurm_get_plugin_dir();
-		plugrack_read_dir(mpi_rack, plugin_dir);
+		plugrack_read_dir(mpi_rack, slurm_conf.plugindir);
 		plugrack_print_all_plugin(mpi_rack);
 		exit(0);
 	}

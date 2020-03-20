@@ -53,6 +53,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_protocol_api.h"
@@ -243,7 +244,7 @@ plugin_load_and_link(const char *type_name, int n_syms,
 			so_name[i] = '_';
 		i++;
 	}
-	if (!(dir_array = slurm_get_plugin_dir())) {
+	if (!(dir_array = xstrdup(slurm_conf.plugindir))) {
 		error("plugin_load_and_link: No plugin dir given");
 		xfree(so_name);
 		return plug;
@@ -440,11 +441,8 @@ extern plugin_context_t *plugin_context_create(
 
 	/* Get plugin list. */
 	if (!c->plugin_list) {
-		char *plugin_dir;
 		c->plugin_list = plugrack_create(plugin_type);
-		plugin_dir = slurm_get_plugin_dir();
-		plugrack_read_dir(c->plugin_list, plugin_dir);
-		xfree(plugin_dir);
+		plugrack_read_dir(c->plugin_list, slurm_conf.plugindir);
 	}
 
 	c->cur_plugin = plugrack_use_by_type(c->plugin_list, c->type);
@@ -502,7 +500,7 @@ extern List plugin_get_plugins_of_type(char *plugin_type)
 	struct dirent *e;
 	int len;
 
-	if (!(plugin_dir = slurm_get_plugin_dir())) {
+	if (!(plugin_dir = xstrdup(slurm_conf.plugindir))) {
 		error("%s: No plugin dir given", __func__);
 		goto done;
 	}

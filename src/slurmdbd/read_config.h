@@ -79,7 +79,6 @@ typedef struct {
 						* persist connection init
 						*/
 	char *		pid_file;	/* where to store current PID	*/
-	char *		plugindir;	/* dir to look for plugins	*/
 	uint16_t        private_data;   /* restrict information         */
 					/* purge variable format
 					 * controlled by PURGE_FLAGS	*/

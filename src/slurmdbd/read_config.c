@@ -102,7 +102,6 @@ static void _clear_slurmdbd_conf(void)
 		slurmdbd_conf->syslog_debug = LOG_LEVEL_END;
 		xfree(slurmdbd_conf->parameters);
 		xfree(slurmdbd_conf->pid_file);
-		xfree(slurmdbd_conf->plugindir);
 		slurmdbd_conf->private_data = 0;
 		slurmdbd_conf->purge_event = 0;
 		slurmdbd_conf->purge_job = 0;
@@ -318,7 +317,7 @@ extern int read_slurmdbd_conf(void)
 		}
 
 		s_p_get_string(&slurmdbd_conf->pid_file, "PidFile", tbl);
-		s_p_get_string(&slurmdbd_conf->plugindir, "PluginDir", tbl);
+		s_p_get_string(&slurm_conf.plugindir, "PluginDir", tbl);
 
 		slurmdbd_conf->private_data = 0; /* default visible to all */
 		if (s_p_get_string(&temp_str, "PrivateData", tbl)) {
@@ -536,8 +535,8 @@ extern int read_slurmdbd_conf(void)
 		slurmdbd_conf->pid_file = xstrdup(DEFAULT_SLURMDBD_PIDFILE);
 	if (slurmdbd_conf->dbd_port == 0)
 		slurmdbd_conf->dbd_port = SLURMDBD_PORT;
-	if (slurmdbd_conf->plugindir == NULL)
-		slurmdbd_conf->plugindir = xstrdup(default_plugin_path);
+	if (!slurm_conf.plugindir)
+		slurm_conf.plugindir = xstrdup(default_plugin_path);
 	if (slurm_conf.slurm_user_name) {
 		if (uid_from_string(slurm_conf.slurm_user_name,
 		                    &slurm_conf.slurm_user_id) < 0)
@@ -650,7 +649,7 @@ extern void log_config(void)
 	debug2("MessageTimeout    = %u", slurm_conf.msg_timeout);
 	debug2("Parameters        = %s", slurmdbd_conf->parameters);
 	debug2("PidFile           = %s", slurmdbd_conf->pid_file);
-	debug2("PluginDir         = %s", slurmdbd_conf->plugindir);
+	debug2("PluginDir         = %s", slurm_conf.plugindir);
 
 	private_data_string(slurmdbd_conf->private_data,
 			    tmp_str, sizeof(tmp_str));
@@ -885,7 +884,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PluginDir");
-	key_pair->value = xstrdup(slurmdbd_conf->plugindir);
+	key_pair->value = xstrdup(slurm_conf.plugindir);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

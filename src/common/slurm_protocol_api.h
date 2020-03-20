@@ -275,12 +275,6 @@ char *slurm_get_slurmctld_plugstack(void);
  */
 uint16_t slurm_get_slurmctld_timeout(void);
 
-/* slurm_get_plugin_dir
- * get plugin directory from slurm_conf object
- * RET char *   - plugin directory, MUST be xfreed by caller
- */
-char *slurm_get_plugin_dir(void);
-
 /* slurm_get_priority_decay_hl
  * returns the priority decay half life in seconds from slurm_conf object
  * RET uint32_t - decay_hl in secs.
