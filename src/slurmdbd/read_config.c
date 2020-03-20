@@ -112,8 +112,6 @@ static void _clear_slurmdbd_conf(void)
 		slurmdbd_conf->purge_suspend = 0;
 		slurmdbd_conf->purge_txn = 0;
 		slurmdbd_conf->purge_usage = 0;
-		slurmdbd_conf->slurm_user_id = NO_VAL;
-		xfree(slurmdbd_conf->slurm_user_name);
 		xfree(slurmdbd_conf->storage_backup_host);
 		xfree(slurmdbd_conf->storage_host);
 		xfree(slurmdbd_conf->storage_loc);
@@ -473,8 +471,7 @@ extern int read_slurmdbd_conf(void)
 					|= SLURMDB_PURGE_MONTHS;
 		}
 
-		s_p_get_string(&slurmdbd_conf->slurm_user_name,
-			       "SlurmUser", tbl);
+		s_p_get_string(&slurm_conf.slurm_user_name, "SlurmUser", tbl);
 
 		if (s_p_get_uint32(&slurmdbd_conf->purge_step,
 				   "StepPurge", tbl)) {
@@ -546,17 +543,14 @@ extern int read_slurmdbd_conf(void)
 		slurmdbd_conf->dbd_port = SLURMDBD_PORT;
 	if (slurmdbd_conf->plugindir == NULL)
 		slurmdbd_conf->plugindir = xstrdup(default_plugin_path);
-	if (slurmdbd_conf->slurm_user_name) {
-		uid_t pw_uid;
-		if (uid_from_string (slurmdbd_conf->slurm_user_name,
-				     &pw_uid) < 0)
+	if (slurm_conf.slurm_user_name) {
+		if (uid_from_string(slurm_conf.slurm_user_name,
+		                    &slurm_conf.slurm_user_id) < 0)
 			fatal("Invalid user for SlurmUser %s, ignored",
-			      slurmdbd_conf->slurm_user_name);
-		else
-			slurmdbd_conf->slurm_user_id = pw_uid;
+			      slurm_conf.slurm_user_name);
 	} else {
-		slurmdbd_conf->slurm_user_name = xstrdup("root");
-		slurmdbd_conf->slurm_user_id = 0;
+		slurm_conf.slurm_user_name = xstrdup("root");
+		slurm_conf.slurm_user_id = 0;
 	}
 
 	if (slurmdbd_conf->storage_type == NULL)
@@ -696,7 +690,7 @@ extern void log_config(void)
 	debug2("PurgeUsageAfter = %s", tmp_str);
 
 	debug2("SlurmUser         = %s(%u)",
-	       slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id);
+	       slurm_conf.slurm_user_name, slurm_conf.slurm_user_id);
 
 	debug2("StorageBackupHost = %s", slurmdbd_conf->storage_backup_host);
 	debug2("StorageHost       = %s", slurmdbd_conf->storage_host);
@@ -989,8 +983,8 @@ extern List dump_config(void)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SlurmUser");
 	key_pair->value = xstrdup_printf("%s(%u)",
-					 slurmdbd_conf->slurm_user_name,
-					 slurmdbd_conf->slurm_user_id);
+	                                 slurm_conf.slurm_user_name,
+	                                 slurm_conf.slurm_user_id);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

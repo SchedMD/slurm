@@ -2719,15 +2719,9 @@ uint16_t slurm_get_slurmd_port(void)
 uint32_t slurm_get_slurm_user_id(void)
 {
 	uint32_t slurm_uid = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-		slurm_uid = slurmdbd_conf->slurm_user_id;
-	} else {
-		conf = slurm_conf_lock();
-		slurm_uid = conf->slurm_user_id;
-		slurm_conf_unlock();
-	}
+	slurm_conf_t *conf = slurm_conf_lock();
+	slurm_uid = conf->slurm_user_id;
+	slurm_conf_unlock();
 	return slurm_uid;
 }
 

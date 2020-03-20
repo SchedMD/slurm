@@ -96,8 +96,6 @@ typedef struct {
 					 * than this in months or days	*/
 	uint32_t        purge_usage;    /* purge usage data older
 					 * than this in months or days	*/
-	uint32_t	slurm_user_id;	/* uid of slurm_user_name	*/
-	char *		slurm_user_name;/* user that slurmcdtld runs as	*/
 	char *		storage_backup_host;/* backup host where DB is
 					     * running */
 	char *		storage_host;	/* host where DB is running	*/

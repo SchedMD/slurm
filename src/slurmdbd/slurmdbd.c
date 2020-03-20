@@ -205,9 +205,10 @@ int main(int argc, char **argv)
 
 	if (reset_lft_rgt) {
 		int rc;
-		if ((rc = acct_storage_g_reset_lft_rgt(
-			     db_conn, slurmdbd_conf->slurm_user_id,
-			     lft_rgt_list)) != SLURM_SUCCESS)
+		if ((rc = acct_storage_g_reset_lft_rgt(db_conn,
+		                                       slurm_conf.slurm_user_id,
+		                                       lft_rgt_list))
+		    != SLURM_SUCCESS)
 			fatal("Error when trying to reset lft and rgt's");
 
 		if (acct_storage_g_commit(db_conn, 1))
@@ -555,14 +556,13 @@ static void _update_logging(bool startup)
 	if (startup && slurmdbd_conf->log_file) {
 		int rc;
 		gid_t slurm_user_gid;
-		slurm_user_gid = gid_from_uid(slurmdbd_conf->slurm_user_id);
-		rc = chown(slurmdbd_conf->log_file,
-			   slurmdbd_conf->slurm_user_id, slurm_user_gid);
+		slurm_user_gid = gid_from_uid(slurm_conf.slurm_user_id);
+		rc = chown(slurmdbd_conf->log_file, slurm_conf.slurm_user_id,
+		           slurm_user_gid);
 		if (rc) {
-			error("chown(%s, %d, %d): %m",
-			      slurmdbd_conf->log_file,
-			      (int) slurmdbd_conf->slurm_user_id,
-			      (int) slurm_user_gid);
+			error("chown(%s, %u, %u): %m",
+			      slurmdbd_conf->log_file, slurm_conf.slurm_user_id,
+			      slurm_user_gid);
 		}
 	}
 
@@ -622,7 +622,7 @@ static void _init_pidfile(void)
 	/* Don't close the fd returned here since we need to keep the
 	   fd open to maintain the write lock.
 	*/
-	create_pidfile(slurmdbd_conf->pid_file, slurmdbd_conf->slurm_user_id);
+	create_pidfile(slurmdbd_conf->pid_file, slurm_conf.slurm_user_id);
 }
 
 /* Become a daemon (child of init) and
@@ -933,22 +933,22 @@ static void _become_slurm_user(void)
 	gid_t slurm_user_gid;
 
 	/* Determine SlurmUser gid */
-	slurm_user_gid = gid_from_uid(slurmdbd_conf->slurm_user_id);
+	slurm_user_gid = gid_from_uid(slurm_conf.slurm_user_id);
 	if (slurm_user_gid == (gid_t) -1) {
 		fatal("Failed to determine gid of SlurmUser(%u)",
-		      slurmdbd_conf->slurm_user_id);
+		      slurm_conf.slurm_user_id);
 	}
 
 	/* Initialize supplementary groups ID list for SlurmUser */
 	if (getuid() == 0) {
 		/* root does not need supplementary groups */
-		if ((slurmdbd_conf->slurm_user_id == 0) &&
+		if ((slurm_conf.slurm_user_id == 0) &&
 		    (setgroups(0, NULL) != 0)) {
 			fatal("Failed to drop supplementary groups, "
 			      "setgroups: %m");
-		} else if ((slurmdbd_conf->slurm_user_id != getuid()) &&
-			   initgroups(slurmdbd_conf->slurm_user_name,
-				      slurm_user_gid)) {
+		} else if ((slurm_conf.slurm_user_id != getuid()) &&
+		           initgroups(slurm_conf.slurm_user_name,
+		                      slurm_user_gid)) {
 			fatal("Failed to set supplementary groups, "
 			      "initgroups: %m");
 		}
@@ -963,10 +963,10 @@ static void _become_slurm_user(void)
 	}
 
 	/* Set UID to UID of SlurmUser */
-	if ((slurmdbd_conf->slurm_user_id != getuid()) &&
-	    (setuid(slurmdbd_conf->slurm_user_id))) {
+	if ((slurm_conf.slurm_user_id != getuid()) &&
+	    (setuid(slurm_conf.slurm_user_id))) {
 		fatal("Can not set uid to SlurmUser(%u): %m",
-		      slurmdbd_conf->slurm_user_id);
+		      slurm_conf.slurm_user_id);
 	}
 }
 

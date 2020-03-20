@@ -605,7 +605,7 @@ static bool _validate_slurm_user(uint32_t uid)
 	if (drop_priv)
 		return false;
 #endif
-	if ((uid == 0) || (uid == slurmdbd_conf->slurm_user_id))
+	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
 		return true;
 
 	return false;
@@ -621,7 +621,7 @@ static bool _validate_super_user(uint32_t uid, slurmdbd_conn_t *dbd_conn)
 	if (drop_priv)
 		return false;
 #endif
-	if ((uid == 0) || (uid == slurmdbd_conf->slurm_user_id) ||
+	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(dbd_conn, uid) >= SLURMDB_ADMIN_SUPER_USER)
 		return true;
 
@@ -638,7 +638,7 @@ static bool _validate_operator(uint32_t uid, slurmdbd_conn_t *dbd_conn)
 	if (drop_priv)
 		return false;
 #endif
-	if ((uid == 0) || (uid == slurmdbd_conf->slurm_user_id) ||
+	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(dbd_conn, uid) >= SLURMDB_ADMIN_OPERATOR)
 		return true;
 

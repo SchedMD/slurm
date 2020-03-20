@@ -561,16 +561,13 @@ extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 	if (drop_priv)
 		return false;
 #endif
-	if (slurmdbd_conf) {
-		/* We have to check the authentication here in the
-		 * plugin since we don't know what accounts are being
-		 * referenced until after the query.
-		 */
-		if ((uid != slurmdbd_conf->slurm_user_id && uid != 0)
-		   && assoc_mgr_get_admin_level(db_conn, uid) < min_level)
-			is_admin = 0;
-	} else if ((uid != 0) && (uid != slurm_conf.slurm_user_id))
-		is_admin = 0;
+	/* We have to check the authentication here in the
+	 * plugin since we don't know what accounts are being
+	 * referenced until after the query.
+	 */
+	if ((uid != slurm_conf.slurm_user_id && uid != 0) &&
+	    assoc_mgr_get_admin_level(db_conn, uid) < min_level)
+		is_admin = false;
 
 	return is_admin;
 }
