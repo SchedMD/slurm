@@ -1688,26 +1688,6 @@ char *slurm_get_accounting_storage_host(void)
 	return storage_host;
 }
 
-/* slurm_set_accounting_storage_host
- * IN: char *host (name of file or database)
- * RET 0 or error code
- */
-int slurm_set_accounting_storage_host(char *host)
-{
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-		xfree(slurmdbd_conf->storage_host);
-		slurmdbd_conf->storage_host = xstrdup(host);
-	} else {
-		conf = slurm_conf_lock();
-		xfree(conf->accounting_storage_host);
-		conf->accounting_storage_host = xstrdup(host);
-		slurm_conf_unlock();
-	}
-	return 0;
-}
-
 /* slurm_get_accounting_storage_loc
  * returns the storage location from slurm_conf object
  * RET char *    - storage location,  MUST be xfreed by caller

@@ -566,12 +566,6 @@ char *slurm_get_accounting_storage_ext_host(void);
  */
 char *slurm_get_accounting_storage_host(void);
 
-/* slurm_set_accounting_storage_host
- * IN: char *host (name of file or database)
- * RET 0 or error code
- */
-int slurm_set_accounting_storage_host(char *host);
-
 /* slurm_get_accounting_storage_enforce
  * returns what level to enforce associations at
  */
