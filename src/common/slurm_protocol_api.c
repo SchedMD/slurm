@@ -236,23 +236,6 @@ uint32_t slurm_get_cpu_freq_govs(void)
 	return cpu_freq_govs;
 }
 
-/* slurm_get_batch_start_timeout
- * RET BatchStartTimeout value from slurm.conf
- */
-uint16_t slurm_get_batch_start_timeout(void)
-{
-	uint16_t batch_start_timeout = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		batch_start_timeout = conf->batch_start_timeout;
-		slurm_conf_unlock();
-	}
-	return batch_start_timeout;
-}
-
 /*
  * slurm_get_control_cnt
  * RET Count of SlurmctldHost records from slurm.conf

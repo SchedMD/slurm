@@ -1719,7 +1719,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	 */
 	if (timeout <= 0) {
 		timeout = (slurm_conf.msg_timeout +
-			   slurm_get_batch_start_timeout()) * 1000;
+		           slurm_conf.batch_start_timeout) * 1000;
 	}
 
 	slurm_msg_t_init(&msg);

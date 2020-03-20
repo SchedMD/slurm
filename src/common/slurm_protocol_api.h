@@ -103,11 +103,6 @@ char *slurm_get_sbcast_parameters(void);
  */
 int slurm_get_auth_ttl(void);
 
-/* slurm_get_batch_start_timeout
- * RET BatchStartTimeout value from slurm.conf
- */
-uint16_t slurm_get_batch_start_timeout(void);
-
 /* slurm_get_cli_filter_plugins
  * get cli_filter_plugins from slurm_conf object from
  * slurm_conf object

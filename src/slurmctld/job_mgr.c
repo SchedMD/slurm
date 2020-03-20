@@ -14101,7 +14101,6 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
 	node_record_t *node_ptr = node_record_table_ptr + node_inx;
-	uint16_t batch_start_timeout	= slurm_get_batch_start_timeout();
 	uint16_t resume_timeout		= slurm_get_resume_timeout();
 	uint32_t suspend_time		= slurm_get_suspend_time();
 	time_t batch_startup_time, node_boot_time = (time_t) 0, startup_time;
@@ -14111,7 +14110,7 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 		node_boot_time = node_ptr->boot_time -
 		                 (slurm_conf.msg_timeout + 5);
 	}
-	batch_startup_time  = now - batch_start_timeout;
+	batch_startup_time  = now - slurm_conf.batch_start_timeout;
 	batch_startup_time -= MIN(DEFAULT_MSG_TIMEOUT, slurm_conf.msg_timeout);
 
 	job_iterator = list_iterator_create(job_list);
