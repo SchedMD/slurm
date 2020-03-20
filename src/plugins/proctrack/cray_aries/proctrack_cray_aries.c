@@ -73,7 +73,6 @@ static pthread_t threadid = 0;
 static pthread_cond_t notify = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t notify_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
-static uint64_t debug_flags = 0;
 
 extern bool proctrack_p_has_pid (uint64_t cont_id, pid_t pid);
 
@@ -129,8 +128,6 @@ static void _end_container_thread(void)
  */
 extern int init(void)
 {
-	debug_flags = slurm_get_debug_flags();
-
 	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -203,7 +200,7 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 		error("proctrack_p_create: already have a cont_id");
 endit:
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
@@ -287,7 +284,7 @@ try_again:
 	TEMP_FAILURE_RETRY(close(fd));
 #endif
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
@@ -308,7 +305,7 @@ int proctrack_p_signal(uint64_t id, int sig)
 		error("Trying to send signal %d a container 0x%08lx "
 		      "that hasn't had anything added to it yet", sig, id);
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 	return (SLURM_SUCCESS);
 }
@@ -329,7 +326,7 @@ int proctrack_p_destroy(uint64_t id)
 	 * return SUCCESS to slurmd so it doesn't retry continuously
 	 */
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 	return SLURM_SUCCESS;
 }
@@ -343,7 +340,7 @@ uint64_t proctrack_p_find(pid_t pid)
 	if ((jid = job_getjid(pid)) == (jid_t) -1)
 		return ((uint64_t) 0);
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return ((uint64_t) jid);
@@ -414,7 +411,7 @@ int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 		*npids = 0;
 	}
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;

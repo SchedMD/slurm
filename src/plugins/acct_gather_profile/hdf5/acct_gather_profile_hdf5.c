@@ -122,7 +122,6 @@ static hid_t     gid_samples = -1;
 static hid_t     gid_totals = -1;
 static char      group_node[MAX_GROUP_NAME+1];
 static slurm_hdf5_conf_t hdf5_conf;
-static uint64_t debug_flags = 0;
 static uint32_t g_profile_running = ACCT_GATHER_PROFILE_NOT_SET;
 static stepd_step_rec_t *g_job = NULL;
 static time_t step_start_time;
@@ -209,8 +208,6 @@ extern int init(void)
 	if (!running_in_slurmstepd())
 		return SLURM_SUCCESS;
 
-	debug_flags = slurm_get_debug_flags();
-
 	/* Move HDF5 trace printing to log file instead of stderr */
 	H5Eset_auto(H5E_DEFAULT, (herr_t (*)(hid_t, void *))H5Eprint,
 	            log_fp());
@@ -290,7 +287,6 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	int rc = SLURM_SUCCESS;
 
 	char *profile_file_name;
-	char *profile_str;
 
 	xassert(running_in_slurmstepd());
 
@@ -298,10 +294,8 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 
 	xassert(hdf5_conf.dir);
 
-	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		profile_str = acct_gather_profile_to_string(g_job->profile);
-		info("PROFILE: option --profile=%s", profile_str);
-	}
+	log_flag(PROFILE, "PROFILE: option --profile=%s",
+		 acct_gather_profile_to_string(g_job->profile));
 
 	if (g_profile_running == ACCT_GATHER_PROFILE_NOT_SET)
 		g_profile_running = _determine_profile();
@@ -329,11 +323,9 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 			g_job->jobid, g_job->stepid, g_job->node_name);
 	}
 
-	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		profile_str = acct_gather_profile_to_string(g_profile_running);
-		info("PROFILE: node_step_start, opt=%s file=%s",
-		     profile_str, profile_file_name);
-	}
+	log_flag(PROFILE, "PROFILE: node_step_start, opt=%s file=%s",
+		 acct_gather_profile_to_string(g_profile_running),
+		 profile_file_name);
 
 	/*
 	 * Create a new file using the default properties
@@ -406,8 +398,7 @@ extern int acct_gather_profile_p_node_step_end(void)
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return rc;
 
-	if (debug_flags & DEBUG_FLAG_PROFILE)
-		info("PROFILE: node_step_end (shutdown)");
+	log_flag(PROFILE, "PROFILE: node_step_end (shutdown)");
 
 	/* close tables */
 	for (i = 0; i < tables_cur_len; ++i) {
@@ -446,16 +437,14 @@ extern int acct_gather_profile_p_task_start(uint32_t taskid)
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return rc;
 
-	if (debug_flags & DEBUG_FLAG_PROFILE)
-		info("PROFILE: task_start");
+	log_flag(PROFILE, "PROFILE: task_start");
 
 	return rc;
 }
 
 extern int acct_gather_profile_p_task_end(pid_t taskpid)
 {
-	if (debug_flags & DEBUG_FLAG_PROFILE)
-		info("PROFILE: task_end");
+	log_flag(PROFILE, "PROFILE: task_end");
 	return SLURM_SUCCESS;
 }
 

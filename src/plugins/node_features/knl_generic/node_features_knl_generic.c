@@ -167,7 +167,6 @@ static int allowed_uid_cnt = 0;
 static uint32_t boot_time = (5 * 60);	/* 5 minute estimated boot time */
 static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static uint32_t cpu_bind[KNL_NUMA_CNT];	/* Derived from numa_cpu_bind */
-static bool debug_flag = false;
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
 static char *mc_path = NULL;
@@ -558,7 +557,7 @@ static void _update_cpu_bind(void)
 		      plugin_type, numa_cpu_bind);
 	}
 
-	if (debug_flag) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		for (i = 0; i < KNL_NUMA_CNT; i++) {
 			char cpu_bind_str[128], *numa_str;
 			if (cpu_bind[i] == 0)
@@ -577,7 +576,7 @@ static void _log_script_argv(char **script_argv, char *resp_msg)
 	char *cmd_line = NULL;
 	int i;
 
-	if (!debug_flag)
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES))
 		return;
 
 	for (i = 0; script_argv[i]; i++) {
@@ -825,7 +824,6 @@ extern int init(void)
 	for (i = 0; i < KNL_NUMA_CNT; i++)
 		cpu_bind[i] = 0;
 	syscfg_timeout = DEFAULT_SYSCFG_TIMEOUT;
-	debug_flag = false;
 	default_mcdram = KNL_CACHE;
 	default_numa = KNL_ALL2ALL;
 //FIXME: Need better mechanism to get MCDRAM percentages
@@ -837,9 +835,6 @@ extern int init(void)
 	mcdram_pct[3] = 0;	// KNL_FLAT
 	mcdram_pct[4] = 0;	// KNL_AUTO
 	xfree(numa_cpu_bind);
-
-	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES)
-		debug_flag = true;
 
 	knl_conf_file = get_extra_conf_path("knl_generic.conf");
 	if ((stat(knl_conf_file, &stat_buf) == 0) &&
@@ -935,7 +930,7 @@ extern int init(void)
 		rc = SLURM_ERROR;
 	}
 
-	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		allow_mcdram_str = _knl_mcdram_str(allow_mcdram);
 		allow_numa_str = _knl_numa_str(allow_numa);
 		allow_user_str = _make_uid_str(allowed_uid, allowed_uid_cnt);
@@ -985,7 +980,6 @@ extern int fini(void)
 	slurm_mutex_unlock(&ume_mutex);
 	xfree(allowed_uid);
 	allowed_uid_cnt = 0;
-	debug_flag = false;
 	xfree(mcdram_per_node);
 	xfree(mc_path);
 	xfree(numa_cpu_bind);

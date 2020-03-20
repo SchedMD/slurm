@@ -92,7 +92,6 @@ const char plugin_type[]        = "route/topology";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /* Global data */
-static uint64_t debug_flags = 0;
 static pthread_mutex_t route_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool run_in_slurmctld = false;
 
@@ -111,7 +110,6 @@ extern int init(void)
 		fatal("ROUTE: route/topology requires topology/tree");
 	}
 	xfree(topotype);
-	debug_flags = slurm_get_debug_flags();
 	run_in_slurmctld = running_in_slurmctld();
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
@@ -209,7 +207,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		 * single slurmctld daemon, and sending something like a
 		 * node_registation request to all nodes.
 		 * Revert to default behavior*/
-		if (debug_flags & DEBUG_FLAG_ROUTE) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 			buf = hostlist_ranged_string_xmalloc(hl);
 			debug("ROUTE: didn't find switch containing nodes=%s",
 			      buf);
@@ -243,7 +241,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		/* Now remove nodes from this switch from message list */
 		bit_and_not(nodes_bitmap, fwd_bitmap);
 		FREE_NULL_BITMAP(fwd_bitmap);
-		if (debug_flags & DEBUG_FLAG_ROUTE) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 			buf = hostlist_ranged_string_xmalloc((*sp_hl)[hl_ndx]);
 			debug("ROUTE: ... sublist[%d] switch=%s :: %s",
 			      i, switch_record_table[i].name, buf);
@@ -268,7 +266,6 @@ extern int route_p_split_hostlist(hostlist_t hl,
  */
 extern int route_p_reconfigure (void)
 {
-	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
 }
 

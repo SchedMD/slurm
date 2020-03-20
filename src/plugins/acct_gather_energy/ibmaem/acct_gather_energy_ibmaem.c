@@ -75,7 +75,6 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 #define IBMAEM_SYSFS_POWER_FILENAME "power1_average"
 
 static acct_gather_energy_t *local_energy = NULL;
-static uint64_t debug_flags = 0;
 static stepd_step_rec_t *job = NULL;
 
 enum {
@@ -150,12 +149,10 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	readings++;
 	energy->current_watts = curr_power;
 
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("_get_joules_task: %"PRIu64" Joules consumed over last"
-		     " %ld secs. Currently at %u watts, ave watts %u",
-		     diff_energy,
-		     energy->poll_time ? now - energy->poll_time : 0,
-		     curr_power, energy->ave_watts);
+	log_flag(ENERGY, "%s: %"PRIu64" Joules consumed over last %ld secs. Currently at %u watts, ave watts %u",
+		 __func__, diff_energy,
+		 (energy->poll_time ? now - energy->poll_time : 0),
+		 curr_power, energy->ave_watts);
 
 	energy->previous_consumed_energy = curr_energy;
 	energy->poll_time = now;
@@ -189,15 +186,14 @@ static int _send_profile(void)
 	if (!_running_profile())
 		return SLURM_SUCCESS;
 
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("_send_profile: consumed %d watts",
-		     local_energy->current_watts);
+	log_flag(ENERGY, "%s: consumed %d watts",
+		 __func__, local_energy->current_watts);
 
 	if (dataset_id < 0) {
 		dataset_id = acct_gather_profile_g_create_dataset(
 			"Energy", NO_PARENT, dataset);
-		if (debug_flags & DEBUG_FLAG_ENERGY)
-			debug("Energy: dataset created (id = %d)", dataset_id);
+		log_flag(ENERGY, "Energy: dataset created (id = %d)",
+			 dataset_id);
 		if (dataset_id == SLURM_ERROR) {
 			error("Energy: Failed to create the dataset for Power");
 			return SLURM_ERROR;
@@ -206,9 +202,8 @@ static int _send_profile(void)
 
 	curr_watts = (uint64_t)local_energy->current_watts;
 
-	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		info("PROFILE-Energy: power=%u", local_energy->current_watts);
-	}
+	log_flag(PROFILE, "PROFILE-Energy: power=%u",
+		 local_energy->current_watts);
 
 	return acct_gather_profile_g_add_sample_data(dataset_id,
 	                                             (void *)&curr_watts,
@@ -235,8 +230,6 @@ extern int acct_gather_energy_p_update_node_energy(void)
  */
 extern int init(void)
 {
-	debug_flags = slurm_get_debug_flags();
-
 	/* put anything that requires the .conf being read in
 	   acct_gather_energy_p_conf_parse
 	*/
@@ -300,7 +293,6 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 
 	switch (data_type) {
 	case ENERGY_DATA_RECONFIG:
-		debug_flags = slurm_get_debug_flags();
 		break;
 	case ENERGY_DATA_PROFILE:
 		_get_joules_task(local_energy);

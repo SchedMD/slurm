@@ -184,15 +184,13 @@ static uint32_t _read_file(const char *file, char **data)
 
 	fd = open(file, O_RDONLY);
 	if (fd < 0) {
-		if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
-			info("%s: Could not open state file %s", plugin_type,
-			     file);
+		log_flag(ESEARCH, "%s: Could not open state file %s",
+			 plugin_type, file);
 		return data_size;
 	}
 	if (fstat(fd, &f_stat)) {
-		if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
-			info("%s: Could not stat state file %s", plugin_type,
-			     file);
+		log_flag(ESEARCH, "%s: Could not stat state file %s",
+			 plugin_type, file);
 		close(fd);
 		return data_size;
 	}
@@ -263,9 +261,8 @@ static int _load_pending_jobs(void)
 		list_enqueue(jobslist, jnode);
 	}
 	if (job_cnt > 0) {
-		if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
-			info("%s: Loaded %u jobs from state file", plugin_type,
-			     job_cnt);
+		log_flag(ESEARCH, "%s: Loaded %u jobs from state file",
+			 plugin_type, job_cnt);
 	}
 	free_buf(buffer);
 	xfree(state_file);
@@ -341,9 +338,8 @@ static int _index_job(const char *jobcomp)
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk);
 
 	if ((res = curl_easy_perform(curl_handle)) != CURLE_OK) {
-		if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
-			info("%s: Could not connect to: %s , reason: %s"
-			     ,plugin_type, log_url, curl_easy_strerror(res));
+		log_flag(ESEARCH, "%s: Could not connect to: %s , reason: %s",
+			 plugin_type, log_url, curl_easy_strerror(res));
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
@@ -368,20 +364,17 @@ static int _index_job(const char *jobcomp)
 	 * HTTP 201 (Created)	- request succeed and resource created.
 	 */
 	if ((xstrcmp(token, "200") != 0) && (xstrcmp(token, "201") != 0)) {
-		if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH) {
-			info("%s: HTTP status code %s received from %s",
-			     plugin_type, token, log_url);
-			info("%s: HTTP response:\n%s", plugin_type,
-			     chunk.message);
-		}
+		log_flag(ESEARCH, "%s: HTTP status code %s received from %s",
+			 plugin_type, token, log_url);
+		log_flag(ESEARCH, "%s: HTTP response:\n%s",
+			 plugin_type, chunk.message);
 		rc = SLURM_ERROR;
 	} else {
 		token = strtok((char *)jobcomp, ",");
 		(void)  strtok(token, ":");
 		token = strtok(NULL, ":");
-		if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
-			info("%s: Job with jobid %s indexed into elasticsearch",
-			     plugin_type, token);
+		log_flag(ESEARCH, "%s: Job with jobid %s indexed into elasticsearch",
+			 plugin_type, token);
 	}
 
 cleanup:
@@ -919,12 +912,10 @@ extern void *_process_jobs(void *x)
 				wait_retry_cnt++;
 		}
 		list_iterator_destroy(iter);
-		if ((success_cnt || fail_cnt) &&
-		    (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)) {
-			info("%s: index success:%d fail:%d wait_retry:%d",
-			     plugin_type, success_cnt, fail_cnt,
-			     wait_retry_cnt);
-		}
+		if ((success_cnt || fail_cnt))
+			log_flag(ESEARCH, "%s: index success:%d fail:%d wait_retry:%d",
+				 plugin_type, success_cnt, fail_cnt,
+				 wait_retry_cnt);
 	}
 	return NULL;
 }

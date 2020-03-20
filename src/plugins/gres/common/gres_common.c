@@ -68,14 +68,12 @@ extern int common_node_config_load(List gres_conf_list,
 	hostlist_t hl;
 	char *root_path, *one_name;
 	gres_device_t *gres_device;
-	uint64_t debug_flags;
 	List names_list;
 	int max_dev_num = -1;
 
 	xassert(gres_conf_list);
 	xassert(gres_devices);
 
-	debug_flags = slurm_get_debug_flags();
 	names_list = list_create(_free_name_list);
 	itr = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(itr))) {
@@ -142,11 +140,9 @@ extern int common_node_config_load(List gres_conf_list,
 		while ((gres_device = list_next(itr))) {
 			if (gres_device->dev_num == -1)
 				gres_device->dev_num = ++max_dev_num;
-			if (debug_flags & DEBUG_FLAG_GRES) {
-				debug("%s device number %d(%s):%s",
-				     gres_name, gres_device->dev_num,
-				     gres_device->path, gres_device->major);
-			}
+			log_flag(GRES, "%s device number %d(%s):%s",
+				 gres_name, gres_device->dev_num,
+				 gres_device->path, gres_device->major);
 		}
 		list_iterator_destroy(itr);
 	}

@@ -5040,7 +5040,7 @@ extern uint32_t job_test_watts_resv(job_record_t *job_ptr, time_t when,
 	list_iterator_destroy(iter);
 
 	resv_cnt = _max_constraint_planning(&wsched, &start, &end);
-	if (slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 		_print_constraint_planning(&wsched);
 		slurm_make_time_str(&start, start_str, sizeof(start_str));
 		slurm_make_time_str(&end, end_str, sizeof(end_str));

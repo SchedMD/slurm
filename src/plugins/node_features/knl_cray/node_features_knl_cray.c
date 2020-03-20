@@ -172,7 +172,6 @@ static uint32_t capmc_retries = DEFAULT_CAPMC_RETRIES;
 static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
 static char *cnselect_path = NULL;
 static uint32_t cpu_bind[KNL_NUMA_CNT];	/* Derived from numa_cpu_bind */
-static bool debug_flag = false;
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
 static char *mc_path = NULL;
@@ -652,7 +651,7 @@ static void _update_cpu_bind(void)
 		      plugin_type, numa_cpu_bind);
 	}
 
-	if (debug_flag) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		for (i = 0; i < KNL_NUMA_CNT; i++) {
 			char cpu_bind_str[128], *numa_str;
 			if (cpu_bind[i] == 0)
@@ -888,10 +887,9 @@ static char *_load_mcdram_type(int cache_pct)
 	START_TIMER;
 	resp_msg = _run_script(cnselect_path, script_argv, &status);
 	END_TIMER;
-	if (debug_flag) {
-		info("%s: %s %s %s ran for %s", __func__,
-		     script_argv[0], script_argv[1], script_argv[2], TIME_STR);
-	}
+	log_flag(NODE_FEATURES, "%s: %s %s %s ran for %s",
+		 __func__, script_argv[0], script_argv[1], script_argv[2],
+		 TIME_STR);
 	if (resp_msg == NULL) {
 		debug("%s: %s %s %s returned no information",
 		      __func__, script_argv[0], script_argv[1], script_argv[2]);
@@ -949,10 +947,9 @@ static char *_load_numa_type(char *type)
 	START_TIMER;
 	resp_msg = _run_script(cnselect_path, script_argv, &status);
 	END_TIMER;
-	if (debug_flag) {
-		info("%s: %s %s %s ran for %s", __func__,
-		     script_argv[0], script_argv[1], script_argv[2], TIME_STR);
-	}
+	log_flag(NODE_FEATURES, "%s: %s %s %s ran for %s",
+		 __func__, script_argv[0], script_argv[1], script_argv[2],
+		 TIME_STR);
 	if (resp_msg == NULL) {
 		debug("%s: %s %s %s returned no information",
 		      __func__, script_argv[0], script_argv[1], script_argv[2]);
@@ -1069,7 +1066,7 @@ static void _log_script_argv(char **script_argv, char *resp_msg)
 	char *cmd_line = NULL;
 	int i;
 
-	if (!debug_flag)
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES))
 		return;
 
 	for (i = 0; script_argv[i]; i++) {
@@ -1853,7 +1850,6 @@ extern int init(void)
 	for (i = 0; i < KNL_NUMA_CNT; i++)
 		cpu_bind[i] = 0;
 	xfree(cnselect_path);
-	debug_flag = false;
 	default_mcdram = KNL_CACHE;
 	default_numa = KNL_ALL2ALL;
 	xfree(mc_path);
@@ -1862,9 +1858,6 @@ extern int init(void)
 	mcdram_set = 0;
 	xfree(numa_cpu_bind);
 	xfree(syscfg_path);
-
-	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES)
-		debug_flag = true;
 
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
 	if ((stat(knl_conf_file, &stat_buf) == 0) &&
@@ -1935,7 +1928,7 @@ extern int init(void)
 	if (!syscfg_path)
 		verbose("SyscfgPath is not configured");
 
-	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		allow_mcdram_str = _knl_mcdram_str(allow_mcdram);
 		allow_numa_str = _knl_numa_str(allow_numa);
 		allow_user_str = _make_uid_str(allowed_uid, allowed_uid_cnt);
@@ -2004,7 +1997,6 @@ extern int fini(void)
 	xfree(capmc_path);
 	xfree(cnselect_path);
 	capmc_timeout = 0;
-	debug_flag = false;
 	xfree(mc_path);
 	xfree(mcdram_per_node);
 	xfree(numa_cpu_bind);
@@ -2043,8 +2035,8 @@ static void _check_node_status(void)
 		START_TIMER;
 		resp_msg = _run_script(capmc_path, script_argv, &status);
 		END_TIMER;
-		if (debug_flag)
-			info("%s: node_status ran for %s", __func__, TIME_STR);
+		log_flag(NODE_FEATURES, "%s: node_status ran for %s",
+			 __func__, TIME_STR);
 		_log_script_argv(script_argv, resp_msg);
 		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
 			break;	/* Success */
@@ -2253,10 +2245,8 @@ static int _update_node_state(char *node_list, bool set_locks)
 		START_TIMER;
 		resp_msg = _run_script(capmc_path, script_argv, &status);
 		END_TIMER;
-		if (debug_flag) {
-			info("%s: get_mcdram_capabilities ran for %s",
-			     __func__, TIME_STR);
-		}
+		log_flag(NODE_FEATURES, "%s: get_mcdram_capabilities ran for %s",
+			 __func__, TIME_STR);
 		_log_script_argv(script_argv, resp_msg);
 		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
 			break;	/* Success */
@@ -2310,10 +2300,8 @@ static int _update_node_state(char *node_list, bool set_locks)
 		START_TIMER;
 		resp_msg = _run_script(capmc_path, script_argv, &status);
 		END_TIMER;
-		if (debug_flag) {
-			info("%s: get_mcdram_cfg ran for %s",
-			     __func__, TIME_STR);
-		}
+		log_flag(NODE_FEATURES, "%s: get_mcdram_cfg ran for %s",
+			 __func__, TIME_STR);
 		_log_script_argv(script_argv, resp_msg);
 		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
 			break;	/* Success */
@@ -2369,10 +2357,8 @@ static int _update_node_state(char *node_list, bool set_locks)
 		START_TIMER;
 		resp_msg = _run_script(capmc_path, script_argv, &status);
 		END_TIMER;
-		if (debug_flag) {
-			info("%s: get_numa_capabilities ran for %s",
-			     __func__, TIME_STR);
-		}
+		log_flag(NODE_FEATURES, "%s: get_numa_capabilities ran for %s",
+			 __func__, TIME_STR);
 		_log_script_argv(script_argv, resp_msg);
 		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
 			break;	/* Success */
@@ -2426,8 +2412,8 @@ static int _update_node_state(char *node_list, bool set_locks)
 		START_TIMER;
 		resp_msg = _run_script(capmc_path, script_argv, &status);
 		END_TIMER;
-		if (debug_flag)
-			info("%s: get_numa_cfg ran for %s", __func__, TIME_STR);
+		log_flag(NODE_FEATURES, "%s: get_numa_cfg ran for %s",
+			 __func__, TIME_STR);
 		_log_script_argv(script_argv, resp_msg);
 		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
 			break;	/* Success */
@@ -2473,7 +2459,7 @@ static int _update_node_state(char *node_list, bool set_locks)
 
 	numa_cfg2 = _load_current_numa(&numa_cfg2_cnt);
 
-	if (debug_flag) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		_mcdram_cap_log(mcdram_cap, mcdram_cap_cnt);
 		_mcdram_cfg_log(mcdram_cfg, mcdram_cfg_cnt);
 		_mcdram_cfg2_log(mcdram_cfg2, mcdram_cfg2_cnt);
@@ -2597,8 +2583,8 @@ static int _update_node_state(char *node_list, bool set_locks)
 					  numa_cfg, numa_cfg_cnt);
 	}
 	END_TIMER;
-	if (debug_flag)
-		info("%s: update_node_features ran for %s", __func__, TIME_STR);
+	log_flag(NODE_FEATURES, "%s: update_node_features ran for %s",
+		 __func__, TIME_STR);
 
 	last_node_update = time(NULL);
 

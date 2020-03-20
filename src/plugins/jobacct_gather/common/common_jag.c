@@ -76,7 +76,6 @@ static long hertz = 0;
 static int my_pagesize = 0;
 static DIR  *slash_proc = NULL;
 static int energy_profile = ENERGY_DATA_NODE_ENERGY_UP;
-static uint64_t debug_flags = 0;
 
 static int _find_prec(void *x, void *key)
 {
@@ -770,6 +769,7 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		double d;
 		uint64_t u64;
 	} data[FIELD_CNT];
+	char str[256];
 
 	if (profile_gid == -1)
 		profile_gid = acct_gather_profile_g_create_group("Tasks");
@@ -845,11 +845,9 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		data[FIELD_WRITE].d /= 1048576.0;
 	}
 
-	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		char str[256];
-		info("PROFILE-Task: %s", acct_gather_profile_dataset_str(
-			     dataset, data, str, sizeof(str)));
-	}
+	log_flag(PROFILE, "PROFILE-Task: %s",
+		 acct_gather_profile_dataset_str(dataset, data, str,
+						 sizeof(str)));
 	acct_gather_profile_g_add_sample_data(jobacct->dataset_id,
 	                                      (void *)data, jobacct->cur_time);
 }
@@ -857,8 +855,6 @@ static void _record_profile(struct jobacctinfo *jobacct)
 extern void jag_common_init(long in_hertz)
 {
 	uint32_t profile_opt;
-
-	debug_flags = slurm_get_debug_flags();
 
 	acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
 				  &profile_opt);

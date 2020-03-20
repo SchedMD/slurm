@@ -1062,7 +1062,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 
 	if ((arg.job_nhosts > 0) && (tasks_to_launch > 0)) {
 		uint32_t hi, i, i_first_bit=0, i_last_bit=0, j;
-		bool cpu_log = slurm_get_debug_flags() & DEBUG_FLAG_CPU_BIND;
+		bool cpu_log = slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND;
 		bool setup_x11 = false;
 
 #ifdef HAVE_FRONT_END
@@ -1810,7 +1810,7 @@ _set_batch_job_limits(slurm_msg_t *msg)
 {
 	int i;
 	uint32_t alloc_lps = 0, last_bit = 0;
-	bool cpu_log = slurm_get_debug_flags() & DEBUG_FLAG_CPU_BIND;
+	bool cpu_log = slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND;
 	slurm_cred_arg_t arg;
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
 

@@ -56,7 +56,6 @@
 typedef struct {
 	pthread_mutex_t	aggr_mutex;
 	pthread_cond_t	cond;
-	uint32_t        debug_flags;
 	bool		max_msgs;
 	uint64_t        max_msg_cnt;
 	List            msg_aggr_list;
@@ -124,14 +123,12 @@ static int _send_to_backup_collector(slurm_msg_t *msg, int rc)
 {
 	slurm_addr_t *next_dest = NULL;
 
-	if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE) {
-		info("%s: primary %s, getting backup", __func__,
-		     rc ? "can't be reached" : "is null");
-	}
+	log_flag(ROUTE, "%s: primary %s, getting backup",
+		 __func__, (rc ? "can't be reached" : "is null"));
 
 	if ((next_dest = route_g_next_collector_backup())) {
 		int rc2 = SLURM_SUCCESS;
-		if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 			char addrbuf[100];
 			slurm_print_slurm_addr(next_dest, addrbuf, 32);
 			info("%s: *next_dest is %s", __func__, addrbuf);
@@ -144,9 +141,8 @@ static int _send_to_backup_collector(slurm_msg_t *msg, int rc)
 
 	if (!next_dest ||  (rc != SLURM_SUCCESS)) {
 		int rc2 = SLURM_SUCCESS;
-		if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
-			info("%s: backup %s, sending msg to controller",
-			     __func__, rc ? "can't be reached" : "is null");
+		log_flag(ROUTE, "%s: backup %s, sending msg to controller",
+			 __func__, (rc ? "can't be reached" : "is null"));
 		rc = slurm_send_recv_controller_rc_msg(msg, &rc2,
 						       working_cluster_rec);
 		if (rc2 != SLURM_SUCCESS && !rc)
@@ -169,11 +165,11 @@ static int _send_to_next_collector(slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	int rc2 = SLURM_SUCCESS;
 
-	if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
-		info("msg aggr: send_to_next_collector: getting primary next "
-		     "collector");
+	log_flag(ROUTE, "msg aggr: %s: getting primary next collector",
+		 __func__);
+
 	if ((next_dest = route_g_next_collector(&i_am_collector))) {
-		if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 			char addrbuf[100];
 			slurm_print_slurm_addr(next_dest, addrbuf, 32);
 			info("msg aggr: send_to_next_collector: *next_dest is "
@@ -288,7 +284,6 @@ extern void msg_aggr_sender_init(char *host, uint16_t port, uint64_t window,
 	msg_collection.msg_aggr_list = list_create(_msg_aggr_free);
 	msg_collection.msg_list = list_create(slurm_free_comp_msg_list);
 	msg_collection.max_msgs = false;
-	msg_collection.debug_flags = slurm_get_debug_flags();
 	slurm_mutex_unlock(&msg_collection.aggr_mutex);
 
 	slurm_thread_create(&msg_collection.thread_id,
@@ -306,7 +301,6 @@ extern void msg_aggr_sender_reconfig(uint64_t window, uint64_t max_msg_cnt)
 		slurm_mutex_lock(&msg_collection.mutex);
 		msg_collection.window = window;
 		msg_collection.max_msg_cnt = max_msg_cnt;
-		msg_collection.debug_flags = slurm_get_debug_flags();
 		slurm_mutex_unlock(&msg_collection.mutex);
 	} else if (max_msg_cnt > 1) {
 		error("can't start the msg_aggr on a reconfig, "
@@ -435,8 +429,7 @@ extern void msg_aggr_resp(slurm_msg_t *msg)
 
 	comp_msg = (composite_msg_t *)msg->data;
 	itr = list_iterator_create(comp_msg->msg_list);
-	if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
-		info("msg_aggr_resp: processing composite msg_list...");
+	log_flag(ROUTE, "msg_aggr_resp: processing composite msg_list...");
 	while ((next_msg = list_next(itr))) {
 		switch (next_msg->msg_type) {
 		case RESPONSE_NODE_REGISTRATION:
@@ -444,10 +437,8 @@ extern void msg_aggr_resp(slurm_msg_t *msg)
 		case RESPONSE_SLURM_RC:
 			/* signal sending thread that slurmctld received this
 			 * msg */
-			if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
-				info("msg_aggr_resp: response found for "
-				     "index %u signaling sending thread",
-				     next_msg->msg_index);
+			log_flag(ROUTE, "%s: response found for index %u signaling sending thread",
+				 __func__, next_msg->msg_index);
 			slurm_mutex_lock(&msg_collection.aggr_mutex);
 			if (!(msg_aggr = _handle_msg_aggr_ret(
 				      next_msg->msg_index, 1))) {
@@ -469,7 +460,7 @@ extern void msg_aggr_resp(slurm_msg_t *msg)
 			memcpy(&next_msg->address, &comp_msg->sender,
 			       sizeof(slurm_addr_t));
 
-			if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE) {
+			if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 				char addrbuf[100];
 				slurm_print_slurm_addr(&next_msg->address,
 						       addrbuf, 32);
@@ -487,7 +478,6 @@ extern void msg_aggr_resp(slurm_msg_t *msg)
 		}
 	}
 	list_iterator_destroy(itr);
-	if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
-		info("msg aggr: _rpc_composite_resp: finished processing "
-		     "composite msg_list...");
+	log_flag(ROUTE, "msg aggr: %s: finished processing composite msg_list",
+		 __func__);
 }

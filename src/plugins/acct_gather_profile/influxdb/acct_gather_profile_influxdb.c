@@ -212,9 +212,8 @@ static int _send_data(const char *data)
 		xstrcat(datastr, data);
 		length = strlen(data);
 		datastrlen += length;
-		if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE)
-			info("%s %s: %zu bytes of data added to buffer. New buffer size: %d",
-			     plugin_type, __func__, length, datastrlen);
+		log_flag(PROFILE, "%s %s: %zu bytes of data added to buffer. New buffer size: %d",
+			 plugin_type, __func__, length, datastrlen);
 		return rc;
 	}
 
@@ -280,7 +279,7 @@ static int _send_data(const char *data)
 		rc = SLURM_ERROR;
 		debug2("%s %s: data write failed, response code: %ld",
 		       plugin_type, __func__, response_code);
-		if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_PROFILE) {
 			/* Strip any trailing newlines. */
 			while (chunk.message[strlen(chunk.message) - 1] == '\n')
 				chunk.message[strlen(chunk.message) - 1] = '\0';
@@ -298,9 +297,8 @@ cleanup_global_init:
 	curl_global_cleanup();
 
 	END_TIMER;
-	if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE)
-		debug("%s %s: took %s to send data", plugin_type, __func__,
-		      TIME_STR);
+	log_flag(PROFILE, "%s %s: took %s to send data",
+		 plugin_type, __func__, TIME_STR);
 
 	if (data) {
 		datastr = xstrdup(data);

@@ -91,7 +91,6 @@ bool     pack_serial_at_end   = false;
 bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
 uint16_t priority_flags       = 0;
-uint64_t select_debug_flags   = 0;
 int      select_node_cnt      = 0;
 bool     spec_cores_first     = false;
 bool     topo_optional        = false;
@@ -723,8 +722,6 @@ extern void common_init(void)
 	if (cr_type)
 		verbose("%s loaded with argument %u", plugin_type, cr_type);
 
-	select_debug_flags = slurm_get_debug_flags();
-
 	topo_param = slurm_get_topology_param();
 	if (topo_param) {
 		if (xstrcasestr(topo_param, "dragonfly"))
@@ -747,7 +744,7 @@ extern void common_init(void)
 
 extern void common_fini(void)
 {
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("%s shutting down ...", plugin_type);
 	else
 		verbose("%s shutting down ...", plugin_type);
@@ -1403,7 +1400,7 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 	       plugin_type, __func__, job_ptr, node_ptr->name);
 	if (job_ptr->start_time < slurmctld_config.boot_time)
 		old_job = true;
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		_dump_job_res(job);
 
 	/* subtract memory */
@@ -1562,8 +1559,7 @@ extern int select_p_job_fini(job_record_t *job_ptr)
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
+	log_flag(SELECT_TYPE, "%s: %s: %pJ", plugin_type, __func__, job_ptr);
 
 	job_res_rm_job(select_part_record, select_node_usage,
 		       job_ptr, 0, true, NULL);
@@ -1579,13 +1575,12 @@ extern int select_p_job_suspend(job_record_t *job_ptr, bool indf_susp)
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		if (indf_susp)
-			info("%s: %s: %pJ indf_susp", plugin_type, __func__,
-			     job_ptr);
-		else
-			info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
-	}
+	if (indf_susp)
+		log_flag(SELECT_TYPE, "%s: %s: %pJ indf_susp",
+			 plugin_type, __func__, job_ptr);
+	else
+		log_flag(SELECT_TYPE, "%s: %s: %pJ",
+			 plugin_type, __func__, job_ptr);
 
 	if (!indf_susp)
 		return SLURM_SUCCESS;
@@ -1600,13 +1595,13 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		if (indf_susp)
-			info("%s: %s: %pJ indf_susp", plugin_type, __func__,
-			     job_ptr);
-		else
-			info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
-	}
+	if (indf_susp)
+		log_flag(SELECT_TYPE, "%s: %s: %pJ indf_susp",
+			 plugin_type, __func__, job_ptr);
+	else
+		log_flag(SELECT_TYPE, "%s: %s: %pJ",
+			 plugin_type, __func__, job_ptr);
+
 	if (!indf_susp)
 		return SLURM_SUCCESS;
 
@@ -2056,7 +2051,6 @@ extern int select_p_reconfigure(void)
 	int rc = SLURM_SUCCESS;
 
 	info("%s: reconfigure", plugin_type);
-	select_debug_flags = slurm_get_debug_flags();
 
 	if (is_cons_tres) {
 		def_cpu_per_gpu = 0;

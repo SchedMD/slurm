@@ -72,7 +72,6 @@
 
 static uint16_t cpu_freq_count = 0;
 static uint32_t cpu_freq_govs = 0; /* Governors allowed. */
-static uint64_t debug_flags = NO_VAL; /* init value for slurmd, slurmstepd */
 static int set_batch_freq = -1;
 
 static struct cpu_freq_data {
@@ -286,8 +285,6 @@ cpu_freq_init(slurmd_conf_t *conf)
 	char value[LINE_LEN];
 	unsigned int i, j;
 
-	debug_flags = slurm_get_debug_flags(); /* init for slurmd */
-
 	xfree(slurmd_spooldir);
 	slurmd_spooldir = xstrdup(conf->spooldir);
 
@@ -331,43 +328,34 @@ cpu_freq_init(slurmd_conf_t *conf)
 		}
 		if (strstr(value, "conservative")) {
 			cpufreq[i].avail_governors |= GOV_CONSERVATIVE;
-			if ((i == 0) && (debug_flags & DEBUG_FLAG_CPU_FREQ)) {
-				info("cpu_freq: Conservative governor "
-				     "defined on cpu 0");
-			}
+			if (i == 0)
+				log_flag(CPU_FREQ, "cpu_freq: Conservative governor defined on cpu 0");
 		}
 		if (strstr(value, "ondemand")) {
 			cpufreq[i].avail_governors |= GOV_ONDEMAND;
-			if ((i == 0) && (debug_flags & DEBUG_FLAG_CPU_FREQ)) {
-				info("cpu_freq: OnDemand governor "
-				     "defined on cpu 0");
-			}
+			if (i == 0)
+				log_flag(CPU_FREQ, "cpu_freq: OnDemand governor defined on cpu 0");
 		}
 		if (strstr(value, "performance")) {
 			cpufreq[i].avail_governors |= GOV_PERFORMANCE;
-			if ((i == 0) && (debug_flags & DEBUG_FLAG_CPU_FREQ)) {
-				info("cpu_freq: Performance governor "
-				     "defined on cpu 0");
-			}
+			if (i == 0)
+				log_flag(CPU_FREQ, "cpu_freq: Performance governor defined on cpu 0");
 		}
 		if (strstr(value, "powersave")) {
 			cpufreq[i].avail_governors |= GOV_POWERSAVE;
-			if ((i == 0) && (debug_flags & DEBUG_FLAG_CPU_FREQ)) {
-				info("cpu_freq: PowerSave governor "
-				     "defined on cpu 0");
-			}
+			if (i == 0)
+				log_flag(CPU_FREQ, "cpu_freq: PowerSave governor defined on cpu 0");
 		}
 		if (strstr(value, "userspace")) {
 			cpufreq[i].avail_governors |= GOV_USERSPACE;
-			if ((i == 0) && (debug_flags & DEBUG_FLAG_CPU_FREQ)) {
-				info("cpu_freq: UserSpace governor "
-				     "defined on cpu 0");
-			}
+			if (i == 0)
+				log_flag(CPU_FREQ, "cpu_freq: UserSpace governor defined on cpu 0");
 		}
 		fclose(fp);
 		if (_cpu_freq_cpu_avail(i) == SLURM_ERROR)
 			continue;
-		if ((i == 0) && (debug_flags & DEBUG_FLAG_CPU_FREQ)) {
+		if ((i == 0) &&
+		    (slurm_conf.debug_flags & DEBUG_FLAG_CPU_FREQ)) {
 			for (j = 0; j < cpufreq[i].nfreq; j++) {
 				info("cpu_freq: frequency %u defined on cpu 0",
 				     cpufreq[i].avail_freq[j]);
@@ -392,7 +380,6 @@ cpu_freq_reconfig(void)
 {
 	/* reset local static variables */
 	cpu_freq_govs = 0;
-	debug_flags = slurm_get_debug_flags();
 }
 
 /*
@@ -471,19 +458,14 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 	    (job->stepid == SLURM_EXTERN_CONT))
 		return;
 
-	debug_flags = slurm_get_debug_flags(); /* init for slurmstepd */
-	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
-		info("cpu_freq_cpuset_validate: request: min=(%12d  %8x) "
-		      "max=(%12d %8x) governor=%8x",
-		      job->cpu_freq_min, job->cpu_freq_min,
-		      job->cpu_freq_max, job->cpu_freq_max,
-		      job->cpu_freq_gov);
-		info("  jobid=%u, stepid=%u, tasks=%u cpu/task=%u, cpus=%u",
-		     job->jobid, job->stepid, job->node_tasks,
-		     job->cpus_per_task, job->cpus);
-		info("  cpu_bind_type=%4x, cpu_bind map=%s",
-		     job->cpu_bind_type, job->cpu_bind);
-	}
+	log_flag(CPU_FREQ, "%s: request: min=(%12d  %8x) max=(%12d %8x) governor=%8x",
+		 __func__, job->cpu_freq_min, job->cpu_freq_min,
+		 job->cpu_freq_max, job->cpu_freq_max, job->cpu_freq_gov);
+	log_flag(CPU_FREQ, "  jobid=%u, stepid=%u, tasks=%u cpu/task=%u, cpus=%u",
+		 job->jobid, job->stepid, job->node_tasks, job->cpus_per_task,
+		 job->cpus);
+	log_flag(CPU_FREQ, "  cpu_bind_type=%4x, cpu_bind map=%s",
+		 job->cpu_bind_type, job->cpu_bind);
 
 	if (!cpu_freq_count)
 		return;
@@ -569,21 +551,17 @@ cpu_freq_cgroup_validate(stepd_step_rec_t *job, char *step_alloc_cores)
 	    (job->stepid == SLURM_EXTERN_CONT))
 		return;
 
-	debug_flags = slurm_get_debug_flags(); /* init for slurmstepd */
-	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
-		info("cpu_freq_cgroup_validate: request: min=(%12d  %8x) "
-				"max=(%12d %8x) governor=%8x",
-		       job->cpu_freq_min, job->cpu_freq_min,
-		       job->cpu_freq_max, job->cpu_freq_max,
-		       job->cpu_freq_gov);
-		info("  jobid=%u, stepid=%u, tasks=%u cpu/task=%u, cpus=%u",
-		       job->jobid,job->stepid,job->node_tasks,
-		       job->cpus_per_task,job->cpus);
-		info("  cpu_bind_type=%4x, cpu_bind map=%s",
-		       job->cpu_bind_type, job->cpu_bind);
-		info("  step logical cores = %s, step physical cores = %s",
-		       job->step_alloc_cores, step_alloc_cores);
-	}
+	log_flag(CPU_FREQ, "%s: request: min=(%12d  %8x) max=(%12d %8x) governor=%8x",
+		 __func__, job->cpu_freq_min, job->cpu_freq_min,
+		 job->cpu_freq_max, job->cpu_freq_max, job->cpu_freq_gov);
+	log_flag(CPU_FREQ, "  jobid=%u, stepid=%u, tasks=%u cpu/task=%u, cpus=%u",
+		 job->jobid,job->stepid,job->node_tasks, job->cpus_per_task,
+		 job->cpus);
+	log_flag(CPU_FREQ, "  cpu_bind_type=%4x, cpu_bind map=%s",
+		 job->cpu_bind_type, job->cpu_bind);
+	log_flag(CPU_FREQ, "  step logical cores = %s, step physical cores = %s",
+		 job->step_alloc_cores, step_alloc_cores);
+
 	if (!cpu_freq_count)
 		return;
 
@@ -815,7 +793,7 @@ _cpu_freq_set_scaling_freq(stepd_step_rec_t *job, int cpx, uint32_t freq,
 		(void) fd_release_lock(fd);
 		(void) close(fd);
 	}
-	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_FREQ) {
 		newfreq = _cpu_freq_get_scaling_freq(cpx, option);
 		if (newfreq != freq) {
 			error("Failed to set freq_scaling %s to %u (org=%u)",
@@ -1160,14 +1138,10 @@ cpu_freq_set(stepd_step_rec_t *job)
 	            && cpufreq[i].new_max_freq == NO_VAL
 		    && cpufreq[i].new_governor[0] == '\0')
 			continue; /* Nothing to set on this CPU */
-		if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
-			info("cpu_freq: current_state cpu=%d org_min=%u "
-			     "org_freq=%u org_max=%u org_gpv=%s", i,
-			     cpufreq[i].org_min_freq,
-			     cpufreq[i].org_frequency,
-			     cpufreq[i].org_max_freq,
-			     cpufreq[i].org_governor);
-		}
+
+		log_flag(CPU_FREQ, "cpu_freq: current_state cpu=%d org_min=%u org_freq=%u org_max=%u org_gpv=%s",
+			 i, cpufreq[i].org_min_freq, cpufreq[i].org_frequency,
+			 cpufreq[i].org_max_freq, cpufreq[i].org_governor);
 
 		/* Max must be set before min, per
 		 * www.kernel.org/doc/Documentation/cpu-freq/user-guide.txt
@@ -1241,7 +1215,7 @@ cpu_freq_set(stepd_step_rec_t *job)
 			if (rc == SLURM_ERROR)
 				continue;
 		}
-		if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_FREQ) {
 			cpu_freq_debug(NULL, NULL,
 					freq_detail, sizeof(freq_detail),
 					NO_VAL, cpufreq[i].new_min_freq,
@@ -1326,7 +1300,7 @@ cpu_freq_reset(stepd_step_rec_t *job)
 				continue;
 		}
 
-		if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_FREQ) {
 			cpu_freq_debug(NULL, NULL,
 					freq_detail, sizeof(freq_detail),
 					NO_VAL, cpufreq[i].org_min_freq,
@@ -1690,7 +1664,7 @@ clean:
 			rc = -1;
 		}
 	}
-	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_FREQ) {
 		cpu_freq_debug("command", "NO_VAL", NULL, 0,
 			       *cpu_freq_gov, *cpu_freq_min,
 			       *cpu_freq_max, NO_VAL);

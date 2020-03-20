@@ -96,7 +96,6 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->dbd_backup);
 		xfree(slurmdbd_conf->dbd_host);
 		slurmdbd_conf->dbd_port = 0;
-		slurmdbd_conf->debug_flags = 0;
 		slurmdbd_conf->debug_level = LOG_LEVEL_INFO;
 		xfree(slurmdbd_conf->default_qos);
 		xfree(slurmdbd_conf->log_file);
@@ -245,13 +244,12 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_uint16(&slurmdbd_conf->dbd_port, "DbdPort", tbl);
 
 		if (s_p_get_string(&temp_str, "DebugFlags", tbl)) {
-			if (debug_str2flags(temp_str,
-					    &slurmdbd_conf->debug_flags)
+			if (debug_str2flags(temp_str, &slurm_conf.debug_flags)
 			    != SLURM_SUCCESS)
 				fatal("DebugFlags invalid: %s", temp_str);
 			xfree(temp_str);
 		} else	/* Default: no DebugFlags */
-			slurmdbd_conf->debug_flags = 0;
+			slurm_conf.debug_flags = 0;
 
 		if (s_p_get_string(&temp_str, "DebugLevel", tbl)) {
 			slurmdbd_conf->debug_level = log_string2num(temp_str);
@@ -643,7 +641,7 @@ extern void log_config(void)
 	debug2("DbdBackupHost     = %s", slurmdbd_conf->dbd_backup);
 	debug2("DbdHost           = %s", slurmdbd_conf->dbd_host);
 	debug2("DbdPort           = %u", slurmdbd_conf->dbd_port);
-	tmp_ptr = debug_flags2str(slurmdbd_conf->debug_flags);
+	tmp_ptr = debug_flags2str(slurm_conf.debug_flags);
 	debug2("DebugFlags        = %s", tmp_ptr);
 	xfree(tmp_ptr);
 	debug2("DebugLevel        = %u", slurmdbd_conf->debug_level);
@@ -842,7 +840,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DebugFlags");
-	key_pair->value = debug_flags2str(slurmdbd_conf->debug_flags);
+	key_pair->value = debug_flags2str(slurm_conf.debug_flags);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

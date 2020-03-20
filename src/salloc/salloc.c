@@ -87,7 +87,6 @@ extern pid_t getpgid(pid_t pid);
 char **command_argv;
 int command_argc;
 pid_t command_pid = -1;
-uint64_t debug_flags = 0;
 char *work_dir = NULL;
 static int is_interactive;
 
@@ -182,7 +181,6 @@ int main(int argc, char **argv)
 	ListIterator iter_req, iter_resp;
 
 	slurm_conf_init(NULL);
-	debug_flags = slurm_get_debug_flags();
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
 
@@ -448,11 +446,8 @@ int main(int argc, char **argv)
 				my_job_id = alloc->job_id;
 				info("Granted job allocation %u", my_job_id);
 			}
-			if (debug_flags & DEBUG_FLAG_HETJOB) {
-				info("Hetjob ID %u+%u (%u) on nodes %s",
-				     my_job_id, i, alloc->job_id,
-				     alloc->node_list);
-			}
+			log_flag(HETJOB, "Hetjob ID %u+%u (%u) on nodes %s",
+			         my_job_id, i, alloc->job_id, alloc->node_list);
 			i++;
 			if (_proc_alloc(alloc) != SLURM_SUCCESS) {
 				list_iterator_destroy(iter_resp);

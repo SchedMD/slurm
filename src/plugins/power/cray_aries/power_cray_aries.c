@@ -134,7 +134,6 @@ static int balance_interval = DEFAULT_BALANCE_INTERVAL;
 static char *capmc_path = NULL;
 static uint32_t cap_watts = DEFAULT_CAP_WATTS;
 static uint32_t set_watts = 0;
-static uint64_t debug_flag = 0;
 static char *full_nid_string = NULL;
 static uint32_t decrease_rate = DEFAULT_DECREASE_RATE;
 static uint32_t increase_rate = DEFAULT_INCREASE_RATE;
@@ -235,7 +234,6 @@ static void _load_config(void)
 {
 	char *end_ptr = NULL, *sched_params, *tmp_ptr;
 
-	debug_flag = slurm_get_debug_flags();
 	sched_params = slurm_get_power_parameters();
 
 	/*                                   12345678901234567890 */
@@ -369,7 +367,7 @@ static void _load_config(void)
 
 	xfree(sched_params);
 	xfree(full_nid_string);
-	if (debug_flag & DEBUG_FLAG_POWER) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_POWER) {
 		char *level_str = "";
 		if (job_level == 0)
 			level_str = "job_no_level,";
@@ -414,9 +412,10 @@ static void _get_capabilities(void)
 		      __func__, script_argv[1], cmd_resp);
 		xfree(cmd_resp);
 		return;
-	} else if (debug_flag & DEBUG_FLAG_POWER) {
-		info("%s: capmc %s %s", __func__, script_argv[1], TIME_STR);
-	}
+	} else
+		log_flag(POWER, "%s: capmc %s %s",
+			 __func__, script_argv[1], TIME_STR);
+
 	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0')) {
 		xfree(cmd_resp);
 		return;
@@ -441,10 +440,10 @@ static void _get_capabilities(void)
 
 	lock_slurmctld(write_node_lock);
 	for (i = 0; i < num_ent; i++) {
-		if (debug_flag & DEBUG_FLAG_POWER)
+		if (slurm_conf.debug_flags & DEBUG_FLAG_POWER)
 			hl = hostlist_create(NULL);
 		for (j = 0; j < ents[i].node_cnt; j++) {
-			if (debug_flag & DEBUG_FLAG_POWER)
+			if (slurm_conf.debug_flags & DEBUG_FLAG_POWER)
 				hostlist_push_host(hl, ents[i].node_name[j]);
 			node_ptr = find_node_record2(ents[i].node_name[j]);
 			if (!node_ptr) {
@@ -463,7 +462,7 @@ static void _get_capabilities(void)
 			xfree(ents[i].node_name[j]);
 		}
 		xfree(ents[i].node_name);
-		if (debug_flag & DEBUG_FLAG_POWER) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_POWER) {
 			hostlist_ranged_string(hl, sizeof(node_names),
 					       node_names);
 			info("AccelWattsAvail:%3.3u-%3.3u "
@@ -725,9 +724,10 @@ static void _get_caps(void)
 		      __func__, script_argv[1], cmd_resp);
 		xfree(cmd_resp);
 		return;
-	} else if (debug_flag & DEBUG_FLAG_POWER) {
-		info("%s: capmc %s %s", __func__, script_argv[1], TIME_STR);
-	}
+	} else
+		log_flag(POWER, "%s: capmc %s %s",
+			 __func__, script_argv[1], TIME_STR);
+
 	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0')) {
 		xfree(cmd_resp);
 		return;
@@ -946,9 +946,10 @@ static void _get_nodes_ready(void)
 		error("%s: capmc %s: %s",  __func__, script_argv[1], cmd_resp);
 		xfree(cmd_resp);
 		return;
-	} else if (debug_flag & DEBUG_FLAG_POWER) {
-		info("%s: capmc %s %s",  __func__, script_argv[1], TIME_STR);
-	}
+	} else
+		log_flag(POWER, "%s: capmc %s %s",
+			 __func__, script_argv[1], TIME_STR);
+
 	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0')) {
 		xfree(cmd_resp);
 		return;
@@ -1080,10 +1081,11 @@ static void _get_node_energy_counter(void)
 		      script_argv[1], script_argv[2], script_argv[3], cmd_resp);
 		xfree(cmd_resp);
 		return;
-	} else if (debug_flag & DEBUG_FLAG_POWER) {
-		info("%s: capmc %s %s %s %s",  __func__,
-		     script_argv[1], script_argv[2], script_argv[3], TIME_STR);
-	}
+	} else
+		log_flag(POWER, "%s: capmc %s %s %s %s",
+			 __func__, script_argv[1], script_argv[2],
+			 script_argv[3], TIME_STR);
+
 	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0')) {
 		xfree(cmd_resp);
 		return;
@@ -1300,7 +1302,7 @@ extern void *_power_agent(void *args)
 		else
 			_rebalance_node_power();
 		unlock_slurmctld(read_locks);
-		if (debug_flag & DEBUG_FLAG_POWER)
+		if (slurm_conf.debug_flags & DEBUG_FLAG_POWER)
 			_log_node_power();
 		_set_power_caps();
 		last_balance_time = time(NULL);
@@ -1397,11 +1399,9 @@ static void _level_power_by_job(void)
 		if (min_watts == max_watts)
 			continue;
 		ave_watts = total_watts / total_nodes;
-		if (debug_flag & DEBUG_FLAG_POWER) {
-			debug("%s: leveling power caps for %pJ (node_cnt:%u min:%u max:%u ave:%u)",
-			      __func__, job_ptr, total_nodes,
-			      min_watts, max_watts, ave_watts);
-		}
+		log_flag(POWER, "%s: leveling power caps for %pJ (node_cnt:%u min:%u max:%u ave:%u)",
+			 __func__, job_ptr, total_nodes, min_watts, max_watts,
+			 ave_watts);
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
@@ -1514,10 +1514,9 @@ static void _rebalance_node_power(void)
 		}
 		avail_power = cap_watts - alloc_power;
 	}
-	if (debug_flag & DEBUG_FLAG_POWER) {
-		info("%s: distributing %u watts over %d nodes",
-		     __func__, avail_power, node_power_raise_cnt);
-	}
+
+	log_flag(POWER, "%s: distributing %u watts over %d nodes",
+		 __func__, avail_power, node_power_raise_cnt);
 
 	/* Distribute rest of power cap on remaining nodes. */
 	if (node_power_raise_cnt) {
@@ -1656,11 +1655,10 @@ static void _set_power_caps(void)
 			xfree(cmd_resp);
 			last_cap_read = 0;	/* Read node caps again */
 			return;
-		} else if (debug_flag & DEBUG_FLAG_POWER) {
-			info("%s: capmc %s %s %s",
-			     __func__, script_argv[1], script_argv[2],
-			     TIME_STR);
-		}
+		} else
+			log_flag(POWER, "%s: capmc %s %s %s",
+				 __func__, script_argv[1], script_argv[2],
+				 TIME_STR);
 		xfree(cmd_resp);
 		xfree(json);
 	}
@@ -1698,11 +1696,11 @@ static void _set_power_caps(void)
 			xfree(cmd_resp);
 			last_cap_read = 0;	/* Read node caps again */
 			return;
-		} else if (debug_flag & DEBUG_FLAG_POWER) {
-			info("%s: capmc %s %s %s",
-			     __func__, script_argv[1], script_argv[2],
-			     TIME_STR);
-		}
+		} else
+			log_flag(POWER, "%s: capmc %s %s %s",
+				 __func__, script_argv[1], script_argv[2],
+				TIME_STR);
+
 		xfree(cmd_resp);
 		xfree(json);
 	}

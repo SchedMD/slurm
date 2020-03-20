@@ -314,7 +314,7 @@ static void _log_script_argv(char **script_argv, char *resp_msg)
 	char *cmd_line = NULL;
 	int i;
 
-	if (!bb_state.bb_config.debug_flag)
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
 		return;
 
 	for (i = 0; script_argv[i]; i++) {
@@ -397,10 +397,8 @@ static int _alloc_job_bb(job_record_t *job_ptr, bb_job_t *bb_job,
 {
 	int rc = SLURM_SUCCESS;
 
-	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: start job allocate %pJ",
-		     plugin_type, __func__, job_ptr);
-	}
+	log_flag(BURST_BUF, "%s: %s: start job allocate %pJ",
+		 plugin_type, __func__, job_ptr);
 
 	if (bb_job->buf_cnt &&
 	    (_create_bufs(job_ptr, bb_job, job_ready) > 0))
@@ -722,7 +720,7 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 	}
 	if (!bb_job->job_pool)
 		bb_job->job_pool = xstrdup(bb_state.bb_config.default_pool);
-	if (bb_state.bb_config.debug_flag)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)
 		bb_job_log(&bb_state, bb_job);
 	return bb_job;
 }
@@ -1000,10 +998,8 @@ static void _recover_bb_state(void)
 			bb_alloc = bb_find_name_rec(name, user_id, &bb_state);
 		}
 		if (bb_alloc) {
-			if (bb_state.bb_config.debug_flag) {
-				info("Recovered burst buffer %s from user %u",
-				     bb_alloc->name, bb_alloc->user_id);
-			}
+			log_flag(BURST_BUF, "Recovered burst buffer %s from user %u",
+				 bb_alloc->name, bb_alloc->user_id);
 			xfree(bb_alloc->account);
 			bb_alloc->account = account;
 			account = NULL;
@@ -1251,9 +1247,8 @@ static void _load_state(bool init_config)
 	 */
 	instances = _bb_get_instances(&num_instances, &bb_state, timeout);
 	if (instances == NULL) {
-		if (bb_state.bb_config.debug_flag)
-			debug("%s: %s: No DataWarp instances found",
-			      plugin_type, __func__);
+		log_flag(BURST_BUF, "%s: %s: No DataWarp instances found",
+			 plugin_type, __func__);
 		num_instances = 0;	/* Redundant, but fixes CLANG bug */
 	}
 	sessions = _bb_get_sessions(&num_sessions, &bb_state, timeout);
@@ -1747,7 +1742,7 @@ static void *_start_stage_in(void *x)
 					&status);
 		END_TIMER;
 		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
-		    bb_state.bb_config.debug_flag)
+		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
 			info("%s: %s: real_size ran for %s",
 			     plugin_type, __func__, TIME_STR);
 
@@ -1822,10 +1817,8 @@ static void *_start_stage_in(void *x)
 			if (bb_alloc) {
 				bb_alloc->state = BB_STATE_STAGED_IN;
 				bb_alloc->state_time = time(NULL);
-				if (bb_state.bb_config.debug_flag) {
-					info("%s: %s: Setup/stage-in complete for %pJ",
-					     plugin_type, __func__, job_ptr);
-				}
+				log_flag(BURST_BUF, "%s: %s: Setup/stage-in complete for %pJ",
+					 plugin_type, __func__, job_ptr);
 				queue_job_scheduler();
 				bb_state.last_update_time = time(NULL);
 			} else {
@@ -1936,7 +1929,7 @@ static void *_start_stage_out(void *x)
 			       &status);
 	END_TIMER;
 	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
-	    bb_state.bb_config.debug_flag) {
+	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 		info("%s: %s: dws_post_run for JobId=%u ran for %s",
 		     plugin_type, __func__, stage_args->job_id, TIME_STR);
 	}
@@ -1996,7 +1989,7 @@ static void *_start_stage_out(void *x)
 				       &status);
 		END_TIMER;
 		if ((DELTA_TIMER > 1000000) ||	/* 10 secs */
-		    bb_state.bb_config.debug_flag) {
+		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 			info("%s: %s: dws_data_out for JobId=%u ran for %s",
 			     plugin_type, __func__, stage_args->job_id,
 			     TIME_STR);
@@ -2062,10 +2055,8 @@ static void *_start_stage_out(void *x)
 		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
 		if (bb_alloc) {
 			if (rc == SLURM_SUCCESS) {
-				if (bb_state.bb_config.debug_flag) {
-					info("%s: %s: Stage-out/post-run complete for %pJ",
-					     plugin_type, __func__, job_ptr);
-				}
+				log_flag(BURST_BUF, "%s: %s: Stage-out/post-run complete for %pJ",
+					 plugin_type, __func__, job_ptr);
 				/* bb_alloc->state = BB_STATE_STAGED_OUT; */
 				bb_alloc->state = BB_STATE_TEARDOWN;
 				bb_alloc->state_time = time(NULL);
@@ -2078,10 +2069,8 @@ static void *_start_stage_out(void *x)
 							false);
 				} else
 					bb_alloc->state = BB_STATE_STAGED_IN;
-				if (bb_state.bb_config.debug_flag) {
-					info("%s: %s: Stage-out failed for %pJ",
-					     plugin_type, __func__, job_ptr);
-				}
+				log_flag(BURST_BUF, "%s: %s: Stage-out failed for %pJ",
+					 plugin_type, __func__, job_ptr);
 			}
 			bb_state.last_update_time = time(NULL);
 		} else if (bb_job && bb_job->total_size) {
@@ -2573,11 +2562,9 @@ static int _test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job)
 			preempt_ptr->bb_ptr->state_time = time(NULL);
 			_queue_teardown(preempt_ptr->job_id,
 					preempt_ptr->user_id, true);
-			if (bb_state.bb_config.debug_flag) {
-				info("%s: %s: Preempting stage-in of JobId=%u for %pJ",
-				     plugin_type, __func__,
-				     preempt_ptr->job_id, job_ptr);
-			}
+			log_flag(BURST_BUF, "%s: %s: Preempting stage-in of JobId=%u for %pJ",
+				 plugin_type, __func__, preempt_ptr->job_id,
+				 job_ptr);
 		}
 
 	}
@@ -2635,11 +2622,10 @@ static void _timeout_bb_rec(void)
 					info("%s: %s: Persistent burst buffer %s purged",
 					     plugin_type, __func__,
 					     bb_alloc->name);
-				} else if (bb_state.bb_config.debug_flag) {
-					info("%s: %s: burst buffer for JobId=%u purged",
-					     plugin_type,
-					     __func__, bb_alloc->job_id);
-				}
+				} else
+					log_flag(BURST_BUF, "%s: %s: burst buffer for JobId=%u purged",
+						 plugin_type, __func__,
+						 bb_alloc->job_id);
 				bb_limit_rem(bb_alloc->user_id, bb_alloc->size,
 					     bb_alloc->pool, &bb_state);
 
@@ -3156,8 +3142,7 @@ extern int init(void)
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_load_config(&bb_state, (char *)plugin_type); /* Removes "const" */
 	_test_config();
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s", plugin_type,  __func__);
+	log_flag(BURST_BUF, "%s: %s", plugin_type,  __func__);
 	if (!state_save_loc)
 		state_save_loc = slurm_get_state_save_location();
 	bb_alloc_cache(&bb_state);
@@ -3187,8 +3172,7 @@ extern int fini(void)
 	}
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s", plugin_type,  __func__);
+	log_flag(BURST_BUF, "%s: %s", plugin_type,  __func__);
 
 	slurm_mutex_lock(&bb_state.term_mutex);
 	bb_state.term_flag = true;
@@ -3279,8 +3263,7 @@ extern int bb_p_load_state(bool init_config)
 
 	/* In practice the Cray APIs are too slow to run inline on each
 	 * scheduling cycle. Do so on a periodic basis from _bb_agent(). */
-	if (bb_state.bb_config.debug_flag)
-		debug("%s: %s", plugin_type,  __func__);
+	log_flag(BURST_BUF, "%s: %s", plugin_type,  __func__);
 	_load_state(init_config);	/* Has own locking */
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_set_tres_pos(&bb_state);
@@ -3329,8 +3312,7 @@ extern int bb_p_reconfig(void)
 	int i;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s", plugin_type,  __func__);
+	log_flag(BURST_BUF, "%s: %s", plugin_type,  __func__);
 	old_default_pool = bb_state.bb_config.default_pool;
 	bb_state.bb_config.default_pool = NULL;
 	bb_load_config(&bb_state, (char *)plugin_type); /* Remove "const" */
@@ -3372,10 +3354,8 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 		uid = 0;	/* User can see all data */
 	rec_count = bb_pack_bufs(uid, &bb_state, buffer, protocol_version);
 	(void) bb_pack_usage(uid, &bb_state, buffer, protocol_version);
-	if (bb_state.bb_config.debug_flag) {
-		debug("%s: %s: record_count:%u",
-		      plugin_type, __func__, rec_count);
-	}
+	log_flag(BURST_BUF, "%s: %s: record_count:%u",
+		 plugin_type, __func__, rec_count);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
@@ -3404,12 +3384,10 @@ extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid)
 	    (job_desc->burst_buffer[0] == '\0'))
 		return rc;
 
-	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: job_user_id:%u, submit_uid:%d",
-		     plugin_type, __func__, job_desc->user_id, submit_uid);
-		info("%s: %s: burst_buffer:%s",
-		     plugin_type,__func__, job_desc->burst_buffer);
-	}
+	log_flag(BURST_BUF, "%s: %s: job_user_id:%u, submit_uid:%d",
+		 plugin_type, __func__, job_desc->user_id, submit_uid);
+	log_flag(BURST_BUF, "%s: %s: burst_buffer:%s",
+		 plugin_type,__func__, job_desc->burst_buffer);
 
 	if (job_desc->user_id == 0) {
 		info("%s: %s: User root can not allocate burst buffers",
@@ -3499,8 +3477,7 @@ static void _update_job_env(job_record_t *job_ptr, char *file_path)
 			break;
 		}
 	}
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s: %s", plugin_type, __func__, data_buf);
+	log_flag(BURST_BUF, "%s: %s: %s", plugin_type, __func__, data_buf);
 
 	/* Get count of environment variables in the file */
 	env_cnt = 0;
@@ -3613,8 +3590,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 		return rc;
 	}
 
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
+	log_flag(BURST_BUF, "%s: %s: %pJ", plugin_type, __func__, job_ptr);
 
 	timeout = bb_state.bb_config.validate_timeout * 1000;
 	dw_cli_path = xstrdup(bb_state.bb_config.get_sys_state);
@@ -3661,7 +3637,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 			       script_argv, timeout, 0, &status);
 	END_TIMER;
 	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
-	    bb_state.bb_config.debug_flag)
+	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
 		info("%s: %s: job_process ran for %s",
 		     plugin_type, __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
@@ -3805,8 +3781,7 @@ extern time_t bb_p_job_get_est_start(job_record_t *job_ptr)
 		return est_start;
 	}
 
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
+	log_flag(BURST_BUF, "%s: %s: %pJ", plugin_type, __func__, job_ptr);
 
 	if ((bb_job->persist_add == 0) && (bb_job->swap_size == 0) &&
 	    (bb_job->total_size == 0)) {
@@ -3843,8 +3818,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	int rc;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s: Mutex locked", plugin_type,  __func__);
+	log_flag(BURST_BUF, "%s: %s: Mutex locked", plugin_type,  __func__);
 
 	if (bb_state.last_load_time == 0) {
 		slurm_mutex_unlock(&bb_state.bb_mutex);
@@ -3928,10 +3902,8 @@ extern int bb_p_job_test_stage_in(job_record_t *job_ptr, bool test_only)
 		return -1;	/* Can't operate on job array structure */
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: %pJ test_only:%d",
-		     plugin_type, __func__, job_ptr, (int) test_only);
-	}
+	log_flag(BURST_BUF, "%s: %s: %pJ test_only:%d",
+		 plugin_type, __func__, job_ptr, (int) test_only);
 	if (bb_state.last_load_time != 0)
 		bb_job = _get_bb_job(job_ptr);
 	if (bb_job && (bb_job->state == BB_STATE_COMPLETE))
@@ -3990,9 +3962,8 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	}
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s: %pJ",
-		     plugin_type, __func__, job_ptr);
+	log_flag(BURST_BUF, "%s: %s: %pJ",
+		 plugin_type, __func__, job_ptr);
 
 	if (bb_state.last_load_time == 0) {
 		info("%s: %s: Burst buffer down, can not start %pJ",
@@ -4074,7 +4045,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 				       &status);
 		END_TIMER;
 		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
-		    bb_state.bb_config.debug_flag)
+		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
 			info("%s: %s: paths ran for %s",
 			     plugin_type, __func__, TIME_STR);
 		_log_script_argv(script_argv, resp_msg);
@@ -4228,7 +4199,7 @@ static void *_start_pre_run(void *x)
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	job_ptr = find_job_record(pre_run_args->job_id);
 	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
-	    bb_state.bb_config.debug_flag) {
+	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 		info("%s: %s: dws_pre_run for %pJ ran for %s",
 		     plugin_type, __func__, job_ptr, TIME_STR);
 	}
@@ -4321,8 +4292,7 @@ extern int bb_p_job_start_stage_out(job_record_t *job_ptr)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
+	log_flag(BURST_BUF, "%s: %s: %pJ", plugin_type, __func__, job_ptr);
 
 	if (bb_state.last_load_time == 0) {
 		info("%s: %s: Burst buffer down, can not stage out %pJ",
@@ -4369,8 +4339,7 @@ extern int bb_p_job_test_post_run(job_record_t *job_ptr)
 		return 1;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
+	log_flag(BURST_BUF, "%s: %s: %pJ", plugin_type, __func__, job_ptr);
 
 	if (bb_state.last_load_time == 0) {
 		info("%s: %s: Burst buffer down, can not post_run %pJ",
@@ -4415,8 +4384,7 @@ extern int bb_p_job_test_stage_out(job_record_t *job_ptr)
 		return 1;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
+	log_flag(BURST_BUF, "%s: %s: %pJ", plugin_type, __func__, job_ptr);
 
 	if (bb_state.last_load_time == 0) {
 		info("%s: %s: Burst buffer down, can not stage-out %pJ",
@@ -4462,8 +4430,7 @@ extern int bb_p_job_cancel(job_record_t *job_ptr)
 	bb_alloc_t *bb_alloc;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
+	log_flag(BURST_BUF, "%s: %s: %pJ", plugin_type, __func__, job_ptr);
 
 	if (bb_state.last_load_time == 0) {
 		info("%s: %s: Burst buffer down, can not cancel %pJ",
@@ -5059,9 +5026,8 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 			       state_ptr->bb_config.get_sys_state,
 			       script_argv, timeout, 0, &status);
 	END_TIMER;
-	if (bb_state.bb_config.debug_flag)
-		debug("%s: %s: show_configurations ran for %s",
-		      plugin_type, __func__, TIME_STR);
+	log_flag(BURST_BUF, "%s: %s: show_configurations ran for %s",
+		 plugin_type, __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 	free_command_argv(script_argv);
 #if 0
@@ -5130,9 +5096,8 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 			       state_ptr->bb_config.get_sys_state,
 			       script_argv, timeout, 0, &status);
 	END_TIMER;
-	if (bb_state.bb_config.debug_flag)
-		debug("%s: %s: show_instances ran for %s",
-		      plugin_type, __func__, TIME_STR);
+	log_flag(BURST_BUF, "%s: %s: show_instances ran for %s",
+		 plugin_type, __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 	free_command_argv(script_argv);
 #if 0
@@ -5200,7 +5165,7 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 			       state_ptr->bb_config.get_sys_state,
 			       script_argv, timeout, 0, &status);
 	END_TIMER;
-	if (bb_state.bb_config.debug_flag) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF) {
 		/* Only log pools data if different to limit volume of logs */
 		static uint32_t last_csum = 0;
 		uint32_t i, resp_csum = 0;
@@ -5269,9 +5234,8 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 			       state_ptr->bb_config.get_sys_state,
 			       script_argv, timeout, 0, &status);
 	END_TIMER;
-	if (bb_state.bb_config.debug_flag)
-		debug("%s: %s: show_sessions ran for %s",
-		      plugin_type, __func__, TIME_STR);
+	log_flag(BURST_BUF, "%s: %s: show_sessions ran for %s",
+		 plugin_type, __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 	free_command_argv(script_argv);
 #if 0

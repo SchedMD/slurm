@@ -97,7 +97,6 @@ const char plugin_name[] = "ExtSensors rrd plugin";
 const char plugin_type[] = "ext_sensors/rrd";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static uint64_t debug_flags = 0;
 static ext_sensors_conf_t ext_sensors_conf;
 static ext_sensors_conf_t *ext_sensors_cnf = &ext_sensors_conf;
 static time_t last_valid_time;
@@ -266,8 +265,8 @@ static uint64_t _rrd_consolidate_one(time_t t0, time_t t1,
 			     &rrd_data);
 
 	if (status != 0){
-		if (debug_flags & DEBUG_FLAG_EXT_SENSORS)
-			info("ext_sensors: error rrd_fetch %s",filename);
+		log_flag(EXT_SENSORS, "ext_sensors: error rrd_fetch %s",
+			 filename);
 		return NO_VAL64;
 	}
 
@@ -279,9 +278,8 @@ static uint64_t _rrd_consolidate_one(time_t t0, time_t t1,
 			break;
 		}
 		if (ds_count == 0) {
-			if (debug_flags & DEBUG_FLAG_EXT_SENSORS)
-				info("ext_sensors: error ds_count==0 in RRD %s",
-				     filename);
+			log_flag(EXT_SENSORS, "ext_sensors: error ds_count==0 in RRD %s",
+				 filename);
 			consumed_energy = (rrd_value_t)NO_VAL64;
 			break;
 		} else if (ds_count == 1 || rra_name == NULL)
@@ -294,10 +292,8 @@ static uint64_t _rrd_consolidate_one(time_t t0, time_t t1,
 				}
 			}
 			if (rra_nb == -1) {
-				if (debug_flags & DEBUG_FLAG_EXT_SENSORS)
-					info("ext_sensors: error RRA %s not "
-					     "found in RRD %s",
-					     rra_name, filename);
+				log_flag(EXT_SENSORS, "ext_sensors: error RRA %s not found in RRD %s",
+					 rra_name, filename);
 				consumed_energy = (rrd_value_t)NO_VAL64;
 				break;
 			}
@@ -378,13 +374,11 @@ static uint64_t _rrd_consolidate_one(time_t t0, time_t t1,
 	} while(0);
 
 	if (nb_miss >= 10000) {
-		if (debug_flags & DEBUG_FLAG_EXT_SENSORS)
-			info("ext_sensors: RRD: no first value");
+		log_flag(EXT_SENSORS, "ext_sensors: RRD: no first value");
 		nb_miss -= 10000;
 	}
-	if (debug_flags & DEBUG_FLAG_EXT_SENSORS)
-		info("ext_sensors: RRD: have %d values and miss %d values",
-		     nb_values, nb_miss);
+	log_flag(EXT_SENSORS, "ext_sensors: RRD: have %d values and miss %d values",
+		 nb_values, nb_miss);
 
 	if (flag_approximate &&
 	    current_watt == (rrd_value_t)NO_VAL &&
@@ -791,7 +785,6 @@ extern int init(void)
 	if (_ext_sensors_read_conf())
 		return SLURM_ERROR;
 
-	debug_flags = slurm_get_debug_flags();
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }

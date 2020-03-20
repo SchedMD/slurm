@@ -158,7 +158,6 @@ static const char *NODE_DESC = "Node";
 static int dataset_id = -1; /* id of the dataset for profile data */
 
 static slurm_ipmi_conf_t slurm_ipmi_conf;
-static uint64_t debug_flags = 0;
 static bool flag_energy_accounting_shutdown = false;
 static bool flag_thread_started = false;
 static bool flag_init = false;
@@ -454,8 +453,8 @@ static int _find_power_sensor(void)
 
 	if (rc != SLURM_SUCCESS)
 		info("Power sensor not found.");
-	else if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("Power sensor found: %d", sensors_len);
+	else
+		log_flag(ENERGY, "Power sensor found: %d", sensors_len);
 
 	return rc;
 }
@@ -578,7 +577,7 @@ static int _thread_update_node_energy(void)
 
 	readings++;
 
-	if (debug_flags & DEBUG_FLAG_ENERGY) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_ENERGY) {
 		for (i = 0; i < sensors_len; ++i)
 			info("ipmi-thread: sensor %u current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
 			     sensors[i].id,
@@ -632,8 +631,7 @@ static int _thread_init(void)
 		if (ipmi_ctx)
 			ipmi_monitoring_ctx_destroy(ipmi_ctx);
 
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("%s thread init", plugin_name);
+	log_flag(ENERGY, "%s thread init", plugin_name);
 
 	first_init = SLURM_SUCCESS;
 
@@ -663,8 +661,7 @@ static int _ipmi_send_profile(void)
 			"Energy", NO_PARENT, dataset);
 		for (i = 0; i < descriptions_len; ++i)
 			xfree(dataset[i].name);
-		if (debug_flags & DEBUG_FLAG_ENERGY)
-			debug("Energy: dataset created (id = %d)", dataset_id);
+		log_flag(ENERGY, "Energy: dataset created (id = %d)", dataset_id);
 		if (dataset_id == SLURM_ERROR) {
 			error("Energy: Failed to create the dataset for IPMI");
 			return SLURM_ERROR;
@@ -682,7 +679,7 @@ static int _ipmi_send_profile(void)
 			last_time = sensors[id].energy.poll_time;
 	}
 
-	if (debug_flags & DEBUG_FLAG_PROFILE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_PROFILE) {
 		for (i = 0; i < descriptions_len; i++) {
 			info("PROFILE-Energy: %sPower=%"PRIu64"",
 			     descriptions[i].label, data[i]);
@@ -703,16 +700,14 @@ static void *_thread_ipmi_run(void *no_data)
 	struct timespec abs;
 
 	flag_energy_accounting_shutdown = false;
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("ipmi-thread: launched");
+	log_flag(ENERGY, "ipmi-thread: launched");
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	slurm_mutex_lock(&ipmi_mutex);
 	if (_thread_init() != SLURM_SUCCESS) {
-		if (debug_flags & DEBUG_FLAG_ENERGY)
-			info("ipmi-thread: aborted");
+		log_flag(ENERGY, "ipmi-thread: aborted");
 		slurm_mutex_unlock(&ipmi_mutex);
 
 		slurm_mutex_lock(&launch_mutex);
@@ -749,8 +744,7 @@ static void *_thread_ipmi_run(void *no_data)
 		slurm_mutex_unlock(&ipmi_mutex);
 	}
 
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("ipmi-thread: ended");
+	log_flag(ENERGY, "ipmi-thread: ended");
 
 	return NULL;
 }
@@ -856,12 +850,9 @@ static int _get_joules_task(uint16_t delta)
 			+ new->base_consumed_energy;
 		memcpy(old, new, sizeof(acct_gather_energy_t));
 
-		if (debug_flags & DEBUG_FLAG_ENERGY)
-			info("_get_joules_task: consumed %"PRIu64" Joules "
-			     "(received %"PRIu64"(%u watts) from slurmd)",
-			     new->consumed_energy,
-			     new->base_consumed_energy,
-			     new->current_watts);
+		log_flag(ENERGY, "%s: consumed %"PRIu64" Joules (received %"PRIu64"(%u watts) from slurmd)",
+			 __func__, new->consumed_energy,
+			 new->base_consumed_energy, new->current_watts);
 	}
 
 	acct_gather_energy_destroy(energies);
@@ -907,7 +898,6 @@ static void _get_node_energy(acct_gather_energy_t *energy)
  */
 extern int init(void)
 {
-	debug_flags = slurm_get_debug_flags();
 	/* put anything that requires the .conf being read in
 	   acct_gather_energy_p_conf_parse
 	*/
@@ -1040,7 +1030,6 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 
 	switch (data_type) {
 	case ENERGY_DATA_RECONFIG:
-		debug_flags = slurm_get_debug_flags();
 		break;
 	case ENERGY_DATA_PROFILE:
 		slurm_mutex_lock(&ipmi_mutex);
@@ -1330,8 +1319,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 		if (running_in_slurmd()) {
 			slurm_thread_create(&thread_ipmi_id_launcher,
 					    _thread_launcher, NULL);
-			if (debug_flags & DEBUG_FLAG_ENERGY)
-				info("%s thread launched", plugin_name);
+			log_flag(ENERGY, "%s thread launched", plugin_name);
 		} else
 			_get_joules_task(0);
 	}

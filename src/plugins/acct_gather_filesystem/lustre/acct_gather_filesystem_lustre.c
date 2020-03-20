@@ -108,7 +108,6 @@ typedef struct {
 static lustre_stats_t lstats = {0,0,0,0,0};
 static lustre_stats_t lstats_prev = {0,0,0,0,0};
 
-static uint64_t debug_flags = 0;
 static pthread_mutex_t lustre_lock = PTHREAD_MUTEX_INITIALIZER;
 static int tres_pos = -1;
 
@@ -295,6 +294,7 @@ static int _update_node_filesystem(void)
 {
 	static int dataset_id = -1;
 	static bool first = true;
+	char str[256];
 
 	enum {
 		FIELD_READ,
@@ -355,12 +355,9 @@ static int _update_node_filesystem(void)
 		(1 << 20);
 
 	/* record sample */
-	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		char str[256];
-		info("PROFILE-Lustre: %s",
-		     acct_gather_profile_dataset_str(
-			     dataset, data, str, sizeof(str)));
-	}
+	log_flag(PROFILE, "PROFILE-Lustre: %s",
+		 acct_gather_profile_dataset_str(dataset, data, str,
+						 sizeof(str)));
 	acct_gather_profile_g_add_sample_data(dataset_id, (void *)data,
 					      lstats.update_time);
 
@@ -383,8 +380,6 @@ extern int init(void)
 	if (!running_in_slurmstepd())
 		return SLURM_SUCCESS;
 
-	debug_flags = slurm_get_debug_flags();
-
 	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
 	tres_rec.type = "fs";
 	tres_rec.name = "lustre";
@@ -398,8 +393,7 @@ extern int fini(void)
 	if (!running_in_slurmstepd())
 		return SLURM_SUCCESS;
 
-	if (debug_flags & DEBUG_FLAG_FILESYSTEM)
-		info("lustre: ended");
+	log_flag(FILESYSTEM, "lustre: ended");
 
 	return SLURM_SUCCESS;
 }

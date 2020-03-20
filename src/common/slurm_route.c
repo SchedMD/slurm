@@ -82,7 +82,6 @@ static slurm_route_ops_t ops;
 static plugin_context_t	*g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
-static uint32_t debug_flags = 0;
 static uint16_t g_tree_width;
 static bool this_is_collector = false; /* this node is a collector node */
 static slurm_addr_t *msg_collect_node = NULL; /* address of node to aggregate
@@ -199,7 +198,7 @@ static void _set_collectors(char *this_node_name)
 				slurm_conf_get_addr(parent, msg_collect_node, 0);
 				msg_collect_node->sin_port = htons(parent_port);
 			}
-			if (debug_flags & DEBUG_FLAG_ROUTE) {
+			if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 				slurm_print_slurm_addr(msg_collect_node,
 						       addrbuf, 32);
 				info("ROUTE -- message collector (%s) address is %s",
@@ -220,7 +219,7 @@ static void _set_collectors(char *this_node_name)
 					msg_collect_backup[i-1]->sin_port =
 						htons(backup_port);
 				}
-				if (debug_flags & DEBUG_FLAG_ROUTE) {
+				if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 					slurm_print_slurm_addr(
 						msg_collect_backup[i-1],
 						addrbuf, 32);
@@ -229,7 +228,8 @@ static void _set_collectors(char *this_node_name)
 					     i, backup[i], addrbuf);
 				}
 			}
-			if ((i == 1) && (debug_flags & DEBUG_FLAG_ROUTE))
+			if ((i == 1) &&
+			    (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE))
 				info("ROUTE -- no message collector backup");
 			goto clean;
 		}
@@ -275,7 +275,7 @@ static void _set_collectors(char *this_node_name)
 			backup_port = 0;
 	}
 clean:
-	if (debug_flags & DEBUG_FLAG_ROUTE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 		slurm_print_slurm_addr(msg_collect_node, addrbuf, 32);
 		xstrfmtcat(tmp, "ROUTE -- %s is a %s node (parent:%s",
 			   this_node_name,
@@ -328,7 +328,6 @@ extern int route_init(char *node_name)
 	}
 
 	g_tree_width = slurm_get_tree_width();
-	debug_flags = slurm_get_debug_flags();
 
 	init_run = true;
 	_set_collectors(node_name);
@@ -387,7 +386,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
 	if (route_init(NULL) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if (debug_flags & DEBUG_FLAG_ROUTE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 		/* nnodes has to be set here as the hl is empty after the
 		 * split_hostlise call.  */
 		nnodes = hostlist_count(hl);
@@ -399,7 +398,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
 
 	rc = (*(ops.split_hostlist))(hl, sp_hl, count,
 				     tree_width ? tree_width : g_tree_width);
-	if (debug_flags & DEBUG_FLAG_ROUTE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 		/* Sanity check to make sure all nodes in msg list are in
 		 * a child list */
 		nnodex = 0;
@@ -424,7 +423,6 @@ extern int route_g_reconfigure(void)
 {
 	if (route_init(NULL) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	debug_flags = slurm_get_debug_flags();
 	g_tree_width = slurm_get_tree_width();
 
 	return (*(ops.reconfigure))();
@@ -507,7 +505,7 @@ extern int route_split_hostlist_treewidth(hostlist_t hl,
 			hostlist_push_host((*sp_hl)[nhl], name);
 			free(name);
 		}
-		if (debug_flags & DEBUG_FLAG_ROUTE) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 			buf = hostlist_ranged_string_xmalloc((*sp_hl)[nhl]);
 			debug("ROUTE: ... sublist[%d] %s", nhl, buf);
 			xfree(buf);

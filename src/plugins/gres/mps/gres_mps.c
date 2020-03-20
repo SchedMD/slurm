@@ -90,7 +90,6 @@ const char	*plugin_name		= "Gres MPS plugin";
 const char	*plugin_type		= "gres/mps";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
-static uint64_t	debug_flags		= 0;
 static char	*gres_name		= "mps";
 static List	gres_devices		= NULL;
 static List	mps_info		= NULL;
@@ -487,14 +486,13 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 	bool have_fake_gpus = _test_gpu_list_fake();
 
 	/* Assume this state is caused by an scontrol reconfigure */
-	debug_flags = slurm_get_debug_flags();
 	if (gres_devices) {
 		debug("Resetting gres_devices");
 		FREE_NULL_LIST(gres_devices);
 	}
 	FREE_NULL_LIST(mps_info);
 
-	if (debug_flags & DEBUG_FLAG_GRES)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES)
 		log_lvl = LOG_LEVEL_VERBOSE;
 	else
 		log_lvl = LOG_LEVEL_DEBUG;

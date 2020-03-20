@@ -63,8 +63,6 @@
 #  include "alpscomm_cn.h"
 #endif
 
-static uint64_t debug_flags = 0;
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -175,8 +173,6 @@ extern int init (void)
 	int rc;
 	struct stat st;
 
-	debug_flags = slurm_get_debug_flags();
-
 	// Create the run directory
 	errno = 0;
 	rc = mkdir(TASK_CRAY_RUN_DIR, 0755);
@@ -249,7 +245,7 @@ extern int task_p_slurmd_suspend_job (uint32_t job_id)
 	_step_epilogue();
 #endif
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
@@ -268,7 +264,7 @@ extern int task_p_slurmd_resume_job (uint32_t job_id)
 	_step_prologue();
 #endif
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
@@ -299,7 +295,7 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
 		_step_prologue();
 #endif
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
@@ -376,7 +372,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 			 ALPS_APP_ID_ENV);
 	}
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
@@ -401,7 +397,7 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
 	}
 #endif
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 	return rc;
 }
@@ -428,7 +424,7 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 	}
 #endif
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 	return rc;
 }
@@ -559,7 +555,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	if (rc != 1)
 		return SLURM_ERROR;
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
@@ -580,9 +576,9 @@ static void _alpsc_debug(const char *file, int line, const char *func,
 		      err_msg ? err_msg : "No error message present");
 	} else if (err_msg) {
 		info("%s: %s", alpsc_func, err_msg);
-	} else if (debug_flags & DEBUG_FLAG_TASK) {
-		debug("Called %s", alpsc_func);
-	}
+	} else
+		log_flag(TASK, "Called %s", alpsc_func);
+
 	free(err_msg);
 }
 
@@ -810,21 +806,16 @@ again:
 		return -1;
 	}
 
-	if (debug_flags & DEBUG_FLAG_TASK) {
-		info("Bitmask %#lx size: %lu sizeof(*(bm->maskp)): %zu"
-		     " weight: %u",
-		     *(bm->maskp), bm->size, sizeof(*(bm->maskp)), *cnt);
-	}
+	log_flag(TASK, "Bitmask %#lx size: %lu sizeof(*(bm->maskp)): %zu weight: %u",
+		 *(bm->maskp), bm->size, sizeof(*(bm->maskp)), *cnt);
 
 	*numa_array = xmalloc(*cnt * sizeof(int32_t));
 
 	index = 0;
 	for (i = 0; i < bm->size; i++) {
 		if (*(bm->maskp) & ((long unsigned) 1 << i)) {
-			if (debug_flags & DEBUG_FLAG_TASK) {
-				info("(%s: %d: %s) NUMA Node %d is present",
-				     THIS_FILE,	__LINE__, __func__, i);
-			}
+			log_flag(TASK, "(%s: %d: %s) NUMA Node %d is present",
+				 THIS_FILE, __LINE__, __func__, i);
 			(*numa_array)[index++] = i;
 		}
 	}
@@ -927,7 +918,7 @@ static int _get_cpu_masks(int num_numa_nodes, int32_t *numa_array,
 		}
 	}
 
-	if (debug_flags & DEBUG_FLAG_TASK) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TASK) {
 		bitmask_str = NULL;
 		for (i = 0; i < num_numa_nodes; i++) {
 			for (j = 0; j < NUM_INTS_TO_HOLD_ALL_CPUS; j++) {
@@ -973,10 +964,8 @@ static int _get_cpu_masks(int num_numa_nodes, int32_t *numa_array,
 				CPU_SET(j, &cpusetptr[i]);
 			}
 		}
-		if (debug_flags & DEBUG_FLAG_TASK) {
-			info("CPU_COUNT() of set: %d",
-			     CPU_COUNT(&cpusetptr[i]));
-		}
+		log_flag(TASK, "CPU_COUNT() of set: %d",
+			 CPU_COUNT(&cpusetptr[i]));
 	}
 
 	*cpuMasks = cpusetptr;
@@ -1064,9 +1053,7 @@ static int _update_num_steps(int val)
 		TEMP_FAILURE_RETRY(close(fd));
 		return -1;
 	}
-	if (debug_flags & DEBUG_FLAG_TASK) {
-		debug("Wrote %d steps to %s", num_steps, NUM_STEPS_FILE);
-	}
+	log_flag(TASK, "Wrote %d steps to %s", num_steps, NUM_STEPS_FILE);
 
 	TEMP_FAILURE_RETRY(close(fd));
 	return num_steps;
@@ -1117,9 +1104,10 @@ static int _step_epilogue(void)
 		if (rc != 1) {
 			return SLURM_ERROR;
 		}
-	} else if (debug_flags & DEBUG_FLAG_TASK) {
-		debug("Skipping epilogue, %d other steps running", num_steps);
-	}
+	} else
+		log_flag(TASK, "Skipping epilogue, %d other steps running",
+			 num_steps);
+
 	return SLURM_SUCCESS;
 }
 #endif

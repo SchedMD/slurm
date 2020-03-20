@@ -66,8 +66,6 @@
 #define SWITCH_BUF_SIZE (PORT_CNT + 128)
 #define SWITCH_CRAY_STATE_VERSION "PROTOCOL_VERSION"
 
-uint64_t debug_flags = 0;
-
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 static bool lustre_no_flush = false;
 #endif
@@ -108,7 +106,6 @@ const uint32_t plugin_id      = SWITCH_PLUGIN_CRAY;
 int init(void)
 {
 	debug("%s loaded.", plugin_name);
-	debug_flags = slurm_get_debug_flags();
 
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	start_lease_extender();
@@ -127,7 +124,6 @@ int fini(void)
 
 extern int switch_p_reconfig(void)
 {
-	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
 }
 
@@ -217,7 +213,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	rc = lease_cookies(job, nodes, step_layout->node_cnt);
 
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	xfree(nodes);
@@ -303,7 +299,7 @@ extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 endit:
 	xfree(job);
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return;
@@ -327,7 +323,7 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 
 	xassert(job->magic == CRAY_JOBINFO_MAGIC);
 
-	if (debug_flags & DEBUG_FLAG_SWITCH) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
 		CRAY_INFO("switch_jobinfo_t contents:");
 		print_jobinfo(job);
 	}
@@ -395,7 +391,7 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, Buf buffer,
 	track_cookies(job);
 #endif
 
-	if (debug_flags & DEBUG_FLAG_SWITCH) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
 		CRAY_INFO("Unpacked jobinfo");
 		print_jobinfo(job);
 	}
@@ -564,7 +560,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 			return SLURM_ERROR;
 	}
 
-	if (debug_flags & DEBUG_FLAG_SWITCH) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
 		CRAY_INFO("Network Scaling: Exclusive %d CPU %d Memory %d",
 			  exclusive, cpu_scaling, mem_scaling);
 	}
@@ -696,7 +692,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 #endif
 
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 #endif
 
@@ -769,7 +765,7 @@ extern int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 #endif
 
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
@@ -838,7 +834,7 @@ extern int switch_p_job_postfini(stepd_step_rec_t *job)
 	}
 
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
@@ -921,7 +917,7 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 		return SLURM_SUCCESS;
 	}
 
-	if (debug_flags & DEBUG_FLAG_SWITCH) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
 		CRAY_INFO("switch_p_job_step_complete");
 	}
 
@@ -931,7 +927,7 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 		return rc;
 	}
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
@@ -994,7 +990,7 @@ extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *job)
 		return SLURM_ERROR;
 	}
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
@@ -1019,7 +1015,7 @@ extern int switch_p_job_step_post_suspend(stepd_step_rec_t *job)
 		return SLURM_ERROR;
 	}
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
@@ -1047,7 +1043,7 @@ extern int switch_p_job_step_pre_resume(stepd_step_rec_t *job)
 		return SLURM_ERROR;
 	}
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
@@ -1072,7 +1068,7 @@ extern int switch_p_job_step_post_resume(stepd_step_rec_t *job)
 		return SLURM_ERROR;
 	}
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;

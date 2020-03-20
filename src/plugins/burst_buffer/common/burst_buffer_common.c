@@ -209,7 +209,6 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 	xfree(config_ptr->allow_users);
 	xfree(config_ptr->allow_users_str);
 	xfree(config_ptr->create_buffer);
-	config_ptr->debug_flag = false;
 	xfree(config_ptr->default_pool);
 	xfree(config_ptr->deny_users);
 	xfree(config_ptr->deny_users_str);
@@ -531,8 +530,6 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 
 	/* Set default configuration */
 	bb_clear_config(&state_ptr->bb_config, false);
-	if (slurm_get_debug_flags() & DEBUG_FLAG_BURST_BUF)
-		state_ptr->bb_config.debug_flag = true;
 	state_ptr->bb_config.flags |= BB_FLAG_DISABLE_PERSISTENT;
 	state_ptr->bb_config.other_timeout = DEFAULT_OTHER_TIMEOUT;
 	state_ptr->bb_config.stage_in_timeout = DEFAULT_STATE_IN_TIMEOUT;
@@ -651,7 +648,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 	s_p_hashtbl_destroy(bb_hashtbl);
 	xfree(bb_conf);
 
-	if (state_ptr->bb_config.debug_flag) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF) {
 		value = _print_users(state_ptr->bb_config.allow_users);
 		info("%s: AllowUsers:%s",  __func__, value);
 		xfree(value);

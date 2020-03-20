@@ -228,7 +228,6 @@ static unsigned int cmd_rq_len = 8;
 static int dataset_id = -1; /* id of the dataset for profile data */
 
 static slurm_ipmi_conf_t slurm_ipmi_conf;
-static uint64_t debug_flags = 0;
 static bool flag_energy_accounting_shutdown = false;
 static bool flag_thread_started = false;
 static bool flag_init = false;
@@ -566,16 +565,10 @@ static int _thread_update_node_energy(void)
 		readings++;
 	}
 
-	if (debug_flags & DEBUG_FLAG_ENERGY) {
-		info("%s: XCC current_watts: %u consumed energy last interval: %"PRIu64"(current reading %"PRIu64") Joules, elapsed time: %u Seconds, first read energy counter val: %"PRIu64" ave watts: %u",
-		     __func__,
-		     xcc_energy.current_watts,
-		     xcc_energy.base_consumed_energy,
-		     xcc_energy.consumed_energy,
-		     elapsed,
-		     first_consumed_energy,
-		     xcc_energy.ave_watts);
-	}
+	log_flag(ENERGY, "%s: XCC current_watts: %u consumed energy last interval: %"PRIu64"(current reading %"PRIu64") Joules, elapsed time: %u Seconds, first read energy counter val: %"PRIu64" ave watts: %u",
+		 __func__, xcc_energy.current_watts,
+		 xcc_energy.base_consumed_energy, xcc_energy.consumed_energy,
+		 elapsed, first_consumed_energy, xcc_energy.ave_watts);
 	return SLURM_SUCCESS;
 }
 
@@ -593,20 +586,18 @@ static int _thread_init(void)
 	 * update the sensor and return because the freeipmi lib
 	 * context cannot be shared among threads.
 	 */
-	if (_init_ipmi_config() != SLURM_SUCCESS)
-		if (debug_flags & DEBUG_FLAG_ENERGY) {
-			info("%s thread init error on _init_ipmi_config()",
-			     plugin_name);
-			goto cleanup;
-		}
+	if (_init_ipmi_config() != SLURM_SUCCESS) {
+		log_flag(ENERGY, "%s thread init error on _init_ipmi_config()",
+			 plugin_name);
+		goto cleanup;
+	}
 
 	if (!first)
 		return first_init;
 
 	first = false;
 
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("%s thread init success", plugin_name);
+	log_flag(ENERGY, "%s thread init success", plugin_name);
 
 	first_init = SLURM_SUCCESS;
 	return SLURM_SUCCESS;
@@ -651,8 +642,8 @@ static int _ipmi_send_profile(void)
 		dataset_id = acct_gather_profile_g_create_dataset(
 			"Energy", NO_PARENT, dataset);
 
-		if (debug_flags & DEBUG_FLAG_ENERGY)
-			debug("Energy: dataset created (id = %d)", dataset_id);
+		log_flag(ENERGY, "Energy: dataset created (id = %d)",
+			 dataset_id);
 		if (dataset_id == SLURM_ERROR) {
 			error("Energy: Failed to create the dataset for IPMI");
 			return SLURM_ERROR;
@@ -663,7 +654,7 @@ static int _ipmi_send_profile(void)
 	memset(data, 0, sizeof(data));
 	data[XCC_ENERGY] = xcc_energy.base_consumed_energy;
 	data[XCC_CURR_POWER] = xcc_energy.current_watts;
-	if (debug_flags & DEBUG_FLAG_PROFILE)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_PROFILE)
 		for (i = 0; i < XCC_LABEL_CNT; i++)
 			info("PROFILE-Energy: %s=%"PRIu64,
 			     xcc_labels[i], data[i]);
@@ -683,16 +674,14 @@ static void *_thread_ipmi_run(void *no_data)
 	struct timespec abs;
 
 	flag_energy_accounting_shutdown = false;
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("ipmi-thread: launched");
+	log_flag(ENERGY, "ipmi-thread: launched");
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	slurm_mutex_lock(&ipmi_mutex);
 	if (_thread_init() != SLURM_SUCCESS) {
-		if (debug_flags & DEBUG_FLAG_ENERGY)
-			info("ipmi-thread: aborted");
+		log_flag(ENERGY, "ipmi-thread: aborted");
 		slurm_mutex_unlock(&ipmi_mutex);
 
 		slurm_cond_signal(&launch_cond);
@@ -725,8 +714,7 @@ static void *_thread_ipmi_run(void *no_data)
 		slurm_mutex_unlock(&ipmi_mutex);
 	}
 
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("ipmi-thread: ended");
+	log_flag(ENERGY, "ipmi-thread: ended");
 
 	return NULL;
 }
@@ -816,13 +804,9 @@ static int _get_joules_task(uint16_t delta)
 
 	memcpy(&xcc_energy, new, sizeof(acct_gather_energy_t));
 
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("%s: consumed %"PRIu64" Joules "
-		     "(received %"PRIu64"(%u watts) from slurmd)",
-		     __func__,
-		     xcc_energy.consumed_energy,
-		     xcc_energy.base_consumed_energy,
-		     xcc_energy.current_watts);
+	log_flag(ENERGY, "%s: consumed %"PRIu64" Joules (received %"PRIu64"(%u watts) from slurmd)",
+		 __func__, xcc_energy.consumed_energy,
+		 xcc_energy.base_consumed_energy, xcc_energy.current_watts);
 
 //	new->previous_consumed_energy = xcc_energy.consumed_energy;
 end_it:
@@ -837,8 +821,6 @@ end_it:
  */
 extern int init(void)
 {
-	debug_flags = slurm_get_debug_flags();
-
 	memset(&xcc_energy, 0, sizeof(acct_gather_energy_t));
 
 	return SLURM_SUCCESS;
@@ -938,7 +920,6 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 
 	switch (data_type) {
 	case ENERGY_DATA_RECONFIG:
-		debug_flags = slurm_get_debug_flags();
 		break;
 	case ENERGY_DATA_PROFILE:
 		slurm_mutex_lock(&ipmi_mutex);
@@ -1058,8 +1039,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 		if (running_in_slurmd()) {
 			slurm_thread_create(&thread_ipmi_id_launcher,
 					    _thread_launcher, NULL);
-			if (debug_flags & DEBUG_FLAG_ENERGY)
-				info("%s thread launched", plugin_name);
+			log_flag(ENERGY, "%s thread launched", plugin_name);
 		} else
 			_get_joules_task(0);
 	}

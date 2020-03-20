@@ -132,7 +132,6 @@ static ofed_sens_t ofed_sens = {0,0,0,0,0,0,0,0};
 static uint8_t pc[1024];
 
 static slurm_ofed_conf_t ofed_conf;
-static uint64_t debug_flags = 0;
 static pthread_mutex_t ofed_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int dataset_id = -1; /* id of the dataset for profile data */
@@ -216,8 +215,7 @@ static int _read_ofed_values(void)
 		mad_decode_field(pc, IB_PC_EXT_RCV_PKTS_F,
 				 &last_update_rcvpkts);
 
-		if (debug_flags & DEBUG_FLAG_INTERCONNECT)
-			info("%s ofed init", plugin_name);
+		log_flag(INTERCONNECT, "%s ofed init", plugin_name);
 
 		first = 0;
 		return SLURM_SUCCESS;
@@ -261,6 +259,7 @@ static int _read_ofed_values(void)
 static int _update_node_interconnect(void)
 {
 	int rc;
+	char str[256];
 
 	enum {
 		FIELD_PACKIN,
@@ -286,8 +285,8 @@ static int _update_node_interconnect(void)
 	if (dataset_id < 0) {
 		dataset_id = acct_gather_profile_g_create_dataset("Network",
 			NO_PARENT, dataset);
-		if (debug_flags & DEBUG_FLAG_INTERCONNECT)
-			debug("IB: dataset created (id = %d)", dataset_id);
+		log_flag(INTERCONNECT, "IB: dataset created (id = %d)",
+			 dataset_id);
 		if (dataset_id == SLURM_ERROR) {
 			error("IB: Failed to create the dataset for ofed");
 			return SLURM_ERROR;
@@ -305,19 +304,14 @@ static int _update_node_interconnect(void)
 	data[FIELD_MBIN].d = (double) ofed_sens.rcvdata / (1 << 20);
 	data[FIELD_MBOUT].d = (double) ofed_sens.xmtdata / (1 << 20);
 
-	if (debug_flags & DEBUG_FLAG_INTERCONNECT) {
-		info("ofed-thread = %d sec, transmitted %"PRIu64" bytes, "
-		     "received %"PRIu64" bytes",
-		     (int) (ofed_sens.update_time - ofed_sens.last_update_time),
-		     ofed_sens.xmtdata, ofed_sens.rcvdata);
-	}
+	log_flag(INTERCONNECT, "ofed-thread = %d sec, transmitted %"PRIu64" bytes, received %"PRIu64" bytes",
+		 (int) (ofed_sens.update_time - ofed_sens.last_update_time),
+		 ofed_sens.xmtdata, ofed_sens.rcvdata);
 	slurm_mutex_unlock(&ofed_lock);
 
-	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		char str[256];
-		info("PROFILE-Network: %s", acct_gather_profile_dataset_str(
-			     dataset, data, str, sizeof(str)));
-	}
+	log_flag(PROFILE, "PROFILE-Network: %s",
+		 acct_gather_profile_dataset_str(dataset, data, str,
+						 sizeof(str)));
 	return acct_gather_profile_g_add_sample_data(dataset_id, (void *)data,
 						     ofed_sens.update_time);
 }
@@ -332,8 +326,6 @@ extern int init(void)
 
 	if (!running_in_slurmstepd())
 		return SLURM_SUCCESS;
-
-	debug_flags = slurm_get_debug_flags();
 
 	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
 	tres_rec.type = "ic";
@@ -355,8 +347,7 @@ extern int fini(void)
 		mad_rpc_close_port(srcport);
 	}
 
-	if (debug_flags & DEBUG_FLAG_INTERCONNECT)
-		info("ofed: ended");
+	log_flag(INTERCONNECT, "ofed: ended");
 
 	return SLURM_SUCCESS;
 }

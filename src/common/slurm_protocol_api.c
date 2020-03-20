@@ -374,24 +374,6 @@ uint32_t slurm_get_prolog_flags(void)
 	return prolog_flags;
 }
 
-/* slurm_get_debug_flags
- * RET DebugFlags value from slurm.conf
- */
-uint64_t slurm_get_debug_flags(void)
-{
-	uint64_t debug_flags = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-		debug_flags = slurmdbd_conf->debug_flags;
-	} else {
-		conf = slurm_conf_lock();
-		debug_flags = conf->debug_flags;
-		slurm_conf_unlock();
-	}
-	return debug_flags;
-}
-
 /* slurm_set_debug_flags
  */
 void slurm_set_debug_flags(uint64_t debug_flags)

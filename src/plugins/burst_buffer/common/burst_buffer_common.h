@@ -66,7 +66,6 @@ typedef struct bb_config {
 	uid_t   *allow_users;
 	char    *allow_users_str;
 	char    *create_buffer;
-	bool	debug_flag;
 	char	*default_pool;
 	uid_t   *deny_users;
 	char    *deny_users_str;

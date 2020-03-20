@@ -181,7 +181,6 @@ xcpuinfo_funcs_t xcpuinfo_ops;
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
-static bool gres_debug = false;
 static slurm_gres_context_t *gres_context = NULL;
 static char *gres_node_name = NULL;
 static char *gres_plugin_list = NULL;
@@ -550,10 +549,6 @@ extern int gres_plugin_init(void)
 		return rc;
 
 	slurm_mutex_lock(&gres_context_lock);
-	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
-		gres_debug = true;
-	else
-		gres_debug = false;
 
 	if (gres_context_cnt >= 0)
 		goto fini;
@@ -810,10 +805,6 @@ extern int gres_plugin_reconfig(void)
 	bool plugin_change;
 
 	slurm_mutex_lock(&gres_context_lock);
-	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
-		gres_debug = true;
-	else
-		gres_debug = false;
 
 	if (xstrcmp(plugin_names, gres_plugin_list))
 		plugin_change = true;
@@ -883,7 +874,7 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 	p = (gres_slurmd_conf_t *) x;
 	xassert(p);
 
-	if (!gres_debug) {
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES)) {
 		verbose("Gres Name=%s Type=%s Count=%"PRIu64,
 			p->name, p->type_name, p->count);
 		return 0;
@@ -2127,13 +2118,11 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
 		}
 
-		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
-			info("Node:%s Gres:%s Type:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"
-			     PRIu64" Links:%s",
-			     node_name, tmp_name, tmp_type,
-			     gres_flags2str(config_flags), tmp_cpus, cpu_cnt,
-			     count64, tmp_links);
-		}
+		log_flag(GRES, "Node:%s Gres:%s Type:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s",
+			 node_name, tmp_name, tmp_type,
+			 gres_flags2str(config_flags), tmp_cpus, cpu_cnt,
+			 count64, tmp_links);
+
 	 	for (j = 0; j < gres_context_cnt; j++) {
 			bool new_has_file,  new_has_type;
 			bool orig_has_file, orig_has_type;
@@ -4307,7 +4296,7 @@ extern void gres_plugin_node_state_log(List gres_list, char *node_name)
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 
-	if (!gres_debug || (gres_list == NULL))
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
 		return;
 
 	(void) gres_plugin_init();
@@ -7681,7 +7670,7 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 	list_iterator_destroy(job_gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
 
-	if (gres_debug)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES)
 		_sock_gres_log(sock_gres_list, node_name);
 
 	return sock_gres_list;
@@ -11529,7 +11518,7 @@ extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id)
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 
-	if (!gres_debug || (gres_list == NULL))
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
 		return;
 
 	(void) gres_plugin_init();
@@ -12903,7 +12892,7 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 
-	if (!gres_debug || (gres_list == NULL))
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
 		return;
 
 	(void) gres_plugin_init();

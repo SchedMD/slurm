@@ -75,13 +75,12 @@ extern void get_cluster_power(node_record_t *node_record_table_ptr,
 			      int node_record_count,
 			      uint32_t *alloc_watts, uint32_t *used_watts)
 {
-	uint64_t debug_flag = slurm_get_debug_flags();
 	int i;
 	node_record_t *node_ptr;
 
 	*alloc_watts = 0;
 	*used_watts  = 0;
-	if ((debug_flag & DEBUG_FLAG_POWER) == 0)
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_POWER))
 		return;
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
@@ -121,7 +120,6 @@ extern List get_job_power(List job_list, node_record_t *node_record_table_ptr)
 	ListIterator job_iterator;
 	power_by_job_t *power_ptr;
 	int i, i_first, i_last;
-	uint64_t debug_flag = slurm_get_debug_flags();
 	List job_power_list = list_create(xfree_ptr);
 	time_t now = time(NULL);
 
@@ -155,7 +153,7 @@ extern List get_job_power(List job_list, node_record_t *node_record_table_ptr)
 					node_ptr->energy->current_watts;
 			}
 		}
-		if (debug_flag & DEBUG_FLAG_POWER) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_POWER) {
 			info("%s: %pJ Age=%ld(sec) AllocWatts=%u UsedWatts=%u",
 			     __func__, job_ptr,
 			     (long int) difftime(now, power_ptr->start_time),
@@ -193,7 +191,7 @@ extern char *power_run_script(char *script_name, char *script_path,
 		resp = xstrdup("Slurm burst buffer configuration error");
 		return resp;
 	}
-	if (slurm_get_debug_flags() & DEBUG_FLAG_POWER) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_POWER) {
 		for (i = 0; i < 10; i++) {
 			if (!script_argv[i])
 				break;

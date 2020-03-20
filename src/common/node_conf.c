@@ -269,12 +269,7 @@ extern int build_all_frontend_info (bool is_slurmd_context)
 #ifdef HAVE_FRONT_END
 	slurm_conf_frontend_t *fe_single, *fe_line;
 	int i, count, max_rc = SLURM_SUCCESS;
-	bool front_end_debug;
 
-	if (slurm_get_debug_flags() & DEBUG_FLAG_FRONT_END)
-		front_end_debug = true;
-	else
-		front_end_debug = false;
 	count = slurm_conf_frontend_array(&ptr_array);
 	if (count == 0)
 		fatal("No FrontendName information available!");
@@ -323,7 +318,8 @@ extern int build_all_frontend_info (bool is_slurmd_context)
 			if (fe_line->reason && fe_line->reason[0])
 				fe_single->reason = xstrdup(fe_line->reason);
 			fe_single->node_state = fe_line->node_state;
-			if (front_end_debug && !is_slurmd_context)
+			if ((slurm_conf.debug_flags & DEBUG_FLAG_FRONT_END) &&
+			    !is_slurmd_context)
 				_dump_front_end(fe_single);
 		}
 		hostlist_destroy(hl_addr);

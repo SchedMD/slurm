@@ -82,7 +82,6 @@
 const char plugin_name[]       	= "Cray/Aries core specialization plugin";
 const char plugin_type[]       	= "core_spec/cray_aries";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
-static uint64_t debug_flags = 0;
 
 // If job_set_corespec fails, retry this many times to wait
 // for suspends to complete.
@@ -90,7 +89,6 @@ static uint64_t debug_flags = 0;
 
 extern int init(void)
 {
-	debug_flags = slurm_get_debug_flags();
 	info("%s: init", plugin_type);
 	return SLURM_SUCCESS;
 }
@@ -192,7 +190,7 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 	}
 #endif
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	// The code that was here is now performed by
