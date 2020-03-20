@@ -315,7 +315,6 @@ extern int slurm_acct_storage_init(char *loc)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "accounting_storage";
-	char *type = NULL;
 
 	if (init_run && plugin_context)
 		return retval;
@@ -328,13 +327,13 @@ extern int slurm_acct_storage_init(char *loc)
 	if (loc)
 		slurm_set_accounting_storage_loc(loc);
 
-	type = slurm_get_accounting_storage_type();
-
 	plugin_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+		plugin_type, slurm_conf.accounting_storage_type, (void **)&ops,
+		syms, sizeof(syms));
 
 	if (!plugin_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.accounting_storage_type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -342,7 +341,6 @@ extern int slurm_acct_storage_init(char *loc)
 	enforce = slurm_get_accounting_storage_enforce();
 done:
 	slurm_mutex_unlock(&plugin_context_lock);
-	xfree(type);
 	return retval;
 }
 

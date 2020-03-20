@@ -115,7 +115,6 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->storage_loc);
 		xfree(slurmdbd_conf->storage_pass);
 		slurmdbd_conf->storage_port = 0;
-		xfree(slurmdbd_conf->storage_type);
 		xfree(slurmdbd_conf->storage_user);
 		slurmdbd_conf->track_wckey = 0;
 		slurmdbd_conf->track_ctld = 0;
@@ -486,8 +485,8 @@ extern int read_slurmdbd_conf(void)
 			       "StoragePass", tbl);
 		s_p_get_uint16(&slurmdbd_conf->storage_port,
 			       "StoragePort", tbl);
-		s_p_get_string(&slurmdbd_conf->storage_type,
-			       "StorageType", tbl);
+		s_p_get_string(&slurm_conf.accounting_storage_type,
+		               "StorageType", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_user,
 			       "StorageUser", tbl);
 
@@ -546,12 +545,12 @@ extern int read_slurmdbd_conf(void)
 		slurm_conf.slurm_user_id = 0;
 	}
 
-	if (slurmdbd_conf->storage_type == NULL)
+	if (!slurmdbd_conf.accounting_storage_type)
 		fatal("StorageType must be specified");
-	if (!xstrcmp(slurmdbd_conf->storage_type,
-		     "accounting_storage/slurmdbd")) {
+	if (!xstrcmp(slurm_conf.accounting_storage_type,
+	             "accounting_storage/slurmdbd")) {
 		fatal("StorageType=%s is invalid in slurmdbd.conf",
-		      slurmdbd_conf->storage_type);
+		      slurm_conf.accounting_storage_type);
 	}
 
 	if (!slurmdbd_conf->storage_host)
@@ -560,8 +559,8 @@ extern int read_slurmdbd_conf(void)
 	if (!slurmdbd_conf->storage_user)
 		slurmdbd_conf->storage_user = xstrdup(getlogin());
 
-	if (!xstrcmp(slurmdbd_conf->storage_type,
-		     "accounting_storage/mysql")) {
+	if (!xstrcmp(slurm_conf.accounting_storage_type,
+	             "accounting_storage/mysql")) {
 		if (!slurmdbd_conf->storage_port)
 			slurmdbd_conf->storage_port = DEFAULT_MYSQL_PORT;
 		if (!slurmdbd_conf->storage_loc)
@@ -690,7 +689,7 @@ extern void log_config(void)
 	debug2("StorageLoc        = %s", slurmdbd_conf->storage_loc);
 	/* debug2("StoragePass       = %s", slurmdbd_conf->storage_pass); */
 	debug2("StoragePort       = %u", slurmdbd_conf->storage_port);
-	debug2("StorageType       = %s", slurmdbd_conf->storage_type);
+	debug2("StorageType       = %s", slurm_conf.accounting_storage_type);
 	debug2("StorageUser       = %s", slurmdbd_conf->storage_user);
 
 	debug2("TCPTimeout        = %u", slurm_conf.tcp_timeout);
@@ -1004,7 +1003,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("StorageType");
-	key_pair->value = xstrdup(slurmdbd_conf->storage_type);
+	key_pair->value = xstrdup(slurm_conf.accounting_storage_type);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

@@ -1693,7 +1693,6 @@ static void _set_usage_efctv(slurmdb_assoc_rec_t *assoc)
  */
 int init ( void )
 {
-	char *temp = NULL;
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
@@ -1707,9 +1706,10 @@ int init ( void )
 	_internal_setup();
 
 	/* Check to see if we are running a supported accounting plugin */
-	temp = slurm_get_accounting_storage_type();
-	if (xstrcasecmp(temp, "accounting_storage/slurmdbd")
-	    && xstrcasecmp(temp, "accounting_storage/mysql")) {
+	if (xstrcasecmp(slurm_conf.accounting_storage_type,
+	                "accounting_storage/slurmdbd")
+	    && xstrcasecmp(slurm_conf.accounting_storage_type,
+	                   "accounting_storage/mysql")) {
 		time_t start_time = time(NULL);
 		error("You are not running a supported "
 		      "accounting_storage plugin\n(%s).\n"
@@ -1718,7 +1718,7 @@ int init ( void )
 		      "or 'accounting_storage/mysql' enabled.  "
 		      "If you want multifactor priority without fairshare "
 		      "ignore this message.",
-		      temp);
+		      slurm_conf.accounting_storage_type);
 		calc_fairshare = 0;
 		weight_fs = 0;
 
@@ -1761,8 +1761,6 @@ int init ( void )
 		}
 		calc_fairshare = 0;
 	}
-
-	xfree(temp);
 
 	site_factor_plugin_init();
 

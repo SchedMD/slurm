@@ -565,8 +565,8 @@ extern int jobacct_gather_init(void)
 	xfree(type);
 	xfree(plugin_type);
 
-	type = slurm_get_accounting_storage_type();
-	if (!xstrcasecmp(type, ACCOUNTING_STORAGE_TYPE_NONE)) {
+	if (!xstrcasecmp(slurm_conf.accounting_storage_type,
+	                 ACCOUNTING_STORAGE_TYPE_NONE)) {
 		error("WARNING: Even though we are collecting accounting "
 		      "information you have asked for it not to be stored "
 		      "(%s) if this is not what you have in mind you will "
@@ -575,7 +575,6 @@ extern int jobacct_gather_init(void)
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
-	xfree(type);
 
 	return(retval);
 }

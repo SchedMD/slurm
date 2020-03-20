@@ -92,7 +92,6 @@ main (int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS, i, opt_char;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
-	char *temp = NULL;
 	int option_index;
 	uint16_t persist_conn_flags = 0;
 	static struct option long_options[] = {
@@ -124,18 +123,17 @@ main (int argc, char **argv)
 	log_init("sreport", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	/* Check to see if we are running a supported accounting plugin */
-	temp = slurm_get_accounting_storage_type();
-	if (xstrcasecmp(temp, "accounting_storage/slurmdbd")
-	   && xstrcasecmp(temp, "accounting_storage/mysql")) {
-		fprintf (stderr, "You are not running a supported "
-			 "accounting_storage plugin\n(%s).\n"
-			 "Only 'accounting_storage/slurmdbd' "
-			 "and 'accounting_storage/mysql' are supported.\n",
-			temp);
-		xfree(temp);
+	if (xstrcasecmp(slurm_conf.accounting_storage_type,
+	                "accounting_storage/slurmdbd")
+	   && xstrcasecmp(slurm_conf.accounting_storage_type,
+	                  "accounting_storage/mysql")) {
+		fprintf(stderr,
+			"You are not running a supported accounting_storage plugin\n"
+			"(%s).\n"
+			"Only 'accounting_storage/slurmdbd' and 'accounting_storage/mysql' are supported.\n",
+			slurm_conf.accounting_storage_type);
 		exit(1);
 	}
-	xfree(temp);
 
 	if (xstrstr(slurm_conf.fed_params, "fed_display"))
 		federation_flag = true;
@@ -148,9 +146,7 @@ main (int argc, char **argv)
 		federation_flag = true;
 	if (getenv("SREPORT_LOCAL"))
 		local_flag = true;
-	temp = getenv("SREPORT_TRES");
-	if (temp)
-		tres_str = xstrdup(temp);
+	tres_str = xstrdup(getenv("SREPORT_TRES"));
 
 	while ((opt_char = getopt_long(argc, argv, "aM:hnpPQs:t:T:vV",
 			long_options, &option_index)) != -1) {

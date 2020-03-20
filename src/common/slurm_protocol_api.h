@@ -530,12 +530,6 @@ extern uint16_t slurm_get_tree_width(void);
  */
 extern uint16_t slurm_get_vsize_factor(void);
 
-/* slurm_get_accounting_storage_type
- * returns the accounting storage type from slurm_conf object
- * RET char *    - accounting storage type,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_type(void);
-
 /* slurm_get_accounting_storage_tres
  * returns the accounting storage tres from slurm_conf object
  * RET char *    - accounting storage tres,  MUST be xfreed by caller

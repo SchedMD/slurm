@@ -1120,14 +1120,13 @@ extern void parse_command_line(int argc, char **argv)
 			fprintf(stderr, "Slurm unable to initialize storage plugin\n");
 			exit(1);
 		}
-		acct_type = slurm_get_accounting_storage_type();
-		if ((xstrcmp(acct_type, "accounting_storage/none") == 0)
+		if ((!xstrcmp(slurm_conf.accounting_storage_type,
+		              "accounting_storage/none"))
 		    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
 			fprintf(stderr,
 				"Slurm accounting storage is disabled\n");
 			exit(1);
 		}
-		xfree(acct_type);
 		acct_db_conn = slurmdb_connection_get();
 		if (errno != SLURM_SUCCESS) {
 			error("Problem talking to the database: %m");

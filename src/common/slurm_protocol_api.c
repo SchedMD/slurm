@@ -1578,26 +1578,6 @@ uint16_t slurm_get_slurmctld_timeout(void)
 	return slurmctld_timeout;
 }
 
-/* slurm_get_accounting_storage_type
- * returns the accounting storage type from slurm_conf object
- * RET char *    - accounting storage type,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_type(void)
-{
-	char *accounting_type;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-		accounting_type = xstrdup(slurmdbd_conf->storage_type);
-	} else {
-		conf = slurm_conf_lock();
-		accounting_type = xstrdup(conf->accounting_storage_type);
-		slurm_conf_unlock();
-	}
-	return accounting_type;
-
-}
-
 /* slurm_get_accounting_storage_tres
  * returns the accounting storage tres from slurm_conf object
  * RET char *    - accounting storage tres,  MUST be xfreed by caller

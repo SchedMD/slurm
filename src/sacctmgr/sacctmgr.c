@@ -82,7 +82,6 @@ int main(int argc, char **argv)
 	int error_code = SLURM_SUCCESS, opt_char;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int local_exit_code = 0;
-	char *temp = NULL;
 	int option_index;
 	uint16_t persist_conn_flags = 0;
 
@@ -173,18 +172,17 @@ int main(int argc, char **argv)
 	}
 
 	/* Check to see if we are running a supported accounting plugin */
-	temp = slurm_get_accounting_storage_type();
-	if (xstrcasecmp(temp, "accounting_storage/slurmdbd")
-	   && xstrcasecmp(temp, "accounting_storage/mysql")) {
-		fprintf (stderr, "You are not running a supported "
-			 "accounting_storage plugin\n(%s).\n"
-			 "Only 'accounting_storage/slurmdbd' "
-			 "and 'accounting_storage/mysql' are supported.\n",
-			temp);
-		xfree(temp);
+	if (xstrcasecmp(slurm_conf.accounting_storage_type,
+	                "accounting_storage/slurmdbd")
+	   && xstrcasecmp(slurm_conf.accounting_storage_type,
+	                  "accounting_storage/mysql")) {
+		fprintf(stderr,
+			"You are not running a supported accounting_storage plugin\n"
+			"(%s).\n"
+			"Only 'accounting_storage/slurmdbd' and 'accounting_storage/mysql' are supported.\n",
+			slurm_conf.accounting_storage_type);
 		exit(1);
 	}
-	xfree(temp);
 
 	errno = 0;
 	db_conn = slurmdb_connection_get2(&persist_conn_flags);
