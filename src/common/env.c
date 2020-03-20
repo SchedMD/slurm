@@ -1149,7 +1149,7 @@ extern int
 env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 			const char *node_name)
 {
-	char *tmp = NULL, *cluster_name;
+	char *tmp = NULL;
 	uint32_t num_cpus = 0;
 	int i;
 	slurm_step_layout_t *step_layout = NULL;
@@ -1174,12 +1174,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		num_cpus += batch->cpu_count_reps[i] * batch->cpus_per_node[i];
 	}
 
-	cluster_name = slurm_get_cluster_name();
-	if (cluster_name) {
-		env_array_overwrite_fmt(dest, "SLURM_CLUSTER_NAME", "%s",
-					cluster_name);
-		xfree(cluster_name);
-	}
+	env_array_overwrite_fmt(dest, "SLURM_CLUSTER_NAME", "%s",
+	                        slurm_conf.cluster_name);
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", batch->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u",

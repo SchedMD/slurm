@@ -2935,7 +2935,7 @@ static bool _verify_clustername(void)
 			      slurm_conf.cluster_name, name, filename);
 			exit(1);
 		}
-	} else if (slurm_conf.cluster_name)
+	} else
 		create_file = true;
 
 	xfree(filename);
@@ -2947,9 +2947,6 @@ static void _create_clustername_file(void)
 {
 	FILE *fp;
 	char *filename = NULL;
-
-	if (!slurm_conf.cluster_name)
-		return;
 
 	filename = xstrdup_printf("%s/clustername",
 	                          slurm_conf.state_save_location);
