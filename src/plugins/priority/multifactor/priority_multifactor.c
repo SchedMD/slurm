@@ -84,7 +84,7 @@ extern void *acct_db_conn  __attribute__((weak_import));
 extern uint32_t cluster_cpus __attribute__((weak_import));
 extern List job_list  __attribute__((weak_import));
 extern time_t last_job_update __attribute__((weak_import));
-extern slurm_conf_t slurmctld_conf __attribute__((weak_import));
+extern slurm_conf_t slurm_conf __attribute__((weak_import));
 extern int slurmctld_tres_cnt __attribute__((weak_import));
 extern uint16_t accounting_enforce __attribute__((weak_import));
 #else
@@ -92,7 +92,7 @@ void *acct_db_conn = NULL;
 uint32_t cluster_cpus = NO_VAL;
 List job_list = NULL;
 time_t last_job_update = (time_t) 0;
-slurm_conf_t slurmctld_conf;
+slurm_conf_t slurm_conf;
 int slurmctld_tres_cnt = 0;
 uint16_t accounting_enforce = 0;
 #endif
@@ -271,7 +271,7 @@ static void _read_last_decay_ran(time_t *last_ran, time_t *last_reset)
 	(*last_reset) = 0;
 
 	/* read the file */
-	state_file = xstrdup(slurmctld_conf.state_save_location);
+	state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(state_file, "/priority_last_decay_ran");
 	lock_state_files();
 
@@ -310,7 +310,7 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 	char *old_file, *new_file, *state_file;
 	Buf buffer;
 
-	if (!xstrcmp(slurmctld_conf.state_save_location, "/dev/null")) {
+	if (!xstrcmp(slurm_conf.state_save_location, "/dev/null")) {
 		error("Can not save priority state information, "
 		      "StateSaveLocation is /dev/null");
 		return error_code;
@@ -321,11 +321,11 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 	pack_time(last_reset, buffer);
 
 	/* read the file */
-	old_file = xstrdup(slurmctld_conf.state_save_location);
+	old_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(old_file, "/priority_last_decay_ran.old");
-	state_file = xstrdup(slurmctld_conf.state_save_location);
+	state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(state_file, "/priority_last_decay_ran");
-	new_file = xstrdup(slurmctld_conf.state_save_location);
+	new_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(new_file, "/priority_last_decay_ran.new");
 
 	lock_state_files();
@@ -2005,12 +2005,12 @@ extern List priority_p_get_priority_factors_list(
 			if (job_ptr->priority == 0)
 				continue;
 
-			if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
+			if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
 			    (job_ptr->user_id != uid) &&
 			    !validate_operator(uid) &&
 			    (((slurm_mcs_get_privatedata() == 0) &&
 			      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-							    job_ptr->account))||
+			                                    job_ptr->account))||
 			     ((slurm_mcs_get_privatedata() == 1) &&
 			      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label)
 			       != 0))))

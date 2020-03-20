@@ -389,14 +389,14 @@ extern void allocate_nodes(job_record_t *job_ptr)
 	static bool cloud_dns = false;
 	static time_t sched_update = 0;
 
-	if (sched_update != slurmctld_conf.last_update) {
+	if (sched_update != slurm_conf.last_update) {
 		char *ctld_params = slurm_get_slurmctld_params();
 
 		if (xstrcasestr(ctld_params, "cloud_dns"))
 			cloud_dns = true;
 		xfree(ctld_params);
 
-		sched_update = slurmctld_conf.last_update;
+		sched_update = slurm_conf.last_update;
 	}
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
@@ -2412,7 +2412,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 	int job_cnt = 0;
 	static time_t sched_update = 0;
 
-	if (sched_update != slurmctld_conf.last_update) {
+	if (sched_update != slurm_conf.last_update) {
 		char *ctld_params = slurm_get_slurmctld_params();
 
 		preempt_send_user_signal = false;
@@ -2420,7 +2420,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			preempt_send_user_signal = true;
 
 		xfree(ctld_params);
-		sched_update = slurmctld_conf.last_update;
+		sched_update = slurm_conf.last_update;
 	}
 
 	iter = list_iterator_create(preemptee_job_list);
@@ -2434,7 +2434,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 		}
 
 		if ((mode == PREEMPT_MODE_SUSPEND) &&
-		    (slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG)) {
+		    (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)) {
 			debug("preempted %pJ suspended by gang scheduler to reclaim resources for %pJ",
 			      job_ptr, preemptor_ptr);
 			job_ptr->preempt_time = time(NULL);
@@ -2809,8 +2809,8 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 
 	tres_req_cnt[TRES_ARRAY_BILLING] =
 		assoc_mgr_tres_weighted(tres_req_cnt,
-					job_ptr->part_ptr->billing_weights,
-					slurmctld_conf.priority_flags, true);
+		                        job_ptr->part_ptr->billing_weights,
+		                        slurm_conf.priority_flags, true);
 
 	if (!test_only && (selected_node_cnt != NO_VAL) &&
 	    !acct_policy_job_runnable_post_select(job_ptr, tres_req_cnt, true)) {
@@ -2840,8 +2840,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 		bool kill_pending = true;
 		if ((detail_ptr->preempt_start_time != 0) &&
 		    (detail_ptr->preempt_start_time >
-		     (now - slurmctld_conf.kill_wait -
-		      slurmctld_conf.msg_timeout))) {
+		     (now - slurm_conf.kill_wait - slurm_conf.msg_timeout))) {
 			/* Job preemption may still be in progress,
 			 * do not cancel or requeue any more jobs yet */
 			kill_pending = false;
@@ -3081,7 +3080,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	 * representing the amount of each GRES type requested and allocated.
 	 */
 	_fill_in_gres_fields(job_ptr);
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
 		char *tmp = _build_tres_str(job_ptr);
 		info("%s: %pJ gres:%s gres_alloc:%s",
 		     __func__, job_ptr, tmp, job_ptr->gres_alloc);
@@ -3116,7 +3115,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	 * PROLOG_FLAG_CONTAIN also turns on PROLOG_FLAG_ALLOC.
 	 */
 	if (!IS_JOB_CONFIGURING(job_ptr)) {
-		if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)
+		if (slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC)
 			launch_prolog(job_ptr);
 	}
 
@@ -3254,8 +3253,8 @@ extern void launch_prolog(job_record_t *job_ptr)
 	prolog_msg_ptr = xmalloc(sizeof(prolog_launch_msg_t));
 
 	/* Locks: Write job */
-	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
-	    !(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
+	if ((slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
+	    !(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
 		job_ptr->state_reason = WAIT_PROLOG;
 
 	prolog_msg_ptr->job_gres_info =
@@ -3323,8 +3322,8 @@ extern void launch_prolog(job_record_t *job_ptr)
 		      __func__, job_ptr);
 		slurm_free_prolog_launch_msg(prolog_msg_ptr);
 		job_ptr->details->begin_time = time(NULL) + 120;
-		job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id,
-			     true, false, 0);
+		job_complete(job_ptr->job_id, slurm_conf.slurm_user_id,
+		             true, false, 0);
 		return;
 	}
 
@@ -3357,7 +3356,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	/* At least on a Cray we have to treat this as a real step, so
 	 * this is where to do it.
 	 */
-	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
+	if (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
 		select_g_step_start(build_extern_step(job_ptr));
 
 	/* Launch the RPC via agent */
@@ -3391,7 +3390,7 @@ static int _fill_in_gres_fields(job_record_t *job_ptr)
 	if (!job_ptr->gres_alloc || (job_ptr->gres_alloc[0] == '\0') ) {
 		/* Now build the GRES allocated field. */
 		rv = _build_gres_alloc_string(job_ptr);
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
 			char *tmp = _build_tres_str(job_ptr);
 			info("%s %pJ gres_req:%s gres_alloc:%s",
 			     __func__, job_ptr, tmp, job_ptr->gres_alloc);

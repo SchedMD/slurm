@@ -142,7 +142,7 @@ static gres_mc_data_t *_build_gres_mc_data(job_record_t *job_ptr)
 			_valid_uint16(job_mc_ptr->ntasks_per_core);
 	}
 	if ((tres_mc_ptr->ntasks_per_core == 0) &&
-	    (slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE))
+	    (slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE))
 		tres_mc_ptr->ntasks_per_core = 1;
 
 	return tres_mc_ptr;
@@ -355,10 +355,10 @@ static time_t _guess_job_end(job_record_t *job_ptr, time_t now)
 	    (job_ptr->part_ptr->over_time_limit != NO_VAL16)) {
 		over_time_limit = job_ptr->part_ptr->over_time_limit;
 	} else {
-		over_time_limit = slurmctld_conf.over_time_limit;
+		over_time_limit = slurm_conf.over_time_limit;
 	}
 	if (over_time_limit == 0) {
-		end_time = job_ptr->end_time + slurmctld_conf.kill_wait;
+		end_time = job_ptr->end_time + slurm_conf.kill_wait;
 	} else if (over_time_limit == INFINITE16) {
 		/* No idea when the job might end, this is just a guess */
 		if (job_ptr->time_limit && (job_ptr->time_limit != NO_VAL) &&
@@ -368,7 +368,7 @@ static time_t _guess_job_end(job_record_t *job_ptr, time_t now)
 			end_time = now + (365 * 24 * 60 * 60);	/* one year */
 		}
 	} else {
-		end_time = job_ptr->end_time + slurmctld_conf.kill_wait +
+		end_time = job_ptr->end_time + slurm_conf.kill_wait +
 			(over_time_limit  * 60);
 	}
 	if (end_time <= now)
@@ -2276,7 +2276,7 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	int rc = EINVAL;
 	uint16_t job_node_req;
 
-	if (!(slurmctld_conf.conf_flags & CTL_CONF_ASRU))
+	if (!(slurm_conf.conf_flags & CTL_CONF_ASRU))
 		job_ptr->details->core_spec = NO_VAL16;
 	if ((job_ptr->details->core_spec != NO_VAL16) &&
 	    (job_ptr->details->whole_node != 1)) {

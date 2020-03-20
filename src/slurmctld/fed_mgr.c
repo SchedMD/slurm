@@ -344,9 +344,9 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 		cluster->fed.send = persist_conn;
 
 		/* Since this connection is coming from us, make it so ;) */
-		persist_conn->cluster_name = xstrdup(slurmctld_conf.cluster_name);
+		persist_conn->cluster_name = xstrdup(slurm_conf.cluster_name);
 		persist_conn->persist_type = PERSIST_TYPE_FED;
-		persist_conn->my_port = slurmctld_conf.slurmctld_port;
+		persist_conn->my_port = slurm_conf.slurmctld_port;
 		persist_conn->rem_host = xstrdup(cluster->control_host);
 		persist_conn->rem_port = cluster->control_port;
 		persist_conn->version  = cluster->rpc_version;
@@ -533,8 +533,8 @@ static void _mark_self_as_drained(void)
 		(fed_mgr_cluster_rec->fed.state & ~CLUSTER_FED_STATE_BASE);
 
 	ret_list = acct_storage_g_modify_clusters(acct_db_conn,
-						  slurmctld_conf.slurm_user_id,
-						  &cluster_cond, &cluster_rec);
+	                                          slurm_conf.slurm_user_id,
+	                                          &cluster_cond, &cluster_rec);
 	if (!ret_list || !list_count(ret_list)) {
 		error("Failed to set cluster state to drained");
 	}
@@ -564,10 +564,9 @@ static void _remove_self_from_federation(void)
 	fed_rec.cluster_list = list_create(NULL);
 	list_append(fed_rec.cluster_list, &cluster_rec);
 
-	ret_list = acct_storage_g_modify_federations(
-					acct_db_conn,
-					slurmctld_conf.slurm_user_id, &fed_cond,
-					&fed_rec);
+	ret_list = acct_storage_g_modify_federations(acct_db_conn,
+	                                             slurm_conf.slurm_user_id,
+	                                             &fed_cond, &fed_rec);
 	if (!ret_list || !list_count(ret_list)) {
 		error("Failed to remove federation from list");
 	}
@@ -732,7 +731,7 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 		c_itr = list_iterator_create(db_fed->cluster_list);
 		while ((db_cluster = list_next(c_itr))) {
 			if (!xstrcmp(db_cluster->name,
-				     slurmctld_conf.cluster_name)) {
+			             slurm_conf.cluster_name)) {
 				fed_mgr_cluster_rec = db_cluster;
 				continue;
 			}
@@ -2120,8 +2119,8 @@ extern int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	sync_time = time(NULL);
 	jobids = _get_sync_jobid_list(sibling->fed.id, sync_time);
 	pack_spec_jobs(&dump, &dump_size, jobids, SHOW_ALL,
-		       slurmctld_conf.slurm_user_id, NO_VAL,
-		       sibling->rpc_version);
+	               slurm_conf.slurm_user_id, NO_VAL,
+	               sibling->rpc_version);
 	FREE_NULL_LIST(jobids);
 
 	unlock_slurmctld(job_read_lock);
@@ -2814,28 +2813,26 @@ extern int fed_mgr_init(void *db_conn)
 
 	if (running_cache) {
 		debug("Database appears down, reading federations from state file.");
-		fed = _state_load(slurmctld_conf.state_save_location);
+		fed = _state_load(slurm_conf.state_save_location);
 		if (!fed) {
 			debug2("No federation state");
 			rc = SLURM_SUCCESS;
 			goto end_it;
 		}
 	} else {
-		state_fed = _state_load(slurmctld_conf.state_save_location);
+		state_fed = _state_load(slurm_conf.state_save_location);
 		if (state_fed)
 			state_cluster = list_find_first(
-						state_fed->cluster_list,
-						slurmdb_find_cluster_in_list,
-						slurmctld_conf.cluster_name);
+				state_fed->cluster_list,
+				slurmdb_find_cluster_in_list,
+				slurm_conf.cluster_name);
 
 		slurmdb_init_federation_cond(&fed_cond, 0);
 		fed_cond.cluster_list = list_create(NULL);
-		list_append(fed_cond.cluster_list, slurmctld_conf.cluster_name);
+		list_append(fed_cond.cluster_list, slurm_conf.cluster_name);
 
 		fed_list = acct_storage_g_get_federations(
-						db_conn,
-						slurmctld_conf.slurm_user_id,
-						&fed_cond);
+			db_conn, slurm_conf.slurm_user_id, &fed_cond);
 		FREE_NULL_LIST(fed_cond.cluster_list);
 		if (!fed_list) {
 			error("failed to get a federation list");
@@ -2858,8 +2855,8 @@ extern int fed_mgr_init(void *db_conn)
 			NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 		if ((cluster = list_find_first(fed->cluster_list,
-					       slurmdb_find_cluster_in_list,
-					       slurmctld_conf.cluster_name))) {
+		                               slurmdb_find_cluster_in_list,
+		                               slurm_conf.cluster_name))) {
 			job_record_t *job_ptr;
 			ListIterator itr;
 
@@ -3030,8 +3027,8 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 	while ((fed = list_pop(feds))) {
 		if (fed->cluster_list &&
 		    (cluster = list_find_first(fed->cluster_list,
-					       slurmdb_find_cluster_in_list,
-					       slurmctld_conf.cluster_name))) {
+		                               slurmdb_find_cluster_in_list,
+		                               slurm_conf.cluster_name))) {
 			/* Find clusters that were removed from the federation
 			 * since the last time we got an update */
 			lock_slurmctld(fedr_jobw_lock);
@@ -3557,7 +3554,7 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 		unlock_slurmctld(fed_read_lock);
 		*out_buffer = xstrdup_printf(
 			"no fed_mgr_fed_rec on cluster %s yet.",
-			slurmctld_conf.cluster_name);
+			slurm_conf.cluster_name);
 		/* This really isn't an error.  If the cluster doesn't know it
 		 * is in a federation this could happen on the initial
 		 * connection from a sibling that found out about the addition
@@ -3575,7 +3572,7 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 		*out_buffer = xstrdup_printf(
 			"no fed_mgr_cluster_rec on cluster %s?  "
 			"This should never happen",
-			slurmctld_conf.cluster_name);
+			slurm_conf.cluster_name);
 		error("%s: %s", __func__, *out_buffer);
 		return SLURM_ERROR;
 	}
@@ -3585,7 +3582,7 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 		unlock_slurmctld(fed_read_lock);
 		*out_buffer = xstrdup_printf(
 			"%s isn't a known sibling of ours, but tried to connect to cluster %s federation %s",
-			persist_conn->cluster_name, slurmctld_conf.cluster_name,
+			persist_conn->cluster_name, slurm_conf.cluster_name,
 			fed_mgr_fed_rec->name);
 		error("%s: %s", __func__, *out_buffer);
 		return SLURM_ERROR;

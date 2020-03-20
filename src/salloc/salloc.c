@@ -153,7 +153,7 @@ static void _reset_input_mode (void)
 
 static int _set_cluster_name(void *x, void *arg)
 {	job_desc_msg_t *desc = (job_desc_msg_t *) x;
-	desc->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
+	desc->origin_cluster = xstrdup(slurm_conf.cluster_name);
 	return 0;
 }
 
@@ -359,7 +359,7 @@ int main(int argc, char **argv)
 	if (job_req_list)
 		(void) list_for_each(job_req_list, _set_cluster_name, NULL);
 	else
-		desc->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
+		desc->origin_cluster = xstrdup(slurm_conf.cluster_name);
 
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;

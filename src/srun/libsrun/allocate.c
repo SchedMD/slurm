@@ -386,7 +386,7 @@ extern resource_allocation_response_msg_t *
 		return NULL;
 	}
 
-	j->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
+	j->origin_cluster = xstrdup(slurm_conf.cluster_name);
 
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;
@@ -513,7 +513,7 @@ List allocate_het_job_nodes(bool handle_signals)
 		if (!first_job)
 			first_job = j;
 
-		j->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
+		j->origin_cluster = xstrdup(slurm_conf.cluster_name);
 
 		list_append(job_req_list, j);
 	}

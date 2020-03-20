@@ -68,14 +68,14 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined(__APPLE__)
-extern slurm_conf_t slurmctld_conf __attribute__((weak_import));
+extern slurm_conf_t slurm_conf __attribute__((weak_import));
 extern List job_list __attribute__((weak_import));
 extern uint16_t running_cache __attribute__((weak_import));
 extern pthread_mutex_t assoc_cache_mutex __attribute__((weak_import));
 extern pthread_cond_t assoc_cache_cond __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
 #else
-slurm_conf_t slurmctld_conf;
+slurm_conf_t slurm_conf;
 List job_list = NULL;
 uint16_t running_cache = 0;
 pthread_mutex_t assoc_cache_mutex;
@@ -2646,7 +2646,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 
 	req.admin_comment = job_ptr->admin_comment;
 
-	if (slurmctld_conf.conf_flags & CTL_CONF_SJC)
+	if (slurm_conf.conf_flags & CTL_CONF_SJC)
 		req.comment = job_ptr->comment;
 
 	req.db_index    = job_ptr->db_index;

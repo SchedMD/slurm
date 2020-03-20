@@ -944,17 +944,16 @@ extern int init(void)
 {
 	char *tmp_ptr = NULL;
 
-	/*			    12345678 */
-	if ((tmp_ptr = xstrcasestr(slurmctld_conf.job_comp_params,
-				   "timeout="))) {
+	/*                                                      12345678 */
+	if ((tmp_ptr = xstrcasestr(slurm_conf.job_comp_params, "timeout="))) {
 		curl_timeout = xstrntol(tmp_ptr + 8, NULL, 10, 10);
 
 		log_flag(ESEARCH, "%s: setting curl timeout: %lds",
 			 plugin_type, curl_timeout);
 	}
 	/*			    1234567890123456 */
-	if ((tmp_ptr = xstrcasestr(slurmctld_conf.job_comp_params,
-				   "connect_timeout="))) {
+	if ((tmp_ptr = xstrcasestr(slurm_conf.job_comp_params,
+	                           "connect_timeout="))) {
 		curl_timeout = xstrntol(tmp_ptr + 16, NULL, 10, 10);
 
 		log_flag(ESEARCH, "%s: setting curl connect timeout: %lds",

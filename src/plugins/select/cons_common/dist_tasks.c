@@ -1234,7 +1234,7 @@ extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 	 * Note : cyclic cores distribution, which is the default, is treated
 	 * by the next code block
 	 */
-	if (slurmctld_conf.select_type_param & CR_CORE_DEFAULT_DIST_BLOCK) {
+	if (slurm_conf.select_type_param & CR_CORE_DEFAULT_DIST_BLOCK) {
 		switch (job_ptr->details->task_dist & SLURM_DIST_NODEMASK) {
 		case SLURM_DIST_ARBITRARY:
 		case SLURM_DIST_BLOCK:

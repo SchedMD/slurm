@@ -49,7 +49,7 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-extern slurm_conf_t slurmctld_conf __attribute__((weak_import));
+extern slurm_conf_t slurm_conf __attribute__((weak_import));
 extern node_record_t *node_record_table_ptr __attribute__((weak_import));
 extern List part_list __attribute__((weak_import));
 extern List job_list __attribute__((weak_import));
@@ -63,7 +63,7 @@ extern uint32_t *cr_node_cores_offset __attribute__((weak_import));
 extern int slurmctld_tres_cnt __attribute__((weak_import));
 extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
 #else
-slurm_conf_t slurmctld_conf;
+slurm_conf_t slurm_conf;
 node_record_t *node_record_table_ptr;
 List part_list;
 List job_list;
@@ -542,7 +542,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 			if (avail_cpus >= threads_per_core) {
 				int used;
 				if (is_cons_tres &&
-				    (slurmctld_conf.select_type_param &
+				    (slurm_conf.select_type_param &
 				     CR_ONE_TASK_PER_CORE) &&
 				    (details_ptr->min_gres_cpu > 0)) {
 					used = threads_per_core;
@@ -688,7 +688,7 @@ extern int common_cpus_per_core(struct job_details *details, int node_inx)
 	uint16_t threads_per_core = select_node_record[node_inx].vpus;
 
 	if (is_cons_tres &&
-	    (slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
+	    (slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
 	    (details->min_gres_cpu > 0)) {
 		/* May override default of 1 CPU per core */
 		uint16_t pu_per_core = 0xffff;	/* Usable CPUs per core */
@@ -719,7 +719,7 @@ extern void common_init(void)
 {
 	char *topo_param;
 
-	cr_type = slurmctld_conf.select_type_param;
+	cr_type = slurm_conf.select_type_param;
 	if (cr_type)
 		verbose("%s loaded with argument %u", plugin_type, cr_type);
 
@@ -777,7 +777,7 @@ extern bitstr_t **common_mark_avail_cores(
 	int rem_core_spec, node_core_spec, thread_spec = 0;
 	node_record_t *node_ptr;
 	bitstr_t *core_map = NULL;
-	uint16_t use_spec_cores = slurmctld_conf.conf_flags & CTL_CONF_ASRU;
+	uint16_t use_spec_cores = slurm_conf.conf_flags & CTL_CONF_ASRU;
 	node_res_record_t *node_res_ptr = NULL;
 	uint32_t coff;
 
@@ -2029,7 +2029,7 @@ extern int select_p_update_node_config(int index)
 	 * Socket and core count can be changed when KNL node reboots in a
 	 * different NUMA configuration
 	 */
-	if (!(slurmctld_conf.conf_flags & CTL_CONF_OR) &&
+	if (!(slurm_conf.conf_flags & CTL_CONF_OR) &&
 	    (select_node_record[index].sockets !=
 	     select_node_record[index].node_ptr->config_ptr->sockets) &&
 	    (select_node_record[index].cores !=
@@ -2061,11 +2061,11 @@ extern int select_p_reconfigure(void)
 	if (is_cons_tres) {
 		def_cpu_per_gpu = 0;
 		def_mem_per_gpu = 0;
-		if (slurmctld_conf.job_defaults_list) {
+		if (slurm_conf.job_defaults_list) {
 			def_cpu_per_gpu = common_get_def_cpu_per_gpu(
-				slurmctld_conf.job_defaults_list);
+				slurm_conf.job_defaults_list);
 			def_mem_per_gpu = common_get_def_mem_per_gpu(
-				slurmctld_conf.job_defaults_list);
+				slurm_conf.job_defaults_list);
 		}
 	}
 

@@ -554,7 +554,7 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 	char *node_cnt_str = NULL, *core_cnt_str = NULL;
 	int duration, i;
 
-	if (!(slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION))
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION))
 		return;
 
 	if (resv_ptr->start_time != (time_t) NO_VAL) {
@@ -875,7 +875,7 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 
 	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 	resv.assocs = resv_ptr->assoc_list;
-	resv.cluster = slurmctld_conf.cluster_name;
+	resv.cluster = slurm_conf.cluster_name;
 	resv.tres_str = resv_ptr->tres_str;
 
 	resv.flags = resv_ptr->flags;
@@ -906,7 +906,7 @@ static int _post_resv_delete(slurmctld_resv_t *resv_ptr)
 		return rc;
 
 	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
-	resv.cluster = slurmctld_conf.cluster_name;
+	resv.cluster = slurm_conf.cluster_name;
 	resv.id = resv_ptr->resv_id;
 	resv.name = resv_ptr->name;
 	resv.time_end = now;
@@ -939,7 +939,7 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 		return rc;
 
 	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
-	resv.cluster = slurmctld_conf.cluster_name;
+	resv.cluster = slurm_conf.cluster_name;
 	resv.id = resv_ptr->resv_id;
 	resv.time_end = resv_ptr->end_time;
 	resv.assocs = resv_ptr->assoc_list;
@@ -3085,7 +3085,7 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 	pack_time(now, buffer);
 
 	/* Create this list once since it will not change during this call. */
-	if ((slurmctld_conf.private_data & PRIVATE_DATA_RESERVATIONS)
+	if ((slurm_conf.private_data & PRIVATE_DATA_RESERVATIONS)
 	    && !validate_operator(uid)) {
 		slurmdb_assoc_rec_t assoc;
 
@@ -3200,11 +3200,11 @@ extern int dump_all_resv_state(void)
 		_pack_resv(resv_ptr, buffer, true, SLURM_PROTOCOL_VERSION);
 	list_iterator_destroy(iter);
 
-	old_file = xstrdup(slurmctld_conf.state_save_location);
+	old_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(old_file, "/resv_state.old");
-	reg_file = xstrdup(slurmctld_conf.state_save_location);
+	reg_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(reg_file, "/resv_state");
-	new_file = xstrdup(slurmctld_conf.state_save_location);
+	new_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(new_file, "/resv_state.new");
 	unlock_slurmctld(resv_read_lock);
 
@@ -3607,7 +3607,7 @@ static Buf _open_resv_state_file(char **state_file)
 {
 	Buf buf;
 
-	*state_file = xstrdup(slurmctld_conf.state_save_location);
+	*state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(*state_file, "/resv_state");
 	if (!(buf = create_mmap_buf(*state_file)))
 		error("Could not open reservation state file %s: %m",
@@ -4104,7 +4104,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 	}
 
 	/* Need to create reservation containing multiple blocks */
-	resv_debug = slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION;
+	resv_debug = slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION;
 	for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
 		tmp_bitmap = _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr,
 						 resv_desc_ptr->node_cnt[i],
@@ -4615,7 +4615,7 @@ static uint32_t _get_job_duration(job_record_t *job_ptr, bool reboot)
 	if (job_ptr->part_ptr)
 		time_slices = job_ptr->part_ptr->max_share & ~SHARED_FORCE;
 	if ((duration != YEAR_SECONDS) && (time_slices > 1) &&
-	    (slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG)) {
+	    (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)) {
 		/* FIXME: Ideally we figure out how many jobs are actually
 		 * time-slicing on each node rather than using the maximum
 		 * value. */
@@ -5196,7 +5196,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		}
 		list_iterator_destroy(iter);
 
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *nodes = bitmap2node_name(*node_bitmap);
 			info("%s: %pJ reservation:%s nodes:%s",
 			     __func__, job_ptr, job_ptr->resv_name, nodes);
@@ -5787,11 +5787,11 @@ extern int set_node_maint_mode(bool reset_all)
 		if ((resv_ptr->start_time <= now) && !resv_ptr->run_prolog) {
 			res_start_cnt++;
 			resv_ptr->run_prolog = true;
-			_run_script(slurmctld_conf.resv_prolog, resv_ptr);
+			_run_script(slurm_conf.resv_prolog, resv_ptr);
 		}
 		if ((resv_ptr->end_time <= now) && !resv_ptr->run_epilog) {
 			resv_ptr->run_epilog = true;
-			_run_script(slurmctld_conf.resv_epilog, resv_ptr);
+			_run_script(slurm_conf.resv_epilog, resv_ptr);
 		}
 	}
 	list_iterator_destroy(iter);
@@ -5946,7 +5946,7 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 			clusteracct_storage_g_node_down(
 				acct_db_conn,
 				node_ptr, now, NULL,
-				slurmctld_conf.slurm_user_id);
+				slurm_conf.slurm_user_id);
 		}
 	}
 }

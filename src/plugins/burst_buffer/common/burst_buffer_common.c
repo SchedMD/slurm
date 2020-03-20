@@ -441,8 +441,8 @@ char *bb_handle_job_script(job_record_t *job_ptr, bb_job_t *bb_job)
 	}
 
 	xstrfmtcat(script, "%s/hash.%d/job.%u/script",
-		   slurmctld_conf.state_save_location, (job_ptr->job_id % 10),
-		   job_ptr->job_id);
+	           slurm_conf.state_save_location, (job_ptr->job_id % 10),
+	           job_ptr->job_id);
 
 	return script;
 }
@@ -1402,7 +1402,7 @@ extern int bb_post_persist_create(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
 
 	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 	resv.assocs = bb_alloc->assocs;
-	resv.cluster = slurmctld_conf.cluster_name;
+	resv.cluster = slurm_conf.cluster_name;
 	resv.name = bb_alloc->name;
 	resv.id = bb_alloc->id;
 	resv.time_start = bb_alloc->create_time;
@@ -1470,7 +1470,7 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 
 	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 	resv.assocs = bb_alloc->assocs;
-	resv.cluster = slurmctld_conf.cluster_name;
+	resv.cluster = slurm_conf.cluster_name;
 	resv.name = bb_alloc->name;
 	resv.id = bb_alloc->id;
 	resv.time_end = time(NULL);

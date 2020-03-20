@@ -125,8 +125,7 @@ int main(int argc, char **argv)
 	slurm_conf_init(NULL);
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	if (slurmctld_conf.fed_params &&
-	    strstr(slurmctld_conf.fed_params, "fed_display"))
+	if (xstrstr(slurm_conf.fed_params, "fed_display"))
 		federation_flag = true;
 
 	if (getenv ("SCONTROL_ALL"))

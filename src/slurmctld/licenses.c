@@ -68,7 +68,7 @@ static void _licenses_print(char *header, List licenses, job_record_t *job_ptr)
 
 	if (licenses == NULL)
 		return;
-	if ((slurmctld_conf.debug_flags & DEBUG_FLAG_LICENSE) == 0)
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_LICENSE))
 		return;
 
 	iter = list_iterator_create(licenses);

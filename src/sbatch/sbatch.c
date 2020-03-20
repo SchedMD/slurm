@@ -422,7 +422,7 @@ static int _job_wait(uint32_t job_id)
 		 * run, complete quickly, and be purged from slurmctld before
 		 * we've woken up and queried the job again.
 		 */
-		if ((sleep_time < (slurmctld_conf.min_job_age / 2)) &&
+		if ((sleep_time < (slurm_conf.min_job_age / 2)) &&
 		    (sleep_time < MAX_WAIT_SLEEP_TIME))
 			sleep_time *= 4;
 

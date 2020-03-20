@@ -1168,7 +1168,7 @@ static inline void _handle_listen_event(con_mgr_t *mgr, int fd,
 static void _handle_event_pipe(con_mgr_t *mgr, const struct pollfd *fds_ptr,
 			       const char *tag, const char *name)
 {
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_NET) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
 		char *flags = poll_revents_to_str(fds_ptr->revents);
 
 		log_flag(NET, "%s: [%s] signal pipe %s flags:%s",
@@ -1222,7 +1222,7 @@ static inline void _poll(con_mgr_t *mgr, poll_args_t *args, List fds,
 			_handle_event_pipe(mgr, fds_ptr, tag, "CHANGE_EVENT");
 		else if ((con = list_find_first(fds, _find_by_fd,
 						&fds_ptr->fd))) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_NET) {
+			if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
 				char *flags = poll_revents_to_str(
 					fds_ptr->revents);
 				log_flag(NET, "%s: [%s->%s] poll event detect flags:%s",

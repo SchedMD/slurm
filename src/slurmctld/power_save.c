@@ -712,7 +712,7 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id)
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
 		setpgid(0, 0);
-		setenv("SLURM_CONF", slurmctld_conf.slurm_conf, 1);
+		setenv("SLURM_CONF", slurm_conf.slurm_conf, 1);
 		if (job_id)
 			setenv("SLURM_JOB_ID", job_id_str, 1);
 		execv(prog, argv);
@@ -846,28 +846,28 @@ static void _clear_power_config(void)
  */
 static int _init_power_config(void)
 {
-	last_config     = slurmctld_conf.last_update;
+	last_config = slurm_conf.last_update;
 	last_work_scan  = 0;
 	last_log	= 0;
-	idle_time       = slurmctld_conf.suspend_time - 1;
-	suspend_rate    = slurmctld_conf.suspend_rate;
-	resume_timeout  = slurmctld_conf.resume_timeout;
-	resume_rate     = slurmctld_conf.resume_rate;
-	slurmd_timeout  = slurmctld_conf.slurmd_timeout;
-	suspend_timeout = slurmctld_conf.suspend_timeout;
+	idle_time = slurm_conf.suspend_time - 1;
+	suspend_rate = slurm_conf.suspend_rate;
+	resume_timeout = slurm_conf.resume_timeout;
+	resume_rate = slurm_conf.resume_rate;
+	slurmd_timeout = slurm_conf.slurmd_timeout;
+	suspend_timeout = slurm_conf.suspend_timeout;
 	_clear_power_config();
-	if (slurmctld_conf.suspend_program)
-		suspend_prog = xstrdup(slurmctld_conf.suspend_program);
-	if (slurmctld_conf.resume_fail_program)
-		resume_fail_prog = xstrdup(slurmctld_conf.resume_fail_program);
-	if (slurmctld_conf.resume_program)
-		resume_prog = xstrdup(slurmctld_conf.resume_program);
-	if (slurmctld_conf.suspend_exc_nodes)
-		exc_nodes = xstrdup(slurmctld_conf.suspend_exc_nodes);
-	if (slurmctld_conf.suspend_exc_parts)
-		exc_parts = xstrdup(slurmctld_conf.suspend_exc_parts);
+	if (slurm_conf.suspend_program)
+		suspend_prog = xstrdup(slurm_conf.suspend_program);
+	if (slurm_conf.resume_fail_program)
+		resume_fail_prog = xstrdup(slurm_conf.resume_fail_program);
+	if (slurm_conf.resume_program)
+		resume_prog = xstrdup(slurm_conf.resume_program);
+	if (slurm_conf.suspend_exc_nodes)
+		exc_nodes = xstrdup(slurm_conf.suspend_exc_nodes);
+	if (slurm_conf.suspend_exc_parts)
+		exc_parts = xstrdup(slurm_conf.suspend_exc_parts);
 
-	idle_on_node_suspend = xstrcasestr(slurmctld_conf.slurmctld_params,
+	idle_on_node_suspend = xstrcasestr(slurm_conf.slurmctld_params,
 					   "idle_on_node_suspend");
 
 	if (idle_time < 0) {	/* not an error */
@@ -905,7 +905,7 @@ static int _init_power_config(void)
 		return -1;
 	}
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_POWER_SAVE)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_POWER_SAVE)
 		power_save_debug = true;
 	else
 		power_save_debug = false;
@@ -1032,7 +1032,7 @@ static void *_init_power_save(void *arg)
 
 		_reap_procs();
 
-		if ((last_config != slurmctld_conf.last_update) &&
+		if ((last_config != slurm_conf.last_update) &&
 		    (_init_power_config())) {
 			info("power_save mode has been disabled due to "
 			     "configuration changes");

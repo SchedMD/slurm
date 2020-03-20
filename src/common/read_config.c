@@ -100,10 +100,10 @@ strong_alias(get_extra_conf_path, slurm_get_extra_conf_path);
 strong_alias(sort_key_pairs, slurm_sort_key_pairs);
 
 /*
- * Instantiation of the "extern slurm_conf_t slurmctld_conf" and
+ * Instantiation of the "extern slurm_conf_t slurm_conf" and
  * "bool ignore_state_errors" found in slurmctld.h
  */
-slurm_conf_t slurmctld_conf;
+slurm_conf_t slurm_conf;
 bool ignore_state_errors = false;
 
 #ifndef NDEBUG
@@ -112,7 +112,7 @@ uint16_t drop_priv_flag = 0;
 
 static pthread_mutex_t conf_lock = PTHREAD_MUTEX_INITIALIZER;
 static s_p_hashtbl_t *conf_hashtbl = NULL;
-static slurm_conf_t *conf_ptr = &slurmctld_conf;
+static slurm_conf_t *conf_ptr = &slurm_conf;
 static bool conf_initialized = false;
 static s_p_hashtbl_t *default_frontend_tbl;
 static s_p_hashtbl_t *default_nodename_tbl;
@@ -3229,7 +3229,7 @@ slurm_conf_init(const char *file_name)
 	/*
 	 * Ensure this determination is propagated throughout. A number of
 	 * other internal functions will call getenv("SLURM_CONF") rather
-	 * than use slurmctld_conf.slurm_conf, and we want to ensure they
+	 * than use slurm_conf.slurm_conf, and we want to ensure they
 	 * don't need to make similar decisions on where the configs live.
 	 */
 	setenv("SLURM_CONF", config_file, 1);

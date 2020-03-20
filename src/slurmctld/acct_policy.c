@@ -4366,7 +4366,7 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 		return SLURM_ERROR;
 	}
 
-	if (sched_update != slurmctld_conf.last_update)
+	if (sched_update != slurm_conf.last_update)
 		priority_flags = slurm_get_priority_flags();
 
 	/*
@@ -4818,7 +4818,7 @@ extern time_t acct_policy_get_preemptable_time(job_record_t *job_ptr)
 	acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 	min1 = (qos_ptr_1) ? qos_ptr_1->preempt_exempt_time : INFINITE;
 	min2 = (qos_ptr_2) ? qos_ptr_2->preempt_exempt_time : INFINITE;
-	conf_min = slurmctld_conf.preempt_exempt_time;
+	conf_min = slurm_conf.preempt_exempt_time;
 
 	/* priority: min1 > min2 > conf_min. INFINITE means none. */
 	if (min1 != INFINITE)

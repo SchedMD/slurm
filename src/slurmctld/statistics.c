@@ -82,8 +82,8 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			pack_time(last_proc_req_start, buffer);
 
 			slurm_mutex_lock(&slurmctld_config.thread_count_lock);
-			debug3("%s: server_thread_count = %u", __func__,
-			       slurmctld_config.server_thread_count);
+			debug3("%s: server_thread_count = %u",
+			       __func__, slurmctld_config.server_thread_count);
 			pack32(slurmctld_config.server_thread_count, buffer);
 			slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 
@@ -152,8 +152,8 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			pack_time(last_proc_req_start, buffer);
 
 			slurm_mutex_lock(&slurmctld_config.thread_count_lock);
-			debug3("%s: server_thread_count = %u", __func__,
-			       slurmctld_config.server_thread_count);
+			debug3("%s: server_thread_count = %u",
+			       __func__, slurmctld_config.server_thread_count);
 			pack32(slurmctld_config.server_thread_count, buffer);
 			slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 

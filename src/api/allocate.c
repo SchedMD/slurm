@@ -551,7 +551,7 @@ int slurm_job_will_run(job_desc_msg_t *req)
 	if (working_cluster_rec)
 		cluster_name = working_cluster_rec->name;
 	else
-		cluster_name = slurmctld_conf.cluster_name;
+		cluster_name = slurm_conf.cluster_name;
 	if (!slurm_load_federation(&ptr) &&
 	    cluster_in_federation(ptr, cluster_name))
 		rc = _fed_job_will_run(req, &will_run_resp, ptr);
@@ -796,7 +796,7 @@ extern int slurm_allocation_lookup(uint32_t jobid,
 
 	memset(&req, 0, sizeof(req));
 	req.job_id = jobid;
-	req.req_cluster  = slurmctld_conf.cluster_name;
+	req.req_cluster = slurm_conf.cluster_name;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO;
@@ -843,7 +843,7 @@ extern int slurm_het_job_lookup(uint32_t jobid, List *info)
 
 	memset(&req, 0, sizeof(req));
 	req.job_id = jobid;
-	req.req_cluster  = slurmctld_conf.cluster_name;
+	req.req_cluster = slurm_conf.cluster_name;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_HET_JOB_ALLOC_INFO;

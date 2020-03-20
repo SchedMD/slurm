@@ -77,7 +77,7 @@ static void *_heartbeat_thread(void *no_data)
 	 * Have it happen at least every 30 seconds if the timeout is quite
 	 * large.
 	 */
-	int beat = MIN(slurmctld_conf.slurmctld_timeout / 4, 30);
+	int beat = MIN(slurm_conf.slurmctld_timeout / 4, 30);
 	time_t now;
 	uint64_t nl;
 	struct timespec ts = {0, 0};
@@ -97,7 +97,7 @@ static void *_heartbeat_thread(void *no_data)
 		 * StateSaveLocation and runs reconfigure.
 		 */
 		reg_file = xstrdup_printf("%s/heartbeat",
-					  slurmctld_conf.state_save_location);
+		                          slurm_conf.state_save_location);
 		new_file = xstrdup_printf("%s.new", reg_file);
 
 		fd = open(new_file, O_CREAT|O_WRONLY|O_TRUNC|O_CLOEXEC, 0600);
@@ -149,7 +149,7 @@ delay:
 
 void heartbeat_start(void)
 {
-	if (slurmctld_conf.control_cnt < 2) {
+	if (slurm_conf.control_cnt < 2) {
 		debug("No backup controllers, not launching heartbeat.");
 		return;
 	}
@@ -180,7 +180,7 @@ time_t get_last_heartbeat(int *server_inx)
 	uint64_t inx;
 
 	file = xstrdup_printf("%s/heartbeat",
-			      slurmctld_conf.state_save_location);
+	                      slurm_conf.state_save_location);
 
 	/*
 	 * Retry the open() in case the primary is rearranging things

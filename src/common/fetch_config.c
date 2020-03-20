@@ -397,7 +397,7 @@ extern void load_config_response_msg(config_response_msg_t *msg, int flags)
 	_load_conf(dir, "plugstack.conf", &msg->plugstack_config);
 	_load_conf(dir, "topology.conf", &msg->topology_config);
 
-	msg->slurmd_spooldir = xstrdup(slurmctld_conf.slurmd_spooldir);
+	msg->slurmd_spooldir = xstrdup(slurm_conf.slurmd_spooldir);
 
 	xfree(dir);
 }

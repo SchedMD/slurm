@@ -146,15 +146,15 @@ static void _set_response_cluster_rec(void)
 		return;
 
 	response_cluster_rec = xmalloc(sizeof(slurmdb_cluster_rec_t));
-	response_cluster_rec->name = xstrdup(slurmctld_conf.cluster_name);
-	if (slurmctld_conf.slurmctld_addr) {
+	response_cluster_rec->name = xstrdup(slurm_conf.cluster_name);
+	if (slurm_conf.slurmctld_addr) {
 		response_cluster_rec->control_host =
-			xstrdup(slurmctld_conf.slurmctld_addr);
+			xstrdup(slurm_conf.slurmctld_addr);
 	} else {
 		response_cluster_rec->control_host =
-			xstrdup(slurmctld_conf.control_addr[0]);
+			xstrdup(slurm_conf.control_addr[0]);
 	}
-	response_cluster_rec->control_port = slurmctld_conf.slurmctld_port;
+	response_cluster_rec->control_port = slurm_conf.slurmctld_port;
 	response_cluster_rec->rpc_version = SLURM_PROTOCOL_VERSION;
 	response_cluster_rec->plugin_id_select = select_get_plugin_id();
 }
@@ -182,15 +182,15 @@ static void _stat_slurm_dirs(void)
 	 * _is_valid_path() instead
 	 */
 
-	if ((stat(slurmctld_conf.plugstack, &stat_buf) == 0) &&
+	if ((stat(slurm_conf.plugstack, &stat_buf) == 0) &&
 	    (stat_buf.st_mode & S_IWOTH)) {
 		problem_dir = "PlugStack";
 	}
-	if ((stat(slurmctld_conf.slurmd_spooldir, &stat_buf) == 0) &&
+	if ((stat(slurm_conf.slurmd_spooldir, &stat_buf) == 0) &&
 	    (stat_buf.st_mode & S_IWOTH)) {
 		problem_dir = "SlurmdSpoolDir";
 	}
-	if ((stat(slurmctld_conf.state_save_location, &stat_buf) == 0) &&
+	if ((stat(slurm_conf.state_save_location, &stat_buf) == 0) &&
 	    (stat_buf.st_mode & S_IWOTH)) {
 		problem_dir = "StateSaveLocation";
 	}
@@ -418,18 +418,16 @@ static void _set_slurmd_addr(void)
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if (IS_NODE_CLOUD(node_ptr)) {
-                    if (slurmctld_conf.suspend_time < 1 ||
-                        slurmctld_conf.resume_program == NULL ||
-                        slurmctld_conf.suspend_program == NULL)
-                            error("%s: Node %s configured with CLOUD state but "
-                                  "missing any of SuspendTime, SuspendProgram "
-                                  "or ResumeProgram options",__func__,
-				  node_ptr->name);
-		    if (IS_NODE_POWER_SAVE(node_ptr))
-			continue;
+			if (slurm_conf.suspend_time < 1 ||
+			    slurm_conf.resume_program == NULL ||
+			    slurm_conf.suspend_program == NULL)
+				error("%s: Node %s configured with CLOUD state but missing any of SuspendTime, SuspendProgram or ResumeProgram options",
+				      __func__, node_ptr->name);
+			if (IS_NODE_POWER_SAVE(node_ptr))
+				continue;
 		}
 		if (node_ptr->port == 0)
-			node_ptr->port = slurmctld_conf.slurmd_port;
+			node_ptr->port = slurm_conf.slurmd_port;
 		slurm_set_addr(&node_ptr->slurm_addr, node_ptr->port,
 			       node_ptr->comm_name);
 		if (node_ptr->slurm_addr.sin_port)
@@ -440,7 +438,7 @@ static void _set_slurmd_addr(void)
 		xfree(node_ptr->reason);
 		node_ptr->reason = xstrdup("NO NETWORK ADDRESS FOUND");
 		node_ptr->reason_time = time(NULL);
-		node_ptr->reason_uid = slurmctld_conf.slurm_user_id;
+		node_ptr->reason_uid = slurm_conf.slurm_user_id;
 	}
 
 	END_TIMER2("_set_slurmd_addr");
@@ -545,7 +543,7 @@ static void _build_bitmaps(void)
 static int _init_all_slurm_conf(void)
 {
 	int error_code;
-	char *conf_name = xstrdup(slurmctld_conf.slurm_conf);
+	char *conf_name = xstrdup(slurm_conf.slurm_conf);
 
 	slurm_conf_reinit(conf_name);
 	xfree(conf_name);
@@ -600,7 +598,7 @@ static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
 			xfree(node_rec->reason);
 			node_rec->reason = xstrdup(down->reason);
 			node_rec->reason_time = time(NULL);
-			node_rec->reason_uid = slurmctld_conf.slurm_user_id;
+			node_rec->reason_uid = slurm_conf.slurm_user_id;
 		}
 		free(alias);
 	}
@@ -775,7 +773,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		part_ptr->preempt_mode = part->preempt_mode;
 
 	if (part->disable_root_jobs == NO_VAL16) {
-		if (slurmctld_conf.conf_flags & CTL_CONF_DRJ)
+		if (slurm_conf.conf_flags & CTL_CONF_DRJ)
 			part_ptr->flags |= PART_FLAG_NO_ROOT;
 	} else if (part->disable_root_jobs) {
 		part_ptr->flags |= PART_FLAG_NO_ROOT;
@@ -1106,17 +1104,17 @@ int read_slurm_conf(int recover, bool reconfig)
 	bool do_reorder_nodes = false;
 	List old_part_list = NULL;
 	char *old_def_part_name = NULL;
-	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
-	char *old_bb_type         = xstrdup(slurmctld_conf.bb_type);
-	char *old_cred_type       = xstrdup(slurmctld_conf.cred_type);
-	uint16_t old_preempt_mode = slurmctld_conf.preempt_mode;
-	char *old_preempt_type    = xstrdup(slurmctld_conf.preempt_type);
-	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
-	char *old_select_type     = xstrdup(slurmctld_conf.select_type);
-	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
-	char *state_save_dir      = xstrdup(slurmctld_conf.state_save_location);
+	char *old_auth_type = xstrdup(slurm_conf.authtype);
+	char *old_bb_type = xstrdup(slurm_conf.bb_type);
+	char *old_cred_type = xstrdup(slurm_conf.cred_type);
+	uint16_t old_preempt_mode = slurm_conf.preempt_mode;
+	char *old_preempt_type = xstrdup(slurm_conf.preempt_type);
+	char *old_sched_type = xstrdup(slurm_conf.schedtype);
+	char *old_select_type = xstrdup(slurm_conf.select_type);
+	char *old_switch_type = xstrdup(slurm_conf.switch_type);
+	char *state_save_dir = xstrdup(slurm_conf.state_save_location);
 	char *mpi_params;
-	uint16_t old_select_type_p = slurmctld_conf.select_type_param;
+	uint16_t old_select_type_p = slurm_conf.select_type_param;
 	bool cgroup_mem_confinement = false;
 
 	/* initialization */
@@ -1168,9 +1166,9 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	cgroup_mem_confinement = xcgroup_mem_cgroup_job_confinement();
 
-	if (slurmctld_conf.job_acct_oom_kill && cgroup_mem_confinement)
+	if (slurm_conf.job_acct_oom_kill && cgroup_mem_confinement)
 		fatal("Jobs memory is being constrained by both TaskPlugin cgroup and JobAcctGather plugin. This enables two incompatible memory enforcement mechanisms, one of them must be disabled.");
-	else if (slurmctld_conf.job_acct_oom_kill)
+	else if (slurm_conf.job_acct_oom_kill)
 		info("Memory enforcing by using JobAcctGather's mechanism is discouraged, task/cgroup is recommended where available.");
 	else if (!cgroup_mem_confinement)
 		info("No memory enforcing mechanism configured.");
@@ -1222,7 +1220,7 @@ int read_slurm_conf(int recover, bool reconfig)
 			dump_config_state_lite();
 	}
 	update_logging();
-	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
+	g_slurm_jobcomp_init(slurm_conf.job_comp_loc);
 	if (slurm_sched_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("Failed to initialize sched plugin");
@@ -1310,18 +1308,18 @@ int read_slurm_conf(int recover, bool reconfig)
 			error_code = MAX(error_code, rc);  /* not fatal */
 		}
 		if (old_part_list && ((recover > 1) ||
-		    (slurmctld_conf.reconfig_flags & RECONFIG_KEEP_PART_INFO))) {
+		    (slurm_conf.reconfig_flags & RECONFIG_KEEP_PART_INFO))) {
 			info("restoring original partition state");
 			rc = _restore_part_state(old_part_list,
-						 old_def_part_name,
-						 slurmctld_conf.reconfig_flags);
+			                         old_def_part_name,
+			                         slurm_conf.reconfig_flags);
 			error_code = MAX(error_code, rc);  /* not fatal */
-		} else if (old_part_list && (slurmctld_conf.reconfig_flags &
-					     RECONFIG_KEEP_PART_STAT)) {
+		} else if (old_part_list && (slurm_conf.reconfig_flags &
+		                             RECONFIG_KEEP_PART_STAT)) {
 			info("restoring original partition state only (up/down)");
 			rc = _restore_part_state(old_part_list,
-						 old_def_part_name,
-						 slurmctld_conf.reconfig_flags);
+			                         old_def_part_name,
+			                         slurm_conf.reconfig_flags);
 			error_code = MAX(error_code, rc);  /* not fatal */
 		}
 		load_last_job_id();
@@ -1377,14 +1375,14 @@ int read_slurm_conf(int recover, bool reconfig)
 	reserve_port_config(mpi_params);
 	xfree(mpi_params);
 
-	if (license_update(slurmctld_conf.licenses) != SLURM_SUCCESS) {
+	if (license_update(slurm_conf.licenses) != SLURM_SUCCESS) {
 		if (test_config) {
 			error("Invalid Licenses value: %s",
-			      slurmctld_conf.licenses);
+			      slurm_conf.licenses);
 			test_config_rc = 1;
 		} else {
 			fatal("Invalid Licenses value: %s",
-			      slurmctld_conf.licenses);
+			      slurm_conf.licenses);
 		}
 	}
 
@@ -1443,56 +1441,56 @@ int read_slurm_conf(int recover, bool reconfig)
 	list_sort(config_list, &list_compare_config);
 
 	/* Update plugins as possible */
-	if (xstrcmp(old_auth_type, slurmctld_conf.authtype)) {
-		xfree(slurmctld_conf.authtype);
-		slurmctld_conf.authtype = old_auth_type;
+	if (xstrcmp(old_auth_type, slurm_conf.authtype)) {
+		xfree(slurm_conf.authtype);
+		slurm_conf.authtype = old_auth_type;
 		rc =  ESLURM_INVALID_AUTHTYPE_CHANGE;
 	}
 
-	if (xstrcmp(old_bb_type, slurmctld_conf.bb_type)) {
-		xfree(slurmctld_conf.bb_type);
-		slurmctld_conf.bb_type = old_bb_type;
+	if (xstrcmp(old_bb_type, slurm_conf.bb_type)) {
+		xfree(slurm_conf.bb_type);
+		slurm_conf.bb_type = old_bb_type;
 		old_bb_type = NULL;
 		rc =  ESLURM_INVALID_BURST_BUFFER_CHANGE;
 	}
 
-	if (xstrcmp(old_cred_type, slurmctld_conf.cred_type)) {
-		xfree(slurmctld_conf.cred_type);
-		slurmctld_conf.cred_type = old_cred_type;
+	if (xstrcmp(old_cred_type, slurm_conf.cred_type)) {
+		xfree(slurm_conf.cred_type);
+		slurm_conf.cred_type = old_cred_type;
 		old_cred_type = NULL;
 		rc = ESLURM_INVALID_CRED_TYPE_CHANGE;
 	}
 
-	if (xstrcmp(old_sched_type, slurmctld_conf.schedtype)) {
-		xfree(slurmctld_conf.schedtype);
-		slurmctld_conf.schedtype = old_sched_type;
+	if (xstrcmp(old_sched_type, slurm_conf.schedtype)) {
+		xfree(slurm_conf.schedtype);
+		slurm_conf.schedtype = old_sched_type;
 		old_sched_type = NULL;
 		rc =  ESLURM_INVALID_SCHEDTYPE_CHANGE;
 	}
 
-	if (xstrcmp(old_select_type, slurmctld_conf.select_type)) {
-		xfree(slurmctld_conf.select_type);
-		slurmctld_conf.select_type = old_select_type;
+	if (xstrcmp(old_select_type, slurm_conf.select_type)) {
+		xfree(slurm_conf.select_type);
+		slurm_conf.select_type = old_select_type;
 		old_select_type = NULL;
 		rc =  ESLURM_INVALID_SELECTTYPE_CHANGE;
 	}
 
-	if (xstrcmp(old_switch_type, slurmctld_conf.switch_type)) {
-		xfree(slurmctld_conf.switch_type);
-		slurmctld_conf.switch_type = old_switch_type;
+	if (xstrcmp(old_switch_type, slurm_conf.switch_type)) {
+		xfree(slurm_conf.switch_type);
+		slurm_conf.switch_type = old_switch_type;
 		old_switch_type = NULL;
 		rc = ESLURM_INVALID_SWITCHTYPE_CHANGE;
 	}
 
-	if ((slurmctld_conf.control_cnt < 2) ||
-	    (slurmctld_conf.control_machine[1] == NULL))
+	if ((slurm_conf.control_cnt < 2) ||
+	    (slurm_conf.control_machine[1] == NULL))
 		info("%s: backup_controller not specified", __func__);
 
 	error_code = MAX(error_code, rc);	/* not fatal */
 
-	if (xstrcmp(old_preempt_type, slurmctld_conf.preempt_type)) {
+	if (xstrcmp(old_preempt_type, slurm_conf.preempt_type)) {
 		info("Changing PreemptType from %s to %s",
-		     old_preempt_type, slurmctld_conf.preempt_type);
+		     old_preempt_type, slurm_conf.preempt_type);
 		(void) slurm_preempt_fini();
 		if (slurm_preempt_init() != SLURM_SUCCESS) {
 			if (test_config) {
@@ -1517,7 +1515,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		rc = node_features_g_reconfig();
 		error_code = MAX(error_code, rc); /* not fatal */
 	}
-	rc = _preserve_select_type_param(&slurmctld_conf, old_select_type_p);
+	rc = _preserve_select_type_param(&slurm_conf, old_select_type_p);
 	error_code = MAX(error_code, rc);	/* not fatal */
 	if (reconfig)
 		rc =  bb_g_reconfig();
@@ -1540,7 +1538,7 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	_set_response_cluster_rec();
 
-	slurmctld_conf.last_update = time(NULL);
+	slurm_conf.last_update = time(NULL);
 end_it:
 	xfree(old_auth_type);
 	xfree(old_bb_type);
@@ -1820,7 +1818,7 @@ static void _gres_reconfig(bool reconfig)
 				node_ptr->config_ptr->threads,
 				node_ptr->config_ptr->cores,
 				node_ptr->config_ptr->sockets,
-				slurmctld_conf.conf_flags & CTL_CONF_OR, NULL);
+				slurm_conf.conf_flags & CTL_CONF_OR, NULL);
 		}
 	}
 }
@@ -1931,7 +1929,7 @@ static int _restore_node_state(int recover,
 	hostset_t hs = NULL;
 	bool power_save_mode = false;
 
-	if (slurmctld_conf.suspend_program && slurmctld_conf.resume_program)
+	if (slurm_conf.suspend_program && slurm_conf.resume_program)
 		power_save_mode = true;
 
 	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
@@ -2894,11 +2892,11 @@ extern int dump_config_state_lite(void)
 	/* write header: version, time */
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
-	packstr(slurmctld_conf.accounting_storage_type, buffer);
+	packstr(slurm_conf.accounting_storage_type, buffer);
 
 	/* write the buffer to file */
 	reg_file = xstrdup_printf("%s/last_config_lite",
-				  slurmctld_conf.state_save_location);
+	                          slurm_conf.state_save_location);
 	old_file = xstrdup_printf("%s.old", reg_file);
 	new_file = xstrdup_printf("%s.new", reg_file);
 
@@ -2959,7 +2957,7 @@ extern int load_config_state_lite(void)
 
 	/* Always ignore .old file */
 	state_file = xstrdup_printf("%s/last_config_lite",
-				    slurmctld_conf.state_save_location);
+	                            slurm_conf.state_save_location);
 
 	//info("looking at the %s file", state_file);
 	if (!(buffer = create_mmap_buf(state_file))) {
@@ -2988,11 +2986,11 @@ extern int load_config_state_lite(void)
 		safe_unpackstr_xmalloc(&last_accounting_storage_type,
 				       &uint32_tmp, buffer);
 	}
-	xassert(slurmctld_conf.accounting_storage_type);
+	xassert(slurm_conf.accounting_storage_type);
 
 	if (last_accounting_storage_type
 	    && !xstrcmp(last_accounting_storage_type,
-		        slurmctld_conf.accounting_storage_type))
+	                slurm_conf.accounting_storage_type))
 		slurmctld_init_db = 0;
 	xfree(last_accounting_storage_type);
 

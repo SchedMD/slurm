@@ -1592,7 +1592,7 @@ static int _attempt_backfill(void)
 	job_record_t *reject_array_job = NULL;
 	part_record_t *reject_array_part = NULL;
 	uint32_t start_time;
-	time_t config_update = slurmctld_conf.last_update;
+	time_t config_update = slurm_conf.last_update;
 	time_t part_update = last_part_update;
 	struct timeval start_tv;
 	uint32_t test_array_job_id = 0;
@@ -1740,7 +1740,7 @@ static int _attempt_backfill(void)
 				     job_test_count, TIME_STR);
 			}
 			if ((_yield_locks(yield_sleep) && !backfill_continue) ||
-			    (slurmctld_conf.last_update != config_update) ||
+			    (slurm_conf.last_update != config_update) ||
 			    (last_part_update != part_update)) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: system state changed, "
@@ -2111,7 +2111,7 @@ next_task:
 				     job_test_count, test_time_count, TIME_STR);
 			}
 			if ((_yield_locks(yield_sleep) && !backfill_continue) ||
-			    (slurmctld_conf.last_update != config_update) ||
+			    (slurm_conf.last_update != config_update) ||
 			    (last_part_update != part_update)) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: system state changed, "
@@ -2722,7 +2722,7 @@ skip_start:
 				assoc_mgr_tres_weighted(
 					tres_req_cnt,
 					job_ptr->part_ptr->billing_weights,
-					slurmctld_conf.priority_flags, true);
+					slurm_conf.priority_flags, true);
 
 			if (!acct_policy_job_runnable_post_select(job_ptr,
 							  tres_req_cnt, true)) {
@@ -3418,9 +3418,9 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 
 		tres_req_cnt[TRES_ARRAY_BILLING] =
 			assoc_mgr_tres_weighted(
-					tres_req_cnt,
-					job_ptr->part_ptr->billing_weights,
-					slurmctld_conf.priority_flags, true);
+				tres_req_cnt,
+				job_ptr->part_ptr->billing_weights,
+				slurm_conf.priority_flags, true);
 
 		if (acct_policy_job_runnable_pre_select(job_ptr, true) &&
 		    acct_policy_job_runnable_post_select(job_ptr,

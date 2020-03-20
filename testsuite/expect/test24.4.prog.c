@@ -454,7 +454,7 @@ int main (int argc, char **argv)
 	shares_response_msg_t resp;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
-	xfree(slurmctld_conf.priority_type);
+	xfree(slurm_conf.priority_type);
 	//logopt.stderr_level += 5;
 	logopt.prefix_level = 1;
 	log_alter(logopt, 0, NULL);
@@ -487,8 +487,8 @@ int main (int argc, char **argv)
 
 	/* we don't want to do any decay here so make the save state
 	 * to /dev/null */
-	xfree(slurmctld_conf.state_save_location);
-	slurmctld_conf.state_save_location = "/dev/null";
+	xfree(slurm_conf.state_save_location);
+	slurm_conf.state_save_location = "/dev/null";
 	/* now set up the association tree */
 	_setup_assoc_list();
 	/* now set up the job list */

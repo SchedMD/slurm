@@ -98,7 +98,7 @@ static void _print_tres(print_field_t *field, uint64_t *tres_cnts,
 
 extern int process(shares_response_msg_t *resp, uint16_t options)
 {
-	uint32_t flags = slurmctld_conf.priority_flags;
+	uint32_t flags = slurm_conf.priority_flags;
 	int rc = SLURM_SUCCESS, i;
 	assoc_shares_object_t *share = NULL;
 	ListIterator itr = NULL;

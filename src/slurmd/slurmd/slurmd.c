@@ -1115,7 +1115,7 @@ _read_config(void)
 	slurm_conf_unlock();
 
 	cgroup_mem_confinement = xcgroup_mem_cgroup_job_confinement();
-	if (slurmctld_conf.job_acct_oom_kill && cgroup_mem_confinement)
+	if (slurm_conf.job_acct_oom_kill && cgroup_mem_confinement)
 		fatal("Jobs memory is being constrained by both TaskPlugin cgroup and JobAcctGather plugin. This enables two incompatible memory enforcement mechanisms, one of them must be disabled.");
 }
 

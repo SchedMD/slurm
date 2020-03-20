@@ -2220,7 +2220,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		/* It is always 0 for front end systems */
 		node_id = nodelist_find(req->nodes, conf->node_name);
 #endif
-		if (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
+		if (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
 			_make_prolog_mem_container(msg);
 
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
@@ -2269,7 +2269,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		}
 
 		if ((rc == SLURM_SUCCESS) &&
-		    (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
+		    (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
 			rc = _spawn_prolog_stepd(msg);
 
 		/*
@@ -2291,7 +2291,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	 * prolog will never appear to stop running.
 	 */
 	while (alt_rc != SLURM_SUCCESS) {
-		if (!(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
+		if (!(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
 			alt_rc = _notify_slurmctld_prolog_fini(
 				req->job_id, rc);
 		else
@@ -2377,7 +2377,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		goto done;
 	}
 
-	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC) {
+	if (slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) {
 		struct timespec ts = {0, 0};
 		struct timeval now;
 		int retry_cnt = 0;
@@ -5771,13 +5771,13 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	bool prolog_fini = false;
 	bool script_lock = false;
 
-	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
+	if (slurm_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
 		slurm_mutex_lock(&prolog_serial_mutex);
 		script_lock = true;
 	}
 
 	timer_struct.job_id      = job_env->jobid;
-	timer_struct.msg_timeout = slurmctld_conf.msg_timeout;
+	timer_struct.msg_timeout = slurm_conf.msg_timeout;
 	timer_struct.prolog_fini = &prolog_fini;
 	timer_struct.timer_cond  = &timer_cond;
 	timer_struct.timer_mutex = &timer_mutex;
@@ -5797,7 +5797,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	diff_time = difftime(time(NULL), start_time);
 	info("%s: prolog with lock for job %u ran for %d seconds",
 	     __func__, job_env->jobid, diff_time);
-	if (diff_time >= (slurmctld_conf.msg_timeout / 2)) {
+	if (diff_time >= (slurm_conf.msg_timeout / 2)) {
 		info("prolog for job %u ran for %d seconds",
 		     job_env->jobid, diff_time);
 	}
@@ -5822,7 +5822,7 @@ _run_epilog(job_env_t *job_env)
 
 	_wait_for_job_running_prolog(job_env->jobid);
 
-	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
+	if (slurm_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
 		slurm_mutex_lock(&prolog_serial_mutex);
 		script_lock = true;
 	}
@@ -5830,7 +5830,7 @@ _run_epilog(job_env_t *job_env)
 	error_code = prep_epilog(job_env, NULL);
 
 	diff_time = difftime(time(NULL), start_time);
-	if (diff_time >= (slurmctld_conf.msg_timeout / 2)) {
+	if (diff_time >= (slurm_conf.msg_timeout / 2)) {
 		info("epilog for job %u ran for %d seconds",
 		     job_env->jobid, diff_time);
 	}

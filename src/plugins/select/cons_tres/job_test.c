@@ -355,7 +355,7 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	}
 	if (max_tasks_this_node == 0) {
 		*avail_cpus = 0;
-	} else if ((slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
+	} else if ((slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
 		   ((mc_ptr->ntasks_per_core == INFINITE16) ||
 		    (mc_ptr->ntasks_per_core == 0)) &&
 		   details_ptr && (details_ptr->min_gres_cpu == 0)) {

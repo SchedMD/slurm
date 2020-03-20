@@ -71,13 +71,12 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 			 bool is_epilog)
 {
 	char *name = is_epilog ? "epilog" : "prolog";
-	char *path = is_epilog ? slurmctld_conf.epilog :
-				 slurmctld_conf.prolog;
+	char *path = is_epilog ? slurm_conf.epilog : slurm_conf.prolog;
 	char **env = _build_env(job_env, cred, is_epilog);
 	struct stat stat_buf;
 	int status = 0, rc;
 	uint32_t jobid = job_env->jobid;
-	int timeout = slurmctld_conf.prolog_epilog_timeout;
+	int timeout = slurm_conf.prolog_epilog_timeout;
 
 	if (timeout == NO_VAL16)
 		timeout = -1;
@@ -247,7 +246,7 @@ static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id)
 	 * leading to this timeout being huge. I suspect a 120-second cap is
 	 * meant here, but I'm leaving this behavior in place for the moment.
 	 */
-	timeout = MAX(slurmctld_conf.prolog_epilog_timeout, 120);
+	timeout = MAX(slurm_conf.prolog_epilog_timeout, 120);
 	if (waitpid_timeout(mode, cpid, &status, timeout) < 0) {
 		error("spank/%s timed out after %u secs", mode, timeout);
 		return SLURM_ERROR;

@@ -183,7 +183,7 @@ static void _print_jobs(struct gs_part *p_ptr)
 {
 	int i;
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GANG) {
 		info("gang:  part %s has %u jobs, %u shadows:",
 		     p_ptr->part_name, p_ptr->num_jobs, p_ptr->num_shadows);
 		for (i = 0; i < p_ptr->num_shadows; i++) {
@@ -209,14 +209,14 @@ static void _print_jobs(struct gs_part *p_ptr)
 
 static uint16_t _get_gr_type(void)
 {
-	if (slurmctld_conf.select_type_param & CR_CORE)
+	if (slurm_conf.select_type_param & CR_CORE)
 		return GS_CORE;
-	if (slurmctld_conf.select_type_param & CR_CPU) {
-		if (!xstrcmp(slurmctld_conf.task_plugin, "task/none"))
+	if (slurm_conf.select_type_param & CR_CPU) {
+		if (!xstrcmp(slurm_conf.task_plugin, "task/none"))
 			return GS_CPU;
 		return GS_CPU2;
 	}
-	if (slurmctld_conf.select_type_param & CR_SOCKET)
+	if (slurm_conf.select_type_param & CR_SOCKET)
 		return GS_SOCKET;
 
 	/* note that CR_MEMORY is node-level scheduling with
@@ -230,7 +230,7 @@ static uint16_t _get_part_gr_type(part_record_t *part_ptr)
 		if (part_ptr->cr_type & CR_CORE)
 			return GS_CORE;
 		if (part_ptr->cr_type & CR_CPU) {
-			if (!xstrcmp(slurmctld_conf.task_plugin, "task/none"))
+			if (!xstrcmp(slurm_conf.task_plugin, "task/none"))
 				return GS_CPU;
 			return GS_CPU2;
 		}
@@ -271,7 +271,7 @@ static void _load_phys_res_cnt(void)
 		gs_bits_per_node[bit_index++] = bit;
 	}
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GANG) {
 		for (i = 0; i < bit_index; i++) {
 			info("gang: _load_phys_res_cnt: bits_per_node[%d]=%u",
 			     i, gs_bits_per_node[i]);
@@ -553,7 +553,7 @@ static int _suspend_job(job_record_t *job_ptr)
 	rc = job_suspend(&msg, 0, -1, false, NO_VAL16);
 	/* job_suspend() returns ESLURM_DISABLED if job is already suspended */
 	if (rc == SLURM_SUCCESS) {
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
+		if (slurm_conf.debug_flags & DEBUG_FLAG_GANG)
 			info("gang: suspending %pJ", job_ptr);
 		else
 			debug("gang: suspending %pJ", job_ptr);
@@ -574,7 +574,7 @@ static void _resume_job(job_record_t *job_ptr)
 	msg.op = RESUME_JOB;
 	rc = job_suspend(&msg, 0, -1, false, NO_VAL16);
 	if (rc == SLURM_SUCCESS) {
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
+		if (slurm_conf.debug_flags & DEBUG_FLAG_GANG)
 			info("gang: resuming %pJ", job_ptr);
 		else
 			debug("gang: resuming %pJ", job_ptr);
@@ -1097,7 +1097,7 @@ static void _spawn_timeslicer_thread(void)
 /* Initialize data structures and start the gang scheduling thread */
 extern void gs_init(void)
 {
-	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
+	if (!(slurm_conf.preempt_mode & PREEMPT_MODE_GANG))
 		return;
 
 	if (timeslicer_thread_id)
@@ -1105,7 +1105,7 @@ extern void gs_init(void)
 
 	/* initialize global variables */
 	log_flag(GANG, "gang: entering gs_init");
-	timeslicer_seconds = slurmctld_conf.sched_time_slice;
+	timeslicer_seconds = slurm_conf.sched_time_slice;
 	gr_type = _get_gr_type();
 	preempt_job_list = list_create(xfree_ptr);
 
@@ -1126,7 +1126,7 @@ extern void gs_init(void)
 /* Terminate the gang scheduling thread and free its data structures */
 extern void gs_fini(void)
 {
-	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
+	if (!(slurm_conf.preempt_mode & PREEMPT_MODE_GANG))
 		return;
 
 	/* terminate the timeslicer thread */
@@ -1163,7 +1163,7 @@ extern void gs_job_start(job_record_t *job_ptr)
 	uint16_t job_sig_state;
 	char *part_name;
 
-	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
+	if (!(slurm_conf.preempt_mode & PREEMPT_MODE_GANG))
 		return;
 
 	log_flag(GANG, "gang: entering %s for %pJ", __func__, job_ptr);
@@ -1202,7 +1202,7 @@ extern void gs_wake_jobs(void)
 	job_record_t *job_ptr;
 	ListIterator job_iterator;
 
-	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
+	if (!(slurm_conf.preempt_mode & PREEMPT_MODE_GANG))
 		return;
 
 	if (!job_list)	/* no jobs */
@@ -1225,7 +1225,7 @@ extern void gs_job_fini(job_record_t *job_ptr)
 	struct gs_part *p_ptr;
 	char *part_name;
 
-	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
+	if (!(slurm_conf.preempt_mode & PREEMPT_MODE_GANG))
 		return;
 
 	log_flag(GANG, "gang: entering %s for %pJ", __func__, job_ptr);
@@ -1280,7 +1280,7 @@ extern void gs_reconfig(void)
 	job_record_t *job_ptr;
 	struct gs_job *j_ptr;
 
-	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
+	if (!(slurm_conf.preempt_mode & PREEMPT_MODE_GANG))
 		return;
 
 	if (!timeslicer_thread_id) {

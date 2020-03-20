@@ -1014,7 +1014,7 @@ static int _schedule(uint32_t job_limit)
 	}
 #endif
 
-	if (sched_update != slurmctld_conf.last_update) {
+	if (sched_update != slurm_conf.last_update) {
 		char *tmp_ptr;
 		char *sched_params = slurm_get_sched_params();
 		char *sched_type = slurm_get_sched_type();
@@ -1200,7 +1200,7 @@ static int _schedule(uint32_t job_limit)
 		}
 
 		xfree(sched_params);
-		sched_update = slurmctld_conf.last_update;
+		sched_update = slurm_conf.last_update;
 		info("SchedulerParameters=default_queue_depth=%d,"
 		     "max_rpc_cnt=%d,max_sched_time=%d,partition_job_depth=%d,"
 		     "sched_max_job_start=%d,sched_min_interval=%d",
@@ -1281,7 +1281,7 @@ static int _schedule(uint32_t job_limit)
 						part_ptr;
 					bit_and_not(avail_node_bitmap,
 						    part_ptr->node_bitmap);
-					if (slurmctld_conf.slurmctld_debug >=
+					if (slurm_conf.slurmctld_debug >=
 					    LOG_LEVEL_DEBUG) {
 						if (cg_part_str)
 							xstrcat(cg_part_str,
@@ -1960,9 +1960,9 @@ extern int sort_job_queue2(void *x, void *y)
 
 	/* The following block of code is designed to minimize run time in
 	 * typical configurations for this frequently executed function. */
-	if (config_update != slurmctld_conf.last_update) {
+	if (config_update != slurm_conf.last_update) {
 		preemption_enabled = slurm_preemption_enabled();
-		config_update = slurmctld_conf.last_update;
+		config_update = slurm_conf.last_update;
 	}
 	if (preemption_enabled) {
 		if (preempt_g_job_preempt_check(job_rec1, job_rec2))
@@ -2159,8 +2159,8 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 		slurm_free_job_launch_msg(launch_msg_ptr);
 		job_ptr->batch_flag = 1;	/* Allow repeated requeue */
 		job_ptr->details->begin_time = time(NULL) + 120;
-		job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id,
-			     true, false, 0);
+		job_complete(job_ptr->job_id, slurm_conf.slurm_user_id,
+		             true, false, 0);
 		return NULL;
 	}
 
@@ -2232,8 +2232,8 @@ job_failed:
 	job_ptr->state_reason = FAIL_SYSTEM;
 	slurm_free_job_launch_msg(launch_msg_ptr);
 	/* ignore the return as job is in an unknown state anyway */
-	job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id, false,
-		     false, 1);
+	job_complete(job_ptr->job_id, slurm_conf.slurm_user_id, false, false,
+	             1);
 	return NULL;
 }
 
@@ -3023,7 +3023,7 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 	} else {
 		if (changed) {
 			_depend_list2str(job_ptr, false);
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+			if (slurm_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
 				print_job_dependency(job_ptr, __func__);
 		}
 		job_ptr->bit_flags |= JOB_DEPENDENT;
@@ -3059,7 +3059,7 @@ static char *_xlate_array_dep(char *new_depend)
 		return NULL;	/* No job array expressions */
 
 	if (max_array_size == NO_VAL) {
-		max_array_size = slurmctld_conf.max_array_sz;
+		max_array_size = slurm_conf.max_array_sz;
 	}
 
 	for (i = 0; new_depend[i]; i++) {
@@ -3552,7 +3552,7 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 			xfree(job_ptr->state_desc);
 		}
 	}
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
 		print_job_dependency(job_ptr, __func__);
 
 	return SLURM_SUCCESS;
@@ -3714,7 +3714,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 		FREE_NULL_LIST(job_ptr->details->depend_list);
 		job_ptr->details->depend_list = new_depend_list;
 		_depend_list2str(job_ptr, or_flag);
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+		if (slurm_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
 			print_job_dependency(job_ptr, __func__);
 	} else {
 		FREE_NULL_LIST(new_depend_list);
@@ -4179,8 +4179,8 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 		return SLURM_SUCCESS;
 	if (power_save_test())
 		return power_job_reboot(job_ptr);
-	if ((slurmctld_conf.reboot_program == NULL) ||
-	    (slurmctld_conf.reboot_program[0] == '\0'))
+	if ((slurm_conf.reboot_program == NULL) ||
+	    (slurm_conf.reboot_program[0] == '\0'))
 		return SLURM_SUCCESS;
 
 /*
@@ -4217,7 +4217,7 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 		bit_set(booting_node_bitmap, i);
 		bit_set(wait_boot_arg->node_bitmap, i);
 		node_ptr->boot_req_time = now;
-		node_ptr->last_response = now + slurmctld_conf.resume_timeout;
+		node_ptr->last_response = now + slurm_conf.resume_timeout;
 	}
 
 	if (job_ptr->details->features &&

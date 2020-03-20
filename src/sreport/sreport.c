@@ -137,8 +137,7 @@ main (int argc, char **argv)
 	}
 	xfree(temp);
 
-	if (slurmctld_conf.fed_params &&
-	    strstr(slurmctld_conf.fed_params, "fed_display"))
+	if (xstrstr(slurm_conf.fed_params, "fed_display"))
 		federation_flag = true;
 
 	if (getenv("SREPORT_CLUSTER")) {
@@ -297,7 +296,7 @@ static char *_build_cluster_string(void)
 	List fed_list = NULL;
 	List cluster_list = list_create(NULL);
 
-	list_append(cluster_list, slurmctld_conf.cluster_name);
+	list_append(cluster_list, slurm_conf.cluster_name);
 	slurmdb_init_federation_cond(&fed_cond, 0);
 	fed_cond.cluster_list = cluster_list;
 

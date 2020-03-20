@@ -157,11 +157,11 @@ int dump_all_node_state ( void )
 		_dump_node_state (node_ptr, buffer);
 	}
 
-	old_file = xstrdup (slurmctld_conf.state_save_location);
+	old_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat (old_file, "/node_state.old");
-	reg_file = xstrdup (slurmctld_conf.state_save_location);
+	reg_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat (reg_file, "/node_state");
-	new_file = xstrdup (slurmctld_conf.state_save_location);
+	new_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat (new_file, "/node_state.new");
 	unlock_slurmctld (node_read_lock);
 
@@ -258,7 +258,7 @@ static Buf _open_node_state_file(char **state_file)
 {
 	Buf buf;
 
-	*state_file = xstrdup(slurmctld_conf.state_save_location);
+	*state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(*state_file, "/node_state");
 
 	if (!(buf = create_mmap_buf(*state_file)))
@@ -306,7 +306,7 @@ extern int load_all_node_state ( bool state_only )
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
-	if (slurmctld_conf.suspend_program && slurmctld_conf.resume_program)
+	if (slurm_conf.suspend_program && slurm_conf.resume_program)
 		power_save_mode = true;
 
 	/* read the file */
@@ -588,10 +588,10 @@ extern int load_all_node_state ( bool state_only )
 				 */
 				if (IS_NODE_POWER_UP(node_ptr))
 					node_ptr->last_response = now +
-						slurmctld_conf.resume_timeout;
+						slurm_conf.resume_timeout;
 				else if (IS_NODE_POWERING_DOWN(node_ptr))
 					node_ptr->last_response = now +
-						slurmctld_conf.suspend_timeout;
+						slurm_conf.suspend_timeout;
 			}
 
 			if (obj_protocol_version &&
@@ -677,7 +677,7 @@ int list_compare_config (void *config_entry1, void *config_entry2)
  * and in the cloud. */
 static bool _is_cloud_hidden(node_record_t *node_ptr)
 {
-	if (((slurmctld_conf.private_data & PRIVATE_CLOUD_NODES) == 0) &&
+	if (((slurm_conf.private_data & PRIVATE_CLOUD_NODES) == 0) &&
 	    IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
 		return true;
 	return false;
@@ -687,7 +687,7 @@ static bool _node_is_hidden(node_record_t *node_ptr, uid_t uid)
 {
 	int i;
 
-	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES)
+	if ((slurm_conf.private_data & PRIVATE_DATA_NODES)
 	    && (slurm_mcs_get_privatedata() == 1)
 	    && !validate_operator(uid)
 	    && (mcs_g_check_mcs_label(uid, node_ptr->mcs_label) != 0))
@@ -1325,8 +1325,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 					ping_nodes_now = true;
 				} else if (IS_NODE_FUTURE(node_ptr)) {
 					if (node_ptr->port == 0) {
-						node_ptr->port =slurmctld_conf.
-								slurmd_port;
+						node_ptr->port =
+							slurm_conf.slurmd_port;
 					}
 					slurm_set_addr(	&node_ptr->slurm_addr,
 							node_ptr->port,
@@ -1634,7 +1634,7 @@ extern void restore_node_features(int recover)
 			node_ptr->config_ptr->gres,
 			&node_ptr->gres,
 			&node_ptr->gres_list,
-			slurmctld_conf.conf_flags & CTL_CONF_OR,
+			slurm_conf.conf_flags & CTL_CONF_OR,
 			node_ptr->cores,
 			(node_ptr->boards * node_ptr->sockets));
 		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
@@ -1953,7 +1953,7 @@ static int _update_node_gres(char *node_names, char *gres)
 				node_ptr->name,
 				gres, &node_ptr->gres,
 				&node_ptr->gres_list,
-				slurmctld_conf.conf_flags & CTL_CONF_OR,
+				slurm_conf.conf_flags & CTL_CONF_OR,
 				node_ptr->cores,
 				(node_ptr->boards * node_ptr->sockets));
 			if (rc2 != SLURM_SUCCESS) {
@@ -2367,7 +2367,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 				&node_ptr->gres, &node_ptr->gres_list,
 				reg_msg->threads, reg_msg->cores,
 				reg_msg->sockets,
-				slurmctld_conf.conf_flags & CTL_CONF_OR,
+				slurm_conf.conf_flags & CTL_CONF_OR,
 				&reason_down)
 		   != SLURM_SUCCESS) {
 		error_code = EINVAL;
@@ -2375,7 +2375,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	}
 	gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 
-	if (!(slurmctld_conf.conf_flags & CTL_CONF_OR)) {
+	if (!(slurm_conf.conf_flags & CTL_CONF_OR)) {
 		/* sockets1, cores1, and threads1 are set above */
 		sockets2 = config_ptr->sockets;
 		cores2   = sockets2 * config_ptr->cores;
@@ -2426,7 +2426,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		node_ptr->threads = reg_msg->threads;
 		node_ptr->cpus    = reg_msg->cpus;
 	}
-	if (!(slurmctld_conf.conf_flags & CTL_CONF_OR)) {
+	if (!(slurm_conf.conf_flags & CTL_CONF_OR)) {
 		if (reg_msg->real_memory < config_ptr->real_memory) {
 			error("Node %s has low real_memory size (%"PRIu64" < %"PRIu64")",
 			      reg_msg->node_name, reg_msg->real_memory,
@@ -2529,9 +2529,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			&& ! IS_NODE_FAIL(node_ptr)) {
 			error ("Setting node %s state to DRAIN",
 				   reg_msg->node_name);
-			drain_nodes(reg_msg->node_name,
-						reason_down,
-						slurmctld_conf.slurm_user_id);
+			drain_nodes(reg_msg->node_name, reason_down,
+			            slurm_conf.slurm_user_id);
 		}
 		last_node_update = time (NULL);
 	} else if (reg_msg->status == ESLURMD_PROLOG_FAILED
@@ -2546,7 +2545,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			else
 				reason = "Job env setup error";
 			drain_nodes(reg_msg->node_name, reason,
-				    slurmctld_conf.slurm_user_id);
+			            slurm_conf.slurm_user_id);
 			last_node_update = time (NULL);
 		}
 	} else {
@@ -2586,9 +2585,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 					acct_db_conn, node_ptr, now);
 			}
 		} else if (IS_NODE_DOWN(node_ptr) &&
-			   ((slurmctld_conf.ret2service == 2) ||
+			   ((slurm_conf.ret2service == 2) ||
 			    IS_NODE_REBOOT(node_ptr) ||
-			    ((slurmctld_conf.ret2service == 1) &&
+			    ((slurm_conf.ret2service == 1) &&
 			     !xstrcmp(node_ptr->reason, "Not responding") &&
 			     (node_ptr->boot_time <
 			      node_ptr->last_response)))) {
@@ -2636,15 +2635,14 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			}
 		} else if (node_ptr->last_response &&
 			   (node_ptr->boot_time > node_ptr->last_response) &&
-			   (slurmctld_conf.ret2service != 2)) {
+			   (slurm_conf.ret2service != 2)) {
 			if (!node_ptr->reason ||
 			    (node_ptr->reason &&
 			     !xstrcmp(node_ptr->reason, "Not responding"))) {
 				if (node_ptr->reason)
 					xfree(node_ptr->reason);
 				node_ptr->reason_time = now;
-				node_ptr->reason_uid =
-					slurmctld_conf.slurm_user_id;
+				node_ptr->reason_uid = slurm_conf.slurm_user_id;
 				node_ptr->reason = xstrdup(
 					"Node unexpectedly rebooted");
 			}
@@ -2920,8 +2918,8 @@ extern int validate_nodes_via_front_end(
 		if (difftime(now, job_ptr->time_last_active) <= 5)
 			continue;
 		info("Killing orphan batch %pJ", job_ptr);
-		job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id,
-			     false, false, 0);
+		job_complete(job_ptr->job_id, slurm_conf.slurm_user_id,
+		             false, false, 0);
 	}
 	list_iterator_destroy(job_iterator);
 
@@ -2942,7 +2940,7 @@ extern int validate_nodes_via_front_end(
 			reg_msg->threads,
 			reg_msg->cores,
 			reg_msg->sockets,
-			slurmctld_conf.conf_flags & CTL_CONF_OR,
+			slurm_conf.conf_flags & CTL_CONF_OR,
 			&reason_down);
 		if (rc) {
 			if (!IS_NODE_DOWN(node_ptr)) {
@@ -2999,9 +2997,9 @@ extern int validate_nodes_via_front_end(
 					acct_updated = true;
 				}
 			} else if (IS_NODE_DOWN(node_ptr) &&
-				   ((slurmctld_conf.ret2service == 2) ||
+				   ((slurm_conf.ret2service == 2) ||
 				    (node_ptr->boot_req_time != 0)    ||
-				    ((slurmctld_conf.ret2service == 1) &&
+				    ((slurm_conf.ret2service == 1) &&
 				     !xstrcmp(node_ptr->reason,
 					      "Not responding")))) {
 				update_node_state = true;
@@ -3128,8 +3126,8 @@ static void _node_did_resp(front_end_record_t *fe_ptr)
 		fe_ptr->node_state = NODE_STATE_IDLE | node_flags;
 	}
 	if (IS_NODE_DOWN(fe_ptr) &&
-	    ((slurmctld_conf.ret2service == 2) ||
-	     ((slurmctld_conf.ret2service == 1) &&
+	    ((slurm_conf.ret2service == 2) ||
+	     ((slurm_conf.ret2service == 1) &&
 	      !xstrcmp(fe_ptr->reason, "Not responding")))) {
 		last_front_end_update = now;
 		fe_ptr->node_state = NODE_STATE_IDLE | node_flags;
@@ -3178,9 +3176,9 @@ static void _node_did_resp(node_record_t *node_ptr)
 		}
 	}
 	if (IS_NODE_DOWN(node_ptr) &&
-	    ((slurmctld_conf.ret2service == 2) ||
+	    ((slurm_conf.ret2service == 2) ||
 	     (node_ptr->boot_req_time != 0)    ||
-	     ((slurmctld_conf.ret2service == 1) &&
+	     ((slurm_conf.ret2service == 1) &&
 	      !xstrcmp(node_ptr->reason, "Not responding")))) {
 		node_ptr->last_idle = now;
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
@@ -3368,7 +3366,7 @@ void set_node_down_ptr(node_record_t *node_ptr, char *reason)
 		if (reason) {
 			node_ptr->reason = xstrdup(reason);
 			node_ptr->reason_time = now;
-			node_ptr->reason_uid = slurmctld_conf.slurm_user_id;
+			node_ptr->reason_uid = slurm_conf.slurm_user_id;
 		} else {
 			node_ptr->reason_time = 0;
 			node_ptr->reason_uid = NO_VAL;
@@ -3694,7 +3692,7 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 			clusteracct_storage_g_node_down(
 				acct_db_conn,
 				node_ptr, now, NULL,
-				slurmctld_conf.slurm_user_id);
+				slurm_conf.slurm_user_id);
 		}
 	}
 
@@ -3844,8 +3842,8 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 		trigger_node_drained(node_ptr);
 		if (!IS_NODE_REBOOT(node_ptr))
 			clusteracct_storage_g_node_down(acct_db_conn,
-							node_ptr, now, NULL,
-							slurmctld_conf.slurm_user_id);
+			                                node_ptr, now, NULL,
+			                                slurm_conf.slurm_user_id);
 	} else if (node_ptr->run_job_cnt) {
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
@@ -3904,7 +3902,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 				acct_db_conn,
 				node_ptr, event_time,
 				reason,
-				slurmctld_conf.slurm_user_id);
+				slurm_conf.slurm_user_id);
 		if (rc == SLURM_ERROR)
 			break;
 	}
@@ -3979,7 +3977,7 @@ extern void check_reboot_nodes()
 	int i;
 	node_record_t *node_ptr;
 	time_t now = time(NULL);
-	uint16_t resume_timeout = slurmctld_conf.resume_timeout;
+	uint16_t resume_timeout = slurm_conf.resume_timeout;
 
 	for (i = 0; i < node_record_count; i++) {
 		node_ptr = &node_record_table_ptr[i];
@@ -3998,7 +3996,7 @@ extern void check_reboot_nodes()
 				node_ptr->reason = xstrdup(timeout_msg);
 			}
 			node_ptr->reason_time = now;
-			node_ptr->reason_uid = slurmctld_conf.slurm_user_id;
+			node_ptr->reason_uid = slurm_conf.slurm_user_id;
 
 			/*
 			 * Remove states now so that event state shows as DOWN.

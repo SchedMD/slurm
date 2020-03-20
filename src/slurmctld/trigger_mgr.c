@@ -143,7 +143,7 @@ static void _dump_trigger_msg(char *header, trigger_info_msg_t *msg)
 {
 	int i;
 
-	if ((slurmctld_conf.debug_flags & DEBUG_FLAG_TRIGGERS) == 0)
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_TRIGGERS))
 		return;
 
 	info("%s", header);
@@ -406,8 +406,8 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 	lock_slurmctld(job_read_lock);
 	slurm_mutex_lock(&trigger_mutex);
 
-	if ((slurmctld_conf.slurm_user_id != 0) &&
-	    (slurmctld_conf.slurm_user_id != uid)) {
+	if ((slurm_conf.slurm_user_id != 0) &&
+	    (slurm_conf.slurm_user_id != uid)) {
 		/* If SlurmUser is not root, then it is unable to set the
 		 * appropriate user id and group id for the program to be
 		 * launched. To prevent the launched program for an arbitrary
@@ -421,7 +421,7 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 	if (trigger_list == NULL) {
 		trigger_list = list_create(_trig_del);
 	} else if ((uid != 0) &&
-		   (list_count(trigger_list) >= slurmctld_conf.max_job_cnt)) {
+	           (list_count(trigger_list) >= slurm_conf.max_job_cnt)) {
 		rc = EAGAIN;
 		goto fini;
 	}
@@ -844,11 +844,11 @@ extern int trigger_state_save(void)
 
 	/* write the buffer to file */
 	lock_slurmctld(config_read_lock);
-	old_file = xstrdup(slurmctld_conf.state_save_location);
+	old_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(old_file, "/trigger_state.old");
-	reg_file = xstrdup(slurmctld_conf.state_save_location);
+	reg_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(reg_file, "/trigger_state");
-	new_file = xstrdup(slurmctld_conf.state_save_location);
+	new_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(new_file, "/trigger_state.new");
 	unlock_slurmctld(config_read_lock);
 
@@ -908,7 +908,7 @@ static Buf _open_trigger_state_file(char **state_file)
 {
 	Buf buf;
 
-	*state_file = xstrdup(slurmctld_conf.state_save_location);
+	*state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(*state_file, "/trigger_state");
 	if (!(buf = create_mmap_buf(*state_file)))
 		error("Could not open trigger state file %s: %m",
@@ -1476,7 +1476,7 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 		trig_in->child_pid = child_pid;
 	} else if (child_pid == 0) {
 		int i;
-		bool run_as_self = (uid == slurmctld_conf.slurm_user_id);
+		bool run_as_self = (uid == slurm_conf.slurm_user_id);
 
 		for (i = 0; i < 1024; i++)
 			(void) close(i);

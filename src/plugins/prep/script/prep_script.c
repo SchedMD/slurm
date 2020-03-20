@@ -80,18 +80,18 @@ void (*epilog_slurmctld_callback)(int rc, uint32_t job_id) = NULL;
 
 extern int init(void)
 {
-	if (slurmctld_conf.prolog_slurmctld) {
-		if (access(slurmctld_conf.prolog_slurmctld, X_OK) < 0)
+	if (slurm_conf.prolog_slurmctld) {
+		if (access(slurm_conf.prolog_slurmctld, X_OK) < 0)
 			error("Invalid PrologSlurmctld(`%s`): %m",
-			      slurmctld_conf.prolog_slurmctld);
+			      slurm_conf.prolog_slurmctld);
 		else
 			have_prolog_slurmctld = true;
 	}
 
-	if (slurmctld_conf.epilog_slurmctld) {
-		if (access(slurmctld_conf.epilog_slurmctld, X_OK) < 0)
+	if (slurm_conf.epilog_slurmctld) {
+		if (access(slurm_conf.epilog_slurmctld, X_OK) < 0)
 			error("Invalid EpilogSlurmctld(`%s`): %m",
-			      slurmctld_conf.epilog_slurmctld);
+			      slurm_conf.epilog_slurmctld);
 		else
 			have_epilog_slurmctld = true;
 	}

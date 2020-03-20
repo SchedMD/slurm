@@ -6172,12 +6172,12 @@ extern void assoc_mgr_normalize_assoc_shares(slurmdb_assoc_rec_t *assoc)
 {
 	xassert(assoc);
 	/*
-	 * Use slurmctld_conf.priority_flags directly instead of using a
+	 * Use slurm_conf.priority_flags directly instead of using a
 	 * global flags variable. assoc_mgr_init() would be the logical
 	 * place to set a global, but there is no great location for
 	 * resetting it when scontrol reconfigure is called
 	 */
-	if (slurmctld_conf.priority_flags & PRIORITY_FLAGS_FAIR_TREE)
+	if (slurm_conf.priority_flags & PRIORITY_FLAGS_FAIR_TREE)
 		_normalize_assoc_shares_fair_tree(assoc);
 	else
 		_normalize_assoc_shares_traditional(assoc);

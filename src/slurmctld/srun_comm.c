@@ -270,11 +270,11 @@ extern void srun_ping (void)
 	job_record_t *job_ptr;
 	slurm_addr_t * addr;
 	time_t now = time(NULL);
-	time_t old = now - (slurmctld_conf.inactive_limit / 3) +
-			   slurmctld_conf.msg_timeout + 1;
+	time_t old = now - (slurm_conf.inactive_limit / 3) +
+	             slurm_conf.msg_timeout + 1;
 	srun_ping_msg_t *msg_arg;
 
-	if (slurmctld_conf.inactive_limit == 0)
+	if (slurm_conf.inactive_limit == 0)
 		return;		/* No limit, don't bother pinging */
 
 	job_iterator = list_iterator_create(job_list);

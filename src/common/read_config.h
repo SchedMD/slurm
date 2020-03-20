@@ -50,7 +50,7 @@
 #include "src/common/parse_config.h"
 #include "src/common/run_in_daemon.h"
 
-extern slurm_conf_t slurmctld_conf;
+extern slurm_conf_t slurm_conf;
 extern char *default_slurm_config_file;
 extern char *default_plugin_path;
 extern char *default_plugstack;

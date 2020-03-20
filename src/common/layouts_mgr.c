@@ -967,8 +967,7 @@ static char* _conf_get_filename(const char* type)
 static char* _state_get_filename(const char* type)
 {
 	return xstrdup_printf("%s/layouts_state_%s",
-			      slurmctld_conf.state_save_location,
-			      type);
+	                      slurm_conf.state_save_location, type);
 }
 
 static s_p_hashtbl_t* _conf_make_hashtbl(int struct_type,

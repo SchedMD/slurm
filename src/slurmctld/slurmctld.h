@@ -58,7 +58,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_conf.h"
 #include "src/common/pack.h"
-#include "src/common/read_config.h" /* location of slurmctld_conf */
+#include "src/common/read_config.h" /* location of slurm_conf */
 #include "src/common/job_resources.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
@@ -2479,7 +2479,7 @@ extern int update_job_wckey(char *module, job_record_t *job_ptr,
 extern void update_job_nodes_completing(void);
 
 /* Reset slurmctld logging based upon configuration parameters
- * uses common slurmctld_conf data structure */
+ * uses common slurm_conf data structure */
 extern void update_logging(void);
 
 /*

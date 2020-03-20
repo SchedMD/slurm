@@ -799,14 +799,13 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
-	if (slurmctld_conf.slurmctld_addr)
-		addr = slurmctld_conf.slurmctld_addr;
+	if (slurm_conf.slurmctld_addr)
+		addr = slurm_conf.slurmctld_addr;
 	else
-		addr = slurmctld_conf.control_addr[0];
+		addr = slurm_conf.control_addr[0];
 	setenvf(&env->env, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d:%d",
-		slurmctld_conf.cluster_name, addr,
-		slurmctld_conf.slurmctld_port, SLURM_PROTOCOL_VERSION,
-		select_get_plugin_id());
+	        slurm_conf.cluster_name, addr, slurm_conf.slurmctld_port,
+	        SLURM_PROTOCOL_VERSION, select_get_plugin_id());
 
 	return rc;
 }

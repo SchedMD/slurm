@@ -308,7 +308,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	/* Debug the protocol layer.
 	 */
 	START_TIMER;
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		char *p = rpc_num2string(msg->msg_type);
 		if (msg->conn) {
 			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
@@ -669,7 +669,7 @@ extern void response_init(slurm_msg_t *resp, slurm_msg_t *msg)
  */
 static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 {
-	slurm_conf_t *conf = &slurmctld_conf;
+	slurm_conf_t *conf = &slurm_conf;
 	uint32_t next_job_id;
 	int i;
 
@@ -859,8 +859,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->prolog_epilog_timeout = conf->prolog_epilog_timeout;
 	conf_ptr->prolog_slurmctld    = xstrdup(conf->prolog_slurmctld);
 	conf_ptr->prolog_flags        = conf->prolog_flags;
-	conf_ptr->propagate_prio_process =
-		slurmctld_conf.propagate_prio_process;
+	conf_ptr->propagate_prio_process = slurm_conf.propagate_prio_process;
 	conf_ptr->propagate_rlimits   = xstrdup(conf->propagate_rlimits);
 	conf_ptr->propagate_rlimits_except = xstrdup(conf->
 						     propagate_rlimits_except);
@@ -973,7 +972,7 @@ extern bool validate_slurm_user(uid_t uid)
 	if (drop_priv)
 		return false;
 #endif
-	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id))
+	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
 		return true;
 	else
 		return false;
@@ -991,7 +990,7 @@ extern bool validate_super_user(uid_t uid)
 	if (drop_priv)
 		return false;
 #endif
-	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id) ||
+	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(acct_db_conn, uid) >=
 	    SLURMDB_ADMIN_SUPER_USER)
 		return true;
@@ -1011,7 +1010,7 @@ extern bool validate_operator(uid_t uid)
 	if (drop_priv)
 		return false;
 #endif
-	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id) ||
+	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(acct_db_conn, uid) >=
 	    SLURMDB_ADMIN_OPERATOR)
 		return true;
@@ -1041,8 +1040,7 @@ static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid)
 
 extern void configless_setup(void)
 {
-	if (!xstrcasestr(slurmctld_conf.slurmctld_params,
-			 "enable_configless"))
+	if (!xstrcasestr(slurm_conf.slurmctld_params, "enable_configless"))
 		return;
 
 	config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
@@ -1057,7 +1055,7 @@ extern void configless_setup(void)
 	 * route/topology will cause srun to load topology.conf, so we'll
 	 * need to send that along with the rest.
 	 */
-	if (!xstrcmp(slurmctld_conf.route_plugin, "route/topology"))
+	if (!xstrcmp(slurm_conf.route_plugin, "route/topology"))
 		config_for_clients->topology_config =
 			config_for_slurmd->topology_config;
 }
@@ -1092,7 +1090,7 @@ extern void configless_update(void)
 	 * route/topology will cause srun to load topology.conf, so we'll
 	 * need to send that along with the rest.
 	 */
-	if (!xstrcmp(slurmctld_conf.route_plugin, "route/topology"))
+	if (!xstrcmp(slurm_conf.route_plugin, "route/topology"))
 		config_for_clients->topology_config =
 			config_for_slurmd->topology_config;
 
@@ -1122,8 +1120,7 @@ static void _kill_job_on_msg_fail(uint32_t job_id)
 	error("Job allocate response msg send failure, killing JobId=%u",
 	      job_id);
 	lock_slurmctld(job_write_lock);
-	job_complete(job_id, slurmctld_conf.slurm_user_id, false, false,
-		     SIGTERM);
+	job_complete(job_id, slurm_conf.slurm_user_id, false, false, SIGTERM);
 	unlock_slurmctld(job_write_lock);
 }
 
@@ -1859,7 +1856,7 @@ static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 	lock_slurmctld(config_read_lock);
 
 	/* check to see if configuration data has changed */
-	if ((last_time_msg->last_update - 1) >= slurmctld_conf.last_update) {
+	if ((last_time_msg->last_update - 1) >= slurm_conf.last_update) {
 		unlock_slurmctld(config_read_lock);
 		debug2("_slurm_rpc_dump_conf, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
@@ -2167,7 +2164,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	START_TIMER;
 	debug3("Processing RPC: REQUEST_NODE_INFO from uid=%d", uid);
 
-	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES) &&
+	if ((slurm_conf.private_data & PRIVATE_DATA_NODES) &&
 	    (!validate_operator(uid))) {
 		error("Security violation, REQUEST_NODE_INFO RPC from uid=%d",
 		      uid);
@@ -2220,7 +2217,7 @@ static void _slurm_rpc_dump_node_single(slurm_msg_t * msg)
 	START_TIMER;
 	debug3("Processing RPC: REQUEST_NODE_INFO_SINGLE from uid=%d", uid);
 
-	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES) &&
+	if ((slurm_conf.private_data & PRIVATE_DATA_NODES) &&
 	    (!validate_operator(uid))) {
 		error("Security violation, REQUEST_NODE_INFO_SINGLE RPC from "
 		      "uid=%d", uid);
@@ -2273,7 +2270,7 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 	part_req_msg = (part_info_request_msg_t  *) msg->data;
 	lock_slurmctld(part_read_lock);
 
-	if ((slurmctld_conf.private_data & PRIVATE_DATA_PARTITIONS) &&
+	if ((slurm_conf.private_data & PRIVATE_DATA_PARTITIONS) &&
 	    !validate_operator(uid)) {
 		unlock_slurmctld(part_read_lock);
 		debug2("Security violation, PARTITION_INFO RPC from uid=%d",
@@ -2331,11 +2328,11 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 	/* Only throttle on non-composite messages, the lock should
 	 * already be set earlier. */
 	if (!running_composite) {
-		if (config_update != slurmctld_conf.last_update) {
+		if (config_update != slurm_conf.last_update) {
 			char *sched_params = slurm_get_sched_params();
 			defer_sched = (xstrcasestr(sched_params, "defer"));
 			xfree(sched_params);
-			config_update = slurmctld_conf.last_update;
+			config_update = slurm_conf.last_update;
 		}
 
 		_throttle_start(&active_rpc_cnt);
@@ -2654,8 +2651,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 			}
 #else
 			error_code = drain_nodes(comp_msg->node_name,
-						 "batch job complete failure",
-						 slurmctld_conf.slurm_user_id);
+			                         "batch job complete failure",
+			                         slurm_conf.slurm_user_id);
 #endif	/* !HAVE_FRONT_END */
 			if ((comp_msg->job_rc != SLURM_SUCCESS) && job_ptr &&
 			    job_ptr->details && job_ptr->details->requeue)
@@ -3115,7 +3112,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg,
 
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
-		if (!(slurmctld_conf.debug_flags & DEBUG_FLAG_NO_CONF_HASH) &&
+		if (!(slurm_conf.debug_flags & DEBUG_FLAG_NO_CONF_HASH) &&
 		    (node_reg_stat_msg->hash_val != NO_VAL) &&
 		    (node_reg_stat_msg->hash_val != slurm_get_hash_val())) {
 			error("Node %s appears to have a different slurm.conf "
@@ -5183,7 +5180,7 @@ static void  _slurm_rpc_burst_buffer_info(slurm_msg_t * msg)
 static void _update_cred_key(void)
 {
 	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx,
-				  slurmctld_conf.job_credential_private_key);
+	                          slurm_conf.job_credential_private_key);
 }
 
 inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
@@ -5465,8 +5462,8 @@ inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
 	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
-	bool allow_user_triggers = xstrcasestr(slurmctld_conf.slurmctld_params,
-					       "allow_user_triggers");
+	bool allow_user_triggers = xstrcasestr(slurm_conf.slurmctld_params,
+	                                       "allow_user_triggers");
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -5660,11 +5657,11 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	}
 
 	lock_slurmctld (config_write_lock);
-	debug_flags  = slurmctld_conf.debug_flags;
+	debug_flags = slurm_conf.debug_flags;
 	debug_flags &= (~request_msg->debug_flags_minus);
 	debug_flags |= request_msg->debug_flags_plus;
 	slurm_set_debug_flags(debug_flags);
-	slurmctld_conf.last_update = time(NULL);
+	slurm_conf.last_update = time(NULL);
 
 	/* Reset cached debug_flags values */
 	log_set_debug_flags();
@@ -5708,7 +5705,7 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 	lock_slurmctld (config_write_lock);
 	if (slurmctld_config.daemonize) {
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
-		if (slurmctld_conf.slurmctld_logfile) {
+		if (slurm_conf.slurmctld_logfile) {
 			log_opts.logfile_level = debug_level;
 			log_opts.syslog_level = LOG_LEVEL_QUIET;
 		} else {
@@ -5718,19 +5715,19 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 	} else {
 		log_opts.syslog_level = LOG_LEVEL_QUIET;
 		log_opts.stderr_level = debug_level;
-		if (slurmctld_conf.slurmctld_logfile)
+		if (slurm_conf.slurmctld_logfile)
 			log_opts.logfile_level = debug_level;
 		else
 			log_opts.logfile_level = LOG_LEVEL_QUIET;
 	}
-	log_alter(log_opts, LOG_DAEMON, slurmctld_conf.slurmctld_logfile);
+	log_alter(log_opts, LOG_DAEMON, slurm_conf.slurmctld_logfile);
 	unlock_slurmctld (config_write_lock);
 
-	if (debug_level != slurmctld_conf.slurmctld_debug)
+	if (debug_level != slurm_conf.slurmctld_debug)
 		info("Set debug level to %d", debug_level);
 
-	slurmctld_conf.slurmctld_debug = debug_level;
-	slurmctld_conf.last_update = time(NULL);
+	slurm_conf.slurmctld_debug = debug_level;
+	slurm_conf.last_update = time(NULL);
 
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
@@ -5754,13 +5751,13 @@ inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 	}
 
 	/*
-	 * If slurmctld_conf.sched_logfile is NULL, then this operation
+	 * If slurm_conf.sched_logfile is NULL, then this operation
 	 *  will fail, since there is no sched logfile for which to alter
 	 *  the log level. (Calling sched_log_alter with a NULL filename
 	 *  is likely to cause a segfault at the next sched log call)
 	 *  So just give up and return "Operation Disabled"
 	 */
-	if (slurmctld_conf.sched_logfile == NULL) {
+	if (slurm_conf.sched_logfile == NULL) {
 		error("set scheduler log level failed: no log file!");
 		slurm_send_rc_msg (msg, ESLURM_DISABLED);
 		return;
@@ -5771,14 +5768,14 @@ inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 
 	lock_slurmctld (config_read_lock);
 	log_opts.logfile_level = schedlog_level;
-	sched_log_alter(log_opts, LOG_DAEMON, slurmctld_conf.sched_logfile);
+	sched_log_alter(log_opts, LOG_DAEMON, slurm_conf.sched_logfile);
 	unlock_slurmctld (config_read_lock);
 
-	if (schedlog_level != slurmctld_conf.sched_log_level)
+	if (schedlog_level != slurm_conf.sched_log_level)
 		sched_info("Set scheduler log level to %d", schedlog_level);
 
-	slurmctld_conf.sched_log_level = schedlog_level;
-	slurmctld_conf.last_update = time(NULL);
+	slurm_conf.sched_log_level = schedlog_level;
+	slurm_conf.last_update = time(NULL);
 
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
@@ -5913,7 +5910,7 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 		}
 		node_ptr->node_state |= NODE_STATE_REBOOT;
 		node_ptr->boot_req_time = (time_t) 0;
-		node_ptr->last_response = now + slurmctld_conf.resume_timeout;
+		node_ptr->last_response = now + slurm_conf.resume_timeout;
 		if (reboot_msg) {
 			node_ptr->next_state = reboot_msg->next_state;
 			if (node_ptr->next_state == NODE_RESUME)
@@ -5994,7 +5991,7 @@ inline static void  _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg)
 	}
 
 	clusteracct_storage_g_register_ctld(acct_db_conn,
-					    slurmctld_conf.slurmctld_port);
+	                                    slurm_conf.slurmctld_port);
 
 	END_TIMER2("_slurm_rpc_accounting_register_ctld");
 }
@@ -6318,7 +6315,7 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 	if (msg->protocol_version >= SLURM_20_02_PROTOCOL_VERSION)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
-	if (config_update != slurmctld_conf.last_update) {
+	if (config_update != slurm_conf.last_update) {
 		char *sched_params = slurm_get_sched_params();
 		int time_limit;
 		char *tmp_ptr;
@@ -6342,7 +6339,7 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 			sched_timeout *= USEC_IN_SEC;
 		}
 		xfree(sched_params);
-		config_update = slurmctld_conf.last_update;
+		config_update = slurm_conf.last_update;
 	}
 
 	if (list_count(comp_msg->msg_list)) {
@@ -6872,7 +6869,7 @@ inline static void  _slurm_rpc_set_fs_dampening_factor(slurm_msg_t *msg)
 
 	lock_slurmctld(config_write_lock);
 	slurm_set_fs_dampening_factor(factor);
-	slurmctld_conf.last_update = time(NULL);
+	slurm_conf.last_update = time(NULL);
 	priority_g_reconfig(false);
 	unlock_slurmctld(config_write_lock);
 

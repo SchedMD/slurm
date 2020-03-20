@@ -136,7 +136,7 @@ static int _calc_part_tres(void *x, void *arg)
 	 */
 	tres_cnt[TRES_ARRAY_BILLING] = assoc_mgr_tres_weighted(
 		tres_cnt, part_ptr->billing_weights,
-		slurmctld_conf.priority_flags, true);
+		slurm_conf.priority_flags, true);
 
 	part_ptr->tres_fmt_str =
 		assoc_mgr_make_tres_str_from_array(part_ptr->tres_cnt,
@@ -436,11 +436,11 @@ int dump_all_part_state(void)
 	lock_slurmctld(part_read_lock);
 	list_for_each(part_list, _dump_part_state, buffer);
 
-	old_file = xstrdup(slurmctld_conf.state_save_location);
+	old_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(old_file, "/part_state.old");
-	reg_file = xstrdup(slurmctld_conf.state_save_location);
+	reg_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(reg_file, "/part_state");
-	new_file = xstrdup(slurmctld_conf.state_save_location);
+	new_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(new_file, "/part_state.new");
 	unlock_slurmctld(part_read_lock);
 
@@ -554,7 +554,7 @@ static Buf _open_part_state_file(char **state_file)
 {
 	Buf buf;
 
-	*state_file = xstrdup(slurmctld_conf.state_save_location);
+	*state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(*state_file, "/part_state");
 	buf = create_mmap_buf(*state_file);
 	if (!buf) {
@@ -894,7 +894,7 @@ int init_part_conf(void)
 	xfree(default_part.name);	/* needed for reconfig */
 	default_part.name           = xstrdup("DEFAULT");
 	default_part.flags          = 0;
-	if (slurmctld_conf.conf_flags & CTL_CONF_DRJ)
+	if (slurm_conf.conf_flags & CTL_CONF_DRJ)
 		default_part.flags |= PART_FLAG_NO_ROOT;
 	default_part.max_time       = INFINITE;
 	default_part.default_time   = NO_VAL;

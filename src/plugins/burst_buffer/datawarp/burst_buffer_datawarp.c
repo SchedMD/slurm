@@ -808,12 +808,12 @@ static void _save_bb_state(void)
 		set_buf_offset(buffer, offset);
 	}
 
-	xstrfmtcat(old_file, "%s/%s", slurmctld_conf.state_save_location,
-		   "burst_buffer_cray_state.old");
-	xstrfmtcat(reg_file, "%s/%s", slurmctld_conf.state_save_location,
-		   "burst_buffer_cray_state");
-	xstrfmtcat(new_file, "%s/%s", slurmctld_conf.state_save_location,
-		   "burst_buffer_cray_state.new");
+	xstrfmtcat(old_file, "%s/%s", slurm_conf.state_save_location,
+	           "burst_buffer_cray_state.old");
+	xstrfmtcat(reg_file, "%s/%s", slurm_conf.state_save_location,
+	           "burst_buffer_cray_state");
+	xstrfmtcat(new_file, "%s/%s", slurm_conf.state_save_location,
+	           "burst_buffer_cray_state.new");
 
 	state_fd = creat(new_file, 0600);
 	if (state_fd < 0) {
@@ -869,7 +869,7 @@ static int _open_part_state_file(char **state_file)
 	int state_fd;
 	struct stat stat_buf;
 
-	*state_file = xstrdup(slurmctld_conf.state_save_location);
+	*state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(*state_file, "/burst_buffer_cray_state");
 	state_fd = open(*state_file, O_RDONLY);
 	if (state_fd < 0) {
@@ -1569,15 +1569,15 @@ static void _update_system_comment(job_record_t *job_ptr, char *operation,
 			JOBCOND_FLAG_NO_DEFAULT_USAGE;
 
 		job_cond.cluster_list = list_create(NULL);
-		list_append(job_cond.cluster_list, slurmctld_conf.cluster_name);
+		list_append(job_cond.cluster_list, slurm_conf.cluster_name);
 
 		job_cond.usage_start = job_ptr->details->submit_time;
 
 		job_rec.system_comment = job_ptr->system_comment;
 
-		ret_list = acct_storage_g_modify_job(
-			acct_db_conn, slurmctld_conf.slurm_user_id,
-			&job_cond, &job_rec);
+		ret_list = acct_storage_g_modify_job(acct_db_conn,
+		                                     slurm_conf.slurm_user_id,
+		                                     &job_cond, &job_rec);
 
 		FREE_NULL_LIST(job_cond.cluster_list);
 		FREE_NULL_LIST(job_cond.step_list);

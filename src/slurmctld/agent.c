@@ -266,7 +266,7 @@ void *agent(void *args)
 
 	slurm_mutex_lock(&agent_cnt_mutex);
 
-	if (sched_update != slurmctld_conf.last_update) {
+	if (sched_update != slurm_conf.last_update) {
 #ifdef HAVE_NATIVE_CRAY
 		reboot_from_ctld = true;
 #else
@@ -277,7 +277,7 @@ void *agent(void *args)
 			reboot_from_ctld = true;
 		xfree(ctld_params);
 #endif
-		sched_update = slurmctld_conf.last_update;
+		sched_update = slurm_conf.last_update;
 	}
 
 	rpc_thread_cnt = 2 + MIN(agent_arg_ptr->node_count, AGENT_THREAD_COUNT);
@@ -727,7 +727,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				  .fed  = READ_LOCK };
 
 			lock_slurmctld(job_write_lock);
-			job_complete(job_id, slurmctld_conf.slurm_user_id,
+			job_complete(job_id, slurm_conf.slurm_user_id,
 				     true, false, 0);
 			unlock_slurmctld(job_write_lock);
 		}
@@ -768,9 +768,8 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 #ifdef HAVE_FRONT_END
 				down_msg = "";
 #else
-				drain_nodes(node_names,
-					    "Prolog/Epilog failure",
-					    slurmctld_conf.slurm_user_id);
+				drain_nodes(node_names, "Prolog/Epilog failure",
+				            slurm_conf.slurm_user_id);
 				down_msg = ", set to state DRAIN";
 #endif
 				error("Prolog/Epilog failure on nodes %s%s",
@@ -780,9 +779,8 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 #ifdef HAVE_FRONT_END
 				down_msg = "";
 #else
-				drain_nodes(node_names,
-					    "Duplicate jobid",
-					    slurmctld_conf.slurm_user_id);
+				drain_nodes(node_names, "Duplicate jobid",
+				            slurm_conf.slurm_user_id);
 				down_msg = ", set to state DRAIN";
 #endif
 				error("Duplicate jobid on nodes %s%s",
@@ -1034,8 +1032,8 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_DONE;
 			ret_data_info->err = thread_state;
 			lock_slurmctld(job_write_lock);
-			job_complete(job_id, slurmctld_conf.slurm_user_id,
-				     false, false, _wif_status());
+			job_complete(job_id, slurm_conf.slurm_user_id,
+			             false, false, _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
 		} else if ((msg_type == RESPONSE_RESOURCE_ALLOCATION) &&
@@ -1050,8 +1048,8 @@ static void *_thread_per_group_rpc(void *args)
 			     job_id, slurm_strerror(rc));
 			thread_state = DSH_FAILED;
 			lock_slurmctld(job_write_lock);
-			job_complete(job_id, slurmctld_conf.slurm_user_id,
-				     false, false, _wif_status());
+			job_complete(job_id, slurm_conf.slurm_user_id,
+			             false, false, _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
 		} else if ((msg_type == RESPONSE_HET_JOB_ALLOCATION) &&
@@ -1070,8 +1068,8 @@ static void *_thread_per_group_rpc(void *args)
 			     job_id, slurm_strerror(rc));
 			thread_state = DSH_FAILED;
 			lock_slurmctld(job_write_lock);
-			job_complete(job_id, slurmctld_conf.slurm_user_id,
-				     false, false, _wif_status());
+			job_complete(job_id, slurm_conf.slurm_user_id,
+			             false, false, _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
 		}
@@ -1589,7 +1587,7 @@ static void _agent_retry(int min_wait, bool mail_too)
 		if (((list_size > 100) &&
 		     (difftime(now, last_msg_time) > 300)) ||
 		    ((list_size > 0) &&
-		     (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT))) {
+		     (slurm_conf.debug_flags & DEBUG_FLAG_AGENT))) {
 			/* Note sizable backlog (retry_list_size()) of work */
 			retry_iter = list_iterator_create(retry_list);
 			while ((queued_req_ptr = list_next(retry_iter))) {
@@ -1851,9 +1849,9 @@ static char **_build_mail_env(void)
 
         my_env = xmalloc(sizeof(char *));
         my_env[0] = NULL;
-        if (slurmctld_conf.cluster_name) {
+        if (slurm_conf.cluster_name) {
                 setenvf(&my_env, "SLURM_CLUSTER_NAME", "%s",
-                        slurmctld_conf.cluster_name);
+		        slurm_conf.cluster_name);
         }
 
 	 return my_env;
@@ -1880,11 +1878,9 @@ static void *_mail_proc(void *arg)
 			error("Couldn't do a dup on fd 1: %m");
 		if ((fd_2 = dup(fd_0)) == -1)			// fd = 2
 			error("Couldn't do a dup on fd 2 %m");
-		execle(slurmctld_conf.mail_prog, "mail",
-			"-s", mi->message, mi->user_name,
-			NULL, my_env);
-		error("Failed to exec %s: %m",
-			slurmctld_conf.mail_prog);
+		execle(slurm_conf.mail_prog, "mail", "-s", mi->message,
+		       mi->user_name, NULL, my_env);
+		error("Failed to exec %s: %m", slurm_conf.mail_prog);
 		exit(1);
 	} else {		/* parent */
 		waitpid(pid, NULL, 0);
@@ -2247,16 +2243,16 @@ static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
 		error("%s: hostlist is NULL", __func__);
 		return;
 	}
-	if (!slurmctld_conf.reboot_program) {
+	if (!slurm_conf.reboot_program) {
 		error("%s: RebootProgram is NULL", __func__);
 		return;
 	}
 
-	pname = strrchr(slurmctld_conf.reboot_program, '/');
+	pname = strrchr(slurm_conf.reboot_program, '/');
 	if (pname)
 		argv[0] = pname + 1;
 	else
-		argv[0] = slurmctld_conf.reboot_program;
+		argv[0] = slurm_conf.reboot_program;
 	argv[1] = hostlist_deranged_string_xmalloc(agent_arg_ptr->hostlist);
 	argv[2] = NULL;
 
@@ -2265,7 +2261,7 @@ static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
 		(void) setpgid(0, 0);
-		(void) execv(slurmctld_conf.reboot_program, argv);
+		(void) execv(slurm_conf.reboot_program, argv);
 		exit(1);
 	} else if (child < 0) {
 		error("fork: %m");
