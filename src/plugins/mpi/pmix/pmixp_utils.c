@@ -414,7 +414,7 @@ static int _pmix_p2p_send_core(const char *nodename, const char *address,
 		return SLURM_ERROR;
 	}
 
-	timeout = slurm_get_msg_timeout() * 1000;
+	timeout = slurm_conf.msg_timeout * 1000;
 	msg.forward.timeout = timeout;
 	msg.forward.cnt = 0;
 	msg.forward.nodelist = NULL;

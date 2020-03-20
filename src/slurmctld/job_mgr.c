@@ -9165,7 +9165,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 
 	if (IS_JOB_COMPLETING(job_ptr) && !LOTS_OF_AGENTS) {
 		kill_age = now - (slurm_conf.kill_wait +
-		                  2 * slurm_get_msg_timeout());
+		                  2 * slurm_conf.msg_timeout);
 		if (job_ptr->time_last_active < kill_age) {
 			job_ptr->time_last_active = now;
 			re_kill_job(job_ptr);
@@ -14050,10 +14050,9 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 			      reg_msg->node_name);
 			abort_job_on_node(reg_msg->job_id[i],
 					  job_ptr, node_ptr->name);
-		}
-
-		else if (difftime(now, job_ptr->end_time) <
-			 slurm_get_msg_timeout()) {	/* Race condition */
+		} else if (difftime(now, job_ptr->end_time) <
+		           slurm_conf.msg_timeout) {
+			/* Race condition */
 			debug("Registered newly completed %pJ %s on %s",
 			      job_ptr,
 			      _build_step_id(step_str, sizeof(step_str),
@@ -14103,17 +14102,17 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 	job_record_t *job_ptr;
 	node_record_t *node_ptr = node_record_table_ptr + node_inx;
 	uint16_t batch_start_timeout	= slurm_get_batch_start_timeout();
-	uint16_t msg_timeout		= slurm_get_msg_timeout();
 	uint16_t resume_timeout		= slurm_get_resume_timeout();
 	uint32_t suspend_time		= slurm_get_suspend_time();
 	time_t batch_startup_time, node_boot_time = (time_t) 0, startup_time;
 
-	if (node_ptr->boot_time > (msg_timeout + 5)) {
+	if (node_ptr->boot_time > (slurm_conf.msg_timeout + 5)) {
 		/* allow for message timeout and other delays */
-		node_boot_time = node_ptr->boot_time - (msg_timeout + 5);
+		node_boot_time = node_ptr->boot_time -
+		                 (slurm_conf.msg_timeout + 5);
 	}
 	batch_startup_time  = now - batch_start_timeout;
-	batch_startup_time -= MIN(DEFAULT_MSG_TIMEOUT, msg_timeout);
+	batch_startup_time -= MIN(DEFAULT_MSG_TIMEOUT, slurm_conf.msg_timeout);
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {

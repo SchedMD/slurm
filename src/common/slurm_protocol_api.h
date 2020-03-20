@@ -210,11 +210,6 @@ char *slurm_get_mpi_params(void);
  */
 char *slurm_get_msg_aggr_params(void);
 
-/* slurm_get_msg_timeout
- * get default message timeout value from slurm_conf object
- */
-extern uint16_t slurm_get_msg_timeout(void);
-
 /* slurm_get_reboot_program
  * RET char * - RebootProgram from slurm.conf, MUST be xfreed by caller
  */

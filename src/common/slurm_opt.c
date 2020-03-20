@@ -2548,7 +2548,7 @@ static char *arg_get_msg_timeout(slurm_opt_t *opt)
 static void arg_reset_msg_timeout(slurm_opt_t *opt)
 {
 	if (opt->srun_opt)
-		opt->srun_opt->msg_timeout = slurm_get_msg_timeout();
+		opt->srun_opt->msg_timeout = slurm_conf.msg_timeout;
 }
 static slurm_cli_opt_t slurm_opt_msg_timeout = {
 	.name = "msg-timeout",

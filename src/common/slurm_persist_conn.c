@@ -550,7 +550,7 @@ extern int slurm_persist_conn_open_without_init(
 		persist_conn->version = SLURM_MIN_PROTOCOL_VERSION;
 	}
 	if (persist_conn->timeout < 0)
-		persist_conn->timeout = slurm_get_msg_timeout() * 1000;
+		persist_conn->timeout = slurm_conf.msg_timeout * 1000;
 
 	slurm_set_addr_char(&addr, persist_conn->rem_port,
 			    persist_conn->rem_host);

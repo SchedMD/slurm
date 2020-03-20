@@ -310,7 +310,7 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 	static int timeout = -1;
 
 	if (timeout < 0)
-		timeout = slurm_get_msg_timeout() * 1000;
+		timeout = slurm_conf.msg_timeout * 1000;
 
 	if (cluster == fed_mgr_cluster_rec) {
 		info("%s: hey! how did we get here with ourselves?", __func__);

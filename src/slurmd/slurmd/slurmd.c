@@ -460,7 +460,7 @@ _msg_engine(void)
 	slurmd_req(NULL);	/* initialize timer */
 	while (!_shutdown) {
 		if (_reconfig) {
-			int rpc_wait = MAX(5, slurm_get_msg_timeout() / 2);
+			int rpc_wait = MAX(5, slurm_conf.msg_timeout / 2);
 			verbose("got reconfigure request");
 			/* Wait for RPCs to finish */
 			_wait_for_all_threads(rpc_wait);

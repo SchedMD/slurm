@@ -192,13 +192,13 @@ int slurm_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
 	 * 10 secs). */
 	_delay_rpc(pmi_rank, pmi_size);
 	if      (pmi_size > 4000)	/* 240 secs */
-		timeout = slurm_get_msg_timeout() * 24000;
+		timeout = slurm_conf.msg_timeout * 24000;
 	else if (pmi_size > 1000)	/* 120 secs */
-		timeout = slurm_get_msg_timeout() * 12000;
+		timeout = slurm_conf.msg_timeout * 12000;
 	else if (pmi_size > 100)	/* 50 secs */
-		timeout = slurm_get_msg_timeout() * 5000;
+		timeout = slurm_conf.msg_timeout * 5000;
 	else if (pmi_size > 10)		/* 20 secs */
-		timeout = slurm_get_msg_timeout() * 2000;
+		timeout = slurm_conf.msg_timeout * 2000;
 
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
@@ -276,13 +276,13 @@ int  slurm_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	 */
 	_delay_rpc(pmi_rank, pmi_size);
 	if      (pmi_size > 4000)	/* 240 secs */
-		timeout = slurm_get_msg_timeout() * 24000;
+		timeout = slurm_conf.msg_timeout * 24000;
 	else if (pmi_size > 1000)	/* 120 secs */
-		timeout = slurm_get_msg_timeout() * 12000;
+		timeout = slurm_conf.msg_timeout * 12000;
 	else if (pmi_size > 100)	/* 60 secs */
-		timeout = slurm_get_msg_timeout() * 6000;
+		timeout = slurm_conf.msg_timeout * 6000;
 	else if (pmi_size > 10)		/* 20 secs */
-		timeout = slurm_get_msg_timeout() * 2000;
+		timeout = slurm_conf.msg_timeout * 2000;
 
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {

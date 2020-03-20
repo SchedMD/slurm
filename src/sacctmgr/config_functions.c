@@ -54,7 +54,6 @@ static uint32_t acct_storage_port;
 static char    *acct_storage_type = NULL;
 static char    *acct_storage_user = NULL;
 static char    *auth_type = NULL;
-static uint16_t msg_timeout;
 static char    *plugin_dir = NULL;
 static uint16_t private_data;
 static uint16_t track_wckey;
@@ -101,7 +100,6 @@ static void _load_slurm_config(void)
 	acct_storage_type = slurm_get_accounting_storage_type();
 	acct_storage_user = slurm_get_accounting_storage_user();
 	auth_type = slurm_get_auth_type();
-	msg_timeout = slurm_get_msg_timeout();
 	plugin_dir = slurm_get_plugin_dir();
 	private_data = slurm_get_private_data();
 	track_wckey = slurm_get_track_wckey();
@@ -134,7 +132,7 @@ static void _print_slurm_config(void)
 	printf("AccountingStorageType  = %s\n", acct_storage_type);
 	printf("AccountingStorageUser  = %s\n", acct_storage_user);
 	printf("AuthType               = %s\n", auth_type);
-	printf("MessageTimeout         = %u sec\n", msg_timeout);
+	printf("MessageTimeout         = %u sec\n", slurm_conf.msg_timeout);
 	printf("PluginDir              = %s\n", plugin_dir);
 	private_data_string(private_data, tmp_str, sizeof(tmp_str));
 	printf("PrivateData            = %s\n", tmp_str);

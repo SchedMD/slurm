@@ -598,7 +598,7 @@ static void _open_slurmdbd_conn(bool need_db)
 
 		slurmdbd_conn->cluster_name = xstrdup(slurmdbd_cluster);
 
-		slurmdbd_conn->timeout = (slurm_get_msg_timeout() + 35) * 1000;
+		slurmdbd_conn->timeout = (slurm_conf.msg_timeout + 35) * 1000;
 
 		slurmdbd_conn->rem_port = slurm_get_accounting_storage_port();
 

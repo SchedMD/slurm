@@ -73,7 +73,6 @@ typedef struct {
 	char *		log_file;	/* Log file			*/
 	uint16_t        log_fmt;        /* Log file timestamt format    */
 	uint32_t	max_time_range;	/* max time range for user queries */
-	uint16_t        msg_timeout;    /* message timeout		*/
 	char *		parameters;	/* parameters to change behavior with
 					 * the slurmdbd directly	*/
 	uint16_t        persist_conn_rc_flags; /* flags to be sent back on any

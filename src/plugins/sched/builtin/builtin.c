@@ -112,7 +112,7 @@ static void _load_config(void)
 	char *sched_params = slurm_get_sched_params();
 	char *tmp_ptr;
 
-	sched_timeout = slurm_get_msg_timeout() / 2;
+	sched_timeout = slurm_conf.msg_timeout / 2;
 	sched_timeout = MAX(sched_timeout, 1);
 	sched_timeout = MIN(sched_timeout, 10);
 

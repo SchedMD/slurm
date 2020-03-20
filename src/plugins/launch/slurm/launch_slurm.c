@@ -245,7 +245,7 @@ static int _is_openmpi_port_error(int errcode)
 		return 0;
 	if (opt_save && (opt_save->srun_opt->resv_port_cnt == NO_VAL))
 		return 0;
-	if (difftime(time(NULL), launch_start_time) > slurm_get_msg_timeout())
+	if (difftime(time(NULL), launch_start_time) > slurm_conf.msg_timeout)
 		return 0;
 	return 1;
 }

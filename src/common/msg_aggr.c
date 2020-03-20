@@ -367,7 +367,6 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait,
 
 	if (wait) {
 		msg_aggr_t *msg_aggr = xmalloc(sizeof(msg_aggr_t));
-		uint16_t        msg_timeout;
 		struct timeval  now;
 		struct timespec timeout;
 
@@ -378,9 +377,8 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait,
 		slurm_mutex_lock(&msg_collection.aggr_mutex);
 		list_append(msg_collection.msg_aggr_list, msg_aggr);
 
-		msg_timeout = slurm_get_msg_timeout();
 		gettimeofday(&now, NULL);
-		timeout.tv_sec = now.tv_sec + msg_timeout;
+		timeout.tv_sec = now.tv_sec + slurm_conf.msg_timeout;
 		timeout.tv_nsec = now.tv_usec * 1000;
 
 		wait_count++;

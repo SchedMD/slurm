@@ -347,7 +347,7 @@ void *agent(void *args)
 	/* Wait for termination of remaining threads */
 	pthread_join(thread_wdog, NULL);
 	delay = (int) difftime(time(NULL), begin_time);
-	if (delay > (slurm_get_msg_timeout() * 2)) {
+	if (delay > (slurm_conf.msg_timeout * 2)) {
 		info("agent msg_type=%u ran for %d seconds",
 			agent_arg_ptr->msg_type,  delay);
 	}
@@ -1686,7 +1686,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 		fatal("AGENT_THREAD_COUNT value is too high relative to MAX_SERVER_THREADS");
 
 	if (message_timeout == NO_VAL16) {
-		message_timeout = MAX(slurm_get_msg_timeout(), 30);
+		message_timeout = MAX(slurm_conf.msg_timeout, 30);
 	}
 
 	if (agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) {

@@ -303,13 +303,11 @@ extern int read_slurmdbd_conf(void)
 			slurmdbd_conf->max_time_range = INFINITE;
 		}
 
-		if (!s_p_get_uint16(&slurmdbd_conf->msg_timeout,
-				    "MessageTimeout", tbl))
-			slurmdbd_conf->msg_timeout = DEFAULT_MSG_TIMEOUT;
-		else if (slurmdbd_conf->msg_timeout > 100) {
-			info("WARNING: MessageTimeout is too high for "
-			     "effective fault-tolerance");
-		}
+		if (!s_p_get_uint16(&slurm_conf.msg_timeout, "MessageTimeout",
+		                    tbl))
+			slurm_conf.msg_timeout = DEFAULT_MSG_TIMEOUT;
+		else if (slurm_conf.msg_timeout > 100)
+			info("WARNING: MessageTimeout is too high for effective fault-tolerance");
 
 		s_p_get_string(&slurmdbd_conf->parameters, "Parameters", tbl);
 		if (slurmdbd_conf->parameters) {
@@ -649,7 +647,7 @@ extern void log_config(void)
 	debug2("DefaultQOS        = %s", slurmdbd_conf->default_qos);
 
 	debug2("LogFile           = %s", slurmdbd_conf->log_file);
-	debug2("MessageTimeout    = %u", slurmdbd_conf->msg_timeout);
+	debug2("MessageTimeout    = %u", slurm_conf.msg_timeout);
 	debug2("Parameters        = %s", slurmdbd_conf->parameters);
 	debug2("PidFile           = %s", slurmdbd_conf->pid_file);
 	debug2("PluginDir         = %s", slurmdbd_conf->plugindir);
@@ -872,7 +870,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MessageTimeout");
-	key_pair->value = xstrdup_printf("%u secs", slurmdbd_conf->msg_timeout);
+	key_pair->value = xstrdup_printf("%u secs", slurm_conf.msg_timeout);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

@@ -390,13 +390,11 @@ static int _attach_to_tasks(uint32_t jobid,
 {
 	slurm_msg_t msg;
 	List nodes_resp = NULL;
-	int timeout;
+	int timeout = slurm_conf.msg_timeout * 1000; /* sec to msec */
 	reattach_tasks_request_msg_t reattach_msg;
 	char *hosts;
 
 	slurm_msg_t_init(&msg);
-
-	timeout = slurm_get_msg_timeout() * 1000; /* sec to msec */
 
 	reattach_msg.job_id = jobid;
 	reattach_msg.job_step_id = stepid;

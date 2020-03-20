@@ -529,27 +529,6 @@ extern char *slurm_get_reboot_program(void)
 	return reboot_program;
 }
 
-/* slurm_get_msg_timeout
- * get default message timeout value from slurm_conf object
- */
-uint16_t slurm_get_msg_timeout(void)
-{
-	uint16_t msg_timeout = 0;
-	slurm_conf_t *conf;
-
- 	if (slurmdbd_conf) {
-		msg_timeout = slurmdbd_conf->msg_timeout;
-	} else {
-		conf = slurm_conf_lock();
-		msg_timeout = conf->msg_timeout;
-		slurm_conf_unlock();
-#ifdef MEMORY_LEAK_DEBUG
-		msg_timeout *= 4;
-#endif
-	}
-	return msg_timeout;
-}
-
 /* slurm_get_plugin_dir
  * get plugin directory from slurm_conf object
  * RET char *   - plugin directory, MUST be xfreed by caller
@@ -3211,7 +3190,7 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 #ifdef HAVE_NATIVE_CRAY
 	max_retry_period = 180;
 #else
-	max_retry_period = slurm_get_msg_timeout();
+	max_retry_period = slurm_conf.msg_timeout;
 #endif
 	for (retry = 0; retry < max_retry_period; retry++) {
 		if (retry)
@@ -3473,9 +3452,9 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 
 	if (timeout <= 0)
 		/* convert secs to msec */
-		timeout  = slurm_get_msg_timeout() * MSEC_IN_SEC;
+		timeout = slurm_conf.msg_timeout * MSEC_IN_SEC;
 
-	else if (timeout > (slurm_get_msg_timeout() * MSEC_IN_SEC * 10)) {
+	else if (timeout > (slurm_conf.msg_timeout * MSEC_IN_SEC * 10)) {
 		/* consider 10x the timeout to be very long */
 		debug("%s: You are receiving a message with very long "
 		      "timeout of %d seconds", __func__,
@@ -3544,12 +3523,12 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 
 	if (timeout <= 0) {
 		/* convert secs to msec */
-		timeout  = slurm_get_msg_timeout() * 1000;
+		timeout = slurm_conf.msg_timeout * 1000;
 		orig_timeout = timeout;
 	}
 	if (steps) {
 		if (message_timeout < 0)
-			message_timeout = slurm_get_msg_timeout() * 1000;
+			message_timeout = slurm_conf.msg_timeout * 1000;
 		orig_timeout = (timeout -
 				(message_timeout*(steps-1)))/steps;
 		steps--;
@@ -3560,11 +3539,11 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	/* we compare to the orig_timeout here because that is really
 	 *  what we are going to wait for each step
 	 */
-	if (orig_timeout >= (slurm_get_msg_timeout() * 10000)) {
+	if (orig_timeout >= (slurm_conf.msg_timeout * 10000)) {
 		debug("slurm_receive_msgs: "
 		      "You are sending a message with timeout's greater "
 		      "than %d seconds, your's is %d seconds",
-		      (slurm_get_msg_timeout() * 10),
+		      (slurm_conf.msg_timeout * 10),
 		      (timeout/1000));
 	} else if (orig_timeout < 1000) {
 		debug("slurm_receive_msgs: "
@@ -3764,15 +3743,15 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 
 	if (timeout <= 0) {
 		/* convert secs to msec */
-		timeout  = slurm_get_msg_timeout() * 1000;
+		timeout = slurm_conf.msg_timeout * 1000;
 	} else if (timeout < 1000) {
 		debug("%s: You are sending a message with a very short timeout of %d milliseconds",
 		      __func__, timeout);
-	} else if (timeout >= (slurm_get_msg_timeout() * 10000)) {
+	} else if (timeout >= (slurm_conf.msg_timeout * 10000)) {
 		debug("slurm_receive_msg_and_forward: "
 		      "You are sending a message with timeout's greater "
 		      "than %d seconds, your's is %d seconds",
-		      (slurm_get_msg_timeout() * 10),
+		      (slurm_conf.msg_timeout * 10),
 		      (timeout/1000));
 	}
 
@@ -4123,15 +4102,15 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 size_t slurm_write_stream(int open_fd, char *buffer, size_t size)
 {
 	return slurm_send_timeout(open_fd, buffer, size,
-				  SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				  (slurm_get_msg_timeout() * 1000));
+	                          SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
+	                          (slurm_conf.msg_timeout * 1000));
 }
 size_t slurm_write_stream_timeout(int open_fd, char *buffer,
 				  size_t size, int timeout)
 {
 	return slurm_send_timeout(open_fd, buffer, size,
-				  SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				  timeout);
+	                          SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
+	                          timeout);
 }
 
 /* slurm_read_stream
@@ -4145,15 +4124,15 @@ size_t slurm_write_stream_timeout(int open_fd, char *buffer,
 size_t slurm_read_stream(int open_fd, char *buffer, size_t size)
 {
 	return slurm_recv_timeout(open_fd, buffer, size,
-				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   (slurm_get_msg_timeout() * 1000));
+	                          SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
+	                          (slurm_conf.msg_timeout * 1000));
 }
 size_t slurm_read_stream_timeout(int open_fd, char *buffer,
 				 size_t size, int timeout)
 {
 	return slurm_recv_timeout(open_fd, buffer, size,
-				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   timeout);
+	                          SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
+	                          timeout);
 }
 
 /**********************************************************************\
@@ -4493,7 +4472,7 @@ _send_and_recv_msgs(int fd, slurm_msg_t *req, int timeout)
 
 	if (!req->forward.timeout) {
 		if (!timeout)
-			timeout = slurm_get_msg_timeout() * 1000;
+			timeout = slurm_conf.msg_timeout * 1000;
 		req->forward.timeout = timeout;
 	}
 	if (slurm_send_node_msg(fd, req) >= 0) {
@@ -4505,7 +4484,7 @@ _send_and_recv_msgs(int fd, slurm_msg_t *req, int timeout)
 			 * to let the child timeout */
 			if (message_timeout < 0)
 				message_timeout =
-					slurm_get_msg_timeout() * 1000;
+					slurm_conf.msg_timeout * 1000;
 			steps = req->forward.cnt + 1;
 			if (!req->forward.tree_width)
 				req->forward.tree_width =
@@ -4882,7 +4861,7 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 
 	slurm_mutex_lock(&conn_lock);
 	if (conn_timeout == NO_VAL16)
-		conn_timeout = MIN(slurm_get_msg_timeout(), 10);
+		conn_timeout = MIN(slurm_conf.msg_timeout, 10);
 	slurm_mutex_unlock(&conn_lock);
 
 	/* This connect retry logic permits Slurm hierarchical communications

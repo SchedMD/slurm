@@ -383,7 +383,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		 * if io_timeout seconds pass without stdio traffic to/from
 		 * the node.
 		 */
-		ctx->launch_state->io_timeout = slurm_get_msg_timeout();
+		ctx->launch_state->io_timeout = slurm_conf.msg_timeout;
 	} else { /* user_managed_io is true */
 		/* initialize user_managed_io_t */
 		ctx->launch_state->io.user =
@@ -576,7 +576,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 		 * if io_timeout seconds pass without stdio traffic to/from
 		 * the node.
 		 */
-		ctx->launch_state->io_timeout = slurm_get_msg_timeout();
+		ctx->launch_state->io_timeout = slurm_conf.msg_timeout;
 	} else { /* user_managed_io is true */
 		xrealloc(ctx->launch_state->io.user->sockets,
 			 sizeof(int) * ctx->step_req->num_tasks);
@@ -1155,7 +1155,7 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	 * parallel jobs using PMI sometimes result in slow message
 	 * responses and timeouts. Raise the default timeout for srun. */
 	if (!message_socket_ops.timeout)
-		message_socket_ops.timeout = slurm_get_msg_timeout() * 8000;
+		message_socket_ops.timeout = slurm_conf.msg_timeout * 8000;
 
 	ports = slurm_get_srun_port_range();
 	for (i = 0; i < sls->num_resp_port; i++) {
@@ -1718,7 +1718,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	 * running Prolog
 	 */
 	if (timeout <= 0) {
-		timeout = (slurm_get_msg_timeout() +
+		timeout = (slurm_conf.msg_timeout +
 			   slurm_get_batch_start_timeout()) * 1000;
 	}
 

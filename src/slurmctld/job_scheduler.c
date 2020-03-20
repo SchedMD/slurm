@@ -1148,7 +1148,7 @@ static int _schedule(uint32_t job_limit)
 			defer_rpc_cnt = 0;
 		}
 
-		time_limit = slurm_get_msg_timeout() / 2;
+		time_limit = slurm_conf.msg_timeout / 2;
 		if ((tmp_ptr = xstrcasestr(sched_params, "max_sched_time="))) {
 			sched_timeout = atoi(tmp_ptr + 15);
 			if ((sched_timeout <= 0) ||

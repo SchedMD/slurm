@@ -658,7 +658,7 @@ static void _add_delay(void)
 
 	slurm_mutex_lock(&max_delay_lock);
 	if (target_resp_time < 0) {
-		target_resp_time = slurm_get_msg_timeout() / 4;
+		target_resp_time = slurm_conf.msg_timeout / 4;
 		target_resp_time = MAX(target_resp_time, 3);
 		target_resp_time = MIN(target_resp_time, 5);
 		target_resp_time *= USEC_IN_SEC;

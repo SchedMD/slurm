@@ -642,7 +642,7 @@ static int _shutdown_primary_controller(int wait_time)
 	int i, *arg;
 
 	if (shutdown_timeout == 0) {
-		shutdown_timeout = slurm_get_msg_timeout() / 2;
+		shutdown_timeout = slurm_conf.msg_timeout / 2;
 		shutdown_timeout = MAX(shutdown_timeout, 2);	/* 2 sec min */
 		shutdown_timeout = MIN(shutdown_timeout, CONTROL_TIMEOUT);
 		shutdown_timeout *= 1000;	/* sec to msec */

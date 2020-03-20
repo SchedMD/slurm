@@ -2883,10 +2883,9 @@ extern int validate_nodes_via_front_end(
 			      front_end_ptr->name);
 			abort_job_on_node(reg_msg->job_id[i], job_ptr,
 					  front_end_ptr->name);
-		}
-
-		else if (difftime(now, job_ptr->end_time) <
-			 slurm_get_msg_timeout()) {	/* Race condition */
+		} else if (difftime(now, job_ptr->end_time) <
+		           slurm_conf.msg_timeout) {
+			/* Race condition */
 			debug("Registered newly completed %pJ %s on %s",
 			      job_ptr,
 			      _build_step_id(step_str, sizeof(step_str),
