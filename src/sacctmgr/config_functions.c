@@ -50,7 +50,6 @@ static char    *acct_storage_backup_host = NULL;
 static char    *acct_storage_host = NULL;
 static char    *acct_storage_loc  = NULL;
 static char    *acct_storage_pass = NULL;
-static uint32_t acct_storage_port;
 static char    *acct_storage_user = NULL;
 static char    *auth_type = NULL;
 static uint16_t private_data;
@@ -94,7 +93,6 @@ static void _load_slurm_config(void)
 	acct_storage_host = slurm_get_accounting_storage_host();
 	acct_storage_loc  = slurm_get_accounting_storage_loc();
 	acct_storage_pass = slurm_get_accounting_storage_pass();
-	acct_storage_port = slurm_get_accounting_storage_port();
 	acct_storage_user = slurm_get_accounting_storage_user();
 	auth_type = slurm_get_auth_type();
 	private_data = slurm_get_private_data();
@@ -122,7 +120,8 @@ static void _print_slurm_config(void)
 	printf("AccountingStorageHost  = %s\n", acct_storage_host);
 	printf("AccountingStorageLoc   = %s\n", acct_storage_loc);
 	printf("AccountingStoragePass  = %s\n", acct_storage_pass);
-	printf("AccountingStoragePort  = %u\n", acct_storage_port);
+	printf("AccountingStoragePort  = %u\n",
+	       slurm_conf.accounting_storage_port);
 	printf("AccountingStorageType  = %s\n",
 	       slurm_conf.accounting_storage_type);
 	printf("AccountingStorageUser  = %s\n", acct_storage_user);

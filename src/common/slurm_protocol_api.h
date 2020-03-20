@@ -606,18 +606,6 @@ int slurm_set_accounting_storage_loc(char *loc);
  */
 char *slurm_get_accounting_storage_pass(void);
 
-/* slurm_get_accounting_storage_port
- * returns the storage port from slurm_conf object
- * RET uint32_t   - storage port
- */
-uint32_t slurm_get_accounting_storage_port(void);
-
-/* slurm_set_accounting_storage_port
- * sets the storage port in slurm_conf object
- * RET 0 or error code
- */
-int slurm_set_accounting_storage_port(uint32_t storage_port);
-
 /* slurm_get_launch_params
  * get launch_params from slurm_conf object
  * RET char *   - launch_params, MUST be xfreed by caller

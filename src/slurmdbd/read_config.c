@@ -114,7 +114,6 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->storage_host);
 		xfree(slurmdbd_conf->storage_loc);
 		xfree(slurmdbd_conf->storage_pass);
-		slurmdbd_conf->storage_port = 0;
 		xfree(slurmdbd_conf->storage_user);
 		slurmdbd_conf->track_wckey = 0;
 		slurmdbd_conf->track_ctld = 0;
@@ -483,8 +482,8 @@ extern int read_slurmdbd_conf(void)
 			       "StorageLoc", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_pass,
 			       "StoragePass", tbl);
-		s_p_get_uint16(&slurmdbd_conf->storage_port,
-			       "StoragePort", tbl);
+		s_p_get_uint32(&slurm_conf.accounting_storage_port,
+		               "StoragePort", tbl);
 		s_p_get_string(&slurm_conf.accounting_storage_type,
 		               "StorageType", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_user,
@@ -561,14 +560,16 @@ extern int read_slurmdbd_conf(void)
 
 	if (!xstrcmp(slurm_conf.accounting_storage_type,
 	             "accounting_storage/mysql")) {
-		if (!slurmdbd_conf->storage_port)
-			slurmdbd_conf->storage_port = DEFAULT_MYSQL_PORT;
+		if (!slurm_conf.accounting_storage_port)
+			slurm_conf.accounting_storage_port =
+				DEFAULT_MYSQL_PORT;
 		if (!slurmdbd_conf->storage_loc)
 			slurmdbd_conf->storage_loc =
 				xstrdup(DEFAULT_ACCOUNTING_DB);
 	} else {
-		if (!slurmdbd_conf->storage_port)
-			slurmdbd_conf->storage_port = DEFAULT_STORAGE_PORT;
+		if (!slurm_conf.accounting_storage_port)
+			slurm_conf.accounting_storage_port =
+				DEFAULT_STORAGE_PORT;
 		if (!slurmdbd_conf->storage_loc)
 			slurmdbd_conf->storage_loc =
 				xstrdup(DEFAULT_STORAGE_LOC);
@@ -688,7 +689,7 @@ extern void log_config(void)
 	debug2("StorageHost       = %s", slurmdbd_conf->storage_host);
 	debug2("StorageLoc        = %s", slurmdbd_conf->storage_loc);
 	/* debug2("StoragePass       = %s", slurmdbd_conf->storage_pass); */
-	debug2("StoragePort       = %u", slurmdbd_conf->storage_port);
+	debug2("StoragePort       = %u", slurm_conf.accounting_storage_port);
 	debug2("StorageType       = %s", slurm_conf.accounting_storage_type);
 	debug2("StorageUser       = %s", slurmdbd_conf->storage_user);
 
@@ -998,7 +999,8 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("StoragePort");
-	key_pair->value = xstrdup_printf("%u", slurmdbd_conf->storage_port);
+	key_pair->value = xstrdup_printf("%u",
+	                                 slurm_conf.accounting_storage_port);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

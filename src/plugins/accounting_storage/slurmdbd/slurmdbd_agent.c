@@ -600,13 +600,7 @@ static void _open_slurmdbd_conn(bool need_db)
 
 		slurmdbd_conn->timeout = (slurm_conf.msg_timeout + 35) * 1000;
 
-		slurmdbd_conn->rem_port = slurm_get_accounting_storage_port();
-
-		if (!slurmdbd_conn->rem_port) {
-			slurmdbd_conn->rem_port = SLURMDBD_PORT;
-			slurm_set_accounting_storage_port(
-				slurmdbd_conn->rem_port);
-		}
+		slurmdbd_conn->rem_port = slurm_conf.accounting_storage_port;
 	}
 	slurmdbd_shutdown = 0;
 	slurmdbd_conn->shutdown = &slurmdbd_shutdown;

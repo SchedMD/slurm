@@ -1953,49 +1953,6 @@ static char *_global_auth_key(void)
 	return storage_pass_ptr;
 }
 
-/* slurm_get_accounting_storage_port
- * returns the storage port from slurm_conf object
- * RET uint32_t   - storage port
- */
-uint32_t slurm_get_accounting_storage_port(void)
-{
-	uint32_t storage_port;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-		storage_port = slurmdbd_conf->storage_port;
-	} else {
-		conf = slurm_conf_lock();
-		storage_port = conf->accounting_storage_port;
-		slurm_conf_unlock();
-	}
-	return storage_port;
-
-}
-
-/* slurm_set_accounting_storage_port
- * sets the storage port in slurm_conf object
- * RET 0 or error code
- */
-int slurm_set_accounting_storage_port(uint32_t storage_port)
-{
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-		slurmdbd_conf->storage_port = storage_port;
-	} else {
-		conf = slurm_conf_lock();
-		if (storage_port == 0) {
-			error("can't have storage port of 0");
-			return SLURM_ERROR;
-		}
-
-		conf->accounting_storage_port = storage_port;
-		slurm_conf_unlock();
-	}
-	return 0;
-}
-
 /*
  * slurm_get_dependency_params
  * RET dependency_params must be xfreed by caller

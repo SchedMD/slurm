@@ -302,7 +302,6 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	char *acct_storage_host = slurm_get_accounting_storage_host();
 	char *acct_storage_loc  = slurm_get_accounting_storage_loc();
 	char *acct_storage_pass = slurm_get_accounting_storage_pass();
-	uint32_t acct_storage_port = slurm_get_accounting_storage_port();
 	char *acct_storage_user = slurm_get_accounting_storage_user();
 	char *auth_type = slurm_get_auth_type();
 	uint16_t private_data = slurm_get_private_data();
@@ -322,7 +321,7 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 				   "AccountingStorageLoc", acct_storage_loc);
 	add_display_treestore_line(update, treestore, &iter,
 				   "AccountingStoragePass", acct_storage_pass);
-	sprintf(tmp_str, "%u", acct_storage_port);
+	sprintf(tmp_str, "%u", slurm_conf.accounting_storage_port);
 	add_display_treestore_line(update, treestore, &iter,
 				   "AccountingStoragePort", tmp_str);
 	add_display_treestore_line(update, treestore, &iter,
