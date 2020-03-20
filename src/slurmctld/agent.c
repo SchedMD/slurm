@@ -1845,16 +1845,13 @@ static void _mail_free(void *arg)
 
 static char **_build_mail_env(void)
 {
-	char **my_env;
+	char **my_env = xcalloc(2, sizeof(char *));
 
-        my_env = xmalloc(sizeof(char *));
-        my_env[0] = NULL;
-        if (slurm_conf.cluster_name) {
-                setenvf(&my_env, "SLURM_CLUSTER_NAME", "%s",
-		        slurm_conf.cluster_name);
-        }
+	my_env[0] = xstrdup_printf("SLURM_CLUSTER_NAME=%s",
+	                           slurm_conf.cluster_name);
+	my_env[1] = NULL;
 
-	 return my_env;
+	return my_env;
 }
 
 /* process an email request and free the record */
