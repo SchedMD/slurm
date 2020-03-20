@@ -53,6 +53,7 @@
 #include "src/common/half_duplex.h"
 #include "src/common/net.h"
 #include "src/common/macros.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
@@ -66,7 +67,6 @@ struct allocation_msg_thread {
 	pthread_t id;
 };
 
-static uid_t slurm_uid;
 static void _handle_msg(void *arg, slurm_msg_t *msg);
 static pthread_mutex_t msg_thr_start_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t msg_thr_start_cond = PTHREAD_COND_INITIALIZER;
@@ -105,7 +105,6 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 
 	debug("Entering slurm_allocation_msg_thr_create()");
 
-	slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	msg_thr = (struct allocation_msg_thread *)xmalloc(
 		sizeof(struct allocation_msg_thread));
 
@@ -304,7 +303,8 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 
-	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
+	if ((req_uid != slurm_conf.slurm_user_id) && (req_uid != 0) &&
+	    (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u",
 		       (unsigned int) req_uid);
 		return;

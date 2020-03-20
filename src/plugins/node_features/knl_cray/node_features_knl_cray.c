@@ -2123,7 +2123,7 @@ static void _check_node_status(void)
 		xfree(node_ptr->reason);
 		node_ptr->reason = xstrdup("Node not found by capmc");
 		node_ptr->reason_time = time(NULL);
-		node_ptr->reason_uid = slurm_get_slurm_user_id();
+		node_ptr->reason_uid = slurm_conf.slurm_user_id;
 		if (avail_node_bitmap)
 			bit_clear(avail_node_bitmap, i);
 	}

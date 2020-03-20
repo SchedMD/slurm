@@ -51,6 +51,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
@@ -568,20 +569,14 @@ _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 static void
 _handle_msg(void *arg, slurm_msg_t *msg)
 {
-	static uid_t slurm_uid;
-	static bool slurm_uid_set = false;
 	message_thread_state_t *mts = (message_thread_state_t *)arg;
 	uid_t req_uid;
 	uid_t uid = getuid();
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 
-	if (!slurm_uid_set) {
-		slurm_uid = slurm_get_slurm_user_id();
-		slurm_uid_set = true;
-	}
-
-	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
+	if ((req_uid != slurm_conf.slurm_user_id) && (req_uid != 0) &&
+	    (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u",
 		       (unsigned int) req_uid);
 		return;

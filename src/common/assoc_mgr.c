@@ -3104,11 +3104,10 @@ extern void assoc_mgr_get_shares(void *db_conn,
 	}
 
 	if (private_data & PRIVATE_DATA_USAGE) {
-		uint32_t slurm_uid = slurm_get_slurm_user_id();
 		is_admin = 0;
 		/* Check permissions of the requesting user.
 		 */
-		if ((uid == slurm_uid || uid == 0)
+		if ((uid == slurm_conf.slurm_user_id || uid == 0)
 		    || assoc_mgr_get_admin_level(db_conn, uid)
 		    >= SLURMDB_ADMIN_OPERATOR)
 			is_admin = 1;
@@ -3308,11 +3307,10 @@ extern void assoc_mgr_info_get_pack_msg(
 	}
 
 	if (private_data & (PRIVATE_DATA_USAGE | PRIVATE_DATA_USERS)) {
-		uint32_t slurm_uid = slurm_get_slurm_user_id();
 		is_admin = 0;
 		/* Check permissions of the requesting user.
 		 */
-		if ((uid == slurm_uid || uid == 0)
+		if ((uid == slurm_conf.slurm_user_id || uid == 0)
 		    || assoc_mgr_get_admin_level(db_conn, uid)
 		    >= SLURMDB_ADMIN_OPERATOR)
 			is_admin = 1;

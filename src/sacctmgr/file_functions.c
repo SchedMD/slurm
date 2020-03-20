@@ -1815,7 +1815,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				goto end_it;
 
 			} else {
-				if (my_uid != slurm_get_slurm_user_id()
+				if ((my_uid != slurm_conf.slurm_user_id)
 				    && my_uid != 0
 				    && (user->admin_level
 					< SLURMDB_ADMIN_SUPER_USER)) {

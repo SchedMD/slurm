@@ -1122,7 +1122,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 		return SLURM_ERROR;
 
 	} else {
-		if (my_uid != slurm_get_slurm_user_id() && my_uid != 0
+		if ((my_uid != slurm_conf.slurm_user_id) && (my_uid != 0)
 		    && user->admin_level < SLURMDB_ADMIN_SUPER_USER) {
 			exit_code = 1;
 			fprintf(stderr, " Your user does not have sufficient "

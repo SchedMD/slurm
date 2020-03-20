@@ -2712,19 +2712,6 @@ uint16_t slurm_get_slurmd_port(void)
 	return slurmd_port;
 }
 
-/* slurm_get_slurm_user_id
- * returns slurm uid from slurm_conf object
- * RET uint32_t	- slurm user id
- */
-uint32_t slurm_get_slurm_user_id(void)
-{
-	uint32_t slurm_uid = 0;
-	slurm_conf_t *conf = slurm_conf_lock();
-	slurm_uid = conf->slurm_user_id;
-	slurm_conf_unlock();
-	return slurm_uid;
-}
-
 /* slurm_get_slurmd_user_id
  * returns slurmd uid from slurm_conf object
  * RET uint32_t	- slurmd user id

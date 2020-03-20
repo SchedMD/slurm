@@ -201,7 +201,7 @@ extern int init ( void )
 	 * file in append mode stats could fail on it if the file
 	 * isn't world writable.
 	 */
-	if (first && (getuid() == slurm_get_slurm_user_id())) {
+	if (first && (getuid() == slurm_conf.slurm_user_id)) {
 		debug2("slurmdb_init() called");
 		log_file = slurm_get_accounting_storage_loc();
 		if (!log_file)

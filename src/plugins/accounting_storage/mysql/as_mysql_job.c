@@ -260,8 +260,8 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			}
 
 			if (as_mysql_add_wckeys(mysql_conn,
-						slurm_get_slurm_user_id(),
-						wckey_list)
+			                        slurm_conf.slurm_user_id,
+			                        wckey_list)
 			    == SLURM_SUCCESS)
 				acct_storage_p_commit(mysql_conn, 1);
 			/* If that worked lets get it */

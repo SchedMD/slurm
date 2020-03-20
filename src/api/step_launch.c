@@ -67,6 +67,7 @@
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/plugstack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_mpi.h"
@@ -99,7 +100,6 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 /**********************************************************************
  * Message handler declarations
  **********************************************************************/
-static uid_t  slurm_uid;
 static bool   force_terminated_job = false;
 static int    task_exit_signal = 0;
 
@@ -1145,7 +1145,6 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	uint16_t eio_timeout;
 
 	debug("Entering _msg_thr_create()");
-	slurm_uid = (uid_t) slurm_get_slurm_user_id();
 
 	eio_timeout = slurm_get_srun_eio_timeout();
 	sls->msg_handle = eio_handle_create(eio_timeout);
@@ -1569,7 +1568,8 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 
-	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
+	if ((req_uid != slurm_conf.slurm_user_id) && (req_uid != 0) &&
+	    (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u",
 		       (unsigned int) req_uid);
  		return;

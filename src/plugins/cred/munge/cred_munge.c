@@ -48,6 +48,7 @@
 
 #include "slurm/slurm_errno.h"
 
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -55,6 +56,12 @@
 
 #define RETRY_COUNT		20
 #define RETRY_USEC		100000
+
+#if defined (__APPLE__)
+extern slurm_conf_t slurm_conf __attribute__((weak_import));
+#else
+slurm_conf_t slurm_conf;
+#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -95,19 +102,12 @@ enum local_error_code {
 	ESIG_CRED_REPLAYED,
 };
 
-static uid_t slurm_user = 0;
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
 extern int init(void)
 {
-	/*
-	 * Get slurm user id once. We use it later to verify credentials.
-	 */
-	slurm_user = slurm_get_slurm_user_id();
-
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -277,9 +277,9 @@ again:
 #endif
 	}
 
-	if ((uid != slurm_user) && (uid != 0)) {
+	if ((uid != slurm_conf.slurm_user_id) && (uid != 0)) {
 		error("%s: Unexpected uid (%u) != Slurm uid (%u)",
-		      plugin_type, uid, slurm_user);
+		      plugin_type, uid, slurm_conf.slurm_user_id);
 		rc = ESIG_BAD_USERID;
 	} else if (buf_size != buf_out_size)
 		rc = ESIG_BUF_SIZE_MISMATCH;

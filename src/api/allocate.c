@@ -1163,12 +1163,12 @@ _handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp)
 {
 	uid_t req_uid;
 	uid_t uid       = getuid();
-	uid_t slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	int rc = 0;
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 
-	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
+	if ((req_uid != slurm_conf.slurm_user_id) && (req_uid != 0) &&
+	    (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u",
 			(unsigned int) req_uid);
 		return 0;
