@@ -127,7 +127,7 @@ extern int slurm_auth_init(char *auth_type)
 
 	type = auth_plugin_type = slurm_get_auth_type();
 	if (run_in_daemon(&daemon_run, &daemon_set, "slurmctld,slurmdbd"))
-		list = auth_alt_types = slurm_get_auth_alt_types();
+		list = auth_alt_types = xstrdup(slurm_conf.authalttypes);
 	g_context_num = 0;
 	if (!auth_plugin_type || auth_plugin_type[0] == '\0')
 		goto done;

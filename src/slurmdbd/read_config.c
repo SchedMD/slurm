@@ -230,8 +230,7 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_boolean(&a_suspend, "ArchiveSuspend", tbl);
 		s_p_get_boolean(&a_txn, "ArchiveTXN", tbl);
 		s_p_get_boolean(&a_usage, "ArchiveUsage", tbl);
-		s_p_get_string(&slurmdbd_conf->auth_alt_types, "AuthAltTypes",
-			       tbl);
+		s_p_get_string(&slurm_conf.authalttypes, "AuthAltTypes", tbl);
 		s_p_get_string(&slurmdbd_conf->auth_info, "AuthInfo", tbl);
 		s_p_get_string(&slurmdbd_conf->auth_type, "AuthType", tbl);
 		s_p_get_uint16(&slurmdbd_conf->commit_delay,
@@ -630,7 +629,7 @@ extern void log_config(void)
 
 	debug2("ArchiveDir        = %s", slurmdbd_conf->archive_dir);
 	debug2("ArchiveScript     = %s", slurmdbd_conf->archive_script);
-	debug2("AuthAltTypes      = %s", slurmdbd_conf->auth_alt_types);
+	debug2("AuthAltTypes      = %s", slurm_conf.authalttypes);
 	debug2("AuthInfo          = %s", slurmdbd_conf->auth_info);
 	debug2("AuthType          = %s", slurmdbd_conf->auth_type);
 	debug2("CommitDelay       = %u", slurmdbd_conf->commit_delay);
@@ -791,7 +790,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AuthAltTypes");
-	key_pair->value = xstrdup(slurmdbd_conf->auth_alt_types);
+	key_pair->value = xstrdup(slurm_conf.authalttypes);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
