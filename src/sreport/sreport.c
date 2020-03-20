@@ -123,15 +123,10 @@ main (int argc, char **argv)
 	log_init("sreport", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	/* Check to see if we are running a supported accounting plugin */
-	if (xstrcasecmp(slurm_conf.accounting_storage_type,
-	                "accounting_storage/slurmdbd")
-	   && xstrcasecmp(slurm_conf.accounting_storage_type,
-	                  "accounting_storage/mysql")) {
+	if (!slurm_with_slurmdbd()) {
 		fprintf(stderr,
-			"You are not running a supported accounting_storage plugin\n"
-			"(%s).\n"
-			"Only 'accounting_storage/slurmdbd' and 'accounting_storage/mysql' are supported.\n",
-			slurm_conf.accounting_storage_type);
+		        "You are not running a supported accounting_storage plugin\n"
+		        "Only 'accounting_storage/slurmdbd' is supported.\n");
 		exit(1);
 	}
 

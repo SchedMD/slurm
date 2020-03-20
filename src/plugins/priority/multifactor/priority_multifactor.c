@@ -1706,19 +1706,11 @@ int init ( void )
 	_internal_setup();
 
 	/* Check to see if we are running a supported accounting plugin */
-	if (xstrcasecmp(slurm_conf.accounting_storage_type,
-	                "accounting_storage/slurmdbd")
-	    && xstrcasecmp(slurm_conf.accounting_storage_type,
-	                   "accounting_storage/mysql")) {
+	if (!slurm_with_slurmdbd()) {
 		time_t start_time = time(NULL);
-		error("You are not running a supported "
-		      "accounting_storage plugin\n(%s).\n"
-		      "Fairshare can only be calculated with either "
-		      "'accounting_storage/slurmdbd' "
-		      "or 'accounting_storage/mysql' enabled.  "
-		      "If you want multifactor priority without fairshare "
-		      "ignore this message.",
-		      slurm_conf.accounting_storage_type);
+		error("You are not running a supported accounting_storage plugin\n"
+		      "Fairshare can only be calculated with 'accounting_storage/slurmdbd' enabled.\n"
+		      "If you want multifactor priority without fairshare ignore this message.");
 		calc_fairshare = 0;
 		weight_fs = 0;
 
