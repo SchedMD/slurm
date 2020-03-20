@@ -547,24 +547,6 @@ extern char *slurm_get_reboot_program(void)
 	return reboot_program;
 }
 
-/* slurm_get_tcp_timeout
- * get default tcp timeout value from slurm_conf object
- */
-uint16_t slurm_get_tcp_timeout(void)
-{
-	uint16_t tcp_timeout = 0;
-	slurm_conf_t *conf;
-
- 	if (slurmdbd_conf) {
-		tcp_timeout = slurmdbd_conf->tcp_timeout;
-	} else {
-		conf = slurm_conf_lock();
-		tcp_timeout = conf->tcp_timeout;
-		slurm_conf_unlock();
-	}
-	return tcp_timeout;
-}
-
 /* slurm_get_msg_timeout
  * get default message timeout value from slurm_conf object
  */

@@ -603,7 +603,7 @@ _random_sleep(stepd_step_rec_t *job)
 {
 #if !defined HAVE_FRONT_END
 	long int delay = 0;
-	long int max   = (slurm_get_tcp_timeout() * job->nnodes);
+	long int max = (slurm_conf.tcp_timeout * job->nnodes);
 
 	max = MIN(max, 5000);
 	srand48((long int) (job->jobid + job->nodeid));

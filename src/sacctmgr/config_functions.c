@@ -57,7 +57,6 @@ static char    *auth_type = NULL;
 static uint16_t msg_timeout;
 static char    *plugin_dir = NULL;
 static uint16_t private_data;
-static uint16_t tcp_timeout;
 static uint16_t track_wckey;
 
 static List dbd_config_list = NULL;
@@ -105,7 +104,6 @@ static void _load_slurm_config(void)
 	msg_timeout = slurm_get_msg_timeout();
 	plugin_dir = slurm_get_plugin_dir();
 	private_data = slurm_get_private_data();
-	tcp_timeout = slurm_get_tcp_timeout();
 	track_wckey = slurm_get_track_wckey();
 }
 
@@ -145,7 +143,7 @@ static void _print_slurm_config(void)
 	       user_name, slurm_conf.slurm_user_id);
 	printf("SLURM_CONF             = %s\n", default_slurm_config_file);
 	printf("SLURM_VERSION          = %s\n", SLURM_VERSION_STRING);
-	printf("TCPTimeout             = %u sec\n", tcp_timeout);
+	printf("TCPTimeout             = %u sec\n", slurm_conf.tcp_timeout);
 	printf("TrackWCKey             = %s\n", track_wckey ? "Yes" : "No");
 }
 

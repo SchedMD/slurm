@@ -54,6 +54,7 @@
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -562,7 +563,6 @@ static int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	 * Timeouts in excess of 3 minutes have been observed, resulting
 	 * in serious problems for slurmctld. Making the connect call
 	 * non-blocking and polling seems to fix the problem. */
-	static int timeout = 0;
 	int rc, flags, flags_save, err;
 	socklen_t len;
 	struct pollfd ufds;
@@ -587,10 +587,8 @@ static int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	ufds.events = POLLIN | POLLOUT;
 	ufds.revents = 0;
 
-	if (timeout == 0)
-		timeout = slurm_get_tcp_timeout() * 1000;
-
-again:	rc = poll(&ufds, 1, timeout);
+again:
+	rc = poll(&ufds, 1, slurm_conf.tcp_timeout * 1000);
 	if (rc == -1) {
 		/* poll failed */
 		if (errno == EINTR) {

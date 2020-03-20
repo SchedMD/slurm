@@ -497,9 +497,8 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->storage_user,
 			       "StorageUser", tbl);
 
-		if (!s_p_get_uint16(&slurmdbd_conf->tcp_timeout,
-				    "TCPTimeout", tbl))
-			slurmdbd_conf->tcp_timeout = DEFAULT_TCP_TIMEOUT;
+		if (!s_p_get_uint16(&slurm_conf.tcp_timeout, "TCPTimeout", tbl))
+			slurm_conf.tcp_timeout = DEFAULT_TCP_TIMEOUT;
 
 		if (!s_p_get_boolean((bool *)&slurmdbd_conf->track_wckey,
 				     "TrackWCKey", tbl))
@@ -700,7 +699,7 @@ extern void log_config(void)
 	debug2("StorageType       = %s", slurmdbd_conf->storage_type);
 	debug2("StorageUser       = %s", slurmdbd_conf->storage_user);
 
-	debug2("TCPTimeout        = %u", slurmdbd_conf->tcp_timeout);
+	debug2("TCPTimeout        = %u", slurm_conf.tcp_timeout);
 
 	debug2("TrackWCKey        = %u", slurmdbd_conf->track_wckey);
 	debug2("TrackSlurmctldDown= %u", slurmdbd_conf->track_ctld);
@@ -1021,7 +1020,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("TCPTimeout");
-	key_pair->value = xstrdup_printf("%u secs", slurmdbd_conf->tcp_timeout);
+	key_pair->value = xstrdup_printf("%u secs", slurm_conf.tcp_timeout);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
