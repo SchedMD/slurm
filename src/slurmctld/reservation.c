@@ -232,6 +232,8 @@ static int  _valid_job_access_resv(job_record_t *job_ptr,
 				   slurmctld_resv_t *resv_ptr);
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 static void _validate_node_choice(slurmctld_resv_t *resv_ptr);
+static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
+				  List user_assoc_list, uid_t uid);
 
 static void _set_boot_time(slurmctld_resv_t *resv_ptr)
 {
@@ -3173,48 +3175,9 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 	/* write individual reservation records */
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
-		if (check_permissions) {
-			/* Determine if we have access */
-			if ((accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
-			    && resv_ptr->assoc_list) {
-				/* Check to see if the association is
-				 * here or the parent association is
-				 * listed in the valid associations.
-				 */
-				if (strchr(resv_ptr->assoc_list, '-')) {
-					if (_match_user_assoc(
-						    resv_ptr->assoc_list,
-						    assoc_list,
-						    true))
-						continue;
-				}
-
-				if (strstr(resv_ptr->assoc_list, ",1") ||
-				    strstr(resv_ptr->assoc_list, ",2") ||
-				    strstr(resv_ptr->assoc_list, ",3") ||
-				    strstr(resv_ptr->assoc_list, ",4") ||
-				    strstr(resv_ptr->assoc_list, ",5") ||
-				    strstr(resv_ptr->assoc_list, ",6") ||
-				    strstr(resv_ptr->assoc_list, ",7") ||
-				    strstr(resv_ptr->assoc_list, ",8") ||
-				    strstr(resv_ptr->assoc_list, ",9") ||
-				    strstr(resv_ptr->assoc_list, ",0")) {
-					if (!_match_user_assoc(
-						    resv_ptr->assoc_list,
-						    assoc_list, false))
-						continue;
-				}
-			} else {
-				int i = 0;
-				for (i = 0; i < resv_ptr->user_cnt; i++) {
-					if (resv_ptr->user_list[i] == uid)
-						break;
-				}
-
-				if (i >= resv_ptr->user_cnt)
-					continue;
-			}
-		}
+		if (check_permissions &&
+		    !_validate_user_access(resv_ptr, assoc_list, uid))
+			continue;
 
 		_pack_resv(resv_ptr, buffer, false, protocol_version);
 		resv_packed++;
@@ -3749,6 +3712,53 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 		debug("reservation %s contains unusable nodes, "
 		      "can't reallocate now", resv_ptr->name);
 	}
+}
+
+/*
+ * Validate if the user has access to this reservation.
+ */
+static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
+				  List user_assoc_list, uid_t uid)
+{
+	/* Determine if we have access */
+	if ((accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
+	    resv_ptr->assoc_list) {
+		xassert(user_assoc_list);
+		/*
+		 * Check to see if the association is
+		 * here or the parent association is
+		 * listed in the valid associations.
+		 */
+		if (xstrchr(resv_ptr->assoc_list, '-')) {
+			if (_match_user_assoc(resv_ptr->assoc_list,
+					      user_assoc_list,
+					      true))
+				return 0;
+		}
+
+		if (xstrstr(resv_ptr->assoc_list, ",1") ||
+		    xstrstr(resv_ptr->assoc_list, ",2") ||
+		    xstrstr(resv_ptr->assoc_list, ",3") ||
+		    xstrstr(resv_ptr->assoc_list, ",4") ||
+		    xstrstr(resv_ptr->assoc_list, ",5") ||
+		    xstrstr(resv_ptr->assoc_list, ",6") ||
+		    xstrstr(resv_ptr->assoc_list, ",7") ||
+		    xstrstr(resv_ptr->assoc_list, ",8") ||
+		    xstrstr(resv_ptr->assoc_list, ",9") ||
+		    xstrstr(resv_ptr->assoc_list, ",0")) {
+			if (!_match_user_assoc(resv_ptr->assoc_list,
+					       user_assoc_list,
+					       false))
+				return 0;
+		}
+	} else {
+		for (int i = 0; i < resv_ptr->user_cnt; i++) {
+			if (resv_ptr->user_list[i] == uid)
+				return 0;
+		}
+	}
+
+	return 1;
 }
 
 /* Open the reservation state save file, or backup if necessary.
