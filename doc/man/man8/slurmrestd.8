@@ -1,4 +1,4 @@
-.TH slurmrestd "8" "Slurm REST Daemon" "February 2020" "Slurm REST Daemon"
+.TH slurmrestd "8" "Slurm REST Daemon" "March 2020" "Slurm REST Daemon"
 
 .SH "NAME"
 slurmrestd \- Interface to Slurm via REST API.
@@ -67,6 +67,16 @@ Set debug level explicitly. Valid values are 1-10. See \fB\-v\fR
 .TP
 \fBSLURMRESTD_LISTEN\fR
 Comma delimited list of host:port pairs or unix sockets to listen on.
+
+.SH "SIGNALS"
+.TP
+\fBSIGINT\fR
+.RS
+\fBslurmrestd\fR will shutdown cleanly.
+.RE
+.TP
+\fBSIGPIPE\fR
+This signal is explicitly ignored.
 
 .SH "NOTES"
 slurmrestd is designed to run with AuthAltTypes outside of the Munge cluster

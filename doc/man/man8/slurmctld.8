@@ -1,4 +1,4 @@
-.TH slurmctld "8" "Slurm Daemon" "June 2018" "Slurm Daemon"
+.TH slurmctld "8" "Slurm Daemon" "March 2020" "Slurm Daemon"
 
 .SH "NAME"
 slurmctld \- The central management daemon of Slurm.
@@ -86,6 +86,28 @@ or "/var/tmp/" as a last resort. If none of the above directories have
 write permission for SlurmUser, no core file will be produced.
 The command "scontrol abort" can be used to abort the slurmctld daemon and
 generate a core file.
+
+.SH "SIGNALS"
+.TP
+\fBSIGTERM SIGINT\fR
+\fBslurmctld\fR will shutdown cleanly, saving its current state to the state
+save directory.
+.TP
+\fBSIGABRT\fR
+\fBslurmctld\fR will shutdown cleanly, saving its current state, and perform a
+core dump.
+.PP
+\fBSIGHUP\fR
+.RS
+Reloads the slurm configuration files, similar to 'scontrol reconfigure'.
+.RE
+.TP
+\fBSIGUSR2\fR
+Reread the log level from the configs, and then reopen the log file.  This
+should be used when setting up \fBlogrotate\fR(8).
+.TP
+\fBSIGCHLD SIGUSR1 SIGTSTP SIGXCPU SIGQUIT SIGPIPE SIGALRM\fR
+These signals are explicitly ignored.
 
 .SH "NOTES"
 It may be useful to experiment with different \fBslurmctld\fR specific
