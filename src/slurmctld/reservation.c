@@ -6526,3 +6526,55 @@ extern void job_resv_clear_promiscous_flag(job_record_t *job_ptr)
 	job_ptr->resv_ptr = NULL;
 	job_ptr->bit_flags &= (~JOB_PROM);
 }
+
+extern bool validate_resv_uid(char *resv_name, uid_t uid)
+{
+	static time_t sched_update = 0;
+	static bool user_resv_delete = false;
+
+	slurmdb_assoc_rec_t assoc;
+	List assoc_list;
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
+	bool found_it = false;
+	slurmctld_resv_t *resv_ptr;
+
+	/* Make sure we have node write locks. */
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+
+	if (!resv_name)
+		return found_it;
+
+	if (sched_update != slurm_conf.last_update) {
+		if (xstrcasestr(slurm_conf.slurmctld_params,
+		                "user_resv_delete"))
+			user_resv_delete = true;
+		else
+			user_resv_delete = false;
+		sched_update = slurm_conf.last_update;
+	}
+
+	if (!user_resv_delete)
+		return found_it;
+
+	memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
+	assoc.uid = uid;
+
+	assoc_list = list_create(NULL);
+
+	assoc_mgr_lock(&locks);
+	if (assoc_mgr_get_user_assocs(acct_db_conn, &assoc,
+				      accounting_enforce, assoc_list)
+	    != SLURM_SUCCESS)
+		goto end_it;
+
+	resv_ptr = list_find_first(resv_list, _find_resv_name, resv_name);
+
+	if (resv_ptr &&
+	    _validate_user_access(resv_ptr, assoc_list, uid))
+		found_it = true;
+end_it:
+	FREE_NULL_LIST(assoc_list);
+	assoc_mgr_unlock(&locks);
+
+	return found_it;
+}

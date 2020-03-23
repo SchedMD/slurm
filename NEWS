@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Improve detection and logging of incompatible options involving the
     REPLACE[_DOWN] flags when creating/updating reservations.
  -- Export SLURMD_NODENAME envvar to HealthCheckProgram.
+ -- SlurmctldParameters=user_resv_delete which allows any user able to run
+    in a reservation to delete it.
 
 * Changes in Slurm 20.02.4
 ==========================
