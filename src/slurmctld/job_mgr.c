@@ -1095,7 +1095,7 @@ extern int load_all_job_state(void)
 
 	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
-			fatal("Can not recover job state, incompatible version, start with '-i' to ignore this");
+			fatal("Can not recover job state, incompatible version, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 		error("***********************************************");
 		error("Can not recover job state, incompatible version");
 		error("***********************************************");
@@ -1130,7 +1130,7 @@ extern int load_all_job_state(void)
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete job state save file, start with '-i' to ignore this");
+		fatal("Incomplete job state save file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete job state save file");
 	info("Recovered information about %d jobs", job_cnt);
 	free_buf(buffer);
@@ -1170,7 +1170,7 @@ extern int load_last_job_id( void )
 
 	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
-			fatal("Can not recover last job ID, incompatible version, start with '-i' to ignore this");
+			fatal("Can not recover last job ID, incompatible version, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 		debug("*************************************************");
 		debug("Can not recover last job ID, incompatible version");
 		debug("*************************************************");
@@ -1190,7 +1190,7 @@ extern int load_last_job_id( void )
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Invalid job data checkpoint file, start with '-i' to ignore this");
+		fatal("Invalid job data checkpoint file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Invalid job data checkpoint file");
 	xfree(ver_str);
 	free_buf(buffer);

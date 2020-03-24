@@ -617,7 +617,7 @@ int load_all_part_state(void)
 
 	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
-			fatal("Can not recover partition state, data version incompatible, start with '-i' to ignore this");
+			fatal("Can not recover partition state, data version incompatible, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 		error("**********************************************************");
 		error("Can not recover partition state, data version incompatible");
 		error("**********************************************************");
@@ -791,7 +791,7 @@ int load_all_part_state(void)
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete partition data checkpoint file, start with '-i' to ignore this");
+		fatal("Incomplete partition data checkpoint file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete partition data checkpoint file");
 	info("Recovered state of %d partitions", part_cnt);
 	free_buf(buffer);

@@ -397,7 +397,7 @@ extern int restore_nonstop_state(void)
 
 	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
-			fatal("Can not recover slurmctld/nonstop state, incompatible version, start with '-i' to ignore this");
+			fatal("Can not recover slurmctld/nonstop state, incompatible version, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 		error("*************************************************************");
 		error("Can not recover slurmctld/nonstop state, incompatible version");
 		error("*************************************************************");
@@ -425,7 +425,7 @@ extern int restore_nonstop_state(void)
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete nonstop state file, start with '-i' to ignore this");
+		fatal("Incomplete nonstop state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete nonstop state file");
 	free_buf(buffer);
 	return SLURM_ERROR;

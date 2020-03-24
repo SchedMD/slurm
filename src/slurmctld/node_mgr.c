@@ -328,7 +328,7 @@ extern int load_all_node_state ( bool state_only )
 
 	if (!protocol_version || (protocol_version == NO_VAL16)) {
 		if (!ignore_state_errors)
-			fatal("Can not recover node state, data version incompatible, start with '-i' to ignore this");
+			fatal("Can not recover node state, data version incompatible, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 		error("*****************************************************");
 		error("Can not recover node state, data version incompatible");
 		error("*****************************************************");
@@ -645,7 +645,7 @@ fini:	info("Recovered state of %d nodes", node_cnt);
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete node data checkpoint file, start with '-i' to ignore this");
+		fatal("Incomplete node data checkpoint file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete node data checkpoint file");
 	error_code = EFAULT;
 	xfree(features);

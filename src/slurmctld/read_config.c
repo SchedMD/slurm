@@ -2971,7 +2971,7 @@ extern int load_config_state_lite(void)
 	debug3("Version in last_conf_lite header is %u", ver);
 	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
 		if (!ignore_state_errors)
-			fatal("Can not recover last_conf_lite, incompatible version, (%u not between %d and %d), start with '-i' to ignore this",
+			fatal("Can not recover last_conf_lite, incompatible version, (%u not between %d and %d), start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.",
 			      ver, SLURM_MIN_PROTOCOL_VERSION,
 			      SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
@@ -2999,7 +2999,7 @@ extern int load_config_state_lite(void)
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete last_config_lite checkpoint file, start with '-i' to ignore this");
+		fatal("Incomplete last_config_lite checkpoint file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete last_config_lite checkpoint file");
 	free_buf(buffer);
 

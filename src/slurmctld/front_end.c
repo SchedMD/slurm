@@ -793,7 +793,7 @@ extern int load_all_front_end_state(bool state_only)
 
 	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
-			fatal("Can not recover front_end state, version incompatible, start with '-i' to ignore this");
+			fatal("Can not recover front_end state, version incompatible, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 		error("*****************************************************");
 		error("Can not recover front_end state, version incompatible");
 		error("*****************************************************");
@@ -890,7 +890,7 @@ fini:	info("Recovered state of %d front_end nodes", node_cnt);
 
 unpack_error:
 	if (!ignore_state_errors)
-		fatal("Incomplete front_end node data checkpoint file, start with '-i' to ignore this");
+		fatal("Incomplete front_end node data checkpoint file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete front_end node data checkpoint file");
 	error_code = EFAULT;
 	xfree (node_name);
