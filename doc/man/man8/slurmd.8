@@ -1,4 +1,4 @@
-.TH slurmd "8" "Slurm Daemon" "Februrary 2020" "Slurm Daemon"
+.TH slurmd "8" "Slurm Daemon" "March 2020" "Slurm Daemon"
 
 .SH "NAME"
 slurmd \- The compute node daemon for Slurm.
@@ -88,6 +88,23 @@ compiled into slurmd.
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.  This is overridden by
 explicitly naming a configuration file on the command line.
+
+.SH "SIGNALS"
+.TP
+\fBSIGTERM SIGINT\fR
+\fBslurmd\fR will shutdown cleanly, waiting for in-progress rollups to finish.
+.TP
+\fBSIGHUP\fR
+.RS
+Reloads the slurm configuration files, similar to 'scontrol reconfigure'.
+.RE
+.TP
+\fBSIGUSR2\fR
+Reread the log level from the configs, and then reopen the log file.  This
+should be used when setting up \fBlogrotate\fR(8).
+.TP
+\fBSIGPIPE\fR
+This signal is explicitly ignored.
 
 .SH "CORE FILE LOCATION"
 If slurmd is started with the \fB\-D\fR option then the core file will be

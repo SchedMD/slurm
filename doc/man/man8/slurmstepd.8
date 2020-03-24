@@ -1,4 +1,4 @@
-.TH slurmstepd "8" "Slurm Component" "April 2015" "Slurm Component"
+.TH slurmstepd "8" "Slurm Component" "March 2020" "Slurm Component"
 
 .SH "NAME"
 slurmstepd \- The job step manager for Slurm.
@@ -11,6 +11,11 @@ and terminates when the job step does.
 It is responsible for managing input and output (stdin, stdout and stderr)
 for the job step along with its accounting and signal processing.
 \fBslurmstepd\fR should not be initiated by users or system administrators.
+
+.SH "SIGNALS"
+.TP
+\fBSIGINT SIGTERM SIGTSTP SIGQUIT SIGPIPE SIGUSR1 SIGUSR2 SIGALRM SIGHUP\fR
+These signals are explicitly ignored.
 
 .SH "COPYING"
 Copyright (C) 2006 The Regents of the University of California.

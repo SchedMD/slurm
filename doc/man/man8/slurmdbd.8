@@ -1,4 +1,4 @@
-.TH slurmdbd "8" "Slurm Daemon" "April 2015" "Slurm Daemon"
+.TH slurmdbd "8" "Slurm Daemon" "March 2020" "Slurm Daemon"
 
 .SH "NAME"
 slurmdbd \- Slurm Database Daemon.
@@ -41,6 +41,28 @@ the same directory as the log file, provided SlurmUser has write
 permission on the directory.  Otherwise the core file will be written
 to "/var/tmp/" as a last resort.  If neither of the above directories
 have write permission for SlurmUser, no core file will be produced.
+
+.SH "SIGNALS"
+.TP
+\fBSIGTERM SIGINT\fR
+\fBslurmdbd\fR will shutdown cleanly, waiting for in-progress rollups to
+finish.
+.TP
+\fBSIGABRT\fR
+\fBslurmdbd\fR will perform a core dump, then exit.  In-progress operations
+are killed.
+.TP
+\fBSIGHUP\fR
+.RS
+Reloads the slurm configuration files, similar to 'scontrol reconfigure'.
+.RE
+.TP
+\fBSIGUSR2\fR
+Reread the log level from the configs, and then reopen the log file.  This
+should be used when setting up \fBlogrotate\fR(8).
+.TP
+\fBSIGCHLD SIGUSR1 SIGTSTP SIGXCPU SIGQUIT SIGPIPE SIGALRM\fR
+These signals are explicitly ignored.
 
 .SH "NOTES"
 It may be useful to experiment with different \fBslurmctld\fR specific
