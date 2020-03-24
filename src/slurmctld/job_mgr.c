@@ -17678,11 +17678,13 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 	if (job_ptr->details && job_ptr->details->env_cnt) {
 		job_info_resp_msg->env_size = job_ptr->details->env_cnt;
 		job_info_resp_msg->environment =
-			xcalloc(job_info_resp_msg->env_size, sizeof(char *));
+			xcalloc(job_info_resp_msg->env_size + 1,
+				sizeof(char *));
 		for (i = 0; i < job_info_resp_msg->env_size; i++) {
 			job_info_resp_msg->environment[i] =
 				xstrdup(job_ptr->details->env_sup[i]);
 		}
+		job_info_resp_msg->environment[i] = NULL;
 	}
 
 	return job_info_resp_msg;
