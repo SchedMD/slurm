@@ -291,7 +291,7 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 	debug3("%s: %s: %pJ action:%d ", plugin_type, __func__, job_ptr,
 	       action);
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		log_job_resources(job_ptr);
 
 	i_first = bit_ffs(job->node_bitmap);
@@ -416,7 +416,7 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 					job->node_req;
 			}
 		}
-		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			info("DEBUG: %s (after):", __func__);
 			part_data_dump_res(p_ptr);
 		}
@@ -467,7 +467,7 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 		return SLURM_ERROR;
 	}
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("%s: %s: %pJ action %d", plugin_type, __func__,
 		     job_ptr, action);
 		log_job_resources(job_ptr);
@@ -608,7 +608,7 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			}
 		}
 	}
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("%s: %s: %pJ finished", plugin_type, __func__, job_ptr);
 		_log_tres_state(node_usage, part_record_ptr);
 	}

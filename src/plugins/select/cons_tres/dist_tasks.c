@@ -51,7 +51,7 @@ static bool _at_tpn_limit(const uint32_t n, const job_record_t *job_ptr,
 	if (job_res->tasks_per_node[n] < job_ptr->details->ntasks_per_node)
 		return false;
 
-	if (log_error || (select_debug_flags & DEBUG_FLAG_SELECT_TYPE))
+	if (log_error || (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE))
 		log_var(log_lvl,
 			"%s: %s over tasks_per_node for %pJ node:%u task_per_node:%d max:%" PRIu16,
 			__func__, tag, job_ptr, n, job_res->tasks_per_node[n],

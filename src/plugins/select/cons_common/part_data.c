@@ -159,7 +159,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 		return;
 	}
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("DEBUG: %s (before):", __func__);
 		part_data_dump_res(p_ptr);
 	}
@@ -196,7 +196,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 	 *     - may still get scenarios where jobs should switch rows
 	 */
 	qsort(ss, num_jobs, sizeof(sort_support_t), _compare_support);
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i = 0; i < num_jobs; i++) {
 			char cstr[64], nstr[64];
 			if (ss[i].tmpjobs->core_bitmap) {
@@ -243,7 +243,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 		 */
 		debug3("%s: %s: dangling job found", plugin_type, __func__);
 
-		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			info("DEBUG: %s (post-algorithm):", __func__);
 			part_data_dump_res(p_ptr);
 		}
@@ -264,7 +264,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 		}
 	}
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("DEBUG: %s (after):", __func__);
 		part_data_dump_res(p_ptr);
 	}

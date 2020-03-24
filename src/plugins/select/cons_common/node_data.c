@@ -61,7 +61,7 @@ extern void node_data_dump(void)
 	List gres_list;
 	int i;
 
-	if (!(select_debug_flags & DEBUG_FLAG_SELECT_TYPE))
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE))
 		return;
 
 	for (i = 0; i < select_node_cnt; i++) {

@@ -664,7 +664,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	if (consec_nodes[consec_index] != 0)
 		consec_end[consec_index++] = i - 1;
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		if (consec_index == 0) {
 			info("%s: %s: consec_index is zero", plugin_type,
 			     __func__);
@@ -1620,7 +1620,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	}
 
 	list_sort(node_weight_list, _topo_weight_sort);
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		(void) list_for_each(node_weight_list, _topo_weight_log, NULL);
 
 	/*
@@ -1754,7 +1754,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	}
 	list_iterator_destroy(iter);
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		char *gres_str = NULL, *gres_print = "";
 		char *node_names;
 		if (req_nodes_bitmap) {
@@ -1852,7 +1852,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		switch_node_cnt[i] = bit_set_count(switch_node_bitmap[i]);
 	}
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i = 0; i < switch_record_cnt; i++) {
 			char *node_names = NULL;
 			if (switch_node_cnt[i]) {
@@ -2235,7 +2235,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	}
 
 	list_sort(node_weight_list, _topo_weight_sort);
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		(void) list_for_each(node_weight_list, _topo_weight_log, NULL);
 
 	/*
@@ -2393,7 +2393,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	}
 	list_iterator_destroy(iter);
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		char *gres_str = NULL, *gres_print = "";
 		char *node_names;
 		if (req_nodes_bitmap) {
@@ -2492,7 +2492,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		switch_node_cnt[i] = bit_set_count(switch_node_bitmap[i]);
 	}
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i = 0; i < switch_record_cnt; i++) {
 			char *node_names = NULL;
 			if (switch_node_cnt[i]) {
@@ -3472,14 +3472,11 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 		bit_clear_all(core_map[node_i]);
 	}
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("%s: %s: %u CPUs on %s(state:%d), mem %"PRIu64"/%"PRIu64,
-		     plugin_type, __func__, cpus,
-		     select_node_record[node_i].node_ptr->name,
-		     node_usage[node_i].node_state,
-		     node_usage[node_i].alloc_memory,
-		     select_node_record[node_i].real_memory);
-	}
+	log_flag(SELECT_TYPE, "%s: %s: %u CPUs on %s(state:%d), mem %"PRIu64"/%"PRIu64,
+	         plugin_type, __func__, cpus,
+	         select_node_record[node_i].node_ptr->name,
+	         node_usage[node_i].node_state, node_usage[node_i].alloc_memory,
+	         select_node_record[node_i].real_memory);
 
 	avail_res->avail_cpus = cpus;
 	avail_res->avail_res_cnt = cpus + avail_res->avail_gpus;

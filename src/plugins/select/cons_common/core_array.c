@@ -174,7 +174,7 @@ extern void core_array_log(char *loc, bitstr_t *node_map, bitstr_t **core_map)
 {
 	char tmp[100];
 
-	if (!(select_debug_flags & DEBUG_FLAG_SELECT_TYPE))
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE))
 		return;
 
 	info("%s", loc);

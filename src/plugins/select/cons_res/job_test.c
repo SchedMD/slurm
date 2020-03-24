@@ -442,7 +442,7 @@ static int _eval_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 	if (consec_nodes[consec_index] != 0)
 		consec_end[consec_index++] = i - 1;
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i = 0; i < consec_index; i++) {
 			info("cons_res: eval_nodes:%d consec "
 			     "c=%d n=%d b=%d e=%d r=%d",
@@ -1138,7 +1138,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 	}
 	bit_nclear(bitmap, 0, select_node_cnt - 1);
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i=0; i<switch_record_cnt; i++) {
 			char *node_names = NULL;
 			if (switches_node_cnt[i]) {
@@ -1595,7 +1595,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr, bitstr_t *bitmap,
 	}
 	bit_nclear(bitmap, 0, select_node_cnt - 1);
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i = 0; i < switch_record_cnt; i++) {
 			char *node_names = NULL;
 			if (switches_node_cnt[i]) {
@@ -2238,14 +2238,10 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	if (cpus == 0)
 		bit_nclear(core_map, core_start_bit, core_end_bit);
 
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("cons_res: can_job_run_on_node: %u cpus on %s(%d), "
-		     "mem %"PRIu64"/%"PRIu64"",
-		     cpus, select_node_record[node_i].node_ptr->name,
-		     node_usage[node_i].node_state,
-		     node_usage[node_i].alloc_memory,
-		     select_node_record[node_i].real_memory);
-	}
+	log_flag(SELECT_TYPE, "cons_res: can_job_run_on_node: %u cpus on %s(%d), mem %"PRIu64"/%"PRIu64,
+	         cpus, select_node_record[node_i].node_ptr->name,
+	         node_usage[node_i].node_state, node_usage[node_i].alloc_memory,
+	         select_node_record[node_i].real_memory);
 	avail_res->avail_cpus = cpus;
 
 	return avail_res;

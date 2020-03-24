@@ -131,7 +131,7 @@ static inline void _log_select_maps(char *loc, job_record_t *job_ptr)
 	char tmp[100];
 	int i;
 
-	if (!(select_debug_flags & DEBUG_FLAG_SELECT_TYPE))
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE))
 		return;
 
 	info("%s: %s %pJ", __func__, loc, job_ptr);
@@ -694,12 +694,10 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 				core_min = elig_core_cnt[elig_idx];
 			}
 		}
-		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-			info("%s: %s: node[%u]: required CPUs:%u min req boards:%u,",
-			     plugin_type, __func__, n, cpus, b_min);
-			info("%s: %s: node[%u]: min req sockets:%u min avail cores:%u",
-			     plugin_type, __func__, n, s_min, core_min);
-		}
+		log_flag(SELECT_TYPE, "%s: %s: node[%u]: required CPUs:%u min req boards:%u,",
+		         plugin_type, __func__, n, cpus, b_min);
+		log_flag(SELECT_TYPE, "%s: %s: node[%u]: min req sockets:%u min avail cores:%u",
+		         plugin_type, __func__, n, s_min, core_min);
 		/*
 		 * Re-sort socket list for best-fit board combination in
 		 * ascending order of socket number
@@ -743,12 +741,10 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 			j = best_fit_location;
 			if (sock_per_brd)
 				j /= sock_per_brd;
-			if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-				info("%s: %s: using node[%u]: board[%u]: socket[%u]: %u cores available",
-				     plugin_type, __func__, n, j,
-				     best_fit_location,
-				     sockets_core_cnt[best_fit_location]);
-			}
+			log_flag(SELECT_TYPE, "%s: %s: using node[%u]: board[%u]: socket[%u]: %u cores available",
+			         plugin_type, __func__, n, j,
+			         best_fit_location,
+			         sockets_core_cnt[best_fit_location]);
 
 			sockets_used[best_fit_location] = true;
 			for (j = (c + (best_fit_location * ncores_nb));
@@ -903,12 +899,10 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 		cps     = select_node_record[n].cores;
 		vpus    = common_cpus_per_core(job_ptr->details, n);
 
-		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-			info("%s: %s: %pJ node %s vpus %u cpus %u",
-			     plugin_type, __func__, job_ptr,
-			     select_node_record[n].node_ptr->name,
-			     vpus, job_res->cpus[i]);
-		}
+		log_flag(SELECT_TYPE, "%s: %s: %pJ node %s vpus %u cpus %u",
+		         plugin_type, __func__, job_ptr,
+		         select_node_record[n].node_ptr->name,
+		         vpus, job_res->cpus[i]);
 
 		if ((c + (sockets * cps)) > csize) {
 			error("%s: %s: index error", plugin_type, __func__);
