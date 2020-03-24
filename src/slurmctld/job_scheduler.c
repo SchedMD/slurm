@@ -1656,7 +1656,8 @@ next_task:
 				     job_state_string(job_ptr->job_state),
 				     job_reason_string(job_ptr->state_reason),
 				     job_ptr->priority, job_ptr->partition);
-			continue;
+			fail_by_part = true;
+			goto fail_this_part;
 		}
 		if (license_job_test(job_ptr, time(NULL), true) !=
 		    SLURM_SUCCESS) {
