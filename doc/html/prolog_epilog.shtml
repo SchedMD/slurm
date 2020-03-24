@@ -315,7 +315,8 @@ sets an environment variable for the user task<br>
 <span class="commandline">unset name</span>
 clears an environment variable from the user task<br>
 <span class="commandline">print ...</span>
-writes to the task's standard output.</p>
+writes to the task's standard output.<br>
+The above functionality is limited to the task prolog script.</p>
 
 <p>Unless otherwise specified, these environment variables are available
 to all of the programs.</p>
@@ -493,6 +494,6 @@ the job to be requeued. Only batch jobs can be requeued. Interactive jobs
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 27 May 2019</p>
+<p style="text-align:center;">Last modified 24 March 2020</p>
 
 <!--#include virtual="footer.txt"-->
