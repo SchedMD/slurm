@@ -30,6 +30,9 @@ HIGHLIGHTS
  -- The example systemd unit files have been changed to the "simple" type of
     operation, and the daemon will now run in the foreground within systemd
     instead of daemonizing itself.
+ -- Log messages enabled by the various DebugFlags have been overhauled, and
+    will all print at the verbose() level, and prepend the flag name that is
+    associated with a given log message.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
