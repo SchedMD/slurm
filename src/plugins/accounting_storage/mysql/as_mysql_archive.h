@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  as_mysql_archive.h - functions dealing with the archiving.
  *****************************************************************************
- *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

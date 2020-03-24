@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  as_mysql_federation.h - functions dealing with federations.
  *****************************************************************************
- *
  *  Copyright (C) 2016 SchedMD LLC.
  *  Written by Brian Christiansen <brian@schedmd.com>
  *

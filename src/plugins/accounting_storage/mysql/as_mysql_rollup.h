@@ -2,7 +2,6 @@
  *  as_mysql_rollup.h - functions for rolling up data for associations
  *                   and machines from the as_mysql storage.
  *****************************************************************************
- *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

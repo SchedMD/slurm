@@ -2,7 +2,6 @@
  *  as_mysql_problems.h - functions for finding out problems in the
  *                     associations and other places in the database.
  *****************************************************************************
- *
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>

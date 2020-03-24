@@ -2,7 +2,6 @@
  *  as_mysql_convert.c - functions dealing with converting from tables in
  *                    slurm <= 17.02.
  *****************************************************************************
- *
  *  Copyright (C) 2015 SchedMD LLC.
  *  Written by Danny Auble <da@schedmd.com>
  *
