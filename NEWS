@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- Clear node_cnt_wag after job update.
  -- Fix regression where AccountingStoreJobComment was not defaulting to 'yes'.
  -- Send registration message immediately after a node is resumed.
+ -- Cray - Fix hetjobs when using only a single component in the step launch.
 
 * Changes in Slurm 20.02.1
 ==========================
