@@ -59,6 +59,4 @@ extern int decay_apply_weighted_factors(job_record_t *job_ptr,
 extern void set_assoc_usage_norm(slurmdb_assoc_rec_t *assoc);
 extern void set_priority_factors(time_t start_time, job_record_t *job_ptr);
 
-extern bool priority_debug;
-
 #endif

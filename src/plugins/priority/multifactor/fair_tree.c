@@ -283,7 +283,7 @@ static slurmdb_assoc_rec_t** _merge_accounts(
 		List children = siblings[i]->usage->children_list;
 
 		/* the first account's debug was already printed */
-		if (priority_debug && i > begin)
+		if ((slurm_conf.debug_flags & DEBUG_FLAG_PRIO) && i > begin)
 			_ft_debug(siblings[i], assoc_level, true);
 
 		if (!children || list_is_empty(children)) {
@@ -344,7 +344,7 @@ static void _calc_tree_fs(slurmdb_assoc_rec_t** siblings,
 			tied = prev_level_fs == assoc->usage->level_fs;
 		}
 
-		if (priority_debug)
+		if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO)
 			_ft_debug(assoc, assoc_level, tied);
 
 		/* If user, set their final fairshare factor and
@@ -392,8 +392,7 @@ static void _apply_priority_fs(void)
 	uint32_t rnt = rank;
 	size_t child_count = 0;
 
-	if (priority_debug)
-		info("Fair Tree fairshare algorithm, starting at root:");
+	log_flag(PRIO, "Fair Tree fairshare algorithm, starting at root:");
 
 	assoc_mgr_root_assoc->usage->level_fs = (long double) NO_VAL;
 
