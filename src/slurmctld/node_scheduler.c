@@ -390,11 +390,8 @@ extern void allocate_nodes(job_record_t *job_ptr)
 	static time_t sched_update = 0;
 
 	if (sched_update != slurm_conf.last_update) {
-		char *ctld_params = slurm_get_slurmctld_params();
-
-		if (xstrcasestr(ctld_params, "cloud_dns"))
+		if (xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns"))
 			cloud_dns = true;
-		xfree(ctld_params);
 
 		sched_update = slurm_conf.last_update;
 	}
@@ -2413,13 +2410,11 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 	static time_t sched_update = 0;
 
 	if (sched_update != slurm_conf.last_update) {
-		char *ctld_params = slurm_get_slurmctld_params();
-
 		preempt_send_user_signal = false;
-		if (xstrcasestr(ctld_params, "preempt_send_user_signal"))
+		if (xstrcasestr(slurm_conf.slurmctld_params,
+		                "preempt_send_user_signal"))
 			preempt_send_user_signal = true;
 
-		xfree(ctld_params);
 		sched_update = slurm_conf.last_update;
 	}
 

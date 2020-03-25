@@ -270,12 +270,10 @@ void *agent(void *args)
 #ifdef HAVE_NATIVE_CRAY
 		reboot_from_ctld = true;
 #else
-		char *ctld_params = slurm_get_slurmctld_params();
-
 		reboot_from_ctld = false;
-		if (xstrcasestr(ctld_params, "reboot_from_controller"))
+		if (xstrcasestr(slurm_conf.slurmctld_params,
+		                "reboot_from_controller"))
 			reboot_from_ctld = true;
-		xfree(ctld_params);
 #endif
 		sched_update = slurm_conf.last_update;
 	}
