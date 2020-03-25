@@ -467,7 +467,7 @@ only for jobs while others are valid only for job steps.
 Valid \fItype\fR specifications include:
 
 .RS
-.TP 6
+.TP 7
 \fBAccount\fR
 Print the account associated with the job.
 (Valid for jobs only)
@@ -497,7 +497,7 @@ Prints the task ID of the job array.
 (Valid for jobs and job steps)
 .TP
 \fBAssocID\fR
-Prints the id of the job association.
+Prints the ID of the job association.
 (Valid for jobs only)
 .TP
 \fBBatchFlag\fR
@@ -546,10 +546,12 @@ Are contiguous nodes requested by the job.
 (Valid for jobs only)
 .TP
 \fBCores\fR
+.RS
 Number of cores per socket requested by the job.
 This reports the value of the \fBsrun \-\-cores\-per\-socket\fR option.
-When \-\-cores\-per\-socket has not been set, "*" is displayed.
+When \fB\-\-cores\-per\-socket\fR has not been set, "*" is displayed.
 (Valid for jobs only)
+.RE
 .TP
 \fBCoreSpec\fR
 Count of cores reserved on each node for system use (core specialization).
@@ -570,16 +572,16 @@ Print the memory required per trackable resources allocated to the job or job st
 Prints the deadline affected to the job
 (Valid for jobs only)
 .TP
+\fBDelayBoot\fR
+Delay boot time.
+(Valid for jobs only)
+.TP
 \fBDependency\fR
 Job dependencies remaining. This job will not begin execution until these
 dependent jobs complete. In the case of a job that can not run due to job
 dependencies never being satisfied, the full original job dependency
 specification will be reported. A value of NULL implies this job has no
 dependencies.
-(Valid for jobs only)
-.TP
-\fBDelayBoot\fR
-Delay boot time.
 (Valid for jobs only)
 .TP
 \fBDerivedEC\fR
@@ -610,16 +612,27 @@ Group ID of the job.
 Group name of the job.
 (Valid for jobs only)
 .TP
+\fBHetJobID\fR
+Job ID of the heterogeneous job leader.
+.TP
+\fBHetJobIDSet\fR
+Expression identifying all components job IDs within a heterogeneous job.
+.TP
+\fBHetJobOffset\fR
+Zero origin offset within a collection of heterogeneous job components.
+.TP
 \fBJobArrayID\fR
 Job array's job ID. This is the base job ID.
 For non\-array jobs, this is the job ID.
 (Valid for jobs only)
 .TP
 \fBJobID\fR
-Job id.
+.RS
+Job ID.
 This will have a unique value for each element of job arrays and each
 component of heterogeneous jobs.
 (Valid for jobs only)
+.RE
 .TP
 \fBLastSchedEval\fR
 Prints the last time the job was evaluated for scheduling.
@@ -645,10 +658,15 @@ Prints the MCS_label of the job.
 Print the memory (in MB) required per trackable resources allocated to the job
 or job step.
 .TP
+\fBMinCpus\fR
+Minimum number of CPUs (processors) per node requested by the job.
+This reports the value of the \fBsrun \-\-mincpus\fR option with a
+default value of zero.
+(Valid for jobs only)
+.TP
 \fBMinMemory\fR
 Minimum size of memory (in MB) requested by the job.
 (Valid for jobs only)
-\fmintime\fR
 .TP
 \fBMinTime\fR
 Minimum time limit of the job
@@ -658,35 +676,35 @@ Minimum time limit of the job
 Minimum size of temporary disk space (in MB) requested by the job.
 (Valid for jobs only)
 .TP
-\fBMinCpus\fR
-Minimum number of CPUs (processors) per node requested by the job.
-This reports the value of the \fBsrun \-\-mincpus\fR option with a
-default value of zero.
-(Valid for jobs only)
-.TP
 \fBName\fR
+.RS
 Job or job step name.
 (Valid for jobs and job steps)
+.RE
 .TP
 \fBNetwork\fR
 The network that the job is running on.
 (Valid for jobs and job steps)
 .TP
 \fBNice\fR
+.RS
 Nice value (adjustment to a job's scheduling priority).
 (Valid for jobs only)
-.TP
-\fBNodes\fR
-List of nodes allocated to the job or job step. In the case of a
-\fICOMPLETING\fR job, the list of nodes will comprise only those
-nodes that have not yet been returned to service.
-(Valid job steps only)
+.RE
 .TP
 \fBNodeList\fR
 List of nodes allocated to the job or job step. In the case of a
 \fICOMPLETING\fR job, the list of nodes will comprise only those
 nodes that have not yet been returned to service.
 (Valid for jobs only)
+.TP
+\fBNodes\fR
+.RS
+List of nodes allocated to the job or job step. In the case of a
+\fICOMPLETING\fR job, the list of nodes will comprise only those
+nodes that have not yet been returned to service.
+(Valid job steps only)
+.RE
 .TP
 \fBNTPerBoard\fR
 The number of tasks per board allocated to the job.
@@ -725,8 +743,10 @@ This reports the value of the \fB\-\-ntasks\fR option.
 (Valid for jobs and job steps)
 .TP
 \fBOrigin\fR
+.RS
 Cluster name where federated job originated from.
 (Valid for federated jobs only)
+.RE
 .TP
 \fBOriginRaw\fR
 Cluster ID where federated job originated from.
@@ -745,18 +765,13 @@ or the partition is configured with OverSubscribe=Force,
 "OK" otherwise (typically allocated dedicated CPUs),
 (Valid for jobs only)
 .TP
-\fBHetJobID\fR
-Job ID of the heterogeneous job leader.
-.TP
-\fBHetJobOffset\fR
-Zero origin offset within a collection of heterogeneous job components.
-.TP
-\fBHetJobIDSet\fR
-Expression identifying all components job IDs within a heterogeneous job.
-.TP
 \fBPartition\fR
 Partition of the job or job step.
 (Valid for jobs and job steps)
+.TP
+\fBPreemptTime\fR
+The preempt time for the job.
+(Valid for jobs only)
 .TP
 \fBPriority\fR
 Priority of the job (converted to a floating point number between 0.0 and 1.0).
@@ -772,18 +787,18 @@ Also see \fBpriority\fR.
 Profile of the job.
 (Valid for jobs only)
 .TP
-\fBPreemptTime\fR
-The preempt time for the job.
-(Valid for jobs only)
-.TP
 \fBQOS\fR
+.RS
 Quality of service associated with the job.
 (Valid for jobs only)
+.RE
 .TP
 \fBReason\fR
+.RS
 The reason a job is in its current state.
 See the \fBJOB REASON CODES\fR section below for more information.
 (Valid for jobs only)
+.RE
 .TP
 \fBReasonList\fR
 For pending jobs: the reason a job is waiting for execution
@@ -795,8 +810,10 @@ See the \fBJOB REASON CODES\fR section below for more information.
 (Valid for jobs only)
 .TP
 \fBReboot\fR
+.RS
 Indicates if the allocated nodes should be rebooted before starting the job.
 (Valid on jobs only)
+.RE
 .TP
 \fBReqNodes\fR
 List of node names explicitly requested by the job.
@@ -832,9 +849,11 @@ started.
 (Valid for jobs only)
 .TP
 \fBSCT\fR
+.RS
 Number of requested sockets, cores, and threads (S:C:T) per node for the job.
 When (S:C:T) has not been set, "*" is displayed.
 (Valid for jobs only)
+.RE
 .TP
 \fBSelectJobInfo\fR
 Node selection plugin specific data for a job. Possible data includes:
@@ -863,7 +882,7 @@ Cluster IDs of where federated sibling jobs viable to run.
 \fBSockets\fR
 Number of sockets per node requested by the job.
 This reports the value of the \fBsrun \-\-sockets\-per\-node\fR option.
-When \-\-sockets\-per\-node has not been set, "*" is displayed.
+When \fB\-\-sockets\-per\-node\fR has not been set, "*" is displayed.
 (Valid for jobs only)
 .TP
 \fBSPerBoard\fR
@@ -875,9 +894,11 @@ Actual or expected start time of the job or job step.
 (Valid for jobs and job steps)
 .TP
 \fBState\fR
+.RS
 Job state in extended form.
 See the \fBJOB STATE CODES\fR section below for a list of possible states.
 (Valid for jobs only)
+.RE
 .TP
 \fBStateCompact\fR
 Job state in compact form.
@@ -885,25 +906,33 @@ See the \fBJOB STATE CODES\fR section below for a list of possible states.
 (Valid for jobs only)
 .TP
 \fBSTDERR\fR
+.RS
 The directory for standard error to output to.
 (Valid for jobs only)
+.RE
 .TP
 \fBSTDIN\fR
+.RS
 The directory for standard in.
 (Valid for jobs only)
+.RE
 .TP
 \fBSTDOUT\fR
+.RS
 The directory for standard out to output to.
 (Valid for jobs only)
+.RE
 .TP
 \fBStepID\fR
-Job or job step id.
+.RS
+Job or job step ID.
 In the case of job arrays, the job ID format will be of the form
 "<base_job_id>_<index>".
 (Valid forjob steps only)
+.RE
 .TP
 \fBStepName\fR
-job step name.
+Job step name.
 (Valid for job steps only)
 .TP
 \fBStepState\fR
@@ -921,7 +950,7 @@ System comment associated with the job.
 \fBThreads\fR
 Number of threads per core requested by the job.
 This reports the value of the \fBsrun \-\-threads\-per\-core\fR option.
-When \-\-threads\-per\-core has not been set, "*" is displayed.
+When \fB\-\-threads\-per\-core\fR has not been set, "*" is displayed.
 (Valid for jobs only)
 .TP
 \fBTimeLeft\fR
@@ -970,8 +999,10 @@ Print the trackable resources requested by the job step.
 Print the trackable resources per task requested by the job or job step.
 .TP
 \fBUserID\fR
+.RS
 User ID for a job or job step.
 (Valid for jobs and job steps)
+.RE
 .TP
 \fBUserName\fR
 User name for a job or job step.
@@ -982,8 +1013,10 @@ The amount of time to wait for the desired number of switches.
 (Valid for jobs only)
 .TP
 \fBWCKey\fR
+.RS
 Workload Characterization Key (wckey).
 (Valid for jobs only)
+.RE
 .TP
 \fBWorkDir\fR
 The job's working directory.
