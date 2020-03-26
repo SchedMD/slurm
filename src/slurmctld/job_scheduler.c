@@ -4310,7 +4310,6 @@ static void *_wait_boot(void *arg)
 	/* Locks: Write jobs; write nodes */
 	slurmctld_lock_t node_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
-	uint16_t resume_timeout = slurm_get_resume_timeout();
 	node_record_t *node_ptr;
 	time_t start_time = time(NULL);
 	int i, total_node_cnt, wait_node_cnt;
@@ -4357,7 +4356,7 @@ static void *_wait_boot(void *arg)
 			     job_ptr, total_node_cnt);
 		}
 		i = (int) difftime(time(NULL), start_time);
-		if (i >= resume_timeout) {
+		if (i >= slurm_conf.resume_timeout) {
 			error("%pJ timeout waiting for node %d of %d boots",
 			      job_ptr, wait_node_cnt, total_node_cnt);
 			wait_node_cnt = 0;
