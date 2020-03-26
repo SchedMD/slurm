@@ -10,6 +10,9 @@ documents those changes that are of interest to users and administrators.
     operation, and the daemon will now run in the foreground within systemd
     instead of daemonizing itself.
 
+* Changes in Slurm 20.02.2
+==========================
+
 * Changes in Slurm 20.02.1
 ==========================
  -- Improve job state reason for jobs hitting partition_job_depth.
@@ -169,6 +172,9 @@ documents those changes that are of interest to users and administrators.
  -- Add gpu/rsmi plugin to support AMD GPUs
  -- Make it so you can "stack" the energy plugins
  -- Add energy accounting plugin for AMD GPU
+
+* Changes in Slurm 19.05.7
+==========================
 
 * Changes in Slurm 19.05.6
 ==========================
