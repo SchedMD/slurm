@@ -7712,7 +7712,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	struct job_details *detail_ptr;
 	job_record_t *job_ptr;
 
-	if (slurm_get_track_wckey()) {
+	if (slurm_conf.conf_flags & CTL_CONF_WCKEY) {
 		if (!job_desc->wckey) {
 			/* get the default wckey for this user since none was
 			 * given */
