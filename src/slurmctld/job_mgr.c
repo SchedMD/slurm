@@ -17169,11 +17169,11 @@ static void _parse_max_depend_depth(char *str)
 
 extern void init_depend_policy(void)
 {
-	char *depend_params = slurm_get_dependency_params();
 	char *tmp_ptr;
 
 	disable_remote_singleton =
-		(xstrcasestr(depend_params, "disable_remote_singleton")) ?
+		(xstrcasestr(slurm_conf.dependency_params,
+		             "disable_remote_singleton")) ?
 		true : false;
 
 	/*
@@ -17186,20 +17186,21 @@ extern void init_depend_policy(void)
 		kill_invalid_dep = true;
 	} else
 		kill_invalid_dep =
-			(xstrcasestr(depend_params, "kill_invalid_depend")) ?
+			(xstrcasestr(slurm_conf.dependency_params,
+			             "kill_invalid_depend")) ?
 			true : false;
 
-	/* 					   01234567890123456 */
-	if ((tmp_ptr = xstrcasestr(depend_params, "max_depend_depth=")))
+	/* 			    01234567890123456 */
+	if ((tmp_ptr = xstrcasestr(slurm_conf.dependency_params,
+	                           "max_depend_depth=")))
 		_parse_max_depend_depth(tmp_ptr + 17);
+	/* 			         01234567890123456 */
 	else if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 	                                "max_depend_depth="))) {
 		info("max_depend_depth is deprecated in SchedulerParameters and moved to DependencyParameters");
 		_parse_max_depend_depth(tmp_ptr + 17);
 	} else
 		max_depend_depth = 10;
-
-	xfree(depend_params);
 
 	log_flag(DEPENDENCY, "%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d; max_depend_depth is set to %d",
 	         __func__, kill_invalid_dep, disable_remote_singleton,
