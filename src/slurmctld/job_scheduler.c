@@ -610,13 +610,12 @@ extern bool job_is_completing(bitstr_t *eff_cg_bitmap)
 	bool completing = false;
 	ListIterator job_iterator;
 	job_record_t *job_ptr = NULL;
-	uint16_t complete_wait = slurm_get_complete_wait();
 	time_t recent;
 
-	if ((job_list == NULL) || (complete_wait == 0))
+	if ((job_list == NULL) || (slurm_conf.complete_wait == 0))
 		return completing;
 
-	recent = time(NULL) - complete_wait;
+	recent = time(NULL) - slurm_conf.complete_wait;
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		if (IS_JOB_COMPLETING(job_ptr) &&
