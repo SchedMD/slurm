@@ -183,7 +183,7 @@ void ping_nodes (void)
 	last_ping_timeout = slurm_conf.slurmd_timeout;
 
 	if (max_reg_threads == 0) {
-		max_reg_threads = MAX(slurm_get_tree_width(), 1);
+		max_reg_threads = MAX(slurm_conf.tree_width, 1);
 	}
 	offset += max_reg_threads;
 	if ((offset > node_record_count) &&
