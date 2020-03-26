@@ -82,6 +82,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix cons_tres --exclusive=user to allocate only requested number of CPUs.
  -- Add MySQL deadlock detection and automatic retry mechanism.
  -- Reject repeating floating reservations as they aren't supported.
+ -- Fix testing of reservation flags that may be NO_VAL64.
 
 * Changes in Slurm 20.02.1
 ==========================
