@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 20.02.2
+==========================
+
 * Changes in Slurm 20.02.1
 ==========================
  -- Improve job state reason for jobs hitting partition_job_depth.
