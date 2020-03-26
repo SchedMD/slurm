@@ -96,7 +96,7 @@ extern int job_submit_plugin_init(void)
 	if (g_context_cnt >= 0)
 		goto fini;
 
-	submit_plugin_list = slurm_get_job_submit_plugins();
+	submit_plugin_list = xstrdup(slurm_conf.job_submit_plugins);
 	g_context_cnt = 0;
 	if ((submit_plugin_list == NULL) || (submit_plugin_list[0] == '\0'))
 		goto fini;
@@ -179,26 +179,25 @@ fini:	slurm_mutex_unlock(&g_context_lock);
 extern int job_submit_plugin_reconfig(void)
 {
 	int rc = SLURM_SUCCESS;
-	char *plugin_names = slurm_get_job_submit_plugins();
 	bool plugin_change;
 
-	if (!plugin_names && !submit_plugin_list)
+	if (!slurm_conf.job_submit_plugins && !submit_plugin_list)
 		return rc;
 
 	slurm_mutex_lock(&g_context_lock);
-	if (xstrcmp(plugin_names, submit_plugin_list))
+	if (xstrcmp(slurm_conf.job_submit_plugins, submit_plugin_list))
 		plugin_change = true;
 	else
 		plugin_change = false;
 	slurm_mutex_unlock(&g_context_lock);
 
 	if (plugin_change) {
-		info("JobSubmitPlugins changed to %s", plugin_names);
+		info("JobSubmitPlugins changed to %s",
+		     slurm_conf.job_submit_plugins);
 		rc = job_submit_plugin_fini();
 		if (rc == SLURM_SUCCESS)
 			rc = job_submit_plugin_init();
 	}
-	xfree(plugin_names);
 
 	return rc;
 }
