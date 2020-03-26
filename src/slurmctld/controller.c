@@ -1592,21 +1592,20 @@ static void _update_qos(slurmdb_qos_rec_t *rec)
 
 static int _init_tres(void)
 {
-	char *temp_char = slurm_get_accounting_storage_tres();
+	char *temp_char;
 	List char_list;
 	List add_list = NULL;
 	slurmdb_tres_rec_t *tres_rec;
 	slurmdb_update_object_t update_object;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
-	if (!temp_char) {
+	if (!slurm_conf.accounting_storage_tres) {
 		error("No tres defined, this should never happen");
 		return SLURM_ERROR;
 	}
 
 	char_list = list_create(xfree_ptr);
-	slurm_addto_char_list(char_list, temp_char);
-	xfree(temp_char);
+	slurm_addto_char_list(char_list, slurm_conf.accounting_storage_tres);
 
 	memset(&update_object, 0, sizeof(slurmdb_update_object_t));
 	if (!association_based_accounting) {
