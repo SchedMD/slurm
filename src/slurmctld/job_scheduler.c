@@ -1009,16 +1009,12 @@ static int _schedule(uint32_t job_limit)
 	if (sched_update != slurm_conf.last_update) {
 		char *tmp_ptr;
 		char *sched_params = slurm_get_sched_params();
-		char *sched_type = slurm_get_sched_type();
-		char *prio_type = slurm_get_priority_type();
-		if ((xstrcmp(sched_type, "sched/builtin") == 0) &&
-		    (xstrcmp(prio_type, "priority/basic") == 0) &&
+		if (!xstrcmp(slurm_conf.schedtype, "sched/builtin") &&
+		    !xstrcmp(slurm_conf.priority_type, "priority/basic") &&
 		    _all_partition_priorities_same())
 			fifo_sched = true;
 		else
 			fifo_sched = false;
-		xfree(sched_type);
-		xfree(prio_type);
 
 		if (xstrcasestr(sched_params, "assoc_limit_stop"))
 			assoc_limit_stop = true;
