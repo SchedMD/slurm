@@ -171,18 +171,20 @@ uint32_t powercap_get_cluster_min_watts(void)
 
 uint32_t powercap_get_cluster_current_cap(void)
 {
-	char *end_ptr = NULL, *power_params, *tmp_ptr;
+	char *end_ptr = NULL, *tmp_ptr;
 	uint32_t cap_watts = 0;
 
-	power_params = slurm_get_power_parameters();
-	if (!power_params)
+	if (!slurm_conf.power_parameters)
 		return cap_watts;
 
-	if ((tmp_ptr = strstr(power_params, "cap_watts=INFINITE"))) {
+	if ((tmp_ptr = xstrstr(slurm_conf.power_parameters,
+	                       "cap_watts=INFINITE"))) {
 		cap_watts = INFINITE;
-	} else if ((tmp_ptr = strstr(power_params, "cap_watts=UNLIMITED"))) {
+	} else if ((tmp_ptr = strstr(slurm_conf.power_parameters,
+	                             "cap_watts=UNLIMITED"))) {
 		cap_watts = INFINITE;
-	} else if ((tmp_ptr = strstr(power_params, "cap_watts="))) {
+	} else if ((tmp_ptr = strstr(slurm_conf.power_parameters,
+	                             "cap_watts="))) {
 		cap_watts = strtol(tmp_ptr + 10, &end_ptr, 10);
 		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
 			cap_watts *= 1000;
@@ -190,7 +192,6 @@ uint32_t powercap_get_cluster_current_cap(void)
 			cap_watts *= 1000000;
 		}
 	}
-	xfree(power_params);
 
 	return cap_watts;
 }
@@ -220,9 +221,10 @@ int powercap_set_cluster_cap(uint32_t new_cap)
 {
 	char *power_params, *sep, *tmp_ptr;
 
-	power_params = slurm_get_power_parameters();
+	power_params = xstrdup(slurm_conf.power_parameters);
+
 	if (power_params) {
-		while ((tmp_ptr = strstr(power_params, "cap_watts="))) {
+		while ((tmp_ptr = xstrstr(power_params, "cap_watts="))) {
 			_strip_cap_watts(tmp_ptr);
 		}
 	}
