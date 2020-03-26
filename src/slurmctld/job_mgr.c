@@ -727,14 +727,14 @@ static uint32_t _max_switch_wait(uint32_t input_wait)
 {
 	static time_t sched_update = 0;
 	static uint32_t max_wait = 300;	/* default max_switch_wait, seconds */
-	char *sched_params, *tmp_ptr;
 	int i;
 
 	if (sched_update != slurm_conf.last_update) {
+		char *tmp_ptr;
 		sched_update = slurm_conf.last_update;
-		sched_params = slurm_get_sched_params();
-		if ((tmp_ptr = xstrcasestr(sched_params, "max_switch_wait="))) {
-		/*                                        0123456789012345 */
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+		                           "max_switch_wait="))) {
+		/*                          0123456789012345 */
 			i = atoi(tmp_ptr + 16);
 			if (i < 0) {
 				error("ignoring SchedulerParameters: "
@@ -743,7 +743,6 @@ static uint32_t _max_switch_wait(uint32_t input_wait)
 				max_wait = i;
 			}
 		}
-		xfree(sched_params);
 	}
 
 	if (max_wait > input_wait)
@@ -7081,15 +7080,14 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 	}
 
 	if (sched_update != slurm_conf.last_update) {
-		char *sched_params = slurm_get_sched_params();
 		char *key;
 		max_task_cnt = max_array_size;
 		sched_update = slurm_conf.last_update;
-		if ((key = xstrcasestr(sched_params, "max_array_tasks="))) {
+		if ((key = xstrcasestr(slurm_conf.sched_params,
+		                       "max_array_tasks="))) {
 			key += 16;
 			max_task_cnt = atoi(key);
 		}
-		xfree(sched_params);
 	}
 
 	/* We have a job array request */
@@ -7124,13 +7122,12 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	static int max_script = -1;
 
 	if (max_script == -1) {
-		char *sched_params = slurm_get_sched_params();
 		char *tmp_ptr;
 		max_script = 4 * 1024 * 1024;
-		if ((tmp_ptr = xstrcasestr(sched_params, "max_script_size="))) {
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+		                           "max_script_size="))) {
 			max_script = atoi(tmp_ptr + 16);
 		}
-		xfree(sched_params);
 	}
 
 	if (_test_strlen(job_desc->account, "account", 1024)		||
@@ -7687,7 +7684,6 @@ static uint16_t _default_wait_all_nodes(job_desc_msg_t *job_desc)
 {
 	static uint16_t default_batch_wait = NO_VAL16;
 	static time_t sched_update = 0;
-	char *sched_params;
 
 	if (!job_desc->script)
 		return 0;
@@ -7696,12 +7692,10 @@ static uint16_t _default_wait_all_nodes(job_desc_msg_t *job_desc)
 	    (sched_update == slurm_conf.last_update))
 		return default_batch_wait;
 
-	sched_params = slurm_get_sched_params();
-	if (xstrcasestr(sched_params, "sbatch_wait_nodes"))
+	if (xstrcasestr(slurm_conf.sched_params, "sbatch_wait_nodes"))
 		default_batch_wait = 1;
 	else
 		default_batch_wait = 0;
-	xfree(sched_params);
 	sched_update = slurm_conf.last_update;
 
 	return default_batch_wait;
@@ -11114,13 +11108,12 @@ extern bool permit_job_expansion(void)
 	static bool permit_job_expansion = false;
 
 	if (sched_update != slurm_conf.last_update) {
-		char *sched_params = slurm_get_sched_params();
 		sched_update = slurm_conf.last_update;
-		if (xstrcasestr(sched_params, "permit_job_expansion"))
+		if (xstrcasestr(slurm_conf.sched_params,
+		                "permit_job_expansion"))
 			permit_job_expansion = true;
 		else
 			permit_job_expansion = false;
-		xfree(sched_params);
 	}
 
 	return permit_job_expansion;
@@ -11132,13 +11125,11 @@ extern bool permit_job_shrink(void)
 	static bool permit_job_shrink = false;
 
 	if (sched_update != slurm_conf.last_update) {
-		char *sched_params = slurm_get_sched_params();
 		sched_update = slurm_conf.last_update;
-		if (xstrcasestr(sched_params, "disable_job_shrink"))
+		if (xstrcasestr(slurm_conf.sched_params, "disable_job_shrink"))
 			permit_job_shrink = false;
 		else
 			permit_job_shrink = true;
-		xfree(sched_params);
 	}
 
 	return permit_job_shrink;
@@ -16622,10 +16613,8 @@ extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
 		uid = 0;
 	} else {
 		bool disable_user_top = true;
-		char *sched_params = slurm_get_sched_params();
-		if (xstrcasestr(sched_params, "enable_user_top"))
+		if (xstrcasestr(slurm_conf.sched_params, "enable_user_top"))
 			disable_user_top = false;
-		xfree(sched_params);
 		if (disable_user_top) {
 			rc = ESLURM_ACCESS_DENIED;
 			goto reply;
@@ -17182,7 +17171,6 @@ static void _parse_max_depend_depth(char *str)
 extern void init_depend_policy(void)
 {
 	char *depend_params = slurm_get_dependency_params();
-	char *sched_params = slurm_get_sched_params();
 	char *tmp_ptr;
 
 	disable_remote_singleton =
@@ -17194,7 +17182,7 @@ extern void init_depend_policy(void)
 	 * SchedulerParameters to DependencyParameters. Support both for 20.02,
 	 * then remove them from SchedulerParameters in a future release.
 	 */
-	if (xstrcasestr(sched_params, "kill_invalid_depend")) {
+	if (xstrcasestr(slurm_conf.sched_params, "kill_invalid_depend")) {
 		info("kill_invalid_depend is deprecated in SchedulerParameters and moved to DependencyParameters");
 		kill_invalid_dep = true;
 	} else
@@ -17205,14 +17193,14 @@ extern void init_depend_policy(void)
 	/* 					   01234567890123456 */
 	if ((tmp_ptr = xstrcasestr(depend_params, "max_depend_depth=")))
 		_parse_max_depend_depth(tmp_ptr + 17);
-	else if ((tmp_ptr = xstrcasestr(sched_params, "max_depend_depth="))) {
+	else if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+	                                "max_depend_depth="))) {
 		info("max_depend_depth is deprecated in SchedulerParameters and moved to DependencyParameters");
 		_parse_max_depend_depth(tmp_ptr + 17);
 	} else
 		max_depend_depth = 10;
 
 	xfree(depend_params);
-	xfree(sched_params);
 
 	log_flag(DEPENDENCY, "%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d; max_depend_depth is set to %d",
 	         __func__, kill_invalid_dep, disable_remote_singleton,
