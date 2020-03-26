@@ -14087,7 +14087,6 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
 	node_record_t *node_ptr = node_record_table_ptr + node_inx;
-	uint16_t resume_timeout		= slurm_get_resume_timeout();
 	uint32_t suspend_time		= slurm_get_suspend_time();
 	time_t batch_startup_time, node_boot_time = (time_t) 0, startup_time;
 
@@ -14108,7 +14107,8 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 		if ((job_ptr->batch_flag != 0)			&&
 		    (suspend_time != 0) /* power mgmt on */	&&
 		    (job_ptr->start_time < node_boot_time)) {
-			startup_time = batch_startup_time - resume_timeout;
+			startup_time = batch_startup_time -
+				slurm_conf.resume_timeout;
 		} else
 			startup_time = batch_startup_time;
 
