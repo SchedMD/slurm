@@ -222,7 +222,6 @@ extern int slurm_preempt_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "preempt";
-	char *type = NULL;
 	char *sched_params;
 
 	/* This function is called frequently, so it should be as fast as
@@ -236,12 +235,13 @@ extern int slurm_preempt_init(void)
 	if (g_context)
 		goto done;
 
-	type = slurm_get_preempt_type();
 	g_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+		plugin_type, slurm_conf.preempt_type,
+		(void **)&ops, syms, sizeof(syms));
 
 	if (!g_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s", plugin_type,
+		      slurm_conf.preempt_type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -254,7 +254,6 @@ extern int slurm_preempt_init(void)
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
-	xfree(type);
 	return retval;
 }
 
