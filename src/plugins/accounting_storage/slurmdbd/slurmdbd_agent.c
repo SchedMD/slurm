@@ -607,7 +607,7 @@ static void _open_slurmdbd_conn(bool need_db)
 	slurmdbd_conn->version  = SLURM_PROTOCOL_VERSION;
 
 	xfree(slurmdbd_conn->rem_host);
-	slurmdbd_conn->rem_host = slurm_conf.accounting_storage_host;
+	slurmdbd_conn->rem_host = xstrdup(slurm_conf.accounting_storage_host);
 
 	// See if a backup slurmdbd is configured
 	backup_host = slurm_get_accounting_storage_backup_host();
