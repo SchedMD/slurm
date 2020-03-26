@@ -3576,7 +3576,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 		 */
 		if ((xstrstr(slurm_conf.select_type, "cons_tres") ||
 		     (xstrstr(slurm_conf.select_type, "cray_aries") &&
-		      (slurm_get_select_type_param() & CR_OTHER_CONS_TRES)))) {
+		      (slurm_conf.select_type_param & CR_OTHER_CONS_TRES)))) {
 			select_hetero = 1;
 		} else
 			select_hetero = 0;
