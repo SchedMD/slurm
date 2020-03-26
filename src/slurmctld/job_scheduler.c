@@ -1008,7 +1008,6 @@ static int _schedule(uint32_t job_limit)
 
 	if (sched_update != slurm_conf.last_update) {
 		char *tmp_ptr;
-		char *sched_params = slurm_get_sched_params();
 		if (!xstrcmp(slurm_conf.schedtype, "sched/builtin") &&
 		    !xstrcmp(slurm_conf.priority_type, "priority/basic") &&
 		    _all_partition_priorities_same())
@@ -1016,12 +1015,12 @@ static int _schedule(uint32_t job_limit)
 		else
 			fifo_sched = false;
 
-		if (xstrcasestr(sched_params, "assoc_limit_stop"))
+		if (xstrcasestr(slurm_conf.sched_params, "assoc_limit_stop"))
 			assoc_limit_stop = true;
 		else
 			assoc_limit_stop = false;
 
-		if ((tmp_ptr = xstrcasestr(sched_params,
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 					   "batch_sched_delay="))) {
 			batch_sched_delay = atoi(tmp_ptr + 18);
 			if (batch_sched_delay < 0) {
@@ -1034,7 +1033,7 @@ static int _schedule(uint32_t job_limit)
 		}
 
 		bb_array_stage_cnt = 10;
-		if ((tmp_ptr = xstrcasestr(sched_params,
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 					   "bb_array_stage_cnt="))) {
 			int task_cnt = atoi(tmp_ptr + 19);
 			if (task_cnt > 0)
@@ -1042,7 +1041,7 @@ static int _schedule(uint32_t job_limit)
 		}
 
 		bf_min_age_reserve = 0;
-		if ((tmp_ptr = xstrcasestr(sched_params,
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 					   "bf_min_age_reserve="))) {
 			int min_age = atoi(tmp_ptr + 19);
 			if (min_age > 0)
@@ -1050,14 +1049,14 @@ static int _schedule(uint32_t job_limit)
 		}
 
 		bf_min_prio_reserve = 0;
-		if ((tmp_ptr = xstrcasestr(sched_params,
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 					   "bf_min_prio_reserve="))) {
 			int64_t min_prio = (int64_t) atoll(tmp_ptr + 20);
 			if (min_prio > 0)
 				bf_min_prio_reserve = (uint32_t) min_prio;
 		}
 
-		if ((tmp_ptr = xstrcasestr(sched_params,
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 					   "build_queue_timeout="))) {
 			build_queue_timeout = atoi(tmp_ptr + 20);
 			if (build_queue_timeout < 100) {
@@ -1069,7 +1068,7 @@ static int _schedule(uint32_t job_limit)
 			build_queue_timeout = BUILD_TIMEOUT;
 		}
 
-		if ((tmp_ptr = xstrcasestr(sched_params,
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 					   "default_queue_depth="))) {
 			def_job_limit = atoi(tmp_ptr + 20);
 			if (def_job_limit < 0) {
@@ -1083,8 +1082,8 @@ static int _schedule(uint32_t job_limit)
 		}
 
 		bf_hetjob_prio = 0;
-		if (sched_params &&
-		    (tmp_ptr = strstr(sched_params, "bf_hetjob_prio="))) {
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+		                           "bf_hetjob_prio="))) {
 			tmp_ptr = strtok(tmp_ptr + 15, ",");
 			if (!xstrcasecmp(tmp_ptr, "min"))
 				bf_hetjob_prio |= HETJOB_PRIO_MIN;
@@ -1098,7 +1097,7 @@ static int _schedule(uint32_t job_limit)
 		}
 
 		bf_hetjob_immediate = false;
-		if (xstrcasestr(sched_params, "bf_hetjob_immediate"))
+		if (xstrcasestr(slurm_conf.sched_params, "bf_hetjob_immediate"))
 			bf_hetjob_immediate = true;
 
 		if (bf_hetjob_immediate && !bf_hetjob_prio) {
@@ -1106,7 +1105,7 @@ static int _schedule(uint32_t job_limit)
 			info("bf_hetjob_immediate automatically sets bf_hetjob_prio=min");
 		}
 
-		if ((tmp_ptr = xstrcasestr(sched_params,
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 					   "partition_job_depth="))) {
 			max_jobs_per_part = atoi(tmp_ptr + 20);
 			if (max_jobs_per_part < 0) {
@@ -1119,14 +1118,16 @@ static int _schedule(uint32_t job_limit)
 			max_jobs_per_part = 0;
 		}
 
-		if (xstrcasestr(sched_params, "reduce_completing_frag"))
+		if (xstrcasestr(slurm_conf.sched_params,
+		                "reduce_completing_frag"))
 			reduce_completing_frag = true;
 		else
 			reduce_completing_frag = false;
 
-		if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_cnt=")))
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+		                           "max_rpc_cnt=")))
 			defer_rpc_cnt = atoi(tmp_ptr + 12);
-		else if ((tmp_ptr = xstrcasestr(sched_params,
+		else if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 						"max_rpc_count=")))
 			defer_rpc_cnt = atoi(tmp_ptr + 14);
 		else
@@ -1137,7 +1138,8 @@ static int _schedule(uint32_t job_limit)
 		}
 
 		time_limit = slurm_conf.msg_timeout / 2;
-		if ((tmp_ptr = xstrcasestr(sched_params, "max_sched_time="))) {
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+		                           "max_sched_time="))) {
 			sched_timeout = atoi(tmp_ptr + 15);
 			if ((sched_timeout <= 0) ||
 			    (sched_timeout > time_limit)) {
@@ -1153,7 +1155,8 @@ static int _schedule(uint32_t job_limit)
 			sched_timeout = MIN(sched_timeout, 2);
 		}
 
-		if ((tmp_ptr = xstrcasestr(sched_params, "sched_interval="))) {
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+		                           "sched_interval="))) {
 			sched_interval = atoi(tmp_ptr + 15);
 			if (sched_interval < 0) {
 				error("Invalid sched_interval: %d",
@@ -1164,7 +1167,7 @@ static int _schedule(uint32_t job_limit)
 			sched_interval = 60;
 		}
 
-		if ((tmp_ptr = xstrcasestr(sched_params,
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 					   "sched_min_interval="))) {
 			i = atoi(tmp_ptr + 19);
 			if (i < 0)
@@ -1175,7 +1178,7 @@ static int _schedule(uint32_t job_limit)
 			sched_min_interval = 2;
 		}
 
-		if ((tmp_ptr = xstrcasestr(sched_params,
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 					   "sched_max_job_start="))) {
 			sched_max_job_start = atoi(tmp_ptr + 20);
 			if (sched_max_job_start < 0) {
@@ -1187,7 +1190,6 @@ static int _schedule(uint32_t job_limit)
 			sched_max_job_start = 0;
 		}
 
-		xfree(sched_params);
 		sched_update = slurm_conf.last_update;
 		info("SchedulerParameters=default_queue_depth=%d,"
 		     "max_rpc_cnt=%d,max_sched_time=%d,partition_job_depth=%d,"
