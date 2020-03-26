@@ -171,13 +171,6 @@ static double _get_system_usage(void)
 {
 	static double sys_usage_per = 0.0;
 	static time_t last_idle_update = 0;
-	static uint16_t priority_flags = 0;
-	static bool statics_inited = false;
-
-	if (!statics_inited) {
-		priority_flags = slurm_get_priority_flags();
-		statics_inited = true;
-	}
 
 	if (last_idle_update < last_node_update) {
 		int    i;
@@ -201,7 +194,7 @@ static double _get_system_usage(void)
 				assoc_mgr_tres_weighted(
 					node_ptr->tres_cnt,
 					node_ptr->config_ptr->tres_weights,
-					priority_flags, false);
+					slurm_conf.priority_flags, false);
 
 			alloc_tres += node_alloc_tres;
 			tot_tres   += node_tot_tres;
