@@ -4645,7 +4645,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 {
 	static time_t sched_update = 0;
 	static int defer_sched = 0;
-	char *sched_params, *tmp_ptr;
 	int error_code, i;
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	job_record_t *job_ptr;
@@ -4658,13 +4657,14 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
 	if (sched_update != slurm_conf.last_update) {
+		char *tmp_ptr;
 		sched_update = slurm_conf.last_update;
-		sched_params = slurm_get_sched_params();
-		if (xstrcasestr(sched_params, "defer"))
+		if (xstrcasestr(slurm_conf.sched_params, "defer"))
 			defer_sched = 1;
 		else
 			defer_sched = 0;
-		if ((tmp_ptr = xstrcasestr(sched_params, "delay_boot="))) {
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+		                           "delay_boot="))) {
 			char *tmp_comma;
 			if ((tmp_comma = xstrstr(tmp_ptr, ",")))
 				*tmp_comma = '\0';
@@ -4675,17 +4675,15 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 				*tmp_comma = ',';
 		}
 		bf_min_age_reserve = 0;
-		if ((tmp_ptr = xstrcasestr(sched_params,
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 					   "bf_min_age_reserve="))) {
 			int min_age = atoi(tmp_ptr + 19);
 			if (min_age > 0)
 				bf_min_age_reserve = min_age;
 		}
 
-		if (xstrcasestr(sched_params, "allow_zero_lic"))
+		if (xstrcasestr(slurm_conf.sched_params, "allow_zero_lic"))
 			validate_cfgd_licenses = false;
-
-		xfree(sched_params);
 	}
 
 	if (job_specs->array_bitmap)
@@ -5270,17 +5268,14 @@ static bool _get_whole_hetjob(void)
 {
 	static time_t sched_update = 0;
 	static bool whole_hetjob = false;
-	char *sched_params = NULL;
 
 	if (sched_update != slurm_conf.last_update) {
 		sched_update = slurm_conf.last_update;
-		sched_params = slurm_get_sched_params();
-		if (xstrcasestr(sched_params, "whole_hetjob") ||
-		    xstrcasestr(sched_params, "whole_pack"))
+		if (xstrcasestr(slurm_conf.sched_params, "whole_hetjob") ||
+		    xstrcasestr(slurm_conf.sched_params, "whole_pack"))
 			whole_hetjob = true;
 		else
 			whole_hetjob = false;
-		xfree(sched_params);
 	}
 
 	return whole_hetjob;
