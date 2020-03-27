@@ -3212,9 +3212,14 @@ exists otherwise use the built\-in FIFO scheduler
 .TP
 \fBSelectType\fR
 Identifies the type of resource selection algorithm to be used.
-Changing this value can only be done by restarting the slurmctld daemon
-and will result in the loss of all job information (running and pending)
+Changing this value can only be done by restarting the slurmctld daemon.
+When changed, all job information (running and pending) will be lost,
 since the job state save format used by each plugin is different.
+The only exception to this is when changing from cons_res to cons_tres or from
+cons_tres to cons_res. However, if a job contains cons_tres-specific features
+and then SelectType is changed to cons_res, the job will be canceled, since
+there is no way for cons_res to satisfy requirements specific to cons_tres.
+
 Acceptable values include
 .RS
 .TP
