@@ -3766,7 +3766,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->accounting_storage_backup_host, buffer);
 		packstr(build_ptr->accounting_storage_host, buffer);
 		packstr(build_ptr->accounting_storage_loc, buffer);
-		pack32(build_ptr->accounting_storage_port, buffer);
+		pack16(build_ptr->accounting_storage_port, buffer);
 		packstr(build_ptr->accounting_storage_tres, buffer);
 		packstr(build_ptr->accounting_storage_type, buffer);
 		packstr(build_ptr->accounting_storage_user, buffer);
@@ -4671,7 +4671,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		                       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_loc,
 		                       &uint32_tmp, buffer);
-		safe_unpack32(&build_ptr->accounting_storage_port, buffer);
+		safe_unpack16(&build_ptr->accounting_storage_port, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_tres,
 		                       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_type,
@@ -5065,7 +5065,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_loc,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&build_ptr->accounting_storage_port, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		build_ptr->accounting_storage_port = uint32_tmp;
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_tres,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_type,
@@ -5460,7 +5461,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_loc,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&build_ptr->accounting_storage_port, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		build_ptr->accounting_storage_port = uint32_tmp;
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_tres,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_type,

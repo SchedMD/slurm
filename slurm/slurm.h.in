@@ -2661,7 +2661,7 @@ typedef struct {
 					 * location */
 	char *accounting_storage_pass;	/* accounting storage
 					 * password */
-	uint32_t accounting_storage_port;/* node accounting storage port */
+	uint16_t accounting_storage_port;/* node accounting storage port */
 	char *accounting_storage_type; /* accounting storage type */
 	char *accounting_storage_user; /* accounting storage user */
 	void *acct_gather_conf; /* account gather config */

@@ -199,7 +199,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"AccountingStorageBackupHost", S_P_STRING},
 	{"AccountingStorageLoc", S_P_STRING},
 	{"AccountingStoragePass", S_P_STRING},
-	{"AccountingStoragePort", S_P_UINT32},
+	{"AccountingStoragePort", S_P_UINT16},
 	{"AccountingStorageType", S_P_STRING},
 	{"AccountingStorageUser", S_P_STRING},
 	{"AccountingStoreJobComment", S_P_BOOLEAN},
@@ -4175,7 +4175,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	    && truth)
 		conf->conf_flags |= CTL_CONF_SJC;
 
-	if (!s_p_get_uint32(&conf->accounting_storage_port,
+	if (!s_p_get_uint16(&conf->accounting_storage_port,
 			    "AccountingStoragePort", hashtbl)) {
 		if (default_storage_port)
 			conf->accounting_storage_port = default_storage_port;

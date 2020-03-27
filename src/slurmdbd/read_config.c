@@ -482,7 +482,7 @@ extern int read_slurmdbd_conf(void)
 			       "StorageLoc", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_pass,
 			       "StoragePass", tbl);
-		s_p_get_uint32(&slurm_conf.accounting_storage_port,
+		s_p_get_uint16(&slurm_conf.accounting_storage_port,
 		               "StoragePort", tbl);
 		s_p_get_string(&slurm_conf.accounting_storage_type,
 		               "StorageType", tbl);
