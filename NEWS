@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.02.2
 ==========================
+ -- Fix slurmctld segfault when checking no_consume GRES node allocation counts.
 
 * Changes in Slurm 20.02.1
 ==========================
