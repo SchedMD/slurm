@@ -99,10 +99,6 @@
 # define NTOH_uint64(x)   UINT64_SWAP_LE_BE (x)
 #endif	/* SLURM_BIGENDIAN */
 
-#ifndef __STRING
-#  define __STRING(arg)		#arg
-#endif
-
 #define slurm_cond_init(cond, cont_attr)				\
 	do {								\
 		int err = pthread_cond_init(cond, cont_attr);		\
