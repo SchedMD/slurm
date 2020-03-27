@@ -392,6 +392,8 @@ extern void allocate_nodes(job_record_t *job_ptr)
 	if (sched_update != slurm_conf.last_update) {
 		if (xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns"))
 			cloud_dns = true;
+		else
+			cloud_dns = false;
 
 		sched_update = slurm_conf.last_update;
 	}
