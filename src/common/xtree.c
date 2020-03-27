@@ -33,6 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <stddef.h>
+
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xtree.h"
