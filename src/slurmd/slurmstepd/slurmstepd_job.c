@@ -69,7 +69,6 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 static char **_array_copy(int n, char **src);
-static void _array_free(char ***array);
 static void _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 				char *ifname, char *ofname, char *efname);
 static void _srun_info_destructor(void *arg);
@@ -77,6 +76,7 @@ static stepd_step_task_info_t *_task_info_create(int taskid, int gtaskid,
 						 char *ifname, char *ofname,
 						 char *efname);
 static void _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog);
+static void _task_info_array_destroy(stepd_step_rec_t *job);
 
 /*
  * return the default output filename for a batch job
@@ -204,16 +204,6 @@ _array_copy(int n, char **src)
 	return dst;
 }
 
-static void
-_array_free(char ***array)
-{
-	int i = 0;
-	while ((*array)[i] != NULL)
-		xfree((*array)[i++]);
-	xfree(*array);
-	*array = NULL;
-}
-
 /* destructor for list routines */
 static void
 _srun_info_destructor(void *arg)
@@ -232,6 +222,22 @@ _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog)
 		xfree(t->argv);
 	} /* otherwise, t->argv is a pointer to job->argv */
 	xfree(t);
+}
+
+static void _task_info_array_destroy(stepd_step_rec_t *job)
+{
+	uint16_t multi_prog = 0;
+
+	if (!job->task)
+		return;
+
+	if (job->flags & LAUNCH_MULTI_PROG)
+		multi_prog = 1;
+
+	for (int i = 0; i < job->node_tasks; i++)
+		_task_info_destroy(job->task[i], multi_prog);
+
+	xfree(job->task);
 }
 
 static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *job)
@@ -642,18 +648,16 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 extern void
 stepd_step_rec_destroy(stepd_step_rec_t *job)
 {
-	uint16_t multi_prog = 0;
 	int i;
 
-	_array_free(&job->env);
-	_array_free(&job->argv);
+	env_array_free(job->env);
+	job->env = NULL;
+	env_array_free(job->argv);
+	job->argv = NULL;
 
-	if (job->flags & LAUNCH_MULTI_PROG)
-		multi_prog = 1;
-	for (i = 0; i < job->node_tasks; i++)
-		_task_info_destroy(job->task[i], multi_prog);
-	xfree(job->task);
-	eio_handle_destroy(job->eio);
+	_task_info_array_destroy(job);
+	if (job->eio)
+		eio_handle_destroy(job->eio);
 	FREE_NULL_LIST(job->sruns);
 	FREE_NULL_LIST(job->clients);
 	FREE_NULL_LIST(job->stdout_eio_objs);
@@ -671,7 +675,8 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	xfree(job->pw_shell);
 	xfree(job->gids);
 	xfree(job->mem_bind);
-	eio_handle_destroy(job->msg_handle);
+	if (job->msg_handle)
+		eio_handle_destroy(job->msg_handle);
 	xfree(job->node_name);
 	mpmd_free(job);
 	xfree(job->het_job_task_cnts);
