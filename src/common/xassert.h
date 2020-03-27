@@ -43,8 +43,6 @@
 
 #include "config.h"
 
-#include "macros.h"
-
 #ifdef NDEBUG
 
 #  define xassert(expr)	((void) (0))
