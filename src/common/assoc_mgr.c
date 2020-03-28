@@ -1977,11 +1977,9 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 	static uint16_t checked_prio = 0;
 
 	if (!checked_prio) {
-		char *prio = slurm_get_priority_type();
-		if (prio && xstrcmp(prio, "priority/basic"))
+		if (xstrcmp(slurm_conf.priority_type, "priority/basic"))
 			setup_children = 1;
 
-		xfree(prio);
 		checked_prio = 1;
 		memset(&init_setup, 0, sizeof(assoc_init_args_t));
 		init_setup.cache_level = ASSOC_MGR_CACHE_ALL;

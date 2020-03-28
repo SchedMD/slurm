@@ -680,25 +680,6 @@ char *slurm_get_priority_site_factor_plugin(void)
 	return plugin;
 }
 
-/* slurm_get_priority_type
- * returns the priority type from slurm_conf object
- * RET char *    - priority type, MUST be xfreed by caller
- */
-char *slurm_get_priority_type(void)
-{
-	char *priority_type = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		priority_type = xstrdup(conf->priority_type);
-		slurm_conf_unlock();
-	}
-
-	return priority_type;
-}
-
 /* slurm_get_priority_weight_age
  * returns the priority weight for age from slurm_conf object
  * RET uint32_t - factor weight.

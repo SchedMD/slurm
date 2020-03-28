@@ -321,12 +321,6 @@ char *slurm_get_priority_site_factor_params(void);
  */
 char *slurm_get_priority_site_factor_plugin(void);
 
-/* slurm_get_priority_type
- * returns the priority type from slurm_conf object
- * RET char *    - priority type, MUST be xfreed by caller
- */
-char *slurm_get_priority_type(void);
-
 /* slurm_get_priority_weight_age
  * returns the priority weight for age from slurm_conf object
  * RET uint32_t - factor weight.

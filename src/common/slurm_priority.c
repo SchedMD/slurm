@@ -90,7 +90,6 @@ extern int slurm_priority_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "priority";
-	char *type = NULL;
 
 	if (init_run && g_priority_context)
 		return retval;
@@ -100,13 +99,14 @@ extern int slurm_priority_init(void)
 	if (g_priority_context)
 		goto done;
 
-	type = slurm_get_priority_type();
-
-	g_priority_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+	g_priority_context = plugin_context_create(plugin_type,
+						   slurm_conf.priority_type,
+						   (void **) &ops, syms,
+						   sizeof(syms));
 
 	if (!g_priority_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.priority_type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -114,7 +114,6 @@ extern int slurm_priority_init(void)
 
 done:
 	slurm_mutex_unlock(&g_priority_context_lock);
-	xfree(type);
 	return retval;
 }
 
