@@ -85,11 +85,6 @@ enum {
  */
 char *slurm_auth_opts_to_socket(char *opts);
 
-/* slurm_get_sbcast_parameters
- * RET char * - SbcastParameters from slurm.conf,  MUST be xfreed by caller
- */
-char *slurm_get_sbcast_parameters(void);
-
 /* slurm_get_auth_ttl
  * returns the credential Time To Live option from the AuthInfo parameter
  * cache value in local buffer for best performance

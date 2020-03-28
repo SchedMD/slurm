@@ -1615,23 +1615,6 @@ extern char *slurm_auth_opts_to_socket(char *opts)
 	return socket;
 }
 
-/* slurm_get_sbcast_parameters
- * RET char * - SbcastParameters from slurm.conf,  MUST be xfreed by caller
- */
-char *slurm_get_sbcast_parameters(void)
-{
-	char *sbcast_parameters = NULL;
-	slurm_conf_t *conf;
-
-	if (!slurmdbd_conf) {
-		conf = slurm_conf_lock();
-		sbcast_parameters = xstrdup(conf->sbcast_parameters);
-		slurm_conf_unlock();
-	}
-
-	return sbcast_parameters;
-}
-
 /* slurm_get_auth_ttl
  * returns the credential Time To Live option from the AuthInfo parameter
  * cache value in local buffer for best performance

@@ -49,6 +49,7 @@
 #include <unistd.h>
 
 #include "src/common/proc_args.h"
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -70,7 +71,6 @@ static void     _usage( void );
  */
 extern void parse_command_line(int argc, char **argv)
 {
-	char *sbcast_parameters;
 	char *end_ptr = NULL, *env_val = NULL, *sep, *tmp;
 	int opt_char;
 	int option_index;
@@ -89,8 +89,7 @@ extern void parse_command_line(int argc, char **argv)
 		{NULL,        0,                 0, 0}
 	};
 
-	if ((sbcast_parameters = slurm_get_sbcast_parameters()) &&
-	    (tmp = strcasestr(sbcast_parameters, "Compression="))) {
+	if ((tmp = xstrcasestr(slurm_conf.sbcast_parameters, "Compression="))) {
 		tmp += 12;
 		sep = strchr(tmp, ',');
 		if (sep)
@@ -194,8 +193,8 @@ extern void parse_command_line(int argc, char **argv)
 
 	if (argv[optind+1][0] == '/') {
 		params.dst_fname = xstrdup(argv[optind+1]);
-	} else if (sbcast_parameters &&
-		   (tmp = strcasestr(sbcast_parameters, "DestDir="))) {
+	} else if ((tmp = xstrcasestr(slurm_conf.sbcast_parameters,
+				      "DestDir="))) {
 		tmp += 8;
 		sep = strchr(tmp, ',');
 		if (sep)
@@ -213,8 +212,6 @@ extern void parse_command_line(int argc, char **argv)
 		xstrfmtcat(params.dst_fname, "%s/%s", tmp, argv[optind+1]);
 		free(tmp);
 	}
-
-	xfree(sbcast_parameters);
 
 	if (params.verbose)
 		_print_options();
