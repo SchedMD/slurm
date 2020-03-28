@@ -131,7 +131,6 @@
 \*****************************************************************************/
 
 typedef struct slurmctld_config {
-	char *	auth_info;
 	pthread_cond_t backup_finish_cond; /* use thread_count_lock */
 	time_t	boot_time;
 	int	daemonize;

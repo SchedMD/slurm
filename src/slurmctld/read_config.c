@@ -1120,8 +1120,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	/* initialization */
 	START_TIMER;
 
-	xfree(slurmctld_config.auth_info);
-	slurmctld_config.auth_info = slurm_get_auth_info();
 	if (reconfig) {
 		/*
 		 * In order to re-use job state information,

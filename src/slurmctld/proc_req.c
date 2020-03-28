@@ -268,7 +268,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 #endif
 
 	/* Validate the credential */
-	if (g_slurm_auth_verify(msg->auth_cred, slurmctld_config.auth_info)) {
+	if (g_slurm_auth_verify(msg->auth_cred, slurm_conf.authinfo)) {
 		error("Bad authentication: %m");
 		return;
 	}
