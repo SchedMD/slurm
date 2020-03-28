@@ -108,7 +108,7 @@ extern int slurm_auth_init(char *auth_type)
 {
 	int retval = SLURM_SUCCESS;
 	char *auth_alt_types = NULL, *list = NULL;
-	char *auth_plugin_type = NULL, *type, *last = NULL;
+	char *type, *last = NULL;
 	char *plugin_type = "auth";
 	static bool daemon_run = false, daemon_set = false;
 
@@ -121,16 +121,20 @@ extern int slurm_auth_init(char *auth_type)
 		goto done;
 
 	if (getenv("SLURM_JWT")) {
-		slurm_set_auth_type("auth/jwt");
-	} else if (auth_type)
-		slurm_set_auth_type(auth_type);
+		xfree(slurm_conf.authtype);
+		slurm_conf.authtype = xstrdup("auth/jwt");
+	} else if (auth_type) {
+		xfree(slurm_conf.authtype);
+		slurm_conf.authtype = xstrdup(auth_type);
+	}
 
-	type = auth_plugin_type = slurm_get_auth_type();
+	type = slurm_conf.authtype;
+	if (!type || type[0] == '\0')
+		goto done;
+
 	if (run_in_daemon(&daemon_run, &daemon_set, "slurmctld,slurmdbd"))
 		list = auth_alt_types = xstrdup(slurm_conf.authalttypes);
 	g_context_num = 0;
-	if (!auth_plugin_type || auth_plugin_type[0] == '\0')
-		goto done;
 
 	/*
 	 * This loop construct ensures that the AuthType is in position zero
@@ -168,7 +172,6 @@ extern int slurm_auth_init(char *auth_type)
 	init_run = true;
 
 done:
-	xfree(auth_plugin_type);
 	xfree(auth_alt_types);
 	slurm_mutex_unlock(&context_lock);
 	return retval;

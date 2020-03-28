@@ -378,19 +378,6 @@ extern char *slurm_get_stepd_loc(void);
  */
 extern char *slurm_get_tmp_fs(char *node_name);
 
-/* slurm_get_auth_type
- * returns the authentication type from slurm_conf object
- * RET char *    - auth type, MUST be xfreed by caller
- */
-extern char *slurm_get_auth_type(void);
-
-/* slurm_set_auth_type
- * set the authentication type in slurm_conf object
- * used for security testing purposes
- * RET 0 or error code
- */
-extern int slurm_set_auth_type(char *auth_type);
-
 /* slurm_get_bb_params
  * returns the BurstBufferParameters (bb_params) from slurm_conf object
  * RET char *    - BurstBufferParameters, MUST be xfreed by caller

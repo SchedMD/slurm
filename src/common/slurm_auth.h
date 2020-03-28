@@ -71,7 +71,7 @@
 /*
  * Prepare the global context.
  * auth_type IN: authentication mechanism (e.g. "auth/munge") or
- *	NULL to select based upon slurm_get_auth_type() results
+ *	NULL to use slurm_conf.auth_type
  */
 extern int slurm_auth_init(char *auth_type);
 

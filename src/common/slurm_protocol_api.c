@@ -943,25 +943,6 @@ extern char *slurm_get_tmp_fs(char *node_name)
 	return tmp_fs;
 }
 
-/* slurm_get_auth_type
- * returns the authentication type from slurm_conf object
- * RET char *    - auth type, MUST be xfreed by caller
- */
-char *slurm_get_auth_type(void)
-{
-	char *auth_type = NULL;
-	slurm_conf_t *conf = NULL;
-
-	if (slurmdbd_conf) {
-		auth_type = xstrdup(slurmdbd_conf->auth_type);
-	} else {
-		conf = slurm_conf_lock();
-		auth_type = xstrdup(conf->authtype);
-		slurm_conf_unlock();
-	}
-	return auth_type;
-}
-
 /* slurm_get_bb_type
  * returns the BurstBufferType (bb_type) from slurm_conf object
  * RET char *    - BurstBufferType, MUST be xfreed by caller
@@ -1192,27 +1173,6 @@ extern uint16_t slurm_get_vsize_factor(void)
 		slurm_conf_unlock();
 	}
 	return vsize_factor;
-}
-
-/* slurm_set_auth_type
- * set the authentication type in slurm_conf object
- * used for security testing purposes
- * RET 0 or error code
- */
-extern int slurm_set_auth_type(char *auth_type)
-{
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-		xfree(slurmdbd_conf->auth_type);
-		slurmdbd_conf->auth_type = xstrdup(auth_type);
-	} else {
-		conf = slurm_conf_lock();
-		xfree(conf->authtype);
-		conf->authtype = xstrdup(auth_type);
-		slurm_conf_unlock();
-	}
-	return 0;
 }
 
 /* slurm_get_hash_val

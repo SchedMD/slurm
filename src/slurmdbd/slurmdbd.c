@@ -157,7 +157,7 @@ int main(int argc, char **argv)
 	 */
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s authentication plugin",
-		      slurmdbd_conf->auth_type);
+		      slurm_conf.authtype);
 	}
 	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s accounting storage plugin",

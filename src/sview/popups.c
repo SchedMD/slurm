@@ -303,7 +303,6 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	char *acct_storage_loc  = slurm_get_accounting_storage_loc();
 	char *acct_storage_pass = slurm_get_accounting_storage_pass();
 	char *acct_storage_user = slurm_get_accounting_storage_user();
-	char *auth_type = slurm_get_auth_type();
 	uint16_t private_data = slurm_get_private_data();
 	uint16_t track_wckey = slurm_get_track_wckey();
 
@@ -329,8 +328,8 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	                           slurm_conf.accounting_storage_type);
 	add_display_treestore_line(update, treestore, &iter,
 				   "AccountingStorageUser", acct_storage_user);
-	add_display_treestore_line(update, treestore, &iter,
-				   "AuthType", auth_type);
+	add_display_treestore_line(update, treestore, &iter, "AuthType",
+				   slurm_conf.authtype);
 	snprintf(tmp_str, sizeof(tmp_str), "%u sec", slurm_conf.msg_timeout);
 	add_display_treestore_line(update, treestore, &iter,
 				   "MessageTimeout", tmp_str);
@@ -356,7 +355,6 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	xfree(acct_storage_loc);
 	xfree(acct_storage_pass);
 	xfree(acct_storage_user);
-	xfree(auth_type);
 
 	/* now load accounting parms from slurmdbd.conf */
 

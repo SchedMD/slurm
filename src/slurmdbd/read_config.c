@@ -89,7 +89,6 @@ static void _clear_slurmdbd_conf(void)
 	if (slurmdbd_conf) {
 		xfree(slurmdbd_conf->archive_dir);
 		xfree(slurmdbd_conf->archive_script);
-		xfree(slurmdbd_conf->auth_type);
 		slurmdbd_conf->commit_delay = 0;
 		xfree(slurmdbd_conf->dbd_addr);
 		xfree(slurmdbd_conf->dbd_backup);
@@ -229,7 +228,7 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_boolean(&a_usage, "ArchiveUsage", tbl);
 		s_p_get_string(&slurm_conf.authalttypes, "AuthAltTypes", tbl);
 		s_p_get_string(&slurm_conf.authinfo, "AuthInfo", tbl);
-		s_p_get_string(&slurmdbd_conf->auth_type, "AuthType", tbl);
+		s_p_get_string(&slurm_conf.authtype, "AuthType", tbl);
 		s_p_get_uint16(&slurmdbd_conf->commit_delay,
 			       "CommitDelay", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_backup,
@@ -518,8 +517,8 @@ extern int read_slurmdbd_conf(void)
 	}
 
 	xfree(conf_path);
-	if (slurmdbd_conf->auth_type == NULL)
-		slurmdbd_conf->auth_type = xstrdup(DEFAULT_SLURMDBD_AUTHTYPE);
+	if (!slurm_conf.authtype)
+		slurm_conf.authtype = xstrdup(DEFAULT_SLURMDBD_AUTHTYPE);
 	if (slurmdbd_conf->dbd_host == NULL) {
 		error("slurmdbd.conf lacks DbdHost parameter, "
 		      "using 'localhost'");
@@ -630,7 +629,7 @@ extern void log_config(void)
 	debug2("ArchiveScript     = %s", slurmdbd_conf->archive_script);
 	debug2("AuthAltTypes      = %s", slurm_conf.authalttypes);
 	debug2("AuthInfo          = %s", slurm_conf.authinfo);
-	debug2("AuthType          = %s", slurmdbd_conf->auth_type);
+	debug2("AuthType          = %s", slurm_conf.authtype);
 	debug2("CommitDelay       = %u", slurmdbd_conf->commit_delay);
 	debug2("DbdAddr           = %s", slurmdbd_conf->dbd_addr);
 	debug2("DbdBackupHost     = %s", slurmdbd_conf->dbd_backup);
@@ -799,7 +798,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AuthType");
-	key_pair->value = xstrdup(slurmdbd_conf->auth_type);
+	key_pair->value = xstrdup(slurm_conf.authtype);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
