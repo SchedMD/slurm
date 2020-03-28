@@ -107,7 +107,6 @@ extern int launch_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "launch";
-	char *type = NULL;
 
 	if (init_run && plugin_context)
 		return retval;
@@ -117,12 +116,14 @@ extern int launch_init(void)
 	if (plugin_context)
 		goto done;
 
-	type = slurm_get_launch_type();
-	plugin_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+	plugin_context = plugin_context_create(plugin_type,
+					       slurm_conf.launch_type,
+					       (void **) &ops, syms,
+					       sizeof(syms));
 
 	if (!plugin_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.launch_type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -130,7 +131,6 @@ extern int launch_init(void)
 
 done:
 	slurm_mutex_unlock(&plugin_context_lock);
-	xfree(type);
 
 	return retval;
 }

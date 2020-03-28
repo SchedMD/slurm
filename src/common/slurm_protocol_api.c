@@ -2325,42 +2325,6 @@ uint16_t slurm_get_kill_wait(void)
 	return kill_wait;
 }
 
-/* slurm_get_launch_type
- * get launch_type from slurm_conf object
- * RET char *   - launch_type, MUST be xfreed by caller
- */
-char *slurm_get_launch_type(void)
-{
-	char *launch_type = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		launch_type = xstrdup(conf->launch_type);
-		slurm_conf_unlock();
-	}
-	return launch_type;
-}
-
-/* slurm_set_launch_type
- * set launch_type in slurm_conf object
- * RET 0 or error code
- */
-int slurm_set_launch_type(char *launch_type)
-{
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		xfree(conf->launch_type);
-		conf->launch_type = xstrdup(launch_type);
-		slurm_conf_unlock();
-	}
-	return 0;
-}
-
 /* slurm_get_mcs_plugin
  * RET mcs_plugin name, must be xfreed by caller */
 char *slurm_get_mcs_plugin(void)

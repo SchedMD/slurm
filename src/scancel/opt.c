@@ -182,15 +182,11 @@ static void _opt_default(void)
 #ifdef HAVE_FRONT_END
 	opt.ctld	= true;
 #else
-{
-	char *launch_type = slurm_get_launch_type();
 	/* do this for all but slurm (poe, aprun, etc...) */
-	if (xstrcmp(launch_type, "launch/slurm"))
+	if (xstrcmp(slurm_conf.launch_type, "launch/slurm"))
 		opt.ctld	= true;
 	else
 		opt.ctld	= false;
-	xfree(launch_type);
-}
 #endif
 	opt.full	= false;
 	opt.hurry	= false;

@@ -375,16 +375,14 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 	pthread_mutex_t step_mutex = PTHREAD_MUTEX_INITIALIZER;
 	pthread_cond_t step_cond   = PTHREAD_COND_INITIALIZER;
 	srun_job_t *first_job = NULL;
-	char *launch_type, *het_job_node_list = NULL;
+	char *het_job_node_list = NULL;
 	bool need_mpir = false;
 	uint16_t *tmp_task_cnt = NULL, *het_job_task_cnts = NULL;
 	uint32_t **tmp_tids = NULL, **het_job_tids = NULL;
 	uint32_t *het_job_tid_offsets = NULL;
 
-	launch_type = slurm_get_launch_type();
-	if (launch_type && strstr(launch_type, "slurm"))
+	if (xstrstr(slurm_conf.launch_type, "slurm"))
 		need_mpir = true;
-	xfree(launch_type);
 
 	if (srun_job_list) {
 		int het_job_step_cnt = list_count(srun_job_list);

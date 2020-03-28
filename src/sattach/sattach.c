@@ -122,7 +122,7 @@ int sattach(int argc, char **argv)
 	slurm_cred_t *fake_cred;
 	message_thread_state_t *mts;
 	client_io_t *io;
-	char *hosts, *launch_type;
+	char *hosts;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
@@ -137,12 +137,11 @@ int sattach(int argc, char **argv)
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
 	}
-	launch_type = slurm_get_launch_type();
-	if (launch_type && xstrcmp(launch_type, "launch/slurm")) {
-		error("sattach does not support LaunchType=%s", launch_type);
+	if (xstrcmp(slurm_conf.launch_type, "launch/slurm")) {
+		error("sattach does not support LaunchType=%s",
+		      slurm_conf.launch_type);
 		exit(error_exit);
 	}
-	xfree(launch_type);
 
 	layout = slurm_job_step_layout_get(opt.jobid, opt.stepid);
 	if (layout == NULL) {
