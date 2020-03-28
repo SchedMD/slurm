@@ -293,12 +293,6 @@ bool slurm_get_priority_favor_small(void);
  */
 uint16_t slurm_get_priority_flags(void);
 
-/* slurm_get_priority_max_age
- * returns the priority age max in seconds from slurm_conf object
- * RET uint32_t - max_age in secs.
- */
-uint32_t slurm_get_priority_max_age(void);
-
 /* slurm_get_priority_params
  * RET char * - Value of PriorityParameters, MUST be xfreed by caller */
 char *slurm_get_priority_params(void);
@@ -321,24 +315,6 @@ char *slurm_get_priority_site_factor_params(void);
  */
 char *slurm_get_priority_site_factor_plugin(void);
 
-/* slurm_get_priority_weight_age
- * returns the priority weight for age from slurm_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_age(void);
-
-/* slurm_get_priority_weight_assoc
- * returns the priority weight for association from slurm_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_assoc(void);
-
-/* slurm_get_priority_weight_fairshare
- * returns the priority weight for fairshare from slurm_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_fairshare(void);
-
 /* slurm_get_fs_dampening_factor
  * returns the dampening factor for fairshare from slurm_conf object
  * RET uint32_t - factor.
@@ -349,24 +325,6 @@ uint16_t slurm_get_fs_dampening_factor(void);
  * sets the value of fs_dampening in slurm_conf object
  */
 void slurm_set_fs_dampening_factor(uint16_t);
-
-/* slurm_get_priority_weight_job_size
- * returns the priority weight for job size from slurm_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_job_size(void);
-
-/* slurm_get_priority_weight_partition
- * returns the priority weight for partitions from slurm_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_partition(void);
-
-/* slurm_get_priority_weight_qos
- * returns the priority weight for QOS from slurm_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_qos(void);
 
 /* slurm_get_priority_weight_tres
  * returns the priority weights for TRES' from slurm_conf object

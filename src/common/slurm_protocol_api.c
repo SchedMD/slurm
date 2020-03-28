@@ -588,25 +588,6 @@ uint16_t slurm_get_priority_flags(void)
 	return flags;
 }
 
-/* slurm_get_priority_max_age
- * returns the priority age max in seconds from slurm_conf object
- * RET uint32_t - age_max in secs.
- */
-uint32_t slurm_get_priority_max_age(void)
-{
-	uint32_t age = NO_VAL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		age = conf->priority_max_age;
-		slurm_conf_unlock();
-	}
-
-	return age;
-}
-
 /* slurm_get_priority_params
  * RET char * - Value of PriorityParameters, MUST be xfreed by caller */
 char *slurm_get_priority_params(void)
@@ -680,65 +661,6 @@ char *slurm_get_priority_site_factor_plugin(void)
 	return plugin;
 }
 
-/* slurm_get_priority_weight_age
- * returns the priority weight for age from slurm_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_age(void)
-{
-	uint32_t factor = NO_VAL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		factor = conf->priority_weight_age;
-		slurm_conf_unlock();
-	}
-
-	return factor;
-}
-
-
-/* slurm_get_priority_weight_assoc
- * returns the priority weight for association from slurm_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_assoc(void)
-{
-	uint32_t factor = NO_VAL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		factor = conf->priority_weight_assoc;
-		slurm_conf_unlock();
-	}
-
-	return factor;
-}
-
-
-/* slurm_get_priority_weight_fairshare
- * returns the priority weight for fairshare from slurm_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_fairshare(void)
-{
-	uint32_t factor = NO_VAL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		factor = conf->priority_weight_fs;
-		slurm_conf_unlock();
-	}
-
-	return factor;
-}
-
 /* slurm_get_fs_dampening_factor
  * returns the dampening factor for fairshare from slurm_conf object
  * RET uint32_t - factor.
@@ -771,63 +693,6 @@ void slurm_set_fs_dampening_factor(uint16_t factor)
 		conf->fs_dampening_factor = factor;
 		slurm_conf_unlock();
 	}
-}
-/* slurm_get_priority_weight_job_size
- * returns the priority weight for job size from slurm_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_job_size(void)
-{
-	uint32_t factor = NO_VAL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		factor = conf->priority_weight_js;
-		slurm_conf_unlock();
-	}
-
-	return factor;
-}
-
-/* slurm_get_priority_weight_partition
- * returns the priority weight for partitions from slurm_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_partition(void)
-{
-	uint32_t factor = NO_VAL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		factor = conf->priority_weight_part;
-		slurm_conf_unlock();
-	}
-
-	return factor;
-}
-
-
-/* slurm_get_priority_weight_qos
- * returns the priority weight for QOS from slurm_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_qos(void)
-{
-	uint32_t factor = NO_VAL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		factor = conf->priority_weight_qos;
-		slurm_conf_unlock();
-	}
-
-	return factor;
 }
 
 /* slurm_get_priority_weight_tres
