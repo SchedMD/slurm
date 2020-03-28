@@ -1177,25 +1177,6 @@ extern uint16_t slurm_get_track_wckey(void)
 	return track_wckey;
 }
 
-/* slurm_get_tree_width
- * returns the value of tree_width in slurm_conf object
- */
-extern uint16_t slurm_get_tree_width(void)
-{
-	/* initialize to 1 to silence later warnings
-	 * about potential division by zero */
-	uint16_t tree_width = 1;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		tree_width = conf->tree_width;
-		slurm_conf_unlock();
-	}
-	return tree_width;
-}
-
 /* slurm_get_vsize_factor
  * returns the value of vsize_factor in slurm_conf object
  */
@@ -3580,7 +3561,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	}
 
 	if (!msg->forward.tree_width)
-		msg->forward.tree_width = slurm_get_tree_width();
+		msg->forward.tree_width = slurm_conf.tree_width;
 
 	forward_wait(msg);
 
@@ -4058,7 +4039,7 @@ _send_and_recv_msgs(int fd, slurm_msg_t *req, int timeout)
 			steps = req->forward.cnt + 1;
 			if (!req->forward.tree_width)
 				req->forward.tree_width =
-					slurm_get_tree_width();
+					slurm_conf.tree_width;
 			if (req->forward.tree_width)
 				steps /= req->forward.tree_width;
 			timeout = (message_timeout * steps);
@@ -4548,7 +4529,7 @@ extern int *set_span(int total,  uint16_t tree_width)
 	int i = 0;
 
 	if (tree_width == 0)
-		tree_width = slurm_get_tree_width();
+		tree_width = slurm_conf.tree_width;
 
 	span = xcalloc(tree_width, sizeof(int));
 	//info("span count = %d", tree_width);

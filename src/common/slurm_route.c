@@ -82,7 +82,6 @@ static slurm_route_ops_t ops;
 static plugin_context_t	*g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
-static uint16_t g_tree_width;
 static bool this_is_collector = false; /* this node is a collector node */
 static slurm_addr_t *msg_collect_node = NULL; /* address of node to aggregate
 						 messages from this node */
@@ -327,8 +326,6 @@ extern int route_init(char *node_name)
 		goto done;
 	}
 
-	g_tree_width = slurm_get_tree_width();
-
 	init_run = true;
 	_set_collectors(node_name);
 
@@ -396,8 +393,10 @@ extern int route_g_split_hostlist(hostlist_t hl,
 		xfree(buf);
 	}
 
-	rc = (*(ops.split_hostlist))(hl, sp_hl, count,
-				     tree_width ? tree_width : g_tree_width);
+	if (!tree_width)
+		tree_width = slurm_conf.tree_width;
+
+	rc = (*(ops.split_hostlist))(hl, sp_hl, count, tree_width);
 	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 		/* Sanity check to make sure all nodes in msg list are in
 		 * a child list */
@@ -423,7 +422,6 @@ extern int route_g_reconfigure(void)
 {
 	if (route_init(NULL) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	g_tree_width = slurm_get_tree_width();
 
 	return (*(ops.reconfigure))();
 }
@@ -488,7 +486,7 @@ extern int route_split_hostlist_treewidth(hostlist_t hl,
 	int j;
 
 	if (!tree_width)
-		tree_width = g_tree_width;
+		tree_width = slurm_conf.tree_width;
 
 	host_count = hostlist_count(hl);
 	span = set_span(host_count, tree_width);

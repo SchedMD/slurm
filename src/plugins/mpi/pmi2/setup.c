@@ -220,10 +220,10 @@ _setup_stepd_tree_info(char ***env)
 		if (tree_width < 2) {
 			info("invalid PMI2 tree width value (%d) detected. "
 			     "fallback to default value.", tree_width);
-			tree_width = slurm_get_tree_width();
+			tree_width = slurm_conf.tree_width;
 		}
 	} else {
-		tree_width = slurm_get_tree_width();
+		tree_width = slurm_conf.tree_width;
 	}
 
 	/* TODO: cannot launch 0 tasks on node */

@@ -493,7 +493,7 @@ extern void restore_front_end_state(int recover)
 #ifdef HAVE_FRONT_END
 	slurm_conf_frontend_t *slurm_conf_fe_ptr;
 	ListIterator iter;
-	uint32_t state_base, state_flags, tree_width;
+	uint32_t state_base, state_flags;
 	int i;
 
 	last_front_end_update = time(NULL);
@@ -590,10 +590,9 @@ extern void restore_front_end_state(int recover)
 	list_iterator_destroy(iter);
 	if (front_end_node_cnt == 0)
 		fatal("No front end nodes defined");
-	tree_width = slurm_get_tree_width();
-	if (front_end_node_cnt > tree_width) {
+	if (front_end_node_cnt > slurm_conf.tree_width) {
 		fatal("front_end_node_cnt > tree_width (%u > %u)",
-		      front_end_node_cnt, tree_width);
+		      front_end_node_cnt, slurm_conf.tree_width);
 	}
 	if (slurm_conf.debug_flags & DEBUG_FLAG_FRONT_END)
 		log_front_end_state();

@@ -236,7 +236,7 @@ void *_forward_thread(void *arg)
 					slurm_conf.msg_timeout * 1000;
 			if (!fwd_msg->header.forward.tree_width)
 				fwd_msg->header.forward.tree_width =
-					slurm_get_tree_width();
+					slurm_conf.tree_width;
 			steps = (fwd_msg->header.forward.cnt+1) /
 					fwd_msg->header.forward.tree_width;
 			fwd_msg->timeout = (message_timeout*steps);
