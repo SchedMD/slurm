@@ -297,7 +297,7 @@ static void _sbast_cache_add(sbcast_cred_t *sbcast_cred);
 
 static int _slurm_cred_init(void)
 {
-	char *auth_info, *tok, *launch_params;
+	char *tok, *launch_params;
 	char    *plugin_type = "cred";
 	char	*type = NULL;
 	int	retval = SLURM_SUCCESS;
@@ -305,15 +305,12 @@ static int _slurm_cred_init(void)
 	if ( init_run && g_context )  /* mostly avoid locks for better speed */
 		return retval;
 
-	if ((auth_info = slurm_get_auth_info())) {
-		if ((tok = strstr(auth_info, "cred_expire="))) {
-			cred_expire = atoi(tok + 12);
-			if (cred_expire < 5) {
-				error("AuthInfo=cred_expire=%d invalid",
-				      cred_expire);
-				cred_expire = DEFAULT_EXPIRATION_WINDOW;
-			}
-		xfree(auth_info);
+	/*					 123456789012 */
+	if ((tok = xstrstr(slurm_conf.authinfo, "cred_expire="))) {
+		cred_expire = atoi(tok + 12);
+		if (cred_expire < 5) {
+			error("AuthInfo=cred_expire=%d invalid", cred_expire);
+			cred_expire = DEFAULT_EXPIRATION_WINDOW;
 		}
 	}
 

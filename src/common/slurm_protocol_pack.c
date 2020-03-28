@@ -2540,12 +2540,11 @@ _pack_composite_msg(composite_msg_t *msg, Buf buffer, uint16_t protocol_version)
 			pack16(tmp_info->msg_index, buffer);
 
 			if (!tmp_info->auth_cred) {
-				char *auth_info = slurm_get_auth_info();
 				/* FIXME: this should handle the
 				 * _global_auth_key() as well. */
 				tmp_info->auth_cred = g_slurm_auth_create(
-					tmp_info->auth_index, auth_info);
-				xfree(auth_info);
+					tmp_info->auth_index,
+					slurm_conf.authinfo);
 			}
 
 			g_slurm_auth_pack(tmp_info->auth_cred, buffer,
@@ -2586,7 +2585,6 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 	int i, rc;
 	slurm_msg_t *tmp_info;
 	composite_msg_t *object_ptr = NULL;
-	char *auth_info = slurm_get_auth_info();
 
 	xassert(msg);
 	object_ptr = xmalloc(sizeof(composite_msg_t));
@@ -2617,7 +2615,8 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 			if (unpack_msg(tmp_info, buffer) != SLURM_SUCCESS)
 				goto unpack_error;
 
-			rc = g_slurm_auth_verify(tmp_info->auth_cred, auth_info);
+			rc = g_slurm_auth_verify(tmp_info->auth_cred,
+						 slurm_conf.authinfo);
 
 			if (rc != SLURM_SUCCESS) {
 				error("%s: %s has authentication error: %m",
@@ -2628,13 +2627,11 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 				list_append(object_ptr->msg_list, tmp_info);
 		}
 	}
-	xfree(auth_info);
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_composite_msg(object_ptr);
 	*msg = NULL;
-	xfree(auth_info);
 	xfree(tmp_info);
 	return SLURM_ERROR;
 }

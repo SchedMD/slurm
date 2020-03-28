@@ -132,7 +132,7 @@ static void *_munge_ctx_setup(bool creator)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
-	char *opts, *socket;
+	char *socket;
 	int auth_ttl, rc;
 
 	if ((ctx = munge_ctx_create()) == NULL) {
@@ -140,8 +140,7 @@ static void *_munge_ctx_setup(bool creator)
 		return NULL;
 	}
 
-	opts = slurm_get_auth_info();
-	socket = slurm_auth_opts_to_socket(opts);
+	socket = slurm_auth_opts_to_socket(slurm_conf.authinfo);
 	if (socket) {
 		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
 		xfree(socket);
@@ -151,7 +150,6 @@ static void *_munge_ctx_setup(bool creator)
 			return NULL;
 		}
 	}
-	xfree(opts);
 
 	auth_ttl = slurm_get_auth_ttl();
 	if (auth_ttl)

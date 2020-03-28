@@ -76,12 +76,6 @@ enum {
  * protocol configuration functions
 \**********************************************************************/
 
-/* slurm_get_auth_info
- * returns the auth_info from slurm_conf object (AuthInfo parameter)
- * RET char * - AuthInfo value,  MUST be xfreed by caller
- */
-char *slurm_get_auth_info(void);
-
 /*
  * slurm_auth_opts_to_socket
  * Convert AuthInfo to a socket path. Accepts two input formats:
