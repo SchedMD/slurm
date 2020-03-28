@@ -413,7 +413,7 @@ static int _bcast_file(struct bcast_parameters *params)
 
 	if (!params->fanout)
 		params->fanout = MAX_THREADS;
-	slurm_set_tree_width(MIN(MAX_THREADS, params->fanout));
+	slurm_conf.tree_width = MIN(MAX_THREADS, params->fanout);
 
 	while (more) {
 		START_TIMER;

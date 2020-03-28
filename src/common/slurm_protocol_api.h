@@ -460,12 +460,6 @@ extern char * slurm_get_topology_param(void);
  */
 extern char * slurm_get_topology_plugin(void);
 
-/* slurm_set_tree_width
- * sets the value of tree_width in slurm_conf object
- * RET 0 or error code
- */
-extern int slurm_set_tree_width(uint16_t tree_width);
-
 /* slurm_get_tree_width
  * returns the value of tree_width in slurm_conf object
  */

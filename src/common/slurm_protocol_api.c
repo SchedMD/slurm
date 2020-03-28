@@ -1177,26 +1177,6 @@ extern uint16_t slurm_get_track_wckey(void)
 	return track_wckey;
 }
 
-/* slurm_set_tree_width
- * sets the value of tree_width in slurm_conf object
- * RET 0 or error code
- */
-extern int slurm_set_tree_width(uint16_t tree_width)
-{
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		if (tree_width == 0) {
-			error("can't have span count of 0");
-			return SLURM_ERROR;
-		}
-		conf->tree_width = tree_width;
-		slurm_conf_unlock();
-	}
-	return 0;
-}
 /* slurm_get_tree_width
  * returns the value of tree_width in slurm_conf object
  */
