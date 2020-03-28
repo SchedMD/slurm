@@ -297,7 +297,7 @@ static void _sbast_cache_add(sbcast_cred_t *sbcast_cred);
 
 static int _slurm_cred_init(void)
 {
-	char *tok, *launch_params;
+	char *tok;
 	char    *plugin_type = "cred";
 	char	*type = NULL;
 	int	retval = SLURM_SUCCESS;
@@ -314,13 +314,10 @@ static int _slurm_cred_init(void)
 		}
 	}
 
-	if ((launch_params = slurm_get_launch_params())) {
-		if (xstrcasestr(launch_params, "enable_nss_slurm"))
-			enable_nss_slurm = true;
-		else if (xstrcasestr(launch_params, "disable_send_gids"))
-			enable_send_gids = false;
-		xfree(launch_params);
-	}
+	if (xstrcasestr(slurm_conf.launch_params, "enable_nss_slurm"))
+		enable_nss_slurm = true;
+	else if (xstrcasestr(slurm_conf.launch_params, "disable_send_gids"))
+		enable_send_gids = false;
 
 	slurm_mutex_lock( &g_context_lock );
 	if (cred_restart_time == (time_t) 0)

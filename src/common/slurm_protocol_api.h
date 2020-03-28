@@ -588,12 +588,6 @@ int slurm_set_accounting_storage_loc(char *loc);
  */
 char *slurm_get_accounting_storage_pass(void);
 
-/* slurm_get_launch_params
- * get launch_params from slurm_conf object
- * RET char *   - launch_params, MUST be xfreed by caller
- */
-char *slurm_get_launch_params(void);
-
 /* slurm_get_launch_type
  * get launch_type from slurm_conf object
  * RET char *   - launch_type, MUST be xfreed by caller

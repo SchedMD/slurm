@@ -448,7 +448,6 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	slurm_cray_jobinfo_t *sw_job = job->switch_job ?
 		(slurm_cray_jobinfo_t *)job->switch_job->data : NULL;
 	int rc, num_ptags;
-	char *launch_params;
 	int exclusive = 0, mem_scaling = 100, cpu_scaling = 100;
 	int *ptags = NULL;
 	char *err_msg = NULL;
@@ -525,8 +524,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * Cray shmem still uses the network, even when it's using only one
 	 * node, so we must always configure the network.
 	 */
-	launch_params = slurm_get_launch_params();
-	if (launch_params && strstr(launch_params, "cray_net_exclusive")) {
+	if (xstrstr(slurm_conf.launch_params, "cray_net_exclusive")) {
 		/*
 		 * Grant exclusive access and all aries resources to the job.
 		 * Not recommended if you may run multiple steps within
@@ -539,11 +537,10 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		 */
 		exclusive = 1;
 	}
-	if (launch_params && strstr(launch_params, "lustre_no_flush")) {
+	if (xstrstr(slurm_conf.launch_params, "lustre_no_flush")) {
 		/* Lustre cache flush can cause job bus errors, see bug 4309 */
 		lustre_no_flush = true;
 	}
-	xfree(launch_params);
 
 	if (!exclusive) {
 		/*

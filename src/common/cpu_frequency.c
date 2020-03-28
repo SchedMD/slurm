@@ -446,12 +446,11 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 	char *savestr = NULL;
 
 	if (set_batch_freq == -1) {
-		char *launch_params = slurm_get_launch_params();
-		if (xstrcasestr(launch_params, "batch_step_set_cpu_freq"))
+		if (xstrcasestr(slurm_conf.launch_params,
+				"batch_step_set_cpu_freq"))
 			set_batch_freq = 1;
 		else
 			set_batch_freq = 0;
-		xfree(launch_params);
 	}
 
 	if (((job->stepid == SLURM_BATCH_SCRIPT) && !set_batch_freq) ||
@@ -539,12 +538,11 @@ cpu_freq_cgroup_validate(stepd_step_rec_t *job, char *step_alloc_cores)
 	char *core_range;
 
 	if (set_batch_freq == -1) {
-		char *launch_params = slurm_get_launch_params();
-		if (xstrcasestr(launch_params, "batch_step_set_cpu_freq"))
+		if (xstrcasestr(slurm_conf.launch_params,
+				"batch_step_set_cpu_freq"))
 			set_batch_freq = 1;
 		else
 			set_batch_freq = 0;
-		xfree(launch_params);
 	}
 
 	if (((job->stepid == SLURM_BATCH_SCRIPT) && !set_batch_freq) ||

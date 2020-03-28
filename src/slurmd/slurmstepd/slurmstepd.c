@@ -111,7 +111,6 @@ main (int argc, char **argv)
 	slurm_msg_t *msg;
 	stepd_step_rec_t *job;
 	int rc = 0;
-	char *launch_params;
 
 	if (_process_cmdline (argc, argv) < 0)
 		fatal ("Error in slurmstepd command line");
@@ -160,11 +159,10 @@ main (int argc, char **argv)
 	 * had been swapped out before upgrade happened it could easily lead
 	 * to SIGBUS at any time after upgrade. Avoid that by locking it
 	 * in-memory. */
-	launch_params = slurm_get_launch_params();
-	if (launch_params && strstr(launch_params, "slurmstepd_memlock")) {
+	if (xstrstr(slurm_conf.launch_params, "slurmstepd_memlock")) {
 #ifdef _POSIX_MEMLOCK
 		int flags = MCL_CURRENT;
-		if (strstr(launch_params, "slurmstepd_memlock_all"))
+		if (xstrstr(slurm_conf.launch_params, "slurmstepd_memlock_all"))
 			flags |= MCL_FUTURE;
 		if (mlockall(flags) < 0)
 			info("failed to mlock() slurmstepd pages: %m");
@@ -174,7 +172,6 @@ main (int argc, char **argv)
 		info("mlockall() system call does not appear to be available");
 #endif
 	}
-	xfree(launch_params);
 
 	acct_gather_energy_g_set_data(ENERGY_DATA_STEP_PTR, job);
 

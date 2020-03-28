@@ -690,7 +690,7 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 {
 	int i, command_pos = 0, command_args = 0;
 	char **rest = NULL;
-	char *fullpath, *launch_params;
+	char *fullpath;
 
 	sropt.het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
 	bit_set(sropt.het_grp_bits, het_job_offset);
@@ -742,14 +742,9 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	}
 	sropt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
-	if (getenv("SLURM_TEST_EXEC")) {
+	if (getenv("SLURM_TEST_EXEC") ||
+	    xstrstr(slurm_conf.launch_params, "test_exec"))
 		sropt.test_exec = true;
-	} else {
-		launch_params = slurm_get_launch_params();
-		if (launch_params && strstr(launch_params, "test_exec"))
-			sropt.test_exec = true;
-		xfree(launch_params);
-	}
 
 	if (sropt.test_exec) {
 		/* Validate command's existence */

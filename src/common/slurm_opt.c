@@ -2463,10 +2463,8 @@ static void arg_reset_mem_bind(slurm_opt_t *opt)
 	opt->mem_bind_type = 0;
 
 	if (opt->srun_opt) {
-		char *launch_params = slurm_get_launch_params();
-		if (xstrstr(launch_params, "mem_sort"))
+		if (xstrstr(slurm_conf.launch_params, "mem_sort"))
 			opt->mem_bind_type |= MEM_BIND_SORT;
-		xfree(launch_params);
 	}
 }
 static slurm_cli_opt_t slurm_opt_mem_bind = {
