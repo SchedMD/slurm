@@ -255,23 +255,6 @@ uint32_t slurm_get_control_cnt(void)
 	return control_cnt;
 }
 
-/* slurm_get_suspend_time
- * RET SuspendTime value from slurm.conf
- */
-uint32_t slurm_get_suspend_time(void)
-{
-	uint32_t suspend_time = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		suspend_time = conf->suspend_time;
-		slurm_conf_unlock();
-	}
-	return suspend_time;
-}
-
 /* slurm_get_def_mem_per_cpu
  * RET DefMemPerCPU/Node value from slurm.conf
  */

@@ -99,11 +99,6 @@ int slurm_get_auth_ttl(void);
  */
 uint32_t slurm_get_control_cnt(void);
 
-/* slurm_get_suspend_time
- * RET SuspendTime value from slurm.conf
- */
-uint32_t slurm_get_suspend_time(void);
-
 /* slurm_get_complete_wait
  * RET CompleteWait value from slurm.conf
  */
