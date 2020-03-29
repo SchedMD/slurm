@@ -688,12 +688,6 @@ extern char * slurm_get_route_plugin(void);
  * RET char * - Value of SchedulerParameters, MUST be xfreed by caller */
 extern char *slurm_get_sched_params(void);
 
-/* slurm_get_slurmd_port
- * returns slurmd port from slurm_conf object
- * RET uint16_t	- slurmd port
- */
-extern uint16_t slurm_get_slurmd_port(void);
-
 /* slurm_get_slurmd_user_id
  * returns slurmd uid from slurm_conf object
  * RET uint32_t	- slurmd user id

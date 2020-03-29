@@ -1477,8 +1477,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 					    req_msg.flags);
 		} else {
 			this_addr = "localhost";
-			slurm_set_addr(&req_msg.address,
-				       (uint16_t)slurm_get_slurmd_port(),
+			slurm_set_addr(&req_msg.address, slurm_conf.slurmd_port,
 				       this_addr);
 		}
 	} else {
@@ -1490,8 +1489,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 		this_addr = slurm_conf_get_nodeaddr(this_host);
 		if (this_addr == NULL)
 			this_addr = xstrdup("localhost");
-		slurm_set_addr(&req_msg.address,
-			       (uint16_t)slurm_get_slurmd_port(),
+		slurm_set_addr(&req_msg.address, slurm_conf.slurmd_port,
 			       this_addr);
 		xfree(this_addr);
 	}
@@ -1870,7 +1868,7 @@ slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
 		memcpy(&target_slurmd, req.ip_src, 4);
 
 	addr.sin_addr.s_addr = target_slurmd;
-	addr.sin_port = htons(slurm_get_slurmd_port());
+	addr.sin_port = htons(slurm_conf.slurmd_port);
 	req_msg.address = addr;
 
 	req_msg.msg_type = REQUEST_NETWORK_CALLERID;

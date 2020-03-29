@@ -2143,24 +2143,6 @@ char *slurm_get_proctrack_type(void)
 	return proctrack_type;
 }
 
-/* slurm_get_slurmd_port
- * returns slurmd port from slurm_conf object
- * RET uint16_t	- slurmd port
- */
-uint16_t slurm_get_slurmd_port(void)
-{
-	uint16_t slurmd_port = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		slurmd_port = conf->slurmd_port;
-		slurm_conf_unlock();
-	}
-	return slurmd_port;
-}
-
 /* slurm_get_slurmd_user_id
  * returns slurmd uid from slurm_conf object
  * RET uint32_t	- slurmd user id

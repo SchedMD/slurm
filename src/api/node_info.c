@@ -291,7 +291,7 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 			line_used = true;
 		}
 
-		if (node_ptr->port != slurm_get_slurmd_port()) {
+		if (node_ptr->port != slurm_conf.slurmd_port) {
 			xstrfmtcat(out, "Port=%u ", node_ptr->port);
 			line_used = true;
 		}
@@ -835,8 +835,7 @@ extern int slurm_get_node_energy(char *host, uint16_t context_id,
 					    req_msg.flags);
 		} else {
 			this_addr = "localhost";
-			slurm_set_addr(&req_msg.address,
-				       (uint16_t)slurm_get_slurmd_port(),
+			slurm_set_addr(&req_msg.address, slurm_conf.slurmd_port,
 				       this_addr);
 		}
 	} else {
@@ -848,8 +847,7 @@ extern int slurm_get_node_energy(char *host, uint16_t context_id,
 		this_addr = slurm_conf_get_nodeaddr(this_host);
 		if (this_addr == NULL)
 			this_addr = xstrdup("localhost");
-		slurm_set_addr(&req_msg.address,
-			       (uint16_t)slurm_get_slurmd_port(),
+		slurm_set_addr(&req_msg.address, slurm_conf.slurmd_port,
 			       this_addr);
 		xfree(this_addr);
 	}
