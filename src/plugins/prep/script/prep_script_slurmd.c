@@ -92,7 +92,7 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 	 *   If both "script" mechanisms fail, prefer to return the "real"
 	 *   prolog/epilog status.
 	 */
-	if (conf->plugstack && (stat(conf->plugstack, &stat_buf) == 0))
+	if (slurm_conf.plugstack && !stat(slurm_conf.plugstack, &stat_buf))
 		status = _run_spank_job_script(name, env, jobid);
 	if ((rc = run_script(name, path, jobid, timeout, env, job_env->uid)))
 		status = rc;

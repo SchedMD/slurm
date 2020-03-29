@@ -5380,7 +5380,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 
 	if ((nsteps == 0) && !slurm_conf.epilog) {
 		struct stat stat_buf;
-		if (conf->plugstack && (stat(conf->plugstack, &stat_buf) == 0))
+		if (slurm_conf.plugstack &&
+		    !stat(slurm_conf.plugstack, &stat_buf))
 			have_spank = true;
 	}
 	/*
