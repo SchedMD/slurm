@@ -1050,7 +1050,6 @@ _read_config(void)
 	_free_and_set(conf->pubkey,   path_pubkey);
 
 	conf->syslog_debug = cf->slurmd_syslog_debug;
-	conf->propagate_prio = cf->propagate_prio_process;
 
 	_free_and_set(conf->job_acct_gather_freq,
 		      xstrdup(cf->job_acct_gather_freq));

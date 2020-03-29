@@ -1767,7 +1767,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			/* jobacctinfo_endpoll();
 			 * closing jobacct files here causes deadlock */
 
-			if (conf->propagate_prio)
+			if (slurm_conf.propagate_prio_process)
 				_set_prio_process(job);
 
 			/*
@@ -2660,7 +2660,7 @@ static void _set_prio_process (stepd_step_rec_t *job)
 		prio_process = atoi( env_val );
 	}
 
-	if (conf->propagate_prio == PROP_PRIO_NICER) {
+	if (slurm_conf.propagate_prio_process == PROP_PRIO_NICER) {
 		prio_daemon = getpriority( PRIO_PROCESS, 0 );
 		prio_process = MAX( prio_process, (prio_daemon + 1) );
 	}

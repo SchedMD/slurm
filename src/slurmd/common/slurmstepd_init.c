@@ -65,7 +65,6 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 	packstr(conf->logfile, buffer);
 	packstr(conf->job_acct_gather_freq, buffer);
 	packstr(conf->job_acct_gather_type, buffer);
-	pack16(conf->propagate_prio, buffer);
 	pack32(conf->debug_level, buffer);
 	pack32(conf->syslog_debug, buffer);
 	pack32(conf->daemonize, buffer);
@@ -110,7 +109,6 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 				       buffer);
 		safe_unpackstr_xmalloc(&conf->job_acct_gather_type, &uint32_tmp,
 				       buffer);
-		safe_unpack16(&conf->propagate_prio, buffer);
 		safe_unpack32(&conf->debug_level, buffer);
 		safe_unpack32(&conf->syslog_debug, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
