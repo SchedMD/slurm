@@ -287,7 +287,7 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 		int fd;
 		local_xauthority = true;
 		xauthority = xstrdup_printf("%s/.Xauthority-XXXXXX",
-					    conf->tmpfs);
+					    slurm_conf.tmp_fs);
 
 		/* protect against weak file permissions in old glibc */
 		umask(0077);

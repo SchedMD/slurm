@@ -71,7 +71,6 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 	pack16(conf->port, buffer);
 	pack16(conf->job_acct_oom_kill, buffer);
 	pack64(conf->msg_aggr_window_msgs, buffer);
-	packstr(conf->tmpfs, buffer);
 	packstr(conf->gres, buffer);
 }
 
@@ -112,7 +111,6 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 		safe_unpack16(&conf->port, buffer);
 		safe_unpack16(&conf->job_acct_oom_kill, buffer);
 		safe_unpack64(&conf->msg_aggr_window_msgs, buffer);
-		safe_unpackstr_xmalloc(&conf->tmpfs, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&conf->gres, &uint32_tmp, buffer);
 	}
 
@@ -126,7 +124,6 @@ unpack_error:
 	xfree(conf->logfile);
 	xfree(conf->node_topo_addr);
 	xfree(conf->node_topo_pattern);
-	xfree(conf->tmpfs);
 	xfree(conf->gres);
 	return SLURM_ERROR;
 }

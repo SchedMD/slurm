@@ -1044,7 +1044,6 @@ _read_config(void)
 
 	cf = slurm_conf_lock();
 	get_tmp_disk(&conf->tmp_disk_space, cf->tmp_fs);
-	_free_and_set(conf->tmpfs,    xstrdup(cf->tmp_fs));
 	_free_and_set(conf->pidfile,  xstrdup(cf->slurmd_pidfile));
 	_massage_pathname(&conf->pidfile);
 	_free_and_set(conf->pubkey,   path_pubkey);
@@ -1243,7 +1242,7 @@ _print_conf(void)
 	debug3("NodeName    = %s",       conf->node_name);
 	debug3("Port        = %u",       conf->port);
 	debug3("Prolog      = `%s'",     cf->prolog);
-	debug3("TmpFS       = `%s'",     conf->tmpfs);
+	debug3("TmpFS       = `%s'",     cf->tmp_fs);
 	debug3("Public Cert = `%s'",     conf->pubkey);
 	debug3("Slurmstepd  = `%s'",     conf->stepd_loc);
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
@@ -1317,7 +1316,6 @@ _destroy_conf(void)
 		xfree(conf->pubkey);
 		xfree(conf->spooldir);
 		xfree(conf->stepd_loc);
-		xfree(conf->tmpfs);
 		xfree(conf->gres);
 		slurm_mutex_destroy(&conf->config_mutex);
 		FREE_NULL_LIST(conf->starting_steps);

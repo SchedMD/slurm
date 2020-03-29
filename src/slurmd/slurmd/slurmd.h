@@ -127,7 +127,6 @@ typedef struct slurmd_config {
 					 * syslog */
 	char         *spooldir;		/* SlurmdSpoolDir		   */
 	char         *pidfile;		/* PidFile location		   */
-	char         *tmpfs;		/* directory of tmp FS             */
 	char         *pubkey;		/* location of job cred public key */
 	char         *stepd_loc;	/* slurmstepd path                 */
 	uint16_t      port;		/* local slurmd port               */
