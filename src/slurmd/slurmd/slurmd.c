@@ -385,7 +385,7 @@ main (int argc, char **argv)
 	_create_msg_socket();
 
 	conf->pid = getpid();
-	pidfd = create_pidfile(conf->pidfile, 0);
+	pidfd = create_pidfile(slurm_conf.slurmd_pidfile, 0);
 
 	rfc2822_timestamp(time_stamp, sizeof(time_stamp));
 	info("%s started on %s", slurm_prog_name, time_stamp);
@@ -410,8 +410,9 @@ main (int argc, char **argv)
 	 */
 	if (pidfd >= 0)			/* valid pidfd, non-error */
 		(void) close(pidfd);	/* Ignore errors */
-	if (unlink(conf->pidfile) < 0)
-		error("Unable to remove pidfile `%s': %m", conf->pidfile);
+	if (unlink(slurm_conf.slurmd_pidfile) < 0)
+		error("Unable to remove pidfile `%s': %m",
+		      slurm_conf.slurmd_pidfile);
 
 	_wait_for_all_threads(120);
 	_slurmd_fini();
@@ -1044,8 +1045,7 @@ _read_config(void)
 
 	cf = slurm_conf_lock();
 	get_tmp_disk(&conf->tmp_disk_space, cf->tmp_fs);
-	_free_and_set(conf->pidfile,  xstrdup(cf->slurmd_pidfile));
-	_massage_pathname(&conf->pidfile);
+	_massage_pathname(&slurm_conf.slurmd_pidfile);
 	_free_and_set(conf->pubkey,   path_pubkey);
 
 	conf->syslog_debug = cf->slurmd_syslog_debug;
@@ -1247,7 +1247,7 @@ _print_conf(void)
 	debug3("Slurmstepd  = `%s'",     conf->stepd_loc);
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
 	debug3("Syslog Debug  = %d",     cf->slurmd_syslog_debug);
-	debug3("Pid File    = `%s'",     conf->pidfile);
+	debug3("Pid File    = `%s'",     cf->slurmd_pidfile);
 	debug3("Slurm UID   = %u",       cf->slurm_user_id);
 	debug3("TaskProlog  = `%s'",     cf->task_prolog);
 	debug3("TaskEpilog  = `%s'",     cf->task_epilog);
@@ -1274,7 +1274,6 @@ _init_conf(void)
 	conf->lfd         = -1;
 	conf->log_opts    = lopts;
 	conf->debug_level = LOG_LEVEL_INFO;
-	conf->pidfile     = xstrdup(DEFAULT_SLURMD_PIDFILE);
 	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
 	conf->print_gres   = false;
 
@@ -1312,7 +1311,6 @@ _destroy_conf(void)
 		xfree(conf->node_name);
 		xfree(conf->node_topo_addr);
 		xfree(conf->node_topo_pattern);
-		xfree(conf->pidfile);
 		xfree(conf->pubkey);
 		xfree(conf->spooldir);
 		xfree(conf->stepd_loc);
@@ -2110,7 +2108,7 @@ static void
 _kill_old_slurmd(void)
 {
 	int fd;
-	pid_t oldpid = read_pidfile(conf->pidfile, &fd);
+	pid_t oldpid = read_pidfile(slurm_conf.slurmd_pidfile, &fd);
 	if (oldpid != (pid_t) 0) {
 		info ("killing old slurmd[%lu]", (unsigned long) oldpid);
 		kill(oldpid, SIGTERM);
@@ -2119,8 +2117,8 @@ _kill_old_slurmd(void)
 		 * Wait for previous daemon to terminate
 		 */
 		if (fd_get_readw_lock(fd) < 0) {
-			fatal ("error getting readw lock on file %s: %m",
-			       conf->pidfile);
+			fatal("error getting readw lock on file %s: %m",
+			      slurm_conf.slurmd_pidfile);
 		}
 		(void) close(fd); /* Ignore errors */
 	}
