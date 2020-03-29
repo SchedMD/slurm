@@ -340,23 +340,6 @@ uint16_t slurm_get_kill_on_bad_exit(void)
 	return kill_on_bad_exit;
 }
 
-/* slurm_get_prolog_flags
- * RET PrologFlags value from slurm.conf
- */
-uint32_t slurm_get_prolog_flags(void)
-{
-	uint32_t prolog_flags = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		prolog_flags = conf->prolog_flags;
-		slurm_conf_unlock();
-	}
-	return prolog_flags;
-}
-
 /* slurm_set_debug_flags
  */
 void slurm_set_debug_flags(uint64_t debug_flags)

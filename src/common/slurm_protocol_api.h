@@ -136,11 +136,6 @@ uint32_t slurm_get_cpu_freq_def(void);
  */
 uint32_t slurm_get_cpu_freq_govs(void);
 
-/* slurm_get_prolog_flags
- * RET PrologFlags value from slurm.conf
- */
-uint32_t slurm_get_prolog_flags(void);
-
 /* slurm_set_debug_flags
  */
 void slurm_set_debug_flags(uint64_t debug_flags);
