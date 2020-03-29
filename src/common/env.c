@@ -1978,9 +1978,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		return NULL;
 	}
 
-	config_timeout = slurm_get_env_timeout();
-
-	if (config_timeout == 0)	/* just read directly from cache */
+	if (!slurm_conf.get_env_timeout)	/* just read directly from cache */
 		return _load_env_cache(username);
 
 	if (stat(SUCMD, &buf))
@@ -2053,7 +2051,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 
 	/* Read all of the output from /bin/su into buffer */
 	if (timeout == 0)
-		timeout = config_timeout;	/* != 0 test above */
+		timeout = slurm_conf.get_env_timeout;	/* != 0 test above */
 	found = 0;
 	buf_read = 0;
 	buffer = xmalloc(ENV_BUFSIZE);

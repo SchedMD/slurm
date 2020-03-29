@@ -153,11 +153,6 @@ uint64_t slurm_get_max_mem_per_cpu(void);
  */
 uint32_t slurm_get_epilog_msg_time(void);
 
-/* slurm_get_env_timeout
- * return default timeout for srun/sbatch --get-user-env option
- */
-extern int slurm_get_env_timeout(void);
-
 /* slurm_get_max_array_size
  * return MaxArraySize configuration parameter
  */

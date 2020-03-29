@@ -388,23 +388,6 @@ uint32_t slurm_get_epilog_msg_time(void)
 	return epilog_msg_time;
 }
 
-/* slurm_get_env_timeout
- * return default timeout for srun/sbatch --get-user-env option
- */
-extern int slurm_get_env_timeout(void)
-{
-	int timeout = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		timeout = conf->get_env_timeout;
-		slurm_conf_unlock();
-	}
-	return timeout;
-}
-
 /* slurm_get_max_array_size
  * return MaxArraySize configuration parameter
  */
