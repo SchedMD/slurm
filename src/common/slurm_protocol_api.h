@@ -270,10 +270,6 @@ uint16_t slurm_get_slurmctld_timeout(void);
  */
 uint32_t slurm_get_priority_decay_hl(void);
 
-/* slurm_get_priority_params
- * RET char * - Value of PriorityParameters, MUST be xfreed by caller */
-char *slurm_get_priority_params(void);
-
 /* slurm_get_priority_reset_period
  * returns the priority usage reset period in seconds from slurm_conf object
  * RET uint16_t - flag, see PRIORITY_RESET_* in slurm/slurm.h.
