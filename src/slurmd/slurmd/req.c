@@ -2989,7 +2989,7 @@ _enforce_job_mem_limit(void)
 	};
 	struct job_mem_info *job_mem_info_ptr = NULL;
 
-	if (conf->job_acct_oom_kill == false)
+	if (!slurm_conf.job_acct_oom_kill)
 		return;
 
 	slurm_mutex_lock(&job_limits_mutex);
