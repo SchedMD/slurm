@@ -217,8 +217,6 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 	xfree(conf->block_map_inv);
 	xfree(conf->hostname);
 	xfree(conf->hwloc_xml);
-	xfree(conf->job_acct_gather_freq);
-	xfree(conf->job_acct_gather_type);
 	xfree(conf->logfile);
 	xfree(conf->node_name);
 	xfree(conf->node_topo_addr);
@@ -312,7 +310,7 @@ static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 
 	confl->acct_freq_task = NO_VAL16;
 	tmp_int = acct_gather_parse_freq(PROFILE_TASK,
-				       confl->job_acct_gather_freq);
+					 slurm_conf.job_acct_gather_freq);
 	if (tmp_int != -1)
 		confl->acct_freq_task = tmp_int;
 

@@ -63,8 +63,6 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 	packstr(conf->spooldir, buffer);
 	packstr(conf->node_name, buffer);
 	packstr(conf->logfile, buffer);
-	packstr(conf->job_acct_gather_freq, buffer);
-	packstr(conf->job_acct_gather_type, buffer);
 	pack32(conf->debug_level, buffer);
 	pack32(conf->syslog_debug, buffer);
 	pack32(conf->daemonize, buffer);
@@ -105,10 +103,6 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 		safe_unpackstr_xmalloc(&conf->spooldir,    &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&conf->node_name,   &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&conf->logfile,     &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->job_acct_gather_freq, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&conf->job_acct_gather_type, &uint32_tmp,
-				       buffer);
 		safe_unpack32(&conf->debug_level, buffer);
 		safe_unpack32(&conf->syslog_debug, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
@@ -126,8 +120,6 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 
 unpack_error:
 	error("unpack_error in unpack_slurmd_conf_lite_no_alloc: %m");
-	xfree(conf->job_acct_gather_freq);
-	xfree(conf->job_acct_gather_type);
 	xfree(conf->hostname);
 	xfree(conf->spooldir);
 	xfree(conf->node_name);

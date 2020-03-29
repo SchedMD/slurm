@@ -464,7 +464,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	acct_gather_profile_g_node_step_start(job);
 
 	acct_gather_profile_startpoll(msg->acctg_freq,
-				      conf->job_acct_gather_freq);
+				      slurm_conf.job_acct_gather_freq);
 
 	job->timelimit   = (time_t) -1;
 	job->flags       = msg->flags;
@@ -570,7 +570,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	acct_gather_profile_g_node_step_start(job);
 	/* needed for the jobacct_gather plugin to start */
 	acct_gather_profile_startpoll(msg->acctg_freq,
-				      conf->job_acct_gather_freq);
+				      slurm_conf.job_acct_gather_freq);
 
 	job->open_mode  = msg->open_mode;
 	job->overcommit = (bool) msg->overcommit;

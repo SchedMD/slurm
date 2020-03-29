@@ -1051,17 +1051,11 @@ _read_config(void)
 
 	conf->syslog_debug = cf->slurmd_syslog_debug;
 
-	_free_and_set(conf->job_acct_gather_freq,
-		      xstrdup(cf->job_acct_gather_freq));
-
 	conf->acct_freq_task = NO_VAL16;
-	cc = acct_gather_parse_freq(PROFILE_TASK,
-				    conf->job_acct_gather_freq);
+	cc = acct_gather_parse_freq(PROFILE_TASK, cf->job_acct_gather_freq);
 	if (cc != -1)
 		conf->acct_freq_task = cc;
 
-	_free_and_set(conf->job_acct_gather_type,
-		      xstrdup(cf->job_acct_gather_type));
 	_set_msg_aggr_params();
 
 	if ( (conf->node_name == NULL) ||
@@ -1315,8 +1309,6 @@ _destroy_conf(void)
 			/* (void)remove(conf->hwloc_xml); */
 			xfree(conf->hwloc_xml);
 		}
-		xfree(conf->job_acct_gather_freq);
-		xfree(conf->job_acct_gather_type);
 		xfree(conf->logfile);
 		xfree(conf->node_name);
 		xfree(conf->node_topo_addr);

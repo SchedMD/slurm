@@ -1111,7 +1111,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	}
 
 	_set_job_state(job, SLURMSTEPD_STEP_RUNNING);
-	if (!conf->job_acct_gather_freq)
+	if (!slurm_conf.job_acct_gather_freq)
 		jobacct_gather_stat_task(0);
 
 	if (spank_task_post_fork(job, -1) < 0)
@@ -1308,7 +1308,7 @@ job_manager(stepd_step_rec_t *job)
 	/* if we are not polling then we need to make sure we get some
 	 * information here
 	 */
-	if (!conf->job_acct_gather_freq)
+	if (!slurm_conf.job_acct_gather_freq)
 		jobacct_gather_stat_task(0);
 
 	/* Send job launch response with list of pids */

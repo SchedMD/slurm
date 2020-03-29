@@ -146,9 +146,6 @@ typedef struct slurmd_config {
 
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        acct_freq_task;
-	char           *job_acct_gather_freq;
-	char           *job_acct_gather_type; /* job accounting gather type */
-	char           *job_acct_gather_params; /* job accounting gather params */
 	uint64_t        msg_aggr_window_msgs; /* msg aggr window size in msgs */
 	uint64_t        msg_aggr_window_time; /* msg aggr window size in time */
 
