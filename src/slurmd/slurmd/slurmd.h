@@ -115,9 +115,6 @@ typedef struct slurmd_config {
 	uint16_t     block_map_size;	/* size of block map               */
 	uint16_t     *block_map;	/* abstract->machine block map     */
 	uint16_t     *block_map_inv;	/* machine->abstract (inverse) map */
-	uint16_t      cr_type;		/* Consumable Resource Type:       *
-					 * CR_SOCKET, CR_CORE, CR_MEMORY,  *
-					 * CR_DEFAULT, etc.                */
 	char         *hwloc_xml;	/* path of hwloc xml file if using */
 	uint16_t     job_acct_oom_kill;  /* enforce mem limit on running job */
 	int           nice;		/* command line nice value spec    */
@@ -132,7 +129,6 @@ typedef struct slurmd_config {
 	char         *pidfile;		/* PidFile location		   */
 	char         *tmpfs;		/* directory of tmp FS             */
 	char         *pubkey;		/* location of job cred public key */
-	char         *select_type;	/* SelectType                      */
 	char         *stepd_loc;	/* slurmstepd path                 */
 	uint16_t      port;		/* local slurmd port               */
 	int           lfd;		/* slurmd listen file descriptor   */

@@ -884,8 +884,6 @@ _read_config(void)
 
 	conf->slurm_user_id =  cf->slurm_user_id;
 
-	conf->cr_type = cf->select_type_param;
-
 	xfree(conf->gres);
 
 	path_pubkey = xstrdup(cf->job_credential_public_certificate);
@@ -1052,7 +1050,6 @@ _read_config(void)
 	_free_and_set(conf->pidfile,  xstrdup(cf->slurmd_pidfile));
 	_massage_pathname(&conf->pidfile);
 	_free_and_set(conf->plugstack,   xstrdup(cf->plugstack));
-	_free_and_set(conf->select_type, xstrdup(cf->select_type));
 	_free_and_set(conf->pubkey,   path_pubkey);
 
 	conf->syslog_debug = cf->slurmd_syslog_debug;
@@ -1336,7 +1333,6 @@ _destroy_conf(void)
 		xfree(conf->pidfile);
 		xfree(conf->plugstack);
 		xfree(conf->pubkey);
-		xfree(conf->select_type);
 		xfree(conf->spooldir);
 		xfree(conf->stepd_loc);
 		xfree(conf->tmpfs);
