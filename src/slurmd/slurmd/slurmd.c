@@ -1069,14 +1069,6 @@ _read_config(void)
 	if (cc != -1)
 		conf->acct_freq_task = cc;
 
-	_free_and_set(conf->acct_gather_energy_type,
-		      xstrdup(cf->acct_gather_energy_type));
-	_free_and_set(conf->acct_gather_filesystem_type,
-		      xstrdup(cf->acct_gather_filesystem_type));
-	_free_and_set(conf->acct_gather_interconnect_type,
-		      xstrdup(cf->acct_gather_interconnect_type));
-	_free_and_set(conf->acct_gather_profile_type,
-		      xstrdup(cf->acct_gather_profile_type));
 	_free_and_set(conf->job_acct_gather_type,
 		      xstrdup(cf->job_acct_gather_type));
 	_free_and_set(conf->msg_aggr_params,
@@ -1322,10 +1314,6 @@ static void
 _destroy_conf(void)
 {
 	if (conf) {
-		xfree(conf->acct_gather_energy_type);
-		xfree(conf->acct_gather_filesystem_type);
-		xfree(conf->acct_gather_interconnect_type);
-		xfree(conf->acct_gather_profile_type);
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
 		FREE_NULL_BUFFER(conf->buf);
