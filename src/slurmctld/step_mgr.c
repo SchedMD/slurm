@@ -2345,7 +2345,6 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	uint32_t task_dist;
 	uint32_t max_tasks;
-	char *mpi_params;
 	uint32_t jobid;
 	slurm_step_layout_t *step_layout = NULL;
 	bool tmp_step_layout_used = false;
@@ -2666,8 +2665,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 			return ESLURM_INVALID_TASK_MEMORY;
 		return SLURM_ERROR;
 	}
-	if (step_specs->resv_port_cnt == NO_VAL16
-	    && (mpi_params = slurm_get_mpi_params())) {
+	if (step_specs->resv_port_cnt == NO_VAL16 && slurm_conf.mpi_params) {
 		step_specs->resv_port_cnt = 0;
 		/*
 		 * reserved port count set to maximum task count on
@@ -2679,7 +2677,6 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 				    step_ptr->step_layout->tasks[i]);
 		}
 		step_specs->resv_port_cnt++;
-		xfree(mpi_params);
 	}
 	if ((step_specs->resv_port_cnt != NO_VAL16) &&
 	    (step_specs->resv_port_cnt != 0)) {

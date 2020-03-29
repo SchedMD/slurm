@@ -354,24 +354,6 @@ extern uint32_t slurm_get_max_array_size(void)
 	return max_array_size;
 }
 
-/* slurm_get_mpi_params
- * get mpi parameters value from slurm_conf object
- * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller
- */
-char *slurm_get_mpi_params(void)
-{
-	char *mpi_params = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		mpi_params = xstrdup(conf->mpi_params);
-		slurm_conf_unlock();
-	}
-	return mpi_params;
-}
-
 /* slurm_get_msg_aggr_params
  * get message aggregation parameters value from slurm_conf object
  * RET char *   - message aggregation value from slurm.conf,

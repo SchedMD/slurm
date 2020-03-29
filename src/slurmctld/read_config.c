@@ -1113,7 +1113,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	char *old_select_type = xstrdup(slurm_conf.select_type);
 	char *old_switch_type = xstrdup(slurm_conf.switch_type);
 	char *state_save_dir = xstrdup(slurm_conf.state_save_location);
-	char *mpi_params;
 	uint16_t old_select_type_p = slurm_conf.select_type_param;
 	bool cgroup_mem_confinement = false;
 
@@ -1369,9 +1368,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
 	_purge_old_part_state(old_part_list, old_def_part_name);
 
-	mpi_params = slurm_get_mpi_params();
-	reserve_port_config(mpi_params);
-	xfree(mpi_params);
+	reserve_port_config(slurm_conf.mpi_params);
 
 	if (license_update(slurm_conf.licenses) != SLURM_SUCCESS) {
 		if (test_config) {
