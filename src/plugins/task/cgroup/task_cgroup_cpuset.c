@@ -50,6 +50,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/proc_args.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/common/xcpuinfo.h"
@@ -1373,7 +1374,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 		jnpus = jntasks * job->cpus_per_task;
 
 	bind_type = job->cpu_bind_type;
-	if ((conf->task_plugin_param & CPU_BIND_VERBOSE) ||
+	if ((slurm_conf.task_plugin_param & CPU_BIND_VERBOSE) ||
 	    (bind_type & CPU_BIND_VERBOSE))
 		bind_verbose = 1 ;
 

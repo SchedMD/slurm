@@ -241,7 +241,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 #endif
 	if (task_cnt) {
 		req->cpu_bind_type = CPU_BIND_MASK;
-		if (conf->task_plugin_param & CPU_BIND_VERBOSE)
+		if (slurm_conf.task_plugin_param & CPU_BIND_VERBOSE)
 			req->cpu_bind_type |= CPU_BIND_VERBOSE;
 		xfree(req->cpu_bind);
 		req->cpu_bind = (char *)bit_fmt_hexmask(hw_map);
@@ -433,7 +433,6 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		 * No bind unit (sockets, cores) specified by user,
 		 * pick something reasonable
 		 */
-		uint32_t task_plugin_param = slurm_get_task_plugin_param();
 		bool auto_def_set = false;
 		int spec_thread_cnt = 0;
 		int max_tasks = req->tasks_to_launch[(int)node_id] *
@@ -469,15 +468,17 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 			goto make_auto;
 		}
 
-		if (task_plugin_param & CPU_AUTO_BIND_TO_THREADS) {
+		if (slurm_conf.task_plugin_param & CPU_AUTO_BIND_TO_THREADS) {
 			auto_def_set = true;
 			req->cpu_bind_type |= CPU_BIND_TO_THREADS;
 			goto make_auto;
-		} else if (task_plugin_param & CPU_AUTO_BIND_TO_CORES) {
+		} else if (slurm_conf.task_plugin_param &
+			   CPU_AUTO_BIND_TO_CORES) {
 			auto_def_set = true;
 			req->cpu_bind_type |= CPU_BIND_TO_CORES;
 			goto make_auto;
-		} else if (task_plugin_param & CPU_AUTO_BIND_TO_SOCKETS) {
+		} else if (slurm_conf.task_plugin_param &
+			   CPU_AUTO_BIND_TO_SOCKETS) {
 			auto_def_set = true;
 			req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
 			goto make_auto;

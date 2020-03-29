@@ -162,8 +162,6 @@ typedef struct slurmd_config {
 	uint64_t        msg_aggr_window_msgs; /* msg aggr window size in msgs */
 	uint64_t        msg_aggr_window_time; /* msg aggr window size in time */
 	uint16_t	use_pam;
-	uint32_t	task_plugin_param; /* TaskPluginParams, expressed
-					 * using cpu_bind_type_t flags */
 	uint16_t	propagate_prio;	/* PropagatePrioProcess flag       */
 
 	List		starting_steps; /* steps that are starting but cannot

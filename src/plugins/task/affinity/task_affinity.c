@@ -121,35 +121,35 @@ static void _update_bind_type(launch_tasks_request_msg_t *req)
 	bool set_bind = false;
 
 	if ((req->cpu_bind_type & (~CPU_BIND_VERBOSE)) == 0) {
-		if (conf->task_plugin_param & CPU_BIND_NONE) {
+		if (slurm_conf.task_plugin_param & CPU_BIND_NONE) {
 			req->cpu_bind_type |= CPU_BIND_NONE;
 			req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
 			req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
 			req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
 			req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
 			set_bind = true;
-		} else if (conf->task_plugin_param & CPU_BIND_TO_SOCKETS) {
+		} else if (slurm_conf.task_plugin_param & CPU_BIND_TO_SOCKETS) {
 			req->cpu_bind_type &= (~CPU_BIND_NONE);
 			req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
 			req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
 			req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
 			req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
 			set_bind = true;
-		} else if (conf->task_plugin_param & CPU_BIND_TO_CORES) {
+		} else if (slurm_conf.task_plugin_param & CPU_BIND_TO_CORES) {
 			req->cpu_bind_type &= (~CPU_BIND_NONE);
 			req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
 			req->cpu_bind_type |= CPU_BIND_TO_CORES;
 			req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
 			req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
 			set_bind = true;
-		} else if (conf->task_plugin_param & CPU_BIND_TO_THREADS) {
+		} else if (slurm_conf.task_plugin_param & CPU_BIND_TO_THREADS) {
 			req->cpu_bind_type &= (~CPU_BIND_NONE);
 			req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
 			req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
 			req->cpu_bind_type |= CPU_BIND_TO_THREADS;
 			req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
 			set_bind = true;
-		} else if (conf->task_plugin_param & CPU_BIND_TO_LDOMS) {
+		} else if (slurm_conf.task_plugin_param & CPU_BIND_TO_LDOMS) {
 			req->cpu_bind_type &= (~CPU_BIND_NONE);
 			req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
 			req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
@@ -158,7 +158,7 @@ static void _update_bind_type(launch_tasks_request_msg_t *req)
 			set_bind = true;
 		}
 	}
-	if (conf->task_plugin_param & CPU_BIND_VERBOSE) {
+	if (slurm_conf.task_plugin_param & CPU_BIND_VERBOSE) {
 		req->cpu_bind_type |= CPU_BIND_VERBOSE;
 		set_bind = true;
 	}
@@ -252,7 +252,7 @@ extern int task_p_slurmd_release_resources (uint32_t job_id)
 	/* NOTE: The notify_on_release flag set in cpuset.c
 	 * should remove the directory, but that is not
 	 * happening reliably. */
-	if (! (conf->task_plugin_param & CPU_BIND_CPUSETS))
+	if (!(slurm_conf.task_plugin_param & CPU_BIND_CPUSETS))
 		return SLURM_SUCCESS;
 
 
@@ -326,7 +326,7 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
 	char path[PATH_MAX];
 	int rc = SLURM_SUCCESS;
 
-	if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
+	if (slurm_conf.task_plugin_param & CPU_BIND_CPUSETS) {
 #ifdef MULTIPLE_SLURMD
 		if (snprintf(path, PATH_MAX, "%s/slurm_%s_%u",
 			     CPUSET_DIR,
@@ -386,7 +386,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		  __func__, job->jobid, job->stepid,
 		  job->envtp->procid, job->cpu_bind_type);
 
-	if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
+	if (slurm_conf.task_plugin_param & CPU_BIND_CPUSETS) {
 		info("%s: Using cpuset affinity for tasks", __func__);
 #ifdef MULTIPLE_SLURMD
 		if (snprintf(base, PATH_MAX, "%s/slurm_%s_%u",
@@ -421,7 +421,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		if (get_cpuset(&new_mask, job) &&
 		    (!(job->cpu_bind_type & CPU_BIND_NONE))) {
 			reset_cpuset(&new_mask, &cur_mask);
-			if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
+			if (slurm_conf.task_plugin_param & CPU_BIND_CPUSETS) {
 				rc = slurm_set_cpuset(base, path, mypid,
 						      sizeof(new_mask),
 						      &new_mask);
@@ -440,7 +440,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		task_slurm_chkaffinity(rc ? &cur_mask : &new_mask,
 				       job, rc);
 	} else if (job->mem_bind_type &&
-		   (conf->task_plugin_param & CPU_BIND_CPUSETS)) {
+		   (slurm_conf.task_plugin_param & CPU_BIND_CPUSETS)) {
 		cpu_set_t cur_mask;
 		pid_t mypid  = job->envtp->task_pid;
 
@@ -452,7 +452,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 	}
 
 #ifdef HAVE_NUMA
-	if ((conf->task_plugin_param & CPU_BIND_CPUSETS) &&
+	if ((slurm_conf.task_plugin_param & CPU_BIND_CPUSETS) &&
 	    (slurm_memset_available() >= 0)) {
 		nodemask_t new_mask, cur_mask;
 
@@ -511,7 +511,7 @@ extern int task_p_post_term (stepd_step_rec_t *job, stepd_step_task_info_t *task
 	/* NOTE: The notify_on_release flag set in cpuset.c
 	 * should remove the directory, but that is not
 	 * happening reliably. */
-	if (! (conf->task_plugin_param & CPU_BIND_CPUSETS))
+	if (!(slurm_conf.task_plugin_param & CPU_BIND_CPUSETS))
 		return SLURM_SUCCESS;
 
 #ifdef MULTIPLE_SLURMD

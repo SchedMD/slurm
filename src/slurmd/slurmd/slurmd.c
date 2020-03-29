@@ -1086,7 +1086,6 @@ _read_config(void)
 	conf->slurmd_timeout = cf->slurmd_timeout;
 	conf->kill_wait = cf->kill_wait;
 	conf->use_pam = cf->conf_flags & CTL_CONF_PAM;
-	conf->task_plugin_param = cf->task_plugin_param;
 	conf->health_check_interval = cf->health_check_interval;
 	conf->job_acct_oom_kill = cf->job_acct_oom_kill;
 
@@ -1274,7 +1273,7 @@ _print_conf(void)
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
 	debug3("TaskProlog  = `%s'",     cf->task_prolog);
 	debug3("TaskEpilog  = `%s'",     cf->task_epilog);
-	debug3("TaskPluginParam = %u",   conf->task_plugin_param);
+	debug3("TaskPluginParam = %u",   cf->task_plugin_param);
 	debug3("Use PAM     = %u",       conf->use_pam);
 	slurm_conf_unlock();
 }
@@ -2387,7 +2386,6 @@ static int _core_spec_init(void)
 #else
 	int i, rval;
 	pid_t pid;
-	uint32_t task_params;
 	bool slurmd_off_spec;
 	bitstr_t *res_mac_bitmap;
 	cpu_set_t mask;
@@ -2438,8 +2436,7 @@ static int _core_spec_init(void)
 	}
 
 	pid = getpid();
-	task_params = slurm_get_task_plugin_param();
-	slurmd_off_spec = (task_params & SLURMD_OFF_SPEC);
+	slurmd_off_spec = (slurm_conf.task_plugin_param & SLURMD_OFF_SPEC);
 
 	if (check_corespec_cgroup_job_confinement()) {
 		if (init_system_cpuset_cgroup() != SLURM_SUCCESS) {
