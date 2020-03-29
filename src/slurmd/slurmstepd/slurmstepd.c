@@ -688,7 +688,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 	job->jobacct = jobacctinfo_create(NULL);
 
 	/* Establish GRES environment variables */
-	if (conf->debug_flags & DEBUG_FLAG_GRES) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
 		gres_plugin_job_state_log(job->job_gres_list, job->jobid);
 		gres_plugin_step_state_log(job->step_gres_list, job->jobid,
 					   job->stepid);

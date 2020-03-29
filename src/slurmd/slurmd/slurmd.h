@@ -145,7 +145,6 @@ typedef struct slurmd_config {
 	uint16_t      log_fmt;          /* Log file timestamp format flag  */
 	uint32_t      debug_level;	/* logging detail level            */
 	uint16_t      debug_level_set;	/* debug_level set on command line */
-	uint64_t      debug_flags;	/* DebugFlags configured           */
 	int	      boot_time:1;      /* Report node boot time now (-b)  */
 	int           daemonize:1;	/* daemonize flag (-D)		   */
 	bool          def_config;       /* We haven't read in the config yet */

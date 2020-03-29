@@ -1060,7 +1060,6 @@ _read_config(void)
 	_free_and_set(conf->pubkey,   path_pubkey);
 	_free_and_set(conf->x11_params, xstrdup(cf->x11_params));
 
-	conf->debug_flags = cf->debug_flags;
 	conf->syslog_debug = cf->slurmd_syslog_debug;
 	conf->propagate_prio = cf->propagate_prio_process;
 
