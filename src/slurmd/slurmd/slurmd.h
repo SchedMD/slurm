@@ -149,7 +149,6 @@ typedef struct slurmd_config {
 	char           *job_acct_gather_freq;
 	char           *job_acct_gather_type; /* job accounting gather type */
 	char           *job_acct_gather_params; /* job accounting gather params */
-	char           *msg_aggr_params;      /* message aggregation params */
 	uint64_t        msg_aggr_window_msgs; /* msg aggr window size in msgs */
 	uint64_t        msg_aggr_window_time; /* msg aggr window size in time */
 

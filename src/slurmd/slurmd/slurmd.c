@@ -1062,8 +1062,6 @@ _read_config(void)
 
 	_free_and_set(conf->job_acct_gather_type,
 		      xstrdup(cf->job_acct_gather_type));
-	_free_and_set(conf->msg_aggr_params,
-		      xstrdup(cf->msg_aggr_params));
 	_set_msg_aggr_params();
 
 	if ( (conf->node_name == NULL) ||
@@ -1320,7 +1318,6 @@ _destroy_conf(void)
 		xfree(conf->job_acct_gather_freq);
 		xfree(conf->job_acct_gather_type);
 		xfree(conf->logfile);
-		xfree(conf->msg_aggr_params);
 		xfree(conf->node_name);
 		xfree(conf->node_topo_addr);
 		xfree(conf->node_topo_pattern);
@@ -2318,10 +2315,10 @@ static uint64_t _parse_msg_aggr_params(int type, char *params)
 
 static void _set_msg_aggr_params(void)
 {
-	conf->msg_aggr_window_time = _parse_msg_aggr_params(WINDOW_TIME,
-			       conf->msg_aggr_params);
-	conf->msg_aggr_window_msgs = _parse_msg_aggr_params(WINDOW_MSGS,
-			       conf->msg_aggr_params);
+	conf->msg_aggr_window_time =
+		_parse_msg_aggr_params(WINDOW_TIME, slurm_conf.msg_aggr_params);
+	conf->msg_aggr_window_msgs =
+		_parse_msg_aggr_params(WINDOW_MSGS, slurm_conf.msg_aggr_params);
 
 	if (conf->msg_aggr_window_time == NO_VAL)
 		conf->msg_aggr_window_time = DEFAULT_MSG_AGGR_WINDOW_TIME;
