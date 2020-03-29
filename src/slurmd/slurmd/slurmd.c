@@ -261,7 +261,6 @@ main (int argc, char **argv)
 	int blocked_signals[] = {SIGPIPE, 0};
 	int cc;
 	char *oom_value;
-	uint32_t slurmd_uid = 0;
 	uint32_t curr_uid = 0;
 	char time_stamp[256];
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
@@ -304,15 +303,15 @@ main (int argc, char **argv)
 		exit(1);
 	}
 
-	slurmd_uid = slurm_get_slurmd_user_id();
 	curr_uid = getuid();
-	if (curr_uid != slurmd_uid) {
-		char *slurmd_user = uid_to_string_or_null(slurmd_uid);
+	if (curr_uid != slurm_conf.slurmd_user_id) {
+		char *slurmd_user =
+			uid_to_string_or_null(slurm_conf.slurmd_user_id);
 		char *curr_user = uid_to_string_or_null(curr_uid);
 
 		fatal("You are running slurmd as something other than user %s(%u). "
 		      "If you want to run as this user add SlurmdUser=%s to the slurm.conf file.",
-		      slurmd_user, slurmd_uid, curr_user);
+		      slurmd_user, slurm_conf.slurm_user_id, curr_user);
 	}
 	init_setproctitle(argc, argv);
 

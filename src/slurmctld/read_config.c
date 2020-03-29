@@ -1171,7 +1171,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	else if (!cgroup_mem_confinement)
 		info("No memory enforcing mechanism configured.");
 
-	if (slurm_get_slurmd_user_id() != 0)
+	if (slurm_conf.slurmd_user_id != 0)
 		_test_cgroup_plugin_use();
 
 	if (layouts_init() != SLURM_SUCCESS) {

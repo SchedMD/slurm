@@ -163,7 +163,7 @@ static void *_munge_ctx_setup(bool creator)
 		 * get at the contents of job credentials.
 		 */
 		err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
-				    slurm_get_slurmd_user_id());
+				    slurm_conf.slurmd_user_id);
 
 		if (err != EMUNGE_SUCCESS) {
 			error("Unable to set uid restriction on munge credentials: %s",

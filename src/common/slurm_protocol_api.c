@@ -2143,24 +2143,6 @@ char *slurm_get_proctrack_type(void)
 	return proctrack_type;
 }
 
-/* slurm_get_slurmd_user_id
- * returns slurmd uid from slurm_conf object
- * RET uint32_t	- slurmd user id
- */
-uint32_t slurm_get_slurmd_user_id(void)
-{
-	uint32_t slurmd_uid = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		slurmd_uid = conf->slurmd_user_id;
-		slurm_conf_unlock();
-	}
-	return slurmd_uid;
-}
-
 /* slurm_get_sched_params
  * RET char * - Value of SchedulerParameters, MUST be xfreed by caller */
 extern char *slurm_get_sched_params(void)
