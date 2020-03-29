@@ -1797,7 +1797,6 @@ static void _queue_reboot_msg(void)
 	time_t now = time(NULL);
 	int i;
 	bool want_reboot;
-	uint16_t resume_timeout = slurm_get_resume_timeout();
 
 	want_nodes_reboot = false;
 	for (i = 0, node_ptr = node_record_table_ptr;
@@ -1811,7 +1810,7 @@ static void _queue_reboot_msg(void)
 			want_nodes_reboot = true;
 			continue;
 		}
-		if (node_ptr->boot_req_time + resume_timeout > now) {
+		if (node_ptr->boot_req_time + slurm_conf.resume_timeout > now) {
 			debug2("%s: Still waiting for boot of node %s",
 			       __func__, node_ptr->name);
 			continue;
@@ -1863,7 +1862,7 @@ static void _queue_reboot_msg(void)
 		bit_clear(idle_node_bitmap, i);
 
 		node_ptr->boot_req_time = now;
-		node_ptr->last_response = now + slurm_get_resume_timeout();
+		node_ptr->last_response = now + slurm_conf.resume_timeout;
 
 		if (node_ptr->reason &&
 		    !xstrstr(node_ptr->reason, "reboot issued"))

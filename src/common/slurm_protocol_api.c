@@ -255,40 +255,6 @@ uint32_t slurm_get_control_cnt(void)
 	return control_cnt;
 }
 
-/* slurm_get_suspend_timeout
- * RET SuspendTimeout value from slurm.conf
- */
-uint16_t slurm_get_suspend_timeout(void)
-{
-	uint16_t suspend_timeout = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		suspend_timeout = conf->suspend_timeout;
-		slurm_conf_unlock();
-	}
-	return suspend_timeout;
-}
-
-/* slurm_get_resume_timeout
- * RET ResumeTimeout value from slurm.conf
- */
-uint16_t slurm_get_resume_timeout(void)
-{
-	uint16_t resume_timeout = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		resume_timeout = conf->resume_timeout;
-		slurm_conf_unlock();
-	}
-	return resume_timeout;
-}
-
 /* slurm_get_suspend_time
  * RET SuspendTime value from slurm.conf
  */

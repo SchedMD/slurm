@@ -896,13 +896,11 @@ static int _wait_nodes_ready(uint32_t job_id)
 {
 	int is_ready = SLURM_ERROR, i, rc = 0;
 	int cur_delay = 0;
-	int suspend_time, resume_time, max_delay;
+	int max_delay;
 
-	suspend_time = slurm_get_suspend_timeout();
-	resume_time  = slurm_get_resume_timeout();
-	if ((suspend_time == 0) || (resume_time == 0))
+	if (!slurm_conf.suspend_timeout || !slurm_conf.resume_timeout)
 		return SLURM_SUCCESS;	/* Power save mode disabled */
-	max_delay = suspend_time + resume_time;
+	max_delay = slurm_conf.suspend_timeout + slurm_conf.resume_timeout;
 	max_delay *= 5;		/* Allow for ResumeRate support */
 
 	for (i=0; (cur_delay < max_delay); i++) {

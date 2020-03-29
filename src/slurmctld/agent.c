@@ -2172,7 +2172,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		queued_req_ptr->first_attempt = now;
 		queued_req_ptr->last_attempt  = now;
 	} else if (difftime(now, queued_req_ptr->first_attempt) >=
-				 slurm_get_resume_timeout()) {
+		   slurm_conf.resume_timeout) {
 		/* Nodes will get marked DOWN and job requeued, if possible */
 		error("agent waited too long for nodes to respond, abort launch of JobId=%u",
 		      job_ptr->job_id);

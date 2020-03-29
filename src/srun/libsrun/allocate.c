@@ -240,14 +240,12 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	int is_ready = 0, i, rc;
 	double cur_delay = 0;
 	double cur_sleep = 0;
-	int suspend_time, resume_time, max_delay;
+	int max_delay;
 	bool job_killed = false;
 
-	suspend_time = slurm_get_suspend_timeout();
-	resume_time  = slurm_get_resume_timeout();
-	if ((suspend_time == 0) || (resume_time == 0))
+	if (!slurm_conf.suspend_timeout || !slurm_conf.resume_timeout)
 		return 1;	/* Power save mode disabled */
-	max_delay = suspend_time + resume_time;
+	max_delay = slurm_conf.suspend_timeout + slurm_conf.resume_timeout;
 	max_delay *= 5;		/* Allow for ResumeRate support */
 
 	pending_job_id = alloc->job_id;
