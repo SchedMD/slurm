@@ -120,8 +120,6 @@ typedef struct slurmd_config {
 					 * CR_DEFAULT, etc.                */
 	char         *hwloc_xml;	/* path of hwloc xml file if using */
 	uint16_t     job_acct_oom_kill;  /* enforce mem limit on running job */
-	time_t       last_update;	/* last update time of the
-					 * build parameters */
 	int           nice;		/* command line nice value spec    */
 	char         *node_name;	/* node name                       */
 	char         *node_topo_addr;   /* node's topology address         */

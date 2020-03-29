@@ -879,8 +879,6 @@ _read_config(void)
 	slurm_mutex_lock(&conf->config_mutex);
 	cf = slurm_conf_lock();
 
-	conf->last_update = time(NULL);
-
 	if (conf->conffile == NULL)
 		conf->conffile = xstrdup(cf->slurm_conf);
 
