@@ -139,7 +139,7 @@ static int msg_target_node_id = 0;
 static bool
 _slurm_authorized_user(uid_t uid)
 {
-	return ((uid == (uid_t) 0) || (uid == conf->slurm_user_id));
+	return ((uid == (uid_t) 0) || (uid == slurm_conf.slurm_user_id));
 }
 
 /*

@@ -5572,7 +5572,7 @@ again:	if (gettimeofday(&tv1, NULL)) {
 static bool
 _slurm_authorized_user(uid_t uid)
 {
-	return ((uid == (uid_t) 0) || (uid == conf->slurm_user_id));
+	return ((uid == (uid_t) 0) || (uid == slurm_conf.slurm_user_id));
 }
 
 
@@ -5691,7 +5691,7 @@ _rpc_update_time(slurm_msg_t *msg)
 	int   rc      = SLURM_SUCCESS;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 
-	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
+	if ((req_uid != slurm_conf.slurm_user_id) && (req_uid != 0)) {
 		rc = ESLURM_USER_ID_MISSING;
 		error("Security violation, uid %d can't update time limit",
 		      req_uid);

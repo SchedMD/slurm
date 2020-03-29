@@ -882,8 +882,6 @@ _read_config(void)
 	if (conf->conffile == NULL)
 		conf->conffile = xstrdup(cf->slurm_conf);
 
-	conf->slurm_user_id =  cf->slurm_user_id;
-
 	xfree(conf->gres);
 
 	path_pubkey = xstrdup(cf->job_credential_public_certificate);
@@ -1263,7 +1261,7 @@ _print_conf(void)
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
 	debug3("Syslog Debug  = %d",     cf->slurmd_syslog_debug);
 	debug3("Pid File    = `%s'",     conf->pidfile);
-	debug3("Slurm UID   = %u",       conf->slurm_user_id);
+	debug3("Slurm UID   = %u",       cf->slurm_user_id);
 	debug3("TaskProlog  = `%s'",     cf->task_prolog);
 	debug3("TaskEpilog  = `%s'",     cf->task_epilog);
 	debug3("TaskPluginParam = %u",   cf->task_plugin_param);
