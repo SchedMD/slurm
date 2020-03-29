@@ -92,13 +92,6 @@ char *slurm_auth_opts_to_socket(char *opts);
  */
 int slurm_get_auth_ttl(void);
 
-/* slurm_get_cli_filter_plugins
- * get cli_filter_plugins from slurm_conf object from
- * slurm_conf object
- * RET char *   - cli_filter_plugins, MUST be xfreed by caller
- */
-char *slurm_get_cli_filter_plugins(void);
-
 /*
  * slurm_get_control_cnt
  * RET Count of SlurmctldHost records from slurm.conf
