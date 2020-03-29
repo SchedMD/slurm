@@ -930,7 +930,6 @@ extern void jag_common_poll_data(
 	char sbuf[72];
 	int energy_counted = 0;
 	time_t ct;
-	static int over_memory_kill = -1;
 	int i = 0;
 
 	xassert(callbacks);
@@ -1111,10 +1110,7 @@ extern void jag_common_poll_data(
 	}
 	list_iterator_destroy(itr);
 
-	if (over_memory_kill == -1)
-		over_memory_kill = slurm_get_job_acct_oom_kill();
-
-	if (over_memory_kill)
+	if (slurm_conf.job_acct_oom_kill)
 		jobacct_gather_handle_mem_limit(total_job_mem,
 						total_job_vsize);
 
