@@ -714,25 +714,6 @@ char *slurm_get_priority_weight_tres(void)
 	return weights;
 }
 
-/* slurm_get_prep_plugins
- * returns the PrEpPlugins from slurm_conf object
- * RET char *    - PrEpPlugins, MUST be xfreed by caller
- */
-char *slurm_get_prep_plugins(void)
-{
-	char *plugins = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		plugins = xstrdup(conf->prep_plugins);
-		slurm_conf_unlock();
-	}
-
-	return plugins;
-}
-
 static int _get_tres_id(char *type, char *name)
 {
 	slurmdb_tres_rec_t tres_rec;

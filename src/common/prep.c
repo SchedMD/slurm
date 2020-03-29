@@ -77,7 +77,7 @@ static bool init_run = false;
 extern int prep_plugin_init(prep_callbacks_t *callbacks)
 {
 	int rc = SLURM_SUCCESS;
-	char *last = NULL, *tmp_plugin_list, *names;
+	char *last = NULL, *names, *tmp_plugin_list;
 	char *plugin_type = "prep";
 	char *type;
 
@@ -88,13 +88,11 @@ extern int prep_plugin_init(prep_callbacks_t *callbacks)
 	if (g_context_cnt >= 0)
 		goto fini;
 
-	prep_plugin_list = slurm_get_prep_plugins();
 	g_context_cnt = 0;
-	if ((prep_plugin_list == NULL) || (prep_plugin_list[0] == '\0'))
+	if (!slurm_conf.prep_plugins || !slurm_conf.prep_plugins[0])
 		goto fini;
 
-	tmp_plugin_list = xstrdup(prep_plugin_list);
-	names = tmp_plugin_list;
+	names = tmp_plugin_list = xstrdup(slurm_conf.prep_plugins);
 	while ((type = strtok_r(names, ",", &last))) {
 		xrecalloc(ops, g_context_cnt + 1, sizeof(prep_ops_t));
 		xrecalloc(g_context, g_context_cnt + 1,
@@ -171,24 +169,23 @@ fini:
 extern int prep_plugin_reconfig(void)
 {
 	int rc = SLURM_SUCCESS;
-	char *plugin_names = slurm_get_prep_plugins();
 	bool plugin_change = false;
 
-	if (!plugin_names && !prep_plugin_list)
+	if (!slurm_conf.prep_plugins && !prep_plugin_list)
 		return rc;
 
 	slurm_mutex_lock(&g_context_lock);
-	if (xstrcmp(plugin_names, prep_plugin_list))
+	if (xstrcmp(slurm_conf.prep_plugins, prep_plugin_list))
 		plugin_change = true;
 	slurm_mutex_unlock(&g_context_lock);
 
 	if (plugin_change) {
-		info("%s: PrEpPlugins changed to %s", __func__, plugin_names);
+		info("%s: PrEpPlugins changed to %s",
+		     __func__, slurm_conf.prep_plugins);
 		rc = prep_plugin_fini();
 		if (rc == SLURM_SUCCESS)
 			rc = prep_plugin_init(NULL);
 	}
-	xfree(plugin_names);
 
 	return rc;
 }
