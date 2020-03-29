@@ -544,12 +544,6 @@ char *slurm_get_jobacct_gather_params(void);
  */
 bool slurm_get_job_acct_oom_kill(void);
 
-/* slurm_get_jobacct_gather_freq
- * returns the job accounting poll frequency from the slurm_conf object
- * RET int    - job accounting frequency
- */
-char *slurm_get_jobacct_gather_freq(void);
-
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurm_conf object
  * RET char *    - job completion type,  MUST be xfreed by caller

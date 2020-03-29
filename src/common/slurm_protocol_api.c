@@ -1714,24 +1714,6 @@ bool slurm_get_job_acct_oom_kill(void)
 	return enabled;
 }
 
-/* slurm_get_jobacct_freq
- * returns the job accounting poll frequency from the slurm_conf object
- * RET int    - job accounting frequency
- */
-char *slurm_get_jobacct_gather_freq(void)
-{
-	char *freq = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		freq = xstrdup(conf->job_acct_gather_freq);
-		slurm_conf_unlock();
-	}
-	return freq;
-}
-
 /* slurm_get_energy_accounting_type
  * get EnergyAccountingType from slurm_conf object
  * RET char *   - energy_accounting type, MUST be xfreed by caller

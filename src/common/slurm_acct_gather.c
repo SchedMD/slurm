@@ -298,9 +298,8 @@ extern int acct_gather_check_acct_freq_task(uint64_t job_mem_lim,
 	static uint32_t acct_freq_task = NO_VAL;
 
 	if (acct_freq_task == NO_VAL) {
-		char *acct_freq = slurm_get_jobacct_gather_freq();
-		int i = acct_gather_parse_freq(PROFILE_TASK, acct_freq);
-		xfree(acct_freq);
+		int i = acct_gather_parse_freq(PROFILE_TASK,
+					       slurm_conf.job_acct_gather_freq);
 
 		/* If the value is -1 lets set the freq to something
 		   really high so we don't check this again.
