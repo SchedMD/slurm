@@ -1085,7 +1085,6 @@ _read_config(void)
 		fatal("Unable to establish controller port");
 	conf->slurmd_timeout = cf->slurmd_timeout;
 	conf->kill_wait = cf->kill_wait;
-	conf->use_pam = cf->conf_flags & CTL_CONF_PAM;
 	conf->health_check_interval = cf->health_check_interval;
 	conf->job_acct_oom_kill = cf->job_acct_oom_kill;
 
@@ -1274,7 +1273,7 @@ _print_conf(void)
 	debug3("TaskProlog  = `%s'",     cf->task_prolog);
 	debug3("TaskEpilog  = `%s'",     cf->task_epilog);
 	debug3("TaskPluginParam = %u",   cf->task_plugin_param);
-	debug3("Use PAM     = %u",       conf->use_pam);
+	debug3("UsePAM      = %u",       (cf->conf_flags & CTL_CONF_PAM));
 	slurm_conf_unlock();
 }
 

@@ -161,7 +161,6 @@ typedef struct slurmd_config {
 	char           *msg_aggr_params;      /* message aggregation params */
 	uint64_t        msg_aggr_window_msgs; /* msg aggr window size in msgs */
 	uint64_t        msg_aggr_window_time; /* msg aggr window size in time */
-	uint16_t	use_pam;
 	uint16_t	propagate_prio;	/* PropagatePrioProcess flag       */
 
 	List		starting_steps; /* steps that are starting but cannot

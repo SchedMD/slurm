@@ -39,6 +39,7 @@
 #include "config.h"
 
 #include "slurm/slurm_errno.h"
+#include "src/common/read_config.h"
 #include "src/slurmd/slurmstepd/pam_ses.h"
 #include "src/common/log.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -79,7 +80,7 @@ pam_setup (char *user, char *host)
 	struct pam_conv conv = {misc_conv, NULL};
         int             rc = 0;
 
-	if (!conf->use_pam)
+	if (!(slurm_conf.conf_flags & CTL_CONF_PAM))
 		return SLURM_SUCCESS;
 	/*
 	 * Slurm uses PAM to obtain resource limits established by the system
@@ -140,7 +141,7 @@ pam_finish ()
 	 * ending the association with PAM.
 	 */
 
-	if (!conf->use_pam)
+	if (!(slurm_conf.conf_flags & CTL_CONF_PAM))
 		return;
 
         if (pam_h != NULL) {
