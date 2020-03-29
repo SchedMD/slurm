@@ -788,10 +788,9 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	}
 
 	if (sig == SIG_TERM_KILL) {
-		uint16_t kill_wait = slurm_get_kill_wait();
 		(void) proctrack_g_signal(job->cont_id, SIGCONT);
 		(void) proctrack_g_signal(job->cont_id, SIGTERM);
-		sleep(kill_wait);
+		sleep(slurm_conf.kill_wait);
 		sig = SIGKILL;
 	}
 

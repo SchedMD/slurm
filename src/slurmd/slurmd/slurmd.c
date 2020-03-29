@@ -1075,7 +1075,6 @@ _read_config(void)
 		fatal("Unable to establish controller machine");
 	if (cf->slurmctld_port == 0)
 		fatal("Unable to establish controller port");
-	conf->kill_wait = cf->kill_wait;
 	conf->job_acct_oom_kill = cf->job_acct_oom_kill;
 
 	slurm_mutex_unlock(&conf->config_mutex);

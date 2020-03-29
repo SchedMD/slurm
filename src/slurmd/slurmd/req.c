@@ -5436,7 +5436,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	/*
 	 *  Check for corpses
 	 */
-	delay = MAX(conf->kill_wait, 5);
+	delay = MAX(slurm_conf.kill_wait, 5);
 	if (!_pause_for_job_completion (req->job_id, req->nodes, delay) &&
 	    _terminate_all_steps(req->job_id, true) ) {
 		/*
