@@ -146,8 +146,6 @@ static uint32_t weight_part; /* weight for Partition factor */
 static uint32_t weight_qos;  /* weight for QOS factor */
 static double  *weight_tres; /* tres weights */
 static uint32_t flags;       /* Priority Flags */
-static uint32_t prevflags;    /* Priority Flags before _internal_setup() resets
-			       * flags after a reconfigure */
 static time_t g_last_ran = 0; /* when the last poll ran */
 static double decay_factor = 1; /* The decay factor when decaying time. */
 
@@ -1529,7 +1527,7 @@ static void _internal_setup(void)
 							  true);
 	}
 	xfree(tres_weights_str);
-	flags = slurm_get_priority_flags();
+	flags = slurm_conf.priority_flags;
 
 	log_flag(PRIO, "priority: Damp Factor is %u", damp_factor);
 	log_flag(PRIO, "priority: AccountingStorageEnforce is %u", enforce);
@@ -1810,18 +1808,19 @@ extern void priority_p_reconfig(bool assoc_clear)
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	reconfig = 1;
-	prevflags = flags;
 	_internal_setup();
 
 	/* Since Fair Tree uses a different shares calculation method, we
 	 * must reassign shares at reconfigure if the algorithm was switched to
 	 * or from Fair Tree */
 	if ((flags & PRIORITY_FLAGS_FAIR_TREE) !=
-	    (prevflags & PRIORITY_FLAGS_FAIR_TREE)) {
+	    (slurm_conf.priority_flags & PRIORITY_FLAGS_FAIR_TREE)) {
 		assoc_mgr_lock(&locks);
 		_set_norm_shares(assoc_mgr_root_assoc->usage->children_list);
 		assoc_mgr_unlock(&locks);
 	}
+
+	flags = slurm_conf.priority_flags;
 
 	/* Since the used_cpu_run_secs has been reset by the reconfig,
 	 * we need to remove the time that has past since the last

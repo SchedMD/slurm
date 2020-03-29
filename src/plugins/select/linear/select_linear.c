@@ -126,8 +126,6 @@ struct select_nodeinfo {
 	double   tres_alloc_weighted;	/* weighted number of tres allocated. */
 };
 
-static uint16_t priority_flags = 0;
-
 static int  _add_job_to_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 			      char *pre_err, int suspended);
 static void _add_run_job(struct cr_record *cr_ptr, uint32_t job_id);
@@ -3468,8 +3466,6 @@ extern int init ( void )
 		xfree(topo_param);
 	}
 
-	priority_flags = slurm_get_priority_flags();
-
 	return rc;
 }
 
@@ -3928,7 +3924,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 				assoc_mgr_tres_weighted(
 					node_ptr->tres_cnt,
 					node_ptr->config_ptr->tres_weights,
-					priority_flags, false);
+					slurm_conf.priority_flags, false);
 		} else {
 			nodeinfo->alloc_cpus = 0;
 			nodeinfo->tres_alloc_weighted = 0.0;

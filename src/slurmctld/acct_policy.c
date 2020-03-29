@@ -4355,8 +4355,6 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 	int create_cnt = 0, i, rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 	bool parent = false;
-	static time_t sched_update = 0;
-	static uint16_t priority_flags = 0;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -4366,14 +4364,11 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 		return SLURM_ERROR;
 	}
 
-	if (sched_update != slurm_conf.last_update)
-		priority_flags = slurm_get_priority_flags();
-
 	/*
 	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
 	 * submit_time (Not begin).  Accrue limits don't work with this flag.
 	 */
-	if (priority_flags & PRIORITY_FLAGS_ACCRUE_ALWAYS) {
+	if (slurm_conf.priority_flags & PRIORITY_FLAGS_ACCRUE_ALWAYS) {
 		if (!details_ptr->accrue_time)
 			details_ptr->accrue_time = details_ptr->submit_time;
 		return SLURM_SUCCESS;

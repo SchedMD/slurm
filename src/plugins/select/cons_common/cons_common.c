@@ -90,7 +90,6 @@ bool     is_cons_tres         = false;
 bool     pack_serial_at_end   = false;
 bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
-uint16_t priority_flags       = 0;
 int      select_node_cnt      = 0;
 bool     spec_cores_first     = false;
 bool     topo_optional        = false;
@@ -730,8 +729,6 @@ extern void common_init(void)
 			topo_optional = true;
 		xfree(topo_param);
 	}
-
-	priority_flags = slurm_get_priority_flags();
 
 	if (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)
 		gang_mode = true;
@@ -1840,7 +1837,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 		nodeinfo->tres_alloc_weighted =
 			assoc_mgr_tres_weighted(nodeinfo->tres_alloc_cnt,
 						node_ptr->config_ptr->tres_weights,
-						priority_flags, false);
+						slurm_conf.priority_flags, false);
 	}
 	free_core_array(&alloc_core_bitmap);
 
