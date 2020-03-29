@@ -531,12 +531,6 @@ char *slurm_get_dependency_params(void);
  */
 uint16_t slurm_get_preempt_mode(void);
 
-/* slurm_get_jobacct_gather_params
- * returns the job accounting params from the slurm_conf object
- * RET char *    - job accounting params,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_gather_params(void);
-
 /* slurm_get_job_acct_oom_kill
  * returns the job_acct_oom_kill setting from the slurm_conf object
  * which represents the value of the OverMemoryKill flag.
