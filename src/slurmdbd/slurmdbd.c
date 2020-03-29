@@ -552,7 +552,7 @@ static void _update_logging(bool startup)
 		log_opts.syslog_level = LOG_LEVEL_FATAL;
 
 	log_alter(log_opts, SYSLOG_FACILITY_DAEMON, slurmdbd_conf->log_file);
-	log_set_timefmt(slurmdbd_conf->log_fmt);
+	log_set_timefmt(slurm_conf.log_fmt);
 	if (startup && slurmdbd_conf->log_file) {
 		int rc;
 		gid_t slurm_user_gid;

@@ -68,7 +68,6 @@ typedef struct {
 	char *	 	default_qos;	/* default qos setting when
 					 * adding clusters              */
 	char *		log_file;	/* Log file			*/
-	uint16_t        log_fmt;        /* Log file timestamt format    */
 	uint32_t	max_time_range;	/* max time range for user queries */
 	char *		parameters;	/* parameters to change behavior with
 					 * the slurmdbd directly	*/

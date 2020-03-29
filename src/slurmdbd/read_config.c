@@ -273,22 +273,22 @@ extern int read_slurmdbd_conf(void)
 
 		if (s_p_get_string(&temp_str, "LogTimeFormat", tbl)) {
 			if (xstrcasestr(temp_str, "iso8601_ms"))
-				slurmdbd_conf->log_fmt = LOG_FMT_ISO8601_MS;
+				slurm_conf.log_fmt = LOG_FMT_ISO8601_MS;
 			else if (xstrcasestr(temp_str, "iso8601"))
-				slurmdbd_conf->log_fmt = LOG_FMT_ISO8601;
+				slurm_conf.log_fmt = LOG_FMT_ISO8601;
 			else if (xstrcasestr(temp_str, "rfc5424_ms"))
-				slurmdbd_conf->log_fmt = LOG_FMT_RFC5424_MS;
+				slurm_conf.log_fmt = LOG_FMT_RFC5424_MS;
 			else if (xstrcasestr(temp_str, "rfc5424"))
-				slurmdbd_conf->log_fmt = LOG_FMT_RFC5424;
+				slurm_conf.log_fmt = LOG_FMT_RFC5424;
 			else if (xstrcasestr(temp_str, "clock"))
-				slurmdbd_conf->log_fmt = LOG_FMT_CLOCK;
+				slurm_conf.log_fmt = LOG_FMT_CLOCK;
 			else if (xstrcasestr(temp_str, "short"))
-				slurmdbd_conf->log_fmt = LOG_FMT_SHORT;
+				slurm_conf.log_fmt = LOG_FMT_SHORT;
 			else if (xstrcasestr(temp_str, "thread_id"))
-				slurmdbd_conf->log_fmt = LOG_FMT_THREAD_ID;
+				slurm_conf.log_fmt = LOG_FMT_THREAD_ID;
 			xfree(temp_str);
 		} else
-			slurmdbd_conf->log_fmt = LOG_FMT_ISO8601_MS;
+			slurm_conf.log_fmt = LOG_FMT_ISO8601_MS;
 
 		if (s_p_get_string(&temp_str, "MaxQueryTimeRange", tbl)) {
 			slurmdbd_conf->max_time_range = time_str2secs(temp_str);
