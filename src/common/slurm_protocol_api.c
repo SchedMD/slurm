@@ -585,44 +585,6 @@ uint16_t slurm_get_priority_reset_period(void)
 	return reset_period;
 }
 
-/* slurm_get_priority_site_factor_params
- * returns the site_factor_params value from slurm_conf object
- * RET char *    - site_factor_params, MUST be xfreed by caller
- */
-char *slurm_get_priority_site_factor_params(void)
-{
-	char *params = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		params = xstrdup(conf->site_factor_params);
-		slurm_conf_unlock();
-	}
-
-	return params;
-}
-
-/* slurm_get_priority_site_factor_plugin
- * returns the site_factor_plugin value from slurm_conf object
- * RET char *    - site_factor_plugin, MUST be xfreed by caller
- */
-char *slurm_get_priority_site_factor_plugin(void)
-{
-	char *plugin = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		plugin = xstrdup(conf->site_factor_plugin);
-		slurm_conf_unlock();
-	}
-
-	return plugin;
-}
-
 /* slurm_get_fs_dampening_factor
  * returns the dampening factor for fairshare from slurm_conf object
  * RET uint32_t - factor.

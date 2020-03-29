@@ -73,7 +73,6 @@ extern int site_factor_plugin_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "site_factor";
-	char *type = NULL;
 
 	if (init_run && g_context)
 		return retval;
@@ -83,23 +82,22 @@ extern int site_factor_plugin_init(void)
 	if (g_context)
 		goto done;
 
-	type = slurm_get_priority_site_factor_plugin();
-
-	g_context = plugin_context_create(plugin_type, type, (void **)&ops,
-					  syms, sizeof(syms));
+	g_context = plugin_context_create(plugin_type,
+					  slurm_conf.site_factor_plugin,
+					  (void **) &ops, syms, sizeof(syms));
 
 	if (!g_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.site_factor_plugin);
 		retval = SLURM_ERROR;
 		goto done;
 	}
 
 	init_run = true;
-	debug2("%s: plugin %s loaded", __func__, type);
+	debug2("%s: plugin %s loaded", __func__, slurm_conf.site_factor_plugin);
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
-	xfree(type);
 
 	return retval;
 }
