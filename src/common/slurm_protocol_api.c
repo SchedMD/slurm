@@ -478,23 +478,6 @@ char *slurm_get_msg_aggr_params(void)
 	return msg_aggr_params;
 }
 
-/* slurm_get_reboot_program
- * RET char * - RebootProgram from slurm.conf, MUST be xfreed by caller
- */
-extern char *slurm_get_reboot_program(void)
-{
-	char *reboot_program = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		reboot_program = xstrdup(conf->reboot_program);
-		slurm_conf_unlock();
-	}
-	return reboot_program;
-}
-
 /* slurm_get_priority_decay_hl
  * returns the priority decay half life in seconds from slurm_conf object
  * RET uint32_t - decay_hl in secs.

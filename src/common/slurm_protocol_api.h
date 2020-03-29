@@ -189,11 +189,6 @@ char *slurm_get_mpi_params(void);
  */
 char *slurm_get_msg_aggr_params(void);
 
-/* slurm_get_reboot_program
- * RET char * - RebootProgram from slurm.conf, MUST be xfreed by caller
- */
-extern char *slurm_get_reboot_program(void);
-
 /* slurm_api_set_default_config
  *	called by the send_controller_msg function to ensure that at least
  *	the compiled in default slurm_protocol_config object is initialized
