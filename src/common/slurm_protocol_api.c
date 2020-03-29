@@ -550,25 +550,6 @@ uint32_t slurm_get_priority_calc_period(void)
 	return calc_period;
 }
 
-/* slurm_get_priority_favor_small
- * returns weither or not we are favoring small jobs from slurm_conf object
- * RET bool - true if favor small, false else.
- */
-bool slurm_get_priority_favor_small(void)
-{
-	bool factor = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		factor = conf->priority_favor_small;
-		slurm_conf_unlock();
-	}
-
-	return factor;
-}
-
 /* slurm_get_priority_params
  * RET char * - Value of PriorityParameters, MUST be xfreed by caller */
 char *slurm_get_priority_params(void)

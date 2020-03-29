@@ -133,7 +133,6 @@ static pthread_mutex_t decay_init_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t decay_init_cond = PTHREAD_COND_INITIALIZER;
 static bool running_decay = 0, reconfig = 0, calc_fairshare = 1;
 static time_t plugin_shutdown = 0;
-static bool favor_small; /* favor small jobs over large */
 static uint16_t damp_factor = 1;  /* weight for age factor */
 static uint32_t max_age; /* time when not to add any more
 			  * priority to a job if reached */
@@ -1510,7 +1509,6 @@ static void _internal_setup(void)
 {
 	char *tres_weights_str;
 
-	favor_small = slurm_get_priority_favor_small();
 	damp_factor = (long double)slurm_get_fs_dampening_factor();
 	enforce = slurm_get_accounting_storage_enforce();
 	max_age = slurm_conf.priority_max_age;
@@ -2110,12 +2108,12 @@ extern void set_priority_factors(time_t start_time, job_record_t *job_ptr)
 			job_ptr->prio_factors->priority_js /= time_limit;
 			/* Normalize to max value of 1.0 */
 			job_ptr->prio_factors->priority_js /= cluster_cpus;
-			if (favor_small) {
+			if (slurm_conf.priority_favor_small) {
 				job_ptr->prio_factors->priority_js =
 					(double) 1.0 -
 					job_ptr->prio_factors->priority_js;
 			}
-		} else if (favor_small) {
+		} else if (slurm_conf.priority_favor_small) {
 			job_ptr->prio_factors->priority_js =
 				(double)(node_record_count - min_nodes)
 				/ (double)node_record_count;

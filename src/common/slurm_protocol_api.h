@@ -276,12 +276,6 @@ uint32_t slurm_get_priority_decay_hl(void);
  */
 uint32_t slurm_get_priority_calc_period(void);
 
-/* slurm_get_priority_favor_small
- * returns weither or not we are favoring small jobs from slurm_conf object
- * RET bool - true if favor small, false else.
- */
-bool slurm_get_priority_favor_small(void);
-
 /* slurm_get_priority_params
  * RET char * - Value of PriorityParameters, MUST be xfreed by caller */
 char *slurm_get_priority_params(void);
