@@ -519,7 +519,6 @@ static void _jobacctinfo_2_stats_tres_usage(slurmdb_stats_t *stats,
 extern int jobacct_gather_init(void)
 {
 	char    *plugin_type = "jobacct_gather";
-	char	*type = NULL;
 	int	retval=SLURM_SUCCESS;
 
 	if (slurmdbd_conf || (_init_run_test() && g_context))
@@ -529,18 +528,19 @@ extern int jobacct_gather_init(void)
 	if (g_context)
 		goto done;
 
-	type = slurm_get_jobacct_gather_type();
-
-	g_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+	g_context = plugin_context_create(plugin_type,
+					  slurm_conf.job_acct_gather_type,
+					  (void **) &ops, syms, sizeof(syms));
 
 	if (!g_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.job_acct_gather_type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
 
-	if (!xstrcasecmp(type, "jobacct_gather/none")) {
+	if (!xstrcasecmp(slurm_conf.job_acct_gather_type,
+			 "jobacct_gather/none")) {
 		plugin_polling = false;
 		goto done;
 	}
@@ -553,17 +553,11 @@ extern int jobacct_gather_init(void)
 	if (!running_in_slurmctld())
 		goto done;
 
-	plugin_type = type;
-	type = slurm_get_proctrack_type();
-	if (!xstrcasecmp(type, "proctrack/pgid")) {
-		info("WARNING: We will use a much slower algorithm with "
-		     "proctrack/pgid, use Proctracktype=proctrack/linuxproc "
-		     "or some other proctrack when using %s",
-		     plugin_type);
+	if (!xstrcasecmp(slurm_conf.proctrack_type, "proctrack/pgid")) {
+		info("WARNING: We will use a much slower algorithm with proctrack/pgid, use Proctracktype=proctrack/linuxproc or some other proctrack when using %s",
+		     slurm_conf.job_acct_gather_type);
 		pgid_plugin = true;
 	}
-	xfree(type);
-	xfree(plugin_type);
 
 	if (!xstrcasecmp(slurm_conf.accounting_storage_type,
 	                 ACCOUNTING_STORAGE_TYPE_NONE)) {

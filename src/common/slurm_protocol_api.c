@@ -1677,24 +1677,6 @@ uint16_t slurm_get_preempt_mode(void)
 	return preempt_mode;
 }
 
-/* slurm_get_jobacct_gather_type
- * returns the job accounting type from the slurm_conf object
- * RET char *    - job accounting type,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_gather_type(void)
-{
-	char *jobacct_type = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		jobacct_type = xstrdup(conf->job_acct_gather_type);
-		slurm_conf_unlock();
-	}
-	return jobacct_type;
-}
-
 /* slurm_get_jobacct_gather_params
  * returns the job accounting params from the slurm_conf object
  * RET char *    - job accounting params,  MUST be xfreed by caller

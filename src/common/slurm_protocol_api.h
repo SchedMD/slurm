@@ -531,12 +531,6 @@ char *slurm_get_dependency_params(void);
  */
 uint16_t slurm_get_preempt_mode(void);
 
-/* slurm_get_jobacct_gather_type
- * returns the job accounting type from slurm_conf object
- * RET char *    - job accounting type,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_gather_type(void);
-
 /* slurm_get_jobacct_gather_params
  * returns the job accounting params from the slurm_conf object
  * RET char *    - job accounting params,  MUST be xfreed by caller
