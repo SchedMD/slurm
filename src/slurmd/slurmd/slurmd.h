@@ -144,7 +144,6 @@ typedef struct slurmd_config {
 
 	slurm_cred_ctx_t vctx;          /* slurm_cred_t verifier context   */
 
-	uint16_t	slurmd_timeout;	/* SlurmdTimeout                   */
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        acct_freq_task;
 	char           *job_acct_gather_freq;
