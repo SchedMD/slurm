@@ -182,13 +182,6 @@ char *slurm_get_mpi_params(void);
  */
 char *slurm_get_msg_aggr_params(void);
 
-/* slurm_api_set_default_config
- *	called by the send_controller_msg function to ensure that at least
- *	the compiled in default slurm_protocol_config object is initialized
- * RET int 		- return code
- */
-extern int slurm_api_set_default_config(void);
-
 /* slurm_api_clear_config
  * execute this only at program termination to free all memory */
 extern void slurm_api_clear_config(void);
