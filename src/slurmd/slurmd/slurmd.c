@@ -1049,8 +1049,6 @@ _read_config(void)
 	cf = slurm_conf_lock();
 	get_tmp_disk(&conf->tmp_disk_space, cf->tmp_fs);
 	_free_and_set(conf->tmpfs,    xstrdup(cf->tmp_fs));
-	_free_and_set(conf->health_check_program,
-		      xstrdup(cf->health_check_program));
 	_free_and_set(conf->pidfile,  xstrdup(cf->slurmd_pidfile));
 	_massage_pathname(&conf->pidfile);
 	_free_and_set(conf->plugstack,   xstrdup(cf->plugstack));
@@ -1085,7 +1083,6 @@ _read_config(void)
 		fatal("Unable to establish controller port");
 	conf->slurmd_timeout = cf->slurmd_timeout;
 	conf->kill_wait = cf->kill_wait;
-	conf->health_check_interval = cf->health_check_interval;
 	conf->job_acct_oom_kill = cf->job_acct_oom_kill;
 
 	slurm_mutex_unlock(&conf->config_mutex);
@@ -1259,7 +1256,7 @@ _print_conf(void)
 	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
 	debug3("Epilog      = `%s'",     cf->epilog);
 	debug3("Logfile     = `%s'",     cf->slurmd_logfile);
-	debug3("HealthCheck = `%s'",     conf->health_check_program);
+	debug3("HealthCheck = `%s'",     cf->health_check_program);
 	debug3("NodeName    = %s",       conf->node_name);
 	debug3("Port        = %u",       conf->port);
 	debug3("Prolog      = `%s'",     cf->prolog);
@@ -1319,7 +1316,6 @@ _destroy_conf(void)
 		xfree(conf->conf_server);
 		xfree(conf->conf_cache);
 		xfree(conf->cpu_spec_list);
-		xfree(conf->health_check_program);
 		xfree(conf->hostname);
 		if (conf->hwloc_xml) {
 			/*
@@ -2697,9 +2693,10 @@ extern int run_script_health_check(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (conf->health_check_program && (conf->health_check_interval != 0)) {
+	if (slurm_conf.health_check_program &&
+	    slurm_conf.health_check_interval) {
 		char *env[1] = { NULL };
-		rc = run_script("health_check", conf->health_check_program,
+		rc = run_script("health_check", slurm_conf.health_check_program,
 				0, 60, env, 0);
 	}
 

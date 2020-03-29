@@ -130,8 +130,6 @@ typedef struct slurmd_config {
 					 * syslog */
 	char         *spooldir;		/* SlurmdSpoolDir		   */
 	char         *pidfile;		/* PidFile location		   */
-	char         *health_check_program; /* run on RPC request or at start */
-	uint64_t     health_check_interval; /* Interval between runs       */
 	char         *tmpfs;		/* directory of tmp FS             */
 	char         *pubkey;		/* location of job cred public key */
 	char         *select_type;	/* SelectType                      */
