@@ -134,7 +134,6 @@ typedef struct slurmd_config {
 	int           lfd;		/* slurmd listen file descriptor   */
 	pid_t         pid;		/* server pid                      */
 	log_options_t log_opts;         /* current logging options         */
-	uint16_t      log_fmt;          /* Log file timestamp format flag  */
 	uint32_t      debug_level;	/* logging detail level            */
 	uint16_t      debug_level_set;	/* debug_level set on command line */
 	int	      boot_time:1;      /* Report node boot time now (-b)  */

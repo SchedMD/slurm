@@ -2157,7 +2157,6 @@ static void _update_logging(void)
 	if (!conf->debug_level_set && (cf->slurmd_debug != NO_VAL16))
 		conf->debug_level = cf->slurmd_debug;
 	conf->syslog_debug = cf->slurmd_syslog_debug;
-	conf->log_fmt = cf->log_fmt;
 	slurm_conf_unlock();
 
 	o->logfile_level = conf->debug_level;
@@ -2177,7 +2176,7 @@ static void _update_logging(void)
 		o->syslog_level = LOG_LEVEL_FATAL;
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
-	log_set_timefmt(conf->log_fmt);
+	log_set_timefmt(cf->log_fmt);
 
 	/*
 	 * If logging to syslog and running in

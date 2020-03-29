@@ -307,7 +307,7 @@ static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 	 * up in the log.
 	 */
 	log_alter(confl->log_opts, 0, confl->logfile);
-	log_set_timefmt(confl->log_fmt);
+	log_set_timefmt(slurm_conf.log_fmt);
 	debug2("debug level is %d.", confl->debug_level);
 
 	confl->acct_freq_task = NO_VAL16;
