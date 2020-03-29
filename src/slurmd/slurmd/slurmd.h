@@ -87,7 +87,6 @@ typedef struct slurmd_config {
 	char         ***argv;           /* pointer to argument vector      */
 	int          *argc;             /* pointer to argument count       */
 	Buf          buf;               /* packed version of this lite config */
-	char         *cluster_name; 	/* conf ClusterName		   */
 	char         *hostname;	 	/* local hostname		   */
 	char         *conf_server;	/* slurmctld to fetch config from  */
 	char         *conf_cache;	/* cache of slurm configs          */

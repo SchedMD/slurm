@@ -130,7 +130,7 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 
 	setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
 	setenvf(&env, "SLURM_CONF", "%s", conf->conffile);
-	setenvf(&env, "SLURM_CLUSTER_NAME", "%s", conf->cluster_name);
+	setenvf(&env, "SLURM_CLUSTER_NAME", "%s", slurm_conf.cluster_name);
 	setenvf(&env, "SLURM_JOB_ID", "%u", job_env->jobid);
 	setenvf(&env, "SLURM_JOB_UID", "%u", job_env->uid);
 	setenvf(&env, "SLURM_JOB_GID", "%u", job_env->gid);

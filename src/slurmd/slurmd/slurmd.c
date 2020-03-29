@@ -1050,7 +1050,6 @@ _read_config(void)
 
 	cf = slurm_conf_lock();
 	get_tmp_disk(&conf->tmp_disk_space, cf->tmp_fs);
-	_free_and_set(conf->cluster_name, xstrdup(cf->cluster_name));
 	_free_and_set(conf->epilog,   xstrdup(cf->epilog));
 	_free_and_set(conf->prolog,   xstrdup(cf->prolog));
 	_free_and_set(conf->tmpfs,    xstrdup(cf->tmp_fs));
@@ -1236,7 +1235,7 @@ _print_conf(void)
 	debug3("NodeName    = %s",       conf->node_name);
 	debug3("TopoAddr    = %s",       conf->node_topo_addr);
 	debug3("TopoPattern = %s",       conf->node_topo_pattern);
-	debug3("ClusterName = %s",       conf->cluster_name);
+	debug3("ClusterName = %s",       cf->cluster_name);
 	debug3("Confile     = `%s'",     conf->conffile);
 	debug3("Debug       = %d",       cf->slurmd_debug);
 	debug3("CPUs        = %-2u (CF: %2u, HW: %2u)",
@@ -1338,7 +1337,6 @@ _destroy_conf(void)
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
 		FREE_NULL_BUFFER(conf->buf);
-		xfree(conf->cluster_name);
 		xfree(conf->conffile);
 		xfree(conf->conf_server);
 		xfree(conf->conf_cache);
