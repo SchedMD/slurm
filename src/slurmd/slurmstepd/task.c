@@ -456,15 +456,9 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 		exit(1);
 	}
 
-	if (conf->task_prolog) {
-		char *my_prolog;
-		slurm_mutex_lock(&conf->config_mutex);
-		my_prolog = xstrdup(conf->task_prolog);
-		slurm_mutex_unlock(&conf->config_mutex);
+	if (slurm_conf.task_prolog)
 		_run_script_and_set_env("slurm task_prolog",
-					my_prolog, job);
-		xfree(my_prolog);
-	}
+					slurm_conf.task_prolog, job);
 	if (job->task_prolog) {
 		_run_script_and_set_env("user task_prolog",
 					job->task_prolog, job);

@@ -2120,15 +2120,10 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 						    job->task_epilog,
 						    job, 5, job->env);
 			}
-			if (conf->task_epilog) {
-				char *my_epilog;
-				slurm_mutex_lock(&conf->config_mutex);
-				my_epilog = xstrdup(conf->task_epilog);
-				slurm_mutex_unlock(&conf->config_mutex);
+			if (slurm_conf.task_epilog) {
 				_run_script_as_user("slurm task_epilog",
-						    my_epilog,
+						    slurm_conf.task_epilog,
 						    job, -1, job->env);
-				xfree(my_epilog);
 			}
 
 			if (spank_task_exit (job, t->id) < 0) {

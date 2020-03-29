@@ -1050,8 +1050,6 @@ _read_config(void)
 
 	cf = slurm_conf_lock();
 	get_tmp_disk(&conf->tmp_disk_space, cf->tmp_fs);
-	_free_and_set(conf->epilog,   xstrdup(cf->epilog));
-	_free_and_set(conf->prolog,   xstrdup(cf->prolog));
 	_free_and_set(conf->tmpfs,    xstrdup(cf->tmp_fs));
 	_free_and_set(conf->health_check_program,
 		      xstrdup(cf->health_check_program));
@@ -1059,8 +1057,6 @@ _read_config(void)
 	_massage_pathname(&conf->pidfile);
 	_free_and_set(conf->plugstack,   xstrdup(cf->plugstack));
 	_free_and_set(conf->select_type, xstrdup(cf->select_type));
-	_free_and_set(conf->task_prolog, xstrdup(cf->task_prolog));
-	_free_and_set(conf->task_epilog, xstrdup(cf->task_epilog));
 	_free_and_set(conf->pubkey,   path_pubkey);
 	_free_and_set(conf->x11_params, xstrdup(cf->x11_params));
 
@@ -1275,12 +1271,12 @@ _print_conf(void)
 
 	debug3("RealMemory  = %"PRIu64"",conf->real_memory_size);
 	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
-	debug3("Epilog      = `%s'",     conf->epilog);
+	debug3("Epilog      = `%s'",     cf->epilog);
 	debug3("Logfile     = `%s'",     cf->slurmd_logfile);
 	debug3("HealthCheck = `%s'",     conf->health_check_program);
 	debug3("NodeName    = %s",       conf->node_name);
 	debug3("Port        = %u",       conf->port);
-	debug3("Prolog      = `%s'",     conf->prolog);
+	debug3("Prolog      = `%s'",     cf->prolog);
 	debug3("TmpFS       = `%s'",     conf->tmpfs);
 	debug3("Public Cert = `%s'",     conf->pubkey);
 	debug3("Slurmstepd  = `%s'",     conf->stepd_loc);
@@ -1288,8 +1284,8 @@ _print_conf(void)
 	debug3("Syslog Debug  = %d",     cf->slurmd_syslog_debug);
 	debug3("Pid File    = `%s'",     conf->pidfile);
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
-	debug3("TaskProlog  = `%s'",     conf->task_prolog);
-	debug3("TaskEpilog  = `%s'",     conf->task_epilog);
+	debug3("TaskProlog  = `%s'",     cf->task_prolog);
+	debug3("TaskEpilog  = `%s'",     cf->task_epilog);
 	debug3("TaskPluginParam = %u",   conf->task_plugin_param);
 	debug3("Use PAM     = %u",       conf->use_pam);
 	slurm_conf_unlock();
@@ -1341,7 +1337,6 @@ _destroy_conf(void)
 		xfree(conf->conf_server);
 		xfree(conf->conf_cache);
 		xfree(conf->cpu_spec_list);
-		xfree(conf->epilog);
 		xfree(conf->health_check_program);
 		xfree(conf->hostname);
 		if (conf->hwloc_xml) {
@@ -1362,13 +1357,10 @@ _destroy_conf(void)
 		xfree(conf->node_topo_pattern);
 		xfree(conf->pidfile);
 		xfree(conf->plugstack);
-		xfree(conf->prolog);
 		xfree(conf->pubkey);
 		xfree(conf->select_type);
 		xfree(conf->spooldir);
 		xfree(conf->stepd_loc);
-		xfree(conf->task_prolog);
-		xfree(conf->task_epilog);
 		xfree(conf->tmpfs);
 		xfree(conf->x11_params);
 		xfree(conf->gres);

@@ -224,8 +224,6 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 	xfree(conf->node_topo_addr);
 	xfree(conf->node_topo_pattern);
 	xfree(conf->spooldir);
-	xfree(conf->task_epilog);
-	xfree(conf->task_prolog);
 	xfree(conf);
 #endif
 	info("done with job");

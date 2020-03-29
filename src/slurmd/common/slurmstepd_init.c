@@ -63,8 +63,6 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 	packstr(conf->spooldir, buffer);
 	packstr(conf->node_name, buffer);
 	packstr(conf->logfile, buffer);
-	packstr(conf->task_prolog, buffer);
-	packstr(conf->task_epilog, buffer);
 	packstr(conf->job_acct_gather_freq, buffer);
 	packstr(conf->job_acct_gather_type, buffer);
 	pack16(conf->propagate_prio, buffer);
@@ -114,8 +112,6 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 		safe_unpackstr_xmalloc(&conf->spooldir,    &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&conf->node_name,   &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&conf->logfile,     &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->task_prolog, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->task_epilog, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&conf->job_acct_gather_freq, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&conf->job_acct_gather_type, &uint32_tmp,
@@ -150,8 +146,6 @@ unpack_error:
 	xfree(conf->spooldir);
 	xfree(conf->node_name);
 	xfree(conf->logfile);
-	xfree(conf->task_prolog);
-	xfree(conf->task_epilog);
 	xfree(conf->node_topo_addr);
 	xfree(conf->node_topo_pattern);
 	xfree(conf->tmpfs);

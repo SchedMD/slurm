@@ -136,12 +136,8 @@ typedef struct slurmd_config {
 	uint64_t     health_check_interval; /* Interval between runs       */
 	char         *tmpfs;		/* directory of tmp FS             */
 	char         *pubkey;		/* location of job cred public key */
-	char         *epilog;		/* Path to Epilog script	   */
-	char         *prolog;		/* Path to prolog script           */
 	char         *select_type;	/* SelectType                      */
 	char         *stepd_loc;	/* slurmstepd path                 */
-	char         *task_prolog;	/* per-task prolog script          */
-	char         *task_epilog;	/* per-task epilog script          */
 	uint16_t      port;		/* local slurmd port               */
 	int           lfd;		/* slurmd listen file descriptor   */
 	pid_t         pid;		/* server pid                      */

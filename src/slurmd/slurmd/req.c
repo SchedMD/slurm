@@ -5378,7 +5378,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 						uid);
 	}
 
-	if ((nsteps == 0) && !conf->epilog) {
+	if ((nsteps == 0) && !slurm_conf.epilog) {
 		struct stat stat_buf;
 		if (conf->plugstack && (stat(conf->plugstack, &stat_buf) == 0))
 			have_spank = true;
@@ -5390,7 +5390,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 *    request. We need to send current switch state on AIX
 	 *    systems, so this bypass can not be used.
 	 */
-	if ((nsteps == 0) && !conf->epilog && !have_spank) {
+	if ((nsteps == 0) && !slurm_conf.epilog && !have_spank) {
 		debug4("sent ALREADY_COMPLETE");
 		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg(msg,
