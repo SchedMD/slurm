@@ -162,7 +162,6 @@ int _mpi_init (char *mpi_type)
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "mpi";
 	char *type = NULL;
-	int got_default = 0;
 
 	if (init_run && g_context)
 		return retval;
@@ -173,8 +172,7 @@ int _mpi_init (char *mpi_type)
 		goto done;
 
 	if (mpi_type == NULL) {
-		mpi_type = slurm_get_mpi_default();
-		got_default = 1;
+		mpi_type = slurm_conf.mpi_default;
 	} else if (!xstrcmp(mpi_type, "openmpi")) {
 		/*
 		 * The openmpi plugin has been equivalent to none for a while.
@@ -211,8 +209,6 @@ int _mpi_init (char *mpi_type)
 
 done:
 	xfree(type);
-	if (got_default)
-		xfree(mpi_type);
 	slurm_mutex_unlock( &context_lock );
 	return retval;
 }

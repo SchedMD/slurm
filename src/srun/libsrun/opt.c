@@ -1180,7 +1180,7 @@ static bool _opt_verify(void)
 	}
 
 	if (!sropt.mpi_type)
-		sropt.mpi_type = slurm_get_mpi_default();
+		sropt.mpi_type = xstrdup(slurm_conf.mpi_default);
 	if (mpi_hook_client_init(sropt.mpi_type) == SLURM_ERROR) {
 		error("invalid MPI type '%s', --mpi=list for acceptable types",
 		      sropt.mpi_type);

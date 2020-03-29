@@ -143,12 +143,6 @@ uint32_t slurm_get_epilog_msg_time(void);
  */
 extern uint32_t slurm_get_max_array_size(void);
 
-/* slurm_get_mpi_default
- * get default mpi value from slurm_conf object
- * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller
- */
-char *slurm_get_mpi_default(void);
-
 /* slurm_get_mpi_params
  * get mpi parameters value from slurm_conf object
  * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller
