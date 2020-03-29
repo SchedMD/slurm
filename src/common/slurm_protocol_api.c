@@ -1951,38 +1951,6 @@ char *slurm_get_srun_epilog(void)
 	return epilog;
 }
 
-/* slurm_get_task_epilog
- * RET task_epilog name, must be xfreed by caller */
-char *slurm_get_task_epilog(void)
-{
-	char *task_epilog = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		task_epilog = xstrdup(conf->task_epilog);
-		slurm_conf_unlock();
-	}
-	return task_epilog;
-}
-
-/* slurm_get_task_prolog
- * RET task_prolog name, must be xfreed by caller */
-char *slurm_get_task_prolog(void)
-{
-	char *task_prolog = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		task_prolog = xstrdup(conf->task_prolog);
-		slurm_conf_unlock();
-	}
-	return task_prolog;
-}
-
 /*  slurm_get_srun_port_range()
  */
 uint16_t *

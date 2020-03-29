@@ -625,14 +625,6 @@ char *slurm_get_srun_epilog(void);
  */
 uint16_t *slurm_get_srun_port_range(void);
 
-/* slurm_get_task_epilog
- * RET task_epilog name, must be xfreed by caller */
-char *slurm_get_task_epilog(void);
-
-/* slurm_get_task_prolog
- * RET task_prolog name, must be xfreed by caller */
-char *slurm_get_task_prolog(void);
-
 /* slurm_get_task_plugin
  * RET task_plugin name, must be xfreed by caller */
 char *slurm_get_task_plugin(void);
