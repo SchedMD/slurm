@@ -531,25 +531,6 @@ uint32_t slurm_get_priority_decay_hl(void)
 	return priority_hl;
 }
 
-/* slurm_get_priority_calc_period
- * returns the seconds between priority decay calculation from slurm_conf
- * RET uint32_t - calc_period in secs.
- */
-uint32_t slurm_get_priority_calc_period(void)
-{
-	uint32_t calc_period = NO_VAL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		calc_period = conf->priority_calc_period;
-		slurm_conf_unlock();
-	}
-
-	return calc_period;
-}
-
 /* slurm_get_priority_params
  * RET char * - Value of PriorityParameters, MUST be xfreed by caller */
 char *slurm_get_priority_params(void)

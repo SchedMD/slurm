@@ -270,12 +270,6 @@ uint16_t slurm_get_slurmctld_timeout(void);
  */
 uint32_t slurm_get_priority_decay_hl(void);
 
-/* slurm_get_priority_calc_period
- * returns the seconds between priority decay calculation from slurm_conf
- * RET uint32_t - calc_period in secs.
- */
-uint32_t slurm_get_priority_calc_period(void);
-
 /* slurm_get_priority_params
  * RET char * - Value of PriorityParameters, MUST be xfreed by caller */
 char *slurm_get_priority_params(void);

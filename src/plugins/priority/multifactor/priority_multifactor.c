@@ -1176,7 +1176,6 @@ static void *_decay_thread(void *no_data)
 {
 	time_t start_time = time(NULL);
 	time_t last_reset = 0, next_reset = 0;
-	uint32_t calc_period = slurm_get_priority_calc_period();
 	double decay_hl = (double)slurm_get_priority_decay_hl();
 	uint16_t reset_period = slurm_get_priority_reset_period();
 
@@ -1263,7 +1262,6 @@ static void *_decay_thread(void *no_data)
 			   flush the used time at a certain time
 			   set by PriorityUsageResetPeriod in the slurm.conf
 			*/
-			calc_period = slurm_get_priority_calc_period();
 			reset_period = slurm_get_priority_reset_period();
 			next_reset = 0;
 			decay_hl = (double)slurm_get_priority_decay_hl();
@@ -1364,7 +1362,7 @@ static void *_decay_thread(void *no_data)
 		running_decay = 0;
 
 		/* Sleep until the next time. */
-		abs.tv_sec += calc_period;
+		abs.tv_sec += slurm_conf.priority_calc_period;
 		slurm_cond_timedwait(&decay_cond, &decay_lock, &abs);
 		slurm_mutex_unlock(&decay_lock);
 
