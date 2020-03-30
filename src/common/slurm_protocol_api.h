@@ -585,9 +585,6 @@ char *slurm_get_srun_epilog(void);
  */
 uint16_t *slurm_get_srun_port_range(void);
 
-/* Get SchedulerTimeSlice (secs) */
-uint16_t slurm_get_time_slice(void);
-
 /* slurm_get_core_spec_plugin
  * RET core_spec plugin name, must be xfreed by caller */
 char *slurm_get_core_spec_plugin(void);

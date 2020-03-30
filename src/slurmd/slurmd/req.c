@@ -4871,7 +4871,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	DEF_TIMERS;
 
 	if (time_slice == -1)
-		time_slice = slurm_get_time_slice();
+		time_slice = slurm_conf.sched_time_slice;
 	if ((req->op != SUSPEND_JOB) && (req->op != RESUME_JOB)) {
 		error("REQUEST_SUSPEND_INT: bad op code %u", req->op);
 		rc = ESLURM_NOT_SUPPORTED;
