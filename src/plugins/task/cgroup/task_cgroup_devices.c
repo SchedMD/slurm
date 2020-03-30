@@ -283,7 +283,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		return SLURM_ERROR;
 	}
 
-	debug2("task/cgroup: manage devices jor job '%u'", jobid);
+	debug2("task/cgroup: manage devices for job '%u'", jobid);
 
 	/*
 	 * create user cgroup in the devices ns (it could already exist)
