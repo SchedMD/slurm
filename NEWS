@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix resetting of cloud_dns on a reconfigure.
  -- squeue - change output for dependency column to use "(null)" instead of ""
     for no dependncies as documented in the man page, and used by other columns.
+ -- Clear node_cnt_wag after job update.
 
 * Changes in Slurm 20.02.1
 ==========================
