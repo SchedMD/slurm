@@ -737,7 +737,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		msg->cpu_spec_list = xstrdup (res_abs_cpus);
 	msg->real_memory = conf->real_memory_size;
 	msg->tmp_disk    = conf->tmp_disk_space;
-	msg->hash_val    = slurm_get_hash_val();
+	msg->hash_val = slurm_conf.hash_val;
 	get_cpu_load(&msg->cpu_load);
 	get_free_mem(&msg->free_mem);
 

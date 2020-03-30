@@ -3114,7 +3114,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg,
 		/* do RPC call */
 		if (!(slurm_conf.debug_flags & DEBUG_FLAG_NO_CONF_HASH) &&
 		    (node_reg_stat_msg->hash_val != NO_VAL) &&
-		    (node_reg_stat_msg->hash_val != slurm_get_hash_val())) {
+		    (node_reg_stat_msg->hash_val != slurm_conf.hash_val)) {
 			error("Node %s appears to have a different slurm.conf "
 			      "than the slurmctld.  This could cause issues "
 			      "with communication and functionality.  "

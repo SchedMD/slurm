@@ -140,13 +140,6 @@ extern uint32_t slurm_get_max_array_size(void);
  */
 char *slurm_get_msg_aggr_params(void);
 
-/* slurm_get_hash_val
- * get hash val of the slurm.conf from slurm_conf object from
- * slurm_conf object
- * RET uint32_t  - hash_val
- */
-uint32_t slurm_get_hash_val(void);
-
 /* slurm_get_health_check_program
  * get health_check_program from slurm_conf object from
  * slurm_conf object
