@@ -43,7 +43,7 @@ set job_id      0
 set matches     0
 
 # job parameters
-set mem_size    1048576
+set mem_size    102400
 set sleep_time  32
 set ret_code    42
 set file_size   10485760
@@ -55,13 +55,12 @@ set step_id	0
 print_header $test_id
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+	log_warn "This test is incompatible with front-end systems"
+	exit $exit_code
 }
 if {![test_accting_steps]} {
-	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
-	send_user "(AccountingStorageEnforce)\n"
-	exit 0
+	log_warn "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
+	exit $exit_code
 }
 
 proc _get_mem {prog} {
@@ -72,7 +71,8 @@ proc _get_mem {prog} {
 	set ave_used -1
 	set exit_code 0
 
-	spawn $prog --noheader -p --job=$job_id.$step_id --format maxrss,maxrsstask,averss --noconvert
+	spawn $prog --noheader -p --job=$job_id.$step_id --format \
+		    maxrss,maxrsstask,averss --noconvert
 	expect {
 		-re "($number).($number).($number)" {
 			set mem_used  $expect_out(1,string)
@@ -85,7 +85,7 @@ proc _get_mem {prog} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: $prog not responding\n"
+			log_error "$prog not responding"
 			set exit_code 1
 		}
 		eof {
@@ -98,24 +98,25 @@ proc _get_mem {prog} {
 	}
 
 	if { $mem_used == -1 } {
-		send_user "\nFAILURE: $prog stat memory not found\n"
+		log_error "$prog stat memory not found"
 		return 1
 	} elseif { $mem_task != 0 } {
-		send_user "\nFAILURE: $prog stat memory task not zero\n"
+		log_error "$prog stat memory task not zero"
 		return 1
 	} elseif { ($ave_used * $num_tasks) < $mem_used } {
-		send_user "\nFAILURE: $prog stat ave memory not believable against max memory\n"
+		log_error "$prog stat ave memory not believable against max memory"
 		return 1
 	}
 	# Compute error in KB
 	set diff_mem [expr $mem_used - $mem_size]
 	set error_mem [expr abs($diff_mem)]
 	if {($mem_used < $mem_size) || ($error_mem > $max_mem_error)} {
-		send_user "\nFAILURE: $prog memory use discrepancy of $diff_mem KB\n"
-		send_user "  Wanted $mem_size KB, got $mem_used KB\n"
+		log_error [format "%s memory use discrepancy of %s KB (wanted %s KB, got %s KB)" \
+			   $prog $diff_mem $mem_size $mem_used]
 		return 1
 	} else {
-		send_user "\nSUCCESS: $prog memory use discrepancy of $error_mem KB\n"
+		log_info [format "SUCCESS: %s memory use discrepancy of %s KB" \
+			  $prog $error_mem]
 	}
 	return 0
 }
@@ -129,7 +130,9 @@ proc _get_file_size {prog} {
 	set max_disk_read   -1
 	set ave_disk_read   -1
 
-	spawn $prog --noheader -p --job=$job_id.$step_id --format MaxDiskWrite,AveDiskWrite,MaxDiskRead,AveDiskRead,MaxDiskWriteTask,MaxDiskReadTask --noconvert
+	spawn $prog --noheader -p --job=$job_id.$step_id --format \
+		    MaxDiskWrite,AveDiskWrite,MaxDiskRead,AveDiskRead,MaxDiskWriteTask,MaxDiskReadTask \
+		    --noconvert
 	expect {
 		-re  "($float)(\[MGT\]*).($float)(\[MGT\]*).($float)(\[MGT\]*).($float)(\[MGT\]*).($number).($number)" {
 			set max_disk_write    $expect_out(1,string)
@@ -143,13 +146,17 @@ proc _get_file_size {prog} {
 			set w_task            $expect_out(9,string)
 			set r_task            $expect_out(10,string)
 
-			set max_disk_write [scale_to_megs $max_disk_write $scale1]
-			set ave_disk_write [scale_to_megs $ave_disk_write $scale2]
-			set max_disk_read  [scale_to_megs $max_disk_read  $scale3]
-			set ave_disk_read  [scale_to_megs $ave_disk_read  $scale4]
+			set max_disk_write [scale_to_megs $max_disk_write \
+							  $scale1]
+			set ave_disk_write [scale_to_megs $ave_disk_write \
+							  $scale2]
+			set max_disk_read  [scale_to_megs $max_disk_read  \
+							  $scale3]
+			set ave_disk_read  [scale_to_megs $ave_disk_read  \
+							  $scale4]
 		}
 		timeout {
-			send_user "\nFAILURE: $prog not responding\n"
+			log_error "$prog not responding"
 			set exit_code 1
 		}
 		eof {
@@ -159,27 +166,27 @@ proc _get_file_size {prog} {
 
 	set mb_file_size [ expr ($file_size/(1024 * 1024)) ]
 	if { $max_disk_write == -1 } {
-		send_user "\nFAILURE: MaxDiskWrite not reported\n"
+		log_error "MaxDiskWrite not reported"
 		return 1
 	}
 	if { $ave_disk_write == -1 } {
-		send_user "\nFAILURE: AveDiskWrite not reported\n"
+		log_error "AveDiskWrite not reported"
 		return 1
 	}
 	if { $max_disk_read == -1 } {
-		send_user "\nFAILURE: MaxDiskRead not reported\n"
+		log_error "MaxDiskRead not reported"
 		return 1
 	}
 	if { $ave_disk_read == -1 } {
-		send_user "\nFAILURE: AveDiskRead not reported\n"
+		log_error "AveDiskRead not reported"
 		return 1
 	}
 	if { $w_task != 1 } {
-		send_user "\nFAILURE: MaxDiskWriteTask not 1\n"
+		log_error "MaxDiskWriteTask not 1"
 		return 1
 	}
 	if { $r_task != 2 } {
-		send_user "\nFAILURE: MaxDiskReadTask not 2\n"
+		log_error "MaxDiskReadTask not 2"
 		return 1
 	}
 
@@ -187,27 +194,21 @@ proc _get_file_size {prog} {
 	set diff_io [expr $max_disk_write - $max_disk_read]
 	set error_io [expr abs($diff_io)]
 	if { $error_io > 0.3 } {
-		send_user "\nFAILURE: written file size does not match read size "
-		send_user "file_size:$mb_file_size MB "
-		send_user "max_disk_write:$max_disk_write MB "
-		send_user "max_disk_read:$max_disk_read MB\n"
+		log_error [format "written file size does not match read size file_size:%s MB max_disk_write:%s MB max_disk_read:%s MB" \
+			   $mb_file_size $max_disk_write $max_disk_read]
 		return 1
 	}
 
 	set diff_io [expr $ave_disk_write - $ave_disk_read]
 	set error_io [expr abs($diff_io)]
 	if { $error_io > 0.3 } {
-		send_user "\nFAILURE: average written file size "
-		send_user "does not match average read size "
-		send_user "file_size:$mb_file_size MB "
-		send_user "ave_disk_write:$ave_disk_write MB "
-		send_user "ave_disk_read:$ave_disk_read MB\n"
+		log_error [format "average written file size does not match average read size file_size:%s MB ave_disk_write:%s MB ave_disk_read:%s MB" \
+			   $mb_file_size $ave_disk_write $ave_disk_read]
 		return 1
 	}
 
-	send_user "\nSUCCESS: $prog reported correct written and read file size\n"
-	send_user "file_size:$mb_file_size MB max_disk_write:$max_disk_write MB "
-	send_user "max_disk_read:$max_disk_read MB\n"
+	log_info [format "SUCCESS: %s reported correct written and read file size (file_size:%s MB max_disk_write:%s MB max_disk_read:%s MB)" \
+		  $prog $mb_file_size $max_disk_write $max_disk_read]
 
 	return 0
 }
@@ -238,11 +239,11 @@ expect {
 }
 log_user 1
 if {$supported_gather == 0} {
-	send_user "\nWARNING: Job accounting information not gathered on this system\n"
+	log_warn "Job accounting information not gathered on this system"
 	exit 0
 }
 if {$supported_storage == 0} {
-	send_user "\nWARNING: Job accounting information not stored on this system\n"
+	log_warn "Job accounting information not stored on this system"
 	exit 0
 }
 
@@ -266,7 +267,9 @@ make_bash_script $file_in "
 set config_prob 0
 set timeout [expr $max_job_delay + $sleep_time]
 set job_mem_limit [expr ($mem_size + $max_mem_error)  / 1024 + 10]
-set sbatch_pid [spawn $sbatch -n$num_tasks --mem-per-cpu=$job_mem_limit --output=$file_out --error=$file_err -t2 $file_in]
+set sbatch_pid [spawn $sbatch -n$num_tasks --mem-per-cpu=$job_mem_limit \
+			      --output=$file_out --error=$file_err -t2 \
+			      $file_in]
 expect {
 	-re "Requested node configuration is not available" {
 		set config_prob 1
@@ -277,7 +280,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		exit 1
 	}
@@ -286,11 +289,11 @@ expect {
 	}
 }
 if {$config_prob != 0} {
-	send_user "\nWARNING: Unable to test with current node configuration\n"
+	log_warn "Unable to test with current node configuration"
 	exit 0
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
+	log_error "batch submit failure"
 	exit 1
 }
 
@@ -298,7 +301,7 @@ if {$job_id == 0} {
 # Wait for job to run
 #
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: waiting for job to run\n"
+	log_error "waiting for job to run"
 	set exit_code 1
 }
 
@@ -317,7 +320,7 @@ if {[_get_file_size $sstat] != 0} {
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "waiting for job to complete"
 	set exit_code 1
 }
 
@@ -326,10 +329,16 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 sleep 10
 
+set expected_state "FAILED"
+if {[test_killonbadexit]} {
+	set expected_state "CANCELLED"
+	set ret_code "0:15"
+}
 #
 # Report basic sacct info
 #
-spawn $sacct --noheader -P --job=$job_id.$step_id --format jobid,jobname,state,exitcode --starttime=00:00
+spawn $sacct --noheader -P --job=$job_id.$step_id --format \
+	     jobid,jobname,state,exitcode --starttime=00:00
 expect {
 	-re "$job_id\.$step_id" {
 		incr matches
@@ -339,12 +348,12 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "FAILED" {
+	-re "$expected_state" {
 		incr matches
 		exp_continue
 	}
 	-re "COMPLETING" {
-		send_user "\nWARNING: Step in completing state rather than FAILED\n"
+		log_warn "Step in completing state rather than $expected_state"
 		incr matches
 		exp_continue
 	}
@@ -353,7 +362,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+		log_error "sacct not responding"
 		set exit_code 1
 	}
 	eof {
@@ -362,7 +371,7 @@ expect {
 }
 
 if {$matches < 4} {
-	send_user "\nFAILURE: sacct reporting failed ($matches < 4)\n"
+	log_error "sacct reporting failed ($matches < 4)"
 	set exit_code 1
 }
 
@@ -372,7 +381,8 @@ if {$matches < 4} {
 #   expected integer but got "08" (looks like invalid octal number)
 #
 set elapsed_time 0
-spawn $sacct --noheader -P --job=$job_id.$step_id --format elapsed  --starttime=00:00
+spawn $sacct --noheader -P --job=$job_id.$step_id --format elapsed \
+	     --starttime=00:00
 expect {
 	-re "($number):($number):(\[0-9\])(\[0-9\])" {
 		set hours $expect_out(1,string)
@@ -384,7 +394,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+		log_error "sacct not responding"
 		set exit_code 1
 	}
 	eof {
@@ -394,15 +404,16 @@ expect {
 set diff_time [expr $elapsed_time - $sleep_time]
 set error_time [expr abs($diff_time)]
 if {$error_time > $max_time_error} {
-	send_user "\nFAILURE: sacct elapsed time discrepancy of $error_time secs\n"
-	send_user "  Wanted $sleep_time secs, got $elapsed_time secs\n"
+	log_error [format "sacct elapsed time discrepancy of %s secs. Wanted %s secs, got %s secs" \
+		   $error_time $sleep_time $elapsed_time]
 	set exit_code 1
 } else {
-	send_user "\nSUCCESS: sacct elapsed time discrepancy of $error_time secs\n"
+	log_info "SUCCESS: sacct elapsed time discrepancy of $error_time secs"
 }
 
 set total_cpu 0
-spawn $sacct --noheader -P --job=$job_id.$step_id --format totalcpu --starttime=00:00
+spawn $sacct --noheader -P --job=$job_id.$step_id --format totalcpu \
+	     --starttime=00:00
 # Ignore the milliseconds portion
 expect {
 	-re "($number):(\[0-9\])(\[0-9\])" {
@@ -414,7 +425,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+		log_error "sacct not responding"
 		set exit_code 1
 	}
 	eof {
@@ -422,15 +433,17 @@ expect {
 	}
 }
 if {$total_cpu > $sleep_time} {
-	send_user "\nFAILURE: sacct reported an impossible TotalCPU time of $total_cpu secs\n"
-	send_user "  Has to be less than $sleep_time secs!\n"
+	log_error [format "sacct reported an impossible TotalCPU time of %s secs Has to be less than %s secs!" \
+		   $total_cpu $sleep_time]
 	set exit_code 1
 } else {
-	send_user "\nSUCCESS: sacct TotalCPU time looks reasonable ($total_cpu seconds)\n"
+	log_info [format "SUCCESS: sacct TotalCPU time looks reasonable (%s seconds)" \
+		  $total_cpu]
 }
 
 set min_cpu 0
-spawn $sacct --noheader -P --job=$job_id.$step_id --format mincpu --starttime=00:00
+spawn $sacct --noheader -P --job=$job_id.$step_id --format mincpu \
+	     --starttime=00:00
 expect {
 	-re "($number):($number):(\[0-9\])(\[0-9\])" {
 		set hours $expect_out(1,string)
@@ -442,7 +455,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+		log_error "sacct not responding"
 		set exit_code 1
 	}
 	eof {
@@ -450,11 +463,11 @@ expect {
 	}
 }
 if {$min_cpu > $sleep_time} {
-	send_user "\nFAILURE: sacct reported an impossible MinCPU time of $min_cpu secs\n"
-	send_user "  Has to be less than $sleep_time secs!\n"
+	log_error [format "sacct reported an impossible MinCPU time of %s secs. Has to be less than %s secs!" \
+		   $min_cpu $sleep_time]
 	set exit_code 1
 } else {
-	send_user "\nSUCCESS: sacct MinCPU time looks reasonable ($min_cpu seconds)\n"
+	log_info "SUCCESS: sacct MinCPU time looks reasonable ($min_cpu seconds)"
 }
 
 if {[_get_mem $sacct] != 0} {
@@ -467,6 +480,8 @@ if {[_get_file_size $sacct] != 0} {
 
 if {$exit_code == 0} {
 	exec rm -f $file_prog $file_in $file_out $file_err $file_name
-	send_user "\nSUCCESS\n"
+	print_success $test_id
+} else {
+	print_failure $test_id
 }
 exit $exit_code
