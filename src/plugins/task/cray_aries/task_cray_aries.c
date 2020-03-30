@@ -158,16 +158,13 @@ extern int init (void)
 {
 	debug("%s loaded.", plugin_name);
 
-	char *task_plugin = slurm_get_task_plugin();
-	char *task_cgroup = strstr(task_plugin, "cgroup");
-	char *task_cray = strstr(task_plugin, "cray");
+	char *task_cgroup = xstrstr(slurm_conf.task_plugin, "cgroup");
+	char *task_cray = xstrstr(slurm_conf.task_plugin, "cray");
 
 	if (!task_cgroup || !task_cray || (task_cgroup < task_cray)) {
 		fatal("task/cgroup must be used with, and listed after, "
 		      "task/cray in TaskPlugin");
 	}
-
-	xfree(task_plugin);
 
 #ifdef HAVE_NATIVE_CRAY
 	int rc;

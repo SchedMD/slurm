@@ -585,13 +585,6 @@ char *slurm_get_srun_epilog(void);
  */
 uint16_t *slurm_get_srun_port_range(void);
 
-/* slurm_get_task_plugin
- * RET task_plugin name, must be xfreed by caller */
-char *slurm_get_task_plugin(void);
-
-/* slurm_get_task_plugin_param */
-uint32_t slurm_get_task_plugin_param(void);
-
 /* Get SchedulerTimeSlice (secs) */
 uint16_t slurm_get_time_slice(void);
 

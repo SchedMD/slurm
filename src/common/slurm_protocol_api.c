@@ -1855,34 +1855,6 @@ slurm_get_srun_port_range(void)
 	return ports;	/* CLANG false positive */
 }
 
-/* slurm_get_task_plugin
- * RET task_plugin name, must be xfreed by caller */
-char *slurm_get_task_plugin(void)
-{
-	char *task_plugin = NULL;
-	slurm_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	task_plugin = xstrdup(conf->task_plugin);
-	slurm_conf_unlock();
-	return task_plugin;
-}
-
-/* slurm_get_task_plugin_param */
-uint32_t slurm_get_task_plugin_param(void)
-{
-	uint32_t task_plugin_param = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		task_plugin_param = conf->task_plugin_param;
-		slurm_conf_unlock();
-	}
-	return task_plugin_param;
-}
-
 /* Get SchedulerTimeSlice (secs) */
 uint16_t slurm_get_time_slice(void)
 {

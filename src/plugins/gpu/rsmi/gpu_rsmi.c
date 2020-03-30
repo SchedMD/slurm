@@ -41,6 +41,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/gres.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include <rocm_smi.h>
 
 /*
@@ -793,7 +794,6 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	bool task_cgroup = false;
 	bool constrained_devices = false;
 	bool cgroups_active = false;
-	char *task_plugin_type = NULL;
 
 	// Parse frequency information
 	debug2("_parse_gpu_freq(%s)", gpu_freq);
@@ -821,10 +821,8 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
 	// Check if task/cgroup plugin is loaded
-	task_plugin_type = slurm_get_task_plugin();
-	if (strstr(task_plugin_type, "cgroup"))
+	if (xstrstr(slurm_conf.task_plugin, "cgroup"))
 		task_cgroup = true;
-	xfree(task_plugin_type);
 
 	// If both of these are true, then GPUs will be constrained
 	if (constrained_devices && task_cgroup) {

@@ -456,7 +456,6 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 	bool task_cgroup = false;
 	bool constrained_devices = false;
 	bool cgroups_active = false;
-	char *task_plugin_type = NULL;
 
 	uint16_t i;
 
@@ -468,10 +467,8 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
 	// Check if task/cgroup plugin is loaded
-	task_plugin_type = slurm_get_task_plugin();
-	if (xstrstr(task_plugin_type, "cgroup"))
+	if (xstrstr(slurm_conf.task_plugin, "cgroup"))
 		task_cgroup = true;
-	xfree(task_plugin_type);
 
 	// If both of these are true, then GPUs will be constrained
 	if (constrained_devices && task_cgroup) {

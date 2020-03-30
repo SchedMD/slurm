@@ -1069,10 +1069,8 @@ static void _test_cgroup_plugin_use(void)
 {
 	char *plugins;
 
-	plugins = slurm_get_task_plugin();
-	if (xstrstr(plugins, "cgroup"))
+	if (xstrstr(slurm_conf.task_plugin, "cgroup"))
 		error("task/cgroup plugin will not work unless SlurmdUser is root");
-	xfree(plugins);
 
 	plugins = slurm_get_proctrack_type();
 	if (xstrstr(plugins, "cgroup"))

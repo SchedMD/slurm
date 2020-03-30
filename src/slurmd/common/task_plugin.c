@@ -44,6 +44,7 @@
 
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -115,12 +116,11 @@ extern int slurmd_task_init(void)
 	if ( g_task_context_num >= 0 )
 		goto done;
 
-	task_plugin_type = slurm_get_task_plugin();
 	g_task_context_num = 0; /* mark it before anything else */
-	if (task_plugin_type == NULL || task_plugin_type[0] == '\0')
+	if (!slurm_conf.task_plugin || !slurm_conf.task_plugin[0])
 		goto done;
 
-	task_plugin_list = task_plugin_type;
+	task_plugin_list = task_plugin_type = xstrdup(slurm_conf.task_plugin);
 	while ((type = strtok_r(task_plugin_list, ",", &last))) {
 		xrealloc(ops,
 			 sizeof(slurmd_task_ops_t) * (g_task_context_num + 1));
