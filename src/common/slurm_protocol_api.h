@@ -591,12 +591,6 @@ bool is_cray_select_type(void);
  */
 char *slurm_get_switch_type(void);
 
-/* slurm_get_wait_time
- * returns wait_time from slurm_conf object
- * RET uint16_t        - wait_time
- */
-uint16_t slurm_get_wait_time(void);
-
 /* slurm_get_srun_prolog
  * return the name of the srun prolog program
  * RET char *   - name of prolog program, must be xfreed by caller

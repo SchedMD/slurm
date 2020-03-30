@@ -1873,24 +1873,6 @@ char *slurm_get_switch_type(void)
 	return switch_type;
 }
 
-/* slurm_get_wait_time
- * returns wait_time from slurm_conf object
- * RET uint16_t	- wait_time
- */
-uint16_t slurm_get_wait_time(void)
-{
-	uint16_t wait_time = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		wait_time = conf->wait_time;
-		slurm_conf_unlock();
-	}
-	return wait_time;
-}
-
 /* slurm_get_srun_prolog
  * return the name of the srun prolog program
  * RET char *   - name of prolog program, must be xfreed by caller

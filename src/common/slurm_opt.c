@@ -4558,7 +4558,7 @@ static char *arg_get_wait_srun(slurm_opt_t *opt)
 static void arg_reset_wait_srun(slurm_opt_t *opt)
 {
 	if (opt->srun_opt)
-		opt->srun_opt->max_wait = slurm_get_wait_time();
+		opt->srun_opt->max_wait = slurm_conf.wait_time;
 }
 static slurm_cli_opt_t slurm_opt_wait_srun = {
 	.name = "wait",
