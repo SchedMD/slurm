@@ -13420,6 +13420,7 @@ fini:
 					slurm_conf.priority_flags, false);
 			set_job_tres_req_str(job_ptr, false);
 			update_accounting = true;
+			job_ptr->node_cnt_wag = 0;
 		}
 	}
 
