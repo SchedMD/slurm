@@ -995,25 +995,6 @@ char *slurm_get_node_features_plugins(void)
 	return knl_plugins;
 }
 
-/* slurm_get_slurmctld_plugstack
- * get slurmctld_plugstack from slurm_conf object from
- * slurm_conf object
- * RET char *   - slurmctld_plugstack, MUST be xfreed by caller
- */
-char *slurm_get_slurmctld_plugstack(void)
-{
-	char *slurmctld_plugstack = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		slurmctld_plugstack = xstrdup(conf->slurmctld_plugstack);
-		slurm_conf_unlock();
-	}
-	return slurmctld_plugstack;
-}
-
 /* slurm_get_slurmctld_timeout
  * get slurmctld_timeout from slurm_conf object from
  * slurm_conf object

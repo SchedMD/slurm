@@ -185,13 +185,6 @@ char *slurm_get_job_slurmctld_logfile(void);
  */
 char *slurm_get_node_features_plugins(void);
 
-/* slurm_get_slurmctld_plugstack
- * get slurmctld_plugstack from slurm_conf object from
- * slurm_conf object
- * RET char *   - slurmctld_plugstack, MUST be xfreed by caller
- */
-char *slurm_get_slurmctld_plugstack(void);
-
 /* slurm_get_slurmctld_timeout
  * get slurmctld_timeout from slurm_conf object from
  * slurm_conf object
