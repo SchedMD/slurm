@@ -178,10 +178,8 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 	}
 
 	if (job->flags & LAUNCH_MULTI_PROG) {
-		char *switch_type = slurm_get_switch_type();
-		if (!xstrcmp(switch_type, "switch/cray_aries"))
+		if (!xstrcmp(slurm_conf.switch_type, "switch/cray_aries"))
 			multi_prog_parse(job, gtid);
-		xfree(switch_type);
 		for (i = 0; i < job->node_tasks; i++){
 			multi_prog_get_argv(job->argv[1], job->env,
 					    gtid[node_id][i],

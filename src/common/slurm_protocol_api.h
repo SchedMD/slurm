@@ -573,12 +573,6 @@ void slurm_set_select_type_param(uint16_t select_type_param);
 /** Return true if (remote) system runs Cray XT/XE */
 bool is_cray_select_type(void);
 
-/* slurm_get_switch_type
- * get switch type from slurm_conf object
- * RET char *   - switch type, MUST be xfreed by caller
- */
-char *slurm_get_switch_type(void);
-
 /* slurm_get_srun_prolog
  * return the name of the srun prolog program
  * RET char *   - name of prolog program, must be xfreed by caller

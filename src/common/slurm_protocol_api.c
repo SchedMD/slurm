@@ -1822,21 +1822,6 @@ bool is_cray_select_type(void)
 	return result;
 }
 
-/* slurm_get_switch_type
- * get switch type from slurm_conf object
- * RET char *   - switch type, MUST be xfreed by caller
- */
-char *slurm_get_switch_type(void)
-{
-	char *switch_type = NULL;
-	slurm_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	switch_type = xstrdup(conf->switch_type);
-	slurm_conf_unlock();
-	return switch_type;
-}
-
 /* slurm_get_srun_prolog
  * return the name of the srun prolog program
  * RET char *   - name of prolog program, must be xfreed by caller
