@@ -44,6 +44,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_cred.h"
@@ -1084,7 +1085,6 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 	uint32_t siglen;
 	char *sig;
 	uint16_t *ports;
-	uint16_t eio_timeout;
 
 	cio = (client_io_t *)xmalloc(sizeof(client_io_t));
 	if (cio == NULL)
@@ -1109,8 +1109,7 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 	memcpy(cio->io_key, sig, siglen);
 	/* no need to free "sig", it is just a pointer into the credential */
 
-	eio_timeout = slurm_get_srun_eio_timeout();
-	cio->eio = eio_handle_create(eio_timeout);
+	cio->eio = eio_handle_create(slurm_conf.eio_timeout);
 
 	/* Compute number of listening sockets needed to allow
 	 * all of the slurmds to establish IO streams with srun, without

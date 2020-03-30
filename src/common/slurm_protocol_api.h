@@ -602,12 +602,6 @@ char *slurm_get_slurmd_spooldir(char *node_name);
  */
 char *slurm_get_layouts(void);
 
-/* slurm_get_srun_eio_timeout()
- *
- * Return the eio timeout for srun.
- */
-int16_t slurm_get_srun_eio_timeout(void);
-
 /* slurm_get_prolog_timeout()
  *
  * Return the timeout used for prolog/epilog

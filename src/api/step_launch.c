@@ -1142,12 +1142,10 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	eio_obj_t *obj;
 	int i, rc = SLURM_SUCCESS;
 	uint16_t *ports;
-	uint16_t eio_timeout;
 
 	debug("Entering _msg_thr_create()");
 
-	eio_timeout = slurm_get_srun_eio_timeout();
-	sls->msg_handle = eio_handle_create(eio_timeout);
+	sls->msg_handle = eio_handle_create(slurm_conf.eio_timeout);
 	sls->num_resp_port = _estimate_nports(num_nodes, 48);
 	sls->resp_port = xmalloc(sizeof(uint16_t) * sls->num_resp_port);
 
