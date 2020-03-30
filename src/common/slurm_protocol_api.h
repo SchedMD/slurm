@@ -290,12 +290,6 @@ extern char *slurm_get_power_parameters(void);
  */
 extern void slurm_set_power_parameters(char *power_parameters);
 
-/* slurm_get_power_plugin
- * returns the PowerPlugin from slurm_conf object
- * RET char *    - PowerPlugin, MUST be xfreed by caller
- */
-extern char *slurm_get_power_plugin(void);
-
 /* slurm_get_track_wckey
  * returns the value of track_wckey in slurm_conf object
  */
