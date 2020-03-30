@@ -145,10 +145,6 @@ extern uint32_t slurm_get_max_array_size(void);
  */
 char *slurm_get_msg_aggr_params(void);
 
-/* slurm_api_clear_config
- * execute this only at program termination to free all memory */
-extern void slurm_api_clear_config(void);
-
 /* slurm_get_hash_val
  * get hash val of the slurm.conf from slurm_conf object from
  * slurm_conf object

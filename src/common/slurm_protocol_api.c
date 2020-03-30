@@ -178,13 +178,6 @@ cleanup:
 	return proto_conf;
 }
 
-/* slurm_api_clear_config
- * execute this only at program termination to free all memory */
-void slurm_api_clear_config(void)
-{
-	slurm_conf_destroy();
-}
-
 /* slurm_get_cpu_freq_def
  * RET CpuFreqDef value from slurm.conf
  */

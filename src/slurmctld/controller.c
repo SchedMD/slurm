@@ -926,7 +926,6 @@ int main(int argc, char **argv)
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
 	slurm_cred_fini();	/* must be after ctx_destroy */
 	slurm_conf_destroy();
-	slurm_api_clear_config();
 	cluster_rec_free();
 	track_script_fini();
 	usleep(500000);
