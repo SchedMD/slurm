@@ -213,7 +213,7 @@ static int _kill_on_bad_exit(void)
 {
 	xassert(opt_save->srun_opt);
 	if (!opt_save || (opt_save->srun_opt->kill_bad_exit == NO_VAL))
-		return slurm_get_kill_on_bad_exit();
+		return slurm_conf.kill_on_bad_exit;
 	return opt_save->srun_opt->kill_bad_exit;
 }
 

@@ -231,23 +231,6 @@ uint64_t slurm_get_def_mem_per_cpu(void)
 	return mem_per_cpu;
 }
 
-/* slurm_get_kill_on_bad_exit
- * RET KillOnBadExit value from slurm.conf
- */
-uint16_t slurm_get_kill_on_bad_exit(void)
-{
-	uint16_t kill_on_bad_exit = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		kill_on_bad_exit = conf->kill_on_bad_exit;
-		slurm_conf_unlock();
-	}
-	return kill_on_bad_exit;
-}
-
 /* slurm_set_debug_flags
  */
 void slurm_set_debug_flags(uint64_t debug_flags)

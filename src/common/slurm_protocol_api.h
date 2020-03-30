@@ -113,11 +113,6 @@ void slurm_set_debug_flags(uint64_t debug_flags);
  */
 uint64_t slurm_get_def_mem_per_cpu(void);
 
-/* slurm_get_kill_on_bad_exit
- * RET KillOnBadExit value from slurm.conf
- */
-uint16_t slurm_get_kill_on_bad_exit(void);
-
 /* slurm_get_max_mem_per_cpu
  * RET MaxMemPerCPU/Node value from slurm.conf
  */
