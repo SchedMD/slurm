@@ -1463,8 +1463,12 @@ Also see \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBMaxMemPerNode\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
 
 NOTE: If a job specifies a memory per CPU limit that exceeds this system limit,
-that job's count of CPUs per task will automatically be increased. This may
-result in the job failing due to CPU count limits.
+that job's count of CPUs per task will try to automatically increase. This
+may result in the job failing due to CPU count limits. This auto-adjustment
+feature is a best-effort one and optimal assignment is not guaranteed due to the
+possibility of having heterogeneous configurations and multi-partition/qos jobs.
+If this is a concern it is advised to use a job submit LUA plugin instead to
+enforce auto-adjustments to your specific needs.
 
 .TP
 \fBMaxMemPerNode\fR
@@ -3208,9 +3212,14 @@ exists otherwise use the built\-in FIFO scheduler
 .TP
 \fBSelectType\fR
 Identifies the type of resource selection algorithm to be used.
-Changing this value can only be done by restarting the slurmctld daemon
-and will result in the loss of all job information (running and pending)
+Changing this value can only be done by restarting the slurmctld daemon.
+When changed, all job information (running and pending) will be lost,
 since the job state save format used by each plugin is different.
+The only exception to this is when changing from cons_res to cons_tres or from
+cons_tres to cons_res. However, if a job contains cons_tres-specific features
+and then SelectType is changed to cons_res, the job will be canceled, since
+there is no way for cons_res to satisfy requirements specific to cons_tres.
+
 Acceptable values include
 .RS
 .TP
