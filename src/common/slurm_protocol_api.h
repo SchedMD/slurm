@@ -99,11 +99,6 @@ int slurm_get_auth_ttl(void);
  */
 uint32_t slurm_get_control_cnt(void);
 
-/* slurm_get_complete_wait
- * RET CompleteWait value from slurm.conf
- */
-uint16_t slurm_get_complete_wait(void);
-
 /* slurm_get_cpu_freq_def
  * RET CpuFreqDef value from slurm.conf
  */
