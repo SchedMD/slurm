@@ -456,12 +456,6 @@ int slurm_set_jobcomp_port(uint32_t port);
  */
 uint16_t slurm_get_keep_alive_time(void);
 
-/* slurm_get_kill_wait
- * returns kill_wait from slurm_conf object
- * RET uint16_t        - kill_wait
- */
-uint16_t slurm_get_kill_wait(void);
-
 /* slurm_get_preempt_type
  * get PreemptType from slurm_conf object
  * RET char *   - preempt type, MUST be xfreed by caller

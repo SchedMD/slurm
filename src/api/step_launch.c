@@ -707,19 +707,17 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 				sls->abort_action_taken = true;
 			}
 			if (!time_set) {
-				uint16_t kill_wait;
 				/* Only set the time once, because we only want
 				 * to wait STEP_ABORT_TIME, no matter how many
 				 * times the condition variable is signaled.
 				 */
-				kill_wait = slurm_get_kill_wait();
 				ts.tv_sec = time(NULL) + STEP_ABORT_TIME
-					+ kill_wait;
+					+ slurm_conf.kill_wait;
 				time_set = true;
 				/* FIXME - should this be a callback? */
 				info("Job step aborted: Waiting up to "
 				     "%d seconds for job step to finish.",
-				     kill_wait + STEP_ABORT_TIME);
+				     slurm_conf.kill_wait + STEP_ABORT_TIME);
 			}
 
 			errnum = pthread_cond_timedwait(&sls->cond,

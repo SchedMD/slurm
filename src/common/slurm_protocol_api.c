@@ -1599,24 +1599,6 @@ uint16_t slurm_get_keep_alive_time(void)
 }
 
 
-/* slurm_get_kill_wait
- * returns kill_wait from slurm_conf object
- * RET uint16_t	- kill_wait
- */
-uint16_t slurm_get_kill_wait(void)
-{
-	uint16_t kill_wait = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		kill_wait = conf->kill_wait;
-		slurm_conf_unlock();
-	}
-	return kill_wait;
-}
-
 /* slurm_get_mcs_plugin
  * RET mcs_plugin name, must be xfreed by caller */
 char *slurm_get_mcs_plugin(void)
