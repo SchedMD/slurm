@@ -55,12 +55,12 @@ set step_id	0
 print_header $test_id
 
 if {[test_front_end]} {
-        log_warn "This test is incompatible with front-end systems"
-        exit $exit_code
+	log_warn "This test is incompatible with front-end systems"
+	exit $exit_code
 }
 if {![test_accting_steps]} {
 	log_warn "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
-	exit 0
+	exit $exit_code
 }
 
 proc _get_mem {prog} {
@@ -71,7 +71,8 @@ proc _get_mem {prog} {
 	set ave_used -1
 	set exit_code 0
 
-	spawn $prog --noheader -p --job=$job_id.$step_id --format maxrss,maxrsstask,averss --noconvert
+	spawn $prog --noheader -p --job=$job_id.$step_id --format \
+		    maxrss,maxrsstask,averss --noconvert
 	expect {
 		-re "($number).($number).($number)" {
 			set mem_used  $expect_out(1,string)
@@ -110,10 +111,12 @@ proc _get_mem {prog} {
 	set diff_mem [expr $mem_used - $mem_size]
 	set error_mem [expr abs($diff_mem)]
 	if {($mem_used < $mem_size) || ($error_mem > $max_mem_error)} {
-		log_error "$prog memory use discrepancy of $diff_mem KB (wanted $mem_size KB, got $mem_used KB)"
+		log_error [format "%s memory use discrepancy of %s KB (wanted %s KB, got %s KB)" \
+			   $prog $diff_mem $mem_size $mem_used]
 		return 1
 	} else {
-		log_info "SUCCESS: $prog memory use discrepancy of $error_mem KB"
+		log_info [format "SUCCESS: %s memory use discrepancy of %s KB" \
+			  $prog $error_mem]
 	}
 	return 0
 }
@@ -127,7 +130,9 @@ proc _get_file_size {prog} {
 	set max_disk_read   -1
 	set ave_disk_read   -1
 
-	spawn $prog --noheader -p --job=$job_id.$step_id --format MaxDiskWrite,AveDiskWrite,MaxDiskRead,AveDiskRead,MaxDiskWriteTask,MaxDiskReadTask --noconvert
+	spawn $prog --noheader -p --job=$job_id.$step_id --format \
+		    MaxDiskWrite,AveDiskWrite,MaxDiskRead,AveDiskRead,MaxDiskWriteTask,MaxDiskReadTask \
+		    --noconvert
 	expect {
 		-re  "($float)(\[MGT\]*).($float)(\[MGT\]*).($float)(\[MGT\]*).($float)(\[MGT\]*).($number).($number)" {
 			set max_disk_write    $expect_out(1,string)
@@ -141,10 +146,14 @@ proc _get_file_size {prog} {
 			set w_task            $expect_out(9,string)
 			set r_task            $expect_out(10,string)
 
-			set max_disk_write [scale_to_megs $max_disk_write $scale1]
-			set ave_disk_write [scale_to_megs $ave_disk_write $scale2]
-			set max_disk_read  [scale_to_megs $max_disk_read  $scale3]
-			set ave_disk_read  [scale_to_megs $ave_disk_read  $scale4]
+			set max_disk_write [scale_to_megs $max_disk_write \
+							  $scale1]
+			set ave_disk_write [scale_to_megs $ave_disk_write \
+							  $scale2]
+			set max_disk_read  [scale_to_megs $max_disk_read  \
+							  $scale3]
+			set ave_disk_read  [scale_to_megs $ave_disk_read  \
+							  $scale4]
 		}
 		timeout {
 			log_error "$prog not responding"
@@ -185,18 +194,21 @@ proc _get_file_size {prog} {
 	set diff_io [expr $max_disk_write - $max_disk_read]
 	set error_io [expr abs($diff_io)]
 	if { $error_io > 0.3 } {
-		log_error "written file size does not match read size file_size:$mb_file_size MB max_disk_write:$max_disk_write MB max_disk_read:$max_disk_read MB"
+		log_error [format "written file size does not match read size file_size:%s MB max_disk_write:%s MB max_disk_read:%s MB" \
+			   $mb_file_size $max_disk_write $max_disk_read]
 		return 1
 	}
 
 	set diff_io [expr $ave_disk_write - $ave_disk_read]
 	set error_io [expr abs($diff_io)]
 	if { $error_io > 0.3 } {
-		log_error "average written file size does not match average read size file_size:$mb_file_size MB ave_disk_write:$ave_disk_write MB ave_disk_read:$ave_disk_read MB"
+		log_error [format "average written file size does not match average read size file_size:%s MB ave_disk_write:%s MB ave_disk_read:%s MB" \
+			   $mb_file_size $ave_disk_write $ave_disk_read]
 		return 1
 	}
 
-	log_info "SUCCESS: $prog reported correct written and read file size (file_size:$mb_file_size MB max_disk_write:$max_disk_write MB max_disk_read:$max_disk_read MB)"
+	log_info [format "SUCCESS: %s reported correct written and read file size (file_size:%s MB max_disk_write:%s MB max_disk_read:%s MB)" \
+		  $prog $mb_file_size $max_disk_write $max_disk_read]
 
 	return 0
 }
@@ -255,7 +267,9 @@ make_bash_script $file_in "
 set config_prob 0
 set timeout [expr $max_job_delay + $sleep_time]
 set job_mem_limit [expr ($mem_size + $max_mem_error)  / 1024 + 10]
-set sbatch_pid [spawn $sbatch -n$num_tasks --mem-per-cpu=$job_mem_limit --output=$file_out --error=$file_err -t2 $file_in]
+set sbatch_pid [spawn $sbatch -n$num_tasks --mem-per-cpu=$job_mem_limit \
+			      --output=$file_out --error=$file_err -t2 \
+			      $file_in]
 expect {
 	-re "Requested node configuration is not available" {
 		set config_prob 1
@@ -323,7 +337,8 @@ if {[test_killonbadexit]} {
 #
 # Report basic sacct info
 #
-spawn $sacct --noheader -P --job=$job_id.$step_id --format jobid,jobname,state,exitcode --starttime=00:00
+spawn $sacct --noheader -P --job=$job_id.$step_id --format \
+	     jobid,jobname,state,exitcode --starttime=00:00
 expect {
 	-re "$job_id\.$step_id" {
 		incr matches
@@ -366,7 +381,8 @@ if {$matches < 4} {
 #   expected integer but got "08" (looks like invalid octal number)
 #
 set elapsed_time 0
-spawn $sacct --noheader -P --job=$job_id.$step_id --format elapsed  --starttime=00:00
+spawn $sacct --noheader -P --job=$job_id.$step_id --format elapsed \
+	     --starttime=00:00
 expect {
 	-re "($number):($number):(\[0-9\])(\[0-9\])" {
 		set hours $expect_out(1,string)
@@ -388,14 +404,16 @@ expect {
 set diff_time [expr $elapsed_time - $sleep_time]
 set error_time [expr abs($diff_time)]
 if {$error_time > $max_time_error} {
-	log_error "sacct elapsed time discrepancy of $error_time secs. Wanted $sleep_time secs, got $elapsed_time secs"
+	log_error [format "sacct elapsed time discrepancy of %s secs. Wanted %s secs, got %s secs" \
+		   $error_time $sleep_time $elapsed_time]
 	set exit_code 1
 } else {
 	log_info "SUCCESS: sacct elapsed time discrepancy of $error_time secs"
 }
 
 set total_cpu 0
-spawn $sacct --noheader -P --job=$job_id.$step_id --format totalcpu --starttime=00:00
+spawn $sacct --noheader -P --job=$job_id.$step_id --format totalcpu \
+	     --starttime=00:00
 # Ignore the milliseconds portion
 expect {
 	-re "($number):(\[0-9\])(\[0-9\])" {
@@ -415,14 +433,17 @@ expect {
 	}
 }
 if {$total_cpu > $sleep_time} {
-	log_error "sacct reported an impossible TotalCPU time of $total_cpu secs Has to be less than $sleep_time secs!"
+	log_error [format "sacct reported an impossible TotalCPU time of %s secs Has to be less than %s secs!" \
+		   $total_cpu $sleep_time]
 	set exit_code 1
 } else {
-	log_info "SUCCESS: sacct TotalCPU time looks reasonable ($total_cpu seconds)"
+	log_info [format "SUCCESS: sacct TotalCPU time looks reasonable (%s seconds)" \
+		  $total_cpu]
 }
 
 set min_cpu 0
-spawn $sacct --noheader -P --job=$job_id.$step_id --format mincpu --starttime=00:00
+spawn $sacct --noheader -P --job=$job_id.$step_id --format mincpu \
+	     --starttime=00:00
 expect {
 	-re "($number):($number):(\[0-9\])(\[0-9\])" {
 		set hours $expect_out(1,string)
@@ -442,7 +463,8 @@ expect {
 	}
 }
 if {$min_cpu > $sleep_time} {
-	log_error "sacct reported an impossible MinCPU time of $min_cpu secs. Has to be less than $sleep_time secs!"
+	log_error [format "sacct reported an impossible MinCPU time of %s secs. Has to be less than %s secs!" \
+		   $min_cpu $sleep_time]
 	set exit_code 1
 } else {
 	log_info "SUCCESS: sacct MinCPU time looks reasonable ($min_cpu seconds)"
