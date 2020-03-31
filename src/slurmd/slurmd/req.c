@@ -945,12 +945,19 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	int		tasks_to_launch = req->tasks_to_launch[node_id];
 	uint32_t	job_cpus = 0, step_cpus = 0;
 
-	if (user_ok && (req->flags & LAUNCH_NO_ALLOC)) {
-		/* If we didn't allocate then the cred isn't valid, just skip
-		 * checking.  This is only cool for root or SlurmUser */
-		debug("%s: FYI, user %d is an authorized user running outside of an allocation.",
-		      __func__, auth_uid);
-		return SLURM_SUCCESS;
+	if (req->flags & LAUNCH_NO_ALLOC) {
+		if (user_ok) {
+			/* If we didn't allocate then the cred isn't valid, just
+			 * skip checking. Only cool for root or SlurmUser */
+			debug("%s: FYI, user %u is an authorized user running outside of an allocation",
+			      __func__, auth_uid);
+			return SLURM_SUCCESS;
+		} else {
+			error("%s: User %u is NOT authorized to run a job outside of an allocation",
+			      __func__, auth_uid);
+			slurm_seterrno(ESLURM_ACCESS_DENIED);
+			return SLURM_ERROR;
+		}
 	}
 
 	/*

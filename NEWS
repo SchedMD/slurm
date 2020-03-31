@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
     spank plugin was loaded in slurmd context.
  -- Fix regression preventing SLURM_HINT=nomultithread from being used
     to set defaults for salloc->srun, sbatch->srun sequence.
+ -- Reject job credential if non-superuser sets the LAUNCH_NO_ALLOC flag.
 
 * Changes in Slurm 20.11.2
 ==========================
