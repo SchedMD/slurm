@@ -89,6 +89,8 @@ documents those changes that are of interest to users and administrators.
  -- Don't display MailUser/MailType in scontrol show jobs if mail won't be sent.
  -- Throw an error and ignore CpuSpecList if it cannot be translated to bitmap
     of number of CPUs size.
+ -- Validate at submission that --hint is mutully exclusive with --cpu-bind,
+    --ntasks-per-core, --threads-per-core or -B.
 
 * Changes in Slurm 20.02.6
 ==========================
