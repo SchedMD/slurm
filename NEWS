@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
  -- Cray - Fix hetjobs when using only a single component in the step launch.
  -- Cray - Fix hetjobs launched without component 0.
  -- Cray - Quiet cookies missing message which is expected on for hetjobs.
+ -- Fix handling of -m/--distribution options for across socket/2nd level by
+    task/affinity plugin.
 
 * Changes in Slurm 20.02.1
 ==========================
@@ -186,6 +188,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 19.05.7
 ==========================
+ -- Fix handling of -m/--distribution options for across socket/2nd level by
+    task/affinity plugin.
 
 * Changes in Slurm 19.05.6
 ==========================
