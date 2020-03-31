@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
     for no dependncies as documented in the man page, and used by other columns.
  -- Clear node_cnt_wag after job update.
  -- Fix regression where AccountingStoreJobComment was not defaulting to 'yes'.
+ -- Send registration message immediately after a node is resumed.
 
 * Changes in Slurm 20.02.1
 ==========================

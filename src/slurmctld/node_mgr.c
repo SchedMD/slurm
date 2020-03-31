@@ -1360,6 +1360,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 #endif
 					node_ptr->last_response = MAX(now,
 						node_ptr->last_response);
+					node_ptr->boot_time = 0;
 					ping_nodes_now = true;
 				} else if (IS_NODE_FUTURE(node_ptr)) {
 					if (node_ptr->port == 0) {
@@ -1380,6 +1381,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 						node_ptr->last_response =
 							MAX(now,
 							node_ptr->last_response);
+						node_ptr->boot_time = 0;
 						ping_nodes_now = true;
 					} else {
 						error("slurm_set_addr failure "
