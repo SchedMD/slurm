@@ -107,6 +107,7 @@ bool srun_shutdown  = false;
 int sig_array[] = {
 	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0 };
+bitstr_t *g_het_grp_bits = NULL;
 
 typedef struct _launch_app_data
 {
@@ -556,7 +557,13 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 						    sizeof(uint32_t *));
 			memcpy(job->het_job_tids, tmp_tids,
 			       sizeof(uint32_t *) * job->het_job_nnodes);
-			job->het_job_node_list = xstrdup(job->nodelist);
+
+			(void) slurm_step_ctx_get(job->step_ctx,
+						  SLURM_STEP_CTX_NODE_LIST,
+						  &job->het_job_node_list);
+			if (!job->het_job_node_list)
+				fatal("%s: job %u has NULL hostname",
+				      __func__, job->jobid);
 
 			job->het_job_tid_offsets = xcalloc(job->ntasks,
 							   sizeof(uint32_t));

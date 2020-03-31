@@ -70,7 +70,7 @@ extern bool	srun_max_timer;
 extern bool	srun_shutdown;
 extern bool	tres_bind_err_log;
 extern bool	tres_freq_err_log;
-
+extern bitstr_t *g_het_grp_bits;
 /*
  * process options:
  * 1. set defaults

@@ -284,8 +284,12 @@ static void _remove_cookie(int32_t cookie_id)
 		}
 	}
 	if (!found) {
-		CRAY_INFO("Cookie %"PRId32" not found in tracked cookie list",
-			  cookie_id);
+		/*
+		 * For a hetstep we release the same cookies multiple times, so
+		 * they will not exist after the first time they are released.
+		 */
+		CRAY_DEBUG("Cookie %"PRId32" not found in tracked cookie list",
+			   cookie_id);
 	}
 
 	// Unlock the mutex
