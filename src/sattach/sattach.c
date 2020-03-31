@@ -137,6 +137,9 @@ int sattach(int argc, char **argv)
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
 	}
+
+	slurm_conf_init(NULL);
+
 	if (xstrcmp(slurm_conf.launch_type, "launch/slurm")) {
 		error("sattach does not support LaunchType=%s",
 		      slurm_conf.launch_type);
