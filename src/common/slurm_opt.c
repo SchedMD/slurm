@@ -5461,3 +5461,22 @@ extern void validate_memory_options(slurm_opt_t *opt)
 		fatal("SLURM_MEM_PER_CPU, SLURM_MEM_PER_GPU, and SLURM_MEM_PER_NODE are mutually exclusive.");
 	}
 }
+
+extern void validate_hint_option(slurm_opt_t *opt)
+{
+	if (slurm_option_set_by_cli(opt, LONG_OPT_HINT) &&
+	    (slurm_option_set_by_cli(opt, LONG_OPT_NTASKSPERCORE) ||
+	     slurm_option_set_by_cli(opt, LONG_OPT_THREADSPERCORE)) ) {
+		fatal("--hint cannot be used together with --ntasks-per-core or --threads-per-core.");
+	} else if (slurm_option_set_by_cli(opt, LONG_OPT_HINT)) {
+		slurm_option_reset(opt, "ntasks-per-core");
+		slurm_option_reset(opt, "threads-per-core");
+	} else if (slurm_option_set_by_cli(opt, LONG_OPT_NTASKSPERCORE) ||
+		   slurm_option_set_by_cli(opt, LONG_OPT_THREADSPERCORE)) {
+		slurm_option_reset(opt, "hint");
+	} else if (slurm_option_set_by_env(opt, LONG_OPT_HINT) &&
+		   (slurm_option_set_by_env(opt, LONG_OPT_NTASKSPERCORE) ||
+		    slurm_option_set_by_env(opt, LONG_OPT_THREADSPERCORE))) {
+		fatal("Environment variables set --hint together with --ntasks-per-core or --nthreads-per-core. This combination is not allowed.");
+	}
+}

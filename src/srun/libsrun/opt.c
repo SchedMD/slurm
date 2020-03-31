@@ -929,10 +929,12 @@ static bool _opt_verify(void)
 			opt.nodes_set = false;
 	}
 
-	if (opt.hint &&
-	    (!(sropt.cpu_bind_type & ~CPU_BIND_VERBOSE)) &&
-	    (opt.ntasks_per_core == NO_VAL) &&
-	    (opt.threads_per_core == NO_VAL)) {
+	validate_hint_option(&opt);
+	if (opt.hint) {
+		if(sropt.cpu_bind_type & ~CPU_BIND_VERBOSE)
+		       fatal("--hint and --cpu-bind (other than --cpu-bind=verbose) are mutually exclusive.");
+		xassert(opt.ntasks_per_core == NO_VAL);
+		xassert(opt.threads_per_core == NO_VAL);
 		if (verify_hint(opt.hint,
 				&opt.sockets_per_node,
 				&opt.cores_per_socket,
