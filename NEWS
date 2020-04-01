@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix handling of -m/--distribution options for across socket/2nd level by
     task/affinity plugin.
  -- Fix grp_node_bitmap error when slurmctld started before slurmdbd.
+ -- Fix scheduling issue when there are not enough nodes available to run a job
+    resulting in possible job starvation.
 
 * Changes in Slurm 20.02.1
 ==========================
