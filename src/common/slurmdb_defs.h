@@ -298,4 +298,12 @@ extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec);
 extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond);
 extern int slurmdb_job_sort_by_submit_time(void *v1, void *v2);
 
+/*
+ * Merge bitmap2 into bitmap1 creating it if it doesn't exist.
+ * Also add counts from job_cnt2 (if NULL then just add 1) to job_cnt1.
+ */
+extern void slurmdb_merge_grp_node_usage(bitstr_t **grp_node_bitmap1,
+					 uint16_t **grp_node_job_cnt1,
+					 bitstr_t *grp_node_bitmap2,
+					 uint16_t *grp_node_job_cnt2);
 #endif
