@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Cray - Quiet cookies missing message which is expected on for hetjobs.
  -- Fix handling of -m/--distribution options for across socket/2nd level by
     task/affinity plugin.
+ -- Fix grp_node_bitmap error when slurmctld started before slurmdbd.
 
 * Changes in Slurm 20.02.1
 ==========================
@@ -180,6 +181,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix handling of -m/--distribution options for across socket/2nd level by
     task/affinity plugin.
+ -- Fix grp_node_bitmap error when slurmctld started before slurmdbd.
 
 * Changes in Slurm 19.05.6
 ==========================
