@@ -76,7 +76,7 @@ extern void *rpc_mgr(void *no_data)
 	master_thread_id = pthread_self();
 
 	/* initialize port for RPCs */
-	if ((sockfd = slurm_init_msg_engine_port(get_dbd_port()))
+	if ((sockfd = slurm_init_msg_engine_port(slurmdbd_conf->dbd_port))
 	    == SLURM_ERROR)
 		fatal("slurm_init_msg_engine_port error %m");
 

@@ -697,17 +697,6 @@ extern void log_config(void)
 	debug2("TrackSlurmctldDown= %u", slurmdbd_conf->track_ctld);
 }
 
-/* Return the DbdPort value */
-extern uint16_t get_dbd_port(void)
-{
-	uint16_t port;
-
-	slurm_mutex_lock(&conf_mutex);
-	port = slurmdbd_conf->dbd_port;
-	slurm_mutex_unlock(&conf_mutex);
-	return port;
-}
-
 /* Dump the configuration in name,value pairs for output to
  *	"statsmgr show config", caller must call list_destroy() */
 extern List dump_config(void)
