@@ -114,10 +114,6 @@ extern void free_slurmdbd_conf(void);
 /* Return the DbdPort value */
 extern uint16_t get_dbd_port(void);
 
-/* lock and unlock the dbd_conf */
-extern void slurmdbd_conf_lock(void);
-extern void slurmdbd_conf_unlock(void);
-
 /* Log the current configuration using verbose() */
 extern void log_config(void);
 

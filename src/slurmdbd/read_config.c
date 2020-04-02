@@ -708,17 +708,6 @@ extern uint16_t get_dbd_port(void)
 	return port;
 }
 
-extern void slurmdbd_conf_lock(void)
-{
-	slurm_mutex_lock(&conf_mutex);
-}
-
-extern void slurmdbd_conf_unlock(void)
-{
-	slurm_mutex_unlock(&conf_mutex);
-}
-
-
 /* Dump the configuration in name,value pairs for output to
  *	"statsmgr show config", caller must call list_destroy() */
 extern List dump_config(void)
