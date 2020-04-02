@@ -39,6 +39,17 @@ set job_id           0
 
 print_header $test_id
 
+proc end_it {} {
+	global exit_code test_id
+
+	if {$exit_code == 0} {
+		print_success $test_id
+	} else {
+		print_failure $test_id
+	}
+	exit $exit_code
+}
+
 #
 # Set target environment variables
 #
@@ -79,7 +90,8 @@ expect {
 
 if {$job_id == 0} {
 	log_error "job_id not found"
-	exit 1
+	set exit_code 1
+	end_it
 }
 
 set timeout 5
@@ -118,9 +130,4 @@ if {$matches != 2} {
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	print_success $test_id
-} else {
-	print_failure $test_id
-}
-exit $exit_code
+end_it
