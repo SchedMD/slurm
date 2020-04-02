@@ -65,7 +65,7 @@ expect {
 		#send_user "Job initiated\n"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -100,7 +100,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		send_user "\nFAILURE: scontrol not responding\n"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
