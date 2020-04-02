@@ -13586,8 +13586,19 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				   job_specs->licenses, job_ptr);
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = xstrdup(job_specs->licenses);
-		} else if (IS_JOB_RUNNING(job_ptr) &&
-			   (operator || (license_list == NULL))) {
+		} else if (IS_JOB_RUNNING(job_ptr)) {
+			/*
+			 * Operators can modify license counts on running jobs,
+			 * regular users can only completely remove license
+			 * counts on running jobs.
+			 */
+			if (!operator && license_list) {
+				sched_error("%s: Not operator user: ignore licenses change for %pJ",
+					    __func__, job_ptr);
+				error_code = ESLURM_ACCESS_DENIED;
+				goto fini;
+			}
+
 			/*
 			 * NOTE: This can result in oversubscription of
 			 * licenses
