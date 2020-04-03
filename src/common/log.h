@@ -281,35 +281,37 @@ extern void fatal(const char *, ...)
 int	error(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	info(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
-#define debug(fmt, ...)						\
-	do {								\
-		if (get_log_level() >= LOG_LEVEL_DEBUG)			\
-			log_var(LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__);	\
+
+#define format_print(l, fmt, ...)			\
+	if (get_log_level() >= l)			\
+		log_var(l, fmt, ##__VA_ARGS__);
+
+#define debug(fmt, ...)		\
+	do {			\
+	format_print(LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__);\
 	} while (0)
-#define debug2(fmt, ...)						\
-	do {								\
-		if (get_log_level() >= LOG_LEVEL_DEBUG2)		\
-			log_var(LOG_LEVEL_DEBUG2, fmt, ##__VA_ARGS__);	\
+
+#define debug2(fmt, ...)	\
+	do {			\
+	format_print(LOG_LEVEL_DEBUG2, fmt, ##__VA_ARGS__);\
 	} while (0)
-/*
- * Debug levels higher than debug3 are not written to stderr in the
- * slurmstepd process after stderr is connected back to the client (srun).
- */
-#define debug3(fmt, ...)						\
-	do {								\
-		if (get_log_level() >= LOG_LEVEL_DEBUG3)		\
-			log_var(LOG_LEVEL_DEBUG3, fmt, ##__VA_ARGS__);	\
+
+#define debug3(fmt, ...)	\
+	do {			\
+	format_print(LOG_LEVEL_DEBUG3, fmt, ##__VA_ARGS__);\
 	} while (0)
-#define debug4(fmt, ...)						\
-	do {								\
-		if (get_log_level() >= LOG_LEVEL_DEBUG4)		\
-			log_var(LOG_LEVEL_DEBUG4, fmt, ##__VA_ARGS__);	\
+
+#define debug4(fmt, ...)	\
+	do {			\
+	format_print(LOG_LEVEL_DEBUG4, fmt, ##__VA_ARGS__);\
 	} while (0)
-#define debug5(fmt, ...)						\
-	do {								\
-		if (get_log_level() >= LOG_LEVEL_DEBUG5)		\
-			log_var(LOG_LEVEL_DEBUG5, fmt, ##__VA_ARGS__);	\
+
+#define debug5(fmt, ...)	\
+	do {			\
+	format_print(LOG_LEVEL_DEBUG5, fmt, ##__VA_ARGS__);\
 	} while (0)
+
+
 /*
  * Like above logging messages, but prepend "sched: " to the log entry
  * and route the message into the sched_log if enabled.
