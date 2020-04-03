@@ -49,8 +49,6 @@
  */
 #define	fatal			slurm_fatal
 #define	error			slurm_error
-#define	info			slurm_info
-#define	verbose			slurm_verbose
 
 /*
  * Allow up to 999 static TRES

@@ -114,8 +114,6 @@ strong_alias(fatal,		slurm_fatal) __attribute__((noreturn));
 strong_alias(fatal_abort,	slurm_fatal_abort) __attribute__((noreturn));
 strong_alias(error,		slurm_error);
 strong_alias(spank_log,		slurm_spank_log);
-strong_alias(info,		slurm_info);
-strong_alias(verbose,		slurm_verbose);
 strong_alias(sched_error,	slurm_sched_error);
 strong_alias(sched_info,	slurm_sched_info);
 strong_alias(sched_verbose,	slurm_sched_verbose);
@@ -1410,12 +1408,12 @@ void spank_log(const char *fmt, ...)
 	va_end(ap);
 }
 
-void info(const char *fmt, ...)
+void slurm_info(const char *fmt, ...)
 {
 	LOG_MACRO(LOG_LEVEL_INFO, false, fmt);
 }
 
-void verbose(const char *fmt, ...)
+void slurm_verbose(const char *fmt, ...)
 {
 	LOG_MACRO(LOG_LEVEL_VERBOSE, false, fmt);
 }

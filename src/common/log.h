@@ -279,12 +279,21 @@ extern void fatal_abort(const char *, ...)
 extern void fatal(const char *, ...)
 	__attribute__((format (printf, 1, 2))) __attribute__((noreturn));
 int	error(const char *, ...) __attribute__ ((format (printf, 1, 2)));
-void	info(const char *, ...) __attribute__ ((format (printf, 1, 2)));
-void	verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	slurm_info(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	slurm_verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 
 #define format_print(l, fmt, ...)			\
 	if (get_log_level() >= l)			\
 		log_var(l, fmt, ##__VA_ARGS__);
+#define info(fmt, ...)		\
+	do {			\
+	format_print(LOG_LEVEL_INFO, fmt, ##__VA_ARGS__);\
+	} while (0)
+
+#define verbose(fmt, ...)	\
+	do {			\
+	format_print(LOG_LEVEL_VERBOSE, fmt, ##__VA_ARGS__);\
+	} while (0)
 
 #define debug(fmt, ...)		\
 	do {			\

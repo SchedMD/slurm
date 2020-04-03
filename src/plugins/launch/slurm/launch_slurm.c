@@ -935,7 +935,7 @@ extern int launch_p_step_terminate(void)
 
 extern void launch_p_print_status(void)
 {
-	task_state_print(task_state_list, (log_f)info);
+	task_state_print(task_state_list, (log_f)slurm_info);
 }
 
 extern void launch_p_fwd_signal(int signal)
