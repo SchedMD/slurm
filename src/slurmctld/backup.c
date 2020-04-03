@@ -314,6 +314,10 @@ static void *_background_signal_hand(void *no_data)
 			dump_core = true;
 			return NULL;    /* Normal termination */
 			break;
+		case SIGUSR2:
+			info("Logrotate signal (SIGUSR2) received");
+			update_logging();
+			break;
 		default:
 			error("Invalid signal (%d) received", sig);
 		}

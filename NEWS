@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't requeue jobs that have been explicitly canceled.
  -- Fix error message for a regular user trying to update licenses on a running
     job.
+ -- Fix backup slurmctld handling for logrotation via SIGUSR2.
 
 * Changes in Slurm 20.02.1
 ==========================
