@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix edge case in _remove_job_hash().
  -- Fix exit code when using --cluster/-M client options.
  -- Fix compilation issues in GCC10.
+ -- Fix invalid references when federated job is revoked while in backfill loop.
 
 * Changes in Slurm 20.02.1
 ==========================

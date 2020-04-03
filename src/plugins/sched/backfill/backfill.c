@@ -1166,6 +1166,8 @@ static bool _job_runnable_now(job_record_t *job_ptr)
 {
 	uint16_t cleaning = 0;
 
+	if (IS_JOB_REVOKED(job_ptr))
+		return false;
 	if (!IS_JOB_PENDING(job_ptr))	/* Started in other partition */
 		return false;
 	if (job_ptr->priority == 0)	/* Job has been held */
