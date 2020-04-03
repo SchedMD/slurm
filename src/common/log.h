@@ -282,9 +282,23 @@ int	error(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	slurm_info(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	slurm_verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 
+#ifdef SLURM_PLUGIN_DEBUG
+/*
+ * Print plugins with the plugin_type and func
+ */
+#define format_print(l, fmt, ...)			\
+	if (get_log_level() >= l)			\
+		log_var(l, "%s: %s: "fmt, plugin_type,	\
+			__func__, ##__VA_ARGS__);
+#else
+/*
+ * Normal log messages
+ */
 #define format_print(l, fmt, ...)			\
 	if (get_log_level() >= l)			\
 		log_var(l, fmt, ##__VA_ARGS__);
+#endif //SLURM_PLUGIN_DEBUG
+
 #define info(fmt, ...)		\
 	do {			\
 	format_print(LOG_LEVEL_INFO, fmt, ##__VA_ARGS__);\
