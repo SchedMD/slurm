@@ -29,6 +29,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix grp_node_bitmap error when slurmctld started before slurmdbd.
  -- Fix scheduling issue when there are not enough nodes available to run a job
     resulting in possible job starvation.
+ -- Make it so mpi/cray_shasta appears in srun --mpi=list
+ -- Don't requeue jobs that have been explicitly canceled.
+ -- Fix error message for a regular user trying to update licenses on a running
+    job.
 
 * Changes in Slurm 20.02.1
 ==========================

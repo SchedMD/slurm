@@ -13093,8 +13093,19 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				   job_specs->licenses, job_ptr);
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = xstrdup(job_specs->licenses);
-		} else if (IS_JOB_RUNNING(job_ptr) &&
-			   (operator || (license_list == NULL))) {
+		} else if (IS_JOB_RUNNING(job_ptr)) {
+			/*
+			 * Operators can modify license counts on running jobs,
+			 * regular users can only completely remove license
+			 * counts on running jobs.
+			 */
+			if (!operator && license_list) {
+				sched_error("%s: Not operator user: ignore licenses change for %pJ",
+					    __func__, job_ptr);
+				error_code = ESLURM_ACCESS_DENIED;
+				goto fini;
+			}
+
 			/*
 			 * NOTE: This can result in oversubscription of
 			 * licenses
@@ -17096,6 +17107,17 @@ extern bool job_hold_requeue(job_record_t *job_ptr)
 	 * cluster and the origin cluster will decide if the job should be
 	 * requeued or not. */
 	if (!fed_mgr_is_origin_job(job_ptr))
+		return false;
+
+	/*
+	 * A job may be canceled during its epilog in which case we need to
+	 * check that the job (or base job in the case of an array) was not
+	 * canceled before attemping to requeue.
+	 */
+	if (IS_JOB_CANCELLED(job_ptr) ||
+	    (((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) &&
+	     (base_job_ptr = find_job_record(job_ptr->array_job_id)) &&
+	     base_job_ptr->array_recs && IS_JOB_CANCELLED(base_job_ptr)))
 		return false;
 
 	/* Check if the job exit with one of the
