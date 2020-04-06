@@ -1946,6 +1946,11 @@ Licenses and BurstBuffer parameters respectively.  Also CPU represents
 CoreCnt, in a reservation and will be adjusted if you have threads per
 core on your nodes.
 
+Note that a reservation that contains nodes or cores is associated with
+one partition, and can't span resources over multiple partitions.
+The only exception from this is when
+the reservation is created with explicitly requested nodes.
+
 .TP
 \fBSPECIFICATIONS FOR SHOW COMMAND, LAYOUTS\fR
 .PP

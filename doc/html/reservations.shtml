@@ -8,6 +8,10 @@ A resource reservation identifies the resources in that reservation
 and a time period during which the reservation is available.
 The resources which can be reserved include cores, nodes, licenses and/or
 burst buffers.
+A reservation that contains nodes or cores is associated with one partition,
+and can't span resources over multiple partitions.
+The only exception from this is when
+the reservation is created with explicitly requested nodes.
 Note that resource reservations are not compatible with Slurm's
 gang scheduler plugin since the termination time of running jobs
 cannot be accurately predicted.</p>
