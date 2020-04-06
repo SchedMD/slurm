@@ -4746,12 +4746,17 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			bitstr_t *tmp_bitmap;
 			tmp_bitmap = bit_copy(node_bitmaps[max_bitmap]);
 			valid_feature_counts(job_ptr, true, tmp_bitmap, &dummy);
-			if (bit_set_count(tmp_bitmap) < total_node_cnt) {
+			if (!valid_feature_counts(job_ptr, true, tmp_bitmap,
+						  &dummy)) {
+				rc = ESLURM_INVALID_FEATURE;
+			} else if (bit_set_count(tmp_bitmap) < total_node_cnt) {
 				/* reset tmp_bitmap and try with available */
 				bit_clear_all(tmp_bitmap);
 				bit_or(tmp_bitmap, node_bitmaps[max_bitmap]);
-				valid_feature_counts(job_ptr, false, tmp_bitmap,
-						     &dummy);
+				if (!valid_feature_counts(job_ptr, false,
+							  tmp_bitmap, &dummy)){
+					rc = ESLURM_INVALID_FEATURE;
+				}
 			}
 
 			if (bit_set_count(tmp_bitmap) < total_node_cnt)

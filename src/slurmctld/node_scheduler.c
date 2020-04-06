@@ -3237,8 +3237,9 @@ extern int list_find_feature(void *feature_entry, void *key)
  *	active, otherwise use available features
  * IN/OUT node_bitmap - nodes available for use, clear if unusable
  * OUT has_xor - set if XOR/XAND found in feature expression
+ * RET true if valid, false otherwise
  */
-extern void valid_feature_counts(job_record_t *job_ptr, bool use_active,
+extern bool valid_feature_counts(job_record_t *job_ptr, bool use_active,
 				 bitstr_t *node_bitmap, bool *has_xor)
 {
 	struct job_details *detail_ptr = job_ptr->details;
@@ -3248,7 +3249,7 @@ extern void valid_feature_counts(job_record_t *job_ptr, bool use_active,
 	int last_paren_cnt = 0;
 	bitstr_t *feature_bitmap, *paren_bitmap = NULL;
 	bitstr_t *tmp_bitmap, *work_bitmap;
-	bool have_count = false, user_update;
+	bool have_count = false, rc = true, user_update;
 
 	xassert(detail_ptr);
 	xassert(node_bitmap);
@@ -3256,7 +3257,7 @@ extern void valid_feature_counts(job_record_t *job_ptr, bool use_active,
 
 	*has_xor = false;
 	if (detail_ptr->feature_list == NULL)	/* no constraints */
-		return;
+		return rc;
 
 	user_update = node_features_g_user_update(job_ptr->user_id);
 	find_feature_nodes(detail_ptr->feature_list, user_update);
@@ -3354,7 +3355,7 @@ extern void valid_feature_counts(job_record_t *job_ptr, bool use_active,
 	xfree(tmp);
 }
 #endif
-	return;
+	return rc;
 }
 
 /*
@@ -3413,7 +3414,8 @@ extern int job_req_node_filter(job_record_t *job_ptr,
 		}
 	}
 
-	valid_feature_counts(job_ptr, false, avail_bitmap, &has_xor);
+	if (!valid_feature_counts(job_ptr, false, avail_bitmap, &has_xor))
+		return EINVAL;
 
 	return SLURM_SUCCESS;
 }
@@ -3554,7 +3556,17 @@ static int _build_node_list(job_record_t *job_ptr,
 		bit_nset(usable_node_mask, 0, (node_record_count - 1));
 	}
 
-	valid_feature_counts(job_ptr, false, usable_node_mask, &has_xor);
+	if (!valid_feature_counts(job_ptr, false, usable_node_mask, &has_xor)) {
+		info("%pJ feature requirements can not be satisfied",
+		     job_ptr);
+		FREE_NULL_BITMAP(usable_node_mask);
+		if (err_msg) {
+			xfree(*err_msg);
+			*err_msg = xstrdup("Node feature requirements can not "
+					   "be satisfied");
+		}
+		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+	}
 
 	if (can_reboot)
 		reboot_bitmap = bit_alloc(node_record_count);
