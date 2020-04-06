@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix reservation feature specification when looking for inactive features
     after active features fails.
  -- Prevent misleading error messages for reservation creation.
+ -- Print message in scontrol when a request fails for not having enough nodes.
 
 * Changes in Slurm 20.02.1
 ==========================
