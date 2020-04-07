@@ -30,16 +30,17 @@ For configuration information, see
 
 <h2>Coordinator</h2>
 
-<p>A special privileged user, usually an account manager or such, that can add
+<p>A special privileged user, usually an account manager, that can add
 users or sub-accounts to the account they are coordinator over.
 This should be a trusted person since they can change limits on account and
-user associations inside their realm.</p>
+user associations, as well as cancel, requeue or reassign accounts of jobs
+inside their realm.</p>
 
-<p>Set using a table in Slurm's database defining user's and accounts for
+<p>Set using a table in Slurm's database defining users and accounts for
 which they can serve as coordinators.
 For configuration information, see the
 <a href="sacctmgr.html">sacctmgr</a> man page.</p>
 
-<p style="text-align:center;">Last modified 22 September 2015</p>
+<p style="text-align:center;">Last modified 07 April 2020</p>
 
 <!--#include virtual="footer.txt"-->
