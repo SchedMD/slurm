@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
  -- Add separate unversion libslurm_pmi.so library to use with libpmi.so.
  -- Configurations including CR_Socket and AllowSpecResourcesUsage=NO will now
     fatal if there are no allocatable sockets due to core specialization.
+ -- Make sacct get UID from database instead of from the username and a
+    system call. Add --use-local-uid option to sacct to use old behavior.
 
 * Changes in Slurm 20.02.2
 ==========================

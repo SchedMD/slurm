@@ -45,6 +45,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+ -- Make sacct get the UID from database instead of from the username and a
+    system call. Add --use-local-uid option to sacct to use old behavior.
 
 API CHANGES
 ===========

@@ -2376,10 +2376,10 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_UID:
 			switch(type) {
 			case JOB:
-				if (job->user) {
-					if ((pw=getpwnam(job->user)))
-						tmp_int = pw->pw_uid;
-				} else
+				if (params.use_local_uid && job->user &&
+				    (pw = getpwnam(job->user)))
+					tmp_int = pw->pw_uid;
+				else
 					tmp_int = job->uid;
 				break;
 			case JOBSTEP:

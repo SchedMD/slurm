@@ -210,6 +210,7 @@ typedef struct {
 	int opt_noheader;	/* can only be cleared */
 	int opt_uid;		/* running persons uid */
 	int units;		/* --units*/
+	bool use_local_uid;	/* --use-local-uid */
 } sacct_parameters_t;
 
 extern print_field_t fields[];

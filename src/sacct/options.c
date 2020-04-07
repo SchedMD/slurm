@@ -54,6 +54,7 @@
 #define OPT_LONG_UNITS     0x104
 #define OPT_LONG_FEDR      0x105
 #define OPT_LONG_WHETJOB   0x106
+#define OPT_LONG_LOCAL_UID 0x107
 
 #define JOB_HASH_SIZE 1000
 
@@ -630,12 +631,6 @@ extern int get_data(void)
 	itr = list_iterator_create(jobs);
 	while ((job = list_next(itr))) {
 
-		if (job->user) {
-			struct passwd *pw = NULL;
-			if ((pw=getpwnam(job->user)))
-				job->uid = pw->pw_uid;
-		}
-
 		if (!job->steps || !(cnt = list_count(job->steps)))
 			continue;
 
@@ -739,6 +734,7 @@ extern void parse_command_line(int argc, char **argv)
                 {"starttime",      required_argument, 0,    'S'},
                 {"truncate",       no_argument,       0,    'T'},
                 {"uid",            required_argument, 0,    'u'},
+		{"use-local-uid",  no_argument,       0,    OPT_LONG_LOCAL_UID},
                 {"usage",          no_argument,       0,    'U'},
                 {"user",           required_argument, 0,    'u'},
                 {"verbose",        no_argument,       0,    'v'},
@@ -993,6 +989,9 @@ extern void parse_command_line(int argc, char **argv)
 				job_cond->userid_list = list_create(xfree_ptr);
 			slurm_addto_id_char_list(job_cond->userid_list,
 						 optarg, 0);
+			break;
+		case OPT_LONG_LOCAL_UID:
+			params.use_local_uid = true;
 			break;
 		case 'v':
 			/* Handle -vvv thusly...

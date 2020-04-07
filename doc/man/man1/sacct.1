@@ -414,6 +414,13 @@ Use this comma separated list of uids or user names to select jobs to
 display.  By default, the running user's uid is used.
 
 .TP
+\f3\-\-use\-local\-uid\fP
+When displaying UID, sacct uses the UID stored in Slurm's accounting database
+by default. Use this command to make Slurm use a system call to get the UID
+from the username. This option may be useful in an environment with multiple
+clusters and one database where the UID's aren't the same on all clusters.
+
+.TP
 \f3\-\-units=[KMGTP]\fP
 Display values in specified unit type. Takes precedence over \-\-noconvert
 option.
