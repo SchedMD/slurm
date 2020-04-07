@@ -1,4 +1,4 @@
-.TH sbcast "1" "Slurm Commands" "October 2016" "Slurm Commands"
+.TH sbcast "1" "Slurm Commands" "April 2020" "Slurm Commands"
 
 .SH "NAME"
 sbcast \- transmit a file to the nodes allocated to a Slurm job.
@@ -114,9 +114,8 @@ The location of the Slurm configuration file.
 
 .SH "AUTHORIZATION"
 
-When using the Slurm db, users who have AdminLevel's defined (Operator
-or Admin) and users who are account coordinators are given the
-authority to invoke sbcast on other user's jobs.
+When using SlurmDBD, users who have an AdminLevel defined (Operator
+or Admin) are given the authority to invoke sbcast on other users jobs.
 
 .SH "EXAMPLE"
 

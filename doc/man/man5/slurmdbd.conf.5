@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "March 2020" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "April 2020" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -411,7 +411,7 @@ or above.
 .TP
 \fBjobs\fR
 prevents users from viewing job records belonging
-to other users unless they are coordinators of the association running the job
+to other users unless they are coordinators of the account running the job
 when using sacct.
 .TP
 \fBreservations\fR
@@ -426,8 +426,8 @@ This applys to sreport.
 prevents users from viewing information of any user
 other than themselves, this also makes it so users can only see
 associations they deal with.
-Coordinators can see associations of all users they are coordinator of,
-but can only see themselves when listing users.
+Coordinators can see associations of all users in the account they are
+coordinator of, but can only see themselves when listing users.
 .RE
 
 .TP

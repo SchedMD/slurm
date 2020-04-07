@@ -3169,6 +3169,26 @@ static int _parse_depend_state(char **str_ptr, uint32_t *depend_state)
 	return SLURM_SUCCESS;
 }
 
+static job_record_t *_find_dependent_job_ptr(uint32_t job_id,
+					     uint32_t *array_task_id)
+{
+	job_record_t *dep_job_ptr;
+
+	if (*array_task_id == NO_VAL) {
+		dep_job_ptr = find_job_record(job_id);
+		if (!dep_job_ptr)
+			dep_job_ptr = find_job_array_rec(job_id, INFINITE);
+		if (dep_job_ptr &&
+		    (dep_job_ptr->array_job_id == job_id) &&
+		    ((dep_job_ptr->array_task_id != NO_VAL) ||
+		     (dep_job_ptr->array_recs != NULL)))
+			*array_task_id = INFINITE;
+	} else
+		dep_job_ptr = find_job_array_rec(job_id, *array_task_id);
+
+	return dep_job_ptr;
+}
+
 /*
  * The new dependency format is:
  *
@@ -3212,23 +3232,7 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 			*rc = ESLURM_DEPENDENCY;
 			break;
 		}
-		if (array_task_id == NO_VAL) {
-			dep_job_ptr = find_job_record(job_id);
-			if (!dep_job_ptr) {
-				dep_job_ptr =
-					find_job_array_rec(job_id,
-							   INFINITE);
-			}
-			if (dep_job_ptr &&
-			    (dep_job_ptr->array_job_id == job_id) &&
-			    ((dep_job_ptr->array_task_id != NO_VAL) ||
-			     (dep_job_ptr->array_recs != NULL))) {
-				array_task_id = INFINITE;
-			}
-		} else {
-			dep_job_ptr = find_job_array_rec(job_id,
-							 array_task_id);
-		}
+		dep_job_ptr = _find_dependent_job_ptr(job_id, &array_task_id);
 		if ((depend_type == SLURM_DEPEND_EXPAND) &&
 		    ((expand_cnt++ > 0) || (dep_job_ptr == NULL) ||
 		     (!IS_JOB_RUNNING(dep_job_ptr))		||
@@ -3382,21 +3386,8 @@ static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 		*rc = ESLURM_DEPENDENCY;
 		return;
 	}
-	/* Find the job_ptr */
-	if (array_task_id == NO_VAL) {
-		dep_job_ptr = find_job_record(job_id);
-		if (!dep_job_ptr) {
-			dep_job_ptr = find_job_array_rec(job_id, INFINITE);
-		}
-		if (dep_job_ptr &&
-		    (dep_job_ptr->array_job_id == job_id) &&
-		    ((dep_job_ptr->array_task_id != NO_VAL) ||
-		     (dep_job_ptr->array_recs != NULL))) {
-			array_task_id = INFINITE;
-		}
-	} else {
-		dep_job_ptr = find_job_array_rec(job_id, array_task_id);
-	}
+	dep_job_ptr = _find_dependent_job_ptr(job_id, &array_task_id);
+
 	dep_ptr = xmalloc(sizeof(depend_spec_t));
 	dep_ptr->array_task_id = array_task_id;
 	dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;

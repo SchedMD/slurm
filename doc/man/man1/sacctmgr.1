@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "March 2020" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "April 2020" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -213,10 +213,11 @@ system configuration.
 
 .TP
 \fIcoordinator\fR
-A special privileged user usually an account manager or such that can
-add users or sub accounts to the account they are coordinator over.
+A special privileged user, usually an account manager, that can
+add users or sub-accounts to the account they are coordinator over.
 This should be a trusted person since they can change limits on
-account and user associations inside their realm.
+account and user associations, as well as cancel, requeue or reassign
+accounts of jobs inside their realm.
 
 .TP
 \fIevent\fR
