@@ -1021,12 +1021,30 @@ extern bool validate_operator(uid_t uid)
 
 static void _set_hostname(slurm_msg_t *msg)
 {
+	slurm_addr_t addr;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
-	char *hostname = g_slurm_auth_get_host(msg->auth_cred);
 
-	if (hostname) {
-		xfree(job_desc_msg->alloc_node);
-		job_desc_msg->alloc_node = hostname;
+	xfree(job_desc_msg->alloc_node);
+	if ((job_desc_msg->alloc_node = g_slurm_auth_get_host(msg->auth_cred)))
+		debug3("%s: Using auth hostname for alloc_node: %s",
+		       __func__, job_desc_msg->alloc_node);
+	else if (msg->conn) {
+		/* use remote host name if persistent connection */
+		job_desc_msg->alloc_node = xstrdup(msg->conn->rem_host);
+		debug3("%s: Using remote hostname for alloc_node: %s",
+		       __func__, msg->conn->rem_host);
+	} else if (msg->conn_fd >= 0 &&
+		   !slurm_get_peer_addr(msg->conn_fd, &addr)) {
+		/* use remote host IP */
+		uint16_t port;
+
+		job_desc_msg->alloc_node = xmalloc(32);
+		slurm_get_ip_str(&addr, &port,
+				 job_desc_msg->alloc_node, 32);
+		debug3("%s: Using requester IP for alloc_node: %s",
+		       __func__, job_desc_msg->alloc_node);
+	} else {
+		error("%s: Unable to determine alloc_node", __func__);
 	}
 }
 
