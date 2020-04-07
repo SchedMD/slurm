@@ -348,12 +348,8 @@ extern int fini(void)
 	if (!running_in_slurmstepd())
 		return SLURM_SUCCESS;
 
-	if ((srcport) && (!(dataset_id < 0))) {
-		_update_node_interconnect();
+	if (srcport)
 		mad_rpc_close_port(srcport);
-	} else if (srcport) {
-		mad_rpc_close_port(srcport);
-	}
 
 	if (debug_flags & DEBUG_FLAG_INTERCONNECT)
 		info("ofed: ended");
