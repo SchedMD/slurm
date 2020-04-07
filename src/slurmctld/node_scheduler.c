@@ -3538,7 +3538,7 @@ extern void valid_feature_counts(job_record_t *job_ptr, bool use_active,
 {
 	char * tmp;
 	tmp = bitmap2node_name(node_bitmap);
-	info("%s: RC:%d NODES:%s HAS_XOR:%d", __func__, rc, tmp, *has_xor);
+	info("%s: NODES:%s HAS_XOR:%d", __func__, tmp, *has_xor);
 	xfree(tmp);
 }
 #endif
