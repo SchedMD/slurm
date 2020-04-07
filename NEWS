@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
     after active features fails.
  -- Prevent misleading error messages for reservation creation.
  -- Print message in scontrol when a request fails for not having enough nodes.
+ -- Fix duplicate output in sacct with multiple resv events.
 
 * Changes in Slurm 20.02.1
 ==========================
