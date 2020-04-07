@@ -28,6 +28,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent misleading error messages for reservation creation.
  -- Print message in scontrol when a request fails for not having enough nodes.
  -- Fix duplicate output in sacct with multiple resv events.
+ -- auth/jwt - return correct gid for a given user. This was incorrectly
+    assuming the users's primary group name matched their username.
 
 * Changes in Slurm 20.02.1
 ==========================

@@ -266,6 +266,8 @@ uid_t slurm_auth_get_uid(auth_token_t *cred)
 
 gid_t slurm_auth_get_gid(auth_token_t *cred)
 {
+	uid_t uid;
+
 	if (cred == NULL || !cred->verified) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_AUTH_NOBODY;
@@ -278,7 +280,12 @@ gid_t slurm_auth_get_gid(auth_token_t *cred)
 	if (cred->gid_set)
 		return cred->gid;
 
-	if (gid_from_string(cred->username, &cred->gid)) {
+	if ((uid = slurm_auth_get_uid(cred)) == SLURM_AUTH_NOBODY) {
+		slurm_seterrno(ESLURM_USER_ID_MISSING);
+		return SLURM_AUTH_NOBODY;
+	}
+
+	if (((cred->gid = gid_from_uid(uid)) == (gid_t) -1)) {
 		slurm_seterrno(ESLURM_USER_ID_MISSING);
 		return SLURM_AUTH_NOBODY;
 	}
