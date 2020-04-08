@@ -606,8 +606,7 @@ static void _max_dbd_msg_action(uint32_t *msg_cnt)
 }
 
 /* Open a connection to the Slurm DBD and set slurmdbd_conn */
-static void _open_slurmdbd_conn(bool need_db,
-				const slurm_trigger_callbacks_t *callbacks)
+static void _open_slurmdbd_conn(bool need_db)
 {
 	char *backup_host = NULL;
 	int rc;
@@ -788,7 +787,7 @@ static void *_agent(void *x)
 		if ((slurmdbd_conn->fd < 0) &&
 		    (difftime(time(NULL), fail_time) >= 10)) {
 			/* The connection to Slurm DBD is not open */
-			_open_slurmdbd_conn(1, NULL);
+			_open_slurmdbd_conn(1);
 			if (slurmdbd_conn->fd < 0) {
 				fail_time = time(NULL);
 
@@ -993,7 +992,7 @@ extern int open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks,
 	slurm_mutex_lock(&slurmdbd_lock);
 
 	if (!slurmdbd_conn) {
-		_open_slurmdbd_conn(1, callbacks);
+		_open_slurmdbd_conn(1);
 		if (persist_conn_flags)
 			*persist_conn_flags = slurmdbd_conn->flags;
 		tmp_errno = errno;
@@ -1070,9 +1069,9 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 		/* Either slurm_open_slurmdbd_conn() was not executed or
 		 * the connection to Slurm DBD has been closed */
 		if (req->msg_type == DBD_GET_CONFIG)
-			_open_slurmdbd_conn(0, NULL);
+			_open_slurmdbd_conn(0);
 		else
-			_open_slurmdbd_conn(1, NULL);
+			_open_slurmdbd_conn(1);
 		if (!slurmdbd_conn || (slurmdbd_conn->fd < 0)) {
 			rc = SLURM_ERROR;
 			goto end_it;
@@ -1185,7 +1184,6 @@ extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 
 /* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
  * will be queued and processed later if the SlurmDBD is not responding.
- * NOTE: slurm_open_slurmdbd_conn() must have been called with callbacks set
  *
  * Returns SLURM_SUCCESS or an error code */
 extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req)
