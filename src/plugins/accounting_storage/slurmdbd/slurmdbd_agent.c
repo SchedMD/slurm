@@ -677,10 +677,8 @@ again:
 		/* set the timeout to the timeout to be used for all other
 		 * messages */
 		slurmdbd_conn->timeout = SLURMDBD_TIMEOUT * 1000;
-		if (slurmdbd_conn->trigger_callbacks.dbd_resumed)
-			(slurmdbd_conn->trigger_callbacks.dbd_resumed)();
-		if (slurmdbd_conn->trigger_callbacks.db_resumed)
-			(slurmdbd_conn->trigger_callbacks.db_resumed)();
+		(slurmdbd_conn->trigger_callbacks.dbd_resumed)();
+		(slurmdbd_conn->trigger_callbacks.db_resumed)();
 	}
 
 	if ((!need_db && (rc == ESLURM_DB_CONNECTION)) ||
@@ -691,8 +689,7 @@ again:
 		*/
 		errno = 0;
 	} else {
-		if ((rc == ESLURM_DB_CONNECTION) &&
-		    slurmdbd_conn->trigger_callbacks.db_fail)
+		if (rc == ESLURM_DB_CONNECTION)
 			(slurmdbd_conn->trigger_callbacks.db_fail)();
 		slurm_persist_conn_close(slurmdbd_conn);
 
@@ -1225,8 +1222,7 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req)
 		error("slurmdbd: agent queue filling (%u), MaxDBDMsgs=%u, RESTART SLURMDBD NOW",
 		      cnt, slurm_conf.max_dbd_msgs);
 		syslog(LOG_CRIT, "*** RESTART SLURMDBD NOW ***");
-		if (slurmdbd_conn->trigger_callbacks.dbd_fail)
-			(slurmdbd_conn->trigger_callbacks.dbd_fail)();
+		(slurmdbd_conn->trigger_callbacks.dbd_fail)();
 	}
 
 	/* Handle action */
@@ -1240,8 +1236,7 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req)
 		      cnt,
 		      slurmdbd_msg_type_2_str(req->msg_type, 1),
 		      req->msg_type);
-		if (slurmdbd_conn->trigger_callbacks.acct_full)
-			(slurmdbd_conn->trigger_callbacks.acct_full)();
+		(slurmdbd_conn->trigger_callbacks.acct_full)();
 		free_buf(buffer);
 		rc = SLURM_ERROR;
 	}
