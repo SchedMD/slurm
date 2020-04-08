@@ -1018,6 +1018,35 @@ extern bool validate_operator(uid_t uid)
 		return false;
 }
 
+static void _set_hostname(slurm_msg_t *msg)
+{
+	slurm_addr_t addr;
+	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
+
+	xfree(job_desc_msg->alloc_node);
+	if ((job_desc_msg->alloc_node = g_slurm_auth_get_host(msg->auth_cred)))
+		debug3("%s: Using auth hostname for alloc_node: %s",
+		       __func__, job_desc_msg->alloc_node);
+	else if (msg->conn) {
+		/* use remote host name if persistent connection */
+		job_desc_msg->alloc_node = xstrdup(msg->conn->rem_host);
+		debug3("%s: Using remote hostname for alloc_node: %s",
+		       __func__, msg->conn->rem_host);
+	} else if (msg->conn_fd >= 0 &&
+		   !slurm_get_peer_addr(msg->conn_fd, &addr)) {
+		/* use remote host IP */
+		uint16_t port;
+
+		job_desc_msg->alloc_node = xmalloc(32);
+		slurm_get_ip_str(&addr, &port,
+				 job_desc_msg->alloc_node, 32);
+		debug3("%s: Using requester IP for alloc_node: %s",
+		       __func__, job_desc_msg->alloc_node);
+	} else {
+		error("%s: Unable to determine alloc_node", __func__);
+	}
+}
+
 static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid)
 {
 	if (validate_slurm_user(uid))
@@ -1396,7 +1425,6 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
-	char *hostname = g_slurm_auth_get_host(msg->auth_cred);
 	uint32_t job_uid = NO_VAL;
 	job_record_t *job_ptr, *first_job_ptr = NULL;
 	char *err_msg = NULL, **job_submit_user_msg = NULL;
@@ -1462,11 +1490,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 			break;
 		}
 
-		/* use the credential to validate where we came from */
-		if (hostname) {
-			xfree(job_desc_msg->alloc_node);
-			job_desc_msg->alloc_node = xstrdup(hostname);
-		}
+		_set_hostname(msg);
 
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -1532,7 +1556,6 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 		list_append(submit_job_list, job_ptr);
 	}
 	list_iterator_destroy(iter);
-	xfree(hostname);
 
 	if ((error_code == 0) && (!first_job_ptr)) {
 		error("%s: No error, but no het_job_id", __func__);
@@ -1666,7 +1689,6 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
-	char *hostname = g_slurm_auth_get_host(msg->auth_cred);
 	int immediate = job_desc_msg->immediate;
 	bool do_unlock = false;
 	bool reject_job = false;
@@ -1693,12 +1715,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	sched_debug2("Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%d",
 		     uid);
 
-	/* use the credential to validate where we came from */
-	if (hostname) {
-		xfree(job_desc_msg->alloc_node);
-		job_desc_msg->alloc_node = hostname;
-		hostname = NULL;
-	}
+	_set_hostname(msg);
 
 	/* do RPC call */
 	if ((job_desc_msg->alloc_node == NULL) ||
@@ -2953,7 +2970,6 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
-	char *hostname = g_slurm_auth_get_host(msg->auth_cred);
 	uint16_t port;	/* dummy value */
 	slurm_addr_t resp_addr;
 	will_run_response_msg_t *resp = NULL;
@@ -2973,13 +2989,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 				    job_desc_msg, uid, gid)))
 		goto send_reply;
 
-
-	/* use the credential to validate where we came from */
-	if (hostname) {
-		xfree(job_desc_msg->alloc_node);
-		job_desc_msg->alloc_node = hostname;
-		hostname = NULL;
-	}
+	_set_hostname(msg);
 
 	if ((job_desc_msg->alloc_node == NULL)
 	    ||  (job_desc_msg->alloc_node[0] == '\0')) {
@@ -3981,7 +3991,6 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
-	char *hostname = g_slurm_auth_get_host(msg->auth_cred);
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
 
@@ -4000,12 +4009,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 
-	/* use the credential to validate where we came from */
-	if (hostname) {
-		xfree(job_desc_msg->alloc_node);
-		job_desc_msg->alloc_node = hostname;
-		hostname = NULL;
-	}
+	_set_hostname(msg);
 
 	if ((job_desc_msg->alloc_node == NULL) ||
 	    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -4144,7 +4148,6 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	List job_req_list = (List) msg->data;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
-	char *hostname = g_slurm_auth_get_host(msg->auth_cred);
 	uint32_t job_uid = NO_VAL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
@@ -4201,11 +4204,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			break;
 		}
 
-		/* use the credential to validate where we came from */
-		if (hostname) {
-			xfree(job_desc_msg->alloc_node);
-			job_desc_msg->alloc_node = xstrdup(hostname);
-		}
+		_set_hostname(msg);
 
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -4242,7 +4241,6 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		het_job_offset++;
 	}
 	list_iterator_destroy(iter);
-	xfree(hostname);
 	unlock_slurmctld(job_read_lock);
 	if (error_code != SLURM_SUCCESS)
 		goto send_msg;

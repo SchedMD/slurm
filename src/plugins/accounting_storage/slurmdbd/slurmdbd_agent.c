@@ -574,7 +574,8 @@ static void _max_dbd_msg_action(uint32_t *msg_cnt)
 }
 
 /* Open a connection to the Slurm DBD and set slurmdbd_conn */
-static void _open_slurmdbd_conn(bool need_db)
+static void _open_slurmdbd_conn(bool need_db,
+				const slurm_trigger_callbacks_t *callbacks)
 {
 	char *backup_host = NULL;
 	int rc;
@@ -601,6 +602,14 @@ static void _open_slurmdbd_conn(bool need_db)
 		slurmdbd_conn->timeout = (slurm_conf.msg_timeout + 35) * 1000;
 
 		slurmdbd_conn->rem_port = slurm_conf.accounting_storage_port;
+
+		/* Initialize the callback pointers */
+		if (callbacks != NULL)
+			memcpy(&(slurmdbd_conn->trigger_callbacks), callbacks,
+			       sizeof(slurm_trigger_callbacks_t));
+		else
+			memset(&slurmdbd_conn->trigger_callbacks, 0,
+			       sizeof(slurm_trigger_callbacks_t));
 	}
 	slurmdbd_shutdown = 0;
 	slurmdbd_conn->shutdown = &slurmdbd_shutdown;
@@ -749,7 +758,7 @@ static void *_agent(void *x)
 		if ((slurmdbd_conn->fd < 0) &&
 		    (difftime(time(NULL), fail_time) >= 10)) {
 			/* The connection to Slurm DBD is not open */
-			_open_slurmdbd_conn(1);
+			_open_slurmdbd_conn(1, NULL);
 			if (slurmdbd_conn->fd < 0) {
 				fail_time = time(NULL);
 
@@ -954,7 +963,7 @@ extern int open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks,
 	slurm_mutex_lock(&slurmdbd_lock);
 
 	if (!slurmdbd_conn) {
-		_open_slurmdbd_conn(1);
+		_open_slurmdbd_conn(1, callbacks);
 		if (persist_conn_flags)
 			*persist_conn_flags = slurmdbd_conn->flags;
 		tmp_errno = errno;
@@ -962,15 +971,6 @@ extern int open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks,
 	slurm_mutex_unlock(&slurmdbd_lock);
 
 	slurm_mutex_lock(&agent_lock);
-	/* Initialize the callback pointers */
-	if (callbacks != NULL) {
-		/* copy the user specified callback pointers */
-		memcpy(&(slurmdbd_conn->trigger_callbacks), callbacks,
-		       sizeof(slurm_trigger_callbacks_t));
-	} else {
-		memset(&slurmdbd_conn->trigger_callbacks, 0,
-		       sizeof(slurm_trigger_callbacks_t));
-	}
 
 	if ((callbacks != NULL) && ((agent_tid == 0) || (agent_list == NULL)))
 		_create_agent();
@@ -1040,9 +1040,9 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 		/* Either slurm_open_slurmdbd_conn() was not executed or
 		 * the connection to Slurm DBD has been closed */
 		if (req->msg_type == DBD_GET_CONFIG)
-			_open_slurmdbd_conn(0);
+			_open_slurmdbd_conn(0, NULL);
 		else
-			_open_slurmdbd_conn(1);
+			_open_slurmdbd_conn(1, NULL);
 		if (!slurmdbd_conn || (slurmdbd_conn->fd < 0)) {
 			rc = SLURM_ERROR;
 			goto end_it;
