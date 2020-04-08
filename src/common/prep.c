@@ -92,7 +92,8 @@ extern int prep_plugin_init(prep_callbacks_t *callbacks)
 	if (!slurm_conf.prep_plugins || !slurm_conf.prep_plugins[0])
 		goto fini;
 
-	names = tmp_plugin_list = xstrdup(slurm_conf.prep_plugins);
+	prep_plugin_list = xstrdup(slurm_conf.prep_plugins);
+	names = tmp_plugin_list = xstrdup(prep_plugin_list);
 	while ((type = strtok_r(names, ",", &last))) {
 		xrecalloc(ops, g_context_cnt + 1, sizeof(prep_ops_t));
 		xrecalloc(g_context, g_context_cnt + 1,
