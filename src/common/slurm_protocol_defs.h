@@ -511,7 +511,7 @@ typedef struct slurm_msg {
 	uint16_t msg_type; /* really a slurm_msg_type_t but needs to be
 			    * this way for packing purposes.  message type */
 	uint16_t protocol_version; /* DON'T PACK!  Only used if
-				    * message comming from non-default
+				    * message coming from non-default
 				    * slurm protocol.  Initted to
 				    * NO_VAL meaning use the default. */
 	/* The following were all added for the forward.c code */
