@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
  -- Use host IP if hostname unknown for job submission for allocating node.
  -- Fix issue with primary_slurmdbd_resumed_operation trigger not happening
     on slurmctld restart.
+ -- Fix race in acct_gather_interconnect/ofed on step termination.
 
 * Changes in Slurm 20.02.1
 ==========================

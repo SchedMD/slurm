@@ -1018,10 +1018,9 @@ extern bool validate_operator(uid_t uid)
 		return false;
 }
 
-static void _set_hostname(slurm_msg_t *msg)
+static void _set_hostname(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg)
 {
 	slurm_addr_t addr;
-	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
 
 	xfree(job_desc_msg->alloc_node);
 	if ((job_desc_msg->alloc_node = g_slurm_auth_get_host(msg->auth_cred)))
@@ -1490,7 +1489,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 			break;
 		}
 
-		_set_hostname(msg);
+		_set_hostname(msg, job_desc_msg);
 
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -1715,7 +1714,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	sched_debug2("Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%d",
 		     uid);
 
-	_set_hostname(msg);
+	_set_hostname(msg, job_desc_msg);
 
 	/* do RPC call */
 	if ((job_desc_msg->alloc_node == NULL) ||
@@ -2989,7 +2988,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 				    job_desc_msg, uid, gid)))
 		goto send_reply;
 
-	_set_hostname(msg);
+	_set_hostname(msg, job_desc_msg);
 
 	if ((job_desc_msg->alloc_node == NULL)
 	    ||  (job_desc_msg->alloc_node[0] == '\0')) {
@@ -4009,7 +4008,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 
-	_set_hostname(msg);
+	_set_hostname(msg, job_desc_msg);
 
 	if ((job_desc_msg->alloc_node == NULL) ||
 	    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -4204,7 +4203,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			break;
 		}
 
-		_set_hostname(msg);
+		_set_hostname(msg, job_desc_msg);
 
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
