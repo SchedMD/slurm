@@ -451,15 +451,24 @@ _msg_engine(void)
 	while (!_shutdown) {
 		if (_reconfig) {
 			int rpc_wait = MAX(5, slurm_conf.msg_timeout / 2);
+			DEF_TIMERS;
+			START_TIMER;
 			verbose("got reconfigure request");
 			/* Wait for RPCs to finish */
 			_wait_for_all_threads(rpc_wait);
 			if (_shutdown)
 				break;
 			_reconfigure();
+			END_TIMER3("_reconfigure request - slurmd doesn't accept new connections during this time.",
+				   5000000);
 		}
-		if (_update_log)
+		if (_update_log) {
+			DEF_TIMERS;
+			START_TIMER;
 			_update_logging();
+			END_TIMER3("_uplodate_log request - slurmd doesn't accept new connections during this time.",
+				   5000000);
+		}
 		cli = xmalloc (sizeof (slurm_addr_t));
 		if ((sock = slurm_accept_msg_conn(conf->lfd, cli)) >= 0) {
 			_handle_connection(sock, cli);
