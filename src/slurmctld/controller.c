@@ -273,7 +273,6 @@ int main(int argc, char **argv)
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-	slurm_trigger_callbacks_t callbacks;
 	prep_callbacks_t prep_callbacks = {
 		.prolog_slurmctld = prep_prolog_slurmctld_callback,
 		.epilog_slurmctld = prep_epilog_slurmctld_callback,
@@ -445,13 +444,6 @@ int main(int argc, char **argv)
 		      slurm_conf.accounting_storage_type);
 	}
 
-	memset(&callbacks, 0, sizeof(slurm_trigger_callbacks_t));
-	callbacks.acct_full   = trigger_primary_ctld_acct_full;
-	callbacks.dbd_fail    = trigger_primary_dbd_fail;
-	callbacks.dbd_resumed = trigger_primary_dbd_res_op;
-	callbacks.db_fail     = trigger_primary_db_fail;
-	callbacks.db_resumed  = trigger_primary_db_res_op;
-
 	if (!test_config)
 		info("%s version %s started on cluster %s",
 		     slurm_prog_name, SLURM_VERSION_STRING,
@@ -617,7 +609,7 @@ int main(int argc, char **argv)
 		if (!slurmctld_primary) {
 			slurm_sched_fini();	/* make sure shutdown */
 			_run_primary_prog(false);
-			run_backup(&callbacks);
+			run_backup();
 			agent_init();	/* Killed at any previous shutdown */
 			(void) _shutdown_backup_controller();
 			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS)
@@ -626,7 +618,7 @@ int main(int argc, char **argv)
 			if (!test_config) {
 				(void) _shutdown_backup_controller();
 				trigger_primary_ctld_res_ctrl();
-				ctld_assoc_mgr_init(&callbacks);
+				ctld_assoc_mgr_init();
 			}
 			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS) {
 				if (test_config) {
@@ -2301,7 +2293,7 @@ extern void save_all_state(void)
 }
 
 /* make sure the assoc_mgr is up and running with the most current state */
-extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
+extern void ctld_assoc_mgr_init(void)
 {
 	assoc_init_args_t assoc_init_arg;
 	int num_jobs = 0;

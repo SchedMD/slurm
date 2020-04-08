@@ -2233,7 +2233,7 @@ extern void resume_job_step(job_record_t *job_ptr);
 
 /* run_backup - this is the backup controller, it should run in standby
  *	mode, assuming control when the primary controller stops responding */
-extern void run_backup(slurm_trigger_callbacks_t *callbacks);
+extern void run_backup(void);
 
 /*
  * ping_controllers - ping other controllers in HA configuration.
@@ -2249,7 +2249,7 @@ extern void save_all_state(void);
 
 /* make sure the assoc_mgr lists are up and running and state is
  * restored */
-extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks);
+extern void ctld_assoc_mgr_init(void);
 
 /* send all info for the controller to accounting */
 extern void send_all_to_accounting(time_t event_time, int db_rc);

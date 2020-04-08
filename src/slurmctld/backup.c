@@ -116,7 +116,7 @@ static int backup_sigarray[] = {
  * run_backup - this is the backup controller, it should run in standby
  *	mode, assuming control when the primary controller stops responding
  */
-void run_backup(slurm_trigger_callbacks_t *callbacks)
+void run_backup(void)
 {
 	int i;
 	time_t last_ping = 0;
@@ -246,7 +246,7 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 	init_job_conf();
 	unlock_slurmctld(config_write_lock);
 
-	ctld_assoc_mgr_init(callbacks);
+	ctld_assoc_mgr_init();
 
 	/* clear old state and read new state */
 	lock_slurmctld(config_write_lock);
