@@ -933,6 +933,8 @@ static void *_agent(void *x)
 
 static void _create_agent(void)
 {
+	xassert(running_in_slurmctld());
+
 	/* this needs to be set because the agent thread will do
 	   nothing if the connection was closed and then opened again */
 	slurmdbd_shutdown = 0;
@@ -1194,6 +1196,7 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req)
 	uint32_t cnt, rc = SLURM_SUCCESS;
 	static time_t syslog_time = 0;
 
+	xassert(running_in_slurmctld());
 	xassert(slurm_conf.max_dbd_msgs);
 
 	log_flag(PROTOCOL, "%s: msg_type:%s protocol_version:%hu agent_count:%d",
