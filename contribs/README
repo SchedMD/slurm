@@ -50,7 +50,7 @@ of the Slurm contribs distribution follows:
 
   pam_slurm_adopt/   [ Plugin for PAM to place incoming connections into
                        existing Slurm job container ]
-     This Slurm plugin provides a mechanism for new incomming connections to
+     This Slurm plugin provides a mechanism for new incoming connections to
      be placed into existing Slurm jobs containers so that then can be accounted
      for and killed at job termination. See the README file in the subdirectory
      for more details.

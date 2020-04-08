@@ -1,4 +1,4 @@
-.TH SPANK "8" "Slurm Component" "January 2020" "Slurm Component"
+.TH SPANK "8" "Slurm Component" "April 2020" "Slurm Component"
 
 .SH "NAME"
 \fBSPANK\fR \- Slurm Plug\-in Architecture for Node and job (K)control
@@ -247,6 +247,12 @@ will be set to one of many error values defined in slurm/spank.h. The
 .fi
 which may be used to translate a \fBspank_err_t\fR value into its
 string representation.
+
+.LP
+The \fBslurm_spank_log\fR function can be used to print messages back to the
+user at an error level.  This is to keep users from having to rely on the
+\fBslurm_error\fR function, which can be confusing because it prepends
+"\fBerror:\fR" to every message.
 
 .SH "SPANK OPTIONS"
 .LP
