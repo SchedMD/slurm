@@ -4938,7 +4938,7 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 
 	slurm_mutex_lock(&conn_lock);
 	if (conn_timeout == NO_VAL16) {
-		conn_timeout = MIN(slurm_get_msg_timeout(), 10);
+		conn_timeout = MAX(5, slurm_get_msg_timeout() / 2);
 		tcp_timeout = MAX(0, slurm_get_tcp_timeout() - 1);
 	}
 	slurm_mutex_unlock(&conn_lock);
