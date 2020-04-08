@@ -2010,223 +2010,227 @@ justified.  A \-30 will print 30 characters left justified.
 .SH "FLAT FILE DUMP AND LOAD"
 sacctmgr has the capability to load and dump Slurm association data to and
 from a file.  This method can easily add a new cluster or copy an
-existing clusters associations into a new cluster with similar
+existing cluster's associations into a new cluster with similar
 accounts. Each file contains Slurm association data for a single
 cluster.  Comments can be put into the file with the # character.
-Each line of information must begin with one of the four titles; \fBCluster, Parent, Account or
-User\fP. Following the title is a space, dash, space, entity value,
-then specifications. Specifications are colon separated.  If any
-variable such as Organization has a space in it, surround the name with
-single or double quotes.
+Each line of information must begin with one of the four titles; \fBCluster\fP,
+\fBParent\fP, \fBAccount\fP or \fBUser\fP. Following the title is a space,
+dash, space, entity value, then specifications. Specifications are colon
+separated. If any variable, such as an Organization name, has a space in it,
+surround the name with single or double quotes.
 
-To create a file of associations one can run
-
-> sacctmgr dump tux file=tux.cfg
-.br
-(file=tux.cfg is optional)
+To create a file of associations you can run
+.RS
+\fBsacctmgr dump tux file=tux.cfg\fP
+.RE
 
 To load a previously created file you can run
+.RS
+\fBsacctmgr load file=tux.cfg\fP
+.RE
 
-> sacctmgr load file=tux.cfg
-
-Other options for load are \-
-
-clean \- delete what was already there and start from scratch with this
-information.
+Other options for load are:
+.RS
+\fBclean\fP     \- delete what was already there and start from scratch with
+this information.
 .br
-Cluster= \- specify a different name for the cluster than that which is
+\fBCluster=\fP  \- specify a different name for the cluster than that which is
 in the file.
-
-Quick explanation of how the file works.
+.RE
 
 Since the associations in the system follow a hierarchy, so does the
 file.  Anything that is a parent needs to be defined before any
 children.  The only exception is the understood 'root' account.  This
 is always a default for any cluster and does not need to be defined.
 
-To edit/create a file start with a cluster line for the new cluster
+To edit/create a file start with a cluster line for the new cluster:
 
-\fBCluster\ \-\ cluster_name:MaxNodesPerJob=15\fP
+.nf
+\fBCluster\ \-\ cluster_name:MaxTRESPerJob=node=15\fP
+.ad
 
-Anything included on this line will be the defaults for all
-associations on this cluster.  These options are as follows...
+Anything included on this line will be the default for all
+associations on this cluster.  The options for the cluster are:
+.RS
 .TP
-\fIGrpTRESMins=\fP
+\fBGrpTRESMins=\fP
 The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this association and its children.
 .TP
-\fIGrpTRESRunMins=\fP
+\fBGrpTRESRunMins=\fP
 Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
 .TP
-\fIGrpTRES=\fP
+\fBGrpTRES=\fP
 Maximum number of TRES running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
-\fIGrpJobs=\fP
+\fBGrpJobs=\fP
 Maximum number of running jobs in aggregate for this
 association and all associations which are children of this association.
 .TP
-\fIGrpJobsAccrue\fP
+\fBGrpJobsAccrue=\fP
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 association and all associations which are children of this association.
 .TP
-\fIGrpNodes=\fP
+\fBGrpNodes=\fP
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
-\fIGrpSubmitJobs=\fP
+\fBGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
 associations which are children of this association.
 .TP
-\fIGrpWall=\fP
+\fBGrpWall=\fP
 Maximum wall clock time running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
-\fIFairShare=\fP
+\fBFairShare=\fP
 Number used in conjunction with other associations to determine job priority.
 .TP
-\fIMaxJobs=\fP
+\fBMaxJobs=\fP
 Maximum number of jobs the children of this association can run.
 .TP
-\fIMaxNodesPerJob=\fP
-Maximum number of nodes per job the children of this association can run.
+\fBMaxTRESPerJob=\fP
+Maximum number of trackable resources per job the children of this association
+can run.
 .TP
-\fIMaxWallDurationPerJob=\fP
+\fBMaxWallDurationPerJob=\fP
 Maximum time (not related to job size) children of this accounts jobs can run.
 .TP
-\fIQOS=\fP
+\fBQOS=\fP
+.RS
 Comma separated list of Quality of Service names (Defined in sacctmgr).
-.TP
+.RE
+.RE
 
-Followed by Accounts you want in this fashion...
+After the entry for the root account you will have entries for the other
+accounts on the system. The entries will look similar to this example:
 
-.na
-\fBParent\ \-\ root\fP (Defined by default)
-.br
-\fBAccount\ \-\ cs\fP:MaxNodesPerJob=5:MaxJobs=4:FairShare=399:MaxWallDurationPerJob=40:Description='Computer Science':Organization='LC'
-.br
-\fBParent\ \-\ cs\fP
-.br
-\fBAccount\ \-\ test\fP:MaxNodesPerJob=1:MaxJobs=1:FairShare=1:MaxWallDurationPerJob=1:Description='Test Account':Organization='Test'
+.nf
+\fBParent\ \-\ root
+Account\ \-\ cs:MaxTRESPerJob=node=5:MaxJobs=4:FairShare=399:MaxWallDurationPerJob=40:Description='Computer Science':Organization='LC'
+Parent\ \-\ cs
+Account\ \-\ test:MaxTRESPerJob=node=1:MaxJobs=1:FairShare=1:MaxWallDurationPerJob=1:Description='Test Account':Organization='Test'\fP
 .ad
 
-.TP
 Any of the options after a ':' can be left out and they can be in any order.
 If you want to add any sub accounts just list the Parent THAT HAS ALREADY
-BEEN CREATED before the account line in this fashion...
+BEEN CREATED before the account you are adding.
+
+Account options are:
+.RS
 .TP
-All account options are
-.TP
-\fIDescription=\fP
+\fBDescription=\fP
 A brief description of the account.
 .TP
-\fIGrpTRESMins=\fP
+\fBGrpTRESMins=\fP
 Maximum number of TRES hours running jobs are able to
 be allocated in aggregate for this association and all associations
 which are children of this association.
-\fIGrpTRESRunMins=\fP
+\fBGrpTRESRunMins=\fP
 Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
 .TP
-\fIGrpTRES=\fP
+\fBGrpTRES=\fP
 Maximum number of TRES running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
-\fIGrpJobs=\fP
+\fBGrpJobs=\fP
 Maximum number of running jobs in aggregate for this
 association and all associations which are children of this association.
 .TP
-\fIGrpJobsAccrue\fP
+\fBGrpJobsAccrue\fP
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 association and all associations which are children of this association.
 .TP
-\fIGrpNodes=\fP
+\fBGrpNodes=\fP
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
-\fIGrpSubmitJobs=\fP
+\fBGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
 associations which are children of this association.
 .TP
-\fIGrpWall=\fP
+\fBGrpWall=\fP
 Maximum wall clock time running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
-\fIFairShare=\fP
+\fBFairShare=\fP
 Number used in conjunction with other associations to determine job priority.
 .TP
-\fIMaxJobs=\fP
+\fBMaxJobs=\fP
 Maximum number of jobs the children of this association can run.
 .TP
-\fIMaxNodesPerJob=\fP
+\fBMaxNodesPerJob=\fP
 Maximum number of nodes per job the children of this association can run.
 .TP
-\fIMaxWallDurationPerJob=\fP
+\fBMaxWallDurationPerJob=\fP
 Maximum time (not related to job size) children of this accounts jobs can run.
 .TP
-\fIOrganization=
+\fBOrganization=
 Name of organization that owns this account.
 .TP
-\fI\fIQOS(=,+=,\-=)\fP
+\fBQOS(=,+=,\-=)\fP
 Comma separated list of Quality of Service names (Defined in sacctmgr).
-.TP
+.RE
 
-.TP
-To add users to a account add a line like this after a Parent \- line
-\fBParent\ \-\ test\fP
-.br
-.na
-\fBUser\ \-\ adam\fP:MaxNodesPerJob=2:MaxJobs=3:FairShare=1:MaxWallDurationPerJob=1:AdminLevel=Operator:Coordinator='test'
+
+To add users to an account add a line after the Parent line, similar to this:
+
+.nf
+\fBParent\ \-\ test
+User\ \-\ adam:MaxTRESPerJob=node:2:MaxJobs=3:FairShare=1:MaxWallDurationPerJob=1:AdminLevel=Operator:Coordinator='test'\fP
 .ad
 
+
+User options are:
+.RS
 .TP
-All user options are
-.TP
-\fIAdminLevel=\fP
+\fBAdminLevel=\fP
 Type of admin this user is (Administrator, Operator)
 .br
 \fBMust be defined on the first occurrence of the user.\fP
 .TP
-\fICoordinator=\fP
+\fBCoordinator=\fP
 Comma separated list of accounts this user is coordinator over
 .br
 \fBMust be defined on the first occurrence of the user.\fP
 .TP
-\fIDefaultAccount=\fP
-system wide default account name
+\fBDefaultAccount=\fP
+System wide default account name
 .br
 \fBMust be defined on the first occurrence of the user.\fP
 .TP
-\fIFairShare=\fP
+\fBFairShare=\fP
 Number used in conjunction with other associations to determine job priority.
 .TP
-\fIMaxJobs=\fP
+\fBMaxJobs=\fP
 Maximum number of jobs this user can run.
 .TP
-\fIMaxNodesPerJob=\fP
-Maximum number of nodes per job this user can run.
+\fBMaxTRESPerJob=\fP
+Maximum number of trackable resources per job this user can run.
 .TP
-\fIMaxWallDurationPerJob=\fP
+\fBMaxWallDurationPerJob=\fP
 Maximum time (not related to job size) this user can run.
 .TP
-\fIQOS(=,+=,\-=)\fP
+\fBQOS(=,+=,\-=)\fP
 Comma separated list of Quality of Service names (Defined in sacctmgr).
-
+.RE
 
 .SH "ARCHIVE FUNCTIONALITY"
 Sacctmgr has the capability to archive to a flatfile and or load that
