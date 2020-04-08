@@ -44,6 +44,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmctld/trigger_mgr.h"
+
 #include "slurmdbd_agent.h"
 
 enum {
@@ -70,6 +72,36 @@ static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
 
 static int max_dbd_msg_action = MAX_DBD_DEFAULT_ACTION;
+
+static void _acct_full(void)
+{
+	if (running_in_slurmctld())
+		trigger_primary_ctld_acct_full();
+}
+
+static void _dbd_fail(void)
+{
+	if (running_in_slurmctld())
+		trigger_primary_dbd_fail();
+}
+
+static void _dbd_res_op(void)
+{
+	if (running_in_slurmctld())
+		trigger_primary_dbd_res_op();
+}
+
+static void _db_fail(void)
+{
+	if (running_in_slurmctld())
+		trigger_primary_db_fail();
+}
+
+static void _db_res_op(void)
+{
+	if (running_in_slurmctld())
+		trigger_primary_db_res_op();
+}
 
 static int _send_fini_msg(void)
 {
@@ -604,12 +636,13 @@ static void _open_slurmdbd_conn(bool need_db,
 		slurmdbd_conn->rem_port = slurm_conf.accounting_storage_port;
 
 		/* Initialize the callback pointers */
-		if (callbacks != NULL)
-			memcpy(&(slurmdbd_conn->trigger_callbacks), callbacks,
-			       sizeof(slurm_trigger_callbacks_t));
-		else
-			memset(&slurmdbd_conn->trigger_callbacks, 0,
-			       sizeof(slurm_trigger_callbacks_t));
+		memset(&slurmdbd_conn->trigger_callbacks, 0,
+		       sizeof(slurm_trigger_callbacks_t));
+		slurmdbd_conn->trigger_callbacks.acct_full = _acct_full;
+		slurmdbd_conn->trigger_callbacks.dbd_fail = _dbd_fail;
+		slurmdbd_conn->trigger_callbacks.dbd_resumed = _dbd_res_op;
+		slurmdbd_conn->trigger_callbacks.db_fail = _db_fail;
+		slurmdbd_conn->trigger_callbacks.db_resumed = _db_res_op;
 	}
 	slurmdbd_shutdown = 0;
 	slurmdbd_conn->shutdown = &slurmdbd_shutdown;
