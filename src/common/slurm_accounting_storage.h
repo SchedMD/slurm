@@ -63,8 +63,6 @@ extern int slurm_acct_storage_fini(void); /* unload the plugin */
 
 /*
  * get a new connection to the storage unit
- * IN: callbacks - Make an agent to manage queued requests, contains
- *                 trigger callbacks
  * IN: conn_num - If running more than one connection to the database
  *     this can be used to tell which connection is doing what
  * OUT: persist_conn_flags - If using a persistant connection to talk to the
@@ -73,7 +71,6 @@ extern int slurm_acct_storage_fini(void); /* unload the plugin */
  * RET: pointer used to access db
  */
 extern void *acct_storage_g_get_connection(
-	const slurm_trigger_callbacks_t *callbacks,
 	int conn_num, uint16_t *persist_conn_flags,
 	bool rollback, char *cluster_name);
 

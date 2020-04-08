@@ -520,7 +520,6 @@ extern int fini ( void )
 }
 
 extern void *acct_storage_p_get_connection(
-	const slurm_trigger_callbacks_t *callbacks,
 	int conn_num, uint16_t *persist_conn_flags,
 	bool rollback, char *cluster_name)
 {

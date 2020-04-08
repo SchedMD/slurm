@@ -60,8 +60,7 @@ uid_t db_api_uid = -1;
  */
 
 typedef struct slurm_acct_storage_ops {
-	void *(*get_conn)          (const slurm_trigger_callbacks_t *callbacks,
-				    int conn_num, uint16_t *persist_conn_flags,
+	void *(*get_conn)          (int conn_num, uint16_t *persist_conn_flags,
 				    bool rollback, char *cluster_name);
 	int  (*close_conn)         (void **db_conn);
 	int  (*commit)             (void *db_conn, bool commit);
@@ -359,13 +358,12 @@ extern int slurm_acct_storage_fini(void)
 }
 
 extern void *acct_storage_g_get_connection(
-	const slurm_trigger_callbacks_t *callbacks,
 	int conn_num, uint16_t *persist_conn_flags,
 	bool rollback,char *cluster_name)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(ops.get_conn))(callbacks, conn_num, persist_conn_flags,
+	return (*(ops.get_conn))(conn_num, persist_conn_flags,
 				 rollback, cluster_name);
 }
 

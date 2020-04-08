@@ -689,8 +689,7 @@ int main(int argc, char **argv)
 
 		if (!acct_db_conn) {
 			acct_db_conn = acct_storage_g_get_connection(
-				&callbacks, 0, NULL, false,
-				slurm_conf.cluster_name);
+				0, NULL, false, slurm_conf.cluster_name);
 			clusteracct_storage_g_register_ctld(
 				acct_db_conn, slurm_conf.slurmctld_port);
 			/*
@@ -2338,7 +2337,7 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 		acct_storage_g_close_connection(&acct_db_conn);
 
 	acct_db_conn = acct_storage_g_get_connection(
-		callbacks, 0, NULL, false, slurm_conf.cluster_name);
+		0, NULL, false, slurm_conf.cluster_name);
 	clusteracct_storage_g_register_ctld(acct_db_conn,
 					    slurm_conf.slurmctld_port);
 
