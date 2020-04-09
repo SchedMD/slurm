@@ -197,7 +197,7 @@ $(VERSION_SCRIPT) :
 	 echo "};") > $(VERSION_SCRIPT)
 
 $(FULL_VERSION_SCRIPT) :
-	(echo "{ global: *; };" > $(FULL_VERSION_SCRIPT)
+	(echo "{ global: *; };") > $(FULL_VERSION_SCRIPT)
 
 $(SLURM_PMI_VERSION_SCRIPT) :
 	(echo "{ global:";   \
