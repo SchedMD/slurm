@@ -1584,11 +1584,10 @@ next_task:
 				!bit_test(job_ptr->assoc_ptr->usage->valid_qos,
 					  job_ptr->qos_id))
 			    && !job_ptr->limit_set.qos) {
-				sched_debug("%pJ has invalid QOS", job_ptr);
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason = FAIL_QOS;
-				last_job_update = now;
 				assoc_mgr_unlock(&locks);
+				sched_debug("%pJ has invalid QOS", job_ptr);
+				job_fail_qos(job_ptr, __func__);
+				last_job_update = now;
 				continue;
 			} else if (job_ptr->state_reason == FAIL_QOS) {
 				xfree(job_ptr->state_desc);
