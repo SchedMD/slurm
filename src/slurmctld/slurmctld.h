@@ -1368,6 +1368,9 @@ extern bool is_node_down (char *name);
  */
 extern bool is_node_resp (char *name);
 
+/* Fail a job because the qos is no longer valid */
+extern int job_fail_qos(job_record_t *job_ptr, const char *func_name);
+
 /*
  * delete_job_desc_files - remove the state files and directory
  * for a given job_id from SlurmStateSaveLocation

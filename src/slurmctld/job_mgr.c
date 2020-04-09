@@ -351,7 +351,7 @@ static int _job_fail_account(job_record_t *job_ptr, const char *func_name)
 	return rc;
 }
 
-static int _job_fail_qos(job_record_t *job_ptr, const char *func_name)
+extern int job_fail_qos(job_record_t *job_ptr, const char *func_name)
 {
 	int rc = 0; // Return number of pending jobs held
 
@@ -2495,7 +2495,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			job_ptr->limit_set.qos, &qos_rec,
 			&qos_error, true);
 		if ((qos_error != SLURM_SUCCESS) && !job_ptr->limit_set.qos) {
-			_job_fail_qos(job_ptr, __func__);
+			job_fail_qos(job_ptr, __func__);
 		} else
 			job_ptr->qos_id = qos_rec.id;
 	}
@@ -17302,7 +17302,7 @@ extern int job_hold_by_qos_id(uint32_t qos_id)
 		if (job_ptr->qos_id != qos_id)
 			continue;
 
-		cnt += _job_fail_qos(job_ptr, __func__);
+		cnt += job_fail_qos(job_ptr, __func__);
 	}
 	list_iterator_destroy(job_iterator);
 	unlock_slurmctld(job_write_lock);
