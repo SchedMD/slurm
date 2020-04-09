@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix MPS without File with 1 GPU, and without GPUs.
  -- Add FreeBSD support to proctrack/pgid plugin.
  -- Fix remote dependency testing for meta job in job array.
+ -- Fix preemption when dealing with a job array.
 
 * Changes in Slurm 20.02.1
 ==========================
