@@ -269,14 +269,16 @@ Show only jobs local to this cluster. Ignore other clusters in this federation
 Equivalent to specifying:
 .IP
 .na
-\-\-format=jobid,jobname,partition,maxvmsize,maxvmsizenode,maxvmsizetask,
-avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,
-maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,
-alloccpus,elapsed,state,exitcode,maxdiskread,maxdiskreadnode,maxdiskreadtask,
+\-\-format=jobid,jodidraw,jobname,partition,maxvmsize,maxvmsizenode,
+maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,
+maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,
+alloccpus,elapsed,state,exitcode,avecpufreq,reqcpufreqmin,reqcpufreqmax,
+reqcpufreqgov,reqmem,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,
 avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,
-allocgres,reqgres,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,
-tresusageinmax,tresusageinmaxn,tresusageinmaxt,tresusageoutmax,tresusageoutmaxn,
-tresusageoutmaxt,tresusageoutave,tresusageinave
+allocgres,reqgres,reqtres,alloctres,tresusageinave,tresusageinmax,
+tresusageinmaxn,tresusageinmaxt,tresusageinmin,tresusageinminn,tresusageinmint,
+tresusageintot,tresusageoutmax,tresusageoutmaxn,
+tresusageoutmaxt,tresusageoutave,tresusageouttot
 .ad
 
 .TP

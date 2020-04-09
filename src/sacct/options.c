@@ -379,16 +379,22 @@ sacct [<OPTION>]                                                            \n \
 	           Overrides --federation.                                  \n\
      -l, --long:                                                            \n\
 	           Equivalent to specifying                                 \n\
-	           '--format=jobid,jobname,partition,maxvmsize,maxvmsizenode,\n\
-                             maxvmsizetask,avevmsize,maxrss,maxrssnode,     \n\
-                             maxrsstask,averss,maxpages,maxpagesnode,       \n\
-                             maxpagestask,avepages,mincpu,mincpunode,       \n\
-                             mincputask,avecpu,ntasks,alloccpus,elapsed,    \n\
-                             state,exitcode,avecpufreq,reqcpufreqmin,       \n\
-                             reqcpufreqmax,reqcpufreqgov,consumedenergy,    \n\
-                             maxdiskread,maxdiskreadnode,maxdiskreadtask,   \n\
-                             avediskread,maxdiskwrite,maxdiskwritenode,     \n\
-                             maxdiskwritetask,avediskread,allocgres,reqgres \n\
+	           '--format=jobid,jobidraw,jobname,partition,maxvmsize,    \n\
+                             maxvmsizenode,maxvmsizetask,avevmsize,maxrss,  \n\
+                             maxrssnode,maxrsstask,averss,maxpages,         \n\
+                             maxpagesnode,maxpagestask,avepages,mincpu,     \n\
+                             mincpunode,mincputask,avecpu,ntasks,alloccpus, \n\
+                             elapsed,state,exitcode,avecpufreq,reqcpufreqmin,\n\
+                             reqcpufreqmax,reqcpufreqgov,reqmem,            \n\
+                             consumedenergy,maxdiskread,maxdiskreadnode,    \n\
+                             maxdiskreadtask,avediskread,maxdiskwrite,      \n\
+                             maxdiskwritenode,maxdiskwritetask,avediskwrite,\n\
+                             allocgres,reqgres,reqtres,alloctres,           \n\
+                             tresusageinave,tresusageinmax,tresusageinmaxn, \n\
+                             tresusageinmaxt,tresusageinmin,tresusageinminn,\n\
+                             tresusageinmint,tresusageintot,tresusageoutmax,\n\
+                             tresusageoutmaxn,tresusageoutmaxt,             \n\
+                             tresusageoutave,tresusageouttot                \n\
      -L, --allclusters:                                                     \n\
 	           Display jobs ran on all clusters. By default, only jobs  \n\
                    ran on the cluster from where sacct is called are        \n\
