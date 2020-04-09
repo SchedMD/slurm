@@ -406,8 +406,6 @@ static int _job_fail_qos(job_record_t *job_ptr, const char *func_name)
 		job_ptr->qos_ptr = NULL;
 	}
 
-	job_ptr->qos_id = 0;
-
 	return rc;
 }
 
