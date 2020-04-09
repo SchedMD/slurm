@@ -35,6 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <signal.h>
+
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/power_save.h"
