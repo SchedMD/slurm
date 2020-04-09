@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix race in acct_gather_interconnect/ofed on step termination.
  -- Fix typo of SlurmctldProlog -> PrologSlurmctld in error message.
  -- slurm.spec - add SuSE-specific dependencies for optional slurmrestd package.
+ -- Fix FreeBSD build issues.
 
 * Changes in Slurm 20.02.1
 ==========================
