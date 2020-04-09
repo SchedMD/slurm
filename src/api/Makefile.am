@@ -185,7 +185,7 @@ $(VERSION_SCRIPT) :
 	 echo "};") > $(VERSION_SCRIPT)
 
 $(FULL_VERSION_SCRIPT) :
-	(echo "{ global: *; };" > $(FULL_VERSION_SCRIPT)
+	(echo "{ global: *; };") > $(FULL_VERSION_SCRIPT)
 
 CLEANFILES = \
 	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)
