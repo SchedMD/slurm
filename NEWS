@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix core reservations using the FLEX flag to allow use of resources
     outside of the reservation allocation.
  -- Fix MPS without File with 1 GPU, and without GPUs.
+ -- Add FreeBSD support to proctrack/pgid plugin.
 
 * Changes in Slurm 20.02.1
 ==========================
