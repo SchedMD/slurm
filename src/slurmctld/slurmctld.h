@@ -1079,6 +1079,12 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
  */
 extern void abort_job_on_nodes(job_record_t *job_ptr, bitstr_t *node_bitmap);
 
+/*
+ * If a job has a FAIL_ACCOUNT or FAIL_QOS start_reason check and set pointers
+ * if they are now valid.
+ */
+extern void set_job_failed_assoc_qos_ptr(job_record_t *job_ptr);
+
 /* set the tres_req_str and tres_req_fmt_str for the job.  assoc_mgr_locked
  * is set if the assoc_mgr read lock is already set.
  */

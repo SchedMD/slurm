@@ -508,8 +508,10 @@ extern List build_job_queue(bool clear_start, bool backfill)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
-		if (IS_JOB_PENDING(job_ptr))
+		if (IS_JOB_PENDING(job_ptr)) {
+			set_job_failed_assoc_qos_ptr(job_ptr);
 			acct_policy_handle_accrue_time(job_ptr, false);
+		}
 
 		if (((tested_jobs % 100) == 0) &&
 		    (slurm_delta_tv(&start_tv) >= build_queue_timeout)) {
@@ -1350,8 +1352,10 @@ static int _schedule(uint32_t job_limit)
 				break;
 
 			/* When not fifo we do this in build_job_queue(). */
-			if (IS_JOB_PENDING(job_ptr))
+			if (IS_JOB_PENDING(job_ptr)) {
+				set_job_failed_assoc_qos_ptr(job_ptr);
 				acct_policy_handle_accrue_time(job_ptr, false);
+			}
 
 			if (!avail_front_end(job_ptr)) {
 				job_ptr->state_reason = WAIT_FRONT_END;

@@ -974,6 +974,59 @@ static Buf _open_job_state_file(char **state_file)
 	return create_mmap_buf(*state_file);
 }
 
+extern void set_job_failed_assoc_qos_ptr(job_record_t *job_ptr)
+{
+	if (!job_ptr->assoc_ptr && (job_ptr->state_reason == FAIL_ACCOUNT)) {
+		slurmdb_assoc_rec_t assoc_rec;
+		memset(&assoc_rec, 0, sizeof(assoc_rec));
+		/*
+		 * For speed and accurracy we will first see if we once had an
+		 * association record.  If not look for it by
+		 * account,partition, user_id.
+		 */
+		if (job_ptr->assoc_id)
+			assoc_rec.id = job_ptr->assoc_id;
+		else {
+			assoc_rec.acct      = job_ptr->account;
+			if (job_ptr->part_ptr)
+				assoc_rec.partition = job_ptr->part_ptr->name;
+			assoc_rec.uid       = job_ptr->user_id;
+		}
+
+		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+		                            accounting_enforce,
+		                            &job_ptr->assoc_ptr, false) ==
+		    SLURM_SUCCESS) {
+			job_ptr->assoc_id = assoc_rec.id;
+			debug("%s: Filling in assoc for %pJ Assoc=%u",
+			      __func__, job_ptr, job_ptr->assoc_id);
+
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
+			last_job_update = time(NULL);
+		}
+	}
+
+	if (!job_ptr->qos_ptr && (job_ptr->state_reason == FAIL_QOS)) {
+		int qos_error = SLURM_SUCCESS;
+		slurmdb_qos_rec_t qos_rec;
+		memset(&qos_rec, 0, sizeof(qos_rec));
+		qos_rec.id = job_ptr->qos_id;
+		job_ptr->qos_ptr = _determine_and_validate_qos(
+			job_ptr->resv_name, job_ptr->assoc_ptr,
+			job_ptr->limit_set.qos, &qos_rec,
+			&qos_error, false, LOG_LEVEL_DEBUG2);
+
+		if ((qos_error == SLURM_SUCCESS) && job_ptr->qos_ptr) {
+			debug("%s: Filling in QOS for %pJ QOS=%s(%u)",
+			      __func__, job_ptr, qos_rec.name, job_ptr->qos_id);
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
+			last_job_update = time(NULL);
+		}
+	}
+}
+
 extern void set_job_tres_req_str(job_record_t *job_ptr, bool assoc_mgr_locked)
 {
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
@@ -2459,6 +2512,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		job_ptr->assoc_id = assoc_rec.id;
 		info("Recovered %pJ Assoc=%u", job_ptr, job_ptr->assoc_id);
 
+		if (job_ptr->state_reason == FAIL_ACCOUNT) {
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
+		}
+
 		/* make sure we have started this job in accounting */
 		if (!job_ptr->db_index) {
 			debug("starting %pJ in accounting", job_ptr);
@@ -2494,8 +2552,13 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			&qos_error, true, LOG_LEVEL_ERROR);
 		if ((qos_error != SLURM_SUCCESS) && !job_ptr->limit_set.qos) {
 			job_fail_qos(job_ptr, __func__);
-		} else
+		} else {
 			job_ptr->qos_id = qos_rec.id;
+			if (job_ptr->state_reason == FAIL_QOS) {
+				job_ptr->state_reason = WAIT_NO_REASON;
+				xfree(job_ptr->state_desc);
+			}
+		}
 	}
 
 	/*
