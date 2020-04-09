@@ -35,6 +35,7 @@
 \*****************************************************************************/
 
 #include <fcntl.h>
+#include <limits.h>
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
