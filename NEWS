@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with primary_slurmdbd_resumed_operation trigger not happening
     on slurmctld restart.
  -- Fix race in acct_gather_interconnect/ofed on step termination.
+ -- Fix typo of SlurmctldProlog -> PrologSlurmctld in error message.
 
 * Changes in Slurm 20.02.1
 ==========================

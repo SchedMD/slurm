@@ -129,8 +129,8 @@ int main (int argc, char *argv[])
 	ctx = slurm_step_ctx_create(step_params);
 	if ((ctx == NULL) &&
 	    (slurm_get_errno() == ESLURM_PROLOG_RUNNING)) {
-		printf("SlurmctldProlog is still running, "
-		       "sleep and try again\n");
+		printf("%s, sleep and try again\n",
+		       slurm_strerror(slurm_get_errno()));
 		sleep(10);
 		ctx = slurm_step_ctx_create(step_params);
 	}
