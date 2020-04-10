@@ -33,23 +33,35 @@
 source ./globals
 
 set test_id     "17.31"
-set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
-set job_acct    "TEST_ACCT"
-set job_name    "TEST_NAME"
 set delay       1
 set node_cnt    3
 set ppn_cnt     2
 set min_mem     1024
+set job_id      0
+global env
+set env_pbs_ignore "SBATCH_IGNORE_PBS"
+set env($env_pbs_ignore) 0
 
 print_header $test_id
 
+proc end_it { exit_code } {
+        global job_id test_id
+        if {$job_id != 0} {
+                cancel_job $job_id
+        }
+
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+        exit $exit_code
+}
+
 set available [available_nodes $partition ""]
 if {$available < $node_cnt} {
-	send_user "\nWARNING: not enough nodes currently available"
-	send_user " ($available avail, $node_cnt needed)\n"
-	exit $exit_code
+	log_warn "not enough nodes currently available ($available avail, $node_cnt needed)"
+	end_it 0
 }
 
 log_user 0
@@ -68,7 +80,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 		slow_kill $scontrol_pid
 		exp_continue
@@ -76,10 +88,87 @@ expect {
 	eof {
 		wait
 	}
+        if {$exit_code != 0} {
+                end_it $exit_code
+        }
 }
 log_user 1
-send_user "Actual configuration: min_cpus=$ppn_cnt  min_mem=$min_mem\n\n"
+log_info "Actual configuration: min_cpus=$ppn_cnt  min_mem=$min_mem"
 append min_mem_mb $min_mem "mb"
+
+proc pbs_ignore_expects {} {
+        set whitespace "\\s+"
+        set number     "\\d+"
+        global job_id node_cnt ppn_cnt min_mem
+        set job_id     0
+        set matches    0
+
+        expect {
+                -re "mem$whitespace: ($number)G" {
+                        set mem $expect_out(1,string)
+                        if { $mem * 1024 != $min_mem } {
+                                log_error "Min memory is different ($mem) than requested ($min_mem)"
+                                end_it 1
+                        } else {
+                                incr matches
+                        }
+                        exp_continue
+                }
+                -re "mem$whitespace: ($number)" {
+                        set mem $expect_out(1,string)
+                        if { $mem != $min_mem } {
+                                log_error "Min memory is different ($mem) than requested ($min_mem)"
+                                end_it 1
+                        } else {
+                                incr matches
+                        }
+                        exp_continue
+                }
+                -re "nodes$whitespace: ($number)" {
+                        set nodes $expect_out(1,string)
+                        if { $nodes != $node_cnt } {
+                                log_error "Bad node count allocated"
+                                end_it 1
+                        } else {
+                                incr matches
+                        }
+                        exp_continue
+                }
+                -re "ntasks$whitespace: ($number)" {
+                        set cpu_count $expect_out(1,string)
+                        set cpus_per_node [expr $cpu_count / $node_cnt]
+                        if { $cpus_per_node != $ppn_cnt } {
+                                log_error "PPN count not sent correctly asked for $ppn_cnt but got $cpus_per_node"
+                                end_it 1
+                        } else {
+                                incr matches
+                        }
+                        exp_continue
+                }
+                -re "batch job ($number)" {
+                        set job_id $expect_out(1,string)
+                        exp_continue
+                }
+                "error: Batch job submission failed" {
+                        log_warn "this might be legitimate, depending upon configuration"
+                        exp_continue
+                }
+
+                timeout {
+                        log_error "sbatch not responding"
+                        slow_kill $sbatch_pid
+                        end_it 1
+                }
+                eof {
+                        wait
+                }
+        }
+        if {$job_id != 0} {
+                cancel_job $job_id
+		set job_id 0
+        }
+        return $matches
+}
 
 #
 # Build input script file
@@ -87,89 +176,62 @@ append min_mem_mb $min_mem "mb"
 #   to occur before contending with a multitude of job step creations.
 #   This is especially important on very slow systems (e.g. AIX).
 #
+# PBS commands in the batch file
 make_bash_script $file_in "
 #PBS -l nodes=$node_cnt+ppn=$ppn_cnt,mem=$min_mem_mb
 $bin_sleep $delay
 "
-
-set job_id  0
-set matches 0
 set sbatch_pid [spawn $sbatch -vv -o $file_out $file_in]
-#exp_internal 1
-expect {
-	-re "mem$whitespace: ($number)G" {
-		set mem $expect_out(1,string)
-		if { $mem * 1024 != $min_mem } {
-			send_user "\nFAILURE: Min memory is different ($mem) than requested ($min_mem)\n"
-			set exit_code 1
-		} else {
-			incr matches
-		}
-		exp_continue
-	}
-	-re "mem$whitespace: ($number)" {
-		set mem $expect_out(1,string)
-		if { $mem != $min_mem } {
-			send_user "\nFAILURE: Min memory is different ($mem) than requested ($min_mem)\n"
-			set exit_code 1
-		} else {
-			incr matches
-		}
-		exp_continue
-	}
-	-re "nodes$whitespace: ($number)" {
-		set nodes $expect_out(1,string)
-		if { $nodes != $node_cnt } {
-			send_user "\nFAILURE: Bad node count allocated\n"
-			set exit_code 1
-		} else {
-			incr matches
-		}
-		exp_continue
-	}
-	-re "ntasks$whitespace: ($number)" {
-		set cpu_count $expect_out(1,string)
-		set cpus_per_node [expr $cpu_count / $node_cnt]
-		if { $cpus_per_node != $ppn_cnt } {
-			send_user "\nFAILURE: PPN count not sent correctly asked for $ppn_cnt but got $cpus_per_node\n"
-			set exit_code 1
-		} else {
-			incr matches
-		}
-		exp_continue
-	}
-	-re "batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	"error: Batch job submission failed" {
-		send_user "\nWARNING: this might be legitimate, depending upon configuration\n"
-		exp_continue
-	}
-
-	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
-		set exit_code 1
-		slow_kill $sbatch_pid
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+set matches [pbs_ignore_expects]
 if {$matches != 3} {
-	send_user "\nFAILURE: sbatch didn't read the correct options from batch file ($matches of 3)\n"
-	set exit_code 1
+        log_error "sbatch didn't read the correct options from batch file ($matches of 3)"
+        end_it 1
 }
-if {$job_id != 0} {
-	cancel_job $job_id
-}
+log_info "#PBS batch command processed correctly"
 
-#
-# Post-processing
-#
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out
-	send_user "\nSUCCESS\n"
+
+log_info "--ignore-pbs in the batch file"
+make_bash_script $file_in "
+#SBATCH --ignore-pbs
+#PBS -l nodes=$node_cnt+ppn=$ppn_cnt,mem=$min_mem_mb
+$bin_sleep $delay
+"
+set sbatch_pid [spawn $sbatch -vv -o $file_out $file_in]
+set matches [pbs_ignore_expects]
+if {$matches != 0} {
+        log_error "#SBATCH --ignore-pbs was not processed"
+        end_it 1
 }
-exit $exit_code
+log_info "#SBATCH --ignore-pbs processed correctly"
+
+
+log_info "--ignore-pbs on the command line"
+make_bash_script $file_in "
+#PBS -l nodes=$node_cnt+ppn=$ppn_cnt,mem=$min_mem_mb
+$bin_sleep $delay
+"
+set sbatch_pid [spawn $sbatch --ignore-pbs -vv -o $file_out $file_in]
+set matches [pbs_ignore_expects]
+if {$matches != 0} {
+        log_error "command line arg --ignore-pbs was not processed"
+        end_it 1
+}
+log_info "command line arg --ignore-pbs processed correctly"
+
+
+log_info "SBATCH_IGNORE_PBS=1 ENV VAR"
+make_bash_script $file_in "
+#PBS -l nodes=$node_cnt+ppn=$ppn_cnt,mem=$min_mem_mb
+$bin_sleep $delay
+"
+set env($env_pbs_ignore) 1
+set sbatch_pid [spawn $sbatch -vv -o $file_out $file_in ]
+set matches [pbs_ignore_expects]
+if {$matches != 0} {
+        log_error "SBATCH_IGNORE_PBS=1 environment variable was not processed"
+        end_it 1
+}
+set env($env_pbs_ignore) 0
+log_info "BATCH_IGNORE_PBS=1 environment variable processed correctly"
+
+end_it 0
