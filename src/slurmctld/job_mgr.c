@@ -189,7 +189,7 @@ static void _delete_job_details(job_record_t *job_entry);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
-	bool locked);
+	bool locked, log_level_t log_lvl);
 static void _dump_job_details(struct job_details *detail_ptr, Buf buffer);
 static void _dump_job_state(job_record_t *dump_job_ptr, Buf buffer);
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
@@ -755,7 +755,7 @@ static uint32_t _max_switch_wait(uint32_t input_wait)
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
-	bool locked)
+	bool locked, log_level_t log_lvl)
 {
 	slurmdb_qos_rec_t *qos_ptr = NULL;
 
@@ -768,7 +768,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	assoc_mgr_get_default_qos_info(assoc_ptr, qos_rec);
 	if (assoc_mgr_fill_in_qos(acct_db_conn, qos_rec, accounting_enforce,
 				  &qos_ptr, locked) != SLURM_SUCCESS) {
-		error("Invalid qos (%s)", qos_rec->name);
+		log_var(log_lvl, "Invalid qos (%s)", qos_rec->name);
 		*error_code = ESLURM_INVALID_QOS;
 		return NULL;
 	}
@@ -778,19 +778,17 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	    && !operator
 	    && (!assoc_ptr->usage->valid_qos
 		|| !bit_test(assoc_ptr->usage->valid_qos, qos_rec->id))) {
-		error("This association %d(account='%s', "
-		      "user='%s', partition='%s') does not have "
-		      "access to qos %s",
-		      assoc_ptr->id, assoc_ptr->acct, assoc_ptr->user,
-		      assoc_ptr->partition, qos_rec->name);
+		log_var(log_lvl, "This association %d(account='%s', user='%s', partition='%s') does not have access to qos %s",
+		        assoc_ptr->id, assoc_ptr->acct, assoc_ptr->user,
+		        assoc_ptr->partition, qos_rec->name);
 		*error_code = ESLURM_INVALID_QOS;
 		return NULL;
 	}
 
 	if (qos_ptr && (qos_ptr->flags & QOS_FLAG_REQ_RESV)
 	    && (!resv_name || resv_name[0] == '\0')) {
-		error("qos %s can only be used in a reservation",
-		      qos_rec->name);
+		log_var(log_lvl, "qos %s can only be used in a reservation",
+		        qos_rec->name);
 		*error_code = ESLURM_INVALID_QOS;
 		return NULL;
 	}
@@ -2493,7 +2491,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		job_ptr->qos_ptr = _determine_and_validate_qos(
 			job_ptr->resv_name, job_ptr->assoc_ptr,
 			job_ptr->limit_set.qos, &qos_rec,
-			&qos_error, true);
+			&qos_error, true, LOG_LEVEL_ERROR);
 		if ((qos_error != SLURM_SUCCESS) && !job_ptr->limit_set.qos) {
 			job_fail_qos(job_ptr, __func__);
 		} else
@@ -6986,7 +6984,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	qos_ptr = _determine_and_validate_qos(
 		job_desc->reservation, assoc_ptr, false, &qos_rec, &qos_error,
-		false);
+		false, LOG_LEVEL_ERROR);
 
 	if (qos_error != SLURM_SUCCESS) {
 		error_code = qos_error;
@@ -11903,7 +11901,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 
 		new_qos_ptr = _determine_and_validate_qos(
 			resv_name, use_assoc_ptr,
-			operator, &qos_rec, &error_code, false);
+			operator, &qos_rec, &error_code, false,
+			LOG_LEVEL_ERROR);
 		if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
 			if (job_ptr->qos_ptr == new_qos_ptr) {
 				sched_debug("%s: new QOS identical to old QOS %pJ",
