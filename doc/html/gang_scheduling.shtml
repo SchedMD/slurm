@@ -4,13 +4,15 @@
 
 <P>
 Slurm supports timesliced gang scheduling in which two or more jobs are
-allocated to the same resources and these jobs are alternately suspended to
-let one job at a time have dedicated access to the resources for a configured
-period of time.
-Slurm also supports preemptive priority job scheduling in which a higher
-priority job can preempt a lower priority one until the higher priority job
-completes.
-See the <a href="preempt.html">Preemption</a> document for more information.
+allocated to the same resources in the same partition and these jobs are
+alternately suspended to let one job at a time have dedicated access to the
+resources for a configured period of time.
+<BR>
+Slurm also supports preemptive job scheduling that allows a job in a
+higher <I>PriorityTier</I> partition, or in a preempting QOS, to preempt other
+jobs. <a href="preempt.html">Preemption</a> is related to Gang scheduling
+because SUSPEND is one of the <I>PreemptionMode</I>s, and it uses the Gang
+scheduler to resume suspended jobs.
 </P>
 <P>
 A workload manager that supports timeslicing can improve responsiveness
@@ -23,7 +25,7 @@ Throughput is also improved because overcommitting the resources provides
 opportunities for "local backfilling" to occur (see example below).
 </P>
 <P>
-The gang scheduling logic monitors each of the partitions in Slurm.
+The gang scheduling logic works on each partition independently.
 If a new job has been allocated to resources in a partition that have already
 been allocated to an existing job, then the plugin will suspend the new job
 until the configured <I>SchedulerTimeslice</I> interval has elapsed.
@@ -42,17 +44,19 @@ gang scheduling:
 <LI>
 <B>SelectType</B>: The Slurm gang scheduler supports
 nodes allocated by the <I>select/linear</I> plugin,
-socket/core/CPU resources allocated by the <I>select/cons_res</I> plugin or
-<I>select/cray_aries</I> for Cray XC systems without ALPS.
+socket/core/CPU resources allocated by the <I>select/cons_res</I> and
+<I>select/cons_tres</I> plugins, or <I>select/cray_aries</I> for Cray XC
+systems without ALPS.
 </LI>
 <LI>
 <B>SelectTypeParameter</B>: Since resources will be getting overallocated
-with jobs, the resource selection plugin should be configured to track the
-amount of memory used by each job to ensure that memory page swapping does
-not occur. When <I>select/linear</I> is chosen, we recommend setting
-<I>SelectTypeParameter=CR_Memory</I>. When <I>select/cons_res</I> is
-chosen, we recommend including Memory as a resource (e.g.
-<I>SelectTypeParameter=CR_Core_Memory</I>).
+with jobs (suspended jobs remain in memory), the resource selection plugin
+should be configured to track the amount of memory used by each job to ensure
+that memory page swapping does not occur.
+When <I>select/linear</I> is chosen, we recommend setting
+<I>SelectTypeParameter=CR_Memory</I>.
+When <I>select/cons_res</I> or <I>select/cons_tres</I> are chosen, we recommend
+including Memory as a resource (e.g. <I>SelectTypeParameter=CR_Core_Memory</I>).
 </LI>
 <LI>
 <B>DefMemPerCPU</B>: Since job requests may not explicitly specify
@@ -78,8 +82,18 @@ adversely affecting other jobs sharing the same resources.
 </LI>
 <LI>
 <B>PreemptMode</B>: set the <I>GANG</I> option.
-Additional options may be specified to enable job preemption in addition
-to gang scheduling.
+See the <I>slurm.conf</I> manpage for other options that may be specified to
+enable job <a href="preempt.html">preemption</a> in addition to GANG.
+<BR>
+NOTE: Gang scheduling is performed independently for each partition, so
+if you only want time-slicing by <I>OverSubscribe</I>, without any preemption,
+then configuring partitions with overlapping nodes is not recommended.
+On the other hand, if you want to use <I>PreemptType=preempt/partition_prio</I>
+to allow jobs from higher <I>PriorityTier</I> partitions to Suspend jobs from
+lower <I>PriorityTier</I> partitions, then you will need overlapping partitions,
+and <I>PreemptMode=SUSPEND,GANG</I> to use the Gang scheduler to resume the
+suspended job(s).
+In any case, time-slicing won't happen between jobs on different partitions.
 </LI>
 <LI>
 <B>SchedulerTimeSlice</B>: The default timeslice interval is 30 seconds.
@@ -96,9 +110,6 @@ how many jobs can share a compute resource (FORCE[:max_share]). By default the
 max_share value is 4. To allow up to 6 jobs from this partition to be
 allocated to a common resource, set <I>OverSubscribe=FORCE:6</I>. To only let 2 jobs
 timeslice on the same resources, set <I>OverSubscribe=FORCE:2</I>.
-NOTE: Gang scheduling is performed independently for each partition, so
-configuring partitions with overlapping nodes and gang scheduling is generally
-not recommended.
 </LI>
 </UL>
 <P>
@@ -508,6 +519,6 @@ Use of the scancel command to send SIGSTOP and SIGCONT signals would stop a
 job without releasing its CPUs for allocation to other jobs and would be a
 preferable mechanism in many cases.</P>
 
-<p style="text-align:center;">Last modified 31 March 2016</p>
+<p style="text-align:center;">Last modified 10 March 2020</p>
 
 <!--#include virtual="footer.txt"-->
