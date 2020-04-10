@@ -1559,6 +1559,29 @@ proc get_conf_param { param } {
 
 ################################################################
 #
+# Proc: check_conf_param
+#
+# Purpose: Check if given parameter contains given value
+#
+# Returns Bool if value is in param
+#
+# Input: param - configuration parameter to be checked (e.g. SchedulerType)
+#        value - value to look for in specific param (e.g sched/builtin)
+#
+################################################################
+proc check_conf_param { param value } {
+	set param_value [ get_conf_param $param ]
+	set match 0
+
+	if {[regexp -nocase $value $param_value]} {
+		set match 1
+	}
+
+	return $match
+}
+
+################################################################
+#
 # Proc: get_affinity_types
 #
 # Purpose: get the task plugins running with task/ stripped
