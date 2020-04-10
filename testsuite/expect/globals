@@ -1523,6 +1523,42 @@ proc test_topology { } {
 
 ################################################################
 #
+# Proc: get_conf_param
+#
+# Purpose: Return the value of specific configuration parameter
+#
+# Returns string with conf parameter value or UNKNOWN, and exit_code 1 on error
+#
+# Input: param - configuration parameter to be returned (e.g. SchedulerType)
+#
+################################################################
+proc get_conf_param { param } {
+	global scontrol bin_bash bin_grep
+
+	set log_prev [log_user -info]
+	log_user 0
+	set param_value "UNKNOWN"
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep -i $param"
+	expect {
+		-re "$param *= (\[^\\n\]*)" {
+			set param_value $expect_out(1,string)
+		}
+		timeout {
+			log_error "scontrol show config time out"
+			set exit_code 1
+		}
+	}
+	if {[string equal $param_value "UNKNOWN"]} {
+		log_error "Configuration option $param not found"
+		set exit_code 1
+	}
+	log_user $log_prev
+
+	return $param_value
+}
+
+################################################################
+#
 # Proc: get_affinity_types
 #
 # Purpose: get the task plugins running with task/ stripped
