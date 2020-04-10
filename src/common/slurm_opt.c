@@ -2007,7 +2007,6 @@ static slurm_cli_opt_t slurm_opt_ignore_pbs = {
 	.name = "ignore-pbs",
 	.has_arg = no_argument,
 	.val = LONG_OPT_IGNORE_PBS,
-	.sbatch_early_pass = true,
 	.set_func_sbatch = arg_set_ignore_pbs,
 	.get_func = arg_get_ignore_pbs,
 	.reset_func = arg_reset_ignore_pbs,

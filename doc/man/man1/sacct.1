@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "May 2019" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "April 2020" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -269,14 +269,16 @@ Show only jobs local to this cluster. Ignore other clusters in this federation
 Equivalent to specifying:
 .IP
 .na
-\-\-format=jobid,jobname,partition,maxvmsize,maxvmsizenode,maxvmsizetask,
-avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,
-maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,
-alloccpus,elapsed,state,exitcode,maxdiskread,maxdiskreadnode,maxdiskreadtask,
+\-\-format=jobid,jodidraw,jobname,partition,maxvmsize,maxvmsizenode,
+maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,
+maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,
+alloccpus,elapsed,state,exitcode,avecpufreq,reqcpufreqmin,reqcpufreqmax,
+reqcpufreqgov,reqmem,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,
 avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,
-allocgres,reqgres,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,
-tresusageinmax,tresusageinmaxn,tresusageinmaxt,tresusageoutmax,tresusageoutmaxn,
-tresusageoutmaxt,tresusageoutave,tresusageinave
+allocgres,reqgres,reqtres,alloctres,tresusageinave,tresusageinmax,
+tresusageinmaxn,tresusageinmaxt,tresusageinmin,tresusageinminn,tresusageinmint,
+tresusageintot,tresusageoutmax,tresusageoutmaxn,
+tresusageoutmaxt,tresusageoutave,tresusageouttot
 .ad
 
 .TP
@@ -752,6 +754,21 @@ Requested CPU frequency for the step, in kHz.
 Note: This value applies only to a job step. No value is reported for the job.
 
 .TP
+\f3ReqCPUFreqGov\fP
+Requested CPU frequency governor for the step, in kHz.
+Note: This value applies only to a job step. No value is reported for the job.
+
+.TP
+\f3ReqCPUFreqMax\fP
+Maximum requested CPU frequency for the step, in kHz.
+Note: This value applies only to a job step. No value is reported for the job.
+
+.TP
+\f3ReqCPUFreqMin\fP
+Minimum requested CPU frequency for the step, in kHz.
+Note: This value applies only to a job step. No value is reported for the job.
+
+.TP
 \f3ReqCPUS\fP
 Number of requested CPUs.
 
@@ -881,6 +898,24 @@ Node for which each maximum TRES usage out occurred.
 Task for which each maximum TRES usage out occurred.
 
 .TP
+\f3TresUsageInMin\fP
+Tres minimum usage in by all tasks in job.
+NOTE: If corresponding TresUsageInMinTask is -1 the metric is node centric
+instead of task.
+
+.TP
+\f3TresUsageInMinNode\fP
+Node for which each minimum TRES usage out occurred.
+
+.TP
+\f3TresUsageInMinTask\fP
+Task for which each minimum TRES usage out occurred.
+
+.TP
+\f3TresUsageInTot\fP
+Tres total usage in by all tasks in job.
+
+.TP
 \f3TresUsageOutAve\fP
 Tres average usage out by all tasks in job.
 NOTE: If corresponding TresUsageOutMaxTask is -1 the metric is node centric
@@ -899,6 +934,10 @@ Node for which each maximum TRES usage out occurred.
 .TP
 \f3TresUsageOutMaxTask\fP
 Task for which each maximum TRES usage out occurred.
+
+.TP
+\f3TresUsageOutTot\fP
+Tres total usage out by all tasks in job.
 
 .TP
 \f3UID\fP
