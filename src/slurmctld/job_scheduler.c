@@ -407,8 +407,17 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	(void) slurm_delta_tv(&start_tv);
 	job_queue = list_create(xfree_ptr);
 
-	/* Create individual job records for job arrays that need burst buffer
-	 * staging */
+	/*
+	 * Create individual job records for job arrays that need burst buffer
+	 * staging
+	 *
+	 * NOTE: You can not use list_for_each for these loops here because
+	 * job_array_post_sched and job_array_split could eventually call
+	 * _create_job_record which appends to job_list causing deadlock.  The
+	 * last one calls job_independent from _job_runnable_test1 which
+	 * eventually calls list_find_first on job_list so it is not able
+	 * either.
+	 */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_PENDING(job_ptr) ||
@@ -444,11 +453,10 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			      __func__, job_ptr);
 		}
 	}
-	list_iterator_destroy(job_iterator);
 
 	/* Create individual job records for job arrays with
 	 * depend_type == SLURM_DEPEND_AFTER_CORRESPOND */
-	job_iterator = list_iterator_create(job_list);
+	list_iterator_reset(job_iterator);
 	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_PENDING(job_ptr) ||
 		    !job_ptr->array_recs ||
@@ -497,9 +505,8 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			      __func__, job_ptr);
 		}
 	}
-	list_iterator_destroy(job_iterator);
 
-	job_iterator = list_iterator_create(job_list);
+	list_iterator_reset(job_iterator);
 	while ((job_ptr = list_next(job_iterator))) {
 		if (IS_JOB_PENDING(job_ptr)) {
 			set_job_failed_assoc_qos_ptr(job_ptr);
