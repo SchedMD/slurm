@@ -1539,32 +1539,7 @@ next_task:
 
 		}
 
-		/* Test for valid account, QOS and required nodes on each pass */
-		if (job_ptr->state_reason == FAIL_ACCOUNT) {
-			slurmdb_assoc_rec_t assoc_rec;
-			memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
-			assoc_rec.acct      = job_ptr->account;
-			if (job_ptr->part_ptr)
-				assoc_rec.partition = job_ptr->part_ptr->name;
-			assoc_rec.uid       = job_ptr->user_id;
-
-			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						     accounting_enforce,
-						     &job_ptr->assoc_ptr,
-						     false)) {
-				job_ptr->state_reason = WAIT_NO_REASON;
-				xfree(job_ptr->state_desc);
-				job_ptr->assoc_id = assoc_rec.id;
-				last_job_update = now;
-			} else {
-				sched_debug("%pJ has invalid association",
-					    job_ptr);
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason =
-					WAIT_ASSOC_RESOURCE_LIMIT;
-				continue;
-			}
-		}
+		/* Test for valid QOS and required nodes on each pass */
 		if (job_ptr->qos_id) {
 			assoc_mgr_lock_t locks =
 				{ .assoc = READ_LOCK, .qos = READ_LOCK };

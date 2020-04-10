@@ -1781,31 +1781,6 @@ static int _attempt_backfill(void)
 		if (het_job_time > (now + backfill_window))
 			continue;
 
-		if (job_ptr->state_reason == FAIL_ACCOUNT) {
-			slurmdb_assoc_rec_t assoc_rec;
-			memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
-			assoc_rec.acct      = job_ptr->account;
-			assoc_rec.partition = job_ptr->part_ptr->name;
-			assoc_rec.uid       = job_ptr->user_id;
-
-			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						    accounting_enforce,
-						     &job_ptr->assoc_ptr,
-						     false)) {
-				job_ptr->state_reason = WAIT_NO_REASON;
-				xfree(job_ptr->state_desc);
-				job_ptr->assoc_id = assoc_rec.id;
-				last_job_update = now;
-			} else {
-				debug("backfill: %pJ has invalid association",
-				      job_ptr);
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason =
-					WAIT_ASSOC_RESOURCE_LIMIT;
-				continue;
-			}
-		}
-
 		if (job_ptr->qos_id) {
 			assoc_mgr_lock_t locks = {
 				READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
