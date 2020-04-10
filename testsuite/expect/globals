@@ -733,6 +733,7 @@ proc wait_for_file { file_name } {
 #                            DONE any terminated state
 #                            PENDING job is pending
 #                            RUNNING job is running
+#                            SPECIAL_EXIT
 #                            SUSPENDED job is suspended
 #
 # NOTE: We sleep for two seconds before replying that a job is
@@ -748,6 +749,7 @@ proc wait_for_job { job_id desired_state } {
 		"DONE" {}
 		"PENDING" {}
 		"RUNNING" {}
+		"SPECIAL_EXIT" {}
 		"SUSPENDED" {}
 		default {
 			send_user "WARNING: wait_for_job with invalid state: $desired_state\n"
@@ -771,13 +773,15 @@ proc wait_for_job { job_id desired_state } {
 
 		switch $state {
 			"NOT_FOUND" -
+			"BOOT_FAIL" -
 			"CANCELLED" -
+			"COMPLETED" -
 			"DEADLINE" -
 			"FAILED" -
-			"TIMEOUT" -
 			"NODE_FAIL" -
+			"OUT_OF_MEMORY" -
 			"PREEMPTED" -
-			"COMPLETED" {
+			"TIMEOUT" {
 				if {[string compare $desired_state "DONE"] == 0} {
 					send_user "Job $job_id is DONE ($state)\n"
 					sleep 2
@@ -804,6 +808,14 @@ proc wait_for_job { job_id desired_state } {
 			"RUNNING" {
 				if {[string compare $desired_state "RUNNING"] == 0} {
 					send_user "Job $job_id is RUNNING\n"
+					return 0
+				}
+				send_user "Job $job_id is in state $state, "
+				send_user "desire $desired_state\n"
+			}
+			"SPECIAL_EXIT" {
+				if {[string compare $desired_state "SPECIAL_EXIT"] == 0} {
+					send_user "Job $job_id is SPECIAL_EXIT\n"
 					return 0
 				}
 				send_user "Job $job_id is in state $state, "
