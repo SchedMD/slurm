@@ -910,6 +910,7 @@ static int _parse_long_format (char* format_long)
 				   &suffix);
 		if (!xstrcasecmp(token, "all")) {
 			_parse_format ("%all");
+			xfree(suffix);
 		} else if (!xstrcasecmp(token, "allocmem")) {
 			params.match_flags.alloc_mem_flag = true;
 			format_add_alloc_mem( params.format_list,
@@ -1177,6 +1178,7 @@ static int _parse_long_format (char* format_long)
 					   suffix );
 		} else if (format_all) {
 			/* ignore */
+			xfree(suffix);
 		} else {
 			format_add_invalid( params.format_list,
 					    field_size,
