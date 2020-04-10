@@ -1822,10 +1822,9 @@ static int _attempt_backfill(void)
 			    && !job_ptr->limit_set.qos) {
 				debug("backfill: %pJ has invalid QOS",
 				      job_ptr);
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason = FAIL_QOS;
-				last_job_update = now;
 				assoc_mgr_unlock(&locks);
+				job_fail_qos(job_ptr, __func__);
+				last_job_update = now;
 				continue;
 			} else if (job_ptr->state_reason == FAIL_QOS) {
 				xfree(job_ptr->state_desc);

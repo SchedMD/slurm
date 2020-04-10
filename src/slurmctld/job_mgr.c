@@ -189,7 +189,7 @@ static void _delete_job_details(job_record_t *job_entry);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
-	bool locked);
+	bool locked, log_level_t log_lvl);
 static void _dump_job_details(struct job_details *detail_ptr, Buf buffer);
 static void _dump_job_state(job_record_t *dump_job_ptr, Buf buffer);
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
@@ -349,7 +349,7 @@ static int _job_fail_account(job_record_t *job_ptr, const char *func_name)
 	return rc;
 }
 
-static int _job_fail_qos(job_record_t *job_ptr, const char *func_name)
+extern int job_fail_qos(job_record_t *job_ptr, const char *func_name)
 {
 	int rc = 0; // Return number of pending jobs held
 
@@ -403,8 +403,6 @@ static int _job_fail_qos(job_record_t *job_ptr, const char *func_name)
 
 		job_ptr->qos_ptr = NULL;
 	}
-
-	job_ptr->qos_id = 0;
 
 	return rc;
 }
@@ -753,7 +751,7 @@ static uint32_t _max_switch_wait(uint32_t input_wait)
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
-	bool locked)
+	bool locked, log_level_t log_lvl)
 {
 	slurmdb_qos_rec_t *qos_ptr = NULL;
 
@@ -766,7 +764,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	assoc_mgr_get_default_qos_info(assoc_ptr, qos_rec);
 	if (assoc_mgr_fill_in_qos(acct_db_conn, qos_rec, accounting_enforce,
 				  &qos_ptr, locked) != SLURM_SUCCESS) {
-		error("Invalid qos (%s)", qos_rec->name);
+		log_var(log_lvl, "Invalid qos (%s)", qos_rec->name);
 		*error_code = ESLURM_INVALID_QOS;
 		return NULL;
 	}
@@ -776,19 +774,17 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	    && !operator
 	    && (!assoc_ptr->usage->valid_qos
 		|| !bit_test(assoc_ptr->usage->valid_qos, qos_rec->id))) {
-		error("This association %d(account='%s', "
-		      "user='%s', partition='%s') does not have "
-		      "access to qos %s",
-		      assoc_ptr->id, assoc_ptr->acct, assoc_ptr->user,
-		      assoc_ptr->partition, qos_rec->name);
+		log_var(log_lvl, "This association %d(account='%s', user='%s', partition='%s') does not have access to qos %s",
+		        assoc_ptr->id, assoc_ptr->acct, assoc_ptr->user,
+		        assoc_ptr->partition, qos_rec->name);
 		*error_code = ESLURM_INVALID_QOS;
 		return NULL;
 	}
 
 	if (qos_ptr && (qos_ptr->flags & QOS_FLAG_REQ_RESV)
 	    && (!resv_name || resv_name[0] == '\0')) {
-		error("qos %s can only be used in a reservation",
-		      qos_rec->name);
+		log_var(log_lvl, "qos %s can only be used in a reservation",
+		        qos_rec->name);
 		*error_code = ESLURM_INVALID_QOS;
 		return NULL;
 	}
@@ -972,6 +968,59 @@ static Buf _open_job_state_file(char **state_file)
 	error("NOTE: Trying backup state save file. Jobs may be lost!");
 	xstrcat(*state_file, ".old");
 	return create_mmap_buf(*state_file);
+}
+
+extern void set_job_failed_assoc_qos_ptr(job_record_t *job_ptr)
+{
+	if (!job_ptr->assoc_ptr && (job_ptr->state_reason == FAIL_ACCOUNT)) {
+		slurmdb_assoc_rec_t assoc_rec;
+		memset(&assoc_rec, 0, sizeof(assoc_rec));
+		/*
+		 * For speed and accurracy we will first see if we once had an
+		 * association record.  If not look for it by
+		 * account,partition, user_id.
+		 */
+		if (job_ptr->assoc_id)
+			assoc_rec.id = job_ptr->assoc_id;
+		else {
+			assoc_rec.acct      = job_ptr->account;
+			if (job_ptr->part_ptr)
+				assoc_rec.partition = job_ptr->part_ptr->name;
+			assoc_rec.uid       = job_ptr->user_id;
+		}
+
+		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+		                            accounting_enforce,
+		                            &job_ptr->assoc_ptr, false) ==
+		    SLURM_SUCCESS) {
+			job_ptr->assoc_id = assoc_rec.id;
+			debug("%s: Filling in assoc for %pJ Assoc=%u",
+			      __func__, job_ptr, job_ptr->assoc_id);
+
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
+			last_job_update = time(NULL);
+		}
+	}
+
+	if (!job_ptr->qos_ptr && (job_ptr->state_reason == FAIL_QOS)) {
+		int qos_error = SLURM_SUCCESS;
+		slurmdb_qos_rec_t qos_rec;
+		memset(&qos_rec, 0, sizeof(qos_rec));
+		qos_rec.id = job_ptr->qos_id;
+		job_ptr->qos_ptr = _determine_and_validate_qos(
+			job_ptr->resv_name, job_ptr->assoc_ptr,
+			job_ptr->limit_set.qos, &qos_rec,
+			&qos_error, false, LOG_LEVEL_DEBUG2);
+
+		if ((qos_error == SLURM_SUCCESS) && job_ptr->qos_ptr) {
+			debug("%s: Filling in QOS for %pJ QOS=%s(%u)",
+			      __func__, job_ptr, qos_rec.name, job_ptr->qos_id);
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
+			last_job_update = time(NULL);
+		}
+	}
 }
 
 extern void set_job_tres_req_str(job_record_t *job_ptr, bool assoc_mgr_locked)
@@ -2223,6 +2272,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		job_ptr->assoc_id = assoc_rec.id;
 		info("Recovered %pJ Assoc=%u", job_ptr, job_ptr->assoc_id);
 
+		if (job_ptr->state_reason == FAIL_ACCOUNT) {
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
+		}
+
 		/* make sure we have started this job in accounting */
 		if (!job_ptr->db_index) {
 			debug("starting %pJ in accounting", job_ptr);
@@ -2255,11 +2309,16 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		job_ptr->qos_ptr = _determine_and_validate_qos(
 			job_ptr->resv_name, job_ptr->assoc_ptr,
 			job_ptr->limit_set.qos, &qos_rec,
-			&qos_error, true);
+			&qos_error, true, LOG_LEVEL_ERROR);
 		if ((qos_error != SLURM_SUCCESS) && !job_ptr->limit_set.qos) {
-			_job_fail_qos(job_ptr, __func__);
-		} else
+			job_fail_qos(job_ptr, __func__);
+		} else {
 			job_ptr->qos_id = qos_rec.id;
+			if (job_ptr->state_reason == FAIL_QOS) {
+				job_ptr->state_reason = WAIT_NO_REASON;
+				xfree(job_ptr->state_desc);
+			}
+		}
 	}
 
 	/*
@@ -6714,7 +6773,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	qos_ptr = _determine_and_validate_qos(
 		job_desc->reservation, assoc_ptr, false, &qos_rec, &qos_error,
-		false);
+		false, LOG_LEVEL_ERROR);
 
 	if (qos_error != SLURM_SUCCESS) {
 		error_code = qos_error;
@@ -11411,7 +11470,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 
 		new_qos_ptr = _determine_and_validate_qos(
 			resv_name, use_assoc_ptr,
-			operator, &qos_rec, &error_code, false);
+			operator, &qos_rec, &error_code, false,
+			LOG_LEVEL_ERROR);
 		if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
 			if (job_ptr->qos_ptr == new_qos_ptr) {
 				sched_debug("%s: new QOS identical to old QOS %pJ",
@@ -16801,7 +16861,7 @@ extern int job_hold_by_qos_id(uint32_t qos_id)
 		if (job_ptr->qos_id != qos_id)
 			continue;
 
-		cnt += _job_fail_qos(job_ptr, __func__);
+		cnt += job_fail_qos(job_ptr, __func__);
 	}
 	list_iterator_destroy(job_iterator);
 	unlock_slurmctld(job_write_lock);

@@ -50,6 +50,9 @@ documents those changes that are of interest to users and administrators.
  -- slurm.spec - add SuSE-specific dependencies for optional slurmrestd package.
  -- Fix FreeBSD build issues.
  -- Fixed sbatch not processing --ignore-pbs in batch script.
+ -- Don't clear the qos_id of an invalid QOS.
+ -- Allow a job that was once FAIL_[QOS|ACCOUNT] to be eligible again if
+    the qos|account limitation is remedied.
 
 * Changes in Slurm 20.02.1
 ==========================
