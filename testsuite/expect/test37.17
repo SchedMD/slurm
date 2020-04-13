@@ -872,6 +872,57 @@ proc test_submit_to_all_clusters { } {
 	cancel_job $job_id2 "$c1,$c2,$c3"
 }
 
+proc test_local_or_dependencies { } {
+	global c1 file_in_long kill_invalid_depend
+
+	send_user "
+#############################################################################
+# Test local OR dependencies.
+#############################################################################
+	\n\n"
+
+	log_info "OR dependencies: Test that one fulfilled dependency makes the whole dependency fulfilled:"
+	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
+	set job_id2 [submit_job "-M$c1" $c1 $file_in_long]
+	set job_id3 [submit_job \
+		"--depend=afternotok:$job_id1?afternotok:$job_id2 -M$c1" \
+		$c1 $file_in_long]
+
+	my_wait_for_fed_job $job_id1 "RUNNING" $c1
+	my_wait_for_fed_job $job_id2 "RUNNING" $c1
+	my_wait_for_fed_job $job_id3 "PENDING" $c1
+	wait_for_depend $job_id3 "Dependency" \
+		"afternotok:$job_id1\(unfulfilled\)?afternotok:$job_id2\(unfulfilled\)"
+
+	cancel_job $job_id2 $c1
+	wait_for_depend $job_id3 "None" "(null)"
+	my_wait_for_fed_job $job_id3 "RUNNING" $c1
+	cancel_job $job_id1 $c1
+	cancel_job $job_id3 $c1
+
+	log_info "OR dependencies: Test that the dependency doesn't fail until all dependencies have failed:"
+	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
+	set job_id2 [submit_job "-M$c1" $c1 $file_in_long]
+	set job_id3 [submit_job "--depend=afterok:$job_id1?afterok:$job_id2 \
+		-M$c1" $c1 $file_in_long]
+
+	my_wait_for_fed_job $job_id1 "RUNNING" $c1
+	my_wait_for_fed_job $job_id2 "RUNNING" $c1
+	my_wait_for_fed_job $job_id3 "PENDING" $c1
+	wait_for_depend $job_id3 "Dependency" \
+		"afterok:$job_id1\(unfulfilled\)?afterok:$job_id2\(unfulfilled\)"
+
+	cancel_job $job_id1 $c1
+	wait_for_depend $job_id3 "Dependency" \
+		"afterok:$job_id1\(failed\)?afterok:$job_id2\(unfulfilled\)"
+	cancel_job $job_id2 $c1
+	wait_for_depend $job_id3 "DependencyNeverSatisfied" \
+		"afterok:$job_id1\(failed\)?afterok:$job_id2\(failed\)"
+	if { !$kill_invalid_depend } {
+		cancel_job $job_id3 $c1
+	}
+}
+
 proc test_remote_or_dependencies { } {
 	global c1 c2 file_in_long kill_invalid_depend
 
@@ -921,6 +972,57 @@ proc test_remote_or_dependencies { } {
 	if { !$kill_invalid_depend } {
 		cancel_job $job_id3 $c1
 	}
+}
+
+proc test_local_and_dependencies { } {
+	global c1 file_in_long kill_invalid_depend
+
+	send_user "
+#############################################################################
+# Test local AND dependencies.
+#############################################################################
+	\n\n"
+
+	log_info "AND dependencies: Test that the dependency isn't fulfilled until all dependencies are fulfilled:"
+	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
+	set job_id2 [submit_job "-M$c1" $c1 $file_in_long]
+	set job_id3 [submit_job \
+		"--depend=afternotok:$job_id1,afternotok:$job_id2 -M$c1" \
+		$c1 $file_in_long]
+
+	my_wait_for_fed_job $job_id1 "RUNNING" $c1
+	my_wait_for_fed_job $job_id2 "RUNNING" $c1
+	my_wait_for_fed_job $job_id3 "PENDING" $c1
+	wait_for_depend $job_id3 "Dependency" \
+		"afternotok:$job_id1\(unfulfilled\),afternotok:$job_id2\(unfulfilled\)"
+
+	cancel_job $job_id1 $c1
+	wait_for_depend $job_id3 "Dependency" \
+		"afternotok:$job_id2\(unfulfilled\)"
+	cancel_job $job_id2 $c1
+	wait_for_depend $job_id3 "None" "(null)"
+	my_wait_for_fed_job $job_id3 "RUNNING" $c1
+	cancel_job $job_id3 $c1
+
+	log_info "AND dependencies: Test that the whole dependency fails when a single dependency fails:"
+	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
+	set job_id2 [submit_job "-M$c1" $c1 $file_in_long]
+	set job_id3 [submit_job "--depend=afterok:$job_id1,afterok:$job_id2 \
+		-M$c1" $c1 $file_in_long]
+
+	my_wait_for_fed_job $job_id1 "RUNNING" $c1
+	my_wait_for_fed_job $job_id2 "RUNNING" $c1
+	my_wait_for_fed_job $job_id3 "PENDING" $c1
+	wait_for_depend $job_id3 "Dependency" \
+		"afterok:$job_id1\(unfulfilled\),afterok:$job_id2\(unfulfilled\)"
+
+	cancel_job $job_id2 $c1
+	wait_for_depend $job_id3 "DependencyNeverSatisfied" \
+		"afterok:$job_id1\(unfulfilled\),afterok:$job_id2\(failed\)"
+	if { !$kill_invalid_depend } {
+		cancel_job $job_id3 $c1
+	}
+	cancel_job $job_id1 $c1
 }
 
 proc test_remote_and_dependencies { } {
@@ -1024,6 +1126,8 @@ test_local_aftercorr
 test_local_afterok
 test_local_afternotok
 test_local_singleton
+test_local_or_dependencies
+test_local_and_dependencies
 # test --depend=expand in another test.
 
 if {![test_federation_setup]} {
