@@ -531,7 +531,7 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 
 	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
 	if (rc != SLURM_SUCCESS)
-		fatal("%s failed to load configuration", plugin_name);
+		fatal("%s: failed to load configuration", plugin_name);
 	if (_build_mps_dev_info(gres_conf_list) == 0)
 		_remove_mps_recs(gres_conf_list);
 
