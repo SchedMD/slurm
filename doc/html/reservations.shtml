@@ -19,7 +19,7 @@ cannot be accurately predicted.</p>
 <p>Note that reserved burst buffers and licenses are treated somewhat
 differently than reserved cores or nodes.
 When cores or nodes are reserved, then jobs using that reservation can use only
-those resources and no other jobs can use those resources.
+those resources (this behavior can be change using FLEX flag) and no other jobs can use those resources.
 Reserved burst buffers and licenses can only be used by jobs associated with
 that reservation, but licenses not explicitly reserved are available to any job.
 This eliminates the need to explicitly put licenses into every advanced

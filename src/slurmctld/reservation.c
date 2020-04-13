@@ -5211,7 +5211,8 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		 * if reservation is using just partial nodes, this returns
 		 * coremap to exclude
 		 */
-		if (resv_ptr->core_bitmap && exc_core_bitmap) {
+		if (resv_ptr->core_bitmap && exc_core_bitmap &&
+		    !(resv_ptr->flags & RESERVE_FLAG_FLEX) ) {
 			*exc_core_bitmap = bit_copy(resv_ptr->core_bitmap);
 			bit_not(*exc_core_bitmap);
 		}
