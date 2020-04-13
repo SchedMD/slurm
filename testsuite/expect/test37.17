@@ -60,15 +60,16 @@ set my_scontrol "${fed_slurm_base}/$c1/bin/scontrol"
 set reason ""
 set dependency ""
 set fed_name "fed_test$test_id"
+set all_clusters "$c1,$c2,$c3"
 
 ###############################################################################
 # Functions
 ###############################################################################
 
 proc cancel_all_jobs { } {
-	global user_name c1 c2 c3 my_scancel
+	global user_name c1 c2 c3 my_scancel all_clusters test_id
 
-	spawn $my_scancel -M$c1,$c2,$c3 -u $user_name
+	spawn $my_scancel -M$all_clusters --jobname test${test_id}_job
 	expect {
 		eof {
 			wait
@@ -109,6 +110,9 @@ proc submit_job { options cdir file_in } {
 
 	set job_id 0
 	set my_sbatch "${fed_slurm_base}/$cdir/bin/sbatch"
+	if {[test_federation_setup]} {
+		set my_sbatch $sbatch
+	}
 	set command "$my_sbatch --job-name=test$test_id\_job -t1 \
 		$options --output=/dev/null $file_in"
 	set sbatch_pid [spawn {*}$command]
@@ -282,11 +286,11 @@ proc is_job_on_cluster { job_id cluster } {
 	}
 }
 
-proc test_after { } {
-	global c1 c2 file_in_long bin_sleep
+proc test_local_after { } {
+	global c1 file_in_long bin_sleep
 	send_user "
 #############################################################################
-# Test after
+# Test local after
 #############################################################################
 	\n\n"
 
@@ -302,6 +306,17 @@ proc test_after { } {
 	my_wait_for_fed_job $job_id2 "RUNNING" $c1
 	cancel_job $job_id1 $c1
 	cancel_job $job_id2 $c1
+
+}
+
+proc test_remote_after { } {
+	global c1 c2 file_in_long bin_sleep
+
+	send_user "
+#############################################################################
+# Test remote after
+#############################################################################
+	\n\n"
 
 	# Remote dependency succeeds
 	log_info "after: test that remote dependency succeeds:"
@@ -337,12 +352,12 @@ proc test_after { } {
 	# After dependency never fails.
 }
 
-proc test_afterany { } {
-	global c1 c2 file_in_long
+proc test_local_afterany { } {
+	global c1 file_in_long
 
 	send_user "
 #############################################################################
-# Test afterany
+# Test local afterany
 #############################################################################
 	\n\n"
 
@@ -358,6 +373,16 @@ proc test_afterany { } {
 	wait_for_depend $job_id2 "None" "(null)"
 	my_wait_for_fed_job $job_id2 "RUNNING" $c1
 	cancel_job $job_id2 $c1
+}
+
+proc test_remote_afterany { } {
+	global c1 c2 file_in_long
+
+	send_user "
+#############################################################################
+# Test remote afterany
+#############################################################################
+	\n\n"
 
 	# Remote dependency succeeds
 	log_info "afterany: test that remote dependency succeeds:"
@@ -389,12 +414,12 @@ proc test_afterany { } {
 	cancel_all_jobs
 }
 
-proc test_aftercorr { } {
-	global c1 c2 kill_invalid_depend file_in_long file_in_short
+proc test_local_aftercorr { } {
+	global c1 kill_invalid_depend file_in_long file_in_short
 
 	send_user "
 #############################################################################
-# Test aftercorr
+# Test local aftercorr
 #############################################################################
 	\n\n"
 
@@ -445,6 +470,16 @@ proc test_aftercorr { } {
 	if { !$kill_invalid_depend } {
 		cancel_job "$job_array2" $c1
 	}
+}
+
+proc test_remote_aftercorr { } {
+	global c1 c2 kill_invalid_depend file_in_long file_in_short
+
+	send_user "
+#############################################################################
+# Test remote aftercorr
+#############################################################################
+	\n\n"
 
 	# Remote dependency succeeds
 	log_info "aftercorr: test that remote dependency succeeds:"
@@ -497,12 +532,12 @@ proc test_aftercorr { } {
 	}
 }
 
-proc test_afterok { } {
-	global c1 c2 kill_invalid_depend file_in_long file_in_short
+proc test_local_afterok { } {
+	global c1 kill_invalid_depend file_in_long file_in_short
 
 	send_user "
 #############################################################################
-# Test afterok
+# Test local afterok
 #############################################################################
 	\n\n"
 
@@ -535,6 +570,16 @@ proc test_afterok { } {
 	if { !$kill_invalid_depend } {
 		cancel_job $job_id2 $c1
 	}
+}
+
+proc test_remote_afterok { } {
+	global c1 c2 kill_invalid_depend file_in_long file_in_short
+
+	send_user "
+#############################################################################
+# Test remote afterok
+#############################################################################
+	\n\n"
 
 	# Remote dependency succeeds
 	log_info "afterok: test that remote dependency succeeds:"
@@ -567,12 +612,12 @@ proc test_afterok { } {
 	}
 }
 
-proc test_afternotok { } {
-	global c1 c2 kill_invalid_depend file_in_long file_in_short
+proc test_local_afternotok { } {
+	global c1 kill_invalid_depend file_in_long file_in_short
 
 	send_user "
 #############################################################################
-# Test afternotok
+# Test local afternotok
 #############################################################################
 	\n\n"
 
@@ -607,6 +652,16 @@ proc test_afternotok { } {
 	if { !$kill_invalid_depend } {
 		cancel_job $job_id2 $c1
 	}
+}
+
+proc test_remote_afternotok { } {
+	global c1 c2 kill_invalid_depend file_in_long file_in_short
+
+	send_user "
+#############################################################################
+# Test remote afternotok
+#############################################################################
+	\n\n"
 
 	# Remote dependency succeeds
 	log_info "afternotok: test that remote dependency succeeds:"
@@ -641,12 +696,12 @@ proc test_afternotok { } {
 	}
 }
 
-proc test_singleton { } {
-	global c1 c2 c3 disable_remote_singleton file_in_long
+proc test_local_singleton { } {
+	global c1 disable_remote_singleton file_in_long
 
 	send_user "
 #############################################################################
-# Test singleton
+# Test local singleton
 #############################################################################
 	\n\n"
 
@@ -662,6 +717,17 @@ proc test_singleton { } {
 	wait_for_depend $job_id2 "None" "(null)"
 	my_wait_for_fed_job $job_id2 "RUNNING" $c1
 	cancel_job $job_id2 $c1
+
+}
+
+proc test_remote_singleton { } {
+	global c1 c2 c3 disable_remote_singleton file_in_long
+
+	send_user "
+#############################################################################
+# Test remote singleton
+#############################################################################
+	\n\n"
 
 	# Test multiple clusters
 	if { $disable_remote_singleton } {
@@ -806,12 +872,12 @@ proc test_submit_to_all_clusters { } {
 	cancel_job $job_id2 "$c1,$c2,$c3"
 }
 
-proc test_or_dependencies { } {
+proc test_remote_or_dependencies { } {
 	global c1 c2 file_in_long kill_invalid_depend
 
 	send_user "
 #############################################################################
-# Test OR dependencies.
+# Test remote OR dependencies.
 #############################################################################
 	\n\n"
 
@@ -857,12 +923,12 @@ proc test_or_dependencies { } {
 	}
 }
 
-proc test_and_dependencies { } {
+proc test_remote_and_dependencies { } {
 	global c1 c2 file_in_long kill_invalid_depend
 
 	send_user "
 #############################################################################
-# Test AND dependencies.
+# Test remote AND dependencies.
 #############################################################################
 	\n\n"
 
@@ -919,18 +985,22 @@ if { [test_account_storage] == 0 } {
 	exit 0
 }
 
-if {[test_federation_setup]} {
-	log_warn "WARNING: This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local."
-	exit 0
-}
+if {![test_federation_setup]} {
 
-if {[test_all_up]} {
-	exit 0
-}
+	if {[test_all_up]} {
+		exit 0
+	}
 
-delete_federations $fed_name
-if { [setup_federation $fed_name] } {
-	cleanup 1
+	delete_federations $fed_name
+	if { [setup_federation $fed_name] } {
+		cleanup 1
+	}
+} else {
+	log_warn "Not running remote dependency tests"
+	set c1 [get_cluster_name]
+	set all_clusters "$c1"
+	set my_scancel $scancel
+	set my_scontrol $scontrol
 }
 
 # Use file_in_short when we have to wait for the job to end.
@@ -947,17 +1017,26 @@ log_info "kill_invalid_depend: $kill_invalid_depend; disable_remote_singleton: $
 
 cancel_all_jobs
 
-test_after
-test_afterany
+test_local_after
+test_local_afterany
 # --depend=afterburstbuffer is tested in test35.6
-test_aftercorr
-test_afterok
-test_afternotok
-test_singleton
+test_local_aftercorr
+test_local_afterok
+test_local_afternotok
+test_local_singleton
 # test --depend=expand in another test.
-test_add_remove_clusters
-test_submit_to_all_clusters
-test_or_dependencies
-test_and_dependencies
+
+if {![test_federation_setup]} {
+	test_remote_after
+	test_remote_afterany
+	test_remote_aftercorr
+	test_remote_afterok
+	test_remote_afternotok
+	test_remote_singleton
+	test_remote_or_dependencies
+	test_remote_and_dependencies
+	test_add_remove_clusters
+	test_submit_to_all_clusters
+}
 
 cleanup 0
