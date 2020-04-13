@@ -677,7 +677,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		if (row[JOB_REQ_USER_NAME])
 			job->user = xstrdup(row[JOB_REQ_USER_NAME]);
 
-		if (!job->user || (job_cond->flags & JOBCOND_FLAG_DBD_UID))
+		if (row[JOB_REQ_UID])
 			job->uid = slurm_atoul(row[JOB_REQ_UID]);
 
 		if (row[JOB_REQ_LFT])

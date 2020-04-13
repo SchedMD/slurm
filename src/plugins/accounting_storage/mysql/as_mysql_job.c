@@ -776,7 +776,6 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 	job_cond->flags |= JOBCOND_FLAG_NO_STEP;
-	job_cond->flags |= JOBCOND_FLAG_DBD_UID;
 	job_cond->flags |= JOBCOND_FLAG_NO_DEFAULT_USAGE;
 
 	job_list = as_mysql_jobacct_process_get_jobs(mysql_conn, uid, job_cond);

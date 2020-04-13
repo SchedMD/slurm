@@ -201,10 +201,6 @@ enum cluster_fed_states {
 #define JOBCOND_FLAG_NO_DEFAULT_USAGE 0x00000080 /* Use usage_time as the
 						  * submit_time of the job.
 						  */
-#define JOBCOND_FLAG_DBD_UID          0x00000100 /* give me the uid from the dbd
-						  * instead of filling it in
-						  * later.
-						  */
 
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number
