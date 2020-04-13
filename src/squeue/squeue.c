@@ -127,7 +127,8 @@ static int _multi_cluster(List clusters)
 			printf("CLUSTER: %s\n", working_cluster_rec->name);
 		}
 		rc2 = _get_info(true, log_cluster_name);
-		rc = MAX(rc, rc2);
+		if (rc2)
+			rc = 1;
 	}
 	list_iterator_destroy(itr);
 

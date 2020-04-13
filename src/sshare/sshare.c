@@ -273,7 +273,8 @@ static int _multi_cluster(shares_request_msg_t *req_msg)
 			printf("\n");
 		printf("CLUSTER: %s\n", working_cluster_rec->name);
 		rc2 = _single_cluster(req_msg);
-		rc  = MAX(rc, rc2);
+		if (rc2)
+			rc = 1;
 	}
 	list_iterator_destroy(itr);
 
