@@ -317,13 +317,16 @@ static int _merge_lists(List gres_conf_list, List gpu_conf_list,
 	ListIterator gpu_itr, mps_itr;
 	gres_slurmd_conf_t *gpu_record, *mps_record;
 
+	if (!list_count(gpu_conf_list) && list_count(mps_conf_list)) {
+		error("%s: MPS specified without any GPU found", plugin_name);
+		return SLURM_ERROR;
+	}
+
 	/*
-	 * If gres/mps has Count, but no File specification and there is more
-	 * than one gres/gpu record, then evenly distribute gres/mps Count
-	 * evenly over all gres/gpu file records
+	 * If gres/mps has Count, but no File specification, then evenly
+	 * distribute gres/mps Count over all gres/gpu file records
 	 */
-	if ((list_count(mps_conf_list) == 1) &&
-	    (list_count(gpu_conf_list) >  1)) {
+	if (list_count(mps_conf_list) == 1) {
 		mps_record = list_peek(mps_conf_list);
 		if (!mps_record->file) {
 			_distribute_count(gres_conf_list, gpu_conf_list,
