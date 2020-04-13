@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
  -- Add FreeBSD support to proctrack/pgid plugin.
  -- Fix remote dependency testing for meta job in job array.
  -- Fix preemption when dealing with a job array.
+ -- Don't send remote non-pending singleton dependencies on federation update.
 
 * Changes in Slurm 20.02.1
 ==========================

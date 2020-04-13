@@ -3000,7 +3000,8 @@ static void _handle_dependencies_for_modified_fed(uint64_t added_clusters,
 	find_dep.depend_type = SLURM_DEPEND_SINGLETON;
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
-		if (added_clusters && _is_fed_job(job_ptr, &origin_id) &&
+		if (added_clusters && IS_JOB_PENDING(job_ptr) &&
+		    _is_fed_job(job_ptr, &origin_id) &&
 		    find_dependency(job_ptr, &find_dep))
 			fed_mgr_submit_remote_dependencies(job_ptr, true,
 							   false);
