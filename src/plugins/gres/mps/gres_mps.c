@@ -311,8 +311,8 @@ static void _distribute_count(List gres_conf_list, List gpu_conf_list,
 }
 
 /* Merge MPS records back to original list, updating and reordering as needed */
-static void _merge_lists(List gres_conf_list, List gpu_conf_list,
-			 List mps_conf_list)
+static int _merge_lists(List gres_conf_list, List gpu_conf_list,
+			List mps_conf_list)
 {
 	ListIterator gpu_itr, mps_itr;
 	gres_slurmd_conf_t *gpu_record, *mps_record;
@@ -329,7 +329,7 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 			_distribute_count(gres_conf_list, gpu_conf_list,
 					  mps_record->count);
 			list_flush(mps_conf_list);
-			return;
+			return SLURM_SUCCESS;
 		}
 	}
 
@@ -396,6 +396,7 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 		(void) list_delete_item(mps_itr);
 	}
 	list_iterator_destroy(mps_itr);
+	return SLURM_SUCCESS;
 }
 
 extern int init(void)
@@ -522,9 +523,11 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 	 * Merge MPS records back to original list, updating and reordering
 	 * as needed.
 	 */
-	_merge_lists(gres_conf_list, gpu_conf_list, mps_conf_list);
+	rc = _merge_lists(gres_conf_list, gpu_conf_list, mps_conf_list);
 	FREE_NULL_LIST(gpu_conf_list);
 	FREE_NULL_LIST(mps_conf_list);
+	if (rc != SLURM_SUCCESS)
+		fatal("%s: failed to merge MPS and GPU configuration", plugin_name);
 
 	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
 	if (rc != SLURM_SUCCESS)
