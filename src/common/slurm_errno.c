@@ -527,6 +527,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Query empty or not RFC7320 compliant"},
 	{ ESLURM_REST_FAIL_PARSING,
 	  "Failure during parsing"},
+	{ ESLURM_REST_INVALID_JOBS_DESC,
+	  "Jobs description entry not found, empty or not dictionary or list"},
 };
 
 /*

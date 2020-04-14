@@ -680,9 +680,9 @@ static job_parse_list_t _parse_job_list(const data_t *jobs, char *script,
 	job_parse_list_t rc = { 0 };
 	xassert(update_only || script);
 
-	if (jobs == NULL) {
-		_jlist_error("%s: unexpected missing jobs", __func__);
-	} else if (data_get_type(jobs) == DATA_TYPE_LIST) {
+	if (jobs == NULL)
+		rc.rc = ESLURM_REST_INVALID_JOBS_DESC;
+	else if (data_get_type(jobs) == DATA_TYPE_LIST) {
 		_parse_job_component_t j = {
 			.rc = &rc,
 			.script = script,
@@ -709,9 +709,8 @@ static job_parse_list_t _parse_job_list(const data_t *jobs, char *script,
 			_jlist_error("%s: unexpected failure parsing job",
 				     __func__);
 		}
-	} else {
-		_jlist_error("%s: unexpected format for jobs", __func__);
-	}
+	} else
+		rc.rc = ESLURM_REST_INVALID_JOBS_DESC;
 
 	return rc;
 }
