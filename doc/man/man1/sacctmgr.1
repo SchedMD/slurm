@@ -294,15 +294,6 @@ only its fairshare value is affected.  To clear a previously set
 value use the modify command with a new value of \-1.
 
 .TP
-\fIGraceTime\fP=<preemption grace time in seconds>
-Specifies, in units of seconds, the preemption grace time
-to be extended to a job which has been selected for preemption.
-The default value is zero, no preemption grace time is allowed on
-this QOS.
-
-NOTE: This value is only meaningful for QOS PreemptMode=CANCEL.
-
-.TP
 \fIGrpTRESMins\fP=<TRES=max TRES minutes,...>
 The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this association and its children.
@@ -1339,14 +1330,20 @@ Name of the QOS.
 \fIPreempt\fP
 Other QOS\' this QOS can preempt.
 
+\fBNOTE\fP: The \fIPriority\fP of a QOS is NOT related to QOS preemption, only
+\fIPreempt\fP is used to define which QOS can preempt others.
+
 .TP
 \fIPreemptMode\fP
-Mechanism used to preempt jobs of this QOS if the clusters \fIPreemptType\fP
-is configured to \fIpreempt/qos\fP.  The default preemption mechanism
-is specified by the cluster\-wide \fIPreemptMode\fP configuration parameter.
-Possible values are "Cluster" (meaning use cluster default), "Cancel",
-and "Requeue".  This option is not compatible with PreemptMode=OFF or
-PreemptMode=SUSPEND (i.e. preempted jobs must be removed from the resources).
+Mechanism used to preempt jobs or enable gang scheduling for this QOS
+when the cluster \fIPreemptType\fR is set to \fIpreempt/qos\fR.
+This QOS\-specific \fBPreemptMode\fR will override the cluster\-wide
+\fBPreemptMode\fR for this QOS. Unsetting the QOS specific \fBPreemptMode\fR,
+by specifying "OFF", "" or "Cluster", makes it use the default cluster\-wide
+\fBPreemptMode\fR.
+.br
+See the description of the cluster\-wide \fBPreemptMode\fR parameter
+for further details of the available modes.
 
 .TP
 \fIPreemptExemptTime\fP
@@ -1360,6 +1357,9 @@ global option in slurm.conf.
 .TP
 \fIPriority\fP
 What priority will be added to a job\'s priority when using this QOS.
+
+\fBNOTE\fP: The \fIPriority\fP of a QOS is NOT related to QOS preemption, see
+\fIPreempt\fP instead.
 
 .TP
 \fIRawUsage\fP=<value>
