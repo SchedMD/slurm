@@ -246,7 +246,6 @@ extern void reset_stats(int level)
 	slurmctld_diag_stats.bf_cycle_max = 0;
 	slurmctld_diag_stats.bf_last_depth = 0;
 	slurmctld_diag_stats.bf_last_depth_try = 0;
-	slurmctld_diag_stats.bf_active = 0;
 
 	last_proc_req_start = time(NULL);
 }

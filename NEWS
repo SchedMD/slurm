@@ -64,6 +64,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix remote dependency testing for meta job in job array.
  -- Fix preemption when dealing with a job array.
  -- Don't send remote non-pending singleton dependencies on federation update.
+ -- slurmrestd - fix crash on empty query.
+ -- Fix race condition which could lead to invalid references in backfill.
 
 * Changes in Slurm 20.02.1
 ==========================
