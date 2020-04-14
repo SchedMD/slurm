@@ -3175,7 +3175,7 @@ extern void slurm_init_job_desc_msg(job_desc_msg_t *job_desc_msg);
 /*
  * slurm_allocate_resources - allocate resources for a job request
  *   If the requested resources are not immediately available, the slurmctld
- *   will send the job_alloc_resp_msg to the sepecified node and port.
+ *   will send the job_alloc_resp_msg to the specified node and port.
  * IN job_desc_msg - description of resource allocation request
  * OUT job_alloc_resp_msg - response to request.  This only represents
  *   a job allocation if resources are immediately.  Otherwise it just contains

@@ -332,7 +332,7 @@ Get the string representation of the specified accounting enforce type.
 
 =head3 $resp = $slurm->allocate_resources($job_desc);
 
-Allocate resources for a job request. If the requested resources are not immediately available, the slurmctld will send the job_alloc_resp_msg to the sepecified node and port.
+Allocate resources for a job request. If the requested resources are not immediately available, the slurmctld will send the job_alloc_resp_msg to the specified node and port.
 
 =over 2
 
