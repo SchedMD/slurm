@@ -1418,12 +1418,13 @@ static int _op_handler_submit_job_post(const char *context_id,
 			       __func__, context_id);
 			rc = jobs_rc.rc;
 			if (jobs_rc.het_job) {
-				rc = slurm_submit_batch_het_job(
-					jobs_rc.jobs, &resp);
+				if (slurm_submit_batch_het_job(jobs_rc.jobs,
+							       &resp))
+					rc = errno;
 				list_destroy(jobs_rc.jobs);
 			} else {
-				rc = slurm_submit_batch_job(jobs_rc.job,
-								&resp);
+				if (slurm_submit_batch_job(jobs_rc.job, &resp))
+					rc = errno;
 				slurm_free_job_desc_msg(jobs_rc.job);
 			}
 		}
