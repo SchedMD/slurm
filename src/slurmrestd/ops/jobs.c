@@ -705,10 +705,8 @@ static job_parse_list_t _parse_job_list(const data_t *jobs, char *script,
 		if (rc.job) {
 			rc.job->script = script;
 			rc.rc = SLURM_SUCCESS;
-		} else {
-			_jlist_error("%s: unexpected failure parsing job",
-				     __func__);
-		}
+		} else
+			rc.rc = ESLURM_REST_FAIL_PARSING;
 	} else
 		rc.rc = ESLURM_REST_INVALID_JOBS_DESC;
 
