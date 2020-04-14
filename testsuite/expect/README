@@ -762,6 +762,7 @@ test37.13  Validate federated arrays
 test37.14  Validate federated scontrol notify
 test37.15  Validate federated scontrol suspend
 test37.16  Validate job cleanup when clusters are removed federation
+test37.17  Test local and remote job dependencies
 
 test38.#   Testing of heterogeneous jobs.
 =========================================

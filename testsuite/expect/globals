@@ -2494,6 +2494,49 @@ proc test_scheduler_params { type } {
 
 ################################################################
 #
+# Proc: test_dependency_params
+#
+# Purpose: Test DependencyParameters being used
+#
+# Returns 1 if "type" (input) is found, 0 otherwise
+#
+################################################################
+
+proc test_dependency_params { type } {
+	global bin_bash scontrol bin_grep alpha_numeric_comma_eq
+
+	log_user 0
+	set ret 0
+	set params ""
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep DependencyParameters"
+	expect {
+		-re "DependencyParameters *= *($alpha_numeric_comma_eq)" {
+			set params $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	# Since string first doesn't have any case
+	# distinction just make it always be upper.
+	set type [string toupper $type]
+	set params [string toupper $params]
+	set params [split $params ,]
+
+	# We have to search with the '*' since some options have an =value
+	# on them.
+	if { [lsearch $params "$type*"] != -1 } {
+		set ret 1
+	}
+	log_user 1
+
+	return $ret
+}
+
+################################################################
+#
 # Proc: test_select_type_params
 #
 # Purpose: Determine SelectTypeParameters being used
