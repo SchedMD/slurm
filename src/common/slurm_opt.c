@@ -70,7 +70,7 @@
 		data_set_string(				\
 			data_key_set(err, "error"), str);	\
 		data_set_int(					\
-			data_key_set(err, "errno"), rc);	\
+			data_key_set(err, "error_code"), rc);	\
 	} while (0)
 
 #define COMMON_STRING_OPTION(field)	\
