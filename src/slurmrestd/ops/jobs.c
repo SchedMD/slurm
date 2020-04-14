@@ -1373,7 +1373,7 @@ static int _op_handler_submit_job_post(const char *context_id,
 	if (!query) {
 		error("%s: [%s] unexpected empty query for job",
 		      __func__, context_id);
-		rc = SLURM_ERROR;
+		rc = ESLURM_REST_INVALID_QUERY;
 		goto finish;
 	}
 

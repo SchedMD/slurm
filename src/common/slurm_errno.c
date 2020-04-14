@@ -521,6 +521,10 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Time limit specification required, but not provided"	},
 	{ ESLURM_INVALID_KNL,
 	  "Invalid KNL configuration (MCDRAM or NUMA option)"	},
+
+	/* REST errors */
+	{ ESLURM_REST_INVALID_QUERY,
+	  "Query empty or not RFC7320 compliant"},
 };
 
 /*
