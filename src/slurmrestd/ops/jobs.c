@@ -599,7 +599,7 @@ static job_desc_msg_t *_parse_job_desc(const data_t *job, data_t *errors,
 		 * bothering the controller.
 		 */
 		data_t *err = data_set_dict(data_list_append(errors));
-		rc = SLURM_ERROR;
+		rc = ESLURM_ENVIRONMENT_MISSING;
 		data_set_string(data_key_set(err, "error"),
 				"environment must be set");
 		data_set_int(data_key_set(err, "errno"), rc);
