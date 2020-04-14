@@ -1186,11 +1186,11 @@ static int _op_handler_jobs(const char *context_id,
 		data_set_string(data_key_set(error, "error"), error_string); \
 		xfree(error_string);                                         \
 		if (errno) {                                                 \
-			data_set_int(data_key_set(error, "errno"), errno);   \
-			rc = errno;                                       \
+			rc = errno;                                          \
 			errno = 0;                                           \
 		} else                                                       \
-			rc = SLURM_ERROR;                                 \
+			rc = SLURM_ERROR;                                    \
+		data_set_int(data_key_set(error, "error_code"), errno);      \
 	} while (0)
 
 static int _handle_job_get(const char *context_id, http_request_method_t method,
