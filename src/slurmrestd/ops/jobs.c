@@ -1369,6 +1369,13 @@ static int _op_handler_submit_job_post(const char *context_id,
 	submit_response_msg_t *resp = NULL;
 	char *script = NULL;
 
+	if (!query) {
+		error("%s: [%s] unexpected empty query for job",
+		      __func__, context_id);
+		rc = SLURM_ERROR;
+		goto finish;
+	}
+
 	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
 		char *buffer = dump_json(query, DUMP_JSON_FLAGS_COMPACT);
 		debug5("%s: job submit query from %s: %s",
@@ -1384,6 +1391,7 @@ static int _op_handler_submit_job_post(const char *context_id,
 		error("%s: unexpected missing script for job from %s",
 		      __func__, context_id);
 		rc = SLURM_ERROR;
+		goto finish;
 	}
 
 	if (!rc) {
@@ -1455,7 +1463,10 @@ static int _op_handler_submit_job_post(const char *context_id,
 		}
 		data_set_string(data_key_set(d, "job_submit_user_msg"),
 				resp->job_submit_user_msg);
-	} else {
+	}
+
+finish:
+	if (rc) {
 		data_t *error = data_set_dict(data_list_append(errors));
 		data_set_int(data_key_set(error, "error_code"), rc);
 		data_set_string(data_key_set(error, "error"),
