@@ -658,22 +658,6 @@ static data_for_each_cmd_t _parse_job_component(const data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-#define _jlist_error(...)                                                    \
-	do {                                                                 \
-		char *error_string = xstrdup_printf(__VA_ARGS__);            \
-		error("%s", error_string);                                   \
-		data_t *error = data_list_append(errors);                    \
-		data_set_dict(error);                                        \
-		data_set_string(data_key_set(error, "error"), error_string); \
-		xfree(error_string);                                         \
-		if (errno) {                                                 \
-			data_set_int(data_key_set(error, "errno"), errno);   \
-			rc.rc = errno;                                       \
-			errno = 0;                                           \
-		} else                                                       \
-			rc.rc = SLURM_ERROR;                                 \
-	} while (0)
-
 static job_parse_list_t _parse_job_list(const data_t *jobs, char *script,
 					data_t *errors, bool update_only)
 {
