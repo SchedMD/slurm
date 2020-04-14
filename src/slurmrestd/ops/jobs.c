@@ -1391,7 +1391,7 @@ static int _op_handler_submit_job_post(const char *context_id,
 	if (data_retrieve_dict_path_string(query, "script", &script)) {
 		error("%s: unexpected missing script for job from %s",
 		      __func__, context_id);
-		rc = SLURM_ERROR;
+		rc = ESLURM_JOB_SCRIPT_MISSING;
 		goto finish;
 	}
 
