@@ -602,7 +602,7 @@ static job_desc_msg_t *_parse_job_desc(const data_t *job, data_t *errors,
 		rc = ESLURM_ENVIRONMENT_MISSING;
 		data_set_string(data_key_set(err, "error"),
 				"environment must be set");
-		data_set_int(data_key_set(err, "errno"), rc);
+		data_set_int(data_key_set(err, "error_code"), rc);
 		goto cleanup;
 	}
 	xassert(req->env_size == envcount(req->environment));
