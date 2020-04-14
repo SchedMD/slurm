@@ -274,11 +274,11 @@ static void _list_delete_job_desc_msg_t(void *_p)
 		data_set_string(data_key_set(error, "error"), error_string); \
 		xfree(error_string);                                         \
 		if (errno) {                                                 \
-			data_set_int(data_key_set(error, "errno"), errno);   \
 			rc = errno;                                          \
 			errno = 0;                                           \
 		} else                                                       \
 			rc = SLURM_ERROR;                                    \
+		data_set_int(data_key_set(error, "error_code"), rc);         \
 	} while (0)
 
 typedef struct {
