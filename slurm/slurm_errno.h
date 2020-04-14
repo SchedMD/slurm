@@ -292,6 +292,7 @@ enum {
 
 	/* REST errors */
 	ESLURM_REST_INVALID_QUERY = 9000,
+	ESLURM_REST_FAIL_PARSING,
 
 };
 

@@ -525,6 +525,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	/* REST errors */
 	{ ESLURM_REST_INVALID_QUERY,
 	  "Query empty or not RFC7320 compliant"},
+	{ ESLURM_REST_FAIL_PARSING,
+	  "Failure during parsing"},
 };
 
 /*
