@@ -83,7 +83,8 @@ static const char *_get_long_node_state(uint32_t state)
 
 static int _dump_node(data_t *p, node_info_t *node)
 {
-	data_t *d = data_set_dict(data_key_set(p, node->name));
+	data_t *d;
+	d = data_set_dict(data_key_set(p, node->name));
 
 	data_set_string(data_key_set(d, "architecture"), node->arch);
 	data_set_string(data_key_set(d, "burstbuffer_network_address"),
