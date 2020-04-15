@@ -1356,6 +1356,7 @@ extern void slurm_free_job_step_create_request_msg(
 		xfree(msg->name);
 		xfree(msg->network);
 		xfree(msg->node_list);
+		xfree(msg->step_het_grps);
 		xfree(msg->tres_bind);
 		xfree(msg->tres_freq);
 		xfree(msg->tres_per_step);

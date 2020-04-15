@@ -143,6 +143,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->relative = step_params->relative;
 	step_req->resv_port_cnt = step_params->resv_port_cnt;
 	step_req->srun_pid = (uint32_t) getpid();
+	step_req->step_het_grps = xstrdup(step_params->step_het_grps);
 	step_req->step_id = step_params->step_id;
 	step_req->task_dist = step_params->task_dist;
 	step_req->tres_bind = xstrdup(step_params->tres_bind);
