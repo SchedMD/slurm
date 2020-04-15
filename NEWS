@@ -62,6 +62,7 @@ documents those changes that are of interest to users and administrators.
  -- Send the current (not the previous) reason for a pending job to client
     commands like squeue/scontrol.
  -- Fix incorrect lock levels for select_g_reconfigure().
+ -- Handle hidden nodes correctly in slurmrestd.
 
 * Changes in Slurm 20.02.1
 ==========================
