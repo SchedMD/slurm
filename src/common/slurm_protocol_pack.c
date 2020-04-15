@@ -2422,6 +2422,14 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->network, &uint32_tmp,
 				       buffer);
+#ifdef HAVE_NATIVE_CRAY
+		/*
+		 * In 20.11 we stopped overloading network with the
+		 * step_het_grps
+		 */
+		msg->step_het_grps = msg->network;
+		msg->network = NULL;
+#endif
 		safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);

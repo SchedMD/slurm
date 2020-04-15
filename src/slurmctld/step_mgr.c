@@ -2696,19 +2696,17 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		 * Het job compontents are sent across on the network
 		 * variable.
 		 */
-		if (!step_specs->network) {
+		if (!step_specs->step_het_grps) {
 			het_job_ptr = find_job_record(job_ptr->het_job_id);
 		} else {
 			int first_bit = 0;
 			het_grp_bits = bit_alloc(128);
 			if (bit_unfmt_hexmask(het_grp_bits,
-					      step_specs->network)) {
+					      step_specs->step_het_grps)) {
 				error("%s: bad het group given", __func__);
 				FREE_NULL_BITMAP(het_grp_bits);
 				return ESLURM_INTERCONNECT_FAILURE;
 			}
-			xfree(step_ptr->network);
-			step_ptr->network = xstrdup(job_ptr->network);
 			if ((first_bit = bit_ffs(het_grp_bits)) == -1) {
 				error("%s: no components given from srun for hetstep %pS",
 				      __func__, step_ptr);
