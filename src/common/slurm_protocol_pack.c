@@ -2427,8 +2427,8 @@ extern int _unpack_job_step_create_request_msg(
 		 * In 20.11 we stopped overloading network with the
 		 * step_het_grps
 		 */
-		msg->step_het_grps = msg->network;
-		msg->network = NULL;
+		tmp_ptr->step_het_grps = tmp_ptr->network;
+		tmp_ptr->network = NULL;
 #endif
 		safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp,
 				       buffer);
