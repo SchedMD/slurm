@@ -1172,10 +1172,10 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 				 * correctly.  We only ever need to send it to
 				 * the first component of the step.
 				 */
-#endif
 				if (g_het_grp_bits)
 					opt_local->network = bit_fmt_hexmask(
 						g_het_grp_bits);
+#endif
 
 				if (srun_opt->exclusive)
 					_step_opt_exclusive(opt_local);
