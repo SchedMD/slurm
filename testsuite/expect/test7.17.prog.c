@@ -52,6 +52,7 @@
 #include "src/common/gres.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
+#include "src/common/strlcpy.h"
 #include "src/common/xstring.h"
 
 /*
@@ -81,10 +82,11 @@ int main(int argc, char *argv[])
 	int core_count, sock_count;
 
 	/* Setup slurm.conf and gres.conf test paths */
-	strcpy(config_dir, argv[2]);
-	strcpy(config_dir, strcat(config_dir, "/test7.17_configs"));
-	strcpy(test, strcat(config_dir, argv[3]));
-	strcpy(slurm_conf, strcat(test, "/slurm.conf"));
+	strlcpy(config_dir, argv[2], sizeof(config_dir));
+	strlcpy(config_dir, strcat(config_dir, "/test7.17_configs"),
+		sizeof(config_dir));
+	strlcpy(test, strcat(config_dir, argv[3]), sizeof(config_dir));
+	strlcpy(slurm_conf, strcat(test, "/slurm.conf"), sizeof(slurm_conf));
 
 	/* Enable detailed logging for now */
 	opts.stderr_level = LOG_LEVEL_DEBUG;
