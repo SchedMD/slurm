@@ -51,10 +51,10 @@ static void pass_its_neighbor(const int rank, const int size)
 
 	out_buf.rank = rank;
 	if (host_env) {
-		strncpy(out_buf.host, host_env, BUF_SIZE);
+		strlcpy(out_buf.host, host_env, BUF_SIZE);
 	} else {
 		uname(&uts);
-		strncpy(out_buf.host, uts.nodename, BUF_SIZE);
+		strlcpy(out_buf.host, uts.nodename, BUF_SIZE);
 	}
 	out_buf.host[BUF_SIZE - 1] = '\0';
 
