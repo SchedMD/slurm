@@ -2255,7 +2255,6 @@ extern void _pack_job_step_create_request_msg(
 		pack32(msg->task_dist, buffer);
 		pack16(msg->plane_size, buffer);
 		pack16(msg->port, buffer);
-		pack16(0, buffer); /* was ckpt_interval */
 		pack16(msg->exclusive, buffer);
 		pack16(msg->immediate, buffer);
 		pack16(msg->resv_port_cnt, buffer);
@@ -2265,7 +2264,6 @@ extern void _pack_job_step_create_request_msg(
 		packstr(msg->name, buffer);
 		packstr(msg->network, buffer);
 		packstr(msg->node_list, buffer);
-		packnull(buffer); /* was ckpt_dir */
 		packstr(msg->features, buffer);
 
 		pack8(msg->no_kill, buffer);
@@ -2341,8 +2339,6 @@ extern int _unpack_job_step_create_request_msg(
 	*msg = tmp_ptr;
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		char *temp_str;
-		uint16_t uint16_tmp;
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->step_id, buffer);
 		safe_unpack32(&tmp_ptr->user_id, buffer);
@@ -2360,7 +2356,6 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpack32(&tmp_ptr->task_dist, buffer);
 		safe_unpack16(&tmp_ptr->plane_size, buffer);
 		safe_unpack16(&tmp_ptr->port, buffer);
-		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
 		safe_unpack16(&tmp_ptr->exclusive, buffer);
 		safe_unpack16(&tmp_ptr->immediate, buffer);
 		safe_unpack16(&tmp_ptr->resv_port_cnt, buffer);
@@ -2372,8 +2367,6 @@ extern int _unpack_job_step_create_request_msg(
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
-		xfree(temp_str); /* was ckpt_dir */
 		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp,
 				       buffer);
 
