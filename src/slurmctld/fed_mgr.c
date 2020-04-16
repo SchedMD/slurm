@@ -1969,9 +1969,12 @@ static void _handle_fed_job_submission(fed_job_update_info_t *job_update_info)
 	lock_slurmctld(job_write_lock);
 
 	if ((job_ptr = find_job_record(job_update_info->job_id))) {
-		info("Found existing fed %pJ, going to requeue/kill it",
-		     job_ptr);
-		purge_job_record(job_ptr->job_id);
+		debug("Found existing fed %pJ, going to requeue/unlink it",
+		      job_ptr);
+		/* Delete job quickly */
+		job_ptr->job_state |= JOB_REVOKED;
+		unlink_job_record(job_ptr);
+
 		/*
 		 * Make sure that the file delete request is purged from list
 		 * -- added from purge_job_record() -- before job is allocated
@@ -4963,7 +4966,7 @@ extern int fed_mgr_job_revoke(job_record_t *job_ptr, bool job_complete,
 		return SLURM_SUCCESS;
 
 	/* Purge the revoked job -- remote only */
-	purge_job_record(job_ptr->job_id);
+	unlink_job_record(job_ptr);
 
 	return SLURM_SUCCESS;
 }

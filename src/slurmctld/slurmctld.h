@@ -2672,6 +2672,14 @@ extern void update_job_fed_details(job_record_t *job_ptr);
 extern int purge_job_record(uint32_t job_id);
 
 /*
+ * Remove job from job hashes so that it can't be found, but leave job in
+ * job_table so that it can be deleted by _list_delete_job().
+ *
+ * IN job_ptr - job_ptr to be unlinked
+ */
+extern void unlink_job_record(job_record_t *job_ptr);
+
+/*
  * copy_job_record_to_job_desc - construct a job_desc_msg_t for a job.
  * IN job_ptr - the job record
  * RET the job_desc_msg_t, NULL on error
