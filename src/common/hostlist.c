@@ -1914,7 +1914,6 @@ done:
 	return new;
 }
 
-
 void hostlist_destroy(hostlist_t hl)
 {
 	int i;
