@@ -1871,7 +1871,6 @@ static void _hostlist_iterator_destroy(hostlist_iterator_t i)
 		}
 	}
 
-	xassert(i->magic = ~HOSTLIST_ITR_MAGIC);
 	free(i);
 }
 
@@ -1927,7 +1926,6 @@ void hostlist_destroy(hostlist_t hl)
 	free(hl->hr);
 	UNLOCK_HOSTLIST(hl);
 	slurm_mutex_destroy(&hl->mutex);
-	xassert((hl->magic = ~HOSTLIST_MAGIC));
 	free(hl);
 }
 
