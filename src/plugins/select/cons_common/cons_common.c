@@ -62,6 +62,7 @@ extern uint16_t *cr_node_num_cores __attribute__((weak_import));
 extern uint32_t *cr_node_cores_offset __attribute__((weak_import));
 extern int slurmctld_tres_cnt __attribute__((weak_import));
 extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
+extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
 #else
 slurm_conf_t slurm_conf;
 node_record_t *node_record_table_ptr;
@@ -76,6 +77,7 @@ uint16_t *cr_node_num_cores;
 uint32_t *cr_node_cores_offset;
 int slurmctld_tres_cnt = 0;
 slurmctld_config_t slurmctld_config;
+bitstr_t *idle_node_bitmap;
 #endif
 
 /* init common global variables */
