@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix grp_node_bitmap error when slurmctld started before slurmdbd.
  -- Fix compilation issues in GCC10.
  -- Fix distributing job steps across idle nodes within a job.
+ -- Break infinite loop in cons_tres dealing with incorrect tasks per tres
+    request resulting in slurmctld hang.
 
 * Changes in Slurm 19.05.6
 ==========================
