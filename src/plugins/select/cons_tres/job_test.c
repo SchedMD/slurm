@@ -41,23 +41,6 @@
 
 #define _DEBUG 0	/* Enables module specific debugging */
 
-/*
- * These symbols are defined here so when we link with something other
- * than the slurmctld we will have these symbols defined. They will get
- * overwritten when linking with the slurmctld.
- */
-#if defined (__APPLE__)
-extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
-extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
-extern struct node_record *node_record_table_ptr __attribute__((weak_import));
-extern List job_list __attribute__((weak_import));
-#else
-slurmctld_config_t slurmctld_config;
-bitstr_t *idle_node_bitmap;
-struct node_record *node_record_table_ptr;
-List job_list;
-#endif
-
 typedef enum {
 	HANDLE_JOB_RES_ADD,
 	HANDLE_JOB_RES_REM,
