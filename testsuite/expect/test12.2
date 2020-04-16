@@ -249,10 +249,11 @@ if {$supported_storage == 0} {
 
 #
 # Delete left-over program and rebuild it
+# Compilation is not optimized to avoid memset to be skipped.
 #
 exec $bin_rm -f $file_prog
 exec $bin_rm -f $file_in $file_out $file_err
-exec $bin_cc -O -o $file_prog ${file_prog}.c
+exec $bin_cc -o $file_prog ${file_prog}.c
 exec $bin_chmod 700 $file_prog
 
 make_bash_script $file_in "
