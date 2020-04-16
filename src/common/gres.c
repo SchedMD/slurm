@@ -8033,7 +8033,8 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				}
 				if (first_pass &&
 				    (tot_core_cnt > min_core_cnt)) {
-					for (c = 0; c < cores_per_socket; c++) {
+					for (c = cores_per_socket - 1;
+					     c >= 0; c--) {
 						i = (s * cores_per_socket) + c;
 						if (!bit_test(avail_core, i))
 							continue;
@@ -8116,7 +8117,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			for (s = 0; s < sockets; s++) {
 				if (req_sock[s])
 					continue;
-				for (c = 0; c < cores_per_socket; c++) {
+				for (c = cores_per_socket - 1; c >= 0; c--) {
 					i = (s * cores_per_socket) + c;
 					if (!bit_test(avail_core, i))
 						continue;
@@ -8180,7 +8181,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					break;
 				if (req_sock[s])
 					continue;
-				for (c = 0; c < cores_per_socket; c++) {
+				for (c = cores_per_socket - 1; c >= 0; c--) {
 					i = (s * cores_per_socket) + c;
 					if (!bit_test(avail_core, i))
 						continue;
@@ -8219,7 +8220,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			if (full_socket == -1)
 				break;
 			s = full_socket;
-			for (c = 0; c < cores_per_socket; c++) {
+			for (c = cores_per_socket - 1; c >= 0; c--) {
 				i = (s * cores_per_socket) + c;
 				if (!bit_test(avail_core, i))
 					continue;
