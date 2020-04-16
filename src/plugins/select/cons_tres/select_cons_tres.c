@@ -71,6 +71,7 @@ extern bitstr_t *avail_node_bitmap __attribute__((weak_import));
 extern uint16_t *cr_node_num_cores __attribute__((weak_import));
 extern uint32_t *cr_node_cores_offset __attribute__((weak_import));
 extern int slurmctld_tres_cnt __attribute__((weak_import));
+extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
 #else
 slurmctld_config_t slurmctld_config;
 slurm_ctl_conf_t slurmctld_conf;
@@ -85,6 +86,7 @@ bitstr_t *avail_node_bitmap;
 uint16_t *cr_node_num_cores;
 uint32_t *cr_node_cores_offset;
 int slurmctld_tres_cnt = 0;
+bitstr_t *idle_node_bitmap;
 #endif
 
 /*
