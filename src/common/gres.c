@@ -7874,7 +7874,7 @@ int _sort_sockets_by_avail_cores(const void *x, const void *y,
  * IN enforce_binding - GRES must be co-allocated with cores
  * IN first_pass - set if first scheduling attempt for this job, use
  *		   co-located GRES and cores if possible
- * IN avail_cores - cores available on this node, UPDATED
+ * IN avail_core - cores available on this node, UPDATED
  */
 extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					 List sock_gres_list,
