@@ -1927,7 +1927,7 @@ void hostlist_destroy(hostlist_t hl)
 	free(hl->hr);
 	UNLOCK_HOSTLIST(hl);
 	slurm_mutex_destroy(&hl->mutex);
-	hl->magic = ~HOSTLIST_MAGIC;
+	xassert((hl->magic = ~HOSTLIST_MAGIC));
 	free(hl);
 }
 
