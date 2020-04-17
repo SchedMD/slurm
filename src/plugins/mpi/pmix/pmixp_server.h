@@ -2,8 +2,9 @@
  **  pmix_server.h - PMIx server side functionality
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015-2018 Mellanox Technologies. All rights reserved.
- *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
+ *  Copyright (C) 2015-2020 Mellanox Technologies. All rights reserved.
+ *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>,
+ *             Boris Karasev <karasev.b@gmail.com, boriska@mellanox.com>.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -87,6 +88,10 @@ int pmixp_server_send_nb(pmixp_ep_t *ep, pmixp_srv_cmd_t type,
 			 void *cb_data);
 Buf pmixp_server_buf_new(void);
 size_t pmixp_server_buf_reset(Buf buf);
+
+void pmixp_abort_handle(int fd);
+void pmixp_abort_propagate(int status);
+int pmixp_abort_code_get(void);
 
 #ifndef NDEBUG
 /* Debug tools used only if debug was enabled */

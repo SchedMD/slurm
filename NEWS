@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- mpi/cray_shasta - fix use-after-free on error in _multi_prog_parse().
  -- Cray - Handle setting correct prefix for cpuset cgroup with respects to
     expected_usage_in_bytes.  This fixes Cray's OOM killer.
+ -- mpi/pmix: Fix PMIx_Abort support.
 
 * Changes in Slurm 20.11.2
 ==========================

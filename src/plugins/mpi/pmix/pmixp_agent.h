@@ -2,8 +2,12 @@
  **  pmix_agent.h - PMIx agent thread
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015      Mellanox Technologies. All rights reserved.
+ *  Copyright (C) 2015-2020 Mellanox Technologies. All rights reserved.
  *  Written by Artem Y. Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
+ *  Copyright (C) 2020      Siberian State University of Telecommunications
+ *                          and Information Sciences (SibSUTIS).
+ *                          All rights reserved.
+ *  Written by Boris Bochkarev <boris-bochkaryov@yandex.ru>.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -42,5 +46,7 @@
 
 int pmixp_agent_start(void);
 int pmixp_agent_stop(void);
+int pmixp_abort_agent_start(char ***env);
+int pmixp_abort_agent_stop(void);
 
 #endif /* PMIXP_AGENT_H */
