@@ -71,6 +71,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix compilation issues in GCC10.
  -- Fix invalid references when federated job is revoked while in backfill loop.
  -- Fix distributing job steps across idle nodes within a job.
+ -- Fix detected floating reservation overlapping.
 
 * Changes in Slurm 20.02.1
 ==========================

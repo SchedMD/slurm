@@ -4990,6 +4990,33 @@ static void _print_constraint_planning(constraint_planning_t* sched)
 	list_iterator_destroy(iter);
 }
 
+static void _get_rel_start_end(slurmctld_resv_t *resv_ptr, time_t now,
+			       time_t *start_relative, time_t *end_relative)
+{
+	xassert(resv_ptr);
+	xassert(start_relative);
+	xassert(end_relative);
+
+	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
+		*start_relative = resv_ptr->start_time + now;
+		if (resv_ptr->duration == INFINITE)
+			*end_relative = *start_relative + YEAR_SECONDS;
+		else if (resv_ptr->duration && (resv_ptr->duration != NO_VAL)) {
+			*end_relative =
+				*start_relative + resv_ptr->duration * 60;
+		} else {
+			*end_relative = resv_ptr->end_time;
+			if (*start_relative > *end_relative)
+				*start_relative = *end_relative;
+		}
+	} else {
+		if (resv_ptr->end_time <= now)
+			_advance_resv_time(resv_ptr);
+		*start_relative = resv_ptr->start_time_first;
+		*end_relative = resv_ptr->end_time;
+	}
+}
+
 /*
  * Determine how many watts the specified job is prevented from using
  * due to reservations
@@ -5178,13 +5205,16 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			else
 				job_end_time_use = job_end_time;
 
+			_get_rel_start_end(
+				res2_ptr, now, &start_relative, &end_relative);
+
 			if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
 			    ((resv_ptr->flags & RESERVE_FLAG_OVERLAP) &&
 			     !(res2_ptr->flags & RESERVE_FLAG_MAINT)) ||
 			    (res2_ptr == resv_ptr) ||
 			    (res2_ptr->node_bitmap == NULL) ||
-			    (res2_ptr->start_time >= job_end_time_use) ||
-			    (res2_ptr->end_time   <= job_start_time) ||
+			    (start_relative >= job_end_time_use) ||
+			    (end_relative   <= job_start_time) ||
 			    (!res2_ptr->full_nodes))
 				continue;
 			if (bit_overlap_any(*node_bitmap,
@@ -5235,26 +5265,8 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 
 		iter = list_iterator_create(resv_list);
 		while ((resv_ptr = list_next(iter))) {
-			if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
-				start_relative = resv_ptr->start_time + now;
-				if (resv_ptr->duration == INFINITE)
-					end_relative = start_relative +
-						       YEAR_SECONDS;
-				else if (resv_ptr->duration &&
-					 (resv_ptr->duration != NO_VAL)) {
-					end_relative = start_relative +
-						resv_ptr->duration * 60;
-				} else {
-					end_relative = resv_ptr->end_time;
-					if (start_relative > end_relative)
-						start_relative = end_relative;
-				}
-			} else {
-				if (resv_ptr->end_time <= now)
-					_advance_resv_time(resv_ptr);
-				start_relative = resv_ptr->start_time_first;
-				end_relative = resv_ptr->end_time;
-			}
+			_get_rel_start_end(
+				resv_ptr, now, &start_relative, &end_relative);
 
 			if (reboot)
 				job_end_time_use =
