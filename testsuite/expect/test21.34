@@ -268,7 +268,7 @@ if {$tmpc == 0 || $tmpn == 0} {
 }
 
 # Get the number of nodes in the default partition
-set num_nodes [available_nodes "idle"]
+set num_nodes [expr [available_nodes "idle"] -1]
 
 if {$num_nodes == 0} {
 	fail "No cpus were found"
