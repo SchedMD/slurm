@@ -498,7 +498,7 @@ if {[test_front_end] == 0} {
 			incr match
 			exp_continue
 		}
-		-re "gpu.IDX:($number)" {
+		-re "gpu:$number\\(IDX:($number)\\)" {
 			set dev1 $expect_out(1,string)
 			exp_continue
 		}
@@ -549,7 +549,7 @@ if {[test_front_end] == 0} {
 			incr match
 			exp_continue
 		}
-		-re "mps.IDX:($number)" {
+		-re "mps:$number\\(IDX:($number)\\)" {
 			set dev1 $expect_out(1,string)} {
 			exp_continue
 		}
