@@ -88,8 +88,8 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	bool log_over_subscribe = true;
 	char *err_msg = NULL;
 	uint16_t *vpus;
-	bool space_remaining = false;
-	bool test_tres_tasks = true;
+	bool space_remaining;
+	bool test_tres_tasks;
 	int i, i_first, i_last, rem_cpus, rem_tasks;
 
 	if (!job_res)
@@ -254,6 +254,7 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	 * Distribute any remaining tasks (without dedicated CPUs) evenly
 	 * across nodes
 	 */
+	test_tres_tasks = true;
 	while (tid < maxtasks) {
 		bool more_tres_tasks = false;
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
