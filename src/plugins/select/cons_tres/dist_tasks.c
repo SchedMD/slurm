@@ -219,16 +219,20 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 			rem_tasks = vpus[n] / job_ptr->details->cpus_per_task;
 			rem_tasks = MAX(rem_tasks, 1);
 			for (t = 0; ((t < rem_tasks) && (tid < maxtasks)); t++){
-				if (!over_subscribe &&
-				    ((avail_cpus[n] - job_res->cpus[n]) <
-				     job_ptr->details->cpus_per_task))
-					break;
-				if (!dist_tasks_tres_tasks_avail(
-					    gres_task_limit, job_res, n))
-					break;
-				if (_at_tpn_limit(n, job_ptr, "fill additional",
-						  false))
-					break;
+				if (!over_subscribe) {
+					if ((avail_cpus[n] - job_res->cpus[n]) <
+					    job_ptr->details->cpus_per_task)
+						break;
+					if (!dist_tasks_tres_tasks_avail(
+						    gres_task_limit,
+						    job_res, n))
+						break;
+					if (_at_tpn_limit(n, job_ptr,
+							  "fill additional",
+							  false))
+						break;
+				}
+
 				tid++;
 				job_res->tasks_per_node[n]++;
 				for (l = 0; l < job_ptr->details->cpus_per_task;
@@ -256,13 +260,16 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	while (tid < maxtasks) {
 		bool more_tres_tasks = false;
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
-			if (test_tres_tasks &&
-			    !dist_tasks_tres_tasks_avail(
-				    gres_task_limit, job_res, n))
-				continue;
-			if (_at_tpn_limit(n, job_ptr, "fill non-dedicated CPUs",
-					  true))
-				continue;
+			if (test_tres_tasks) {
+				if (!dist_tasks_tres_tasks_avail(
+					    gres_task_limit, job_res, n))
+					continue;
+				if (_at_tpn_limit(n, job_ptr,
+						  "fill non-dedicated CPUs",
+						  true))
+					continue;
+			}
+
 			more_tres_tasks = true;
 			tid++;
 			job_res->tasks_per_node[n]++;
