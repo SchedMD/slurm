@@ -171,16 +171,13 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 		if (rem_tasks == 0)
 			continue;
 		for (t = 0; ((t < rem_tasks) && (tid < maxtasks)); t++) {
-			if (!over_subscribe &&
-			    ((avail_cpus[n] - job_res->cpus[n]) <
+			if (((avail_cpus[n] - job_res->cpus[n]) <
 			     job_ptr->details->cpus_per_task))
 				break;
-			if (!over_subscribe &&
-			    !dist_tasks_tres_tasks_avail(
+			if (!dist_tasks_tres_tasks_avail(
 				    gres_task_limit, job_res, n))
 				break;
-			if (!over_subscribe &&
-			    _at_tpn_limit(n, job_ptr, "fill allocated", false))
+			if (_at_tpn_limit(n, job_ptr, "fill allocated", false))
 				break;
 			tid++;
 			job_res->tasks_per_node[n]++;
