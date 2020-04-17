@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix invalid references when federated job is revoked while in backfill loop.
  -- Fix distributing job steps across idle nodes within a job.
  -- Fix detected floating reservation overlapping.
+ -- Break infinite loop in cons_tres dealing with incorrect tasks per tres
+    request resulting in slurmctld hang.
 
 * Changes in Slurm 20.02.1
 ==========================
