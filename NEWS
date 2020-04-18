@@ -76,6 +76,7 @@ documents those changes that are of interest to users and administrators.
     request resulting in slurmctld hang.
  -- Send the current (not the previous) reason for a pending job to client
     commands like squeue/scontrol.
+ -- Fix incorrect lock levels for select_g_reconfigure().
 
 * Changes in Slurm 20.02.1
 ==========================

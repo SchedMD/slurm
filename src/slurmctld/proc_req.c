@@ -4701,10 +4701,10 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	update_part_msg_t *part_desc_ptr = (update_part_msg_t *) msg->data;
-	/* Locks: Read config, write job, read node, write partition
+	/* Locks: Read config, write job, write node, write partition
 	 * NOTE: job write lock due to gang scheduler support */
 	slurmctld_lock_t part_write_lock = {
-		READ_LOCK, WRITE_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	START_TIMER;
@@ -4820,9 +4820,9 @@ static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	delete_part_msg_t *part_desc_ptr = (delete_part_msg_t *) msg->data;
-	/* Locks: write job, read node, write partition */
+	/* Locks: write job, write node, write partition */
 	slurmctld_lock_t part_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	START_TIMER;
@@ -5646,7 +5646,7 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 {
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	slurmctld_lock_t config_write_lock =
-		{ WRITE_LOCK, READ_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+		{ WRITE_LOCK, READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	set_debug_flags_msg_t *request_msg =
 		(set_debug_flags_msg_t *) msg->data;
 	uint64_t debug_flags;
