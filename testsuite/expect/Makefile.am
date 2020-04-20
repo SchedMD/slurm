@@ -51,12 +51,10 @@ EXTRA_DIST = \
 	test1.38			\
 	test1.40			\
 	test1.41			\
-	test1.42			\
 	test1.43			\
 	test1.44			\
 	test1.45			\
 	test1.46			\
-	test1.47			\
 	test1.48			\
 	test1.49			\
 	test1.50			\
