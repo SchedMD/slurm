@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "September 2019" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "April 2020" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -45,15 +45,28 @@ The overall configuration parameters available include:
 .TP
 \fBAutoDetect\fR
 The hardware detection mechanisms to enable for automatic GRES configuration.
-This should be on a line by itself. Current, options are:
+Currently, the options are:
 .RS
 .TP
 \fBnvml\fR
-Used to automatically detect NVIDIA GPUs
+Automatically detect NVIDIA GPUs
+.TP
+\fBoff\fR
+Do not automatically detect any GPUs. Used to override other options.
 .TP
 \fBrsmi\fR
-Used to automatically detect AMD GPUs
+Automatically detect AMD GPUs
 .RE
+
+\fIAutoDetect\fR can be on a line by itself, in which case it will globally
+apply to all lines in gres.conf by default. In addition, \fIAutoDetect\fR can be
+combined with \fBNodeName\fR to only apply to certain nodes. Node-specific
+\fIAutoDetect\fRs will trump the global \fIAutoDetect\fR. A node-specific
+\fIAutoDetect\fR only needs to be specified once per node. If specified multiple
+times for the same nodes, they must all be the same value. To unset
+\fIAutoDetect\fR for a node when a global \fIAutoDetect\fR is set, simply set it
+to "off" in a node-specific GRES line.
+E.g.: \fINodeName=tux3 AutoDetect=off Name=gpu File=/dev/nvidia[0\-3]\fR.
 
 .TP
 \fBCount\fR
@@ -227,7 +240,7 @@ If \fBType\fR is specified, then \fBCount\fR is limited in size (currently 1024)
 .br
 # Slurm's Generic Resource (GRES) configuration file
 .br
-# Define GPU devices with MPS support
+# Define GPU devices with MPS support, with AutoDetect sanity checking
 .br
 ##################################################################
 .br
@@ -291,11 +304,29 @@ NodeName=tux[4\-15]  Name=gpu File=/dev/nvidia[0\-3]
 .br
 # Use NVML to gather GPU configuration information
 .br
-# Information about all other GRES gathered from slurm.conf
+# for all nodes except one
 .br
 ##################################################################
 .br
 AutoDetect=nvml
+.br
+NodeName=tux3 AutoDetect=off Name=gpu File=/dev/nvidia[0\-3]
+.br
+
+##################################################################
+.br
+# Slurm's Generic Resource (GRES) configuration file
+.br
+# Specify some nodes with NVML, some with RSMI, and some with no AutoDetect
+.br
+##################################################################
+.br
+NodeName=tux[0\-7] AutoDetect=nvml
+.br
+NodeName=tux[8\-11] AutoDetect=rsmi
+.br
+NodeName=tux[12\-15] Name=gpu File=/dev/nvidia[0\-3]
+.br
 
 .SH "COPYING"
 Copyright (C) 2010 The Regents of the University of California.

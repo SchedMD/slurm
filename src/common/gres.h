@@ -75,6 +75,10 @@ typedef struct {
 #define GRES_AUTODETECT_UNSET   0x00000000 /* Not set; allow global override */
 #define GRES_AUTODETECT_NVML    0x00000001
 #define GRES_AUTODETECT_RSMI    0x00000002
+#define GRES_AUTODETECT_OFF     0x00000004 /* Do NOT use global */
+
+#define GRES_AUTODETECT_GPU_FLAGS 0x000000ff /* reserve first 8 bits for gpu
+					      * flags */
 
 /* Gres state information gathered by slurmd daemon */
 typedef struct gres_slurmd_conf {

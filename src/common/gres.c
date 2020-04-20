@@ -1035,6 +1035,77 @@ static bool _multi_count_per_file(char *name)
 	return false;
 }
 
+static char *_get_autodetect_types_str(void)
+{
+	char *flags = NULL;
+
+	if (!(autodetect_types & GRES_AUTODETECT_GPU_FLAGS))
+		xstrfmtcat(flags, "%sunset", flags ? "," : "");
+	else {
+		if (autodetect_types & GRES_AUTODETECT_NVML)
+			xstrfmtcat(flags, "%snvml", flags ? "," : "");
+		else if (autodetect_types & GRES_AUTODETECT_RSMI)
+			xstrfmtcat(flags, "%srsmi", flags ? "," : "");
+		else if (autodetect_types & GRES_AUTODETECT_OFF)
+			xstrfmtcat(flags, "%soff", flags ? "," : "");
+	}
+
+	return flags;
+}
+
+static uint32_t _handle_autodetect_flags(char *str)
+{
+	uint32_t flags = 0;
+
+	/* Set the node-local gpus value of autodetect_types */
+	if (xstrcasestr(str, "nvml"))
+		flags |= GRES_AUTODETECT_NVML;
+	else if (xstrcasestr(str, "rsmi"))
+		flags |= GRES_AUTODETECT_RSMI;
+	else if (!xstrcmp(str, "off"))
+		flags |= GRES_AUTODETECT_OFF;
+
+	return flags;
+}
+
+static void _handle_local_autodetect(char *str)
+{
+	uint32_t autodetect_types_local = _handle_autodetect_flags(str);
+
+	/* Only set autodetect_types once locally, unless it's the same val */
+	if ((autodetect_types != GRES_AUTODETECT_UNSET) &&
+	    (autodetect_types != autodetect_types_local)) {
+		fatal("gres.conf: duplicate node-local AutoDetect specification does not match the first");
+		return;
+	}
+
+	/* Set the node-local gpus value of autodetect_types */
+	autodetect_types |= autodetect_types_local;
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
+		char *flags = _get_autodetect_types_str();
+		log_flag(GRES, "Using node-local AutoDetect=%s(%d)",
+			 flags, autodetect_types);
+		xfree(flags);
+	}
+}
+
+static void _handle_global_autodetect(char *str)
+{
+	/* If GPU flags exist, node-local value was already specified */
+	if (autodetect_types & GRES_AUTODETECT_GPU_FLAGS)
+		debug2("gres.conf: AutoDetect GPU flags were locally set, so ignoring global flags");
+	else
+		autodetect_types |= _handle_autodetect_flags(str);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
+		char *flags = _get_autodetect_types_str();
+		log_flag(GRES, "Global AutoDetect=%s(%d)",
+			 flags, autodetect_types);
+		xfree(flags);
+	}
+}
+
 /*
  * Build gres_slurmd_conf_t record based upon a line from the gres.conf file
  */
@@ -1043,6 +1114,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			      const char *line, char **leftover)
 {
 	static s_p_options_t _gres_options[] = {
+		{"AutoDetect", S_P_STRING},
 		{"Count", S_P_STRING},	/* Number of Gres available */
 		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource
 					 * (deprecated, use Cores) */
@@ -1063,11 +1135,26 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	char *tmp_str, *last;
 	bool cores_flag = false, cpus_flag = false;
 	char *type_str = NULL;
+	char *autodetect_string = NULL;
 
 	tbl = s_p_hashtbl_create(_gres_options);
 	s_p_parse_line(tbl, *leftover, leftover);
 
 	p = xmalloc(sizeof(gres_slurmd_conf_t));
+
+	/*
+	 * Detect and set the node-local AutoDetect option only if
+	 * NodeName is specified.
+	 */
+	if (s_p_get_string(&autodetect_string, "AutoDetect", tbl)) {
+		if (value)
+			error("gres.conf: In-line AutoDetect requires NodeName to take effect");
+		else {
+			_handle_local_autodetect(autodetect_string);
+		}
+		xfree(autodetect_string);
+	}
+
 	if (!value) {
 		if (!s_p_get_string(&p->name, "Name", tbl)) {
 			error("Invalid GRES data, no type name (%s)", line);
@@ -1186,6 +1273,7 @@ static int _parse_gres_config2(void **dest, slurm_parser_enum_t type,
 			       const char *line, char **leftover)
 {
 	static s_p_options_t _gres_options[] = {
+		{"AutoDetect", S_P_STRING},
 		{"Count", S_P_STRING},	/* Number of Gres available */
 		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource */
 		{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
@@ -1966,11 +2054,9 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 		if (s_p_parse_file(tbl, NULL, gres_conf_file, false) == SLURM_ERROR)
 			fatal("error opening/reading %s", gres_conf_file);
 
+		/* Overwrite unspecified local AutoDetect with global default */
 		if (s_p_get_string(&autodetect_string, "Autodetect", tbl)) {
-			if (xstrcasestr(autodetect_string, "nvml"))
-				autodetect_types |= GRES_AUTODETECT_NVML;
-			if (xstrcasestr(autodetect_string, "rsmi"))
-				autodetect_types |= GRES_AUTODETECT_RSMI;
+			_handle_global_autodetect(autodetect_string);
 			xfree(autodetect_string);
 		}
 

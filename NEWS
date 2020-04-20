@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
     system call. Add --use-local-uid option to sacct to use old behavior.
  -- Limit number of jobs updated by as_mysql_flush_jobs_on_cluster() to avoid
     boot loop failures in slurmdbd.
+ -- Add Autodetect option to NodeName line in gres.conf to override the global
+    Autodetect option.
 
 * Changes in Slurm 20.02.2
 ==========================
