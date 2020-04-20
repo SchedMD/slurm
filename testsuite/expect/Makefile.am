@@ -65,7 +65,6 @@ EXTRA_DIST = \
 	test1.54			\
 	test1.55			\
 	test1.56			\
-	test1.57			\
 	test1.58			\
 	test1.59			\
 	test1.60			\
