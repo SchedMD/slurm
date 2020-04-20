@@ -1194,7 +1194,7 @@ extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 		return SLURM_SUCCESS;
 	}
 
-	if (job_ptr->details->overcommit && (job_ptr->tres_per_task == 0))
+	if (job_ptr->details->overcommit && !job_ptr->tres_per_task)
 		one_task_per_node = true;
 	_log_select_maps("cr_dist/start", job_ptr);
 	if (((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==

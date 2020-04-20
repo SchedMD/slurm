@@ -197,7 +197,7 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	 * tasks on node 0, 7 tasks on node 1, and 6 tasks on node 2.  It should
 	 * launch 8 tasks on node, 8 tasks on node 1, and 4 tasks on node 2.
 	 */
-	if (job_ptr->details->overcommit && (job_ptr->tres_per_task == 0))
+	if (job_ptr->details->overcommit && !job_ptr->tres_per_task)
 		maxtasks = 0;	/* Allocate have one_task_per_node */
 	while (tid < maxtasks) {
 		bool space_remaining = false;
