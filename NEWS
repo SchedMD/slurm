@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
     fatal if there are no allocatable sockets due to core specialization.
  -- Make sacct get UID from database instead of from the username and a
     system call. Add --use-local-uid option to sacct to use old behavior.
+ -- Limit number of jobs updated by as_mysql_flush_jobs_on_cluster() to avoid
+    boot loop failures in slurmdbd.
 
 * Changes in Slurm 20.02.2
 ==========================

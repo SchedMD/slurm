@@ -49,6 +49,7 @@
 #include "src/common/slurm_time.h"
 
 #define BUFFER_SIZE 4096
+#define MAX_FLUSH_JOBS 500
 
 typedef struct {
 	char *cluster;
@@ -1635,7 +1636,9 @@ extern int as_mysql_flush_jobs_on_cluster(
 	char *query = NULL;
 	char *id_char = NULL;
 	char *suspended_char = NULL;
+	size_t count;
 
+again:
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
@@ -1644,8 +1647,8 @@ extern int as_mysql_flush_jobs_on_cluster(
 	 */
 	query = xstrdup_printf(
 		"select distinct t1.job_db_inx, t1.state from \"%s_%s\" "
-		"as t1 where t1.time_end=0;",
-		mysql_conn->cluster_name, job_table);
+		"as t1 where t1.time_end=0 LIMIT %u;",
+		mysql_conn->cluster_name, job_table, MAX_FLUSH_JOBS);
 	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
 	if (!(result =
 	      mysql_db_query_ret(mysql_conn, query, 0))) {
@@ -1670,6 +1673,7 @@ extern int as_mysql_flush_jobs_on_cluster(
 		else
 			xstrfmtcat(id_char, "job_db_inx in (%s", row[0]);
 	}
+	count = mysql_num_rows(result);
 	mysql_free_result(result);
 
 	if (suspended_char) {
@@ -1713,6 +1717,14 @@ extern int as_mysql_flush_jobs_on_cluster(
 
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
+	}
+
+	/* all rows were returned, there may be more to check */
+	if (!rc && (count >= MAX_FLUSH_JOBS)) {
+		DB_DEBUG(DB_JOB, mysql_conn->conn,
+			 "%s: possible missed jobs. Running query again.",
+			 __func__);
+		goto again;
 	}
 
 	return rc;
