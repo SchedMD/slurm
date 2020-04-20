@@ -1136,6 +1136,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	bool cores_flag = false, cpus_flag = false;
 	char *type_str = NULL;
 	char *autodetect_string = NULL;
+	bool autodetect = false;
 
 	tbl = s_p_hashtbl_create(_gres_options);
 	s_p_parse_line(tbl, *leftover, leftover);
@@ -1151,13 +1152,17 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			error("gres.conf: In-line AutoDetect requires NodeName to take effect");
 		else {
 			_handle_local_autodetect(autodetect_string);
+			/* AutoDetect was specified w/ NodeName */
+			autodetect = true;
 		}
 		xfree(autodetect_string);
 	}
 
 	if (!value) {
 		if (!s_p_get_string(&p->name, "Name", tbl)) {
-			error("Invalid GRES data, no type name (%s)", line);
+			if (!autodetect)
+				error("Invalid GRES data, no type name (%s)",
+				      line);
 			xfree(p);
 			s_p_hashtbl_destroy(tbl);
 			return 0;
