@@ -189,7 +189,7 @@ static List gres_conf_list = NULL;
 static bool init_run = false;
 static bool have_gpu = false, have_mps = false;
 static uint32_t gpu_plugin_id = NO_VAL, mps_plugin_id = NO_VAL;
-static volatile uint32_t autodetect_types = GRES_AUTODETECT_NONE;
+static volatile uint32_t autodetect_types = GRES_AUTODETECT_UNSET;
 static uint32_t select_plugin_type = NO_VAL;
 static Buf gres_context_buf = NULL;
 static Buf gres_conf_buf = NULL;

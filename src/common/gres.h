@@ -72,7 +72,7 @@ typedef struct {
 #define GRES_NO_CONSUME		0x0001	/* Requesting no consume of resources */
 
 /* GRES AutoDetect options */
-#define GRES_AUTODETECT_NONE    0x00000000
+#define GRES_AUTODETECT_UNSET   0x00000000 /* Not set; allow global override */
 #define GRES_AUTODETECT_NVML    0x00000001
 #define GRES_AUTODETECT_RSMI    0x00000002
 
