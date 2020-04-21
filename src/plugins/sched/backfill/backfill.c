@@ -237,7 +237,7 @@ static int  _num_feature_count(job_record_t *job_ptr, bool *has_xand,
 static int  _het_job_find_map(void *x, void *key);
 static void _het_job_map_del(void *x);
 static void _het_job_start_clear(void);
-static time_t _het_job_start_find(job_record_t *job_ptr, time_t now);
+static time_t _het_job_start_find(job_record_t *job_ptr);
 static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			       uint32_t comp_time_limit);
 static void _het_job_start_test_single(node_space_map_t *node_space,
@@ -1779,7 +1779,7 @@ static int _attempt_backfill(void)
 		job_ptr->part_ptr = part_ptr;
 		job_ptr->priority = bf_job_priority;
 		mcs_select = slurm_mcs_get_select(job_ptr);
-		het_job_time = _het_job_start_find(job_ptr, now);
+		het_job_time = _het_job_start_find(job_ptr);
 		if (het_job_time > (now + backfill_window))
 			continue;
 
@@ -3145,7 +3145,7 @@ static time_t _het_job_start_compute(het_job_map_t *map,
  * If the job's state reason is BeginTime (the way all hetjobs start) and that
  * time is passed, then clear the reason field.
  */
-static time_t _het_job_start_find(job_record_t *job_ptr, time_t now)
+static time_t _het_job_start_find(job_record_t *job_ptr)
 {
 	het_job_map_t *map;
 	time_t latest_start = (time_t) 0;
@@ -3157,19 +3157,6 @@ static time_t _het_job_start_find(job_record_t *job_ptr, time_t now)
 		if (map) {
 			latest_start = _het_job_start_compute(map,
 							      job_ptr->job_id);
-		}
-
-		/*
-		 * All hetjobs are submitted with a begin time in the future
-		 * so that all components can be submitted before any of them
-		 * are scheduled, but we want to clear the BeginTime reason
-		 * as soon as possible to avoid confusing users
-		 */
-		if (job_ptr->details->begin_time <= now) {
-			if (job_ptr->state_reason == WAIT_TIME) {
-				job_ptr->state_reason = WAIT_NO_REASON;
-				last_job_update = now;
-			}
 		}
 
 		log_flag(HETJOB, "%pJ in partition %s expected to start in %ld secs",
