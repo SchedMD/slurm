@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix setting ntasks-per-core when using --multithread.
  -- Only override job wait reason to priority if Reason=None or
     Reason=Resources.
+ -- Perl API / seff - fix missing symbol issue with accounting_storage/slurmdbd.
 
 * Changes in Slurm 20.02.1
 ==========================
