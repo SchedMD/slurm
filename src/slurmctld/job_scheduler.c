@@ -541,16 +541,6 @@ extern List build_job_queue(bool clear_start, bool backfill)
 		if (job_ptr->array_recs)
 			job_ptr->array_recs->pend_run_tasks = 0;
 		if (job_ptr->state_reason != WAIT_NO_REASON) {
-			job_ptr->state_reason_prev = job_ptr->state_reason;
-			if ((job_ptr->state_reason != WAIT_PRIORITY) &&
-			    (job_ptr->state_reason != WAIT_RESOURCES))
-				job_ptr->state_reason_prev_db =
-					job_ptr->state_reason;
-			last_job_update = now;
-		} else if ((job_ptr->state_reason_prev == WAIT_TIME) &&
-			   job_ptr->details &&
-			   (job_ptr->details->begin_time <= now)) {
-			job_ptr->state_reason_prev = job_ptr->state_reason;
 			if ((job_ptr->state_reason != WAIT_PRIORITY) &&
 			    (job_ptr->state_reason != WAIT_RESOURCES))
 				job_ptr->state_reason_prev_db =
@@ -2235,7 +2225,6 @@ job_failed:
 	      __func__, fail_why, job_ptr, job_ptr);
 	xfree(job_ptr->state_desc);
 	job_ptr->state_desc = xstrdup(fail_why);
-	job_ptr->state_reason_prev = job_ptr->state_reason;
 	job_ptr->state_reason = FAIL_SYSTEM;
 	slurm_free_job_launch_msg(launch_msg_ptr);
 	/* ignore the return as job is in an unknown state anyway */

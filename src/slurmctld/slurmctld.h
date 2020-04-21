@@ -832,10 +832,6 @@ struct job_record {
 	char *state_desc;		/* optional details for state_reason */
 	uint32_t state_reason;		/* reason job still pending or failed
 					 * see slurm.h:enum job_state_reason */
-	uint32_t state_reason_prev;	/* Previous state_reason, needed to
-					 * return valid job information during
-					 * scheduling cycle (state_reason is
-					 * cleared at start of cycle) */
 	uint32_t state_reason_prev_db;	/* Previous state_reason that isn't
 					 * priority or resources, only stored in
 					 * the database. */

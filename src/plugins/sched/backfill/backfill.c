@@ -3170,10 +3170,6 @@ static time_t _het_job_start_find(job_record_t *job_ptr, time_t now)
 				job_ptr->state_reason = WAIT_NO_REASON;
 				last_job_update = now;
 			}
-			if (job_ptr->state_reason_prev == WAIT_TIME) {
-				job_ptr->state_reason_prev = WAIT_NO_REASON;
-				last_job_update = now;
-			}
 		}
 
 		log_flag(HETJOB, "%pJ in partition %s expected to start in %ld secs",

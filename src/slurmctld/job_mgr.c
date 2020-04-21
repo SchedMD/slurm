@@ -11066,7 +11066,6 @@ static void _release_job_rec(job_record_t *job_ptr, uid_t uid)
 	job_ptr->direct_set_prio = 0;
 	set_job_prio(job_ptr);
 	job_ptr->state_reason = WAIT_NO_REASON;
-	job_ptr->state_reason_prev = WAIT_NO_REASON;
 	job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 	xfree(job_ptr->state_desc);
 	job_ptr->exit_code = 0;
