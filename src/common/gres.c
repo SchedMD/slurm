@@ -189,7 +189,7 @@ static List gres_conf_list = NULL;
 static bool init_run = false;
 static bool have_gpu = false, have_mps = false;
 static uint32_t gpu_plugin_id = NO_VAL, mps_plugin_id = NO_VAL;
-static volatile uint32_t autodetect_types = GRES_AUTODETECT_UNSET;
+static volatile uint32_t autodetect_flags = GRES_AUTODETECT_UNSET;
 static uint32_t select_plugin_type = NO_VAL;
 static Buf gres_context_buf = NULL;
 static Buf gres_conf_buf = NULL;
@@ -1035,18 +1035,18 @@ static bool _multi_count_per_file(char *name)
 	return false;
 }
 
-static char *_get_autodetect_types_str(void)
+static char *_get_autodetect_flags_str(void)
 {
 	char *flags = NULL;
 
-	if (!(autodetect_types & GRES_AUTODETECT_GPU_FLAGS))
+	if (!(autodetect_flags & GRES_AUTODETECT_GPU_FLAGS))
 		xstrfmtcat(flags, "%sunset", flags ? "," : "");
 	else {
-		if (autodetect_types & GRES_AUTODETECT_GPU_NVML)
+		if (autodetect_flags & GRES_AUTODETECT_GPU_NVML)
 			xstrfmtcat(flags, "%snvml", flags ? "," : "");
-		else if (autodetect_types & GRES_AUTODETECT_GPU_RSMI)
+		else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI)
 			xstrfmtcat(flags, "%srsmi", flags ? "," : "");
-		else if (autodetect_types & GRES_AUTODETECT_GPU_OFF)
+		else if (autodetect_flags & GRES_AUTODETECT_GPU_OFF)
 			xstrfmtcat(flags, "%soff", flags ? "," : "");
 	}
 
@@ -1057,7 +1057,7 @@ static uint32_t _handle_autodetect_flags(char *str)
 {
 	uint32_t flags = 0;
 
-	/* Set the node-local gpus value of autodetect_types */
+	/* Set the node-local gpus value of autodetect_flags */
 	if (xstrcasestr(str, "nvml"))
 		flags |= GRES_AUTODETECT_GPU_NVML;
 	else if (xstrcasestr(str, "rsmi"))
@@ -1070,22 +1070,22 @@ static uint32_t _handle_autodetect_flags(char *str)
 
 static void _handle_local_autodetect(char *str)
 {
-	uint32_t autodetect_types_local = _handle_autodetect_flags(str);
+	uint32_t autodetect_flags_local = _handle_autodetect_flags(str);
 
-	/* Only set autodetect_types once locally, unless it's the same val */
-	if ((autodetect_types != GRES_AUTODETECT_UNSET) &&
-	    (autodetect_types != autodetect_types_local)) {
+	/* Only set autodetect_flags once locally, unless it's the same val */
+	if ((autodetect_flags != GRES_AUTODETECT_UNSET) &&
+	    (autodetect_flags != autodetect_flags_local)) {
 		fatal("gres.conf: duplicate node-local AutoDetect specification does not match the first");
 		return;
 	}
 
-	/* Set the node-local gpus value of autodetect_types */
-	autodetect_types |= autodetect_types_local;
+	/* Set the node-local gpus value of autodetect_flags */
+	autodetect_flags |= autodetect_flags_local;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
-		char *flags = _get_autodetect_types_str();
+		char *flags = _get_autodetect_flags_str();
 		log_flag(GRES, "Using node-local AutoDetect=%s(%d)",
-			 flags, autodetect_types);
+			 flags, autodetect_flags);
 		xfree(flags);
 	}
 }
@@ -1093,15 +1093,15 @@ static void _handle_local_autodetect(char *str)
 static void _handle_global_autodetect(char *str)
 {
 	/* If GPU flags exist, node-local value was already specified */
-	if (autodetect_types & GRES_AUTODETECT_GPU_FLAGS)
+	if (autodetect_flags & GRES_AUTODETECT_GPU_FLAGS)
 		debug2("gres.conf: AutoDetect GPU flags were locally set, so ignoring global flags");
 	else
-		autodetect_types |= _handle_autodetect_flags(str);
+		autodetect_flags |= _handle_autodetect_flags(str);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
-		char *flags = _get_autodetect_types_str();
+		char *flags = _get_autodetect_flags_str();
 		log_flag(GRES, "Global AutoDetect=%s(%d)",
-			 flags, autodetect_types);
+			 flags, autodetect_flags);
 		xfree(flags);
 	}
 }
@@ -1952,7 +1952,7 @@ static void _pack_gres_conf(void)
 	FREE_NULL_BUFFER(gres_conf_buf);
 
 	gres_conf_buf = init_buf(0);
-	pack32(autodetect_types, gres_conf_buf);
+	pack32(autodetect_flags, gres_conf_buf);
 
 	/* If there is no list to send, let the stepd know */
 	if (!gres_conf_list || !(len = list_count(gres_conf_list))) {
@@ -1973,7 +1973,7 @@ static int _unpack_gres_conf(Buf buffer)
 {
 	uint32_t cnt;
 	safe_unpack32(&cnt, buffer);
-	autodetect_types = cnt;
+	autodetect_flags = cnt;
 	safe_unpack32(&cnt, buffer);
 
 	if (!cnt)
@@ -14058,9 +14058,9 @@ extern gres_job_state_t *gres_get_job_state(List gres_list, char *name)
 	return (gres_job_state_t *)gres_state_ptr->gres_data;
 }
 
-extern uint32_t gres_get_autodetect_types(void)
+extern uint32_t gres_get_autodetect_flags(void)
 {
-	return autodetect_types;
+	return autodetect_flags;
 }
 
 extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)

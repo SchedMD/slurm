@@ -1365,7 +1365,7 @@ extern int gres_get_step_info(List step_gres_list, char *gres_name,
 extern gres_job_state_t *gres_get_job_state(List gres_list, char *name);
 extern gres_step_state_t *gres_get_step_state(List gres_list, char *name);
 
-extern uint32_t gres_get_autodetect_types(void);
+extern uint32_t gres_get_autodetect_flags(void);
 
 /*
  * Translate a gres_list into a tres_str
