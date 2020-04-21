@@ -1042,11 +1042,11 @@ static char *_get_autodetect_types_str(void)
 	if (!(autodetect_types & GRES_AUTODETECT_GPU_FLAGS))
 		xstrfmtcat(flags, "%sunset", flags ? "," : "");
 	else {
-		if (autodetect_types & GRES_AUTODETECT_NVML)
+		if (autodetect_types & GRES_AUTODETECT_GPU_NVML)
 			xstrfmtcat(flags, "%snvml", flags ? "," : "");
-		else if (autodetect_types & GRES_AUTODETECT_RSMI)
+		else if (autodetect_types & GRES_AUTODETECT_GPU_RSMI)
 			xstrfmtcat(flags, "%srsmi", flags ? "," : "");
-		else if (autodetect_types & GRES_AUTODETECT_OFF)
+		else if (autodetect_types & GRES_AUTODETECT_GPU_OFF)
 			xstrfmtcat(flags, "%soff", flags ? "," : "");
 	}
 
@@ -1059,11 +1059,11 @@ static uint32_t _handle_autodetect_flags(char *str)
 
 	/* Set the node-local gpus value of autodetect_types */
 	if (xstrcasestr(str, "nvml"))
-		flags |= GRES_AUTODETECT_NVML;
+		flags |= GRES_AUTODETECT_GPU_NVML;
 	else if (xstrcasestr(str, "rsmi"))
-		flags |= GRES_AUTODETECT_RSMI;
+		flags |= GRES_AUTODETECT_GPU_RSMI;
 	else if (!xstrcmp(str, "off"))
-		flags |= GRES_AUTODETECT_OFF;
+		flags |= GRES_AUTODETECT_GPU_OFF;
 
 	return flags;
 }

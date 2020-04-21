@@ -72,10 +72,10 @@ typedef struct {
 #define GRES_NO_CONSUME		0x0001	/* Requesting no consume of resources */
 
 /* GRES AutoDetect options */
-#define GRES_AUTODETECT_UNSET   0x00000000 /* Not set; allow global override */
-#define GRES_AUTODETECT_NVML    0x00000001
-#define GRES_AUTODETECT_RSMI    0x00000002
-#define GRES_AUTODETECT_OFF     0x00000004 /* Do NOT use global */
+#define GRES_AUTODETECT_UNSET     0x00000000 /* Not set */
+#define GRES_AUTODETECT_GPU_NVML  0x00000001
+#define GRES_AUTODETECT_GPU_RSMI  0x00000002
+#define GRES_AUTODETECT_GPU_OFF   0x00000004 /* Do NOT use global */
 
 #define GRES_AUTODETECT_GPU_FLAGS 0x000000ff /* reserve first 8 bits for gpu
 					      * flags */
