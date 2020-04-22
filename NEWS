@@ -88,6 +88,7 @@ documents those changes that are of interest to users and administrators.
  -- Only override job wait reason to priority if Reason=None or
     Reason=Resources.
  -- Perl API / seff - fix missing symbol issue with accounting_storage/slurmdbd.
+ -- slurm.spec - add --with cray_shasta option.
 
 * Changes in Slurm 20.02.1
 ==========================
@@ -258,6 +259,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix distributing job steps across idle nodes within a job.
  -- Break infinite loop in cons_tres dealing with incorrect tasks per tres
     request resulting in slurmctld hang.
+ -- priority/multifactor - gracefully handle NULL list of associations or array
+    of siblings when calculating FairTree fairshare.
 
 * Changes in Slurm 19.05.6
 ==========================

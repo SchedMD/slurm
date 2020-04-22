@@ -219,6 +219,14 @@ static slurmdb_assoc_rec_t** _append_list_to_array(
 	slurmdb_assoc_rec_t *next;
 	size_t bytes;
 	size_t i = *merged_size;
+
+	if (!list) {
+		error("%s: unable to append NULL list to assoc list.",
+		      __func__);
+
+		return merged;
+	}
+
 	*merged_size += list_count(list);
 
 	/* must be null-terminated, so add one extra slot */
@@ -324,6 +332,12 @@ static void _calc_tree_fs(slurmdb_assoc_rec_t** siblings,
 	long double prev_level_fs = (long double) NO_VAL;
 	bool tied = false;
 	size_t i;
+
+	if (!siblings) {
+		error("%s: unable to calculate fairshare on empty tree",
+		      __func__);
+		return;
+	}
 
 	/* Calculate level_fs for each child */
 	for (i = 0; (assoc = siblings[i]); i++)
