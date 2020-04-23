@@ -15,7 +15,7 @@
 
 <a id="Overview"></a>
 <h2>Overview</h2>
-<p>The AcctGatherProfileType/hdf5 plugin allows Slurm to coordinate collecting
+<p>The acct_gather_profile/hdf5 plugin allows Slurm to coordinate collecting
 data on jobs it runs on a cluster that is more detailed than is practical to
 include in its database. The data comes from periodically sampling various
 performance data either collected by Slurm, the operating system, or
