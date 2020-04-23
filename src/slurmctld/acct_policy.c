@@ -4555,15 +4555,6 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 		details_ptr = old_job_ptr->details;
 		if (!details_ptr) {
 			fatal_abort("%s: no details after split", __func__);
-			rc = SLURM_ERROR;
-			_add_accrue_time_internal(job_ptr->assoc_ptr,
-						  qos_ptr_1,
-						  used_limits_a1,
-						  used_limits_u1,
-						  qos_ptr_2,
-						  used_limits_a2,
-						  used_limits_u2,
-						  i - 1);
 			goto endit;
 		}
 		details_ptr->accrue_time = now;
