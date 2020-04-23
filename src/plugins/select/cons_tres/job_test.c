@@ -3290,30 +3290,10 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	}
 
 	/* Identify available CPUs */
-	if (cr_type & CR_CORE) {
-		/* cpu_alloc_size = # of CPUs per core */
-		cpu_alloc_size = select_node_record[node_i].vpus;
-		avail_res = common_allocate_cores(job_ptr, core_map[node_i],
-						  part_core_map_ptr, node_i,
-						  &cpu_alloc_size,
-						  req_sock_map);
+	avail_res = common_allocate(job_ptr, core_map[node_i],
+				    part_core_map_ptr, node_i,
+				    &cpu_alloc_size, req_sock_map, cr_type);
 
-	} else if (cr_type & CR_SOCKET) {
-		/* cpu_alloc_size = # of CPUs per socket */
-		cpu_alloc_size = select_node_record[node_i].cores *
-				 select_node_record[node_i].vpus;
-		avail_res = common_allocate_sockets(job_ptr, core_map[node_i],
-						    part_core_map_ptr, node_i,
-						    &cpu_alloc_size,
-						    req_sock_map);
-	} else {
-		/* cpu_alloc_size = 1 individual CPU */
-		cpu_alloc_size = 1;
-		avail_res = common_allocate_cores(job_ptr, core_map[node_i],
-						  part_core_map_ptr, node_i,
-						  &cpu_alloc_size,
-						  req_sock_map);
-	}
 	FREE_NULL_BITMAP(req_sock_map);
 	if (!avail_res || (avail_res->max_cpus == 0)) {
 		common_free_avail_res(avail_res);

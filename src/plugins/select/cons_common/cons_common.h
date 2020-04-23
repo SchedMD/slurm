@@ -152,46 +152,26 @@ extern bitstr_t **common_mark_avail_cores(
 	bitstr_t *node_bitmap, uint16_t core_spec);
 
 /*
- * common_allocate_cores - Given the job requirements, determine which cores
+ * common_allocate - Given the job requirements, determine which resources
  *                   from the given node can be allocated (if any) to this
  *                   job. Returns the number of cpus that can be used by
- *                   this node AND a bitmap of the selected cores.
+ *                   this node AND a bitmap of the selected cores|sockets.
  *
  * IN job_ptr       - pointer to job requirements
  * IN/OUT core_map  - core_bitmap of available cores on this node
  * IN part_core_map - bitmap of cores already allocated on this partition/node
  * IN node_i        - index of node to be evaluated
- * IN/OUT cpu_alloc_size - minimum allocation size, in CPUs
+ * OUT cpu_alloc_size - minimum allocation size, in CPUs
  * IN req_sock_map - OPTIONAL bitmap of required sockets
+ * IN cr_type - Consumable Resource setting
  * RET resource availability structure, call _free_avail_res() to free
  */
-extern avail_res_t *common_allocate_cores(job_record_t *job_ptr,
-					  bitstr_t *core_map,
-					  bitstr_t *part_core_map,
-					  const uint32_t node_i,
-					  int *cpu_alloc_size,
-					  bitstr_t *req_sock_map);
-
-/*
- * common_allocate_sockets - Given the job requirements, determine which sockets
- *                     from the given node can be allocated (if any) to this
- *                     job. Returns the number of cpus that can be used by
- *                     this node AND a core-level bitmap of the selected
- *                     sockets.
- *
- * IN job_ptr       - pointer to job requirements
- * IN/OUT core_map  - core_bitmap of available cores on this node
- * IN part_core_map - bitmap of cores already allocated on this partition/node
- * IN node_i        - index of node to be evaluated
- * IN/OUT cpu_alloc_size - minimum allocation size, in CPUs
- * IN req_sock_map - OPTIONAL bitmap of required sockets
- * RET resource availability structure, call _free_avail_res() to free
- */
-extern avail_res_t *common_allocate_sockets(job_record_t *job_ptr,
-					    bitstr_t *core_map,
-					    bitstr_t *part_core_map,
-					    const uint32_t node_i,
-					    int *cpu_alloc_size,
-					    bitstr_t *req_sock_map);
+extern avail_res_t *common_allocate(job_record_t *job_ptr,
+				    bitstr_t *core_map,
+				    bitstr_t *part_core_map,
+				    const uint32_t node_i,
+				    int *cpu_alloc_size,
+				    bitstr_t *req_sock_map,
+				    uint16_t cr_type);
 
 #endif /* _CONS_COMMON_H */

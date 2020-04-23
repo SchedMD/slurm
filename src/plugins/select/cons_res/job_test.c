@@ -2122,25 +2122,8 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	if (gres_cores == 0)
 		return NULL;
 
-	if (cr_type & CR_CORE) {
-		/* cpu_alloc_size = CPUs per core */
-		cpu_alloc_size = select_node_record[node_i].vpus;
-		avail_res = common_allocate_cores(
-			job_ptr, core_map, part_core_map,
-			node_i, &cpu_alloc_size, NULL);
-	} else if (cr_type & CR_SOCKET) {
-		/* cpu_alloc_size = CPUs per socket */
-		cpu_alloc_size = select_node_record[node_i].cores *
-				 select_node_record[node_i].vpus;
-		avail_res = common_allocate_sockets(
-			job_ptr, core_map, part_core_map,
-			node_i, &cpu_alloc_size, NULL);
-	} else {
-		cpu_alloc_size = 1;
-		avail_res = common_allocate_cores(
-			job_ptr, core_map, part_core_map,
-			node_i, &cpu_alloc_size, NULL);
-	}
+	avail_res = common_allocate(job_ptr, core_map, part_core_map,
+				    node_i, &cpu_alloc_size, NULL, cr_type);
 
 	if (avail_res)
 		cpus = avail_res->max_cpus;
