@@ -103,7 +103,6 @@ extern bool     backfill_busy_nodes;
 extern int      bf_window_scale;
 extern cons_common_callbacks_t cons_common_callbacks;
 extern int      core_array_size;
-extern uint16_t cr_type;
 extern bool     gang_mode;
 extern bool     have_dragonfly;
 extern bool     is_cons_tres;

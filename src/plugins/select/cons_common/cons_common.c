@@ -85,7 +85,6 @@ bool     backfill_busy_nodes  = false;
 int      bf_window_scale      = 0;
 cons_common_callbacks_t cons_common_callbacks = {0};
 int      core_array_size      = 1;
-uint16_t cr_type              = CR_CPU; /* cr_type is overwritten in init() */
 bool     gang_mode            = false;
 bool     have_dragonfly       = false;
 bool     is_cons_tres         = false;
@@ -752,10 +751,6 @@ extern void common_init(void)
 {
 	char *topo_param;
 
-	cr_type = slurm_conf.select_type_param;
-	if (cr_type)
-		verbose("%s loaded with argument %u", plugin_type, cr_type);
-
 	topo_param = slurm_get_topology_param();
 	if (topo_param) {
 		if (xstrcasestr(topo_param, "dragonfly"))
@@ -772,6 +767,9 @@ extern void common_init(void)
 
 	if (plugin_id == SELECT_PLUGIN_CONS_TRES)
 		is_cons_tres = true;
+
+	verbose("%s loaded", plugin_type);
+
 }
 
 extern void common_fini(void)
@@ -1016,10 +1014,11 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 	int i;
 
 	info("%s: %s", plugin_type, __func__);
-	if ((cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) == 0) {
+	if (!(slurm_conf.select_type_param & (CR_CPU | CR_CORE | CR_SOCKET))) {
 		fatal("Invalid SelectTypeParameters: %s (%u), "
 		      "You need at least CR_(CPU|CORE|SOCKET)*",
-		      select_type_param_string(cr_type), cr_type);
+		      select_type_param_string(slurm_conf.select_type_param),
+		      slurm_conf.select_type_param);
 	}
 	if (node_ptr == NULL) {
 		error("select_p_node_init: node_ptr == NULL");
@@ -1137,7 +1136,7 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 			      select_node_record[i].tot_cores *
 			      select_node_record[i].threads);
 
-		if ((cr_type & CR_SOCKET) &&
+		if ((slurm_conf.select_type_param & CR_SOCKET) &&
 		    (slurm_conf.conf_flags & CTL_CONF_ASRU) == 0)
 			_check_allocatable_sockets(&select_node_record[i]);
 

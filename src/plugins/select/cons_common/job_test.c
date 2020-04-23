@@ -1660,23 +1660,29 @@ alloc_job:
 	return error_code;
 }
 
+static uint16_t _setup_cr_type(job_record_t *job_ptr)
+{
+	uint16_t tmp_cr_type = slurm_conf.select_type_param;
+
+	if (job_ptr->part_ptr->cr_type) {
+		if ((tmp_cr_type & CR_SOCKET) || (tmp_cr_type & CR_CORE)) {
+			tmp_cr_type &= ~(CR_SOCKET | CR_CORE | CR_MEMORY);
+			tmp_cr_type |= job_ptr->part_ptr->cr_type;
+		} else
+			info("%s: Can't use Partition SelectType unless using CR_Socket or CR_Core",
+			     plugin_type);
+	}
+
+	return tmp_cr_type;
+}
+
 /* Determine if a job can ever run */
 static int _test_only(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
 		      uint32_t req_nodes, uint16_t job_node_req)
 {
 	int rc;
-	uint16_t tmp_cr_type = cr_type;
-
-	if (job_ptr->part_ptr->cr_type) {
-		if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) {
-			tmp_cr_type &= ~(CR_SOCKET | CR_CORE | CR_MEMORY);
-			tmp_cr_type |= job_ptr->part_ptr->cr_type;
-		} else {
-			info("%s: Can't use Partition SelectType unless "
-			     "using CR_Socket or CR_Core", plugin_type);
-		}
-	}
+	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
 
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_TEST_ONLY, tmp_cr_type, job_node_req,
@@ -1776,20 +1782,10 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t *orig_map;
 	int action, rc = SLURM_ERROR;
 	time_t now = time(NULL);
-	uint16_t tmp_cr_type = cr_type;
+	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
 	bool qos_preemptor = false;
 
 	orig_map = bit_copy(node_bitmap);
-
-	if (job_ptr->part_ptr->cr_type) {
-		if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) {
-			tmp_cr_type &= ~(CR_SOCKET | CR_CORE | CR_MEMORY);
-			tmp_cr_type |= job_ptr->part_ptr->cr_type;
-		} else {
-			info("%s: Can't use Partition SelectType unless "
-			     "using CR_Socket or CR_Core", plugin_type);
-		}
-	}
 
 	/* Try to run with currently available nodes */
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
@@ -2002,21 +1998,11 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	bool remove_some_jobs = false;
 	uint16_t pass_count = 0;
 	uint16_t mode = NO_VAL16;
-	uint16_t tmp_cr_type = cr_type;
+	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
 	bool preempt_mode = false;
 
 	save_node_map = bit_copy(node_bitmap);
 top:	orig_node_map = bit_copy(save_node_map);
-
-	if (job_ptr->part_ptr->cr_type) {
-		if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) {
-			tmp_cr_type &= ~(CR_SOCKET | CR_CORE | CR_MEMORY);
-			tmp_cr_type |= job_ptr->part_ptr->cr_type;
-		} else {
-			info("%s: Can't use Partition SelectType unless "
-			     "using CR_Socket or CR_Core", plugin_type);
-		}
-	}
 
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_RUN_NOW, tmp_cr_type, job_node_req,
