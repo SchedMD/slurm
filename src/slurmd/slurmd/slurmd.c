@@ -1030,12 +1030,13 @@ _read_config(void)
 	    (conf->sockets != conf->actual_sockets) ||
 	    (conf->cores   != conf->actual_cores)   ||
 	    (conf->threads != conf->actual_threads)) {
-		error("Node configuration differs from hardware: CPUs=%u:%u(hw) Boards=%u:%u(hw) SocketsPerBoard=%u:%u(hw) CoresPerSocket=%u:%u(hw) ThreadsPerCore=%u:%u(hw)",
-		      conf->cpus,    conf->actual_cpus,
-		      conf->boards,  conf->actual_boards,
-		      conf->sockets, conf->actual_sockets,
-		      conf->cores,   conf->actual_cores,
-		      conf->threads, conf->actual_threads);
+		log_var(config_overrides ? LOG_LEVEL_INFO : LOG_LEVEL_ERROR,
+			"Node configuration differs from hardware: CPUs=%u:%u(hw) Boards=%u:%u(hw) SocketsPerBoard=%u:%u(hw) CoresPerSocket=%u:%u(hw) ThreadsPerCore=%u:%u(hw)",
+			conf->cpus,    conf->actual_cpus,
+			conf->boards,  conf->actual_boards,
+			conf->sockets, conf->actual_sockets,
+			conf->cores,   conf->actual_cores,
+			conf->threads, conf->actual_threads);
 	}
 #endif
 
