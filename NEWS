@@ -73,6 +73,8 @@ documents those changes that are of interest to users and administrators.
  -- Downgrade "Node config differ.." error message if config_overrides enabled.
  -- Add client error when using --gpus-per-socket without --sockets-per-node.
  -- Fix nvml/rsmi debug statements making it to stderr.
+ -- NodeSets - fix slurmctld segfault in newer glibc if any nodes have no
+    defined features.
 
 * Changes in Slurm 20.02.1
 ==========================
