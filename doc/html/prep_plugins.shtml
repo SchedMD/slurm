@@ -1,0 +1,182 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">PrEp Plugin API</a></h1>
+
+<h2>Overview</h2>
+<p>This document describes the Slurm PrEp &mdash; short for "Pr"olog and
+"Ep"ilog &mdash; plugins API. It is intended as a resource to programmers
+wishing to write their own Slurm prep plugins.</p>
+
+<p>The purpose of the prep plugin APIs to provide a native C interface to the
+same hooks traditionally used by the <i>Prolog</i>, <i>Epilog</i>,
+<i>PrologSlurmctld</i>, and <i>EpilogSlurmctld</i> scripts. Those interfaces
+are now implemented through the <i>prep/script</i> plugin, and that plugin
+serves as a good example of how to approach development of additional
+plugins.</p>
+
+<p>Slurm PrEp plugins must conform to the Slurm Plugin API with the following
+specifications:</p>
+
+<p><span class="commandline">
+const char plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"
+</span></p>
+<p style="margin-left:.2in">
+A free-formatted ASCII text string that identifies the plugin.
+</p>
+
+<p><span class="commandline">
+const char plugin_type[]="<i>major/minor</i>"
+</span></p>
+<p style="margin-left:.2in">
+The major type must be &quot;prep&quot;.
+The minor type can be any suitable name for the type of prep plugin.
+</p>
+
+<p><span class="commandline">const uint32_t plugin_version</span></p>
+<p style="margin-left:.2in">
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loaded by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.
+</p>
+
+<p>Slurm can be configured to use multiple prep plugins if desired through the
+PrEpPlugins configuration option. Additional plugins should be comma-separated.
+Note that, by default, the <i>prep/script</i> plugin is loaded if that option
+is not set, but will not be loaded if an explict setting has been made. Thus,
+if you do set that option, and intend to still use the <i>Prolog</i>,
+<i>Epilog</i>, <i>PrologSlurmctld</i>, and/or <i>EpilogSlurmctld</i> options
+you will need to ensure both your additional plugin and <i>prep/script</i> are
+set.</p>
+
+<p>Special care must be used when developing against the
+<span class="commandline">prep_p_prolog_slurmctld()</span> or
+<span class="commandline">prep_p_epilog_slurmctld()</span> interfaces. These
+functions are called while the slurmctld holds a number of internal locks,
+and need to return quickly otherwise slurmctld responsiveness and system
+throughput will be impacted. For simple logging, this is not required, and
+the "async" option can be left to false. But, especially for anything
+communicating with an external API or spawning additional processes, it is
+highly recommended to first make a local copy of any job record details
+required, and then spawn a separate processing thread &mdash; which, by default,
+will not have inherited any slurmctld locks &mdash; to continue processing.
+You must set the async return value to true, and call the corresponding
+<span class="commandline">prolog_slurmctld_callback()</span> or
+<span class="commandline">epilog_slurmctld_callback()</span> function before
+the thread exits. These callbacks are provided as function pointers when the
+slurmctld starts through
+<span class="commandline">prep_p_register_callbacks()</span> call, and these
+function pointers should be cached locally in your plugin.</p>
+
+<h2>API Functions</h2>
+<p>All of the following functions are required. Functions which are not
+implemented must be stubbed.</p>
+
+<p class="commandline">int init(void)</p>
+<p style="margin-left:.2in"><b>Description</b>:<br />
+  Called when the plugin is loaded, before any other functions are
+  called. Put global initialization here.</p>
+<p style="margin-left:.2in"><b>Returns</b>: <br />
+  <span class="commandline">SLURM_SUCCESS</span> on success, or<br />
+  <span class="commandline">SLURM_ERROR</span> on failure.</p>
+
+<p class="commandline">void fini(void)</p>
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when the plugin is removed. Clear any allocated storage here.</p>
+<p style="margin-left:.2in"><b>Returns</b>: None.</p>
+
+<p><b>Note</b>: These init and fini functions are not the same as those
+described in the <span class="commandline">dlopen (3)</span> system library.
+The C run-time system co-opts those symbols for its own initialization.
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
+<span class="commandline">fini()</span> is called before the system's
+<span class="commandline">_fini()</span>.</p>
+
+<p class="commandline">
+void prep_p_register_callbacks(prep_callbacks_t *callbacks)
+</p>
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the slurmctld to pass function pointer addresses
+used with asynchronous operation with the prep_p_prolog_slurmctld() and
+prep_p_epilog_slurmctld() interfaces. These pointers must be saved if
+asynchronous operation is used, otherwise this function can be an empty stub.
+</p>
+
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">callbacks</span>
+(input) contains function pointers for use with asynchronous operation within the slurmctld
+</p>
+<p style="margin-left:.2in"><b>Returns</b>: None.</p>
+
+<p class="commandline">
+int prep_p_prolog(job_env_t *job_env, slurm_cred_t *cred)
+</p>
+<p style="margin-left:.2in"><b>Description</b>:<br />
+Called within the slurmd as root before the first step of a job starts on the
+compute node.
+<p style="margin-left:.2in"><b>Arguments</b>: <br />
+<span class="commandline">job_env</span>
+(input) details from the step launch request<br />
+<span class="commandline">cred</span>
+(input) launch credential with additional verifiable launch details signed by
+the slurmctld<br />
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure, will cause job failure.
+</p>
+
+<p class="commandline">
+int prep_p_epilog(job_env_t *job_env, slurm_cred_t *cred)
+</p>
+<p style="margin-left:.2in"><b>Description</b>:<br />
+Called within the slurmd as root after all job steps have completed.
+<p style="margin-left:.2in"><b>Arguments</b>: <br />
+<span class="commandline">job_env</span>
+(input) details from the step launch request<br />
+<span class="commandline">cred</span>
+(input) launch credential with additional verifiable launch details signed by
+the slurmctld<br />
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure, will cause job failure.
+</p>
+
+<p class="commandline">
+int prep_p_prolog_slurmctld(job_record_t *job_ptr, bool *async)
+</p>
+<p style="margin-left:.2in"><b>Description</b>:<br />
+Called within the slurmctld before a job launches.
+<p style="margin-left:.2in"><b>Arguments</b>: <br />
+<span class="commandline">job_ptr</span>
+(input) raw job record<br />
+<span class="commandline">async</span>
+(output) set to true if this interface has spawned a separate processing thread
+that must complete before the job starts execution<br />
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure, will cause job failure.
+</p>
+
+<p class="commandline">
+int prep_p_epilog_slurmctld(job_record_t *job_ptr, bool *async)
+</p>
+<p style="margin-left:.2in"><b>Description</b>:<br />
+Called within the slurmctld before a job launches.
+<p style="margin-left:.2in"><b>Arguments</b>: <br />
+<span class="commandline">job_ptr</span>
+(input) raw job record<br />
+<span class="commandline">async</span>
+(output) set to true if this interface has spawned a separate processing thread
+that must complete before the job is marked complete<br />
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure, will cause job failure.
+</p>
+
+<p style="text-align:center;">Last modified 22 April 2020</p>
+
+<!--#include virtual="footer.txt"-->

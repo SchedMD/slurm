@@ -73,6 +73,7 @@ generated_html = \
 	power_save.html \
 	power_plugins.html \
 	preempt.html \
+	prep_plugins.html \
 	preemption_plugins.html \
 	priority_multifactor.html \
 	priority_multifactor3.html \
