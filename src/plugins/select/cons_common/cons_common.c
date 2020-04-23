@@ -935,7 +935,6 @@ extern bitstr_t **common_mark_avail_cores(
  * IN part_core_map - bitmap of cores already allocated on this partition/node
  * IN node_i        - index of node to be evaluated
  * IN/OUT cpu_alloc_size - minimum allocation size, in CPUs
- * IN cpu_type      - if true, allocate CPUs rather than cores
  * IN req_sock_map - OPTIONAL bitmap of required sockets
  * RET resource availability structure, call common_free_avail_res() to free
  */
@@ -944,7 +943,6 @@ extern avail_res_t *common_allocate_cores(job_record_t *job_ptr,
 					  bitstr_t *part_core_map,
 					  const uint32_t node_i,
 					  int *cpu_alloc_size,
-					  bool cpu_type,
 					  bitstr_t *req_sock_map)
 {
 	return _allocate_sc(job_ptr, core_map, part_core_map, node_i,

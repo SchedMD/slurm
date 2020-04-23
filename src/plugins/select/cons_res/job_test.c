@@ -2127,7 +2127,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 		cpu_alloc_size = select_node_record[node_i].vpus;
 		avail_res = common_allocate_cores(
 			job_ptr, core_map, part_core_map,
-			node_i, &cpu_alloc_size, false, NULL);
+			node_i, &cpu_alloc_size, NULL);
 	} else if (cr_type & CR_SOCKET) {
 		/* cpu_alloc_size = CPUs per socket */
 		cpu_alloc_size = select_node_record[node_i].cores *
@@ -2139,7 +2139,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 		cpu_alloc_size = 1;
 		avail_res = common_allocate_cores(
 			job_ptr, core_map, part_core_map,
-			node_i, &cpu_alloc_size, true, NULL);
+			node_i, &cpu_alloc_size, NULL);
 	}
 
 	if (avail_res)

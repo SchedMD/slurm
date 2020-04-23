@@ -3295,7 +3295,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 		cpu_alloc_size = select_node_record[node_i].vpus;
 		avail_res = common_allocate_cores(job_ptr, core_map[node_i],
 						  part_core_map_ptr, node_i,
-						  &cpu_alloc_size, false,
+						  &cpu_alloc_size,
 						  req_sock_map);
 
 	} else if (cr_type & CR_SOCKET) {
@@ -3311,7 +3311,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 		cpu_alloc_size = 1;
 		avail_res = common_allocate_cores(job_ptr, core_map[node_i],
 						  part_core_map_ptr, node_i,
-						  &cpu_alloc_size, true,
+						  &cpu_alloc_size,
 						  req_sock_map);
 	}
 	FREE_NULL_BITMAP(req_sock_map);
