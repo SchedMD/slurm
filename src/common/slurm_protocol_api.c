@@ -2831,7 +2831,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	}
 	if (auth_cred == NULL) {
 		error("%s: g_slurm_auth_create: %s has authentication error: %m",
-		      __func__, rpc_num2string(header.msg_type));
+		      __func__, rpc_num2string(msg->msg_type));
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
 
