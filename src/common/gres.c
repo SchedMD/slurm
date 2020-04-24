@@ -8190,7 +8190,9 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					    cpus_per_core < *avail_cpus) {
 						*avail_cpus -= cpus_per_core;
 					}
-					if (--avail_cores_tot == req_cores)
+					avail_cores_tot--;
+					avail_cores_per_sock[s]--;
+					if (avail_cores_tot == req_cores)
 						break;
 				}
 			}
