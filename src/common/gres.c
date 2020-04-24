@@ -7901,7 +7901,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	bool *req_sock = NULL;	/* Required socket */
 	int *socket_index = NULL; /* Socket indexes */
 	uint16_t *avail_cores_per_sock, cpus_per_gres;
-	uint16_t avail_cores_req = 0, avail_cores_tot;
+	uint16_t avail_cores_tot;
 
 	if (*max_tasks_this_node == 0)
 		return;
@@ -8061,7 +8061,6 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				continue;
 
 			cnt_avail_total += cnt_avail_sock;
-			avail_cores_req += avail_cores_per_sock[s];
 			if (!sufficient_gres) {
 				req_sock[s] = true;
 				sock_cnt++;
