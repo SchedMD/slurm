@@ -77,6 +77,10 @@ documents those changes that are of interest to users and administrators.
     defined features.
  -- ConfigLess - write out plugstack config to correct config file name in
     the config cache.
+ -- priority/multifactor - gracefully handle NULL list of associations or array
+    of siblings when calculating FairTree fairshare.
+ -- Fix cons_tres --exclusive=user to allocate only requested number of CPUs.
+ -- Add MySQL deadlock detection and automatic retry mechanism.
 
 * Changes in Slurm 20.02.1
 ==========================
