@@ -7974,10 +7974,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		min_core_cnt = (min_core_cnt + cpus_per_core - 1) /
 			       cpus_per_core;
 
-		if (!enforce_binding && first_pass) {
-			/* Allow any GRES with any CPUs for now */
-			cpus_per_gres = 0;
-		} else if (job_specs->cpus_per_gres)
+		if (job_specs->cpus_per_gres)
 			cpus_per_gres = job_specs->cpus_per_gres;
 		else
 			cpus_per_gres = job_specs->def_cpus_per_gres;
@@ -8022,8 +8019,14 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					cnt_avail_sock;
 			if ((job_specs->gres_per_socket > tot_gres_sock) ||
 			    (tot_gres_sock == 0)) {
-				/* Insufficient GRES on this socket */
-				if (sock_gres->cnt_by_sock) {
+				/*
+				 * Insufficient GRES on this socket
+				 * GRES removed here won't be used in 2nd pass
+				 */
+				if (((job_specs->gres_per_socket >
+				      tot_gres_sock) ||
+				     enforce_binding) &&
+				    sock_gres->cnt_by_sock) {
 					sock_gres->total_cnt -=
 						sock_gres->cnt_by_sock[s];
 					sock_gres->cnt_by_sock[s] = 0;
