@@ -48,6 +48,8 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/read_config.h"
 
+#define MAX_DEADLOCK_ATTEMPTS 10
+
 static char *table_defs_table = "table_defs_table";
 
 typedef struct {
@@ -135,7 +137,9 @@ static MYSQL_RES *_get_last_result(MYSQL *db_conn)
 static int _mysql_query_internal(MYSQL *db_conn, char *query)
 {
 	int rc = SLURM_SUCCESS;
+	int deadlock_attempt = 0;
 
+try_again:
 	if (!db_conn)
 		fatal("You haven't inited this storage yet.");
 
@@ -152,7 +156,24 @@ static int _mysql_query_internal(MYSQL *db_conn, char *query)
 			goto end_it;
 		}
 		error("mysql_query failed: %d %s\n%s", errno, err_str, query);
-		if (errno == ER_LOCK_WAIT_TIMEOUT) {
+		if (errno == ER_LOCK_DEADLOCK) {
+			/*
+			 * Mysql detected a deadlock and we should retry
+			 * a few times since this is mainly a race condition
+			 */
+			deadlock_attempt++;
+
+			if (deadlock_attempt < MAX_DEADLOCK_ATTEMPTS) {
+				error("%s: deadlock detected attempt %u/%u: %d %s",
+				      __func__, deadlock_attempt,
+				      MAX_DEADLOCK_ATTEMPTS, errno, err_str);
+				goto try_again;
+			} else {
+				fatal("%s: unable to resolve deadlock with attempts %u/%u: %d %s\nPlease call 'show engine innodb status;' in MySQL/MariaDB and open a bug report with SchedMD.",
+				      __func__, deadlock_attempt,
+				      MAX_DEADLOCK_ATTEMPTS, errno, err_str);
+			}
+		} else if (errno == ER_LOCK_WAIT_TIMEOUT) {
 			/* FIXME: If we get ER_LOCK_WAIT_TIMEOUT here we need
 			 * to restart the connections, but it appears restarting
 			 * the calling program is the only way to handle this.
