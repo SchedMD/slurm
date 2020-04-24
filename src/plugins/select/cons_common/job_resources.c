@@ -127,7 +127,7 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 			use_core_array = core_array[0];
 		}
 
-		if (job_resrcs_ptr->whole_node) {
+		if (job_resrcs_ptr->whole_node == 1) {
 			if (!use_core_array) {
 				if (type != HANDLE_JOB_RES_TEST)
 					error("%s: %s: core_array for node %d is NULL %d",
