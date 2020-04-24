@@ -7915,6 +7915,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	list_sort(sock_gres_list, _sock_gres_sort);
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
+		bool sufficient_gres;
 		job_specs = sock_gres->job_specs;
 		if (!job_specs)
 			continue;
@@ -7967,6 +7968,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		/* Filter out unusable GRES by socket */
 		avail_cores_tot = 0;
 		cnt_avail_total = sock_gres->cnt_any_sock;
+		sufficient_gres = false;
 		for (s = 0; s < sockets; s++) {
 			/* Test for sufficient gres_per_socket */
 			if (sock_gres->cnt_by_sock) {
@@ -8014,11 +8016,13 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 
 			cnt_avail_total += cnt_avail_sock;
 			avail_cores_req += avail_cores_per_sock[s];
-			req_sock[s] = true;
-			sock_cnt++;
+			if (!sufficient_gres) {
+				req_sock[s] = true;
+				sock_cnt++;
+			}
 			if (job_specs->gres_per_node &&
 			    (cnt_avail_total >= job_specs->gres_per_node))
-				break;	/* Sufficient GRES */
+				sufficient_gres = true;
 		}
 
 		if (!enforce_binding && first_pass) {
@@ -8056,6 +8060,30 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 
 		if (*max_tasks_this_node == 0)
 			break;
+
+		/*
+		 * Remove cores on not required sockets when enforce-binding,
+		 * this has to happen also when max_tasks_this_node == NO_VAL
+		 */
+		if (enforce_binding || first_pass) {
+			for (s = 0; s < sockets; s++) {
+				if (req_sock[s])
+					continue;
+				for (c = 0; c < cores_per_socket; c++) {
+					i = (s * cores_per_socket) + c;
+					if (!bit_test(avail_core, i))
+						continue;
+					bit_clear(avail_core, i);
+					if (bit_set_count(avail_core) *
+					    cpus_per_core < *avail_cpus) {
+						*avail_cpus -= cpus_per_core;
+					}
+					avail_cores_tot--;
+					avail_cores_per_sock[s]--;
+				}
+			}
+		}
+
 		if (*max_tasks_this_node == NO_VAL) {
 			if (cpus_per_gres) {
 				i = *avail_cpus / cpus_per_gres;
@@ -8093,8 +8121,13 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			req_cores = MAX(req_cores, i);
 		}
 
-		/* Clear extra avail_core bits on sockets we don't need */
-		if (avail_cores_tot > req_cores) {
+		/*
+		 * Clear extra avail_core bits on sockets we don't need
+		 * up to required number of cores based on max_tasks_this_node.
+		 * In case of enforce-binding those are already cleared.
+		 */
+		if ((avail_cores_tot > req_cores) &&
+		     !enforce_binding && !first_pass) {
 			for (s = 0; s < sockets; s++) {
 				if (avail_cores_tot == req_cores)
 					break;
