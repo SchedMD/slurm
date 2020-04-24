@@ -297,6 +297,9 @@ static void _add_nodes_with_feature(hostlist_t hl, char *feature)
 	for (int i = 0; i < node_record_count; i++) {
 		char *features, *tmp, *tok, *last = NULL;
 
+		if (!node_record_table_ptr[i].features)
+			continue;
+
 		features = tmp = xstrdup(node_record_table_ptr[i].features);
 
 		while ((tok = strtok_r(tmp, ",", &last))) {

@@ -298,23 +298,29 @@ static void _init_minimal_conf_server_config(List controllers)
 static int _write_conf(const char *dir, const char *name, const char *content)
 {
 	char *file = NULL, *file_final = NULL;
-	int fd;
-
-	if (!content)
-		return SLURM_SUCCESS;
+	int fd = -1;
 
 	xstrfmtcat(file, "%s/%s.new", dir, name);
 	xstrfmtcat(file_final, "%s/%s", dir, name);
+
+	if (!content) {
+		(void) unlink(file_final);
+		goto cleanup;
+	}
+
 	if ((fd = open(file, O_CREAT|O_WRONLY|O_TRUNC|O_CLOEXEC, 0644)) < 0) {
 		error("%s: could not open config file `%s`", __func__, file);
-		xfree(file);
-		return SLURM_ERROR;
+		goto rwfail;
 	}
+
 	safe_write(fd, content, strlen(content));
 	close(fd);
+	fd = -1;
+
 	if (rename(file, file_final))
 		goto rwfail;
 
+cleanup:
 	xfree(file);
 	xfree(file_final);
 	return SLURM_SUCCESS;
@@ -323,7 +329,8 @@ rwfail:
 	error("%s: error writing config to %s: %m", __func__, file);
 	xfree(file);
 	xfree(file_final);
-	close(fd);
+	if (fd >= 0)
+		close(fd);
 	return SLURM_ERROR;
 }
 
@@ -347,7 +354,7 @@ extern int write_configs_to_conf_cache(config_response_msg_t *msg,
 		return SLURM_ERROR;
 	if (_write_conf(dir, "knl_generic.conf", msg->knl_generic_config))
 		return SLURM_ERROR;
-	if (_write_conf(dir, "plugstack.conf", msg->topology_config))
+	if (_write_conf(dir, "plugstack.conf", msg->plugstack_config))
 		return SLURM_ERROR;
 	if (_write_conf(dir, "topology.conf", msg->topology_config))
 		return SLURM_ERROR;
