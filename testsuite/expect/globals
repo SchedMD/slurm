@@ -240,6 +240,12 @@ cset poll_interval 1
 # Force LANG, as the expect tests aren't localized
 set ::env(LANG)          "en_US.UTF-8"
 
+# Testsuite level variables
+cset testsuite_cleanup_on_failure false
+if {[info exists env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)]} {
+	set testsuite_cleanup_on_failure $env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)
+}
+
 # Other common variables
 set alpha                "\[a-zA-Z\]+"
 set alpha_cap            "\[A-Z\]+"
@@ -282,6 +288,133 @@ cset super_user_set 0
 # Global variable used in multiple functions in "globals" file
 #
 set gpu_sock_list {}
+
+################################################################
+#
+# Proc: get_test_name
+#
+# Purpose: Gets the name of the invoking source script
+#
+# Returns: The name of the originally called script
+#
+################################################################
+proc get_test_name { } {
+
+	set test_name unknown
+	set frame_level 1
+	while { $frame_level <= [info frame] } {
+		if { [dict get [info frame $frame_level] type] == "source" } {
+			set test_name [file tail [dict get [info frame $frame_level] file]]
+			break
+		}
+		incr frame_level
+	}
+
+	return $test_name
+}
+
+#
+# Name of the originally invoked test script, e.g. test1.1
+#
+set test_name [get_test_name]
+
+#
+# Suffix of the test script, e.g. 1.1
+#
+set test_id   [string map {test ""} $test_name]
+
+################################################################
+#
+# Proc: exit_with_failure
+#
+# Purpose: Print a failure message, clean up and exit with a non-zero exit code
+#
+# Input: message -- The message to print
+#
+#  NOTE: This calls the cleanup procedure if defined and exits with a non-zero
+#        exit code (1). DO NOT call this within your local cleanup procedure.
+#
+################################################################
+proc exit_with_failure { message } {
+	global testsuite_cleanup_on_failure
+
+	# Call the test's locally-defined cleanup procedure if present
+	if {$testsuite_cleanup_on_failure && [info procs cleanup] eq "cleanup"} {
+		cleanup
+	}
+
+	log_error $message
+
+	exit 1
+}
+
+################################################################
+#
+# Proc: exit_with_warning
+#
+# Purpose: Print a warning message and exit with a zero exit code
+#
+# Input: message -- The message to print
+#
+#  NOTE: This calls the cleanup procedure if defined and exits with a non-zero
+#        exit code (1). DO NOT call this within your local cleanup procedure.
+#
+################################################################
+proc exit_with_warning { message } {
+
+	# Call the test's locally-defined cleanup procedure if present
+	if {[info procs cleanup] eq "cleanup"} {
+		cleanup
+	}
+
+	log_warn $message
+
+	exit 0
+}
+
+################################################################
+#
+# Proc: exit_with_success
+#
+# Purpose: Print a success message and exit with a zero exit code
+#
+#  NOTE: This calls the cleanup procedure if defined and exits with an exit
+#        code of zero. DO NOT call this within your local cleanup procedure.
+#
+################################################################
+proc exit_with_success { } {
+
+	# Call the test's locally-defined cleanup procedure if present
+	if {[info procs cleanup] eq "cleanup"} {
+		cleanup
+	}
+
+	send_user "\nSUCCESS\n"
+
+	exit 0
+}
+
+################################################################
+#
+# Proc: fail_on_error
+#
+# Purpose: Tests the exit_code global variable and exits with failure if the
+#          exit code is non-zero.
+#
+# Input: message -- The failure message to print
+#
+#  NOTE: If this test results in a call to exit_with_failure, the cleanup
+#        procedure will be invoked if locally-defined. DO NOT call this
+#        within your local cleanup procedure.
+#
+################################################################
+proc fail_on_error { message } {
+	global exit_code
+
+	if {$exit_code != 0} {
+		exit_with_failure "$message"
+	}
+}
 
 ################################################################
 #
@@ -579,14 +712,19 @@ proc kill_srun {  } {
 #
 # Purpose:  Print header with test ID
 #
-# Input: job_id   -- The Slurm job id of a job we want to cancel.
+# Input (optional): test_id -- The Slurm regression test ID.
 #
 ################################################################
 
-proc print_header { test_id } {
+proc print_header { { test_id_in "" } } {
+	global test_id
+
+	if { "$test_id_in" == "" } {
+		set test_id_in $test_id
+	}
 
 	send_user "============================================\n"
-	send_user "TEST: $test_id\n"
+	send_user "TEST: $test_id_in\n"
 }
 
 ################################################################
@@ -3335,14 +3473,19 @@ proc get_idle_node_in_part { partition } {
 #
 # Purpose:  Print failure with test ID
 #
-# Input: test_id   -- The Slurm regression test ID.
+# Input (optional): test_id_in -- The Slurm regression test ID.
 #
 ################################################################
 
-proc print_failure { test_id } {
+proc print_failure { {test_id_in ""} } {
+	global test_id
+
+	if { "$test_id_in" == "" } {
+		set test_id_in $test_id
+	}
 
 	send_user "\n"
-	send_user "FAILURE: test$test_id\n"
+	send_user "\nFAILURE: test$test_id_in\n"
 }
 
 ################################################################
@@ -3351,14 +3494,20 @@ proc print_failure { test_id } {
 #
 # Purpose:  Print success with test ID
 #
-# Input: test_id   -- The Slurm regression test ID.
+# Input (optional): test_id_in -- The Slurm regression test ID.
 #
 ################################################################
 
-proc print_success { test_id } {
+proc print_success { {test_id_in ""} } {
+
+	global test_id
+
+	if { "$test_id_in" == "" } {
+		set test_id_in $test_id
+	}
 
 	send_user "\n"
-	send_user "SUCCESS: test$test_id\n"
+	send_user "SUCCESS: test$test_id_in\n"
 }
 
 ###############################################################
