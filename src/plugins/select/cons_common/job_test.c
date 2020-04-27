@@ -653,18 +653,18 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			} else
 				free_mem = 0;
 			if (free_mem < min_mem) {
-				debug3("%s: %s: node %s no mem (%"PRIu64" < %"PRIu64")",
+				debug3("%s: %s: Not considering node %s, free_mem < min_mem (%"PRIu64" < %"PRIu64") for %pJ",
 				       plugin_type, __func__,
 				       node_ptr->name,
-				       free_mem, min_mem);
+				       free_mem, min_mem, job_ptr);
 				goto clear_bit;
 			}
 		} else if (cr_type & CR_MEMORY) {   /* --mem=0 for all memory */
 			if (node_usage[i].alloc_memory) {
-				debug3("%s: %s: node %s mem in use %"PRIu64,
+				debug3("%s: %s: Not considering node %s, allocated memory = %"PRIu64" and all memory requested for %pJ",
 				       plugin_type, __func__,
 				       node_ptr->name,
-				       node_usage[i].alloc_memory);
+				       node_usage[i].alloc_memory, job_ptr);
 				goto clear_bit;
 			}
 		}
