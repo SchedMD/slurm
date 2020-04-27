@@ -2141,6 +2141,29 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	_create_resv_lists(false);
 	_dump_resv_req(resv_desc_ptr, "create_resv");
 
+	if (resv_desc_ptr->flags == NO_VAL64)
+		resv_desc_ptr->flags = 0;
+	else {
+		resv_desc_ptr->flags &= RESERVE_FLAG_MAINT    |
+					RESERVE_FLAG_FLEX     |
+					RESERVE_FLAG_OVERLAP  |
+					RESERVE_FLAG_IGN_JOBS |
+					RESERVE_FLAG_DAILY    |
+					RESERVE_FLAG_WEEKDAY  |
+					RESERVE_FLAG_WEEKEND  |
+					RESERVE_FLAG_WEEKLY   |
+					RESERVE_FLAG_STATIC   |
+					RESERVE_FLAG_ANY_NODES   |
+					RESERVE_FLAG_PART_NODES  |
+					RESERVE_FLAG_FIRST_CORES |
+					RESERVE_FLAG_TIME_FLOAT  |
+					RESERVE_FLAG_PURGE_COMP  |
+					RESERVE_FLAG_REPLACE     |
+					RESERVE_FLAG_REPLACE_DOWN |
+					RESERVE_FLAG_NO_HOLD_JOBS |
+					RESERVE_FLAG_PROM;
+	}
+
 	/* Validate the request */
 	if (resv_desc_ptr->start_time != (time_t) NO_VAL) {
 		if (resv_desc_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
@@ -2168,28 +2191,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					  (resv_desc_ptr->duration * 60);
 	} else
 		resv_desc_ptr->end_time = INFINITE;
-	if (resv_desc_ptr->flags == NO_VAL64)
-		resv_desc_ptr->flags = 0;
-	else {
-		resv_desc_ptr->flags &= RESERVE_FLAG_MAINT    |
-					RESERVE_FLAG_FLEX     |
-					RESERVE_FLAG_OVERLAP  |
-					RESERVE_FLAG_IGN_JOBS |
-					RESERVE_FLAG_DAILY    |
-					RESERVE_FLAG_WEEKDAY  |
-					RESERVE_FLAG_WEEKEND  |
-					RESERVE_FLAG_WEEKLY   |
-					RESERVE_FLAG_STATIC   |
-					RESERVE_FLAG_ANY_NODES   |
-					RESERVE_FLAG_PART_NODES  |
-					RESERVE_FLAG_FIRST_CORES |
-					RESERVE_FLAG_TIME_FLOAT  |
-					RESERVE_FLAG_PURGE_COMP  |
-					RESERVE_FLAG_REPLACE     |
-					RESERVE_FLAG_REPLACE_DOWN |
-					RESERVE_FLAG_NO_HOLD_JOBS |
-					RESERVE_FLAG_PROM;
-	}
+
 	if ((resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) ||
 	    (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
 		if (resv_desc_ptr->node_list) {
@@ -2252,6 +2254,15 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_INVALID_LICENSES;
 			goto bad_parse;
 		}
+	}
+	if ((resv_desc_ptr->flags & RESERVE_FLAG_TIME_FLOAT) &&
+	    (resv_desc_ptr->flags & (RESERVE_FLAG_DAILY   |
+				     RESERVE_FLAG_WEEKDAY |
+				     RESERVE_FLAG_WEEKEND |
+				     RESERVE_FLAG_WEEKLY))) {
+		info("Reservation request has mutually exclusive flags. Repeating floating reservations are not supported.");
+		rc = ESLURM_NOT_SUPPORTED;
+		goto bad_parse;
 	}
 
 	/* Sort the list of node counts in order descending size */
