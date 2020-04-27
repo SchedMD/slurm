@@ -644,8 +644,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			continue;
 		node_ptr = select_node_record[i].node_ptr;
 		/* node-level memory check */
-		if ((job_ptr->details->pn_min_memory) &&
-		    (cr_type & CR_MEMORY)) {
+		if (min_mem && (cr_type & CR_MEMORY)) {
 			avail_mem = select_node_record[i].real_memory -
 				select_node_record[i].mem_spec_limit;
 			if (avail_mem > node_usage[i].alloc_memory) {
