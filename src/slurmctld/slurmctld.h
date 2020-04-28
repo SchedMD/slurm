@@ -564,7 +564,7 @@ struct job_details {
 					 * NICE_OFFSET == no change */
 	uint16_t ntasks_per_node;	/* number of tasks on each node */
 	uint32_t num_tasks;		/* number of tasks to start */
-	uint8_t open_mode;		/* stdout/err append or trunctate */
+	uint8_t open_mode;		/* stdout/err append or truncate */
 	uint8_t overcommit;		/* processors being over subscribed */
 	uint16_t plane_size;		/* plane size when task_dist =
 					 * SLURM_DIST_PLANE */
