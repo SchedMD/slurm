@@ -668,6 +668,8 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 
 	_log_init(opts.log_level);
 
+	slurm_conf_init(NULL);
+
 	switch (opts.action_generic_failure) {
 	case CALLERID_ACTION_DENY:
 		rc = PAM_PERM_DENIED;
