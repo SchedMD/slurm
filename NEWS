@@ -87,6 +87,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix DependencyNeverSatisfied not set as the job's state reason if
     kill_invalid_depend or --kill-on-invalid-dep are used.
  -- pam_slurm_adopt - explicitly call slurm_conf_init().
+ -- configless - fix plugstack.conf handling for client commands.
 
 * Changes in Slurm 20.02.1
 ==========================
