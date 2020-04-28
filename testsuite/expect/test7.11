@@ -280,9 +280,15 @@ expect {
 send_user "\n\n"
 
 $bin_sleep 30
-make_bash_script $file_in "
-  $srun --test_suite_srun=5 $bin_sum $spank_conf_file
-"
+if {[test_configless_slurmd] == 0} {
+	make_bash_script $file_in "
+	$srun --test_suite_srun=5 $bin_sum $spank_conf_file
+	"
+} else {
+	make_bash_script $file_in "
+	$srun --test_suite_srun=5 $bin_sum /run/slurm/conf/plugstack.conf
+	"
+}
 
 set job_id 0
 set matches 0
