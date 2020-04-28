@@ -100,6 +100,11 @@ def main(argv=None):
 
     # Now run the tests
     start_time = time.time()
+    test_env = os.environ.copy()
+    if options.stop_on_first_fail:
+        test_env["SLURM_TESTSUITE_CLEANUP_ON_FAILURE"] = "false"
+	else:
+        test_env["SLURM_TESTSUITE_CLEANUP_ON_FAILURE"] = "true"
     print('Started:', time.asctime(time.localtime(start_time)), file=sys.stdout)
     sys.stdout.flush()
     for test in tests:
@@ -117,7 +122,7 @@ def main(argv=None):
         if options.time_individual:
             t1 = time.time()
         retcode = Popen(('expect', test[2]), shell=False,
-                        stdout=testlog, stderr=testlog).wait()
+                        env=test_env, stdout=testlog, stderr=testlog).wait()
         if options.time_individual:
             t2 = time.time()
             minutes = int(t2-t1)/60

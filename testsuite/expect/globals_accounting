@@ -562,7 +562,7 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 }
 
 #
-# Use sacctmgr to add an user
+# Use sacctmgr to add a user
 #
 proc add_user { name user_req_in } {
 	global sacctmgr timeout
