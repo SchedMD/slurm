@@ -114,7 +114,7 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 	char tmp[128];
 	bitstr_t **tmp_cores;
 #endif
-	bitstr_t **avail_cores, **local_cores = NULL;
+	bitstr_t **avail_cores;
 	bitstr_t *picked_node_bitmap = NULL;
 	bitstr_t *tmp_core_bitmap;
 	int c, c_cnt, i;
@@ -134,7 +134,6 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 		tmp_core_bitmap = bit_alloc(c);
 		bit_not(tmp_core_bitmap);
 		avail_cores = core_bitmap_to_array(tmp_core_bitmap);
-		local_cores = avail_cores;
 		FREE_NULL_BITMAP(tmp_core_bitmap);
 	} else {
 #if _DEBUG
@@ -189,7 +188,7 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 		info("%s: %s: reservation request can not be satisfied",
 		     plugin_type, __func__);
 		FREE_NULL_BITMAP(picked_node_bitmap);
-		free_core_array(&local_cores);
+		free_core_array(&avail_cores);
 	} else {
 		free_core_array(exc_cores);
 		*exc_cores = avail_cores;
@@ -222,7 +221,7 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 	char tmp[128];
 	bitstr_t **tmp_cores;
 #endif
-	bitstr_t **avail_cores = NULL, **local_cores = NULL;
+	bitstr_t **avail_cores = NULL;
 	bitstr_t *picked_node_bitmap;
 	char str[300];
 	int cores_per_node = 0, extra_cores_needed = -1;
@@ -286,7 +285,6 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 			tmp_core_bitmap = bit_alloc(c);
 			bit_not(tmp_core_bitmap);
 			avail_cores = core_bitmap_to_array(tmp_core_bitmap);
-			local_cores = avail_cores;
 			FREE_NULL_BITMAP(tmp_core_bitmap);
 		} else {
 #if _DEBUG
@@ -375,9 +373,7 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 			info("%s: %s: reservation request can not be satisfied",
 			     plugin_type, __func__);
 			FREE_NULL_BITMAP(picked_node_bitmap);
-			if (local_cores != avail_cores)
-				free_core_array(&avail_cores);
-			free_core_array(&local_cores);
+			free_core_array(&avail_cores);
 		} else {
 			free_core_array(exc_cores);
 			*exc_cores = avail_cores;
