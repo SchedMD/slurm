@@ -103,6 +103,8 @@ documents those changes that are of interest to users and administrators.
  -- Reject repeating floating reservations as they aren't supported.
  -- Fix testing of reservation flags that may be NO_VAL64.
  -- Fix _verify_node_state memory requested as --mem-per-gpu DefMemPerGPU.
+ -- Fix DependencyNeverSatisfied not set as the job's state reason if
+    kill_invalid_depend or --kill-on-invalid-dep are used.
 
 * Changes in Slurm 20.02.1
 ==========================
