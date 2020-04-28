@@ -2052,6 +2052,37 @@ proc test_multiple_slurmd { } {
 
 ################################################################
 #
+# Proc: test_configless_slurmd
+#
+# Returns 1 if running with configless slurmd enabled
+#
+################################################################
+proc test_configless_slurmd { } {
+	global scontrol bin_bash bin_grep
+
+	log_user 0
+	set configless 0
+	spawn -noecho $bin_bash -c "exec $scontrol show config |\
+				    $bin_grep SlurmctldParameters"
+	expect {
+		"enable_configless" {
+			set configless 1
+			exp_continue
+		}
+		timeout {
+			log_error("timeout checing if configless is set")
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $configless
+}
+
+################################################################
+#
 # Proc: test_cray
 #
 # Purpose: Determine if the system is a native cray system
