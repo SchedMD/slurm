@@ -8066,9 +8066,18 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				req_sock[s] = true;
 				sock_cnt++;
 			}
+
 			if (job_specs->gres_per_node &&
-			    (cnt_avail_total >= job_specs->gres_per_node))
+			    (cnt_avail_total >= job_specs->gres_per_node) &&
+			    !sock_gres->cnt_any_sock) {
+				/*
+				 * Sufficient gres will leave remaining CPUs as
+				 * !req_sock. We do this only when we
+				 * collected enough and all collected gres of
+				 * considered type are bound to socket.
+				 */
 				sufficient_gres = true;
+			}
 		}
 
 		if (cpus_per_gres) {
