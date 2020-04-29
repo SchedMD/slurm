@@ -103,7 +103,7 @@ def main(argv=None):
     test_env = os.environ.copy()
     if options.stop_on_first_fail:
         test_env["SLURM_TESTSUITE_CLEANUP_ON_FAILURE"] = "false"
-	else:
+    else:
         test_env["SLURM_TESTSUITE_CLEANUP_ON_FAILURE"] = "true"
     print('Started:', time.asctime(time.localtime(start_time)), file=sys.stdout)
     sys.stdout.flush()
