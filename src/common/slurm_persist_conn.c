@@ -928,7 +928,13 @@ extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
 		goto endit;
 	}
 
-	msg = xmalloc(msg_size);
+	msg = try_xmalloc(msg_size);
+	if (!msg) {
+		error("%s: Unable to allocate msg with %u bytes",
+		      __func__, msg_size);
+		goto endit;
+	}
+
 	offset = 0;
 	while (msg_size > offset) {
 		if (!_conn_readable(persist_conn))
