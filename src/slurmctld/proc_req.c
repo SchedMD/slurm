@@ -1085,6 +1085,8 @@ extern void configless_setup(void)
 
 	/* just reuse what we already have */
 	config_for_clients->config = config_for_slurmd->config;
+	config_for_clients->plugstack_config =
+		config_for_slurmd->plugstack_config;
 
 	/*
 	 * route/topology will cause srun to load topology.conf, so we'll
@@ -1120,6 +1122,8 @@ extern void configless_update(void)
 
 	/* just reuse what we already have */
 	config_for_clients->config = config_for_slurmd->config;
+	config_for_clients->plugstack_config =
+		config_for_slurmd->plugstack_config;
 
 	/*
 	 * route/topology will cause srun to load topology.conf, so we'll
