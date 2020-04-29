@@ -356,14 +356,12 @@ batch_finish(stepd_step_rec_t *job, int rc)
 		error("unlink(%s): %m", job->argv[0]);
 
 	if (job->aborted) {
-		if ((job->stepid == NO_VAL) ||
-		    (job->stepid == SLURM_BATCH_SCRIPT)) {
+		if (job->stepid != SLURM_BATCH_SCRIPT)
 			info("step %u.%u abort completed",
 			     job->jobid, job->stepid);
-		} else
+		else
 			info("job %u abort completed", job->jobid);
-	} else if ((job->stepid == NO_VAL) ||
-		   (job->stepid == SLURM_BATCH_SCRIPT)) {
+	} else if (job->stepid == SLURM_BATCH_SCRIPT) {
 		verbose("job %u completed with slurm_rc = %d, job_rc = %d",
 			job->jobid, rc, step_complete.step_rc);
 		_send_complete_batch_script_msg(job, rc, step_complete.step_rc);
