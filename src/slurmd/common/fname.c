@@ -346,7 +346,10 @@ static void _batch_path_check(char **p, char **q, char **name,
 		break;
 	case 's':  /* '%s' => step id        */
 		xmemcat(*name, *q, *p - 1);
-		xstrfmtcat(*name, "%0*u", wid, job->stepid);
+		if (job->stepid == SLURM_BATCH_SCRIPT)
+			xstrcat(*name, "batch");
+		else
+			xstrfmtcat(*name, "%0*u", wid, job->stepid);
 		*q = ++(*p);
 		break;
 	case 't':  /* '%t' => taskid         */

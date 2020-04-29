@@ -47,6 +47,8 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
  -- Make sacct get the UID from database instead of from the username and a
     system call. Add --use-local-uid option to sacct to use old behavior.
+ -- The '%s' format in -e/-i/-o options to sbatch will expand to "batch" rather
+    than "4294967294".
 
 API CHANGES
 ===========
