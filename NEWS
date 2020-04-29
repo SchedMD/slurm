@@ -107,6 +107,8 @@ documents those changes that are of interest to users and administrators.
     kill_invalid_depend or --kill-on-invalid-dep are used.
  -- pam_slurm_adopt - explicitly call slurm_conf_init().
  -- configless - fix plugstack.conf handling for client commands.
+ -- Set SLURM_JOB_USER and SLURM_JOB_UID in task_epilog correctly.
+ -- slurmrestd - authenticate job submissions by SlurmUser properly.
 
 * Changes in Slurm 20.02.1
 ==========================

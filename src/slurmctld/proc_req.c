@@ -1049,22 +1049,25 @@ static void _set_hostname(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg)
 
 static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid)
 {
+	/*
+	 * If UID/GID not given use the authenticated values.
+	 */
+	if (msg->user_id == NO_VAL)
+		msg->user_id = uid;
+	if (msg->group_id == NO_VAL)
+		msg->group_id = gid;
+
 	if (validate_slurm_user(uid))
 		return SLURM_SUCCESS;
 
-	/* if UID not given, then use UID from auth */
-	if (msg->user_id == NO_VAL)
-		msg->user_id = uid;
-	else if (uid != msg->user_id) {
+	if (uid != msg->user_id) {
 		error("%s: Requested UID=%u doesn't match user UID=%u.",
 		      caller, msg->user_id, uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
 	/* if GID not given, then use GID from auth */
-	if (msg->group_id == NO_VAL)
-		msg->group_id = gid;
-	else if (gid != msg->group_id) {
+	if (gid != msg->group_id) {
 		error("%s: Requested GID=%u doesn't match user GID=%u.",
 		      caller, msg->group_id, gid);
 		return ESLURM_GROUP_ID_MISSING;

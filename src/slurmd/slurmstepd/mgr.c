@@ -2100,6 +2100,8 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 			job->envtp->localid = t->id;
 			job->envtp->distribution = -1;
 			job->envtp->batch_flag = job->batch;
+			job->envtp->uid = job->uid;
+			job->envtp->user_name = xstrdup(job->user_name);
 
 			/*
 			 * Modify copy of job's environment. Do not alter in
