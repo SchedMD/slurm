@@ -184,8 +184,6 @@ extern char *x11_get_xauth(void)
 	result = run_command("xauth", XAUTH_PATH, xauth_argv, 10000, 0,
 			     &status);
 
-	debug2("%s: result from xauth: %s", __func__, result);
-
 	free_command_argv(xauth_argv);
 
 	if (status) {
