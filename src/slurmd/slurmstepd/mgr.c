@@ -2233,7 +2233,7 @@ _make_batch_dir(stepd_step_rec_t *job)
 {
 	char path[MAXPATHLEN];
 
-	if (job->stepid == NO_VAL)
+	if (job->stepid == SLURM_BATCH_SCRIPT)
 		snprintf(path, sizeof(path), "%s/job%05u",
 			 conf->spooldir, job->jobid);
 	else {

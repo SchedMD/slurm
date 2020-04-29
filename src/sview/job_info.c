@@ -4538,7 +4538,7 @@ static void selected_foreach_build_list(GtkTreeModel  *model,
 	else
 		xstrfmtcat(stacked_job_list, "%u_%u",
 			   array_job_id, array_task_id);
-	if (stepid != NO_VAL)
+	if (stepid != SLURM_BATCH_SCRIPT)
 		xstrfmtcat(stacked_job_list, ".%u", stepid);
 }
 
@@ -4735,7 +4735,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 		gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_NO, GTK_RESPONSE_CANCEL);
 
-		if (stepid != NO_VAL)
+		if (stepid != SLURM_BATCH_SCRIPT)
 			snprintf(tmp_char, sizeof(tmp_char),
 				 "Are you sure you want to cancel "
 				 "these job step(s)?");
@@ -4752,7 +4752,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 		gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 
-		if (stepid != NO_VAL)
+		if (stepid != SLURM_BATCH_SCRIPT)
 			snprintf(tmp_char, sizeof(tmp_char),
 				 "Are you sure you want to toggle "
 				 "suspend/resume on these job steps?");

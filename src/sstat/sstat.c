@@ -313,7 +313,7 @@ int main(int argc, char **argv)
 			stepid = SLURM_EXTERN_CONT;
 			nodelist = job_ptr->job_array[0].nodes;
 			slurm_free_job_info_msg(job_ptr);
-		} else if (selected_step->stepid != NO_VAL) {
+		} else if (selected_step->stepid != SLURM_BATCH_SCRIPT) {
 			stepid = selected_step->stepid;
 		} else if (params.opt_all_steps) {
 			job_step_info_response_msg_t *step_ptr = NULL;

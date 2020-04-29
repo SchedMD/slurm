@@ -598,7 +598,7 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 	stepd_task_info(fd, protocol_version, &task_info, &tcount);
 	for (i = 0; i < (int)tcount; i++) {
 		if (!task_info[i].exited) {
-			if (stepid == NO_VAL)
+			if (stepid == SLURM_BATCH_SCRIPT)
 				printf("%-8d %-8u %-6s %-7d %-8d\n",
 				       task_info[i].pid,
 				       jobid,
@@ -618,7 +618,7 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 	stepd_list_pids(fd, protocol_version, &pids, &count);
 	for (i = 0; i < count; i++) {
 		if (!_in_task_array((pid_t)pids[i], task_info, tcount)) {
-			if (stepid == NO_VAL)
+			if (stepid == SLURM_BATCH_SCRIPT)
 				printf("%-8d %-8u %-6s %-7s %-8s\n",
 				       pids[i], jobid, "batch", "-", "-");
 			else

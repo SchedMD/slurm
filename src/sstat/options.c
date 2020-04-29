@@ -449,7 +449,7 @@ void parse_command_line(int argc, char **argv)
 		debug("Jobs requested:\n");
 		itr = list_iterator_create(params.opt_job_list);
 		while ((selected_step = list_next(itr))) {
-			if (selected_step->stepid != NO_VAL)
+			if (selected_step->stepid != SLURM_BATCH_SCRIPT)
 				debug("\t: %d.%d\n",
 					selected_step->jobid,
 					selected_step->stepid);

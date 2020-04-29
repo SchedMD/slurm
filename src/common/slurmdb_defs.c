@@ -3135,7 +3135,7 @@ extern char *slurmdb_get_selected_step_id(
 			 selected_step->jobid);
 	}
 
-	if (selected_step->stepid != NO_VAL)
+	if (selected_step->stepid != SLURM_BATCH_SCRIPT)
 		snprintf(job_id_str, len, "%s.%u",
 			 id, selected_step->stepid);
 	else

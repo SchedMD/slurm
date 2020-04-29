@@ -330,7 +330,7 @@ static void _batch_path_check(char **p, char **q, char **name,
 	case 'j':  /* '%j' => jobid        */
 		xmemcat(*name, *q, *p - 1);
 		xstrfmtcat(*name, "%0*u", wid, job->jobid);
-		if ((**p == 'J') && (job->stepid != NO_VAL))
+		if ((**p == 'J') && (job->stepid != SLURM_BATCH_SCRIPT))
 			xstrfmtcat(*name, ".%u", job->stepid);
 		*q = ++(*p);
 		break;

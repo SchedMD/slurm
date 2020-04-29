@@ -3581,7 +3581,7 @@ _get_step_list(void)
 
 		if (step_list)
 			xstrcat(step_list, ", ");
-		if (stepd->stepid == NO_VAL) {
+		if (stepd->stepid == SLURM_BATCH_SCRIPT) {
 			snprintf(tmp, sizeof(tmp), "%u",
 				 stepd->jobid);
 			xstrcat(step_list, tmp);

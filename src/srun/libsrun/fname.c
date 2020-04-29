@@ -177,8 +177,8 @@ extern fname_t *fname_create(srun_job_t *job, char *format, int task_count)
 				xstrfmtcat(name, "%0*d", wid,
 					   job->jobid);
 
-				if ((*p == 'J') && (job->stepid !=
-						    NO_VAL))
+				if ((*p == 'J') &&
+				    (job->stepid != SLURM_BATCH_SCRIPT))
 					xstrfmtcat(name, ".%d",
 						   job->stepid);
 				xfree(tmp_perc);
