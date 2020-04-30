@@ -21,6 +21,9 @@ documents those changes that are of interest to users and administrators.
     Autodetect option.
  -- Add NetworkRaw debugflag.
 
+* Changes in Slurm 20.02.3
+==========================
+
 * Changes in Slurm 20.02.2
 ==========================
  -- Fix slurmctld segfault when checking no_consume GRES node allocation counts.
