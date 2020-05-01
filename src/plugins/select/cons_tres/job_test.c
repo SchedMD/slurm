@@ -5921,10 +5921,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 			(0xff - near_gpu_cnt);
 	}
 
-	for (i = 0; i < avail_res->sock_cnt; i++)
-		cpus += avail_res->avail_cores_per_sock[i];
-	cpus *= avail_res->vpus;
-	cpus -= avail_res->spec_threads;
+	cpus = avail_res->max_cpus;
 
 	if (cr_type & CR_MEMORY) {
 		/*
