@@ -1048,7 +1048,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 				     j++, k++) {
 					if (!bit_test(core_map, k))
 						continue;
-					if (sock_str)
+					if (core_str)
 						sep = ",";
 					else
 						sep = "";

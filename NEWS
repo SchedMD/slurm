@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.02.3
 ==========================
+ -- Factor in ntasks-per-core=1 with cons_tres.
+ -- Fix formatting in error message in cons_tres.
 
 * Changes in Slurm 20.02.2
 ==========================
@@ -268,6 +270,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix cons_tres --exclusive=user to allocate only requested number of CPUs.
  -- Add MySQL deadlock detection and automatic retry mechanism.
  -- Fix _verify_node_state memory requested as --mem-per-gpu DefMemPerGPU.
+ -- Factor in ntasks-per-core=1 with cons_tres.
+ -- Fix formatting in error message in cons_tres.
 
 * Changes in Slurm 19.05.6
 ==========================
