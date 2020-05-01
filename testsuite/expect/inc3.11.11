@@ -139,5 +139,5 @@ proc inc3_11_11 {} {
     inc3_11_11_resv_test $def_partition "SPEC_NODES" $one_node
     inc3_11_11_delete_resv
 
-    inc3_11_11_fini "inc3_11_1 all good" 0
+    inc3_11_11_fini "inc3_11_11 all good" 0
 }
