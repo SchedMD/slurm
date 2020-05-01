@@ -46,6 +46,11 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
+#
+# Include private functions and variables
+#
+source ./globals_private
+
 global sacctmgr sacct salloc sattach sbatch sbcast scancel scontrol sinfo
 global smap smd squeue sreport srun sstat strigger
 
@@ -854,135 +859,6 @@ proc wait_for_file { file_name } {
 	}
 	send_user "\nFAILURE: Timeout waiting for file $file_name\n"
 	return 1
-}
-
-
-################################################################
-#
-# Proc: _wait_for_single_job
-#
-# Purpose:  Wait for a previously submitted Slurm job to reach
-# the desired state. Polls every $poll_interval seconds.
-#
-# Returns: A non-zero return code indicates a failure.
-#
-# Input: job_id   -- The Slurm job id of a job we want to
-#                    wait for.
-#        desired_state -- The state you want the job to attain before
-#                         returning.  Currently supports:
-#                            DONE any terminated state
-#                            PENDING job is pending
-#                            RUNNING job is running
-#                            SPECIAL_EXIT
-#                            SUSPENDED job is suspended
-#
-# NOTE: We sleep for two seconds before replying that a job is
-# done to give time for I/O completion (stdout/stderr files)
-#
-################################################################
-
-proc _wait_for_single_job { job_id desired_state } {
-	global scontrol max_job_state_delay poll_interval
-
-	# First verify that desired_state is supported
-	switch $desired_state {
-		"DONE" {}
-		"PENDING" {}
-		"RUNNING" {}
-		"SPECIAL_EXIT" {}
-		"SUSPENDED" {}
-		default {
-			send_user "WARNING: wait_for_single_job with invalid state: $desired_state\n"
-			return 1
-		}
-	}
-
-	if {$job_id == 0} {
-		send_user "WARNING: wait_for_single_job with invalid job ID: $job_id\n"
-		return 1
-	}
-
-	set my_delay    0
-	while 1 {
-		set fd [open "|$scontrol -o show job $job_id"]
-		gets $fd line
-		catch {close $fd}
-		if {[regexp {JobState\s*=\s*(\w+)} $line foo state] != 1} {
-			set state "NOT_FOUND"
-		}
-
-		switch $state {
-			"NOT_FOUND" -
-			"BOOT_FAIL" -
-			"CANCELLED" -
-			"COMPLETED" -
-			"DEADLINE" -
-			"FAILED" -
-			"NODE_FAIL" -
-			"OUT_OF_MEMORY" -
-			"PREEMPTED" -
-			"TIMEOUT" {
-				if {[string compare $desired_state "DONE"] == 0} {
-					send_user "Job $job_id is DONE ($state)\n"
-					sleep 2
-					return 0
-				}
-				if {[string compare $desired_state "RUNNING"] == 0} {
-					send_user "Job $job_id is $state, "
-					send_user "but we wanted RUNNING\n"
-				}
-				if {[string compare $desired_state "SUSPENDED"] == 0} {
-					send_user "Job $job_id is $state, "
-					send_user "but we wanted SUSPENDED\n"
-				}
-				return 1
-			}
-			"PENDING" {
-				if {[string compare $desired_state "PENDING"] == 0} {
-					send_user "Job $job_id is PENDING\n"
-					return 0
-				}
-				send_user "Job $job_id is in state $state, "
-				send_user "desire $desired_state\n"
-			}
-			"RUNNING" {
-				if {[string compare $desired_state "RUNNING"] == 0} {
-					send_user "Job $job_id is RUNNING\n"
-					return 0
-				}
-				send_user "Job $job_id is in state $state, "
-				send_user "desire $desired_state\n"
-			}
-			"SPECIAL_EXIT" {
-				if {[string compare $desired_state "SPECIAL_EXIT"] == 0} {
-					send_user "Job $job_id is SPECIAL_EXIT\n"
-					return 0
-				}
-				send_user "Job $job_id is in state $state, "
-				send_user "desire $desired_state\n"
-			}
-			"SUSPENDED" {
-				if {[string compare $desired_state "SUSPENDED"] == 0} {
-					send_user "Job $job_id is SUSPENDED\n"
-					return 0
-				}
-				send_user "Job $job_id is in state $state, "
-				send_user "desire $desired_state\n"
-			}
-			default {
-				send_user "Job $job_id is in state $state, "
-				send_user "desire $desired_state\n"
-			}
-		}
-
-		if { $my_delay > $max_job_state_delay } {
-			send_user "WARNING: Timeout waiting for job state $desired_state\n"
-			return 1
-		}
-
-		exec sleep $poll_interval
-		set my_delay [expr $my_delay + $poll_interval]
-	}
 }
 
 ################################################################
