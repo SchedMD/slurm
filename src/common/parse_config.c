@@ -191,8 +191,7 @@ s_p_hashtbl_t *s_p_hashtbl_create(const s_p_options_t options[])
 			xassert(op->line_options);
 			expdata->template =
 				s_p_hashtbl_create(op->line_options);
-			expdata->index = xcalloc(CONF_HASH_LEN,
-						 sizeof(s_p_values_t *));
+			expdata->index = xmalloc(sizeof(*expdata->index));
 			expdata->values = NULL;
 			value->data = expdata;
 		}
