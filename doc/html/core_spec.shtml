@@ -49,7 +49,7 @@ The first core selected will be the highest numbered core on the highest
 numbered socket.
 Subsequent cores selected will be the highest numbered core on lower
 numbered sockets.
-If additional cores are required, they well come from the next highest numbered
+If additional cores are required, they will come from the next highest numbered
 cores on each socket.
 By way of example, consider a node with two sockets, each with four cores.
 The specialized cores will be selected in the following order:</p>
