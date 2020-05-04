@@ -320,11 +320,11 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 			c = bit_set_count(avail_cores[i]);
 			if (cores_per_node) {
 				if (c < cores_per_node)
-					continue;	
+					continue;
 				if ((c > cores_per_node) &&
 				    (extra_cores_needed > 0)) {
 					c_cnt = cores_per_node +
-					        extra_cores_needed;
+						extra_cores_needed;
 					if (c_cnt > c)
 						c_target = c;
 					else
@@ -332,7 +332,7 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 					extra_cores_needed -= (c_target - c);
 				} else {
 					c_target = cores_per_node;
-				}	
+				}
 			} else if (single_core_cnt) {
 				if (c > total_core_cnt)
 					c_target = total_core_cnt;
@@ -448,7 +448,7 @@ extern int fini(void)
 /*
  * select_p_job_test - Given a specification of scheduling requirements,
  *	identify the nodes which "best" satisfy the request.
- * 	"best" is defined as either a minimal number of consecutive nodes
+ *	"best" is defined as either a minimal number of consecutive nodes
  *	or if sharing resources then sharing them with a job of similar size.
  * IN/OUT job_ptr - pointer to job being considered for initiation,
  *                  set's start_time when job expected to start
