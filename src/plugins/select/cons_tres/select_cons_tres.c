@@ -191,6 +191,7 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 		FREE_NULL_BITMAP(picked_node_bitmap);
 		free_core_array(&local_cores);
 	} else {
+		free_core_array(exc_cores);
 		*exc_cores = avail_cores;
 #if _DEBUG
 		for (i = 0; i < select_node_cnt; i++) {
