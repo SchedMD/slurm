@@ -722,14 +722,14 @@ static int _resolve_shared_status(job_record_t *job_ptr,
 	if (job_ptr->reboot)
 		return 0;
 
-	/* no sharing if partition Shared=EXCLUSIVE */
+	/* no sharing if partition OverSubscribe=EXCLUSIVE */
 	if (part_max_share == 0) {
 		job_ptr->details->whole_node = 1;
 		job_ptr->details->share_res = 0;
 		return 0;
 	}
 
-	/* sharing if partition Shared=FORCE with count > 1 */
+	/* sharing if partition OverSubscribe=FORCE with count > 1 */
 	if ((part_max_share & SHARED_FORCE) &&
 	    ((part_max_share & (~SHARED_FORCE)) > 1)) {
 		job_ptr->details->share_res = 1;
@@ -745,7 +745,7 @@ static int _resolve_shared_status(job_record_t *job_ptr,
 		return 1;
 	} else {
 		job_ptr->details->whole_node = WHOLE_NODE_REQUIRED;
-		if (part_max_share == 1) { /* partition configured Shared=NO */
+		if (part_max_share == 1) { /* partition is OverSubscribe=NO */
 			job_ptr->details->share_res = 0;
 			return 0;
 		}

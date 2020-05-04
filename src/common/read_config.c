@@ -1624,7 +1624,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				if (i <= 1) {
 					error("Ignoring bad OverSubscribe value: %s",
 					      tmp);
-					p->max_share = 1; /* Shared=NO */
+					p->max_share = 1; /* OverSubscribe=NO */
 				} else
 					p->max_share = i;
 			} else if (xstrcasecmp(tmp, "YES") == 0)
@@ -1634,13 +1634,14 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				if (i < 1) {
 					error("Ignoring bad OverSubscribe value: %s",
 					      tmp);
-					p->max_share = 1; /* Shared=NO */
+					p->max_share = 1; /* OverSubscribe=NO */
 				} else
 					p->max_share = i | SHARED_FORCE;
 			} else if (xstrcasecmp(tmp, "FORCE") == 0)
 				p->max_share = 4 | SHARED_FORCE;
 			else {
-				error("Bad value \"%s\" for Shared", tmp);
+				error("Bad value \"%s\" for OverSubscribe",
+				      tmp);
 				_destroy_partitionname(p);
 				s_p_hashtbl_destroy(tbl);
 				xfree(tmp);

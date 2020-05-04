@@ -1576,7 +1576,7 @@ extern int select_p_job_fini(job_record_t *job_ptr)
 
 /* NOTE: This function is not called with gang scheduling because it
  * needs to track how many jobs are running or suspended on each node.
- * This sum is compared with the partition's Shared parameter */
+ * This sum is compared with the partition's OverSubscribe parameter */
 extern int select_p_job_suspend(job_record_t *job_ptr, bool indf_susp)
 {
 	xassert(job_ptr);
