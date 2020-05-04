@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Factor in ntasks-per-core=1 with cons_tres.
  -- Fix formatting in error message in cons_tres.
+ -- Fix calling stat on a NULL variable.
 
 * Changes in Slurm 20.02.2
 ==========================

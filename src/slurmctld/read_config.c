@@ -182,7 +182,8 @@ static void _stat_slurm_dirs(void)
 	 * _is_valid_path() instead
 	 */
 
-	if ((stat(slurmctld_conf.plugstack, &stat_buf) == 0) &&
+	if (slurmctld_conf.plugstack &&
+	    (stat(slurmctld_conf.plugstack, &stat_buf) == 0) &&
 	    (stat_buf.st_mode & S_IWOTH)) {
 		problem_dir = "PlugStack";
 	}
