@@ -25,6 +25,9 @@ NOTE: The FastSchedule option has been removed. The FastSchedule=2 functionality
       (used for testing and development) is available as the new
       SlurmdParameters=config_overrides option.
 
+NOTE: Slurmdbd is now set to fatal if slurmdbd.conf file isn't owned by
+      SlurmUser or it's mode is not set to 0600.
+
 HIGHLIGHTS
 ==========
  -- The example systemd unit files have been changed to the "simple" type of

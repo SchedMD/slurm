@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
     the credential has already expired when setting the memory limits.
  -- Reject jobs that request more nodes than provided in job credential if
     PrologFlags includes Contain.
+ -- Slurmdbd is now set to fatal if slurmdbd.conf file isn't owned by SlurmUser
+    or it's mode is not set to 0600.
 
 * Changes in Slurm 20.02.3
 ==========================
