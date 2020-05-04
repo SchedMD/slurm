@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix formatting in error message in cons_tres.
  -- Fix calling stat on a NULL variable.
  -- Fix minor memory leak when using reservations with flags=first_cores.
+ -- Fix gpu bind issue when CPUs=Cores and ThreadsPerCore > 1 on a node.
 
 * Changes in Slurm 20.02.2
 ==========================
