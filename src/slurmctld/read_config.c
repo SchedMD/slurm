@@ -183,15 +183,15 @@ static void _stat_slurm_dirs(void)
 	 */
 
 	if (slurm_conf.plugstack &&
-	    (stat(slurm_conf.plugstack, &stat_buf) == 0) &&
+	    !stat(slurm_conf.plugstack, &stat_buf) &&
 	    (stat_buf.st_mode & S_IWOTH)) {
 		problem_dir = "PlugStack";
 	}
-	if ((stat(slurm_conf.slurmd_spooldir, &stat_buf) == 0) &&
+	if (!stat(slurm_conf.slurmd_spooldir, &stat_buf) &&
 	    (stat_buf.st_mode & S_IWOTH)) {
 		problem_dir = "SlurmdSpoolDir";
 	}
-	if ((stat(slurm_conf.state_save_location, &stat_buf) == 0) &&
+	if (!stat(slurm_conf.state_save_location, &stat_buf) &&
 	    (stat_buf.st_mode & S_IWOTH)) {
 		problem_dir = "StateSaveLocation";
 	}
