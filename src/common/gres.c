@@ -9699,6 +9699,11 @@ extern bool gres_plugin_job_mem_set(List job_gres_list,
 			mem_per_gres = job_data_ptr->mem_per_gres;
 		else
 			mem_per_gres = job_data_ptr->def_mem_per_gres;
+		/*
+		 * The logic below is correct because the only mem_per_gres
+		 * is --mem-per-gpu adding another option will require change
+		 * to take MAX of mem_per_gres for all types.
+		 */
 		if ((mem_per_gres == 0) || !job_data_ptr->gres_cnt_node_select)
 			continue;
 		rc = true;
@@ -9723,13 +9728,10 @@ extern bool gres_plugin_job_mem_set(List job_gres_list,
 				gres_cnt =
 					job_data_ptr->gres_cnt_node_select[i];
 			mem_size = mem_per_gres * gres_cnt;
-			if (first_set) {
+			if (first_set)
 				job_res->memory_allocated[node_off] = mem_size;
-			} else {
-				job_res->memory_allocated[node_off] = MAX(
-					job_res->memory_allocated[node_off],
-					mem_size);
-			}
+			else
+				job_res->memory_allocated[node_off] += mem_size;
 		}
 		first_set = false;
 	}
