@@ -2305,7 +2305,8 @@ will have duplicate records.
 
 .TP
 \fIFile=\fP
-File to load into database.
+File to load into database. The specified file must exist on the slurmdbd host,
+which is not necessarily the machine running the command.
 .TP
 \fIInsert=\fP
 SQL to insert directly into the database.  This should be used very
