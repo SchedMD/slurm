@@ -1231,12 +1231,13 @@ job_manager(stepd_step_rec_t *job)
 
 	if (!job->batch && (job->accel_bind_type || job->tres_bind ||
 	    job->tres_freq)) {
+		uint32_t cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 		List gres_list = NULL;
 		(void) gres_plugin_init_node_config(conf->node_name,
 						    conf->gres,
 						    &gres_list);
 		debug2("Running gres_plugin_node_config_load()!");
-		(void) gres_plugin_node_config_load(conf->cpus, conf->node_name,
+		(void) gres_plugin_node_config_load(cpu_cnt, conf->node_name,
 						gres_list,
 						(void *)&xcpuinfo_abs_to_mac,
 						(void *)&xcpuinfo_mac_to_abs);
