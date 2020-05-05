@@ -49,10 +49,8 @@ set config_path [get_conf_path]
 if { $exit_code != 0 } {
 	exit $exit_code
 }
-copy_conf $config_path $cwd
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+set config_file $config_path/slurm.conf
+save_conf $config_file
 
 send_user "\n---Checking sbatch uses mcs-label only for some jobs (ondemand mode)---\n"
 
@@ -72,12 +70,12 @@ expect {
 	}
 }
 
-exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_echo -e "\nMCSPlugin=mcs/group" >> $config_path/slurm.conf
-exec $bin_echo MCSParameters=ondemand,select,privatedata:$groups_name >> $config_path/slurm.conf
-exec $bin_echo PrivateData=jobs,nodes >> $config_path/slurm.conf
+exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_file
+exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_file
+exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
+exec $bin_echo -e "\nMCSPlugin=mcs/group" >> $config_file
+exec $bin_echo MCSParameters=ondemand,select,privatedata:$groups_name >> $config_file
+exec $bin_echo PrivateData=jobs,nodes >> $config_file
 reconfigure
 
 
@@ -294,12 +292,12 @@ cancel_job $job_id
 # test with enforced
 #
 send_user "\n---Checking sbatch uses mcs-label with all jobs (enforced mode)---\n"
-exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_echo -e "\nMCSPlugin=mcs/group" >> $config_path/slurm.conf
-exec $bin_echo MCSParameters=enforced,noselect,privatedata:$groups_name >> $config_path/slurm.conf
-exec $bin_echo PrivateData=jobs,nodes >> $config_path/slurm.conf
+exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_file
+exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_file
+exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
+exec $bin_echo -e "\nMCSPlugin=mcs/group" >> $config_file
+exec $bin_echo MCSParameters=enforced,noselect,privatedata:$groups_name >> $config_file
+exec $bin_echo PrivateData=jobs,nodes >> $config_file
 reconfigure
 
 
@@ -403,12 +401,11 @@ expect {
 cancel_job $job_id
 
 # Clean up vestigial files and restore original slurm.conf file
-send_user "\nChanging slurm.conf back\n"
-exec $bin_cp -v $cwd/slurm.conf.orig $config_path/slurm.conf
+restore_conf $config_file
 reconfigure
 
 if {$exit_code == 0} {
-	exec $bin_rm $tmp_job $cwd/slurm.conf.orig
+	exec $bin_rm $tmp_job
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

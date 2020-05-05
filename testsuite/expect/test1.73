@@ -91,55 +91,21 @@ proc check_rc { job } {
 #
 # Get the slurm.conf path
 #
-set got_config 0
-log_user 0
-spawn $scontrol show config
-expect {
-	-re "SLURM_CONF.*= (/.*)/($alpha).*SLURM_VERSION" {
-		set config_dir $expect_out(1,string)
-		set got_config 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
+set config_dir [get_conf_path]
+if { $exit_code != 0 } {
+        exit $exit_code
 }
-log_user 1
-if {$got_config == 0} {
-    send_user "\nFAILURE: Could not find configuration file location\n"
-    exit 1
-}
-
-# Get the current working directory
-set cwd "[$bin_pwd]"
+set config_file $config_dir/slurm.conf
 
 #
 # Copy the original slurm.conf file
 #
-exec $bin_rm -f $cwd/slurm.conf.orig
-spawn $bin_cp -v $config_dir/slurm.conf $cwd/slurm.conf.orig
-expect {
-	timeout {
-		send_user "\nFAILURE: slurm.conf was not copied\n"
-		exit 1
-	}
-	eof {
-		wait
-	}
-}
-if {![file exists $cwd/slurm.conf.orig]} {
-	send_user "\nFAILURE: slurm.conf was not copied\n"
-	exit 1
-}
+save_conf $config_file
 
 #
 # Add OverTimeLimit value to slurm.conf and reconfigure
 #
-make_bash_script $conf_script "$bin_echo OverTimeLimit=2 >> $config_dir/slurm.conf"
+make_bash_script $conf_script "$bin_echo OverTimeLimit=2 >> $config_file"
 spawn ./$conf_script
 expect {
 	-re "Permission denied" {
@@ -152,7 +118,7 @@ expect {
 	}
 }
 set match 0
-spawn tail $config_dir/slurm.conf
+spawn tail $config_file
 expect {
 	-re "OverTimeLimit=2" {
 		set match 1
@@ -181,12 +147,12 @@ if {$rc == 0} {
 }
 
 # Restore the slurm.conf file back to original values
-exec $bin_cp $cwd/slurm.conf.orig $config_dir/slurm.conf
+restore_conf $config_file
 reconfigure
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $good_script $bad_script $good_job $bad_job
-	exec $bin_rm -f $conf_script $cwd/slurm.conf.orig
+	exec $bin_rm -f $conf_script
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

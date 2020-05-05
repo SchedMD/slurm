@@ -43,10 +43,9 @@ set config_path ""
 set cwd "[$bin_pwd]"
 
 proc cleanup { } {
-	global exit_code file_script reconfigure bin_cp cwd config_path
-	send_user "\nChanging slurm.conf back\n"
-	exec $bin_cp -v $cwd/slurm.conf.orig $config_path/slurm.conf
-	file delete $file_script $cwd/slurm.conf.orig
+	global exit_code file_script reconfigure bin_cp cwd config_file test_id
+	restore_conf $config_file
+	file delete $file_script
 	reconfigure
 
 	if { $exit_code == 0 } {
@@ -95,15 +94,13 @@ set config_path [get_conf_path]
 if { $exit_code != 0 } {
 	cleanup
 }
+set config_file $config_path/slurm.conf
 
-copy_conf $config_path $cwd
-if { $exit_code != 0 } {
-	cleanup
-}
+save_conf $config_file
 
 # Change the slurm.conf MinJobAge=10 so we don't have to wait very long.
-exec $bin_sed -i /^\[\t\s\]*MinJobAge\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_echo -e "\nMinJobAge=10" >> $config_path/slurm.conf
+exec $bin_sed -i /^\[\t\s\]*MinJobAge\[\t\s\]*=/Id $config_file
+exec $bin_echo -e "\nMinJobAge=10" >> $config_file
 
 reconfigure
 if { $exit_code != 0 } {

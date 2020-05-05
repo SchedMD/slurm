@@ -47,10 +47,8 @@ set config_path [get_conf_path]
 if { $exit_code != 0 } {
 	exit $exit_code
 }
-copy_conf $config_path $cwd
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+set config_file $config_path/slurm.conf
+save_conf $config_file
 
 send_user "\n---Checking sbatch uses mcs-label only for some jobs (ondemand,select mode)---\n"
 
@@ -58,12 +56,12 @@ send_user "\n---Checking sbatch uses mcs-label only for some jobs (ondemand,sele
 # Change the slurm.conf MCSparameters and MCSPlugin
 # test with ondemand,select
 #
-exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_echo -e "\nMCSPlugin=mcs/user" >> $config_path/slurm.conf
-exec $bin_echo MCSParameters=ondemand,select,privatedata >> $config_path/slurm.conf
-exec $bin_echo PrivateData=jobs,nodes >> $config_path/slurm.conf
+exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_file
+exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_file
+exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
+exec $bin_echo -e "\nMCSPlugin=mcs/user" >> $config_file
+exec $bin_echo MCSParameters=ondemand,select,privatedata >> $config_file
+exec $bin_echo PrivateData=jobs,nodes >> $config_file
 reconfigure
 
 
@@ -300,12 +298,12 @@ cancel_job $job_id
 # test with enforced,noselect
 #
 send_user "n---Checking sbatch uses mcs-label with all jobs (enforced,noselect mode)---\n"
-exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_echo -e "\nMCSPlugin=mcs/user" >> $config_path/slurm.conf
-exec $bin_echo MCSParameters=enforced,noselect,privatedata >> $config_path/slurm.conf
-exec $bin_echo PrivateData=jobs,nodes >> $config_path/slurm.conf
+exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_file
+exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_file
+exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
+exec $bin_echo -e "\nMCSPlugin=mcs/user" >> $config_file
+exec $bin_echo MCSParameters=enforced,noselect,privatedata >> $config_file
+exec $bin_echo PrivateData=jobs,nodes >> $config_file
 reconfigure
 
 
@@ -415,12 +413,12 @@ cancel_job $job_id
 # test with ondemand,noselect
 #
 send_user "\n---Checking sbatch doesn't use mcs-label on filter (ondemand,noselect mode)---\n"
-exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_echo -e "\nMCSPlugin=mcs/user" >> $config_path/slurm.conf
-exec $bin_echo MCSParameters=ondemand,noselect,privatedata >> $config_path/slurm.conf
-exec $bin_echo PrivateData=jobs,nodes >> $config_path/slurm.conf
+exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_file
+exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_file
+exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
+exec $bin_echo -e "\nMCSPlugin=mcs/user" >> $config_file
+exec $bin_echo MCSParameters=ondemand,noselect,privatedata >> $config_file
+exec $bin_echo PrivateData=jobs,nodes >> $config_file
 reconfigure
 
 ###### Check that sbatch uses mcs-label=user ######
@@ -588,12 +586,12 @@ send_user "\n---Checking sbatch uses mcs-label for all jobs (enforced,select mod
 # Change the slurm.conf MCSparameters and MCSPlugin
 # test with enforced,select
 #
-exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_echo -e "\nMCSPlugin=mcs/user" >> $config_path/slurm.conf
-exec $bin_echo MCSParameters=enforced,select,privatedata >> $config_path/slurm.conf
-exec $bin_echo PrivateData=jobs,nodes >> $config_path/slurm.conf
+exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_file
+exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_file
+exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
+exec $bin_echo -e "\nMCSPlugin=mcs/user" >> $config_file
+exec $bin_echo MCSParameters=enforced,select,privatedata >> $config_file
+exec $bin_echo PrivateData=jobs,nodes >> $config_file
 reconfigure
 
 ###### Check that sbatch uses mcs-label=user ######
@@ -702,12 +700,11 @@ if {$found == 0} {
 cancel_job $job_id
 
 # Clean up vestigial files and restore original slurm.conf file
-send_user "\nChanging slurm.conf back\n"
-exec $bin_cp -v $cwd/slurm.conf.orig $config_path/slurm.conf
+restore_conf $config_file
 reconfigure
 
 if {$exit_code == 0} {
-	exec $bin_rm $tmp_job $cwd/slurm.conf.orig
+	exec $bin_rm $tmp_job
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

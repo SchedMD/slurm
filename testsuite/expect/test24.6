@@ -41,8 +41,6 @@ set tq1         "test$test_id-qos.1"
 set p1          "test$test_id-part.1"
 set p2          "test$test_id-part.2"
 
-set config_path  ""
-
 set jobid1 0
 set jobid2 0
 set jobid3 0
@@ -81,7 +79,7 @@ proc clean_assocs {} {
 }
 
 proc end_it { exit_code } {
-	global test_id jobid1 jobid2 jobid3 jobid4 bin_cp config_path cwd ta1 tq1
+	global test_id jobid1 jobid2 jobid3 jobid4 bin_cp config_file test_id ta1 tq1
 
 	if {$jobid1} {
 		cancel_job $jobid1
@@ -98,8 +96,7 @@ proc end_it { exit_code } {
 
 	clean_assocs
 
-	log_info "Changing slurm.conf back"
-	exec $bin_cp -v $cwd/slurm.conf.orig $config_path/slurm.conf
+	restore_conf $config_file
 	reconfigure
 
 	if {$exit_code == 0} {
@@ -274,13 +271,12 @@ set config_path [get_conf_path]
 if { $exit_code != 0 } {
 	exit $exit_code
 }
+set config_file $config_path/slurm.conf
 
-copy_conf $config_path $cwd
-if { $exit_code != 0 } {
-	exit $exit_code
-}
-exec $bin_sed -i "s/^\\(PriorityWeight.*\\)/#\\1/Ig" $config_path/slurm.conf
-exec $bin_sed -i "s/^\\(PriorityFlags.*\\)/#\\1/Ig" $config_path/slurm.conf
+save_conf $config_file
+
+exec $bin_sed -i "s/^\\(PriorityWeight.*\\)/#\\1/Ig" $config_file
+exec $bin_sed -i "s/^\\(PriorityFlags.*\\)/#\\1/Ig" $config_file
 set prio_conf "
 PriorityWeightAssoc     = 1
 PriorityWeightJobSize   = 1
@@ -289,7 +285,7 @@ PriorityWeightQOS       = 1
 PriorityWeightTRES=cpu=1
 PriorityFlags=NO_NORMAL_ALL
 "
-exec $bin_echo $prio_conf >> $config_path/slurm.conf
+exec $bin_echo $prio_conf >> $config_file
 reconfigure
 
 
