@@ -5548,8 +5548,10 @@ static void _advance_resv_time(slurmctld_resv_t *resv_ptr)
 				NULL, _update_resv_jobs, &resv_ptr->resv_id);
 		}
 
-		verbose("Advance reservation %s by %d day(s)", resv_ptr->name,
-			day_cnt);
+		verbose("%s: reservation %s advanced by %d day%s",
+			__func__, resv_ptr->name, day_cnt,
+			(day_cnt > 1 ? "s" : ""));
+
 		resv_ptr->start_time = resv_ptr->start_time_first;
 		_advance_time(&resv_ptr->start_time, day_cnt);
 		resv_ptr->start_time_prev = resv_ptr->start_time;
@@ -5558,6 +5560,9 @@ static void _advance_resv_time(slurmctld_resv_t *resv_ptr)
 		_post_resv_create(resv_ptr);
 		last_resv_update = time(NULL);
 		schedule_resv_save();
+	} else {
+		log_flag(RESERVATION, "%s: skipping reservation %s for being advanced by any days",
+			 __func__, resv_ptr->name);
 	}
 }
 
