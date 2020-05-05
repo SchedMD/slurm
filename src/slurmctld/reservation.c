@@ -121,6 +121,14 @@ typedef struct constraint_slot {
 	time_t end;
 	uint32_t value;
 } constraint_slot_t;
+
+typedef struct {
+	resv_desc_msg_t *resv_desc_ptr;
+	time_t now;
+	bitstr_t *node_bitmap;
+	bitstr_t **core_bitmap;
+} filter_resv_args_t;
+
 /*
  * the associated functions are the following
  */
@@ -3948,6 +3956,42 @@ static int _have_xor_feature(void *x, void *key)
 }
 
 /*
+ * Filter out nodes and cores from reservation based on existing
+ * reservations.
+ */
+int _filter_resv(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
+	filter_resv_args_t *args = (filter_resv_args_t *) arg;
+	resv_desc_msg_t *resv_desc_ptr = args->resv_desc_ptr;
+	bitstr_t *node_bitmap = args->node_bitmap;
+	bitstr_t **core_bitmap = args->core_bitmap;
+
+	if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
+	    (resv_ptr->flags & RESERVE_FLAG_OVERLAP))
+		return 0;
+	if (resv_ptr->end_time <= args->now)
+		_advance_resv_time(resv_ptr);
+	if (resv_ptr->node_bitmap == NULL)
+		return 0;
+	if (!_resv_time_overlap(resv_desc_ptr, resv_ptr))
+		return 0;
+	if (!resv_ptr->core_bitmap && !resv_ptr->full_nodes) {
+		error("Reservation %s has no core_bitmap and "
+		      "full_nodes is zero", resv_ptr->name);
+		resv_ptr->full_nodes = 1;
+	}
+	if (resv_ptr->full_nodes || !resv_desc_ptr->core_cnt) {
+		bit_and_not(node_bitmap, resv_ptr->node_bitmap);
+	} else {
+		_create_cluster_core_bitmap(core_bitmap);
+		bit_or(*core_bitmap, resv_ptr->core_bitmap);
+	}
+
+	return 0;
+}
+
+/*
  * Select nodes using given node bitmap and/or core_bitmap
  * Given a reservation create request, select appropriate nodes for use
  * resv_desc_ptr IN - Reservation request, node_list field set on exit
@@ -3962,7 +4006,6 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 {
 	bitstr_t *node_bitmap;
 	int rc = SLURM_SUCCESS;
-	time_t now = time(NULL);
 	bool have_xand = false;
 
 	if (*part_ptr == NULL) {
@@ -3984,31 +4027,15 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	/* Don't use nodes already reserved */
 	if (!(resv_desc_ptr->flags & RESERVE_FLAG_MAINT) &&
 	    !(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)) {
-		slurmctld_resv_t *resv_ptr;
-		ListIterator iter = list_iterator_create(resv_list);
-		while ((resv_ptr = list_next(iter))) {
-			if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
-			    (resv_ptr->flags & RESERVE_FLAG_OVERLAP))
-				continue;
-			if (resv_ptr->end_time <= now)
-				_advance_resv_time(resv_ptr);
-			if (resv_ptr->node_bitmap == NULL)
-				continue;
-			if (!_resv_time_overlap(resv_desc_ptr, resv_ptr))
-				continue;
-			if (!resv_ptr->core_bitmap && !resv_ptr->full_nodes) {
-				error("Reservation %s has no core_bitmap and "
-				      "full_nodes is zero", resv_ptr->name);
-				resv_ptr->full_nodes = 1;
-			}
-			if (resv_ptr->full_nodes || !resv_desc_ptr->core_cnt) {
-				bit_and_not(node_bitmap, resv_ptr->node_bitmap);
-			} else {
-				_create_cluster_core_bitmap(core_bitmap);
-				bit_or(*core_bitmap, resv_ptr->core_bitmap);
-			}
-		}
-		list_iterator_destroy(iter);
+		filter_resv_args_t args = {
+			.resv_desc_ptr = resv_desc_ptr,
+			.now = time(NULL),
+			.node_bitmap = node_bitmap,
+			.core_bitmap = core_bitmap,
+		};
+
+		if (list_for_each(resv_list, _filter_resv, &args) < 0)
+			fatal_abort("%s: unexpected error", __func__);
 	}
 
 	if (((resv_desc_ptr->flags & RESERVE_FLAG_MAINT) == 0) &&
