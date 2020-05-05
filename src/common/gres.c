@@ -8165,7 +8165,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				i = 1;
 			}
 			i *= cpus_per_gres;
-			i /= cpus_per_core;
+			i = (i + cpus_per_core - 1) / cpus_per_core;
 			req_cores = MAX(req_cores, i);
 		}
 
