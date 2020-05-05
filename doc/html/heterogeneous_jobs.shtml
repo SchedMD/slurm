@@ -584,7 +584,7 @@ determined by examining Slurm environment variables.</p>
 
 <h2><a name="limitations">Limitations</a></h2>
 
-<p>The backfill scheduler has limiations in how it tracks usage of CPUs and
+<p>The backfill scheduler has limitations in how it tracks usage of CPUs and
 memory in the future.
 This typically requires the backfill scheduler be able to allocate each
 component of a heterogeneous job on a different node in order to begin its
