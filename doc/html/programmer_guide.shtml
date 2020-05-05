@@ -211,7 +211,8 @@ in a separate file named <b>testsuite/expect/globals.local</b>.</p>
 <p>Set your working directory to <b>testsuite/expect</b> before
 starting these tests.  Tests may be executed individually by name
 (e.g.  <i>test1.1</i>)
-or the full test suite may be executed with the single command <i>regression</i>.
+or the full test suite may be executed with the single command
+<i>regression.py</i>.
 See <b>testsuite/expect/README</b> for more information.</p>
 
 <a id="Adding-Files-and-Directories"></a>
@@ -321,6 +322,6 @@ systemctl start/stop/restart slurmd@nodeXYZ
 
 </p>
 
-<p style="text-align:center;">Last modified 23 September 2019</p>
+<p style="text-align:center;">Last modified 5 May 2020</p>
 
 <!--#include virtual="footer.txt"-->

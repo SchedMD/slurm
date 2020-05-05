@@ -5,7 +5,6 @@ EXTRA_DIST = \
 	globals				\
 	globals_accounting		\
 	README				\
-	regression			\
 	regression.py			\
 	slurm_status			\
 	test1.1				\

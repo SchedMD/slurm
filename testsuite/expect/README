@@ -54,20 +54,15 @@ File created on one node in the cluster should be visible to all other
 nodes in the cluster. If not executed in such an environment, many tests
 will fail.
 
-The script "regression" will execute all of the tests and summarize the
+The script "regression.py" will execute all of the tests and summarize the
 results. Standard output contains detailed logging of all events, which is
 quite verbose. Failure information is written to standard error. A good
-way to run "regression" is to write its standard output to one file and
+way to run "regression.py" is to write its standard output to one file and
 either write standard error to another file or print it to the terminal.
 Execution time of the full test suite is roughly 80 minutes, but can vary
 considerably with the architecture, configuration, and system load. Some
 tests send e-mail, so check for four e-mail messages sent to the user
-running the tests. Here is an example.
-    $ ./regression >slurm.test.tux.Aug3
-    Completions:357
-    Failures:   0
-    Time (sec): 4375
-    Remember to check for mail send by tests
+running the tests.
 
 When failures do occur, check the standard output for details. Searching
 for the keyword "FAILURE" will typically locate the failing test. Note

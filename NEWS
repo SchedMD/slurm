@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
  -- Slurmdbd is now set to fatal if slurmdbd.conf file isn't owned by SlurmUser
     or it's mode is not set to 0600.
  -- libsrun/opt - use slurm_option_reset() when ignoring ntasks_per_node.
+ -- Removed "regression" script from testsuite. Please use regression.py.
 
 * Changes in Slurm 20.02.3
 ==========================
