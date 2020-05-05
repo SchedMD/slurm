@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
     PrologFlags includes Contain.
  -- Slurmdbd is now set to fatal if slurmdbd.conf file isn't owned by SlurmUser
     or it's mode is not set to 0600.
+ -- libsrun/opt - use slurm_option_reset() when ignoring ntasks_per_node.
 
 * Changes in Slurm 20.02.3
 ==========================

@@ -1171,7 +1171,7 @@ static bool _opt_verify(void)
 				     "requested nodes %u. Ignoring "
 				     "--ntasks-per-node.", opt.ntasks_per_node,
 				     opt.ntasks, opt.min_nodes);
-			opt.ntasks_per_node = NO_VAL;
+			slurm_option_reset(&opt, "ntasks-per-node");
 		}
 
 	} /* else if (opt.ntasks_set && !opt.nodes_set) */
