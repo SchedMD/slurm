@@ -690,10 +690,9 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 	memcpy(&jobacct->id, jobacct_id, sizeof(jobacct_id_t));
 	debug2("adding task %u pid %d on node %u to jobacct",
 	       jobacct_id->taskid, pid, jobacct_id->nodeid);
+	(*(ops.add_task))(pid, jobacct_id);
 	list_push(task_list, jobacct);
 	slurm_mutex_unlock(&task_list_lock);
-
-	(*(ops.add_task))(pid, jobacct_id);
 
 	if (poll == 1)
 		_poll_data(1);
