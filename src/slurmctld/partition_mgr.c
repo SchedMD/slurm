@@ -669,13 +669,13 @@ int load_all_part_state(void)
 					       &name_len, buffer);
 			safe_unpackstr_xmalloc(&qos_char,
 					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_alloc_nodes, &name_len,
+					       buffer);
+			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
 			safe_unpackstr_xmalloc(&deny_accounts,
 					       &name_len, buffer);
 			safe_unpackstr_xmalloc(&deny_qos,
 					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&allow_alloc_nodes,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
 			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 			if ((flags & PART_FLAG_DEFAULT_CLR)   ||
 			    (flags & PART_FLAG_EXC_USER_CLR)  ||
@@ -719,13 +719,13 @@ int load_all_part_state(void)
 					       &name_len, buffer);
 			safe_unpackstr_xmalloc(&qos_char,
 					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_alloc_nodes, &name_len,
+					       buffer);
+			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
 			safe_unpackstr_xmalloc(&deny_accounts,
 					       &name_len, buffer);
 			safe_unpackstr_xmalloc(&deny_qos,
 					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&allow_alloc_nodes,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
 			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 			if ((flags & PART_FLAG_DEFAULT_CLR)   ||
 			    (flags & PART_FLAG_EXC_USER_CLR)  ||
