@@ -933,41 +933,42 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	 * and run it there */
 	j->clusters = xstrdup(opt_local->clusters);
 
-	if (opt.cpus_per_gpu)
-		xstrfmtcat(j->cpus_per_tres, "gpu:%d", opt.cpus_per_gpu);
-	if (opt.gpu_bind)
-		xstrfmtcat(opt.tres_bind, "gpu:%s", opt.gpu_bind);
-	if (tres_bind_verify_cmdline(opt.tres_bind)) {
+	if (opt_local->cpus_per_gpu)
+		xstrfmtcat(j->cpus_per_tres, "gpu:%d", opt_local->cpus_per_gpu);
+	if (opt_local->gpu_bind)
+		xstrfmtcat(opt_local->tres_bind, "gpu:%s", opt_local->gpu_bind);
+	if (tres_bind_verify_cmdline(opt_local->tres_bind)) {
 		if (tres_bind_err_log) {	/* Log once */
 			error("Invalid --tres-bind argument: %s. Ignored",
-			      opt.tres_bind);
+			      opt_local->tres_bind);
 			tres_bind_err_log = false;
 		}
-		xfree(opt.tres_bind);
+		xfree(opt_local->tres_bind);
 	}
-	j->tres_bind = xstrdup(opt.tres_bind);
-	xfmt_tres_freq(&opt.tres_freq, "gpu", opt.gpu_freq);
-	if (tres_freq_verify_cmdline(opt.tres_freq)) {
+	j->tres_bind = xstrdup(opt_local->tres_bind);
+	xfmt_tres_freq(&opt_local->tres_freq, "gpu", opt_local->gpu_freq);
+	if (tres_freq_verify_cmdline(opt_local->tres_freq)) {
 		if (tres_freq_err_log) {	/* Log once */
 			error("Invalid --tres-freq argument: %s. Ignored",
-			      opt.tres_freq);
+			      opt_local->tres_freq);
 			tres_freq_err_log = false;
 		}
-		xfree(opt.tres_freq);
+		xfree(opt_local->tres_freq);
 	}
-	j->tres_freq = xstrdup(opt.tres_freq);
-	xfmt_tres(&j->tres_per_job,    "gpu", opt.gpus);
-	xfmt_tres(&j->tres_per_node,   "gpu", opt.gpus_per_node);
+	j->tres_freq = xstrdup(opt_local->tres_freq);
+	xfmt_tres(&j->tres_per_job,    "gpu", opt_local->gpus);
+	xfmt_tres(&j->tres_per_node,   "gpu", opt_local->gpus_per_node);
 	if (opt_local->gres && xstrcasecmp(opt_local->gres, "NONE")) {
 		if (j->tres_per_node)
 			xstrfmtcat(j->tres_per_node, ",%s", opt_local->gres);
 		else
 			j->tres_per_node = xstrdup(opt_local->gres);
 	}
-	xfmt_tres(&j->tres_per_socket, "gpu", opt.gpus_per_socket);
-	xfmt_tres(&j->tres_per_task,   "gpu", opt.gpus_per_task);
-	if (opt.mem_per_gpu != NO_VAL64)
-		xstrfmtcat(j->mem_per_tres, "gpu:%"PRIu64, opt.mem_per_gpu);
+	xfmt_tres(&j->tres_per_socket, "gpu", opt_local->gpus_per_socket);
+	xfmt_tres(&j->tres_per_task,   "gpu", opt_local->gpus_per_task);
+	if (opt_local->mem_per_gpu != NO_VAL64)
+		xstrfmtcat(j->mem_per_tres, "gpu:%"PRIu64,
+			   opt_local->mem_per_gpu);
 
 	return j;
 }
