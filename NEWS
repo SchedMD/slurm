@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix gpu bind issue when CPUs=Cores and ThreadsPerCore > 1 on a node.
  -- Fix --mem-per-gpu for heterogenous --gres requests.
  -- Fix slurmctld load order in load_all_part_state().
+ -- Fix race condition not finding jobacct gather task cgroup entry.
 
 * Changes in Slurm 20.02.2
 ==========================
