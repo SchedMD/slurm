@@ -3972,10 +3972,16 @@ int _filter_resv(void *x, void *arg)
 		return 0;
 	if (resv_ptr->end_time <= args->now)
 		_advance_resv_time(resv_ptr);
-	if (resv_ptr->node_bitmap == NULL)
+	if (resv_ptr->node_bitmap == NULL) {
+		log_flag(RESERVATION, "%s: reservation %s has no nodes to filter for reservation %s",
+			 __func__, resv_ptr->name, args->resv_desc_ptr->name);
 		return 0;
-	if (!_resv_time_overlap(resv_desc_ptr, resv_ptr))
+	}
+	if (!_resv_time_overlap(args->resv_desc_ptr, resv_ptr)) {
+		log_flag(RESERVATION, "%s: reservation %s does not overlap in time to filter for reservation %s",
+			 __func__, resv_ptr->name, args->resv_desc_ptr->name);
 		return 0;
+	}
 	if (!resv_ptr->core_bitmap && !resv_ptr->full_nodes) {
 		error("%s: Reservation %s has no core_bitmap and full_nodes is zero",
 		      __func__, resv_ptr->name);
