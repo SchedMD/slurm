@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld load order in load_all_part_state().
  -- Fix race condition not finding jobacct gather task cgroup entry.
  -- Suppress error message when selecting nodes on disjoint topologies.
+ -- Improve performance of _pack_default_job_details() with large number of job
+    arguments.
 
 * Changes in Slurm 20.02.2
 ==========================
