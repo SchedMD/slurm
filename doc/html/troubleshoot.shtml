@@ -126,7 +126,7 @@ between the control machine and the DOWN node using the command
 NodeAddr values configured in <i>slurm.conf</i>.
 If ping fails, then fix the network or addresses in <i>slurm.conf</i>.</li>
 
-<li>Next, login to a node tha. Slurm considers to be in a DOWN
+<li>Next, login to a node that Slurm considers to be in a DOWN
 state and check if the slurmd daemon is running with the command
 "<i>ps -el | grep slurmd</i>".
 If slurmd is not running, restart it (typically as user root
