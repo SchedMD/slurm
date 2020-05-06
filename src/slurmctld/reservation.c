@@ -4109,7 +4109,6 @@ static bitstr_t *_pick_nodes(bitstr_t *avail_bitmap,
 {
 	int i;
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap;
-	bool resv_debug;
 
 	/* Free node_list here, it could be filled in by the select plugin. */
 	xfree(resv_desc_ptr->node_list);
@@ -4121,24 +4120,23 @@ static bitstr_t *_pick_nodes(bitstr_t *avail_bitmap,
 	}
 
 	/* Need to create reservation containing multiple blocks */
-	resv_debug = slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION;
 	for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
 		tmp_bitmap = _pick_node_cnt(avail_bitmap, resv_desc_ptr,
 					    resv_desc_ptr->node_cnt[i],
 					    core_bitmap);
 		if (tmp_bitmap == NULL) {	/* allocation failure */
-			if (resv_debug) {
-				info("reservation of %u nodes failed",
-				     resv_desc_ptr->node_cnt[i]);
-			}
+			log_flag(RESERVATION, "%s: reservation %s of %u nodes failed",
+				 __func__, resv_desc_ptr->name,
+				 resv_desc_ptr->node_cnt[i]);
 			FREE_NULL_BITMAP(ret_bitmap);
 			return NULL;
 		}
-		if (resv_debug) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *tmp_name;
 			tmp_name = bitmap2node_name(tmp_bitmap);
-			info("reservation of %u nodes, using %s",
-			     resv_desc_ptr->node_cnt[i], tmp_name);
+			log_flag(RESERVATION, "%s reservation %s of %u nodes, using %s",
+				 __func__, resv_desc_ptr->name,
+				 resv_desc_ptr->node_cnt[i], tmp_name);
 			xfree(tmp_name);
 		}
 		if (ret_bitmap)
