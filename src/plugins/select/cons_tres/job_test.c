@@ -2269,11 +2269,12 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	/*
 	 * Top switch is highest level switch containing all required nodes
 	 * OR all nodes of the lowest scheduling weight
-	 * OR -1 of can not identify top-level switch
+	 * OR -1 if can not identify top-level switch, which may be due to a
+	 * disjoint topology and available nodes living on different switches.
 	 */
 	if (top_switch_inx == -1) {
-		error("%s: %s: %pJ unable to identify top level switch",
-		       plugin_type, __func__, job_ptr);
+		log_flag(SELECT_TYPE, "%s: %s: %pJ unable to identify top level switch",
+			 plugin_type, __func__, job_ptr);
 		rc = SLURM_ERROR;
 		goto fini;
 	}
