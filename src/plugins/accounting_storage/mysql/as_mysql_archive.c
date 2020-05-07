@@ -1159,8 +1159,11 @@ static int _unpack_local_job(local_job_t *object,
 				tmp_uint64 |= MEM_PER_CPU;
 				object->req_mem = xstrdup_printf("%"PRIu64,
 								 tmp_uint64);
+				xfree(tmp_char);
+			} else {
+				object->req_mem = tmp_char;
+				tmp_char = NULL;
 			}
-			xfree(tmp_char);
 		}
 		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
@@ -1216,8 +1219,11 @@ static int _unpack_local_job(local_job_t *object,
 				tmp_uint64 |= MEM_PER_CPU;
 				object->req_mem = xstrdup_printf("%"PRIu64,
 								 tmp_uint64);
+				xfree(tmp_char);
+			} else {
+				object->req_mem = tmp_char;
+				tmp_char = NULL;
 			}
-			xfree(tmp_char);
 		}
 		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
@@ -1274,8 +1280,11 @@ static int _unpack_local_job(local_job_t *object,
 				tmp_uint64 |= MEM_PER_CPU;
 				object->req_mem = xstrdup_printf("%"PRIu64,
 								 tmp_uint64);
+				xfree(tmp_char);
+			} else {
+				object->req_mem = tmp_char;
+				tmp_char = NULL;
 			}
-			xfree(tmp_char);
 		}
 		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
 		object->het_job_id = xstrdup("0");
@@ -1331,8 +1340,11 @@ static int _unpack_local_job(local_job_t *object,
 				tmp_uint64 |= MEM_PER_CPU;
 				object->req_mem = xstrdup_printf("%"PRIu64,
 								 tmp_uint64);
+				xfree(tmp_char);
+			} else {
+				object->req_mem = tmp_char;
+				tmp_char = NULL;
 			}
-			xfree(tmp_char);
 		}
 		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
 		object->het_job_id = xstrdup("0");
