@@ -76,26 +76,36 @@ proc end_it { exit_code } {
 
 
 proc def_cpu_cnt { } {
-	global sinfo number
+	global sinfo scontrol alpha_numeric_nodelist
 
 	set partition [default_partition]
-	set cpu_cnt 1
-	spawn $sinfo -h -o "%P %C" -p $partition --state=idle
+	set cpu_cnt 0
+	spawn $sinfo -h -o "%P %N" -p $partition --state=idle
 	expect {
-		-re "$partition\\* ($number)(K?)/($number)(K?)" {
-			set cpu_cnt $expect_out(3,string)
-			if {[string compare $expect_out(4,string) ""]} {
-				set cpu_cnt [expr $cpu_cnt * 1024]
-			}
-
+		-re "$partition\\* ($alpha_numeric_nodelist)" {
+			set def_hostlist $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
+			log_error "sinfo not responding"
 			end_it 1
 		}
 		eof {
 			wait
+		}
+	}
+	set fd [open "|$scontrol --oneliner show node $def_hostlist"]
+	while {[gets $fd line] != -1} {
+		if {[regexp {CPUTot=(\d+).*CoreSpecCount=(\d+).*ThreadsPerCore=(\d+)} \
+		            $line frag tmp_cpu_cnt core_spec_cnt \
+		            threads_per_core] == 1} {
+			set cpu_cnt [expr $cpu_cnt + $tmp_cpu_cnt - \
+			                  $core_spec_cnt * $threads_per_core]
+			continue
+		}
+		if {[regexp {CPUTot=(\d+)} $line frag tmp_cpu_cnt] == 1} {
+			set cpu_cnt [expr $cpu_cnt + $tmp_cpu_cnt]
+			continue
 		}
 	}
 	return $cpu_cnt
