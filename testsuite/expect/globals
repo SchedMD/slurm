@@ -5908,7 +5908,20 @@ proc check_reason { job_id reason } {
 	return $found
 }
 
-proc compile_against_libslurm { test_prog use_full use_valgrind } {
+################################################################################
+#
+# Proc: compile_against_libslurm
+#
+# Compile a test program against either libslurm.so or libslurmfull.so.
+#
+# test_prog  - The name of the test program (and .c file)
+# use_full   - If 1, use libslurmfull.so instead of libslurm.so. Defaults to 1.
+# build_args - Additional string to be appended to the build command.
+#              E.g. "-DUSING_VALGRIND -lm ${build_dir}/src/slurmctld/locks.o"
+#              (initial space will be added automatically).
+#
+################################################################################
+proc compile_against_libslurm { test_prog {use_full 1} {build_args ""} } {
 	global slurm_dir bin_cc src_dir build_dir
 
 	if {$use_full} {
@@ -5933,9 +5946,11 @@ proc compile_against_libslurm { test_prog use_full use_valgrind } {
 
 	set build_cmd "$bin_cc ${test_prog}.c -g -pthread -o $test_prog -I$src_dir -I$build_dir -I$slurm_dir/include -Wl,-rpath=$libline -L$libline -l$libfile"
 
-	if {$use_valgrind} {
-		set build_cmd "$build_cmd -DUSING_VALGRIND"
+	# Add additional arguments to the build command
+	if {$build_args != ""} {
+		set build_cmd "$build_cmd $build_args"
 	}
+
 	send_user "$build_cmd\n"
 	eval exec $build_cmd
 }
