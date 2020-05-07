@@ -136,13 +136,11 @@ touch_file $dev8
 
 
 # Build test program
-set build_cmd "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl"
 if {$use_valgrind} {
-	set build_cmd "$build_cmd -DUSING_VALGRIND"
+	compile_against_libslurm ${test_prog} 1 "-DUSING_VALGRIND"
+} else {
+	compile_against_libslurm ${test_prog}
 }
-send_user "$build_cmd\n"
-eval exec $build_cmd
-
 
 # Build program to determine size of unsigned long in C
 set build_cmd "$bin_cc ${test_ulong_prog}.c -o ${test_ulong_prog}"
