@@ -3481,6 +3481,23 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 	 */
 	add_nodes = resv_ptr->node_cnt - preserve_nodes;
 	while (add_nodes) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+			char *pres = bitmap2node_name(preserve_bitmap);
+			bitstr_t *rem_bitmap = bit_copy(resv_ptr->node_bitmap);
+			char *rem = NULL;
+
+			bit_and_not(rem_bitmap, preserve_bitmap);
+			rem = bitmap2node_name(rem_bitmap);
+			log_flag(RESERVATION, "%s: reservation %s replacing %d/%d nodes unavailable[%d/%zd]:%s preserving[%d]:%s",
+				 __func__, resv_ptr->name, add_nodes,
+				 resv_ptr->node_cnt, bit_set_count(rem_bitmap),
+				 bit_size(rem_bitmap), rem, preserve_nodes,
+				 pres);
+			xfree(pres);
+			xfree(rem);
+			FREE_NULL_BITMAP(rem_bitmap);
+		}
+
 		memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
 		resv_desc.start_time  = resv_ptr->start_time;
 		resv_desc.end_time    = resv_ptr->end_time;
@@ -3524,12 +3541,29 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 
 			if (log_it ||
 			    (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION)) {
-				char *kept = bitmap2node_name(preserve_bitmap);
-				verbose("%s: modified reservation %s with added:%s kept:%s",
+				char *kept, *added;
+				bitstr_t *new_nodes =
+					bit_copy(resv_ptr->node_bitmap);
+				bitstr_t *kept_nodes =
+					bit_copy(resv_ptr->node_bitmap);
+
+				bit_and_not(new_nodes, preserve_bitmap);
+				bit_and(kept_nodes, preserve_bitmap);
+
+				added = bitmap2node_name(new_nodes);
+				kept = bitmap2node_name(kept_nodes);
+
+				verbose("%s: modified reservation %s with added[%d/%zd]:%s kept[%d/%zd]:%s",
 					__func__, resv_ptr->name,
-					resv_ptr->node_list,
-					(kept ? kept : "NONE"));
+					bit_set_count(new_nodes),
+					bit_size(new_nodes), added,
+					bit_set_count(kept_nodes),
+					bit_size(kept_nodes), kept);
+
 				xfree(kept);
+				xfree(added);
+				FREE_NULL_BITMAP(new_nodes);
+				FREE_NULL_BITMAP(kept_nodes);
 			}
 			break;
 		}
