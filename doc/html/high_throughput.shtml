@@ -177,6 +177,12 @@ messages on more than one port in order to avoid having incoming messages
 discarded by the operating system due to exceeding the SOMAXCONN limit
 described above. Using between two and ten ports is suggested when large
 numbers of simultaneous requests are to be supported.</li>
+<li><b>PrologSlurmctld/EpilogSlurmctld</b>:
+Neither of these is recommended for a high throughput environment. When they
+are enabled a separate slurmctld thread has to be created for every job start
+(or task for a job array).
+Current architecture requires acquisition of a job write lock in every thread,
+which is a costly operation that severely limits scheduler throughput.
 <li><b>SlurmctldDebug</b>:
 More detailed logging will decrease system throughput. Set to 2 (log errors
 only) or 3 (general information logging). Each increment in the logging level
