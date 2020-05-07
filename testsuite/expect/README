@@ -28,17 +28,16 @@
 
 This directory contains a battery of Slurm regression tests. The tests make
 use of the "expect" scripting language. You can create "globals.local" and
-identify locations of files to be used in testing, especially the variable
-"slurm_dir". These tests expect single node jobs submitted to the default
-partition to respond within a 120 seconds.  If that is not the case, modify
-the value of "max_job_delay" in the "globals.local" file to an appropriate
-value or the tests will report failures due to timeouts.  If there are file
-propagation delays (e.g. due to NFS), the value of "max_file_delay" in the
-"globals.local" file may need modification. For example:
-    $ cat globals.local
-    set slurm_dir     "/usr/local"
-    set max_job_delay 300
+configure several testsuite variables, for example:
 
+slurm_dir:                    slurm installation directory (prefix) [/usr]
+build_dir:                    slurm build directory [../..]
+max_file_delay:               maximum file propogation delay (e.g. nfs) [90]
+testsuite_cleanup_on_failure: runs cleanup procedure on test failure [false]
+testsuite_log_level:          logging threshold [$LOG_LEVEL_INFO]
+
+The "globals.local" file can be in this directory, or the one configured in
+the environment variable SLURM_LOCAL_GLOBALS_FILE.
 Each test can be executed independently. Upon successful completion, the test
 will print "SUCCESS" and terminate with an exit code of zero. Upon failure,
 the test will typically print "FAILURE" and an explanation of the failure.

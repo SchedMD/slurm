@@ -46,6 +46,11 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
+# Avoid sourcing this file multiple times
+if {[info procs exit] eq "exit"} {
+	return
+}
+
 #
 # Include private functions and variables
 #
@@ -73,6 +78,16 @@ proc cset {name value} {
 }
 
 cset local_globals_file "./globals.local"
+
+# Log level "enum"
+# Define these early so they are available in globals.local
+set LOG_LEVEL_QUIET   0
+set LOG_LEVEL_FATAL   1
+set LOG_LEVEL_ERROR   2
+set LOG_LEVEL_WARNING 3
+set LOG_LEVEL_INFO    4
+set LOG_LEVEL_DEBUG   5
+set LOG_LEVEL_TRACE   6
 
 if {[info exists env(SLURM_LOCAL_GLOBALS_FILE)]} {
 	set local_globals_file $env(SLURM_LOCAL_GLOBALS_FILE)
@@ -246,7 +261,9 @@ cset poll_interval 1
 set ::env(LANG)          "en_US.UTF-8"
 
 # Testsuite level variables
+cset testsuite_log_level $LOG_LEVEL_INFO
 cset testsuite_cleanup_on_failure false
+
 if {[info exists env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)]} {
 	set testsuite_cleanup_on_failure $env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)
 }
@@ -330,72 +347,125 @@ set test_id   [string map {test ""} $test_name]
 
 ################################################################
 #
-# Proc: exit_with_failure
+# Overload the exit routine so we can consistently print the final test status
 #
-# Purpose: Print a failure message, clean up and exit with a non-zero exit code
+# When a test exits with a zero exit code, we print SUCCESS.
+# When a test exits with a negative exit code, we print SKIPPED.
+# When a test exits with a positive exit code, we print FAILURE.
 #
-# Input: message -- The message to print
+# If a local cleanup procedure is defined, we will always call it for
+# successful or skipped tests. Whether or the cleanup procedure is called
+# for failed tests depends on the setting of the $testsuite_cleanup_on_failure
+# variable which can be set in the globals.local file or overridden with the
+# SLURM_TESTSUITE_CLEANUP_ON_FAILURE environment variable.
 #
-#  NOTE: This calls the cleanup procedure if defined and exits with a non-zero
-#        exit code (1). DO NOT call this within your local cleanup procedure.
+# NOTE: DO NOT call exit in your local cleanup procedure
 #
 ################################################################
-proc exit_with_failure { message } {
+rename exit __exit
+proc exit { {status 0} } {
 	global testsuite_cleanup_on_failure
 
-	# Call the test's locally-defined cleanup procedure if present
-	if {$testsuite_cleanup_on_failure && [info procs cleanup] eq "cleanup"} {
-		cleanup
+	# Avoid recursive calls from within cleanup
+	if {[info level] > 1 && [lindex [info level -1] 0] eq "cleanup"} {
+		log_warn "Do not call exit from your local cleanup procedure"
+		return
 	}
 
-	log_error $message
+	if {$status == 0} {
+		# Call the test's cleanup procedure if defined
+		if {[info procs cleanup] eq "cleanup"} {
+			if {[catch {cleanup} cleanup_error ]} {
+				log_warn "Cleanup had errors: $cleanup_error"
+			}
+		 }
 
+		print_success
+	} elseif {$status < 0} {
+		# Call the test's cleanup procedure if defined
+		if {[info procs cleanup] eq "cleanup"} {
+			if {[catch {cleanup} cleanup_error ]} {
+				log_warn "Cleanup had errors: $cleanup_error"
+			}
+		}
+
+		print_skipped
+	} else {
+		# Call the test's cleanup procedure if defined and allowed
+		if {$testsuite_cleanup_on_failure && [info procs cleanup] eq \
+		                                     "cleanup"} {
+			if {[catch {cleanup} cleanup_error ]} {
+				log_warn "Cleanup had errors: $cleanup_error"
+			}
+		}
+
+		print_failure
+	}
+
+	__exit $status
+}
+
+################################################################
+#
+# Proc: fail
+#
+# Purpose: To be used when an error is fatal for the test. This routine
+#          prints the specified error message, optionally cleans up, prints
+#          a final test failure message, and exits the test with exit code 1.
+#
+# Input: message -- The error message to print
+#
+# NOTE: Whether or not the cleanup procedure is called depends on the setting
+#       of the $testsuite_cleanup_on_failure set in the globals.local file or
+#       overridden with the SLURM_TESTSUITE_CLEANUP_ON_FAILURE environment
+#       variable.
+# NOTE: DO NOT call this within your local cleanup procedure.
+#
+################################################################
+proc fail { message } {
+
+	log_fatal $message
+
+	# Exit will handle the cleanup procedure and print the failure message.
 	exit 1
 }
 
 ################################################################
 #
-# Proc: exit_with_warning
+# Proc: skip
 #
-# Purpose: Print a warning message and exit with a zero exit code
+# Purpose: To be used when a precondition for the test fails and the test
+#          should be skipped. This routine prints the specified warning message,
+#          calls the cleanup procedure if defined, prints a final test skipped
+#          message, and exits the test with exit code -1 (aka 255).
 #
-# Input: message -- The message to print
+# Input: message -- The warning message to print
 #
-#  NOTE: This calls the cleanup procedure if defined and exits with a non-zero
-#        exit code (1). DO NOT call this within your local cleanup procedure.
+# NOTE: DO NOT call this within your local cleanup procedure.
 #
 ################################################################
-proc exit_with_warning { message } {
-
-	# Call the test's locally-defined cleanup procedure if present
-	if {[info procs cleanup] eq "cleanup"} {
-		cleanup
-	}
+proc skip { message } {
 
 	log_warn $message
 
-	exit 0
+	# Exit will handle the cleanup procedure and print the skipped message.
+	exit -1
 }
 
 ################################################################
 #
-# Proc: exit_with_success
+# Proc: pass
 #
-# Purpose: Print a success message and exit with a zero exit code
+# Purpose: To be used when a test passes and should complete with success.
+#          This routine calls the cleanup procedure if defined, prints a final
+#          test success message, and exits with exit code 0.
 #
-#  NOTE: This calls the cleanup procedure if defined and exits with an exit
-#        code of zero. DO NOT call this within your local cleanup procedure.
+#  NOTE: DO NOT call this within your local cleanup procedure.
 #
 ################################################################
-proc exit_with_success { } {
+proc pass { } {
 
-	# Call the test's locally-defined cleanup procedure if present
-	if {[info procs cleanup] eq "cleanup"} {
-		cleanup
-	}
-
-	send_user "\nSUCCESS\n"
-
+	# Exit will handle the cleanup procedure and print the success message.
 	exit 0
 }
 
@@ -403,21 +473,19 @@ proc exit_with_success { } {
 #
 # Proc: fail_on_error
 #
-# Purpose: Tests the exit_code global variable and exits with failure if the
-#          exit code is non-zero.
+# Purpose: If exit_code global variable is non-zero it calls fail with the
+#          message.
 #
-# Input: message -- The failure message to print
+# Input: message -- The failure message to print if exit_code is non-zero.
 #
-#  NOTE: If this test results in a call to exit_with_failure, the cleanup
-#        procedure will be invoked if locally-defined. DO NOT call this
-#        within your local cleanup procedure.
+# NOTE: DO NOT call this within your local cleanup procedure.
 #
 ################################################################
 proc fail_on_error { message } {
 	global exit_code
 
 	if {$exit_code != 0} {
-		exit_with_failure "$message"
+		fail "$message"
 	}
 }
 
@@ -550,8 +618,7 @@ proc get_my_id {} {
 	log_user 1
 
 	if {$login_info == -1} {
-		send_user "\nFAILURE: Unable to get user info\n"
-		exit 1
+		fail "Unable to get user info"
 	}
 
 	return $login_info
@@ -587,8 +654,7 @@ proc get_my_user_name {  } {
 	log_user 1
 
 	if {$user_name == -1} {
-		send_user "\nFAILURE: Unable to get user name\n"
-		exit 1
+		fail "Unable to get user name"
 	}
 
 	return $user_name
@@ -730,8 +796,8 @@ proc print_header { { test_id_in "" } } {
 		set test_id_in $test_id
 	}
 
-	send_user "============================================\n"
-	send_user "TEST: $test_id_in\n"
+	puts "============================================"
+	puts "TEST: $test_id_in"
 }
 
 ################################################################
@@ -857,7 +923,7 @@ proc wait_for_file { file_name } {
 		}
 		exec /bin/ls $dir_name
 	}
-	send_user "\nFAILURE: Timeout waiting for file $file_name\n"
+	log_error "Timeout waiting for file $file_name"
 	return 1
 }
 
@@ -938,7 +1004,7 @@ proc wait_for_account_done { accounts } {
 		spawn $scancel -A $item
 		expect {
 			timeout {
-				send_user "No response from scancel\n"
+				log_warn "No response from scancel"
 			}
 			eof {
 				wait
@@ -1073,11 +1139,11 @@ proc wait_for_step { step_id } {
 			return 0
 		}
 		if { $my_delay > $max_job_state_delay } {
-			send_user "FAILURE: Timeout waiting for job step\n"
+			log_error "Timeout waiting for job step"
 			return 1
 		}
 
-		send_user "Step $step_id not done yet waiting for $poll_interval seconds\n"
+		log_info "Step $step_id not done yet. Waiting for $poll_interval seconds"
 		exec sleep $poll_interval
 		set my_delay [expr $my_delay + $poll_interval]
 	}
@@ -1141,7 +1207,7 @@ proc wait_for_all_jobs { job_name } {
 		spawn $scancel -n $job_name
 		expect {
 			timeout {
-				log_warning "No response from scancel"
+				log_warn "No response from scancel"
 			}
 			eof {
 				wait
@@ -2058,7 +2124,7 @@ proc priority_type {} {
 	log_user 1
 
 	if {[string length $name] == 0} {
-		send_user "ERROR: could not identify the Priority Type\n"
+		log_error "Could not identify the Priority Type"
 	}
 
 	return $name
@@ -2092,7 +2158,7 @@ proc get_min_job_age {} {
 	log_user 1
 
 	if {$age == 0} {
-		send_user "ERROR: could not identify the MinJobAge\n"
+		log_error "Could not identify the MinJobAge"
 	}
 	return $age
 }
@@ -2854,7 +2920,6 @@ proc available_nodes { partition state } {
 	}
 
 	set available -1
-	#send_user "$sinfo --noheader --partition $partition --state $state --format %D\n"
 	set fd [open "|$sinfo --noheader --partition $partition --state $state --format %D"]
 	gets $fd line
 	catch {close $fd}
@@ -2888,7 +2953,7 @@ proc partition_oversubscribe { partition } {
 	global sinfo
 
 	set oversubscribe "NO"
-	send_user "$sinfo --noheader --partition $partition --format %h\n"
+	log_debug "$sinfo --noheader --partition $partition --format %h"
 	set fd [open "|$sinfo --noheader --partition $partition --format %h"]
 	gets $fd line
 	catch {close $fd}
@@ -2920,7 +2985,7 @@ proc default_partition {} {
 	catch {close $fd}
 
 	if {[string length $name] == 0} {
-		send_user "ERROR: could not identify the default partition\n"
+		log_error "Could not identify the default partition"
 	}
 
 	return $name
@@ -2971,7 +3036,7 @@ proc switch_type {} {
 	catch {close $fd}
 
 	if {[string length $name] == 0} {
-		send_user "ERROR: could not identify the switch type\n"
+		log_error "Could not identify the switch type"
 	}
 
 	return $name
@@ -3034,7 +3099,7 @@ proc get_suffix { hostname } {
 	incr host_inx
 
 	if {$host_inx == $host_len} {
-		send_user "\nHostname lacks a suffix:$hostname\n"
+		log_warn "Hostname lacks a suffix:$hostname"
 		return "-1"
 	}
 
@@ -3098,7 +3163,7 @@ proc check_acct_associations { } {
 
 	set rc 1
 	log_user 0
-	send_user "Testing Associations\n"
+	log_info "Testing Associations"
 	#
 	# Use sacctmgr to check associations
 	#
@@ -3118,12 +3183,12 @@ proc check_acct_associations { } {
 		      set num2 $expect_out(2,string)
 		      set first [info exists found($cluster,$num1)]
 		      set sec [info exists found($cluster,$num2)]
-		      #send_user "$first=$num1 $sec=$num2\n"
+		      #log_debug "$first=$num1 $sec=$num2"
 		      if { $first } {
-			     send_user "FAILURE: $cluster found lft $num1 again\n"
+			     log_error "$cluster found lft $num1 again"
 			     set rc 0
 		      } elseif { $sec } {
-			     send_user "FAILURE: $cluster found rgt $num2 again\n"
+			     log_error "$cluster found rgt $num2 again"
 			     set rc 0
 		      } else {
 			     set found($cluster,$num1) 1
@@ -3140,9 +3205,9 @@ proc check_acct_associations { } {
 		      exp_continue
 	       }
 	       timeout {
-		      send_user "FAILURE: sacctmgr add not responding\n"
-		      slow_kill $s_pid
-		      set exit_code 1
+			log_error "sacctmgr add not responding"
+			slow_kill $s_pid
+			set exit_code 1
 	       }
 	       eof {
 		      wait
@@ -3153,7 +3218,7 @@ proc check_acct_associations { } {
 		# Here we are checking for holes in the list from above
 		for {set inx $c_min($cluster)} {$inx < $c_max($cluster)} {incr inx} {
 			if { ![info exists found($cluster,$inx)] } {
-				send_user "FAILURE: $cluster No index at $inx\n"
+				log_error "$cluster No index at $inx"
 				set rc 0
 			}
 		}
@@ -3258,7 +3323,7 @@ proc check_accounting_admin_level { } {
 	set user_name [get_my_user_name]
 
 	if { ![string length $user_name] } {
-		send_user "FAILURE: No name returned from id\n"
+		log_error "No name returned from id"
 		return ""
 	}
 
@@ -3272,9 +3337,8 @@ proc check_accounting_admin_level { } {
 		      exp_continue
 	       }
 	       timeout {
-		      send_user "FAILURE: sacctmgr add not responding\n"
 		      slow_kill $s_pid
-		      set exit_code 1
+		      fail "sacctmgr add not responding"
 	       }
 	       eof {
 		      wait
@@ -3308,9 +3372,8 @@ proc get_cluster_name { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
 			slow_kill $scon_pid
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -3348,7 +3411,7 @@ proc get_control_machine { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $scon_pid
 			set exit_code 1
 		}
@@ -3383,7 +3446,7 @@ proc get_node_cnt { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $scon_pid
 			set exit_code 1
 		}
@@ -3414,14 +3477,14 @@ proc get_node_cnt_in_part { partition } {
 	set scon_pid [spawn -noecho $scontrol show partition $partition]
 	expect {
 		-re "not found" {
-			send_user "\nFAILURE: partition $partition doesn't exist\n"
+			log_error "partition $partition doesn't exist"
 		}
 		-re "TotalNodes=($number)" {
 			set node_cnt $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 		}
 		eof {
 		}
@@ -3449,13 +3512,13 @@ proc get_idle_node_in_part { partition } {
 	spawn $sinfo -oNAME=%N -h -p$partition --state=idle
 	expect {
 		-re "not found" {
-			send_user "\nFAILURE: partition $partition doesn't exist\n"
+			log_error "partition $partition doesn't exist"
 		}
 		-re "NAME=($alpha_numeric_nodelist)" {
 			set host_list $expect_out(1,string)
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo not responding\n"
+			log_error "sinfo not responding"
 		}
 		eof {
 			wait
@@ -3469,7 +3532,7 @@ proc get_idle_node_in_part { partition } {
 			set node_name $expect_out(1,string)
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 		}
 		eof {
 			wait
@@ -3497,8 +3560,27 @@ proc print_failure { {test_id_in ""} } {
 		set test_id_in $test_id
 	}
 
-	send_user "\n"
-	send_user "\nFAILURE: test$test_id_in\n"
+	puts "\nFAILURE: test$test_id_in"
+}
+
+################################################################
+#
+# Proc: print_skipped
+#
+# Purpose:  Print skipped with test ID
+#
+# Input (optional): test_id_in -- The Slurm regression test ID.
+#
+################################################################
+
+proc print_skipped { {test_id_in ""} } {
+	global test_id
+
+	if { "$test_id_in" == "" } {
+		set test_id_in $test_id
+	}
+
+	puts "\nSKIPPED: test$test_id_in"
 }
 
 ################################################################
@@ -3512,15 +3594,13 @@ proc print_failure { {test_id_in ""} } {
 ################################################################
 
 proc print_success { {test_id_in ""} } {
-
 	global test_id
 
 	if { "$test_id_in" == "" } {
 		set test_id_in $test_id
 	}
 
-	send_user "\n"
-	send_user "SUCCESS: test$test_id_in\n"
+	puts "\nSUCCESS: test$test_id_in"
 }
 
 ###############################################################
@@ -3546,11 +3626,11 @@ proc change_subbp_state { node ionodes state } {
 			exp_continue
 		}
 		-re "Unable to contact" {
-			send_user "\nFAILURE: slurm appears to be down\n"
+			log_error "slurm appears to be down"
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $my_pid
 			set return_code 1
 		}
@@ -3575,11 +3655,11 @@ proc change_subbp_state { node ionodes state } {
 			exp_continue
 		}
 		-re "Unable to contact" {
-			send_user "\nFAILURE: slurm appears to be down\n"
+			log_error "slurm appears to be down"
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: smap not responding\n"
+			log_error "smap not responding"
 			slow_kill $my_pid
 			set return_code 1
 		}
@@ -3589,7 +3669,7 @@ proc change_subbp_state { node ionodes state } {
 	}
 
 	if {$match != 2} {
-		send_user "\nFAILURE: Subbp did not go into $state state. $match\n"
+		log_error "Subbp did not go into $state state. $match"
 		set return_code 1
 	}
 
@@ -3766,7 +3846,7 @@ proc get_fs_damping_factor { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $scon_pid
 			set exit_code 1
 		}
@@ -3804,7 +3884,7 @@ proc slurmctld_plug_stack_nonstop { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $scon_pid
 			set exit_code 1
 		}
@@ -3841,7 +3921,7 @@ proc job_submit_all_partitions { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $scon_pid
 			set exit_code 1
 		}
@@ -3881,7 +3961,7 @@ proc wait_for_node {partition state num_nodes} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sinfo is not responding\n"
+				log_error "sinfo is not responding"
 				set rt 1
 			}
 			eof {
@@ -3893,7 +3973,7 @@ proc wait_for_node {partition state num_nodes} {
 		if {$num_nodes <= $cnt} {
 			set done 1
 		} else {
-			send_user "partition $partition has $cnt nodes idle and we want $num_nodes\n"
+			log_debug "partition $partition has $cnt nodes idle and we want $num_nodes"
 			sleep $poll_interval
 			incr wait_time 1
 		}
@@ -4060,7 +4140,7 @@ proc available_nodes_hostnames { partition {also_power_save false} } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo is not responding\n"
+			log_error "sinfo is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -4152,7 +4232,7 @@ proc get_partition_nodes {partition states} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo not responding\n"
+			log_error "sinfo not responding"
 			slow_kill $sinfo_pid
 			set exit_code 1
 		}
@@ -4277,7 +4357,7 @@ proc get_partition_maximum_time_limit {partition} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo not responding\n"
+			log_error "sinfo not responding"
 			slow_kill $sinfo_pid
 			set exit_code 1
 		}
@@ -4345,7 +4425,7 @@ proc get_partition_default_time_limit {partition} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo not responding\n"
+			log_error "sinfo not responding"
 			slow_kill $sinfo_pid
 			set exit_code 1
 		}
@@ -4394,7 +4474,7 @@ proc get_node_cores {node} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo not responding\n"
+			log_error "sinfo not responding"
 			slow_kill $sinfo_pid
 			set exit_code 1
 		}
@@ -4456,7 +4536,7 @@ proc get_node_cpus {node} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			slow_kill $scontrol_pid
 			set exit_code 1
 		}
@@ -4468,7 +4548,7 @@ proc get_node_cpus {node} {
 	set core_cnt [expr $nsockets * $ncores]
 	set thread_cnt [expr $ncores * $nthreads]
 	if {$totcpus != $nthreads && $totcpus == $ncores} {
-		send_user "\nNOTE: Cores rather than threads are being allocated\n"
+		log_info "Cores rather than threads are being allocated"
 		set nthreads 1
 	}
 
@@ -4518,7 +4598,7 @@ proc get_part_total_cores {part states} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo not responding\n"
+			log_error "sinfo not responding"
 			slow_kill $sinfo_pid
 			set exit_code 1
 		}
@@ -4560,12 +4640,12 @@ proc check_hosts_contiguous {part check_hosts_list} {
 		}
 		-re "Unable to contact" {
 			log_user 1
-			send_user "\nFAILURE: slurm appears to be down\n"
+			log_error "slurm appears to be down"
 			return 1
 		}
 		timeout {
 			log_user 1
-			send_user "\nFAILURE: sinfo not responding\n"
+			log_error "sinfo not responding"
 			slow_kill $sinfo_pid
 			return 1
 		}
@@ -4578,12 +4658,12 @@ proc check_hosts_contiguous {part check_hosts_list} {
 	foreach host $check_hosts_list {
 		set idx_cur [lsearch $part_hosts_list $host]
 		if {$idx_cur == -1} {
-			send_user "\nFAILURE: $host not found in list of hosts from partition $part\n"
+			log_error "$host not found in list of hosts from partition $part"
 			return 1
 		}
 		if {[info exists idx_old]} {
 			if {$idx_cur != [expr $idx_old + 1]} {
-				send_user "\nFAILURE: node sequence number not contiguous\n"
+				log_error "node sequence number not contiguous"
 				return 1
 			}
 		}
@@ -4612,11 +4692,9 @@ proc stop_root_user {} {
 
 	set uid [get_my_uid]
 	if {$uid == -1} {
-		send_user "\nCan't get my uid\n"
-		exit 1
+		fail "Can't get my uid"
 	} elseif {$uid == 0} {
-		send_user "\nWARNING: Can't run this test as user root\n"
-		exit 0
+		skip "Can't run this test as user root"
 	}
 
 	return $uid
@@ -4643,7 +4721,7 @@ proc get_requeue_exit { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $scon_pid
 			set exit_code 1
 		}
@@ -4677,7 +4755,7 @@ proc get_requeue_exit_hold { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $scon_pid
 			set exit_code 1
 		}
@@ -4711,7 +4789,7 @@ proc get_prolog { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $scon_pid
 			set exit_code 1
 		}
@@ -4738,8 +4816,7 @@ proc expect_extern_step { } {
 			set extern_step 1
 		}
 		timeout {
-			log_error "scontrol show config not responding\n"
-			exit 1
+			fail "scontrol show config not responding"
 		}
 		eof {
 			wait
@@ -4802,7 +4879,7 @@ proc get_het_job_ids { jobid {use_offset 0}} {
 #
 ################################################################
 proc test_pack_step { } {
-	global scontrol number
+	global scontrol number exit_code
 
 	log_user 0
 	set pack_step 0
@@ -4816,7 +4893,8 @@ proc test_pack_step { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
+			set exit_code 1
 		}
 		eof {
 			wait
@@ -4833,7 +4911,8 @@ proc test_pack_step { } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: scontrol not responding\n"
+				log_error "scontrol not responding"
+				set exit_code 1
 			}
 			eof {
 				wait
@@ -4855,7 +4934,8 @@ proc test_pack_step { } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: scontrol not responding\n"
+				log_error "scontrol not responding"
+				set exit_code 1
 			}
 			eof {
 				wait
@@ -4903,7 +4983,7 @@ proc reconfigure { {cluster ""} } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -4917,16 +4997,52 @@ proc reconfigure { {cluster ""} } {
 	set timeout $save_timeout
 }
 
+proc log_fatal {msg} {
+	global testsuite_log_level LOG_LEVEL_FATAL
+
+	if {$testsuite_log_level >= $LOG_LEVEL_FATAL} {
+		puts "FATAL: $msg"
+	}
+}
+
 proc log_error {msg} {
-	send_user "\nFAILURE: $msg\n"
+	global testsuite_log_level LOG_LEVEL_ERROR
+
+	if {$testsuite_log_level >= $LOG_LEVEL_ERROR} {
+		puts "ERROR: $msg"
+	}
 }
 
 proc log_warn {msg} {
-	send_user "\nWARNING:    $msg\n"
+	global testsuite_log_level LOG_LEVEL_WARNING
+
+	if {$testsuite_log_level >= $LOG_LEVEL_WARNING} {
+		puts "WARNING: $msg"
+	}
 }
 
 proc log_info {msg} {
-	send_user "INFO:    $msg\n"
+	global testsuite_log_level LOG_LEVEL_INFO
+
+	if {$testsuite_log_level >= $LOG_LEVEL_INFO} {
+		puts "INFO: $msg"
+	}
+}
+
+proc log_debug {msg} {
+	global testsuite_log_level LOG_LEVEL_DEBUG
+
+	if {$testsuite_log_level >= $LOG_LEVEL_DEBUG} {
+		puts "DEBUG: $msg"
+	}
+}
+
+proc log_trace {msg} {
+	global testsuite_log_level LOG_LEVEL_TRACE
+
+	if {$testsuite_log_level >= $LOG_LEVEL_TRACE} {
+		puts "TRACE: $msg"
+	}
 }
 
 ################################################################
@@ -4946,7 +5062,7 @@ proc in_fed {} {
 			return 1
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 		}
 		eof {
 			wait
@@ -4995,7 +5111,7 @@ proc check_job_state { job state {het_job 0}} {
 				incr state_match
 			}
 			timeout {
-				send_user "\nFAILURE scontrol not responding\n"
+				log_error "scontrol not responding"
 				set exit_code 1
 			}
 			eof {
@@ -5004,7 +5120,7 @@ proc check_job_state { job state {het_job 0}} {
 		}
 
 		if {$state_match != 1} {
-			send_user "\nFAILURE job $jid should be in $state state, but is not\n"
+			log_error "job $jid should be in $state state, but is not"
 			set exit_code 1
 			break
 		}
@@ -5338,7 +5454,7 @@ proc get_over_time_limit {} {
 			set ret $expect_out(1,string)
 		}
 		timeout {
-			log_error "FAILURE: scontrol not responding"
+			log_error "scontrol not responding"
 			incr exit_code
 		}
 		eof {
@@ -5372,7 +5488,7 @@ proc cuda_count { cuda_string } {
 				incr cuda_count
 				set has_number 0
 			} else {
-				send_user "cuda_count: Invalid input ($cuda_string)\n"
+				log_error "cuda_count: Invalid input ($cuda_string)"
 				return -1
 			}
 		} elseif {[string is digit $cuda_char]} {
@@ -5382,7 +5498,7 @@ proc cuda_count { cuda_string } {
 	if {$has_number > 0} {
 		incr cuda_count
 	} else {
-		send_user "cuda_count: Invalid input ($cuda_string)\n"
+		log_error "cuda_count: Invalid input ($cuda_string)"
 		return -1
 	}
 	return $cuda_count
@@ -5436,7 +5552,7 @@ proc get_conf_path { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -5446,7 +5562,7 @@ proc get_conf_path { } {
 	log_user 1
 
 	if {$got_config != 1} {
-		send_user "\nFAILURE: did not get slurm.conf path\n"
+		log_error "Did not get slurm.conf path"
 		set exit_code 1
 	}
 	return $config_path
@@ -5469,7 +5585,7 @@ proc copy_conf { config_path cwd } {
 	spawn $bin_cp -v $config_path/slurm.conf $cwd/slurm.conf.orig
 	expect {
 		timeout {
-			send_user "\nFAILURE: slurm.conf was not copied\n"
+			log_error "slurm.conf was not copied"
 			set exit_code 1
 		}
 		eof {
@@ -5692,7 +5808,7 @@ proc have_nvml { } {
 	log_user 1
 
 	if {$grep_fail == 1} {
-		send_user "\nFAILURE: Could not grep $config_h for HAVE_NVML\n"
+		log_error "Could not grep $config_h for HAVE_NVML"
 		set have_nvml 0
 	}
 
@@ -5754,7 +5870,7 @@ proc have_lua { } {
 	log_user 1
 
 	if {$grep_fail == 1} {
-		send_user "\nFAILURE: Could not grep $config_h for HAVE_LUA\n"
+		log_error "Could not grep $config_h for HAVE_LUA"
 		set have_lua 0
 	}
 
@@ -5950,7 +6066,7 @@ proc get_node_config { {request_args "-n1 -t1"} } {
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -5980,7 +6096,7 @@ proc check_reason { job_id reason } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue not responding\n"
+			log_error "squeue not responding"
 		}
 		eof {
 			wait
@@ -6046,3 +6162,107 @@ proc compile_against_libslurm { test_prog {use_full 0} {build_args ""} } {
 
 	exec $bin_chmod 700 $test_prog
 }
+
+################################################################
+#
+# Proc: assert <condition> <message> [<action>]
+#
+# Purpose: Tests a boolean expression. If the condition is false, the
+#          function will take the designated action (error, fail, skip,
+#          or warn) using the specified message.
+#
+# Input: condition -- The boolean expression to test
+# Input: message   -- The message to print with the action
+# Input: action    -- Specifies the action to take when false.
+#                     Optional, default is "error".
+#
+# The action will be one of the following:
+# error - Prints an error if the boolean_expression is false [default]
+# fail  - Fails the test if the boolean_expression is false
+# skip  - Skips the test if the boolean_expression is false
+# warn  - Prints a warning if the boolean_expression is false
+#
+################################################################
+proc assert { condition message { action "error" } } {
+
+	# We must skip two levels if being called by one of the assert_* helpers
+	set uplevel 1
+	if {[info level] > 1 && [string match "assert_*" [lindex [info level -1] 0] ]} {
+		incr uplevel
+	}
+
+	if {![uplevel $uplevel expr [format "{%s}" $condition]]} {
+		if {$action eq "fail"} {
+			fail "$message"
+		} elseif {$action eq "error"} {
+			log_error "$message"
+		} elseif {$action eq "warn"} {
+			log_warn "$message"
+		} elseif {$action eq "skip"} {
+			skip "$message"
+		} else {
+			fail "Invalid action ($action) with assert"
+		}
+	}
+}
+
+################################################################
+#
+# Proc: assert_or_fail <condition> <message>
+#
+# Purpose: Tests a boolean condition. If the condition is false, the
+#          function will call fail with the specified message.
+#
+# Input: condition -- The boolean expression to test
+# Input: message   -- The message to print on failure
+#
+################################################################
+proc assert_or_fail { condition message } {
+	assert "$condition" "$message" "fail"
+}
+
+################################################################
+#
+# Proc: assert_or_error <condition> <message>
+#
+# Purpose: Tests a boolean condition. If the condition is false, the
+#          function will log_error with the specified message.
+#
+# Input: condition -- The boolean expression to test
+# Input: message   -- The message to print on failure
+#
+################################################################
+proc assert_or_error { condition message } {
+	assert "$condition" "$message" "error"
+}
+
+################################################################
+#
+# Proc: assert_or_warn <condition> <message>
+#
+# Purpose: Tests a boolean condition. If the condition is false, the
+#          function will log_warn with the specified message.
+#
+# Input: condition -- The boolean expression to test
+# Input: message   -- The message to print on failure
+#
+################################################################
+proc assert_or_warn { condition message } {
+	assert "$condition" "$message" "warn"
+}
+
+################################################################
+#
+# Proc: assert_or_skip <condition> <message>
+#
+# Purpose: Tests a boolean condition. If the condition is false, the
+#          function will call skip with the specified message.
+#
+# Input: condition -- The boolean expression to test
+# Input: message   -- The message to print on failure
+#
+################################################################
+proc assert_or_skip { condition message } {
+	assert "$condition" "$message" "skip"
+}
+
