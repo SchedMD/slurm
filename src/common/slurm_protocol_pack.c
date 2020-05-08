@@ -8865,13 +8865,25 @@ static void
 _pack_step_complete_msg(step_complete_msg_t * msg, Buf buffer,
 			uint16_t protocol_version)
 {
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->job_step_id, buffer);
-	pack32((uint32_t)msg->range_first, buffer);
-	pack32((uint32_t)msg->range_last, buffer);
-	pack32((uint32_t)msg->step_rc, buffer);
-	jobacctinfo_pack(msg->jobacct, protocol_version,
-			 PROTOCOL_TYPE_SLURM, buffer);
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		pack32((uint32_t)msg->job_id, buffer);
+		pack32((uint32_t)msg->job_step_id, buffer);
+		pack32((uint32_t)msg->range_first, buffer);
+		pack32((uint32_t)msg->range_last, buffer);
+		pack32((uint32_t)msg->step_rc, buffer);
+		jobacctinfo_pack(msg->jobacct, protocol_version,
+				 PROTOCOL_TYPE_SLURM, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32((uint32_t)msg->job_id, buffer);
+		pack32((uint32_t)msg->job_step_id, buffer);
+		pack32((uint32_t)msg->range_first, buffer);
+		pack32((uint32_t)msg->range_last, buffer);
+		pack32((uint32_t)msg->step_rc, buffer);
+		jobacctinfo_pack(msg->jobacct, protocol_version,
+				 PROTOCOL_TYPE_SLURM, buffer);
+	} else
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 }
 
 static int
@@ -8883,15 +8895,31 @@ _unpack_step_complete_msg(step_complete_msg_t ** msg_ptr, Buf buffer,
 	msg = xmalloc(sizeof(step_complete_msg_t));
 	*msg_ptr = msg;
 
-	safe_unpack32(&msg->job_id, buffer);
-	safe_unpack32(&msg->job_step_id, buffer);
-	safe_unpack32(&msg->range_first, buffer);
-	safe_unpack32(&msg->range_last, buffer);
-	safe_unpack32(&msg->step_rc, buffer);
-	if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
-			       PROTOCOL_TYPE_SLURM, buffer, 1)
-	    != SLURM_SUCCESS)
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->job_step_id, buffer);
+		safe_unpack32(&msg->range_first, buffer);
+		safe_unpack32(&msg->range_last, buffer);
+		safe_unpack32(&msg->step_rc, buffer);
+		if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
+				       PROTOCOL_TYPE_SLURM, buffer, 1)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->job_step_id, buffer);
+		safe_unpack32(&msg->range_first, buffer);
+		safe_unpack32(&msg->range_last, buffer);
+		safe_unpack32(&msg->step_rc, buffer);
+		if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
+				       PROTOCOL_TYPE_SLURM, buffer, 1)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 		goto unpack_error;
+	}
 
 	return SLURM_SUCCESS;
 
