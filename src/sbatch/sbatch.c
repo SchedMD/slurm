@@ -60,7 +60,6 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
@@ -710,13 +709,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	if (opt.cpus_per_gpu)
 		xstrfmtcat(desc->cpus_per_tres, "gpu:%d", opt.cpus_per_gpu);
-	if (opt.gpu_bind)
-		xstrfmtcat(opt.tres_bind, "gpu:%s", opt.gpu_bind);
-	if (tres_bind_verify_cmdline(opt.tres_bind)) {
-		error("Invalid --tres-bind argument: %s. Ignored",
-		      opt.tres_bind);
-		xfree(opt.tres_bind);
-	}
 	desc->tres_bind = xstrdup(opt.tres_bind);
 	xfmt_tres_freq(&opt.tres_freq, "gpu", opt.gpu_freq);
 	if (tres_freq_verify_cmdline(opt.tres_freq)) {

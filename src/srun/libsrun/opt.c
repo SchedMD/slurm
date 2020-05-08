@@ -95,7 +95,6 @@ slurm_opt_t opt =
 List 	opt_list = NULL;
 int	pass_number = 0;
 time_t	srun_begin_time = 0;
-bool	tres_bind_err_log = true;
 bool	tres_freq_err_log = true;
 
 /*---- forward declarations of static variables and functions  ----*/

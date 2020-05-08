@@ -47,6 +47,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/tres_bind.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
 #include "src/common/x11_util.h"
@@ -1751,7 +1752,49 @@ static slurm_cli_opt_t slurm_opt_gid = {
 	.reset_func = arg_reset_gid,
 };
 
-COMMON_STRING_OPTION(gpu_bind);
+static int arg_set_gpu_bind(slurm_opt_t *opt, const char *arg)
+{
+	xfree(opt->gpu_bind);
+	xfree(opt->tres_bind);
+	opt->gpu_bind = xstrdup(arg);
+	xstrfmtcat(opt->tres_bind, "gpu:%s", opt->gpu_bind);
+	if (tres_bind_verify_cmdline(opt->tres_bind)) {
+		error("Invalid --gpu-bind argument: %s", opt->tres_bind);
+		exit(1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static int arg_set_data_gpu_bind(slurm_opt_t *opt, const data_t *arg,
+				 data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else {
+		xfree(opt->gpu_bind);
+		xfree(opt->tres_bind);
+		opt->gpu_bind = xstrdup(str);
+		xstrfmtcat(opt->tres_bind, "gpu:%s", opt->gpu_bind);
+		if (tres_bind_verify_cmdline(opt->tres_bind)) {
+			rc = SLURM_ERROR;
+			ADD_DATA_ERROR("Invalid --gpu-bind argument", rc);
+			xfree(opt->gpu_bind);
+			xfree(opt->tres_bind);
+		}
+	}
+
+	xfree(str);
+	return rc;
+}
+static void arg_reset_gpu_bind(slurm_opt_t *opt)
+{
+	xfree(opt->gpu_bind);
+	xfree(opt->tres_bind);
+}
+COMMON_STRING_OPTION_GET(gpu_bind);
 static slurm_cli_opt_t slurm_opt_gpu_bind = {
 	.name = "gpu-bind",
 	.has_arg = required_argument,
