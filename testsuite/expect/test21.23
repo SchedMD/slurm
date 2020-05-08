@@ -41,7 +41,12 @@ set wk          "test$test_id-wckey"
 set wk2         "test$test_id-wckey2"
 set wk3         "test$test_id-wckey3"
 set timeout 60
+
 set config_path [get_conf_path]
+if { $exit_code != 0 } {
+	exit $exit_code
+}
+set config_file $config_path/slurm.conf
 
 print_header $test_id
 
@@ -136,13 +141,10 @@ set reconfigured false
 if {![test_track_wckey_slurmctld]} {
 	log_info "Enabling TrackWCKey..."
 
-	copy_conf $config_path $cwd
-	if { $exit_code != 0 } {
-		exit $exit_code
-	}
+	save_conf $config_file
 
-	exec $bin_sed -i /^\[\t\s\]*TrackWCKey\[\t\s\]*=/Id $config_path/slurm.conf
-	exec $bin_echo TrackWCKey=Yes >> $config_path/slurm.conf
+	exec $bin_sed -i /^\[\t\s\]*TrackWCKey\[\t\s\]*=/Id $config_file
+	exec $bin_echo TrackWCKey=Yes >> $config_file
 	reconfigure
 	set reconfigured true
 }
@@ -460,8 +462,7 @@ expect {
 }
 
 if {$reconfigured} {
-	log_info "Changing slurm.conf back"
-	exec $bin_cp -v $cwd/slurm.conf.orig $config_path/slurm.conf
+	restore_conf $config_file
 	reconfigure
 }
 
