@@ -7363,16 +7363,30 @@ _pack_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg,
 	int i;
 
 	xassert(msg);
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->job_step_id, buffer);
-	pack16((uint16_t)msg->num_resp_port, buffer);
-	for (i = 0; i < msg->num_resp_port; i++)
-		pack16((uint16_t)msg->resp_port[i], buffer);
-	pack16((uint16_t)msg->num_io_port, buffer);
-	for (i = 0; i < msg->num_io_port; i++)
-		pack16((uint16_t)msg->io_port[i], buffer);
-
-	slurm_cred_pack(msg->cred, buffer, protocol_version);
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		pack32((uint32_t)msg->job_id, buffer);
+		pack32((uint32_t)msg->job_step_id, buffer);
+		pack16((uint16_t)msg->num_resp_port, buffer);
+		for (i = 0; i < msg->num_resp_port; i++)
+			pack16((uint16_t)msg->resp_port[i], buffer);
+		pack16((uint16_t)msg->num_io_port, buffer);
+		for (i = 0; i < msg->num_io_port; i++)
+			pack16((uint16_t)msg->io_port[i], buffer);
+		slurm_cred_pack(msg->cred, buffer, protocol_version);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32((uint32_t)msg->job_id, buffer);
+		pack32((uint32_t)msg->job_step_id, buffer);
+		pack16((uint16_t)msg->num_resp_port, buffer);
+		for (i = 0; i < msg->num_resp_port; i++)
+			pack16((uint16_t)msg->resp_port[i], buffer);
+		pack16((uint16_t)msg->num_io_port, buffer);
+		for (i = 0; i < msg->num_io_port; i++)
+			pack16((uint16_t)msg->io_port[i], buffer);
+		slurm_cred_pack(msg->cred, buffer, protocol_version);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
 }
 
 static int
@@ -7387,28 +7401,59 @@ _unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
 	msg = xmalloc(sizeof(*msg));
 	*msg_ptr = msg;
 
-	safe_unpack32(&msg->job_id, buffer);
-	safe_unpack32(&msg->job_step_id, buffer);
-	safe_unpack16(&msg->num_resp_port, buffer);
-	if (msg->num_resp_port >= NO_VAL16)
-		goto unpack_error;
-	if (msg->num_resp_port > 0) {
-		safe_xcalloc(msg->resp_port, msg->num_resp_port,
-			     sizeof(uint16_t));
-		for (i = 0; i < msg->num_resp_port; i++)
-			safe_unpack16(&msg->resp_port[i], buffer);
-	}
-	safe_unpack16(&msg->num_io_port, buffer);
-	if (msg->num_io_port >= NO_VAL16)
-		goto unpack_error;
-	if (msg->num_io_port > 0) {
-		safe_xcalloc(msg->io_port, msg->num_io_port, sizeof(uint16_t));
-		for (i = 0; i < msg->num_io_port; i++)
-			safe_unpack16(&msg->io_port[i], buffer);
-	}
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->job_step_id, buffer);
+		safe_unpack16(&msg->num_resp_port, buffer);
+		if (msg->num_resp_port >= NO_VAL16)
+			goto unpack_error;
+		if (msg->num_resp_port > 0) {
+			safe_xcalloc(msg->resp_port, msg->num_resp_port,
+				     sizeof(uint16_t));
+			for (i = 0; i < msg->num_resp_port; i++)
+				safe_unpack16(&msg->resp_port[i], buffer);
+		}
+		safe_unpack16(&msg->num_io_port, buffer);
+		if (msg->num_io_port >= NO_VAL16)
+			goto unpack_error;
+		if (msg->num_io_port > 0) {
+			safe_xcalloc(msg->io_port, msg->num_io_port,
+				     sizeof(uint16_t));
+			for (i = 0; i < msg->num_io_port; i++)
+				safe_unpack16(&msg->io_port[i], buffer);
+		}
 
-	if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
+		if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->job_step_id, buffer);
+		safe_unpack16(&msg->num_resp_port, buffer);
+		if (msg->num_resp_port >= NO_VAL16)
+			goto unpack_error;
+		if (msg->num_resp_port > 0) {
+			safe_xcalloc(msg->resp_port, msg->num_resp_port,
+				     sizeof(uint16_t));
+			for (i = 0; i < msg->num_resp_port; i++)
+				safe_unpack16(&msg->resp_port[i], buffer);
+		}
+		safe_unpack16(&msg->num_io_port, buffer);
+		if (msg->num_io_port >= NO_VAL16)
+			goto unpack_error;
+		if (msg->num_io_port > 0) {
+			safe_xcalloc(msg->io_port, msg->num_io_port,
+				     sizeof(uint16_t));
+			for (i = 0; i < msg->num_io_port; i++)
+				safe_unpack16(&msg->io_port[i], buffer);
+		}
+
+		if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
+			goto unpack_error;
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 		goto unpack_error;
+	}
 
 	return SLURM_SUCCESS;
 
