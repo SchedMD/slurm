@@ -8333,9 +8333,8 @@ _pack_update_job_step_msg(step_update_request_msg_t * msg, Buf buffer,
 		pack32(msg->step_id, buffer);
 		pack32(msg->time_limit, buffer);
 	} else {
-		pack32(msg->job_id, buffer);
-		pack32(msg->step_id, buffer);
-		pack32(msg->time_limit, buffer);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
 
@@ -8365,9 +8364,9 @@ _unpack_update_job_step_msg(step_update_request_msg_t ** msg_ptr, Buf buffer,
 		safe_unpack32(&msg->step_id, buffer);
 		safe_unpack32(&msg->time_limit, buffer);
 	} else {
-		safe_unpack32(&msg->job_id, buffer);
-		safe_unpack32(&msg->step_id, buffer);
-		safe_unpack32(&msg->time_limit, buffer);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
 	}
 	return SLURM_SUCCESS;
 
