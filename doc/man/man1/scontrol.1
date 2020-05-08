@@ -1688,8 +1688,9 @@ This is because the CRAY API for managing DataWarps supports both formats.
 
 .TP
 \fICoreCnt\fP=<num>
-This option is only supported when SelectType=select/cons_res. Identify number
-of cores to be reserved. If NodeCnt is used without the FIRST_CORES flag, this
+This option is only supported when \fISelectType=select/cons_res\fP or
+\fIselect/cons_tres\fP. Identify number of cores to be reserved.
+If NodeCnt is used without the FIRST_CORES flag, this
 is the total number of cores to reserve where cores per node is CoreCnt/NodeCnt.
 If a nodelist is used, or if NodeCnt is used with the FIRST_CORES flag, this
 should be an array of core numbers by node: Nodes=node[1\-5] CoreCnt=2,2,3,3,4
