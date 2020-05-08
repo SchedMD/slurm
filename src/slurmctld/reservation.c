@@ -3977,8 +3977,8 @@ int _filter_resv(void *x, void *arg)
 	if (!_resv_time_overlap(resv_desc_ptr, resv_ptr))
 		return 0;
 	if (!resv_ptr->core_bitmap && !resv_ptr->full_nodes) {
-		error("Reservation %s has no core_bitmap and "
-		      "full_nodes is zero", resv_ptr->name);
+		error("%s: Reservation %s has no core_bitmap and full_nodes is zero",
+		      __func__, resv_ptr->name);
 		resv_ptr->full_nodes = 1;
 	}
 	if (resv_ptr->full_nodes || !resv_desc_ptr->core_cnt) {
