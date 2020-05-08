@@ -10233,9 +10233,17 @@ _pack_srun_timeout_msg(srun_timeout_msg_t * msg, Buf buffer,
 {
 	xassert(msg);
 
-	pack32((uint32_t)msg->job_id, buffer ) ;
-	pack32((uint32_t)msg->step_id , buffer ) ;
-	pack_time ( msg -> timeout, buffer );
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->step_id, buffer);
+		pack_time(msg->timeout, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->step_id, buffer);
+		pack_time(msg->timeout, buffer);
+	} else
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 }
 
 static int
@@ -10248,9 +10256,20 @@ _unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, Buf buffer,
 	msg = xmalloc ( sizeof (srun_timeout_msg_t) ) ;
 	*msg_ptr = msg ;
 
-	safe_unpack32(&msg->job_id, buffer ) ;
-	safe_unpack32(&msg->step_id, buffer ) ;
-	safe_unpack_time (&msg->timeout, buffer );
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id, buffer);
+		safe_unpack_time(&msg->timeout, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id, buffer);
+		safe_unpack_time(&msg->timeout, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
