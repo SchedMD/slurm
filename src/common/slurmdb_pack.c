@@ -4675,7 +4675,12 @@ extern void slurmdb_pack_selected_step(void *in, uint16_t protocol_version,
 {
 	slurmdb_selected_step_t *step = (slurmdb_selected_step_t *) in;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		pack32(step->array_task_id, buffer);
+		pack32(step->jobid, buffer);
+		pack32(step->het_job_offset, buffer);
+		pack32(step->stepid, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step->array_task_id, buffer);
 		pack32(step->jobid, buffer);
 		pack32(step->het_job_offset, buffer);
@@ -4693,7 +4698,12 @@ extern int slurmdb_unpack_selected_step(slurmdb_selected_step_t **step,
 
 	step_ptr->array_task_id = NO_VAL;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpack32(&step_ptr->array_task_id, buffer);
+		safe_unpack32(&step_ptr->jobid, buffer);
+		safe_unpack32(&step_ptr->het_job_offset, buffer);
+		safe_unpack32(&step_ptr->stepid, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&step_ptr->array_task_id, buffer);
 		safe_unpack32(&step_ptr->jobid, buffer);
 		safe_unpack32(&step_ptr->het_job_offset, buffer);
