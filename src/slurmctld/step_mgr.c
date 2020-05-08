@@ -3886,7 +3886,73 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 	List gres_list = NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 
-	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpack32(&step_id, buffer);
+		safe_unpack16(&cyclic_alloc, buffer);
+		safe_unpack32(&srun_pid, buffer);
+		safe_unpack16(&port, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack16(&resv_port_cnt, buffer);
+		safe_unpack16(&state, buffer);
+		safe_unpack16(&start_protocol_ver, buffer);
+
+		safe_unpack8(&no_kill, buffer);
+
+		safe_unpack32(&cpu_count, buffer);
+		safe_unpack64(&pn_min_memory, buffer);
+		safe_unpack32(&exit_code, buffer);
+		if (exit_code != NO_VAL) {
+			unpack_bit_str_hex(&exit_node_bitmap, buffer);
+		}
+		unpack_bit_str_hex(&core_bitmap_job, buffer);
+
+		safe_unpack32(&time_limit, buffer);
+		safe_unpack32(&cpu_freq_min, buffer);
+		safe_unpack32(&cpu_freq_max, buffer);
+		safe_unpack32(&cpu_freq_gov, buffer);
+
+		safe_unpack_time(&start_time, buffer);
+		safe_unpack_time(&pre_sus_time, buffer);
+		safe_unpack_time(&tot_sus_time, buffer);
+
+		safe_unpackstr_xmalloc(&host, &name_len, buffer);
+		safe_unpackstr_xmalloc(&resv_ports, &name_len, buffer);
+		safe_unpackstr_xmalloc(&name, &name_len, buffer);
+		safe_unpackstr_xmalloc(&network, &name_len, buffer);
+
+		if (gres_plugin_step_state_unpack(&gres_list, buffer,
+						  job_ptr->job_id, step_id,
+						  protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpack16(&batch_step, buffer);
+
+		if (unpack_slurm_step_layout(&step_layout, buffer,
+					     protocol_version))
+			goto unpack_error;
+
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp &&
+		    (switch_g_unpack_jobinfo(&switch_tmp, buffer,
+					     protocol_version)))
+				goto unpack_error;
+
+		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
+						   protocol_version))
+			goto unpack_error;
+		safe_unpackstr_xmalloc(&tres_alloc_str, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_fmt_alloc_str, &name_len, buffer);
+
+		safe_unpackstr_xmalloc(&cpus_per_tres, &name_len, buffer);
+		safe_unpackstr_xmalloc(&mem_per_tres, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_bind, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_freq, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_per_step, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_per_node, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_per_socket, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_per_task, &name_len, buffer);
+	} else if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack32(&srun_pid, buffer);
