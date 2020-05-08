@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix getting system counts for named GRES/TRES.
  -- MySQL - Fix for handing typed GRES for association rollups.
  -- Fix step allocations when tasks_per_core > 1.
+ -- Fix allocating more GRES than requested when asking for multiple GRES types.
 
 * Changes in Slurm 20.02.2
 ==========================
