@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- Improve performance of _pack_default_job_details() with large number of job
     arguments.
  -- Fix archive loading previous to 17.11 jobs per-node req_mem.
+ -- Fix regresion validating that --gpus-per-socket requires --sockets-per-node
+    for steps. Should only validate allocation requests.
 
 * Changes in Slurm 20.02.2
 ==========================
