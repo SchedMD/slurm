@@ -7520,12 +7520,25 @@ _pack_task_exit_msg(task_exit_msg_t * msg, Buf buffer,
 		    uint16_t protocol_version)
 {
 	xassert(msg);
-	pack32(msg->return_code, buffer);
-	pack32(msg->num_tasks, buffer);
-	pack32_array(msg->task_id_list,
-		     msg->num_tasks, buffer);
-	pack32(msg->job_id, buffer);
-	pack32(msg->step_id, buffer);
+
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		pack32(msg->return_code, buffer);
+		pack32(msg->num_tasks, buffer);
+		pack32_array(msg->task_id_list,
+			     msg->num_tasks, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->step_id, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(msg->return_code, buffer);
+		pack32(msg->num_tasks, buffer);
+		pack32_array(msg->task_id_list,
+			     msg->num_tasks, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->step_id, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
 }
 
 static int
@@ -7539,13 +7552,28 @@ _unpack_task_exit_msg(task_exit_msg_t ** msg_ptr, Buf buffer,
 	msg = xmalloc(sizeof(task_exit_msg_t));
 	*msg_ptr = msg;
 
-	safe_unpack32(&msg->return_code, buffer);
-	safe_unpack32(&msg->num_tasks, buffer);
-	safe_unpack32_array(&msg->task_id_list, &uint32_tmp, buffer);
-	if (msg->num_tasks != uint32_tmp)
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->return_code, buffer);
+		safe_unpack32(&msg->num_tasks, buffer);
+		safe_unpack32_array(&msg->task_id_list, &uint32_tmp, buffer);
+		if (msg->num_tasks != uint32_tmp)
+			goto unpack_error;
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->return_code, buffer);
+		safe_unpack32(&msg->num_tasks, buffer);
+		safe_unpack32_array(&msg->task_id_list, &uint32_tmp, buffer);
+		if (msg->num_tasks != uint32_tmp)
+			goto unpack_error;
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 		goto unpack_error;
-	safe_unpack32(&msg->job_id, buffer);
-	safe_unpack32(&msg->step_id, buffer);
+	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
