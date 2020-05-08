@@ -48,6 +48,7 @@
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/tres_bind.h"
+#include "src/common/tres_frequency.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
 #include "src/common/x11_util.h"
@@ -1806,7 +1807,49 @@ static slurm_cli_opt_t slurm_opt_gpu_bind = {
 	.reset_each_pass = true,
 };
 
-COMMON_STRING_OPTION(gpu_freq);
+static int arg_set_gpu_freq(slurm_opt_t *opt, const char *arg)
+{
+	xfree(opt->gpu_freq);
+	xfree(opt->tres_freq);
+	opt->gpu_freq = xstrdup(arg);
+	xstrfmtcat(opt->tres_freq, "gpu:%s", opt->gpu_freq);
+	if (tres_freq_verify_cmdline(opt->tres_freq)) {
+		error("Invalid --gpu-freq argument: %s", opt->tres_freq);
+		exit(1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static int arg_set_data_gpu_freq(slurm_opt_t *opt, const data_t *arg,
+				 data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else {
+		xfree(opt->gpu_freq);
+		xfree(opt->tres_freq);
+		opt->gpu_freq = xstrdup(str);
+		xstrfmtcat(opt->tres_freq, "gpu:%s", opt->gpu_freq);
+		if (tres_freq_verify_cmdline(opt->tres_freq)) {
+			rc = SLURM_ERROR;
+			ADD_DATA_ERROR("Invalid --gpu-freq argument", rc);
+			xfree(opt->gpu_freq);
+			xfree(opt->tres_freq);
+		}
+	}
+
+	xfree(str);
+	return rc;
+}
+static void arg_reset_gpu_freq(slurm_opt_t *opt)
+{
+	xfree(opt->gpu_freq);
+	xfree(opt->tres_freq);
+}
+COMMON_STRING_OPTION_GET(gpu_freq);
 static slurm_cli_opt_t slurm_opt_gpu_freq = {
 	.name = "gpu-freq",
 	.has_arg = required_argument,
