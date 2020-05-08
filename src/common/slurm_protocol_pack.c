@@ -8275,6 +8275,9 @@ _pack_job_step_kill_msg(job_step_kill_msg_t * msg, Buf buffer,
 		packstr(msg->sibling, buffer);
 		pack16((uint16_t)msg->signal, buffer);
 		pack16((uint16_t)msg->flags, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
 
@@ -8301,8 +8304,11 @@ _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&msg->sibling, &cc, buffer);
 		safe_unpack16(&msg->signal, buffer);
 		safe_unpack16(&msg->flags, buffer);
-	} else
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 		goto unpack_error;
+	}
 
 	return SLURM_SUCCESS;
 
