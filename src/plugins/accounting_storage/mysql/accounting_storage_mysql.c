@@ -2533,6 +2533,38 @@ static int _get_database_variable(mysql_conn_t *mysql_conn,
 }
 
 /*
+ * MySQL version 5.6.48 and 5.7.30 introduced a regression in the
+ * implementation of CONCAT() that will lead to incorrect NULL values.
+ *
+ * We cannot safely work around this mistake without restructing our stored
+ * procedures, and thus fatal() here to avoid a segfault.
+ *
+ * Test that concat() is working as expected, rather than trying to blacklist
+ * specific versions.
+ */
+static void _check_mysql_concat_is_sane(mysql_conn_t *mysql_conn)
+{
+	MYSQL_ROW row = NULL;
+	MYSQL_RES *result = NULL;
+	char *query = "select @var := concat('');";
+	const char *version = mysql_get_server_info(mysql_conn->db_conn);
+
+	info("MySQL server version is: %s", version);
+
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	if (!result)
+		fatal("%s: null result from query `%s`", __func__, query);
+
+	if (mysql_num_rows(result) != 1)
+		fatal("%s: invalid results from query `%s`", __func__, query);
+
+	if (!(row = mysql_fetch_row(result)) || !row[0])
+		fatal("MySQL concat() function is defective. Please upgrade to a fixed version. See https://bugs.mysql.com/bug.php?id=99485.");
+
+	mysql_free_result(result);
+}
+
+/*
  * Check the values of innodb global database variables, and print
  * an error if the values are not at least half the recommendation.
  */
@@ -2622,6 +2654,7 @@ extern int init(void)
 		sleep(5);
 	}
 
+	_check_mysql_concat_is_sane(mysql_conn);
 	_check_database_variables(mysql_conn);
 
 	rc = _as_mysql_acct_check_tables(mysql_conn);
