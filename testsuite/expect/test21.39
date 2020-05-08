@@ -40,6 +40,7 @@ set ta2		"test$test_id-account.2"
 set tu1     [get_my_user_name]
 set tq1     "test$test_id-qos.1"
 set tq2     "test$test_id-qos.2"
+set exit_code	0
 
 # account options
 array set acct_1 {}
@@ -105,12 +106,11 @@ proc cleanup_accounts {} {
 }
 
 proc endit { exit_code } {
-	global config_dir cwd bin_cp bin_rm test_id part_name
+	global config_file test_id cwd bin_cp bin_rm test_id part_name
 
 	wait_for_part_done $part_name
 
-	exec $bin_cp -v $cwd/slurm.conf.orig $config_dir/slurm.conf
-	exec $bin_rm -f $cwd/slurm.conf.orig
+	restore_conf $config_file
 	reconfigure
 
 	if {$exit_code == 0} {
@@ -273,15 +273,18 @@ create_accounts
 
 # Get the location of the slurm.conf file
 set config_dir [get_conf_path]
+if { $exit_code != 0 } {
+	exit $exit_code
+}
+set config_file $config_dir/slurm.conf
 
 #
 # Copy slurm.conf file
 #
-set cwd [$bin_pwd]
-copy_conf $config_dir $cwd
+save_conf $config_file
 
 # Comment out PrologFlags in the slurm.conf
-exec $bin_sed -i {s/^\(PrologFlags=\)/#\1/gI} $config_dir/slurm.conf
+exec $bin_sed -i {s/^\(PrologFlags=\)/#\1/gI} $config_file
 
 reconfigure
 

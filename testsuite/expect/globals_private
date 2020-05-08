@@ -25,6 +25,12 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
+#
+# List of files backed up used for save/restore_conf
+#
+set _global_bkp_register {}
+set _global_bkp_noexist  {}
+
 ################################################################
 #
 # Proc: _wait_for_single_job

@@ -5400,6 +5400,190 @@ proc copy_conf { config_path cwd } {
 
 ################################################################
 #
+# Proc: save_conf
+#
+# Rename a file as <file_name>.<test_id> and make a copy of it
+# to its original name to be able to modify it.
+# It registers the saved files to allow to restore them properly
+# with restore_conf.
+# It will log_warn if the file dosn't exist, but will register it
+# to allow restore_conf to "restore" the original state: no file.
+#
+# It throws a TCL error (FATAL: ) if unsafe scenarios are detected,
+# like a backup file already existing, or any error with mv or cp.
+# It does this to encourage the user executing the test to manually
+# check the files to avoid automatically removing any original file.
+#
+# Input file_name - Path and name of file to backup
+#
+# See also restore_conf.
+#
+################################################################
+proc save_conf { file_name } {
+	global test_id
+	global bin_mv bin_cp bin_rm
+	global _global_bkp_register _global_bkp_noexist
+
+	set log_prev [log_user -info]
+	set rc       0
+
+	log_info "Saving backup of $file_name"
+
+	#
+	# Check for existing backups
+	# If it exists, throw a tcl exception/error to stop.
+	# If it exists, manual intervation should be encouraged to avoid
+	# original config files to be overwriten by a test.
+	#
+	set backup_files [glob -nocomplain $file_name*\[0-9\].\[0-9\]*]
+	if {$backup_files != ""} {
+		error [format "\nFATAL: Backup file already exists: %s" \
+		       $backup_files]
+	}
+
+	#
+	# Check if file to backup exists.
+	# If is doesn't warn the user, register the file as nonexistent and
+	# allow the test to continue.
+	# The restore_conf should remove the file.
+	#
+	if {![file exists $file_name]} {
+		log_warn [format "Backup of a nonexistent file registered: %s" \
+			  $file_name]
+		lappend _global_bkp_register $file_name
+		lappend _global_bkp_noexist  $file_name
+		return
+	}
+
+	log_user 0
+	spawn $bin_mv $file_name $file_name.$test_id
+	expect {
+		timeout {
+			error [format "\nFATAL: Timeout moving original %s" \
+			       $file_name]
+		}
+		eof {
+			lassign [wait] pid spawnid os_error_flag rc
+			if {$rc != 0} {
+				error [format "\nFATAL: Error moving original %s" \
+				       $file_name]
+			}
+		}
+	}
+	spawn $bin_cp $file_name.$test_id $file_name
+	expect {
+		timeout {
+			error [format "\nFATAL: Timeout copying original %s" \
+			       $file_name]
+		}
+		eof {
+			lassign [wait] pid spawnid os_error_flag rc
+			if {$rc != 0} {
+				error [format "\nFATAL: Error copying original %s" \
+				       $file_name]
+			}
+		}
+	}
+	# If everything is ok, register the backup file
+	lappend _global_bkp_register $file_name
+	log_user $log_prev
+}
+
+################################################################
+#
+# Proc: restore_conf
+#
+# Restore the original file saved previously with save_config.
+#
+# It throws a TCL error (FATAL: ) if unsafe scenarios are detected,
+# like a file_name not previously saved or, or any error with the
+# mv command.
+# It does this to encourage the user executing the test to manually
+# check the files to avoid automatically removing any original file.
+#
+# Input file_name - Path and name of file to restore
+#
+# See also save_conf.
+
+################################################################
+proc restore_conf { file_name } {
+	global test_id
+	global bin_mv bin_rm
+	global _global_bkp_register _global_bkp_noexist
+
+	set log_prev [log_user -info]
+	set rc       0
+
+	#
+	# We don't want to restore any file not previously saved.
+	# This avoids possible overwrtites or removals.
+	# We want to throw an error because this may indicate data corruption.
+	#
+	if { [lsearch $_global_bkp_register $file_name] == -1 } {
+		error [format "\nFATAL: Cannot restore a not previously saved file:\n%s\nSaved files are: %s\n" \
+		       $file_name [join $_global_bkp_register "\n"]]
+	}
+
+	log_user 0
+	if {[file exists $file_name.$test_id]} {
+		#
+		# If backup file exist but it was nonexistent when saved it
+		# means that it has been created in the middle of the test.
+		# This shouldn't happen and manual intervention is prefeared.
+		#
+		if { [lsearch $_global_bkp_noexist $file_name] != -1 } {
+			error [format "\nFATAL: Backup file created by someone, not by this test!" \
+			       $file_name]
+		}
+
+		log_info "Restoring backup of $file_name"
+		spawn $bin_mv $file_name.$test_id $file_name
+		expect {
+			timeout {
+				error [format "\nFATAL: Timeout restoring original: %s" \
+				       $file_name.$test_id]
+			}
+			eof {
+				lassign [wait] pid spawnid os_error_flag rc
+				if {$rc != 0} {
+					error [format "\nFATAL: Error restoring original %s" \
+					       $file_name]
+				}
+			}
+		}
+	} else {
+		#
+		# If backup file doesn't exist but it did when when we saved
+		# it means that it has been removed while the test was running.
+		# This should never happen, manual intervention is prefered.
+		#
+		if { [lsearch $_global_bkp_noexist $file_name] == -1 } {
+			error [format "\nFATAL: Backup file was removed since saved!" \
+				$file_name]
+		}
+
+		log_info "Removing file used for the test: $file_name"
+		spawn $bin_rm -f $file_name
+		expect {
+			timeout {
+				error [format "\nFATAL: Timeout removing vestigial file: %s" \
+					$file_name]
+			}
+			eof {
+				lassign [wait] pid spawnid os_error_flag rc
+				if {$rc != 0} {
+					error [format "\nFATAL: Error removing vestigial file: %s" \
+					       $file_name]
+				}
+			}
+		}
+	}
+
+	log_user $log_prev
+}
+
+################################################################
+#
 # Proc: have_nvml
 #
 # Returns 1 if HAVE_NVML is set in config.h. Else, returns 0.

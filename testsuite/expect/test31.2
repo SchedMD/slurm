@@ -52,11 +52,11 @@ if {[test_front_end] != 0} {
 
 proc clean_up { } {
 
-	global cwd config_dir exit_code bin_rm bin_cp good_prolog bad_prolog
-	global scontrol test_node test_script
+	global cwd config_file exit_code bin_rm bin_cp good_prolog bad_prolog
+	global scontrol test_node test_script test_id
 
-	exec $bin_cp -v $cwd/slurm.conf.orig $config_dir/slurm.conf
-	exec $bin_rm $test_script $good_prolog $bad_prolog $cwd/slurm.conf.orig
+	restore_conf $config_file
+	exec $bin_rm $test_script $good_prolog $bad_prolog
 	reconfigure
 
 	spawn $scontrol update node=$test_node state=idle
@@ -86,22 +86,20 @@ set config_dir [get_conf_path]
 if { $exit_code != 0 } {
 	exit $exit_code
 }
+set config_file $config_dir/slurm.conf
 
 #
 # Copy slurm.conf file
 #
 set cwd [$bin_pwd]
-copy_conf $config_dir $cwd
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+save_conf $config_file
 
 # Ensure that Prolog and nohold_on_prolog_fail params are removed
-exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
-exec $bin_sed -i {s/nohold_on_prolog_fail//gI} $config_dir/slurm.conf
+exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_file
+exec $bin_sed -i {s/nohold_on_prolog_fail//gI} $config_file
 
 # Append Prolog config to the slurm.conf
-exec $bin_echo "Prolog=$cwd/$good_prolog" >> $config_dir/slurm.conf
+exec $bin_echo "Prolog=$cwd/$good_prolog" >> $config_file
 reconfigure
 
 spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
@@ -163,10 +161,10 @@ if {$exit_code} {
 	exit $exit_code;
 }
 
-exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
+exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_file
 
 # Append Prolog config to the slurm.conf
-exec $bin_echo "Prolog=$cwd/$bad_prolog" >> $config_dir/slurm.conf
+exec $bin_echo "Prolog=$cwd/$bad_prolog" >> $config_file
 reconfigure
 
 set job_id 0

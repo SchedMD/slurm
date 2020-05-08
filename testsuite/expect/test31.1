@@ -34,7 +34,6 @@ source ./globals
 set test_id          "31.1"
 set test_name        "test31.1"
 set config_dir       ""
-set conf_path        "$config_dir/slurm.conf"
 set inc_slurm        "pro_epi_$test_name"
 set pro_epi_prog     "$test_name\_prog"
 set proc             ""
@@ -220,6 +219,7 @@ set config_dir [get_conf_path]
 if { $exit_code != 0 } {
 	exit $exit_code
 }
+set config_file $config_dir/slurm.conf
 
 set get_name 0
 spawn $srun -t1 -l $bin_printenv SLURMD_NODENAME
@@ -248,10 +248,7 @@ if {$get_name != 1} {
 #
 # Copy slurm.conf file
 #
-copy_conf $config_dir $cwd
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+save_conf $config_file
 
 #
 # Test srun --task-epilog
@@ -377,11 +374,11 @@ run_job taskepilog taskepilog_$test_name 0 0
 run_job prolog prolog_$test_name 0 0
 
 # Clean up vestigial files and restore original slurm.conf file
-exec $bin_cp $cwd/slurm.conf.orig $config_dir/slurm.conf
+restore_conf $config_file
 reconfigure
 
 if {$exit_code == 0} {
-	exec $bin_rm -fr $config_dir/$inc_slurm $config_dir/$pro_epi_prog $cwd/slurm.conf.orig
+	exec $bin_rm -fr $config_dir/$inc_slurm $config_dir/$pro_epi_prog
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
