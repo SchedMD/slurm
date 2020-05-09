@@ -1636,13 +1636,17 @@ static int _parse_single_range(const char *str, struct _range *range, int dims)
 		seterrno_ret(ENOMEM, 0);
 
 	/* do NOT allow boxes here */
-	if ((p = strchr(str, 'x')))
-		fatal("%s: Invalid range: `%s'", __func__, orig);
+	if ((p = strchr(str, 'x'))) {
+		error("%s: Invalid range: `%s'", __func__, orig);
+		return 0;
+	}
 
 	if ((p = strchr(str, '-'))) {
 		*p++ = '\0';
-		if (*p == '-')     /* do NOT allow negative numbers */
-			fatal("%s: Invalid range: `%s'", __func__, orig);
+		if (*p == '-') {   /* do NOT allow negative numbers */
+			error("%s: Invalid range: `%s'", __func__, orig);
+			return 0;
+		}
 	}
 
 	range->width = strlen(str);
@@ -1657,19 +1661,27 @@ static int _parse_single_range(const char *str, struct _range *range, int dims)
 	}
 	range->lo = strtoul(str, &q, hostlist_base);
 
-	if (q == str)
-		fatal("%s: Invalid range: `%s'", __func__, orig);
+	if (q == str) {
+		error("%s: Invalid range: `%s'", __func__, orig);
+		return 0;
+	}
 
 	range->hi = (p && *p) ? strtoul(p, &q, hostlist_base) : range->lo;
 
-	if (q == p || *q != '\0')
-		fatal("%s: Invalid range: `%s'", __func__, orig);
+	if (q == p || *q != '\0') {
+		error("%s: Invalid range: `%s'", __func__, orig);
+		return 0;
+	}
 
-	if (range->lo > range->hi)
-		fatal("%s: Invalid range: `%s'", __func__, orig);
+	if (range->lo > range->hi) {
+		error("%s: Invalid range: `%s'", __func__, orig);
+		return 0;
+	}
 
-	if (range->hi - range->lo + 1 > MAX_RANGE)
-		fatal("%s: Too many hosts in range `%s'", __func__, orig);
+	if (range->hi - range->lo + 1 > MAX_RANGE) {
+		error("%s: Too many hosts in range `%s'", __func__, orig);
+		return 0;
+	}
 
 	free(orig);
 	return 1;
