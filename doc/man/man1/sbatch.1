@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "April 2020" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "May 2020" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -567,7 +567,8 @@ partition's \fBOverSubscribe\fR option takes precedence over the job's option.
 .TP
 \fB\-\-export\fR=<\fI[ALL,]environment variables\fR|\fIALL\fR|\fINONE\fR>
 Identify which environment variables from the submission environment are
-propagated to the launched application.
+propagated to the launched application. Note that SLURM_* variables are
+always propagated.
 .RS
 .TP 10
 \fB\-\-export\fR=\fIALL\fR
@@ -578,10 +579,10 @@ will be loaded (either from callers environment or clean environment if
 .TP
 \fB\-\-export\fR=\fINONE\fR
 .br
-None of the user environment will be defined. User must use absolute path to
-the binary to be executed that will define the environment. User can not specify
-explicit environment variables with \fINONE\fR. \fI\-\-get\-user\-env\fR will
-be ignored.
+Only SLURM_* variables from the user environment will be defined. User must use
+absolute path to the binary to be executed that will define the environment.
+User can not specify explicit environment variables with \fINONE\fR.
+\fI\-\-get\-user\-env\fR will be ignored.
 .br
 This option is particularly important for jobs that are submitted on one cluster
 and execute on a different cluster (e.g. with different paths).
@@ -591,7 +592,7 @@ sbatch command, the environment variable SLURM_EXPORT_ENV should be set to
 .TP
 \fB\-\-export\fR=<\fI[ALL,]environment variables>\fR
 .br
-Exports all SLURM* environment variables along with explicitly defined
+Exports all SLURM_* environment variables along with explicitly defined
 variables. Multiple environment variable names should be comma separated.
 Environment variable names may be specified to propagate the current
 value (e.g. "\-\-export=EDITOR") or specific values may be exported
