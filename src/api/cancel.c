@@ -68,6 +68,7 @@ slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t flags)
 	req.step_id.job_id = job_id;
 	req.sjob_id     = NULL;
 	req.step_id.step_id = NO_VAL;
+	req.step_id.step_het_comp = NO_VAL;
 	req.signal      = signal;
 	req.flags       = flags;
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
@@ -104,6 +105,7 @@ slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	req.step_id.job_id = job_id;
 	req.sjob_id     = NULL;
 	req.step_id.step_id = step_id;
+	req.step_id.step_het_comp = NO_VAL;
 	req.signal      = signal;
 	req.flags	= 0;
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
@@ -138,6 +140,7 @@ slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags)
 	req.step_id.job_id = NO_VAL;
 	req.sjob_id     = xstrdup(job_id);
 	req.step_id.step_id = NO_VAL;
+	req.step_id.step_het_comp = NO_VAL;
 	req.signal      = signal;
 	req.flags	= flags;
 	msg.msg_type    = REQUEST_KILL_JOB;

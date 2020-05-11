@@ -3970,6 +3970,7 @@ extern int slurmdb_unpack_job_modify_cond(void **object,
 	safe_unpack32(&selected_step->step_id.job_id, buffer);
 	selected_step->het_job_offset = NO_VAL;
 	selected_step->step_id.step_id = NO_VAL;
+	selected_step->step_id.step_het_comp = NO_VAL;
 
 	safe_unpack_time(&object_ptr->usage_start, buffer);
 

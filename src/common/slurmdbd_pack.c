@@ -879,6 +879,7 @@ static int _unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
 		safe_unpack16(&msg_ptr->state, buffer);
 		safe_unpack32(&msg_ptr->step_id.step_id, buffer);
 		convert_old_step_id(&msg_ptr->step_id.step_id);
+		msg_ptr->step_id.step_het_comp = NO_VAL;
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
 	} else
 		goto unpack_error;
@@ -975,6 +976,7 @@ static int _unpack_step_start_msg(dbd_step_start_msg_t **msg,
 		safe_unpack32(&msg_ptr->req_cpufreq_gov, buffer);
 		safe_unpack32(&msg_ptr->step_id.step_id, buffer);
 		convert_old_step_id(&msg_ptr->step_id.step_id);
+		msg_ptr->step_id.step_het_comp = NO_VAL;
 		safe_unpack32(&msg_ptr->task_dist, buffer);
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->tres_alloc_str,

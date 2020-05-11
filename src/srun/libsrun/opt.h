@@ -71,6 +71,8 @@ extern bool	srun_shutdown;
 extern bool	tres_bind_err_log;
 extern bool	tres_freq_err_log;
 extern bitstr_t *g_het_grp_bits;
+extern bool local_het_step;
+
 /*
  * process options:
  * 1. set defaults

@@ -314,8 +314,12 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
 {
 	mpi_plugin_task_info_t info[1];
 
-	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		info->jobid   = job->het_job_id;
+	else
+		info->jobid   = job->step_id.job_id;
+
+	if (job->het_job_offset != NO_VAL) {
 		info->stepid  = job->step_id.step_id;
 		info->nnodes  = job->het_job_nnodes;
 		info->nodeid  = job->het_job_node_offset + job->nodeid;
@@ -327,7 +331,6 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
 		info->self    = job->envtp->self;
 		info->client  = job->envtp->cli;
 	} else {
-		info->jobid   = job->step_id.job_id;
 		info->stepid  = job->step_id.step_id;
 		info->nnodes  = job->nnodes;
 		info->nodeid  = job->nodeid;
@@ -413,7 +416,7 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 		if (switch_g_job_attach(job->switch_job, &job->env,
 					job->nodeid, (uint32_t) local_proc_id,
 					job->nnodes, job->ntasks,
-					task->gtid) < 0) {
+					task->gtid + task_offset) < 0) {
 			error("Unable to attach to interconnect: %m");
 			log_fini();
 			exit(1);

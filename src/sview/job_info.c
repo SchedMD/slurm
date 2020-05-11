@@ -4515,6 +4515,7 @@ static void selected_foreach_build_list(GtkTreeModel  *model,
 	fe_ptr = xmalloc(sizeof(jobs_foreach_t));
 	fe_ptr->step_id.job_id = jobid;
 	fe_ptr->step_id.step_id = stepid;
+	fe_ptr->step_id.step_het_comp = NO_VAL;
 	fe_ptr->state = state;
 	fe_ptr->array_job_id = array_job_id;
 	fe_ptr->array_task_id = array_task_id;

@@ -885,7 +885,9 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id_in,
 	char *xauthority = NULL;
 	uint16_t protocol_version;
 	slurm_step_id_t step_id = { .job_id = job_id,
-				    .step_id = SLURM_EXTERN_CONT };
+				    .step_id = SLURM_EXTERN_CONT,
+				    .step_het_comp = NO_VAL,
+	};
 
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   &step_id,
@@ -1389,13 +1391,13 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	slurm_get_ip_str(cli, &port, host, sizeof(host));
 	if (req->het_job_id && (req->het_job_id != NO_VAL)) {
-		info("launch task %u+%u.%u (%u.%u) request from UID:%u GID:%u HOST:%s PORT:%hu",
+		info("launch task %u+%u.%u (%ps) request from UID:%u GID:%u HOST:%s PORT:%hu",
 		     req->het_job_id, req->het_job_offset, req->step_id.step_id,
-		     req->step_id.job_id, req->step_id.step_id, req->uid, req->gid,
+		     &req->step_id, req->uid, req->gid,
 		     host, port);
 	} else {
-		info("launch task %u.%u request from UID:%u GID:%u HOST:%s PORT:%hu",
-		     req->step_id.job_id, req->step_id.step_id, req->uid, req->gid,
+		info("launch task %ps request from UID:%u GID:%u HOST:%s PORT:%hu",
+		     &req->step_id, req->uid, req->gid,
 		     host, port);
 	}
 
@@ -1985,6 +1987,7 @@ static int _make_prolog_mem_container(slurm_msg_t *msg)
 			job_limits_list = list_create(xfree_ptr);
 		step_info.step_id.job_id  = req->job_id;
 		step_info.step_id.step_id = SLURM_EXTERN_CONT;
+		step_info.step_id.step_het_comp = NO_VAL;
 		job_limits_ptr = list_find_first(job_limits_list,
 						 _step_limits_match,
 						 &step_info);
@@ -1993,6 +1996,7 @@ static int _make_prolog_mem_container(slurm_msg_t *msg)
 			job_limits_ptr->step_id.job_id   = req->job_id;
 			job_limits_ptr->job_mem  = req->job_mem_limit;
 			job_limits_ptr->step_id.step_id  = SLURM_EXTERN_CONT;
+			job_limits_ptr->step_id.step_het_comp = NO_VAL;
 			job_limits_ptr->step_mem = req->job_mem_limit;
 #if _LIMIT_INFO
 			info("AddLim step:%u.%u job_mem:%"PRIu64""
@@ -2032,6 +2036,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->step_id.job_id      = req->job_id;
 	launch_req->job_mem_lim		= req->job_mem_limit;
 	launch_req->step_id.step_id	= SLURM_EXTERN_CONT;
+	launch_req->step_id.step_het_comp = NO_VAL;
 	launch_req->nnodes		= req->nnodes;
 	launch_req->ntasks		= req->nnodes;
 	launch_req->ofname		= "/dev/null";

@@ -291,17 +291,18 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 	uint64_t apid;
 	uint32_t jobid;
 	uint32_t taskid;
-	uint32_t offset;
+	uint32_t offset = 0;
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
+	else
+		jobid = job->step_id.jobid;
+
+	if (job->het_job_task_offset != NO_VAL)
 		offset = job->het_job_task_offset;
-	} else {
-		jobid = job->step_id.job_id;
-		offset = 0;
-	}
+
 	taskid = offset + job->task[job->envtp->localid]->gtid;
 
 	apid = SLURM_ID_HASH(jobid, job->step_id.step_id);
@@ -638,20 +639,21 @@ static int _check_status_file(stepd_step_rec_t *job,
 	int rv, fd;
 	uint32_t jobid;
 	uint32_t taskid;
-	uint32_t offset;
+	uint32_t offset = 0;
 
 	// We only need to special case termination with exit(0)
 	// srun already handles abnormal exit conditions fine
 	if (!WIFEXITED(task->estatus) || (WEXITSTATUS(task->estatus) != 0))
 		return SLURM_SUCCESS;
 
-	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
+	else
+		jobid = job->step_id.jobid;
+
+	if (job->het_job_task_offset != NO_VAL)
 		offset = job->het_job_task_offset;
-	} else {
-		jobid = job->step_id.job_id;
-		offset = 0;
-	}
+
 	taskid = offset + task->gtid;
 
 	// Get the lli file name

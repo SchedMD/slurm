@@ -163,6 +163,8 @@ _step_connect(const char *directory, const char *nodename,
 
 	xstrfmtcatat(name, &pos, "%s/%s_%u.%u",
 		     directory, nodename, step_id->job_id, step_id->step_id);
+	if (step_id->step_het_comp != NO_VAL)
+		xstrfmtcatat(name, &pos, ".%u", step_id->step_het_comp);
 
 	/*
 	 * If socket name would be truncated, emit error and exit
@@ -318,10 +320,13 @@ slurmstepd_info_t *stepd_get_info(int fd)
 		safe_read(fd, &step_info->nodeid, sizeof(uint32_t));
 		safe_read(fd, &step_info->job_mem_limit, sizeof(uint64_t));
 		safe_read(fd, &step_info->step_mem_limit, sizeof(uint64_t));
+		safe_read(fd, &step_info->step_id.step_het_comp,
+			  sizeof(uint32_t));
 	} else if (step_info->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_read(fd, &step_info->nodeid, sizeof(uint32_t));
 		safe_read(fd, &step_info->job_mem_limit, sizeof(uint64_t));
 		safe_read(fd, &step_info->step_mem_limit, sizeof(uint64_t));
+		step_info->step_id.step_het_comp = NO_VAL;
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, step_info->protocol_version);
@@ -484,6 +489,7 @@ _sockname_regex(regex_t *re, const char *filename, slurm_step_id_t *step_id)
 	size_t nmatch = 5;
 	regmatch_t pmatch[5];
 	char *match;
+	size_t my_size;
 
 	xassert(step_id);
 
@@ -501,6 +507,14 @@ _sockname_regex(regex_t *re, const char *filename, slurm_step_id_t *step_id)
 			(size_t)(pmatch[2].rm_eo - pmatch[2].rm_so));
 	step_id->step_id = slurm_atoul(match);
 	xfree(match);
+
+	/* If we have a size here we have a het_comp */
+	if ((my_size = pmatch[3].rm_eo - pmatch[3].rm_so)) {
+		match = xstrndup(filename + pmatch[3].rm_so, my_size);
+		step_id->step_het_comp = slurm_atoul(match);
+		xfree(match);
+	} else
+		step_id->step_het_comp = NO_VAL;
 
 	return 0;
 }
@@ -563,8 +577,7 @@ stepd_available(const char *directory, const char *nodename)
 		slurm_step_id_t step_id;
 
 		if (!_sockname_regex(&re, ent->d_name, &step_id)) {
-			debug4("found jobid = %u, stepid = %u",
-			       step_id.job_id, step_id.step_id);
+			debug4("found %ps", &step_id);
 			loc = xmalloc(sizeof(step_loc_t));
 			loc->directory = xstrdup(directory);
 			loc->nodename = xstrdup(nodename);

@@ -5672,6 +5672,7 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 		signal_tasks_msg->step_id.step_id = SLURM_BATCH_SCRIPT;
 	else
 		signal_tasks_msg->step_id.step_id = NO_VAL;
+	signal_tasks_msg->step_id.step_het_comp = NO_VAL;
 
 	signal_tasks_msg->flags = flags;
 	signal_tasks_msg->signal = signal;
@@ -13875,6 +13876,7 @@ static void _send_job_kill(job_record_t *job_ptr)
 	kill_job->step_id.job_id = job_ptr->job_id;
 	kill_job->het_job_id = job_ptr->het_job_id;
 	kill_job->step_id.step_id = NO_VAL;
+	kill_job->step_id.step_het_comp = NO_VAL;
 	kill_job->job_state = job_ptr->job_state;
 	kill_job->job_uid   = job_ptr->user_id;
 	kill_job->job_gid   = job_ptr->group_id;
@@ -14272,6 +14274,7 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
 	kill_req->step_id.job_id = job_id;
 	kill_req->step_id.step_id = NO_VAL;
+	kill_req->step_id.step_het_comp = NO_VAL;
 	kill_req->time          = time(NULL);
 	kill_req->nodes		= xstrdup(node_name);
 	if (job_ptr) {  /* NULL if unknown */
@@ -14365,6 +14368,7 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 						     job_ptr->nodes);
 		kill_req->step_id.job_id = job_ptr->job_id;
 		kill_req->step_id.step_id = NO_VAL;
+		kill_req->step_id.step_het_comp = NO_VAL;
 		kill_req->time          = time(NULL);
 		kill_req->nodes		= bitmap2node_name(tmp_node_bitmap);
 		kill_req->het_job_id	= job_ptr->het_job_id;
@@ -14405,6 +14409,7 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 	kill_req->het_job_id	= job_ptr->het_job_id;
 	kill_req->step_id.job_id = job_ptr->job_id;
 	kill_req->step_id.step_id = NO_VAL;
+	kill_req->step_id.step_het_comp = NO_VAL;
 	kill_req->time          = time(NULL);
 	kill_req->start_time	= job_ptr->start_time;
 	kill_req->nodes		= xstrdup(node_ptr->name);
@@ -15331,6 +15336,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 	 * step_id to an impossible number.
 	 */
 	signal_job_msg->step_id.step_id = slurm_conf.max_step_cnt + 1;
+	signal_job_msg->step_id.step_het_comp = NO_VAL;
 
 	/*
 	 * Encode the flags for slurm stepd to know what steps get signaled
@@ -16721,6 +16727,7 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 	memset(timeout_msg, 0, sizeof(srun_timeout_msg_t));
 	timeout_msg->step_id.job_id = time_req_msg->job_id;
 	timeout_msg->step_id.step_id = NO_VAL;
+	timeout_msg->step_id.step_het_comp = NO_VAL;
 	timeout_msg->timeout = job_ptr->end_time;
 	return SLURM_SUCCESS;
 }

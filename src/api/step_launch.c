@@ -169,7 +169,12 @@ static void _rebuild_mpi_layout(slurm_step_ctx_t *ctx,
 {
 	slurm_step_layout_t *new_step_layout, *orig_step_layout;
 
-	ctx->launch_state->mpi_info->het_job_id = params->het_job_id;
+	if (params->het_job_offset == NO_VAL)
+		return;
+
+	if (params->het_job_id && (params->het_job_id != NO_VAL))
+		ctx->launch_state->mpi_info->het_job_id = params->het_job_id;
+
 	ctx->launch_state->mpi_info->het_job_task_offset =
 		params->het_job_task_offset;
 	new_step_layout = xmalloc(sizeof(slurm_step_layout_t));
@@ -232,8 +237,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		return SLURM_ERROR;
 	}
 
-	if (params->het_job_id && (params->het_job_id != NO_VAL))
-		_rebuild_mpi_layout(ctx, params);
+	_rebuild_mpi_layout(ctx, params);
 
 	mpi_env = xmalloc(sizeof(char *));  /* Needed for setenvf used by MPI */
 	if ((ctx->launch_state->mpi_state =

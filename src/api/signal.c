@@ -97,6 +97,7 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 	memset(&rpc, 0, sizeof(rpc));
 	rpc.step_id.job_id = allocation->job_id;
 	rpc.step_id.step_id = SLURM_BATCH_SCRIPT;
+	rpc.step_id.step_het_comp = NO_VAL;
 	rpc.signal = signal;
 	rpc.flags = KILL_JOB_BATCH;
 
@@ -154,6 +155,7 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
 	memset(&rpc, 0, sizeof(rpc));
 	rpc.step_id.job_id = allocation->job_id;
 	rpc.step_id.step_id = SLURM_BATCH_SCRIPT;
+	rpc.step_id.step_het_comp = NO_VAL;
 	rpc.signal = (uint16_t)-1; /* not used by slurmd */
 
 	slurm_msg_t_init(&msg);
@@ -227,6 +229,7 @@ slurm_signal_job (uint32_t job_id, uint16_t signal)
 	memset(&rpc, 0, sizeof(rpc));
 	rpc.step_id.job_id = job_id;
 	rpc.step_id.step_id = NO_VAL;
+	rpc.step_id.step_het_comp = NO_VAL;
 	rpc.signal = signal;
 	rpc.flags = KILL_STEPS_ONLY;
 

@@ -447,7 +447,7 @@ extern int create_apinfo(const stepd_step_rec_t *job)
 	}
 
 	// Get relevant information from job
-	if (job->het_job_id != NO_VAL) {
+	if (job->het_job_offset != NO_VAL) {
 		ntasks = job->het_job_ntasks;
 		ncmds = job->het_job_step_cnt;
 		nnodes = job->het_job_nnodes;

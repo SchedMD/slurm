@@ -753,6 +753,9 @@ typedef struct job_step_specs {
 	uint16_t port;		/* port to contact initiating srun */
 	uint16_t relative;	/* first node to use of job's allocation */
 	uint16_t resv_port_cnt;	/* reserve ports for MPI if set */
+	uint32_t step_het_comp_cnt; /* How many het componets in the step. Used
+				     * for a het step inside a non-het job
+				     * allocation. */
 	char *step_het_grps;	/* what het groups are used by step */
 	slurm_step_id_t step_id;
 	uint32_t srun_pid;	/* PID of srun command, also see host */

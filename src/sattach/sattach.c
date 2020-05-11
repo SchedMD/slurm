@@ -149,6 +149,7 @@ int sattach(int argc, char **argv)
 	/* FIXME: this does not work with hetsteps */
 	step_id.job_id = opt.jobid;
 	step_id.step_id = opt.stepid;
+	step_id.step_het_comp = NO_VAL;
 	layout = slurm_job_step_layout_get(&step_id);
 	if (layout == NULL) {
 		error("Could not get job step info: %m");
@@ -291,6 +292,7 @@ static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
 	memset(&arg, 0, sizeof(slurm_cred_arg_t));
 	arg.step_id.job_id = jobid;
 	arg.step_id.step_id = stepid;
+	arg.step_id.step_het_comp = NO_VAL;
 	arg.uid      = uid;
 
 	arg.job_hostlist  = nodelist;
@@ -403,6 +405,7 @@ static int _attach_to_tasks(uint32_t jobid,
 
 	reattach_msg.step_id.job_id = jobid;
 	reattach_msg.step_id.step_id = stepid;
+	reattach_msg.step_id.step_het_comp = NO_VAL;
 	reattach_msg.num_resp_port = num_resp_ports;
 	reattach_msg.resp_port = resp_ports; /* array of response ports */
 	reattach_msg.num_io_port = num_io_ports;

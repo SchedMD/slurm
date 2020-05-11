@@ -106,8 +106,12 @@ _setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
 
 	memset(&job_info, 0, sizeof(job_info));
 
-	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		job_info.jobid  = job->het_job_id;
+	else
+		job_info.jobid  = job->step_id.job_id;
+
+	if (job->het_job_offset != NO_VAL) {
 		job_info.stepid = job->step_id.step_id;
 		job_info.nnodes = job->het_job_nnodes;
 		job_info.nodeid = job->nodeid + job->het_job_node_offset;
@@ -119,7 +123,6 @@ _setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
 					    job->het_job_task_offset;
 		}
 	} else {
-		job_info.jobid  = job->step_id.job_id;
 		job_info.stepid = job->step_id.step_id;
 		job_info.nnodes = job->nnodes;
 		job_info.nodeid = job->nodeid;
@@ -581,17 +584,14 @@ _setup_srun_job_info(const mpi_plugin_client_info_t *job)
 
 	memset(&job_info, 0, sizeof(job_info));
 
-	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		job_info.jobid  = job->het_job_id;
-		job_info.stepid = job->stepid;
-		job_info.nnodes = job->step_layout->node_cnt;
-		job_info.ntasks = job->step_layout->task_cnt;
-	} else {
+	else
 		job_info.jobid  = job->jobid;
-		job_info.stepid = job->stepid;
-		job_info.nnodes = job->step_layout->node_cnt;
-		job_info.ntasks = job->step_layout->task_cnt;
-	}
+
+	job_info.stepid = job->stepid;
+	job_info.nnodes = job->step_layout->node_cnt;
+	job_info.ntasks = job->step_layout->task_cnt;
 	job_info.nodeid = -1;	/* id in tree. not used. */
 	job_info.ltasks = 0;	/* not used */
 	job_info.gtids = NULL;	/* not used */

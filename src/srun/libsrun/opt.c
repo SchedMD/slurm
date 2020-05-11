@@ -97,6 +97,7 @@ int	pass_number = 0;
 time_t	srun_begin_time = 0;
 bool	tres_bind_err_log = true;
 bool	tres_freq_err_log = true;
+bool local_het_step = false;
 
 /*---- forward declarations of static variables and functions  ----*/
 

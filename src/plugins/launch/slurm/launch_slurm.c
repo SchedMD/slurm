@@ -293,11 +293,12 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 	}
 
 	task_state = task_state_find(msg->step_id.job_id,
-				     msg->step_id.step_id, NO_VAL,
+				     msg->step_id.step_id,
+				     msg->step_id.step_het_comp,
 				     task_state_list);
 	if (!task_state) {
-		error("%s: Could not locate task state for step %u.%u",
-		      __func__, msg->step_id.job_id, msg->step_id.step_id);
+		error("%s: Could not locate task state for step %ps",
+		      __func__, &msg->step_id);
 	}
 	for (i = 0; i < msg->count_of_pids; i++) {
 		local_task_id = msg->task_ids[i];
@@ -342,7 +343,10 @@ static void _task_finish(task_exit_msg_t *msg)
 	iter = list_iterator_create(local_job_list);
 	while ((my_srun_job = (srun_job_t *) list_next(iter))) {
 		if ((my_srun_job->step_id.job_id  == msg->step_id.job_id) &&
-		    (my_srun_job->step_id.step_id == msg->step_id.step_id))
+		    (my_srun_job->step_id.step_id == msg->step_id.step_id) &&
+		    ((msg->step_id.step_het_comp == NO_VAL) ||
+		     (my_srun_job->het_job_offset ==
+		      msg->step_id.step_het_comp)))
 			break;
 	}
 	list_iterator_destroy(iter);
@@ -451,7 +455,8 @@ static void _task_finish(task_exit_msg_t *msg)
 	xfree(hosts);
 
 	task_state = task_state_find(msg->step_id.job_id,
-				     msg->step_id.step_id, NO_VAL,
+				     msg->step_id.step_id,
+				     msg->step_id.step_het_comp,
 				     task_state_list);
 	if (task_state) {
 		_update_task_exit_state(task_state, msg->num_tasks,

@@ -534,6 +534,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->ntasks  = msg->ntasks;
 	job->step_id.job_id   = msg->job_id;
 	job->step_id.step_id  = msg->step_id;
+	job->step_id.step_het_comp  = NO_VAL;
 	job->array_job_id  = msg->array_job_id;
 	job->array_task_id = msg->array_task_id;
 	job->het_job_step_cnt = NO_VAL;

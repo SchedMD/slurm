@@ -190,7 +190,7 @@ _create_socket(const char *name)
 
 static int
 _domain_socket_create(const char *dir, const char *nodename,
-		     uint32_t jobid, uint32_t stepid)
+		      slurm_step_id_t *step_id)
 {
 	int fd;
 	char *name = NULL;
@@ -210,7 +210,11 @@ _domain_socket_create(const char *dir, const char *nodename,
 	/*
 	 * Now build the name of socket, and create the socket.
 	 */
-	xstrfmtcat(name, "%s/%s_%u.%u", dir, nodename, jobid, stepid);
+	xstrfmtcat(name, "%s/%s_%u.%u", dir, nodename, step_id->job_id,
+		   step_id->step_id);
+
+	if (step_id->step_het_comp != NO_VAL)
+		xstrfmtcat(name, ".%u", step_id->step_het_comp);
 
 	/*
 	 * First check to see if the named socket already exists.
@@ -221,8 +225,8 @@ _domain_socket_create(const char *dir, const char *nodename,
 		 * and recreate it.
 		 */
 		if (unlink(name) != 0) {
-			error("%s: failed unlink(%s) job %u step %u %m",
-			      __func__, name, jobid, stepid);
+			error("%s: failed unlink(%s): %m",
+			      __func__, name);
 			xfree(name);
 			errno = ESLURMD_STEP_EXISTS;
 			return -1;
@@ -297,7 +301,7 @@ msg_thr_create(stepd_step_rec_t *job)
 	eio_obj_t *eio_obj;
 	errno = 0;
 	fd = _domain_socket_create(conf->spooldir, conf->node_name,
-				   job->step_id.job_id, job->step_id.step_id);
+				   &job->step_id);
 	if (fd == -1)
 		return SLURM_ERROR;
 
@@ -619,6 +623,7 @@ _handle_info(int fd, stepd_step_rec_t *job)
 	safe_write(fd, &job->nodeid, sizeof(uint32_t));
 	safe_write(fd, &job->job_mem, sizeof(uint64_t));
 	safe_write(fd, &job->step_mem, sizeof(uint64_t));
+	safe_write(fd, &job->step_id.step_het_comp, sizeof(uint32_t));
 
 	return SLURM_SUCCESS;
 rwfail:
