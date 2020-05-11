@@ -72,6 +72,10 @@ extern slurm_step_layout_t *fake_slurm_step_layout_create(
 extern slurm_step_layout_t *slurm_step_layout_copy(
 	slurm_step_layout_t *step_layout);
 
+/* merge step_layout2 into step_layout1 */
+extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
+				    slurm_step_layout_t *step_layout2);
+
 /* pack and unpack structure */
 extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 				   Buf buffer, uint16_t protocol_version);
