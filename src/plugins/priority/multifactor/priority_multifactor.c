@@ -2033,7 +2033,7 @@ extern int decay_apply_weighted_factors(job_record_t *job_ptr,
 
 extern void set_priority_factors(time_t start_time, job_record_t *job_ptr)
 {
-	slurmdb_qos_rec_t *qos_ptr = NULL;
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .qos = READ_LOCK };
 
 	xassert(job_ptr);
 
@@ -2046,8 +2046,6 @@ extern void set_priority_factors(time_t start_time, job_record_t *job_ptr)
 		memset(job_ptr->prio_factors, 0,
 		       sizeof(priority_factors_object_t));
 	}
-
-	qos_ptr = job_ptr->qos_ptr;
 
 	if (weight_age && job_ptr->details->accrue_time) {
 		uint32_t diff = 0;
@@ -2147,18 +2145,20 @@ extern void set_priority_factors(time_t start_time, job_record_t *job_ptr)
 
 	job_ptr->prio_factors->priority_site = job_ptr->site_factor;
 
+	assoc_mgr_lock(&locks);
 	if (job_ptr->assoc_ptr && weight_assoc)
 		job_ptr->prio_factors->priority_assoc =
 			(flags & PRIORITY_FLAGS_NO_NORMAL_ASSOC) ?
 			job_ptr->assoc_ptr->priority :
 			job_ptr->assoc_ptr->usage->priority_norm;
 
-	if (qos_ptr && qos_ptr->priority && weight_qos) {
+	if (job_ptr->qos_ptr && job_ptr->qos_ptr->priority && weight_qos) {
 		job_ptr->prio_factors->priority_qos =
 			(flags & PRIORITY_FLAGS_NO_NORMAL_QOS) ?
-			qos_ptr->priority :
-			qos_ptr->usage->norm_priority;
+			job_ptr->qos_ptr->priority :
+			job_ptr->qos_ptr->usage->norm_priority;
 	}
+	assoc_mgr_unlock(&locks);
 
 	if (job_ptr->details)
 		job_ptr->prio_factors->nice = job_ptr->details->nice;
