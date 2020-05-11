@@ -36,7 +36,6 @@
 source ./globals
 
 set test_id     "15.7"
-set exit_code   0
 set job_id      0
 
 set cpu_cnt     1
@@ -45,6 +44,53 @@ set tmp_size    2
 set matches     0
 
 print_header $test_id
+
+proc end_it {exit_code} {
+	global job_id test_id
+
+	if {$job_id} {
+		cancel_job $job_id
+	}
+
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+proc sbatch_mem_error {arg} {
+	global sbatch test_id number global_exit_code job_id
+
+	set matches 0
+	set job_id 0
+
+	set cmd "$sbatch -Jtest$test_id --wrap=hostname $arg"
+	set sbatch_pid [spawn {*}$cmd]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+		}
+		"sbatch: error: Invalid" {
+			incr matches
+		}
+		timeout {
+			log_error "FAILURE: sbatch not responding"
+			slow_kill $sbatch_pid
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id} {
+		log_error "job shouldn't have submitted (cmd:$cmd)"
+		end_it 1
+	}
+	if {$matches != 1} {
+		log_error "job should have errored with arg '$arg'"
+		end_it 1
+	}
+}
 
 #
 # Spawn a salloc job with constraints
@@ -56,16 +102,12 @@ expect {
 	}
 	-re "uid=" {
 		send_user "\nFAILURE: salloc --hold option ineffective\n"
-		set exit_code 1
-		exp_continue
+		end_it 1
 	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
 		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -120,7 +162,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -128,12 +170,19 @@ expect {
 }
 if {$matches != 5} {
 	send_user "\nFAILURE: Did not get constraints ($matches of 5)\n"
-	set exit_code 1
+	end_it 1
 }
 if {[cancel_job $job_id] != 0} {
-	set exit_code 1
+	end_it 1
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
-exit $exit_code
+
+sbatch_mem_error "--mem="
+sbatch_mem_error "--mem=1gggggg"
+sbatch_mem_error "--mem=memory"
+sbatch_mem_error "--mem=-1"
+sbatch_mem_error "--mem-per-cpu="
+sbatch_mem_error "--mem-per-cpu=1gggggg"
+sbatch_mem_error "--mem-per-cpu=memory"
+sbatch_mem_error "--mem-per-cpu=-1"
+
+end_it 0
