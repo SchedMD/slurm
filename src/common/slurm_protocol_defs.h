@@ -1370,6 +1370,10 @@ extern int slurm_find_char_in_list(void *x, void *key);
 extern int slurm_sort_char_list_asc(void *, void *);
 extern int slurm_sort_char_list_desc(void *, void *);
 
+extern resource_allocation_response_msg_t *
+slurm_copy_resource_allocation_response_msg(
+	resource_allocation_response_msg_t *msg);
+
 /* free message functions */
 extern void slurm_free_dep_msg(dep_msg_t *msg);
 extern void slurm_free_dep_update_origin_msg(dep_update_origin_msg_t *msg);

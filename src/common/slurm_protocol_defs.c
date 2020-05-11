@@ -766,6 +766,50 @@ extern int slurm_sort_char_list_desc(void *v1, void *v2)
 	return 0;
 }
 
+extern resource_allocation_response_msg_t *
+slurm_copy_resource_allocation_response_msg(
+	resource_allocation_response_msg_t *msg)
+{
+	resource_allocation_response_msg_t *new;
+
+	if (!msg)
+		return NULL;
+
+	new = xmalloc(sizeof(*msg));
+
+	memcpy(new, msg, sizeof(*msg));
+	new->account = xstrdup(msg->account);
+	new->alias_list = xstrdup(msg->alias_list);
+
+	if (msg->cpus_per_node) {
+		new->cpus_per_node = xcalloc(new->num_cpu_groups,
+					     sizeof(*new->cpus_per_node));
+		memcpy(new->cpus_per_node, msg->cpus_per_node,
+		       new->num_cpu_groups * sizeof(*new->cpus_per_node));
+	}
+
+	if (msg->cpu_count_reps) {
+		new->cpu_count_reps = xcalloc(new->num_cpu_groups,
+					      sizeof(*new->cpu_count_reps));
+		memcpy(new->cpu_count_reps, msg->cpu_count_reps,
+		       new->num_cpu_groups * sizeof(*new->cpu_count_reps));
+	}
+
+	new->environment = env_array_copy((const char **)msg->environment);
+	new->job_submit_user_msg = xstrdup(msg->job_submit_user_msg);
+	if (msg->node_addr) {
+		new->node_addr = xmalloc(sizeof(*new->node_addr));
+		memcpy(new->node_addr, msg->node_addr, sizeof(*new->node_addr));
+	}
+	new->node_list = xstrdup(msg->node_list);
+	new->partition = xstrdup(msg->partition);
+	new->qos = xstrdup(msg->qos);
+	new->resv_name = xstrdup(msg->resv_name);
+	new->working_cluster_rec = NULL;
+	return new;
+}
+
+
 extern void slurm_free_last_update_msg(last_update_msg_t * msg)
 {
 	xfree(msg);
