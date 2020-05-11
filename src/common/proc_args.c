@@ -470,20 +470,26 @@ static uint64_t _str_to_mbytes(const char *arg, int use_gbytes)
 	result = strtoll(arg, &endptr, 10);
 	if ((errno != 0) && ((result == LLONG_MIN) || (result == LLONG_MAX)))
 		return NO_VAL64;
-	if (result < 0)
+	if (arg == endptr)
 		return NO_VAL64;
 
+	if (result < 0)
+		return NO_VAL64;
 	else if ((endptr[0] == '\0') && (use_gbytes == 1))  /* GB default */
 		result *= 1024;
 	else if (endptr[0] == '\0')	/* MB default */
 		;
-	else if ((endptr[0] == 'k') || (endptr[0] == 'K'))
+	else if (((endptr[0] == 'k') || (endptr[0] == 'K')) &&
+	         (endptr[1] == '\0'))
 		result = (result + 1023) / 1024;	/* round up */
-	else if ((endptr[0] == 'm') || (endptr[0] == 'M'))
+	else if (((endptr[0] == 'm') || (endptr[0] == 'M')) &&
+	         (endptr[1] == '\0'))
 		;
-	else if ((endptr[0] == 'g') || (endptr[0] == 'G'))
+	else if (((endptr[0] == 'g') || (endptr[0] == 'G')) &&
+	         (endptr[1] == '\0'))
 		result *= 1024;
-	else if ((endptr[0] == 't') || (endptr[0] == 'T'))
+	else if (((endptr[0] == 't') || (endptr[0] == 'T')) &&
+	         (endptr[1] == '\0'))
 		result *= (1024 * 1024);
 	else
 		return NO_VAL64;
