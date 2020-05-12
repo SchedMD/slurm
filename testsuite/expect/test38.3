@@ -106,10 +106,6 @@ proc cleanup { } {
 proc end_it { exit_code } {
 	global test_id
 	cancel_all_jobs
-	if {$exit_code == 0} {
-		cleanup
-		print_success $test_id
-	}
 	exit $exit_code
 }
 

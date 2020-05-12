@@ -40,13 +40,8 @@ set job_id           0
 print_header $test_id
 
 proc end_it {} {
-	global exit_code test_id
+	global exit_code
 
-	if {$exit_code == 0} {
-		print_success $test_id
-	} else {
-		print_failure $test_id
-	}
 	exit $exit_code
 }
 

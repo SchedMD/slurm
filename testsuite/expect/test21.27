@@ -296,9 +296,7 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	print_success $test_id
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE\n"
 }
 exit $exit_code

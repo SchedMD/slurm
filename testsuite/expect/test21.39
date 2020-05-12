@@ -115,9 +115,6 @@ proc endit { exit_code } {
 
 	if {$exit_code == 0} {
 		cleanup_accounts
-		print_success $test_id
-	} else {
-		print_failure $test_id
 	}
 	exit $exit_code
 }

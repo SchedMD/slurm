@@ -457,7 +457,6 @@ incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 
 if {$exit_code == 0} {
    	exec $bin_rm -f $file_out4
-	print_success $test_id
 } else {
 	send_user "\nFAILURE\n"
 }

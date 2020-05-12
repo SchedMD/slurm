@@ -929,9 +929,7 @@ exec $bin_rm -f $file_in
 exec $bin_rm -f $file_in2
 exec $bin_rm -f $file_in3
 
-if {$exit_code == 0} {
-	print_success $test_id
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE\n"
 }
 exit $exit_code

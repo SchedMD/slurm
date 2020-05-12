@@ -65,6 +65,5 @@ if {$pack_job_id != 0} {
 	set exit_code 1
 } else {
 	send_user "\nNo worries. This error is expected\n"
-	print_success $test_id
 }
 exit $exit_code

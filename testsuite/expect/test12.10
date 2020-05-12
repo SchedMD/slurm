@@ -2539,10 +2539,7 @@ log_info "QeC      : $QeC"
 log_info "TestCases: $ntest"
 log_info "Failures : $failures"
 
-if {$failures == 0} {
-	print_success $test_id
-} else {
-	print_failure $test_id
+if {$failures != 0} {
 	set exit_code 1
 }
 exit $exit_code

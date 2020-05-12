@@ -481,8 +481,5 @@ if {[_get_file_size $sacct] != 0} {
 
 if {$exit_code == 0} {
 	exec rm -f $file_prog $file_in $file_out $file_err $file_name
-	print_success $test_id
-} else {
-	print_failure $test_id
 }
 exit $exit_code

@@ -257,9 +257,7 @@ if { ![check_acct_associations] } {
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	print_success $test_id
-		} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE\n"
 		}
 

@@ -87,8 +87,4 @@ if {$slurmdbd_conf_matches != 2} {
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	print_success $test_id
-}
-
 exit $exit_code

@@ -274,9 +274,4 @@ exec $bin_rm -f $file_in $file_out $file_prog
 #
 # Final results
 #
-if {!$exit_code} {
-	print_success $test_id
-} else {
-	print_failure $test_id
-}
 exit $exit_code

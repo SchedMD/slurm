@@ -99,9 +99,6 @@ proc end_it { exit_code } {
 	restore_conf $config_file
 	reconfigure
 
-	if {$exit_code == 0} {
-		print_success $test_id
-	}
 	exit $exit_code
 }
 

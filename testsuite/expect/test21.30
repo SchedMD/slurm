@@ -298,9 +298,7 @@ proc endit { } {
 		}
 	}
 
-	if {$exit_code == 0} {
-		print_success $test_id
-	} else {
+	if {$exit_code != 0} {
 		send_user "\nFAILURE: test $test_id\n"
 	}
 

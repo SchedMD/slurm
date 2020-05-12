@@ -174,9 +174,6 @@ proc cleanup { } {
 proc end_it { exit_code } {
 	global test_id my_squeue
 	cleanup
-	if {$exit_code == 0} {
-		print_success $test_id
-	}
 	exit $exit_code
 }
 

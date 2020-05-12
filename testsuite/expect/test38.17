@@ -44,9 +44,6 @@ proc end_it { exit_code } {
 		exec $scancel $job_id
 	}
 	exec $bin_rm -f $file_in1 $file_in2 $file_in3
-	if {$exit_code == 0} {
-		print_success $test_id
-	}
 	exit $exit_code
 }
 

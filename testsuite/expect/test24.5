@@ -68,9 +68,6 @@ proc end_it { exit_code } {
 		cancel_job $jobid2
 	}
 
-	if {$exit_code == 0} {
-		print_success $test_id
-	}
 	exit $exit_code
 }
 

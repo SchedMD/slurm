@@ -240,9 +240,7 @@ incr exit_code [remove_acct "$tc1,$tc2" "$ta1,$ta2,$ta3"]
 incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
 incr exit_code [remove_cluster "$tc1,$tc2"]
 
-if {$exit_code == 0} {
-	print_success $test_id
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE\n"
 }
 exit $exit_code

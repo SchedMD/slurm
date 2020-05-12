@@ -289,9 +289,4 @@ if {$damatches != 1} {
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	print_success $test_id
-} else {
-	print_failure $test_id
-}
 exit $exit_code

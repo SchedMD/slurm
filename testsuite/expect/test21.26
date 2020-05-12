@@ -573,9 +573,7 @@ if {$matches != 6} {
 # This is the end below here
 #
 incr exit_code [end_test]
-if {$exit_code == 0} {
-	print_success $test_id
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE: $test_id\n"
 }
 exit $exit_code
