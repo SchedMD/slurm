@@ -100,7 +100,7 @@ jobacct_gather_cgroup_memory_fini(void)
 	/*
 	 * Move the slurmstepd back to the root memory cg and force empty
 	 * the step cgroup to move its allocated pages to its parent.
-	 * The release_agent will asynchroneously be called for the step
+	 * The release_agent will be called asynchronously for the step
 	 * cgroup. It will do the necessary cleanup.
 	 * It should be good if this force_empty mech could be done directly
 	 * by the memcg implementation at the end of the last task managed
