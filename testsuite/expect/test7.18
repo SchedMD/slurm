@@ -62,7 +62,6 @@ expect {
 
 if { $exit_code == 0 } {
 	file delete $test_prog
-	send_user "\nSUCCESS\n"
 } else {
 	send_user "\nFAILURE: One or more hosts weren't found.\n"
 }

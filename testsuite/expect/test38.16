@@ -241,5 +241,4 @@ if {$matches != 2} {
 }
 
 exec $bin_rm -f $file_in $file_out
-send_user "\nSUCCESS\n"
 end_it 0

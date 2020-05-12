@@ -118,7 +118,6 @@ if {$error_match != 2} {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $file_out $script $file_c
 }
 exit $exit_code

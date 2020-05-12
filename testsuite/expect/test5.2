@@ -65,7 +65,4 @@ if {$matches != 2} {
 	send_user "\nFAILURE: squeue failed to report help message\n"
 	set exit_code 1
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

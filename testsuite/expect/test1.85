@@ -170,5 +170,3 @@ if {[ string compare $host2 $hostname] != 0} {
 	send_user "\nFAILURE: The execution hostname $hostname != $host2 requested hostname.\n"
 	exit 1
 }
-
-send_user "\nSUCCESS\n"

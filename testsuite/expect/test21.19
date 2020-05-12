@@ -235,9 +235,7 @@ incr exit_code [remove_user "" "" "$us1,$us2,$us3"]
 incr exit_code [remove_acct "" "$nm1,$nm2,$nm3"]
 incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE\n"
 }
 exit $exit_code

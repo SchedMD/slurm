@@ -115,8 +115,7 @@ proc _get_mem {prog} {
 			   $prog $diff_mem $mem_size $mem_used]
 		return 1
 	} else {
-		log_info [format "SUCCESS: %s memory use discrepancy of %s KB" \
-			  $prog $error_mem]
+		log_info [format "%s memory use discrepancy of %s KB" $prog $error_mem]
 	}
 	return 0
 }
@@ -207,7 +206,7 @@ proc _get_file_size {prog} {
 		return 1
 	}
 
-	log_info [format "SUCCESS: %s reported correct written and read file size (file_size:%s MB max_disk_write:%s MB max_disk_read:%s MB)" \
+	log_info [format "%s reported correct written and read file size (file_size:%s MB max_disk_write:%s MB max_disk_read:%s MB)" \
 		  $prog $mb_file_size $max_disk_write $max_disk_read]
 
 	return 0
@@ -409,7 +408,7 @@ if {$error_time > $max_time_error} {
 		   $error_time $sleep_time $elapsed_time]
 	set exit_code 1
 } else {
-	log_info "SUCCESS: sacct elapsed time discrepancy of $error_time secs"
+	log_info "sacct elapsed time discrepancy of $error_time secs"
 }
 
 set total_cpu 0
@@ -438,7 +437,7 @@ if {$total_cpu > $sleep_time} {
 		   $total_cpu $sleep_time]
 	set exit_code 1
 } else {
-	log_info [format "SUCCESS: sacct TotalCPU time looks reasonable (%s seconds)" \
+	log_info [format "sacct TotalCPU time looks reasonable (%s seconds)" \
 		  $total_cpu]
 }
 
@@ -468,7 +467,7 @@ if {$min_cpu > $sleep_time} {
 		   $min_cpu $sleep_time]
 	set exit_code 1
 } else {
-	log_info "SUCCESS: sacct MinCPU time looks reasonable ($min_cpu seconds)"
+	log_info "sacct MinCPU time looks reasonable ($min_cpu seconds)"
 }
 
 if {[_get_mem $sacct] != 0} {

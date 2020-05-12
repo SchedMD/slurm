@@ -277,5 +277,4 @@ expect {
 	}
 }
 
-send_user "\nSUCCESS\n"
 end_it 0

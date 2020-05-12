@@ -70,7 +70,4 @@ if {$matches < $target_matches} {
 	send_user "\nFAILURE: srun failed to report help message ($matches of $target_matches)\n"
 	set exit_code 1
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

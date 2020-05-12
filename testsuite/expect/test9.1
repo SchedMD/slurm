@@ -114,7 +114,6 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
-	send_user "\nSUCCESS\n"
 } else {
 	send_user "\nFAILURE: Only $success_cnt of $cycle_count"
 	send_user " copy tests passed\n"

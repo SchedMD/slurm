@@ -261,7 +261,4 @@ if {$matches != 10} {
 	send_user "\nFAILURE: sinfo partition long format error\n"
 	set exit_code 1
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

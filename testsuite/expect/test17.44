@@ -123,7 +123,6 @@ for {set task_id 1} {$task_id <= $tasks} {incr task_id} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $script1 $script2
-	send_user "\nSUCCESS\n"
 } else {
 	cancel_job $job_id1
 	cancel_job $job_id2

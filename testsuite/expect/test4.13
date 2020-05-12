@@ -244,9 +244,7 @@ foreach option [array names part_sinfo_vals] {
 
 cleanup
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE\n"
 }
 

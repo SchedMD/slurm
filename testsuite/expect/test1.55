@@ -138,7 +138,6 @@ expect {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $test_script
 	exit 0
 } else {

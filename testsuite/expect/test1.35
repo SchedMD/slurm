@@ -160,7 +160,6 @@ if {$step_cnt != $steps_started} {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $file_in $file_out $file_err
 }
 exit $exit_code

@@ -286,7 +286,6 @@ core_spec_job 1 $first_node [expr $core_cnt + 5] -1
 core_spec_job 1 $first_node [expr $core_cnt + 7] -1
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $file_in $file_out $spec_in
 }
 exit $exit_code

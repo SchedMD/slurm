@@ -113,8 +113,6 @@ expect {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-        exec $bin_rm -f $file_prog_get
-
+	exec $bin_rm -f $file_prog_get
 }
 exit $exit_code

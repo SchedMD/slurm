@@ -260,6 +260,5 @@ if {[file exists $file_flag_2]} {
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
 	exec $bin_rm -f $file_flag_1 $file_flag_2 $file_flag_3 $file_flag_4
-	send_user "\nSUCCESS\n"
 }
 exit $exit_code

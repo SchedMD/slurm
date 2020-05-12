@@ -252,9 +252,6 @@ set partition [default_partition]
 set node_count [get_node_cnt_in_part $partition]
 if { $node_count < 2 } {
 	send_user "WARNING: Insufficient nodes in default partition to continue ($node_count < 2)\n"
-	if {$exit_code == 0} {
-		send_user "\nSUCCESS\n"
-	}
 	exit $exit_code
 }
 
@@ -338,7 +335,4 @@ if {$dup_host == 1} {
 	set exit_code   1
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

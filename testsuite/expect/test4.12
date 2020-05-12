@@ -419,8 +419,4 @@ if {!$exit_code && $smallest != $inode_procs} {
 	sleep 1
 	set exit_code [allocate_and_quit $inode_name $inode_procs $inode_procs]
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
-	exit $exit_code
-}
+exit $exit_code

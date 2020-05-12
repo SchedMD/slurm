@@ -131,8 +131,4 @@ lappend check_hosts_list $host_0_name $host_1_name $host_2_name
 
 set exit_code [check_hosts_contiguous $partition $check_hosts_list]
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
-
 exit $exit_code

@@ -111,9 +111,7 @@ set exit_code [check_qos_limits $qos_name [array get qos]]
 # Next is clean up and the end
 incr exit_code [remove_qos "$qos_name"]
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE\n"
 }
 exit $exit_code

@@ -180,6 +180,5 @@ if {$max_node_val > $max_nodes} {
 #
 if {$exit_code == 0} {
 	exec $bin_rm -f $env_valu_stdout $file_in
-	send_user "\nSUCCESS\n"
 }
 exit $exit_code

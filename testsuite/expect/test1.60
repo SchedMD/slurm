@@ -207,7 +207,4 @@ for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 #
 # Post-processing
 #
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

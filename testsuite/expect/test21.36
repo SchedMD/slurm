@@ -63,9 +63,7 @@ proc endit { } {
 	global exit_code bin_rm sql_query sql_query_rem
 	cleanup
 
-	if {$exit_code == 0} {
-		send_user "\nSUCCESS\n"
-	} else {
+	if {$exit_code != 0} {
 		send_user "\nFAILURE\n"
 	}
 

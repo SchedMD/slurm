@@ -76,9 +76,7 @@ if {[string compare $control_machine $lsid_control_machine]} {
 	set exit_code 1
 }
 
-if {!$exit_code} {
-	send_user "\nSUCCESS\n"
-} else {
+if {$exit_code} {
 	send_user "\nFAILURE\n"
 }
 

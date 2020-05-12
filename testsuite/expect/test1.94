@@ -190,7 +190,6 @@ if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
 	exec $bin_rm -f $master_prog ${master_prog}.o
 	exec $bin_rm -f $slave_prog  ${slave_prog}.o
-	send_user "\nSUCCESS\n"
 } else {
 	set matches 0
 	spawn head $file_err

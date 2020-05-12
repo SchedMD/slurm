@@ -239,6 +239,5 @@ expect {
 
 if {$exit_code == 0} {
 	exec rm -f $file_prog $file_in $file_out
-	send_user "\nSUCCESS\n"
 }
 exit $exit_code

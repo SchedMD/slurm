@@ -80,7 +80,4 @@ if {$got_job_grps == 0} {
 	exit 1
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

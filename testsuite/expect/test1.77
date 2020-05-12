@@ -72,7 +72,6 @@ if  {$found != 1} {
 	send_user "\nFAILURE: COULD NOT FIND SLURM_JOB_NAME=banana\n"
 	exit 1
 }
-send_user "SUCCESS\n"
 
 #
 # Tests -J using sbatch
@@ -112,7 +111,6 @@ if {$found != 1} {
 }
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_out
-	send_user "SUCCESS\n"
 }
 exec rm -f slurm-$job_id.out
 
@@ -140,5 +138,4 @@ if  {$found != 1} {
 	exit 1
 }
 exec rm -f $file_in
-send_user "SUCCESS\n"
 exit $exit_code

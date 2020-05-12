@@ -299,8 +299,4 @@ if {$match != 1} {
 # Delete test partitions
 delete_part
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
-
 exit $exit_code

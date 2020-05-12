@@ -113,7 +113,6 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 exec $bin_rm -f $file_in $file_out $file_err
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $file_err $file_in $file_out
 } else {
 	send_user "\nFAILURE\n"

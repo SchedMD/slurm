@@ -201,8 +201,6 @@ check_pre " "
 
 remove_qos $qos_names_str
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE\n"
 }

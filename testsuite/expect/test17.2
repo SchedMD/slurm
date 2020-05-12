@@ -64,7 +64,4 @@ if {$matches != 2} {
 	send_user "\nFAILURE: sbatch failed to report help message ($matches != 2)\n"
 	set exit_code 1
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

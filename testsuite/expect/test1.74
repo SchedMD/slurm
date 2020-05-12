@@ -314,9 +314,7 @@ srun_test [expr $node_cnt - 2] $acct_c2
 
 cleanup
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE\n"
 }
 exit $exit_code

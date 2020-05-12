@@ -165,7 +165,4 @@ if {$validate_new_priority && ($read_priority != $new_prio)} {
 if {[cancel_job $job_id] != 0} {
 	set exit_code 1
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

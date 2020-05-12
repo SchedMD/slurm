@@ -162,7 +162,4 @@ cancel_job $fast_id
 cancel_job $slow_id
 cancel_job $dep_id
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

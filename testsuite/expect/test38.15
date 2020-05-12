@@ -167,5 +167,4 @@ expect {
 }
 
 exec $bin_rm -f $file_in
-send_user "\nSUCCESS\n"
 end_it 0

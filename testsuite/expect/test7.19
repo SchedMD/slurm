@@ -218,6 +218,4 @@ if { [test_srun 1] } {
 #cleanup
 exec $bin_rm $file_in
 
-send_user "\nSUCCESS\n"
-
 exit 0

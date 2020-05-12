@@ -126,7 +126,4 @@ if {$not_support != 0} {
 	exit 0
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

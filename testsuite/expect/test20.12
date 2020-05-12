@@ -165,5 +165,4 @@ set var2_name "${var1_name}_2"
 run_qsub $var1_name "another_value" $var2_name $variable2_value \
          "-V -v $var1_name=another_value" "#SBATCH --export=NONE"
 
-send_user "\nSUCCESS\n"
 exit 0

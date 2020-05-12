@@ -133,5 +133,4 @@ check $pack_job_id+2 7 1
 check $pack_job_id+1 6 1
 check $pack_job_id+0 5 1
 
-send_user "\nSUCCESS\n"
 end_it 0

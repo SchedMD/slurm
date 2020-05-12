@@ -391,7 +391,6 @@ if {$nerr != 0} {
 	send_user "\n\nFAILURE: $nerr test cases failed.\n"
 	set exit_code 1
 } else {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $wd/test1.76.out
 }
 exit $exit_code

@@ -113,6 +113,5 @@ if {$match != 1} {
 cancel_job $job_id
 if {$exit_code == 0} {
 	file delete $file_script
-	send_user "\nSUCCESS\n"
 }
 exit $exit_code

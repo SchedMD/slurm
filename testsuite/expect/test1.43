@@ -78,7 +78,4 @@ if {$jobs_run == 0} {
 	send_user "\nError expected. No worries.\n"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

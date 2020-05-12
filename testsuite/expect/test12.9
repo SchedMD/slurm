@@ -168,5 +168,4 @@ run_sacct "$array1_job_id,$array2_job_id\_3" [expr $expected_steps * 6] $expecte
 # Now test sacct one task from the first array and the second full
 run_sacct "$array1_job_id\_2,$array2_job_id" $expected_steps [expr $expected_steps * 6]
 
-send_user "\nSUCCESS\n"
 exit $exit_code

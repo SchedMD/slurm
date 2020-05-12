@@ -277,9 +277,7 @@ if {[check_resource_limits $sr3 [array get resource2_chck]] == 1} {
 incr exit_code [remove_res $sr2,$sr3]
 incr exit_code [remove_cluster $tc2]
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE\n"
 }
 exit $exit_code

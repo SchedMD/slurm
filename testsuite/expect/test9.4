@@ -153,9 +153,7 @@ for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
 	exec $bin_rm -f $file_in_glob $file_out_glob
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE: Only $success_cnt of "
 	send_user "[expr $cycle_count * $task_cnt] task I/O tests passed\n"
 }

@@ -278,9 +278,7 @@ if {$cpu_l_cnt == $cpu_h_cnt} {
 		each with different cpu counts -- finishing test now."
 
 	exec $bin_rm -fr $script
-	if {$exit_code == 0} {
-		send_user "\nSUCCESS\n"
-	} else {
+	if {$exit_code != 0} {
 		send_user "\nFAILURE\n"
 	}
 	exit $exit_code
@@ -384,9 +382,7 @@ expect {
 }
 
 exec $bin_rm -fr $script
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE\n"
 }
 

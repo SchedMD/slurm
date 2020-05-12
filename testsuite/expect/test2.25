@@ -334,7 +334,4 @@ if {[test_using_slurmdbd]} {
 	}
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

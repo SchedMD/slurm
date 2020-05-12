@@ -65,9 +65,6 @@ proc end_it {code} {
 		cancel_job $job_id2
 	}
 	exec $bin_rm -f slurm-$job_id1.sh $test_id.sh
-	if {$code == 0} {
-		send_user "\nSUCCESS\n"
-	}
 	exit $code
 }
 

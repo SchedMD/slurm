@@ -200,7 +200,6 @@ if {$fail_match != 1} {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	file delete $test_prog
 }
 exit $exit_code

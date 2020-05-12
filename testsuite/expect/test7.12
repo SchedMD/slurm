@@ -147,6 +147,5 @@ if {$job_matches != 1} {
 cancel_job $job_id
 if {$exit_code == 0} {
 	file delete $file_in $test_prog
-	send_user "\nSUCCESS\n"
 }
 exit $exit_code

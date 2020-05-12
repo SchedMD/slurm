@@ -91,7 +91,4 @@ if {$matches != 6} {
 	send_user "\nFAILURE: sacctmgr show stats response bad ($matches != 6).\n"
 	set exit_code 1
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

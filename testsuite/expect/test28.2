@@ -217,7 +217,6 @@ for {set index 0} {$index < $array_end} {incr index} {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	delete_file
 } else {
 	send_user "\nFAILURE\n"

@@ -210,9 +210,7 @@ expect {
 }
 
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE\n"
 }
 exit $exit_code

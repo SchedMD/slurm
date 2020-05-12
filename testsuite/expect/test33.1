@@ -196,7 +196,6 @@ if {$cfgok != $cfgcount} {
 	send_user "\n\nFAILURE\n"
 	set exit_code 1
 } else {
-	send_user "\nSUCCESS\n"
 	file delete $test_prog
 }
 exit $exit_code

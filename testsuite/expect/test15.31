@@ -43,9 +43,7 @@ print_header $test_id
 proc endit { } {
 	global exit_code
 	reconfigure
-	if {$exit_code == 0} {
-		send_user "\nSUCCESS\n"
-	} else {
+	if {$exit_code != 0} {
 		send_user "\nFAILURE: exiting with exit code $exit_code\n"
 	}
 	exit $exit_code

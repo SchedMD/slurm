@@ -161,7 +161,4 @@ run_gpu_fail "gpu:tesla:INVALID_COUNT"
 run_gpu_fail "gpu:INVALID_TYPE:"
 run_gpu_fail "gpu:INVALID_TYPE:INVALID_COUNT"
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

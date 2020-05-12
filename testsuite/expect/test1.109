@@ -72,9 +72,7 @@ if {$invalid_tl == 0} {
 	exit 1
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
+if {$exit_code != 0} {
 	send_user "\nFAILURE: job not with DEADLINE status.\n"
 }
 exit $exit_code

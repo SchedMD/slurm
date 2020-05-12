@@ -226,7 +226,6 @@ if {$nerr > 3} {
 
 if {$exit_code == 0} {
 	exec rm -f $file_prog $file_out $hdf5_file
-	send_user "\nSUCCESS\n"
 } else {
 	exec mv $hdf5_file test$test_id.hdf5
 }

@@ -146,7 +146,6 @@ check_job_state $job_id PENDING|RUNNING
 cancel_job $job_id
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $complete_script $fail_script
 }
 exit $exit_code

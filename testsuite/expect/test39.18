@@ -1856,9 +1856,7 @@ check_configuration 2.56 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_o
 # # Cleanup and finish
 # ##############################################################################
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
+if {$exit_code != 0} {
 	send_user "FAILURE: Tests $test_id.\["
 	set length [llength $failed_tests]
 	set i 0

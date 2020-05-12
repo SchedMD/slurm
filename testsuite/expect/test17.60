@@ -137,6 +137,5 @@ if {$exit_code == 1} {
 	send_user "\nFAILURE: batch submitted with a deadline too short\n"
 } else {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
 }
 exit $exit_code

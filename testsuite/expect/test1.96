@@ -151,7 +151,6 @@ if {[wait_for_file $file_out] == 0} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
-	send_user "\nSUCCESS\n"
 } else {
 	send_user "Check contents of $file_err\n"
 }

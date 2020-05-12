@@ -69,7 +69,4 @@ if {$matches != 3} {
 	send_user "\nFAILURE: scontrol help message not as expected\n"
 	set exit_code 1
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

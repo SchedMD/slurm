@@ -107,7 +107,6 @@ if {$arg_match == 0} {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $file_in $file_out $file_err
 }
 exit $exit_code

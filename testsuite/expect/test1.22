@@ -108,7 +108,4 @@ if {[string compare $host_0 ""] == 0} {
 	set exit_code   1
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

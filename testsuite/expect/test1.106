@@ -72,7 +72,4 @@ if {$time_error == 0} {
 	send_user "\nTime limit error expected, no worries\n"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

@@ -198,7 +198,7 @@ proc inc3_11_7 {} {
 			exp_continue
 		}
 		-re "JobState=PENDING" {
-			send_user "\n\033\[32mSUCCESS: Job $job_id is PENDING as expected (Within: inc3.11.7)\033\[m\n"
+			log_info "Job $job_id is PENDING as expected (Within: inc3.11.7)"
 			exp_continue
 		}
 		-re "JobState=RUNNING" {
@@ -250,7 +250,7 @@ proc inc3_11_7 {} {
 			exp_continue
 		}
 		-re "JobState=PENDING" {
-			send_user "\n\033\[32mSUCCESS: Job $job_id is PENDING as expected (Within: inc3.11.7)\033\[m\n"
+			log_info "ob $job_id is PENDING as expected (Within: inc3.11.7)"
 			exp_continue
 		}
 		-re "JobState=RUNNING" {
@@ -291,7 +291,7 @@ proc inc3_11_7 {} {
 			exp_continue
 		}
 		-re "JobState=RUNNING" {
-			send_user "\n\033\[32mSUCCESS: Job $job_id is RUNNING as expected (Within: inc3.11.7)\033\[m\n"
+			log_info "Job $job_id is RUNNING as expected (Within: inc3.11.7)"
 			exp_continue
 		}
 		timeout {

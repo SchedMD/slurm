@@ -160,7 +160,6 @@ check_release $job_id
 cancel_job $job_id
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $script
 }
 

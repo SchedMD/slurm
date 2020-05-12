@@ -162,7 +162,6 @@ send_user "\n\nSo far, so good....\n\n\n"
 if {$part_cnt < 2} {
 	if {$exit_code == 0} {
 		exec $bin_rm -f $file_in
-		send_user "\nSUCCESS\n"
 	}
 	exit $exit_code
 }

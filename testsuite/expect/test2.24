@@ -159,7 +159,6 @@ if {$tot_match != $opt_cnt} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $new_conf
-	send_user "\nSUCCESS\n"
 }
 
 exit $exit_code

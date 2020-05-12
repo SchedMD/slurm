@@ -332,10 +332,4 @@ cancel_job $job_id1
 cancel_job $job_id2
 restore_conf $config_file
 reconfigure
-
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
-	send_user "\nFAILURE\n"
-}
-exit $exit_code
+fail_on_error "Error restoring reconfiguration"

@@ -67,7 +67,4 @@ if {$debug_get != $debug_set} {
 	send_user "\nFAILURE: Did not log at proper level ($debug_get != $debug_set)\n"
 	set exit_code 1
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
 exit $exit_code

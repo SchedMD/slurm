@@ -52,7 +52,9 @@ proc endit { exit_code msg } {
 	global job_id bin_rm file_in
 	cancel_job $job_id
 	exec $bin_rm $file_in
-	send_user "\n$msg\n"
+	if {$exit_code != 0} {
+		log_error "$msg"
+	}
 	exit $exit_code
 }
 
@@ -395,4 +397,4 @@ if {$comp_count != 2} {
 	endit 1 "FAILURE: Bad COMPLETED count ($comp_count != 2)"
 }
 
-endit 0 "SUCCESS"
+endit 0 ""

@@ -281,7 +281,6 @@ thread_spec_job 1 $first_node [expr $thread_cnt + 1] -1
 thread_spec_job 1 $first_node [expr $thread_cnt + 3] -1
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $file_in $file_out $spec_in
 }
 exit $exit_code
