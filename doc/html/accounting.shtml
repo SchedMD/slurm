@@ -251,13 +251,12 @@ MySQL test program built properly.
 </pre>
 
 <p><b>NOTE:</b> Before running the slurmdbd for the first time, review the
-current setting for MySQL's
-<a href="http://dev.mysql.com/doc/refman/5.0/en/innodb-parameters.html
-#sysvar_innodb_buffer_pool_size">innodb_buffer_pool_size</a>.
+current setting for MySQL's <i>innodb_buffer_pool_size</i>.
 Consider setting this
 value large enough to handle the size of the database. This helps when
 converting large tables over to the new database schema and when purging
-old records. Setting innodb_lock_wait_timeout and innodb_log_file_size to
+old records. Setting <i>innodb_lock_wait_timeout</i> and
+<i>innodb_log_file_size</i> to
 larger values than the default is also recommended.</p>
 
 <p>
@@ -278,6 +277,32 @@ $cat my.cnf
 <i>innodb_log_file_size=64M</i>
 <i>innodb_lock_wait_timeout=900</i>
 ...
+</pre>
+</p>
+
+<p>Also, in MySQL versions prior to 5.7 the default row format was set to
+<i>COMPACT</i> which could cause some issues during an upgrade when creating
+tables. In more recent versions it was changed to <i>DYNAMIC</i>. The row
+format of a table determines how its rows are physically stored in pages and
+directly affects the performane of queries and DML operations. In very specific
+situations using a format other than DYNAMIC can lead to rows not fitting into
+pages and MySQL can throw an error during the creation of the table because of
+that. Therefore it is recommended to read carefully about the row format before
+creating your database tables if you are not using DYNAMIC by default, and
+consider setting that if your database version supports it. If the
+following InnoDB error shows up during an upgrade, the table can then be
+altered (may take some time) to set the row format to DYNAMIC in order to
+allow the conversion to proceed:
+<pre>
+<i>[Warning] InnoDB: Cannot add field ... in table ... because after adding it, the row size is Y which is greater than maximum allowed size (X) for a record on index leaf page.</i>
+</pre>
+
+You can check your default row format value by showing the
+<i>innodb_default_row_format</i> variable, and how the tables are created
+by running:
+
+<pre>
+mysql> SHOW TABLE STATUS IN table_name;
 </pre>
 </p>
 
@@ -790,7 +815,7 @@ completely. This is meant to clean up after typographical errors.
 Removing user associations or accounts, however, will cause slurmctld to lose
 track of usage data for that user/account.</p>
 
-<p style="text-align:center;">Last modified 6 March 2020</p>
+<p style="text-align:center;">Last modified 12 May 2020</p>
 
 <!--#include virtual="footer.txt"-->
 
