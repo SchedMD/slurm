@@ -3418,6 +3418,9 @@ static void _validate_all_reservations(void)
 	slurmctld_resv_t *resv_ptr;
 	job_record_t *job_ptr;
 
+	log_flag(RESERVATION, "%s: validating %u reservations and %u jobs",
+		 __func__, list_count(resv_list), list_count(job_list));
+
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
 		if (!_validate_one_reservation(resv_ptr)) {
