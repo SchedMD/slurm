@@ -65,9 +65,9 @@ if {$gpu_cnt < 1} {
 	exit 0
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
-send_user "\nGPU count is $gpu_cnt\n"
-send_user "Sockets per node is $node_conf(Sockets)\n"
-send_user "CPUs per socket is $node_conf(CPUsPerSocket)\n"
+log_info "GPU count is $gpu_cnt"
+log_info "Sockets per node is $node_conf(Sockets)"
+log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
 
 set tot_cpus $node_conf(CPUTot)
 set tot_gpus $gpu_cnt

@@ -135,9 +135,9 @@ if {$gpu_cnt < 1} {
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
-send_user "\nGPU count is $gpu_cnt\n"
-send_user "Memory Size is $node_conf(RealMemory)\n"
-send_user "Node count in partition default parition $def_part_name is $nb_nodes\n\n"
+log_info "GPU count is $gpu_cnt"
+log_info "Memory Size is $node_conf(RealMemory)"
+log_info "Node count in partition default parition $def_part_name is $nb_nodes"
 
 #
 # Build input script file

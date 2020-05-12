@@ -133,10 +133,10 @@ if {$gpu_cnt < 2} {
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set cpus_per_node $node_conf(CPUTot)
 
-send_user "GPUs per node is $gpu_cnt\n"
-send_user "Sockets per node is $node_conf(Sockets)\n"
-send_user "CPUs per socket is $node_conf(CPUsPerSocket)\n"
-send_user "CPUs per node is $cpus_per_node\n\n"
+log_info "GPUs per node is $gpu_cnt"
+log_info "Sockets per node is $node_conf(Sockets)"
+log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_info "CPUs per node is $cpus_per_node"
 
 if {$cpus_per_node < 3} {
 	send_user "\nWARNING: This test requires 3 or more CPUs per node in the default partition\n"
