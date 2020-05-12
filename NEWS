@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- cons_common/job_test - fix slurmctld SIGABRT due to double-free.
  -- Fix updating reservations to set the duration correctly if updating the
     start time.
+ -- Fix update reservation to promiscuous mode.
 
 * Changes in Slurm 20.02.3
 ==========================
