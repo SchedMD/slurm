@@ -219,8 +219,7 @@ proc update_res { res_name res_params failure_expected } {
 		}
 		-re "Error creating the reservation: Invalid user" {
 			if {!$failure_expected} {
-				send_user "\nWARNING: user not authorized "
-				send_user "to update reservation\n"
+				log_warn "User not authorized to update reservation"
 			}
 			set ret_code 1
 			exp_continue
@@ -277,11 +276,9 @@ proc delete_res { res_name } {
 }
 
 if {[is_super_user] == 0} {
-	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
-	exit 0
+	skip "This test can't be run except as SlurmUser"
 } elseif {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
-	send_user "\nWARNING: This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE\n"
-	exit 0
+	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
 set have_resv 0
@@ -296,9 +293,7 @@ expect {
 	}
 }
 if {$have_resv != 0} {
-	send_user "*****************************************************************************************\n"
-	send_user "WARNING: $have_resv reservations exist at start of test which may interfere with the test\n"
-	send_user "*****************************************************************************************\n"
+	log_warn "$have_resv reservations exist at start of test which may interfere with the test"
 }
 
 #
@@ -349,7 +344,7 @@ expect {
 # Some tests do not support names of this form "rack[0-3]_blade[0-63]"
 set irregular_node_name 0
 if {[string compare $def_node_name ""] == 0} {
-	send_user "\nWARNING: Node name format not supported for all test\n"
+	log_warn "Node name format not supported for all test"
 	set irregular_node_name 1
 }
 
@@ -395,7 +390,7 @@ expect {
 }
 log_user 1
 if {$heterogeneous != 0} {
-	send_user "\nWARNING: Cluster is heterogeneous and some tests may fail\n"
+	log_warn "Cluster is heterogeneous and some tests may fail"
 }
 set cores_per_node [expr $cores_per_socket * $sockets_per_node]
 set node_count [available_nodes $def_partition ""]
@@ -411,20 +406,17 @@ set states "idle"
 set node_list [get_partition_nodes $def_partition $states]
 set part_node_cnt [llength $node_list]
 if {$part_node_cnt == 0} {
-	send_user "\n\033\[34mWARNING: unable to get $states nodes in partition $def_partition"
-	exit $exit_code
+	fail "Unable to get $states nodes in partition $def_partition"
 }
 
 set part_node [lindex $node_list 0]
 set part_node_cores [get_node_cores $part_node]
 if {$part_node_cores == -1} {
-	send_user "\n\033\[34mWARNING: unable to get cores from $part_node"
-	exit $exit_code
+	fail "Unable to get cores from $part_node"
 }
 set part_cores [get_part_total_cores $def_partition $states]
 if {$part_cores == 0} {
-	send_user "\n\033\[34mWARNING: unable to get cores from $states nodes in $def_partition"
-	exit $exit_code
+	fail "Unable to get cores from $states nodes in $def_partition"
 }
 
 #

@@ -24,12 +24,10 @@ set exit_code   0
 print_header $test_id
 
 if {![slurmctld_plug_stack_nonstop]} {
-	send_user "\nWARNING: This test is only compatible when SlurmctldPlugstack includes nonstop.\n"
-	exit $exit_code
+	skip "This test is only compatible when SlurmctldPlugstack includes nonstop"
 }
 if {![test_super_user]} {
-	send_user "\nWARNING: This test is only suitable for a super user (to restore down nodes).\n"
-	exit $exit_code
+	skip "This test is only suitable for a super user (to restore down nodes)"
 }
 
 make_bash_script $file_in "$bin_sleep 100"

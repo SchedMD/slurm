@@ -42,12 +42,10 @@ set test_script     "test$test_id\.sh"
 print_header $test_id
 
 if { [test_super_user] == 0 } {
-	send_user "WARNING: Test can only be run as SlurmUser\n"
-	exit $exit_code
+	skip "Test can only be run as SlurmUser"
 }
 if {[test_front_end] != 0} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit 0
+        skip "This test is incompatible with front-end systems"
 }
 
 proc clean_up { } {
@@ -198,7 +196,6 @@ expect {
 		wait
 	}
 }
-
 if {$match == 0} {
 	log_error "Node $test_node was not drained when it should be"
 	set exit_code 1

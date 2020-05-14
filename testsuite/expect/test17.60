@@ -128,7 +128,7 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	sleep 10
 }
 if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
+	skip "Can not test without accounting enabled"
 }
 
 if {$exit_code == 1} {

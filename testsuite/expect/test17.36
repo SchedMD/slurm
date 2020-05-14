@@ -50,16 +50,13 @@ set exit_code     0
 print_header $test_id
 
 if {[test_linear]} {
-	send_user "\nWARNING: test is not compatible with a config of SelectType=select/linear\n"
-	exit $exit_code
+	skip "Test is not compatible with a config of SelectType=select/linear"
 }
 if {[is_super_user] == 0} {
-	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
-	exit 0
+	skip "This test can't be run except as SlurmUser"
 }
 if {[test_select_type_params "CR_SOCKET"]} {
-	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
-	exit 0
+	skip "This test is incompatible with CR_SOCKET allocations"
 }
 if {[test_select_type_params "CR_CORE"]} {
 	set cr_core 1
@@ -284,7 +281,7 @@ proc check_part { } {
 	log_user 1
 
 	if {$found == 1} {
-		send_user "\WARNING: partition $part_name already exists\n"
+		log_warn "Partition $part_name already exists"
 		delete_part $test_part_1
 		delete_part $test_part_2
 		delete_part $test_part_3
@@ -359,8 +356,7 @@ send_user "\n\nTest partition with oversubscribe=NO\n"
 set num_jobs [cr_core_cpu $node_name]
 set job_start [default_queue_depth]
 if { $num_jobs >= $job_start } {
-	send_user "\nWARNING: default_queue_depth less than core count ($num_jobs < $job_start), can not run this test\n"
-	exit $exit_code
+	skip "default_queue_depth less than core count ($num_jobs < $job_start), can not run this test"
 }
 
 # Create first test partition
@@ -388,8 +384,7 @@ set new_job_limit [expr $num_jobs * 2]
 if { [test_gang] == 1 } {
 	send_user "\n\nTest partition with oversubscribe=YES:2 incompatible with gang scheduling\n"
 } elseif { $new_job_limit >= $job_start } {
-        send_user "\nWARNING: default_queue_depth less than desired job count ($new_job_limit < $job_start), can not run oversubscribe=YES:2\n"
-
+        skip "default_queue_depth less than desired job count ($new_job_limit < $job_start), can not run oversubscribe=YES:2"
 } else {
 	send_user "\n\nTest partition with oversubscribe=YES:2\n"
 #	Make a new partition with oversubscribe=yes:2

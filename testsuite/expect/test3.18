@@ -44,8 +44,7 @@ set file_in        "test$test_id.input"
 print_header $test_id
 
 if { ![test_super_user] } {
-	send_user "\nWARNING: This test can't be run without being a super user of the cluster.\n"
-	exit 0
+	skip "This test can't be run without being a super user of the cluster"
 }
 
 #
@@ -72,8 +71,7 @@ expect {
 }
 exec $bin_rm -f $file_in
 if {$matches != 1} {
-	send_user "\nWARNING: This test can't be run without a node with at least 2 gres/gpu.\n"
-	exit 0
+	skip "This test can't be run without a node with at least 2 gres/gpu"
 }
 
 #

@@ -90,8 +90,7 @@ proc run_spread_job { task_cnt } {
 print_header $test_id
 
 if {![test_cons_res] && ![test_cons_tres]} {
-	send_user "\nWARNING: test is only compatible with a config of SelectType=select/cons_res or select/cons_tres\n"
-	exit 0
+	skip "Test is only compatible with a config of SelectType=select/cons_res or select/cons_tres"
 }
 
 log_user 1
@@ -112,8 +111,7 @@ expect {
 log_user 1
 
 if {$node_cnt < 2} {
-	send_user "\nWARNING: Insufficient nodes for test in partition $partition ($node_cnt < 2)\n"
-	exit 0
+	skip "Insufficient nodes for test in partition $partition ($node_cnt < 2)"
 }
 
 if {$node_cnt > 8} {

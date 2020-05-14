@@ -37,8 +37,7 @@ print_header $test_id
 set prompt           "PROMPT: "
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+        skip "This test is incompatible with front-end systems"
 } else {
 	set task_num 2
 }
@@ -46,8 +45,7 @@ if {[test_front_end]} {
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {$nb_nodes < 3} {
-	send_user "\nWARNING: Need 3 or more nodes in default partition\n"
-	exit $exit_code
+	skip "Need 3 or more nodes in default partition"
 }
 
 proc end_it { exit_code } {

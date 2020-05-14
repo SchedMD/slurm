@@ -44,8 +44,7 @@ if {$gpu_cnt < 0} {
 	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs per node in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPUs per node in the default partition"
 }
 send_user "\nGPUs per node count is $gpu_cnt\n"
 
@@ -108,7 +107,7 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$no_nvcc != 0} {
-		send_user "\nWARNING: Could not find program nvcc (CUDA compiler)\n"
+		log_warn "Could not find program nvcc (CUDA compiler)"
 	} elseif {$matches != 1} {
 		log_error "CUDA output not as expected"
 		set exit_code 1

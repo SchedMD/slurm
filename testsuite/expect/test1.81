@@ -44,8 +44,7 @@ print_header $test_id
 set partition [default_partition]
 set node_count [get_node_cnt_in_part $partition]
 if { $node_count < 2 } {
-	send_user "WARNING: Insufficient nodes in default partition ($node_count < 2)\n"
-	exit $exit_code
+	skip "Insufficient nodes in default partition ($node_count < 2)"
 }
 
 #
@@ -61,7 +60,7 @@ expect {
 	-re "(Task count specification invalid|configuration is not available)" {
 		if { [test_front_end] } {
 			set can_not_run 1
-			send_user "\nWARNING: error expected, Testing is incompatible with front-end systems\n"
+			log_warn "Error expected, Testing is incompatible with front-end systems"
 #
 		}
 		exp_continue
@@ -160,7 +159,7 @@ if {[string compare $host_1 ""] != 0} {
 	log_error "Started two tasks instead of one"
 }
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
+	log_warn "Additional testing is incompatible with front-end systems"
 	exit $exit_code
 }
 
@@ -236,8 +235,7 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -N2-3 -l -t1 $bin_printenv SLURM_NODEID]
 expect {
 	-re "srun: error" {
-		send_user "\nWARNING: can't test srun task distribution\n"
-		exit $exit_code
+		skip "Can't test srun task distribution"
 	}
 	-re "($number): *($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {

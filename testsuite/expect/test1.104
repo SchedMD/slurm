@@ -43,8 +43,7 @@ set test_script    "./test$test_id.bash"
 print_header $test_id
 
 if {[test_super_user] == 0} {
-	send_user "\nWARNING: can not test more unless SlurmUser or root\n"
-	exit $exit_code
+	skip "Can not test more unless SlurmUser or root"
 }
 
 #

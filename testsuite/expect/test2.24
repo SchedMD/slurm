@@ -43,8 +43,7 @@ set exit_code     0
 print_header $test_id
 
 if {[is_super_user] == 0} {
-	send_user "\nWARNING: this test requires that the user be root or "
-	send_user "the SlurmUser\n"
+	skip "This test requires that the user be root or the SlurmUser"
 }
 
 #

@@ -60,24 +60,19 @@ print_header $test_id
 # Test for existence of mpi compiler and totalview
 #
 if {[info exists mpicc] == 0} {
-	send_user "\nWARNING: mpicc not defined, can't perform mpi testing\n"
-	exit 0
+	skip "mpicc not defined, can't perform mpi testing"
 }
 if {[file executable $mpicc] == 0} {
-	send_user "\nWARNING: $mpicc does not exists\n"
-	exit 0
+	skip "$mpicc does not exists"
 }
 if {[info exists totalviewcli] == 0} {
-	send_user "\nWARNING: totalviewcli not defined, can't perform mpi testing\n"
-	exit 0
+	skip "totalviewcli not defined, can't perform mpi testing"
 }
 if {[file executable $totalviewcli] == 0} {
-	send_user "\nWARNING: $totalviewcli does not exists\n"
-	exit 0
+	skip "$totalviewcli does not exists"
 }
 if {[test_front_end] != 0} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit 0
+    skip "This test is incompatible with front-end systems"
 }
 
 #
@@ -130,7 +125,7 @@ send_user "=====================================================================
 spawn $totalviewcli -verbosity info -e $no_bulk $srun -a --input=none -n4 -N1-2 -O -t1 $test_prog
 expect {
 	-re "All licenses are currently in use" {
-		send_user "\nWARNING: We can not run this test now\n"
+		log_warn "We can not run this test now"
 		incr no_capability
 		exp_continue
 	}
@@ -145,8 +140,7 @@ expect {
 		exp_continue
 	}
 	-re "cannot open shared object" {
-		send_user "\nWARNING: Set LD_LIBRARY_PATH environment variable "
-		send_user "to include this object's directory\n"
+		log_warn "Set LD_LIBRARY_PATH environment variable to include this object's directory"
 		exp_continue
 	}
 	-re "Do you want to stop the job now?.*:" {
@@ -191,8 +185,7 @@ expect {
 	}
 }
 if {$no_capability != 0} {
-	send_user "\nWARNING: Unable to run test with present configuration\n"
-	exit 0
+	skip "Unable to run test with present configuration"
 }
 if {$matches != 12} {
 	log_error "totalviewcli operation matches $matches of 12"

@@ -38,8 +38,7 @@ set exit_code   0
 print_header $test_id
 
 if {[file executable $pbsnodes] == 0} {
-	send_user "\nWARNING: $pbsnodes does not exists\n"
-	exit 0
+	skip "$pbsnodes does not exists"
 }
 
 set matches 0

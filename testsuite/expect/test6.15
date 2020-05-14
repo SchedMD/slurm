@@ -71,8 +71,7 @@ exit 0
 set proctracktype [test_proctrack]
 send_user "Proctrack: $proctracktype\n"
 if {$proctracktype != "cgroup" && $proctracktype != "linuxproc" && $proctracktype != "pgid"} {
-	log_warn "This test only works for proctracktype/cgroup, proctracktype/linuxproc or proctracktype/pgid."
-	exit 0
+	skip "This test only works for proctracktype/cgroup, proctracktype/linuxproc or proctracktype/pgid."
 }
 
 #

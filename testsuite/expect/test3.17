@@ -36,8 +36,7 @@ set file_in     "test$test_id.input"
 print_header $test_id
 
 if { ![test_super_user] } {
-	send_user "\nWARNING: This test can't be run without being a super user of the cluster.\n"
-	exit 0
+	skip "This test can't be run without being a super user of the cluster"
 }
 
 proc set_node_feature {node_name new_avail_feature new_active_feature} {

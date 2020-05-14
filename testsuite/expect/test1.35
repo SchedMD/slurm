@@ -150,7 +150,7 @@ if {$step_cnt != $steps_started} {
 		}
 	}
 	if {$mem_err == 1} {
-		send_user "\nWARNING: Test could not complete due to memory limit\n"
+		log_warn "Test could not complete due to memory limit"
 		set step_cnt $steps_started
 	} else {
 		log_error "Not all steps reported by squeue"

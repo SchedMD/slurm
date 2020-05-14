@@ -67,8 +67,7 @@ expect {
 	}
 }
 if {[string compare $node_list ""] == 0} {
-	send_user "\nWARNING: no nodes in usable state for this test\n"
-	exit 0
+	skip "No nodes in usable state for this test"
 }
 
 #
@@ -90,8 +89,7 @@ expect {
 }
 log_user 1
 if {[string compare $node_name ""] == 0} {
-	send_user "\nWARNING: no nodes in usable state for this test\n"
-	exit 0
+	skip "No nodes in usable state for this test"
 }
 
 #
@@ -110,8 +108,7 @@ expect {
 			set access_err 1
 		}
 		if {$access_err == 1} {
-			send_user "\nWARNING: user not authorized\n"
-			exit $exit_code
+			skip "User not authorized"
 		} else {
 			set authorized 0
 		}

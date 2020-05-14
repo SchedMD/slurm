@@ -38,13 +38,11 @@ set exit_code  0
 print_header $test_id
 
 if {[file executable $qrerun] == 0} {
-	send_user "\nWARNING: qrerun was not found\n"
-	exit 0
+	skip "qrerun was not found"
 }
 
 if {[file executable $bin_perldoc] == 0} {
-	send_user "\nWARNING: $bin_perldoc does not exist\n"
-	exit 0
+	skip "$bin_perldoc does not exist"
 }
 
 # If perl-doc isn't installed there is sometimes a useless perldoc script
@@ -53,9 +51,7 @@ log_user 0
 spawn $bin_perldoc
 expect {
 	-re "You need to install the perl-doc" {
-		send_user "\nWARNING: $bin_perldoc not installed\n"
-		exit 0
-
+		skip "$bin_perldoc not installed"
 	}
 	eof {
 		wait

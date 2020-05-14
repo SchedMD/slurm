@@ -49,8 +49,7 @@ set file_out_n_glob  ""
 print_header $test_id
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+    skip "This test is incompatible with front-end systems"
 }
 
 #
@@ -136,8 +135,7 @@ for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 }
 
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: Additional tests are incompatible with front-end systems\n"
-	exit $exit_code
+	skip "Additional tests are incompatible with front-end systems"
 }
 
 #

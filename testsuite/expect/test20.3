@@ -41,12 +41,10 @@ set file_err	"test$test_id.error"
 print_header $test_id
 
 if {[file executable $qsub] == 0} {
-	send_user "\nWARNING: $qsub does not exists\n"
-	exit 0
+	skip "$qsub does not exists"
 }
 if {[file executable $qdel] == 0} {
-	send_user "\nWARNING: $qdel does not exists\n"
-	exit 0
+	skip "$qdel does not exists"
 }
 
 set job_id 0

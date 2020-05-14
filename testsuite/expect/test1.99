@@ -44,12 +44,10 @@ array set ports {}
 print_header $test_id
 
 if { ![test_super_user] } {
-        send_user "\nWARNING: This test can't be run without being a super user of the cluster.\n"
-	exit 0
+    skip "This test can't be run without being a super user of the cluster"
 }
 if {$chk_ports == 0} {
-	send_user "\nWARNING: this test requires SrunPortRange to be configured\n"
-	exit 0
+	skip "This test requires SrunPortRange to be configured"
 }
 
 # split the port range into 2 numbers
@@ -61,9 +59,7 @@ foreach p $range {
 }
 
 if {[expr $ports(1) - $ports(0)] < 5} {
-	send_user "\nWARNING: this test requires SrunPortRange to be "
-	send_user "configured with at least 5 ports\n"
-	exit 0
+	skip "This test requires SrunPortRange to be configured with at least 5 ports"
 }
 
 #

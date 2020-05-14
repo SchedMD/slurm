@@ -43,12 +43,10 @@ print_header	$test_id
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 if { [string compare [priority_type] multifactor] } {
-	send_user "\nWARNING: This test can't be run without a usable PriorityType\n"
-	exit 0
+	skip "This test can't be run without a usable PriorityType"
 }
 
 #
@@ -56,8 +54,7 @@ if { [string compare [priority_type] multifactor] } {
 #
 set select_type_params [get_select_type_params ""]
 if { [string first "CR_ONE_TASK_PER_CORE" $select_type_params] != -1 } {
-	log_warn "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
-	exit 0
+	skip "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
 #
@@ -161,8 +158,7 @@ proc sprio_opt { soption } {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 
 		if {$matches != 4} {
@@ -196,8 +192,7 @@ proc sprio_opt { soption } {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		if {$matches != 1} {
 			log_error "sprio -$soption failed ($matches)"
@@ -230,8 +225,7 @@ proc sprio_opt { soption } {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 
 		if {$matches != 1} {
@@ -270,8 +264,7 @@ proc sprio_opt { soption } {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 
 		if {$matches != 2} {
@@ -325,8 +318,7 @@ proc sprio_args { soption sargs jobid} {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		if {$matches != 0} {
 			log_error "sprio $soption failed ($matches)"
@@ -364,8 +356,7 @@ proc sprio_args { soption sargs jobid} {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		if {$matches != 2} {
 			log_error "sprio $soption failed ($matches)"
@@ -403,8 +394,7 @@ proc sprio_args { soption sargs jobid} {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		if {$matches != 2} {
 			log_error "sprio $soption failed ($matches)"
@@ -442,8 +432,7 @@ proc sprio_args { soption sargs jobid} {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		if {$matches != 2} {
 			log_error "sprio $soption failed ($matches)"
@@ -486,8 +475,7 @@ proc sprio_args { soption sargs jobid} {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		if {$matches != 3} {
 			log_error "sprio $soption failed ($matches)"
@@ -525,8 +513,7 @@ proc sprio_args { soption sargs jobid} {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		if {$matches != 2} {
 			log_error "sprio $soption failed ($matches)"
@@ -564,8 +551,7 @@ proc sprio_args { soption sargs jobid} {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		if {$matches != 2} {
 			log_error "sprio $soption failed ($matches)"
@@ -608,8 +594,7 @@ proc sprio_args { soption sargs jobid} {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		if {$matches != 3} {
 			log_error "sprio $soption failed ($matches)"

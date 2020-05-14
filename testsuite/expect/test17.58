@@ -58,8 +58,7 @@ proc endit { } {
 # otherwise this test may fail.
 #
 if {[test_super_user] == 0} {
-	log_warn "You must be SlurmUser or root to run this test."
-	exit 0
+	skip "You must be SlurmUser or root to run this test"
 }
 
 #

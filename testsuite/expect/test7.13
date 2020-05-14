@@ -40,9 +40,7 @@ set file_prog2       "test$test_id.prog2"
 print_header $test_id
 
 if {![test_accting_steps]} {
-	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
-	send_user "(AccoutingStorageEnforce)\n"
-	exit 0
+	skip "This test can not be run with nosteps or nojobs (AccoutingStorageEnforce)"
 }
 
 #

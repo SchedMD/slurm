@@ -45,8 +45,7 @@ set hostfile    "test$test_id.hostfile"
 print_header $test_id
 
 if { [test_front_end] } {
-	send_user "\nWARNING: This test incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test incompatible with front-end systems"
 }
 
 # Determine if we have enough nodes to test functionality
@@ -75,11 +74,10 @@ expect {
 set idle_nodes [available_nodes $def_part idle]
 if { ($idle_nodes < 3) || ($max_nodes < 3) } {
 	if { $max_nodes == 999999 } {
-		send_user "WARNING: partition $def_part must have at least 3 idle nodes and MaxNodes >= 3 to run this test on. IDLE:$idle_nodes MaxNodes:UNLIMITED\n"
+		skip "Partition $def_part must have at least 3 idle nodes and MaxNodes >= 3 to run this test on. IDLE:$idle_nodes MaxNodes:UNLIMITED"
 	} else {
-		send_user "WARNING: partition $def_part must have at least 3 idle nodes and MaxNodes >= 3 to run this test on. IDLE:$idle_nodes MaxNodes:$max_nodes\n"
+		skip "Partition $def_part must have at least 3 idle nodes and MaxNodes >= 3 to run this test on. IDLE:$idle_nodes MaxNodes:$max_nodes"
 	}
-	exit $exit_code
 }
 
 exec $bin_rm -f %hostfile

@@ -72,7 +72,7 @@ proc run_gpu_test { gres_cnt } {
 			exp_continue
 		}
 		-re "CUDA_VISIBLE_DEVICES=" {
-			send_user "\nWARNING: This could indicate that gres.conf lacks device files for the GPUs\n"
+			log_warn "This could indicate that gres.conf lacks device files for the GPUs"
 			exp_continue
 		}
 		timeout {
@@ -85,7 +85,7 @@ proc run_gpu_test { gres_cnt } {
 		}
 	}
 	if {$invalid != 0} {
-		send_user "\WARNING: Insufficient resources to test $gres_cnt GPUs\n"
+		log_warn "Insufficient resources to test $gres_cnt GPUs"
 		return 0
 	} elseif {$bad_format != 0} {
 		log_error "Duplicated device number in GRES allocation"
@@ -135,8 +135,7 @@ print_header $test_id
 #
 set gpu_cnt [get_gpu_count 1]
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test can not be run without gres/gpu configured\n"
-	exit $exit_code
+	skip "This test can not be run without gres/gpu configured"
 }
 send_user "\n GPUs:$gpu_cnt\n"
 #

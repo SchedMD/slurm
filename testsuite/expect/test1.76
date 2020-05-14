@@ -198,13 +198,13 @@ proc test_freq {opt expmin expcur expmax expgov} {
 		set real_error 1
 		if {![string compare $opt "High"]} {
 			if {$tcur > $expcur} {
-				send_user "\nWARNING: --cpu-freq=$opt -- test cur $tcur higher than ($expcur).  This is expected on overclocked systems.\n\n"
+				log_warn "--cpu-freq=$opt -- test cur $tcur higher than ($expcur).  This is expected on overclocked systems"
 				set real_error 0
 			}
 		}
 
 		if {$real_error} {
-			send_user "\nWARNING: --cpu-freq=$opt -- test cur $tcur not expected ($expcur, error is $percent_error percent)\n"
+			log_warn "--cpu-freq=$opt -- test cur $tcur not expected ($expcur, error is $percent_error percent)"
 			log_user 1
 			return 2
 		}
@@ -251,12 +251,10 @@ proc test_case {opt expmin expcur expmax expgov} {
 
 # Check environment
 if {[test_cpu_affinity_or_cgroup] == 0} {
-	send_user "\nWARNING: This test requires some form of task affinity\n"
-	exit 0
+	skip "This test requires some form of task affinity"
 }
 if {[test_fast_schedule] != 0} {
-	send_user "\nWARNING: FastSchedule=0 is recommended.\n"
-	send_user "         Proceeding assuming that the number of CPUs declared is accurate.\n"
+	log_warn "FastSchedule=0 is recommended. Proceeding assuming that the number of CPUs declared is accurate"
 }
 log_user 0
 spawn $scontrol show config
@@ -320,8 +318,7 @@ set nfreq 0
 spawn $srun -w $test_node --exclusive -t1 ./test1.76.bash $test_cpu
 expect {
 	-re "scaling frequency not supported" {
-		send_user "\nWARNING: Test requires frequency scaling\n"
-		exit 0
+		skip "Test requires frequency scaling"
 	}
 	-re "available_governors (\[a-zA-Z \]+)" {
 		if {[string first "ondemand" $expect_out(1,string)] >= 0} {
@@ -345,15 +342,13 @@ expect {
 	}
 }
 if {$nfreq < 2} {
-	send_user "\nWARNING: Test requires at least 2 available frequencies\n"
-	exit 0
+	skip "Test requires at least 2 available frequencies"
 }
 if {$have_user_space == 0} {
-	send_user "\nWARNING: Test requires UserSpace governor\n"
-	exit 0
+	skip "Test requires UserSpace governor"
 }
 if {$have_on_demand == 0} {
-	send_user "\nWARNING: Test requires OnDemand governor\n"
+	skip "Test requires OnDemand governor"
 }
 
 set xmx [expr ($nfreq - 1) / 2]

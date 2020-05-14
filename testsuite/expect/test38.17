@@ -53,17 +53,14 @@ print_header $test_id
 set partition [default_partition]
 set node_count [get_node_cnt_in_part $partition]
 if { $node_count < 3 } {
-	send_user "WARNING: Insufficient nodes in default partition ($node_count < 3)\n"
-	exit $exit_code
+	skip "Insufficient nodes in default partition ($node_count < 3)"
 }
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+        skip "This test is incompatible with front-end systems"
 }
 if {[test_pack_step] == 0} {
-	send_user "\nWARNING: Heterogeneous steps not currently supported\n"
-	exit $exit_code
+	skip "Heterogeneous steps not currently supported"
 }
 
 make_bash_script $file_in1 "$srun -l --mpi=none --pack-group=0,2 ./$file_in2 : --pack-group=1 ./$file_in3"

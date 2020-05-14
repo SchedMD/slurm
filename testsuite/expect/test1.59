@@ -47,16 +47,14 @@ print_header $test_id
 
 exec $bin_rm -f $hostfile
 if { [test_front_end] } {
-	send_user "\nWARNING: This test incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test incompatible with front-end systems"
 }
 
 # find out if we have enough nodes to test functionality
 set partition [default_partition]
 set node_count [get_node_cnt_in_part $partition]
 if { $node_count < 3 } {
-	send_user "WARNING: Insufficient nodes in default partition ($node_count < 3)\n"
-	exit $exit_code
+	skip "Insufficient nodes in default partition ($node_count < 3)"
 }
 
 set node0 0
@@ -118,10 +116,7 @@ for {set i 0} {$i<4} {incr i} {
 		close $file
 	} elseif { $i==2 } {
 		if { $node_count < 3 } {
-			send_user "WARNING: system must have at least 3 \
-				   nodes to finish this test.  This system \
-				   only has $node_count.\n"
-			exit $exit_code
+			skip "System must have at least 3 nodes to finish this test.  This system only has $node_count"
 		}
 		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
 			fail "node names not set from previous srun"
@@ -260,10 +255,7 @@ for {set i 0} {$i<5} {incr i} {
 		set extra " -m arbitrary -w $node2,$node0,$node1"
 	} elseif { $i==2 } {
 		if { $node_count < 3 } {
-			send_user "WARNING: system must have at least 3 \
-				   nodes to finish this test.  This system \
-				   only has $node_count.\n"
-			exit $exit_code
+			skip "System must have at least 3 nodes to finish this test. This system only has $node_count"
 		}
 		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
 			fail "node names not set from previous srun"

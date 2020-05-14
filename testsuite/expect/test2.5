@@ -68,7 +68,7 @@ expect {
 
 if {$matches != 3} {
 	if {$matches == 2} {
-		send_user "\nWARNING: it appears you are running with multiple slurmds.\n"
+		log_warn "It appears you are running with multiple slurmds"
 	} else {
 		log_error "scontrol show config command failed"
 		set exit_code 1
@@ -146,7 +146,7 @@ expect {
 	}
 }
 if {$matches < 1} {
-	send_user "\nWARNING: no front end nodes found\n"
+	log_warn "No front end nodes found"
 } else {
 #
 #	Report one slurm front end node

@@ -60,7 +60,7 @@ proc test_alloc_size { task_cnt } {
 		}
 	}
 	if {[wait_for_job $job_id "DONE"] != 0} {
-		send_user "\nWARNING: job $job_id did not complete\n"
+		log_warn "Job $job_id did not complete"
 		cancel_job $job_id
 		set max_tasks $task_cnt
 		return
@@ -154,8 +154,7 @@ proc test_alloc_size { task_cnt } {
 print_header $test_id
 
 if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
-	send_user "\nWARNING: This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE\n"
-	exit 0
+	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
 set partition [default_partition]

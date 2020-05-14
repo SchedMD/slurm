@@ -51,8 +51,7 @@ set test_prog   "test$test_id.prog"
 print_header $test_id
 
 if { [test_front_end] == 1 } {
-	send_user "\nWARNING: Test incompatible with front-end systems\n"
-	exit 0
+	skip "Test incompatible with front-end systems"
 }
 
 # Procedure to run a configuration

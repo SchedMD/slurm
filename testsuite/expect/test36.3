@@ -38,18 +38,15 @@ set exit_code   0
 print_header $test_id
 
 if {[file executable $sbatch] == 0} {
-	send_user "\nWARNING: $sbatch does not exist\n"
-	exit 0
+	skip "$sbatch does not exist"
 }
 
 if {[file executable $bkill] == 0} {
-	send_user "\nWARNING: $bkill does not exist\n"
-	exit 0
+	skip "$bkill does not exist"
 }
 
 if {[file executable $scontrol] == 0} {
-	send_user "\nWARNING: $scontrol does not exist\n"
-	exit 0
+	skip "$scontrol does not exist"
 }
 
 #

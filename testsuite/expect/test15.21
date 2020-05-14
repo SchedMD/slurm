@@ -44,18 +44,14 @@ set exit_code   0
 print_header $test_id
 
 if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit 0
+	skip "This test is incompatible with front-end systems"
 } elseif {[test_topology]} {
-	send_user "\nWARNING: This test is incompatible topology configured systems\n"
-	exit 0
+	skip "This test is incompatible topology configured systems"
 }
 
 set available [available_nodes $partition ""]
 if {$available < 3} {
-	send_user "\nWARNING: This test requires 3 nodes, "
-	send_user "but only $available available\n"
-	exit 0
+	skip "This test requires 3 nodes, but only $available available"
 }
 
 if {[string length $partition] == 0} {
@@ -76,9 +72,8 @@ set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N3-3 -p $partition --contiguous -t1 $srun -l $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Required node not available|Node count specification invalid|configuration not available" {
-		send_user "\nWARNING: can't test --contiguous distribution\n"
 		slow_kill $salloc_pid
-		exit $exit_code
+		skip "Can't test --contiguous distribution"
 	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

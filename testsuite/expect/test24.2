@@ -41,8 +41,7 @@ print_header	$test_id
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 ################################################################
@@ -101,13 +100,11 @@ proc sshare_opt { soption } {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit $exit_code
+			skip "Can not test without accounting enabled"
 		}
 
 		if {$not_support == 2} {
-			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
-			exit $exit_code
+			skip "Can not test without priority/multifactor plugin"
 		}
 
 		return $matches
@@ -140,13 +137,11 @@ proc sshare_opt { soption } {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit $exit_code
+			skip "Can not test without accounting enabled"
 		}
 
 		if {$not_support == 2} {
-			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
-			exit $exit_code
+			skip "Can not test without priority/multifactor plugin"
 		}
 
 		return $matches
@@ -184,8 +179,7 @@ proc sshare_opt { soption } {
 		}
 
 		if {$not_support != 0} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit $exit_code
+			skip "Can not test without accounting enabled"
 		}
 
 		return $matches
@@ -223,13 +217,11 @@ proc sshare_opt { soption } {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit $exit_code
+			skip "Can not test without accounting enabled"
 		}
 
 		if {$not_support == 2} {
-			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
-			exit $exit_code
+			skip "Can not test without priority/multifactor plugin"
 		}
 
 		return $matches
@@ -267,13 +259,11 @@ proc sshare_opt { soption } {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit $exit_code
+			skip "Can not test without accounting enabled"
 		}
 
 		if {$not_support == 2} {
-			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
-			exit $exit_code
+			skip "Can not test without priority/multifactor plugin"
 		}
 
 		return $matches
@@ -307,13 +297,11 @@ proc sshare_opt { soption } {
 		}
 
 		if {$not_support == 1} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit $exit_code
+			skip "Can not test without accounting enabled"
 		}
 
 		if {$not_support == 2} {
-			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
-			exit $exit_code
+			skip "Can not test without priority/multifactor plugin"
 		}
 
 		return $matches

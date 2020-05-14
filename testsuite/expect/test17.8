@@ -61,8 +61,7 @@ proc endit { } {
 # otherwise this test may fail.
 #
 if {[test_super_user] == 0} {
-	log_warn "You must be SlurmUser or root to run this test."
-	exit 0
+	skip "You must be SlurmUser or root to run this test"
 }
 
 #
@@ -141,9 +140,8 @@ expect {
 		exp_continue
 	}
 	-re "time limit exceeds" {
-		send_user "\nWARNING: unable to fully test time limits\n"
-		# Don't use endit here since we don't want to print "SUCCESS"
 		reconfigure
+		log_warn "Unable to fully test time limits"
 		exit $exit_code
 	}
 	timeout {

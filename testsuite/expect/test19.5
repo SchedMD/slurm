@@ -105,11 +105,9 @@ expect {
 	}
 }
 if {$disabled == 1} {
-	send_user "\nWARNING: Current configuration prevents setting triggers\n"
-	send_user "         Need to run as SlurmUser or make SlurmUser=root\n"
 	cancel_job $job_id
 	exec rm -f $file_in $file_in_fini $file_in_time
-	exit $exit_code
+	skip "Current configuration prevents setting triggers. Need to run as SlurmUser or make SlurmUser=root"
 }
 if {$matches == 0} {
 	log_error "Trigger creation failure"
@@ -226,13 +224,12 @@ if {[wait_for_file $file_out_fini] != 0} {
 			set min_job_age [get_min_job_age]
 		}
 		if {$job_purge == 1 && $min_job_age < 60} {
-			send_user "\nWARNING: MinJobAge ($min_job_age) configured too low "
-			send_user "to capture job state after completion\n"
+			log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
 		} elseif {[test_power_save] == 0} {
 			log_error "File $file_out_fini contents are bad, CD run time"
 			set exit_code 1
 		} else {
-			send_user "\nWARNING: job timeout bad, possibly due to power save mode\n"
+			log_warn "Job timeout bad, possibly due to power save mode"
 		}
 	}
 }

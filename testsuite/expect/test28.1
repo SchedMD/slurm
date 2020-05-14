@@ -46,8 +46,7 @@ print_header $test_id
 
 set array_size  [get_array_config]
 if {$array_size < $min_task_id} {
-	send_user "\nWARNING: MaxArraySize is too small\n"
-	exit 0
+	skip "MaxArraySize is too small"
 }
 if {$array_size > $max_task_id} {
 	set array_size $max_task_id

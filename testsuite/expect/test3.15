@@ -152,17 +152,14 @@ proc test_license_count {want_total want_used want_free } {
 print_header $test_id
 
 if {[is_super_user] == 0} {
-	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
-	exit 0
+	skip "This test can't be run except as SlurmUser"
 }
 
 set def_part_name [default_partition]
 if {[test_linear]} {
-	send_user "\nWARNING: This test is incompatible with select/linear\n"
-	exit $exit_code
+	skip "This test is incompatible with select/linear"
 } elseif {[default_part_exclusive]} {
-	send_user "\nWARNING: This test is incompatible with exclusive node allocations\n"
-	exit $exit_code
+	skip "This test is incompatible with exclusive node allocations"
 }
 
 set user_name [get_my_user_name]

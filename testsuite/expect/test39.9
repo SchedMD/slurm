@@ -41,20 +41,17 @@ set generic_msg "The gpu/generic plugin is loaded, so Slurm can't really test GP
 print_header $test_id
 
 if {[have_nvml] == 0} {
-	log_warn "NVML must be installed and enabled to test GPU frequency operations."
-	exit 0
+	skip "NVML must be installed and enabled to test GPU frequency operations"
 }
 if {[slurmd_user_root] == 0} {
-	log_warn "SlurmdUser must be root to test GPU frequency operations."
-	exit 0
+	skip "SlurmdUser must be root to test GPU frequency operations"
 }
 print_time
 
 if {[test_cons_tres]} {
         send_user "\nValid configuration, using select/cons_tres\n"
 } else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit 0
+        skip "This test is only compatible with select/cons_tres"
 }
 
 set gpu_cnt [get_gpu_count 1]
@@ -62,8 +59,7 @@ if {$gpu_cnt < 0} {
 	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPU in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPU in the default partition"
 }
 send_user "\nGPU count is $gpu_cnt\n"
 
@@ -89,8 +85,7 @@ expect {
 	}
 	-re $freq_parse_generic {
 		# Emit warning once and exit
-		log_warn $generic_msg
-		exit $exit_code
+		skip $generic_msg
 	}
 	timeout {
 		log_error "srun not responding"

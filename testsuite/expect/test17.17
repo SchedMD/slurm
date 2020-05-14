@@ -67,8 +67,7 @@ if {[string compare $nodelist_name ""] == 0} {
 	fail "Did not get hostname of task 0"
 }
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "Additional testing is incompatible with front-end systems"
 }
 
 #
@@ -127,7 +126,7 @@ if {$waited == 0} {
 	spawn $scontrol show partition
 	expect {
 		-re "OverSubscribe=FORCE" {
-			send_user "\nWARNING: Test incompatible with OverSubscribe=FORCE\n"
+			log_warn "Test incompatible with OverSubscribe=FORCE"
 			set waited 1
 			exp_continue
 		}

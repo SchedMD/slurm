@@ -120,8 +120,7 @@ expect {
 }
 
 if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
+	skip "Can not test without accounting enabled"
 }
 
 exit $exit_code

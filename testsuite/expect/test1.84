@@ -45,15 +45,13 @@ set file_in     "test$test_id.bash"
 print_header $test_id
 
 if { [test_front_end] } {
-	send_user "\nWARNING: This test is incompatible with FRONT_END systems\n"
-	exit 0
+	skip "This test is incompatible with FRONT_END systems"
 }
 
 # Various configurations allocate nodes, sockets, cores, cpus or threads;
 # not all of which are compatible with this test
 if {[test_linear]} {
-	send_user "\nWARNING: This test is incompatible with select/linear\n"
-	exit 0
+	skip "This test is incompatible with select/linear"
 }
 
 #
@@ -106,8 +104,7 @@ expect {
 	}
 }
 if {$part_oversubscribe_force != 0} {
-	send_user "\nWARNING: This test is incompatible with forced sharing of nodes\n"
-	exit 0
+	skip "This test is incompatible with forced sharing of nodes"
 }
 
 # Add sleep for any epilog clean up of previous jobs
@@ -150,9 +147,7 @@ expect {
 		exp_continue
 	}
 	-re "Task count specification invalid" {
-		send_user "\nWARNING: nodes have too many CPUs for test\n"
-		exit 0
- 		exp_continue
+		skip "Nodes have too many CPUs for test"
  	}
 	timeout {
 		log_error "srun not responding"
@@ -182,8 +177,7 @@ if {$cpu_cnt != $task_cnt} {
 	set exit_code 1
 }
 if {$cpu_cnt < 2} {
-	send_user "\nWARNING: The node only has one core\n"
-	exit $exit_code
+	skip "The node only has one core"
 }
 
 #
@@ -193,10 +187,7 @@ set task_cnt  0
 set srun_pid [spawn $srun -N1 --cpus-per-task=2 --exclusive -l -t1 --nodelist=$host $bin_printenv SLURM_PROCID]
 expect {
 	-re "Invalid node name specified" {
-		send_user "\nWARNING: Appears you are using "
-		send_user "multiple slurmd testing.\n"
-		send_user "This test won't work in that fashion.\n"
-		exit 0
+		skip "Appears you are using multiple slurmd testing. This test won't work in that fashion"
 	}
 	-re "$number: *($alpha_numeric_under)" {
 		incr task_cnt

@@ -36,8 +36,7 @@ set exit_code   0
 print_header $test_id
 
 if {[file executable $lsid] == 0} {
-	send_user "\nWARNING: $lsid does not exist\n"
-	exit 0
+	skip "$lsid does not exist"
 }
 
 set cluster_name [get_cluster_name]

@@ -54,29 +54,22 @@ array set freq_lvl_2 {
 print_header $test_id
 
 if { [test_using_slurmdbd] == 0 } {
-	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
-	exit 0
+	skip "This test can't be run without AccountStorageType=slurmdbd"
 }
 if {![string compare [test_proctrack] "linuxproc"]} {
-	send_user "\nWARNING: this test cannot run on ProctrackType of linuxproc\n"
-	exit 0
+	skip "This test cannot run on ProctrackType of linuxproc"
 }
 if {![string compare [get_job_acct_type] "none"]} {
-	send_user "\nWARNING: this test cannot run on JobAcctGatherType of none\n"
-	exit 0
+	skip "This test cannot run on JobAcctGatherType of none"
 } 
 if {[slurmd_user_root] == 0} {
-	send_user "\nWARNING: This test is incompatible with SlurmdUser != root\n"
-	exit 0
+	skip "This test is incompatible with SlurmdUser != root"
 }
 if {[test_cpu_affinity_or_cgroup] == 0} {
-	send_user "\nWARNING: This test requires some form of task affinity\n"
-	exit 0
+	skip "This test requires some form of task affinity"
 }
 if {![test_accting_steps]} {
-	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
-	send_user "(AccountingStorageEnforce)\n"
-	exit 0
+	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
 }
 
 proc sub_job { freq } {
@@ -197,9 +190,8 @@ if {[wait_for_file $file_out] == 0} {
         }
 }
 if {$userspace_governor == 0} {
-	send_user "\nWARNING: Node configuration prevents direct control over CPU frequency\n"
 	exec $bin_rm -f $file_id $file_in $file_out
-	exit 0
+	skip "Node configuration prevents direct control over CPU frequency"
 }
 
 set match 0

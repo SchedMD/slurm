@@ -107,10 +107,9 @@ proc multi_socket_gres { gres_string } {
 print_header $test_id
 
 if {[test_cons_tres]} {
-        send_user "\nValid configuration, using select/cons_tres\n"
+    send_user "\nValid configuration, using select/cons_tres\n"
 } else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit 0
+    skip "This test is only compatible with select/cons_tres"
 }
 
 set gpu_cnt [get_gpu_count 1]
@@ -118,17 +117,14 @@ if {$gpu_cnt < 0} {
 	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPUs in the default partition"
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 if {$node_conf(Sockets) < 2} {
-	send_user "\nWARNING: This test requires 2 or more sockets per node in the default partition\n"
-	exit 0
+	skip "This test requires 2 or more sockets per node in the default partition"
 }
 if {$node_conf(CPUsPerSocket) < 2} {
-	send_user "\nWARNING: This test requires 2 or more cores per socket in the default partition\n"
-	exit 0
+	skip "This test requires 2 or more cores per socket in the default partition"
 }
 set cpus_per_node $node_conf(CPUTot)
 log_info "GPU count is $gpu_cnt"
@@ -172,8 +168,7 @@ expect {
 	}
 	-re "CPU_IDs=($controlmachine_regex)" {
 		if {$multi_socket != 0 && [string first , $expect_out(1,string)] == -1} {
-			send_user "\WARNING: Allocated CPUs do not appear to span multiple sockets.\n"
-			send_user "\WARNING: This is fine if every GPU is bound to ALL sockets.\n"
+			log_warn "Allocated CPUs do not appear to span multiple sockets. This is fine if every GPU is bound to ALL sockets"
 		}
 		exp_continue
 	}

@@ -43,16 +43,14 @@ set prompt      "PROMPT: "
 print_header $test_id
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+        skip "This test is incompatible with front-end systems"
 }
 
 # find out if we have enough nodes to test functionality
 set partition [default_partition]
 set node_count [get_node_cnt_in_part $partition]
 if { $node_count < 2 } {
-	send_user "WARNING: Insufficient nodes in default partition ($node_count < 2)\n"
-	exit $exit_code
+	skip "Insufficient nodes in default partition ($node_count < 2)"
 }
 
 make_bash_script $file_bash {
@@ -72,9 +70,8 @@ expect {
 		exp_continue
 	}
 	-re "(configuration is not available|Unable to submit batch job|Node count specification invalid|More processors requested than permitted)" {
-		send_user "\nWARNING: can't test srun task distribution\n"
 		file delete $file_bash
-		exit 0
+		skip "Can't test srun task distribution"
 	}
 	-re "\"$prompt" {
 		# skip this, just echo of setting prompt"
@@ -124,15 +121,13 @@ expect {
 }
 
 if {$node_cnt != 2} {
-	send_user "\nWARNING: need 2 nodes to perform test\n"
 	file delete $file_bash
-	exit $exit_code
+	skip "Need 2 nodes to perform test"
 }
 
 if {$task_cnt < (2 * $node_cnt)} {
-        send_user "\nWARNING: need at least 2 CPUs per node, test is not applicable\n"
 	file delete $file_bash
-        exit $exit_code
+    skip "Need at least 2 CPUs per node, test is not applicable"
 }
 
 #############################################################################

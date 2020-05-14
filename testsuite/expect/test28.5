@@ -42,8 +42,7 @@ set file_script  "test$test_id.sh"
 print_header $test_id
 
 if {[get_array_config] < [expr $array_size + 1]} {
-	send_user "\nWARNING: MaxArraySize is to small for this test\n"
-	exit 0
+	skip "MaxArraySize is to small for this test"
 }
 
 proc hold_job {job} {

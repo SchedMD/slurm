@@ -67,8 +67,7 @@ expect {
 	}
 }
 if {$matches < 1} {
-	send_user "\nWARNING: no suitable front end nodes found\n"
-	exit $exit_code
+	skip "No suitable front end nodes found"
 }
 
 
@@ -88,8 +87,7 @@ expect {
 			set access_err 1
 		}
 		if {$access_err == 1} {
-			send_user "\nWARNING: user not authorized\n"
-			exit $exit_code
+			skip "User not authorized"
 		} else {
 			set authorized 0
 		}

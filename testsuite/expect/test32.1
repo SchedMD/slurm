@@ -36,8 +36,7 @@ set exit_code    0
 print_header $test_id
 
 if {[file executable $sgather] == 0} {
-	send_user "\nWARNING: $sgather does not exist\n"
-	exit 0
+	skip "$sgather does not exist"
 }
 
 set matches 0

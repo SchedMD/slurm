@@ -72,10 +72,8 @@ expect {
 	}
 }
 if {$permission == 1} {
-	send_user "\nWARNING: Current configuration prevents setting triggers\n"
-	send_user "         Need to run as SlurmUser or make SlurmUser=root\n"
 	exec $bin_rm -f $trigger_file_in
-	exit $exit_code
+	skip "Current configuration prevents setting triggers. Need to run as SlurmUser or make SlurmUser=root"
 }
 if {$match != 1} {
 	log_error "Trigger was not set"

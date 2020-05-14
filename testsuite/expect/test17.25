@@ -43,7 +43,7 @@ set account	     "dummy_acct"
 print_header $test_id
 
 if {[test_assoc_enforced]} {
-	send_user "\nWARNING: Using users default account instead of $account since associations are enforced.\n"
+	log_warn "Using users default account instead of $account since associations are enforced"
 	set account [get_default_acct 0]
 }
 

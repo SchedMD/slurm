@@ -83,7 +83,7 @@ if {$task_num <= 32} {
 set srun_pid [spawn $srun -N$node_cnt -n$task_num -O -l --threads=$thread_cnt -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Memory required by task is not available" {
-		send_user "\nWARNING: DefMemPerTask is configured too high for this test\n"
+		log_warn "DefMemPerTask is configured too high for this test"
 		set host_0 "warn"
 	}
 	-re "0: *($alpha_numeric_under)" {

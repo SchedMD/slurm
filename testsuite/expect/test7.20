@@ -104,8 +104,7 @@ proc do_copy { src dst } {
 		spawn $bin_cp -v $src $dst
 		expect {
 			timeout {
-				log_error "$file was not copied"
-				exit 1
+				fail "$file was not copied"
 			}
 			eof {
 				lassign [wait] pid spawnid os_error_flag rc
@@ -164,8 +163,7 @@ proc endit { exit_code } {
 	reconfigure
 
 	if {$exit_code == $exit_code_skip} {
-		send_user "\nWARNING: Unable to run test with available nodes\n"
-		exit 0
+		skip "Unable to run test with available nodes"
 	} elseif {$exit_code != 0} {
 		log_error "exiting with exit code $exit_code"
 	}
@@ -175,8 +173,7 @@ proc endit { exit_code } {
 
 proc check_rc { exit_code } {
 	if {$exit_code != 0} {
-		log_error "exiting with exit code $exit_code"
-		exit $exit_code
+		fail "Exiting with exit code $exit_code"
 	}
 }
 
@@ -296,20 +293,16 @@ proc test_bin_fail { num bin args het_job count } {
 }
 
 if {[have_lua] == 0} {
-	log_warn "LUA must be installed and enabled to test lua job_submit plugin."
-	exit 0
+	skip "LUA must be installed and enabled to test lua job_submit plugin."
 }
 
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 } elseif { [test_enforce_limits] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountingStorageEnforce\n"
-	exit 0
+	skip "This test can't be run without a usable AccountingStorageEnforce"
 }
 if { [test_limits_enforced] == 0 } {
-	send_user "\nWARNING: This test can't be run without enforcing limits\n"
-	exit 0
+	skip "This test can't be run without enforcing limits"
 }
 
 # Verify cluster is able to run largest test job
@@ -330,8 +323,7 @@ expect {
 	}
 }
 if { $got_uid == 0 } {
-	send_user "\nWARNING: System too small for test\n"
-	exit 0
+	skip "System too small for test"
 }
 
 set config_dir ""
@@ -352,8 +344,7 @@ expect {
 }
 log_user 1
 if { $config_dir == "" } {
-	log_error "scontrol did not provide SLURM_CONF"
-	exit 1
+	fail "scontrol did not provide SLURM_CONF"
 }
 
 cleanup_accounts

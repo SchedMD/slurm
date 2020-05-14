@@ -39,8 +39,7 @@ set file_out	"test$test_id.output"
 print_header $test_id
 
 if {[file executable $qsub] == 0} {
-	send_user "\nWARNING: $qsub not found\n"
-	exit 0
+	skip "$qsub not found"
 }
 
 set exe "hostname"

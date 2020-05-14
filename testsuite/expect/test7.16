@@ -87,15 +87,12 @@ expect {
 }
 log_user 1
 if {$auth_munge == 0} {
-	send_user "\nWARNING: not running auth/munge, test is not applicable\n"
-	exit $exit_code
+	skip "Not running auth/munge, test is not applicable"
 }
 
 set job_id [alloc_job]
 if {$job_id != 0} {
-	send_user "\nWARNING: Allocation granted with bad Munge credential\n"
-	send_user "WARNING: This happens rarely, when the Slurm test modifies a byte that Munge does not use\n"
-	send_user "WARNING: Try one more time...\n"
+	log_warn "Allocation granted with bad Munge credential. This happens rarely, when the Slurm test modifies a byte that Munge does not use. Try one more time.."
 	sleep 1
 	set job_id [alloc_job]
 	if {$job_id != 0} {

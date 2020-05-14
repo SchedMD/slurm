@@ -46,24 +46,20 @@ print_header $test_id
 # Test for existence of mpi compiler
 #
 if {[info exists mpicc] == 0} {
-	send_user "\nWARNING: mpicc not defined, can't perform MPI testing\n"
-	exit 0
+	skip "Mpicc not defined, can't perform MPI testing"
 }
 if {[file executable $mpicc] == 0} {
-	send_user "\nWARNING: $mpicc does not exists\n"
-	exit 0
+	skip "$mpicc does not exists"
 }
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit 0
+    skip "This test is incompatible with front-end systems"
 }
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {$nb_nodes < 2} {
-	send_user "\nWARNING: Need 2 or more nodes in default partition\n"
-	exit $exit_code
+	skip "Need 2 or more nodes in default partition"
 }
 
 #
@@ -86,8 +82,7 @@ if {$use_pmi} {
 	}
 }
 if {![file exists $test_prog]} {
-	send_user "\nWARNING: Unable to build test program\n"
-	exit 0
+	skip "Unable to build test program"
 }
 
 ########################################################################
@@ -140,11 +135,10 @@ expect {
 }
 
 if {$no_start != 0} {
-	send_user "\nWARNING: partition too small for test\n"
 	if {$job_id != 0} {
 		cancel_job $job_id
 	}
-	exit 0
+	skip "Partition too small for test"
 }
 if {$job_id == 0} {
 	fail "Batch submit failure"
@@ -250,11 +244,10 @@ expect {
 }
 
 if {$no_start != 0} {
-	send_user "\nWARNING: partition too small for test\n"
 	if {$job_id != 0} {
 		cancel_job $job_id
 	}
-	exit 0
+	skip "Partition too small for test"
 }
 if {$job_id == 0} {
 	fail "Batch submit failure"
@@ -319,8 +312,7 @@ if {[test_pack_step] == 0} {
 	if {$exit_code == 0} {
 		exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
 	}
-	send_user "\nWARNING: heterogeneous steps not currently supported\n"
-	exit $exit_code
+	skip "Heterogeneous steps not currently supported"
 }
 
 #
@@ -336,8 +328,7 @@ if {[test_multiple_slurmd]} {
 	if {$exit_code == 0} {
 		exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
 	}
-	send_user "\nWARNING: This test is incompatible with multiple slurmd systems\n"
-	exit $exit_code
+	skip "This test is incompatible with multiple slurmd systems"
 }
 
 send_user "\n\nTEST OF PACK GROUP 0,1\n\n"

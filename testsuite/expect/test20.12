@@ -20,8 +20,7 @@ set variable2_value "var2"
 print_header $test_id
 
 if {[file executable $qsub] == 0} {
-	send_user "\nWARNING: qsub was not found\n"
-	exit 0
+	skip "qsub was not found"
 }
 
 proc make_random_var_name {} {

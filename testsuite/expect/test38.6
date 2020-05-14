@@ -41,16 +41,13 @@ set spank_out       "${cwd}/test${test_id}.spank.out"
 print_header $test_id
 
 if {[test_super_user] == 0} {
-	send_user "\nWARNING: This test must be run as SlurmUser\n"
-	exit 0
+	skip "This test must be run as SlurmUser"
 }
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+    skip "This test is incompatible with front-end systems"
 }
 if {[test_pack_step] == 0} {
-	send_user "\nWARNING: heterogeneous steps not currently supported\n"
-	exit $exit_code
+	skip "Heterogeneous steps not currently supported"
 }
 
 proc end_it { exit_code } {
@@ -75,8 +72,7 @@ proc end_it { exit_code } {
 
 set node_count [available_nodes "" ""]
 if {$node_count < 2} {
-        send_user "\nWARNING: Insufficient node count to run test\n"
-        exit $exit_code
+    skip "Insufficient node count to run test"
 }
 
 #
@@ -123,8 +119,7 @@ expect {
 log_user 1
 
 if {[string compare $ctld_slurm_ver $loc_slurm_ver]} {
-	send_user "\nWARNING: slurmctld ($ctld_slurm_ver) and local Slurm ($loc_slurm_ver) versions are not the same, can not continue.\n"
-	exit 0
+	skip "Slurmctld ($ctld_slurm_ver) and local Slurm ($loc_slurm_ver) versions are not the same, can not continue"
 }
 
 
@@ -169,8 +164,7 @@ exec $bin_echo "required ${file_prog}.so ${spank_out}" >>$new_spank_conf
 spawn $bin_cp -f $new_spank_conf $spank_conf_file
 expect {
 	-re "Permission denied" {
-		send_user "\nWARNING: User lacks permission to update plugstack_conf file\n"
-		exit 0
+		skip "User lacks permission to update plugstack_conf file"
 	}
 	eof {
 		wait
@@ -368,8 +362,7 @@ if {[wait_for_file $spank_out] == 0} {
 		set fail_cnt 1
 	}
 	if {$fail_cnt != 0} {
-		send_user "\nWARNING: Check for matching checksums on the plugstack.conf file.\n"
-		send_user "         Different checksums could indicate file system delays\n"
+		log_warn "Check for matching checksums on the plugstack.conf file. Different checksums could indicate file system delays"
 		end_it 1
 	}
 	send_user "\nRemote (slurmd) spank plugin success\n"

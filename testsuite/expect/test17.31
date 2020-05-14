@@ -47,9 +47,7 @@ print_header $test_id
 
 set available [available_nodes $partition ""]
 if {$available < $node_cnt} {
-	send_user "\nWARNING: not enough nodes currently available"
-	send_user " ($available avail, $node_cnt needed)\n"
-	exit $exit_code
+	skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
 }
 
 log_user 0
@@ -143,7 +141,7 @@ expect {
 		exp_continue
 	}
 	"error: Batch job submission failed" {
-		send_user "\nWARNING: this might be legitimate, depending upon configuration\n"
+		log_warn "This might be legitimate, depending upon configuration"
 		exp_continue
 	}
 

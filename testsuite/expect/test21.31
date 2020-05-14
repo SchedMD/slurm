@@ -94,29 +94,25 @@ set timeout 60
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 #
 # Check that current user is root or SlurmUser
 #
 if {[test_super_user] == 0} {
-	send_user "\nWARNING: Test can only be ran as SlurmUser\n"
-	exit 0
+	skip "Test can only be ran as SlurmUser"
 }
 
 #if { [string compare [check_accounting_admin_level] "Administrator"] } {
-#	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-#	exit 0
+#	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 #}
 
 # verify a clean system and permission to do this work
 remove_cluster "$tc2"
 remove_res "$sr1"
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 
 #

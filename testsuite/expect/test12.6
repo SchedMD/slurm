@@ -41,8 +41,7 @@ set job_id      0
 print_header $test_id
 
 if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
 # Check if acct_gather_profile/hdf5 is installed
@@ -59,8 +58,7 @@ expect {
 }
 log_user 1
 if {$profile == 0} {
-	send_user "\nWARNING: acct_gather_profile/hdf5 not installed on this system\n"
-	exit 0
+	skip "acct_gather_profile/hdf5 not installed on this system"
 }
 send_user "\nacct_gather_profile/hdf5 plugin installed\n"
 send_user "Note: this test takes 3 minutes to run\n"
@@ -86,9 +84,8 @@ expect {
 		exp_continue
 	}
 	-re "error: PROFILE: Impossible to create the table" {
-		send_user "\nWARNING: This error is cause by a bug in HDF5 1.10.0, and is fixed in 1.10.1.  Please upgrade to run this test.\n"
 		exec rm -f $file_prog
-		exit 0;
+		skip "This error is cause by a bug in HDF5 1.10.0, and is fixed in 1.10.1.  Please upgrade to run this test"
 	}
 	-re "error:" {
 		fail "Something happened on start of job"

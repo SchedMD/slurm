@@ -43,9 +43,7 @@ set iterations       50
 print_header $test_id
 
 if {![test_accting_steps]} {
-	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
-	send_user "(AccoutingStorageEnforce)\n"
-	exit 0
+	skip "This test can not be run with nosteps or nojobs (AccoutingStorageEnforce)"
 }
 
 #
@@ -55,8 +53,7 @@ if {![test_accting_steps]} {
 # by just closing all files after fd=3.
 #
 if {[string compare [test_proctrack] "cray_aries"] == 0} {
-	log_warn "Test incompatible with proctrack/cray_aries"
-	exit $exit_code
+	skip "Test incompatible with proctrack/cray_aries"
 }
 
 #
@@ -133,7 +130,7 @@ if {$fini != 1} {
 if {$matches != 0} {
 	set tot [expr $iterations + 1]
 	if {$matches <= 1} {
-		send_user "\nWARNING: $matches of $tot tests failed\n"
+		log_warn "$matches of $tot tests failed"
 	} else {
 		log_error "$matches of $tot tests failed"
 		set exit_code 1

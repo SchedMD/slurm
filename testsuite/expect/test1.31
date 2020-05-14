@@ -147,7 +147,7 @@ expect {
 }
 
 if {$stale_cnt != 0} {
-	send_user "\nWARNING: Stale file handles $task_cnt for $stale_cnt tasks\n"
+	log_warn "Stale file handles $task_cnt for $stale_cnt tasks"
 	incr task_cnt $stale_cnt
 }
 if {$task_cnt != $env_valu_nprocs} {

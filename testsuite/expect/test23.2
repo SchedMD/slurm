@@ -65,18 +65,15 @@ set nt		NTasks
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [test_front_end] == 1 } {
-	send_user "\nWARNING: This test can't be run on a front-end system\n"
-	exit 0
+	skip "This test can't be run on a front-end system"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 #
@@ -111,7 +108,7 @@ expect {
 		exp_continue
 	}
 	-re "Nothing new added" {
-		send_user "\nWARNING: vestigial account $test_acct found\n"
+		log_warn "Vestigial account $test_acct found"
 		incr aamatches
 		exp_continue
 	}
@@ -221,8 +218,7 @@ if {$job_id3 == 0} {
 # Wait for job to start running, then status it
 #
 if {[wait_for_job $job_id3 "RUNNING"] != 0} {
-	log_error "Waiting for job to start running"
-	exit 1
+	fail "Waiting for job to start running"
 }
 sleep 5
 ################################################################
@@ -271,8 +267,7 @@ proc sstat_job { soption job_id step_id } {
 			}
 		}
 		if {$not_support != 0} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		return $matches
 	}
@@ -306,8 +301,7 @@ proc sstat_job { soption job_id step_id } {
 			}
 		}
 		if {$not_support != 0} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		return $matches
 	}
@@ -348,8 +342,7 @@ proc sstat_job { soption job_id step_id } {
 			}
 		}
 		if {$not_support != 0} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		return $matches
 	}
@@ -390,8 +383,7 @@ proc sstat_job { soption job_id step_id } {
 			}
 		}
 		if {$not_support != 0} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		return $matches
 	}
@@ -432,8 +424,7 @@ proc sstat_job { soption job_id step_id } {
 			}
 		}
 		if {$not_support != 0} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		return $matches
 	}
@@ -505,8 +496,7 @@ proc sstat_vargs { soption vargs job_id} {
 			}
 		}
 		if {$not_support != 0} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		return $matches
 	}

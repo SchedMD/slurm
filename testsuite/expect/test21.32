@@ -137,20 +137,17 @@ proc check_pre { preempt_qos } {
 # Check that current user is root or SlurmUser
 #
 if {[test_super_user] == 0} {
-	send_user "\nWARNING: Test can only be ran as SlurmUser\n"
-	exit 0
+	skip "Test can only be ran as SlurmUser"
 }
 
 if {[test_using_slurmdbd] != 1} {
-	send_user "\nWARNING: not using accounting_storage/slurmdbd\n"
-	exit $exit_code
+	skip "Not using accounting_storage/slurmdbd"
 }
 
 # clean it up (and check to make sure we can do this test
 remove_qos $qos_names_str
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 
 # Add a few QoS

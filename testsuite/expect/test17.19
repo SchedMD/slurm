@@ -82,8 +82,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	log_error "sbatch failed to submit job"
-	exit 1
+	fail "sbatch failed to submit job"
 }
 
 set matches 0
@@ -103,8 +102,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	log_error "sbatch failed to set partition properly"
-	exit 1
+	fail "sbatch failed to set partition properly"
 }
 if {[cancel_job $job_id] != 0} {
 	set exit_code 1
@@ -147,8 +145,7 @@ if {$job_id != 0} {
 	set exit_code 1
 }
 if {$matches != 1} {
-	log_error "sbatch failed to report invalid partition name"
-	exit 1
+	fail "sbatch failed to report invalid partition name"
 }
 if {$exit_code != 0} {
 	exit $exit_code

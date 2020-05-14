@@ -66,14 +66,11 @@ print_header $test_id
 #
 
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator.\n \
-	 	  Use: sacctmgr mod user \$USER set admin=admin."
-	exit 0
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
 
@@ -329,9 +326,7 @@ proc end_it { exit_code } {
 #start test
 
 if {[test_federation_setup]} {
-	log_warn "WARNING: This test can't be run without fed_slurm_base,\
-		fedc1, fedc2, fedc3 setup in globals.local."
-	exit 0
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
 }
 
 if {[test_all_up]} {

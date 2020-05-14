@@ -47,16 +47,13 @@ if {[file executable $sgather] == 0} {
 }
 
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\m"
-	exit 0
+	skip "This test is incompatible with front-end systems"
 }
 if {[test_multiple_slurmd] != 0} {
-	send_user "\nWARNING: This test is incompatible with multiple slurmd systems\n"
-	exit 0
+	skip "This test is incompatible with multiple slurmd systems"
 }
 if {[slurmd_user_root] == 0} {
-	send_user "\nWARNING: This test is incompatible with SlurmdUser != root\n"
-	exit 0
+	skip "This test is incompatible with SlurmdUser != root"
 }
 
 #

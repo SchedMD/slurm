@@ -79,8 +79,7 @@ proc inc3_11_1 {} {
 	}
 
 	if {[test_super_user] == 0} {
-		send_user "\n\033\[34mWARNING: can not test more unless SlurmUser or root (Within: inc3.11.1)\033\[m\n"
-		exit $exit_code
+		skip "Can not test more unless SlurmUser or root (Within: inc3.11.1)"
 	}
 
 	set corecnt [ expr $part_cores / 2 ]

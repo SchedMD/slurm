@@ -55,12 +55,10 @@ set step_id	0
 print_header $test_id
 
 if {[test_front_end]} {
-	log_warn "This test is incompatible with front-end systems"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 if {![test_accting_steps]} {
-	log_warn "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
-	exit $exit_code
+	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
 }
 
 proc _get_mem {prog} {
@@ -238,12 +236,10 @@ expect {
 }
 log_user 1
 if {$supported_gather == 0} {
-	log_warn "Job accounting information not gathered on this system"
-	exit 0
+	skip "Job accounting information not gathered on this system"
 }
 if {$supported_storage == 0} {
-	log_warn "Job accounting information not stored on this system"
-	exit 0
+	skip "Job accounting information not stored on this system"
 }
 
 #
@@ -289,12 +285,10 @@ expect {
 	}
 }
 if {$config_prob != 0} {
-	log_warn "Unable to test with current node configuration"
-	exit 0
+	skip "Unable to test with current node configuration"
 }
 if {$job_id == 0} {
-	log_error "batch submit failure"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #

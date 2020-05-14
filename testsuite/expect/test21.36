@@ -76,12 +76,10 @@ proc endit { } {
 print_header $test_id
 
 if {[test_using_slurmdbd] == 0} {
-	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
-	exit 0
+	skip "This test can't be run without AccountStorageType=slurmdbd"
 }
 if {[string compare [check_accounting_admin_level] "Administrator"]} {
-	send_user "\nThis test can't be run without being an Accounting administrator.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator"
 }
 
 exec $bin_rm -f $sql_query $sql_query_rem

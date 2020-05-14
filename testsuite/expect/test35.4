@@ -59,12 +59,10 @@ print_header $test_id
 
 set bb_types [get_bb_types]
 if {[string first "datawarp" $bb_types] == -1} {
-	send_user "\nWARNING: This test can only be run with the burst_buffer/datawarp plugin\n"
-	exit 0
+	skip "This test can only be run with the burst_buffer/datawarp plugin"
 }
 if {[get_bb_persistent] == 0} {
-	send_user "\nWARNING: This test can only be run if persistent burst_buffers can be created/deleted\n"
-	exit 0
+	skip "This test can only be run if persistent burst_buffers can be created/deleted"
 }
 
 make_bash_script $script_mk "#BB create_persistent name=test$test_id capacity=48 access=striped type=scratch

@@ -83,8 +83,7 @@ if {$matches != 1} {
 }
 
 if {[test_front_end]} {
-    send_user "\nWARNING: Additional portions of this test are incompatible with front-end systems\n"
-	exit $exit_code
+    skip "Additional portions of this test are incompatible with front-end systems"
 }
 
 if {$exit_code == 0} {

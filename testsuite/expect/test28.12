@@ -40,8 +40,7 @@ print_header $test_id
 
 set min_job_age [get_min_job_age]
 if {$min_job_age > 60} {
-	send_user "\nWARNING: MinJobAge too large for this test\n"
-	exit 0
+	skip "MinJobAge too large for this test"
 }
 
 make_bash_script $file_script "

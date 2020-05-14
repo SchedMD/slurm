@@ -40,8 +40,7 @@ set task_limit    1
 print_header $test_id
 
 if {[get_array_config] < [expr $array_size + 1]} {
-	send_user "\nWARNING: MaxArraySize is too small\n"
-	exit 0
+	skip "MaxArraySize is too small"
 }
 
 # Submit a job array with 4 elements
@@ -66,8 +65,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	log_error "sbatch did not submit jobs"
-	exit 1
+	fail "sbatch did not submit jobs"
 }
 
 if {[wait_for_job ${job_id}_0 "RUNNING"] != 0} {

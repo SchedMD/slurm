@@ -124,7 +124,7 @@ expect {
 	}
 }
 if {$not_support != 0} {
-	send_user "\nWARNING: can not fully test without accounting enabled\n"
+	log_warn "Can not fully test without accounting enabled"
 }
 
 if {$exit_code == 0} {

@@ -43,19 +43,16 @@ set prompt      "PROMPT: "
 print_header $test_id
 
 if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit 0
+	skip "This test is incompatible with front-end systems"
 } elseif {[test_multiple_slurmd] != 0} {
-	send_user "\nWARNING: This test is incompatible with multiple slurmd systems\n"
-	exit 0
+	skip "This test is incompatible with multiple slurmd systems"
 }
 
 # find out if we have enough nodes to test functionality
 set partition [default_partition]
 set node_count [get_node_cnt_in_part $partition]
 if { $node_count < 2 } {
-	send_user "WARNING: Insufficient nodes in default partition ($node_count < 2)\n"
-	exit $exit_code
+	skip "Insufficient nodes in default partition ($node_count < 2)"
 }
 
 #
@@ -85,9 +82,8 @@ expect {
 		exp_continue
 	}
 	-re "salloc: error" {
-		send_user "\nWARNING: can't test srun task distribution\n"
 		exec $bin_rm -f $file_in
-		exit $exit_code
+		skip "Can't test srun task distribution"
 	}
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
@@ -228,11 +224,8 @@ set matches 0
 send "$srun -l -N1 -n1 --nodelist=$host_0 $bin_printenv SLURMD_NODENAME\r"
 expect {
 	-re "Requested node configuration is not available" {
-		send_user "\nWARNING: Appears you are using "
-		send_user "multiple slurmd testing.\n"
-		send_user "This test won't work in that fashion.\n"
 		send "exit\r"
-		exit 0
+		skip "Appears you are using multiple slurmd testing. This test won't work in that fashion"
 	}
 	-re "0: *($alpha_numeric_under)" {
 		if {[string compare $expect_out(1,string) $host_0] == 0} {

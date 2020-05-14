@@ -51,19 +51,14 @@ proc end_it { exit_code } {
 print_header $test_id
 
 if {![test_accting_steps]} {
-	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
-	send_user "(AccountingStorageEnforce)\n"
-	exit 0
+	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
 }
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit 0
+	skip "This test is incompatible with front-end systems"
 } elseif {[slurmd_user_root] == 0} {
-	send_user "\nWARNING: This test requires that the SlurmdUser be root\n"
-	exit 0
+	skip "This test requires that the SlurmdUser be root"
 } elseif {[get_node_cnt] < 2} {
-	send_user "\nWARNING: This test requires that the configuration has at least 2 nodes.\n"
-	exit 0
+	skip "This test requires that the configuration has at least 2 nodes"
 }
 
 set def_part [default_partition]
@@ -83,8 +78,7 @@ expect {
 	}
 }
 if {![string compare $node1 ""] || ![string compare $node2 ""]} {
-	send_user "\nWARNING: Did not find at least 2 idle nodes\n"
-	exit 0
+	skip "Did not find at least 2 idle nodes"
 }
 
 set pack_job_id 0

@@ -48,12 +48,10 @@ set NO_VAL 4294967294
 print_header $test_id
 
 if {[test_super_user] == 0} {
-	log_warn "This test must be run as SlurmUser"
-	exit 0
+	skip "This test must be run as SlurmUser"
 }
 if {[test_front_end]} {
-        log_warn "This test is incompatible with front-end systems"
-        exit $exit_code
+    skip "This test is incompatible with front-end systems"
 }
 
 proc end_it { exit_code } {
@@ -106,8 +104,7 @@ expect {
 }
 log_user 1
 if {[string compare $config_dir ""] == 0} {
-	log_error "Could not locate slurm.conf directory"
-	exit 1
+	fail "Could not locate slurm.conf directory"
 }
 
 log_user 0
@@ -125,8 +122,7 @@ expect {
 log_user 1
 
 if {[string compare $ctld_slurm_ver $loc_slurm_ver]} {
-	log_warn "slurmctld ($ctld_slurm_ver) and local Slurm ($loc_slurm_ver) versions are not the same, can not continue."
-	exit 0
+	skip "slurmctld ($ctld_slurm_ver) and local Slurm ($loc_slurm_ver) versions are not the same, can not continue"
 }
 
 set spank_conf_file ${config_dir}/plugstack.conf
@@ -135,8 +131,7 @@ if {[file exists $spank_conf_file]} {
 	spawn $bin_cat $spank_conf_file
 	expect {
 		-re "test${test_id}" {
-			log_error "spank plugin includes vestigial test${test_id}. You probably should manually remove it from $spank_conf_file. it was probably left over from some previous test failure."
-			exit 1
+			fail "spank plugin includes vestigial test${test_id}. You probably should manually remove it from $spank_conf_file. it was probably left over from some previous test failure."
 		}
 		eof {
 			wait
@@ -155,8 +150,7 @@ exec $bin_echo "required ${file_prog}.so ${spank_out}" > $new_spank_conf
 spawn $bin_cp -f $new_spank_conf $spank_conf_file
 expect {
 	-re "Permission denied" {
-		log_warn "User lacks permission to update plugstack_conf file"
-		exit 0
+		skip "User lacks permission to update plugstack_conf file"
 	}
 	eof {
 		wait

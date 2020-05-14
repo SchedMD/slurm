@@ -47,16 +47,13 @@ print_header $test_id
 # Test for existence of mpi compiler
 #
 if {[info exists mpicc] == 0} {
-	send_user "\nWARNING: mpicc not defined, can't perform mpi testing\n"
-	exit 0
+	skip "Mpicc not defined, can't perform mpi testing"
 }
 if {[file executable $mpicc] == 0} {
-	send_user "\nWARNING: $mpicc does not exists\n"
-	exit 0
+	skip "$mpicc does not exists"
 }
 if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit 0
+	skip "This test is incompatible with front-end systems"
 }
 
 #
@@ -79,8 +76,7 @@ if {$use_pmi} {
 	}
 }
 if {![file exists $test_prog]} {
-	send_user "\nWARNING: Unable to build test program\n"
-	exit 0
+	skip "Unable to build test program"
 }
 
 # Delete left-over stdout/err files
@@ -96,7 +92,7 @@ file delete $file_out $file_err
 # mode.
 #
 if {[test_multiple_slurmd]} {
-	send_user "\nWARNING: This test is limited with multiple slurmd systems\n"
+	log_warn "This test is limited with multiple slurmd systems"
 	set tasks_over_nodes 1
 } else {
 	set tasks_over_nodes 2
@@ -155,11 +151,10 @@ expect {
 }
 
 if {$no_start != 0} {
-	send_user "\nWARNING: partition too small for test\n"
 	if {$job_id != 0} {
 		cancel_job $job_id
 	}
-	exit 0
+	skip "Partition too small for test"
 }
 if {$job_id == 0} {
 	fail "Batch submit failure"
@@ -245,9 +240,7 @@ if {$exit_code == 0} {
 		}
 	}
 	if {$matches != 0} {
-		send_user "WARNING: If using MVAPICH then\n"
-		send_user "         Configure \"PropagateResourceLimitsExcept=MEMLOCK\"\n"
-		send_user "         Also start slurmd with \"ulimit -l unlimited\"\n"
+		log_warn "If using MVAPICH then configure \"PropagateResourceLimitsExcept=MEMLOCK\". Also start slurmd with \"ulimit -l unlimited\""
 	} else {
 		send_user "Check contents of $file_err\n"
 	}

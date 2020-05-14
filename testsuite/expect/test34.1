@@ -45,9 +45,7 @@ set file_in        "test$test_id\_sc"
 print_header $test_id
 
 if {[test_preempttype_part] == 0} {
-	send_user "\nWARNING: This test requires that "
-	send_user "PreemptType=preempt/partition_prio\n"
-	exit $exit_code
+	skip "This test requires that PreemptType=preempt/partition_prio"
 }
 
 proc create_part { part nodes priority pre_type } {
@@ -57,8 +55,7 @@ proc create_part { part nodes priority pre_type } {
 	spawn $scontrol create partitionname=$part nodes=$nodes priority=$priority preemptmode=$pre_type
 	expect {
 		-re "invalid user" {
-			send_user "\nWARNING: User not authorized to run this test\n"
-			exit 0
+			skip "User not authorized to run this test"
 		}
 		timeout {
 			log_error "scontrol is not responding"
@@ -219,8 +216,7 @@ proc clean_up { rc } {
 }
 
 if {[is_super_user] == 0} {
-	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
-	exit 0
+	skip "This test can't be run except as SlurmUser"
 }
 
 make_bash_script $file_in "sleep 5"

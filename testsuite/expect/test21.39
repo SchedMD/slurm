@@ -71,8 +71,7 @@ print_header $test_id
 
 proc check_rc { exit_code } {
 	if {$exit_code != 0} {
-		log_error "exiting with exit code $exit_code"
-		exit $exit_code
+		fail "Exiting with exit code $exit_code"
 	}
 }
 
@@ -256,13 +255,11 @@ proc run_test { run_qos } {
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin."
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 cleanup_accounts

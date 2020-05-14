@@ -54,11 +54,9 @@ sleep 10
 "
 
 if { ![test_super_user] } {
-        send_user "\nWARNING: This test can't be run without being a super user of the cluster.\n"
-        exit 0
+    skip "This test can't be run without being a super user of the cluster"
 } elseif {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
-	send_user "\nWARNING: This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE\n"
-	exit 0
+	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
 proc sub_job { cpu_cnt part } {
@@ -215,8 +213,7 @@ expect {
 
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		exit 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait

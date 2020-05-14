@@ -47,13 +47,11 @@ print_header $test_id
 if {[test_cray]} {
 	set make_file 1
 	if { [file exists $pcmd_prog] == 0 } {
-		send_user "\nWARNING: The file $pcmd_prog was not found\n"
-		exit $exit_code
+		skip "The file $pcmd_prog was not found"
 	}
 }
 if { [string compare [test_launch_type] "slurm"] } {
-	send_user "\nWARNING: This test is only compatible with systems using launch/slurm\n"
-	exit $exit_code
+	skip "This test is only compatible with systems using launch/slurm"
 }
 set timeout $max_job_delay
 
@@ -207,12 +205,10 @@ proc run_job { file_type program_name conf_change task_pro} {
 
 
 if { [test_super_user] == 0 } {
-	send_user "WARNING: Test can only be run as SlurmUser\n"
-	exit $exit_code
+	skip "Test can only be run as SlurmUser"
 }
 if { [test_front_end] == 1 } {
-	send_user "WARNING: Test can not be run with front-end configuration\n"
-	exit $exit_code
+	skip "Test can not be run with front-end configuration"
 }
 
 set config_dir [get_conf_path]
@@ -241,8 +237,7 @@ expect {
 set cwd "[$bin_pwd]"
 set file_dir "/tmp"
 if {$get_name != 1} {
-	log_error "Did not get run_host"
-	exit 1
+	fail "Did not get run_host"
 }
 
 #

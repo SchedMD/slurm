@@ -53,8 +53,7 @@ set timeout $max_job_delay
 
 set available [available_nodes $partition ""]
 if {$available < $node_cnt} {
-    send_user "\nWARNING: not enough nodes currently available ($available avail, $node_cnt needed)\n"
-    exit $exit_code
+    skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
 }
 
 set timeout $max_job_delay
@@ -66,16 +65,13 @@ expect {
 		exp_continue
 	}
 	-re "More processors requested than permitted" {
-		send_user "\nWARNING: can't test salloc task distribution\n"
-		exit $exit_code
+		skip "Can't test salloc task distribution"
 	}
 	-re "Node count specification invalid" {
-		send_user "\nWARNING: can't test salloc task distribution\n"
-		exit $exit_code
+		skip "Can't test salloc task distribution"
 	}
 	-re "configuration not available" {
-		send_user "WARNING: partition too small for test\n"
-		exit 0
+		skip "Partition too small for test"
 	}
 	-re "($number): *($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
@@ -120,8 +116,7 @@ if {[string compare $host_2 ""] == 0} {
 	set exit_code   1
 }
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "Additional testing is incompatible with front-end systems"
 }
 if {[string compare $host_3 ""] != 0} {
 	log_error "Started more than three tasks"
@@ -157,10 +152,7 @@ expect {
 		exp_continue
 	}
 	-re "Invalid node name specified" {
-		send_user "\nWARNING: Appears you are using "
-		send_user "multiple slurmd testing.\n"
-		send_user "This test won't work in that fashion.\n"
-		exit 0
+		skip "Appears you are using multiple slurmd testing. This test won't work in that fashion"
 	}
 
 	-re "($number): *($alpha_numeric_under)" {

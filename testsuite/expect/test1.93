@@ -115,23 +115,20 @@ proc end_test { } {
 print_header $test_id
 
 if {![test_super_user]} {
-	send_user "\nWARNING: This test is only suitable for a super user (to restore down nodes).\n"
-	exit 0
+	skip "This test is only suitable for a super user (to restore down nodes)"
 }
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {$nb_nodes < 2} {
-	send_user "\nWARNING: Need 2 or more nodes in default partition\n"
-	exit $exit_code
+	skip "Need 2 or more nodes in default partition"
 }
 
 #
 # Test if CPU affinity support is supported.
 #
 if {![test_cpu_affinity]} {
-	send_user "\nWARNING: CPU affinity not supported on this system\n"
-	exit $exit_code
+	skip "CPU affinity not supported on this system"
 }
 send_user "\ntask affinity plugin installed\n"
 

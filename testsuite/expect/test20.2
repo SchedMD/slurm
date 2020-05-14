@@ -42,16 +42,13 @@ set job_name	"test$test_id"
 print_header $test_id
 
 if {[file executable $qsub] == 0} {
-	send_user "\nWARNING: $qsub does not exists\n"
-	exit 0
+	skip "$qsub does not exists"
 }
 if {[file executable $qstat] == 0} {
-	send_user "\nWARNING: $qstat does not exists\n"
-	exit 0
+	skip "$qstat does not exists"
 }
 if {[file executable $qdel] == 0} {
-	send_user "\nWARNING: $qdel does not exists\n"
-	exit 0
+	skip "$qdel does not exists"
 }
 
 set job_id 0

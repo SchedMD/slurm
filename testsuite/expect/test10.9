@@ -42,8 +42,7 @@ set too_small     0
 print_header $test_id
 
 if {[file exists $smap] == 0} {
-	send_user "\nWARNING: smap not installed\n"
-	exit 0
+	skip "smap not installed"
 }
 
 #
@@ -80,8 +79,7 @@ expect {
       	}
 }
 if {$too_small != 0} {
-	send_user "\nWARNING: Screen too small to run test\n"
-	exit 0
+	skip "Screen too small to run test"
 }
 if {$matches <= 2} {
 	log_error "smap --iterate failed ($matches)"

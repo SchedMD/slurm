@@ -72,8 +72,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	log_error "salloc submit failure"
-	exit 1
+	fail "salloc submit failure"
 }
 
 #

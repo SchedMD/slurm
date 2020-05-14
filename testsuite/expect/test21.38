@@ -118,8 +118,7 @@ proc _clean_exit { exit_code } {
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 # Make sure we have a clean system
@@ -127,8 +126,7 @@ remove_user "" "" "$tu1,$tu2"
 remove_acct "" "$ta1,$ta2"
 remove_cluster "$tc1"
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 
 # Add the cluster

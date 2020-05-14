@@ -54,14 +54,11 @@ print_header $test_id
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator."
-	log_warn "Use: sacctmgr mod user \$USER set admin=admin."
-	exit 0
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin."
 }
 
 set using_slurmdbd [test_using_slurmdbd]
@@ -101,7 +98,7 @@ expect {
 		exp_continue
 	}
 	-re "Nothing new added" {
-		log_warn "vestigial account $ta found"
+		log_warn "Vestigial account $ta found"
 		incr aamatches
 		exp_continue
 	}
@@ -115,8 +112,7 @@ expect {
 	}
 }
 if {$aamatches != 1} {
-	log_error "sacctmgr had a problem adding account."
-	exit 1
+	fail "sacctmgr had a problem adding account."
 }
 
 #

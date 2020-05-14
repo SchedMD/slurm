@@ -128,8 +128,7 @@ proc end_it { } {
 print_header $test_id
 
 if {[test_super_user] == 0 && [top_enabled] == 0} {
-	send_user "\nWARNING: scontrol top operation disabled for this user\n"
-	exit 0
+	skip "Scontrol top operation disabled for this user"
 }
 
 #

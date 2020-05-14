@@ -134,8 +134,7 @@ proc get_time { } {
 ############################################################################
 
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType."
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType."
 }
 
 ############################################################################

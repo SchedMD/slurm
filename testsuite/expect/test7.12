@@ -46,8 +46,7 @@ set test_prog   "test$test_id.prog"
 print_header $test_id
 
 if {[test_front_end] != 0} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit 0
+    skip "This test is incompatible with front-end systems"
 }
 
 #
@@ -133,9 +132,7 @@ if {$step_matches != 1} {
 	set exit_code 1
 }
 if {$pid_matches != $pid_count} {
-	send_user "\nWARNING: Failed to load PIDs associated with job step ($pid_matches != $pid_count).\n"
-	send_user "         This is dependent upon the ProctrackType configured.\n"
-	send_user "         proctrack/pgid does NOT support this functionality.\n"
+	log_warn "Failed to load PIDs associated with job step ($pid_matches != $pid_count). This is dependent upon the ProctrackType configured. proctrack/pgid does NOT support this functionality"
 }
 if {$job_matches != 1} {
 	log_error "Failed to load job info for this job ($job_matches != 1)"

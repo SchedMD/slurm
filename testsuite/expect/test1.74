@@ -53,14 +53,11 @@ set mod_acct_assoc_vals(qos) $qos
 print_header $test_id
 
 if { [test_using_slurmdbd] == 0 } {
-	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
-	exit $exit_code
+	skip "This test can't be run without AccountStorageType=slurmdbd"
 } elseif { [test_enforce_limits] == 0 } {
-	send_user "\nWARNING: This test can't be run without AccountingStorageEnforce=limits\n"
-	exit $exit_code
+	skip "This test can't be run without AccountingStorageEnforce=limits"
 } elseif { [test_enforce_qos_set] == 0 } {
-	send_user "\nWARNING: This test can't be run without AccountingStorageEnforce=qos\n"
-	exit $exit_code
+	skip "This test can't be run without AccountingStorageEnforce=qos"
 }
 if {[string compare [check_accounting_admin_level] "Administrator"]} {
 	send_user "\nThis test can't be run without being an Accounting administrator.\n"
@@ -73,7 +70,7 @@ proc cleanup { } {
 	global acct acct_c1 acct_c2 exit_code qos
 	remove_acct "" "$acct,$acct_c1,$acct_c2"
 	if {[remove_qos "$qos"] != 0} {
-		send_user "\nWARNING: not authorized to perform this test\n"
+		log_warn "Not authorized to perform this test"
 		set $exit_code 1
 	}
 }
@@ -163,14 +160,12 @@ cleanup
 set partition [default_partition]
 set node_cnt [available_nodes $partition "idle,alloc,comp"]
 if {$node_cnt < 3} {
-	send_user "\nWARNING: partition $partition has too few nodes ($node_cnt < 3)\n"
-	exit $exit_code
+	skip "Partition $partition has too few nodes ($node_cnt < 3)"
 }
 
 # Wait for 3 nodes to be in idle state
 if {[wait_for_node $partition idle 3]} {
-	send_user "\nWARNING: partition $partition lacks 3 idle nodes\n"
-	exit $exit_code
+	skip "Partition $partition lacks 3 idle nodes"
 }
 set node_cnt [available_nodes $partition idle]
 

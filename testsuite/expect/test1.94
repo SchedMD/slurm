@@ -48,12 +48,10 @@ print_header $test_id
 # Test for existence of mpi compiler
 #
 if {[info exists mpicc] == 0} {
-	send_user "\nWARNING: mpicc not defined, can't perform mpi testing\n"
-	exit 0
+	skip "Mpicc not defined, can't perform mpi testing"
 }
 if {[file executable $mpicc] == 0} {
-	send_user "\nWARNING: $mpicc does not exists\n"
-	exit 0
+	skip "$mpicc does not exists"
 }
 #
 # Test is only works with mpi/pmi2 plugin.
@@ -76,8 +74,7 @@ expect {
 }
 log_user 1
 if {$invalid == 1} {
-	send_user "\nWARNING: test compatible only with MpiDefault=pmi2\n"
-	exit $exit_code
+	skip "Test compatible only with MpiDefault=pmi2"
 }
 
 #
@@ -128,11 +125,10 @@ expect {
 }
 
 if {$no_start != 0} {
-	send_user "\nWARNING: partition too small for test\n"
 	if {$job_id != 0} {
 		cancel_job $job_id
 	}
-	exit 0
+	skip "Partition too small for test"
 }
 if {$job_id == 0} {
 	fail "Batch submit failure"
@@ -198,9 +194,7 @@ if {$exit_code == 0} {
 		}
 	}
 	if {$matches != 0} {
-		send_user "WARNING: If using MVAPICH then\n"
-		send_user "         Configure \"PropagateResourceLimitsExcept=MEMLOCK\"\n"
-		send_user "         Also start slurmd with \"ulimit -l unlimited\"\n"
+		log_warn "If using MVAPICH thenc onfigure \"PropagateResourceLimitsExcept=MEMLOCK\". Also start slurmd with \"ulimit -l unlimited\""
 	} else {
 		send_user "Check contents of $file_err\n"
 	}

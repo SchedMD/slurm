@@ -43,10 +43,8 @@ set job_id 0
 print_header $test_id
 
 if {[in_fed]} {
-	log_warn "This test should not be run in a federation"
-	exit 0
+	skip "This test should not be run in a federation"
 }
-
 
 proc sbatch {} {
 	global number sbatch file_in file_out bin_sleep

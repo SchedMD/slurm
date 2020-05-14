@@ -45,14 +45,12 @@ print_header $test_id
 # otherwise this test may fail.
 #
 if {[test_super_user] == 0} {
-	log_warn "You must be SlurmUser or root to run this test."
-	exit 0
+	skip "You must be SlurmUser or root to run this test"
 }
 
 set default_part [default_partition]
 if { $default_part == "" } {
-	log_error "Unable to get the default partition."
-	exit 1
+	fail "Unable to get the default partition"
 }
 
 #
@@ -75,13 +73,11 @@ if { $exit_code == 1 } {
 }
 set timelimit [get_partition_maximum_time_limit $default_part]
 if { $timelimit != -1 } {
-	log_error "Unable to update partition MaxTime to UNLIMITED"
-	exit 1
+	fail "Unable to update partition MaxTime to UNLIMITED"
 }
 set timelimit [get_partition_default_time_limit $default_part]
 if { $timelimit != -1 } {
-	log_error "Unable to update partition DefaultTime to UNLIMITED"
-	exit 1
+	fail "Unable to update partition DefaultTime to UNLIMITED"
 }
 
 #

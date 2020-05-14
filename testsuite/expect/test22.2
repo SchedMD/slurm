@@ -41,8 +41,7 @@ print_header $test_id
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 ################################################################
@@ -98,8 +97,7 @@ proc sreport_opt { soption } {
 	}
 
 	if {$not_support == 1} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
+		skip "Can not test without accounting enabled"
 	}
 
 	if {$matches != 3} {
@@ -132,8 +130,7 @@ proc sreport_opt { soption } {
 	}
 
 	if {$not_support == 1} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
+		skip "Can not test without accounting enabled"
 	}
 	if {$matches != 0} {
 		log_error "sreport -$soption failed ($matches)"
@@ -170,8 +167,7 @@ proc sreport_opt { soption } {
 	}
 
 	if {$not_support != 0} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
+		skip "Can not test without accounting enabled"
 	}
 	return $matches
 }
@@ -204,8 +200,7 @@ proc sreport_opt { soption } {
 	}
 
 	if {$not_support == 1} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
+		skip "Can not test without accounting enabled"
 	}
 
 	if {$matches != 2} {
@@ -238,8 +233,7 @@ proc sreport_opt { soption } {
 	}
 
 	if {$not_support == 1} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
+		skip "Can not test without accounting enabled"
 	}
 
 	if {$matches != 1} {

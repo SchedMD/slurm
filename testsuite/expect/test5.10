@@ -42,8 +42,7 @@ set exit_code     0
 print_header $test_id
 
 if {[test_super_user] == 0} {
-	send_user "\nWARNING: can not test more unless SlurmUser\n"
-	exit $exit_code
+	skip "Can not test more unless SlurmUser"
 }
 
 proc create_part { name prio } {
@@ -171,8 +170,7 @@ delete_part $test_part_2
 
 set def_part [default_partition]
 if {[string length $def_part] == 0} {
-	send_user "\nWARNING: This test can not run without a default partition\n"
-	exit $exit_code
+	skip "This test can not run without a default partition"
 }
 
 # Get a list of nodes

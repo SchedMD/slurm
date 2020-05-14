@@ -97,11 +97,9 @@ proc check_val { res_name } {
 print_header $test_id
 
 if { [test_using_slurmdbd] == 0 } {
-        send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
-        exit $exit_code
+    skip "This test can't be run without AccountStorageType=slurmdbd"
 } elseif { [test_super_user] == 0} {
-        send_user "\nWARNING: This test can't be run without superuser permissions\n"
-        exit $exit_code
+    skip "This test can't be run without superuser permissions"
 }
 
 # Delete any vestigial data

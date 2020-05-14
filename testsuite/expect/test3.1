@@ -43,8 +43,7 @@ print_header $test_id
 # issue scontrol reconfigure.
 #
 if {(![is_super_user]) && ([check_accounting_admin_level] != "Administrator")} {
-	log_warn "This test can't be run except as SlurmUser or Admin"
-	exit 0
+	skip "This test can't be run except as SlurmUser or Admin"
 }
 
 #

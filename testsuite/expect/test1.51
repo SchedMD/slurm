@@ -41,8 +41,7 @@ set file_script  "test$test_id.script"
 print_header $test_id
 
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
 #

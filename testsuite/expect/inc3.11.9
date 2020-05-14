@@ -109,7 +109,7 @@ proc inc3_11_9 {} {
 
 	# Make a reservation using 1 core per node in first 5 nodes
 	if {$num_nodes < 5} {
-		send_user "\nWARNING: Insufficient node count for remaining test (Within: inc3.11.9)\n";
+		log_warn "Insufficient node count for remaining test (Within: inc3.11.9)";
 		cancel_job $job_id
 		return
 	}
@@ -201,7 +201,7 @@ proc inc3_11_9 {} {
 
 
 	if {$core_res_num < 2} {
-		send_user "\n\033\[32mWARNING: not enough cores for remaining tests (Within: inc3.11.9)\033\[m\n"
+		log_warn "Not enough cores for remaining tests (Within: inc3.11.9)"
 		set exit_code [delete_res $res_name]
 		return
 	}

@@ -39,8 +39,7 @@ print_header $test_id
 
 set bb_types [get_bb_types]
 if {[string first "datawarp" $bb_types] == -1} {
-	send_user "\nWARNING: This test can only be run with the burst_buffer/datawarp plugin\n"
-	exit 0
+	skip "This test can only be run with the burst_buffer/datawarp plugin"
 }
 
 set matches 0
@@ -86,8 +85,7 @@ if {$fail == 1} {
 		}
 	}
 	if {$default_state_loc == 0 && $default_status_loc == 1} {
-		send_user "\nWARNING: 'dwstat' is not configured properly\n"
-		exit 0
+		skip "'dwstat' is not configured properly"
 	}
 	fail "'dwstat' is not configured properly"
 }

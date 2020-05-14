@@ -39,11 +39,9 @@ set exit_code    0
 print_header $test_id
 
 if {![test_super_user]} {
-	send_user "\nWARNING: This test can't be run except as SlurmUser or root\n"
-	exit 0
+	skip "This test can't be run except as SlurmUser or root"
 } elseif {![test_limits_enforced]} {
-	send_user "\nWARNING: AccountingStorageEnforce limits must be set\n"
-	exit 0
+	skip "AccountingStorageEnforce limits must be set"
 }
 
 proc mod_assoc_vals { } {

@@ -42,8 +42,7 @@ set job_name      "test$test_id"
 set cycle_count [get_cycle_count]
 set task_cnt    $max_stress_tasks
 if { [string compare [test_launch_type] "slurm"] } {
-	send_user "\nWARNING: This test is only compatible with systems using launch/slurm\n"
-	exit $exit_code
+	skip "This test is only compatible with systems using launch/slurm"
 } else {
 	set node_cnt 1-4
 }
@@ -90,8 +89,7 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -e /dev/null -i $file_in -o $file_in_task -N$node_cnt -n$task_cnt $other_opts -t1 $bin_cat]
 expect {
 	-re "Unable to contact" {
-		log_error "Slurm appears to be down"
-		exit 1
+		fail "Slurm appears to be down"
 	}
         timeout {
                 log_error "srun not responding"

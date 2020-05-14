@@ -155,19 +155,16 @@ proc thread_spec_job {task node thread_spec exp_nodes} {
 print_header $test_id
 
 if {[test_linear]} {
-	send_user "\nWARNING: This test is incompatible with select/linear\n"
-	exit 0
+	skip "This test is incompatible with select/linear"
 }
 
 if {[test_select_type_params "CR_SOCKET"]} {
-	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
-	exit 0
+	skip "This test is incompatible with CR_SOCKET allocations"
 }
 
 set allow_spec [test_allow_spec_resc]
 if {$allow_spec == 0} {
-	send_user "WARNING: AllowSpecResourcesUsage not configured to permit thread specialization\n"
-	exit $exit_code
+	skip "AllowSpecResourcesUsage not configured to permit thread specialization"
 }
 
 # Remove any vestigial files
@@ -185,8 +182,7 @@ set job_id 0
 spawn $sbatch --exclusive -t1 -N2 -o$file_out $file_in
 expect {
 	-re "Batch job submission failed" {
-		send_user "\nWARNING: can't test srun task distribution\n"
-		exit $exit_code
+		skip "Can't test srun task distribution"
 	}
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -249,8 +245,7 @@ if {$thread_cnt == 0} {
 	fail "sbatch did not find the number of thread"
 }
 if {$thread_cnt < 4} {
-	send_user "\nWARNING: thread thread too low for testing ($thread_cnt < 4)\n"
-	exit $exit_code
+	skip "Thread thread too low for testing ($thread_cnt < 4)"
 }
 
 #

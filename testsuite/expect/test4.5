@@ -104,9 +104,7 @@ expect {
 }
 
 if {$num_nodes < 8} {
-	send_user "\nWARNING: This test requires 8 or more nodes but only "
-	send_user "found $num_nodes available\n"
-	exit 0
+	skip "This test requires 8 or more nodes but only found $num_nodes available"
 }
 
 if {$num_cpus == 0} {
@@ -136,8 +134,7 @@ expect {
 }
 
 if {$i != 8} {
-	send_user "\nWARNING: Unable to get all the required nodes ($i != 8)\n"
-	exit 0
+	skip "Unable to get all the required nodes ($i != 8)"
 }
 
 #

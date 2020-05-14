@@ -40,10 +40,9 @@ set job_id      0
 print_header $test_id
 
 if {[test_cons_tres]} {
-        send_user "\nValid configuration, using select/cons_tres\n"
+    send_user "\nValid configuration, using select/cons_tres\n"
 } else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit 0
+    skip "This test is only compatible with select/cons_tres"
 }
 
 set mps_cnt [get_mps_count 1]
@@ -51,8 +50,7 @@ if {$mps_cnt < 0} {
 	fail "Error getting MPS count"
 }
 if {$mps_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more MPS in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more MPS in the default partition"
 }
 if {$mps_cnt < 100} {
 #	This could be a legitimate configuration for testing purposes, but not likley for production use
@@ -111,9 +109,7 @@ if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
 		-re "Couldn't allocate memory" {
-			send_user "\nWARNING: This means the gpu selected doesn't support this test.\n"
-			exit 0
-			exp_continue
+			skip "This means the gpu selected doesn't support this test"
 		}
 		-re "No such file" {
 			incr no_nvcc
@@ -166,7 +162,7 @@ if {[wait_for_file $file_out] == 0} {
 	}
 	log_user 1
 	if {$no_nvcc != 0} {
-		send_user "\nWARNING: Could not find program nvcc (CUDA compiler)\n"
+		log_warn "Could not find program nvcc (CUDA compiler)"
 	} elseif {$matches != 6} {
 		log_error "CUDA output not as expected ($matches != 6)"
 		set exit_code 1

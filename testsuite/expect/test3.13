@@ -99,10 +99,8 @@ if {$read_priority != 0} {
 spawn $scontrol release $job_id
 expect {
 	-re "slurm_update error: Access.*denied" {
-		send_user "\nWARNING: User not authorized to modify jobs\n"
 		cancel_job $job_id
-		exit $exit_code
-		exp_continue
+		skip "User not authorized to modify jobs"
 	}
 	timeout {
 		log_error "scontrol not responding"

@@ -46,12 +46,7 @@ print_header $test_id
 # set in globals.local to a nonzero value.
 #
 if { ![info exists slurm_testsuite_dev_build] || !$slurm_testsuite_dev_build } {
-	send_user "
-		WARNING: Cannot run this test on a non-development
-		build. If you are on a development build, set
-		slurm_testsuite_dev_build in globals.local in order to
-		run this test.\n"
-	exit 0
+	skip "Cannot run this test on a non-development build. If you are on a development build, set slurm_testsuite_dev_build in globals.local in order to run this test"
 }
 
 #
@@ -105,8 +100,7 @@ if {$found == 1} {
 # created to test this feature, which only super users can do
 #
 if {[test_super_user] == 0} {
-	send_user "\nWARNING: can not test more unless SlurmUser\n"
-	exit $exit_code
+	skip "Can not test more unless SlurmUser"
 }
 
 #

@@ -118,8 +118,7 @@ expect {
 if {$match_jobid == 0} {
 	set min_job_age [get_min_job_age]
 	if {$min_job_age < 60} {
-		send_user "\nWARNING: MinJobAge ($min_job_age) configured too low "
-		send_user "to capture job state after completion\n"
+		log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
 	} else {
 		log_error "Dependency information is missing"
 		set exit_code 1
@@ -260,8 +259,7 @@ if {$is_done == 0} {
 if {$purged_job == 1} {
 	set min_job_age [get_min_job_age]
 	if {$min_job_age < 60} {
-		send_user "\nWARNING: MinJobAge ($min_job_age) configured too low "
-		send_user "to capture job state after completion\n"
+		log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
 	} else {
 		log_error "Could not find job $job_id1"
 		set exit_code 1

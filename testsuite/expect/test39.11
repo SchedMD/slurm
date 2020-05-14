@@ -38,10 +38,9 @@ set number_commas  "\[0-9_,\]+"
 print_header $test_id
 
 if {[test_cons_tres]} {
-        send_user "\nValid configuration, using select/cons_tres\n"
+    send_user "\nValid configuration, using select/cons_tres\n"
 } else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit 0
+    skip "This test is only compatible with select/cons_tres"
 }
 
 set craynetwork_count [get_craynetwork_count]
@@ -49,8 +48,7 @@ if {$craynetwork_count < 0} {
 	fail "Error getting craynetwork GRES count"
 }
 if {$craynetwork_count < 1} {
-	send_user "\nWARNING: This test requires 1 or more craynetwork GRES in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more craynetwork GRES in the default partition"
 }
 send_user "\ncraynetwork count is $craynetwork_count\n"
 

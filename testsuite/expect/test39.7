@@ -117,10 +117,9 @@ proc run_gpu_per_task { cpus_per_gpu } {
 print_header $test_id
 
 if {[test_cons_tres]} {
-        send_user "\nValid configuration, using select/cons_tres\n"
+    send_user "\nValid configuration, using select/cons_tres\n"
 } else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit 0
+    skip "This test is only compatible with select/cons_tres"
 }
 
 set gpu_cnt [get_gpu_count 1]
@@ -128,8 +127,7 @@ if {$gpu_cnt < 0} {
 	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPUs in the default partition"
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set cpus_per_node $node_conf(CPUTot)
@@ -141,8 +139,7 @@ log_info "Sockets per node is $node_conf(Sockets)"
 log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
 log_info "CPUs per node is $cpus_per_node"
 if {$cpus_per_node < 1} {
-	send_user "\nWARNING: This test requires 1 or more CPUs per node in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more CPUs per node in the default partition"
 }
 
 #

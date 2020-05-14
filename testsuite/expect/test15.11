@@ -42,8 +42,7 @@ print_header $test_id
 
 set prio_type [priority_type]
 if {[string compare $prio_type "multifactor"] == 0} {
-	send_user "\nWARNING: not compatible with priority/multifactor\n"
-	exit $exit_code
+	skip "Not compatible with priority/multifactor"
 }
 
 #

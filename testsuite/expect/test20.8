@@ -39,13 +39,11 @@ set exit_code   0
 print_header $test_id
 
 if {[file executable $qalter] == 0} {
-	send_user "\nWARNING: $qalter does not exist\n"
-	exit 0
+	skip "$qalter does not exist"
 }
 
 if {[file executable $qsub] == 0} {
-	send_user "\nWARNING: $qalter does not exist\n"
-	exit 0
+	skip "$qalter does not exist"
 }
 
 # Clean up any vestigial files

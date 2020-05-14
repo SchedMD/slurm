@@ -43,16 +43,14 @@ set prompt      "QA_PROMPT: "
 print_header $test_id
 
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit 0
+	skip "This test is incompatible with front-end systems"
 }
 
 # find out if we have enough nodes to test functionality
 set partition [default_partition]
 set node_count [get_node_cnt_in_part $partition]
 if { $node_count < 4 } {
-	send_user "WARNING: Insufficient nodes in default partition ($node_count < 4)\n"
-	exit $exit_code
+	skip "Insufficient nodes in default partition ($node_count < 4)"
 }
 
 #
@@ -70,25 +68,21 @@ set timeout $max_job_delay
 set srun_pid [spawn $salloc -N4 ./$file_in]
 expect {
 	-re "More processors requested than permitted" {
-		send_user "\nWARNING: can't test srun task distribution\n"
 		exec $bin_rm -f $file_in
-		exit $exit_code
+		skip "Can't test srun task distribution"
 	}
 	-re "Node count specification invalid" {
-		send_user "\nWARNING: can't test srun task distribution\n"
 		exec $bin_rm -f $file_in
-		exit $exit_code
+		skip "Can't test srun task distribution"
 	}
 	-re "configuration is not available" {
-		send_user "WARNING: partition too small for test\n"
 		slow_kill $srun_pid
 		exec $bin_rm -f $file_in
-		exit 0
+		skip "Partition too small for test"
 	}
 	-re "Required node not available" {
-		send_user "\nWARNING: can't test srun task distribution\n"
 		exec $bin_rm -f $file_in
-		exit $exit_code
+		skip "Can't test srun task distribution"
 	}
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"

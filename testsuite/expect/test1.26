@@ -42,19 +42,16 @@ set exit_code   0
 print_header $test_id
 
 if {[is_super_user] == 0} {
-	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
-	exit 0
+	skip "This test can't be run except as SlurmUser"
 }
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+    skip "This test is incompatible with front-end systems"
 }
 
 set switch [switch_type]
 if {[string compare $switch "none"]} {
-        send_user "\nWARNING: This test is incompatible with switch/$switch\n"
-        exit $exit_code
+        skip "This test is incompatible with switch/$switch"
 }
 
 #
@@ -101,7 +98,7 @@ if {[string compare $nodelist_name ""] == 0} {
 	fail "Did not get nodelist_name of task 0"
 }
 if {[string compare $host_0 $nodelist_name] != 0} {
-	send_user "\nWARNING: hostname inconsistency\n"
+	log_warn "Hostname inconsistency"
 }
 set include_node $host_0
 
@@ -114,7 +111,7 @@ set timeout     10
 set srun_pid [spawn $srun -N1 -l --nodelist=$include_node --no-allocate -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Invalid job credential" {
-		send_user "\nWARNING: Not SlurmUser or root.\n"
+		log_warn "Not SlurmUser or root"
 		set slurm_user 0
 		exp_continue
 	}

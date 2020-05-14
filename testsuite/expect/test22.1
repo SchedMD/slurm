@@ -185,19 +185,16 @@ set node0_end_str [timestamp -format %Y-%m-%dT%X -seconds $node0_down_end]
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 set wc_key_track [check_wckey_tracking_slurmdbd]
 if { $wc_key_track == 0 } {
-	send_user "\nWARNING: Portions of this test will not work without TrackWCKey set in slurmdbd.conf.\n"
-	exit 0
+	skip "Portions of this test will not work without TrackWCKey set in slurmdbd.conf"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 remove_user "" "" $users

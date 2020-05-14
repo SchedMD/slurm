@@ -46,16 +46,13 @@ print_header $test_id
 # Test for existence of UPC compiler
 #
 if {[info exists upcc] == 0} {
-	send_user "\nWARNING: UPC compiler (upcc) not defined, can't perform UPC testing\n"
-	exit 0
+	skip "UPC compiler (upcc) not defined, can't perform UPC testing"
 }
 if {[file executable $upcc] == 0} {
-	send_user "\nWARNING: $upcc does not exists\n"
-	exit 0
+	skip "$upcc does not exists"
 }
 if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit 0
+	skip "This test is incompatible with front-end systems"
 }
 
 #
@@ -103,11 +100,10 @@ expect {
 }
 
 if {$no_start != 0} {
-	send_user "\nWARNING: partition too small for test\n"
 	if {$job_id != 0} {
 		cancel_job $job_id
 	}
-	exit 0
+	skip "Partition too small for test"
 }
 if {$job_id == 0} {
 	fail "Batch submit failure"

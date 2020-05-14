@@ -41,8 +41,7 @@ set too_small     0
 print_header $test_id
 
 if {[file exists $smap] == 0} {
-	send_user "\nWARNING: smap not installed\n"
-	exit 0
+	skip "smap not installed"
 }
 
 #
@@ -96,8 +95,7 @@ expect {
 }
 
 if {$too_small != 0} {
-	send_user "\nWARNING: screen is too small for test\n"
-	exit 0
+	skip "Screen is too small for test"
 }
 if {$matches != 6} {
 	log_error "smap slurm partition display in curses mode ($matches of 6)"

@@ -43,13 +43,11 @@ set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {[test_linear]} {
 	if {$nb_nodes < 2} {
-		send_user "\nWARNING: This test is incompatible with select/linear and only one node\n"
-		exit $exit_code
+		skip "This test is incompatible with select/linear and only one node"
 	}
 } elseif {[default_part_exclusive]} {
 	if {$nb_nodes < 2} {
-		send_user "\nWARNING: This test is incompatible with exclusive node allocations and only one node\n"
-		exit $exit_code
+		skip "This test is incompatible with exclusive node allocations and only one node"
 	}
 }
 
@@ -76,8 +74,7 @@ if {$slow_id == 0} {
 spawn $sbatch -t3 -o /dev/null --wrap "sleep 30"
 expect {
 	-re "Node count specification invalid" {
-		send_user "\nWARNING: can't test with less than two nodes\n"
-		exit 0
+		skip "Can't test with less than two nodes"
 	}
 	-re "Submitted batch job ($number)" {
 		set fast_id $expect_out(1,string)

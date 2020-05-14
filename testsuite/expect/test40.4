@@ -82,22 +82,17 @@ print_header $test_id
 set store_tres [string tolower [get_acct_store_tres]]
 set store_mps [string first "gres/mps:" $store_tres]
 if {$store_mps != -1} {
-	send_user "\nWARNING: This test requires homogeneous MPS accounting (NO Type)\n"
-	exit $exit_code
+	skip "This test requires homogeneous MPS accounting (NO Type)"
 }
 set store_mps [string first "gres/mps" $store_tres]
 if {$store_mps == -1} {
-	send_user "\nWARNING: This test requires accounting for MPS\n"
-	exit $exit_code
+	skip "This test requires accounting for MPS"
 } elseif { [test_using_slurmdbd] == 0 } {
-	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
-	exit $exit_code
+	skip "This test can't be run without AccountStorageType=slurmdbd"
 } elseif { [test_enforce_limits] == 0 } {
-	send_user "\nWARNING: This test can't be run without AccountingStorageEnforce=limits\n"
-	exit $exit_code
+	skip "This test can't be run without AccountingStorageEnforce=limits"
 } elseif {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 } elseif {[string compare [check_accounting_admin_level] "Administrator"]} {
 	send_user "\nThis test can't be run without being an Accounting administrator.\n"
 	exit $exit_code
@@ -106,8 +101,7 @@ if {$store_mps == -1} {
 if {[test_cons_tres]} {
 	send_user "\nValid configuration, using select/cons_tres\n"
 } else {
-	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-	exit 0
+	skip "This test is only compatible with select/cons_tres"
 }
 
 set def_part_name [default_partition]
@@ -121,8 +115,7 @@ if {$mps_cnt < 0} {
 	fail "Error getting MPS count"
 }
 if {$mps_cnt < 100} {
-	send_user "\nWARNING: This test requires 100 or more MPS per node in the default partition\n"
-	exit 0
+	skip "This test requires 100 or more MPS per node in the default partition"
 }
 send_user "MPS count is $mps_cnt\n"
 

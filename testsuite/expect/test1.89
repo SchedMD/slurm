@@ -44,8 +44,7 @@ print_header $test_id
 # Test if CPU affinity support is supported.
 #
 if {![test_cpu_affinity_or_cgroup]} {
-	send_user "\nWARNING: CPU affinity not supported on this system\n"
-	exit 0
+	skip "CPU affinity not supported on this system"
 }
 send_user "\ntask affinity plugin installed\n"
 
@@ -63,8 +62,7 @@ expect {
 }
 log_user 1
 if {$force == 1} {
-	send_user "\nWARNING: This test is not compatible with OverSubscribe=FORCE\n"
-	exit 0
+	skip "This test is not compatible with OverSubscribe=FORCE"
 }
 
 #
@@ -153,7 +151,7 @@ if {$task_cnt > 32} {
 
 	if {$exit_code == 0} {
 		exec $bin_rm -f $file_prog
-		send_user "\nWARNING: Expect unable to work with more than 32-bit numbers\n"
+		log_warn "Expect unable to work with more than 32-bit numbers"
 	}
 	exit $exit_code
 }

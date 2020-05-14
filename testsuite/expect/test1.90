@@ -57,8 +57,7 @@ expect {
 }
 log_user 1
 if {$affinity == 0} {
-	send_user "\nWARNING: memory affinity not supported on this system\n"
-	exit 0
+	skip "Memory affinity not supported on this system"
 }
 send_user "\ntask affinity plugin installed with numa support\n"
 
@@ -76,8 +75,7 @@ expect {
 }
 log_user 1
 if {$force == 1} {
-	send_user "\nWARNING: exclusive node allocation supported in default partition\n"
-	exit 0
+	skip "Exclusive node allocation supported in default partition"
 }
 
 #
@@ -130,8 +128,7 @@ send "$srun -c1 ./$file_prog\r"
 expect {
 	-re "numa support not available" {
 		send "exit\r"
-		send_user "\nWARNING: Unable to test on this system\n"
-		exit 0
+		skip "Unable to test on this system"
 	}
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		set full_mask $expect_out(3,string)
