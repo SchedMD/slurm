@@ -53,11 +53,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -66,7 +65,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE: sinfo failed to process verbose option\n"
+	log_error "sinfo failed to process verbose option"
 	set exit_code 1
 }
 exit $exit_code

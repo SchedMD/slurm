@@ -71,7 +71,7 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 			-re "gpu:($number)" {
 				incr match
 				if {$expect_out(1,string) != $job_gpus} {
-					send_user "\nFAILURE: bad step GPU count reported by sacct ($expect_out(1,string) != $step_gpus)\n"
+					log_error "Bad step GPU count reported by sacct ($expect_out(1,string) != $step_gpus)"
 					set exit_code 1
 				}
 				exp_continue
@@ -79,7 +79,7 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 			-re "gres/gpu=($number)" {
 				incr match
 				if {$expect_out(1,string) != $step_gpus} {
-					send_user "\nFAILURE: bad step GPU count reported by sacct ($expect_out(1,string) != $step_gpus)\n"
+					log_error "Bad step GPU count reported by sacct ($expect_out(1,string) != $step_gpus)"
 					set exit_code 1
 				}
 				exp_continue
@@ -88,7 +88,7 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 				if {$have_gpu_types != 0} {
 					incr match
 					if {$expect_out(2,string) != $step_gpus} {
-						send_user "\nFAILURE: bad step GPU count reported by sacct ($expect_out(2,string) != $step_gpus)\n"
+						log_error "Bad step GPU count reported by sacct ($expect_out(2,string) != $step_gpus)"
 						set exit_code 1
 					}
 				}
@@ -99,7 +99,7 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 			}
 		}
 		if {$match != 3} {
-			send_user "\nFAILURE: Missing step GPU count report from sacct ($match != 3)\n"
+			log_error "Missing step GPU count report from sacct ($match != 3)"
 		}
 	}
 
@@ -109,7 +109,7 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 		-re "gpu:($number)" {
 			incr match
 			if {$expect_out(1,string) != $job_gpus} {
-				send_user "\nFAILURE: bad batch GPU count reported by sacct ($expect_out(1,string) != $job_gpus)\n"
+				log_error "Bad batch GPU count reported by sacct ($expect_out(1,string) != $job_gpus)"
 				set exit_code 1
 			}
 			exp_continue
@@ -119,7 +119,7 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 		}
 	}
 	if {$match != 2} {
-		send_user "\nFAILURE: missing batch GPU count report from sacct ($match != 2)\n"
+		log_error "Missing batch GPU count report from sacct ($match != 2)"
 	}
 
 	set match 0
@@ -128,7 +128,7 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 		-re "gpu:($number)" {
 			incr match
 			if {$expect_out(1,string) != $job_gpus} {
-				send_user "\nFAILURE: Bad job GPU count reported by sacct ($expect_out(1,string) != $job_gpus)\n"
+				log_error "Bad job GPU count reported by sacct ($expect_out(1,string) != $job_gpus)"
 				set exit_code 1
 			}
 			exp_continue
@@ -136,7 +136,7 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 		-re "gres/gpu=($number)" {
 			incr match
 			if {$expect_out(1,string) != $job_gpus} {
-				send_user "\nFAILURE: Bad job GPU count reported by sacct ($expect_out(1,string) != $job_gpus)\n"
+				log_error "Bad job GPU count reported by sacct ($expect_out(1,string) != $job_gpus)"
 				set exit_code 1
 			}
 			exp_continue
@@ -145,7 +145,7 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 			if {$have_gpu_types != 0} {
 				incr match
 				if {$expect_out(2,string) != $job_gpus} {
-					send_user "\nFAILURE: Bad job GPU count reported by sacct ($expect_out(2,string) != $job_gpus)\n"
+					log_error "Bad job GPU count reported by sacct ($expect_out(2,string) != $job_gpus)"
 					set exit_code 1
 				}
 			}
@@ -156,7 +156,7 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 		}
 	}
 	if {$match != 3} {
-		send_user "\nFAILURE: Missing job GPU count report from sacct ($match != 3)\n"
+		log_error "Missing job GPU count report from sacct ($match != 3)"
 	}
 	exec $bin_rm -f $file_out
 	log_user 1
@@ -173,8 +173,7 @@ proc test_out_file { file_out target } {
 	global alpha_numeric_under number bin_cat exit_code
 
 	if {[wait_for_file $file_out] != 0} {
-		send_user "\nFAILURE: no output file\n"
-		exit 1
+		fail "No output file"
 	}
 
 	set match 0
@@ -193,7 +192,7 @@ proc test_out_file { file_out target } {
 		}
 	}
 	if {$match != $target} {
-		send_user "\nFAILURE: Failed to account for proper GPU count ($match != $target)\n"
+		log_error "Failed to account for proper GPU count ($match != $target)"
 		set exit_code 1
 	}
 }
@@ -230,8 +229,7 @@ if {$nb_nodes > 2} {
 }
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 2} {
 	send_user "\nWARNING: This test requires 2 or more GPUs in the default partition\n"
@@ -274,7 +272,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -282,19 +280,16 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
+	fail "No output file"
 }
 set have_gpu_types 0
 set match 0
@@ -317,7 +312,7 @@ expect {
 }
 set target [expr $nb_nodes * 2]
 if {$match != $target} {
-	send_user "\nFAILURE: failed to account for proper GPU count ($match != $target)\n"
+	log_error "Failed to account for proper GPU count ($match != $target)"
 	set exit_code 1
 }
 test_acct $job_id $target -1 $have_gpu_types
@@ -341,7 +336,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -349,14 +344,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 test_out_file $file_out $target
@@ -383,7 +376,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -391,14 +384,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 test_out_file $file_out $nb_tasks
@@ -426,7 +417,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -434,14 +425,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 set target [expr $nb_nodes * $nb_sockets]
@@ -474,7 +463,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -482,14 +471,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 set target [expr $nb_nodes * 2]
@@ -515,7 +502,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -523,14 +510,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 test_out_file $file_out $target
@@ -557,7 +542,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -565,14 +550,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 test_out_file $file_out $nb_tasks
@@ -600,7 +583,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -608,14 +591,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 set target [expr $nb_nodes * $nb_sockets]
@@ -655,7 +636,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -663,14 +644,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 test_out_file $file_out $step_tasks

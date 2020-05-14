@@ -62,7 +62,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -70,7 +70,7 @@ expect {
 	}
 }
 if {$sub_match != 1} {
-	send_user "\nFAILURE: srun did not submit job\n"
+	log_error "srun did not submit job"
 	set exit_code 1
 }
 
@@ -83,7 +83,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -91,8 +91,7 @@ expect {
 	}
 }
 if {$sub_match != 1} {
-	send_user "\nFAILURE: srun did not fail when it should have\n"
-	set exit_code 1
+	fail "srun did not fail when it should have"
 }
 
 exit $exit_code

@@ -66,7 +66,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -76,18 +76,16 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
 	exec $bin_rm -f $file_in
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
 	exec $bin_rm -f $file_in
-	exit 1
+	fail "Waiting for job to complete"
 }
 
 #
@@ -111,7 +109,7 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$matches != 3} {
-	send_user "\nFAILURE: scontrol listpids output error\n"
+	log_error "scontrol listpids output error"
 	set exit_code 1
 }
 

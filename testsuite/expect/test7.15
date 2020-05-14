@@ -78,12 +78,12 @@ expect {
 			send_user "Signal $signal is ignored by default when using runjob, this error is expected, turn that frown upside down!\n"
 			exp_continue
 		} else {
-			send_user "FAILURE: At least one signal is ignored!\n"
+			log_error "At least one signal is ignored!"
 			set exit_code 1
 		}
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}

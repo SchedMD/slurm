@@ -49,11 +49,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -62,7 +61,7 @@ expect {
 }
 
 if {$matches != 0} {
-	send_user "\nFAILURE: sinfo printer header\n"
+	log_error "sinfo printer header"
 	set exit_code 1
 }
 
@@ -77,11 +76,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -90,7 +88,7 @@ expect {
 }
 
 if {$matches != 0} {
-	send_user "\nFAILURE: sinfo printer header\n"
+	log_error "sinfo printer header"
 	set exit_code 1
 }
 
@@ -105,11 +103,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -118,7 +115,7 @@ expect {
 }
 
 if {$matches != 0} {
-	send_user "\nFAILURE: sinfo printer header\n"
+	log_error "sinfo printer header"
 	set exit_code 1
 }
 

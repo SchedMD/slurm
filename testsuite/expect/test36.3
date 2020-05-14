@@ -69,7 +69,7 @@ expect {
                 exp_continue
         }
         timeout {
-                send_user "\nFAILURE: sbatch not responding\n"
+                log_error "sbatch not responding"
                 set exit_code 1
                 exp_continue
         }
@@ -78,8 +78,7 @@ expect {
         }
 }
 if { $job_id == 0 } {
-        send_user "\nFAILURE: failed to submit job\n"
-        exit 1
+        fail "Failed to submit job"
 }
 
 if {$job_submitted == 1} {
@@ -94,16 +93,14 @@ if {$job_submitted == 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: bkill not responding\n"
-			exit 1
+			fail "bkill not responding"
 		}
 		eof {
 			wait
 		}
 	}
 } else {
-	send_user "\nFAILURE: unable to submit a test job through sbatch\n"
-	exit 1
+	fail "Unable to submit a test job through sbatch"
 }
 
 if {$job_sent_kill == 1} {
@@ -126,7 +123,7 @@ if {$job_sent_kill == 1} {
 				exp_continue
 			}
         	        timeout {
-        	                send_user "\nFAILURE scontrol not responding\n"
+        	                log_error "scontrol not responding"
         	                set exit_code 1
         	        }
         	        eof {
@@ -136,19 +133,17 @@ if {$job_sent_kill == 1} {
 	}
 	if {$exit_code == 1} {
 		if {$cycle_count == 8} {
-			send_user "\nFAILURE: job not switched to CANCELLED\n"
-			exit 1
+			fail "Job not switched to CANCELLED"
 		}
 	}
 } else {
-	send_user "\nFAILURE: unable bkill $job_id\n"
 	cancel_job $job_id
-	exit 1
+	fail "Unable bkill $job_id"
 }
 
 if {$state_match != 1} {
-	send_user "\nFAILURE job should be CANCELLED, but is not\n"
-        set exit_code 1
+	log_error "Job should be CANCELLED, but is not"
+    set exit_code 1
 }
 
 if {$exit_code == 0} {

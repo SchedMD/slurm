@@ -61,7 +61,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		catch {exec $bin_kill -KILL $sbatch_pid}
 		set exit_code 1
 	}
@@ -70,13 +70,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch job submit failed\n"
-	exit 1
+	fail "sbatch job submit failed"
 }
 if {[wait_for_job $job_id RUNNING] != 0} {
-	send_user "\nFAILURE: waiting for job $job_id to start\n"
 	cancel_job $job_id
-	exit 1
+	fail "Waiting for job $job_id to start"
 }
 
 #
@@ -85,7 +83,7 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 reconfigure
 
 if {[wait_for_job $job_id RUNNING] != 0} {
-	send_user "\nFAILURE: job $job_id not running after reconfiguration\n"
+	log_error "Job $job_id not running after reconfiguration"
 	set exit_code 1
 }
 cancel_job $job_id

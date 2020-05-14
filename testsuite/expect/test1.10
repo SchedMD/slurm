@@ -57,14 +57,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
 }
 
 if {$debug_get != $debug_set} {
-	send_user "\nFAILURE: Did not log at proper level ($debug_get != $debug_set)\n"
+	log_error "Did not log at proper level ($debug_get != $debug_set)"
 	set exit_code 1
 }
 exit $exit_code

@@ -63,7 +63,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -72,10 +72,10 @@ expect {
 	}
 }
 if {$began_flag == 0} {
-	send_user "\nFAILURE: job never started\n"
+	log_error "Job never started"
 	set exit_code 1
 } elseif {$run_time < 59 || $run_time > 121} {
-	send_user "\nFAILURE: problem with time limit signal\n"
+	log_error "Problem with time limit signal"
 	set exit_code 1
 }
 

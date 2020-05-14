@@ -60,7 +60,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -69,8 +69,7 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	fail "Failed to submit job"
 }
 
 set matches 0
@@ -85,7 +84,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: sbatch failed to set job name\n"
+	log_error "sbatch failed to set job name"
 	set exit_code 1
 }
 cancel_job $job_id

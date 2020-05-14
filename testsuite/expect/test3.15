@@ -46,7 +46,7 @@ proc submit_job { license_count } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 			exp_continue
 		}
@@ -55,7 +55,7 @@ proc submit_job { license_count } {
 		}
 	}
 	if { $job_id == 0 } {
-		send_user "\nFAILURE: failed to submit job\n"
+		log_error "Failed to submit job"
 		set exit_code 1
 	}
 	return $job_id
@@ -71,7 +71,7 @@ proc reason_is_licenses { job_id } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue not responding\n"
+			log_error "squeue not responding"
 			set exit_code 1
 			exp_continue
 		}
@@ -92,7 +92,7 @@ proc update_resv { license_count } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 			exp_continue
 		}
@@ -101,7 +101,7 @@ proc update_resv { license_count } {
 		}
 	}
 	if { $updated_ok == 0 } {
-		send_user "\nFAILURE: failed to set update reservation\n"
+		log_error "Failed to set update reservation"
 		set exit_code 1
 	}
 }
@@ -126,7 +126,7 @@ proc test_license_count {want_total want_used want_free } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 			exp_continue
 		}
@@ -135,15 +135,15 @@ proc test_license_count {want_total want_used want_free } {
 		}
 	}
 	if { $license_total != $want_total } {
-		send_user "\nFAILURE: Incorrect license_total count ($license_total != $want_total)\n"
+		log_error "Incorrect license_total count ($license_total != $want_total)"
 		set exit_code 1
 	}
 	if { $license_used != $want_used } {
-		send_user "\nFAILURE: Incorrect license_used count ($license_used != $want_used)\n"
+		log_error "Incorrect license_used count ($license_used != $want_used)"
 		set exit_code 1
 	}
 	if { $license_free != $want_free } {
-		send_user "\nFAILURE: Incorrect license_free count ($license_free != $want_free)\n"
+		log_error "Incorrect license_free count ($license_free != $want_free)"
 		set exit_code 1
 	}
 }
@@ -188,7 +188,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -197,12 +197,10 @@ expect {
 }
 log_user 1
 if {[string first ${license_name} ${licenses}] != -1} {
-	send_user "\nFAILURE: License ${license_name} already configured, likely vestigial from previous test, fix slurm.conf and test again\n"
-	exit 1
+	fail "License ${license_name} already configured, likely vestigial from previous test, fix slurm.conf and test again"
 }
 if {$got_config == 0} {
-	send_user "\nFAILURE: Could not identify slurm.conf location\n"
-	exit 1
+	fail "Could not identify slurm.conf location"
 }
 
 set config_file $config_dir/slurm.conf
@@ -231,7 +229,7 @@ expect {
 		send_user "\nError is expected, no worries\n"
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -242,11 +240,11 @@ expect {
 spawn $scontrol create reservation ReservationName=$resv_name starttime=now duration=2 nodecnt=2 flags=license_only users=$user_name licenses=${license_name}:6
 expect {
 	-re "Error|error" {
-		send_user "\nFAILURE: error creating reservation\n"
+		log_error "Error creating reservation"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -264,7 +262,7 @@ set job_id1 [submit_job 3]
 #
 sleep 5
 if { [reason_is_licenses $job_id1] == 0 } {
-	send_user "\nFAILURE: failed to set proper job reason for job $job_id1\n"
+	log_error "Failed to set proper job reason for job $job_id1"
 	set exit_code 1
 }
 
@@ -278,7 +276,7 @@ update_resv 2
 #
 sleep 5
 if { [reason_is_licenses $job_id1] != 0 } {
-	send_user "\nFAILURE: failed to set proper job reason for job $job_id1\n"
+	log_error "Failed to set proper job reason for job $job_id1"
 	set exit_code 1
 }
 
@@ -301,7 +299,7 @@ set job_id2 [submit_job 4]
 #
 sleep 5
 if { [reason_is_licenses $job_id2] == 0 } {
-	send_user "\nFAILURE: failed to set proper job reason for job $job_id2\n"
+	log_error "Failed to set proper job reason for job $job_id2"
 	set exit_code 1
 }
 
@@ -315,7 +313,7 @@ update_resv 1
 #
 sleep 5
 if { [reason_is_licenses $job_id2] != 0 } {
-	send_user "\nFAILURE: failed to set proper job reason for job $job_id2\n"
+	log_error "Failed to set proper job reason for job $job_id2"
 	set exit_code 1
 }
 

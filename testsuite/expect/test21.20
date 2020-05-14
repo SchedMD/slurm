@@ -164,7 +164,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	        log_error "There was a problem with the sacctmgr command"
 	    	incr exit_code 1
 	}
 	-re "(($tu1|$tu2|$tu3).($qs1|$qs2))." {
@@ -172,7 +172,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -182,7 +182,7 @@ expect {
 }
 
 if {$matches != 27} {
-	send_user "\nFAILURE:  Account addition 27 incorrect with only $matches.\n"
+	log_error "Account addition 27 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -208,8 +208,8 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "$tu1.$qs3." {
 		incr matches
@@ -220,7 +220,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -230,7 +230,7 @@ expect {
 }
 
 if {$matches != 21} {
-	send_user "\nFAILURE:  Account addition 21 incorrect with only $matches.\n"
+	log_error "Account addition 21 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -257,8 +257,8 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "$tu1.$qs3." {
 		incr matches
@@ -273,7 +273,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -283,7 +283,7 @@ expect {
 }
 
 if {$matches != 15} {
-	send_user "\nFAILURE:  Account addition 15 incorrect with only $matches.\n"
+	log_error "Account addition 15 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -311,8 +311,8 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "$tu1.$qs3." {
 		incr matches
@@ -327,7 +327,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -337,7 +337,7 @@ expect {
 }
 
 if {$matches != 9} {
-	send_user "\nFAILURE:  Account addition 9 incorrect with only $matches.\n"
+	log_error "Account addition 9 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -349,7 +349,5 @@ incr exit_code [remove_qos "$qs1,$qs2,$qs3"]
 incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code
-

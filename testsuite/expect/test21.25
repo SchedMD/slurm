@@ -71,7 +71,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		set exit_code 1
 	}
 	eof {
@@ -79,11 +79,11 @@ expect {
 	}
 }
 if {$slurm_conf_matches != 2} {
-	send_user "\nFAILURE:  sacctmgr failed to show slurm_conf values\n"
+	log_error "sacctmgr failed to show slurm_conf values"
 	set exit_code 1
 }
 if {$slurmdbd_conf_matches != 2} {
-	send_user "\nFAILURE:  sacctmgr failed to show slurmdbd configuration\n"
+	log_error "sacctmgr failed to show slurmdbd configuration"
 	set exit_code 1
 }
 

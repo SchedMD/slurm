@@ -107,7 +107,7 @@ proc cr_core_cpu { node } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -121,8 +121,7 @@ proc cr_core_cpu { node } {
 	} elseif { $cr_core == 1 } {
 		return [expr $core_cnt * $socket_cnt]
 	} else {
-		send_user "\nFAILURE: an error occurred when getting the cpu or"
-		send_user " core count\n"
+		log_error "an error occurred when getting the cpu or core count"
 		set exit_code 1
 	}
 
@@ -141,7 +140,7 @@ proc default_queue_depth { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -160,7 +159,7 @@ proc create_part {part oversubscribe node} {
 	spawn $scontrol create partitionname=$part OverSubscribe=$oversubscribe nodes=$node
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -176,7 +175,7 @@ proc delete_part {part} {
 	spawn $scontrol delete partitionname=$part
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -197,7 +196,7 @@ proc sub_job { job oversubscribe part } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sbatch is not responding\n"
+				log_error "sbatch is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -212,7 +211,7 @@ proc sub_job { job oversubscribe part } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sbatch is not responding\n"
+				log_error "sbatch is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -221,7 +220,7 @@ proc sub_job { job oversubscribe part } {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: sbatch did not submit job\n"
+		log_error "sbatch did not submit job"
 		set exit_code 1
 	}
 
@@ -233,7 +232,7 @@ proc check_job { exp_num_jobs } {
 
 	# Wait a bit for the job to start
 	if {[wait_for_job ${job_id}_0 "RUNNING"] != 0} {
-		send_user "\nFAILURE: error waiting for job ${job_id}_0 to start\n"
+		log_error "Error waiting for job ${job_id}_0 to start"
 		cancel_job ${job_id}_0
 		set exit_code 1
 	}
@@ -247,7 +246,7 @@ proc check_job { exp_num_jobs } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue is not responding\n"
+			log_error "squeue is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -256,9 +255,7 @@ proc check_job { exp_num_jobs } {
 	}
 
 	if { $job_cnt != $exp_num_jobs } {
-		send_user "\nFAILURE: the number of possible jobs that could "
-		send_user "run were not reached ($job_cnt != $exp_num_jobs).\n"
-		send_user "FAILURE: This could be due to memory or other limits.\n"
+		log_error "The number of possible jobs that could run were not reached ($job_cnt != $exp_num_jobs). This could be due to memory or other limits."
 		set exit_code 1
 	}
 }
@@ -277,7 +274,7 @@ proc check_part { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -310,7 +307,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not reponding\n"
+		log_error "sbatch is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -318,13 +315,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit $exit_code
+	fail "sbatch did not submit job"
 }
 
 # Wait a bit for job to start
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	log_error "Error waiting for job $job_id to start"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -339,7 +335,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -347,8 +343,7 @@ expect {
 	}
 }
 if {$got_node != 1} {
-	send_user "\nFAILURE: no node was set for job\n"
-	exit 1
+	fail "No node was set for job"
 }
 
 cancel_job $job_id
@@ -436,6 +431,5 @@ delete_part $test_part_3
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
 } else {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

@@ -70,7 +70,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -79,8 +79,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
@@ -95,7 +94,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -114,12 +113,12 @@ expect {
 	}
 	-re "Cancel job_id=$job_id .* partition= .*\? " {
 		send "n\r"
-		send_user "\nFAILURE: scancel partition filter failure\n"
+		log_error "scancel partition filter failure"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -135,12 +134,12 @@ expect {
 	}
 	-re "Cancel job_id=.* partition= .*\? " {
 		send "n\r"
-		send_user "\nFAILURE: scancel partition filter failure\n"
+		log_error "scancel partition filter failure"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -151,7 +150,7 @@ expect {
 spawn $scancel --verbose --user=$my_login
 expect {
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -167,7 +166,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -175,7 +174,7 @@ expect {
 	}
 }
 if {$matches != 0} {
-	send_user "\nFAILURE: scancel user filter failed\n"
+	log_error "scancel user filter failed"
 	set exit_code 1
 }
 

@@ -55,11 +55,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -69,12 +68,11 @@ expect {
 }
 
 if {$task_cnt != $tasks} {
-	send_user "\nFAILURE: Did not get proper number of tasks:"
-	send_user " $task_cnt, $tasks\n"
+	log_error "Did not get proper number of tasks: $task_cnt, $tasks"
 	set exit_code 1
 }
 if {$verbosity != 1} {
-	send_user "\nFAILURE: Did not report job id with verbosity on\n"
+	log_error "Did not report job id with verbosity on"
 	set exit_code 1
 }
 exit $exit_code

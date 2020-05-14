@@ -46,7 +46,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -54,7 +54,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scancel failed to log no matching jobs\n"
+	log_error "scancel failed to log no matching jobs"
 	set exit_code 1
 }
 
@@ -70,7 +70,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -78,7 +78,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scancel failed to log invalid job ID\n"
+	log_error "scancel failed to log invalid job ID"
 	set exit_code 1
 }
 send_user "\n\n\n"
@@ -95,7 +95,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -103,12 +103,10 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scancel failed to log invalid job ID\n"
+	log_error "scancel failed to log invalid job ID"
 	set exit_code 1
 }
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code
-

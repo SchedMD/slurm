@@ -78,7 +78,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: qrerun did not return the man pages ($matches != 1)\n"
+	log_error "qrerun did not return the man pages ($matches != 1)"
 	set exit_code 1
 }
 

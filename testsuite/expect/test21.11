@@ -110,7 +110,7 @@ if {$access_err != 0} {
 }
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
+	log_error "Our associations don't line up"
 	set exit_code 1
 }
 
@@ -125,7 +125,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -133,7 +133,7 @@ expect {
 	}
 }
 if {$qos_set != 1} {
-	send_user "\nFAILURE QOS $acct(DefaultQos) was not created\n"
+	log_error "QOS $acct(DefaultQos) was not created"
 	set exit_code 1
 }
 
@@ -157,16 +157,16 @@ expect {
 	}
 	-re "$tc2.$ta1" {
 		set exit_code 1
-		send_user "\nFAILURE: $ta1 account erroneously added to $tc2\n"
+		log_error "$ta1 account erroneously added to $tc2"
 		exp_continue
 	}
 	-re "$tc2.$ta2" {
 		exp_continue
-		send_user "\nFAILURE: $ta2 account erroneously added to $tc2\n"
+		log_error "$ta2 account erroneously added to $tc2"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $as_list_pid
 		set exit_code 1
 	}
@@ -176,7 +176,7 @@ expect {
 }
 
 if {$almatches != 2} {
-	send_user "\nFAILURE: Added associations not found.\n"
+	log_error "Added associations not found."
 	send_user "\n Need 2 matches and got $almatches instead.\n"
 	set exit_code 1
 }
@@ -186,7 +186,7 @@ check_assoc_limit 2 account $ta1 [array get acct]
 check_assoc_limit 2 account $ta2 [array get acct]
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
+	log_error "Our associations don't line up"
 	set exit_code 1
 }
 
@@ -200,7 +200,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -210,12 +210,12 @@ expect {
 }
 
 if {$damatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $damatches\n"
+	log_error "sacctmgr had a problem deleting cluster got $damatches"
 	set exit_code 1
 }
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
+	log_error "Our associations don't line up"
 	set exit_code 1
 }
 
@@ -229,7 +229,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -239,7 +239,7 @@ expect {
 }
 
 if {$dcmatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $dcmatches\n"
+	log_error "sacctmgr had a problem deleting cluster got $dcmatches"
 	set exit_code 1
 }
 
@@ -254,7 +254,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -264,7 +264,7 @@ expect {
 }
 
 if {$dmatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting QOS got $dmatches\n"
+	log_error "sacctmgr had a problem deleting QOS got $dmatches"
 	set exit_code 1
 }
 
@@ -275,16 +275,16 @@ set as2_list_pid [spawn $sacctmgr list association cluster=$tc1 ]
 expect {
 	-re "$tc1 *$ta1" {
 		exp_continue
-		send_user "\nFAILURE: test associations still exist.\n"
+		log_error "Test associations still exist"
 		set exit_code 1
 	}
 	-re "$tc1 *$ta2" {
 		exp_continue
-		send_user "\nFAILURE: test associations still exist.\n"
+		log_error "Test associations still exist"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nTest associations delete verified.\n"
+		send_user "\nTest associations delete verified\n"
 		slow_kill $as2_list_pid
 	}
 	eof {
@@ -293,7 +293,7 @@ expect {
 }
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
+	log_error "Our associations don't line up"
 	set exit_code 1
 }
 

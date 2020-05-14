@@ -99,7 +99,7 @@ expect {
 	}
 
 	timeout {
-		send_user "\nFAILURE: smap not responding\n"
+		log_error "smap not responding"
 		set exit_code 1
 	}
 	eof {
@@ -113,7 +113,7 @@ if {$too_small != 0} {
 if {$matches != 8} {
 	#send_user $matches ."\n"
 	send_user $stuff
-	send_user "\nFAILURE: smap job information display\n"
+	log_error "smap job information display"
 	set exit_code 1
 }
 

@@ -74,7 +74,7 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: There was a problem creating the link\n"
+			log_error "There was a problem creating the link"
 			set exit_code 1
 		}
 		eof {
@@ -83,7 +83,7 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 	}
 
 	if {$make_ln != 1} {
-		send_user "\nFAILURE: link was not created\n"
+		log_error "Link was not created"
 		set exit_code 1
 	}
 
@@ -114,7 +114,7 @@ proc check_file { file_name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: find is not responding\n"
+			log_error "find is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -123,7 +123,7 @@ proc check_file { file_name } {
 	}
 
 	if {$found == 1} {
-		send_user "\nFAILURE: The file $file_name should have been removed\n"
+		log_error "The file $file_name should have been removed"
 		# Root may of created this file so we can't remove it
 		# exec $bin_rm -f $file_dir/$file_name
 		set exit_code 1
@@ -142,7 +142,7 @@ proc check_proc {program_name} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: timed out while looking for process\n"
+			log_error "Timed out while looking for process"
 			set exit_code 1
 		}
 		eof {
@@ -150,7 +150,7 @@ proc check_proc {program_name} {
 		}
 	}
 	if {$proc_exist == 1} {
-		send_user "\nFAILURE: $program_name should have been killed\n"
+		log_error "$program_name should have been killed"
 		exec killall -9 $program_name
 		set exit_code 1
 	}
@@ -177,7 +177,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun is not responding\n"
+			log_error "srun is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -186,7 +186,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 	}
 
 	if {$sub_job != 1} {
-		send_user "\nFAILURE: srun did not start job\n"
+		log_error "srun did not start job"
 		set exit_code 1
 	}
 
@@ -230,7 +230,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: Did not get run_host\n"
+		log_error "Did not get run_host"
 		set exit_code 1
 	}
 	eof {
@@ -241,7 +241,7 @@ expect {
 set cwd "[$bin_pwd]"
 set file_dir "/tmp"
 if {$get_name != 1} {
-	send_user "\nFAILURE: Did not get run_host\n"
+	log_error "Did not get run_host"
 	exit 1
 }
 
@@ -266,7 +266,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -274,7 +274,7 @@ expect {
 	}
 }
 if {$sub_job != 1} {
-	send_user "\nFAILURE: srun did not submit job\n"
+	log_error "srun did not submit job"
 	set exit_code 1
 }
 
@@ -322,7 +322,7 @@ if {$make_file == 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not responding\n"
+			log_error "salloc is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -330,7 +330,7 @@ if {$make_file == 1} {
 		}
 	}
 	if {$sub_job != 1} {
-		send_user "\nFAILURE: srun did not submit job\n"
+		log_error "srun did not submit job"
 		set exit_code 1
 	}
 

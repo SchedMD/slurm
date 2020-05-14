@@ -58,8 +58,7 @@ if {$nb_nodes < 2} {
 set nb_nodes 2
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
@@ -90,7 +89,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		slow_kill $salloc_pid
 		set exit_code 1
 	}
@@ -99,7 +98,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	send_user "\nFAILURE: Invalid heterogeneous job output ($match != 2)\n"
+	log_error "Invalid heterogeneous job output ($match != 2)"
 	set exit_code 1
 }
 

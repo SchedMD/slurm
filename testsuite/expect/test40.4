@@ -57,13 +57,13 @@ proc setup { mps_limit } {
 	set user_req(account) $acct
 
 	if { [add_acct $acct [array get acct_req]] } {
-		send_user "\nFAILURE: child account was not added\n"
+		log_error "Child account was not added"
 		incr exit_code
 		return 1
 	}
 
 	if { [add_user $user [array get user_req]] } {
-		send_user "\nFAILURE: user was not added to child account\n"
+		log_error "User was not added to child account"
 		incr exit_code
 		return 1
 	}
@@ -118,8 +118,7 @@ if {$nb_nodes > 1} {
 }
 set mps_cnt [get_mps_count $nb_nodes]
 if {$mps_cnt < 0} {
-	send_user "\nFAILURE: Error getting MPS count\n"
-	exit 1
+	fail "Error getting MPS count"
 }
 if {$mps_cnt < 100} {
 	send_user "\nWARNING: This test requires 100 or more MPS per node in the default partition\n"
@@ -167,7 +166,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -175,7 +174,7 @@ expect {
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: job not submitted\n"
+	log_error "Job not submitted"
 	set exit_code 1
 }
 
@@ -187,7 +186,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -195,12 +194,12 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	send_user "\nFAILURE: job not submitted\n"
+	log_error "Job not submitted"
 	set exit_code 1
 }
 
 if {[wait_for_job $job_id2 "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id2 did not complete\n"
+	log_error "Job $job_id2 did not complete"
 	cancel_job $job_id2
 	set exit_code 1
 }
@@ -217,7 +216,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -225,7 +224,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	send_user "\nFAILURE: job $job_id1 state is bad\n"
+	log_error "Job $job_id1 state is bad"
 	set exit_code 1
 }
 cancel_job $job_id1

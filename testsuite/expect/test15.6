@@ -67,11 +67,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -83,7 +82,7 @@ expect {
 	}
 }
 if {$verbosity != 2} {
-	send_user "\nFAILURE: Did not report job id with verbosity on\n"
+	log_error "Did not report job id with verbosity on"
 	set exit_code 1
 }
 

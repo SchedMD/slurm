@@ -73,7 +73,7 @@ proc acct_setup { acct_name qos_name pre_qos pre_type } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -88,7 +88,7 @@ proc acct_setup { acct_name qos_name pre_qos pre_type } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -103,7 +103,7 @@ proc acct_setup { acct_name qos_name pre_qos pre_type } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -112,8 +112,7 @@ proc acct_setup { acct_name qos_name pre_qos pre_type } {
 	}
 
 	if {$added != 3} {
-		send_user "\nFAILURE: account was not created properly\n"
-		exit 1
+		fail "Account was not created properly"
 	}
 }
 
@@ -129,7 +128,7 @@ proc mod_qos { qos_name pre_type } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -138,7 +137,7 @@ proc mod_qos { qos_name pre_type } {
 	}
 
 	if { $mod != 1 } {
-		send_user "\nFAILURE: qos $qos_name was not modified\n"
+		log_error "Qos $qos_name was not modified"
 		set exit_code 1
 	}
 }
@@ -155,7 +154,7 @@ proc sub_job { acct } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -164,8 +163,7 @@ proc sub_job { acct } {
 	}
 
 	if { $job_id == 0 } {
-		send_user "\nFAILURE: sbatch did not submit job\n"
-		exit $exit_code
+		fail "sbatch did not submit job"
 	} else {
 		return $job_id
 	}
@@ -192,7 +190,7 @@ proc clean_up { rc } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sacctmgr is not responding\n"
+				log_error "sacctmgr is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -207,7 +205,7 @@ proc clean_up { rc } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sacctmgr is not responding\n"
+				log_error "sacctmgr is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -217,7 +215,7 @@ proc clean_up { rc } {
 	}
 
 	if { $clean != 4 } {
-		send_user "\nFAILURE: unable to clean up accounts and qos\n"
+		log_error "Unable to clean up accounts and qos"
 		set exit_code 1
 	}
 
@@ -242,13 +240,13 @@ acct_setup $acct_2 $qos_2 $qos_1 cluster
 
 set qos_1_id [sub_job $acct_1]
 if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_1_id failed to start\n"
+	log_error "Job $qos_1_id failed to start"
 	clean_up 1
 }
 
 set qos_2_id [sub_job $acct_2]
 if { [wait_for_job $qos_2_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_2_id failed to start\n"
+	log_error "Job $qos_2_id failed to start"
 	clean_up 1
 }
 
@@ -264,13 +262,13 @@ mod_qos $qos_1 requeue
 
 set qos_1_id [sub_job $acct_1]
 if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_1_id failed to start\n"
+	log_error "Job $qos_1_id failed to start"
 	clean_up 1
 }
 
 set qos_2_id [sub_job $acct_2]
 if { [wait_for_job $qos_2_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_2_id failed to start\n"
+	log_error "Job $qos_2_id failed to start"
 	clean_up 1
 }
 
@@ -279,11 +277,11 @@ check_job_state $qos_1_id PENDING
 
 # Wait for requeued job to restart
 if { [wait_for_job $qos_2_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $qos_2_id failed to complete\n"
+	log_error "Job $qos_2_id failed to complete"
 	clean_up 1
 }
 if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_1_id failed to start\n"
+	log_error "Job $qos_1_id failed to start"
 	clean_up 1
 }
 

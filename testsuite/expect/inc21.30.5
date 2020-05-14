@@ -43,15 +43,15 @@ proc inc21_30_5 { wait_reason } {
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nFAILURE: This should have run but did not. (Within: inc21.30.5)\n"
+			log_error "This should have run but did not. (Within: inc21.30.5)"
 			set exit_code 1
 		}
 		-re "error" {
-			send_user "\nFAILURE: Job allocation should not have failed. (Within: inc21.30.5)\n"
+			log_error "Job allocation should not have failed. (Within: inc21.30.5)"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding (Within: inc21.30.5)\n"
+			log_error "salloc not responding (Within: inc21.30.5)"
 			set exit_code 1
 		}
 		eof {
@@ -69,11 +69,11 @@ proc inc21_30_5 { wait_reason } {
 			send_user "\nJob $job_id1 is waiting for resources. This is expected. (Within: inc21.30.5)\n"
 		}
 		-re "Granted job allocation ($number)" {
-			send_user "\nFAILURE: This should have pended but did not (Within: inc21.30.5)\n"
+			log_error "This should have pended but did not (Within: inc21.30.5)"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding. (Within: inc21.30.5)\n"
+			log_error "salloc not responding. (Within: inc21.30.5)"
 			set exit_code 1
 		}
 		eof {
@@ -82,7 +82,7 @@ proc inc21_30_5 { wait_reason } {
 	}
 
 	if {![check_reason $job_id1 $wait_reason]} {
-		send_user "\nFAILURE: Bad job wait reason. (Within: inc21.30.5)\n"
+		log_error "Bad job wait reason. (Within: inc21.30.5)"
 		set exit_code 1
 	}
 

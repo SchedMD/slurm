@@ -117,7 +117,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -127,11 +127,11 @@ expect {
 }
 
 if {$dmatches != 4} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting cluster\n"
+	log_error "sacctmgr had a problem deleting cluster"
 	set exit_code 1
 }
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
+	log_error "Our associations don't line up"
 	set exit_code 1
 }
 

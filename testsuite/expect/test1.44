@@ -100,9 +100,9 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	}
 	if {$stdout_lines != $stdout_target} {
 		if {$stdout_lines == 0} {
-			send_user "\nFAILURE: stdout is empty, is current working directory writable from compute nodes?\n"
+			log_error "Stdout is empty, is current working directory writable from compute nodes?"
 		} else {
-			send_user "\nFAILURE:stdout is incomplete ($stdout_lines != $stdout_target)\n"
+			log_error "Stdout is incomplete ($stdout_lines != $stdout_target)"
 		}
 	        set exit_code 1
 	        break
@@ -115,6 +115,5 @@ exec $bin_rm -f $file_in $file_out $file_err
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_err $file_in $file_out
 } else {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors with exit code $exit_code"
 }
-exit $exit_code

@@ -64,7 +64,7 @@ proc check_name { job_id name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -72,7 +72,7 @@ proc check_name { job_id name } {
 		}
 	}
 	if {$check_out != 1} {
-		send_user "\nFAILURE: job name for job $job_id was not changed\n"
+		log_error "Job name for job $job_id was not changed"
 		set exit_code 1
 	}
 }
@@ -84,7 +84,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub is not responding\n"
+		log_error "qsub is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -92,14 +92,14 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: qsub did not submit job\n"
+	log_error "qsub did not submit job"
 	set exit_code 1
 }
 
 spawn $qalter -N $job_name $job_id
 expect {
 	timeout {
-		send_user "\nFAILURE: qalter is not responding\n"
+		log_error "qalter is not responding"
 		set exit_code 1
 	}
 	eof {

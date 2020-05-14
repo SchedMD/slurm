@@ -60,7 +60,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -72,8 +72,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: unexpected output from bad job name\n"
-	set exit_code 1
+	fail "Unexpected output from bad job name"
 }
 
 exit $exit_code

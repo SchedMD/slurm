@@ -45,7 +45,7 @@ proc run_gpu_per_job { mem_per_gpu } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -54,7 +54,7 @@ proc run_gpu_per_job { mem_per_gpu } {
 		}
 	}
 	if {$mem_size != $mem_per_gpu} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure ($mem_size != $mem_per_gpu)\n\n"
+		log_error "srun --mem-per-gpu failure ($mem_size != $mem_per_gpu)"
 		set exit_code 1
 	}
 }
@@ -70,7 +70,7 @@ proc run_gpu_per_node { mem_per_gpu } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -79,7 +79,7 @@ proc run_gpu_per_node { mem_per_gpu } {
 		}
 	}
 	if {$mem_size != $mem_per_gpu} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure ($mem_size != $mem_per_gpu)\n\n"
+		log_error "srun --mem-per-gpu failure ($mem_size != $mem_per_gpu)"
 		set exit_code 1
 	}
 }
@@ -95,7 +95,7 @@ proc run_gpu_per_task { mem_per_gpu gpu_cnt } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -105,7 +105,7 @@ proc run_gpu_per_task { mem_per_gpu gpu_cnt } {
 	}
 	set mem_target [expr $mem_per_gpu * $gpu_cnt]
 	if {$mem_size != $mem_target} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure ($mem_size != $mem_target)\n\n"
+		log_error "srun --mem-per-gpu failure ($mem_size != $mem_target)"
 		set exit_code 1
 	}
 }
@@ -125,8 +125,7 @@ if {![test_select_type_params "MEMORY"]} {
 
 set gpu_cnt [get_gpu_count 1]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
@@ -213,7 +212,7 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -223,13 +222,13 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 	}
 	set node_target 2
 	if {$node_count < $node_target} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure, bad node count ($node_count < $node_target)\n\n"
+		log_error "srun --mem-per-gpu failure, bad node count ($node_count < $node_target)"
 		set exit_code 1
 	}
 
 	set mem_target [expr $mem_spec * $gpu_target]
 	if {$mem_alloc != $mem_target} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure ($mem_alloc != $mem_target)\n"
+		log_error "srun --mem-per-gpu failure ($mem_alloc != $mem_target)"
 		set exit_code 1
 	}
 }
@@ -252,7 +251,7 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -263,13 +262,13 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 
 	set node_target 2
 	if {$node_count < $node_target} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure, bad node count ($node_count < $node_target)\n\n"
+		log_error "srun --mem-per-gpu failure, bad node count ($node_count < $node_target)"
 		set exit_code 1
 	}
 
 	set mem_target [expr $mem_spec * $node_target]
 	if {$mem_alloc != $mem_target} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure ($mem_alloc != $mem_target)\n"
+		log_error "srun --mem-per-gpu failure ($mem_alloc != $mem_target)"
 		set exit_code 1
 	}
 }

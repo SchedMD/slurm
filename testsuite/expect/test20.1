@@ -55,7 +55,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -63,14 +63,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: qsub failed to submit job\n"
-	exit 1
+	fail "qsub failed to submit job"
 }
 
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: qsub output file not found\n"
 	catch {exec $qdel $job_id}
-	exit 1
+	fail "qsub output file not found"
 }
 set matches 0
 spawn $bin_cat $file_out
@@ -84,14 +82,13 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: unexpected qsub output file contents\n"
+	log_error "Unexpected qsub output file contents"
 	set exit_code 1
 }
 
 if {[wait_for_file $file_err] != 0} {
-	send_user "\nFAILURE: qsub error file not found\n"
 	catch {exec $qdel $job_id}
-	exit 1
+	fail "qsub error file not found"
 }
 set matches 0
 spawn $bin_cat $file_err
@@ -106,7 +103,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: unexpected qsub error file contents\n"
+	log_error "Unexpected qsub error file contents"
 	set exit_code 1
 }
 

@@ -147,7 +147,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -157,16 +157,14 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
-	exit 1
+	fail "Waiting for job to complete"
 }
 
 #
@@ -229,7 +227,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sort not responding\n"
+		log_error "Sort not responding"
 		set exit_code 1
 	}
 	eof {
@@ -239,12 +237,7 @@ expect {
 
 set target 5
 if {$matches != $target} {
-	send_user "\nFAILURE: User limits not propagated got $matches of $target matches\n"
-	send_user "Check PropagateResourceLimits configuration parameter\n"
-	send_user "Check $file_err for errors\n"
-	send_user "A long running slurmd could cause a file size limit error\n"
-	send_user "slurmd could have been started with limits lower than user launching the task\n"
-	set exit_code 1
+	fail "User limits not propagated got $matches of $target matches. Check PropagateResourceLimits configuration parameter. Check $file_err for errors. A long running slurmd could cause a file size limit error. slurmd could have been started with limits lower than user launching the task"
 }
 
 if {$exit_code == 0} {

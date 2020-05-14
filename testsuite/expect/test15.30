@@ -48,12 +48,10 @@ expect {
 		exp_continue
 	}
 	-re "Granted job allocation " {
-		send_user "\nFAILURE: salloc is OK with a deadline too old\n"
-		set exit_code 1
-		exit 1
+		fail "Salloc is OK with a deadline too old"
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		set exit_code 1
 	}
 	eof {

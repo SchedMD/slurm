@@ -69,7 +69,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -81,11 +81,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: salloc failed to initiate job\n"
+	log_error "salloc failed to initiate job"
 	set exit_code 1
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: failed to set job name\n"
+	log_error "Failed to set job name"
 	set exit_code 1
 }
 
@@ -107,7 +107,7 @@ expect {
 		exp_continue
         }
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -121,7 +121,7 @@ expect {
 }
 set delta_prio [expr $priority1 - $priority2]
 if {$delta_prio < 950} {
-	send_user "\nFAILURE: failed to process nice option\n"
+	log_error "Failed to process nice option"
 	set exit_code 1
 }
 

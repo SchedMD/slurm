@@ -54,11 +54,11 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
+		log_error "sbatch did not submit jobs"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -66,12 +66,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit jobs\n"
+	log_error "sbatch did not submit jobs"
 	exit 1
 }
 
 if {[wait_for_job ${job_id}_0 "RUNNING"] != 0} {
-	send_user "\nFAILURE: waiting for job to start\n"
+	log_error "Waiting for job to start"
 	cancel_job $job_id
 	exit 1
 }
@@ -88,7 +88,7 @@ while { $inx < 10 } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -96,7 +96,7 @@ while { $inx < 10 } {
 		}
 	}
 	if {$run_count > $task_limit} {
-		send_user "\nFAILURE: too many tasks in the job array are running ($run_count > $task_limit)\n"
+		log_error "Too many tasks in the job array are running ($run_count > $task_limit)"
 		set exit_code 1
 	}
 	send_user "\n+++ $run_count running tasks +++\n"
@@ -108,7 +108,7 @@ while { $inx < 10 } {
 		spawn $scontrol update jobid=$job_id arraytaskthrottle $task_limit
 		expect {
 			timeout {
-				send_user "\nFAILURE: scontrol not responding\n"
+				log_error "scontrol not responding"
 				set exit_code 1
 			}
 			eof {

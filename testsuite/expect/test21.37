@@ -75,7 +75,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr show stats not responding.\n"
+		log_error "sacctmgr show stats not responding"
 		set exit_code 1
 		slow_kill $as_pid
 	}
@@ -88,7 +88,6 @@ if {$rpc_rec_cnt > 0} {
 	incr matches
 }
 if {$matches != 6} {
-	send_user "\nFAILURE: sacctmgr show stats response bad ($matches != 6).\n"
-	set exit_code 1
+	fail "sacctmgr show stats response bad ($matches != 6)"
 }
 exit $exit_code

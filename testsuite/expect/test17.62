@@ -74,7 +74,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -90,7 +90,7 @@ if {$job_id == 0} {
 
 # Wait for the job to finish
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	log_error "Error waiting for job $job_id to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -111,7 +111,7 @@ foreach option [array names check_list] {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -122,8 +122,7 @@ foreach option [array names check_list] {
 
 	# Check that each value is found
 	if {$match != 1} {
-		send_user "\nFAILURE: $option was not found\n"
-		send_user "\nFAILURE: Could be due to small configured MinJobAge value\n"
+		log_error "$option was not found. Could be due to small configured MinJobAge value"
 		set exit_code 1
 	}
 }

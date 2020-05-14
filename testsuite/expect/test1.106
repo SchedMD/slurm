@@ -53,7 +53,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {
@@ -61,12 +61,11 @@ expect {
 	}
 }
 if {$job_id != 0} {
-	send_user "\nFAILURE: job submitted despite the deadline\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job submitted despite the deadline"
 }
 if {$time_error == 0} {
-	send_user "\nFAILURE: No time-min limit error\n"
+	log_error "No time-min limit error"
 	set exit_code 1
 } else {
 	send_user "\nTime limit error expected, no worries\n"

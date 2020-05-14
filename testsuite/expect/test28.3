@@ -58,7 +58,7 @@ proc check_ids { job } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -66,7 +66,7 @@ proc check_ids { job } {
 			}
 		}
 		if {$match != 1} {
-			send_user "\nFAILURE: Array IDs for $job\_$index not found\n"
+			log_error "Array IDs for $job\_$index not found"
 			set exit_code 1
 		}
 	}
@@ -81,11 +81,11 @@ expect {
 		send_user "\njob $job_id was submitted\n"
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
+		log_error "sbatch did not submit jobs"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {

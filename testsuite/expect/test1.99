@@ -88,7 +88,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: cat is not responding\n"
+		log_error "cat is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -104,7 +104,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -113,8 +113,7 @@ expect {
 }
 
 if {[string compare $show_config_range $slurm_conf_range]} {
-	send_user "\nFAILURE: SrunPortRange from scontrol show config does "
-	send_user "match what is in slurm.conf\n"
+	log_error "SrunPortRange from scontrol show config does not match what is in slurm.conf"
 	set exit_code 1
 }
 
@@ -146,7 +145,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -155,7 +154,7 @@ expect {
 }
 
 if {$out_of_range != 0} {
-	send_user "\nFAILURE: srun has exceeded the allowed port range\n"
+	log_error "srun has exceeded the allowed port range"
 	set exit_code 1
 }
 
@@ -180,7 +179,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -189,12 +188,11 @@ expect {
 }
 
 if {$tmp_id == 0} {
-	send_user "\nFAILURE: job was not submitted\n"
-	exit 1
+	fail "Job was not submitted"
 }
 
 if {[wait_for_job $tmp_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $tmp_id to start\n"
+	log_error "Error waiting for job $tmp_id to start"
 	set exit_code 1
 }
 set match 0
@@ -206,7 +204,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -215,8 +213,7 @@ expect {
 }
 
 if {$match != 1} {
-	send_user "\nFAILURE: srun should have failed due to exhausted ports "
-	send_user "but did not\n"
+	log_error "srun should have failed due to exhausted ports but did not"
 	set exit_code 1
 }
 

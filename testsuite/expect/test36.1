@@ -58,7 +58,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: lsid not responding\n"
+		log_error "lsid not responding"
 		set exit_code 1
 	}
 	eof {
@@ -67,17 +67,15 @@ expect {
 }
 
 if {[string compare $cluster_name $lsid_cluster_name]} {
-	send_user "\nFAILURE: lsid's cluster name does not match the configured parameter ($cluster_name != $lsid_cluster_name)\n"
+	log_error "lsid's cluster name does not match the configured parameter ($cluster_name != $lsid_cluster_name)"
 	set exit_code 1
 }
 
 if {[string compare $control_machine $lsid_control_machine]} {
-	send_user "\nFAILURE: lsid's master name does not match the configured parameter ($control_machine != $lsid_control_machine)\n"
+	log_error "lsid's master name does not match the configured parameter ($control_machine != $lsid_control_machine)"
 	set exit_code 1
 }
 
 if {$exit_code} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-
-exit $exit_code

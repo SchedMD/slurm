@@ -52,7 +52,7 @@ proc sdiag_all { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sdiag not responding\n"
+			log_error "sdiag not responding"
 			set exit_code 1
 		}
 		eof {
@@ -61,7 +61,7 @@ proc sdiag_all { } {
 	}
 
 	if {$matches != 2} {
-		send_user "\nFAILURE: sdiag --all failed ($matches)\n"
+		log_error "sdiag --all failed ($matches)"
 		set exit_code 1
 	}
 }
@@ -89,11 +89,11 @@ if {$perm_denied != 0} {
 sdiag_all
 
 if {$jobs_submitted != 0} {
-	send_user "\nFAILURE: sdiag job submit count not cleared\n"
+	log_error "sdiag job submit count not cleared"
 	set exit_code 1
 }
 if {$jobs_started != 0} {
-	send_user "\nFAILURE: sdiag job start count not cleared\n"
+	log_error "sdiag job start count not cleared"
 	set exit_code 1
 }
 

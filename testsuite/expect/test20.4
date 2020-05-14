@@ -50,7 +50,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: pbsnodes not responding\n"
+		log_error "pbsnodes not responding"
 		set exit_code 1
 	}
 	eof {
@@ -58,7 +58,7 @@ expect {
 	}
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: pbsnodes output failure\n"
+	log_error "pbsnodes output failure"
 	set exit_code 1
 }
 

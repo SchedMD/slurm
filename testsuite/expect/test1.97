@@ -84,7 +84,7 @@ proc check_node_config { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -94,8 +94,7 @@ proc check_node_config { } {
 	log_user 1
 
 	if {$match != 3} {
-		send_user "\nFAILURE: could not determine node config\n"
-		exit 1
+		fail "Could not determine node config"
 	} elseif {$same == 2} {
 		set sys_homo 1
 		return $low
@@ -118,7 +117,7 @@ proc check_tasks_all {ntaskspn tasks} {
 	}
 
 	if {$match != 3} {
-		send_user "\nFAILURE: incorrect number of tasks were set\n"
+		log_error "Incorrect number of tasks were set"
 		set exit_code 1
 	}
 }
@@ -140,7 +139,7 @@ proc check_tasks_off {ntaskspn tasks offset} {
 	}
 
 	if {$match != 3} {
-		send_user "\nFAILURE: incorrect number of tasks were set $match != 3\n"
+		log_error "Incorrect number of tasks were set $match != 3"
 		set exit_code 1
 	}
 }
@@ -160,7 +159,7 @@ proc check_cpu_all {nodes job_cpus ncpus} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -170,7 +169,7 @@ proc check_cpu_all {nodes job_cpus ncpus} {
 	}
 
 	if {$match != 3} {
-		send_user "\nFAILURE: incorrect number of cpus were set\n"
+		log_error "Incorrect number of cpus were set"
 		set exit_code 1
 	}
 }
@@ -190,7 +189,7 @@ proc check_cpu_off {nodes job_cpus ncpus} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -206,7 +205,7 @@ proc check_cpu_off {nodes job_cpus ncpus} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -215,7 +214,7 @@ proc check_cpu_off {nodes job_cpus ncpus} {
 	}
 
 	if {$match != 3} {
-		send_user "\nFAILURE: incorrect number of cpus were set $match != 3\n"
+		log_error "Incorrect number of cpus were set $match != 3"
 		set exit_code 1
 	}
 }
@@ -242,7 +241,7 @@ proc submit_cpu {ntasks ncpus} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun is not responding\n"
+			log_error "srun is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -251,8 +250,7 @@ proc submit_cpu {ntasks ncpus} {
 	}
 
 	if {$x != 3} {
-		send_user "\nFAILURE: srun did not submit the jobs correctly $x != 3\n"
-		exit 1
+		fail "srun did not submit the jobs correctly $x != 3"
 	}
 }
 
@@ -278,7 +276,7 @@ proc submit_tasks {ntasks ntaskpn} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun is not responding\n"
+			log_error "srun is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -287,8 +285,7 @@ proc submit_tasks {ntasks ntaskpn} {
 	}
 
 	if {$x != 3} {
-		send_user "\nFAILURE: srun did not submit the jobs correctly $x != 3\n"
-		exit 1
+		fail "srun did not submit the jobs correctly $x != 3"
 	}
 }
 
@@ -311,7 +308,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -320,7 +317,7 @@ expect {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	log_error "Error waiting for job $job_id to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -336,7 +333,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {

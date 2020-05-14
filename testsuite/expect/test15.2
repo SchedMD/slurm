@@ -53,7 +53,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		set exit_code 1
 	}
 	eof {
@@ -62,7 +62,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE: salloc failed to report help message\n"
+	log_error "salloc failed to report help message"
 	set exit_code 1
 }
 exit $exit_code

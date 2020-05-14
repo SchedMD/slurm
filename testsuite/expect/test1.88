@@ -142,11 +142,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -163,15 +162,14 @@ if {$no_start != 0} {
 	exit 0
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job $job_id to complete\n"
+	log_error "Waiting for job $job_id to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -216,19 +214,16 @@ if {[wait_for_file $file_out] == 0} {
 	}
 	set expected_sum [expr $expected_sum * 6]
 	if {$matches == 0} {
-		send_user "\nFAILURE: No MPI communications occurred\n"
-		send_user "  The version of MPI you are using may be incompatible "
-		send_user "with the configured switch\n"
-		send_user "  Core files may be present from failed MPI tasks\n\n"
+		log_error "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
 		set exit_code 1
 	} elseif {$matches != $expected_msg} {
-		send_user "\nFAILURE: unexpected output ($matches of $expected_msg)\n"
+		log_error "Unexpected output ($matches of $expected_msg)"
 		set exit_code 1
 	} elseif {$complete == 0} {
-		send_user "\nFAILURE: test failed to complete\n"
+		log_error "Test failed to complete"
 		set exit_code 1
 	} elseif {$rank_sum != $expected_sum} {
-		send_user "\nFAILURE: Invalid rank values ($rank_sum != $expected_sum)\n"
+		log_error "Invalid rank values ($rank_sum != $expected_sum)"
 		set exit_code 1
 	}
 } else {

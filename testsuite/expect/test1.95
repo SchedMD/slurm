@@ -90,11 +90,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -111,15 +110,14 @@ if {$no_start != 0} {
 	exit 0
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	set exit_code 1
 }
 
@@ -142,8 +140,7 @@ if {[wait_for_file $file_out] == 0} {
 			exp_continue
 		}
 		-re "Failed to mmap" {
-			send_user "\nFAILURE: insufficient shared memory. "
-			send_user "Rebuild UPCC with --disable-pshm option.\n"
+			log_error "insufficient shared memory. Rebuild UPCC with --disable-pshm option."
 			exp_continue
 		}
 		eof {
@@ -151,13 +148,13 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$matches == 0} {
-		send_user "\nFAILURE: No UPC communications occurred\n"
+		log_error "No UPC communications occurred"
 		set exit_code 1
 	} elseif {$matches != $task_cnt} {
-		send_user "\nFAILURE: unexpected output ($matches of $task_cnt)\n"
+		log_error "Unexpected output ($matches of $task_cnt)"
 		set exit_code 1
 	} elseif {$sum != $total} {
-		send_user "\nFAILURE: Problem with global variables ($sum != $total)\n"
+		log_error "Problem with global variables ($sum != $total)"
 		set exit_code 1
 	}
 } else {

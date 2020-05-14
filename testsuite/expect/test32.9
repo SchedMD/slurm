@@ -88,7 +88,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -96,12 +96,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch job was not submitted\n"
-	exit 1
+	fail "Batch job was not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	log_error "Error waiting for job $job_id to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -130,7 +129,7 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$matches != [expr $node_cnt * 2]} {
-	send_user "\nFAILURE: Failed to preserve file time ($matches != [expr $node_cnt * 2])\n"
+	log_error "Failed to preserve file time ($matches != [expr $node_cnt * 2])"
 	set exit_code 1
 }
 

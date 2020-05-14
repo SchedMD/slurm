@@ -57,8 +57,7 @@ if {$nb_nodes > 1} {
 }
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
@@ -126,7 +125,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -136,7 +135,7 @@ expect {
 }
 set expected_gpus $use_gpus_per_job
 if {$match != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus failure ($match != $expected_gpus)\n"
+	log_error "srun --gpus failure ($match != $expected_gpus)"
 	set exit_code 1
 }
 
@@ -153,7 +152,7 @@ if {$use_gpus_per_job > 2} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -163,7 +162,7 @@ if {$use_gpus_per_job > 2} {
 	}
 	set expected_gpus $use_gpus_per_job
 	if {$match != $expected_gpus} {
-		send_user "\nFAILURE: srun --gpus failure ($match != $expected_gpus)\n"
+		log_error "srun --gpus failure ($match != $expected_gpus)"
 		set exit_code 1
 	}
 }
@@ -185,7 +184,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -195,7 +194,7 @@ expect {
 }
 set expected_gpus [expr $use_gpus_per_node * $nb_nodes]
 if {$match != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-node failure ($match != $expected_gpus)\n"
+	log_error "srun --gpus-per-node failure ($match != $expected_gpus)"
 	set exit_code 1
 }
 
@@ -213,7 +212,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -224,7 +223,7 @@ expect {
 
 set expected_gpus [expr $sockets_with_gpus * $nb_nodes]
 if {$match < $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-task failure ($match < $expected_gpus)\n"
+	log_error "srun --gpus-per-task failure ($match < $expected_gpus)"
 	set exit_code 1
 }
 
@@ -253,7 +252,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -263,7 +262,7 @@ expect {
 }
 set expected_gpus [expr $use_gpus_per_node * $use_gpus_per_node]
 if {$match != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-task failure ($match != $expected_gpus)\n"
+	log_error "srun --gpus-per-task failure ($match != $expected_gpus)"
 	set exit_code 1
 }
 
@@ -293,7 +292,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -303,7 +302,7 @@ expect {
 }
 set expected_gpus [expr $nb_nodes * $use_tasks_per_node * $use_tasks_per_node]
 if {$match != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-task failure ($match != $expected_gpus)\n"
+	log_error "srun --gpus-per-task failure ($match != $expected_gpus)"
 	set exit_code 1
 }
 
@@ -324,7 +323,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -334,7 +333,7 @@ expect {
 }
 set expected_gpus [expr $nb_nodes * $use_gpus_per_node]
 if {$match != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-task failure ($match != $expected_gpus)\n"
+	log_error "srun --gpus-per-task failure ($match != $expected_gpus)"
 	set exit_code 1
 }
 

@@ -58,7 +58,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr not responding\n"
+		log_error "sacctmgr not responding"
 		set exit_code 1
 	}
 	eof {
@@ -67,8 +67,7 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE: sacctmgr --help failed ($matches)\n"
-	set exit_code 1
+	fail "sacctmgr --help failed ($matches)"
 }
 
 exit $exit_code

@@ -108,7 +108,7 @@ proc check_limit { type name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -117,7 +117,7 @@ proc check_limit { type name } {
 	}
 
 	if {$modified != 1} {
-		send_user "\nFAILURE: sacctmgr did not modify tres=$option=$max_tres_type($option)\n"
+		log_error "sacctmgr did not modify tres=$option=$max_tres_type($option)"
 		set exit_code 1
 	}
 
@@ -145,7 +145,7 @@ proc check_limit { type name } {
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: srun is not responding\n"
+			log_error "srun is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -154,10 +154,8 @@ proc check_limit { type name } {
 	}
 
 	if {$match != 1 || $job_id} {
-		send_user "\nFAILURE: job should have been killed upon submission\n"
 		cancel_job $job_id
-		cleanup
-		exit 1
+		fail "Job should have been killed upon submission"
 	}
 
 	# Reset limits
@@ -176,7 +174,7 @@ proc cleanup { } {
 	spawn $sacctmgr -i delete account $test_acct
 	expect {
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -187,7 +185,7 @@ proc cleanup { } {
 	spawn $sacctmgr -i delete qos $test_qos
 	expect {
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -199,11 +197,11 @@ proc cleanup { } {
 		spawn $scontrol update partitionname=[default_partition] TRESBillingWeights=$save_billing_weights
 		expect {
 			-re "error" {
-				send_user "\nFAILURE: failed to reset TRESBillingWeights\n"
+				log_error "Failed to reset TRESBillingWeights"
 				set exit_code 1
 			}
 			timeout {
-				send_user "\nFAILURE: scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -248,7 +246,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -257,9 +255,7 @@ expect {
 }
 
 if {$added != 1} {
-	send_user "\nFAILURE: test QoS $test_qos was not created\n"
-	cleanup
-	exit 1
+	fail "Test QoS $test_qos was not created"
 }
 
 set match 0
@@ -270,7 +266,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user"\nFAILURE: sacctmgr is not responding\n"
+		log_error"sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -279,15 +275,13 @@ expect {
 }
 
 if {$match != 1} {
-	send_user "\nFAILURE: test account $test_acct was not created\n"
-	cleanup
-	exit 1
+	fail "Test account $test_acct was not created"
 }
 
 spawn $sacctmgr -i create user name=[get_my_user_name] account=$test_acct
 expect {
 	timeout {
-		send_user"\nFAILURE: sacctmgr is not responding\n"
+		log_error"sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -304,7 +298,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -319,7 +313,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -330,11 +324,11 @@ expect {
 spawn $scontrol update partitionname=[default_partition] tresbillingweights=cpu=$tres_cpu_mult
 expect {
 	-re "error" {
-		send_user "\nFAILURE: failed to set TRESBillingWeights\n"
+		log_error "Failed to set TRESBillingWeights"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -374,7 +368,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -383,7 +377,7 @@ expect {
 }
 
 if {$modified != 1} {
-	send_user "\nFAILURE: sacctmgr did not modify tres=$option=$max_tres_qos($option)\n"
+	log_error "sacctmgr did not modify tres=$option=$max_tres_qos($option)"
 	set exit_code 1
 }
 
@@ -399,7 +393,7 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -408,7 +402,7 @@ expect {
 }
 
 if {$match != 1 || $job_id} {
-	send_user "\nFAILURE: job should have been killed upon submittion\n"
+	log_error "Job should have been killed upon submittion"
 	set exit_code 1
 }
 
@@ -418,5 +412,5 @@ cancel_job $job_id
 cleanup
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE: test $test_id\n"
+	fail "Test failed due to previous errors"
 }

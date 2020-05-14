@@ -56,7 +56,7 @@ proc inc22_1_5 { } {
 	set my_pid [spawn $sreport job sizesbyaccount printjobcount cluster='$cluster1' start=$start_str end=$end_str -p -n]
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sreport command (Within: inc22.1.5)\n"
+			log_error "There was a problem with the sreport command (Within: inc22.1.5)"
 			incr exit_code 1
 		}
 		-re "$cluster1.root.4.*.100.00%" {
@@ -64,7 +64,7 @@ proc inc22_1_5 { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sreport not responding (Within: inc22.1.5)\n"
+			log_error "sreport not responding (Within: inc22.1.5)"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -74,7 +74,7 @@ proc inc22_1_5 { } {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sreport didn't give good info test1 $matches. (Within: inc22.1.5)\n"
+		log_error "sreport didn't give good info test1 $matches. (Within: inc22.1.5)"
 		incr exit_code 1
 	}
 
@@ -87,7 +87,7 @@ proc inc22_1_5 { } {
 	set my_pid [spawn $sreport job sizesbyaccount printjobcount cluster='$cluster1' start=$start_str end=$end_str -p -n flatview]
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sreport command (Within: inc22.1.5)\n"
+			log_error "There was a problem with the sreport command (Within: inc22.1.5)"
 			incr exit_code 1
 		}
 		#test22-1clus1|test22-1acct1|2|0|0|0|0|50.00%|
@@ -98,7 +98,7 @@ proc inc22_1_5 { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sreport not responding (Within: inc22.1.5)\n"
+			log_error "sreport not responding (Within: inc22.1.5)"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -108,7 +108,7 @@ proc inc22_1_5 { } {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sreport didn't give good info test2 $matches. (Within: inc22.1.5)\n"
+		log_error "sreport didn't give good info test2 $matches. (Within: inc22.1.5)"
 		incr exit_code 1
 	}
 
@@ -121,7 +121,7 @@ proc inc22_1_5 { } {
 	set my_pid [spawn $sreport job sizesbyaccount printjobcount cluster='$cluster1' account=$account1 start=$start_str end=$end_str -p -n]
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sreport command (Within: inc22.1.5)\n"
+			log_error "There was a problem with the sreport command (Within: inc22.1.5)"
 			incr exit_code 1
 		}
 		-re "$cluster1.$account1.2.*.100.00%." {
@@ -129,7 +129,7 @@ proc inc22_1_5 { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sreport not responding (Within: inc22.1.5)\n"
+			log_error "sreport not responding (Within: inc22.1.5)"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -139,7 +139,7 @@ proc inc22_1_5 { } {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sreport didn't give good info test3 $matches. (Within: inc22.1.5)\n"
+		log_error "sreport didn't give good info test3 $matches. (Within: inc22.1.5)"
 		incr exit_code 1
 	}
 

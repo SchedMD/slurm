@@ -58,7 +58,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -66,7 +66,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	send_user "\nFAILURE: show hostnames failure ($matches != 4)\n"
+	log_error "Show hostnames failure ($matches != 4)"
 	set exit_code 1
 }
 
@@ -93,7 +93,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -101,7 +101,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	send_user "\nFAILURE: show hostnames failure ($matches != 4)\n"
+	log_error "Show hostnames failure ($matches != 4)"
 	set exit_code 1
 }
 
@@ -144,7 +144,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -152,7 +152,7 @@ expect {
 	}
 }
 if {$matches != 8} {
-	send_user "\nFAILURE: show hostnames failure ($matches != 8)\n"
+	log_error "Show hostnames failure ($matches != 8)"
 	set exit_code 1
 }
 

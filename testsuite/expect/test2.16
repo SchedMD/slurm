@@ -57,11 +57,11 @@ proc set_part_val {part_type part_val} {
 	spawn $scontrol update partitionname=$part_name $part_type=$part_val
 	expect {
 		-re "Error" {
-			send_user "\nFAILURE: $part_type was not set\n"
+			log_error "$part_type was not set"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -82,7 +82,7 @@ proc check_part {part_type part_val} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -91,7 +91,7 @@ proc check_part {part_type part_val} {
 	}
 
 	if {$val_found != 1} {
-		send_user "\nFAILURE: $part_type was not set to $part_val\n"
+		log_error "$part_type was not set to $part_val"
 		set exit_code 1
 	}
 }
@@ -103,12 +103,12 @@ proc delete_part { } {
 	spawn $scontrol delete partition=$part_name
 	expect {
 		-re "error" {
-			send_user "\nFAILURE: scontrol did not remove partition\n"
+			log_error "scontrol did not remove partition"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "FAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -124,7 +124,7 @@ proc delete_part { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -133,7 +133,7 @@ proc delete_part { } {
 	}
 
 	if {$del_acct != 1} {
-		send_user "\nFAILURE: Account was not deleted\n"
+		log_error "Account was not deleted"
 		set exit_code 1
 	}
 
@@ -142,11 +142,11 @@ proc delete_part { } {
 spawn $scontrol create partition=$part_name
 expect {
 	-re "error" {
-		send_user "\nFAILURE: partition was not created\n"
+		log_error "Partition was not created"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not reponding\n"
+		log_error "scontrol is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -162,7 +162,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -170,7 +170,7 @@ expect {
 	}
 }
 if { $make_acct != 1 } {
-	send_user "\nFAILURE: Account was not added\n"
+	log_error "Account was not added"
 	set exit_code 1
 }
 

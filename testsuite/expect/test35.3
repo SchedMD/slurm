@@ -119,7 +119,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -128,10 +128,10 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: job did not launch\n"
+	log_error "Job did not launch"
 	set exit_code 1
 } elseif {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id
 }
@@ -140,13 +140,13 @@ for {set cnt 1} {$cnt<=$array_end} {incr cnt} {
 	set job_array_id "${job_id}_${cnt}"
 	set output_file "test${test_id}-${job_array_id}.output"
 	if {[wait_for_file $output_file] != 0} {
-		send_user "\nFAILURE: output file was not created or not the correct format. $output_file not found\n"
+		log_error "Output file was not created or not the correct format. $output_file not found"
 		set exit_code 1
 	} elseif {[find_bb_jobid $output_file $job_array_id] == 0} {
-		send_user "\nFAILURE: job array $job_array_id burst buffer not found\n"
+		log_error "Job array $job_array_id burst buffer not found"
 		set exit_code 1
 	} elseif {[find_bb_data $output_file $data_in] == 0} {
-		send_user "\nFAILURE: job array $job_array_id burst buffer input data not found\n"
+		log_error "Job array $job_array_id burst buffer input data not found"
 		set exit_code 1
 	} else {
 		send_user "Job array task $cnt output file is good\n\n"
@@ -155,7 +155,7 @@ for {set cnt 1} {$cnt<=$array_end} {incr cnt} {
 }
 
 if {[find_bb_data $output_data $data_out] == 0} {
-	send_user "\nFAILURE: job burst buffer output data not found\n"
+	log_error "Job burst buffer output data not found"
 	set exit_code 1
 }
 
@@ -169,7 +169,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -177,7 +177,7 @@ expect {
 	}
 }
 if {$found != 0} {
-	send_user "\nFAILURE: job burst buffer not removed\n"
+	log_error "Job burst buffer not removed"
 	set exit_code 1
 }
 

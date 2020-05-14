@@ -61,7 +61,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -69,8 +69,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 #
@@ -82,11 +81,11 @@ expect {
 		exp_continue
 	}
 	-re "TimeLimit=" {
-		send_user "\nFAILURE: job submitted with a time limit different than calculated (00:10:00)\n"
+		log_error "Job submitted with a time limit different than calculated (00:10:00)"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {

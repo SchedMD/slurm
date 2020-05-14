@@ -155,8 +155,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "FAILURE: No response from $test_ulong_prog\n"
-		exit 1
+		fail "No response from $test_ulong_prog"
 	}
 	eof {
 		wait
@@ -244,7 +243,7 @@ rm -rf ./$file_out"
 			exp_continue
 		}
 		timeout {
-			send_user "FAILURE: No response from $test_prog\n"
+			log_error "No response from $test_prog"
 			set failed 1
 		}
 		eof {
@@ -277,7 +276,7 @@ rm -rf ./$file_out"
 				exp_continue
 			}
 			timeout {
-				send_user "FAILURE: No response from $test_prog\n"
+				log_error "No response from $test_prog"
 				set failed 1
 			}
 			eof {
@@ -299,7 +298,7 @@ rm -rf ./$file_out"
 			exp_continue
 		}
 		timeout {
-			send_user "FAILURE: No response from $test_prog\n"
+			log_error "No response from $test_prog"
 			set failed 1
 		}
 		eof {
@@ -1857,21 +1856,21 @@ check_configuration 2.56 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_o
 # ##############################################################################
 
 if {$exit_code != 0} {
-	send_user "FAILURE: Tests $test_id.\["
+	set message "Tests $test_id.\["
 	set length [llength $failed_tests]
 	set i 0
 	foreach test_minor $failed_tests {
 		set i [expr $i+1]
-		send_user "$test_minor"
+		append message "$test_minor"
 		if {$i < $length} {
-			send_user ","
+			append message ","
 		}
 	}
-	send_user "\] failed\n"
+	append message "\] failed"
 	if {$test_minor_in == ""} {
-		send_user "To run an individual sub-test, do `expect test$test_id <sub-test>`\n"
+		append message ". To run an individual sub-test, do `expect test$test_id <sub-test>`"
 	}
-
+	log_error $message
 }
 
 # Delete generated files

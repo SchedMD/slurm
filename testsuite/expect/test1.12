@@ -57,11 +57,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -70,10 +69,10 @@ expect {
 	}
 }
 if {$ckpt_out == -1} {
-	send_user "\nFAILURE: No Checkpoint time reported for job step\n"
+	log_error "No Checkpoint time reported for job step"
 	set exit_code 1
 } elseif {$ckpt_in != $ckpt_out} {
-	send_user "\nFAILURE: Checkpoint time not set properly ($ckpt_in != $ckpt_out)\n"
+	log_error "Checkpoint time not set properly ($ckpt_in != $ckpt_out)"
 	set exit_code 1
 }
 

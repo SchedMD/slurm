@@ -57,7 +57,6 @@ if { [test_front_end] == 1 } {
 
 # Procedure to run a configuration
 proc run_config { test_config } {
-
 	global test_prog cfgcount cfgok wd
 
 	incr cfgcount
@@ -193,7 +192,7 @@ run_config "etc.33.1.4"
 file delete $file_in
 
 if {$cfgok != $cfgcount} {
-	send_user "\n\nFAILURE\n"
+	log_error "Some of the configurations failed"
 	set exit_code 1
 } else {
 	file delete $test_prog

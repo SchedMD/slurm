@@ -56,7 +56,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -65,8 +65,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Environment variables not propagated ($matches != 1)\n"
-	exit 1
+	fail "Environment variables not propagated ($matches != 1)"
 }
 
 #
@@ -84,7 +83,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -93,8 +92,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Environment variables not propagated ($matches != 1)\n"
-	exit 1
+	fail "Environment variables not propagated ($matches != 1)"
 }
 
 #
@@ -110,7 +108,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -119,8 +117,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Environment variables not propagated ($matches != 1)\n"
-	exit 1
+	fail "Environment variables not propagated ($matches != 1)"
 }
 
 #
@@ -136,7 +133,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -145,8 +142,7 @@ expect {
 	}
 }
 if {$matches != 0} {
-	send_user "\nFAILURE: Environment variables were propagated ($matches != 0)\n"
-	exit 1
+	fail "Environment variables were propagated ($matches != 0)"
 }
 
 if {$exit_code == 0} {

@@ -74,7 +74,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -84,7 +84,7 @@ expect {
 }
 
 if {$sum != 21} {
-	send_user "\nFAILURE: srun failed to report exit code ($sum != 21) $myexit\n"
+	log_error "srun failed to report exit code ($sum != 21) $myexit"
 	set exit_code 1
 }
 
@@ -104,7 +104,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: srun's exit code is bad\n"
+	log_error "srun's exit code is bad"
 	set exit_code 1
 }
 

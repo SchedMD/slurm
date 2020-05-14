@@ -48,7 +48,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qalter is not responding\n"
+		log_error "qalter is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -56,7 +56,7 @@ expect {
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: qalter's help option did not work\n"
+	log_error "qalter's help option did not work"
 	set exit_code 1
 }
 

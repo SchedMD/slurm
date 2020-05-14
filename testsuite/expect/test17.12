@@ -56,7 +56,7 @@ proc check_job_nodes {test_job node_name find_node} {
 	set nodelist ""
 
 	if {[wait_for_job $test_job "RUNNING"] != 0} {
-		send_user "\nFAILURE: error waiting for job $test_job to start\n"
+		log_error "Error waiting for job $test_job to start"
 		cancel_job $test_job
 		set exit_code 1
 	}
@@ -70,7 +70,7 @@ proc check_job_nodes {test_job node_name find_node} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code
 		}
 		eof {
@@ -87,7 +87,7 @@ proc check_job_nodes {test_job node_name find_node} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -96,7 +96,7 @@ proc check_job_nodes {test_job node_name find_node} {
 	}
 
 	if {$match != $find_node} {
-		send_user "\nFAILURE: invalid node found\n"
+		log_error "Invalid node found"
 		set exit_code 1
 	}
 }
@@ -109,7 +109,7 @@ proc check_job {nnode test_job} {
 	set nodelist ""
 
 	if {[wait_for_job $test_job "RUNNING"] != 0} {
-		send_user "\nFAILURE: error waiting for job $test_job to start\n"
+		log_error "Error waiting for job $test_job to start"
 		cancel_job $test_job
 		set exit_code 1
 	}
@@ -122,7 +122,7 @@ proc check_job {nnode test_job} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code
 		}
 		eof {
@@ -138,7 +138,7 @@ proc check_job {nnode test_job} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -147,7 +147,7 @@ proc check_job {nnode test_job} {
 	}
 
 	if {$node_cnt != $nnode} {
-		send_user "\nFAILURE: sbatch bad node count ($node_cnt != $nnode)\n"
+		log_error "sbatch bad node count ($node_cnt != $nnode)"
 		set exit_code 1
 	}
 
@@ -174,7 +174,7 @@ proc sub_job_and {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sbatch is not responding\n"
+				log_error "sbatch is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -186,7 +186,7 @@ proc sub_job_and {nnode fail_test} {
 			send_user "\nThis error is expected, no worries\n"
 		}
 		if {$test_job != 0} {
-			send_user "\nFAILURE: Job should have been rejected, but was not\n"
+			log_error "Job should have been rejected, but was not"
 			cancel_job $test_job
 			set exit_code 1
 		}
@@ -198,12 +198,12 @@ proc sub_job_and {nnode fail_test} {
 				exp_continue
 			}
 			-re "Requested node configuration is not available" {
-				send_user "\nFAILURE: Unexpected job submit failure\n"
+				log_error "Unexpected job submit failure"
 				set exit_code 1
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sbatch is not responding\n"
+				log_error "sbatch is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -213,7 +213,7 @@ proc sub_job_and {nnode fail_test} {
 
 		# Check that nodes have the correct features
 		if {$test_job == 0} {
-			send_user "\nFAILURE: Job submit failure\n"
+			log_error "Job submit failure"
 			set exit_code 1
 		} else {
 #			Make sure nodes(3) included in allocation
@@ -238,12 +238,12 @@ proc sub_batch_host {nnode} {
 			exp_continue
 		}
 		-re "Requested node configuration is not available" {
-			send_user "\nFAILURE: Unexpected job submit failure\n"
+			log_error "Unexpected job submit failure"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -252,11 +252,11 @@ proc sub_batch_host {nnode} {
 	}
 
 	if {$test_job == 0} {
-		send_user "\nFAILURE: Job submit failure\n"
+		log_error "Job submit failure"
 		set exit_code 1
 	} else {
 		if {[wait_for_job $test_job "RUNNING"] != 0} {
-			send_user "\nFAILURE: waiting for job to start\n"
+			log_error "Waiting for job to start"
 			set exit_code 1
 		} else {
 			set match 0
@@ -267,7 +267,7 @@ proc sub_batch_host {nnode} {
 					exp_continue
 				}
 				timeout {
-					send_user "\nFAILURE: sbatch is not responding\n"
+					log_error "sbatch is not responding"
 					set exit_code 1
 				}
 				eof {
@@ -275,7 +275,7 @@ proc sub_batch_host {nnode} {
 				}
 			}
 			if {$match != 1} {
-				send_user "\nFAILURE: Invalid BatchHost value\n"
+				log_error "Invalid BatchHost value"
 				set exit_code 1
 			}
 		}
@@ -303,7 +303,7 @@ proc sub_job_count {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sbatch is not responding\n"
+				log_error "sbatch is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -315,7 +315,7 @@ proc sub_job_count {nnode fail_test} {
 			send_user "\nThis error is expected, no worries\n"
 		}
 		if {$test_job != 0} {
-			send_user "\nFAILURE: Job should have been rejected, but was not\n"
+			log_error "Job should have been rejected, but was not"
 			cancel_job $test_job
 			set exit_code 1
 		}
@@ -327,12 +327,12 @@ proc sub_job_count {nnode fail_test} {
 				exp_continue
 			}
 			-re "Requested node configuration is not available" {
-				send_user "\nFAILURE: Unexpected job submit failure\n"
+				log_error "Unexpected job submit failure"
 				set exit_code 1
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sbatch is not responding\n"
+				log_error "sbatch is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -342,7 +342,7 @@ proc sub_job_count {nnode fail_test} {
 
 		# Check that nodes have the correct features
 		if {$test_job == 0} {
-			send_user "\nFAILURE: Job submit failure\n"
+			log_error "Job submit failure"
 			set exit_code 1
 		} else {
 #			Make sure nodes(2 and 3) included in allocation
@@ -373,7 +373,7 @@ proc sub_job_or {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sbatch is not responding\n"
+				log_error "sbatch is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -385,7 +385,7 @@ proc sub_job_or {nnode fail_test} {
 			send_user "\nThis error is expected, no worries\n"
 		}
 		if {$test_job != 0} {
-			send_user "\nFAILURE: Job should have been rejected, but was not\n"
+			log_error "Job should have been rejected, but was not"
 			cancel_job $test_job
 			set exit_code 1
 		}
@@ -397,12 +397,12 @@ proc sub_job_or {nnode fail_test} {
 				exp_continue
 			}
 			-re "Requested node configuration is not available" {
-				send_user "\nFAILURE: Unexpected job submit failure\n"
+				log_error "Unexpected job submit failure"
 				set exit_code 1
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sbatch is not responding\n"
+				log_error "sbatch is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -412,7 +412,7 @@ proc sub_job_or {nnode fail_test} {
 
 		# Check that nodes have the correct features
 		if {$test_job == 0} {
-			send_user "\nFAILURE: Job submit failure\n"
+			log_error "Job submit failure"
 			set exit_code 1
 		} else {
 			check_job $nnode $test_job
@@ -435,12 +435,12 @@ proc sub_job_or_paren {nnode fail_test} {
             exp_continue
         }
         -re "Requested node configuration is not available" {
-            send_user "\nFAILURE: Unexpected job submit failure\n"
+            log_error "Unexpected job submit failure"
             set exit_code 1
             exp_continue
         }
         timeout {
-            send_user "\nFAILURE: sbatch is not responding\n"
+            log_error "sbatch is not responding"
             set exit_code 1
         }
         eof {
@@ -462,12 +462,12 @@ proc sub_job_or_paren {nnode fail_test} {
             exp_continue
         }
         -re "Requested node configuration is not available" {
-            send_user "\nFAILURE: Unexpected job submit failure\n"
+            log_error "Unexpected job submit failure"
             set exit_code 1
             exp_continue
         }
         timeout {
-            send_user "\nFAILURE: sbatch is not responding\n"
+            log_error "sbatch is not responding"
             set exit_code 1
         }
         eof {
@@ -493,12 +493,12 @@ proc sub_job_or_paren {nnode fail_test} {
             exp_continue
         }
         -re "Requested node configuration is not available" {
-            send_user "\nFAILURE: Unexpected job submit failure\n"
+            log_error "Unexpected job submit failure"
             set exit_code 1
             exp_continue
         }
         timeout {
-            send_user "\nFAILURE: sbatch is not responding\n"
+            log_error "sbatch is not responding"
             set exit_code 1
         }
         eof {
@@ -524,12 +524,12 @@ proc sub_job_or_paren {nnode fail_test} {
             exp_continue
         }
         -re "Requested node configuration is not available" {
-            send_user "\nFAILURE: Unexpected job submit failure\n"
+            log_error "Unexpected job submit failure"
             set exit_code 1
             exp_continue
         }
         timeout {
-            send_user "\nFAILURE: sbatch is not responding\n"
+            log_error "sbatch is not responding"
             set exit_code 1
         }
         eof {
@@ -566,7 +566,7 @@ proc sub_job_xand {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sbatch is not responding\n"
+				log_error "sbatch is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -578,7 +578,7 @@ proc sub_job_xand {nnode fail_test} {
 			send_user "\nThis error is expected, no worries\n"
 		}
 		if {$test_job != 0} {
-			send_user "\nFAILURE: Job should have been rejected, but was not\n"
+			log_error "Job should have been rejected, but was not"
 			cancel_job $test_job
 			set exit_code 1
 		}
@@ -590,12 +590,12 @@ proc sub_job_xand {nnode fail_test} {
 				exp_continue
 			}
 			-re "Requested node configuration is not available" {
-				send_user "\nFAILURE: Unexpected job submit failure\n"
+				log_error "Unexpected job submit failure"
 				set exit_code 1
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sbatch is not responding\n"
+				log_error "sbatch is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -605,7 +605,7 @@ proc sub_job_xand {nnode fail_test} {
 
 		# Check that nodes have the correct features
 		if {$test_job == 0} {
-			send_user "\nFAILURE: Job submit failure\n"
+			log_error "Job submit failure"
 			set exit_code 1
 		} else {
 #			Make sure nodes(1, 2 and 3) included in allocation
@@ -637,7 +637,7 @@ proc sub_job_xor {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sbatch is not responding\n"
+				log_error "sbatch is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -649,7 +649,7 @@ proc sub_job_xor {nnode fail_test} {
 			send_user "\nThis error is expected, no worries\n"
 		}
 		if {$test_job != 0} {
-			send_user "\nFAILURE: Job should have been rejected, but was not\n"
+			log_error "Job should have been rejected, but was not"
 			cancel_job $test_job
 			set exit_code 1
 		}
@@ -661,12 +661,12 @@ proc sub_job_xor {nnode fail_test} {
 				exp_continue
 			}
 			-re "Requested node configuration is not available" {
-				send_user "\nFAILURE: Unexpected job submit failure\n"
+				log_error "Unexpected job submit failure"
 				set exit_code 1
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sbatch is not responding\n"
+				log_error "sbatch is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -676,7 +676,7 @@ proc sub_job_xor {nnode fail_test} {
 
 		# Check that nodes have the correct features
 		if {$test_job == 0} {
-			send_user "\nFAILURE: Job submit failure\n"
+			log_error "Job submit failure"
 			set exit_code 1
 		} else {
 #			Make sure nodes(1) not included in allocation
@@ -761,7 +761,7 @@ proc set_node_feature {node_name new_feature} {
 	spawn $scontrol update node=$node_name AvailableFeatures=$new_feature ActiveFeatures=$new_feature
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -776,7 +776,7 @@ proc clean_up {} {
 	spawn $scontrol delete partition=$test_part
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -790,7 +790,7 @@ proc clean_up {} {
 		spawn $scontrol update node=$node AvailableFeatures=$def_avail_node_feat($node) ActiveFeatures=$def_active_node_feat($node)
 		expect {
 			timeout {
-				send_user "\nFAILURE: scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -823,13 +823,13 @@ expect {
 		exp_continue
 	}
 	-re "Submitted batch job ($number)" {
-		send_user "\nFAILURE: sbatch job submitted with invalid constraint\n"
+		log_error "sbatch job submitted with invalid constraint"
 		cancel_job $expect_out(1,string)
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -838,7 +838,7 @@ expect {
 	}
 }
 if {$err_msg != 1} {
-	send_user "\nFAILURE: job failed to report required error\n"
+	log_error "Job failed to report required error"
 	set exit_code   1
 }
 
@@ -862,7 +862,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -872,7 +872,7 @@ expect {
 }
 if {$job_id == 0} {
 	log_user 1
-	send_user "\nFAILURE: Job submission failed\n"
+	log_error "Job submission failed"
 	exit 1
 }
 
@@ -884,7 +884,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -901,7 +901,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -935,7 +935,7 @@ foreach option [array names nodes] {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -961,7 +961,7 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -1038,6 +1038,6 @@ clean_up
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
 } else {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
 exit $exit_code

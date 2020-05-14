@@ -65,7 +65,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -93,7 +93,7 @@ if {$job_id != 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -108,7 +108,7 @@ if {$job_id != 0} {
 	set exit_code   1
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: Did not properly set oversubscribe and contiguous flag ($matches != 2)\n"
+	log_error "Did not properly set oversubscribe and contiguous flag ($matches != 2)"
 	set exit_code   1
 }
 
@@ -123,7 +123,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		exit 1
 	}
 	eof {
@@ -155,7 +155,7 @@ if {$job_id != 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -169,12 +169,10 @@ if {$job_id != 0} {
 	set exit_code 1
 }
 if {$match_cont != 1} {
-	send_user "\nFAILURE: Did not properly set contiguous flag\n"
-	set exit_code 1
+	fail "Did not properly set contiguous flag"
 }
 if {$force_part == 0 && $match_oversubscribe != 1} {
-	send_user "\nFAILURE: Did not properly set oversubscribe flag\n"
-	set exit_code 1
+	fail "Did not properly set oversubscribe flag"
 }
 
 if {$exit_code == 0} {

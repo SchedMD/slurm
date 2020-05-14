@@ -66,7 +66,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -75,8 +75,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
@@ -122,7 +121,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -130,8 +129,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	send_user "\nFAILURE: Did not get proper constraints\n"
-	set exit_code 1
+	fail "Did not get proper constraints"
 }
 if {[cancel_job $job_id] != 0} {
 	set exit_code 1

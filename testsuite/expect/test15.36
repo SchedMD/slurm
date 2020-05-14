@@ -56,7 +56,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		set exit_code 1
 	}
 	eof {
@@ -65,9 +65,8 @@ expect {
 }
 
 if {$job_id != 0} {
-	send_user "\nFAILURE: job submitted with a deadline too short\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job submitted with a deadline too short"
 }
 
 exit $exit_code

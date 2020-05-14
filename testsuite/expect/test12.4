@@ -72,7 +72,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "FAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $s_pid
 		exit 1
 	}
@@ -97,7 +97,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
 		set exit_code 1
 	}
@@ -106,8 +106,7 @@ expect {
 	}
 }
 if {$aamatches != 1} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding account.\n"
-	exit 1
+	fail "sacctmgr had a problem adding account"
 }
 
 #
@@ -116,7 +115,7 @@ if {$aamatches != 1} {
 set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct cluster=$cluster]
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
 		set exit_code 1
 	}
@@ -137,7 +136,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {
@@ -145,7 +144,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: did not get srun job_id3\n"
+	log_error "did not get srun job_id3"
 	set exit_code 1
 } else {
 	set matches 0
@@ -156,7 +155,7 @@ if {$job_id == 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -164,7 +163,7 @@ if {$job_id == 0} {
 		}
 	}
 	if {$matches != 1} {
-		send_user "\nFAILURE: srun failed to use specified account\n"
+		log_error "srun failed to use specified account"
 		set exit_code 1
 	}
 }
@@ -214,7 +213,7 @@ proc sacct_job { soption job_id} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sacct not responding\n"
+				log_error "sacct not responding"
 				set exit_code 1
 			}
 			eof {
@@ -271,7 +270,7 @@ proc sacct_job { soption job_id} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sacct not responding\n"
+				log_error "sacct not responding"
 				set exit_code 1
 			}
 			eof {
@@ -314,7 +313,7 @@ proc sacct_job { soption job_id} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sacct not responding\n"
+				log_error "sacct not responding"
 				set exit_code 1
 			}
 			eof {
@@ -346,7 +345,7 @@ proc sacct_job { soption job_id} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sacct not responding\n"
+				log_error "sacct not responding"
 				set exit_code 1
 			}
 			eof {
@@ -378,7 +377,7 @@ proc sacct_job { soption job_id} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sacct not responding\n"
+				log_error "sacct not responding"
 				set exit_code 1
 			}
 			eof {
@@ -420,7 +419,7 @@ proc sacct_job { soption job_id} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sacct not responding\n"
+				log_error "sacct not responding"
 				set exit_code 1
 			}
 			eof {
@@ -482,7 +481,7 @@ proc sacct_vargs { soption vargs job_id} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sacct not responding\n"
+				log_error "sacct not responding"
 				set exit_code 1
 			}
 			eof {
@@ -519,7 +518,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
 		set exit_code 1
 	}
@@ -528,8 +527,7 @@ expect {
 	}
 }
 if {$aamatches != 1} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding account.\n"
-	exit 1
+	fail "sacctmgr had a problem adding account"
 }
 
 #
@@ -538,7 +536,7 @@ if {$aamatches != 1} {
 set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct cluster=$cluster]
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
 		set exit_code 1
 	}
@@ -558,7 +556,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {
@@ -566,7 +564,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: did not get srun job_id3\n"
+	log_error "Did not get srun job_id3"
 	set exit_code 1
 } else {
 	set matches 0
@@ -577,7 +575,7 @@ if {$job_id == 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -585,7 +583,7 @@ if {$job_id == 0} {
 		}
 	}
 	if {$matches != 1} {
-		send_user "\nFAILURE: srun failed to use specified account\n"
+		log_error "srun failed to use specified account"
 		set exit_code 1
 	}
 
@@ -600,109 +598,109 @@ if {$job_id == 0} {
 
 	set matches [sacct_job b $job_id]
 	if {$matches != 2} {
-		send_user "\nFAILURE: sacct -b failed ($matches != 2)\n"
+		log_error "sacct -b failed ($matches != 2)"
 		set exit_code 1
 	}
 
 	set matches [sacct_job -brief $job_id]
 	if {$matches != 2} {
-		send_user "\nFAILURE: sacct --brief failed ($matches != 2)\n"
+		log_error "sacct --brief failed ($matches != 2)"
 		set exit_code 1
 	}
 
 	set matches [sacct_vargs g $user_gid $job_id]
 	if {$matches != 3} {
-		send_user "\nFAILURE: sacct -g failed ($matches != 3)\n"
+		log_error "sacct -g failed ($matches != 3)"
 		set exit_code 1
 	}
 
 	set matches [sacct_vargs -gid $user_gid $job_id]
 	if {$matches != 3} {
-		send_user "\nFAILURE: sacct --gid failed ($matches != 3)\n"
+		log_error "sacct --gid failed ($matches != 3)"
 		set exit_code 1
 	}
 
 	set matches [sacct_vargs -group $user_gid $job_id]
 	if {$matches != 3} {
-		send_user "\nFAILURE: sacct --group failed ($matches != 3)\n"
+		log_error "sacct --group failed ($matches != 3)"
 		set exit_code 1
 	}
 
 	set matches [sacct_job l $job_id]
 	if {$matches != 8} {
-		send_user "\nFAILURE: sacct -l failed ($matches != 8)\n"
+		log_error "sacct -l failed ($matches != 8)"
 		set exit_code 1
 	}
 
 	set matches [sacct_job -long $job_id]
 	if {$matches != 8} {
-		send_user "\nFAILURE: sacct --long failed ($matches != 8)\n"
+		log_error "sacct --long failed ($matches != 8)"
 		set exit_code 1
 	}
 
 	set matches [sacct_job n $job_id]
 	if {$matches != 1} {
-		send_user "\nFAILURE: sacct -n failed ($matches != 1)\n"
+		log_error "sacct -n failed ($matches != 1)"
 		set exit_code 1
 	}
 
 	set matches [sacct_job -noheader $job_id]
 	if {$matches != 1} {
-		send_user "\nFAILURE: sacct -n failed ($matches != 1)\n"
+		log_error "sacct -n failed ($matches != 1)"
 		set exit_code 1
 	}
 
 	set matches [sacct_job p $job_id]
 	if {$matches != 2} {
-		send_user "\nFAILURE: sacct -p failed ($matches != 2)\n"
+		log_error "sacct -p failed ($matches != 2)"
 		set exit_code 1
 	}
 
 	set matches [sacct_job -parsable $job_id]
 	if {$matches != 2} {
-		send_user "\nFAILURE: sacct --parsable failed ($matches != 2)\n"
+		log_error "sacct --parsable failed ($matches != 2)"
 		set exit_code 1
 	}
 
 	set matches [sacct_job P $job_id]
 	if {$matches != 2} {
-		send_user "\nFAILURE: sacct -P failed ($matches != 2)\n"
+		log_error "sacct -P failed ($matches != 2)"
 		set exit_code 1
 	}
 
 	set matches [sacct_job -parsable2 $job_id]
 	if {$matches != 2} {
-		send_user "\nFAILURE: sacct --parsable2 failed ($matches != 2)\n"
+		log_error "sacct --parsable2 failed ($matches != 2)"
 		set exit_code 1
 	}
 
 	set matches [sacct_vargs u $user_name $job_id]
 	if {$matches != 3} {
-		send_user "\nFAILURE: sacct -g failed ($matches != 3)\n"
+		log_error "sacct -g failed ($matches != 3)"
 		set exit_code 1
 	}
 
 	set matches [sacct_vargs -uid $user_name $job_id]
 	if {$matches != 3} {
-		send_user "\nFAILURE: sacct --gid failed ($matches != 3)\n"
+		log_error "sacct --gid failed ($matches != 3)"
 		set exit_code 1
 	}
 
 	set matches [sacct_vargs -user $user_name $job_id]
 	if {$matches != 3} {
-		send_user "\nFAILURE: sacct --group failed ($matches != 3)\n"
+		log_error "sacct --group failed ($matches != 3)"
 		set exit_code 1
 	}
 
 	set matches [sacct_job v $job_id]
 	if {$matches != 4} {
-		send_user "\nFAILURE: sacct -v failed ($matches != 4)\n"
+		log_error "sacct -v failed ($matches != 4)"
 		set exit_code 1
 	}
 
 	set matches [sacct_job -verbose $job_id]
 	if {$matches != 4} {
-		send_user "\nFAILURE: sacct --verbose failed ($matches != 4)\n"
+		log_error "sacct --verbose failed ($matches != 4)"
 		set exit_code 1
 	}
 }
@@ -718,7 +716,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -727,7 +725,7 @@ expect {
 	}
 }
 if {$damatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting account\n"
+	log_error "sacctmgr had a problem deleting account"
 	set exit_code 1
 }
 

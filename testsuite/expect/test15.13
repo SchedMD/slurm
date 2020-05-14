@@ -69,7 +69,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -88,18 +88,17 @@ foreach {slurm_var check_flag} [array get good_vars] {
     incr total
     if {[info exists found_vars($slurm_var)]} {
 	if { $check_flag == 1 && $found_vars($slurm_var) <= 0 } {
-		send_user "FAILURE: Found $slurm_var, but $found_vars($slurm_var) <= 0\n"
+		log_error "Found $slurm_var, but $found_vars($slurm_var) <= 0"
 	} else {
 	    incr good
 	}
     } else {
-	send_user "FAILURE: Variable $slurm_var not found\n"
+		log_error "Variable $slurm_var not found"
     }
 }
 
 if {$good < $total} {
-	send_user "\nFAILURE: Only $good of $total Slurm environment variables set\n"
-	set exit_code 1
+	fail "Only $good of $total Slurm environment variables set"
 }
 
 exit $exit_code

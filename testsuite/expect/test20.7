@@ -67,7 +67,7 @@ proc check_output { path job_id } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -75,8 +75,7 @@ proc check_output { path job_id } {
 		}
 	}
 	if {$check_out != 1} {
-		send_user "\nFAILURE: output path for job $job_id was not set"
-		send_user " to the correct value\n"
+		log_error "output path for job $job_id was not set to the correct value"
 		set exit_code 1
 	}
 }
@@ -89,7 +88,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub is not responding\n"
+		log_error "qsub is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -97,7 +96,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: qsub did not submit job\n"
+	log_error "qsub did not submit job"
 	set exit_code 1
 }
 
@@ -105,7 +104,7 @@ set found 0
 spawn $qalter -o $out_path $job_id
 expect {
 	timeout {
-		send_user "\nFAILURE: qalter is not responding\n"
+		log_error "qalter is not responding"
 		set exit_code 1
 	}
 	eof {

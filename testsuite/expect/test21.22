@@ -278,7 +278,7 @@ proc _remove_cluster {name} {
 	set nothing 0
 
 	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to remove\n"
+		log_error "We need a name to remove"
 		return 1
 	}
 
@@ -289,19 +289,19 @@ proc _remove_cluster {name} {
 			exp_continue
 		}
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			log_error "There was a problem with the sacctmgr command"
 			incr exit_code 1
 		}
 		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
+			log_error "There was a problem getting information from the database"
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknown problem\n"
+			log_error "There was an unknown problem"
 			incr exit_code 1
 		}
 		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
+			log_error "Your command didn't return anything"
 			incr exit_code 1
 		}
 		-re "Deleting clusters" {
@@ -314,7 +314,7 @@ proc _remove_cluster {name} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			log_error "sacctmgr delete not responding"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -326,12 +326,12 @@ proc _remove_cluster {name} {
 		return 1
 	}
 	if {$matches != 1} {
-		send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $matches\n"
+		log_error "sacctmgr had a problem deleting cluster got $matches"
 		incr exit_code 1
 	}
 	if { !$nothing } {
 		if { ![check_acct_associations] } {
-			send_user "\nFAILURE:  Our associations don't line up\n"
+			log_error "Our associations don't line up"
 			incr exit_code 1
 		}
 	}
@@ -351,7 +351,7 @@ proc _remove_acct { cluster name } {
 	set check "Deleting account"
 
 	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to remove\n"
+		log_error "We need a name to remove"
 		return 1
 	}
 
@@ -365,19 +365,19 @@ proc _remove_acct { cluster name } {
 	set my_pid [eval spawn $sacctmgr -i delete account $command]
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			log_error "There was a problem with the sacctmgr command"
 			incr exit_code 1
 		}
 		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
+			log_error "There was a problem getting information from the database"
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknown problem\n"
+			log_error "There was an unknown problem"
 			incr exit_code 1
 		}
 		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
+			log_error "Your command didn't return anything"
 			incr exit_code 1
 		}
 		-re "$check" {
@@ -390,7 +390,7 @@ proc _remove_acct { cluster name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr add not responding\n"
+			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -400,14 +400,13 @@ proc _remove_acct { cluster name } {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sacctmgr had a problem deleting account.
-	got $matches\n"
+		log_error "sacctmgr had a problem deleting account. Got $matches"
 		incr exit_code 1
 	}
 
 	if { !$nothing } {
 		if { ![check_acct_associations] } {
-			send_user "\nFAILURE:  Our associations don't line up\n"
+			log_error "Our associations don't line up"
 			incr exit_code 1
 		}
 	}
@@ -427,7 +426,7 @@ proc _remove_user { acct user } {
 	set check "Deleting user"
 
 	if { ![string length $user] } {
-		send_user "FAILURE: we need a name to remove\n"
+		log_error "We need a name to remove"
 		return 1
 	}
 
@@ -441,19 +440,19 @@ proc _remove_user { acct user } {
 	set my_pid [eval spawn $sacctmgr -i delete user $command]
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			log_error "There was a problem with the sacctmgr command"
 			incr exit_code 1
 		}
 		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
+			log_error "There was a problem getting information from the database"
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknown problem\n"
+			log_error "There was an unknown problem"
 			incr exit_code 1
 		}
 		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
+			log_error "Your command didn't return anything"
 			incr exit_code 1
 		}
 		-re "$check" {
@@ -466,7 +465,7 @@ proc _remove_user { acct user } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			log_error "sacctmgr delete not responding"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -476,14 +475,13 @@ proc _remove_user { acct user } {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sacctmgr had a problem deleting user.
-	got $matches\n"
+		log_error "sacctmgr had a problem deleting user. Got $matches"
 		incr exit_code 1
 	}
 
 	if { !$nothing } {
 		if { ![check_acct_associations] } {
-			send_user "\nFAILURE:  Our associations don't line up\n"
+			log_error "Our associations don't line up"
 			incr exit_code 1
 		}
 	}
@@ -504,15 +502,15 @@ set matches 0
 set my_pid [spawn $sacctmgr -i load $file_in]
 expect {
 	-re "(Unable to read *.* * No such file or directory)" {
-	        send_user "FAILURE: there was a problem with the file\n"
+	        log_error "There was a problem with the file"
 	    	incr exit_code 1
 	}
 	-re "error" {
-	        send_user "FAILURE: there was a problem with the file\n"
+	        log_error "There was a problem with the file"
 	    	incr exit_code 1
 	}
 	-re "Problem with requests" {
-	        send_user "FAILURE: there was a problem with the request\n"
+	        log_error "There was a problem with the request"
 	    	incr exit_code 1
 	}
 	-re "For cluster $tc1" {
@@ -524,7 +522,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding 1\n"
+		log_error "sacctmgr list associations not responding 1"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -534,7 +532,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE:  File load 1 incorrect with only $matches.\n"
+	log_error "File load 1 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -545,7 +543,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p $lis $as $clu=$tc1 $fmt=$clu,$acc,$usr,$pts,$fs,$gm,$gc,$gj,$gn,$gs,$gw,$mc,$mm,$mj,$mn,$ms,$mw,$qs]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	        log_error "There was a problem with the sacctmgr command"
 	    	incr exit_code 1
 	}
 	-re "($tc1.$roo...$fs6.$gm6.$gc6.$gj6.$gn6.$gs6.$gt6.$mc6.$mm6.$mj6.$mn6.$ms6.$mt6.$qs1)" {
@@ -577,7 +575,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding 2\n"
+		log_error "sacctmgr list associations not responding 2"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -587,7 +585,7 @@ expect {
 }
 
 if {$matches != 7} {
-	send_user "\nFAILURE:  Associations addition 7 incorrect with only $matches.\n"
+	log_error "Associations addition 7 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -598,8 +596,8 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$al $wco]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	   	incr exit_code 1
 	}
 	-re "($tu1.$ta2.$alo)" {
 		incr matches
@@ -610,7 +608,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding 3\n"
+		log_error "sacctmgr list associations not responding 3"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -620,7 +618,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE:  Adminstrator and coordinator 2 incorrect with only $matches.\n"
+	log_error "Adminstrator and coordinator 2 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -628,16 +626,16 @@ set matches 0
 set my_pid [spawn $sacctmgr -i load $file_in2]
 expect {
 	-re "(Unable to read *.* * No such file or directory)" {
-	        send_user "FAILURE: there was a problem with the file\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the file"
+	    incr exit_code 1
 	}
 	-re "error" {
-	        send_user "FAILURE: there was a problem with the file\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the file"
+	    incr exit_code 1
 	}
 	-re "Problem with requests" {
-	        send_user "FAILURE: there was a problem with the request\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the request"
+	    incr exit_code 1
 	}
 	-re "For cluster $tc1" {
 		incr matches
@@ -649,7 +647,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr load not responding 4\n"
+		log_error "sacctmgr load not responding 4"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -659,7 +657,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE:  File load 2 incorrect with only $matches.\n"
+	log_error "File load 2 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -671,8 +669,8 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -P $lis $as $clu=$tc1 $fmt=$clu,$acc,$usr,$fs,$gm,$gc,$gj,$gn,$gs,$gw,$mc,$mm,$mj,$mn,$ms,$mw,$qs]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "there was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "($tc1.$roo..$fs6.$gm6.$gc6.$gj6.$gn6.$gs6.$gt6.$mc6.$mm6.$mj6.$mn6.$ms6.$mt6.$qs1)" {
 		incr matches
@@ -724,7 +722,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding 5\n"
+		log_error "sacctmgr list associations not responding 5"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -734,7 +732,7 @@ expect {
 }
 
 if {$matches != 10} {
-	send_user "\nFAILURE:  Association modification 10 incorrect with only $matches.\n"
+	log_error "Association modification 10 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -745,8 +743,8 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$al $wco]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	   	incr exit_code 1
 	}
 	-re "($tu1.$ta2.$alo)" {
 		incr matches
@@ -761,7 +759,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding 6\n"
+		log_error "sacctmgr list associations not responding 6"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -771,7 +769,7 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE:  Adminstrator and coordinator 3 incorrect with only $matches.\n"
+	log_error "Adminstrator and coordinator 3 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -779,16 +777,16 @@ set matches 0
 set my_pid [spawn $sacctmgr -i load  $file_in3 clean]
 expect {
 	-re "(Unable to read *.* * No such file or directory)" {
-	        send_user "FAILURE: there was a problem with the file\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the file"
+	    incr exit_code 1
 	}
 	-re "error" {
-	        send_user "FAILURE: there was a problem with the file\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the file"
+	    incr exit_code 1
 	}
 	-re "Problem with requests" {
-	        send_user "FAILURE: there was a problem with the request\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the request"
+	    incr exit_code 1
 	}
 	-re "For cluster $tc1" {
 		incr matches
@@ -799,7 +797,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding 7\n"
+		log_error "sacctmgr list associations not responding 7"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -809,7 +807,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE:  File load 2 incorrect with only $matches.\n"
+	log_error "File load 2 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -821,8 +819,8 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p $lis $as $clu=$tc1 $fmt=$clu,$acc,$usr,$pts,$fs,$gm,$gc,$gj,$gn,$gs,$gw,$mc,$mm,$mj,$mn,$ms,$mw,$qs]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "there was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "($tc1.$roo...$fs6.$gm6.$gc6.$gj6.$gn6.$gs6.$gt6.$mc6.$mm6.$mj6.$mn6.$ms6.$mt6.$qs1)" {
 		incr matches
@@ -865,7 +863,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding 8\n"
+		log_error "sacctmgr list associations not responding 8"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -875,7 +873,7 @@ expect {
 }
 
 if {$matches != 10} {
-	send_user "\nFAILURE:  Clean association addition 10 incorrect with only $matches.\n"
+	log_error "Clean association addition 10 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -886,8 +884,8 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$al $wco]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "($tu1.$ta2.$alo)" {
 		incr matches
@@ -902,7 +900,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding 9\n"
+		log_error "sacctmgr list associations not responding 9"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -912,7 +910,7 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE:  Adminstrator and coordinator 3 incorrect with only $matches.\n"
+	log_error "Adminstrator and coordinator 3 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -930,7 +928,5 @@ exec $bin_rm -f $file_in2
 exec $bin_rm -f $file_in3
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code
-

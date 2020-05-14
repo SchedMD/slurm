@@ -88,7 +88,7 @@ proc sub_job { cpu_cnt } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 		}
 		eof {
@@ -97,7 +97,7 @@ proc sub_job { cpu_cnt } {
 	}
 
 	if {$job_id == 0} {
-		send_user "\nFAILURE: did not get sbatch job_id\n"
+		log_error "Did not get sbatch job_id"
 		set exit_code 1
 	}
 	return $job_id
@@ -152,7 +152,7 @@ proc sprio_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sprio not responding\n"
+				log_error "sprio not responding"
 				set exit_code 1
 			}
 			eof {
@@ -166,7 +166,7 @@ proc sprio_opt { soption } {
 		}
 
 		if {$matches != 4} {
-			send_user "\nFAILURE: sprio $soption failed ($matches)\n"
+			log_error "sprio $soption failed ($matches)"
 			set exit_code 1
 		}
 	return $matches
@@ -187,7 +187,7 @@ proc sprio_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sprio not responding\n"
+				log_error "sprio not responding"
 				set exit_code 1
 			}
 			eof {
@@ -200,7 +200,7 @@ proc sprio_opt { soption } {
 			exit 0
 		}
 		if {$matches != 1} {
-			send_user "\nFAILURE: sprio -$soption failed ($matches)\n"
+			log_error "sprio -$soption failed ($matches)"
 			set exit_code 1
 		}
 		return $matches
@@ -221,7 +221,7 @@ proc sprio_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sprio not responding\n"
+				log_error "sprio not responding"
 				set exit_code 1
 			}
 			eof {
@@ -235,7 +235,7 @@ proc sprio_opt { soption } {
 		}
 
 		if {$matches != 1} {
-			send_user "\nFAILURE: sprio -$soption failed ($matches)\n"
+			log_error "sprio -$soption failed ($matches)"
 			set exit_code 1
 		}
 		return $matches
@@ -261,7 +261,7 @@ proc sprio_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sprio not responding\n"
+				log_error "sprio not responding"
 				set exit_code 1
 			}
 			eof {
@@ -275,7 +275,7 @@ proc sprio_opt { soption } {
 		}
 
 		if {$matches != 2} {
-			send_user "\nFAILURE: sprio -$soption failed ($matches)\n"
+			log_error "sprio -$soption failed ($matches)"
 			set exit_code 1
 		}
 		return $matches
@@ -316,7 +316,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sprio not responding\n"
+				log_error "sprio not responding"
 				set exit_code 1
 			}
 			eof {
@@ -329,7 +329,7 @@ proc sprio_args { soption sargs jobid} {
 			exit 0
 		}
 		if {$matches != 0} {
-			send_user "\nFAILURE: sprio $soption failed ($matches)\n"
+			log_error "sprio $soption failed ($matches)"
 			set exit_code 1
 		}
 		return $matches
@@ -355,7 +355,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sprio not responding\n"
+				log_error "sprio not responding"
 				set exit_code 1
 			}
 			eof {
@@ -368,7 +368,7 @@ proc sprio_args { soption sargs jobid} {
 			exit 0
 		}
 		if {$matches != 2} {
-			send_user "\nFAILURE: sprio $soption failed ($matches)\n"
+			log_error "sprio $soption failed ($matches)"
 			set exit_code 1
 		}
 		return $matches
@@ -394,7 +394,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sprio not responding\n"
+				log_error "sprio not responding"
 				set exit_code 1
 			}
 			eof {
@@ -407,7 +407,7 @@ proc sprio_args { soption sargs jobid} {
 			exit 0
 		}
 		if {$matches != 2} {
-			send_user "\nFAILURE: sprio $soption failed ($matches)\n"
+			log_error "sprio $soption failed ($matches)"
 			set exit_code 1
 		}
 		return $matches
@@ -433,7 +433,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sprio not responding\n"
+				log_error "sprio not responding"
 				set exit_code 1
 			}
 			eof {
@@ -446,7 +446,7 @@ proc sprio_args { soption sargs jobid} {
 			exit 0
 		}
 		if {$matches != 2} {
-			send_user "\nFAILURE: sprio $soption failed ($matches)\n"
+			log_error "sprio $soption failed ($matches)"
 			set exit_code 1
 		}
 		return $matches
@@ -477,7 +477,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sprio not responding\n"
+				log_error "sprio not responding"
 				set exit_code 1
 			}
 			eof {
@@ -490,7 +490,7 @@ proc sprio_args { soption sargs jobid} {
 			exit 0
 		}
 		if {$matches != 3} {
-			send_user "\nFAILURE: sprio $soption failed ($matches)\n"
+			log_error "sprio $soption failed ($matches)"
 			set exit_code 1
 		}
 		return $matches
@@ -516,7 +516,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sprio not responding\n"
+				log_error "sprio not responding"
 				set exit_code 1
 			}
 			eof {
@@ -529,7 +529,7 @@ proc sprio_args { soption sargs jobid} {
 			exit 0
 		}
 		if {$matches != 2} {
-			send_user "\nFAILURE: sprio $soption failed ($matches)\n"
+			log_error "sprio $soption failed ($matches)"
 			set exit_code 1
 		}
 		return $matches
@@ -555,7 +555,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sprio not responding\n"
+				log_error "sprio not responding"
 				set exit_code 1
 			}
 			eof {
@@ -568,7 +568,7 @@ proc sprio_args { soption sargs jobid} {
 			exit 0
 		}
 		if {$matches != 2} {
-			send_user "\nFAILURE: sprio $soption failed ($matches)\n"
+			log_error "sprio $soption failed ($matches)"
 			set exit_code 1
 		}
 		return $matches
@@ -599,7 +599,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sprio not responding\n"
+				log_error "sprio not responding"
 				set exit_code 1
 			}
 			eof {
@@ -612,7 +612,7 @@ proc sprio_args { soption sargs jobid} {
 			exit 0
 		}
 		if {$matches != 3} {
-			send_user "\nFAILURE: sprio $soption failed ($matches)\n"
+			log_error "sprio $soption failed ($matches)"
 			set exit_code 1
 		}
 		return $matches

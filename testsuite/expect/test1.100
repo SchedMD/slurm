@@ -70,7 +70,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -113,7 +113,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -128,7 +128,7 @@ expect {
 send_user "Optimal task layout was: $expected_layout\n"
 send_user "Actual task layout was : $tested_layout\n"
 if {[string compare $tested_layout $expected_layout]} {
-	send_user "\FAILURE: failed to distribute tasks in nopack fashion\n"
+	log_error "Failed to distribute tasks in nopack fashion"
 	set exit_code 1
 }
 
@@ -167,7 +167,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -182,7 +182,7 @@ expect {
 send_user "Optimal task layout was: $expected_layout\n"
 send_user "Actual task layout was : $tested_layout\n"
 if {[string compare $tested_layout $expected_layout]} {
-	send_user "\FAILURE: failed to distribute tasks in nopack fashion\n"
+	log_error "Failed to distribute tasks in nopack fashion"
 	set exit_code 1
 }
 

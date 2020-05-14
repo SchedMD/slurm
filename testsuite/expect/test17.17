@@ -55,7 +55,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -64,8 +64,7 @@ expect {
 	}
 }
 if {[string compare $nodelist_name ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	exit 1
+	fail "Did not get hostname of task 0"
 }
 if {[test_front_end] != 0} {
 	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
@@ -91,17 +90,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: sbatch failed to report jobid\n"
-	exit 1
+	fail "sbatch failed to report jobid"
 }
 
 set partition "dummy"
@@ -118,10 +115,9 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
 		cancel_job $job_id1
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -141,8 +137,7 @@ if {$waited == 0} {
 	}
 }
 if {$waited == 0} {
-	send_user "\nFAILURE: srun failed to wait for non-sharing job to complete\n"
-	set exit_code 1
+	fail "srun failed to wait for non-sharing job to complete"
 }
 
 cancel_job $job_id1

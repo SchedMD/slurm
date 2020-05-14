@@ -75,7 +75,7 @@ expect {
 		}
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -87,12 +87,10 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job submit failure\n"
-	exit 1
+	fail "Job submit failure"
 }
 if {$matches != $task_cnt} {
-	send_user "\nFAILURE: job run time failure\n"
-	exit 1
+	fail "Job run time failure"
 }
 
 # Wait for startup to complete (including RESPONSE_LAUNCH_TASKS message to srun)
@@ -112,7 +110,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sattach not responding\n"
+		log_error "sattach not responding"
 		set exit_code 1
 	}
 	eof {
@@ -120,7 +118,7 @@ expect {
 	}
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: layout information not printed\n"
+	log_error "Layout information not printed"
 	set exit_code 1
 }
 
@@ -135,7 +133,7 @@ expect {
         -i $attach_id
 	-re "($number): WAITING" {
 		if {$expect_out(1,string) != [expr $task_cnt - 1]} {
-			send_user "\nFAILURE: output filtering by task failed\n"
+			log_error "Output filtering by task failed"
 			set exit_code 1
 		} else {
 			incr matches
@@ -144,7 +142,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sattach not responding\n"
+		log_error "sattach not responding"
 		set exit_code 1
 	}
 	eof {
@@ -152,7 +150,7 @@ expect {
 	}
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: failed to filter task output\n"
+	log_error "Failed to filter task output"
 	set exit_code 1
 }
 
@@ -177,7 +175,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sattach not responding\n"
+		log_error "sattach not responding"
 		set exit_code 1
 	}
 	eof {
@@ -185,7 +183,7 @@ expect {
 	}
 }
 if {$matches != [expr $task_cnt + 1]} {
-	send_user "\nFAILURE: job run time failure ($matches != [expr $task_cnt + 1])\n"
+	log_error "Job run time failure ($matches != [expr $task_cnt + 1])"
 	set exit_code 1
 }
 
@@ -196,7 +194,7 @@ if {$matches != [expr $task_cnt + 1]} {
 set spawn_id $init_id
 expect {
 	timeout {
-		send_user "\nFAILURE: srun (terminate) not responding\n"
+		log_error "srun (terminate) not responding"
 		set exit_code 1
 	}
 	eof {

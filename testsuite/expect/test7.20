@@ -322,9 +322,8 @@ expect {
 	}
 
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 0
+		fail "srun not responding"
 	}
 	eof {
 		wait

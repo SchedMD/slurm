@@ -89,7 +89,7 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sreport not responding\n"
+			log_error "sreport not responding"
 			set exit_code 1
 		}
 		eof {
@@ -103,7 +103,7 @@ proc sreport_opt { soption } {
 	}
 
 	if {$matches != 3} {
-		send_user "\nFAILURE: sreport -$soption failed ($matches)\n"
+		log_error "sreport -$soption failed ($matches)"
 		set exit_code 1
 	}
 	return $matches
@@ -123,7 +123,7 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sreport not responding\n"
+			log_error "sreport not responding"
 			set exit_code 1
 		}
 		eof {
@@ -136,7 +136,7 @@ proc sreport_opt { soption } {
 		exit 0
 	}
 	if {$matches != 0} {
-		send_user "\nFAILURE: sreport -$soption failed ($matches)\n"
+		log_error "sreport -$soption failed ($matches)"
 		set exit_code 1
 	}
 	return $matches
@@ -161,7 +161,7 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sreport not responding\n"
+			log_error "sreport not responding"
 			set exit_code 1
 		}
 		eof {
@@ -195,7 +195,7 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sreport not responding\n"
+			log_error "sreport not responding"
 			set exit_code 1
 		}
 		eof {
@@ -209,7 +209,7 @@ proc sreport_opt { soption } {
 	}
 
 	if {$matches != 2} {
-		send_user "\nFAILURE: sreport -$soption failed ($matches)\n"
+		log_error "sreport -$soption failed ($matches)"
 		set exit_code 1
 	}
 		return $matches
@@ -229,7 +229,7 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sreport not responding\n"
+			log_error "sreport not responding"
 			set exit_code 1
 		}
 		eof {
@@ -243,7 +243,7 @@ proc sreport_opt { soption } {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE: sreport -$soption failed ($matches)\n"
+		log_error "sreport -$soption failed ($matches)"
 		set exit_code 1
 	}
 		return $matches
@@ -254,67 +254,67 @@ proc sreport_opt { soption } {
 
 set matches [sreport_opt h ]
 if {$matches != 3} {
-	send_user "\nFAILURE: sreport -h failed ($matches)\n"
+	log_error "sreport -h failed ($matches)"
 	set exit_code 1
 }
 
 set matches [sreport_opt -help ]
 if {$matches != 3} {
-	send_user "\nFAILURE: sreport --help failed ($matches)\n"
+	log_error "sreport --help failed ($matches)"
 	set exit_code 1
 }
 
 set matches [sreport_opt -usage ]
 if {$matches != 3} {
-	send_user "\nFAILURE: sreport --usage failed ($matches)\n"
+	log_error "sreport --usage failed ($matches)"
 	set exit_code 1
 }
 
 set matches [sreport_opt n ]
 if {$matches != 0} {
-	send_user "\nFAILURE: sreport -n failed ($matches)\n"
+	log_error "sreport -n failed ($matches)"
 	set exit_code 1
 }
 
 set matches [sreport_opt -noheader ]
 if {$matches != 0} {
-	send_user "\nFAILURE: sreport --noheader failed ($matches)\n"
+	log_error "sreport --noheader failed ($matches)"
 	set exit_code 1
 }
 
 set matches [sreport_opt p ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sreport -p failed ($matches)\n"
+	log_error "sreport -p failed ($matches)"
 	set exit_code 1
 }
 
 set matches [sreport_opt -parsable ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sreport --parsable failed ($matches)\n"
+	log_error "sreport --parsable failed ($matches)"
 	set exit_code 1
 }
 
 set matches [sreport_opt P ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sreport -P failed ($matches)\n"
+	log_error "sreport -P failed ($matches)"
 	set exit_code 1
 }
 
 set matches [sreport_opt -parsable2 ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sreport --parsable2 failed ($matches)\n"
+	log_error "sreport --parsable2 failed ($matches)"
 	set exit_code 1
 }
 
 set matches [sreport_opt V ]
 if {$matches != 1} {
-	send_user "\nFAILURE: sreport -V failed ($matches)\n"
+	log_error "sreport -V failed ($matches)"
 	set exit_code 1
 }
 
 set matches [sreport_opt -version ]
 if {$matches != 1} {
-	send_user "\nFAILURE: sreport --verbose failed ($matches)\n"
+	log_error "sreport --verbose failed ($matches)"
 	set exit_code 1
 }
 

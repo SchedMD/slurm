@@ -45,7 +45,7 @@ proc endit { } {
 	global exit_code
 	reconfigure
 	if {$exit_code != 0} {
-		send_user "\nFAILURE: exiting with exit code $exit_code\n"
+		fail "Exiting due to previous errors with exit code $exit_code"
 	}
 	exit $exit_code
 }
@@ -75,7 +75,7 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -v  -N1 --deadline now+1hour --time-min 20 -t120 $bin_sleep 1]
 expect {
 	-re "Requested time limit is invalid" {
-		send_user "\nFAILURE: time limit error\n"
+		log_error "Time limit error"
 		set exit_code 1
 		exp_continue
 	}
@@ -84,7 +84,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {
@@ -92,8 +92,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	send_user "FAILURE: This can be due to QOS or account time limit <120 minutes\n"
+	log_error "Job not submitted. This can be due to QOS or account time limit <120 minutes"
 	set exit_code 1
 	endit
 }
@@ -110,12 +109,12 @@ expect {
 		exp_continue
 	}
 	-re "TimeLimit=" {
-		send_user "\nFAILURE: time limit is different from deadline\n"
+		log_error "Time limit is different from deadline"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {

@@ -61,13 +61,13 @@ proc scontrol_check { job_id } {
 		-re "JobState=($alpha_numeric_under)" {
 			set tmp $expect_out(1,string)
 			if {[string compare $tmp "CANCELLED"]} {
-				send_user "\nFAILURE: Job was not cancelled\n"
+				log_error "Job was not cancelled"
 				set exit_code 1
 			}
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -86,14 +86,14 @@ proc multi_squeue_check {job_id} {
 		-re "$job_id\_($number\)" {
 			set array_id $expect_out(1,string)
 			if {$array_id != $array_in} {
-				send_user "\nFAILURE: array IDs do not match $array_id != $array_in\n"
+				log_error "Array IDs do not match $array_id != $array_in"
 				set exit_code 1
 			}
 			incr array_in
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue is not responding\n"
+			log_error "squeue is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -115,7 +115,7 @@ proc multi_scontrol_check { job_id } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -138,11 +138,10 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
-		exit 1
+		fail "sbatch did not submit jobs"
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -153,14 +152,14 @@ expect {
 # checks all the job array indexes
 set task_cnt [multi_scontrol_check $job_id]
 if {$task_cnt != $array_size} {
-	send_user "\nFAILURE: job count found by scontrol bad ($task_cnt != $array_size)\n"
+	log_error "Job count found by scontrol bad ($task_cnt != $array_size)"
 	set exit_code
 }
 
 # uses squeue to check for the jobs
 set job_cnt [multi_squeue_check $job_id]
 if {$job_cnt != $array_size} {
-	send_user "\nFAILURE: job count found by squeue bad ($job_cnt != $array_size)\n"
+	log_error "Job count found by squeue bad ($job_cnt != $array_size)"
 	set exit_code 1
 }
 
@@ -171,7 +170,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -189,7 +188,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {

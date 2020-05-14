@@ -53,7 +53,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -63,7 +63,7 @@ expect {
 }
 
 if {$task_output != [expr $task_cnt * $mult]} {
-	send_user "\nFAILURE: failed to get output from all tasks\n"
+	log_error "Failed to get output from all tasks"
 	set exit_code 1
 }
 

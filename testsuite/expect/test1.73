@@ -77,7 +77,7 @@ proc check_rc { job } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: echo is not responding\n"
+			log_error "echo is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -92,9 +92,8 @@ proc check_rc { job } {
 # Get the slurm.conf path
 #
 set config_dir [get_conf_path]
-if { $exit_code != 0 } {
-        exit $exit_code
-}
+fail_on_error "Unable to get config path"
+
 set config_file $config_dir/slurm.conf
 
 #
@@ -136,13 +135,13 @@ reconfigure
 
 set rc [check_rc $good_job]
 if {$rc != 0} {
-	send_user "\nFAILURE: bad job exit code ($rc != 0)\n"
+	log_error "Bad job exit code ($rc != 0)"
 	set exit_code 1
 }
 
 set rc [check_rc $bad_job]
 if {$rc == 0} {
-	send_user "\nFAILURE: bad job exit code ($rc == 0)\n"
+	log_error "Bad job exit code ($rc == 0)"
 	set exit_code 1
 }
 

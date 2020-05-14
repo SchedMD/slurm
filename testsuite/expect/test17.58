@@ -48,7 +48,7 @@ proc endit { } {
 	if {$exit_code == 0} {
 		exec $bin_rm -f $file_in
 	} else {
-		send_user "\nFAILURE: exiting with exit code $exit_code\n"
+		fail "Exiting with exit code $exit_code"
 	}
 	exit $exit_code
 }
@@ -93,7 +93,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -102,7 +102,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted\n"
+	log_error "Batch not submitted"
 	set exit_code 1
 	endit
 }
@@ -112,8 +112,7 @@ if {$job_id == 0} {
 #
 if {[wait_for_job $job_id DONE] != 0} {
 	cancel_job $job_id
-	send_user "\nFAILURE: job failed to run to completion\n"
-	send_user "FAILURE: This can be due to QOS or account time limit <120 minutes\n"
+	log_error "Job failed to run to completion. This can be due to QOS or account time limit <120 minutes"
 	set exit_code 1
 	endit
 }
@@ -128,12 +127,12 @@ expect {
 		exp_continue
 	}
 	-re "TimeLimit=" {
-		send_user "\nFAILURE: time limit is different from deadline\n"
+		log_error "Time limit is different from deadline"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {

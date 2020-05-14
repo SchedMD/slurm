@@ -41,8 +41,7 @@ set nb_nodes [get_node_cnt_in_part $def_part_name]
 
 set mps_cnt [get_mps_count 1]
 if {$mps_cnt < 0} {
-	send_user "\nFAILURE: Error getting MPS count\n"
-	exit 1
+	fail "Error getting MPS count"
 }
 if {$mps_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more MPS in the default partition\n"
@@ -50,7 +49,7 @@ if {$mps_cnt < 1} {
 }
 if {$mps_cnt < 100} {
 #	This could be a legitimate configuration for testing purposes, but not likley for production use
-	send_user "\nFAILURE: MPS count per node is unexpectedly low ($mps_cnt < 100). Check your configuration\n"
+	log_error "MPS count per node is unexpectedly low ($mps_cnt < 100). Check your configuration"
 	set exit_code 1
 }
 send_user "\nMPS count is $mps_cnt\n"
@@ -63,7 +62,7 @@ spawn $sbatch --gres=mps:1,gpu:1 -N1 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
 	-re "Submitted batch job ($number)" {
 		cancel_job $expect_out(1,string)
-		send_user "\nFAILURE: batch request not rejected\n"
+		log_error "batch request not rejected"
 		set exit_code 1
 		exp_continue
 	}
@@ -72,7 +71,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -88,7 +87,7 @@ spawn $sbatch --gres=mps:1 --gpu-freq=high -N1 --output=/dev/null -t1 --wrap $bi
 expect {
 	-re "Submitted batch job ($number)" {
 		cancel_job $expect_out(1,string)
-		send_user "\nFAILURE: batch request not rejected\n"
+		log_error "batch request not rejected"
 		set exit_code 1
 		exp_continue
 	}
@@ -97,7 +96,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {

@@ -54,7 +54,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -67,7 +67,7 @@ expect {
 # Verify node registration
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
+	log_error "Did not get hostname of task 0"
 	set exit_code   1
 }
 
@@ -91,7 +91,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -104,7 +104,7 @@ expect {
 # Verify node registration
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
+	log_error "Did not get hostname of task 0"
 	set exit_code   1
 }
 

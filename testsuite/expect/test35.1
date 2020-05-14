@@ -91,7 +91,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -99,11 +99,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job did not launch\n"
+	log_error "Job did not launch"
 	set exit_code 1
 }
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id
 }
@@ -121,7 +121,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -137,7 +137,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -146,30 +146,30 @@ expect {
 }
 
 if {$job_id_mk == 0} {
-	send_user "\nFAILURE: job did not launch\n"
+	log_error "Job did not launch"
 	set exit_code 1
 } elseif {[wait_for_job $job_id_mk "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id_mk
 }
 
 if {$job_id_use == 0} {
-	send_user "\nFAILURE: job did not launch\n"
+	log_error "Job did not launch"
 	set exit_code 1
 } elseif {[wait_for_job $job_id_use "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id_use
 } elseif {[wait_for_file $output_use] != 0} {
 	set exit_code 1
 } elseif {[find_bb_name $output_use test$test_id] == 0} {
-	send_user "\nFAILURE: job using burst buffer ran before creation\n"
+	log_error "Job using burst buffer ran before creation"
 	set exit_code 1
 } elseif {[wait_for_file $output_mk] != 0} {
 	set exit_code 1
 } elseif {[find_bb_name $output_mk test$test_id] == 0} {
-	send_user "\nFAILURE: job creating burst buffer failed to do so\n"
+	log_error "Job creating burst buffer failed to do so"
 	set exit_code 1
 }
 
@@ -184,7 +184,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -192,16 +192,16 @@ expect {
 	}
 }
 if {$job_id_rm == 0} {
-	send_user "\nFAILURE: job did not launch\n"
+	log_error "Job did not launch"
 	set exit_code 1
 } elseif {[wait_for_job $job_id_rm "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id_rm
 } elseif {[wait_for_file $output_rm] != 0} {
 	set exit_code 1
 } elseif {[find_bb_name $output_rm test$test_id] != 0} {
-	send_user "\nFAILURE: job deleting burst buffer failed to do so\n"
+	log_error "Job deleting burst buffer failed to do so"
 	set exit_code 1
 }
 

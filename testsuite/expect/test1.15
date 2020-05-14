@@ -55,7 +55,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -65,7 +65,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE: problem with srun wait option matches was $matches\n"
+	log_error "Problem with srun wait option matches was $matches"
 	set exit_code 1
 }
 exit $exit_code

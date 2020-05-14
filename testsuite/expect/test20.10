@@ -48,7 +48,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qrerun is not responding\n"
+		log_error "qrerun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -56,7 +56,7 @@ expect {
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: qrerun --help option failed\n"
+	log_error "qrerun --help option failed"
 	set exit_code 1
 }
 

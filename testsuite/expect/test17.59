@@ -64,7 +64,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -72,9 +72,8 @@ expect {
 	}
 }
 if {$job_id != 0} {
-	send_user "\nFAILURE: batch submitted with a deadline too short\n"
 	cancel_job $job_id
-	exit 1
+	fail "Batch submitted with a deadline too short"
 }
 
 if {$exit_code == 0} {

@@ -90,7 +90,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -99,8 +99,7 @@ expect {
 	}
 }
 if {[expr $match_wait + $match_int + $match_term] != 3} {
-	send_user "\nFAILURE: srun failed to properly process SIGINT, "
-	send_user "($match_wait + $match_int + $match_term != 3)\n"
+	log_error "srun failed to properly process SIGINT, ($match_wait + $match_int + $match_term != 3)"
 	set exit_code 1
 }
 if {$exit_code == 0} {
@@ -142,7 +141,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -152,12 +151,10 @@ expect {
 }
 cancel_job $job_id
 if {[expr $match_wait + $match_int + $match_term] != 2} {
-	send_user "\nFAILURE: srun failed to properly process SIGINT, "
-	send_user "($match_wait + $match_int + $match_term != 2)\n"
+	log_error "srun failed to properly process SIGINT, ($match_wait + $match_int + $match_term != 2)"
 	set exit_code 1
 } elseif {$match_int != 0} {
-	send_user "\nFAILURE: srun failed to properly process SIGINT, "
-	send_user "($match_int != 0)\n"
+	log_error "srun failed to properly process SIGINT, ($match_int != 0)"
 	set exit_code 1
 }
 

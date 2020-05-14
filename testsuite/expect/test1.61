@@ -59,7 +59,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -67,8 +67,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: did not get sbatch job_id\n"
-	exit 1
+	fail "Did not get sbatch job_id"
 }
 
 #
@@ -76,7 +75,7 @@ if {$job_id == 0} {
 #
 sleep 60
 if {[wait_for_job $job_id DONE] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	set exit_code 1
 }
 
@@ -93,11 +92,11 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$timed_out == 0} {
-		send_user "\nFAILURE: srun time limit not found\n"
+		log_error "srun time limit not found"
 		set exit_code 1
 	}
 } else {
-	send_user "\nFAILURE: Job output file missing\n"
+	log_error "Job output file missing"
 	set exit_code 1
 }
 
@@ -114,11 +113,11 @@ if {[wait_for_file $file_err] == 0} {
 		}
 	}
 	if {$timed_out == 0} {
-		send_user "\nFAILURE: srun time limit not enforced\n"
+		log_error "srun time limit not enforced"
 		set exit_code 1
 	}
 } else {
-	send_user "\nFAILURE: Job error file missing\n"
+	log_error "Job error file missing"
 	set exit_code 1
 }
 

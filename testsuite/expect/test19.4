@@ -66,7 +66,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: strigger not responding\n"
+		log_error "strigger not responding"
 		slow_kill $strigger_pid
 		set exit_code 1
 	}
@@ -81,8 +81,7 @@ if {$disabled == 1} {
 	exit $exit_code
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: trigger creation failure\n"
-	exit 1
+	fail "Trigger creation failure"
 }
 
 set matches 0
@@ -93,7 +92,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: strigger not responding\n"
+		log_error "strigger not responding"
 		slow_kill $strigger_pid
 		set exit_code 1
 	}
@@ -102,7 +101,7 @@ expect {
 	}
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: trigger get failure\n"
+	log_error "Trigger get failure"
 	set exit_code 1
 }
 
@@ -126,7 +125,7 @@ if {$invalid == 0} {
 
 #	Plus time for cross-platform NSF delays
 	if {[wait_for_file $file_out] != 0} {
-		send_user "\nFAILURE: file $file_out is missing\n"
+		log_error "File $file_out is missing"
 		set exit_code 1
 	} else {
 		set reconfig 0
@@ -141,7 +140,7 @@ if {$invalid == 0} {
 			}
 		}
 		if {$reconfig == 0} {
-			send_user "\nFAILURE: file $file_out contents are bad\n"
+			log_error "File $file_out contents are bad"
 			set exit_code 1
 		}
 	}
@@ -150,7 +149,7 @@ if {$invalid == 0} {
 set strigger_pid [spawn $strigger --clear -v --reconfig --user=$uid]
 expect {
 	timeout {
-		send_user "\nFAILURE: strigger not responding\n"
+		log_error "strigger not responding"
 		slow_kill $strigger_pid
 		set exit_code 1
 	}

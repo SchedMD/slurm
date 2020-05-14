@@ -82,7 +82,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -95,12 +95,10 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	exit 1
+	fail "Did not get hostname of task 0"
 }
 if {[string compare $nodelist_name ""] == 0} {
-	send_user "\nFAILURE: Did not get nodelist_name of task 0\n"
-	exit 1
+	fail "Did not get nodelist_name of task 0"
 }
 if {[string compare $host_0 $nodelist_name] != 0} {
 	send_user "\nWARNING: hostname inconsistency\n"
@@ -138,7 +136,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding.\n"
+		log_error "srun not responding."
 		slow_kill $srun_pid
 		set slurm_user 0
 		set exit_code 1
@@ -151,7 +149,7 @@ if {$slurm_user == 0} {
 	exit 0;
 }
 if {[string compare $host_1 $include_node]} {
-	send_user "\nFAILURE: Allocation lacked an included node\n"
+	log_error "Allocation lacked an included node"
 	set exit_code 1
 }
 
@@ -187,12 +185,12 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 			exp_continue
 		}
 		-re "error:" {
-			send_user "\nFAILURE: some error happened\n"
+			log_error "Some error happened"
 			set failures 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid2
 			set failures 1
 		}
@@ -209,12 +207,12 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 			exp_continue
 		}
 		-re "error:" {
-			send_user "\nFAILURE: some error happened\n"
+			log_error "Some error happened"
 			set failures 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid1
 			set failures 1
 		}
@@ -228,7 +226,7 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 	expect {
 		-i $alloc
 		-re "Invalid node name specified" {
-			send_user "\nFAILURE: some error happened\n"
+			log_error "Some error happened"
 			set failures 1
 			exp_continue
 		}
@@ -237,7 +235,7 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 			exp_continue
 		}
 		-re "error:" {
-			send_user "\nFAILURE: some error happened\n"
+			log_error "Some error happened"
 			set failures 1
 			exp_continue
 		}
@@ -246,7 +244,7 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set failures 1
 		}
@@ -262,7 +260,7 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 	}
 }
 if {$successes != $iterations} {
-	send_user "\nFAILURE: only $successes of $iterations completed successfully\n"
+	fail "Only $successes of $iterations completed successfully"
 }
 
 exit $exit_code

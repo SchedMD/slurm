@@ -142,7 +142,7 @@ add_resource $sr1 [array get resource1]
 # Use sacctmgr list to verify the test global resource fields
 #
 if {[check_resource_limits $sr1 [array get resource1_chck]] == 1} {
-	send_user "\nFAILURE: list resource output is incorrect. \n"
+	log_error "list resource output is incorrect"
 	incr exit_code 1
 }
 
@@ -161,7 +161,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -169,9 +169,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: license output is incorrect ($matches != 2).\n"
-	send_user "  Expected: LicenseName=$sr1@$resource1(Server)\n"
-	send_user "  Expected: Total=$ect1 Used=0 Free=$ect1 Remote=yes\n\n\n"
+	log_error "License output is incorrect ($matches != 2). Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Remote=yes"
 	incr exit_code 1
 }
 
@@ -179,7 +177,7 @@ if {$matches != 2} {
 # modify resources
 #
 if {[mod_resource $sr1 [array get resource1_chng]] == 1} {
-	send_user "\nFAILURE: Resource modify not working ($matches != 1).\n"
+	log_error "Resource modify not working ($matches != 1)"
 	incr exit_code 1
 }
 
@@ -190,7 +188,7 @@ if {[mod_resource $sr1 [array get resource1_chng]] == 1} {
 #
 set resource1_chck(count) $resource1_chng(count)
 if {[check_resource_limits $sr1 [array get resource1_chck]] == 1} {
-	send_user "\nFAILURE: list resource output is incorrect.\n"
+	log_error "List resource output is incorrect"
 	incr exit_code 1
 }
 
@@ -209,7 +207,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -217,9 +215,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: license output is incorrect ($matches != 2).\n"
-	send_user "  Expected: LicenseName=$sr1@$resource1(Server)\n"
-	send_user "  Expected: Total=$ect1 Used=0 Free=$ect1 Remote=yes\n\n\n"
+	log_error "License output is incorrect ($matches != 2). Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Remote=yes"
 	incr exit_code 1
 }
 
@@ -239,7 +235,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -247,7 +243,7 @@ expect {
 	}
 }
 if {$matches != 0} {
-	send_user "\nFAILURE: scontrol failed to remove license $sr1@$resource1(Server).\n"
+	log_error "scontrol failed to remove license $sr1@$resource1(Server)"
 	incr exit_code 1
 }
 
@@ -261,13 +257,13 @@ add_resource "$sr2,$sr3" [array get resource2]
 #
 # Check resource 2
 if {[check_resource_limits $sr2 [array get resource2_chck]] == 1} {
-	send_user "\nFAILURE: list resource output is incorrect.\n"
+	log_error "List resource output is incorrect"
 	incr exit_code 1
 }
 
 # Check resource 3
 if {[check_resource_limits $sr3 [array get resource2_chck]] == 1} {
-	send_user "\nFAILURE: list resource output is incorrect.\n"
+	log_error "List resource output is incorrect"
 	incr exit_code 1
 }
 
@@ -278,6 +274,5 @@ incr exit_code [remove_res $sr2,$sr3]
 incr exit_code [remove_cluster $tc2]
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

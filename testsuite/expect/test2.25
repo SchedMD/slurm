@@ -58,7 +58,7 @@ proc mod_assoc_vals { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -67,8 +67,7 @@ proc mod_assoc_vals { } {
 	}
 
 	if {!$modified} {
-		send_user "\nFAILURE: account limits were not modified\n"
-		exit 1
+		fail "Account limits were not modified"
 	}
 }
 
@@ -84,7 +83,7 @@ proc clear_assoc_vals { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -93,8 +92,7 @@ proc clear_assoc_vals { } {
 	}
 
 	if {!$modified} {
-		send_user "\nFAILURE: account limits were not modified\n"
-		exit 1
+		fail "Account limits were not modified"
 	}
 }
 
@@ -109,7 +107,7 @@ proc delete_test_acct { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -135,7 +133,7 @@ if {[test_using_slurmdbd]} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -144,8 +142,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {!$acct_added} {
-		send_user "\nFAILURE: could not add test account $test_acct\n"
-		exit 1
+		fail "Could not add test account $test_acct"
 	}
 
 	# Add user to test account
@@ -157,7 +154,7 @@ if {[test_using_slurmdbd]} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not reponding\n"
+			log_error "sacctmgr is not reponding"
 			set exit_code 1
 		}
 		eof {
@@ -166,8 +163,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {!$user_added} {
-		send_user "\nFAILURE: could not add user to test account\n"
-		exit 1
+		fail "Could not add user to test account"
 	}
 
 	set match 0
@@ -194,7 +190,7 @@ if {[test_using_slurmdbd]} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -203,7 +199,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 5} {
-		send_user "\nFAILURE: 1 scontrol show assoc_mgr did not show correct information ($match != 5).\n"
+		log_error "1. scontrol show assoc_mgr did not show correct information ($match != 5)"
 		set exit_code 1
 	}
 
@@ -238,7 +234,7 @@ if {[test_using_slurmdbd]} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -247,7 +243,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 6} {
-		send_user "\nFAILURE: 2 scontrol show assoc_mgr did not show correct information ($match != 6).\n"
+		log_error "2. scontrol show assoc_mgr did not show correct information ($match != 6)"
 		set exit_code 1
 	}
 
@@ -283,7 +279,7 @@ if {[test_using_slurmdbd]} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -292,7 +288,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 3 && $limit_match} {
-		send_user "\nFAILURE: 3 scontrol show assoc_mgr did not show correct information ($match != 3).\n"
+		log_error "3. scontrol show assoc_mgr did not show correct information ($match != 3)"
 		set exit_code 1
 	}
 
@@ -320,7 +316,7 @@ if {[test_using_slurmdbd]} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -329,7 +325,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 4} {
-		send_user "\nFAILURE: 4 scontrol show assoc_mgr did not show correct information ($match != 4)\n"
+		log_error "4. scontrol show assoc_mgr did not show correct information ($match != 4)"
 		set exit_code 1
 	}
 }

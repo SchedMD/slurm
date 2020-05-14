@@ -55,7 +55,7 @@ set cpu_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.1" 8
 expect {
 	-re "failure" {
-		send_user "\nFAILURE: running test7.17.1\n"
+		log_error "Failure running test program test7.17.1"
 		set exit_code 1
 		exp_continue
 	}
@@ -68,7 +68,7 @@ expect {
 	}
 }
 if {$cpu_match != 1} {
-	send_user "\nFAILURE: number of CPUs is incorrect\n"
+	log_error "Number of CPUs is incorrect"
 	set exit_code 1
 }
 
@@ -77,7 +77,7 @@ set cpu_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.2" 16
 expect {
 	-re "failure" {
-		send_user "\nFAILURE: running test7.17.2\n"
+		log_error "Failure running program test7.17.2"
 		set exit_code 1
 		exp_continue
 	}
@@ -90,7 +90,7 @@ expect {
 	}
 }
 if {$cpu_match != 1} {
-	send_user "\nFAILURE: number of cpu is incorrect\n"
+	log_error "Number of cpu is incorrect"
 	set exit_code 1
 }
 
@@ -99,7 +99,7 @@ set cpu_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.3" 16
 expect {
 	-re "failure" {
-		send_user "\nFAILURE: running test7.17.3\n"
+		log_error "Failure running test program test7.17.3"
 		set exit_code 1
 		exp_continue
 	}
@@ -112,7 +112,7 @@ expect {
 	}
 }
 if {$cpu_match != 1} {
-	send_user "\nFAILURE: number of cpu is incorrect should be 16\n"
+	log_error "Number of cpu is incorrect should be 16"
 	set exit_code 1
 }
 
@@ -121,7 +121,7 @@ set cpu_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.4" 16
 expect {
 	-re "failure" {
-		send_user "\nFAILURE: running test7.17.4\n"
+		log_error "Failure running test program test7.17.4"
 		set exit_code 1
 		exp_continue
 	}
@@ -134,7 +134,7 @@ expect {
 	}
 }
 if {$cpu_match != 1} {
-	send_user "\nFAILURE: number of cpu is incorrect, should be ALL\n"
+	log_error "Number of cpu is incorrect, should be ALL"
 	set exit_code 1
 }
 
@@ -157,7 +157,7 @@ expect {
 	}
 }
 if {$fail_match != 1} {
-	send_user "\nFAILURE: This test should have failed but did not\n"
+	log_error "This test should have failed but did not"
 	set exit_code 1
 }
 
@@ -176,7 +176,7 @@ expect {
 	}
 }
 if {$fail_match != 1} {
-	send_user "\nFAILURE: This test should have failed but did not\n"
+	log_error "This test should have failed but did not"
 	set exit_code 1
 }
 
@@ -195,7 +195,7 @@ expect {
 	}
 }
 if {$fail_match != 1} {
-	send_user "\nFAILURE: This test should have failed but did not\n"
+	log_error "This test should have failed but did not"
 	set exit_code 1
 }
 

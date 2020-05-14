@@ -53,8 +53,7 @@ set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
@@ -100,7 +99,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -109,7 +108,7 @@ expect {
 	}
 }
 if {$match != $node_cnt} {
-	send_user "\nFAILURE: srun --gpus-per-task failure ($match != $node_cnt)\n"
+	log_error "srun --gpus-per-task failure ($match != $node_cnt)"
 	set exit_code 1
 }
 
@@ -133,7 +132,7 @@ if {$gpu_cnt > 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -143,7 +142,7 @@ if {$gpu_cnt > 1} {
 	}
 	set exp_gpu_cnt [expr $node_cnt * 2]
 	if {$match != $exp_gpu_cnt} {
-		send_user "\nFAILURE: srun --gpus-per-task failure ($match != $exp_gpu_cnt)\n"
+		log_error "srun --gpus-per-task failure ($match != $exp_gpu_cnt)"
 		set exit_code 1
 	}
 }
@@ -164,7 +163,7 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -173,7 +172,7 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 		}
 	}
 	if {$match != $task_cnt} {
-		send_user "\nFAILURE: srun --gpus-per-task failure ($match != $task_cnt)\n"
+		log_error "srun --gpus-per-task failure ($match != $task_cnt)"
 		set exit_code 1
 	}
 }
@@ -194,7 +193,7 @@ if {$gpu_cnt > 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -204,10 +203,10 @@ if {$gpu_cnt > 1} {
 	}
 	set exp_gpu_cnt [expr $task_cnt * $task_cnt]
 	if {$task_cnt == 0} {
-		send_user "\nFAILURE: srun --gpus-per-task test failed to run\n"
+		log_error "srun --gpus-per-task test failed to run"
 		set exit_code 1
 	} elseif {$match != $exp_gpu_cnt} {
-		send_user "\nFAILURE: srun --gpus-per-task failure ($match != $exp_gpu_cnt)\n"
+		log_error "srun --gpus-per-task failure ($match != $exp_gpu_cnt)"
 		set exit_code 1
 	}
 }
@@ -238,7 +237,7 @@ if {$gpu_cnt > 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -248,10 +247,10 @@ if {$gpu_cnt > 1} {
 	}
 	set exp_gpu_cnt [expr $task_cnt * $task_cnt * 2]
 	if {$task_cnt == 0} {
-		send_user "\nFAILURE: srun --gpus-per-task test failed to run\n"
+		log_error "srun --gpus-per-task test failed to run"
 		set exit_code 1
 	} elseif {$match != $exp_gpu_cnt} {
-		send_user "\nFAILURE: srun --gpus-per-task failure ($match != $exp_gpu_cnt)\n"
+		log_error "srun --gpus-per-task failure ($match != $exp_gpu_cnt)"
 		set exit_code 1
 	}
 }
@@ -278,7 +277,7 @@ if {$gpu_cnt > 1 && $num_cpus > 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -288,10 +287,10 @@ if {$gpu_cnt > 1 && $num_cpus > 0} {
 	}
 	set exp_gpu_cnt [expr $task_cnt *$task_cnt * $gpus_per_task]
 	if {$task_cnt == 0} {
-		send_user "\nFAILURE: srun --gpus-per-task test failed to run\n"
+		log_error "srun --gpus-per-task test failed to run"
 		set exit_code 1
 	} elseif {$match != $exp_gpu_cnt} {
-		send_user "\nFAILURE: srun --gpus-per-task failure ($match != $exp_gpu_cnt)\n"
+		log_error "srun --gpus-per-task failure ($match != $exp_gpu_cnt)"
 		set exit_code 1
 	}
 }

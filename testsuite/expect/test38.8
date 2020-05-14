@@ -87,7 +87,7 @@ expect {
 		#send_user "Job initiated\n"
 	}
 	timeout {
-		log_error "salloc : allocation not granted in $timeout seconds\n"
+		log_error "salloc: allocation not granted in $timeout seconds"
 		end_it 1
 	}
 	eof {
@@ -95,7 +95,7 @@ expect {
 	}
 }
 if {$pack_job_id == 0} {
-	log_error "salloc failure\n"
+	log_error "salloc failure"
 	end_it 1
 }
 
@@ -119,7 +119,7 @@ expect {
 		set has_prolog_flags 1
 	}
 	timeout {
-		log_error "scontrol show config not responding\n"
+		log_error "scontrol show config not responding"
 		end_it 1
 	}
 	eof {
@@ -135,7 +135,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacct not responding\n"
+		log_error "sacct not responding"
 		end_it 1
 	}
 	eof {
@@ -143,7 +143,7 @@ expect {
 	}
 }
 if {$matches != $expected_matches} {
-	log_error "sacct failure ($matches != $expected_matches)\n"
+	log_error "sacct failure ($matches != $expected_matches)"
 	end_it 1
 }
 
@@ -167,7 +167,7 @@ for {set inx 0} {$inx < 3} {incr inx} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacct not responding\n"
+			log_error "sacct not responding"
 			end_it 1
 		}
 		eof {
@@ -175,7 +175,7 @@ for {set inx 0} {$inx < 3} {incr inx} {
 		}
 	}
 	if {$matches != $expected_matches || $bad_matches != 0} {
-		log_error "sacct failure ($matches != 1 || $bad_matches != 0)\n"
+		log_error "sacct failure ($matches != 1 || $bad_matches != 0)"
 		end_it 1
 	}
 }

@@ -98,7 +98,7 @@ expect {
 	}
 
 	timeout {
-		send_user "\nFAILURE: smap not responding\n"
+		log_error "smap not responding"
 		set exit_code 1
 	}
 	eof {
@@ -109,7 +109,7 @@ expect {
 if {$matches != 8} {
 	#send_user $matches ."\n"
 	send_user $stuff
-	send_user "\nFAILURE: smap job display in commandline mode.\n"
+	log_error "smap job display in commandline mode."
 	set exit_code 1
 }
 

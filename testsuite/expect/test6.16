@@ -59,23 +59,20 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 if {[wait_for_job $job_id RUNNING] != 0} {
-	send_user "\nFAILURE: error starting job $job_id\n"
 	cancel_job $job_id
-	exit 1
+	fail "Error starting job $job_id"
 }
 # Wait for job steps to begin
 exec $bin_sleep 3
@@ -102,7 +99,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -110,7 +107,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	send_user "\nFAILURE: scancel with multiple step_id failed\n"
+	log_error "scancel with multiple step_id failed"
 	set exit_code 1
 }
 

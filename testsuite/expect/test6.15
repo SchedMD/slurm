@@ -109,7 +109,7 @@ proc test_signaling { batch full } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			slow_kill $sbatch_pid
 			return 1
 		}
@@ -118,7 +118,7 @@ proc test_signaling { batch full } {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: batch submit failure\n"
+		log_error "Batch submit failure"
 		return 1
 	}
 
@@ -126,7 +126,7 @@ proc test_signaling { batch full } {
 	# Wait for job to start running
 	#
 	if {[wait_for_job $job_id "RUNNING"] != 0} {
-		send_user "\nFAILURE: waiting for job to start running\n"
+		log_error "Waiting for job to start running"
 		return 1
 	}
 
@@ -155,7 +155,7 @@ proc test_signaling { batch full } {
 	# Wait for completion
 	#
 	if {[wait_for_job $job_id DONE] != 0} {
-		send_user "\nFAILURE: error completing job $job_id\n"
+		log_error "Error completing job $job_id"
 		cancel_job $job_id
 		return 1
 	}
@@ -216,23 +216,23 @@ proc test_signaling { batch full } {
 			}
 		}
 		if {$script_signaled != $expected_script_signaled} {
-			send_user "\nFAILURE: Script signaled mismatch with expected ($script_signaled != $expected_script_signaled)\n"
+			log_error "Script signaled mismatch with expected ($script_signaled != $expected_script_signaled)"
 			incr rc
 		}
 		if {$parent_step_signaled != $expected_parent_step_signaled} {
-			send_user "\nFAILURE: Parent step signaled mismatch with expected ($parent_step_signaled != $expected_parent_step_signaled)\n"
+			log_error "Parent step signaled mismatch with expected ($parent_step_signaled != $expected_parent_step_signaled)"
 			incr rc
 		}
 		if {$parent_command_signaled != $expected_parent_command_signaled} {
-			send_user "\nFAILURE: Parent command signaled mismatch with expected ($parent_command_signaled != $expected_parent_command_signaled)\n"
+			log_error "Parent command signaled mismatch with expected ($parent_command_signaled != $expected_parent_command_signaled)"
 			incr rc
 		}
 		if {$child_step_signaled != $expected_child_step_signaled} {
-			send_user "\nFAILURE: Child step signaled mismatch with expected ($child_step_signaled != $expected_child_step_signaled)\n"
+			log_error "Child step signaled mismatch with expected ($child_step_signaled != $expected_child_step_signaled)"
 			incr rc
 		}
 		if {$child_command_signaled != $expected_child_command_signaled} {
-			send_user "\nFAILURE: Child command signaled mismatch with expected ($child_command_signaled != $expected_child_command_signaled)\n"
+			log_error "Child command signaled mismatch with expected ($child_command_signaled != $expected_child_command_signaled)"
 			incr rc
 		}
 	} else {

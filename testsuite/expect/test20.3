@@ -58,7 +58,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -66,20 +66,19 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: qsub failed to submit job\n"
-	exit 1
+	fail "qsub failed to submit job"
 }
 
 set status 1
 spawn $qdel $job_id
 expect {
 	-re "Invalid job id" {
-		send_user "\nFAILURE: qdel failed to delete job\n"
+		log_error "qdel failed to delete job"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qdel not responding\n"
+		log_error "qdel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -89,7 +88,7 @@ expect {
 }
 
 if {$status != 0} {
-	send_user "\nFAILURE: it appears things worked ok, but we got a non-zero exit from qdel\n"
+	log_error "It appears things worked ok, but we got a non-zero exit from qdel"
 	set exit_code 1
 }
 
@@ -103,7 +102,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qdel not responding\n"
+		log_error "qdel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -114,7 +113,7 @@ expect {
 
 # we should get an error code here from qdel, but no message
 if {($matches != 0) || ($status == 0)} {
-	send_user "\nFAILURE: No error on attempt to cancel terminated job\n"
+	log_error "No error on attempt to cancel terminated job"
 	set exit_code 1
 }
 

@@ -54,7 +54,7 @@ proc add_lic { license } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not reponding\n"
+			log_error "sacctmgr is not reponding"
 			set exit_code 1
 		}
 		eof {
@@ -63,7 +63,7 @@ proc add_lic { license } {
 	}
 
 	if {$added != 1} {
-		send_user "\nFAILURE: sacctmgr did not add license: $license\n"
+		log_error "sacctmgr did not add license: $license"
 		set exit_code 1
 	}
 }
@@ -80,7 +80,7 @@ proc delete_lic { license } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -126,7 +126,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -135,7 +135,7 @@ expect {
 }
 
 if { $match != 3 } {
-	send_user "\nFAILURE: licenses are not sorted\n"
+	log_error "Licenses are not sorted"
 	set exit_code 1
 }
 

@@ -68,7 +68,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 		slow_kill $scontrol_pid
 		exp_continue
@@ -100,7 +100,7 @@ expect {
 	-re "mem$whitespace: ($number)G" {
 		set mem $expect_out(1,string)
 		if { $mem * 1024 != $min_mem } {
-			send_user "\nFAILURE: Min memory is different ($mem) than requested ($min_mem)\n"
+			log_error "Min memory is different ($mem) than requested ($min_mem)"
 			set exit_code 1
 		} else {
 			incr matches
@@ -110,7 +110,7 @@ expect {
 	-re "mem$whitespace: ($number)" {
 		set mem $expect_out(1,string)
 		if { $mem != $min_mem } {
-			send_user "\nFAILURE: Min memory is different ($mem) than requested ($min_mem)\n"
+			log_error "Min memory is different ($mem) than requested ($min_mem)"
 			set exit_code 1
 		} else {
 			incr matches
@@ -120,7 +120,7 @@ expect {
 	-re "nodes$whitespace: ($number)" {
 		set nodes $expect_out(1,string)
 		if { $nodes != $node_cnt } {
-			send_user "\nFAILURE: Bad node count allocated\n"
+			log_error "Bad node count allocated"
 			set exit_code 1
 		} else {
 			incr matches
@@ -131,7 +131,7 @@ expect {
 		set cpu_count $expect_out(1,string)
 		set cpus_per_node [expr $cpu_count / $node_cnt]
 		if { $cpus_per_node != $ppn_cnt } {
-			send_user "\nFAILURE: PPN count not sent correctly asked for $ppn_cnt but got $cpus_per_node\n"
+			log_error "PPN count not sent correctly asked for $ppn_cnt but got $cpus_per_node"
 			set exit_code 1
 		} else {
 			incr matches
@@ -148,7 +148,7 @@ expect {
 	}
 
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		slow_kill $sbatch_pid
 		exp_continue
@@ -157,12 +157,12 @@ expect {
 		wait
 	}
 }
-if {$matches != 3} {
-	send_user "\nFAILURE: sbatch didn't read the correct options from batch file ($matches of 3)\n"
-	set exit_code 1
-}
+
 if {$job_id != 0} {
 	cancel_job $job_id
+}
+if {$matches != 3} {
+	fail "sbatch didn't read the correct options from batch file ($matches of 3)"
 }
 
 #

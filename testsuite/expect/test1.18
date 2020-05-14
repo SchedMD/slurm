@@ -51,16 +51,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "Srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$match == 0} {
-	send_user "\nFAILURE: No error on with bad license name\n"
+	log_error "No error on with bad license name"
 	set exit_code 1
 }
 
@@ -85,7 +84,7 @@ if {[string compare $licenses ""] != 0} {
 	set srun_pid [spawn $srun --licenses=$licenses $bin_printenv SLURMD_NODENAME]
 	expect {
 		-re "invalid license" {
-			send_user "\nFAILURE: Error getting license\n"
+			log_error "Error getting license"
 			set exit_code 1
 			exp_continue
 		}

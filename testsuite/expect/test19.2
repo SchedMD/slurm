@@ -45,7 +45,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: strigger not responding\n"
+		log_error "strigger not responding"
 		set exit_code 1
 	}
 	eof {
@@ -54,7 +54,7 @@ expect {
 }
 
 if {$matches < 1} {
-	send_user "\nFAILURE: strigger failed to report usage message\n"
+	log_error "strigger failed to report usage message"
 	set exit_code 1
 }
 exit $exit_code

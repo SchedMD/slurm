@@ -61,7 +61,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -103,7 +103,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -113,15 +113,14 @@ expect {
 }
 
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	fail "Failed to submit job"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	set exit_code 1
 }
 
@@ -135,7 +134,7 @@ if {[wait_for_file $file_out] == 0} {
 		-re "($number)" {
 			set nodes $expect_out(1,string)
 			if {$nodes != 1} {
-				send_user "\nFAILURE: expected 1 allocated node\n"
+				log_error "Expected 1 allocated node"
 				set exit_code 1
 			}
 			exp_continue
@@ -145,8 +144,7 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 } else {
-	send_user "\nFAILURE: job didn't produce the expected $file_out output file\n"
-	set exit_code 1
+	fail "Job didn't produce the expected $file_out output file"
 }
 
 if {$exit_code == 0} {

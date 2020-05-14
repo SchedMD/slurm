@@ -90,7 +90,7 @@ expect {
 		#send_user "Job initiated\n"
 	}
 	timeout {
-		log_error "salloc : allocation not granted in $timeout seconds\n"
+		log_error "salloc : allocation not granted in $timeout seconds"
 		end_it 1
 	}
 	eof {
@@ -98,7 +98,7 @@ expect {
 	}
 }
 if {$pack_job_id == 0} {
-	log_error "salloc failure\n"
+	log_error "salloc failure"
 	end_it 1
 }
 
@@ -137,7 +137,7 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding\n"
+		log_error "srun not responding"
 		end_it 1
 	}
 	eof {
@@ -145,7 +145,7 @@ expect {
 	}
 }
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: srun output file not found\n"
+	log_error "srun output file not found"
 	end_it 1
 }
 
@@ -173,7 +173,7 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "sort not responding\n"
+		log_error "sort not responding"
 		end_it 1
 	}
 	eof {
@@ -197,7 +197,7 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "sort not responding\n"
+		log_error "sort not responding"
 		end_it 1
 	}
 	eof {
@@ -206,14 +206,14 @@ expect {
 }
 log_user 1
 if {$matches != 6} {
-	log_error "srun failure ($matches != 6)\n"
+	log_error "srun failure ($matches != 6)"
 	end_it 1
 }
 
 send "exit\r"
 expect {
 	timeout {
-		log_error "srun not responding\n"
+		log_error "srun not responding"
 		end_it 1
 	}
 	eof {
@@ -236,7 +236,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	log_error "srun combined hostlist is bad ($matches != 2)\n"
+	log_error "srun combined hostlist is bad ($matches != 2)"
 	end_it 1
 }
 

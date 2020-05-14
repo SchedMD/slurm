@@ -50,8 +50,7 @@ if {$nb_nodes > 1} {
 }
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs per node in the default partition\n"
@@ -129,7 +128,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {
@@ -137,7 +136,7 @@ expect {
 	}
 }
 if {$match != 7} {
-	send_user "\nFAILURE: srun gpu options not fully processed ($match != 7)\n"
+	log_error "srun gpu options not fully processed ($match != 7)"
 	set exit_code 1
 
 }
@@ -157,7 +156,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {
@@ -165,7 +164,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: srun gpu options not fully processed ($match != 1)\n"
+	log_error "srun gpu options not fully processed ($match != 1)"
 	set exit_code 1
 
 }

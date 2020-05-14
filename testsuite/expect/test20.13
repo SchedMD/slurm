@@ -55,7 +55,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -64,7 +64,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: qsub -b option did not set up correctly\n"
+	log_error "qsub -b option did not set up correctly"
 	set exit_code 1
 }
 
@@ -78,7 +78,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -87,7 +87,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: qsub -pe option did not set up correctly\n"
+	log_error "qsub -pe option did not set up correctly"
 	set exit_code 1
 }
 
@@ -101,7 +101,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -118,7 +118,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -136,7 +136,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -146,7 +146,7 @@ expect {
 
 
 if {$matches != 1} {
-	send_user "\nFAILURE: qsub -D option did not set up correctly\n"
+	log_error "qsub -D option did not set up correctly"
 	set exit_code 1
 }
 
@@ -161,7 +161,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -170,7 +170,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: qsub -l h_rt option did not set up correctly\n"
+	log_error "qsub -l h_rt option did not set up correctly"
 	set exit_code 1
 }
 
@@ -184,7 +184,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -193,7 +193,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: qsub -l h_rt option did not set up correctly\n"
+	log_error "qsub -l h_rt option did not set up correctly"
 	set exit_code 1
 }
 
@@ -207,7 +207,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -216,7 +216,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: qsub -l h_vmem option did not set up correctly\n"
+	log_error "qsub -l h_vmem option did not set up correctly"
 	set exit_code 1
 }
 

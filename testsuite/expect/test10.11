@@ -53,7 +53,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: smap not responding\n"
+		log_error "smap not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -63,7 +63,7 @@ expect {
 }
 
 if {$version != 1} {
-	send_user "\nFAILURE: Did not get proper smap version number\n"
+	log_error "Did not get proper smap version number"
 	set exit_code 1
 }
 exit $exit_code

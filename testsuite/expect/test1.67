@@ -73,7 +73,7 @@ expect {
 	-re "sending job to foreground" {
 		set send_match 1
 		if {$time_match == 0} {
-			send_user "\nFAILURE: srun is not generating output\n"
+			log_error "srun is not generating output"
 			set exit_code 1
 		}
 		exp_continue
@@ -87,7 +87,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -96,15 +96,15 @@ expect {
 }
 
 if {$send_match != 1} {
-	send_user "\nFAILURE: srun was not sent to the foreground\n"
+	log_error "srun was not sent to the foreground"
 	set exit_code 1
 }
 if {$time_match != 10} {
-	send_user "\nFAILURE: srun is not generating output ($time_match != 10)\n"
+	log_error "srun is not generating output ($time_match != 10)"
 	set exit_code 1
 }
 if {$fini_match != 1} {
-	send_user "\nFAILURE: srun did not finish the program submitted\n"
+	log_error "srun did not finish the program submitted"
 	set exit_code 1
 }
 

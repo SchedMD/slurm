@@ -72,7 +72,7 @@ expect {
 	}
 
 	timeout {
-		send_user "\nFAILURE: smap not responding\n"
+		log_error "smap not responding"
 		set exit_code 1
 	}
 	eof {
@@ -84,7 +84,7 @@ if {$too_small != 0} {
 	exit 0
 }
 if {$matches <= 2} {
-	send_user "\nFAILURE: smap --iterate failed ($matches)\n"
+	log_error "smap --iterate failed ($matches)"
 	set exit_code 1
 }
 

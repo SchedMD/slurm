@@ -51,7 +51,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -60,7 +60,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: failed to hold job as requested\n"
+	log_error "Failed to hold job as requested"
 	set exit_code 1
 }
 
@@ -83,7 +83,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -93,7 +93,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: Immediate initiation option failure\n"
+	log_error "Immediate initiation option failure"
 	set exit_code 1
 }
 exit $exit_code

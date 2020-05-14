@@ -66,8 +66,7 @@ if {$nb_nodes < 2} {
 }
 set gpu_cnt [get_gpu_count 2]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs per node in the default partition\n"
@@ -124,7 +123,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -132,13 +131,11 @@ expect {
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: job 1 not submitted\n"
-	exit 1
+	fail "Job 1 not submitted"
 }
 if {[wait_for_job $job_id1 "RUNNING"] != 0} {
-	send_user "\nFAILURE: job 1 did not start\n"
 	cancel_job $job_id1
-	exit 1
+	fail "Job 1 did not start"
 }
 
 #
@@ -152,7 +149,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -160,20 +157,17 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	send_user "\nFAILURE: job 2 not submitted\n"
 	cancel_job $job_id1
-	exit 1
+	fail "Job 2 not submitted"
 }
 if {[wait_for_job $job_id1 "DONE"] != 0} {
-	send_user "\nFAILURE: job 1 did not complete\n"
 	cancel_job $job_id1
 	cancel_job $job_id2
-	exit 1
+	fail "Job 1 did not complete"
 }
 if {[wait_for_job $job_id2 "DONE"] != 0} {
-	send_user "\nFAILURE: job 2 did not complete\n"
 	cancel_job $job_id2
-	exit 1
+	fail "Job 2 did not complete"
 }
 
 #
@@ -181,8 +175,7 @@ if {[wait_for_job $job_id2 "DONE"] != 0} {
 #
 send_user "\n\nParse job 1 output\n"
 if {[wait_for_file $file_out1] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
+	fail "No output file"
 }
 set match 0
 spawn $bin_cat $file_out1
@@ -196,7 +189,7 @@ expect {
 	}
 }
 if {$match != 3} {
-	send_user "\nFAILURE: bad CUDA information about job 1 ($match != 3)\n"
+	log_error "Bad CUDA information about job 1 ($match != 3)"
 	set exit_code 1
 }
 
@@ -206,8 +199,7 @@ if {$match != 3} {
 #
 send_user "\n\nParse job 2 output\n"
 if {[wait_for_file $file_out2] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
+	fail "No output file"
 }
 set match 0
 spawn $bin_cat $file_out2

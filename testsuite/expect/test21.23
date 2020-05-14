@@ -410,7 +410,7 @@ expect {
 }
 
 if {$swmatches!=3} {
-	log_error "We should have 3 test WCKeys configured we have $swmatches\n"
+	log_error "We should have 3 test WCKeys configured we have $swmatches"
 	set exit_code 1
 }
 

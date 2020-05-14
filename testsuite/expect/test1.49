@@ -88,12 +88,12 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: Error running srun\n"
+		log_error "Error running srun"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -106,7 +106,7 @@ if {$exit_code != 0} {
 }
 set exp_matches [expr $tasks * 3]
 if {$matches != $exp_matches} {
-	send_user "\nFAILURE: prolog exported env var failure ($matches != $exp_matches)\n"
+	log_error "Prolog exported env var failure ($matches != $exp_matches)"
 	set exit_code 1
 } else {
 	send_user "\nSo far, so good\n\n"
@@ -137,7 +137,7 @@ if {[wait_for_file $file_out_pre] == 0} {
 	}
 }
 if {$matches != $tasks} {
-	send_user "\nFAILURE: task prolog output is missing or uid mismatch ($matches:$tasks)\n"
+	log_error "Task prolog output is missing or uid mismatch ($matches:$tasks)"
 	set exit_code 1
 }
 
@@ -154,7 +154,7 @@ expect {
 	}
 }
 if {$matches != $tasks} {
-	send_user "\nFAILURE: task epilog output is missing or uid mismatch ($matches:$tasks)\n"
+	log_error "Task epilog output is missing or uid mismatch ($matches:$tasks)"
 	set exit_code 1
 }
 

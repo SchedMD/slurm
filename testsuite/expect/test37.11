@@ -219,7 +219,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "$eolFAILURE: sacctmgr mod not responding$eol"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -228,7 +228,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.$eol"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -252,7 +252,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "$eolFAILURE: sacctmgr mod not responding$eol"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -261,7 +261,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.$eol"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -286,7 +286,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "$eolFAILURE: sacctmgr mod not responding$eol"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -295,7 +295,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.$eol"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 

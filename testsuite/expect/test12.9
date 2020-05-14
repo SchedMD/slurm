@@ -71,8 +71,7 @@ proc run_sacct { jobs exp_match_1 exp_match_2 } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacct not responding\n"
-			exit 1
+			fail "sacct not responding"
 		}
 		eof {
 			wait
@@ -80,20 +79,17 @@ proc run_sacct { jobs exp_match_1 exp_match_2 } {
 	}
 
 	if {$matches_1 != $exp_match_1} {
-		log_error "sacct failure for array 1 ($matches_1 != $exp_match_1)\n"
-		exit 1
+		fail "sacct failure for array 1 ($matches_1 != $exp_match_1)"
 	}
 
 	if {$matches_2 != $exp_match_2} {
-		log_error "sacct failure for array 2 ($matches_2 != $exp_match_2)\n"
-		exit 1
+		fail "sacct failure for array 2 ($matches_2 != $exp_match_2)"
 	}
 
 	set matches [expr $matches_1 + $matches_2]
 
 	if {$matches != $expected_matches} {
-		log_error "sacct failure ($matches != $expected_matches)\n"
-		exit 1
+		fail "sacct failure ($matches != $expected_matches)"
 	}
 }
 
@@ -108,11 +104,11 @@ expect {
 		send_user "\njob $array1_job_id was submitted\n"
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
+		log_error "sbatch did not submit jobs"
 		exit 1
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -127,11 +123,10 @@ expect {
 		send_user "\njob $array2_job_id was submitted\n"
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
-		exit 1
+		fail "Sbatch did not submit jobs"
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -149,10 +144,9 @@ if {[expect_extern_step]} {
 # Wait for both jobs to complete
 #
 if {[wait_for_job $array1_job_id "DONE"] || [wait_for_job $array2_job_id "DONE"]} {
-	send_user "\nFAILURE: waiting for jobs to complete\n"
 	cancel_job $array1_job_id
 	cancel_job $array2_job_id
-	exit 1
+	fail "Waiting for jobs to complete"
 }
 
 # Wait for accounting records to reach slurmdbd

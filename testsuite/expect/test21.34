@@ -167,7 +167,7 @@ proc cleanup { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -182,11 +182,11 @@ proc cleanup { } {
 			exp_continue
 		}
 		-re "Error" {
-			send_user "\nFAILURE: account was not deleted\n"
+			log_error "Account was not deleted"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -197,7 +197,7 @@ proc cleanup { } {
 	spawn $scontrol delete partitionname=$test_part
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -209,7 +209,7 @@ proc cleanup { } {
 		spawn $scontrol update partitionname=$def_part default=yes
 		expect {
 			timeout {
-				send_user "\nFAILURE: scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -266,7 +266,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -288,7 +288,7 @@ if {[test_select_type_params "CR_CORE"]} {
 set num_nodes [available_nodes [default_partition] "idle"]
 
 if {$num_nodes == 0} {
-	send_user "\nFAILURE: no cpus where found\n"
+	log_error "No cpus were found"
 	exit 1
 } else {
 	# Set QoS node values
@@ -306,7 +306,7 @@ spawn $scontrol create partitionname=$test_part qos=$part_qos tresbillingweights
     nodes=ALL
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code
 	}
 	eof {
@@ -323,7 +323,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -332,16 +332,14 @@ expect {
 }
 
 if {$got_node != 1} {
-	send_user "\nFAILURE: did not get node for testing\n"
-	exit 0
+	fail "Did not get node for testing"
 }
 
 # Get the number of cpus on a node
 lassign [get_node_cpus $test_node] totcpus nthreads
 
 if {$totcpus == 0} {
-	send_user "\nFAILURE: no cpus where found\n"
-	exit 1
+	fail "No cpus were found"
 } else {
 	# Set QoS CPU values
 	set grcpu_num [expr $totcpus - $nthreads]
@@ -362,7 +360,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -371,16 +369,14 @@ expect {
 	}
 }
 if {$acctmatch != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem adding the account\n"
-	cleanup
-	exit 1
+	fail "sacctmgr had a problem adding the account"
 }
 
 # Add user to account
 spawn $sacctmgr -i create user name=$user_name account=$acct
 expect {
 	timeout {
-		send_user "\nFAILURE: sacctmgr not responding\n"
+		log_error "sacctmgr not responding"
 	}
 	eof {
 		wait
@@ -402,7 +398,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not resonding\n"
+		log_error "sacctmgr is not resonding"
 		set exit_code 1
 	}
 	eof {
@@ -417,7 +413,5 @@ qos_test
 cleanup
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE: test $test_id\n"
+	fail "Test failed due to previous errors"
 }
-
-exit $exit_code

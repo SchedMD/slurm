@@ -61,7 +61,7 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -72,8 +72,7 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 }
 
 if {$jobs_run == 0} {
-	send_user "\nFAILURE: No jobs run\n"
-	set exit_code 1
+	fail "No jobs run"
 } elseif {$alloc_fail == 1} {
 	send_user "\nError expected. No worries.\n"
 }

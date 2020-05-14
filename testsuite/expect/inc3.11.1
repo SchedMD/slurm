@@ -71,9 +71,8 @@ proc inc3_11_1 {} {
 	foreach test $badtests {
 		set ret_code [create_res $test 1]
 		if {$ret_code == 0} {
-			send_user "\n\033\[31mFAILURE: Reservation $test did not fail but should have (Within: inc3.11.1)\033\[m\n"
 			delete_res $res_name
-			exit 1
+			fail "Reservation $test did not fail but should have (Within: inc3.11.1)"
 		} else {
 			send_user "\033\[32mExpected error. You can turn that frown upside-down. (Within: inc3.11.1)\033\[m\n"
 		}
@@ -103,15 +102,13 @@ proc inc3_11_1 {} {
 	foreach test $goodtests {
 		set ret_code [create_res $test 0]
 		if {$ret_code != 0} {
-			send_user "\n\033\[31mFAILURE: Unable to create a valid reservation (Within: inc3.11.1)\033\[m\n"
-			exit $ret_code
+			fail "Unable to create a valid reservation (Within: inc3.11.1)"
 		} else {
 			send_user "\033\[32mReservation created as expected. (Within: inc3.11.1)\033\[m\n"
 		}
 		set ret_code [delete_res $res_name]
 		if {$ret_code != 0} {
-			send_user "\n\033\[31mFAILURE: Unable to delete a reservation (Within: inc3.11.1)\033\[m\n"
-			exit $ret_code
+			fail "Unable to delete a reservation (Within: inc3.11.1)"
 		} else {
 			send_user "\033\[32mReservation deleted as expected. (Within: inc3.11.1)\033\[m\n"
 		}

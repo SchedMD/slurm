@@ -49,7 +49,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -58,7 +58,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: sinfo failed to report usage format\n"
+	log_error "sinfo failed to report usage format"
 	set exit_code 1
 }
 exit $exit_code

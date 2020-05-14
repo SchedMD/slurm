@@ -98,7 +98,7 @@ proc sub_job { freq } {
 					send_user "\nThis error is expected, no worries\n"
 					set skip true
 				} else {
-					send_user "\nFAILURE: This CPU frequency should be valid\n"
+					log_error "This CPU frequency should be valid"
 					set exit_code 1
 				}
 				exp_continue
@@ -108,7 +108,7 @@ proc sub_job { freq } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: srun is not responding\n"
+				log_error "srun is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -120,12 +120,11 @@ proc sub_job { freq } {
 			continue
 		}
 		if {$job_id == 0} {
-			send_user "\nFAILURE: srun did not submit job\b"
-			exit 1
+			fail "srun did not submit job"
 		}
 
 		if {[wait_for_job $job_id "DONE"] != 0} {
-			send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+			log_error "Error waiting for job $job_id to complete"
 			cancel_job $job_id
 			set exit_code 1
 		}
@@ -141,7 +140,7 @@ proc sub_job { freq } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sacct is not responding\n"
+				log_error "sacct is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -150,7 +149,7 @@ proc sub_job { freq } {
 		}
 
 		if {$this_freq($option) == 0} {
-			send_user "\nFAILURE: did not get cpu frequency for $option\n"
+			log_error "Did not get cpu frequency for $option"
 			set exit_code 1
 		}
 	}
@@ -168,7 +167,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -176,14 +175,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Waiting for job to complete"
 }
 
 set userspace_governor 0
@@ -214,7 +211,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -223,8 +220,7 @@ expect {
 }
 
 if {$match != 1} {
-	send_user "\nFAILURE: was not able to get a usable node\n"
-	exit 1
+	fail "Was not able to get a usable node"
 }
 
 lassign [get_node_cpus $node] num_cputot threads
@@ -241,7 +237,7 @@ array set freq_lvl_2 [sub_job [array get freq_lvl_2]]
 
 if {($freq_lvl_2(conservative) == 0) || ($freq_lvl_2(ondemand) == 0) ||
     ($freq_lvl_2(performance) == 0)  || ($freq_lvl_2(powersave) == 0)} {
-	send_user "\nFAILURE: CPU frequency values are invalid\n"
+	log_error "CPU frequency values are invalid"
 	set exit_code 1
 }
 
@@ -258,7 +254,7 @@ foreach name [array names freq_lvl_1] {
 if { (($freq_lvl_1(low) > $freq_lvl_1(medium)) ||
       ($freq_lvl_1(medium) > $freq_lvl_1(high)) ||
       ($freq_lvl_1(highm1) > $freq_lvl_1(high)))} {
-	send_user "\nFAILURE: CPU frequency values are not valid\n"
+	log_error "CPU frequency values are not valid"
 	send_user "Test with smaller JobAcctGatherFrequency configuration or longer running jobs\n"
 	exit 1
 }

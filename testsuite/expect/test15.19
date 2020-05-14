@@ -72,7 +72,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -85,9 +85,7 @@ expect {
 }
 
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURMD_NODENAME of task 0\n"
-	set exit_code   1
-	exit $exit_code
+	fail "Did not get SLURMD_NODENAME of task 0"
 }
 
 set alloc_fail 0
@@ -108,7 +106,7 @@ expect {
 		set alloc_fail 1
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -120,11 +118,11 @@ expect {
 	}
 }
 if { $alloc_fail == 0 } {
-	send_user "\nFAILURE: Did not generate expected error message\n"
+	log_error "Did not generate expected error message"
 	set exit_code   1
 }
 if { $task_cnt2 != 0 } {
-	send_user "\nFAILURE: allocated more tasks than processors\n"
+	log_error "Allocated more tasks than processors"
 	set exit_code   1
 }
 
@@ -151,7 +149,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -167,11 +165,11 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODENAME of task 0\n"
+	log_error "Did not get SLURM_NODENAME of task 0"
 	set exit_code   1
 }
 if {[string compare $host_1 ""] != 0} {
-	send_user "\nFAILURE: Started two tasks instead of one\n"
+	log_error "Started two tasks instead of one"
 }
 if {[test_front_end] != 0} {
 	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
@@ -209,7 +207,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -225,11 +223,11 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURMD_NODENAME of task 0\n"
+	log_error "Did not get SLURMD_NODENAME of task 0"
 	set exit_code   1
 }
 if {[string compare $host_3 ""] != 0} {
-	send_user "\nFAILURE: Started more than three tasks\n"
+	log_error "Started more than three tasks"
 	set exit_code   1
 }
 set dup_host 0
@@ -243,7 +241,7 @@ if {[string compare $host_0 $host_3] == 0} {
 	set dup_host 1
 }
 if {$dup_host == 1} {
-	send_user "\nFAILURE: Re-used a node in the allocation\n"
+	log_error "Re-used a node in the allocation"
 	set exit_code 1
 }
 
@@ -293,7 +291,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -309,15 +307,15 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURMD_NODENAME of task 0\n"
+	log_error "Did not get SLURMD_NODENAME of task 0"
 	set exit_code   1
 }
 if {[string compare $host_1 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURMD_NODENAME of task 1\n"
+	log_error "Did not get SLURMD_NODENAME of task 1"
 	set exit_code   1
 }
 if {[string compare $host_3 ""] != 0} {
-	send_user "\nFAILURE: Started more than three tasks\n"
+	log_error "Started more than three tasks"
 	set exit_code   1
 }
 set dup_host 0
@@ -331,7 +329,7 @@ if {[string compare $host_0 $host_3] == 0} {
 	set dup_host 1
 }
 if {$dup_host == 1} {
-	send_user "\nFAILURE: Re-used a node in the allocation\n"
+	log_error "Re-used a node in the allocation"
 	set exit_code   1
 }
 

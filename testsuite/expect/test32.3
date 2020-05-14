@@ -51,7 +51,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sgather is not responding\n"
+		log_error "sgather is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -59,7 +59,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: sgather did not report the version ($matches != 1)\n"
+	log_error "sgather did not report the version ($matches != 1)"
 	set exit_code 1
 }
 

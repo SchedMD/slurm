@@ -45,9 +45,7 @@ proc get_cpu_bind { type name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-			exit 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -62,13 +60,11 @@ proc set_cpu_bind { type name cpu_bind } {
 	spawn $scontrol update ${type}Name=$name CpuBind=$cpu_bind
 	expect {
 		-re "error" {
-			send_user "\nFAILURE: scontrol error setting CpuBind on node $node_name\n"
+			log_error "scontrol error setting CpuBind on node $node_name"
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-			exit 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -92,16 +88,15 @@ proc run_prog { node_name cpu_bind } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
 			slow_kill $srun_pid
-			exit 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		send_user "\nFAILURE: Node $node_name should have CpuBind of $cpu_bind rather than $found_cpu_bind\n"
+		log_error "Node $node_name should have CpuBind of $cpu_bind rather than $found_cpu_bind"
 		set exit_code 1
 	}
 }
@@ -161,17 +156,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$node_cnt != 2} {
-	send_user "\FAILURE: Unexpected resource count ($node_cnt != 2)\n"
-	exit 1
+	fail "Unexpected resource count ($node_cnt != 2)"
 }
 
 send_user "\nDetermine the node and partition current CpuBind configuration\n"

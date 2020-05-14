@@ -79,7 +79,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -87,28 +87,25 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job did not complete"
 }
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
+	fail "No output file"
 }
 set task_count 0
 set node_count 0
 spawn $bin_cat $file_out
 expect {
 	-re "slurm_allocation_lookup" {
-		send_user "\nFAILURE: Couldn't look up the job correctly\n\n\n"
+		log_error "Couldn't look up the job correctly"
 		set exit_code 1
 	}
 	-re "No such file or directory" {
-		send_user "\nFAILURE: For some reason the resize script wasn't found\n\n\n"
+		log_error "For some reason the resize script wasn't found"
 		set exit_code 1
 	}
 	-re "($number): *uid=" {
@@ -125,11 +122,11 @@ expect {
 }
 set task_target [expr $node_cnt + 1]
 if {$task_count != $task_target} {
-	send_user "\nFAILURE: Invalid task count ($task_count != $task_target)\n\n\n"
+	log_error "Invalid task count ($task_count != $task_target)"
 	set exit_code 1
 }
 if {$node_count != 1} {
-	send_user "\nFAILURE: Invalid node count ($node_count != 1)\n\n\n"
+	log_error "Invalid node count ($node_count != 1)"
 	set exit_code 1
 }
 if {$exit_code == 0} {
@@ -137,8 +134,7 @@ if {$exit_code == 0} {
 }
 
 if {[wait_for_file $file_out2] != 0} {
-	send_user "\nFAILURE: no output file2\n"
-	exit 1
+	fail "No output file2"
 }
 set node_count 0
 spawn $bin_cat $file_out2
@@ -152,7 +148,7 @@ expect {
 	}
 }
 if {$node_count != 3} {
-	send_user "\nFAILURE: Invalid node count ($node_count != 3)\n"
+	log_error "Invalid node count ($node_count != 3)"
 	set exit_code 1
 }
 

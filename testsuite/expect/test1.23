@@ -57,7 +57,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -67,11 +67,11 @@ expect {
 }
 
 if {[string compare $this_date ""] != 0} {
-	send_user "\nFAILURE: job ran with invalid mincpus option\n"
+	log_error "Job ran with invalid mincpus option"
 	set exit_code   1
 }
 if {$err_msg != 1} {
-	send_user "\nFAILURE: job failed to report required error\n"
+	log_error "Job failed to report required error"
 	set exit_code   1
 }
 
@@ -92,7 +92,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -102,7 +102,7 @@ expect {
 }
 
 if {[string compare $this_date ""] == 0} {
-	send_user "\nFAILURE: job failed with valid mincpus option\n"
+	log_error "Job failed with valid mincpus option"
 	set exit_code   1
 }
 
@@ -124,7 +124,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -134,11 +134,11 @@ expect {
 }
 
 if {[string compare $this_date ""] != 0} {
-	send_user "\nFAILURE: job ran with invalid mem option\n"
+	log_error "Job ran with invalid mem option"
 	set exit_code   1
 }
 if {$err_msg != 1} {
-	send_user "\nFAILURE: job failed to report required error\n"
+	log_error "Job failed to report required error"
 	set exit_code   1
 }
 
@@ -169,7 +169,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -179,7 +179,7 @@ expect {
 }
 
 if {$err_msg == 0 && [string compare $this_date ""] == 0} {
-	send_user "\nFAILURE: job failed with valid mem option\n"
+	log_error "Job failed with valid mem option"
 	set exit_code   1
 }
 
@@ -201,7 +201,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -211,11 +211,11 @@ expect {
 }
 
 if {[string compare $this_date ""] != 0} {
-	send_user "\nFAILURE: job ran with invalid tmp option\n"
+	log_error "Job ran with invalid tmp option"
 	set exit_code   1
 }
 if {$err_msg != 1} {
-	send_user "\nFAILURE: job failed to report required error\n"
+	log_error "Job failed to report required error"
 	set exit_code   1
 }
 
@@ -236,7 +236,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -246,7 +246,7 @@ expect {
 }
 
 if {[string compare $this_date ""] == 0} {
-	send_user "\nFAILURE: job failed with valid tmp option\n"
+	log_error "Job failed with valid tmp option"
 	set exit_code   1
 }
 

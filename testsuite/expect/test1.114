@@ -47,7 +47,7 @@ proc run_spread_job { task_cnt } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $sun_pid
 			set exit_code 1
 		}
@@ -56,12 +56,11 @@ proc run_spread_job { task_cnt } {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: srun job ID not found\n"
-		exit 1
+		fail "Srun job ID not found"
 	}
 
 	if {[wait_for_job $job_id "DONE"] != 0} {
-		send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+		log_error "Error waiting for job $job_id to complete"
 		cancel_job $job_id
 		set exit_code 1
 	}
@@ -75,7 +74,7 @@ proc run_spread_job { task_cnt } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -83,7 +82,7 @@ proc run_spread_job { task_cnt } {
 		}
 	}
 	if {$num_nodes != $task_cnt} {
-		send_user "\nFAILURE: Invalid node count for job $job_id ($num_nodes != $task_cnt)\n"
+		log_error "Invalid node count for job $job_id ($num_nodes != $task_cnt)"
 		set exit_code 1
 	}
 }
@@ -103,7 +102,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {

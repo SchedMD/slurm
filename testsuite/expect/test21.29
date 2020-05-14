@@ -112,6 +112,5 @@ set exit_code [check_qos_limits $qos_name [array get qos]]
 incr exit_code [remove_qos "$qos_name"]
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

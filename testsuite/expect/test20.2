@@ -63,7 +63,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -71,8 +71,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: qsub failed to submit job\n"
-	exit 1
+	fail "qsub failed to submit job"
 }
 
 set matches 0
@@ -83,7 +82,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qstat not responding\n"
+		log_error "qstat not responding"
 		set exit_code 1
 	}
 	eof {
@@ -91,7 +90,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: qstat failed to report job\n"
+	log_error "qstat failed to report job"
 	set exit_code 1
 }
 catch {exec $qdel $job_id}

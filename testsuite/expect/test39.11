@@ -46,8 +46,7 @@ if {[test_cons_tres]} {
 
 set craynetwork_count [get_craynetwork_count]
 if {$craynetwork_count < 0} {
-	send_user "\nFAILURE: Error getting craynetwork GRES count\n"
-	exit 1
+	fail "Error getting craynetwork GRES count"
 }
 if {$craynetwork_count < 1} {
 	send_user "\nWARNING: This test requires 1 or more craynetwork GRES in the default partition\n"
@@ -84,7 +83,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -93,7 +92,7 @@ expect {
 	}
 }
 if {$match != $gres_target} {
-	send_user "\nFAILURE: srun --gres failure ($match != $gres_target)\n"
+	log_error "srun --gres failure ($match != $gres_target)"
 	set exit_code 1
 }
 
@@ -124,7 +123,7 @@ if {0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -133,11 +132,11 @@ if {0} {
 		}
 	}
 	if {$node_cnt != $node_target} {
-		send_user "\nFAILURE: srun node count failure ($node_cnt != $node_target)\n"
+		log_error "srun node count failure ($node_cnt != $node_target)"
 		set exit_code 1
 	}
 	if {$match != $gres_target} {
-		send_user "\nFAILURE: srun --gres-per-job failure ($match != $gres_target)\n"
+		log_error "srun --gres-per-job failure ($match != $gres_target)"
 		set exit_code 1
 	}
 }

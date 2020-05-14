@@ -58,7 +58,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -67,8 +67,7 @@ expect {
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --job-name=job.$test_id -t1 $file_in]
@@ -78,7 +77,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -87,16 +86,14 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
 	cancel_job $job_id1
-	exit 1
+	fail "Batch submit failure"
 }
 exec $bin_rm -f $file_in
 
 if {[wait_for_job $job_id2 RUNNING] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id2 to run\n"
 	cancel_job $job_id1
-	exit 1
+	fail "Error waiting for job $job_id2 to run"
 }
 
 #
@@ -112,12 +109,12 @@ expect {
 	}
 	-re "Cancel job_id=($number).*\? " {
 		send "n\r"
-		send_user "\nFAILURE: scancel job id mis-match ($expect_out(1,string) != $job_id2)\n"
+		log_error "scancel job id mis-match ($expect_out(1,string) != $job_id2)"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -125,7 +122,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scancel name or state filter failed\n"
+	log_error "scancel name or state filter failed"
 	cancel_job $job_id1
 	set exit_code 1
 }
@@ -140,12 +137,12 @@ expect {
 	}
 	-re "Cancel job_id=($number).*\? " {
 		send "n\r"
-		send_user "\nFAILURE: scancel job id mis-match ($expect_out(1,string) != $job_id1)\n"
+		log_error "scancel job id mis-match ($expect_out(1,string) != $job_id1)"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -153,11 +150,10 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scancel name or state filter failed\n"
+	log_error "scancel name or state filter failed"
 	set exit_code 1
 }
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

@@ -57,11 +57,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -81,7 +80,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -94,7 +93,7 @@ expect {
 }
 # Confirm the job's partition
 if {$job_id == 0} {
-	send_user "\nFAILURE: job submit failure\n"
+	log_error "Job submit failure"
 	set exit_code 1
 } else {
 	set read_part ""
@@ -105,7 +104,7 @@ if {$job_id == 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -113,7 +112,7 @@ if {$job_id == 0} {
 		}
 	}
 	if ([string compare $read_part $def_part_name]) {
-		send_user "\nFAILURE: Improper partition selected\n"
+		log_error "Improper partition selected"
 		set exit_code 1
 	}
 	cancel_job $job_id
@@ -145,7 +144,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -160,7 +159,7 @@ expect {
 if {$legit_failure == 1} {
 	send_user "\nWARNING: partition '$other_part_name' is not usable\n"
 } elseif {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
+	log_error "Batch submit failure"
 	set exit_code 1
 } else {
 	set read_part ""
@@ -171,7 +170,7 @@ if {$legit_failure == 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -179,7 +178,7 @@ if {$legit_failure == 1} {
 		}
 	}
 	if ([string compare $read_part $other_part_name]) {
-		send_user "\nFAILURE: Improper partition selected\n"
+		log_error "Improper partition selected"
 		set exit_code 1
 	}
 	cancel_job $job_id

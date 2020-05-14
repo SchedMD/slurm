@@ -69,18 +69,17 @@ for {set inx 0} {$inx < $task_cnt} {incr inx} {
 			incr success_cnt
 		}
 		timeout {
-			send_user "\nFAILURE: Timeout on task $inx\n"
+			log_error "Timeout on task $inx"
 		}
 		eof {
 			wait
-			send_user "\nFAILURE: EOF on task $inx\n"
+			log_error "EOF on task $inx"
 		}
 	}
 }
 
 if {$success_cnt != $task_cnt} {
-	send_user "\nFAILURE: Only $success_cnt of $task_cnt tests passed\n"
-	set exit_code 1
+	fail "Only $success_cnt of $task_cnt tests passed"
 }
 
 exit $exit_code

@@ -57,7 +57,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set matches -999
 		slow_kill $srun_pid
 		set exit_code 1
@@ -68,7 +68,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: srun failed to process SIGINT while waiting for allocation\n"
+	log_error "srun failed to process SIGINT while waiting for allocation"
 	set exit_code 1
 }
 

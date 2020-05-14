@@ -87,7 +87,7 @@ expect {
 	}
 
 	timeout {
-		send_user "\nFAILURE: smap not responding\n"
+		log_error "smap not responding"
 		set exit_code 1
 	}
 	eof {
@@ -100,7 +100,7 @@ if {$too_small != 0} {
 	exit 0
 }
 if {$matches != 6} {
-	send_user "\nFAILURE: smap slurm partition display in curses mode ($matches of 6)\n"
+	log_error "smap slurm partition display in curses mode ($matches of 6)"
 	set exit_code 1
 }
 

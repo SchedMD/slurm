@@ -67,7 +67,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -128,13 +128,13 @@ expect {
 		exp_continue
 	}
 	-re "FINI" {
-		send_user "\nFAILURE: job time limit not honored\n"
+		log_error "Job time limit not honored"
 		exec date
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -165,7 +165,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -177,7 +177,7 @@ expect {
 	}
 }
 if {$completions != 1} {
-	send_user "\nFAILURE: job failed to complete properly ($completions)\n"
+	log_error "Job failed to complete properly ($completions)"
 	set exit_code 1
 }
 

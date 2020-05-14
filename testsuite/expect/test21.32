@@ -64,7 +64,7 @@ proc reset_qos { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -73,8 +73,7 @@ proc reset_qos { } {
 	}
 
 	if {$removed != 1} {
-		send_user "\nFAILURE: qos $qos_test(0)\'s preempt qos were not "
-		send_user "removed\n"
+		log_error "qos $qos_test(0)\'s preempt qos were not removed"
 		set exit_code 1
 	}
 
@@ -92,7 +91,7 @@ proc _local_mod_qos { preempt_qos } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -101,7 +100,7 @@ proc _local_mod_qos { preempt_qos } {
 	}
 
 	if {$mod != 1} {
-		send_user "\nFAILURE: QoS $qos_test(0) was not modified\n"
+		log_error "QoS $qos_test(0) was not modified"
 		set exit_code 1
 	}
 }
@@ -118,7 +117,7 @@ proc check_pre { preempt_qos } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -127,7 +126,7 @@ proc check_pre { preempt_qos } {
 	}
 
 	if {$match != 1} {
-		send_user "\nFAILURE: preempted QoS do not match what is expected\n"
+		log_error "preempted QoS do not match what is expected"
 		set exit_code 1
 	}
 }
@@ -158,8 +157,7 @@ if {$access_err != 0} {
 add_qos $qos_names_str ""
 if { $exit_code } {
 	remove_qos $qos_names_str
-	send_user "\nFAILURE\n"
-	exit $exit_code
+	fail "Unable to add QOS ($qos_names_str)"
 }
 
 # Add a preempt qos with =
@@ -202,5 +200,5 @@ check_pre " "
 remove_qos $qos_names_str
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }

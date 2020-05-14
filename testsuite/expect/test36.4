@@ -59,7 +59,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: bsub not responding\n"
+		log_error "bsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -67,14 +67,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: bsub failed to submit job\n"
-	exit 1
+	fail "bsub failed to submit job"
 }
 
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: bsub output file not found\n"
 	catch {exec $bkill $job_id}
-	exit 1
+	fail "bsub output file not found"
 }
 set matches 0
 spawn $bin_cat $file_out
@@ -88,14 +86,13 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: unexpected bsub output file contents\n"
+	log_error "Unexpected bsub output file contents"
 	set exit_code 1
 }
 
 if {[wait_for_file $file_err] != 0} {
-	send_user "\nFAILURE: bsub error file not found\n"
 	catch {exec $qdel $job_id}
-	exit 1
+	fail "bsub error file not found"
 }
 set matches 0
 spawn $bin_cat $file_err
@@ -110,7 +107,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: unexpected bsub error file contents\n"
+	log_error "Unexpected bsub error file contents"
 	set exit_code 1
 }
 

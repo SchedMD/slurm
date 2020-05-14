@@ -93,7 +93,7 @@ expect {
 		} elseif {$expect_out(1,string) == 2 && $expect_out(2,string) == 2} {
 			incr matches
 		} else {
-			send_user "\nFAILURE: Invalid output ($expect_out(1,string): FILE$expect_out(2,string))\n"
+			log_error "Invalid output ($expect_out(1,string): FILE$expect_out(2,string))"
 			set exit_code 1
 		}
 		exp_continue
@@ -107,11 +107,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: error submitting job\n"
+	log_error "Error submitting job"
 	end_it 1
 }
 if {$matches != 4} {
-	send_user "\nFAILURE: Invalid output ($matches != 4)\n"
+	log_error "Invalid output ($matches != 4)"
 	end_it 1
 }
 end_it $exit_code

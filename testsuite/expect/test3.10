@@ -59,13 +59,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: waiting for job to start\n"
 	cancel_job $job_id
-	exit 1
+	fail "Waiting for job to start"
 }
 # Add delay to make sure job step fully starts
 exec $bin_sleep 2
@@ -106,7 +104,7 @@ if {[wait_for_file $file_err] == 0} {
 		}
 	}
 	if {$got_message != 1} {
-		send_user "\nFAILURE: message not received\n"
+		log_error "Message not received"
 		set exit_code 1
 	}
 } else {
@@ -131,14 +129,12 @@ expect {
 		set job_id $expect_out(1,string)
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun not responding"
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: srun failed to create job\n"
-	exit 1
+	fail "srun failed to create job"
 }
 
 #
@@ -171,16 +167,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: notification not received by srun\n"
+	log_error "Notification not received by srun"
 	set exit_code 1
 }
 

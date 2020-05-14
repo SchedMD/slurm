@@ -61,7 +61,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not reponding\n"
+		log_error "sbatch is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -69,8 +69,7 @@ expect {
 	}
 }
 if {$slow_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 # Submit job 2 of 3
@@ -85,7 +84,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not reponding\n"
+		log_error "sbatch is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -93,8 +92,7 @@ expect {
 	}
 }
 if {$fast_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 # Submit dependency job, 3 of 3
@@ -105,7 +103,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not reponding\n"
+		log_error "sbatch is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -113,8 +111,7 @@ expect {
 	}
 }
 if {$dep_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 # Check that dependent job is pending
@@ -126,7 +123,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue is not reponding\n"
+		log_error "squeue is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -134,21 +131,20 @@ expect {
 	}
 }
 if {$match == 0} {
-	send_user "\nFAILURE: job $dep_id is in the wrong state should be "
-	send_user "state PENDING and have REASON Dependency\n"
+	log_error "Job $dep_id is in the wrong state should be state PENDING and have REASON Dependency"
 	set exit_code 1
 }
 
 # Wait for the fast job to finish after submitting dependent job
 if {[wait_for_job $fast_id "DONE"] != 0} {
-	send_user "\nFAILURE: error waiting for job $fast_id to complete\n"
+	log_error "Error waiting for job $fast_id to complete"
 	set exit_code 1
 	cancel_job $fast_id
 }
 
 # Wait for dependency job to start once the fast job is complete
 if {[wait_for_job $dep_id RUNNING]} {
-	send_user "\nFAILURE: job $dep_id should be running\n"
+	log_error "Job $dep_id should be running"
 	set exit_code 1
 }
 

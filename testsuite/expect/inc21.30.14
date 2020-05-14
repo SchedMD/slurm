@@ -43,11 +43,11 @@ proc inc21_30_14 { wait_reason } {
 			send_user "\nJob $job_id has been submitted\n"
 		}
 		-re "error" {
-			send_user "\nFAILURE: Job allocation should not have failed. (Within: inc21.30.14)\n"
+			log_error "Job allocation should not have failed. (Within: inc21.30.14)"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not responding (Within: inc21.30.14)\n"
+			log_error "salloc is not responding (Within: inc21.30.14)"
 			set exit_code 1
 		}
 		eof {
@@ -66,11 +66,11 @@ proc inc21_30_14 { wait_reason } {
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			send_user "\nFAILURE: job $job_id should be pending for resources, but is not (Within: inc21.30.14)\n"
+			log_error "Job $job_id should be pending for resources, but is not (Within: inc21.30.14)"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not responding (Within: inc21.30.14)\n"
+			log_error "salloc is not responding (Within: inc21.30.14)"
 			set exit_code 1
 		}
 		eof {
@@ -79,7 +79,7 @@ proc inc21_30_14 { wait_reason } {
 	}
 
 	if {![check_reason $job_id $wait_reason]} {
-		send_user "\nFAILURE: Bad job wait reason. (Within: inc21.30.14)\n"
+		log_error "Bad job wait reason. (Within: inc21.30.14)"
 		set exit_code 1
 	}
 

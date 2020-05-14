@@ -64,8 +64,7 @@ if {$nb_nodes < 2} {
 }
 set mps_cnt [get_mps_count $nb_nodes]
 if {$mps_cnt < 0} {
-	send_user "\nFAILURE: Error getting MPS count\n"
-	exit 1
+	fail "Error getting MPS count"
 }
 if {$mps_cnt < 100} {
 	send_user "\nWARNING: This test requires 100 or more MPS per node in the default partition\n"
@@ -105,7 +104,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -113,13 +112,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job 1 not submitted\n"
-	exit 1
+	fail "Job 1 not submitted"
 }
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job did not complete"
 }
 
 #
@@ -127,8 +124,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 send_user "\n\nParse job 1 output\n"
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
+	fail "No output file"
 }
 set match 0
 set percentage -1
@@ -144,7 +140,7 @@ expect {
 	}
 }
 if {$match != 3} {
-	send_user "\nFAILURE: bad CUDA information about job 1 ($match != 3)\n"
+	log_error "Bad CUDA information about job 1 ($match != 3)"
 	set exit_code 1
 }
 
@@ -173,7 +169,7 @@ if {$exit_code == 0 && $constrain_devices == 0} {
 	if {$count > 0} {
 		set count [expr 10 * 100 / $count]
 		if {$percentage != $count} {
-			send_user "\nFAILURE: Bad CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value ($percentage != $count)\n"
+			log_error "Bad CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value ($percentage != $count)"
 			set exit_code 1
 		} else {
 			send_user "\n CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value is good\n"

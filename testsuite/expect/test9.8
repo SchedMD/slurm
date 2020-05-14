@@ -91,11 +91,11 @@ for {set inx 0} {$inx < $job_cnt} {incr inx} {
 			exp_continue
 		}
 		-re "Unable to contact" {
-			send_user "\nFAILURE: slurm appears to be down\n"
+			log_error "Slurm appears to be down"
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			slow_kill $sbatch_pid
 			set exit_code 1
 		}
@@ -105,7 +105,7 @@ for {set inx 0} {$inx < $job_cnt} {incr inx} {
 	}
 }
 if {$start_cnt < $job_cnt} {
-	send_user "\nFAILURE: $job_cnt of $start_cnt jobs submitted\n"
+	log_error "$job_cnt of $start_cnt jobs submitted"
 	set exit_code 1
 } else {
 	send_user "\nAll $start_cnt jobs submitted\n"
@@ -138,7 +138,7 @@ while { 1 } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue not responding\n"
+			log_error "squeue not responding"
 			set exit_code 1
 		}
 		eof {
@@ -154,12 +154,12 @@ while { 1 } {
 			exp_continue
 		}
 		-re "error:" {
-			send_user "\nFAILURE: squeue error\n"
+			log_error "squeue error"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue not responding\n"
+			log_error "squeue not responding"
 			set exit_code 1
 		}
 		eof {
@@ -179,8 +179,7 @@ while { 1 } {
 
 log_user 1
 if {$step_count < $desired_tasks} {
-	send_user "\nFAILURE: only started $job_count jobs and $step_count steps\n"
-	send_user "  We expected at least $desired_tasks and possibly hundreds\n"
+	log_error "Only started $job_count jobs and $step_count steps. We expected at least $desired_tasks and possibly hundreds"
 	set exit_code 1
 } else {
 	send_user "\nWe found $job_count jobs and $step_count steps\n"
@@ -216,13 +215,13 @@ expect {
 }
 #
 # The following logic handles the scancel request failing
-# due to a very busy system (reports FAILURE above)
+# due to a very busy system (reports failure above)
 #
 # Increasing the MessageTimeout configuration parameter
 # should fix this problem.
 #
 if {$running_jobs != 0} {
-	send_user "\nFAILURE: jobs not all cancelled\n"
+	log_error "Jobs not all cancelled"
 	set exit_code 1
 
 	spawn $scancel --quiet --user $user_name
@@ -248,7 +247,7 @@ if {$completing_jobs != 0} {
 		}
 	}
 	if {$completing_jobs != 0} {
-		send_user "\nFAILURE: jobs not completing\n"
+		log_error "Jobs not completing"
 		set exit_code 1
 	}
 }
@@ -270,7 +269,7 @@ if {$completing_jobs != 0} {
 	}
 }
 if {$completing_jobs != 0} {
-	send_user "\nFAILURE: Jobs not completing. Subsequent tests may fail!\n"
+	log_error "Jobs not completing. Subsequent tests may fail!"
 }
 
 if {$exit_code == 0} {

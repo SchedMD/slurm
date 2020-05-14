@@ -129,7 +129,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -138,15 +138,14 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	fail "Failed to submit job"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	set exit_code 1
 }
 
@@ -154,7 +153,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Check for desired output
 #
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: waiting for output file\n"
+	log_error "Waiting for output file"
 	set exit_code 1
 } else {
 	set counter 0
@@ -169,7 +168,7 @@ if {[wait_for_file $file_out] != 0} {
 		}
 	}
 	if {$counter != 150} {
-		send_user "\nFAILURE: output file incomplete ($counter != 5)\n"
+		log_error "Output file incomplete ($counter != 5)"
 		set exit_code 1
 	}
 }

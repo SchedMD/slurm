@@ -112,7 +112,7 @@ expect {
 }
 
 if { $match != 1 } {
-	log_error "Job $job_id1 did not exit with exit code 0, which could be due to a small configured MinJobAge value\n"
+	log_error "Job $job_id1 did not exit with exit code 0, which could be due to a small configured MinJobAge value"
 	set exit_code 1
 }
 

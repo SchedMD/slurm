@@ -217,7 +217,7 @@ expect {
 	}
 
 	timeout {
-		send_user "\nFAILURE: spawn IO not responding\n"
+		log_error "spawn IO not responding"
 		cancel_job $job_id
 		set exit_code 1
 	}
@@ -227,7 +227,7 @@ expect {
 }
 
 if {$matches != $expected_matches} {
-	send_user "\nFAILURE: we didn't get the correct priorities from the plugin ($matches != $expected_matches)\n"
+	log_error "We didn't get the correct priorities from the plugin ($matches != $expected_matches)"
 	send_user "Some potentially useful information is below:
 * Account aA, aB, and aC are general purpose algorithm tests with various shares, usage values, children counts, and depths
 * Account aD is used to test USE_PARENT. Any account that is USE_PARENT should have its children effectively reparented to the parent's parent. Any user with USE_PARENT should be ranked highest in its account, subject to ties with any other association with level_fs==1.0. uD2 and uD3 do NOT have the same level_fs; sshare doesn't show enough digits to visually distinguish.

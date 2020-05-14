@@ -137,15 +137,15 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list account account=$ta1,$ta2,$ta3 format="Account,Description,Organization"]
 expect {
 	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "($ta1|$ta2|$ta3).$acct_mod_acct_vals(description).$acct_mod_acct_vals(organization)." {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -154,7 +154,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	send_user "\nFAILURE:  Account modification 1 incorrect with only $matches.\n"
+	log_error "Account modification 1 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -173,15 +173,15 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list associations account=$ta1,$ta2,$ta3 format="Account,Cluster,Fairshare,MaxCPUM,MaxJobs,MaxNodes,MaxWall"]
 expect {
 	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "($ta1.($tc1|$tc2).$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|($ta2|$ta3).($tc1|$tc2).1)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -191,7 +191,7 @@ expect {
 }
 
 if {$matches != 6} {
-	send_user "\nFAILURE:  Account modification 2 incorrect with only $matches.\n"
+	log_error "Account modification 2 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -210,8 +210,8 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -n -p list account withassoc account=$ta1,$ta2,$ta3 format="Account,Description,Organization,Cluster,Fairshare,MaxCPUM,MaxJobs,MaxNodes,MaxWall"]
 expect {
 	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	# Any time you use () around something you need to combine all
 	# those things together since you can miss some and they be thrown away
@@ -220,7 +220,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -230,7 +230,7 @@ expect {
 }
 
 if {$matches != 6} {
-	send_user "\nFAILURE:  Account modification 6 incorrect with $matches.\n"
+	log_error "Account modification 6 incorrect with $matches"
 	incr exit_code 1
 }
 
@@ -241,6 +241,5 @@ incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
 incr exit_code [remove_cluster "$tc1,$tc2"]
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

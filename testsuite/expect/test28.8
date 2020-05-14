@@ -71,12 +71,12 @@ proc suspend_job { job_id operation } {
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: scontrol error\n"
+			log_error "scontrol error"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -101,7 +101,7 @@ proc check_output { file_name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: cat not responding\n"
+			log_error "cat not responding"
 			set exit_code 1
 		}
 		eof {
@@ -110,11 +110,11 @@ proc check_output { file_name } {
 	}
 
 	if { $match1 == 0 } {
-		send_user "\nFAILURE: job never suspended\n"
+		log_error "Job never suspended"
 		set exit_code 1
 	}
 	if { $match2 == 0 } {
-		send_user "\nFAILURE: job failed to run to completion\n"
+		log_error "Job failed to run to completion"
 		set exit_code 1
 	}
 }
@@ -130,11 +130,11 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
+		log_error "sbatch did not submit jobs"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -142,9 +142,8 @@ expect {
 	}
 }
 if {[wait_for_job ${job_id}_1 RUNNING] != 0} {
-	send_user "\nFAILURE: error starting job ${job_id}_1\n"
 	cancel_job $job_id
-	exit 1
+	fail "Error starting job ${job_id}_1"
 }
 
 sleep 5
@@ -157,16 +156,14 @@ if {$not_supported == 1} {
 
 
 if {[wait_for_job ${job_id}_1 SUSPENDED] != 0} {
-	send_user "\nFAILURE: error suspending job $job_id\n"
 	cancel_job $job_id
-	exit 1
+	fail "Error suspending job $job_id"
 }
 
 suspend_job $job_id resume
 if {[wait_for_job ${job_id}_1 RUNNING] != 0} {
-	send_user "\nFAILURE: error resuming job $job_id\n"
 	cancel_job $job_id
-	exit 1
+	fail "Error resuming job $job_id"
 }
 cancel_job $job_id
 

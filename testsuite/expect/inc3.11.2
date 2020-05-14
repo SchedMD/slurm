@@ -38,8 +38,7 @@ proc inc3_11_2 {} {
 	send_user "\n+++++ STARTING TEST 2 (Within inc3.11.2) +++++\n"
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
 	if {$ret_code != 0} {
-		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation  (Within inc3.11.2)\033\[m\n"
-		exit $ret_code
+		fail "Unable to create a valid reservation (Within inc3.11.2)"
 	}
 
 	set goodupdates "
@@ -60,7 +59,7 @@ proc inc3_11_2 {} {
 	foreach test $goodupdates {
 		set ret_code [update_res $res_name $test 0]
 		if {$ret_code != 0} {
-			send_user "\n\033\[31mFAILURE: Unable to update a valid reservation  (Within inc3.11.2)\033\[m\n"
+			log_error "Unable to update a valid reservation  (Within inc3.11.2)"
 			set exit_code 1
 			break
 		} else {
@@ -71,7 +70,6 @@ proc inc3_11_2 {} {
 
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
-		send_user "\n\033\[31mFAILURE: Unable to delete a reservation (Within: inc3.11.2)\033\[m\n"
-		exit $ret_code
+		fail "Unable to delete a reservation (Within: inc3.11.2)"
 	}
 }

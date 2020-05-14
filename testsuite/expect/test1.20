@@ -45,17 +45,17 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun --output=none -t1 $bin_id]
 expect {
 	-re "uid=" {
-		send_user "\nFAILURE: srun improperly forwarded stdout\n"
+		log_error "srun improperly forwarded stdout"
 		set exit_code 1
 		exp_continue
 	}
 	-re "groups=" {
-		send_user "\nFAILURE: srun improperly forwarded stdout\n"
+		log_error "srun improperly forwarded stdout"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -71,7 +71,7 @@ set matches 0
 set srun_pid [spawn $srun --error=none -t1 $bin_sleep aaa]
 expect {
 	-re "invalid" {
-		send_user "\nFAILURE: srun improperly forwarded stderr\n"
+		log_error "srun improperly forwarded stderr"
 		set exit_code 1
 		exp_continue
 	}
@@ -81,7 +81,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -91,7 +91,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: srun exit code does not indicate error\n"
+	log_error "srun exit code does not indicate error"
 	set exit_code 1
 }
 

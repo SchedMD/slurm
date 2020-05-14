@@ -64,12 +64,12 @@ proc endit { } {
 	cleanup
 
 	if {$exit_code != 0} {
-		send_user "\nFAILURE\n"
+		fail "Test failed due to previous errors"
 	}
 
 	exec $bin_rm -f $sql_query $sql_query_rem
 
-	exit $exit_code
+	pass
 }
 
 
@@ -145,7 +145,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		endit
 	}
 	eof {
@@ -154,8 +154,7 @@ expect {
 }
 
 if {$list_job != 1} {
-	send_user "\nFAILURE: sacctmgr did not find any runaway jobs when "
-	send_user "it should have\n"
+	log_error "sacctmgr did not find any runaway jobs when it should have"
 	endit
 }
 
@@ -168,7 +167,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		endit
 	}
 	eof {
@@ -177,8 +176,7 @@ expect {
 }
 
 if {$list_job != 1} {
-	send_user "\nFAILURE: sacctmgr found runaway jobs when "
-	send_user "it should not have\n"
+	log_error "sacctmgr found runaway jobs when it should not have"
 	endit
 }
 

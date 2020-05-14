@@ -53,7 +53,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -62,7 +62,7 @@ expect {
 }
 
 if {$matches == 0} {
-	send_user "\nFAILURE: sinfo format error\n"
+	log_error "sinfo format error"
 	set exit_code 1
 }
 
@@ -79,7 +79,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -89,7 +89,7 @@ expect {
 unset env(SINFO_FORMAT)
 
 if {$matches == 0} {
-	send_user "\nFAILURE: sinfo format error\n"
+	log_error "sinfo format error"
 	set exit_code 1
 }
 

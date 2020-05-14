@@ -62,7 +62,7 @@ proc clean_up { } {
 	spawn $scontrol update node=$test_node state=idle
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not respinding\n"
+			log_error "scontrol is not respinding"
 			set exit_code 1
 		}
 		eof {
@@ -110,7 +110,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -118,7 +118,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
+	log_error "sbatch did not submit job"
 	set exit_code 1
 }
 if {$exit_code} {
@@ -154,7 +154,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -165,9 +165,7 @@ if {$job_id == 0} {
 	set exit_code 1
 }
 if {$exit_code} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	clean_up
-	exit $exit_code
+	fail "sbatch did not submit job"
 }
 
 # Check that the job is held due to the failed prolog or JobHeldAdmin
@@ -193,7 +191,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not repsonding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -202,8 +200,7 @@ expect {
 }
 
 if {$match == 0} {
-	send_user "\nFAILURE: node $test_node was not drained when "
-	send_user "it should be\n"
+	log_error "Node $test_node was not drained when it should be"
 	set exit_code 1
 }
 
@@ -211,7 +208,7 @@ cancel_job $job_id
 
 if {$exit_code} {
 	clean_up
-	exit $exit_code;
+	exit $exit_code
 }
 log_info "RESUMING NODE"
 spawn $scontrol update node=$test_node state=RESUME

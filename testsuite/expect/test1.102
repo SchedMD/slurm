@@ -52,12 +52,10 @@ expect {
 		exp_continue
 	}
 	-re "Completed" {
-		send_user "\nFAILURE: srun is OK with a deadline too old\n"
-		set exit_code 1
-		exit 1
+		fail "srun is OK with a deadline too old"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {

@@ -92,7 +92,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sshare not responding\n"
+				log_error "sshare not responding"
 				set exit_code 1
 			}
 			eof {
@@ -131,7 +131,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sshare not responding\n"
+				log_error "sshare not responding"
 				set exit_code 1
 			}
 			eof {
@@ -175,7 +175,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sshare not responding\n"
+				log_error "sshare not responding"
 				set exit_code 1
 			}
 			eof {
@@ -214,7 +214,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sshare not responding\n"
+				log_error "sshare not responding"
 				set exit_code 1
 			}
 			eof {
@@ -258,7 +258,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sshare not responding\n"
+				log_error "sshare not responding"
 				set exit_code 1
 			}
 			eof {
@@ -298,7 +298,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sshare not responding\n"
+				log_error "sshare not responding"
 				set exit_code 1
 			}
 			eof {
@@ -324,78 +324,77 @@ proc sshare_opt { soption } {
 
 set matches [sshare_opt -help ]
 if {$matches != 3} {
-	send_user "\nFAILURE: sshare --help failed ($matches != 3)\n"
+	log_error "sshare --help failed ($matches != 3)"
 	set exit_code 1
 }
 
 set matches [sshare_opt -usage ]
 if {$matches != 3} {
-	send_user "\nFAILURE: sshare --usage failed ($matches != 3)\n"
+	log_error "sshare --usage failed ($matches != 3)"
 	set exit_code 1
 }
 
 set matches [sshare_opt n ]
 if {$matches != 0} {
-	send_user "\nFAILURE: sshare -n failed ($matches != 0)\n"
+	log_error "sshare -n failed ($matches != 0)"
 	set exit_code 1
 }
 
 set matches [sshare_opt -noheader ]
 if {$matches != 0} {
-	send_user "\nFAILURE: sshare --noheader failed ($matches != 0)\n"
+	log_error "sshare --noheader failed ($matches != 0)"
 	set exit_code 1
 }
 
 set matches [sshare_opt p ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sshare -p failed ($matches != 2)\n"
+	log_error "sshare -p failed ($matches != 2)"
 	set exit_code 1
 }
 
 set matches [sshare_opt -parsable ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sshare --parsable failed ($matches != 2)\n"
+	log_error "sshare --parsable failed ($matches != 2)"
 	set exit_code 1
 }
 
 set matches [sshare_opt P ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sshare -P failed ($matches != 2)\n"
+	log_error "sshare -P failed ($matches != 2)"
 	set exit_code 1
 }
 
 set matches [sshare_opt -parsable2 ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sshare --parsable2 failed ($matches != 2)\n"
+	log_error "sshare --parsable2 failed ($matches != 2)"
 	set exit_code 1
 }
 
 set matches [sshare_opt v ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sshare -v failed ($matches != 2)\n"
+	log_error "sshare -v failed ($matches != 2)"
 	set exit_code 1
 }
 
 set matches [sshare_opt -verbose ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sshare --verbose failed ($matches != 2)\n"
+	log_error "sshare --verbose failed ($matches != 2)"
 	set exit_code 1
 }
 
 
 set matches [sshare_opt V ]
 if {$matches != 1} {
-	send_user "\nFAILURE: sshare -v failed ($matches != 1)\n"
+	log_error "sshare -v failed ($matches != 1)"
 	set exit_code 1
 }
 
 set matches [sshare_opt -version ]
 if {$matches != 1} {
-	send_user "\nFAILURE: sshare --verbose failed ($matches != 1)\n"
+	log_error "sshare --verbose failed ($matches != 1)"
 	set exit_code 1
 }
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

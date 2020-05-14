@@ -73,7 +73,7 @@ proc sub_job { cpu_cnt part } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -82,7 +82,7 @@ proc sub_job { cpu_cnt part } {
 	}
 
 	if {!$job_id} {
-		send_user "\nFAILURE: job was not submitted\n"
+		log_error "Job was not submitted"
 	}
 }
 
@@ -98,7 +98,7 @@ proc check_node_cnt { exp_nodes } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue is not responding\n"
+			log_error "squeue is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -107,7 +107,7 @@ proc check_node_cnt { exp_nodes } {
 	}
 
 	if {!$match} {
-		send_user "\nFAILURE: job did not make proper node estimation, expected = $exp_nodes\n"
+		log_error "Job did not make proper node estimation, expected = $exp_nodes"
 		set exit_code 1
 	}
 }
@@ -119,7 +119,7 @@ proc update_job { job_id part } {
 	spawn $scontrol update jobid=$job_id partition=$part
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -144,7 +144,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -163,7 +163,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -215,7 +215,7 @@ expect {
 
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		exit 1
 	}
 	eof {
@@ -243,7 +243,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -263,7 +263,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -279,17 +279,16 @@ if {$cpu_l_cnt == $cpu_h_cnt} {
 
 	exec $bin_rm -fr $script
 	if {$exit_code != 0} {
-		send_user "\nFAILURE\n"
+		fail "Test failed due to prior errors"
 	}
-	exit $exit_code
+	pass
 }
 
 # Create partition with the smallest node in the system
 spawn $scontrol create partitionname=$test_part nodes=$node_l
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		exit 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -304,8 +303,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE scontrol is not responding\n"
-		exit 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -313,8 +311,7 @@ expect {
 }
 
 if {!$match} {
-	send_user "\nFAILURE: partition $test_part was not created\n"
-	exit 1
+	fail "Partition $test_part was not created"
 }
 
 # Choose a cpu count greater then highest cpu node
@@ -332,8 +329,7 @@ cancel_job $job_id
 spawn $scontrol update partitionname=$test_part nodes=$node_l,$node_m
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		exit 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -353,8 +349,7 @@ cancel_job $job_id
 spawn $scontrol update partitionname=$test_part nodes=$node_l,$node_m,$node_h
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		exit 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -373,7 +368,7 @@ cancel_job $job_id
 spawn $scontrol delete partition=$test_part
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -383,7 +378,5 @@ expect {
 
 exec $bin_rm -fr $script
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-
-exit $exit_code

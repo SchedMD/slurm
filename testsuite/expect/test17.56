@@ -66,7 +66,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -76,13 +76,11 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch job not submitted\n"
-	exit 1
+	fail "Batch job not submitted"
 }
 
 if {[wait_for_job $job_id DONE] != 0} {
-	send_user "\nFAILURE: job failed to run to completion\n"
-	exit 1
+	fail "Job failed to run to completion"
 }
 
 spawn $scontrol show job $job_id
@@ -94,11 +92,11 @@ expect {
 		send_user "\nTimelimit OK\n"
 	}
 	-re "TimeLimit=" {
-		send_user "\nFAILURE : Timelimit not OK with deadline\n"
+		log_error ": Timelimit not OK with deadline"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {

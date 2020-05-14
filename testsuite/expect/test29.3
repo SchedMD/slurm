@@ -42,7 +42,7 @@ proc get_node {job_id} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue is not responding\n"
+			log_error "squeue is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -58,7 +58,7 @@ proc get_node {job_id} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -74,7 +74,7 @@ proc reset_state {node} {
 	spawn $scontrol update NodeName=$node State=RESUME
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -96,7 +96,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -104,7 +104,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
+	log_error "sbatch did not submit job"
 	set exit_code 1
 }
 
@@ -112,7 +112,7 @@ if {$job_id == 0} {
 # Wait for job to start
 #
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-        send_user "\nFAILURE: waiting for job to start\n"
+        log_error "waiting for job to start"
         cancel_job $job_id
         exit 1
 }
@@ -129,7 +129,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: smd is not responding\n"
+		log_error "smd is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -138,7 +138,7 @@ expect {
 }
 
 if {$sub_match != 1} {
-	send_user "\nFAILURE: job $job_id should not be failing\n"
+	log_error "Job $job_id should not be failing"
 	set exit_code 1
 }
 
@@ -153,7 +153,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: smd is not reponding\n"
+		log_error "smd is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -162,7 +162,7 @@ expect {
 }
 
 if {$sub_match != 1} {
-	send_user "\nFAILURE: smd did not drain node\n"
+	log_error "smd did not drain node"
 	set exit_code 1
 }
 
@@ -177,7 +177,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: smd is not responding\n"
+		log_error "smd is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -186,7 +186,7 @@ expect {
 }
 
 if {$sub_match != 1} {
-	send_user "\nFAILURE: Job $job_id should have failed or failing hosts\n"
+	log_error "Job $job_id should have failed or failing hosts"
 	set exit_code 1
 }
 

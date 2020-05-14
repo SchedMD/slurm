@@ -101,7 +101,7 @@ expect {
 		}
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -110,15 +110,14 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 spawn $scontrol update jobid=$job_id nodelist=$host
 set scontrol_id $spawn_id
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -139,7 +138,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -148,7 +147,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: task 0 did not run to completion after other tasks killed\n"
+	log_error "Task 0 did not run to completion after other tasks killed"
 	set exit_code 1
 }
 

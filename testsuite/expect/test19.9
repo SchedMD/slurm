@@ -64,7 +64,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: strigger is not responding\b"
+		log_error "strigger is not responding\b"
 		set exit_code 1
 	}
 	eof {
@@ -78,7 +78,7 @@ if {$permission == 1} {
 	exit $exit_code
 }
 if {$match != 1} {
-	send_user "\nFAILURE: trigger was not set\n"
+	log_error "Trigger was not set"
 	set exit_code 1
 }
 
@@ -91,7 +91,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: strigger is not responding\n"
+		log_error "strigger is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -99,7 +99,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: trigger should not have been set but was\n"
+	log_error "Trigger should not have been set but was"
 	set exit_code 1
 }
 
@@ -107,7 +107,7 @@ set match 0
 spawn $strigger --clear -v --user=$uid
 expect {
 	timeout {
-		send_user "\nFAILURE: strigger is not responding\n"
+		log_error "strigger is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -118,6 +118,5 @@ expect {
 if {$exit_code == 0} {
 	exec $bin_rm -f $trigger_file_out $trigger_file_in
 } else {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

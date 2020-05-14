@@ -53,7 +53,7 @@ expect {
 		}
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -62,7 +62,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol ping output error ($matches != 1)\n"
+	log_error "scontrol ping output error ($matches != 1)"
 	set exit_code 1
 }
 exit $exit_code

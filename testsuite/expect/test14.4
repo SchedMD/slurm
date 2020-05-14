@@ -94,7 +94,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -104,15 +104,14 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete and check output file
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -126,7 +125,7 @@ if {[wait_for_file $file_out] == 0} {
 			exp_continue
 		}
 		-re "$file2 differ" {
-			send_user "\nFAILURE: sbcast failed to overwrite file with --force option\n"
+			log_error "sbcast failed to overwrite file with --force option"
 			set exit_code 1
 			exp_continue
 		}
@@ -136,7 +135,7 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$differ_found == 0} {
-	send_user "\nFAILURE: sbcast overwrote file without --force option\n"
+	log_error "sbcast overwrote file without --force option"
 	set exit_code 1
 }
 

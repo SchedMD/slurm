@@ -48,7 +48,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "FAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -57,11 +57,11 @@ expect {
 	}
 }
 if {$pack_job_id != 0} {
-	send_user "FAILURE: Heterogeneous job array should not be accepted\n"
+	log_error "Heterogeneous job array should not be accepted"
 	cancel_job $pack_job_id
 	set exit_code 1
 } elseif {$matches != 1} {
-	send_user "FAILURE: Heterogeneous job array should not be accepted ($matches != 1)\n"
+	log_error "Heterogeneous job array should not be accepted ($matches != 1)"
 	set exit_code 1
 } else {
 	send_user "\nNo worries. This error is expected\n"

@@ -79,19 +79,19 @@ expect {
 		exp_continue
 	}
 	-re "Received signal" {
-		send_user "\nFAILURE: unexpected signal processed\n"
+		log_error "Unexpected signal processed"
 		set exit_code 1
 		send_user "\nSent SIGTERM\n"
 		exp_continue
 	}
 	-re "WAITING" {
-		send_user "\nFAILURE: job not stopped in debugger mode\n"
+		log_error "Job not stopped in debugger mode"
 		set exit_code 1
 		send_user "\nSent SIGTERM\n"
 		exp_continue
 	}
 	-re "TIME LIMIT" {
-		send_user "\nFAILURE: job not terminated with SIGINT\n"
+		log_error "Job not terminated with SIGINT"
 		set exit_code 1
 		exp_continue
 	}
@@ -104,7 +104,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -114,11 +114,11 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: srun failed to initialize properly ($matches != 1)\n"
+	log_error "srun failed to initialize properly ($matches != 1)"
 	set exit_code 1
 }
 if {$fini_cnt > 0} {
-	send_user "\nFAILURE: srun failed to terminate properly ($fini_cnt > 0)\n"
+	log_error "srun failed to terminate properly ($fini_cnt > 0)"
 	set exit_code 1
 }
 
@@ -145,19 +145,19 @@ expect {
 		exp_continue
 	}
 	-re "Received signal" {
-		send_user "\nFAILURE: unexpected signal processed\n"
+		log_error "Unexpected signal processed"
 		set exit_code 1
 		send_user "\nSent SIGTERM\n"
 		exp_continue
 	}
 	-re "WAITING" {
-		send_user "\nFAILURE: job not stopped in debugger mode\n"
+		log_error "Job not stopped in debugger mode"
 		set exit_code 1
 		send_user "\nSent SIGTERM\n"
 		exp_continue
 	}
 	-re "TIME LIMIT" {
-		send_user "\nFAILURE: job not terminated with SIGINT\n"
+		log_error "Job not terminated with SIGINT"
 		set exit_code 1
 		exp_continue
 	}
@@ -170,7 +170,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -180,11 +180,11 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: srun failed to initialize properly ($matches != 1)\n"
+	log_error "srun failed to initialize properly ($matches != 1)"
 	set exit_code 1
 }
 if {$fini_cnt > 0} {
-	send_user "\nFAILURE: srun failed to terminate properly ($fini_cnt > 0)\n"
+	log_error "srun failed to terminate properly ($fini_cnt > 0)"
 	set exit_code 1
 }
 

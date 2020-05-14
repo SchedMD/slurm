@@ -54,7 +54,7 @@ proc delete_part { } {
 	spawn $scontrol delete partition=$test_part_1
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -65,7 +65,7 @@ proc delete_part { } {
 	spawn $scontrol delete partition=$test_part_2
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -85,7 +85,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -97,7 +97,7 @@ expect {
 spawn $scontrol create partition=$test_part_1 nodes=$test_node
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -108,7 +108,7 @@ expect {
 spawn $scontrol create partition=$test_part_2 nodes=$test_node
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -129,7 +129,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -137,9 +137,8 @@ expect {
 	}
 }
 if {$found != 2} {
-	send_user "\nFAILURE: Test partition was not created ($found != 2)\n"
 	delete_part
-	exit 1
+	fail "Test partition was not created ($found != 2)"
 }
 
 #### Using the Environment Variable ####
@@ -157,7 +156,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -166,7 +165,7 @@ expect {
 }
 
 if {$match != 2 || $found != 2} {
-	send_user "\nFAILURE: partitions do not match (match:$match found:$found != 2)\n"
+	log_error "Partitions do not match (match:$match found:$found != 2)"
 	set exit_code 1
 }
 
@@ -186,7 +185,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -195,7 +194,7 @@ expect {
 }
 
 if {$match != 1} {
-	send_user "\nFAILURE: sinfo -p did not override environment variable ($match != 1)\n"
+	log_error "sinfo -p did not override environment variable ($match != 1)"
 	set exit_code 1
 }
 
@@ -213,7 +212,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -222,7 +221,7 @@ expect {
 }
 
 if {$match != 2 || $found != 2} {
-	send_user "\nFAILURE: sinfo -p did not override env variable (match:$match found:$found != 2)\n"
+	log_error "sinfo -p did not override env variable (match:$match found:$found != 2)"
 	set exit_code 1
 }
 
@@ -238,7 +237,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -247,7 +246,7 @@ expect {
 }
 
 if {$match != 2} {
-	send_user "\nFAILURE: sinfo did not show all partitions ($match != 2)\n"
+	log_error "sinfo did not show all partitions ($match != 2)"
 	set exit_code 1
 }
 
@@ -261,7 +260,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -270,7 +269,7 @@ expect {
 }
 
 if {$match != 1} {
-	send_user "\nFAILURE: sinfo should have produced an error ($match != 1)\n"
+	log_error "sinfo should have produced an error ($match != 1)"
 	set exit_code 1
 }
 
@@ -283,7 +282,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -292,7 +291,7 @@ expect {
 }
 
 if {$match != 1} {
-	send_user "\nFAILURE: sinfo should have produced an error ($match != 1)\n"
+	log_error "sinfo should have produced an error ($match != 1)"
 	set exit_code 1
 }
 

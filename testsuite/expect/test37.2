@@ -100,11 +100,11 @@ proc test_fed_job_id { cname cid} {
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: Job was not submitted\n"
+			log_error "Job was not submitted"
 			incr rc
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			incr rc
 		}
 		eof {
@@ -113,7 +113,7 @@ proc test_fed_job_id { cname cid} {
 	}
 
 	if {$job_id <= $max_local_id} {
-		send_user "\nFAILURE: $cname didn't give back a federation jobid ($job_id)\n"
+		log_error "$cname didn't give back a federation jobid ($job_id)"
 		incr rc
 	}
 
@@ -122,8 +122,7 @@ proc test_fed_job_id { cname cid} {
 
 	send_user "Fed JobID:$job_id Local JobID:$local_id Cluster ID:$clust_id\n"
 	if {!$rc && ($clust_id != $cid)} {
-		send_user "\nFAILURE: jobid($job_id) from $cname didn't give\
-			correct partition id ($part_id != $cid)\n"
+		log_error "Jobid($job_id) from $cname didn't give correct partition id ($part_id != $cid)"
 		incr rc
 	}
 
@@ -148,11 +147,11 @@ proc test_loc_job_id { cname } {
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: Job was not submitted\n"
+			log_error "Job was not submitted"
 			incr rc
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			incr rc
 		}
 		eof {
@@ -161,7 +160,7 @@ proc test_loc_job_id { cname } {
 	}
 
 	if {$job_id > $max_local_id} {
-		send_user "\nFAILURE: $cname didn't give back a non-federation job id\n"
+		log_error "$cname didn't give back a non-federation job id"
 		incr rc
 	}
 	send_user "JobID:$job_id\n"
@@ -181,13 +180,13 @@ if {[test_all_up]} {
 
 # Remove existing setup
 if {[cleanup] != 0} {
-	send_user "\nFAILURE: failed to cleanup\n"
+	log_error "Failed to cleanup"
 	end_it 1
 }
 
 # add clusters to federation
 if {[setup_federation $fed_name]} {
-	send_user "\nFAILURE: failed to setup federation\n"
+	log_error "Failed to setup federation"
 	end_it 1
 }
 
@@ -205,7 +204,7 @@ if {[test_fed_job_id $fedc1 [dict get $clusters($fedc1) id]] ||
 # Verify that after clusters are removed from federation that they give normal
 # job ids again.
 if {[delete_federations $fed_name]} {
-	send_user "\nFAILURE: failed delete federation $fed_name\n"
+	log_error "Failed delete federation $fed_name"
 	end_it 1
 }
 

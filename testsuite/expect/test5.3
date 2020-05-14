@@ -61,7 +61,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
+		log_error "squeue not responding"
 		set exit_code 1
 	}
 	eof {
@@ -70,7 +70,7 @@ expect {
 }
 
 if {$iteration < 3} {
-	send_user "\nFAILURE: squeue iteration error\n"
+	log_error "squeue iteration error"
 	set exit_code 1
 }
 exit $exit_code

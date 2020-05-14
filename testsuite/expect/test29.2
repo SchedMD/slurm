@@ -34,7 +34,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: smd is not responding\n"
+		log_error "smd is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -57,7 +57,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: smd is not responding\n"
+		log_error "smd is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -65,8 +65,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	send_user "\nFAILURE: smd show config failed\n"
-	set exit_code 1
+	fail "smd show config failed"
 }
 
 exit $exit_code

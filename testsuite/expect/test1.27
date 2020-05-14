@@ -93,7 +93,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -109,17 +109,17 @@ foreach {slurm_var check_flag} [array get good_vars] {
 	incr total
 	if {[info exists found_vars($slurm_var)]} {
 		if { $check_flag == 1 && $found_vars($slurm_var) <= 0 } {
-			send_user "FAILURE: Found $slurm_var, but $found_vars($slurm_var) <= 0\n"
+			log_error "Found $slurm_var, but $found_vars($slurm_var) <= 0"
 		} else {
 			incr good
 		}
 	} else {
-		send_user "\nFAILURE: Variable $slurm_var not found\n"
+		log_error "Variable $slurm_var not found"
 	}
 }
 
 if {$good < $total} {
-	send_user "\nFAILURE: Only $good of $total Slurm environment variables set\n"
+	log_error "Only $good of $total Slurm environment variables set"
 	set exit_code 1
 }
 

@@ -152,7 +152,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user names=$tu1,$tu2,$tu3 format="User,DefaultA,Admin" cluster=$tc1]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	        log_error "There was a problem with the sacctmgr command"
 	    	incr exit_code 1
 	}
 	-re "($tu1.$ta2.$user_mod_acct(adminlevel).|($tu2|$tu3).$ta1.$user_mod_acct2(adminlevel).)" {
@@ -160,7 +160,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -170,7 +170,7 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE:  User modification 3 incorrect with only $matches.\n"
+	log_error "User modification 3 incorrect with only $matches"
 	incr exit_code 1
 	exit $exit_code
 }
@@ -193,15 +193,15 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list assoc users=$tu1,$tu2,$tu3 format="User,Cluster,Fairshare,Maxcpum,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "($tu2.($tc1|$tc2|$tc3).$user_mod_assoc2(fairshare).$user_mod_assoc2(maxcpumin).$user_mod_assoc2(maxjob).$user_mod_assoc2(maxnode).$user_mod_assoc2(maxwall).|($tu1|$tu3).($tc1|$tc2|$tc3).1.....)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -211,7 +211,7 @@ expect {
 }
 
 if {$matches != 27} {
-	send_user "\nFAILURE:  User modification 27 incorrect with only $matches.\n"
+	log_error "User modification 27 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -222,7 +222,5 @@ incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
 incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code
-

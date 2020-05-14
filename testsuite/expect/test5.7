@@ -53,11 +53,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
+		log_error "squeue not responding"
 		set exit_code 1
 	}
 	eof {
@@ -66,7 +65,6 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE: squeue failed to process verbose option\n"
-	set exit_code 1
+	fail "squeue failed to process verbose option"
 }
 exit $exit_code

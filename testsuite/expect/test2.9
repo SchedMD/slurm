@@ -44,12 +44,11 @@ print_header $test_id
 spawn $scontrol completing
 expect {
 	-re "invalid keyword" {
-		send_user "\nFAILURE: scontrol did not recognize \'completing\' command\n"
+		log_error "scontrol did not recognize \'completing\' command"
 		set exit_code 1
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	eof {
 		wait

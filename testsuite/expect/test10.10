@@ -118,7 +118,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: smap not responding\n"
+		log_error "smap not responding"
 		set exit_code 1
 	}
 	eof {
@@ -127,7 +127,7 @@ expect {
 }
 
 if {$matches != 0} {
-	send_user "\nFAILURE: smap --noheader produces header ($stuff)\n"
+	log_error "smap --noheader produces header ($stuff)"
 	set exit_code 1
 }
 

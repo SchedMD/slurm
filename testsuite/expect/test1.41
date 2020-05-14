@@ -64,7 +64,7 @@ set node_cnt 1-2
 set srun_pid [spawn $srun -N$node_cnt -n$task_cnt --overcommit --debugger-test -t1 $bin_id]
 expect {
 	-re "uid=" {
-		send_user "\nFAILURE: task not stopped\n"
+		log_error "Task not stopped"
 		set exit_code 1
 		exp_continue
 	}
@@ -77,7 +77,7 @@ expect {
 		exp_continue;
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -91,8 +91,6 @@ if {$timed_out == 1} {
 }
 
 if {$task_cnt != $resp_cnt} {
-	send_user "\nFAILURE: Did not get proper number of tasks: "
-	send_user "$task_cnt, $resp_cnt\n"
-	set exit_code 1
+	fail "Did not get proper number of tasks: $task_cnt, $resp_cnt"
 }
 exit $exit_code

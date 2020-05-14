@@ -69,7 +69,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -77,12 +77,10 @@ expect {
 	}
 }
 if {$found == -1} {
-	send_user "\nFAILURE: scontrol output format error\n"
-	exit 1
+	fail "scontrol output format error"
 }
 if {$found == 1} {
-	send_user "\nFAILURE: partition $part_name already exists\n"
-	exit 1
+	fail "Partition $part_name already exists"
 }
 
 #
@@ -101,8 +99,7 @@ expect {
 	}
 }
 if {[string compare $def_name ""] == 0} {
-	send_user "\nFAILURE: failed to find default partition\n"
-	exit 1
+	fail "Failed to find default partition"
 }
 spawn $sinfo -h -o "=%N=" -p $def_name
 expect {
@@ -115,8 +112,7 @@ expect {
 	}
 }
 if {[string compare $def_node ""] == 0} {
-	send_user "\nFAILURE:default partition seems to have no nodes\n"
-	exit 1
+	fail "Default partition seems to have no nodes"
 }
 
 #
@@ -125,12 +121,12 @@ if {[string compare $def_node ""] == 0} {
 spawn $scontrol create PartitionName=$part_name Nodes=$def_node
 expect {
 	-re "error" {
-		send_user "\nFAILURE: something bad happened on partition create\n"
+		log_error "Something bad happened on partition create"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -158,7 +154,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -166,11 +162,10 @@ expect {
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: partition not created\n"
-	exit 1
+	fail "Partition not created"
 }
 if {$allow != 1} {
-	send_user "\nFAILURE: partition groups value incorrect\n"
+	log_error "Partition groups value incorrect"
 	set exit_code 1
 }
 
@@ -184,7 +179,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: id not responding\n"
+		log_error "id not responding"
 		set exit_code 1
 	}
 	eof {
@@ -194,7 +189,7 @@ expect {
 spawn $scontrol update PartitionName=$part_name AllowGroups=$my_group MaxTime=1
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -209,7 +204,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -217,7 +212,7 @@ expect {
 	}
 }
 if {$found != 1} {
-        send_user "\nFAILURE: partition group not reset\n"
+        log_error "Partition group not reset"
 	set exit_code 1
 }
 
@@ -234,7 +229,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 	}
 	eof {
@@ -244,7 +239,7 @@ expect {
 if {$timed_out == 1} {
 	send_user "Early termination is expected, no worries.\n"
 } else {
-	send_user "\nFAILURE: partition time limit not enforced\n"
+	log_error "Partition time limit not enforced"
 	set exit_code 1
 }
 
@@ -254,7 +249,7 @@ if {$timed_out == 1} {
 spawn $scontrol update PartitionName=$part_name AllowGroups=ALL
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -269,7 +264,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -277,7 +272,7 @@ expect {
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: partition group not reset\n"
+	log_error "Partition group not reset"
 	set exit_code 1
 }
 
@@ -289,11 +284,11 @@ set tres_line "cPu=1,mem=-0.5G,node=.3,energy=-10"
 spawn $scontrol update partitionname=$part_name TRESBillingWeights=$tres_line
 expect {
 	-re "error" {
-		send_user "\nFAILURE: failed to reset TRESBillingWeights\n"
+		log_error "Failed to reset TRESBillingWeights"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -309,7 +304,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -317,7 +312,7 @@ expect {
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: TRESBillingWeights not set\n"
+	log_error "TRESBillingWeights not set"
 	set exit_code 1
 }
 
@@ -330,7 +325,7 @@ expect {
 		set found 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -338,7 +333,7 @@ expect {
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: didn't fail to set TRESBillingWeights\n"
+	log_error "Didn't fail to set TRESBillingWeights"
 	set exit_code 1
 }
 
@@ -352,7 +347,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -360,7 +355,7 @@ expect {
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: TRESBillingWeights not set\n"
+	log_error "TRESBillingWeights not set"
 	set exit_code 1
 }
 
@@ -369,11 +364,11 @@ set found 0
 spawn $scontrol update partitionname=$part_name TRESBillingWeights=
 expect {
 	-re "error" {
-		send_user "\nFAILURE: failed to reset TRESBillingWeights\n"
+		log_error "Failed to reset TRESBillingWeights"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -389,7 +384,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -397,7 +392,7 @@ expect {
 	}
 }
 if {$found} {
-	send_user "\nFAILURE: found TRESBillingWeights when they should have been removed.\n"
+	log_error "Found TRESBillingWeights when they should have been removed"
 	set exit_code 1
 }
 
@@ -408,7 +403,7 @@ if {$found} {
 spawn $scontrol delete PartitionName=$part_name
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -432,7 +427,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -440,8 +435,7 @@ expect {
 	}
 }
 if {$found != 0} {
-	send_user "\nFAILURE: partition not deleted\n"
-	exit 1
+	fail "Partition not deleted"
 }
 
 exit $exit_code

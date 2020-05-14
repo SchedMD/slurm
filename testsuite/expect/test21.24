@@ -355,31 +355,31 @@ set matches 0
 set my_pid [spawn $sacctmgr -i dump $clu=$tc3 file=$file_out4]
 expect {
 	-re "(Cluster .* returned nothing)" {
-		send_user "FAILURE: there was a problem with the dump\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the dump"
+	    incr exit_code 1
 	}
 	-re "(No filename given)" {
-		send_user "FAILURE: there was a problem with the file name\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the file name"
+	    incr exit_code 1
 	}
 	-re "(Can only do one cluster at a time)" {
-		send_user "FAILURE: there was a problem with the dump\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the dump"
+	    incr exit_code 1
 	}
 	-re "too few arguments for keyword" {
-		send_user "FAILURE: there was a problem with the dump request\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the dump request"
+	    incr exit_code 1
 	}
 	-re "Unknown option" {
-		send_user "FAILURE: there was a problem with the request\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the request"
+	    incr exit_code 1
 	}
 	-re "(sacctmgr: Cluster)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -389,7 +389,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE:  File load 1 incorrect with only $matches.\n"
+	log_error "File load 1 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -398,7 +398,7 @@ set tfile [open "$file_out4" r]
 while {[gets $tfile line] != -1} {
 
 	if {![string compare $line "No such file or directory"]} {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		log_error "There was a problem with the sacctmgr command"
 		incr exit_code 1
 	} elseif {![string compare $line "$clu - '$tc3':$fs=$clus_req(fairshare):$gc=$clus_req(grptres):$gj=$clus_req(grpjob):$gs=$clus_req(grpsubmit):$mp=$clus_req(maxtresmin):$mu=$clus_req(maxtres):$mj=$clus_req(maxjobs):$ms=$clus_req(maxsubmit):$md=$clus_req(maxwall):$qs='$clus_req(qos)'"]} {
 		send_user "match 1\n"
@@ -443,7 +443,7 @@ while {[gets $tfile line] != -1} {
 
 
 if {$matches != 14} {
-	send_user "\nFAILURE:  Parse of file for 14 entries incorrect with only $matches.\n"
+	log_error "Parse of file for 14 entries incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -458,6 +458,5 @@ incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 if {$exit_code == 0} {
    	exec $bin_rm -f $file_out4
 } else {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

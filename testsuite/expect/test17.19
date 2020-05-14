@@ -59,8 +59,7 @@ while {[gets $fd line] != -1} {
 catch {close $fd}
 
 if {$part_cnt == 0} {
-	send_user "FAILURE: could not identify the any usable partitions\n"
-	exit 1
+	fail "Could not identify the any usable partitions"
 }
 
 #
@@ -74,7 +73,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -83,7 +82,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch failed to submit job\n"
+	log_error "sbatch failed to submit job"
 	exit 1
 }
 
@@ -95,7 +94,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -104,7 +103,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: sbatch failed to set partition properly\n"
+	log_error "sbatch failed to set partition properly"
 	exit 1
 }
 if {[cancel_job $job_id] != 0} {
@@ -132,7 +131,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -141,14 +140,14 @@ expect {
 	}
 }
 if {$job_id != 0} {
-	send_user "\nFAILURE: sbatch submitted job to invalid partition name\n"
+	log_error "sbatch submitted job to invalid partition name"
 	if {[cancel_job $job_id] != 0} {
 		set exit_code 1
 	}
 	set exit_code 1
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: sbatch failed to report invalid partition name\n"
+	log_error "sbatch failed to report invalid partition name"
 	exit 1
 }
 if {$exit_code != 0} {
@@ -177,7 +176,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -186,8 +185,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch failed to submit job\n"
-	exit 1
+	fail "sbatch failed to submit job"
 }
 
 set matches 0
@@ -206,7 +204,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -215,8 +213,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: sbatch failed to set partition properly\n"
-	exit 1
+	fail "sbatch failed to set partition properly"
 }
 if {[cancel_job $job_id] != 0} {
 	set exit_code 1
@@ -224,6 +221,5 @@ if {[cancel_job $job_id] != 0} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
 }
 exit $exit_code

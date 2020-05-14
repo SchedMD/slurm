@@ -58,7 +58,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -70,7 +70,7 @@ if {$matches != 3} {
 	if {$matches == 2} {
 		send_user "\nWARNING: it appears you are running with multiple slurmds.\n"
 	} else {
-		send_user "\nFAILURE: scontrol show config command failed\n"
+		log_error "scontrol show config command failed"
 		set exit_code 1
 	}
 }
@@ -88,7 +88,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -96,7 +96,7 @@ expect {
 	}
 }
 if {$matches < 1} {
-	send_user "\nFAILURE: scontrol show partition command failed\n"
+	log_error "scontrol show partition command failed"
 	set exit_code 1
 }
 
@@ -113,7 +113,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -121,8 +121,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol show partition command"
-	send_user " with name failed\n"
+	log_error "scontrol show partition command with name failed"
 	set exit_code 1
 }
 
@@ -139,7 +138,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -162,7 +161,7 @@ if {$matches < 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -170,7 +169,7 @@ if {$matches < 1} {
 		}
 	}
 	if {$matches != 1} {
-		send_user "\nFAILURE: scontrol show frontend command with name failed\n"
+		log_error "scontrol show frontend command with name failed"
 		set exit_code 1
 	}
 }
@@ -188,7 +187,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -196,7 +195,7 @@ expect {
 	}
 }
 if {$matches < 1} {
-	send_user "\nFAILURE: scontrol show node command failed\n"
+	log_error "scontrol show node command failed"
 	set exit_code 1
 }
 
@@ -213,7 +212,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -221,7 +220,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol show node command with name failed\n"
+	log_error "scontrol show node command with name failed"
 	set exit_code 1
 }
 
@@ -240,7 +239,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {

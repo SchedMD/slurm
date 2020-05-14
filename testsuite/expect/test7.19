@@ -77,7 +77,7 @@ proc test_sbatch { local } {
 	}
 
 	if { $rc != $exp_rc } {
-		log_error "sbatch error submitting job $job_id rc: $rc instead of $exp_rc\n"
+		log_error "sbatch error submitting job $job_id rc: $rc instead of $exp_rc"
 		return 1
 	}
 
@@ -104,7 +104,7 @@ proc test_salloc { local } {
 			exp_continue
 		}
 		-re "error" {
-			log_warn "FAILURE: Job was not submitted"
+			log_error "Job was not submitted"
 			return 1
 		}
 		timeout {
@@ -117,7 +117,7 @@ proc test_salloc { local } {
 	}
 
 	if { $job_id == 0 } {
-		log_error "FAILURE: salloc submit failure"
+		log_error "salloc submit failure"
 		return 1
 	}
 
@@ -126,7 +126,7 @@ proc test_salloc { local } {
 	}
 
 	if { $rc != $exp_rc } {
-		log_error "salloc error submitting job $job_id rc: $rc instead of $exp_rc\n"
+		log_error "salloc error submitting job $job_id rc: $rc instead of $exp_rc"
 		return 1
 	}
 
@@ -172,7 +172,7 @@ proc test_srun { local } {
 	}
 
 	if { $rc != $exp_rc } {
-		log_error "srun error submitting job $job_id rc: $rc instead of $exp_rc\n"
+		log_error "srun error submitting job $job_id rc: $rc instead of $exp_rc"
 		return 1
 	}
 

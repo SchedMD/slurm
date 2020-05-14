@@ -59,7 +59,7 @@ for {set node_cnt 1} {$node_cnt < $max_node_cnt} {set node_cnt [expr $node_cnt *
 			exp_continue
 		}
 		-re "Unable to contact" {
-			send_user "\nFAILURE: slurm appears to be down\n"
+			log_error "Slurm appears to be down"
 			set exit_code 1
 			exp_continue
 		}
@@ -79,7 +79,7 @@ for {set node_cnt 1} {$node_cnt < $max_node_cnt} {set node_cnt [expr $node_cnt *
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -90,7 +90,7 @@ for {set node_cnt 1} {$node_cnt < $max_node_cnt} {set node_cnt [expr $node_cnt *
 }
 
 if {$error == 1} {
-	send_user "\nFAILURE: some error happened\n"
+	log_error "Some error happened"
 	set exit_code 1
 }
 

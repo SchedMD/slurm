@@ -65,7 +65,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -74,15 +74,14 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	fail "Failed to submit job"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -91,8 +90,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Check for desired output
 #
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: Output file $file_out is missing\n"
-	exit 1
+	fail "Output file $file_out is missing"
 }
 spawn $bin_cat $file_out
 expect {
@@ -110,8 +108,7 @@ expect {
 }
 # Match to "SLURM_EXPORT_ENV=TEST_ENV_17.14=123" and "TEST_ENV_17.14=123"
 if {$matches != 2} {
-	send_user "\nFAILURE: Environment variables not propagated from command line ($matches != 2)\n"
-	exit 1
+	fail "Environment variables not propagated from command line ($matches != 2)"
 }
 
 #
@@ -127,7 +124,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -136,15 +133,14 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	fail "Failed to submit job"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -153,8 +149,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Check for desired output
 #
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: Output file $file_out is missing\n"
-	exit 1
+	fail "Output file $file_out is missing"
 }
 spawn $bin_cat $file_out
 expect {
@@ -169,8 +164,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Environment variables not propagated ($matches != 1)\n"
-	exit 1
+	fail "Environment variables not propagated ($matches != 1)"
 }
 
 #
@@ -186,7 +180,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -195,15 +189,14 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	fail "Failed to submit job"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -212,8 +205,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Check for desired output
 #
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: Output file $file_out is missing\n"
-	exit 1
+	fail "Output file $file_out is missing"
 }
 spawn $bin_cat $file_out
 expect {
@@ -228,8 +220,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Environment variables not propagated ($matches != 1)\n"
-	exit 1
+	fail "Environment variables not propagated ($matches != 1)"
 }
 
 #
@@ -245,7 +236,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -254,15 +245,14 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	fail "Failed to submit job"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -271,8 +261,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Check for desired output
 #
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: Output file $file_out is missing\n"
-	exit 1
+	fail "Output file $file_out is missing"
 }
 spawn $bin_cat $file_out
 expect {
@@ -287,8 +276,7 @@ expect {
 	}
 }
 if {$matches != 0} {
-	send_user "\nFAILURE: Environment variables were propagated ($matches != 0)\n"
-	exit 1
+	fail "Environment variables were propagated ($matches != 0)"
 }
 
 if {$exit_code == 0} {

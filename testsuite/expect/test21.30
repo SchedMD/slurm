@@ -148,7 +148,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -185,7 +185,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -194,16 +194,14 @@ expect {
 }
 
 if {$got_node != 1} {
-	send_user "\nFAILURE: did not get node for testing\n"
-	exit 0
+	fail "Did not get node for testing"
 }
 
 # Get the number of cpus on a node
 lassign [get_node_cpus $test_node] totcpus nthreads
 
 if {$totcpus == 0} {
-	send_user "\nFAILURE: no cpus where found\n"
-	exit 1
+	fail "No cpus were found"
 } else {
 	# Set QoS CPU values
 	set grcpu_num [expr $totcpus - $nthreads]
@@ -223,7 +221,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -232,8 +230,7 @@ expect {
 }
 
 if {$num_nodes == 0} {
-	send_user "\nFAILURE: no cpus where found\n"
-	exit 1
+	fail "No cpus were found"
 } else {
 	# Set QoS node values
 	set grn_num     $num_nodes
@@ -252,10 +249,10 @@ proc endit { } {
 			exp_continue
 		}
 		-re "Error" {
-			send_user "\nFAILURE: QOS was not deleted\n"
+			log_error "QOS was not deleted"
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -269,11 +266,11 @@ proc endit { } {
 			exp_continue
 		}
 		-re "Error" {
-			send_user "\nFAILURE: account was not deleted\n"
+			log_error "account was not deleted"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -285,11 +282,11 @@ proc endit { } {
 		spawn $scontrol update partitionname=[default_partition] TRESBillingWeights=$save_billing_weights
 		expect {
 			-re "error" {
-				send_user "\nFAILURE: failed to reset TRESBillingWeights\n"
+				log_error "Failed to reset TRESBillingWeights"
 				set exit_code 1
 			}
 			timeout {
-				send_user "\nFAILURE: scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -299,7 +296,7 @@ proc endit { } {
 	}
 
 	if {$exit_code != 0} {
-		send_user "\nFAILURE: test $test_id\n"
+		log_error "Test $test_id"
 	}
 
 	exit $exit_code
@@ -343,10 +340,10 @@ expect {
 		exp_continue
 	}
 	-re "Error" {
-		send_user "\nFAILURE: QOS was not deleted\n"
+		log_error "QOS was not deleted"
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -360,11 +357,11 @@ expect {
 		exp_continue
 	}
 	-re "Error" {
-		send_user "\nFAILURE: account was not deleted\n"
+		log_error "Account was not deleted"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -385,7 +382,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr did not add QOS\n"
+		log_error "sacctmgr did not add QOS"
 		set exit_code 1
 	}
 	eof {
@@ -402,7 +399,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -411,7 +408,7 @@ expect {
 	}
 }
 if {$acctmatch != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem adding the account\n"
+	log_error "sacctmgr had a problem adding the account"
 	exit 1
 }
 
@@ -419,7 +416,7 @@ if {$acctmatch != 1} {
 spawn $sacctmgr -i create user name=$user_name account=$acct
 expect {
 	timeout {
-		send_user "\nFAILURE: sacctmgr not responding\n"
+		log_error "sacctmgr not responding"
 	}
 	eof {
 		wait
@@ -673,11 +670,11 @@ set mod_qos_vals(MaxWall) "-1"
 spawn $scontrol update partitionname=[default_partition] tresbillingweights=cpu=$tres_cpu_mult
 expect {
 	-re "error" {
-		send_user "\nFAILURE: failed to set TRESBillingWeights\n"
+		log_error "Failed to set TRESBillingWeights"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {

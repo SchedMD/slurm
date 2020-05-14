@@ -60,7 +60,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -70,18 +70,16 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
 	exec $bin_rm -f $file_in
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
 	exec $bin_rm -f $file_in
-	exit 1
+	fail "Waiting for job to complete"
 }
 
 #
@@ -105,11 +103,11 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$rem_time > 60} {
-	send_user "\nFAILURE: job remaining time is wrong $rem_time\n"
+	log_error "Job remaining time is wrong $rem_time"
 	set exit_code 1
 }
 if {$rem_time < 55} {
-	send_user "\nFAILURE: job remaining time seems too small\n"
+	log_error "Job remaining time seems too small"
 	set exit_code 1
 }
 
@@ -120,7 +118,7 @@ if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
 		-re "error" {
-			send_user "\nFAILURE: some error encountered\n"
+			log_error "Some error encountered"
 			set exit_code 1
 		}
 		eof {
@@ -130,10 +128,10 @@ if {[wait_for_file $file_err] == 0} {
 }
 
 if {$job_id != $scontrol_id} {
-	send_user "\nFAILURE: scontrol pidinfo error\n"
-	set exit_code 1
+	fail "scontrol pidinfo error"
 }
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
 }
+
 exit $exit_code

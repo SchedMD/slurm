@@ -83,7 +83,7 @@ proc cleanup { } {
 	spawn $scontrol delete partitionname=$test_part
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -114,7 +114,7 @@ foreach option [array names node_info] {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -135,7 +135,7 @@ foreach option [array names node_sinfo_vals] {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo is not responding\n"
+			log_error "sinfo is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -144,9 +144,7 @@ foreach option [array names node_sinfo_vals] {
 	}
 
 	if {$match != 1} {
-		send_user "\nFAILURE: Node information $option output does "
-		send_user "not match sinfo output. "
-		send_user "Looking for value: $option = $node_sinfo_vals($option)\n"
+		log_error "Node information $option output does not match sinfo output. Looking for value: $option = $node_sinfo_vals($option)"
 		set exit_code 1
 	}
 }
@@ -157,7 +155,7 @@ foreach option [array names node_sinfo_vals] {
 spawn $scontrol create partitionname=$test_part nodes=$test_node
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -173,7 +171,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -181,8 +179,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: test partition was not created\n"
-	exit 1
+	fail "Test partition was not created"
 }
 
 send_user "\n=== Testing Partition Information ===\n"
@@ -204,7 +201,7 @@ foreach option [array names part_info] {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -225,7 +222,7 @@ foreach option [array names part_sinfo_vals] {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo is not responding\n"
+			log_error "sinfo is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -234,10 +231,7 @@ foreach option [array names part_sinfo_vals] {
 	}
 
 	if {$match != 1} {
-		send_user "\nFAILURE: Partition information $option "
-		send_user "output does not match sinfo output. "
-		send_user "Looking for value: "
-		send_user "$option = $part_sinfo_vals($option)\n"
+		log_error "Partition information $option output does not match sinfo output. Looking for value: $option = $part_sinfo_vals($option)"
 		set exit_code 1
 	}
 }
@@ -245,7 +239,5 @@ foreach option [array names part_sinfo_vals] {
 cleanup
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-
-exit $exit_code

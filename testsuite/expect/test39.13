@@ -57,8 +57,7 @@ if {$nb_nodes > 1} {
 }
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
@@ -111,7 +110,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 		}
 		eof {
@@ -119,7 +118,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: sbatch job submit failure\n"
+		log_error "sbatch job submit failure"
 		set exit_code 1
 		set tot_gpus [expr $inx - 1]
 		break
@@ -140,7 +139,7 @@ if {$tot_gpus > 4 && $max_file_delay > 30} {
 for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	set ofile ${file_out}.${inx}
 	if {[wait_for_file $ofile] != 0} {
-		send_user "\nFAILURE: output file $ofile not found\n"
+		log_error "Output file $ofile not found"
 		set exit_code 1
 	} else {
 		set match 0
@@ -155,7 +154,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 			}
 		}
 		if {$match != $inx} {
-			send_user "\nFAILURE: Bad GPU count in file $ofile ($match != $inx)\n"
+			log_error "Bad GPU count in file $ofile ($match != $inx)"
 			set exit_code 1
 		} else {
 			exec $bin_rm -f $ofile
@@ -171,7 +170,7 @@ if {$exit_code != 0} {
 	spawn $squeue -tall -n "test$test_id"
 	expect {
 		timeout {
-			send_user "\nFAILURE: squeue not responding\n"
+			log_error "squeue not responding"
 			set exit_code 1
 		}
 		eof {

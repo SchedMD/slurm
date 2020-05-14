@@ -70,17 +70,15 @@ expect {
 		set job_running 1
 	}
 	timeout {
-		send_user "\nFAILURE: Failed to launch test program through srun\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "Failed to launch test program through srun"
 	}
 	eof {
 		wait
 	}
 }
 if {$jobid == 0 || $job_running == 0} {
-	send_user "\nFAILURE: Failed to launch test program through srun\n"
-	exit 1
+	fail "Failed to launch test program through srun"
 }
 
 #
@@ -99,11 +97,10 @@ while {[string compare $running ""]} {
 	set running [exec $squeue --noheader --states=running --steps=$stepid]
 	sleep 1
 	if {$i == 30} {
-		send_user "\nFAILURE: job step is not completing\n"
 		cancel_job $jobid
 		sleep 5
 		exec kill -9 $srun_pid
-		exit 1
+		fail "Job step is not completing"
 	}
 	incr i 1
 }
@@ -117,20 +114,18 @@ if [catch {exec kill -0 $srun_pid}] {
 	send_user "\nsrun command is terminated, as desired\n"
 	set exit_code 0
 } else {
-	send_user "\nFAILURE: srun is still running after job exits!\n"
+	log_error "srun is still running after job exits!"
 	set exit_code 1
 }
 spawn $squeue --noheader --jobs=$jobid
 expect {
 	-re "R" {
-		send_user "\nFAILURE: job not completed!\n"
+		log_error "Job not completed!"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
-		set exit_code 1
-		exit 1
+		fail "Squeue not responding"
 	}
 	eof {
 		wait

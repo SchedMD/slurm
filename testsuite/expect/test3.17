@@ -46,7 +46,7 @@ proc set_node_feature {node_name new_avail_feature new_active_feature} {
 	spawn $scontrol update node=$node_name AvailableFeatures=$new_avail_feature ActiveFeatures=$new_active_feature
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -70,11 +70,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: Slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -83,8 +82,7 @@ expect {
 	}
 }
 if {$match == 0} {
-	send_user "\nFAILURE: Could not run job in exclusive node\n"
-	exit 1
+	fail "Could not run job in exclusive node"
 }
 
 # Save the node's current features
@@ -120,7 +118,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -128,8 +126,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	send_user "\nFAILURE: Could not determine current features for node $node_name\n"
-	exit 1
+	fail "Could not determine current features for node $node_name"
 }
 
 # Set new feature names to use
@@ -156,11 +153,11 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: Slurm appears to be down\n"
+		log_error "Slurm appears to be down"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -169,7 +166,7 @@ expect {
 	}
 }
 if {$match == 0} {
-	send_user "\nFAILURE: Could not run job with constraint\n"
+	log_error "Could not run job with constraint"
 	set exit_code 1
 }
 
@@ -186,11 +183,11 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: Slurm appears to be down\n"
+		log_error "Slurm appears to be down"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -199,7 +196,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: Ran job with what should be invalid constraint\n"
+	log_error "Ran job with what should be invalid constraint"
 	set exit_code 1
 }
 

@@ -76,7 +76,7 @@ expect {
 	}
 
 	timeout {
-		send_user "\nFAILURE: smap not responding\n"
+		log_error "smap not responding"
 		set exit_code 1
 	}
 	eof {
@@ -85,7 +85,7 @@ expect {
 }
 
 if {$matches != 5} {
-	send_user "\nFAILURE: smap slurm partition display in commandline mode\n"
+	log_error "smap slurm partition display in commandline mode"
 	set exit_code 1
 }
 

@@ -52,11 +52,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -68,7 +67,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: salloc failed to respond\n"
+	log_error "salloc failed to respond"
 	set exit_code 1
 }
 
@@ -85,11 +84,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -101,7 +99,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: salloc failed to respond\n"
+	log_error "salloc failed to respond"
 	set exit_code 1
 }
 

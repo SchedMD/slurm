@@ -103,7 +103,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -113,19 +113,19 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: srun failed to initialize properly\n"
+	log_error "srun failed to initialize properly"
 	set exit_code 1
 }
 if {$usr1cnt != $usr1target} {
-	send_user "\nFAILURE: $file_prog received $usr1cnt SIGUSR1 (not $usr1target)\n"
+	log_error "$file_prog received $usr1cnt SIGUSR1 (not $usr1target)"
 	set exit_code 1
 }
 if {$usr2cnt != $usr2target} {
-	send_user "\nFAILURE: $file_prog received $usr2cnt SIGUSR2 (not $usr2target)\n"
+	log_error "$file_prog received $usr2cnt SIGUSR2 (not $usr2target)"
 	set exit_code 1
 }
 if {$fini_cnt != 1} {
-	send_user "\nFAILURE: srun failed to terminate properly\n"
+	log_error "srun failed to terminate properly"
 	set exit_code 1
 }
 

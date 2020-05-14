@@ -98,8 +98,7 @@ expect {
 }
 log_user 1
 if {[string compare $config_dir ""] == 0} {
-	send_user "\nFAILURE: Could not locate slurm.conf directory\n"
-	exit 1
+	fail "Could not locate slurm.conf directory"
 }
 
 log_user 0
@@ -128,10 +127,7 @@ if {[file exists $spank_conf_file]} {
 	spawn $bin_cat $spank_conf_file
 	expect {
 		-re "test${test_id}" {
-			send_user "\nFAILURE: spank plugin includes vestigial test${test_id}\n"
-			send_user "   You probably should manually remove it from $spank_conf_file\n"
-			send_user "   It was probably left over from some previous test failure.\n"
-			exit 1
+			fail "Spank plugin includes vestigial test${test_id}. You probably should manually remove it from $spank_conf_file. It was probably left over from some previous test failure"
 		}
 		eof {
 			wait
@@ -179,7 +175,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		end_it 1
 	}
@@ -188,7 +184,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: spank help message not in srun help message\n"
+	log_error "Spank help message not in srun help message"
 	end_it 1
 }
 
@@ -210,7 +206,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		slow_kill $srun_pid
 		end_it 1
 	}
@@ -219,7 +215,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: spank help message not in salloc help message ($matches != 1)\n"
+	log_error "spank help message not in salloc help message ($matches != 1)"
 	end_it 1
 }
 
@@ -241,7 +237,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		end_it 1
 	}
@@ -250,7 +246,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: spank help message not in sbatch help message ($matches != 1)\n"
+	log_error "spank help message not in sbatch help message ($matches != 1)"
 	end_it 1
 }
 
@@ -269,7 +265,7 @@ send_user "Checksum of local $spank_conf_file\n"
 spawn $bin_sum $spank_conf_file
 expect {
 	-re timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		end_it 1
 	}
 	eof {
@@ -300,7 +296,7 @@ expect {
 		exp_continue
 	}
 	-re timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		end_it 1
 	}
 	eof {
@@ -308,11 +304,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
+	log_error "Batch submit failure"
 	end_it 1
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: spank options not processed by sbatch ($matches != 2)\n"
+	log_error "spank options not processed by sbatch ($matches != 2)"
 	end_it 1
 }
 
@@ -320,7 +316,7 @@ if {$matches != 2} {
 # Wait for job to complete and check for files
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	end_it 1
 }
@@ -334,7 +330,7 @@ if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
 		-re "error" {
-			send_user "\nFAILURE: some error happened\n"
+			log_error "Some error happened"
 			end_it 1
 		}
 		-re "_test_opt_process_(.*?=$number)" {
@@ -359,13 +355,13 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$matches_sbatch != 1} {
-		send_user "\nFAILURE: local (srun) sbatch spank plugin failure ($matches_sbatch != 1)\n"
+		log_error "Local (srun) sbatch spank plugin failure ($matches_sbatch != 1)"
 		end_it 1
 	} elseif {$matches_srun != 1} {
-		send_user "\nFAILURE: local (srun) srun spank plugin failure ($matches_srun != 1)\n"
+		log_error "Local (srun) srun spank plugin failure ($matches_srun != 1)"
 		end_it 1
 	} elseif {$matches != 2} {
-		send_user "\nFAILURE: local (srun) spank plugin failure ($matches != 2)\n"
+		log_error "Local (srun) spank plugin failure ($matches != 2)"
 		end_it 1
 	} else {
 		send_user "\nlocal (srun) spank plugin success\n"
@@ -400,7 +396,7 @@ if {[wait_for_file $spank_out] == 0} {
 			incr expected_spank_exit
 		}
 		timeout {
-			log_error "scontrol show config not responding\n"
+			log_error "scontrol show config not responding"
 				end_it 1
 		}
 		eof {
@@ -444,23 +440,23 @@ if {[wait_for_file $spank_out] == 0} {
 
 	set fail_cnt 0
 	if {$matches_spank_exit != $expected_spank_exit} {
-		send_user "\nFAILURE: remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != $expected_spank_exit)\n"
+		log_error "Remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != $expected_spank_exit)"
 		set fail_cnt 1
 	}
 	if {$matches_spank_init != $expected_spank_init} {
-		send_user "\nFAILURE: remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != $expected_spank_init)\n"
+		log_error "Remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != $expected_spank_init)"
 		set fail_cnt 1
 	}
 	if {$matches_sbatch != $expected_sbatch} {
-		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch != $expected_sbatch)\n"
+		log_error "Remote (slurmd) sbatch spank plugin failure ($matches_sbatch != $expected_sbatch)"
 		set fail_cnt 1
 	}
 	if {$matches_srun != $expected_srun} {
-		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun != $expected_srun)\n"
+		log_error "Remote (slurmd) srun spank plugin failure ($matches_srun != $expected_srun)"
 		set fail_cnt 1
 	}
 	if {$matches != $expected_items} {
-		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != $expected_items)\n"
+		log_error "Remote (slurmd) spank plugin failure ($matches != $expected_items)"
 		set fail_cnt 1
 	}
 	if {$fail_cnt != 0} {

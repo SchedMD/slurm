@@ -102,7 +102,9 @@ set min_job_age [get_min_job_age]
 assert_or_fail {$min_job_age == 10} "Failed to set MinJobAge"
 
 set node_feature [get_single_node_feature]
-assert_or_skip {$node_feature != ""} "Cannot run this test without any node features."
+if { $node_feature == "" } {
+	skip "Cannot run this test without any node features."
+}
 
 # It doesn't matter how long the job sleeps; it will be cancelled anyway.
 make_bash_script $file_script "sleep 5"

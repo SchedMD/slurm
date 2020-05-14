@@ -52,7 +52,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		set exit_code 1
 	}
 	eof {
@@ -61,8 +61,7 @@ expect {
 }
 
 if {$job_id != 0} {
-	send_user "\nFAILURE: batch submitted despite the deadline\n"
-	exit 1
+	fail "Batch submitted despite the deadline"
 }
 
 exit $exit_code

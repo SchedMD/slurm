@@ -67,11 +67,10 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun --input=$file_in --output=$file_out --error=$file_err -t1 $bin_bash]
 expect {
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -101,11 +100,11 @@ if {[wait_for_file $file_out] == 0} {
 }
 
 if {$got_job_grps == 0} {
-	send_user "\nFAILURE: User and group ID info missing from stdout\n"
+	log_error "User and group ID info missing from stdout"
 	set exit_code 1
 }
 if {[string compare $login_grp_info $job_grp_info] != 0} {
-	send_user "\nFAILURE: Login and slurm user info mismatch\n"
+	log_error "Login and slurm user info mismatch"
 	set exit_code 1
 }
 
@@ -130,7 +129,7 @@ if {[wait_for_file $file_err] == 0} {
 	}
 }
 if {$got_sleep_err == 0} {
-	send_user "\nFAILURE: Unexpected stderr contents\n"
+	log_error "Unexpected stderr contents"
 	set exit_code 1
 }
 
@@ -140,21 +139,20 @@ if {$got_sleep_err == 0} {
 set srun_pid [spawn $srun --input=none --output=none --error=none -t1 -N1 $bin_head $file_in]
 expect {
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	-re "Terminated" {
-		send_user "\nFAILURE: srun failed to complete\n"
+		log_error "srun failed to complete"
 		set exit_code 1
 		exp_continue
 	}
 	-re "time limit exceeded" {
-		send_user "\nFAILURE: srun failed to complete\n"
+		log_error "srun failed to complete"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}

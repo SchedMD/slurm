@@ -70,7 +70,7 @@ expect {
 		incr matches
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -79,8 +79,7 @@ expect {
 }
 
 if {$matches == 0} {
-	send_user "\nFAILURE: scontrol reported no switches\n"
-	exit 1
+	fail "scontrol reported no switches"
 }
 
 #
@@ -94,7 +93,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -102,8 +101,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol topology with switch name filter failed\n"
-	set exit_code 1
+	fail "scontrol topology with switch name filter failed"
 }
 
 exit $exit_code

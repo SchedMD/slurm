@@ -81,7 +81,7 @@ expect {
 		#send_user "Job initiated\n"
 	}
 	timeout {
-		log_error "salloc : allocation not granted in $timeout seconds\n"
+		log_error "salloc: allocation not granted in $timeout seconds"
 		end_it 1
 	}
 	eof {
@@ -89,7 +89,7 @@ expect {
 	}
 }
 if {$pack_job_id == 0} {
-	log_error "salloc failure\n"
+	log_error "salloc failure"
 	end_it 1
 }
 
@@ -132,7 +132,7 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding\n"
+		log_error "srun not responding"
 		end_it 1
 	}
 	eof {
@@ -140,7 +140,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	log_error "srun failure ($matches != 1)\n"
+	log_error "srun failure ($matches != 1)"
 	end_it 1
 }
 
@@ -156,7 +156,7 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding\n"
+		log_error "srun not responding"
 		end_it 1
 	}
 	eof {
@@ -164,7 +164,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	log_error "srun failure ($matches != 1)\n"
+	log_error "srun failure ($matches != 1)"
 	end_it 1
 }
 
@@ -180,7 +180,7 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding\n"
+		log_error "srun not responding"
 		end_it 1
 	}
 	eof {
@@ -188,7 +188,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	log_error "srun failure ($matches != 1)\n"
+	log_error "srun failure ($matches != 1)"
 	end_it 1
 }
 
@@ -204,7 +204,7 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding\n"
+		log_error "srun not responding"
 		end_it 1
 	}
 	eof {
@@ -212,7 +212,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	log_error "srun failure ($matches != 4)\n"
+	log_error "srun failure ($matches != 4)"
 	end_it 1
 }
 
@@ -227,7 +227,7 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding\n"
+		log_error "srun not responding"
 		end_it 1
 	}
 	eof {
@@ -235,7 +235,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	log_error "srun failure ($matches != 3)\n"
+	log_error "srun failure ($matches != 3)"
 	end_it 1
 }
 
@@ -253,7 +253,7 @@ for {set inx 0} {$inx < 3} {incr inx} {
 			#break
 		}
 		timeout {
-			log_error "srun not responding\n"
+			log_error "srun not responding"
 			end_it 1
 		}
 		eof {
@@ -261,7 +261,7 @@ for {set inx 0} {$inx < 3} {incr inx} {
 		}
 	}
 	if {$matches != 3} {
-		log_error "srun failure ($matches != 3)\n"
+		log_error "srun failure ($matches != 3)"
 		end_it 1
 	}
 }
@@ -269,7 +269,7 @@ for {set inx 0} {$inx < 3} {incr inx} {
 send "exit\r"
 expect {
 	timeout {
-		log_error "srun not responding\n"
+		log_error "srun not responding"
 		end_it 1
 	}
 	eof {

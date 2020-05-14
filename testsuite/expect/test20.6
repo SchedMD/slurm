@@ -62,7 +62,7 @@ proc check_rerun { arg job_id } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -70,8 +70,7 @@ proc check_rerun { arg job_id } {
 		}
 	}
 	if {$check_val != 1} {
-		send_user "\nFAILURE: requeue for job $job_id was not"
-		send_user " set correctly\n"
+		log_error "Requeue for job $job_id was not set correctly"
 		set exit_code 1
 	}
 }
@@ -83,7 +82,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub is not responding\n"
+		log_error "qsub is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -91,14 +90,14 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job was not submitted\n"
+	log_error "Job was not submitted"
 	set exit_code 1
 }
 
 spawn $qalter -r y $job_id
 expect {
 	timeout {
-		send_user "\nFAILURE: qalter is not responding\n"
+		log_error "qalter is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -112,7 +111,7 @@ check_rerun 1 $job_id
 spawn $qalter -r n $job_id
 expect {
 	timeout {
-		send_user "\nFAILURE: qalter is not responding\n"
+		log_error "qalter is not responding"
 		set exit_code 1
 	}
 	eof {

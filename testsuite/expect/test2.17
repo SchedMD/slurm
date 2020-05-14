@@ -163,7 +163,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -172,7 +172,7 @@ expect {
 }
 
 if {$create_qos != 1} {
-	send_user "\nFAILURE: QOS was not created\n"
+	log_error "QOS was not created"
 	set exit_code 1
 }
 

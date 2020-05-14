@@ -67,16 +67,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill [expr 0 - $srun_pid]
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: umask not propagated\n"
+	log_error "umask not propagated"
 	set exit_code 1
 }
 

@@ -63,7 +63,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -71,12 +71,10 @@ expect {
 	}
 }
 if {$found == -1} {
-	send_user "\nFAILURE: scontrol output format error\n"
-	exit 1
+	fail "scontrol output format error"
 }
 if {$found == 1} {
-	send_user "\nFAILURE: partition $part_name already exists\n"
-	exit 1
+	fail "Partition $part_name already exists"
 }
 
 #
@@ -84,8 +82,7 @@ if {$found == 1} {
 #
 set def_node [get_idle_node_in_part [default_partition]]
 if {[string compare $def_node ""] == 0} {
-	send_user "\nFAILURE: default partition seems to have no idle nodes\n"
-	exit 1
+	fail "Default partition seems to have no idle nodes"
 }
 
 #
@@ -94,12 +91,12 @@ if {[string compare $def_node ""] == 0} {
 spawn $scontrol create PartitionName=$part_name Nodes=$def_node MaxTime=30
 expect {
 	-re "error" {
-		send_user "\nFAILURE: something bad happened on partition create\n"
+		log_error "Something bad happened on partition create"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -123,7 +120,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -131,8 +128,7 @@ expect {
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: partition not created\n"
-	exit 1
+	fail "Partition not created"
 }
 
 set found 0
@@ -167,7 +163,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 			set exit_code 0
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			set exit_code 1
 		}
 		eof {
@@ -178,7 +174,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 	# verify time limit. Add a temporization to wait for update reason
 	#
 	if {$job_id == 0} {
-		send_user "\nFAILURE: job_id = 0 : salloc not OK\n"
+		log_error "Job_id = 0 : salloc not OK"
 		set exit_code 1
 	} else {
 		set cycle_count 8
@@ -195,7 +191,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 					exp_continue
 				}
 				timeout {
-					send_user "\nFAILURE: scontrol not responding\n"
+					log_error "scontrol not responding"
 					set exit_code 1
 				}
 				eof {
@@ -205,7 +201,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 		}
 		if {$exit_code == 1} {
 			if {$cycle_count == 8}  {
-				send_user "\nFAILURE: partition time limit not used \n"
+				log_error "Partition time limit not used "
 			}
 		}
 		cancel_job $job_id
@@ -225,7 +221,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 	                exp_continue
 	        }
 	        timeout {
-	                send_user "\nFAILURE: srun not responding\n"
+	                log_error "srun not responding"
 	                set exit_code 1
 	        }
 	        eof {
@@ -241,7 +237,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 spawn $scontrol delete PartitionName=$part_name
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -265,7 +261,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -273,8 +269,7 @@ expect {
 	}
 }
 if {$found != 0} {
-	send_user "\nFAILURE: partition not deleted\n"
-	exit 1
+	fail "Partition not deleted"
 }
 
 if {$exit_code == 0} {

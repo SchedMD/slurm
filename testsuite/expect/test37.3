@@ -133,7 +133,7 @@ proc test_fed_status {cname fed_flags cluster_list} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $my_pid
 			end_it 1
 		}
@@ -143,12 +143,12 @@ proc test_fed_status {cname fed_flags cluster_list} {
 	}
 
 	if {$lines != $expected_matches} {
-		send_user "FAILURE: line count and expected matches don't match: $lines != $expected_matches.\n"
+		log_error "Line count and expected matches don't match: $lines != $expected_matches"
 		end_it 1
 	}
 
 	if {$matches != $expected_matches} {
-		send_user "FAILURE: failed to match $matches != $expected_matches.\n"
+		log_error "Failed to match $matches != $expected_matches"
 		end_it 1
 	}
 }
@@ -165,13 +165,13 @@ if {[test_all_up]} {
 
 # Remove existing setup
 if {[cleanup] != 0} {
-	send_user "\nFAILURE: failed to cleanup\n"
+	log_error "Failed to cleanup"
 	end_it 1
 }
 
 # add clusters to federation
 if {[setup_federation $fed_name]} {
-	send_user "\nFAILURE: failed to setup federation\n"
+	log_error "Failed to setup federation"
 	end_it 1
 }
 
@@ -277,7 +277,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 #		exp_continue
 #	}
 #	timeout {
-#		send_user "\nFAILURE: sacctmgr add not responding\n"
+#		log_error "sacctmgr add not responding"
 #		slow_kill $my_pid
 #		set exit_code 1
 #	}
@@ -286,7 +286,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 #	}
 #}
 #if {$exit_code || $matches != 4} {
-#	send_user "$matches FAILURE: setting LLC flag.\n"
+#	log_error "Setting LLC flag"
 #	end_it 1
 #}
 #
@@ -319,7 +319,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 #		exp_continue
 #	}
 #	timeout {
-#		send_user "\nFAILURE: sacctmgr add not responding\n"
+#		log_error "sacctmgr add not responding"
 #		slow_kill $my_pid
 #		set exit_code 1
 #	}
@@ -328,7 +328,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 #	}
 #}
 #if {$exit_code || $matches != 4} {
-#	send_user "$matches FAILURE: removing federation flags.\n"
+#	log_error "Removing federation flags. Got $matches"
 #	end_it 1
 #}
 #
@@ -365,7 +365,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -374,7 +374,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 5} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -405,7 +405,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -414,7 +414,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -445,7 +445,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -454,7 +454,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -486,7 +486,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -495,7 +495,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 

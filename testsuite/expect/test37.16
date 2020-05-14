@@ -100,7 +100,7 @@ proc setup_cluster_features {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr mod not responding\n"
+			log_error "sacctmgr mod not responding"
 			slow_kill $my_pid
 			set exit_code 1
 		}
@@ -109,7 +109,7 @@ proc setup_cluster_features {} {
 		}
 	}
 	if {$exit_code || $matches != 4} {
-		send_user "$matches FAILURE: unexpected error.\n"
+		log_error "Unexpected error. Got $matches"
 		end_it 1
 	}
 
@@ -133,7 +133,7 @@ proc setup_cluster_features {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr mod not responding\n"
+			log_error "sacctmgr mod not responding"
 			slow_kill $my_pid
 			set exit_code 1
 		}
@@ -142,7 +142,7 @@ proc setup_cluster_features {} {
 		}
 	}
 	if {$exit_code || $matches != 4} {
-		send_user "$matches FAILURE: unexpected error.\n"
+		log_error "Unexpected error. Got $matches"
 		end_it 1
 	}
 
@@ -166,7 +166,7 @@ proc setup_cluster_features {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr mod not responding\n"
+			log_error "sacctmgr mod not responding"
 			slow_kill $my_pid
 			set exit_code 1
 		}
@@ -175,7 +175,7 @@ proc setup_cluster_features {} {
 		}
 	}
 	if {$exit_code || $matches != 4} {
-		send_user "$matches FAILURE: unexpected error.\n"
+		log_error "Unexpected error. Got $matches"
 		end_it 1
 	}
 }

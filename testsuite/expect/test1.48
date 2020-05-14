@@ -57,7 +57,7 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -t1 --job-name=test$test_id --mail-type=all --mail-user=$login_grp_info $bin_id -un]
 expect {
 	-re "error" {
-		send_user "\nFAILURE: Error running srun\n"
+		log_error "Error running srun"
 		set exit_code 1
 		exp_continue
 	}
@@ -66,7 +66,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -76,8 +76,7 @@ expect {
 }
 
 if {$got_job_grps == 0} {
-	send_user "\nFAILURE: Did not get user info from slurm job\n"
-	exit 1
+	fail "Did not get user info from slurm job"
 }
 
 exit $exit_code

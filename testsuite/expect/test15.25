@@ -70,7 +70,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -79,8 +79,7 @@ expect {
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
@@ -98,7 +97,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id2 != 0} {
 			cancel_job $job_id
 		}
@@ -110,7 +109,7 @@ expect {
 	}
 }
 if {$match_acct == 0} {
-	send_user "\nFAILURE: Account information not processed\n"
+	log_error "Account information not processed"
 	set exit_code 1
 }
 
@@ -125,7 +124,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -133,7 +132,7 @@ expect {
 	}
 }
 if {$match_acct == 0} {
-	send_user "\nFAILURE: Account information not processed\n"
+	log_error "Account information not processed"
 	set exit_code 1
 }
 

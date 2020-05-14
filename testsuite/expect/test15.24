@@ -74,7 +74,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -82,12 +82,11 @@ expect {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: Did not set desired allocation env vars\n"
+	log_error "Did not set desired allocation env vars"
 	set exit_code 1
 }
 if {$task_cnt != $tasks} {
-	send_user "\nFAILURE: Did not get proper number of tasks: "
-	send_user "$task_cnt, $tasks\n"
+	log_error "Did not get proper number of tasks: $task_cnt, $tasks"
 	set exit_code 1
 }
 

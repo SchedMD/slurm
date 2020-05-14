@@ -63,17 +63,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
@@ -92,7 +90,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: strigger not responding\n"
+		log_error "strigger not responding"
 		slow_kill $strigger_pid
 		set exit_code 1
 	}
@@ -108,7 +106,7 @@ if {$disabled == 1} {
 	exit $exit_code
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: trigger creation failure\n"
+	log_error "Trigger creation failure"
 	set exit_code 1
 }
 
@@ -123,7 +121,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: strigger not responding\n"
+		log_error "strigger not responding"
 		slow_kill $strigger_pid
 		set exit_code 1
 	}
@@ -136,7 +134,7 @@ expect {
 # might be processed immediately and not found by "strigger --get"
 #
 #if {$idle_matches == 0} {
-#	send_user "\nFAILURE: trigger get failure\n"
+#	log_error "Trigger get failure"
 #	set exit_code 1
 #}
 
@@ -144,7 +142,7 @@ expect {
 # Wait for trigger event (hopefully, shortly after the job completes)
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	set exit_code 1
 }
 if {[wait_for_file $file_out] == 0} {
@@ -155,7 +153,7 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 } else {
-	send_user "\nFAILURE: Idle trigger program's output file missing\n"
+	log_error "Idle trigger program's output file missing"
 	set exit_code 1
 }
 
@@ -170,7 +168,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: strigger not responding\n"
+		log_error "strigger not responding"
 		slow_kill $strigger_pid
 		set exit_code 1
 	}
@@ -179,7 +177,7 @@ expect {
 	}
 }
 if {$idle_matches != 0} {
-	send_user "\nFAILURE: trigger get failure, still exists\n"
+	log_error "Trigger get failure, still exists"
 	set exit_code 1
 }
 

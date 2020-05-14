@@ -44,7 +44,7 @@ proc endit { } {
 	global exit_code
 	reconfigure
 	if {$exit_code != 0} {
-		send_user "\nFAILURE: exiting with exit code $exit_code\n"
+		fail "Exiting due to previous errors with exit code $exit_code"
 	}
 	exit $exit_code
 }
@@ -90,7 +90,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {
@@ -98,7 +98,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted\n"
+	log_error "Batch not submitted"
 	set exit_code 1
 	endit
 }
@@ -115,11 +115,11 @@ expect {
 		exp_continue
 	}
 	-re "TimeLimit=" {
-		send_user "\nFAILURE: job submitted with a time limit different than calculated (00:09:00)\n"
+		log_error "Job submitted with a time limit different than calculated (00:09:00)"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+		log_error "sacct not responding"
 		set exit_code 1
 	}
 	eof {

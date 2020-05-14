@@ -70,7 +70,7 @@ proc check { id tl matches } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding\n"
+			log_error "scontrol not responding"
 			end_it 1
 		}
 		eof {
@@ -78,7 +78,7 @@ proc check { id tl matches } {
 		}
 	}
 	if {$count != $matches} {
-		log_error "scontrol failure ($count != 3)\n"
+		log_error "scontrol failure ($count != 3)"
 		end_it 1
 	}
 }
@@ -100,7 +100,7 @@ expect {
 		#send_user "Job initiated\n"
 	}
 	timeout {
-		log_error "salloc : allocation not granted in $timeout seconds\n"
+		log_error "salloc : allocation not granted in $timeout seconds"
 		end_it 1
 	}
 	eof {
@@ -108,7 +108,7 @@ expect {
 	}
 }
 if {$pack_job_id == 0} {
-	log_error "salloc failure\n"
+	log_error "salloc failure"
 	end_it 1
 }
 

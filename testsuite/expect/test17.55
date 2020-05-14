@@ -60,7 +60,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -68,12 +68,10 @@ expect {
 	}
 }
 if {$found == -1} {
-	send_user "\nFAILURE: scontrol output format error\n"
-	exit 1
+	fail "scontrol output format error"
 }
 if {$found == 1} {
-	send_user "\nFAILURE: partition $part_name already exists\n"
-	exit 1
+	fail "Partition $part_name already exists"
 }
 
 #
@@ -81,8 +79,7 @@ if {$found == 1} {
 #
 set def_node [get_idle_node_in_part [default_partition]]
 if {[string compare $def_node ""] == 0} {
-	send_user "\nFAILURE: default partition seems to have no nodes\n"
-	exit 1
+	fail "Default partition seems to have no nodes"
 }
 
 #
@@ -91,12 +88,12 @@ if {[string compare $def_node ""] == 0} {
 spawn $scontrol create PartitionName=$part_name Nodes=$def_node MaxTime=30
 expect {
 	-re "error" {
-		send_user "\nFAILURE: something bad happened on partition create\n"
+		log_error "Something bad happened on partition create"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -120,7 +117,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -128,8 +125,7 @@ expect {
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: partition not created\n"
-	exit 1
+	fail "Partition not created"
 }
 
 set found 0
@@ -154,7 +150,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 			exp_continue
 		}
@@ -175,7 +171,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 			exp_continue
 		}
@@ -184,7 +180,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 		}
 	}
 	if {$matches != 1} {
-		send_user "\nFAILURE: partition time limit not used \n"
+		log_error "Partition time limit not used "
 		set exit_code 1
 	}
 } else {
@@ -201,7 +197,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
                         exp_continue
                 }
                 timeout {
-                        send_user "\nFAILURE: sbatch not responding\n"
+                        log_error "sbatch not responding"
                         set exit_code 1
                 }
                 eof {
@@ -218,7 +214,7 @@ cancel_job $job_id
 spawn $scontrol delete PartitionName=$part_name
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -242,7 +238,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -250,8 +246,7 @@ expect {
 	}
 }
 if {$found != 0} {
-	send_user "\nFAILURE: partition not deleted\n"
-	exit 1
+	fail "Partition not deleted"
 }
 
 if {$exit_code == 0} {

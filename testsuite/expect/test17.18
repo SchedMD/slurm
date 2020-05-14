@@ -59,7 +59,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -68,8 +68,7 @@ expect {
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
@@ -90,8 +89,7 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
@@ -110,7 +108,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -123,11 +121,11 @@ if {$match_jobid == 0} {
 		send_user "\nWARNING: MinJobAge ($min_job_age) configured too low "
 		send_user "to capture job state after completion\n"
 	} else {
-		send_user "\nFAILURE: Dependency information is missing\n"
+		log_error "Dependency information is missing"
 		set exit_code 1
 	}
 } elseif {$match_jobid != $job_id1} {
-	send_user "\nFAILURE: Dependency information not processed\n"
+	log_error "Dependency information not processed"
 	set exit_code 1
 }
 
@@ -135,10 +133,9 @@ if {$match_jobid == 0} {
 # Wait for job to complete
 #
 if {[wait_for_job $job_id2 "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
 	cancel_job $job_id2
 	cancel_job $job_id1
-	exit 1
+	fail "Waiting for job to complete"
 }
 cancel_job $job_id1
 
@@ -161,7 +158,7 @@ expect {
 	}
 }
 if {$match_state == 0} {
-	send_user "\nFAILURE: Dependent job not completed\n"
+	log_error "Dependent job not completed"
 	set exit_code 1
 }
 
@@ -180,8 +177,7 @@ expect {
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 exec $bin_sleep 5
@@ -201,7 +197,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -210,7 +206,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	send_user "\nFAILURE: unexpected JobState or StartTime $match\n"
+	log_error "Unexpected JobState or StartTime $match"
 	set exit_code 1
 }
 
@@ -218,7 +214,7 @@ if {$match != 2} {
 spawn $scontrol update JobId=$job_id1 StartTime=now
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -244,7 +240,7 @@ while { $delayed < $max_job_delay } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 			exp_continue
 		}
@@ -257,7 +253,7 @@ while { $delayed < $max_job_delay } {
 	}
 }
 if {$is_done == 0} {
-	send_user "\nFAILURE: unexpected JobState\n"
+	log_error "Unexpected JobState"
 	cancel_job $job_id1
 	set exit_code 1
 }
@@ -267,7 +263,7 @@ if {$purged_job == 1} {
 		send_user "\nWARNING: MinJobAge ($min_job_age) configured too low "
 		send_user "to capture job state after completion\n"
 	} else {
-		send_user "\nFAILURE: Could not find job $job_id1\n"
+		log_error "Could not find job $job_id1"
 		set exit_code 1
 	}
 }

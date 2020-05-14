@@ -53,7 +53,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -63,8 +63,7 @@ expect {
 }
 
 if {$task_cnt != $tasks} {
-	send_user "\nFAILURE: Did not get proper number of tasks: "
-	send_user "$task_cnt != $tasks\n"
+	log_error "Did not get proper number of tasks: $task_cnt != $tasks"
 	set exit_code 1
 }
 exit $exit_code

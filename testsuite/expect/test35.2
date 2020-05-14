@@ -118,7 +118,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -127,22 +127,22 @@ expect {
 }
 
 if {$job_id_use == 0} {
-	send_user "\nFAILURE: job did not launch\n"
+	log_error "Job did not launch"
 	set exit_code 1
 } elseif {[wait_for_job $job_id_use "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id_use
 } elseif {[wait_for_file $output_use] != 0} {
 	set exit_code 1
 } elseif {[find_bb_jobid $output_use $job_id_use] == 0} {
-	send_user "\nFAILURE: job burst buffer not found\n"
+	log_error "Job burst buffer not found"
 	set exit_code 1
 } elseif {[find_bb_data $output_use $data_in] == 0} {
-	send_user "\nFAILURE: job burst buffer input data not found\n"
+	log_error "Job burst buffer input data not found"
 	set exit_code 1
 } elseif {[find_bb_data $output_data $data_out] == 0} {
-	send_user "\nFAILURE: job burst buffer output data not found\n"
+	log_error "Job burst buffer output data not found"
 	set exit_code 1
 }
 
@@ -157,7 +157,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -165,12 +165,12 @@ expect {
 	}
 }
 if {$found != 0} {
-	send_user "\nFAILURE: job burst buffer not removed\n"
+	log_error "Job burst buffer not removed"
 	set exit_code 1
 }
 
 if {[find_bb_data $output_data $data_out] == 0} {
-	send_user "\nFAILURE: job output burst buffer data not correct\n"
+	log_error "Job output burst buffer data not correct"
 	set exit_code 1
 }
 

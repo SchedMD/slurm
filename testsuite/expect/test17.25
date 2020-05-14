@@ -85,7 +85,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -94,11 +94,10 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: did not get job_id\n"
-	exit 1
+	fail "Did not get job_id"
 }
 if {$matches != 3} {
-	send_user "\nFAILURE: processed $matches of 3 environment variables\n"
+	log_error "Processed $matches of 3 environment variables"
 	set exit_code 1
 }
 cancel_job $job_id

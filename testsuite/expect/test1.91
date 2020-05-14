@@ -91,7 +91,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -100,8 +100,7 @@ expect {
 	}
 }
 if {[string compare $node_name ""] == 0} {
-	send_user "\nFAILURE: failed to get a usable node name\n"
-	exit 1
+	fail "Failed to get a usable node name"
 }
 
 # Determine how many cpus, sockets, cores, and threads the node has
@@ -175,10 +174,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding "
-		send_user "or failure to recognize prompt\n"
 		slow_kill $salloc_pid
-		exit 1
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $prompt {
 	}
@@ -220,15 +217,13 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: some error occurred\n"
+		log_error "Some error occurred"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding "
-		send_user "or failure to recognize prompt\n"
 		slow_kill $salloc_pid
-		exit 1
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re "$srun" {
 		# just so we don't grab the srun call
@@ -249,13 +244,12 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: some error occurred\n"
+		log_error "Some error occurred"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
-		send_user "or failure to recognize prompt\n"
+		log_error "srun (from --allocate) not responding or failure to recognize prompt"
 		set exit_code 1
 	}
 	-re "$srun" {
@@ -265,7 +259,7 @@ expect {
 	-re $prompt
 }
 if {$task_mask != $expected_mask} {
-	send_user "\nFAILURE: affinity mask inconsistency ($task_mask,$expected_mask)\n"
+	log_error "Affinity mask inconsistency ($task_mask,$expected_mask)"
 	set exit_code 1
 }
 
@@ -295,13 +289,12 @@ while {$this_cnt <= $num_sockets} {
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: some error occurred\n"
+			log_error "Some error occurred"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun (from --allocate) not responding "
-			send_user "or failure to recognize prompt\n"
+			log_error "srun (from --allocate) not responding or failure to recognize prompt"
 			set exit_code 1
 		}
 		-re "$srun" {
@@ -312,11 +305,11 @@ while {$this_cnt <= $num_sockets} {
 	}
 
 	if {$num_tasks != $expected_tasks} {
-		send_user "\nFAILURE: number of tasks inconsistent ($num_tasks,$expected_tasks)\n"
+		log_error "Number of tasks inconsistent ($num_tasks,$expected_tasks)"
 		set exit_code 1
 	}
 	if {$num_bits != $expected_tasks} {
-		send_user "\nFAILURE: number of set bits inconsistent ($num_bits,$expected_tasks)\n"
+		log_error "Number of set bits inconsistent ($num_bits,$expected_tasks)"
 		set exit_code 1
 	}
 	incr this_cnt 1
@@ -349,13 +342,12 @@ while {$this_cnt <= $num_cores} {
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: some error occurred\n"
+			log_error "Some error occurred"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding "
-			send_user "or failure to recognize prompt\n"
+			log_error "salloc not responding or failure to recognize prompt"
 			set exit_code 1
 		}
 		-re "$srun" {
@@ -366,11 +358,11 @@ while {$this_cnt <= $num_cores} {
 	}
 
 	if {$num_tasks != $expected_tasks} {
-		send_user "\nFAILURE: number of tasks inconsistent ($num_tasks,$expected_tasks)\n"
+		log_error "Number of tasks inconsistent ($num_tasks,$expected_tasks)"
 		set exit_code 1
 	}
 	if {$num_bits != $expected_tasks} {
-		send_user "\nFAILURE: number of set bits inconsistent ($num_bits,$expected_tasks)\n"
+		log_error "Number of set bits inconsistent ($num_bits,$expected_tasks)"
 		set exit_code 1
 	}
 	incr this_cnt 1
@@ -403,13 +395,12 @@ while {$this_cnt <= $num_threads} {
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: some error occurred\n"
+			log_error "Some error occurred"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding "
-			send_user "or failure to recognize prompt\n"
+			log_error "salloc not responding or failure to recognize prompt"
 			set exit_code 1
 		}
 		-re "$srun" {
@@ -420,11 +411,11 @@ while {$this_cnt <= $num_threads} {
 	}
 
 	if {$num_tasks != $expected_tasks} {
-		send_user "\nFAILURE: number of tasks inconsistent ($num_tasks,$expected_tasks)\n"
+		log_error "Number of tasks inconsistent ($num_tasks,$expected_tasks)"
 		set exit_code 1
 	}
 	if {$num_bits != $expected_tasks} {
-		send_user "\nFAILURE: number of set bits inconsistent ($num_bits,$expected_tasks)\n"
+		log_error "Number of set bits inconsistent ($num_bits,$expected_tasks)"
 		set exit_code 1
 	}
 	incr this_cnt 1
@@ -456,13 +447,12 @@ while {$this_cnt <= $task_cnt} {
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: some error occurred\n"
+			log_error "Some error occurred"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding "
-			send_user "or failure to recognize prompt\n"
+			log_error "salloc not responding or failure to recognize prompt"
 			set exit_code 1
 		}
 		-re "$srun" {
@@ -473,11 +463,11 @@ while {$this_cnt <= $task_cnt} {
 	}
 
 	if {$num_tasks != $expected_tasks} {
-		send_user "\nFAILURE: number of tasks inconsistent ($num_tasks,$expected_tasks)\n"
+		log_error "Number of tasks inconsistent ($num_tasks,$expected_tasks)"
 		set exit_code 1
 	}
 	if {$num_bits != $this_cnt} {
-		send_user "\nFAILURE: number of set bits inconsistent ($num_bits,$this_cnt)\n"
+		log_error "Number of set bits inconsistent ($num_bits,$this_cnt)"
 		set exit_code 1
 	}
 	incr this_cnt 1
@@ -497,13 +487,12 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: some error occurred\n"
+		log_error "Some error occurred"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding "
-		send_user "or failure to recognize prompt\n"
+		log_error "salloc not responding or failure to recognize prompt"
 		set exit_code 1
 	}
 	-re "$srun" {
@@ -514,7 +503,7 @@ expect {
 }
 
 if {$task_mask != $expected_mask} {
-	send_user "\nFAILURE: affinity mask inconsistency ($task_mask,$expected_mask)\n"
+	log_error "Affinity mask inconsistency ($task_mask,$expected_mask)"
 	set exit_code 1
 }
 
@@ -525,12 +514,11 @@ if {$task_mask != $expected_mask} {
 send "exit\r"
 expect {
 	-re "error" {
-		send_user "\nFAILURE: some error occurred\n"
+		log_error "Some error occurred"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding "
-		send_user "or failure to recognize prompt\n"
+		log_error "salloc not responding or failure to recognize prompt"
 		slow_kill $salloc_pid
 		set exit_code 1
 	}
@@ -547,8 +535,7 @@ if {$exit_code == 0} {
 	send_user "  (sockets, cores, threads) differs from the actual configuration\n"
 	send_user "  or if using task/cgroup without task/affinity.\n"
 } else {
-	send_user "\nFAILURE\n"
-	set exit_code 1
+	fail "Test failed due to previous errors"
 }
 exit $exit_code
 

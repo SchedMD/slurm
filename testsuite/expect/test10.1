@@ -53,7 +53,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: smap not responding\n"
+		log_error "smap not responding"
 		set exit_code 1
 	}
 	eof {
@@ -62,7 +62,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: smap failed to report usage format\n"
+	log_error "smap failed to report usage format"
 	set exit_code 1
 }
 exit $exit_code

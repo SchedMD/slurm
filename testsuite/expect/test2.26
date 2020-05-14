@@ -47,7 +47,7 @@ proc top_enabled { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 			exp_continue
 		}
@@ -70,7 +70,7 @@ proc submit_job { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 			exp_continue
 		}
@@ -101,7 +101,7 @@ proc load_job_prio { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 			exp_continue
 		}
@@ -143,7 +143,7 @@ set job_id(0) [submit_job]
 set job_id(1) [submit_job]
 set job_id(2) [submit_job]
 if {$job_id(0) == 0 || $job_id(1) == 0 || $job_id(2) == 0} {
-	send_user "\nFAILURE: failed to submit jobs\n"
+	log_error "Failed to submit jobs"
 	set exit_code 1
 	end_it
 }
@@ -159,7 +159,7 @@ send_user "\Reset and test job priorities\n\n"
 spawn $scontrol top $job_id(2),$job_id(1)
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -169,7 +169,7 @@ expect {
 }
 load_job_prio
 if {$prio(2) <= $prio(1) || $prio(1) <= $prio(0)} {
-	send_user "\nFAILURE: job priorities not reset as expected ($prio(2) <= $prio(1) <= $prio(0))\n"
+	log_error "Job priorities not reset as expected ($prio(2) <= $prio(1) <= $prio(0))"
 	set exit_code 1
 	end_it
 }
@@ -178,7 +178,7 @@ send_user "\Reset and test job priorities\n\n"
 spawn $scontrol top $job_id(0)
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -188,7 +188,7 @@ expect {
 }
 load_job_prio
 if {$prio(0) <= $prio(1) || $prio(0) <= $prio(2)} {
-	send_user "\nFAILURE: job priorities not reset as expected ($prio(0) <= $prio(1) && $prio(0) <= $prio(2))\n"
+	log_error "job priorities not reset as expected ($prio(0) <= $prio(1) && $prio(0) <= $prio(2))"
 	set exit_code 1
 	end_it
 }

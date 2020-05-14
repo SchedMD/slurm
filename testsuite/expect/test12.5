@@ -84,7 +84,7 @@ proc sacct_job { soption } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct not responding\n"
+			log_error "sacct not responding"
 			set exit_code 1
 		}
 		eof {
@@ -102,13 +102,13 @@ proc sacct_job { soption } {
 ################################################################
 set matches [sacct_job --helpformat]
 if {$matches != 2} {
-	send_user "\nFAILURE: sacct --helpformat failed ($matches of 2)\n"
+	log_error "sacct --helpformat failed ($matches of 2)"
 	set exit_code 1
 }
 
 set matches [sacct_job -e]
 if {$matches != 2} {
-	send_user "\nFAILURE: sacct -e failed ($matches of 2)\n"
+	log_error "sacct -e failed ($matches of 2)"
 	set exit_code 1
 }
 

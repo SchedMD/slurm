@@ -59,11 +59,10 @@ set user_name [get_my_user_name]
 spawn $scontrol create reservation ReservationName=$resv_name starttime=now duration=2 nodecnt=2 flags=replace partition=$def_part_name users=$user_name
 expect {
 	-re "Error|error" {
-		send_user "\nFAILURE: error creating reservation\n"
-		exit 1
+		fail "Error creating reservation"
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -86,7 +85,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -94,7 +93,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: reservation REPLACE flag not found\n"
+	log_error "Reservation REPLACE flag not found"
 	set exit_code 1
 }
 
@@ -104,7 +103,7 @@ if {$match != 1} {
 spawn $srun -t1 -n1 --reservation=$resv_name $bin_hostname
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -122,7 +121,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -130,7 +129,7 @@ expect {
 	}
 }
 if {![string compare $node_list_orig $node_list_new]} {
-	send_user "\nFAILURE: reservation failed to replace allocated node\n"
+	log_error "Reservation failed to replace allocated node"
 	set exit_code 1
 }
 
@@ -140,11 +139,11 @@ if {![string compare $node_list_orig $node_list_new]} {
 spawn $scontrol update NodeName=$node_list_new State=DRAIN Reason=TESTING
 expect {
 	-re "Error|error" {
-		send_user "\nFAILURE: error updating node\n"
+		log_error "Error updating node"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -165,7 +164,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -173,7 +172,7 @@ expect {
 	}
 }
 if {![string compare $node_list_orig $node_list_new]} {
-	send_user "\nFAILURE: reservation failed to replace drain node\n"
+	log_error "Reservation failed to replace drain node"
 	set exit_code 1
 }
 
@@ -183,11 +182,11 @@ if {![string compare $node_list_orig $node_list_new]} {
 spawn $scontrol delete ReservationName=$resv_name
 expect {
 	-re "Error|error" {
-		send_user "\nFAILURE: error deleting reservation\n"
+		log_error "Error deleting reservation"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -197,11 +196,11 @@ expect {
 spawn $scontrol update NodeName=$node_list_new State=RESUME
 expect {
 	-re "Error|error" {
-		send_user "\nFAILURE: error updating node\n"
+		log_error "Error updating node"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -211,6 +210,5 @@ expect {
 
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

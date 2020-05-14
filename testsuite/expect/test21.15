@@ -153,7 +153,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,DefaultA,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw"  names=$tu1 withassoc]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	        log_error "There was a problem with the sacctmgr command"
 	    	incr exit_code 1
 	}
 	-re "($tu1.$ta2.$user_req1(adminlevel).($tc1|$tc2|$tc3).($ta1|$ta2|$ta3).$user_req1(fairshare).$user_req1(maxcpumin).$user_req1(maxjob).$user_req1(maxnode).$user_req1(maxwall).)" {
@@ -161,7 +161,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -171,7 +171,7 @@ expect {
 }
 
 if {$matches != 9} {
-	send_user "\nFAILURE:  Account addition 9 incorrect with only $matches.\n"
+	log_error "Account addition 9 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -210,6 +210,5 @@ incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 incr exit_code [remove_qos "$dqos1"]
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

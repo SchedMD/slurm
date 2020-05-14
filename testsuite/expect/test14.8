@@ -90,7 +90,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -100,15 +100,14 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete and check output file
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -117,16 +116,16 @@ if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
 		-re "differ" {
-			send_user "\nFAILURE: sbcast transmitted file differs from original\n"
+			log_error "sbcast transmitted file differs from original"
 			set exit_code 1
 			exp_continue
 		}
 		-re "no such" {
-			send_user "\nFAILURE: sbcast failed to transmit the file\n"
+			log_error "sbcast failed to transmit the file"
 			set exit_code 1
 		}
 		-re "error" {
-			send_user "\nFAILURE: some error occurred\n"
+			log_error "Some error occurred"
 			set exit_code 1
 			exp_continue
 		}

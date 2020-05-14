@@ -79,7 +79,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -88,15 +88,15 @@ expect {
 	}
 }
 if {$match_run < 1} {
-	send_user "\nFAILURE: srun failed to properly start\n"
+	log_error "srun failed to properly start"
 	set exit_code 1
 }
 if {$match_sig < 1} {
-	send_user "\nFAILURE: srun failed to properly process SIGINT\n"
+	log_error "srun failed to properly process SIGINT"
 	set exit_code 1
 }
 if {$match_abort < 1} {
-	send_user "\nFAILURE: srun failed to properly process multiple SIGINT to abort\n"
+	log_error "srun failed to properly process multiple SIGINT to abort"
 	set exit_code 1
 }
 

@@ -67,7 +67,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -123,11 +123,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -138,7 +137,7 @@ expect {
 if {$timed_out == 1} {
 	send_user "Early termination is expected, no worries.\n"
 } else {
-	send_user "\nFAILURE: time limit not enforced\n"
+	log_error "Time limit not enforced"
 	set exit_code 1
 }
 
@@ -158,15 +157,14 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	-re "error" {
 		set completions -1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -176,8 +174,7 @@ expect {
 	}
 }
 if {$completions != 1} {
-	send_user "\nFAILURE: job failed to complete properly\n"
-	set exit_code 1
+	fail "Job failed to complete properly"
 }
 
 exit $exit_code

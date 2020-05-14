@@ -57,7 +57,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -66,8 +66,7 @@ expect {
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: job submit failure\n"
-	exit 1
+	fail "Job submit failure"
 }
 
 set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --job-name=$job_name2 -t1 $file_in]
@@ -77,7 +76,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -86,9 +85,8 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	send_user "\nFAILURE: job submit failure\n"
 	cancel_job $job_id1
-	exit 1
+	fail "Job submit failure"
 }
 exec $bin_rm -f $file_in
 
@@ -105,7 +103,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -113,7 +111,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scancel name filter failed\n"
+	log_error "scancel name filter failed"
 	set exit_code 1
 }
 
@@ -126,7 +124,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -134,12 +132,12 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scancel name filter failed\n"
+	log_error "scancel name filter failed"
 	set exit_code 1
 }
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
 exit $exit_code
 

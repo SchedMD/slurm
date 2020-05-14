@@ -58,17 +58,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: srun job submit failure\n"
-	exit 1
+	fail "srun job submit failure"
 }
 
 set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --hold -t1 $file_in]
@@ -78,24 +76,21 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id2 == 0} {
-        send_user "\nFAILURE: srun job submit failure\n"
-	exit 1
+    fail "srun job submit failure"
 }
 
 if {[wait_for_job $job_id1 RUNNING] != 0} {
-	send_user "\nFAILURE to start job $job_id1\n"
 	cancel_job $job_id1
 	cancel_job $job_id2
-	exit 1
+	fail "Failed to start job $job_id1"
 }
 exec $bin_rm -f $file_in
 
@@ -111,7 +106,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
+		log_error "squeue not responding"
 		cancel_job $job_id2
 		set exit_code 1
 	}
@@ -121,7 +116,7 @@ expect {
 }
 
 if {$have_header > 0} {
-	send_user "\nFAILURE: squeue noheader error\n"
+	log_error "squeue noheader error"
 	set exit_code 1
 }
 
@@ -145,7 +140,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
+		log_error "squeue not responding"
 		set exit_code 1
 	}
 	eof {
@@ -154,11 +149,11 @@ expect {
 }
 
 if {$have_job_ids == 0} {
-	send_user "\nFAILURE: squeue format error\n"
+	log_error "squeue format error"
 	set exit_code 1
 }
 if {$have_job_ids == 1} {
-	send_user "\nFAILURE: squeue found only 1 of 2 jobs\n"
+	log_error "squeue found only 1 of 2 jobs"
 	set exit_code 1
 }
 
@@ -181,7 +176,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
+		log_error "squeue not responding"
 		set exit_code 1
 	}
 	eof {
@@ -191,11 +186,11 @@ expect {
 unset env(SQUEUE_FORMAT)
 
 if {$have_job_ids == 0} {
-	send_user "\nFAILURE: squeue format error\n"
+	log_error "squeue format error"
 	set exit_code 1
 }
 if {$have_job_ids == 1} {
-	send_user "\nFAILURE: squeue found only 1 of 2 jobs\n"
+	log_error "squeue found only 1 of 2 jobs"
 	set exit_code 1
 }
 
@@ -222,7 +217,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
+		log_error "squeue not responding"
 		set exit_code 1
 	}
 	eof {
@@ -231,7 +226,7 @@ expect {
 }
 
 if {$step_found == 0} {
-	send_user "\nFAILURE: squeue step format error\n"
+	log_error "squeue step format error"
 	set exit_code 1
 }
 

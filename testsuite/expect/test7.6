@@ -102,7 +102,7 @@ expect {
 		set job_id $expect_out(1,string)
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -114,8 +114,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: salloc failed to allocate a job\n"
-	exit 1
+	fail "salloc failed to allocate a job"
 }
 
 #
@@ -184,7 +183,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: totalviewcli not responding\n"
+		log_error "totalviewcli not responding"
 		set exit_code 1
 	}
 	eof {
@@ -196,7 +195,7 @@ if {$no_capability != 0} {
 	exit 0
 }
 if {$matches != 12} {
-	send_user "\nFAILURE: totalviewcli operation matches $matches of 12\n"
+	log_error "totalviewcli operation matches $matches of 12"
 	send_user "Remove your ~/.totalview directory and try again\n"
 	set exit_code 1
 }

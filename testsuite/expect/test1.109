@@ -55,7 +55,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {
@@ -63,16 +63,14 @@ expect {
 	}
 }
 if {$job_id != 0} {
-	send_user "\nFAILURE: job submitted with a deadline too short\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job submitted with a deadline too short"
 }
 if {$invalid_tl == 0} {
-	send_user "\nFAILURE: failed to generate deadline error\n"
-	exit 1
+	fail "Failed to generate deadline error"
 }
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE: job not with DEADLINE status.\n"
+	fail "Job not with DEADLINE status"
 }
 exit $exit_code

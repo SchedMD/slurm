@@ -74,21 +74,19 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch failed to submit job\n"
-	exit 1
+	fail "sbatch failed to submit job"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Waiting for job to complete"
 }
 
 if {[wait_for_file $file_out] != 0} {
-	exit 1
+	fail "Job did not produce output"
 }
 
 spawn $bin_cat $file_out
@@ -103,8 +101,7 @@ expect {
 }
 
 if {$got_job_grps == 0} {
-	send_user "\nFAILURE: Did not get user info from slurm job\n"
-	exit 1
+	fail "Did not get user info from slurm job"
 }
 
 if {$exit_code == 0} {

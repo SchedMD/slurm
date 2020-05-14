@@ -69,7 +69,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -82,8 +82,7 @@ expect {
 }
 
 if {$got_job_grps == 0} {
-	send_user "\nFAILURE: Did not get user info from slurm job\n"
-	exit 1
+	fail "Did not get user info from slurm job"
 }
 
 #
@@ -92,7 +91,7 @@ if {$got_job_grps == 0} {
 #
 
 if {[string compare $login_grp_info $job_grp_info] != 0} {
-	send_user "\nFAILURE: Login and slurm user info mismatch\n"
+	log_error "Login and slurm user info mismatch"
 	set exit_code 1
 }
 exit $exit_code

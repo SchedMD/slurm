@@ -90,16 +90,14 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
-	exit 1
+	fail "Waiting for job to complete"
 }
 
 #
@@ -121,7 +119,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: /bin/cat not responding\n"
+		log_error "/bin/cat not responding"
 		set exit_code 1
 	}
 	eof {
@@ -129,7 +127,7 @@ expect {
 	}
 }
 if {$fini != 1} {
-	send_user "\nFAILURE: script never completed\n"
+	log_error "Script never completed"
 	set exit_code 1
 }
 if {$matches != 0} {
@@ -137,7 +135,7 @@ if {$matches != 0} {
 	if {$matches <= 1} {
 		send_user "\nWARNING: $matches of $tot tests failed\n"
 	} else {
-		send_user "\nFAILURE: $matches of $tot tests failed\n"
+		log_error "$matches of $tot tests failed"
 		set exit_code 1
 	}
 	send_user "  This should happen infrequently, typically when\n"

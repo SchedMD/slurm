@@ -50,7 +50,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -58,17 +58,17 @@ expect {
 	}
 }
 if {$sub_match != 1} {
-	send_user "\nFAILURE: srun did not submitt job\n"
+	log_error "srun did not submitt job"
 }
 
 spawn diff $file_in $file_out
 expect {
 	-re "differ" {
-		send_user "\nFAILURE: binary file and the output file do not match\n"
+		log_error "Binary file and the output file do not match"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: diff is not responding\n"
+		log_error "diff is not responding"
 		set exit_code 1
 	}
 	eof {

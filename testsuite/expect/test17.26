@@ -62,7 +62,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -70,7 +70,7 @@ expect {
 	}
 }
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	log_error "Job did not complete"
 	set exit_code 1
 }
 if {[wait_for_file $file_out] == 0} {
@@ -86,8 +86,7 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: sbatch failed to process --input\n"
-	set exit_code 1
+	fail "Sbatch failed to process --input"
 }
 
 if {$exit_code == 0} {

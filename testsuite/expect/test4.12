@@ -58,7 +58,7 @@ proc scontrol_test { node proc_cnt } {
 			set num_alloc $expect_out(1,string)
 			set found 1
 			if {$proc_cnt != $num_alloc} {
-				send_user "\nFAILURE: requested $proc_cnt but got $num_alloc instead\n"
+				log_error "Requested $proc_cnt but got $num_alloc instead"
 				set rc 1
 			}
 			exp_continue
@@ -66,7 +66,7 @@ proc scontrol_test { node proc_cnt } {
 		-re $prompt {
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $mypid
 			return 1
 		}
@@ -76,7 +76,7 @@ proc scontrol_test { node proc_cnt } {
 	}
 
 	if {!$found} {
-		send_user "\nFAILURE: didn't get expected output from scontrol\n"
+		log_error "Didn't get expected output from scontrol"
 		set rc 1
 	}
 
@@ -118,13 +118,13 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 			}
 
 			if { $num_alloc != $proc_cnt } {
-				send_user "\nFAILURE: sinfo 1 allocated cpus wrong, got $num_alloc but needed $proc_cnt\n"
+				log_error "sinfo 1 allocated cpus wrong, got $num_alloc but needed $proc_cnt"
 				set rc 1
 			} elseif { $num_idle != $idle_cpus } {
-				send_user "\nFAILURE: sinfo 1 idle cpus wrong, got $num_idle but needed $idle_cpus\n"
+				log_error "sinfo 1 idle cpus wrong, got $num_idle but needed $idle_cpus"
 				set rc 1
 			} elseif { $num_total != $total_procs } {
-				send_user "\nFAILURE: sinfo 1 total cpus wrong, got $num_total but needed $total_procs\n"
+				log_error "sinfo 1 total cpus wrong, got $num_total but needed $total_procs"
 				set rc 1
 			}
 			exp_continue
@@ -132,7 +132,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 		-re $prompt {
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo not responding\n"
+			log_error "sinfo not responding"
 			slow_kill $mypid
 			return 1
 		}
@@ -142,7 +142,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 	}
 
 	if {!$found} {
-		send_user "\nFAILURE: didn't get expected output from sinfo\n"
+		log_error "Didn't get expected output from sinfo"
 		set rc 1
 	}
 
@@ -193,7 +193,7 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 		-re $prompt {
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo not responding\n"
+			log_error "sinfo not responding"
 			slow_kill $mypid
 			return 1
 		}
@@ -203,10 +203,10 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 	}
 
 	if { $num_alloc != $alloc_nodes } {
-		send_user "\nFAILURE: sinfo 2 allocated nodes wrong, got $num_alloc but needed $alloc_nodes\n"
+		log_error "sinfo 2 allocated nodes wrong, got $num_alloc but needed $alloc_nodes"
 		set rc 1
 	} elseif { $num_idle != $idle_nodes } {
-		send_user "\nFAILURE: sinfo 2 idle nodes wrong, got $num_idle but needed $idle_nodes\n"
+		log_error "sinfo 2 idle nodes wrong, got $num_idle but needed $idle_nodes"
 		set rc 1
 	}
 
@@ -261,11 +261,11 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 		}
 
 		-re "Unable to contact" {
-			send_user "\nFAILURE: slurm appears to be down\n"
+			log_error "Slurm appears to be down"
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding\n"
+			log_error "salloc not responding"
 			if {$job_id != 0} {
 				cancel_job $job_id
 			}
@@ -330,7 +330,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -346,7 +346,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -355,7 +355,7 @@ expect {
 }
 log_user 1
 if {$host_cnt == 0} {
-	send_user "\nFAILURE: could not find any nodes in default partition\n"
+	log_error "Could not find any nodes in default partition"
 	exit 1
 }
 
@@ -387,7 +387,7 @@ catch {close $fd}
 log_user 1
 
 if {!$inode_procs} {
-	send_user "\nFAILURE: couldn't find an idle node in the default partition\n"
+	log_error "Couldn't find an idle node in the default partition"
 	exit 1
 }
 

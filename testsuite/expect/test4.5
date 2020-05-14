@@ -52,7 +52,7 @@ proc change_state { state nodes } {
 	spawn $scontrol update nodename=$nodes state=$state reason=test
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -69,7 +69,7 @@ proc reset_state { } {
 		spawn $scontrol update nodename=$node_list($num) state=idle
 		expect {
 			timeout {
-				send_user "\nFAILURE: scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -95,7 +95,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof  {
@@ -110,8 +110,7 @@ if {$num_nodes < 8} {
 }
 
 if {$num_cpus == 0} {
-	send_user "\nFAILURE: Number of CPUs reported is zero\n"
-	exit 1
+	fail "Number of CPUs reported is zero"
 }
 
 #
@@ -128,7 +127,7 @@ expect {
 		}
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -155,7 +154,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -164,12 +163,12 @@ expect {
 }
 
 if {$tmp_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
+	log_error "sbatch did not submit job"
 	set exit_code 1
 }
 
 if {[wait_for_job $tmp_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $tmp_id to start\n"
+	log_error "Error waiting for job $tmp_id to start"
 	cancel_job $tmp_id
 	set exit_code 1
 }
@@ -183,15 +182,14 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		send_user "\nFAILURE: Unexpected error from sinfo\n"
+		log_error "Unexpected error from sinfo"
 		set exit_code 1
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -220,15 +218,14 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		send_user "\nFAILURE: Unexpected error from sinfo\n"
+		log_error "Unexpected error from sinfo"
 		set exit_code 1
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -249,15 +246,14 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		send_user "\nFAILURE: Unexpected error from sinfo\n"
+		log_error "Unexpected error from sinfo"
 		set exit_code 1
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -278,15 +274,14 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		send_user "\nFAILURE: Unexpected error from sinfo\n"
+		log_error "Unexpected error from sinfo"
 		set exit_code 1
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -300,7 +295,7 @@ expect {
 reset_state
 
 if {$mismatches != 0} {
-	send_user "\nFAILURE: sinfo node filtering error\n"
+	log_error "sinfo node filtering error"
 	set exit_code 1
 }
 if {$exit_code == 0} {

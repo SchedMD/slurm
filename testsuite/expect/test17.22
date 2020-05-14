@@ -49,12 +49,12 @@ expect {
 		exp_continue
 	}
 	-re "Submitted batch job" {
-		send_user "\nFAILURE: bogus job script should not have been submitted\n"
+		log_error "Bogus job script should not have been submitted"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -63,8 +63,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: unexpected output from bad job name\n"
-	set exit_code 1
+	fail "Unexpected output from bad job name"
 }
 
 exit $exit_code

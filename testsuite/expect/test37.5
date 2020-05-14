@@ -125,7 +125,7 @@ proc check_ctl_state { job_id state cluster } {
 			exp_continue
 		}
 		timeout {
-			log_error "FAILURE: scontrol is not responding"
+			log_error "scontrol is not responding"
 			end_it 1
 		}
 		eof {
@@ -150,7 +150,7 @@ proc check_missing_job { job_id cluster } {
 			exp_continue
 		}
 		timeout {
-			log_error "FAILURE: scontrol is not responding"
+			log_error "scontrol is not responding"
 			end_it 1
 		}
 		eof {
@@ -368,7 +368,7 @@ proc get_slurm_conf { cluster } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $scon_pid
 			set exit_code 1
 		}
@@ -479,7 +479,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "FAILURE: sbatch is not responding"
+		log_error "sbatch is not responding"
 		end_it 1
 	}
 	eof {
@@ -488,7 +488,7 @@ expect {
 }
 
 if { $job_id == 0 } {
-	log_error "FAILURE: sbatch did not submit job"
+	log_error "sbatch did not submit job"
 	end_it 1
 }
 
@@ -608,7 +608,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		end_it 1
 	}
 	eof {
@@ -617,7 +617,7 @@ expect {
 }
 
 if { $job_id == 0 } {
-	send_user "\nFAILURE: sbatch did not submit job\n"
+	log_error "sbatch did not submit job"
 	end_it 1
 }
 

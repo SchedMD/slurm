@@ -85,7 +85,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -105,7 +105,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n";
+		log_error "scontrol is not responding";
 		set exit_code 1
 	}
 	eof {
@@ -134,7 +134,7 @@ foreach opt [array names conf_val] {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -144,16 +144,14 @@ foreach opt [array names conf_val] {
 	log_user 1
 
 	if {$match != 1} {
-		send_user "\nFAILURE: $opt = $conf_val($opt)"
-		send_user " Was not found in new config file\n"
+		log_error "$opt = $conf_val($opt) was not found in new config file"
 		set exit_code 1
 	} else {
 		incr tot_match
 	}
 }
 if {$tot_match != $opt_cnt} {
-	send_user "FAILURE: not all the values in the new config "
-	send_user "file were found ($tot_match != $opt_cnt)\n"
+	log_error "Not all the values in the new config file were found ($tot_match != $opt_cnt)"
 	set exit_code 1
 }
 

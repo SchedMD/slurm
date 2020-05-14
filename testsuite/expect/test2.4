@@ -68,7 +68,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -76,7 +76,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol ping or exit command failed\n"
+	log_error "scontrol ping or exit command failed"
 	set exit_code 1
 }
 
@@ -107,7 +107,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -115,7 +115,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol ping or quit command failed\n"
+	log_error "scontrol ping or quit command failed"
 	set exit_code 1
 }
 
@@ -154,7 +154,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -162,7 +162,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: scontrol ping, !!, or quit command failed\n"
+	log_error "scontrol ping, !!, or quit command failed"
 	set exit_code 1
 }
 

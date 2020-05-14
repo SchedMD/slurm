@@ -169,7 +169,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor format=user,DefaultAccount,Admin,Coord cluster=$tc1]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	        log_error "There was a problem with the sacctmgr command"
 	    	incr exit_code 1
 	}
 	-re "($us1.$nm1.$aln.$nm1.|($us2|$us3).$nm1.$aln..)" {
@@ -177,7 +177,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -187,7 +187,7 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE:  Coordinator add 3 incorrect with only $matches.\n"
+	log_error "Coordinator add 3 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -207,15 +207,15 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor format=user,DefaultAccount,Admin,Coord cluster=$tc1]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	   	incr exit_code 1
 	}
 	-re "($us1.$nm1.$aln.$nm1.|($us2|$us3).$nm1.$aln.$nm1,$nm3)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -225,7 +225,7 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE:  User modification 3 incorrect with only $matches.\n"
+	log_error "User modification 3 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -236,7 +236,5 @@ incr exit_code [remove_acct "" "$nm1,$nm2,$nm3"]
 incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code
-

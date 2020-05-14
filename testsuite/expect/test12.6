@@ -91,13 +91,11 @@ expect {
 		exit 0;
 	}
 	-re "error:" {
-		send_user "\nFAILURE: something happened on start of job\n"
-		exit 1
+		fail "Something happened on start of job"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "Srun not responding"
 	}
 	eof {
 		wait
@@ -108,14 +106,12 @@ set timeout 10
 set srun_pid [spawn $sh5util -j $job_id]
 expect {
 	"Output file generated is empty" {
-		send_user "\nFAILURE: sh5util merge didn't make anything\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "Sh5util merge didn't make anything"
 	}
 	timeout {
-		send_user "\nFAILURE: sh5util merge not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "Sh5util merge not responding"
 	}
 	eof {
 		wait
@@ -126,14 +122,12 @@ set hdf5_file "job_$job_id.h5"
 set srun_pid [spawn $sh5util -j $job_id -E -l Node:TimeSeries -s Tasks -o $file_out]
 expect {
 	"Output file generated is empty" {
-		send_user "\nFAILURE: sh5util extract didn't make anything\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "Sh5util extract didn't make anything"
 	}
 	timeout {
-		send_user "\nFAILURE: sh5util extract not responding\n"
+		fail "Sh5util extract not responding"
 		slow_kill $srun_pid
-		exit 1
 	}
 	eof {
 		wait
@@ -160,15 +154,15 @@ while {$fd > 0 && [gets $fd line] != -1} {
 		set read_disk_col [lsearch $tokens "ReadMB"]
 
 		if {$et_col == -1} {
-			send_user "\nFAILURE: no ElapsedTime column found\n"
+			log_error "No ElapsedTime column found"
 			set exit_code 1
 		}
 		if {$cpu_util_col == -1} {
-			send_user "\nFAILURE: no CPUUtilization column found\n"
+			log_error "No CPUUtilization column found"
 			set exit_code 1
 		}
 		if {$read_disk_col == -1} {
-			send_user "\nFAILURE: no ReadMB column found\n"
+			log_error "No ReadMB column found"
 			set exit_code 1
 		}
 
@@ -215,12 +209,12 @@ while {$fd > 0 && [gets $fd line] != -1} {
 close $fd
 
 if {$lno == 0} {
-	send_user "\nFAILURE: $file_out is empty\n"
+	log_error "$file_out is empty"
 	set exit_code 1
 }
 
 if {$nerr > 3} {
-	send_user "\nFAILURE: $nerr is too many values out of range\n"
+	log_error "$nerr is too many values out of range"
 		set exit_code 1
 }
 

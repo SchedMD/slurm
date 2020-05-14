@@ -33,8 +33,7 @@ proc inc3_11_10 {} {
 	# Make the reservation
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=[available_nodes_hostnames "" true] flags=DAILY user=$user_name" 0]
 	if {$ret_code != 0} {
-		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation (Within: inc3.11.10)\033\[m\n"
-		exit $ret_code
+		fail "Unable to create a valid reservation (Within: inc3.11.10)"
 	}
 
 	set res_name_save $res_name
@@ -42,10 +41,9 @@ proc inc3_11_10 {} {
 	# Test for reservation conflict
 	set ret_code [create_res "StartTime=now Duration=120 NodeCnt=1 user=$user_name" 1]
 	if {$ret_code == 0} {
-		send_user "\n\033\[31mFAILURE: Reservation did not fail but should have (Within: inc3.11.10)\033\[m\n"
 		delete_res $res_name_save
 		delete_res $res_name
-		exit 1
+		fail "Reservation did not fail but should have (Within: inc3.11.10)"
 	} else {
 		send_user "\033\[32mExpected error.  You can turn that frown upside-down.(Within: inc3.11.10)\033\[m\n"
 	}
@@ -53,10 +51,9 @@ proc inc3_11_10 {} {
 	# Test for reservation conflict
 	set ret_code [create_res "StartTime=now+6days Duration=120 NodeCnt=1 user=$user_name" 2]
 	if {$ret_code == 0} {
-		send_user "\n\033\[31mFAILURE: Reservation did not fail but should have (Within: inc3.11.10)\033\[m\n"
 		delete_res $res_name_save
 		delete_res $res_name
-		exit 1
+		fail "Reservation did not fail but should have (Within: inc3.11.10)"
 	} else {
 		send_user "\033\[32mExpected error.  You can turn that frown upside-down.(Within: inc3.11.10)\033\[m\n"
 	}

@@ -59,7 +59,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -68,8 +68,7 @@ expect {
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
@@ -84,7 +83,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -93,8 +92,7 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
@@ -108,7 +106,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -116,7 +114,7 @@ expect {
 	}
 }
 if {$match_jobid != $job_id1} {
-	send_user "\nFAILURE: Dependency information not processed\n"
+	log_error "Dependency information not processed"
 	set exit_code 1
 }
 
@@ -125,7 +123,7 @@ if {$match_jobid != $job_id1} {
 # Confirm that first job is complete before second job starts
 #
 if {[wait_for_file $file_out2] != 0} {
-	send_user "\nFAILURE: file $file_out2 is missing\n"
+	log_error "File $file_out2 is missing"
         set exit_code 1
 } else {
 	set match_job_state 0
@@ -140,7 +138,7 @@ if {[wait_for_file $file_out2] != 0} {
 		}
 	}
 	if {$match_job_state == 0} {
-		send_user "\nFAILURE: Dependent job not completed\n"
+		log_error "Dependent job not completed"
 		set exit_code 1
 	}
 }

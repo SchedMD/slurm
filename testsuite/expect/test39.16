@@ -55,8 +55,7 @@ set nb_tasks 1
 
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 2} {
 	send_user "\nWARNING: This test requires 2 or more GPUs in the default partition\n"
@@ -95,7 +94,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -104,7 +103,7 @@ expect {
 	}
 }
 if {$match != $nb_tasks} {
-	send_user "\nFAILURE: srun --gpus-per-task with --exclusive failure ($match != $nb_tasks)\n"
+	log_error "srun --gpus-per-task with --exclusive failure ($match != $nb_tasks)"
 	set exit_code 1
 }
 

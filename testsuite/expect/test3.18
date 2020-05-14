@@ -62,7 +62,7 @@ expect {
                 exp_continue
         }
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -87,7 +87,7 @@ expect {
                 exp_continue
         }
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -95,8 +95,7 @@ expect {
 	}
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: Something seems to be wrong with the state of node $host_name.\n"
-	exit 1
+	fail "Something seems to be wrong with the state of node $host_name"
 }
 
 #
@@ -112,7 +111,7 @@ expect {
                 exp_continue
         }
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -120,9 +119,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Node GRES change request not rejected.\n"
-	send_user "\nFAILURE: Configuration of node $host_name is likely left in a bad state.\n"
-	exit 1
+	fail "Node GRES change request not rejected. Configuration of node $host_name is likely left in a bad state"
 }
 
 exit $exit_code

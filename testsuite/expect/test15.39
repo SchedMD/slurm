@@ -57,7 +57,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -88,12 +88,12 @@ expect {
 	-re "SLURM_NNODES=($number)" {
 		set nodes $expect_out(1,string)
 		if {$nodes != 1} {
-			send_user "\nFAILURE: expected 1 allocated node\n"
+			log_error "Expected 1 allocated node"
 			set exit_code 1
 		}
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		set exit_code 1
 	}
 	eof {
@@ -102,7 +102,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: job submit failure\n"
+	log_error "Job submit failure"
 	exit 1
 }
 

@@ -46,8 +46,7 @@ if {[test_cons_tres]} {
 
 set gpu_cnt [get_gpu_count 1]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 2} {
 	send_user "\nWARNING: This test requires 2 or more GPUs in the default partition\n"
@@ -84,7 +83,7 @@ if {$node_conf(Sockets) < 2} {
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --accel-bind=g -J "test$test_id" -t1 ./$file_in]
 	expect {
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -100,7 +99,7 @@ if {$node_conf(Sockets) < 2} {
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --gpu-bind=closest -J "test$test_id" -t1 ./$file_in]
 	expect {
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -148,7 +147,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -157,7 +156,7 @@ expect {
 	}
 }
 if {$matches != $match_goal} {
-	send_user "\nFAILURE: --gpu-bind=$map_gpu not respected ($matches != $match_goal)\n"
+	log_error "--gpu-bind=$map_gpu not respected ($matches != $match_goal)"
 	set exit_code 1
 }
 
@@ -195,7 +194,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -204,7 +203,7 @@ expect {
 	}
 }
 if {$matches != $match_goal} {
-	send_user "\nFAILURE: --gpu-bind=$mask_gpu not respected ($matches != $match_goal)\n"
+	log_error "--gpu-bind=$mask_gpu not respected ($matches != $match_goal)"
 	set exit_code 1
 }
 

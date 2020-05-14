@@ -54,8 +54,7 @@ set def_part [default_partition]
 spawn $scontrol show partition $def_part
 expect {
 	-re "not found" {
-		send_user "\nFAILURE: partition $def_part doesn't exist\n"
-		exit 1
+		fail "Partition $def_part doesn't exist"
 	}
 	-re "MaxNodes=($number)" {
 		set max_nodes $expect_out(1,string)
@@ -66,8 +65,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		exit 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -92,9 +90,7 @@ set timeout $max_job_delay
 for {set i 0} {$i<3} {incr i} {
 	if { $i==1 } {
 		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
-			send_user "\nFAILURE: node names not set from \
-				previous srun\n"
-			exit 1
+			fail "node names not set from previous srun"
 		}
 		set env(SLURM_HOSTFILE) $hostfile
 		set 1node0 $node2
@@ -105,9 +101,7 @@ for {set i 0} {$i<3} {incr i} {
 		close $file
 	} elseif { $i==2 } {
 		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
-			send_user "\nFAILURE: node names not set from \
-				previous srun\n"
-			exit 1
+			fail "Node names not set from previous srun"
 		}
 		set env(SLURM_HOSTFILE) $hostfile
 		set 2node0 $node1
@@ -144,7 +138,7 @@ for {set i 0} {$i<3} {incr i} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -156,24 +150,24 @@ for {set i 0} {$i<3} {incr i} {
 		send_user "\nNo worries, test just can not run here\n"
 	} elseif { $i == 1 } {
 		if { [string compare $node0 $1node0] } {
-			send_user "\nFAILURE: task 0 not distributed by hostfile ($node0 != $1node0)\n"
+			log_error "Task 0 not distributed by hostfile ($node0 != $1node0)"
 			set exit_code 1
 		} elseif { [string compare $node1 $1node1] } {
-			send_user "\nFAILURE: task 1 not distributed by hostfile ($node1 != $1node1)\n"
+			log_error "Task 1 not distributed by hostfile ($node1 != $1node1)"
 			set exit_code 1
 		} elseif { [string compare $node2 $1node2] } {
-			send_user "\nFAILURE: task 2 not distributed by hostfile ($node2 != $1node2)\n"
+			log_error "Task 2 not distributed by hostfile ($node2 != $1node2)"
 			set exit_code 1
 		}
 	} elseif { $i == 2 } {
 		if { [string compare $node0 $2node0] } {
-			send_user "\nFAILURE: task 0 not distributed by hostfile ($node0 != $2node0)\n"
+			log_error "Task 0 not distributed by hostfile ($node0 != $2node0)"
 			set exit_code 1
 		} elseif { [string compare $node1 $2node1] } {
-			send_user "\nFAILURE: task 1 not distributed by hostfile ($node1 != $2node1)\n"
+			log_error "Task 1 not distributed by hostfile ($node1 != $2node1)"
 			set exit_code 1
 		} elseif { [string compare $node2 $2node2] } {
-			send_user "\nFAILURE: task 2 not distributed by hostfile ($node2 != $2node2)\n"
+			log_error "Task 2 not distributed by hostfile ($node2 != $2node2)"
 			set exit_code 1
 		}
 	}

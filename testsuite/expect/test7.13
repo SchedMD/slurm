@@ -83,16 +83,14 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
-	exit 1
+	fail "Waiting for job to complete"
 }
 
 #
@@ -110,8 +108,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		exit 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -119,8 +116,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE: Job ExitCode incorrect ($matches != 2)\n"
-	exit 1
+	fail "Job ExitCode incorrect ($matches != 2)"
 }
 
 #
@@ -151,16 +147,14 @@ if { [test_account_storage] == 1 } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct not responding\n"
-			exit 1
+			fail "sacct not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 4} {
-		send_user "\nFAILURE: sacct of $job_id failed ($matches != 4)\n"
-		exit 1
+		fail "sacct of $job_id failed ($matches != 4)"
 	}
 }
 
@@ -193,16 +187,14 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
-	exit 1
+	fail "Waiting for job to complete"
 }
 
 #
@@ -220,16 +212,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		exit 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: Job ExitCode incorrect ($matches != 2)\n"
-	exit 1
+	fail "Job ExitCode incorrect ($matches != 2)"
 }
 
 #
@@ -260,16 +250,14 @@ if { [test_account_storage] == 1 } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct not responding\n"
-			exit 1
+			fail "sacct not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 4} {
-		send_user "\nFAILURE: sacct of $job_id failed ($matches != 4)\n"
-		exit 1
+		fail "sacct of $job_id failed ($matches != 4)"
 	}
 }
 

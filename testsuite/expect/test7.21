@@ -79,7 +79,7 @@ proc end_it { exit_code } {
 # Build the plugin
 #
 exec $bin_rm -f ${file_prog}.so
-log_info "slurm_dir is $slurm_dir\n"
+log_info "slurm_dir is $slurm_dir"
 if [file exists ${slurm_dir}/lib64/libslurm.so] {
 	exec $bin_cc -fPIC -g -pthread -ggdb3 -Wall -shared -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib64 -lslurm -o ${file_prog}.so ${file_prog}.c
 } else {

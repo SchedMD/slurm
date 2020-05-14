@@ -57,20 +57,20 @@ proc inc22_1_4 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct not responding (Within: inc21.1.4)\n"
+			log_error "sacct not responding (Within: inc21.1.4)"
 			set exit_code 1
 		}
 		eof {
 			wait
 		}
 		if {$usermatch !=1} {
-			send_user"\nFAILURE: sacct did not work (Within: inc21.1.4)\n"
+			log_error"sacct did not work (Within: inc21.1.4)"
 			set exit_code 1
 		}
 	}
 	# Job1 is submitted twice
 	if {$usermatch != 2} {
-		send_user "\nFAILURE:  sacct didn't give good info 25 $usermatch.\n"
+		log_error "sacct didn't give good info 25 $usermatch."
 		incr exit_code 1
 	}
 
@@ -88,19 +88,19 @@ proc inc22_1_4 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct not responding (Within: inc21.1.4)\n"
+			log_error "sacct not responding (Within: inc21.1.4)"
 			set exit_code 1
 		}
 		eof {
 			wait
 		}
 		if {$usermatch !=1} {
-			send_user"\nFAILURE: sacct did not work (Within: inc21.1.4)\n"
+			log_error"sacct did not work (Within: inc21.1.4)"
 			set exit_code 1
 		}
 	}
 	if {$usermatch != 1} {
-		send_user "\nFAILURE:  sacct didn't give good info 25 $usermatch.\n"
+		log_error "sacct didn't give good info 25 $usermatch."
 		incr exit_code 1
 	}
 
@@ -125,13 +125,13 @@ proc inc22_1_4 {} {
 			wait
 		}
 		if {$usermatch !=1} {
-			send_user "\nFAILURE: sacct did not work (Within: inc21.1.4)\n"
+			log_error "sacct did not work (Within: inc21.1.4)"
 			set exit_code 1
 		}
 	}
 
 	if {$usermatch != 1} {
-		send_user "\nFAILURE:  sacct didn't give good info 25 $usermatch.\n"
+		log_error "sacct didn't give good info 25 $usermatch."
 		incr exit_code 1
 	}
 

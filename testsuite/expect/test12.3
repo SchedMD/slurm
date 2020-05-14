@@ -91,7 +91,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "FAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $s_pid
 		exit 1
 	}
@@ -116,7 +116,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
 		set exit_code 1
 	}
@@ -125,8 +125,7 @@ expect {
 	}
 }
 if {$aamatches != 1} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding account ($aamatches != 1)\n"
-	exit 1
+	fail "sacctmgr had a problem adding account ($aamatches != 1)"
 }
 
 #
@@ -135,7 +134,7 @@ if {$aamatches != 1} {
 set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct]
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
 		set exit_code 1
 	}
@@ -161,7 +160,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -170,7 +169,7 @@ expect {
 	}
 }
 if {$job_1_node_inx != 2} {
-	send_user "\nFAILURE: srun host count bad ($job_1_node_inx != 2)\n"
+	log_error "srun host count bad ($job_1_node_inx != 2)"
 	set exit_code 1
 }
 
@@ -191,7 +190,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -200,7 +199,7 @@ expect {
 	}
 }
 if {$job_2_node_inx != 2} {
-	send_user "\nFAILURE: srun host count bad ($job_2_node_inx != 2)\n"
+	log_error "srun host count bad ($job_2_node_inx != 2)"
 	set exit_code 1
 }
 
@@ -221,7 +220,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -230,7 +229,7 @@ expect {
 	}
 }
 if {$job_3_node_inx != 2} {
-	send_user "\nFAILURE: srun host count bad ($job_3_node_inx != 2)\n"
+	log_error "srun host count bad ($job_3_node_inx != 2)"
 	set exit_code 1
 }
 
@@ -276,7 +275,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -285,7 +284,7 @@ expect {
 	}
 }
 if {$damatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting account\n"
+	log_error "sacctmgr had a problem deleting account"
 	set exit_code 1
 }
 

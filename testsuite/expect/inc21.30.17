@@ -39,7 +39,7 @@ proc check_timelimit { job } {
 			incr timelimit_match
 		}
 		timeout {
-			send_user "\nFAILURE scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -48,7 +48,7 @@ proc check_timelimit { job } {
 	}
 
 	if {$timelimit_match != 1} {
-		send_user "\nFAILURE job should have as TimeLimit the QOS MaxWall\n"
+		log_error "Job should have as TimeLimit the QOS MaxWall"
 		set exit_code 1
 	}
 }
@@ -68,15 +68,15 @@ proc inc21_30_17 { } {
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			send_user "\nFAILURE: job $job_id should not be waiting for resources (Within: inc21.30.17)\n"
+			log_error "job $job_id should not be waiting for resources (Within: inc21.30.17)"
 			set exit_code 1
 		}
 		-re "error" {
-			send_user "\nFAILURE: Job allocation should not have failed. (Within: inc21.30.17)\n"
+			log_error "Job allocation should not have failed. (Within: inc21.30.17)"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not responding (Within: inc21.30.17)\n"
+			log_error "salloc is not responding (Within: inc21.30.17)"
 			set exit_code 1
 		}
 		eof {

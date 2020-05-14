@@ -50,7 +50,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sdiag not responding\n"
+		log_error "sdiag not responding"
 		set exit_code 1
 	}
 	eof {
@@ -59,8 +59,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE: sdiag --help failed ($matches)\n"
-	set exit_code 1
+	fail "sdiag --help failed ($matches)"
 }
 
 exit $exit_code

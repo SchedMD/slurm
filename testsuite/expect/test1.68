@@ -92,7 +92,7 @@ spawn bash -i $file_in
 expect {
 	-re "sending job to the background" {
 		if {$time_num == 0} {
-			send_user "\nFAILURE: srun is not generating output\n"
+			log_error "srun is not generating output"
 			set exit_code 1
 		}
 		set bg_time_num $time_num
@@ -101,7 +101,7 @@ expect {
 	}
 	-re "sending job to foreground" {
 		if {$time_num == $bg_time_num} {
-			send_user "\nFAILURE: srun is not progressing ($time_num == $bg_time_num)\n"
+			log_error "srun is not progressing ($time_num == $bg_time_num)"
 			set exit_code 1
 		}
 		set fg_match 1
@@ -116,17 +116,17 @@ expect {
 		exp_continue
 	}
 	-re "BG Failed" {
-		send_user "\nFAILURE: Failed to find suspended srun job in background\n"
+		log_error "Failed to find suspended srun job in background"
 		set exit_code 1
 		exp_continue
 	}
 	-re "FG Failed" {
-		send_user "\nFAILURE: Failed to find background srun job to put in foreground\n"
+		log_error "Failed to find background srun job to put in foreground"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -135,19 +135,19 @@ expect {
 }
 
 if {$fg_match != 1} {
-	send_user "\nFAILURE: srun was not sent to the foreground\n"
+	log_error "srun was not sent to the foreground"
 	set exit_code 1
 }
 if {$bg_match != 1} {
-	send_user "\nFAILURE: srun was not sent to the background\n"
+	log_error "srun was not sent to the background"
 	set exit_code 1
 }
 if {$time_num != 10} {
-	send_user "\nFAILURE: srun is not generating output ($time_num != 10)\n"
+	log_error "srun is not generating output ($time_num != 10)"
 	set exit_code 1
 }
 if {$fini_match != 1} {
-	send_user "\nFAILURE: srun did not finish the program submitted\n"
+	log_error "srun did not finish the program submitted"
 	set exit_code 1
 }
 

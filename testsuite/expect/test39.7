@@ -47,7 +47,7 @@ proc run_gpu_per_job { cpus_per_gpu } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -57,7 +57,7 @@ proc run_gpu_per_job { cpus_per_gpu } {
 	}
 #	Depending upon minimal allocation unit, job can be allocated extra CPUs
 	if {$cpu_count < $cpus_per_gpu} {
-		send_user "\nFAILURE: srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)\n"
+		log_error "srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)"
 		set exit_code 1
 	}
 }
@@ -73,7 +73,7 @@ proc run_gpu_per_node { cpus_per_gpu } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -83,7 +83,7 @@ proc run_gpu_per_node { cpus_per_gpu } {
 	}
 #	Depending upon minimal allocation unit, job can be allocated extra CPUs
 	if {$cpu_count < $cpus_per_gpu} {
-		send_user "\nFAILURE: srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)\n"
+		log_error "srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)"
 		set exit_code 1
 	}
 }
@@ -99,7 +99,7 @@ proc run_gpu_per_task { cpus_per_gpu } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -109,7 +109,7 @@ proc run_gpu_per_task { cpus_per_gpu } {
 	}
 #	Depending upon minimal allocation unit, job can be allocated extra CPUs
 	if {$cpu_count < $cpus_per_gpu} {
-		send_user "\nFAILURE: srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)\n"
+		log_error "srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)"
 		set exit_code 1
 	}
 }
@@ -125,8 +125,7 @@ if {[test_cons_tres]} {
 
 set gpu_cnt [get_gpu_count 1]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
@@ -204,7 +203,7 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -215,12 +214,12 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 #	Depending upon minimal allocation unit, job can be allocated extra CPUs
 	set cpu_target [expr $cpus_per_node * 2]
 	if {$cpu_count < $cpu_target} {
-		send_user "\nFAILURE: srun --cpus-per-gpu failure, bad CPU count ($cpu_count < $cpu_target)\n"
+		log_error "srun --cpus-per-gpu failure, bad CPU count ($cpu_count < $cpu_target)"
 		set exit_code 1
 	}
 	set node_target 2
 	if {$node_count < $node_target} {
-		send_user "\nFAILURE: srun --cpus-per-gpu failure, bad node count ($node_count < $node_target)\n"
+		log_error "srun --cpus-per-gpu failure, bad node count ($node_count < $node_target)"
 		set exit_code 1
 	}
 }

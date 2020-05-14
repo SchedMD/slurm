@@ -55,10 +55,9 @@ proc alloc_job { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding\n"
 			slow_kill [expr 0 - $salloc_pid]
 			cancel_job $job_id
-			exit 1
+			fail "salloc not responding"
 		}
 		eof {
 			wait
@@ -79,7 +78,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -100,9 +99,7 @@ if {$job_id != 0} {
 	sleep 1
 	set job_id [alloc_job]
 	if {$job_id != 0} {
-		send_user "\nFAILURE: Allocation granted with bad Munge credential\n"
-		send_user "FAILURE: This happens rarely, when the Slurm test modifies a byte that Munge does not use\n"
-		exit 1
+		fail "Allocation granted with bad Munge credential. This happens rarely, when the Slurm test modifies a byte that Munge does not use"
 	}
 }
 

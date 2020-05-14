@@ -57,7 +57,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -66,7 +66,6 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE: scontrol help message not as expected\n"
-	set exit_code 1
+	fail "scontrol help message not as expected"
 }
 exit $exit_code

@@ -91,7 +91,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -100,7 +100,7 @@ expect {
 }
 
 if {$found == 0} {
-	send_user "\nFAILURE: MCSPlugin parameter in scontrol show config is not mcs/group\n"
+	log_error "MCSPlugin parameter in scontrol show config is not mcs/group"
 	set exit_code 1
 }
 
@@ -117,7 +117,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -138,7 +138,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -147,7 +147,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: job was not submitted\n"
+	log_error "Job was not submitted"
 	set exit_code 1
 }
 
@@ -175,7 +175,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
+		log_error "squeue is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -184,7 +184,7 @@ expect {
 }
 
 if {$found == 0} {
-	send_user "\nFAILURE: job was submitted with a bad mcs-label\n"
+	log_error "Job was submitted with a bad mcs-label"
 	set exit_code 1
 }
 
@@ -199,7 +199,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -208,7 +208,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: job was not submitted\n"
+	log_error "Job was not submitted"
 	set exit_code 1
 }
 set found 0
@@ -221,12 +221,12 @@ expect {
 		exp_continue
 	}
 	-re "Invalid job format specification" {
-		send_user "\nFAILURE Invalid job format specification mcslabel\n"
+		log_error "Invalid job format specification mcslabel"
 		set exit_code 1
 		set found 1
 	}
 	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
+		log_error "squeue is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -234,7 +234,7 @@ expect {
 	}
 }
 if {$found == 0} {
-	 send_user "\nFAILURE: job was submitted with a bad mcs-label\n"
+	 log_error "Job was submitted with a bad mcs-label"
 	 set exit_code 1
 }
 
@@ -248,7 +248,7 @@ expect {
 		set found 1
 	}
 	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
+		log_error "squeue is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -257,7 +257,7 @@ expect {
 }
 
 if {$found == 0} {
-	send_user "\nFAILURE: no node found in squeue command\n"
+	log_error "No node found in squeue command"
 	set exit_code 1
 }
 
@@ -273,7 +273,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -282,7 +282,7 @@ expect {
 }
 
 if {$found == 0} {
-	send_user "\nFAILURE: job was submitted with node with bad mcs-label\n"
+	log_error "Job was submitted with node with bad mcs-label"
 	set exit_code 1
 }
 cancel_job $job_id
@@ -313,7 +313,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -322,7 +322,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: job was not submitted\n"
+	log_error "Job was not submitted"
 	set exit_code 1
 }
 
@@ -336,12 +336,12 @@ expect {
 		exp_continue
 	}
 	-re "(null)" {
-		send_user "\nFAILURE: NO MCS-label for this job\n"
+		log_error "NO MCS-label for this job"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
+		log_error "squeue is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -350,7 +350,7 @@ expect {
 }
 
 if {$found == 0} {
-	send_user "\nFAILURE: job was submitted with a bad mcs-label\n"
+	log_error "Job was submitted with a bad mcs-label"
 	set exit_code 1
 }
 
@@ -364,7 +364,7 @@ expect {
 		set found 1
 	}
 	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
+		log_error "squeue is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -373,7 +373,7 @@ expect {
 }
 
 if {$found == 0} {
-	send_user "\nFAILURE: no node found in squeue command\n"
+	log_error "No node found in squeue command"
 	set exit_code 1
 }
 
@@ -383,14 +383,14 @@ if {$found == 0} {
 spawn -noecho $bin_bash -c "exec $scontrol show node=$node | $bin_grep MCS"
 expect {
 	-re "MCS_label=$group1" {
-		send_user "\nFAILURE: a mcs_label is found for this job. It was not expected\n"
+		log_error "A mcs_label is found for this job. It was not expected"
 		set exit_code 1
 	}
 	-re "MCS_label=N/A" {
 		send_user "\nNo mcs_label for this node. It was expected\n"
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {

@@ -72,7 +72,7 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: qsub not responding\n"
+			log_error "qsub not responding"
 			set exit_code 1
 		}
 		eof {
@@ -80,14 +80,12 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: qsub failed to submit job\n"
-		exit 1
+		fail "qsub failed to submit job"
 	}
 
 	if {[wait_for_file $file_out] != 0} {
-		send_user "\nFAILURE: qsub output file not found\n"
 		catch {exec $qdel $job_id}
-		exit 1
+		fail "qsub output file not found"
 	}
 	set matches 0
 	spawn $bin_cat $file_out
@@ -106,7 +104,7 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name
 	}
 
 	if {$matches != 2} {
-		send_user "\nFAILURE: one or more environment variables failed to match their expected values for sub test '$subtest_name'\n"
+		log_error "One or more environment variables failed to match their expected values for sub test '$subtest_name'"
 		set exit_code 1
 	}
 

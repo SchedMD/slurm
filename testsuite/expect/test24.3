@@ -164,7 +164,7 @@ expect {
 	}
 
 	timeout {
-		send_user "\nFAILURE: spawn IO not responding\n"
+		log_error "spawn IO not responding"
 		cancel_job $job_id
 		set exit_code 1
 	}
@@ -174,7 +174,7 @@ expect {
 }
 
 if {$matches != 22} {
-	send_user "\nFAILURE: we didn't get the correct priorities from the plugin ($matches != 22)\n"
+	log_error "We didn't get the correct priorities from the plugin ($matches != 22)"
 	set exit_code 1
 }
 

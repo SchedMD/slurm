@@ -82,7 +82,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -91,7 +91,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	send_user "\nFAILURE: Did not get expected multi-program output\n"
+	log_error "Did not get expected multi-program output"
 	set exit_code 1
 }
 if {$exit_code != 0} {
@@ -140,7 +140,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -149,11 +149,11 @@ expect {
 	}
 }
 if {$matches != 4} {
-	send_user "\nFAILURE: did not generate full list of executables.\n"
+	log_error "Did not generate full list of executables."
 	set exit_code 1
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: failed to get job id\n"
+	log_error "Failed to get job id"
 	set exit_code 1
 } else {
 	cancel_job $job_id
@@ -177,7 +177,7 @@ expect {
 		incr matches
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -186,7 +186,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: did not note lack of a executable for task 5.\n"
+	log_error "Did not note lack of a executable for task 5."
 	set exit_code 1
 }
 
@@ -212,13 +212,13 @@ expect {
 		} elseif {$expect_out(1,string) == 3 && $expect_out(2,string) == 3 && $expect_out(3,string) == 1} {
 			incr matches
 		} else {
-			send_user "\nFAILURE: processing MPMD line continuation\n"
+			log_error "Processing MPMD line continuation"
 			set exit_code 1
 		}
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -227,8 +227,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: processing MPMD line continuation ($matches != 2)\n"
-	set exit_code 1
+	fail "Processing MPMD line continuation ($matches != 2)"
 }
 
 if {$exit_code == 0} {

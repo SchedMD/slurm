@@ -130,7 +130,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -140,15 +140,15 @@ expect {
 
 
 if {$timer_match != [expr $run_timer*10]} {
-	send_user "\nFAILURE: srun did not execute all timers ($timer_match != [expr $run_timer*10])\n"
+	log_error "srun did not execute all timers ($timer_match != [expr $run_timer*10])"
 	set exit_code 1
 }
 if {$time_match != [expr $run_timer*10]} {
-	send_user "\nFAILURE: srun is not generating output ($time_match != [expr $run_timer*10])\n"
+	log_error "srun is not generating output ($time_match != [expr $run_timer*10])"
 	set exit_code 1
 }
 if {$fini_match != $run_timer} {
-	send_user "\nFAILURE: srun did not finish the program submitted ($fini_match != $run_timer)\n"
+	log_error "srun did not finish the program submitted ($fini_match != $run_timer)"
 	set exit_code 1
 }
 

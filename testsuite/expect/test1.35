@@ -89,7 +89,7 @@ set timeout $max_job_delay
 set srun_pid [eval spawn $sbatch -N$node_cnt --output=$file_out --error=$file_err -t1 --gres=craynetwork:0 $job_mem_opt $file_in]
 expect {
 	-re "Requested node configuration is not available" {
-		send_user "\nFAILURE: Memory is allocated, but your nodes don't have even 256MB configured\n"
+		log_error "Memory is allocated, but your nodes don't have even 256MB configured"
 		set exit_code 1
 	}
 	-re "Submitted batch job ($number)" {
@@ -97,7 +97,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -107,8 +107,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
@@ -116,7 +115,7 @@ if {$job_id == 0} {
 #
 sleep 30
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -154,7 +153,7 @@ if {$step_cnt != $steps_started} {
 		send_user "\nWARNING: Test could not complete due to memory limit\n"
 		set step_cnt $steps_started
 	} else {
-		send_user "\nFAILURE: not all steps reported by squeue\n"
+		log_error "Not all steps reported by squeue"
 		set exit_code 1
 	}
 }

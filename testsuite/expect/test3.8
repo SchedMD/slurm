@@ -88,7 +88,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -97,27 +97,26 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to begin, then requeue it
 #
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: waiting for job to begin\n"
+	log_error "Waiting for job to begin"
 	set exit_code 1
 }
 exec $bin_sleep 15
 spawn $scontrol requeue $job_id
 expect {
 	-re "error" {
-		send_user "\nFAILURE: some scontrol error happened\n"
+		log_error "Some scontrol error happened"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -129,19 +128,19 @@ expect {
 # Wait for job to restart, then requeue it again
 #
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: waiting for job to restart\n"
+	log_error "Waiting for job to restart"
 	set exit_code 1
 }
 exec $bin_sleep 15
 spawn $scontrol requeue $job_id
 expect {
 	-re "error" {
-		send_user "\nFAILURE: some scontrol error happened\n"
+		log_error "Some scontrol error happened"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -153,28 +152,28 @@ expect {
 # Wait for job to complete and check for files
 #
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: waiting for job to restart\n"
+	log_error "Waiting for job to restart"
 	set exit_code 1
 }
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
 if {[wait_for_file $file_flag_1] != 0} {
-	send_user "\nFAILURE: file $file_flag_1 is missing\n"
+	log_error "File $file_flag_1 is missing"
 	set exit_code 1
 }
 if {[wait_for_file $file_flag_2] != 0} {
-	send_user "\nFAILURE: file $file_flag_2 is missing\n"
+	log_error "File $file_flag_2 is missing"
 	set exit_code 1
 }
 if {[wait_for_file $file_flag_3] != 0} {
-	send_user "\nFAILURE: file $file_flag_3 is missing\n"
+	log_error "File $file_flag_3 is missing"
 	set exit_code 1
 }
 if {[file exists $file_flag_4]} {
-	send_user "\nFAILURE: file $file_flag_4 is found\n"
+	log_error "File $file_flag_4 is found"
 	set exit_code 1
 }
 
@@ -193,7 +192,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -202,15 +201,14 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to begin, then requeue it
 #
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: waiting for job to begin\n"
+	log_error "Waiting for job to begin"
 	set exit_code 1
 }
 set disabled 0
@@ -223,12 +221,12 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: some scontrol error happened\n"
+		log_error "Some scontrol error happened"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -236,7 +234,7 @@ expect {
 	}
 }
 if {$disabled == 0} {
-	send_user "\nFAILURE: srun's --no-requeue option ignored\n"
+	log_error "srun's --no-requeue option ignored"
 	set exit_code 1
 }
 
@@ -244,16 +242,16 @@ if {$disabled == 0} {
 # Wait for job to complete and check for files
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
 if {[wait_for_file $file_flag_1] != 0} {
-	send_user "\nFAILURE: file $file_flag_1 is missing\n"
+	log_error "File $file_flag_1 is missing"
 	set exit_code 1
 }
 if {[file exists $file_flag_2]} {
-	send_user "\nFAILURE: file $file_flag_2 is found\n"
+	log_error "File $file_flag_2 is found"
 	set exit_code 1
 }
 

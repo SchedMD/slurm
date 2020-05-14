@@ -98,7 +98,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -131,16 +131,14 @@ catch {close $fd}
 log_user 1
 
 if {!$cpu_cnt} {
-	send_user "\nFAILURE: couldn't find an idle node in the default partition\n"
-	exit 1
+	fail "Couldn't find an idle node in the default partition"
 }
 
 #
 # Check CPU count
 #
 if {[string compare $host ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname from idle node\n"
-	exit 1
+	fail "Did not get hostname from idle node"
 }
 
 send_user "found idle node $host with $cpu_cnt processors\n"
@@ -157,7 +155,7 @@ expect {
  		exp_continue
  	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -180,9 +178,7 @@ if {$cpu_cnt != $task_cnt} {
 	}
 }
 if {$cpu_cnt != $task_cnt} {
-	send_user "FAILURE: Should have run $cpu_cnt tasks (one per core) "
-	send_user "instead of $task_cnt tasks\n"
-	send_user "NOTE: This could be due to memory limit per allocated CPU, MaxCPUsPerNode, CR_ONE_TASK_PER_CORE, or OverSubscribe=FORCE\n\n"
+	log_error "Should have run $cpu_cnt tasks (one per core) instead of $task_cnt tasks. This could be due to memory limit per allocated CPU, MaxCPUsPerNode, CR_ONE_TASK_PER_CORE, or OverSubscribe=FORCE"
 	set exit_code 1
 }
 if {$cpu_cnt < 2} {
@@ -207,7 +203,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -220,8 +216,7 @@ expect {
 # Verify that half the number of tasks were spawned
 #
 if {$task_cnt != [expr $cpu_cnt / 2]} {
-	send_user "\nFAILURE: Improper task count for given cpus-per-task\n"
-	send_user "NOTE: This could be due to memory limit per allocated CPU or OverSubscribe=FORCE\n\n"
+	log_error "Improper task count for given cpus-per-task. This could be due to memory limit per allocated CPU or OverSubscribe=FORCE"
 	set exit_code   1
 }
 

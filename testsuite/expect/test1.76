@@ -83,18 +83,18 @@ proc test_freq {opt expmin expcur expmax expgov} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: batch submit failure\n"
+		log_error "Batch submit failure"
 		return 1
 	}
 	#
 	# Wait for job to complete
 	#
 	if {[wait_for_job $job_id "DONE"] != 0} {
-		send_user "\nFAILURE: waiting for job to complete\n"
+		log_error "Waiting for job to complete"
 		return 1
 	}
 	if {[wait_for_file $wd/test1.76.out] != 0} {
-		send_user "\nFAILURE: waiting for file $wd/test1.76.out\n"
+		log_error "Waiting for file $wd/test1.76.out"
 		return 1
 	}
 	set line ""
@@ -114,7 +114,7 @@ proc test_freq {opt expmin expcur expmax expgov} {
 		} 
 	}
 	if {[string compare $start_value ""] == 0} {
-		send_user "\nFAILURE: --cpu-freq=$opt -- can't find starting values\n"
+		log_error "--cpu-freq=$opt -- can't find starting values"
 		close $fd
 		log_user 1
 		return 1
@@ -130,7 +130,7 @@ proc test_freq {opt expmin expcur expmax expgov} {
 		} 
 	}
 	if {[string compare $test_value ""] == 0} {
-		send_user "\nFAILURE: --cpu-freq=$opt -- can't find test values\n"
+		log_error "--cpu-freq=$opt -- can't find test values"
 		close $fd
 		log_user 1
 		return 1
@@ -146,7 +146,7 @@ proc test_freq {opt expmin expcur expmax expgov} {
 		} 
 	}
 	if {[string compare $end_value ""] == 0} {
-		send_user "\nFAILURE: --cpu-freq=$opt -- can't find ending values\n"
+		log_error "--cpu-freq=$opt -- can't find ending values"
 		close $fd
 		log_user 1
 		return 1
@@ -178,13 +178,13 @@ proc test_freq {opt expmin expcur expmax expgov} {
 
 	if {[string compare $expgov 0] != 0 
 	    && [string compare $tgov $expgov] != 0} {
-		send_user "\nFAILURE: --cpu-freq=$opt -- test governor $tgov not expected ($expgov)\n"
+		log_error "--cpu-freq=$opt -- test governor $tgov not expected ($expgov)"
 		log_user 1
 		return 1
 	}
 	if {[string compare $expmin 0] != 0 
 	    && [string compare $tmin $expmin] != 0} {
-		send_user "\nFAILURE: --cpu-freq=$opt -- test min $tmin not expected ($expmin)\n"
+		log_error "--cpu-freq=$opt -- test min $tmin not expected ($expmin)"
 		log_user 1
 		return 1
 	}
@@ -218,17 +218,17 @@ proc test_freq {opt expmin expcur expmax expgov} {
 		return 1
 	}
 	if {[string compare $sgov $egov] != 0} {
-		send_user "\nFAILURE: --cpu-freq=$opt -- starting governor $sgov not reset ($egov)\n"
+		log_error "--cpu-freq=$opt -- starting governor $sgov not reset ($egov)"
 		log_user 1
 		return 1
 	}
 	if {[string compare $smin $emin] != 0} {
-		send_user "\nFAILURE: --cpu-freq=$opt -- starting min $smin not reset ($emin)\n"
+		log_error "--cpu-freq=$opt -- starting min $smin not reset ($emin)"
 		log_user 1
 		return 1
 	}
 	if {[string compare $smax $emax] != 0} {
-		send_user "\nFAILURE: --cpu-freq=$opt -- starting max $smax not reset ($emax)\n"
+		log_error "--cpu-freq=$opt -- starting max $smax not reset ($emax)"
 		log_user 1
 		return 1
 	}
@@ -245,7 +245,7 @@ proc test_case {opt expmin expcur expmax expgov} {
 			return $rc
 		}
 	}
-	send_user "\nFAILURE: --cpu-freq control failing repeatedly\n"
+	log_error "--cpu-freq control failing repeatedly"
 	return $rc
 }
 
@@ -289,8 +289,7 @@ expect {
 	}
 }
 if {$test_node == 0} {
-	send_user "\nFAILURE: failed to get hostname\n"
-	exit 1
+	fail "Failed to get hostname"
 }
 
 # Determine CPU count on that node.
@@ -309,8 +308,7 @@ expect {
 
 log_user 1
 if {$test_cpu == -1} {
-	send_user "\nFAILURE: failed to get CPU count on node $test_node\n"
-	exit 1
+	fail "Failed to get CPU count on node $test_node"
 }
 incr test_cpu -1
 send_user "test node is $test_node, test_cpu is $test_cpu\n"
@@ -388,8 +386,7 @@ if {$nfreq > 3} {
 }
 
 if {$nerr != 0} {
-	send_user "\n\nFAILURE: $nerr test cases failed.\n"
-	set exit_code 1
+	fail "$nerr test cases failed."
 } else {
 	exec $bin_rm -f $wd/test1.76.out
 }

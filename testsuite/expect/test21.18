@@ -171,15 +171,15 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user names=$tu1,$tu2,$tu3 format="User,DefaultA,Admin" cluster=$tc1]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "($tu1|$tu2|$tu3).$ta2.$user_mod_acct(adminlevel)." {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -189,7 +189,7 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE:  Account modification 3 incorrect with only $matches.\n"
+	log_error "Account modification 3 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -210,15 +210,15 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user names=$tu1,$tu2,$tu3 format="User,DefaultA,Admin" cluster=$tc1]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the sacctmgr command"
+	   	incr exit_code 1
 	}
 	-re "(($tu1|$tu3).$ta3.$user_mod_acct2(adminlevel).|$tu2.$ta2.$user_mod_acct(adminlevel).)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -228,7 +228,7 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE:  Account modification 3 incorrect with only $matches.\n"
+	log_error "Account modification 3 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -249,15 +249,15 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list assoc users=$tu1,$tu2,$tu3 format="User,Cluster,Fairshare,Maxcpum,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	   	incr exit_code 1
 	}
 	-re "(($tu1|$tu2|$tu3).($tc1|$tc2).$user_mod_assoc3(fairshare).$user_mod_assoc3(maxcpumin).$user_mod_assoc3(maxjob).$user_mod_assoc3(maxnode).$user_mod_assoc3(maxwall).)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -267,7 +267,7 @@ expect {
 }
 
 if {$matches != 18} {
-	send_user "\nFAILURE:  User modification 18 incorrect with only $matches.\n"
+	log_error "User modification 18 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -288,7 +288,7 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -n -p list assoc user=$tu1,$tu2,$tu3 format="User,Cluster,Fairshare,Maxcpum,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	        log_error "There was a problem with the sacctmgr command"
 	    	incr exit_code 1
 	}
 	# Any time you use () around something you need to combine all
@@ -298,7 +298,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -308,7 +308,7 @@ expect {
 }
 
 if {$matches != 18} {
-	send_user "\nFAILURE:  User modification 18 incorrect with $matches.\n"
+	log_error "User modification 18 incorrect with $matches"
 	incr exit_code 1
 }
 
@@ -319,7 +319,5 @@ incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
 incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code
-

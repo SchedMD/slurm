@@ -61,7 +61,7 @@ expect {
 		exp_continue;
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		set wait_flag -999
 		slow_kill $salloc_pid
 		set exit_code 1
@@ -72,11 +72,7 @@ expect {
 	}
 }
 if {[expr $wait_flag + $abort_flag] != 2} {
-	send_user "\nFAILURE: salloc failed to process SIGINT while waiting for allocation\n"
-	set exit_code 1
+	fail "salloc failed to process SIGINT while waiting for allocation"
 }
 
-#
-# Post-processing
-#
 exit $exit_code

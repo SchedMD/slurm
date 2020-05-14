@@ -64,17 +64,17 @@ expect {
 		 exp_continue
 	}
 	-re "time limit exceeded" {
-		send_user "\nFAILURE: srun didn't terminate properly\n"
+		log_error "srun time limit exceeded"
 		set exit_code 1
 		exp_continue
 	}
 	-re "Terminated" {
-		send_user "\nFAILURE: srun didn't terminate properly\n"
+		log_error "srun didn't terminate properly"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -83,8 +83,7 @@ expect {
 	}
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: unexpected output from bad job name\n"
-	set exit_code 1
+	fail "Unexpected output from bad job name"
 }
 
 exit $exit_code

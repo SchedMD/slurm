@@ -75,7 +75,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -84,15 +84,13 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: srun failed to initiate job\n"
-	exit 1
+	fail "srun failed to initiate job"
 }
 #
 # Wait for job _and_ step to start running
 #
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-        send_user "\nFAILURE: waiting for job to start running\n"
-        exit 1
+    fail "Waiting for job to start running"
 }
 sleep 5
 
@@ -106,7 +104,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -114,7 +112,7 @@ expect {
 	}
 }
 if {$orig_time != 5} {
-        send_user "\nFAILURE: Failed to set step initial time limit\n"
+    log_error "Failed to set step initial time limit"
 	set exit_code 1
 }
 
@@ -124,7 +122,7 @@ if {$orig_time != 5} {
 spawn $scontrol update StepId=$job_id TimeLimit=1
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -142,7 +140,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -150,7 +148,7 @@ expect {
 	}
 }
 if {$orig_time != 1} {
-        send_user "\nFAILURE: Failed to update step time limit\n"
+    log_error "Failed to update step time limit"
 	set exit_code 1
 }
 
@@ -160,18 +158,16 @@ if {$orig_time != 1} {
 #
 sleep 60
 if {[wait_for_job $job_id "DONE"] != 0} {
-        send_user "\nFAILURE: waiting for job to terminate\n"
-        exit 1
+    fail "Waiting for job to terminate"
 }
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: job output file not found\n"
-	exit 1
+	fail "Job output file not found"
 }
 
 spawn $bin_cat $file_out
 expect {
 	-re "STEP_FINISH" {
-		send_user "\nFAILURE: step time limit not enforced\n"
+		log_error "Step time limit not enforced"
 		set exit_code 1
 	}
 	eof {

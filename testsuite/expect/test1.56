@@ -67,9 +67,8 @@ expect {
 		set stepid $expect_out(2,string)
 	}
 	timeout {
-		send_user "\nFAILURE: srun launch failed\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "Srun launch failed"
     	}
 	eof {
 		wait
@@ -80,8 +79,7 @@ expect {
 # Make sure that the contents of the input and output files are the same
 #
 if {[catch {exec diff $file_in $file_out}]} {
-	send_user "\nFAILURE: File $file_out does not match file $file_in\n"
-	exit 1
+	fail "File $file_out does not match file $file_in"
 }
 
 exec $bin_rm -f $file_in $file_out

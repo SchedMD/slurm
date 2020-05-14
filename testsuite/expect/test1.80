@@ -91,7 +91,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -109,7 +109,7 @@ send_user "Actual task layout was : $tested_layout\n"
 if {[string compare $tested_layout $expected_layout1] &&
     [string compare $tested_layout $expected_layout2] &&
     [string compare $tested_layout $expected_layout3]} {
-	send_user "\FAILURE: failed to distribute tasks in block fashion\n"
+	log_error "Failed to distribute tasks in block fashion"
 	set exit_code 1
 }
 
@@ -159,7 +159,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -176,7 +176,7 @@ send_user "Actual task layout was : $tested_layout\n"
 if {[string compare $tested_layout $expected_layout1] &&
     [string compare $tested_layout $expected_layout2] &&
     [string compare $tested_layout $expected_layout3]} {
-	send_user "\FAILURE: failed to distribute tasks in cyclic fashion\n"
+	log_error "Failed to distribute tasks in cyclic fashion"
 	set exit_code 1
 }
 
