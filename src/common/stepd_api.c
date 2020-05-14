@@ -71,6 +71,7 @@
 
 strong_alias(stepd_available, slurm_stepd_available);
 strong_alias(stepd_connect, slurm_stepd_connect);
+strong_alias(stepd_connect_nss, slurm_stepd_connext_nss);
 strong_alias(stepd_get_uid, slurm_stepd_get_uid);
 strong_alias(stepd_add_extern_pid, slurm_stepd_add_extern_pid);
 strong_alias(stepd_get_x11_display, slurm_stepd_get_x11_display);
@@ -360,6 +361,50 @@ fail1:
 	return fd;
 }
 
+/*
+ * Connect to a slurmstepd proccess by way of its unix domain socket.
+ *
+ * This is specifically intended to be used with nss_slurm to prevent possible
+ * deadlocks. Neither "directory" or "nodename" may be null, and will result
+ * in an error. Remove this function in 20.11.
+ *
+ * Returns a file descriptor for the opened socket on success alongside the
+ * protocol_version for the stepd, or -1 on error.
+ */
+extern int stepd_connect_nss(const char *directory, const char *nodename,
+			     uint32_t jobid, uint32_t stepid,
+			     uint16_t *protocol_version)
+{
+	int req = SLURM_PROTOCOL_VERSION;
+	int fd = -1;
+	int rc;
+
+	*protocol_version = 0;
+
+	if (!nodename || !directory) {
+		error("directory or nodename invalid");
+		return -1;
+	}
+
+	/* Connect to the step */
+	fd = _step_connect(directory, nodename, jobid, stepid);
+	if (fd == -1)
+		goto fail1;
+
+	safe_write(fd, &req, sizeof(int));
+	safe_read(fd, &rc, sizeof(int));
+	if (rc < 0)
+		goto rwfail;
+	else if (rc)
+		*protocol_version = rc;
+
+	return fd;
+
+rwfail:
+	close(fd);
+fail1:
+	return fd;
+}
 
 /*
  * Retrieve a job step's current state.
