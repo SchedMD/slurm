@@ -5800,85 +5800,68 @@ proc create_part { part_name num_nodes_in } {
 #
 # Proc: get_node_config
 #
-# Determine the configuration of a node containing at least desired_gpus, one
-# gpu id desired_gpus is not specified.
+# Purpose: Obtain the node configuration of a node with the requested
+#          resources.
 #
-# Set the following global variables
-# cores_per_socket - Cores per socet
-# cpus_per_socket - CPUs per socket
-# cpus_tot - Total count of CPUs on the node
-# exit_code - Set to 1 on failure
-# gpu_tot - GPUs in the node
-# hostname - Name of the node referenced
-# mem_size - Real memory size
-# sockets_per_node - Sockets per node
+# Input: request_args -- Desired resources of a node in form of srun
+#                        arguments, e.g. "--gres=gpu:1 -n1 -t1"
 #
-# Returns true if node with the desired_gpus was found, false otherwise.
+# Returns: An array with the configuration of a node with at least the
+#          requested  resources. The keys of the arrays are the same that
+#          appear in the scontrol show node (e.g. CPUTot, State, RealMemory.)
+#          The array also includes some extra values:
+#          - GPUTot       : Total number of GPUs of the node.
+#          - CPUPerSocker : Number of CPUs per Socket (i.e. CPUTot / Sockets)
+#
+#          In no node is found, it returns an empty array.
+#          In case of other errors, the global exit_code is set to 1.
 #
 ################################################################
-proc get_node_config { {desired_gpus 1} } {
-	global cores_per_socket cpus_per_socket sockets_per_node mem_size
-	global hostname exit_code max_job_delay number srun scontrol gpu_tot
-	global alpha_numeric_nodelist bin_rm gres_regex
+proc get_node_config { {request_args "-n1 -t1"} } {
+	global exit_code max_job_delay srun scontrol
+	global bin_rm
 
-	set node_found false
-	set cpus_tot 1
-	set file_in  "test_gloabls"
-	set hostname "UNKNOWN"
-	set mem_size 1
-	set sockets_per_node 1
-	set cpus_per_socket 1
-	set gpu_tot 0
+	array set node_conf {}
+	set node_conf(GPUTot) 0
+
+	set file_in "get_node_config"
 	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODELIST"
+
 	set timeout $max_job_delay
+	set log_prev [log_user -info]
 	log_user 0
-	set srun_pid [spawn $srun --gres=gpu:$desired_gpus -n1 -t1 ./$file_in]
+
+	set srun_pid [spawn $srun {*}$request_args -t1 ./$file_in]
 	expect {
-		-re "NodeName=($alpha_numeric_nodelist)" {
-			set hostname $expect_out(1,string)
-			set node_found true
-			exp_continue
-		}
-		-re "CoresPerSocket=($number)" {
-			set cores_per_socket $expect_out(1,string)
-			exp_continue
-		}
-		-re "CPUTot=($number)" {
-			set cpus_tot $expect_out(1,string)
-			exp_continue
-		}
-		-re "(Gres=|,)$gres_regex" {
-			set count 0
-			set line $expect_out(1,string)
-			set name $expect_out(2,string)
-			# Assume typed GRES of format gpu:1080:5 to start out
-			set type $expect_out(3,string)
-			set count $expect_out(4,string)
+		# The regexp is an OR for all cases of Key=Value where
+		# Value has no whitespaces, and the Key "Os=" that may
+		# have Value with whitespaces, so we match until the
+		# end of the line
+		-re "(\ *(\[^=\\n\]+)=(\\S+)\|\\n\ *(OS)=(\[^\\n\]*))" {
+			if {[string first "OS=" $expect_out(0,string)] != -1 } {
+				# Use the last groups the main regexp
+				set node_conf($expect_out(4,string)) $expect_out(5,string)
+			} else {
+				# Use the first groups of the main regexp
+				set node_conf($expect_out(2,string)) $expect_out(3,string)
 
-			# Skip all GRES of different names
-			if {$name != "gpu"} {
-				exp_continue
+				# Compute the GPUTot when Key is Gres
+				if {[string first "Gres=" $expect_out(0,string)] != -1 } {
+					set gres_list [split $expect_out(3,string) ","]
+					foreach gres $gres_list {
+						if {[regexp {gpu:(\S+?):(\d+)} $gres match type count] == 1} {
+							incr node_conf(GPUTot) $count
+						}
+						if {[regexp {gpu:(\d+)} $gres match count] == 1} {
+							incr node_conf(GPUTot) $count
+						}
+					}
+				}
 			}
-			if {$count == ""} {
-				# Now assume GRES format gpu:5
-				set count $type
-			}
-			if { $count } {
-				incr gpu_tot $count
-			}
-
-			exp_continue
-		}
-		-re "RealMemory=($number)" {
-			set mem_size $expect_out(1,string)
-			exp_continue
-		}
-		-re "Sockets=($number)" {
-			set sockets_per_node $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding\n"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -5887,9 +5870,14 @@ proc get_node_config { {desired_gpus 1} } {
 		}
 	}
 	exec $bin_rm -f $file_in
-	log_user 1
-	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
-	return $node_found
+	log_user $log_prev
+	if { [info exists node_conf(NodeName)] } {
+		set node_conf(CPUsPerSocket) \
+			[expr $node_conf(CPUTot) / $node_conf(Sockets)]
+	} else {
+		array unset node_conf
+	}
+	array get node_conf
 }
 
 proc get_job_gpu_cnt { job_id } {

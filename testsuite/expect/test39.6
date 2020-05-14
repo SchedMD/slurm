@@ -122,20 +122,20 @@ if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
 	exit 0
 }
-get_node_config
-if {$sockets_per_node < 2} {
+array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
+if {$node_conf(Sockets) < 2} {
 	send_user "\nWARNING: This test requires 2 or more sockets per node in the default partition\n"
 	exit 0
 }
-if {$cpus_per_socket < 2} {
+if {$node_conf(CPUsPerSocket) < 2} {
 	send_user "\nWARNING: This test requires 2 or more cores per socket in the default partition\n"
 	exit 0
 }
-set cpus_per_node [expr $sockets_per_node * $cpus_per_socket]
-send_user "\nGPU count is $gpu_cnt\n"
-send_user "Sockets per node is $sockets_per_node\n"
-send_user "CPUs per socket is $cpus_per_socket\n"
-send_user "CPUs per node is $cpus_per_node\n\n"
+set cpus_per_node $node_conf(CPUTot)
+log_info "GPU count is $gpu_cnt"
+log_info "Sockets per node is $node_conf(Sockets)"
+log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_info "CPUs per node is $cpus_per_node"
 
 #
 # Build input script file
@@ -152,9 +152,15 @@ exit 0"
 set match 0
 set multi_socket 0
 if {$gpu_cnt > $cpus_per_node} {
-	set srun_pid [spawn $srun --gpus-per-node=$gpu_cnt --nodes=1 --ntasks=1 --cpus-per-task=$cpus_per_socket -t1 -l ./$file_in]
+	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt \
+	                          --nodes=1 --ntasks=1 \
+	                          --cpus-per-task=$node_conf(CPUsPerSocket) \
+	                          -t1 -l ./$file_in]
 } else {
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --nodes=1 --ntasks=1 --cpus-per-task=$cpus_per_socket -t1 -l ./$file_in]
+	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt \
+	                          --nodes=1 --ntasks=1 \
+	                          --cpus-per-task=$node_conf(CPUsPerSocket) \
+	                          -t1 -l ./$file_in]
 }
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {

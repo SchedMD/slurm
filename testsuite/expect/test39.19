@@ -238,15 +238,16 @@ if {$gpu_cnt < 2} {
 	exit 0
 }
 
-get_node_config
-set cpus_per_node [expr $sockets_per_node * $cpus_per_socket]
-set sockets_with_gpus [get_gpu_socket_count $gpu_cnt $sockets_per_node]
+array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
+set cpus_per_node $node_conf(CPUTot)
+set sockets_with_gpus [get_gpu_socket_count $gpu_cnt \
+                                            $node_conf(Sockets)]
 
-send_user "GPUs per node is $gpu_cnt\n"
-send_user "Sockets with GPUs $sockets_with_gpus\n"
-send_user "Sockets per node is $sockets_per_node\n"
-send_user "CPUs per socket is $cpus_per_socket\n"
-send_user "CPUs per node is $cpus_per_node\n"
+log_info "GPUs per node is $gpu_cnt"
+log_info "Sockets with GPUs $sockets_with_gpus"
+log_info "Sockets per node is $node_conf(Sockets)"
+log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_info "CPUs per node is $cpus_per_node"
 
 if {$cpus_per_node < 3} {
 	send_user "\nWARNING: This test requires 3 or more CPUs per node in the default partition\n"
@@ -412,7 +413,7 @@ exec $bin_rm -f $file_out
 
 if {$sockets_with_gpus >= 2} {
 	set nb_sockets 2
-	set cpus_per_task $cpus_per_socket
+	set cpus_per_task $node_conf(CPUsPerSocket)
 } else {
 	set nb_sockets 1
 	set cpus_per_task 1
@@ -586,7 +587,7 @@ exec $bin_rm -f $file_out
 
 if {$sockets_with_gpus >= 2} {
 	set nb_sockets 2
-	set cpus_per_task $cpus_per_socket
+	set cpus_per_task $node_conf(CPUsPerSocket)
 } else {
 	set nb_sockets 1
 	set cpus_per_task 1
