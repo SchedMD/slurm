@@ -8276,7 +8276,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 		detail_ptr->num_tasks = job_desc->num_tasks;
 	if (job_desc->ntasks_per_node != NO_VAL16) {
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
-		if (detail_ptr->overcommit == 0) {
+		if ((detail_ptr->overcommit == 0) &&
+		    (detail_ptr->num_tasks > 1)) {
 			detail_ptr->pn_min_cpus =
 				MAX(detail_ptr->pn_min_cpus,
 				    (detail_ptr->cpus_per_task *

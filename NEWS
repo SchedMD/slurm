@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix updating reservations to set the duration correctly if updating the
     start time.
  -- Fix update reservation to promiscuous mode.
+ -- Fix override of job tasks count to max when ntasks-per-node present.
 
 * Changes in Slurm 20.02.3
 ==========================
