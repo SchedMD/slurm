@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
     start time.
  -- Fix update reservation to promiscuous mode.
  -- Fix override of job tasks count to max when ntasks-per-node present.
+ -- Fix min CPUs per node not being at least CPUs per task requested.
 
 * Changes in Slurm 20.02.3
 ==========================
