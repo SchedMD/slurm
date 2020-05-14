@@ -74,19 +74,20 @@ if {$craynetwork_count < 1} {
 }
 
 set one_task_per_core [test_select_type_params "CR_ONE_TASK_PER_CORE"]
-get_node_config
-set sockets_with_gpus [get_gpu_socket_count $gpu_cnt $sockets_per_node]
+array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
+set sockets_with_gpus [get_gpu_socket_count $gpu_cnt \
+                                            $node_conf(Sockets)]
 
-send_user "\nGPU count is $gpu_cnt\n"
-send_user "Sockets with GPUs $sockets_with_gpus\n"
-send_user "Sockets per node is $sockets_per_node\n"
-send_user "Cores per socket is $cores_per_socket\n"
-send_user "CPUs per socket is $cpus_per_socket\n"
-send_user "gres/craynetwork count is $craynetwork_count\n"
-send_user "CR_ONE_TASK_PER_CORE is $one_task_per_core\n"
+log_info "GPU count is $gpu_cnt"
+log_info "Sockets with GPUs $sockets_with_gpus"
+log_info "Sockets per node is $node_conf(Sockets)"
+log_info "Cores per socket is $node_conf(CoresPerSocket)"
+log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_info "gres/craynetwork count is $craynetwork_count"
+log_info "CR_ONE_TASK_PER_CORE is $one_task_per_core"
 
-set cores_per_node [expr $sockets_per_node * $cores_per_socket]
-set cpus_per_node  [expr $sockets_per_node * $cpus_per_socket]
+set cores_per_node [expr $node_conf(Sockets) * $node_conf(CoresPerSocket)]
+set cpus_per_node $node_conf(CPUTot)
 if {$one_task_per_core > 0} {
 	if {$gpu_cnt > $cores_per_node} {
 		set gpu_cnt $cores_per_node
@@ -102,13 +103,14 @@ if {$nb_nodes > 1} {
 	incr tot_gpus $gpu_cnt
 }
 set gpus_per_node $gpu_cnt
-if {$gpus_per_node > 1 && $sockets_per_node > 1} {
-	set sockets_per_node 2
-	set gpus_per_socket [expr $gpus_per_node / $sockets_per_node]
+if {$gpus_per_node > 1 && $node_conf(Sockets) > 1} {
+	set node_conf(Sockets) 2
+	set gpus_per_socket [expr $gpus_per_node / \
+	                          $node_conf(Sockets)]
 } else {
 	set gpus_per_socket $gpus_per_node
 }
-set sockets_per_node [expr $gpus_per_node / $gpus_per_socket]
+set node_conf(Sockets) [expr $gpus_per_node / $gpus_per_socket]
 
 #
 # Build input script file
@@ -255,7 +257,7 @@ send_user "\n\nTEST: --gpus-per-socket option\n"
 set match_craynetwork 0
 set match_gpu 0
 if {$sockets_with_gpus > 1} {
-	set cpus_per_task $cpus_per_socket
+	set cpus_per_task $node_conf(CPUsPerSocket)
 } else {
 	set cpus_per_task 1
 }

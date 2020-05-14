@@ -132,12 +132,12 @@ if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
 	exit 0
 }
-get_node_config
+array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
-send_user "\nGPU count is $gpu_cnt\n"
-send_user "Memory Size is $mem_size\n"
-send_user "Node count in partition default parition $def_part_name is $nb_nodes\n\n"
+log_info "GPU count is $gpu_cnt"
+log_info "Memory Size is $node_conf(RealMemory)"
+log_info "Node count in partition default parition $def_part_name is $nb_nodes"
 
 #
 # Build input script file
@@ -151,7 +151,7 @@ exit 0"
 # Run test job with global GPU count
 # Increase mem_per_gpu value 10x on each iteration
 #
-for {set inx 12} {$inx <= $mem_size} {set inx [expr $inx * 10]} {
+for {set inx 12} {$inx <= $node_conf(RealMemory)} {set inx [expr $inx * 10]} {
 	run_gpu_per_job $inx
 	if {$exit_code != 0} {
 		break
@@ -162,7 +162,7 @@ for {set inx 12} {$inx <= $mem_size} {set inx [expr $inx * 10]} {
 # Run test job with gpus-per-node count
 # Increase mem_per_gpu value 10x on each iteration
 #
-for {set inx 12} {$inx <= $mem_size} {set inx [expr $inx * 10]} {
+for {set inx 12} {$inx <= $node_conf(RealMemory)} {set inx [expr $inx * 10]} {
 	run_gpu_per_node $inx
 	if {$exit_code != 0} {
 		break
@@ -173,7 +173,7 @@ for {set inx 12} {$inx <= $mem_size} {set inx [expr $inx * 10]} {
 # Run test job with gpus-per-task count and one GPU
 # Increase mem_per_gpu value 10x on each iteration
 #
-for {set inx 12} {$inx <= $mem_size} {set inx [expr $inx * 10]} {
+for {set inx 12} {$inx <= $node_conf(RealMemory)} {set inx [expr $inx * 10]} {
 	run_gpu_per_task $inx 1
 	if {$exit_code != 0} {
 		break
@@ -185,7 +185,8 @@ for {set inx 12} {$inx <= $mem_size} {set inx [expr $inx * 10]} {
 # Increase mem_per_gpu value 10x on each iteration
 #
 if {$gpu_cnt > 1} {
-	for {set inx 13} {$inx <= [expr $mem_size / 2] } {set inx [expr $inx * 10]} {
+	for {set inx 13} {$inx <= [expr $node_conf(RealMemory) / 2]} \
+	    {set inx [expr $inx * 10]} {
 		run_gpu_per_task $inx 2
 		if {$exit_code != 0} {
 			break
@@ -239,7 +240,7 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 if {$gpu_cnt > 1 && $nb_nodes > 1} {
 	set mem_alloc 0
 	set node_count 0
-	set mem_spec [expr $mem_size / 2 + 1]
+	set mem_spec [expr $node_conf(RealMemory) / 2 + 1]
 	set srun_pid [spawn $srun --gpus=2 --mem-per-gpu=$mem_spec -J "test$test_id" -t1 ./$file_in]
 	expect {
 		-re "NumNodes=($number)" {
