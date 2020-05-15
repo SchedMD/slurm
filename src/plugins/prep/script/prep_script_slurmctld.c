@@ -134,10 +134,6 @@ static void *_run_script(void *arg)
 		     script_arg->job_id,
 		     script_arg->is_epilog ? "epilog" : "prolog",
 		     WTERMSIG(status));
-
-		_destroy_run_script_arg(script_arg);
-		track_script_remove(pthread_self());
-		return NULL;
 	} else if (status != 0) {
 		error("epilog_slurmctld JobId=%u epilog exit status %u:%u",
 		      script_arg->job_id, WEXITSTATUS(status),

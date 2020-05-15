@@ -62,6 +62,7 @@ documents those changes that are of interest to users and administrators.
     requesting --distribution=plane for the job.
  -- Fix parsing of the --distribution option.
  -- Add CONF READ_LOCK to _handle_fed_send_job_sync.
+ -- prep/script - always call slurmctld PrEp callback in _run_script().
 
 * Changes in Slurm 20.02.3
 ==========================
