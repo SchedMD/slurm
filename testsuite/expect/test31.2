@@ -96,7 +96,8 @@ save_conf $config_file
 
 # Ensure that Prolog and nohold_on_prolog_fail params are removed
 exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_file
-exec $bin_sed -i {s/nohold_on_prolog_fail//gI} $config_file
+exec $bin_sed -i {s/nohold_on_prolog_fail//gI; \
+		  s/^SchedulerParameters=$//gI} $config_file
 
 # Append Prolog config to the slurm.conf
 exec $bin_echo "Prolog=$cwd/$good_prolog" >> $config_file
@@ -126,31 +127,9 @@ if {$exit_code} {
 	exit $exit_code
 }
 
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to start\n"
-	set exit_code 1
-}
-
-# Check that the job was submitted with no error
-set match 0
-spawn $squeue -h -j$job_id -o%t|%r
-expect {
-	-re "R.None" {
-		set match 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$match == 0} {
-	send_user "\nFAILURE: job $job_id is not in the correct state."
-	send_user "Job $job_id should be Running and have reason: None\n"
+# Check that job starts running correctly
+if {[wait_job_reason $job_id "RUNNING" "None"] != 0} {
+	log_error "Job $job_id should be Running and have reason: None"
 	set exit_code 1
 }
 
@@ -191,63 +170,11 @@ if {$exit_code} {
 	exit $exit_code
 }
 
-
-# Wait a bit for the pending reason to be set
-sleep 10
-
 # Check that the job is held due to the failed prolog or JobHeldAdmin
 # Either state is possible due to race conditions
-set cleaning 0
-set match 0
-spawn $squeue -h -j$job_id -o%t|%r
-expect {
-	-re "PD.Cleaning" {
-		set cleaning 1
-		exp_continue
-	}
-	-re "PD.launch failed requeued held" {
-		set match 1
-		exp_continue
-	}
-	-re "PD.JobHeldAdmin" {
-		set match 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$cleaning == 1} {
-	send_user "\nWARNING: Waiting longer for job cleanup\n"
-	sleep 30
-	set match 0
-	spawn $squeue -h -j$job_id -o%t|%r
-	expect {
-		-re "PD.launch failed requeued held" {
-			set match 1
-			exp_continue
-		}
-		-re "PD.JobHeldAdmin" {
-			set match 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: squeue is not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-}
-if {$match == 0} {
-	send_user "\nFAILURE: job $job_id is not in the correct state. "
-	send_user "Job $job_id should be Pending and have reason: "
-	send_user "\"launch failed requeued held\" or \"JobHeldAdmin\"\n"
+if {[wait_job_reason $job_id "PENDING" {"launch_failed_requeued_held" \
+                                        "JobHeldAdmin"}]} {
+	log_error "Job $job_id is not in the correct state or reason."
 	set exit_code 1
 }
 
@@ -281,9 +208,72 @@ if {$match == 0} {
 }
 
 cancel_job $job_id
-clean_up
+
+if {$exit_code} {
+	clean_up
+	exit $exit_code;
+}
+log_info "RESUMING NODE"
+spawn $scontrol update node=$test_node state=RESUME
+
+#Comment out SchedulerParameters
+exec $bin_sed -i {s/^\(SchedulerParameters=\)/#\1/gI} $config_dir/slurm.conf
+#Append SchedulerParameters=nohold_on_prolog_fail to SchedulerParameters
+exec $bin_echo "SchedulerParameters=nohold_on_prolog_fail" \
+	 >> $config_dir/slurm.conf
+reconfigure
+
+set job_id 0
+spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		log_error "sbatch is not responding"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	set exit_code 1
+}
+
+# Wait a bit for the pending reason to be set
+if {[wait_job_reason $job_id] != 0} {
+	log_error "error waiting for job $job_id to start"
+	set exit_code 1
+}
+
+# Check that the job doesn't have priority 0
+set priority 0
+spawn $squeue -h -j$job_id -o%t.%Q
+expect {
+	-re "($alpha).($number)" {
+		set priority $expect_out(2,string)
+	}
+	timeout {
+		log_error "squeue is not responding"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$priority == 0} {
+	log_error "job $job_id is held, while it shouldn't"
+	set exit_code 1
+}
+
+cancel_job $job_id
+
 
 if {$exit_code == 0} {
+	clean_up
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
