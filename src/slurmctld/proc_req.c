@@ -1454,6 +1454,8 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 		goto send_msg;
 	}
 	if (!_sched_backfill()) {
+		info("REQUEST_HET_JOB_ALLOCATION from uid=%d rejected as sched/backfill is not configured",
+		     uid);
 		error_code = ESLURM_NOT_SUPPORTED;
 		goto send_msg;
 	}
@@ -4174,6 +4176,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 	if (!_sched_backfill()) {
+		info("REQUEST_SUBMIT_BATCH_HET_JOB from uid=%d rejected as sched/backfill is not configured",
+		     uid);
 		error_code = ESLURM_NOT_SUPPORTED;
 		reject_job = true;
 		goto send_msg;
