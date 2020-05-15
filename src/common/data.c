@@ -938,23 +938,20 @@ extern int data_list_for_each_const(const data_t *d, DataListForFConst f, void *
 
 		xassert(!i->key);
 		data_for_each_cmd_t cmd = f(i->data, arg);
+		count++;
 
 		xassert(cmd > DATA_FOR_EACH_INVALID);
 		xassert(cmd < DATA_FOR_EACH_MAX);
 
 		switch (cmd) {
 		case DATA_FOR_EACH_CONT:
-			count++;
 			break;
 		case DATA_FOR_EACH_DELETE:
 			fatal_abort("%s: delete attempted against const",
 				    __func__);
 			break;
 		case DATA_FOR_EACH_FAIL:
-			if (!count)
-				count = -1;
-			else
-				count *= -1;
+			count *= -1;
 			/* fall through */
 		case DATA_FOR_EACH_STOP:
 			i = NULL;
@@ -990,22 +987,19 @@ extern int data_list_for_each(data_t *d, DataListForF f, void *arg)
 
 		xassert(!i->key);
 		data_for_each_cmd_t cmd = f(i->data, arg);
+		count++;
 
 		xassert(cmd > DATA_FOR_EACH_INVALID);
 		xassert(cmd < DATA_FOR_EACH_MAX);
 
 		switch (cmd) {
 		case DATA_FOR_EACH_CONT:
-			count++;
 			break;
 		case DATA_FOR_EACH_DELETE:
 			_release_data_list_node(d->data.list_u, i);
 			break;
 		case DATA_FOR_EACH_FAIL:
-			if (!count)
-				count = -1;
-			else
-				count *= -1;
+			count *= -1;
 			/* fall through */
 		case DATA_FOR_EACH_STOP:
 			i = NULL;
@@ -1042,13 +1036,13 @@ extern int data_dict_for_each_const(const data_t *d, DataDictForFConst f, void *
 		_check_data_list_node_magic(i);
 
 		cmd = f(i->key, i->data, arg);
+		count++;
 
 		xassert(cmd > DATA_FOR_EACH_INVALID);
 		xassert(cmd < DATA_FOR_EACH_MAX);
 
 		switch (cmd) {
 		case DATA_FOR_EACH_CONT:
-			count++;
 			break;
 		case DATA_FOR_EACH_DELETE:
 			fatal_abort("%s: delete attempted against const",
@@ -1090,23 +1084,20 @@ extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg)
 		_check_data_list_node_magic(i);
 
 		data_for_each_cmd_t cmd = f(i->key, i->data, arg);
+		count++;
 
 		xassert(cmd > DATA_FOR_EACH_INVALID);
 		xassert(cmd < DATA_FOR_EACH_MAX);
 
 		switch (cmd) {
 		case DATA_FOR_EACH_CONT:
-			count++;
 			break;
 		case DATA_FOR_EACH_DELETE:
 			_release_data_list_node(d->data.dict_u, i);
 			break;
 		case DATA_FOR_EACH_FAIL:
-			if (!count)
-				count = -1;
-			else
-				count *= -1;
-		/* fall through */
+			count *= -1;
+			/* fall through */
 		case DATA_FOR_EACH_STOP:
 			i = NULL;
 			break;
