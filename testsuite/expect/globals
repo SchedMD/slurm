@@ -1152,6 +1152,92 @@ proc wait_for_all_jobs { job_name } {
 
 ################################################################
 #
+# Proc: wait_job_reason
+#	Wait until the job is in desired state and reason is one
+#	of the desired ones. Or to max_job_state_delay.
+#
+# Input: job_id              - The job to wait for.
+#        desired_state       - Desired state.
+#        desired_reason_list - List of desired reasons. Empty list
+#                              means that any reason is ok.
+#
+# Returns: 0 when job is in the desired state and reason is one
+#          of the desired ones, or 1 otherwise.
+#
+################################################################
+proc wait_job_reason { job_id {desired_state "PENDING"}
+		       {desired_reason_list ""} } {
+	global scontrol alpha max_job_state_delay poll_interval
+	set final_state "COMPLETED CANCELLED FAILED TIMEOUT DEADLINE
+	                 OUT_OF_MEMORY"
+
+	set log_user_prev [log_user -info]
+	log_user 0
+
+	set my_delay 0
+	while true {
+		set pending 0
+		set has_reason 1
+		spawn $scontrol show job $job_id
+		expect {
+			-re "JobState=($alpha) Reason=(\\S+)" {
+				set job_state $expect_out(1,string)
+				set job_reason $expect_out(2,string)
+			}
+			timeout {
+				log_error "No response from scontrol show job"
+				set rc 1
+				break
+			}
+		}
+
+		# Check if both state and reason are the desired ones
+		if {$job_state == $desired_state} {
+			set found 0
+			if {$desired_reason_list == ""} {
+				set found 1
+			}
+			foreach desired_reason $desired_reason_list {
+				if {$job_reason == $desired_reason } {
+					set found 1
+				}
+			}
+			if {$found} {
+				set rc 0
+				break
+			}
+		} elseif {[lsearch -exact final_state $job_state] >= 0} {
+			# Job is in final step no need to wait longer
+			log_error [format "Job in final state/reason '%s' / '%s' instead of the desired '%s' / '%s'." \
+			                  $job_state $job_reason \
+			                  $desired_state $desired_reason_list]
+			set rc 1
+			break
+		}
+
+		# Check if this was the last poll
+		if {$my_delay > $max_job_state_delay} {
+			log_error "wait_job_reason timeout"
+			set rc 1
+			break
+		}
+		set remamining_sec [expr $max_job_state_delay - $my_delay]
+		log_info [format "Job in state/reason '%s' / '%s' instead of the desired '%s' / '%s'." \
+		                 $job_state $job_reason \
+		                 $desired_state $desired_reason_list]
+		log_info [format "Polling again in %ss, %ss to timeout." \
+		                 $poll_interval $remamining_sec]
+
+		sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
+	}
+
+	log_user $log_user_prev
+	return $rc
+}
+
+################################################################
+#
 # Proc: test_config_overrides
 #
 # Returns if SlurmdParameters=config_overrides in slurm.conf
