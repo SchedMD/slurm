@@ -5832,20 +5832,29 @@ proc get_node_config { {request_args "-n1 -t1"} } {
 		-re "(\ *(\[^=\\n\]+)=(\\S+)\|\\n\ *(OS)=(\[^\\n\]*))" {
 			if {[string first "OS=" $expect_out(0,string)] != -1 } {
 				# Use the last groups the main regexp
-				set node_conf($expect_out(4,string)) $expect_out(5,string)
+				set node_conf($expect_out(4,string)) \
+					$expect_out(5,string)
 			} else {
 				# Use the first groups of the main regexp
-				set node_conf($expect_out(2,string)) $expect_out(3,string)
+				set node_conf($expect_out(2,string)) \
+					$expect_out(3,string)
 
 				# Compute the GPUTot when Key is Gres
-				if {[string first "Gres=" $expect_out(0,string)] != -1 } {
-					set gres_list [split $expect_out(3,string) ","]
+				if {[string first "Gres=" $expect_out(0,string)] \
+					!= -1 } {
+					set gres_list [split \
+						$expect_out(3,string) ","]
 					foreach gres $gres_list {
-						if {[regexp {gpu:(\S+?):(\d+)} $gres match type count] == 1} {
-							incr node_conf(GPUTot) $count
+						if {[regexp {gpu:(\S+?):(\d+)} \
+							$gres match type count] \
+							== 1} {
+							incr node_conf(GPUTot) \
+								$count
 						}
-						if {[regexp {gpu:(\d+)} $gres match count] == 1} {
-							incr node_conf(GPUTot) $count
+						if {[regexp {gpu:(\d+)} $gres \
+							match count] == 1} {
+							incr node_conf(GPUTot) \
+								$count
 						}
 					}
 				}
