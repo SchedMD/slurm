@@ -2539,6 +2539,8 @@ log_info "TestCases: $ntest"
 log_info "Failures : $failures"
 
 if {$failures != 0} {
-	set exit_code 1
+	fail "Test failed due to previous failures (\$failures = $failures)"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

@@ -614,7 +614,7 @@ set jobid2 [sub_job $cpu_cnt]
 if {$exit_code != 0} {
 	cancel_job $jobid1
 	cancel_job $jobid2
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 send_user "\nSubmitted 2 jobs successfully\n\n"
 
@@ -703,5 +703,6 @@ cancel_job $jobid2
 #
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -132,12 +132,12 @@ expect {
 	}
 }
 if {$matches != 1} {
-	log_error "scancel name filter failed"
-	set exit_code 1
+	fail "scancel name filter failed"
 }
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
 

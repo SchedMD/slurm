@@ -221,4 +221,6 @@ if {$exit_code == 0} {
 	exec mv $hdf5_file test$test_id.hdf5
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

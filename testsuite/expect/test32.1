@@ -55,8 +55,9 @@ expect {
 	}
 }
 if {$matches != 1} {
-	log_error "sgather failed to report usage ($matches != 1)"
-	set exit_code 1
+	fail "sgather failed to report usage ($matches != 1)"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

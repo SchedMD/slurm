@@ -94,8 +94,7 @@ expect {
 }
 # Quit now if job failed
 if {$exit_code != 0} {
-	exit $exit_code
-
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 spawn $scancel --interactive $job_id1
@@ -131,11 +130,11 @@ expect {
 }
 
 if {$matches != 3} {
-	log_error "scancel interactive option failed"
-	set exit_code 1
+	fail "scancel interactive option failed"
 }
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
 

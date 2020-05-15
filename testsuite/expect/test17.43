@@ -168,12 +168,12 @@ if {[wait_for_file $file_out] != 0} {
 		}
 	}
 	if {$counter != 150} {
-		log_error "Output file incomplete ($counter != 5)"
-		set exit_code 1
+		fail "Output file incomplete ($counter != 5)"
 	}
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

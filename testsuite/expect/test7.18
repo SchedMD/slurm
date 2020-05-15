@@ -63,7 +63,5 @@ expect {
 if { $exit_code == 0 } {
 	file delete $test_prog
 } else {
-	log_error "One or more hosts weren't found"
+	fail "One or more hosts weren't found"
 }
-
-exit $exit_code

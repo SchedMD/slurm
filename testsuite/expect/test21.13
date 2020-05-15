@@ -108,7 +108,7 @@ incr exit_code [add_cluster "$tc1,$tc2" ""]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
-	exit $exit_code
+	fail "Unable to add cluster ($tc1,$tc2)"
 }
 
 #add accounts
@@ -116,7 +116,7 @@ incr exit_code [add_acct "$ta1,$ta2,$ta3" [array get acct_req]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
-	exit $exit_code
+	fail "Unable to add account ($ta1,$ta2,$ta3)"
 }
 
 # OK This is the real test, first test change the desc and org of the accounts
@@ -124,7 +124,7 @@ incr exit_code [mod_acct "$ta1,$ta2,$ta3" [array get acct_mod_desc] [array get a
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
-	exit $exit_code
+	fail "Unable to modify account ($ta1,$ta2,$ta3)"
 }
 
 #
@@ -160,7 +160,7 @@ incr exit_code [mod_acct $ta1  [array get acct_mod_desc2] [array get acct_mod_as
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
-	exit $exit_code
+	fail "Unable to modify account ($ta1)"
 }
 
 #
@@ -197,7 +197,7 @@ incr exit_code [mod_acct $ta1  [array get acct_mod_desc3] [array get acct_mod_as
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
-	exit $exit_code
+	fail "Unable to modify account ($ta1)"
 }
 
 #

@@ -67,8 +67,9 @@ expect {
 }
 
 if {$matches != 3} {
-	log_error "sacctmgr --usage failed ($matches)"
-	set exit_code 1
+	fail "sacctmgr --usage failed ($matches)"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

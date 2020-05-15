@@ -276,7 +276,7 @@ if { $exit_code } {
 	remove_acct "" "$ta2,$ta3,$ta4"
 	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add qos ($qs2)"
 }
 
 #
@@ -287,7 +287,7 @@ if { $exit_code } {
 	remove_acct "" "$ta2,$ta3,$ta4"
 	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add cluster ($tc3)"
 }
 
 #add accounts
@@ -297,7 +297,7 @@ if { $exit_code } {
 	remove_acct "" "$ta2,$ta3,$ta4"
 	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add account ($ta4)"
 }
 
 incr exit_code [add_acct $ta3 [array get acct_req2]]
@@ -306,7 +306,7 @@ if { $exit_code } {
 	remove_acct "" "$ta2,$ta3,$ta4"
 	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add account ($ta3)"
 }
 
 incr exit_code [add_acct $ta2 [array get acct_req3]]
@@ -315,7 +315,7 @@ if { $exit_code } {
 	remove_acct "" "$ta2,$ta3,$ta4"
 	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add account ($ta2)"
 }
 
 #add users
@@ -325,7 +325,7 @@ if { $exit_code } {
 	remove_acct "" "$ta2,$ta3,$ta4"
 	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add user ($tu3)"
 }
 
 incr exit_code [add_user $tu2 [array get user_req2]]
@@ -334,7 +334,7 @@ if { $exit_code } {
 	remove_acct "" "$ta2,$ta3,$ta4"
 	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add user ($tu2)"
 }
 
 incr exit_code [add_user $tu1 [array get user_req3]]
@@ -343,7 +343,7 @@ if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3,$ta4"
 	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add user ($tu1)"
 }
 
 exec $bin_rm -f $file_out4

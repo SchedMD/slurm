@@ -211,17 +211,16 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 #	Depending upon minimal allocation unit, job can be allocated extra CPUs
 	set cpu_target [expr $cpus_per_node * 2]
 	if {$cpu_count < $cpu_target} {
-		log_error "srun --cpus-per-gpu failure, bad CPU count ($cpu_count < $cpu_target)"
-		set exit_code 1
+		fail "srun --cpus-per-gpu failure, bad CPU count ($cpu_count < $cpu_target)"
 	}
 	set node_target 2
 	if {$node_count < $node_target} {
-		log_error "srun --cpus-per-gpu failure, bad node count ($node_count < $node_target)"
-		set exit_code 1
+		fail "srun --cpus-per-gpu failure, bad node count ($node_count < $node_target)"
 	}
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

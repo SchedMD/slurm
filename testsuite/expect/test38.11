@@ -208,11 +208,11 @@ expect {
 	}
 }
 if {$matches != 4} {
-	log_error "sbcast did not copy the file(s) to the correct nodes ($matches != 4)"
-	set exit_code 1
+	fail "sbcast did not copy the file(s) to the correct nodes ($matches != 4)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -rf $script1
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

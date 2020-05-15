@@ -109,11 +109,11 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$matches != 3} {
-	log_error "scontrol listpids output error"
-	set exit_code 1
+	fail "scontrol listpids output error"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

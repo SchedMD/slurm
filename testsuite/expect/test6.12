@@ -226,7 +226,7 @@ if {$found_job == 0} {
 }
 
 if {$exit_code != 0} {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 #
@@ -291,15 +291,15 @@ expect {
 	}
 }
 if {$found_step == 1} {
-	log_error "Job step found, not killed"
-	set exit_code 1
+	fail "Job step found, not killed"
 }
 
 if {[cancel_job $job_id] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

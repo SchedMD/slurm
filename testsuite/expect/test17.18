@@ -142,7 +142,7 @@ cancel_job $job_id1
 # Inspect the job's output file
 #
 if {[wait_for_file $file_out] != 0} {
-	exit 1
+	fail "Failed waiting for file ($file_out)"
 }
 
 spawn $bin_cat $file_out
@@ -261,13 +261,13 @@ if {$purged_job == 1} {
 	if {$min_job_age < 60} {
 		log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
 	} else {
-		log_error "Could not find job $job_id1"
-		set exit_code 1
+		fail "Could not find job $job_id1"
 	}
 }
 
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

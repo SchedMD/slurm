@@ -160,7 +160,7 @@ if {[string compare $host_1 ""] != 0} {
 }
 if {[test_front_end] != 0} {
 	log_warn "Additional testing is incompatible with front-end systems"
-	exit $exit_code
+	pass
 }
 
 #
@@ -292,4 +292,6 @@ if {$dup_host == 1} {
 	set exit_code   1
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

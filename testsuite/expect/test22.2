@@ -248,68 +248,59 @@ proc sreport_opt { soption } {
 
 set matches [sreport_opt h ]
 if {$matches != 3} {
-	log_error "sreport -h failed ($matches)"
-	set exit_code 1
+	fail "sreport -h failed ($matches)"
 }
 
 set matches [sreport_opt -help ]
 if {$matches != 3} {
-	log_error "sreport --help failed ($matches)"
-	set exit_code 1
+	fail "sreport --help failed ($matches)"
 }
 
 set matches [sreport_opt -usage ]
 if {$matches != 3} {
-	log_error "sreport --usage failed ($matches)"
-	set exit_code 1
+	fail "sreport --usage failed ($matches)"
 }
 
 set matches [sreport_opt n ]
 if {$matches != 0} {
-	log_error "sreport -n failed ($matches)"
-	set exit_code 1
+	fail "sreport -n failed ($matches)"
 }
 
 set matches [sreport_opt -noheader ]
 if {$matches != 0} {
-	log_error "sreport --noheader failed ($matches)"
-	set exit_code 1
+	fail "sreport --noheader failed ($matches)"
 }
 
 set matches [sreport_opt p ]
 if {$matches != 2} {
-	log_error "sreport -p failed ($matches)"
-	set exit_code 1
+	fail "sreport -p failed ($matches)"
 }
 
 set matches [sreport_opt -parsable ]
 if {$matches != 2} {
-	log_error "sreport --parsable failed ($matches)"
-	set exit_code 1
+	fail "sreport --parsable failed ($matches)"
 }
 
 set matches [sreport_opt P ]
 if {$matches != 2} {
-	log_error "sreport -P failed ($matches)"
-	set exit_code 1
+	fail "sreport -P failed ($matches)"
 }
 
 set matches [sreport_opt -parsable2 ]
 if {$matches != 2} {
-	log_error "sreport --parsable2 failed ($matches)"
-	set exit_code 1
+	fail "sreport --parsable2 failed ($matches)"
 }
 
 set matches [sreport_opt V ]
 if {$matches != 1} {
-	log_error "sreport -V failed ($matches)"
-	set exit_code 1
+	fail "sreport -V failed ($matches)"
 }
 
 set matches [sreport_opt -version ]
 if {$matches != 1} {
-	log_error "sreport --verbose failed ($matches)"
-	set exit_code 1
+	fail "sreport --verbose failed ($matches)"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

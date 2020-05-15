@@ -122,7 +122,10 @@ proc end_it { } {
 	if {$job_id(2) > 0} {
 		exec $scancel $job_id(2)
 	}
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 print_header $test_id

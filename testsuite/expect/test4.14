@@ -290,11 +290,12 @@ expect {
 }
 
 if {$match != 1} {
-	log_error "sinfo should have produced an error ($match != 1)"
-	set exit_code 1
+	fail "sinfo should have produced an error ($match != 1)"
 }
 
 # Delete test partitions
 delete_part
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

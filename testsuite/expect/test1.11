@@ -117,4 +117,6 @@ if {[ string compare $short1 $short2 ] != 0} {
 	fail "Requested and actual job name mismatch. Strings are:$short1:$short2:$size2"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

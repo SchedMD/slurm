@@ -274,4 +274,6 @@ if {$found != 0} {
 if {$exit_code == 0} {
 	exec $bin_rm $test_srun $file_in
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

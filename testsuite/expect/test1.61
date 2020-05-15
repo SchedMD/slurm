@@ -113,15 +113,14 @@ if {[wait_for_file $file_err] == 0} {
 		}
 	}
 	if {$timed_out == 0} {
-		log_error "srun time limit not enforced"
-		set exit_code 1
+		fail "srun time limit not enforced"
 	}
 } else {
-	log_error "Job error file missing"
-	set exit_code 1
+	fail "Job error file missing"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

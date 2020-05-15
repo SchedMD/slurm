@@ -58,7 +58,7 @@ proc inc3_11_6 {} {
 	# Delete the reservation
 	set ret_code [delete_res $res_name_save]
 	if {$ret_code != 0} {
-		exit $ret_code
+		fail "Unable to delete reservation ($res_name_save)"
 	}
 
 
@@ -82,7 +82,7 @@ proc inc3_11_6 {} {
 	# Delete the reservation
 	set ret_code [delete_res $res_name_save]
 	if {$ret_code != 0} {
-		exit $ret_code
+		fail "Unable to delete reservation ($res_name_save)"
 	}
 
 	#

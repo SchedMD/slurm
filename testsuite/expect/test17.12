@@ -1035,6 +1035,5 @@ clean_up
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
 } else {
-	fail "Test failed due to previous errors"
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

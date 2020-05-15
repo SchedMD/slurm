@@ -121,22 +121,22 @@ send_user "\n"
 foreach {slurm_var check_flag} [array get good_vars] {
     incr total
     if {[info exists found_vars($slurm_var)]} {
-	if { $check_flag == 1 && $found_vars($slurm_var) <= 0 } {
-		log_error "Found $slurm_var, but $found_vars($slurm_var) <= 0"
-	} else {
-	    incr good
-	}
+		if { $check_flag == 1 && $found_vars($slurm_var) <= 0 } {
+			log_error "Found $slurm_var, but $found_vars($slurm_var) <= 0"
+		} else {
+	    	incr good
+		}
     } else {
-	log_error "Variable $slurm_var not found"
+		fail "Variable $slurm_var not found"
     }
 }
 
 if {$good < $total} {
-	log_error "Only $good of $total Slurm environment variables set"
-	set exit_code 1
+	fail "Only $good of $total Slurm environment variables set"
 }
 
 if {$exit_code == 0} {
 	file delete $file_in $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

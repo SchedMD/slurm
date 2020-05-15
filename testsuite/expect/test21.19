@@ -128,7 +128,7 @@ if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
 }
 
 #add accounts
@@ -137,7 +137,7 @@ if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add account ($nm1,$nm2,$nm3)"
 }
 
 #add users
@@ -146,7 +146,7 @@ if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add user ($us1,$us2,$us3)"
 }
 
 # Add a coordinator
@@ -156,7 +156,7 @@ if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add coordinator ($nm1 $us1)"
 }
 
 #
@@ -194,7 +194,7 @@ if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add coordinator ($nm1,$nm3 $us2,$us3)"
 }
 
 #

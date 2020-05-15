@@ -195,8 +195,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	log_error "Ran job with what should be invalid constraint"
-	set exit_code 1
+	fail "Ran job with what should be invalid constraint"
 }
 
 # Explicitly reset features, just to be safe
@@ -204,5 +203,6 @@ set_node_feature $node_name $orig_avail_node_feat $orig_active_node_feat
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

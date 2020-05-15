@@ -101,4 +101,6 @@ if {$good < $total} {
 	fail "Only $good of $total Slurm environment variables set"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

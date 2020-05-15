@@ -175,8 +175,9 @@ expect {
 send_user "Optimal task layout was: $expected_layout\n"
 send_user "Actual task layout was : $tested_layout\n"
 if {[string compare $tested_layout $expected_layout]} {
-	log_error "Failed to distribute tasks in nopack fashion"
-	set exit_code 1
+	fail "Failed to distribute tasks in nopack fashion"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

@@ -47,7 +47,7 @@ proc inc3_11_7 {} {
 	# Delete the reservation
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
-		exit $ret_code
+		fail "Unable to delete reservation ($res_name)"
 	}
 
 	# Now make a reservation using half the cores on that node
@@ -266,7 +266,7 @@ proc inc3_11_7 {} {
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
 		cancel_job $job_id
-		exit $ret_code
+		fail "Unable to delete reservation ($res_name)"
 	}
 
 	sleep 10

@@ -292,10 +292,10 @@ expect {
 reset_state
 
 if {$mismatches != 0} {
-	log_error "sinfo node filtering error"
-	set exit_code 1
+	fail "sinfo node filtering error"
 }
 if {$exit_code == 0} {
 	file delete $tmp_sc
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

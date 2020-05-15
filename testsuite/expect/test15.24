@@ -82,15 +82,14 @@ expect {
 	}
 }
 if {$matches != 2} {
-	log_error "Did not set desired allocation env vars"
-	set exit_code 1
+	fail "Did not set desired allocation env vars"
 }
 if {$task_cnt != $tasks} {
-	log_error "Did not get proper number of tasks: $task_cnt, $tasks"
-	set exit_code 1
+	fail "Did not get proper number of tasks: $task_cnt, $tasks"
 }
 
 if {$exit_code == 0} {
 	file delete $file_in $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

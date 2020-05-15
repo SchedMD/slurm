@@ -136,5 +136,6 @@ if {$match != 3} {
 
 if {$exit_code == 0} {
 	file delete $file_script
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

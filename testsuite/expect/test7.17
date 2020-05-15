@@ -194,11 +194,11 @@ expect {
 	}
 }
 if {$fail_match != 1} {
-	log_error "This test should have failed but did not"
-	set exit_code 1
+	fail "This test should have failed but did not"
 }
 
 if {$exit_code == 0} {
 	file delete $test_prog
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

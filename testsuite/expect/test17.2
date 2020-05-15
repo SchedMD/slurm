@@ -64,4 +64,6 @@ if {$matches != 2} {
 	log_error "sbatch failed to report help message ($matches != 2)"
 	set exit_code 1
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

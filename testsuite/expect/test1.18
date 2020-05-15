@@ -104,5 +104,7 @@ if {[string compare $licenses ""] != 0} {
 # Run a job attempting to get a legitimate license name
 #
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
 

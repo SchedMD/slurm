@@ -144,8 +144,10 @@ proc cleanup { } {
 
 proc end_it { exit_code } {
 	global test_id
-	cleanup
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 #
@@ -154,11 +156,9 @@ proc end_it { exit_code } {
 set nothing 0
 set matches 0
 
-cleanup
 if {$exit_code != 0} {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-
 
 ######MAIN######
 #####################################

@@ -119,8 +119,9 @@ foreach {slurm_var check_flag} [array get good_vars] {
 }
 
 if {$good < $total} {
-	log_error "Only $good of $total Slurm environment variables set"
-	set exit_code 1
+	fail "Only $good of $total Slurm environment variables set"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

@@ -118,11 +118,11 @@ expect {
 }
 
 if {$matches != [expr $task_cnt * 3]} {
-	log_error "Spawn IO communications failure"
-	set exit_code 1
+	fail "Spawn IO communications failure"
 }
 
 if {$exit_code == 0} {
 	file delete $io_prog $test_prog
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

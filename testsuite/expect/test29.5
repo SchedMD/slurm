@@ -112,9 +112,8 @@ if {$job_id == 0} {
 # Wait for job to start
 #
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-        log_error "waiting for job to start"
         cancel_job $job_id
-        exit 1
+        fail "Waiting for job to start"
 }
 set node_name [get_node $job_id]
 
@@ -195,5 +194,6 @@ reset_state $node_name
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

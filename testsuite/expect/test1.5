@@ -67,7 +67,8 @@ expect {
 
 set target_matches 3
 if {$matches < $target_matches} {
-	log_error "srun failed to report help message ($matches of $target_matches)"
-	set exit_code 1
+	fail "srun failed to report help message ($matches of $target_matches)"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

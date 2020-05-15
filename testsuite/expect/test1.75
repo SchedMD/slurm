@@ -246,12 +246,11 @@ foreach name [array names freq_lvl_1] {
 if { (($freq_lvl_1(low) > $freq_lvl_1(medium)) ||
       ($freq_lvl_1(medium) > $freq_lvl_1(high)) ||
       ($freq_lvl_1(highm1) > $freq_lvl_1(high)))} {
-	log_error "CPU frequency values are not valid"
-	send_user "Test with smaller JobAcctGatherFrequency configuration or longer running jobs\n"
-	exit 1
+	fail "CPU frequency values are not valid. Test with smaller JobAcctGatherFrequency configuration or longer running jobs"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_id $file_in $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -84,9 +84,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $s_pid
-		exit 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -281,4 +280,6 @@ if {$damatches != 1} {
 	set exit_code 1
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

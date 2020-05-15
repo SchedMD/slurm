@@ -143,11 +143,11 @@ expect {
 	}
 }
 if {$matches != 1} {
-	log_error "Task 0 did not run to completion after other tasks killed"
-	set exit_code 1
+	fail "Task 0 did not run to completion after other tasks killed"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

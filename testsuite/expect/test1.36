@@ -63,8 +63,9 @@ expect {
 }
 
 if {$task_output != [expr $task_cnt * $mult]} {
-	log_error "Failed to get output from all tasks"
-	set exit_code 1
+	fail "Failed to get output from all tasks"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

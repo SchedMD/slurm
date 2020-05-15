@@ -88,7 +88,7 @@ if {$match_job_state != 1} {
 	set exit_code 1
 }
 if {$exit_code != 0} {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 send_user "\nSo far, so good\n\n\n"
 
@@ -135,11 +135,10 @@ expect {
 	}
 }
 if {$match_job_state != $array_size} {
-	log_error "Dependent job not completed ($match_job_state != $array_size)"
-	set exit_code 1
+	fail "Dependent job not completed ($match_job_state != $array_size)"
 }
 
 cancel_job $job_id
-if {$exit_code == 0} {
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -101,11 +101,11 @@ if {[wait_for_file $file_out] == 0} {
 }
 
 if {$arg_match == 0} {
-	log_error "Failed to pass script arguments"
-	set exit_code 1
+	fail "Failed to pass script arguments"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

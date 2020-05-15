@@ -71,7 +71,7 @@ print_header $test_id
 
 proc check_rc { exit_code } {
 	if {$exit_code != 0} {
-		fail "Exiting with exit code $exit_code"
+		fail "Subcommand failed with exit code $exit_code"
 	}
 }
 
@@ -115,7 +115,10 @@ proc endit { exit_code } {
 	if {$exit_code == 0} {
 		cleanup_accounts
 	}
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 proc test_salloc { qos account num_nodes } {

@@ -69,9 +69,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $s_pid
-		exit 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -715,8 +714,9 @@ expect {
 	}
 }
 if {$damatches != 1} {
-	log_error "sacctmgr had a problem deleting account"
-	set exit_code 1
+	fail "sacctmgr had a problem deleting account"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

@@ -109,7 +109,10 @@ proc end_it { exit_code } {
 	restore_conf $config_file
 	reconfigure
 
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 
@@ -323,9 +326,7 @@ if {[info exists env(SPRIO_FORMAT)]} {
 }
 
 set config_path [get_conf_path]
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+fail_on_error "Unable to get config path"
 set config_file $config_path/slurm.conf
 
 save_conf $config_file

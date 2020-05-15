@@ -65,7 +65,10 @@ proc end_it { exit_code } {
 		cancel_job $jobid2
 	}
 
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 

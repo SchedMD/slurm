@@ -55,8 +55,9 @@ expect {
 	}
 }
 if {$found != 1} {
-	log_error "qalter's help option did not work"
-	set exit_code 1
+	fail "qalter's help option did not work"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

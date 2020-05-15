@@ -191,9 +191,10 @@ run_config "etc.33.1.4"
 file delete $file_in
 
 if {$cfgok != $cfgcount} {
-	log_error "Some of the configurations failed"
-	set exit_code 1
+	fail "Some of the configurations failed"
 } else {
 	file delete $test_prog
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

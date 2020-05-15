@@ -150,12 +150,11 @@ foreach opt [array names conf_val] {
 	}
 }
 if {$tot_match != $opt_cnt} {
-	log_error "Not all the values in the new config file were found ($tot_match != $opt_cnt)"
-	set exit_code 1
+	fail "Not all the values in the new config file were found ($tot_match != $opt_cnt)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $new_conf
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-
-exit $exit_code

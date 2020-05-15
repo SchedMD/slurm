@@ -183,15 +183,15 @@ expect {
 	}
 }
 if {$job_id_rm == 0} {
-	log_error "Job did not launch"
-	set exit_code 1
+	fail "Job did not launch"
 } elseif {[wait_for_job $job_id_rm "DONE"] != 0} {
-	log_error "Job did not complete"
-	set exit_code 1
 	cancel_job $job_id_rm
+	fail "Job did not complete"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $output_use $script_mk $script_rm $script_use
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

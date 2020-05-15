@@ -115,8 +115,9 @@ expect {
 }
 
 if {$matches != 0} {
-	log_error "sinfo printer header"
-	set exit_code 1
+	fail "sinfo printer header"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

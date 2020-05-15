@@ -281,23 +281,21 @@ expect {
 # Verify node count and names
 #
 if {[string compare $host_0 ""] == 0} {
-	log_error "Did not get hostname of task 0"
-	set exit_code   1
+	fail "Did not get hostname of task 0"
 }
 if {[string compare $host_1 ""] != 0} {
-	log_error "Started more than one task"
-	set exit_code   1
+	fail "Started more than one task"
 }
 set dup_hostname 0
 if {[string compare $host_0 $include_node] == 0} {
 	set dup_hostname 1
 }
 if {$dup_hostname == 0} {
-	log_error "Allocation lacked an included node"
-	set exit_code   1
+	fail "Allocation lacked an included node"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

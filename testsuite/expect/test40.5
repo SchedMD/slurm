@@ -251,5 +251,6 @@ if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2 $file_in3 $file_out1 $file_out2
 	exec $bin_rm -f slurm_job_${job_id2}_resize.csh
 	exec $bin_rm -f slurm_job_${job_id2}_resize.sh
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

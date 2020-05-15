@@ -97,15 +97,14 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$matches != 1} {
-		log_error "Unexpected output ($matches != 1)"
-		set exit_code 1
+		fail "Unexpected output ($matches != 1)"
 	}
 } else {
-	log_error "Output file missing"
-	set exit_code 1
+	fail "Output file missing"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $script $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

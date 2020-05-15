@@ -103,4 +103,6 @@ if { $match != 1 } {
 	fail "salloc exit code not reported"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

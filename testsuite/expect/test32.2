@@ -36,8 +36,7 @@ set exit_code  0
 print_header $test_id
 
 if {[file executable $sgather] == 0} {
-	send_user "\nWARINING $sgather does not exist\n"
-	exit 0
+	skip "$sgather does not exist"
 }
 
 set matches 0
@@ -60,8 +59,9 @@ expect {
 	}
 }
 if {$matches != 2} {
-	log_error "sgather did not report the help message ($matches != 2)"
-	set exit_code 1
+	fail "sgather did not report the help message ($matches != 2)"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

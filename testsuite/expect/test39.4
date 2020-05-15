@@ -197,5 +197,6 @@ expect {
 		wait
 	}
 }
-
-exit $exit_code
+ else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

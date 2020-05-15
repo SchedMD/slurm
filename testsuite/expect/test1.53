@@ -72,15 +72,14 @@ expect {
 	}
 }
 if {$began_flag == 0} {
-	log_error "Job never started"
-	set exit_code 1
+	fail "Job never started"
 } elseif {$run_time < 59 || $run_time > 121} {
-	log_error "Problem with time limit signal"
-	set exit_code 1
+	fail "Problem with time limit signal"
 }
 
 if {$exit_code == 0} {
 	exec rm -f $file_prog
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
 

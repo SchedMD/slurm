@@ -62,7 +62,8 @@ expect {
 }
 
 if {$matches != 2} {
-	log_error "squeue failed to report help message"
-	set exit_code 1
+	fail "squeue failed to report help message"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

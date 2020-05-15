@@ -68,11 +68,11 @@ expect {
 }
 
 if {$task_cnt != $tasks} {
-	log_error "Did not get proper number of tasks: $task_cnt, $tasks"
-	set exit_code 1
+	fail "Did not get proper number of tasks: $task_cnt, $tasks"
 }
 if {$verbosity != 1} {
-	log_error "Did not report job id with verbosity on"
-	set exit_code 1
+	fail "Did not report job id with verbosity on"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

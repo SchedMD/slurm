@@ -78,4 +78,6 @@ for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 	}
 }
 
-exit $exit_code
+exit if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

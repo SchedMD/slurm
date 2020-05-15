@@ -92,4 +92,6 @@ if {$timed_out == 1} {
 if {$task_cnt != $resp_cnt} {
 	fail "Did not get proper number of tasks: $task_cnt, $resp_cnt"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

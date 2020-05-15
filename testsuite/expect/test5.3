@@ -70,7 +70,8 @@ expect {
 }
 
 if {$iteration < 3} {
-	log_error "squeue iteration error"
-	set exit_code 1
+	fail "squeue iteration error"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

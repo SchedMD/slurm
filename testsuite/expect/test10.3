@@ -98,8 +98,9 @@ if {$too_small != 0} {
 	skip "Screen is too small for test"
 }
 if {$matches != 6} {
-	log_error "smap slurm partition display in curses mode ($matches of 6)"
-	set exit_code 1
+	fail "smap slurm partition display in curses mode ($matches of 6)"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

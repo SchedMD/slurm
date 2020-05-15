@@ -63,7 +63,8 @@ expect {
 }
 
 if {$debug_get != $debug_set} {
-	log_error "Did not log at proper level ($debug_get != $debug_set)"
-	set exit_code 1
+	fail "Did not log at proper level ($debug_get != $debug_set)"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

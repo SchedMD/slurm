@@ -83,4 +83,3 @@ if {[catch {exec diff $file_in $file_out}]} {
 }
 
 exec $bin_rm -f $file_in $file_out
-exit 0

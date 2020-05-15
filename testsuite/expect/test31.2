@@ -205,7 +205,7 @@ cancel_job $job_id
 
 if {$exit_code} {
 	clean_up
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 log_info "RESUMING NODE"
 spawn $scontrol update node=$test_node state=RESUME
@@ -258,15 +258,12 @@ expect {
 	}
 }
 
-if {$priority == 0} {
-	log_error "job $job_id is held, while it shouldn't"
-	set exit_code 1
-}
+assert_or_error {$priority != 0} "job $job_id is held, while it shouldn't"
 
 cancel_job $job_id
 
-
 if {$exit_code == 0} {
 	clean_up
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

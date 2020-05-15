@@ -111,11 +111,11 @@ expect {
 
 # we should get an error code here from qdel, but no message
 if {($matches != 0) || ($status == 0)} {
-	log_error "No error on attempt to cancel terminated job"
-	set exit_code 1
+	fail "No error on attempt to cancel terminated job"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -568,9 +568,6 @@ expect {
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_prog
 } else {
-	send_user "\nNOTE: This test can fail if the node configuration in slurm.conf \n"
-	send_user "  (sockets, cores, threads) differs from the actual configuration\n"
-	send_user "  SPANK plugins (e.g. auto-affinity.so)\n"
+	fail "This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration. SPANK plugins (e.g. auto-affinity.so)"
 }
-exit $exit_code
 

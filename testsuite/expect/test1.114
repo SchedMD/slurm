@@ -128,4 +128,6 @@ for {set inx 2} {$inx < $max_task_cnt} {incr inx 2} {
 	sleep 1
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

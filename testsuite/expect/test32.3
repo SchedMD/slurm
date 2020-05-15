@@ -36,8 +36,7 @@ set exit_code  0
 print_header $test_id
 
 if {[file executable $sgather] == 0} {
-	send_user "\nWARINING $sgather does not exist\n"
-	exit 0
+	skip "$sgather does not exist"
 }
 
 # Set env PATH to slurm dir to find srun
@@ -59,8 +58,9 @@ expect {
 	}
 }
 if {$matches != 1} {
-	log_error "sgather did not report the version ($matches != 1)"
-	set exit_code 1
+	fail "sgather did not report the version ($matches != 1)"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

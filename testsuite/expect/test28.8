@@ -148,7 +148,7 @@ suspend_job $job_id suspend
 if {$not_supported == 1} {
 	exec $bin_rm -f $file_script
 	cancel_job $job_id
-	exit 0
+	skip "Job suspend not supported"
 }
 
 
@@ -166,5 +166,6 @@ cancel_job $job_id
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_script
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

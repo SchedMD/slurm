@@ -48,8 +48,7 @@ print_header $test_id
 
 set damp [get_fs_damping_factor]
 if {$damp != 1} {
-	send_user "Unable to run with FairShareDampeningFactor=$damp (must be 1)\n"
-	exit 0
+	skip "Unable to run with FairShareDampeningFactor=$damp (must be 1)"
 }
 
 #
@@ -174,11 +173,11 @@ expect {
 }
 
 if {$matches != 22} {
-	log_error "We didn't get the correct priorities from the plugin ($matches != 22)"
-	set exit_code 1
+	fail "We didn't get the correct priorities from the plugin ($matches != 22)"
 }
 
 if {$exit_code == 0} {
 	file delete $test_prog
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

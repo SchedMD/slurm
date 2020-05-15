@@ -62,12 +62,12 @@ proc end_it { exit_code } {
 		exec $bin_rm -f $spank_conf_file
 	}
 
-       if {$exit_code == 0} {
+    if {$exit_code == 0} {
 		exec $bin_rm -f $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
+		pass
 	} else {
-		log_error "This may be due to NFS sychronization problems: Multiple processes on differrent nodes writing to the same file. The SlurmdLogFile on each node should include SPANK logs for each step"
+		fail "Test failed due to previous errors (\$exit_code = $exit_code). This may be due to NFS sychronization problems: Multiple processes on differrent nodes writing to the same file. The SlurmdLogFile on each node should include SPANK logs for each step"
 	}
-	exit $exit_code
 }
 
 set node_count [available_nodes "" ""]

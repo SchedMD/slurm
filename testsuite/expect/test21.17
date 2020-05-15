@@ -110,7 +110,7 @@ if { $exit_code } {
      	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
 }
 
 #add accounts
@@ -119,7 +119,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add account ($ta1,$ta2,$ta3)"
 }
 
 #add users
@@ -128,7 +128,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add user ($tu1,$tu2,$tu3)"
 }
 
 # First test change the AdminLevel and DefaultAccount of a user
@@ -139,7 +139,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to modify user ($tu1)"
 }
 
 #
@@ -167,9 +167,7 @@ expect {
 }
 
 if {$matches != 3} {
-	log_error "User modification 3 incorrect with only $matches"
-	incr exit_code 1
-	exit $exit_code
+	fail "User modification 3 incorrect with only $matches"
 }
 
 # Next, test change the limits of one user
@@ -180,7 +178,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to modify user ($tu2)"
 }
 
 #

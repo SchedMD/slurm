@@ -385,4 +385,6 @@ if {$nerr != 0} {
 } else {
 	exec $bin_rm -f $wd/test1.76.out
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

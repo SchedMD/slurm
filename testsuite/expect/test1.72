@@ -92,4 +92,6 @@ if {$sub_match != 1} {
 	fail "srun did not fail when it should have"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

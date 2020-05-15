@@ -38,8 +38,7 @@ set exit_code   0
 print_header $test_id
 
 if {[test_using_slurmdbd] == 0} {
-	send_user "\nThis test can't be run without AccountStorageType=slurmdbd\n"
-	exit 0
+	skip "This test can't be run without AccountStorageType=slurmdbd"
 }
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
@@ -89,4 +88,6 @@ if {$rpc_rec_cnt > 0} {
 if {$matches != 6} {
 	fail "sacctmgr show stats response bad ($matches != 6)"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

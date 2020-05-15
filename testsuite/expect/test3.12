@@ -183,8 +183,9 @@ expect {
 	}
 }
 if {$read_state != 0} {
-	send_user "\nFAILURE: scontrol state change error\n"
-	set exit_code 1
+	fail "scontrol state change error"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

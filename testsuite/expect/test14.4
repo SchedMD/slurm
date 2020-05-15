@@ -132,11 +132,11 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$differ_found == 0} {
-	log_error "sbcast overwrote file without --force option"
-	set exit_code 1
+	fail "sbcast overwrote file without --force option"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -157,7 +157,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Inspect the job's output file
 #
 if {[wait_for_file $file_out] != 0} {
-	exit 1
+	fail "Failed waiting for file ($file_out)"
 }
 spawn $bin_sort $file_out
 expect {
@@ -223,11 +223,11 @@ expect {
 
 set target 5
 if {$matches != $target} {
-	log_error "User limits not propagated got $matches of $target matches. Check PropagateResourceLimits configuration parameter. Check $file_err for errors. A long running slurmd could cause a file size limit error. slurmd could have been started with limits lower than user launching the task"
-	set exit_code 1
+	fail "User limits not propagated got $matches of $target matches. Check PropagateResourceLimits configuration parameter. Check $file_err for errors. A long running slurmd could cause a file size limit error. slurmd could have been started with limits lower than user launching the task"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_err $file_in $file_prog_get $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

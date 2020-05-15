@@ -120,9 +120,9 @@ expect {
 }
 set delta_prio [expr $priority1 - $priority2]
 if {$delta_prio < 950} {
-	log_error "Failed to process nice option"
-	set exit_code 1
+	fail "Failed to process nice option"
 }
 
-
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

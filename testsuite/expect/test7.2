@@ -79,7 +79,7 @@ expect {
 if { $exit_code == 0 } {
 	send_user "\n\nSo far, so good\nNow run PMI test under srun\n"
 } else {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 #
@@ -112,5 +112,6 @@ expect {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_prog_get
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

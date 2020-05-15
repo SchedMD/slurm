@@ -123,4 +123,6 @@ if {$not_support != 0} {
 	skip "Can not test without accounting enabled"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

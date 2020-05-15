@@ -143,7 +143,7 @@ expect {
 	}
 }
 if {$slurm_user == 0} {
-	exit 0;
+	pass
 }
 if {[string compare $host_1 $include_node]} {
 	log_error "Allocation lacked an included node"
@@ -260,4 +260,6 @@ if {$successes != $iterations} {
 	fail "Only $successes of $iterations completed successfully"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

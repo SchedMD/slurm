@@ -146,7 +146,7 @@ if { !$match } {
 incr exit_code [mod_cluster $tc1 [array get clus_req]]
 if { $exit_code } {
 	remove_qos "$qos1"
-	exit $exit_code
+	fail "Unable to modify cluster ($tc1)"
 }
 
 # send_user "moded the cluster to qos = ''"
@@ -156,28 +156,28 @@ if { $exit_code } {
 incr exit_code [add_qos "$qos1" ""]
 if { $exit_code } {
 	remove_qos "$qos1"
-	exit $exit_code
+	fail "Unable to add qos ($qos1)"
 }
 #====Done Add QoS===========Begin Add First Account========
 #add default account
 incr exit_code [add_acct $ta1 [array get acct_req1]]
 if { $exit_code } {
 	end_test
-	exit $exit_code
+	fail "Unable to add account ($ta1)"
 }
 #====Done Add First Account====Begin Add Second Account====
 #add account
 incr exit_code [add_acct $ta2 [array get acct_req2]]
 if { $exit_code } {
 	end_test
-	exit $exit_code
+	fail "Unable to add account ($ta2)"
 }
 #=====Done Add Second Account========Begin Add User=========
 #add user
 incr exit_code [add_user $tu1 [array get user_req]]
 if { $exit_code } {
 	end_test
-	exit $exit_code
+	fail "Unable to add user ($tu1)"
 }
 
 #====Done add user====Done building test associations===Begin test section=======
@@ -233,7 +233,7 @@ if {$matches != 6} {
 incr exit_code [mod_acct $ta1 [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]]
 if { $exit_code } {
 	end_test
-	exit $exit_code
+	fail "Unable to modify account ($ta1)"
 }
 
 #=======Done Modifying Account=======Next is Verify=======
@@ -285,7 +285,7 @@ if {$matches != 6} {
 incr exit_code [mod_acct $ta2 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]]
 if { $exit_code } {
 	end_test
-	exit $exit_code
+	fail "Unable to modify account ($ta2)"
 }
 
 #=======Done Modifying Account=======Next is Verify=======
@@ -293,8 +293,7 @@ set matches 0
 set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
 expect {
 	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-		exit 1
+		fail "There was a problem with the sacctmgr command"
 	}
 	"\n|root||" {
 		incr matches
@@ -339,7 +338,7 @@ if {$matches != 6} {
 incr exit_code [mod_acct $ta1 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]]
 if { $exit_code } {
 	end_test
-	exit $exit_code
+	fail "Unable to modify account ($ta1)"
 }
 
 #=======Done Modifying Account=======Next is Verify=======
@@ -391,7 +390,7 @@ if {$matches != 6} {
 incr exit_code [mod_acct $ta2 [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]]
 if { $exit_code } {
 	end_test
-	exit $exit_code
+	fail "Unable to modify account ($ta2)"
 }
 
 #=======Done Modifying Account=======Next is Verify=======
@@ -444,7 +443,7 @@ if {$matches != 6} {
 incr exit_code [mod_acct "root" [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]]
 if { $exit_code } {
 	end_test
-	exit $exit_code
+	fail "Unable to modify account (root)"
 }
 
 #=======Done Modifying Account=======Next Is Verify=======
@@ -496,7 +495,7 @@ if {$matches != 6} {
 incr exit_code [mod_acct $ta2 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]]
 if { $exit_code } {
 	end_test
-	exit $exit_code
+	fail "Unable to modify account ($ta2)"
 }
 
 #=======Done Modifying Account=======Next is Verify=======

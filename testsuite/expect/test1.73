@@ -133,14 +133,12 @@ reconfigure
 
 set rc [check_rc $good_job]
 if {$rc != 0} {
-	log_error "Bad job exit code ($rc != 0)"
-	set exit_code 1
+	fail "Bad job exit code ($rc != 0)"
 }
 
 set rc [check_rc $bad_job]
 if {$rc == 0} {
-	log_error "Bad job exit code ($rc == 0)"
-	set exit_code 1
+	fail "Bad job exit code ($rc == 0)"
 }
 
 # Restore the slurm.conf file back to original values
@@ -150,5 +148,6 @@ reconfigure
 if {$exit_code == 0} {
 	exec $bin_rm -f $good_script $bad_script $good_job $bad_job
 	exec $bin_rm -f $conf_script
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

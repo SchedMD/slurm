@@ -141,4 +141,6 @@ if {$exec_cnt != $node_cnt} {
 if {$exit_code == 0} {
 	exec rm -f $file_in
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

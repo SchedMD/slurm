@@ -82,19 +82,18 @@ expect {
 	}
 }
 if {$perm_denied != 0} {
-	send_user "\nInsufficient permission for this test\n"
-	exit $exit_code
+	fail "Insufficient permission for this test"
 }
 
 sdiag_all
 
 if {$jobs_submitted != 0} {
-	log_error "sdiag job submit count not cleared"
-	set exit_code 1
+	fail "sdiag job submit count not cleared"
 }
 if {$jobs_started != 0} {
-	log_error "sdiag job start count not cleared"
-	set exit_code 1
+	fail "sdiag job start count not cleared"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

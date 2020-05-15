@@ -113,7 +113,7 @@ if {$exit_code == 0} {
 	send_user "\nSo far, so good\n\n"
 	exec rm -f $file_in $file_out $file_err
 } else {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 #
@@ -173,11 +173,12 @@ expect {
 	}
 }
 if {$matches == 0} {
-	log_error "Notification not received by srun"
-	set exit_code 1
+	fail "Notification not received by srun"
 }
 
 if {[cancel_job $job_id] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id)"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

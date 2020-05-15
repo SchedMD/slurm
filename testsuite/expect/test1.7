@@ -174,4 +174,6 @@ if {$completions != 1} {
 	fail "Job failed to complete properly"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

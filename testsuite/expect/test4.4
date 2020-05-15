@@ -136,12 +136,12 @@ expect {
 }
 
 if {$ranges != 0} {
-	log_error "sinfo exact match option failure"
-	set exit_code 1
+	fail "sinfo exact match option failure"
 }
 
 if {$matches != 6} {
-	log_error "sinfo node long format error"
-	set exit_code 1
+	fail "sinfo node long format error"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

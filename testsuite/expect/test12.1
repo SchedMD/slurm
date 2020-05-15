@@ -86,4 +86,6 @@ if {$matches != 3} {
 	fail "sacct --help failed ($matches != 3)"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

@@ -126,10 +126,11 @@ expect {
 	}
 }
 if {$matches != 5} {
-	log_error "Did not get constraints ($matches of 5)"
-	set exit_code 1
+	fail "Did not get constraints ($matches of 5)"
 }
 if {[cancel_job $job_id] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id)"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

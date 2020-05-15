@@ -211,7 +211,7 @@ proc clean_up { rc } {
 	delete_part $part_name_2
 
 	if {$rc != 0} {
-		exit $rc
+		fail "Test failed due to previous errors (\$rc = $rc)"
 	}
 }
 
@@ -244,7 +244,7 @@ if {$job_id == 0} {
 
 if { [wait_for_job $job_id "DONE"] != 0} {
 	cancel_job $job_id
-	exit 1
+	fail "Failed waiting for job to be done"
 }
 
 # Identify node to use for testing
@@ -348,12 +348,12 @@ check_job_state $part_id_1 PENDING
 
 # Wait for job 1 to be requeued
 if { [wait_for_job $part_id_2 "DONE"] != 0} {
-	log_error "Job $part_id_2 failed to complete"
-	clean_up 1
+	clean_up 0
+	fail "Job $part_id_2 failed to complete"
 }
 if { [wait_for_job $part_id_1 "RUNNING"] != 0} {
-	log_error "Job $part_id_1 failed to start"
-	clean_up 1
+	clean_up 0
+	fail "Job $part_id_1 failed to start"
 }
 
 sleep 5
@@ -363,5 +363,6 @@ clean_up 0
 
 if {$exit_code == 0} {
 	exec $bin_rm $job1 $job2 $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

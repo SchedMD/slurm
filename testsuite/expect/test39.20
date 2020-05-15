@@ -95,8 +95,7 @@ if {$store_gpu == -1} {
 } elseif {[test_front_end]} {
 	skip "This test is incompatible with front-end systems"
 } elseif {[string compare [check_accounting_admin_level] "Administrator"]} {
-	send_user "\nThis test can't be run without being an Accounting administrator.\n"
-	exit $exit_code
+	skip "This test can't be run without being an Accounting administrator"
 }
 
 if {[test_cons_tres]} {

@@ -306,8 +306,9 @@ test_part $acct2 $qos_bad $part_name 1
 
 sleep 5
 if {[cleanup] != 2} {
-	log_error "Qos/account was not deleted"
-	set exit_code 1
+	fail "Qos/account was not deleted"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

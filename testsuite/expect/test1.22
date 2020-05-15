@@ -104,8 +104,9 @@ expect {
 # Verify node registration
 #
 if {[string compare $host_0 ""] == 0} {
-	log_error "Did not get hostname of task 0"
-	set exit_code   1
+	fail "Did not get hostname of task 0"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

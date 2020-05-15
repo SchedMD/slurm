@@ -47,8 +47,7 @@ print_header $test_id
 
 set damp [get_fs_damping_factor]
 if {$damp != 1} {
-	send_user "Unable to run with FairShareDampeningFactor=$damp (must be 1)\n"
-	exit 0
+	skip "Unable to run with FairShareDampeningFactor=$damp (must be 1)"
 }
 
 #
@@ -240,5 +239,6 @@ if {$matches != $expected_matches} {
 
 if {$exit_code == 0} {
 	file delete $test_prog
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

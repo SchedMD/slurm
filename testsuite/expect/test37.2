@@ -74,7 +74,10 @@ proc cleanup { } {
 proc end_it { exit_code } {
 	global test_id
 	cleanup
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 # submit jobs to each cluster and ensure that they return a unique job id
@@ -170,7 +173,7 @@ if {[test_federation_setup]} {
 }
 
 if {[test_all_up]} {
-	exit 0
+	pass
 }
 
 # Remove existing setup

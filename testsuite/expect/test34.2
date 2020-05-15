@@ -216,7 +216,7 @@ proc clean_up { rc } {
 	}
 
 	if {$rc != 0} {
-		exit $rc
+		fail "Test failed due to previous errors (\$rc = $rc)"
 	}
 }
 
@@ -273,12 +273,12 @@ check_job_state $qos_1_id PENDING
 
 # Wait for requeued job to restart
 if { [wait_for_job $qos_2_id "DONE"] != 0} {
-	log_error "Job $qos_2_id failed to complete"
-	clean_up 1
+	clean_up 0
+	fail "Job $qos_2_id failed to complete"
 }
 if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
-	log_error "Job $qos_1_id failed to start"
-	clean_up 1
+	clean_up 0
+	fail "Job $qos_1_id failed to start"
 }
 
 sleep 2
@@ -290,5 +290,6 @@ clean_up 0
 
 if {$exit_code == 0} {
 	exec $bin_rm $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

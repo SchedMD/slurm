@@ -89,9 +89,10 @@ expect {
 unset env(SINFO_FORMAT)
 
 if {$matches == 0} {
-	log_error "sinfo format error"
-	set exit_code 1
+	fail "sinfo format error"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
 

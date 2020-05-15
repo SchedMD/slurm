@@ -184,5 +184,7 @@ if {$exit_code == 0} {
 }
 # clear any vestigial triggers
 exec $strigger --clear --quiet --user=$uid
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
 

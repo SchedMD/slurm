@@ -44,7 +44,10 @@ proc end_it { exit_code } {
 		exec $scancel $job_id
 	}
 	exec $bin_rm -f $file_in1 $file_in2 $file_in3
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 print_header $test_id

@@ -94,8 +94,7 @@ if {$store_mps == -1} {
 } elseif {[test_front_end]} {
 	skip "This test is incompatible with front-end systems"
 } elseif {[string compare [check_accounting_admin_level] "Administrator"]} {
-	send_user "\nThis test can't be run without being an Accounting administrator.\n"
-	exit $exit_code
+	skip "This test can't be run without being an Accounting administrator"
 }
 
 if {[test_cons_tres]} {
@@ -130,8 +129,7 @@ if {$mps_limit > 8} {
 	incr mps_limit -1
 }
 if {[setup $mps_limit]} {
-	cleanup
-	exit 1
+	fail "Failure in setup ($mps_limit)"
 }
 
 make_bash_script $file_in "
@@ -222,16 +220,11 @@ if {$match != 2} {
 }
 cancel_job $job_id1
 if {$exit_code != 0} {
-	cleanup
-	exit $exit_code
+	fail "Unable to cancel job ($job_id1)"
 }
-
-#
-# Remove any vestigial test account
-#
-cleanup
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out1 $file_out2
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

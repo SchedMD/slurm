@@ -140,8 +140,9 @@ expect {
 	}
 }
 if {$matches == 0} {
-	log_error "'dwstat sessions' output does not match expected form"
-	set exit_code 1
+	fail "'dwstat sessions' output does not match expected form"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

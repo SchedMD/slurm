@@ -42,8 +42,7 @@ set exit_code     0
 print_header $test_id
 
 if {[file executable $sgather] == 0} {
-	send_user "\nWARINING $sgather does not exist\n"
-	exit 0
+	skip "$sgather does not exist"
 }
 
 if {[test_front_end] != 0} {
@@ -132,15 +131,14 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$file_cnt != $node_cnt} {
-	log_error "Failed to gather files from all allocated nodes ($file_cnt != $node_cnt)"
-	set exit_code 1
+	fail "Failed to gather files from all allocated nodes ($file_cnt != $node_cnt)"
 }
 if {$rm_cnt != $node_cnt} {
-	log_error "Failed to remove gathered files from all allocated nodes ($rm_cnt != $node_cnt)"
-	set exit_code 1
+	fail "Failed to remove gathered files from all allocated nodes ($rm_cnt != $node_cnt)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

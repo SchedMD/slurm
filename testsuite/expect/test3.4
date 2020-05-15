@@ -153,11 +153,12 @@ expect {
 	}
 }
 if {$validate_new_priority && ($read_priority != $new_prio)} {
-	log_error "scontrol priority change error"
-	set exit_code 1
+	fail "scontrol priority change error"
 }
 
 if {[cancel_job $job_id] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id)"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

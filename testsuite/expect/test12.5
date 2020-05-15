@@ -106,8 +106,9 @@ if {$matches != 2} {
 
 set matches [sacct_job -e]
 if {$matches != 2} {
-	log_error "sacct -e failed ($matches of 2)"
-	set exit_code 1
+	fail "sacct -e failed ($matches of 2)"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

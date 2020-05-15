@@ -47,7 +47,7 @@ proc endit { } {
 	if {$exit_code != 0} {
 		fail "Exiting due to previous errors with exit code $exit_code"
 	}
-	exit $exit_code
+	pass
 }
 
 #

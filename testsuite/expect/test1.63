@@ -88,16 +88,13 @@ expect {
 	}
 }
 if {$match_run < 1} {
-	log_error "srun failed to properly start"
-	set exit_code 1
+	fail "srun failed to properly start"
 }
 if {$match_sig < 1} {
-	log_error "srun failed to properly process SIGINT"
-	set exit_code 1
+	fail "srun failed to properly process SIGINT"
 }
 if {$match_abort < 1} {
-	log_error "srun failed to properly process multiple SIGINT to abort"
-	set exit_code 1
+	fail "srun failed to properly process multiple SIGINT to abort"
 }
 
 #
@@ -105,5 +102,6 @@ if {$match_abort < 1} {
 #
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_prog
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

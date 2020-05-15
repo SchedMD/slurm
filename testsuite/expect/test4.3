@@ -258,7 +258,8 @@ expect {
 }
 
 if {$matches != 10} {
-	log_error "sinfo partition long format error"
-	set exit_code 1
+	fail "sinfo partition long format error"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

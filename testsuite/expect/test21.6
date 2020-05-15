@@ -269,13 +269,13 @@ expect {
 }
 
 if {$dmatches != 1} {
-	log_error "sacctmgr had a problem deleting QOS got $dmatches"
-	set exit_code 1
+	fail "sacctmgr had a problem deleting QOS got $dmatches"
 }
 
 if { ![check_acct_associations] } {
-	log_error "Our associations don't line up"
-	set exit_code 1
+	fail "Our associations don't line up"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

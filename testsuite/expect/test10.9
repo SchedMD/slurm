@@ -82,8 +82,9 @@ if {$too_small != 0} {
 	skip "Screen too small to run test"
 }
 if {$matches <= 2} {
-	log_error "smap --iterate failed ($matches)"
-	set exit_code 1
+	fail "smap --iterate failed ($matches)"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

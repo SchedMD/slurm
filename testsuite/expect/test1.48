@@ -78,4 +78,6 @@ if {$got_job_grps == 0} {
 	fail "Did not get user info from slurm job"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

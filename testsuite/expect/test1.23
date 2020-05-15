@@ -246,8 +246,9 @@ expect {
 }
 
 if {[string compare $this_date ""] == 0} {
-	log_error "Job failed with valid tmp option"
-	set exit_code   1
+	fail "Job failed with valid tmp option"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

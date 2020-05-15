@@ -59,8 +59,9 @@ expect {
 }
 
 if {$matches != 1} {
-	log_error "sacctmgr version failed ($matches)"
-	set exit_code 1
+	fail "sacctmgr version failed ($matches)"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

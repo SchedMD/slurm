@@ -166,15 +166,13 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	log_error "sbatch didn't reject job with invalid size"
 	cancel_job $job_id
-	set exit_code 1
+	fail "sbatch didn't reject job with invalid size"
 }
 
 if {[wait_for_job $job_id DONE] != 0} {
-	log_error "Error completing job $job_id"
 	cancel_job $job_id
-	set exit_code 1
+	fail "Error completing job $job_id"
 }
 
 #
@@ -182,5 +180,6 @@ if {[wait_for_job $job_id DONE] != 0} {
 #
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

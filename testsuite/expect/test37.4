@@ -95,7 +95,10 @@ proc cleanup { } {
 proc end_it { exit_code } {
 	global test_id
 	cleanup
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 proc submit_fed_batch_job { cname expected_origin expected_sib extra_args expected_state } {
@@ -377,7 +380,7 @@ if {[test_federation_setup]} {
 }
 
 if {[test_all_up]} {
-	exit 0
+	pass
 }
 
 set user_name [get_my_user_name]

@@ -62,8 +62,9 @@ expect {
 	}
 }
 if {$matches != 2} {
-	log_error "Unexpected output. Got $matches"
-	set exit_code 1
+	fail "Unexpected output. Got $matches"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

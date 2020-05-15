@@ -153,11 +153,11 @@ expect {
 	}
 }
 if {$match_acct == 0} {
-	log_error "Account information not processed"
-	set exit_code 1
+	fail "Account information not processed"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

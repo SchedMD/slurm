@@ -65,7 +65,7 @@ expect {
 }
 
 if {$matches != 2} {
-	log_error "Problem with srun wait option matches was $matches"
-	set exit_code 1
+	fail "Problem with srun wait option matches was $matches"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -102,7 +102,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
 }
 
 #add accounts
@@ -111,7 +111,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add account ($ta1,$ta2,$ta3)"
 }
 
 #add users
@@ -120,7 +120,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add user ($tu1,$tu2,$tu3)"
 }
 
 ################################################################

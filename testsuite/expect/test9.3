@@ -115,6 +115,5 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
 } else {
-	log_error "Only $success_cnt of $cycle_count I/O tests passed"
+	fail "Only $success_cnt of $cycle_count I/O tests passed"
 }
-exit $exit_code

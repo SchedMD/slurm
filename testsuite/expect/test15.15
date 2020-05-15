@@ -96,8 +96,9 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	log_error "salloc failed to respond"
-	set exit_code 1
+	fail "salloc failed to respond"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

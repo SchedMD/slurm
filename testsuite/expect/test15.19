@@ -329,4 +329,6 @@ if {$dup_host == 1} {
 	set exit_code   1
 }
 
-exit $exit_code
+exit if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

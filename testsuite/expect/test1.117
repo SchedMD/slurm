@@ -48,9 +48,8 @@ expect {
 		set job_id $expect_out(1,string)
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait

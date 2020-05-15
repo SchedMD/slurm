@@ -107,11 +107,11 @@ expect {
 	}
 }
 if {$matches != 3} {
-	log_error "scancel with multiple step_id failed"
-	set exit_code 1
+	fail "scancel with multiple step_id failed"
 }
 
 if {$exit_code == 0} {
 	exec rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

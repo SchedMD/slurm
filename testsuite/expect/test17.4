@@ -112,11 +112,11 @@ if {$got_job_grps == 0} {
 # of the local 'id' execution.
 #
 if {[string compare $login_grp_info $job_grp_info] != 0} {
-	log_error "Login and sbatch user info mismatch"
-	set exit_code 1
+	fail "Login and sbatch user info mismatch"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

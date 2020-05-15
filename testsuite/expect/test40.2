@@ -285,8 +285,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 	set exit_code 1
 }
 if {[wait_for_file $file_out1] != 0} {
-	log_error "No output file"
-	exit 1
+	fail "No output file"
 }
 set match 0
 spawn $bin_cat $file_out1
@@ -372,8 +371,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 	set exit_code 1
 }
 if {[wait_for_file $file_out1] != 0} {
-	log_error "No output file"
-	exit 1
+	fail "No output file"
 }
 set match 0
 spawn $bin_cat $file_out1

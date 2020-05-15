@@ -128,19 +128,18 @@ expect {
 }
 
 if {$step_matches != 1} {
-	log_error "Error running slurm_job_step_stat() program ($step_matches != 1)"
-	set exit_code 1
+	fail "Error running slurm_job_step_stat() program ($step_matches != 1)"
 }
 if {$pid_matches != $pid_count} {
 	log_warn "Failed to load PIDs associated with job step ($pid_matches != $pid_count). This is dependent upon the ProctrackType configured. proctrack/pgid does NOT support this functionality"
 }
 if {$job_matches != 1} {
-	log_error "Failed to load job info for this job ($job_matches != 1)"
-	set exit_code 1
+	fail "Failed to load job info for this job ($job_matches != 1)"
 }
 
 cancel_job $job_id
 if {$exit_code == 0} {
 	file delete $file_in $test_prog
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

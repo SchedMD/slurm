@@ -111,8 +111,9 @@ if {$too_small != 0} {
 if {$matches != 8} {
 	#send_user $matches ."\n"
 	send_user $stuff
-	log_error "smap job information display"
-	set exit_code 1
+	fail "smap job information display"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

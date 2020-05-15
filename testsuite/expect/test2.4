@@ -162,8 +162,9 @@ expect {
 	}
 }
 if {$matches != 2} {
-	log_error "scontrol ping, !!, or quit command failed"
-	set exit_code 1
+	fail "scontrol ping, !!, or quit command failed"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

@@ -108,8 +108,9 @@ expect {
 if {$matches != 8} {
 	#send_user $matches ."\n"
 	send_user $stuff
-	log_error "smap job display in commandline mode."
-	set exit_code 1
+	fail "smap job display in commandline mode."
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

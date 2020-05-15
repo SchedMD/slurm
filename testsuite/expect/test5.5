@@ -116,10 +116,12 @@ expect {
 }
 
 if {[cancel_job $job_id1] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id1)"
 }
 if {[cancel_job $job_id2] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id2)"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
 

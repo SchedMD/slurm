@@ -327,16 +327,15 @@ expect {
 	}
 }
 if {$match_craynetwork < 1} {
-	send_user "\nFAILURE: srun --gres=craynetwork failure ($match_craynetwork < 1)\n"
-	set exit_code 1
+	fail "srun --gres=craynetwork failure ($match_craynetwork < 1)"
 }
 set expected_gpus [expr $use_gpus_per_node * $use_gpus_per_node]
 if {$match_gpu != $expected_gpus} {
-	log_error "srun --gpus-per-task failure ($match_gpu != $expected_gpus)"
-	set exit_code 1
+	fail "srun --gpus-per-task failure ($match_gpu != $expected_gpus)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

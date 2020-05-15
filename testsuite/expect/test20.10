@@ -55,8 +55,9 @@ expect {
 	}
 }
 if {$found != 1} {
-	log_error "qrerun --help option failed"
-	set exit_code 1
+	fail "qrerun --help option failed"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

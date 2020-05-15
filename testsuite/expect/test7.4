@@ -243,12 +243,11 @@ if {$no_capability != 0} {
 	skip "Unable to run test with present configuration"
 }
 if {$matches != 12} {
-	log_error "totalviewcli operation matches $matches of 12"
-	send_user "Remove your ~/.totalview directory and try again\n"
-	set exit_code 1
+	fail "totalviewcli operation matches $matches of 12. Remove your ~/.totalview directory and try again"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $test_prog ${test_prog}.o ${test_prog}.TVD.v3breakpoints ${test_prog}.TVD.v3breakpoints~
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

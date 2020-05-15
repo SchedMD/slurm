@@ -112,5 +112,6 @@ if {$tasks != $task_cnt} {
 
 if {$exit_code == 0} {
 	file delete $file_in $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

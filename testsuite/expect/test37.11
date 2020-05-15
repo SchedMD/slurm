@@ -170,7 +170,7 @@ if {[test_federation_setup]} {
 }
 
 if {[test_all_up]} {
-	exit 0
+	pass
 }
 
 set user_name [get_my_user_name]

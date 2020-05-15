@@ -79,12 +79,12 @@ expect {
 	}
 }
 if {$slurm_conf_matches != 2} {
-	log_error "sacctmgr failed to show slurm_conf values"
-	set exit_code 1
+	fail "sacctmgr failed to show slurm_conf values"
 }
 if {$slurmdbd_conf_matches != 2} {
-	log_error "sacctmgr failed to show slurmdbd configuration"
-	set exit_code 1
+	fail "sacctmgr failed to show slurmdbd configuration"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

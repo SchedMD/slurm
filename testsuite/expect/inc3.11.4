@@ -86,6 +86,6 @@ proc inc3_11_4 {} {
 	# Delete the reservation
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
-		exit $ret_code
+		fail "Unable to detele reservation ($res_name)"
 	}
 }

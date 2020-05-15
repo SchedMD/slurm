@@ -135,10 +135,11 @@ set new_job_id [check_update ${job_id}_2 4]
 check_update ${job_id}_1 1
 
 if {[cancel_job $job_id] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_script
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

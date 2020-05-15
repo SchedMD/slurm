@@ -68,11 +68,12 @@ expect {
 	}
 }
 if {$matches != 2} {
-	log_error "srun failed to process SIGINT while waiting for allocation"
-	set exit_code 1
+	fail "srun failed to process SIGINT while waiting for allocation"
 }
 
 #
 # Post-processing
 #
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

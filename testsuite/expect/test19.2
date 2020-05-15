@@ -54,7 +54,8 @@ expect {
 }
 
 if {$matches < 1} {
-	log_error "strigger failed to report usage message"
-	set exit_code 1
+	fail "strigger failed to report usage message"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

@@ -63,7 +63,10 @@ proc end_it {code} {
 		cancel_job $job_id2
 	}
 	exec $bin_rm -f slurm-$job_id1.sh $test_id.sh
-	exit $code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 #

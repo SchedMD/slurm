@@ -90,8 +90,9 @@ for {set node_cnt 1} {$node_cnt < $max_node_cnt} {set node_cnt [expr $node_cnt *
 }
 
 if {$error == 1} {
-	log_error "Some error happened"
-	set exit_code 1
+	fail "Some error happened"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

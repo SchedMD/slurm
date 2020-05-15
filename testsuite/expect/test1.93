@@ -109,7 +109,10 @@ proc end_test { } {
 	set_cpu_bind "node" $node_0 $node_cpu_bind_0
 	set_cpu_bind "node" $node_1 $node_cpu_bind_1
 	set_cpu_bind "partition" $def_part_name $partition_cpu_bind
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 print_header $test_id
@@ -169,7 +172,7 @@ set partition_cpu_bind [get_cpu_bind "partition" $def_part_name]
 set node_cpu_bind_0 [get_cpu_bind "node" $node_0]
 set node_cpu_bind_1 [get_cpu_bind "node" $node_1]
 if {$exit_code != 0} {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 set_cpu_bind "node" $node_0 "core"

@@ -70,8 +70,9 @@ if {[string compare $host_0 ""] != 0} {
 	set exit_code   1
 }
 if {$err_msg != 1} {
-	log_error "Job failed to report required error"
-	set exit_code   1
+	fail "Job failed to report required error"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

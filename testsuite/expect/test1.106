@@ -71,4 +71,6 @@ if {$time_error == 0} {
 	send_user "\nTime limit error expected, no worries\n"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

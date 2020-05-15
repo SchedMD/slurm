@@ -257,13 +257,12 @@ expect {
 	}
 }
 if {$match != 1} {
-	log_error "srun '--gpu-freq=verbose' failure ($match != 1)"
-	set exit_code 1
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
+	fail "srun '--gpu-freq=verbose' failure ($match != 1)"
 }
 
 print_time
-exit $exit_code
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

@@ -255,14 +255,14 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$matches != 1} {
-		log_error "Missing JOB CANCELLED error message"
-		set exit_code 1
+		fail "Missing JOB CANCELLED error message"
 	}
 } else {
-	set exit_code 1
+	fail "Output file ($file_out) did not appear"
 }
 
 if {$exit_code == 0} {
 	exec rm -f $file_in $file_out $file_prog
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

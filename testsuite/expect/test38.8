@@ -61,7 +61,10 @@ proc end_it { exit_code } {
 	if {$pack_job_id > 0} {
 		exec $scancel $pack_job_id
 	}
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 set pack_job_id 0

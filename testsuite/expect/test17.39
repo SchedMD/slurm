@@ -155,4 +155,6 @@ cancel_job $fast_id
 cancel_job $slow_id
 cancel_job $dep_id
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

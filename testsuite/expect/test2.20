@@ -152,8 +152,9 @@ expect {
 	}
 }
 if {$matches != 8} {
-	log_error "Show hostnames failure ($matches != 8)"
-	set exit_code 1
+	fail "Show hostnames failure ($matches != 8)"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

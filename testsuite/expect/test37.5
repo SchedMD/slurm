@@ -75,7 +75,7 @@ if {[test_federation_setup]} {
 }
 
 if {[test_all_up]} {
-	exit 0
+	pass
 }
 
 proc cancel_all_jobs { } {
@@ -105,7 +105,10 @@ proc cleanup { } {
 proc end_it { exit_code } {
 	global test_id
 	cleanup
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 proc check_ctl_state { job_id state cluster } {

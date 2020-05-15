@@ -87,9 +87,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding or failure to recognize prompt"
 		slow_kill $salloc_pid
-		exit 1
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $prompt {
 	}
@@ -152,8 +151,10 @@ if {$task_cnt > 32} {
 	if {$exit_code == 0} {
 		exec $bin_rm -f $file_prog
 		log_warn "Expect unable to work with more than 32-bit numbers"
+		pass
+	} else {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
 }
 
 #
@@ -529,8 +530,5 @@ expect {
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_prog
 } else {
-	send_user "\nNOTE: This test can fail if the node configuration in slurm.conf \n"
-	send_user "  (sockets, cores, threads) differs from the actual configuration \n"
-	send_user "  or if OverSubscribe=FORCE for the default partition.\n"
+	fail "Test failed due to previous errors (\$exit_code = $exit_code). This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration or if OverSubscribe=FORCE for the default partition"
 }
-exit $exit_code

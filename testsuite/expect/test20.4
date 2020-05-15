@@ -57,8 +57,9 @@ expect {
 	}
 }
 if {$matches == 0} {
-	log_error "pbsnodes output failure"
-	set exit_code 1
+	fail "pbsnodes output failure"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

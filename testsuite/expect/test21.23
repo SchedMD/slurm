@@ -43,9 +43,7 @@ set wk3         "test$test_id-wckey3"
 set timeout 60
 
 set config_path [get_conf_path]
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+fail_on_error "Error getting config path"
 set config_file $config_path/slurm.conf
 
 print_header $test_id
@@ -78,9 +76,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $s_pid
-		exit 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -464,5 +461,6 @@ if {$reconfigured} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

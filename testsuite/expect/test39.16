@@ -99,11 +99,11 @@ expect {
 	}
 }
 if {$match != $nb_tasks} {
-	log_error "srun --gpus-per-task with --exclusive failure ($match != $nb_tasks)"
-	set exit_code 1
+	fail "srun --gpus-per-task with --exclusive failure ($match != $nb_tasks)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

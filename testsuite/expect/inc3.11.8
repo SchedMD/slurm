@@ -66,7 +66,7 @@ proc inc3_11_8 {} {
 	# Delete the reservation
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
-		exit $ret_code
+		fail "Unable to delete reservation ($res_name)"
 	}
 	if {[string compare $host_name ""] == 0} {
 		fail "Failed to get host name (Within: inc3.11.8)"
@@ -142,7 +142,7 @@ proc inc3_11_8 {} {
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
 		cancel_job $job_id
-		exit $ret_code
+		fail "Unable to delete reservation ($res_name)"
 	}
 
 	set core_res_num  [expr $core_res_num + 1]

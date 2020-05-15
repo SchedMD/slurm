@@ -67,4 +67,6 @@ expect {
 if {$matches != 2} {
 	fail "squeue failed to process verbose option"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

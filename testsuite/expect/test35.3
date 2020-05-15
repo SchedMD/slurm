@@ -176,11 +176,11 @@ expect {
 	}
 }
 if {$found != 0} {
-	log_error "Job burst buffer not removed"
-	set exit_code 1
+	fail "Job burst buffer not removed"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $input_data $output_data $script_use
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

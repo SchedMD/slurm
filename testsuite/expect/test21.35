@@ -332,8 +332,7 @@ expect {
 	}
 }
 if {$exit_code != 0} {
-	cleanup
-	exit 1
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 

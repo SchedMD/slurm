@@ -207,7 +207,7 @@ incr exit_code [add_cluster $cluster2 [array get clus_req]]
 if { $exit_code } {
 	remove_cluster "$cluster1"
 	remove_cluster "$cluster2"
-	exit $exit_code
+	fail "Unable to add clusters"
 }
 
 #add accounts
@@ -216,7 +216,7 @@ if { $exit_code } {
 	remove_acct "" "$account1,$account2"
 	remove_cluster "$cluster1"
 	remove_cluster "$cluster2"
-	exit $exit_code
+	fail "Unable to add account ($account1,$account2)"
 }
 
 #add accounts
@@ -225,7 +225,7 @@ if { $exit_code } {
 	remove_acct "" $accounts
 	remove_cluster "$cluster1"
 	remove_cluster "$cluster2"
-	exit $exit_code
+	fail "Unable to add account ($account3)"
 }
 
 #add users
@@ -235,7 +235,7 @@ if { $exit_code } {
 	remove_acct "" $accounts
 	remove_cluster "$cluster1"
 	remove_cluster "$cluster2"
-	exit $exit_code
+	fail "Unable to add user ($users)"
 }
 
 #get the user association ids for the jobs we plan to add
@@ -286,12 +286,11 @@ expect {
 }
 
 if {!$user1acct1 || !$user1acct2 || !$user1acct3 || !$user2acct1 || !$user2acct2|| !$user2acct3} {
-	log_error "Didn't get one of the user associations $user1acct1 $user1acct2 $user1acct3 $user2acct1 $user2acct2 $user2acct3"
 	incr exit_code 1
 	remove_user "" "" $users
 	remove_acct "" $accounts
 	remove_cluster "$cluster1"
-	exit $exit_code
+	fail "Didn't get one of the user associations $user1acct1 $user1acct2 $user1acct3 $user2acct1 $user2acct2 $user2acct3"
 }
 
 #get the wckey ids for the jobs we plan to add
@@ -322,12 +321,10 @@ expect {
 }
 
 if {!$user1wckey1 || !$user2wckey1} {
-	log_error "Didn't get one of the user wckeys $user1wckey1 $user2wckey1"
-	incr exit_code 1
 	remove_user "" "" $users
 	remove_acct "" $accounts
 	remove_cluster "$cluster1"
-	exit $exit_code
+	fail "Didn't get one of the user wckeys $user1wckey1 $user2wckey1"
 }
 
 proc end_it {} {
@@ -340,7 +337,10 @@ proc end_it {} {
 	remove_acct "" $accounts
 	remove_cluster "$cluster1"
 	remove_cluster "$cluster2"
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 proc test_fed {} {
@@ -464,7 +464,7 @@ proc create_sql {cluster sql_in sql_rem} {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
-		exit $exit_code
+		fail "Unable to load archive"
 	}
 
 	#

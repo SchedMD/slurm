@@ -212,9 +212,7 @@ if { [test_front_end] == 1 } {
 }
 
 set config_dir [get_conf_path]
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+fail_on_error "Unable to get config path"
 set config_file $config_dir/slurm.conf
 
 set get_name 0
@@ -374,5 +372,6 @@ reconfigure
 
 if {$exit_code == 0} {
 	exec $bin_rm -fr $config_dir/$inc_slurm $config_dir/$pro_epi_prog
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -95,4 +95,6 @@ if {$job_id != 0} {
 	}
 }
 
-exit $exit_code
+exit if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

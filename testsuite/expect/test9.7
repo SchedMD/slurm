@@ -82,4 +82,6 @@ if {$success_cnt != $task_cnt} {
 	fail "Only $success_cnt of $task_cnt tests passed"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

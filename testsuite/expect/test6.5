@@ -127,8 +127,9 @@ expect {
 	}
 }
 if {$matches != 0} {
-	log_error "scancel verbose option failed"
-	set exit_code 1
+	fail "scancel verbose option failed"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

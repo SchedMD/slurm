@@ -83,9 +83,8 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFailure: sbatch did not submit job\n"
 	exec $bin_rm -fr $file_in
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 # Wait for the job to finish
@@ -130,5 +129,6 @@ foreach option [array names check_list] {
 cancel_job $job_id
 if {$exit_code == 0} {
 	exec $bin_rm -fr $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

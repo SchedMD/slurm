@@ -60,4 +60,6 @@ expect {
 if {$version != 1} {
 	fail "Did not get proper scontrol version number"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

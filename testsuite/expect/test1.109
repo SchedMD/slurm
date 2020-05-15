@@ -73,4 +73,3 @@ if {$invalid_tl == 0} {
 if {$exit_code != 0} {
 	fail "Job not with DEADLINE status"
 }
-exit $exit_code

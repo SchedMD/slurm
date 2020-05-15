@@ -60,7 +60,7 @@ proc inc3_11_9 {} {
 	# Delete the reservation
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
-		exit $ret_code
+		fail "Unable to delete reservation ($res_name)"
 	}
 
 	set nodes [available_nodes_hostnames $def_partition ]
@@ -138,7 +138,7 @@ proc inc3_11_9 {} {
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
 		cancel_job $job_id
-		exit $ret_code
+		fail "Unable to delete reservation ($res_name)"
 	}
 
 	set core_res_num  [expr $core_res_num + 1]
@@ -154,7 +154,7 @@ proc inc3_11_9 {} {
 		set ret_code [delete_res $res_name]
 		if {$ret_code != 0} {
 			cancel_job $job_id
-			exit $ret_code
+			fail "Unable to delete reservation ($res_name)"
 		}
 	}
 
@@ -170,7 +170,7 @@ proc inc3_11_9 {} {
 		set ret_code [delete_res $res_name]
 		if {$ret_code != 0} {
 			cancel_job $job_id
-			exit $ret_code
+			fail "Unable to delete reservation ($res_name)"
 		}
 	}
 
@@ -282,7 +282,7 @@ proc inc3_11_9 {} {
 	if { $exit_code == 1 } {
 		delete_res $res_name1
 		delete_res $res_name
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 
 	send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.9)\033\[m\n"
@@ -344,7 +344,7 @@ proc inc3_11_9 {} {
 	if { $exit_code == 1 } {
 		delete_res $res_name1
 		delete_res $res_name
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 
 	# Submit a batch job: a job using cores reserved in first reservation
@@ -403,7 +403,7 @@ proc inc3_11_9 {} {
 	if { $exit_code == 1 } {
 		delete_res $res_name1
 		delete_res $res_name
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 
 	# Submit a batch job: a job using more cores than reserved in first reservation
@@ -464,7 +464,7 @@ proc inc3_11_9 {} {
 	if { $exit_code == 1 } {
 		delete_res $res_name1
 		delete_res $res_name
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 
 	# Submit a batch job: a job using cores reserved in second reservation
@@ -522,7 +522,7 @@ proc inc3_11_9 {} {
 	if { $exit_code == 1 } {
 		delete_res $res_name1
 		delete_res $res_name
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 
 	# Submit a batch job: a job using more cores than reserved in second reservation
@@ -585,14 +585,11 @@ proc inc3_11_9 {} {
 
 	set ret_code1 [delete_res $res_name1]
 	if { $ret_code1 != 0 } {
-		log_error "failed to delete reservation $res_name1."
+		fail "Failed to delete reservation $res_name1."
 	}
 	set ret_code [delete_res $res_name]
 	if { $ret_code != 0 } {
-		log_error "failed to delete reservation $res_name."
-	}
-	if { $ret_code != 0 || $ret_code1 != 0 } {
-		exit 1
+		fail "Failed to delete reservation $res_name."
 	}
 
 	# Create a job that uses all cores in the node range and is not
@@ -640,7 +637,7 @@ proc inc3_11_9 {} {
 	}
 	if { $exit_code == 1 } {
 		cancel_job $job_id
-		exit $exit_code
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 
 	# Make the reservation using more cores than free, but use the
@@ -729,11 +726,10 @@ proc inc3_11_9 {} {
 	set ret_code [delete_res $res_name]
 
 	if { $ret_code != 0 } {
-		log_error "Error $ret_code deleting reservation."
-		set exit_code 1
+		fail "Error $ret_code deleting reservation."
 	}
 	if { $exit_code == 1 } {
-		exit $exit_code
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 
 
@@ -781,7 +777,7 @@ proc inc3_11_9 {} {
 	}
 	if { $exit_code == 1 } {
 		cancel_job $job_id
-		exit $exit_code
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 
 	# Make the reservation with the FIRST_CORES flag. It should fail

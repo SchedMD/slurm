@@ -79,4 +79,6 @@ if {[wait_for_job $job_id DONE] != 0} {
 	fail "Job failed to run to completion"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

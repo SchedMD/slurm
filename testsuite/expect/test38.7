@@ -376,11 +376,10 @@ expect {
 }
 
 if {$no_start != 0} {
-	send_user "\nWARNING: partition too small for test\n"
 	if {$job_id != 0} {
 		cancel_job $job_id
 	}
-	exit 0
+	skip "Partition too small for test"
 }
 if {$job_id == 0} {
 	fail "Batch submit failure"
@@ -488,11 +487,10 @@ expect {
 }
 
 if {$no_start != 0} {
-	send_user "\nWARNING: partition too small for test\n"
 	if {$job_id != 0} {
 		cancel_job $job_id
 	}
-	exit 0
+	skip "Partition too small for test"
 }
 if {$job_id == 0} {
 	fail "Batch submit failure"
@@ -564,12 +562,12 @@ if {$exit_code == 0} {
 		}
 	}
 	if {$matches != 0} {
-		send_user "WARNING: If using MVAPICH then\n"
-		send_user "         Configure \"PropagateResourceLimitsExcept=MEMLOCK\"\n"
-		send_user "         Also start slurmd with \"ulimit -l unlimited\"\n"
+		log_warn "If using MVAPICH then configure \"PropagateResourceLimitsExcept=MEMLOCK\". Also start slurmd with \"ulimit -l unlimited\""
 	} else {
 		send_user "Check contents of $file_err\n"
 	}
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

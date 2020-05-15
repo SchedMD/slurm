@@ -68,4 +68,6 @@ expect {
 if {$matches != 1} {
 	fail "Srun failed to change working directory"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

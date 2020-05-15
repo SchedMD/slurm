@@ -120,4 +120,6 @@ if {$matches != 1} {
 	fail "Node GRES change request not rejected. Configuration of node $host_name is likely left in a bad state"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

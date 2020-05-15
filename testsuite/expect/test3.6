@@ -92,7 +92,7 @@ expect {
 	}
 }
 if {$found == 1} {
-	exit $exit_code
+	fail "Hidden partitions were found"
 }
 
 #
@@ -235,5 +235,6 @@ if {$found != 0} {
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

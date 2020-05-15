@@ -94,7 +94,7 @@ if {$matches != 4} {
 	set exit_code 1
 }
 if {$exit_code != 0} {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 } else {
 	send_user "\nSo far, so good\n\n"
 }
@@ -159,7 +159,7 @@ if {$job_id == 0} {
 }
 
 if {$exit_code != 0} {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 } else {
 	send_user "\nSo far, so good\n\n"
 }
@@ -231,5 +231,6 @@ if {$matches != 2} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

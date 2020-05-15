@@ -89,11 +89,11 @@ expect {
 	}
 }
 if {$match_job_state == 0} {
-	log_error "Dependent job not completed"
-	set exit_code 1
+	fail "Dependent job not completed"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

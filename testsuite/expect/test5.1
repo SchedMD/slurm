@@ -58,7 +58,7 @@ expect {
 }
 
 if {$matches != 1} {
-	log_error "squeue failed to report usage format"
-	set exit_code 1
+	fail "squeue failed to report usage format"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

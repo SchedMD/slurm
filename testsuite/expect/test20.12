@@ -112,7 +112,7 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name
 		set pattern "$file_in*"
 		file delete {*}[glob $pattern]
 	} else {
-		exit $exit_code
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 }
 
@@ -161,5 +161,3 @@ set var1_name [make_random_var_name]
 set var2_name "${var1_name}_2"
 run_qsub $var1_name "another_value" $var2_name $variable2_value \
          "-V -v $var1_name=another_value" "#SBATCH --export=NONE"
-
-exit 0

@@ -41,15 +41,13 @@ if {[test_front_end]} {
     skip "This test is incompatible with front-end systems"
 }
 if {[test_pack_step] == 0} {
-	send_user "\nWARNING: heterogeneous steps not currently supported\n"
-	exit $exit_code
+	skip "Heterogeneous steps not currently supported"
 }
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {$nb_nodes < 3} {
-	send_user "\nWARNING: Need 3 or more nodes in default partition\n"
-	exit $exit_code
+	skip "Need 3 or more nodes in default partition"
 }
 
 proc end_it { exit_code } {
@@ -57,7 +55,10 @@ proc end_it { exit_code } {
 	if {$pack_job_id > 0} {
 		exec $scancel $pack_job_id
 	}
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 set pack_job_id 0

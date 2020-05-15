@@ -415,4 +415,6 @@ if {!$exit_code && $smallest != $inode_procs} {
 	sleep 1
 	set exit_code [allocate_and_quit $inode_name $inode_procs $inode_procs]
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

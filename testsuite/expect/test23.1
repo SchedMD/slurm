@@ -177,18 +177,18 @@ if {$matches != 2} {
 
 set matches [sstat_job V ]
 if {$matches != 1} {
-	log_error "sstat -V failed ($matches)"
-	set exit_code 1
+	fail "sstat -V failed ($matches)"
 } else {
 	send_user "\nsstat -V test GOOD!\n"
 }
 
 set matches [sstat_job -version ]
 if {$matches != 1} {
-	log_error "sstat --version failed ($matches)"
-	set exit_code 1
+	fail "sstat --version failed ($matches)"
 } else {
 	send_user "\nsstat --version test GOOD!\n"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

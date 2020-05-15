@@ -32,16 +32,15 @@ proc inc3_11_11_delete_resv {} {
 
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
-		exit $ret_code
+		fail "Unable to delete reservation ($res_name)"
 	}
 }
 
 proc inc3_11_11_fini { msg ret_code } {
 
     if {$ret_code} {
-        log_error $msg
         inc3_11_11_delete_resv
-        exit $ret_code
+        fail $msg
     } else {
         log_info $msg
     }

@@ -397,8 +397,9 @@ expect {
 }
 
 if { ![check_acct_associations] } {
-	log_error "Our associations don't line up"
-	set exit_code 1
+	fail "Our associations don't line up"
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

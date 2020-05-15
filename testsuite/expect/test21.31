@@ -120,7 +120,7 @@ if {$access_err != 0} {
 #
 incr exit_code [add_cluster "$tc2" [array get clus_req]]
 if { $exit_code } {
-	exit $exit_code
+	fail "Unable to add cluster ($tc2)"
 }
 
 #
@@ -270,5 +270,5 @@ incr exit_code [remove_res $sr2,$sr3]
 incr exit_code [remove_cluster $tc2]
 
 if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

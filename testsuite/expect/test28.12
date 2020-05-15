@@ -103,12 +103,12 @@ expect {
 	}
 }
 if {$match != 1} {
-	log_error "Head job not found"
-	set exit_code 1
+	fail "Head job not found"
 }
 
 cancel_job $job_id
 if {$exit_code == 0} {
 	file delete $file_script
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

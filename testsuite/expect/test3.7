@@ -214,7 +214,7 @@ suspend_job $job_id1 suspend
 if {$not_supported == 1} {
 	exec $bin_rm -f $file_out1 $file_out2 $file_prog $file_prog_sh1 $file_prog_sh2
 	cancel_job $job_id1
-	exit 0
+	fail "Job suspension is not supported"
 }
 if {$not_supported == 0} {
 	if {[wait_for_job $job_id2 RUNNING] != 0} {
@@ -248,6 +248,5 @@ if {$not_supported == 0} {
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_out1 $file_out2 $file_prog $file_prog_sh1 $file_prog_sh2
 } else {
-	fail "Test failure may be due to use of gang scheduler, a race conditions, or the ProcTrack plugin not identifying the application as part of the job"
+	fail "Test failed due to previous errors (\$exit_code = $exit_code). Failure may be due to use of gang scheduler, a race conditions, or the ProcTrack plugin not identifying the application as part of the job"
 }
-exit $exit_code

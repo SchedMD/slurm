@@ -174,11 +174,11 @@ expect {
 	}
 }
 if {$completions != 1} {
-	log_error "Job failed to complete properly ($completions)"
-	set exit_code 1
+	fail "Job failed to complete properly ($completions)"
 }
 
 if {$exit_code == 0} {
 	file delete $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
