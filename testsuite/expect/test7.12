@@ -60,7 +60,7 @@ make_bash_script $file_in "
 
 send_user "slurm_dir is $slurm_dir\n"
 
-compile_against_libslurm $test_prog 0 0
+compile_against_libslurm $test_prog 0
 
 #
 # Spawn program via sbatch
