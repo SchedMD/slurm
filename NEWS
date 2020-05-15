@@ -67,6 +67,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix jobcomp, job_submit and cli_filter Lua implementation plugins causing
     slurmctld and/or job submission CLI tools segfaults due to bad return
     handling when the respective Lua script failed to load.
+ -- Fix propagation of gpu options through hetjob components.
 
 * Changes in Slurm 20.02.3
 ==========================
