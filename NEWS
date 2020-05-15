@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix regresion validating that --gpus-per-socket requires --sockets-per-node
     for steps. Should only validate allocation requests.
  -- error() instead of fatal() when parsing an invalid hostlist.
+ -- nss_slurm - fix potential deadlock in slurmstepd on overloaded systems.
 
 * Changes in Slurm 20.02.2
 ==========================
