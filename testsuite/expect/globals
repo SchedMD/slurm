@@ -261,7 +261,7 @@ cset poll_interval 1
 set ::env(LANG)          "en_US.UTF-8"
 
 # Testsuite level variables
-cset testsuite_log_level $LOG_LEVEL_INFO
+cset testsuite_log_level $LOG_LEVEL_DEBUG
 cset testsuite_cleanup_on_failure false
 
 if {[info exists env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)]} {
