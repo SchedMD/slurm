@@ -1953,6 +1953,19 @@ static void _pick_step_cores(struct step_record *step_ptr,
 	}
 }
 
+static bool _use_one_thread_per_core(struct job_record *job_ptr)
+{
+	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
+
+	if ((job_resrcs_ptr->whole_node != 1) &&
+	    (slurmctld_conf.select_type_param & (CR_CORE | CR_SOCKET)) &&
+	    (job_ptr->details &&
+	     (job_ptr->details->cpu_bind_type != NO_VAL16) &&
+	     (job_ptr->details->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)))
+		return true;
+	return false;
+}
+
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
 extern void step_alloc_lps(struct step_record *step_ptr)
 {
@@ -2943,13 +2956,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			 * of cpus available if we only want to run 1
 			 * thread per core.
 			 */
-			if ((job_resrcs_ptr->whole_node != 1)
-			    && (slurmctld_conf.select_type_param
-				& (CR_CORE | CR_SOCKET))
-			    && (job_ptr->details &&
-				(job_ptr->details->cpu_bind_type != NO_VAL16)
-				&& (job_ptr->details->cpu_bind_type
-				    & CPU_BIND_ONE_THREAD_PER_CORE))) {
+			if (_use_one_thread_per_core(job_ptr)) {
 				uint16_t threads;
 				if (slurmctld_conf.fast_schedule)
 					threads = node_ptr->config_ptr->threads;
