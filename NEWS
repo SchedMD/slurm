@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix --mem-per-gpu for heterogenous --gres requests.
  -- Fix slurmctld load order in load_all_part_state().
  -- Fix getting system counts for named GRES/TRES.
+ -- MySQL - Fix for handing typed GRES for association rollups.
 
 * Changes in Slurm 19.05.6
 ==========================
