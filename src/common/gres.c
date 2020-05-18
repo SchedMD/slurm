@@ -8017,6 +8017,13 @@ static int _sock_gres_sort(void *x, void *y)
 	return weight1 - weight2;
 }
 
+int _sort_sockets_by_avail_cores(const void *x, const void *y,
+				 void *socket_avail_cores)
+{
+	uint16_t *sockets = (uint16_t *)socket_avail_cores;
+	return (sockets[*(int *)y] - sockets[*(int *)x]);
+}
+
 /*
  * Determine how many tasks can be started on a given node and which
  *	sockets/cores are required
@@ -8034,7 +8041,7 @@ static int _sock_gres_sort(void *x, void *y)
  * IN enforce_binding - GRES must be co-allocated with cores
  * IN first_pass - set if first scheduling attempt for this job, use
  *		   co-located GRES and cores if possible
- * IN avail_cores - cores available on this node, UPDATED
+ * IN avail_core - cores available on this node, UPDATED
  */
 extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					 List sock_gres_list,
@@ -8053,14 +8060,15 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
 	gres_job_state_t *job_specs;
-	int i, c, s, sock_cnt = 0, req_cores, rem_sockets, full_socket;
+	int i, j, c, s, sock_cnt = 0, req_cores, rem_sockets, full_socket;
 	int tot_core_cnt = 0, min_core_cnt = 1;
 	uint64_t cnt_avail_sock, cnt_avail_total, max_gres = 0, rem_gres = 0;
 	uint64_t tot_gres_sock, max_tasks;
 	uint32_t task_cnt_incr;
 	bool *req_sock = NULL;	/* Required socket */
+	int *socket_index = NULL; /* Socket indexes */
 	uint16_t *avail_cores_per_sock, cpus_per_gres;
-	uint16_t avail_cores_req = 0, avail_cores_tot;
+	uint16_t avail_cores_tot;
 
 	if (*max_tasks_this_node == 0)
 		return;
@@ -8078,10 +8086,12 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 
 	task_cnt_incr = *min_tasks_this_node;
 	req_sock = xcalloc(sockets, sizeof(bool));
+	socket_index = xcalloc(sockets, sizeof(int));
 
 	list_sort(sock_gres_list, _sock_gres_sort);
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
+		bool sufficient_gres;
 		job_specs = sock_gres->job_specs;
 		if (!job_specs)
 			continue;
@@ -8131,28 +8141,67 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		min_core_cnt = (min_core_cnt + cpus_per_core - 1) /
 			       cpus_per_core;
 
+		if (job_specs->cpus_per_gres)
+			cpus_per_gres = job_specs->cpus_per_gres;
+		else
+			cpus_per_gres = job_specs->def_cpus_per_gres;
+
 		/* Filter out unusable GRES by socket */
 		avail_cores_tot = 0;
 		cnt_avail_total = sock_gres->cnt_any_sock;
-		for (s = 0; s < sockets; s++) {
-			/* Test for sufficient gres_per_socket */
+		sufficient_gres = false;
+		for (s = 0; s < sockets; s++)
+			socket_index[s] = s;
+		qsort_r(socket_index, sockets, sizeof(int),
+			_sort_sockets_by_avail_cores, avail_cores_per_sock);
+
+		for (j = 0; j < sockets; j++) {
+			/*
+			 * Test for sufficient gres_per_socket
+			 *
+			 * Start with socket with most cores available,
+			 * so we know that we have max number of cores on socket
+			 * with allocated GRES.
+			 */
+			s = socket_index[j];
+
 			if (sock_gres->cnt_by_sock) {
 				cnt_avail_sock = sock_gres->cnt_by_sock[s];
 			} else
 				cnt_avail_sock = 0;
+
+			/*
+			 * If enforce binding number of gres allocated per
+			 * socket has to be limited by cpus_per_gres
+			 */
+			if ((enforce_binding || first_pass) && cpus_per_gres) {
+				int max_gres_socket = (avail_cores_per_sock[s] *
+						       cpus_per_core) /
+						      cpus_per_gres;
+				cnt_avail_sock = MIN(cnt_avail_sock,
+						     max_gres_socket);
+			}
+
 			tot_gres_sock = sock_gres->cnt_any_sock +
 					cnt_avail_sock;
 			if ((job_specs->gres_per_socket > tot_gres_sock) ||
 			    (tot_gres_sock == 0)) {
-				/* Insufficient GRES on this socket */
-				if (sock_gres->cnt_by_sock) {
+				/*
+				 * Insufficient GRES on this socket
+				 * GRES removed here won't be used in 2nd pass
+				 */
+				if (((job_specs->gres_per_socket >
+				      tot_gres_sock) ||
+				     enforce_binding) &&
+				    sock_gres->cnt_by_sock) {
 					sock_gres->total_cnt -=
 						sock_gres->cnt_by_sock[s];
 					sock_gres->cnt_by_sock[s] = 0;
 				}
 				if (first_pass &&
 				    (tot_core_cnt > min_core_cnt)) {
-					for (c = 0; c < cores_per_socket; c++) {
+					for (c = cores_per_socket - 1;
+					     c >= 0; c--) {
 						i = (s * cores_per_socket) + c;
 						if (!bit_test(avail_core, i))
 							continue;
@@ -8180,21 +8229,24 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				continue;
 
 			cnt_avail_total += cnt_avail_sock;
-			avail_cores_req += avail_cores_per_sock[s];
-			req_sock[s] = true;
-			sock_cnt++;
+			if (!sufficient_gres) {
+				req_sock[s] = true;
+				sock_cnt++;
+			}
+
 			if (job_specs->gres_per_node &&
-			    (cnt_avail_total >= job_specs->gres_per_node))
-				break;	/* Sufficient GRES */
+			    (cnt_avail_total >= job_specs->gres_per_node) &&
+			    !sock_gres->cnt_any_sock) {
+				/*
+				 * Sufficient gres will leave remaining CPUs as
+				 * !req_sock. We do this only when we
+				 * collected enough and all collected gres of
+				 * considered type are bound to socket.
+				 */
+				sufficient_gres = true;
+			}
 		}
 
-		if (!enforce_binding && first_pass) {
-			/* Allow any GRES with any CPUs for now */
-			cpus_per_gres = 0;
-		} else if (job_specs->cpus_per_gres)
-			cpus_per_gres = job_specs->cpus_per_gres;
-		else
-			cpus_per_gres = job_specs->def_cpus_per_gres;
 		if (cpus_per_gres) {
 			max_gres = *avail_cpus / cpus_per_gres;
 			cnt_avail_total = MIN(cnt_avail_total, max_gres);
@@ -8223,6 +8275,30 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 
 		if (*max_tasks_this_node == 0)
 			break;
+
+		/*
+		 * Remove cores on not required sockets when enforce-binding,
+		 * this has to happen also when max_tasks_this_node == NO_VAL
+		 */
+		if (enforce_binding || first_pass) {
+			for (s = 0; s < sockets; s++) {
+				if (req_sock[s])
+					continue;
+				for (c = cores_per_socket - 1; c >= 0; c--) {
+					i = (s * cores_per_socket) + c;
+					if (!bit_test(avail_core, i))
+						continue;
+					bit_clear(avail_core, i);
+					if (bit_set_count(avail_core) *
+					    cpus_per_core < *avail_cpus) {
+						*avail_cpus -= cpus_per_core;
+					}
+					avail_cores_tot--;
+					avail_cores_per_sock[s]--;
+				}
+			}
+		}
+
 		if (*max_tasks_this_node == NO_VAL) {
 			if (cpus_per_gres) {
 				i = *avail_cpus / cpus_per_gres;
@@ -8256,18 +8332,23 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				i = 1;
 			}
 			i *= cpus_per_gres;
-			i /= cpus_per_core;
+			i = (i + cpus_per_core - 1) / cpus_per_core;
 			req_cores = MAX(req_cores, i);
 		}
 
-		/* Clear extra avail_core bits on sockets we don't need */
-		if (avail_cores_tot > req_cores) {
+		/*
+		 * Clear extra avail_core bits on sockets we don't need
+		 * up to required number of cores based on max_tasks_this_node.
+		 * In case of enforce-binding those are already cleared.
+		 */
+		if ((avail_cores_tot > req_cores) &&
+		     !enforce_binding && !first_pass) {
 			for (s = 0; s < sockets; s++) {
 				if (avail_cores_tot == req_cores)
 					break;
 				if (req_sock[s])
 					continue;
-				for (c = 0; c < cores_per_socket; c++) {
+				for (c = cores_per_socket - 1; c >= 0; c--) {
 					i = (s * cores_per_socket) + c;
 					if (!bit_test(avail_core, i))
 						continue;
@@ -8276,7 +8357,9 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					    cpus_per_core < *avail_cpus) {
 						*avail_cpus -= cpus_per_core;
 					}
-					if (--avail_cores_tot == req_cores)
+					avail_cores_tot--;
+					avail_cores_per_sock[s]--;
+					if (avail_cores_tot == req_cores)
 						break;
 				}
 			}
@@ -8304,7 +8387,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			if (full_socket == -1)
 				break;
 			s = full_socket;
-			for (c = 0; c < cores_per_socket; c++) {
+			for (c = cores_per_socket - 1; c >= 0; c--) {
 				i = (s * cores_per_socket) + c;
 				if (!bit_test(avail_core, i))
 					continue;
@@ -9720,10 +9803,10 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					       tasks_per_node_socket);
 			} else if (job_specs->gres_per_job) {
 				uint16_t cpus_per_core;
-				cpus_per_core = node_table_ptr->cpus /
-						node_table_ptr->boards /
-						node_table_ptr->sockets /
-						node_table_ptr->cores;
+				cpus_per_core = node_table_ptr[i].cpus /
+						node_table_ptr[i].boards /
+						node_table_ptr[i].sockets /
+						node_table_ptr[i].cores;
 				job_fini = _set_job_bits1(job_res, i, node_inx,
 					       rem_node_cnt--, sock_gres,
 					       job_id, tres_mc_ptr,
