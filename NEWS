@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix gpu bind issue when CPUs=Cores and ThreadsPerCore > 1 on a node.
  -- Fix --mem-per-gpu for heterogenous --gres requests.
  -- Fix slurmctld load order in load_all_part_state().
+ -- Fix getting system counts for named GRES/TRES.
 
 * Changes in Slurm 19.05.6
 ==========================

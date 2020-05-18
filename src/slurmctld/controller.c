@@ -2418,6 +2418,14 @@ static int _add_node_gres_tres(void *x, void *arg)
 
 	gres_cnt = gres_plugin_node_config_cnt(node_ptr->gres_list,
 					       tres_rec_in->name);
+
+	/*
+	 * Set the count here for named GRES as we don't store the count the
+	 * same way we do for unnamed GRES.
+	 */
+	if (strchr(tres_rec_in->name, ':'))
+		tres_rec_in->count += gres_cnt;
+
 	if ((tres_pos = assoc_mgr_find_tres_pos(tres_rec_in, true)) != -1)
 		node_ptr->tres_cnt[tres_pos] = gres_cnt;
 
@@ -2503,6 +2511,13 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 			tres_rec->count = bb_g_get_system_size(tres_rec->name);
 			continue;
 		} else if (!xstrcmp(tres_rec->type, "gres")) {
+			/*
+			 * Skip named GRES as we don't store
+			 * the count the same way we do for unnamed GRES.
+			 */
+			if (strchr(tres_rec->name, ':'))
+				continue;
+
 			tres_rec->count = gres_get_system_cnt(tres_rec->name);
 			if (tres_rec->count == NO_VAL64)
 				tres_rec->count = 0;   /* GRES name not found */
