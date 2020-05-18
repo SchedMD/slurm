@@ -2578,9 +2578,13 @@ extern int run_script_health_check(void)
 
 	if (slurm_conf.health_check_program &&
 	    slurm_conf.health_check_interval) {
-		char *env[1] = { NULL };
+		char **env = env_array_create();
+		setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
+
 		rc = run_script("health_check", slurm_conf.health_check_program,
 				0, 60, env, 0);
+
+		env_array_free(env);
 	}
 
 	return rc;
