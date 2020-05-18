@@ -412,6 +412,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		uint32_t feat_node_cnt;
 
 		tmp_bitmap = bit_copy(*avail_bitmap);
+		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 		feat_iter = list_iterator_create(feature_cache);
 		while ((feat_ptr = (job_feature_t *) list_next(feat_iter)) &&
 		       (rc == SLURM_SUCCESS)) {
@@ -438,8 +439,6 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 			if ((job_req_node_filter(job_ptr, *avail_bitmap, true)
 			     == SLURM_SUCCESS) &&
 			    (bit_set_count(*avail_bitmap) >= feat_min_node)) {
-				preemptee_candidates =
-					slurm_find_preemptable_jobs(job_ptr);
 				rc = select_g_job_test(job_ptr, *avail_bitmap,
 						       feat_min_node, max_nodes,
 						       feat_min_node,
@@ -447,7 +446,6 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 						       preemptee_candidates,
 						       NULL,
 						       exc_core_bitmap);
-				FREE_NULL_LIST(preemptee_candidates);
 				if (rc == SLURM_SUCCESS) {
 					if ((high_start == 0) ||
 					    (high_start < job_ptr->start_time))
@@ -495,6 +493,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 				*avail_bitmap = NULL;
 			}
 		}
+		FREE_NULL_LIST(preemptee_candidates);
 		FREE_NULL_BITMAP(tmp_bitmap);
 		if (high_start && rc == SLURM_SUCCESS) {
 			job_ptr->start_time = high_start;
@@ -517,6 +516,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		time_t low_start = 0;
 
 		tmp_bitmap = bit_copy(*avail_bitmap);
+		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 		feat_iter = list_iterator_create(feature_cache);
 		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
 			detail_ptr->feature_list =
@@ -539,8 +539,6 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 			if ((job_req_node_filter(job_ptr, *avail_bitmap, true)
 			     == SLURM_SUCCESS) &&
 			    (bit_set_count(*avail_bitmap) >= min_nodes)) {
-				preemptee_candidates =
-					slurm_find_preemptable_jobs(job_ptr);
 				rc = select_g_job_test(job_ptr, *avail_bitmap,
 						       min_nodes, max_nodes,
 						       req_nodes,
@@ -548,7 +546,6 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 						       preemptee_candidates,
 						       NULL,
 						       exc_core_bitmap);
-				FREE_NULL_LIST(preemptee_candidates);
 				if ((rc == SLURM_SUCCESS) &&
 				    ((low_start == 0) ||
 				     (low_start > job_ptr->start_time))) {
@@ -562,6 +559,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 			list_destroy(detail_ptr->feature_list);
 		}
 		list_iterator_destroy(feat_iter);
+		FREE_NULL_LIST(preemptee_candidates);
 		FREE_NULL_BITMAP(tmp_bitmap);
 		if (low_start) {
 			job_ptr->start_time = low_start;
