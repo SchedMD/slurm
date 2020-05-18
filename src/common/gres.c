@@ -8246,6 +8246,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	list_iterator_destroy(sock_gres_iter);
 	xfree(avail_cores_per_sock);
 	xfree(req_sock);
+	xfree(socket_index);
 
 
 	if (select_type_param == NO_VAL16)
