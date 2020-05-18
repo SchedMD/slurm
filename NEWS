@@ -87,6 +87,8 @@ documents those changes that are of interest to users and administrators.
  -- Add ability for sinfo state filtering to require all listed states.
  -- Add the "Reserved" license count to 'scontrol show licenses'.
  -- Don't display MailUser/MailType in scontrol show jobs if mail won't be sent.
+ -- Throw an error and ignore CpuSpecList if it cannot be translated to bitmap
+    of number of CPUs size.
 
 * Changes in Slurm 20.02.6
 ==========================

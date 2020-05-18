@@ -893,6 +893,16 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			n->core_spec_cnt = 1;
 		}
 
+		if (n->cpu_spec_list) {
+			bitstr_t *cpu_spec_bitmap = bit_alloc(n->cpus);
+			if (bit_unfmt(cpu_spec_bitmap, n->cpu_spec_list)) {
+				error("NodeNames=%s CpuSpecList=%s - unable to convert it to bitmap of size CPUs=%d. Ignoring CpuSpecList.",
+				      n->nodenames, n->cpu_spec_list, n->cpus);
+				xfree(n->cpu_spec_list);
+			}
+			FREE_NULL_BITMAP(cpu_spec_bitmap);
+		}
+
 		if ((n->core_spec_cnt > 0) && n->cpu_spec_list) {
 			error("NodeNames=%s CoreSpecCount=%u is invalid "
 			      "with CPUSpecList, reset to 0",
