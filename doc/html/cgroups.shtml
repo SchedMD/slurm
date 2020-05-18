@@ -36,7 +36,11 @@ been completely fixed in the 2.6.38 kernel.</li>
 the kernel command line: <pre>cgroup_enable=memory swapaccount=1</pre>
 This can usually be placed in /etc/default/grub inside the
 <i>GRUB_CMDLINE_LINUX</i> variable.  A command such as <i>update-grub</i> must
-be run after updating the file.
+be run after updating the file.</li>
+<li>Linux allows you to use the JoinControllers parameters to have multiple
+controllers mounted in a single hierarchy, however Slurm does not work
+correctly with this configuration. Please make sure your system.conf does
+not use JoinControllers.</li>
 </ul>
 
 <h2>Use of Cgroups in Slurm</h2>
