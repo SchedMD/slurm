@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
     for steps. Should only validate allocation requests.
  -- error() instead of fatal() when parsing an invalid hostlist.
  -- nss_slurm - fix potential deadlock in slurmstepd on overloaded systems.
+ -- cons_tres - fix --gres-flags=enforce-binding and related --cpus-per-gres.
+ -- cons_tres - Allocate lowest numbered cores when filtering cores with gres.
 
 * Changes in Slurm 20.02.2
 ==========================
