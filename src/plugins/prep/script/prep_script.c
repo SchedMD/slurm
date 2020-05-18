@@ -152,3 +152,27 @@ extern int prep_p_epilog_slurmctld(job_record_t *job_ptr, bool *async)
 	*async = true;
 	return SLURM_SUCCESS;
 }
+
+extern void prep_p_required(prep_call_type_t type, bool *required)
+{
+	*required = false;
+	switch (type) {
+	case PREP_PROLOG_SLURMCTLD:
+		if (running_in_slurmctld() && have_prolog_slurmctld)
+			*required = true;
+		break;
+	case PREP_EPILOG_SLURMCTLD:
+		if (running_in_slurmctld() && have_epilog_slurmctld)
+			*required = true;
+		break;
+	case PREP_PROLOG:
+	case PREP_EPILOG:
+		if (running_in_slurmd())
+			*required = true;
+		break;
+	default:
+		return;
+	}
+
+	return;
+}

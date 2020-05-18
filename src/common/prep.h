@@ -45,6 +45,15 @@ typedef struct {
 	void (*epilog_slurmctld)(int rc, uint32_t job_id);
 } prep_callbacks_t;
 
+typedef enum {
+	PREP_REGISTER_CALLBACKS = 0,
+	PREP_PROLOG,
+	PREP_EPILOG,
+	PREP_PROLOG_SLURMCTLD,
+	PREP_EPILOG_SLURMCTLD,
+	PREP_CALL_CNT,
+} prep_call_type_t;
+
 /*
  * Initialize the PrEpPlugins.
  *
@@ -90,5 +99,8 @@ extern void prep_prolog_slurmctld(job_record_t *job_ptr);
  * or plugins may call prep_epilog_slurmctld_callback().
  */
 extern void prep_epilog_slurmctld(job_record_t *job_ptr);
+
+/* Whether or not the requested prep is configured or not */
+extern bool prep_required(prep_call_type_t type);
 
 #endif /* !_PREP_H_ */

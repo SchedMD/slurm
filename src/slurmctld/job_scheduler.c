@@ -4451,9 +4451,6 @@ static void *_wait_boot(void *arg)
  * until that has completed.
  * For HetJobs in particular, this is critical to ensure that all components
  * have been setup properly before prolog_slurmctld actually runs.
- *
- * FIXME: explore other ways to refactor slurmctld to avoid this extraneous
- * thread
  */
 static void *_start_prolog_slurmctld_thread(void *x)
 {
@@ -4497,6 +4494,8 @@ extern void prolog_slurmctld(job_record_t *job_ptr)
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 
+	if (!prep_required(PREP_PROLOG_SLURMCTLD))
+		return;
 	job_ptr->details->prolog_running++;
 	job_ptr->job_state |= JOB_CONFIGURING;
 

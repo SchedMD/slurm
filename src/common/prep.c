@@ -49,6 +49,7 @@ typedef struct {
 	int (*epilog)(job_env_t *job_env, slurm_cred_t *cred);
 	int (*prolog_slurmctld)(job_record_t *job_ptr, bool *async);
 	int (*epilog_slurmctld)(job_record_t *job_ptr, bool *async);
+	void (*required)(prep_call_type_t type, bool *required);
 } prep_ops_t;
 
 /*
@@ -60,6 +61,7 @@ static const char *syms[] = {
 	"prep_p_epilog",
 	"prep_p_prolog_slurmctld",
 	"prep_p_epilog_slurmctld",
+	"prep_p_required",
 };
 
 static int g_context_cnt = -1;
@@ -68,6 +70,7 @@ static plugin_context_t **g_context = NULL;
 static char *prep_plugin_list = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
+static bool prep_is_required[PREP_CALL_CNT] = { false };
 
 /*
  * Initialize the PrEpPlugins.
@@ -123,6 +126,14 @@ extern int prep_plugin_init(prep_callbacks_t *callbacks)
 	}
 	init_run = true;
 	xfree(tmp_plugin_list);
+
+	for (int j = 0; j < PREP_CALL_CNT; j++) {
+		for (int i = 0; i < g_context_cnt; i++) {
+			(*(ops[i].required))(j, &prep_is_required[j]);
+			if (prep_is_required[j])
+				break;
+		}
+	}
 
 fini:
 	slurm_mutex_unlock(&g_context_lock);
@@ -275,4 +286,20 @@ extern void prep_epilog_slurmctld(job_record_t *job_ptr)
 
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
+}
+
+extern bool prep_required(prep_call_type_t type)
+{
+	int rc;
+	bool required = false;
+
+	rc = prep_plugin_init(NULL);
+	if (rc != SLURM_SUCCESS)
+		return required;
+
+	slurm_mutex_lock(&g_context_lock);
+	required = prep_is_required[type];
+	slurm_mutex_unlock(&g_context_lock);
+
+	return required;
 }
