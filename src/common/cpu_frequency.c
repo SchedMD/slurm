@@ -372,15 +372,6 @@ cpu_freq_fini(void)
 }
 
 /*
- * reset debug flag (slurmd)
- */
-extern void
-cpu_freq_reconfig(void)
-{
-	/* reset local static variables */
-}
-
-/*
  * Send the cpu_frequency table info to slurmstepd
  */
 extern void

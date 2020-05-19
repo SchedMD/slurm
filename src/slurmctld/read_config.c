@@ -1272,7 +1272,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	route_g_reconfigure();
 	if (reconfig)
 		power_g_reconfig();
-	cpu_freq_reconfig();
 
 	rehash_jobs();
 	_set_slurmd_addr();

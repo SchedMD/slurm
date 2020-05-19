@@ -1117,7 +1117,6 @@ _reconfigure(void)
 	slurm_topo_build_config();
 	_set_topo_info();
 	route_g_reconfigure();
-	cpu_freq_reconfig();
 
 	msg_aggr_sender_reconfig(conf->msg_aggr_window_time,
 				 conf->msg_aggr_window_msgs);
