@@ -303,7 +303,7 @@
 #define running_in_slurmctld    slurm_running_in_slurmctld
 #define running_in_slurmd       slurm_running_in_slurmd
 #define running_in_slurmdbd     slurm_running_in_slurmdbd
-#define running_in_slurmdstepd  slurm_running_in_slurmdstepd
+#define running_in_slurmd_stepd slurm_running_in_slurmd_stepd
 #define running_in_slurmstepd   slurm_running_in_slurmstepd
 
 /* slurm_auth.[ch] functions

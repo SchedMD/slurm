@@ -924,7 +924,7 @@ static void _my_stat(char *file_name)
 	bool sent_msg = false;
 	int i;
 
-	if (!running_in_slurmdstepd())
+	if (!running_in_slurmd_stepd())
 		return;
 
 	for (i = 0; i < 20; i++) {

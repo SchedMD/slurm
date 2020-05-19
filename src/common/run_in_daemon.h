@@ -59,7 +59,7 @@ extern bool running_in_slurmd(void);
 extern bool running_in_slurmdbd(void);
 
 /* check if running in the slurmd or slurmstepd */
-extern bool running_in_slurmdstepd(void);
+extern bool running_in_slurmd_stepd(void);
 
 /* check if running in the slurmrestd */
 extern bool running_in_slurmrestd(void);

@@ -607,7 +607,7 @@ extern int init(void)
  */
 extern int fini(void)
 {
-	if (!running_in_slurmdstepd())
+	if (!running_in_slurmd_stepd())
 		return SLURM_SUCCESS;
 
 	flag_energy_accounting_shutdown = true;
@@ -639,7 +639,7 @@ extern int fini(void)
 extern int acct_gather_energy_p_update_node_energy(void)
 {
 	int rc = SLURM_SUCCESS;
-	xassert(running_in_slurmdstepd());
+	xassert(running_in_slurmd_stepd());
 
 	return rc;
 }
@@ -653,7 +653,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	time_t *last_poll = (time_t *)data;
 	uint16_t *gpu_cnt = (uint16_t *)data;
 
-	xassert(running_in_slurmdstepd());
+	xassert(running_in_slurmd_stepd());
 
 	switch (data_type) {
 	case ENERGY_DATA_NODE_ENERGY_UP:
@@ -719,7 +719,7 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 	int rc = SLURM_SUCCESS;
 	int *delta = (int *)data;
 
-	xassert(running_in_slurmdstepd());
+	xassert(running_in_slurmd_stepd());
 
 	switch (data_type) {
 	case ENERGY_DATA_RECONFIG:
@@ -776,7 +776,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 
 	context_id = context_id_in;
 
-	if (!running_in_slurmdstepd())
+	if (!running_in_slurmd_stepd())
 		return;
 
 	if (!flag_init) {

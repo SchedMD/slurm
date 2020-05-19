@@ -219,7 +219,7 @@ extern int acct_gather_energy_p_update_node_energy(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	xassert(running_in_slurmdstepd());
+	xassert(running_in_slurmd_stepd());
 
 	if (!local_energy || local_energy->current_watts == NO_VAL)
 		return rc;
@@ -244,7 +244,7 @@ extern int init(void)
 
 extern int fini(void)
 {
-	if (!running_in_slurmdstepd())
+	if (!running_in_slurmd_stepd())
 		return SLURM_SUCCESS;
 
 	acct_gather_energy_destroy(local_energy);
@@ -260,7 +260,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	time_t *last_poll = (time_t *)data;
 	uint16_t *sensor_cnt = (uint16_t *)data;
 
-	xassert(running_in_slurmdstepd());
+	xassert(running_in_slurmd_stepd());
 
 	if (!local_energy) {
 		debug("%s: trying to get data %d, but no local_energy yet.",
@@ -300,7 +300,7 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 {
 	int rc = SLURM_SUCCESS;
 
-	xassert(running_in_slurmdstepd());
+	xassert(running_in_slurmd_stepd());
 
 	switch (data_type) {
 	case ENERGY_DATA_RECONFIG:
@@ -333,7 +333,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 {
 	static bool flag_init = 0;
 
-	if (!running_in_slurmdstepd())
+	if (!running_in_slurmd_stepd())
 		return;
 
 	/* Already been here, we shouldn't need to visit again */
