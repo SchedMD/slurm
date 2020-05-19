@@ -505,11 +505,6 @@ char *slurm_get_job_container_plugin(void);
  * RET slurmd_spooldir name, must be xfreed by caller */
 char *slurm_get_slurmd_spooldir(char *node_name);
 
-/* slurm_get_layouts
- * RET comma seperated list of layouts in a string, must be xfreed by caller
- */
-char *slurm_get_layouts(void);
-
 /*
  * slurm_get_jobcomp_type
  * returns the configured GpuFreqDef value
