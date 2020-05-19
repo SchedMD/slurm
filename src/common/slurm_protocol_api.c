@@ -197,25 +197,6 @@ uint32_t slurm_get_cpu_freq_govs(void)
 	return cpu_freq_govs;
 }
 
-/*
- * slurm_get_control_cnt
- * RET Count of SlurmctldHost records from slurm.conf
- * (slurmctld server count, primary plus backups) 
- */
-uint32_t slurm_get_control_cnt(void)
-{
-	uint32_t control_cnt = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		control_cnt = conf->control_cnt;
-		slurm_conf_unlock();
-	}
-	return control_cnt;
-}
-
 /* slurm_get_def_mem_per_cpu
  * RET DefMemPerCPU/Node value from slurm.conf
  */

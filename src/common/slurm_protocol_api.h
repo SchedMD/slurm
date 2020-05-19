@@ -92,13 +92,6 @@ char *slurm_auth_opts_to_socket(char *opts);
  */
 int slurm_get_auth_ttl(void);
 
-/*
- * slurm_get_control_cnt
- * RET Count of SlurmctldHost records from slurm.conf
- * (slurmctld server count, primary plus backups)
- */
-uint32_t slurm_get_control_cnt(void);
-
 /* slurm_get_cpu_freq_govs
  * RET CpuFreqGovernors value from slurm.conf
  */
