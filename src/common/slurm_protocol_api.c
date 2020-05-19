@@ -228,25 +228,6 @@ void slurm_set_fs_dampening_factor(uint16_t factor)
 	}
 }
 
-/* slurm_get_priority_weight_tres
- * returns the priority weights for TRES' from slurm_conf object
- * RET char * string of configured tres weights. MUST be xfreed by caller
- */
-char *slurm_get_priority_weight_tres(void)
-{
-	char *weights = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		weights = xstrdup(conf->priority_weight_tres);
-		slurm_conf_unlock();
-	}
-
-	return weights;
-}
-
 static int _get_tres_id(char *type, char *name)
 {
 	slurmdb_tres_rec_t tres_rec;

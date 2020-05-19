@@ -1506,8 +1506,6 @@ static void _filter_job(job_record_t *job_ptr,
 
 static void _internal_setup(void)
 {
-	char *tres_weights_str;
-
 	damp_factor = (long double)slurm_get_fs_dampening_factor();
 	enforce = slurm_get_accounting_storage_enforce();
 	max_age = slurm_conf.priority_max_age;
@@ -1518,12 +1516,8 @@ static void _internal_setup(void)
 	weight_part = slurm_conf.priority_weight_part;
 	weight_qos = slurm_conf.priority_weight_qos;
 	xfree(weight_tres);
-	if ((tres_weights_str = slurm_get_priority_weight_tres())) {
-		weight_tres = slurm_get_tres_weight_array(tres_weights_str,
-							  slurmctld_tres_cnt,
-							  true);
-	}
-	xfree(tres_weights_str);
+	weight_tres = slurm_get_tres_weight_array(
+		slurm_conf.priority_weight_tres, slurmctld_tres_cnt, true);
 	flags = slurm_conf.priority_flags;
 
 	log_flag(PRIO, "priority: Damp Factor is %u", damp_factor);

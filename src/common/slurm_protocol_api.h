@@ -140,12 +140,6 @@ uint16_t slurm_get_fs_dampening_factor(void);
  */
 void slurm_set_fs_dampening_factor(uint16_t);
 
-/* slurm_get_priority_weight_tres
- * returns the priority weights for TRES' from slurm_conf object
- * RET char * of the tres weights.
- */
-char *slurm_get_priority_weight_tres(void);
-
 /* slurm_get_tres_weight_array
  * IN weights_str - string of tres and weights to be parsed.
  * IN tres_cnt - count of how many tres' are on the system (e.g.
