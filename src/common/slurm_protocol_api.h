@@ -96,13 +96,6 @@ int slurm_get_auth_ttl(void);
  */
 void slurm_set_debug_flags(uint64_t debug_flags);
 
-/* slurm_get_health_check_program
- * get health_check_program from slurm_conf object from
- * slurm_conf object
- * RET char *   - health_check_program, MUST be xfreed by caller
- */
-char *slurm_get_health_check_program(void);
-
 /* slurm_get_gres_plugins
  * get gres_plugins from slurm_conf object from
  * slurm_conf object

@@ -618,25 +618,6 @@ extern uint16_t slurm_get_vsize_factor(void)
 	return vsize_factor;
 }
 
-/* slurm_get_health_check_program
- * get health_check_program from slurm_conf object from
- * slurm_conf object
- * RET char *   - health_check_program, MUST be xfreed by caller
- */
-char *slurm_get_health_check_program(void)
-{
-	char *health_check_program = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		health_check_program = xstrdup(conf->health_check_program);
-		slurm_conf_unlock();
-	}
-	return health_check_program;
-}
-
 /* slurm_get_gres_plugins
  * get gres_plugins from slurm_conf object from
  * slurm_conf object
