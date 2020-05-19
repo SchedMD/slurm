@@ -126,7 +126,7 @@ extern int other_select_init(void)
 		goto done;
 
 	if (!other_select_type_param)
-		other_select_type_param = slurm_get_select_type_param();
+		other_select_type_param = slurm_conf.select_type_param;
 
 	if (other_select_type_param & CR_OTHER_CONS_RES)
 		type = "select/cons_res";

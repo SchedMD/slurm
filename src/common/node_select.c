@@ -256,7 +256,7 @@ done:
 	slurm_mutex_unlock( &select_context_lock );
 	if (!working_cluster_rec) {
 		if (select_running_linear_based()) {
-			uint16_t cr_type = slurm_get_select_type_param();
+			uint16_t cr_type = slurm_conf.select_type_param;
 			if (cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) {
 				fatal("Invalid SelectTypeParameters for "
 				      "%s: %s (%u), it can't contain "
@@ -319,7 +319,7 @@ again:
 		     (plugin_id == SELECT_PLUGIN_CRAY_CONS_TRES) ||
 		     (plugin_id == SELECT_PLUGIN_CRAY_LINEAR))) {
 			char *type = "select", *name = "select/cray_aries";
-			uint16_t save_params = slurm_get_select_type_param();
+			uint16_t save_params = slurm_conf.select_type_param;
 			uint16_t params[2];
 			int cray_plugin_id[2], cray_offset;
 

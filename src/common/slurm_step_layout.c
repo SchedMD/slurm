@@ -574,7 +574,7 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 	bool pack_nodes;
 
 	if (select_params == NO_VAL16)
-		select_params = slurm_get_select_type_param();
+		select_params = slurm_conf.select_type_param;
 	if (step_layout->task_dist & SLURM_DIST_PACK_NODES)
 		pack_nodes = true;
 	else if (step_layout->task_dist & SLURM_DIST_NO_PACK_NODES)

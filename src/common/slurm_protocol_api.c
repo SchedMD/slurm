@@ -1433,24 +1433,6 @@ char *slurm_get_select_type(void)
 	return select_type;
 }
 
-/* slurm_get_select_type_param
- * get select_type_param from slurm_conf object
- * RET uint16_t   - select_type_param
- */
-uint16_t slurm_get_select_type_param(void)
-{
-	uint16_t select_type_param = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		select_type_param = conf->select_type_param;
-		slurm_conf_unlock();
-	}
-	return select_type_param;
-}
-
 /* slurm_set_select_type_param
  * set select_type_param for slurm_conf object
  * IN uint16_t   - select_type_param

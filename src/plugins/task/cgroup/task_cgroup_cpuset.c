@@ -1577,7 +1577,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 		case SLURM_DIST_BLOCK:
 		case SLURM_DIST_CYCLIC:
 		case SLURM_DIST_UNKNOWN:
-			if (slurm_get_select_type_param()
+			if (slurm_conf.select_type_param
 			    & CR_CORE_DEFAULT_DIST_BLOCK) {
 				_task_cgroup_cpuset_dist_block(topology,
 					hwtype, req_hwtype,
