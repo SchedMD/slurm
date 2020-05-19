@@ -92,11 +92,6 @@ char *slurm_auth_opts_to_socket(char *opts);
  */
 int slurm_get_auth_ttl(void);
 
-/* slurm_get_cpu_freq_govs
- * RET CpuFreqGovernors value from slurm.conf
- */
-uint32_t slurm_get_cpu_freq_govs(void);
-
 /* slurm_set_debug_flags
  */
 void slurm_set_debug_flags(uint64_t debug_flags);

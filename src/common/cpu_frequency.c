@@ -71,7 +71,6 @@
 #define GOV_USERSPACE		0x10
 
 static uint16_t cpu_freq_count = 0;
-static uint32_t cpu_freq_govs = 0; /* Governors allowed. */
 static int set_batch_freq = -1;
 
 static struct cpu_freq_data {
@@ -379,7 +378,6 @@ extern void
 cpu_freq_reconfig(void)
 {
 	/* reset local static variables */
-	cpu_freq_govs = 0;
 }
 
 /*
@@ -1573,10 +1571,6 @@ cpu_freq_verify_cmdline(const char *arg,
 	uint32_t frequency;
 	int rc = 0;
 
-	if (cpu_freq_govs == 0)
-		cpu_freq_govs = slurm_get_cpu_freq_govs();
-
-
 	if (arg == NULL || cpu_freq_min == NULL || cpu_freq_max == NULL
 			|| cpu_freq_gov == NULL) {
 		return -1;
@@ -1654,7 +1648,7 @@ cpu_freq_verify_cmdline(const char *arg,
 
 clean:
 	if (*cpu_freq_gov != NO_VAL) {
-		if (((*cpu_freq_gov & cpu_freq_govs)
+		if (((*cpu_freq_gov & slurm_conf.cpu_freq_govs)
 		    & ~CPU_FREQ_RANGE_FLAG) == 0) {
 			error("governor of %s is not allowed in slurm.conf",
 			      arg);

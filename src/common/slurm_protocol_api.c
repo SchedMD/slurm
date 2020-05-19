@@ -180,23 +180,6 @@ cleanup:
 	return proto_conf;
 }
 
-/* slurm_get_cpu_freq_govs
- * RET CpuFreqGovernors value from slurm.conf
- */
-uint32_t slurm_get_cpu_freq_govs(void)
-{
-	uint32_t cpu_freq_govs = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		cpu_freq_govs = conf->cpu_freq_govs;
-		slurm_conf_unlock();
-	}
-	return cpu_freq_govs;
-}
-
 /* slurm_get_def_mem_per_cpu
  * RET DefMemPerCPU/Node value from slurm.conf
  */
