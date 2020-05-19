@@ -101,11 +101,6 @@ void slurm_set_debug_flags(uint64_t debug_flags);
  */
 uint64_t slurm_get_max_mem_per_cpu(void);
 
-/* slurm_get_max_array_size
- * return MaxArraySize configuration parameter
- */
-extern uint32_t slurm_get_max_array_size(void);
-
 /* slurm_get_msg_aggr_params
  * get message aggregation parameters value from slurm_conf object
  * RET char *   - msg aggregation parameters default value from slurm.conf,

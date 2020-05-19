@@ -421,7 +421,6 @@ static int _print_one_job_from_format(job_info_t * job, List list)
 
 static int _print_job_from_format(void *x, void *arg)
 {
-	static int32_t max_array_size = -1;
 	int i, i_first, i_last;
 	bitstr_t *bitmap;
 	squeue_job_rec_t *job_rec_ptr = (squeue_job_rec_t *) x;
@@ -441,11 +440,9 @@ static int _print_job_from_format(void *x, void *arg)
 	if (job_rec_ptr->job_ptr->array_task_str && params.array_flag) {
 		char *p;
 
-		if (max_array_size == -1)
-			max_array_size = slurm_get_max_array_size();
 		if ((p = strchr(job_rec_ptr->job_ptr->array_task_str, '%')))
 			*p = 0;
-		bitmap = bit_alloc(max_array_size);
+		bitmap = bit_alloc(slurm_conf.max_array_sz);
 		bit_unfmt(bitmap, job_rec_ptr->job_ptr->array_task_str);
 		xfree(job_rec_ptr->job_ptr->array_task_str);
 		i_first = bit_ffs(bitmap);

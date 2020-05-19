@@ -211,23 +211,6 @@ uint64_t slurm_get_max_mem_per_cpu(void)
 	return mem_per_cpu;
 }
 
-/* slurm_get_max_array_size
- * return MaxArraySize configuration parameter
- */
-extern uint32_t slurm_get_max_array_size(void)
-{
-	int max_array_size = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		max_array_size = conf->max_array_sz;
-		slurm_conf_unlock();
-	}
-	return max_array_size;
-}
-
 /* slurm_get_msg_aggr_params
  * get message aggregation parameters value from slurm_conf object
  * RET char *   - message aggregation value from slurm.conf,
