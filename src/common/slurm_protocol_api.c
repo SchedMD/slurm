@@ -1415,24 +1415,6 @@ extern char *slurm_get_sched_params(void)
 	return params;
 }
 
-/* slurm_get_sched_type
- * get sched type from slurm_conf object
- * RET char *   - sched type, MUST be xfreed by caller
- */
-char *slurm_get_sched_type(void)
-{
-	char *sched_type = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		sched_type = xstrdup(conf->schedtype);
-		slurm_conf_unlock();
-	}
-	return sched_type;
-}
-
 /* slurm_get_select_type
  * get select_type from slurm_conf object
  * RET char *   - select_type, MUST be xfreed by caller

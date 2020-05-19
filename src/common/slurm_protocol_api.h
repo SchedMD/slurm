@@ -440,12 +440,6 @@ extern char * slurm_get_route_plugin(void);
  * RET char * - Value of SchedulerParameters, MUST be xfreed by caller */
 extern char *slurm_get_sched_params(void);
 
-/* slurm_get_sched_type
- * get sched type from slurm_conf object
- * RET char *   - sched type, MUST be xfreed by caller
- */
-char *slurm_get_sched_type(void);
-
 /* slurm_get_select_type
  * get select_type from slurm_conf object
  * RET char *   - select_type, MUST be xfreed by caller
