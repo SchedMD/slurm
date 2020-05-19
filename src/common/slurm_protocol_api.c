@@ -194,25 +194,6 @@ void slurm_set_debug_flags(uint64_t debug_flags)
 	}
 }
 
-/* slurm_get_fs_dampening_factor
- * returns the dampening factor for fairshare from slurm_conf object
- * RET uint32_t - factor.
- */
-uint16_t slurm_get_fs_dampening_factor(void)
-{
-	uint16_t factor = 1;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		factor = conf->fs_dampening_factor;
-		slurm_conf_unlock();
-	}
-
-	return factor;
-}
-
 /* slurm_set_fs_dampening_factor
  * set the dampening factor for fairshare from slurm_conf object
  */

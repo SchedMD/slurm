@@ -129,12 +129,6 @@ char *slurm_get_job_slurmctld_logfile(void);
  */
 char *slurm_get_node_features_plugins(void);
 
-/* slurm_get_fs_dampening_factor
- * returns the dampening factor for fairshare from slurm_conf object
- * RET uint32_t - factor.
- */
-uint16_t slurm_get_fs_dampening_factor(void);
-
 /* slurm_set_fs_dampening_factor
  * sets the value of fs_dampening in slurm_conf object
  */

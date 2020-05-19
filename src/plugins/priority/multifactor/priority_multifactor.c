@@ -1506,7 +1506,7 @@ static void _filter_job(job_record_t *job_ptr,
 
 static void _internal_setup(void)
 {
-	damp_factor = (long double)slurm_get_fs_dampening_factor();
+	damp_factor = (long double) slurm_conf.fs_dampening_factor;
 	enforce = slurm_get_accounting_storage_enforce();
 	max_age = slurm_conf.priority_max_age;
 	weight_age = slurm_conf.priority_weight_age;
@@ -1688,7 +1688,7 @@ int init ( void )
 
 	/* This means we aren't running from the controller so skip setup. */
 	if (cluster_cpus == NO_VAL) {
-		damp_factor = (long double)slurm_get_fs_dampening_factor();
+		damp_factor = (long double) slurm_conf.fs_dampening_factor;
 		return SLURM_SUCCESS;
 	}
 
