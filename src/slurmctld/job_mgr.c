@@ -16142,6 +16142,12 @@ static int _resume_job_nodes(job_record_t *job_ptr, bool indf_susp)
 			if (node_ptr->no_share_job_cnt)
 				bit_clear(share_node_bitmap, i);
 		}
+
+		if (slurm_mcs_get_select(job_ptr) == 1) {
+			xfree(node_ptr->mcs_label);
+			node_ptr->mcs_label = xstrdup(job_ptr->mcs_label);
+		}
+
 		bit_clear(idle_node_bitmap, i);
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
