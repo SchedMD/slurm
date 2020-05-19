@@ -180,23 +180,6 @@ cleanup:
 	return proto_conf;
 }
 
-/* slurm_get_def_mem_per_cpu
- * RET DefMemPerCPU/Node value from slurm.conf
- */
-uint64_t slurm_get_def_mem_per_cpu(void)
-{
-	uint64_t mem_per_cpu = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		mem_per_cpu = conf->def_mem_per_cpu;
-		slurm_conf_unlock();
-	}
-	return mem_per_cpu;
-}
-
 /* slurm_set_debug_flags
  */
 void slurm_set_debug_flags(uint64_t debug_flags)

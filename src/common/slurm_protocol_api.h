@@ -96,11 +96,6 @@ int slurm_get_auth_ttl(void);
  */
 void slurm_set_debug_flags(uint64_t debug_flags);
 
-/* slurm_get_def_mem_per_cpu
- * RET DefMemPerCPU/Node value from slurm.conf
- */
-uint64_t slurm_get_def_mem_per_cpu(void);
-
 /* slurm_get_max_mem_per_cpu
  * RET MaxMemPerCPU/Node value from slurm.conf
  */
