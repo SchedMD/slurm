@@ -264,23 +264,6 @@ uint64_t slurm_get_max_mem_per_cpu(void)
 	return mem_per_cpu;
 }
 
-/* slurm_get_epilog_msg_time
- * RET EpilogMsgTime value from slurm.conf
- */
-uint32_t slurm_get_epilog_msg_time(void)
-{
-	uint32_t epilog_msg_time = 0;
-	slurm_conf_t *conf;
-
- 	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		epilog_msg_time = conf->epilog_msg_time;
-		slurm_conf_unlock();
-	}
-	return epilog_msg_time;
-}
-
 /* slurm_get_max_array_size
  * return MaxArraySize configuration parameter
  */

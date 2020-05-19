@@ -5509,7 +5509,6 @@ static void _sync_messages_kill(kill_job_msg_t *req)
 	int host_cnt, host_inx;
 	char *host;
 	hostset_t hosts;
-	int epilog_msg_time;
 
 	hosts = hostset_create(req->nodes);
 	host_cnt = hostset_count(hosts);
@@ -5528,8 +5527,8 @@ static void _sync_messages_kill(kill_job_msg_t *req)
 		}
 		free(host);
 	}
-	epilog_msg_time = slurm_get_epilog_msg_time();
-	_delay_rpc(host_inx, host_cnt, epilog_msg_time);
+
+	_delay_rpc(host_inx, host_cnt, slurm_conf.epilog_msg_time);
 
 fini:	hostset_destroy(hosts);
 }
