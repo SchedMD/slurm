@@ -1924,7 +1924,7 @@ static void _pick_step_cores(step_record_t *step_ptr,
 	}
 }
 
-static bool _use_one_thread_per_core(struct job_record *job_ptr)
+static bool _use_one_thread_per_core(job_record_t *job_ptr)
 {
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 
