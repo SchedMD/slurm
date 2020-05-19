@@ -129,12 +129,6 @@ char *slurm_get_job_slurmctld_logfile(void);
  */
 char *slurm_get_node_features_plugins(void);
 
-/* slurm_get_priority_decay_hl
- * returns the priority decay half life in seconds from slurm_conf object
- * RET uint32_t - decay_hl in secs.
- */
-uint32_t slurm_get_priority_decay_hl(void);
-
 /* slurm_get_priority_reset_period
  * returns the priority usage reset period in seconds from slurm_conf object
  * RET uint16_t - flag, see PRIORITY_RESET_* in slurm/slurm.h.

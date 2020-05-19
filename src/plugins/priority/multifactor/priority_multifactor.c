@@ -1177,7 +1177,7 @@ static void *_decay_thread(void *no_data)
 {
 	time_t start_time = time(NULL);
 	time_t last_reset = 0, next_reset = 0;
-	double decay_hl = (double)slurm_get_priority_decay_hl();
+	double decay_hl = (double) slurm_conf.priority_decay_hl;
 	uint16_t reset_period = slurm_get_priority_reset_period();
 
 	time_t now;
@@ -1265,7 +1265,7 @@ static void *_decay_thread(void *no_data)
 			*/
 			reset_period = slurm_get_priority_reset_period();
 			next_reset = 0;
-			decay_hl = (double)slurm_get_priority_decay_hl();
+			decay_hl = (double) slurm_conf.priority_decay_hl;
 			if (decay_hl > 0)
 				decay_factor = 1 - (0.693 / decay_hl);
 			else

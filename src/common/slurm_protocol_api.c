@@ -194,25 +194,6 @@ void slurm_set_debug_flags(uint64_t debug_flags)
 	}
 }
 
-/* slurm_get_priority_decay_hl
- * returns the priority decay half life in seconds from slurm_conf object
- * RET uint32_t - decay_hl in secs.
- */
-uint32_t slurm_get_priority_decay_hl(void)
-{
-	uint32_t priority_hl = NO_VAL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		priority_hl = conf->priority_decay_hl;
-		slurm_conf_unlock();
-	}
-
-	return priority_hl;
-}
-
 /* slurm_get_priority_reset_period
  * returns the priority usage reset period from slurm_conf object
  * RET uint16_t - flag, see PRIORITY_RESET_* in slurm/slurm.h.
