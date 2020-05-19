@@ -194,21 +194,6 @@ void slurm_set_debug_flags(uint64_t debug_flags)
 	}
 }
 
-/* slurm_set_fs_dampening_factor
- * set the dampening factor for fairshare from slurm_conf object
- */
-void slurm_set_fs_dampening_factor(uint16_t factor)
-{
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		conf->fs_dampening_factor = factor;
-		slurm_conf_unlock();
-	}
-}
-
 static int _get_tres_id(char *type, char *name)
 {
 	slurmdb_tres_rec_t tres_rec;

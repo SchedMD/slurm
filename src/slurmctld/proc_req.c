@@ -6882,7 +6882,7 @@ inline static void  _slurm_rpc_set_fs_dampening_factor(slurm_msg_t *msg)
 	factor = request_msg->dampening_factor;
 
 	lock_slurmctld(config_write_lock);
-	slurm_set_fs_dampening_factor(factor);
+	slurm_conf.fs_dampening_factor = factor;
 	slurm_conf.last_update = time(NULL);
 	priority_g_reconfig(false);
 	unlock_slurmctld(config_write_lock);

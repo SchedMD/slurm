@@ -129,11 +129,6 @@ char *slurm_get_job_slurmctld_logfile(void);
  */
 char *slurm_get_node_features_plugins(void);
 
-/* slurm_set_fs_dampening_factor
- * sets the value of fs_dampening in slurm_conf object
- */
-void slurm_set_fs_dampening_factor(uint16_t);
-
 /* slurm_get_tres_weight_array
  * IN weights_str - string of tres and weights to be parsed.
  * IN tres_cnt - count of how many tres' are on the system (e.g.
