@@ -4160,24 +4160,6 @@ static bool _is_port_ok(int s, uint16_t port, bool local)
 	return true;
 }
 
-/* slurm_get_prolog_timeout
- * Get prolog/epilog timeout
- */
-uint16_t slurm_get_prolog_timeout(void)
-{
-	uint16_t timeout = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		timeout = conf->prolog_epilog_timeout;
-		slurm_conf_unlock();
-	}
-
-	return timeout;
-}
-
 extern int slurm_hex_to_char(int v)
 {
 	if (v >= 0 && v < 10)

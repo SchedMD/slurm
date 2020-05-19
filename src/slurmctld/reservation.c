@@ -5577,7 +5577,6 @@ static void *_fork_script(void *x)
 	char *argv[3], *envp[1];
 	int status, wait_rc;
 	pid_t cpid;
-	uint16_t tm;
 
 	argv[0] = args->script;
 	argv[1] = args->resv_name;
@@ -5594,9 +5593,9 @@ static void *_fork_script(void *x)
 		exit(127);
 	}
 
-	tm = slurm_get_prolog_timeout();
 	while (1) {
-		wait_rc = waitpid_timeout(__func__, cpid, &status, tm);
+		wait_rc = waitpid_timeout(__func__, cpid, &status,
+					  slurm_conf.prolog_epilog_timeout);
 		if (wait_rc < 0) {
 			if (errno == EINTR)
 				continue;

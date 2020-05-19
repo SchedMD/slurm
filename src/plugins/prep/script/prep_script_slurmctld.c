@@ -95,7 +95,6 @@ static void *_run_script(void *arg)
 	pid_t cpid;
 	int status, wait_rc;
 	char *argv[2];
-	uint16_t tm;
 
 	argv[0] = script_arg->script;
 	argv[1] = NULL;
@@ -116,9 +115,9 @@ static void *_run_script(void *arg)
 	/* Start tracking this new process */
 	track_script_rec_add(script_arg->job_id, cpid, pthread_self());
 
-	tm = slurm_get_prolog_timeout();
 	while (1) {
-		wait_rc = waitpid_timeout(__func__, cpid, &status, tm);
+		wait_rc = waitpid_timeout(__func__, cpid, &status,
+					  slurm_conf.prolog_epilog_timeout);
 		if (wait_rc < 0) {
 			if (errno == EINTR)
 				continue;

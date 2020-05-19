@@ -573,12 +573,6 @@ char *slurm_get_slurmd_spooldir(char *node_name);
  */
 char *slurm_get_layouts(void);
 
-/* slurm_get_prolog_timeout()
- *
- * Return the timeout used for prolog/epilog
- */
-extern uint16_t slurm_get_prolog_timeout(void);
-
 /*
  * slurm_get_jobcomp_type
  * returns the configured GpuFreqDef value
