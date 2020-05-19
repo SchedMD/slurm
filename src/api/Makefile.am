@@ -9,7 +9,8 @@ if WITH_GNU_LD
 VERSION_SCRIPT = \
 	version.map
 OTHER_FLAGS = \
-	-Wl,--version-script=$(VERSION_SCRIPT)
+	-Wl,--version-script=$(VERSION_SCRIPT) \
+	-Wl,-init,slurm_library_init
 FULL_VERSION_SCRIPT = \
 	full_version.map
 FULL_OTHER_FLAGS = \
@@ -102,6 +103,7 @@ slurmapi_src =           \
 	config_info.c    \
 	federation_info.c \
 	front_end_info.c \
+	init.c           \
 	init_msg.c       \
 	job_info.c       \
 	job_step_info.c  \
