@@ -989,17 +989,16 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		if (slurmdbd_conf && slurmdbd_conf->default_qos) {
 			List char_list = list_create(xfree_ptr);
 			char *qos = NULL;
-			ListIterator itr = NULL;
+
 			slurm_addto_char_list(char_list,
 					      slurmdbd_conf->default_qos);
-			/* NOTE: you can not use list_pop, or list_push
-			   anywhere either, since as_mysql is
-			   exporting something of the same type as a macro,
-			   which messes everything up
-			   (my_list.h is the bad boy).
-			*/
-			itr = list_iterator_create(char_list);
-			while ((qos = list_next(itr))) {
+			/*
+			 * NOTE: You have to use slurm_list_pop here, since
+			 * mysql is exporting something of the same type as a
+			 * macro, which messes everything up
+			 * (my_list.h is the bad boy).
+			 */
+			while ((qos = slurm_list_pop(char_list))) {
 				query = xstrdup_printf(
 					"insert into %s "
 					"(creation_time, mod_time, name, "
@@ -1016,8 +1015,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 					fatal("problem added qos '%s", qos);
 				xstrfmtcat(default_qos_str, ",%d", qos_id);
 				xfree(query);
+				xfree(qos);
 			}
-			list_iterator_destroy(itr);
 			FREE_NULL_LIST(char_list);
 		} else {
 			query = xstrdup_printf(

@@ -206,6 +206,31 @@ enum {
 	RASSOC_COUNT
 };
 
+static void _move_assoc_list_to_update_list(List update_list, List assoc_list)
+{
+	slurmdb_assoc_rec_t *assoc;
+
+	if (!assoc_list)
+		return;
+
+	/*
+	 * NOTE: You have to use slurm_list_pop here, since
+	 * mysql is exporting something of the same type as a
+	 * macro, which messes everything up
+	 * (my_list.h is the bad boy).
+	 */
+	while ((assoc = slurm_list_pop(assoc_list))) {
+		/*
+		 * Only free the pointer on error as success will have
+		 * moved it to update_list.
+		 */
+		if (addto_update_list(update_list,
+				      SLURMDB_MODIFY_ASSOC,
+				      assoc) != SLURM_SUCCESS)
+			slurmdb_destroy_assoc_rec(assoc);
+	}
+}
+
 static int _assoc_sort_cluster(void *r1, void *r2)
 {
 	slurmdb_assoc_rec_t *rec_a = *(slurmdb_assoc_rec_t **)r1;
@@ -1714,8 +1739,6 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 	if (moved_parent) {
 		List local_assoc_list = NULL;
-		ListIterator local_itr = NULL;
-		slurmdb_assoc_rec_t *local_assoc = NULL;
 		slurmdb_assoc_cond_t local_assoc_cond;
 		/* now we need to send the update of the new parents and
 		 * limits, so just to be safe, send the whole
@@ -1737,22 +1760,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		FREE_NULL_LIST(local_assoc_cond.cluster_list);
 		if (!local_assoc_list)
 			goto end_it;
-		/* NOTE: you can not use list_pop, or list_push
-		   anywhere either, since as_mysql is
-		   exporting something of the same type as a macro,
-		   which messes everything up (my_list.h is
-		   the bad boy).
-		   So we are just going to delete each item as it
-		   comes out since we are moving it to the update_list.
-		*/
-		local_itr = list_iterator_create(local_assoc_list);
-		while ((local_assoc = list_next(local_itr))) {
-			if (addto_update_list(mysql_conn->update_list,
-					      SLURMDB_MODIFY_ASSOC,
-					      local_assoc) == SLURM_SUCCESS)
-				list_remove(local_itr);
-		}
-		list_iterator_destroy(local_itr);
+
+
+		_move_assoc_list_to_update_list(mysql_conn->update_list,
+						local_assoc_list);
 		FREE_NULL_LIST(local_assoc_list);
 	}
 
@@ -3013,8 +3024,6 @@ end_it:
 			}
 		}
 		if (moved_parent) {
-			ListIterator itr = NULL;
-			slurmdb_assoc_rec_t *assoc = NULL;
 			slurmdb_assoc_cond_t assoc_cond;
 			/* now we need to send the update of the new parents and
 			 * limits, so just to be safe, send the whole
@@ -3034,22 +3043,9 @@ end_it:
 				FREE_NULL_LIST(local_cluster_list);
 				return rc;
 			}
-			/* NOTE: you can not use list_pop, or list_push
-			   anywhere either, since as_mysql is
-			   exporting something of the same type as a macro,
-			   which messes everything up (my_list.h is
-			   the bad boy).
-			   So we are just going to delete each item as it
-			   comes out since we are moving it to the update_list.
-			*/
-			itr = list_iterator_create(assoc_list_tmp);
-			while ((assoc = list_next(itr))) {
-				if (addto_update_list(mysql_conn->update_list,
-						      SLURMDB_MODIFY_ASSOC,
-						      assoc) == SLURM_SUCCESS)
-					list_remove(itr);
-			}
-			list_iterator_destroy(itr);
+
+			_move_assoc_list_to_update_list(mysql_conn->update_list,
+							assoc_list_tmp);
 			FREE_NULL_LIST(assoc_list_tmp);
 		}
 	} else {

@@ -366,18 +366,15 @@ static void _add_tres_2_list(List tres_list, char *tres_str, int seconds)
 
 static void _add_job_alloc_time_to_assoc(List a_tres_list, List j_tres_list)
 {
-	ListIterator itr;
 	local_tres_usage_t *loc_a_tres, *loc_j_tres;
 
 	/*
-	 * NOTE: you can not use list_pop, or list_push
-	 * anywhere either, since as_mysql is
-	 * exporting something of the same type as a macro,
-	 * which messes everything up
+	 * NOTE: You have to use slurm_list_pop here, since
+	 * mysql is exporting something of the same type as a
+	 * macro, which messes everything up
 	 * (my_list.h is the bad boy).
 	 */
-	itr = list_iterator_create(j_tres_list);
-	while ((loc_j_tres = list_next(itr))) {
+	while ((loc_j_tres = slurm_list_pop(j_tres_list))) {
 		if (!(loc_a_tres = list_find_first(
 			      a_tres_list, _find_loc_tres, &loc_j_tres->id))) {
 			/*
@@ -385,17 +382,11 @@ static void _add_job_alloc_time_to_assoc(List a_tres_list, List j_tres_list)
 			 * just transfer it over.
 			 */
 			list_append(a_tres_list, loc_j_tres);
-			list_remove(itr);
 			continue;
 		}
 		loc_a_tres->time_alloc += loc_j_tres->time_alloc;
-		/*
-		 * We are freeing this list right after this might as well
-		 * delete it now.
-		 */
-		list_delete_item(itr);
+		_destroy_local_tres_usage(loc_j_tres);
 	}
-	list_iterator_destroy(itr);
 }
 
 /* This will destroy the *loc_tres given after it is transfered */
