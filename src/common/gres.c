@@ -9769,7 +9769,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					job_specs->gres_cnt_node_select[i] =
 						_get_job_cnt(sock_gres,
 							     node_specs,
-							     rem_node_cnt--);
+							     rem_node_cnt);
 				}
 				job_specs->total_gres +=
 					job_specs->gres_cnt_node_select[i];
@@ -9809,7 +9809,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 						node_table_ptr[i].sockets /
 						node_table_ptr[i].cores;
 				job_fini = _set_job_bits1(job_res, i, node_inx,
-					       rem_node_cnt--, sock_gres,
+					       rem_node_cnt, sock_gres,
 					       job_id, tres_mc_ptr,
 						cpus_per_core);
 			} else {
@@ -9825,6 +9825,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					job_specs->gres_cnt_node_select[i];
 			}
 		}
+		rem_node_cnt--;
 		list_iterator_destroy(sock_gres_iter);
 	}
 
