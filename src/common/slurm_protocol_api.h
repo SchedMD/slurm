@@ -501,10 +501,6 @@ char *slurm_get_core_spec_plugin(void);
  * RET job_container plugin name, must be xfreed by caller */
 char *slurm_get_job_container_plugin(void);
 
-/* slurm_get_slurmd_spooldir
- * RET slurmd_spooldir name, must be xfreed by caller */
-char *slurm_get_slurmd_spooldir(char *node_name);
-
 /*
  * slurm_get_jobcomp_type
  * returns the configured GpuFreqDef value

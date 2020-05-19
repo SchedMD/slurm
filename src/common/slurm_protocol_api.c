@@ -1597,26 +1597,6 @@ char *slurm_get_job_container_plugin(void)
 	return job_container_plugin;
 }
 
-/* slurm_get_slurmd_spooldir
- * RET slurmd_spooldir name, must be xfreed by caller */
-char *slurm_get_slurmd_spooldir(char *node_name)
-{
-	char *slurmd_spooldir = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		if (!node_name)
-			slurmd_spooldir = xstrdup(conf->slurmd_spooldir);
-		else
-			slurmd_spooldir = slurm_conf_expand_slurmd_path(
-				conf->slurmd_spooldir, node_name);
-		slurm_conf_unlock();
-	}
-	return slurmd_spooldir;
-}
-
 /* Change general slurm communication errors to slurmctld specific errors */
 static void _remap_slurmctld_errno(void)
 {

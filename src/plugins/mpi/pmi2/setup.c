@@ -295,7 +295,7 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 	 * tree_sock_addr has to remain unformatted since the formatting
 	 * happens on the slurmd side
 	 */
-	spool = slurm_get_slurmd_spooldir(NULL);
+	spool = xstrdup(slurm_conf.slurmd_spooldir);
 	snprintf(tree_sock_addr, sizeof(tree_sock_addr), PMI2_SOCK_ADDR_FMT,
 		 spool, job_info.jobid, job_info.stepid);
 	/*
@@ -659,7 +659,6 @@ _setup_srun_tree_info(void)
 {
 	char *p;
 	uint16_t p_port;
-	char *spool;
 
 	memset(&tree_info, 0, sizeof(tree_info));
 
@@ -683,10 +682,8 @@ _setup_srun_tree_info(void)
 	 * FIXME: We need to handle %n and %h in the spool dir, but don't have
 	 * the node name here
 	 */
-	spool = slurm_get_slurmd_spooldir(NULL);
 	snprintf(tree_sock_addr, 128, PMI2_SOCK_ADDR_FMT,
-		 spool, job_info.jobid, job_info.stepid);
-	xfree(spool);
+		 slurm_conf.slurmd_spooldir, job_info.jobid, job_info.stepid);
 
 	/* init kvs seq to 0. TODO: reduce array size */
 	tree_info.children_kvs_seq = xmalloc(sizeof(uint32_t) *

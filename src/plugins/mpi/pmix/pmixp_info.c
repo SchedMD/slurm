@@ -374,7 +374,8 @@ static int _env_set(char ***env)
 
 	xassert(_pmixp_job_info.hostname);
 
-	_pmixp_job_info.server_addr_unfmt = slurm_get_slurmd_spooldir(NULL);
+	_pmixp_job_info.server_addr_unfmt =
+		xstrdup(slurm_conf.slurmd_spooldir);
 
 	_pmixp_job_info.lib_tmpdir = slurm_conf_expand_slurmd_path(
 				_pmixp_job_info.server_addr_unfmt,
