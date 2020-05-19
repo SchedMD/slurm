@@ -96,11 +96,6 @@ int slurm_get_auth_ttl(void);
  */
 void slurm_set_debug_flags(uint64_t debug_flags);
 
-/* slurm_get_max_mem_per_cpu
- * RET MaxMemPerCPU/Node value from slurm.conf
- */
-uint64_t slurm_get_max_mem_per_cpu(void);
-
 /* slurm_get_msg_aggr_params
  * get message aggregation parameters value from slurm_conf object
  * RET char *   - msg aggregation parameters default value from slurm.conf,

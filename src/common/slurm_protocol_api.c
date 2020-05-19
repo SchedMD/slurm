@@ -194,23 +194,6 @@ void slurm_set_debug_flags(uint64_t debug_flags)
 	}
 }
 
-/* slurm_get_max_mem_per_cpu
- * RET MaxMemPerCPU/Node value from slurm.conf
- */
-uint64_t slurm_get_max_mem_per_cpu(void)
-{
-	uint64_t mem_per_cpu = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		mem_per_cpu = conf->max_mem_per_cpu;
-		slurm_conf_unlock();
-	}
-	return mem_per_cpu;
-}
-
 /* slurm_get_msg_aggr_params
  * get message aggregation parameters value from slurm_conf object
  * RET char *   - message aggregation value from slurm.conf,
