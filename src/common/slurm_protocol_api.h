@@ -129,12 +129,6 @@ char *slurm_get_job_slurmctld_logfile(void);
  */
 char *slurm_get_node_features_plugins(void);
 
-/* slurm_get_priority_reset_period
- * returns the priority usage reset period in seconds from slurm_conf object
- * RET uint16_t - flag, see PRIORITY_RESET_* in slurm/slurm.h.
- */
-uint16_t slurm_get_priority_reset_period(void);
-
 /* slurm_get_fs_dampening_factor
  * returns the dampening factor for fairshare from slurm_conf object
  * RET uint32_t - factor.
