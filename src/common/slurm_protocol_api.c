@@ -194,25 +194,6 @@ void slurm_set_debug_flags(uint64_t debug_flags)
 	}
 }
 
-/* slurm_get_msg_aggr_params
- * get message aggregation parameters value from slurm_conf object
- * RET char *   - message aggregation value from slurm.conf,
- * MUST be xfreed by caller
- */
-char *slurm_get_msg_aggr_params(void)
-{
-	char *msg_aggr_params = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		msg_aggr_params = xstrdup(conf->msg_aggr_params);
-		slurm_conf_unlock();
-	}
-	return msg_aggr_params;
-}
-
 /* slurm_get_priority_decay_hl
  * returns the priority decay half life in seconds from slurm_conf object
  * RET uint32_t - decay_hl in secs.
