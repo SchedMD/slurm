@@ -163,13 +163,6 @@ char *slurm_get_job_slurmctld_logfile(void);
  */
 char *slurm_get_node_features_plugins(void);
 
-/* slurm_get_slurmctld_timeout
- * get slurmctld_timeout from slurm_conf object from
- * slurm_conf object
- * RET uint16_t - slurmctld timeout in seconds
- */
-uint16_t slurm_get_slurmctld_timeout(void);
-
 /* slurm_get_priority_decay_hl
  * returns the priority decay half life in seconds from slurm_conf object
  * RET uint32_t - decay_hl in secs.

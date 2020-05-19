@@ -374,7 +374,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					    1000;
 			} else {
 				slurmctld_timeout = MIN(300, MAX(60,
-					slurm_get_slurmctld_timeout()));
+					slurm_conf.slurmctld_timeout));
 				step_wait = ((getpid() % 10) +
 					     slurmctld_timeout) * 1000;
 			}

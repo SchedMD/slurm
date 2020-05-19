@@ -908,25 +908,6 @@ char *slurm_get_node_features_plugins(void)
 	return knl_plugins;
 }
 
-/* slurm_get_slurmctld_timeout
- * get slurmctld_timeout from slurm_conf object from
- * slurm_conf object
- * RET uint16_t - slurmctld timeout in seconds
- */
-uint16_t slurm_get_slurmctld_timeout(void)
-{
-	uint16_t slurmctld_timeout = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		slurmctld_timeout = conf->slurmctld_timeout;
-		slurm_conf_unlock();
-	}
-	return slurmctld_timeout;
-}
-
 /* slurm_get_accounting_storage_tres
  * returns the accounting storage tres from slurm_conf object
  * RET char *    - accounting storage tres,  MUST be xfreed by caller
