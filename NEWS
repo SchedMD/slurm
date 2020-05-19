@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
  -- cons_tres - Allocate lowest numbered cores when filtering cores with gres.
  -- Fix getting system counts for named GRES/TRES.
  -- MySQL - Fix for handing typed GRES for association rollups.
+ -- Fix step allocations when tasks_per_core > 1.
 
 * Changes in Slurm 20.02.2
 ==========================
@@ -323,6 +324,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld load order in load_all_part_state().
  -- Fix getting system counts for named GRES/TRES.
  -- MySQL - Fix for handing typed GRES for association rollups.
+ -- Fix step allocations when tasks_per_core > 1.
 
 * Changes in Slurm 19.05.6
 ==========================
