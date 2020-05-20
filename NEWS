@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Silence security warning when a Slurm is trying a job for a
     magnetic reservation.
  -- Have sacct exit correctly when a user/group id isn't valid.
+ -- Remove extra \n from invalid user/group id error message.
 
 * Changes in Slurm 20.02.5
 ==========================
