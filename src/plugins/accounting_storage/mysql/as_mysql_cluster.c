@@ -1093,7 +1093,6 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	uint16_t private_data = 0;
 	time_t now = time(NULL);
 	List use_cluster_list = as_mysql_cluster_list;
 	slurmdb_user_rec_t user;
@@ -1128,9 +1127,7 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	private_data = slurm_get_private_data();
-
-	if (private_data & PRIVATE_DATA_EVENTS) {
+	if (slurm_conf.private_data & PRIVATE_DATA_EVENTS) {
 		if (!is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
 			error("UID %u tried to access events, only administrators can look at events",

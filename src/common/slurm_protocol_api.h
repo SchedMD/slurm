@@ -101,12 +101,6 @@ int slurm_get_auth_ttl(void);
  */
 double *slurm_get_tres_weight_array(char *weights_str, int tres_cnt, bool fail);
 
-/* slurm_get_private_data
- * get private data from slurm_conf object
- * RET uint16_t   - private_data
- */
-uint16_t slurm_get_private_data(void);
-
 /* slurm_get_stepd_loc
  * get path to the slurmstepd
  * RET char * - absolute path to the slurmstepd, MUST be xfreed by caller

@@ -1927,7 +1927,6 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	char *last_acct = NULL;
 	char *last_cluster = NULL;
 	uint32_t parent_id = 0;
-	uint16_t private_data = slurm_get_private_data();
 	char *query = NULL;
 	char *extra = xstrdup(sent_extra);
 	char *qos_extra = NULL;
@@ -1949,7 +1948,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	 * if this flag is set.  We also include any accounts they may be
 	 * coordinator of.
 	 */
-	if (!is_admin && (private_data & PRIVATE_DATA_USERS)) {
+	if (!is_admin && (slurm_conf.private_data & PRIVATE_DATA_USERS)) {
 		int set = 0;
 		query = xstrdup_printf("select lft from \"%s_%s\" where user='%s'",
 				       cluster_name, assoc_table, user->name);
@@ -3384,7 +3383,6 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 	List assoc_list = NULL;
 	ListIterator itr = NULL;
 	int i=0, is_admin=1;
-	uint16_t private_data = 0;
 	slurmdb_user_rec_t user;
 	char *prefix = "t1";
 	List use_cluster_list = as_mysql_cluster_list;
@@ -3401,8 +3399,7 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	private_data = slurm_get_private_data();
-	if (private_data & PRIVATE_DATA_USERS) {
+	if (slurm_conf.private_data & PRIVATE_DATA_USERS) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			/* Fill in the user with any accounts they may

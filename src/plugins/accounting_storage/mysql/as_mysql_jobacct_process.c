@@ -464,7 +464,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 {
 	char *query = NULL;
 	char *extra = xstrdup(sent_extra);
-	uint16_t private_data = slurm_get_private_data();
 	slurmdb_selected_step_t *selected_step = NULL;
 	MYSQL_RES *result = NULL, *step_result = NULL;
 	MYSQL_ROW row, step_row;
@@ -484,7 +483,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	 * if this flag is set.  We also include any accounts they may be
 	 * coordinator of.
 	 */
-	if (!is_admin && (private_data & PRIVATE_DATA_JOBS)) {
+	if (!is_admin && (slurm_conf.private_data & PRIVATE_DATA_JOBS)) {
 		query = xstrdup_printf("select lft from \"%s_%s\" "
 				       "where user='%s'",
 				       cluster_name, assoc_table, user->name);
@@ -1688,7 +1687,6 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	int is_admin=1;
 	int i;
 	List job_list = NULL;
-	uint16_t private_data = 0;
 	slurmdb_user_rec_t user;
 	int only_pending = 0;
 	List use_cluster_list = as_mysql_cluster_list;
@@ -1699,8 +1697,7 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	private_data = slurm_get_private_data();
-	if (private_data & PRIVATE_DATA_JOBS) {
+	if (slurm_conf.private_data & PRIVATE_DATA_JOBS) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			/*

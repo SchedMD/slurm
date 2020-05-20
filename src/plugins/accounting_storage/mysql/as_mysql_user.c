@@ -1226,7 +1226,6 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	uint16_t private_data = 0;
 	slurmdb_user_rec_t user;
 
 	/* if this changes you will need to edit the corresponding enum */
@@ -1246,8 +1245,7 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	private_data = slurm_get_private_data();
-	if (private_data & PRIVATE_DATA_USERS) {
+	if (slurm_conf.private_data & PRIVATE_DATA_USERS) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			assoc_mgr_fill_in_user(
@@ -1316,7 +1314,7 @@ empty:
 	/* This is here to make sure we are looking at only this user
 	 * if this flag is set.
 	 */
-	if (!is_admin && (private_data & PRIVATE_DATA_USERS)) {
+	if (!is_admin && (slurm_conf.private_data & PRIVATE_DATA_USERS)) {
 		xstrfmtcat(extra, " && name='%s'", user.name);
 	}
 

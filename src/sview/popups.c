@@ -303,7 +303,6 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	char *acct_storage_loc  = slurm_get_accounting_storage_loc();
 	char *acct_storage_pass = slurm_get_accounting_storage_pass();
 	char *acct_storage_user = slurm_get_accounting_storage_user();
-	uint16_t private_data = slurm_get_private_data();
 	uint16_t track_wckey = slurm_get_track_wckey();
 
 	slurm_make_time_str(&now, tmp_str, sizeof(tmp_str));
@@ -335,7 +334,7 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 				   "MessageTimeout", tmp_str);
 	add_display_treestore_line(update, treestore, &iter, "PluginDir",
                                    slurm_conf.plugindir);
-	private_data_string(private_data, tmp_str, sizeof(tmp_str));
+	private_data_string(slurm_conf.private_data, tmp_str, sizeof(tmp_str));
 	add_display_treestore_line(update, treestore, &iter,
 				   "PrivateData", tmp_str);
 	user_name = uid_to_string_cached(slurm_conf.slurm_user_id);

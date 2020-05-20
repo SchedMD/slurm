@@ -788,7 +788,6 @@ extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 	char *cluster_name = NULL;
 	List wckey_list = NULL;
 	int i=0, is_admin=1;
-	uint16_t private_data = 0;
 	slurmdb_user_rec_t user;
 	List use_cluster_list = as_mysql_cluster_list;
 	ListIterator itr;
@@ -804,8 +803,7 @@ extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	private_data = slurm_get_private_data();
-	if (private_data & PRIVATE_DATA_USERS) {
+	if (slurm_conf.private_data & PRIVATE_DATA_USERS) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			assoc_mgr_fill_in_user(
@@ -833,7 +831,7 @@ empty:
 	 * if this flag is set.  We also include any accounts they may be
 	 * coordinator of.
 	 */
-	if (!is_admin && (private_data & PRIVATE_DATA_USERS))
+	if (!is_admin && (slurm_conf.private_data & PRIVATE_DATA_USERS))
 		xstrfmtcat(extra, " && t1.user='%s'", user.name);
 
 	wckey_list = list_create(slurmdb_destroy_wckey_rec);

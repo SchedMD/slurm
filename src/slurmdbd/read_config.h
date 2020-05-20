@@ -75,7 +75,6 @@ typedef struct {
 						* persist connection init
 						*/
 	char *		pid_file;	/* where to store current PID	*/
-	uint16_t        private_data;   /* restrict information         */
 					/* purge variable format
 					 * controlled by PURGE_FLAGS	*/
 	uint32_t        purge_event;    /* purge events older than

@@ -3091,7 +3091,6 @@ extern void assoc_mgr_get_shares(void *db_conn,
 	char *tmp_char = NULL;
 	slurmdb_user_rec_t user;
 	int is_admin=1;
-	uint16_t private_data = slurm_get_private_data();
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .tres = READ_LOCK };
 
 	xassert(resp_msg);
@@ -3110,7 +3109,7 @@ extern void assoc_mgr_get_shares(void *db_conn,
 			acct_itr = list_iterator_create(req_msg->acct_list);
 	}
 
-	if (private_data & PRIVATE_DATA_USAGE) {
+	if (slurm_conf.private_data & PRIVATE_DATA_USAGE) {
 		is_admin = 0;
 		/* Check permissions of the requesting user.
 		 */
@@ -3165,7 +3164,7 @@ extern void assoc_mgr_get_shares(void *db_conn,
 				continue;
 		}
 
-		if (private_data & PRIVATE_DATA_USAGE) {
+		if (slurm_conf.private_data & PRIVATE_DATA_USAGE) {
 			if (!is_admin) {
 				ListIterator itr = NULL;
 				slurmdb_coord_rec_t *coord = NULL;
@@ -3290,7 +3289,6 @@ extern void assoc_mgr_info_get_pack_msg(
 	void *object;
 	uint32_t flags = 0;
 
-	uint16_t private_data = slurm_get_private_data();
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .res = READ_LOCK,
 				   .tres = READ_LOCK, .user = READ_LOCK };
 	Buf buffer;
@@ -3313,7 +3311,8 @@ extern void assoc_mgr_info_get_pack_msg(
 		flags = msg->flags;
 	}
 
-	if (private_data & (PRIVATE_DATA_USAGE | PRIVATE_DATA_USERS)) {
+	if (slurm_conf.private_data &
+	    (PRIVATE_DATA_USAGE | PRIVATE_DATA_USERS)) {
 		is_admin = 0;
 		/* Check permissions of the requesting user.
 		 */
@@ -3368,7 +3367,7 @@ extern void assoc_mgr_info_get_pack_msg(
 				continue;
 		}
 
-		if (private_data & PRIVATE_DATA_USAGE) {
+		if (slurm_conf.private_data & PRIVATE_DATA_USAGE) {
 			if (!is_admin) {
 				ListIterator itr = NULL;
 				slurmdb_coord_rec_t *coord = NULL;
@@ -3458,7 +3457,8 @@ no_qos:
 	/* now filter out the users */
 	itr = list_iterator_create(assoc_mgr_user_list);
 	while ((user_rec = list_next(itr))) {
-		if (!is_admin && (private_data & PRIVATE_DATA_USERS) &&
+		if (!is_admin &&
+		    (slurm_conf.private_data & PRIVATE_DATA_USERS) &&
 		    xstrcasecmp(user_rec->name, user.name))
 			continue;
 

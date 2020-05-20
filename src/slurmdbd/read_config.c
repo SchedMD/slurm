@@ -100,7 +100,6 @@ static void _clear_slurmdbd_conf(void)
 		slurmdbd_conf->syslog_debug = LOG_LEVEL_END;
 		xfree(slurmdbd_conf->parameters);
 		xfree(slurmdbd_conf->pid_file);
-		slurmdbd_conf->private_data = 0;
 		slurmdbd_conf->purge_event = 0;
 		slurmdbd_conf->purge_job = 0;
 		slurmdbd_conf->purge_resv = 0;
@@ -324,34 +323,34 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->pid_file, "PidFile", tbl);
 		s_p_get_string(&slurm_conf.plugindir, "PluginDir", tbl);
 
-		slurmdbd_conf->private_data = 0; /* default visible to all */
+		slurm_conf.private_data = 0; /* default visible to all */
 		if (s_p_get_string(&temp_str, "PrivateData", tbl)) {
 			if (xstrcasestr(temp_str, "account"))
-				slurmdbd_conf->private_data
+				slurm_conf.private_data
 					|= PRIVATE_DATA_ACCOUNTS;
 			if (xstrcasestr(temp_str, "job"))
-				slurmdbd_conf->private_data
+				slurm_conf.private_data
 					|= PRIVATE_DATA_JOBS;
 			if (xstrcasestr(temp_str, "event"))
-				slurmdbd_conf->private_data
+				slurm_conf.private_data
 					|= PRIVATE_DATA_EVENTS;
 			if (xstrcasestr(temp_str, "node"))
-				slurmdbd_conf->private_data
+				slurm_conf.private_data
 					|= PRIVATE_DATA_NODES;
 			if (xstrcasestr(temp_str, "partition"))
-				slurmdbd_conf->private_data
+				slurm_conf.private_data
 					|= PRIVATE_DATA_PARTITIONS;
 			if (xstrcasestr(temp_str, "reservation"))
-				slurmdbd_conf->private_data
+				slurm_conf.private_data
 					|= PRIVATE_DATA_RESERVATIONS;
 			if (xstrcasestr(temp_str, "usage"))
-				slurmdbd_conf->private_data
+				slurm_conf.private_data
 					|= PRIVATE_DATA_USAGE;
 			if (xstrcasestr(temp_str, "user"))
-				slurmdbd_conf->private_data
+				slurm_conf.private_data
 					|= PRIVATE_DATA_USERS;
 			if (xstrcasestr(temp_str, "all"))
-				slurmdbd_conf->private_data = 0xffff;
+				slurm_conf.private_data = 0xffff;
 			xfree(temp_str);
 		}
 		if (s_p_get_string(&temp_str, "PurgeEventAfter", tbl)) {
@@ -673,7 +672,7 @@ extern void log_config(void)
 	debug2("PidFile           = %s", slurmdbd_conf->pid_file);
 	debug2("PluginDir         = %s", slurm_conf.plugindir);
 
-	private_data_string(slurmdbd_conf->private_data,
+	private_data_string(slurm_conf.private_data,
 			    tmp_str, sizeof(tmp_str));
 	debug2("PrivateData       = %s", tmp_str);
 
@@ -890,8 +889,7 @@ extern List dump_config(void)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PrivateData");
 	key_pair->value = xmalloc(128);
-	private_data_string(slurmdbd_conf->private_data,
-			    key_pair->value, 128);
+	private_data_string(slurm_conf.private_data, key_pair->value, 128);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

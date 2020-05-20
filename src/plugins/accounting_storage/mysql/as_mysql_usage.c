@@ -774,7 +774,6 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	slurmdb_assoc_rec_t *slurmdb_assoc = in;
 	slurmdb_wckey_rec_t *slurmdb_wckey = in;
 	char *username = NULL;
-	uint16_t private_data = 0;
 	List *my_list = NULL;
 	char *cluster_name = NULL;
 	char *id_str = NULL;
@@ -822,8 +821,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		return SLURM_ERROR;
 	}
 
-	private_data = slurm_get_private_data();
-	if (private_data & PRIVATE_DATA_USAGE) {
+	if (slurm_conf.private_data & PRIVATE_DATA_USAGE) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			ListIterator itr = NULL;

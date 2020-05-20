@@ -51,7 +51,6 @@ static char    *acct_storage_host = NULL;
 static char    *acct_storage_loc  = NULL;
 static char    *acct_storage_pass = NULL;
 static char    *acct_storage_user = NULL;
-static uint16_t private_data;
 static uint16_t track_wckey;
 
 static List dbd_config_list = NULL;
@@ -93,7 +92,6 @@ static void _load_slurm_config(void)
 	acct_storage_loc  = slurm_get_accounting_storage_loc();
 	acct_storage_pass = slurm_get_accounting_storage_pass();
 	acct_storage_user = slurm_get_accounting_storage_user();
-	private_data = slurm_get_private_data();
 	track_wckey = slurm_get_track_wckey();
 }
 
@@ -125,7 +123,7 @@ static void _print_slurm_config(void)
 	printf("AuthType               = %s\n", slurm_conf.authtype);
 	printf("MessageTimeout         = %u sec\n", slurm_conf.msg_timeout);
 	printf("PluginDir              = %s\n", slurm_conf.plugindir);
-	private_data_string(private_data, tmp_str, sizeof(tmp_str));
+	private_data_string(slurm_conf.private_data, tmp_str, sizeof(tmp_str));
 	printf("PrivateData            = %s\n", tmp_str);
 	user_name = uid_to_string_cached(slurm_conf.slurm_user_id);
 	printf("SlurmUserId            = %s(%u)\n",
