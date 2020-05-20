@@ -119,12 +119,6 @@ extern char *slurm_get_stepd_loc(void);
  */
 extern char *slurm_get_tmp_fs(char *node_name);
 
-/* slurm_get_power_parameters
- * returns the PowerParameters from slurm_conf object
- * RET char *    - PowerParameters, MUST be xfreed by caller
- */
-extern char *slurm_get_power_parameters(void);
-
 /* slurm_set_power_parameters
  * reset the PowerParameters object
  */

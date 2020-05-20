@@ -336,24 +336,6 @@ extern char *slurm_get_tmp_fs(char *node_name)
 	return tmp_fs;
 }
 
-/* slurm_get_power_parameters
- * returns the PowerParameters from slurm_conf object
- * RET char *    - PowerParameters, MUST be xfreed by caller
- */
-extern char *slurm_get_power_parameters(void)
-{
-	char *power_parameters = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		power_parameters = xstrdup(conf->power_parameters);
-		slurm_conf_unlock();
-	}
-	return power_parameters;
-}
-
 /* slurm_set_power_parameters
  * reset the PowerParameters object
  */

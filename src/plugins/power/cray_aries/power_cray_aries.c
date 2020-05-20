@@ -234,7 +234,7 @@ static void _load_config(void)
 {
 	char *end_ptr = NULL, *sched_params, *tmp_ptr;
 
-	sched_params = slurm_get_power_parameters();
+	sched_params = slurm_conf.power_parameters;
 
 	/*                                   12345678901234567890 */
 	if ((tmp_ptr = xstrcasestr(sched_params, "balance_interval="))) {
@@ -365,7 +365,6 @@ static void _load_config(void)
 		upper_threshold = DEFAULT_UPPER_THRESHOLD;
 	}
 
-	xfree(sched_params);
 	xfree(full_nid_string);
 	if (slurm_conf.debug_flags & DEBUG_FLAG_POWER) {
 		char *level_str = "";
