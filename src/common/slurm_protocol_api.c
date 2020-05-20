@@ -334,23 +334,6 @@ extern void slurm_set_power_parameters(char *power_parameters)
 	}
 }
 
-/* slurm_get_propagate_prio_process
- * return the PropagatePrioProcess flag from slurm_conf object
- */
-extern uint16_t slurm_get_propagate_prio_process(void)
-{
-	uint16_t propagate_prio = 0;
-	slurm_conf_t *conf;
-
- 	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		propagate_prio = conf->propagate_prio_process;
-		slurm_conf_unlock();
-	}
-	return propagate_prio;
-}
-
 /* slurm_get_track_wckey
  * returns the value of track_wckey in slurm_conf object
  */

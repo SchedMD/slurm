@@ -272,11 +272,6 @@ uint16_t slurm_get_keep_alive_time(void);
  */
 char *slurm_get_preempt_type(void);
 
-/* slurm_get_propagate_prio_process
- * return the PropagatePrioProcess flag from slurm_conf object
- */
-extern uint16_t slurm_get_propagate_prio_process(void);
-
 /* slurm_get_proctrack_type
  * get ProctrackType from slurm_conf object
  * RET char *   - proctrack type, MUST be xfreed by caller
