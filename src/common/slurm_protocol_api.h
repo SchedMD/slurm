@@ -180,12 +180,6 @@ char *slurm_get_cluster_name(void);
  */
 extern char *slurm_get_comm_parameters(void);
 
-/* slurm_get_cred_type
- * returns the cred_type from slurm_conf object
- * RET char *    - cred type, MUST be xfreed by caller
- */
-extern char *slurm_get_cred_type(void);
-
 /* slurm_get_power_parameters
  * returns the PowerParameters from slurm_conf object
  * RET char *    - PowerParameters, MUST be xfreed by caller

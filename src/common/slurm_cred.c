@@ -299,7 +299,6 @@ static int _slurm_cred_init(void)
 {
 	char *tok;
 	char    *plugin_type = "cred";
-	char	*type = NULL;
 	int	retval = SLURM_SUCCESS;
 
 	if ( init_run && g_context )  /* mostly avoid locks for better speed */
@@ -325,12 +324,13 @@ static int _slurm_cred_init(void)
 	if ( g_context )
 		goto done;
 
-	type = slurm_get_cred_type();
-	g_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+	g_context = plugin_context_create(plugin_type,
+					  slurm_conf.cred_type,
+					  (void **) &ops, syms, sizeof(syms));
 
 	if (!g_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.cred_type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -339,7 +339,6 @@ static int _slurm_cred_init(void)
 
 done:
 	slurm_mutex_unlock( &g_context_lock );
-	xfree(type);
 
 	return(retval);
 }
