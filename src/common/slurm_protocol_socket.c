@@ -462,12 +462,10 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 #ifdef HAVE_NATIVE_CRAY
 	static int check_quiesce = -1;
 	if (check_quiesce == -1) {
-		char *comm_params = slurm_get_comm_parameters();
-		if (xstrcasestr(comm_params, "CheckGhalQuiesce"))
+		if (xstrcasestr(slurm_conf.comm_params, "CheckGhalQuiesce"))
 			check_quiesce = 1;
 		else
 			check_quiesce = 0;
-		xfree(comm_params);
 	}
 
 	if (check_quiesce) {

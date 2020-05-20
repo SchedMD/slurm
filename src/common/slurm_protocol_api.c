@@ -426,25 +426,6 @@ char *slurm_get_cluster_name(void)
 	return name;
 }
 
-/* slurm_get_comm_parameters
- * returns the value of comm_param in slurm_conf object
- * RET char *    - comm parameters, MUST be xfreed by caller
- */
-extern char *slurm_get_comm_parameters(void)
-{
-	char *comm_params = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		comm_params = xstrdup(conf->comm_params);
-		slurm_conf_unlock();
-	}
-	return comm_params;
-}
-
-
 /* slurm_get_power_parameters
  * returns the PowerParameters from slurm_conf object
  * RET char *    - PowerParameters, MUST be xfreed by caller
@@ -3690,7 +3671,6 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 		 * want to get just any address.  This is the case on
 		 * a Cray system with RSIP.
 		 */
-		char *comm_params = slurm_get_comm_parameters();
 		char *var;
 
 		if (running_in_slurmctld())
@@ -3698,7 +3678,7 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 		else
 			var = "NoInAddrAny";
 
-		if (xstrcasestr(comm_params, var)) {
+		if (xstrcasestr(slurm_conf.comm_params, var)) {
 			char host[MAXHOSTNAMELEN];
 
 			if (!gethostname(host, MAXHOSTNAMELEN)) {
@@ -3709,8 +3689,6 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 				      "Can't get hostname or addr: %m");
 		} else
 			s_addr = htonl(INADDR_ANY);
-
-		xfree(comm_params);
 	}
 
 	sin->sin_addr.s_addr = s_addr;

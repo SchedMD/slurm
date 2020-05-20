@@ -168,12 +168,6 @@ extern char *slurm_get_bb_type(void);
  */
 char *slurm_get_cluster_name(void);
 
-/* slurm_get_comm_parameters
- * returns the value of comm_param in slurm_conf object
- * RET char *    - comm parameters, MUST be xfreed by caller
- */
-extern char *slurm_get_comm_parameters(void);
-
 /* slurm_get_power_parameters
  * returns the PowerParameters from slurm_conf object
  * RET char *    - PowerParameters, MUST be xfreed by caller

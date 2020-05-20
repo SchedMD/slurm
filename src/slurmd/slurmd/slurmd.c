@@ -920,10 +920,8 @@ _read_config(void)
 		fatal("Unable to determine this slurmd's NodeName");
 
 	if ((bcast_address = slurm_conf_get_bcast_address(conf->node_name))) {
-		char *comm_params = slurm_get_comm_parameters();
-		if (xstrcasestr(comm_params, "NoInAddrAny"))
+		if (xstrcasestr(slurm_conf.comm_params, "NoInAddrAny"))
 			fatal("Cannot use BcastAddr option on this node with CommunicationParameters=NoInAddrAny");
-		xfree(comm_params);
 		xfree(bcast_address);
 	}
 
