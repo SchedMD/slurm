@@ -354,24 +354,6 @@ extern char *slurm_get_tmp_fs(char *node_name)
 	return tmp_fs;
 }
 
-/* slurm_get_bb_type
- * returns the BurstBufferType (bb_type) from slurm_conf object
- * RET char *    - BurstBufferType, MUST be xfreed by caller
- */
-extern char *slurm_get_bb_type(void)
-{
-	char *bb_type = NULL;
-	slurm_conf_t *conf = NULL;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		bb_type = xstrdup(conf->bb_type);
-		slurm_conf_unlock();
-	}
-	return bb_type;
-}
-
 /* slurm_get_cluster_name
  * returns the cluster name from slurm_conf object
  * RET char *    - cluster name,  MUST be xfreed by caller

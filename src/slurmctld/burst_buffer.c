@@ -132,7 +132,7 @@ extern int bb_g_init(void)
 	if (g_context_cnt >= 0)
 		goto fini;
 
-	bb_plugin_list = slurm_get_bb_type();
+	bb_plugin_list = xstrdup(slurm_conf.bb_type);
 	g_context_cnt = 0;
 	if ((bb_plugin_list == NULL) || (bb_plugin_list[0] == '\0'))
 		goto fini;
