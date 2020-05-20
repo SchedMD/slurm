@@ -19,7 +19,9 @@ FULL_OTHER_FLAGS = \
 SLURM_PMI_VERSION_SCRIPT = \
 	slurm_pmi_version.map
 SLURM_PMI_OTHER_FLAGS = \
-	-Wl,--version-script=$(SLURM_PMI_VERSION_SCRIPT)
+	-Wl,--version-script=$(SLURM_PMI_VERSION_SCRIPT) \
+	-Wl,-init,slurm_library_init \
+	-Wl,-fini,slurm_library_fini
 endif
 
 # libslurm version information :

@@ -608,7 +608,9 @@ AM_CPPFLAGS = -I$(top_srcdir)
 @WITH_GNU_LD_TRUE@	slurm_pmi_version.map
 
 @WITH_GNU_LD_TRUE@SLURM_PMI_OTHER_FLAGS = \
-@WITH_GNU_LD_TRUE@	-Wl,--version-script=$(SLURM_PMI_VERSION_SCRIPT)
+@WITH_GNU_LD_TRUE@	-Wl,--version-script=$(SLURM_PMI_VERSION_SCRIPT) \
+@WITH_GNU_LD_TRUE@	-Wl,-init,slurm_library_init \
+@WITH_GNU_LD_TRUE@	-Wl,-fini,slurm_library_fini
 
 
 # libslurm version information :
