@@ -107,12 +107,6 @@ double *slurm_get_tres_weight_array(char *weights_str, int tres_cnt, bool fail);
  */
 uint16_t slurm_get_private_data(void);
 
-/* slurm_get_state_save_location
- * get state_save_location from slurm_conf object
- * RET char *   - state_save_location directory, MUST be xfreed by caller
- */
-char *slurm_get_state_save_location(void);
-
 /* slurm_get_stepd_loc
  * get path to the slurmstepd
  * RET char * - absolute path to the slurmstepd, MUST be xfreed by caller

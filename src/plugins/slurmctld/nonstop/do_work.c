@@ -284,7 +284,7 @@ static int _update_job(job_desc_msg_t * job_specs, uid_t uid)
  */
 extern int save_nonstop_state(void)
 {
-	char *dir_path, *old_file, *new_file, *reg_file;
+	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
 	Buf buffer = init_buf(0);
 	time_t now = time(NULL);
 	job_failures_t *job_fail_ptr;
@@ -313,13 +313,12 @@ extern int save_nonstop_state(void)
 	slurm_mutex_unlock(&job_fail_mutex);
 
 	/* write the buffer to file */
-	dir_path = slurm_get_state_save_location();
-	old_file = xstrdup(dir_path);
-	xstrcat(old_file, "/nonstop_state.old");
-	reg_file = xstrdup(dir_path);
-	xstrcat(reg_file, "/nonstop_state");
-	new_file = xstrdup(dir_path);
-	xstrcat(new_file, "/nonstop_state.new");
+	xstrfmtcat(old_file, "%s/nonstop_state.old"
+		   slurm_conf.state_save_location);
+	xstrfmtcat(reg_file, "%s/nonstop_state",
+		   slurm_conf.state_save_location);
+	xstrfmtcat(new_file, "%s/nonstop_state.new",
+		   slurm_conf.state_save_location);
 
 	log_fd = creat(new_file, 0600);
 	if (log_fd < 0) {
@@ -357,7 +356,6 @@ extern int save_nonstop_state(void)
 			       new_file, reg_file);
 		(void) unlink(new_file);
 	}
-	xfree(dir_path);
 	xfree(old_file);
 	xfree(reg_file);
 	xfree(new_file);
@@ -371,7 +369,7 @@ extern int save_nonstop_state(void)
  */
 extern int restore_nonstop_state(void)
 {
-	char *dir_path, *state_file;
+	char *state_file = NULL;
 	uint32_t job_cnt = 0;
 	uint16_t protocol_version = NO_VAL16;
 	Buf buffer;
@@ -379,10 +377,8 @@ extern int restore_nonstop_state(void)
 	time_t buf_time;
 	job_failures_t *job_fail_ptr = NULL;
 
-	dir_path = slurm_get_state_save_location();
-	state_file = xstrdup(dir_path);
-	xstrcat(state_file, "/nonstop_state");
-	xfree(dir_path);
+	xstrfmtcat(state_file, "%s/nonstop_state",
+		   slurm_conf.state_save_location);
 
 	if (!(buffer = create_mmap_buf(state_file))) {
 		error("No nonstop state file (%s) to recover", state_file);

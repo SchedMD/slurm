@@ -120,7 +120,6 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
  * easily use common functions from multiple burst buffer plugins */
 static bb_state_t	bb_state;
 static uint32_t		last_persistent_id = 1;
-static char *		state_save_loc = NULL;
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -348,7 +347,8 @@ static void _purge_bb_files(uint32_t job_id, job_record_t *job_ptr)
 	int hash_inx;
 
 	hash_inx = job_id % 10;
-	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+	xstrfmtcat(hash_dir, "%s/hash.%d",
+		   slurm_conf.state_save_location, hash_inx);
 	(void) mkdir(hash_dir, 0700);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_id);
 	(void) mkdir(job_dir, 0700);
@@ -1457,7 +1457,8 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	int rc = SLURM_SUCCESS;
 	pthread_t tid;
 
-	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+	xstrfmtcat(hash_dir, "%s/hash.%d",
+		   slurm_conf.state_save_location, hash_inx);
 	(void) mkdir(hash_dir, 0700);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
 	if (job_ptr->sched_nodes) {
@@ -1869,7 +1870,8 @@ static int _queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
 	int hash_inx = bb_job->job_id % 10, rc = SLURM_SUCCESS;
 	pthread_t tid;
 
-	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+	xstrfmtcat(hash_dir, "%s/hash.%d",
+		   slurm_conf.state_save_location, hash_inx);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, bb_job->job_id);
 
 	data_out_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
@@ -2103,12 +2105,13 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 	int fd, hash_inx = job_id % 10;
 	pthread_t tid;
 
-	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+	xstrfmtcat(hash_dir, "%s/hash.%d",
+		   slurm_conf.state_save_location, hash_inx);
 	xstrfmtcat(job_script, "%s/job.%u/script", hash_dir, job_id);
 	if (stat(job_script, &buf) == -1) {
 		xfree(job_script);
 		xstrfmtcat(job_script, "%s/burst_buffer_script",
-			   state_save_loc);
+			   slurm_conf.state_save_location);
 		if (stat(job_script, &buf) == -1) {
 			fd = creat(job_script, 0755);
 			if (fd >= 0) {
@@ -3142,8 +3145,6 @@ extern int init(void)
 	bb_load_config(&bb_state, (char *)plugin_type); /* Removes "const" */
 	_test_config();
 	log_flag(BURST_BUF, "%s: %s", plugin_type,  __func__);
-	if (!state_save_loc)
-		state_save_loc = slurm_get_state_save_location();
 	bb_alloc_cache(&bb_state);
 	run_command_init();
 	slurm_thread_create(&bb_state.bb_thread, _bb_agent, NULL);
@@ -3186,7 +3187,6 @@ extern int fini(void)
 	}
 	bb_clear_config(&bb_state.bb_config, true);
 	bb_clear_cache(&bb_state);
-	xfree(state_save_loc);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
@@ -3599,7 +3599,8 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	if ((job_ptr->array_task_id != NO_VAL) &&
 	    (job_ptr->array_job_id != job_ptr->job_id)) {
 		hash_inx = job_ptr->array_job_id % 10;
-		xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+		xstrfmtcat(hash_dir, "%s/hash.%d",
+			   slurm_conf.state_save_location, hash_inx);
 		(void) mkdir(hash_dir, 0700);
 		xstrfmtcat(job_dir, "%s/job.%u", hash_dir,
 			   job_ptr->array_job_id);
@@ -3614,7 +3615,8 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 		}
 	} else {
 		hash_inx = job_ptr->job_id % 10;
-		xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+		xstrfmtcat(hash_dir, "%s/hash.%d",
+			   slurm_conf.state_save_location, hash_inx);
 		(void) mkdir(hash_dir, 0700);
 		xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
 		(void) mkdir(job_dir, 0700);
@@ -3664,7 +3666,8 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 		/* Job array's need to have script file in the "standard"
 		 * location for the remaining logic, make hard link */
 		hash_inx = job_ptr->job_id % 10;
-		xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+		xstrfmtcat(hash_dir, "%s/hash.%d",
+			   slurm_conf.state_save_location, hash_inx);
 		(void) mkdir(hash_dir, 0700);
 		xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
 		xfree(hash_dir);
@@ -3996,8 +3999,8 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	}
 
 	hash_inx = job_ptr->job_id % 10;
-	xstrfmtcat(job_dir, "%s/hash.%d/job.%u", state_save_loc, hash_inx,
-		   job_ptr->job_id);
+	xstrfmtcat(job_dir, "%s/hash.%d/job.%u",
+		   slurm_conf.state_save_location, hash_inx, job_ptr->job_id);
 	xstrfmtcat(client_nodes_file_nid, "%s/client_nids", job_dir);
 	if (do_pre_run)
 		bb_job->state = BB_STATE_PRE_RUN;
@@ -4589,7 +4592,8 @@ static int _create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 			hash_inx = job_ptr->job_id % 10;
 			xstrfmtcat(create_args->job_script,
 				   "%s/hash.%d/job.%u/script",
-				   state_save_loc, hash_inx, job_ptr->job_id);
+				   slurm_conf.state_save_location,
+				   hash_inx, job_ptr->job_id);
 			create_args->name = xstrdup(buf_ptr->name);
 			create_args->user_id = job_ptr->user_id;
 

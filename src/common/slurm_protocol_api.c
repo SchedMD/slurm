@@ -299,24 +299,6 @@ uint16_t slurm_get_private_data(void)
 	return private_data;
 }
 
-/* slurm_get_state_save_location
- * get state_save_location from slurm_conf object
- * RET char *   - state_save_location directory, MUST be xfreed by caller
- */
-char *slurm_get_state_save_location(void)
-{
-	char *state_save_loc = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		state_save_loc = xstrdup(conf->state_save_location);
-		slurm_conf_unlock();
-	}
-	return state_save_loc;
-}
-
 /* slurm_get_stepd_loc
  * get path to the slurmstepd
  *      1. configure --sbindir concatenated with slurmstepd.

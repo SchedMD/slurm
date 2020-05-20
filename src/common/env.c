@@ -1885,16 +1885,14 @@ char **env_array_from_file(const char *fname)
  */
 static char **_load_env_cache(const char *username)
 {
-	char *state_save_loc, fname[MAXPATHLEN];
+	char fname[MAXPATHLEN];
 	char *line, name[256], *value;
 	char **env = NULL;
 	FILE *fp;
 	int i;
 
-	state_save_loc = slurm_get_state_save_location();
-	i = snprintf(fname, sizeof(fname), "%s/env_cache/%s", state_save_loc,
-		     username);
-	xfree(state_save_loc);
+	i = snprintf(fname, sizeof(fname), "%s/env_cache/%s",
+		     slurm_conf.state_save_location, username);
 	if (i < 0) {
 		error("Environment cache filename overflow");
 		return NULL;

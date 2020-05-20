@@ -349,13 +349,12 @@ static Buf _load_dbd_rec(int fd)
 
 static void _load_dbd_state(void)
 {
-	char *dbd_fname;
+	char *dbd_fname = NULL;
 	Buf buffer;
 	int fd, recovered = 0;
 	uint16_t rpc_version = 0;
 
-	dbd_fname = slurm_get_state_save_location();
-	xstrcat(dbd_fname, "/dbd.messages");
+	xstrfmtcat(dbd_fname, "%s/dbd.messages", slurm_conf.state_save_location);
 	fd = open(dbd_fname, O_RDONLY);
 	if (fd < 0) {
 		/* don't print an error message if there is no file */
@@ -469,14 +468,13 @@ static int _save_dbd_rec(int fd, Buf buffer)
 
 static void _save_dbd_state(void)
 {
-	char *dbd_fname;
+	char *dbd_fname = NULL;
 	Buf buffer;
 	int fd, rc, wrote = 0;
 	uint16_t msg_type;
 	uint32_t offset;
 
-	dbd_fname = slurm_get_state_save_location();
-	xstrcat(dbd_fname, "/dbd.messages");
+	xstrfmtcat(dbd_fname, "%s/dbd.messages", slurm_conf.state_save_location);
 	(void) unlink(dbd_fname);	/* clear save state */
 	fd = open(dbd_fname, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	if (fd < 0) {

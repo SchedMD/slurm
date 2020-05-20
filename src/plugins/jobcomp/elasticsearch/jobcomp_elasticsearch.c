@@ -231,16 +231,8 @@ static int _load_pending_jobs(void)
 	Buf buffer;
 	struct job_node *jnode;
 
-	state_file = slurm_get_state_save_location();
-	if (state_file == NULL) {
-		error("%s: Could not retrieve StateSaveLocation from conf",
-		      plugin_type);
-		return SLURM_ERROR;
-	}
-
-	if (state_file[strlen(state_file) - 1] != '/')
-		xstrcat(state_file, "/");
-	xstrcat(state_file, save_state_file);
+	xstrfmtcat(state_file, "%s/%s",
+		   slurm_conf.state_save_location, save_state_file);
 
 	slurm_mutex_lock(&save_lock);
 	data_size = _read_file(state_file, &saved_data);
@@ -483,17 +475,9 @@ static int _save_state(void)
 	}
 	list_iterator_destroy(iter);
 
-	state_file = slurm_get_state_save_location();
-	if (state_file == NULL || state_file[0] == '\0') {
-		error("%s: Could not retrieve StateSaveLocation from conf",
-		      plugin_type);
-		return SLURM_ERROR;
-	}
+	xstrfmtcat(state_file, "%s/%s",
+		   slurm_conf.state_save_location, save_state_file);
 
-	if (state_file[strlen(state_file) - 1] != '/')
-		xstrcat(state_file, "/");
-
-	xstrcat(state_file, save_state_file);
 	old_file = xstrdup(state_file);
 	new_file = xstrdup(state_file);
 	xstrcat(new_file, ".new");
