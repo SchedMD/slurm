@@ -92,10 +92,6 @@ char *slurm_auth_opts_to_socket(char *opts);
  */
 int slurm_get_auth_ttl(void);
 
-/* slurm_set_debug_flags
- */
-void slurm_set_debug_flags(uint64_t debug_flags);
-
 /* slurm_get_job_submit_plugins
  * get job_submit_plugins from slurm_conf object from
  * slurm_conf object

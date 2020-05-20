@@ -1692,7 +1692,7 @@ _slurmd_init(void)
 	if (slurm_select_init(1) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (conf->print_gres)
-		slurm_set_debug_flags(DEBUG_FLAG_GRES);
+		slurm_conf.debug_flags = DEBUG_FLAG_GRES;
 	if (gres_plugin_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	build_all_nodeline_info(true, 0);

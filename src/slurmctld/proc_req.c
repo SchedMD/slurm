@@ -5656,7 +5656,6 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 		{ WRITE_LOCK, READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	set_debug_flags_msg_t *request_msg =
 		(set_debug_flags_msg_t *) msg->data;
-	uint64_t debug_flags;
 	char *flag_string;
 
 	debug2("Processing RPC: REQUEST_SET_DEBUG_FLAGS from uid=%d", uid);
@@ -5668,10 +5667,8 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	}
 
 	lock_slurmctld (config_write_lock);
-	debug_flags = slurm_conf.debug_flags;
-	debug_flags &= (~request_msg->debug_flags_minus);
-	debug_flags |= request_msg->debug_flags_plus;
-	slurm_set_debug_flags(debug_flags);
+	slurm_conf.debug_flags &= (~request_msg->debug_flags_minus);
+	slurm_conf.debug_flags |= request_msg->debug_flags_plus;
 	slurm_conf.last_update = time(NULL);
 
 	/* Reset cached debug_flags values */
@@ -5683,7 +5680,7 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	(void) switch_g_reconfig();
 
 	unlock_slurmctld (config_write_lock);
-	flag_string = debug_flags2str(debug_flags);
+	flag_string = debug_flags2str(slurm_conf.debug_flags);
 	info("Set DebugFlags to %s", flag_string ? flag_string : "none");
 	xfree(flag_string);
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);

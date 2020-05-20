@@ -180,20 +180,6 @@ cleanup:
 	return proto_conf;
 }
 
-/* slurm_set_debug_flags
- */
-void slurm_set_debug_flags(uint64_t debug_flags)
-{
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		conf->debug_flags = debug_flags;
-		slurm_conf_unlock();
-	}
-}
-
 static int _get_tres_id(char *type, char *name)
 {
 	slurmdb_tres_rec_t tres_rec;
