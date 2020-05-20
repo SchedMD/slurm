@@ -40,3 +40,8 @@ extern void slurm_library_init(void)
 {
 	slurm_conf_init(NULL);
 }
+
+extern void slurm_library_fini(void)
+{
+	slurm_conf_destroy();
+}

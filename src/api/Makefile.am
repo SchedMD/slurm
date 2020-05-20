@@ -10,7 +10,8 @@ VERSION_SCRIPT = \
 	version.map
 OTHER_FLAGS = \
 	-Wl,--version-script=$(VERSION_SCRIPT) \
-	-Wl,-init,slurm_library_init
+	-Wl,-init,slurm_library_init \
+	-Wl,-fini,slurm_library_fini
 FULL_VERSION_SCRIPT = \
 	full_version.map
 FULL_OTHER_FLAGS = \
