@@ -548,25 +548,6 @@ extern uint16_t slurm_get_vsize_factor(void)
 	return vsize_factor;
 }
 
-/* slurm_get_job_submit_plugins
- * get job_submit_plugins from slurm_conf object from
- * slurm_conf object
- * RET char *   - job_submit_plugins, MUST be xfreed by caller
- */
-char *slurm_get_job_submit_plugins(void)
-{
-	char *job_submit_plugins = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		job_submit_plugins = xstrdup(conf->job_submit_plugins);
-		slurm_conf_unlock();
-	}
-	return job_submit_plugins;
-}
-
 /* slurm_get_node_features_plugins
  * get node_features_plugins from slurm_conf object
  * RET char *   - knl_plugins, MUST be xfreed by caller

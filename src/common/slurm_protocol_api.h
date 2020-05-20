@@ -92,13 +92,6 @@ char *slurm_auth_opts_to_socket(char *opts);
  */
 int slurm_get_auth_ttl(void);
 
-/* slurm_get_job_submit_plugins
- * get job_submit_plugins from slurm_conf object from
- * slurm_conf object
- * RET char *   - job_submit_plugins, MUST be xfreed by caller
- */
-char *slurm_get_job_submit_plugins(void);
-
 /* slurm_get_node_features_plugins
  * get node_features_plugins from slurm_conf object
  * RET char *   - knl_plugins, MUST be xfreed by caller
