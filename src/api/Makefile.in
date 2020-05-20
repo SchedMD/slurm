@@ -637,12 +637,14 @@ AM_CPPFLAGS = -I$(top_srcdir)
 current = $(SLURM_API_CURRENT)
 age = $(SLURM_API_AGE)
 rev = $(SLURM_API_REVISION)
-lib_LTLIBRARIES = libslurm.la libslurm_pmi.la
+lib_LTLIBRARIES = libslurm.la
 
 # The ABI of libslurmfull can easily change from 1 micro version to another.
 # To avoid issue we will install this lib alongside the plugins to protect
 # from version issues.
-pkglib_LTLIBRARIES = libslurmfull.la
+#
+# The unversioned libslurm_pmi is hidden there as well.
+pkglib_LTLIBRARIES = libslurmfull.la libslurm_pmi.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.
@@ -901,7 +903,7 @@ libslurm.la: $(libslurm_la_OBJECTS) $(libslurm_la_DEPENDENCIES) $(EXTRA_libslurm
 	$(AM_V_CCLD)$(libslurm_la_LINK) -rpath $(libdir) $(libslurm_la_OBJECTS) $(libslurm_la_LIBADD) $(LIBS)
 
 libslurm_pmi.la: $(libslurm_pmi_la_OBJECTS) $(libslurm_pmi_la_DEPENDENCIES) $(EXTRA_libslurm_pmi_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libslurm_pmi_la_LINK) -rpath $(libdir) $(libslurm_pmi_la_OBJECTS) $(libslurm_pmi_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libslurm_pmi_la_LINK) -rpath $(pkglibdir) $(libslurm_pmi_la_OBJECTS) $(libslurm_pmi_la_LIBADD) $(LIBS)
 
 libslurmfull.la: $(libslurmfull_la_OBJECTS) $(libslurmfull_la_DEPENDENCIES) $(EXTRA_libslurmfull_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libslurmfull_la_LINK) -rpath $(pkglibdir) $(libslurmfull_la_OBJECTS) $(libslurmfull_la_LIBADD) $(LIBS)

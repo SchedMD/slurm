@@ -50,12 +50,14 @@ current = $(SLURM_API_CURRENT)
 age     = $(SLURM_API_AGE)
 rev     = $(SLURM_API_REVISION)
 
-lib_LTLIBRARIES = libslurm.la libslurm_pmi.la
+lib_LTLIBRARIES = libslurm.la
 
 # The ABI of libslurmfull can easily change from 1 micro version to another.
 # To avoid issue we will install this lib alongside the plugins to protect
 # from version issues.
-pkglib_LTLIBRARIES = libslurmfull.la
+#
+# The unversioned libslurm_pmi is hidden there as well.
+pkglib_LTLIBRARIES = libslurmfull.la libslurm_pmi.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.
