@@ -3450,21 +3450,16 @@ static int  _cr_job_list_sort(void *x, void *y)
  */
 extern int init ( void )
 {
-	char *topo_param;
 	int rc = SLURM_SUCCESS;
 
 	cr_type = slurm_conf.select_type_param;
 	if (cr_type)
 		verbose("%s loaded with argument %u", plugin_name, cr_type);
 
-	topo_param = slurm_get_topology_param();
-	if (topo_param) {
-		if (xstrcasestr(topo_param, "dragonfly"))
-			have_dragonfly = true;
-		if (xstrcasestr(topo_param, "TopoOptional"))
-			topo_optional = true;
-		xfree(topo_param);
-	}
+	if (xstrcasestr(slurm_conf.topology_param, "dragonfly"))
+		have_dragonfly = true;
+	if (xstrcasestr(slurm_conf.topology_param, "TopoOptional"))
+		topo_optional = true;
 
 	return rc;
 }

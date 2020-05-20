@@ -129,12 +129,6 @@ extern void slurm_set_power_parameters(char *power_parameters);
  */
 extern uint16_t slurm_get_track_wckey(void);
 
-/* slurm_get_topology_param
- * returns the value of topology_param in slurm_conf object
- * RET char *    - topology parameters, MUST be xfreed by caller
- */
-extern char * slurm_get_topology_param(void);
-
 /* slurm_get_topology_plugin
  * returns the value of topology_plugin in slurm_conf object
  * RET char *    - topology type, MUST be xfreed by caller

@@ -352,24 +352,6 @@ extern void slurm_set_power_parameters(char *power_parameters)
 	}
 }
 
-/* slurm_get_topology_param
- * returns the value of topology_param in slurm_conf object
- * RET char *    - topology parameters, MUST be xfreed by caller
- */
-extern char * slurm_get_topology_param(void)
-{
-	char *topology_param = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		topology_param = xstrdup(conf->topology_param);
-		slurm_conf_unlock();
-	}
-	return topology_param;
-}
-
 /* slurm_get_topology_plugin
  * returns the value of topology_plugin in slurm_conf object
  * RET char *    - topology type, MUST be xfreed by caller

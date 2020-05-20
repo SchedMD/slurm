@@ -749,16 +749,10 @@ extern int common_cpus_per_core(struct job_details *details, int node_inx)
 
 extern void common_init(void)
 {
-	char *topo_param;
-
-	topo_param = slurm_get_topology_param();
-	if (topo_param) {
-		if (xstrcasestr(topo_param, "dragonfly"))
-			have_dragonfly = true;
-		if (xstrcasestr(topo_param, "TopoOptional"))
-			topo_optional = true;
-		xfree(topo_param);
-	}
+	if (xstrcasestr(slurm_conf.topology_param, "dragonfly"))
+		have_dragonfly = true;
+	if (xstrcasestr(slurm_conf.topology_param, "TopoOptional"))
+		topo_optional = true;
 
 	if (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)
 		gang_mode = true;
