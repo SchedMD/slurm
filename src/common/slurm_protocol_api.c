@@ -564,25 +564,6 @@ extern uint16_t slurm_get_propagate_prio_process(void)
 	return propagate_prio;
 }
 
-/* slurm_get_route_plugin
- * returns the value of route_plugin in slurm_conf object
- * RET char *    - route type, MUST be xfreed by caller
- */
-extern char * slurm_get_route_plugin(void)
-{
-	char *route_plugin = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-
-		route_plugin = xstrdup(conf->route_plugin);
-		slurm_conf_unlock();
-	}
-	return route_plugin;
-}
-
 /* slurm_get_track_wckey
  * returns the value of track_wckey in slurm_conf object
  */
