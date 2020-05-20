@@ -6058,7 +6058,7 @@ proc check_reason { job_id reason } {
 #
 ################################################################################
 proc compile_against_libslurm { test_prog {use_full 1} {build_args ""} } {
-	global slurm_dir bin_cc src_dir build_dir
+	global slurm_dir bin_cc src_dir build_dir exit_code bin_chmod
 
 	if {$use_full} {
 		set libfile "libslurmfull.so"
@@ -6087,6 +6087,13 @@ proc compile_against_libslurm { test_prog {use_full 1} {build_args ""} } {
 		set build_cmd "$build_cmd $build_args"
 	}
 
-	send_user "$build_cmd\n"
-	eval exec $build_cmd
+	log_info "Build command: $build_cmd"
+	catch {exec {*}$build_cmd} out_str out_dict
+	if {[dict get $out_dict -code]} {
+		log_error $out_str
+		set exit_code 1
+		return
+	}
+
+	exec $bin_chmod 700 $test_prog
 }

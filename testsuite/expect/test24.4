@@ -61,8 +61,7 @@ send_user "build_dir is $build_dir\n"
 compile_against_libslurm ${test_prog} 1 "-ldl -lm -export-dynamic \
 					 ${build_dir}/src/slurmctld/locks.o \
 					 ${build_dir}/src/sshare/process.o"
-
-exec $bin_chmod 700 $test_prog
+fail_on_error "Cannot compile test program"
 
 # Usage: test24.4.prog
 spawn ./$test_prog
