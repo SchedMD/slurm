@@ -830,8 +830,9 @@ extern void parse_command_line(int argc, char **argv)
 		case 'g':
 			if (!job_cond->groupid_list)
 				job_cond->groupid_list = list_create(xfree_ptr);
-			slurm_addto_id_char_list(job_cond->groupid_list,
-						 optarg, 1);
+			if (!slurm_addto_id_char_list(job_cond->groupid_list,
+			                              optarg, 1))
+				exit(1);
 			break;
 		case 'h':
 			params.opt_help = 1;
@@ -992,8 +993,9 @@ extern void parse_command_line(int argc, char **argv)
 			all_users = false;
 			if (!job_cond->userid_list)
 				job_cond->userid_list = list_create(xfree_ptr);
-			slurm_addto_id_char_list(job_cond->userid_list,
-						 optarg, 0);
+			if (!slurm_addto_id_char_list(job_cond->userid_list,
+			                              optarg, 0))
+				exit(1);
 			break;
 		case 'v':
 			/* Handle -vvv thusly...
