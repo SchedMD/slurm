@@ -806,7 +806,7 @@ extern int init(void)
 {
 	char *allow_mcdram_str, *allow_numa_str, *allow_user_str;
 	char *default_mcdram_str, *default_numa_str;
-	char *knl_conf_file, *tmp_str = NULL, *resume_program;
+	char *knl_conf_file, *tmp_str = NULL;
 	s_p_hashtbl_t *tbl;
 	struct stat stat_buf;
 	int i, rc = SLURM_SUCCESS;
@@ -923,10 +923,9 @@ extern int init(void)
 		fclose(cpu_info_file);
 	}
 
-	if ((resume_program = slurm_get_resume_program())) {
+	if (slurm_conf.resume_program) {
 		error("Use of ResumeProgram with %s not currently supported",
 		      plugin_name);
-		xfree(resume_program);
 		rc = SLURM_ERROR;
 	}
 
