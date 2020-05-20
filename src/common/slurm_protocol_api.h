@@ -131,12 +131,6 @@ extern char *slurm_get_stepd_loc(void);
  */
 extern char *slurm_get_tmp_fs(char *node_name);
 
-/* slurm_get_bb_params
- * returns the BurstBufferParameters (bb_params) from slurm_conf object
- * RET char *    - BurstBufferParameters, MUST be xfreed by caller
- */
-extern char *slurm_get_bb_params(void);
-
 /* slurm_get_bb_type
  * returns the BurstBufferType (bb_type) from slurm_conf object
  * RET char *    - BurstBufferType, MUST be xfreed by caller
