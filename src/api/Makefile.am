@@ -16,10 +16,8 @@ FULL_VERSION_SCRIPT = \
 	full_version.map
 FULL_OTHER_FLAGS = \
 	-Wl,--version-script=$(FULL_VERSION_SCRIPT)
-SLURM_PMI_VERSION_SCRIPT = \
-	slurm_pmi_version.map
 SLURM_PMI_OTHER_FLAGS = \
-	-Wl,--version-script=$(SLURM_PMI_VERSION_SCRIPT) \
+	-Wl,--version-script=$(VERSION_SCRIPT) \
 	-Wl,-init,slurm_library_init \
 	-Wl,-fini,slurm_library_fini
 endif
@@ -203,13 +201,6 @@ $(VERSION_SCRIPT) :
 
 $(FULL_VERSION_SCRIPT) :
 	(echo "{ global: *; };") > $(FULL_VERSION_SCRIPT)
-
-$(SLURM_PMI_VERSION_SCRIPT) :
-	(echo "{ global:";   \
-	 echo "   slurm_pmi_*;"; \
-	 echo "  local: *;"; \
-	 echo "};") > $(SLURM_PMI_VERSION_SCRIPT)
-
 
 CLEANFILES = \
 	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(SLURM_PMI_VERSION_SCRIPT)
