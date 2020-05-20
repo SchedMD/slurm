@@ -96,13 +96,6 @@ int slurm_get_auth_ttl(void);
  */
 void slurm_set_debug_flags(uint64_t debug_flags);
 
-/* slurm_get_gres_plugins
- * get gres_plugins from slurm_conf object from
- * slurm_conf object
- * RET char *   - gres_plugins, MUST be xfreed by caller
- */
-char *slurm_get_gres_plugins(void);
-
 /* slurm_get_job_submit_plugins
  * get job_submit_plugins from slurm_conf object from
  * slurm_conf object

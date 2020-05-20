@@ -553,7 +553,7 @@ extern int gres_plugin_init(void)
 	if (gres_context_cnt >= 0)
 		goto fini;
 
-	gres_plugin_list = slurm_get_gres_plugins();
+	gres_plugin_list = xstrdup(slurm_conf.gres_plugins);
 	gres_context_cnt = 0;
 	if ((gres_plugin_list == NULL) || (gres_plugin_list[0] == '\0'))
 		goto fini;
@@ -801,12 +801,11 @@ extern char *gres_plugin_help_msg(void)
 extern int gres_plugin_reconfig(void)
 {
 	int rc = SLURM_SUCCESS;
-	char *plugin_names = slurm_get_gres_plugins();
 	bool plugin_change;
 
 	slurm_mutex_lock(&gres_context_lock);
 
-	if (xstrcmp(plugin_names, gres_plugin_list))
+	if (xstrcmp(slurm_conf.gres_plugins, gres_plugin_list))
 		plugin_change = true;
 	else
 		plugin_change = false;
@@ -814,7 +813,7 @@ extern int gres_plugin_reconfig(void)
 
 	if (plugin_change) {
 		error("GresPlugins changed from %s to %s ignored",
-		     gres_plugin_list, plugin_names);
+		     gres_plugin_list, slurm_conf.gres_plugins);
 		error("Restart the slurmctld daemon to change GresPlugins");
 #if 0
 		/* This logic would load new plugins, but we need the old
@@ -825,7 +824,6 @@ extern int gres_plugin_reconfig(void)
 			rc = gres_plugin_init();
 #endif
 	}
-	xfree(plugin_names);
 
 	return rc;
 }

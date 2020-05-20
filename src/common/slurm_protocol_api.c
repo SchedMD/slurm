@@ -618,25 +618,6 @@ extern uint16_t slurm_get_vsize_factor(void)
 	return vsize_factor;
 }
 
-/* slurm_get_gres_plugins
- * get gres_plugins from slurm_conf object from
- * slurm_conf object
- * RET char *   - gres_plugins, MUST be xfreed by caller
- */
-char *slurm_get_gres_plugins(void)
-{
-	char *gres_plugins = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		gres_plugins = xstrdup(conf->gres_plugins);
-		slurm_conf_unlock();
-	}
-	return gres_plugins;
-}
-
 /* slurm_get_job_submit_plugins
  * get job_submit_plugins from slurm_conf object from
  * slurm_conf object
