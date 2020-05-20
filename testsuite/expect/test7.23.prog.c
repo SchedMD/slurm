@@ -33,6 +33,8 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+#include "src/common/slurm_xlator.h"
+
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
 #include "src/common/xassert.h"

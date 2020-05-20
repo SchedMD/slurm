@@ -139,7 +139,7 @@ touch_file $dev8
 if {$use_valgrind} {
 	compile_against_libslurm ${test_prog} 1 "-DUSING_VALGRIND"
 } else {
-	compile_against_libslurm ${test_prog}
+	compile_against_libslurm ${test_prog} 1
 }
 fail_on_error "Cannot compile test program"
 
