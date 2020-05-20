@@ -23,6 +23,7 @@ PROTOTYPES: ENABLE
 
 void*
 slurmdb_connection_get()
+	uint16_t *persist_conn_flags
 
 int
 slurmdb_connection_close(db_conn)

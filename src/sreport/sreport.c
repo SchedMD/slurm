@@ -223,7 +223,7 @@ main (int argc, char **argv)
 	    !local_flag)
 		cluster_flag = _build_cluster_string();
 
-	db_conn = slurmdb_connection_get2(&persist_conn_flags);
+	db_conn = slurmdb_connection_get(&persist_conn_flags);
 	if (errno) {
 		fatal("Problem connecting to the database: %m");
 		exit(1);

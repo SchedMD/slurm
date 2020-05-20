@@ -42,15 +42,6 @@
 #include "slurm/slurmdb.h"
 
 #include "src/common/slurm_accounting_storage.h"
-/*
- * get a new connection to the slurmdb
- * RET: pointer used to access db
- */
-extern void *slurmdb_connection_get(void)
-{
-	return acct_storage_g_get_connection(0, NULL, 1,
-					     slurm_conf.cluster_name);
-}
 
 /*
  * get a new connection to the slurmdb
@@ -58,7 +49,7 @@ extern void *slurmdb_connection_get(void)
  *                           slurm_persist_conn.h.
  * RET: pointer used to access db
  */
-extern void *slurmdb_connection_get2(uint16_t *persist_conn_flags)
+extern void *slurmdb_connection_get(uint16_t *persist_conn_flags)
 {
 	return acct_storage_g_get_connection(0, persist_conn_flags, 1,
 					     slurm_conf.cluster_name);

@@ -1132,7 +1132,7 @@ extern void parse_command_line(int argc, char **argv)
 				"Slurm accounting storage is disabled\n");
 			exit(1);
 		}
-		acct_db_conn = slurmdb_connection_get();
+		acct_db_conn = slurmdb_connection_get(NULL);
 		if (errno != SLURM_SUCCESS) {
 			error("Problem talking to the database: %m");
 			exit(1);

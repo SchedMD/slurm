@@ -742,7 +742,7 @@ static bool _user_is_admin(void)
 	if ((uid == 0) || uid == slurm_conf.slurm_user_id)
 		return true;
 
-	if (!(db_conn = slurmdb_connection_get()))
+	if (!(db_conn = slurmdb_connection_get(NULL)))
 		return false;
 
 	level = assoc_mgr_get_admin_level(db_conn, uid);

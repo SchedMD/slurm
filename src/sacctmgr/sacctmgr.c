@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 	}
 
 	errno = 0;
-	db_conn = slurmdb_connection_get2(&persist_conn_flags);
+	db_conn = slurmdb_connection_get(&persist_conn_flags);
 
 	if (!errno)
 		have_db_conn = true;
