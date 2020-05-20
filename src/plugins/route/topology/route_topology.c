@@ -104,12 +104,9 @@ static bool run_in_slurmctld = false;
  */
 extern int init(void)
 {
-	char *topotype;
-	topotype = slurm_get_topology_plugin();
-	if (xstrcasecmp(topotype,"topology/tree") != 0) {
+	if (xstrcmp(slurm_conf.topology_plugin, "topology/tree"))
 		fatal("ROUTE: route/topology requires topology/tree");
-	}
-	xfree(topotype);
+
 	run_in_slurmctld = running_in_slurmctld();
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;

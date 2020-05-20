@@ -352,24 +352,6 @@ extern void slurm_set_power_parameters(char *power_parameters)
 	}
 }
 
-/* slurm_get_topology_plugin
- * returns the value of topology_plugin in slurm_conf object
- * RET char *    - topology type, MUST be xfreed by caller
- */
-extern char * slurm_get_topology_plugin(void)
-{
-	char *topology_plugin = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		topology_plugin = xstrdup(conf->topology_plugin);
-		slurm_conf_unlock();
-	}
-	return topology_plugin;
-}
-
 /* slurm_get_propagate_prio_process
  * return the PropagatePrioProcess flag from slurm_conf object
  */
