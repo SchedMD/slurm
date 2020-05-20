@@ -47,7 +47,7 @@ if {[test_cray]} {
 #
 file delete $test_prog
 
-compile_against_libslurm ${test_prog}
+compile_against_libslurm ${test_prog} 1
 fail_on_error "Cannot compile test program"
 
 send_user "\n====test7.17.1====\n"
