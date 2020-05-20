@@ -306,16 +306,14 @@ extern void parse_command_line(int argc, char **argv)
 
 	if (params.federation_flag && !params.clusters && !params.local) {
 		void *ptr = NULL;
-		char *cluster_name = slurm_get_cluster_name();
 		if (slurm_load_federation(&ptr) ||
-		    !cluster_in_federation(ptr, cluster_name)) {
+		    !cluster_in_federation(ptr, slurm_conf.cluster_name)) {
 			/* Not in federation */
 			params.local = true;
 			slurm_destroy_federation_rec(ptr);
 		} else {
 			params.fed = (slurmdb_federation_rec_t *) ptr;
 		}
-		xfree(cluster_name);
 	}
 
 	if ( params.format == NULL ) {

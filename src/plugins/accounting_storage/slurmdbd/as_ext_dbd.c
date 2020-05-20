@@ -63,14 +63,10 @@ extern void _destroy_external_host_conns(void *object)
 /* don't connect now as it will block the ctld */
 extern slurm_persist_conn_t *_create_slurmdbd_conn(char *host, int port)
 {
-	static char *cluster_name = NULL;
 	slurm_persist_conn_t *dbd_conn = NULL;
 
-	if (!cluster_name)
-		cluster_name = slurm_get_cluster_name();
-
 	dbd_conn = xmalloc(sizeof(slurm_persist_conn_t));
-	dbd_conn->cluster_name = xstrdup(cluster_name);
+	dbd_conn->cluster_name = xstrdup(slurm_conf.cluster_name);
 	dbd_conn->fd = -1;
 	dbd_conn->flags = PERSIST_FLAG_DBD;
 	dbd_conn->persist_type = PERSIST_TYPE_DBD;

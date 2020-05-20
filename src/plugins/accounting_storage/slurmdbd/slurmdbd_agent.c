@@ -65,7 +65,6 @@ static pthread_t agent_tid      = 0;
 
 static bool      halt_agent          = 0;
 static time_t    slurmdbd_shutdown   = 0;
-static char *    slurmdbd_cluster    = NULL;
 
 static slurm_persist_conn_t *slurmdbd_conn = NULL;
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -623,10 +622,7 @@ static void _open_slurmdbd_conn(bool need_db)
 			PERSIST_FLAG_DBD | PERSIST_FLAG_RECONNECT;
 		slurmdbd_conn->persist_type = PERSIST_TYPE_DBD;
 
-		if (!slurmdbd_cluster)
-			slurmdbd_cluster = slurm_get_cluster_name();
-
-		slurmdbd_conn->cluster_name = xstrdup(slurmdbd_cluster);
+		slurmdbd_conn->cluster_name = xstrdup(slurm_conf.cluster_name);
 
 		slurmdbd_conn->timeout = (slurm_conf.msg_timeout + 35) * 1000;
 
@@ -1038,7 +1034,6 @@ extern int close_slurmdbd_conn(void)
 	slurm_mutex_lock(&slurmdbd_lock);
 	slurm_persist_conn_destroy(slurmdbd_conn);
 	slurmdbd_conn = NULL;
-	xfree(slurmdbd_cluster);
 	slurm_mutex_unlock(&slurmdbd_lock);
 
 	return SLURM_SUCCESS;

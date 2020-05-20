@@ -49,7 +49,6 @@
 #include "src/common/xstring.h"
 #include "src/lua/slurm_lua.h"
 
-static const char *cluster_name = NULL;
 static void *lua_handle = NULL;
 
 #ifdef HAVE_LUA
@@ -305,7 +304,7 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_pushnumber(L, USE_MIN_NODES);
 	lua_setfield(L, -2, "USE_MIN_NODES");
 
-	lua_pushstring(L, cluster_name);
+	lua_pushstring(L, slurm_conf.cluster_name);
 	lua_setfield(L, -2, "CLUSTER_NAME");
 }
 
@@ -801,8 +800,6 @@ extern int slurm_lua_init(void)
 		return SLURM_ERROR;
 	}
 
-	cluster_name = slurm_get_cluster_name();
-
 	return SLURM_SUCCESS;
 }
 
@@ -811,7 +808,6 @@ extern int slurm_lua_init(void)
  */
 extern void slurm_lua_fini(void)
 {
-	xfree(cluster_name);
 	if (lua_handle)
 		dlclose(lua_handle);
 }

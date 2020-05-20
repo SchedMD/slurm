@@ -3499,12 +3499,10 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 	}
 
 	/* If job not local, clear node_inx to avoid setting node colors */
-	if (!orig_cluster_name)
-		orig_cluster_name = slurm_get_cluster_name();
 	if (working_cluster_rec && working_cluster_rec->name)
 		local_cluster = xstrdup(working_cluster_rec->name);
 	else
-		local_cluster = xstrdup(orig_cluster_name);
+		local_cluster = xstrdup(slurm_conf.cluster_name);
 	if (error_code == SLURM_SUCCESS) {
 		for (i = 0, job_ptr = new_job_ptr->job_array;
 		     i < new_job_ptr->record_count; i++, job_ptr++) {

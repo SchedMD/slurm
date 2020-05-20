@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 	resource_allocation_response_msg_t *alloc = NULL;
 	time_t before, after;
 	allocation_msg_thread_t *msg_thr = NULL;
-	char **env = NULL, *cluster_name;
+	char **env = NULL;
 	int status = 0;
 	int retries = 0;
 	pid_t pid  = getpid();
@@ -554,11 +554,9 @@ int main(int argc, char **argv)
 	if (working_cluster_rec && working_cluster_rec->name) {
 		env_array_append_fmt(&env, "SLURM_CLUSTER_NAME", "%s",
 				     working_cluster_rec->name);
-	} else if ((cluster_name = slurm_get_cluster_name())) {
+	} else
 		env_array_append_fmt(&env, "SLURM_CLUSTER_NAME", "%s",
-				     cluster_name);
-		xfree(cluster_name);
-	}
+				     slurm_conf.cluster_name);
 
 	env_array_set_environment(env);
 	env_array_free(env);

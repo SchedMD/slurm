@@ -148,9 +148,8 @@ static int _set_cond(int *start, int argc, char **argv,
 
 	if (!local_cluster_flag && !list_count(assoc_cond->cluster_list)) {
 		/* Get the default Cluster since no cluster is specified */
-		char *temp = slurm_get_cluster_name();
-		if (temp)
-			list_append(assoc_cond->cluster_list, temp);
+		list_append(assoc_cond->cluster_list,
+			    xstrdup(slurm_conf.cluster_name));
 	}
 
 	/* This needs to be done on some systems to make sure

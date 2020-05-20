@@ -38,6 +38,7 @@
 #include "slurm/slurmdb.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
@@ -108,9 +109,9 @@ extern void slurm_print_federation(void *ptr)
 		return;
 
 	if (working_cluster_rec)
-		cluster_name = xstrdup(working_cluster_rec->name);
+		cluster_name = working_cluster_rec->name;
 	else
-		cluster_name = slurm_get_cluster_name();
+		cluster_name = slurm_conf.cluster_name;
 
 	left_col_size = strlen("federation:");
 	printf("%-*s %s\n", left_col_size, "Federation:",
@@ -163,7 +164,6 @@ extern void slurm_print_federation(void *ptr)
 	}
 
 	list_iterator_destroy(itr);
-	xfree(cluster_name);
 }
 
 /*

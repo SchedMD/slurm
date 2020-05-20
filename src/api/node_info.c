@@ -689,9 +689,10 @@ extern int slurm_load_node(time_t update_time, node_info_msg_t **resp,
 	int rc;
 
 	if (working_cluster_rec)
-		cluster_name = xstrdup(working_cluster_rec->name);
+		cluster_name = working_cluster_rec->name;
 	else
-		cluster_name = slurm_get_cluster_name();
+		cluster_name = slurm_conf.cluster_name;
+
 	if ((show_flags & SHOW_FEDERATION) && !(show_flags & SHOW_LOCAL) &&
 	    (slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
 	    cluster_in_federation(ptr, cluster_name)) {
@@ -722,7 +723,6 @@ extern int slurm_load_node(time_t update_time, node_info_msg_t **resp,
 
 	if (ptr)
 		slurm_destroy_federation_rec(ptr);
-	xfree(cluster_name);
 
 	return rc;
 }

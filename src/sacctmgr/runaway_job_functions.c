@@ -213,11 +213,10 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 	job_cond->flags |= JOBCOND_FLAG_RUNAWAY | JOBCOND_FLAG_NO_TRUNC;
 
 	if (!job_cond->cluster_list || !list_count(job_cond->cluster_list)) {
-		char *cluster = slurm_get_cluster_name();
 		if (!job_cond->cluster_list)
 			job_cond->cluster_list = list_create(xfree_ptr);
-		slurm_addto_char_list(job_cond->cluster_list, cluster);
-		xfree(cluster);
+		slurm_addto_char_list(job_cond->cluster_list,
+				      xstrdup(slurm_conf.cluster_name));
 	}
 
 	if (list_count(job_cond->cluster_list) != 1) {

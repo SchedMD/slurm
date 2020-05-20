@@ -1306,9 +1306,10 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	int rc;
 
 	if (working_cluster_rec)
-		cluster_name = xstrdup(working_cluster_rec->name);
+		cluster_name = working_cluster_rec->name;
 	else
-		cluster_name = slurm_get_cluster_name();
+		cluster_name = slurm_conf.cluster_name;
+
 	if ((show_flags & SHOW_FEDERATION) && !(show_flags & SHOW_LOCAL) &&
 	    (slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
 	    cluster_in_federation(ptr, cluster_name)) {
@@ -1339,7 +1340,6 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 
 	if (ptr)
 		slurm_destroy_federation_rec(ptr);
-	xfree(cluster_name);
 
 	return rc;
 }
@@ -1359,15 +1359,13 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
 {
 	slurm_msg_t req_msg;
 	job_user_id_msg_t req;
-	char *cluster_name = NULL;
 	void *ptr = NULL;
 	slurmdb_federation_rec_t *fed;
 	int rc;
 
-	cluster_name = slurm_get_cluster_name();
 	if ((show_flags & SHOW_LOCAL) == 0) {
 		if (slurm_load_federation(&ptr) ||
-		    !cluster_in_federation(ptr, cluster_name)) {
+		    !cluster_in_federation(ptr, slurm_conf.cluster_name)) {
 			/* Not in federation */
 			show_flags |= SHOW_LOCAL;
 		}
@@ -1388,12 +1386,11 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
 	} else {
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
-				    cluster_name, fed);
+				    slurm_conf.cluster_name, fed);
 	}
 
 	if (ptr)
 		slurm_destroy_federation_rec(ptr);
-	xfree(cluster_name);
 
 	return rc;
 }
@@ -1412,15 +1409,13 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 {
 	slurm_msg_t req_msg;
 	job_id_msg_t req;
-	char *cluster_name = NULL;
 	void *ptr = NULL;
 	slurmdb_federation_rec_t *fed;
 	int rc;
 
-	cluster_name = slurm_get_cluster_name();
 	if ((show_flags & SHOW_LOCAL) == 0) {
 		if (slurm_load_federation(&ptr) ||
-		    !cluster_in_federation(ptr, cluster_name)) {
+		    !cluster_in_federation(ptr, slurm_conf.cluster_name)) {
 			/* Not in federation */
 			show_flags |= SHOW_LOCAL;
 		}
@@ -1441,12 +1436,11 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 	} else {
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
-				    cluster_name, fed);
+				    slurm_conf.cluster_name, fed);
 	}
 
 	if (ptr)
 		slurm_destroy_federation_rec(ptr);
-	xfree(cluster_name);
 
 	return rc;
 }
@@ -2170,15 +2164,13 @@ slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
 {
 	slurm_msg_t req_msg;
 	priority_factors_request_msg_t factors_req;
-	char *cluster_name = NULL;
 	void *ptr = NULL;
 	slurmdb_federation_rec_t *fed;
 	int rc;
 
-	cluster_name = slurm_get_cluster_name();
 	if ((show_flags & SHOW_FEDERATION) && !(show_flags & SHOW_LOCAL) &&
 	    (slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
-	    cluster_in_federation(ptr, cluster_name)) {
+	    cluster_in_federation(ptr, slurm_conf.cluster_name)) {
 		/* In federation. Need full info from all clusters */
 		show_flags &= (~SHOW_LOCAL);
 	} else {
@@ -2201,7 +2193,7 @@ slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
 	if (show_flags & SHOW_FEDERATION) {
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_job_prio(&req_msg, factors_resp, show_flags,
-					cluster_name, fed);
+					slurm_conf.cluster_name, fed);
 	} else {
 		rc = _load_cluster_job_prio(&req_msg, factors_resp,
 					    working_cluster_rec);
@@ -2209,7 +2201,6 @@ slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
 
 	if (ptr)
 		slurm_destroy_federation_rec(ptr);
-	xfree(cluster_name);
 
 	return rc;
 }

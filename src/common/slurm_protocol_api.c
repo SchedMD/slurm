@@ -336,24 +336,6 @@ extern char *slurm_get_tmp_fs(char *node_name)
 	return tmp_fs;
 }
 
-/* slurm_get_cluster_name
- * returns the cluster name from slurm_conf object
- * RET char *    - cluster name,  MUST be xfreed by caller
- */
-char *slurm_get_cluster_name(void)
-{
-	char *name = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		name = xstrdup(conf->cluster_name);
-		slurm_conf_unlock();
-	}
-	return name;
-}
-
 /* slurm_get_power_parameters
  * returns the PowerParameters from slurm_conf object
  * RET char *    - PowerParameters, MUST be xfreed by caller

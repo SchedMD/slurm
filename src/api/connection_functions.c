@@ -48,11 +48,8 @@
  */
 extern void *slurmdb_connection_get(void)
 {
-	char *cluster_name = slurm_get_cluster_name();
-	void *db_conn = acct_storage_g_get_connection(0, NULL,
-						      1, cluster_name);
-	xfree(cluster_name);
-	return db_conn;
+	return acct_storage_g_get_connection(0, NULL, 1,
+					     slurm_conf.cluster_name);
 }
 
 /*
@@ -63,12 +60,8 @@ extern void *slurmdb_connection_get(void)
  */
 extern void *slurmdb_connection_get2(uint16_t *persist_conn_flags)
 {
-	char *cluster_name = slurm_get_cluster_name();
-	void *db_conn = acct_storage_g_get_connection(0,
-						      persist_conn_flags,
-						      1, cluster_name);
-	xfree(cluster_name);
-	return db_conn;
+	return acct_storage_g_get_connection(0, persist_conn_flags, 1,
+					     slurm_conf.cluster_name);
 }
 
 /*

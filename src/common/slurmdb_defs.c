@@ -55,8 +55,6 @@
 
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 
-static char *local_cluster_name; /* name of local_cluster      */
-
 static void _free_res_cond_members(slurmdb_res_cond_t *res_cond);
 static void _free_res_rec_members(slurmdb_res_rec_t *res);
 
@@ -471,9 +469,9 @@ static int _sort_local_cluster(void *v1, void *v2)
 	else if (rec_a->preempt_cnt > rec_b->preempt_cnt)
 		return 1;
 
-	if (!xstrcmp(local_cluster_name, rec_a->cluster_rec->name))
+	if (!xstrcmp(slurm_conf.cluster_name, rec_a->cluster_rec->name))
 		return -1;
-	else if (!xstrcmp(local_cluster_name, rec_b->cluster_rec->name))
+	else if (!xstrcmp(slurm_conf.cluster_name, rec_b->cluster_rec->name))
 		return 1;
 
 	return 0;
@@ -1419,9 +1417,8 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	if (cluster_names && !xstrcasecmp(cluster_names, "all"))
 		all_clusters = 1;
 
-	cluster_name = slurm_get_cluster_name();
-	db_conn = acct_storage_g_get_connection(0, NULL, 1, cluster_name);
-	xfree(cluster_name);
+	db_conn = acct_storage_g_get_connection(0, NULL, 1,
+						slurm_conf.cluster_name);
 
 	slurmdb_init_cluster_cond(&cluster_cond, 0);
 	if (cluster_names && !all_clusters) {
@@ -3228,9 +3225,7 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	}
 
 	/* sort the list so the first spot is on top */
-	local_cluster_name = slurm_get_cluster_name();
 	list_sort(ret_list, (ListCmpF)_sort_local_cluster);
-	xfree(local_cluster_name);
 	local_cluster = list_peek(ret_list);
 
 	/* prevent cluster_rec from being freed when cluster_list is destroyed */
@@ -3367,9 +3362,7 @@ extern int slurmdb_get_first_het_job_cluster(List job_req_list,
 	}
 
 	/* sort the list so the first spot is on top */
-	local_cluster_name = slurm_get_cluster_name();
 	list_sort(ret_list, (ListCmpF)_sort_local_cluster);
-	xfree(local_cluster_name);
 	local_cluster = list_peek(ret_list);
 
 	/* prevent cluster_rec from being freed when cluster_list is destroyed */

@@ -1149,7 +1149,7 @@ extern void parse_command_line(int argc, char **argv)
 		List fed_list = NULL;
 		List cluster_list = list_create(NULL);
 
-		params.cluster_name = slurm_get_cluster_name();
+		params.cluster_name = xstrdup(slurm_conf.cluster_name);
 
 		list_append(cluster_list, params.cluster_name);
 		slurmdb_init_federation_cond(&fed_cond, 0);
@@ -1184,7 +1184,7 @@ extern void parse_command_line(int argc, char **argv)
 		  || !list_count(job_cond->cluster_list)) {
 		if (!job_cond->cluster_list)
 			job_cond->cluster_list = list_create(xfree_ptr);
-		if ((start = slurm_get_cluster_name())) {
+		if ((start = xstrdup(slurm_conf.cluster_name))) {
 			list_append(job_cond->cluster_list, start);
 			debug2("Clusters requested:\t%s", start);
 		}

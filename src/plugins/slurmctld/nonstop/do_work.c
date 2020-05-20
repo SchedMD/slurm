@@ -313,7 +313,7 @@ extern int save_nonstop_state(void)
 	slurm_mutex_unlock(&job_fail_mutex);
 
 	/* write the buffer to file */
-	xstrfmtcat(old_file, "%s/nonstop_state.old"
+	xstrfmtcat(old_file, "%s/nonstop_state.old",
 		   slurm_conf.state_save_location);
 	xstrfmtcat(reg_file, "%s/nonstop_state",
 		   slurm_conf.state_save_location);

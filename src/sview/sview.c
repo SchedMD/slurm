@@ -84,7 +84,6 @@ GCond *grid_cond = NULL;
 int cluster_dims;
 uint32_t cluster_flags;
 List cluster_list = NULL;
-char *orig_cluster_name = NULL;
 switch_record_bitmaps_t *g_switch_nodes_maps = NULL;
 popup_pos_t popup_pos;
 char *federation_name = NULL;
@@ -627,7 +626,6 @@ static gboolean _delete(GtkWidget *widget,
 	FREE_NULL_LIST(multi_button_list);
 	FREE_NULL_LIST(signal_params_list);
 	FREE_NULL_LIST(cluster_list);
-	xfree(orig_cluster_name);
 	uid_cache_clear();
 	assoc_mgr_fini(0);
 #endif
@@ -1128,9 +1126,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	gtk_table_set_col_spacings(main_grid_table, 0);
 	gtk_table_set_row_spacings(main_grid_table, 0);
 
-	if (!orig_cluster_name)
-		orig_cluster_name = slurm_get_cluster_name();
-	if (!xstrcmp(cluster_rec->name, orig_cluster_name))
+	if (!xstrcmp(cluster_rec->name, slurm_conf.cluster_name))
 		working_cluster_rec = NULL;
 	else
 		working_cluster_rec = cluster_rec;
@@ -1284,9 +1280,6 @@ static GtkWidget *_create_cluster_combo(void)
 		return NULL;
 	}
 
-	if (!orig_cluster_name)
-		orig_cluster_name = slurm_get_cluster_name();
-
 	if (list_count(cluster_list) > 1)
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
 
@@ -1332,7 +1325,7 @@ static GtkWidget *_create_cluster_combo(void)
 		gtk_list_store_set(model, &iter, 0, cluster_rec->name, 1,
 				   cluster_rec, -1);
 
-		if (!xstrcmp(cluster_rec->name, orig_cluster_name)) {
+		if (!xstrcmp(cluster_rec->name, slurm_conf.cluster_name)) {
 			/* clear it since we found the current cluster */
 			working_cluster_rec = NULL;
 			spot = count;

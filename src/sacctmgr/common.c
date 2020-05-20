@@ -888,16 +888,10 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 		assoc_cond->cluster_list = list_create(xfree_ptr);
 
 	if (!list_count(assoc_cond->cluster_list)) {
-		char *temp = slurm_get_cluster_name();
-		if (temp) {
-			printf("No cluster specified, resetting "
-			       "on local cluster %s\n", temp);
-			list_append(assoc_cond->cluster_list, temp);
-		}
-		if (!list_count(assoc_cond->cluster_list)) {
-			error("A cluster name is required to remove usage");
-			return SLURM_ERROR;
-		}
+		printf("No cluster specified, resetting on local cluster %s\n",
+		       slurm_conf.cluster_name);
+		list_append(assoc_cond->cluster_list,
+			    xstrdup(slurm_conf.cluster_name));
 	}
 
 	if (!commit_check("Would you like to reset usage?")) {
@@ -1020,16 +1014,9 @@ extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond)
 		cluster_list = list_create(xfree_ptr);
 
 	if (!list_count(cluster_list)) {
-		char *temp = slurm_get_cluster_name();
-		if (temp) {
-			printf("No cluster specified, resetting "
-			       "on local cluster %s\n", temp);
-			list_append(cluster_list, temp);
-		}
-		if (!list_count(cluster_list)) {
-			error("A cluster name is required to remove usage");
-			return SLURM_ERROR;
-		}
+		printf("No cluster specified, resetting on local cluster %s\n",
+		       slurm_conf.cluster_name);
+		list_append(cluster_list, xstrdup(slurm_conf.cluster_name));
 	}
 
 	if (!commit_check("Would you like to reset usage?")) {

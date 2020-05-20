@@ -119,12 +119,6 @@ extern char *slurm_get_stepd_loc(void);
  */
 extern char *slurm_get_tmp_fs(char *node_name);
 
-/* slurm_get_cluster_name
- * returns the cluster name from slurm_conf object
- * RET char *    - cluster name,  MUST be xfreed by caller
- */
-char *slurm_get_cluster_name(void);
-
 /* slurm_get_power_parameters
  * returns the PowerParameters from slurm_conf object
  * RET char *    - PowerParameters, MUST be xfreed by caller

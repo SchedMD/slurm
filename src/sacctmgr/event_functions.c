@@ -415,11 +415,8 @@ static int _set_cond(int *start, int argc, char **argv,
 	}
 	(*start) = i;
 
-	if (!local_cluster_flag && !list_count(event_cond->cluster_list)) {
-		char *temp = slurm_get_cluster_name();
-		if (temp)
-			list_append(event_cond->cluster_list, temp);
-	}
+	if (!local_cluster_flag && !list_count(event_cond->cluster_list))
+		list_append(event_cond->cluster_list, xstrdup(slurm_conf.cluster_name));
 
 	if (!all_time_flag && !event_cond->period_start) {
 		event_cond->period_start = time(NULL);

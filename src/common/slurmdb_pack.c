@@ -3924,11 +3924,9 @@ extern void slurmdb_pack_job_modify_cond(void *in, uint16_t protocol_version,
 		return;
 	}
 
-	if (!cond->cluster_list || !list_count(cond->cluster_list)) {
-		char *cluster = slurm_get_cluster_name();
-		packstr(cluster, buffer);
-		xfree(cluster);
-	} else
+	if (!cond->cluster_list || !list_count(cond->cluster_list))
+		packstr(slurm_conf.cluster_name, buffer);
+	else
 		packstr(list_peek(cond->cluster_list), buffer);
 	pack32(cond->flags, buffer);
 

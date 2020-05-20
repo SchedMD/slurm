@@ -479,13 +479,11 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	slurm_msg_t req_msg;
 	job_step_info_request_msg_t req;
 	slurmdb_federation_rec_t *fed;
-	char *cluster_name = NULL;
 	void *ptr = NULL;
 
-	cluster_name = slurm_get_cluster_name();
 	if ((show_flags & SHOW_LOCAL) == 0) {
 		if (slurm_load_federation(&ptr) ||
-		    !cluster_in_federation(ptr, cluster_name)) {
+		    !cluster_in_federation(ptr, slurm_conf.cluster_name)) {
 			/* Not in federation */
 			show_flags |= SHOW_LOCAL;
 		} else {
@@ -509,13 +507,12 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 		rc = _load_cluster_steps(&req_msg, resp, working_cluster_rec);
 	} else {
 		fed = (slurmdb_federation_rec_t *) ptr;
-		rc = _load_fed_steps(&req_msg, resp, show_flags, cluster_name,
-				     fed);
+		rc = _load_fed_steps(&req_msg, resp, show_flags,
+				     slurm_conf.cluster_name, fed);
 	}
 
 	if (ptr)
 		slurm_destroy_federation_rec(ptr);
-	xfree(cluster_name);
 
 	return rc;
 }

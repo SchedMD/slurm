@@ -463,13 +463,11 @@ static void *_set_db_inx_thread(void *no_data)
 extern int init ( void )
 {
 	if (first) {
-		char *cluster_name = NULL;
 		/* since this can be loaded from many different places
 		   only tell us once. */
-		if (!(cluster_name = slurm_get_cluster_name()))
+		if (!slurm_conf.cluster_name)
 			fatal("%s requires ClusterName in slurm.conf",
 			      plugin_name);
-		xfree(cluster_name);
 
 		slurmdbd_agent_config_setup();
 

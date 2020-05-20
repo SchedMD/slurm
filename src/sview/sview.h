@@ -327,7 +327,6 @@ extern int sview_colors_cnt;
 extern int cluster_dims;
 extern uint32_t cluster_flags;
 extern List cluster_list;
-extern char *orig_cluster_name;
 extern front_end_info_msg_t *g_front_end_info_ptr;
 extern job_info_msg_t *g_job_info_ptr;
 extern node_info_msg_t *g_node_info_ptr;

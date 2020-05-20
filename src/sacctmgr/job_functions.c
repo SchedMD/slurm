@@ -132,7 +132,8 @@ static int _set_cond(int *start, int argc, char **argv,
 
 	if (!job_cond->cluster_list) {
 		job_cond->cluster_list = list_create(xfree_ptr);
-		list_push(job_cond->cluster_list, slurm_get_cluster_name());
+		list_push(job_cond->cluster_list,
+			  xstrdup(slurm_conf.cluster_name));
 	}
 
 	(*start) = i;
