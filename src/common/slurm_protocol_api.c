@@ -494,24 +494,6 @@ extern uint16_t slurm_get_vsize_factor(void)
 	return vsize_factor;
 }
 
-/* slurm_get_node_features_plugins
- * get node_features_plugins from slurm_conf object
- * RET char *   - knl_plugins, MUST be xfreed by caller
- */
-char *slurm_get_node_features_plugins(void)
-{
-	char *knl_plugins = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		knl_plugins = xstrdup(conf->node_features_plugins);
-		slurm_conf_unlock();
-	}
-	return knl_plugins;
-}
-
 /* slurm_get_accounting_storage_tres
  * returns the accounting storage tres from slurm_conf object
  * RET char *    - accounting storage tres,  MUST be xfreed by caller

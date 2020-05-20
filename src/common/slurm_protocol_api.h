@@ -92,12 +92,6 @@ char *slurm_auth_opts_to_socket(char *opts);
  */
 int slurm_get_auth_ttl(void);
 
-/* slurm_get_node_features_plugins
- * get node_features_plugins from slurm_conf object
- * RET char *   - knl_plugins, MUST be xfreed by caller
- */
-char *slurm_get_node_features_plugins(void);
-
 /* slurm_get_tres_weight_array
  * IN weights_str - string of tres and weights to be parsed.
  * IN tres_cnt - count of how many tres' are on the system (e.g.

@@ -122,7 +122,7 @@ extern int node_features_g_init(void)
 	if (g_context_cnt >= 0)
 		goto fini;
 
-	node_features_plugin_list = slurm_get_node_features_plugins();
+	node_features_plugin_list = xstrdup(slurm_conf.node_features_plugins);
 	g_context_cnt = 0;
 	if ((node_features_plugin_list == NULL) ||
 	    (node_features_plugin_list[0] == '\0'))
