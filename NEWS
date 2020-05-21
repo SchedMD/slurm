@@ -29,6 +29,9 @@ documents those changes that are of interest to users and administrators.
  -- libsrun/opt - use slurm_option_reset() when ignoring ntasks_per_node.
  -- Removed "regression" script from testsuite. Please use regression.py.
 
+* Changes in Slurm 20.02.4
+==========================
+
 * Changes in Slurm 20.02.3
 ==========================
  -- Factor in ntasks-per-core=1 with cons_tres.
@@ -303,6 +306,9 @@ documents those changes that are of interest to users and administrators.
  -- Add gpu/rsmi plugin to support AMD GPUs
  -- Make it so you can "stack" the energy plugins
  -- Add energy accounting plugin for AMD GPU
+
+* Changes in Slurm 19.05.8
+==========================
 
 * Changes in Slurm 19.05.7
 ==========================
