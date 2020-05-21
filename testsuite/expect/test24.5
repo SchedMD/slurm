@@ -75,42 +75,6 @@ proc end_it { exit_code } {
 }
 
 
-proc def_cpu_cnt { } {
-	global sinfo scontrol alpha_numeric_nodelist
-
-	set partition [default_partition]
-	set cpu_cnt 0
-	spawn $sinfo -h -o "%P %N" -p $partition --state=idle
-	expect {
-		-re "$partition\\* ($alpha_numeric_nodelist)" {
-			set def_hostlist $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			log_error "sinfo not responding"
-			end_it 1
-		}
-		eof {
-			wait
-		}
-	}
-	set fd [open "|$scontrol --oneliner show node $def_hostlist"]
-	while {[gets $fd line] != -1} {
-		if {[regexp {CPUTot=(\d+).*CoreSpecCount=(\d+).*ThreadsPerCore=(\d+)} \
-		            $line frag tmp_cpu_cnt core_spec_cnt \
-		            threads_per_core] == 1} {
-			set cpu_cnt [expr $cpu_cnt + $tmp_cpu_cnt - \
-			                  $core_spec_cnt * $threads_per_core]
-			continue
-		}
-		if {[regexp {CPUTot=(\d+)} $line frag tmp_cpu_cnt] == 1} {
-			set cpu_cnt [expr $cpu_cnt + $tmp_cpu_cnt]
-			continue
-		}
-	}
-	return $cpu_cnt
-}
-
 proc sub_job { cpu_cnt state } {
 	global number sbatch test_id bin_sleep
 
@@ -181,7 +145,7 @@ proc update_job { jobid prio {error ""} } {
 }
 
 ################################################################
-set cpu_cnt [def_cpu_cnt]
+set cpu_cnt [get_total_cpus]
 set jobid1 [sub_job $cpu_cnt RUNNING]
 set jobid2 [sub_job $cpu_cnt PENDING]
 
