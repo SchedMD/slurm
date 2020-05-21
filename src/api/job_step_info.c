@@ -172,41 +172,25 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	else
 		secs2time_str ((time_t)job_step_ptr->time_limit * 60,
 				limit_str, sizeof(limit_str));
-	if (job_step_ptr->array_job_id) {
-		if (job_step_ptr->step_id == SLURM_PENDING_STEP) {
-			xstrfmtcat(out, "StepId=%u_%u.TBD ",
-				   job_step_ptr->array_job_id,
-				   job_step_ptr->array_task_id);
-		} else if (job_step_ptr->step_id == SLURM_BATCH_SCRIPT) {
-			xstrfmtcat(out, "StepId=%u_%u.batch ",
-				   job_step_ptr->array_job_id,
-				   job_step_ptr->array_task_id);
-		} else if (job_step_ptr->step_id == SLURM_EXTERN_CONT) {
-			xstrfmtcat(out, "StepId=%u_%u.extern ",
-				   job_step_ptr->array_job_id,
-				   job_step_ptr->array_task_id);
-		} else {
-			xstrfmtcat(out, "StepId=%u_%u.%u ",
-				   job_step_ptr->array_job_id,
-				   job_step_ptr->array_task_id,
-				   job_step_ptr->step_id);
-		}
-	} else {
-		if (job_step_ptr->step_id == SLURM_PENDING_STEP) {
-			xstrfmtcat(out, "StepId=%u.TBD ",
-				   job_step_ptr->job_id);
-		} else if (job_step_ptr->step_id == SLURM_BATCH_SCRIPT) {
-			xstrfmtcat(out, "StepId=%u.batch ",
-				   job_step_ptr->job_id);
-		} else if (job_step_ptr->step_id == SLURM_EXTERN_CONT) {
-			xstrfmtcat(out, "StepId=%u.extern ",
-				   job_step_ptr->job_id);
-		} else {
-			xstrfmtcat(out, "StepId=%u.%u ",
-				   job_step_ptr->job_id,
-				   job_step_ptr->step_id);
-		}
-	}
+
+	out = xstrdup("StepId=");
+
+	if (job_step_ptr->array_job_id)
+		xstrfmtcat(out, "%u_%u.",
+			   job_step_ptr->array_job_id,
+			   job_step_ptr->array_task_id);
+	else
+		xstrfmtcat(out, "%u.", job_step_ptr->job_id);
+
+	if (job_step_ptr->step_id == SLURM_PENDING_STEP)
+		xstrcat(out, "TBD ");
+	else if (job_step_ptr->step_id == SLURM_BATCH_SCRIPT)
+		xstrcat(out, "batch ");
+	else if (job_step_ptr->step_id == SLURM_EXTERN_CONT)
+		xstrcat(out, "extern ");
+	else
+		xstrfmtcat(out, "%u ", job_step_ptr->step_id);
+
 	xstrfmtcat(out, "UserId=%u StartTime=%s TimeLimit=%s",
 		   job_step_ptr->user_id, time_str, limit_str);
 
