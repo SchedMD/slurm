@@ -87,7 +87,6 @@ static void  _make_tmpdir(stepd_step_rec_t *job);
 static int   _run_script_and_set_env(const char *name, const char *path,
 				     stepd_step_rec_t *job);
 static void  _proc_stdout(char *buf, stepd_step_rec_t *job);
-static char *_uint32_array_to_str(int array_len, const uint32_t *array);
 
 /*
  * Process TaskProlog output
@@ -347,7 +346,6 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
  */
 extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 {
-	uint32_t *gtids;		/* pointer to array of ranks */
 	int fd, j;
 	stepd_step_task_info_t *task = job->task[local_proc_id];
 	char **tmp_env;
@@ -359,11 +357,9 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 	if (job->het_job_task_offset != NO_VAL)
 		task_offset = job->het_job_task_offset;
 
-	gtids = xmalloc(job->node_tasks * sizeof(uint32_t));
 	for (j = 0; j < job->node_tasks; j++)
-		gtids[j] = job->task[j]->gtid + task_offset;
-	job->envtp->sgtids = _uint32_array_to_str(job->node_tasks, gtids);
-	xfree(gtids);
+		xstrfmtcat(job->envtp->sgtids, "%s%u", j ? "," : "",
+			   job->task[j]->gtid + task_offset);
 
 	if (job->het_job_id != NO_VAL)
 		job->envtp->jobid = job->het_job_id;
@@ -571,30 +567,4 @@ _make_tmpdir(stepd_step_rec_t *job)
 	}
 
 	return;
-}
-
-/*
- * Return a string representation of an array of uint32_t elements.
- * Each value in the array is printed in decimal notation and elements
- * are separated by a comma.
- *
- * Returns an xmalloc'ed string.  Free with xfree().
- */
-static char *_uint32_array_to_str(int array_len, const uint32_t *array)
-{
-	int i;
-	char *sep = ",";  /* seperator */
-	char *str = xstrdup("");
-
-	if (array == NULL)
-		return str;
-
-	for (i = 0; i < array_len; i++) {
-
-		if (i == array_len-1) /* last time through loop */
-			sep = "";
-		xstrfmtcat(str, "%u%s", array[i], sep);
-	}
-
-	return str;
 }
