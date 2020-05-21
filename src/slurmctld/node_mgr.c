@@ -2520,7 +2520,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		threads2 = cores2   * config_ptr->threads;
 
 		if (threads1 < threads2) {
-			error("Node %s has low socket*core*thread count "
+			debug("Node %s has low socket*core*thread count "
 			      "(%d < %d)",
 			      reg_msg->node_name, threads1, threads2);
 			error_code = EINVAL;
@@ -2530,7 +2530,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		}
 
 		if (reg_msg->cpus < config_ptr->cpus) {
-			error("Node %s has low cpu count (%u < %u)",
+			debug("Node %s has low cpu count (%u < %u)",
 			      reg_msg->node_name, reg_msg->cpus,
 			      config_ptr->cpus);
 			error_code  = EINVAL;
@@ -2566,7 +2566,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	}
 	if (!(slurm_conf.conf_flags & CTL_CONF_OR)) {
 		if (reg_msg->real_memory < config_ptr->real_memory) {
-			error("Node %s has low real_memory size (%"PRIu64" < %"PRIu64")",
+			debug("Node %s has low real_memory size (%"PRIu64" < %"PRIu64")",
 			      reg_msg->node_name, reg_msg->real_memory,
 			      config_ptr->real_memory);
 			error_code  = EINVAL;
@@ -2576,7 +2576,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		}
 
 		if (reg_msg->tmp_disk < config_ptr->tmp_disk) {
-			error("Node %s has low tmp_disk size (%u < %u)",
+			debug("Node %s has low tmp_disk size (%u < %u)",
 			      reg_msg->node_name, reg_msg->tmp_disk,
 			      config_ptr->tmp_disk);
 			error_code = EINVAL;
@@ -2665,8 +2665,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		if (!IS_NODE_DOWN(node_ptr)
 			&& !IS_NODE_DRAIN(node_ptr)
 			&& ! IS_NODE_FAIL(node_ptr)) {
-			error ("Setting node %s state to DRAIN",
-				   reg_msg->node_name);
+			error("Setting node %s state to DRAIN with reason:%s",
+			       reg_msg->node_name, reason_down);
 			drain_nodes(reg_msg->node_name, reason_down,
 			            slurm_conf.slurm_user_id);
 		}

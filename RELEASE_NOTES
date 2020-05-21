@@ -77,6 +77,10 @@ HIGHLIGHTS
  -- Allow use of a target directory with "srun --bcast", and change the default
     filename to include the node name as well.
  -- Added a new --mail-type=INVALID_DEPEND option to salloc, sbatch, and srun.
+ -- Differences between hardware (memory size, number of CPUs) discovered on
+    node vs configured in slurm.conf will now throw an error only when the node
+    state is set to drain. Previously it was done on every node registration,
+    those messages were demoted to debug level.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
