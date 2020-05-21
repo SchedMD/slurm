@@ -76,6 +76,15 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 
+typedef struct {
+	uint16_t flags;
+	bool found;
+	int rc_in;
+	uint16_t signal;
+	slurm_step_id_t step_id;
+	uid_t uid;
+} step_signal_t;
+
 static void _build_pending_step(job_record_t *job_ptr,
 				job_step_create_request_msg_t *step_specs);
 static int  _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
@@ -316,6 +325,81 @@ static void _internal_step_complete(job_record_t *job_ptr,
 }
 
 /*
+ * _find_step_id - Find specific step_id entry in the step list,
+ *	           see common/list.h for documentation
+ * - object - the step list from a job_record_t
+ * - key - slurm_step_id_t
+ */
+static int _find_step_id(void *object, void *key)
+{
+	step_record_t *step_ptr = (step_record_t *)object;
+	slurm_step_id_t *step_id = (slurm_step_id_t *)key;
+
+	/* We want any step */
+	if (step_id->step_id == NO_VAL)
+		return 1;
+
+	/*
+	 * See if we have the same step id.  If we do check to see if we
+	 * have the same step_het_comp or if the step's is NO_VAL,
+	 * meaning this step is not a het step.
+	 */
+	if ((step_id->step_id == step_ptr->step_id.step_id) &&
+	    ((step_id->step_het_comp == step_ptr->step_id.step_het_comp) ||
+	     (step_id->step_het_comp == NO_VAL)))
+		return 1;
+	else
+		return 0;
+}
+
+static int _step_signal(void *object, void *arg)
+{
+	step_record_t *step_ptr = (step_record_t *)object;
+	step_signal_t *step_signal = (step_signal_t *)arg;
+	uint16_t signal;
+	int rc;
+
+
+	if (!(step_signal->flags & KILL_FULL_JOB) &&
+	    !_find_step_id(step_ptr, &step_signal->step_id))
+		return SLURM_SUCCESS;
+
+	step_signal->found = true;
+	signal = step_signal->signal;
+
+	/*
+	 * If step_het_comp is NO_VAL means it is a non-het step, so return
+	 * SLURM_ERROR to break out of the list_for_each.
+	 */
+	rc = (step_ptr->step_id.step_het_comp == NO_VAL) ?
+		SLURM_ERROR : SLURM_SUCCESS;
+
+	if (step_signal->flags & KILL_OOM)
+		step_ptr->exit_code = SIG_OOM;
+
+	/*
+	 * If SIG_NODE_FAIL codes through it means we had nodes failed
+	 * so handle that in the select plugin and switch the signal
+	 * to KILL afterwards.
+	 */
+	if (signal == SIG_NODE_FAIL) {
+		if (step_signal->rc_in != SLURM_SUCCESS)
+			return rc;
+		signal = SIGKILL;
+	}
+
+	/* save user ID of the one who requested the job be cancelled */
+	if (signal == SIGKILL) {
+		step_ptr->requid = step_signal->uid;
+		srun_step_complete(step_ptr);
+	}
+
+	signal_step_tasks(step_ptr, signal, REQUEST_SIGNAL_TASKS);
+
+	return rc;
+}
+
+/*
  * delete_step_records - Delete step record for specified job_ptr.
  * This function is called when a step fails to run to completion. For example,
  * when the job is killed due to reaching its time limit or allocated nodes
@@ -519,30 +603,6 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 }
 
 /*
- * _find_step_id - Find specific step_id entry in the step list,
- *	           see common/list.h for documentation
- * - object - the step list from a job_record_t
- * - key - slurm_step_id_t
- */
-static int _find_step_id(void *object, void *key)
-{
-	step_record_t *step_ptr = (step_record_t *)object;
-	slurm_step_id_t *step_id = (slurm_step_id_t *)key;
-
-	/*
-	 * See if we have the same step id.  If we do check to see if we
-	 * have the same step_het_comp or if the step's is NO_VAL,
-	 * meaning this step is not a het step.
-	 */
-	if ((step_id->step_id == step_ptr->step_id.step_id) &&
-	    ((step_id->step_het_comp == step_ptr->step_id.step_het_comp) ||
-	     (step_id->step_het_comp == NO_VAL)))
-		return 1;
-	else
-		return 0;
-}
-
-/*
  * find_step_record - return a pointer to the step record with the given
  *	job_id and step_id
  * IN job_ptr - pointer to job table entry to have step record added
@@ -572,8 +632,13 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 			   uint16_t signal, uint16_t flags, uid_t uid)
 {
 	job_record_t *job_ptr;
-	step_record_t *step_ptr;
-	int rc = SLURM_SUCCESS;
+	step_signal_t step_signal = { .flags = flags,
+				      .found = false,
+				      .rc_in = SLURM_SUCCESS,
+				      .signal = signal,
+				      .uid = uid };
+
+	memcpy(&step_signal.step_id, step_id, sizeof(step_signal.step_id));
 
 	job_ptr = find_job_record(step_id->job_id);
 	if (job_ptr == NULL) {
@@ -588,46 +653,26 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 	}
 
 	if (IS_JOB_FINISHED(job_ptr)) {
-		rc = ESLURM_ALREADY_DONE;
+		step_signal.rc_in = ESLURM_ALREADY_DONE;
 		if (signal != SIG_NODE_FAIL)
-			return rc;
+			return step_signal.rc_in;
 	} else if (!IS_JOB_RUNNING(job_ptr)) {
-		verbose("job_step_signal: %pJ StepId=%u can not be sent signal %u from state=%s",
-			job_ptr, step_id->step_id, signal,
+		verbose("%s: %pJ is in state %s, cannot signal steps",
+			__func__, job_ptr,
 			job_state_string(job_ptr->job_state));
 		if (signal != SIG_NODE_FAIL)
 			return ESLURM_TRANSITION_STATE_NO_UPDATE;
 	}
 
-	step_ptr = find_step_record(job_ptr, step_id);
+	list_for_each(job_ptr->step_list, _step_signal, &step_signal);
 
-	if (step_ptr == NULL) {
+	if (!step_signal.found) {
 		info("%s: %pJ StepId=%u not found",
 		     __func__, job_ptr, step_id->step_id);
 		return ESLURM_INVALID_JOB_ID;
-	} else if (flags & KILL_OOM) {
-		step_ptr->exit_code = SIG_OOM;
 	}
 
-	/* If SIG_NODE_FAIL codes through it means we had nodes failed
-	 * so handle that in the select plugin and switch the signal
-	 * to KILL afterwards.
-	 */
-	if (signal == SIG_NODE_FAIL) {
-		signal = SIGKILL;
-		if (rc != SLURM_SUCCESS)
-			return rc;
-	}
-
-	/* save user ID of the one who requested the job be cancelled */
-	if (signal == SIGKILL) {
-		step_ptr->requid = uid;
-		srun_step_complete(step_ptr);
-	}
-
-	signal_step_tasks(step_ptr, signal, REQUEST_SIGNAL_TASKS);
-
-	return SLURM_SUCCESS;
+	return step_signal.rc_in;
 }
 
 /*
