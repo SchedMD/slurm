@@ -14071,8 +14071,8 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 					job_ptr->time_last_active = now;
 				}
 				step_ptr = find_step_record(job_ptr,
-							    reg_msg->
-							    step_id[i].step_id);
+							    &reg_msg->
+							    step_id[i]);
 				if (step_ptr)
 					step_ptr->time_last_active = now;
 				debug3("Registered %pS on node %s",
