@@ -773,61 +773,6 @@ static void _wake_pending_steps(job_record_t *job_ptr)
 	list_iterator_destroy (step_iterator);
 }
 
-/*
- * job_step_complete - note normal completion the specified job step
- * IN job_id - id of the job to be completed
- * IN step_id - id of the job step to be completed
- * IN uid - user id of user issuing the RPC
- * IN requeue - job should be run again if possible
- * IN job_return_code - job's return code, if set then set state to JOB_FAILED
- * RET 0 on success, otherwise ESLURM error code
- * global: job_list - pointer global job list
- *	last_job_update - time of last job table update
- */
-int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
-		      bool requeue, uint32_t job_return_code)
-{
-	job_record_t *job_ptr;
-	step_record_t *step_ptr;
-	uint16_t cleaning = 0;
-
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		info("job_step_complete: invalid JobId=%u", job_id);
-		return ESLURM_INVALID_JOB_ID;
-	}
-
-	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
-		error("Security violation, JOB_COMPLETE RPC from uid %d",
-		      uid);
-		return ESLURM_USER_ID_MISSING;
-	}
-
-	step_ptr = find_step_record(job_ptr, step_id);
-	if (step_ptr == NULL)
-		return ESLURM_INVALID_JOB_ID;
-
-	if (step_ptr->step_id == SLURM_PENDING_STEP)
-		return SLURM_SUCCESS;
-
-	/* If the job is already cleaning we have already been here
-	 * before, so just return. */
-	select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-				    SELECT_JOBDATA_CLEANING,
-				    &cleaning);
-	if (cleaning) {	/* Step hasn't finished cleanup yet. */
-		debug("%s: Cleaning flag already set for %pS, no reason to cleanup again.",
-		      __func__, step_ptr);
-		return SLURM_SUCCESS;
-	}
-
-	_internal_step_complete(job_ptr, step_ptr);
-
-	last_job_update = time(NULL);
-
-	return SLURM_SUCCESS;
-}
-
 /* Pick nodes to be allocated to a job step. If a CPU count is also specified,
  * then select nodes with a sufficient CPU count.
  * IN job_ptr - job to contain step allocation
@@ -3416,7 +3361,7 @@ extern int kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 		req.range_last = step_node_inx;
 		req.step_rc = 9;
 		req.jobacct = NULL;	/* No accounting */
-		(void) step_partial_comp(&req, 0, &rem, &step_rc);
+		(void) step_partial_comp(&req, 0, false, &rem, &step_rc);
 
 		if (node_fail && !step_ptr->no_kill) {
 			info("Killing %pS due to failed node %s", step_ptr,
@@ -3449,11 +3394,12 @@ extern int kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
  *	some of its nodes
  * IN req     - step_completion_msg RPC from slurmstepd
  * IN uid     - UID issuing the request
+ * IN finish  - If true, no error, and no rem is 0 finish the step.
  * OUT rem    - count of nodes for which responses are still pending
  * OUT max_rc - highest return code for any step thus far
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
+extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 			     int *rem, uint32_t *max_rc)
 {
 	job_record_t *job_ptr;
@@ -3570,6 +3516,28 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 
 	if (max_rc)
 		*max_rc = step_ptr->exit_code;
+
+	/* The step has finished, finish it completely */
+	if (!*rem && finish) {
+		uint16_t cleaning = 0;
+		if (step_ptr->step_id == SLURM_PENDING_STEP)
+			return SLURM_SUCCESS;
+
+		/* If the job is already cleaning we have already been here
+		 * before, so just return. */
+		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+					    SELECT_JOBDATA_CLEANING,
+					    &cleaning);
+		if (cleaning) {	/* Step hasn't finished cleanup yet. */
+			debug("%s: Cleaning flag already set for %pS, no reason to cleanup again.",
+			      __func__, step_ptr);
+			return SLURM_SUCCESS;
+		}
+
+		_internal_step_complete(job_ptr, step_ptr);
+
+		last_job_update = time(NULL);
+	}
 
 	return SLURM_SUCCESS;
 }

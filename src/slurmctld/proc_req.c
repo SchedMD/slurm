@@ -3819,7 +3819,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 		lock_slurmctld(job_write_lock);
 	}
 
-	rc = step_partial_comp(req, uid, &rem, &step_rc);
+	rc = step_partial_comp(req, uid, true, &rem, &step_rc);
 
 	if (rc || rem) {	/* some error or not totally done */
 		/* Note: Error printed within step_partial_comp */
@@ -3833,8 +3833,6 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 		return;
 	}
 
-	error_code = job_step_complete(req->job_id, req->job_step_id,
-				       uid, false, step_rc);
 	if (!running_composite) {
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
