@@ -9756,7 +9756,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					job_specs->gres_cnt_node_select[i] *=
 						_get_task_cnt_node(
 						tasks_per_node_socket, i,
-						node_table_ptr[i].sockets);
+						node_table_ptr[i].tot_sockets);
 				} else if (job_specs->gres_per_job) {
 					job_specs->gres_cnt_node_select[i] =
 						_get_job_cnt(sock_gres,
@@ -9796,10 +9796,10 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					       tasks_per_node_socket);
 			} else if (job_specs->gres_per_job) {
 				uint16_t cpus_per_core;
-				cpus_per_core = node_table_ptr[i].cpus /
-						node_table_ptr[i].boards /
-						node_table_ptr[i].sockets /
-						node_table_ptr[i].cores;
+				cpus_per_core = node_table_ptr->cpus /
+						node_table_ptr->boards /
+						node_table_ptr->tot_sockets /
+						node_table_ptr->cores;
 				job_fini = _set_job_bits1(job_res, i, node_inx,
 					       rem_node_cnt, sock_gres,
 					       job_id, tres_mc_ptr,

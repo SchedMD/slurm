@@ -102,7 +102,7 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 			continue;
 		node_ptr = node_record_table + i;
 
-		socks = node_ptr->config_ptr->sockets;
+		socks = node_ptr->config_ptr->tot_sockets;
 		cores = node_ptr->config_ptr->cores;
 
 		if ((sock_inx < 0) ||
@@ -277,7 +277,7 @@ extern int valid_job_resources(job_resources_t *job_resrcs,
 			continue;
 		node_ptr = node_record_table + i;
 
-		socks = node_ptr->config_ptr->sockets;
+		socks = node_ptr->config_ptr->tot_sockets;
 		cores = node_ptr->config_ptr->cores;
 
 		if (sock_cnt >= job_resrcs->sock_core_rep_count[sock_inx]) {

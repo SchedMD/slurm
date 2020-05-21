@@ -1089,7 +1089,7 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 		config_ptr = node_ptr[i].config_ptr;
 		select_node_record[i].cpus    = config_ptr->cpus;
 		select_node_record[i].boards  = config_ptr->boards;
-		select_node_record[i].sockets = config_ptr->sockets;
+		select_node_record[i].sockets = config_ptr->tot_sockets;
 		select_node_record[i].cores   = config_ptr->cores;
 		select_node_record[i].threads = config_ptr->threads;
 		select_node_record[i].vpus    = config_ptr->threads;
@@ -1776,7 +1776,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 		}
 
 		node_boards  = node_ptr->config_ptr->boards;
-		node_sockets = node_ptr->config_ptr->sockets;
+		node_sockets = node_ptr->config_ptr->tot_sockets;
 		node_cores   = node_ptr->config_ptr->cores;
 		node_cpus    = node_ptr->config_ptr->cpus;
 		node_threads = node_ptr->config_ptr->threads;
@@ -2035,17 +2035,18 @@ extern int select_p_update_node_config(int index)
 	 */
 	if (!(slurm_conf.conf_flags & CTL_CONF_OR) &&
 	    (select_node_record[index].sockets !=
-	     select_node_record[index].node_ptr->config_ptr->sockets) &&
+	     select_node_record[index].node_ptr->config_ptr->tot_sockets) &&
 	    (select_node_record[index].cores !=
 	     select_node_record[index].node_ptr->config_ptr->cores) &&
 	    ((select_node_record[index].sockets *
 	      select_node_record[index].cores) ==
-	     (select_node_record[index].node_ptr->sockets *
+	     (select_node_record[index].node_ptr->tot_sockets *
 	      select_node_record[index].node_ptr->cores))) {
 		select_node_record[index].cores =
 			select_node_record[index].node_ptr->config_ptr->cores;
 		select_node_record[index].sockets =
-			select_node_record[index].node_ptr->config_ptr->sockets;
+			select_node_record[index].node_ptr->config_ptr->
+				tot_sockets;
 		/* tot_sockets should be the same */
 		/* tot_cores should be the same */
 	}

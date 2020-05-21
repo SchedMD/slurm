@@ -212,7 +212,7 @@ typedef struct slurm_conf_node {
 	uint16_t cpus;		/* count of cpus running on the node */
 	char *cpu_spec_list;	/* arbitrary list of specialized cpus */
 	uint16_t boards; 	/* number of boards per node */
-	uint16_t sockets;       /* number of sockets per node */
+	uint16_t tot_sockets;   /* number of sockets per node */
 	uint16_t cores;         /* number of cores per CPU */
 	uint16_t core_spec_cnt;	/* number of specialized cores */
 	uint16_t threads;       /* number of threads per core */

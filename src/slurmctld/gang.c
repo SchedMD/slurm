@@ -264,7 +264,7 @@ static void _load_phys_res_cnt(void)
 		if (gr_type == GS_CPU) {
 			bit = node_ptr->config_ptr->cpus;
 		} else {
-			sock = node_ptr->config_ptr->sockets;
+			sock = node_ptr->config_ptr->tot_sockets;
 			bit  = node_ptr->config_ptr->cores * sock;
 		}
 
@@ -286,14 +286,14 @@ static uint16_t _get_phys_bit_cnt(int node_index)
 	if (gr_type == GS_CPU)
 		return node_ptr->config_ptr->cpus;
 	return node_ptr->config_ptr->cores *
-		node_ptr->config_ptr->sockets;
+		node_ptr->config_ptr->tot_sockets;
 }
 
 static uint16_t _get_socket_cnt(int node_index)
 {
 	node_record_t *node_ptr = node_record_table_ptr + node_index;
 
-	return node_ptr->config_ptr->sockets;
+	return node_ptr->config_ptr->tot_sockets;
 }
 
 static void _destroy_parts(void *x)

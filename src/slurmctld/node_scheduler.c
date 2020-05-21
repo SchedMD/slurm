@@ -1792,7 +1792,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			i = bit_ffs(job_ptr->details->req_node_bitmap);
 			if (i >= 0) {
 				node_ptr = node_record_table_ptr + i;
-				j = node_ptr->config_ptr->sockets *
+				j = node_ptr->config_ptr->tot_sockets *
 					node_ptr->config_ptr->cores;
 			}
 			if ((i >= 0) && (job_ptr->details->core_spec >= j)) {
@@ -3426,7 +3426,7 @@ extern int job_req_node_filter(job_record_t *job_ptr,
 			continue;
 		}
 		if (mc_ptr &&
-		    (((mc_ptr->sockets_per_node > config_ptr->sockets) &&
+		    (((mc_ptr->sockets_per_node > config_ptr->tot_sockets) &&
 		      (mc_ptr->sockets_per_node != NO_VAL16)) ||
 		     ((mc_ptr->cores_per_socket > config_ptr->cores)   &&
 		      (mc_ptr->cores_per_socket != NO_VAL16)) ||
@@ -3598,7 +3598,7 @@ static int _build_node_list(job_record_t *job_ptr,
 	while ((config_ptr = list_next(config_iterator))) {
 		bool cpus_ok = false, mem_ok = false, disk_ok = false;
 		bool job_mc_ok = false, config_filter = false;
-		total_cores = config_ptr->boards * config_ptr->sockets *
+		total_cores = config_ptr->boards * config_ptr->tot_sockets *
 			      config_ptr->cores;
 		adj_cpus = adjust_cpus_nppcu(_get_ntasks_per_core(detail_ptr),
 					     detail_ptr->cpus_per_task,
@@ -3613,7 +3613,7 @@ static int _build_node_list(job_record_t *job_ptr,
 		if (!mc_ptr)
 			job_mc_ok = true;
 		if (mc_ptr &&
-		    (((mc_ptr->sockets_per_node <= config_ptr->sockets) ||
+		    (((mc_ptr->sockets_per_node <= config_ptr->tot_sockets) ||
 		      (mc_ptr->sockets_per_node == NO_VAL16))  &&
 		     ((mc_ptr->cores_per_socket <= config_ptr->cores)   ||
 		      (mc_ptr->cores_per_socket == NO_VAL16))  &&

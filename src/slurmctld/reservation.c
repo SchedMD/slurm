@@ -2374,7 +2374,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 				continue;
 			resv_ptr->core_cnt +=
 				(node_ptr->config_ptr->cores *
-				 node_ptr->config_ptr->sockets);
+				 node_ptr->config_ptr->tot_sockets);
 			cpu_cnt += node_ptr->config_ptr->cpus;
 		}
 	} else if (resv_ptr->core_bitmap) {
@@ -2389,7 +2389,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 					continue;
 
 				cores = (node_ptr->config_ptr->cores *
-					 node_ptr->config_ptr->sockets);
+					 node_ptr->config_ptr->tot_sockets);
 				threads = node_ptr->config_ptr->threads;
 
 				offset = cr_get_coremap_offset(i);

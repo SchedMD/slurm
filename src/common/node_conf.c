@@ -390,7 +390,7 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 		config_ptr->cpu_bind = node->cpu_bind;
 		config_ptr->cpus = node->cpus;
 		config_ptr->boards = node->boards;
-		config_ptr->sockets = node->sockets;
+		config_ptr->tot_sockets = node->tot_sockets;
 		config_ptr->cores = node->cores;
 		config_ptr->core_spec_cnt = node->core_spec_cnt;
 		config_ptr->cpu_spec_list = xstrdup(node->cpu_spec_list);
@@ -673,7 +673,7 @@ extern node_record_t *create_node_record(config_record_t *config_ptr,
 	node_ptr->free_mem = NO_VAL64;
 	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
 	node_ptr->boards = config_ptr->boards;
-	node_ptr->sockets = config_ptr->sockets;
+	node_ptr->tot_sockets = config_ptr->tot_sockets;
 	node_ptr->cores = config_ptr->cores;
 	node_ptr->core_spec_cnt = config_ptr->core_spec_cnt;
 	node_ptr->threads = config_ptr->threads;
@@ -1015,7 +1015,7 @@ extern void cr_init_global_core_data(node_record_t *node_ptr, int node_cnt)
 
 	for (n = 0; n < node_cnt; n++) {
 		uint16_t cores = node_ptr[n].config_ptr->cores;
-		cores *= node_ptr[n].config_ptr->sockets;
+		cores *= node_ptr[n].config_ptr->tot_sockets;
 
 		cr_node_num_cores[n] = cores;
 		if (n > 0) {

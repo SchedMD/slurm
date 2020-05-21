@@ -1780,7 +1780,7 @@ static void _gres_reconfig(bool reconfig)
 				&node_ptr->gres, &node_ptr->gres_list,
 				node_ptr->config_ptr->threads,
 				node_ptr->config_ptr->cores,
-				node_ptr->config_ptr->sockets,
+				node_ptr->config_ptr->tot_sockets,
 				slurm_conf.conf_flags & CTL_CONF_OR, NULL);
 		}
 	}
@@ -1980,7 +1980,7 @@ static int _restore_node_state(int recover,
 		node_ptr->core_spec_cnt = old_node_ptr->core_spec_cnt;
 		node_ptr->last_idle     = old_node_ptr->last_idle;
 		node_ptr->boards        = old_node_ptr->boards;
-		node_ptr->sockets       = old_node_ptr->sockets;
+		node_ptr->tot_sockets       = old_node_ptr->tot_sockets;
 		node_ptr->threads       = old_node_ptr->threads;
 		node_ptr->real_memory   = old_node_ptr->real_memory;
 		node_ptr->mem_spec_limit = old_node_ptr->mem_spec_limit;

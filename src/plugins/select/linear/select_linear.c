@@ -394,7 +394,7 @@ static int _get_avail_cpus(job_record_t *job_ptr, int index)
 	node_ptr = select_node_ptr + index;
 	cpus_per_node     = node_ptr->config_ptr->cpus;
 	boards_per_node   = node_ptr->config_ptr->boards;
-	sockets_per_board = node_ptr->config_ptr->sockets;
+	sockets_per_board = node_ptr->config_ptr->tot_sockets;
 	cores_per_socket  = node_ptr->config_ptr->cores;
 	thread_per_core   = node_ptr->config_ptr->threads;
 

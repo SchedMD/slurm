@@ -4643,7 +4643,7 @@ static int _get_node_cores(int node_inx)
 	node_record_t *node_ptr = node_record_table_ptr + node_inx;
 	int socks, cores;
 
-	socks = node_ptr->config_ptr->sockets;
+	socks = node_ptr->config_ptr->tot_sockets;
 	cores = node_ptr->config_ptr->cores;
 
 	return socks * cores;

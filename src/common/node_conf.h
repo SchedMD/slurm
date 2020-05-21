@@ -62,7 +62,7 @@ typedef struct {
 	uint16_t cpus;		/* count of processors running on the node */
 	char *cpu_spec_list;	/* arbitrary list of specialized cpus */
 	uint16_t boards;	/* count of boards configured */
-	uint16_t sockets;	/* number of sockets per node */
+	uint16_t tot_sockets;	/* number of sockets per node */
 	uint16_t cores;		/* number of cores per socket */
 	uint16_t core_spec_cnt;	/* number of specialized cores */
 	uint32_t cpu_bind;	/* default CPU binding type */
@@ -103,7 +103,7 @@ struct node_record {
 	time_t last_idle;		/* time node last become idle */
 	uint16_t cpus;			/* count of processors on the node */
 	uint16_t boards; 		/* count of boards configured */
-	uint16_t sockets;		/* number of sockets per node */
+	uint16_t tot_sockets;		/* number of sockets per node */
 	uint16_t cores;			/* number of cores per socket */
 	char *cpu_spec_list;		/* node's specialized cpus */
 	uint16_t core_spec_cnt;		/* number of specialized cores on node*/

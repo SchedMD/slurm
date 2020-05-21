@@ -233,7 +233,7 @@ static void _dump_node_state(node_record_t *dump_node_ptr, Buf buffer)
 	pack32  (dump_node_ptr->cpu_bind, buffer);
 	pack16  (dump_node_ptr->cpus, buffer);
 	pack16  (dump_node_ptr->boards, buffer);
-	pack16  (dump_node_ptr->sockets, buffer);
+	pack16  (dump_node_ptr->tot_sockets, buffer);
 	pack16  (dump_node_ptr->cores, buffer);
 	pack16  (dump_node_ptr->core_spec_cnt, buffer);
 	pack16  (dump_node_ptr->threads, buffer);
@@ -464,7 +464,7 @@ extern int load_all_node_state ( bool state_only )
 					 * down nodes */
 					node_ptr->cpus          = cpus;
 					node_ptr->boards        = boards;
-					node_ptr->sockets       = sockets;
+					node_ptr->tot_sockets = sockets;
 					node_ptr->cores         = cores;
 					node_ptr->core_spec_cnt =
 						core_spec_cnt;
@@ -556,7 +556,7 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->cpu_bind      = cpu_bind;
 			node_ptr->cpus          = cpus;
 			node_ptr->boards        = boards;
-			node_ptr->sockets       = sockets;
+			node_ptr->tot_sockets = sockets;
 			node_ptr->cores         = cores;
 			node_ptr->core_spec_cnt = core_spec_cnt;
 			node_ptr->threads       = threads;
@@ -901,7 +901,7 @@ static void _pack_node(node_record_t *dump_node_ptr, Buf buffer,
 		/* Only data from config_record used for scheduling */
 		pack16(dump_node_ptr->config_ptr->cpus, buffer);
 		pack16(dump_node_ptr->config_ptr->boards, buffer);
-		pack16(dump_node_ptr->config_ptr->sockets, buffer);
+		pack16(dump_node_ptr->config_ptr->tot_sockets, buffer);
 		pack16(dump_node_ptr->config_ptr->cores, buffer);
 		pack16(dump_node_ptr->config_ptr->threads, buffer);
 		pack64(dump_node_ptr->config_ptr->real_memory, buffer);
@@ -968,7 +968,7 @@ static void _pack_node(node_record_t *dump_node_ptr, Buf buffer,
 		/* Only data from config_record used for scheduling */
 		pack16(dump_node_ptr->config_ptr->cpus, buffer);
 		pack16(dump_node_ptr->config_ptr->boards, buffer);
-		pack16(dump_node_ptr->config_ptr->sockets, buffer);
+		pack16(dump_node_ptr->config_ptr->tot_sockets, buffer);
 		pack16(dump_node_ptr->config_ptr->cores, buffer);
 		pack16(dump_node_ptr->config_ptr->threads, buffer);
 		pack64(dump_node_ptr->config_ptr->real_memory, buffer);
@@ -1647,7 +1647,7 @@ extern void restore_node_features(int recover)
 			&node_ptr->gres_list,
 			slurm_conf.conf_flags & CTL_CONF_OR,
 			node_ptr->cores,
-			(node_ptr->boards * node_ptr->sockets));
+			(node_ptr->boards * node_ptr->tot_sockets));
 		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 	}
 	_update_node_avail_features(NULL, NULL, FEATURE_MODE_PEND);
@@ -1663,7 +1663,7 @@ config_record_t *_dup_config(config_record_t *config_ptr)
 	new_config_ptr->cpus        = config_ptr->cpus;
 	new_config_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
 	new_config_ptr->boards      = config_ptr->boards;
-	new_config_ptr->sockets     = config_ptr->sockets;
+	new_config_ptr->tot_sockets     = config_ptr->tot_sockets;
 	new_config_ptr->cores       = config_ptr->cores;
 	new_config_ptr->core_spec_cnt = config_ptr->core_spec_cnt;
 	new_config_ptr->threads     = config_ptr->threads;
@@ -1966,7 +1966,7 @@ static int _update_node_gres(char *node_names, char *gres)
 				&node_ptr->gres_list,
 				slurm_conf.conf_flags & CTL_CONF_OR,
 				node_ptr->cores,
-				(node_ptr->boards * node_ptr->sockets));
+				(node_ptr->boards * node_ptr->tot_sockets));
 			if (rc2 != SLURM_SUCCESS) {
 				bit_clear(tmp_bitmap, i);
 				overlap1--;
@@ -2268,7 +2268,7 @@ static void _split_node_config(node_record_t *node_ptr,
 		config_ptr = new_config_ptr;
 	}
 	config_ptr->cores = reg_msg->cores;
-	config_ptr->sockets = reg_msg->sockets;
+	config_ptr->tot_sockets = reg_msg->sockets;
 }
 
 /*
@@ -2395,7 +2395,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 
 	if (!(slurm_conf.conf_flags & CTL_CONF_OR)) {
 		/* sockets1, cores1, and threads1 are set above */
-		sockets2 = config_ptr->sockets;
+		sockets2 = config_ptr->tot_sockets;
 		cores2   = sockets2 * config_ptr->cores;
 		threads2 = cores2   * config_ptr->threads;
 
@@ -2422,10 +2422,10 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		if ((error_code == SLURM_SUCCESS) &&
 		    (cr_flag == SELECT_TYPE_CONS_RES) &&
 		    (node_features_cnt > 0) &&
-		    (reg_msg->sockets != config_ptr->sockets) &&
+		    (reg_msg->sockets != config_ptr->tot_sockets) &&
 		    (reg_msg->cores   != config_ptr->cores) &&
 		    ((reg_msg->sockets * reg_msg->cores) ==
-		     (config_ptr->sockets * config_ptr->cores))) {
+		     (config_ptr->tot_sockets * config_ptr->cores))) {
 			_split_node_config(node_ptr, reg_msg);
 		}
 	}
@@ -2439,7 +2439,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 
 	if (error_code == SLURM_SUCCESS) {
 		node_ptr->boards  = reg_msg->boards;
-		node_ptr->sockets = reg_msg->sockets;
+		node_ptr->tot_sockets = reg_msg->sockets;
 		node_ptr->cores   = reg_msg->cores;
 		node_ptr->threads = reg_msg->threads;
 		node_ptr->cpus    = reg_msg->cpus;

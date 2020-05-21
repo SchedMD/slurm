@@ -769,9 +769,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&n->reason, "Reason", tbl))
 			s_p_get_string(&n->reason, "Reason", dflt);
 
-		if (!s_p_get_uint16(&n->sockets, "Sockets", tbl)
-		    && !s_p_get_uint16(&n->sockets, "Sockets", dflt)) {
-			n->sockets = 1;
+		if (!s_p_get_uint16(&n->tot_sockets, "Sockets", tbl) &&
+		    !s_p_get_uint16(&n->tot_sockets, "Sockets", dflt)) {
+			n->tot_sockets = 1;
 			no_sockets = true;
 		}
 
@@ -836,16 +836,18 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 					      "SocketsPerBoard=# is invalid"
 					      ", using SocketsPerBoard",
 					      n->nodenames);
-				n->sockets = sockets_per_board;
+				n->tot_sockets = sockets_per_board;
 			} else if (!no_cpus && no_sockets) {
 				/* infer missing Sockets= */
-				n->sockets = n->cpus / (n->cores * n->threads);
+				n->tot_sockets = n->cpus / (n->cores *
+							    n->threads);
 			}
 
-			if (n->sockets == 0) { /* make sure sockets != 0 */
+			if (n->tot_sockets == 0) {
+				/* make sure sockets != 0 */
 				error("NodeNames=%s Sockets=0 is invalid, "
 				      "reset to 1", n->nodenames);
-				n->sockets = 1;
+				n->tot_sockets = 1;
 			}
 		} else {
 			/* In this case Boards=# is used.
@@ -866,39 +868,39 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 					      "using SocketsPerBoard",
 					      n->nodenames);
 
-				n->sockets = n->boards * sockets_per_board;
+				n->tot_sockets = n->boards * sockets_per_board;
 			} else if (!no_sockets) {
 				error("NodeNames=%s Sockets=# with Boards=# is"
 				      " not recommended, assume "
 				      "SocketsPerBoard was meant",
 				      n->nodenames);
-				if (n->sockets == 0) {
-					/* make sure sockets is non-zero */
+				if (n->tot_sockets == 0) {
+					/* make sure tot_sockets is non-zero */
 					error("NodeNames=%s Sockets=0 is "
 					      "invalid, reset to 1",
 					      n->nodenames);
-					n->sockets = 1;
+					n->tot_sockets = 1;
 				}
-				n->sockets = n->boards * n->sockets;
+				n->tot_sockets = n->boards * n->tot_sockets;
 			} else {
-				n->sockets = n->boards;
+				n->tot_sockets = n->boards;
 			}
 		}
 
 		if (no_cpus) {		/* infer missing CPUs= */
-			n->cpus = n->sockets * n->cores * n->threads;
+			n->cpus = n->tot_sockets * n->cores * n->threads;
 		}
 
 		/* Node boards are factored into sockets */
-		if ((n->cpus != n->sockets) &&
-		    (n->cpus != n->sockets * n->cores) &&
-		    (n->cpus != n->sockets * n->cores * n->threads)) {
+		if ((n->cpus != n->tot_sockets) &&
+		    (n->cpus != n->tot_sockets * n->cores) &&
+		    (n->cpus != n->tot_sockets * n->cores * n->threads)) {
 			error("NodeNames=%s CPUs=%d match no Sockets, Sockets*CoresPerSocket or Sockets*CoresPerSocket*ThreadsPerCore. Resetting CPUs.",
 			      n->nodenames, n->cpus);
-			n->cpus = n->sockets * n->cores * n->threads;
+			n->cpus = n->tot_sockets * n->cores * n->threads;
 		}
 
-		if (n->core_spec_cnt >= (n->sockets * n->cores)) {
+		if (n->core_spec_cnt >= (n->tot_sockets * n->cores)) {
 			error("NodeNames=%s CoreSpecCount=%u is invalid, "
 			      "reset to 1", n->nodenames, n->core_spec_cnt);
 			n->core_spec_cnt = 1;
@@ -2193,7 +2195,7 @@ static void _check_callback(char *alias, char *hostname, char *address,
 {
 	_push_to_hashtbls(alias, hostname, address, bcast_address, port,
 			  node_ptr->cpus, node_ptr->boards,
-			  node_ptr->sockets, node_ptr->cores,
+			  node_ptr->tot_sockets, node_ptr->cores,
 			  node_ptr->threads, 0, node_ptr->cpu_spec_list,
 			  node_ptr->core_spec_cnt,
 			  node_ptr->mem_spec_limit, NULL, false);
