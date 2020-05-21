@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - fix corrupted output due to incorrect use of memcpy().
  -- slurmrestd - address a number of minor Coverity warnings.
  -- Handle retry failure when slurmstepd is communicating with srun correctly.
+ -- Fix jobacct_gather possibly duplicate stats when _is_a_lwp error shows up.
 
 * Changes in Slurm 20.02.3
 ==========================
