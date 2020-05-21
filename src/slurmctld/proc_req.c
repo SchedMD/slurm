@@ -2596,7 +2596,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 			comp_msg->jobacct = NULL;
 			step_ptr->state |= JOB_COMPLETING;
 			jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
-			delete_step_record(job_ptr, step_ptr->step_id);
+			delete_step_record(job_ptr, step_ptr);
 		}
 	}
 

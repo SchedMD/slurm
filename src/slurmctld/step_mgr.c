@@ -410,10 +410,10 @@ static void _free_step_rec(step_record_t *step_ptr)
  * delete_step_record - delete record for job step for specified job_ptr
  *	and step_id
  * IN job_ptr - pointer to job table entry to have step record removed
- * IN step_id - id of the desired job step
+ * IN step_ptr - pointer to step table entry of the desired job step
  * RET 0 on success, errno otherwise
  */
-int delete_step_record(job_record_t *job_ptr, uint32_t step_id)
+int delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr_in)
 {
 	ListIterator step_iterator;
 	step_record_t *step_ptr;
@@ -428,7 +428,7 @@ int delete_step_record(job_record_t *job_ptr, uint32_t step_id)
 	last_job_update = time(NULL);
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->step_id != step_id)
+		if (step_ptr != step_ptr_in)
 			continue;
 
 		error_code = 0;
@@ -2622,7 +2622,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 			info("%s: %pS time greater than partition's (%u > %u)",
 			     __func__, step_ptr, step_specs->time_limit,
 			     job_ptr->part_ptr->max_time);
-			delete_step_record(job_ptr, step_ptr->step_id);
+			delete_step_record(job_ptr, step_ptr);
 			xfree(step_node_list);
 			return ESLURM_INVALID_TIME_LIMIT;
 		}
@@ -2638,7 +2638,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 				   step_specs->plane_size);
 	xfree(step_node_list);
 	if (!step_ptr->step_layout) {
-		delete_step_record (job_ptr, step_ptr->step_id);
+		delete_step_record(job_ptr, step_ptr);
 		if (step_specs->pn_min_memory)
 			return ESLURM_INVALID_TASK_MEMORY;
 		return SLURM_ERROR;
@@ -2661,8 +2661,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
 		i = resv_port_alloc(step_ptr);
 		if (i != SLURM_SUCCESS) {
-			delete_step_record (job_ptr,
-					    step_ptr->step_id);
+			delete_step_record(job_ptr, step_ptr);
 			return i;
 		}
 	}
@@ -2761,7 +2760,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		if (switch_g_build_jobinfo(step_ptr->switch_job,
 					   step_layout,
 					   step_ptr->network) < 0) {
-			delete_step_record (job_ptr, step_ptr->step_id);
+			delete_step_record(job_ptr, step_ptr);
 			if (tmp_step_layout_used)
 				xfree(step_layout->node_list);
 			if (errno == ESLURM_INTERCONNECT_BUSY)
@@ -4588,7 +4587,7 @@ extern int post_job_step(step_record_t *step_ptr)
 	/* Don't need to set state. Will be destroyed in next steps. */
 	/* step_ptr->state = JOB_COMPLETE; */
 
-	error_code = delete_step_record(job_ptr, step_ptr->step_id);
+	error_code = delete_step_record(job_ptr, step_ptr);
 	if (error_code == ENOENT) {
 		info("remove_job_step %pS not found", step_ptr);
 		return ESLURM_ALREADY_DONE;
