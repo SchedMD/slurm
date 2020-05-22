@@ -65,34 +65,6 @@ if { [string first "CR_ONE_TASK_PER_CORE" $select_type_params] != -1 } {
 #
 make_bash_script $file_in "$bin_sleep 600"
 
-proc def_cpu_cnt { } {
-	global sinfo alpha_numeric_under number exit_code partition
-
-	if { [string length $partition] == 0 } {
-		set partition [default_partition]
-	}
-	set cpu_cnt 1
-	spawn $sinfo -h -o "%P %C" -p $partition --state=idle
-	expect {
-		-re "$partition\\* ($number)(K?)\/($number)(K?)" {
-			set cpu_cnt $expect_out(3,string)
-			if {[string compare $expect_out(4,string) ""]} {
-				set cpu_cnt [expr $cpu_cnt * 1024]
-			}
-
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	return $cpu_cnt
-}
-
 ################################################################
 #
 # Proc: sub_job
@@ -651,7 +623,7 @@ proc sprio_args { soption sargs jobid} {
 ################################################################
 # Start a group of jobs
 
-set cpu_cnt [def_cpu_cnt]
+set cpu_cnt [get_total_cpus]
 set jobid1 [sub_job $cpu_cnt]
 set jobid2 [sub_job $cpu_cnt]
 if {$exit_code != 0} {
