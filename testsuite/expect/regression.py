@@ -41,6 +41,7 @@ def main(argv=None):
     tests = []
     failed_tests = []
     passed_tests = []
+    skipped_tests = []
     begin = (1,1)
 
     # Handle command line parameters
@@ -141,6 +142,9 @@ def main(argv=None):
                 except IOError as e:
                     print('ERROR failed to close %s %s' % (testlog_name, e),
                             file=sys.stederr);
+        elif retcode > 127:
+            skipped_tests.append(test)
+            sys.stdout.write('SKIPPED\n')
         else:
             failed_tests.append(test)
             os.rename(testlog_name, testlog_name+'.failed')
@@ -155,6 +159,7 @@ def main(argv=None):
           %((end_time-start_time)/60,(end_time-start_time)%60), file=sys.stdout)
     print('Completions  :', len(passed_tests), file=sys.stdout)
     print('Failures     :', len(failed_tests), file=sys.stdout)
+    print('Skipped      :', len(skipped_tests), file=sys.stdout)
     if len(failed_tests) > 0:
         print('Failed tests : ', file=sys.stdout)
         first = True
