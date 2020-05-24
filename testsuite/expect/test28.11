@@ -47,13 +47,6 @@ proc cleanup { } {
 	restore_conf $config_file
 	file delete $file_script
 	reconfigure
-
-	if { $exit_code == 0 } {
-		send_user "\nSUCCESS\n"
-	} else {
-		send_user "\nFAILURE\n"
-	}
-	exit $exit_code
 }
 
 proc get_single_node_feature { } {
@@ -91,9 +84,8 @@ if {[test_super_user] != 1} {
 }
 
 set config_path [get_conf_path]
-if { $exit_code != 0 } {
-	cleanup
-}
+fail_on_error "Not able to get config_path"
+
 set config_file $config_path/slurm.conf
 
 save_conf $config_file
@@ -103,23 +95,14 @@ exec $bin_sed -i /^\[\t\s\]*MinJobAge\[\t\s\]*=/Id $config_file
 exec $bin_echo -e "\nMinJobAge=10" >> $config_file
 
 reconfigure
-if { $exit_code != 0 } {
-	cleanup
-}
+fail_on_error "Not able to reconfigure"
 
 # Verify that MinJobAge was set
 set min_job_age [get_min_job_age]
-if { $min_job_age != 10 } {
-	log_error "Failed to set MinJobAge"
-	set exit_code 1
-	cleanup
-}
+assert_or_fail {$min_job_age == 10} "Failed to set MinJobAge"
 
 set node_feature [get_single_node_feature]
-if { $node_feature == "" } {
-	log_warn "Cannot run this test without any node features."
-	cleanup
-}
+assert_or_skip {$node_feature != ""} "Cannot run this test without any node features."
 
 # It doesn't matter how long the job sleeps; it will be cancelled anyway.
 make_bash_script $file_script "sleep 5"
@@ -146,9 +129,7 @@ expect {
 	}
 }
 
-if { $exit_code != 0 } {
-	cleanup
-}
+fail_on_error "Error submitting job"
 
 # Wait enough time for the jobs to be in the controller
 $bin_sleep 1
@@ -170,17 +151,12 @@ expect {
 	}
 }
 
-if { $count != $count_exp } {
-	log_error "Expected each of the $count_exp jobs to have features=$node_feature, but got $count"
-	cleanup
-}
+assert_or_fail { $count == $count_exp } [format "Expected each of the %s jobs to have features=%s, but got %s" \
+                                                $count_exp $node_feature $count]
 
 # Cancel the jobs and wait for them to purged from the controller
 set exit_code [cancel_job $job_id]
-if { $exit_code != 0 } {
-	log_fail "Problem cancelling job $job_id"
-	cleanup
-}
+fail_on_error "Problem cancelling job $job_id"
 
 set exit_code 1
 set sleep_time $min_job_age
@@ -203,4 +179,4 @@ expect {
 	}
 }
 
-cleanup
+pass
