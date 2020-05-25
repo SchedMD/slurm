@@ -57,6 +57,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
 #define PATH_TO_CPU	"/sys/devices/system/cpu/"
@@ -473,6 +474,10 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 
 	debug_flags = slurm_get_debug_flags(); /* init for slurmstepd */
 	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
+		char cpu_bind_type_string[128];
+
+		slurm_sprint_cpu_bind_type(cpu_bind_type_string,
+				           job->cpu_bind_type);
 		info("cpu_freq_cpuset_validate: request: min=(%12d  %8x) "
 		      "max=(%12d %8x) governor=%8x",
 		      job->cpu_freq_min, job->cpu_freq_min,
@@ -481,8 +486,8 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 		info("  jobid=%u, stepid=%u, tasks=%u cpu/task=%u, cpus=%u",
 		     job->jobid, job->stepid, job->node_tasks,
 		     job->cpus_per_task, job->cpus);
-		info("  cpu_bind_type=%4x, cpu_bind map=%s",
-		     job->cpu_bind_type, job->cpu_bind);
+		info("  cpu_bind_type=%s, cpu_bind map=%s",
+		     cpu_bind_type_string, job->cpu_bind);
 	}
 
 	if (!cpu_freq_count)
