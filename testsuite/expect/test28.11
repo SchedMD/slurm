@@ -4,11 +4,6 @@
 #          Confirms that a job array that requested a feature with
 #          the --constraint option is correctly purged from the controller
 #          (see bug 5702).
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Marshall Garey

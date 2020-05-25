@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose:  Test of slurm_job_step_stat() and slurm_load_job() API calls.
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # Note:    This script generates and then deletes a file in the working
 #          directory named test7.12.prog
 ############################################################################

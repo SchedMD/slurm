@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Test of srun signal forwarding
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # Note:    This script generates and then deletes files in the working directory
 #          named test1.32.prog
 ############################################################################

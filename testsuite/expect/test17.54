@@ -5,10 +5,6 @@
 #
 #          At the moment this test only really works if the DefaultTime is
 #          longer than 1 hour to verify the timelimit is set accordingly.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 CEA/DAM/DIF
 # Written by Aline Roy <aline.roy@cea.fr>

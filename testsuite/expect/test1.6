@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Confirm that srun sets appropriate working directory (--chdir option).
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # NOTE:    Due to symbolic links, we only look to match the last component
 #          of the directory name (e.g "cd /tmp; pwd" might return "/var/tmp").
 ############################################################################

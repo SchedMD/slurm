@@ -4,11 +4,6 @@
 #          Test that the core spec option in sbatch allocates the correct
 #          number of cores and that tasks spread over multiple nodes
 #          when there is not enough resources on one node.
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>

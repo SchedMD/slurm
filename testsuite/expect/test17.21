@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Tests #SBATCH entry functionality in a batch script
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2005-2007 The Regents of the University of California.
 # Copyright (C) 2008 Lawrence Livermore National Security.

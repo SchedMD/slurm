@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr clear (modify) resource values
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Written by Bill Brophy <bill.brophy@bull.com>
 #  Copyright (C) 2012 Bull S. A. S.

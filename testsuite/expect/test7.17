@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose:  Test GRES APIs.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2014 SchedMD LLC
 # Written by Morris Jette

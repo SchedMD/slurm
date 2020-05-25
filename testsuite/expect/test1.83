@@ -4,11 +4,6 @@
 #          Test of contiguous option with multiple nodes (--contiguous option).
 #          Also see test1.14.
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # NOTE:    This assumes node names are of the form <alpha><number>, where
 #          the value of <number> indicates the nodes relative location.
 #          Change tha node name parsing logic as needed for other formats.

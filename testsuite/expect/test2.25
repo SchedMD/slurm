@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validate that scontrol show assoc_mgr shows the data cached in
 #          the slurmctld
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>

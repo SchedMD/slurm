@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose:  Test of route/topology plugin
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 ############################################################################
 #  Copyright (C) 2014 Bull S. A. S.
 #		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.

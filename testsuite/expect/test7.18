@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose:  Test of slurm_hostlist_find().
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # Note:    This script generates and then deletes a file in the working
 #          directory named test7.18.prog
 ############################################################################
