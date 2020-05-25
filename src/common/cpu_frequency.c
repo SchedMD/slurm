@@ -489,7 +489,14 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 		return;
 
 	if (job->cpu_bind == NULL) {
-		error("cpu_freq_cpuset_validate: cpu_bind string is null");
+		/*
+		 * slurm_verify_cpu_bind will set cpu_bind to NULL for manual
+		 * binding that doesn't require an argument
+		 */
+		if ((job->cpu_bind_type != CPU_BIND_NONE) &&
+		    (job->cpu_bind_type != CPU_BIND_RANK) &&
+		    (job->cpu_bind_type != CPU_BIND_LDRANK))
+			error("cpu_freq_cpuset_validate: cpu_bind string is null");
 		return;
 	}
 	cpu_bind = xstrdup(job->cpu_bind);
