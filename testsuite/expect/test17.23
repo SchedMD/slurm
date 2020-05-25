@@ -179,7 +179,6 @@ if {$job_prio1 == 0 || $job_prio2 == 0 || $job_prio3 == 0} {
 cancel_job $job_id1
 cancel_job $job_id2
 cancel_job $job_id3
-exit if {$exit_code != 0} {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-

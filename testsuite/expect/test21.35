@@ -392,14 +392,11 @@ expect {
 }
 
 if {$match != 1 || $job_id} {
-	log_error "Job should have been killed upon submittion"
-	set exit_code 1
+	fail "Job should have been killed upon submission"
 }
 
 # Cancel the submitted job
 cancel_job $job_id
-
-cleanup
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors"

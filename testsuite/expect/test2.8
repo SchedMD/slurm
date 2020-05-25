@@ -50,7 +50,7 @@ if {[test_linear]} {
 }
 
 proc end_it {code} {
-	global job_id1 job_id2 bin_rm test_id
+	global job_id1 job_id2 bin_rm test_id exit_code
 
 	if {$job_id1} {
 		cancel_job $job_id1

@@ -89,8 +89,6 @@ proc delete_lic { license } {
 	}
 }
 
-print_header $test_id
-
 if { [test_using_slurmdbd] == 0 } {
         skip "This test can't be run without AccountStorageType=slurmdbd"
 } elseif { [test_super_user] == 0} {

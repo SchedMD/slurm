@@ -149,6 +149,12 @@ def main(argv=None):
         elif retcode > 127:
             skipped_tests.append(test)
             sys.stdout.write('SKIPPED\n')
+            if not options.keep_logs:
+                try:
+                    os.remove(testlog_name)
+                except IOError as e:
+                    print('ERROR failed to close %s %s' % (testlog_name, e),
+                            file=sys.stederr);
         else:
             failed_tests.append(test)
             os.rename(testlog_name, testlog_name+'.failed')
