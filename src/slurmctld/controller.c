@@ -1185,7 +1185,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	while (_wait_for_server_thread()) {
 		if (poll(fds, nports, -1) == -1) {
 			if (errno != EINTR)
-				error("slurm_accept_msg_conn select: %m");
+				error("slurm_accept_msg_conn poll: %m");
 			server_thread_decr();
 			continue;
 		}
