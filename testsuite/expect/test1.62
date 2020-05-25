@@ -123,7 +123,7 @@ proc run_gpu_fail { gres_spec } {
 		log_error "Failure to reject job with invalid GRES specification"
 		set exit_code 1
 	} else {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 	}
 	return
 }
@@ -137,7 +137,7 @@ set gpu_cnt [get_gpu_count 1]
 if {$gpu_cnt < 1} {
 	skip "This test can not be run without gres/gpu configured"
 }
-send_user "\n GPUs:$gpu_cnt\n"
+log_debug "GPUs:$gpu_cnt"
 #
 # Spawn a job via srun to print environment variables and
 # check count GPU devices allocated
@@ -152,7 +152,7 @@ for {set inx 1} {$inx <= $gpu_cnt && $inx <= 3} {incr inx} {
 #
 # Spawn a job via srun with various invalid GRES specifications
 #
-send_user "\nTest various invalid GRES specifications\n"
+log_info "Test various invalid GRES specifications"
 run_gpu_fail "gpu:"
 run_gpu_fail "gpu::"
 run_gpu_fail "gpu:tesla:"

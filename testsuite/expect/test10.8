@@ -106,8 +106,8 @@ expect {
 }
 
 if {$matches != 8} {
-	#send_user $matches ."\n"
-	send_user $stuff
+	#log_debug $matches .""
+	log_debug $stuff
 	fail "smap job display in commandline mode."
 }
 

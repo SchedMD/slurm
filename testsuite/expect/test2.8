@@ -129,7 +129,7 @@ if {[wait_for_job $job_id2 "RUNNING"] != 0} {
 #
 # NOTE: Match "JobId=" only
 #
-send_user "\nGetting more info for job id 1 ($job_id1)\n"
+log_debug "Getting more info for job id 1 ($job_id1)"
 set matches 0
 spawn $scontrol show job $job_id1
 expect {
@@ -149,7 +149,7 @@ expect {
 		wait
 	}
 }
-send_user "\nGetting more info for job id 2 ($job_id2)\n"
+log_debug "Getting more info for job id 2 ($job_id2)"
 spawn $scontrol show job $job_id2
 expect {
 	-re "JobId=$job_id2 " {
@@ -176,7 +176,7 @@ if {$matches != 2} {
 #
 # using the scontrol -d option to display more info about job
 #
-send_user "\nGetting more info for job id 1 ($job_id1) with -d option\n"
+log_debug "Getting more info for job id 1 ($job_id1) with -d option"
 set matches 0
 spawn $scontrol -d show job $job_id1
 expect {
@@ -196,7 +196,7 @@ expect {
 		wait
 	}
 }
-send_user "\nGetting more info for job id 2 ($job_id2) with -d option\n"
+log_debug "Getting more info for job id 2 ($job_id2) with -d option"
 spawn $scontrol -d show job $job_id2
 expect {
 	-re "JobId=$job_id2 " {
@@ -225,7 +225,7 @@ if {$matches != $match_target} {
 #
 # using the scontrol -dd option to display more info about job
 #
-send_user "\nGetting more info for job id 1 ($job_id1) with -dd option\n"
+log_debug "Getting more info for job id 1 ($job_id1) with -dd option"
 set matches 0
 spawn $scontrol -dd show job $job_id1
 expect {
@@ -245,7 +245,7 @@ expect {
 		wait
 	}
 }
-send_user "\nGetting more info for job id 2 ($job_id2) with -dd option\n"
+log_debug "Getting more info for job id 2 ($job_id2) with -dd option"
 spawn $scontrol -dd show job $job_id2
 expect {
 	-re "JobId=$job_id2 " {
@@ -370,7 +370,7 @@ expect {
 		exp_continue
 	}
 	-re "Invalid job id" {
-		send_user "\nNo worries, error expected\n"
+		log_debug "No worries, error expected"
 		incr matches
 		exp_continue
 	}

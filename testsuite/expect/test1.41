@@ -86,7 +86,7 @@ expect {
 }
 
 if {$timed_out == 1} {
-	send_user "\nEarly termination is expected, no worries.\n"
+	log_debug "Early termination is expected, no worries"
 }
 
 if {$task_cnt != $resp_cnt} {

@@ -128,7 +128,7 @@ if {$node_count != 1} {
 	set exit_code 1
 }
 if {$exit_code == 0} {
-	send_user "\nSo far, so good...\n\n\n"
+	log_debug "So far, so good.."
 }
 
 if {[wait_for_file $file_out2] != 0} {

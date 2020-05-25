@@ -48,7 +48,7 @@ set timeout	$max_job_delay
 set srun_pid [spawn $srun -N1 -l --mincpus=999999 -t1 $bin_date]
 expect {
 	-re "configuration is not available" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set err_msg 1
 		exp_continue
 	}
@@ -115,7 +115,7 @@ set timeout	$max_job_delay
 set srun_pid [spawn $srun -N1 -l --mem=999999 -t1 $bin_date]
 expect {
 	-re "not available" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set err_msg 1
 		exp_continue
 	}
@@ -155,7 +155,7 @@ set timeout	$max_job_delay
 set srun_pid [spawn $srun -N1 -l --mem=10 -t1 $bin_date]
 expect {
 	-re "not available" {
-		send_user "This error is not unexpected, no worries\n"
+		log_debug "This error is not unexpected, no worries"
 		set err_msg 1
 		exp_continue
 	}
@@ -192,7 +192,7 @@ set timeout	$max_job_delay
 set srun_pid [spawn $srun -N1 -l --tmp=999999999 -t1 $bin_date]
 expect {
 	-re "configuration is not available" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set err_msg 1
 		exp_continue
 	}

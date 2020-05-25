@@ -31,7 +31,7 @@ proc inc21_30_9 { wait_reason } {
 	global salloc srun nthreads acct bin_sleep grpcpumin_num number
 	global totcpus test_node qostest exit_code
 
-	send_user "\nStarting GrpCpuMins test (Within: inc21.30.9) \n\n"
+	log_info "Starting GrpCpuMins test (Within: inc21.30.9) "
 
 	if  { [test_enforce_safe_set] == 0 } {
 		log_warn "This test can't be run without AccountingStorageEnforce having \"safe\" in it"
@@ -50,7 +50,7 @@ proc inc21_30_9 { wait_reason } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nJob $job_id1 has been submitted. (Within: inc21.30.9)\n"
+			log_debug "Job $job_id1 has been submitted. (Within: inc21.30.9)"
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
@@ -77,7 +77,7 @@ proc inc21_30_9 { wait_reason } {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			send_user "\nJob $job_id2 is waiting for resources. This is expected. (Within: inc21.30.9)\n"
+			log_debug "Job $job_id2 is waiting for resources. This is expected. (Within: inc21.30.9)"
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id2 $expect_out(1,string)

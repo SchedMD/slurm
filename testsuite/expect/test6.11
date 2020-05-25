@@ -88,7 +88,7 @@ set matches 0
 spawn $scancel -v $job_id
 expect {
 	-re "error:" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set matches 1
 		exp_continue
 	}

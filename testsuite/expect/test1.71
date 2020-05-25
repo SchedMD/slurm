@@ -66,7 +66,7 @@ spawn ./$script
 expect {
 
 	-re "Segmentation fault" {
-		send_user "\nThis error is expected do not worry\n"
+		log_debug "This error is expected do not worry"
 		incr error_match
 		exp_continue
 	}
@@ -113,7 +113,7 @@ expect {
 if {$error_match != 2} {
 	fail "srun did not have a segmentation error when running the program ($error_match != 2)"
 } else {
-	send_user "\nThis error is expected\n"
+	log_debug "This error is expected"
 }
 
 if {$exit_code == 0} {

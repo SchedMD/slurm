@@ -124,7 +124,7 @@ set sub_match 0
 spawn $smd -r $node_name $job_id
 expect {
 	-re "The specified node has not failed" {
-		send_user "\nThis error is expected.\n"
+		log_debug "This error is expected"
 		set sub_match 1
 		exp_continue
 	}

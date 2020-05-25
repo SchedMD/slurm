@@ -166,7 +166,7 @@ expect {
 		if {$expect_out(1,string) == $target} {
 			incr matches
 		} else {
-			send_user "\nCORE value bad ($expect_out(1,string) != $target)\n"
+			log_warn "CORE value bad ($expect_out(1,string) != $target)"
 		}
 		exp_continue
 	}
@@ -175,7 +175,7 @@ expect {
 		if {$expect_out(1,string) == $target} {
 			incr matches
 		} else {
-			send_user "\nFSIZE value bad ($expect_out(1,string) != $target)\n"
+			log_warn "FSIZE value bad ($expect_out(1,string) != $target)"
 		}
 		exp_continue
 	}
@@ -183,7 +183,7 @@ expect {
 		if {$expect_out(1,string) == $limit_nofile} {
 			incr matches
 		} else {
-			send_user "\nNOFILE value bad ($expect_out(1,string) != $limit_nofile)\n"
+			log_warn "NOFILE value bad ($expect_out(1,string) != $limit_nofile)"
 		}
 		exp_continue
 	}
@@ -191,7 +191,7 @@ expect {
 		if {$expect_out(1,string) == $limit_nproc} {
 			incr matches
 		} else {
-			send_user "\nNPROC value bad ($expect_out(1,string) != $limit_nproc)\n"
+			log_warn "NPROC value bad ($expect_out(1,string) != $limit_nproc)"
 		}
 		exp_continue
 	}
@@ -204,7 +204,7 @@ expect {
 		if {$expect_out(1,string) == [expr $limit_stack * 1024]} {
 			incr matches
 		} else {
-			send_user "\nSTACK value bad ($expect_out(1,string) != $target)\n"
+			log_warn "STACK value bad ($expect_out(1,string) != $target)"
 		}
 		exp_continue
 	}

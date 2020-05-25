@@ -55,8 +55,6 @@ if {$damp != 1} {
 #
 file delete $test_prog
 
-send_user "build_dir is $build_dir\n"
-
 compile_against_libslurm ${test_prog} 1 "-ldl -lm -export-dynamic \
 					 ${build_dir}/src/slurmctld/locks.o \
 					 ${build_dir}/src/sshare/process.o"
@@ -66,11 +64,11 @@ fail_on_error "Cannot compile test program"
 spawn ./$test_prog
 expect {
 	"No last decay" {
-		send_user "This error is expected.  No worries.\n"
+		log_debug "This error is expected. No worries"
 		exp_continue
 	}
 	"error: Can't save decay state" {
-		send_user "This error is expected.  No worries.\n"
+		log_debug "This error is expected. No worries"
 		exp_continue
 	}
 
@@ -227,13 +225,13 @@ expect {
 
 if {$matches != $expected_matches} {
 	log_error "We didn't get the correct priorities from the plugin ($matches != $expected_matches)"
-	send_user "Some potentially useful information is below:
+	log_debug "Some potentially useful information is below:
 * Account aA, aB, and aC are general purpose algorithm tests with various shares, usage values, children counts, and depths
 * Account aD is used to test USE_PARENT. Any account that is USE_PARENT should have its children effectively reparented to the parent's parent. Any user with USE_PARENT should be ranked highest in its account, subject to ties with any other association with level_fs==1.0. uD2 and uD3 do NOT have the same level_fs; sshare doesn't show enough digits to visually distinguish.
 * Account aE and its children should have fairshare==1.0 as a result of tie handling code.
 * Account aF is similar to aE except its shares are different; they should still be 1.0.
 * Accounts aE and aF and their descendants and u1 (root) should have fairshare==1.0 or ranking is broken.
-* Account aG is set up so that uGA1 and uG1 will have equivalent fs factors due to the tie handling code but uGA2 will not.\n"
+* Account aG is set up so that uGA1 and uG1 will have equivalent fs factors due to the tie handling code but uGA2 will not."
 	set exit_code 1
 }
 

@@ -53,7 +53,7 @@ for {set node_cnt 1} {$node_cnt < $max_node_cnt} {set node_cnt [expr $node_cnt *
 	set srun_pid [spawn $srun --immediate -N$node_cnt $srun_opts -t2 $bin_printenv SLURMD_NODENAME]
 	expect {
 		-re "Immediate execution impossible" {
-			send_user "This error is expected, no worries\n"
+			log_debug "This error is expected, no worries"
 			set node_cnt $max_node_cnt
 			set error 0
 			exp_continue
@@ -64,13 +64,13 @@ for {set node_cnt 1} {$node_cnt < $max_node_cnt} {set node_cnt [expr $node_cnt *
 			exp_continue
 		}
 		-re "Unable to allocate resources" {
-			send_user "This error is expected, no worries\n"
+			log_debug "This error is expected, no worries"
 			set node_cnt $max_node_cnt
 			set error 0
 			exp_continue
 		}
 		-re "Too many open files" {
-			send_user "This error is expected, no worries\n"
+			log_debug "This error is expected, no worries"
 			set node_cnt $max_node_cnt
 			exp_continue
 		}

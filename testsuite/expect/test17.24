@@ -93,7 +93,7 @@ expect {
 	}
 	-re "Invalid partition name" {
 		incr matches
-		send_user "\nNo worries, this error is expected\n"
+		log_debug "No worries, this error is expected"
 		exp_continue
 	}
 	timeout {

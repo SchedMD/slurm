@@ -75,7 +75,7 @@ expect {
 	-re "Signal ($number) is ignored!" {
 		set signal $expect_out(1,string)
 		if { $have_runjob && (($signal == 1) || ($signal == 5) || ($signal == 12) || ($signal == 13)) } {
-			send_user "Signal $signal is ignored by default when using runjob, this error is expected, turn that frown upside down!\n"
+			log_debug "Signal $signal is ignored by default when using runjob, this error is expected, turn that frown upside down!"
 			exp_continue
 		} else {
 			log_error "At least one signal is ignored!"

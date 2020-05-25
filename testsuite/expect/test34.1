@@ -185,7 +185,7 @@ proc sub_job { part job } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -269,7 +269,7 @@ if {$got_node != 1} {
 }
 
 ###################### Test preempt cancel ######################
-send_user "\n*** TEST PREEMPT CANCEL ***\n"
+log_info "*** TEST PREEMPT CANCEL ***"
 
 delete_part $part_name_1
 delete_part $part_name_2
@@ -295,7 +295,7 @@ cancel_job $part_id_1
 
 ###################### Test preempt suspend ######################
 if { [test_gang] == 1 } {
-	send_user "\n*** TEST PREEMPT SUSPEND ***\n"
+	log_info "*** TEST PREEMPT SUSPEND ***"
 
 	mod_part $part_name_1 suspend
 	set part_id_1 [sub_job $part_name_1 $job1]
@@ -328,7 +328,7 @@ if { [test_gang] == 1 } {
 }
 
 ###################### Test preempt requeue ######################
-send_user "\n*** TEST PREEMPT REQUEUE ***\n"
+log_info "*** TEST PREEMPT REQUEUE ***"
 
 mod_part $part_name_1 requeue
 set part_id_1 [sub_job $part_name_1 $job1]

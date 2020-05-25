@@ -200,7 +200,7 @@ spawn $squeue --format=%u --noheader --user=$this_uid --nodelist=dummy_name
 expect {
 
 	-re "Invalid node name dummy_name" {
-		send_user "\nNo worries. This error is expected\n"
+		log_debug "No worries. This error is expected"
 		incr match
 		exp_continue
 	}

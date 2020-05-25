@@ -38,7 +38,7 @@ set number_commas  "\[0-9_,\]+"
 print_header $test_id
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
 	skip "This test is only compatible with select/cons_tres"
 }
@@ -72,13 +72,13 @@ array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set sockets_with_gpus [get_gpu_socket_count $gpu_cnt \
                                             $node_conf(Sockets)]
 
-log_info "GPU count is $gpu_cnt"
-log_info "Sockets with GPUs $sockets_with_gpus"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "Cores per socket is $node_conf(CoresPerSocket)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
-log_info "gres/craynetwork count is $craynetwork_count"
-log_info "CR_ONE_TASK_PER_CORE is $one_task_per_core"
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets with GPUs $sockets_with_gpus"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "Cores per socket is $node_conf(CoresPerSocket)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "gres/craynetwork count is $craynetwork_count"
+log_debug "CR_ONE_TASK_PER_CORE is $one_task_per_core"
 
 set cores_per_node [expr $node_conf(Sockets) * $node_conf(CoresPerSocket)]
 set cpus_per_node $node_conf(CPUTot)
@@ -119,7 +119,7 @@ exit 0"
 #
 # Test --gpus options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus option\n"
+log_info "TEST: --gpus option"
 set match_craynetwork 0
 set match_gpu 0
 set timeout $max_job_delay
@@ -162,7 +162,7 @@ if {$match_gpu != $expected_gpus} {
 }
 
 if {[expr $use_gpus_per_job - 2] > $nb_nodes} {
-	send_user "\n\nTEST: --gpus option, part 2\n"
+	log_info "TEST: --gpus option, part 2"
 	set match_craynetwork 0
 	set match_gpu 0
 	incr use_gpus_per_job -2
@@ -203,7 +203,7 @@ if {[expr $use_gpus_per_job - 2] > $nb_nodes} {
 #
 # Test --gpus-per-node options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus-per-node option\n"
+log_info "TEST: --gpus-per-node option"
 set match_craynetwork 0
 set match_gpu 0
 if {$gpus_per_node > 1} {
@@ -247,7 +247,7 @@ if {$match_gpu != $expected_gpus} {
 #
 # Test --gpus-per-socket options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus-per-socket option\n"
+log_info "TEST: --gpus-per-socket option"
 set match_craynetwork 0
 set match_gpu 0
 if {$sockets_with_gpus > 1} {
@@ -295,7 +295,7 @@ if {$match_gpu != $expected_gpus} {
 #
 # Test --gpus-per-task options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus-per-task option\n"
+log_info "TEST: --gpus-per-task option"
 set match_craynetwork 0
 set match_gpu 0
 if {$gpu_cnt > 1} {

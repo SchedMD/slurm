@@ -123,7 +123,7 @@ spawn $sbatch -N1 --array=0-[expr $array_size -1] --output=/dev/null -t1 $file_s
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		send_user "\njob $job_id was submitted\n"
+		log_debug "Job $job_id was submitted"
 		exp_continue
 	}
 	-re "error" {

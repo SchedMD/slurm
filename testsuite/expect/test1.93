@@ -133,7 +133,7 @@ if {$nb_nodes < 2} {
 if {![test_cpu_affinity]} {
 	skip "CPU affinity not supported on this system"
 }
-send_user "\ntask affinity plugin installed\n"
+log_debug "Task affinity plugin installed"
 
 #
 # Identify some nodes to use
@@ -167,7 +167,7 @@ if {$node_cnt != 2} {
 	fail "Unexpected resource count ($node_cnt != 2)"
 }
 
-send_user "\nDetermine the node and partition current CpuBind configuration\n"
+log_debug "Determine the node and partition current CpuBind configuration"
 set partition_cpu_bind [get_cpu_bind "partition" $def_part_name]
 set node_cpu_bind_0 [get_cpu_bind "node" $node_0]
 set node_cpu_bind_1 [get_cpu_bind "node" $node_1]

@@ -40,7 +40,7 @@ set job_id      0
 print_header $test_id
 
 if {[test_cons_tres]} {
-    send_user "\nValid configuration, using select/cons_tres\n"
+    log_debug "Valid configuration, using select/cons_tres"
 } else {
     skip "This test is only compatible with select/cons_tres"
 }
@@ -57,7 +57,7 @@ if {$mps_cnt < 100} {
 	log_error "MPS per node is unexpectedly low ($mps_cnt < 100). Check your configuration"
 	set exit_code 1
 }
-send_user "\nMPS count per node is $mps_cnt\n"
+log_debug "MPS count per node is $mps_cnt"
 
 #
 # Build input script file
@@ -174,8 +174,8 @@ if {[wait_for_file $file_out] == 0} {
 			log_error "CUDA MPS jobs appear to have not run in parallel. Run time difference was $percent_time_diff percent"
 			set exit_code 1
 		} else {
-			send_user "\nCUDA MPS jobs do appear to have not run in parallel\n"
-			send_user "Run time difference was $percent_time_diff percent\n"
+			log_debug "CUDA MPS jobs do appear to have not run in parallel"
+			log_debug "Run time difference was $percent_time_diff percent"
 		}
 	}
 } else {

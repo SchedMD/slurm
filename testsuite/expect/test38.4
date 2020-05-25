@@ -131,9 +131,9 @@ proc end_it { exit_code } {
 
 #start test
 
-send_user "\n################################################################\n"
-send_user "Salloc packjob and verify output from scontrol show job"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Salloc packjob and verify output from scontrol show job"
+log_info "################################################################"
 
 set job_id 0
 salloc

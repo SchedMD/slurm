@@ -100,7 +100,7 @@ if {$failed_cnt != 2 || $timeout_cnt != 1} {
 	log_error "batch job $job_id did not FAIL and/or the step did not TIMEOUT.  Count for FAILED was $failed_cnt (not 2) and TIMEOUT was $timeout_cnt (not 1)"
 	set exit_code 1
 
-	send_user "\nGathering more job information:\n"
+	log_debug "Gathering more job information:"
 	spawn $sacct --jobs=$job_id --starttime=00:00
 	expect {
 		eof {

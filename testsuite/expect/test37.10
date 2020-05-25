@@ -239,9 +239,9 @@ if {[setup_federation $fed_name]} {
 # get number of nodes per cluster
 set node_count [available_nodes "" ""]
 
-send_user "$eol################################################################$eol"
-send_user "Setup cluster features"
-send_user "$eol################################################################$eol"
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
 
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
@@ -345,9 +345,9 @@ if {$exit_code || $matches != 4} {
 
 make_bash_script $file_in "sleep 900"
 
-send_user "$eol################################################################$eol"
-send_user "test scancel within federated clusters"
-send_user "$eol################################################################$eol"
+log_info "################################################################"
+log_info "Test scancel within federated clusters"
+log_info "################################################################"
 
 set ji0 [sbatch]
 set jid([wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]) $ji0
@@ -540,7 +540,7 @@ squeue " -M$fedc1,$fedc2,$fedc3 " $regex
 
 set my_scancel "${fed_slurm_base}/$fedc3/bin/scancel"
 spawn $my_scancel -u $user_name
-send_user "here1\n"
+log_trace "Here1"
 
 wait_for_fed_job $ji0 DONE $cid($ji0)
 wait_for_fed_job $ji1 DONE $cid($ji1)

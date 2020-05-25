@@ -84,7 +84,7 @@ set match 0
 spawn $strigger --set -v --down --program=$cwd/$trigger_file_in
 expect {
 	-re "Duplicate event trigger" {
-		send_user "\nThis error is expected\n"
+		log_debug "This error is expected"
 		set match 1
 		exp_continue
 	}

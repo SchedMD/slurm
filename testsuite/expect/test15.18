@@ -54,7 +54,7 @@ expect {
 		exp_continue
 	}
 	-re "Unable to exec command|Unable to find command" {
-		send_user "\nNo worries, this error is expected\n"
+		log_debug "No worries, this error is expected"
 		set matches 1
 		exp_continue
 	}

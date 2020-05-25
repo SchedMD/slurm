@@ -64,7 +64,7 @@ proc sacct_job { soption } {
 	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "sacct $soption\n"
+	log_debug "Sacct $soption"
 
 	spawn $sacct $soption
 	expect {
@@ -73,12 +73,12 @@ proc sacct_job { soption } {
 			exp_continue
 		}
 		-re "Account.*AdminComment.*AllocCPUS.*AllocGRES" {
-			if {$debug} {send_user "\nmatch1\n"}
+			if {$debug} {log_debug "Match1"}
 			incr matches
 			exp_continue
 		}
 		-re "AllocNodes.*AllocTRES.*AssocID.*AveCPU" {
-			if {$debug} {send_user "\nmatch2\n"}
+			if {$debug} {log_debug "Match2"}
 			incr matches
 			exp_continue
 		}

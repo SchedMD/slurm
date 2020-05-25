@@ -109,7 +109,7 @@ if {$matches != $exp_matches} {
 	log_error "Prolog exported env var failure ($matches != $exp_matches)"
 	set exit_code 1
 } else {
-	send_user "\nSo far, so good\n\n"
+	log_debug "So far, so good"
 }
 
 #

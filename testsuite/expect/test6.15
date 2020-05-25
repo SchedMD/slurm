@@ -69,7 +69,7 @@ exit 0
 "
 
 set proctracktype [test_proctrack]
-send_user "Proctrack: $proctracktype\n"
+log_debug "Proctrack: $proctracktype"
 if {$proctracktype != "cgroup" && $proctracktype != "linuxproc" && $proctracktype != "pgid"} {
 	skip "This test only works for proctracktype/cgroup, proctracktype/linuxproc or proctracktype/pgid."
 }
@@ -99,7 +99,7 @@ proc test_signaling { batch full } {
 	#
 	# Submit sbatch job
 	#
-	send_user "\nSubmit the job\n"
+	log_debug "Submit the job"
 	set timeout $max_job_delay
 	set sbatch_pid [spawn $sbatch --output=$file_out -t2 $file_in]
 	expect {
@@ -141,7 +141,7 @@ proc test_signaling { batch full } {
 	}
 
 	exec $bin_sleep 2
-	send_user "\nSignal the job\n"
+	log_debug "Signal the job"
 	set cmd_str "$scancel -s SIGUSR1 $params $job_id"
 	spawn [lindex $cmd_str 0] {*}[lrange $cmd_str 1 end]
 	expect {
@@ -235,7 +235,7 @@ proc test_signaling { batch full } {
 			incr rc
 		}
 	} else {
-		send_user "\nERROR reading output file\n"
+		log_error "Error reading output file"
 		set rc 1
 	}
 

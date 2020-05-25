@@ -35,7 +35,7 @@ proc inc3_11_2 {} {
 
 	# TEST 2
 
-	send_user "\n+++++ STARTING TEST 2 (Within inc3.11.2) +++++\n"
+	log_info "+++++ STARTING TEST 2 (Within inc3.11.2) +++++"
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
 	if {$ret_code != 0} {
 		fail "Unable to create a valid reservation (Within inc3.11.2)"
@@ -63,7 +63,7 @@ proc inc3_11_2 {} {
 			set exit_code 1
 			break
 		} else {
-			send_user "\n\033\[32mReservation was updated as expected (Within: inc3.11.2)\033\[m\n"
+			log_debug "\033\[32mReservation was updated as expected (Within: inc3.11.2)"
 		}
 
 	}

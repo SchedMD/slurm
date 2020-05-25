@@ -30,7 +30,7 @@ proc inc21_30_16 { wait_reason } {
 
 	global salloc srun acct number bin_sleep maxnodespu_num exit_code
 
-	send_user "\nStarting MaxNodesPerUser test (Within: inc21.30.16)\n"
+	log_info "Starting MaxNodesPerUser test (Within: inc21.30.16)"
 
 	set job_id 0
 
@@ -38,7 +38,7 @@ proc inc21_30_16 { wait_reason } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			send_user "\nJob $job_id was submitted (Within: inc21.30.16)\n"
+			log_debug "Job $job_id was submitted (Within: inc21.30.16)"
 		}
 		-re "error" {
 			log_error "Job allocation should not have failed. (Within: inc21.30.16)"
@@ -65,7 +65,7 @@ proc inc21_30_16 { wait_reason } {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			send_user "\nThis error is expected. Do not worry (Within: inc21.30.16)\n"
+			log_debug "This error is expected. Do not worry (Within: inc21.30.16)"
 		}
 		-re "Granted job allocation" {
 			log_error "salloc should not have granted an allocation (Within: inc21.30.16)"

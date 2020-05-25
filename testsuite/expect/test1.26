@@ -116,12 +116,12 @@ expect {
 		exp_continue
 	}
 	-re "error: .*try again" {
-		send_user "Can't avoid this possible error\n"
+		log_debug "Can't avoid this possible error"
 		set host_1 $host_0
 		exp_continue
 	}
 	-re "error: .*already in shared memory" {
-		send_user "Can't avoid this possible error\n"
+		log_debug "Can't avoid this possible error"
 		set host_1 $host_0
 		exp_continue
 	}
@@ -178,7 +178,7 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 	expect {
 		-i $noalloc2
 		-re "error:.*configuring interconnect" {
-			send_user "Can't avoid this possible error\n"
+			log_debug "Can't avoid this possible error"
 			exp_continue
 		}
 		-re "error:" {
@@ -200,7 +200,7 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 	expect {
 		-i $noalloc1
 		-re "error:.*configuring interconnect" {
-			send_user "Can't avoid this possible error\n"
+			log_debug "Can't avoid this possible error"
 			exp_continue
 		}
 		-re "error:" {
@@ -228,7 +228,7 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 			exp_continue
 		}
 		-re "error:.*configuring interconnect" {
-			send_user "Can't avoid this possible error\n"
+			log_debug "Can't avoid this possible error"
 			exp_continue
 		}
 		-re "error:" {

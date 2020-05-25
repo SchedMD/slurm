@@ -39,7 +39,7 @@ set job_id      0
 print_header $test_id
 
 if {[test_cons_tres]} {
-    send_user "\nValid configuration, using select/cons_tres\n"
+    log_debug "Valid configuration, using select/cons_tres"
 } else {
     skip "This test is only compatible with select/cons_tres"
 }
@@ -57,9 +57,9 @@ if {$gpu_cnt < 1} {
 	skip "This test requires 1 or more GPUs per node in the default partition"
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
-log_info "GPUs per node count is $gpu_cnt"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "GPUs per node count is $gpu_cnt"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
 
 set cpus_per_node $node_conf(CPUTot)
 if {$gpu_cnt > $cpus_per_node} {

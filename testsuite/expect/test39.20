@@ -99,7 +99,7 @@ if {$store_gpu == -1} {
 }
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
 	skip "This test is only compatible with select/cons_tres"
 }
@@ -109,7 +109,7 @@ if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
-send_user "\nDefault partition node count is $nb_nodes\n"
+log_debug "Default partition node count is $nb_nodes"
 if {$nb_nodes > 1} {
 	set nb_nodes 2
 }
@@ -124,10 +124,10 @@ if {$gpu_cnt < 2} {
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set cpus_per_node $node_conf(CPUTot)
 
-log_info "GPUs per node is $gpu_cnt"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
-log_info "CPUs per node is $cpus_per_node"
+log_debug "GPUs per node is $gpu_cnt"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "CPUs per node is $cpus_per_node"
 
 if {$cpus_per_node < 3} {
 	skip "This test requires 3 or more CPUs per node in the default partition"
@@ -155,7 +155,7 @@ make_bash_script $file_in "
 #
 # Test --gpus option by job (first job over limit, second job under limit)
 #
-send_user "\n\nTEST 1: --gpus option by job (first job over limit, second job under limit)\n"
+log_info "TEST 1: --gpus option by job (first job over limit, second job under limit)"
 
 set timeout $max_job_delay
 exec $bin_rm -f $file_out1  $file_out2
@@ -238,7 +238,7 @@ if {$exit_code != 0} {
 #
 # Test --gpus-per-node option by job (first job over limit, second job under limit)
 #
-send_user "\n\nTEST 2: --gpus-per-node option by job (first job over limit, second job under limit)\n"
+log_info "TEST 2: --gpus-per-node option by job (first job over limit, second job under limit)"
 
 set timeout $max_job_delay
 exec $bin_rm -f $file_out1  $file_out2
@@ -326,7 +326,7 @@ if {$exit_code != 0} {
 #
 # Test --gpus-per-task option by job (first job over limit, second job under limit)
 #
-send_user "\n\nTEST 3: --gpus-per-task option by job (first job over limit, second job under limit)\n"
+log_info "TEST 3: --gpus-per-task option by job (first job over limit, second job under limit)"
 
 set total_cores [expr $node_conf(CoresPerSocket) * $node_conf(Sockets)]
 if {$one_task_pc && $cpus_per_node > $total_cores} {

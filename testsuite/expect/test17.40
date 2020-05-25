@@ -93,7 +93,7 @@ proc thread_spec_job {task node thread_spec exp_nodes} {
 		fail "This job should have failed but did not"
 
 	} elseif {$exp_nodes == -1 && $error_chk != 0} {
-		send_user "\nThis error is expected do not worry\n"
+		log_debug "This error is expected do not worry"
 
 	} else {
 		set thread_chk 0
@@ -251,7 +251,7 @@ if {$thread_cnt < 4} {
 #
 # Using the thread spec within the node limits
 #
-send_user "\n\nRun within the specified node\n"
+log_info "Run within the specified node"
 thread_spec_job  0 $first_node [expr $thread_cnt - 2] 0
 thread_spec_job -1 $first_node [expr $thread_cnt - 2] 0
 
@@ -259,14 +259,14 @@ thread_spec_job -1 $first_node [expr $thread_cnt - 2] 0
 # Using thread spec with more tasks then the node can handle. This should
 # cause the tasks to spread across multiple nodes as needed
 #
-send_user "\n\nSpread job across multiple nodes\n"
+log_info "Spread job across multiple nodes"
 thread_spec_job 1 $first_node [expr $thread_cnt - 2] 1
 thread_spec_job 1 $first_node [expr $thread_cnt - 1] 1
 
 #
 # Using thread spec with more thread then the specified node has
 #
-send_user "\n\nFail by trying to use more threads than exist\n"
+log_info "Fail by trying to use more threads than exist"
 thread_spec_job 1 $first_node [expr $thread_cnt + 1] -1
 thread_spec_job 1 $first_node [expr $thread_cnt + 3] -1
 

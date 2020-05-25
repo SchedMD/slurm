@@ -114,9 +114,9 @@ make_bash_script $file_in "#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1
 
 $bin_sleep 10"
 
-send_user "\n################################################################\n"
-send_user "Submit packjob and verify output from scontrol show job"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Submit packjob and verify output from scontrol show job"
+log_info "################################################################"
 
 set job_id [sbatch]
 
@@ -151,7 +151,7 @@ if {$matches != 2 } {
 	log_error "Problem with squeue test 1 ($matches != 2)"
 	end_it 1
 } else {
-	send_user "Test 1 OK\n\n"
+	log_debug "Test 1 OK"
 }
 
 set js [parse_id_set $id_set $job_id]
@@ -180,7 +180,7 @@ if {$matches != 1 } {
 	log_error "Problem with squeue test 2 ($matches != 1)"
 	end_it 1
 } else {
-	send_user "Test 2 OK\n\n"
+	log_debug "Test 2 OK"
 }
 
 set matches 0
@@ -204,7 +204,7 @@ if {$matches != 1 } {
 	log_error "Problem with squeue test 3 ($matches != 1)"
 	end_it 1
 } else {
-	send_user "Test 3 OK\n\n"
+	log_debug "Test 3 OK"
 }
 
 # All Done

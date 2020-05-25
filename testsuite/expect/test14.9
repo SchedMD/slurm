@@ -95,22 +95,22 @@ if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
 		-re "error: REQUEST_FILE_BCAST" {
-			send_user "These errors are expected, no worries\n"
+			log_debug "These errors are expected, no worries"
 			incr matches
 			exp_continue
 		}
 		-re "ls.* No such file" {
-			send_user "These errors are expected, no worries\n"
+			log_debug "These errors are expected, no worries"
 			incr matches
 			exp_continue
 		}
 		-re "ls.* does not exist" {
-			send_user "These errors are expected, no worries\n"
+			log_debug "These errors are expected, no worries"
 			incr matches
 			exp_continue
 		}
 		-re "ls.* not found" {
-			send_user "These errors are expected, no worries\n"
+			log_debug "These errors are expected, no worries"
 			incr matches
 			exp_continue
 		}

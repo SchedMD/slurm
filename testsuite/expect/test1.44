@@ -52,7 +52,7 @@ print_header $test_id
 proc run_cat_backpressure { input_file output_file } {
 	global bin_cat bin_sleep bin_rm srun node_cnt task_cnt timeout file_err
 
-	send_user "Running run_cat_backpressure (This is slow)."
+	log_debug "Running run_cat_backpressure (This is slow)"
 	exec $bin_rm -f $file_err $output_file
 	set iter 0
 
@@ -62,12 +62,12 @@ proc run_cat_backpressure { input_file output_file } {
 		puts -nonewline $output [read $srun_output 1]
 		incr iter
 		if {[expr $iter % 1000] == 0} {
-			send_user "."
+			puts -nonewline "."
 			exec $bin_sleep 1
 		}
 	}
 
-	send_user "\n"
+	puts ""
 	flush $output
 	close $output
 }

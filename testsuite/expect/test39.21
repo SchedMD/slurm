@@ -46,7 +46,7 @@ if {$gpu_cnt < 0} {
 if {$gpu_cnt < 1} {
 	skip "This test requires 1 or more GPUs per node in the default partition"
 }
-send_user "\nGPUs per node count is $gpu_cnt\n"
+log_debug "GPUs per node count is $gpu_cnt"
 
 #
 # Build input script file

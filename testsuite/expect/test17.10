@@ -87,20 +87,20 @@ expect {
 		set read_prio $expect_out(1,string)
 		if {$read_prio == 0} {
 			incr matches
-			send_user "match of Priority\n"
+			log_debug "Match of Priority"
 		}
 		exp_continue
 	}
 	-re "JobState=PENDING" {
 		incr matches
-		send_user "match of JobState\n"
+		log_debug "Match of JobState"
 		exp_continue
 	}
 	-re "MinCPUsNode=($number)" {
 		set read_cpus $expect_out(1,string)
 		if {$read_cpus == $cpu_cnt} {
 			incr matches
-			send_user "match of MinCPUsNode\n"
+			log_debug "Match of MinCPUsNode"
 		}
 		exp_continue
 	}
@@ -108,7 +108,7 @@ expect {
 		set read_mem $expect_out(1,string)
 		if {$read_mem == $mem_size} {
 			incr matches
-			send_user "match of MinMemory\n"
+			log_debug "Match of MinMemory"
 		}
 		exp_continue
 	}
@@ -116,7 +116,7 @@ expect {
 		set read_disk $expect_out(1,string)
 		if {$read_disk == $tmp_size} {
 			incr matches
-			send_user "match of MinTmpDiskNode\n"
+			log_debug "Match of MinTmpDiskNode"
 		}
 		exp_continue
 	}

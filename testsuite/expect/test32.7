@@ -112,7 +112,7 @@ if {[wait_for_file $file_out] == 0} {
 			exp_continue
 		}
 		eof {
-			send_user "\nNo worries about failing to open files, these are expected\n"
+			log_debug "No worries about failing to open files, these are expected"
 			wait
 		}
 	}

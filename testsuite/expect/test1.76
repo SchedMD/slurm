@@ -153,10 +153,10 @@ proc test_freq {opt expmin expcur expmax expgov} {
 	}
 	close $fd
 
-	send_user "\n--cpu-freq=$opt\n"
-	send_user "start_freq: $start_value\n"
-	send_user "test_freq:  $test_value\n"
-	send_user "end_freq:   $end_value\n\n"
+	log_debug "--cpu-freq=$opt"
+	log_debug "Start_freq: $start_value"
+	log_debug "Test_freq:  $test_value"
+	log_debug "End_freq:   $end_value"
 
 	set strt_vals [split $start_value " "]
 	set sgov [string range [lindex $strt_vals 0] 4 end]
@@ -209,11 +209,11 @@ proc test_freq {opt expmin expcur expmax expgov} {
 			return 2
 		}
 	} elseif {$expcur != 0} {
-		send_user "\nDifference between requested and actual frequency is $percent_error percent ($tcur vs. $expcur)\n\n"
+		log_debug "Difference between requested and actual frequency is $percent_error percent ($tcur vs. $expcur)"
 	}
 	if {[string compare $expmax 0] !=0 
 	    && [string compare $tmax $expmax] != 0} {
-		send_user "\nERROR: --cpu-freq=$opt -- test max $tmax not expected ($expmax)\n"
+		log_error "--cpu-freq=$opt -- test max $tmax not expected ($expmax)"
 		log_user 1
 		return 1
 	}
@@ -309,7 +309,7 @@ if {$test_cpu == -1} {
 	fail "Failed to get CPU count on node $test_node"
 }
 incr test_cpu -1
-send_user "test node is $test_node, test_cpu is $test_cpu\n"
+log_debug "Test node is $test_node, test_cpu is $test_cpu"
 
 # Verify that selected CPU on selected node supports cpu_frequency
 set have_on_demand 0
@@ -356,7 +356,7 @@ set xlow [lindex $avail_freq 0]
 set xhigh [lindex $avail_freq $nfreq-1]
 set xhighm1 [lindex $avail_freq $nfreq-2]
 set xmed [lindex $avail_freq $xmx]
-send_user "\nFrequencies: low:$xlow medium:$xmed highm1:$xhighm1 high:$xhigh\n"
+log_debug "Frequencies: low:$xlow medium:$xmed highm1:$xhighm1 high:$xhigh"
 
 #
 # Now run the tests

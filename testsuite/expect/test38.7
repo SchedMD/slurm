@@ -89,7 +89,7 @@ if {![file exists $test_prog]} {
 # TEST OF PACK GROUP 0
 ########################################################################
 
-send_user "\n\nTEST OF PACK GROUP 0\n\n"
+log_info "TEST OF PACK GROUP 0"
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -199,7 +199,7 @@ if {[wait_for_file $file_out] == 0} {
 # TEST OF PACK GROUP 1
 ########################################################################
 
-send_user "\n\nTEST OF PACK GROUP 1\n\n"
+log_info "TEST OF PACK GROUP 1"
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -331,7 +331,7 @@ if {[test_multiple_slurmd]} {
 	skip "This test is incompatible with multiple slurmd systems"
 }
 
-send_user "\n\nTEST OF PACK GROUP 0,1\n\n"
+log_info "TEST OF PACK GROUP 0,1"
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -440,7 +440,7 @@ if {[wait_for_file $file_out] == 0} {
 # TEST OF PACK GROUP 1 THEN 0,1
 ########################################################################
 
-send_user "\n\nTEST OF PACK GROUP 1 THEN 0,1\n\n"
+log_info "TEST OF PACK GROUP 1 THEN 0,1"
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -564,7 +564,7 @@ if {$exit_code == 0} {
 	if {$matches != 0} {
 		log_warn "If using MVAPICH then configure \"PropagateResourceLimitsExcept=MEMLOCK\". Also start slurmd with \"ulimit -l unlimited\""
 	} else {
-		send_user "Check contents of $file_err\n"
+		log_debug "Check contents of $file_err"
 	}
 }
 

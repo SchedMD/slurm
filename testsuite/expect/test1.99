@@ -66,15 +66,13 @@ if {[expr $ports(1) - $ports(0)] < 5} {
 # Copy the slurm.conf file
 #
 set config_path [get_conf_path]
-if { $exit_code != 0 } {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
 set config_file $config_path/slurm.conf
 
 save_conf $config_file
 
 ### Check that SrunPortRange in scontrol show config and slurm.conf match ###
-send_user "\n---Checking SrunPortRange in slurm.conf and scontrol show conf---\n"
+log_info "---Checking SrunPortRange in slurm.conf and scontrol show conf---"
 
 set slurm_conf_range ""
 spawn  $bin_grep -i SrunPortRange $config_file
@@ -121,7 +119,7 @@ foreach p $range {
 }
 
 # Check to see that srun is using the correct ports specified in slurm.conf #
-send_user "\n---Checking that srun uses correct ports---\n"
+log_info "---Checking that srun uses correct ports---"
 
 make_bash_script $file_in "pid=\$(ps -ef|grep srun| egrep -v 'grep| gdb' | awk '{if (NR==1)print \$2}')
 echo \$pid
@@ -163,7 +161,7 @@ exec $bin_echo include $config_path/$port_dir >> $config_file
 reconfigure
 
 ###### Check that srun produces an error when all ports are exhausted ######
-send_user "\n---Checking srun error when ports are exhausted---\n"
+log_info "---Checking srun error when ports are exhausted---"
 
 make_bash_script $tmp_job "$srun -t1 sleep 10"
 
@@ -196,7 +194,7 @@ spawn $srun -t1 sleep 10
 expect {
 	-re "all ports in range" {
 		set match 1
-		send_user "\nThis error is expected, do not worry\n"
+		log_debug "This error is expected, do not worry"
 		exp_continue
 	}
 	timeout {

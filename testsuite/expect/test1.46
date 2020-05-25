@@ -77,7 +77,7 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -n10 -N1 -O --kill-on-bad-exit -t1 ./$file_in]
 expect {
 	-re "exit code 2" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		incr matches
 		exp_continue
 	}

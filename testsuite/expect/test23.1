@@ -57,24 +57,24 @@ proc sstat_job { soption } {
 	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "sstat -$soption \n"
+	log_debug "sstat -$soption "
 
 	if { $soption == "h" || $soption == "-help" } {
 
 		spawn $sstat -$soption
 		expect {
 			-re "sstat...OPTION" {
-				if {$debug} {send_user "\nmatch6\n"}
+				if {$debug} {log_debug "Match6"}
 				incr matches
 				exp_continue
 			}
 			-re "Valid..OPTION" {
-				if {$debug} {send_user "\nmatch7\n"}
+				if {$debug} {log_debug "Match7"}
 				incr matches
 				exp_continue
 			}
 			-re "-e, --helpformat" {
-				if {$debug} {send_user "\nmatch8\n"}
+				if {$debug} {log_debug "Match8"}
 				incr matches
 				exp_continue
 			}
@@ -99,12 +99,12 @@ proc sstat_job { soption } {
 		spawn $sstat -$soption
 		expect {
 			-re "Usage: sstat .options. -j .job..stepid." {
-				if {$debug} {send_user "\nmatch9\n"}
+				if {$debug} {log_debug "Match9"}
 				incr matches
 				exp_continue
 			}
 			-re "Use --help for help" {
-				if {$debug} {send_user "\nmatch10\n"}
+				if {$debug} {log_debug "Match10"}
 				incr matches
 				exp_continue
 			}
@@ -129,7 +129,7 @@ proc sstat_job { soption } {
 		spawn $sstat -$soption
 		expect {
 			-re "slurm ($number).($number)." {
-				if {$debug} {send_user "\nmatch11\n"}
+				if {$debug} {log_debug "Match11"}
 				incr matches
 				exp_continue
 			}
@@ -156,7 +156,7 @@ if {$matches != 3} {
 	log_error "sstat -h failed ($matches)"
 	set exit_code 1
 } else {
-	send_user "\nsstat -h test GOOD!\n"
+	log_debug "Sstat -h test GOOD!"
 }
 
 set matches [sstat_job -help ]
@@ -164,7 +164,7 @@ if {$matches != 3} {
 	log_error "sstat --help failed ($matches)"
 	set exit_code 1
 } else {
-	send_user "\nsstat --help test GOOD!\n"
+	log_debug "Sstat --help test GOOD!"
 }
 
 set matches [sstat_job -usage ]
@@ -172,21 +172,21 @@ if {$matches != 2} {
 	log_error "sstat --usage failed ($matches)"
 	set exit_code 1
 } else {
-	send_user "\nsstat --usage test GOOD!\n"
+	log_debug "Sstat --usage test GOOD!"
 }
 
 set matches [sstat_job V ]
 if {$matches != 1} {
 	fail "sstat -V failed ($matches)"
 } else {
-	send_user "\nsstat -V test GOOD!\n"
+	log_debug "Sstat -V test GOOD!"
 }
 
 set matches [sstat_job -version ]
 if {$matches != 1} {
 	fail "sstat --version failed ($matches)"
 } else {
-	send_user "\nsstat --version test GOOD!\n"
+	log_debug "Sstat --version test GOOD!"
 }
 
 if {$exit_code != 0} {

@@ -109,7 +109,7 @@ if {$time_used == 0} {
 	set time_used 1
 }
 set rate [ expr ($job_cnt * 1000) / $time_used ]
-send_user "Job submit rate $rate jobs per second ($job_cnt jobs in $time_used msec)\n"
+log_debug "Job submit rate $rate jobs per second ($job_cnt jobs in $time_used msec)"
 if {$rate < $target} {
 	fail "Job submit rate of $rate below target of $target. This may be due to use of NFS rather than local storage for logs or state information"
 }

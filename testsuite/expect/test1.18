@@ -47,7 +47,7 @@ set srun_pid [spawn $srun --licenses=DUMMY_FOR_TESTING $bin_printenv SLURMD_NODE
 expect {
 	-re "Invalid license" {
 		set match 1
-		send_user "This error was expected, no worries\n\n"
+		log_debug "This error was expected, no worries"
 		exp_continue
 	}
 	timeout {
@@ -89,9 +89,7 @@ if {[string compare $licenses ""] != 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nNOTE: srun not responding\n"
-			send_user "  This test can fail if the selected "
-			send_user "license is in use.\n"
+			log_error "srun not responding. This test can fail if the selected license is in use"
 			set exit_code 1
 		}
 		eof {

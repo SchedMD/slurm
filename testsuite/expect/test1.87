@@ -89,7 +89,7 @@ expect {
 	}
 	"$prompt" {
 #		Printing this message seems to damage expect's buffers
-#		send_user "Job initiated\n"
+#		log_debug "Job initiated"
 	}
 	timeout {
 		slow_kill $srun_pid
@@ -131,7 +131,7 @@ expect {
 	}
 	"$prompt" {
 #		Printing this message seems to damage expect's buffers
-#		send_user "srun completed\n"
+#		log_debug "Srun completed"
 	}
 	timeout {
 		slow_kill $srun_pid
@@ -165,7 +165,7 @@ if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
-#send_user "\nhost_0:$host_0:host_1:$host_1:host_2:$host_2:host_3:$host_3:\n"
+#log_debug "Host_0:$host_0:host_1:$host_1:host_2:$host_2:host_3:$host_3:"
 #
 # Get two nodes relative (starting at) node 0
 #
@@ -202,7 +202,7 @@ expect {
 	}
 	"$prompt" {
 #		Printing this message seems to damage expect's buffers
-#		send_user "srun completed\n"
+#		log_debug "srun completed"
 	}
 	timeout {
 		slow_kill $srun_pid
@@ -252,7 +252,7 @@ expect {
 	}
 	"$prompt" {
 #		Printing this message seems to damage expect's buffers
-#		send_user "srun completed\n"
+#		log_debug "srun completed"
 	}
 	timeout {
 		slow_kill $srun_pid
@@ -275,7 +275,7 @@ set error 0
 send "$srun -l -N2 -n2 -O --relative=3 $bin_printenv SLURMD_NODENAME\r"
 expect {
 	-re "error:" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		incr error
 		exp_continue
 	}
@@ -289,7 +289,7 @@ expect {
 	}
 	"$prompt" {
 #		Printing this message seems to damage expect's buffers
-#		send_user "srun completed\n"
+#		log_debug "srun completed"
 	}
 	timeout {
 		slow_kill $srun_pid

@@ -83,7 +83,6 @@ expect {
 
 set total 0
 set good 0
-send_user "\n"
 foreach {slurm_var check_flag} [array get good_vars] {
     incr total
     if {[info exists found_vars($slurm_var)]} {

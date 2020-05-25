@@ -96,7 +96,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 
 
 foreach option [array names check_list] {
-	#send_user "\n$option=$check_list($option)\n"
+	#log_debug "$option=$check_list($option)"
 	if {[string compare $option "BatchHost"] == 0 && [test_front_end] != 0} {
 		continue
 	}

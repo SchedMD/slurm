@@ -79,7 +79,7 @@ $scontrol show burst"
 #
 # Remove any vestigial buffer
 #
-send_user "\n\nClean up vestigial burst buffer\n"
+log_debug "Clean up vestigial burst buffer"
 incr max_job_state_delay 300
 set job_id 0
 spawn $sbatch -t1 -N1 --output=/dev/null $script_rm
@@ -110,7 +110,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Now submit a job to use the persistent burst buffer followed by a job
 # to create the burst buffer, make sure the buffer creation happens first
 #
-send_user "\n\nCreate and use a burst buffer\n"
+log_debug "Create and use a burst buffer"
 set job_id_use 0
 spawn $sbatch -t1 -N1 --output=$output_use $script_use
 expect {

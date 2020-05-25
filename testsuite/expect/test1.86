@@ -89,7 +89,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	"$prompt" {
-		send_user "Job initiated\n"
+		log_debug "Job initiated"
 	}
 	timeout {
 		slow_kill $salloc_pid
@@ -123,7 +123,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		log_debug "srun completed"
 	}
 	timeout {
 		slow_kill $salloc_pid
@@ -168,7 +168,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		log_debug "srun completed"
 	}
 	timeout {
 		slow_kill $salloc_pid
@@ -202,7 +202,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		log_debug "srun completed"
 	}
 	timeout {
 		slow_kill $salloc_pid
@@ -240,7 +240,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		log_debug "srun completed"
 	}
 	timeout {
 		slow_kill $salloc_pid
@@ -274,7 +274,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		log_debug "srun completed"
 	}
 	timeout {
 		slow_kill $salloc_pid
@@ -304,12 +304,12 @@ expect {
 		exp_continue
 	}
 	"error:" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		incr matches
 		exp_continue
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		log_debug "srun completed"
 	}
 	timeout {
 		slow_kill $salloc_pid
@@ -336,12 +336,12 @@ expect {
 		exp_continue
 	}
 	"error:" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		incr matches
 		exp_continue
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		log_debug "srun completed"
 	}
 	timeout {
 		slow_kill $salloc_pid
@@ -382,7 +382,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		log_debug "srun completed"
 	}
 	timeout {
 		slow_kill $salloc_pid
@@ -415,7 +415,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		log_debug "srun completed"
 	}
 	timeout {
 		slow_kill $salloc_pid
@@ -442,7 +442,7 @@ expect {
 		exp_continue
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		log_debug "srun completed"
 	}
 	timeout {
 		slow_kill $salloc_pid

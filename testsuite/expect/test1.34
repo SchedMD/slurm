@@ -62,7 +62,7 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -n1 -t1 ./$file_in]
 expect {
 	-re "Segmentation fault" {
-		send_user "\nThis Seg Fault was expected, no worries\n"
+		log_debug "This Seg Fault was expected, no worries"
 		set matches 1
 		exp_continue
 	}

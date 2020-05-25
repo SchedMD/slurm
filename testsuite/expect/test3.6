@@ -110,7 +110,7 @@ set found -1
 spawn $scontrol -a show part $part_name
 expect {
 	-re "not found" {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		set found 0
 		exp_continue
 	}
@@ -213,7 +213,7 @@ set found -1
 spawn $scontrol -a show part $part_name
 expect {
 	-re "not found" {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		set found 0
 		exp_continue
 	}
@@ -233,8 +233,6 @@ if {$found != 0} {
 	fail "Partition not deleted"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

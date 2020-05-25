@@ -155,7 +155,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list account account=$ta1,$ta2,$ta3 format="Account,Desc,Org"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	        log_error "There was a problem with the sacctmgr command"
 	    	incr exit_code 1
 	}
 	-re "($ta1|$ta2|$ta3).$acct_mod_acct_vals1(description).$acct_mod_acct_vals1(organization)." {
@@ -163,7 +163,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -172,7 +172,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	send_user "\nFAILURE:  Account modification 1 incorrect with only $matches.\n"
+	log_error "Account modification 1 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -191,7 +191,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list assoc account=$ta1,$ta2,$ta3 format="Account,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	        log_error "There was a problem with the sacctmgr command"
 	    	incr exit_code 1
 	}
 	-re "($ta1|$ta2|$ta3).($tc1|$tc2).$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall)." {
@@ -199,7 +199,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -208,7 +208,7 @@ expect {
 	}
 }
 if {$matches != 6} {
-	send_user "\nFAILURE:  Account modification 2 incorrect with only $matches.\n"
+	log_error "Account modification 2 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -227,8 +227,8 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -n -p list account withassoc account=$ta1,$ta2,$ta3 format="Account,Desc,Org,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	 	incr exit_code 1
 	}
 	# Any time you use () around something you need to combine all
 	# those things together since you can miss some and they be thrown away
@@ -237,7 +237,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -247,7 +247,7 @@ expect {
 }
 
 if {$matches != 6} {
-	send_user "\nFAILURE:  Account modification 6 incorrect with $matches.\n"
+	log_error "Account modification 6 incorrect with $matches"
 	incr exit_code 1
 }
 
@@ -266,8 +266,8 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -n -p list assoc account=$ta3 format="Account,ParentN,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "$ta3.$ta2.$tc1.1.$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall)." {
 		incr matches
@@ -278,7 +278,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -287,7 +287,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE:  Account modification 2 incorrect with $matches.\n"
+	log_error "Account modification 2 incorrect with $matches"
 	incr exit_code 1
 }
 
@@ -307,15 +307,15 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -n -p list assoc account=$ta3,$ta2 format="Account,ParentN,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	   	incr exit_code 1
 	}
 	-re "($ta2.root.$tc2.$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|$ta2.$ta3.$tc1.$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|$ta3.root.($tc1|$tc2).1.....)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -324,7 +324,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	send_user "\nFAILURE:  Account modification 4 incorrect with $matches.\n"
+	log_error "Account modification 4 incorrect with $matches"
 	incr exit_code 1
 }
 
@@ -344,15 +344,15 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -n -p list assoc account=$ta3,$ta2 format="Account,ParentN,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "($ta2.root.($tc1|$tc2).$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|$ta3.$ta2.$tc1.1.$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|$ta3.root.$tc2.1.....)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -361,10 +361,9 @@ expect {
 	}
 }
 if {$matches != 4} {
-	send_user "\nFAILURE:  Account modification 4 incorrect with $matches.\n"
+	log_error "Account modification 4 incorrect with $matches"
 	incr exit_code 1
 }
-
 
 # This is the end below here
 
@@ -373,7 +372,5 @@ incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
 incr exit_code [remove_cluster "$tc1,$tc2"]
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
-} else {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

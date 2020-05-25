@@ -109,8 +109,7 @@ if {$too_small != 0} {
 	skip "Screen is too small for test"
 }
 if {$matches != 8} {
-	#send_user $matches ."\n"
-	send_user $stuff
+	log_debug $stuff
 	fail "smap job information display"
 }
 

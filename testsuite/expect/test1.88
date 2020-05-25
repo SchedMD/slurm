@@ -242,7 +242,7 @@ if {$exit_code == 0} {
 	if {$matches != 0} {
 		log_warn "If using MVAPICH then configure \"PropagateResourceLimitsExcept=MEMLOCK\". Also start slurmd with \"ulimit -l unlimited\""
 	} else {
-		send_user "Check contents of $file_err\n"
+		log_debug "Check contents of $file_err"
 	}
 }
 

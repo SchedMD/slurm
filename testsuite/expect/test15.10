@@ -55,7 +55,7 @@ for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 			exp_continue
 		}
 		-re "allocate failed" {
-			send_user "\nThis error is not unexpected, no worries\n"
+			log_debug "This error is not unexpected, no worries"
 			set tasks_get $tasks_set
 		}
 		timeout {
@@ -71,7 +71,7 @@ for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 				log_error "Did not get proper number of tasks: $tasks_get < $tasks_set"
 				set exit_code 1
 			} else {
-				send_user "test of $tasks_get processors good\n\n"
+				log_debug "Test of $tasks_get processors good"
 			}
 			wait
 		}

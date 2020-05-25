@@ -73,7 +73,7 @@ proc test_sbatch { local } {
 	}
 
 	if {$rc != 0 } {
-		send_user "\nThis error is expected, not a problem\n"
+		log_debug "This error is expected, not a problem"
 	}
 
 	if { $rc != $exp_rc } {
@@ -122,7 +122,7 @@ proc test_salloc { local } {
 	}
 
 	if {$rc != 0 } {
-		send_user "\nThis error is expected, not a problem\n"
+		log_debug "This error is expected, not a problem"
 	}
 
 	if { $rc != $exp_rc } {
@@ -168,7 +168,7 @@ proc test_srun { local } {
 	}
 
 	if {$rc != 0 } {
-		send_user "\nThis error is expected, not a problem\n"
+		log_debug "This error is expected, not a problem"
 	}
 
 	if { $rc != $exp_rc } {

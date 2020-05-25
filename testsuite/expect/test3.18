@@ -104,9 +104,9 @@ set matches 0
 spawn $scontrol update NodeName=$host_name Gres=gpu:1
 expect {
         -re "Invalid generic resource" {
-                incr matches
-		send_user "\nError is expected, no worries.\n"
-                exp_continue
+            incr matches
+			log_debug "Error is expected, no worries"
+            exp_continue
         }
 	timeout {
 		log_error "scontrol not responding"

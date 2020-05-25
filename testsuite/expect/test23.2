@@ -178,7 +178,7 @@ spawn $sbatch -N1 -t1 -v $job_mem_opt --gres=craynetwork:0 --account=$test_acct 
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id3 $expect_out(1,string)
-		send_user "\nFOUND JobID to be $job_id3\n"
+		log_debug "Found JobID to be $job_id3"
 		exp_continue
 	}
 	timeout {
@@ -239,7 +239,7 @@ proc sstat_job { soption job_id step_id } {
 	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "sstat -$soption -p -j $job_id\n"
+	log_debug "sstat -$soption -p -j $job_id"
 
 	if { $soption == "-allsteps" || $soption == "a" } {
 		spawn $sstat -$soption -p -j $job_id
@@ -249,12 +249,12 @@ proc sstat_job { soption job_id step_id } {
 				exp_continue
 			}
 			-re "$job_id.($number)" {
-				if {$debug} {send_user "\nmatch $expect_out(1,string)\n"}
+				if {$debug} {log_debug "Match $expect_out(1,string)"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id.batch" {
-				if {$debug} {send_user "\nmatch batch\n"}
+				if {$debug} {log_debug "Match batch"}
 				incr matches
 				exp_continue
 			}
@@ -283,12 +283,12 @@ proc sstat_job { soption job_id step_id } {
 				AveVMSize|MaxRSS|MaxRSSNode|MaxRSSTask|AveRSS|	\
 				MaxPages|MaxPagesNode|MaxPagesTask|AvePages|	\
 				MinCPU|MinCPUNode|MinCPUTask|AveCPU|NTasks" {
-				if {$debug} {send_user "\nmatch4\n"}
+				if {$debug} {log_debug "Match4"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id" {
-				if {$debug} {send_user "\nmatch5\n"}
+				if {$debug} {log_debug "Match5"}
 				incr matches
 				exp_continue
 			}
@@ -314,22 +314,22 @@ proc sstat_job { soption job_id step_id } {
 				exp_continue
 			}
 			-re "JobID\\|MaxVMSize\\|MaxVMSizeNode\\|MaxVMSizeTask\\|AveVMSize\\|MaxRSS\\|" {
-				if {$debug} {send_user "\nmatch6\n"}
+				if {$debug} {log_debug "Match6"}
 				incr matches
 				exp_continue
 			}
 			-re "MaxRSSNode\\|MaxRSSTask\\|AveRSS\\|MaxPages\\|MaxPagesNode\\|MaxPagesTask\\|" {
-				if {$debug} {send_user "\nmatch7\n"}
+				if {$debug} {log_debug "Match7"}
 				incr matches
 				exp_continue
 			}
 			-re "AvePages\\|MinCPU\\|MinCPUNode\\|MinCPUTask\\|AveCPU\\|NTasks\\|" {
-				if {$debug} {send_user "\nmatch8\n"}
+				if {$debug} {log_debug "Match8"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id.$step_id\\|" {
-				if {$debug} {send_user "\nmatch9\n"}
+				if {$debug} {log_debug "Match9"}
 				incr matches
 				exp_continue
 			}
@@ -355,22 +355,22 @@ proc sstat_job { soption job_id step_id } {
 				exp_continue
 			}
 			-re "JobID\\|MaxVMSize\\|MaxVMSizeNode\\|MaxVMSizeTask\\|AveVMSize\\|MaxRSS\\|" {
-				if {$debug} {send_user "\nmatch10\n"}
+				if {$debug} {log_debug "Match10"}
 				incr matches
 				exp_continue
 			}
 			-re "MaxRSSNode\\|MaxRSSTask\\|AveRSS\\|MaxPages\\|MaxPagesNode\\|MaxPagesTask\\|" {
-				if {$debug} {send_user "\nmatch11\n"}
+				if {$debug} {log_debug "Match11"}
 				incr matches
 				exp_continue
 			}
 			-re "AvePages\\|MinCPU\\|MinCPUNode\\|MinCPUTask\\|AveCPU\\|NTasks" {
-				if {$debug} {send_user "\nmatch12\n"}
+				if {$debug} {log_debug "Match12"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id.$step_id\\|" {
-				if {$debug} {send_user "\nmatch13\n"}
+				if {$debug} {log_debug "Match13"}
 				incr matches
 				exp_continue
 			}
@@ -396,22 +396,22 @@ proc sstat_job { soption job_id step_id } {
 				exp_continue
 			}
 			-re "JobID.MaxVMSize.MaxVMSizeNode.MaxVMSizeTask.AveVMSize.MaxRSS" {
-				if {$debug} {send_user "\nmatch14\n"}
+				if {$debug} {log_debug "Match14"}
 				incr matches
 				exp_continue
 			}
 			-re "MaxRSSNode.MaxRSSTask.AveRSS.MaxPages.MaxPagesNode.MaxPagesTask" {
-				if {$debug} {send_user "\nmatch15\n"}
+				if {$debug} {log_debug "Match15"}
 				incr matches
 				exp_continue
 			}
 			-re "AvePages.MinCPU.MinCPUNode.MinCPUTask.AveCPU.NTasks" {
-				if {$debug} {send_user "\nmatch16\n"}
+				if {$debug} {log_debug "Match16"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id" {
-				if {$debug} {send_user "\nmatch17\n"}
+				if {$debug} {log_debug "Match17"}
 				incr matches
 				exp_continue
 			}
@@ -448,7 +448,7 @@ proc sstat_vargs { soption vargs job_id} {
 	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "sstat -$soption $vargs -p -j $job_id\n"
+	log_debug "sstat -$soption $vargs -p -j $job_id"
 
 	if { $soption == "o" || $soption == "-format" } {
 		spawn $sstat -$soption $vargs -p -j $job_id
@@ -458,32 +458,32 @@ proc sstat_vargs { soption vargs job_id} {
 				exp_continue
 			}
 			-re "AveCPU.AvePages.AveRSS.AveVMSize" {
-				if {$debug} {send_user "\nmatch18\n"}
+				if {$debug} {log_debug "Match18"}
 				incr matches
 				exp_continue
 			}
 			-re "JobID.MaxPages.MaxPagesNode.MaxPagesTask" {
-				if {$debug} {send_user "\nmatch19\n"}
+				if {$debug} {log_debug "Match19"}
 				incr matches
 				exp_continue
 			}
 			-re "MaxRSS.MaxRSSNode.MaxRSSTask.MaxVMSize" {
-				if {$debug} {send_user "\nmatch20\n"}
+				if {$debug} {log_debug "Match20"}
 				incr matches
 				exp_continue
 			}
 			-re "MaxVMSizeNode.MaxVMSizeTask.MinCPU.MinCPUNode" {
-				if {$debug} {send_user "\nmatch21\n"}
+				if {$debug} {log_debug "Match21"}
 				incr matches
 				exp_continue
 			}
 			-re "MinCPUTask.NTasks" {
-				if {$debug} {send_user "\nmatch22\n"}
+				if {$debug} {log_debug "Match22"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id" {
-				if {$debug} {send_user "\nmatch23\n"}
+				if {$debug} {log_debug "Match23"}
 				incr matches
 				exp_continue
 			}
@@ -586,7 +586,7 @@ expect {
 		exp_continue
 	}
 	"Job(s) active, cancel job(s) before remove" {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		set needtodel 1
 	}
 

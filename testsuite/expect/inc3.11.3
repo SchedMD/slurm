@@ -38,7 +38,7 @@ proc inc3_11_3 {} {
 
 	# TEST 3
 
-	send_user "\n+++++ STARTING TEST 3 (Within: inc3.11.3) +++++\n"
+	log_info "+++++ STARTING TEST 3 (Within: inc3.11.3) +++++"
 	# Make the reservation
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
 	if {$ret_code != 0} {
@@ -95,7 +95,7 @@ proc inc3_11_3 {} {
 		}
 	}
 
-	send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.3)\033\[m\n"
+	log_debug "\033\[32mJOB is running as expected (Within: inc3.11.3)"
 
 	# Cancel the job
 	spawn $scancel -v $job_id

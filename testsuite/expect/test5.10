@@ -199,7 +199,7 @@ create_part $test_part_1 1
 create_part $test_part_2 2
 
 # Submit a job to check priority
-send_user "\n\nTest 1\n"
+log_info "Test 1"
 make_bash_script $file_in "sleep 20"
 sub_job
 
@@ -235,7 +235,7 @@ change_prio $test_part_1 2
 change_prio $test_part_2 1
 
 # Submit another job to check priority
-send_user "\n\nTest 2\n"
+log_info "Test 2"
 sub_job
 
 # Check partition
@@ -267,7 +267,7 @@ cancel_job $job_id
 
 # Submit a job that will run now to check that the --priority option for
 # squeue will only list the job running on the partition
-send_user "\n\nTest 3\n"
+log_info "Test 3"
 set job_id 0
 spawn $sbatch -N1 -o/dev/null -t1 --begin=now -p$test_part_1,$test_part_2 $file_in
 expect {
@@ -288,7 +288,7 @@ if {$job_id == 0} {
 	fail "sbatch did not submit job"
 }
 if {[wait_for_job $job_id RUNNING] != 0} {
-	send_user "\nJob $job_id failed to start\n"
+	log_error "Job $job_id failed to start"
 	set exit_code 1
 }
 
@@ -312,7 +312,7 @@ if {$part_chk != 1} {
 	log_error "Job $job_id should be RUNNING in partition $test_part_1 and is not"
 	set exit_code 1
 } else {
-	send_user "\nJob $job_id is RUNNING in partition $test_part_1 as expected\n"
+	log_debug "Job $job_id is RUNNING in partition $test_part_1 as expected"
 }
 
 cancel_job $job_id

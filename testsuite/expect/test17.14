@@ -98,7 +98,7 @@ expect {
 		if {$expect_out(1,string) == $test_env_val} {
 			incr matches
 		} else {
-			send_user "\nNO MATCHX${expect_out(1,string)}X${test_env_val}X\n"
+			log_debug "NO MATCHX${expect_out(1,string)}X${test_env_val}X"
 		}
 		exp_continue
 	}

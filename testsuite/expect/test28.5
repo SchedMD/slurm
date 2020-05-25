@@ -140,7 +140,7 @@ spawn $sbatch -N1 --array=0-[expr $array_size -1] --begin=midnight --output=/dev
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		send_user "\njob $job_id was submitted\n"
+		log_debug "Job $job_id was submitted"
 		exp_continue
 	}
 	-re "error" {
@@ -160,26 +160,26 @@ expect {
 # hold the whole array then release individual jobs in the array
 if {$job_id != 0} {
 
-	send_user "\nHolding entire job array\n"
+	log_debug "Holding entire job array"
 	hold_job $job_id
 	check_hold_job ${job_id}_0
 	check_hold_job ${job_id}_1
 
-	send_user "\nReleasing job index $array_in in the array\n"
+	log_debug "Releasing job index $array_in in the array"
 	release_job ${job_id}_$array_in
 	check_hold_job ${job_id}_0
 	check_release_job ${job_id}_$array_in
 
-	send_user "\nReleasing the entire job array\n"
+	log_debug "Releasing the entire job array"
 	release_job $job_id
 	check_release_job ${job_id}_0
 	check_release_job ${job_id}_1
 
-	send_user "\nHolding job index $array_in in the array\n"
+	log_debug "Holding job index $array_in in the array"
 	hold_job ${job_id}_$array_in
 	check_hold_job ${job_id}_$array_in
 
-	send_user "\nReleasing job index $array_in in the array\n"
+	log_debug "Releasing job index $array_in in the array"
 	release_job ${job_id}_$array_in
 	check_release_job ${job_id}_$array_in
 

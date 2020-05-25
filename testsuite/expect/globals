@@ -493,20 +493,18 @@ proc fail_on_error { message } {
 #
 # Proc: print_time
 #
-# Purpose:  Print the current data and time
+# Purpose:  Print the current date and time
 #
 ################################################################
 proc print_time { } {
 	global bin_date
 
-	send_user "\n"
 	spawn $bin_date
 	expect {
 		eof {
 			wait
 		}
 	}
-	send_user "\n"
 
 	return
 }
@@ -531,7 +529,7 @@ proc cancel_job { job_id {het_job 0}} {
 		return 1
 	}
 
-	send_user "cancelling $job_id\n"
+	log_debug "Cancelling $job_id"
 	set status [catch [exec $scancel -Q $job_id] result]
 	exec $bin_sleep 1
 	return [wait_for_job $job_id "DONE" $het_job]

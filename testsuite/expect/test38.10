@@ -98,7 +98,7 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
 		log_error "salloc : allocation not granted in $timeout seconds"

@@ -89,7 +89,7 @@ if {$over_time_limit > 0} {
 }
 if {$inactive_limit < $sleep_time} {
 	set sleep_time [expr $inactive_limit + $kill_wait]
-	send_user "\nReset job sleep time to $sleep_time seconds\n"
+	log_debug "Reset job sleep time to $sleep_time seconds"
 }
 
 #
@@ -132,7 +132,7 @@ expect {
 	}
 }
 if {$timed_out == 1} {
-	send_user "Early termination is expected, no worries.\n"
+	log_debug "Early termination is expected, no worries"
 } else {
 	log_error "Time limit not enforced"
 	set exit_code 1

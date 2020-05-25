@@ -65,7 +65,7 @@ set matches  0
 spawn $scancel INVALID
 expect {
 	-re "Invalid job id" {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 		incr matches
 		exp_continue
 	}
@@ -81,7 +81,6 @@ if {$matches != 1} {
 	log_error "scancel failed to log invalid job ID"
 	set exit_code 1
 }
-send_user "\n\n\n"
 
 #
 # Test scancel with invalid job ID
@@ -90,7 +89,7 @@ set matches  0
 spawn $scancel 0
 expect {
 	-re "Invalid job id" {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 		incr matches
 		exp_continue
 	}

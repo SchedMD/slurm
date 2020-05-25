@@ -350,7 +350,7 @@ cancel_job $job_id
 # Test partition with oversubscribe=NO
 #
 ####################################
-send_user "\n\nTest partition with oversubscribe=NO\n"
+log_info "Test partition with oversubscribe=NO"
 
 # Determine the number of cores or CPUs
 set num_jobs [cr_core_cpu $node_name]
@@ -382,11 +382,11 @@ delete_part $test_part_1
 ####################################
 set new_job_limit [expr $num_jobs * 2]
 if { [test_gang] == 1 } {
-	send_user "\n\nTest partition with oversubscribe=YES:2 incompatible with gang scheduling\n"
+	log_info "Test partition with oversubscribe=YES:2 incompatible with gang scheduling"
 } elseif { $new_job_limit >= $job_start } {
         skip "default_queue_depth less than desired job count ($new_job_limit < $job_start), can not run oversubscribe=YES:2"
 } else {
-	send_user "\n\nTest partition with oversubscribe=YES:2\n"
+	log_info "Test partition with oversubscribe=YES:2"
 #	Make a new partition with oversubscribe=yes:2
 	create_part $test_part_2 "YES:$oversubscribe_j_cnt" $node_name
 
@@ -407,7 +407,7 @@ if { [test_gang] == 1 } {
 # Test partition with oversubscribe=EXCLUSIVE
 #
 ########################################
-send_user "\n\nTest partition with oversubscribe=EXCLUSIVE\n"
+log_info "Test partition with oversubscribe=EXCLUSIVE"
 
 # Make a new partition with oversubscribe=EXCLUSIVE
 create_part $test_part_3 "EXCLUSIVE" $node_name

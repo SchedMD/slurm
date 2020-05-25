@@ -145,7 +145,7 @@ for {set i 0} {$i<3} {incr i} {
 		}
 	}
 	if { $task_cnt != 3 } {
-		send_user "\nNo worries, test just can not run here\n"
+		log_warn "No worries, test just can not run here"
 	} elseif { $i == 1 } {
 		if { [string compare $node0 $1node0] } {
 			log_error "Task 0 not distributed by hostfile ($node0 != $1node0)"

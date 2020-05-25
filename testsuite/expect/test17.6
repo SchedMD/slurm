@@ -57,7 +57,7 @@ expect {
 		exp_continue
 	}
 	-re "Batch job submission failed" {
-		send_user "\nNo worries, error not unexpected\n"
+		log_debug "No worries, error not unexpected"
 		set no_run 1
 		exp_continue
 	}

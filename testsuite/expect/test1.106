@@ -68,7 +68,7 @@ if {$time_error == 0} {
 	log_error "No time-min limit error"
 	set exit_code 1
 } else {
-	send_user "\nTime limit error expected, no worries\n"
+	log_debug "Time limit error expected, no worries"
 }
 
 if {$exit_code != 0} {

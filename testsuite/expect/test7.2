@@ -58,7 +58,7 @@ exec $bin_chmod 700 $file_prog_get
 #
 # Run job stand-alone to validate basic operation with 1 task and no srun
 #
-send_user "\nRunning PMI test stand alone (without srun)\n"
+log_info "Running PMI test stand alone (without srun)"
 set prog_pid [spawn ./$file_prog_get]
 expect {
 	-re "(FAILURE|error)" {
@@ -77,7 +77,7 @@ expect {
 }
 
 if { $exit_code == 0 } {
-	send_user "\n\nSo far, so good\nNow run PMI test under srun\n"
+	log_info "So far, so good\nNow run PMI test under srun"
 } else {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

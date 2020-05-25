@@ -110,7 +110,7 @@ if {[cancel_job $job_id] != 0} {
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-send_user "\n\nSo far, so good....\n\n\n"
+log_debug "So far, so good..."
 
 #
 # Submit job to two partitions, including one invalid name
@@ -124,7 +124,7 @@ expect {
 		exp_continue
 	}
 	-re "Invalid partition name specified" {
-		send_user "\nNo worries, this error is expected\n"
+		log_debug "No worries, this error is expected"
 		incr matches
 		exp_continue
 	}
@@ -150,7 +150,7 @@ if {$matches != 1} {
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-send_user "\n\nSo far, so good....\n\n\n"
+log_debug "So far, so good..."
 
 #
 # Quit here if only one partition

@@ -375,7 +375,7 @@ expect {
 }
 
 
-send_user "\n========== Run limit test on partition's qos limits ==========\n\n"
+log_info "========== Run limit test on partition's qos limits =========="
 part_test
 
 #
@@ -398,7 +398,7 @@ expect {
 }
 
 
-send_user "\n========== Run limit test on job's qos limits ==========\n\n"
+log_info "========== Run limit test on job's qos limits =========="
 qos_test
 
 cleanup

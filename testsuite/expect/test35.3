@@ -148,7 +148,7 @@ for {set cnt 1} {$cnt<=$array_end} {incr cnt} {
 		log_error "Job array $job_array_id burst buffer input data not found"
 		set exit_code 1
 	} else {
-		send_user "Job array task $cnt output file is good\n\n"
+		log_debug "Job array task $cnt output file is good"
 		exec $bin_rm -f $output_file
 	}
 }

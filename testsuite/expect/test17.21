@@ -99,7 +99,7 @@ set match 0
 set sbatch_pid [spawn $sbatch -o $file_out $file_in]
 expect {
 	-re "More processors requested than permitted" {
-		send_user "This error was expected, no worries\n\n"
+		log_debug "This error was expected, no worries"
 		set match 1
 		exp_continue
 	}

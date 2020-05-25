@@ -182,8 +182,8 @@ proc scontrol { fed job_id index regex } {
 
 	set matches 0
 
-	send_user "\nexecuting $my_scontrol -M$fed notify $job_id I'm Alive\n"
-	send_user "output: [exec $my_scontrol -M$fed notify $job_id I'm Alive]\n"
+	log_debug "Executing $my_scontrol -M$fed notify $job_id I'm Alive"
+	log_debug "Output: [exec $my_scontrol -M$fed notify $job_id I'm Alive]"
 
 	set spawn_id $srun_spawn_id($index)
 	expect {
@@ -352,9 +352,9 @@ if {[setup_federation $fed_name]} {
 setup_cluster_features
 
 
-send_user "\n################################################################\n"
-send_user "Test sacctmgr remove federation"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test sacctmgr remove federation"
+log_info "################################################################"
 
 cancel_all_jobs
 
@@ -426,9 +426,9 @@ squeue "$fedc1" "11" $r1
 squeue "$fedc2" "9" $r2
 squeue "$fedc3" "5" $r3
 
-send_user "\n################################################################\n"
-send_user "Remove $fedc1"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Remove $fedc1"
+log_info "################################################################"
 spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$fedc1
 
 sleep 5
@@ -531,9 +531,9 @@ if {[string compare $run_cluster ""] == 0} {
 
 
 
-send_user "\n################################################################\n"
-send_user "Remove $fedc2"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Remove $fedc2"
+log_info "################################################################"
 spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$fedc2
 
 sleep 5
@@ -589,9 +589,9 @@ if {[string compare $run_cluster ""] == 0} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Remove $fedc3"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Remove $fedc3"
+log_info "################################################################"
 spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$fedc3
 
 sleep 5
@@ -617,9 +617,9 @@ squeue "$fedc1" "3" $r1
 squeue "$fedc2" "4" $r2
 squeue "$fedc3" "3" $r3
 
-send_user "\n################################################################\n"
-send_user "Test revoked origin jobs are removed."
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test revoked origin jobs are removed."
+log_info "################################################################"
 
 # Start from scratch
 # Start jobs on all clusters and remove non-origin clusters.

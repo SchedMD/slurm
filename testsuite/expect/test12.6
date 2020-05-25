@@ -60,12 +60,12 @@ log_user 1
 if {$profile == 0} {
 	skip "acct_gather_profile/hdf5 not installed on this system"
 }
-send_user "\nacct_gather_profile/hdf5 plugin installed\n"
-send_user "Note: this test takes 3 minutes to run\n"
+log_info "Acct_gather_profile/hdf5 plugin installed"
+log_debug "Note: this test takes 3 minutes to run"
 
 set task_freq [get_job_acct_freq]
 if {$task_freq < 30} {
-	send_user "\nWarning: jobacct_gather_freq < 30 ($task_freq), results are unreliable\n"
+	log_warn "jobacct_gather_freq < 30 ($task_freq), results are unreliable"
 }
 
 #
@@ -178,7 +178,7 @@ while {$fd > 0 && [gets $fd line] != -1} {
 	}
 
 	if {$cur_et < $task_freq} {
-		send_user "\nWarning: Poll interval was only $cur_et instead of expected $task_freq on line $lno\n"
+		log_warn "Poll interval was only $cur_et instead of expected $task_freq on line $lno"
 		incr nerr
 	}
 
@@ -190,7 +190,7 @@ while {$fd > 0 && [gets $fd line] != -1} {
 	# managing the I/O portion. Slurm and linux also consume some
 	# cpu.
 	if {$cputil < 38.0 || $cputil > 47.0 } {
-		send_user "\nWarning: CPU Busy $cputil not near 40% on line $lno\n"
+		log_warn "CPU Busy $cputil not near 40% on line $lno"
 		incr nerr
 	}
 
@@ -199,7 +199,7 @@ while {$fd > 0 && [gets $fd line] != -1} {
 	set hi_rd  [expr 1.025 * 10 * $cur_et]
 
 	if {$rdmb < $low_rd || $rdmb  > $hi_rd } {
-		send_user "\nWarning: Read Megabytes $rdmb not near 100.0 on line $lno\n"
+		log_warn "Read Megabytes $rdmb not near 100.0 on line $lno"
 		incr nerr
 	}
 }

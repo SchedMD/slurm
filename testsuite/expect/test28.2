@@ -154,7 +154,7 @@ for {set cnt 0} {$cnt<$array_end} {incr cnt} {
 		set exit_code 1
 	}
 }
-send_user "\nchecking environment variables\n"
+log_debug "Checking environment variables"
 # Checks that the array job ids are correct
 set max_inx [expr $array_end - 1]
 for {set index 0} {$index < $array_end} {incr index} {
@@ -201,7 +201,7 @@ for {set index 0} {$index < $array_end} {incr index} {
 	spawn $bin_cat test$test_id-$job_id\_$index\.error
 	expect {
 		-re "$sleep_error_message" {
-			send_user "\nDo not worry this error is expected\n"
+			log_debug "Do not worry this error is expected"
 			incr err_match
 		}
 		eof {

@@ -37,7 +37,7 @@ proc inc3_11_8 {} {
 	global alpha_numeric_under scancel
 	global cluster_cpus def_partition
 
-	send_user "\n+++++ STARTING TEST 8 (Within: inc3.11.8) +++++\n"
+	log_info "+++++ STARTING TEST 8 (Within: inc3.11.8) +++++"
 
 	# Make the job script
 	exec $bin_rm -f $file_in
@@ -128,7 +128,7 @@ proc inc3_11_8 {} {
 		cancel_job $job_id
 		fail "job failed to start"
 	}
-	send_user "\nJob is running as expected\n"
+	log_debug "Job is running as expected"
 
 	# Make the reservation using free cores in a node
 	set ret_code [create_res "StartTime=now Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name" 0]

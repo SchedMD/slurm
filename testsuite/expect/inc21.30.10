@@ -30,13 +30,13 @@ proc inc21_30_10 { wait_reason } {
 
 	global salloc srun acct bin_sleep grpcpurunmin_num number exit_code
 
-	send_user "\nStarting GrpCpuRunMins test (Within: inc21.30.10)\n\n"
+	log_info "Starting GrpCpuRunMins test (Within: inc21.30.10)"
 	set job_id1 0
 	set job_id2 0
 	set target_time [expr $grpcpurunmin_num / 4]
 	set time_limit [expr $target_time - 3]
 	if {$time_limit < 1} {
-		send_user "\nInvalid time limit. (Within: inc21.30.10)\n"
+		log_warn "Invalid time limit. (Within: inc21.30.10)"
 		return
 	}
 
@@ -45,7 +45,7 @@ proc inc21_30_10 { wait_reason } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nJob $job_id1 has been submitted. (Within: inc21.30.10)\n"
+			log_debug "Job $job_id1 has been submitted. (Within: inc21.30.10)"
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
@@ -69,7 +69,7 @@ proc inc21_30_10 { wait_reason } {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			send_user "\nJob $job_id2 is waiting for resources. This is expected. (Within: inc21.30.10)\n"
+			log_debug "Job $job_id2 is waiting for resources. This is expected. (Within: inc21.30.10)"
 		}
 		-re "Granted job allocation ($number)" {
 			log_error "Job should be pending, but is not. (Within: inc21.30.10)"

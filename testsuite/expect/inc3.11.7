@@ -37,7 +37,7 @@ proc inc3_11_7 {} {
 	global part_node_cnt part_node_cores res_name res_name res_nodes
 	global res_thread_cnt sbatch scancel scontrol user_name wait_for_job
 
-	send_user "\n+++++ STARTING TEST 7 (Within: inc3.11.7) +++++\n"
+	log_info "+++++ STARTING TEST 7 (Within: inc3.11.7) +++++"
 
 	# Make a reservation, just to get node size information
 	set ret_code [create_res "StartTime=now Duration=1 Nodes=$part_node User=$user_name" 0]
@@ -92,7 +92,7 @@ proc inc3_11_7 {} {
 		log_error "Job $job_id failed to start (Within: inc3.11.7)"
 		set exit_code 1
 	} else {
-		send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.7)\033\[m\n"
+		log_debug "Job is running as expected (Within: inc3.11.7)"
 	}
 	cancel_job $job_id
 
@@ -124,7 +124,7 @@ proc inc3_11_7 {} {
 		log_error "Job $job_id failed to start (Within: inc3.11.7)"
 		set exit_code 1
 	} else {
-		send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.7)\033\[m\n"
+		log_debug "Job is running as expected (Within: inc3.11.7)"
 	}
 	cancel_job $job_id
 
@@ -156,7 +156,7 @@ proc inc3_11_7 {} {
 		log_error "Job $job_id failed to start (Within: inc3.11.7)"
 		set exit_code 1
 	} else {
-		send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.7)\033\[m\n"
+		log_debug "Job is running as expected (Within: inc3.11.7)"
 	}
 	cancel_job $job_id
 

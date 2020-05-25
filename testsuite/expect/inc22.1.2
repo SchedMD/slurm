@@ -78,7 +78,7 @@ proc inc22_1_2 {} {
 	set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]]
 	set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
 
-	send_user "\nTesting sreport for second hour (Within: inc22.1.2)\n"
+	log_info "Testing sreport for second hour (Within: inc22.1.2)"
 	set matches 0
 	set my_pid [spawn $sreport --local cluster utilization cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,reported]
 	expect {
@@ -101,8 +101,7 @@ proc inc22_1_2 {} {
 	}
 
 	if {$matches != 1} {
-		log_error "sreport didn't give good info 9 $matches. (Within: inc22.1.2)"
-		send_user "we are looking for $cluster.$idle.$down.$alloc.$resv.$reported. (Within inc22.1.2)\n"
+		log_error "sreport didn't give good info 9 $matches. We are looking for $cluster.$idle.$down.$alloc.$resv.$reported. (Within inc22.1.2)"
 		incr exit_code 1
 	}
 

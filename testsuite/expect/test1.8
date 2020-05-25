@@ -115,7 +115,7 @@ if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
 		-re "$sleep_error_message" {
-			send_user "\nNo worries, this error is expected\n"
+			log_debug "No worries, this error is expected"
 			set got_sleep_err 1
 			exp_continue
 		}

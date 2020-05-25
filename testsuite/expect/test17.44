@@ -90,7 +90,7 @@ if { $job_id2 == 0 } {
 	fail "sbatch did not submit job"
 }
 
-send_user "\nWaiting for output files...\n"
+log_debug "Waiting for output files.."
 for {set task_id 1} {$task_id <= $tasks} {incr task_id} {
 	set file_out_glob "${output_base}${task_id}"
 	if {[wait_for_file $file_out_glob] != 0} {

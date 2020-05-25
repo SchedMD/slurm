@@ -99,7 +99,7 @@ expect {
 		exp_continue
 	}
 	-re "Unable to allocate resources" {
-		send_user "\nThis error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set alloc_fail 1
 	}
 	timeout {

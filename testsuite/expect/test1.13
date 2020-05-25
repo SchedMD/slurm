@@ -46,7 +46,7 @@ set timeout 10
 set srun_pid [spawn $srun --immediate --hold -t1 $bin_pwd]
 expect {
 	-re "Unable to allocate resources" {
-		send_user "\nThis error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		incr matches
 		exp_continue
 	}
@@ -74,7 +74,7 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun --immediate -v -t1 $bin_pwd]
 expect {
 	-re "error" {
-		send_user "\nThis error is not unexpected, no worries\n"
+		log_debug "This error is not unexpected, no worries"
 		incr matches
 		exp_continue
 	}

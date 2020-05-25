@@ -31,7 +31,7 @@ proc inc21_30_3 { wait_reason } {
 
 	global salloc scontrol srun acct alpha bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code grjobs_num
 
-	send_user "\nStarting GrpJob limit test (Within: inc21.30.3)\n\n"
+	log_info "Starting GrpJob limit test (Within: inc21.30.3)"
 	set check_num $grjobs_num
 
 	set jobmatch 0
@@ -42,7 +42,7 @@ proc inc21_30_3 { wait_reason } {
 			-re "Granted job allocation ($number)" {
 				set job_id($inx) $expect_out(1,string)
 				if {$inx < $check_num} {
-					send_user "\njob $inx $job_id($inx) was submitted. (Within: inc21.30.3)\n"
+					log_debug "Job $inx $job_id($inx) was submitted. (Within: inc21.30.3)"
 					incr jobmatch
 				} else {
 					log_error "Job $inx $job_id($inx) wasn't suppose to work but it did, limit was $check_num? (Within: inc21.30.3)"
@@ -52,7 +52,7 @@ proc inc21_30_3 { wait_reason } {
 			-re "job ($number) queued and waiting for resources" {
 				set job_id($inx) $expect_out(1,string)
 				if {$inx >= $check_num} {
-					send_user "\nJob $inx $job_id($inx) is waiting for resources. This is expected. (Within: inc21.30.3)\n"
+					log_debug "Job $inx $job_id($inx) is waiting for resources. This is expected. (Within: inc21.30.3)"
 					incr jobmatch
 				} else {
 					set test_reason 1

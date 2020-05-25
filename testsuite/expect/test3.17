@@ -177,7 +177,7 @@ set match 0
 set srun_pid [spawn $srun -t1 -C $feature -N1 $file_in]
 expect {
 	-re "Invalid feature" {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		set match 1
 		exp_continue
 	}

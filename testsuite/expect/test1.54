@@ -96,7 +96,7 @@ if {$matches != 4} {
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 } else {
-	send_user "\nSo far, so good\n\n"
+	log_debug "So far, so good"
 }
 
 #
@@ -161,7 +161,7 @@ if {$job_id == 0} {
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 } else {
-	send_user "\nSo far, so good\n\n"
+	log_debug "So far, so good"
 }
 
 #
@@ -172,7 +172,7 @@ set matches   0
 set srun_pid [spawn $srun -N1 -n5 --overcommit -l -t1 --multi-prog  ./$file_in]
 expect {
 	-re "Configuration file .* invalid" {
-		send_user "\nNo worries. This error is expected\n"
+		log_debug "No worries. This error is expected"
 		incr matches
 	}
 	timeout {

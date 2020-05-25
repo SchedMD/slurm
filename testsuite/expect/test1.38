@@ -103,7 +103,7 @@ if {[expr $match_wait + $match_int + $match_term] != 3} {
 	set exit_code 1
 }
 if {$exit_code == 0} {
-	send_user "\nSo far, so good\n\n"
+	log_debug "So far, so good"
 } else {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

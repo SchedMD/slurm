@@ -39,7 +39,7 @@ set number_commas  "\[0-9_,\]+"
 print_header $test_id
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
 	skip "This test is only compatible with select/cons_tres"
 }

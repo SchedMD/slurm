@@ -116,7 +116,7 @@ expect {
 spawn $scancel --interactive $job_id1
 expect {
 	-re "Kill job error.* $job_id1" {
-		send_user "\nNo worries, error is expected\n"
+		log_debug "No worries, error is expected"
 		incr matches
 		exp_continue
 	}

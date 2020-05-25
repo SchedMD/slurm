@@ -98,7 +98,7 @@ expect {
 		if { [lsearch $submitted_jobs $job_id] == -1 } {
 			exp_continue
 		}
-		#send_user "job $job_id: node $node_name\n"
+		#log_debug "Job $job_id: node $node_name"
 		#Insert into a table with node_name as the key, job_id as the value
 		set found 0
 		for {set ii 0} {$ii < [llength $job_map]} {incr ii} {
@@ -115,7 +115,7 @@ expect {
 		exp_continue
 	}
 }
-#send_user "job map: $job_map\n"
+#log_debug "Job map: $job_map"
 
 
 #

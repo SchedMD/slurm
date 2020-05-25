@@ -106,8 +106,8 @@ proc squeue { fed regex } {
 
 	set matches 0
 	set command "$my_squeue --noheader -a -M$fed"
-#	send_user [eval $command]
-#	send_user "\n\n"
+#	log_debug [eval $command]
+#	log_debug ""
 #	return
 	spawn {*}$command
 	expect {
@@ -198,9 +198,9 @@ if {[setup_federation $fed_name]} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Setup cluster features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
 
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
@@ -301,9 +301,9 @@ if {$exit_code || $matches != 4} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Test scontrol suspend within federation"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test scontrol suspend within federation"
+log_info "################################################################"
 
 cancel_all_jobs
 

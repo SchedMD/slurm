@@ -97,7 +97,7 @@ if { ![test_super_user] } {
     skip "This test can't be run without being a super user of the cluster"
 }
 
-send_user "\n=== Testing Node Information ===\n"
+log_info "=== Testing Node Information ==="
 set first_option 1
 foreach option [array names node_info] {
 
@@ -181,7 +181,7 @@ if {$match != 1} {
 	fail "Test partition was not created"
 }
 
-send_user "\n=== Testing Partition Information ===\n"
+log_info "=== Testing Partition Information ==="
 set first_option 1
 foreach option [array names part_info] {
 

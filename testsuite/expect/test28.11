@@ -113,7 +113,7 @@ spawn $sbatch --constraint=$node_feature --array=1-2 --output="/dev/null" \
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		send_user "\njob $job_id was submitted\n"
+		log_debug "Job $job_id was submitted"
 		exp_continue
 	}
 	-re "Batch job submission failed" {
@@ -136,7 +136,7 @@ fail_on_error "Error submitting job"
 $bin_sleep 1
 set count 0
 set count_exp 2
-send_user "Verifying the jobs correctly requested the feature $node_feature\n"
+log_info "Verifying the jobs correctly requested the feature $node_feature"
 spawn $scontrol show job $job_id
 expect {
 	-re "Features=$node_feature" {
@@ -162,7 +162,7 @@ fail_on_error "Problem cancelling job $job_id"
 set exit_code 1
 set sleep_time $min_job_age
 incr sleep_time 10
-send_user "Waiting for $sleep_time seconds for the jobs to be purged from the controller\n"
+log_info "Waiting for $sleep_time seconds for the jobs to be purged from the controller"
 $bin_sleep $sleep_time
 spawn $scontrol show job $job_id
 expect {

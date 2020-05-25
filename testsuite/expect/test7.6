@@ -80,7 +80,7 @@ if {[test_front_end] != 0} {
 # command to work (runs "srun" without path)
 #
 set env(PATH) "$slurm_dir/bin:$env(PATH)"
-send_user "\n $env(PATH)\n"
+log_debug "$env(PATH)"
 
 #
 # Delete left-over program and rebuild it
@@ -119,9 +119,9 @@ if {$job_id == 0} {
 set matches 0
 set no_capability 0
 set timeout $max_job_delay
-send_user "======================================================================\n"
-send_user "=======================  Run without bulk transfer ===================\n"
-send_user "======================================================================\n"
+log_info "======================================================================"
+log_info "=======================  Run without bulk transfer ==================="
+log_info "======================================================================"
 spawn $totalviewcli -verbosity info -e $no_bulk $srun -a --input=none -n4 -N1-2 -O -t1 $test_prog
 expect {
 	-re "All licenses are currently in use" {
@@ -173,7 +173,7 @@ expect {
 		exp_continue
 	}
 	-re "Could not open breakpoint file" {
-		send_user "\nNOTE: Breakpoint file error is expected due to known Totalview bug\n"
+		log_debug "NOTE: Breakpoint file error is expected due to known Totalview bug"
 		exp_continue
 	}
 	timeout {

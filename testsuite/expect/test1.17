@@ -115,7 +115,7 @@ if {[wait_for_file $file_err] == 0} {
 			set exit_code 1
 		}
 		-re "$sleep_error_message" {
-			send_user "\nNo worries, this error is expected\n"
+			log_debug "No worries, this error is expected"
 			incr got_sleep_err
 			exp_continue
 		}
@@ -183,7 +183,7 @@ if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
 		-re "$sleep_error_message" {
-			send_user "\nNo worries, this error is expected\n"
+			log_debug "No worries, this error is expected"
 			incr got_sleep_err
 			exp_continue
 		}

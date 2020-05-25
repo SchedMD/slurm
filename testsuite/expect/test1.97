@@ -338,7 +338,7 @@ expect {
 }
 
 ############# Test by CPU #############
-send_user "====================Testing CPUs per Task====================\n\n"
+log_info "====================Testing CPUs per Task===================="
 set ncpuspt [check_node_config]
 
 # Submit job with just one cpu per task
@@ -357,7 +357,7 @@ if {!$sys_homo} {
 }
 
 ############# Test by node task #############
-send_user "====================Testing Tasks per Node====================\n\n"
+log_info "====================Testing Tasks per Node===================="
 set ntask [expr $num_nodes * [check_node_config]]
 set ntaskpn [check_node_config]
 

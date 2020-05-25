@@ -52,7 +52,7 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 	}
 
 	sleep 2
-	send_user "\nJob $job_id Expected job GPUs:$job_gpus  Step GPUs:$step_gpus\n"
+	log_debug "Job $job_id Expected job GPUs:$job_gpus  Step GPUs:$step_gpus"
 	exec $bin_rm -f $file_out
 	exec >$file_out $sacct --job=$job_id --parsable2 --start=today -o JobID,AllocGRES,ReqGRES,AllocTRES
 
@@ -212,14 +212,14 @@ if {$store_gpu == -1} {
 }
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
 	skip "This test is only compatible with select/cons_tres"
 }
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
-send_user "\nDefault partition node count is $nb_nodes\n"
+log_debug "Default partition node count is $nb_nodes"
 if {$nb_nodes > 2} {
 	set nb_nodes 2
 }
@@ -236,11 +236,11 @@ set cpus_per_node $node_conf(CPUTot)
 set sockets_with_gpus [get_gpu_socket_count $gpu_cnt \
                                             $node_conf(Sockets)]
 
-log_info "GPUs per node is $gpu_cnt"
-log_info "Sockets with GPUs $sockets_with_gpus"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
-log_info "CPUs per node is $cpus_per_node"
+log_debug "GPUs per node is $gpu_cnt"
+log_debug "Sockets with GPUs $sockets_with_gpus"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "CPUs per node is $cpus_per_node"
 
 if {$cpus_per_node < 3} {
 	skip "This test requires 3 or more CPUs per node in the default partition"
@@ -253,7 +253,7 @@ make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID} | grep gpu
 	exit 0"
 
-send_user "\n\nTEST 1: --gpus-per-node option by job\n"
+log_info "TEST 1: --gpus-per-node option by job"
 
 set target [expr $nb_nodes * 2]
 exec $bin_rm -f $file_out
@@ -314,7 +314,7 @@ test_acct $job_id $target -1 $have_gpu_types
 #
 # Test --gpus option by job
 #
-send_user "\n\nTEST 2: --gpus option by job\n"
+log_info "TEST 2: --gpus option by job"
 
 exec $bin_rm -f $file_out
 if {$nb_nodes >= 2 || $gpu_cnt >= 2} {
@@ -352,7 +352,7 @@ test_acct $job_id $target -1 $have_gpu_types
 #
 # Test --gpus-per-task option by job
 #
-send_user "\n\nTEST 3: --gpus-per-task option by job\n"
+log_info "TEST 3: --gpus-per-task option by job"
 
 exec $bin_rm -f $file_out
 if {$cpus_per_node >= 2 && $nb_nodes >= 2} {
@@ -392,7 +392,7 @@ test_acct $job_id $nb_tasks -1 $have_gpu_types
 #
 # Test --gpus-per-socket option by job
 #
-send_user "\n\nTEST 4: --gpus-per-socket option by job\n"
+log_info "TEST 4: --gpus-per-socket option by job"
 
 exec $bin_rm -f $file_out
 
@@ -444,7 +444,7 @@ make_bash_script $file_in2 "
 	fi
 	exit 0"
 
-send_user "\n\nTEST 5: --gpus-per-node option by step\n"
+log_info "TEST 5: --gpus-per-node option by step"
 
 set target [expr $nb_nodes * 2]
 exec $bin_rm -f $file_out
@@ -480,7 +480,7 @@ test_acct $job_id $target $target $have_gpu_types
 #
 # Test --gpus option by step
 #
-send_user "\n\nTEST 6: --gpus option by step\n"
+log_info "TEST 6: --gpus option by step"
 
 exec $bin_rm -f $file_out
 if {$nb_nodes >= 2 || $gpu_cnt >= 2} {
@@ -518,7 +518,7 @@ test_acct $job_id $target $target $have_gpu_types
 #
 # Test --gpus-per-task option by step
 #
-send_user "\n\nTEST 7: --gpus-per-task option by step\n"
+log_info "TEST 7: --gpus-per-task option by step"
 
 exec $bin_rm -f $file_out
 if {$cpus_per_node >= 2 && $nb_nodes >= 2} {
@@ -558,7 +558,7 @@ test_acct $job_id $nb_tasks $nb_tasks $have_gpu_types
 #
 # Test --gpus-per-socket option by step
 #
-send_user "\n\nTEST 8: --gpus-per-socket option by step\n"
+log_info "TEST 8: --gpus-per-socket option by step"
 
 exec $bin_rm -f $file_out
 
@@ -600,7 +600,7 @@ test_acct $job_id $target $target $have_gpu_types
 #
 # Test --gpus-per-task option by step
 #
-send_user "\n\nTEST 9: --gpus-per-task option by step\n"
+log_info "TEST 9: --gpus-per-task option by step"
 
 exec $bin_rm -f $file_out
 if {$cpus_per_node >= 2 && $nb_nodes >= 2} {

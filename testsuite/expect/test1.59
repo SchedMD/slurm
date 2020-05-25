@@ -79,7 +79,7 @@ expect {
 		exp_continue
 	}
 	-re $prompt {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
 		log_error "salloc not responding"
@@ -105,7 +105,7 @@ for {set i 0} {$i<4} {incr i} {
 		send "export SLURM_HOSTFILE=$hostfile\r"
 		expect {
 			-re $prompt {
-				#send_user "srun completed\n"
+				#log_debug "Srun completed"
 			}
 		}
 		set 1node0 $node0
@@ -173,7 +173,7 @@ for {set i 0} {$i<4} {incr i} {
 			exp_continue
 		}
 		-re $prompt {
-			#send_user "srun completed\n"
+			#log_debug "Srun completed"
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
@@ -237,7 +237,7 @@ for {set i 0} {$i<4} {incr i} {
 send "unset SLURM_HOSTFILE\r"
 expect {
 	-re $prompt {
-		#send_user "srun completed\n"
+		#log_debug "Srun completed"
 	}
 }
 
@@ -316,14 +316,14 @@ for {set i 0} {$i<5} {incr i} {
 		}
 		-re "error" {
 			if { $i == 4 } {
-				send_user "\nThis error is expected, no worries\n"
+				log_debug "This error is expected, no worries"
 			} else {
 				set exit_code 1
 			}
 			exp_continue
 		}
 		-re $prompt {
-			#send_user "srun completed\n"
+			#log_debug "Srun completed"
 		}
 		-re "slurm job ($number)" {
 			set job_id $expect_out(1,string)
@@ -376,7 +376,7 @@ for {set i 0} {$i<5} {incr i} {
 send "exit\r"
 expect {
 	-re "error.*Exit 1" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		exp_continue
 	}
 	timeout {

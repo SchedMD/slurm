@@ -29,7 +29,7 @@
 proc inc21_30_13 { wait_reason } {
 	global salloc srun acct bin_sleep maxcpumin_num number exit_code
 
-	send_user "\nStarting MaxCpuMins test (Within: inc21.30.13)\n"
+	log_info "Starting MaxCpuMins test (Within: inc21.30.13)"
 	set job_id1 0
 	set job_id2 0
 
@@ -37,7 +37,7 @@ proc inc21_30_13 { wait_reason } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nJob $job_id1 has been submitted (Within: inc21.30.13)\n"
+			log_debug "Job $job_id1 has been submitted (Within: inc21.30.13)"
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
@@ -61,7 +61,7 @@ proc inc21_30_13 { wait_reason } {
 	expect {
 		-re " Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			send_user "\nJob $job_id2 is waiting for resources. This is expected. (Within: inc21.30.13)\n"
+			log_debug "Job $job_id2 is waiting for resources. This is expected. (Within: inc21.30.13)"
 
 		}
 		-re "Granted job allocation ($number)" {

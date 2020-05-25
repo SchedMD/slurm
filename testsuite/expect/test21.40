@@ -362,17 +362,17 @@ expect {
 
 make_bash_script $file_in "$bin_sleep 60"
 
-send_user "\n\nTEST 1: Association GrpNodes limit\n"
+log_info "TEST 1: Association GrpNodes limit"
 set_assoc 1
 run_job_test
 set_assoc -1
 
-send_user "\n\nTEST 2: Job QOS GrpNodes limit\n"
+log_info "TEST 2: Job QOS GrpNodes limit"
 set_qos $job_qos 1
 run_job_test
 set_qos $job_qos -1
 
-send_user "\n\nTEST 3: Partition QOS GrpNodes limit\n"
+log_info "TEST 3: Partition QOS GrpNodes limit"
 set_qos $part_qos 1
 run_job_test
 set_qos $part_qos -1

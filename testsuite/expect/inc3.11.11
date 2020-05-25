@@ -96,7 +96,7 @@ proc inc3_11_11 {} {
 
     global def_partition
 
-	send_user "\n+++++ STARTING TEST 11 (Within: inc3.11.11) +++++\n"
+	log_info "+++++ STARTING TEST 11 (Within: inc3.11.11) +++++"
 
     set part_nodes [available_nodes_hostnames $def_partition true]
     set one_node [get_idle_node_in_part $def_partition]

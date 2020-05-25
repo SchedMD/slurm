@@ -61,11 +61,11 @@ fail_on_error "Cannot compile test program"
 spawn ./$test_prog
 expect {
 	"No last decay" {
-		send_user "This error is expected.  No worries.\n"
+		log_debug "This error is expected.  No worries"
 		exp_continue
 	}
 	"error: Can't save decay state" {
-		send_user "This error is expected.  No worries.\n"
+		log_debug "This error is expected.  No worries"
 		exp_continue
 	}
 	"AccountA||40|0.400000|45|0.450000|0.450000|0.458502|" {

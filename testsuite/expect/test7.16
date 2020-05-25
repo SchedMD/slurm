@@ -51,7 +51,7 @@ proc alloc_job { } {
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nError is expected, no worries.\n"
+			log_debug "Error is expected, no worries"
 			exp_continue
 		}
 		timeout {

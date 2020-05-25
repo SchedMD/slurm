@@ -65,7 +65,7 @@ expect {
 		exp_continue
 	}
 	-re "error: First task exited" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		exp_continue
 	}
 	timeout {
@@ -87,7 +87,7 @@ if {[test_front_end]} {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSo far... stdin to specific task worked fine\n\n\n"
+	log_info "So far... stdin to specific task worked fine"
 }
 
 #

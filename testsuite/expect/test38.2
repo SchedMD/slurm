@@ -138,9 +138,9 @@ make_bash_script $file_in "#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1
 
 env"
 
-send_user "\n################################################################\n"
-send_user "Submit packjob and verify output from scontrol show job"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Submit packjob and verify output from scontrol show job"
+log_info "################################################################"
 
 set job_id 0
 sbatch

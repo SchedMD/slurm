@@ -188,7 +188,7 @@ if {[add_child $acct_c1 $acct_c2 [expr $node_cnt - 2] -1]} {
 	fail "Unable to add child account ($acct_c2)"
 }
 
-send_user "############################# Test QoS Limits #################################\n"
+log_info "############################# Test QoS Limits #################################"
 
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
 	fail "Account was not modified"
@@ -242,12 +242,12 @@ srun_test 1 $acct
 set mod_acct_assoc_vals(maxnodes) -1
 
 
-send_user "##################### Test limits based on associations #####################\n"
+log_info "##################### Test limits based on associations #####################"
 
 #
 # MaxNodes Limit
 #
-send_user "\nTesting Association MaxNode Limits\n"
+log_info "Testing Association MaxNode Limits"
 
 set mod_qos_vals(GrpNodes) -1
 if {[mod_qos $qos [array get mod_qos_vals]]} {
@@ -268,7 +268,7 @@ srun_test [expr $node_cnt - 2] $acct_c2
 #
 # GrpNodes Limit
 #
-send_user "\nTesting GrpNode Limits\n"
+log_info "Testing GrpNode Limits"
 
 # Modify child with GrpNode
 set mod_acct_assoc_vals(MaxNode) -1

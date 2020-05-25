@@ -97,7 +97,7 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
 		log_error "salloc: allocation not granted in $timeout seconds"
@@ -166,8 +166,7 @@ expect {
 		fail "Unable to delete/create file, check permissions"
 	}
 	-re "cannot create directory" {
-		send_user "\nThis error is expected when nodes share the "
-		send_user "same tmp directory\n"
+		log_debug "This error is expected when nodes share the same tmp directory"
 		exp_continue
 	}
 	-re "Checking node 1: */tmp/test_${test_id}/test$test_id\_file" {
@@ -197,7 +196,7 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
 		log_error "salloc is not responding"

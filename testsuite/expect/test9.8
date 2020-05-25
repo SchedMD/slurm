@@ -108,7 +108,7 @@ if {$start_cnt < $job_cnt} {
 	log_error "$job_cnt of $start_cnt jobs submitted"
 	set exit_code 1
 } else {
-	send_user "\nAll $start_cnt jobs submitted\n"
+	log_debug "All $start_cnt jobs submitted"
 }
 
 set user_name [get_my_user_name]
@@ -171,7 +171,7 @@ while { 1 } {
 	}
 	set scaled_task_cnt [expr $job_count * $desired_tasks]
 	if {$step_count >= $scaled_task_cnt} {
-		send_user "\nOnly started $job_count jobs, reducing step count target to $scaled_task_cnt\n"
+		log_debug "Only started $job_count jobs, reducing step count target to $scaled_task_cnt"
 		set desired_tasks $scaled_task_cnt
 	}
 	exec $bin_sleep 3
@@ -182,7 +182,7 @@ if {$step_count < $desired_tasks} {
 	log_error "Only started $job_count jobs and $step_count steps. We expected at least $desired_tasks and possibly hundreds"
 	set exit_code 1
 } else {
-	send_user "\nWe found $job_count jobs and $step_count steps\n"
+	log_debug "We found $job_count jobs and $step_count steps"
 }
 spawn $scancel --quiet --user $user_name
 expect {
@@ -232,8 +232,8 @@ if {$running_jobs != 0} {
 	}
 }
 if {$completing_jobs != 0} {
-	send_user "\nWaiting for slurmctld to re-send job kill RPC\n"
-	send_user "This will take 120 seconds...\n"
+	log_info "Waiting for slurmctld to re-send job kill RPC"
+	log_info "This will take 120 seconds.."
 	exec $bin_sleep 120
 	set completing_jobs 0
 	spawn $squeue --noheader --user $user_name

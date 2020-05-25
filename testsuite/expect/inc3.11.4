@@ -39,7 +39,7 @@ proc inc3_11_4 {} {
 	# If not running as root, make a reservation restricted to root, submit a job,
 	# and confirm that the job is rejected.
 	#
-	send_user "\n+++++ STARTING TEST 4 (Within: inc3.11.4) +++++\n"
+	log_info "+++++ STARTING TEST 4 (Within: inc3.11.4) +++++"
 
 	if {$user_name == "root"} {
 		return;
@@ -81,7 +81,7 @@ proc inc3_11_4 {} {
 		log_error "Job $job_id should have been rejected from reservation restricted to root.  Expected rejection message not given. (Within: inc3.11.4)"
 		set exit_code 1
 	} else {
-		send_user "\033\[32mExpected error, no worries mate. (Within: inc3.11.4)\033\[m\n"
+		log_debug "\033\[32mExpected error, no worries mate. (Within: inc3.11.4)"
 	}
 	# Delete the reservation
 	set ret_code [delete_res $res_name]

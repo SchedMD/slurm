@@ -78,12 +78,12 @@ expect {
 			sleep 1
 			exec $bin_kill -USR1 $srun_pid
 		}
-		send_user "\nSent signal USR1 $usr1target times\n"
+		log_debug "Sent signal USR1 $usr1target times"
 		for {set inx 0} {$inx < $usr2target} {incr inx} {
 			sleep 1
 			exec $bin_kill -USR2 $srun_pid
 		}
-		send_user "\nSent signal USR2 $usr2target times\n"
+		log_debug "Sent signal USR2 $usr2target times"
 		exp_continue
 	}
 	-re "SIGUSR($number)" {
@@ -95,7 +95,7 @@ expect {
 		exp_continue
 	}
 	-re "error.*not running" {
-		send_user "\nDon't worry about the error...\n"
+		log_debug "Don't worry about the error.."
 		exp_continue
 	}
 	-re "FINI" {
@@ -108,7 +108,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
-		send_user "\nEOF\n"
+		log_debug "EOF"
 		wait
 	}
 }

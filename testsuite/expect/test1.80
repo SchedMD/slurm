@@ -101,8 +101,8 @@ expect {
 # Verify block distribution of tasks
 #
 
-send_user "Optimal task layout was: $expected_layout2\n"
-send_user "Actual task layout was : $tested_layout\n"
+log_debug "Optimal task layout was: $expected_layout2"
+log_debug "Actual task layout was : $tested_layout"
 if {[string compare $tested_layout $expected_layout1] &&
     [string compare $tested_layout $expected_layout2] &&
     [string compare $tested_layout $expected_layout3]} {
@@ -165,8 +165,8 @@ expect {
 #
 # Verify cyclic distribution of tasks
 #
-send_user "Optimal task layout was: $expected_layout2\n"
-send_user "Actual task layout was : $tested_layout\n"
+log_debug "Optimal task layout was: $expected_layout2"
+log_debug "Actual task layout was : $tested_layout"
 if {[string compare $tested_layout $expected_layout1] &&
     [string compare $tested_layout $expected_layout2] &&
     [string compare $tested_layout $expected_layout3]} {

@@ -179,9 +179,9 @@ if {[setup_federation $fed_name]} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Setup cluster features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
 
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
@@ -282,9 +282,9 @@ if {$exit_code || $matches != 4} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Test federated arrays"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test federated arrays"
+log_info "################################################################"
 
 cancel_all_jobs
 

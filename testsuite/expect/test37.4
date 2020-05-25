@@ -405,9 +405,9 @@ make_bash_script $file_in "env; $bin_sleep 300"
 
 
 # Test needs to change to count that it gets two job per cluster instead of making sure that it packs on each. Because it's not guaranteed that the cluster will pack because the job gets submitted to each cluster and it's a free for all.
-send_user "\n################################################################\n"
-send_user "Test packing across clusters with sbatch"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test packing across clusters with sbatch"
+log_info "################################################################"
 
 unset job_counts
 
@@ -438,9 +438,9 @@ if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
 }
 
 
-send_user "\n################################################################\n"
-send_user "Test packing across clusters with srun"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test packing across clusters with srun"
+log_info "################################################################"
 cancel_all_jobs
 unset job_counts
 
@@ -470,9 +470,9 @@ if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Test packing across clusters with salloc"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test packing across clusters with salloc"
+log_info "################################################################"
 cancel_all_jobs
 unset job_counts
 
@@ -502,9 +502,9 @@ if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Test -M<clusters> with federated jobs with sbatch"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test -M<clusters> with federated jobs with sbatch"
+log_info "################################################################"
 cancel_all_jobs
 unset job_counts
 
@@ -561,9 +561,9 @@ if {$job_counts($fedc2,$fedc3) != 1} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Test -M<clusters> with federated jobs with srun"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test -M<clusters> with federated jobs with srun"
+log_info "################################################################"
 cancel_all_jobs
 unset job_counts
 
@@ -621,9 +621,9 @@ if {$job_counts($fedc2,$fedc3) != 1} {
 }
 
 
-send_user "\n################################################################\n"
-send_user "Test -M<clusters> with federated jobs with salloc"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test -M<clusters> with federated jobs with salloc"
+log_info "################################################################"
 cancel_all_jobs
 unset job_counts
 
@@ -681,9 +681,9 @@ if {$job_counts($fedc2,$fedc3) != 1} {
 }
 
 
-send_user "\n################################################################\n"
-send_user "Test jobs with cluster features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test jobs with cluster features"
+log_info "################################################################"
 cancel_all_jobs
 
 set matches 0
@@ -785,9 +785,9 @@ if {$exit_code || $matches != 4} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Test sbatch jobs with cluster features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test sbatch jobs with cluster features"
+log_info "################################################################"
 unset job_counts
 
 set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" RUNNING]
@@ -827,9 +827,9 @@ if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Test salloc jobs with cluster features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test salloc jobs with cluster features"
+log_info "################################################################"
 cancel_all_jobs
 unset job_counts
 
@@ -870,9 +870,9 @@ if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Test srun jobs with cluster features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test srun jobs with cluster features"
+log_info "################################################################"
 cancel_all_jobs
 unset job_counts
 
@@ -913,9 +913,9 @@ if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Test jobs with invalid cluster features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test jobs with invalid cluster features"
+log_info "################################################################"
 set matches 0
 set my_sbatch "${fed_slurm_base}/$fedc1/bin/sbatch"
 set sbatch_pid [spawn $my_sbatch --output=/dev/null --error=/dev/null -n1 -t3 --cluster-constraint=invalid $file_in]

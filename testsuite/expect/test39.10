@@ -113,7 +113,7 @@ proc run_gpu_per_task { mem_per_gpu gpu_cnt } {
 print_header $test_id
 
 if {[test_cons_tres]} {
-        send_user "\nValid configuration, using select/cons_tres\n"
+        log_debug "Valid configuration, using select/cons_tres"
 } else {
         skip "This test is only compatible with select/cons_tres"
 }
@@ -131,9 +131,9 @@ if {$gpu_cnt < 1} {
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
-log_info "GPU count is $gpu_cnt"
-log_info "Memory Size is $node_conf(RealMemory)"
-log_info "Node count in partition default parition $def_part_name is $nb_nodes"
+log_debug "GPU count is $gpu_cnt"
+log_debug "Memory Size is $node_conf(RealMemory)"
+log_debug "Node count in partition default parition $def_part_name is $nb_nodes"
 
 #
 # Build input script file

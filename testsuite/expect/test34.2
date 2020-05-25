@@ -229,7 +229,7 @@ set user [get_my_user_name]
 log_info "**** Cleanup from previous run ****"
 clean_up 0
 
-send_user "\n*** TEST PREEMPT CANCEL ***\n"
+log_info "*** TEST PREEMPT CANCEL ***"
 
 acct_setup $acct_1 $qos_1 "" cancel
 acct_setup $acct_2 $qos_2 $qos_1 cluster
@@ -252,7 +252,7 @@ check_job_state $qos_1_id PREEMPTED
 wait_for_account_done $acct_1,$acct_2
 
 ###################### Test preempt requeue ######################
-send_user "\n*** TEST PREEMPT REQUEUE ***\n"
+log_info "*** TEST PREEMPT REQUEUE ***"
 
 mod_qos $qos_1 requeue
 

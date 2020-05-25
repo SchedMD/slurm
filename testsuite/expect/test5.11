@@ -269,9 +269,9 @@ expect {
 }
 log_user 1
 
-send_user "\nL:$node_l:$cpu_l_cnt M:$node_m:$cpu_m_cnt H:$node_h:$cpu_h_cnt\n"
+log_debug "L:$node_l:$cpu_l_cnt M:$node_m:$cpu_m_cnt H:$node_h:$cpu_h_cnt"
 if {$cpu_l_cnt == $cpu_h_cnt} {
-	send_user "The rest of this test expects to have three different nodes \
+	log_debug "The rest of this test expects to have three different nodes \
 		each with different cpu counts -- finishing test now."
 
 	exec $bin_rm -fr $script

@@ -65,7 +65,7 @@ proc run_job { part_name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nsrun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			return 1
 		}

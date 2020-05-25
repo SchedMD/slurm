@@ -90,7 +90,7 @@ if {$match_job_state != 1} {
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-send_user "\nSo far, so good\n\n\n"
+log_debug "So far, so good"
 
 #
 # Submit a job array for second dependency test

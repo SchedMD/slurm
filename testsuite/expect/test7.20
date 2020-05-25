@@ -189,7 +189,7 @@ proc test_bin_pass { num bin args het_job count } {
 	set got_sub3 0
 	set rc -12345
 
-	send_user "\n\n**** TEST PASS $num ****\n"
+	log_info "**** TEST PASS $num ****"
 	eval spawn $bin [join $args " "]
 	set pid [exp_pid]
 	expect {
@@ -246,7 +246,7 @@ proc test_bin_fail { num bin args het_job count } {
 	set got_sub3 0
 	set rc -12345
 
-	send_user "\n\n**** TEST FAIL $num ****\n"
+	log_info "**** TEST FAIL $num ****"
 	eval spawn $bin [join $args " "]
 	set pid [exp_pid]
 	expect {

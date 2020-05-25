@@ -48,7 +48,7 @@ if {![test_scheduler_params "permit_job_expansion"]} {
 }
 
 if {[test_cons_tres]} {
-    send_user "\nValid configuration, using select/cons_tres\n"
+    log_debug "Valid configuration, using select/cons_tres"
 } else {
     skip "This test is only compatible with select/cons_tres"
 }
@@ -168,7 +168,7 @@ if {[wait_for_job $job_id2 "DONE"] != 0} {
 #
 # Parse the output files from job 1
 #
-send_user "\n\nParse job 1 output\n"
+log_debug "Parse job 1 output"
 if {[wait_for_file $file_out1] != 0} {
 	fail "No output file"
 }
@@ -192,7 +192,7 @@ if {$match != 3} {
 # Parse the output files from job 2
 # Not currently looking for anything, but do log it's contents before purge
 #
-send_user "\n\nParse job 2 output\n"
+log_debug "Parse job 2 output"
 if {[wait_for_file $file_out2] != 0} {
 	fail "No output file"
 }

@@ -56,7 +56,7 @@ spawn $sbatch -n1 --array=1-4 --output=/dev/null $file_script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		send_user "\njob $job_id was submitted\n"
+		log_debug "Job $job_id was submitted"
 		exp_continue
 	}
 	-re "error" {
@@ -78,7 +78,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 }
 
 # wait a while for job purge to happen
-send_user "\nWaiting for job record purge to happen...\n"
+log_debug "Waiting for job record purge to happen.."
 sleep 65
 
 # check that head job still exists

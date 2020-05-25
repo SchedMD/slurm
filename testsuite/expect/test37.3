@@ -97,14 +97,14 @@ proc test_fed_status {cname fed_flags cluster_list} {
 		-re "$eol" {
 			incr lines
 			set line $expect_out(buffer)
-			send_user "line: $line\n"
+			log_debug "Line: $line"
 
 			if {[regexp "Federation: $fed_name" $line match]} {
-				send_user "matched: $match\n"
+				log_debug "Matched: $match"
 				incr matches
 			} elseif {[regexp {Self:\s+(\S+):(\S+):(\d+) ID:(\d+) FedState:(\S*) Features:(\S*)} \
 					  $line match name host port id state features]} {
-				send_user "matched: $match\n"
+				log_debug "Matched: $match"
 				if {$expected_matches &&
 				    ![string compare [dict get $clusters($name) host]     $host]  &&
 				    ![string compare [dict get $clusters($name) state]    $state] &&
@@ -112,12 +112,12 @@ proc test_fed_status {cname fed_flags cluster_list} {
 				    ![string compare [dict get $clusters($name) conn]     Self]  &&
 				    [dict get $clusters($name) port]   == $port &&
 				    [dict get $clusters($name) id]     == $id} {
-					send_user "matched self: $name\n"
+					log_debug "Matched self: $name"
 					incr matches
 				}
 			} elseif {[regexp {Sibling:\s+(\S+):(\S+):(\d+) ID:(\d+) FedState:(\S*) Features:(\S*) PersistConnSend/Recv:(\S+)} \
 					  $line match name host port id state features conn]} {
-				send_user "matched: $match\n"
+				log_debug "Matched: $match"
 				if {$expected_matches &&
 				    ![string compare [dict get $clusters($name) host]     $host]  &&
 				    ![string compare [dict get $clusters($name) state]    $state] &&
@@ -125,7 +125,7 @@ proc test_fed_status {cname fed_flags cluster_list} {
 				    ![string compare [dict get $clusters($name) conn]     $conn]  &&
 				    [dict get $clusters($name) port]   == $port &&
 				    [dict get $clusters($name) id]     == $id} {
-					send_user "matched sibling: $name\n"
+					log_debug "Matched sibling: $name"
 					incr matches
 				}
 			}
@@ -177,25 +177,25 @@ array set clusters [get_clusterfed_info $fed_name]
 
 set fed_flags "None"
 
-send_user "\n\ntest from $fedc1\n"
+log_info "Test from $fedc1"
 dict set clusters($fedc1) conn Self
 dict set clusters($fedc2) conn "Yes/Yes"
 dict set clusters($fedc3) conn "Yes/Yes"
 test_fed_status $fedc1 $fed_flags [array get clusters]
 
-send_user "\n\ntest from $fedc2\n"
+log_info "Test from $fedc2"
 dict set clusters($fedc1) conn "Yes/Yes"
 dict set clusters($fedc2) conn Self
 dict set clusters($fedc3) conn "Yes/Yes"
 test_fed_status $fedc2 $fed_flags [array get clusters]
 
-send_user "\n\ntest from $fedc3\n"
+log_info "Test from $fedc3"
 dict set clusters($fedc1) conn "Yes/Yes"
 dict set clusters($fedc2) conn "Yes/Yes"
 dict set clusters($fedc3) conn Self
 test_fed_status $fedc3 $fed_flags [array get clusters]
 
-send_user "\n\nremove $fedc3 and test from $fedc1 and $fedc2\n"
+log_info "Remove $fedc3 and test from $fedc1 and $fedc2"
 if {[remove_cluster_from_fed $fedc3 $fed_name]} {
 	end_it 1
 }
@@ -208,7 +208,7 @@ dict set clusters($fedc1) conn "Yes/Yes"
 dict set clusters($fedc2) conn Self
 test_fed_status $fedc2 $fed_flags [array get clusters]
 
-send_user "\n\nremove $fedc1 and test from $fedc2\n"
+log_info "Remove $fedc1 and test from $fedc2"
 if {[remove_cluster_from_fed $fedc1 $fed_name]} {
 	end_it 1
 }
@@ -216,14 +216,14 @@ array unset clusters $fedc1
 dict set clusters($fedc2) conn Self
 test_fed_status $fedc2 $fed_flags [array get clusters]
 
-send_user "\n\nremove $fedc2 and test from $fedc2\n"
+log_info "Remove $fedc2 and test from $fedc2"
 array unset clusters
 if {[remove_cluster_from_fed $fedc2 $fed_name]} {
 	end_it 1
 }
 test_fed_status $fedc2 $fed_flags [array get clusters]
 
-send_user "\n\nadd $fedc1 and test from $fedc1\n"
+log_info "Add $fedc1 and test from $fedc1"
 if {[add_cluster_to_fed $fedc1 $fed_name]} {
 	end_it 1
 }
@@ -231,7 +231,7 @@ array set clusters [get_clusterfed_info $fed_name]
 dict set clusters($fedc1) conn Self
 test_fed_status $fedc1 $fed_flags [array get clusters]
 
-send_user "\n\nadd $fedc2 and test from $fedc1\n"
+log_info "Add $fedc2 and test from $fedc1"
 if {[add_cluster_to_fed $fedc2 $fed_name]} {
 	end_it 1
 }
@@ -241,7 +241,7 @@ dict set clusters($fedc1) conn Self
 dict set clusters($fedc2) conn "Yes/Yes"
 test_fed_status $fedc1 $fed_flags [array get clusters]
 
-send_user "\n\nadd $fedc3 and test from $fedc1\n"
+log_info "Add $fedc3 and test from $fedc1"
 if {[add_cluster_to_fed $fedc3 $fed_name]} {
 	end_it 1
 }
@@ -253,7 +253,7 @@ dict set clusters($fedc3) conn "Yes/Yes"
 test_fed_status $fedc1 $fed_flags [array get clusters]
 
 
-#send_user "\n\nTest federation flags (LLC)\n"
+#log_info "Test federation flags (LLC)"
 #set matches 0
 #set my_pid [spawn $sacctmgr -i modify federation $fed_name set flags+=LLC]
 #expect {
@@ -295,7 +295,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 #test_fed_status $fedc1 $fed_flags [array get clusters]
 #
 #
-#send_user "\n\nTest removal of federation flags (LLC)\n"
+#log_info "Test removal of federation flags (LLC)"
 #set matches 0
 #set my_pid [spawn $sacctmgr -i modify federation $fed_name set flags-=LLC]
 #expect {
@@ -337,7 +337,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 #test_fed_status $fedc1 $fed_flags [array get clusters]
 
 
-send_user "\n\nTest setting of cluster features\n"
+log_info "Test setting of cluster features"
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features=fb,fa]
 expect {
@@ -381,7 +381,7 @@ dict set clusters($fedc2) conn "Yes/Yes"
 dict set clusters($fedc3) conn "Yes/Yes"
 test_fed_status $fedc1 $fed_flags [array get clusters]
 
-send_user "\n\nTest modifying/add of cluster features\n"
+log_info "Test modifying/add of cluster features"
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features+=fc]
 expect {
@@ -421,7 +421,7 @@ dict set clusters($fedc2) conn "Yes/Yes"
 dict set clusters($fedc3) conn "Yes/Yes"
 test_fed_status $fedc1 $fed_flags [array get clusters]
 
-send_user "\n\nTest modifying/remove of cluster features\n"
+log_info "Test modifying/remove of cluster features"
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features-=fb]
 expect {
@@ -462,7 +462,7 @@ dict set clusters($fedc3) conn "Yes/Yes"
 test_fed_status $fedc1 $fed_flags [array get clusters]
 
 
-send_user "\n\nTest clearing of cluster features\n"
+log_info "Test clearing of cluster features"
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features=]
 expect {
@@ -502,12 +502,9 @@ dict set clusters($fedc2) conn "Yes/Yes"
 dict set clusters($fedc3) conn "Yes/Yes"
 test_fed_status $fedc1 $fed_flags [array get clusters]
 
-send_user "\n\ndelete federation and test from $fedc1\n"
+log_info "Delete federation and test from $fedc1"
 delete_federations $fed_name
 array unset clusters
 test_fed_status $fedc2 $fed_flags [array get clusters]
-
-
-
 
 end_it 0

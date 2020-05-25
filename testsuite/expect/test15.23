@@ -71,7 +71,7 @@ expect {
 		exp_continue
 	}
 	-re $prompt {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
 		log_error "salloc not responding"

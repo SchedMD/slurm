@@ -223,7 +223,7 @@ reconfigure
 spawn $scontrol delete ReservationName=$resv_name
 expect {
 	-re "Error|error" {
-		send_user "\nError is expected, no worries\n"
+		log_debug "Error is expected, no worries"
 	}
 	timeout {
 		log_error "scontrol not responding"
@@ -283,7 +283,7 @@ if { [reason_is_licenses $job_id1] != 0 } {
 test_license_count 8 3 5
 
 if {$exit_code == 0} {
-	send_user "\nSo far, so good. Starting test of second job\n\n"
+	log_debug "So far, so good. Starting test of second job"
 }
 
 #

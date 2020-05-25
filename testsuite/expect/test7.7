@@ -176,8 +176,8 @@ if {[test_linear]} {
 	set alloc_unit_num 4
 }
 set max_tasks [get_total_cpus]
-send_user "\nResource allocation unit: $alloc_unit_str\n"
-send_user "CPUs in default partition: $max_tasks\n\n"
+log_debug "Resource allocation unit: $alloc_unit_str"
+log_debug "CPUs in default partition: $max_tasks"
 if {$max_tasks > 32} {
 	set max_tasks 20
 }

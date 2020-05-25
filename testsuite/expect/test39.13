@@ -40,7 +40,7 @@ set number_commas  "\[0-9_,\]+"
 print_header $test_id
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
 	skip "This test is only compatible with select/cons_tres"
 }
@@ -61,9 +61,9 @@ if {$gpu_cnt < 1} {
 	skip "This test requires 1 or more GPUs in the default partition"
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
-log_info "GPU count is $gpu_cnt"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
 
 set tot_cpus $node_conf(CPUTot)
 set tot_gpus $gpu_cnt

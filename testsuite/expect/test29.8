@@ -168,7 +168,7 @@ for {set count 0} {$count <= $spare_node} {incr count 1} {
 			exp_continue
 		}
 		-re "Job has reached MaxSpareNodeCount limit" {
-			send_user "\nDo not worry this error is expected\n"
+			log_debug "Do not worry this error is expected"
 			set replace_match 2
 			exp_continue
 		}

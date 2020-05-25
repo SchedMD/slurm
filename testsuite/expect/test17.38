@@ -72,7 +72,7 @@ done
 "
 
 ################Run sbatch with --signal=################
-send_user "\nStart --signal test to signal steps\n"
+log_info "Start --signal test to signal steps"
 
 spawn $sbatch -t3 --signal=2@60 -o$file_out $file_in
 expect {
@@ -154,7 +154,7 @@ expect {
 exec $bin_rm -f $file_out
 
 ################Run sbatch with --signal=B:################
-send_user "\nStart --signal test to signal bash script\n"
+log_info "Start --signal test to signal bash script"
 
 set job_id 0
 spawn $sbatch -t3 --signal=B:2@60 -o$file_out $file_in
@@ -177,7 +177,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	log_error "Error waiting for job $job_id to complete"
 	set exit_code 1
 	cancel_job $job_id
 }

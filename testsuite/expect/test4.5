@@ -140,7 +140,7 @@ if {$i != 8} {
 #
 # Submit a job to filter for allocated job state
 #
-send_user "\nTesting ALLOCATED state\n"
+log_info "Testing ALLOCATED state"
 set tmp_id 0
 set tmp_sc "test$test_id\_tmp_sc"
 make_bash_script $tmp_sc "sleep 20"
@@ -205,7 +205,7 @@ change_state drain $node_list(6),$node_list(7)
 #
 # Change node state to idle and use state filter to filter node
 #
-send_user "\nTesting IDLE state\n"
+log_info "Testing IDLE state"
 spawn $sinfo --Node --node=$node_list(2),$node_list(3) --long --exact --state=idle -p$partition
 expect {
 	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($alpha)" {
@@ -233,7 +233,7 @@ expect {
 #
 # Change node state to down and use state filter to filter node
 #
-send_user "\nTesting DOWN state\n"
+log_info "Testing DOWN state"
 spawn $sinfo --Node --node=$node_list(4),$node_list(5) --long --exact --state=down -p$partition
 expect {
 	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($alpha)" {
@@ -261,7 +261,7 @@ expect {
 #
 # Change node state to drain and use state filter to filter node
 #
-send_user "\nTesting DRAIN state\n"
+log_info "Testing DRAIN state"
 spawn $sinfo --Node --node=$node_list(6),$node_list(7) --long --exact --state=drain -p$partition
 expect {
 	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($alpha)" {

@@ -216,7 +216,7 @@ spawn $scontrol requeue $job_id
 expect {
 	-re "Requested operation is presently disabled" {
 		set disabled 1
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		exp_continue
 	}
 	-re "error" {

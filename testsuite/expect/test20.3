@@ -95,7 +95,7 @@ set matches 0
 spawn $qdel $job_id
 expect {
 	-re "already completing or completed" {
-		send_user "\nWe shouldn't see this because qdel doesn't print an error for this.\n"
+		log_debug "We shouldn't see this because qdel doesn't print an error for this"
 		incr matches
 		exp_continue
 	}

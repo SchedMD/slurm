@@ -96,10 +96,10 @@ if {$job_id == 0} {
 	spawn $scontrol show job $job_id
 	expect {
 		-re "TimeLimit=01:00:00" {
-			send_user "\nTimelimit OK\n"
+			log_debug "Timelimit OK"
 		}
 		-re "TimeLimit=00:59:" {
-			send_user "\nTimelimit OK\n"
+			log_debug "Timelimit OK"
 		}
 		-re "TimeLimit=" {
 			log_error "Timelimit not OK with deadline"

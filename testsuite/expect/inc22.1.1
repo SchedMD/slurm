@@ -66,7 +66,7 @@ proc inc22_1_1 { } {
 	set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]]
 	set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
 
-	send_user "\nTesting sreport for first hour (Within: inc22.1.1)\n"
+	log_info "Testing sreport for first hour (Within: inc22.1.1)"
 
 	set matches 0
 	set my_pid [spawn $sreport -M$cluster2 cluster utilization start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,reported]

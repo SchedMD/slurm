@@ -70,7 +70,7 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nNo worries, this error is expected\n"
+		log_debug "No worries, this error is expected"
 		exp_continue
 	}
 	timeout {

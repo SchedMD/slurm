@@ -159,7 +159,7 @@ reconfigure
 #       directly, so we build a script containing a pipe to tail
 #
 
-send_user "\n\nTesting srun help message..........\n\n"
+log_info "Testing srun help message........."
 
 make_bash_script $file_in "$srun --help | $bin_grep test"
 set matches 0
@@ -194,7 +194,7 @@ if {$matches != 2} {
 #       directly, so we build a script containing a pipe to tail
 #
 
-send_user "\n\nTesting salloc help message..........\n\n"
+log_info "Testing salloc help message........."
 
 make_bash_script $file_in "$salloc --help | $bin_grep test"
 set matches 0
@@ -225,7 +225,7 @@ if {$matches != 1} {
 #       directly, so we build a script containing a pipe to tail
 #
 
-send_user "\n\nTesting sbatch help message..........\n\n"
+log_info "Testing sbatch help message........."
 
 make_bash_script $file_in "$sbatch --help | $bin_grep test"
 set matches 0
@@ -258,9 +258,9 @@ if {$matches != 1} {
 #	slurmd/slurmstepd on the compute node will not get the updated
 #	configuration.
 #
-send_user "\n\nTest locally logged messages..........\n\n"
+log_info "Test locally logged messages........."
 
-send_user "Checksum of local $spank_conf_file\n"
+log_debug "Checksum of local $spank_conf_file"
 spawn $bin_sum $spank_conf_file
 expect {
 	-re timeout {
@@ -271,7 +271,6 @@ expect {
 		wait
 	}
 }
-send_user "\n\n"
 
 $bin_sleep 30
 make_bash_script $file_in "
@@ -322,7 +321,6 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 
 # NOTE: spank logs from sbatch and srun would be intermingled here
 if {[wait_for_file $file_out] == 0} {
-	send_user "\n\n"
 	set matches 0
 	set matches_sbatch 0
 	set matches_srun 0
@@ -363,7 +361,7 @@ if {[wait_for_file $file_out] == 0} {
 		log_error "Local (srun) spank plugin failure ($matches != 2)"
 		end_it 1
 	} else {
-		send_user "\nlocal (srun) spank plugin success\n"
+		log_debug "Local (srun) spank plugin success"
 	}
 } else {
 	end_it 1
@@ -373,7 +371,6 @@ if {[wait_for_file $file_out] == 0} {
 # Test for slurmd output in file
 #
 if {[wait_for_file $spank_out] == 0} {
-	send_user "\n\n"
 	set matches        0
 	set matches_sbatch 0
 	set matches_srun   0
@@ -462,7 +459,7 @@ if {[wait_for_file $spank_out] == 0} {
 		log_warn "Check for matching checksums on the plugstack.conf file. Different checksums could indicate file system delays"
 		end_it 1
 	}
-	send_user "\n remote (slurmd) spank plugin success\n"
+	log_debug "Remote (slurmd) spank plugin success"
 } else {
 	end_it 1
 }

@@ -40,7 +40,7 @@ set number_commas  "\[0-9_,\]+"
 print_header $test_id
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
 	skip "This test is only compatible with select/cons_tres"
 }
@@ -50,7 +50,7 @@ if {[test_front_end]} {
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
-send_user "\nDefault partition node count is $nb_nodes\n"
+log_debug "Default partition node count is $nb_nodes"
 if {$nb_nodes > 1} {
 	set nb_nodes 2
 }
@@ -72,10 +72,10 @@ if {$constrain_devices} {
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set cpus_per_node $node_conf(CPUTot)
 
-log_info "GPUs per node is $gpu_cnt"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
-log_info "CPUs per node is $cpus_per_node"
+log_debug "GPUs per node is $gpu_cnt"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "CPUs per node is $cpus_per_node"
 
 if {$cpus_per_node < 3} {
 	skip "This test requires 3 or more CPUs per node in the default partition"
@@ -84,7 +84,7 @@ if {$cpus_per_node < 3} {
 #
 # Test --gpus-per-node option by job step
 #
-send_user "\n\nTEST 1: --gpus-per-node option\n"
+log_info "TEST 1: --gpus-per-node option"
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
@@ -169,7 +169,7 @@ if {$match != 1} {
 # Test --gpus-per-task option by job step
 # Note that job is using --gpus-per-node, while step is using --gpus-per-task
 #
-send_user "\n\nTEST 2: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
+log_info "TEST 2: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option"
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
@@ -257,7 +257,7 @@ if {$bad_cuda_cnt != 0} {
 #
 # Test --gpus (per job or step) option by job step
 #
-send_user "\n\nTEST 3: --gpus-per-node for job and multiple simultaneous steps using --gpus (per step) option\n"
+log_info "TEST 3: --gpus-per-node for job and multiple simultaneous steps using --gpus (per step) option"
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
@@ -346,7 +346,7 @@ if {$bad_cuda_cnt != 0} {
 # Test --gpus (per job or step) option by job step
 #
 if {$gpu_cnt > 2} {
-	send_user "\n\nTEST 4: --gpus-per-node for job and multiple simultaneous steps using --gpus (per step) option\n"
+	log_info "TEST 4: --gpus-per-node for job and multiple simultaneous steps using --gpus (per step) option"
 
 	make_bash_script $file_in1 "
 		$scontrol -dd show job \${SLURM_JOBID}
@@ -451,7 +451,7 @@ if {$gpu_cnt > 2} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 2} {
-	send_user "\n\nTEST 5: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
+	log_info "TEST 5: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option"
 
 	set job_gpus 3
 	set step_gpus 2
@@ -564,7 +564,7 @@ if {$gpu_cnt > 2} {
 # Test --gpus option by job step
 #
 if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
-	send_user "\n\nTEST 6: --gpus-per-node for job and multiple simultaneous steps using --gpus option\n"
+	log_info "TEST 6: --gpus-per-node for job and multiple simultaneous steps using --gpus option"
 
 	set job_gpus 2
 	set step_gpus 2
@@ -684,7 +684,7 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 # Test --gpus option by job step
 #
 if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
-	send_user "\n\nTEST 7: --gpus-per-node for job and multiple simultaneous steps using --gpus option\n"
+	log_info "TEST 7: --gpus-per-node for job and multiple simultaneous steps using --gpus option"
 
 	set job_gpus 4
 
@@ -774,7 +774,7 @@ if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 3 && $nb_nodes >= 2} {
-	send_user "\n\nTEST 8: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
+	log_info "TEST 8: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option"
 
 	set job_gpus 4
 	set step_gpus 2
@@ -894,7 +894,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 3 && $nb_nodes >= 2} {
-	send_user "\n\nTEST 9: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
+	log_info "TEST 9: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option"
 
 	set job_gpus 4
 	set step_gpus 2
@@ -997,7 +997,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 3 && $nb_nodes >= 2} {
-	send_user "\n\nTEST 10: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
+	log_info "TEST 10: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option"
 
 	set job_gpus 3
 	set step_gpus 2

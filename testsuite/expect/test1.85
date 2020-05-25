@@ -56,7 +56,7 @@ expect {
 	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send_user "Allocation started\n"
+		log_debug "Allocation started"
 		send "export PS1=\"$prompt\"\r"
 		exp_continue
 	}
@@ -118,7 +118,7 @@ expect {
 	-re $prompt {
 	}
 }
-send_user "Got exec hosts $host1 $host2\n"
+log_debug "Got exec hosts $host1 $host2"
 
 # reset the spawn process to be initial allocation
 # then srun a first task.

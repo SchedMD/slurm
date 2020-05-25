@@ -115,7 +115,7 @@ if {[file exist $def_out]} {
 		}
 		-re "$sleep_error_message" {
 			incr got_stdout
-			send_user "\nThis error is expected do not worry\n"
+			log_debug "This error is expected do not worry"
 			exp_continue
 		}
 		eof {
@@ -187,7 +187,7 @@ if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
 		-re "$sleep_error_message" {
-			send_user "\nNo worries, this error is expected\n"
+			log_debug "No worries, this error is expected"
 			set got_stderr 1
 			exp_continue
 		}
@@ -387,7 +387,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 exec sleep 5
 set file_err2 slurm-$job_id.err
 set file_out2 slurm-$job_id.out
-send_user "\nChecking for files $file_err2 and $file_out2\n"
+log_debug "Checking for files $file_err2 and $file_out2"
 if { [file exists $file_out2] } {
 	fail "Found unexpected stdout file $file_out2"
 }

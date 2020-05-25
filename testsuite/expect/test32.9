@@ -115,7 +115,7 @@ if {[wait_for_file $file_out] == 0} {
 			exp_continue
 		}
 		-re "No such file or directory" {
-			send_user "\nError is expected. No worries.\n"
+			log_debug "Error is expected. No worries"
 			incr rm_cnt
 			exp_continue
 		}

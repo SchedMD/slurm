@@ -138,7 +138,7 @@ if {[string compare $host ""] == 0} {
 	fail "Did not get hostname from idle node"
 }
 
-send_user "found idle node $host with $cpu_cnt processors\n"
+log_debug "Found idle node $host with $cpu_cnt processors"
 
 set srun_pid [spawn $srun -N1 -w$host --cpus-per-task=1 --exclusive -l -t1 $bin_printenv SLURM_PROCID]
 expect {
@@ -169,7 +169,7 @@ if {$cpu_cnt != $task_cnt} {
 		set cpu_cnt [expr $cpu_cnt * $threads_per_core]
 	}
 	if {$cpu_cnt == $task_cnt} {
-		send_user "NOTE: Allocated $core_cnt cores and $threads_per_core CPUs per core\n"
+		log_debug "Allocated $core_cnt cores and $threads_per_core CPUs per core"
 	}
 }
 if {$cpu_cnt != $task_cnt} {

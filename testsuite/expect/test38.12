@@ -78,7 +78,7 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
 		log_error "salloc: allocation not granted in $timeout seconds"
@@ -93,7 +93,7 @@ if {$pack_job_id == 0} {
 	end_it 1
 }
 
-send_user "\n\nCollect Nodenames\n\n"
+log_debug "Collect Nodenames"
 
 send "$squeue -j $pack_job_id -o\"NAME=%N\" --noheader\r"
 expect {
@@ -118,7 +118,7 @@ if {$index != 3} {
 	end_it 1
 }
 
-send_user "\n\nTest Sending Srun w/ --label To Various Components\n\n"
+log_info "Test Sending Srun w/ --label To Various Components"
 
 set matches 0
 send "$srun --label --mpi=none --pack-group=0-2 printenv SLURMD_NODENAME\r"
@@ -128,7 +128,6 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		send_user "\n\n"
 		#break
 	}
 	timeout {
@@ -152,7 +151,6 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		send_user "\n\n"
 		#break
 	}
 	timeout {
@@ -176,7 +174,6 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		send_user "\n\n"
 		#break
 	}
 	timeout {
@@ -200,7 +197,6 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		send_user "\n\n"
 		#break
 	}
 	timeout {
@@ -241,7 +237,6 @@ if {$matches != 3} {
 
 
 for {set inx 0} {$inx < 3} {incr inx} {
-	send_user "\n\n"
 	set matches 0
 	send "$srun -O -n3 --label --mpi=none --pack-group=$inx printenv SLURMD_NODENAME\r"
 	expect {

@@ -49,7 +49,7 @@ proc inc22_1_5 { } {
 	set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
 	set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
 
-	send_user "\nTesting sreport for default (non-AcctAsParent) and FlatView (Within: inc22.1.5)\n"
+	log_info "Testing sreport for default (non-AcctAsParent) and FlatView (Within: inc22.1.5)"
 
 	# test the job report for root account
 	set matches 0

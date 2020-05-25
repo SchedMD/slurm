@@ -95,7 +95,7 @@ for {set inx 0} {$inx < $windows_iterations} {incr inx} {
                         exp_continue
                 }
 		-re $prompt {
-			send_user "spawning step $inx\n"
+			log_debug "Spawning step $inx"
 			send "$srun -N1 -O -n$windows_used true\r"
 		}
 		timeout {
@@ -110,7 +110,7 @@ for {set inx 0} {$inx < $windows_iterations} {incr inx} {
 
 # wait for initial job step to complete
 expect -re $prompt
-send_user "(sleeping for $step_delay seconds, for job step zero to complete)\n"
+log_debug "(sleeping for $step_delay seconds, for job step zero to complete)"
 exec $bin_sleep $step_delay
 send "exit\r"
 

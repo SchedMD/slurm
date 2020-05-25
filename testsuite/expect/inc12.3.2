@@ -32,7 +32,7 @@ proc inc12_3_2 {job_id_1 job_id_2 job_id_3 job_name_1 job_name_2 test_acct job_1
 	global alpha_numeric_under sacct
 	global exit_code
 
-	send_user "\nSearch for jobs $job_id_1 and $job_id_3 on node: $job_1_node_0 (Within: inc12.3.2)\n"
+	log_info "Search for jobs $job_id_1 and $job_id_3 on node: $job_1_node_0 (Within: inc12.3.2)"
 	set job_1_match 0
 	set job_2_match 0
 	spawn $sacct -A '$test_acct' -N$job_1_node_0 -X -p -o jobid,jobname
@@ -62,8 +62,7 @@ proc inc12_3_2 {job_id_1 job_id_2 job_id_3 job_name_1 job_name_2 test_acct job_1
 		set exit_code 1
 	}
 
-
-	send_user "\nSearch for jobs $job_id_1 and $job_id_2 on node: $job_1_node_2 (Within: inc12.3.2))\n"
+	log_info "Search for jobs $job_id_1 and $job_id_2 on node: $job_1_node_2 (Within: inc12.3.2))"
 	set job_1_match 0
 	set job_2_match 0
 	spawn $sacct -A '$test_acct' -N$job_1_node_2 -X -p -o jobid,jobname
@@ -89,8 +88,7 @@ proc inc12_3_2 {job_id_1 job_id_2 job_id_3 job_name_1 job_name_2 test_acct job_1
 		set exit_code 1
 	}
 
-
-	send_user "\nSearch for jobs $job_id_1 and $job_id_2 on node: $job_2_node_0 (Within: inc12.3.2)\n"
+	log_info "Search for jobs $job_id_1 and $job_id_2 on node: $job_2_node_0 (Within: inc12.3.2)"
 	set job_1_match 0
 	set job_2_match 0
 	spawn $sacct -A '$test_acct' -N$job_2_node_0 -X -p -o jobid,jobname
@@ -116,8 +114,7 @@ proc inc12_3_2 {job_id_1 job_id_2 job_id_3 job_name_1 job_name_2 test_acct job_1
 		set exit_code 1
 	}
 
-
-	send_user "\nSearch for jobs $job_id_2 and $job_id_3 on node: $job_2_node_1 (Within: inc12.3.2)\n"
+	log_info "Search for jobs $job_id_2 and $job_id_3 on node: $job_2_node_1 (Within: inc12.3.2)"
 	set job_1_match 0
 	set job_2_match 0
 	spawn $sacct -A '$test_acct' -N$job_2_node_1 -X -p -o jobid,jobname

@@ -134,7 +134,7 @@ if { $matches > $tasks_per_node } {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSo far, so good. Trying with --immediate option\n\n"
+	log_info "So far, so good. Trying with --immediate option"
 } else {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
@@ -209,7 +209,7 @@ expect {
 		exp_continue
 	}
 	-re "Unable to create " {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		incr matches
 		exp_continue
 	}

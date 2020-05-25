@@ -29,7 +29,7 @@ proc inc3_11_10 {} {
 	# TEST 10
 	# Test node reservation conflict
 	#
-	send_user "\n+++++ STARTING TEST 10 (Within: inc3.11.10) +++++\n"
+	log_info "+++++ STARTING TEST 10 (Within: inc3.11.10) +++++"
 	# Make the reservation
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=[available_nodes_hostnames "" true] flags=DAILY user=$user_name" 0]
 	if {$ret_code != 0} {
@@ -45,7 +45,7 @@ proc inc3_11_10 {} {
 		delete_res $res_name
 		fail "Reservation did not fail but should have (Within: inc3.11.10)"
 	} else {
-		send_user "\033\[32mExpected error.  You can turn that frown upside-down.(Within: inc3.11.10)\033\[m\n"
+		log_debug "\033\[32mExpected error. You can turn that frown upside-down.(Within: inc3.11.10)"
 	}
 
 	# Test for reservation conflict
@@ -55,7 +55,7 @@ proc inc3_11_10 {} {
 		delete_res $res_name
 		fail "Reservation did not fail but should have (Within: inc3.11.10)"
 	} else {
-		send_user "\033\[32mExpected error.  You can turn that frown upside-down.(Within: inc3.11.10)\033\[m\n"
+		log_debug "\033\[32mExpected error. You can turn that frown upside-down.(Within: inc3.11.10)"
 	}
 
 

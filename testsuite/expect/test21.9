@@ -231,7 +231,7 @@ if { ![check_acct_associations] } {
 #
 mod_cluster "$tc1,$tc2,$tc3" [array get mod_cluster]
 
-send_user "\nChecking modifed cluster limits:"
+log_info "Checking modifed cluster limits:"
 # Check Cluster 1
 check_assoc_limit 1 cluster $tc1 [array get mod_cluster]
 

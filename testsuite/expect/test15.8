@@ -56,7 +56,7 @@ expect {
 		exp_continue
 	}
 	-re "Unable to allocate resources" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		incr matches
 		exp_continue
 	}
@@ -76,7 +76,7 @@ if {$matches != 3} {
 	log_error "Failed to hold job as requested ($matches != 3)"
 	set exit_code 1
 } else {
-	send_user "\nSo far, so good\n\n"
+	log_debug "So far, so good"
 }
 
 #
@@ -88,7 +88,7 @@ set matches 0
 set salloc_pid [spawn $salloc --immediate -t1 $bin_pwd]
 expect {
 	-re "error: Job submit/allocate failed" {
-		send_user "This error is not unexpected, no worries\n"
+		log_debug "This error is not unexpected, no worries"
 		incr matches
 		exp_continue
 	}

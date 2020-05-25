@@ -111,7 +111,7 @@ expect {
 		exp_continue
 	}
 	-re "exit code $number" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set srun_exit 1
 		exp_continue;
 	}
@@ -247,7 +247,7 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nDo not worry this error is expected\n"
+		log_debug "Do not worry this error is expected"
 		set srun_exit 1
 		exp_continue;
 	}

@@ -93,7 +93,7 @@ set matches 0
 spawn $bin_cat $file_err
 expect {
 	-re "No such file" {
-		send_user "message from cat expected, no worries.\n"
+		log_debug "Message from cat expected, no worries"
 		incr matches
 		exp_continue
 	}

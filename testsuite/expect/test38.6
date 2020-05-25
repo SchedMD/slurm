@@ -181,9 +181,9 @@ expect {
 #	configuration.
 #
 exec $bin_sleep 30
-send_user "\n\nTest locally logged messages..........\n\n"
+log_info "Test locally logged messages........."
 
-send_user "Checksum of local $spank_conf_file\n"
+log_debug "Checksum of local $spank_conf_file"
 spawn $bin_sum $spank_conf_file
 expect {
 	-re timeout {
@@ -244,7 +244,6 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 
 # NOTE: spank logs from sbatch and srun would be intermingled here
 if {[wait_for_file $file_out] == 0} {
-	send_user "\n\n"
 	set matches 0
 	set matches_sbatch 0
 	set matches_srun 0
@@ -291,7 +290,7 @@ if {[wait_for_file $file_out] == 0} {
 	if {$fail_cnt != 0} {
 		end_it 1
 	}
-	send_user "\nlocal (srun) spank plugin success\n"
+	log_debug "Local (srun) spank plugin success"
 } else {
 	end_it 1
 }
@@ -300,7 +299,6 @@ if {[wait_for_file $file_out] == 0} {
 # Test for slurmd output in file
 #
 if {[wait_for_file $spank_out] == 0} {
-	send_user "\n\n"
 	set matches        0
 	set matches_sbatch 0
 	set matches_srun   0

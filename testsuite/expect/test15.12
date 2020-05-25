@@ -47,7 +47,7 @@ set timeout $max_job_delay
 spawn $salloc -N1 -t1 --constraint=invalid,constraint salloc -t1 $bin_bash
 expect {
 	-re "error:.*Invalid feature specification" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set err_msg 1
 		exp_continue
 	}

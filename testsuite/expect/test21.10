@@ -388,7 +388,7 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nTest associations delete verified.\n"
+		log_debug "Test associations delete verified"
 		slow_kill $as2_list_pid
 	}
 	eof {

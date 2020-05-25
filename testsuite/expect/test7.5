@@ -75,19 +75,19 @@ expect {
 		# sleep to make sure the process is actually running
 		exec $bin_sleep 1
 		exec $bin_kill -TERM $srun_pid
-		send_user "\nSent SIGTERM\n"
+		log_debug "Sent SIGTERM"
 		exp_continue
 	}
 	-re "Received signal" {
 		log_error "Unexpected signal processed"
 		set exit_code 1
-		send_user "\nSent SIGTERM\n"
+		log_debug "Sent SIGTERM"
 		exp_continue
 	}
 	-re "WAITING" {
 		log_error "Job not stopped in debugger mode"
 		set exit_code 1
-		send_user "\nSent SIGTERM\n"
+		log_debug "Sent SIGTERM"
 		exp_continue
 	}
 	-re "TIME LIMIT" {
@@ -96,7 +96,7 @@ expect {
 		exp_continue
 	}
 	-re "error.*not running" {
-		send_user "\nDon't worry about the error...\n"
+		log_debug "Don't worry about the error.."
 		exp_continue
 	}
 	-re "FINI" {
@@ -109,7 +109,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
-		send_user "\nEOF\n"
+		log_debug "EOF"
 		wait
 	}
 }
@@ -123,7 +123,7 @@ if {$fini_cnt > 0} {
 }
 
 if {$exit_code == 0} {
-	send_user "\n\nSo far, so good\n\n"
+	log_debug "So far, so good"
 } else {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
@@ -141,19 +141,19 @@ expect {
 		exec $bin_sleep 1
 		exec $bin_kill -INT $srun_pid
 		exec $bin_kill -INT $srun_pid
-		send_user "\nSent SIGINT * 2\n"
+		log_debug "Sent SIGINT * 2"
 		exp_continue
 	}
 	-re "Received signal" {
 		log_error "Unexpected signal processed"
 		set exit_code 1
-		send_user "\nSent SIGTERM\n"
+		log_debug "Sent SIGTERM"
 		exp_continue
 	}
 	-re "WAITING" {
 		log_error "Job not stopped in debugger mode"
 		set exit_code 1
-		send_user "\nSent SIGTERM\n"
+		log_debug "Sent SIGTERM"
 		exp_continue
 	}
 	-re "TIME LIMIT" {
@@ -162,7 +162,7 @@ expect {
 		exp_continue
 	}
 	-re "error.*not running" {
-		send_user "\nDon't worry about the error...\n"
+		log_debug "Don't worry about the error.."
 		exp_continue
 	}
 	-re "FINI" {
@@ -175,7 +175,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
-		send_user "\nEOF\n"
+		log_debug "EOF"
 		wait
 	}
 }

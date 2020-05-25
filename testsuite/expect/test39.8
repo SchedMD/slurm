@@ -38,7 +38,7 @@ set number_commas  "\[0-9_,\]+"
 print_header $test_id
 
 if {[test_cons_tres]} {
-    send_user "\nValid configuration, using select/cons_tres\n"
+    log_debug "Valid configuration, using select/cons_tres"
 } else {
     skip "This test is only compatible with select/cons_tres"
 }
@@ -52,10 +52,10 @@ if {$gpu_cnt < 2} {
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set cpus_per_node $node_conf(CPUTot)
-log_info "GPU count is $gpu_cnt"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
-log_info "CPUs per node is $cpus_per_node"
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "CPUs per node is $cpus_per_node"
 
 if {$cpus_per_node < 2} {
 	skip "This test requires 2 or more CPUs per node in the default partition"
@@ -76,7 +76,7 @@ set timeout $max_job_delay
 if {$node_conf(Sockets) < 2} {
 	log_warn "Tests ${test_id}.0 and ${test_id}.1 require 2 or more sockets per node in the default partition"
 } else {
-	send_user "\n\nTEST ${test_id}.0\n"
+	log_info "TEST ${test_id}.0"
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --accel-bind=g -J "test$test_id" -t1 ./$file_in]
 	expect {
 		timeout {
@@ -92,7 +92,7 @@ if {$node_conf(Sockets) < 2} {
 	#
 	# Test of --gpu-bind=closest
 	#
-	send_user "\n\nTEST ${test_id}.1\n"
+	log_info "TEST ${test_id}.1"
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --gpu-bind=closest -J "test$test_id" -t1 ./$file_in]
 	expect {
 		timeout {
@@ -110,7 +110,7 @@ if {$node_conf(Sockets) < 2} {
 # Test of --gpu-bind=map_gpu
 # Note that if the task count exceeds the provided map_gpu, the map will be cycled over for additional tasks
 #
-send_user "\n\nTEST ${test_id}.2\n"
+log_info "TEST ${test_id}.2"
 if {$gpu_cnt < 4} {
 	set map_gpu "map_gpu:1,0"
 	set match_goal 2
@@ -161,7 +161,7 @@ if {$matches != $match_goal} {
 # Test of --gpu-bind=mask_gpu
 # Note that if the task count exceeds the provided mask_gpu, the mask will be cycled over for additional tasks
 #
-send_user "\n\nTEST ${test_id}.3\n"
+log_info "TEST ${test_id}.3"
 if {$gpu_cnt < 4} {
 	set mask_gpu "mask_gpu:0x3,0x1"
 } else {

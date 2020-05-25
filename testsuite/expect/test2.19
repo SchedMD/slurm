@@ -88,8 +88,7 @@ proc cleanup { } {
 		}
 	}
 
-	send_user "Any error, except for unresponsiveness, from the previous "
-	send_user "scancel is expected and should be ignored.\n"
+	log_debug "Any error, except for unresponsiveness, from the previous scancel is expected and should be ignored"
 
 	spawn $scontrol delete partition=$part_name
 	expect {
@@ -205,7 +204,7 @@ proc test_part {acct qos part qos_con } {
 	expect {
 		-re "error" {
 			if { $qos_con == 1 } {
-				send_user "\nThis error is expected\n"
+				log_debug "This error is expected"
 			} else {
 				log_error "This error should not have occured"
 				set exit_code 1
@@ -268,7 +267,7 @@ expect {
 set_part_val allowqos $qos_good
 
 ######Testing AllowQos######
-send_user "\nTesting AllowQos\n"
+log_info "Testing AllowQos"
 
 #
 # Test partition with good Qos
@@ -290,7 +289,7 @@ set_part_val allowqos ALL
 set_part_val denyqos $qos_bad
 
 ######Testing DenyQos#####
-send_user "\nTesting DenyQos\n"
+log_info "Testing DenyQos"
 
 #
 # Test partition with good Qos

@@ -40,7 +40,7 @@ set file_out         "test$test_id.output"
 print_header $test_id
 
 if {[test_cons_tres]} {
-    send_user "\nValid configuration, using select/cons_tres\n"
+    log_debug "Valid configuration, using select/cons_tres"
 } else {
     skip "This test is only compatible with select/cons_tres"
 }
@@ -50,9 +50,9 @@ if {[test_front_end]} {
 
 set constrain_devices [test_constrain_devices]
 if {$constrain_devices} {
-	send_user "Devices files are constrained by cgroups\n"
+	log_debug "Devices files are constrained by cgroups"
 } else {
-	send_user "Devices files are NOT constrained by cgroups\n"
+	log_debug "Devices files are NOT constrained by cgroups"
 }
 
 set nb_nodes [available_nodes $partition ""]
@@ -118,7 +118,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 # Parse the output files from job 1
 #
-send_user "\n\nParse job 1 output\n"
+log_info "Parse job 1 output"
 if {[wait_for_file $file_out] != 0} {
 	fail "No output file"
 }
@@ -168,7 +168,7 @@ if {$exit_code == 0 && $constrain_devices == 0} {
 			log_error "Bad CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value ($percentage != $count)"
 			set exit_code 1
 		} else {
-			send_user "\n CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value is good\n"
+			log_debug "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value is good"
 		}
 	}
 }

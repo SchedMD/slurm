@@ -120,8 +120,8 @@ expect {
 #
 # Verify "pack" distribution of tasks
 #
-send_user "Optimal task layout was: $expected_layout\n"
-send_user "Actual task layout was : $tested_layout\n"
+log_debug "Optimal task layout was: $expected_layout"
+log_debug "Actual task layout was : $tested_layout"
 if {[string compare $tested_layout $expected_layout]} {
 	log_error "Failed to distribute tasks in nopack fashion"
 	set exit_code 1
@@ -172,8 +172,8 @@ expect {
 #
 # Verify "nopack" distribution of tasks
 #
-send_user "Optimal task layout was: $expected_layout\n"
-send_user "Actual task layout was : $tested_layout\n"
+log_debug "Optimal task layout was: $expected_layout"
+log_debug "Actual task layout was : $tested_layout"
 if {[string compare $tested_layout $expected_layout]} {
 	fail "Failed to distribute tasks in nopack fashion"
 }

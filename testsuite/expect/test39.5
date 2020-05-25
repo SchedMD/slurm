@@ -40,7 +40,7 @@ set one_task_pc    0
 print_header $test_id
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
 	skip "This test is only compatible with select/cons_tres"
 }
@@ -65,9 +65,9 @@ if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 	set one_task_pc 1
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
-log_info "GPU count is $gpu_cnt"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
 set cpus_per_node $node_conf(CPUTot)
 if {$gpu_cnt > $cpus_per_node} {
 	set gpu_cnt $cpus_per_node
@@ -103,7 +103,7 @@ exit 0"
 #
 # Test --gpus options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus option\n"
+log_info "TEST: --gpus option"
 set match 0
 set timeout $max_job_delay
 if {$tot_gpus > 1} {
@@ -137,7 +137,7 @@ if {$match != $expected_gpus} {
 }
 
 if {$use_gpus_per_job > 2} {
-	send_user "\n\nTEST: --gpus option, part 2\n"
+	log_info "TEST: --gpus option, part 2"
 	set match 0
 	if {$use_gpus_per_job > $nb_nodes} {
 		incr use_gpus_per_job -1
@@ -167,7 +167,7 @@ if {$use_gpus_per_job > 2} {
 #
 # Test --gpus-per-node options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus-per-node option\n"
+log_info "TEST: --gpus-per-node option"
 set match 0
 if {$gpus_per_node > 1} {
 	set use_gpus_per_node [expr $gpus_per_node - 1]
@@ -198,7 +198,7 @@ if {$match != $expected_gpus} {
 #
 # Test --gpus-per-socket options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus-per-socket option\n"
+log_info "TEST: --gpus-per-socket option"
 set sockets_with_gpus [get_gpu_socket_count $gpu_cnt \
                                             $node_conf(Sockets)]
 set match 0
@@ -227,7 +227,7 @@ if {$match < $expected_gpus} {
 #
 # Test --gpus-per-task options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus-per-task option\n"
+log_info "TEST: --gpus-per-task option"
 set match 0
 if {$gpu_cnt > 1} {
 	set use_gpus_per_node [expr $gpu_cnt - 1]
@@ -266,7 +266,7 @@ if {$match != $expected_gpus} {
 #
 # Test --gpus-per-task option without task count
 #
-send_user "\n\nTEST: --gpus-per-task option, part 2 (implicit task count)\n"
+log_info "TEST: --gpus-per-task option, part 2 (implicit task count)"
 if {$cpus_per_node > 1} {
 	set use_tasks_per_node 2
 } else {
@@ -306,7 +306,7 @@ if {$match != $expected_gpus} {
 #
 # Test --gpus-per-task option without task count
 #
-send_user "\n\nTEST: --gpus-per-task option, part 3 (implicit task count)\n"
+log_info "TEST: --gpus-per-task option, part 3 (implicit task count)"
 if {$gpu_cnt > 1} {
 	set use_gpus_per_node [expr $gpu_cnt - 1]
 } else {

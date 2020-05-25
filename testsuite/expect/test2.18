@@ -87,7 +87,7 @@ proc cleanup { } {
 		}
 	}
 
-	send_user "Any error, except for unresponsiveness, from the previous scancel is expected and should be ignored.\n"
+	log_debug "Any error, except for unresponsiveness, from the previous scancel is expected and should be ignored"
 
 	spawn $scontrol delete partition=$part_name
 	expect {
@@ -173,7 +173,7 @@ proc test_part { acct part acct_con } {
 	expect {
 		-re "error" {
 			if { $acct_con == 1 } {
-				send_user "\nThis error is expected\n"
+				log_debug "This error is expected"
 			} else {
 				log_error "This error should not have occured"
 				set exit_code 1
@@ -239,7 +239,7 @@ expect {
 set_part_val allowaccount $acct_good
 
 ######Testing AllowAccount#####
-send_user "\nTesting AllowAccount\n"
+log_info "Testing AllowAccount"
 
 #
 # Test partition with good values
@@ -262,7 +262,7 @@ set_part_val denyaccount $acct_bad
 
 
 ######Testing DenyAccount#####
-send_user "\nTesting DenyAccount\n"
+log_info "Testing DenyAccount"
 
 #
 # Test partition with good values

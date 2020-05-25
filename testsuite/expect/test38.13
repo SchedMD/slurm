@@ -62,7 +62,7 @@ if {$pack_job_id != 0} {
 } elseif {$matches != 1} {
 	fail "Heterogeneous job array should not be accepted ($matches != 1)"
 } else {
-	send_user "\nNo worries. This error is expected\n"
+	log_debug "No worries. This error is expected"
 }
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"

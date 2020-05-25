@@ -254,7 +254,7 @@ set match 0
 spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 SINFO_ALL=1 $sinfo"
 expect {
 	-re "Conflicting options" {
-		send_user "\nThis error is expected, do not worry.\n"
+		log_debug "This error is expected, do not worry"
 		set match 1
 		exp_continue
 	}
@@ -276,7 +276,7 @@ set match 0
 spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -p$test_part_1 -a"
 expect {
 	-re "Conflicting options" {
-		send_user "\nThis error is expected, do not worry.\n"
+		log_debug "This error is expected, do not worry"
 		set match 1
 		exp_continue
 	}

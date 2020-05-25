@@ -96,7 +96,7 @@ while { $inx < 10 } {
 		log_error "Too many tasks in the job array are running ($run_count > $task_limit)"
 		set exit_code 1
 	}
-	send_user "\n+++ $run_count running tasks +++\n"
+	log_debug "+++ $run_count running tasks +++"
 	if {$run_count == 0} {
 		break
 	}

@@ -35,13 +35,13 @@ proc inc21_30_2 { wait_reason } {
 	set job_id1 0
 	set job_id2 0
 
-	send_user "\nStarting GrpCPUs limit test (Within: inc21.30.2)\n\n"
+	log_info "Starting GrpCPUs limit test (Within: inc21.30.2)"
 	set jobmatch 0
 	spawn $salloc --account=$acct -w$test_node -t1 -n$grcpu_num $srun $bin_sleep 5
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\njob $job_id1 has been submitted. (Within: inc21.30.2)\n"
+			log_debug "Job $job_id1 has been submitted. (Within: inc21.30.2)"
 			incr jobmatch
 		}
 		-re "Pending job allocation ($number)" {
@@ -71,7 +71,7 @@ proc inc21_30_2 { wait_reason } {
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			send_user "\njob $job_id2 is waiting for resources. This is expected. (Within: inc21.30.2)\n"
+			log_debug "Job $job_id2 is waiting for resources. This is expected. (Within: inc21.30.2)"
 			incr jobmatch
 		}
 		timeout {

@@ -135,11 +135,11 @@ if {$matches != 0} {
 		log_error "$matches of $tot tests failed"
 		set exit_code 1
 	}
-	send_user "  This should happen infrequently, typically when\n"
-	send_user "  JobAcctFrequency is set to a small value and is\n"
-	send_user "  indicative of a non-checkpointable job. For details,\n"
-	send_user "  see src/plugins/jobacct/linux/jobacct_linux.c\n"
-	send_user "  To diagnose, use lsof to examine spawned job.\n"
+	log_debug "  This should happen infrequently, typically when"
+	log_debug "  JobAcctFrequency is set to a small value and is"
+	log_debug "  indicative of a non-checkpointable job. For details,"
+	log_debug "  see src/plugins/jobacct/linux/jobacct_linux.c"
+	log_debug "  To diagnose, use lsof to examine spawned job"
 }
 
 if {$exit_code == 0} {

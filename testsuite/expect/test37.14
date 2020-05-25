@@ -161,8 +161,8 @@ proc scontrol { fed id regex } {
 
 	set matches 0
 
-	send_user "\nexecuting $my_scontrol -M$fed notify $id from $fed\n"
-	send_user "output: [exec $my_scontrol -M$fed notify $id from $fed]\n"
+	log_debug "Executing $my_scontrol -M$fed notify $id from $fed"
+	log_debug "Output: [exec $my_scontrol -M$fed notify $id from $fed]"
 
 	if {$regex ne ""} {
 		set spawn_id $srun_spawn_id
@@ -265,9 +265,9 @@ if {[setup_federation $fed_name]} {
 # get number of nodes per cluster
 set node_count [available_nodes "" ""]
 
-send_user "\n################################################################\n"
-send_user "Setup cluster features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
 
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
@@ -372,9 +372,9 @@ make_bash_script $file_in "sleep 300"
 
 set srun_spawn_id 0
 
-send_user "\n################################################################\n"
-send_user "verify federated scontrol notify <message>"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Verify federated scontrol notify <message>"
+log_info "################################################################"
 
 cancel_all_jobs
 

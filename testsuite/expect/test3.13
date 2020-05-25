@@ -114,7 +114,7 @@ expect {
 #
 # Test modification of job with bad JobName/UserID specification
 #
-send_user "\n\nTest 1\n"
+log_info "Test 1"
 set no_jobs 0
 spawn $scontrol update JobName=$file_in UserID=1 Priority=$new_prio
 expect {
@@ -138,7 +138,7 @@ if {$no_jobs == 0} {
 #
 # Change that job's priority
 #
-send_user "\n\nTest 2\n"
+log_info "Test 2"
 set no_jobs 0
 set my_uid  [get_my_uid]
 spawn $scontrol update JobName=$file_in UserID=$my_uid Priority=$new_prio

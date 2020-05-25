@@ -51,7 +51,7 @@ fail_on_error "Unable to get config path"
 set config_file $config_path/slurm.conf
 save_conf $config_file
 
-send_user "\n---Checking sbatch uses mcs-label only for some jobs (ondemand mode)---\n"
+log_info "---Checking sbatch uses mcs-label only for some jobs (ondemand mode)---"
 
 #
 # Change the slurm.conf MCSparameters and MCSPlugin
@@ -71,7 +71,7 @@ set found 0
 spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep MCS"
 expect {
 	-re "MCSPlugin               = mcs/account" {
-		send_user "\n MCSPlugin=mcs/account OK\n"
+		log_debug "MCSPlugin=mcs/account OK"
 		set found 1
 		exp_continue
 	}
@@ -89,7 +89,7 @@ if {$found == 0} {
 }
 
 ###### Check that sbatch fails with a bad mcs-label ######
-send_user "\n---Checking sbatch fails with a bad mcs-label ---\n"
+log_info "---Checking sbatch fails with a bad mcs-label ---"
 
 set timeout $max_job_delay
 make_bash_script $tmp_job "sleep 10"
@@ -97,7 +97,7 @@ set job_id 0
 spawn $sbatch -N1 --mcs-label=foo -t1 $tmp_job
 expect {
 	-re "Batch job submission failed: Invalid mcs_label specified" {
-		send_user "\nThis error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		exp_continue
 	}
 	-re "Submitted batch job ($number)" {
@@ -118,7 +118,7 @@ if {$job_id != 0} {
 }
 
 ###### Check that sbatch uses mcs-label=account ######
-send_user "\n---Checking sbatch uses mcs-label=account---\n"
+log_info "---Checking sbatch uses mcs-label=account---"
 
 set job_id 0
 spawn $sbatch -N1 -o/dev/null --exclusive=mcs -t1 $tmp_job
@@ -163,11 +163,11 @@ set found 0
 spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
 expect {
 	-re "(null)" {
-		send_user "\nNO MCS-label for this job : this is not expected\n"
+		log_debug "NO MCS-label for this job : this is not expected"
 		exp_continue
 	}
 	-re "$account_name" {
-		send_user "\nMCS-label OK for this job\n"
+		log_debug "MCS-label OK for this job"
 		set found 1
 		exp_continue
 	}
@@ -212,7 +212,7 @@ sleep 5
 spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
 expect {
 	-re "$account_name" {
-		send_user "\nMCS-label OK for this job\n"
+		log_debug "MCS-label OK for this job"
 		set found 1
 		exp_continue
 	}
@@ -240,7 +240,7 @@ spawn $squeue --jobs=$job_id --noheader -O "nodelist"
 expect {
 	-re "($alpha_numeric_under)" {
 		set node $expect_out(1,string)
-		send_user "\nNode for this job : $node\n"
+		log_debug "Node for this job : $node"
 		set found 1
 	}
 	timeout {
@@ -264,7 +264,7 @@ set found 0
 spawn -noecho $bin_bash -c "exec $scontrol show node=$node | $bin_grep MCS"
 expect {
 	-re "MCS_label=$account_name" {
-		send_user "\n mcs_label OK for node $node\n"
+		log_debug "mcs_label OK for node $node"
 		set found 1
 		exp_continue
 	}
@@ -287,7 +287,7 @@ cancel_job $job_id
 # Change the slurm.conf MCSparameters and MCSPlugin
 # test with enforced
 #
-send_user "\n---Checking sbatch uses mcs-label with all jobs (enforced mode)---\n"
+log_info "---Checking sbatch uses mcs-label with all jobs (enforced mode)---"
 exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_file
 exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_file
 exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
@@ -297,7 +297,7 @@ exec $bin_echo PrivateData=jobs,nodes >> $config_file
 reconfigure
 
 ###### Check that sbatch uses mcs-label=account ######
-send_user "\n---Checking sbatch uses mcs-label=account---\n"
+log_info "---Checking sbatch uses mcs-label=account---"
 
 spawn $sbatch -N1 -o/dev/null -t1 $tmp_job
 expect {
@@ -324,7 +324,7 @@ sleep 3
 spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
 expect {
 	-re "$account_name" {
-		send_user "\nMCS-label OK for this job\n"
+		log_debug "MCS-label OK for this job"
 		set found 1
 		exp_continue
 	}
@@ -353,7 +353,7 @@ spawn $squeue --jobs=$job_id --noheader -O "nodelist"
 expect {
 	-re "($alpha_numeric_under)" {
 		set node $expect_out(1,string)
-		send_user "\nNode for this job : $node\n"
+		log_debug "Node for this job : $node"
 		set found 1
 	}
 	timeout {
@@ -381,7 +381,7 @@ expect {
 		set exit_code 1
 	}
 	-re "MCS_label=N/A" {
-		send_user "\nNo mcs_label for this node. It was expected\n"
+		log_debug "No mcs_label for this node. It was expected"
 	}
 	timeout {
 		log_error "scontrol is not responding"

@@ -46,12 +46,12 @@ if {$gpu_cnt < 0} {
 if {$gpu_cnt < 1} {
 	skip "This test requires 1 or more GPUs in the default partition"
 }
-send_user "\nGPU count is $gpu_cnt\n"
+log_debug "GPU count is $gpu_cnt"
 
 #
 # Request more GPUs per node than exist on a single node
 #
-send_user "\n\n==== TEST 1 ====\n"
+log_info "==== TEST 1 ===="
 spawn $sbatch --gpus-per-node=[expr $gpu_cnt + 1] -N1 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
 	-re "Submitted batch job ($number)" {
@@ -61,7 +61,7 @@ expect {
 		exp_continue
 	}
 	-re "error: " {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 		exp_continue
 	}
 	timeout {
@@ -76,7 +76,7 @@ expect {
 #
 # Specify 1 node and more GPUs than exist on a single node
 #
-send_user "\n\n==== TEST 2 ====\n"
+log_info "==== TEST 2 ===="
 spawn $sbatch --gpus-per-node=$gpu_cnt --gres=[expr $gpu_cnt + 1] -N1 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
 	-re "Submitted batch job ($number)" {
@@ -86,7 +86,7 @@ expect {
 		exp_continue
 	}
 	-re "error: " {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 		exp_continue
 	}
 	timeout {
@@ -101,7 +101,7 @@ expect {
 #
 # Specify inconsistent --cpus-per-task and --gpus-per-task/--cpus-per-gpu
 #
-send_user "\n\n==== TEST 3 ====\n"
+log_info "==== TEST 3 ===="
 spawn $sbatch --gpus-per-task=1 --cpus-per-gpu=1 --cpus-per-task=2 -N1 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
 	-re "Submitted batch job ($number)" {
@@ -111,7 +111,7 @@ expect {
 		exp_continue
 	}
 	-re "error: " {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 		exp_continue
 	}
 	timeout {
@@ -126,7 +126,7 @@ expect {
 #
 # Specify inconsistent tasks per node
 #
-send_user "\n\n==== TEST 4 ====\n"
+log_info "==== TEST 4 ===="
 spawn $sbatch --gpus-per-task=1 --gpus-per-node=1 -n2 -N1 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
 	-re "Submitted batch job ($number)" {
@@ -136,7 +136,7 @@ expect {
 		exp_continue
 	}
 	-re "error: " {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 		exp_continue
 	}
 	timeout {
@@ -151,7 +151,7 @@ expect {
 #
 # Specify gpus-per-socket, but no sockets-per-node count
 #
-send_user "\n\n==== TEST 5 ====\n"
+log_info "==== TEST 5 ===="
 spawn $sbatch --gpus-per-socket=1 -N1 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
 	-re "Submitted batch job ($number)" {
@@ -161,7 +161,7 @@ expect {
 		exp_continue
 	}
 	-re "error: " {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 		exp_continue
 	}
 	timeout {
@@ -176,7 +176,7 @@ expect {
 #
 # Specify inconsistent tasks per node (variation of test 4)
 #
-send_user "\n\n==== TEST 6 ====\n"
+log_info "==== TEST 6 ===="
 spawn $sbatch --gpus-per-task=1 --gpus-per-node=2 --ntasks-per-node=1 -N1 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
 	-re "Submitted batch job ($number)" {
@@ -186,7 +186,7 @@ expect {
 		exp_continue
 	}
 	-re "error: " {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 		exp_continue
 	}
 	timeout {

@@ -284,21 +284,18 @@ set node_count [available_nodes "" ""]
 make_bash_script $file_in "env; $bin_sleep 300"
 
 
-send_user "\n################################################################\n"
-send_user "Setup cluster features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
 
 set job_id 0
 set matches 0
 
-send_user "here \n"
-
+log_trace "Here"
 
 exec $my_sacctmgr add Federation $fed_name clusters=$fedc1,$fedc2 -i
 
-
-send_user "here \n"
-
+log_trace "Here"
 
 set matches 0
 
@@ -464,7 +461,7 @@ scontrol jobs "Requeue=0.+"
 set job_id [sbatch 1 0]
 
 if {[expr $job_id >> 26]} {
-	send_user "Removed cluster still giving federated job id\n"
+	log_warn "Removed cluster still giving federated job id"
 	end_it 1
 }
 

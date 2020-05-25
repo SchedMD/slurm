@@ -117,7 +117,7 @@ proc sprio_opt { soption } {
 	set debug       0
 	set matches     0
 	set not_support 0
-	send_user "$sprio $soption \n"
+	log_debug "$sprio $soption"
 
 ############# sprio help option
 	if { $soption == "--help" } {
@@ -129,22 +129,22 @@ proc sprio_opt { soption } {
 				exp_continue
 			}
 			-re "noheader.*jobs.*long.*norm.*format.*user.*verbose.*version.*weights" {
-				if {$debug} {send_user "\nmatch1\n"}
+				if {$debug} {log_debug "Match1"}
 				incr matches
 				exp_continue
 			}
 			-re "Help options:" {
-				if {$debug} {send_user "\nmatch2\n"}
+				if {$debug} {log_debug "Match2"}
 				incr matches
 				exp_continue
 			}
 			-re "help *show this help message" {
-				if {$debug} {send_user "\nmatch3\n"}
+				if {$debug} {log_debug "Match3"}
 				incr matches
 				exp_continue
 			}
 			-re "usage *display a brief summary of sprio options" {
-				if {$debug} {send_user "\nmatch4\n"}
+				if {$debug} {log_debug "Match4"}
 				incr matches
 				exp_continue
 			}
@@ -178,7 +178,7 @@ proc sprio_opt { soption } {
 				exp_continue
 			}
 			-re "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .-p partitions.\r\n   .--federation. .--local. .--sibling. .--usage. .-hlnvVw." {
-				if {$debug} {send_user "\nmatch5\n"}
+				if {$debug} {log_debug "Match5"}
 				incr matches
 				exp_continue
 			}
@@ -211,7 +211,7 @@ proc sprio_opt { soption } {
 				exp_continue
 			}
 			-re "slurm $number.$number.$number" {
-				if {$debug} {send_user "\nmatch6\n"}
+				if {$debug} {log_debug "Match6"}
 				incr matches
 				exp_continue
 			}
@@ -245,12 +245,12 @@ proc sprio_opt { soption } {
 				exp_continue
 			}
 			-re "JOBID\\s+PARTITION\\s+PRIORITY" {
-				if {$debug} {send_user "\nmatch7\n"}
+				if {$debug} {log_debug "Match7"}
 				incr matches
 				exp_continue
 			}
 			-re "Weights" {
-				if {$debug} {send_user "\nmatch8\n"}
+				if {$debug} {log_debug "Match8"}
 				incr matches
 				exp_continue
 			}
@@ -292,7 +292,7 @@ proc sprio_args { soption sargs jobid} {
 	set debug       0
 	set matches     0
 	set not_support 0
-	send_user "$sprio $soption $sargs $jobid\n"
+	log_debug "$sprio $soption $sargs $jobid"
 
 ############# sprio noheader options
 	if { $soption == "--noheader" || $soption == "-h" } {
@@ -304,7 +304,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			-re "JOBID|PARTITION|PRIORITY|ADMIN|AGE|ASSOC|FAIRSHARE|JOBSIZE|PARTITION|QOS" {
-				if {$debug} {send_user "\nmatch9\n"}
+				if {$debug} {log_debug "Match9"}
 				incr matches
 				exp_continue
 			}
@@ -337,12 +337,12 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			-re "JOBID\\s+PARTITION\\s+PRIORITY" {
-				if {$debug} {send_user "\nmatch10\n"}
+				if {$debug} {log_debug "Match10"}
 				incr matches
 				exp_continue
 			}
 			-re "$jobid\\s+\\S+\\s+$number" {
-				if {$debug} {send_user "\nmatch11\n"}
+				if {$debug} {log_debug "Match11"}
 				incr matches
 				exp_continue
 			}
@@ -375,12 +375,12 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			-re "JOBID PARTITION     USER   PRIORITY       SITE        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE                 TRES" {
-				if {$debug} {send_user "\nmatch12\n"}
+				if {$debug} {log_debug "Match12"}
 				incr matches
 				exp_continue
 			}
 			-re "$jobid.*$number *$number *$number *$number *$number *$number *$number" {
-				if {$debug} {send_user "\nmatch13\n"}
+				if {$debug} {log_debug "Match13"}
 				incr matches
 				exp_continue
 			}
@@ -413,12 +413,12 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			-re "JOBID\\s+PARTITION\\s+PRIORITY" {
-				if {$debug} {send_user "\nmatch14\n"}
+				if {$debug} {log_debug "Match14"}
 				incr matches
 				exp_continue
 			}
 			-re "$jobid\\s+\\S+\\s+$float" {
-				if {$debug} {send_user "\nmatch15\n"}
+				if {$debug} {log_debug "Match15"}
 				incr matches
 				exp_continue
 			}
@@ -451,17 +451,17 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			-re "JOBID     USER   PRIORITY   PRIORITY       SITE        AGE        AGE      ASSOC      ASSOC " {
-				if {$debug} {send_user "\nmatch16\n"}
+				if {$debug} {log_debug "Match16"}
 				incr matches
 				exp_continue
 			}
 			-re "FAIRSHARE  FAIRSHARE    JOBSIZE    JOBSIZE  PARTITION  PARTITION        QOS        QOS   NICE" {
-				if {$debug} {send_user "\nmatch17\n"}
+				if {$debug} {log_debug "Match17"}
 				incr matches
 				exp_continue
 			}
 			-re "$jobid *.* *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$number" {
-				if {$debug} {send_user "\nmatch18\n"}
+				if {$debug} {log_debug "Match18"}
 				incr matches
 				exp_continue
 			}
@@ -494,12 +494,12 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			-re "JOBID\\s+PARTITION\\s+USER" {
-				if {$debug} {send_user "\nmatch19\n"}
+				if {$debug} {log_debug "Match19"}
 				incr matches
 				exp_continue
 			}
 			-re "$jobid\\s+\\S+\\s+[string range $sargs 0 7]" {
-				if {$debug} {send_user "\nmatch20\n"}
+				if {$debug} {log_debug "Match20"}
 				incr matches
 				exp_continue
 			}
@@ -532,12 +532,12 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			-re "JOBID\\s+PARTITION\\s+USER" {
-				if {$debug} {send_user "\nmatch21\n"}
+				if {$debug} {log_debug "Match21"}
 				incr matches
 				exp_continue
 			}
 			-re "$jobid\\s+\\S+\\s+[string range $sargs 0 7]" {
-				if {$debug} {send_user "\nmatch22\n"}
+				if {$debug} {log_debug "Match22"}
 				incr matches
 				exp_continue
 			}
@@ -570,17 +570,17 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			-re "format.*job_flag.*jobs.*$jobid.*verbose" {
-				if {$debug} {send_user "\nmatch23\n"}
+				if {$debug} {log_debug "Match23"}
 				incr matches
 				exp_continue
 			}
 			-re "JOBID\\s+PARTITION\\s+PRIORITY" {
-				if {$debug} {send_user "\nmatch24\n"}
+				if {$debug} {log_debug "Match24"}
 				incr matches
 				exp_continue
 			}
 			-re "$jobid\\s+\\S+\\s+$number" {
-				if {$debug} {send_user "\nmatch25\n"}
+				if {$debug} {log_debug "Match25"}
 				incr matches
 				exp_continue
 			}
@@ -616,7 +616,7 @@ if {$exit_code != 0} {
 	cancel_job $jobid2
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-send_user "\nSubmitted 2 jobs successfully\n\n"
+log_debug "Submitted 2 jobs successfully"
 
 #
 # Collect uid

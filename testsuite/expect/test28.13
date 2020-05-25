@@ -51,7 +51,7 @@ spawn $sbatch -n1 --array=1-4 --requeue --output=/dev/null $file_script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		send_user "\njob $job_id was submitted\n"
+		log_debug "Job $job_id was submitted"
 		exp_continue
 	}
 	-re "error" {

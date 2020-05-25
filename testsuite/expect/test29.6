@@ -215,7 +215,7 @@ set time_ext 0
 spawn $smd -e [expr $time_limit + 1] $job_id
 expect {
 	-re "failed job_id $job_id" {
-		send_user "\nThis error is expected\n"
+		log_debug "This error is expected"
 		set time_ext 1
 		exp_continue
 	}

@@ -172,8 +172,7 @@ expect {
 }
 
 if {$almatches != 2} {
-	log_error "Added associations not found."
-	send_user "\n Need 2 matches and got $almatches instead.\n"
+	log_error "Added associations not found. Need 2 matches and got $almatches instead"
 	set exit_code 1
 }
 # Check that the Association was set correctly
@@ -280,7 +279,7 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nTest associations delete verified\n"
+		log_debug "Test associations delete verified"
 		slow_kill $as2_list_pid
 	}
 	eof {

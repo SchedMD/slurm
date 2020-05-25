@@ -49,7 +49,7 @@ expect {
 		incr matches
 		sleep 1
 		exec $bin_kill -INT $srun_pid
-		send_user "\nSent SIGINT\n"
+		log_debug "Sent SIGINT"
 		exp_continue
 	}
 	-re "Job allocation ($number) has been revoked" {
@@ -63,7 +63,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
-		send_user "\nEOF\n"
+		log_debug "EOF"
 		wait
 	}
 }

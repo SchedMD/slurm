@@ -183,7 +183,7 @@ proc sub_job_and {nnode fail_test} {
 		}
 
 		if {$fail_node_config == $fail_test} {
-			send_user "\nThis error is expected, no worries\n"
+			log_debug "This error is expected, no worries"
 		}
 		if {$test_job != 0} {
 			log_error "Job should have been rejected, but was not"
@@ -312,7 +312,7 @@ proc sub_job_count {nnode fail_test} {
 		}
 
 		if {$fail_node_config == $fail_test} {
-			send_user "\nThis error is expected, no worries\n"
+			log_debug "This error is expected, no worries"
 		}
 		if {$test_job != 0} {
 			log_error "Job should have been rejected, but was not"
@@ -382,7 +382,7 @@ proc sub_job_or {nnode fail_test} {
 		}
 
 		if {$fail_node_config == $fail_test} {
-			send_user "\nThis error is expected, no worries\n"
+			log_debug "This error is expected, no worries"
 		}
 		if {$test_job != 0} {
 			log_error "Job should have been rejected, but was not"
@@ -575,7 +575,7 @@ proc sub_job_xand {nnode fail_test} {
 		}
 
 		if {$fail_node_config == $fail_test} {
-			send_user "\nThis error is expected, no worries\n"
+			log_debug "This error is expected, no worries"
 		}
 		if {$test_job != 0} {
 			log_error "Job should have been rejected, but was not"
@@ -646,7 +646,7 @@ proc sub_job_xor {nnode fail_test} {
 		}
 
 		if {$fail_node_config == $fail_test} {
-			send_user "\nThis error is expected, no worries\n"
+			log_debug "This error is expected, no worries"
 		}
 		if {$test_job != 0} {
 			log_error "Job should have been rejected, but was not"
@@ -812,13 +812,13 @@ make_bash_script $file_in "
 #
 # Submit a job with invalid constraint requirement
 #
-send_user "\n\n==========Test invalid constraints==========\n"
+log_info "==========Test invalid constraints=========="
 set err_msg     0
 set timeout $max_job_delay
 spawn $sbatch -N1 --constraint=invalid,constraint -t1 -o /dev/null $file_in
 expect {
 	-re "error:.*Invalid feature specification" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set err_msg 1
 		exp_continue
 	}
@@ -943,7 +943,7 @@ foreach option [array names nodes] {
 }
 
 # Set node features for testing
-send_user "\n\n==========Set node features to test-specific values for testing==========\n"
+log_info "==========Set node features to test-specific values for testing=========="
 set_node_feature $nodes(0) $feat0
 set_node_feature $nodes(1) $feat1
 set_node_feature $nodes(2) $feat0,$feat2,$feat4
@@ -967,69 +967,69 @@ expect {
 }
 
 # Test feature count logic with 2 nodes
-send_user "\n\n==========Test feature count 2 nodes==========\n"
+log_info "==========Test feature count 2 nodes=========="
 sub_job_count 2 0
 
 # Test feature count logic with 3 nodes
-send_user "\n\n==========Test feature count 3 nodes==========\n"
+log_info "==========Test feature count 3 nodes=========="
 sub_job_count 3 0
 
 # Test feature count logic with 3 nodes (This is expected to fail)
-send_user "\n\n==========Test feature count 3 nodes with failure==========\n"
+log_info "==========Test feature count 3 nodes with failure=========="
 sub_job_count 3 1
 
 # Test AND with 1 node
-send_user "\n\n==========Test AND 1 node==========\n"
+log_info "==========Test AND 1 node=========="
 sub_job_and 1 0
 
 # Test AND with 1 node (This is expected to fail)
-send_user "\n\n==========Test AND 1 node with failure==========\n"
+log_info "==========Test AND 1 node with failure=========="
 sub_job_and 1 1
 
 # Test eXclusive AND (XAND) with 3 nodes
-send_user "\n\n==========Test XAND 3 nodes==========\n"
+log_info "==========Test XAND 3 nodes=========="
 sub_job_xand 3 0
 
 # Test eXclusive AND (XAND) with 3 nodes (This is expected to fail)
-send_user "\n\n==========Test XAND 3 nodes with failure==========\n"
+log_info "==========Test XAND 3 nodes with failure=========="
 sub_job_xand 3 1
 
 # Test eXclusive OR (XOR) with 2 nodes
-send_user "\n\n==========Test XOR 2 nodes==========\n"
+log_info "==========Test XOR 2 nodes=========="
 sub_job_xor 2 0
 
 # Test eXclusive OR (XOR) with 3 nodes
-send_user "\n\n==========Test XOR 3 nodes==========\n"
+log_info "==========Test XOR 3 nodes=========="
 sub_job_xor 3 0
 
 # Test eXclusive OR (XOR) with 4 nodes (This is expected to fail)
-send_user "\n\n==========Test XOR 4 nodes with failure==========\n"
+log_info "==========Test XOR 4 nodes with failure=========="
 sub_job_xor 4 1
 
 # Test OR with 4 nodes
-send_user "\n\n==========Test OR 4 nodes==========\n"
+log_info "==========Test OR 4 nodes=========="
 sub_job_or 4 0
 
 # Test OR within parenthesis
-send_user "\n\n==========Test OR within parenthesis==========\n"
+log_info "==========Test OR within parenthesis=========="
 sub_job_or_paren 4 0
 
 # Test mixed AND and XOR with 2 nodes
-send_user "\n\n==========Test mix of AND and XOR==========\n"
+log_info "==========Test mix of AND and XOR=========="
 sub_job_and_xor 2 0
 
 # Test mixed AND and XOR with 3 nodes (This is expected to fail)
-send_user "\n\n==========Test mix of AND and XOR==========\n"
+log_info "==========Test mix of AND and XOR=========="
 sub_job_and_xor 3 1
 
 # Test batch host
 if {[test_front_end] == 0} {
-	send_user "\n\n==========Test batch host==========\n"
+	log_info "==========Test batch host=========="
 	sub_batch_host 3
 }
 
 # Reset node features and remove test part
-send_user "\n\n==========Clean Up==========\n"
+log_debug "==========Clean Up=========="
 clean_up
 
 if {$exit_code == 0} {

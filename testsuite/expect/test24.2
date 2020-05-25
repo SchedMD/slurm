@@ -61,7 +61,7 @@ proc sshare_opt { soption } {
 	set debug       1
 	set matches     0
 	set not_support 0
-	send_user "$sshare -$soption \n"
+	log_info "$sshare -$soption "
 
 	if { $soption == "-help"|| $soption == "-usage" } {
 
@@ -76,17 +76,17 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			-re "Usage: *sshare *.OPTION" {
-				if {$debug} {send_user "\nmatch1\n"}
+				if {$debug} {log_debug "Match1"}
 				incr matches
 				exp_continue
 			}
 			-re "Valid OPTIONs are" {
-				if {$debug} {send_user "\nmatch2\n"}
+				if {$debug} {log_debug "Match2"}
 				incr matches
 				exp_continue
 			}
 			-re "verbose *display more information" {
-				if {$debug} {send_user "\nmatch3\n"}
+				if {$debug} {log_debug "Match3"}
 				incr matches
 				exp_continue
 			}
@@ -123,7 +123,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			-re "Account|User|RawShares|NormShares|RawUsage|NormUsage|EffectvUsage" {
-				if {$debug} {send_user "\nmatch4\n"}
+				if {$debug} {log_debug "Match4"}
 				incr matches
 				exp_continue
 			}
@@ -160,12 +160,12 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			-re "Account\\|User\\|RawShares\\|NormShares\\|" {
-				if {$debug} {send_user "\nmatch5\n"}
+				if {$debug} {log_debug "Match5"}
 				incr matches
 				exp_continue
 			}
 			-re "RawUsage\\|EffectvUsage\\|FairShare\\|" {
-				if {$debug} {send_user "\nmatch5\n"}
+				if {$debug} {log_debug "Match5"}
 				incr matches
 				exp_continue
 			}
@@ -198,12 +198,12 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			-re "Account\\|User\\|RawShares\\|NormShares\\|" {
-				if {$debug} {send_user "\nmatch6\n"}
+				if {$debug} {log_debug "Match6"}
 				incr matches
 				exp_continue
 			}
 			-re "RawUsage\\|EffectvUsage\\|FairShare" {
-				if {$debug} {send_user "\nmatch7\n"}
+				if {$debug} {log_debug "Match7"}
 				incr matches
 				exp_continue
 			}
@@ -240,12 +240,12 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			-re "Users requested" {
-				if {$debug} {send_user "\nmatch8\n"}
+				if {$debug} {log_debug "Match8"}
 				incr matches
 				exp_continue
 			}
 			-re "Accounts requested" {
-				if {$debug} {send_user "\nmatch9\n"}
+				if {$debug} {log_debug "Match9"}
 				incr matches
 				exp_continue
 			}
@@ -283,7 +283,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			-re "slurm $number.$number.$number" {
-				if {$debug} {send_user "\nmatch11\n"}
+				if {$debug} {log_debug "Match11"}
 				incr matches
 				exp_continue
 			}

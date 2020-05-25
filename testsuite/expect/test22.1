@@ -367,22 +367,22 @@ proc test_fed {} {
 	delete_federations $fedname
 
 	set cmd1 "$sacctmgr -i add federation $fedname"
-	send_user "$cmd1\n"
-	send_user "[eval exec $cmd1]\n"
+	log_debug "$cmd1"
+	log_debug "[eval exec $cmd1]"
 
 	set cmd2 "$sacctmgr -i mod fed $fedname set clusters=$cluster1,$cluster2"
-	send_user "$cmd2\n"
-	send_user "[eval exec $cmd2]\n"
+	log_debug "$cmd2"
+	log_debug "[eval exec $cmd2]"
 
-	send_user "This is the config dir: $config_dir; new config: $new_conf \n"
+	log_debug "This is the config dir: $config_dir; new config: $new_conf "
 
 	set old_conf "$config_dir/slurm.conf"
 
-	send_user [exec sed "s/ClusterName\\s*=.*/ClusterName=$cluster1/Ig" $old_conf > $new_conf]
+	log_debug [exec sed "S/ClusterName\\s*=.*/ClusterName=$cluster1/Ig" $old_conf > $new_conf]
 
 	set env(SLURM_CONF) $new_conf
 
-	send_user "ENV VARIABLE: [exec printenv SLURM_CONF]  \n"
+	log_debug "ENV VARIABLE: [exec printenv SLURM_CONF]  "
 
 	set exit_code [inc22_1_fed]
 	delete_federations $fedname
@@ -478,17 +478,17 @@ proc create_sql {cluster sql_in sql_rem} {
 			incr exit_code 1
 		}
 		-re "$cluster.$account1.$user1acct1.$wckey1.$user1wckey1.$job1_start_str.$job1_end_str.$job1_diff_str." {
-			send_user "got 1\n"
+			log_debug "Got 1"
 			incr matches
 			exp_continue
 		}
 		-re "$cluster.$account3.$user2acct3.$wckey1.$user2wckey1.$job2_start_str.$job2_end_str.$job2_diff_str." {
-			send_user "got 2\n"
+			log_debug "Got 2"
 			incr matches
 			exp_continue
 		}
 		-re "$cluster.$account2.$user1acct2.$wckey1.$user1wckey1.$job3_start_str.$job3_end_str.$job3_diff_str." {
-			send_user "got 3\n"
+			log_debug "Got 3"
 			incr matches
 			exp_continue
 		}
@@ -516,7 +516,7 @@ proc create_sql {cluster sql_in sql_rem} {
 	# Use sacctmgr to see if node event loaded
 	#
 
-	send_user "$cluster..$start_str.$end_str.$cluster_cpus.$node_list.\n"
+	log_debug "$cluster..$start_str.$end_str.$cluster_cpus.$node_list"
 
 	set matches 0
 	set my_pid [eval spawn $sacctmgr -p list events cluster=$cluster format=cluster,noden,start,end,cpu --noheader start=$start_str end=$end_str]
@@ -526,12 +526,12 @@ proc create_sql {cluster sql_in sql_rem} {
 			incr exit_code 1
 		}
 		-re "($cluster..$start_str.$end_str.$cluster_cpus.)" {
-			send_user "got 1\n"
+			log_debug "Got 1"
 			incr matches
 			exp_continue
 		}
 		-re "($cluster.$node0.$node0_start_str.$node0_end_str.$node0_cpus.)" {
-			send_user "got 2\n"
+			log_debug "Got 2"
 			incr matches
 			exp_continue
 		}

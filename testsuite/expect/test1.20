@@ -76,7 +76,7 @@ expect {
 		exp_continue
 	}
 	-re "exit code $number" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set matches 1
 		exp_continue
 	}

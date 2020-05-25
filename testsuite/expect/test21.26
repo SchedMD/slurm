@@ -149,9 +149,6 @@ if { $exit_code } {
 	fail "Unable to modify cluster ($tc1)"
 }
 
-# send_user "moded the cluster to qos = ''"
-# exit
-
 #add qos
 incr exit_code [add_qos "$qos1" ""]
 if { $exit_code } {

@@ -51,7 +51,7 @@ if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 if {![test_cpu_affinity]} {
 	skip "CPU affinity not supported on this system"
 }
-send_user "\ntask affinity plugin installed\n"
+log_debug "Task affinity plugin installed"
 
 set task_params [string tolower [get_affinity_params]]
 if {[string first $task_params "boards"]  != -1 ||
@@ -137,7 +137,7 @@ set total_thread_count [expr $num_sockets * $num_cores * $num_threads]
 if {$total_thread_count > 64} {
 	skip "Total thread count too large for Expect to process ($total_thread_count > 64). Expect unable to work with more than 32-bit numbers"
 }
-send_user "Node config: CPUs=$num_cputot Sockets=$num_sockets Cores=$num_cores Threads=$num_threads\n\n"
+log_debug "Node config: CPUs=$num_cputot Sockets=$num_sockets Cores=$num_cores Threads=$num_threads"
 if {$num_cputot < $total_thread_count} {
 	skip "CPUs=$num_cputot < (Sockets($num_sockets)*Cores($num_cores)*Threads($num_threads)). Test incompatible with lowered CPUs count"
 }

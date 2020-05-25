@@ -46,7 +46,7 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -n10 -N1 -O -W2 -t2 ./$file_in]
 expect {
 	-re "First task exited" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		incr matches
 		exp_continue
 	}

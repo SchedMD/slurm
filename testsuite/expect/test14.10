@@ -114,8 +114,7 @@ expect {
 		skip "Can't run this test"
 	}
 	-re "cannot create directory" {
-		send_user "\nThis error is expected when nodes share the "
-		send_user "same tmp directory\n"
+		log_debug "This error is expected when nodes share the same tmp directory"
 		exp_continue
 	}
 	-re "Granted job allocation ($number)" {
@@ -131,7 +130,7 @@ expect {
 		exp_continue
 	}
 	-re "Checking node 0: .*No such" {
-		send_user "\nThis error is expected\n"
+		log_debug "This error is expected"
 		incr matches
 		exp_continue
 	}

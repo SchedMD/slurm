@@ -675,47 +675,47 @@ expect {
 	}
 	-re "($tc1.$roo.$roo.1.......$mc6.$mm6.$mj6.$mn6.$ms6.$mt6.$qs1)" {
 		incr matches
-		send_user "2\n"
+		log_debug "2"
 		exp_continue
 	}
 	-re "($tc1.$ta1..$fs5.$gm5.$gc5.$gj5.$gn5.$gs5.$gt5.$mc5.$mm5.$mj5.$mn5.$ms5.$mt5.$qs1)" {
 		incr matches
-		send_user "3\n"
+		log_debug "3"
 		exp_continue
 	}
 	-re "($tc1.$ta1.$tu3.$fs2.......$mc1.$mm1.$mj1.$mn1.$ms1.$mt1.$qs1)" {
 		incr matches
-		send_user "4\n"
+		log_debug "4"
 		exp_continue
 	}
 	-re "($tc1.$ta2..$fs4.$gm4.$gc4.$gj4.$gn4.$gs4.$gt4.$mc4.$mm4.$mj4.$mn4.$ms4.$mt4.$qs1)" {
 		incr matches
-		send_user "5\n"
+		log_debug "5"
 		exp_continue
 	}
 	-re "($tc1.$ta2.$tu1.$fs1.......$mc2.$mm2.$mj2.$mn2.$ms2.$mt2.$qs1)" {
 		incr matches
-		send_user "6\n"
+		log_debug "6"
 		exp_continue
 	}
 	-re "($tc1.$ta2.$tu3.$fs2.......$mc2.$mm2.$mj2.$mn2.$ms2.$mt2.$qs1)" {
 		incr matches
-		send_user "7\n"
+		log_debug "7"
 		exp_continue
 	}
 	-re "($tc1.$ta3..$fs5.$gm5.$gc5.$gj5.$gn5.$gs5.$gt5.$mc5.$mm5.$mj5.$mn5.$ms5.$mt5.$qs1)" {
 		incr matches
-		send_user "8\n"
+		log_debug "8"
 		exp_continue
 	}
 	-re "($tc1.$ta3.$tu2.$fs3.......$mc3.$mm3.$mj3.$mn3.$ms3.$mt3.$qs1)" {
 		incr matches
-		send_user "9\n"
+		log_debug "9"
 		exp_continue
 	}
 	-re "($tc1.$ta3.$tu3.$fs3.......$mc3.$mm3.$mj3.$mn3.$ms3.$mt3.$qs1)" {
 		incr matches
-		send_user "10\n"
+		log_debug "10"
 		exp_continue
 	}
 	timeout {

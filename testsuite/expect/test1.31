@@ -62,7 +62,7 @@ set timeout          $max_job_delay
 global env
 set env($env_name_debug)   $env_valu_debug
 set env($env_name_nnodes)  $env_valu_nnodes
-send_user "$env_valu_nnodes $env_valu_nprocs\n";
+log_debug "$env_valu_nnodes $env_valu_nprocs";
 set env($env_name_nprocs)  $env_valu_nprocs
 set env($env_name_stdout)  $env_valu_stdout
 set env($env_name_overcom) $env_valu_overcom

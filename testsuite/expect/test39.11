@@ -38,7 +38,7 @@ set number_commas  "\[0-9_,\]+"
 print_header $test_id
 
 if {[test_cons_tres]} {
-    send_user "\nValid configuration, using select/cons_tres\n"
+    log_debug "Valid configuration, using select/cons_tres"
 } else {
     skip "This test is only compatible with select/cons_tres"
 }
@@ -50,7 +50,7 @@ if {$craynetwork_count < 0} {
 if {$craynetwork_count < 1} {
 	skip "This test requires 1 or more craynetwork GRES in the default partition"
 }
-send_user "\ncraynetwork count is $craynetwork_count\n"
+log_debug "craynetwork count is $craynetwork_count"
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
@@ -66,7 +66,7 @@ exit 0"
 #
 # Test --gres options using a subset of craynetwork GRES available on the node
 #
-send_user "\n\nTEST: --gres=craynetwork:# option\n"
+log_info "TEST: --gres=craynetwork:# option"
 set match 0
 set timeout $max_job_delay
 if {$craynetwork_count > 1} {
@@ -99,7 +99,7 @@ if {0} {
 	#
 	# Test --tres-per-job options using multiple nodes
 	#
-	send_user "\n\nTEST: --tres-per-job=craynetwork:# option\n"
+	log_info "TEST: --tres-per-job=craynetwork:# option"
 	set match 0
 	set node_cnt 0
 	set timeout $max_job_delay

@@ -99,7 +99,7 @@ spawn $sbatch -N1 --array=0-5 --output=/dev/null -t1 --wrap=exit
 expect {
 	-re "Submitted batch job ($number)" {
 		set array1_job_id $expect_out(1,string)
-		send_user "\njob $array1_job_id was submitted\n"
+		log_debug "Job $array1_job_id was submitted"
 	}
 	-re "error" {
 		fail "sbatch did not submit jobs"
@@ -117,7 +117,7 @@ eval spawn $sbatch -N1 --array=0-5 --output=/dev/null -t1 --wrap=exit
 expect {
 	-re "Submitted batch job ($number)" {
 		set array2_job_id $expect_out(1,string)
-		send_user "\njob $array2_job_id was submitted\n"
+		log_debug "Job $array2_job_id was submitted"
 	}
 	-re "error" {
 		fail "Sbatch did not submit jobs"

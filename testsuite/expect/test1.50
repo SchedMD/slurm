@@ -52,12 +52,12 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -t1 /bad/bad/bad]
 expect {
 	-re "No such file" {
-		send_user "\nNo worries, this error is expected\n"
+		log_debug "No worries, this error is expected"
 		set matches 1
 		exp_continue
 	}
 	-re "Unable to run executable" {
-		send_user "\nNo worries, this error is expected\n"
+		log_debug "No worries, this error is expected"
 		set matches 1
 		 exp_continue
 	}

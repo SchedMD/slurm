@@ -84,7 +84,7 @@ if {$jobid == 0 || $job_running == 0} {
 #
 # Kill srun's stdio streams
 #
-send_user "Test saw stepid $stepid\n"
+log_debug "Test saw stepid $stepid"
 set file [exp_open]
 close $file
 
@@ -104,14 +104,14 @@ while {[string compare $running ""]} {
 	}
 	incr i 1
 }
-send_user "Test sees step is gone, srun should have exited as well.\n"
+log_debug "Test sees step is gone, srun should have exited as well"
 
 #
 # And finally check to see if srun is still hanging around (it should
 # have exited by now) and job has completed
 #
 if [catch {exec kill -0 $srun_pid}] {
-	send_user "\nsrun command is terminated, as desired\n"
+	log_debug "Srun command is terminated, as desired"
 	set exit_code 0
 } else {
 	log_error "srun is still running after job exits!"

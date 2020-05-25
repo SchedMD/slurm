@@ -51,12 +51,12 @@ if {$mps_cnt < 100} {
 	log_error "MPS count per node is unexpectedly low ($mps_cnt < 100). Check your configuration"
 	set exit_code 1
 }
-send_user "\nMPS count is $mps_cnt\n"
+log_debug "MPS count is $mps_cnt"
 
 #
 # Request both GPUs and MPS in single request
 #
-send_user "\n\n==== TEST 1 ====\n"
+log_info "==== TEST 1 ===="
 spawn $sbatch --gres=mps:1,gpu:1 -N1 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
 	-re "Submitted batch job ($number)" {
@@ -66,7 +66,7 @@ expect {
 		exp_continue
 	}
 	-re "error: " {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 		exp_continue
 	}
 	timeout {
@@ -81,7 +81,7 @@ expect {
 #
 # Request MPS plus GPU frequency
 #
-send_user "\n\n==== TEST 2 ====\n"
+log_info "==== TEST 2 ===="
 spawn $sbatch --gres=mps:1 --gpu-freq=high -N1 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
 	-re "Submitted batch job ($number)" {
@@ -91,7 +91,7 @@ expect {
 		exp_continue
 	}
 	-re "error: " {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 		exp_continue
 	}
 	timeout {

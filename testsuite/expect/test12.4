@@ -188,8 +188,6 @@ proc sacct_job { soption job_id} {
 	set not_support 0
 	set total_opts "$sacct -$soption -X -p --starttime=00:00 -j $job_id"
 
-	send_user "\n"
-
 	eval spawn $total_opts
 
 	if { $soption == "-brief" || $soption == "b" } {
@@ -199,12 +197,12 @@ proc sacct_job { soption job_id} {
 				exp_continue
 			}
 			-re "JobID.State.ExitCode" {
-				if {$debug} {send_user "\nmatch1\n"}
+				if {$debug} {log_debug "Match1"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id" {
-				if {$debug} {send_user "\nmatch2\n"}
+				if {$debug} {log_debug "Match2"}
 				incr matches
 				exp_continue
 			}
@@ -230,37 +228,37 @@ proc sacct_job { soption job_id} {
 				exp_continue
 			}
 			-re "JobID.JobIDRaw.JobName.Partition.MaxVMSize" {
-				if {$debug} {send_user "\nmatch3\n"}
+				if {$debug} {log_debug "Match3"}
 				incr matches
 				exp_continue
 			}
 			-re "MaxVMSizeNode.MaxVMSizeTask.AveVMSize.MaxRSS" {
-				if {$debug} {send_user "\nmatch4\n"}
+				if {$debug} {log_debug "Match4"}
 				incr matches
 				exp_continue
 			}
 			-re "MaxRSSNode.MaxRSSTask.AveRSS.MaxPages" {
-				if {$debug} {send_user "\nmatch5\n"}
+				if {$debug} {log_debug "Match5"}
 				incr matches
 				exp_continue
 			}
 			-re "MaxPagesNode.MaxPagesTask.AvePages.MinCPU" {
-				if {$debug} {send_user "\nmatch6\n"}
+				if {$debug} {log_debug "Match6"}
 				incr matches
 				exp_continue
 			}
 			-re "MinCPUNode.MinCPUTask.AveCPU.NTasks" {
-				if {$debug} {send_user "\nmatch7\n"}
+				if {$debug} {log_debug "Match7"}
 				incr matches
 				exp_continue
 			}
 			-re "AllocCPUS.Elapsed.State.ExitCode" {
-				if {$debug} {send_user "\nmatch8\n"}
+				if {$debug} {log_debug "Match8"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id" {
-				if {$debug} {send_user "\nmatch9\n"}
+				if {$debug} {log_debug "Match9"}
 				incr matches
 				exp_continue
 			}
@@ -297,12 +295,12 @@ proc sacct_job { soption job_id} {
 				|State|Submit|Suspended|SystemCPU	|
 				|Timelimit|TotalCPU|UID|User	|
 				|UserCPU|WCKey|WCKeyID" {
-				if {$debug} {send_user "\nmatch10\n"}
+				if {$debug} {log_debug "Match10"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id" {
-				if {$debug} {send_user "\nmatch11\n"}
+				if {$debug} {log_debug "Match11"}
 				incr matches
 				exp_continue
 			}
@@ -328,12 +326,12 @@ proc sacct_job { soption job_id} {
 				exp_continue
 			}
 			-re "JobID\\|JobName\\|Partition\\|Account\\|AllocCPUS\\|State\\|ExitCode\\|" {
-				if {$debug} {send_user "\nmatch12\n"}
+				if {$debug} {log_debug "Match12"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id\\|" {
-				if {$debug} {send_user "\nmatch13\n"}
+				if {$debug} {log_debug "Match13"}
 				incr matches
 				exp_continue
 			}
@@ -359,12 +357,12 @@ proc sacct_job { soption job_id} {
 				exp_continue
 			}
 			-re "JobID\\|JobName\\|Partition\\|Account\\|AllocCPUS\\|State\\|ExitCode *" {
-				if {$debug} {send_user "\nmatch14\n"}
+				if {$debug} {log_debug "Match14"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id\\|" {
-				if {$debug} {send_user "\nmatch15\n"}
+				if {$debug} {log_debug "Match15"}
 				incr matches
 				exp_continue
 			}
@@ -390,22 +388,22 @@ proc sacct_job { soption job_id} {
 				exp_continue
 			}
 			-re "sacct: Accounting storage SLURMDBD plugin loaded" {
-				if {$debug} {send_user "\nmatch16\n"}
+				if {$debug} {log_debug "Match16"}
 				incr matches
 				exp_continue
 			}
 			-re "JobID.JobName.Partition" {
-				if {$debug} {send_user "\nmatch17\n"}
+				if {$debug} {log_debug "Match17"}
 				incr matches
 				exp_continue
 			}
 			-re "Account.AllocCPUS.State.ExitCode" {
-				if {$debug} {send_user "\nmatch18\n"}
+				if {$debug} {log_debug "Match18"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id" {
-				if {$debug} {send_user "\nmatch19\n"}
+				if {$debug} {log_debug "Match19"}
 				incr matches
 				exp_continue
 			}
@@ -445,8 +443,6 @@ proc sacct_vargs { soption vargs job_id} {
 	set not_support 0
 	set total_opts "$sacct -$soption $vargs -X -p -j $job_id"
 
-	send_user "\n"
-
 	eval spawn $total_opts
 
 	if { $soption == "g" || $soption == "-gid" || $soption == "-group" || $soption == "u" || $soption == "-uid" || $soption == "-user"} {
@@ -456,18 +452,18 @@ proc sacct_vargs { soption vargs job_id} {
 				exp_continue
 			}
 			-re "JobID.JobName.Partition" {
-				if {$debug} {send_user "\nmatch20\n"}
+				if {$debug} {log_debug "Match20"}
 				incr matches
 				exp_continue
 			}
 			-re "Account.AllocCPUS.State.ExitCode" {
-				if {$debug} {send_user "\nmatch21\n"}
+				if {$debug} {log_debug "Match21"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id" {
 				incr matches
-				if {$debug} {send_user "\nmatch22\n"}
+				if {$debug} {log_debug "Match22"}
 				exp_continue
 			}
 			timeout {

@@ -41,7 +41,7 @@ set job_id      0
 print_header $test_id
 
 if {[test_cons_tres]} {
-    send_user "\nValid configuration, using select/cons_tres\n"
+    log_debug "Valid configuration, using select/cons_tres"
 } else {
     skip "This test is only compatible with select/cons_tres"
 }
@@ -61,7 +61,7 @@ if {$mps_cnt < 100} {
 	log_error "MPS count per node is unexpectedly low ($mps_cnt < 100). Check your configuration"
 	set exit_code 1
 }
-send_user "\nMPS count is $mps_cnt\n"
+log_debug "MPS count is $mps_cnt"
 if {$mps_cnt > 100} {
 	set mps_cnt 100
 }
@@ -69,7 +69,7 @@ if {$mps_cnt > 100} {
 #
 # Simple MPS request, check environment variables
 #
-send_user "\n\n==== TEST 1 ====\n"
+log_info "==== TEST 1 ===="
 make_bash_script $file_in1 "
 echo HOST:\$SLURMD_NODENAME
 echo CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
@@ -117,7 +117,7 @@ if {$matches != 3} {
 #
 # Run two steps in parallel to consume gres/mps using sbatch
 #
-send_user "\n\n==== TEST 2 ====\n"
+log_info "==== TEST 2 ===="
 set target_job  [expr $mps_cnt / 2]
 set target_step [expr $target_job / 2]
 make_bash_script $file_in1 "
@@ -200,7 +200,7 @@ if {$match != 3} {
 # Run two steps in parallel to consume gres/mps using salloc
 # Reuse scripts from test 2 above
 #
-send_user "\n\n==== TEST 3 ====\n"
+log_info "==== TEST 3 ===="
 set match 0
 set salloc_pid [spawn $salloc --gres=mps:$target_job -n1 -t1 -J "test$test_id" ./$file_in2]
 expect {
@@ -245,7 +245,7 @@ if {$match != 3} {
 # Run three steps in parallel to make sure steps get delay as needed to avoid
 # oversubscribing consumed MPS resources
 #
-send_user "\n\n==== TEST 4 ====\n"
+log_info "==== TEST 4 ===="
 set target_job  [expr $mps_cnt / 2]
 set target_step [expr $target_job / 2]
 make_bash_script $file_in1 "
@@ -335,7 +335,7 @@ if {$match != 1} {
 #
 # Run step to try to consume gres/mps than allocated to the job
 #
-send_user "\n\n==== TEST 5 ====\n"
+log_info "==== TEST 5 ===="
 set target_job  [expr $mps_cnt / 2]
 set target_step [expr $target_job + 1]
 make_bash_script $file_in1 "
@@ -377,7 +377,7 @@ set match 0
 spawn $bin_cat $file_out1
 expect {
 	-re "Unable to create step" {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 		incr match
 		exp_continue
 	}
@@ -397,7 +397,7 @@ if {$match != 1} {
 #
 # Run multi-node job
 #
-send_user "\n\n==== TEST 6 ====\n"
+log_info "==== TEST 6 ===="
 set node_cnt [get_mps_node_count]
 if {$node_cnt > 2} {
 	set node_cnt 2
@@ -416,7 +416,7 @@ expect {
 		if {$match == 1} {
 			set hostname $expect_out(1,string)
 		} elseif {[test_front_end]} {
-			send_user "\nDuplicate SLURMD_HOSTNAME in front-end mode as expected\n"
+			log_debug "Duplicate SLURMD_HOSTNAME in front-end mode as expected"
 		} elseif {[string compare $hostname $expect_out(1,string)] == 0} {
 			log_error "Two tasks ran on same node ($hostname))"
 			set exit_code 1
@@ -442,7 +442,7 @@ if {$match != $node_cnt} {
 # or run at different times
 #
 if {[test_front_end] == 0} {
-	send_user "\n\n==== TEST 7 ====\n"
+	log_info "==== TEST 7 ===="
 	set target_job [expr $mps_cnt / 2]
 	make_bash_script $file_in1 "
 	echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
@@ -516,7 +516,6 @@ if {[test_front_end] == 0} {
 		set exit_code 1
 	}
 
-	send_user "\n\n"
 	if {[wait_for_job $job_id2 "DONE"] != 0} {
 		log_error "Job $job_id2 did not complete"
 		cancel_job $job_id2
@@ -562,13 +561,13 @@ if {[test_front_end] == 0} {
 		set exit_code 1
 	} elseif {$dev1 == $dev2} {
 		if {$running == 0} {
-			send_user "\nThe jobs are using the same GPU ($dev1) and running at different times, which is fine\n"
+			log_debug "The jobs are using the same GPU ($dev1) and running at different times, which is fine"
 		} else {
 			log_error "The jobs are using the same GPU ($dev1) and running at the same time"
 			set exit_code 1
 		}
 	} else {
-		send_user "\nThe jobs are using different GPUs ($dev1 != $dev2), which is fine\n"
+		log_debug "The jobs are using different GPUs ($dev1 != $dev2), which is fine"
 	}
 }
 

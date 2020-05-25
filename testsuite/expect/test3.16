@@ -89,8 +89,7 @@ proc delete_lic { license } {
 	}
 
 	if { $deleted != 1 } {
-		send_user "\nFailure: sacctmgr could not delete "
-		send_user "license: $license\n"
+		log_error "sacctmgr could not delete license: $license"
 		set exit_code 1
 	}
 }

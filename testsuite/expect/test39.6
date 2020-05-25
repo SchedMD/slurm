@@ -107,7 +107,7 @@ proc multi_socket_gres { gres_string } {
 print_header $test_id
 
 if {[test_cons_tres]} {
-    send_user "\nValid configuration, using select/cons_tres\n"
+    log_debug "Valid configuration, using select/cons_tres"
 } else {
     skip "This test is only compatible with select/cons_tres"
 }
@@ -127,10 +127,10 @@ if {$node_conf(CPUsPerSocket) < 2} {
 	skip "This test requires 2 or more cores per socket in the default partition"
 }
 set cpus_per_node $node_conf(CPUTot)
-log_info "GPU count is $gpu_cnt"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
-log_info "CPUs per node is $cpus_per_node"
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "CPUs per node is $cpus_per_node"
 
 #
 # Build input script file

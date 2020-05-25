@@ -29,7 +29,7 @@
 proc inc21_30_14 { wait_reason } {
 	global salloc srun acct bin_sleep number maxwall_num exit_code
 
-	send_user "\nStarting MaxWall test (Within: inc21.30.14)\n"
+	log_info "Starting MaxWall test (Within: inc21.30.14)"
 	set job_id 0
 
 	spawn $salloc --account=$acct -N1 -t$maxwall_num $srun $bin_sleep 10
@@ -40,7 +40,7 @@ proc inc21_30_14 { wait_reason } {
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			send_user "\nJob $job_id has been submitted\n"
+			log_debug "Job $job_id has been submitted"
 		}
 		-re "error" {
 			log_error "Job allocation should not have failed. (Within: inc21.30.14)"
@@ -62,7 +62,7 @@ proc inc21_30_14 { wait_reason } {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			send_user "\nJob $job_id is waiting for resources. This is expected (Within: inc21.30.14)\n"
+			log_debug "Job $job_id is waiting for resources. This is expected (Within: inc21.30.14)"
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)

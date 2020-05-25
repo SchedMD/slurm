@@ -59,7 +59,7 @@ log_user 1
 if {$affinity == 0} {
 	skip "Memory affinity not supported on this system"
 }
-send_user "\ntask affinity plugin installed with numa support\n"
+log_info "Task affinity plugin installed with numa support"
 
 log_user 0
 set force 0
@@ -375,14 +375,13 @@ while {$cpu_cnt < $task_cnt} {
 	incr cpu_cnt 1
 }
 
-send_user "\n"
-send_user "full_mask: $full_mask\n"
-send_user "fwd_map:  $fwd_map\n"
-send_user "fwd_mask: $fwd_mask\n"
-send_user "rev_map:  $rev_map\n"
-send_user "rev_mask: $rev_mask\n"
-send_user "alt_map:  $alt_map\n"
-send_user "alt_mask: $alt_mask\n"
+log_debug "full_mask: $full_mask"
+log_debug "fwd_map:  $fwd_map"
+log_debug "fwd_mask: $fwd_mask"
+log_debug "rev_map:  $rev_map"
+log_debug "rev_mask: $rev_mask"
+log_debug "alt_map:  $alt_map"
+log_debug "alt_mask: $alt_mask"
 
 #
 # Run all tasks bound to a different CPU's memory by specifying a forward map

@@ -76,7 +76,7 @@ set sub_match 0
 spawn $srun -v --mem=200 --acctg-freq=[expr $freq_val + 10] sleep 5
 expect {
 	-re "Invalid accounting frequency" {
-		send_user "\nThis error is expect do not worry.\n"
+		log_debug "This error is expect do not worry"
 		set sub_match 1
 		exp_continue
 	}

@@ -52,7 +52,7 @@ set found -1
 spawn $scontrol -a show part $part_name
 expect {
 	-re "not found" {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		set found 0
 		exp_continue
 	}
@@ -138,7 +138,7 @@ set found 0
 
 # Check EnforcePartLimits value
 set enforcepartlimits [test_enforce_part_limits]
-send_user "\nEnforcePartLimits=$enforcepartlimits\n\n"
+log_debug "EnforcePartLimits=$enforcepartlimits"
 
 #
 # Run a job in this new partition and validate the time limit
@@ -251,7 +251,7 @@ set found -1
 spawn $scontrol show part $part_name
 expect {
 	-re "not found" {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		set found 0
 		exp_continue
 	}

@@ -81,14 +81,14 @@ proc sub_job { freq } {
 	array set this_freq $freq
 
 	foreach option [array names this_freq] {
-		send_user "\n======= TESTING FREQUENCY/GOVERNOR $option =======\n"
+		log_info "======= TESTING FREQUENCY/GOVERNOR $option ======="
 		set skip false
 		set job_id 0
 		set srun_pid [spawn $srun -t1 --cpu-freq=$option -n$threads -w$node ./$file_id]
 		expect {
 			-re "not allowed" {
 				if {[string first $option $avail_governors] == -1} {
-					send_user "\nThis error is expected, no worries\n"
+					log_debug "This error is expected, no worries"
 					set skip true
 				} else {
 					log_error "This CPU frequency should be valid"
@@ -223,7 +223,7 @@ cancel_job $job_id
 # Test various CPU governor values
 #
 set avail_governors get_cpu_governors
-send_user "\nCpuFreqGovernors = $avail_governors\n"
+log_debug "CpuFreqGovernors = $avail_governors"
 
 array set freq_lvl_2 [sub_job [array get freq_lvl_2]]
 
@@ -238,9 +238,9 @@ if {($freq_lvl_2(conservative) == 0) || ($freq_lvl_2(ondemand) == 0) ||
 #
 array set freq_lvl_1 [sub_job [array get freq_lvl_1]]
 
-send_user "\n======= Reported frequencies =======\n"
+log_debug "======= Reported frequencies ======="
 foreach name [array names freq_lvl_1] {
-	send_user "$name is $freq_lvl_1($name) GHz\n"
+	log_debug "$name is $freq_lvl_1($name) GHz"
 }
 
 if { (($freq_lvl_1(low) > $freq_lvl_1(medium)) ||

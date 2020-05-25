@@ -43,7 +43,7 @@ set short_string "foo bar baz "
 set count [expr $slurmstepd_cbuf_size / [string length $short_string] + 1]
 set really_big_string [string repeat $short_string $count]
 unset count
-send_user "really_big_string is [string length $really_big_string] bytes\n"
+log_debug "Really_big_string is [string length $really_big_string] bytes"
 
 #
 # Create a test input file

@@ -84,7 +84,7 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
 		log_error "salloc: allocation not granted in $timeout seconds"
@@ -101,7 +101,7 @@ if {$pack_job_id == 0} {
 
 expect *
 
-send_user "\n\nTest Sending Sacct To Various Components\n\n"
+log_info "Test Sending Sacct To Various Components"
 
 # Wait for accounting records to reach slurmdbd
 sleep 5
@@ -153,7 +153,6 @@ if {$has_prolog_flags} {
 }
 
 for {set inx 0} {$inx < 3} {incr inx} {
-	send_user "\n\n"
 	set bad_matches 0
 	set matches 0
 	spawn $sacct -j $pack_job_id+$inx

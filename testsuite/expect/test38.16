@@ -87,7 +87,7 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
 		log_error "salloc : allocation not granted in $timeout seconds"
@@ -102,7 +102,7 @@ if {$pack_job_id == 0} {
 	end_it 1
 }
 
-send_user "\n\nCollect Nodename for each job component\n\n"
+log_debug "Collect Nodename for each job component"
 
 send "$squeue -j $pack_job_id -o\"NAME=%N\" --noheader\r"
 expect {
@@ -127,13 +127,12 @@ if {$index != 2} {
 	end_it 1
 }
 
-send_user "\n\nTest environment variables needed by MPI\n\n"
+log_info "Test environment variables needed by MPI"
 
 set matches 0
 send "$srun --label --mpi=none --pack-group=0,1 -l -o$file_out $file_in\r"
 expect {
 	-re "$prompt" {
-		send_user "\n\n"
 		#break
 	}
 	timeout {
@@ -169,7 +168,6 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		send_user "\n\n"
 		#break
 	}
 	timeout {
@@ -193,7 +191,6 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		send_user "\n\n"
 		#break
 	}
 	timeout {
@@ -221,7 +218,7 @@ expect {
 	}
 }
 
-send_user "\n\nValidate combined hostlist\n\n"
+log_info "Validate combined hostlist"
 
 set matches 0
 spawn $scontrol show hostnames $pack_nodelist
