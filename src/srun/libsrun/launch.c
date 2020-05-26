@@ -299,8 +299,11 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	job->ctx_params.no_kill = opt_local->no_kill;
 	if (slurm_option_set_by_cli(opt_local, 'J'))
 		job->ctx_params.name = opt_local->job_name;
-	else
+	else if (srun_opt->cmd_name)
 		job->ctx_params.name = srun_opt->cmd_name;
+	else
+		job->ctx_params.name = sropt.cmd_name;
+
 	job->ctx_params.features = opt_local->constraint;
 
 	job->ctx_params.step_het_grps = opt_local->step_het_grps;
