@@ -413,8 +413,14 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 			for (j = 0; sig_array[j]; j++)
 				xsignal(sig_array[j], signal_function);
 		} else {
-			info("Job %u step creation still disabled, retrying (%s)",
-			     job->ctx_params.job_id, slurm_strerror(rc));
+			if (rc == ESLURM_PROLOG_RUNNING)
+				verbose("Job %u step creation still disabled, retrying (%s)",
+					job->ctx_params.job_id,
+					slurm_strerror(rc));
+			else
+				info("Job %u step creation still disabled, retrying (%s)",
+				     job->ctx_params.job_id,
+				     slurm_strerror(rc));
 		}
 
 		if (*destroy_job) {
