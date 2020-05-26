@@ -2029,6 +2029,10 @@ To load a previously created file you can run
 \fBsacctmgr load file=tux.cfg\fP
 .RE
 
+sacctmgr dump/load must be run as a Slurm administrator or root. If using
+sacctmgr load on a database without any associations, it must be run as root
+(because there aren't any users in the database yet).
+
 Other options for load are:
 .RS
 \fBclean\fP     \- delete what was already there and start from scratch with
