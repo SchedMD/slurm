@@ -11505,6 +11505,13 @@ extern void gres_plugin_job_set_defs(List job_gres_list, char *gres_name,
 	gres_state_t *gres_ptr = NULL;
 	gres_job_state_t *job_gres_data;
 
+	/*
+	 * Currently only GPU supported, check how cpus_per_tres/mem_per_tres
+	 * is handled in _fill_job_desc_from_sbatch_opts and
+	 * _job_desc_msg_create_from_opts.
+	 */
+	xassert(!xstrcmp(gres_name, "gpu"));
+
 	if (!job_gres_list)
 		return;
 
