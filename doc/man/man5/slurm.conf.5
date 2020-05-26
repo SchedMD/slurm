@@ -2607,10 +2607,17 @@ them with the job step's allocation information).
 For systems with generic resources (GRES) defined, the \fBSallocDefaultCommand\fR
 value should explicitly specify a zero count for the configured GRES.
 Failure to do so will result in the launched shell consuming those GRES and
-preventing subsequent srun commands from using them.
-For example, on Cray systems add "\-\-gres=craynetwork:0" as shown below:
+preventing subsequent srun commands from using them, you can achieve that by:
 .nf
-    SallocDefaultCommand = "srun \-n1 \-N1 \-\-mem\-per\-cpu=0 \-\-gres=craynetwork:0 \-\-pty \-\-preserve\-env \-\-mpi=none $SHELL"
+    SallocDefaultCommand = "srun \-n1 \-N1 \-\-mem\-per\-cpu=0 \-\-gres=NONE \-\-pty \-\-preserve\-env \-\-mpi=none $SHELL"
+.fi
+
+For systems configured with \fBSelectPlugin=cons_tres\fR GPU resources may be
+requested on a per job, socket, task or node basis. To make sure that none
+is used when the \fBSallocDefaultCommand\fR requests job resources, you
+need to use a command like:
+.nf
+    SallocDefaultCommand = "srun \-n1 \-N1 \-\-mem\-per\-cpu=0 \-\-gres=NONE \-\-gpus=0 \-\-gpus-per-socket=0 \-\-gpus\-per\-task=0 \-\-pty \-\-preserve\-env \-\-mpi=none $SHELL"
 .fi
 
 For systems with TaskPlugin set, adding an option of "\-\-cpu\-bind=no" is
