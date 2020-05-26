@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "April 2020" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "May 2020" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -2242,10 +2242,11 @@ Loading data into the database can be done from these files to either
 view old data or regenerate rolled up data.
 
 .SS archive dump
-Dump accounting data to file. Depending on options and slurmdbd configuration
-data may remain in database or be purged. This operation cannot be rolled back
+Dump accounting data to file. Data will not be archived unless the
+corresponding purge option is included in this command or in slurmdbd.conf.
+This operation cannot be rolled back
 once executed. If one of the following options is not specified when sacctmgr
-is called, the value configured in slurmdbd.comf is used.
+is called, the value configured in slurmdbd.conf is used.
 
 .TP
 \fIDirectory=\fP
