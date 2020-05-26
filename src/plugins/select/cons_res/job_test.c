@@ -2104,9 +2104,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 					    test_only, core_map, core_start_bit,
 					    core_end_bit, node_ptr->name);
 	}
-	if (job_ptr->bit_flags & GRES_DISABLE_BIND) {
-		gres_cores = NO_VAL;
-	} else if (s_p_n == NO_VAL) {
+	if ((job_ptr->bit_flags & GRES_DISABLE_BIND) || s_p_n == NO_VAL) {
 		gres_cores = gres_plugin_job_test(job_ptr->gres_list,
 						  gres_list, test_only,
 						  core_map, core_start_bit,
