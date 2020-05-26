@@ -243,7 +243,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *core_bitmap,
 			  int core_start_bit, int core_end_bit, bool *topo_set,
 			  uint32_t job_id, char *node_name, char *gres_name,
-			  uint32_t plugin_id);
+			  uint32_t plugin_id, bool disable_binding);
 static int	_load_gres_plugin(slurm_gres_context_t *plugin_context);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
 static void	_my_stat(char *file_name);
@@ -6517,7 +6517,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *core_bitmap,
 			  int core_start_bit, int core_end_bit, bool *topo_set,
 			  uint32_t job_id, char *node_name, char *gres_name,
-			  uint32_t plugin_id)
+			  uint32_t plugin_id, bool disable_binding)
 {
 	int i, j, core_size, core_ctld, top_inx = -1;
 	uint64_t gres_avail = 0, gres_max = 0, gres_total, gres_tmp;
@@ -6609,7 +6609,8 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		if (min_gres_node > gres_avail)
 			return (uint32_t) 0;	/* insufficient GRES avail */
 		return NO_VAL;
-	} else if (min_gres_node && node_gres_ptr->topo_cnt) {
+	} else if (min_gres_node && node_gres_ptr->topo_cnt &&
+		   !disable_binding) {
 		/* Need to determine which specific cores can be used */
 		gres_avail = node_gres_ptr->gres_cnt_avail;
 		if (!use_total_gres)
@@ -6893,13 +6894,15 @@ extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
  * IN core_end_bit   - index into core_bitmap for this node's last core
  * IN job_id         - job's ID (for logging)
  * IN node_name      - name of the node (for logging)
+ * IN disable binding- --gres-flags=disable-binding
  * RET: NO_VAL    - All cores on node are available
  *      otherwise - Count of available cores
  */
 extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 				     bool use_total_gres, bitstr_t *core_bitmap,
 				     int core_start_bit, int core_end_bit,
-				     uint32_t job_id, char *node_name)
+				     uint32_t job_id, char *node_name,
+				     bool disable_binding)
 {
 	int i;
 	uint32_t core_cnt, tmp_cnt;
@@ -6941,7 +6944,8 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 					    core_start_bit, core_end_bit,
 					    &topo_set, job_id, node_name,
 					    gres_context[i].gres_name,
-					    gres_context[i].plugin_id);
+					    gres_context[i].plugin_id,
+					    disable_binding);
 			if (tmp_cnt != NO_VAL) {
 				if (core_cnt == NO_VAL)
 					core_cnt = tmp_cnt;
