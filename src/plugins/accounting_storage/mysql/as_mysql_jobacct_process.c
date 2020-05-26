@@ -169,6 +169,7 @@ enum {
  * enum below also t1 is step_table */
 char *step_req_inx[] = {
 	"t1.id_step",
+	"t1.step_het_comp",
 	"t1.time_start",
 	"t1.time_end",
 	"t1.time_suspended",
@@ -211,6 +212,7 @@ char *step_req_inx[] = {
 
 enum {
 	STEP_REQ_STEPID,
+	STEP_REQ_STEP_HET_COMP,
 	STEP_REQ_START,
 	STEP_REQ_END,
 	STEP_REQ_SUSPENDED,
@@ -940,8 +942,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			step->step_id.job_id = job->jobid;
 			step->step_id.step_id = slurm_atoul(
 				step_row[STEP_REQ_STEPID]);
-			/* info("got step %u.%u", */
-/* 			     job->header.jobnum, step->stepnum); */
+			step->step_id.step_het_comp =
+				slurm_atoul(step_row[STEP_REQ_STEP_HET_COMP]);
+			/* info("got step %ps", &step->step_id); */
 			step->state = slurm_atoul(step_row[STEP_REQ_STATE]);
 			step->exitcode =
 				slurm_atoul(step_row[STEP_REQ_EXIT_CODE]);

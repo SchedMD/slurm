@@ -1242,11 +1242,11 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 	   %d */
 	/* The stepid could be negative so use %d not %u */
 	query = xstrdup_printf(
-		"insert into \"%s_%s\" (job_db_inx, id_step, time_start, "
-		"step_name, state, tres_alloc, "
+		"insert into \"%s_%s\" (job_db_inx, id_step, step_het_comp, "
+		"time_start, step_name, state, tres_alloc, "
 		"nodes_alloc, task_cnt, nodelist, node_inx, "
 		"task_dist, req_cpufreq, req_cpufreq_min, req_cpufreq_gov) "
-		"values (%"PRIu64", %d, %d, '%s', %d, '%s', %d, %d, "
+		"values (%"PRIu64", %d, %u, %d, '%s', %d, '%s', %d, %d, "
 		"'%s', '%s', %d, %u, %u, %u) "
 		"on duplicate key update "
 		"nodes_alloc=%d, task_cnt=%d, time_end=0, state=%d, "
@@ -1256,6 +1256,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		mysql_conn->cluster_name, step_table,
 		step_ptr->job_ptr->db_index,
 		step_ptr->step_id.step_id,
+		step_ptr->step_id.step_het_comp,
 		(int)start_time, step_ptr->name,
 		JOB_RUNNING, step_ptr->tres_alloc_str,
 		nodes, tasks, node_list, node_inx, task_dist,
@@ -1510,8 +1511,9 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	   and extern steps.  Don't change it to a %u.
 	*/
 	xstrfmtcat(query,
-		   " where job_db_inx=%"PRIu64" and id_step=%d",
-		   step_ptr->job_ptr->db_index, step_ptr->step_id.step_id);
+		   " where job_db_inx=%"PRIu64" and id_step=%d and step_het_comp=%u",
+		   step_ptr->job_ptr->db_index, step_ptr->step_id.step_id,
+		   step_ptr->step_id.step_het_comp);
 	DB_DEBUG(DB_STEP, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);

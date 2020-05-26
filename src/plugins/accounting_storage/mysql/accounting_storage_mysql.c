@@ -1333,6 +1333,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "deleted", "tinyint default 0 not null" },
 		{ "exit_code", "int default 0 not null" },
 		{ "id_step", "int not null" },
+		{ "step_het_comp", "int unsigned default 0xfffffffe not null" },
 		{ "kill_requid", "int default -1 not null" },
 		{ "nodelist", "text not null" },
 		{ "nodes_alloc", "int unsigned not null" },
@@ -1511,7 +1512,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		 cluster_name, step_table);
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  step_table_fields,
-				  ", primary key (job_db_inx, id_step))")
+				  ", primary key (job_db_inx, id_step, "
+				  "step_het_comp), "
+				  "key no_step_comp (job_db_inx, id_step))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
