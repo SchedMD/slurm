@@ -48,22 +48,26 @@
 #define KB_ADJ 1024
 #define MB_ADJ 1048576
 
+static int _for_each_pack_str(void *x, void *arg)
+{
+	char *str = (char *) x;
+	Buf buffer = (Buf) arg;
+
+	packstr(str, buffer);
+
+	return SLURM_SUCCESS;
+}
+
 static void _pack_list_of_str(List l, Buf buffer)
 {
 	uint32_t count = NO_VAL;
-	ListIterator itr = NULL;
-	char *str;
 
 	if (l)
 		count = list_count(l);
 
 	pack32(count, buffer);
-	if (count && (count != NO_VAL)) {
-		itr = list_iterator_create(l);
-		while ((str = list_next(itr)))
-			packstr(str, buffer);
-		list_iterator_destroy(itr);
-	}
+	if (count && (count != NO_VAL))
+		list_for_each(l, _for_each_pack_str, buffer);
 }
 
 static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
