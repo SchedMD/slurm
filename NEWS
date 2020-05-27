@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- srun - suppress job step creation warning message when waiting on
     PrologSlurmctld.
  -- slurmrestd - fix incorrect return values in data_list_for_each() functions.
+ -- mpi/pmix - fix issue where HetJobs could fail to launch.
 
 * Changes in Slurm 20.02.3
 ==========================
