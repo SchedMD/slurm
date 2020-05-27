@@ -89,6 +89,8 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 void *libpmix_plug = NULL;
 
+char *process_mapping = NULL;
+
 static void _libpmix_close(void *lib_plug)
 {
 	xassert(lib_plug);
@@ -204,7 +206,6 @@ extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 {
 	static pthread_mutex_t setup_mutex = PTHREAD_MUTEX_INITIALIZER;
 	static pthread_cond_t setup_cond  = PTHREAD_COND_INITIALIZER;
-	static char *mapping = NULL;
 	static bool setup_done = false;
 	uint32_t nnodes, ntasks, **tids;
 	uint16_t *task_cnt;
@@ -215,7 +216,8 @@ extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 		ntasks = job->step_layout->task_cnt;
 		task_cnt = job->step_layout->tasks;
 		tids = job->step_layout->tids;
-		mapping = pack_process_mapping(nnodes, ntasks, task_cnt, tids);
+		process_mapping = pack_process_mapping(nnodes, ntasks,
+						       task_cnt, tids);
 		slurm_mutex_lock(&setup_mutex);
 		setup_done = true;
 		slurm_cond_broadcast(&setup_cond);
@@ -227,12 +229,11 @@ extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 		slurm_mutex_unlock(&setup_mutex);
 	}
 
-	if (NULL == mapping) {
+	if (!process_mapping) {
 		PMIXP_ERROR("Cannot create process mapping");
 		return NULL;
 	}
-	setenvf(env, PMIXP_SLURM_MAPPING_ENV, "%s", mapping);
-	xfree(mapping);
+	setenvf(env, PMIXP_SLURM_MAPPING_ENV, "%s", process_mapping);
 
 	/* only return NULL on error */
 	return (void *)0xdeadbeef;
@@ -240,5 +241,7 @@ extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 
 extern int p_mpi_hook_client_fini(void)
 {
+	xfree(process_mapping);
+
 	return SLURM_SUCCESS;
 }
