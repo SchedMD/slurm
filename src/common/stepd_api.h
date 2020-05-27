@@ -96,13 +96,13 @@ typedef enum {
 } stepd_getgr_mode_t;
 
 typedef struct {
-	uid_t uid;
 	uint32_t jobid;
-	uint32_t stepid;
+	uint64_t job_mem_limit;		/* job's memory limit, MB */
 	uint32_t nodeid;
 	uint16_t protocol_version;
-	uint64_t job_mem_limit;		/* job's memory limit, MB */
+	uint32_t stepid;
 	uint64_t step_mem_limit;	/* step's memory limit, MB */
+	uid_t uid;
 } slurmstepd_info_t;
 
 typedef struct {
@@ -112,19 +112,19 @@ typedef struct {
 } slurmstepd_mem_info_t;
 
 typedef struct {
-	int             id;	    /* local task id */
-	uint32_t        gtid;	    /* global task id */
-	pid_t           pid;	    /* task pid */
-	bool            exited;     /* true if task has exited */
 	int             estatus;    /* exit status if exited is true*/
+	bool            exited;     /* true if task has exited */
+	uint32_t        gtid;	    /* global task id */
+	int             id;	    /* local task id */
+	pid_t           pid;	    /* task pid */
 } slurmstepd_task_info_t;
 
 typedef struct step_location {
-	uint32_t jobid;
-	uint32_t stepid;
-	char *nodename;
 	char *directory;
+	uint32_t jobid;
+	char *nodename;
 	uint16_t protocol_version;
+	uint32_t stepid;
 } step_loc_t;
 
 
