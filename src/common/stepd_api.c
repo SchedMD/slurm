@@ -311,7 +311,11 @@ slurmstepd_info_t *stepd_get_info(int fd)
 	safe_read(fd, &step_info->stepid, sizeof(uint32_t));
 
 	safe_read(fd, &step_info->protocol_version, sizeof(uint16_t));
-	if (step_info->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (step_info->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_read(fd, &step_info->nodeid, sizeof(uint32_t));
+		safe_read(fd, &step_info->job_mem_limit, sizeof(uint64_t));
+		safe_read(fd, &step_info->step_mem_limit, sizeof(uint64_t));
+	} else if (step_info->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_read(fd, &step_info->nodeid, sizeof(uint32_t));
 		safe_read(fd, &step_info->job_mem_limit, sizeof(uint64_t));
 		safe_read(fd, &step_info->step_mem_limit, sizeof(uint64_t));
