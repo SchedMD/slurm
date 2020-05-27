@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.02.4
 ==========================
+ -- srun - suppress job step creation warning message when waiting on
+    PrologSlurmctld.
 
 * Changes in Slurm 20.02.3
 ==========================
