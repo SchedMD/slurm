@@ -107,6 +107,22 @@ configuration parameters to automatically respond to processes which can not
 be killed, by sending email or rebooting the node. For more information,
 see the <i>slurm.conf</i> documentation.</li>
 </ol>
+<p>
+If it doesn't look like your job is stuck because of filesystem problems
+it may take some debugging to find the cause.  If you can reproduce
+the behavior you can set the SlurmdDebug level to 'debug' and restart
+slurmd on a node you'll use to reproduce the problem.  The slurmd.log
+file should then have more information to help troubleshoot the issue.
+
+Looking at slurmctld.log may also provide clues. If nodes stop responding,
+you may want to look into why since they may prevent job cleanup and
+cause jobs to remain in a COMPLETING state. When looking for connectivity
+problems, the relevant log entries should look something like this:
+<pre>
+error: Nodes node[00,03,25] not responding
+Node node00 now responding
+</pre>
+</p>
 
 
 <h2><a name="nodes">Nodes are getting set to a DOWN state</a></h2>
@@ -189,6 +205,6 @@ releases (e.g. a version 17.11.x SlurmDBD will support slurmctld daemons and
 commands with a version of 17.11.x, 17.02.x or 16.05.x).</li>
 </ol>
 
-<p style="text-align:center;">Last modified 26 April 2019</p>
+<p style="text-align:center;">Last modified 28 May 2020</p>
 
 <!--#include virtual="footer.txt"-->
