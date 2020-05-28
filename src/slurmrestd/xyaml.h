@@ -42,14 +42,14 @@
 /*
  * Read YAML formatted buffer
  * IN buf string buffer containing YAML formatted data
- * RET structued data or NULL on error
+ * RET structured data or NULL on error
  */
 extern data_t *parse_yaml(const char *buf);
 
 /*
  * read YAML formatted buffer
  * IN buf string buffer containing YAML formatted data
- * RET structued data or NULL on error (must call xfree())
+ * RET structured data or NULL on error (must call xfree())
  */
 extern char *dump_yaml(const data_t *data);
 
