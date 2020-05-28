@@ -163,7 +163,7 @@ static void _read_config(void)
 		capmc_path = xstrdup("/opt/cray/capmc/default/bin/capmc");
 	capmc_timeout = MAX(capmc_timeout, MIN_CAPMC_TIMEOUT);
 	if (!log_file)
-		log_file = slurm_get_job_slurmctld_logfile();
+		log_file = xstrdup(slurm_conf.slurmctld_logfile);
 }
 
 /*
