@@ -408,7 +408,7 @@ extern int send_http_response(const send_http_response_args_t *args)
 			return rc;
 		if (args->body_encoding &&
 		    (rc = _write_fmt_header(
-			     args->con, "Content-Type:", args->body_encoding)))
+			     args->con, "Content-Type", args->body_encoding)))
 			return rc;
 
 		if ((rc = con_mgr_queue_write_fd(args->con, CRLF,

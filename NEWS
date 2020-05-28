@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
     PrologSlurmctld.
  -- slurmrestd - fix incorrect return values in data_list_for_each() functions.
  -- mpi/pmix - fix issue where HetJobs could fail to launch.
+ -- slurmrestd - set content-type header in responses.
 
 * Changes in Slurm 20.02.3
 ==========================

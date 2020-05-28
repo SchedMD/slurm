@@ -200,6 +200,7 @@ static int _operations_router_reject(const on_http_request_args_t *args,
 		.http_minor = args->http_minor,
 		.status_code = err_code,
 		.body = err,
+		.body_encoding = "text/plain",
 		.body_length = err ? strlen(err) : 0
 	};
 
@@ -370,6 +371,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		if (body) {
 			send_args.body = body;
 			send_args.body_length = strlen(body);
+			send_args.body_encoding = get_mime_type_str(write_mime);
 		}
 
 		rc = send_http_response(&send_args);
