@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "April 2020" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "May 2020" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -441,7 +441,7 @@ everything older than 12 hours).
 The purge takes place at the start of the each purge interval.
 For example, if the purge time is 2 months, the purge would happen at the
 beginning of each month.
-If not set (default), then job step records are never purged.
+If not set (default), then event records are never purged.
 
 .TP
 \fBPurgeJobAfter\fR
@@ -494,7 +494,7 @@ everything older than 12 hours).
 The purge takes place at the start of the each purge interval.
 For example, if the purge time is 2 months, the purge would happen at the
 beginning of each month.
-If not set (default), then job step records are never purged.
+If not set (default), then suspend records are never purged.
 
 .TP
 \fBPurgeTXNAfter\fR
@@ -506,7 +506,7 @@ everything older than 12 hours).
 The purge takes place at the start of the each purge interval.
 For example, if the purge time is 2 months, the purge would happen at the
 beginning of each month.
-If not set (default), then job step records are never purged.
+If not set (default), then transaction records are never purged.
 
 .TP
 \fBPurgeUsageAfter\fR
@@ -519,7 +519,7 @@ everything older than 12 hours).
 The purge takes place at the start of the each purge interval.
 For example, if the purge time is 2 months, the purge would happen at the
 beginning of each month.
-If not set (default), then job step records are never purged.
+If not set (default), then usage records are never purged.
 
 .TP
 \fBSlurmUser\fR
