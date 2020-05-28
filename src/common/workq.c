@@ -42,11 +42,10 @@
 
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
+#include "src/common/workq.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#include "src/slurmrestd/workq.h"
 
 typedef struct {
 	int magic;

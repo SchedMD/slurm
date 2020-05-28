@@ -56,13 +56,13 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/strlcpy.h"
+#include "src/common/workq.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmrestd/conmgr.h"
 #include "src/slurmrestd/http.h"
-#include "src/slurmrestd/workq.h"
 
 #define MAGIC_CON_MGR_FD 0xD23444EF
 #define MAGIC_CON_MGR 0xD232444A

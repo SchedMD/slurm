@@ -17,7 +17,6 @@ SRCS = \
 	slurmrestd.c \
 	ref.h \
 	rest_auth.h rest_auth.c \
-	workq.h workq.c \
 	xjson.h xjson.c \
 	xyaml.h xyaml.c
 
