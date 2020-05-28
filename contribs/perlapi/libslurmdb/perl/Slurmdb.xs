@@ -22,8 +22,8 @@ INCLUDE: const-xs.inc
 PROTOTYPES: ENABLE
 
 void*
-slurmdb_connection_get()
-	uint16_t *persist_conn_flags
+slurmdb_connection_get(persist_conn_flags)
+	void* persist_conn_flags
 
 int
 slurmdb_connection_close(db_conn)
