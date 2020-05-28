@@ -460,7 +460,7 @@ static char *_json_escape(const char *str)
 static int _save_state(void)
 {
 	int fd, rc = SLURM_SUCCESS;
-	char *state_file, *new_file, *old_file;
+	char *state_file = NULL, *new_file, *old_file;
 	ListIterator iter;
 	static int high_buffer_size = (1024 * 1024);
 	Buf buffer = init_buf(high_buffer_size);
