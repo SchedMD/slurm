@@ -793,10 +793,10 @@ static void _wrap_on_data(void *x)
 			 * not all data read, need to shift it to start of
 			 * buffer and fix offset
 			 */
-			memcpy(get_buf_data(con->in),
-			       (get_buf_data(con->in) +
-				get_buf_offset(con->in)),
-			       remaining_buf(con->in));
+			memmove(get_buf_data(con->in),
+				(get_buf_data(con->in) +
+				 get_buf_offset(con->in)),
+				remaining_buf(con->in));
 
 			/* reset start of offset to end of previous data */
 			set_buf_offset(con->in, remaining_buf(con->in));
@@ -1700,8 +1700,8 @@ extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 		grow_buf(con->out, need);
 	}
 
-	memcpy(get_buf_data(con->out) + get_buf_offset(con->out), buffer,
-	       bytes);
+	memmove((get_buf_data(con->out) + get_buf_offset(con->out)), buffer,
+		bytes);
 	con->out->processed += bytes;
 
 	log_flag(NET, "%s: [%s] queued %zu/%u bytes in outgoing buffer",
