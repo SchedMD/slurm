@@ -1995,9 +1995,8 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 		return SLURM_SUCCESS;
 	}
 
-	if ((!assoc_mgr_cluster_name) && !slurmdbd_conf) {
-		assoc_mgr_cluster_name = slurm_conf.cluster_name;
-	}
+	if ((!assoc_mgr_cluster_name) && !slurmdbd_conf)
+		assoc_mgr_cluster_name = xstrdup(slurm_conf.cluster_name);
 
 	/* check if we can't talk to the db yet (Do this after all
 	 * the initialization above) */
@@ -2082,6 +2081,7 @@ extern int assoc_mgr_fini(bool save_state)
 	}
 	xfree(assoc_mgr_tres_array);
 	xfree(assoc_mgr_tres_old_pos);
+	xfree(assoc_mgr_cluster_name);
 	assoc_mgr_assoc_list = NULL;
 	assoc_mgr_res_list = NULL;
 	assoc_mgr_qos_list = NULL;
