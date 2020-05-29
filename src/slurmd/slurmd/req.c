@@ -263,6 +263,8 @@ static pthread_cond_t  file_bcast_cond  = PTHREAD_COND_INITIALIZER;
 static int fb_read_lock = 0, fb_write_wait_lock = 0, fb_write_lock = 0;
 static List file_bcast_list = NULL;
 
+static pthread_mutex_t waiter_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 void
 slurmd_req(slurm_msg_t *msg)
 {
@@ -271,7 +273,9 @@ slurmd_req(slurm_msg_t *msg)
 	if (msg == NULL) {
 		if (startup == 0)
 			startup = time(NULL);
+		slurm_mutex_lock(&waiter_mutex);
 		FREE_NULL_LIST(waiters);
+		slurm_mutex_unlock(&waiter_mutex);
 		slurm_mutex_lock(&job_limits_mutex);
 		if (job_limits_list) {
 			FREE_NULL_LIST(job_limits_list);
@@ -5585,6 +5589,9 @@ static int _find_waiter(void *x, void *y)
 
 static int _waiter_init (uint32_t jobid)
 {
+	int rc = SLURM_SUCCESS;
+
+	slurm_mutex_lock(&waiter_mutex);
 	if (!waiters)
 		waiters = list_create(xfree_ptr);
 
@@ -5592,16 +5599,25 @@ static int _waiter_init (uint32_t jobid)
 	 *  Exit this thread if another thread is waiting on job
 	 */
 	if (list_find_first(waiters, _find_waiter, &jobid))
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
 	else
 		list_append(waiters, _waiter_create(jobid));
 
-	return (SLURM_SUCCESS);
+	slurm_mutex_unlock(&waiter_mutex);
+
+	return rc;
 }
 
 static int _waiter_complete (uint32_t jobid)
 {
-	return (list_delete_all (waiters, _find_waiter, &jobid));
+	int rc = 0;
+
+	slurm_mutex_lock(&waiter_mutex);
+	if (waiters)
+		rc = list_delete_all(waiters, _find_waiter, &jobid);
+	slurm_mutex_unlock(&waiter_mutex);
+
+	return rc;
 }
 
 /*

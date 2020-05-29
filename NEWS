@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- pmi2 - clean up sockets at step termination.
  -- Fix 'scontrol hold' to work with 'JobName'.
  -- sbatch - handle --uid/--gid in #SBATCH directives properly.
+ -- Fix race condition in job termination on slurmd.
 
 * Changes in Slurm 20.02.3
 ==========================
