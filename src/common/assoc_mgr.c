@@ -112,7 +112,7 @@ static int _assoc_hash_index(slurmdb_assoc_rec_t *assoc)
 	index = assoc->uid;
 
 	/* only set on the slurmdbd */
-	if (!assoc_mgr_cluster_name && assoc->cluster)
+	if (slurmdbd_conf && assoc->cluster)
 		index += _get_str_inx(assoc->cluster);
 
 	if (assoc->acct)
@@ -198,7 +198,7 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 	int inx;
 
 	/* We can only use _find_assoc_rec_id if we are not on the slurmdbd */
-	if (assoc->id && assoc_mgr_cluster_name)
+	if (assoc->id && !slurmdbd_conf)
 		return _find_assoc_rec_id(assoc->id);
 
 	if (!assoc_hash) {
@@ -247,7 +247,7 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 		}
 
 		/* only check for on the slurmdbd */
-		if (!assoc_mgr_cluster_name && assoc->cluster
+		if (slurmdbd_conf && assoc->cluster
 		    && (!assoc_ptr->cluster
 			|| xstrcasecmp(assoc->cluster, assoc_ptr->cluster))) {
 			debug3("%s: not the right cluster", __func__);
@@ -1145,7 +1145,7 @@ static int _post_qos_list(List qos_list)
 
 static int _post_res_list(List res_list)
 {
-	if (res_list && assoc_mgr_cluster_name) {
+	if (res_list && !slurmdbd_conf) {
 		slurmdb_res_rec_t *object = NULL;
 		ListIterator itr = list_iterator_create(res_list);
 		while ((object = list_next(itr))) {
@@ -1538,7 +1538,7 @@ static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	FREE_NULL_LIST(assoc_mgr_assoc_list);
 
 	memset(&assoc_q, 0, sizeof(slurmdb_assoc_cond_t));
-	if (assoc_mgr_cluster_name) {
+	if (!slurmdbd_conf) {
 		assoc_q.cluster_list = list_create(NULL);
 		list_append(assoc_q.cluster_list, assoc_mgr_cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_ASSOCS) && !slurmdbd_conf) {
@@ -1586,7 +1586,7 @@ static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 	FREE_NULL_LIST(assoc_mgr_res_list);
 
 	slurmdb_init_res_cond(&res_q, 0);
-	if (assoc_mgr_cluster_name) {
+	if (!slurmdbd_conf) {
 		res_q.with_clusters = 1;
 		res_q.cluster_list = list_create(NULL);
 		list_append(res_q.cluster_list, assoc_mgr_cluster_name);
@@ -1686,7 +1686,7 @@ static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 	FREE_NULL_LIST(assoc_mgr_wckey_list);
 
 	memset(&wckey_q, 0, sizeof(slurmdb_wckey_cond_t));
-	if (assoc_mgr_cluster_name) {
+	if (!slurmdbd_conf) {
 		wckey_q.cluster_list = list_create(NULL);
 		list_append(wckey_q.cluster_list, assoc_mgr_cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_WCKEYS) && !slurmdbd_conf) {
@@ -1746,7 +1746,7 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 //	DEF_TIMERS;
 
 	memset(&assoc_q, 0, sizeof(slurmdb_assoc_cond_t));
-	if (assoc_mgr_cluster_name) {
+	if (!slurmdbd_conf) {
 		assoc_q.cluster_list = list_create(NULL);
 		list_append(assoc_q.cluster_list, assoc_mgr_cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_ASSOCS) && !slurmdbd_conf) {
@@ -1820,7 +1820,7 @@ static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
 	assoc_mgr_lock_t locks = { .res = WRITE_LOCK };
 
 	slurmdb_init_res_cond(&res_q, 0);
-	if (assoc_mgr_cluster_name) {
+	if (!slurmdbd_conf) {
 		res_q.with_clusters = 1;
 		res_q.cluster_list = list_create(NULL);
 		list_append(res_q.cluster_list, assoc_mgr_cluster_name);
@@ -1942,7 +1942,7 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
 
 	memset(&wckey_q, 0, sizeof(slurmdb_wckey_cond_t));
-	if (assoc_mgr_cluster_name) {
+	if (!slurmdbd_conf) {
 		wckey_q.cluster_list = list_create(NULL);
 		list_append(wckey_q.cluster_list, assoc_mgr_cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_WCKEYS) && !slurmdbd_conf) {
@@ -1995,7 +1995,7 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 		return SLURM_SUCCESS;
 	}
 
-	if ((!assoc_mgr_cluster_name) && !slurmdbd_conf)
+	if (!slurmdbd_conf)
 		assoc_mgr_cluster_name = xstrdup(slurm_conf.cluster_name);
 
 	/* check if we can't talk to the db yet (Do this after all
@@ -2910,7 +2910,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 	itr = list_iterator_create(assoc_mgr_wckey_list);
 	while ((found_wckey = list_next(itr))) {
 		/* only and always check for on the slurmdbd */
-		if (!assoc_mgr_cluster_name) {
+		if (slurmdbd_conf) {
 			if (!wckey->cluster) {
 				error("No cluster name was given "
 				      "to check against, "
@@ -3657,14 +3657,14 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 
 	while ((object = list_pop(update->objects))) {
 		bool update_jobs = false;
-		if (object->cluster && assoc_mgr_cluster_name) {
+		if (object->cluster && !slurmdbd_conf) {
 			/* only update the local clusters assocs */
 			if (xstrcasecmp(object->cluster,
 					assoc_mgr_cluster_name)) {
 				slurmdb_destroy_assoc_rec(object);
 				continue;
 			}
-		} else if (assoc_mgr_cluster_name) {
+		} else if (!slurmdbd_conf) {
 			error("We don't have a cluster here, no "
 			      "idea if this is our association.");
 			continue;
@@ -4148,14 +4148,14 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 
 	itr = list_iterator_create(assoc_mgr_wckey_list);
 	while ((object = list_pop(update->objects))) {
-		if (object->cluster && assoc_mgr_cluster_name) {
+		if (object->cluster && !slurmdbd_conf) {
 			/* only update the local clusters assocs */
 			if (xstrcasecmp(object->cluster,
 					assoc_mgr_cluster_name)) {
 				slurmdb_destroy_wckey_rec(object);
 				continue;
 			}
-		} else if (assoc_mgr_cluster_name) {
+		} else if (!slurmdbd_conf) {
 			error("We don't have a cluster here, no "
 			      "idea if this is our wckey.");
 			continue;
@@ -4164,7 +4164,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 		list_iterator_reset(itr);
 		while ((rec = list_next(itr))) {
 			/* only and always check for on the slurmdbd */
-			if (!assoc_mgr_cluster_name &&
+			if (slurmdbd_conf &&
 			    xstrcasecmp(object->cluster, rec->cluster)) {
 				debug4("not the right cluster");
 				continue;
@@ -4846,7 +4846,7 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 		   clus_res_list then the resource it self changed so
 		   update counts.
 		*/
-		if (assoc_mgr_cluster_name && object->clus_res_rec) {
+		if (!slurmdbd_conf && object->clus_res_rec) {
 			if (!object->clus_res_rec->cluster) {
 				error("Resource doesn't have a cluster name?");
 				slurmdb_destroy_res_rec(object);
