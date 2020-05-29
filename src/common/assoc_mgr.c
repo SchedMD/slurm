@@ -170,7 +170,7 @@ static slurmdb_assoc_rec_t *_find_assoc_rec_id(uint32_t assoc_id)
 	slurmdb_assoc_rec_t *assoc;
 
 	if (!assoc_hash_id) {
-		debug2("_find_assoc_rec_id: no associations added yet");
+		debug2("%s: no associations added yet", __func__);
 		return NULL;
 	}
 
@@ -202,7 +202,7 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 		return _find_assoc_rec_id(assoc->id);
 
 	if (!assoc_hash) {
-		debug2("_find_assoc_rec: no associations added yet");
+		debug2("%s: no associations added yet", __func__);
 		return NULL;
 	}
 
@@ -531,8 +531,8 @@ static int _change_user_name(slurmdb_user_rec_t *user)
 	xassert(user->old_name);
 
 	if (uid_from_string(user->name, &pw_uid) < 0) {
-		debug("_change_user_name: couldn't get new uid for user %s",
-		      user->name);
+		debug("%s: couldn't get new uid for user %s",
+		      __func__, user->name);
 		user->uid = NO_VAL;
 	} else
 		user->uid = pw_uid;
@@ -1506,8 +1506,7 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 	if (!new_list) {
 		assoc_mgr_unlock(&locks);
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
-			error("_get_assoc_mgr_tres_list: "
-			      "no list was made.");
+			error("%s: no list was made.", __func__);
 			return SLURM_ERROR;
 		} else {
 			return SLURM_SUCCESS;
@@ -1543,9 +1542,8 @@ static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 		assoc_q.cluster_list = list_create(NULL);
 		list_append(assoc_q.cluster_list, assoc_mgr_cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_ASSOCS) && !slurmdbd_conf) {
-		error("_get_assoc_mgr_assoc_list: "
-		      "no cluster name here going to get "
-		      "all associations.");
+		error("%s: no cluster name here going to get all associations.",
+		      __func__);
 	}
 
 //	START_TIMER;
@@ -1562,8 +1560,7 @@ static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 			list_create(slurmdb_destroy_assoc_rec);
 		assoc_mgr_unlock(&locks);
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
-			error("_get_assoc_mgr_assoc_list: "
-			      "no list was made.");
+			error("%s: no list was made.", __func__);
 			return SLURM_ERROR;
 		} else {
 			debug3("not enforcing associations and no "
@@ -1594,9 +1591,8 @@ static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 		res_q.cluster_list = list_create(NULL);
 		list_append(res_q.cluster_list, assoc_mgr_cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_ASSOCS) && !slurmdbd_conf) {
-		error("_get_assoc_mgr_res_list: "
-		      "no cluster name here going to get "
-		      "all associations.");
+		error("%s: no cluster name here going to get all associations.",
+		      __func__);
 	}
 
 	assoc_mgr_res_list = acct_storage_g_get_res(db_conn, uid, &res_q);
@@ -1606,8 +1602,7 @@ static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 	if (!assoc_mgr_res_list) {
 		assoc_mgr_unlock(&locks);
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
-			error("_get_assoc_mgr_res_list:"
-			      "no list was made.");
+			error("%s: no list was made.", __func__);
 			return SLURM_ERROR;
 		} else {
 			return SLURM_SUCCESS;
@@ -1630,7 +1625,7 @@ static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 
 	if (!new_list) {
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
-			error("_get_assoc_mgr_qos_list: no list was made.");
+			error("%s: no list was made.", __func__);
 			return SLURM_ERROR;
 		} else {
 			return SLURM_SUCCESS;
@@ -1666,8 +1661,7 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 	if (!assoc_mgr_user_list) {
 		assoc_mgr_unlock(&locks);
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
-			error("_get_assoc_mgr_user_list: "
-			      "no list was made.");
+			error("%s: no list was made.", __func__);
 			return SLURM_ERROR;
 		} else {
 			return SLURM_SUCCESS;
@@ -1696,9 +1690,8 @@ static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 		wckey_q.cluster_list = list_create(NULL);
 		list_append(wckey_q.cluster_list, assoc_mgr_cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_WCKEYS) && !slurmdbd_conf) {
-		error("_get_assoc_mgr_wckey_list: "
-		      "no cluster name here going to get "
-		      "all wckeys.");
+		error("%s: no cluster name here going to get all wckeys.",
+		      __func__);
 	}
 
 //	START_TIMER;
@@ -1714,8 +1707,7 @@ static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 		assoc_mgr_wckey_list = list_create(slurmdb_destroy_wckey_rec);
 		assoc_mgr_unlock(&locks);
 		if (enforce & ACCOUNTING_ENFORCE_WCKEYS) {
-			error("_get_assoc_mgr_wckey_list: "
-			      "no list was made.");
+			error("%s: no list was made.", __func__);
 			return SLURM_ERROR;
 		} else {
 			debug3("not enforcing wckeys and no "
@@ -1758,9 +1750,8 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 		assoc_q.cluster_list = list_create(NULL);
 		list_append(assoc_q.cluster_list, assoc_mgr_cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_ASSOCS) && !slurmdbd_conf) {
-		error("_refresh_assoc_mgr_assoc_list: "
-		      "no cluster name here going to get "
-		      "all associations.");
+		error("%s: no cluster name here going to get all associations.",
+		      __func__);
 	}
 
 	assoc_mgr_lock(&locks);
@@ -1778,8 +1769,8 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 		assoc_mgr_assoc_list = current_assocs;
 		assoc_mgr_unlock(&locks);
 
-		error("_refresh_assoc_mgr_assoc_list: "
-		      "no new list given back keeping cached one.");
+		error("%s: no new list given back keeping cached one.",
+		      __func__);
 		return SLURM_ERROR;
 	}
 
@@ -1834,9 +1825,8 @@ static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
 		res_q.cluster_list = list_create(NULL);
 		list_append(res_q.cluster_list, assoc_mgr_cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_ASSOCS) && !slurmdbd_conf) {
-		error("_refresh_assoc_mgr_res_list: "
-		      "no cluster name here going to get "
-		      "all associations.");
+		error("%s: no cluster name here going to get all associations.",
+		      __func__);
 	}
 
 	current_res = acct_storage_g_get_res(db_conn, uid, &res_q);
@@ -1844,8 +1834,8 @@ static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
 	FREE_NULL_LIST(res_q.cluster_list);
 
 	if (!current_res) {
-		error("_refresh_assoc_mgr_res_list: "
-		      "no new list given back keeping cached one.");
+		error("%s: no new list given back keeping cached one.",
+		      __func__);
 		return SLURM_ERROR;
 	}
 
@@ -1874,8 +1864,8 @@ static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 	current_qos = acct_storage_g_get_qos(db_conn, uid, NULL);
 
 	if (!current_qos) {
-		error("_refresh_assoc_mgr_qos_list: "
-		      "no new list given back keeping cached one.");
+		error("%s: no new list given back keeping cached one.",
+		      __func__);
 		return SLURM_ERROR;
 	}
 
@@ -1924,8 +1914,8 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 	current_users = acct_storage_g_get_users(db_conn, uid, &user_q);
 
 	if (!current_users) {
-		error("_refresh_assoc_mgr_user_list: "
-		      "no new list given back keeping cached one.");
+		error("%s: no new list given back keeping cached one.",
+		      __func__);
 		return SLURM_ERROR;
 	}
 	_post_user_list(current_users);
@@ -1956,9 +1946,8 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 		wckey_q.cluster_list = list_create(NULL);
 		list_append(wckey_q.cluster_list, assoc_mgr_cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_WCKEYS) && !slurmdbd_conf) {
-		error("_refresh_assoc_wckey_list: "
-		      "no cluster name here going to get "
-		      "all wckeys.");
+		error("%s: no cluster name here going to get all wckeys.",
+		      __func__);
 	}
 
 	current_wckeys = acct_storage_g_get_wckeys(db_conn, uid, &wckey_q);
@@ -1966,8 +1955,8 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 	FREE_NULL_LIST(wckey_q.cluster_list);
 
 	if (!current_wckeys) {
-		error("_refresh_assoc_wckey_list: "
-		      "no new list given back keeping cached one.");
+		error("%s: no new list given back keeping cached one.",
+		      __func__);
 		return SLURM_ERROR;
 	}
 
@@ -5177,13 +5166,13 @@ static void _set_usage_tres_raw(long double *tres_cnt, char *tres_str)
 		id = atoi(tmp_str);
 		/* 0 isn't a valid tres id */
 		if (id <= 0) {
-			error("_set_usage_tres_raw: no id "
-			      "found at %s instead", tmp_str);
+			error("%s: no id found at %s instead",
+			      __func__, tmp_str);
 			break;
 		}
 		if (!(tmp_str = strchr(tmp_str, '='))) {
-			error("_set_usage_tres_raw: "
-			      "no value found %s", tres_str);
+			error("%s: no value found %s",
+			      __func__, tres_str);
 			break;
 		}
 
@@ -5193,9 +5182,8 @@ static void _set_usage_tres_raw(long double *tres_cnt, char *tres_str)
 			/* set the index to the count */
 			tres_cnt[pos] = strtold(++tmp_str, &endptr);
 		} else {
-			debug("_set_usage_tres_raw: "
-			       "no tres of id %u found in the array",
-			       tres_rec.id);
+			debug("%s: no tres of id %u found in the array",
+			      __func__, tres_rec.id);
 		}
 		if (!(tmp_str = strchr(tmp_str, ',')))
 			break;
