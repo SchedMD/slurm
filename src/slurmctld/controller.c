@@ -1231,8 +1231,8 @@ static void *_slurmctld_rpc_mgr(void *no_data)
  */
 static void *_service_connection(void *arg)
 {
-	slurm_msg_t msg;
 	int fd = *((int *) arg);
+	slurm_msg_t *msg = xmalloc(sizeof *msg);
 	xfree(arg);
 
 #if HAVE_SYS_PRCTL_H
@@ -1240,13 +1240,13 @@ static void *_service_connection(void *arg)
 		error("%s: cannot set my name to %s %m", __func__, "srvcn");
 	}
 #endif
-	slurm_msg_t_init(&msg);
-	msg.flags |= SLURM_MSG_KEEP_BUFFER;
+	slurm_msg_t_init(msg);
+	msg->flags |= SLURM_MSG_KEEP_BUFFER;
 	/*
 	 * slurm_receive_msg sets msg connection fd to accepted fd. This allows
 	 * possibility for slurmctld_req() to close accepted connection.
 	 */
-	if (slurm_receive_msg(fd, &msg, 0) != 0) {
+	if (slurm_receive_msg(fd, msg, 0)) {
 		slurm_addr_t cli_addr;
 		(void) slurm_get_peer_addr(fd, &cli_addr);
 		error("slurm_receive_msg [%pA]: %m", &cli_addr);
@@ -1256,13 +1256,13 @@ static void *_service_connection(void *arg)
 	}
 
 	/* process the request */
-	slurmctld_req(&msg);
+	slurmctld_req(msg);
 
-	if ((msg.conn_fd >= 0) && (close(msg.conn_fd) < 0))
-		error("close(%d): %m", msg.conn_fd);
+	if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))
+		error("close(%d): %m", msg->conn_fd);
 
 cleanup:
-	slurm_free_msg_members(&msg);
+	slurm_free_msg(msg);
 	server_thread_decr();
 
 	return NULL;
