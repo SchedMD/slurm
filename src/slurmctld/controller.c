@@ -1243,7 +1243,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 static void *_service_connection(void *arg)
 {
 	connection_arg_t *conn = (connection_arg_t *) arg;
-	void *return_code = NULL;
 	slurm_msg_t msg;
 
 #if HAVE_SYS_PRCTL_H
@@ -1282,7 +1281,7 @@ cleanup:
 	xfree(arg);
 	server_thread_decr();
 
-	return return_code;
+	return NULL;
 }
 
 /* Increment slurmctld_config.server_thread_count and don't return
