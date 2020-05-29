@@ -3379,8 +3379,8 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			resv_ptr->node_cnt = bit_set_count(
 				resv_ptr->node_bitmap);
 			if (!resv_ptr->node_cnt) {
-				error("Reservation %s has no nodes left, deleting it",
-				      resv_ptr->name);
+				error("%s: Reservation %s has no nodes left, deleting it",
+				      __func__, resv_ptr->name);
 				return false;
 			}
 			memset(&old_resv_ptr, 0, sizeof(slurmctld_resv_t));
@@ -3389,8 +3389,8 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			old_resv_ptr.node_list = resv_ptr->node_list;
 			resv_ptr->node_list = NULL;
 			new_node_list = bitmap2node_name(resv_ptr->node_bitmap);
-			info("Reservation %s has invalid nodes (%s), shrinking to (%s)",
-			     resv_ptr->name, resv_ptr->node_list,
+			info("%s: Reservation %s has invalid nodes (%s), shrinking to (%s)",
+			     __func__, resv_ptr->name, resv_ptr->node_list,
 			     new_node_list);
 			resv_ptr->node_list = new_node_list;
 			new_node_list = NULL;
