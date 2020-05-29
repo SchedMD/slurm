@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "April 2020" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "May 2020" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1133,14 +1133,18 @@ Use PSS value instead of RSS to calculate real usage of memory.
 The PSS value will be saved as RSS.
 .TP
 \fBOverMemoryKill\fR
-Kill jobs or steps that are being detected to use more memory than requested
-every time accounting information is gathered by the JobAcctGather plugin.
+Kill processes that are being detected to use more memory than requested by
+steps every time accounting information is gathered by the JobAcctGather plugin.
 This parameter should be used with caution because a job exceeding its memory
 allocation may affect other processes and/or machine health.
-NOTE: If available, it is recommended to limit memory by enabling task/cgroup
-in TaskPlugin and making use of ConstrainRAMSpace=yes cgroup.conf instead
-of using this JobAcctGather mechanism for memory enforcement, since the former
-has a lower resolution (JobAcctGatherFreq) and OOMs could happen at some point.
+
+\fBNOTE\fR: If available, it is recommended to limit memory by enabling
+task/cgroup as a TaskPlugin and making use of ConstrainRAMSpace=yes in the
+cgroup.conf instead of using this JobAcctGather mechanism for memory
+enforcement. With OverMemoryKill, memory limit is applied against each process
+individually and is not applied to the step as a whole as it is with
+ConstrainRAMSpace=yes. Using JobAcctGather is polling based and there is a
+delay before a job is killed, which could lead to system Out of Memory events.
 .RE
 
 .TP
