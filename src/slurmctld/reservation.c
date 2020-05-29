@@ -3389,9 +3389,10 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			old_resv_ptr.node_list = resv_ptr->node_list;
 			resv_ptr->node_list = NULL;
 			new_node_list = bitmap2node_name(resv_ptr->node_bitmap);
-			info("%s: Reservation %s has invalid nodes (%s), shrinking to (%s)",
+			info("%s: Reservation %s has invalid previous_nodes:%s remaining_nodes[%d/%u]:%s",
 			     __func__, resv_ptr->name, old_resv_ptr.node_list,
-			     new_node_list);
+			     bit_set_count(resv_ptr->node_bitmap),
+			     resv_ptr->node_cnt, new_node_list);
 			resv_ptr->node_list = new_node_list;
 			new_node_list = NULL;
 			old_resv_ptr.tres_str = resv_ptr->tres_str;
