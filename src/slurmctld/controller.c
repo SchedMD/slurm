@@ -1257,15 +1257,8 @@ static void *_service_connection(void *arg)
 		goto cleanup;
 	}
 
-	if (errno != SLURM_SUCCESS) {
-		if (errno == SLURM_PROTOCOL_VERSION_ERROR) {
-			slurm_send_rc_msg(&msg, SLURM_PROTOCOL_VERSION_ERROR);
-		} else
-			info("_service_connection/slurm_receive_msg %m");
-	} else {
-		/* process the request */
-		slurmctld_req(&msg, conn);
-	}
+	/* process the request */
+	slurmctld_req(&msg, conn);
 
 	if ((conn->newsockfd >= 0) && (close(conn->newsockfd) < 0))
 		error ("close(%d): %m",  conn->newsockfd);
