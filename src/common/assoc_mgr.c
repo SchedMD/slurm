@@ -69,7 +69,6 @@ List assoc_mgr_qos_list = NULL;
 List assoc_mgr_user_list = NULL;
 List assoc_mgr_wckey_list = NULL;
 
-static char *assoc_mgr_cluster_name = NULL;
 static int setup_children = 0;
 static pthread_rwlock_t assoc_mgr_locks[ASSOC_MGR_ENTITY_COUNT];
 
@@ -1158,9 +1157,9 @@ static int _post_res_list(List res_list)
 					/* only update the local clusters
 					 * res, only one per res
 					 * record, so throw the others away. */
-					if (!xstrcasecmp(object->clus_res_rec->
-							cluster,
-							assoc_mgr_cluster_name))
+					if (!xstrcasecmp(
+						object->clus_res_rec->cluster,
+						slurm_conf.cluster_name))
 						break;
 					slurmdb_destroy_clus_res_rec(
 						object->clus_res_rec);
@@ -1540,7 +1539,7 @@ static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	memset(&assoc_q, 0, sizeof(slurmdb_assoc_cond_t));
 	if (!slurmdbd_conf) {
 		assoc_q.cluster_list = list_create(NULL);
-		list_append(assoc_q.cluster_list, assoc_mgr_cluster_name);
+		list_append(assoc_q.cluster_list, slurm_conf.cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_ASSOCS) && !slurmdbd_conf) {
 		error("%s: no cluster name here going to get all associations.",
 		      __func__);
@@ -1589,7 +1588,7 @@ static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 	if (!slurmdbd_conf) {
 		res_q.with_clusters = 1;
 		res_q.cluster_list = list_create(NULL);
-		list_append(res_q.cluster_list, assoc_mgr_cluster_name);
+		list_append(res_q.cluster_list, slurm_conf.cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_ASSOCS) && !slurmdbd_conf) {
 		error("%s: no cluster name here going to get all associations.",
 		      __func__);
@@ -1688,7 +1687,7 @@ static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 	memset(&wckey_q, 0, sizeof(slurmdb_wckey_cond_t));
 	if (!slurmdbd_conf) {
 		wckey_q.cluster_list = list_create(NULL);
-		list_append(wckey_q.cluster_list, assoc_mgr_cluster_name);
+		list_append(wckey_q.cluster_list, slurm_conf.cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_WCKEYS) && !slurmdbd_conf) {
 		error("%s: no cluster name here going to get all wckeys.",
 		      __func__);
@@ -1748,7 +1747,7 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	memset(&assoc_q, 0, sizeof(slurmdb_assoc_cond_t));
 	if (!slurmdbd_conf) {
 		assoc_q.cluster_list = list_create(NULL);
-		list_append(assoc_q.cluster_list, assoc_mgr_cluster_name);
+		list_append(assoc_q.cluster_list, slurm_conf.cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_ASSOCS) && !slurmdbd_conf) {
 		error("%s: no cluster name here going to get all associations.",
 		      __func__);
@@ -1823,7 +1822,7 @@ static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
 	if (!slurmdbd_conf) {
 		res_q.with_clusters = 1;
 		res_q.cluster_list = list_create(NULL);
-		list_append(res_q.cluster_list, assoc_mgr_cluster_name);
+		list_append(res_q.cluster_list, slurm_conf.cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_ASSOCS) && !slurmdbd_conf) {
 		error("%s: no cluster name here going to get all associations.",
 		      __func__);
@@ -1944,7 +1943,7 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 	memset(&wckey_q, 0, sizeof(slurmdb_wckey_cond_t));
 	if (!slurmdbd_conf) {
 		wckey_q.cluster_list = list_create(NULL);
-		list_append(wckey_q.cluster_list, assoc_mgr_cluster_name);
+		list_append(wckey_q.cluster_list, slurm_conf.cluster_name);
 	} else if ((enforce & ACCOUNTING_ENFORCE_WCKEYS) && !slurmdbd_conf) {
 		error("%s: no cluster name here going to get all wckeys.",
 		      __func__);
@@ -1994,9 +1993,6 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 		       "If we do use assoc_mgr_refresh_lists instead.");
 		return SLURM_SUCCESS;
 	}
-
-	if (!slurmdbd_conf)
-		assoc_mgr_cluster_name = xstrdup(slurm_conf.cluster_name);
 
 	/* check if we can't talk to the db yet (Do this after all
 	 * the initialization above) */
@@ -2081,7 +2077,6 @@ extern int assoc_mgr_fini(bool save_state)
 	}
 	xfree(assoc_mgr_tres_array);
 	xfree(assoc_mgr_tres_old_pos);
-	xfree(assoc_mgr_cluster_name);
 	assoc_mgr_assoc_list = NULL;
 	assoc_mgr_res_list = NULL;
 	assoc_mgr_qos_list = NULL;
@@ -2462,7 +2457,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 		}
 
 		if (!assoc->cluster)
-			assoc->cluster = assoc_mgr_cluster_name;
+			assoc->cluster = slurm_conf.cluster_name;
 	}
 	debug5("%s: looking for assoc of user=%s(%u), acct=%s, cluster=%s, partition=%s",
 	       __func__, assoc->user, assoc->uid, assoc->acct, assoc->cluster,
@@ -2896,7 +2891,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 
 
 		if (!wckey->cluster)
-			wckey->cluster = assoc_mgr_cluster_name;
+			wckey->cluster = slurm_conf.cluster_name;
 	}
 /* 	info("looking for wckey of user=%s(%u), name=%s, " */
 /* 	     "cluster=%s", */
@@ -3660,7 +3655,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 		if (object->cluster && !slurmdbd_conf) {
 			/* only update the local clusters assocs */
 			if (xstrcasecmp(object->cluster,
-					assoc_mgr_cluster_name)) {
+					slurm_conf.cluster_name)) {
 				slurmdb_destroy_assoc_rec(object);
 				continue;
 			}
@@ -4151,7 +4146,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 		if (object->cluster && !slurmdbd_conf) {
 			/* only update the local clusters assocs */
 			if (xstrcasecmp(object->cluster,
-					assoc_mgr_cluster_name)) {
+					slurm_conf.cluster_name)) {
 				slurmdb_destroy_wckey_rec(object);
 				continue;
 			}
@@ -4820,8 +4815,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 }
 
 /*
- * NOTE: This function only works when assoc_mgr_cluster_name is defined.  This
- * does not currently work for the slurmdbd.
+ * NOTE: This function does not currently work for the slurmdbd.
  */
 extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 {
@@ -4852,7 +4846,7 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 				slurmdb_destroy_res_rec(object);
 				continue;
 			} else if (xstrcmp(object->clus_res_rec->cluster,
-					   assoc_mgr_cluster_name)) {
+					   slurm_conf.cluster_name)) {
 				debug("Not for our cluster for '%s'",
 				      object->clus_res_rec->cluster);
 				slurmdb_destroy_res_rec(object);
