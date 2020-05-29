@@ -742,8 +742,9 @@ static void _handle_write(void *x)
 		 * not all data written, need to shift it to start of
 		 * buffer and fix offset
 		 */
-		memcpy(get_buf_data(con->out), (get_buf_data(con->out) + wrote),
-		       (get_buf_offset(con->out) - wrote));
+		memmove(get_buf_data(con->out),
+			(get_buf_data(con->out) + wrote),
+			(get_buf_offset(con->out) - wrote));
 
 		/* reset start of offset to end of previous data */
 		set_buf_offset(con->out, (get_buf_offset(con->out) - wrote));
