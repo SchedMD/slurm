@@ -715,17 +715,9 @@ int setup_env(env_t *env, bool preserve_env)
 	}
 
 	if (env->cli) {
-
-		slurm_print_slurm_addr (env->cli, addrbuf, INET_ADDRSTRLEN);
-
-		/*
-		 *  XXX: Eventually, need a function for slurm_addrs that
-		 *   returns just the IP address (not addr:port)
-		 */
-
-		if ((dist = strchr (addrbuf, ':')) != NULL)
-			*dist = '\0';
-		setenvf (&env->env, "SLURM_LAUNCH_NODE_IPADDR", "%s", addrbuf);
+		uint16_t port;
+		slurm_get_ip_str(env->cli, &port, addrbuf, INET_ADDRSTRLEN);
+		setenvf(&env->env, "SLURM_LAUNCH_NODE_IPADDR", "%s", addrbuf);
 	}
 
 	if (env->sgtids &&
