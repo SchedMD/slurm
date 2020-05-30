@@ -514,8 +514,6 @@ _init_from_slurmd(int sock, char **argv,
 	slurm_addr_t *cli = NULL;
 	slurm_addr_t *self = NULL;
 	slurm_msg_t *msg = NULL;
-	uint16_t port;
-	char buf[16];
 	uint32_t jobid = 0, stepid = 0;
 
 	/* receive conf from slurmd */
@@ -549,9 +547,8 @@ _init_from_slurmd(int sock, char **argv,
 
 	switch_g_slurmd_step_init();
 
-	slurm_get_ip_str(&step_complete.parent_addr, &port, buf, 16);
-	debug3("slurmstepd rank %d, parent address = %s, port = %u",
-	       step_complete.rank, buf, port);
+	debug3("slurmstepd rank %d, parent = %pA",
+	       step_complete.rank, &step_complete.parent_addr);
 
 	/* receive cli from slurmd */
 	safe_read(sock, &len, sizeof(int));
