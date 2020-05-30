@@ -128,11 +128,7 @@ static int _send_to_backup_collector(slurm_msg_t *msg, int rc)
 
 	if ((next_dest = route_g_next_collector_backup())) {
 		int rc2 = SLURM_SUCCESS;
-		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
-			char addrbuf[100];
-			slurm_print_slurm_addr(next_dest, addrbuf, 32);
-			info("%s: *next_dest is %s", __func__, addrbuf);
-		}
+		log_flag(ROUTE, "%s: *next_dest is %pA", __func__, next_dest);
 		memcpy(&msg->address, next_dest, sizeof(slurm_addr_t));
 		rc = slurm_send_recv_rc_msg_only_one(msg, &rc2, 0);
 		if (rc2 != SLURM_SUCCESS && !rc)
@@ -169,12 +165,8 @@ static int _send_to_next_collector(slurm_msg_t *msg)
 		 __func__);
 
 	if ((next_dest = route_g_next_collector(&i_am_collector))) {
-		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
-			char addrbuf[100];
-			slurm_print_slurm_addr(next_dest, addrbuf, 32);
-			info("msg aggr: send_to_next_collector: *next_dest is "
-			     "%s", addrbuf);
-		}
+		log_flag(ROUTE, "msg aggr: send_to_next_collector: *next_dest is %pA",
+			 next_dest);
 		memcpy(&msg->address, next_dest, sizeof(slurm_addr_t));
 		rc = slurm_send_recv_rc_msg_only_one(msg, &rc2, 0);
 		if (rc2 != SLURM_SUCCESS && !rc)
@@ -457,13 +449,8 @@ extern void msg_aggr_resp(slurm_msg_t *msg)
 			memcpy(&next_msg->address, &comp_msg->sender,
 			       sizeof(slurm_addr_t));
 
-			if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
-				char addrbuf[100];
-				slurm_print_slurm_addr(&next_msg->address,
-						       addrbuf, 32);
-				info("msg_aggr_resp: composite response msg "
-				     "found for %s", addrbuf);
-			}
+			log_flag(ROUTE, "%s: composite response msg found for %pA",
+				 __func__, &next_msg->address);
 
 			slurm_send_only_node_msg(next_msg);
 

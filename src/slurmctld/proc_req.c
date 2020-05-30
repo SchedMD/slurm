@@ -315,12 +315,8 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 			     __func__, p, msg->conn->cluster_name,
 			     msg->conn->rem_host, rpc_uid);
 		} else if (arg) {
-			char inetbuf[64];
-			slurm_print_slurm_addr(&arg->cli_addr,
-					       inetbuf,
-					       sizeof(inetbuf));
-			info("%s: received opcode %s from %s uid %u",
-			     __func__, p, inetbuf, rpc_uid);
+			info("%s: received opcode %s from %pA uid %u",
+			     __func__, p, &arg->cli_addr, rpc_uid);
 		} else {
 			error("%s: No arg given and this doesn't appear to be a persistent connection, this should never happen", __func__);
 		}

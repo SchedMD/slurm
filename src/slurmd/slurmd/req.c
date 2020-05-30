@@ -1600,11 +1600,8 @@ done:
 		hostset_destroy(step_hset);
 
 	if (slurm_send_rc_msg(msg, errnum) < 0) {
-		char addr_str[32];
-		slurm_print_slurm_addr(&msg->address, addr_str,
-				       sizeof(addr_str));
-		error("%s: unable to send return code to address:port=%s msg_type=%u: %m",
-		      __func__, addr_str, msg->msg_type);
+		error("%s: unable to send return code to address:port=%pA msg_type=%u: %m",
+		      __func__, &msg->address, msg->msg_type);
 
 		/*
 		 * Rewind credential so that srun may perform retry

@@ -197,12 +197,8 @@ static void _set_collectors(char *this_node_name)
 				slurm_conf_get_addr(parent, msg_collect_node, 0);
 				msg_collect_node->sin_port = htons(parent_port);
 			}
-			if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
-				slurm_print_slurm_addr(msg_collect_node,
-						       addrbuf, 32);
-				info("ROUTE -- message collector (%s) address is %s",
-				     parent, addrbuf);
-			}
+			log_flag(ROUTE, "ROUTE -- message collector (%s) address is %pA",
+				 parent, msg_collect_node);
 			msg_backup_cnt = 0;
 			xfree(msg_collect_backup[0]);
 			for (i = 1; (i < backup_cnt) && backup[i]; i++) {
@@ -218,14 +214,8 @@ static void _set_collectors(char *this_node_name)
 					msg_collect_backup[i-1]->sin_port =
 						htons(backup_port);
 				}
-				if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
-					slurm_print_slurm_addr(
-						msg_collect_backup[i-1],
-						addrbuf, 32);
-					info("ROUTE -- message collector backup[%d] (%s) "
-					     "address is %s",
-					     i, backup[i], addrbuf);
-				}
+				log_flag(ROUTE, "ROUTE -- message collector backup[%d] (%s) address is %pA",
+					 i, backup[i], msg_collect_backup[i-1]);
 			}
 			if ((i == 1) &&
 			    (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE))
