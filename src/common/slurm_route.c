@@ -125,7 +125,6 @@ static void _set_collectors(char *this_node_name)
 	hostlist_t *hll = NULL;
 	uint32_t backup_cnt;
 	char *parent = NULL, **backup;
-	char addrbuf[32];
 	int i, j, f = -1;
 	int hl_count = 0;
 	uint16_t parent_port;
@@ -264,20 +263,10 @@ static void _set_collectors(char *this_node_name)
 			backup_port = 0;
 	}
 clean:
-	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
-		slurm_print_slurm_addr(msg_collect_node, addrbuf, 32);
-		xstrfmtcat(tmp, "ROUTE -- %s is a %s node (parent:%s",
-			   this_node_name,
-			   this_is_collector ? "collector" : "leaf", addrbuf);
-		for (i = 0; (i < backup_cnt) && msg_collect_backup[i]; 
-		     i++) {
-			slurm_print_slurm_addr(msg_collect_backup[i],
-					       addrbuf, 32);
-			xstrfmtcat(tmp, " backup[%d]:%s", i, addrbuf);
-		}
-		info("%s)", tmp);
-		xfree(tmp);
-	}
+	log_flag(ROUTE, "ROUTE -- %s is a %s node (parent:%pA)",
+		 this_node_name,
+		 this_is_collector ? "collector" : "leaf",
+		 msg_collect_node);
 
 	hostlist_destroy(nodes);
 	if (parent)
