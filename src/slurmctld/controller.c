@@ -1124,8 +1124,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	int newsockfd;
 	struct pollfd *fds;
 	slurm_addr_t cli_addr, srv_addr;
-	uint16_t port;
-	char ip[32];
 	int fd_next = 0, i, nports;
 	connection_arg_t *conn_arg = NULL;
 	/* Locks: Read config */
@@ -1163,8 +1161,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		if (slurm_get_stream_addr(fds[i].fd, &srv_addr)) {
 			error("slurm_get_stream_addr error %m");
 		} else {
-			slurm_get_ip_str(&srv_addr, &port, ip, sizeof(ip));
-			debug2("slurmctld listening on %s:%d", ip, ntohs(port));
+			debug2("slurmctld listening on %pA", &srv_addr);
 		}
 	}
 	unlock_slurmctld(config_read_lock);
