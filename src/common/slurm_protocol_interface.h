@@ -156,14 +156,6 @@ extern void slurm_get_addr ( slurm_addr_t * slurm_address ,
 			     uint16_t * port , char * host ,
 			     uint32_t buf_len ) ;
 
-/* prints a slurm_addr_t into a buf
- * IN address		- slurm_addr_t to print
- * IN buf		- space for string representation of slurm_addr
- * IN n			- max number of bytes to write (including NUL)
- */
-extern void slurm_print_slurm_addr ( slurm_addr_t * address,
-				     char *buf, size_t n ) ;
-
 /*****************************/
 /* slurm addr pack functions */
 /*****************************/
