@@ -56,6 +56,8 @@ slurmctld_SOURCES =     \
 	read_config.h	\
 	reservation.c	\
 	reservation.h	\
+	rpc_queue.c	\
+	rpc_queue.h	\
 	sched_plugin.c	\
 	sched_plugin.h	\
 	slurmctld.h	\
