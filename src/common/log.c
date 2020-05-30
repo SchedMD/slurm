@@ -54,6 +54,7 @@
 #  include <sys/prctl.h>
 #endif
 
+#include <arpa/inet.h>
 #include <errno.h>
 #include <poll.h>
 #include <pthread.h>
@@ -693,6 +694,29 @@ static void _set_idbuf(char *idbuf, size_t size)
 }
 
 /*
+ * _addr2fmt() - print an IPv4 slurm_addr_t
+ */
+static char *_addr2fmt(slurm_addr_t *addr_ptr, char *buf, int buf_size)
+{
+	char addrbuf[INET_ADDRSTRLEN];
+
+	/*
+	 * NOTE: You will notice we put a %.0s in front of the string.
+	 * This is to handle the fact that we can't remove the addr_ptr
+	 * argument from the va_list directly. So when we call vsnprintf()
+	 * to handle the va_list this will effectively skip this argument.
+	 */
+	if (addr_ptr == NULL)
+		return "%.0sNULL";
+
+	inet_ntop(AF_INET, &addr_ptr->sin_addr, addrbuf, INET_ADDRSTRLEN);
+
+	snprintf(buf, buf_size, "%%.0s%s:%d",
+		 addrbuf, ntohs(addr_ptr->sin_port));
+
+	return buf;
+}
+/*
  * jobid2fmt() - print a job ID as "JobId=..." including, as applicable,
  * the job array or hetjob component information with the raw jobid in
  * parenthesis.
@@ -763,6 +787,7 @@ static char *_stepid2fmt(step_record_t *step_ptr, char *buf, int buf_size)
  * args are like printf, with the addition of the following format chars:
  * - %m expands to strerror(errno)
  * - %M expand to time stamp, format is configuration dependent
+ * - %pA expands to "AAA.BBB.CCC.DDD:XXXX" for the given slurm_addr_t.
  * - %pJ expands to "JobId=XXXX" for the given job_ptr, with the appropriate
  *       format for job arrays and hetjob components.
  * - %pS expands to "JobId=XXXX StepId=YYYY" for a given step_ptr.
@@ -807,6 +832,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				break;
 			case 'p':
 				switch (*(p + 2)) {
+				case 'A':
 				case 'J':
 				case 'S':
 					is_our_format = true;
@@ -851,6 +877,24 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 			case 'p':
 				fmt++;
 				switch (*fmt) {
+				case 'A':	/* "%pA" -> "AAA.BBB.CCC.DDD:XXXX" */
+				{
+					void *ptr = NULL;
+					slurm_addr_t *addr_ptr;
+					va_list	ap_copy;
+
+					va_copy(ap_copy, ap);
+					for (int i = 0; i < cnt; i++ )
+						ptr = va_arg(ap_copy, void *);
+					addr_ptr = ptr;
+					xstrcat(intermediate_fmt,
+						_addr2fmt(
+							addr_ptr,
+							substitute_on_stack,
+							sizeof(substitute_on_stack)));
+					va_end(ap_copy);
+					break;
+				}
 				case 'J':	/* "%pJ" => "JobId=..." */
 				{
 					int i;
