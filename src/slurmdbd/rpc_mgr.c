@@ -109,7 +109,7 @@ extern void *rpc_mgr(void *no_data)
 		conn_arg->conn->callback_fini = _connection_fini_callback;
 		conn_arg->conn->shutdown = &shutdown_time;
 		conn_arg->conn->version = SLURM_MIN_PROTOCOL_VERSION;
-		conn_arg->conn->rem_host = xmalloc_nz(16);
+		conn_arg->conn->rem_host = xmalloc(16);
 		/* Don't fill in the rem_port here.  It will be filled in
 		 * later if it is a slurmctld connection. */
 		slurm_get_ip_str(&cli_addr, &port,
