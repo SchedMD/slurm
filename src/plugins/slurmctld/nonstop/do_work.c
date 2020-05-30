@@ -136,20 +136,15 @@ static int _job_fail_find(void *x, void *key)
 
 static void _job_fail_log(job_failures_t *job_fail_ptr)
 {
-	uint16_t port;
-	char ip[32];
 	int i;
 
 	if (nonstop_debug > 0) {
 		info("nonstop: =====================");
 		info("nonstop: job_id: %u", job_fail_ptr->job_id);
-		slurm_get_ip_str(&job_fail_ptr->callback_addr, &port,
-				 ip, sizeof(ip));
-		info("nonstop: callback_addr: %s", ip);
+		info("nonstop: callback_addr: %pA",
+		     &job_fail_ptr->callback_addr);
 		info("nonstop: callback_flags: %x",
 		     job_fail_ptr->callback_flags);
-		info("nonstop: callback_port: %u",
-		     job_fail_ptr->callback_port);
 		info("nonstop: fail_node_cnt: %u",
 		     job_fail_ptr->fail_node_cnt);
 		for (i = 0; i < job_fail_ptr->fail_node_cnt; i++) {
