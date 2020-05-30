@@ -1196,10 +1196,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		}
 		fd_next = (i + 1) % nports;
 
-		/*
-		 * accept needed for stream implementation is a no-op in
-		 * message implementation that just passes sockfd to newsockfd
-		 */
 		if ((newsockfd = slurm_accept_msg_conn(fds[i].fd, &cli_addr))
 		    == SLURM_ERROR) {
 			if (errno != EINTR)
