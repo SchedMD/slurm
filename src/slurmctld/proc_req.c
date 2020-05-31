@@ -256,7 +256,7 @@ static __thread bool drop_priv = false;
 void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 {
 	DEF_TIMERS;
-	int i, rpc_type_index = -1, rpc_user_index = -1;
+	int i;
 	uint32_t rpc_uid;
 
 	if (arg && (arg->newsockfd >= 0))
@@ -273,25 +273,6 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		return;
 	}
 	rpc_uid = (uint32_t) g_slurm_auth_get_uid(msg->auth_cred);
-
-	slurm_mutex_lock(&rpc_mutex);
-	for (i = 0; i < RPC_TYPE_SIZE; i++) {
-		if (rpc_type_id[i] == 0)
-			rpc_type_id[i] = msg->msg_type;
-		else if (rpc_type_id[i] != msg->msg_type)
-			continue;
-		rpc_type_index = i;
-		break;
-	}
-	for (i = 0; i < RPC_USER_SIZE; i++) {
-		if ((rpc_user_id[i] == 0) && (i != 0))
-			rpc_user_id[i] = rpc_uid;
-		else if (rpc_user_id[i] != rpc_uid)
-			continue;
-		rpc_user_index = i;
-		break;
-	}
-	slurm_mutex_unlock(&rpc_mutex);
 
 	/* Debug the protocol layer.
 	 */
@@ -581,13 +562,23 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 
 	END_TIMER;
 	slurm_mutex_lock(&rpc_mutex);
-	if (rpc_type_index >= 0) {
-		rpc_type_cnt[rpc_type_index]++;
-		rpc_type_time[rpc_type_index] += DELTA_TIMER;
+	for (int i = 0; i < RPC_TYPE_SIZE; i++) {
+		if (rpc_type_id[i] == 0)
+			rpc_type_id[i] = msg->msg_type;
+		else if (rpc_type_id[i] != msg->msg_type)
+			continue;
+		rpc_type_cnt[i]++;
+		rpc_type_time[i] += DELTA_TIMER;
+		break;
 	}
-	if (rpc_user_index >= 0) {
-		rpc_user_cnt[rpc_user_index]++;
-		rpc_user_time[rpc_user_index] += DELTA_TIMER;
+	for (int i = 0; i < RPC_USER_SIZE; i++) {
+		if ((rpc_user_id[i] == 0) && (i != 0))
+			rpc_user_id[i] = rpc_uid;
+		else if (rpc_user_id[i] != rpc_uid)
+			continue;
+		rpc_user_cnt[i]++;
+		rpc_user_time[i] += DELTA_TIMER;
+		break;
 	}
 	slurm_mutex_unlock(&rpc_mutex);
 }
