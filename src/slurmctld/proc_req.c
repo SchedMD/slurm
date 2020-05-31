@@ -256,7 +256,7 @@ static __thread bool drop_priv = false;
 void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 {
 	DEF_TIMERS;
-	int i;
+	bool run_scheduler = false;
 	uint32_t rpc_uid;
 
 	if (arg && (arg->newsockfd >= 0))
@@ -338,8 +338,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_dump_partitions(msg);
 		break;
 	case MESSAGE_EPILOG_COMPLETE:
-		i = 0;
-		_slurm_rpc_epilog_complete(msg, (bool *)&i, 0);
+		_slurm_rpc_epilog_complete(msg, &run_scheduler, 0);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
 		_slurm_rpc_job_step_kill(rpc_uid, msg);
@@ -351,8 +350,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_complete_prolog(msg);
 		break;
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		i = 0;
-		_slurm_rpc_complete_batch_script(msg, (bool *)&i, 0);
+		_slurm_rpc_complete_batch_script(msg, &run_scheduler, 0);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
 		_slurm_rpc_job_step_create(msg);
