@@ -894,7 +894,6 @@ int main(int argc, char **argv)
 	trigger_fini();
 	assoc_mgr_fini(1);
 	reserve_port_config(NULL);
-	free_rpc_stats();
 
 	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */

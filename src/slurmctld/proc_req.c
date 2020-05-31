@@ -106,14 +106,14 @@
 #include "src/slurmctld/trigger_mgr.h"
 
 static pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int rpc_type_size = 0;	/* Size of rpc_type_* arrays */
-static uint16_t *rpc_type_id = NULL;
-static uint32_t *rpc_type_cnt = NULL;
-static uint64_t *rpc_type_time = NULL;
-static int rpc_user_size = 0;	/* Size of rpc_user_* arrays */
-static uint32_t *rpc_user_id = NULL;
-static uint32_t *rpc_user_cnt = NULL;
-static uint64_t *rpc_user_time = NULL;
+#define RPC_TYPE_SIZE 100
+static uint16_t rpc_type_id[RPC_TYPE_SIZE] = { 0 };
+static uint32_t rpc_type_cnt[RPC_TYPE_SIZE] = { 0 };
+static uint64_t rpc_type_time[RPC_TYPE_SIZE] = { 0 };
+#define RPC_USER_SIZE 200
+static uint32_t rpc_user_id[RPC_USER_SIZE] = { 0 };
+static uint32_t rpc_user_cnt[RPC_USER_SIZE] = { 0 };
+static uint64_t rpc_user_time[RPC_USER_SIZE] = { 0 };
 
 static config_response_msg_t *config_for_slurmd = NULL;
 static config_response_msg_t *config_for_clients = NULL;
@@ -275,13 +275,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	rpc_uid = (uint32_t) g_slurm_auth_get_uid(msg->auth_cred);
 
 	slurm_mutex_lock(&rpc_mutex);
-	if (rpc_type_size == 0) {
-		rpc_type_size = 100;  /* Capture info for first 100 RPC types */
-		rpc_type_id   = xmalloc(sizeof(uint16_t) * rpc_type_size);
-		rpc_type_cnt  = xmalloc(sizeof(uint32_t) * rpc_type_size);
-		rpc_type_time = xmalloc(sizeof(uint64_t) * rpc_type_size);
-	}
-	for (i = 0; i < rpc_type_size; i++) {
+	for (i = 0; i < RPC_TYPE_SIZE; i++) {
 		if (rpc_type_id[i] == 0)
 			rpc_type_id[i] = msg->msg_type;
 		else if (rpc_type_id[i] != msg->msg_type)
@@ -289,13 +283,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		rpc_type_index = i;
 		break;
 	}
-	if (rpc_user_size == 0) {
-		rpc_user_size = 200;  /* Capture info for first 200 RPC users */
-		rpc_user_id   = xmalloc(sizeof(uint32_t) * rpc_user_size);
-		rpc_user_cnt  = xmalloc(sizeof(uint32_t) * rpc_user_size);
-		rpc_user_time = xmalloc(sizeof(uint64_t) * rpc_user_size);
-	}
-	for (i = 0; i < rpc_user_size; i++) {
+	for (i = 0; i < RPC_USER_SIZE; i++) {
 		if ((rpc_user_id[i] == 0) && (i != 0))
 			rpc_user_id[i] = rpc_uid;
 		else if (rpc_user_id[i] != rpc_uid)
@@ -6001,19 +5989,13 @@ inline static void  _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg)
 
 static void _clear_rpc_stats(void)
 {
-	int i;
-
 	slurm_mutex_lock(&rpc_mutex);
-	for (i = 0; i < rpc_type_size; i++) {
-		rpc_type_cnt[i] = 0;
-		rpc_type_id[i] = 0;
-		rpc_type_time[i] = 0;
-	}
-	for (i = 0; i < rpc_user_size; i++) {
-		rpc_user_cnt[i] = 0;
-		rpc_user_id[i] = 0;
-		rpc_user_time[i] = 0;
-	}
+	memset(rpc_type_cnt, 0, sizeof(rpc_type_cnt));
+	memset(rpc_type_id, 0, sizeof(rpc_type_id));
+	memset(rpc_type_time, 0, sizeof(rpc_type_time));
+	memset(rpc_user_cnt, 0, sizeof(rpc_user_cnt));
+	memset(rpc_user_id, 0, sizeof(rpc_user_id));
+	memset(rpc_user_time, 0, sizeof(rpc_user_time));
 	slurm_mutex_unlock(&rpc_mutex);
 }
 
@@ -6028,7 +6010,7 @@ static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
 	set_buf_offset(buffer, *buffer_size);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		for (i = 0; i < rpc_type_size; i++) {
+		for (i = 0; i < RPC_TYPE_SIZE; i++) {
 			if (rpc_type_id[i] == 0)
 				break;
 		}
@@ -6037,7 +6019,7 @@ static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
 		pack32_array(rpc_type_cnt,  i, buffer);
 		pack64_array(rpc_type_time, i, buffer);
 
-		for (i = 1; i < rpc_user_size; i++) {
+		for (i = 1; i < RPC_USER_SIZE; i++) {
 			if (rpc_user_id[i] == 0)
 				break;
 		}
@@ -6159,22 +6141,6 @@ _slurm_rpc_dump_licenses(slurm_msg_t * msg)
 
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	xfree(dump);
-}
-
-/* Free memory used to track RPC usage by type and user */
-extern void free_rpc_stats(void)
-{
-	slurm_mutex_lock(&rpc_mutex);
-	xfree(rpc_type_cnt);
-	xfree(rpc_type_id);
-	xfree(rpc_type_time);
-	rpc_type_size = 0;
-
-	xfree(rpc_user_cnt);
-	xfree(rpc_user_id);
-	xfree(rpc_user_time);
-	rpc_user_size = 0;
-	slurm_mutex_unlock(&rpc_mutex);
 }
 
 /*
