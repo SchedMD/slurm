@@ -58,6 +58,11 @@ typedef struct connection_arg {
 void slurmctld_req(slurm_msg_t * msg, connection_arg_t *);
 
 /*
+ * Update slurmctld stats structure with time spent processing an rpc.
+ */
+extern void record_rpc_stats(uint16_t msg_type, uid_t rpc_uid, long delta);
+
+/*
  * Initialize a response slurm_msg_t to an inbound msg,
  * first by calling slurm_msg_t_init(), then by copying
  * fields needed to communicate with the remote correctly.
