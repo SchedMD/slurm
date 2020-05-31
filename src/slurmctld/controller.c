@@ -1120,11 +1120,10 @@ static void _sig_handler(int signal)
  */
 static void *_slurmctld_rpc_mgr(void *no_data)
 {
-	int newsockfd;
+	int *newsockfd;
 	struct pollfd *fds;
 	slurm_addr_t cli_addr, srv_addr;
 	int fd_next = 0, i, nports;
-	connection_arg_t *conn_arg = NULL;
 	/* Locks: Read config */
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -1195,27 +1194,26 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		}
 		fd_next = (i + 1) % nports;
 
-		if ((newsockfd = slurm_accept_msg_conn(fds[i].fd, &cli_addr))
+		newsockfd = xmalloc(sizeof(*newsockfd));
+		if ((*newsockfd = slurm_accept_msg_conn(fds[i].fd, &cli_addr))
 		    == SLURM_ERROR) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn: %m");
 			server_thread_decr();
+			xfree(newsockfd);
 			continue;
 		}
-		fd_set_close_on_exec(newsockfd);
-		conn_arg = xmalloc(sizeof(connection_arg_t));
-		conn_arg->newsockfd = newsockfd;
-		memcpy(&conn_arg->cli_addr, &cli_addr, sizeof(slurm_addr_t));
+		fd_set_close_on_exec(*newsockfd);
 
 		log_flag(PROTOCOL, "%s: accept() connection from %pA",
 			 __func__, &cli_addr);
 
 		if (slurmctld_config.shutdown_time) {
 			slurmctld_diag_stats.proc_req_raw++;
-			_service_connection(conn_arg);
+			_service_connection(newsockfd);
 		} else {
 			slurm_thread_create_detached(NULL, _service_connection,
-						     conn_arg);
+						     newsockfd);
 		}
 	}
 
@@ -1236,8 +1234,9 @@ static void *_slurmctld_rpc_mgr(void *no_data)
  */
 static void *_service_connection(void *arg)
 {
-	connection_arg_t *conn = (connection_arg_t *) arg;
 	slurm_msg_t msg;
+	int fd = *((int *) arg);
+	xfree(arg);
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "srvcn", NULL, NULL, NULL) < 0) {
@@ -1250,22 +1249,23 @@ static void *_service_connection(void *arg)
 	 * slurm_receive_msg sets msg connection fd to accepted fd. This allows
 	 * possibility for slurmctld_req() to close accepted connection.
 	 */
-	if (slurm_receive_msg(conn->newsockfd, &msg, 0) != 0) {
-		error("slurm_receive_msg [%pA]: %m", &conn->cli_addr);
+	if (slurm_receive_msg(fd, &msg, 0) != 0) {
+		slurm_addr_t cli_addr;
+		slurm_get_peer_addr(fd, &cli_addr);
+		error("slurm_receive_msg [%pA]: %m", &cli_addr);
 		/* close the new socket */
-		close(conn->newsockfd);
+		close(fd);
 		goto cleanup;
 	}
 
 	/* process the request */
-	slurmctld_req(&msg, conn);
+	slurmctld_req(&msg);
 
-	if ((conn->newsockfd >= 0) && (close(conn->newsockfd) < 0))
-		error ("close(%d): %m",  conn->newsockfd);
+	if ((msg.conn_fd >= 0) && (close(msg.conn_fd) < 0))
+		error("close(%d): %m", msg.conn_fd);
 
 cleanup:
 	slurm_free_msg_members(&msg);
-	xfree(arg);
 	server_thread_decr();
 
 	return NULL;

@@ -232,7 +232,7 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 				      struct timeval *start_tv,
 				      int timeout);
 static void  _slurm_rpc_assoc_mgr_info(slurm_msg_t * msg);
-static void  _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg);
+static void  _slurm_rpc_persist_init(slurm_msg_t *msg);
 
 extern diag_stats_t slurmctld_diag_stats;
 
@@ -253,14 +253,14 @@ static __thread bool drop_priv = false;
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
  */
-void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
+void slurmctld_req(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	bool run_scheduler = false;
 	uint32_t rpc_uid;
 
-	if (arg && (arg->newsockfd >= 0))
-		fd_set_nonblocking(arg->newsockfd);
+	if (msg->conn_fd >= 0)
+		fd_set_nonblocking(msg->conn_fd);
 
 #ifndef NDEBUG
 	if ((msg->flags & SLURM_DROP_PRIV))
@@ -283,11 +283,11 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
 			     __func__, p, msg->conn->cluster_name,
 			     msg->conn->rem_host, rpc_uid);
-		} else if (arg) {
-			info("%s: received opcode %s from %pA uid %u",
-			     __func__, p, &arg->cli_addr, rpc_uid);
 		} else {
-			error("%s: No arg given and this doesn't appear to be a persistent connection, this should never happen", __func__);
+			slurm_addr_t cli_addr;
+			slurm_get_peer_addr(msg->conn_fd, &cli_addr);
+			info("%s: received opcode %s from %pA uid %u",
+			     __func__, p, &cli_addr, rpc_uid);
 		}
 	}
 
@@ -538,7 +538,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_PERSIST_INIT:
 		if (msg->conn)
 			error("We already have a persistent connect, this should never happen");
-		_slurm_rpc_persist_init(msg, arg);
+		_slurm_rpc_persist_init(msg);
 		break;
 	case REQUEST_EVENT_LOG:
 		_slurm_rpc_event_log(msg);
@@ -6499,23 +6499,20 @@ static int _process_persist_conn(void *arg,
 	msg.msg_type = persist_msg->msg_type;
 	msg.data = persist_msg->data;
 
-	slurmctld_req(&msg, NULL);
+	slurmctld_req(&msg);
 
 	return SLURM_SUCCESS;
 }
 
-static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
+static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
-	uint16_t port;
 	Buf ret_buf;
 	slurm_persist_conn_t *persist_conn = NULL, p_tmp;
 	persist_init_req_msg_t *persist_init = msg->data;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
-
-	xassert(arg);
 
 	START_TIMER;
 
@@ -6524,7 +6521,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 
 	if (!validate_slurm_user(uid)) {
 		memset(&p_tmp, 0, sizeof(p_tmp));
-		p_tmp.fd = arg->newsockfd;
+		p_tmp.fd = msg->conn_fd;
 		p_tmp.cluster_name = persist_init->cluster_name;
 		p_tmp.version = persist_init->version;
 		p_tmp.shutdown = &slurmctld_config.shutdown_time;
@@ -6543,8 +6540,8 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 	persist_conn->cluster_name = persist_init->cluster_name;
 	persist_init->cluster_name = NULL;
 
-	persist_conn->fd = arg->newsockfd;
-	arg->newsockfd = -1;
+	persist_conn->fd = msg->conn_fd;
+	msg->conn_fd = -1;
 
 	persist_conn->callback_proc = _process_persist_conn;
 
@@ -6552,8 +6549,6 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 	persist_conn->rem_port = persist_init->port;
 	persist_conn->rem_host = xmalloc_nz(16);
 
-	slurm_get_ip_str(&arg->cli_addr, &port,
-			 persist_conn->rem_host, 16);
 	/* info("got it from %d %s %s(%u)", persist_conn->fd, */
 	/*      persist_conn->cluster_name, */
 	/*      persist_conn->rem_host, persist_conn->rem_port); */
