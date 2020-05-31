@@ -1207,9 +1207,8 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		conn_arg->newsockfd = newsockfd;
 		memcpy(&conn_arg->cli_addr, &cli_addr, sizeof(slurm_addr_t));
 
-		if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
-			info("%s: accept() connection from %pA",
-			     __func__, &cli_addr);
+		log_flag(PROTOCOL, "%s: accept() connection from %pA",
+			 __func__, &cli_addr);
 
 		if (slurmctld_config.shutdown_time) {
 			slurmctld_diag_stats.proc_req_raw++;
