@@ -171,7 +171,7 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 		return gres_plugin_job_test(job_gres_list, node_gres_list,
 					    use_total_gres, core_bitmap,
 					    core_start_bit, core_end_bit,
-				 	    job_id, node_name);
+					    job_id, node_name, false);
 	}
 
 	/* Build local data structures */
@@ -208,7 +208,7 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 		avail_cores[i] = gres_plugin_job_test(job_gres_list,
 					node_gres_list, use_total_gres,
 					sock_core_bitmap[i], core_start_bit,
-					core_end_bit, job_id, node_name);
+					core_end_bit, job_id, node_name, false);
 	}
 
 	/* Identify the best sockets */
@@ -2070,6 +2070,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	uint64_t avail_mem, req_mem;
 	uint32_t gres_cores, gres_cpus, cpus_per_core;
 	int core_start_bit, core_end_bit, cpu_alloc_size, i;
+	bool disable_binding;
 	node_record_t *node_ptr = node_record_table_ptr + node_i;
 	List gres_list;
 	bitstr_t *core_map = NULL;
@@ -2099,19 +2100,19 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	else
 		gres_list = node_ptr->gres_list;
 
-	if (!(job_ptr->bit_flags & GRES_DISABLE_BIND)) {
+	disable_binding = job_ptr->bit_flags & GRES_DISABLE_BIND;
+	if (!disable_binding) {
 		gres_plugin_job_core_filter(job_ptr->gres_list, gres_list,
 					    test_only, core_map, core_start_bit,
 					    core_end_bit, node_ptr->name);
 	}
-	if (job_ptr->bit_flags & GRES_DISABLE_BIND) {
-		gres_cores = NO_VAL;
-	} else if (s_p_n == NO_VAL) {
+	if (disable_binding || (s_p_n == NO_VAL)) {
 		gres_cores = gres_plugin_job_test(job_ptr->gres_list,
 						  gres_list, test_only,
 						  core_map, core_start_bit,
 						  core_end_bit, job_ptr->job_id,
-						  node_ptr->name);
+						  node_ptr->name,
+						  disable_binding);
 	} else {
 		gres_cores = _gres_sock_job_test(job_ptr->gres_list,
 						 gres_list, test_only,

@@ -614,6 +614,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 	uint64_t free_mem, min_mem, avail_mem;
 	List gres_list;
 	int i, i_first, i_last;
+	bool disable_binding = false;
 
 	if (is_cons_tres && !(job_ptr->bit_flags & JOB_MEM_SET) &&
 	    (min_mem = gres_plugin_job_mem_max(job_ptr->gres_list))) {
@@ -634,6 +635,8 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 		min_mem = job_ptr->details->pn_min_memory;
 	}
 
+	if (!is_cons_tres && (job_ptr->bit_flags & GRES_DISABLE_BIND))
+		disable_binding = true;
 	i_first = bit_ffs(node_bitmap);
 	if (i_first == -1)
 		i_last = -2;
@@ -702,7 +705,8 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 		gres_cores = gres_plugin_job_test(job_ptr->gres_list,
 						  gres_list, true,
 						  NULL, 0, 0, job_ptr->job_id,
-						  node_ptr->name);
+						  node_ptr->name,
+						  disable_binding);
 		gres_cpus = gres_cores;
 		if (gres_cpus != NO_VAL)
 			gres_cpus *= select_node_record[i].vpus;

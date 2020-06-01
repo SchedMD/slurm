@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
 	bit_nset(cpu_bitmap, 0, cpu_count - 1);
 	cpu_alloc = gres_plugin_job_test(job_gres_list, node_gres_list, true,
 					 cpu_bitmap, 0, cpu_count - 1,
-					 job_id, node_name);
+					 job_id, node_name, false);
 	if (cpu_alloc == NO_VAL)
 		printf("cpu_alloc=ALL\n");
 	else
