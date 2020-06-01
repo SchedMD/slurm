@@ -3184,6 +3184,7 @@ static int _find_dependency(void *arg, void *key)
 	depend_spec_t *dep_ptr = (depend_spec_t *)arg;
 	depend_spec_t *new_dep = (depend_spec_t *)key;
 	return (dep_ptr->job_id == new_dep->job_id) &&
+		(dep_ptr->array_task_id == new_dep->array_task_id) &&
 		(dep_ptr->depend_type == new_dep->depend_type);
 }
 
