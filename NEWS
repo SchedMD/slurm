@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix cons_res GRES overallocation for --gres-flags=disable-binding.
  -- Fix cons_res incorrectly filtering cores with respect to GRES locality for
     --gres-flags=disable-binding requests.
+ -- Fix regression where a dependency on multiple jobs in a single array using
+    underscores would only add the first job.
 
 * Changes in Slurm 20.02.3
 ==========================
