@@ -4104,13 +4104,9 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 	/* Free node_list here, it could be filled in by the select plugin. */
 	xfree(resv_desc_ptr->node_list);
 
-	if (resv_desc_ptr->node_cnt == NULL) {
+	if (!resv_desc_ptr->node_cnt || (!resv_desc_ptr->node_cnt[0] &&
+	    !resv_desc_ptr->node_cnt[1])) {
 		return _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr, 0,
-					   core_bitmap);
-	} else if ((resv_desc_ptr->node_cnt[0] == 0) ||
-		   (resv_desc_ptr->node_cnt[1] == 0)) {
-		return _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr,
-					   resv_desc_ptr->node_cnt[0],
 					   core_bitmap);
 	}
 
