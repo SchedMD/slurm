@@ -155,7 +155,7 @@ static List _list_dup(List license_list);
 static Buf  _open_resv_state_file(char **state_file);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal, uint16_t protocol_version);
-static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes,
+static bitstr_t *_pick_nodes(bitstr_t *avail_nodes,
 				  resv_desc_msg_t *resv_desc_ptr,
 				  bitstr_t **core_bitmap);
 static bitstr_t *_pick_idle_xand_nodes(bitstr_t *avail_bitmap,
@@ -3989,8 +3989,8 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	}
 
 	if (!have_xand && (rc == SLURM_SUCCESS)) {
-		*resv_bitmap = _pick_idle_nodes(node_bitmap,
-						resv_desc_ptr, core_bitmap);
+		*resv_bitmap = _pick_nodes(node_bitmap, resv_desc_ptr,
+					   core_bitmap);
 	}
 	FREE_NULL_BITMAP(node_bitmap);
 	if (*resv_bitmap == NULL) {
@@ -4065,8 +4065,8 @@ TRY_AVAIL:
 			bit_and(tmp_avail_bitmap, feat_ptr->node_bitmap_active);
 		else
 			bit_and(tmp_avail_bitmap, feat_ptr->node_bitmap_avail);
-		tmp_bitmap = _pick_idle_nodes(tmp_avail_bitmap, resv_desc_ptr,
-					      core_bitmap);
+		tmp_bitmap = _pick_nodes(tmp_avail_bitmap, resv_desc_ptr,
+					 core_bitmap);
 		FREE_NULL_BITMAP(tmp_avail_bitmap);
 		if (!tmp_bitmap) {
 			FREE_NULL_BITMAP(ret_bitmap);
@@ -4093,9 +4093,9 @@ TRY_AVAIL:
 	return ret_bitmap;
 }
 
-static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
-				  resv_desc_msg_t *resv_desc_ptr,
-				  bitstr_t **core_bitmap)
+static bitstr_t *_pick_nodes(bitstr_t *avail_bitmap,
+			     resv_desc_msg_t *resv_desc_ptr,
+			     bitstr_t **core_bitmap)
 {
 	int i;
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap;
