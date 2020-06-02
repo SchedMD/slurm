@@ -177,7 +177,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_AUTHTYPE_CHANGE,
 	  "AuthType change requires restart of all Slurm daemons and "
 	  "commands to take effect"},
-
+	{ ESLURM_ACTIVE_FEATURE_NOT_SUBSET,
+	  "Active features not subset of available features"	},
 	{ ESLURM_INVALID_CRED_TYPE_CHANGE,
 	  "CredType change requires restart of all Slurm daemons "
 	  "to take effect"					},
