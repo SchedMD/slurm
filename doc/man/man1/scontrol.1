@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "April 2020" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "June 2020" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -1148,7 +1148,9 @@ restart of the slurmctld daemon with the \fI\-R\fR option and state files
 preserved or slurmctld's receipt of a SIGHUP.
 Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
-Also see \fIActiveFeatures\fP.
+
+\fBNote\fR: Available features being removed via \fBscontrol\fR must not be
+active (i.e. remove them from \fIActiveFeatures\fP first).
 
 .TP
 \fICpuBind\fP=<node>
