@@ -109,7 +109,10 @@ extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal);
  */
 extern void srun_node_fail(job_record_t *job_ptr, char *node_name);
 
-/* srun_ping - ping all srun commands that have not been heard from recently */
+/*
+ * srun_ping - Ping all allocations srun/salloc that have not been heard from
+ * recently. This does not ping sruns inside a allocation from sbatch or salloc.
+ */
 extern void srun_ping (void);
 
 /*

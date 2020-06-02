@@ -658,7 +658,6 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 	if        (agent_ptr->msg_type == SRUN_PING) {
 		srun_ping_msg_t *msg = *agent_ptr->msg_args_pptr;
 		job_id  = msg->job_id;
-		step_id = msg->step_id;
 	} else if (agent_ptr->msg_type == SRUN_TIMEOUT) {
 		srun_timeout_msg_t *msg = *agent_ptr->msg_args_pptr;
 		job_id  = msg->step_id.job_id;

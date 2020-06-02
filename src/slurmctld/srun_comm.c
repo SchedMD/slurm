@@ -263,7 +263,10 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 	}
 }
 
-/* srun_ping - ping all srun commands that have not been heard from recently */
+/*
+ * srun_ping - Ping all allocations srun/salloc that have not been heard from
+ * recently. This does not ping sruns inside a allocation from sbatch or salloc.
+ */
 extern void srun_ping (void)
 {
 	ListIterator job_iterator;
@@ -291,7 +294,6 @@ extern void srun_ping (void)
 				job_ptr->resp_host);
 			msg_arg = xmalloc(sizeof(srun_ping_msg_t));
 			msg_arg->job_id  = job_ptr->job_id;
-			msg_arg->step_id = NO_VAL;
 			_srun_agent_launch(addr, job_ptr->alloc_node,
 					   SRUN_PING, msg_arg,
 					   job_ptr->start_protocol_ver);

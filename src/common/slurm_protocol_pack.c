@@ -9779,10 +9779,9 @@ _pack_srun_ping_msg(srun_ping_msg_t * msg, Buf buffer,
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
-		pack32(msg->step_id, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
-		pack_old_step_id(msg->step_id, buffer);
+		pack32(NO_VAL, buffer);
 	} else
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -9800,11 +9799,10 @@ _unpack_srun_ping_msg(srun_ping_msg_t ** msg_ptr, Buf buffer,
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
-		safe_unpack32(&msg->step_id, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t throw_away;
 		safe_unpack32(&msg->job_id, buffer);
-		safe_unpack32(&msg->step_id, buffer);
-		convert_old_step_id(&msg->step_id);
+		safe_unpack32(&throw_away, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);

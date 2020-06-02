@@ -1845,7 +1845,6 @@ typedef struct {
 
 typedef struct srun_ping_msg {
 	uint32_t job_id;	/* slurm job_id */
-	uint32_t step_id;	/* step_id or NO_VAL */
 } srun_ping_msg_t;
 
 typedef slurm_step_id_t srun_job_complete_msg_t;
