@@ -79,7 +79,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
-#define _DEBUG		0
 #define RESV_MAGIC	0x3b82
 
 /* Permit sufficient time for slurmctld failover or other long delay before
@@ -2352,11 +2351,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					rc = ESLURM_INVALID_CORE_CNT;
 					goto bad_parse;
 				}
-#if _DEBUG
-				info("Requesting %d cores for node_list %d",
-				     resv_desc_ptr->core_cnt[nodeinx],
-				     nodeinx);
-#endif
+			log_flag(RESERVATION, "%s: Requesting %d cores for node_list %d",
+				 __func__, resv_desc_ptr->core_cnt[nodeinx],
+				 nodeinx);
 				nodeinx++;
 			}
 			rc = _select_nodes(resv_desc_ptr, &part_ptr,
@@ -2474,14 +2471,12 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
 
 	if (!resv_desc_ptr->core_cnt) {
-#if _DEBUG
-		info("reservation using full nodes");
-#endif
+		log_flag(RESERVATION, "%s: reservation %s using full nodes",
+			 __func__, resv_ptr->name);
 		resv_ptr->full_nodes = 1;
 	} else {
-#if _DEBUG
-		info("reservation using partial nodes");
-#endif
+		log_flag(RESERVATION, "%s: reservation %s using partial nodes",
+			 __func__, resv_ptr->name);
 		resv_ptr->full_nodes = 0;
 	}
 
@@ -4167,15 +4162,13 @@ static void _check_job_compatibility(job_record_t *job_ptr,
 
 	total_nodes = bit_set_count(job_res->node_bitmap);
 
-#if _DEBUG
-{
-	char str[200];
-	bit_fmt(str, sizeof(str), job_res->core_bitmap);
-	info("Checking %d nodes (of %"PRIu64") for %pJ, core_bitmap:%s core_bitmap_size:%"PRIu64,
-	     total_nodes, bit_size(job_res->node_bitmap),
-	     job_ptr, str, bit_size(job_res->core_bitmap));
-}
-#endif
+	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+		char str[200];
+		bit_fmt(str, sizeof(str), job_res->core_bitmap);
+		log_flag(RESERVATION, "%s: Checking %d nodes (of %"PRIu64") for %pJ, core_bitmap:%s core_bitmap_size:%"PRIu64,
+		     __func__, total_nodes, bit_size(job_res->node_bitmap),
+		     job_ptr, str, bit_size(job_res->core_bitmap));
+	}
 
 	full_node_bitmap = bit_copy(job_res->node_bitmap);
 	_create_cluster_core_bitmap(core_bitmap);
@@ -4188,11 +4181,8 @@ static void _check_job_compatibility(job_record_t *job_ptr,
 		int repeat_node_conf = job_res->sock_core_rep_count[rep_count++];
 		int node_bitmap_inx;
 
-#if _DEBUG
-		info("Working with %d cores per node. Same node conf repeated "
-		     "%d times (start core offset %d)",
-		     cores_in_a_node, repeat_node_conf, start);
-#endif
+		log_flag(RESERVATION, "%s: Working with %d cores per node. Same node conf repeated %d times (start core offset %d)",
+		     __func__, cores_in_a_node, repeat_node_conf, start);
 
 		i_node += repeat_node_conf;
 		res_inx++;
@@ -4209,10 +4199,10 @@ static void _check_job_compatibility(job_record_t *job_ptr,
 			allocated = 0;
 
 			for (i_core = 0; i_core < cores_in_a_node; i_core++) {
-#if _DEBUG
-				info("i_core: %d, start: %d, allocated: %d",
-				     i_core, start, allocated);
-#endif
+				log_flag(RESERVATION, "%s: %pJ i_core: %d, start: %d, allocated: %d",
+					 __func__, job_ptr, i_core, start,
+					 allocated);
+
 				if (bit_test(job_ptr->job_resrcs->core_bitmap,
 					     i_core + start)) {
 					allocated++;
@@ -4220,16 +4210,14 @@ static void _check_job_compatibility(job_record_t *job_ptr,
 						global_core_start + i_core);
 				}
 			}
-#if _DEBUG
-			info("Checking node %d, allocated: %d, "
-			     "cores_in_a_node: %d", node_bitmap_inx,
-			     allocated, cores_in_a_node);
-#endif
+			log_flag(RESERVATION, "%s: Checking node %d, allocated: %d, cores_in_a_node: %d",
+				 __func__, node_bitmap_inx, allocated,
+				 cores_in_a_node);
+
 			if (allocated == cores_in_a_node) {
 				/* We can exclude this node */
-#if _DEBUG
-				info("Excluding node %d", node_bitmap_inx);
-#endif
+				log_flag(RESERVATION, "%s: %pJ excluding node %d",
+					 __func__, job_ptr, node_bitmap_inx);
 				bit_clear(avail_bitmap, node_bitmap_inx);
 			}
 			start += cores_in_a_node;
@@ -4348,17 +4336,22 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 
 fini:	FREE_NULL_BITMAP(orig_bitmap);
 	FREE_NULL_BITMAP(save_bitmap);
-#if _DEBUG
-	if (ret_bitmap) {
-		char str[300];
-		bit_fmt(str, (sizeof(str) - 1), ret_bitmap);
-		info("_pick_idle_node_cnt: node bitmap:%s", str);
-		if (*core_bitmap) {
-			bit_fmt(str, (sizeof(str) - 1), *core_bitmap);
-			info("_pick_idle_node_cnt: core bitmap:%s", str);
-		}
+
+	if (ret_bitmap && (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION)) {
+		char *nodes = bitmap2node_name(ret_bitmap);
+		char cores[300] = {0};
+
+		if (*core_bitmap)
+			bit_fmt(cores, (sizeof(cores) - 1), *core_bitmap);
+
+		log_flag(RESERVATION, "%s: reservation %s node_bitmap:%s core_bitmap:%s",
+			 __func__, resv_desc_ptr->name,
+			 ((nodes && nodes[0]) ? nodes : "(NONE)"),
+			 (cores[0] ? cores : "(NONE)"));
+
+		xfree(nodes);
 	}
-#endif
+
 	return ret_bitmap;
 }
 
@@ -5337,16 +5330,13 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 
 			if ((resv_ptr->full_nodes) ||
 			    (job_ptr->details->whole_node == 1)) {
-#if _DEBUG
-				info("reservation %s uses full nodes or %pJ will not share nodes",
-				     resv_ptr->name, job_ptr);
-#endif
+				log_flag(RESERVATION, "%s: reservation %s uses full nodes or %pJ will not share nodes",
+					 __func__, resv_ptr->name, job_ptr);
 				bit_and_not(*node_bitmap, resv_ptr->node_bitmap);
 			} else {
-#if _DEBUG
-				info("%s: reservation %s uses partial nodes",
+				log_flag(RESERVATION, "%s: reservation %s uses partial nodes",
 				     __func__, resv_ptr->name);
-#endif
+
 				if (resv_ptr->core_bitmap == NULL) {
 					;
 				} else if (exc_core_bitmap == NULL) {
