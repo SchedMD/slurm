@@ -835,7 +835,7 @@ static void _pack_step_complete_msg(dbd_step_comp_msg_t *msg,
 		pack32(msg->req_uid, buffer);
 		pack_time(msg->start_time, buffer);
 		pack16(msg->state, buffer);
-		pack32(msg->step_id, buffer);
+		pack_old_step_id(msg->step_id, buffer);
 		pack32(msg->total_tasks, buffer);
 	}
 }
@@ -878,6 +878,7 @@ static int _unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack16(&msg_ptr->state, buffer);
 		safe_unpack32(&msg_ptr->step_id, buffer);
+		convert_old_step_id(&msg_ptr->step_id);
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
 	} else
 		goto unpack_error;
@@ -927,7 +928,7 @@ static void _pack_step_start_msg(dbd_step_start_msg_t *msg,
 		pack32(msg->req_cpufreq_min, buffer);
 		pack32(msg->req_cpufreq_max, buffer);
 		pack32(msg->req_cpufreq_gov, buffer);
-		pack32(msg->step_id, buffer);
+		pack_old_step_id(msg->step_id, buffer);
 		pack32(msg->task_dist, buffer);
 		pack32(msg->total_tasks, buffer);
 		packstr(msg->tres_alloc_str, buffer);
@@ -973,6 +974,7 @@ static int _unpack_step_start_msg(dbd_step_start_msg_t **msg,
 		safe_unpack32(&msg_ptr->req_cpufreq_max, buffer);
 		safe_unpack32(&msg_ptr->req_cpufreq_gov, buffer);
 		safe_unpack32(&msg_ptr->step_id, buffer);
+		convert_old_step_id(&msg_ptr->step_id);
 		safe_unpack32(&msg_ptr->task_dist, buffer);
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->tres_alloc_str,

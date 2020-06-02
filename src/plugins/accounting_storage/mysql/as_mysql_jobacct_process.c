@@ -882,7 +882,10 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				else
 					xstrcat(extra, " && (");
 
-				/* The stepid could be -2 so use %d not %u */
+				/*
+				 * The stepid could be negative so use
+				 * %d not %u
+				 */
 				xstrfmtcat(extra, "t1.id_step=%d",
 					   selected_step->stepid);
 				set = 1;

@@ -40,6 +40,7 @@ set new_spank_conf  "${cwd}/test${test_id}.new_conf"
 set spank_out       "${cwd}/test${test_id}.spank.out"
 
 set NO_VAL 4294967294
+set SLURM_BATCH_SCRIPT 0xfffffffb
 
 print_header $test_id
 
@@ -293,7 +294,7 @@ expect {
 		set narray_job_id $expect_out(4,string)
 		set narray_task_id $expect_out(5,string)
 
-		if {$narray_task_id == 0 || $nstep_id == $NO_VAL} {
+		if {$narray_task_id == 0 || $nstep_id == $SLURM_BATCH_SCRIPT} {
 			#ignore extern and batch steps
 			exp_continue
 		} elseif {$nstep_id == 0 && $narray_job_id == $array_job_id} {

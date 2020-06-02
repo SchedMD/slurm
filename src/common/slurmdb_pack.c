@@ -4682,7 +4682,7 @@ extern void slurmdb_pack_selected_step(void *in, uint16_t protocol_version,
 		pack32(step->array_task_id, buffer);
 		pack32(step->jobid, buffer);
 		pack32(step->het_job_offset, buffer);
-		pack32(step->stepid, buffer);
+		pack_old_step_id(step->stepid, buffer);
 	}
 }
 
@@ -4706,6 +4706,7 @@ extern int slurmdb_unpack_selected_step(slurmdb_selected_step_t **step,
 		safe_unpack32(&step_ptr->jobid, buffer);
 		safe_unpack32(&step_ptr->het_job_offset, buffer);
 		safe_unpack32(&step_ptr->stepid, buffer);
+		convert_old_step_id(&step_ptr->stepid);
 	} else
 		goto unpack_error;
 
@@ -4760,7 +4761,7 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		_pack_slurmdb_stats(&step->stats, protocol_version, buffer);
 		pack_time(step->start, buffer);
 		pack16(step->state, buffer);
-		pack32(step->stepid, buffer);   /* job's step number */
+		pack_old_step_id(step->stepid, buffer);  /* job's step number */
 		packstr(step->stepname, buffer);
 		pack32(step->suspended, buffer);
 		pack32(step->sys_cpu_sec, buffer);
@@ -4838,6 +4839,7 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpack16(&uint16_tmp, buffer);
 		step_ptr->state = uint16_tmp;
 		safe_unpack32(&step_ptr->stepid, buffer);
+		convert_old_step_id(&step_ptr->stepid);
 		safe_unpackstr_xmalloc(&step_ptr->stepname,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&step_ptr->suspended, buffer);

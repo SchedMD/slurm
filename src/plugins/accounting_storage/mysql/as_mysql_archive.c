@@ -152,6 +152,20 @@ typedef struct {
 	char *work_dir;
 } local_job_t;
 
+static void _convert_old_step_id(char **step_id)
+{
+	if (!step_id || !*step_id)
+		return;
+
+	if (!xstrcmp(*step_id, "-2")) {
+		xfree(*step_id);
+		*step_id = xstrdup_printf("%d", SLURM_BATCH_SCRIPT);
+	} else if (!xstrcmp(*step_id, "-1")) {
+		xfree(*step_id);
+		*step_id = xstrdup_printf("%d", SLURM_EXTERN_CONT);
+	}
+}
+
 static void _free_local_job_members(local_job_t *object)
 {
 	if (object) {
@@ -1618,6 +1632,7 @@ static int _unpack_local_step(local_step_t *object,
 		safe_unpackstr_xmalloc(&object->req_cpufreq_gov, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
+		_convert_old_step_id(&object->stepid);
 		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
@@ -1667,6 +1682,7 @@ static int _unpack_local_step(local_step_t *object,
 		safe_unpackstr_xmalloc(&object->req_cpufreq_gov, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
+		_convert_old_step_id(&object->stepid);
 		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
@@ -1820,6 +1836,7 @@ static int _unpack_local_step(local_step_t *object,
 		safe_unpackstr_xmalloc(&object->req_cpufreq_gov, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
+		_convert_old_step_id(&object->stepid);
 		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
@@ -1976,6 +1993,7 @@ static int _unpack_local_step(local_step_t *object,
 		safe_unpackstr_xmalloc(&object->req_cpufreq_max, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
+		_convert_old_step_id(&object->stepid);
 		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);

@@ -3129,7 +3129,7 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, Buf buffer,
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 		pack32(step_ptr->job_ptr->job_id, buffer);
-		pack32(step_ptr->step_id, buffer);
+		pack_old_step_id(step_ptr->step_id, buffer);
 		pack32(step_ptr->job_ptr->user_id, buffer);
 		pack32(cpu_cnt, buffer);
 		pack32(step_ptr->cpu_freq_min, buffer);
@@ -3183,7 +3183,7 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, Buf buffer,
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 		pack32(step_ptr->job_ptr->job_id, buffer);
-		pack32(step_ptr->step_id, buffer);
+		pack_old_step_id(step_ptr->step_id, buffer);
 		pack16(0, buffer); /* was ckpt_interval */
 		pack32(step_ptr->job_ptr->user_id, buffer);
 		pack32(cpu_cnt, buffer);
@@ -3948,6 +3948,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&tres_per_task, &name_len, buffer);
 	} else if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id, buffer);
+		convert_old_step_id(&step_id);
 		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack32(&srun_pid, buffer);
 		safe_unpack16(&port, buffer);
@@ -4018,6 +4019,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 
 		uint16_t uint16_tmp;
 		safe_unpack32(&step_id, buffer);
+		convert_old_step_id(&step_id);
 		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack32(&srun_pid, buffer);
 		safe_unpack16(&port, buffer);

@@ -2125,7 +2125,14 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 		xmalloc(sizeof(batch_job_launch_msg_t));
 	launch_msg_ptr->job_id = job_ptr->job_id;
 	launch_msg_ptr->het_job_id = job_ptr->het_job_id;
-	launch_msg_ptr->step_id = NO_VAL;
+	/*
+	 * SLURM_BATCH_SCRIPT changed in 20.11, after 2 versions this can be
+	 * simplified.
+	 */
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION)
+		launch_msg_ptr->step_id = SLURM_BATCH_SCRIPT;
+	else
+		launch_msg_ptr->step_id = NO_VAL;
 	launch_msg_ptr->array_job_id = job_ptr->array_job_id;
 	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
 	launch_msg_ptr->uid = job_ptr->user_id;

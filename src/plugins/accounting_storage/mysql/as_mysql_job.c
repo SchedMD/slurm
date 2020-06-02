@@ -1240,7 +1240,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 
 	/* we want to print a -1 for the requid so leave it a
 	   %d */
-	/* The stepid could be -2 so use %d not %u */
+	/* The stepid could be negative so use %d not %u */
 	query = xstrdup_printf(
 		"insert into \"%s_%s\" (job_db_inx, id_step, time_start, "
 		"step_name, state, tres_alloc, "
@@ -1365,7 +1365,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	/* The stepid could be -2 so use %d not %u */
+	/* The stepid could be negative so use %d not %u */
 	query = xstrdup_printf(
 		"update \"%s_%s\" set time_end=%d, state=%u, "
 		"kill_requid=%d, exit_code=%d",
@@ -1506,8 +1506,8 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		slurmdb_free_slurmdb_stats_members(&stats);
 	}
 
-	/* id_step has to be %d here to handle the -2 -1 for the batch and
-	   extern steps.  Don't change it to a %u.
+	/* id_step has to be %d here to handle the negative values for the batch
+	   and extern steps.  Don't change it to a %u.
 	*/
 	xstrfmtcat(query,
 		   " where job_db_inx=%"PRIu64" and id_step=%d",
