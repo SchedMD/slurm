@@ -162,10 +162,9 @@ static bitstr_t *_pick_idle_xand_nodes(bitstr_t *avail_bitmap,
 				       resv_desc_msg_t *resv_desc_ptr,
 				       bitstr_t **core_bitmap,
 				       List feature_list);
-static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
-				     resv_desc_msg_t *resv_desc_ptr,
-				     uint32_t node_cnt,
-				     bitstr_t **core_bitmap);
+static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
+				resv_desc_msg_t *resv_desc_ptr,
+				uint32_t node_cnt, bitstr_t **core_bitmap);
 static int  _post_resv_create(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
@@ -4106,16 +4105,16 @@ static bitstr_t *_pick_nodes(bitstr_t *avail_bitmap,
 
 	if (!resv_desc_ptr->node_cnt || (!resv_desc_ptr->node_cnt[0] &&
 	    !resv_desc_ptr->node_cnt[1])) {
-		return _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr, 0,
-					   core_bitmap);
+		return _pick_node_cnt(avail_bitmap, resv_desc_ptr, 0,
+				      core_bitmap);
 	}
 
 	/* Need to create reservation containing multiple blocks */
 	resv_debug = slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION;
 	for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
-		tmp_bitmap = _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr,
-						 resv_desc_ptr->node_cnt[i],
-						 core_bitmap);
+		tmp_bitmap = _pick_node_cnt(avail_bitmap, resv_desc_ptr,
+					    resv_desc_ptr->node_cnt[i],
+					    core_bitmap);
 		if (tmp_bitmap == NULL) {	/* allocation failure */
 			if (resv_debug) {
 				info("reservation of %u nodes failed",
@@ -4223,9 +4222,9 @@ static void _check_job_compatibility(job_record_t *job_ptr,
 	FREE_NULL_BITMAP(full_node_bitmap);
 }
 
-static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
-				     resv_desc_msg_t *resv_desc_ptr,
-				     uint32_t node_cnt, bitstr_t **core_bitmap)
+static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
+				resv_desc_msg_t *resv_desc_ptr,
+				uint32_t node_cnt, bitstr_t **core_bitmap)
 {
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
