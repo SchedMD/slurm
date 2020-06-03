@@ -141,7 +141,6 @@ _check_params(void)
 		return -1;
 	}
 	if (params.configdir) {
-		setenv("SLURM_CONFIG_DIR",params.configdir,1);
 		conf_path = xstrdup_printf("%s/slurm.conf",params.configdir);
 		setenv("SLURM_CONF",conf_path,1);
 		xfree(conf_path);

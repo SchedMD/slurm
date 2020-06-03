@@ -104,8 +104,6 @@ int main(int argc, char *argv[])
 	if (rc)
 		fatal("failure: gres_plugin_init: %s", slurm_strerror(rc));
 
-	setenv("SLURM_CONFIG_DIR", config_dir, 1);
-
 	/*
 	 * Logic normally executed by slurmctld daemon
 	 */
