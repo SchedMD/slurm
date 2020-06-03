@@ -192,8 +192,6 @@ static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
 static int    _send_complete_batch_script_msg(stepd_step_rec_t *job,
 					      int err, int status);
 
-static stepd_step_rec_t *reattach_job;
-
 /*
  * Launch an job step on the current node
  */
@@ -1278,8 +1276,6 @@ job_manager(stepd_step_rec_t *job)
 		goto fail3;
 
 	io_close_task_fds(job);
-
-	reattach_job = job;
 
 	/* Attach slurmstepd to system cgroups, if configured */
 	attach_system_cgroup_pid(getpid());
