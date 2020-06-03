@@ -340,14 +340,6 @@ sarb_cb(uint32_t job_id)
 /********** convert functions for callbacks **********/
 
 static int
-srun_ping_msg_to_hv(srun_ping_msg_t *msg, HV *hv)
-{
-	STORE_FIELD(hv, msg, job_id, uint32_t);
-	STORE_FIELD(hv, msg, step_id, uint32_t);
-	return 0;
-}
-
-static int
 srun_user_msg_to_hv(srun_user_msg_t *msg, HV *hv)
 {
 	STORE_FIELD(hv, msg, job_id, uint32_t);
@@ -368,7 +360,6 @@ srun_node_fail_msg_to_hv(srun_node_fail_msg_t *msg, HV *hv)
 }
 
 /*********** callbacks for slurm_allocation_msg_thr_create() **********/
-static SV *ping_cb_sv = NULL;
 static SV *job_complete_cb_sv = NULL;
 static SV *timeout_cb_sv = NULL;
 static SV *user_msg_cb_sv = NULL;
@@ -380,8 +371,6 @@ set_sacb(HV *callbacks)
 	SV **svp, *cb;
 
 	if (callbacks == NULL) {
-		if (ping_cb_sv != NULL)
-			sv_setsv(ping_cb_sv, &PL_sv_undef);
 		if (job_complete_cb_sv != NULL)
 			sv_setsv(job_complete_cb_sv, &PL_sv_undef);
 		if (timeout_cb_sv != NULL)
@@ -391,14 +380,6 @@ set_sacb(HV *callbacks)
 		if (node_fail_cb_sv != NULL)
 			sv_setsv(node_fail_cb_sv, &PL_sv_undef);
 		return;
-	}
-
-	svp = hv_fetch(callbacks, "ping", 4, FALSE);
-	cb = svp ? *svp : &PL_sv_undef;
-	if (ping_cb_sv == NULL) {
-		ping_cb_sv = newSVsv(cb);
-	} else {
-		sv_setsv(ping_cb_sv, cb);
 	}
 
 	svp = hv_fetch(callbacks, "job_complete", 4, FALSE);
@@ -432,35 +413,6 @@ set_sacb(HV *callbacks)
 	} else {
 		sv_setsv(node_fail_cb_sv, cb);
 	}
-}
-
-static void
-ping_cb(srun_ping_msg_t *msg)
-{
-	HV *hv;
-	dSP;
-
-	if (ping_cb_sv == NULL ||
-	    ping_cb_sv == &PL_sv_undef) {
-		return;
-	}
-	hv = newHV();
-	if (srun_ping_msg_to_hv(msg, hv) < 0) {
-		Perl_warn( aTHX_ "failed to convert surn_ping_msg_t to perl HV");
-		SvREFCNT_dec(hv);
-		return;
-	}
-
-	ENTER;
-	SAVETMPS;
-	PUSHMARK(SP);
-	XPUSHs(sv_2mortal(newRV_noinc((SV*)hv)));
-	PUTBACK;
-
-	call_sv(ping_cb_sv, G_VOID);
-
-	FREETMPS;
-	LEAVE;
 }
 
 static void
@@ -580,7 +532,6 @@ node_fail_cb(srun_node_fail_msg_t *msg)
 }
 
 slurm_allocation_callbacks_t sacb = {
-	ping_cb,
 	job_complete_cb,
 	timeout_cb,
 	user_msg_cb,

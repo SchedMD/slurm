@@ -2016,7 +2016,6 @@ typedef struct {
 } slurm_step_launch_callbacks_t;
 
 typedef struct {
-	void (*ping)(srun_ping_msg_t *);
 	void (*job_complete)(srun_job_complete_msg_t *);
 	void (*timeout)(srun_timeout_msg_t *);
 	void (*user_msg)(srun_user_msg_t *);

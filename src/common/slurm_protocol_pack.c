@@ -9778,7 +9778,7 @@ _pack_srun_ping_msg(srun_ping_msg_t * msg, Buf buffer,
 	xassert(msg);
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		pack32(msg->job_id, buffer);
+		/* empty, nothing needs to be sent */
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(NO_VAL, buffer);
@@ -9791,17 +9791,15 @@ static int
 _unpack_srun_ping_msg(srun_ping_msg_t ** msg_ptr, Buf buffer,
 		      uint16_t protocol_version)
 {
-	srun_ping_msg_t * msg;
 	xassert(msg_ptr);
 
-	msg = xmalloc ( sizeof (srun_ping_msg_t) ) ;
-	*msg_ptr = msg;
+	*msg_ptr = NULL;
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
+		/* empty, nothing is sent */
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint32_t throw_away;
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&throw_away, buffer);
 		safe_unpack32(&throw_away, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -9812,7 +9810,6 @@ _unpack_srun_ping_msg(srun_ping_msg_t ** msg_ptr, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_srun_ping_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
