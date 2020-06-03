@@ -54,6 +54,7 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_route.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
@@ -288,6 +289,8 @@ int main(int argc, char *argv[])
 	cc = _check_params();
 	if (cc < 0)
 		goto ouch;
+
+	slurm_conf_init(NULL);
 
 	if ((fd = fopen(params.testcases, "r")) == NULL) {
 		info("Failed to open %s: %m",params.testcases);

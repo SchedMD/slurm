@@ -52,6 +52,7 @@
 #include "src/common/gres.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
+#include "src/common/read_config.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xstring.h"
 
@@ -96,6 +97,9 @@ int main(int argc, char *argv[])
 	 * Logic normally executed by slurmd daemon
 	 */
 	setenv("SLURM_CONF", slurm_conf, 1);
+
+	slurm_conf_init(NULL);
+
 	rc = gres_plugin_init();
 	if (rc)
 		fatal("failure: gres_plugin_init: %s", slurm_strerror(rc));

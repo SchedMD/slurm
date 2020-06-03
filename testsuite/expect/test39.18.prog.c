@@ -37,6 +37,7 @@
 #include <sys/stat.h>
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
+#include "src/common/read_config.h"
 #include "src/common/xstring.h"
 
 int main(int argc, char *argv[])
@@ -94,6 +95,8 @@ int main(int argc, char *argv[])
 
 	// Override where Slurm looks for conf files
 	setenv("SLURM_CONF", slurm_conf, 1);
+
+	slurm_conf_init(NULL);
 
 	// Initialize GRES info (from slurm.conf)
 	rc = gres_plugin_init_node_config(node_name, slurm_conf_gres_str,
