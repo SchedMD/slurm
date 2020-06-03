@@ -1198,8 +1198,6 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		pack32(msg->job_count, buffer);
 		for (i = 0; i < msg->job_count; i++) {
 			pack32(msg->job_id[i], buffer);
-		}
-		for (i = 0; i < msg->job_count; i++) {
 			pack32(msg->step_id[i], buffer);
 		}
 		pack16(msg->flags, buffer);
@@ -1312,12 +1310,10 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			goto unpack_error;
 		safe_xcalloc(node_reg_ptr->job_id, node_reg_ptr->job_count,
 			     sizeof(uint32_t));
-		for (i = 0; i < node_reg_ptr->job_count; i++) {
-			safe_unpack32(&node_reg_ptr->job_id[i], buffer);
-		}
 		safe_xcalloc(node_reg_ptr->step_id, node_reg_ptr->job_count,
 			     sizeof(uint32_t));
 		for (i = 0; i < node_reg_ptr->job_count; i++) {
+			safe_unpack32(&node_reg_ptr->job_id[i], buffer);
 			safe_unpack32(&node_reg_ptr->step_id[i], buffer);
 		}
 
