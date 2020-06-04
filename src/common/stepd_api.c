@@ -1065,7 +1065,7 @@ rwfail:
  */
 int
 stepd_stat_jobacct(int fd, uint16_t protocol_version,
-		   job_step_id_msg_t *sent, job_step_stat_t *resp)
+		   slurm_step_id_t *sent, job_step_stat_t *resp)
 {
 	int req = REQUEST_STEP_STAT;
 	int rc = SLURM_SUCCESS;

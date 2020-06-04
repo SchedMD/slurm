@@ -881,7 +881,7 @@ extern void slurm_free_job_user_id_msg(job_user_id_msg_t * msg)
 	xfree(msg);
 }
 
-extern void slurm_free_job_step_id_msg(job_step_id_msg_t * msg)
+extern void slurm_free_step_id(slurm_step_id_t *msg)
 {
 	xfree(msg);
 }
@@ -4976,7 +4976,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_JOB_STEP_STAT:
 	case REQUEST_JOB_STEP_PIDS:
 	case REQUEST_STEP_LAYOUT:
-		slurm_free_job_step_id_msg(data);
+		slurm_free_step_id(data);
 		break;
 	case RESPONSE_JOB_STEP_STAT:
 		slurm_free_job_step_stat(data);

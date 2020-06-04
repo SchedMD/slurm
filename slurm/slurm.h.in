@@ -1797,6 +1797,11 @@ typedef struct slurm_step_layout {
 	uint32_t **tids;	/* host id => task id mapping */
 } slurm_step_layout_t;
 
+typedef struct slurm_step_id_msg {
+	uint32_t job_id;
+	uint32_t step_id;
+} slurm_step_id_t;
+
 typedef struct slurm_step_io_fds {
 	struct {
 		int fd;

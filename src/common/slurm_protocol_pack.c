@@ -8611,29 +8611,26 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_step_id_msg(job_step_id_msg_t * msg, Buf buffer,
-		      uint16_t protocol_version)
+static void _pack_step_id(slurm_step_id_t *msg, Buf buffer,
+			  uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		pack32((uint32_t)msg->job_id, buffer);
-		pack32((uint32_t)msg->step_id, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->step_id, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32((uint32_t)msg->job_id, buffer);
-		pack32((uint32_t)msg->step_id, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->step_id, buffer);
 	} else
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
 }
 
-
-static int
-_unpack_job_step_id_msg(job_step_id_msg_t ** msg_ptr, Buf buffer,
-			uint16_t protocol_version)
+static int _unpack_step_id(slurm_step_id_t **msg_ptr, Buf buffer,
+			   uint16_t protocol_version)
 {
-	job_step_id_msg_t *msg;
+	slurm_step_id_t *msg;
 
-	msg = xmalloc(sizeof(job_step_id_msg_t));
+	msg = xmalloc(sizeof(*msg));
 	*msg_ptr = msg;
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
@@ -8651,7 +8648,7 @@ _unpack_job_step_id_msg(job_step_id_msg_t ** msg_ptr, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_job_step_id_msg(msg);
+	slurm_free_step_id(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
@@ -12138,8 +12135,8 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_STEP_LAYOUT:
 	case REQUEST_JOB_STEP_STAT:
 	case REQUEST_JOB_STEP_PIDS:
-		_pack_job_step_id_msg((job_step_id_msg_t *)msg->data, buffer,
-				      msg->protocol_version);
+		_pack_step_id((slurm_step_id_t *)msg->data, buffer,
+			      msg->protocol_version);
 		break;
 	case RESPONSE_STEP_LAYOUT:
 		pack_slurm_step_layout((slurm_step_layout_t *)msg->data,
@@ -12768,7 +12765,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			& (msg->data), buffer,
 			msg->protocol_version);
 		break;
-		/********  job_step_id_t Messages  ********/
+		/********  slurm_step_id_t Messages  ********/
 	case REQUEST_JOB_INFO:
 		rc = _unpack_job_info_request_msg((job_info_request_msg_t**)
 						  & (msg->data), buffer,
@@ -12810,8 +12807,8 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_STEP_LAYOUT:
 	case REQUEST_JOB_STEP_STAT:
 	case REQUEST_JOB_STEP_PIDS:
-		rc = _unpack_job_step_id_msg((job_step_id_msg_t **)&msg->data,
-					     buffer, msg->protocol_version);
+		rc = _unpack_step_id((slurm_step_id_t **)&msg->data,
+				     buffer, msg->protocol_version);
 		break;
 	case RESPONSE_STEP_LAYOUT:
 		rc = unpack_slurm_step_layout(

@@ -3866,7 +3866,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
 	DEF_TIMERS;
-	job_step_id_msg_t *req = (job_step_id_msg_t *)msg->data;
+	slurm_step_id_t *req = (slurm_step_id_t *)msg->data;
 	slurm_step_layout_t *step_layout = NULL;
 	/* Locks: Read config job, write node */
 	slurmctld_lock_t job_read_lock = {

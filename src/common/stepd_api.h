@@ -291,7 +291,7 @@ int stepd_completion(int fd, uint16_t protocol_version,
  * resp receives a jobacctinfo_t which must be freed if SUCCESS.
  */
 int stepd_stat_jobacct(int fd, uint16_t protocol_version,
-		       job_step_id_msg_t *sent, job_step_stat_t *resp);
+		       slurm_step_id_t *sent, job_step_stat_t *resp);
 
 
 int stepd_task_info(int fd, uint16_t protocol_version,

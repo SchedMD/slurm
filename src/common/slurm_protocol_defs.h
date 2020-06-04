@@ -611,11 +611,6 @@ typedef struct job_user_id_msg {
 	uint16_t show_flags;
 } job_user_id_msg_t;
 
-typedef struct job_step_id_msg {
-	uint32_t job_id;
-	uint32_t step_id;
-} job_step_id_msg_t;
-
 typedef struct job_info_request_msg {
 	time_t last_update;
 	uint16_t show_flags;
@@ -1437,7 +1432,7 @@ extern void slurm_free_job_id_response_msg(job_id_response_msg_t * msg);
 extern void slurm_free_config_request_msg(config_request_msg_t *msg);
 extern void slurm_free_config_response_msg(config_response_msg_t *msg);
 
-extern void slurm_free_job_step_id_msg(job_step_id_msg_t *msg);
+extern void slurm_free_step_id(slurm_step_id_t *msg);
 
 extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 

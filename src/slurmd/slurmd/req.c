@@ -2940,7 +2940,7 @@ _enforce_job_mem_limit(void)
 	step_loc_t *stepd;
 	int fd, i, job_inx, job_cnt;
 	uint64_t step_rss, step_vsize;
-	job_step_id_msg_t acct_req;
+	slurm_step_id_t acct_req;
 	job_step_stat_t *resp = NULL;
 	struct job_mem_info {
 		uint32_t job_id;
@@ -3536,7 +3536,7 @@ static void _rpc_daemon_status(slurm_msg_t *msg)
 
 static void _rpc_stat_jobacct(slurm_msg_t *msg)
 {
-	job_step_id_msg_t *req = (job_step_id_msg_t *)msg->data;
+	slurm_step_id_t *req = (slurm_step_id_t *)msg->data;
 	slurm_msg_t        resp_msg;
 	job_step_stat_t *resp = NULL;
 	int fd;
@@ -3704,7 +3704,7 @@ static void _rpc_network_callerid(slurm_msg_t *msg)
 
 static void _rpc_list_pids(slurm_msg_t *msg)
 {
-	job_step_id_msg_t *req = (job_step_id_msg_t *)msg->data;
+	slurm_step_id_t *req = (slurm_step_id_t *)msg->data;
 	slurm_msg_t        resp_msg;
 	job_step_pids_t *resp = NULL;
 	int fd;
