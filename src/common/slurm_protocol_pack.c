@@ -115,6 +115,12 @@ static int _unpack_ret_list(List *ret_list, uint16_t size_val, Buf buffer,
 
 static void _priority_factors_resp_list_del(void *x);
 
+static void _pack_step_id(slurm_step_id_t *msg, Buf buffer,
+			  uint16_t protocol_version);
+static int _unpack_step_id_members(slurm_step_id_t *msg, Buf buffer,
+				   uint16_t protocol_version);
+static int _unpack_step_id(slurm_step_id_t **msg_ptr, Buf buffer,
+			   uint16_t protocol_version);
 
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
@@ -8625,13 +8631,10 @@ static void _pack_step_id(slurm_step_id_t *msg, Buf buffer,
 		      __func__, protocol_version);
 }
 
-static int _unpack_step_id(slurm_step_id_t **msg_ptr, Buf buffer,
-			   uint16_t protocol_version)
+static int _unpack_step_id_members(slurm_step_id_t *msg, Buf buffer,
+				   uint16_t protocol_version)
 {
-	slurm_step_id_t *msg;
-
-	msg = xmalloc(sizeof(*msg));
-	*msg_ptr = msg;
+	xassert(msg);
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
@@ -8648,6 +8651,22 @@ static int _unpack_step_id(slurm_step_id_t **msg_ptr, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	return SLURM_ERROR;
+}
+
+
+static int _unpack_step_id(slurm_step_id_t **msg_ptr, Buf buffer,
+			   uint16_t protocol_version)
+{
+	slurm_step_id_t *msg;
+
+	msg = xmalloc(sizeof(*msg));
+	*msg_ptr = msg;
+
+	if (_unpack_step_id_members(msg, buffer, protocol_version) ==
+	    SLURM_SUCCESS)
+		return SLURM_SUCCESS;
+
 	slurm_free_step_id(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
