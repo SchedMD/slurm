@@ -39,9 +39,6 @@ set orig_spank_conf "${cwd}/test${test_id}.orig_conf"
 set new_spank_conf  "${cwd}/test${test_id}.new_conf"
 set spank_out       "${cwd}/test${test_id}.spank.out"
 
-set NO_VAL 0xfffffffe
-set SLURM_BATCH_SCRIPT 0xfffffffb
-
 print_header $test_id
 
 if {[test_super_user] == 0} {

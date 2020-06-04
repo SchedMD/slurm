@@ -287,6 +287,14 @@ set no_delim_slash       "\[^(,:/\r\n\]"
 # Test out the regex here: https://regex101.com/r/FlNYKM/7
 set gres_regex "($no_delim_slash*):($no_delim*)?:?($no_delim*)"
 
+#basic #defines in slurm.h
+set NO_VAL 0xfffffffe
+set INFINITE 0xffffffff
+set SLURM_MAX_NORMAL_STEP_ID 0xfffffff0
+set SLURM_EXTERN_CONT 0xfffffffc
+set SLURM_BATCH_SCRIPT 0xfffffffb
+
+
 #
 # Cache SlurmUser to check for SuperUser requests
 #
