@@ -91,6 +91,12 @@
 /* No need to change we always pack SLURM_PROTOCOL_VERSION */
 #define RESV_STATE_VERSION          "PROTOCOL_VERSION"
 
+/*
+ * Max number of ordered bitmaps a reservation can select against.
+ * Last bitmap is always a NULL pointer
+ */
+#define MAX_BITMAPS 5
+
 typedef struct resv_thread_args {
 	char *script;
 	char *resv_name;
@@ -159,6 +165,12 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 static bitstr_t *_pick_nodes(bitstr_t *avail_nodes,
 				  resv_desc_msg_t *resv_desc_ptr,
 				  bitstr_t **core_bitmap);
+static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
+			       bitstr_t **core_bitmaps,
+			       resv_desc_msg_t *resv_desc_ptr,
+			       bitstr_t **ret_node_bitmap,
+			       bitstr_t **ret_core_bitmap,
+			       const char **bitmap_tags);
 static bitstr_t *_pick_idle_xand_nodes(bitstr_t *avail_bitmap,
 				       resv_desc_msg_t *resv_desc_ptr,
 				       bitstr_t **core_bitmap,
@@ -3936,6 +3948,7 @@ static int _have_xor_feature(void *x, void *key)
 }
 
 /*
+ * Select nodes using given node bitmap and/or core_bitmap
  * Given a reservation create request, select appropriate nodes for use
  * resv_desc_ptr IN - Reservation request, node_list field set on exit
  * part_ptr IN/OUT - Desired partition, if NULL then set to default part
@@ -4172,51 +4185,277 @@ TRY_AVAIL:
 	return ret_bitmap;
 }
 
-static bitstr_t *_pick_nodes(bitstr_t *avail_bitmap,
-			     resv_desc_msg_t *resv_desc_ptr,
-			     bitstr_t **core_bitmap)
+/*
+ * Pick nodes based on ordered list of bitmaps
+ * IN avail_bitmaps - bitmap array of size MAX_BITMAPS.
+ * 	last pointer must be NULL.
+ * 	Ordered list of nodes that could be used for the reservation.
+ * 	Will attempt to use nodes from low ordered bitmaps first.
+ * IN/OUT core_bitmaps - NULL, or bitmap array of size MAX_BITMAPS.
+ * 	last pointer must be NULL.
+ * 	Ordered list of cores that could be used for the reservation.
+ * 	Will attempt to use cores from low ordered bitmaps first.
+ * 	Cores must match nodes in same node avail_bitmap.
+ * 	Cores will be updated as chosen.
+ * IN/OUT resv_desc_ptr - Reservation requesting nodes.
+ * 	node_list will be updated every run.
+ * OUT ret_node_bitmap - on success, set to new bitmap of nodes.
+ * 	caller must xfree.
+ * OUT ret_core_bitmap - on success, set to new bitmap of core
+ * 	caller must xfree.
+ * IN bitmap_tags - NULL, or array of cstrings giving a tag for each array index
+ * 	in the bitmaps
+ * RET SLURM_SUCCESS or error
+ */
+static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
+			       bitstr_t **core_bitmaps,
+			       resv_desc_msg_t *resv_desc_ptr,
+			       bitstr_t **ret_node_bitmap,
+			       bitstr_t **ret_core_bitmap,
+			       const char **bitmap_tags)
 {
-	int i;
-	bitstr_t *ret_bitmap = NULL, *tmp_bitmap;
+	bitstr_t *selected_bitmap = bit_alloc(bit_size(avail_bitmaps[0]));
+	bitstr_t *selected_core_bitmap = NULL;
+
+	if (core_bitmaps && core_bitmaps[0])
+		selected_core_bitmap = bit_alloc(bit_size(core_bitmaps[0]));
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+		char *cores = NULL, *nodes = NULL, *pos = NULL,
+		     *node_cnt = NULL, *core_cnt = NULL;
+		size_t max_bitmap = 0;
+
+		for (size_t b = 0; (b < MAX_BITMAPS) && avail_bitmaps[b]; b++) {
+			char *tmp = bitmap2node_name(avail_bitmaps[b]);
+			xstrfmtcatat(nodes, &pos, "%s%s[%zu]=%s",
+				     (b == 0 ? "" : ","),
+				     (bitmap_tags ? bitmap_tags[b] : ""),
+				     b,
+				     ((!tmp || !tmp[0]) ? "(NONE)" : tmp));
+			xfree(tmp);
+
+			max_bitmap = MAX(max_bitmap, (b + 1));
+		}
+		pos = NULL;
+
+		for (size_t b = 0; (b < MAX_BITMAPS) && core_bitmaps[b]; b++) {
+			char *tmp = bit_fmt_full(core_bitmaps[b]);
+			xstrfmtcatat(cores, &pos, "%s%s[%zu]=%s",
+				     (b == 0 ? "" : ","),
+				     (bitmap_tags ? bitmap_tags[b] : ""),
+				     b,
+				     ((!tmp || !tmp[0]) ? "(NONE)" : tmp));
+			xfree(tmp);
+
+			max_bitmap = MAX(max_bitmap, (b + 1));
+		}
+		pos = NULL;
+
+		for (size_t i = 0; (resv_desc_ptr->node_cnt &&
+				    resv_desc_ptr->node_cnt[i]); i++)
+			xstrfmtcatat(node_cnt, &pos, "%s%u",
+				     (i == 0 ? "" : ","),
+				     resv_desc_ptr->node_cnt[i]);
+		pos = NULL;
+
+		for (size_t i = 0; (resv_desc_ptr->core_cnt &&
+				    resv_desc_ptr->core_cnt[i]); i++)
+			xstrfmtcatat(core_cnt, &pos, "%s%u",
+				     (i == 0 ? "" : ","),
+				     resv_desc_ptr->core_cnt[i]);
+
+		log_flag(RESERVATION, "%s: reservation %s picking from %zu bitmaps avail_nodes_bitmaps[%s]:%s used_cores_bitmaps[%s]:%s",
+			 __func__, resv_desc_ptr->name, max_bitmap, node_cnt,
+			 nodes, core_cnt, (cores ? cores : "(NONE)"));
+
+		xfree(cores);
+		xfree(nodes);
+		xfree(node_cnt);
+		xfree(core_cnt);
+	}
 
 	/* Free node_list here, it could be filled in by the select plugin. */
 	xfree(resv_desc_ptr->node_list);
 
-	if (!resv_desc_ptr->node_cnt || (!resv_desc_ptr->node_cnt[0] &&
-	    !resv_desc_ptr->node_cnt[1])) {
-		return _pick_node_cnt(avail_bitmap, resv_desc_ptr, 0,
-				      core_bitmap);
+	for (size_t i = 0; (resv_desc_ptr->node_cnt &&
+			    resv_desc_ptr->node_cnt[i]) ||
+	     (resv_desc_ptr->core_cnt && resv_desc_ptr->core_cnt[i]); i++) {
+		size_t remain_nodes = 0, remain_cores = 0;
+
+		if (resv_desc_ptr->node_cnt)
+			remain_nodes = resv_desc_ptr->node_cnt[i];
+		if (resv_desc_ptr->core_cnt)
+			remain_cores = resv_desc_ptr->core_cnt[i];
+
+		for (size_t b = 0; (remain_nodes || remain_cores) &&
+		     (b < MAX_BITMAPS) && avail_bitmaps[b]; b++) {
+			bitstr_t *tmp_bitmap;
+			size_t nodes_picked, cores_picked = 0;
+
+			if (!bit_set_count(avail_bitmaps[b])) {
+				log_flag(RESERVATION, "%s: reservation %s skipping empty bitmap:%s[%zu]",
+					 __func__, resv_desc_ptr->name,
+					 (bitmap_tags ? bitmap_tags[b] : ""),
+					 b);
+				continue;
+			}
+
+			tmp_bitmap = _pick_node_cnt(avail_bitmaps[b],
+						    resv_desc_ptr, remain_nodes,
+						    &core_bitmaps[b]);
+			if (tmp_bitmap == NULL) {	/* allocation failure */
+				log_flag(RESERVATION, "%s: reservation %s of 0/%zu nodes with bitmap:%s[%zu]",
+					 __func__, resv_desc_ptr->name,
+					 remain_nodes,
+					 (bitmap_tags ? bitmap_tags[b] : ""),
+					 b);
+				continue;
+			}
+
+			/* avoid counting already reserved nodes */
+			bit_and_not(tmp_bitmap, selected_bitmap);
+
+			/* grab counts of picked resources */
+			nodes_picked = bit_set_count(tmp_bitmap);
+			if (core_bitmaps[b])
+				cores_picked = bit_set_count(core_bitmaps[b]);
+
+			if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+				char *nodes = bitmap2node_name(tmp_bitmap);
+				char *cores = NULL;
+
+				if (core_bitmaps[b])
+					cores = bit_fmt_full(core_bitmaps[b]);
+
+				log_flag(RESERVATION, "%s: reservation %s picked from bitmap:%s[%zu] nodes[%zu/%zu]:%s cores[%zu]:%s",
+					 __func__, resv_desc_ptr->name,
+					 (bitmap_tags ? bitmap_tags[b] : ""), b,
+					 remain_nodes, nodes_picked, nodes,
+					 cores_picked, cores);
+
+				xfree(nodes);
+				xfree(cores);
+			}
+
+			if (nodes_picked <= remain_nodes)
+				remain_nodes -= nodes_picked;
+			else
+				remain_nodes = 0;
+
+			if (core_bitmaps[b]) {
+				if (cores_picked <= remain_cores)
+					remain_cores -= cores_picked;
+				else
+					remain_cores = 0;
+
+				if (!selected_core_bitmap) {
+					/*
+					 * select plugin made a core bitmap, use
+					 * it for selected cores instead
+					 */
+					selected_core_bitmap = core_bitmaps[b];
+					core_bitmaps[b] = NULL;
+				} else
+					bit_or(selected_core_bitmap,
+					       core_bitmaps[b]);
+			}
+			bit_or(selected_bitmap, tmp_bitmap);
+			bit_and_not(avail_bitmaps[b], tmp_bitmap);
+			FREE_NULL_BITMAP(tmp_bitmap);
+
+			if (!remain_nodes) {
+				log_flag(RESERVATION, "%s: reservation %s selected sufficient nodes by bitmap:%s[%zu]",
+					 __func__, resv_desc_ptr->name,
+					 (bitmap_tags ? bitmap_tags[b] : ""),
+					 b);
+			} else if (selected_core_bitmap && !remain_cores) {
+				log_flag(RESERVATION, "%s: reservation %s selected sufficient cores by bitmap:%s[%zu]",
+					 __func__, resv_desc_ptr->name,
+					 (bitmap_tags ? bitmap_tags[b] : ""),
+					 b);
+			} else {
+				log_flag(RESERVATION, "%s: reservation %s requires nodes:%zu cores:%zu after bitmap:%s[%zu]",
+					 __func__, resv_desc_ptr->name,
+					 remain_nodes, remain_cores,
+					 (bitmap_tags ? bitmap_tags[b] : ""),
+					 b);
+			}
+		}
 	}
 
-	/* Need to create reservation containing multiple blocks */
-	for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
-		tmp_bitmap = _pick_node_cnt(avail_bitmap, resv_desc_ptr,
-					    resv_desc_ptr->node_cnt[i],
-					    core_bitmap);
-		if (tmp_bitmap == NULL) {	/* allocation failure */
-			log_flag(RESERVATION, "%s: reservation %s of %u nodes failed",
-				 __func__, resv_desc_ptr->name,
-				 resv_desc_ptr->node_cnt[i]);
-			FREE_NULL_BITMAP(ret_bitmap);
-			return NULL;
-		}
+	/* If nothing selected, return a NULL pointer instead */
+	if (!selected_bitmap || !bit_set_count(selected_bitmap)) {
+		log_flag(RESERVATION, "%s: reservation %s unable to pick any nodes",
+			 __func__, resv_desc_ptr->name);
+		FREE_NULL_BITMAP(selected_bitmap);
+		FREE_NULL_BITMAP(selected_core_bitmap);
+		return ESLURM_NODES_BUSY;
+	} else {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
-			char *tmp_name;
-			tmp_name = bitmap2node_name(tmp_bitmap);
-			log_flag(RESERVATION, "%s reservation %s of %u nodes, using %s",
-				 __func__, resv_desc_ptr->name,
-				 resv_desc_ptr->node_cnt[i], tmp_name);
-			xfree(tmp_name);
+			char *nodes = NULL;
+			int node_cnt = 0;
+			char *cores = NULL;
+			int core_cnt = 0;
+
+			if (selected_bitmap) {
+				nodes = bitmap2node_name(selected_bitmap);
+				node_cnt = bit_set_count(selected_bitmap);
+			}
+			if (selected_core_bitmap) {
+				cores = bit_fmt_full(selected_core_bitmap);
+				core_cnt = bit_set_count(selected_core_bitmap);
+			}
+			log_flag(RESERVATION, "%s: reservation %s picked nodes[%u]:%s cores[%u]:%s",
+				 __func__, resv_desc_ptr->name, node_cnt, nodes,
+				 core_cnt, cores);
+			xfree(nodes);
+			xfree(cores);
 		}
-		if (ret_bitmap)
-			bit_or(ret_bitmap, tmp_bitmap);
-		else
-			ret_bitmap = bit_copy(tmp_bitmap);
-		bit_and_not(avail_bitmap, tmp_bitmap);
-		FREE_NULL_BITMAP(tmp_bitmap);
+
+		*ret_node_bitmap = selected_bitmap;
+		*ret_core_bitmap = selected_core_bitmap;
+		return SLURM_SUCCESS;
+	}
+}
+
+/*
+ * Select nodes using given a single node bitmap and/or core_bitmap
+ */
+static bitstr_t *_pick_nodes(bitstr_t *avail_bitmap,
+			     resv_desc_msg_t *resv_desc_ptr,
+			     bitstr_t **core_bitmap)
+{
+	bitstr_t *avail_bitmaps[MAX_BITMAPS] = { avail_bitmap };
+	bitstr_t *avail_core_bitmaps[MAX_BITMAPS] = { *core_bitmap };
+	bitstr_t *ret_node_bitmap = NULL;
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+		char *nodes = NULL;
+		int node_cnt = 0;
+		char *cores = NULL;
+		int core_cnt = 0;
+
+		if (avail_bitmap) {
+			nodes = bitmap2node_name(avail_bitmap);
+			node_cnt = bit_set_count(avail_bitmap);
+		}
+		if (*core_bitmap) {
+			cores = bit_fmt_full(*core_bitmap);
+			core_cnt = bit_set_count(*core_bitmap);
+		}
+		log_flag(RESERVATION, "%s: reservation %s picking nodes[%u]:%s cores[%u]:%s",
+			 __func__, resv_desc_ptr->name, node_cnt, nodes,
+			 core_cnt, cores);
+		xfree(nodes);
+		xfree(cores);
 	}
 
-	return ret_bitmap;
+	if (_pick_nodes_ordered(avail_bitmaps, avail_core_bitmaps,
+				resv_desc_ptr, &ret_node_bitmap, core_bitmap,
+				NULL))
+		return NULL;
+	else
+		return ret_node_bitmap;
 }
 
 static void _check_job_compatibility(job_record_t *job_ptr,
