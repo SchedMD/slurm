@@ -941,6 +941,28 @@ int _print_job_time_submit(job_info_t * job, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_time_pending(job_info_t *job, int width, bool right,
+			    char *suffix)
+{
+	time_t now = time(NULL);
+
+	/*
+	 * If the job has started, defined as (start - submit).
+	 * Else, defined as (now - submit).
+	 */
+
+	if (!job)	/* Print the Header instead */
+		_print_str("PENDING_TIME", width, right, true);
+	else if (job->start_time && (job->start_time < now))
+		_print_int((job->start_time - job->submit_time), width, right,
+			   true);
+	else
+		_print_int((now - job->submit_time), width, right, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_time_start(job_info_t * job, int width, bool right,
 			  char* suffix)
 {

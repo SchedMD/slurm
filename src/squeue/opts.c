@@ -1405,6 +1405,11 @@ extern int parse_long_format( char* format_long )
 							    field_size,
 							    right_justify,
 							    suffix );
+			else if (!xstrcasecmp(token, "pendingtime"))
+				job_format_add_time_pending(params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix);
 			else if (!xstrcasecmp(token, "wckey"))
 				job_format_add_wckey( params.format_list,
 						      field_size,
