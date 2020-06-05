@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression where a dependency on multiple jobs in a single array using
     underscores would only add the first job.
  -- slurmrestd - fix corrupted output due to incorrect use of memcpy().
+ -- slurmrestd - address a number of minor Coverity warnings.
 
 * Changes in Slurm 20.02.3
 ==========================
