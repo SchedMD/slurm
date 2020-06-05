@@ -735,8 +735,9 @@ static void _handle_write(void *x)
 		 * not all data written, need to shift it to start of
 		 * buffer and fix offset
 		 */
-		memcpy(get_buf_data(con->out), (get_buf_data(con->out) + wrote),
-		       (get_buf_offset(con->out) - wrote));
+		memmove(get_buf_data(con->out),
+			(get_buf_data(con->out) + wrote),
+			(get_buf_offset(con->out) - wrote));
 
 		/* reset start of offset to end of previous data */
 		set_buf_offset(con->out, (get_buf_offset(con->out) - wrote));
@@ -778,17 +779,16 @@ static void _wrap_on_data(void *x)
 		return;
 	}
 
-	xassert(get_buf_offset(con->in) >= 0);
 	if (get_buf_offset(con->in) < size_buf(con->in)) {
 		if (get_buf_offset(con->in) > 0) {
 			/*
 			 * not all data read, need to shift it to start of
 			 * buffer and fix offset
 			 */
-			memcpy(get_buf_data(con->in),
-			       (get_buf_data(con->in) +
-				get_buf_offset(con->in)),
-			       remaining_buf(con->in));
+			memmove(get_buf_data(con->in),
+				(get_buf_data(con->in) +
+				 get_buf_offset(con->in)),
+				remaining_buf(con->in));
 
 			/* reset start of offset to end of previous data */
 			set_buf_offset(con->in, remaining_buf(con->in));
@@ -1692,8 +1692,8 @@ extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 		grow_buf(con->out, need);
 	}
 
-	memcpy(get_buf_data(con->out) + get_buf_offset(con->out), buffer,
-	       bytes);
+	memmove((get_buf_data(con->out) + get_buf_offset(con->out)), buffer,
+		bytes);
 	con->out->processed += bytes;
 
 	log_flag(NET, "%s: [%s] queued %zu/%u bytes in outgoing buffer",

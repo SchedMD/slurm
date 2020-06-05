@@ -128,6 +128,7 @@ static void _parse_env(void)
 			list_append(socket_listen, xstrdup(ptr1));
 			ptr1 = strtok_r(NULL, ",", &ptr2);
 		}
+		xfree(toklist);
 	}
 }
 
@@ -292,7 +293,8 @@ int main(int argc, char **argv)
 		.on_finish = on_http_connection_finish,
 	};
 
-	sigaction(SIGPIPE, &sigpipe_handler, NULL);
+	if (sigaction(SIGPIPE, &sigpipe_handler, NULL) == -1)
+		fatal("%s: unable to control SIGPIPE: %m", __func__);
 
 	_parse_env();
 	_parse_commandline(argc, argv);

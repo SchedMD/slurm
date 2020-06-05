@@ -467,6 +467,7 @@ static bool _match_param(const data_t *data, match_path_from_data_t *args)
 	default: /* assume string */
 		debug("%s: unknown parameter type %s",
 		      __func__, _get_parameter_type_string(entry->parameter));
+		/* fall through */
 	case OPENAPI_TYPE_STRING:
 	{
 		if (data_convert_type(match, DATA_TYPE_STRING) ==
