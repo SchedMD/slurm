@@ -1137,7 +1137,7 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 			fprintf(stderr, " Please either remove the "
 				"accounts listed "
 				"above from list and resubmit,\n"
-				" or change these users default account to "
+				" or change these users' default accounts to "
 				"remove the account(s).\n"
 				" Changes Discarded\n");
 			slurmdb_connection_commit(db_conn, 0);
