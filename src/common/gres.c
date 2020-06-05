@@ -6259,7 +6259,7 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			 * A likely sign that GresPlugins has changed.
 			 * Not a fatal error, skip over the data.
 			 */
-			error("%s: no plugin configured to unpack data type %u from job %u",
+			error("%s: no plugin configured to unpack data type %u from job %u. This is likely due to a difference in the GresTypes configured in slurm.conf on different cluster nodes.",
 			      __func__, plugin_id, job_id);
 			_job_state_delete(gres_job_ptr);
 			continue;
