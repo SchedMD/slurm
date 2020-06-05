@@ -9,7 +9,7 @@ Nodes possess resources such as processors, memory, swap, local
 disk, etc. and jobs consume these resources. The exclusive use default policy
 in Slurm can result in inefficient utilization of the cluster and of its nodes
 resources.
-Slurm's <i>cons_res</i> or consumable resource plugin is available to
+Slurm's <i>cons_res</i> and <i>cons_tres</i> plugins are available to
 manage resources on a much more fine-grained basis as described below.</p>
 
 <h2>Using the Consumable Resource Allocation Plugin: <b>select/cons_res</b></h2>
@@ -78,19 +78,50 @@ configuration parameter, the extra processes will time share the allocated
 resources.</li>
 </ul>
 
+<h2>Using the Consumable Trackable Resource Plugin: <b>select/cons_tres</b></h2>
+<ul>
+<li>The Consumable Trackable Resources (<b>cons_tres</b>) plugin provides all
+the same functionality provided by the Consumable Resources (<b>cons_res</b>)
+plugin. It also includes additional functionality specifically
+related to GPUs.</li>
+<li>Additional parameters available for the <b>cons_tres</b> plugin:
+  <ul>
+  <li><b>DefCpuPerGPU</b>: Default number of CPUs allocated per GPU.</li>
+  <li><b>DefMemPerGPU</b>: Default amount of memory allocated per GPU.</li>
+  </ul></li>
+<li>Additional job submit options available for the <b>cons_tres</b> plugin:
+  <ul>
+  <li><b>--cpus-per-gpu=</b>: Number of CPUs for every GPU.</li>
+  <li><b>--gpus=</b>: Count of GPUs for entire job allocation.</li>
+  <li><b>--gpu-bind=</b>: Bind task to specific GPU(s).</li>
+  <li><b>--gpu-freq=</b>: Request specific GPU/memory frequencies.</li>
+  <li><b>--gpus-per-node=</b>: Number of GPUs per node.</li>
+  <li><b>--gpus-per-socket=</b>: Number of GPUs per socket.</li>
+  <li><b>--gpus-per-task=</b>: Number of GPUs per task.</li>
+  <li><b>--mem-per-gpu=</b>: Amount of memory for each GPU.</li>
+  </ul></li>
+<li>The consumable trackable resource plugin is enabled via the SelectType
+parameter in the slurm.conf.</li>
+<pre>
+# Excerpt from sample slurm.conf file
+SelectType=select/cons_tres
+</pre>
+</ul>
+
 <h2>General Comments</h2>
 
 <ul>
 <li>Slurm's default <b>select/linear</b> plugin is using a best fit algorithm
 based on number of consecutive nodes. The same node allocation approach is used
-in <b>select/cons_res</b> for consistency.</li>
+with <b>select/cons_res</b> and <b>select/cons_tres</b> for consistency.</li>
 
-<li>The <b>select/cons_res</b> plugin is enabled or disabled cluster-wide.</li>
+<li>The <b>select/cons_res</b> and <b>select/cons_tres</b> plugins are enabled
+or disabled cluster-wide.</li>
 
-<li>In the case where <b>select/cons_res</b> is not enabled, the normal Slurm
-behaviors are not disrupted. The only changes, users see when using the
-<b>select/cons_res</b> plugin, are that jobs can be co-scheduled on nodes when
-resources permit it.
+<li>In the case where <b>select/linear</b> is enabled, the normal Slurm
+behaviors are not disrupted. The only changes users see when using the
+<b>select/cons_res</b> or <b>select/cons_tres</b> plugins, are that jobs can be
+co-scheduled on nodes when resources permit it.
 The rest of Slurm, such as srun and its options (except srun -s ...), etc. are not
 effected by this plugin. Slurm is, from a user point of view, working the same
 way as when using the default node selection scheme.</li>
@@ -336,6 +367,6 @@ programs that will take advantage of all the CPUs within a node but only need
 one mpi process per node.</p>
 
 
-<p style="text-align:center;">Last modified 5 June 2020</p>
+<p style="text-align:center;">Last modified 26 June 2020</p>
 
 <!--#include virtual="footer.txt"-->

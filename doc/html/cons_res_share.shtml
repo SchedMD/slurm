@@ -16,9 +16,10 @@ When the default <CODE>select/linear</CODE> plugin is enabled, the
 per-partition <CODE>OverSubscribe</CODE> setting controls whether or not the
 <B>nodes</B> are shared among jobs.
 </P></LI><LI><P>
-When the <CODE>select/cons_res</CODE> plugin is enabled, the per-partition
-<CODE>OverSubscribe</CODE> setting controls whether or not the <B>configured consumable
-resources</B> are shared among jobs. When a consumable resource such as a core,
+When the <CODE>select/cons_res</CODE> or <CODE>select/cons_tres</CODE> plugins
+are enabled, the per-partition <CODE>OverSubscribe</CODE> setting controls
+whether or not the <B>configured consumable resources</B> are shared among jobs.
+When a consumable resource such as a core,
 socket, or CPU is shared, it means that more than one job can be assigned to it.
 </P></LI></UL>
 </P>
@@ -44,7 +45,7 @@ option.</TD>
 <TD>Each whole node can be allocated to multiple jobs up to the count specified
 per partition/queue (default 4 jobs per node)</TD>
 </TR><TR>
-<TD ROWSPAN=3>SelectType=<B>select/cons_res</B><BR>
+<TD ROWSPAN=3>SelectType=<B>select/cons_res</B> or <B>select/cons_tres</B><BR>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_Core</B><BR>
 SelectTypeParameters=<B>CR_Core_Memory</B></TD>
@@ -61,7 +62,7 @@ option.</TD>
 <TD>Each core can be allocated to multiple jobs up to the count specified
 per partition/queue (default 4 jobs per core).</TD>
 </TR><TR>
-<TD ROWSPAN=3>SelectType=<B>select/cons_res</B><BR>
+<TD ROWSPAN=3>SelectType=<B>select/cons_res</B> or <B>select/cons_tres</B><BR>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_CPU</B><BR>
 SelectTypeParameters=<B>CR_CPU_Memory</B></TD>
@@ -78,7 +79,7 @@ option.</TD>
 <TD>Each CPU can be allocated to multiple jobs up to the count specified
 per partition/queue (default 4 jobs per CPU).</TD>
 </TR><TR>
-<TD ROWSPAN=3>SelectType=<B>select/cons_res</B><BR>
+<TD ROWSPAN=3>SelectType=<B>select/cons_res</B> or <B>select/cons_tres</B><BR>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_Socket</B><BR>
 SelectTypeParameters=<B>CR_Socket_Memory</B></TD>
@@ -105,24 +106,26 @@ running two or more jobs. This is the same approach that the
 </P>
 <P>
 Note that the <B>granularity</B> of the "least-loaded" algorithm is what
-distinguishes the two selection plugins (<CODE>cons_res</CODE> and
-<CODE>linear</CODE>) when <CODE>OverSubscribe=FORCE</CODE> is configured. With the
-<CODE>select/cons_res</CODE> plugin enabled, the CPUs of a node are not
+distinguishes the consumable resource and linear plugins
+when <CODE>OverSubscribe=FORCE</CODE> is configured. With the
+<CODE>select/cons_res</CODE> or <CODE>select/cons_tres</CODE> plugin enabled,
+the CPUs of a node are not
 overcommitted until <B>all</B> of the rest of the CPUs are overcommitted on the
 other nodes. Thus if one job allocates half of the CPUs on a node and then a
 second job is submitted that requires more than half of the CPUs, the
-<CODE>select/cons_res</CODE> plugin will attempt to place this new job on other
+consumable resource plugin will attempt to place this new job on other
 busy nodes that have more than half of the CPUs available for use. The
 <CODE>select/linear</CODE> plugin simply counts jobs on nodes, and does not
 track the CPU usage on each node.
 </P><P>
-This new sharing functionality in the select/cons_res plugin also supports the
+The sharing functionality in the <CODE>select/cons_res</CODE> and
+<CODE>select/cons_tres</CODE> plugins also support the
 new <CODE>OverSubscribe=FORCE:&lt;num&gt;</CODE> syntax. If <CODE>OverSubscribe=FORCE:3</CODE>
-is configured with <CODE>select/cons_res</CODE> and <CODE>CR_Core</CODE> or
-<CODE>CR_Core_Memory</CODE>, then the <CODE>select/cons_res</CODE> plugin will
+is configured with a consumable resource plugin and <CODE>CR_Core</CODE> or
+<CODE>CR_Core_Memory</CODE>, then the plugin will
 run up to 3 jobs on each <U>core</U> of each node in the partition. If
 <CODE>CR_Socket</CODE> or <CODE>CR_Socket_Memory</CODE> is configured, then the
-<CODE>select/cons_res</CODE> plugin will run up to 3 jobs on each <U>socket</U>
+plugin will run up to 3 jobs on each <U>socket</U>
 of each node in the partition.
 </P>
 <H3>Nodes in Multiple Partitions</H3>
@@ -146,10 +149,10 @@ share resources</TD><TD>Jobs do not run on the same nodes</TD></TR>
 <TD>Jobs can run on the same nodes but will not share resources</TD></TR>
 </TABLE>
 <P>
-The next table contains several
-scenarios with the <CODE>select/cons_res</CODE> plugin enabled to further
+The next table contains several scenarios with the <CODE>select/cons_res</CODE>
+or <CODE>select/cons_tres</CODE> plugins enabled to further
 clarify how a node is used when it is configured in more than one partition and
-the partitions have different "OverSubscribe" policies:
+the partitions have different "OverSubscribe" policies.
 </P>
 <TABLE CELLPADDING=3 CELLSPACING=1 BORDER=1>
 <TR><TH>Slurm configuration</TH>
@@ -192,7 +195,7 @@ priority. This works in reverse also, and in fact it's easier for jobs from the
 consumable resource "sharing" provides more resource availability for new jobs
 to begin running "on top of" the existing jobs. This happens with the
 <CODE>select/linear</CODE> plugin also, so it's not specific to the
-<CODE>select/cons_res</CODE> plugin.
+<CODE>select/cons_res</CODE> or <CODE>select/cons_tres</CODE> plugins.
 </P>
 
 <H3>Memory Management</H3>
@@ -215,7 +218,7 @@ SelectTypeParameters=<B>CR_Memory</B></TD>
 memory to meet the jobs memory requirement will not be allocated to the job.
 </TD>
 </TR><TR>
-<TD>SelectType=<B>select/cons_res</B><BR>
+<TD>SelectType=<B>select/cons_res</B> or <B>select/cons_tres</B><BR>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_Core</B><BR>
 SelectTypeParameters=<B>CR_CPU</B><BR>
@@ -223,7 +226,7 @@ SelectTypeParameters=<B>CR_Socket</B></TD>
 <TD>Memory allocation is not tracked. Jobs are allocated to consumable resources
 without considering if there is enough free memory. Swapping could occur!</TD>
 </TR><TR>
-<TD>SelectType=<B>select/cons_res</B><BR>
+<TD>SelectType=<B>select/cons_res</B> or <B>select/cons_tres</B><BR>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_Memory</B><BR>
 SelectTypeParameters=<B>CR_Core_Memory</B><BR>
@@ -241,8 +244,8 @@ for use with the <CODE>select/linear</CODE> plugin, which allocates
 whole nodes to jobs. The
 <CODE>srun --mem-per-cpu=&lt;num&gt;</CODE> option can be used to specify the
 jobs memory requirement on a per allocated CPU basis. This is recommended
-for use with the <CODE>select/cons_res</CODE> plugin which can
-allocate individual CPUs to jobs.</P>
+for use with the <CODE>select/cons_res</CODE> or <CODE>select/cons_tres</CODE>
+plugins, which can allocate individual CPUs to jobs.</P>
 
 <P>Default and maximum values for memory on a per node or per CPU basis can
 be configured by the system administrator using the following
@@ -261,6 +264,6 @@ the accounting plugin, which periodically gathers data about running jobs. Set
 values suitable for your system.</P>
 
 
-<p style="text-align:center;">Last modified 31 March 2016</p>
+<p style="text-align:center;">Last modified 26 June 2020</p>
 
 <!--#include virtual="footer.txt"-->

@@ -49,7 +49,9 @@ job step.  Node selection is therefore influenced by many of the configuration a
 that control the allocation of CPUs (Step 2 below).
 If <font face="Courier New, monospace">
 SelectType=select/linear</font> is configured, all resources on the selected nodes will be allocated
-to the job/step. If <font face="Courier New, monospace">SelectType=select/cons_res</font> is configured,
+to the job/step. If <font face="Courier New, monospace">SelectType</font> is configured to be
+<font face="Courier New, monospace">select/cons_res</font> or
+<font face="Courier New, monospace">select/cons_tres</font>,
 individual sockets, cores and threads may be allocated from the selected nodes as
 <a href="cons_res.html">consumable resources</a>. The consumable resource type is defined by
 <font face="Courier New, monospace">SelectTypeParameters.</font>
@@ -126,7 +128,7 @@ Step 1 is performed by slurmctld and the select plugin.
 			</td>
 			<td height="18" width="20%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-			       <font face="Courier New, monospace">select/linear | select/cons_res</font></font></p>
+			       <font face="Courier New, monospace">select/linear | select/cons_res | select/cons_tres</font></font></p>
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">Controls
@@ -479,12 +481,16 @@ in Step 1. CPU allocation is therefore influenced by the configuration and comma
 that relate to node selection.
 If <font face="Courier New, monospace">
 SelectType=select/linear</font> is configured, all resources on the selected nodes will be allocated
-to the job/step. If <font face="Courier New, monospace">SelectType=select/cons_res</font> is configured,
+to the job/step. If <font face="Courier New, monospace">SelectType</font> is configured to be
+<font face="Courier New, monospace">select/cons_res</font> or
+<font face="Courier New, monospace">select/cons_tres</font>,
 individual sockets, cores and threads may be allocated from the selected nodes as
 <a href="cons_res.html">consumable resources</a>. The consumable resource type is defined by
 <font face="Courier New, monospace">SelectTypeParameters.</font>
 <br>
-</p><p>When using <font face="Courier New, monospace">SelectType=select/cons_res</font>,
+</p><p>When using a <font face="Courier New, monospace">SelectType</font> of
+<font face="Courier New, monospace">select/cons_res</font> or
+<font face="Courier New, monospace">select/cons_tres</font>,
 the default allocation method across nodes is block allocation (allocate all available CPUs in
 a node before using another node). The default allocation method within a node is cyclic
 allocation (allocate available CPUs in a round-robin fashion across the sockets within a node).
@@ -563,7 +569,7 @@ Step 2 is performed by slurmctld and the select plugin.
 			</td>
 			<td height="18" width="20%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-			       <font face="Courier New, monospace">select/linear | select/cons_res</font></font></p>
+			       <font face="Courier New, monospace">select/linear | select/cons_res | select/cons_tres</font></font></p>
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">Controls
@@ -1559,6 +1565,9 @@ Nodename=n3 NodeAddr=node3 Sockets=2 CoresPerSocket=4 ThreadsPerCore=2 Procs=16 
 PartitionName=regnodes Nodes=n0,n1,n2 OverSubscribe=YES Default=YES State=UP
 PartitionName=hypernode Nodes=n3 State=UP
 </pre>
+<p>These examples show the use of the <font face="Courier New, monospace">cons_res</font>
+select type plugin, but they could use the
+<font face="Courier New, monospace">cons_tres</font> plugin with the same effect.</p>
 <br>
 <a name="Example1"></a>
 <h3>Example 1: Allocation of whole nodes</h3>
@@ -3532,6 +3541,6 @@ and binding for this job. For example, task id 2 is bound to CPU id 2.
 </center>
 
 
-<p style="text-align:center;">Last modified 9 October 2019</p>
+<p style="text-align:center;">Last modified 26 June 2020</p>
 
 <!--#include virtual="footer.txt"-->
