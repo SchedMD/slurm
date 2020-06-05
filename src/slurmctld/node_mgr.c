@@ -2775,15 +2775,6 @@ static front_end_record_t * _front_end_reg(
 	return front_end_ptr;
 }
 
-static char *_build_step_id(char *buf, int buf_len, uint32_t step_id)
-{
-	if (step_id == SLURM_BATCH_SCRIPT)
-		snprintf(buf, buf_len, "StepId=Batch");
-	else
-		snprintf(buf, buf_len, "StepId=%u", step_id);
-	return buf;
-}
-
 /*
  * validate_nodes_via_front_end - validate all nodes on a cluster as having
  *	a valid configuration as soon as the front-end registers. Individual
@@ -2844,8 +2835,8 @@ extern int validate_nodes_via_front_end(
 		     (reg_msg->job_id[i] <= MAX_NOALLOC_JOBID) ) {
 			info("NoAllocate JobId=%u %s reported",
 			     reg_msg->job_id[i],
-			     _build_step_id(step_str, sizeof(step_str),
-					    reg_msg->step_id[i]));
+			     build_step_id(step_str, sizeof(step_str),
+					   reg_msg->step_id[i]));
 			continue;
 		}
 
@@ -2858,8 +2849,8 @@ extern int validate_nodes_via_front_end(
 		if (job_ptr == NULL) {
 			error("Orphan JobId=%u %s reported on node %s",
 			      reg_msg->job_id[i],
-			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i]),
+			      build_step_id(step_str, sizeof(step_str),
+					    reg_msg->step_id[i]),
 			      front_end_ptr->name);
 			abort_job_on_node(reg_msg->job_id[i],
 					  job_ptr, front_end_ptr->name);
@@ -2874,7 +2865,7 @@ extern int validate_nodes_via_front_end(
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
 			debug3("Registered %pJ %s on %s",
 			       job_ptr,
-			       _build_step_id(step_str, sizeof(step_str),
+			       build_step_id(step_str, sizeof(step_str),
 					     reg_msg->step_id[i]),
 			       front_end_ptr->name);
 			if (job_ptr->batch_flag) {
@@ -2896,8 +2887,8 @@ extern int validate_nodes_via_front_end(
 			 * slurmd that went DOWN is now responding */
 			error("Registered PENDING %pJ %s on %s",
 			      job_ptr,
-			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i]),
+			      build_step_id(step_str, sizeof(step_str),
+					    reg_msg->step_id[i]),
 			      front_end_ptr->name);
 			abort_job_on_node(reg_msg->job_id[i], job_ptr,
 					  front_end_ptr->name);
@@ -2906,16 +2897,16 @@ extern int validate_nodes_via_front_end(
 			/* Race condition */
 			debug("Registered newly completed %pJ %s on %s",
 			      job_ptr,
-			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i]),
+			      build_step_id(step_str, sizeof(step_str),
+					    reg_msg->step_id[i]),
 			      front_end_ptr->name);
 		}
 
 		else {		/* else job is supposed to be done */
 			error("Registered %pJ %s in state %s on %s",
 			      job_ptr,
-			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i]),
+			      build_step_id(step_str, sizeof(step_str),
+					    reg_msg->step_id[i]),
 			      job_state_string(job_ptr->job_state),
 			      front_end_ptr->name);
 			kill_job_on_node(job_ptr, node_ptr);
