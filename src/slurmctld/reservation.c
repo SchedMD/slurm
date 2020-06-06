@@ -3885,12 +3885,13 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		resv_desc_ptr->partition = xstrdup((*part_ptr)->name);
 	}
 
-	/* Start with all nodes in the partition */
 	if (*resv_bitmap) {
 		node_bitmap = *resv_bitmap;
 		*resv_bitmap = NULL;
-	} else
+	} else {
+		/* Start with all nodes in the partition */
 		node_bitmap = bit_copy((*part_ptr)->node_bitmap);
+	}
 
 	/* Don't use nodes already reserved */
 	if (!(resv_desc_ptr->flags & RESERVE_FLAG_MAINT) &&
