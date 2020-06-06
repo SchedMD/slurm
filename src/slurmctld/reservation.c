@@ -4277,6 +4277,13 @@ static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 	bitstr_t *orig_bitmap, *save_bitmap = NULL;
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap;
 	int total_node_cnt, requested_node_cnt;
+	bitstr_t *orig_avail_bitmap = NULL, *orig_core_bitmap = NULL;
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+		orig_avail_bitmap = bit_copy(avail_bitmap);
+		if (*core_bitmap)
+			orig_core_bitmap = bit_copy(*core_bitmap);
+	}
 
 	total_node_cnt = bit_set_count(avail_bitmap);
 	if (total_node_cnt < node_cnt) {
@@ -4380,19 +4387,31 @@ static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 fini:	FREE_NULL_BITMAP(orig_bitmap);
 	FREE_NULL_BITMAP(save_bitmap);
 
-	if (ret_bitmap && (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION)) {
-		char *nodes = bitmap2node_name(ret_bitmap);
-		char cores[300] = {0};
+	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+		char *nodes[2] = {
+			(ret_bitmap ? bitmap2node_name(ret_bitmap) : NULL),
+			bitmap2node_name(orig_avail_bitmap),
+		};
+		char *cores[2] = {0};
 
 		if (*core_bitmap)
-			bit_fmt(cores, (sizeof(cores) - 1), *core_bitmap);
+			cores[0] = bit_fmt_full(*core_bitmap);
+		if (orig_core_bitmap)
+			cores[1] = bit_fmt_full(orig_core_bitmap);
 
-		log_flag(RESERVATION, "%s: reservation %s node_bitmap:%s core_bitmap:%s",
+		log_flag(RESERVATION, "%s: reservation %s picked nodes:%s cores:%s from possible_nodes:%s used_cores:%s",
 			 __func__, resv_desc_ptr->name,
-			 ((nodes && nodes[0]) ? nodes : "(NONE)"),
-			 (cores[0] ? cores : "(NONE)"));
+			 ((nodes[0] && nodes[0][0]) ? nodes[0] : "(NONE)"),
+			 ((cores[0] && cores[0][0]) ? cores[0] : "(NONE)"),
+			 ((nodes[1] && nodes[1][0]) ? nodes[1] : "(NONE)"),
+			 ((cores[1] && cores[1][0]) ? cores[1] : "(NONE)"));
 
-		xfree(nodes);
+		xfree(nodes[0]);
+		xfree(nodes[1]);
+		xfree(cores[0]);
+		xfree(cores[1]);
+		FREE_NULL_BITMAP(orig_avail_bitmap);
+		FREE_NULL_BITMAP(orig_core_bitmap);
 	}
 
 	return ret_bitmap;
