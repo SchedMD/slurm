@@ -127,6 +127,7 @@ typedef struct {
 	time_t now;
 	bitstr_t *node_bitmap;
 	bitstr_t **core_bitmap;
+	bool filter_overlap; /* true to remove nodes that overlap */
 } filter_resv_args_t;
 
 /*
@@ -3966,9 +3967,13 @@ int _filter_resv(void *x, void *arg)
 	bitstr_t *node_bitmap = args->node_bitmap;
 	bitstr_t **core_bitmap = args->core_bitmap;
 
-	if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
-	    (resv_ptr->flags & RESERVE_FLAG_OVERLAP))
+	if (!args->filter_overlap &&
+	    ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
+	    (resv_ptr->flags & RESERVE_FLAG_OVERLAP))) {
+		log_flag(RESERVATION, "%s: skipping reservation %s filter for reservation %s",
+			 __func__, resv_ptr->name, args->resv_desc_ptr->name);
 		return 0;
+	}
 	if (resv_ptr->end_time <= args->now)
 		_advance_resv_time(resv_ptr);
 	if (resv_ptr->node_bitmap == NULL) {
