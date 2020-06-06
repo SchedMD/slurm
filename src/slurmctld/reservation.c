@@ -3963,7 +3963,6 @@ int _filter_resv(void *x, void *arg)
 {
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
 	filter_resv_args_t *args = (filter_resv_args_t *) arg;
-	resv_desc_msg_t *resv_desc_ptr = args->resv_desc_ptr;
 	bitstr_t *node_bitmap = args->node_bitmap;
 	bitstr_t **core_bitmap = args->core_bitmap;
 
@@ -3987,10 +3986,36 @@ int _filter_resv(void *x, void *arg)
 		      __func__, resv_ptr->name);
 		resv_ptr->full_nodes = 1;
 	}
-	if (resv_ptr->full_nodes || !resv_desc_ptr->core_cnt) {
+	if (resv_ptr->full_nodes) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+			char *nodes[2] = {
+				bitmap2node_name(resv_ptr->node_bitmap),
+				bitmap2node_name(node_bitmap)
+			};
+
+			log_flag(RESERVATION, "%s: reservation %s filtered nodes:%s from reservation %s nodes:%s",
+				 __func__, resv_ptr->name, nodes[0],
+				 args->resv_desc_ptr->name, nodes[1]);
+
+			xfree(nodes[0]);
+			xfree(nodes[1]);
+		}
 		bit_and_not(node_bitmap, resv_ptr->node_bitmap);
-	} else {
-		_create_cluster_core_bitmap(core_bitmap);
+	}
+	if (*core_bitmap && resv_ptr->core_bitmap) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+			char *cores[2] = {
+				bit_fmt_full(resv_ptr->core_bitmap),
+				bit_fmt_full(*core_bitmap)
+			};
+
+			log_flag(RESERVATION, "%s: reservation %s filtered cores:%s from reservation %s cores:%s",
+				 __func__, resv_ptr->name, cores[0],
+				 args->resv_desc_ptr->name, cores[1]);
+
+			xfree(cores[0]);
+			xfree(cores[1]);
+		}
 		bit_or(*core_bitmap, resv_ptr->core_bitmap);
 	}
 
@@ -4029,6 +4054,10 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		/* Start with all nodes in the partition */
 		node_bitmap = bit_copy((*part_ptr)->node_bitmap);
 	}
+
+	/* create core bitmap if cores are requested */
+	if (resv_desc_ptr->core_cnt)
+		_create_cluster_core_bitmap(core_bitmap);
 
 	/* Don't use nodes already reserved */
 	if (!(resv_desc_ptr->flags & RESERVE_FLAG_MAINT) &&
