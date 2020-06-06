@@ -4060,6 +4060,12 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		node_bitmap = bit_copy((*part_ptr)->node_bitmap);
 	}
 
+	if (((resv_desc_ptr->flags & RESERVE_FLAG_MAINT) == 0) &&
+	    ((resv_desc_ptr->flags & RESERVE_FLAG_SPEC_NODES) == 0)) {
+		/* Nodes must be available */
+		bit_and(node_bitmap, avail_node_bitmap);
+	}
+
 	/* create core bitmap if cores are requested */
 	if (resv_desc_ptr->core_cnt)
 		_create_cluster_core_bitmap(core_bitmap);
@@ -4076,12 +4082,6 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 
 		if (list_for_each(resv_list, _filter_resv, &args) < 0)
 			fatal_abort("%s: unexpected error", __func__);
-	}
-
-	if (((resv_desc_ptr->flags & RESERVE_FLAG_MAINT) == 0) &&
-	    ((resv_desc_ptr->flags & RESERVE_FLAG_SPEC_NODES) == 0)) {
-		/* Nodes must be available */
-		bit_and(node_bitmap, avail_node_bitmap);
 	}
 
 	/* Satisfy feature specification */
