@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validate scontrol show commands for configuration, daemons,
 #          nodes, frontends, and partitions.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2011 Lawrence Livermore National Security.
@@ -58,7 +54,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -68,9 +64,9 @@ expect {
 
 if {$matches != 3} {
 	if {$matches == 2} {
-		send_user "\nWARNING: it appears you are running with multiple slurmds.\n"
+		log_warn "It appears you are running with multiple slurmds"
 	} else {
-		send_user "\nFAILURE: scontrol show config command failed\n"
+		log_error "scontrol show config command failed"
 		set exit_code 1
 	}
 }
@@ -88,7 +84,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -96,7 +92,7 @@ expect {
 	}
 }
 if {$matches < 1} {
-	send_user "\nFAILURE: scontrol show partition command failed\n"
+	log_error "scontrol show partition command failed"
 	set exit_code 1
 }
 
@@ -113,7 +109,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -121,8 +117,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol show partition command"
-	send_user " with name failed\n"
+	log_error "scontrol show partition command with name failed"
 	set exit_code 1
 }
 
@@ -139,7 +134,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -147,7 +142,7 @@ expect {
 	}
 }
 if {$matches < 1} {
-	send_user "\nWARNING: no front end nodes found\n"
+	log_warn "No front end nodes found"
 } else {
 #
 #	Report one slurm front end node
@@ -162,7 +157,7 @@ if {$matches < 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -170,7 +165,7 @@ if {$matches < 1} {
 		}
 	}
 	if {$matches != 1} {
-		send_user "\nFAILURE: scontrol show frontend command with name failed\n"
+		log_error "scontrol show frontend command with name failed"
 		set exit_code 1
 	}
 }
@@ -188,7 +183,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -196,7 +191,7 @@ expect {
 	}
 }
 if {$matches < 1} {
-	send_user "\nFAILURE: scontrol show node command failed\n"
+	log_error "scontrol show node command failed"
 	set exit_code 1
 }
 
@@ -213,7 +208,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -221,7 +216,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol show node command with name failed\n"
+	log_error "scontrol show node command with name failed"
 	set exit_code 1
 }
 
@@ -240,7 +235,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -248,7 +243,6 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

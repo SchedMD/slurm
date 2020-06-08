@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Simple CUDA MPS test
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC
 # Written by Morris Jette
@@ -40,27 +36,24 @@ set job_id      0
 print_header $test_id
 
 if {[test_cons_tres]} {
-        send_user "\nValid configuration, using select/cons_tres\n"
+    log_debug "Valid configuration, using select/cons_tres"
 } else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit 0
+    skip "This test is only compatible with select/cons_tres"
 }
 
 set mps_cnt [get_mps_count 1]
 if {$mps_cnt < 0} {
-	send_user "\nFAILURE: Error getting MPS count\n"
-	exit 1
+	fail "Error getting MPS count"
 }
 if {$mps_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more MPS in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more MPS in the default partition"
 }
 if {$mps_cnt < 100} {
 #	This could be a legitimate configuration for testing purposes, but not likley for production use
-	send_user "\nFAILURE: MPS per node is unexpectedly low ($mps_cnt < 100). Check your configuration\n"
+	log_error "MPS per node is unexpectedly low ($mps_cnt < 100). Check your configuration"
 	set exit_code 1
 }
-send_user "\nMPS count per node is $mps_cnt\n"
+log_debug "MPS count per node is $mps_cnt"
 
 #
 # Build input script file
@@ -86,7 +79,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -94,17 +87,15 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted\n"
-	exit 1
+	fail "Batch not submitted"
 }
 
 #
 # Wait for job to complete and check for file
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Waiting for job to complete"
 }
 if {[wait_for_file $file_out] == 0} {
 	set matches 0
@@ -114,9 +105,7 @@ if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
 		-re "Couldn't allocate memory" {
-			send_user "\nWARNING: This means the gpu selected doesn't support this test.\n"
-			exit 0
-			exp_continue
+			skip "This means the gpu selected doesn't support this test"
 		}
 		-re "No such file" {
 			incr no_nvcc
@@ -169,29 +158,28 @@ if {[wait_for_file $file_out] == 0} {
 	}
 	log_user 1
 	if {$no_nvcc != 0} {
-		send_user "\nWARNING: Could not find program nvcc (CUDA compiler)\n"
+		log_warn "Could not find program nvcc (CUDA compiler)"
 	} elseif {$matches != 6} {
-		send_user "\nFAILURE: CUDA output not as expected ($matches != 6)\n"
+		log_error "CUDA output not as expected ($matches != 6)"
 		set exit_code 1
 	}
 	if {$run_time1 > 0} {
 		set delta_t [expr abs($run_time1 - $run_time2)]
 		set percent_time_diff [expr ($delta_t * 100) / $run_time1]
 		if {$percent_time_diff > 20} {
-			send_user "\nFAILURE: CUDA MPS jobs appear to have not run in parallel\n"
-			send_user "FAILURE: Run time difference was $percent_time_diff percent\n"
+			log_error "CUDA MPS jobs appear to have not run in parallel. Run time difference was $percent_time_diff percent"
 			set exit_code 1
 		} else {
-			send_user "\nCUDA MPS jobs do appear to have not run in parallel\n"
-			send_user "Run time difference was $percent_time_diff percent\n"
+			log_debug "CUDA MPS jobs do appear to have not run in parallel"
+			log_debug "Run time difference was $percent_time_diff percent"
 		}
 	}
 } else {
-	set exit_code 1
+	fail "Output file failed to appear ($file_out)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_prog
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test --mem-per-gpu option
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Morris Jette
@@ -45,7 +41,7 @@ proc run_gpu_per_job { mem_per_gpu } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -54,7 +50,7 @@ proc run_gpu_per_job { mem_per_gpu } {
 		}
 	}
 	if {$mem_size != $mem_per_gpu} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure ($mem_size != $mem_per_gpu)\n\n"
+		log_error "srun --mem-per-gpu failure ($mem_size != $mem_per_gpu)"
 		set exit_code 1
 	}
 }
@@ -70,7 +66,7 @@ proc run_gpu_per_node { mem_per_gpu } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -79,7 +75,7 @@ proc run_gpu_per_node { mem_per_gpu } {
 		}
 	}
 	if {$mem_size != $mem_per_gpu} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure ($mem_size != $mem_per_gpu)\n\n"
+		log_error "srun --mem-per-gpu failure ($mem_size != $mem_per_gpu)"
 		set exit_code 1
 	}
 }
@@ -95,7 +91,7 @@ proc run_gpu_per_task { mem_per_gpu gpu_cnt } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -105,7 +101,7 @@ proc run_gpu_per_task { mem_per_gpu gpu_cnt } {
 	}
 	set mem_target [expr $mem_per_gpu * $gpu_cnt]
 	if {$mem_size != $mem_target} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure ($mem_size != $mem_target)\n\n"
+		log_error "srun --mem-per-gpu failure ($mem_size != $mem_target)"
 		set exit_code 1
 	}
 }
@@ -113,31 +109,27 @@ proc run_gpu_per_task { mem_per_gpu gpu_cnt } {
 print_header $test_id
 
 if {[test_cons_tres]} {
-        send_user "\nValid configuration, using select/cons_tres\n"
+        log_debug "Valid configuration, using select/cons_tres"
 } else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit 0
+        skip "This test is only compatible with select/cons_tres"
 }
 if {![test_select_type_params "MEMORY"]} {
-        send_user "\nWARNING: This test requires memory allocation management\n"
-        exit 0
+        skip "This test requires memory allocation management"
 }
 
 set gpu_cnt [get_gpu_count 1]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPUs in the default partition"
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
-log_info "GPU count is $gpu_cnt"
-log_info "Memory Size is $node_conf(RealMemory)"
-log_info "Node count in partition default parition $def_part_name is $nb_nodes"
+log_debug "GPU count is $gpu_cnt"
+log_debug "Memory Size is $node_conf(RealMemory)"
+log_debug "Node count in partition default parition $def_part_name is $nb_nodes"
 
 #
 # Build input script file
@@ -213,7 +205,7 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -223,13 +215,13 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 	}
 	set node_target 2
 	if {$node_count < $node_target} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure, bad node count ($node_count < $node_target)\n\n"
+		log_error "srun --mem-per-gpu failure, bad node count ($node_count < $node_target)"
 		set exit_code 1
 	}
 
 	set mem_target [expr $mem_spec * $gpu_target]
 	if {$mem_alloc != $mem_target} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure ($mem_alloc != $mem_target)\n"
+		log_error "srun --mem-per-gpu failure ($mem_alloc != $mem_target)"
 		set exit_code 1
 	}
 }
@@ -252,7 +244,7 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -263,19 +255,19 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 
 	set node_target 2
 	if {$node_count < $node_target} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure, bad node count ($node_count < $node_target)\n\n"
+		log_error "srun --mem-per-gpu failure, bad node count ($node_count < $node_target)"
 		set exit_code 1
 	}
 
 	set mem_target [expr $mem_spec * $node_target]
 	if {$mem_alloc != $mem_target} {
-		send_user "\nFAILURE: srun --mem-per-gpu failure ($mem_alloc != $mem_target)\n"
+		log_error "srun --mem-per-gpu failure ($mem_alloc != $mem_target)"
 		set exit_code 1
 	}
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

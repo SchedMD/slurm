@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test options --ntask-per-node and -c are enforced
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -48,14 +44,11 @@ set timeout 60
 print_header $test_id
 
 if {![test_select_type_params "CR_PACK_NODES"]} {
-	send_user "\nWARNING: this test requires "
-	send_user "SelectTypeParameters=CR_PACK_NODES\n"
-	exit 0
+	skip "This test requires SelectTypeParameters=CR_PACK_NODES"
 }
 
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: this test is not compatible with front-end configurations\n"
-	exit 0
+	skip "This test is not compatible with front-end configurations"
 }
 
 proc check_node_config { } {
@@ -84,7 +77,7 @@ proc check_node_config { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -94,8 +87,7 @@ proc check_node_config { } {
 	log_user 1
 
 	if {$match != 3} {
-		send_user "\nFAILURE: could not determine node config\n"
-		exit 1
+		fail "Could not determine node config"
 	} elseif {$same == 2} {
 		set sys_homo 1
 		return $low
@@ -118,7 +110,7 @@ proc check_tasks_all {ntaskspn tasks} {
 	}
 
 	if {$match != 3} {
-		send_user "\nFAILURE: incorrect number of tasks were set\n"
+		log_error "Incorrect number of tasks were set"
 		set exit_code 1
 	}
 }
@@ -140,7 +132,7 @@ proc check_tasks_off {ntaskspn tasks offset} {
 	}
 
 	if {$match != 3} {
-		send_user "\nFAILURE: incorrect number of tasks were set $match != 3\n"
+		log_error "Incorrect number of tasks were set $match != 3"
 		set exit_code 1
 	}
 }
@@ -160,7 +152,7 @@ proc check_cpu_all {nodes job_cpus ncpus} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -170,7 +162,7 @@ proc check_cpu_all {nodes job_cpus ncpus} {
 	}
 
 	if {$match != 3} {
-		send_user "\nFAILURE: incorrect number of cpus were set\n"
+		log_error "Incorrect number of cpus were set"
 		set exit_code 1
 	}
 }
@@ -190,7 +182,7 @@ proc check_cpu_off {nodes job_cpus ncpus} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -206,7 +198,7 @@ proc check_cpu_off {nodes job_cpus ncpus} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -215,7 +207,7 @@ proc check_cpu_off {nodes job_cpus ncpus} {
 	}
 
 	if {$match != 3} {
-		send_user "\nFAILURE: incorrect number of cpus were set $match != 3\n"
+		log_error "Incorrect number of cpus were set $match != 3"
 		set exit_code 1
 	}
 }
@@ -242,7 +234,7 @@ proc submit_cpu {ntasks ncpus} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun is not responding\n"
+			log_error "srun is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -251,8 +243,7 @@ proc submit_cpu {ntasks ncpus} {
 	}
 
 	if {$x != 3} {
-		send_user "\nFAILURE: srun did not submit the jobs correctly $x != 3\n"
-		exit 1
+		fail "srun did not submit the jobs correctly $x != 3"
 	}
 }
 
@@ -278,7 +269,7 @@ proc submit_tasks {ntasks ntaskpn} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun is not responding\n"
+			log_error "srun is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -287,8 +278,7 @@ proc submit_tasks {ntasks ntaskpn} {
 	}
 
 	if {$x != 3} {
-		send_user "\nFAILURE: srun did not submit the jobs correctly $x != 3\n"
-		exit 1
+		fail "srun did not submit the jobs correctly $x != 3"
 	}
 }
 
@@ -296,8 +286,7 @@ proc submit_tasks {ntasks ntaskpn} {
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {$nb_nodes < 3} {
-	send_user "\nWARNING: This test requires at least 3 nodes in the cluster.\n"
-	exit $exit_code
+	skip "This test requires at least 3 nodes in the cluster"
 }
 
 make_bash_script $file_in "true"
@@ -311,7 +300,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -320,7 +309,7 @@ expect {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	log_error "Error waiting for job $job_id to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -336,7 +325,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -345,7 +334,7 @@ expect {
 }
 
 ############# Test by CPU #############
-send_user "====================Testing CPUs per Task====================\n\n"
+log_info "====================Testing CPUs per Task===================="
 set ncpuspt [check_node_config]
 
 # Submit job with just one cpu per task
@@ -364,7 +353,7 @@ if {!$sys_homo} {
 }
 
 ############# Test by node task #############
-send_user "====================Testing Tasks per Node====================\n\n"
+log_info "====================Testing Tasks per Node===================="
 set ntask [expr $num_nodes * [check_node_config]]
 set ntaskpn [check_node_config]
 
@@ -384,6 +373,6 @@ check_tasks_off $ntaskpn [array get tasks] 2
 
 if {$exit_code == 0} {
 	exec $bin_rm $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -4,11 +4,6 @@
 #          Test that the core spec option in sbatch allocates the correct
 #          number of cores and that tasks spread over multiple nodes
 #          when there is not enough resources on one node.
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -77,14 +72,14 @@ proc core_spec_job {task node core_spec exp_nodes} {
 		}
 		-re "error" {
 			if {$exp_nodes != -1} {
-				send_user "\nFAILURE: sbatch should not have produced an error\n"
+				log_error "sbatch should not have produced an error"
 				set exit_code 1
 			}
 			set error_chk 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -93,20 +88,18 @@ proc core_spec_job {task node core_spec exp_nodes} {
 	}
 
 	if {$job_id == 0 && $error_chk == 0} {
-		send_user "\nFAILURE: Job was not submitted\n"
-		exit 1
+		fail "Job was not submitted"
 
 	} elseif {$exp_nodes == -1 && $job_id != 0} {
-		send_user "\nFAILURE: This job should have failed but did not\n"
-		exit 1
+		fail "This job should have failed but did not"
 
 	} elseif {$exp_nodes == -1 && $error_chk != 0} {
-		send_user "\nThis error is expected do not worry\n"
+		log_debug "This error is expected do not worry"
 
 	} else {
 		set core_chk 0
 		if {[wait_for_job $job_id "RUNNING"] != 0} {
-			send_user "\nFAILURE: waiting for job to start\n"
+			log_error "Waiting for job to start"
 			set exit_code 1
 		}
 		spawn $scontrol show job $job_id
@@ -120,7 +113,7 @@ proc core_spec_job {task node core_spec exp_nodes} {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -129,26 +122,26 @@ proc core_spec_job {task node core_spec exp_nodes} {
 		}
 
 		if {$core_chk == 0} {
-			send_user "\nFAILURE: Job $job_id does not have the correct number of specialized cores\n"
+			log_error "Job $job_id does not have the correct number of specialized cores"
 			set exit_code 1
 		}
 
 		if {[wait_for_job $job_id "DONE"] != 0} {
-			send_user "\nFAILURE: waiting for job to complete\n"
+			log_error "Waiting for job to complete"
 			set exit_code 1
 		}
 	}
 
 	if {$exp_nodes == 1} {
 		if {$num_nodes <= 1} {
-			send_user "\nFAILURE: Job $job_id should use more then 1 node\n"
+			log_error "Job $job_id should use more then 1 node"
 			set exit_code 1
 		}
 	}
 
 	if {$exp_nodes == 0} {
 		if {$num_nodes != 1} {
-			send_user "\nFAILURE: Job $job_id should use only $node\n"
+			log_error "Job $job_id should use only $node"
 			set exit_code 1
 		}
 	}
@@ -163,18 +156,15 @@ proc core_spec_job {task node core_spec exp_nodes} {
 print_header $test_id
 
 if {[test_linear]} {
-	send_user "\nWARNING: This test is incompatible with select/linear\n"
-	exit 0
+	skip "This test is incompatible with select/linear"
 }
 if {[test_select_type_params "CR_SOCKET"]} {
-	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
-	exit 0
+	skip "This test is incompatible with CR_SOCKET allocations"
 }
 
 set allow_spec [test_allow_spec_resc]
 if {$allow_spec == 0} {
-	send_user "WARNING: AllowSpecResourcesUsage not configured to permit core specialization\n"
-	exit $exit_code
+	skip "AllowSpecResourcesUsage not configured to permit core specialization"
 }
 
 # Remove any vestigial files
@@ -192,15 +182,14 @@ set job_id 0
 spawn $sbatch --exclusive -t1 -N2 -o$file_out $file_in
 expect {
 	-re "Batch job submission failed" {
-		send_user "\nWARNING: can't test srun task distribution\n"
-		exit $exit_code
+		skip "Can't test srun task distribution"
 	}
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -208,13 +197,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "FAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: output file was not created\n"
-	exit 1
+	fail "Output file was not created"
 }
 
 set first_node ""
@@ -246,7 +233,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: cat is not responding\n"
+		log_error "cat is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -255,18 +242,16 @@ expect {
 }
 set core_cnt [expr $core_cnt * $socket_cnt]
 if {$core_cnt == 0} {
-	send_user "\nFAILURE: sbatch did not find the number of cores\n"
-	exit 1
+	fail "sbatch did not find the number of cores"
 }
 if {$core_cnt < 4} {
-	send_user "\nWARNING: core count too low for testing ($core_cnt < 4)\n"
-	exit $exit_code
+	skip "Core count too low for testing ($core_cnt < 4)"
 }
 
 #
 # Using the core spec within the node limits
 #
-send_user "\n\nRun within the specified node\n"
+log_info "Run within the specified node"
 core_spec_job  0 $first_node [expr $core_cnt - 2] 0
 core_spec_job -2 $first_node [expr $core_cnt - 2] 0
 
@@ -274,19 +259,19 @@ core_spec_job -2 $first_node [expr $core_cnt - 2] 0
 # Using core spec with more tasks then the node can handle. This should
 # cause the tasks to spread across multiple nodes as needed
 #
-send_user "\n\nSpread job across multiple nodes\n"
+log_info "Spread job across multiple nodes"
 core_spec_job 1 $first_node [expr $core_cnt - 2] 1
 core_spec_job 1 $first_node [expr $core_cnt - 1] 1
 
 #
 # Using core spec with more cores then the specified node has
 #
-send_user "\n\nFail by trying to use more cores than exist\n"
+log_info "Fail by trying to use more cores than exist"
 core_spec_job 1 $first_node [expr $core_cnt + 5] -1
 core_spec_job 1 $first_node [expr $core_cnt + 7] -1
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $file_in $file_out $spec_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

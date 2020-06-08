@@ -69,14 +69,11 @@ print_header $test_id
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator.\n \
-	 	  Use: sacctmgr mod user \$USER set admin=admin."
-	exit 0
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
 proc srun { regex } {
@@ -164,8 +161,8 @@ proc scontrol { fed id regex } {
 
 	set matches 0
 
-	send_user "\nexecuting $my_scontrol -M$fed notify $id from $fed\n"
-	send_user "output: [exec $my_scontrol -M$fed notify $id from $fed]\n"
+	log_debug "Executing $my_scontrol -M$fed notify $id from $fed"
+	log_debug "Output: [exec $my_scontrol -M$fed notify $id from $fed]"
 
 	if {$regex ne ""} {
 		set spawn_id $srun_spawn_id
@@ -205,7 +202,7 @@ proc my_cat { id } {
 		}
 	}
 	if {$matches != 3} {
-		log_error "cat failure: expected .+error: from ($fedc1|$fedc2|$fedc3). matches=$matches\n"
+		log_error "cat failure: expected .+error: from ($fedc1|$fedc2|$fedc3). matches=$matches"
 		end_it 1
 	}
 }
@@ -235,23 +232,20 @@ proc cleanup { } {
 
 proc end_it { exit_code } {
 	global test_id my_squeue
-	cleanup
-	if {$exit_code == 0} {
-		print_success $test_id
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
+	pass
 }
 
 #start test
 
 if {[test_federation_setup]} {
-	log_warn "WARNING: This test can't be run without fed_slurm_base,\
-		fedc1, fedc2, fedc3 setup in globals.local."
-	exit 0
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
 }
 
 if {[test_all_up]} {
-	exit 0
+	pass
 }
 
 set user_name [get_my_user_name]
@@ -271,9 +265,9 @@ if {[setup_federation $fed_name]} {
 # get number of nodes per cluster
 set node_count [available_nodes "" ""]
 
-send_user "\n################################################################\n"
-send_user "Setup cluster features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
 
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
@@ -295,7 +289,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -304,7 +298,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -328,7 +322,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -337,7 +331,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -361,7 +355,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -370,7 +364,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -378,9 +372,9 @@ make_bash_script $file_in "sleep 300"
 
 set srun_spawn_id 0
 
-send_user "\n################################################################\n"
-send_user "verify federated scontrol notify <message>"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Verify federated scontrol notify <message>"
+log_info "################################################################"
 
 cancel_all_jobs
 

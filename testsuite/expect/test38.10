@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of scontrol update job for heterogeneous jobs.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Isaac Hartung <ihartung@schedmd.com>
@@ -37,8 +33,7 @@ print_header $test_id
 set prompt           "PROMPT: "
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+        skip "This test is incompatible with front-end systems"
 } else {
 	set task_num 2
 }
@@ -46,8 +41,7 @@ if {[test_front_end]} {
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {$nb_nodes < 3} {
-	send_user "\nWARNING: Need 3 or more nodes in default partition\n"
-	exit $exit_code
+	skip "Need 3 or more nodes in default partition"
 }
 
 proc end_it { exit_code } {
@@ -55,7 +49,10 @@ proc end_it { exit_code } {
 	if {$het_job_id > 0} {
 		exec $scancel $het_job_id
 	}
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 proc check { id tl matches } {
@@ -70,7 +67,7 @@ proc check { id tl matches } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding\n"
+			log_error "scontrol not responding"
 			end_it 1
 		}
 		eof {
@@ -78,7 +75,7 @@ proc check { id tl matches } {
 		}
 	}
 	if {$count != $matches} {
-		log_error "scontrol failure ($count != 3)\n"
+		log_error "scontrol failure ($count != 3)"
 		end_it 1
 	}
 }
@@ -97,10 +94,10 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
-		log_error "salloc : allocation not granted in $timeout seconds\n"
+		log_error "salloc : allocation not granted in $timeout seconds"
 		end_it 1
 	}
 	eof {
@@ -108,7 +105,7 @@ expect {
 	}
 }
 if {$het_job_id == 0} {
-	log_error "salloc failure\n"
+	log_error "salloc failure"
 	end_it 1
 }
 
@@ -133,5 +130,4 @@ check $het_job_id+2 7 1
 check $het_job_id+1 6 1
 check $het_job_id+0 5 1
 
-send_user "\nSUCCESS\n"
 end_it 0

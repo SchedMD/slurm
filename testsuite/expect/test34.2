@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate that preemption by qos is enforced
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -46,19 +42,15 @@ set job_id      0
 print_header $test_id
 
 if {[test_preempttype_qos] == 0} {
-	send_user "\nWARNING: This test requires that "
-	send_user "PreemptType=preempt/qos\n"
-	exit $exit_code
+	skip "This test requires that PreemptType=preempt/qos"
 }
 if {[test_using_slurmdbd] == 0} {
-	send_user "\nWARNING: This test requires use of Slurmdbd\n"
-	exit $exit_code
+	skip "This test requires use of Slurmdbd"
 }
 
 set min_job_age [get_min_job_age]
 if {$min_job_age < 10} {
-	send_user "\nWARNING: MinJobAge configured too low for this test ($min_job_age < 10)\n"
-	exit $exit_code
+	skip "MinJobAge configured too low for this test ($min_job_age < 10)"
 }
 
 proc acct_setup { acct_name qos_name pre_qos pre_type } {
@@ -73,7 +65,7 @@ proc acct_setup { acct_name qos_name pre_qos pre_type } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -88,7 +80,7 @@ proc acct_setup { acct_name qos_name pre_qos pre_type } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -103,7 +95,7 @@ proc acct_setup { acct_name qos_name pre_qos pre_type } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -112,8 +104,7 @@ proc acct_setup { acct_name qos_name pre_qos pre_type } {
 	}
 
 	if {$added != 3} {
-		send_user "\nFAILURE: account was not created properly\n"
-		exit 1
+		fail "Account was not created properly"
 	}
 }
 
@@ -129,7 +120,7 @@ proc mod_qos { qos_name pre_type } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -138,7 +129,7 @@ proc mod_qos { qos_name pre_type } {
 	}
 
 	if { $mod != 1 } {
-		send_user "\nFAILURE: qos $qos_name was not modified\n"
+		log_error "Qos $qos_name was not modified"
 		set exit_code 1
 	}
 }
@@ -155,7 +146,7 @@ proc sub_job { acct } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -164,8 +155,7 @@ proc sub_job { acct } {
 	}
 
 	if { $job_id == 0 } {
-		send_user "\nFAILURE: sbatch did not submit job\n"
-		exit $exit_code
+		fail "sbatch did not submit job"
 	} else {
 		return $job_id
 	}
@@ -192,7 +182,7 @@ proc clean_up { rc } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sacctmgr is not responding\n"
+				log_error "sacctmgr is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -207,7 +197,7 @@ proc clean_up { rc } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sacctmgr is not responding\n"
+				log_error "sacctmgr is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -217,12 +207,12 @@ proc clean_up { rc } {
 	}
 
 	if { $clean != 4 } {
-		send_user "\nFAILURE: unable to clean up accounts and qos\n"
+		log_error "Unable to clean up accounts and qos"
 		set exit_code 1
 	}
 
 	if {$rc != 0} {
-		exit $rc
+		fail "Test failed due to previous errors (\$rc = $rc)"
 	}
 }
 
@@ -235,20 +225,20 @@ set user [get_my_user_name]
 log_info "**** Cleanup from previous run ****"
 clean_up 0
 
-send_user "\n*** TEST PREEMPT CANCEL ***\n"
+log_info "*** TEST PREEMPT CANCEL ***"
 
 acct_setup $acct_1 $qos_1 "" cancel
 acct_setup $acct_2 $qos_2 $qos_1 cluster
 
 set qos_1_id [sub_job $acct_1]
 if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_1_id failed to start\n"
+	log_error "Job $qos_1_id failed to start"
 	clean_up 1
 }
 
 set qos_2_id [sub_job $acct_2]
 if { [wait_for_job $qos_2_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_2_id failed to start\n"
+	log_error "Job $qos_2_id failed to start"
 	clean_up 1
 }
 
@@ -258,19 +248,19 @@ check_job_state $qos_1_id PREEMPTED
 wait_for_account_done $acct_1,$acct_2
 
 ###################### Test preempt requeue ######################
-send_user "\n*** TEST PREEMPT REQUEUE ***\n"
+log_info "*** TEST PREEMPT REQUEUE ***"
 
 mod_qos $qos_1 requeue
 
 set qos_1_id [sub_job $acct_1]
 if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_1_id failed to start\n"
+	log_error "Job $qos_1_id failed to start"
 	clean_up 1
 }
 
 set qos_2_id [sub_job $acct_2]
 if { [wait_for_job $qos_2_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_2_id failed to start\n"
+	log_error "Job $qos_2_id failed to start"
 	clean_up 1
 }
 
@@ -279,12 +269,12 @@ check_job_state $qos_1_id PENDING
 
 # Wait for requeued job to restart
 if { [wait_for_job $qos_2_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $qos_2_id failed to complete\n"
-	clean_up 1
+	clean_up 0
+	fail "Job $qos_2_id failed to complete"
 }
 if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_1_id failed to start\n"
-	clean_up 1
+	clean_up 0
+	fail "Job $qos_1_id failed to start"
 }
 
 sleep 2
@@ -296,6 +286,6 @@ clean_up 0
 
 if {$exit_code == 0} {
 	exec $bin_rm $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

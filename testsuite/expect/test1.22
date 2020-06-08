@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Confirm that a job executes with various launch thread fanouts
 #          (--threads option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -54,7 +49,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -67,7 +62,7 @@ expect {
 # Verify node registration
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
+	log_error "Did not get hostname of task 0"
 	set exit_code   1
 }
 
@@ -83,7 +78,7 @@ if {$task_num <= 32} {
 set srun_pid [spawn $srun -N$node_cnt -n$task_num -O -l --threads=$thread_cnt -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Memory required by task is not available" {
-		send_user "\nWARNING: DefMemPerTask is configured too high for this test\n"
+		log_warn "DefMemPerTask is configured too high for this test"
 		set host_0 "warn"
 	}
 	-re "0: *($alpha_numeric_under)" {
@@ -91,7 +86,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -104,11 +99,9 @@ expect {
 # Verify node registration
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	set exit_code   1
+	fail "Did not get hostname of task 0"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate scontrol show commands for jobs and steps.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2009 Lawrence Livermore National Security.
@@ -45,18 +41,16 @@ set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {[test_linear]} {
 	if {$nb_nodes < 2} {
-		send_user "\nWARNING: This test is incompatible with select/linear and only one node\n"
-		exit $exit_code
+		skip "This test is incompatible with select/linear and only one node"
 	}
 } elseif {[default_part_exclusive]} {
 	if {$nb_nodes < 2} {
-		send_user "\nWARNING: This test is incompatible with exclusive node allocations and only one node\n"
-		exit $exit_code
+		skip "This test is incompatible with exclusive node allocations and only one node"
 	}
 }
 
 proc end_it {code} {
-	global job_id1 job_id2 bin_rm test_id
+	global job_id1 job_id2 bin_rm test_id exit_code
 
 	if {$job_id1} {
 		cancel_job $job_id1
@@ -65,10 +59,10 @@ proc end_it {code} {
 		cancel_job $job_id2
 	}
 	exec $bin_rm -f slurm-$job_id1.sh $test_id.sh
-	if {$code == 0} {
-		send_user "\nSUCCESS\n"
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $code
+	pass
 }
 
 #
@@ -81,17 +75,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: srun submit failed\n"
-	exit 1
+	fail "srun submit failed"
 }
 
 set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --wrap "$srun $bin_sleep 60"]
@@ -101,32 +93,28 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		cancel_job $job_id1
 		slow_kill $sbatch_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id2 == 0} {
-	send_user "\nFAILURE: srun submit failed\n"
 	cancel_job $job_id1
-	exit 1
+	fail "srun submit failed"
 }
 
 if {[wait_for_job $job_id1 "RUNNING"] != 0} {
-        send_user "\nFAILURE: waiting for job $job_id1 to start\n"
         cancel_job $job_id1
         cancel_job $job_id2
-        exit 1
+        log_error "Waiting for job $job_id1 to start"
 }
 if {[wait_for_job $job_id2 "RUNNING"] != 0} {
-        send_user "\nFAILURE: waiting for job $job_id2 to start\n"
         cancel_job $job_id1
         cancel_job $job_id2
-        exit 1
+        fail "Waiting for job $job_id2 to start"
 }
 
 #
@@ -137,7 +125,7 @@ if {[wait_for_job $job_id2 "RUNNING"] != 0} {
 #
 # NOTE: Match "JobId=" only
 #
-send_user "\nGetting more info for job id 1 ($job_id1)\n"
+log_debug "Getting more info for job id 1 ($job_id1)"
 set matches 0
 spawn $scontrol show job $job_id1
 expect {
@@ -150,14 +138,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
 		wait
 	}
 }
-send_user "\nGetting more info for job id 2 ($job_id2)\n"
+log_debug "Getting more info for job id 2 ($job_id2)"
 spawn $scontrol show job $job_id2
 expect {
 	-re "JobId=$job_id2 " {
@@ -169,7 +157,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
@@ -177,14 +165,14 @@ expect {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: scontrol failed to find matching job ($matches != 2)\n"
+	log_error "scontrol failed to find matching job ($matches != 2)"
 	end_it 1
 }
 
 #
 # using the scontrol -d option to display more info about job
 #
-send_user "\nGetting more info for job id 1 ($job_id1) with -d option\n"
+log_debug "Getting more info for job id 1 ($job_id1) with -d option"
 set matches 0
 spawn $scontrol -d show job $job_id1
 expect {
@@ -197,14 +185,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\n FAILURE scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
 		wait
 	}
 }
-send_user "\nGetting more info for job id 2 ($job_id2) with -d option\n"
+log_debug "Getting more info for job id 2 ($job_id2) with -d option"
 spawn $scontrol -d show job $job_id2
 expect {
 	-re "JobId=$job_id2 " {
@@ -216,7 +204,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
@@ -226,14 +214,14 @@ expect {
 }
 set match_target 4
 if {$matches != $match_target} {
-	send_user "\nFAILURE: scontrol failed to find matching job ($matches != $match_target)\n"
+	log_error "scontrol failed to find matching job ($matches != $match_target)"
 	end_it 1
 }
 
 #
 # using the scontrol -dd option to display more info about job
 #
-send_user "\nGetting more info for job id 1 ($job_id1) with -dd option\n"
+log_debug "Getting more info for job id 1 ($job_id1) with -dd option"
 set matches 0
 spawn $scontrol -dd show job $job_id1
 expect {
@@ -246,14 +234,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\n FAILURE scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
 		wait
 	}
 }
-send_user "\nGetting more info for job id 2 ($job_id2) with -dd option\n"
+log_debug "Getting more info for job id 2 ($job_id2) with -dd option"
 spawn $scontrol -dd show job $job_id2
 expect {
 	-re "JobId=$job_id2 " {
@@ -265,7 +253,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
@@ -276,7 +264,7 @@ expect {
 
 set match_target 4
 if {$matches != $match_target} {
-	send_user "\nFAILURE: scontrol failed to find matching job ($matches != $match_target)\n"
+	log_error "scontrol failed to find matching job ($matches != $match_target)"
 	end_it 1
 }
 
@@ -291,12 +279,12 @@ expect {
 		exp_continue
 	}
 	-re "JobId=" {
-		send_user "\nFAILURE: scontrol filter by job id\n"
+		log_error "scontrol filter by job id"
 		end_it 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
@@ -304,7 +292,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol failed to find requested job\n"
+	log_error "scontrol failed to find requested job"
 	end_it 1
 }
 
@@ -324,7 +312,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
@@ -332,7 +320,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol failed to find job step $job_id1.$step_id\n"
+	log_error "scontrol failed to find job step $job_id1.$step_id"
 	end_it 1
 }
 
@@ -347,12 +335,12 @@ expect {
 		exp_continue
 	}
 	-re "StepId=" {
-		send_user "\nFAILURE: scontrol filter by step id\n"
+		log_error "scontrol filter by step id"
 		end_it 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
@@ -360,7 +348,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol failed to specific job step\n"
+	log_error "scontrol failed to specific job step"
 	end_it 1
 }
 
@@ -373,22 +361,22 @@ set job_id3 [expr $job_id1 + 10000]
 spawn $scontrol show step $job_id3.$step_id
 expect {
 	-re "StepId=$job_id3.$step_id " {
-		send_user "\nFAILURE: scontrol found unexpected job step\n"
+		log_error "scontrol found unexpected job step"
 		end_it 1
 		exp_continue
 	}
 	-re "Invalid job id" {
-		send_user "\nNo worries, error expected\n"
+		log_debug "No worries, error expected"
 		incr matches
 		exp_continue
 	}
 	-re "StepId=" {
-		send_user "\nFAILURE: scontrol filter by step id\n"
+		log_error "scontrol filter by step id"
 		end_it 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
@@ -396,7 +384,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol found unexpected job step\n"
+	log_error "scontrol found unexpected job step"
 	end_it 1
 }
 
@@ -412,7 +400,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
@@ -420,7 +408,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol failed to write batch script\n"
+	log_error "scontrol failed to write batch script"
 	end_it 1
 }
 
@@ -432,7 +420,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
@@ -440,7 +428,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol failed to write batch script\n"
+	log_error "scontrol failed to write batch script"
 	end_it 1
 }
 
@@ -455,7 +443,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
@@ -463,7 +451,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Could not find file\n"
+	log_error "Could not find file"
 	end_it 1
 }
 
@@ -478,7 +466,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		end_it 1
 	}
 	eof {
@@ -486,7 +474,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Could not find file\n"
+	log_error "Could not find file"
 	end_it 1
 }
 

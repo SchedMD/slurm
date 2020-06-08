@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate --cpu-freq is enforced when using non-numeric values
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -54,29 +50,22 @@ array set freq_lvl_2 {
 print_header $test_id
 
 if { [test_using_slurmdbd] == 0 } {
-	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
-	exit 0
+	skip "This test can't be run without AccountStorageType=slurmdbd"
 }
 if {![string compare [test_proctrack] "linuxproc"]} {
-	send_user "\nWARNING: this test cannot run on ProctrackType of linuxproc\n"
-	exit 0
+	skip "This test cannot run on ProctrackType of linuxproc"
 }
 if {![string compare [get_job_acct_type] "none"]} {
-	send_user "\nWARNING: this test cannot run on JobAcctGatherType of none\n"
-	exit 0
+	skip "This test cannot run on JobAcctGatherType of none"
 } 
 if {[slurmd_user_root] == 0} {
-	send_user "\nWARNING: This test is incompatible with SlurmdUser != root\n"
-	exit 0
+	skip "This test is incompatible with SlurmdUser != root"
 }
 if {[test_cpu_affinity_or_cgroup] == 0} {
-	send_user "\nWARNING: This test requires some form of task affinity\n"
-	exit 0
+	skip "This test requires some form of task affinity"
 }
 if {![test_accting_steps]} {
-	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
-	send_user "(AccountingStorageEnforce)\n"
-	exit 0
+	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
 }
 
 proc sub_job { freq } {
@@ -88,17 +77,17 @@ proc sub_job { freq } {
 	array set this_freq $freq
 
 	foreach option [array names this_freq] {
-		send_user "\n======= TESTING FREQUENCY/GOVERNOR $option =======\n"
+		log_info "======= TESTING FREQUENCY/GOVERNOR $option ======="
 		set skip false
 		set job_id 0
 		set srun_pid [spawn $srun -t1 --cpu-freq=$option -n$threads -w$node ./$file_id]
 		expect {
 			-re "not allowed" {
 				if {[string first $option $avail_governors] == -1} {
-					send_user "\nThis error is expected, no worries\n"
+					log_debug "This error is expected, no worries"
 					set skip true
 				} else {
-					send_user "\nFAILURE: This CPU frequency should be valid\n"
+					log_error "This CPU frequency should be valid"
 					set exit_code 1
 				}
 				exp_continue
@@ -108,7 +97,7 @@ proc sub_job { freq } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: srun is not responding\n"
+				log_error "srun is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -120,12 +109,11 @@ proc sub_job { freq } {
 			continue
 		}
 		if {$job_id == 0} {
-			send_user "\nFAILURE: srun did not submit job\b"
-			exit 1
+			fail "srun did not submit job"
 		}
 
 		if {[wait_for_job $job_id "DONE"] != 0} {
-			send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+			log_error "Error waiting for job $job_id to complete"
 			cancel_job $job_id
 			set exit_code 1
 		}
@@ -141,7 +129,7 @@ proc sub_job { freq } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sacct is not responding\n"
+				log_error "sacct is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -150,7 +138,7 @@ proc sub_job { freq } {
 		}
 
 		if {$this_freq($option) == 0} {
-			send_user "\nFAILURE: did not get cpu frequency for $option\n"
+			log_error "Did not get cpu frequency for $option"
 			set exit_code 1
 		}
 	}
@@ -168,7 +156,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -176,14 +164,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Waiting for job to complete"
 }
 
 set userspace_governor 0
@@ -200,9 +186,8 @@ if {[wait_for_file $file_out] == 0} {
         }
 }
 if {$userspace_governor == 0} {
-	send_user "\nWARNING: Node configuration prevents direct control over CPU frequency\n"
 	exec $bin_rm -f $file_id $file_in $file_out
-	exit 0
+	skip "Node configuration prevents direct control over CPU frequency"
 }
 
 set match 0
@@ -214,7 +199,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -223,8 +208,7 @@ expect {
 }
 
 if {$match != 1} {
-	send_user "\nFAILURE: was not able to get a usable node\n"
-	exit 1
+	fail "Was not able to get a usable node"
 }
 
 lassign [get_node_cpus $node] num_cputot threads
@@ -235,13 +219,13 @@ cancel_job $job_id
 # Test various CPU governor values
 #
 set avail_governors get_cpu_governors
-send_user "\nCpuFreqGovernors = $avail_governors\n"
+log_debug "CpuFreqGovernors = $avail_governors"
 
 array set freq_lvl_2 [sub_job [array get freq_lvl_2]]
 
 if {($freq_lvl_2(conservative) == 0) || ($freq_lvl_2(ondemand) == 0) ||
     ($freq_lvl_2(performance) == 0)  || ($freq_lvl_2(powersave) == 0)} {
-	send_user "\nFAILURE: CPU frequency values are invalid\n"
+	log_error "CPU frequency values are invalid"
 	set exit_code 1
 }
 
@@ -250,21 +234,19 @@ if {($freq_lvl_2(conservative) == 0) || ($freq_lvl_2(ondemand) == 0) ||
 #
 array set freq_lvl_1 [sub_job [array get freq_lvl_1]]
 
-send_user "\n======= Reported frequencies =======\n"
+log_debug "======= Reported frequencies ======="
 foreach name [array names freq_lvl_1] {
-	send_user "$name is $freq_lvl_1($name) GHz\n"
+	log_debug "$name is $freq_lvl_1($name) GHz"
 }
 
 if { (($freq_lvl_1(low) > $freq_lvl_1(medium)) ||
       ($freq_lvl_1(medium) > $freq_lvl_1(high)) ||
       ($freq_lvl_1(highm1) > $freq_lvl_1(high)))} {
-	send_user "\nFAILURE: CPU frequency values are not valid\n"
-	send_user "Test with smaller JobAcctGatherFrequency configuration or longer running jobs\n"
-	exit 1
+	fail "CPU frequency values are not valid. Test with smaller JobAcctGatherFrequency configuration or longer running jobs"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_id $file_in $file_out
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

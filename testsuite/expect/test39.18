@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose:  Test gres.conf-specified and system-detected GPU device merging
 #           logic
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Michael Hinton
@@ -61,8 +57,7 @@ print_header $test_id
 
 if {[test_cray]} {
 #	Many Cray-specific changes required in slurm.conf test files
-	send_user "\nWARNING: This test can not run on a Cray system\n"
-	exit $exit_code
+	skip "This test can not run on a Cray system"
 }
 
 # Run the test under valgrind if any arguments are given
@@ -73,12 +68,12 @@ set test_minor_in ""
 if {[lindex $argv 0] == "v" || [lindex $argv 0] == "valgrind"} {
 	set use_valgrind 1
 	set test_minor_offset 1
-	send_user "Running tests under valgrind!\n"
+	log_info "Running tests under valgrind!"
 }
 
 if {[lindex $argv $test_minor_offset] != ""} {
 	set test_minor_in [lindex $argv $test_minor_offset]
-	send_user "Running test $test_id.$test_minor_in \n"
+	log_info "Running test $test_id.$test_minor_in "
 }
 
 proc mkdir {dir} {
@@ -145,7 +140,7 @@ fail_on_error "Cannot compile test program"
 
 # Build program to determine size of unsigned long in C
 set build_cmd "$bin_cc ${test_ulong_prog}.c -o ${test_ulong_prog}"
-send_user "$build_cmd\n"
+log_debug "$build_cmd"
 eval exec $build_cmd
 
 spawn ./$test_ulong_prog
@@ -155,15 +150,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "FAILURE: No response from $test_ulong_prog\n"
-		exit 1
+		fail "No response from $test_ulong_prog"
 	}
 	eof {
 		wait
 	}
 }
 
-send_user "sizeof(unsigned long) = $ulong_bits\n"
+log_debug "Sizeof(unsigned long) = $ulong_bits"
 
 
 #
@@ -201,7 +195,7 @@ proc check_configuration {test_minor slurm_conf_gres gres_conf fake_gpus_conf ou
 	}
 
 	set failed 0
-	send_user "\n====test$test_id.$test_minor====\n\n"
+	log_info "====test$test_id.$test_minor===="
 
 	generate_file $gres_conf $cfgpath/gres.conf
 	generate_file $fake_gpus_conf $cfgpath/fake_gpus.conf
@@ -244,7 +238,7 @@ rm -rf ./$file_out"
 			exp_continue
 		}
 		timeout {
-			send_user "FAILURE: No response from $test_prog\n"
+			log_error "No response from $test_prog"
 			set failed 1
 		}
 		eof {
@@ -270,14 +264,14 @@ rm -rf ./$file_out"
 		spawn ./$file_in
 		expect {
 			-re "($err_msgs)" {
-				send_user "Found '$err_msgs'\n"
+				log_debug "Found '$err_msgs'"
 				if {$ignore_err_msgs == 0} {
 					incr errs_actual
 				}
 				exp_continue
 			}
 			timeout {
-				send_user "FAILURE: No response from $test_prog\n"
+				log_error "No response from $test_prog"
 				set failed 1
 			}
 			eof {
@@ -299,7 +293,7 @@ rm -rf ./$file_out"
 			exp_continue
 		}
 		timeout {
-			send_user "FAILURE: No response from $test_prog\n"
+			log_error "No response from $test_prog"
 			set failed 1
 		}
 		eof {
@@ -310,9 +304,9 @@ rm -rf ./$file_out"
 	log_user 1
 
 	# Check the output with what is expected
-	send_user "Actual (sorted): $sorted_actual\n"
+	log_debug "Actual (sorted): $sorted_actual"
 	if {$sorted_actual != $sorted_expected} {
-		send_user "Expected (sorted): $sorted_expected\n"
+		log_debug "Expected (sorted): $sorted_expected"
 		log_error "Expected output does not match actual output for sub-test $test_minor"
 		set failed 1
 	} else {
@@ -586,7 +580,7 @@ check_configuration 0.20 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_o
 # ##############################################################################
 
 } else {
-	send_user "\n====Omitting NVML-specific tests====\n\n"
+	log_warn "====Omitting NVML-specific tests===="
 }
 
 # ##############################################################################
@@ -1856,24 +1850,22 @@ check_configuration 2.56 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_o
 # # Cleanup and finish
 # ##############################################################################
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
-	send_user "FAILURE: Tests $test_id.\["
+if {$exit_code != 0} {
+	set message "Tests $test_id.\["
 	set length [llength $failed_tests]
 	set i 0
 	foreach test_minor $failed_tests {
 		set i [expr $i+1]
-		send_user "$test_minor"
+		append message "$test_minor"
 		if {$i < $length} {
-			send_user ","
+			append message ","
 		}
 	}
-	send_user "\] failed\n"
+	append message "\] failed"
 	if {$test_minor_in == ""} {
-		send_user "To run an individual sub-test, do `expect test$test_id <sub-test>`\n"
+		append message ". To run an individual sub-test, do `expect test$test_id <sub-test>`"
 	}
-
+	log_error $message
 }
 
 # Delete generated files
@@ -1895,4 +1887,6 @@ file delete $dev8
 # Delete generated folders
 file delete $cfgpath
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

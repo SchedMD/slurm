@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose:  Test of slurm_job_step_stat() and slurm_load_job() API calls.
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # Note:    This script generates and then deletes a file in the working
 #          directory named test7.12.prog
 ############################################################################
@@ -46,8 +42,7 @@ set test_prog   "test$test_id.prog"
 print_header $test_id
 
 if {[test_front_end] != 0} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit 0
+    skip "This test is incompatible with front-end systems"
 }
 
 #
@@ -70,7 +65,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -79,17 +74,15 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	fail "Failed to submit job"
 }
 
 #
 # Wait for job to start
 #
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: waiting for job to start\n"
 	cancel_job $job_id
-	exit 1
+	fail "Waiting for job to start"
 }
 # wait for job step to start
 sleep 5
@@ -121,7 +114,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: spawn IO not responding\n"
+		log_error "Spawn IO not responding"
 		cancel_job $job_id
 		set exit_code 1
 	}
@@ -131,22 +124,18 @@ expect {
 }
 
 if {$step_matches != 1} {
-	send_user "\nFAILURE: error running slurm_job_step_stat() program ($step_matches != 1)\n"
-	set exit_code 1
+	fail "Error running slurm_job_step_stat() program ($step_matches != 1)"
 }
 if {$pid_matches != $pid_count} {
-	send_user "\nWARNING: Failed to load PIDs associated with job step ($pid_matches != $pid_count).\n"
-	send_user "         This is dependent upon the ProctrackType configured.\n"
-	send_user "         proctrack/pgid does NOT support this functionality.\n"
+	log_warn "Failed to load PIDs associated with job step ($pid_matches != $pid_count). This is dependent upon the ProctrackType configured. proctrack/pgid does NOT support this functionality"
 }
 if {$job_matches != 1} {
-	send_user "\nFAILURE: Failed to load job info for this job ($job_matches != 1).\n"
-	set exit_code 1
+	fail "Failed to load job info for this job ($job_matches != 1)"
 }
 
 cancel_job $job_id
 if {$exit_code == 0} {
 	file delete $file_in $test_prog
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

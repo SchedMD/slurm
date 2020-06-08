@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of sacct functionality for array jobs.
 #          sacct options j
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC.
 # Written by Dominik Bartkiewicz <bart@schedmd.com>
@@ -41,13 +37,11 @@ print_header $test_id
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit $exit_code
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+        skip "This test is incompatible with front-end systems"
 } else {
 	set task_num 2
 }
@@ -71,8 +65,7 @@ proc run_sacct { jobs exp_match_1 exp_match_2 } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacct not responding\n"
-			exit 1
+			fail "sacct not responding"
 		}
 		eof {
 			wait
@@ -80,20 +73,17 @@ proc run_sacct { jobs exp_match_1 exp_match_2 } {
 	}
 
 	if {$matches_1 != $exp_match_1} {
-		log_error "sacct failure for array 1 ($matches_1 != $exp_match_1)\n"
-		exit 1
+		fail "sacct failure for array 1 ($matches_1 != $exp_match_1)"
 	}
 
 	if {$matches_2 != $exp_match_2} {
-		log_error "sacct failure for array 2 ($matches_2 != $exp_match_2)\n"
-		exit 1
+		fail "sacct failure for array 2 ($matches_2 != $exp_match_2)"
 	}
 
 	set matches [expr $matches_1 + $matches_2]
 
 	if {$matches != $expected_matches} {
-		log_error "sacct failure ($matches != $expected_matches)\n"
-		exit 1
+		fail "sacct failure ($matches != $expected_matches)"
 	}
 }
 
@@ -105,14 +95,13 @@ spawn $sbatch -N1 --array=0-5 --output=/dev/null -t1 --wrap=exit
 expect {
 	-re "Submitted batch job ($number)" {
 		set array1_job_id $expect_out(1,string)
-		send_user "\njob $array1_job_id was submitted\n"
+		log_debug "Job $array1_job_id was submitted"
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
-		exit 1
+		fail "sbatch did not submit jobs"
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -124,14 +113,13 @@ eval spawn $sbatch -N1 --array=0-5 --output=/dev/null -t1 --wrap=exit
 expect {
 	-re "Submitted batch job ($number)" {
 		set array2_job_id $expect_out(1,string)
-		send_user "\njob $array2_job_id was submitted\n"
+		log_debug "Job $array2_job_id was submitted"
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
-		exit 1
+		fail "Sbatch did not submit jobs"
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -149,10 +137,9 @@ if {[expect_extern_step]} {
 # Wait for both jobs to complete
 #
 if {[wait_for_job $array1_job_id "DONE"] || [wait_for_job $array2_job_id "DONE"]} {
-	send_user "\nFAILURE: waiting for jobs to complete\n"
 	cancel_job $array1_job_id
 	cancel_job $array2_job_id
-	exit 1
+	fail "Waiting for jobs to complete"
 }
 
 # Wait for accounting records to reach slurmdbd
@@ -168,5 +155,6 @@ run_sacct "$array1_job_id,$array2_job_id\_3" [expr $expected_steps * 6] $expecte
 # Now test sacct one task from the first array and the second full
 run_sacct "$array1_job_id\_2,$array2_job_id" $expected_steps [expr $expected_steps * 6]
 
-send_user "\nSUCCESS\n"
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

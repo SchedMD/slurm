@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test full set of sbatch --gpu options and scontrol show job.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Morris Jette
@@ -39,10 +35,9 @@ set job_id      0
 print_header $test_id
 
 if {[test_cons_tres]} {
-        send_user "\nValid configuration, using select/cons_tres\n"
+    log_debug "Valid configuration, using select/cons_tres"
 } else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit 0
+    skip "This test is only compatible with select/cons_tres"
 }
 
 set def_part_name [default_partition]
@@ -52,17 +47,15 @@ if {$nb_nodes > 1} {
 }
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs per node in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPUs per node in the default partition"
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
-log_info "GPUs per node count is $gpu_cnt"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "GPUs per node count is $gpu_cnt"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
 
 set cpus_per_node $node_conf(CPUTot)
 if {$gpu_cnt > $cpus_per_node} {
@@ -102,7 +95,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -110,8 +103,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted\n"
-	exit 1
+	fail "Batch not submitted"
 }
 
 set match 0
@@ -146,7 +138,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -154,7 +146,7 @@ expect {
 	}
 }
 if {$match != 7} {
-	send_user "\nFAILURE: sbatch gpu options not fully processed ($match != 7)\n"
+	log_error "sbatch gpu options not fully processed ($match != 7)"
 	set exit_code 1
 
 }
@@ -173,7 +165,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -181,9 +173,8 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted\n"
 	exec $bin_rm -f $file_in $file_out
-	exit 1
+	fail "Batch not submitted"
 }
 set match 0
 spawn $scontrol show job $job_id
@@ -193,7 +184,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -201,14 +192,12 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: sbatch gpu options not fully processed ($match != 8)\n"
-	set exit_code 1
-
+	fail "sbatch gpu options not fully processed ($match != 8)"
 }
 cancel_job $job_id
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

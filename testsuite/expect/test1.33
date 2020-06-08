@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of srun exit code reporting
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -69,12 +65,12 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -n $task_cnt -O -t1 $exit_script]
 expect {
 	-re "exit code ($number)" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		incr sum $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -84,7 +80,7 @@ expect {
 }
 
 if {$sum != 21} {
-	send_user "\nFAILURE: srun failed to report exit code ($sum != 21) $myexit\n"
+	log_error "srun failed to report exit code ($sum != 21) $myexit"
 	set exit_code 1
 }
 
@@ -95,7 +91,7 @@ set matches 0
 spawn $test_script
 expect {
 	-re "srun_exit_code_11" {
-		send_user "Above error are expected, no worries\n"
+		log_debug "Above error are expected, no worries"
 		incr matches
 		exp_continue
 	}
@@ -104,7 +100,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: srun's exit code is bad\n"
+	log_error "srun's exit code is bad"
 	set exit_code 1
 }
 
@@ -113,6 +109,6 @@ if {$matches != 1} {
 #
 if {$exit_code == 0} {
 	exec $bin_rm -f $exit_script $test_script
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

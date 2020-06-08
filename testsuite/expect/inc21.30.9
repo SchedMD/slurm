@@ -31,10 +31,10 @@ proc inc21_30_9 { wait_reason } {
 	global salloc srun nthreads acct bin_sleep grpcpumin_num number
 	global totcpus test_node qostest exit_code
 
-	send_user "\nStarting GrpCpuMins test (Within: inc21.30.9) \n\n"
+	log_info "Starting GrpCpuMins test (Within: inc21.30.9) "
 
 	if  { [test_enforce_safe_set] == 0 } {
-		send_user "\nWARNING: This test can't be run without AccountingStorageEnforce having \"safe\" in it\n"
+		log_warn "This test can't be run without AccountingStorageEnforce having \"safe\" in it"
 		return
 	}
 
@@ -50,19 +50,19 @@ proc inc21_30_9 { wait_reason } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nJob $job_id1 has been submitted. (Within: inc21.30.9)\n"
+			log_debug "Job $job_id1 has been submitted. (Within: inc21.30.9)"
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nFAILURE: This job should not be pending (Within: inc21.30.9)\n"
+			log_error "This job should not be pending (Within: inc21.30.9)"
 			set exit_code 1
 		}
 		-re "error" {
-			send_user "\nFAILURE: Job allocation should not have failed. (Within: inc21.30.9)\n"
+			log_error "Job allocation should not have failed. (Within: inc21.30.9)"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding. (Within: inc21.30.9)\n"
+			log_error "salloc not responding. (Within: inc21.30.9)"
 			set exit_code 1
 		}
 		eof {
@@ -77,15 +77,15 @@ proc inc21_30_9 { wait_reason } {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			send_user "\nJob $job_id2 is waiting for resources. This is expected. (Within: inc21.30.9)\n"
+			log_debug "Job $job_id2 is waiting for resources. This is expected. (Within: inc21.30.9)"
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			send_user "\nFAILURE: Job should be pending but is not. (Within: inc21.30.9)\n"
+			log_error "Job should be pending but is not. (Within: inc21.30.9)"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding. (Within: inc21.30.9)\n"
+			log_error "salloc not responding. (Within: inc21.30.9)"
 			set exit_code 1
 		}
 		eof {
@@ -94,7 +94,7 @@ proc inc21_30_9 { wait_reason } {
 	}
 
 	if {![check_reason $job_id2 $wait_reason]} {
-		send_user "\nFAILURE: Bad job wait reason. (Within: inc21.30.9)\n"
+		log_error "Bad job wait reason. (Within: inc21.30.9)"
 		set exit_code 1
 	}
 

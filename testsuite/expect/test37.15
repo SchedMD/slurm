@@ -14,10 +14,6 @@
 #          fedr/fed2/...
 #          fedr/fed3/...
 #          3. controllers are up and running.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Isaac Hartung <ihartung@schedmd.com>
@@ -63,14 +59,11 @@ print_header $test_id
 #
 
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator.\n \
-	 	  Use: sacctmgr mod user \$USER set admin=admin."
-	exit 0
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
 proc sbatch { options } {
@@ -109,8 +102,8 @@ proc squeue { fed regex } {
 
 	set matches 0
 	set command "$my_squeue --noheader -a -M$fed"
-#	send_user [eval $command]
-#	send_user "\n\n"
+#	log_debug [eval $command]
+#	log_debug ""
 #	return
 	spawn {*}$command
 	expect {
@@ -171,22 +164,20 @@ proc cleanup { } {
 proc end_it { exit_code } {
 	global test_id my_squeue
 	cleanup
-	if {$exit_code == 0} {
-		print_success $test_id
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
+	pass
 }
 
 #start test
 
 if {[test_federation_setup]} {
-	log_warn "WARNING: This test can't be run without fed_slurm_base,\
-		fedc1, fedc2, fedc3 setup in globals.local."
-	exit 0
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
 }
 
 if {[test_all_up]} {
-	exit 0
+	pass
 }
 
 set user_name [get_my_user_name]
@@ -203,9 +194,9 @@ if {[setup_federation $fed_name]} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Setup cluster features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
 
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
@@ -227,7 +218,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -236,7 +227,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -260,7 +251,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -269,7 +260,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -293,7 +284,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -302,13 +293,13 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Test scontrol suspend within federation"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test scontrol suspend within federation"
+log_info "################################################################"
 
 cancel_all_jobs
 

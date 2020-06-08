@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Test that an srun program can move from the foreground to the
 #          background.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -92,7 +88,7 @@ spawn bash -i $file_in
 expect {
 	-re "sending job to the background" {
 		if {$time_num == 0} {
-			send_user "\nFAILURE: srun is not generating output\n"
+			log_error "srun is not generating output"
 			set exit_code 1
 		}
 		set bg_time_num $time_num
@@ -101,7 +97,7 @@ expect {
 	}
 	-re "sending job to foreground" {
 		if {$time_num == $bg_time_num} {
-			send_user "\nFAILURE: srun is not progressing ($time_num == $bg_time_num)\n"
+			log_error "srun is not progressing ($time_num == $bg_time_num)"
 			set exit_code 1
 		}
 		set fg_match 1
@@ -116,17 +112,17 @@ expect {
 		exp_continue
 	}
 	-re "BG Failed" {
-		send_user "\nFAILURE: Failed to find suspended srun job in background\n"
+		log_error "Failed to find suspended srun job in background"
 		set exit_code 1
 		exp_continue
 	}
 	-re "FG Failed" {
-		send_user "\nFAILURE: Failed to find background srun job to put in foreground\n"
+		log_error "Failed to find background srun job to put in foreground"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -135,27 +131,20 @@ expect {
 }
 
 if {$fg_match != 1} {
-	send_user "\nFAILURE: srun was not sent to the foreground\n"
-	set exit_code 1
+	fail "srun was not sent to the foreground"
 }
 if {$bg_match != 1} {
-	send_user "\nFAILURE: srun was not sent to the background\n"
-	set exit_code 1
+	fail "srun was not sent to the background"
 }
 if {$time_num != 10} {
-	send_user "\nFAILURE: srun is not generating output ($time_num != 10)\n"
-	set exit_code 1
+	fail "srun is not generating output ($time_num != 10)"
 }
 if {$fini_match != 1} {
-	send_user "\nFAILURE: srun did not finish the program submitted\n"
-	set exit_code 1
+	fail "srun did not finish the program submitted"
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $test_timer $test_srun $file_in $stop_srun
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
-
-
-

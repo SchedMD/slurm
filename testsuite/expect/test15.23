@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Verify environment variables controlling salloc are processed:
 #          SALLOC_DEBUG and SALLOC_TIMELIMIT
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -40,14 +36,12 @@ set job_id           0
 print_header $test_id
 
 proc end_it {} {
-	global exit_code test_id
+	global exit_code
 
-	if {$exit_code == 0} {
-		print_success $test_id
-	} else {
-		print_failure $test_id
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
+	pass
 }
 
 #
@@ -73,7 +67,7 @@ expect {
 		exp_continue
 	}
 	-re $prompt {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
 		log_error "salloc not responding"

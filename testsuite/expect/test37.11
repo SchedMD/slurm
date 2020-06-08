@@ -63,14 +63,11 @@ print_header $test_id
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator.$eol \
-	 	  Use: sacctmgr mod user \$USER set admin=admin."
-
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
 proc build_regex { jid cid state } {
@@ -163,22 +160,17 @@ proc cleanup { } {
 proc end_it { exit_code } {
 	global test_id my_squeue
 	cleanup
-	if {$exit_code == 0} {
-		print_success $test_id
-	}
 	exit $exit_code
 }
 
 #start test
 
 if {[test_federation_setup]} {
-	log_warn "This test can't be run without fed_slurm_base,\
-		fedc1, fedc2, fedc3 setup in globals.local."
-	exit 0
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
 }
 
 if {[test_all_up]} {
-	exit 0
+	pass
 }
 
 set user_name [get_my_user_name]
@@ -198,9 +190,9 @@ if {[setup_federation $fed_name]} {
 # get number of nodes per cluster
 set node_count [available_nodes "" ""]
 
-send_user "$eol################################################################$eol"
-send_user "Setup cluster features"
-send_user "$eol################################################################$eol"
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
 
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
@@ -222,7 +214,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "$eolFAILURE: sacctmgr mod not responding$eol"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -231,7 +223,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.$eol"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -255,7 +247,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "$eolFAILURE: sacctmgr mod not responding$eol"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -264,7 +256,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.$eol"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -289,7 +281,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "$eolFAILURE: sacctmgr mod not responding$eol"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -298,15 +290,15 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.$eol"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
 make_bash_script $file_in "sleep 15"
 
-send_user "$eol################################################################$eol"
-send_user "test scancel within federated clusters"
-send_user "$eol################################################################$eol"
+log_info "################################################################"
+log_info "Test scancel within federated clusters"
+log_info "################################################################"
 
 set ji0             [sbatch fa]
 set cid($ji0)       [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]

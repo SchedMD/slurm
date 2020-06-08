@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test allocating sub-sets of GRES to job steps
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Morris Jette
@@ -40,56 +36,51 @@ set number_commas  "\[0-9_,\]+"
 print_header $test_id
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
-	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-	exit 0
+	skip "This test is only compatible with select/cons_tres"
 }
 if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
-send_user "\nDefault partition node count is $nb_nodes\n"
+log_debug "Default partition node count is $nb_nodes"
 if {$nb_nodes > 1} {
 	set nb_nodes 2
 }
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 2} {
-	send_user "\nWARNING: This test requires 2 or more GPUs in the default partition\n"
-	exit 0
+	skip "This test requires 2 or more GPUs in the default partition"
 }
 
 set constrain_devices [test_constrain_devices]
 if {$constrain_devices} {
-	log_info "Devices files are constrained by cgroups\n"
+	log_info "Devices files are constrained by cgroups"
 } else {
-	log_info "Devices files are NOT constrained by cgroups\n"
+	log_info "Devices files are NOT constrained by cgroups"
 }
 
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set cpus_per_node $node_conf(CPUTot)
 
-log_info "GPUs per node is $gpu_cnt"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
-log_info "CPUs per node is $cpus_per_node"
+log_debug "GPUs per node is $gpu_cnt"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "CPUs per node is $cpus_per_node"
 
 if {$cpus_per_node < 3} {
-	send_user "\nWARNING: This test requires 3 or more CPUs per node in the default partition\n"
-	exit 0
+	skip "This test requires 3 or more CPUs per node in the default partition"
 }
 
 #
 # Test --gpus-per-node option by job step
 #
-send_user "\n\nTEST 1: --gpus-per-node option\n"
+log_info "TEST 1: --gpus-per-node option"
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
@@ -117,7 +108,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -125,19 +116,16 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
+	fail "No output file"
 }
 set match 0
 spawn $bin_cat $file_out
@@ -151,7 +139,7 @@ expect {
 	}
 }
 if {$match != 3} {
-	send_user "\nFAILURE: bad CUDA information about job ($match != 3)\n"
+	log_error "Bad CUDA information about job ($match != 3)"
 	set exit_code 1
 }
 
@@ -169,7 +157,7 @@ expect {
 }
 log_user 1
 if {$match != 1} {
-	send_user "\nFAILURE: did not delay step for available GPU\n"
+	log_error "Did not delay step for available GPU"
 	set exit_code 1
 }
 
@@ -177,7 +165,7 @@ if {$match != 1} {
 # Test --gpus-per-task option by job step
 # Note that job is using --gpus-per-node, while step is using --gpus-per-task
 #
-send_user "\n\nTEST 2: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
+log_info "TEST 2: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option"
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
@@ -204,7 +192,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -212,19 +200,16 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
+	fail "No output file"
 }
 set bad_cuda_cnt 0
 set bad_cuda_val 0
@@ -258,17 +243,17 @@ expect {
 	}
 }
 if {$bad_cuda_cnt != 0} {
-	send_user "\nFAILURE: Bad CUDA count for $bad_cuda_cnt of 2 steps\n"
+	log_error "Bad CUDA count for $bad_cuda_cnt of 2 steps"
 	set exit_code 1
 } elseif {$bad_cuda_val != 0} {
-	send_user "\nFAILURE: Duplicate CUDA values for parallel steps 2 steps\n"
+	log_error "Duplicate CUDA values for parallel steps 2 steps"
 	set exit_code 1
 }
 
 #
 # Test --gpus (per job or step) option by job step
 #
-send_user "\n\nTEST 3: --gpus-per-node for job and multiple simultaneous steps using --gpus (per step) option\n"
+log_info "TEST 3: --gpus-per-node for job and multiple simultaneous steps using --gpus (per step) option"
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
@@ -295,7 +280,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -303,19 +288,16 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
+	fail "No output file"
 }
 set bad_cuda_cnt 0
 set bad_cuda_val 0
@@ -349,10 +331,10 @@ expect {
 	}
 }
 if {$bad_cuda_cnt != 0} {
-	send_user "\nFAILURE: Bad CUDA count for $bad_cuda_cnt of 2 steps\n"
+	log_error "Bad CUDA count for $bad_cuda_cnt of 2 steps"
 	set exit_code 1
 } elseif {$bad_cuda_val != 0} {
-	send_user "\nFAILURE: Duplicate CUDA values for parallel steps 2 steps\n"
+	log_error "Duplicate CUDA values for parallel steps 2 steps"
 	set exit_code 1
 }
 
@@ -360,7 +342,7 @@ if {$bad_cuda_cnt != 0} {
 # Test --gpus (per job or step) option by job step
 #
 if {$gpu_cnt > 2} {
-	send_user "\n\nTEST 4: --gpus-per-node for job and multiple simultaneous steps using --gpus (per step) option\n"
+	log_info "TEST 4: --gpus-per-node for job and multiple simultaneous steps using --gpus (per step) option"
 
 	make_bash_script $file_in1 "
 		$scontrol -dd show job \${SLURM_JOBID}
@@ -387,7 +369,7 @@ if {$gpu_cnt > 2} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 		}
 		eof {
@@ -395,19 +377,16 @@ if {$gpu_cnt > 2} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: job not submitted\n"
-		exit 1
+		fail "Job not submitted"
 	}
 
 	if {[wait_for_job $job_id "DONE"] != 0} {
-		send_user "\nFAILURE: job $job_id did not complete\n"
 		cancel_job $job_id
-		exit 1
+		fail "Job $job_id did not complete"
 	}
 
 	if {[wait_for_file $file_out] != 0} {
-		send_user "\nFAILURE: no output file\n"
-		exit 1
+		fail "No output file"
 	}
 	set bad_cuda_cnt 0
 	set bad_cuda_val 0
@@ -456,10 +435,10 @@ if {$gpu_cnt > 2} {
 		}
 	}
 	if {$bad_cuda_cnt != 0} {
-		send_user "\nFAILURE: Bad CUDA count for $bad_cuda_cnt of 2 steps\n"
+		log_error "Bad CUDA count for $bad_cuda_cnt of 2 steps"
 		set exit_code 1
 	} elseif {$bad_cuda_val != 0} {
-		send_user "\nFAILURE: Duplicate CUDA values for parallel steps 2 steps\n"
+		log_error "Duplicate CUDA values for parallel steps 2 steps"
 		set exit_code 1
 	}
 }
@@ -468,7 +447,7 @@ if {$gpu_cnt > 2} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 2} {
-	send_user "\n\nTEST 5: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
+	log_info "TEST 5: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option"
 
 	set job_gpus 3
 	set step_gpus 2
@@ -499,7 +478,7 @@ if {$gpu_cnt > 2} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 		}
 		eof {
@@ -507,19 +486,16 @@ if {$gpu_cnt > 2} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: job not submitted\n"
-		exit 1
+		fail "Job not submitted"
 	}
 
 	if {[wait_for_job $job_id "DONE"] != 0} {
-		send_user "\nFAILURE: job $job_id did not complete\n"
 		cancel_job $job_id
-		exit 1
+		fail "Job $job_id did not complete"
 	}
 
 	if {[wait_for_file $file_out] != 0} {
-		send_user "\nFAILURE: no output file\n"
-		exit 1
+		fail "No output file"
 	}
 	set match 0
 	set bad_cuda_cnt 0
@@ -554,10 +530,10 @@ if {$gpu_cnt > 2} {
 		}
 	}
 	if {$bad_cuda_cnt != 0} {
-		send_user "\nFAILURE: Bad CUDA count for $bad_cuda_cnt of 3 steps\n"
+		log_error "Bad CUDA count for $bad_cuda_cnt of 3 steps"
 		set exit_code 1
 	} elseif {$match != 3} {
-		send_user "\nFAILURE: Bad CUDA information for $match of 3 steps\n"
+		log_error "Bad CUDA information for $match of 3 steps"
 		set exit_code 1
 	}
 
@@ -575,7 +551,7 @@ if {$gpu_cnt > 2} {
 	}
 	log_user 1
 	if {$match != 2} {
-		send_user "\nFAILURE: did not delay steps for available GPU\n"
+		log_error "Did not delay steps for available GPU"
 		set exit_code 1
 	}
 }
@@ -584,7 +560,7 @@ if {$gpu_cnt > 2} {
 # Test --gpus option by job step
 #
 if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
-	send_user "\n\nTEST 6: --gpus-per-node for job and multiple simultaneous steps using --gpus option\n"
+	log_info "TEST 6: --gpus-per-node for job and multiple simultaneous steps using --gpus option"
 
 	set job_gpus 2
 	set step_gpus 2
@@ -615,7 +591,7 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 		}
 		eof {
@@ -623,19 +599,16 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: job not submitted\n"
-		exit 1
+		fail "Job not submitted"
 	}
 
 	if {[wait_for_job $job_id "DONE"] != 0} {
-		send_user "\nFAILURE: job $job_id did not complete\n"
 		cancel_job $job_id
-		exit 1
+		fail "Job $job_id did not complete"
 	}
 
 	if {[wait_for_file $file_out] != 0} {
-		send_user "\nFAILURE: no output file\n"
-		exit 1
+		fail "No output file"
 	}
 	set match 0
 	set bad_cuda_cnt 0
@@ -662,10 +635,10 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 		}
 	}
 	if {$bad_cuda_cnt != 0} {
-		send_user "\nFAILURE: Bad CUDA count for $bad_cuda_cnt of 6 tasks\n"
+		log_error "Bad CUDA count for $bad_cuda_cnt of 6 tasks"
 		set exit_code 1
 	} elseif {$match != 6} {
-		send_user "\nFAILURE: Bad CUDA information for $match of 6 tasks\n"
+		log_error "Bad CUDA information for $match of 6 tasks"
 		set exit_code 1
 	}
 	if {$exit_code == 0} {
@@ -675,11 +648,11 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 				set exit_code 1
 			}
 		} elseif {$cuda_val(0) == $cuda_val(1) && $cuda_val(1) == $cuda_val(2)} {
-			send_user "\nFAILURE: Duplicated CUDA values for all 3 steps on node 0 of allocation\n"
+			log_error "Duplicated CUDA values for all 3 steps on node 0 of allocation"
 			set exit_code 1
 		}
 		if {$cuda_val(0) != $cuda_val(1) && $cuda_val(1) != $cuda_val(2) && $cuda_val(2) != $cuda_val(0)} {
-			send_user "\nFAILURE: Unique CUDA values for all 3 steps on node 0 of allocation\n"
+			log_error "Unique CUDA values for all 3 steps on node 0 of allocation"
 			set exit_code 1
 		}
 	}
@@ -698,7 +671,7 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 	}
 	log_user 1
 	if {$match != 1} {
-		send_user "\nFAILURE: did not delay steps for available GPU\n"
+		log_error "Did not delay steps for available GPU"
 		set exit_code 1
 	}
 }
@@ -707,7 +680,7 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 # Test --gpus option by job step
 #
 if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
-	send_user "\n\nTEST 7: --gpus-per-node for job and multiple simultaneous steps using --gpus option\n"
+	log_info "TEST 7: --gpus-per-node for job and multiple simultaneous steps using --gpus option"
 
 	set job_gpus 4
 
@@ -737,7 +710,7 @@ if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 		}
 		eof {
@@ -745,19 +718,16 @@ if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: job not submitted\n"
-		exit 1
+		fail "Job not submitted"
 	}
 
 	if {[wait_for_job $job_id "DONE"] != 0} {
-		send_user "\nFAILURE: job $job_id did not complete\n"
 		cancel_job $job_id
-		exit 1
+		fail "Job $job_id did not complete"
 	}
 
 	if {[wait_for_file $file_out] != 0} {
-		send_user "\nFAILURE: no output file\n"
-		exit 1
+		fail "No output file"
 	}
 
 	set match 0
@@ -773,7 +743,7 @@ if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 		}
 	}
 	if {$bad_cuda_cnt != 0} {
-		send_user "\nFAILURE: Bad CUDA count for $bad_cuda_cnt of 3 tasks\n"
+		log_error "Bad CUDA count for $bad_cuda_cnt of 3 tasks"
 		set exit_code 1
 	}
 
@@ -791,7 +761,7 @@ if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 	}
 	log_user 1
 	if {$match != 2} {
-		send_user "\nFAILURE: did not delay steps for available GPU ($match != 2)\n"
+		log_error "Did not delay steps for available GPU ($match != 2)"
 		set exit_code 1
 	}
 }
@@ -800,7 +770,7 @@ if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 3 && $nb_nodes >= 2} {
-	send_user "\n\nTEST 8: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
+	log_info "TEST 8: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option"
 
 	set job_gpus 4
 	set step_gpus 2
@@ -830,7 +800,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 		}
 		eof {
@@ -838,19 +808,16 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: job not submitted\n"
-		exit 1
+		fail "Job not submitted"
 	}
 
 	if {[wait_for_job $job_id "DONE"] != 0} {
-		send_user "\nFAILURE: job $job_id did not complete\n"
 		cancel_job $job_id
-		exit 1
+		fail "Job $job_id did not complete"
 	}
 
 	if {[wait_for_file $file_out] != 0} {
-		send_user "\nFAILURE: no output file\n"
-		exit 1
+		fail "No output file"
 	}
 	set match2 0
 	set match4 0
@@ -890,13 +857,13 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 	}
 	log_user 1
 	if {$bad_cuda_cnt != 0} {
-		send_user "\nFAILURE: Bad CUDA count for $bad_cuda_cnt of 2 steps\n"
+		log_error "Bad CUDA count for $bad_cuda_cnt of 2 steps"
 		set exit_code 1
 	} elseif {$match2 != 2} {
-		send_user "\nFAILURE: Bad CUDA information for $match2 of 2 tasks\n"
+		log_error "Bad CUDA information for $match2 of 2 tasks"
 		set exit_code 1
 	} elseif {$match4 != 4} {
-		send_user "\nFAILURE: Bad CUDA information for $match4 of 4 tasks\n"
+		log_error "Bad CUDA information for $match4 of 4 tasks"
 		set exit_code 1
 	}
 
@@ -914,7 +881,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 	}
 	log_user 1
 	if {$match != 1} {
-		send_user "\nFAILURE: did not delay steps for available GPU\n"
+		log_error "Did not delay steps for available GPU"
 		set exit_code 1
 	}
 }
@@ -923,7 +890,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 3 && $nb_nodes >= 2} {
-	send_user "\n\nTEST 9: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
+	log_info "TEST 9: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option"
 
 	set job_gpus 4
 	set step_gpus 2
@@ -956,7 +923,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 		}
 		eof {
@@ -964,19 +931,16 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: job not submitted\n"
-		exit 1
+		fail "Job not submitted"
 	}
 
 	if {[wait_for_job $job_id "DONE"] != 0} {
-		send_user "\nFAILURE: job $job_id did not complete\n"
 		cancel_job $job_id
-		exit 1
+		fail "Job $job_id did not complete"
 	}
 
 	if {[wait_for_file $file_out] != 0} {
-		send_user "\nFAILURE: no output file\n"
-		exit 1
+		fail "No output file"
 	}
 	set match2 0
 	set bad_cuda_cnt 0
@@ -999,10 +963,10 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 		}
 	}
 	if {$bad_cuda_cnt != 0} {
-		send_user "\nFAILURE: Bad CUDA count for $bad_cuda_cnt of 2 steps\n"
+		log_error "Bad CUDA count for $bad_cuda_cnt of 2 steps"
 		set exit_code 1
 	} elseif {$match2 != 5} {
-		send_user "\nFAILURE: Bad CUDA information for $match2 of 5 tasks\n"
+		log_error "Bad CUDA information for $match2 of 5 tasks"
 		set exit_code 1
 	}
 
@@ -1020,7 +984,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 	}
 	log_user 1
 	if {$match != 1} {
-		send_user "\nFAILURE: did not delay steps for available GPU\n"
+		log_error "Did not delay steps for available GPU"
 		set exit_code 1
 	}
 }
@@ -1029,7 +993,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 # Test --gpus-per-task option by job step
 #
 if {$gpu_cnt > 3 && $nb_nodes >= 2} {
-	send_user "\n\nTEST 10: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option\n"
+	log_info "TEST 10: --gpus-per-node for job and multiple simultaneous steps using --gpus-per-task option"
 
 	set job_gpus 3
 	set step_gpus 2
@@ -1059,7 +1023,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 		}
 		eof {
@@ -1067,19 +1031,16 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: job not submitted\n"
-		exit 1
+		fail "Job not submitted"
 	}
 
 	if {[wait_for_job $job_id "DONE"] != 0} {
-		send_user "\nFAILURE: job $job_id did not complete\n"
 		cancel_job $job_id
-		exit 1
+		fail "Job $job_id did not complete"
 	}
 
 	if {[wait_for_file $file_out] != 0} {
-		send_user "\nFAILURE: no output file\n"
-		exit 1
+		fail "No output file"
 	}
 	set match2 0
 	set bad_cuda_cnt 0
@@ -1106,10 +1067,10 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 		}
 	}
 	if {$bad_cuda_cnt != 0} {
-		send_user "\nFAILURE: Bad CUDA count for $bad_cuda_cnt of 2 steps\n"
+		log_error "Bad CUDA count for $bad_cuda_cnt of 2 steps"
 		set exit_code 1
 	} elseif {$match2 != 8} {
-		send_user "\nFAILURE: Bad CUDA information for $match2 of 8 tasks\n"
+		log_error "Bad CUDA information for $match2 of 8 tasks"
 		set exit_code 1
 	}
 
@@ -1127,13 +1088,12 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 	}
 	log_user 1
 	if {$match != 1} {
-		send_user "\nFAILURE: did not delay steps for available GPU\n"
-		set exit_code 1
+		fail "Did not delay steps for available GPU"
 	}
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2 $file_out
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

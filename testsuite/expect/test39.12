@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test some valid combinations of srun --gpu and non-GPU GRES options
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Morris Jette
@@ -38,14 +34,12 @@ set number_commas  "\[0-9_,\]+"
 print_header $test_id
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
-	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-	exit 0
+	skip "This test is only compatible with select/cons_tres"
 }
 if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
 set def_part_name [default_partition]
@@ -55,22 +49,18 @@ if {$nb_nodes > 1} {
 }
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs per node for at least $nb_nodes nodes in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPUs per node for at least $nb_nodes nodes in the default partition"
 }
 
 set craynetwork_count [get_craynetwork_count $nb_nodes]
 if {$craynetwork_count < 0} {
-	send_user "\nFAILURE: Error getting craynetwork GRES count\n"
-	exit 1
+	fail "Error getting craynetwork GRES count"
 }
 if {$craynetwork_count < 1} {
-	send_user "\nWARNING: This test requires 1 or more craynetwork GRES per node for at least $nb_nodes nodes in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more craynetwork GRES per node for at least $nb_nodes nodes in the default partition"
 }
 
 set one_task_per_core [test_select_type_params "CR_ONE_TASK_PER_CORE"]
@@ -78,13 +68,13 @@ array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set sockets_with_gpus [get_gpu_socket_count $gpu_cnt \
                                             $node_conf(Sockets)]
 
-log_info "GPU count is $gpu_cnt"
-log_info "Sockets with GPUs $sockets_with_gpus"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "Cores per socket is $node_conf(CoresPerSocket)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
-log_info "gres/craynetwork count is $craynetwork_count"
-log_info "CR_ONE_TASK_PER_CORE is $one_task_per_core"
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets with GPUs $sockets_with_gpus"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "Cores per socket is $node_conf(CoresPerSocket)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "gres/craynetwork count is $craynetwork_count"
+log_debug "CR_ONE_TASK_PER_CORE is $one_task_per_core"
 
 set cores_per_node [expr $node_conf(Sockets) * $node_conf(CoresPerSocket)]
 set cpus_per_node $node_conf(CPUTot)
@@ -125,7 +115,7 @@ exit 0"
 #
 # Test --gpus options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus option\n"
+log_info "TEST: --gpus option"
 set match_craynetwork 0
 set match_gpu 0
 set timeout $max_job_delay
@@ -149,7 +139,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -158,17 +148,17 @@ expect {
 	}
 }
 if {$match_craynetwork < 1} {
-	send_user "\nFAILURE: srun --gres=craynetwork failure ($match_craynetwork < 1)\n"
+	log_error "srun --gres=craynetwork failure ($match_craynetwork < 1)"
 	set exit_code 1
 }
 set expected_gpus $use_gpus_per_job
 if {$match_gpu != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus failure ($match_gpu != $expected_gpus)\n"
+	log_error "srun --gpus failure ($match_gpu != $expected_gpus)"
 	set exit_code 1
 }
 
 if {[expr $use_gpus_per_job - 2] > $nb_nodes} {
-	send_user "\n\nTEST: --gpus option, part 2\n"
+	log_info "TEST: --gpus option, part 2"
 	set match_craynetwork 0
 	set match_gpu 0
 	incr use_gpus_per_job -2
@@ -187,7 +177,7 @@ if {[expr $use_gpus_per_job - 2] > $nb_nodes} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -196,12 +186,12 @@ if {[expr $use_gpus_per_job - 2] > $nb_nodes} {
 		}
 	}
 	if {$match_craynetwork < 1} {
-		send_user "\nFAILURE: srun --gres=craynetwork failure ($match_craynetwork < 1)\n"
+		log_error "srun --gres=craynetwork failure ($match_craynetwork < 1)"
 		set exit_code 1
 	}
 	set expected_gpus $use_gpus_per_job
 	if {$match_gpu != $expected_gpus} {
-		send_user "\nFAILURE: srun --gpus failure ($match_gpu != $expected_gpus)\n"
+		log_error "srun --gpus failure ($match_gpu != $expected_gpus)"
 		set exit_code 1
 	}
 }
@@ -209,7 +199,7 @@ if {[expr $use_gpus_per_job - 2] > $nb_nodes} {
 #
 # Test --gpus-per-node options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus-per-node option\n"
+log_info "TEST: --gpus-per-node option"
 set match_craynetwork 0
 set match_gpu 0
 if {$gpus_per_node > 1} {
@@ -232,7 +222,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -241,19 +231,19 @@ expect {
 	}
 }
 if {$match_craynetwork < 1} {
-	send_user "\nFAILURE: srun --gres=craynetwork failure ($match_craynetwork < 1)\n"
+	log_error "srun --gres=craynetwork failure ($match_craynetwork < 1)"
 	set exit_code 1
 }
 set expected_gpus [expr $use_gpus_per_node * $nb_nodes]
 if {$match_gpu != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-node failure ($match_gpu != $expected_gpus)\n"
+	log_error "srun --gpus-per-node failure ($match_gpu != $expected_gpus)"
 	set exit_code 1
 }
 
 #
 # Test --gpus-per-socket options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus-per-socket option\n"
+log_info "TEST: --gpus-per-socket option"
 set match_craynetwork 0
 set match_gpu 0
 if {$sockets_with_gpus > 1} {
@@ -280,7 +270,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -289,19 +279,19 @@ expect {
 	}
 }
 if {$match_craynetwork < 1} {
-	send_user "\nFAILURE: srun --gres=craynetwork failure ($match_craynetwork < 1)\n"
+	log_error "srun --gres=craynetwork failure ($match_craynetwork < 1)"
 	set exit_code 1
 }
 set expected_gpus [expr $sockets_with_gpus * $nb_nodes]
 if {$match_gpu != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-socket failure ($match_gpu != $expected_gpus)\n"
+	log_error "srun --gpus-per-socket failure ($match_gpu != $expected_gpus)"
 	set exit_code 1
 }
 
 #
 # Test --gpus-per-task options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus-per-task option\n"
+log_info "TEST: --gpus-per-task option"
 set match_craynetwork 0
 set match_gpu 0
 if {$gpu_cnt > 1} {
@@ -324,7 +314,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -333,17 +323,15 @@ expect {
 	}
 }
 if {$match_craynetwork < 1} {
-	send_user "\nFAILURE: srun --gres=craynetwork failure ($match_craynetwork < 1)\n"
-	set exit_code 1
+	fail "srun --gres=craynetwork failure ($match_craynetwork < 1)"
 }
 set expected_gpus [expr $use_gpus_per_node * $use_gpus_per_node]
 if {$match_gpu != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-task failure ($match_gpu != $expected_gpus)\n"
-	set exit_code 1
+	fail "srun --gpus-per-task failure ($match_gpu != $expected_gpus)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

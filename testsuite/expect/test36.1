@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          lsid wrapper test
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2016 SchedMD LLC
 # Written by Alejandro Sanchez <alex@schedmd.com>
@@ -36,8 +32,7 @@ set exit_code   0
 print_header $test_id
 
 if {[file executable $lsid] == 0} {
-	send_user "\nWARNING: $lsid does not exist\n"
-	exit 0
+	skip "$lsid does not exist"
 }
 
 set cluster_name [get_cluster_name]
@@ -58,7 +53,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: lsid not responding\n"
+		log_error "lsid not responding"
 		set exit_code 1
 	}
 	eof {
@@ -67,19 +62,15 @@ expect {
 }
 
 if {[string compare $cluster_name $lsid_cluster_name]} {
-	send_user "\nFAILURE: lsid's cluster name does not match the configured parameter ($cluster_name != $lsid_cluster_name)\n"
+	log_error "lsid's cluster name does not match the configured parameter ($cluster_name != $lsid_cluster_name)"
 	set exit_code 1
 }
 
 if {[string compare $control_machine $lsid_control_machine]} {
-	send_user "\nFAILURE: lsid's master name does not match the configured parameter ($control_machine != $lsid_control_machine)\n"
+	log_error "lsid's master name does not match the configured parameter ($control_machine != $lsid_control_machine)"
 	set exit_code 1
 }
 
-if {!$exit_code} {
-	send_user "\nSUCCESS\n"
-} else {
-	send_user "\nFAILURE\n"
+if {$exit_code} {
+	fail "Test failed due to previous errors"
 }
-
-exit $exit_code

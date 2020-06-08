@@ -14,10 +14,6 @@
 #          fedr/fed2/...
 #          fedr/fed3/...
 #          3. controllers are up and running.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Isaac Hartung <ihartung@schedmd.com>
@@ -60,14 +56,11 @@ print_header $test_id
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator.\n \
-	 	  Use: sacctmgr mod user \$USER set admin=admin."
-	exit 0
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
 proc modify {job_id constraint reg_ex error_message} {
@@ -203,23 +196,20 @@ proc cleanup { } {
 
 proc end_it { exit_code } {
 	global test_id
-	cleanup
-	if {$exit_code == 0} {
-		print_success $test_id
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
+	pass
 }
 
 #start test
 
 if {[test_federation_setup]} {
-	log_warn "WARNING: This test can't be run without fed_slurm_base,\
-		fedc1, fedc2, fedc3 setup in globals.local."
-	exit 0
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
 }
 
 if {[test_all_up]} {
-	exit 0
+	pass
 }
 
 set user_name [get_my_user_name]
@@ -241,10 +231,9 @@ set node_count [available_nodes "" ""]
 
 make_bash_script $file_in "env; $bin_sleep 300"
 
-
-send_user "\n################################################################\n"
-send_user "Setup cluster features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
 
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
@@ -266,7 +255,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -275,7 +264,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -299,7 +288,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -308,7 +297,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -332,7 +321,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -341,10 +330,9 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
-
 
 set my_scontrol "${fed_slurm_base}/$fedc1/bin/scontrol"
 
@@ -352,10 +340,9 @@ set job_id 0
 set script "\"sleep 300\""
 set my_sbatch "${fed_slurm_base}/$fedc1/bin/sbatch"
 
-
-send_user "\n################################################################\n"
-send_user "Modify Feature of Running Job"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Modify Feature of Running Job"
+log_info "################################################################"
 cancel_all_jobs
 
 #first job
@@ -366,9 +353,9 @@ verify $fedc1 $job_id "R\\s+$fedc1\\s+$fedc1" "Job not running on designated clu
 
 modify $job_id fb "Job is no longer pending execution for job $job_id" "allowed user to modify features of running job"
 
-send_user "\n################################################################\n"
-send_user "Test invalid feature"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test invalid feature"
+log_info "################################################################"
 #second job
 
 set job_id [sbatch $my_sbatch $script fa]
@@ -379,9 +366,9 @@ verify $fedc1 $job_id "PD\\s+$fedc1\\s+$fedc1" "Job not running on designated cl
 
 modify $job_id invalid "Invalid cluster feature specification for job" "allowed invalid feature"
 
-send_user "\n################################################################\n"
-send_user "Move pending job to $fedc2 with feature fb"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Move pending job to $fedc2 with feature fb"
+log_info "################################################################"
 modify $job_id fb "" "did not allow user to modify features of pending job"
 
 set run_cluster [wait_for_fed_job $job_id RUNNING ""]
@@ -392,9 +379,9 @@ if {[string compare $run_cluster $fedc2]} {
 verify $fedc1 $job_id "RV\\s+$fedc2\\s+$fedc2" "Job not revoked"
 verify $fedc2 $job_id "R\\s+$fedc2\\s+$fedc2" "Job not running on designated cluster"
 
-send_user "\n################################################################\n"
-send_user "New job to fa, then move job to $fedc2,$fedc3. Runs on $fedc3"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "New job to fa, then move job to $fedc2,$fedc3. Runs on $fedc3"
+log_info "################################################################"
 #third job
 
 set job_id [sbatch $my_sbatch $script fa]
@@ -409,9 +396,9 @@ if {[string compare $run_cluster $fedc3]} {
 verify $fedc1 $job_id "RV\\s+$fedc2,$fedc3\\s+$fedc3" "Job not revoked"
 verify $fedc3 $job_id "R\\s+$fedc2,$fedc3\\s+$fedc3" "Job not running on designated cluster"
 
-send_user "\n################################################################\n"
-send_user "New job to fa, then move job to $fedc3"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "New job to fa, then move job to $fedc3"
+log_info "################################################################"
 #fourth job
 
 set job_id [sbatch $my_sbatch $script fa]
@@ -421,27 +408,27 @@ modify $job_id "fc" "" "did not allow user to modify features of pending job"
 verify $fedc1 $job_id "RV\\s+$fedc3\\s+$fedc3" "Job not revoked"
 verify $fedc3 $job_id "PD\\s+$fedc3\\s+NA" "Job not running on designated cluster"
 
-send_user "\n################################################################\n"
-send_user "Move job to $fedc1,$fedc3"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Move job to $fedc1,$fedc3"
+log_info "################################################################"
 modify $job_id "fa,fc" "" "did not allow user to modify features of pending job"
 
 verify $fedc1 $job_id "PD\\s+$fedc1,$fedc3\\s+$fedc1,$fedc3" "Job not running on designated cluster"
 verify $fedc2 $job_id ".+Invalid.+" "Job found on wrong cluster"
 verify $fedc3 $job_id "PD\\s+$fedc1,$fedc3\\s+NA" "Job found on wrong cluster"
 
-send_user "\n################################################################\n"
-send_user "Move job to $fedc1"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Move job to $fedc1"
+log_info "################################################################"
 modify $job_id "fa" "" "did not allow user to modify features of pending job"
 
 verify $fedc1 $job_id "PD\\s+$fedc1\\s+$fedc1" "Job not running on designated cluster"
 verify $fedc2 $job_id ".+Invalid.+" "Job found on wrong cluster"
 verify $fedc3 $job_id ".+Invalid.+" "Job found on wrong cluster"
 
-send_user "\n################################################################\n"
-send_user "Clear features. Should go to pending on $fedc1,$fedc2,$fedc3"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Clear features. Should go to pending on $fedc1,$fedc2,$fedc3"
+log_info "################################################################"
 #Clear Features
 
 modify $job_id "" "" "did not allow user to modify features of pending job"
@@ -450,9 +437,9 @@ verify $fedc1 $job_id "PD\\s+$fedc1,$fedc2,$fedc3\\s+$fedc1,$fedc2,$fedc3" "Job 
 verify $fedc2 $job_id "PD\\s+$fedc1,$fedc2,$fedc3\\s+NA" "Job not running on designated cluster"
 verify $fedc3 $job_id "PD\\s+$fedc1,$fedc2,$fedc3\\s+NA" "Job not running on designated cluster"
 
-send_user "\n################################################################\n"
-send_user "Modify Feature of Held Job"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Modify Feature of Held Job"
+log_info "################################################################"
 cancel_all_jobs
 
 set job_id [sbatch $my_sbatch $script fa -H]
@@ -481,7 +468,7 @@ verify $fedc3 $job_id ".+Invalid.+" "Job found on wrong cluster"
 
 set my_scontrol "${fed_slurm_base}/$fedc1/bin/scontrol"
 
-send_user "releasing job\n"
+log_debug "Releasing job"
 
 exec $my_scontrol release $job_id
 
@@ -496,9 +483,9 @@ verify $fedc1 $job_id "RV\\s+$fedc3\\s+$fedc3" "Job not running on designated cl
 verify $fedc2 $job_id ".+Invalid.+" "Job found on wrong cluster"
 verify $fedc3 $job_id "R\\s+$fedc3\\s+$fedc3" "Job found on wrong cluster"
 
-send_user "\n################################################################\n"
-send_user "Test Clearing Features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test Clearing Features"
+log_info "################################################################"
 
 cancel_all_jobs
 
@@ -528,9 +515,9 @@ verify $fedc1 $job_id "PD\\s+$fedc1,$fedc2,$fedc3\\s+$fedc1,$fedc2,$fedc3" "Job 
 verify $fedc2 $job_id "PD\\s+$fedc1,$fedc2,$fedc3\\s+NA" "Job not running on designated cluster"
 verify $fedc3 $job_id "PD\\s+$fedc1,$fedc2,$fedc3\\s+NA" "Job not running on designated cluster"
 
-send_user "\n################################################################\n"
-send_user "Modify Federation Cluster Features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Modify Federation Cluster Features"
+log_info "################################################################"
 cancel_all_jobs
 
 sbatch $my_sbatch $script fa
@@ -569,9 +556,9 @@ verify $fedc3 $job_id "PD\\s+$fedc1,$fedc2,$fedc3\\s+NA" "Job not running on des
 
 #this one shows that the $fedc1 is routing the update from $fedc1 to $fedc2
 
-send_user "\n################################################################\n"
-send_user "$fedc1 routing the update from $fedc1 to $fedc2"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "$fedc1 routing the update from $fedc1 to $fedc2"
+log_info "################################################################"
 
 set job_id [sbatch $my_sbatch $script "" -M$fedc2]
 
@@ -594,10 +581,9 @@ verify $fedc3 $job_id "PD\\s+$fedc1,$fedc2,$fedc3\\s+NA" "Job not running on des
 #Federations and clusterfeatures ($fedc1 and fb - so the job is not eligible
 #				  anywhere beacause it can't have both)
 
-send_user "\n################################################################\n"
-send_user "Federations and ClusterFeatures"
-send_user "\n################################################################\n"
-
+log_info "################################################################"
+log_info "Federations and ClusterFeatures"
+log_info "################################################################"
 
 modify_with_clusters $job_id "$fedc1" "" "did not allow user to modify features of pending job"
 
@@ -617,9 +603,9 @@ verify $fedc2 $job_id "RV\\s+$fedc1\\s+$fedc1" "Job not running on designated cl
 verify $fedc1 $job_id "PD\\s+$fedc1\\s+NA" "Job not running on designated cluster"
 verify $fedc3 $job_id ".+Invalid.+" "Job found on wrong cluster"
 
-send_user "\n################################################################\n"
-send_user "Federations and Negative ClusterFeatures"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Federations and Negative ClusterFeatures"
+log_info "################################################################"
 
 cancel_all_jobs
 

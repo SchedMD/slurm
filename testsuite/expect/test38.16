@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test environment variables needed by MPI.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Isaac Hartung <ihartung@schedmd.com>
@@ -39,19 +35,16 @@ set timeout	60
 print_header $test_id
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+    skip "This test is incompatible with front-end systems"
 }
 if {[test_hetjob_step] == 0} {
-	send_user "\nWARNING: heterogeneous steps not currently supported\n"
-	exit $exit_code
+	skip "Heterogeneous steps not currently supported"
 }
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {$nb_nodes < 2} {
-	send_user "\nWARNING: Need 2 or more nodes in default partition\n"
-	exit $exit_code
+	skip "Need 2 or more nodes in default partition"
 }
 
 #
@@ -67,7 +60,10 @@ proc end_it { exit_code } {
 	if {$het_job_id > 0} {
 		exec $scancel $het_job_id
 	}
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 set het_job_id 0
@@ -87,10 +83,10 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
-		log_error "salloc : allocation not granted in $timeout seconds\n"
+		log_error "salloc : allocation not granted in $timeout seconds"
 		end_it 1
 	}
 	eof {
@@ -98,11 +94,11 @@ expect {
 	}
 }
 if {$het_job_id == 0} {
-	log_error "salloc failure\n"
+	log_error "salloc failure"
 	end_it 1
 }
 
-send_user "\n\nCollect Nodename for each job component\n\n"
+log_debug "Collect Nodename for each job component"
 
 send "$squeue -j $het_job_id -o\"NAME=%N\" --noheader\r"
 expect {
@@ -127,17 +123,16 @@ if {$index != 2} {
 	end_it 1
 }
 
-send_user "\n\nTest environment variables needed by MPI\n\n"
+log_info "Test environment variables needed by MPI"
 
 set matches 0
 send "$srun --label --mpi=none --het-group=0,1 -l -o$file_out $file_in\r"
 expect {
 	-re "$prompt" {
-		send_user "\n\n"
 		#break
 	}
 	timeout {
-		log_error "srun not responding\n"
+		log_error "srun not responding"
 		end_it 1
 	}
 	eof {
@@ -145,7 +140,7 @@ expect {
 	}
 }
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: srun output file not found\n"
+	log_error "srun output file not found"
 	end_it 1
 }
 
@@ -169,11 +164,10 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		send_user "\n\n"
 		#break
 	}
 	timeout {
-		log_error "sort not responding\n"
+		log_error "sort not responding"
 		end_it 1
 	}
 	eof {
@@ -193,11 +187,10 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		send_user "\n\n"
 		#break
 	}
 	timeout {
-		log_error "sort not responding\n"
+		log_error "sort not responding"
 		end_it 1
 	}
 	eof {
@@ -206,14 +199,14 @@ expect {
 }
 log_user 1
 if {$matches != 6} {
-	log_error "srun failure ($matches != 6)\n"
+	log_error "srun failure ($matches != 6)"
 	end_it 1
 }
 
 send "exit\r"
 expect {
 	timeout {
-		log_error "srun not responding\n"
+		log_error "srun not responding"
 		end_it 1
 	}
 	eof {
@@ -221,7 +214,7 @@ expect {
 	}
 }
 
-send_user "\n\nValidate combined hostlist\n\n"
+log_info "Validate combined hostlist"
 
 set matches 0
 spawn $scontrol show hostnames $het_nodelist
@@ -236,10 +229,9 @@ expect {
 	}
 }
 if {$matches != 2} {
-	log_error "srun combined hostlist is bad ($matches != 2)\n"
+	log_error "srun combined hostlist is bad ($matches != 2)"
 	end_it 1
 }
 
 exec $bin_rm -f $file_in $file_out
-send_user "\nSUCCESS\n"
 end_it 0

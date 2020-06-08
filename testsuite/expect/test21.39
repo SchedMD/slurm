@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr create qos/account job and then delete account/qos
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC.
 # Written by Nathan Rini <nate@schedmd.com>
@@ -71,8 +67,7 @@ print_header $test_id
 
 proc check_rc { exit_code } {
 	if {$exit_code != 0} {
-		log_error "exiting with exit code $exit_code"
-		exit $exit_code
+		fail "Subcommand failed with exit code $exit_code"
 	}
 }
 
@@ -115,11 +110,11 @@ proc endit { exit_code } {
 
 	if {$exit_code == 0} {
 		cleanup_accounts
-		print_success $test_id
-	} else {
-		print_failure $test_id
 	}
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 proc test_salloc { qos account num_nodes } {
@@ -259,13 +254,11 @@ proc run_test { run_qos } {
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin."
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 cleanup_accounts

@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of --deadline option and time_min too long
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 CEA/DAM/DIF
 # Written by Aline Roy <aline.roy@cea.fr>
@@ -53,7 +49,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {
@@ -61,18 +57,16 @@ expect {
 	}
 }
 if {$job_id != 0} {
-	send_user "\nFAILURE: job submitted despite the deadline\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job submitted despite the deadline"
 }
 if {$time_error == 0} {
-	send_user "\nFAILURE: No time-min limit error\n"
+	log_error "No time-min limit error"
 	set exit_code 1
 } else {
-	send_user "\nTime limit error expected, no worries\n"
+	log_debug "Time limit error expected, no worries"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

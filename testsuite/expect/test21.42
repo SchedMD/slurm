@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test sacctmgr show <ENTITY> format= options.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC.
 # Written by Marcin Stolarek <cinek@schedmd.com>
@@ -66,10 +62,6 @@ proc test_header_in_format { entity } {
 test_header_in_format "qos"
 
 
-if {$exit_code == 0} {
-	print_success $test_id
-} else {
-	print_failure $test_id
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
-

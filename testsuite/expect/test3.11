@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate scontrol create, delete, and update for reservations.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2009 Lawrence Livermore National Security
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -85,9 +81,7 @@ proc get_res_attrs {} {
 			set tmp_res_name $expect_out(1,string)
 			if {$tmp_res_name != $res_name} {
 				if {!$failure_expected} {
-					send_user "\nFAILURE: problem showing "
-					send_user "reservation created with:  "
-					send_user "$res_params\n"
+					log_error "problem showing reservation created with:  $res_params"
 				}
 				set ret_code 1
 			}
@@ -95,18 +89,14 @@ proc get_res_attrs {} {
 		}
 		-re "No reservations in the system" {
 			if {!$failure_expected} {
-				send_user "\nFAILURE: no reservations found  "
-				send_user "after reservation created with:  "
-				send_user "$res_params\n"
+				log_error "no reservations found after reservation created with: $res_params"
 			}
 			set ret_code 1
 			exp_continue
 		}
 		-re "Reservation ($alpha_numeric_under) not found" {
 			if {!$failure_expected} {
-				send_user "\nFAILURE: Reservation $res_name not"
-				send_user "found after reservation created "
-				send_user "with:  $res_params\n"
+				log_error "Reservation $res_name not found after reservation created with: $res_params"
 			}
 			set ret_code 1
 			exp_continue
@@ -132,7 +122,7 @@ proc get_res_attrs {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set ret_code 1
 		}
 		eof {
@@ -173,22 +163,20 @@ proc create_res { res_params failure_expected } {
 		}
 		-re "Error creating the reservation: Invalid user" {
 			if {!$failure_expected} {
-				send_user "\nFAILURE: user not authorized "
-				send_user "to create reservation\n"
+				log_error "User not authorized to create reservation"
 			}
 			set ret_code 1
 			exp_continue
 		}
 		-nocase "Error" {
 			if {!$failure_expected} {
-				send_user "\nFAILURE: problem creating "
-				send_user "reservation with args: $res_params\n"
+				log_error "problem creating reservation with args: $res_params"
 			}
 			set ret_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			log_error "scontrol not responding"
 			set ret_code 1
 		}
 		eof {
@@ -227,32 +215,27 @@ proc update_res { res_name res_params failure_expected } {
 		}
 		-re "Error creating the reservation: Invalid user" {
 			if {!$failure_expected} {
-				send_user "\nWARNING: user not authorized "
-				send_user "to update reservation\n"
+				log_warn "User not authorized to update reservation"
 			}
 			set ret_code 1
 			exp_continue
 		}
 		-re "Error" {
 			if {!$failure_expected} {
-				send_user "\nFAILURE: problem updating "
-				send_user "reservation $res_name with "
-				send_user "$res_params\n"
+				log_error "problem updating reservation $res_name with $res_params"
 			}
 			set ret_code 1
 			exp_continue
 		}
 		-re "error" {
 			if {!$failure_expected} {
-				send_user "\nFAILURE: problem updating "
-				send_user "reservation $res_name with "
-				send_user "$res_params\n"
+				log_error "problem updating reservation $res_name with $res_params"
 			}
 			set ret_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set ret_code 1
 		}
 		eof {
@@ -272,12 +255,12 @@ proc delete_res { res_name } {
 	spawn $scontrol delete ReservationName=$res_name
 	expect {
 		-re "invalid" {
-			send_user "\nFAILURE: problem deleting reservation $res_name\n"
+			log_error "Problem deleting reservation $res_name"
 			set ret_code 1
 			exp_continue
 		}
 		-re "reservation is in use" {
-			send_user "\nFAILURE: $res_name is in use\n"
+			log_error "$res_name is in use"
 			set ret_code 1
 			exp_continue
 		}
@@ -289,11 +272,9 @@ proc delete_res { res_name } {
 }
 
 if {[is_super_user] == 0} {
-	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
-	exit 0
+	skip "This test can't be run except as SlurmUser"
 } elseif {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
-	send_user "\nWARNING: This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE\n"
-	exit 0
+	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
 set have_resv 0
@@ -308,9 +289,7 @@ expect {
 	}
 }
 if {$have_resv != 0} {
-	send_user "*****************************************************************************************\n"
-	send_user "WARNING: $have_resv reservations exist at start of test which may interfere with the test\n"
-	send_user "*****************************************************************************************\n"
+	log_warn "$have_resv reservations exist at start of test which may interfere with the test"
 }
 
 #
@@ -318,8 +297,7 @@ if {$have_resv != 0} {
 #
 set def_partition [default_partition]
 if {[string compare $def_partition ""] == 0} {
-	send_user "\nFAILURE: failed to find default partition\n"
-	exit 1
+	fail "Failed to find default partition"
 }
 
 spawn $scontrol show partition $def_partition
@@ -343,8 +321,7 @@ expect {
 	}
 }
 if {[string compare $def_node ""] == 0} {
-	send_user "\nFAILURE:default partition seems to have no nodes\n"
-	exit 1
+	fail "Default partition seems to have no nodes"
 }
 
 spawn $sinfo -h -o "=%N=" -tIDLE -p $def_partition
@@ -363,7 +340,7 @@ expect {
 # Some tests do not support names of this form "rack[0-3]_blade[0-63]"
 set irregular_node_name 0
 if {[string compare $def_node_name ""] == 0} {
-	send_user "\nWARNING: Node name format not supported for all test\n"
+	log_warn "Node name format not supported for all test"
 	set irregular_node_name 1
 }
 
@@ -409,7 +386,7 @@ expect {
 }
 log_user 1
 if {$heterogeneous != 0} {
-	send_user "\nWARNING: Cluster is heterogeneous and some tests may fail\n"
+	log_warn "Cluster is heterogeneous and some tests may fail"
 }
 set cores_per_node [expr $cores_per_socket * $sockets_per_node]
 set node_count [available_nodes $def_partition ""]
@@ -425,20 +402,17 @@ set states "idle"
 set node_list [get_partition_nodes $def_partition $states]
 set part_node_cnt [llength $node_list]
 if {$part_node_cnt == 0} {
-	send_user "\n\033\[34mWARNING: unable to get $states nodes in partition $def_partition"
-	exit $exit_code
+	fail "Unable to get $states nodes in partition $def_partition"
 }
 
 set part_node [lindex $node_list 0]
 set part_node_cores [get_node_cores $part_node]
 if {$part_node_cores == -1} {
-	send_user "\n\033\[34mWARNING: unable to get cores from $part_node"
-	exit $exit_code
+	fail "Unable to get cores from $part_node"
 }
 set part_cores [get_part_total_cores $def_partition $states]
 if {$part_cores == 0} {
-	send_user "\n\033\[34mWARNING: unable to get cores from $states nodes in $def_partition"
-	exit $exit_code
+	fail "Unable to get cores from $states nodes in $def_partition"
 }
 
 #
@@ -473,8 +447,6 @@ inc3_11_10
 inc3_11_11
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
 } else {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

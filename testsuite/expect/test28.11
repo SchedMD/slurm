@@ -4,11 +4,6 @@
 #          Confirms that a job array that requested a feature with
 #          the --constraint option is correctly purged from the controller
 #          (see bug 5702).
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Marshall Garey
@@ -79,8 +74,7 @@ proc get_single_node_feature { } {
 print_header $test_id
 
 if {[test_super_user] != 1} {
-	send_user "\nWARNING: This test must be run as SlurmUser or root\n"
-	exit 0
+	skip "This test must be run as SlurmUser or root"
 }
 
 set config_path [get_conf_path]
@@ -102,7 +96,9 @@ set min_job_age [get_min_job_age]
 assert_or_fail {$min_job_age == 10} "Failed to set MinJobAge"
 
 set node_feature [get_single_node_feature]
-assert_or_skip {$node_feature != ""} "Cannot run this test without any node features."
+if { $node_feature == "" } {
+	skip "Cannot run this test without any node features."
+}
 
 # It doesn't matter how long the job sleeps; it will be cancelled anyway.
 make_bash_script $file_script "sleep 5"
@@ -112,7 +108,7 @@ spawn $sbatch --constraint=$node_feature --array=1-2 --output="/dev/null" \
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		send_user "\njob $job_id was submitted\n"
+		log_debug "Job $job_id was submitted"
 		exp_continue
 	}
 	-re "Batch job submission failed" {
@@ -135,7 +131,7 @@ fail_on_error "Error submitting job"
 $bin_sleep 1
 set count 0
 set count_exp 2
-send_user "Verifying the jobs correctly requested the feature $node_feature\n"
+log_info "Verifying the jobs correctly requested the feature $node_feature"
 spawn $scontrol show job $job_id
 expect {
 	-re "Features=$node_feature" {
@@ -161,7 +157,7 @@ fail_on_error "Problem cancelling job $job_id"
 set exit_code 1
 set sleep_time $min_job_age
 incr sleep_time 10
-send_user "Waiting for $sleep_time seconds for the jobs to be purged from the controller\n"
+log_info "Waiting for $sleep_time seconds for the jobs to be purged from the controller"
 $bin_sleep $sleep_time
 spawn $scontrol show job $job_id
 expect {

@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validate that squeue --priority lists each job per partition
 #          if the job is pending and submitted to multiple partitions.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -42,8 +38,7 @@ set exit_code     0
 print_header $test_id
 
 if {[test_super_user] == 0} {
-	send_user "\nWARNING: can not test more unless SlurmUser\n"
-	exit $exit_code
+	skip "Can not test more unless SlurmUser"
 }
 
 proc create_part { name prio } {
@@ -52,7 +47,7 @@ proc create_part { name prio } {
 	spawn $scontrol create partitionname=$name priority=$prio nodes=$nodes
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -68,7 +63,7 @@ proc create_part { name prio } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -77,8 +72,7 @@ proc create_part { name prio } {
 	}
 
 	if {$found == 0} {
-		send_user"\nFAILURE: scontrol did not create partition $name\n"
-		exit 0
+		fail "scontrol did not create partition $name"
 	}
 }
 
@@ -88,7 +82,7 @@ proc change_prio { name prio } {
 	spawn $scontrol update partitionname=$name priority=$prio
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -104,7 +98,7 @@ proc delete_part { name } {
 	spawn $scontrol delete partition=$name
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -121,7 +115,7 @@ proc delete_part { name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -131,7 +125,7 @@ proc delete_part { name } {
 	log_user 1
 
 	if {$deleted != 1} {
-		send_user "\nFAILURE: partition $name was not deleted\n"
+		log_error "Partition $name was not deleted"
 		set exit_code 1
 	}
 }
@@ -150,7 +144,7 @@ proc sub_job { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -159,8 +153,7 @@ proc sub_job { } {
 	}
 
 	if {$job_id == 0} {
-		send_user "\nFAILURE: sbatch did not submit job\n"
-		exit 0
+		fail "sbatch did not submit job"
 	}
 
 	# Wait a bit for the job to start if it does
@@ -173,8 +166,7 @@ delete_part $test_part_2
 
 set def_part [default_partition]
 if {[string length $def_part] == 0} {
-	send_user "\nWARNING: This test can not run without a default partition\n"
-	exit $exit_code
+	skip "This test can not run without a default partition"
 }
 
 # Get a list of nodes
@@ -186,7 +178,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -195,8 +187,7 @@ expect {
 }
 
 if {[string length $nodes] == 0} {
-	send_user "\nFAILURE: did not get a valid node list\n"
-	exit 1
+	fail "Did not get a valid node list"
 }
 
 # Create 2 test partitions
@@ -204,7 +195,7 @@ create_part $test_part_1 1
 create_part $test_part_2 2
 
 # Submit a job to check priority
-send_user "\n\nTest 1\n"
+log_info "Test 1"
 make_bash_script $file_in "sleep 20"
 sub_job
 
@@ -221,7 +212,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
+		log_error "squeue is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -229,8 +220,7 @@ expect {
 	}
 }
 if {$part_chk != 2} {
-	send_user "\nFAILURE: --priority option did not list "
-	send_user "priority properly ($part_chk != 2)\n"
+	log_error "--priority option did not list priority properly ($part_chk != 2)"
 	set exit_code 1
 }
 
@@ -241,7 +231,7 @@ change_prio $test_part_1 2
 change_prio $test_part_2 1
 
 # Submit another job to check priority
-send_user "\n\nTest 2\n"
+log_info "Test 2"
 sub_job
 
 # Check partition
@@ -257,7 +247,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
+		log_error "squeue is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -265,8 +255,7 @@ expect {
 	}
 }
 if {$part_chk != 2} {
-	send_user "\nFAILURE: --priority option did not list "
-	send_user "priority properly ($part_chk != 2)\n"
+	log_error "--priority option did not list priority properly ($part_chk != 2)"
 	set exit_code 1
 }
 
@@ -274,7 +263,7 @@ cancel_job $job_id
 
 # Submit a job that will run now to check that the --priority option for
 # squeue will only list the job running on the partition
-send_user "\n\nTest 3\n"
+log_info "Test 3"
 set job_id 0
 spawn $sbatch -N1 -o/dev/null -t1 --begin=now -p$test_part_1,$test_part_2 $file_in
 expect {
@@ -283,7 +272,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -292,11 +281,10 @@ expect {
 
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 0
+	fail "sbatch did not submit job"
 }
 if {[wait_for_job $job_id RUNNING] != 0} {
-	send_user "\nJob $job_id failed to start\n"
+	log_error "Job $job_id failed to start"
 	set exit_code 1
 }
 
@@ -309,7 +297,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
+		log_error "squeue is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -317,10 +305,10 @@ expect {
 	}
 }
 if {$part_chk != 1} {
-	send_user "\nFAILURE: Job $job_id should be RUNNING in partition $test_part_1 and is not\n"
+	log_error "Job $job_id should be RUNNING in partition $test_part_1 and is not"
 	set exit_code 1
 } else {
-	send_user "\nJob $job_id is RUNNING in partition $test_part_1 as expected\n"
+	log_debug "Job $job_id is RUNNING in partition $test_part_1 as expected"
 }
 
 cancel_job $job_id
@@ -331,8 +319,6 @@ delete_part $test_part_2
 
 if {$exit_code == 0} {
 	exec $bin_rm $file_in
-	send_user "\nSUCCESS\n"
 } else {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code
