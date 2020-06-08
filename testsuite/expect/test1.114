@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of srun --spread-job option.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2016 SchedMD LLC.
 # Written by Alejandro Sanchez <alex@schedmd.com>
@@ -47,7 +43,7 @@ proc run_spread_job { task_cnt } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $sun_pid
 			set exit_code 1
 		}
@@ -56,12 +52,11 @@ proc run_spread_job { task_cnt } {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: srun job ID not found\n"
-		exit 1
+		fail "Srun job ID not found"
 	}
 
 	if {[wait_for_job $job_id "DONE"] != 0} {
-		send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+		log_error "Error waiting for job $job_id to complete"
 		cancel_job $job_id
 		set exit_code 1
 	}
@@ -75,7 +70,7 @@ proc run_spread_job { task_cnt } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -83,7 +78,7 @@ proc run_spread_job { task_cnt } {
 		}
 	}
 	if {$num_nodes != $task_cnt} {
-		send_user "\nFAILURE: Invalid node count for job $job_id ($num_nodes != $task_cnt)\n"
+		log_error "Invalid node count for job $job_id ($num_nodes != $task_cnt)"
 		set exit_code 1
 	}
 }
@@ -91,8 +86,7 @@ proc run_spread_job { task_cnt } {
 print_header $test_id
 
 if {![test_cons_res] && ![test_cons_tres]} {
-	send_user "\nWARNING: test is only compatible with a config of SelectType=select/cons_res or select/cons_tres\n"
-	exit 0
+	skip "Test is only compatible with a config of SelectType=select/cons_res or select/cons_tres"
 }
 
 log_user 1
@@ -103,7 +97,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -113,8 +107,7 @@ expect {
 log_user 1
 
 if {$node_cnt < 2} {
-	send_user "\nWARNING: Insufficient nodes for test in partition $partition ($node_cnt < 2)\n"
-	exit 0
+	skip "Insufficient nodes for test in partition $partition ($node_cnt < 2)"
 }
 
 if {$node_cnt > 8} {
@@ -131,7 +124,6 @@ for {set inx 2} {$inx < $max_task_cnt} {incr inx 2} {
 	sleep 1
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

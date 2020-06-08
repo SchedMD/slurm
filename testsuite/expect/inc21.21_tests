@@ -45,8 +45,7 @@ proc inc21_21_good { test_type limit } {
 	# Wait for old jobs to clean up
 	sleep 2
 
-	send_user "\n====== Test $test_type "
-	send_user "(Within: inc21.21_tests function: inc21_21_good) ======\n"
+	log_info "====== Test $test_type within: inc21.21_tests function: inc21_21_good) ======"
 
 	if { [string compare $test_type "maxcpus"] == 0 ||
 	     [string compare $test_type "maxcpumins"] == 0 &&
@@ -112,8 +111,7 @@ proc inc21_21_bad { test_type limit } {
 	set over_lim [expr [lindex $limit 1] + 1]
 	set add ""
 
-	send_user "\n====== Test $test_type"
-	send_user "(Within: inc21.21_tests function: inc21_21_bad) ======\n"
+	log_info "====== Test $test_type within: inc21.21_tests function: inc21_21_bad) ======"
 
 	if { [string compare $test_type "maxnode"] == 0 } {
 		set add "--exclusive"
@@ -164,8 +162,7 @@ proc inc21_21_grp_test { test_type limit } {
 	set val 0
 	set exclusive ""
 
-	send_user "\n===== Test $test_type "
-	send_user "(Within: inc21.21_tests function: inc21_21_grp_test) =====\n"
+	log_info "===== Test $test_type within: inc21.21_tests function: inc21_21_grp_test) ====="
 
 	if  { ![string compare $test_type "grpcpumins"] &&
 	      ![test_enforce_safe_set] } {
@@ -336,8 +333,7 @@ proc inc21_21_submit_test { limit } {
 
 	# Test to make sure that the grpsubmit and maxsubmit
 	# are enforced with jobs
-	send_user "\n==== Test $limit (Within: inc21.21_tests function: "
-	send_user "inc21_21_submit_test) ====\n"
+	log_info "==== Test $limit (within: inc21.21_tests function: inc21_21_submit_test) ===="
 
 	# Submit jobs to test the limit set in the association
 	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_sub)} \
@@ -479,8 +475,7 @@ proc inc21_21_submit_test { limit } {
 	# Test to make sure that the grpsubmit and maxsubmit
 	# are enforced with job arrays
 
-	send_user "\n==== Test $limit with job arrays(Within: inc21.21_tests function: "
-	send_user "inc21_21_submit_test) ====\n"
+	log_info "==== Test $limit with job arrays (within: inc21.21_tests function: inc21_21_submit_test) ===="
 
 	# Submit jobs to test the limit set in the association
 	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_sub)} \
@@ -633,8 +628,7 @@ proc inc21_21_grpwall { test_type limit } {
 	set job_id 0
 	set timeout 120
 
-	send_user "\n====== Test $test_type"
-	send_user "(Within: inc21.21_tests function: inc21_21_grpwall) ======\n"
+	log_info "====== Test $test_type within: inc21.21_tests function: inc21_21_grpwall) ======"
 
 	# Wait for old jobs to clean up
 	sleep 2

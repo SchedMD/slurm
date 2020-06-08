@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Check sinfo formating options (--format option and SINFO_FORMAT
 #          environment variable).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -53,7 +49,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -62,7 +58,7 @@ expect {
 }
 
 if {$matches == 0} {
-	send_user "\nFAILURE: sinfo format error\n"
+	log_error "sinfo format error"
 	set exit_code 1
 }
 
@@ -79,7 +75,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -89,12 +85,10 @@ expect {
 unset env(SINFO_FORMAT)
 
 if {$matches == 0} {
-	send_user "\nFAILURE: sinfo format error\n"
-	set exit_code 1
+	fail "sinfo format error"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
 

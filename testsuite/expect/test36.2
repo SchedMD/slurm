@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          bjobs wrapper test
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2016 SchedMD LLC
 # Written by Alejandro Sanchez <alex@schedmd.com>
@@ -38,13 +34,11 @@ set exit_code   0
 print_header $test_id
 
 if {[file executable $sbatch] == 0} {
-	send_user "\nWARNING: $sbatch does not exist\n"
-	exit 0
+	skip "$sbatch does not exist"
 }
 
 if {[file executable $bjobs] == 0} {
-	send_user "\nWARNING: $bjobs does not exist\n"
-	exit 0
+	skip "$bjobs does not exist"
 }
 
 spawn $bjobs
@@ -53,12 +47,10 @@ expect {
 		exp_continue
 	}
 	-re "Problem loading jobs" {
-		send_user "\nFAILURE: problem loading jobs.\n"
-		exit 1
+		fail "Problem loading jobs"
 	}
 	timeout {
-		send_user "\nFAILURE: bjobs not responding\n"
-		exit 1
+		fail "bjobs not responding"
 	}
 	eof {
 		wait
@@ -81,7 +73,7 @@ expect {
                 exp_continue
         }
         timeout {
-                send_user "\nFAILURE: sbatch not responding\n"
+                log_error "sbatch not responding"
                 set exit_code 1
                 exp_continue
         }
@@ -90,13 +82,11 @@ expect {
         }
 }
 if { $job_id == 0 } {
-        send_user "\nFAILURE: failed to submit job\n"
-        exit 1
+        fail "Failed to submit job"
 }
 
 if {[string length $job_id] > 7} {
-        log_warn "jobid is longer than 7 characters.\n"
-        exit 0
+        fail "Jobid is longer than 7 characters"
 }
 
 #
@@ -110,9 +100,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: bjobs not responding\n"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "bjobs not responding"
 	}
 	eof {
 		wait
@@ -123,11 +112,11 @@ cancel_job $job_id
 if {$exit_code == 0} {
 	if {$job_found == 1} {
 		exec $bin_rm -f $file_in
-		send_user "\nSUCCESS\n"
 	} else {
-		send_user "\nFAILURE: bjobs $job_id does not work\n"
-		exit 1
+		fail "bjobs $job_id does not work"
 	}
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

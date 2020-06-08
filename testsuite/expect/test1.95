@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Basic UPC (Unified Parallel C) test via srun.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2012 SchedMD LLC.
 # Written by Morris Jette <jette@schedmd.com>
@@ -46,16 +41,13 @@ print_header $test_id
 # Test for existence of UPC compiler
 #
 if {[info exists upcc] == 0} {
-	send_user "\nWARNING: UPC compiler (upcc) not defined, can't perform UPC testing\n"
-	exit 0
+	skip "UPC compiler (upcc) not defined, can't perform UPC testing"
 }
 if {[file executable $upcc] == 0} {
-	send_user "\nWARNING: $upcc does not exists\n"
-	exit 0
+	skip "$upcc does not exists"
 }
 if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit 0
+	skip "This test is incompatible with front-end systems"
 }
 
 #
@@ -90,11 +82,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -104,22 +95,20 @@ expect {
 }
 
 if {$no_start != 0} {
-	send_user "\nWARNING: partition too small for test\n"
 	if {$job_id != 0} {
 		cancel_job $job_id
 	}
-	exit 0
+	skip "Partition too small for test"
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	set exit_code 1
 }
 
@@ -142,8 +131,7 @@ if {[wait_for_file $file_out] == 0} {
 			exp_continue
 		}
 		-re "Failed to mmap" {
-			send_user "\nFAILURE: insufficient shared memory. "
-			send_user "Rebuild UPCC with --disable-pshm option.\n"
+			log_error "insufficient shared memory. Rebuild UPCC with --disable-pshm option."
 			exp_continue
 		}
 		eof {
@@ -151,14 +139,11 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$matches == 0} {
-		send_user "\nFAILURE: No UPC communications occurred\n"
-		set exit_code 1
+		fail "No UPC communications occurred"
 	} elseif {$matches != $task_cnt} {
-		send_user "\nFAILURE: unexpected output ($matches of $task_cnt)\n"
-		set exit_code 1
+		fail "Unexpected output ($matches of $task_cnt)"
 	} elseif {$sum != $total} {
-		send_user "\nFAILURE: Problem with global variables ($sum != $total)\n"
-		set exit_code 1
+		fail "Problem with global variables ($sum != $total)"
 	}
 } else {
 	set exit_code 1
@@ -166,9 +151,6 @@ if {[wait_for_file $file_out] == 0} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
-	send_user "\nSUCCESS\n"
 } else {
-	send_user "Check contents of $file_err\n"
+	fail "Check contents of $file_err\n"
 }
-
-exit $exit_code

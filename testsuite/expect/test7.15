@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Verify signal mask of tasks have no ignored signals.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -75,15 +71,15 @@ expect {
 	-re "Signal ($number) is ignored!" {
 		set signal $expect_out(1,string)
 		if { $have_runjob && (($signal == 1) || ($signal == 5) || ($signal == 12) || ($signal == 13)) } {
-			send_user "Signal $signal is ignored by default when using runjob, this error is expected, turn that frown upside down!\n"
+			log_debug "Signal $signal is ignored by default when using runjob, this error is expected, turn that frown upside down!"
 			exp_continue
 		} else {
-			send_user "FAILURE: At least one signal is ignored!\n"
+			log_error "At least one signal is ignored!"
 			set exit_code 1
 		}
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -98,8 +94,7 @@ expect {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $file_prog
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-
-exit $exit_code

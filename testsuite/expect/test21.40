@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test association plus partition/job QoS unique node limits enforced
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC
 # Written by Morris Jette
@@ -47,7 +43,7 @@ proc cleanup { } {
 	spawn $sacctmgr -i delete qos $job_qos,$part_qos
 	expect {
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -59,7 +55,7 @@ proc cleanup { } {
 	spawn $sacctmgr -i delete account $test_acct
 	expect {
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -71,7 +67,7 @@ proc cleanup { } {
 	spawn $scontrol delete partitionname=$test_part
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -86,7 +82,7 @@ proc set_assoc {count} {
 	spawn $sacctmgr -i modify account $test_acct set grpnodes=$count
 	expect {
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -101,7 +97,7 @@ proc set_qos {qos_name count} {
 	spawn $sacctmgr -i modify qos $qos_name set grpnodes=$count
 	expect {
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -125,7 +121,7 @@ proc reason_node_limit {job_id} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -149,12 +145,12 @@ proc run_job_test { } {
 	set job_id1 0
 	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --mem=10 -o /dev/null -N1 $file_in
 	expect {
-                -re "Submitted batch job ($number)" {
-                        set job_id1 $expect_out(1,string)
-                        exp_continue
-                }
+        -re "Submitted batch job ($number)" {
+            set job_id1 $expect_out(1,string)
+            exp_continue
+        }
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -162,14 +158,14 @@ proc run_job_test { } {
 		}
 	}
 	if {$job_id1 == 0} {
-		send_user "\nFAILURE: job submit failed\n"
+		log_error "Job submit failed"
 		set exit_code 1
 		return
 	}
 
 	# Wait for job to start and get its info
 	if {[wait_for_job $job_id1 "RUNNING"] != 0} {
-		send_user "\nFAILURE: error waiting for job $job_id1 to run\n"
+		log_error "Error waiting for job $job_id1 to run"
 		cancel_job $job_id1
 		set exit_code 1
 		return
@@ -177,12 +173,12 @@ proc run_job_test { } {
 	set hostname 0
 	spawn $scontrol show job $job_id1
 	expect {
-                -re "NodeList=($alpha_numeric_under)" {
-                        set hostname $expect_out(1,string)
-                        exp_continue
-                }
+        -re "NodeList=($alpha_numeric_under)" {
+            set hostname $expect_out(1,string)
+            exp_continue
+        }
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -190,7 +186,7 @@ proc run_job_test { } {
 		}
 	}
 	if {$hostname == 0} {
-		send_user "\nFAILURE: BatchHost for job $job_id1 not found\n"
+		log_error "BatchHost for job $job_id1 not found"
 		cancel_job $job_id1
 		set exit_code 1
 		return
@@ -205,7 +201,7 @@ proc run_job_test { } {
                         exp_continue
                 }
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -213,7 +209,7 @@ proc run_job_test { } {
 		}
 	}
 	if {$job_id2 == 0} {
-		send_user "\nFAILURE: job submit failed\n"
+		log_error "Job submit failed"
 		cancel_job $job_id1
 		set exit_code 1
 		return
@@ -223,12 +219,12 @@ proc run_job_test { } {
 	set job_id3 0
 	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --nodelist=$hostname --mem=10 -o /dev/null -N1 $file_in
 	expect {
-                -re "Submitted batch job ($number)" {
-                        set job_id3 $expect_out(1,string)
-                        exp_continue
-                }
+        -re "Submitted batch job ($number)" {
+            set job_id3 $expect_out(1,string)
+            exp_continue
+        }
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -236,7 +232,7 @@ proc run_job_test { } {
 		}
 	}
 	if {$job_id3 == 0} {
-		send_user "\nFAILURE: job submit failed\n"
+		log_error "Job submit failed"
 		cancel_job $job_id1
 		cancel_job $job_id2
 		set exit_code 1
@@ -246,11 +242,11 @@ proc run_job_test { } {
 	# Check if job's are waiting on GrpNodeLimit
 	sleep $sleep_for_reason_set
 	if {[reason_node_limit $job_id2] != 1} {
-		send_user "\nFAILURE: Job $job_id2 should be waiting on GrpNodeLimit, but is not\n"
+		log_error "Job $job_id2 should be waiting on GrpNodeLimit, but is not"
 		set exit_code 1
 	}
 	if {[reason_node_limit $job_id3] != 0} {
-		send_user "\nFAILURE: Job $job_id3 should not be waiting on GrpNodeLimit, but is\n"
+		log_error "Job $job_id3 should not be waiting on GrpNodeLimit, but is"
 		set exit_code 1
 	}
 	cancel_job $job_id1
@@ -269,7 +265,7 @@ proc run_job_test { } {
                         exp_continue
                 }
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -279,7 +275,7 @@ proc run_job_test { } {
 	if {$job_id4 != 0} {
 		sleep $sleep_for_reason_set
 		if {[reason_node_limit $job_id4] != 1} {
-			send_user "\nFAILURE: Job $job_id4 should be waiting on GrpNodeLimit, but is not\n"
+			log_error "Job $job_id4 should be waiting on GrpNodeLimit, but is not"
 			set exit_code 1
 		}
 		cancel_job $job_id4
@@ -287,19 +283,15 @@ proc run_job_test { } {
 }
 
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 } elseif { [test_enforce_limits] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountingStorageEnforce\n"
-	exit 0
+	skip "This test can't be run without a usable AccountingStorageEnforce"
 }
 if { [test_limits_enforced] == 0 } {
-	send_user "\nWARNING: This test can't be run without enforcing limits\n"
-	exit 0
+	skip "This test can't be run without enforcing limits"
 }
 if {[test_super_user] == 0} {
-	send_user "\nWARNING Test can only be ran as SlurmUser\n"
-	exit 0
+	skip "Test can only be ran as SlurmUser"
 }
 
 # Start with clean configuration
@@ -307,12 +299,10 @@ cleanup
 
 # Create test QOS
 if {[add_qos $job_qos ""] != 0} {
-	cleanup
-	exit 1
+	fail "Unable to add qos ($job_qos)"
 }
 if {[add_qos $part_qos ""] != 0} {
-	cleanup
-	exit 1
+	fail "Unable to add qos ($part_qos)"
 }
 
 # Add account with QOS
@@ -324,7 +314,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -332,9 +322,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem adding the account\n"
-	cleanup
-	exit 1
+	fail "sacctmgr had a problem adding the account"
 }
 
 # Get user name
@@ -344,7 +332,7 @@ set user_name [get_my_user_name]
 spawn $sacctmgr -i create user name=$user_name account=$test_acct
 expect {
 	timeout {
-		send_user "\nFAILURE: sacctmgr not responding\n"
+		log_error "sacctmgr not responding"
 		set exit_code 1
 	}
 	eof {
@@ -360,7 +348,7 @@ set nb_nodes [get_node_cnt_in_part $def_part]
 spawn $scontrol create partitionname=$test_part qos=$part_qos nodes=[available_nodes_hostnames $def_part]
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code
 	}
 	eof {
@@ -370,25 +358,24 @@ expect {
 
 make_bash_script $file_in "$bin_sleep 60"
 
-send_user "\n\nTEST 1: Association GrpNodes limit\n"
+log_info "TEST 1: Association GrpNodes limit"
 set_assoc 1
 run_job_test
 set_assoc -1
 
-send_user "\n\nTEST 2: Job QOS GrpNodes limit\n"
+log_info "TEST 2: Job QOS GrpNodes limit"
 set_qos $job_qos 1
 run_job_test
 set_qos $job_qos -1
 
-send_user "\n\nTEST 3: Partition QOS GrpNodes limit\n"
+log_info "TEST 3: Partition QOS GrpNodes limit"
 set_qos $part_qos 1
 run_job_test
 set_qos $part_qos -1
 
 # Clean up and exit
-cleanup
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	print_success $test_id
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

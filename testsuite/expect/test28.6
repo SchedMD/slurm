@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #		  test that when a job array is submitted to multiple
 #		  partitions that the jobs run on all the assigned partitions
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#		  "FAILURE: ..." otherwise with an explanation of the failure, OR
-#		  anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -44,11 +39,9 @@ set exit_code	 0
 print_header $test_id
 
 if {[get_array_config] < [expr $array_size + 1]} {
-	send_user "\nWARNING: MaxArraySize is to small for this test\n"
-	exit 0
+	skip "MaxArraySize is to small for this test"
 } elseif {[test_super_user] == 0} {
-	send_user "\nWARNING: This test must be done from a super-user\n"
-	exit 0
+	skip "This test must be done from a super-user"
 }
 
 make_bash_script $script "
@@ -68,7 +61,7 @@ proc check_job { job_id } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -76,7 +69,7 @@ proc check_job { job_id } {
 			}
 		}
 		if {$matches != 1} {
-			send_user "\nFAILURE: job $job_id\_$index was not found\n"
+			log_error "Job $job_id\_$index was not found"
 			set exit_code 1
 		}
 	}
@@ -87,7 +80,7 @@ proc check_job { job_id } {
 #
 set def_part [default_partition]
 if {[string compare $def_part ""] == 0} {
-	send_user "\nFAILURE: default partition was not found\n"
+	log_error "Default partition was not found"
 	set exit_code 1
 }
 
@@ -102,7 +95,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -110,7 +103,7 @@ expect {
 	}
 }
 if {[string compare $node_list ""] == 0} {
-	send_user "\nFAILURE: node list was not found\n"
+	log_error "Node list was not found"
 	set exit_code 1
 }
 
@@ -120,12 +113,12 @@ if {[string compare $node_list ""] == 0} {
 spawn $scontrol create PartitionName=$test_part Nodes=$node_list
 expect {
 	-re "error" {
-		send_user"\nFAILURE: scontrol did not create partition\n"
+		log_error"scontrol did not create partition"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -143,7 +136,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -151,12 +144,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
+	log_error "sbatch did not submit job"
 	set exit_code 1
 }
 
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: Job never started\n"
+	log_error "Job never started"
 	set exit_code 1
 }
 cancel_job $job_id
@@ -167,12 +160,12 @@ cancel_job $job_id
 spawn $scontrol delete partition=$test_part
 expect {
 	-re "error" {
-		send_user "\nFAILURE: partition was not deleted\n"
+		log_error "Partition was not deleted"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -182,6 +175,6 @@ expect {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $script 
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

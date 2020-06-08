@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of --het-group option.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Isaac Hartung <ihartung@schedmd.com>
@@ -38,19 +34,16 @@ set task_num	2
 print_header $test_id
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+        skip "This test is incompatible with front-end systems"
 }
 if {[test_hetjob_step] == 0} {
-	send_user "\nWARNING: heterogeneous steps not currently supported\n"
-	exit $exit_code
+	skip "Heterogeneous steps not currently supported"
 }
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {$nb_nodes < 3} {
-	send_user "\nWARNING: Need 3 or more nodes in default partition\n"
-	exit $exit_code
+	skip "Need 3 or more nodes in default partition"
 }
 
 proc end_it { exit_code } {
@@ -58,7 +51,10 @@ proc end_it { exit_code } {
 	if {$het_job_id > 0} {
 		exec $scancel $het_job_id
 	}
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 set het_job_id 0
@@ -78,7 +74,7 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
 		log_error "salloc : allocation not granted in $timeout seconds"
@@ -104,7 +100,7 @@ expect {
 }
 set timeout 30
 
-send_user "\n\nCollect Nodenames\n\n"
+log_debug "Collect Nodenames"
 
 send "$squeue -j $het_job_id -o\"NAME=%N\" --noheader \r"
 expect {
@@ -129,7 +125,7 @@ if {$index != 3} {
 	end_it 1
 }
 
-send_user "\n\nTest Sending Jobs To Various Components\n\n"
+log_info "Test Sending Jobs To Various Components"
 
 set timeout 3
 set matches 0
@@ -237,15 +233,14 @@ if { $matches != 2} {
 	end_it 1
 }
 
-send_user "\n\nTesting Error Messages\n\n"
-
+log_info "Testing Error Messages"
 
 set matches 0
 
 send "$srun --mpi=none --het-group=0-3 printenv SLURMD_NODENAME\r"
 expect {
 	-re "srun: error: Attempt to run a job step with het group value of 3, but the job allocation has maximum value of 2" {
-		send_user "Error is expected, no worries.\n\n"
+		log_debug "Error is expected, no worries"
 		incr matches
 		exp_continue
 	}
@@ -266,7 +261,7 @@ set matches 0
 send "$srun --mpi=none --het-group=0,5 printenv SLURMD_NODENAME\r"
 expect {
 	-re "srun: error: Attempt to run a job step with het group value of 5, but the job allocation has maximum value of 2" {
-		send_user "Error is expected, no worries.\n\n"
+		log_debug "Error is expected, no worries"
 		incr matches
 		exp_continue
 	}
@@ -287,7 +282,7 @@ set matches 0
 send "$srun --mpi=none --het-group=0 printenv SLURMD_NODENAME : --het-group=0 env\r"
 expect {
 	-re "srun: fatal: Duplicate het groups in single srun not supported" {
-		send_user "Error is expected, no worries.\n\n"
+		log_debug "Error is expected, no worries"
 		incr matches
 		exp_continue
 	}
@@ -305,6 +300,3 @@ if { $matches != 1} {
 }
 
 send "exit\r"
-
-send_user "\nSUCCESS\n"
-exit 0

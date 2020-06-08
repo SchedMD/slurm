@@ -4,10 +4,6 @@
 #
 # Reqs:    1. Using slurmdbd accounting storage type and is up
 #          2. controllers are up and running.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Isaac Hartung <ihartung@schedmd.com>
@@ -43,10 +39,8 @@ set job_id 0
 print_header $test_id
 
 if {[in_fed]} {
-	log_warn "This test should not be run in a federation"
-	exit 0
+	skip "This test should not be run in a federation"
 }
-
 
 proc sbatch {} {
 	global number sbatch file_in file_out bin_sleep
@@ -100,11 +94,10 @@ proc cleanup { } {
 proc end_it { exit_code } {
 	global test_id
 	cancel_all_jobs
-	if {$exit_code == 0} {
-		cleanup
-		print_success $test_id
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
+	pass
 }
 
 #start test
@@ -117,9 +110,9 @@ make_bash_script $file_in "#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1
 
 $bin_sleep 10"
 
-send_user "\n################################################################\n"
-send_user "Submit hetjob and verify output from scontrol show job"
-send_user "\n################################################################\n"
+log_info "\n################################################################\n"
+log_info "Submit hetjob and verify output from scontrol show job"
+log_info "\n################################################################\n"
 
 set job_id [sbatch]
 
@@ -154,7 +147,7 @@ if {$matches != 2 } {
 	log_error "Problem with squeue test 1 ($matches != 2)"
 	end_it 1
 } else {
-	send_user "Test 1 OK\n\n"
+	log_debug "Test 1 OK"
 }
 
 set js [parse_id_set $id_set $job_id]
@@ -183,7 +176,7 @@ if {$matches != 1 } {
 	log_error "Problem with squeue test 2 ($matches != 1)"
 	end_it 1
 } else {
-	send_user "Test 2 OK\n\n"
+	log_debug "Test 2 OK"
 }
 
 set matches 0
@@ -207,7 +200,7 @@ if {$matches != 1 } {
 	log_error "Problem with squeue test 3 ($matches != 1)"
 	end_it 1
 } else {
-	send_user "Test 3 OK\n\n"
+	log_debug "Test 3 OK"
 }
 
 # All Done

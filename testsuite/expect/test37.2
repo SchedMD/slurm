@@ -15,10 +15,6 @@
 #          fedr/fed2/...
 #          fedr/fed3/...
 #          3. controllers are up and running.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2016 SchedMD LLC.
 # Written by Brian Christiansen <brian@schedmd.com>
@@ -59,14 +55,11 @@ print_header $test_id
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\n"
-	send_user "Use: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
 proc cleanup { } {
@@ -77,10 +70,10 @@ proc cleanup { } {
 proc end_it { exit_code } {
 	global test_id
 	cleanup
-	if {$exit_code == 0} {
-		print_success $test_id
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
+	pass
 }
 
 # submit jobs to each cluster and ensure that they return a unique job id
@@ -103,11 +96,11 @@ proc test_fed_job_id { cname cid} {
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: Job was not submitted\n"
+			log_error "Job was not submitted"
 			incr rc
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			incr rc
 		}
 		eof {
@@ -116,17 +109,16 @@ proc test_fed_job_id { cname cid} {
 	}
 
 	if {$job_id <= $max_local_id} {
-		send_user "\nFAILURE: $cname didn't give back a federation jobid ($job_id)\n"
+		log_error "$cname didn't give back a federation jobid ($job_id)"
 		incr rc
 	}
 
 	set local_id [expr $job_id & $max_local_id]
 	set clust_id [expr $job_id >> 26]
 
-	send_user "Fed JobID:$job_id Local JobID:$local_id Cluster ID:$clust_id\n"
+	log_debug "Fed JobID:$job_id Local JobID:$local_id Cluster ID:$clust_id"
 	if {!$rc && ($clust_id != $cid)} {
-		send_user "\nFAILURE: jobid($job_id) from $cname didn't give\
-			correct partition id ($part_id != $cid)\n"
+		log_error "Jobid($job_id) from $cname didn't give correct partition id ($part_id != $cid)"
 		incr rc
 	}
 
@@ -151,11 +143,11 @@ proc test_loc_job_id { cname } {
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: Job was not submitted\n"
+			log_error "Job was not submitted"
 			incr rc
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			incr rc
 		}
 		eof {
@@ -164,40 +156,38 @@ proc test_loc_job_id { cname } {
 	}
 
 	if {$job_id > $max_local_id} {
-		send_user "\nFAILURE: $cname didn't give back a non-federation job id\n"
+		log_error "$cname didn't give back a non-federation job id"
 		incr rc
 	}
-	send_user "JobID:$job_id\n"
+	log_debug "JobID:$job_id"
 
 	return $rc
 }
 
 if {[test_federation_setup]} {
-	send_user "\nWARNING: This test can't be run without fed_slurm_base,\
-		fedc1, fedc2, fedc3 setup in globals.local.\n"
-	exit 0
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
 }
 
 if {[test_all_up]} {
-	exit 0
+	pass
 }
 
 # Remove existing setup
 if {[cleanup] != 0} {
-	send_user "\nFAILURE: failed to cleanup\n"
+	log_error "Failed to cleanup"
 	end_it 1
 }
 
 # add clusters to federation
 if {[setup_federation $fed_name]} {
-	send_user "\nFAILURE: failed to setup federation\n"
+	log_error "Failed to setup federation"
 	end_it 1
 }
 
 # Get cluster/fed info from db
 array set clusters [get_clusterfed_info $fed_name]
 
-send_user "Verify federation ids are returned when cluster is part of federation\n"
+log_info "Verify federation ids are returned when cluster is part of federation"
 if {[test_fed_job_id $fedc1 [dict get $clusters($fedc1) id]] ||
     [test_fed_job_id $fedc2 [dict get $clusters($fedc2) id]] ||
     [test_fed_job_id $fedc3 [dict get $clusters($fedc3) id]]} {
@@ -208,13 +198,13 @@ if {[test_fed_job_id $fedc1 [dict get $clusters($fedc1) id]] ||
 # Verify that after clusters are removed from federation that they give normal
 # job ids again.
 if {[delete_federations $fed_name]} {
-	send_user "\nFAILURE: failed delete federation $fed_name\n"
+	log_error "Failed delete federation $fed_name"
 	end_it 1
 }
 
 sleep 2
 
-send_user "Verify local ids after being removed from federation\n"
+log_info "Verify local ids after being removed from federation"
 if {[test_loc_job_id $fedc1] ||
     [test_loc_job_id $fedc2] ||
     [test_loc_job_id $fedc3]} {

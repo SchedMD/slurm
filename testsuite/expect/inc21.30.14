@@ -29,7 +29,7 @@
 proc inc21_30_14 { wait_reason } {
 	global salloc srun acct bin_sleep number maxwall_num exit_code
 
-	send_user "\nStarting MaxWall test (Within: inc21.30.14)\n"
+	log_info "Starting MaxWall test (Within: inc21.30.14)"
 	set job_id 0
 
 	spawn $salloc --account=$acct -N1 -t$maxwall_num $srun $bin_sleep 10
@@ -40,14 +40,14 @@ proc inc21_30_14 { wait_reason } {
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			send_user "\nJob $job_id has been submitted\n"
+			log_debug "Job $job_id has been submitted"
 		}
 		-re "error" {
-			send_user "\nFAILURE: Job allocation should not have failed. (Within: inc21.30.14)\n"
+			log_error "Job allocation should not have failed. (Within: inc21.30.14)"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not responding (Within: inc21.30.14)\n"
+			log_error "salloc is not responding (Within: inc21.30.14)"
 			set exit_code 1
 		}
 		eof {
@@ -62,15 +62,15 @@ proc inc21_30_14 { wait_reason } {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			send_user "\nJob $job_id is waiting for resources. This is expected (Within: inc21.30.14)\n"
+			log_debug "Job $job_id is waiting for resources. This is expected (Within: inc21.30.14)"
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			send_user "\nFAILURE: job $job_id should be pending for resources, but is not (Within: inc21.30.14)\n"
+			log_error "Job $job_id should be pending for resources, but is not (Within: inc21.30.14)"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not responding (Within: inc21.30.14)\n"
+			log_error "salloc is not responding (Within: inc21.30.14)"
 			set exit_code 1
 		}
 		eof {
@@ -79,7 +79,7 @@ proc inc21_30_14 { wait_reason } {
 	}
 
 	if {![check_reason $job_id $wait_reason]} {
-		send_user "\nFAILURE: Bad job wait reason. (Within: inc21.30.14)\n"
+		log_error "Bad job wait reason. (Within: inc21.30.14)"
 		set exit_code 1
 	}
 

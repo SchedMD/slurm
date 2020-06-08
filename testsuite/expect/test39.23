@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test --gpus-per-task with implicit task count.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC
 # Written by Morris Jette
@@ -39,29 +35,25 @@ set number_commas  "\[0-9_,\]+"
 print_header $test_id
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
-	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-	exit 0
+	skip "This test is only compatible with select/cons_tres"
 }
 if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPUs in the default partition"
 }
-send_user "\nGPU count is $gpu_cnt\n"
-send_user "Default partition node count $nb_nodes\n"
+log_debug "GPU count is $gpu_cnt"
+log_debug "Default partition node count $nb_nodes"
 
 if {$nb_nodes > 3} {
 	set nb_nodes 3
@@ -88,7 +80,7 @@ exit 0"
 #
 # One GPU per task with node count (without range)
 #
-send_user "\n\nTEST: One GPU per task with node count (without range)\n"
+log_info "TEST: One GPU per task with node count (without range)"
 set timeout $max_job_delay
 set match 0
 set node_cnt -1
@@ -100,7 +92,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -109,7 +101,7 @@ expect {
 	}
 }
 if {$match != $node_cnt} {
-	send_user "\nFAILURE: srun --gpus-per-task failure ($match != $node_cnt)\n"
+	log_error "srun --gpus-per-task failure ($match != $node_cnt)"
 	set exit_code 1
 }
 
@@ -117,7 +109,7 @@ if {$match != $node_cnt} {
 # Two GPUs per task with node count (without range)
 #
 if {$gpu_cnt > 1} {
-	send_user "\n\nTEST: Two GPUs per task with node count (without range)\n"
+	log_info "TEST: Two GPUs per task with node count (without range)"
 	set match 0
 	if {$nb_nodes > 1} {
 		set min_nodes 2
@@ -133,7 +125,7 @@ if {$gpu_cnt > 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -143,7 +135,7 @@ if {$gpu_cnt > 1} {
 	}
 	set exp_gpu_cnt [expr $node_cnt * 2]
 	if {$match != $exp_gpu_cnt} {
-		send_user "\nFAILURE: srun --gpus-per-task failure ($match != $exp_gpu_cnt)\n"
+		log_error "srun --gpus-per-task failure ($match != $exp_gpu_cnt)"
 		set exit_code 1
 	}
 }
@@ -152,7 +144,7 @@ if {$gpu_cnt > 1} {
 # One GPU per task with node count range and task count resulting in uneven task distribution
 #
 if {$gpu_cnt > 1 && $nb_nodes > 1} {
-	send_user "\n\nTEST: Node count range and uneven task distribution\n"
+	log_info "TEST: Node count range and uneven task distribution"
 	set match 0
 	set node_cnt -1
 	set task_cnt [expr $nb_nodes + 1]
@@ -164,7 +156,7 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -173,7 +165,7 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 		}
 	}
 	if {$match != $task_cnt} {
-		send_user "\nFAILURE: srun --gpus-per-task failure ($match != $task_cnt)\n"
+		log_error "srun --gpus-per-task failure ($match != $task_cnt)"
 		set exit_code 1
 	}
 }
@@ -182,7 +174,7 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 # One task and GPU for each GPU available at step level
 #
 if {$gpu_cnt > 1} {
-	send_user "\n\nTEST: One task and GPU for each GPU available at step level\n"
+	log_info "TEST: One task and GPU for each GPU available at step level"
 	set match 0
 	set task_cnt 0
 # FIXME: RANGE CHECK CPU/GPU COUNT
@@ -194,7 +186,7 @@ if {$gpu_cnt > 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -204,10 +196,10 @@ if {$gpu_cnt > 1} {
 	}
 	set exp_gpu_cnt [expr $task_cnt * $task_cnt]
 	if {$task_cnt == 0} {
-		send_user "\nFAILURE: srun --gpus-per-task test failed to run\n"
+		log_error "srun --gpus-per-task test failed to run"
 		set exit_code 1
 	} elseif {$match != $exp_gpu_cnt} {
-		send_user "\nFAILURE: srun --gpus-per-task failure ($match != $exp_gpu_cnt)\n"
+		log_error "srun --gpus-per-task failure ($match != $exp_gpu_cnt)"
 		set exit_code 1
 	}
 }
@@ -216,7 +208,7 @@ if {$gpu_cnt > 1} {
 # One task and two GPUs as resources available at step level
 #
 if {$gpu_cnt > 1} {
-	send_user "\n\nTEST: One task and two GPUs as resources available at step level\n"
+	log_info "TEST: One task and two GPUs as resources available at step level"
 	set hostname "unknown"
 	set match 0
 	set num_cpus 0
@@ -238,7 +230,7 @@ if {$gpu_cnt > 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -248,10 +240,10 @@ if {$gpu_cnt > 1} {
 	}
 	set exp_gpu_cnt [expr $task_cnt * $task_cnt * 2]
 	if {$task_cnt == 0} {
-		send_user "\nFAILURE: srun --gpus-per-task test failed to run\n"
+		log_error "srun --gpus-per-task test failed to run"
 		set exit_code 1
 	} elseif {$match != $exp_gpu_cnt} {
-		send_user "\nFAILURE: srun --gpus-per-task failure ($match != $exp_gpu_cnt)\n"
+		log_error "srun --gpus-per-task failure ($match != $exp_gpu_cnt)"
 		set exit_code 1
 	}
 }
@@ -260,7 +252,7 @@ if {$gpu_cnt > 1} {
 # Step allocation of GPUs based upon CPUs per task
 #
 if {$gpu_cnt > 1 && $num_cpus > 0} {
-	send_user "\n\nTEST: Step allocation of GPUs based upon CPUs per task\n"
+	log_info "TEST: Step allocation of GPUs based upon CPUs per task"
 	set match 0
 	set task_cnt 0
 	if {$gpu_cnt > $num_cpus} {
@@ -278,7 +270,7 @@ if {$gpu_cnt > 1 && $num_cpus > 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -288,16 +280,14 @@ if {$gpu_cnt > 1 && $num_cpus > 0} {
 	}
 	set exp_gpu_cnt [expr $task_cnt *$task_cnt * $gpus_per_task]
 	if {$task_cnt == 0} {
-		send_user "\nFAILURE: srun --gpus-per-task test failed to run\n"
-		set exit_code 1
+		fail "srun --gpus-per-task test failed to run"
 	} elseif {$match != $exp_gpu_cnt} {
-		send_user "\nFAILURE: srun --gpus-per-task failure ($match != $exp_gpu_cnt)\n"
-		set exit_code 1
+		fail "srun --gpus-per-task failure ($match != $exp_gpu_cnt)"
 	}
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

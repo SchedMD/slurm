@@ -68,14 +68,11 @@ print_header $test_id
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator.\n \
-	 	  Use: sacctmgr mod user \$USER set admin=admin."
-	exit 0
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
 proc sbatch { args } {
@@ -244,22 +241,20 @@ proc cleanup { } {
 proc end_it { exit_code } {
 	global test_id
 	cleanup
-	if {$exit_code == 0} {
-		print_success $test_id
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
+	pass
 }
 
 #start test
 
 if {[test_federation_setup]} {
-	log_warn "WARNING: This test can't be run without fed_slurm_base,\
-		fedc1, fedc2, fedc3 setup in globals.local."
-	exit 0
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
 }
 
 if {[test_all_up]} {
-	exit 0
+	pass
 }
 
 set user_name [get_my_user_name]
@@ -303,7 +298,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -312,7 +307,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -336,7 +331,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -345,7 +340,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 
@@ -369,7 +364,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
 		set exit_code 1
 	}
@@ -378,7 +373,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
+	log_error "Unexpected error. Got $matches"
 	end_it 1
 }
 

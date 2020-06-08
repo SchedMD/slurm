@@ -5,10 +5,6 @@
 #          constraints options (--mincpus, --mem, and --tmp options).
 #          Also test that priority zero job is not started (--hold
 #          option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -66,7 +62,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -75,8 +71,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
@@ -88,20 +83,20 @@ expect {
 		set read_prio $expect_out(1,string)
 		if {$read_prio == 0} {
 			incr matches
-			send_user "match of Priority\n"
+			log_debug "Match of Priority"
 		}
 		exp_continue
 	}
 	-re "JobState=PENDING" {
 		incr matches
-		send_user "match of JobState\n"
+		log_debug "Match of JobState"
 		exp_continue
 	}
 	-re "MinCPUsNode=($number)" {
 		set read_cpus $expect_out(1,string)
 		if {$read_cpus == $cpu_cnt} {
 			incr matches
-			send_user "match of MinCPUsNode\n"
+			log_debug "Match of MinCPUsNode"
 		}
 		exp_continue
 	}
@@ -109,7 +104,7 @@ expect {
 		set read_mem $expect_out(1,string)
 		if {$read_mem == $mem_size} {
 			incr matches
-			send_user "match of MinMemory\n"
+			log_debug "Match of MinMemory"
 		}
 		exp_continue
 	}
@@ -117,12 +112,12 @@ expect {
 		set read_disk $expect_out(1,string)
 		if {$read_disk == $tmp_size} {
 			incr matches
-			send_user "match of MinTmpDiskNode\n"
+			log_debug "Match of MinTmpDiskNode"
 		}
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -130,14 +125,13 @@ expect {
 	}
 }
 if {$matches != 5} {
-	send_user "\nFAILURE: Did not get proper constraints\n"
-	set exit_code 1
+	fail "Did not get proper constraints"
 }
 if {[cancel_job $job_id] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id)"
 }
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

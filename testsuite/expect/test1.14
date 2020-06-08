@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test exclusive resource allocation for a step (--exclusive option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -46,8 +42,7 @@ set hostname         ""
 print_header $test_id
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+    skip "This test is incompatible with front-end systems"
 }
 
 array set node_conf [get_node_config "--gres=gpu:2"]
@@ -96,7 +91,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -105,15 +100,14 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	fail "Failed to submit job"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -122,8 +116,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Check for desired output
 #
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: Output file $file_out is missing\n"
-	exit 1
+	fail "Output file $file_out is missing"
 }
 set matches 0
 set tasks_per_node 0
@@ -142,15 +135,14 @@ expect {
 }
 
 if { $matches > $tasks_per_node } {
-	send_user "\nFAILURE: Problem with exclusive resource allocation "
-	send_user "for step ($matches > $tasks_per_node)\n"
+	log_error "Problem with exclusive resource allocation for step ($matches > $tasks_per_node)"
 	set exit_code 1
 }
 
 if {$exit_code == 0} {
-	send_user "\nSo far, so good. Trying with --immediate option\n\n"
+	log_info "So far, so good. Trying with --immediate option"
 } else {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 #
@@ -187,7 +179,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -196,15 +188,14 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	fail "Failed to submit job"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -213,19 +204,18 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Check for desired output
 #
 if {[wait_for_file $file_out2] != 0} {
-	send_user "\nFAILURE: Output file $file_out2 is missing\n"
-	exit 1
+	fail "Output file $file_out2 is missing"
 }
 set matches 0
 spawn $bin_cat $file_out2
 expect {
 	-re "StepId=$job_id" {
-		send_user "\nFAILURE: Problem --exclusive and --immediate option for step\n"
+		log_error "Problem --exclusive and --immediate option for step"
 		set exit_code 1
 		exp_continue
 	}
 	-re "Unable to create " {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		incr matches
 		exp_continue
 	}
@@ -235,7 +225,7 @@ expect {
 }
 
 if { $matches != 1 } {
-	send_user "\nFAILURE: Problem --exclusive and --immediate option for step ($matches != 1)\n"
+	log_error "Problem --exclusive and --immediate option for step ($matches != 1)"
 	set exit_code 1
 }
 
@@ -276,6 +266,6 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_in2 $file_out $file_out2
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm sacct with -s R, -S and -E options
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Albert Gil <albert.gil@schedmd.com>
@@ -134,8 +130,7 @@ proc get_time { } {
 ############################################################################
 
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType."
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType."
 }
 
 ############################################################################
@@ -2539,10 +2534,9 @@ log_info "QeC      : $QeC"
 log_info "TestCases: $ntest"
 log_info "Failures : $failures"
 
-if {$failures == 0} {
-	print_success $test_id
-} else {
-	print_failure $test_id
-	set exit_code 1
+if {$failures != 0} {
+	fail "Test failed due to previous failures (\$failures = $failures)"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

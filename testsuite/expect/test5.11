@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Test that job's node estimation is based off the biggest node
 #          in the partition
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -54,11 +49,9 @@ sleep 10
 "
 
 if { ![test_super_user] } {
-        send_user "\nWARNING: This test can't be run without being a super user of the cluster.\n"
-        exit 0
+    skip "This test can't be run without being a super user of the cluster"
 } elseif {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
-	send_user "\nWARNING: This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE\n"
-	exit 0
+	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
 proc sub_job { cpu_cnt part } {
@@ -73,7 +66,7 @@ proc sub_job { cpu_cnt part } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -82,7 +75,7 @@ proc sub_job { cpu_cnt part } {
 	}
 
 	if {!$job_id} {
-		send_user "\nFAILURE: job was not submitted\n"
+		log_error "Job was not submitted"
 	}
 }
 
@@ -98,7 +91,7 @@ proc check_node_cnt { exp_nodes } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue is not responding\n"
+			log_error "squeue is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -107,7 +100,7 @@ proc check_node_cnt { exp_nodes } {
 	}
 
 	if {!$match} {
-		send_user "\nFAILURE: job did not make proper node estimation, expected = $exp_nodes\n"
+		log_error "Job did not make proper node estimation, expected = $exp_nodes"
 		set exit_code 1
 	}
 }
@@ -119,7 +112,7 @@ proc update_job { job_id part } {
 	spawn $scontrol update jobid=$job_id partition=$part
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -144,7 +137,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -163,7 +156,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -215,8 +208,7 @@ expect {
 
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		exit 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -243,7 +235,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -263,7 +255,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -272,26 +264,23 @@ expect {
 }
 log_user 1
 
-send_user "\nL:$node_l:$cpu_l_cnt M:$node_m:$cpu_m_cnt H:$node_h:$cpu_h_cnt\n"
+log_debug "L:$node_l:$cpu_l_cnt M:$node_m:$cpu_m_cnt H:$node_h:$cpu_h_cnt"
 if {$cpu_l_cnt == $cpu_h_cnt} {
-	send_user "The rest of this test expects to have three different nodes \
+	log_debug "The rest of this test expects to have three different nodes \
 		each with different cpu counts -- finishing test now."
 
 	exec $bin_rm -fr $script
-	if {$exit_code == 0} {
-		send_user "\nSUCCESS\n"
-	} else {
-		send_user "\nFAILURE\n"
+	if {$exit_code != 0} {
+		fail "Test failed due to prior errors"
 	}
-	exit $exit_code
+	pass
 }
 
 # Create partition with the smallest node in the system
 spawn $scontrol create partitionname=$test_part nodes=$node_l
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		exit 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -306,8 +295,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE scontrol is not responding\n"
-		exit 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -315,8 +303,7 @@ expect {
 }
 
 if {!$match} {
-	send_user "\nFAILURE: partition $test_part was not created\n"
-	exit 1
+	fail "Partition $test_part was not created"
 }
 
 # Choose a cpu count greater then highest cpu node
@@ -334,8 +321,7 @@ cancel_job $job_id
 spawn $scontrol update partitionname=$test_part nodes=$node_l,$node_m
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		exit 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -355,8 +341,7 @@ cancel_job $job_id
 spawn $scontrol update partitionname=$test_part nodes=$node_l,$node_m,$node_h
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		exit 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -375,7 +360,7 @@ cancel_job $job_id
 spawn $scontrol delete partition=$test_part
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -384,10 +369,6 @@ expect {
 }
 
 exec $bin_rm -fr $script
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
-	send_user "\nFAILURE\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors"
 }
-
-exit $exit_code

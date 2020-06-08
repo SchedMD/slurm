@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate proper GRES operation under heavy load (many jobs)
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Morris Jette
@@ -40,14 +36,12 @@ set number_commas  "\[0-9_,\]+"
 print_header $test_id
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
-	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-	exit 0
+	skip "This test is only compatible with select/cons_tres"
 }
 if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
 set def_part_name [default_partition]
@@ -57,17 +51,15 @@ if {$nb_nodes > 1} {
 }
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPUs in the default partition"
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
-log_info "GPU count is $gpu_cnt"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
 
 set tot_cpus $node_conf(CPUTot)
 set tot_gpus $gpu_cnt
@@ -111,7 +103,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 		}
 		eof {
@@ -119,7 +111,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: sbatch job submit failure\n"
+		log_error "sbatch job submit failure"
 		set exit_code 1
 		set tot_gpus [expr $inx - 1]
 		break
@@ -140,7 +132,7 @@ if {$tot_gpus > 4 && $max_file_delay > 30} {
 for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	set ofile ${file_out}.${inx}
 	if {[wait_for_file $ofile] != 0} {
-		send_user "\nFAILURE: output file $ofile not found\n"
+		log_error "Output file $ofile not found"
 		set exit_code 1
 	} else {
 		set match 0
@@ -155,7 +147,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 			}
 		}
 		if {$match != $inx} {
-			send_user "\nFAILURE: Bad GPU count in file $ofile ($match != $inx)\n"
+			log_error "Bad GPU count in file $ofile ($match != $inx)"
 			set exit_code 1
 		} else {
 			exec $bin_rm -f $ofile
@@ -171,7 +163,7 @@ if {$exit_code != 0} {
 	spawn $squeue -tall -n "test$test_id"
 	expect {
 		timeout {
-			send_user "\nFAILURE: squeue not responding\n"
+			log_error "squeue not responding"
 			set exit_code 1
 		}
 		eof {
@@ -183,6 +175,6 @@ exec $scancel -n "test$test_id"
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

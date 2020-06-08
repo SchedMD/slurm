@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test --gpu-bind options
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Morris Jette
@@ -38,31 +34,27 @@ set number_commas  "\[0-9_,\]+"
 print_header $test_id
 
 if {[test_cons_tres]} {
-        send_user "\nValid configuration, using select/cons_tres\n"
+    log_debug "Valid configuration, using select/cons_tres"
 } else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit 0
+    skip "This test is only compatible with select/cons_tres"
 }
 
 set gpu_cnt [get_gpu_count 1]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 2} {
-	send_user "\nWARNING: This test requires 2 or more GPUs in the default partition\n"
-	exit 0
+	skip "This test requires 2 or more GPUs in the default partition"
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set cpus_per_node $node_conf(CPUTot)
-log_info "GPU count is $gpu_cnt"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
-log_info "CPUs per node is $cpus_per_node"
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "CPUs per node is $cpus_per_node"
 
 if {$cpus_per_node < 2} {
-	send_user "\nWARNING: This test requires 2 or more CPUs per node in the default partition\n"
-	exit 0
+	skip "This test requires 2 or more CPUs per node in the default partition"
 }
 
 #
@@ -78,13 +70,13 @@ exit 0"
 set timeout $max_job_delay
 
 if {$node_conf(Sockets) < 2} {
-	send_user "\nWARNING: Tests ${test_id}.0 and ${test_id}.1 require 2 or more sockets per node in the default partition\n"
+	log_warn "Tests ${test_id}.0 and ${test_id}.1 require 2 or more sockets per node in the default partition"
 } else {
-	send_user "\n\nTEST ${test_id}.0\n"
+	log_info "TEST ${test_id}.0"
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --accel-bind=g -J "test$test_id" -t1 ./$file_in]
 	expect {
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -96,11 +88,11 @@ if {$node_conf(Sockets) < 2} {
 	#
 	# Test of --gpu-bind=closest
 	#
-	send_user "\n\nTEST ${test_id}.1\n"
+	log_info "TEST ${test_id}.1"
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --gpu-bind=closest -J "test$test_id" -t1 ./$file_in]
 	expect {
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -114,7 +106,7 @@ if {$node_conf(Sockets) < 2} {
 # Test of --gpu-bind=map_gpu
 # Note that if the task count exceeds the provided map_gpu, the map will be cycled over for additional tasks
 #
-send_user "\n\nTEST ${test_id}.2\n"
+log_info "TEST ${test_id}.2"
 if {$gpu_cnt < 4} {
 	set map_gpu "map_gpu:1,0"
 	set match_goal 2
@@ -148,7 +140,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -157,7 +149,7 @@ expect {
 	}
 }
 if {$matches != $match_goal} {
-	send_user "\nFAILURE: --gpu-bind=$map_gpu not respected ($matches != $match_goal)\n"
+	log_error "--gpu-bind=$map_gpu not respected ($matches != $match_goal)"
 	set exit_code 1
 }
 
@@ -165,7 +157,7 @@ if {$matches != $match_goal} {
 # Test of --gpu-bind=mask_gpu
 # Note that if the task count exceeds the provided mask_gpu, the mask will be cycled over for additional tasks
 #
-send_user "\n\nTEST ${test_id}.3\n"
+log_info "TEST ${test_id}.3"
 if {$gpu_cnt < 4} {
 	set mask_gpu "mask_gpu:0x3,0x1"
 } else {
@@ -195,7 +187,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -204,12 +196,11 @@ expect {
 	}
 }
 if {$matches != $match_goal} {
-	send_user "\nFAILURE: --gpu-bind=$mask_gpu not respected ($matches != $match_goal)\n"
-	set exit_code 1
+	fail "--gpu-bind=$mask_gpu not respected ($matches != $match_goal)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

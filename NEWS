@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
     underscores would only add the first job.
  -- slurmrestd - fix corrupted output due to incorrect use of memcpy().
  -- slurmrestd - address a number of minor Coverity warnings.
+ -- Handle retry failure when slurmstepd is communicating with srun correctly.
 
 * Changes in Slurm 20.02.3
 ==========================

@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of default CPU binding support.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 #
@@ -45,9 +40,7 @@ proc get_cpu_bind { type name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-			exit 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -62,13 +55,11 @@ proc set_cpu_bind { type name cpu_bind } {
 	spawn $scontrol update ${type}Name=$name CpuBind=$cpu_bind
 	expect {
 		-re "error" {
-			send_user "\nFAILURE: scontrol error setting CpuBind on node $node_name\n"
+			log_error "scontrol error setting CpuBind on node $node_name"
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-			exit 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -92,16 +83,15 @@ proc run_prog { node_name cpu_bind } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
 			slow_kill $srun_pid
-			exit 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		send_user "\nFAILURE: Node $node_name should have CpuBind of $cpu_bind rather than $found_cpu_bind\n"
+		log_error "Node $node_name should have CpuBind of $cpu_bind rather than $found_cpu_bind"
 		set exit_code 1
 	}
 }
@@ -114,34 +104,31 @@ proc end_test { } {
 	set_cpu_bind "node" $node_0 $node_cpu_bind_0
 	set_cpu_bind "node" $node_1 $node_cpu_bind_1
 	set_cpu_bind "partition" $def_part_name $partition_cpu_bind
-	if {$exit_code == 0} {
-		send_user "\nSUCCESS\n"
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
+	pass
 }
 
 print_header $test_id
 
 if {![test_super_user]} {
-	send_user "\nWARNING: This test is only suitable for a super user (to restore down nodes).\n"
-	exit 0
+	skip "This test is only suitable for a super user (to restore down nodes)"
 }
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {$nb_nodes < 2} {
-	send_user "\nWARNING: Need 2 or more nodes in default partition\n"
-	exit $exit_code
+	skip "Need 2 or more nodes in default partition"
 }
 
 #
 # Test if CPU affinity support is supported.
 #
 if {![test_cpu_affinity]} {
-	send_user "\nWARNING: CPU affinity not supported on this system\n"
-	exit $exit_code
+	skip "CPU affinity not supported on this system"
 }
-send_user "\ntask affinity plugin installed\n"
+log_debug "Task affinity plugin installed"
 
 #
 # Identify some nodes to use
@@ -164,25 +151,23 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$node_cnt != 2} {
-	send_user "\FAILURE: Unexpected resource count ($node_cnt != 2)\n"
-	exit 1
+	fail "Unexpected resource count ($node_cnt != 2)"
 }
 
-send_user "\nDetermine the node and partition current CpuBind configuration\n"
+log_debug "Determine the node and partition current CpuBind configuration"
 set partition_cpu_bind [get_cpu_bind "partition" $def_part_name]
 set node_cpu_bind_0 [get_cpu_bind "node" $node_0]
 set node_cpu_bind_1 [get_cpu_bind "node" $node_1]
 if {$exit_code != 0} {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 set_cpu_bind "node" $node_0 "core"

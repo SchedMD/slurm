@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test scancel with --full and/or --batch.
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # Note:    This script generates and then deletes files in the working directory
 #          named test6.15.input, test6.15.output, and test6.15.error
 ############################################################################
@@ -69,10 +65,9 @@ exit 0
 "
 
 set proctracktype [test_proctrack]
-send_user "Proctrack: $proctracktype\n"
+log_debug "Proctrack: $proctracktype"
 if {$proctracktype != "cgroup" && $proctracktype != "linuxproc" && $proctracktype != "pgid"} {
-	log_warn "This test only works for proctracktype/cgroup, proctracktype/linuxproc or proctracktype/pgid."
-	exit 0
+	skip "This test only works for proctracktype/cgroup, proctracktype/linuxproc or proctracktype/pgid."
 }
 
 #
@@ -100,7 +95,7 @@ proc test_signaling { batch full } {
 	#
 	# Submit sbatch job
 	#
-	send_user "\nSubmit the job\n"
+	log_debug "Submit the job"
 	set timeout $max_job_delay
 	set sbatch_pid [spawn $sbatch --output=$file_out -t2 $file_in]
 	expect {
@@ -109,7 +104,7 @@ proc test_signaling { batch full } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			slow_kill $sbatch_pid
 			return 1
 		}
@@ -118,7 +113,7 @@ proc test_signaling { batch full } {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: batch submit failure\n"
+		log_error "Batch submit failure"
 		return 1
 	}
 
@@ -126,7 +121,7 @@ proc test_signaling { batch full } {
 	# Wait for job to start running
 	#
 	if {[wait_for_job $job_id "RUNNING"] != 0} {
-		send_user "\nFAILURE: waiting for job to start running\n"
+		log_error "Waiting for job to start running"
 		return 1
 	}
 
@@ -142,7 +137,7 @@ proc test_signaling { batch full } {
 	}
 
 	exec $bin_sleep 2
-	send_user "\nSignal the job\n"
+	log_debug "Signal the job"
 	set cmd_str "$scancel -s SIGUSR1 $params $job_id"
 	spawn [lindex $cmd_str 0] {*}[lrange $cmd_str 1 end]
 	expect {
@@ -155,7 +150,7 @@ proc test_signaling { batch full } {
 	# Wait for completion
 	#
 	if {[wait_for_job $job_id DONE] != 0} {
-		send_user "\nFAILURE: error completing job $job_id\n"
+		log_error "Error completing job $job_id"
 		cancel_job $job_id
 		return 1
 	}
@@ -216,27 +211,27 @@ proc test_signaling { batch full } {
 			}
 		}
 		if {$script_signaled != $expected_script_signaled} {
-			send_user "\nFAILURE: Script signaled mismatch with expected ($script_signaled != $expected_script_signaled)\n"
+			log_error "Script signaled mismatch with expected ($script_signaled != $expected_script_signaled)"
 			incr rc
 		}
 		if {$parent_step_signaled != $expected_parent_step_signaled} {
-			send_user "\nFAILURE: Parent step signaled mismatch with expected ($parent_step_signaled != $expected_parent_step_signaled)\n"
+			log_error "Parent step signaled mismatch with expected ($parent_step_signaled != $expected_parent_step_signaled)"
 			incr rc
 		}
 		if {$parent_command_signaled != $expected_parent_command_signaled} {
-			send_user "\nFAILURE: Parent command signaled mismatch with expected ($parent_command_signaled != $expected_parent_command_signaled)\n"
+			log_error "Parent command signaled mismatch with expected ($parent_command_signaled != $expected_parent_command_signaled)"
 			incr rc
 		}
 		if {$child_step_signaled != $expected_child_step_signaled} {
-			send_user "\nFAILURE: Child step signaled mismatch with expected ($child_step_signaled != $expected_child_step_signaled)\n"
+			log_error "Child step signaled mismatch with expected ($child_step_signaled != $expected_child_step_signaled)"
 			incr rc
 		}
 		if {$child_command_signaled != $expected_child_command_signaled} {
-			send_user "\nFAILURE: Child command signaled mismatch with expected ($child_command_signaled != $expected_child_command_signaled)\n"
+			log_error "Child command signaled mismatch with expected ($child_command_signaled != $expected_child_command_signaled)"
 			incr rc
 		}
 	} else {
-		send_user "\nERROR reading output file\n"
+		log_error "Error reading output file"
 		set rc 1
 	}
 
@@ -274,9 +269,6 @@ exec $bin_rm -f $file_in $file_out $file_prog
 #
 # Final results
 #
-if {!$exit_code} {
-	print_success $test_id
-} else {
-	print_failure $test_id
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

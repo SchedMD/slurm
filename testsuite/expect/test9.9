@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Timing test for 5000 jobs.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2012 SchedMD LLC
 # Written by Danny Auble <da@schedmd.com>
@@ -73,18 +69,14 @@ proc _submit_jobs { job_name test_file } {
 	}
 	log_user 1
 	if {[wait_for_all_jobs $job_name] != 0} {
-		send_user "\nFAILURE: some submitted jobs failed to terminate\n"
-		set exit_code 1
+		fail "Some submitted jobs failed to terminate"
 	}
 }
 
 set time_took [string trim [time {_submit_jobs "test$test_id" "/dev/null"}] " per iteration microseconds"]
 set jobs_per_sec [expr $job_cnt * 1000000 / $time_took]
-send_user "Ran $job_cnt jobs in $time_took microseconds or $jobs_per_sec jobs per second\n"
+log_debug "Ran $job_cnt jobs in $time_took microseconds or $jobs_per_sec jobs per second"
 
-if { $exit_code != 0 } {
-	exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-
-send_user "\nSUCCESS\n"
-exit $exit_code

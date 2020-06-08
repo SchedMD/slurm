@@ -52,7 +52,7 @@ proc change_state { state nodes } {
 	spawn $scontrol update nodename=$nodes state=$state reason=test
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -69,7 +69,7 @@ proc reset_state { } {
 		spawn $scontrol update nodename=$node_list($num) state=idle
 		expect {
 			timeout {
-				send_user "\nFAILURE: scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -95,7 +95,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof  {
@@ -104,14 +104,11 @@ expect {
 }
 
 if {$num_nodes < 8} {
-	send_user "\nWARNING: This test requires 8 or more nodes but only "
-	send_user "found $num_nodes available\n"
-	exit 0
+	skip "This test requires 8 or more nodes but only found $num_nodes available"
 }
 
 if {$num_cpus == 0} {
-	send_user "\nFAILURE: Number of CPUs reported is zero\n"
-	exit 1
+	fail "Number of CPUs reported is zero"
 }
 
 #
@@ -128,7 +125,7 @@ expect {
 		}
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -137,14 +134,13 @@ expect {
 }
 
 if {$i != 8} {
-	send_user "\nWARNING: Unable to get all the required nodes ($i != 8)\n"
-	exit 0
+	skip "Unable to get all the required nodes ($i != 8)"
 }
 
 #
 # Submit a job to filter for allocated job state
 #
-send_user "\nTesting ALLOCATED state\n"
+log_info "Testing ALLOCATED state"
 set tmp_id 0
 set tmp_sc "test$test_id\_tmp_sc"
 make_bash_script $tmp_sc "sleep 20"
@@ -155,7 +151,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -164,12 +160,12 @@ expect {
 }
 
 if {$tmp_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
+	log_error "sbatch did not submit job"
 	set exit_code 1
 }
 
 if {[wait_for_job $tmp_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $tmp_id to start\n"
+	log_error "Error waiting for job $tmp_id to start"
 	cancel_job $tmp_id
 	set exit_code 1
 }
@@ -183,15 +179,14 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		send_user "\nFAILURE: Unexpected error from sinfo\n"
+		log_error "Unexpected error from sinfo"
 		set exit_code 1
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -210,7 +205,7 @@ change_state drain $node_list(6),$node_list(7)
 #
 # Change node state to idle and use state filter to filter node
 #
-send_user "\nTesting IDLE state\n"
+log_info "Testing IDLE state"
 spawn $sinfo --Node --node=$node_list(2),$node_list(3) --long --exact --state=idle -p$partition
 expect {
 	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($alpha)" {
@@ -220,15 +215,14 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		send_user "\nFAILURE: Unexpected error from sinfo\n"
+		log_error "Unexpected error from sinfo"
 		set exit_code 1
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -239,7 +233,7 @@ expect {
 #
 # Change node state to down and use state filter to filter node
 #
-send_user "\nTesting DOWN state\n"
+log_info "Testing DOWN state"
 spawn $sinfo --Node --node=$node_list(4),$node_list(5) --long --exact --state=down -p$partition
 expect {
 	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($alpha)" {
@@ -249,15 +243,14 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		send_user "\nFAILURE: Unexpected error from sinfo\n"
+		log_error "Unexpected error from sinfo"
 		set exit_code 1
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -268,7 +261,7 @@ expect {
 #
 # Change node state to drain and use state filter to filter node
 #
-send_user "\nTesting DRAIN state\n"
+log_info "Testing DRAIN state"
 spawn $sinfo --Node --node=$node_list(6),$node_list(7) --long --exact --state=drain -p$partition
 expect {
 	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($alpha)" {
@@ -278,15 +271,14 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		send_user "\nFAILURE: Unexpected error from sinfo\n"
+		log_error "Unexpected error from sinfo"
 		set exit_code 1
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -300,11 +292,10 @@ expect {
 reset_state
 
 if {$mismatches != 0} {
-	send_user "\nFAILURE: sinfo node filtering error\n"
-	set exit_code 1
+	fail "sinfo node filtering error"
 }
 if {$exit_code == 0} {
 	file delete $tmp_sc
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

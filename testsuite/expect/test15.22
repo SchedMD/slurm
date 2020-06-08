@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Test of partition specification on job submission (--partition
 #          option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -57,11 +52,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -81,7 +75,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -94,7 +88,7 @@ expect {
 }
 # Confirm the job's partition
 if {$job_id == 0} {
-	send_user "\nFAILURE: job submit failure\n"
+	log_error "Job submit failure"
 	set exit_code 1
 } else {
 	set read_part ""
@@ -105,7 +99,7 @@ if {$job_id == 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -113,7 +107,7 @@ if {$job_id == 0} {
 		}
 	}
 	if ([string compare $read_part $def_part_name]) {
-		send_user "\nFAILURE: Improper partition selected\n"
+		log_error "Improper partition selected"
 		set exit_code 1
 	}
 	cancel_job $job_id
@@ -123,9 +117,7 @@ if {$job_id == 0} {
 # Test if a non-default partition exists, terminate if none
 #
 if (![string compare $other_part_name ""]) {
-	send_user "\nWARNING: can't test salloc partition option"
-	send_user " only the default partition exists\n"
-	exit $exit_code
+	skip "Can't test salloc partition option only the default partition exists"
 }
 
 #
@@ -145,7 +137,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -158,9 +150,9 @@ expect {
 }
 # Confirm the job's partition
 if {$legit_failure == 1} {
-	send_user "\nWARNING: partition '$other_part_name' is not usable\n"
+	log_warn "Partition '$other_part_name' is not usable"
 } elseif {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
+	log_error "Batch submit failure"
 	set exit_code 1
 } else {
 	set read_part ""
@@ -171,7 +163,7 @@ if {$legit_failure == 1} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -179,13 +171,12 @@ if {$legit_failure == 1} {
 		}
 	}
 	if ([string compare $read_part $other_part_name]) {
-		send_user "\nFAILURE: Improper partition selected\n"
+		log_error "Improper partition selected"
 		set exit_code 1
 	}
 	cancel_job $job_id
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

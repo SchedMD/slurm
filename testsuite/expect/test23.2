@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm sstat functionality
 #          sstat a, n, o, p, P and v options.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2009 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -65,18 +61,15 @@ set nt		NTasks
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [test_front_end] == 1 } {
-	send_user "\nWARNING: This test can't be run on a front-end system\n"
-	exit 0
+	skip "This test can't be run on a front-end system"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 #
@@ -92,9 +85,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "FAILURE: sacctmgr add not responding\n"
 		slow_kill $s_pid
-		exit 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -112,22 +104,20 @@ expect {
 		exp_continue
 	}
 	-re "Nothing new added" {
-		send_user "\nWARNING: vestigial account $test_acct found\n"
+		log_warn "Vestigial account $test_acct found"
 		incr aamatches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
 		slow_kill $sadd_pid
-		set exit_code 1
+		log_error "sacctmgr add not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$aamatches != 1} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding account.\n"
-	exit 1
+	log_error "sacctmgr had a problem adding account"
 }
 
 #
@@ -136,7 +126,7 @@ if {$aamatches != 1} {
 set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct]
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
 		set exit_code 1
 	}
@@ -184,11 +174,11 @@ spawn $sbatch -N1 -t1 -v $job_mem_opt --gres=craynetwork:0 --account=$test_acct 
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id3 $expect_out(1,string)
-		send_user "\nFOUND JobID to be $job_id3\n"
+		log_debug "Found JobID to be $job_id3"
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -196,7 +186,7 @@ expect {
 	}
 }
 if {$job_id3 == 0} {
-	send_user "\nFAILURE: did not get srun job_id3\n"
+	log_error "Did not get srun job_id3"
 	set exit_code 1
 } else {
 	set matches 0
@@ -207,7 +197,7 @@ if {$job_id3 == 0} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -215,7 +205,7 @@ if {$job_id3 == 0} {
 		}
 	}
 	if {$matches != 1} {
-		send_user "\nFAILURE: srun failed to use specified account\n"
+		log_error "srun failed to use specified account"
 		set exit_code 1
 	}
 }
@@ -224,8 +214,7 @@ if {$job_id3 == 0} {
 # Wait for job to start running, then status it
 #
 if {[wait_for_job $job_id3 "RUNNING"] != 0} {
-	send_user "\nFAILURE: waiting for job to start running\n"
-	exit 1
+	fail "Waiting for job to start running"
 }
 sleep 5
 ################################################################
@@ -246,7 +235,7 @@ proc sstat_job { soption job_id step_id } {
 	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "sstat -$soption -p -j $job_id\n"
+	log_debug "sstat -$soption -p -j $job_id"
 
 	if { $soption == "-allsteps" || $soption == "a" } {
 		spawn $sstat -$soption -p -j $job_id
@@ -256,17 +245,17 @@ proc sstat_job { soption job_id step_id } {
 				exp_continue
 			}
 			-re "$job_id.($number)" {
-				if {$debug} {send_user "\nmatch $expect_out(1,string)\n"}
+				if {$debug} {log_debug "Match $expect_out(1,string)"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id.batch" {
-				if {$debug} {send_user "\nmatch batch\n"}
+				if {$debug} {log_debug "Match batch"}
 				incr matches
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sstat not responding\n"
+				log_error "sstat not responding"
 				set exit_code 1
 			}
 			eof {
@@ -274,8 +263,7 @@ proc sstat_job { soption job_id step_id } {
 			}
 		}
 		if {$not_support != 0} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		return $matches
 	}
@@ -291,17 +279,17 @@ proc sstat_job { soption job_id step_id } {
 				AveVMSize|MaxRSS|MaxRSSNode|MaxRSSTask|AveRSS|	\
 				MaxPages|MaxPagesNode|MaxPagesTask|AvePages|	\
 				MinCPU|MinCPUNode|MinCPUTask|AveCPU|NTasks" {
-				if {$debug} {send_user "\nmatch4\n"}
+				if {$debug} {log_debug "Match4"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id" {
-				if {$debug} {send_user "\nmatch5\n"}
+				if {$debug} {log_debug "Match5"}
 				incr matches
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sstat not responding\n"
+				log_error "sstat not responding"
 				set exit_code 1
 			}
 			eof {
@@ -309,8 +297,7 @@ proc sstat_job { soption job_id step_id } {
 			}
 		}
 		if {$not_support != 0} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		return $matches
 	}
@@ -323,27 +310,27 @@ proc sstat_job { soption job_id step_id } {
 				exp_continue
 			}
 			-re "JobID\\|MaxVMSize\\|MaxVMSizeNode\\|MaxVMSizeTask\\|AveVMSize\\|MaxRSS\\|" {
-				if {$debug} {send_user "\nmatch6\n"}
+				if {$debug} {log_debug "Match6"}
 				incr matches
 				exp_continue
 			}
 			-re "MaxRSSNode\\|MaxRSSTask\\|AveRSS\\|MaxPages\\|MaxPagesNode\\|MaxPagesTask\\|" {
-				if {$debug} {send_user "\nmatch7\n"}
+				if {$debug} {log_debug "Match7"}
 				incr matches
 				exp_continue
 			}
 			-re "AvePages\\|MinCPU\\|MinCPUNode\\|MinCPUTask\\|AveCPU\\|NTasks\\|" {
-				if {$debug} {send_user "\nmatch8\n"}
+				if {$debug} {log_debug "Match8"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id.$step_id\\|" {
-				if {$debug} {send_user "\nmatch9\n"}
+				if {$debug} {log_debug "Match9"}
 				incr matches
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sstat not responding\n"
+				log_error "sstat not responding"
 				set exit_code 1
 			}
 			eof {
@@ -351,8 +338,7 @@ proc sstat_job { soption job_id step_id } {
 			}
 		}
 		if {$not_support != 0} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		return $matches
 	}
@@ -365,27 +351,27 @@ proc sstat_job { soption job_id step_id } {
 				exp_continue
 			}
 			-re "JobID\\|MaxVMSize\\|MaxVMSizeNode\\|MaxVMSizeTask\\|AveVMSize\\|MaxRSS\\|" {
-				if {$debug} {send_user "\nmatch10\n"}
+				if {$debug} {log_debug "Match10"}
 				incr matches
 				exp_continue
 			}
 			-re "MaxRSSNode\\|MaxRSSTask\\|AveRSS\\|MaxPages\\|MaxPagesNode\\|MaxPagesTask\\|" {
-				if {$debug} {send_user "\nmatch11\n"}
+				if {$debug} {log_debug "Match11"}
 				incr matches
 				exp_continue
 			}
 			-re "AvePages\\|MinCPU\\|MinCPUNode\\|MinCPUTask\\|AveCPU\\|NTasks" {
-				if {$debug} {send_user "\nmatch12\n"}
+				if {$debug} {log_debug "Match12"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id.$step_id\\|" {
-				if {$debug} {send_user "\nmatch13\n"}
+				if {$debug} {log_debug "Match13"}
 				incr matches
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sstat not responding\n"
+				log_error "sstat not responding"
 				set exit_code 1
 			}
 			eof {
@@ -393,8 +379,7 @@ proc sstat_job { soption job_id step_id } {
 			}
 		}
 		if {$not_support != 0} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		return $matches
 	}
@@ -407,27 +392,27 @@ proc sstat_job { soption job_id step_id } {
 				exp_continue
 			}
 			-re "JobID.MaxVMSize.MaxVMSizeNode.MaxVMSizeTask.AveVMSize.MaxRSS" {
-				if {$debug} {send_user "\nmatch14\n"}
+				if {$debug} {log_debug "Match14"}
 				incr matches
 				exp_continue
 			}
 			-re "MaxRSSNode.MaxRSSTask.AveRSS.MaxPages.MaxPagesNode.MaxPagesTask" {
-				if {$debug} {send_user "\nmatch15\n"}
+				if {$debug} {log_debug "Match15"}
 				incr matches
 				exp_continue
 			}
 			-re "AvePages.MinCPU.MinCPUNode.MinCPUTask.AveCPU.NTasks" {
-				if {$debug} {send_user "\nmatch16\n"}
+				if {$debug} {log_debug "Match16"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id" {
-				if {$debug} {send_user "\nmatch17\n"}
+				if {$debug} {log_debug "Match17"}
 				incr matches
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sstat not responding\n"
+				log_error "sstat not responding"
 				set exit_code 1
 			}
 			eof {
@@ -435,8 +420,7 @@ proc sstat_job { soption job_id step_id } {
 			}
 		}
 		if {$not_support != 0} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		return $matches
 	}
@@ -460,7 +444,7 @@ proc sstat_vargs { soption vargs job_id} {
 	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "sstat -$soption $vargs -p -j $job_id\n"
+	log_debug "sstat -$soption $vargs -p -j $job_id"
 
 	if { $soption == "o" || $soption == "-format" } {
 		spawn $sstat -$soption $vargs -p -j $job_id
@@ -470,37 +454,37 @@ proc sstat_vargs { soption vargs job_id} {
 				exp_continue
 			}
 			-re "AveCPU.AvePages.AveRSS.AveVMSize" {
-				if {$debug} {send_user "\nmatch18\n"}
+				if {$debug} {log_debug "Match18"}
 				incr matches
 				exp_continue
 			}
 			-re "JobID.MaxPages.MaxPagesNode.MaxPagesTask" {
-				if {$debug} {send_user "\nmatch19\n"}
+				if {$debug} {log_debug "Match19"}
 				incr matches
 				exp_continue
 			}
 			-re "MaxRSS.MaxRSSNode.MaxRSSTask.MaxVMSize" {
-				if {$debug} {send_user "\nmatch20\n"}
+				if {$debug} {log_debug "Match20"}
 				incr matches
 				exp_continue
 			}
 			-re "MaxVMSizeNode.MaxVMSizeTask.MinCPU.MinCPUNode" {
-				if {$debug} {send_user "\nmatch21\n"}
+				if {$debug} {log_debug "Match21"}
 				incr matches
 				exp_continue
 			}
 			-re "MinCPUTask.NTasks" {
-				if {$debug} {send_user "\nmatch22\n"}
+				if {$debug} {log_debug "Match22"}
 				incr matches
 				exp_continue
 			}
 			-re "$job_id" {
-				if {$debug} {send_user "\nmatch23\n"}
+				if {$debug} {log_debug "Match23"}
 				incr matches
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: sstat not responding\n"
+				log_error "sstat not responding"
 				set exit_code 1
 			}
 			eof {
@@ -508,8 +492,7 @@ proc sstat_vargs { soption vargs job_id} {
 			}
 		}
 		if {$not_support != 0} {
-			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			skip "Can not test without accounting enabled"
 		}
 		return $matches
 	}
@@ -517,73 +500,73 @@ proc sstat_vargs { soption vargs job_id} {
 ################################################################
 set matches [sstat_job a $job_id3 ""]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat -a failed ($matches != 3)\n"
+	log_error "sstat -a failed ($matches != 3)"
 	set exit_code 1
 }
 
 set matches [sstat_job -allsteps $job_id3 ""]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat --allsteps failed ($matches != 3)\n"
+	log_error "sstat --allsteps failed ($matches != 3)"
 	set exit_code 1
 }
 
 set matches [sstat_job n $job_id3 ""]
 if {$matches != 1} {
-	send_user "\nFAILURE: sstat -n failed ($matches != 1)\n"
+	log_error "sstat -n failed ($matches != 1)"
 	set exit_code 1
 }
 
 set matches [sstat_job -noheader $job_id3 ""]
 if {$matches != 1} {
-	send_user "\nFAILURE: sstat --noheader failed ($matches != 1)\n"
+	log_error "sstat --noheader failed ($matches != 1)"
 	set exit_code 1
 }
 
 set matches [sstat_job p $job_id3 0]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat -p failed ($matches != 4)\n"
+	log_error "sstat -p failed ($matches != 4)"
 	set exit_code 1
 }
 
 set matches [sstat_job -parsable $job_id3 0]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat --parsable failed ($matches != 4)\n"
+	log_error "sstat --parsable failed ($matches != 4)"
 	set exit_code 1
 }
 
 set matches [sstat_job P $job_id3 0]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat -P failed ($matches != 4)\n"
+	log_error "sstat -P failed ($matches != 4)"
 	set exit_code 1
 }
 
 set matches [sstat_job -parsable2 $job_id3 0]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat --parsable2 failed ($matches != 4)\n"
+	log_error "sstat --parsable2 failed ($matches != 4)"
 	set exit_code 1
 }
 
 set matches [sstat_job v $job_id3 0]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat -v failed ($matches != 4)\n"
+	log_error "sstat -v failed ($matches != 4)"
 	set exit_code 1
 }
 
 set matches [sstat_job -verbose $job_id3 0]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat --verbose failed ($matches != 4)\n"
+	log_error "sstat --verbose failed ($matches != 4)"
 	set exit_code 1
 }
 
 set matches [sstat_vargs o $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id3]
 if {$matches != 6} {
-	send_user "\nFAILURE: sstat -o failed ($matches != 6)\n"
+	log_error "sstat -o failed ($matches != 6)"
 	set exit_code 1
 }
 
 set matches [sstat_vargs -format $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id3]
 if {$matches != 6} {
-	send_user "\nFAILURE: sstat --format failed ($matches != 6)\n"
+	log_error "sstat --format failed ($matches != 6)"
 	set exit_code 1
 }
 
@@ -599,12 +582,12 @@ expect {
 		exp_continue
 	}
 	"Job(s) active, cancel job(s) before remove" {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		set needtodel 1
 	}
 
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -625,7 +608,7 @@ if {$needtodel == 1} {
 	}
 
 	if {[wait_for_job $job_id3 DONE] != 0} {
-		send_user "\nFAILURE: error completing job $job_id3\n"
+		log_error "Error completing job $job_id3"
 		cancel_job $job_id3
 		set exit_code 1
 	}
@@ -642,7 +625,7 @@ if {$needtodel == 1} {
 		}
 
 		timeout {
-			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			log_error "sacctmgr delete not responding"
 			slow_kill $sadel_pid
 			set exit_code 1
 		}
@@ -653,12 +636,11 @@ if {$needtodel == 1} {
 }
 
 if {$damatches != 1} {
-	send_user "\nFAILURE: sacctmgr had problems deleting the account\n"
-	set exit_code 1
+	fail "sacctmgr had problems deleting the account"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2 $file_in3
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

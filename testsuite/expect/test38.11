@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate sbcast for a hetjob allocation.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015-2107 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -51,19 +47,14 @@ proc end_it { exit_code } {
 print_header $test_id
 
 if {![test_accting_steps]} {
-	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
-	send_user "(AccountingStorageEnforce)\n"
-	exit 0
+	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
 }
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit 0
+	skip "This test is incompatible with front-end systems"
 } elseif {[slurmd_user_root] == 0} {
-	send_user "\nWARNING: This test requires that the SlurmdUser be root\n"
-	exit 0
+	skip "This test requires that the SlurmdUser be root"
 } elseif {[get_node_cnt] < 2} {
-	send_user "\nWARNING: This test requires that the configuration has at least 2 nodes.\n"
-	exit 0
+	skip "This test requires that the configuration has at least 2 nodes"
 }
 
 set def_part [default_partition]
@@ -75,7 +66,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -83,8 +74,7 @@ expect {
 	}
 }
 if {![string compare $node1 ""] || ![string compare $node2 ""]} {
-	send_user "\nWARNING: Did not find at least 2 idle nodes\n"
-	exit 0
+	skip "Did not find at least 2 idle nodes"
 }
 
 set het_job_id 0
@@ -103,10 +93,10 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
-		log_error "salloc : allocation not granted in $timeout seconds\n"
+		log_error "salloc: allocation not granted in $timeout seconds"
 		end_it 1
 	}
 	eof {
@@ -114,7 +104,7 @@ expect {
 	}
 }
 if {$het_job_id == 0} {
-	log_error "salloc failure\n"
+	log_error "salloc failure"
 	end_it 1
 }
 
@@ -169,12 +159,10 @@ set matches 0
 send "./$script1 \r"
 expect {
 	-re "Permission denied" {
-		send_user "\nFAILURE: Unable to delete/create file, check permissions\n"
-		exit 1
+		fail "Unable to delete/create file, check permissions"
 	}
 	-re "cannot create directory" {
-		send_user "\nThis error is expected when nodes share the "
-		send_user "same tmp directory\n"
+		log_debug "This error is expected when nodes share the same tmp directory"
 		exp_continue
 	}
 	-re "Checking node 1: */tmp/test_${test_id}/test$test_id\_file" {
@@ -194,20 +182,20 @@ expect {
 		exp_continue
 	}
 	-re "Checking node 1 for lack: */tmp/test_${test_id}/$node1/test$test_id\_file\_comp0" {
-		send_user "\nFAILURE: sbcast copied file to wrong node\n"
+		log_error "sbcast copied file to wrong node"
 		set exit_code 1
 		exp_continue
 	}
 	-re "Checking node 0 for lack: */tmp/test_${test_id}/$node2/test$test_id\_file\_comp1" {
-		send_user "\nFAILURE: sbcast copied file to wrong node\n"
+		log_error "sbcast copied file to wrong node"
 		set exit_code 1
 		exp_continue
 	}
 	-re "$prompt" {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
-		send_user "\nFAILURE: salloc is not responding\n"
+		log_error "salloc is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -215,12 +203,11 @@ expect {
 	}
 }
 if {$matches != 4} {
-	send_user "\nFAILURE: sbcast did not copy the file(s) to the correct nodes ($matches != 4)\n"
-	set exit_code 1
+	fail "sbcast did not copy the file(s) to the correct nodes ($matches != 4)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -rf $script1
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

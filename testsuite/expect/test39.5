@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test some valid combinations of srun --gpu options
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Morris Jette
@@ -40,14 +36,12 @@ set one_task_pc    0
 print_header $test_id
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
-	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-	exit 0
+	skip "This test is only compatible with select/cons_tres"
 }
 if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
 set def_part_name [default_partition]
@@ -57,21 +51,19 @@ if {$nb_nodes > 1} {
 }
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPUs in the default partition"
 }
 # Determine what the selecttype param is
 if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 	set one_task_pc 1
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
-log_info "GPU count is $gpu_cnt"
-log_info "Sockets per node is $node_conf(Sockets)"
-log_info "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets per node is $node_conf(Sockets)"
+log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
 set cpus_per_node $node_conf(CPUTot)
 if {$gpu_cnt > $cpus_per_node} {
 	set gpu_cnt $cpus_per_node
@@ -107,7 +99,7 @@ exit 0"
 #
 # Test --gpus options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus option\n"
+log_info "TEST: --gpus option"
 set match 0
 set timeout $max_job_delay
 if {$tot_gpus > 1} {
@@ -126,7 +118,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -136,12 +128,12 @@ expect {
 }
 set expected_gpus $use_gpus_per_job
 if {$match != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus failure ($match != $expected_gpus)\n"
+	log_error "srun --gpus failure ($match != $expected_gpus)"
 	set exit_code 1
 }
 
 if {$use_gpus_per_job > 2} {
-	send_user "\n\nTEST: --gpus option, part 2\n"
+	log_info "TEST: --gpus option, part 2"
 	set match 0
 	if {$use_gpus_per_job > $nb_nodes} {
 		incr use_gpus_per_job -1
@@ -153,7 +145,7 @@ if {$use_gpus_per_job > 2} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -163,7 +155,7 @@ if {$use_gpus_per_job > 2} {
 	}
 	set expected_gpus $use_gpus_per_job
 	if {$match != $expected_gpus} {
-		send_user "\nFAILURE: srun --gpus failure ($match != $expected_gpus)\n"
+		log_error "srun --gpus failure ($match != $expected_gpus)"
 		set exit_code 1
 	}
 }
@@ -171,7 +163,7 @@ if {$use_gpus_per_job > 2} {
 #
 # Test --gpus-per-node options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus-per-node option\n"
+log_info "TEST: --gpus-per-node option"
 set match 0
 if {$gpus_per_node > 1} {
 	set use_gpus_per_node [expr $gpus_per_node - 1]
@@ -185,7 +177,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -195,14 +187,14 @@ expect {
 }
 set expected_gpus [expr $use_gpus_per_node * $nb_nodes]
 if {$match != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-node failure ($match != $expected_gpus)\n"
+	log_error "srun --gpus-per-node failure ($match != $expected_gpus)"
 	set exit_code 1
 }
 
 #
 # Test --gpus-per-socket options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus-per-socket option\n"
+log_info "TEST: --gpus-per-socket option"
 set sockets_with_gpus [get_gpu_socket_count $gpu_cnt \
                                             $node_conf(Sockets)]
 set match 0
@@ -213,7 +205,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -224,14 +216,14 @@ expect {
 
 set expected_gpus [expr $sockets_with_gpus * $nb_nodes]
 if {$match < $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-task failure ($match < $expected_gpus)\n"
+	log_error "srun --gpus-per-task failure ($match < $expected_gpus)"
 	set exit_code 1
 }
 
 #
 # Test --gpus-per-task options using a subset of GPUs actually available on the node
 #
-send_user "\n\nTEST: --gpus-per-task option\n"
+log_info "TEST: --gpus-per-task option"
 set match 0
 if {$gpu_cnt > 1} {
 	set use_gpus_per_node [expr $gpu_cnt - 1]
@@ -253,7 +245,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -263,14 +255,14 @@ expect {
 }
 set expected_gpus [expr $use_gpus_per_node * $use_gpus_per_node]
 if {$match != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-task failure ($match != $expected_gpus)\n"
+	log_error "srun --gpus-per-task failure ($match != $expected_gpus)"
 	set exit_code 1
 }
 
 #
 # Test --gpus-per-task option without task count
 #
-send_user "\n\nTEST: --gpus-per-task option, part 2 (implicit task count)\n"
+log_info "TEST: --gpus-per-task option, part 2 (implicit task count)"
 if {$cpus_per_node > 1} {
 	set use_tasks_per_node 2
 } else {
@@ -293,7 +285,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -303,14 +295,14 @@ expect {
 }
 set expected_gpus [expr $nb_nodes * $use_tasks_per_node * $use_tasks_per_node]
 if {$match != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-task failure ($match != $expected_gpus)\n"
+	log_error "srun --gpus-per-task failure ($match != $expected_gpus)"
 	set exit_code 1
 }
 
 #
 # Test --gpus-per-task option without task count
 #
-send_user "\n\nTEST: --gpus-per-task option, part 3 (implicit task count)\n"
+log_info "TEST: --gpus-per-task option, part 3 (implicit task count)"
 if {$gpu_cnt > 1} {
 	set use_gpus_per_node [expr $gpu_cnt - 1]
 } else {
@@ -324,7 +316,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -334,12 +326,11 @@ expect {
 }
 set expected_gpus [expr $nb_nodes * $use_gpus_per_node]
 if {$match != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-task failure ($match != $expected_gpus)\n"
-	set exit_code 1
+	fail "srun --gpus-per-task failure ($match != $expected_gpus)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

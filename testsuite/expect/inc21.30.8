@@ -32,7 +32,7 @@ proc inc21_30_8 {} {
 	global sbatch salloc srun acct bin_rm bin_sleep jobmatch
 	global job_id1 job_id2 job_id3 number exit_code maxjobsub_num
 
-	send_user "\nStarting MaxJobsSubmits limit test (Within: inc21.30.8)\n\n"
+	log_info "Starting MaxJobsSubmits limit test (Within: inc21.30.8)"
 	set check_num $maxjobsub_num
 	set file_in "in21.30.8_script"
 	set tmp_job_id 0
@@ -46,24 +46,24 @@ proc inc21_30_8 {} {
 			-re "Granted job allocation ($number)" {
 				set job_id($inx) $expect_out(1,string)
 				if {$inx < $check_num} {
-					send_user "\njob $inx $job_id($inx) was submitted (Within: inc21.30.8)\n"
+					log_debug "Job $inx $job_id($inx) was submitted (Within: inc21.30.8)"
 					incr jobmatch
 				} else {
-					send_user "\nFAILURE: Job $inx $job_id($inx) wasn't suppose to work but it did, limit was $check_num? (Within: inc21.30.8)\n"
+					log_error "Job $inx $job_id($inx) wasn't suppose to work but it did, limit was $check_num? (Within: inc21.30.8)"
 					set exit_code 1
 				}
 			}
 			-re "error" {
 				if {$inx >= $check_num} {
-					send_user "\nJob $inx didn't get submitted. This is expected (Within: inc21.30.8)\n"
+					log_debug "Job $inx didn't get submitted. This is expected (Within: inc21.30.8)"
 					incr jobmatch
 				} else {
-					send_user "\nFAILURE: Job $inx was suppose to work but it didn't, limit was $check_num? (Within: inc21.30.8)\n"
+					log_error "Job $inx was suppose to work but it didn't, limit was $check_num? (Within: inc21.30.8)"
 					set exit_code 1
 				}
 			}
 			timeout {
-				send_user "\nFAILURE: salloc is not responding (Within: inc21.30.8)\n"
+				log_error "salloc is not responding (Within: inc21.30.8)"
 				set exit_code 1
 			}
 			eof {
@@ -74,7 +74,7 @@ proc inc21_30_8 {} {
 
 	set target_jobs [expr $check_num + 1]
 	if {$jobmatch != $target_jobs} {
-		send_user "\nFAILURE: Not all jobs were not submitted ($jobmatch != $target_jobs) (Within: inc21.30.8)\n"
+		log_error "Not all jobs were not submitted ($jobmatch != $target_jobs) (Within: inc21.30.8)"
 		set exit_code 1
 	}
 
@@ -94,7 +94,7 @@ proc inc21_30_8 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -102,7 +102,7 @@ proc inc21_30_8 {} {
 		}
 	}
 	if {$tmp_job_id == 0} {
-		send_user "\nFAILURE: job was not submitted when it should have\n"
+		log_error "Job was not submitted when it should have"
 		set exit_code 1
 	}
 
@@ -115,7 +115,7 @@ proc inc21_30_8 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -123,7 +123,7 @@ proc inc21_30_8 {} {
 		}
 	}
 	if {$match == 0} {
-		send_user "\nFAILURE: job should not have been submitted\n"
+		log_error "Job should not have been submitted"
 		set exit_code 1
 	}
 

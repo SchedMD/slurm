@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr verify wckey
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -43,9 +39,7 @@ set wk3         "test$test_id-wckey3"
 set timeout 60
 
 set config_path [get_conf_path]
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+fail_on_error "Error getting config path"
 set config_file $config_path/slurm.conf
 
 print_header $test_id
@@ -54,14 +48,11 @@ print_header $test_id
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator."
-	log_warn "Use: sacctmgr mod user \$USER set admin=admin."
-	exit 0
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin."
 }
 
 set using_slurmdbd [test_using_slurmdbd]
@@ -81,9 +72,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $s_pid
-		exit 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -101,7 +91,7 @@ expect {
 		exp_continue
 	}
 	-re "Nothing new added" {
-		log_warn "vestigial account $ta found"
+		log_warn "Vestigial account $ta found"
 		incr aamatches
 		exp_continue
 	}
@@ -115,8 +105,7 @@ expect {
 	}
 }
 if {$aamatches != 1} {
-	log_error "sacctmgr had a problem adding account."
-	exit 1
+	fail "sacctmgr had a problem adding account."
 }
 
 #
@@ -410,7 +399,7 @@ expect {
 }
 
 if {$swmatches!=3} {
-	log_error "We should have 3 test WCKeys configured we have $swmatches\n"
+	log_error "We should have 3 test WCKeys configured we have $swmatches"
 	set exit_code 1
 }
 
@@ -468,6 +457,6 @@ if {$reconfigured} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	print_success $test_id
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

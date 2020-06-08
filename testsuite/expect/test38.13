@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test that job arrays of hetjobs are rejected
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Morris Jette <jette@schedmd.com>
@@ -48,7 +44,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "FAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -57,14 +53,13 @@ expect {
 	}
 }
 if {$het_job_id != 0} {
-	send_user "FAILURE: Heterogeneous job array should not be accepted\n"
-	cancel_job $het_job_id
-	set exit_code 1
+	cancel_job $pack_job_id
+	fail "Heterogeneous job array should not be accepted"
 } elseif {$matches != 1} {
-	send_user "FAILURE: Heterogeneous job array should not be accepted ($matches != 1)\n"
-	set exit_code 1
+	fail "Heterogeneous job array should not be accepted ($matches != 1)"
 } else {
-	send_user "\nNo worries. This error is expected\n"
-	print_success $test_id
+	log_debug "No worries. This error is expected"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

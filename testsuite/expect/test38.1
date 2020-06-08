@@ -4,10 +4,6 @@
 #
 # Reqs:    1. Using slurmdbd accounting storage type and is up
 #          2. controllers are up and running.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Isaac Hartung <ihartung@schedmd.com>
@@ -95,9 +91,11 @@ proc end_it { exit_code } {
 	cancel_all_jobs
 	if {$exit_code == 0} {
 		cleanup
-		print_success $test_id
 	}
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 #start test
@@ -110,9 +108,9 @@ make_bash_script $file_in "#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1
 
 $bin_sleep 300"
 
-send_user "\n################################################################\n"
-send_user "Submit hetjob and verify output from scontrol show job"
-send_user "\n################################################################\n"
+log_info "\n################################################################\n"
+log_info "Submit hetjob and verify output from scontrol show job"
+log_info "\n################################################################\n"
 
 set job_id [sbatch]
 

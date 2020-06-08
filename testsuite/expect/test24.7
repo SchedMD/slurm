@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test normalized factors
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC.
 # Written by Brian Christiansen <brian@schedmd.com>
@@ -61,12 +57,10 @@ set user [get_my_user_name]
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 if { [string compare [priority_type] multifactor] } {
-	log_warn "This test can't be run without a usable PriorityType"
-	exit 0
+	skip "This test can't be run without a usable PriorityType"
 }
 
 #
@@ -74,8 +68,7 @@ if { [string compare [priority_type] multifactor] } {
 #
 set select_type_params [get_select_type_params ""]
 if { [string first "CR_ONE_TASK_PER_CORE" $select_type_params] != -1 } {
-	log_warn "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
-	exit 0
+	skip "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
 proc clean_assocs {} {
@@ -112,10 +105,10 @@ proc end_it { exit_code } {
 	restore_conf $config_file
 	reconfigure
 
-	if {$exit_code == 0} {
-		print_success $test_id
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
+	pass
 }
 
 
@@ -328,9 +321,7 @@ if {[info exists env(SPRIO_FORMAT)]} {
 }
 
 set config_path [get_conf_path]
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+fail_on_error "Unable to get config path"
 set config_file $config_path/slurm.conf
 
 save_conf $config_file

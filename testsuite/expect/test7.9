@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Test that no files are open in spawned tasks (except stdin,
 #          stdout, and stderr) to ensure successful checkpoint/restart.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -43,9 +39,7 @@ set iterations       50
 print_header $test_id
 
 if {![test_accting_steps]} {
-	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
-	send_user "(AccoutingStorageEnforce)\n"
-	exit 0
+	skip "This test can not be run with nosteps or nojobs (AccoutingStorageEnforce)"
 }
 
 #
@@ -55,8 +49,7 @@ if {![test_accting_steps]} {
 # by just closing all files after fd=3.
 #
 if {[string compare [test_proctrack] "cray_aries"] == 0} {
-	log_warn "Test incompatible with proctrack/cray_aries"
-	exit $exit_code
+	skip "Test incompatible with proctrack/cray_aries"
 }
 
 #
@@ -90,16 +83,14 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
-	exit 1
+	fail "Waiting for job to complete"
 }
 
 #
@@ -121,7 +112,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: /bin/cat not responding\n"
+		log_error "/bin/cat not responding"
 		set exit_code 1
 	}
 	eof {
@@ -129,27 +120,26 @@ expect {
 	}
 }
 if {$fini != 1} {
-	send_user "\nFAILURE: script never completed\n"
+	log_error "Script never completed"
 	set exit_code 1
 }
 if {$matches != 0} {
 	set tot [expr $iterations + 1]
 	if {$matches <= 1} {
-		send_user "\nWARNING: $matches of $tot tests failed\n"
+		log_warn "$matches of $tot tests failed"
 	} else {
-		send_user "\nFAILURE: $matches of $tot tests failed\n"
+		log_error "$matches of $tot tests failed"
 		set exit_code 1
 	}
-	send_user "  This should happen infrequently, typically when\n"
-	send_user "  JobAcctFrequency is set to a small value and is\n"
-	send_user "  indicative of a non-checkpointable job. For details,\n"
-	send_user "  see src/plugins/jobacct/linux/jobacct_linux.c\n"
-	send_user "  To diagnose, use lsof to examine spawned job.\n"
+	log_debug "  This should happen infrequently, typically when"
+	log_debug "  JobAcctFrequency is set to a small value and is"
+	log_debug "  indicative of a non-checkpointable job. For details,"
+	log_debug "  see src/plugins/jobacct/linux/jobacct_linux.c"
+	log_debug "  To diagnose, use lsof to examine spawned job"
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-        exec $bin_rm -f $file_in $file_prog $file_out
-
+	exec $bin_rm -f $file_in $file_prog $file_out
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

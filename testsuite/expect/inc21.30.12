@@ -29,7 +29,7 @@
 proc inc21_30_12 { } {
 	global salloc srun acct bin_sleep grpwall_num number exit_code qostest
 
-	send_user "\nStarting Grpwall test (Within: inc21.30.12)\n\n"
+	log_info "Starting Grpwall test (Within: inc21.30.12)"
 	set job_id1 0
 	set job_id2 0
 	set timeout 120
@@ -42,18 +42,18 @@ proc inc21_30_12 { } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nJob $job_id1 has been submitted. (Within: inc21.30.12)\n"
+			log_debug "Job $job_id1 has been submitted. (Within: inc21.30.12)"
 		}
 		-re "Job violates accounting/QOS policy" {
-			send_user "\nFAILURE: This job should not be pending, but is. (Within: inc21.30.12)\n"
+			log_error "This job should not be pending, but is. (Within: inc21.30.12)"
 			set exit_code 1
 		}
 		-re "error" {
-			send_user "\nFAILURE: Job allocation should not have failed. (Within: inc21.30.12)\n"
+			log_error "Job allocation should not have failed. (Within: inc21.30.12)"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding. (Within: inc21.30.12)\n"
+			log_error "salloc not responding. (Within: inc21.30.12)"
 			set exit_code 1
 		}
 		eof {
@@ -62,7 +62,7 @@ proc inc21_30_12 { } {
 	}
 
 	if {$job_id1 == 0} {
-		send_user "\nFAILURE: job was not submitted\n"
+		log_error "Job was not submitted"
 		set exit_code 1
 	} else {
 		# Cancel job
@@ -73,16 +73,16 @@ proc inc21_30_12 { } {
 	spawn $salloc -I --account=$acct --qos=$qostest -N2 -t1 $srun -I $bin_sleep 10
 	expect {
 		-re "Job violates accounting/QOS policy" {
-			send_user "\nJob waiting for resources. This is expected. (Within: inc21.30.12)\n"
+			log_debug "Job waiting for resources. This is expected. (Within: inc21.30.12)"
 			set match 1
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			send_user "\nFAILURE: Job $job_id2 should be waiting for resources, but is not. (Within: inc21.30.12)\n"
+			log_error "Job $job_id2 should be waiting for resources, but is not. (Within: inc21.30.12)"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not responding (Within: inc21.30.12)\n"
+			log_error "salloc is not responding (Within: inc21.30.12)"
 			set exit_code 1
 		}
 		eof {
@@ -91,7 +91,7 @@ proc inc21_30_12 { } {
 	}
 
 	if {$match != 1} {
-		send_user "\nFAILURE: job was submitted when it should not have been\n"
+		log_error "Job was submitted when it should not have been"
 		set exit_code 1
 	}
 

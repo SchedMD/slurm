@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate salloc --exclusive with -n will give all cpus on node
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -59,7 +55,7 @@ proc check_alloc { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -68,8 +64,7 @@ proc check_alloc { } {
 	}
 
 	if {$scontrol_cpu == 0} {
-		send_user "\nFAILURE: number of cpus is invalid\n"
-		exit 1
+		fail "Number of cpus is invalid"
 	}
 
 	# Wait a bit for sacct to populate
@@ -82,7 +77,7 @@ proc check_alloc { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct is not responding\n"
+			log_error "sacct is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -91,8 +86,7 @@ proc check_alloc { } {
 	}
 
 	if {$sacct_cpu == 0} {
-		send_user "\nFAILURE: number of cpus is invalid\n"
-		exit 1
+		fail "Number of cpus is invalid"
 	}
 
 	spawn $scontrol show node $node_name
@@ -102,7 +96,7 @@ proc check_alloc { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -111,23 +105,18 @@ proc check_alloc { } {
 	}
 
 	if {$cputot != $scontrol_cpu} {
-		send_user "\nFAILURE: scontrol reported $scontrol_cpu cpus "
-		send_user "where used by job $job_id when it should have used "
-		send_user "$cputot cpus\n"
+		log_error "scontrol reported $scontrol_cpu cpus were used by job $job_id when it should have used cputot cpus"
 		set exit_code 1
 	}
 
 	if {$cputot != $sacct_cpu} {
-		send_user "\nFAILURE: sacct reported $sacct_cpu cpus where "
-		send_user "used by job $job_id when it should have used $cputot"
-		send_user "cpus\n"
+		log_error "sacct reported $sacct_cpu cpus were used by job $job_id when it should have used $cputot cpus"
 		set exit_code 1
 	}
 }
 
 if {[test_using_slurmdbd] == 0 } {
-	send_user "\nWARNING: Test invalid with slurmdbd\n"
-	exit 0
+	skip "Test invalid with slurmdbd"
 }
 
 array set node_conf [get_node_config "--gres=gpu:2"]
@@ -149,7 +138,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc is not responding\n"
+		log_error "salloc is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -170,7 +159,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc is not responding\n"
+		log_error "salloc is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -215,7 +204,6 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

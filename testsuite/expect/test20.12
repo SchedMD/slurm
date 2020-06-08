@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test for the qsub -V and -v options
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 source ./globals
 
@@ -20,8 +16,7 @@ set variable2_value "var2"
 print_header $test_id
 
 if {[file executable $qsub] == 0} {
-	send_user "\nWARNING: qsub was not found\n"
-	exit 0
+	skip "qsub was not found"
 }
 
 proc make_random_var_name {} {
@@ -42,9 +37,9 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name
 	global variable1_value variable2_value
 	global subtest_name
 
-	send_user "\n==============================================\n"
-	send_user "$subtest_name\n"
-	send_user "==============================================\n"
+	log_info "=============================================="
+	log_info "$subtest_name"
+	log_info "=============================================="
 
 	set job_id 0
 	exec rm -f $file_err $file_out
@@ -72,7 +67,7 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: qsub not responding\n"
+			log_error "qsub not responding"
 			set exit_code 1
 		}
 		eof {
@@ -80,14 +75,12 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: qsub failed to submit job\n"
-		exit 1
+		fail "qsub failed to submit job"
 	}
 
 	if {[wait_for_file $file_out] != 0} {
-		send_user "\nFAILURE: qsub output file not found\n"
 		catch {exec $qdel $job_id}
-		exit 1
+		fail "qsub output file not found"
 	}
 	set matches 0
 	spawn $bin_cat $file_out
@@ -106,7 +99,7 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name
 	}
 
 	if {$matches != 2} {
-		send_user "\nFAILURE: one or more environment variables failed to match their expected values for sub test '$subtest_name'\n"
+		log_error "One or more environment variables failed to match their expected values for sub test '$subtest_name'"
 		set exit_code 1
 	}
 
@@ -115,7 +108,7 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name
 		set pattern "$file_in*"
 		file delete {*}[glob $pattern]
 	} else {
-		exit $exit_code
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 }
 
@@ -164,6 +157,3 @@ set var1_name [make_random_var_name]
 set var2_name "${var1_name}_2"
 run_qsub $var1_name "another_value" $var2_name $variable2_value \
          "-V -v $var1_name=another_value" "#SBATCH --export=NONE"
-
-send_user "\nSUCCESS\n"
-exit 0

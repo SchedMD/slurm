@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test heterogeneous job GPU allocations.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC
 # Written by Morris Jette
@@ -39,31 +35,26 @@ set number_commas  "\[0-9_,\]+"
 print_header $test_id
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
-	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-	exit 0
+	skip "This test is only compatible with select/cons_tres"
 }
 if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {$nb_nodes < 2} {
-	send_user "\nWARNING: This test requires 2 or more nodes in the default partition\n"
-	exit 0
+	skip "This test requires 2 or more nodes in the default partition"
 }
 set nb_nodes 2
 set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPUs in the default partition"
 }
 
 #
@@ -90,7 +81,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		slow_kill $salloc_pid
 		set exit_code 1
 	}
@@ -99,12 +90,11 @@ expect {
 	}
 }
 if {$match != 2} {
-	send_user "\nFAILURE: Invalid heterogeneous job output ($match != 2)\n"
-	set exit_code 1
+	fail "Invalid heterogeneous job output ($match != 2)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

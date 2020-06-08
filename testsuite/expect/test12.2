@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test sacct functionality and accuracy.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2005 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -55,12 +51,10 @@ set step_id	0
 print_header $test_id
 
 if {[test_front_end]} {
-	log_warn "This test is incompatible with front-end systems"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 if {![test_accting_steps]} {
-	log_warn "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
-	exit $exit_code
+	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
 }
 
 proc _get_mem {prog} {
@@ -115,8 +109,7 @@ proc _get_mem {prog} {
 			   $prog $diff_mem $mem_size $mem_used]
 		return 1
 	} else {
-		log_info [format "SUCCESS: %s memory use discrepancy of %s KB" \
-			  $prog $error_mem]
+		log_info [format "%s memory use discrepancy of %s KB" $prog $error_mem]
 	}
 	return 0
 }
@@ -207,7 +200,7 @@ proc _get_file_size {prog} {
 		return 1
 	}
 
-	log_info [format "SUCCESS: %s reported correct written and read file size (file_size:%s MB max_disk_write:%s MB max_disk_read:%s MB)" \
+	log_info [format "%s reported correct written and read file size (file_size:%s MB max_disk_write:%s MB max_disk_read:%s MB)" \
 		  $prog $mb_file_size $max_disk_write $max_disk_read]
 
 	return 0
@@ -239,12 +232,10 @@ expect {
 }
 log_user 1
 if {$supported_gather == 0} {
-	log_warn "Job accounting information not gathered on this system"
-	exit 0
+	skip "Job accounting information not gathered on this system"
 }
 if {$supported_storage == 0} {
-	log_warn "Job accounting information not stored on this system"
-	exit 0
+	skip "Job accounting information not stored on this system"
 }
 
 #
@@ -281,21 +272,18 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$config_prob != 0} {
-	log_warn "Unable to test with current node configuration"
-	exit 0
+	skip "Unable to test with current node configuration"
 }
 if {$job_id == 0} {
-	log_error "batch submit failure"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
@@ -409,7 +397,7 @@ if {$error_time > $max_time_error} {
 		   $error_time $sleep_time $elapsed_time]
 	set exit_code 1
 } else {
-	log_info "SUCCESS: sacct elapsed time discrepancy of $error_time secs"
+	log_info "sacct elapsed time discrepancy of $error_time secs"
 }
 
 set total_cpu 0
@@ -438,7 +426,7 @@ if {$total_cpu > $sleep_time} {
 		   $total_cpu $sleep_time]
 	set exit_code 1
 } else {
-	log_info [format "SUCCESS: sacct TotalCPU time looks reasonable (%s seconds)" \
+	log_info [format "sacct TotalCPU time looks reasonable (%s seconds)" \
 		  $total_cpu]
 }
 
@@ -468,7 +456,7 @@ if {$min_cpu > $sleep_time} {
 		   $min_cpu $sleep_time]
 	set exit_code 1
 } else {
-	log_info "SUCCESS: sacct MinCPU time looks reasonable ($min_cpu seconds)"
+	log_info "sacct MinCPU time looks reasonable ($min_cpu seconds)"
 }
 
 if {[_get_mem $sacct] != 0} {
@@ -481,8 +469,6 @@ if {[_get_file_size $sacct] != 0} {
 
 if {$exit_code == 0} {
 	exec rm -f $file_prog $file_in $file_out $file_err $file_name
-	print_success $test_id
 } else {
-	print_failure $test_id
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test scancel signal option (--signal and --verbose options).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -46,8 +42,7 @@ print_header $test_id
 #
 set overtimelim [get_over_time_limit]
 if {$overtimelim != 0} {
-	log_warn "Cannot run this test when OverTimeLimit is set. Exiting now."
-	exit 0
+	skip "Cannot run this test when OverTimeLimit is set. Exiting now"
 }
 
 #
@@ -72,7 +67,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -81,13 +76,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: error submitting job\n"
-	exit 1
+	fail "Error submitting job"
 }
 if {[wait_for_job $job_id RUNNING] != 0} {
-	send_user "\nFAILURE: error starting job $job_id\n"
 	cancel_job $job_id
-	exit 1
+	fail "Error starting job $job_id"
 }
 # Allow time for the step to start
 # This could take a while with launch/poe
@@ -113,7 +106,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -121,14 +114,13 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scancel verbose option failed\n"
+	log_error "scancel verbose option failed"
 	set exit_code 1
 }
 
 if {[wait_for_job $job_id DONE] != 0} {
-	send_user "\nFAILURE: error completing job $job_id\n"
 	cancel_job $job_id
-	exit 1
+	fail "Error completing job $job_id"
 }
 
 #
@@ -139,7 +131,7 @@ if {[wait_for_file $file_out] == 0} {
 	spawn cat $file_out
 	expect {
 		-re "ERROR" {
-			send_user "\nFAILURE: Failure running test program\n"
+			log_error "Failure running test program"
 			set exit_code 1
 			exp_continue
 		}
@@ -152,7 +144,7 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$got_signal != 1} {
-		send_user "\nFAILURE: SIGUSR1 not received\n"
+		log_error "SIGUSR1 not received"
 		set exit_code 1
 	}
 } else {
@@ -185,7 +177,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill sbatch_pid
 		set exit_code 1
 		exp_continue
@@ -196,9 +188,8 @@ expect {
 }
 
 if {[wait_for_job $job_id RUNNING] != 0} {
-	send_user "\nFAILURE: error starting job $job_id\n"
 	cancel_job $job_id
-	exit 1
+	fail "Error starting job $job_id"
 }
 sleep 5
 
@@ -222,7 +213,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -230,14 +221,13 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scancel verbose option failed\n"
+	log_error "scancel verbose option failed"
 	set exit_code 1
 }
 
 if {[wait_for_job $job_id DONE] != 0} {
-	send_user "\nFAILURE: error completing job $job_id\n"
 	cancel_job $job_id
-	exit 1
+	fail "Error completing job $job_id"
 }
 
 #
@@ -247,7 +237,7 @@ if {[wait_for_file $file_out2] == 0} {
 	spawn cat $file_out2
 	expect {
 		-re "FINI" {
-			send_user "\nFAILURE: Job not stopped\n"
+			log_error "Job not stopped"
 			set exit_code 1
 			exp_continue
 		}
@@ -261,7 +251,7 @@ if {[wait_for_file $file_out2] == 0} {
 
 if {$exit_code == 0} {
 	exec rm -f $file_in $file_out2 $file_prog
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
 
