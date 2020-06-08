@@ -655,7 +655,7 @@
           "wckey": {
             "type": "string",
             "description": "Specify wckey to be used with job."
-          },
+          }
         }
       }
     }

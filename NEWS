@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - restrict ability of requests to use different authentication
     plugins.
  -- slurmrestd - unlink named unix sockets before closing.
+ -- slurmrestd - fix invalid formatting in openapi.json.
 
 * Changes in Slurm 20.02.3
 ==========================
