@@ -114,4 +114,11 @@ extern void pack_config_response_msg(config_response_msg_t *msg,
 				     Buf buffer, uint16_t protocol_version);
 extern int unpack_config_response_msg(config_response_msg_t **msg_ptr,
 				      Buf buffer, uint16_t protocol_version);
+
+extern void pack_step_id(slurm_step_id_t *msg, Buf buffer,
+			 uint16_t protocol_version);
+extern int unpack_step_id_members(slurm_step_id_t *msg, Buf buffer,
+				  uint16_t protocol_version);
+extern int unpack_step_id(slurm_step_id_t **msg_ptr, Buf buffer,
+			  uint16_t protocol_version);
 #endif
