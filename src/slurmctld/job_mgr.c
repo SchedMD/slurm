@@ -14008,7 +14008,6 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 	node_record_t *node_ptr;
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
-	char step_str[64];
 	time_t now = time(NULL);
 
 	node_ptr = find_node_record(reg_msg->node_name);
@@ -14045,20 +14044,15 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 	for (i = 0; i < reg_msg->job_count; i++) {
 		if ( (reg_msg->step_id[i].job_id >= MIN_NOALLOC_JOBID) &&
 		     (reg_msg->step_id[i].job_id <= MAX_NOALLOC_JOBID) ) {
-			info("NoAllocate JobId=%u %s reported on node %s",
-			     reg_msg->step_id[i].job_id,
-			     build_step_id(step_str, sizeof(step_str),
-					   reg_msg->step_id[i].step_id),
-			     reg_msg->node_name);
+			info("NoAllocate %ps reported on node %s",
+			     &reg_msg->step_id[i], reg_msg->node_name);
 			continue;
 		}
 
 		job_ptr = find_job_record(reg_msg->step_id[i].job_id);
 		if (job_ptr == NULL) {
-			error("Orphan JobId=%u %s reported on node %s",
-			      reg_msg->step_id[i].job_id,
-			      build_step_id(step_str, sizeof(step_str),
-					    reg_msg->step_id[i].step_id),
+			error("Orphan %ps reported on node %s",
+			      &reg_msg->step_id[i],
 			      reg_msg->node_name);
 			abort_job_on_node(reg_msg->step_id[i].job_id,
 					  job_ptr, node_ptr->name);
@@ -14085,12 +14079,9 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 				/* Typically indicates a job requeue and
 				 * restart on another nodes. A node from the
 				 * original allocation just responded here. */
-				error("Registered %pJ %s on wrong node %s",
+				error("Registered %pJ %ps on wrong node %s",
 				      job_ptr,
-				       build_step_id(step_str,
-						     sizeof(step_str),
-						     reg_msg->step_id[i].
-						     step_id),
+				      &reg_msg->step_id[i],
 				      reg_msg->node_name);
 				info("%s: job nodes %s count %d inx %d",
 				     __func__, job_ptr->nodes,
@@ -14113,28 +14104,25 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		else if (IS_JOB_PENDING(job_ptr)) {
 			/* Typically indicates a job requeue and the hung
 			 * slurmd that went DOWN is now responding */
-			error("Registered PENDING %pJ %s on node %s",
+			error("Registered PENDING %pJ %ps on node %s",
 			      job_ptr,
-			      build_step_id(step_str, sizeof(step_str),
-					    reg_msg->step_id[i].step_id),
+			      &reg_msg->step_id[i],
 			      reg_msg->node_name);
 			abort_job_on_node(reg_msg->step_id[i].job_id,
 					  job_ptr, node_ptr->name);
 		} else if (difftime(now, job_ptr->end_time) <
 		           slurm_conf.msg_timeout) {
 			/* Race condition */
-			debug("Registered newly completed %pJ %s on %s",
+			debug("Registered newly completed %pJ %ps on %s",
 			      job_ptr,
-			      build_step_id(step_str, sizeof(step_str),
-					    reg_msg->step_id[i].step_id),
+			      &reg_msg->step_id[i],
 			      node_ptr->name);
 		}
 
 		else {		/* else job is supposed to be done */
-			error("Registered %pJ %s in state %s on node %s",
+			error("Registered %pJ %ps in state %s on node %s",
 			      job_ptr,
-			      build_step_id(step_str, sizeof(step_str),
-					    reg_msg->step_id[i].step_id),
+			      &reg_msg->step_id[i],
 			      job_state_string(job_ptr->job_state),
 			      reg_msg->node_name);
 			kill_job_on_node(job_ptr, node_ptr);

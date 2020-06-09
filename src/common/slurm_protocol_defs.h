@@ -1625,11 +1625,6 @@ extern char *rpc_num2string(uint16_t opcode);
  */
 extern uint64_t suffix_mult(char *suffix);
 
-/*
- * Make a string that represents the step_id.
- */
-extern char *build_step_id(char *buf, int buf_len, uint32_t step_id);
-
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\

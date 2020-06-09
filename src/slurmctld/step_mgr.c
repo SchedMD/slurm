@@ -456,7 +456,6 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 {
 	uint64_t mem_value = step_spec->pn_min_memory;
 	char *mem_type = "node";
-	char step_str[64];
 
 	if (mem_value & MEM_PER_CPU) {
 		mem_value &= (~MEM_PER_CPU);
@@ -467,10 +466,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 		 step_spec->user_id, step_spec->step_id.job_id,
 		 step_spec->cpu_freq_gov,
 		 step_spec->cpu_freq_max, step_spec->cpu_freq_min);
-	debug3("StepDesc: user_id=%u JobId=%u %s node_count=%u-%u cpu_count=%u num_tasks=%u",
-	       step_spec->user_id, step_spec->step_id.job_id,
-	       build_step_id(step_str, sizeof(step_str),
-			     step_spec->step_id.step_id),
+	debug3("StepDesc: user_id=%u %ps node_count=%u-%u cpu_count=%u num_tasks=%u",
+	       step_spec->user_id, &step_spec->step_id,
 	       step_spec->min_nodes, step_spec->max_nodes,
 	       step_spec->cpu_count, step_spec->num_tasks);
 	debug3("   cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u "

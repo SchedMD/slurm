@@ -2799,7 +2799,6 @@ extern int validate_nodes_via_front_end(
 	char *host_str = NULL, *reason_down = NULL;
 	uint32_t node_flags;
 	front_end_record_t *front_end_ptr;
-	char step_str[64];
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
@@ -2833,10 +2832,8 @@ extern int validate_nodes_via_front_end(
 	for (i = 0; i < reg_msg->job_count; i++) {
 		if ( (reg_msg->step_id[i].job_id >= MIN_NOALLOC_JOBID) &&
 		     (reg_msg->step_id[i].job_id <= MAX_NOALLOC_JOBID) ) {
-			info("NoAllocate JobId=%u %s reported",
-			     reg_msg->step_id[i].job_id,
-			     build_step_id(step_str, sizeof(step_str),
-					   reg_msg->step_id[i].step_id));
+			info("NoAllocate %ps reported",
+			     &reg_msg->step_id[i]);
 			continue;
 		}
 
@@ -2847,10 +2844,8 @@ extern int validate_nodes_via_front_end(
 			node_ptr += j;
 
 		if (job_ptr == NULL) {
-			error("Orphan JobId=%u %s reported on node %s",
-			      reg_msg->step_id[i].job_id,
-			      build_step_id(step_str, sizeof(step_str),
-					    reg_msg->step_id[i].step_id),
+			error("Orphan %ps reported on node %s",
+			      &reg_msg->step_id[i],
 			      front_end_ptr->name);
 			abort_job_on_node(reg_msg->step_id[i].job_id,
 					  job_ptr, front_end_ptr->name);
@@ -2863,10 +2858,9 @@ extern int validate_nodes_via_front_end(
 
 
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
-			debug3("Registered %pJ %s on %s",
+			debug3("Registered %pJ %ps on %s",
 			       job_ptr,
-			       build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i].step_id),
+			       &reg_msg->step_id[i],
 			       front_end_ptr->name);
 			if (job_ptr->batch_flag) {
 				/* NOTE: Used for purging defunct batch jobs */
@@ -2885,28 +2879,25 @@ extern int validate_nodes_via_front_end(
 		else if (IS_JOB_PENDING(job_ptr)) {
 			/* Typically indicates a job requeue and the hung
 			 * slurmd that went DOWN is now responding */
-			error("Registered PENDING %pJ %s on %s",
+			error("Registered PENDING %pJ %ps on %s",
 			      job_ptr,
-			      build_step_id(step_str, sizeof(step_str),
-					    reg_msg->step_id[i].step_id),
+			      &reg_msg->step_id[i],
 			      front_end_ptr->name);
 			abort_job_on_node(reg_msg->step_id[i].job_id, job_ptr,
 					  front_end_ptr->name);
 		} else if (difftime(now, job_ptr->end_time) <
 		           slurm_conf.msg_timeout) {
 			/* Race condition */
-			debug("Registered newly completed %pJ %s on %s",
+			debug("Registered newly completed %pJ %ps on %s",
 			      job_ptr,
-			      build_step_id(step_str, sizeof(step_str),
-					    reg_msg->step_id[i].step_id),
+			      &reg_msg->step_id[i],
 			      front_end_ptr->name);
 		}
 
 		else {		/* else job is supposed to be done */
-			error("Registered %pJ %s in state %s on %s",
+			error("Registered %pJ %ps in state %s on %s",
 			      job_ptr,
-			      build_step_id(step_str, sizeof(step_str),
-					    reg_msg->step_id[i].step_id),
+			      &reg_msg->step_id[i],
 			      job_state_string(job_ptr->job_state),
 			      front_end_ptr->name);
 			kill_job_on_node(job_ptr, node_ptr);

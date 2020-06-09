@@ -834,6 +834,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				switch (*(p + 2)) {
 				case 'A':
 				case 'J':
+				case 's':
 				case 'S':
 					is_our_format = true;
 					/*
@@ -914,7 +915,33 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					va_end(ap_copy);
 					break;
 				}
-				/* "%pS" => "JobId=... StepId=..." */
+				/*
+				 * "%ps" => "StepId=... " on a
+				 * slurm_step_id_t
+				 */
+				case 's':
+				{
+					int i;
+					void *ptr = NULL;
+					slurm_step_id_t *step_id = NULL;
+					va_list	ap_copy;
+
+					va_copy(ap_copy, ap);
+					for (i = 0; i < cnt; i++ )
+						ptr = va_arg(ap_copy, void *);
+					step_id = ptr;
+					xstrcat(intermediate_fmt,
+						log_build_step_id_str(
+							step_id,
+							substitute_on_stack,
+							sizeof(substitute_on_stack)));
+					va_end(ap_copy);
+					break;
+				}
+				/*
+				 * "%pS" => "JobId=... StepId=..." on a
+				 * step_record_t
+				 */
 				case 'S':
 				{
 					int i;
@@ -1462,4 +1489,43 @@ extern int get_log_level(void)
 extern int get_sched_log_level(void)
 {
 	return MAX(highest_log_level, highest_sched_log_level);
+}
+
+/*
+ * log_build_step_id_str() - print a slurm_step_id_t as " StepId=...", with
+ * Batch and Extern used as appropriate.
+ */
+extern char *log_build_step_id_str(
+	slurm_step_id_t *step_id, char *buf, int buf_size)
+{
+	/*
+	 * NOTE: You will notice we put a %.0s in front of the string.
+	 * This is to handle the fact that we can't remove the step_id
+	 * argument from the va_list directly. So when we call vsnprintf()
+	 * to handle the va_list this will effectively skip this argument.
+	 */
+	int pos = snprintf(buf, buf_size, "%%.0sStepId=");
+
+	if (!step_id) {
+		snprintf(buf + pos, buf_size - pos, "Invalid");
+		return buf;
+	}
+
+	if (step_id->job_id)
+		pos += snprintf(buf + pos, buf_size - pos,
+				"%u.", step_id->job_id);
+
+	if (pos >= buf_size)
+		return buf;
+
+	if (step_id->step_id == SLURM_BATCH_SCRIPT)
+		snprintf(buf + pos, buf_size - pos, "Batch");
+	else if (step_id->step_id == SLURM_EXTERN_CONT)
+		snprintf(buf + pos, buf_size - pos, "Extern");
+	else if (step_id->step_id == SLURM_PENDING_STEP)
+		snprintf(buf + pos, buf_size - pos, "TDB");
+	else
+		snprintf(buf + pos, buf_size - pos, "%u", step_id->step_id);
+
+	return buf;
 }

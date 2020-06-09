@@ -2386,12 +2386,9 @@ static void _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	job_step_kill_msg_t *job_step_kill_msg =
 		(job_step_kill_msg_t *) msg->data;
-	char step_str[64];
 
-	log_flag(STEPS, "Processing RPC: REQUEST_CANCEL_JOB_STEP JobId=%u %s uid=%u",
-		 job_step_kill_msg->step_id.job_id,
-		 build_step_id(step_str, sizeof(step_str),
-			       job_step_kill_msg->step_id.step_id),
+	log_flag(STEPS, "Processing RPC: REQUEST_CANCEL_JOB_STEP %ps uid=%u",
+		 &job_step_kill_msg->step_id,
 		 uid);
 	_throttle_start(&active_rpc_cnt);
 
@@ -3810,14 +3807,11 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	bool dump_job = false;
-	char step_str[64];
 
 	/* init */
 	START_TIMER;
-	log_flag(STEPS, "Processing RPC: REQUEST_STEP_COMPLETE for JobId=%u %s nodes %u-%u rc=%u uid=%u",
-		 req->step_id.job_id,
-		 build_step_id(step_str, sizeof(step_str),
-			       req->step_id.step_id),
+	log_flag(STEPS, "Processing RPC: REQUEST_STEP_COMPLETE for %ps nodes %u-%u rc=%u uid=%u",
+		 &req->step_id,
 		 req->range_first, req->range_last, req->step_rc, uid);
 
 	if (!running_composite) {
@@ -3847,17 +3841,13 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 
 	/* return result */
 	if (error_code) {
-		log_flag(STEPS, "%s 1 JobId=%u %s %s",
-			 __func__, req->step_id.job_id,
-			 build_step_id(step_str, sizeof(step_str),
-				       req->step_id.step_id),
+		log_flag(STEPS, "%s 1 %ps %s",
+			 __func__, &req->step_id,
 			 slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		log_flag(STEPS, "%s JobId=%u %s %s",
-			 __func__, req->step_id.job_id,
-			 build_step_id(step_str, sizeof(step_str),
-				       req->step_id.step_id),
+		log_flag(STEPS, "%s %ps %s",
+			 __func__, &req->step_id,
 			 TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		dump_job = true;
