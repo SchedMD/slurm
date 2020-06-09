@@ -123,6 +123,7 @@ int sattach(int argc, char **argv)
 	message_thread_state_t *mts;
 	client_io_t *io;
 	char *hosts;
+	slurm_step_id_t step_id;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
@@ -145,8 +146,10 @@ int sattach(int argc, char **argv)
 		      slurm_conf.launch_type);
 		exit(error_exit);
 	}
-
-	layout = slurm_job_step_layout_get(opt.jobid, opt.stepid);
+	/* FIXME: this does not work with hetsteps */
+	step_id.job_id = opt.jobid;
+	step_id.step_id = opt.stepid;
+	layout = slurm_job_step_layout_get(&step_id);
 	if (layout == NULL) {
 		error("Could not get job step info: %m");
 		exit(error_exit);

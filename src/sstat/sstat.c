@@ -121,7 +121,7 @@ int _do_stat(slurm_step_id_t *step_id, char *nodelist,
 	char *ave_usage_tmp = NULL;
 
 	debug("requesting info for %ps", step_id);
-	if ((rc = slurm_job_step_stat(step_id->job_id, step_id->step_id,
+	if ((rc = slurm_job_step_stat(step_id,
 				      nodelist, use_protocol_ver,
 				      &step_stat_response)) != SLURM_SUCCESS) {
 		if (rc == ESLURM_INVALID_JOB_ID) {
