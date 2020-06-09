@@ -480,12 +480,8 @@ parse_command_line( int argc, char* *argv )
 	}
 
 	if (params.job_list && (list_count(params.job_list) == 1)) {
-		ListIterator iterator;
-		squeue_job_step_t *job_step_ptr;
-		iterator = list_iterator_create(params.job_list);
-		job_step_ptr = list_next(iterator);
+		squeue_job_step_t *job_step_ptr = list_peek(params.job_list);
 		params.job_id = job_step_ptr->step_id.job_id;
-		list_iterator_destroy(iterator);
 	}
 	if (params.user_list && (list_count(params.user_list) == 1)) {
 		ListIterator iterator;
