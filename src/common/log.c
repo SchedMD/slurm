@@ -934,7 +934,8 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 						log_build_step_id_str(
 							step_id,
 							substitute_on_stack,
-							sizeof(substitute_on_stack)));
+							sizeof(substitute_on_stack),
+							STEP_ID_FLAG_PS));
 					va_end(ap_copy);
 					break;
 				}
@@ -1496,22 +1497,29 @@ extern int get_sched_log_level(void)
  * Batch and Extern used as appropriate.
  */
 extern char *log_build_step_id_str(
-	slurm_step_id_t *step_id, char *buf, int buf_size)
+	slurm_step_id_t *step_id, char *buf, int buf_size, uint16_t flags)
 {
+	int pos = 0;
+
 	/*
-	 * NOTE: You will notice we put a %.0s in front of the string.
+	 * NOTE: You will notice we put a %.0s in front of the string if running
+	 * with %ps like interactions.
 	 * This is to handle the fact that we can't remove the step_id
 	 * argument from the va_list directly. So when we call vsnprintf()
 	 * to handle the va_list this will effectively skip this argument.
 	 */
-	int pos = snprintf(buf, buf_size, "%%.0sStepId=");
+	if (flags & STEP_ID_FLAG_PS)
+		pos += snprintf(buf + pos, buf_size - pos, "%%.0s");
+
+	if (!(flags & STEP_ID_FLAG_NO_PREFIX))
+		pos += snprintf(buf + pos, buf_size - pos, "StepId=");
 
 	if (!step_id) {
 		snprintf(buf + pos, buf_size - pos, "Invalid");
 		return buf;
 	}
 
-	if (step_id->job_id)
+	if (step_id->job_id && !(flags & STEP_ID_FLAG_NO_JOB))
 		pos += snprintf(buf + pos, buf_size - pos,
 				"%u.", step_id->job_id);
 
