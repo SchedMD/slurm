@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - address a number of minor Coverity warnings.
  -- Handle retry failure when slurmstepd is communicating with srun correctly.
  -- Fix jobacct_gather possibly duplicate stats when _is_a_lwp error shows up.
+ -- Fix tasks binding to GRES which are closest to the allocated CPUs.
 
 * Changes in Slurm 20.02.3
 ==========================
