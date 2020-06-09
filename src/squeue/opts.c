@@ -481,10 +481,10 @@ parse_command_line( int argc, char* *argv )
 
 	if (params.job_list && (list_count(params.job_list) == 1)) {
 		ListIterator iterator;
-		uint32_t *job_id_ptr;
+		squeue_job_step_t *job_step_ptr;
 		iterator = list_iterator_create(params.job_list);
-		job_id_ptr = list_next(iterator);
-		params.job_id = *job_id_ptr;
+		job_step_ptr = list_next(iterator);
+		params.job_id = job_step_ptr->step_id.job_id;
 		list_iterator_destroy(iterator);
 	}
 	if (params.user_list && (list_count(params.user_list) == 1)) {
