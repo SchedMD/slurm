@@ -172,12 +172,6 @@ typedef struct gres_search_key {
 	uint32_t type_id;
 } gres_key_t;
 
-/* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
-typedef struct xcpuinfo_funcs {
-	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
-} xcpuinfo_funcs_t;
-xcpuinfo_funcs_t xcpuinfo_ops;
-
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -1974,13 +1968,11 @@ unpack_error:
  * IN cpu_cnt - Number of CPUs configured on this node
  * IN node_name - Name of this node
  * IN gres_list - Node's GRES information as loaded from slurm.conf by slurmd
- * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct, if available
  * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct, if available
  * NOTE: Called from slurmd and slurmstepd
  */
 extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 					List gres_list,
-					void *xcpuinfo_abs_to_mac,
 					void *xcpuinfo_mac_to_abs)
 {
 	static s_p_options_t _gres_options[] = {
@@ -2007,9 +1999,6 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 		      __func__, node_name);
 		return SLURM_ERROR;
 	}
-
-	if (xcpuinfo_abs_to_mac)
-		xcpuinfo_ops.xcpuinfo_abs_to_mac = xcpuinfo_abs_to_mac;
 
 	rc = gres_plugin_init();
 
