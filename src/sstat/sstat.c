@@ -40,11 +40,6 @@
 
 #include "sstat.h"
 
-int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
-	     uint32_t req_cpufreq_min, uint32_t req_cpufreq_max,
-	     uint32_t req_cpufreq_gov,
-	     uint16_t use_protocol_ver);
-
 /*
  * Globals
  */
@@ -111,7 +106,7 @@ List print_fields_list = NULL;
 ListIterator print_fields_itr = NULL;
 int field_count = 0;
 
-int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
+int _do_stat(slurm_step_id_t *step_id, char *nodelist,
 	     uint32_t req_cpufreq_min, uint32_t req_cpufreq_max,
 	     uint32_t req_cpufreq_gov, uint16_t use_protocol_ver)
 {
@@ -125,29 +120,30 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	hostlist_t hl = NULL;
 	char *ave_usage_tmp = NULL;
 
-	debug("requesting info for job %u.%u", jobid, stepid);
-	if ((rc = slurm_job_step_stat(jobid, stepid, nodelist, use_protocol_ver,
+	debug("requesting info for %ps", step_id);
+	if ((rc = slurm_job_step_stat(step_id->job_id, step_id->step_id,
+				      nodelist, use_protocol_ver,
 				      &step_stat_response)) != SLURM_SUCCESS) {
 		if (rc == ESLURM_INVALID_JOB_ID) {
-			debug("job step %u.%u has already completed",
-			      jobid, stepid);
+			debug("%ps has already completed",
+			      step_id);
 		} else {
-			error("problem getting step_layout for %u.%u: %s",
-			      jobid, stepid, slurm_strerror(rc));
+			error("problem getting step_layout for %ps: %s",
+			      step_id, slurm_strerror(rc));
 		}
 		slurm_job_step_pids_response_msg_free(step_stat_response);
 		return rc;
 	}
 
 	memset(&job, 0, sizeof(slurmdb_job_rec_t));
-	job.jobid = jobid;
+	job.jobid = step_id->job_id;
 
 	memset(&step, 0, sizeof(slurmdb_step_rec_t));
 
 	memset(&step.stats, 0, sizeof(slurmdb_stats_t));
 
 	step.job_ptr = &job;
-	step.stepid = stepid;
+	step.stepid = step_id->step_id;
 	step.nodes = xmalloc(BUF_SIZE);
 	step.req_cpufreq_min = req_cpufreq_min;
 	step.req_cpufreq_max = req_cpufreq_max;
@@ -256,9 +252,6 @@ getout:
 int main(int argc, char **argv)
 {
 	ListIterator itr = NULL;
-	uint32_t req_cpufreq_min = NO_VAL;
-	uint32_t req_cpufreq_max = NO_VAL;
-	uint32_t req_cpufreq_gov = NO_VAL;
 	uint32_t stepid = NO_VAL;
 	slurmdb_selected_step_t *selected_step = NULL;
 
@@ -275,109 +268,59 @@ int main(int argc, char **argv)
 	print_fields_header(print_fields_list);
 	itr = list_iterator_create(params.opt_job_list);
 	while ((selected_step = list_next(itr))) {
-		char *nodelist = NULL;
-		bool free_nodelist = false;
-		uint16_t use_protocol_ver = SLURM_PROTOCOL_VERSION;
-		if (selected_step->stepid == SSTAT_BATCH_STEP) {
-			/* get the batch step info */
-			job_info_msg_t *job_ptr = NULL;
-			hostlist_t hl;
+		job_step_info_response_msg_t *step_info = NULL;
 
-			if (slurm_load_job(
-				    &job_ptr, selected_step->jobid, SHOW_ALL)) {
-				error("couldn't get info for job %u",
-				      selected_step->jobid);
-				continue;
-			}
+		stepid = selected_step->stepid;
 
-			use_protocol_ver = MIN(SLURM_PROTOCOL_VERSION,
-				job_ptr->job_array[0].start_protocol_ver);
-			stepid = SLURM_BATCH_SCRIPT;
-			hl = hostlist_create(job_ptr->job_array[0].nodes);
-			nodelist = hostlist_shift(hl);
-			free_nodelist = true;
-			hostlist_destroy(hl);
-			slurm_free_job_info_msg(job_ptr);
-		} else if (selected_step->stepid == SSTAT_EXTERN_STEP) {
-			/* get the extern step info */
-			job_info_msg_t *job_ptr = NULL;
-
-			if (slurm_load_job(
-				    &job_ptr, selected_step->jobid, SHOW_ALL)) {
-				error("couldn't get info for job %u",
-				      selected_step->jobid);
-				continue;
-			}
-			use_protocol_ver = MIN(SLURM_PROTOCOL_VERSION,
-				job_ptr->job_array[0].start_protocol_ver);
-			stepid = SLURM_EXTERN_CONT;
-			nodelist = job_ptr->job_array[0].nodes;
-			slurm_free_job_info_msg(job_ptr);
-		} else if (selected_step->stepid != SLURM_BATCH_SCRIPT) {
-			stepid = selected_step->stepid;
-		} else if (params.opt_all_steps) {
-			job_step_info_response_msg_t *step_ptr = NULL;
-			int i = 0;
-			if (slurm_get_job_steps(
-				    0, selected_step->jobid, NO_VAL,
-				    &step_ptr, SHOW_ALL)) {
-				error("couldn't get steps for job %u",
-				      selected_step->jobid);
-				continue;
-			}
-
-			for (i = 0; i < step_ptr->job_step_count; i++) {
-				_do_stat(selected_step->jobid,
-					 step_ptr->job_steps[i].step_id.step_id,
-					 step_ptr->job_steps[i].nodes,
-					 step_ptr->job_steps[i].cpu_freq_min,
-					 step_ptr->job_steps[i].cpu_freq_max,
-					 step_ptr->job_steps[i].cpu_freq_gov,
-					 step_ptr->job_steps[i].
-					 start_protocol_ver);
-			}
-			slurm_free_job_step_info_response_msg(step_ptr);
+		if (slurm_get_job_steps(
+			    0, selected_step->jobid, stepid,
+			    &step_info, SHOW_ALL)) {
+			error("couldn't get steps for job %u",
+			      selected_step->jobid);
 			continue;
-		} else {
-			/* get the first running step to query against. */
-			job_step_info_response_msg_t *step_ptr = NULL;
-			job_step_info_t *step_info;
-
-			if (slurm_get_job_steps(
-				    0, selected_step->jobid, NO_VAL,
-				    &step_ptr, SHOW_ALL)) {
-				error("couldn't get steps for job %u",
+		} else if (!step_info->job_step_count) {
+			if (stepid == SLURM_BATCH_SCRIPT)
+				error("Step %u.batch not found running.",
 				      selected_step->jobid);
-				continue;
-			}
-			if (!step_ptr->job_step_count) {
-				error("no steps running for job %u",
+			else if (stepid == SLURM_EXTERN_CONT)
+				error("Step %u.extern not found running.",
 				      selected_step->jobid);
-				continue;
-			}
-
-			/* If the first step is the extern step lets
-			 * just skip it.  They should ask for it
-			 * directly.
-			 */
-			if ((step_ptr->job_steps[0].step_id.step_id ==
-			    SLURM_EXTERN_CONT) && step_ptr->job_step_count > 1)
-				step_info = ++step_ptr->job_steps;
+			else if (stepid == NO_VAL)
+				error("No steps running for job %u",
+				      selected_step->jobid);
 			else
-				step_info = step_ptr->job_steps;
-			stepid = step_info->step_id.step_id;
-			nodelist = step_info->nodes;
-			req_cpufreq_min = step_info->cpu_freq_min;
-			req_cpufreq_max = step_info->cpu_freq_max;
-			req_cpufreq_gov = step_info->cpu_freq_gov;
-			use_protocol_ver = MIN(SLURM_PROTOCOL_VERSION,
-					       step_info->start_protocol_ver);
+				error("Step %u.%u not found running.",
+				      selected_step->jobid, stepid);
+
+			continue;
 		}
-		_do_stat(selected_step->jobid, stepid, nodelist,
-			 req_cpufreq_min, req_cpufreq_max, req_cpufreq_gov,
-			 use_protocol_ver);
-		if (free_nodelist && nodelist)
-			free(nodelist);
+
+		for (int i = 0; i < step_info->job_step_count; i++) {
+			/* If no stepid was requested set it to the first one */
+			if (stepid == NO_VAL) {
+				/*
+				 * If asking for no particular step skip the
+				 * special steps.
+				 */
+				if (!params.opt_all_steps &&
+				    (step_info->job_steps[i].step_id.step_id >
+				     SLURM_MAX_NORMAL_STEP_ID))
+					continue;
+				stepid = step_info->job_steps[i].
+					step_id.step_id;
+			}
+
+			if (!params.opt_all_steps &&
+			    (step_info->job_steps[i].step_id.step_id != stepid))
+				continue;
+
+			_do_stat(&step_info->job_steps[i].step_id,
+				 step_info->job_steps[i].nodes,
+				 step_info->job_steps[i].cpu_freq_min,
+				 step_info->job_steps[i].cpu_freq_max,
+				 step_info->job_steps[i].cpu_freq_gov,
+				 step_info->job_steps[i].start_protocol_ver);
+		}
 	}
 	list_iterator_destroy(itr);
 
