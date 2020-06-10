@@ -257,12 +257,14 @@ static int _set_cond(int *start, int argc, char **argv,
 				dot = strstr(start_char, ".");
 				if (dot == NULL) {
 					debug2("No jobstep requested");
-					selected_step->stepid = NO_VAL;
+					selected_step->step_id.step_id = NO_VAL;
 				} else {
 					*dot++ = 0;
-					selected_step->stepid = atoi(dot);
+					selected_step->step_id.step_id =
+						atoi(dot);
 				}
-				selected_step->jobid = atoi(start_char);
+				selected_step->step_id.job_id =
+					atoi(start_char);
 				start_char = end_char + 1;
 			}
 

@@ -146,8 +146,8 @@ static int _find_selected_step(void *x, void *key)
 	slurmdb_selected_step_t *current = (slurmdb_selected_step_t *)x;
 	slurmdb_selected_step_t *new = (slurmdb_selected_step_t *)key;
 
-	if ((current->jobid == new->jobid) &&
-	    (current->stepid == new->stepid))
+	if ((current->step_id.job_id == new->step_id.job_id) &&
+	    (current->step_id.step_id == new->step_id.step_id))
 		return 1;
 	return 0;
 }
@@ -161,15 +161,15 @@ static void _add_selected_step_to_list(char *name)
 	dot = xstrstr(name, ".");
 	if (!dot) {
 		debug2("No jobstep requested");
-		selected_step->stepid = NO_VAL;
+		selected_step->step_id.step_id = NO_VAL;
 	} else {
 		*dot++ = 0;
 		if (!xstrcasecmp(dot, "batch"))
-			selected_step->stepid =	SLURM_BATCH_SCRIPT;
+			selected_step->step_id.step_id = SLURM_BATCH_SCRIPT;
 		else if (!xstrcasecmp(dot, "extern"))
-			selected_step->stepid = SLURM_EXTERN_CONT;
+			selected_step->step_id.step_id = SLURM_EXTERN_CONT;
 		else
-			selected_step->stepid = slurm_atoul(dot);
+			selected_step->step_id.step_id = slurm_atoul(dot);
 	}
 
 	selected_step->array_task_id = NO_VAL;
@@ -183,7 +183,7 @@ static void _add_selected_step_to_list(char *name)
 	} else
 		debug2("No array/hetjob requested");
 
-	selected_step->jobid = slurm_xlate_job_id(name);
+	selected_step->step_id.job_id = slurm_xlate_job_id(name);
 
 	if (!params.opt_job_list)
 		params.opt_job_list =
@@ -387,13 +387,11 @@ void parse_command_line(int argc, char **argv)
 		debug("Jobs requested:\n");
 		itr = list_iterator_create(params.opt_job_list);
 		while ((selected_step = list_next(itr))) {
-			if (selected_step->stepid != SLURM_BATCH_SCRIPT)
-				debug("\t: %d.%d\n",
-					selected_step->jobid,
-					selected_step->stepid);
+			if (selected_step->step_id.step_id != NO_VAL)
+				debug("\t: %ps\n", &selected_step->step_id);
 			else
-				debug("\t: %d\n",
-					selected_step->jobid);
+				debug("\t: All steps for job %u\n",
+				      selected_step->step_id.job_id);
 		}
 		list_iterator_destroy(itr);
 	}

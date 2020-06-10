@@ -3845,7 +3845,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 				/* There is no such thing as jobid 0,
 				 * if we process it the database will
 				 * return all jobs. */
-				if (!job->jobid)
+				if (!job->step_id.job_id)
 					slurmdb_destroy_selected_step(job);
 				else
 					list_append(object_ptr->step_list, job);
@@ -3935,7 +3935,7 @@ extern void slurmdb_pack_job_modify_cond(void *in, uint16_t protocol_version,
 	else {
 		slurmdb_selected_step_t *selected_step =
 			list_peek(cond->step_list);
-		pack32(selected_step->jobid, buffer);
+		pack32(selected_step->step_id.job_id, buffer);
 	}
 
 	pack_time(cond->usage_start, buffer);
@@ -3967,9 +3967,9 @@ extern int slurmdb_unpack_job_modify_cond(void **object,
 	selected_step = xmalloc(sizeof(slurmdb_selected_step_t));
 	list_append(object_ptr->step_list, selected_step);
 	selected_step->array_task_id = NO_VAL;
-	safe_unpack32(&selected_step->jobid, buffer);
+	safe_unpack32(&selected_step->step_id.job_id, buffer);
 	selected_step->het_job_offset = NO_VAL;
-	selected_step->stepid = NO_VAL;
+	selected_step->step_id.step_id = NO_VAL;
 
 	safe_unpack_time(&object_ptr->usage_start, buffer);
 
@@ -4674,15 +4674,14 @@ extern void slurmdb_pack_selected_step(void *in, uint16_t protocol_version,
 	slurmdb_selected_step_t *step = (slurmdb_selected_step_t *) in;
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		pack_step_id(&step->step_id, buffer, protocol_version);
 		pack32(step->array_task_id, buffer);
-		pack32(step->jobid, buffer);
 		pack32(step->het_job_offset, buffer);
-		pack32(step->stepid, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step->array_task_id, buffer);
-		pack32(step->jobid, buffer);
+		pack32(step->step_id.job_id, buffer);
 		pack32(step->het_job_offset, buffer);
-		pack_old_step_id(step->stepid, buffer);
+		pack_old_step_id(step->step_id.step_id, buffer);
 	}
 }
 
@@ -4697,16 +4696,17 @@ extern int slurmdb_unpack_selected_step(slurmdb_selected_step_t **step,
 	step_ptr->array_task_id = NO_VAL;
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&step_ptr->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpack32(&step_ptr->array_task_id, buffer);
-		safe_unpack32(&step_ptr->jobid, buffer);
 		safe_unpack32(&step_ptr->het_job_offset, buffer);
-		safe_unpack32(&step_ptr->stepid, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&step_ptr->array_task_id, buffer);
-		safe_unpack32(&step_ptr->jobid, buffer);
+		safe_unpack32(&step_ptr->step_id.job_id, buffer);
 		safe_unpack32(&step_ptr->het_job_offset, buffer);
-		safe_unpack32(&step_ptr->stepid, buffer);
-		convert_old_step_id(&step_ptr->stepid);
+		safe_unpack32(&step_ptr->step_id.step_id, buffer);
+		convert_old_step_id(&step_ptr->step_id.step_id);
 	} else
 		goto unpack_error;
 

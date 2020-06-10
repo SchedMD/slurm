@@ -270,27 +270,21 @@ int main(int argc, char **argv)
 	while ((selected_step = list_next(itr))) {
 		job_step_info_response_msg_t *step_info = NULL;
 
-		stepid = selected_step->stepid;
+		stepid = selected_step->step_id.step_id;
 
 		if (slurm_get_job_steps(
-			    0, selected_step->jobid, stepid,
+			    0, selected_step->step_id.job_id, stepid,
 			    &step_info, SHOW_ALL)) {
 			error("couldn't get steps for job %u",
-			      selected_step->jobid);
+			      selected_step->step_id.job_id);
 			continue;
 		} else if (!step_info->job_step_count) {
-			if (stepid == SLURM_BATCH_SCRIPT)
-				error("Step %u.batch not found running.",
-				      selected_step->jobid);
-			else if (stepid == SLURM_EXTERN_CONT)
-				error("Step %u.extern not found running.",
-				      selected_step->jobid);
-			else if (stepid == NO_VAL)
+			if (stepid == NO_VAL)
 				error("No steps running for job %u",
-				      selected_step->jobid);
+				      selected_step->step_id.job_id);
 			else
-				error("Step %u.%u not found running.",
-				      selected_step->jobid, stepid);
+				error("%ps not found running.",
+				      &selected_step->step_id);
 
 			continue;
 		}

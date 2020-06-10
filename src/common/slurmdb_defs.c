@@ -3119,22 +3119,22 @@ extern char *slurmdb_get_selected_step_id(
 	if (selected_step->array_task_id != NO_VAL) {
 		snprintf(id, FORMAT_STRING_SIZE,
 			 "%u_%u",
-			 selected_step->jobid,
+			 selected_step->step_id.job_id,
 			 selected_step->array_task_id);
 	} else if (selected_step->het_job_offset != NO_VAL) {
 		snprintf(id, FORMAT_STRING_SIZE,
 			 "%u+%u",
-			 selected_step->jobid,
+			 selected_step->step_id.job_id,
 			 selected_step->het_job_offset);
 	} else {
 		snprintf(id, FORMAT_STRING_SIZE,
 			 "%u",
-			 selected_step->jobid);
+			 selected_step->step_id.job_id);
 	}
 
-	if (selected_step->stepid != SLURM_BATCH_SCRIPT)
+	if (selected_step->step_id.step_id != SLURM_BATCH_SCRIPT)
 		snprintf(job_id_str, len, "%s.%u",
-			 id, selected_step->stepid);
+			 id, selected_step->step_id.step_id);
 	else
 		snprintf(job_id_str, len, "%s", id);
 
@@ -4131,8 +4131,8 @@ extern int slurmdb_find_selected_step_in_list(void *x, void *key)
 	slurmdb_selected_step_t *selected_step = (slurmdb_selected_step_t *)x;
 	slurmdb_selected_step_t *query_step = (slurmdb_selected_step_t *)key;
 
-	if ((query_step->jobid == selected_step->jobid) &&
-	    (query_step->stepid == selected_step->stepid) &&
+	if ((query_step->step_id.job_id == selected_step->step_id.job_id) &&
+	    (query_step->step_id.step_id == selected_step->step_id.step_id) &&
 	    (query_step->array_task_id == selected_step->array_task_id) &&
 	    (query_step->het_job_offset == selected_step->het_job_offset))
 		return 1;

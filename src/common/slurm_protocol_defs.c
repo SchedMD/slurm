@@ -655,14 +655,14 @@ static int _addto_step_list_internal(List step_list, char *names,
 		*dot++ = 0;
 		/* can't use NO_VAL since that means all */
 		if (!xstrcmp(dot, "batch"))
-			selected_step->stepid = INFINITE;
+			selected_step->step_id.step_id = INFINITE;
 		else if (isdigit(*dot))
-			selected_step->stepid = atoi(dot);
+			selected_step->step_id.step_id = atoi(dot);
 		else
 			fatal("Bad step specified: %s", name);
 	} else {
 		debug2("No jobstep requested");
-		selected_step->stepid = NO_VAL;
+		selected_step->step_id.step_id = NO_VAL;
 	}
 
 	if ((under = strstr(name, "_"))) {
@@ -685,7 +685,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 		selected_step->het_job_offset = NO_VAL;
 	}
 
-	selected_step->jobid = atoi(name);
+	selected_step->step_id.job_id = atoi(name);
 	xfree(name);
 
 	if (!list_find_first(step_list,
