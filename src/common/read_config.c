@@ -199,7 +199,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"AccountingStorageExternalHost", S_P_STRING},
 	{"AccountingStorageHost", S_P_STRING},
 	{"AccountingStorageBackupHost", S_P_STRING},
-	{"AccountingStorageLoc", S_P_STRING},
 	{"AccountingStoragePass", S_P_STRING},
 	{"AccountingStoragePort", S_P_UINT16},
 	{"AccountingStorageType", S_P_STRING},
@@ -2725,7 +2724,6 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->accounting_storage_backup_host);
 	xfree (ctl_conf_ptr->accounting_storage_ext_host);
 	xfree (ctl_conf_ptr->accounting_storage_host);
-	xfree (ctl_conf_ptr->accounting_storage_loc);
 	xfree (ctl_conf_ptr->accounting_storage_pass);
 	xfree (ctl_conf_ptr->accounting_storage_tres);
 	xfree (ctl_conf_ptr->accounting_storage_type);
@@ -2874,7 +2872,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->accounting_storage_enforce          = 0;
 	xfree (ctl_conf_ptr->accounting_storage_ext_host);
 	xfree (ctl_conf_ptr->accounting_storage_host);
-	xfree (ctl_conf_ptr->accounting_storage_loc);
 	xfree (ctl_conf_ptr->accounting_storage_pass);
 	ctl_conf_ptr->accounting_storage_port             = 0;
 	xfree (ctl_conf_ptr->accounting_storage_tres);
@@ -4155,19 +4152,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 				xstrdup(DEFAULT_STORAGE_HOST);
 	}
 
-	if (!s_p_get_string(&conf->accounting_storage_loc,
-			    "AccountingStorageLoc", hashtbl)) {
-		if (default_storage_loc)
-			conf->accounting_storage_loc =
-				xstrdup(default_storage_loc);
-		else if (!xstrcmp(conf->accounting_storage_type,
-				 "accounting_storage/mysql"))
-			conf->accounting_storage_loc =
-				xstrdup(DEFAULT_ACCOUNTING_DB);
-		else
-			conf->accounting_storage_loc =
-				xstrdup(DEFAULT_STORAGE_LOC);
-	}
+	if (s_p_get_string(&temp_str, "AccountingStorageLoc", hashtbl))
+		fatal("The AccountingStorageLoc option has been removed. It is safe to remove from your configuration.");
+
 	if (!s_p_get_string(&conf->accounting_storage_user,
 			    "AccountingStorageUser", hashtbl)) {
 		if (default_storage_user)
@@ -4204,8 +4191,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	/* remove the user and loc if using slurmdbd */
 	if (!xstrcmp(conf->accounting_storage_type,
 		   "accounting_storage/slurmdbd")) {
-		xfree(conf->accounting_storage_loc);
-		conf->accounting_storage_loc = xstrdup("N/A");
 		xfree(conf->accounting_storage_user);
 		conf->accounting_storage_user = xstrdup("N/A");
 	}

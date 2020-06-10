@@ -2658,8 +2658,6 @@ typedef struct {
 						 * backup host */
 	char *accounting_storage_ext_host; /* accounting storage ext host */
 	char *accounting_storage_host;	/* accounting storage host */
-	char *accounting_storage_loc;	/* accounting storage (db table)
-					 * location */
 	char *accounting_storage_pass;	/* accounting storage
 					 * password */
 	uint16_t accounting_storage_port;/* node accounting storage port */

@@ -106,12 +106,6 @@ Only used with systems using SlurmDBD, ignored otherwise.
 Also see \fBDefaultStorageHost\fR.
 
 .TP
-\fBAccountingStorageLoc\fR
-The fully qualified file name where accounting records are written
-when the \fBAccountingStorageType\fR is "accounting_storage/filetxt".
-Also see \fBDefaultStorageLoc\fR.
-
-.TP
 \fBAccountingStoragePass\fR
 The password used to gain access to the database to store the
 accounting data.  Only used for database type storage plugins, ignored
@@ -5748,12 +5742,6 @@ A few files need to be accessible by normal users on all login and
 compute nodes.
 While many files and directories are listed below, most of them will
 not be used with most configurations.
-.TP
-\fBAccountingStorageLoc\fR
-If this specifies a file, it must be writable by user \fBSlurmUser\fR.
-The file must be accessible by the primary and backup control machines.
-It is recommended that the file be readable by all users from login and
-compute nodes.
 .TP
 \fBEpilog\fR
 Must be executable by user root.

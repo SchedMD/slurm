@@ -486,14 +486,9 @@ char *slurm_get_accounting_storage_host(void)
 char *slurm_get_accounting_storage_loc(void)
 {
 	char *storage_loc;
-	slurm_conf_t *conf;
 
 	if (slurmdbd_conf) {
 		storage_loc = xstrdup(slurmdbd_conf->storage_loc);
-	} else {
-		conf = slurm_conf_lock();
-		storage_loc = xstrdup(conf->accounting_storage_loc);
-		slurm_conf_unlock();
 	}
 	return storage_loc;
 }
@@ -504,16 +499,9 @@ char *slurm_get_accounting_storage_loc(void)
  */
 int slurm_set_accounting_storage_loc(char *loc)
 {
-	slurm_conf_t *conf;
-
 	if (slurmdbd_conf) {
 		xfree(slurmdbd_conf->storage_loc);
 		slurmdbd_conf->storage_loc = xstrdup(loc);
-	} else {
-		conf = slurm_conf_lock();
-		xfree(conf->accounting_storage_loc);
-		conf->accounting_storage_loc = xstrdup(loc);
-		slurm_conf_unlock();
 	}
 	return 0;
 }
