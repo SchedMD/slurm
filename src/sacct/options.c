@@ -352,7 +352,7 @@ sacct [<OPTION>]                                                            \n \
      -f, --file=file:                                                       \n\
 	           Read data from the specified file, rather than Slurm's   \n\
                    current accounting log file. (Only appliciable when      \n\
-                   running the filetxt plugin.)                             \n\
+                   running the jobcomp/filetxt plugin.)                     \n\
      -g, --gid, --group:                                                    \n\
 	           Use this comma separated list of gids or group names     \n\
                    to select jobs to display.  By default, all groups are   \n\

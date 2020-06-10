@@ -42,6 +42,8 @@ HIGHLIGHTS
     libraries and later updating your Slurm release, thereby breaking the
     embedded libslurm.so.<version> link in those OpenMPI libraries that were
     inherited from libpmi.so.
+ -- accounting_storage/filetxt has been removed as an option.  Please consider
+    using accounting_storage/slurmdbd as an alternative.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

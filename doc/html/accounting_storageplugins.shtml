@@ -22,7 +22,6 @@ The major type must be &quot;accounting_storage.&quot;
 The minor type can be any suitable name
 for the type of accounting package. We currently use
 <ul>
-<li><b>filetxt</b> &mdash; Information written to a text file.
 <li><b>mysql</b> &mdash; Store information in a mysql database (using
   the InnoDB storage engine).
 <li><b>slurmdbd</b> &mdash; Send information to the Slurm Database
@@ -1009,8 +1008,6 @@ used.
 <dl>
 <dt><span class="commandline">AccountingStorageType</span>
 <dd>Specifies which plugin should be used.
-<dt><span class="commandline">AccountingStorageLoc</span>
-<dd>Let the plugin the name of the logfile/database name to use.
 <dt><span class="commandline">AccountingStorageHost</span>
 <dd>Let the plugin know the host where the database is.
 <dt><span class="commandline">AccountingStoragePort</span>

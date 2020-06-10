@@ -170,18 +170,13 @@ may be desired in order to force jobs to explicitly specify some GPU type.
 .TP
 \fBAccountingStorageType\fR
 The accounting storage mechanism type.  Acceptable values at
-present include "accounting_storage/filetxt", "accounting_storage/none"
-and "accounting_storage/slurmdbd".  The
-"accounting_storage/filetxt" value indicates that accounting records
-will be written to the file specified by the
-\fBAccountingStorageLoc\fR parameter.
+present include "accounting_storage/none"
+and "accounting_storage/slurmdbd".
 The "accounting_storage/slurmdbd" value indicates that accounting records
 will be written to the Slurm DBD, which manages an underlying MySQL
 database. See "man slurmdbd" for more information.  The
 default value is "accounting_storage/none" and indicates that account
 records are not maintained.
-Note: The filetxt plugin records only a limited subset of accounting
-information and will prevent some sacct options from proper operation.
 Also see \fBDefaultStorageType\fR.
 
 .TP
@@ -725,10 +720,9 @@ defined.
 
 .TP
 \fBDefaultStorageLoc\fR
-The fully qualified file name where accounting records and/or job
-completion records are written when the \fBDefaultStorageType\fR is
-"filetxt".
-Also see \fBAccountingStorageLoc\fR and \fBJobCompLoc\fR.
+The fully qualified file name where job completion records are written
+when the \fBDefaultStorageType\fR is "filetxt".
+Also see \fBJobCompLoc\fR.
 
 .TP
 \fBDefaultStoragePass\fR

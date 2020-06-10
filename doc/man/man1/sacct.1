@@ -44,13 +44,6 @@ slurmdbd.conf man page for additional details on restricting
 access to accounting data.
 .TP
 \f3Note: \fP\c
-If the AccountingStorageType is set to "accounting_storage/filetxt",
-space characters embedded within account names, job names, and step names
-will be replaced by underscores. If account names with embedded spaces are
-needed, it is recommended that a database type of accounting storage be
-configured.
-.TP
-\f3Note: \fP\c
 The contents of Slurm's database are maintained in lower case. This may
 result in some \f3sacct\fP output differing from that of other Slurm commands.
 .TP
@@ -207,7 +200,7 @@ Show jobs from the federation if a member of one.
 \f3\-f \fP\f2file\fP\f3,\fP  \f3\-\-file\fP\f3=\fP\f2file\fP
 Causes the \f3sacct\fP command to read job accounting data from the
 named \f2file\fP instead of the current Slurm job accounting log
-file. Only applicable when running the filetxt plugin.
+file. Only applicable when running the jobcomp/filetxt plugin.
 
 .TP
 \f3\-F \fP\f2flag_list\fP\f3,\fP  \f3\-\-flags\fP\f3=\fP\f2flag_list\fP

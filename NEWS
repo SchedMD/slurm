@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- Removed "regression" script from testsuite. Please use regression.py.
  -- Avoid communication issues if TreeWidth greatly exceeds the node count
     for a job.
+ -- accounting_storage/filetxt has been removed as an option.
 
 * Changes in Slurm 20.02.4
 ==========================

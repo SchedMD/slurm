@@ -69,11 +69,8 @@ used to store that information.</p>
 
 <p>Storing the accounting information into text files is
 very simple. Just configure the appropriate plugin (e.g.
-<i>AccountingStorageType=accounting_storage/filetxt</i> and/or
 <i>JobCompType=jobcomp/filetxt</i>) and then specify the
-pathname of the file (e.g.
-<i>AccountingStorageLoc=/var/log/slurm/accounting</i> and/or
-<i>JobCompLoc=/var/log/slurm/job_completions</i>).
+pathname of the file (e.g. <i>JobCompLoc=/var/log/slurm/job_completions</i>).
 Use the <i>logrotate</i> or similar tool to prevent the
 log files from getting too large.
 Send a SIGUSR2 signal to the <i>slurmctld</i> daemon
