@@ -2138,7 +2138,6 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		if (!xstrcasecmp(key_pair->name, "AccountingStorageBackupHost") ||
 		    !xstrcasecmp(key_pair->name, "AccountingStorageEnforce") ||
 		    !xstrcasecmp(key_pair->name, "AccountingStorageHost") ||
-		    !xstrcasecmp(key_pair->name, "AccountingStorageLoc") ||
 		    !xstrcasecmp(key_pair->name, "AccountingStoragePort") ||
 		    !xstrcasecmp(key_pair->name, "AccountingStorageType") ||
 		    !xstrcasecmp(key_pair->name, "AccountingStorageUser") ||

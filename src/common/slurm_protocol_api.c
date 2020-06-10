@@ -485,7 +485,7 @@ char *slurm_get_accounting_storage_host(void)
  */
 char *slurm_get_accounting_storage_loc(void)
 {
-	char *storage_loc;
+	char *storage_loc = NULL;
 
 	if (slurmdbd_conf) {
 		storage_loc = xstrdup(slurmdbd_conf->storage_loc);

@@ -199,6 +199,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"AccountingStorageExternalHost", S_P_STRING},
 	{"AccountingStorageHost", S_P_STRING},
 	{"AccountingStorageBackupHost", S_P_STRING},
+	{"AccountingStorageLoc", S_P_STRING},
 	{"AccountingStoragePass", S_P_STRING},
 	{"AccountingStoragePort", S_P_UINT16},
 	{"AccountingStorageType", S_P_STRING},
