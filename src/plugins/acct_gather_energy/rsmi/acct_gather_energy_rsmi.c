@@ -45,7 +45,7 @@
  * consumption for a job.
  */
 
-#include <rocm_smi.h>
+#include <rocm_smi/rocm_smi.h>
 #include <dlfcn.h>
 
 #include "src/common/slurm_xlator.h"

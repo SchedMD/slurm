@@ -41,7 +41,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/gres.h"
 #include "src/common/log.h"
-#include <rocm_smi.h>
+#include <rocm_smi/rocm_smi.h>
 
 /*
  * #defines needed to test rsmi.

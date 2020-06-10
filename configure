@@ -21462,10 +21462,10 @@ fi
 $as_echo "" >&6; }
     cppflags_save="$CPPFLAGS"
     ldflags_save="$LDFLAGS"
-    CPPFLAGS="-I$_x_ac_rsmi_dir/include/rocm_smi $CPPFLAGS"
+    CPPFLAGS="-I$_x_ac_rsmi_dir/include $CPPFLAGS"
     LDFLAGS="-L$_x_ac_rsmi_dir/lib $LDFLAGS"
-    ac_fn_c_check_header_mongrel "$LINENO" "rocm_smi.h" "ac_cv_header_rocm_smi_h" "$ac_includes_default"
-if test "x$ac_cv_header_rocm_smi_h" = xyes; then :
+    ac_fn_c_check_header_mongrel "$LINENO" "rocm_smi/rocm_smi.h" "ac_cv_header_rocm_smi_rocm_smi_h" "$ac_includes_default"
+if test "x$ac_cv_header_rocm_smi_rocm_smi_h" = xyes; then :
   ac_rsmi_h=yes
 else
   ac_rsmi_h=no
@@ -21562,7 +21562,7 @@ fi
       if test "$ac_rsmi_version" = "yes"; then
         RSMI_LDFLAGS="-L$_x_ac_rsmi_dir/lib"
         RSMI_LIBS="-lrocm_smi64"
-        RSMI_CPPFLAGS="-I$_x_ac_rsmi_dir/include/rocm_smi"
+        RSMI_CPPFLAGS="-I$_x_ac_rsmi_dir/include"
         ac_rsmi="yes"
 
 $as_echo "#define HAVE_RSMI 1" >>confdefs.h
