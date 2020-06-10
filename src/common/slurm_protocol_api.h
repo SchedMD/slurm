@@ -176,18 +176,6 @@ bool slurm_with_slurmdbd(void);
 
 /* slurm_get_accounting_storage_pass
  * returns the storage password from slurm_conf object
- * RET char *    - storage location,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_loc(void);
-
-/* slurm_set_accounting_storage_loc
- * IN: char *loc (name of file or database)
- * RET 0 or error code
- */
-int slurm_set_accounting_storage_loc(char *loc);
-
-/* slurm_get_accounting_storage_pass
- * returns the storage password from slurm_conf object
  * RET char *    - storage password,  MUST be xfreed by caller
  */
 char *slurm_get_accounting_storage_pass(void);

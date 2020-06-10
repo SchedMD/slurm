@@ -611,7 +611,7 @@ extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
 extern char *acct_get_db_name(void)
 {
 	char *db_name = NULL;
-	char *location = slurm_get_accounting_storage_loc();
+	char *location = slurmdbd_conf->storage_loc;
 
 	if (!location)
 		db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
@@ -628,9 +628,8 @@ extern char *acct_get_db_name(void)
 		}
 		if (location[i]) {
 			db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
-			xfree(location);
 		} else
-			db_name = location;
+			db_name = xstrdup(location);
 	}
 	return db_name;
 }

@@ -479,33 +479,6 @@ char *slurm_get_accounting_storage_host(void)
 	return storage_host;
 }
 
-/* slurm_get_accounting_storage_loc
- * returns the storage location from slurm_conf object
- * RET char *    - storage location,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_loc(void)
-{
-	char *storage_loc = NULL;
-
-	if (slurmdbd_conf) {
-		storage_loc = xstrdup(slurmdbd_conf->storage_loc);
-	}
-	return storage_loc;
-}
-
-/* slurm_set_accounting_storage_loc
- * IN: char *loc (name of file or database)
- * RET 0 or error code
- */
-int slurm_set_accounting_storage_loc(char *loc)
-{
-	if (slurmdbd_conf) {
-		xfree(slurmdbd_conf->storage_loc);
-		slurmdbd_conf->storage_loc = xstrdup(loc);
-	}
-	return 0;
-}
-
 /* slurm_get_accounting_storage_enforce
  * returns what level to enforce associations at
  */
