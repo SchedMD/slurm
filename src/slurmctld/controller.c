@@ -612,7 +612,7 @@ int main(int argc, char **argv)
 			run_backup();
 			agent_init();	/* Killed at any previous shutdown */
 			(void) _shutdown_backup_controller();
-			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS)
+			if (slurm_acct_storage_init() != SLURM_SUCCESS)
 				fatal("failed to initialize accounting_storage plugin");
 		} else if (test_config || slurmctld_primary) {
 			if (!test_config) {
@@ -620,7 +620,7 @@ int main(int argc, char **argv)
 				trigger_primary_ctld_res_ctrl();
 				ctld_assoc_mgr_init();
 			}
-			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS) {
+			if (slurm_acct_storage_init() != SLURM_SUCCESS) {
 				if (test_config) {
 					error("failed to initialize accounting_storage plugin");
 					test_config_rc = 1;

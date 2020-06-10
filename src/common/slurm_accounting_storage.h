@@ -58,7 +58,7 @@ typedef enum {
 extern int with_slurmdbd;
 extern uid_t db_api_uid;
 
-extern int slurm_acct_storage_init(char *loc); /* load the plugin */
+extern int slurm_acct_storage_init(void); /* load the plugin */
 extern int slurm_acct_storage_fini(void); /* unload the plugin */
 
 /*

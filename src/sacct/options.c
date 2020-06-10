@@ -1120,14 +1120,12 @@ extern void parse_command_line(int argc, char **argv)
 		}
 		xfree(acct_type);
 	} else {
-		if (slurm_acct_storage_init(params.opt_filein) !=
-		    SLURM_SUCCESS) {
+		if (slurm_acct_storage_init() != SLURM_SUCCESS) {
 			fprintf(stderr, "Slurm unable to initialize storage plugin\n");
 			exit(1);
 		}
-		if ((!xstrcmp(slurm_conf.accounting_storage_type,
-		              "accounting_storage/none"))
-		    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
+		if (!xstrcmp(slurm_conf.accounting_storage_type,
+			     "accounting_storage/none")) {
 			fprintf(stderr,
 				"Slurm accounting storage is disabled\n");
 			exit(1);
