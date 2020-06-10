@@ -4558,11 +4558,13 @@ static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 
 	total_node_cnt = bit_set_count(avail_bitmap);
 	if (total_node_cnt < node_cnt) {
-		verbose("%s: reservation %s requests %d of %d nodes",
+		verbose("%s: reservation %s requests %d of %d nodes. Reducing requested node count.",
 			__func__, resv_desc_ptr->name, node_cnt,
 			total_node_cnt);
-		return NULL;
-	} else if ((total_node_cnt == node_cnt) &&
+		node_cnt = total_node_cnt;
+	}
+
+	if ((total_node_cnt == node_cnt) &&
 		   (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS)) {
 		log_flag(RESERVATION, "%s: reservation %s requests all %d nodes",
 			__func__, resv_desc_ptr->name, total_node_cnt);
