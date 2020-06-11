@@ -404,10 +404,11 @@ extern int operations_router(on_http_request_args_t *args)
 	     __func__, args->context->con->name,
 	     get_http_method_string(args->method), args->path);
 
-	if ((rc = rest_authenticate_http_request(args)))
-		return _operations_router_reject(
-			args, "Authentication failure",
-			HTTP_STATUS_CODE_ERROR_UNAUTHORIZED);
+	if ((rc = rest_authenticate_http_request(args))) {
+		_operations_router_reject(args, "Authentication failure",
+					  HTTP_STATUS_CODE_ERROR_UNAUTHORIZED);
+		return rc;
+	}
 
 	params = data_set_dict(data_new());
 	if ((rc = _resolve_path(args, &path_tag, params)))
