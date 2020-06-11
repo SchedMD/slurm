@@ -41,12 +41,12 @@ print_header $test_id
 
 proc check_alloc { } {
 	global scontrol salloc sacct cputot scontrol_cpu sacct_cpu nodes
-	global job_id number alpha_numeric_nodelist
+	global job_id number re_word_str
 
 	set node_name $nodes
 	spawn $scontrol show job $job_id
 	expect {
-		-re "NodeList=($alpha_numeric_nodelist)" {
+		-re "NodeList=($re_word_str)" {
 			set node_name $expect_out(1,string)
 			exp_continue
 		}
@@ -133,7 +133,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric_nodelist)" {
+	-re "($number): ($re_word_str)" {
 		set nodes $expect_out(2,string)
 		exp_continue
 	}
@@ -154,7 +154,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric_nodelist)" {
+	-re "($number): ($re_word_str)" {
 		set nodes $expect_out(2,string)
 		exp_continue
 	}

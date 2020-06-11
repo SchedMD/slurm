@@ -104,7 +104,7 @@ set host_0      ""
 set host_1      ""
 send "$srun -l $bin_printenv SLURMD_NODENAME\r"
 expect {
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		set host_inx $expect_out(1,string)
 		if {$host_inx == 0} {
 			set host_0 $expect_out(2,string)
@@ -150,7 +150,7 @@ if {$exit_code != 0} {
 set matches 0
 send "$srun -l -N1 -n1 --exclude=$host_0 $bin_printenv SLURMD_NODENAME\r"
 expect {
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		if {[string compare $expect_out(1,string) $host_1] == 0} {
 			incr matches
 		} else {
@@ -184,7 +184,7 @@ if {$matches == 0} {
 set matches 0
 send "$srun -l -N1 -n1 --exclude=$host_1 $bin_printenv SLURMD_NODENAME\r"
 expect {
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		if {[string compare $expect_out(1,string) $host_0] == 0} {
 			incr matches
 		} else {
@@ -222,7 +222,7 @@ expect {
 		send "exit\r"
 		skip "Appears you are using multiple slurmd testing. This test won't work in that fashion"
 	}
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		if {[string compare $expect_out(1,string) $host_0] == 0} {
 			incr matches
 		} else {
@@ -256,7 +256,7 @@ if {$matches == 0} {
 set matches 0
 send "$srun -l -N1 -n1 --nodelist=$host_1 $bin_printenv SLURMD_NODENAME\r"
 expect {
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		if {[string compare $expect_out(1,string) $host_1] == 0} {
 			incr matches
 		} else {
@@ -293,7 +293,7 @@ set matches 0
 send "$srun -l -N1 -n1 --nodelist=$host_0 "
 send " --exclude=$host_0 $bin_printenv SLURMD_NODENAME\r"
 expect {
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		log_error "Wrong node responded"
 		set exit_code   1
 		exp_continue
@@ -325,7 +325,7 @@ if {$matches == 0} {
 set matches 0
 send "$srun -l -N3 -n3 -O $bin_printenv SLURMD_NODENAME\r"
 expect {
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		log_error "Wrong node responded"
 		set exit_code   1
 		exp_continue
@@ -358,12 +358,12 @@ set test_0      ""
 set test_1      ""
 send "$srun -l -N1-1 -n2 -O $bin_printenv SLURMD_NODENAME\r"
 expect {
-	-re "($number).($number):($alpha_numeric_under)" {
+	-re "($number).($number):($re_word_str)" {
 		set test_0 $expect_out(3,string)
 		set test_1 $expect_out(3,string)
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): ($re_word_str)" {
 		set host_inx $expect_out(1,string)
 		if {$host_inx == 0} {
 			set test_0 $expect_out(2,string)
@@ -398,11 +398,11 @@ if {[string compare $test_0 $test_1] != 0} {
 set processors 1
 send "$srun -l -c1 $bin_printenv SLURMD_NODENAME\r"
 expect {
-	-re "($number)-($number):($alpha_numeric_under)" {
+	-re "($number)-($number):($re_word_str)" {
 		set processors [expr $processors + $expect_out(2,string) - $expect_out(1,string) + 1]
 		exp_continue
 	}
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		incr processors
 		exp_continue
 	}
@@ -431,7 +431,7 @@ expect {
 #		Avoid confusiuon with task ID below
 		exp_continue
 	}
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		log_error "wrong node responded"
 		set exit_code   1
 		exp_continue

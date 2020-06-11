@@ -83,7 +83,7 @@ if {$job_id == 0} {
 set matches  0
 spawn $scancel --interactive $job_id
 expect {
-	-re "Cancel job_id=$job_id .* partition=($alpha_numeric_under) .*\? " {
+	-re "Cancel job_id=$job_id .* partition=($re_word_str) .*\? " {
 		set default_part $expect_out(1,string)
 		send "n\r"
 		exp_continue

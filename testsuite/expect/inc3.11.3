@@ -34,7 +34,7 @@
 proc inc3_11_3 {} {
 	global user_name exit_code res_name
 	global bin_rm file_in bin_sleep sbatch number scontrol
-	global alpha_numeric_under scancel
+	global re_word_str scancel
 
 	# TEST 3
 
@@ -73,7 +73,7 @@ proc inc3_11_3 {} {
 	# Show the job, make sure reservation tag is right
 	spawn $scontrol show job $job_id
 	expect {
-		-re "Reservation=($alpha_numeric_under)" {
+		-re "Reservation=($re_word_str)" {
 			set tmp_res_name $expect_out(1,string)
 			if {$tmp_res_name != $res_name} {
 				log_error "problem submitting a job to a reservation.  Job $job_id is running on reservation $tmp_res_name, not $res_name (Within: inc3.11.3)"

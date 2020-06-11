@@ -124,7 +124,7 @@ set host_1      ""
 
 set srun_pid [spawn $srun -N1-1 -l -t1 $bin_printenv SLURM_NODEID]
 expect {
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -168,7 +168,7 @@ set host_3      ""
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N1-3 -l -t1 $bin_printenv SLURM_NODEID]
 expect {
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -232,7 +232,7 @@ expect {
 	-re "srun: error" {
 		skip "Can't test srun task distribution"
 	}
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}

@@ -136,7 +136,7 @@ if {[wait_for_job $tmp_job "RUNNING"] != 0} {
 set got_node 0
 spawn $scontrol show job $tmp_job
 expect {
-	-re "NodeList=($alpha_numeric_under)" {
+	-re "NodeList=($re_word_str)" {
 		set test_node $expect_out(1,string)
 		set got_node 1
 		exp_continue
@@ -375,7 +375,7 @@ set sq_step_format(username)    $sq_format(username)
 set match 0
 spawn $scontrol show step $sq_step_format(stepid)
 expect {
-	-re "State=($alpha_under)" {
+	-re "State=($re_word_str)" {
 		set sq_step_format(stepstate) $expect_out(1,string)
 		incr match 1
 		exp_continue
@@ -390,7 +390,7 @@ expect {
 		incr match 1
 		exp_continue
 	}
-	-re "Network=($alpha_numeric_under)" {
+	-re "Network=($re_word_str)" {
 		set sq_step_format(network) $expect_out(1,string)
 		incr match 1
 		exp_continue

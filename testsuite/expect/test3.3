@@ -42,13 +42,13 @@ print_header $test_id
 #
 spawn $sinfo --noheader -o  "NodeName=%N State=%t "
 expect {
-        -re "NodeName=($alpha_numeric_nodelist) State=idle " {
+        -re "NodeName=($re_word_str) State=idle " {
                 if {[string compare $node_list ""] == 0} {
                         set node_list $expect_out(1,string)
                 }
                 exp_continue
         }
-        -re "NodeName=($alpha_numeric_nodelist) State=allocated " {
+        -re "NodeName=($re_word_str) State=allocated " {
                 if {[string compare $node_list ""] == 0} {
                         set node_list $expect_out(1,string)
                 }
@@ -72,7 +72,7 @@ if {[string compare $node_list ""] == 0} {
 log_user 0
 spawn $scontrol show hostnames $node_list
 expect {
-        -re "($alpha_numeric_nodelist)" {
+        -re "($re_word_str)" {
 		set node_name $expect_out(1,string)
         }
 	timeout {
@@ -93,7 +93,7 @@ if {[string compare $node_name ""] == 0} {
 #
 spawn $scontrol update NodeName=$node_name State=DRAIN Reason=TESTING
 expect {
-	-re "slurm_update error: ($alpha_numeric_under) ($alpha_numeric_under)" {
+	-re "slurm_update error: ($re_word_str) ($re_word_str)" {
 		set access_err 0
 		set err_msg1 $expect_out(1,string)
 		set err_msg2 $expect_out(2,string)
@@ -126,15 +126,15 @@ set read_state  0
 set reason_code ""
 spawn $scontrol show node $node_name
 expect {
-	-re "State=($alpha_cap).DRAIN" {
+	-re "State=($re_word_str).DRAIN" {
 		set read_state 1
 		exp_continue
 	}
-	-re "State=($alpha_cap).CLOUD.DRAIN" {
+	-re "State=($re_word_str).CLOUD.DRAIN" {
 		set read_state 1
 		exp_continue
 	}
-	-re "Reason=($alpha_cap)" {
+	-re "Reason=($re_word_str)" {
 		set reason_code $expect_out(1,string)
 		exp_continue
 	}
@@ -191,11 +191,11 @@ expect {
 set read_state 0
 spawn  $scontrol show node $node_name
 expect {
-	-re "State=($alpha_cap).DRAIN" {
+	-re "State=($re_word_str).DRAIN" {
 		set read_state 1
 		exp_continue
 	}
-	-re "State=($alpha_cap).CLOUD.DRAIN" {
+	-re "State=($re_word_str).CLOUD.DRAIN" {
 		set read_state 1
 		exp_continue
 	}

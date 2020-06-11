@@ -211,7 +211,7 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 
 # allocate a set of nodes (node_cnt) and the quit right after
 proc allocate_and_quit { node proc_cnt total_procs } {
-	global bin_bash salloc scontrol sinfo number alpha_numeric_under
+	global bin_bash salloc scontrol sinfo number re_word_str
 	global prompt select_type procs_per_node test_id bin_rm
 
 	set file_in "test$test_id.input"
@@ -294,7 +294,7 @@ set def_part [default_partition]
 set def_node_name ""
 spawn $sinfo -h -o "=%N=" -p $def_part
 expect {
-	-re "=($alpha_numeric).($number)-($number).=" {
+	-re "=($re_word_str).($number)-($number).=" {
 		set def_node_name $expect_out(1,string)
 		exp_continue
 	}
@@ -311,11 +311,11 @@ set def_hostlist ""
 set part_exclusive 0
 spawn $scontrol show part $def_part
 expect {
-	-re " Nodes=($alpha_numeric_nodelist)"  {
+	-re " Nodes=($re_word_str)"  {
 		set def_hostlist $expect_out(1,string)
 		exp_continue
 	}
-	-re " BasePartitions=($alpha_numeric_nodelist)" {
+	-re " BasePartitions=($re_word_str)" {
 		set def_hostlist $expect_out(1,string)
 		exp_continue
 	}
@@ -334,7 +334,7 @@ expect {
 set host_cnt 0
 spawn $scontrol show hostnames $def_hostlist
 expect {
-	-re "($alpha_numeric_under)"  {
+	-re "($re_word_str)"  {
 		set host_name($host_cnt) $expect_out(1,string)
 		incr host_cnt
 		exp_continue

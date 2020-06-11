@@ -322,7 +322,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 set got_node 0
 spawn $scontrol show job $job_id
 expect {
-	-re "NodeList=($alpha_numeric_under)" {
+	-re "NodeList=($re_word_str)" {
 		set node_name $expect_out(1,string)
 		set got_node 1
 		exp_continue

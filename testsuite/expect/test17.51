@@ -237,7 +237,7 @@ set found 0
 set node 0
 spawn $squeue --jobs=$job_id --noheader -O "nodelist"
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set node $expect_out(1,string)
 		log_debug "Node for this job : $node"
 		set found 1
@@ -355,7 +355,7 @@ set found 0
 set node 0
 spawn $squeue --jobs=$job_id --noheader -O "nodelist"
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set node $expect_out(1,string)
 		log_debug "Node for this job : $node"
 		set found 1
@@ -469,7 +469,7 @@ set found 0
 set node 0
 spawn $squeue --jobs=$job_id --noheader -O "nodelist"
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set node $expect_out(1,string)
 		log_debug "Node for this job : $node"
 		set found 1
@@ -640,7 +640,7 @@ set found 0
 set node 0
 spawn $squeue --jobs=$job_id --noheader -O "nodelist"
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set node $expect_out(1,string)
 		log_debug "Node for this job : $node"
 		set found 1

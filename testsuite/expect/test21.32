@@ -103,7 +103,7 @@ proc _local_mod_qos { preempt_qos } {
 
 proc check_pre { preempt_qos } {
 
-	global sacctmgr exit_code alpha_numeric_under qos_test
+	global sacctmgr exit_code re_word_str qos_test
 
 	set match 0
 	spawn $sacctmgr show qos $qos_test(0) format=preempt%-80 --noheader

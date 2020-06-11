@@ -48,11 +48,11 @@ if {$array_size > $max_task_id} {
 }
 
 proc scontrol_check { job_id } {
-	global scontrol alpha_numeric_under array_id exit_code
+	global scontrol re_word_str array_id exit_code
 
 	spawn $scontrol show job $job_id
 	expect {
-		-re "JobState=($alpha_numeric_under)" {
+		-re "JobState=($re_word_str)" {
 			set tmp $expect_out(1,string)
 			if {[string compare $tmp "CANCELLED"]} {
 				log_error "Job was not cancelled"

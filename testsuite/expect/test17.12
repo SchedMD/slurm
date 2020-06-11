@@ -45,7 +45,7 @@ print_header $test_id
 
 proc check_job_nodes {test_job node_name find_node} {
 	global exit_code sbatch test_part file_in
-	global feat0 feat1 number scontrol alpha_numeric_nodelist bin_bash
+	global feat0 feat1 number scontrol re_word_str bin_bash
 	global bin_grep
 
 	set nodelist ""
@@ -60,7 +60,7 @@ proc check_job_nodes {test_job node_name find_node} {
 	log_user 0
 	spawn $scontrol show job $test_job
 	expect {
-		-re " NodeList=($alpha_numeric_nodelist)" {
+		-re " NodeList=($re_word_str)" {
 			set nodelist $expect_out(1,string)
 			exp_continue
 		}
@@ -98,7 +98,7 @@ proc check_job_nodes {test_job node_name find_node} {
 
 proc check_job {nnode test_job} {
 	global exit_code sbatch test_part file_in
-	global feat0 feat1 number scontrol alpha_numeric_nodelist bin_bash
+	global feat0 feat1 number scontrol re_word_str bin_bash
 	global bin_grep
 
 	set nodelist ""
@@ -112,7 +112,7 @@ proc check_job {nnode test_job} {
 	# Check that job that the job used the correct nodes
 	spawn $scontrol show job $test_job
 	expect {
-		-re " NodeList=($alpha_numeric_nodelist)" {
+		-re " NodeList=($re_word_str)" {
 			set nodelist $expect_out(1,string)
 			exp_continue
 		}
@@ -151,7 +151,7 @@ proc check_job {nnode test_job} {
 
 proc sub_job_and {nnode fail_test} {
 	global exit_code sbatch test_part file_in nodes
-	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
+	global feat0 feat1 feat2 feat3 number scontrol re_word_str bin_bash
 	global bin_grep
 
 	set test_job 0
@@ -220,7 +220,7 @@ proc sub_job_and {nnode fail_test} {
 
 proc sub_batch_host {nnode} {
 	global exit_code sbatch scontrol test_part file_in nodes
-	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
+	global feat0 feat1 feat2 feat3 number scontrol re_word_str bin_bash
 	global bin_grep
 
 	set test_job 0
@@ -280,7 +280,7 @@ proc sub_batch_host {nnode} {
 
 proc sub_job_count {nnode fail_test} {
 	global exit_code sbatch test_part file_in nodes
-	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
+	global feat0 feat1 feat2 feat3 number scontrol re_word_str bin_bash
 	global bin_grep
 
 	set test_job 0
@@ -350,7 +350,7 @@ proc sub_job_count {nnode fail_test} {
 
 proc sub_job_or {nnode fail_test} {
 	global exit_code sbatch test_part file_in
-	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
+	global feat0 feat1 feat2 feat3 number scontrol re_word_str bin_bash
 	global bin_grep
 
 	set test_job 0
@@ -417,7 +417,7 @@ proc sub_job_or {nnode fail_test} {
 
 proc sub_job_or_paren {nnode fail_test} {
 	global exit_code sbatch test_part file_in nodes
-	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
+	global feat0 feat1 feat2 feat3 number scontrol re_word_str bin_bash
 	global bin_grep
 
 	set test_job 0
@@ -543,7 +543,7 @@ proc sub_job_or_paren {nnode fail_test} {
 
 proc sub_job_xand {nnode fail_test} {
 	global exit_code sbatch test_part file_in nodes
-	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
+	global feat0 feat1 feat2 feat3 number scontrol re_word_str bin_bash
 	global bin_grep
 
 	set test_job 0
@@ -614,7 +614,7 @@ proc sub_job_xand {nnode fail_test} {
 
 proc sub_job_xor {nnode fail_test} {
 	global exit_code sbatch test_part file_in nodes
-	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
+	global feat0 feat1 feat2 feat3 number scontrol re_word_str bin_bash
 	global bin_grep
 
 	set test_job 0
@@ -872,7 +872,7 @@ if {$job_id == 0} {
 set nodelist ""
 spawn $scontrol show job $job_id
 expect {
-	-re " NodeList=($alpha_numeric_nodelist)" {
+	-re " NodeList=($re_word_str)" {
 		set nodelist $expect_out(1,string)
 		exp_continue
 	}
@@ -888,7 +888,7 @@ expect {
 set i 0
 spawn $scontrol show hostnames $nodelist
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set nodes($i) $expect_out(1,string)
 		incr i
 		exp_continue
@@ -916,12 +916,12 @@ foreach option [array names nodes] {
 	set def_avail_node_feat($node)  ""
 	spawn $bin_bash -c "$scontrol show node $node | $bin_grep Features"
 	expect {
-		-re "AvailableFeatures=($alpha_numeric_comma)" {
+		-re "AvailableFeatures=($re_word_str)" {
 			set def_avail_node_feat($node) $expect_out(1,string)
 			incr node_save
 			exp_continue
 		}
-		-re "ActiveFeatures=($alpha_numeric_comma)" {
+		-re "ActiveFeatures=($re_word_str)" {
 			set def_active_node_feat($node) $expect_out(1,string)
 			incr node_save
 			exp_continue

@@ -87,7 +87,7 @@ proc test_signaling { batch full } {
 	global max_job_delay proctracktype
 	global bin_sleep bin_cat
 	global sbatch scancel file_out file_in
-	global number alpha_numeric_under
+	global number re_word_str
 
 	set job_id      0
 	set rc          0
@@ -191,7 +191,7 @@ proc test_signaling { batch full } {
 
 		spawn $bin_cat $file_out
 		expect {
-			-re "Signaled: ($alpha_numeric_under)" {
+			-re "Signaled: ($re_word_str)" {
 				set signaled $expect_out(1,string)
 				if {$signaled == "script"} {
 					incr script_signaled

@@ -71,7 +71,7 @@ if {![test_accting_steps]} {
 proc sub_job { freq } {
 
 	global srun sacct node threads job_id number wait_for_job float timeout exit_code
-	global alpha_numeric_under file_id avail_governors
+	global re_word_str file_id avail_governors
 
 	set timeout 120
 	array set this_freq $freq
@@ -120,7 +120,7 @@ proc sub_job { freq } {
 
 		spawn $sacct -j$job_id -oavecpufreq --noheader
 		expect {
-			-re "($float)($alpha_numeric_under)" {
+			-re "($float)($re_word_str)" {
 				set this_freq($option) $expect_out(1,string)
 				set tmp $expect_out(2,string)
 				if {[string compare $tmp "M"] == 0} {
@@ -193,7 +193,7 @@ if {$userspace_governor == 0} {
 set match 0
 spawn $scontrol show job $job_id
 expect {
-	-re "NodeList=($alpha_numeric_nodelist)" {
+	-re "NodeList=($re_word_str)" {
 		set node $expect_out(1,string)
 		set match 1
 		exp_continue

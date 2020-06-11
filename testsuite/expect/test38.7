@@ -160,7 +160,7 @@ if {[wait_for_file $file_out] == 0} {
 	set rank_sum 0
 	spawn $bin_cat $file_out
 	expect {
-                -re "Rank.($number). on $alpha_numeric_under just received msg from Rank ($number)" {
+                -re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
 			incr rank_sum $expect_out(1,string)
 			incr rank_sum $expect_out(2,string)
 			incr matches
@@ -269,7 +269,7 @@ if {[wait_for_file $file_out] == 0} {
 	set rank_sum 0
 	spawn $bin_cat $file_out
 	expect {
-                -re "Rank.($number). on $alpha_numeric_under just received msg from Rank ($number)" {
+                -re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
 			incr rank_sum $expect_out(1,string)
 			incr rank_sum $expect_out(2,string)
 			incr matches
@@ -401,7 +401,7 @@ if {[wait_for_file $file_out] == 0} {
 	set rank_sum 0
 	spawn $bin_cat $file_out
 	expect {
-                -re "Rank.($number). on $alpha_numeric_under just received msg from Rank ($number)" {
+                -re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
 			incr rank_sum $expect_out(1,string)
 			incr rank_sum $expect_out(2,string)
 			incr matches
@@ -512,7 +512,7 @@ if {[wait_for_file $file_out] == 0} {
 	set rank_sum 0
 	spawn $bin_cat $file_out
 	expect {
-                -re "Rank.($number). on $alpha_numeric_under just received msg from Rank ($number)" {
+                -re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
 			incr rank_sum $expect_out(1,string)
 			incr rank_sum $expect_out(2,string)
 			incr matches

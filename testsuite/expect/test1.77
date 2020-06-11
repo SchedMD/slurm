@@ -88,7 +88,7 @@ expect {
 set wait_file [wait_for_file $file_out]
 spawn $bin_grep SLURM_JOB_NAME=banana $file_out
 expect {
-        -re "SLURM_JOB_NAME=($alpha_numeric)" {
+	-re "SLURM_JOB_NAME=($re_word_str)" {
             log_debug "Job name matched $expect_out(1,string)"
             set found 1
             exp_continue

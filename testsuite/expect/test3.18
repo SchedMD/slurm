@@ -51,7 +51,7 @@ set timeout $max_job_delay
 set matches 0
 set srun_pid [spawn $srun -n1 --gres=gpu:2 $file_in]
 expect {
-        -re "HOST:($alpha_numeric_under)" {
+        -re "HOST:($re_word_str)" {
                 incr matches
 		set host_name $expect_out(1,string)
                 exp_continue

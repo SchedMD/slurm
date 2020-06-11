@@ -105,7 +105,7 @@ expect {
 	-re "--noheader" {
 		exp_continue
 	}
-	-re "NAME=($alpha_numeric_under)" {
+	-re "NAME=($re_word_str)" {
 		set component($index) $expect_out(1,string)
 		incr index
 		exp_continue
@@ -177,7 +177,7 @@ expect {
 log_user 0
 send "$bin_sort $file_out\r"
 expect {
-	-re "0: SLURM_NODELIST=($alpha_numeric_nodelist)" {
+	-re "0: SLURM_NODELIST=($re_word_str)" {
 		set het_nodelist $expect_out(1,string)
 		incr matches
 		exp_continue
