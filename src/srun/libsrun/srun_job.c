@@ -1789,7 +1789,7 @@ static int _run_srun_script (srun_job_t *job, char *script)
 		}
 		args[i+1] = NULL;
 		execv(script, args);
-		error("help! %m");
+		error("Failed to execute srun prolog/epilog script: %m");
 		exit(127);
 	}
 
