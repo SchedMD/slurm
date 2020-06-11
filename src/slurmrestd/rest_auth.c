@@ -225,8 +225,6 @@ static void _auth_local(on_http_request_args_t *args, rest_auth_context_t *ctxt)
 		return _clear_auth(ctxt);
 	}
 
-	xassert(ctxt->type & AUTH_TYPE_LOCAL);
-
 	if (!ctxt->user_name)
 		ctxt->user_name = uid_to_string_or_null(auth_uid);
 
@@ -236,6 +234,10 @@ static void _auth_local(on_http_request_args_t *args, rest_auth_context_t *ctxt)
 		      __func__, args->context->con->name, auth_uid);
 		return _clear_auth(ctxt);
 	}
+
+	if (!(ctxt->type & AUTH_TYPE_LOCAL))
+		fatal_abort("%s: authentication failed but didn't return error",
+			    __func__);
 }
 
 static int _auth_user_psk(on_http_request_args_t *args,
