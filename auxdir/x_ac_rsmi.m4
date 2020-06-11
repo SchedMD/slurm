@@ -31,9 +31,9 @@ AC_DEFUN([X_AC_RSMI],
     AC_MSG_RESULT([])
     cppflags_save="$CPPFLAGS"
     ldflags_save="$LDFLAGS"
-    CPPFLAGS="-I$_x_ac_rsmi_dir/include/rocm_smi $CPPFLAGS"
+    CPPFLAGS="-I$_x_ac_rsmi_dir/include $CPPFLAGS"
     LDFLAGS="-L$_x_ac_rsmi_dir/lib $LDFLAGS"
-    AC_CHECK_HEADER([rocm_smi.h], [ac_rsmi_h=yes], [ac_rsmi_h=no])
+    AC_CHECK_HEADER([rocm_smi/rocm_smi.h], [ac_rsmi_h=yes], [ac_rsmi_h=no])
     AC_CHECK_LIB([rocm_smi64], [rsmi_init], [ac_rsmi_l=yes], [ac_rsmi_l=no])
     AC_CHECK_LIB([rocm_smi64], [rsmi_dev_drm_render_minor_get], [ac_rsmi_version=yes], [ac_rsmi_version=no])
     CPPFLAGS="$cppflags_save"
@@ -42,7 +42,7 @@ AC_DEFUN([X_AC_RSMI],
       if test "$ac_rsmi_version" = "yes"; then
         RSMI_LDFLAGS="-L$_x_ac_rsmi_dir/lib"
         RSMI_LIBS="-lrocm_smi64"
-        RSMI_CPPFLAGS="-I$_x_ac_rsmi_dir/include/rocm_smi"
+        RSMI_CPPFLAGS="-I$_x_ac_rsmi_dir/include"
         ac_rsmi="yes"
         AC_DEFINE(HAVE_RSMI, 1, [Define to 1 if RSMI library found])
       else
