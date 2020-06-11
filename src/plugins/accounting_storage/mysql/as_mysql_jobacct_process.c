@@ -937,7 +937,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			if (!job->first_step_ptr)
 				job->first_step_ptr = step;
 			list_append(job->steps, step);
-			step->stepid = slurm_atoul(step_row[STEP_REQ_STEPID]);
+			step->step_id.job_id = job->jobid;
+			step->step_id.step_id = slurm_atoul(
+				step_row[STEP_REQ_STEPID]);
 			/* info("got step %u.%u", */
 /* 			     job->header.jobnum, step->stepnum); */
 			step->state = slurm_atoul(step_row[STEP_REQ_STATE]);

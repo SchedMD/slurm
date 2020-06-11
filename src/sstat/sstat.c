@@ -143,7 +143,7 @@ int _do_stat(slurm_step_id_t *step_id, char *nodelist,
 	memset(&step.stats, 0, sizeof(slurmdb_stats_t));
 
 	step.job_ptr = &job;
-	step.stepid = step_id->step_id;
+	memcpy(&step.step_id, step_id, sizeof(step.step_id));
 	step.nodes = xmalloc(BUF_SIZE);
 	step.req_cpufreq_min = req_cpufreq_min;
 	step.req_cpufreq_max = req_cpufreq_max;

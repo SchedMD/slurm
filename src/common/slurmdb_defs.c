@@ -648,7 +648,7 @@ extern slurmdb_step_rec_t *slurmdb_create_step_rec()
 {
 	slurmdb_step_rec_t *step = xmalloc(sizeof(slurmdb_step_rec_t));
 	memset(&step->stats, 0, sizeof(slurmdb_stats_t));
-	step->stepid = NO_VAL;
+	step->step_id.step_id = NO_VAL;
 	step->state = NO_VAL;
 	step->exitcode = NO_VAL;
 	step->elapsed = NO_VAL;

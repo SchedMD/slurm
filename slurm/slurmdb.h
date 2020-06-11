@@ -1069,7 +1069,7 @@ typedef struct {
 	time_t start;
 	uint32_t state;
 	slurmdb_stats_t stats;
-	uint32_t stepid;	/* job's step number */
+	slurm_step_id_t step_id;	/* job's step number */
 	char *stepname;
 	uint32_t suspended;
 	uint32_t sys_cpu_sec;

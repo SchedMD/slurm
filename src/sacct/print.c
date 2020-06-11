@@ -1066,16 +1066,18 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = xstrdup(id);
 				break;
 			case JOBSTEP:
-				if (step->stepid == SLURM_BATCH_SCRIPT) {
+				if (step->step_id.step_id ==
+				    SLURM_BATCH_SCRIPT) {
 					tmp_char = xstrdup_printf(
 						"%s.batch", id);
-				} else if (step->stepid == SLURM_EXTERN_CONT) {
+				} else if (step->step_id.step_id ==
+					   SLURM_EXTERN_CONT) {
 					tmp_char = xstrdup_printf(
 						"%s.extern", id);
 				} else {
 					tmp_char = xstrdup_printf(
 						"%s.%u",
-						id, step->stepid);
+						id, step->step_id.step_id);
 				}
 				break;
 			case JOBCOMP:
@@ -1096,11 +1098,13 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = xstrdup_printf("%u", job->jobid);
 				break;
 			case JOBSTEP:
-				if (step->stepid == SLURM_BATCH_SCRIPT) {
+				if (step->step_id.step_id ==
+				    SLURM_BATCH_SCRIPT) {
 					tmp_char = xstrdup_printf(
 						"%u.batch",
 						step->job_ptr->jobid);
-				} else if (step->stepid == SLURM_EXTERN_CONT) {
+				} else if (step->step_id.step_id ==
+					   SLURM_EXTERN_CONT) {
 					tmp_char = xstrdup_printf(
 						"%u.extern",
 						step->job_ptr->jobid);
@@ -1108,7 +1112,7 @@ extern void print_fields(type_t type, void *object)
 					tmp_char = xstrdup_printf(
 						"%u.%u",
 						step->job_ptr->jobid,
-						step->stepid);
+						step->step_id.step_id);
 				}
 				break;
 			case JOBCOMP:

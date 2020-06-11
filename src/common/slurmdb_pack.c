@@ -4413,6 +4413,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 				goto unpack_error;
 
 			step->job_ptr = job_ptr;
+			step->step_id.job_id = job_ptr->jobid;
 			if (!job_ptr->first_step_ptr)
 				job_ptr->first_step_ptr = step;
 			list_append(job_ptr->steps, step);
@@ -4506,6 +4507,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 				goto unpack_error;
 
 			step->job_ptr = job_ptr;
+			step->step_id.job_id = job_ptr->jobid;
 			if (!job_ptr->first_step_ptr)
 				job_ptr->first_step_ptr = step;
 			list_append(job_ptr->steps, step);
@@ -4915,7 +4917,7 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		_pack_slurmdb_stats(&step->stats, protocol_version, buffer);
 		pack_time(step->start, buffer);
 		pack16(step->state, buffer);
-		pack32(step->stepid, buffer);   /* job's step number */
+		pack_step_id(&step->step_id, buffer, protocol_version);
 		packstr(step->stepname, buffer);
 		pack32(step->suspended, buffer);
 		pack32(step->sys_cpu_sec, buffer);
@@ -4940,7 +4942,7 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		_pack_slurmdb_stats(&step->stats, protocol_version, buffer);
 		pack_time(step->start, buffer);
 		pack16(step->state, buffer);
-		pack_old_step_id(step->stepid, buffer);  /* job's step number */
+		pack_old_step_id(step->step_id.step_id, buffer);
 		packstr(step->stepname, buffer);
 		pack32(step->suspended, buffer);
 		pack32(step->sys_cpu_sec, buffer);
@@ -4985,7 +4987,9 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpack_time(&step_ptr->start, buffer);
 		safe_unpack16(&uint16_tmp, buffer);
 		step_ptr->state = uint16_tmp;
-		safe_unpack32(&step_ptr->stepid, buffer);
+		if (unpack_step_id_members(&step_ptr->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpackstr_xmalloc(&step_ptr->stepname,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&step_ptr->suspended, buffer);
@@ -5017,8 +5021,9 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpack_time(&step_ptr->start, buffer);
 		safe_unpack16(&uint16_tmp, buffer);
 		step_ptr->state = uint16_tmp;
-		safe_unpack32(&step_ptr->stepid, buffer);
-		convert_old_step_id(&step_ptr->stepid);
+		step_ptr->step_id.job_id = 0;
+		safe_unpack32(&step_ptr->step_id.step_id, buffer);
+		convert_old_step_id(&step_ptr->step_id.step_id);
 		safe_unpackstr_xmalloc(&step_ptr->stepname,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&step_ptr->suspended, buffer);
