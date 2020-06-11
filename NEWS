@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix jobacct_gather possibly duplicate stats when _is_a_lwp error shows up.
  -- Fix tasks binding to GRES which are closest to the allocated CPUs.
  -- Fix AMD GPU ROCM 3.5 support.
+ -- Fix handling of job arrays in sacct when querying specific steps.
 
 * Changes in Slurm 20.02.3
 ==========================

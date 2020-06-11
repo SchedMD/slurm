@@ -865,7 +865,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				     job->array_job_id)) {
 					continue;
 				} else if ((selected_step->array_task_id !=
-					    INFINITE) &&
+					    NO_VAL) &&
 					   (selected_step->array_task_id !=
 					    job->array_task_id)) {
 					continue;
