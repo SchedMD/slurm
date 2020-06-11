@@ -658,6 +658,8 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	env->account = job->account;
 	env->qos = job->qos;
 	env->resv_name = job->resv_name;
+	env->uid = getuid();
+	env->user_name = uid_to_string(env->uid);
 
 	if (srun_opt->pty && (set_winsize(job) < 0)) {
 		error("Not using a pseudo-terminal, disregarding --pty option");
@@ -688,6 +690,7 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	setup_env(env, srun_opt->preserve_env);
 	env_array_merge(&job->env, (const char **)environ);
 	xfree(env->task_count);
+	xfree(env->user_name);
 	xfree(env);
 }
 
