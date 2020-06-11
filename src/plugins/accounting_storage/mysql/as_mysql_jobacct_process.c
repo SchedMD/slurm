@@ -876,11 +876,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					   NO_VAL) {
 					job->show_full = 1;
 					break;
-				} else if (selected_step->step_id.step_id ==
-					   INFINITE)
-					selected_step->step_id.step_id =
-						SLURM_BATCH_SCRIPT;
-
+				}
 				if (set)
 					xstrcat(extra, " || ");
 				else
@@ -892,15 +888,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				 */
 				xstrfmtcat(extra, "t1.id_step=%d",
 					   selected_step->step_id.step_id);
+
 				set = 1;
 				job->show_full = 0;
-				/* Set it back just in case we are
-				   looking at a job array.
-				*/
-				if (selected_step->step_id.step_id ==
-				    SLURM_BATCH_SCRIPT)
-					selected_step->step_id.step_id =
-						INFINITE;
 			}
 			list_iterator_destroy(itr);
 			if (set)

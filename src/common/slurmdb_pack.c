@@ -4706,6 +4706,9 @@ extern int slurmdb_unpack_selected_step(slurmdb_selected_step_t **step,
 		safe_unpack32(&step_ptr->step_id.job_id, buffer);
 		safe_unpack32(&step_ptr->het_job_offset, buffer);
 		safe_unpack32(&step_ptr->step_id.step_id, buffer);
+		/* Old Slurm used to use INFINITE To denote the batch script */
+		if (step_ptr->step_id.step_id == INFINITE)
+			step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
 		convert_old_step_id(&step_ptr->step_id.step_id);
 	} else
 		goto unpack_error;

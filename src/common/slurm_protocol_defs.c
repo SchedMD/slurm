@@ -655,7 +655,9 @@ static int _addto_step_list_internal(List step_list, char *names,
 		*dot++ = 0;
 		/* can't use NO_VAL since that means all */
 		if (!xstrcmp(dot, "batch"))
-			selected_step->step_id.step_id = INFINITE;
+			selected_step->step_id.step_id = SLURM_BATCH_SCRIPT;
+		else if (!xstrcmp(dot, "extern"))
+			selected_step->step_id.step_id = SLURM_EXTERN_CONT;
 		else if (isdigit(*dot))
 			selected_step->step_id.step_id = atoi(dot);
 		else
