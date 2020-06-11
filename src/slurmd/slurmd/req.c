@@ -3303,34 +3303,32 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 }
 
 static int
-_signal_jobstep(uint32_t job_id, uint32_t step_id_in, uint16_t signal,
+_signal_jobstep(slurm_step_id_t *step_id, uint16_t signal,
 		uint16_t flags, uid_t req_uid)
 {
 	int fd, rc = SLURM_SUCCESS;
 	uint16_t protocol_version;
-	slurm_step_id_t step_id = { .job_id = job_id,
-				    .step_id = step_id_in };
 
 	/*
 	 * There will be no stepd if the prolog is still running
 	 * Return failure so caller can retry.
 	 */
-	if (_prolog_is_running(step_id.job_id)) {
+	if (_prolog_is_running(step_id->job_id)) {
 		info("signal %d req for %u.%u while prolog is running. Returning failure.",
-		     signal, step_id.job_id, step_id.step_id);
+		     signal, step_id->job_id, step_id->step_id);
 		return ESLURM_TRANSITION_STATE_NO_UPDATE;
 	}
 
 	fd = stepd_connect(conf->spooldir, conf->node_name,
-			   &step_id, &protocol_version);
+			   step_id, &protocol_version);
 	if (fd == -1) {
 		debug("signal for nonexistent %u.%u stepd_connect failed: %m",
-		      step_id.job_id, step_id.step_id);
+		      step_id->job_id, step_id->step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
 	debug2("container signal %d to job %u.%u",
-	       signal, step_id.job_id, step_id.step_id);
+	       signal, step_id->job_id, step_id->step_id);
 	rc = stepd_signal_container(fd, protocol_version, signal, flags,
 				    req_uid);
 	if (rc == -1)
@@ -3377,7 +3375,7 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 	} else {
 		debug("%s: sending signal %u to step %u.%u flag %u", __func__,
 		      req->signal, req->step_id.job_id, req->step_id.step_id, req->flags);
-		rc = _signal_jobstep(req->step_id.job_id, req->step_id.step_id,
+		rc = _signal_jobstep(&req->step_id,
 				     req->signal, req->flags, req_uid);
 	}
 done:
@@ -3818,28 +3816,25 @@ _rpc_timelimit(slurm_msg_t *msg)
 		 * - send a SIGKILL to clean up
 		 */
 		if (msg->msg_type == REQUEST_KILL_TIMELIMIT) {
-			rc = _signal_jobstep(req->step_id.job_id,
-					     req->step_id.step_id,
+			rc = _signal_jobstep(&req->step_id,
 					     SIG_TIME_LIMIT, 0, uid);
 		} else {
-			rc = _signal_jobstep(req->step_id.job_id, req->step_id.step_id,
+			rc = _signal_jobstep(&req->step_id,
 					     SIG_PREEMPTED, 0, uid);
 		}
 		if (rc != SLURM_SUCCESS)
 			return;
-		rc = _signal_jobstep(req->step_id.job_id, req->step_id.step_id, SIGCONT, 0,
-				     uid);
+		rc = _signal_jobstep(&req->step_id, SIGCONT, 0, uid);
 		if (rc != SLURM_SUCCESS)
 			return;
-		rc = _signal_jobstep(req->step_id.job_id, req->step_id.step_id, SIGTERM, 0,
-				     uid);
+		rc = _signal_jobstep(&req->step_id, SIGTERM, 0, uid);
 		if (rc != SLURM_SUCCESS)
 			return;
 		cf = slurm_conf_lock();
 		delay = MAX(cf->kill_wait, 5);
 		slurm_conf_unlock();
 		sleep(delay);
-		_signal_jobstep(req->step_id.job_id, req->step_id.step_id, SIGKILL, 0, uid);
+		_signal_jobstep(&req->step_id, SIGKILL, 0, uid);
 		return;
 	}
 
@@ -4442,7 +4437,7 @@ _kill_all_active_steps(uint32_t jobid, int sig, int flags, bool batch,
 		     (stepd->step_id.step_id != SLURM_BATCH_SCRIPT)) ||
 		    (sig_batch_step &&
 		     (stepd->step_id.step_id == SLURM_BATCH_SCRIPT))) {
-			if (_signal_jobstep(stepd->step_id.job_id, stepd->step_id.step_id, sig,
+			if (_signal_jobstep(&stepd->step_id, sig,
 			                    flags, req_uid) != SLURM_SUCCESS) {
 				rc = SLURM_ERROR;
 				continue;
