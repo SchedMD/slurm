@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
     authentication is ill-formed.
  -- slurmrestd - restrict ability of requests to use different authentication
     plugins.
+ -- slurmrestd - unlink named unix sockets before closing.
 
 * Changes in Slurm 20.02.3
 ==========================
