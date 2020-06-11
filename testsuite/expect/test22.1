@@ -374,7 +374,7 @@ proc test_fed {} {
 
 	set old_conf "$config_dir/slurm.conf"
 
-	log_debug [exec sed "S/ClusterName\\s*=.*/ClusterName=$cluster1/Ig" $old_conf > $new_conf]
+	log_debug [exec sed "s/ClusterName\\s*=.*/ClusterName=$cluster1/Ig" $old_conf > $new_conf]
 
 	set env(SLURM_CONF) $new_conf
 
