@@ -1107,7 +1107,7 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		_rsmi_print_freqs(i, LOG_LEVEL_DEBUG2);
 
 		add_gres_to_list(gres_list_system, "gpu", 1,
-				 node_config->cpu_cnt, NULL,
+				 node_config->cpu_cnt, NULL, NULL,
 				 device_file, device_brand, NULL);
 
 		xfree(device_file);
