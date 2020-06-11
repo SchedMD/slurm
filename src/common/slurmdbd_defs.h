@@ -349,7 +349,6 @@ typedef struct dbd_step_comp_msg {
 	time_t   end_time;	/* job termintation time */
 	uint32_t exit_code;	/* job exit code or signal */
 	jobacctinfo_t *jobacct; /* status info */
-	uint32_t job_id;	/* job ID */
 	time_t   job_submit_time;/* job submit time needed to find job record
 				  * in db */
 	char    *job_tres_alloc_str;/* Simple comma separated list of TRES for
@@ -360,14 +359,13 @@ typedef struct dbd_step_comp_msg {
 	time_t   start_time;	/* step start time */
 	uint16_t state;         /* current state of node.  Used to get
 				   flags on the state (i.e. maintenance) */
-	uint32_t step_id;	/* step ID */
+	slurm_step_id_t step_id;
 	uint32_t total_tasks;	/* count of tasks for step */
 } dbd_step_comp_msg_t;
 
 typedef struct dbd_step_start_msg {
 	uint32_t assoc_id;	/* accounting association id */
 	uint64_t db_index;	/* index into the db for this job */
-	uint32_t job_id;	/* job ID */
 	char *   name;		/* step name */
 	char *   nodes;		/* hosts allocated to the step */
 	char *   node_inx;	/* bitmap index of hosts allocated to
@@ -379,7 +377,7 @@ typedef struct dbd_step_start_msg {
 	uint32_t req_cpufreq_min; /* requested minimum CPU frequency  */
 	uint32_t req_cpufreq_max; /* requested maximum CPU frequency  */
 	uint32_t req_cpufreq_gov; /* requested CPU frequency governor */
-	uint32_t step_id;	/* step ID */
+	slurm_step_id_t step_id;
 	uint32_t task_dist;     /* layout method of step */
 	uint32_t total_tasks;	/* count of tasks for step */
 	char *tres_alloc_str;   /* Simple comma separated list of TRES */

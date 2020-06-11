@@ -3418,8 +3418,8 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 
-	debug2("DBD_STEP_COMPLETE: ID:%u.%u SUBMIT:%lu",
-	       step_comp_msg->job_id, step_comp_msg->step_id,
+	debug2("DBD_STEP_COMPLETE: %ps SUBMIT:%lu",
+	       &step_comp_msg->step_id,
 	       (unsigned long) step_comp_msg->job_submit_time);
 
 	memset(&step, 0, sizeof(step_record_t));
@@ -3432,14 +3432,15 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	job.end_time = step_comp_msg->end_time;
 	step.exit_code = step_comp_msg->exit_code;
 	step.jobacct = step_comp_msg->jobacct;
-	job.job_id = step_comp_msg->job_id;
+	job.job_id = step_comp_msg->step_id.job_id;
 	step.requid = step_comp_msg->req_uid;
 	job.start_protocol_ver = slurmdbd_conn->conn->version;
 	job.start_time = step_comp_msg->start_time;
 	job.tres_alloc_str = step_comp_msg->job_tres_alloc_str;
 	step.state = step_comp_msg->state;
-	step.step_id.job_id = step_comp_msg->job_id;
-	step.step_id.step_id = step_comp_msg->step_id;
+
+	memcpy(&step.step_id, &step_comp_msg->step_id, sizeof(step.step_id));
+
 	details.submit_time = step_comp_msg->job_submit_time;
 	details.num_tasks = step_comp_msg->total_tasks;
 
@@ -3487,8 +3488,8 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 
-	debug2("DBD_STEP_START: ID:%u.%u NAME:%s SUBMIT:%lu",
-	       step_start_msg->job_id, step_start_msg->step_id,
+	debug2("DBD_STEP_START: %ps NAME:%s SUBMIT:%lu",
+	       &step_start_msg->step_id,
 	       step_start_msg->name,
 	       (unsigned long) step_start_msg->job_submit_time);
 
@@ -3500,15 +3501,16 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.assoc_id = step_start_msg->assoc_id;
 	if (step_start_msg->db_index != NO_VAL64)
 		job.db_index = step_start_msg->db_index;
-	job.job_id = step_start_msg->job_id;
+	job.job_id = step_start_msg->step_id.job_id;
 	step.name = step_start_msg->name;
 	job.nodes = step_start_msg->nodes;
 	step.network = step_start_msg->node_inx;
 	job.start_protocol_ver = slurmdbd_conn->conn->version;
 	step.start_time = step_start_msg->start_time;
 	details.submit_time = step_start_msg->job_submit_time;
-	step.step_id.job_id = step_start_msg->job_id;
-	step.step_id.step_id = step_start_msg->step_id;
+
+	memcpy(&step.step_id, &step_start_msg->step_id, sizeof(step.step_id));
+
 	details.num_tasks = step_start_msg->total_tasks;
 	step.cpu_freq_min = step_start_msg->req_cpufreq_min;
 	step.cpu_freq_max = step_start_msg->req_cpufreq_max;
