@@ -1371,6 +1371,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			safe_unpack32(&node_reg_ptr->step_id[i].step_id,
 				      buffer);
 			convert_old_step_id(&node_reg_ptr->step_id[i].step_id);
+			node_reg_ptr->step_id[i].step_het_comp = NO_VAL;
 		}
 
 		safe_unpack16(&node_reg_ptr->flags, buffer);
@@ -2689,6 +2690,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 		safe_unpack_time(&tmp_ptr->start_time, buffer);
 		safe_unpack32(&tmp_ptr->step_id.step_id, buffer);
 		convert_old_step_id(&tmp_ptr->step_id.step_id);
+		tmp_ptr->step_id.step_het_comp = NO_VAL;
 		safe_unpack_time(&tmp_ptr->time, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (gres_plugin_job_alloc_unpack(&(tmp_ptr->job_gres_info),
@@ -2709,6 +2711,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 		safe_unpack_time(&(tmp_ptr->start_time), buffer);
 		safe_unpack32(&(tmp_ptr->step_id.step_id), buffer);
 		convert_old_step_id(&tmp_ptr->step_id.step_id);
+		tmp_ptr->step_id.step_het_comp = NO_VAL;
 		safe_unpack_time(&(tmp_ptr->time), buffer);
 	} else {
 		error("%s: protocol_version %hu not supported", __func__,
@@ -13164,6 +13167,7 @@ extern void pack_step_id(slurm_step_id_t *msg, Buf buffer,
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->step_id, buffer);
+		pack32(msg->step_het_comp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack_old_step_id(msg->step_id, buffer);
@@ -13180,10 +13184,12 @@ extern int unpack_step_id_members(slurm_step_id_t *msg, Buf buffer,
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->step_id, buffer);
+		safe_unpack32(&msg->step_het_comp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->step_id, buffer);
 		convert_old_step_id(&msg->step_id);
+		msg->step_het_comp = NO_VAL;
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);

@@ -4888,6 +4888,7 @@ extern int slurmdb_unpack_selected_step(slurmdb_selected_step_t **step,
 		if (step_ptr->step_id.step_id == INFINITE)
 			step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
 		convert_old_step_id(&step_ptr->step_id.step_id);
+		step_ptr->step_id.step_het_comp = NO_VAL;
 	} else
 		goto unpack_error;
 
@@ -5024,6 +5025,7 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		step_ptr->step_id.job_id = 0;
 		safe_unpack32(&step_ptr->step_id.step_id, buffer);
 		convert_old_step_id(&step_ptr->step_id.step_id);
+		step_ptr->step_id.step_het_comp = NO_VAL;
 		safe_unpackstr_xmalloc(&step_ptr->stepname,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&step_ptr->suspended, buffer);
