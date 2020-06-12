@@ -1304,8 +1304,9 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_xcalloc(node_reg_ptr->step_id, node_reg_ptr->job_count,
 			     sizeof(*node_reg_ptr->step_id));
 		for (i = 0; i < node_reg_ptr->job_count; i++)
-			unpack_step_id_members(&node_reg_ptr->step_id[i],
-					       buffer, protocol_version);
+			if (unpack_step_id_members(&node_reg_ptr->step_id[i],
+						   buffer, protocol_version))
+				goto unpack_error;
 
 		safe_unpack16(&node_reg_ptr->flags, buffer);
 		if ((node_reg_ptr->flags & SLURMD_REG_FLAG_STARTUP)
