@@ -1473,7 +1473,7 @@ static bool _job_exceeds_max_bf_param(job_record_t *job_ptr,
 		if (_check_bf_usage(user_part_usage,
 				    max_backfill_job_per_user_part,
 				    sched_start)) {
-			log_flag(BACKFILL, "backfill: have already checked %u jobs for user %u on partition %s; skipping job %u, %pJ",
+			log_flag(BACKFILL, "have already checked %u jobs for user %u on partition %s; skipping job %u, %pJ",
 				 max_backfill_job_per_user_part,
 				 job_ptr->user_id, job_ptr->part_ptr->name,
 				 job_ptr->job_id, job_ptr);
@@ -1486,7 +1486,7 @@ static bool _job_exceeds_max_bf_param(job_record_t *job_ptr,
 		part_usage = part_ptr->bf_data->job_usage;
 		if (_check_bf_usage(part_usage, max_backfill_job_per_part,
 				    sched_start)) {
-			log_flag(BACKFILL, "backfill: have already checked %u jobs for partition %s; skipping %pJ",
+			log_flag(BACKFILL, "have already checked %u jobs for partition %s; skipping %pJ",
 				 max_backfill_job_per_part,
 				 job_ptr->part_ptr->name, job_ptr);
 			return true;
@@ -1503,7 +1503,7 @@ static bool _job_exceeds_max_bf_param(job_record_t *job_ptr,
 			if (_check_bf_usage(assoc_usage,
 					    max_backfill_job_per_assoc,
 					    sched_start)) {
-				log_flag(BACKFILL, "backfill: have already checked %u jobs for user %u, assoc %u; skipping %pJ",
+				log_flag(BACKFILL, "have already checked %u jobs for user %u, assoc %u; skipping %pJ",
 					 max_backfill_job_per_assoc,
 					 job_ptr->user_id, job_ptr->assoc_id,
 					 job_ptr);
@@ -1511,7 +1511,7 @@ static bool _job_exceeds_max_bf_param(job_record_t *job_ptr,
 			}
 		} else {
 			/* Null assoc_ptr indicates no database */
-			log_flag(BACKFILL, "backfill: no assoc for job %u, required for parameter bf_max_job_per_assoc",
+			log_flag(BACKFILL, "no assoc for job %u, required for parameter bf_max_job_per_assoc",
 				 job_ptr->job_id);
 			assoc_usage = NULL;
 		}
@@ -1534,7 +1534,7 @@ static bool _job_exceeds_max_bf_param(job_record_t *job_ptr,
 
 		if (_check_bf_usage(user_usage, max_backfill_job_per_user,
 				    sched_start)) {
-			log_flag(BACKFILL, "backfill: have already checked %u jobs for user %u; skipping %pJ",
+			log_flag(BACKFILL, "have already checked %u jobs for user %u; skipping %pJ",
 				 max_backfill_job_per_user, job_ptr->user_id,
 				 job_ptr);
 			return true;
@@ -1693,7 +1693,7 @@ static int _attempt_backfill(void)
 		}
 		job_queue_rec = (job_queue_rec_t *) list_pop(job_queue);
 		if (!job_queue_rec) {
-			log_flag(BACKFILL, "backfill: reached end of job queue");
+			log_flag(BACKFILL, "reached end of job queue");
 			break;
 		}
 
@@ -1727,7 +1727,7 @@ static int _attempt_backfill(void)
 			if ((_yield_locks(yield_sleep) && !backfill_continue) ||
 			    (slurm_conf.last_update != config_update) ||
 			    (last_part_update != part_update)) {
-				log_flag(BACKFILL, "backfill: system state changed, breaking out after testing %u(%d) jobs",
+				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
 				rc = 1;
@@ -1841,7 +1841,7 @@ static int _attempt_backfill(void)
 			prio_reserve = bf_min_prio_reserve;
 
 		if (prio_reserve)
-			log_flag(BACKFILL, "backfill: %pJ has a prio_reserve of %u",
+			log_flag(BACKFILL, "%pJ has a prio_reserve of %u",
 				 job_ptr, prio_reserve);
 
 		job_no_reserve = 0;
@@ -1856,7 +1856,7 @@ static int _attempt_backfill(void)
 		}
 
 		if (bf_one_resv_per_job && job_ptr->start_time) {
-			log_flag(BACKFILL, "backfill: %pJ already added a backfill reservation. Test immediate start only for partition %s",
+			log_flag(BACKFILL, "%pJ already added a backfill reservation. Test immediate start only for partition %s",
 				 job_ptr, job_ptr->part_ptr->name);
 			job_no_reserve = TEST_NOW_ONLY;
 		}
@@ -1937,7 +1937,7 @@ next_task:
 			continue;
 		}
 
-		log_flag(BACKFILL, "backfill test for %pJ Prio=%u Partition=%s",
+		log_flag(BACKFILL, "test for %pJ Prio=%u Partition=%s",
 			 job_ptr, job_ptr->priority, job_ptr->part_ptr->name);
 
 		/* Test to see if we've exceeded any per user/partition limit */
@@ -1946,7 +1946,7 @@ next_task:
 
 		if (((part_ptr->state_up & PARTITION_SCHED) == 0) ||
 		    (part_ptr->node_bitmap == NULL)) {
-			log_flag(BACKFILL, "backfill: partition %s not usable",
+			log_flag(BACKFILL, "partition %s not usable",
 				 job_ptr->part_ptr->name);
 			continue;
 		}
@@ -1954,7 +1954,7 @@ next_task:
 		if ((!job_independent(job_ptr)) ||
 		    (license_job_test(job_ptr, time(NULL), true) !=
 		     SLURM_SUCCESS)) {
-			log_flag(BACKFILL, "backfill: %pJ not runable now",
+			log_flag(BACKFILL, "%pJ not runable now",
 				 job_ptr);
 			continue;
 		}
@@ -1964,16 +1964,16 @@ next_task:
 					   &min_nodes, &req_nodes, &max_nodes);
 
 		if (error_code == ESLURM_ACCOUNTING_POLICY) {
-			log_flag(BACKFILL, "backfill: %pJ acct policy node limit",
+			log_flag(BACKFILL, "%pJ acct policy node limit",
 				 job_ptr);
 			continue;
 		} else if (error_code ==
 			   ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
-			log_flag(BACKFILL, "backfill: %pJ node count too high",
+			log_flag(BACKFILL, "%pJ node count too high",
 				 job_ptr);
 			continue;
 		} else if (error_code != SLURM_SUCCESS) {
-			log_flag(BACKFILL, "backfill: error setting nodes for %pJ: %s",
+			log_flag(BACKFILL, "error setting nodes for %pJ: %s",
 				 job_ptr, slurm_strerror(error_code));
 			continue;
 		}
@@ -2058,7 +2058,7 @@ next_task:
 			if ((_yield_locks(yield_sleep) && !backfill_continue) ||
 			    (slurm_conf.last_update != config_update) ||
 			    (last_part_update != part_update)) {
-				log_flag(BACKFILL, "backfill: system state changed, breaking out after testing %u(%d) jobs",
+				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
 				rc = 1;
@@ -2101,7 +2101,7 @@ next_task:
 		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
 				  &exc_core_bitmap, &resv_overlap, false);
 		if (j != SLURM_SUCCESS) {
-			log_flag(BACKFILL, "backfill: %pJ reservation defer",
+			log_flag(BACKFILL, "%pJ reservation defer",
 				 job_ptr);
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			continue;
@@ -2355,7 +2355,7 @@ next_task:
 
 			/* get fed job lock from origin cluster */
 			if (fed_mgr_job_lock(job_ptr)) {
-				log_flag(BACKFILL, "backfill: %pJ can't get fed job lock from origin cluster to backfill job",
+				log_flag(BACKFILL, "%pJ can't get fed job lock from origin cluster to backfill job",
 					 job_ptr);
 				rc = ESLURM_FED_JOB_LOCK;
 				goto skip_start;
@@ -2469,7 +2469,7 @@ skip_start:
 					assoc_mgr_unlock(&qos_read_lock);
 				}
 			} else if (rc != SLURM_SUCCESS) {
-				log_flag(BACKFILL, "backfill: planned start of %pJ failed: %s",
+				log_flag(BACKFILL, "planned start of %pJ failed: %s",
 					 job_ptr, slurm_strerror(rc));
 				/* Drop through and reserve these resources.
 				 * Likely due to state changes during sleep.
@@ -2491,7 +2491,7 @@ skip_start:
 				job_start_cnt++;
 				if (max_backfill_jobs_start &&
 				    (job_start_cnt >= max_backfill_jobs_start)){
-					log_flag(BACKFILL, "backfill: bf_max_job_start limit of %d reached",
+					log_flag(BACKFILL, "bf_max_job_start limit of %d reached",
 						 max_backfill_jobs_start);
 					break;
 				}
@@ -2538,7 +2538,7 @@ skip_start:
 		if (later_start && (job_ptr->start_time > later_start)) {
 			/* Try later when some nodes currently reserved for
 			 * pending jobs are free */
-			log_flag(BACKFILL, "backfill: Try later %pJ later_start %ld",
+			log_flag(BACKFILL, "Try later %pJ later_start %ld",
 			         job_ptr, later_start);
 			job_ptr->start_time = 0;
 			goto TRY_LATER;
@@ -2567,7 +2567,7 @@ skip_start:
 		}
 
 		if (node_space_recs >= max_backfill_job_cnt) {
-			log_flag(BACKFILL, "backfill: table size limit of %u reached",
+			log_flag(BACKFILL, "table size limit of %u reached",
 				 max_backfill_job_cnt);
 			if ((max_backfill_job_per_part != 0) &&
 			    (max_backfill_job_per_part >=
@@ -2602,7 +2602,7 @@ skip_start:
 			 * plugin does not know about. Try again later. */
 			later_start = job_ptr->start_time;
 			job_ptr->start_time = 0;
-			log_flag(BACKFILL, "backfill: %pJ overlaps with existing reservation start_time=%u end_reserve=%u boot_time=%u later_start %ld",
+			log_flag(BACKFILL, "%pJ overlaps with existing reservation start_time=%u end_reserve=%u boot_time=%u later_start %ld",
 				 job_ptr, start_time, end_reserve, boot_time,
 				 later_start);
 			goto TRY_LATER;
@@ -2655,7 +2655,7 @@ skip_start:
 			if (!acct_policy_job_runnable_post_select(job_ptr,
 							  tres_req_cnt, true)) {
 				assoc_mgr_unlock(&locks);
-				log_flag(BACKFILL, "backfill: adding reservation for %pJ blocked by acct_policy_job_runnable_post_select",
+				log_flag(BACKFILL, "adding reservation for %pJ blocked by acct_policy_job_runnable_post_select",
 					 job_ptr);
 				_set_job_time_limit(job_ptr, orig_time_limit);
 				continue;
@@ -2818,7 +2818,7 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 		slurmctld_diag_stats.last_backfilled_jobs++;
 		if (job_ptr->het_job_id)
 			slurmctld_diag_stats.backfilled_het_jobs++;
-		log_flag(BACKFILL, "backfill: Jobs backfilled since boot: %u",
+		log_flag(BACKFILL, "Jobs backfilled since boot: %u",
 			 slurmctld_diag_stats.backfilled_jobs);
 	} else if ((job_ptr->job_id != fail_jobid) &&
 		   (rc != ESLURM_ACCOUNTING_POLICY)) {
@@ -3561,7 +3561,7 @@ static void _het_job_start_test_single(node_space_map_t *node_space,
 		job_start_cnt += list_count(map->het_job_rec_list);
 		if (max_backfill_jobs_start &&
 		    (job_start_cnt >= max_backfill_jobs_start)) {
-			log_flag(BACKFILL, "backfill: bf_max_job_start limit of %d reached",
+			log_flag(BACKFILL, "bf_max_job_start limit of %d reached",
 				 max_backfill_jobs_start);
 		}
 	}
