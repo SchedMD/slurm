@@ -131,7 +131,8 @@ static void _auth_local(on_http_request_args_t *args, rest_auth_context_t *ctxt)
 		/* local auth requires there to be a valid fd */
 		debug3("%s: rejecting auth local with invalid input_fd:%u output_fd:%u",
 		       __func__, input_fd, output_fd);
-		return _clear_auth(ctxt);
+		_clear_auth(ctxt);
+		return;
 	}
 
 	if (args->context->con->is_socket && !args->context->con->unix_socket) {
@@ -140,7 +141,8 @@ static void _auth_local(on_http_request_args_t *args, rest_auth_context_t *ctxt)
 		 */
 		debug("%s: [%s] socket authentication only supported on UNIX sockets",
 		      __func__, name);
-		return _clear_auth(ctxt);
+		_clear_auth(ctxt);
+		return;
 	} else if (args->context->con->is_socket &&
 		   args->context->con->unix_socket) {
 		struct ucred cred = { 0 };
@@ -151,14 +153,16 @@ static void _auth_local(on_http_request_args_t *args, rest_auth_context_t *ctxt)
 			/* socket may be remote, local auth doesn't apply */
 			debug("%s: [%s] unable to get socket ownership: %m",
 			      __func__, name);
-			return _clear_auth(ctxt);
+			_clear_auth(ctxt);
+			return;
 		}
 
 		if (cred.uid == -1 || cred.gid == -1 || cred.pid == 0) {
 			/* SO_PEERCRED failed silently */
 			error("%s: [%s] rejecting socket connection with invalid SO_PEERCRED response",
 			      __func__, name);
-			return _clear_auth(ctxt);
+			_clear_auth(ctxt);
+			return;
 		} else if (!cred.uid) {
 			/* requesting socket is root */
 			error("%s: [%s] accepted root socket connection with uid:%u gid:%u pid:%ld",
@@ -188,24 +192,28 @@ static void _auth_local(on_http_request_args_t *args, rest_auth_context_t *ctxt)
 			error("%s: [%s] rejecting socket connection with uid:%u gid:%u pid:%ld",
 			      __func__, name, cred.uid, cred.gid,
 			      (long) cred.pid);
-			return _clear_auth(ctxt);
+			_clear_auth(ctxt);
+			return;
 		}
 	} else if (fstat(input_fd, &status)) {
 		error("%s: [%s] unable to stat fd %d: %m",
 		      __func__, name, input_fd);
-		return _clear_auth(ctxt);
+		_clear_auth(ctxt);
+		return;
 	} else if (S_ISCHR(status.st_mode) || S_ISFIFO(status.st_mode) ||
 		   S_ISREG(status.st_mode)) {
 		if (status.st_mode & (S_ISUID | S_ISGID)) {
 			/* FIFO has sticky bits -> REJECT */
 			error("%s: [%s] rejecting PIPE connection sticky bits permissions: %07o",
 			      __func__, name, status.st_mode);
-			return _clear_auth(ctxt);
+			_clear_auth(ctxt);
+			return;
 		} else if (status.st_mode & S_IRWXO) {
 			/* FIFO has other read/write -> REJECT */
 			error("%s: [%s] rejecting PIPE connection other read or write bits permissions: %07o",
 			      __func__, name, status.st_mode);
-			return _clear_auth(ctxt);
+			_clear_auth(ctxt);
+			return;
 		} else if (status.st_uid == uid) {
 			/* FIFO is owned by same user */
 			info("%s: [%s] accepted connection from uid:%u",
@@ -220,7 +228,8 @@ static void _auth_local(on_http_request_args_t *args, rest_auth_context_t *ctxt)
 		      S_ISCHR(status.st_mode), S_ISDIR(status.st_mode),
 		      S_ISFIFO(status.st_mode), S_ISREG(status.st_mode),
 		      S_ISLNK(status.st_mode));
-		return _clear_auth(ctxt);
+		_clear_auth(ctxt);
+		return;
 	}
 
 	if (!ctxt->user_name)
@@ -230,7 +239,8 @@ static void _auth_local(on_http_request_args_t *args, rest_auth_context_t *ctxt)
 	if (!ctxt->user_name) {
 		error("%s: [%s] unable to lookup user_name for uid:%u",
 		      __func__, args->context->con->name, auth_uid);
-		return _clear_auth(ctxt);
+		_clear_auth(ctxt);
+		return;
 	}
 
 	if (!(ctxt->type & AUTH_TYPE_LOCAL))
