@@ -70,7 +70,7 @@ expect {
 set match 0
 spawn $scontrol show ReservationName=$resv_name
 expect {
-	-re "Nodes=($alpha_numeric_nodelist)" {
+	-re "Nodes=($re_word_str)" {
 		set node_list_orig $expect_out(1,string)
 		exp_continue
 	}
@@ -110,7 +110,7 @@ expect {
 #
 spawn $scontrol show ReservationName=$resv_name
 expect {
-	-re "Nodes=($alpha_numeric_nodelist)" {
+	-re "Nodes=($re_word_str)" {
 		set node_list_new $expect_out(1,string)
 		exp_continue
 	}
@@ -153,7 +153,7 @@ sleep 32
 #
 spawn $scontrol show ReservationName=$resv_name
 expect {
-	-re "Nodes=($alpha_numeric_nodelist)" {
+	-re "Nodes=($re_word_str)" {
 		set node_list_orig $expect_out(1,string)
 		exp_continue
 	}

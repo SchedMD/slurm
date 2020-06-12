@@ -215,7 +215,7 @@ proc check_cpu_off {nodes job_cpus ncpus} {
 proc submit_cpu {ntasks ncpus} {
 
 	global srun bin_printenv nodelist exit_code num_nodes tasks nodes
-	global bin_bash number alpha_numeric_nodelist wait_for_job
+	global bin_bash number re_word_str wait_for_job
 	global bin_sort bin_uniq
 
 	# Wait awhile for the jobs to cleanup
@@ -227,7 +227,7 @@ proc submit_cpu {ntasks ncpus} {
 		-re "job ($number)" {
 			exp_continue
 		}
-		-re "  ($number) ($alpha_numeric_nodelist)" {
+		-re "  ($number) ($re_word_str)" {
 			set tasks($x) $expect_out(1,string)
 			set nodes($x) $expect_out(2,string)
 			incr x 1
@@ -250,7 +250,7 @@ proc submit_cpu {ntasks ncpus} {
 proc submit_tasks {ntasks ntaskpn} {
 
 	global srun bin_printenv nodelist exit_code num_nodes tasks nodes bin_bash
-	global number alpha_numeric_nodelist
+	global number re_word_str
 	global bin_sort bin_uniq
 
 	# Wait awhile for the jobs to clean up
@@ -262,7 +262,7 @@ proc submit_tasks {ntasks ntaskpn} {
 		-re "job ($number)" {
 			exp_continue
 		}
-		-re "   ($number) ($alpha_numeric_nodelist)" {
+		-re "   ($number) ($re_word_str)" {
 			set tasks($x) $expect_out(1,string)
 			set nodes($x) $expect_out(2,string)
 			incr x 1
@@ -316,7 +316,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 
 spawn $scontrol show job $tmp_id
 expect {
-	-re "NodeList=($alpha_numeric_nodelist)" {
+	-re "NodeList=($re_word_str)" {
 		set nodelist $expect_out(1,string)
 		exp_continue
 	}

@@ -81,7 +81,7 @@ expect {
 	-re "JobState=DEADLINE" {
 		exp_continue
 	}
-	-re "JobState=($alpha)" {
+	-re "JobState=($re_word_str)" {
 		set current_state $expect_out(1,string)
 		log_error "Invalid job state ($current_state != DEADLINE)"
 		set exit_code 1

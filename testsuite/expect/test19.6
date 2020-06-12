@@ -276,7 +276,7 @@ expect {
 		incr job_matches
 		exp_continue
 	}
-	-re "($number) *node *. *($alpha)" {
+	-re "($number) *node *. *($re_word_str)" {
 		incr node_matches
 		set trigger_id $expect_out(1,string)
 		exp_continue
@@ -329,7 +329,7 @@ if {$matches == 0} {
 set node_matches 0
 set strigger_pid [spawn $strigger --get -v --user=$uid]
 expect {
-	-re "($number) *node *. *($alpha)" {
+	-re "($number) *node *. *($re_word_str)" {
 		incr node_matches
 		if {$trigger_id == $expect_out(1,string)} {
 			log_error "Failed to clear specific trigger"

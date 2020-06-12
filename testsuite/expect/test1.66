@@ -77,11 +77,11 @@ if {[wait_for_file $file_out] == 0} {
 	set matches  0
 	spawn $bin_cat $file_out
 	expect {
-		-re "SUBMIT_NODE=($alpha_numeric_nodelist)" {
+		-re "SUBMIT_NODE=($re_word_str)" {
 			set node_name $expect_out(1,string)
 			exp_continue
 		}
-		-re "SLURM_STEP_NODELIST=($alpha_numeric_nodelist)" {
+		-re "SLURM_STEP_NODELIST=($re_word_str)" {
 			if {![string compare $expect_out(1,string) $node_name]} {
 				incr matches
 				exp_continue

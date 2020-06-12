@@ -82,7 +82,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "HOST($number)=($alpha_numeric_under)" {
+	-re "HOST($number)=($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
 			set host $expect_out(2,string)
 		}

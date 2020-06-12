@@ -125,7 +125,7 @@ if {$job_found == 0} {
 #
 spawn $squeue --format=%t --noheader --states=PD
 expect {
-	-re "($alpha_cap)" {
+	-re "($re_word_str)" {
 		if {[string compare $expect_out(1,string) "PD"]} {
 			log_error "squeue state filter failure"
 			set exit_code 1
@@ -149,7 +149,7 @@ set this_user [get_my_user_name]
 
 spawn $squeue --format=%u --noheader --user=$this_user
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		if {[string compare $expect_out(1,string) $this_user]} {
 			log_error "squeue user filter failure"
 			set exit_code 1
@@ -172,7 +172,7 @@ set this_uid [get_my_uid]
 
 spawn $squeue --format=%u --noheader --user=$this_uid
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		if {[string compare $expect_out(1,string) $this_user]} {
 			log_error "squeue user filter failure"
 			set exit_code 1
@@ -217,7 +217,7 @@ if {$match != 1} {
 set node_name_set 0
 spawn $squeue --format=%N --noheader --jobs=$job_id1 --states=RUNNING
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set node_name $expect_out(1,string)
 		set node_name_set 1
 		exp_continue
@@ -233,7 +233,7 @@ expect {
 if {$node_name_set == 1} {
 	spawn $squeue --format=%u --noheader --user=$this_uid --nodelist=$node_name
 	expect {
-		-re "($alpha_numeric_under)" {
+		-re "($re_word_str)" {
 			set node_name_set 0
 			exp_continue
 		}
@@ -259,7 +259,7 @@ set partition1 ""
 set partition2 ""
 spawn $squeue --format=%P --noheader
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		if {![string compare $partition1 ""]} {
 			set partition1 $expect_out(1,string)
 			exp_continue
@@ -282,7 +282,7 @@ if {[string compare partition2 ""] == 0} {
 }
 spawn $squeue --format=%P --noheader --partitions=$partition1
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		if {[string compare $expect_out(1,string) $partition1]} {
 			log_error "squeue partition filter error"
 			set exit_code 1

@@ -66,7 +66,7 @@ print_header $test_id
 proc get_res_attrs {} {
 
 	global scontrol
-	global alpha_numeric_under alpha_numeric_nodelist
+	global re_word_str
 	global res_name
 	global res_nodes
 	global res_nodecnt
@@ -77,7 +77,7 @@ proc get_res_attrs {} {
 
 	spawn $scontrol show res $res_name
 	expect {
-		-re "ReservationName=($alpha_numeric_under)" {
+		-re "ReservationName=($re_word_str)" {
 			set tmp_res_name $expect_out(1,string)
 			if {$tmp_res_name != $res_name} {
 				if {!$failure_expected} {
@@ -94,22 +94,22 @@ proc get_res_attrs {} {
 			set ret_code 1
 			exp_continue
 		}
-		-re "Reservation ($alpha_numeric_under) not found" {
+		-re "Reservation ($re_word_str) not found" {
 			if {!$failure_expected} {
 				log_error "Reservation $res_name not found after reservation created with: $res_params"
 			}
 			set ret_code 1
 			exp_continue
 		}
-		-re "Nodes=($alpha_numeric_nodelist)" {
+		-re "Nodes=($re_word_str)" {
 			set res_nodes $expect_out(1,string)
 			exp_continue
 		}
-		-re "NodeCnt=($alpha_numeric_under)" {
+		-re "NodeCnt=($re_word_str)" {
 			set res_nodecnt $expect_out(1,string)
 			exp_continue
 		}
-		-re "CoreCnt=($alpha_numeric_under)" {
+		-re "CoreCnt=($re_word_str)" {
 			set res_corecnt $expect_out(1,string)
 			exp_continue
 		}
@@ -139,7 +139,7 @@ proc get_res_attrs {} {
 proc create_res { res_params failure_expected } {
 	#exp_internal 1
 	global scontrol
-	global alpha_numeric_under number alpha_numeric_nodelist
+	global re_word_str
 	global res_name
 	global res_nodes
 	global res_nodecnt
@@ -158,7 +158,7 @@ proc create_res { res_params failure_expected } {
 	set arglist [linsert $res_params 0 $scontrol create res]
 	eval spawn $arglist
 	expect {
-		-re "Reservation created: ($alpha_numeric_under)" {
+		-re "Reservation created: ($re_word_str)" {
 			set res_name $expect_out(1,string)
 		}
 		-re "Error creating the reservation: Invalid user" {
@@ -201,7 +201,7 @@ proc create_res { res_params failure_expected } {
 #
 proc update_res { res_name res_params failure_expected } {
 	global scontrol
-	global alpha_numeric_under
+	global re_word_str
 	set ret_code 0
 
 	#
@@ -280,7 +280,7 @@ if {[is_super_user] == 0} {
 set have_resv 0
 spawn $scontrol show res $res_name
 expect {
-	-re "ReservationName=($alpha_numeric_under)" {
+	-re "ReservationName=($re_word_str)" {
 		incr have_resv
 		exp_continue
 	}
@@ -326,7 +326,7 @@ if {[string compare $def_node ""] == 0} {
 
 spawn $sinfo -h -o "=%N=" -tIDLE -p $def_partition
 expect {
-	-re "=($alpha_numeric).($number)-($number).=" {
+	-re "=($re_word_str).($number)-($number).=" {
 		set def_node_name $expect_out(1,string)
 		set def_node_inx_min $expect_out(2,string)
 		set def_node_inx_max $expect_out(3,string)

@@ -51,12 +51,12 @@ proc get_max_spare_node_cnt {} {
 }
 
 proc get_node {job_id} {
-	global scontrol squeue alpha_numeric_nodelist alpha_numeric_under exit_code
+	global scontrol squeue re_word_str re_word_str exit_code
 
 	set node_list ""
 	spawn $squeue -j $job_id --noheader -o NodeList=%N
 	expect {
-		-re "NodeList=($alpha_numeric_nodelist)" {
+		-re "NodeList=($re_word_str)" {
 			set node_list $expect_out(1,string)
 			exp_continue
 		}
@@ -72,7 +72,7 @@ proc get_node {job_id} {
 	set node_name ""
 	spawn $scontrol show hostnames $node_list
 	expect {
-		-re "($alpha_numeric_under)" {
+		-re "($re_word_str)" {
 			set node_name $expect_out(1,string)
 			exp_continue
 		}
@@ -158,7 +158,7 @@ for {set count 0} {$count <= $spare_node} {incr count 1} {
 	set replace_match 0
 	spawn $smd -r $node_name $job_id
 	expect {
-		-re "Job $job_id got node $node_name replaced with node ($alpha_numeric_under)" {
+		-re "Job $job_id got node $node_name replaced with node ($re_word_str)" {
 			set new_node $expect_out(1,string)
 			set replace_match 1
 			exp_continue
@@ -190,7 +190,7 @@ for {set count 0} {$count <= $spare_node} {incr count 1} {
 
 spawn $sinfo --noheader -o "State=%T NodeName=%N"
 expect {
-	-re "State=fail NodeName=($alpha_numeric_nodelist)" {
+	-re "State=fail NodeName=($re_word_str)" {
 		set fail_node $expect_out(1,string)
 		exp_continue
 	}

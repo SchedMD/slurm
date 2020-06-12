@@ -304,7 +304,7 @@ expect {
 set got_node 0
 spawn $srun -N1 printenv SLURM_NODELIST
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set test_node $expect_out(1,string)
 		set got_node 1
 		exp_continue

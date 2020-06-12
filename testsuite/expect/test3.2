@@ -78,7 +78,7 @@ proc run_job { part_name } {
 #
 spawn $scontrol show part
 expect {
-	-re "PartitionName=($alpha_numeric_under)" {
+	-re "PartitionName=($re_word_str)" {
 		if {[string compare $part_name ""] == 0} {
 			set part_name $expect_out(1,string)
 		}
@@ -95,7 +95,7 @@ expect {
 
 spawn $scontrol show part $part_name
 expect {
-	-re "State=($alpha_cap) " {
+	-re "State=($re_word_str) " {
 		set part_old_state $expect_out(1,string)
 		exp_continue
 	}
@@ -144,7 +144,7 @@ if {$job_runable == 0} {
 #
 spawn $scontrol update PartitionName=$part_name State=$part_new_state
 expect {
-	-re "slurm_update error: ($alpha_numeric_under) ($alpha_numeric_under)" {
+	-re "slurm_update error: ($re_word_str) ($re_word_str)" {
 		set access_err 0
 		set err_msg1 $expect_out(1,string)
 		set err_msg2 $expect_out(2,string)
@@ -175,7 +175,7 @@ expect {
 #
 spawn $scontrol show partition $part_name
 expect {
-	-re "State=($alpha_cap) " {
+	-re "State=($re_word_str) " {
 		set read_state $expect_out(1,string)
 		exp_continue
 	}

@@ -31,7 +31,6 @@ set test_id        4.14
 set test_part_1    "test$test_id\_partition_1"
 set test_part_2    "test$test_id\_partition_2"
 set test_node      ""
-set alpha_num_dot  "\[a-zA-Z0-9_.\-\]+"
 set default_part   default_partition
 set exit_code      0
 
@@ -74,7 +73,7 @@ delete_part
 # get a node for the test partition
 spawn $bin_bash -c "$sinfo -h --state=idle -o%n | head -n1"
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set test_node $expect_out(1,string)
 		exp_continue
 	}
@@ -140,7 +139,7 @@ set match 0
 set found 0
 spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P"
 expect {
-	-re "($alpha_num_dot)" {
+	-re "($re_word_str)" {
 		set str $expect_out(1,string)
 		if {![string compare $str $test_part_1] || \
 		    ![string compare $str $test_part_2] } {
@@ -167,7 +166,7 @@ if {$match != 2 || $found != 2} {
 set match 0
 spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P -p$test_part_2"
 expect {
-	-re "($alpha_num_dot)" {
+	-re "($re_word_str)" {
 		set str $expect_out(1,string)
 		if {![string compare $str $test_part_1] } {
 			set match -99
@@ -196,7 +195,7 @@ set match 0
 set found 0
 spawn $bin_bash -c "SINFO_ALL=1 $sinfo -h -o%P -p$test_part_1,$test_part_2"
 expect {
-	-re "($alpha_num_dot)" {
+	-re "($re_word_str)" {
 		set str $expect_out(1,string)
 		if {![string compare $str $test_part_1] || \
 		    ![string compare $str $test_part_2]} {
@@ -222,7 +221,7 @@ if {$match != 2 || $found != 2} {
 set match 0
 spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P -a"
 expect {
-	-re "($alpha_num_dot)" {
+	-re "($re_word_str)" {
 		set str $expect_out(1,string)
 		if {![string compare $str $test_part_1] || \
 		    ![string compare $str $test_part_2]} {

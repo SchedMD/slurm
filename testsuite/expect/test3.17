@@ -59,7 +59,7 @@ make_bash_script $file_in "
 set timeout $max_job_delay
 set srun_pid [spawn $srun -t1 --exclusive -N1 $file_in]
 expect {
-	-re "NodeList=($alpha_numeric)" {
+	-re "NodeList=($re_word_str)" {
 		set node_name $expect_out(1,string)
 		set match 1
 		exp_continue
@@ -84,7 +84,7 @@ if {$match == 0} {
 set match 0
 spawn $scontrol show node $node_name
 expect {
-	-re "AvailableFeatures=($alpha_numeric_comma)" {
+	-re "AvailableFeatures=($re_word_str)" {
 		if {![string compare orig_avail_node_feat "(null)"]} {
 			set orig_avail_node_feat ""
 		} else {
@@ -98,7 +98,7 @@ expect {
 		incr match
 		exp_continue
 	}
-	-re "ActiveFeatures=($alpha_numeric_comma)" {
+	-re "ActiveFeatures=($re_word_str)" {
 		if {![string compare orig_avail_node_feat "(null)"]} {
 			set orig_active_node_feat ""
 		} else {

@@ -225,7 +225,7 @@ if {$gpu_cnt > 1} {
 			set num_cpus $expect_out(1,string)
 			exp_continue
 		}
-		-re " Nodes=($alpha_numeric_under)" {
+		-re " Nodes=($re_word_str)" {
 			set hostname $expect_out(1,string)
 			exp_continue
 		}

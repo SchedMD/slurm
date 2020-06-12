@@ -70,7 +70,7 @@ set timeout $max_job_delay
 set match   0
 set salloc_pid [spawn $salloc --gpus=$gpu_cnt --nodes=1 -t1 -J "test$test_id" : --gpus=1 --nodes=1 ./$file_in1]
 expect {
-	-re "($number): HOST:($alpha_numeric_under) CUDA_VISIBLE_DEVICES:($number_commas)" {
+	-re "($number): HOST:($re_word_str) CUDA_VISIBLE_DEVICES:($number_commas)" {
 		set gpu_alloc [cuda_count $expect_out(3,string)]
 		if {$expect_out(1,string) == 0 && $gpu_alloc == $gpu_cnt} {
 			incr match

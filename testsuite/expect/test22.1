@@ -340,14 +340,14 @@ proc end_it {} {
 }
 
 proc test_fed {} {
-	global scontrol alpha sacctmgr env bin_rm cluster1 cluster2 fedname
+	global scontrol re_word_str sacctmgr env bin_rm cluster1 cluster2 fedname
 
 	set config_dir ""
 	set new_conf /tmp/slurm.conf.test22.1
 
 	spawn $scontrol show config
 	expect {
-		-re "SLURM_CONF *= (/.*)/($alpha).*SLURM_VERSION" {
+		-re "SLURM_CONF *= (/.*)/($re_word_str).*SLURM_VERSION" {
 			set config_dir $expect_out(1,string)
 			exp_continue
 		}

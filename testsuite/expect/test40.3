@@ -40,7 +40,7 @@ set file_out       "test$test_id.output"
 #	are reported based upon the job specification
 #
 proc test_acct { job_id job_mps step_mps have_mps_types } {
-	global alpha_numeric_under number
+	global re_word_str number
 	global bin_cat bin_rm bin_grep exit_code file_out sacct
 
 	if {$job_id == 0} {
@@ -80,7 +80,7 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 				}
 				exp_continue
 			}
-			-re "gres/mps:($alpha_numeric_under)=($number)" {
+			-re "gres/mps:($re_word_str)=($number)" {
 				if {$have_mps_types != 0} {
 					incr match
 					if {$expect_out(2,string) != $step_mps} {
@@ -137,7 +137,7 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 			}
 			exp_continue
 		}
-		-re "gres/mps:($alpha_numeric_under)=($number)" {
+		-re "gres/mps:($re_word_str)=($number)" {
 			if {$have_mps_types != 0} {
 				incr match
 				if {$expect_out(2,string) != $job_mps} {
@@ -166,7 +166,7 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 #	are reported based upon the job specification
 #
 proc test_out_file { file_out target } {
-	global alpha_numeric_under number bin_cat exit_code
+	global re_word_str number bin_cat exit_code
 
 	if {[wait_for_file $file_out] != 0} {
 		fail "No output file"
@@ -179,7 +179,7 @@ proc test_out_file { file_out target } {
 			set match $expect_out(1,string)
 			exp_continue
 		}
-		-re "TRES=.*,gres/mps:($alpha_numeric_under)=($number)" {
+		-re "TRES=.*,gres/mps:($re_word_str)=($number)" {
 			set match $expect_out(2,string)
 			exp_continue
 		}
@@ -272,7 +272,7 @@ expect {
 		set match $expect_out(1,string)
 		exp_continue
 	}
-	-re "TRES=.*,gres/mps:($alpha_numeric_under)=($number)" {
+	-re "TRES=.*,gres/mps:($re_word_str)=($number)" {
 		if {$match == 0} {
 			set have_mps_types 1
 			set match $expect_out(2,string)

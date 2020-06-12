@@ -50,7 +50,7 @@ if {[test_front_end] != 0} {
 
 spawn $bin_bash -c "exec $scontrol show hostnames \$($sinfo -tidle -h -o%N) | head -n2 |tr \'\n\' ' ' "
 expect {
-	-re "($alpha_numeric_under) ($alpha_numeric_under)" {
+	-re "($re_word_str) ($re_word_str)" {
 		set node1 $expect_out(1,string)
 		set node2 $expect_out(2,string)
 		exp_continue

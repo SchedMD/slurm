@@ -139,7 +139,7 @@ proc submit_job { options cdir file_in } {
 }
 
 proc get_job_dependency { job_id } {
-	global my_scontrol reason dependency alpha
+	global my_scontrol reason dependency re_word_str
 
 	set reason ""
 	set dependency ""
@@ -160,11 +160,11 @@ proc get_job_dependency { job_id } {
 	# ([a-zA-Z_]+:[0-9_*+]+\([a-zA-Z]+\)\?*\,*|singleton\(unfulfilled\)\?*\,*)+|\(null\)
 
 
-#set depend_match "\[a-zA-Z_\]+:\[0-9_*+\]+\\($alpha\\)\|\\(null\\)\|singleton\\(unfulfilled\\)"
+#set depend_match "\[a-zA-Z_\]+:\[0-9_*+\]+\\($re_word_str\\)\|\\(null\\)\|singleton\\(unfulfilled\\)"
 
 	set type "\[a-zA-Z_\]+"
 	set jobid_time "\[0-9_*+\]+"
-	set state "\\($alpha\\)\\"
+	set state "\\($re_word_str\\)\\"
 	set delim ",*\\?*"
 	set depend_regex "\($type:$jobid_time$state$delim\|singleton\\(unfulfilled\\)$delim\)+"
 	set no_depend "\\(null\\)"

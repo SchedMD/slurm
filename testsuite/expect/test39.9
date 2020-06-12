@@ -161,7 +161,7 @@ expect {
 		incr match
 		exp_continue
 	}
-	-re " NodeList=($controlmachine_regex)" {
+	-re " NodeList=($re_word_str)" {
 		set hostname $expect_out(1,string)
 		incr match
 		exp_continue

@@ -183,7 +183,7 @@ if {[wait_for_file $file_out] == 0} {
 			set task_cnt $expect_out(1,string)
 			exp_continue
 		}
-		-re "Rank.($number). on $alpha_numeric_under just received msg from Rank ($number)" {
+		-re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
 			incr rank_sum $expect_out(1,string)
 			incr rank_sum $expect_out(2,string)
 			incr matches

@@ -84,7 +84,7 @@ set def_name ""
 set def_node ""
 spawn $sinfo -h -o %32P
 expect {
-	-re "($alpha_numeric_under)(\\*)" {
+	-re "($re_word_str)(\\*)" {
 		set def_name $expect_out(1,string)
 		exp_continue
 	}
@@ -168,7 +168,7 @@ if {$allow != 1} {
 #
 spawn $bin_id -gn
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set my_group  $expect_out(1,string)
 		exp_continue
 	}

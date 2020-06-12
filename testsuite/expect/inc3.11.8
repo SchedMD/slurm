@@ -34,7 +34,7 @@
 proc inc3_11_8 {} {
 	global user_name exit_code res_name
 	global bin_rm file_in bin_sleep sbatch number scontrol
-	global alpha_numeric_under scancel
+	global re_word_str scancel
 	global cluster_cpus def_partition
 
 	log_info "+++++ STARTING TEST 8 (Within: inc3.11.8) +++++"
@@ -51,7 +51,7 @@ proc inc3_11_8 {} {
 	set host_name ""
 	spawn $scontrol show res $res_name
 	expect {
-		-re "Nodes=($alpha_numeric_under)" {
+		-re "Nodes=($re_word_str)" {
 			set host_name $expect_out(1,string)
 			exp_continue
 		}

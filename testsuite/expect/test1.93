@@ -30,12 +30,12 @@ set exit_code   0
 set file_prog   "test$test_id.prog"
 
 proc get_cpu_bind { type name } {
-	global alpha exit_code scontrol
+	global re_word_str exit_code scontrol
 
 	set cpu_bind "off"
 	spawn $scontrol show $type $name
 	expect {
-		-re "CpuBind=($alpha)" {
+		-re "CpuBind=($re_word_str)" {
 			set cpu_bind $expect_out(1,string)
 			exp_continue
 		}
@@ -69,13 +69,13 @@ proc set_cpu_bind { type name cpu_bind } {
 }
 
 proc run_prog { node_name cpu_bind } {
-	global exit_code srun def_part_name bin_printenv number alpha
+	global exit_code srun def_part_name bin_printenv number re_word_str
 
 	set matches 0
 	set found_cpu_bind ""
 	set srun_pid [spawn $srun -p $def_part_name -w $node_name -v -t1 $bin_printenv SLURMD_NODENAME]
 	expect {
-		-re "CpuBindType=($alpha)" {
+		-re "CpuBindType=($re_word_str)" {
 			set found_cpu_bind $expect_out(1,string)
 			if {[string first $cpu_bind $found_cpu_bind] != -1} {
 				set matches 1
@@ -139,7 +139,7 @@ set node_1 ""
 set node_cnt 0
 set srun_pid [spawn $srun -p $def_part_name -l -N2 -t1 $bin_printenv SLURMD_NODENAME]
 expect {
-	-re "($number): ($controlmachine_regex)" {
+	-re "($number): ($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
 			set node_0 $expect_out(2,string)
 			incr node_cnt

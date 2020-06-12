@@ -74,7 +74,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		set task_id $expect_out(1,string)
 		if {$task_id == 0} {
 			set host_0_name $expect_out(2,string)

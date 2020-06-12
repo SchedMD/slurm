@@ -75,7 +75,7 @@ set host_num 0
 set host_list ""
 send "$srun -l -n 1 -N 1 $bin_printenv SLURM_NODELIST\r"
 expect {
-	-re "($number): *($alpha_numeric_nodelist)" {
+	-re "($number): *($re_word_str)" {
 		set host_num $expect_out(1,string)
 		set host_list $expect_out(2,string)
 		exp_continue
@@ -94,7 +94,7 @@ set host1 ""
 set host2 ""
 send "$srun -l -n1 -N1 $scontrol show hostnames $host_list\r"
 expect {
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		if { $count == 0 } {
 			set host1 $expect_out(2,string)
 			incr count
@@ -120,7 +120,7 @@ log_debug "Got exec hosts $host1 $host2"
 set hostname ""
 send "$srun -l -n 1 -N 1 $bin_printenv SLURM_STEP_NODELIST\r"
 expect {
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		set hostname $expect_out(2,string)
 		exp_continue
 	}
@@ -141,7 +141,7 @@ expect {
 set hostname ""
 send "$srun -l -n 1 -N 1 -w $host2 $bin_printenv SLURM_STEP_NODELIST\r"
 expect {
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		set hostname $expect_out(2,string)
 		exp_continue
 	}

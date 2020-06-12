@@ -133,7 +133,7 @@ proc reason_node_limit {job_id} {
 
 proc run_job_test { } {
 	global file_in cancel_job sbatch scontrol test_acct
-	global test_part job_qos number alpha_numeric_under
+	global test_part job_qos number re_word_str
 	global nb_nodes exit_code reason_node_limit
 
 	# Time to wait for scheduling logic to set job's Reason to GrpNodeLimit.
@@ -173,10 +173,10 @@ proc run_job_test { } {
 	set hostname 0
 	spawn $scontrol show job $job_id1
 	expect {
-        -re "NodeList=($alpha_numeric_under)" {
-            set hostname $expect_out(1,string)
-            exp_continue
-        }
+                -re "NodeList=($re_word_str)" {
+                        set hostname $expect_out(1,string)
+                        exp_continue
+                }
 		timeout {
 			log_error "scontrol is not responding"
 			set exit_code 1

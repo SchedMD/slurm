@@ -83,7 +83,7 @@ if {$job_id == 0} {
 #
 spawn $scontrol show job $job_id
 expect {
-	-re "Name=($alpha_cap) " {
+	-re "Name=($re_word_str) " {
 		set name_read $expect_out(1,string)
 		exp_continue
 	}

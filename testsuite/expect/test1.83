@@ -70,7 +70,7 @@ expect {
 		slow_kill $srun_pid
 		skip "Can't test srun task distribution"
 	}
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		set task_id $expect_out(1,string)
 		if {$task_id == 0} {
 			set host_0_name $expect_out(2,string)

@@ -171,11 +171,11 @@ expect {
 	-re "Licenses += .null" {
 		exp_continue
 	}
-	-re "Licenses += ($alpha_numeric_colon)" {
+	-re "Licenses += ($re_word_str)" {
 		set licenses $expect_out(1,string)
 		exp_continue
 	}
-	-re "SLURM_CONF *= (/.*)/($alpha).*SLURM_VERSION" {
+	-re "SLURM_CONF *= (/.*)/($re_word_str).*SLURM_VERSION" {
 		set config_dir $expect_out(1,string)
 		set got_config 1
 		exp_continue

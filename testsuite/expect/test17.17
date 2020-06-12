@@ -60,7 +60,7 @@ set gpu_tot  $node_conf(GPUTot)
 set timeout $max_job_delay
 set srun_pid [spawn $srun -v -N1 -l -t1 $bin_printenv SLURMD_NODENAME]
 expect {
-	-re "on host ($alpha_numeric_under)," {
+	-re "on host ($re_word_str)," {
 		set nodelist_name $expect_out(1,string)
 		exp_continue
 	}
@@ -119,7 +119,7 @@ expect {
 		set waited 0
 		exp_continue
 	}
-	-re "Partition=($alpha_numeric_under)" {
+	-re "Partition=($re_word_str)" {
 		set partition $expect_out(1,string)
 		exp_continue
 	}

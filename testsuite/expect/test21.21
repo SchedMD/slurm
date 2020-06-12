@@ -99,7 +99,7 @@ if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 set got_node 0
 spawn $srun -N1 -t1 printenv SLURM_NODELIST
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set test_node $expect_out(1,string)
 		set got_node 1
 		exp_continue
@@ -247,7 +247,7 @@ set user_name [get_my_user_name]
 
 set s_pid [spawn $sacctmgr show user $user_name]
 expect {
-	-re "$user_name *($alpha_numeric_under)" {
+	-re "$user_name *($re_word_str)" {
 		set acct_name $expect_out(1,string)
 		exp_continue
 	}
