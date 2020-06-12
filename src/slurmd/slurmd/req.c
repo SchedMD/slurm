@@ -3553,7 +3553,7 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg)
 	uid_t uid;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 
-	debug3("Entering _rpc_stat_jobacct");
+	debug3("Entering _rpc_stat_jobacct for %ps", req);
 	/* step completion messages are only allowed from other slurmstepd,
 	   so only root or SlurmUser is allowed here */
 
