@@ -530,13 +530,14 @@ static int _parse_jobid(const char *jobid_str, uint32_t *out_jobid)
 static int _parse_stepid(const char *jobid_str, slurm_step_id_t *step_id)
 {
 	char *ptr, *job, *step;
+	int rc = 1;
 
 	job = xstrdup(jobid_str);
 	ptr = xstrchr(job, '.');
 	if (ptr == NULL) {
 		/* did not find a period, so no step ID in this string */
 		xfree(job);
-		return 0;
+		return rc;
 	} else {
 		step = ptr + 1;
 	}
@@ -554,12 +555,11 @@ static int _parse_stepid(const char *jobid_str, slurm_step_id_t *step_id)
 	if (!xstring_is_whitespace(ptr)) {
 		fprintf(stderr, "\"%s\" does not look like a stepid\n",
 			jobid_str);
-		xfree(job);
-		return 0;
+		rc = 0;
 	}
 
 	xfree(job);
-	return 1;
+	return rc;
 }
 
 
@@ -594,13 +594,11 @@ _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id)
 	if (fd == -1) {
 		exit_code = 1;
 		if (errno == ENOENT) {
-			log_build_step_id_str(step_id, tmp_char,
-					      sizeof(tmp_char),
-					      STEP_ID_FLAG_NONE);
-
 			fprintf(stderr,
 				"%s does not exist on this node.\n",
-				tmp_char);
+				log_build_step_id_str(step_id, tmp_char,
+						      sizeof(tmp_char),
+						      STEP_ID_FLAG_NONE));
 			exit_code = 1;
 		} else {
 			perror("Unable to connect to slurmstepd");
@@ -637,16 +635,26 @@ _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id)
 }
 
 static void
-_list_pids_all_steps(const char *node_name, uint32_t jobid)
+_list_pids_all_steps(const char *node_name, slurm_step_id_t *step_id)
 {
 	List steps;
 	ListIterator itr;
 	step_loc_t *stepd;
 	int count = 0;
+	char tmp_char[64];
+
+	if (step_id->step_het_comp != NO_VAL) {
+		_list_pids_one_step(node_name, step_id);
+		return;
+	}
 
 	steps = stepd_available(NULL, node_name);
 	if (!steps || list_count(steps) == 0) {
-		fprintf(stderr, "Job %u does not exist on this node.\n", jobid);
+		fprintf(stderr, "%s does not exist on node %s.\n",
+			log_build_step_id_str(step_id, tmp_char,
+					      sizeof(tmp_char),
+					      STEP_ID_FLAG_NONE),
+			node_name);
 		FREE_NULL_LIST(steps);
 		exit_code = 1;
 		return;
@@ -654,17 +662,29 @@ _list_pids_all_steps(const char *node_name, uint32_t jobid)
 
 	itr = list_iterator_create(steps);
 	while ((stepd = list_next(itr))) {
-		if (jobid == stepd->step_id.job_id) {
-			_list_pids_one_step(stepd->nodename, &stepd->step_id);
-			count++;
-		}
+		if (step_id->job_id != stepd->step_id.job_id)
+			continue;
+
+		if ((step_id->step_id != NO_VAL) &&
+		    (step_id->step_id != stepd->step_id.step_id))
+			continue;
+
+		_list_pids_one_step(stepd->nodename, &stepd->step_id);
+		count++;
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(steps);
 
 	if (count == 0) {
-		fprintf(stderr, "Job %u does not exist on this node.\n",
-			jobid);
+		if (step_id->step_id != NO_VAL) {
+			fprintf(stderr, "%s does not exist on node %s.\n",
+				log_build_step_id_str(step_id, tmp_char,
+						      sizeof(tmp_char),
+						      STEP_ID_FLAG_NONE),
+				node_name);
+		} else
+			fprintf(stderr, "There are no steps for job %u on node %s.\n",
+				step_id->job_id, node_name);
 		exit_code = 1;
 	}
 }
@@ -725,11 +745,8 @@ scontrol_list_pids(const char *jobid_str, const char *node_name)
 	       "PID", "JOBID", "STEPID", "LOCALID", "GLOBALID");
 	if (jobid_str == NULL || jobid_str[0] == '*') {
 		_list_pids_all_jobs(node_name);
-	} else if (_parse_stepid(jobid_str, &step_id)) {
-		_list_pids_one_step(node_name, &step_id);
-	} else {
-		_list_pids_all_steps(node_name, step_id.job_id);
-	}
+	} else if (_parse_stepid(jobid_str, &step_id))
+		_list_pids_all_steps(node_name, &step_id);
 }
 
 extern void scontrol_getent(const char *node_name)
