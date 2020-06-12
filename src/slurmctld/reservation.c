@@ -3583,6 +3583,10 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 		}
 		resv_desc.node_cnt = xcalloc(2, sizeof(uint32_t));
 		resv_desc.node_cnt[0] = add_nodes;
+		/* exclude already reserved nodes from new resv request */
+		new_bitmap = bit_copy(resv_ptr->part_ptr->node_bitmap);
+		bit_and_not(new_bitmap, resv_ptr->node_bitmap);
+
 		i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &new_bitmap,
 				  &core_bitmap);
 		xfree(resv_desc.core_cnt);
@@ -3647,6 +3651,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 				__func__, resv_ptr->name);
 			log_it = false;
 		}
+		FREE_NULL_BITMAP(new_bitmap);
 	}
 	FREE_NULL_BITMAP(preserve_bitmap);
 	last_resv_update = time(NULL);
