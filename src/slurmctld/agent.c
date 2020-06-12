@@ -652,29 +652,30 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 	/* Locks: Write job */
 	slurmctld_lock_t job_write_lock =
 	    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	uint32_t job_id = 0, step_id = 0;
+	slurm_step_id_t step_id = {
+		.job_id = 0,
+		.step_id = NO_VAL,
+		.step_het_comp = NO_VAL,
+	};
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 
 	if        (agent_ptr->msg_type == SRUN_PING) {
 		srun_ping_msg_t *msg = *agent_ptr->msg_args_pptr;
-		job_id  = msg->job_id;
+		step_id.job_id  = msg->job_id;
 	} else if (agent_ptr->msg_type == SRUN_TIMEOUT) {
 		srun_timeout_msg_t *msg = *agent_ptr->msg_args_pptr;
-		job_id  = msg->step_id.job_id;
-		step_id = msg->step_id.step_id;
+		memcpy(&step_id, &msg->step_id, sizeof(step_id));
 	} else if (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION) {
 		resource_allocation_response_msg_t *msg =
 			*agent_ptr->msg_args_pptr;
-		job_id  = msg->job_id;
-		step_id = NO_VAL;
+		step_id.job_id = msg->job_id;
 	} else if (agent_ptr->msg_type == RESPONSE_HET_JOB_ALLOCATION) {
 		List het_alloc_list = *agent_ptr->msg_args_pptr;
 		resource_allocation_response_msg_t *msg;
 		if (!het_alloc_list || (list_count(het_alloc_list) == 0))
 			return;
 		msg = list_peek(het_alloc_list);
-		job_id  = msg->job_id;
-		step_id = NO_VAL;
+		step_id.job_id  = msg->job_id;
 	} else if ((agent_ptr->msg_type == SRUN_JOB_COMPLETE)		||
 		   (agent_ptr->msg_type == SRUN_REQUEST_SUSPEND)	||
 		   (agent_ptr->msg_type == SRUN_STEP_MISSING)		||
@@ -690,7 +691,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 	}
 	lock_slurmctld(job_write_lock);
 	if  (thread_ptr[0].state == DSH_DONE) {
-		srun_response(job_id, step_id);
+		srun_response(&step_id);
 	}
 
 	unlock_slurmctld(job_write_lock);

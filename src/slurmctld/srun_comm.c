@@ -596,15 +596,22 @@ extern void srun_exec(step_record_t *step_ptr, char **argv)
 
 /*
  * srun_response - note that srun has responded
- * IN job_id  - id of job responding
  * IN step_id - id of step responding or NO_VAL if not a step
  */
-extern void srun_response(uint32_t job_id, uint32_t step_id)
+extern void srun_response(slurm_step_id_t *step_id)
 {
-	job_record_t *job_ptr = find_job_record(job_id);
+	job_record_t *job_ptr = find_job_record(step_id->job_id);
+	step_record_t *step_ptr;
 	time_t now = time(NULL);
 
 	if (job_ptr == NULL)
 		return;
 	job_ptr->time_last_active = now;
+
+	if (step_id->step_id == NO_VAL)
+		return;
+
+	if ((step_ptr = find_step_record(job_ptr, step_id)))
+		step_ptr->time_last_active = now;
+
 }

@@ -117,10 +117,9 @@ extern void srun_ping (void);
 
 /*
  * srun_response - note that srun has responded
- * IN job_id  - id of job responding
  * IN step_id - id of step responding or NO_VAL if not a step
  */
-extern void srun_response(uint32_t job_id, uint32_t step_id);
+extern void srun_response(slurm_step_id_t *step_id);
 
 /*
  * srun_step_timeout - notify srun of a job step's imminent timeout
