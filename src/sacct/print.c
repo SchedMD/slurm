@@ -1095,22 +1095,13 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = xstrdup_printf("%u", job->jobid);
 				break;
 			case JOBSTEP:
-				if (step->step_id.step_id ==
-				    SLURM_BATCH_SCRIPT) {
-					tmp_char = xstrdup_printf(
-						"%u.batch",
-						step->job_ptr->jobid);
-				} else if (step->step_id.step_id ==
-					   SLURM_EXTERN_CONT) {
-					tmp_char = xstrdup_printf(
-						"%u.extern",
-						step->job_ptr->jobid);
-				} else {
-					tmp_char = xstrdup_printf(
-						"%u.%u",
-						step->job_ptr->jobid,
-						step->step_id.step_id);
-				}
+				log_build_step_id_str(&step->step_id, id,
+						      sizeof(id),
+						      (STEP_ID_FLAG_NO_PREFIX |
+						       STEP_ID_FLAG_NO_JOB));
+				tmp_char = xstrdup_printf("%u.%s",
+							  step->job_ptr->jobid,
+							  id);
 				break;
 			case JOBCOMP:
 				tmp_char = xstrdup_printf("%u",
