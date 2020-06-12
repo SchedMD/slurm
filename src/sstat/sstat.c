@@ -252,7 +252,11 @@ getout:
 int main(int argc, char **argv)
 {
 	ListIterator itr = NULL;
-	uint32_t stepid = NO_VAL;
+	slurm_step_id_t step_id = {
+		.job_id = 0,
+		.step_id = NO_VAL,
+		.step_het_comp = NO_VAL,
+	};
 	slurmdb_selected_step_t *selected_step = NULL;
 
 	slurm_conf_init(NULL);
@@ -270,16 +274,15 @@ int main(int argc, char **argv)
 	while ((selected_step = list_next(itr))) {
 		job_step_info_response_msg_t *step_info = NULL;
 
-		stepid = selected_step->step_id.step_id;
+		memcpy(&step_id, &selected_step->step_id, sizeof(step_id));
 
-		if (slurm_get_job_steps(
-			    0, selected_step->step_id.job_id, stepid,
-			    &step_info, SHOW_ALL)) {
+		if (slurm_get_job_steps(0, step_id.job_id, step_id.step_id,
+					&step_info, SHOW_ALL)) {
 			error("couldn't get steps for job %u",
 			      selected_step->step_id.job_id);
 			continue;
 		} else if (!step_info->job_step_count) {
-			if (stepid == NO_VAL)
+			if (step_id.step_id == NO_VAL)
 				error("No steps running for job %u",
 				      selected_step->step_id.job_id);
 			else
@@ -291,7 +294,7 @@ int main(int argc, char **argv)
 
 		for (int i = 0; i < step_info->job_step_count; i++) {
 			/* If no stepid was requested set it to the first one */
-			if (stepid == NO_VAL) {
+			if (step_id.step_id == NO_VAL) {
 				/*
 				 * If asking for no particular step skip the
 				 * special steps.
@@ -300,12 +303,13 @@ int main(int argc, char **argv)
 				    (step_info->job_steps[i].step_id.step_id >
 				     SLURM_MAX_NORMAL_STEP_ID))
 					continue;
-				stepid = step_info->job_steps[i].
+				step_id.step_id = step_info->job_steps[i].
 					step_id.step_id;
 			}
 
 			if (!params.opt_all_steps &&
-			    (step_info->job_steps[i].step_id.step_id != stepid))
+			    !verify_step_id(&step_info->job_steps[i].step_id,
+					    &step_id))
 				continue;
 
 			_do_stat(&step_info->job_steps[i].step_id,

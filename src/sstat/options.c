@@ -154,14 +154,16 @@ static int _find_selected_step(void *x, void *key)
 
 static void _add_selected_step_to_list(char *name)
 {
-	char *dot, *plus, *under;
+	char *dot, *plus = NULL, *under;
 	slurmdb_selected_step_t *selected_step =
 		xmalloc(sizeof(*selected_step));
+
+	selected_step->step_id.step_id = NO_VAL;
+	selected_step->step_id.step_het_comp = NO_VAL;
 
 	dot = xstrstr(name, ".");
 	if (!dot) {
 		debug2("No jobstep requested");
-		selected_step->step_id.step_id = NO_VAL;
 	} else {
 		*dot++ = 0;
 		if (!xstrcasecmp(dot, "batch"))
@@ -170,6 +172,13 @@ static void _add_selected_step_to_list(char *name)
 			selected_step->step_id.step_id = SLURM_EXTERN_CONT;
 		else
 			selected_step->step_id.step_id = slurm_atoul(dot);
+		plus = xstrchr(dot, '+');
+		if (plus) {
+			/* het step */
+			plus++;
+			selected_step->step_id.step_het_comp =
+				slurm_atoul(plus);
+		}
 	}
 
 	selected_step->array_task_id = NO_VAL;
@@ -177,7 +186,7 @@ static void _add_selected_step_to_list(char *name)
 	if ((under = xstrstr(name, "_"))) {
 		*under++ = 0;
 		selected_step->array_task_id = slurm_atoul(under);
-	} else if ((plus = xstrstr(name, "+"))) {
+	} else if (!plus && (plus = xstrstr(name, "+"))) {
 		*plus++ = 0;
 		selected_step->het_job_offset = slurm_atoul(plus);
 	} else
