@@ -615,7 +615,7 @@ _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id)
 	for (i = 0; i < (int)tcount; i++) {
 		if (task_info[i].exited)
 			continue;
-		printf("%-8d %-8u %-6s %-7d %-8d\n",
+		printf("%-8d %-8u %-8s %-7d %-8d\n",
 		       task_info[i].pid,
 		       step_id->job_id,
 		       tmp_char,
@@ -626,7 +626,7 @@ _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id)
 	stepd_list_pids(fd, protocol_version, &pids, &count);
 	for (i = 0; i < count; i++) {
 		if (!_in_task_array((pid_t)pids[i], task_info, tcount)) {
-			printf("%-8d %-8u %-6s %-7s %-8s\n",
+			printf("%-8d %-8u %-8s %-7s %-8s\n",
 			       pids[i], step_id->job_id, tmp_char, "-", "-");
 		}
 	}
@@ -721,7 +721,7 @@ scontrol_list_pids(const char *jobid_str, const char *node_name)
 	}
 
 	/* Step ID is optional */
-	printf("%-8s %-8s %-6s %-7s %-8s\n",
+	printf("%-8s %-8s %-8s %-7s %-8s\n",
 	       "PID", "JOBID", "STEPID", "LOCALID", "GLOBALID");
 	if (jobid_str == NULL || jobid_str[0] == '*') {
 		_list_pids_all_jobs(node_name);
