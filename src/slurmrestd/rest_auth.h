@@ -96,9 +96,9 @@ extern int rest_authenticate_http_request(on_http_request_args_t *args);
 /*
  * Apply current auth context to thread
  * IN context - security context to apply
- * will fatal on error
+ * RET SLURM_SUCCESS or error
  */
-extern void rest_auth_context_apply(rest_auth_context_t *context);
+extern int rest_auth_context_apply(rest_auth_context_t *context);
 
 /*
  * Clear current auth context

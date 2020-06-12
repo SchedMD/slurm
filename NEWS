@@ -51,6 +51,11 @@ documents those changes that are of interest to users and administrators.
  -- Fix tasks binding to GRES which are closest to the allocated CPUs.
  -- Fix AMD GPU ROCM 3.5 support.
  -- Fix handling of job arrays in sacct when querying specific steps.
+ -- slurmrestd - avoid fallback to local socket authentication if JWT
+    authentication is ill-formed.
+ -- slurmrestd - restrict ability of requests to use different authentication
+    plugins.
+ -- slurmrestd - unlink named unix sockets before closing.
 
 * Changes in Slurm 20.02.3
 ==========================

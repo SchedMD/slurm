@@ -629,7 +629,9 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 		xassert(request->context == context);
 	request->context = context;
 
-	rest_auth_context_apply(context->auth);
+	/* make sure there is no auth context inherited */
+	rest_auth_context_clear();
+
 	parser->data = request;
 
 	debug("%s: [%s] Accepted HTTP connection", __func__, con->name);

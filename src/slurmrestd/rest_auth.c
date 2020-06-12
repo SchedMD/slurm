@@ -223,8 +223,6 @@ static void _auth_local(on_http_request_args_t *args, rest_auth_context_t *ctxt)
 		return _clear_auth(ctxt);
 	}
 
-	xassert(ctxt->type & AUTH_TYPE_LOCAL);
-
 	if (!ctxt->user_name)
 		ctxt->user_name = uid_to_string_or_null(auth_uid);
 
@@ -234,10 +232,14 @@ static void _auth_local(on_http_request_args_t *args, rest_auth_context_t *ctxt)
 		      __func__, args->context->con->name, auth_uid);
 		return _clear_auth(ctxt);
 	}
+
+	if (!(ctxt->type & AUTH_TYPE_LOCAL))
+		fatal_abort("%s: authentication failed but didn't return error",
+			    __func__);
 }
 
-static void _auth_user_psk(on_http_request_args_t *args,
-			   rest_auth_context_t *ctxt)
+static int _auth_user_psk(on_http_request_args_t *args,
+			  rest_auth_context_t *ctxt)
 {
 	const char *key = find_http_header(args->headers,
 					   HTTP_HEADER_USER_TOKEN);
@@ -246,17 +248,25 @@ static void _auth_user_psk(on_http_request_args_t *args,
 
 	_check_magic(ctxt);
 
+	if (!key && !user_name) {
+		debug3("%s: [%s] skipping token authentication",
+		       __func__, args->context->con->name);
+		return SLURM_SUCCESS;
+	}
+
 	if (!key) {
 		error("%s: [%s] missing header user token: %s",
 		      __func__, args->context->con->name,
 		      HTTP_HEADER_USER_TOKEN);
-		return _clear_auth(ctxt);
+		_clear_auth(ctxt);
+		return ESLURM_AUTH_CRED_INVALID;
 	}
 	if (!user_name) {
 		error("%s: [%s] missing header user name: %s",
 		      __func__, args->context->con->name,
 		      HTTP_HEADER_USER_NAME);
-		return _clear_auth(ctxt);
+		_clear_auth(ctxt);
+		return ESLURM_AUTH_CRED_INVALID;
 	}
 
 	debug3("%s: [%s] attempting user_name %s token authentication",
@@ -268,6 +278,8 @@ static void _auth_user_psk(on_http_request_args_t *args,
 	ctxt->type |= AUTH_TYPE_USER_PSK;
 	ctxt->user_name = xstrdup(user_name);
 	ctxt->token = xstrdup(key);
+
+	return SLURM_SUCCESS;
 }
 
 extern int rest_authenticate_http_request(on_http_request_args_t *args)
@@ -286,24 +298,23 @@ extern int rest_authenticate_http_request(on_http_request_args_t *args)
 		return SLURM_SUCCESS;
 
 	/* favor PSK if it is provided */
-	if (context->type == AUTH_TYPE_INVALID &&
-	    (auth_type & AUTH_TYPE_USER_PSK))
-		_auth_user_psk(args, context);
+	if ((auth_type & AUTH_TYPE_USER_PSK) &&
+	    _auth_user_psk(args, context))
+		goto fail;
 
-	if (context->type == AUTH_TYPE_INVALID &&
-	    auth_type & AUTH_TYPE_LOCAL)
+	if (auth_type & AUTH_TYPE_LOCAL)
 		_auth_local(args, context);
 
-	if (context->type == AUTH_TYPE_INVALID) {
-		g_slurm_auth_thread_clear();
-		return ESLURM_AUTH_CRED_INVALID;
-	}
+	if (context->type == AUTH_TYPE_INVALID)
+		goto fail;
 
 	_check_magic(context);
 
-	rest_auth_context_apply(context);
+	return rest_auth_context_apply(context);
 
-	return SLURM_SUCCESS;
+fail:
+	g_slurm_auth_thread_clear();
+	return ESLURM_AUTH_CRED_INVALID;
 }
 
 extern rest_auth_context_t *rest_auth_context_new(void)
@@ -315,22 +326,24 @@ extern rest_auth_context_t *rest_auth_context_new(void)
 	return context;
 }
 
-extern void rest_auth_context_apply(rest_auth_context_t *context)
+extern int rest_auth_context_apply(rest_auth_context_t *context)
 {
-	bool found = false;
+	int rc = ESLURM_AUTH_CRED_INVALID;
 
 	if (context->type == AUTH_TYPE_INVALID) {
-		return rest_auth_context_clear();
+		rest_auth_context_clear();
 	} else if (context->type == AUTH_TYPE_LOCAL) {
-		found = true;
-		g_slurm_auth_thread_config(NULL, context->user_name);
+		/* clear any previous auth */
+		rest_auth_context_clear();
+		/* local auth relies on callers authentication already setup */
+		rc = SLURM_SUCCESS;
 	} else if (context->type == AUTH_TYPE_USER_PSK) {
-		found = true;
-		g_slurm_auth_thread_config(context->token, context->user_name);
-	}
+		rc = g_slurm_auth_thread_config(context->token,
+						context->user_name);
+	} else
+		fatal_abort("%s: invalid auth type", __func__);
 
-	if (!found)
-		fatal_abort("%s: invalid auth type to apply", __func__);
+	return rc;
 }
 
 extern void rest_auth_context_clear(void)
