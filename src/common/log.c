@@ -1522,9 +1522,9 @@ extern char *log_build_step_id_str(
 		return buf;
 
 	if (step_id->step_id == SLURM_BATCH_SCRIPT)
-		pos += snprintf(buf + pos, buf_size - pos, "Batch");
+		pos += snprintf(buf + pos, buf_size - pos, "batch");
 	else if (step_id->step_id == SLURM_EXTERN_CONT)
-		pos += snprintf(buf + pos, buf_size - pos, "Extern");
+		pos += snprintf(buf + pos, buf_size - pos, "extern");
 	else if (step_id->step_id == SLURM_PENDING_STEP)
 		pos += snprintf(buf + pos, buf_size - pos, "TDB");
 	else
