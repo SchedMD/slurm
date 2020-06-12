@@ -335,21 +335,7 @@ static int _find_step_id(void *object, void *key)
 	step_record_t *step_ptr = (step_record_t *)object;
 	slurm_step_id_t *step_id = (slurm_step_id_t *)key;
 
-	/* We want any step */
-	if (step_id->step_id == NO_VAL)
-		return 1;
-
-	/*
-	 * See if we have the same step id.  If we do check to see if we
-	 * have the same step_het_comp or if the step's is NO_VAL,
-	 * meaning this step is not a het step.
-	 */
-	if ((step_id->step_id == step_ptr->step_id.step_id) &&
-	    ((step_id->step_het_comp == step_ptr->step_id.step_het_comp) ||
-	     (step_id->step_het_comp == NO_VAL)))
-		return 1;
-	else
-		return 0;
+	return verify_step_id(&step_ptr->step_id, step_id);
 }
 
 static int _step_signal(void *object, void *arg)

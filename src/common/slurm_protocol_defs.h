@@ -1626,6 +1626,11 @@ extern char *rpc_num2string(uint16_t opcode);
  * The return value for an invalid suffix is NO_VAL64.
  */
 extern uint64_t suffix_mult(char *suffix);
+/*
+ * See if the step_id 'key' coming in matches enough of the step_id 'object'
+ */
+extern bool verify_step_id(slurm_step_id_t *object, slurm_step_id_t *key);
+
 
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\

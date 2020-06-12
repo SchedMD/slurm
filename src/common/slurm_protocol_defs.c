@@ -5934,3 +5934,22 @@ extern uint64_t suffix_mult(char *suffix)
 
 	return multiplier;
 }
+
+extern bool verify_step_id(slurm_step_id_t *object, slurm_step_id_t *key)
+{
+	/* Any step will do */
+	if (key->step_id == NO_VAL)
+		return 1;
+
+	/*
+	 * See if we have the same step id.  If we do check to see if we
+	 * have the same step_het_comp or if the key's is NO_VAL,
+	 * meaning we are not looking directly for a het step.
+	 */
+	if ((key->step_id == object->step_id) &&
+	    ((key->step_het_comp == object->step_het_comp) ||
+	     (key->step_het_comp == NO_VAL)))
+		return 1;
+	else
+		return 0;
+}
