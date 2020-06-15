@@ -277,6 +277,11 @@ scontrol_hold(char *op, char *job_str)
 			job_id = 0;
 			job_name = job_str;
 			last_job_id = NO_VAL;
+		} else if (!xstrncasecmp(job_str, "JobName=", 8)) {
+			job_str += 8;
+			job_id = 0;
+			job_name = job_str;
+			last_job_id = NO_VAL;
 		} else {
 			exit_code = 1;
 			rc = ESLURM_INVALID_JOB_ID;
