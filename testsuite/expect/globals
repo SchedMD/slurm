@@ -3469,18 +3469,9 @@ proc get_control_machine { } {
 	set control_machine ""
 	set scon_pid [spawn -noecho $scontrol show config]
 	expect {
-		# We need to handle two possible outputs of the ControlMachine / SlurmctldHost[0] option:
+		# We need to handle two possible outputs of SlurmctldHost[0]:
 		# a) hostname
 		# b) hostname(IP)
-		-re "ControlMachine *= ($re_word_str)" {
-			set par_idx [expr [string last "(" $expect_out(1,string)] -1]
-			if { $par_idx == -2 } {
-				set control_machine $expect_out(1,string)
-			} else {
-				set control_machine [string range $expect_out(1,string) 0 $par_idx]
-			}
-			exp_continue
-		}
 		-re "SlurmctldHost.0. *= ($re_word_str)" {
 			set par_idx [expr [string last "(" $expect_out(1,string)] -1]
 			if { $par_idx == -2 } {
