@@ -1507,18 +1507,21 @@ extern char *log_build_step_id_str(
 		pos += snprintf(buf + pos, buf_size - pos, "%%.0s");
 
 	if (!(flags & STEP_ID_FLAG_NO_PREFIX))
-		pos += snprintf(buf + pos, buf_size - pos, "StepId=");
+		pos += snprintf(buf + pos, buf_size - pos, "%s",
+				(!step_id || (step_id->step_id != NO_VAL)) ?
+				"StepId=" : "JobId=");
 
-	if (!step_id) {
+	if (!step_id || !step_id->job_id) {
 		snprintf(buf + pos, buf_size - pos, "Invalid");
 		return buf;
 	}
 
 	if (step_id->job_id && !(flags & STEP_ID_FLAG_NO_JOB))
 		pos += snprintf(buf + pos, buf_size - pos,
-				"%u.", step_id->job_id);
+				"%u%s", step_id->job_id,
+				step_id->step_id == NO_VAL ? "" : ".");
 
-	if (pos >= buf_size)
+	if ((pos >= buf_size) || (step_id->step_id == NO_VAL))
 		return buf;
 
 	if (step_id->step_id == SLURM_BATCH_SCRIPT)
