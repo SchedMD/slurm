@@ -128,11 +128,6 @@ typedef struct {
 
 typedef struct {
 	uint32_t job_id;
-	uint32_t step_id;
-} starting_step_t;
-
-typedef struct {
-	uint32_t job_id;
 	uint16_t msg_timeout;
 	bool *prolog_fini;
 	pthread_cond_t *timer_cond;
@@ -210,8 +205,8 @@ static uid_t _get_job_uid(uint32_t jobid);
 static int  _add_starting_step(uint16_t type, void *req);
 static int  _remove_starting_step(uint16_t type, void *req);
 static int  _compare_starting_steps(void *s0, void *s1);
-static int  _wait_for_starting_step(uint32_t job_id, uint32_t step_id);
-static bool _step_is_starting(uint32_t job_id, uint32_t step_id);
+static int  _wait_for_starting_step(slurm_step_id_t *step_id);
+static bool _step_is_starting(slurm_step_id_t *step_id);
 
 static void _add_job_running_prolog(uint32_t job_id);
 static void _remove_job_running_prolog(uint32_t job_id);
@@ -2596,8 +2591,8 @@ _rpc_job_notify(slurm_msg_t *msg)
 
 no_job:
 	if (step_cnt == 0) {
-		debug2("Can't find jobid %u to send notification message",
-		       req->job_id);
+		debug2("No steps running for jobid %u to send notification message",
+		       req->step_id.job_id);
 	}
 }
 
@@ -3462,9 +3457,11 @@ _get_step_list(void)
 				 stepd->step_id.job_id);
 			xstrcat(step_list, tmp);
 		} else {
-			snprintf(tmp, sizeof(tmp), "%u.%u",
-				 stepd->step_id.job_id, stepd->step_id.step_id);
-			xstrcat(step_list, tmp);
+			xstrcat(step_list,
+				log_build_step_id_str(&stepd->step_id,
+						      tmp,
+						      sizeof(tmp),
+						      STEP_ID_FLAG_NO_PREFIX));
 		}
 	}
 	list_iterator_destroy(i);
@@ -5061,7 +5058,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	job_env_t       job_env;
 	uint32_t        jobid;
 
-	debug("_rpc_terminate_job, uid = %d", uid);
+	debug("_rpc_terminate_job, uid = %d %ps", uid, &req->step_id);
 	/*
 	 * check that requesting user ID is the Slurm UID
 	 */
@@ -5141,7 +5138,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 * var for the start.  Otherwise a slow-starting step can miss the
 	 * job termination message and run indefinitely.
 	 */
-	if (_step_is_starting(req->step_id.job_id, NO_VAL)) {
+	if (_step_is_starting(&req->step_id)) {
 		if (msg->conn_fd >= 0) {
 			/* If the step hasn't started yet just send a
 			 * success to let the controller know we got
@@ -5154,7 +5151,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 				      msg->conn_fd);
 			msg->conn_fd = -1;
 		}
-		if (_wait_for_starting_step(req->step_id.job_id, NO_VAL)) {
+		if (_wait_for_starting_step(&req->step_id)) {
 			/*
 			 * There's currently no case in which we enter this
 			 * error condition.  If there was, it's hard to say
@@ -5628,27 +5625,28 @@ _run_epilog(job_env_t *job_env)
 static int
 _add_starting_step(uint16_t type, void *req)
 {
-	starting_step_t *starting_step;
+	slurm_step_id_t *starting_step;
 
 	/* Add the step info to a list of starting processes that
 	   cannot reliably be contacted. */
-	starting_step = xmalloc(sizeof(starting_step_t));
+	starting_step = xmalloc(sizeof(slurm_step_id_t));
 
 	switch (type) {
 	case LAUNCH_BATCH_JOB:
 		starting_step->job_id =
 			((batch_job_launch_msg_t *)req)->job_id;
 		starting_step->step_id = SLURM_BATCH_SCRIPT;
+		starting_step->step_het_comp = NO_VAL;
 		break;
 	case LAUNCH_TASKS:
-		starting_step->job_id =
-			((launch_tasks_request_msg_t *)req)->step_id.job_id;
-		starting_step->step_id =
-			((launch_tasks_request_msg_t *)req)->step_id.step_id;
+		memcpy(starting_step,
+		       &((launch_tasks_request_msg_t *)req)->step_id,
+		       sizeof(*starting_step));
 		break;
 	case REQUEST_LAUNCH_PROLOG:
 		starting_step->job_id  = ((prolog_launch_msg_t *)req)->job_id;
 		starting_step->step_id = SLURM_EXTERN_CONT;
+		starting_step->step_het_comp = NO_VAL;
 		break;
 	default:
 		error("%s called with an invalid type: %u", __func__, type);
@@ -5665,7 +5663,7 @@ _add_starting_step(uint16_t type, void *req)
 static int
 _remove_starting_step(uint16_t type, void *req)
 {
-	starting_step_t starting_step;
+	slurm_step_id_t starting_step;
 	int rc = SLURM_SUCCESS;
 
 	switch(type) {
@@ -5673,12 +5671,12 @@ _remove_starting_step(uint16_t type, void *req)
 		starting_step.job_id =
 			((batch_job_launch_msg_t *)req)->job_id;
 		starting_step.step_id = SLURM_BATCH_SCRIPT;
+		starting_step.step_het_comp = NO_VAL;
 		break;
 	case LAUNCH_TASKS:
-		starting_step.job_id =
-			((launch_tasks_request_msg_t *)req)->step_id.job_id;
-		starting_step.step_id =
-			((launch_tasks_request_msg_t *)req)->step_id.step_id;
+		memcpy(&starting_step,
+		       &((launch_tasks_request_msg_t *)req)->step_id,
+		       sizeof(starting_step));
 		break;
 	default:
 		error("%s called with an invalid type: %u", __func__, type);
@@ -5689,12 +5687,7 @@ _remove_starting_step(uint16_t type, void *req)
 	if (!list_delete_all(conf->starting_steps,
 			     _compare_starting_steps,
 			     &starting_step)) {
-		slurm_step_id_t tmp = {
-			.job_id = starting_step.job_id,
-			.step_het_comp = NO_VAL,
-			.step_id = starting_step.step_id,
-		};
-		error("%s: %ps not found", __func__, &tmp);
+		error("%s: %ps not found", __func__, &starting_step);
 		rc = SLURM_ERROR;
 	}
 	slurm_cond_broadcast(&conf->starting_steps_cond);
@@ -5706,11 +5699,17 @@ fail:
 
 static int _compare_starting_steps(void *listentry, void *key)
 {
-	starting_step_t *step0 = (starting_step_t *)listentry;
-	starting_step_t *step1 = (starting_step_t *)key;
+	slurm_step_id_t *step0 = (slurm_step_id_t *)listentry;
+	slurm_step_id_t *step1 = (slurm_step_id_t *)key;
 
-	return (step0->job_id == step1->job_id &&
-		step0->step_id == step1->step_id);
+	/* If step1->step_id is NO_VAL then return for any step */
+	if ((step1->step_id == NO_VAL) &&
+	    (step0->job_id == step1->job_id)) {
+		return 1;
+	} else if (memcmp(step0, step1, sizeof(*step0)))
+		return 0;
+	else
+		return 1;
 }
 
 
@@ -5718,28 +5717,23 @@ static int _compare_starting_steps(void *listentry, void *key)
    a socket open, ready to handle RPC calls.  Pass step_id = NO_VAL
    to wait on any step for the given job. */
 
-static int _wait_for_starting_step(uint32_t job_id, uint32_t step_id)
+static int _wait_for_starting_step(slurm_step_id_t *step_id)
 {
 	static pthread_mutex_t dummy_lock = PTHREAD_MUTEX_INITIALIZER;
 	struct timespec ts = {0, 0};
 	struct timeval now;
 
-	starting_step_t starting_step;
 	int num_passes = 0;
-
-	starting_step.job_id  = job_id;
-	starting_step.step_id = step_id;
 
 	while (list_find_first(conf->starting_steps,
 			       _compare_starting_steps,
-			       &starting_step)) {
+			       step_id)) {
 		if (num_passes == 0) {
-			if (step_id != NO_VAL)
-				debug("Blocked waiting for step %d.%d",
-				      job_id, step_id);
+			if (step_id->step_id != NO_VAL)
+				debug("Blocked waiting for %ps", step_id);
 			else
-				debug("Blocked waiting for job %d, all steps",
-				      job_id);
+				debug("Blocked waiting for %ps, all steps",
+				      step_id);
 		}
 		num_passes++;
 
@@ -5753,12 +5747,11 @@ static int _wait_for_starting_step(uint32_t job_id, uint32_t step_id)
 		slurm_mutex_unlock(&dummy_lock);
 	}
 	if (num_passes > 0) {
-		if (step_id != NO_VAL)
-			debug("Finished wait for step %d.%d",
-			      job_id, step_id);
+		if (step_id->step_id != NO_VAL)
+			debug("Finished wait for step %ps", step_id);
 		else
-			debug("Finished wait for job %d, all steps",
-			      job_id);
+			debug("Finished wait for %ps, all steps",
+			      step_id);
 	}
 
 	return SLURM_SUCCESS;
@@ -5768,20 +5761,11 @@ static int _wait_for_starting_step(uint32_t job_id, uint32_t step_id)
 /* Return true if the step has not yet confirmed that its socket to
    handle RPC calls has been created.  Pass step_id = NO_VAL
    to return true if any of the job's steps are still starting. */
-static bool _step_is_starting(uint32_t job_id, uint32_t step_id)
+static bool _step_is_starting(slurm_step_id_t *step_id)
 {
-	starting_step_t  starting_step;
-	starting_step.job_id  = job_id;
-	starting_step.step_id = step_id;
-	bool ret = false;
-
-	if (list_find_first(conf->starting_steps,
-			    _compare_starting_steps,
-			    &starting_step )) {
-		ret = true;
-	}
-
-	return ret;
+	return list_find_first(conf->starting_steps,
+			       _compare_starting_steps,
+			       step_id);
 }
 
 /* Add this job to the list of jobs currently running their prolog */
