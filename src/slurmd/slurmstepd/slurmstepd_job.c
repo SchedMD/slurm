@@ -479,13 +479,9 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 			   &job->job_mem, &job->step_mem);
 
 	if (job->step_mem && slurm_conf.job_acct_oom_kill) {
-		jobacct_gather_set_mem_limit(job->step_id.job_id,
-					     job->step_id.step_id,
-					     job->step_mem);
+		jobacct_gather_set_mem_limit(&job->step_id, job->step_mem);
 	} else if (job->job_mem && slurm_conf.job_acct_oom_kill) {
-		jobacct_gather_set_mem_limit(job->step_id.job_id,
-					     job->step_id.step_id,
-					     job->job_mem);
+		jobacct_gather_set_mem_limit(&job->step_id, job->job_mem);
 	}
 
 	/* only need these values on the extern step, don't copy otherwise */
@@ -607,11 +603,9 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
 	if (job->step_mem && slurm_conf.job_acct_oom_kill)
-		jobacct_gather_set_mem_limit(job->step_id.job_id,
-					     NO_VAL, job->step_mem);
+		jobacct_gather_set_mem_limit(&job->step_id, job->step_mem);
 	else if (job->job_mem && slurm_conf.job_acct_oom_kill)
-		jobacct_gather_set_mem_limit(job->step_id.job_id,
-					     NO_VAL, job->job_mem);
+		jobacct_gather_set_mem_limit(&job->step_id, job->job_mem);
 
 	get_cred_gres(msg->cred, conf->node_name,
 		      &job->job_gres_list, &job->step_gres_list);

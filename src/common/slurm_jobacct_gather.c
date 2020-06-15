@@ -120,8 +120,11 @@ static bool jobacct_shutdown = true;
 static pthread_mutex_t jobacct_shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool plugin_polling = true;
 
-static uint32_t jobacct_job_id     = 0;
-static uint32_t jobacct_step_id    = 0;
+static slurm_step_id_t jobacct_step_id = {
+	.job_id = 0,
+	.step_het_comp = NO_VAL,
+	.step_id = 0,
+};
 static uint64_t jobacct_mem_limit  = 0;
 static uint64_t jobacct_vmem_limit = 0;
 static acct_gather_profile_timer_t *profile_timer =
@@ -284,8 +287,8 @@ static void _acct_kill_step(void)
 	job_notify_msg_t notify_req;
 
 	slurm_msg_t_init(&msg);
-	notify_req.job_id      = jobacct_job_id;
-	notify_req.job_step_id = jobacct_step_id;
+	notify_req.job_id      = jobacct_step_id.job_id;
+	notify_req.job_step_id = jobacct_step_id.step_id;
 	notify_req.message     = "Exceeded job memory limit";
 	msg.msg_type    = REQUEST_JOB_NOTIFY;
 	msg.data        = &notify_req;
@@ -295,8 +298,7 @@ static void _acct_kill_step(void)
 	 * Request message:
 	 */
 	memset(&req, 0, sizeof(job_step_kill_msg_t));
-	req.step_id.job_id = jobacct_job_id;
-	req.step_id.step_id = jobacct_step_id;
+	memcpy(&req.step_id, &jobacct_step_id, sizeof(req.step_id));
 	req.signal      = SIGKILL;
 	req.flags       = 0;
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
@@ -794,21 +796,19 @@ extern int jobacct_gather_set_proctrack_container_id(uint64_t id)
 	return SLURM_SUCCESS;
 }
 
-extern int jobacct_gather_set_mem_limit(uint32_t job_id,
-					uint32_t step_id,
+extern int jobacct_gather_set_mem_limit(slurm_step_id_t *step_id,
 					uint64_t mem_limit)
 {
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
-	if ((job_id == 0) || (mem_limit == 0)) {
+	if ((step_id->job_id == 0) || (mem_limit == 0)) {
 		error("jobacct_gather_set_mem_limit: jobid:%u "
-		      "mem_limit:%"PRIu64"", job_id, mem_limit);
+		      "mem_limit:%"PRIu64"", step_id->job_id, mem_limit);
 		return SLURM_ERROR;
 	}
 
-	jobacct_job_id      = job_id;
-	jobacct_step_id     = step_id;
+	memcpy(&jobacct_step_id, step_id, sizeof(jobacct_step_id));
 	jobacct_mem_limit   = mem_limit * 1048576; /* MB to B */
 	jobacct_vmem_limit  = jobacct_mem_limit;
 	jobacct_vmem_limit *= (slurm_conf.vsize_factor / 100.0);
@@ -821,45 +821,19 @@ extern void jobacct_gather_handle_mem_limit(uint64_t total_job_mem,
 	if (!plugin_polling)
 		return;
 
-	if (jobacct_mem_limit) {
-		if (jobacct_step_id == NO_VAL) {
-			debug("Job %u memory used:%"PRIu64" limit:%"PRIu64" B",
-			      jobacct_job_id, total_job_mem, jobacct_mem_limit);
-		} else {
-			debug("Step %u.%u memory used:%"PRIu64" "
-			      "limit:%"PRIu64" B",
-			      jobacct_job_id, jobacct_step_id,
-			      total_job_mem, jobacct_mem_limit);
-		}
-	}
-	if (jobacct_job_id && jobacct_mem_limit &&
+	if (jobacct_mem_limit)
+		debug("%ps memory used:%"PRIu64" limit:%"PRIu64" B",
+		      &jobacct_step_id, total_job_mem, jobacct_mem_limit);
+
+	if (jobacct_step_id.job_id && jobacct_mem_limit &&
 	    (total_job_mem > jobacct_mem_limit)) {
-		if (jobacct_step_id == NO_VAL) {
-			error("Job %u exceeded memory limit "
-			      "(%"PRIu64" > %"PRIu64"), being "
-			      "killed", jobacct_job_id, total_job_mem,
-			      jobacct_mem_limit);
-		} else {
-			error("Step %u.%u exceeded memory limit "
-			      "(%"PRIu64" > %"PRIu64"), "
-			      "being killed", jobacct_job_id, jobacct_step_id,
-			      total_job_mem, jobacct_mem_limit);
-		}
+		error("%ps exceeded memory limit (%"PRIu64" > %"PRIu64"), being killed",
+		      &jobacct_step_id, total_job_mem, jobacct_mem_limit);
 		_acct_kill_step();
-	} else if (jobacct_job_id && jobacct_vmem_limit &&
+	} else if (jobacct_step_id.job_id && jobacct_vmem_limit &&
 		   (total_job_vsize > jobacct_vmem_limit)) {
-		if (jobacct_step_id == NO_VAL) {
-			error("Job %u exceeded virtual memory limit "
-			      "(%"PRIu64" > %"PRIu64"), being killed",
-			      jobacct_job_id,
-			      total_job_vsize, jobacct_vmem_limit);
-		} else {
-			error("Step %u.%u exceeded virtual memory limit "
-			      "(%"PRIu64" > %"PRIu64"), being killed",
-			      jobacct_job_id,
-			      jobacct_step_id, total_job_vsize,
-			      jobacct_vmem_limit);
-		}
+		error("%ps exceeded virtual memory limit (%"PRIu64" > %"PRIu64"), being killed",
+		      &jobacct_step_id, total_job_vsize, jobacct_vmem_limit);
 		_acct_kill_step();
 	}
 }
