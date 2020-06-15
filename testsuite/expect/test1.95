@@ -33,7 +33,8 @@ set file_out           "test$test_id.output"
 set file_err           "test$test_id.error"
 set test_prog          "test$test_id.prog"
 set job_id             0
-set task_cnt           8
+set task_cnt           2
+set thread_cnt         4
 
 print_header $test_id
 
@@ -54,7 +55,7 @@ if {[test_front_end]} {
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $test_prog ${test_prog}.o
-exec $upcc -o $test_prog -qupc=threads=$task_cnt ${test_prog}.upc
+exec $upcc -o $test_prog ${test_prog}.upc
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -63,7 +64,7 @@ file delete $file_out $file_err
 # Build input script file
 #
 make_bash_script $file_in "
-  $srun -n $task_cnt ./$test_prog
+GASNET_SPAWNFN=L $srun -n $task_cnt ./$test_prog $thread_cnt
 "
 
 #
@@ -85,9 +86,8 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -108,8 +108,7 @@ if {$job_id == 0} {
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
+	fail "Timed out waiting for job ($job_id) to complete"
 }
 
 #
@@ -121,7 +120,7 @@ if {[wait_for_file $file_out] == 0} {
 	set total    0
 	spawn $bin_cat $file_out
 	expect {
-		-re "Hello from ($number) of $task_cnt" {
+		-re "Hello from ($number) of $thread_cnt" {
 			incr matches
 			incr sum $expect_out(1,string)
 			exp_continue
@@ -131,8 +130,7 @@ if {[wait_for_file $file_out] == 0} {
 			exp_continue
 		}
 		-re "Failed to mmap" {
-			log_error "insufficient shared memory. Rebuild UPCC with --disable-pshm option."
-			exp_continue
+			fail "Insufficient shared memory. Rebuild UPCC with --disable-pshm option."
 		}
 		eof {
 			wait
@@ -140,13 +138,13 @@ if {[wait_for_file $file_out] == 0} {
 	}
 	if {$matches == 0} {
 		fail "No UPC communications occurred"
-	} elseif {$matches != $task_cnt} {
-		fail "Unexpected output ($matches of $task_cnt)"
-	} elseif {$sum != $total} {
+	} elseif {$matches != $task_cnt * $thread_cnt} {
+		fail "Unexpected output ($matches of $task_cnt * $thread_cnt)"
+	} elseif {$sum != $total * $task_cnt} {
 		fail "Problem with global variables ($sum != $total)"
 	}
 } else {
-	set exit_code 1
+	fail "Output file for job ($job_id) did not get created"
 }
 
 if {$exit_code == 0} {
