@@ -1351,8 +1351,7 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		if (gres_plugin_step_state_unpack(&cred->step_gres_list,
-						  buffer, cred->step_id.job_id,
-						  cred->step_id.step_id,
+						  buffer, &cred->step_id,
 						  protocol_version)
 		    != SLURM_SUCCESS) {
 			goto unpack_error;
@@ -1415,8 +1414,7 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		if (gres_plugin_step_state_unpack(&cred->step_gres_list,
-						  buffer, cred->step_id.job_id,
-						  cred->step_id.step_id,
+						  buffer, &cred->step_id,
 						  protocol_version)
 		    != SLURM_SUCCESS) {
 			goto unpack_error;
@@ -1759,8 +1757,7 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 						  cred->step_id.job_id, false,
 						  protocol_version);
 		gres_plugin_step_state_pack(cred->step_gres_list, buffer,
-					    cred->step_id.job_id, cred->step_id.step_id,
-					    protocol_version);
+					    &cred->step_id, protocol_version);
 		pack16(cred->job_core_spec, buffer);
 		pack64(cred->job_mem_limit, buffer);
 		pack64(cred->step_mem_limit, buffer);
@@ -1803,8 +1800,7 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 						  cred->step_id.job_id, false,
 						  protocol_version);
 		gres_plugin_step_state_pack(cred->step_gres_list, buffer,
-					    cred->step_id.job_id, cred->step_id.step_id,
-					    protocol_version);
+					    &cred->step_id, protocol_version);
 		pack16(cred->job_core_spec, buffer);
 		pack64(cred->job_mem_limit, buffer);
 		pack64(cred->step_mem_limit, buffer);

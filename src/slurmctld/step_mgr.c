@@ -3877,8 +3877,7 @@ extern int dump_job_step_state(void *x, void *arg)
 	packstr(step_ptr->network, buffer);
 
 	(void) gres_plugin_step_state_pack(step_ptr->gres_list, buffer,
-					   step_ptr->job_ptr->job_id,
-					   step_ptr->step_id.step_id,
+					   &step_ptr->step_id,
 					   SLURM_PROTOCOL_VERSION);
 
 	pack16(step_ptr->batch_step, buffer);
@@ -3977,8 +3976,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 
 		if (gres_plugin_step_state_unpack(&gres_list, buffer,
-						  job_ptr->job_id,
-						  step_id.step_id,
+						  &step_id,
 						  protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
@@ -4045,8 +4043,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 
 		if (gres_plugin_step_state_unpack(&gres_list, buffer,
-						  job_ptr->job_id,
-						  step_id.step_id,
+						  &step_id,
 						  protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
@@ -4121,8 +4118,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		xfree(temp_str); /* was ckpt_dir */
 
 		if (gres_plugin_step_state_unpack(&gres_list, buffer,
-						  job_ptr->job_id,
-						  step_id.step_id,
+						  &step_id,
 						  protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
