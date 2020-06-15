@@ -390,8 +390,8 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 
 	if (!(job = batch_stepd_step_rec_create(msg))) {
 		xstrfmtcat(err_msg,
-			   "batch_stepd_step_rec_create() failed for job %u.%u on %s: %s",
-			   msg->job_id, msg->step_id, conf->hostname,
+			   "batch_stepd_step_rec_create() failed for job %u on %s: %s",
+			   msg->job_id, conf->hostname,
 			   slurm_strerror(errno));
 		(void) log_ctld(LOG_LEVEL_ERROR, err_msg);
 		error("%s", err_msg);
@@ -421,8 +421,8 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 
 cleanup:
 	xstrfmtcat(err_msg,
-		   "batch script setup failed for job %u.%u on %s: %s",
-		   msg->job_id, msg->step_id, conf->hostname,
+		   "batch script setup failed for job %u on %s: %s",
+		   msg->job_id, conf->hostname,
 		   slurm_strerror(errno));
 	(void) log_ctld(LOG_LEVEL_ERROR, err_msg);
 	error("%s", err_msg);

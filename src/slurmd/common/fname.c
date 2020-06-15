@@ -151,7 +151,8 @@ extern char *fname_create2(batch_job_launch_msg_t *req)
 	job.array_task_id	= req->array_task_id;
 	job.step_id.job_id = req->job_id;
 //	job->nodeid		= TBD;
-	job.step_id.step_id = req->step_id;
+	job.step_id.step_id = SLURM_BATCH_SCRIPT;
+	job.step_id.step_het_comp = NO_VAL;
 	job.uid			= req->uid;
 	job.user_name		= req->user_name;
 	name = _create_batch_fname(name, orig, &job, 0);
