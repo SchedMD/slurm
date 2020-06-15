@@ -677,6 +677,7 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 	}
 	xfree(slurm_cgpath);
 
+	// TODO DA: Fold this logic into job->step_id?
 	/* build job cgroup relative path if no set (should not be) */
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
@@ -829,10 +830,8 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 {
 	xcgroup_t memory_cg;
 	int rc = SLURM_SUCCESS;
-	char step_str[20];
 	uint64_t stop_msg;
 	ssize_t ret;
-	uint32_t jobid;
 
 	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0)
 	    != XCGROUP_SUCCESS) {
@@ -845,45 +844,33 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 		goto fail_xcgroup_lock;
 	}
 
-	if (job->het_job_id && (job->het_job_id != NO_VAL))
-		jobid = job->het_job_id;
-	else
-		jobid = job->step_id.job_id;
-	if (job->step_id.step_id == SLURM_BATCH_SCRIPT)
-		snprintf(step_str, sizeof(step_str), "%u.batch", jobid);
-	else if (job->step_id.step_id == SLURM_EXTERN_CONT)
-		snprintf(step_str, sizeof(step_str), "%u.extern", jobid);
-	else
-		snprintf(step_str, sizeof(step_str), "%u.%u",
-			 jobid, job->step_id.step_id);
-
 	if (failcnt_non_zero(&step_memory_cg, "memory.memsw.failcnt")) {
 		/*
 		 * reports the number of times that the memory plus swap space
 		 * limit has reached the value in memory.memsw.limit_in_bytes.
 		 */
-		info("Step %s hit memory+swap limit at least once during execution. This may or may not result in some failure.",
-		     step_str);
+		info("%ps hit memory+swap limit at least once during execution. This may or may not result in some failure.",
+		     &job->step_id);
 	} else if (failcnt_non_zero(&step_memory_cg, "memory.failcnt")) {
 		/*
 		 * reports the number of times that the memory limit has reached
 		 * the value set in memory.limit_in_bytes.
 		 */
-		info("Step %s hit memory limit at least once during execution. This may or may not result in some failure.",
-		     step_str);
+		info("%ps hit memory limit at least once during execution. This may or may not result in some failure.",
+		     &job->step_id);
 	}
 
 	if (failcnt_non_zero(&job_memory_cg, "memory.memsw.failcnt")) {
-		info("Job %u hit memory+swap limit at least once during execution. This may or may not result in some failure.",
-		     jobid);
+		info("%ps hit memory+swap limit at least once during execution. This may or may not result in some failure.",
+		     &job->step_id);
 	} else if (failcnt_non_zero(&job_memory_cg, "memory.failcnt")) {
-		info("Job %u hit memory limit at least once during execution. This may or may not result in some failure.",
-		     jobid);
+		info("%ps hit memory limit at least once during execution. This may or may not result in some failure.",
+		     &job->step_id);
 	}
 
 	if (!oom_thread_created) {
-		debug("%s: OOM events were not monitored for %s", __func__,
-		      step_str);
+		debug("%s: OOM events were not monitored for %ps", __func__,
+		      &job->step_id);
 		goto fail_oom_results;
 	}
 
@@ -914,16 +901,16 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 
 	slurm_mutex_lock(&oom_mutex);
 	if (oom_kill_count) {
-		error("Detected %"PRIu64" oom-kill event(s) in step %s cgroup. Some of your processes may have been killed by the cgroup out-of-memory handler.",
-		      oom_kill_count, step_str);
+		error("Detected %"PRIu64" oom-kill event(s) in %ps cgroup. Some of your processes may have been killed by the cgroup out-of-memory handler.",
+		      oom_kill_count, &job->step_id);
 		rc = ENOMEM;
 	}
 	slurm_mutex_unlock(&oom_mutex);
 
 fail_oom_results:
 	if ((oom_pipe[1] != -1) && (close(oom_pipe[1]) == -1)) {
-		error("%s: close() failed on oom_pipe[1] fd, step %s: %m",
-		      __func__, step_str);
+		error("%s: close() failed on oom_pipe[1] fd, %ps: %m",
+		      __func__, &job->step_id);
 	}
 
 	slurm_mutex_destroy(&oom_mutex);
