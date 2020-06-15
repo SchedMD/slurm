@@ -30,7 +30,6 @@ source ./globals
 
 set test_id              "1.55"
 set test_script          "test$test_id.sh"
-set step_id              0
 
 print_header $test_id
 
@@ -57,7 +56,7 @@ set stepid 0
 set job_running 0
 set srun_pid [spawn $srun --unbuffered -v -n1 -t1 ./$test_script]
 expect {
-	-re "launching (($number)\.$step_id)" {
+	-re "launching StepId=(($number)\.$re_word_str)" {
 		set stepid $expect_out(1,string)
 		set jobid $expect_out(2,string)
 		exp_continue
