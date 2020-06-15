@@ -139,7 +139,6 @@ typedef struct {
 	pthread_mutex_t *timer_mutex;
 } timer_struct_t;
 
-static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(uint32_t job_id);
@@ -2525,10 +2524,7 @@ done:
 	if (rc != SLURM_SUCCESS) {
 		/* prolog or job launch failure,
 		 * tell slurmctld that the job failed */
-		if (req->step_id == SLURM_BATCH_SCRIPT)
-			_launch_job_fail(req->job_id, rc);
-		else
-			_abort_step(req->job_id, req->step_id);
+		_launch_job_fail(req->job_id, rc);
 	}
 
 	/*
@@ -2672,30 +2668,6 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 	}
 
 	return rpc_rc;
-}
-
-static int
-_abort_step(uint32_t job_id, uint32_t step_id)
-{
-	step_complete_msg_t resp;
-	slurm_msg_t resp_msg;
-	slurm_msg_t_init(&resp_msg);
-	int rc, rc2;
-
-	memset(&resp, 0, sizeof(resp));
-	resp.step_id.job_id = job_id;
-	resp.step_id.step_id = step_id;
-	resp.range_first  = 0;
-	resp.range_last   = 0;
-	resp.step_rc      = 1;
-	resp.jobacct      = jobacctinfo_create(NULL);
-	resp_msg.msg_type = REQUEST_STEP_COMPLETE;
-	resp_msg.data     = &resp;
-	rc2 = slurm_send_recv_controller_rc_msg(&resp_msg, &rc,
-						working_cluster_rec);
-	/* Note: we are ignoring the RPC return code */
-	jobacctinfo_destroy(resp.jobacct);
-	return rc2;
 }
 
 static void
