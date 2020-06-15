@@ -596,9 +596,8 @@ typedef struct priority_factors_request_msg {
 } priority_factors_request_msg_t;
 
 typedef struct job_notify_msg {
-	uint32_t job_id;
-	uint32_t job_step_id;	/* currently not used */
 	char *   message;
+	slurm_step_id_t step_id;
 } job_notify_msg_t;
 
 typedef struct job_id_msg {

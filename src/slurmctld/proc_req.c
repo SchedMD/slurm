@@ -5569,13 +5569,13 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 
 	/* do RPC call */
 	lock_slurmctld(job_read_lock);
-	job_ptr = find_job_record(notify_msg->job_id);
+	job_ptr = find_job_record(notify_msg->step_id.job_id);
 
 	/* If job is found on the cluster, it could be pending, the origin
 	 * cluster, or running on the sibling cluster. If it's not there then
 	 * route it to the origin. */
 	if (!job_ptr &&
-	    !_route_msg_to_origin(msg, NULL, notify_msg->job_id, uid)) {
+	    !_route_msg_to_origin(msg, NULL, notify_msg->step_id.job_id, uid)) {
 		unlock_slurmctld(job_read_lock);
 		return;
 	}

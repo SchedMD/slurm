@@ -378,8 +378,9 @@ extern int slurm_notify_job (uint32_t job_id, char *message)
 	 * Request message:
 	 */
 	memset(&req, 0, sizeof(req));
-	req.job_id = job_id;
-	req.job_step_id = NO_VAL;	/* currently not used */
+	req.step_id.job_id = job_id;
+	req.step_id.step_id = NO_VAL;	/* currently not used */
+	req.step_id.step_het_comp = NO_VAL;	/* currently not used */
 	req.message     = message;
 	msg.msg_type    = REQUEST_JOB_NOTIFY;
 	msg.data        = &req;

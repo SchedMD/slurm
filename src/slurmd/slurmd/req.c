@@ -2553,8 +2553,8 @@ _rpc_job_notify(slurm_msg_t *msg)
 	int step_cnt  = 0;
 	int fd;
 
-	debug("_rpc_job_notify, uid = %d, jobid = %u", req_uid, req->job_id);
-	job_uid = _get_job_uid(req->job_id);
+	debug("_rpc_job_notify, uid = %d, %ps", req_uid, &req->step_id);
+	job_uid = _get_job_uid(req->step_id.job_id);
 	if ((int)job_uid < 0)
 		goto no_job;
 
@@ -2563,14 +2563,14 @@ _rpc_job_notify(slurm_msg_t *msg)
 	 */
 	if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
 		error("Security violation: job_notify(%u) from uid %d",
-		      req->job_id, req_uid);
+		      req->step_id.job_id, req_uid);
 		return;
 	}
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while ((stepd = list_next(i))) {
-		if ((stepd->step_id.job_id  != req->job_id) ||
+		if ((stepd->step_id.job_id  != req->step_id.job_id) ||
 		    (stepd->step_id.step_id != SLURM_BATCH_SCRIPT)) {
 			continue;
 		}
@@ -2886,16 +2886,16 @@ _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 	/* NOTE: Batch jobs may have no srun to get this message */
 	slurm_msg_t_init(&msg);
 	memset(&notify_req, 0, sizeof(notify_req));
-	notify_req.job_id      = job_id;
-	notify_req.job_step_id = step_id;
+	notify_req.step_id.job_id = job_id;
+	notify_req.step_id.step_id = step_id;
+	notify_req.step_id.step_het_comp = NO_VAL;
 	notify_req.message     = "Exceeded job memory limit";
 	msg.msg_type    = REQUEST_JOB_NOTIFY;
 	msg.data        = &notify_req;
 	slurm_send_only_controller_msg(&msg, working_cluster_rec);
 
 	memset(&kill_req, 0, sizeof(kill_req));
-	kill_req.step_id.job_id = job_id;
-	kill_req.step_id.step_id = step_id;
+	memcpy(&kill_req.step_id, &notify_req, sizeof(kill_req.step_id));
 	kill_req.signal      = SIGKILL;
 	kill_req.flags       = KILL_OOM;
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
@@ -5532,8 +5532,9 @@ static void *_prolog_timer(void *x)
 	snprintf(srun_msg, sizeof(srun_msg), "Prolog hung on node %s",
 		 conf->node_name);
 	memset(&notify_req, 0, sizeof(notify_req));
-	notify_req.job_id	= timer_struct->job_id;
-	notify_req.job_step_id	= NO_VAL;
+	notify_req.step_id.job_id	= timer_struct->job_id;
+	notify_req.step_id.step_id = NO_VAL;
+	notify_req.step_id.step_het_comp = NO_VAL;
 	notify_req.message	= srun_msg;
 	msg.msg_type	= REQUEST_JOB_NOTIFY;
 	msg.data	= &notify_req;

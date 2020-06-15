@@ -416,7 +416,9 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 #endif
 		notify_msg_ptr = (job_notify_msg_t *)
 				 xmalloc(sizeof(job_notify_msg_t));
-		notify_msg_ptr->job_id = job_ptr->job_id;
+		notify_msg_ptr->step_id.job_id = job_ptr->job_id;
+		notify_msg_ptr->step_id.step_id = NO_VAL;
+		notify_msg_ptr->step_id.step_het_comp = NO_VAL;
 		notify_msg_ptr->message = xstrdup(msg);
 		agent_arg_ptr->node_count = 1;
 		agent_arg_ptr->retry = 0;

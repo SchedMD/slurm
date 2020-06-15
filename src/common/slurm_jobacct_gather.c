@@ -287,8 +287,8 @@ static void _acct_kill_step(void)
 	job_notify_msg_t notify_req;
 
 	slurm_msg_t_init(&msg);
-	notify_req.job_id      = jobacct_step_id.job_id;
-	notify_req.job_step_id = jobacct_step_id.step_id;
+	memcpy(&notify_req.step_id, &jobacct_step_id,
+	       sizeof(notify_req.step_id));
 	notify_req.message     = "Exceeded job memory limit";
 	msg.msg_type    = REQUEST_JOB_NOTIFY;
 	msg.data        = &notify_req;
