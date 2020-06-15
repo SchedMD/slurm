@@ -619,8 +619,7 @@ typedef struct job_info_request_msg {
 
 typedef struct job_step_info_request_msg {
 	time_t last_update;
-	uint32_t job_id;
-	uint32_t step_id;
+	slurm_step_id_t step_id;
 	uint16_t show_flags;
 } job_step_info_request_msg_t;
 

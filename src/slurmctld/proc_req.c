@@ -2895,7 +2895,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 	} else {
 		Buf buffer = init_buf(BUF_SIZE);
 		error_code = pack_ctld_job_step_info_response_msg(
-			request->job_id, request->step_id,
+			request->step_id.job_id, request->step_id.step_id,
 			uid, request->show_flags, buffer,
 			msg->protocol_version);
 		unlock_slurmctld(job_read_lock);

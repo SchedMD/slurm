@@ -459,7 +459,11 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	job_step_info_request_msg_t req;
 	slurmdb_federation_rec_t *fed;
 	void *ptr = NULL;
-
+	slurm_step_id_t tmp_step_id = {
+		.job_id = job_id,
+		.step_het_comp = NO_VAL,
+		.step_id = step_id,
+	};
 	if ((show_flags & SHOW_LOCAL) == 0) {
 		if (slurm_load_federation(&ptr) ||
 		    !cluster_in_federation(ptr, slurm_conf.cluster_name)) {
@@ -474,8 +478,7 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	slurm_msg_t_init(&req_msg);
 	memset(&req, 0, sizeof(req));
 	req.last_update  = update_time;
-	req.job_id       = job_id;
-	req.step_id      = step_id;
+	memcpy(&req.step_id, &tmp_step_id, sizeof(req.step_id));
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_JOB_STEP_INFO;
 	req_msg.data     = &req;
