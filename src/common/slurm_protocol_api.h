@@ -438,26 +438,18 @@ extern int slurm_open_msg_conn(slurm_addr_t * slurm_address);
  * IN open_fd		- file descriptor to write on
  * IN buffer		- buffer to send
  * IN size		- size of buffer send
- * IN timeout		- how long to wait in milliseconds
  * RET size_t		- bytes sent , or -1 on errror
  */
 extern size_t slurm_write_stream(int open_fd, char *buffer, size_t size);
-extern size_t slurm_write_stream_timeout(int open_fd,
-					 char *buffer, size_t size,
-					 int timeout);
 
 /* slurm_read_stream
  * read into buffer grom a stream file descriptor
  * IN open_fd		- file descriptor to read from
  * OUT buffer	- buffer to receive into
  * IN size		- size of buffer
- * IN timeout		- how long to wait in milliseconds
  * RET size_t		- bytes read , or -1 on errror
  */
 extern size_t slurm_read_stream(int open_fd, char *buffer, size_t size);
-extern size_t slurm_read_stream_timeout(int open_fd,
-					char *buffer, size_t size,
-					int timeout);
 
 /**********************************************************************\
  * address conversion and management functions

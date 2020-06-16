@@ -1914,13 +1914,6 @@ size_t slurm_write_stream(int open_fd, char *buffer, size_t size)
 	                          SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
 	                          (slurm_conf.msg_timeout * 1000));
 }
-size_t slurm_write_stream_timeout(int open_fd, char *buffer,
-				  size_t size, int timeout)
-{
-	return slurm_send_timeout(open_fd, buffer, size,
-	                          SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-	                          timeout);
-}
 
 /* slurm_read_stream
  * read into buffer grom a stream file descriptor
@@ -1935,13 +1928,6 @@ size_t slurm_read_stream(int open_fd, char *buffer, size_t size)
 	return slurm_recv_timeout(open_fd, buffer, size,
 	                          SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
 	                          (slurm_conf.msg_timeout * 1000));
-}
-size_t slurm_read_stream_timeout(int open_fd, char *buffer,
-				 size_t size, int timeout)
-{
-	return slurm_recv_timeout(open_fd, buffer, size,
-	                          SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-	                          timeout);
 }
 
 /**********************************************************************\
