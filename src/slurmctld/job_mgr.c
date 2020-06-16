@@ -8677,6 +8677,17 @@ extern bool test_job_nodes_ready(job_record_t *job_ptr)
 		if ((select_g_job_ready(job_ptr) & READY_NODE_STATE) == 0)
 			return false;
 	} else if (job_ptr->batch_flag) {
+
+#ifdef HAVE_FRONT_END
+		/* Make sure frontend node is ready to start batch job */
+		front_end_record_t *front_end_ptr =
+			find_front_end_record(job_ptr->batch_host);
+		if (!front_end_ptr ||
+		    IS_NODE_POWER_SAVE(front_end_ptr) ||
+		    IS_NODE_POWER_UP(front_end_ptr)) {
+			return false;
+		}
+#else
 		/* Make sure first node is ready to start batch job */
 		node_record_t *node_ptr =
 			find_node_record(job_ptr->batch_host);
@@ -8685,6 +8696,7 @@ extern bool test_job_nodes_ready(job_record_t *job_ptr)
 		    IS_NODE_POWER_UP(node_ptr)) {
 			return false;
 		}
+#endif
 	}
 
 	return true;
