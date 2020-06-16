@@ -2508,8 +2508,8 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 		/* FIXME: set up the other tres here that aren't specific */
 	}
 
-	slurm_set_accounting_storage_tres(unique_tres);
-	xfree(unique_tres);
+	xfree(slurm_conf.accounting_storage_tres);
+	slurm_conf.accounting_storage_tres = unique_tres;
 
 	cluster_cpus = 0;
 
