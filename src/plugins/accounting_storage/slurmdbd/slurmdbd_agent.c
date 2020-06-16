@@ -163,7 +163,7 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 
 		if (rc != SLURM_SUCCESS) {
 			if (msg->ret_info == DBD_REGISTER_CTLD &&
-			    slurm_get_accounting_storage_enforce()) {
+			    slurm_conf.accounting_storage_enforce) {
 				error("slurmdbd: PERSIST_RC is %d from "
 				      "%s(%u): %s",
 				      rc,
@@ -260,7 +260,7 @@ static int _handle_mult_rc_ret(void)
 			rc = msg->rc;
 			if (rc != SLURM_SUCCESS) {
 				if (msg->ret_info == DBD_REGISTER_CTLD &&
-				    slurm_get_accounting_storage_enforce()) {
+				    slurm_conf.accounting_storage_enforce) {
 					error("slurmdbd: PERSIST_RC is %d from "
 					      "%s(%u): %s",
 					      rc,
@@ -1150,7 +1150,7 @@ extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 				comment = slurm_strerror(msg->rc);
 			if (!req->conn &&
 			    (msg->ret_info == DBD_REGISTER_CTLD) &&
-			    slurm_get_accounting_storage_enforce()) {
+			    slurm_conf.accounting_storage_enforce) {
 				error("slurmdbd: Issue with call "
 				      "%s(%u): %u(%s)",
 				      slurmdbd_msg_type_2_str(

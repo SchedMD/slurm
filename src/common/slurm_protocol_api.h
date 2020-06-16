@@ -118,11 +118,6 @@ extern char *slurm_get_tmp_fs(char *node_name);
  */
 extern uint16_t slurm_get_track_wckey(void);
 
-/* slurm_get_accounting_storage_enforce
- * returns what level to enforce associations at
- */
-uint16_t slurm_get_accounting_storage_enforce(void);
-
 /* slurm_with_slurmdbd
  * returns true if operating with slurmdbd
  */

@@ -336,24 +336,6 @@ extern uint16_t slurm_get_track_wckey(void)
 	return track_wckey;
 }
 
-/* slurm_get_accounting_storage_enforce
- * returns what level to enforce associations at
- */
-uint16_t slurm_get_accounting_storage_enforce(void)
-{
-	uint16_t enforce = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		enforce = conf->accounting_storage_enforce;
-		slurm_conf_unlock();
-	}
-	return enforce;
-
-}
-
 /* slurm_with_slurmdbd
  * returns true if operating with slurmdbd
  */

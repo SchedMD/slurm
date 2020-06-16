@@ -136,7 +136,6 @@ static time_t plugin_shutdown = 0;
 static uint16_t damp_factor = 1;  /* weight for age factor */
 static uint32_t max_age; /* time when not to add any more
 			  * priority to a job if reached */
-static uint16_t enforce;     /* AccountingStorageEnforce */
 static uint32_t weight_age;  /* weight for age factor */
 static uint32_t weight_assoc;/* weight for assoc factor */
 static uint32_t weight_fs;   /* weight for Fairshare factor */
@@ -903,7 +902,8 @@ static void _init_grp_used_tres_run_secs(time_t last_ran)
 
 	log_flag(PRIO, "Initializing grp_used_tres_run_secs");
 
-	if (!(enforce & ACCOUNTING_ENFORCE_LIMITS))
+	if (!(slurm_conf.accounting_storage_enforce &
+	      ACCOUNTING_ENFORCE_LIMITS))
 		return;
 	if (!(job_list && list_count(job_list)))
 		return;
@@ -1507,7 +1507,6 @@ static void _filter_job(job_record_t *job_ptr,
 static void _internal_setup(void)
 {
 	damp_factor = (long double) slurm_conf.fs_dampening_factor;
-	enforce = slurm_get_accounting_storage_enforce();
 	max_age = slurm_conf.priority_max_age;
 	weight_age = slurm_conf.priority_weight_age;
 	weight_assoc = slurm_conf.priority_weight_assoc;
@@ -1521,7 +1520,8 @@ static void _internal_setup(void)
 	flags = slurm_conf.priority_flags;
 
 	log_flag(PRIO, "priority: Damp Factor is %u", damp_factor);
-	log_flag(PRIO, "priority: AccountingStorageEnforce is %u", enforce);
+	log_flag(PRIO, "priority: AccountingStorageEnforce is %u",
+		 slurm_conf.accounting_storage_enforce);
 	log_flag(PRIO, "priority: Max Age is %u", max_age);
 	log_flag(PRIO, "priority: Weight Age is %u", weight_age);
 	log_flag(PRIO, "priority: Weight Assoc is %u", weight_assoc);
