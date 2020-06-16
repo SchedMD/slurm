@@ -765,20 +765,6 @@ char *slurm_get_gpu_freq_def(void)
 	return gpu_freq_def;
 }
 
-char *slurm_get_jobcomp_params(void)
-{
-	char *param = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		param = xstrdup(conf->job_comp_params);
-		slurm_conf_unlock();
-	}
-	return param;
-}
-
 /* slurm_set_jobcomp_port
  * sets the jobcomp port in slurm_conf object
  * RET 0 or error code

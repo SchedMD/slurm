@@ -180,12 +180,6 @@ char *slurm_get_dependency_params(void);
  */
 uint16_t slurm_get_preempt_mode(void);
 
-/*
- * returns the jobcomp parameters from slurm_conf object
- * RET char *    - arbitrary jobcomp parameters, MUST be xfreed by caller
- */
-char *slurm_get_jobcomp_params(void);
-
 /* slurm_set_jobcomp_port
  * sets the jobcomp port in slurm_conf object
  * RET 0 or error code
