@@ -355,14 +355,14 @@ again:
 				goto end_it;	/* No match */
 
 			slurm_mutex_lock(&select_context_lock);
-			slurm_set_select_type_param(params[cray_offset]);
+			slurm_conf.select_type_param = params[cray_offset];
 			plugin_context_destroy(select_context[i]);
 			select_context[i] =
 				plugin_context_create(type, name,
 						      (void **)&ops[i],
 						      node_select_syms,
 						      sizeof(node_select_syms));
-			slurm_set_select_type_param(save_params);
+			slurm_conf.select_type_param = save_params;
 			slurm_mutex_unlock(&select_context_lock);
 			goto again;
 		}

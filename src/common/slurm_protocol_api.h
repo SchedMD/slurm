@@ -237,12 +237,6 @@ extern char *slurm_get_sched_params(void);
  */
 char *slurm_get_select_type(void);
 
-/* slurm_set_select_type_param
- * set select_type_param for slurm_conf object
- * IN uint16_t   - select_type_param
- */
-void slurm_set_select_type_param(uint16_t select_type_param);
-
 /** Return true if (remote) system runs Cray XT/XE */
 bool is_cray_select_type(void);
 
