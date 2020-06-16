@@ -352,23 +352,6 @@ extern uint16_t slurm_get_track_wckey(void)
 	return track_wckey;
 }
 
-/* slurm_get_vsize_factor
- * returns the value of vsize_factor in slurm_conf object
- */
-extern uint16_t slurm_get_vsize_factor(void)
-{
-	uint16_t vsize_factor = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		vsize_factor = conf->vsize_factor;
-		slurm_conf_unlock();
-	}
-	return vsize_factor;
-}
-
 /* slurm_get_accounting_storage_user
  * returns the storage user from slurm_conf object
  * RET char *    - storage user,  MUST be xfreed by caller

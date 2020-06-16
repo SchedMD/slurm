@@ -123,11 +123,6 @@ extern void slurm_set_power_parameters(char *power_parameters);
  */
 extern uint16_t slurm_get_track_wckey(void);
 
-/* slurm_get_vsize_factor
- * returns the value of vsize_factor in slurm_conf object
- */
-extern uint16_t slurm_get_vsize_factor(void);
-
 /* slurm_get_accounting_storage_user
  * returns the storage user from slurm_conf object
  * RET char *    - storage user,  MUST be xfreed by caller

@@ -2991,7 +2991,6 @@ _enforce_job_mem_limit(void)
 	job_mem_limits_t *job_limits_ptr;
 	step_loc_t *stepd;
 	int fd, i, job_inx, job_cnt;
-	uint16_t vsize_factor;
 	uint64_t step_rss, step_vsize;
 	job_step_id_msg_t acct_req;
 	job_step_stat_t *resp = NULL;
@@ -3041,11 +3040,11 @@ _enforce_job_mem_limit(void)
 	list_iterator_destroy(job_limits_iter);
 	slurm_mutex_unlock(&job_limits_mutex);
 
-	vsize_factor = slurm_get_vsize_factor();
 	for (i=0; i<job_cnt; i++) {
 		job_mem_info_ptr[i].vsize_limit = job_mem_info_ptr[i].
 			mem_limit;
-		job_mem_info_ptr[i].vsize_limit *= (vsize_factor / 100.0);
+		job_mem_info_ptr[i].vsize_limit *=
+			(slurm_conf.vsize_factor / 100.0);
 	}
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
