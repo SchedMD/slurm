@@ -849,42 +849,6 @@ bool is_cray_select_type(void)
 	return result;
 }
 
-/* slurm_get_srun_prolog
- * return the name of the srun prolog program
- * RET char *   - name of prolog program, must be xfreed by caller
- */
-char *slurm_get_srun_prolog(void)
-{
-	char *prolog = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		prolog = xstrdup(conf->srun_prolog);
-		slurm_conf_unlock();
-	}
-	return prolog;
-}
-
-/* slurm_get_srun_epilog
- * return the name of the srun epilog program
- * RET char *   - name of epilog program, must be xfreed by caller
- */
-char *slurm_get_srun_epilog(void)
-{
-	char *epilog = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		epilog = xstrdup(conf->srun_epilog);
-		slurm_conf_unlock();
-	}
-	return epilog;
-}
-
 /*  slurm_get_srun_port_range()
  */
 uint16_t *

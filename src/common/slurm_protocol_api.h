@@ -251,18 +251,6 @@ void slurm_set_select_type_param(uint16_t select_type_param);
 /** Return true if (remote) system runs Cray XT/XE */
 bool is_cray_select_type(void);
 
-/* slurm_get_srun_prolog
- * return the name of the srun prolog program
- * RET char *   - name of prolog program, must be xfreed by caller
- */
-char *slurm_get_srun_prolog(void);
-
-/* slurm_get_srun_epilog
- * return the name of the srun epilog program
- * RET char *   - name of epilog program, must be xfreed by caller
- */
-char *slurm_get_srun_epilog(void);
-
 /* slurm_get_srun_port_range()
  *
  * Return the array with 2 members indicating the

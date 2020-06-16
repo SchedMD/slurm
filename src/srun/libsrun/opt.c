@@ -872,9 +872,9 @@ static bool _opt_verify(void)
 	}
 
 	if (!sropt.epilog)
-		sropt.epilog = slurm_get_srun_epilog();
+		sropt.epilog = xstrdup(slurm_conf.srun_epilog);
 	if (!sropt.prolog)
-		sropt.prolog = slurm_get_srun_prolog();
+		sropt.prolog = xstrdup(slurm_conf.srun_prolog);
 
 	/*
 	 * This means --ntasks was read from the environment.
