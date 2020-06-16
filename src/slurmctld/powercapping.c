@@ -236,9 +236,10 @@ int powercap_set_cluster_cap(uint32_t new_cap)
 		xstrfmtcat(power_params, "%scap_watts=INFINITE", sep);
 	else
 		xstrfmtcat(power_params, "%scap_watts=%u", sep, new_cap);
-	slurm_set_power_parameters(power_params);
+
+	xfree(slurm_conf.power_parameters);
+	slurm_conf.power_parameters = power_params;
 	power_g_reconfig();
-	xfree(power_params);
 
 	return 0;
 }

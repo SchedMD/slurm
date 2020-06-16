@@ -318,22 +318,6 @@ extern char *slurm_get_tmp_fs(char *node_name)
 	return tmp_fs;
 }
 
-/* slurm_set_power_parameters
- * reset the PowerParameters object
- */
-extern void slurm_set_power_parameters(char *power_parameters)
-{
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		xfree(conf->power_parameters);
-		conf->power_parameters = xstrdup(power_parameters);
-		slurm_conf_unlock();
-	}
-}
-
 /* slurm_get_track_wckey
  * returns the value of track_wckey in slurm_conf object
  */

@@ -113,11 +113,6 @@ extern char *slurm_get_stepd_loc(void);
  */
 extern char *slurm_get_tmp_fs(char *node_name);
 
-/* slurm_set_power_parameters
- * reset the PowerParameters object
- */
-extern void slurm_set_power_parameters(char *power_parameters);
-
 /* slurm_get_track_wckey
  * returns the value of track_wckey in slurm_conf object
  */
