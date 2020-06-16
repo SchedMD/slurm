@@ -336,25 +336,6 @@ extern uint16_t slurm_get_track_wckey(void)
 	return track_wckey;
 }
 
-/* slurm_get_accounting_storage_user
- * returns the storage user from slurm_conf object
- * RET char *    - storage user,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_user(void)
-{
-	char *storage_user;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-		storage_user = xstrdup(slurmdbd_conf->storage_user);
-	} else {
-		conf = slurm_conf_lock();
-		storage_user = xstrdup(conf->accounting_storage_user);
-		slurm_conf_unlock();
-	}
-	return storage_user;
-}
-
 /* slurm_get_accounting_storage_backup_host
  * returns the storage backup host from slurm_conf object
  * RET char *    - storage backup host,  MUST be xfreed by caller

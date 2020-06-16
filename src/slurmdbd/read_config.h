@@ -93,7 +93,6 @@ typedef struct {
 	char *		storage_host;	/* host where DB is running	*/
 	char *		storage_loc;	/* database name		*/
 	char *		storage_pass;   /* password for DB write	*/
-	char *		storage_user;	/* user authorized to write DB	*/
 	uint16_t	syslog_debug;	/* output to both logfile and syslog*/
 	uint16_t        track_wckey;    /* Whether or not to track wckey*/
 	uint16_t        track_ctld;     /* Whether or not track when a

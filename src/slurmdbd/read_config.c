@@ -111,7 +111,6 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->storage_host);
 		xfree(slurmdbd_conf->storage_loc);
 		xfree(slurmdbd_conf->storage_pass);
-		xfree(slurmdbd_conf->storage_user);
 		slurmdbd_conf->track_wckey = 0;
 		slurmdbd_conf->track_ctld = 0;
 	}
@@ -508,7 +507,7 @@ extern int read_slurmdbd_conf(void)
 		               "StoragePort", tbl);
 		s_p_get_string(&slurm_conf.accounting_storage_type,
 		               "StorageType", tbl);
-		s_p_get_string(&slurmdbd_conf->storage_user,
+		s_p_get_string(&slurm_conf.accounting_storage_user,
 			       "StorageUser", tbl);
 
 		if (!s_p_get_uint16(&slurm_conf.tcp_timeout, "TCPTimeout", tbl))
@@ -577,8 +576,8 @@ extern int read_slurmdbd_conf(void)
 	if (!slurmdbd_conf->storage_host)
 		slurmdbd_conf->storage_host = xstrdup(DEFAULT_STORAGE_HOST);
 
-	if (!slurmdbd_conf->storage_user)
-		slurmdbd_conf->storage_user = xstrdup(getlogin());
+	if (!slurm_conf.accounting_storage_user)
+		slurm_conf.accounting_storage_user = xstrdup(getlogin());
 
 	if (!xstrcmp(slurm_conf.accounting_storage_type,
 	             "accounting_storage/mysql")) {
@@ -713,7 +712,7 @@ extern void log_config(void)
 	/* debug2("StoragePass       = %s", slurmdbd_conf->storage_pass); */
 	debug2("StoragePort       = %u", slurm_conf.accounting_storage_port);
 	debug2("StorageType       = %s", slurm_conf.accounting_storage_type);
-	debug2("StorageUser       = %s", slurmdbd_conf->storage_user);
+	debug2("StorageUser       = %s", slurm_conf.accounting_storage_user);
 
 	debug2("TCPTimeout        = %u", slurm_conf.tcp_timeout);
 
@@ -1009,7 +1008,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("StorageUser");
-	key_pair->value = xstrdup(slurmdbd_conf->storage_user);
+	key_pair->value = xstrdup(slurm_conf.accounting_storage_user);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
