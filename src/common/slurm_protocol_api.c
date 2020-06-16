@@ -765,25 +765,6 @@ char *slurm_get_gpu_freq_def(void)
 	return gpu_freq_def;
 }
 
-/*
- * slurm_get_jobcomp_type
- * returns the job completion logger type from slurm_conf object
- * RET char *    - job completion type,  MUST be xfreed by caller
- */
-char *slurm_get_jobcomp_type(void)
-{
-	char *jobcomp_type = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		jobcomp_type = xstrdup(conf->job_comp_type);
-		slurm_conf_unlock();
-	}
-	return jobcomp_type;
-}
-
 /* slurm_get_jobcomp_loc
  * returns the job completion loc from slurm_conf object
  * RET char *    - job completion location,  MUST be xfreed by caller

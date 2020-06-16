@@ -676,7 +676,7 @@ extern void parse_command_line(int argc, char **argv)
 {
 	extern int optind;
 	int c, i, optionIndex = 0;
-	char *end = NULL, *start = NULL, *acct_type = NULL;
+	char *end = NULL, *start = NULL;
 	slurmdb_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	struct stat stat_buf;
@@ -1112,13 +1112,11 @@ extern void parse_command_line(int argc, char **argv)
 	if (params.opt_completion) {
 		slurmdb_jobcomp_init(params.opt_filein);
 
-		acct_type = slurm_get_jobcomp_type();
-		if ((xstrcmp(acct_type, "jobcomp/none") == 0)
+		if (!xstrcmp(slurm_conf.job_comp_type, "jobcomp/none")
 		    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
 			fprintf(stderr, "Slurm job completion is disabled\n");
 			exit(1);
 		}
-		xfree(acct_type);
 	} else {
 		if (slurm_acct_storage_init() != SLURM_SUCCESS) {
 			fprintf(stderr, "Slurm unable to initialize storage plugin\n");
