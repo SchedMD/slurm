@@ -336,20 +336,6 @@ extern uint16_t slurm_get_track_wckey(void)
 	return track_wckey;
 }
 
-char *slurm_get_accounting_storage_ext_host(void)
-{
-	char *ext_host = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		ext_host = xstrdup(conf->accounting_storage_ext_host);
-		slurm_conf_unlock();
-	}
-	return ext_host;
-}
-
 /* slurm_get_accounting_storage_enforce
  * returns what level to enforce associations at
  */

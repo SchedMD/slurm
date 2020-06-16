@@ -93,12 +93,12 @@ extern int _find_ext_conn(void *x, void *key)
 
 static void _create_ext_conns(void)
 {
-	char *ext_hosts = slurm_get_accounting_storage_ext_host();
+	char *ext_hosts;
 	char *tok = NULL, *save_ptr = NULL;
 	List new_list = list_create(_destroy_external_host_conns);
 	slurm_persist_conn_t *old_conn;
 
-	if (ext_hosts)
+	if ((ext_hosts = xstrdup(slurm_conf.accounting_storage_ext_host)))
 		tok = strtok_r(ext_hosts, ",", &save_ptr);
 	while (ext_hosts && tok) {
 		slurm_persist_conn_t *dbd_conn;
