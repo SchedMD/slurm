@@ -46,7 +46,6 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/slurm_time.h"
 
-static char    *acct_storage_backup_host = NULL;
 static uint16_t track_wckey;
 
 static List dbd_config_list = NULL;
@@ -83,13 +82,11 @@ static void _free_dbd_config(void)
 
 static void _load_slurm_config(void)
 {
-	acct_storage_backup_host = slurm_get_accounting_storage_backup_host();
 	track_wckey = slurm_get_track_wckey();
 }
 
 static void _free_slurm_config(void)
 {
-	xfree(acct_storage_backup_host);
 }
 
 static void _print_slurm_config(void)
@@ -99,7 +96,8 @@ static void _print_slurm_config(void)
 
 	slurm_make_time_str(&now, tmp_str, sizeof(tmp_str));
 	printf("Configuration data as of %s\n", tmp_str);
-	printf("AccountingStorageBackupHost  = %s\n", acct_storage_backup_host);
+	printf("AccountingStorageBackupHost  = %s\n",
+	       slurm_conf.accounting_storage_backup_host);
 	printf("AccountingStorageHost  = %s\n",
 	       slurm_conf.accounting_storage_host);
 	printf("AccountingStoragePass  = %s\n",

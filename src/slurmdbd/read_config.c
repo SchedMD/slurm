@@ -107,7 +107,6 @@ static void _clear_slurmdbd_conf(void)
 		slurmdbd_conf->purge_suspend = 0;
 		slurmdbd_conf->purge_txn = 0;
 		slurmdbd_conf->purge_usage = 0;
-		xfree(slurmdbd_conf->storage_backup_host);
 		xfree(slurmdbd_conf->storage_loc);
 		slurmdbd_conf->track_wckey = 0;
 		slurmdbd_conf->track_ctld = 0;
@@ -493,7 +492,7 @@ extern int read_slurmdbd_conf(void)
 					SLURMDB_PURGE_MONTHS;
 		}
 
-		s_p_get_string(&slurmdbd_conf->storage_backup_host,
+		s_p_get_string(&slurm_conf.accounting_storage_backup_host,
 			       "StorageBackupHost", tbl);
 		s_p_get_string(&slurm_conf.accounting_storage_host,
 			       "StorageHost", tbl);
@@ -705,7 +704,8 @@ extern void log_config(void)
 	debug2("SlurmUser         = %s(%u)",
 	       slurm_conf.slurm_user_name, slurm_conf.slurm_user_id);
 
-	debug2("StorageBackupHost = %s", slurmdbd_conf->storage_backup_host);
+	debug2("StorageBackupHost = %s",
+	       slurm_conf.accounting_storage_backup_host);
 	debug2("StorageHost       = %s",
 	       slurm_conf.accounting_storage_host);
 	debug2("StorageLoc        = %s", slurmdbd_conf->storage_loc);
@@ -981,7 +981,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("StorageBackupHost");
-	key_pair->value = xstrdup(slurmdbd_conf->storage_backup_host);
+	key_pair->value = xstrdup(slurm_conf.accounting_storage_backup_host);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

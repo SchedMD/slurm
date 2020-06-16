@@ -645,7 +645,7 @@ static void _open_slurmdbd_conn(bool need_db)
 	slurmdbd_conn->rem_host = xstrdup(slurm_conf.accounting_storage_host);
 
 	// See if a backup slurmdbd is configured
-	backup_host = slurm_get_accounting_storage_backup_host();
+	backup_host = xstrdup(slurm_conf.accounting_storage_backup_host);
 
 again:
 	// A connection failure is only an error if backup dne or also fails

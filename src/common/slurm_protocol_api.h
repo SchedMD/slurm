@@ -118,12 +118,6 @@ extern char *slurm_get_tmp_fs(char *node_name);
  */
 extern uint16_t slurm_get_track_wckey(void);
 
-/* slurm_get_accounting_storage_backup_host
- * returns the storage host from slurm_conf object
- * RET char *    - storage backup host,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_backup_host(void);
-
 /* slurm_get_accounting_storage_ext_host
  * returns the external storage host from slurm_conf object
  * RET char * - storage host str (host[:port][,...], MUST be xfreed by caller

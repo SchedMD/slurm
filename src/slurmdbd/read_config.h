@@ -88,8 +88,6 @@ typedef struct {
 					 * than this in months or days	*/
 	uint32_t        purge_usage;    /* purge usage data older
 					 * than this in months or days	*/
-	char *		storage_backup_host;/* backup host where DB is
-					     * running */
 	char *		storage_loc;	/* database name		*/
 	uint16_t	syslog_debug;	/* output to both logfile and syslog*/
 	uint16_t        track_wckey;    /* Whether or not to track wckey*/
