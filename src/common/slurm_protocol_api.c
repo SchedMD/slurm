@@ -446,25 +446,6 @@ static char *_global_auth_key(void)
 	return storage_pass_ptr;
 }
 
-/* slurm_get_profile_accounting_type
- * get ProfileAccountingType from slurm_conf object
- * RET char *   - profile_accounting type, MUST be xfreed by caller
- */
-char *slurm_get_acct_gather_profile_type(void)
-{
-	char *acct_gather_profile_type = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		acct_gather_profile_type =
-			xstrdup(conf->acct_gather_profile_type);
-		slurm_conf_unlock();
-	}
-	return acct_gather_profile_type;
-}
-
 /* slurm_get_interconnect_accounting_type
  * get InterconnectAccountingType from slurm_conf object
  * RET char *   - interconnect_accounting type, MUST be xfreed by caller

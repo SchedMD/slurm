@@ -214,7 +214,6 @@ extern int acct_gather_profile_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "acct_gather_profile";
-	char *type = NULL;
 
 	if (init_run && g_context)
 		return retval;
@@ -224,13 +223,13 @@ extern int acct_gather_profile_init(void)
 	if (g_context)
 		goto done;
 
-	type = slurm_get_acct_gather_profile_type();
-
-	g_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+	g_context = plugin_context_create(plugin_type,
+					  slurm_conf.acct_gather_profile_type,
+					  (void **) &ops, syms, sizeof(syms));
 
 	if (!g_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.acct_gather_profile_type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -241,8 +240,8 @@ done:
 	if (retval == SLURM_SUCCESS)
 		retval = acct_gather_conf_init();
 	if (retval != SLURM_SUCCESS)
-		fatal("can not open the %s plugin", type);
-	xfree(type);
+		fatal("can not open the %s plugin",
+		      slurm_conf.acct_gather_profile_type);
 
 	return retval;
 }
