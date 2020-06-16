@@ -1482,7 +1482,6 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 	slurmdb_tres_cond_t tres_q;
 	uid_t uid = getuid();
 	List new_list = NULL;
-	char *tres_req_str;
 	int changed;
 	assoc_mgr_lock_t locks =
 		{ .assoc = WRITE_LOCK, .qos = WRITE_LOCK, .tres= WRITE_LOCK };
@@ -1492,10 +1491,10 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 	assoc_mgr_lock(&locks);
 
 	/* If this exists we only want/care about tracking/caching these TRES */
-	if ((tres_req_str = slurm_get_accounting_storage_tres())) {
+	if (slurm_conf.accounting_storage_tres) {
 		tres_q.type_list = list_create(xfree_ptr);
-		slurm_addto_char_list(tres_q.type_list, tres_req_str);
-		xfree(tres_req_str);
+		slurm_addto_char_list(tres_q.type_list,
+				      slurm_conf.accounting_storage_tres);
 	}
 	new_list = acct_storage_g_get_tres(
 		db_conn, uid, &tres_q);

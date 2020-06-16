@@ -128,12 +128,6 @@ extern uint16_t slurm_get_track_wckey(void);
  */
 extern uint16_t slurm_get_vsize_factor(void);
 
-/* slurm_get_accounting_storage_tres
- * returns the accounting storage tres from slurm_conf object
- * RET char *    - accounting storage tres,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_tres(void);
-
 /* slurm_set_accounting_storage_tres
  * sets the value of accounting_storage_tres in slurm_conf object
  * RET 0 or error_code

@@ -369,26 +369,6 @@ extern uint16_t slurm_get_vsize_factor(void)
 	return vsize_factor;
 }
 
-/* slurm_get_accounting_storage_tres
- * returns the accounting storage tres from slurm_conf object
- * RET char *    - accounting storage tres,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_tres(void)
-{
-	char *accounting_tres;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-		accounting_tres = NULL;
-	} else {
-		conf = slurm_conf_lock();
-		accounting_tres = xstrdup(conf->accounting_storage_tres);
-		slurm_conf_unlock();
-	}
-	return accounting_tres;
-
-}
-
 /* slurm_set_accounting_storage_tres
  * sets the value of accounting_storage_tres in slurm_conf object
  * RET 0 or error_code
