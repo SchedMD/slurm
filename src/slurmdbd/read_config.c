@@ -109,7 +109,6 @@ static void _clear_slurmdbd_conf(void)
 		slurmdbd_conf->purge_usage = 0;
 		xfree(slurmdbd_conf->storage_backup_host);
 		xfree(slurmdbd_conf->storage_loc);
-		xfree(slurmdbd_conf->storage_pass);
 		slurmdbd_conf->track_wckey = 0;
 		slurmdbd_conf->track_ctld = 0;
 	}
@@ -500,7 +499,7 @@ extern int read_slurmdbd_conf(void)
 			       "StorageHost", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_loc,
 			       "StorageLoc", tbl);
-		s_p_get_string(&slurmdbd_conf->storage_pass,
+		s_p_get_string(&slurm_conf.accounting_storage_pass,
 			       "StoragePass", tbl);
 		s_p_get_uint16(&slurm_conf.accounting_storage_port,
 		               "StoragePort", tbl);
@@ -710,7 +709,8 @@ extern void log_config(void)
 	debug2("StorageHost       = %s",
 	       slurm_conf.accounting_storage_host);
 	debug2("StorageLoc        = %s", slurmdbd_conf->storage_loc);
-	/* debug2("StoragePass       = %s", slurmdbd_conf->storage_pass); */
+	/* debug2("StoragePass       = %s",
+	       slurm_conf.accounting_storage_pass); */
 	debug2("StoragePort       = %u", slurm_conf.accounting_storage_port);
 	debug2("StorageType       = %s", slurm_conf.accounting_storage_type);
 	debug2("StorageUser       = %s", slurm_conf.accounting_storage_user);

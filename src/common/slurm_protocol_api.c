@@ -400,25 +400,6 @@ bool slurm_with_slurmdbd(void)
 	return with_slurmdbd;
 }
 
-/* slurm_get_accounting_storage_pass
- * returns the storage password from slurm_conf object
- * RET char *    - storage password,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_pass(void)
-{
-	char *storage_pass;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-		storage_pass = xstrdup(slurmdbd_conf->storage_pass);
-	} else {
-		conf = slurm_conf_lock();
-		storage_pass = xstrdup(conf->accounting_storage_pass);
-		slurm_conf_unlock();
-	}
-	return storage_pass;
-}
-
 /*
  * Convert AuthInfo to a socket path. Accepts two input formats:
  * 1) <path>		(Old format)

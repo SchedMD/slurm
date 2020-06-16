@@ -299,7 +299,6 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	/* first load accounting parms from slurm.conf */
 	char *acct_storage_backup_host =
 		slurm_get_accounting_storage_backup_host();
-	char *acct_storage_pass = slurm_get_accounting_storage_pass();
 	uint16_t track_wckey = slurm_get_track_wckey();
 
 	slurm_make_time_str(&now, tmp_str, sizeof(tmp_str));
@@ -314,7 +313,8 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 				   "AccountingStorageHost",
 				   slurm_conf.accounting_storage_host);
 	add_display_treestore_line(update, treestore, &iter,
-				   "AccountingStoragePass", acct_storage_pass);
+				   "AccountingStoragePass",
+				   slurm_conf.accounting_storage_pass);
 	sprintf(tmp_str, "%u", slurm_conf.accounting_storage_port);
 	add_display_treestore_line(update, treestore, &iter,
 				   "AccountingStoragePort", tmp_str);
@@ -347,7 +347,6 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 				   "TrackWCKey", tmp_str);
 
 	xfree(acct_storage_backup_host);
-	xfree(acct_storage_pass);
 
 	/* now load accounting parms from slurmdbd.conf */
 

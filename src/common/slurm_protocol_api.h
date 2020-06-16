@@ -140,12 +140,6 @@ uint16_t slurm_get_accounting_storage_enforce(void);
  */
 bool slurm_with_slurmdbd(void);
 
-/* slurm_get_accounting_storage_pass
- * returns the storage password from slurm_conf object
- * RET char *    - storage password,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_pass(void);
-
 /*
  * slurm_get_dependency_params
  * RET dependency_params must be xfreed by caller
