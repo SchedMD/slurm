@@ -85,7 +85,7 @@ extern int job_container_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "job_container";
-	char *last = NULL, *job_container_plugin_list, *job_container = NULL;
+	char *type = NULL, *last = NULL, *plugin_list, *job_container = NULL;
 
 	if (init_run && (g_container_context_num >= 0))
 		return retval;
@@ -100,9 +100,8 @@ extern int job_container_init(void)
 	    !slurm_conf.job_container_plugin[0])
 		goto done;
 
-	job_container_plugin_list = xstrdup(slurm_conf.job_container_plugin);
-	while ((job_container =
-		strtok_r(job_container_plugin_list, ",", &last))) {
+	type = plugin_list = xstrdup(slurm_conf.job_container_plugin);
+	while ((job_container = strtok_r(plugin_list, ",", &last))) {
 		xrealloc(ops,
 			 sizeof(job_container_ops_t) *
 			 (g_container_context_num + 1));
@@ -127,12 +126,13 @@ extern int job_container_init(void)
 
 		xfree(job_container);
 		g_container_context_num++;
-		job_container_plugin_list = NULL; /* for next iteration */
+		plugin_list = NULL; /* for next iteration */
 	}
 	init_run = true;
 
  done:
 	slurm_mutex_unlock(&g_container_context_lock);
+	xfree(type);
 
 	if (retval != SLURM_SUCCESS)
 		job_container_fini();
