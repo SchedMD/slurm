@@ -797,24 +797,6 @@ char *slurm_get_jobcomp_params(void)
 	return param;
 }
 
-/* slurm_get_jobcomp_pass
- * returns the storage password from slurm_conf object
- * RET char *    - storage password,  MUST be xfreed by caller
- */
-char *slurm_get_jobcomp_pass(void)
-{
-	char *storage_pass = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		storage_pass = xstrdup(conf->job_comp_pass);
-		slurm_conf_unlock();
-	}
-	return storage_pass;
-}
-
 /* slurm_set_jobcomp_port
  * sets the jobcomp port in slurm_conf object
  * RET 0 or error code

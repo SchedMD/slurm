@@ -192,12 +192,6 @@ char *slurm_get_jobcomp_host(void);
  */
 char *slurm_get_jobcomp_params(void);
 
-/* slurm_get_jobcomp_pass
- * returns the storage password from slurm_conf object
- * RET char *    - storage password,  MUST be xfreed by caller
- */
-char *slurm_get_jobcomp_pass(void);
-
 /* slurm_set_jobcomp_port
  * sets the jobcomp port in slurm_conf object
  * RET 0 or error code
