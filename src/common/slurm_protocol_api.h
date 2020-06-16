@@ -135,12 +135,6 @@ uint16_t slurm_get_keep_alive_time(void);
  */
 char *slurm_get_preempt_type(void);
 
-/* slurm_get_acct_gather_energy_type
- * get EnergyAccountingType from slurm_conf object
- * RET char *   - acct_gather_energy type, MUST be xfreed by caller
- */
-char *slurm_get_acct_gather_energy_type(void);
-
 /* slurm_get_acct_gather_profile_type
  * get ProfileAccountingType from slurm_conf object
  * RET char *   - acct_gather_profile_type, MUST be xfreed by caller

@@ -143,7 +143,7 @@ extern int slurm_acct_gather_energy_init(void)
 	if (g_context_num >= 0)
 		goto done;
 
-	full_plugin_type = slurm_get_acct_gather_energy_type();
+	full_plugin_type = xstrdup(slurm_conf.acct_gather_energy_type);
 	g_context_num = 0; /* mark it before anything else */
 	plugin_entry = full_plugin_type;
 	while ((type = strtok_r(plugin_entry, ",", &last))) {
