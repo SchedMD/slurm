@@ -765,24 +765,6 @@ char *slurm_get_gpu_freq_def(void)
 	return gpu_freq_def;
 }
 
-/* slurm_get_jobcomp_host
- * returns the storage host from slurm_conf object
- * RET char *    - storage host,  MUST be xfreed by caller
- */
-char *slurm_get_jobcomp_host(void)
-{
-	char *storage_host = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		storage_host = xstrdup(conf->job_comp_host);
-		slurm_conf_unlock();
-	}
-	return storage_host;
-}
-
 char *slurm_get_jobcomp_params(void)
 {
 	char *param = NULL;

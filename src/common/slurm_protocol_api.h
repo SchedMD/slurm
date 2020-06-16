@@ -180,12 +180,6 @@ char *slurm_get_dependency_params(void);
  */
 uint16_t slurm_get_preempt_mode(void);
 
-/* slurm_get_jobcomp_host
- * returns the storage host from slurm_conf object
- * RET char *    - storage host,  MUST be xfreed by caller
- */
-char *slurm_get_jobcomp_host(void);
-
 /*
  * returns the jobcomp parameters from slurm_conf object
  * RET char *    - arbitrary jobcomp parameters, MUST be xfreed by caller
