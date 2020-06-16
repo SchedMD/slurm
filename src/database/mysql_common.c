@@ -692,7 +692,7 @@ extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
 			slurm_set_jobcomp_port(db_info->port);
 		}
 		db_info->host = slurm_get_jobcomp_host();
-		db_info->user = slurm_get_jobcomp_user();
+		db_info->user = xstrdup(slurm_conf.job_comp_user);
 		db_info->pass = slurm_get_jobcomp_pass();
 		break;
 	default:
