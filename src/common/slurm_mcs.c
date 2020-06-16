@@ -59,7 +59,6 @@ static bool init_run = false;
 static bool private_data = false;
 static bool label_strict_enforced = false;
 static uint32_t select_value = MCS_SELECT_ONDEMANDSELECT;
-static char *mcs_params = NULL;
 static char *mcs_params_common = NULL;
 static char *mcs_params_specific = NULL;
 
@@ -83,15 +82,13 @@ extern int slurm_mcs_init(void)
 	if (g_mcs_context)
 		goto done;
 
-	xfree(mcs_params);
 	xfree(mcs_params_common);
 	xfree(mcs_params_specific);
-	mcs_params = slurm_get_mcs_plugin_params();
 
-	if (mcs_params == NULL)
+	if (!slurm_conf.mcs_plugin_params)
 		info("No parameter for mcs plugin, default values set");
 	else {
-		mcs_params_common = xstrdup(mcs_params);
+		mcs_params_common = xstrdup(slurm_conf.mcs_plugin_params);
 		sep = xstrchr(mcs_params_common, ':');
 		if (sep != NULL) {
 			if (sep[1] != '\0')
@@ -134,7 +131,6 @@ extern int slurm_mcs_fini(void)
 	g_mcs_context = NULL;
 	xfree(mcs_params_common);
 	xfree(mcs_params_specific);
-	xfree(mcs_params);
 	return rc;
 }
 

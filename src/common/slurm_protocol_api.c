@@ -930,22 +930,6 @@ uint16_t slurm_get_keep_alive_time(void)
 }
 
 
-/* slurm_get_mcs_plugin_params
- * RET mcs_plugin_params name, must be xfreed by caller */
-char *slurm_get_mcs_plugin_params(void)
-{
-	char *mcs_plugin_params = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		mcs_plugin_params = xstrdup(conf->mcs_plugin_params);
-		slurm_conf_unlock();
-	}
-	return mcs_plugin_params;
-}
-
 /* slurm_get_preempt_type
  * get PreemptType from slurm_conf object
  * RET char *   - preempt type, MUST be xfreed by caller
