@@ -38,6 +38,7 @@
 
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -84,7 +85,6 @@ extern int job_container_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "job_container";
-	char *container_plugin_type = NULL;
 	char *last = NULL, *job_container_plugin_list, *job_container = NULL;
 
 	if (init_run && (g_container_context_num >= 0))
@@ -95,13 +95,12 @@ extern int job_container_init(void)
 	if (g_container_context_num >= 0)
 		goto done;
 
-	container_plugin_type = slurm_get_job_container_plugin();
 	g_container_context_num = 0; /* mark it before anything else */
-	if ((container_plugin_type == NULL) ||
-	    (container_plugin_type[0] == '\0'))
+	if (!slurm_conf.job_container_plugin ||
+	    !slurm_conf.job_container_plugin[0])
 		goto done;
 
-	job_container_plugin_list = container_plugin_type;
+	job_container_plugin_list = xstrdup(slurm_conf.job_container_plugin);
 	while ((job_container =
 		strtok_r(job_container_plugin_list, ",", &last))) {
 		xrealloc(ops,
@@ -134,7 +133,6 @@ extern int job_container_init(void)
 
  done:
 	slurm_mutex_unlock(&g_container_context_lock);
-	xfree(container_plugin_type);
 
 	if (retval != SLURM_SUCCESS)
 		job_container_fini();

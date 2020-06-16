@@ -262,10 +262,6 @@ uint16_t *slurm_get_srun_port_range(void);
  * RET core_spec plugin name, must be xfreed by caller */
 char *slurm_get_core_spec_plugin(void);
 
-/* slurm_get_job_container_plugin
- * RET job_container plugin name, must be xfreed by caller */
-char *slurm_get_job_container_plugin(void);
-
 /*
  * slurm_get_jobcomp_type
  * returns the configured GpuFreqDef value

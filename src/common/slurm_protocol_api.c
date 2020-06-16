@@ -879,19 +879,6 @@ char *slurm_get_core_spec_plugin(void)
 	return core_spec_plugin;
 }
 
-/* slurm_get_job_container_plugin
- * RET job_container plugin name, must be xfreed by caller */
-char *slurm_get_job_container_plugin(void)
-{
-	char *job_container_plugin = NULL;
-	slurm_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	job_container_plugin = xstrdup(conf->job_container_plugin);
-	slurm_conf_unlock();
-	return job_container_plugin;
-}
-
 /* Change general slurm communication errors to slurmctld specific errors */
 static void _remap_slurmctld_errno(void)
 {
