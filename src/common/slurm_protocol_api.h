@@ -180,12 +180,6 @@ char *slurm_get_dependency_params(void);
  */
 uint16_t slurm_get_preempt_mode(void);
 
-/* slurm_get_jobcomp_loc
- * returns the job completion loc from slurm_conf object
- * RET char *    - job completion location,  MUST be xfreed by caller
- */
-char *slurm_get_jobcomp_loc(void);
-
 /* slurm_get_jobcomp_user
  * returns the storage user from slurm_conf object
  * RET char *    - storage user,  MUST be xfreed by caller

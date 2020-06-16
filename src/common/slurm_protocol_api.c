@@ -765,24 +765,6 @@ char *slurm_get_gpu_freq_def(void)
 	return gpu_freq_def;
 }
 
-/* slurm_get_jobcomp_loc
- * returns the job completion loc from slurm_conf object
- * RET char *    - job completion location,  MUST be xfreed by caller
- */
-char *slurm_get_jobcomp_loc(void)
-{
-	char *jobcomp_loc = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		jobcomp_loc = xstrdup(conf->job_comp_loc);
-		slurm_conf_unlock();
-	}
-	return jobcomp_loc;
-}
-
 /* slurm_get_jobcomp_user
  * returns the storage user from slurm_conf object
  * RET char *    - storage user,  MUST be xfreed by caller

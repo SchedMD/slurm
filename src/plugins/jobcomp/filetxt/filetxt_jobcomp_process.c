@@ -176,7 +176,7 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 	char line[BUFFER_SIZE];
-	char *fptr = NULL, *filein = NULL;
+	char *fptr = NULL;
 	int jobid = 0;
 	char *partition = NULL;
 	FILE *fd = NULL;
@@ -189,8 +189,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	filetxt_jobcomp_info_t *jobcomp_info = NULL;
 	List job_list = list_create(jobcomp_destroy_job);
 
-	filein = slurm_get_jobcomp_loc();
-	fd = _open_log_file(filein);
+	fd = _open_log_file(slurm_conf.job_comp_loc);
 
 	while (fgets(line, BUFFER_SIZE, fd)) {
 		lc++;
@@ -271,12 +270,10 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	FREE_NULL_LIST(job_info_list);
 
 	if (ferror(fd)) {
-		perror(filein);
-		xfree(filein);
+		perror(slurm_conf.job_comp_loc);
 		exit(1);
 	}
 	fclose(fd);
-	xfree(filein);
 
 	return job_list;
 }
