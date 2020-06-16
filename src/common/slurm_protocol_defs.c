@@ -289,7 +289,7 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 			else if (names[i] == '[')
 			       /*
 				* Make sure there is a open bracket. This
-				* check is to allow comma sperated notation
+				* check is to allow comma-separated notation
 				* within the bracket (e.g. "linux[0-1,2]").
 				*/
 				first_brack = true;
