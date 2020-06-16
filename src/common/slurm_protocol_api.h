@@ -180,12 +180,6 @@ char *slurm_get_dependency_params(void);
  */
 uint16_t slurm_get_preempt_mode(void);
 
-/* slurm_set_jobcomp_port
- * sets the jobcomp port in slurm_conf object
- * RET 0 or error code
- */
-int slurm_set_jobcomp_port(uint32_t port);
-
 /* slurm_get_keep_alive_time
  * returns keep_alive_time slurm_conf object
  * RET uint16_t        - keep_alive_time

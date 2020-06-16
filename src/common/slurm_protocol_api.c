@@ -765,28 +765,6 @@ char *slurm_get_gpu_freq_def(void)
 	return gpu_freq_def;
 }
 
-/* slurm_set_jobcomp_port
- * sets the jobcomp port in slurm_conf object
- * RET 0 or error code
- */
-int slurm_set_jobcomp_port(uint32_t port)
-{
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		if (port == 0) {
-			error("can't have jobcomp port of 0");
-			return SLURM_ERROR;
-		}
-
-		conf->job_comp_port = port;
-		slurm_conf_unlock();
-	}
-	return 0;
-}
-
 /* slurm_get_keep_alive_time
  * returns keep_alive_time slurm_conf object
  * RET uint16_t	- keep_alive_time
