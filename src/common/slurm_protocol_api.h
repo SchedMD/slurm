@@ -192,12 +192,6 @@ uint16_t slurm_get_keep_alive_time(void);
  */
 char *slurm_get_preempt_type(void);
 
-/* slurm_get_proctrack_type
- * get ProctrackType from slurm_conf object
- * RET char *   - proctrack type, MUST be xfreed by caller
- */
-char *slurm_get_proctrack_type(void);
-
 /* slurm_get_acct_gather_energy_type
  * get EnergyAccountingType from slurm_conf object
  * RET char *   - acct_gather_energy type, MUST be xfreed by caller

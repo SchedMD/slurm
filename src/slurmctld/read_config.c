@@ -1071,15 +1071,11 @@ static void _validate_het_jobs(void)
 /* Log an error if SlurmdUser is not root and any cgroup plugin is used */
 static void _test_cgroup_plugin_use(void)
 {
-	char *plugins;
-
 	if (xstrstr(slurm_conf.task_plugin, "cgroup"))
 		error("task/cgroup plugin will not work unless SlurmdUser is root");
 
-	plugins = slurm_get_proctrack_type();
-	if (xstrstr(plugins, "cgroup"))
+	if (xstrstr(slurm_conf.proctrack_type, "cgroup"))
 		error("proctrack/cgroup plugin will not work unless SlurmdUser is root");
-	xfree(plugins);
 }
 
 /*

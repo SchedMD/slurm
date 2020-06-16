@@ -59,6 +59,7 @@
 
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -105,7 +106,6 @@ extern int slurm_proctrack_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "proctrack";
-	char *type = NULL;
 
 	if (init_run && g_context)
 		return retval;
@@ -115,12 +115,13 @@ extern int slurm_proctrack_init(void)
 	if (g_context)
 		goto done;
 
-	type = slurm_get_proctrack_type();
-	g_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+	g_context = plugin_context_create(plugin_type,
+					  slurm_conf.proctrack_type,
+					  (void **) &ops, syms, sizeof(syms));
 
 	if (!g_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.proctrack_type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -128,7 +129,6 @@ extern int slurm_proctrack_init(void)
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
-	xfree(type);
 	return retval;
 }
 

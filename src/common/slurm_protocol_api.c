@@ -802,24 +802,6 @@ char *slurm_get_preempt_type(void)
 	return preempt_type;
 }
 
-/* slurm_get_proctrack_type
- * get ProctrackType from slurm_conf object
- * RET char *   - proctrack type, MUST be xfreed by caller
- */
-char *slurm_get_proctrack_type(void)
-{
-	char *proctrack_type = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		proctrack_type = xstrdup(conf->proctrack_type);
-		slurm_conf_unlock();
-	}
-	return proctrack_type;
-}
-
 /* slurm_get_sched_params
  * RET char * - Value of SchedulerParameters, MUST be xfreed by caller */
 extern char *slurm_get_sched_params(void)
