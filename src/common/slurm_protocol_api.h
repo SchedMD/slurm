@@ -123,12 +123,6 @@ extern uint16_t slurm_get_track_wckey(void);
  */
 bool slurm_with_slurmdbd(void);
 
-/*
- * slurm_get_dependency_params
- * RET dependency_params must be xfreed by caller
- */
-char *slurm_get_dependency_params(void);
-
 /* slurm_get_preempt_mode
  * returns the PreemptMode value from slurm_conf object
  * RET uint16_t   - PreemptMode value (See PREEMPT_MODE_* in slurm.h)
