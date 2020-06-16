@@ -102,11 +102,10 @@ extern int job_container_init(void)
 
 	type = plugin_list = xstrdup(slurm_conf.job_container_plugin);
 	while ((job_container = strtok_r(plugin_list, ",", &last))) {
-		xrealloc(ops,
-			 sizeof(job_container_ops_t) *
-			 (g_container_context_num + 1));
-		xrealloc(g_container_context, (sizeof(plugin_context_t *)
-					  * (g_container_context_num + 1)));
+		xrecalloc(ops, g_container_context_num + 1,
+			  sizeof(job_container_ops_t));
+		xrecalloc(g_container_context, g_container_context_num + 1,
+			  sizeof(plugin_context_t *));
 		if (xstrncmp(job_container, "job_container/", 14) == 0)
 			job_container += 14; /* backward compatibility */
 		job_container = xstrdup_printf("job_container/%s",
