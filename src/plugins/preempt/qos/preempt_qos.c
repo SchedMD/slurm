@@ -65,7 +65,7 @@ static uint16_t _job_preempt_mode(job_record_t *job_ptr)
 	if (job_ptr->qos_ptr && job_ptr->qos_ptr->preempt_mode)
 		return job_ptr->qos_ptr->preempt_mode;
 
-	return (slurm_get_preempt_mode() & (~PREEMPT_MODE_GANG));
+	return (slurm_conf.preempt_mode & (~PREEMPT_MODE_GANG));
 }
 
 /* Generate the job's priority. It is partly based upon the QOS priority
@@ -144,7 +144,7 @@ extern int preempt_p_get_data(job_record_t *job_ptr,
 
 	switch (data_type) {
 	case PREEMPT_DATA_ENABLED:
-		(*(bool *)data) = slurm_get_preempt_mode() != PREEMPT_MODE_OFF;
+		(*(bool *)data) = slurm_conf.preempt_mode != PREEMPT_MODE_OFF;
 		break;
 	case PREEMPT_DATA_MODE:
 		(*(uint16_t *)data) = _job_preempt_mode(job_ptr);

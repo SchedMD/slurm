@@ -2481,7 +2481,7 @@ static int _preserve_select_type_param(slurm_conf_t *ctl_conf_ptr,
  *	configuration */
 static int _update_preempt(uint16_t old_preempt_mode)
 {
-	uint16_t new_preempt_mode = slurm_get_preempt_mode();
+	uint16_t new_preempt_mode = slurm_conf.preempt_mode;
 
 	if ((old_preempt_mode & PREEMPT_MODE_GANG) ==
 	    (new_preempt_mode & PREEMPT_MODE_GANG))

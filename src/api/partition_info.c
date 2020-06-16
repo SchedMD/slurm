@@ -300,7 +300,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	preempt_mode = part_ptr->preempt_mode;
 	if (preempt_mode == NO_VAL16)
-		preempt_mode = slurm_get_preempt_mode(); /* use cluster param */
+		preempt_mode = slurm_conf.preempt_mode; /* use cluster param */
 	xstrfmtcat(out, " PreemptMode=%s", preempt_mode_string(preempt_mode));
 
 	xstrcat(out, line_end);

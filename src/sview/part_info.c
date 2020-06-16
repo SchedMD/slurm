@@ -1091,7 +1091,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 		case SORTID_PREEMPT_MODE:
 			temp_uint16 = part_ptr->preempt_mode;
 			if (temp_uint16 == NO_VAL16)
-				temp_uint16 =  slurm_get_preempt_mode();
+				temp_uint16 =  slurm_conf.preempt_mode;
 			temp_char = preempt_mode_string(temp_uint16);
 			break;
 		case SORTID_PRIORITY_JOB_FACTOR:
@@ -1324,7 +1324,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 
 	tmp_preempt = part_ptr->preempt_mode;
 	if (tmp_preempt == NO_VAL16)
-		tmp_preempt = slurm_get_preempt_mode();	/* use cluster param */
+		tmp_preempt = slurm_conf.preempt_mode; /* use cluster param */
 
 	convert_num_unit((float)part_ptr->priority_job_factor,
 			 tmp_prio_job_factor, sizeof(tmp_prio_job_factor),
@@ -2221,7 +2221,7 @@ static GtkListStore *_create_model_part2(int type)
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter, 0,
-				preempt_mode_string(slurm_get_preempt_mode()),
+				preempt_mode_string(slurm_conf.preempt_mode),
 				1, SORTID_PREEMPT_MODE, -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,

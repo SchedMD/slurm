@@ -754,7 +754,7 @@ extern void common_init(void)
 	if (xstrcasestr(slurm_conf.topology_param, "TopoOptional"))
 		topo_optional = true;
 
-	if (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)
+	if (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)
 		gang_mode = true;
 	else
 		gang_mode = false;

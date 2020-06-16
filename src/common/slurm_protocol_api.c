@@ -446,24 +446,6 @@ static char *_global_auth_key(void)
 	return storage_pass_ptr;
 }
 
-/* slurm_get_preempt_mode
- * returns the PreemptMode value from slurm_conf object
- * RET uint16_t   - PreemptMode value (See PREEMPT_MODE_* in slurm.h)
- */
-uint16_t slurm_get_preempt_mode(void)
-{
-	uint16_t preempt_mode = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		preempt_mode = conf->preempt_mode;
-		slurm_conf_unlock();
-	}
-	return preempt_mode;
-}
-
 /* slurm_get_energy_accounting_type
  * get EnergyAccountingType from slurm_conf object
  * RET char *   - energy_accounting type, MUST be xfreed by caller
