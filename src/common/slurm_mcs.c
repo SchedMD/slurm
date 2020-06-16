@@ -74,7 +74,6 @@ extern int slurm_mcs_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "mcs";
-	char *type = NULL;
 	char *sep;
 
 	if (init_run && g_mcs_context)
@@ -87,7 +86,6 @@ extern int slurm_mcs_init(void)
 	xfree(mcs_params);
 	xfree(mcs_params_common);
 	xfree(mcs_params_specific);
-	type = slurm_get_mcs_plugin();
 	mcs_params = slurm_get_mcs_plugin_params();
 
 	if (mcs_params == NULL)
@@ -106,11 +104,14 @@ extern int slurm_mcs_init(void)
 	_slurm_mcs_check_and_load_enforced(mcs_params_common);
 	_slurm_mcs_check_and_load_select(mcs_params_common);
 
-	g_mcs_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+	g_mcs_context = plugin_context_create(plugin_type,
+					      slurm_conf.mcs_plugin,
+					      (void **) &ops, syms,
+					      sizeof(syms));
 
 	if (!g_mcs_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.mcs_plugin);
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -118,7 +119,6 @@ extern int slurm_mcs_init(void)
 	init_run = true;
 done:
 	slurm_mutex_unlock(&g_mcs_context_lock);
-	xfree(type);
 	return retval;
 }
 

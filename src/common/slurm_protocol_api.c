@@ -930,22 +930,6 @@ uint16_t slurm_get_keep_alive_time(void)
 }
 
 
-/* slurm_get_mcs_plugin
- * RET mcs_plugin name, must be xfreed by caller */
-char *slurm_get_mcs_plugin(void)
-{
-	char *mcs_plugin = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		mcs_plugin = xstrdup(conf->mcs_plugin);
-		slurm_conf_unlock();
-	}
-	return mcs_plugin;
-}
-
 /* slurm_get_mcs_plugin_params
  * RET mcs_plugin_params name, must be xfreed by caller */
 char *slurm_get_mcs_plugin_params(void)

@@ -168,10 +168,6 @@ bool slurm_with_slurmdbd(void);
  */
 char *slurm_get_accounting_storage_pass(void);
 
-/* slurm_get_mcs_plugin
- * RET mcs_plugin name, must be xfreed by caller */
-char *slurm_get_mcs_plugin(void);
-
 /* slurm_get_mcs_plugin_params
  * RET mcs_plugin_params name, must be xfreed by caller */
 char *slurm_get_mcs_plugin_params(void);
