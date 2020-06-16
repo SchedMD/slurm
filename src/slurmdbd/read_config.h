@@ -90,7 +90,6 @@ typedef struct {
 					 * than this in months or days	*/
 	char *		storage_backup_host;/* backup host where DB is
 					     * running */
-	char *		storage_host;	/* host where DB is running	*/
 	char *		storage_loc;	/* database name		*/
 	char *		storage_pass;   /* password for DB write	*/
 	uint16_t	syslog_debug;	/* output to both logfile and syslog*/

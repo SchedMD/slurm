@@ -47,7 +47,6 @@
 #include "src/common/slurm_time.h"
 
 static char    *acct_storage_backup_host = NULL;
-static char    *acct_storage_host = NULL;
 static char    *acct_storage_pass = NULL;
 static uint16_t track_wckey;
 
@@ -86,7 +85,6 @@ static void _free_dbd_config(void)
 static void _load_slurm_config(void)
 {
 	acct_storage_backup_host = slurm_get_accounting_storage_backup_host();
-	acct_storage_host = slurm_get_accounting_storage_host();
 	acct_storage_pass = slurm_get_accounting_storage_pass();
 	track_wckey = slurm_get_track_wckey();
 }
@@ -94,7 +92,6 @@ static void _load_slurm_config(void)
 static void _free_slurm_config(void)
 {
 	xfree(acct_storage_backup_host);
-	xfree(acct_storage_host);
 	xfree(acct_storage_pass);
 }
 
@@ -106,7 +103,8 @@ static void _print_slurm_config(void)
 	slurm_make_time_str(&now, tmp_str, sizeof(tmp_str));
 	printf("Configuration data as of %s\n", tmp_str);
 	printf("AccountingStorageBackupHost  = %s\n", acct_storage_backup_host);
-	printf("AccountingStorageHost  = %s\n", acct_storage_host);
+	printf("AccountingStorageHost  = %s\n",
+	       slurm_conf.accounting_storage_host);
 	printf("AccountingStoragePass  = %s\n", acct_storage_pass);
 	printf("AccountingStoragePort  = %u\n",
 	       slurm_conf.accounting_storage_port);

@@ -680,7 +680,7 @@ extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
 	switch (type) {
 	case SLURM_MYSQL_PLUGIN_AS:
 		db_info->port = slurm_conf.accounting_storage_port;
-		db_info->host = slurm_get_accounting_storage_host();
+		db_info->host = xstrdup(slurm_conf.accounting_storage_host);
 		db_info->backup = slurm_get_accounting_storage_backup_host();
 		db_info->user = xstrdup(slurm_conf.accounting_storage_user);
 		db_info->pass = slurm_get_accounting_storage_pass();

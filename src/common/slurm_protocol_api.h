@@ -130,12 +130,6 @@ char *slurm_get_accounting_storage_backup_host(void);
  */
 char *slurm_get_accounting_storage_ext_host(void);
 
-/* slurm_get_accounting_storage_host
- * returns the storage host from slurm_conf object
- * RET char *    - storage host,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_host(void);
-
 /* slurm_get_accounting_storage_enforce
  * returns what level to enforce associations at
  */
