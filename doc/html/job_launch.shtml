@@ -21,7 +21,11 @@ command will create a resource allocation (if not already running within one)
 plus launch tasks. Each of these commands will fill in a data structure
 identifying the specifications of the job allocation requirement (e.g. node
 count, task count, etc.) based upon command line options and environment
-variables and send the RPC to the <b>slurmctld</b> daemon. If the new job
+variables and send the RPC to the <b>slurmctld</b> daemon. The UID and GID of
+the user launching the job will be included in a credential which will be used
+later to restrict access to the job, so further steps run in the allocation
+will need to be launched using the same UID and GID as the one used to create
+the allocation. If the new job
 request is the highest priority, the <b>slurmctld</b> daemon will attempt
 to select resources for it immediately, otherwise it will validate that the job
 request can be satisfied at some time and queue the request. In either case
@@ -31,7 +35,7 @@ following:</p>
 <li>A job ID and the resource allocation specification (nodes, cpus, etc.)</li>
 <li>A job ID and notification of the job being in a queued state OR</li>
 <li>An error code</li>
-</ul> 
+</ul>
 
 <p>The process of selecting resources for a job request involves multiple steps,
 some of which involve plugins. The process is as follows:</p>
@@ -134,6 +138,6 @@ nodes that the job is to be ended. The <b>slurmd</b> daemon does the following:
 </ol>
 
 
-<p style="text-align:center;">Last modified 7 January 2019</p>
+<p style="text-align:center;">Last modified 17 June 2020</p>
 
 <!--#include virtual="footer.txt"-->
