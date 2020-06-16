@@ -686,7 +686,7 @@ extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
 		db_info->pass = slurm_get_accounting_storage_pass();
 		break;
 	case SLURM_MYSQL_PLUGIN_JC:
-		db_info->port = slurm_get_jobcomp_port();
+		db_info->port = slurm_conf.job_comp_port;
 		if (!db_info->port) {
 			db_info->port = DEFAULT_MYSQL_PORT;
 			slurm_set_jobcomp_port(db_info->port);

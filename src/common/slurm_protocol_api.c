@@ -815,25 +815,6 @@ char *slurm_get_jobcomp_pass(void)
 	return storage_pass;
 }
 
-/* slurm_get_jobcomp_port
- * returns the storage port from slurm_conf object
- * RET uint32_t   - storage port
- */
-uint32_t slurm_get_jobcomp_port(void)
-{
-	uint32_t storage_port = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		storage_port = conf->job_comp_port;
-		slurm_conf_unlock();
-	}
-	return storage_port;
-
-}
-
 /* slurm_set_jobcomp_port
  * sets the jobcomp port in slurm_conf object
  * RET 0 or error code

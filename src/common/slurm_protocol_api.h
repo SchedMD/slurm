@@ -198,12 +198,6 @@ char *slurm_get_jobcomp_params(void);
  */
 char *slurm_get_jobcomp_pass(void);
 
-/* slurm_get_jobcomp_port
- * returns the storage port from slurm_conf object
- * RET uint32_t   - storage port
- */
-uint32_t slurm_get_jobcomp_port(void);
-
 /* slurm_set_jobcomp_port
  * sets the jobcomp port in slurm_conf object
  * RET 0 or error code
