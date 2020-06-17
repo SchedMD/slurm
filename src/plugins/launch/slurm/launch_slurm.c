@@ -254,7 +254,7 @@ static void
 _handle_openmpi_port_error(const char *tasks, const char *hosts,
 			   slurm_step_ctx_t *step_ctx)
 {
-	uint32_t job_id, step_id;
+	slurm_step_id_t step_id;
 	char *msg = "retrying";
 
 	if (!retry_step_begin) {
@@ -267,10 +267,9 @@ _handle_openmpi_port_error(const char *tasks, const char *hosts,
 	error("%s: tasks %s unable to claim reserved port, %s.",
 	      hosts, tasks, msg);
 
-	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
-	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
-	info("Terminating job step %u.%u", job_id, step_id);
-	slurm_kill_job_step(job_id, step_id, SIGKILL);
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEP_ID, &step_id);
+	info("Terminating job step %ps", &step_id);
+	slurm_kill_job_step(step_id.job_id, step_id.step_id, SIGKILL);
 }
 
 static void _task_start(launch_tasks_response_msg_t *msg)
