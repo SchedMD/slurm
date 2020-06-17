@@ -47,9 +47,7 @@
 #include "src/plugins/launch/slurm/task_state.h"
 
 struct task_state_struct {
-	uint32_t job_id;
-	uint32_t step_id;
-	uint32_t het_group;
+	slurm_step_id_t step_id;
 	uint32_t task_offset;
 	int n_tasks;
 	int n_started;
@@ -67,16 +65,13 @@ struct task_state_struct {
  * Given a het group and task count, return a task_state structure
  * Free memory using task_state_destroy()
  */
-extern task_state_t task_state_create(uint32_t job_id, uint32_t step_id,
-				      uint32_t het_group, int ntasks,
+extern task_state_t task_state_create(slurm_step_id_t *step_id, int ntasks,
 				      uint32_t task_offset)
 {
 	task_state_t ts = xmalloc(sizeof(*ts));
 
 	/* ts is zero filled by xmalloc() */
-	ts->job_id = job_id;
-	ts->step_id = step_id;
-	ts->het_group = het_group;
+	memcpy(&ts->step_id, step_id, sizeof(ts->step_id));
 	ts->task_offset = task_offset;
 	ts->n_tasks = ntasks;
 	ts->running = bit_alloc(ntasks);
@@ -87,30 +82,26 @@ extern task_state_t task_state_create(uint32_t job_id, uint32_t step_id,
 	return ts;
 }
 
+static int _find_task_state(void *object, void *key)
+{
+	task_state_t ts = (task_state_t)object;
+	slurm_step_id_t *step_id = (slurm_step_id_t *)key;
+
+	return verify_step_id(&ts->step_id, step_id);
+}
+
 /*
  * Find the task_state structure for a given job_id, step_id and/or het group
  * on a list. Specify values of NO_VAL for values that are not to be matched
  * Returns NULL if not found
  */
-extern task_state_t task_state_find(uint32_t job_id, uint32_t step_id,
-				    uint32_t het_group, List task_state_list)
+extern task_state_t task_state_find(slurm_step_id_t *step_id,
+				    List task_state_list)
 {
-	task_state_t ts = NULL;
-	ListIterator iter;
-
 	if (!task_state_list)
-		return ts;
+		return NULL;
 
-	iter = list_iterator_create(task_state_list);
-	while ((ts = list_next(iter))) {
-		if (((job_id     == ts->job_id)     || (job_id  == NO_VAL)) &&
-		    ((step_id    == ts->step_id)    || (step_id == NO_VAL)) &&
-		    ((het_group == ts->het_group) || (het_group == NO_VAL)))
-			break;
-	}
-	list_iterator_destroy(iter);
-
-	return ts;
+	return list_find_first(task_state_list, _find_task_state, step_id);
 }
 
 /*
@@ -169,15 +160,9 @@ extern void task_state_update(task_state_t ts, int task_id, task_state_type_t t)
 	xassert(task_id >= 0);
 	xassert(task_id < ts->n_tasks);
 
-	if (ts->het_group == NO_VAL) {
-		debug3("%s: step=%u.%u task_id=%d, %s", __func__,
-		       ts->job_id, ts->step_id, task_id,
-		       _task_state_type_str(t));
-	} else {
-		debug3("%s: step=%u.%u het_group=%u task_id=%d, %s", __func__,
-		       ts->job_id, ts->step_id, ts->het_group, task_id,
-		       _task_state_type_str(t));
-	}
+	debug3("%s: %ps task_id=%d, %s", __func__,
+	       &ts->step_id, task_id,
+	       _task_state_type_str(t));
 
 	switch (t) {
 	case TS_START_SUCCESS:
@@ -297,15 +282,8 @@ static void _do_log_msg(task_state_t ts, bitstr_t *b, log_f fn,
 {
 	char buf[4096];
 	char *s = bit_set_count (b) == 1 ? "" : "s";
-	if (ts->het_group == NO_VAL) {
-		(*fn) ("step:%u.%u task%s %s: %s",
-		       ts->job_id, ts->step_id,
-		       s, bit_fmt(buf, sizeof(buf), b), msg);
-	} else {
-		(*fn) ("step:%u.%u het_group:%u task%s %s: %s",
-		       ts->job_id, ts->step_id, ts->het_group,
-		       s, bit_fmt(buf, sizeof(buf), b), msg);
-	}
+	(*fn) ("%ps task%s %s: %s",
+	       &ts->step_id, s, bit_fmt(buf, sizeof(buf), b), msg);
 }
 
 static void _task_state_print(task_state_t ts, log_f fn)

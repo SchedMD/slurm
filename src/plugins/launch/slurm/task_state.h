@@ -57,8 +57,8 @@ typedef void (*log_f) (const char *, ...);
  * Given a het group and task count, return a task_state structure
  * Free memory using task_state_destroy()
  */
-extern task_state_t task_state_create(uint32_t job_id, uint32_t step_id,
-				      uint32_t het_group, int ntasks,
+extern task_state_t task_state_create(slurm_step_id_t *step_id,
+				      int ntasks,
 				      uint32_t task_offset);
 
 /*
@@ -66,8 +66,8 @@ extern task_state_t task_state_create(uint32_t job_id, uint32_t step_id,
  * on a list. Specify values of NO_VAL for values that are not to be matched
  * Returns NULL if not found
  */
-extern task_state_t task_state_find(uint32_t job_id, uint32_t step_id,
-				    uint32_t het_group, List task_state_list);
+extern task_state_t task_state_find(slurm_step_id_t *step_id,
+				    List task_state_list);
 
 /*
  * Modify the task count for a previously created task_state structure

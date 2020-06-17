@@ -291,10 +291,7 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 		       msg->node_name, slurm_strerror(msg->return_code));
 	}
 
-	task_state = task_state_find(msg->step_id.job_id,
-				     msg->step_id.step_id,
-				     msg->step_id.step_het_comp,
-				     task_state_list);
+	task_state = task_state_find(&msg->step_id, task_state_list);
 	if (!task_state) {
 		error("%s: Could not locate task state for %ps",
 		      __func__, &msg->step_id);
@@ -326,6 +323,27 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 
 }
 
+static int _find_step(void *object, void *key)
+{
+	srun_job_t *srun_job = (srun_job_t *)object;
+	slurm_step_id_t *step_id = (slurm_step_id_t *)key;
+
+	return verify_step_id(&srun_job->step_id, step_id);
+}
+
+/*
+ * Find the task_state structure for a given job_id, step_id and/or het group
+ * on a list. Specify values of NO_VAL for values that are not to be matched
+ * Returns NULL if not found
+ */
+static srun_job_t *_find_srun_job(slurm_step_id_t *step_id)
+{
+	if (!local_job_list)
+		return NULL;
+
+	return list_find_first(local_job_list, _find_step, step_id);
+}
+
 static void _task_finish(task_exit_msg_t *msg)
 {
 	char *tasks = NULL, *hosts = NULL;
@@ -336,19 +354,8 @@ static void _task_finish(task_exit_msg_t *msg)
 	static int msg_printed = 0, oom_printed = 0, last_task_exit_rc;
 	task_state_t task_state;
 	const char *task_str = _taskstr(msg->num_tasks);
-	srun_job_t *my_srun_job;
-	ListIterator iter;
+	srun_job_t *my_srun_job = _find_srun_job(&msg->step_id);
 
-	iter = list_iterator_create(local_job_list);
-	while ((my_srun_job = (srun_job_t *) list_next(iter))) {
-		if ((my_srun_job->step_id.job_id  == msg->step_id.job_id) &&
-		    (my_srun_job->step_id.step_id == msg->step_id.step_id) &&
-		    ((msg->step_id.step_het_comp == NO_VAL) ||
-		     (my_srun_job->het_job_offset ==
-		      msg->step_id.step_het_comp)))
-			break;
-	}
-	list_iterator_destroy(iter);
 	if (!my_srun_job) {
 		error("Ignoring exit message from unrecognized %ps",
 		      &msg->step_id);
@@ -452,10 +459,7 @@ static void _task_finish(task_exit_msg_t *msg)
 	xfree(tasks);
 	xfree(hosts);
 
-	task_state = task_state_find(msg->step_id.job_id,
-				     msg->step_id.step_id,
-				     msg->step_id.step_het_comp,
-				     task_state_list);
+	task_state = task_state_find(&msg->step_id, task_state_list);
 	if (task_state) {
 		_update_task_exit_state(task_state, msg->num_tasks,
 					msg->task_id_list, !normal_exit);
@@ -698,12 +702,10 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	slurm_step_launch_params_t_init(&launch_params);
 	memcpy(&callbacks, step_callbacks, sizeof(callbacks));
 
-	task_state = task_state_find(job->step_id.job_id, job->step_id.step_id,
-				     job->het_job_offset, task_state_list);
+	task_state = task_state_find(&job->step_id, task_state_list);
+
 	if (!task_state) {
-		task_state = task_state_create(job->step_id.job_id,
-					       job->step_id.step_id,
-					       job->het_job_offset, job->ntasks,
+		task_state = task_state_create(&job->step_id, job->ntasks,
 					       job->het_job_task_offset);
 		slurm_mutex_lock(&het_job_lock);
 		if (!local_job_list)
