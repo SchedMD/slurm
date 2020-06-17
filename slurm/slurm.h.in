@@ -148,7 +148,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #define MAX_JOB_ID (0x03FFFFFF) /* bits 0-25 */
 #define MAX_FED_CLUSTERS 63
 
-/* Job step ID of external process container */
+/* Job step ID of pending step */
 #define SLURM_PENDING_STEP (0xfffffffd)
 /* Job step ID of batch scripts */
 #define SLURM_BATCH_SCRIPT (0xfffffffe)

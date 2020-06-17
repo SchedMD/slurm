@@ -331,11 +331,11 @@ other jobs if they do not use all of the resources on the nodes.</p>
 <p>We have added a <i>"--exclusive"</i> option to srun which allow users
 to specify that they would like their allocated
 nodes in exclusive mode. For more information see "man srun".
-The reason for that is if users have mpi//threaded/openMP
+The reason for that is if users have mpi/threaded/openMP
 programs that will take advantage of all the CPUs within a node but only need
 one mpi process per node.</p>
 
 
-<p style="text-align:center;">Last modified 21 April 2014</p>
+<p style="text-align:center;">Last modified 5 June 2020</p>
 
 <!--#include virtual="footer.txt"-->

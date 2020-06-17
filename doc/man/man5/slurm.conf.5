@@ -3337,7 +3337,7 @@ resource allocation.
 The node's \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR and
 \fBThreadsPerCore\fR may optionally be configured and result in job
 allocations which have improved locality; however doing so will prevent
-more than one job being from being allocated on each core.
+more than one job from being allocated on each core.
 .TP
 \fBCR_CPU_Memory\fR
 CPUs and memory are consumable resources.
@@ -3347,7 +3347,7 @@ resource allocation.
 The node's \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR and
 \fBThreadsPerCore\fR may optionally be configured and result in job
 allocations which have improved locality; however doing so will prevent
-more than one job being from being allocated on each core.
+more than one job from being allocated on each core.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Core\fR
@@ -4183,7 +4183,7 @@ Only optimize allocation for network topology if the job includes a switch
 option. Since optimizing resource allocation for topology involves much higher
 system overhead, this option can be used to impose the extra overhead only on
 jobs which can take advantage of it. If most job allocations are not optimized
-for network topology, they make fragment resources to the point that topology
+for network topology, they may fragment resources to the point that topology
 optimization for other jobs will be difficult to achieve.
 \fBNOTE\fR: Jobs may span across nodes without common parent switches with
 this enabled.

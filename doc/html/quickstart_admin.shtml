@@ -691,7 +691,7 @@ Sometimes it works to just symlink the old .so name(s) to the new one, but this
 has no guarantee of working.</p>
 
 <p><b>Be mindful of your configured SlurmdTimeout and SlurmctldTimeout values</b>.
-If the Slurm daemon's are down for longer than the specified timeout during an
+If the Slurm daemons are down for longer than the specified timeout during an
 upgrade, nodes may be marked DOWN and their jobs killed.
 You can either increase the timeout values during an upgrade or ensure that the
 slurmd daemons on compute nodes are not down for longer than SlurmdTimeout.
@@ -742,6 +742,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 30 January 2020</p>
+<p style="text-align:center;">Last modified 5 June 2020</p>
 
 <!--#include virtual="footer.txt"-->

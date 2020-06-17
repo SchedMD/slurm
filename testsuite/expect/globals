@@ -2160,7 +2160,7 @@ proc get_min_job_age {} {
 #
 # Proc: get_default_acct
 #
-# Purpose: get users default account.
+# Purpose: get user's default account.
 #
 # Returns name of default account if exists, NULL otherwise
 #
