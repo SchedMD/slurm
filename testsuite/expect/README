@@ -634,6 +634,7 @@ test21.37  sacctmgr show stats
 test21.38  sacctmgr modify limits for nested accounts with multiple users
 test21.39  sacctmgr create qos/account job and then delete account/qos
 test21.40  Test association plus partition/job QoS unique node limits enforced
+test21.43  Test usagefactor
 
 test22.#   Testing of sreport commands and options.
 	   These also test the sacctmgr archive dump/load functions.
