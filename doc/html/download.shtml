@@ -172,12 +172,6 @@ probably do not want to recommend.
 SQL Alchemy bindings for your slurmdbd database.</li>
 -->
 
-<li><a href="http://www.lua.org/">Lua</a> may be used to implement a
-Slurm process tracking plugin.
-The Lua script available in <i>contribs/lua/protrack.lua</i>
-implements containers using CPUSETs.
-</ul><br>
-
 <li><b>SPANK Plugins</b><br>
 SPANK provides a very generic interface for stackable plug-ins which
 may be used to dynamically modify the job launch code in Slurm. SPANK
@@ -384,6 +378,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 15 July 2019</p>
+<p style="text-align:center;">Last modified 17 June 2020</p>
 
 <!--#include virtual="footer.txt"-->
