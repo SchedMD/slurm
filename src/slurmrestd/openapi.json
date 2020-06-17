@@ -300,37 +300,37 @@
   },
   "components": {
     "schemas": {
-	  "signal": {
-		"oneOf": [
-		  {
-			"type": "integer",
-			"description": "POSIX signal number",
-			"format": "int32"
-		  },
-		  {
-			"type": "string",
-			"description": "POSIX signal name",
-			"format": "int32",
-			"enum": [
-			  "HUP",
-			  "INT",
-			  "QUIT",
-			  "ABRT",
-			  "KILL",
-			  "ALRM",
-			  "TERM",
-			  "USR1",
-			  "USR2",
-			  "URG",
-			  "CONT",
-			  "STOP",
-			  "TSTP",
-			  "TTIN",
-			  "TTOU"
-			]
-		  }
-		]
-	  },
+      "signal": {
+        "oneOf": [
+          {
+            "type": "integer",
+            "description": "POSIX signal number",
+            "format": "int32"
+          },
+          {
+            "type": "string",
+            "description": "POSIX signal name",
+            "format": "int32",
+            "enum": [
+              "HUP",
+              "INT",
+              "QUIT",
+              "ABRT",
+              "KILL",
+              "ALRM",
+              "TERM",
+              "USR1",
+              "USR2",
+              "URG",
+              "CONT",
+              "STOP",
+              "TSTP",
+              "TTIN",
+              "TTOU"
+            ]
+          }
+        ]
+      },
       "job_properties": {
         "properties": {
           "account": {
@@ -591,11 +591,11 @@
             "type": "string",
             "description": "Allocate resources for the job from the named reservation."
           },
-		  "signal" : {
-			"pattern" : "[B:]<sig_num>[@<sig_time>]",
-			"type" : "string",
-			"description" : "When a job is within sig_time seconds of its end time, send it the signal sig_num."
-		  },
+          "signal": {
+            "pattern": "[B:]<sig_num>[@<sig_time>]",
+            "type": "string",
+            "description": "When a job is within sig_time seconds of its end time, send it the signal sig_num."
+          },
           "sockets_per_node": {
             "type": "integer",
             "description": "Restrict node selection to nodes with at least the specified number of sockets."
@@ -655,7 +655,7 @@
           "wckey": {
             "type": "string",
             "description": "Specify wckey to be used with job."
-          },
+          }
         }
       }
     }
