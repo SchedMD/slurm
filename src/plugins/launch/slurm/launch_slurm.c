@@ -43,8 +43,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "src/common/slurm_opt.h"
 #include "src/common/slurm_xlator.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/api/pmi_server.h"
 #include "src/srun/libsrun/allocate.h"
