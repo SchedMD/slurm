@@ -47,6 +47,7 @@ HIGHLIGHTS
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
+ -- Removed "cpusets" option from TaskPluginParam. Please use task/cgroup.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
