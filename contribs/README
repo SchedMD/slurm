@@ -25,8 +25,6 @@ of the Slurm contribs distribution follows:
 		      using a very simple algorithm
      job_submit_license.lua - job_submit plugin that can set a job's use of
 		      system licenses
-     proctrack.lua  - proctrack (process tracking) plugin that implements a
-		      very simple job step container using CPUSETs
 
   make-3.81.slurm.patch   [ Patch to "make" command for parallel build ]
   make-4.0.slurm.patch    [ Patch to "make" command for parallel build ]

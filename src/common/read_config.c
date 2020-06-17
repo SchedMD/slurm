@@ -4835,7 +4835,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (s_p_get_string(&temp_str, "TaskPluginParam", hashtbl)) {
 		char *last = NULL, *tok;
-		bool set_mode = false, set_unit = false, set_auto = false;
+		bool set_unit = false, set_auto = false;
 		tok = strtok_r(temp_str, ",", &last);
 		while (tok) {
 			if (xstrcasecmp(tok, "none") == 0) {
@@ -4873,19 +4873,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 				}
 				set_unit = true;
 				conf->task_plugin_param |= CPU_BIND_TO_THREADS;
-			} else if (xstrcasecmp(tok, "cpusets") == 0) {
-				if (set_mode) {
-					error("Bad TaskPluginParam: %s", tok);
-					return SLURM_ERROR;
-				}
-				set_mode = true;
-				conf->task_plugin_param |= CPU_BIND_CPUSETS;
 			} else if (xstrcasecmp(tok, "sched") == 0) {
-				if (set_mode) {
-					error("Bad TaskPluginParam: %s", tok);
-					return SLURM_ERROR;
-				}
-				set_mode = true;
 				/* No change to task_plugin_param,
 				 * this is the default */
 			} else if (xstrcasecmp(tok, "verbose") == 0) {

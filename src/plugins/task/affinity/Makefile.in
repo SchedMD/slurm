@@ -177,15 +177,8 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 task_affinity_la_LIBADD =
-am__task_affinity_la_SOURCES_DIST = affinity.c affinity.h cpuset.c \
-	dist_tasks.c dist_tasks.h numa.c schedutils.c task_affinity.c
-@HAVE_SCHED_SETAFFINITY_TRUE@am_task_affinity_la_OBJECTS =  \
-@HAVE_SCHED_SETAFFINITY_TRUE@	affinity.lo cpuset.lo \
-@HAVE_SCHED_SETAFFINITY_TRUE@	dist_tasks.lo numa.lo \
-@HAVE_SCHED_SETAFFINITY_TRUE@	schedutils.lo task_affinity.lo
-am__EXTRA_task_affinity_la_SOURCES_DIST = affinity.c affinity.h \
-	cpuset.c dist_tasks.c dist_tasks.h numa.c schedutils.c \
-	task_affinity.c
+am_task_affinity_la_OBJECTS = affinity.lo dist_tasks.lo numa.lo \
+	schedutils.lo task_affinity.lo
 task_affinity_la_OBJECTS = $(am_task_affinity_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -195,8 +188,6 @@ task_affinity_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(task_affinity_la_LDFLAGS) $(LDFLAGS) \
 	-o $@
-@HAVE_SCHED_SETAFFINITY_TRUE@am_task_affinity_la_rpath = -rpath \
-@HAVE_SCHED_SETAFFINITY_TRUE@	$(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -212,7 +203,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/affinity.Plo ./$(DEPDIR)/cpuset.Plo \
+am__depfiles_remade = ./$(DEPDIR)/affinity.Plo \
 	./$(DEPDIR)/dist_tasks.Plo ./$(DEPDIR)/numa.Plo \
 	./$(DEPDIR)/schedutils.Plo ./$(DEPDIR)/task_affinity.Plo
 am__mv = mv -f
@@ -234,10 +225,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(task_affinity_la_SOURCES) \
-	$(EXTRA_task_affinity_la_SOURCES)
-DIST_SOURCES = $(am__task_affinity_la_SOURCES_DIST) \
-	$(am__EXTRA_task_affinity_la_SOURCES_DIST)
+SOURCES = $(task_affinity_la_SOURCES)
+DIST_SOURCES = $(task_affinity_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -522,25 +511,15 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
-@HAVE_SCHED_SETAFFINITY_FALSE@pkglib_LTLIBRARIES = 
-@HAVE_SCHED_SETAFFINITY_TRUE@pkglib_LTLIBRARIES = task_affinity.la
-@HAVE_SCHED_SETAFFINITY_TRUE@task_affinity_la_SOURCES = \
-@HAVE_SCHED_SETAFFINITY_TRUE@	affinity.c affinity.h \
-@HAVE_SCHED_SETAFFINITY_TRUE@	cpuset.c \
-@HAVE_SCHED_SETAFFINITY_TRUE@	dist_tasks.c dist_tasks.h \
-@HAVE_SCHED_SETAFFINITY_TRUE@	numa.c \
-@HAVE_SCHED_SETAFFINITY_TRUE@	schedutils.c \
-@HAVE_SCHED_SETAFFINITY_TRUE@	task_affinity.c
+pkglib_LTLIBRARIES = task_affinity.la
+task_affinity_la_SOURCES = \
+	affinity.c affinity.h \
+	dist_tasks.c dist_tasks.h \
+	numa.c \
+	schedutils.c \
+	task_affinity.c
 
-@HAVE_SCHED_SETAFFINITY_TRUE@task_affinity_la_LDFLAGS = $(NUMA_LIBS) $(PLUGIN_FLAGS)
-@HAVE_SCHED_SETAFFINITY_FALSE@EXTRA_task_affinity_la_SOURCES = \
-@HAVE_SCHED_SETAFFINITY_FALSE@	affinity.c affinity.h \
-@HAVE_SCHED_SETAFFINITY_FALSE@	cpuset.c \
-@HAVE_SCHED_SETAFFINITY_FALSE@	dist_tasks.c dist_tasks.h \
-@HAVE_SCHED_SETAFFINITY_FALSE@	numa.c \
-@HAVE_SCHED_SETAFFINITY_FALSE@	schedutils.c \
-@HAVE_SCHED_SETAFFINITY_FALSE@	task_affinity.c
-
+task_affinity_la_LDFLAGS = $(NUMA_LIBS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -611,7 +590,7 @@ clean-pkglibLTLIBRARIES:
 	}
 
 task_affinity.la: $(task_affinity_la_OBJECTS) $(task_affinity_la_DEPENDENCIES) $(EXTRA_task_affinity_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(task_affinity_la_LINK) $(am_task_affinity_la_rpath) $(task_affinity_la_OBJECTS) $(task_affinity_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(task_affinity_la_LINK) -rpath $(pkglibdir) $(task_affinity_la_OBJECTS) $(task_affinity_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -620,7 +599,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affinity.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpuset.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dist_tasks.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/numa.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/schedutils.Plo@am__quote@ # am--include-marker
@@ -788,7 +766,6 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/affinity.Plo
-	-rm -f ./$(DEPDIR)/cpuset.Plo
 	-rm -f ./$(DEPDIR)/dist_tasks.Plo
 	-rm -f ./$(DEPDIR)/numa.Plo
 	-rm -f ./$(DEPDIR)/schedutils.Plo
@@ -839,7 +816,6 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/affinity.Plo
-	-rm -f ./$(DEPDIR)/cpuset.Plo
 	-rm -f ./$(DEPDIR)/dist_tasks.Plo
 	-rm -f ./$(DEPDIR)/numa.Plo
 	-rm -f ./$(DEPDIR)/schedutils.Plo

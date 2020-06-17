@@ -803,8 +803,6 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * CPU_BIND_LDMASK             0x800
 
-=item * CPU_BIND_CPUSETS            0x8000
-
 =back
 
 =head3 Memory bind type

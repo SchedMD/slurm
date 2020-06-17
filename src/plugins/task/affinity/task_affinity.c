@@ -54,12 +54,6 @@
 
 #include "src/slurmd/common/task_plugin.h"
 
-
-/* Enable purging of cpuset directories
- * after each task and the step are done.
- */
-#define PURGE_CPUSET_DIRS 1
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -241,119 +235,20 @@ extern int task_p_slurmd_resume_job (uint32_t job_id)
  */
 extern int task_p_slurmd_release_resources (uint32_t job_id)
 {
-	DIR *dirp;
-	struct dirent *entryp;
-	char base[PATH_MAX];
-	char path[PATH_MAX];
-
 	debug("%s: affinity jobid %u", __func__, job_id);
-
-#if PURGE_CPUSET_DIRS
-	/* NOTE: The notify_on_release flag set in cpuset.c
-	 * should remove the directory, but that is not
-	 * happening reliably. */
-	if (!(slurm_conf.task_plugin_param & CPU_BIND_CPUSETS))
-		return SLURM_SUCCESS;
-
-
-#ifdef MULTIPLE_SLURMD
-	if (snprintf(base, PATH_MAX, "%s/slurm_%s_%u",
-				 CPUSET_DIR,
-				 (conf->node_name != NULL)?conf->node_name:"",
-				 job_id) >= PATH_MAX) {
-		error("%s: cpuset path too long", __func__);
-		return SLURM_ERROR;
-	}
-#else
-	if (snprintf(base, PATH_MAX, "%s/slurm%u",
-				 CPUSET_DIR, job_id) >= PATH_MAX) {
-		error("%s: cpuset path too long", __func__);
-		return SLURM_ERROR;
-	}
-#endif
-	if (rmdir(base) == 0)
-		return SLURM_SUCCESS;
-
-	/* EBUSY  Attempted to remove, using rmdir(2),
-	 * a cpuset with child cpusets. ENOTEMPTY?
-	 */
-	if (errno != ENOTEMPTY
-		&& errno != EBUSY) {
-		error("%s: rmdir(%s) failed %m", __func__, base);
-		return SLURM_ERROR;
-	}
-
-	/* errno == ENOTEMPTY
-	 */
-	if ((dirp = opendir(base)) == NULL) {
-		error("%s: could not open dir %s: %m", __func__, base);
-		return SLURM_ERROR;
-	}
-
-	while (1) {
-		if (!(entryp = readdir(dirp)))
-			break;
-		if (xstrncmp(entryp->d_name, "slurm", 5))
-			continue;
-		if (snprintf(path, PATH_MAX, "%s/%s",
-			     base, entryp->d_name) >= PATH_MAX) {
-			error("%s: cpuset path too long", __func__);
-			break;
-		}
-		if (rmdir(path) != 0) {
-			error("%s: rmdir(%s) failed %m", __func__, base);
-			closedir(dirp);
-			return SLURM_ERROR;
-		}
-	}
-	closedir(dirp);
-	if (rmdir(base) != 0) {
-		error("%s: rmdir(%s) failed %m", __func__, base);
-		return SLURM_ERROR;
-	}
-#endif
 
 	return SLURM_SUCCESS;
 }
 
 /*
  * task_p_pre_setuid() is called before setting the UID for the
- * user to launch his jobs. Use this to create the CPUSET directory
- * and set the owner appropriately.
+ * user to launch his jobs.
  */
 extern int task_p_pre_setuid (stepd_step_rec_t *job)
 {
-	char path[PATH_MAX];
 	int rc = SLURM_SUCCESS;
 
-	if (slurm_conf.task_plugin_param & CPU_BIND_CPUSETS) {
-#ifdef MULTIPLE_SLURMD
-		if (snprintf(path, PATH_MAX, "%s/slurm_%s_%u",
-			     CPUSET_DIR,
-			     (conf->node_name != NULL)?conf->node_name:"",
-			     job->jobid) > PATH_MAX) {
-			error("%s: cpuset path too long", __func__);
-			rc = SLURM_ERROR;
-		}
-#else
-		if (snprintf(path, PATH_MAX, "%s/slurm%u",
-			     CPUSET_DIR, job->jobid) > PATH_MAX) {
-			error("%s: cpuset path too long", __func__);
-			rc = SLURM_ERROR;
-		}
-#endif
-		if (rc == SLURM_SUCCESS) {
-			rc = slurm_build_cpuset(CPUSET_DIR, path, job->uid,
-						job->gid);
-			if (rc != SLURM_SUCCESS) {
-				error("%s: slurm_build_cpuset() failed",
-				       __func__);
-			}
-		}
-	}
-
-	if (rc == SLURM_SUCCESS)
-		cpu_freq_cpuset_validate(job);
+	cpu_freq_cpuset_validate(job);
 
 	return rc;
 }
@@ -379,38 +274,11 @@ static void _numa_set_preferred(nodemask_t *new_mask)
  */
 extern int task_p_pre_launch (stepd_step_rec_t *job)
 {
-	char base[PATH_MAX], path[PATH_MAX];
 	int rc = SLURM_SUCCESS;
 
 	debug("%s: affinity jobid %u.%u, task:%u bind:%u",
 		  __func__, job->jobid, job->stepid,
 		  job->envtp->procid, job->cpu_bind_type);
-
-	if (slurm_conf.task_plugin_param & CPU_BIND_CPUSETS) {
-		info("%s: Using cpuset affinity for tasks", __func__);
-#ifdef MULTIPLE_SLURMD
-		if (snprintf(base, PATH_MAX, "%s/slurm_%s_%u",
-					 CPUSET_DIR,
-					 (conf->node_name != NULL)?conf->node_name:"",
-					 job->jobid) >= PATH_MAX) {
-			error("%s: cpuset path too long", __func__);
-			return SLURM_ERROR;
-		}
-#else
-		if (snprintf(base, PATH_MAX, "%s/slurm%u",
-					 CPUSET_DIR, job->jobid) >= PATH_MAX) {
-			error("%s: cpuset path too long", __func__);
-			return SLURM_ERROR;
-		}
-#endif
-		if (snprintf(path, PATH_MAX, "%s/slurm%u.%u_%d",
-					 base, job->jobid, job->stepid,
-					 job->envtp->localid) >= PATH_MAX) {
-			error("%s: cpuset path too long", __func__);
-			return SLURM_ERROR;
-		}
-	} else
-		info("%s: Using sched_affinity for tasks", __func__);
 
 	/*** CPU binding support ***/
 	if (job->cpu_bind_type) {
@@ -421,55 +289,16 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		if (get_cpuset(&new_mask, job) &&
 		    (!(job->cpu_bind_type & CPU_BIND_NONE))) {
 			reset_cpuset(&new_mask, &cur_mask);
-			if (slurm_conf.task_plugin_param & CPU_BIND_CPUSETS) {
-				rc = slurm_set_cpuset(base, path, mypid,
-						      sizeof(new_mask),
-						      &new_mask);
-				slurm_get_cpuset(path, mypid,
-						 sizeof(cur_mask),
-						 &cur_mask);
-			} else {
-				rc = slurm_setaffinity(mypid,
-						       sizeof(new_mask),
-						       &new_mask);
-				slurm_getaffinity(mypid,
-						  sizeof(cur_mask),
-						  &cur_mask);
-			}
+			rc = slurm_setaffinity(mypid, sizeof(new_mask),
+					       &new_mask);
+			slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
 		}
 		task_slurm_chkaffinity(rc ? &cur_mask : &new_mask,
 				       job, rc);
-	} else if (job->mem_bind_type &&
-		   (slurm_conf.task_plugin_param & CPU_BIND_CPUSETS)) {
-		cpu_set_t cur_mask;
-		pid_t mypid  = job->envtp->task_pid;
-
-		/* Establish cpuset just for the memory binding */
-		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
-		rc = slurm_set_cpuset(base, path,
-				      (pid_t) job->envtp->task_pid,
-				      sizeof(cur_mask), &cur_mask);
 	}
 
 #ifdef HAVE_NUMA
-	if ((slurm_conf.task_plugin_param & CPU_BIND_CPUSETS) &&
-	    (slurm_memset_available() >= 0)) {
-		nodemask_t new_mask, cur_mask;
-
-		cur_mask = numa_get_membind();
-		if (get_memset(&new_mask, job) &&
-		    (!(job->mem_bind_type & MEM_BIND_NONE))) {
-			slurm_set_memset(path, &new_mask);
-			if (numa_available() >= 0) {
-				if (job->mem_bind_type & MEM_BIND_PREFER)
-					_numa_set_preferred(&new_mask);
-				else
-					numa_set_membind(&new_mask);
-			}
-			cur_mask = new_mask;
-		}
-		slurm_chk_memset(&cur_mask, job);
-	} else if (job->mem_bind_type && (numa_available() >= 0)) {
+	if (job->mem_bind_type && (numa_available() >= 0)) {
 		nodemask_t new_mask, cur_mask;
 
 		cur_mask = numa_get_membind();
@@ -484,6 +313,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		slurm_chk_memset(&cur_mask, job);
 	}
 #endif
+
 	return rc;
 }
 
@@ -503,45 +333,8 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
  */
 extern int task_p_post_term (stepd_step_rec_t *job, stepd_step_task_info_t *task)
 {
-		char base[PATH_MAX], path[PATH_MAX];
 	debug("%s: affinity %u.%u, task %d",
 	      __func__, job->jobid, job->stepid, task->id);
-
-#if PURGE_CPUSET_DIRS
-	/* NOTE: The notify_on_release flag set in cpuset.c
-	 * should remove the directory, but that is not
-	 * happening reliably. */
-	if (!(slurm_conf.task_plugin_param & CPU_BIND_CPUSETS))
-		return SLURM_SUCCESS;
-
-#ifdef MULTIPLE_SLURMD
-	if (snprintf(base, PATH_MAX, "%s/slurm_%s_%u",
-				 CPUSET_DIR,
-				 (conf->node_name != NULL)?conf->node_name:"",
-				 job->jobid) >= PATH_MAX) {
-		error("%s: cpuset path too long", __func__);
-		return SLURM_ERROR;
-	}
-#else
-	if (snprintf(base, PATH_MAX, "%s/slurm%u",
-				 CPUSET_DIR, job->jobid) >= PATH_MAX) {
-		error("%s: cpuset path too long", __func__);
-		return SLURM_ERROR;
-	}
-#endif
-	if (snprintf(path, PATH_MAX, "%s/slurm%u.%u_%d",
-				 base, job->jobid, job->stepid,
-				 task->id) >= PATH_MAX) {
-		error("%s: cpuset path too long", __func__);
-		return SLURM_ERROR;
-	}
-	/* Only error out if it failed to remove the cpuset dir. The cpuset
-	 * dir may have already been removed by the release_agent. */
-	if (rmdir(path) != 0 && errno != ENOENT) {
-		error("%s: rmdir(%s) failed %m", __func__, path);
-		return SLURM_ERROR;
-	}
-#endif
 
 	return SLURM_SUCCESS;
 }

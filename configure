@@ -796,8 +796,6 @@ PAM_DIR
 HAVE_PAM_FALSE
 HAVE_PAM_TRUE
 PAM_LIBS
-HAVE_SCHED_SETAFFINITY_FALSE
-HAVE_SCHED_SETAFFINITY_TRUE
 HAVE_NUMA_FALSE
 HAVE_NUMA_TRUE
 NUMA_LIBS
@@ -976,7 +974,6 @@ with_aix_soname
 with_gnu_ld
 with_sysroot
 enable_libtool_lock
-with_cpusetdir
 enable_pam
 with_pam_dir
 with_shared_libslurm
@@ -1742,8 +1739,6 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
                           compiler's sysroot if not specified).
-  --with-cpusetdir=PATH   specify path to cpuset directory default is
-                          /dev/cpuset
   --with-pam_dir=PATH     Specify path to PAM module installation
   --without-shared-libslurm
                           statically link to libslurm.o instead of the shared
@@ -18648,20 +18643,6 @@ done
 
 
 
-
-# Test if sched_setaffinity function exists
-  for ac_func in sched_setaffinity
-do :
-  ac_fn_c_check_func "$LINENO" "sched_setaffinity" "ac_cv_func_sched_setaffinity"
-if test "x$ac_cv_func_sched_setaffinity" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_SCHED_SETAFFINITY 1
-_ACEOF
- have_sched_setaffinity=yes
-fi
-done
-
-
 #
 # Test for NUMA memory afffinity functions and set the definitions
 #
@@ -18724,39 +18705,6 @@ $as_echo "#define HAVE_NUMA 1" >>confdefs.h
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate NUMA memory affinity functions" >&5
 $as_echo "$as_me: WARNING: unable to locate NUMA memory affinity functions" >&2;}
   fi
-
-#
-# Test for cpuset directory
-#
-  cpuset_default_dir="/dev/cpuset"
-
-# Check whether --with-cpusetdir was given.
-if test "${with_cpusetdir+set}" = set; then :
-  withval=$with_cpusetdir; try_path=$withval
-fi
-
-  for cpuset_dir in $try_path "" $cpuset_default_dir; do
-    if test -d "$cpuset_dir" ; then
-
-cat >>confdefs.h <<_ACEOF
-#define CPUSET_DIR "$cpuset_dir"
-_ACEOF
-
-      have_sched_setaffinity=yes
-      break
-    fi
-  done
-
-#
-# Set HAVE_SCHED_SETAFFINITY if any task affinity supported
- if test "x$have_sched_setaffinity" = "xyes"; then
-  HAVE_SCHED_SETAFFINITY_TRUE=
-  HAVE_SCHED_SETAFFINITY_FALSE='#'
-else
-  HAVE_SCHED_SETAFFINITY_TRUE='#'
-  HAVE_SCHED_SETAFFINITY_FALSE=
-fi
-
 
 
 
@@ -25270,10 +25218,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_NUMA_TRUE}" && test -z "${HAVE_NUMA_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_NUMA\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_SCHED_SETAFFINITY_TRUE}" && test -z "${HAVE_SCHED_SETAFFINITY_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_SCHED_SETAFFINITY\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_PAM_TRUE}" && test -z "${HAVE_PAM_FALSE}"; then

@@ -3,9 +3,6 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
-/* Define location of cpuset directory */
-#undef CPUSET_DIR
-
 /* Define to 1 for debugger partial task attach support. */
 #undef DEBUGGER_PARTIAL_ATTACH
 
@@ -216,9 +213,6 @@
 
 /* Define to 1 if RSMI library found */
 #undef HAVE_RSMI
-
-/* Define to 1 if you have the `sched_setaffinity' function. */
-#undef HAVE_SCHED_SETAFFINITY
 
 /* Define to 1 if you have the <security/pam_appl.h> header file. */
 #undef HAVE_SECURITY_PAM_APPL_H
