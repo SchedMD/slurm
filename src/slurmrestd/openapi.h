@@ -46,7 +46,8 @@
 #include "src/slurmrestd/http.h"
 
 /*
- * Retrieve entire OpenAPI specification
+ * Retrieve first loaded OpenAPI specification.
+ * Previous version will not provided to users requesting spec.
  */
 extern const data_t *get_openapi_specification(void);
 

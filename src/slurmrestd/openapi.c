@@ -48,6 +48,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmrestd/http.h"
+#include "src/slurmrestd/http_url.h"
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/ref.h"
 #include "src/slurmrestd/xjson.h"
@@ -59,7 +60,7 @@ decl_static_data(openapi_json);
 static pthread_rwlock_t paths_lock = PTHREAD_RWLOCK_INITIALIZER;
 static List paths = NULL;
 static int path_tag_counter = 0;
-static const data_t *spec = NULL;
+static data_t **spec = NULL;
 
 typedef enum {
 	OPENAPI_TYPE_UNKNOWN = 0,
@@ -71,6 +72,9 @@ typedef enum {
 	OPENAPI_TYPE_ARRAY,
 	OPENAPI_TYPE_MAX
 } parameter_type_t;
+
+static data_for_each_cmd_t _match_server_path_string(const data_t *data,
+						     void *arg);
 
 /*
  * Parse OAS type.
@@ -230,38 +234,162 @@ fail:
 }
 
 typedef struct {
-	const char *str_path;
+	const data_t *path;        /* path requested to match */
+	const data_t *path_list;   /* dictionary of all paths under server */
+	const data_t *server_path; /* path from servers object */
 	const data_t *found;
 } match_path_string_t;
+
+
+static bool _match_server_path(const data_t *server_path, const data_t *path,
+			       const data_t *match_path)
+{
+	bool found;
+	const data_t *join[3] = {0};
+	data_t *joined_path;
+
+	join[0] = server_path;
+	join[1] = path;
+	joined_path = data_list_join(join, true);
+	found = data_check_match(joined_path, match_path, false);
+
+	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
+		char *joined_path_str, *mpath_str;
+
+		joined_path_str = dump_json(joined_path,
+					    DUMP_JSON_FLAGS_COMPACT);
+		mpath_str = dump_json(match_path, DUMP_JSON_FLAGS_COMPACT);
+
+		debug5("%s: match:%s server_path:%s match_path:%s",
+		       __func__, (found ? "T" : "F"),
+		       joined_path_str, mpath_str);
+
+		xfree(joined_path_str);
+		xfree(mpath_str);
+	}
+
+	FREE_NULL_DATA(joined_path);
+
+	return found;
+}
+
+static data_for_each_cmd_t _match_server_override(const data_t *data,
+						  void *arg)
+{
+	const data_t **fargs = (const data_t **) arg;
+	const data_t *surl;
+	data_t *spath;
+	data_for_each_cmd_t rc = DATA_FOR_EACH_CONT;
+
+	surl = data_resolve_dict_path(data, "url");
+
+	if (!surl)
+		fatal("%s: server %s lacks url field required per OASv3.0.3 section 4.7.5",
+		      __func__, dump_json(data, 0));
+
+	spath = parse_url_path(data_get_string(surl), true, true);
+
+	if (_match_server_path(spath, fargs[1], fargs[0])) {
+		fargs[2] = data;
+		rc = DATA_FOR_EACH_STOP;
+	}
+
+	FREE_NULL_DATA(spath);
+
+	return rc;
+}
 
 static data_for_each_cmd_t _match_path_string(const char *key,
 					      const data_t *data,
 					      void *arg)
 {
 	match_path_string_t *args = arg;
+	data_t *mpath;
+	data_for_each_cmd_t rc = DATA_FOR_EACH_CONT;
+	const data_t *servers = data_key_get_const(data, "servers");
 
-	if (!xstrcasecmp(args->str_path, key)) {
+	mpath = parse_url_path(key, true, true);
+
+	if (servers) {
+		/*
+		 * Alternative server specified per OASv3.0.3 section 4.7.9.1
+		 * which overrides the global servers settings
+		 */
+		const data_t *fargs[3] = {0};
+		fargs[0] = args->path;
+		fargs[1] = mpath;
+
+		if (data_list_for_each_const(servers, _match_server_override,
+					     &fargs) < 0)
+			fatal_abort("%s: unexpected for each failure",
+				    __func__);
+
+		if (fargs[2]) {
+			args->found = data;
+			rc = DATA_FOR_EACH_STOP;
+		}
+	} else if (_match_server_path(args->server_path, mpath, args->path)) {
 		args->found = data;
-		return DATA_FOR_EACH_STOP;
+		rc = DATA_FOR_EACH_STOP;
 	}
 
-	return DATA_FOR_EACH_CONT;
+	FREE_NULL_DATA(mpath);
+	return rc;
+}
+
+static data_for_each_cmd_t _match_server_path_string(const data_t *data,
+						     void *arg)
+{
+	match_path_string_t *args = arg;
+	const data_t *surl;
+	data_t *spath = NULL;
+	data_for_each_cmd_t rc = DATA_FOR_EACH_CONT;
+
+	surl = data_resolve_dict_path(data, "url");
+
+	if (!surl)
+		fatal("%s: server %s lacks url field required per OASv3.0.3 section 4.7.5",
+		      __func__, dump_json(data, 0));
+
+	args->server_path = spath = parse_url_path(data_get_string(surl),
+						   true, true);
+
+	if ((data_dict_for_each_const(args->path_list, _match_path_string, arg)
+	     < 0) || args->found)
+		rc = DATA_FOR_EACH_STOP;
+
+	FREE_NULL_DATA(spath);
+	args->server_path = NULL;
+
+	return rc;
 }
 
 static const data_t *_find_spec_path(const char *str_path)
 {
-	const data_t *path_list = data_resolve_dict_path(spec, "/paths");
-	match_path_string_t args = { .str_path = str_path };
+	match_path_string_t args = {0};
+	data_t *path = parse_url_path(str_path, true, true);
+	args.path = path;
 
-	if (!path_list)
-		return NULL;
+	for (size_t i = 0; spec[i]; i++) {
+		const data_t *servers = data_resolve_dict_path(spec[i], "/servers");
+		args.path_list = data_resolve_dict_path(spec[i], "/paths");
 
-	if (data_get_type(path_list) != DATA_TYPE_DICT)
-		return NULL;
+		if (!args.path_list ||
+		    (data_get_type(args.path_list) != DATA_TYPE_DICT) ||
+		    !servers)
+			continue;
 
-	if (data_dict_for_each_const(path_list, _match_path_string, &args) < 0)
-		return NULL;
+		if (data_list_for_each_const(servers, _match_server_path_string,
+					     &args) < 0)
+			continue;
 
+		args.path_list = NULL;
+
+		if (args.found)
+			break;
+	}
+
+	FREE_NULL_DATA(path);
 	return args.found;
 }
 
@@ -365,9 +493,9 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 extern int register_path_tag(const char *str_path)
 {
 	path_t *path = NULL;
-	entry_t *entries = _parse_openapi_path(str_path);
 	const data_t *spec_entry;
 	populate_methods_t args = {0};
+	entry_t *entries = _parse_openapi_path(str_path);
 
 	if (!entries)
 		return -1;
@@ -570,8 +698,11 @@ extern int find_path_tag(const data_t *dpath, data_t *params,
 			 http_request_method_t method)
 {
 	path_t *path;
-	match_path_from_data_t args = { .params = params, .dpath = dpath };
 	int tag = -1;
+	match_path_from_data_t args = {
+		.params = params,
+		.dpath = dpath,
+	};
 
 	xassert(data_get_type(params) == DATA_TYPE_DICT);
 	slurm_rwlock_rdlock(&paths_lock);
@@ -587,7 +718,7 @@ extern int find_path_tag(const data_t *dpath, data_t *params,
 
 extern const data_t *get_openapi_specification(void)
 {
-	return spec;
+	return spec[0];
 }
 
 static void _list_delete_path_t(void *x)
@@ -634,9 +765,12 @@ extern int init_openapi(void)
 	if (spec)
 		fatal_abort("%s called twice", __func__);
 
+	/* only 1 specification currently */
+	spec = xcalloc(2, sizeof(spec));
+
 	paths = list_create(_list_delete_path_t);
 
-	static_ref_json_to_data_t(spec, openapi_json);
+	static_ref_json_to_data_t(spec[0], openapi_json);
 
 	slurm_rwlock_unlock(&paths_lock);
 
@@ -649,10 +783,10 @@ extern void destroy_openapi(void)
 
 	FREE_NULL_LIST(paths);
 
-	/* const_cast spec since this is only place that frees it */
-	data_t *dspec = (data_t *) spec;
-	FREE_NULL_DATA(dspec);
-	spec = NULL;
+	for (size_t i = 0; spec[i]; i++)
+		FREE_NULL_DATA(spec[i]);
+
+	xfree(spec);
 
 	slurm_rwlock_unlock(&paths_lock);
 }
