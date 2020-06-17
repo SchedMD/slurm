@@ -444,6 +444,7 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
 	uint32_t ***uint32_array_ppptr = (uint32_t ***) NULL;
 	char **char_array_pptr = (char **) NULL;
 	job_step_create_response_msg_t ** step_resp_pptr;
+	slurm_step_id_t *step_id = NULL;
 	slurm_cred_t  **cred;     /* Slurm job credential    */
 	dynamic_plugin_data_t **switch_job;
 	int *int_ptr;
@@ -458,11 +459,19 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
 	switch (ctx_key) {
 	case SLURM_STEP_CTX_JOBID:
 		uint32_ptr = (uint32_t *) va_arg(ap, void *);
-		*uint32_ptr = ctx->job_id;
+		*uint32_ptr = ctx->step_req->step_id.job_id;
 		break;
 	case SLURM_STEP_CTX_STEPID:
 		uint32_ptr = (uint32_t *) va_arg(ap, void *);
-		*uint32_ptr = ctx->step_resp->job_step_id;
+		*uint32_ptr = ctx->step_req->step_id.step_id;
+		break;
+	case SLURM_STEP_CTX_STEP_HET_COMP:
+		uint32_ptr = (uint32_t *) va_arg(ap, void *);
+		*uint32_ptr = ctx->step_req->step_id.step_het_comp;
+		break;
+	case SLURM_STEP_CTX_STEP_ID:
+		step_id = (slurm_step_id_t *) va_arg(ap, void *);
+		memcpy(step_id, &ctx->step_req->step_id, sizeof(*step_id));
 		break;
 	case SLURM_STEP_CTX_TASKS:
 		uint16_array_pptr = (uint16_t **) va_arg(ap, void *);
