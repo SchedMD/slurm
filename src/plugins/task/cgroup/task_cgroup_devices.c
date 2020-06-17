@@ -192,6 +192,25 @@ extern int task_cgroup_devices_fini(void)
 	return SLURM_SUCCESS;
 }
 
+static int _handle_device_access(void *x, void *arg)
+{
+	gres_device_t *gres_device = (gres_device_t *)x;
+	xcgroup_t *devices_cg = (xcgroup_t *)arg;
+	char *cg;
+
+	if (gres_device->alloc)
+		cg = "devices.allow";
+	else
+		cg = "devices.deny";
+
+	debug("%s %s: adding %s(%s)",
+	      (devices_cg == &job_devices_cg) ? "job " : "step",
+	      cg, gres_device->major, gres_device->path);
+	xcgroup_set_param(devices_cg, cg, gres_device->major);
+
+	return SLURM_SUCCESS;
+}
+
 static int _cgroup_create_callback(const char *calling_func,
 				   xcgroup_ns_t *ns,
 				   void *callback_arg)
@@ -203,8 +222,6 @@ static int _cgroup_create_callback(const char *calling_func,
 	List job_gres_list = job->job_gres_list;
 	List step_gres_list = job->step_gres_list;
 	List device_list = NULL;
-	ListIterator itr;
-	gres_device_t *gres_device;
 	char *allowed_devices[PATH_MAX], *allowed_dev_major[PATH_MAX];
 	int k, rc, allow_lines = 0;
 
@@ -235,24 +252,9 @@ static int _cgroup_create_callback(const char *calling_func,
 	device_list = gres_plugin_get_allocated_devices(job_gres_list, true);
 
 	if (device_list) {
-		itr = list_iterator_create(device_list);
-		while ((gres_device = list_next(itr))) {
-			if (gres_device->alloc) {
-				debug("Allowing access to device %s(%s) for job",
-				      gres_device->major, gres_device->path);
-				xcgroup_set_param(&job_devices_cg,
-						  "devices.allow",
-						  gres_device->major);
-			} else {
-				debug("Not allowing access to device %s(%s) for job",
-				       gres_device->major, gres_device->path);
-				xcgroup_set_param(&job_devices_cg,
-						  "devices.deny",
-						  gres_device->major);
-			}
-		}
-		list_iterator_destroy(itr);
-		list_destroy(device_list);
+		list_for_each(device_list, _handle_device_access,
+			      &job_devices_cg);
+		FREE_NULL_LIST(device_list);
 	}
 
 	if ((job->step_id.step_id != SLURM_BATCH_SCRIPT) &&
@@ -277,28 +279,9 @@ static int _cgroup_create_callback(const char *calling_func,
 			step_gres_list, false);
 
 		if (device_list) {
-			itr = list_iterator_create(device_list);
-			while ((gres_device = list_next(itr))) {
-				if (gres_device->alloc) {
-					debug("%s: Allowing access to device %s(%s) for step",
-					      calling_func,
-					      gres_device->major,
-					      gres_device->path);
-					xcgroup_set_param(&step_devices_cg,
-							  "devices.allow",
-							  gres_device->major);
-				} else {
-					debug("%s: Not allowing access to device %s(%s) for step",
-					      calling_func,
-					      gres_device->major,
-					      gres_device->path);
-					xcgroup_set_param(&step_devices_cg,
-							  "devices.deny",
-							  gres_device->major);
-				}
-			}
-			list_iterator_destroy(itr);
-			list_destroy(device_list);
+			list_for_each(device_list, _handle_device_access,
+				      &step_devices_cg);
+			FREE_NULL_LIST(device_list);
 		}
 	}
 
