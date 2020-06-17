@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "May 2020" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "June 2020" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4035,11 +4035,8 @@ list. The prefix of "task/" is optional. Acceptable values include:
 .RS
 .TP 15
 \fBtask/affinity\fR
-enables resource containment using CPUSETs.
+enables resource containment using sched_setaffinity().
 This enables the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
-If you use "task/affinity" and encounter problems, it may be due to
-the variety of system calls used to implement task affinity on
-different operating systems.
 .TP
 \fBtask/cgroup\fR
 enables resource containment using Linux control cgroups.
@@ -4077,10 +4074,6 @@ in the \fBsrun\fR command.
 \fBNone\fR, \fBBoards\fR, \fBSockets\fR, \fBCores\fR and \fBThreads\fR are mutually
 exclusive and since they decrease scheduling flexibility are not generally
 recommended (select no more than one of them).
-\fBCpusets\fR and \fBSched\fR
-are mutually exclusive (select only one of them).
-All TaskPluginParam options are supported on FreeBSD except \fBCpusets\fR.
-The \fBSched\fR option uses cpuset_setaffinity() on FreeBSD, not sched_setaffinity().
 
 .RS
 .TP 10
@@ -4092,17 +4085,9 @@ Overrides automatic binding.
 Bind tasks to cores by default.
 Overrides automatic binding.
 .TP
-\fBCpusets\fR
-Use cpusets to perform task affinity functions.
-By default, \fBSched\fR task binding is performed.
-.TP
 \fBNone\fR
 Perform no task binding by default.
 Overrides automatic binding.
-.TP
-\fBSched\fR
-Use \fIsched_setaffinity\fR (if available) to bind tasks to
-processors.
 .TP
 \fBSockets\fR
 Bind to sockets by default.

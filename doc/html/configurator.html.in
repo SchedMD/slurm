@@ -542,14 +542,6 @@ CPU affinity support
 <input type="radio" name="task_plugin" value="cgroup"> <B>Cgroup</B>:
 Allocated resources constraints enforcement using Linux Control Groups
 (see cgroup.conf man page)
-<DL><DL>
-<DT><B>TaskPluginParam</B> (As used by <I>TaskPlugin=Affinity</I> only):
-<DT><input type="radio" name="task_plugin_param" value="Cpusets">
-    <B>Cpusets</B>: Use <I>cpusets</I> to control task binding.
-<DT><input type="radio" name="task_plugin_param" value="Sched" checked>
-    <B>Sched</B>: Use <I>sched_setaffinity</I> (if available) to bind
-    tasks to processors. This is the default mode of operation.
-</DL></DL>
 <P>
 
 <H2>Prolog and Epilog</H2>
@@ -732,5 +724,5 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 6 June 2018</P>
+Last modified 17 June 2020</P>
 </BODY>

@@ -1114,8 +1114,7 @@ Step 4 is performed by slurmd and the task plugin.
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-				For task/affinity, controls the binding unit (sockets, cores or threads) and the
-				binding method (sched or cpusets)</font></p>
+				For task/affinity, controls the binding unit (sockets, cores or threads).</font></p>
 			</td>
 		</tr>
 	</tbody></table>
