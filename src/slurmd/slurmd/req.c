@@ -1610,7 +1610,6 @@ done:
 
 	} else if (errnum == SLURM_SUCCESS) {
 		save_cred_state(conf->vctx);
-		task_g_slurmd_reserve_resources(req, node_id);
 	}
 
 	/*
@@ -5091,8 +5090,6 @@ _rpc_abort_job(slurm_msg_t *msg)
 		return;
 	}
 
-	task_g_slurmd_release_resources(req->job_id);
-
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
@@ -5265,8 +5262,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 #else
 	jobid = req->job_id;
 #endif
-
-	task_g_slurmd_release_resources(req->job_id);
 
 	/*
 	 *  Initialize a "waiter" thread for this jobid. If another

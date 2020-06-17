@@ -178,15 +178,6 @@ extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 }
 
 /*
- * task_p_slurmd_reserve_resources()
- */
-extern int task_p_slurmd_reserve_resources (launch_tasks_request_msg_t *req,
-					    uint32_t node_id)
-{
-	return SLURM_SUCCESS;
-}
-
-/*
  * task_p_slurmd_suspend_job()
  */
 extern int task_p_slurmd_suspend_job (uint32_t job_id)
@@ -198,14 +189,6 @@ extern int task_p_slurmd_suspend_job (uint32_t job_id)
  * task_p_slurmd_resume_job()
  */
 extern int task_p_slurmd_resume_job (uint32_t job_id)
-{
-	return SLURM_SUCCESS;
-}
-
-/*
- * task_p_slurmd_release_resources()
- */
-extern int task_p_slurmd_release_resources (uint32_t job_id)
 {
 	return SLURM_SUCCESS;
 }
