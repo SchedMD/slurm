@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix batch jobs stuck in CF state on FrontEnd mode.
  -- Add a separate explicit error message when rejecting changes to active node
     features.
+ -- cons_common/job_test - fix slurmctld SIGABRT due to double-free.
 
 * Changes in Slurm 20.02.3
 ==========================
