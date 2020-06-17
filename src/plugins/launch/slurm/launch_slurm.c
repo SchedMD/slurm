@@ -199,7 +199,7 @@ static char *_task_array_to_string(int ntasks, uint32_t *taskids,
 	return str;
 }
 
-static void _update_task_exit_state(task_state_t task_state, uint32_t ntasks,
+static void _update_task_exit_state(task_state_t *task_state, uint32_t ntasks,
 				    uint32_t *taskids, int abnormal)
 {
 	int i;
@@ -277,7 +277,7 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 	MPIR_PROCDESC *table;
 	uint32_t local_task_id, global_task_id;
 	int i;
-	task_state_t task_state;
+	task_state_t *task_state;
 
 	if (msg->count_of_pids) {
 		verbose("Node %s, %d tasks started",
@@ -352,7 +352,7 @@ static void _task_finish(task_exit_msg_t *msg)
 	int normal_exit = 0;
 	static int reduce_task_exit_msg = -1;
 	static int msg_printed = 0, oom_printed = 0, last_task_exit_rc;
-	task_state_t task_state;
+	task_state_t *task_state;
 	const char *task_str = _taskstr(msg->num_tasks);
 	srun_job_t *my_srun_job = _find_srun_job(&msg->step_id);
 
@@ -648,7 +648,7 @@ static char **_build_user_env(srun_job_t *job, slurm_opt_t *opt_local)
 
 static void _task_state_del(void *x)
 {
-	task_state_t task_state = (task_state_t) x;
+	task_state_t *task_state = (task_state_t *)x;
 
 	task_state_destroy(task_state);
 }
@@ -693,7 +693,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
 	int rc = SLURM_SUCCESS;
-	task_state_t task_state;
+	task_state_t *task_state;
 	bool first_launch = false;
 	uint32_t def_cpu_bind_type = 0;
 	char tmp_str[128];

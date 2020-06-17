@@ -65,10 +65,10 @@ struct task_state_struct {
  * Given a het group and task count, return a task_state structure
  * Free memory using task_state_destroy()
  */
-extern task_state_t task_state_create(slurm_step_id_t *step_id, int ntasks,
-				      uint32_t task_offset)
+extern task_state_t *task_state_create(slurm_step_id_t *step_id, int ntasks,
+				       uint32_t task_offset)
 {
-	task_state_t ts = xmalloc(sizeof(*ts));
+	task_state_t *ts = xmalloc(sizeof(*ts));
 
 	/* ts is zero filled by xmalloc() */
 	memcpy(&ts->step_id, step_id, sizeof(ts->step_id));
@@ -84,7 +84,7 @@ extern task_state_t task_state_create(slurm_step_id_t *step_id, int ntasks,
 
 static int _find_task_state(void *object, void *key)
 {
-	task_state_t ts = (task_state_t)object;
+	task_state_t *ts = (task_state_t *)object;
 	slurm_step_id_t *step_id = (slurm_step_id_t *)key;
 
 	return verify_step_id(&ts->step_id, step_id);
@@ -95,7 +95,7 @@ static int _find_task_state(void *object, void *key)
  * on a list. Specify values of NO_VAL for values that are not to be matched
  * Returns NULL if not found
  */
-extern task_state_t task_state_find(slurm_step_id_t *step_id,
+extern task_state_t *task_state_find(slurm_step_id_t *step_id,
 				    List task_state_list)
 {
 	if (!task_state_list)
@@ -107,7 +107,7 @@ extern task_state_t task_state_find(slurm_step_id_t *step_id,
 /*
  * Modify the task count for a previously created task_state structure
  */
-extern void task_state_alter(task_state_t ts, int ntasks)
+extern void task_state_alter(task_state_t *ts, int ntasks)
 {
 	xassert(ts);
 	ts->n_tasks = ntasks;
@@ -120,7 +120,7 @@ extern void task_state_alter(task_state_t ts, int ntasks)
 /*
  * Destroy a task_state structure build by task_state_create()
  */
-extern void task_state_destroy(task_state_t ts)
+extern void task_state_destroy(task_state_t *ts)
 {
 	if (ts == NULL)
 		return;
@@ -154,7 +154,8 @@ static const char *_task_state_type_str(task_state_type_t t)
 /*
  * Update the state of a specific task ID in a specific task_state structure
  */
-extern void task_state_update(task_state_t ts, int task_id, task_state_type_t t)
+extern void task_state_update(task_state_t *ts, int task_id,
+			      task_state_type_t t)
 {
 	xassert(ts != NULL);
 	xassert(task_id >= 0);
@@ -207,7 +208,7 @@ extern void task_state_update(task_state_t ts, int task_id, task_state_type_t t)
  */
 extern bool task_state_first_exit(List task_state_list)
 {
-	task_state_t ts = NULL;
+	task_state_t *ts = NULL;
 	ListIterator iter;
 	bool is_first = true;
 	int n_exited = 0;
@@ -245,7 +246,7 @@ extern bool task_state_first_exit(List task_state_list)
  */
 extern bool task_state_first_abnormal_exit(List task_state_list)
 {
-	task_state_t ts = NULL;
+	task_state_t *ts = NULL;
 	ListIterator iter;
 	bool is_first = true;
 	int n_abnormal = 0;
@@ -277,7 +278,7 @@ extern bool task_state_first_abnormal_exit(List task_state_list)
 	return is_first;
 }
 
-static void _do_log_msg(task_state_t ts, bitstr_t *b, log_f fn,
+static void _do_log_msg(task_state_t *ts, bitstr_t *b, log_f fn,
 			const char *msg)
 {
 	char buf[4096];
@@ -286,7 +287,7 @@ static void _do_log_msg(task_state_t ts, bitstr_t *b, log_f fn,
 	       &ts->step_id, s, bit_fmt(buf, sizeof(buf), b), msg);
 }
 
-static void _task_state_print(task_state_t ts, log_f fn)
+static void _task_state_print(task_state_t *ts, log_f fn)
 {
 	bitstr_t *unseen;
 
@@ -323,7 +324,7 @@ static void _task_state_print(task_state_t ts, log_f fn)
  */
 extern void task_state_print(List task_state_list, log_f fn)
 {
-	task_state_t ts = NULL;
+	task_state_t *ts = NULL;
 	ListIterator iter;
 
 	if (!task_state_list)
@@ -339,7 +340,7 @@ extern void task_state_print(List task_state_list, log_f fn)
 /*
  * Translate hetjob component local task ID to a global task ID
  */
-extern uint32_t task_state_global_id(task_state_t ts, uint32_t local_task_id)
+extern uint32_t task_state_global_id(task_state_t *ts, uint32_t local_task_id)
 {
 	uint32_t global_task_id = local_task_id;
 
