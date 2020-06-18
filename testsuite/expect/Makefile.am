@@ -50,12 +50,10 @@ EXTRA_DIST = \
 	test1.38			\
 	test1.40			\
 	test1.41			\
-	test1.42			\
 	test1.43			\
 	test1.44			\
 	test1.45			\
 	test1.46			\
-	test1.47			\
 	test1.48			\
 	test1.49			\
 	test1.50			\
@@ -66,7 +64,6 @@ EXTRA_DIST = \
 	test1.54			\
 	test1.55			\
 	test1.56			\
-	test1.57			\
 	test1.58			\
 	test1.59			\
 	test1.60			\
