@@ -5052,10 +5052,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_TRIGGER_PULL:
 		slurm_free_trigger_msg(data);
 		break;
-	case MESSAGE_COMPOSITE:
-	case RESPONSE_MESSAGE_COMPOSITE:
-		slurm_free_composite_msg(data);
-		break;
 	case REQUEST_JOB_NOTIFY:
 		slurm_free_job_notify_msg(data);
 		break;
@@ -5641,11 +5637,6 @@ rpc_num2string(uint16_t opcode)
 		return "ACCOUNTING_TRES_CHANGE_DB";
 	case ACCOUNTING_NODES_CHANGE_DB:
 		return "ACCOUNTING_NODES_CHANGE_DB";
-
-	case MESSAGE_COMPOSITE:					/* 110001 */
-		return "MESSAGE_COMPOSITE";
-	case RESPONSE_MESSAGE_COMPOSITE:
-		return "RESPONSE_MESSAGE_COMPOSITE";
 
 	case REQUEST_PERSIST_INIT:
 		return "REQUEST_PERSIST_INIT";

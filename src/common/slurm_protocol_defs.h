@@ -431,9 +431,6 @@ typedef enum {
 	ACCOUNTING_REGISTER_CTLD,
 	ACCOUNTING_TRES_CHANGE_DB,
 	ACCOUNTING_NODES_CHANGE_DB,
-
-	MESSAGE_COMPOSITE = 11001,
-	RESPONSE_MESSAGE_COMPOSITE,
 } slurm_msg_type_t;
 
 /*****************************************************************************\

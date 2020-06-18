@@ -2766,132 +2766,6 @@ unpack_error:
 }
 
 static void
-_pack_composite_msg(composite_msg_t *msg, Buf buffer, uint16_t protocol_version)
-{
-	uint32_t count;
-	slurm_msg_t *tmp_info = NULL;
-	ListIterator itr = NULL;
-	Buf tmp_buf;
-
-	xassert(msg);
-
-	if (msg->msg_list)
-		count = list_count(msg->msg_list);
-	else
-		count = NO_VAL;
-
-	pack32(count, buffer);
-
-	slurm_pack_slurm_addr(&msg->sender, buffer);
-	if (count && count != NO_VAL) {
-		itr = list_iterator_create(msg->msg_list);
-		while ((tmp_info = list_next(itr))) {
-			if (tmp_info->protocol_version == NO_VAL16)
-				tmp_info->protocol_version = protocol_version;
-			pack16(tmp_info->protocol_version, buffer);
-			pack16(tmp_info->msg_type, buffer);
-			pack16(tmp_info->flags, buffer);
-			pack16(tmp_info->msg_index, buffer);
-
-			if (!tmp_info->auth_cred) {
-				/* FIXME: this should handle the
-				 * _global_auth_key() as well. */
-				tmp_info->auth_cred = g_slurm_auth_create(
-					tmp_info->auth_index,
-					slurm_conf.authinfo);
-			}
-
-			g_slurm_auth_pack(tmp_info->auth_cred, buffer,
-					  protocol_version);
-
-			if (!tmp_info->data_size) {
-				pack_msg(tmp_info, buffer);
-				continue;
-			}
-
-			/* If we are here it means we are already
-			 * packed so just add our packed buffer to the
-			 * mix.
-			 */
-			if (remaining_buf(buffer) < tmp_info->data_size) {
-				int new_size = buffer->processed +
-					tmp_info->data_size;
-				new_size += 1024; /* padded for paranoia */
-				xrealloc_nz(buffer->head, new_size);
-				buffer->size = new_size;
-			}
-			tmp_buf = tmp_info->data;
-
-			memcpy(&buffer->head[buffer->processed],
-			       &tmp_buf->head[tmp_buf->processed],
-			       tmp_info->data_size);
-			buffer->processed += tmp_info->data_size;
-		}
-		list_iterator_destroy(itr);
-	}
-}
-
-static int
-_unpack_composite_msg(composite_msg_t **msg, Buf buffer,
-		      uint16_t protocol_version)
-{
-	uint32_t count = NO_VAL;
-	int i, rc;
-	slurm_msg_t *tmp_info;
-	composite_msg_t *object_ptr = NULL;
-
-	xassert(msg);
-	object_ptr = xmalloc(sizeof(composite_msg_t));
-	*msg = object_ptr;
-	safe_unpack32(&count, buffer);
-	slurm_unpack_slurm_addr_no_alloc(&object_ptr->sender, buffer);
-
-	if (count > NO_VAL)
-		goto unpack_error;
-	if (count != NO_VAL) {
-		object_ptr->msg_list = list_create(slurm_free_comp_msg_list);
-		for (i = 0; i < count; i++) {
-			tmp_info = xmalloc_nz(sizeof(slurm_msg_t));
-			slurm_msg_t_init(tmp_info);
-			safe_unpack16(&tmp_info->protocol_version, buffer);
-			safe_unpack16(&tmp_info->msg_type, buffer);
-			safe_unpack16(&tmp_info->flags, buffer);
-			safe_unpack16(&tmp_info->msg_index, buffer);
-
-			if (!(tmp_info->auth_cred =
-			      g_slurm_auth_unpack(buffer, protocol_version))) {
-				error("%s: g_slurm_auth_unpack: authentication: %m",
-				      __func__);
-				free_buf(buffer);
-				slurm_seterrno(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
-				goto unpack_error;
-			}
-
-			if (unpack_msg(tmp_info, buffer) != SLURM_SUCCESS)
-				goto unpack_error;
-
-			rc = g_slurm_auth_verify(tmp_info->auth_cred,
-						 slurm_conf.authinfo);
-
-			if (rc != SLURM_SUCCESS) {
-				error("%s: g_slurm_auth_verify: %s has authentication error: %m",
-				      __func__,
-				      rpc_num2string(tmp_info->msg_type));
-				slurm_free_comp_msg_list(tmp_info);
-			} else
-				list_append(object_ptr->msg_list, tmp_info);
-		}
-	}
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_composite_msg(object_ptr);
-	*msg = NULL;
-	xfree(tmp_info);
-	return SLURM_ERROR;
-}
-
-static void
 _pack_update_job_time_msg(job_time_msg_t * msg, Buf buffer,
 			  uint16_t protocol_version)
 {
@@ -12604,11 +12478,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case RESPONSE_LICENSE_INFO:
 		_pack_license_info_msg((slurm_msg_t *) msg, buffer);
 		break;
-	case MESSAGE_COMPOSITE:
-	case RESPONSE_MESSAGE_COMPOSITE:
-		_pack_composite_msg((composite_msg_t *) msg->data, buffer,
-				     msg->protocol_version);
-		break;
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		_pack_job_array_resp_msg((job_array_resp_msg_t *) msg->data,
 					 buffer, msg->protocol_version);
@@ -13320,11 +13189,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						      &(msg->data),
 						      buffer,
 						      msg->protocol_version);
-		break;
-	case MESSAGE_COMPOSITE:
-	case RESPONSE_MESSAGE_COMPOSITE:
-		rc = _unpack_composite_msg((composite_msg_t **) &(msg->data),
-					   buffer, msg->protocol_version);
 		break;
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		rc = _unpack_job_array_resp_msg((job_array_resp_msg_t **)
