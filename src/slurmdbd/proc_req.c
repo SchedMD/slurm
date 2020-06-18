@@ -749,12 +749,6 @@ static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 
 	req_msg->uid = g_slurm_auth_get_uid(slurmdbd_conn->conn->auth_cred);
 
-	/* If the client happens to be a newer version than we are make it so
-	 * they talk language I understand.
-	 */
-	if (req_msg->version > SLURM_PROTOCOL_VERSION)
-		req_msg->version = SLURM_PROTOCOL_VERSION;
-
 	rc = _handle_init_msg(slurmdbd_conn, req_msg, uid);
 
 	if (rc != SLURM_SUCCESS)
