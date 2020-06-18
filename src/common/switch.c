@@ -112,8 +112,6 @@ typedef struct slurm_switch_ops {
 					    Buf buffer,
 					    uint16_t protocol_version );
 	int          (*free_nodeinfo)     ( switch_node_info_t **nodeinfo );
-	char *       (*sprintf_nodeinfo)  ( switch_node_info_t *nodeinfo,
-					    char *buf, size_t size );
 	int          (*step_complete)     ( switch_jobinfo_t *jobinfo,
 					    char *nodelist );
 	int          (*step_part_comp)    ( switch_jobinfo_t *jobinfo,
@@ -169,7 +167,6 @@ static const char *syms[] = {
 	"switch_p_pack_node_info",
 	"switch_p_unpack_node_info",
 	"switch_p_free_node_info",
-	"switch_p_sprintf_node_info",
 	"switch_p_job_step_complete",
 	"switch_p_job_step_part_comp",
 	"switch_p_part_comp",
@@ -764,16 +761,6 @@ extern int switch_g_free_node_info(switch_node_info_t **switch_node)
 		return SLURM_ERROR;
 
 	return (*(ops[switch_context_default].free_nodeinfo))( switch_node );
-}
-
-extern char*switch_g_sprintf_node_info(switch_node_info_t *switch_node,
-				       char *buf, size_t size)
-{
-	if ( switch_init(0) < 0 )
-		return NULL;
-
-	return (*(ops[switch_context_default].sprintf_nodeinfo))
-		( switch_node, buf, size );
 }
 
 extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,

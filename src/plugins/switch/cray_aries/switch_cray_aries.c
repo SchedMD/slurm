@@ -888,17 +888,6 @@ extern int switch_p_free_node_info(switch_node_info_t **switch_node)
 	return SLURM_SUCCESS;
 }
 
-extern char*switch_p_sprintf_node_info(switch_node_info_t *switch_node,
-				       char *buf, size_t size)
-{
-	if (buf && size) {
-		buf[0] = '\0';
-		return buf;
-	}
-
-	return NULL ;
-}
-
 extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 				      char *nodelist)
 {

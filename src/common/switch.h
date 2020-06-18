@@ -406,12 +406,6 @@ extern int switch_g_unpack_node_info(switch_node_info_t **switch_node,
  */
 extern int switch_g_free_node_info(switch_node_info_t **switch_node);
 
-/*
- * Print the contents of a node's switch state record to a buffer.
- */
-extern char*switch_g_sprintf_node_info(switch_node_info_t *switch_node,
-	char *buf, size_t size);
-
 /********************************************************************\
  * JOB STEP {PRE,POST}-SUSPEND and {PRE-POST}-RESUME FUNCTIONS      *
 \********************************************************************/
