@@ -652,8 +652,12 @@ extern int
 send_registration_msg(uint32_t status, bool startup)
 {
 	int ret_val = SLURM_SUCCESS;
+	slurm_msg_t req, resp_msg;
 	slurm_node_registration_status_msg_t *msg =
 		xmalloc (sizeof (slurm_node_registration_status_msg_t));
+
+	slurm_msg_t_init(&req);
+	slurm_msg_t_init(&resp_msg);
 
 	if (startup)
 		msg->flags |= SLURMD_REG_FLAG_STARTUP;
@@ -663,44 +667,27 @@ send_registration_msg(uint32_t status, bool startup)
 	_fill_registration_msg(msg);
 	msg->status  = status;
 
-	if (conf->msg_aggr_window_msgs > 1) {
-		slurm_msg_t *req = xmalloc_nz(sizeof(slurm_msg_t));
+	req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
+	req.data = msg;
 
-		slurm_msg_t_init(req);
-		req->msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
-		req->data     = msg;
+	ret_val = slurm_send_recv_controller_msg(&req, &resp_msg,
+						 working_cluster_rec);
+	slurm_free_node_registration_status_msg(msg);
 
-		msg_aggr_add_msg(req, 1, _handle_node_reg_resp);
-	} else {
-		slurm_msg_t req;
-		slurm_msg_t resp_msg;
+	if (ret_val < 0) {
+		error("Unable to register: %m");
+		ret_val = SLURM_ERROR;
+		goto fail;
+	}
 
-		slurm_msg_t_init(&req);
-		slurm_msg_t_init(&resp_msg);
-
-		req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
-		req.data     = msg;
-
-		ret_val = slurm_send_recv_controller_msg(&req, &resp_msg,
-							 working_cluster_rec);
-		slurm_free_node_registration_status_msg(msg);
-
-		if (ret_val < 0) {
-			error("Unable to register: %m");
-			ret_val = SLURM_ERROR;
-			goto fail;
-		}
-
-		_handle_node_reg_resp(&resp_msg);
-		if (resp_msg.msg_type != RESPONSE_SLURM_RC) {
-			/* RESPONSE_SLURM_RC freed by _handle_node_reg_resp() */
-			slurm_free_msg_data(resp_msg.msg_type, resp_msg.data);
-		}
-		if (errno) {
-			ret_val = errno;
-			errno = 0;
-		}
-
+	_handle_node_reg_resp(&resp_msg);
+	if (resp_msg.msg_type != RESPONSE_SLURM_RC) {
+		/* RESPONSE_SLURM_RC freed by _handle_node_reg_resp() */
+		slurm_free_msg_data(resp_msg.msg_type, resp_msg.data);
+	}
+	if (errno) {
+		ret_val = errno;
+		errno = 0;
 	}
 
 	if (ret_val == SLURM_SUCCESS)
