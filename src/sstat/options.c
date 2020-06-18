@@ -141,114 +141,14 @@ void _init_params()
 	params.units = NO_VAL;
 }
 
-static int _find_selected_step(void *x, void *key)
-{
-	slurmdb_selected_step_t *current = (slurmdb_selected_step_t *)x;
-	slurmdb_selected_step_t *new = (slurmdb_selected_step_t *)key;
-
-	if ((current->step_id.job_id == new->step_id.job_id) &&
-	    (current->step_id.step_id == new->step_id.step_id))
-		return 1;
-	return 0;
-}
-
-static void _add_selected_step_to_list(char *name)
-{
-	char *dot, *plus = NULL, *under;
-	slurmdb_selected_step_t *selected_step =
-		xmalloc(sizeof(*selected_step));
-
-	selected_step->step_id.step_id = NO_VAL;
-	selected_step->step_id.step_het_comp = NO_VAL;
-
-	dot = xstrstr(name, ".");
-	if (!dot) {
-		debug2("No jobstep requested");
-	} else {
-		*dot++ = 0;
-		if (!xstrcasecmp(dot, "batch"))
-			selected_step->step_id.step_id = SLURM_BATCH_SCRIPT;
-		else if (!xstrcasecmp(dot, "extern"))
-			selected_step->step_id.step_id = SLURM_EXTERN_CONT;
-		else
-			selected_step->step_id.step_id = slurm_atoul(dot);
-		plus = xstrchr(dot, '+');
-		if (plus) {
-			/* het step */
-			plus++;
-			selected_step->step_id.step_het_comp =
-				slurm_atoul(plus);
-		}
-	}
-
-	selected_step->array_task_id = NO_VAL;
-	selected_step->het_job_offset = NO_VAL;
-	if ((under = xstrstr(name, "_"))) {
-		*under++ = 0;
-		selected_step->array_task_id = slurm_atoul(under);
-	} else if (!plus && (plus = xstrstr(name, "+"))) {
-		*plus++ = 0;
-		selected_step->het_job_offset = slurm_atoul(plus);
-	} else
-		debug2("No array/hetjob requested");
-
-	selected_step->step_id.job_id = slurm_xlate_job_id(name);
-
-	if (!params.opt_job_list)
-		params.opt_job_list =
-			list_create(slurmdb_destroy_selected_step);
-
-	if (list_find_first(params.opt_job_list,
-			    _find_selected_step, selected_step))
-		slurmdb_destroy_selected_step(selected_step);
-	else
-		list_append(params.opt_job_list, selected_step);
-}
-
 /* returns number of objects added to list */
 static void _addto_job_list(char *names)
 {
-	int i = 0, start = 0;
-	char *name = NULL;
+	if (!params.opt_job_list)
+		params.opt_job_list = list_create(
+			slurmdb_destroy_selected_step);
 
-	char quote_c = '\0';
-	int quote = 0;
-
-	if (names) {
-		if (names[i] == '\"' || names[i] == '\'') {
-			quote_c = names[i];
-			quote = 1;
-			i++;
-		}
-		start = i;
-		while (names[i]) {
-			//info("got %d - %d = %d", i, start, i-start);
-			if (quote && names[i] == quote_c)
-				break;
-			else if (names[i] == '\"' || names[i] == '\'')
-				names[i] = '`';
-			else if (names[i] == ',') {
-				if ((i-start) > 0) {
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
-
-					_add_selected_step_to_list(name);
-					xfree(name);
-				}
-				i++;
-				start = i;
-			}
-			i++;
-		}
-		if ((i-start) > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-
-			_add_selected_step_to_list(name);
-			xfree(name);
-		}
-	}
-	return;
+	(void)slurm_addto_step_list(params.opt_job_list, names);
 }
 
 int decode_state_char(char *state)
@@ -333,7 +233,7 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'j':
 			_addto_job_list(optarg);
-			break;
+ 			break;
 		case 'n':
 			print_fields_have_header = 0;
 			break;
