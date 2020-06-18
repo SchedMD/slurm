@@ -769,8 +769,6 @@ static char *_stepid2fmt(step_record_t *step_ptr, char *buf, int buf_size)
 
 	return log_build_step_id_str(&step_ptr->step_id, buf, buf_size,
 				     STEP_ID_FLAG_SPACE | STEP_ID_FLAG_NO_JOB);
-
-	return buf;
 }
 
 /*
