@@ -4132,8 +4132,8 @@ extern int slurmdb_find_selected_step_in_list(void *x, void *key)
 	slurmdb_selected_step_t *selected_step = (slurmdb_selected_step_t *)x;
 	slurmdb_selected_step_t *query_step = (slurmdb_selected_step_t *)key;
 
-	if ((query_step->step_id.job_id == selected_step->step_id.job_id) &&
-	    (query_step->step_id.step_id == selected_step->step_id.step_id) &&
+	if (!memcmp(&query_step->step_id, &selected_step->step_id,
+		    sizeof(query_step->step_id)) &&
 	    (query_step->array_task_id == selected_step->array_task_id) &&
 	    (query_step->het_job_offset == selected_step->het_job_offset))
 		return 1;
