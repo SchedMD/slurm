@@ -79,7 +79,7 @@ static plugin_context_t	*g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
-extern int route_init(char *node_name)
+extern int route_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "route";
@@ -149,7 +149,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
 	char *buf;
 
 	nnodes = nnodex = 0;
-	if (route_init(NULL) != SLURM_SUCCESS)
+	if (route_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
@@ -189,7 +189,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
  */
 extern int route_g_reconfigure(void)
 {
-	if (route_init(NULL) != SLURM_SUCCESS)
+	if (route_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	return (*(ops.reconfigure))();

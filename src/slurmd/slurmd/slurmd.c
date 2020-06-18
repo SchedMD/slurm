@@ -1728,7 +1728,7 @@ _slurmd_init(void)
 	slurm_topo_build_config();
 	_set_topo_info();
 	_build_conf_buf();
-	route_init(conf->node_name);
+	route_init();
 
 	/*
 	 * Check for cpu frequency set capabilities on this node
