@@ -286,9 +286,6 @@ slurmd_req(slurm_msg_t *msg)
 		last_slurmctld_msg = time(NULL);
 		break;
 	case REQUEST_BATCH_JOB_LAUNCH:
-		/* Mutex locking moved into _rpc_batch_job() due to
-		 * very slow prolog on Blue Gene system. Only batch
-		 * jobs are supported on Blue Gene (no job steps). */
 		_rpc_batch_job(msg);
 		last_slurmctld_msg = time(NULL);
 		break;
