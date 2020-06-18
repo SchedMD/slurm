@@ -94,26 +94,6 @@
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
-
-/*
- * get_mach_name - Return the name of this node
- * Input: node_name - buffer for the node name, must be at least MAX_SLURM_NAME characters
- * Output: node_name - filled in with node name
- *         return code - 0 if no error, otherwise errno
- */
-extern int
-get_mach_name(char *node_name)
-{
-    int error_code;
-
-    error_code = gethostname_short(node_name, MAX_SLURM_NAME);
-    if (error_code != 0)
-	error ("get_mach_name: gethostname_short error %d", error_code);
-
-    return error_code;
-}
-
-
 /*
  * get_memory - Return the count of procs on this system
  * Input: real_memory - buffer for the Real Memory size
