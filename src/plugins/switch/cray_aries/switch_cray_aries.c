@@ -488,7 +488,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
+		jobid = job->step_id.job_id;
 	rc = alpsc_attach_cncu_container(&err_msg, jobid, job->cont_id);
 	ALPSC_CN_DEBUG("alpsc_attach_cncu_container");
 	if (rc != 1) {
