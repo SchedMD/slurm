@@ -309,7 +309,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"MinJobAge", S_P_UINT32},
 	{"MpiDefault", S_P_STRING},
 	{"MpiParams", S_P_STRING},
-	{"MsgAggregationParams", S_P_STRING},
 	{"NodeFeaturesPlugins", S_P_STRING},
 	{"OverTimeLimit", S_P_UINT16},
 	{"PluginDir", S_P_STRING},
@@ -2785,7 +2784,6 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->mcs_plugin_params);
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
-	xfree (ctl_conf_ptr->msg_aggr_params);
 	FREE_NULL_LIST(ctl_conf_ptr->node_features_conf);
 	xfree (ctl_conf_ptr->node_features_plugins);
 	xfree (ctl_conf_ptr->node_prefix);
@@ -2957,7 +2955,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->min_job_age = NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
-	xfree (ctl_conf_ptr->msg_aggr_params);
 	ctl_conf_ptr->msg_timeout		= NO_VAL16;
 	ctl_conf_ptr->next_job_id		= NO_VAL;
 	xfree(ctl_conf_ptr->node_features_plugins);
@@ -4027,9 +4024,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		return SLURM_ERROR;
 	}
 #endif
-
-	(void) s_p_get_string(&conf->msg_aggr_params, "MsgAggregationParams",
-			      hashtbl);
 
 	if (s_p_get_boolean((bool *)&truth, "TrackWCKey", hashtbl) && truth)
 		conf->conf_flags |= CTL_CONF_WCKEY;

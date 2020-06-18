@@ -785,7 +785,6 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->min_job_age         = conf->min_job_age;
 	conf_ptr->mpi_default         = xstrdup(conf->mpi_default);
 	conf_ptr->mpi_params          = xstrdup(conf->mpi_params);
-	conf_ptr->msg_aggr_params     = xstrdup(conf->msg_aggr_params);
 	conf_ptr->msg_timeout         = conf->msg_timeout;
 
 	conf_ptr->next_job_id         = next_job_id;
