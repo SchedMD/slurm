@@ -111,7 +111,7 @@ static void _task_layout_display_masks(launch_tasks_request_msg_t *req,
 	for(i = 0; i < maxtasks; i++) {
 		str = (char *)bit_fmt_hexmask(masks[i]);
 		debug3("_task_layout_display_masks jobid [%u:%d] %s",
-		       req->job_id, gtid[i], str);
+		       req->step_id.job_id, gtid[i], str);
 		xfree(str);
 	}
 }
@@ -424,7 +424,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		}
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("%s: JobId=%u manual binding: %s",
-		     __func__, req->job_id, buf_type);
+		     __func__, req->step_id.job_id, buf_type);
 		return;
 	}
 
@@ -491,20 +491,20 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("%s: JobId=%u auto binding off: %s",
-		     __func__, req->job_id, buf_type);
+		     __func__, req->step_id.job_id, buf_type);
 		return;
 
   make_auto:	xfree(avail_mask);
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("%s: JobId=%u %s auto binding: %s, dist %d",
-		     __func__, req->job_id,
+		     __func__, req->step_id.job_id,
 		     (auto_def_set) ? "default" : "implicit",
 		     buf_type, req->task_dist);
 	} else {
 		/* Explicit bind unit (sockets, cores) specified by user */
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("%s: JobId=%u binding: %s, dist %d",
-		     __func__, req->job_id, buf_type, req->task_dist);
+		     __func__, req->step_id.job_id, buf_type, req->task_dist);
 	}
 
 	switch (req->task_dist & SLURM_DIST_NODESOCKMASK) {
@@ -512,7 +512,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	case SLURM_DIST_CYCLIC_BLOCK:
 	case SLURM_DIST_PLANE:
 		debug2("%s: JobId=%u will use lllp_block",
-		       __func__, req->job_id);
+		       __func__, req->step_id.job_id);
 		/* tasks are distributed in blocks within a plane */
 		rc = _task_layout_lllp_block(req, node_id, &masks);
 		break;
@@ -522,7 +522,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	case SLURM_DIST_UNKNOWN:
 		if (slurm_conf.select_type_param & CR_CORE_DEFAULT_DIST_BLOCK) {
 			debug2("%s: JobId=%u will use lllp_block because of SelectTypeParameters",
-			       __func__, req->job_id);
+			       __func__, req->step_id.job_id);
 			rc = _task_layout_lllp_block(req, node_id, &masks);
 			break;
 		}
@@ -532,7 +532,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		 */
 	default:
 		debug2("%s: JobId=%u will use lllp_cyclic because of SelectTypeParameters",
-		       __func__, req->job_id);
+		       __func__, req->step_id.job_id);
 		rc = _task_layout_lllp_cyclic(req, node_id, &masks);
 		break;
 	}
@@ -569,7 +569,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		}
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		error("%s: JobId=%u overriding binding: %s",
-		      __func__, req->job_id, buf_type);
+		      __func__, req->step_id.job_id, buf_type);
 		error("%s: Verify socket/core/thread counts in configuration",
 		      __func__);
 	}
@@ -775,7 +775,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 
 	str = (char *)bit_fmt_hexmask(req_map);
 	debug3("task/affinity: job %u.%u core mask from slurmctld: %s",
-		req->job_id, req->job_step_id, str);
+		req->step_id.job_id, req->step_id.step_id, str);
 	xfree(str);
 
 	for (p = 0; p < num_cpus; p++) {
@@ -821,7 +821,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 
 	str = (char *)bit_fmt_hexmask(hw_map);
 	debug3("task/affinity: job %u.%u CPU final mask for local node: %s",
-		req->job_id, req->job_step_id, str);
+		req->step_id.job_id, req->step_id.step_id, str);
 	xfree(str);
 
 	FREE_NULL_BITMAP(req_map);
@@ -1376,5 +1376,5 @@ static void _lllp_generate_cpu_bind(launch_tasks_request_msg_t *req,
 
 	slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 	info("_lllp_generate_cpu_bind jobid [%u]: %s, %s",
-	     req->job_id, buf_type, masks_str);
+	     req->step_id.job_id, buf_type, masks_str);
 }

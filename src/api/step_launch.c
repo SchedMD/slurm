@@ -250,7 +250,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		return rc;
 
 	/* Start tasks on compute nodes */
-	launch.job_id = ctx->step_req->job_id;
+	memcpy(&launch.step_id, &ctx->step_req->step_id,
+	       sizeof(launch.step_id));
 	launch.uid = ctx->step_req->user_id;
 	launch.gid = params->gid;
 	launch.argc = params->argc;
@@ -258,7 +259,6 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.spank_job_env = params->spank_job_env;
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
-	launch.job_step_id = ctx->step_resp->job_step_id;
 	launch.het_job_node_offset = params->het_job_node_offset;
 	launch.het_job_step_cnt = params->het_job_step_cnt;
 	launch.het_job_id = params->het_job_id;
@@ -448,7 +448,8 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	memset(&launch, 0, sizeof(launch));
 
 	/* Start tasks on compute nodes */
-	launch.job_id = ctx->step_req->job_id;
+	memcpy(&launch.step_id, &ctx->step_req->step_id,
+	       sizeof(launch.step_id));
 	launch.uid = ctx->step_req->user_id;
 	launch.gid = params->gid;
 	launch.argc = params->argc;
@@ -456,7 +457,6 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.spank_job_env = params->spank_job_env;
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
-	launch.job_step_id = ctx->step_resp->job_step_id;
 	launch.het_job_step_cnt = params->het_job_step_cnt;
 	launch.het_job_id = params->het_job_id;
 	launch.het_job_nnodes = params->het_job_nnodes;
@@ -850,8 +850,7 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 
 	/* common to all tasks */
 	memset(&msg, 0, sizeof(msg));
-	msg.job_id      = ctx->job_id;
-	msg.job_step_id = ctx->step_resp->job_step_id;
+	memcpy(&msg.step_id, &ctx->step_req->step_id, sizeof(msg.step_id));
 	msg.signal      = (uint16_t) signo;
 
 	slurm_mutex_lock(&sls->lock);
@@ -971,7 +970,7 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->abort = false;
 	sls->abort_action_taken = false;
 	/* NOTE: No malloc() of sls->mpi_info required */
-	sls->mpi_info->jobid = ctx->step_req->job_id;
+	sls->mpi_info->jobid = ctx->step_req->step_id.job_id;
 	sls->mpi_info->het_job_id = NO_VAL;
 	sls->mpi_info->het_job_task_offset = NO_VAL;
 	sls->mpi_info->stepid = ctx->step_resp->job_step_id;
@@ -1224,10 +1223,10 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	void (*task_finish)(task_exit_msg_t *);
 	int i;
 
-	if ((msg->job_id != sls->mpi_info->jobid) ||
-	    (msg->step_id != sls->mpi_info->stepid)) {
+	if ((msg->step_id.job_id != sls->mpi_info->jobid) ||
+	    (msg->step_id.step_id != sls->mpi_info->stepid)) {
 		debug("Received MESSAGE_TASK_EXIT from wrong job: %u.%u",
-		      msg->job_id, msg->step_id);
+		      msg->step_id.job_id, msg->step_id.step_id);
 		return;
 	}
 
@@ -1386,7 +1385,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 	bool  active;
 
 	debug("Step %u.%u missing from node(s) %s",
-	      step_missing->job_id, step_missing->step_id,
+	      step_missing->step_id.job_id, step_missing->step_id.step_id,
 	      step_missing->nodelist);
 
 	/* Ignore this message in the unusual "user_managed_io" case.  No way
@@ -1504,7 +1503,7 @@ _step_step_signal(struct step_launch_state *sls, slurm_msg_t *signal_msg)
 {
 	job_step_kill_msg_t *step_signal = signal_msg->data;
 	debug2("Signal %u requested for step %u.%u", step_signal->signal,
-	       step_signal->job_id, step_signal->job_step_id);
+	       step_signal->step_id.job_id, step_signal->step_id.step_id);
 	if (sls->callback.step_signal)
 		(sls->callback.step_signal)(step_signal->signal);
 
@@ -1663,9 +1662,7 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 	slurm_mutex_unlock(&sls->lock);
 
 	memset(&msg, 0, sizeof(msg));
-	msg.job_id = ctx->job_id;
-	msg.job_step_id = ctx->step_resp->job_step_id;
-
+	memcpy(&msg.step_id, &ctx->step_req->step_id, sizeof(msg.step_id));
 	msg.range_first = msg.range_last = nodeid;
 	msg.step_rc = ret_code;
 
@@ -1801,7 +1798,7 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 	hostlist_destroy(hl);
 
 	info("launching %u.%u on host %s, %u tasks: %s",
-	     msg->job_id, msg->job_step_id, hostname,
+	     msg->step_id.job_id, msg->step_id.step_id, hostname,
 	     msg->tasks_to_launch[nodeid], task_list);
 	xfree(task_list);
 

@@ -502,9 +502,9 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	last_node_update    = time(NULL);
 	kill_job->job_gres_info =
 		 gres_plugin_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
-	kill_job->job_id    = job_ptr->job_id;
+	kill_job->step_id.job_id    = job_ptr->job_id;
 	kill_job->het_job_id = job_ptr->het_job_id;
-	kill_job->step_id   = NO_VAL;
+	kill_job->step_id.step_id   = NO_VAL;
 	kill_job->job_state = job_ptr->job_state;
 	kill_job->job_uid   = job_ptr->user_id;
 	kill_job->job_gid   = job_ptr->group_id;
@@ -3285,8 +3285,8 @@ extern void launch_prolog(job_record_t *job_ptr)
 	xassert(job_ptr->job_resrcs);
 	job_resrcs_ptr = job_ptr->job_resrcs;
 	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
-	cred_arg.jobid               = job_ptr->job_id;
-	cred_arg.stepid              = SLURM_EXTERN_CONT;
+	cred_arg.step_id.job_id = job_ptr->job_id;
+	cred_arg.step_id.step_id = SLURM_EXTERN_CONT;
 	cred_arg.uid                 = job_ptr->user_id;
 	cred_arg.gid                 = job_ptr->group_id;
 	cred_arg.x11                 = job_ptr->details->x11;
@@ -4587,9 +4587,9 @@ extern void re_kill_job(job_record_t *job_ptr)
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	kill_job->job_gres_info	=
 		gres_plugin_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
-	kill_job->job_id    = job_ptr->job_id;
+	kill_job->step_id.job_id    = job_ptr->job_id;
 	kill_job->het_job_id = job_ptr->het_job_id;
-	kill_job->step_id   = NO_VAL;
+	kill_job->step_id.step_id   = NO_VAL;
 	kill_job->job_uid   = job_ptr->user_id;
 	kill_job->job_gid   = job_ptr->group_id;
 	kill_job->job_state = job_ptr->job_state;

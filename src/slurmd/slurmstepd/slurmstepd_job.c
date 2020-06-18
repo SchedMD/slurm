@@ -311,8 +311,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	memcpy(job->task_cnts, msg->tasks_to_launch,
 	       sizeof(uint16_t) * msg->nnodes);
 	job->ntasks	= msg->ntasks;
-	job->jobid	= msg->job_id;
-	job->stepid	= msg->job_step_id;
+	memcpy(&job->step_id, &msg->step_id, sizeof(job->step_id));
 
 	job->uid	= (uid_t) msg->uid;
 	job->gid	= (gid_t) msg->gid;
@@ -347,7 +346,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->cpus_per_task = msg->cpus_per_task;
 
 	job->env     = _array_copy(msg->envc, msg->env);
-	job->array_job_id  = msg->job_id;
+	job->array_job_id  = msg->step_id.job_id;
 	job->array_task_id = NO_VAL;
 	/* Used for env vars */
 	job->het_job_node_offset = msg->het_job_node_offset;
@@ -480,15 +479,17 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 			   &job->job_mem, &job->step_mem);
 
 	if (job->step_mem && slurm_conf.job_acct_oom_kill) {
-		jobacct_gather_set_mem_limit(job->jobid, job->stepid,
+		jobacct_gather_set_mem_limit(job->step_id.job_id,
+					     job->step_id.step_id,
 					     job->step_mem);
 	} else if (job->job_mem && slurm_conf.job_acct_oom_kill) {
-		jobacct_gather_set_mem_limit(job->jobid, job->stepid,
+		jobacct_gather_set_mem_limit(job->step_id.job_id,
+					     job->step_id.step_id,
 					     job->job_mem);
 	}
 
 	/* only need these values on the extern step, don't copy otherwise */
-	if ((msg->job_step_id == SLURM_EXTERN_CONT) && msg->x11) {
+	if ((msg->step_id.step_id == SLURM_EXTERN_CONT) && msg->x11) {
 		job->x11 = msg->x11;
 		job->x11_alloc_host = xstrdup(msg->x11_alloc_host);
 		job->x11_alloc_port = msg->x11_alloc_port;
@@ -531,8 +532,8 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 		job->cpus    = msg->cpus_per_node[0];
 	job->node_tasks  = 1;
 	job->ntasks  = msg->ntasks;
-	job->jobid   = msg->job_id;
-	job->stepid  = msg->step_id;
+	job->step_id.job_id   = msg->job_id;
+	job->step_id.step_id  = msg->step_id;
 	job->array_job_id  = msg->array_job_id;
 	job->array_task_id = msg->array_task_id;
 	job->het_job_step_cnt = NO_VAL;
@@ -605,9 +606,11 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
 	if (job->step_mem && slurm_conf.job_acct_oom_kill)
-		jobacct_gather_set_mem_limit(job->jobid, NO_VAL, job->step_mem);
+		jobacct_gather_set_mem_limit(job->step_id.job_id,
+					     NO_VAL, job->step_mem);
 	else if (job->job_mem && slurm_conf.job_acct_oom_kill)
-		jobacct_gather_set_mem_limit(job->jobid, NO_VAL, job->job_mem);
+		jobacct_gather_set_mem_limit(job->step_id.job_id,
+					     NO_VAL, job->job_mem);
 
 	get_cred_gres(msg->cred, conf->node_name,
 		      &job->job_gres_list, &job->step_gres_list);

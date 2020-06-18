@@ -1860,10 +1860,10 @@ _print_options(void)
 		while ( (job_step_id = list_next( iterator )) ) {
 			if (job_step_id->array_id == NO_VAL) {
 				printf( "job_list[%d] = %u\n", i++,
-					job_step_id->job_id );
+					job_step_id->step_id.job_id );
 			} else {
 				printf( "job_list[%d] = %u_%u\n", i++,
-					job_step_id->job_id,
+					job_step_id->step_id.job_id,
 					job_step_id->array_id );
 			}
 		}
@@ -1914,13 +1914,13 @@ _print_options(void)
 		while ( (job_step_id = list_next( iterator )) ) {
 			if (job_step_id->array_id == NO_VAL) {
 				printf( "step_list[%d] = %u.%u\n", i++,
-					job_step_id->job_id,
-					job_step_id->step_id );
+					job_step_id->step_id.job_id,
+					job_step_id->step_id.step_id );
 			} else {
 				printf( "step_list[%d] = %u_%u.%u\n", i++,
-					job_step_id->job_id,
+					job_step_id->step_id.job_id,
 					job_step_id->array_id,
-					job_step_id->step_id );
+					job_step_id->step_id.step_id );
 			}
 		}
 		list_iterator_destroy( iterator );
@@ -1970,7 +1970,7 @@ _build_job_list( char* str )
 		}
 
 		job_step_id = xmalloc( sizeof( squeue_job_step_t ) );
-		job_step_id->job_id   = job_id;
+		job_step_id->step_id.job_id   = job_id;
 		job_step_id->array_id = array_id;
 		list_append( my_list, job_step_id );
 		job = strtok_r (NULL, ",", &tmp_char);
@@ -2110,9 +2110,9 @@ _build_step_list( char* str )
 			exit(1);
 		}
 		job_step_id = xmalloc(sizeof(squeue_job_step_t));
-		job_step_id->job_id   = job_id;
+		job_step_id->step_id.job_id   = job_id;
 		job_step_id->array_id = array_id;
-		job_step_id->step_id  = step_id;
+		job_step_id->step_id.step_id  = step_id;
 		list_append(my_list, job_step_id);
 		step = strtok_r(NULL, ",", &tmp_char);
 	}

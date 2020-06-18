@@ -75,9 +75,8 @@ static List foreach_list = NULL;
 static char *stacked_job_list = NULL;
 
 typedef struct {
-	int job_id;
 	int state;
-	int step_id;
+	slurm_step_id_t step_id;
 	int array_job_id;
 	int array_task_id;
 	int het_job_id;
@@ -2412,15 +2411,15 @@ static int _id_from_stepstr(char *str) {
 
 static void _stepstr_from_step(job_step_info_t *step_ptr, char *dest,
 			       uint32_t len) {
-	if (step_ptr->step_id == SLURM_PENDING_STEP)
+	if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
 		snprintf(dest, len, "TBD");
-	else if (step_ptr->step_id == SLURM_EXTERN_CONT)
+	else if (step_ptr->step_id.step_id == SLURM_EXTERN_CONT)
 		snprintf(dest, len, "Extern");
-	else if (step_ptr->step_id == SLURM_BATCH_SCRIPT)
+	else if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
 		snprintf(dest, len, "Batch");
 	else
 		snprintf(dest, len, "%u",
-			 step_ptr->step_id);
+			 step_ptr->step_id.step_id);
 }
 
 static void _layout_step_record(GtkTreeView *treeview,
@@ -2452,17 +2451,17 @@ static void _layout_step_record(GtkTreeView *treeview,
 	if (step_ptr->array_job_id) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u_%u.%u (%u.%u)",
 			 step_ptr->array_job_id, step_ptr->array_task_id,
-			 step_ptr->step_id,
-			 step_ptr->job_id, step_ptr->step_id);
+			 step_ptr->step_id.step_id,
+			 step_ptr->step_id.job_id, step_ptr->step_id.step_id);
 //	} else if (step_ptr->het_job_id) {
 //		snprintf(tmp_char, sizeof(tmp_char), "%u+%u.%u (%u.%u)",
 //			 step_ptr->het_job_id, step_ptr->het_job_offset,
-//			 step_ptr->step_id,
-//			 step_ptr->job_id, step_ptr->step_id);
+//			 step_ptr->step_id.step_id,
+//			 step_ptr->step_id.job_id, step_ptr->step_id.step_id);
 	} else {
 		_stepstr_from_step(step_ptr, tmp_str, sizeof(tmp_str));
 		snprintf(tmp_char, sizeof(tmp_char), "%u.%s",
-			 step_ptr->job_id, tmp_str);
+			 step_ptr->step_id.job_id, tmp_str);
 	}
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
@@ -2587,7 +2586,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	char tmp_step_id[40], tmp_job_id[400];
 	char tmp_fmt_stepid[40];
 	uint32_t state;
-	int color_inx = step_ptr->step_id % sview_colors_cnt;
+	int color_inx = step_ptr->step_id.step_id % sview_colors_cnt;
 
 	convert_num_unit((float)step_ptr->num_cpus, tmp_cpu_min,
 			 sizeof(tmp_cpu_min), UNIT_NONE, NO_VAL,
@@ -2630,21 +2629,22 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			    sizeof(tmp_time_start));
 
 	_stepstr_from_step(step_ptr, tmp_fmt_stepid, sizeof(tmp_fmt_stepid));
-	snprintf(tmp_step_id, sizeof(tmp_step_id), "%u", step_ptr->step_id);
+	snprintf(tmp_step_id, sizeof(tmp_step_id), "%u",
+		 step_ptr->step_id.step_id);
 
 	if (step_ptr->array_job_id) {
 		snprintf(tmp_job_id, sizeof(tmp_job_id), "%u_%u.%u (%u.%u)",
 			 step_ptr->array_job_id, step_ptr->array_task_id,
-			 step_ptr->step_id,
-			 step_ptr->job_id, step_ptr->step_id);
+			 step_ptr->step_id.step_id,
+			 step_ptr->step_id.job_id, step_ptr->step_id.step_id);
 //	} else if (step_ptr->het_job_id) {
 //		snprintf(tmp_job_id, sizeof(tmp_job_id), "%u+%u.%u (%u.%u)",
 //			 step_ptr->het_job_id, step_ptr->het_job_offset,
-//			 step_ptr->step_id,
-//			 step_ptr->job_id, step_ptr->step_id);
+//			 step_ptr->step_id.step_id,
+//			 step_ptr->step_id.job_id, step_ptr->step_id.step_id);
 	} else {
 		snprintf(tmp_job_id, sizeof(tmp_job_id), "%u.%s",
-			 step_ptr->job_id, tmp_fmt_stepid);
+			 step_ptr->step_id.job_id, tmp_fmt_stepid);
 	}
 
 	tmp_uname = uid_to_string_cached((uid_t)step_ptr->user_id);
@@ -2879,7 +2879,7 @@ static void _update_info_step(sview_job_info_t *sview_job_info_ptr,
 					   &tmp_stepid, -1);
 			stepid = atoi(tmp_stepid);
 			g_free(tmp_stepid);
-			if (stepid == (int)step_ptr->step_id) {
+			if (stepid == (int)step_ptr->step_id.step_id) {
 				/* update with new info */
 				_update_step_record(
 					step_ptr, GTK_TREE_STORE(model),
@@ -3187,7 +3187,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 
 		for (j = 0; j < step_info_ptr->job_step_count; j++) {
 			step_ptr = &(step_info_ptr->job_steps[j]);
-			if ((step_ptr->job_id == job_ptr->job_id) &&
+			if ((step_ptr->step_id.job_id == job_ptr->job_id) &&
 			    (step_ptr->state == JOB_RUNNING)) {
 				list_append(sview_job_info_ptr->step_list,
 					    step_ptr);
@@ -3324,7 +3324,7 @@ need_refresh:
 		bool *color_set_flag = xmalloc(sizeof(bool) * array_size);
 		itr = list_iterator_create(sview_job_info->step_list);
 		while ((step_ptr = list_next(itr))) {
-			if (step_ptr->step_id ==
+			if (step_ptr->step_id.step_id ==
 			    spec_info->search_info->int_data2) {
 				j = 0;
 				while (step_ptr->node_inx[j] >= 0) {
@@ -3339,7 +3339,7 @@ need_refresh:
 					     k <= step_ptr->node_inx[j+1];
 					     k++) {
 						color_set_flag[k] = true;
-						color_inx[k] = step_ptr->step_id
+						color_inx[k] = step_ptr->step_id.step_id
 							% sview_colors_cnt;
 					}
 					j += 2;
@@ -4056,7 +4056,7 @@ display_it:
 				step_itr = list_iterator_create(
 					sview_job_info->step_list);
 				while ((step_ptr = list_next(itr))) {
-					if (step_ptr->step_id ==
+					if (step_ptr->step_id.step_id ==
 					    spec_info->search_info->int_data2) {
 						break;
 					}
@@ -4369,8 +4369,8 @@ static void process_foreach_list(jobs_foreach_common_t *jobs_foreach_common)
 		if (global_error_code)
 			break;
 
-		jobid = job_foreach->job_id;
-		stepid = job_foreach->step_id;
+		jobid = job_foreach->step_id.job_id;
+		stepid = job_foreach->step_id.step_id;
 		state = job_foreach->state;
 
 		switch(jobs_foreach_common->edit_type) {
@@ -4513,8 +4513,8 @@ static void selected_foreach_build_list(GtkTreeModel  *model,
 
 	/* alc mem for individual job processor target */
 	fe_ptr = xmalloc(sizeof(jobs_foreach_t));
-	fe_ptr->job_id = jobid;
-	fe_ptr->step_id = stepid;
+	fe_ptr->step_id.job_id = jobid;
+	fe_ptr->step_id.step_id = stepid;
 	fe_ptr->state = state;
 	fe_ptr->array_job_id = array_job_id;
 	fe_ptr->array_task_id = array_task_id;
@@ -4578,12 +4578,12 @@ static void _edit_each_job(GtkTreeModel *model, GtkTreeIter *iter,
 		gtk_window_set_default_size(GTK_WINDOW(popup), 200, 400);
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Editing job %u think before you type",
-			 job_foreach->job_id);
+			 job_foreach->step_id.job_id);
 		label = gtk_label_new(tmp_char);
 
 		job_msg = xmalloc(sizeof(job_desc_msg_t));
 		slurm_init_job_desc_msg(job_msg);
-		job_msg->job_id = job_foreach->job_id;
+		job_msg->job_id = job_foreach->step_id.job_id;
 		entry = _admin_full_edit_job(job_msg, model, iter);
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
 				   label, false, false, 0);
@@ -4609,15 +4609,15 @@ static void _edit_each_job(GtkTreeModel *model, GtkTreeIter *iter,
 			   == SLURM_SUCCESS) {
 			tmp_char_ptr = g_strdup_printf(
 				"Job %u updated successfully",
-				job_foreach->job_id);
+				job_foreach->step_id.job_id);
 		} else if (errno == ESLURM_DISABLED) {
 			tmp_char_ptr = g_strdup_printf(
 				"Can't edit that part of non-pending job %u.",
-				job_foreach->job_id);
+				job_foreach->step_id.job_id);
 		} else {
 			tmp_char_ptr = g_strdup_printf(
 				"Problem updating job %u.",
-				job_foreach->job_id);
+				job_foreach->step_id.job_id);
 		}
 		display_edit_note(tmp_char_ptr);
 		g_free(tmp_char_ptr);

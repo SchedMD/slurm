@@ -277,16 +277,22 @@ job_sbcast_cred_msg_to_hv(job_sbcast_cred_msg_t *msg, HV *hv)
 int
 srun_job_complete_msg_to_hv(srun_job_complete_msg_t *msg, HV *hv)
 {
-	STORE_FIELD(hv, msg, job_id, uint32_t);
-	STORE_FIELD(hv, msg, step_id, uint32_t);
+	HV *step_id_hv = (HV*)sv_2mortal((SV*)newHV());
+
+	step_id_to_hv(msg, step_id_hv);
+	hv_store_sv(hv, "step_id", newRV((SV*)step_id_hv));
+
 	return 0;
 }
 
 int
 srun_timeout_msg_to_hv(srun_timeout_msg_t *msg, HV *hv)
 {
-	STORE_FIELD(hv, msg, job_id, uint32_t);
-	STORE_FIELD(hv, msg, step_id, uint32_t);
+	HV *step_id_hv = (HV*)sv_2mortal((SV*)newHV());
+
+	step_id_to_hv(&msg->step_id, step_id_hv);
+	hv_store_sv(hv, "step_id", newRV((SV*)step_id_hv));
+
 	STORE_FIELD(hv, msg, timeout, time_t);
 	return 0;
 }
@@ -352,9 +358,12 @@ srun_user_msg_to_hv(srun_user_msg_t *msg, HV *hv)
 static int
 srun_node_fail_msg_to_hv(srun_node_fail_msg_t *msg, HV *hv)
 {
-	STORE_FIELD(hv, msg, job_id, uint32_t);
+	HV *step_id_hv = (HV*)sv_2mortal((SV*)newHV());
+
+	step_id_to_hv(&msg->step_id, step_id_hv);
+	hv_store_sv(hv, "step_id", newRV((SV*)step_id_hv));
+
 	STORE_FIELD(hv, msg, nodelist, charp);
-	STORE_FIELD(hv, msg, step_id, uint32_t);
 	return 0;
 }
 

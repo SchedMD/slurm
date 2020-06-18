@@ -90,7 +90,6 @@ typedef struct allocation_info {
 	char                   *alias_list;
 	uint16_t               *cpus_per_node;
 	uint32_t               *cpu_count_reps;
-	uint32_t                jobid;
 	uint32_t                nnodes;
 	char                   *nodelist;
 	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
@@ -100,7 +99,7 @@ typedef struct allocation_info {
 	uint32_t                num_cpu_groups;
 	char                   *partition;
 	dynamic_plugin_data_t  *select_jobinfo;
-	uint32_t                stepid;
+	slurm_step_id_t         step_id;
 } allocation_info_t;
 
 typedef struct het_job_resp_struct {
@@ -173,10 +172,10 @@ job_create_noalloc(void)
 		goto error;
 	}
 	srand48(getpid());
-	ai->jobid          = MIN_NOALLOC_JOBID +
-			     ((uint32_t) lrand48() %
-			      (MAX_NOALLOC_JOBID - MIN_NOALLOC_JOBID + 1));
-	ai->stepid         = (uint32_t) (lrand48());
+	ai->step_id.job_id = MIN_NOALLOC_JOBID +
+		((uint32_t) lrand48() %
+		 (MAX_NOALLOC_JOBID - MIN_NOALLOC_JOBID + 1));
+	ai->step_id.step_id = (uint32_t) (lrand48());
 	ai->nodelist       = opt_local->nodelist;
 	ai->nnodes         = hostlist_count(hl);
 
@@ -221,8 +220,8 @@ extern srun_job_t *job_step_create_allocation(
 	char *step_nodelist = NULL;
 	xassert(srun_opt);
 
-	ai->jobid          = job_id;
-	ai->stepid         = NO_VAL;
+	ai->step_id.job_id          = job_id;
+	ai->step_id.step_id         = NO_VAL;
 	ai->alias_list     = resp->alias_list;
 	if (srun_opt->alloc_nodelist)
 		ai->nodelist = xstrdup(srun_opt->alloc_nodelist);
@@ -442,8 +441,8 @@ extern srun_job_t *job_create_allocation(
 	i->nodelist       = _normalize_hostlist(resp->node_list);
 	i->nnodes	  = resp->node_cnt;
 	i->partition      = resp->partition;
-	i->jobid          = resp->job_id;
-	i->stepid         = NO_VAL;
+	i->step_id.job_id          = resp->job_id;
+	i->step_id.step_id         = NO_VAL;
 	i->num_cpu_groups = resp->num_cpu_groups;
 	i->cpus_per_node  = resp->cpus_per_node;
 	i->cpu_count_reps = resp->cpu_count_reps;
@@ -752,7 +751,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 		while ((job = list_next(job_iter))) {
 			if (het_job_id)
 				job->het_job_id = het_job_id;
-			job->stepid = NO_VAL;
+			job->step_id.step_id = NO_VAL;
 			het_job_nnodes += job->nhosts;
 			het_job_ntasks += job->ntasks;
 		}
@@ -768,12 +767,12 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			job->het_job_ntasks = het_job_ntasks;
 			job->het_job_task_offset = task_offset;
 			if (step_id != NO_VAL)
-				job->stepid = step_id;
+				job->step_id.step_id = step_id;
 			rc = create_job_step(job, use_all_cpus, opt_local);
 			if (rc < 0)
 				break;
 			if (step_id == NO_VAL)
-				step_id = job->stepid;
+				step_id = job->step_id.step_id;
 
 			if ((slurm_step_ctx_get(job->step_ctx,
 						SLURM_STEP_CTX_RESP,
@@ -854,10 +853,9 @@ static void _cancel_steps(List srun_job_list)
 
 	job_iter = list_iterator_create(srun_job_list);
 	while ((job = list_next(job_iter))) {
-		if (job->stepid == NO_VAL)
+		if (job->step_id.step_id == NO_VAL)
 			continue;
-		msg.job_id	= job->jobid;
-		msg.job_step_id	= job->stepid;
+		memcpy(&msg.step_id, &job->step_id, sizeof(msg.step_id));
 		msg.range_first	= 0;
 		msg.range_last	= job->nhosts - 1;
 		(void) slurm_send_recv_controller_rc_msg(&req, &rc,
@@ -1349,7 +1347,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		*p_job = (void *) job;
 
 	if (job)
-	        _srun_cli_filter_post_submit(my_job_id, job->stepid);
+	        _srun_cli_filter_post_submit(my_job_id, job->step_id.step_id);
 }
 
 extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
@@ -1384,9 +1382,9 @@ extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 
 		/* Tell slurmctld that we were cancelled */
 		if (job->state >= SRUN_JOB_CANCELLED)
-			slurm_complete_job(job->jobid, NO_VAL);
+			slurm_complete_job(job->step_id.job_id, NO_VAL);
 		else
-			slurm_complete_job(job->jobid, *global_rc);
+			slurm_complete_job(job->step_id.job_id, *global_rc);
 	}
 	_shepherd_notify(shepherd_fd);
 
@@ -1453,7 +1451,7 @@ job_force_termination(srun_job_t *job)
 		}
 		if (kill_sent == 1) {
 			/* Try sending SIGKILL through slurmctld */
-			slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
+			slurm_kill_job_step(job->step_id.job_id, job->step_id.step_id, SIGKILL);
 		}
 	}
 	kill_sent++;
@@ -1501,7 +1499,7 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
  	job->alias_list = xstrdup(ainfo->alias_list);
  	job->nodelist = xstrdup(ainfo->nodelist);
  	job->partition = xstrdup(ainfo->partition);
-	job->stepid  = ainfo->stepid;
+	memcpy(&job->step_id, &ainfo->step_id, sizeof(job->step_id));
 	job->het_job_id  = NO_VAL;
 	job->het_job_nnodes = NO_VAL;
 	job->het_job_ntasks = NO_VAL;
@@ -1532,7 +1530,6 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
 	}
 #endif
 	job->select_jobinfo = ainfo->select_jobinfo;
-	job->jobid   = ainfo->jobid;
 
 	job->ntasks  = opt_local->ntasks;
 	job->ntasks_per_board = ainfo->ntasks_per_board;
@@ -1623,8 +1620,8 @@ static int _call_spank_local_user(srun_job_t *job, slurm_opt_t *opt_local)
 	info->argc = srun_opt->argc;
 	info->argv = srun_opt->argv;
 	info->gid	= opt_local->gid;
-	info->jobid	= job->jobid;
-	info->stepid	= job->stepid;
+	info->jobid	= job->step_id.job_id;
+	info->stepid	= job->step_id.step_id;
 	info->step_layout = launch_common_get_slurm_step_layout(job);
 	info->uid	= opt_local->uid;
 
@@ -1668,7 +1665,7 @@ static void _handle_intr(srun_job_t *job)
 	if (!sropt.quit_on_intr && (_diff_tv_str(&last_intr, &now) > 1000000)) {
 		if (sropt.disable_status) {
 			info("sending Ctrl-C to job %u.%u",
-			     job->jobid, job->stepid);
+			     job->step_id.job_id, job->step_id.step_id);
 			launch_g_fwd_signal(SIGINT);
 		} else if (job->state < SRUN_JOB_FORCETERM) {
 			info("interrupt (one more within 1 sec to abort)");
@@ -1689,7 +1686,7 @@ static void _handle_intr(srun_job_t *job)
 			}
 
 			info("sending Ctrl-C to job %u.%u",
-			     job->jobid, job->stepid);
+			     job->step_id.job_id, job->step_id.step_id);
 			last_intr_sent = now;
 			launch_g_fwd_signal(SIGINT);
 		} else
@@ -2117,16 +2114,16 @@ static int _shepherd_spawn(srun_job_t *job, List srun_job_list, bool got_alloc)
 		ListIterator job_iter;
 		job_iter  = list_iterator_create(srun_job_list);
 		while ((job = list_next(job_iter))) {
-			(void) slurm_kill_job_step(job->jobid, job->stepid,
+			(void) slurm_kill_job_step(job->step_id.job_id, job->step_id.step_id,
 						   SIGKILL);
 			if (got_alloc)
-				slurm_complete_job(job->jobid, NO_VAL);
+				slurm_complete_job(job->step_id.job_id, NO_VAL);
 		}
 		list_iterator_destroy(job_iter);
 	} else {
-		(void) slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
+		(void) slurm_kill_job_step(job->step_id.job_id, job->step_id.step_id, SIGKILL);
 		if (got_alloc)
-			slurm_complete_job(job->jobid, NO_VAL);
+			slurm_complete_job(job->step_id.job_id, NO_VAL);
 	}
 
 	exit(0);

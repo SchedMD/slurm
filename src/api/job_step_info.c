@@ -180,16 +180,16 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 			   job_step_ptr->array_job_id,
 			   job_step_ptr->array_task_id);
 	else
-		xstrfmtcat(out, "%u.", job_step_ptr->job_id);
+		xstrfmtcat(out, "%u.", job_step_ptr->step_id.job_id);
 
-	if (job_step_ptr->step_id == SLURM_PENDING_STEP)
+	if (job_step_ptr->step_id.step_id == SLURM_PENDING_STEP)
 		xstrcat(out, "TBD ");
-	else if (job_step_ptr->step_id == SLURM_BATCH_SCRIPT)
+	else if (job_step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
 		xstrcat(out, "batch ");
-	else if (job_step_ptr->step_id == SLURM_EXTERN_CONT)
+	else if (job_step_ptr->step_id.step_id == SLURM_EXTERN_CONT)
 		xstrcat(out, "extern ");
 	else
-		xstrfmtcat(out, "%u ", job_step_ptr->step_id);
+		xstrfmtcat(out, "%u ", job_step_ptr->step_id.step_id);
 
 	xstrfmtcat(out, "UserId=%u StartTime=%s TimeLimit=%s",
 		   job_step_ptr->user_id, time_str, limit_str);
@@ -588,8 +588,8 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 	slurm_msg_t_init(&req_msg);
 
 	memset(&req, 0, sizeof(req));
-	resp_out->job_id = req.job_id = job_id;
-	resp_out->step_id = req.step_id = step_id;
+	resp_out->step_id.job_id = req.job_id = job_id;
+	resp_out->step_id.step_id = req.step_id = step_id;
 
 	req_msg.protocol_version = use_protocol_ver;
 	req_msg.msg_type = REQUEST_JOB_STEP_STAT;
@@ -703,8 +703,8 @@ extern int slurm_job_step_get_pids(uint32_t job_id, uint32_t step_id,
 	slurm_msg_t_init(&req_msg);
 
 	memset(&req, 0, sizeof(req));
-	resp_out->job_id = req.job_id = job_id;
-	resp_out->step_id = req.step_id = step_id;
+	resp_out->step_id.job_id = req.job_id = job_id;
+	resp_out->step_id.step_id = req.step_id = step_id;
 
 	req_msg.msg_type = REQUEST_JOB_STEP_PIDS;
 	req_msg.data = &req;

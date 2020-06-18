@@ -772,16 +772,14 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	msg->job_count = list_count(steps);
-	msg->job_id    = xmalloc(msg->job_count * sizeof(*msg->job_id));
-	/* Note: Running batch jobs will have step_id == NO_VAL */
-	msg->step_id   = xmalloc(msg->job_count * sizeof(*msg->step_id));
+	msg->step_id = xmalloc(msg->job_count * sizeof(*msg->step_id));
 
 	i = list_iterator_create(steps);
 	n = 0;
 	while ((stepd = list_next(i))) {
 		int fd;
 		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   stepd->jobid, stepd->stepid,
+				   &stepd->step_id,
 				   &stepd->protocol_version);
 		if (fd == -1) {
 			--(msg->job_count);
@@ -791,22 +789,22 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		if (stepd_state(fd, stepd->protocol_version)
 		    == SLURMSTEPD_NOT_RUNNING) {
 			debug("stale domain socket for stepd %u.%u ",
-			      stepd->jobid, stepd->stepid);
+			      stepd->step_id.job_id, stepd->step_id.step_id);
 			--(msg->job_count);
 			close(fd);
 			continue;
 		}
 
 		close(fd);
-		if (stepd->stepid == SLURM_BATCH_SCRIPT) {
+		if (stepd->step_id.step_id == SLURM_BATCH_SCRIPT) {
 			debug("%s: found apparently running job %u",
-			      __func__, stepd->jobid);
+			      __func__, stepd->step_id.job_id);
 		} else {
 			debug("%s: found apparently running step %u.%u",
-			      __func__, stepd->jobid, stepd->stepid);
+			      __func__, stepd->step_id.job_id, stepd->step_id.step_id);
 		}
-		msg->job_id[n]  = stepd->jobid;
-		msg->step_id[n] = stepd->stepid;
+		memcpy(&msg->step_id[n], &stepd->step_id,
+		       sizeof(msg->step_id[n]));
 		n++;
 	}
 	list_iterator_destroy(i);
@@ -2154,7 +2152,7 @@ static void _update_logging(void)
 	while ((stepd = list_next(i))) {
 		int fd;
 		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   stepd->jobid, stepd->stepid,
+				   &stepd->step_id,
 				   &stepd->protocol_version);
 		if (fd == -1)
 			continue;
@@ -2162,7 +2160,7 @@ static void _update_logging(void)
 		if (stepd_reconfig(fd, stepd->protocol_version)
 		    != SLURM_SUCCESS)
 			debug("Reconfig jobid=%u.%u failed: %m",
-			      stepd->jobid, stepd->stepid);
+			      stepd->step_id.job_id, stepd->step_id.step_id);
 		close(fd);
 	}
 	list_iterator_destroy(i);

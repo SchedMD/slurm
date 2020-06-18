@@ -899,9 +899,10 @@ static int _sort_step_by_id(void *void1, void *void2)
 
 	_get_step_info_from_void(&step1, &step2, void1, void2);
 
-	diff = _diff_uint32(step1->job_id, step2->job_id);
+	diff = _diff_uint32(step1->step_id.job_id, step2->step_id.job_id);
 	if (diff == 0)
-		diff = _diff_uint32(step1->step_id, step2->step_id);
+		diff = _diff_uint32(step1->step_id.step_id,
+				    step2->step_id.step_id);
 
 	if (reverse_order)
 		diff = -diff;

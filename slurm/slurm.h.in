@@ -1815,13 +1815,12 @@ typedef struct slurm_step_io_fds {
 		{2, (uint32_t)-1, (uint32_t)-1}}
 
 typedef struct launch_tasks_response_msg {
-	uint32_t job_id;
-	uint32_t step_id;
 	uint32_t return_code;
 	char    *node_name;
 	uint32_t srun_node_id;
 	uint32_t count_of_pids;
 	uint32_t *local_pids;
+	slurm_step_id_t step_id;
 	uint32_t *task_ids; /* array of length count_of_pids */
 } launch_tasks_response_msg_t;
 
@@ -1829,8 +1828,7 @@ typedef struct task_ext_msg {
 	uint32_t num_tasks;
 	uint32_t *task_id_list;
 	uint32_t return_code;
-	uint32_t job_id;
-	uint32_t step_id;
+	slurm_step_id_t step_id;
 } task_exit_msg_t;
 
 typedef struct {
@@ -1845,14 +1843,10 @@ typedef struct srun_ping_msg {
 	uint32_t step_id;	/* step_id or NO_VAL */
 } srun_ping_msg_t;
 
-typedef struct srun_job_complete_msg {
-	uint32_t job_id;        /* slurm job_id */
-	uint32_t step_id;       /* step_id or NO_VAL */
-} srun_job_complete_msg_t;
+typedef slurm_step_id_t srun_job_complete_msg_t;
 
 typedef struct srun_timeout_msg {
-	uint32_t job_id;	/* slurm job_id */
-	uint32_t step_id;	/* step_id or NO_VAL */
+	slurm_step_id_t step_id;
 	time_t   timeout;	/* when job scheduled to be killed */
 } srun_timeout_msg_t;
 
@@ -1862,15 +1856,13 @@ typedef struct srun_user_msg {
 } srun_user_msg_t;
 
 typedef struct srun_node_fail_msg {
-	uint32_t job_id;	/* slurm job_id */
 	char *nodelist;		/* name of failed node(s) */
-	uint32_t step_id;	/* step_id or NO_VAL */
+	slurm_step_id_t step_id;
 } srun_node_fail_msg_t;
 
 typedef struct srun_step_missing_msg {
-	uint32_t job_id;	/* slurm job_id */
 	char *nodelist;		/* name of node(s) lacking this step */
-	uint32_t step_id;	/* step_id or NO_VAL */
+	slurm_step_id_t step_id;
 } srun_step_missing_msg_t;
 
 enum suspend_opts {
@@ -1902,7 +1894,6 @@ typedef struct {
 	char *features;		/* required node features, default NONE */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
-	uint32_t job_id;	/* job ID */
 	uint64_t pn_min_memory; /* minimum real memory per node OR
 				 * real memory per CPU | MEM_PER_CPU,
 				 * default=0 (use job limit) */
@@ -1925,7 +1916,7 @@ typedef struct {
 	uint16_t relative;	/* first node to use of job's allocation */
 	uint16_t resv_port_cnt;	/* reserve ports if set */
 	char *step_het_grps;	/* what het groups are used by step */
-	uint32_t step_id;	/* desired step ID or NO_VAL */
+	slurm_step_id_t step_id;
 	uint32_t task_count;	/* number of tasks required */
 	uint32_t task_dist;	/* see enum task_dist_state, default
 				 * is SLURM_DIST_CYCLIC */
@@ -2045,7 +2036,6 @@ typedef struct {
 	uint32_t cpu_freq_max;	/* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;	/* cpu frequency governor */
 	char *cpus_per_tres;	/* comma delimited list of TRES=# values */
-	uint32_t job_id;	/* job ID */
 	char *mem_per_tres;	/* comma delimited list of TRES=# values */
 	char *name;		/* name of job step */
 	char *network;		/* network specs for job step */
@@ -2069,7 +2059,7 @@ typedef struct {
 				      *	either srun or the lowest slurmd version
 				      *	it is talking to */
 	uint32_t state;		/* state of the step, see enum job_states */
-	uint32_t step_id;	/* step ID */
+	slurm_step_id_t step_id;
 	uint32_t task_dist;	/* see enum task_dist_state */
 	uint32_t time_limit;	/* step time limit */
 	char *tres_alloc_str;   /* tres used in the job */
@@ -2095,9 +2085,8 @@ typedef struct {
 } job_step_pids_t;
 
 typedef struct {
-	uint32_t job_id;
 	List pid_list; /* List of job_step_pids_t *'s */
-	uint32_t step_id;
+	slurm_step_id_t step_id;
 } job_step_pids_response_msg_t;
 
 typedef struct {
@@ -2108,9 +2097,8 @@ typedef struct {
 } job_step_stat_t;
 
 typedef struct {
-	uint32_t job_id;	/* job ID */
 	List stats_list;	/* List of job_step_stat_t *'s */
-	uint32_t step_id;
+	slurm_step_id_t step_id;
 } job_step_stat_response_msg_t;
 
 typedef struct node_info {
@@ -3405,12 +3393,11 @@ extern void slurm_free_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *
 \*****************************************************************************/
 
 typedef struct job_step_kill_msg {
-	uint32_t job_id;
 	char *sjob_id;
-	uint32_t job_step_id;
 	uint16_t signal;
 	uint16_t flags;
 	char *sibling;
+	slurm_step_id_t step_id;
 } job_step_kill_msg_t;
 
 /*

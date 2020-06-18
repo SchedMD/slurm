@@ -580,8 +580,9 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 	uint32_t tcount = 0;
 	int i;
 	uint16_t protocol_version;
-
-	fd = stepd_connect(NULL, node_name, jobid, stepid, &protocol_version);
+	slurm_step_id_t step_id = { .job_id = jobid,
+				    .step_id = stepid };
+	fd = stepd_connect(NULL, node_name, &step_id, &protocol_version);
 	if (fd == -1) {
 		exit_code = 1;
 		if (errno == ENOENT) {
@@ -650,9 +651,10 @@ _list_pids_all_steps(const char *node_name, uint32_t jobid)
 
 	itr = list_iterator_create(steps);
 	while ((stepd = list_next(itr))) {
-		if (jobid == stepd->jobid) {
-			_list_pids_one_step(stepd->nodename, stepd->jobid,
-					    stepd->stepid);
+		if (jobid == stepd->step_id.job_id) {
+			_list_pids_one_step(stepd->nodename,
+					    stepd->step_id.job_id,
+					    stepd->step_id.step_id);
 			count++;
 		}
 	}
@@ -683,8 +685,8 @@ _list_pids_all_jobs(const char *node_name)
 
 	itr = list_iterator_create(steps);
 	while((stepd = list_next(itr))) {
-		_list_pids_one_step(stepd->nodename, stepd->jobid,
-				    stepd->stepid);
+		_list_pids_one_step(stepd->nodename, stepd->step_id.job_id,
+				    stepd->step_id.step_id);
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(steps);
@@ -742,8 +744,7 @@ extern void scontrol_getent(const char *node_name)
 
 	itr = list_iterator_create(steps);
 	while ((stepd = list_next(itr))) {
-		fd = stepd_connect(NULL, node_name, stepd->jobid,
-				   stepd->stepid,
+		fd = stepd_connect(NULL, node_name, &stepd->step_id,
 				   &stepd->protocol_version);
 
 		if (fd < 0)
@@ -756,13 +757,13 @@ extern void scontrol_getent(const char *node_name)
 			continue;
 		}
 
-		if (stepd->stepid == SLURM_EXTERN_CONT)
-			printf("JobId=%u.Extern:\nUser:\n", stepd->jobid);
-		else if (stepd->stepid == SLURM_BATCH_SCRIPT)
-			printf("JobId=%u.Batch:\nUser:\n", stepd->jobid);
+		if (stepd->step_id.step_id == SLURM_EXTERN_CONT)
+			printf("JobId=%u.Extern:\nUser:\n", stepd->step_id.job_id);
+		else if (stepd->step_id.step_id == SLURM_BATCH_SCRIPT)
+			printf("JobId=%u.Batch:\nUser:\n", stepd->step_id.job_id);
 		else
 			printf("JobId=%u.%u:\nUser:\n",
-			       stepd->jobid, stepd->stepid);
+			       stepd->step_id.job_id, stepd->step_id.step_id);
 
 		printf("%s:%s:%u:%u:%s:%s:%s\nGroups:\n",
 		       pwd->pw_name, pwd->pw_passwd, pwd->pw_uid, pwd->pw_gid,

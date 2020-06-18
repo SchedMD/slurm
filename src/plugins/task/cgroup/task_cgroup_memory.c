@@ -654,7 +654,7 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 	int fstatus = SLURM_ERROR;
 	xcgroup_t memory_cg;
 	uint32_t jobid;
-	uint32_t stepid = job->stepid;
+	uint32_t stepid = job->step_id.step_id;
 	uid_t uid = job->uid;
 	gid_t gid = job->gid;
 	char *slurm_cgpath;
@@ -681,7 +681,7 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
+		jobid = job->step_id.job_id;
 	if (*job_cgroup_path == '\0') {
 		if (snprintf(job_cgroup_path,PATH_MAX,"%s/job_%u",
 			      user_cgroup_path, jobid) >= PATH_MAX) {
@@ -848,14 +848,14 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
-	if (job->stepid == SLURM_BATCH_SCRIPT)
+		jobid = job->step_id.job_id;
+	if (job->step_id.step_id == SLURM_BATCH_SCRIPT)
 		snprintf(step_str, sizeof(step_str), "%u.batch", jobid);
-	else if (job->stepid == SLURM_EXTERN_CONT)
+	else if (job->step_id.step_id == SLURM_EXTERN_CONT)
 		snprintf(step_str, sizeof(step_str), "%u.extern", jobid);
 	else
 		snprintf(step_str, sizeof(step_str), "%u.%u",
-			 jobid, job->stepid);
+			 jobid, job->step_id.step_id);
 
 	if (failcnt_non_zero(&step_memory_cg, "memory.memsw.failcnt")) {
 		/*

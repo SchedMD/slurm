@@ -96,11 +96,10 @@ typedef enum {
 } stepd_getgr_mode_t;
 
 typedef struct {
-	uint32_t jobid;
 	uint64_t job_mem_limit;		/* job's memory limit, MB */
 	uint32_t nodeid;
 	uint16_t protocol_version;
-	uint32_t stepid;
+	slurm_step_id_t step_id;
 	uint64_t step_mem_limit;	/* step's memory limit, MB */
 	uid_t uid;
 } slurmstepd_info_t;
@@ -121,10 +120,9 @@ typedef struct {
 
 typedef struct step_location {
 	char *directory;
-	uint32_t jobid;
 	char *nodename;
 	uint16_t protocol_version;
-	uint32_t stepid;
+	slurm_step_id_t step_id;
 } step_loc_t;
 
 
@@ -148,7 +146,8 @@ int stepd_terminate(int fd, uint16_t protocol_version);
  * of the running stepd.
  */
 extern int stepd_connect(const char *directory, const char *nodename,
-		  uint32_t jobid, uint32_t stepid, uint16_t *protocol_version);
+			 slurm_step_id_t *step_id,
+			 uint16_t *protocol_version);
 
 /*
  * Retrieve a job step's current state.

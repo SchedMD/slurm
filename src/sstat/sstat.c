@@ -328,7 +328,7 @@ int main(int argc, char **argv)
 
 			for (i = 0; i < step_ptr->job_step_count; i++) {
 				_do_stat(selected_step->jobid,
-					 step_ptr->job_steps[i].step_id,
+					 step_ptr->job_steps[i].step_id.step_id,
 					 step_ptr->job_steps[i].nodes,
 					 step_ptr->job_steps[i].cpu_freq_min,
 					 step_ptr->job_steps[i].cpu_freq_max,
@@ -360,12 +360,12 @@ int main(int argc, char **argv)
 			 * just skip it.  They should ask for it
 			 * directly.
 			 */
-			if ((step_ptr->job_steps[0].step_id ==
+			if ((step_ptr->job_steps[0].step_id.step_id ==
 			    SLURM_EXTERN_CONT) && step_ptr->job_step_count > 1)
 				step_info = ++step_ptr->job_steps;
 			else
 				step_info = step_ptr->job_steps;
-			stepid = step_info->step_id;
+			stepid = step_info->step_id.step_id;
 			nodelist = step_info->nodes;
 			req_cpufreq_min = step_info->cpu_freq_min;
 			req_cpufreq_max = step_info->cpu_freq_max;

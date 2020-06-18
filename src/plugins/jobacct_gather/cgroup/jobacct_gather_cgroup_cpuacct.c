@@ -191,12 +191,12 @@ jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 	job = jobacct_id->job;
 	uid = job->uid;
 	gid = job->gid;
-	stepid = job->stepid;
+	stepid = job->step_id.step_id;
 	taskid = jobacct_id->taskid;
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
+		jobid = job->step_id.job_id;
 
 	if (taskid >= max_task_id)
 		max_task_id = taskid;

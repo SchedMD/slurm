@@ -91,8 +91,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 typedef struct {
 	time_t   ctime;		/* Time that the cred was created	*/
 	time_t   expiration;    /* Time at which cred is no longer good	*/
-	uint32_t jobid;		/* Slurm job id for this credential	*/
-	uint32_t stepid;	/* Slurm step id for this credential	*/
+	slurm_step_id_t step_id; /* Slurm step id for this credential	*/
 } cred_state_t;
 
 /*
@@ -163,8 +162,7 @@ struct slurm_cred_context {
 struct slurm_job_credential {
 	int      magic;
 	pthread_mutex_t mutex;
-	uint32_t  jobid;	/* Job ID associated with this cred	*/
-	uint32_t  stepid;	/* Job step ID for this credential	*/
+	slurm_step_id_t step_id;/* Job step ID for this credential	*/
 	uid_t     uid;		/* user for which this cred is valid	*/
 	gid_t     gid;		/* user's primary group id 		*/
 	char *pw_name;		/* username				*/
@@ -551,8 +549,7 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	slurm_mutex_lock(&cred->mutex);
 	xassert(cred->magic == CRED_MAGIC);
 
-	cred->jobid  = arg->jobid;
-	cred->stepid = arg->stepid;
+	memcpy(&cred->step_id, &arg->step_id, sizeof(cred->step_id));
 	cred->uid    = arg->uid;
 	cred->gid    = arg->gid;
 	cred->ngids = arg->ngids;
@@ -660,8 +657,7 @@ slurm_cred_copy(slurm_cred_t *cred)
 	slurm_mutex_lock(&rcred->mutex);
 	xassert(rcred->magic == CRED_MAGIC);
 
-	rcred->jobid  = cred->jobid;
-	rcred->stepid = cred->stepid;
+	memcpy(&rcred->step_id, &cred->step_id, sizeof(rcred->step_id));
 	rcred->uid    = cred->uid;
 	rcred->gid    = cred->gid;
 	rcred->pw_name = xstrdup(cred->pw_name);
@@ -718,8 +714,7 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred = _slurm_cred_alloc();
 	slurm_mutex_lock(&cred->mutex);
 
-	cred->jobid    = arg->jobid;
-	cred->stepid   = arg->stepid;
+	memcpy(&cred->step_id, &arg->step_id, sizeof(cred->step_id));
 	cred->uid      = arg->uid;
 	cred->gid      = arg->gid;
 	cred->pw_name = xstrdup(arg->pw_name);
@@ -809,8 +804,7 @@ static void _copy_cred_to_arg(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	xassert(cred);
 	xassert(arg);
 
-	arg->jobid    = cred->jobid;
-	arg->stepid   = cred->stepid;
+	memcpy(&arg->step_id, &cred->step_id, sizeof(arg->step_id));
 	arg->uid      = cred->uid;
 	arg->gid      = cred->gid;
 	arg->pw_name = xstrdup(cred->pw_name);
@@ -1185,7 +1179,7 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
 #endif
 	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
 		error("Invalid host_index %d for job %u",
-		      host_index, cred->jobid);
+		      host_index, cred->step_id.job_id);
 		error("Host %s not in hostlist %s",
 		      node_name, cred->job_hostlist);
 		hostset_destroy(hset);
@@ -1289,7 +1283,7 @@ extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
 	hostset_destroy(hset);
 	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
 		error("Invalid host_index %d for job %u",
-		      host_index, cred->jobid);
+		      host_index, cred->step_id.job_id);
 		error("Host %s not in credential hostlist %s",
 		      node_name, cred->job_hostlist);
 		return;
@@ -1333,8 +1327,9 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 	cred = _slurm_cred_alloc();
 	slurm_mutex_lock(&cred->mutex);
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		safe_unpack32(&cred->jobid, buffer);
-		safe_unpack32(&cred->stepid, buffer);
+		if (unpack_step_id_members(&cred->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpack32(&cred_uid, buffer);
 		cred->uid = cred_uid;
 		safe_unpack32(&cred_gid, buffer);
@@ -1352,12 +1347,12 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 		if (gres_plugin_job_state_unpack(&cred->job_gres_list, buffer,
-						 cred->jobid, protocol_version)
+						 cred->step_id.job_id, protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		if (gres_plugin_step_state_unpack(&cred->step_gres_list,
-						  buffer, cred->jobid,
-						  cred->stepid,
+						  buffer, cred->step_id.job_id,
+						  cred->step_id.step_id,
 						  protocol_version)
 		    != SLURM_SUCCESS) {
 			goto unpack_error;
@@ -1396,8 +1391,9 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		cred->siglen = len;
 		xassert(len > 0);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&cred->jobid, buffer);
-		safe_unpack32(&cred->stepid, buffer);
+		if (unpack_step_id_members(&cred->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpack32(&cred_uid, buffer);
 		cred->uid = cred_uid;
 		safe_unpack32(&cred_gid, buffer);
@@ -1415,12 +1411,12 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 		if (gres_plugin_job_state_unpack(&cred->job_gres_list, buffer,
-						 cred->jobid, protocol_version)
+						 cred->step_id.job_id, protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		if (gres_plugin_step_state_unpack(&cred->step_gres_list,
-						  buffer, cred->jobid,
-						  cred->stepid,
+						  buffer, cred->step_id.job_id,
+						  cred->step_id.step_id,
 						  protocol_version)
 		    != SLURM_SUCCESS) {
 			goto unpack_error;
@@ -1530,8 +1526,8 @@ slurm_cred_print(slurm_cred_t *cred)
 		spec_type  = "Cores";
 		spec_count = cred->job_core_spec;
 	}
-	info("Cred: Jobid             %u",  cred->jobid         );
-	info("Cred: Stepid            %u",  cred->stepid        );
+	info("Cred: Jobid             %u",  cred->step_id.job_id);
+	info("Cred: Stepid            %u",  cred->step_id.step_id);
 	info("Cred: UID               %u",  (uint32_t) cred->uid);
 	info("Cred: Job_constraints   %s",  cred->job_constraints );
 	info("Cred: Job_core_spec     %d %s", spec_count, spec_type );
@@ -1749,8 +1745,7 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 	uint32_t gr_names_cnt = (cred->gr_names) ? cred->ngids : 0;
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		pack32(cred->jobid, buffer);
-		pack32(cred->stepid, buffer);
+		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack32(cred_uid, buffer);
 		pack32(cred->gid, buffer);
 		packstr(cred->pw_name, buffer);
@@ -1761,10 +1756,10 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 		packstr_array(cred->gr_names, gr_names_cnt, buffer);
 
 		(void) gres_plugin_job_state_pack(cred->job_gres_list, buffer,
-						  cred->jobid, false,
+						  cred->step_id.job_id, false,
 						  protocol_version);
 		gres_plugin_step_state_pack(cred->step_gres_list, buffer,
-					    cred->jobid, cred->stepid,
+					    cred->step_id.job_id, cred->step_id.step_id,
 					    protocol_version);
 		pack16(cred->job_core_spec, buffer);
 		pack64(cred->job_mem_limit, buffer);
@@ -1794,8 +1789,7 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 		pack32(cred->job_nhosts, buffer);
 		packstr(cred->job_hostlist, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(cred->jobid, buffer);
-		pack32(cred->stepid, buffer);
+		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack32(cred_uid, buffer);
 		pack32(cred->gid, buffer);
 		packstr(cred->pw_name, buffer);
@@ -1806,10 +1800,10 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 		packstr_array(cred->gr_names, gr_names_cnt, buffer);
 
 		(void) gres_plugin_job_state_pack(cred->job_gres_list, buffer,
-						  cred->jobid, false,
+						  cred->step_id.job_id, false,
 						  protocol_version);
 		gres_plugin_step_state_pack(cred->step_gres_list, buffer,
-					    cred->jobid, cred->stepid,
+					    cred->step_id.job_id, cred->step_id.step_id,
 					    protocol_version);
 		pack16(cred->job_core_spec, buffer);
 		pack64(cred->job_mem_limit, buffer);
@@ -1845,8 +1839,8 @@ static int _list_find_cred_state(void *x, void *key)
 {
 	cred_state_t *s = (cred_state_t *) x;
 	slurm_cred_t *cred = (slurm_cred_t *) key;
-	if ((s->jobid  == cred->jobid)  &&
-	    (s->stepid == cred->stepid) &&
+	if ((s->step_id.job_id == cred->step_id.job_id)  &&
+	    (s->step_id.step_id == cred->step_id.step_id) &&
 	    (s->ctime  == cred->ctime))
 		return 1;
 	return 0;
@@ -1878,7 +1872,7 @@ _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 extern void
 slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 {
-	job_state_t  *j = _find_job_state(ctx, cred->jobid);
+	job_state_t  *j = _find_job_state(ctx, cred->step_id.job_id);
 
 	if (j != NULL && j->revoked && (cred->ctime > j->revoked)) {
 		/* The credential has been reissued.  Purge the
@@ -1897,7 +1891,7 @@ slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 extern bool
 slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 {
-	job_state_t  *j = _find_job_state(ctx, cred->jobid);
+	job_state_t  *j = _find_job_state(ctx, cred->step_id.job_id);
 
 	if ((j == NULL) || (j->revoked == (time_t)0))
 		return false;
@@ -1915,8 +1909,8 @@ _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 
 	_clear_expired_job_states(ctx);
 
-	if (!(j = _find_job_state(ctx, cred->jobid))) {
-		(void) _insert_job_state(ctx, cred->jobid);
+	if (!(j = _find_job_state(ctx, cred->step_id.job_id))) {
+		(void) _insert_job_state(ctx, cred->step_id.job_id);
 		return false;
 	}
 
@@ -2043,8 +2037,7 @@ _cred_state_create(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 {
 	cred_state_t *s = xmalloc(sizeof(*s));
 
-	s->jobid      = cred->jobid;
-	s->stepid     = cred->stepid;
+	memcpy(&s->step_id, &cred->step_id, sizeof(s->step_id));
 	s->ctime      = cred->ctime;
 	s->expiration = cred->ctime + ctx->expiry_window;
 
@@ -2054,8 +2047,7 @@ _cred_state_create(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 static void
 _cred_state_pack_one(cred_state_t *s, Buf buffer)
 {
-	pack32(s->jobid, buffer);
-	pack32(s->stepid, buffer);
+	pack_step_id(&s->step_id, buffer, SLURM_PROTOCOL_VERSION);
 	pack_time(s->ctime, buffer);
 	pack_time(s->expiration, buffer);
 }
@@ -2066,8 +2058,9 @@ _cred_state_unpack_one(Buf buffer)
 {
 	cred_state_t *s = xmalloc(sizeof(*s));
 
-	safe_unpack32(&s->jobid, buffer);
-	safe_unpack32(&s->stepid, buffer);
+	if (unpack_step_id_members(&s->step_id, buffer,
+				   SLURM_PROTOCOL_VERSION) != SLURM_SUCCESS)
+		goto unpack_error;
 	safe_unpack_time(&s->ctime, buffer);
 	safe_unpack_time(&s->expiration, buffer);
 	return s;

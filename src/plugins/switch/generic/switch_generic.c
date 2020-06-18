@@ -656,8 +656,8 @@ int switch_p_job_postfini(stepd_step_rec_t *job)
 			(unsigned long) pgid);
 		kill(-pgid, SIGKILL);
 	} else
-		debug("Job %u.%u: Bad pid valud %lu", job->jobid,
-		      job->stepid, (unsigned long) pgid);
+		debug("Job %u.%u: Bad pid valud %lu", job->step_id.job_id,
+		      job->step_id.step_id, (unsigned long) pgid);
 
 	return SLURM_SUCCESS;
 }

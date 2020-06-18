@@ -190,8 +190,8 @@ extern void srun_allocate_abort(job_record_t *job_ptr)
 		slurm_set_addr(addr, job_ptr->alloc_resp_port,
 			       job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
-		msg_arg->job_id   = job_ptr->job_id;
-		msg_arg->step_id  = NO_VAL;
+		msg_arg->job_id = job_ptr->job_id;
+		msg_arg->step_id = NO_VAL;
 		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   SRUN_JOB_COMPLETE,
 				   msg_arg,
@@ -243,8 +243,8 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
-		msg_arg->job_id   = job_ptr->job_id;
-		msg_arg->step_id  = step_ptr->step_id;
+		msg_arg->step_id.job_id = job_ptr->job_id;
+		msg_arg->step_id.step_id  = step_ptr->step_id;
 		msg_arg->nodelist = xstrdup(node_name);
 		_srun_agent_launch(addr, step_ptr->host, SRUN_NODE_FAIL,
 				   msg_arg, step_ptr->start_protocol_ver);
@@ -255,8 +255,8 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
-		msg_arg->job_id   = job_ptr->job_id;
-		msg_arg->step_id  = NO_VAL;
+		msg_arg->step_id.job_id = job_ptr->job_id;
+		msg_arg->step_id.step_id  = NO_VAL;
 		msg_arg->nodelist = xstrdup(node_name);
 		_srun_agent_launch(addr, job_ptr->alloc_node, SRUN_NODE_FAIL,
 				   msg_arg, job_ptr->start_protocol_ver);
@@ -320,8 +320,8 @@ extern void srun_step_timeout(step_record_t *step_ptr, time_t timeout_val)
 	addr = xmalloc(sizeof(struct sockaddr_in));
 	slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 	msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
-	msg_arg->job_id   = step_ptr->job_ptr->job_id;
-	msg_arg->step_id  = step_ptr->step_id;
+	msg_arg->step_id.job_id   = step_ptr->job_ptr->job_id;
+	msg_arg->step_id.step_id  = step_ptr->step_id;
 	msg_arg->timeout  = timeout_val;
 	_srun_agent_launch(addr, step_ptr->host, SRUN_TIMEOUT, msg_arg,
 			   step_ptr->start_protocol_ver);
@@ -346,8 +346,8 @@ extern void srun_timeout(job_record_t *job_ptr)
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
-		msg_arg->job_id   = job_ptr->job_id;
-		msg_arg->step_id  = NO_VAL;
+		msg_arg->step_id.job_id   = job_ptr->job_id;
+		msg_arg->step_id.step_id  = NO_VAL;
 		msg_arg->timeout  = job_ptr->end_time;
 		_srun_agent_launch(addr, job_ptr->alloc_node, SRUN_TIMEOUT,
 				   msg_arg, job_ptr->start_protocol_ver);
@@ -442,8 +442,8 @@ extern void srun_job_complete(job_record_t *job_ptr)
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_job_complete_msg_t));
-		msg_arg->job_id   = job_ptr->job_id;
-		msg_arg->step_id  = NO_VAL;
+		msg_arg->job_id = job_ptr->job_id;
+		msg_arg->step_id = NO_VAL;
 		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   SRUN_JOB_COMPLETE, msg_arg,
 				   job_ptr->start_protocol_ver);
@@ -500,8 +500,8 @@ extern void srun_step_complete(step_record_t *step_ptr)
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 		msg_arg = xmalloc(sizeof(srun_job_complete_msg_t));
-		msg_arg->job_id   = step_ptr->job_ptr->job_id;
-		msg_arg->step_id  = step_ptr->step_id;
+		msg_arg->job_id = step_ptr->job_ptr->job_id;
+		msg_arg->step_id = step_ptr->step_id;
 		_srun_agent_launch(addr, step_ptr->host, SRUN_JOB_COMPLETE,
 				   msg_arg, step_ptr->start_protocol_ver);
 	}
@@ -523,8 +523,8 @@ extern void srun_step_missing(step_record_t *step_ptr, char *node_list)
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 		msg_arg = xmalloc(sizeof(srun_step_missing_msg_t));
-		msg_arg->job_id   = step_ptr->job_ptr->job_id;
-		msg_arg->step_id  = step_ptr->step_id;
+		msg_arg->step_id.job_id = step_ptr->job_ptr->job_id;
+		msg_arg->step_id.step_id = step_ptr->step_id;
 		msg_arg->nodelist = xstrdup(node_list);
 		_srun_agent_launch(addr, step_ptr->host, SRUN_STEP_MISSING,
 				   msg_arg, step_ptr->start_protocol_ver);
@@ -547,8 +547,8 @@ extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal)
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 		msg_arg = xmalloc(sizeof(job_step_kill_msg_t));
-		msg_arg->job_id      = step_ptr->job_ptr->job_id;
-		msg_arg->job_step_id = step_ptr->step_id;
+		msg_arg->step_id.job_id = step_ptr->job_ptr->job_id;
+		msg_arg->step_id.step_id = step_ptr->step_id;
 		msg_arg->signal      = signal;
 		_srun_agent_launch(addr, step_ptr->host, SRUN_STEP_SIGNAL,
 				   msg_arg, step_ptr->start_protocol_ver);
@@ -575,7 +575,7 @@ extern void srun_exec(step_record_t *step_ptr, char **argv)
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 		msg_arg = xmalloc(sizeof(srun_exec_msg_t));
-		msg_arg->job_id  = step_ptr->job_ptr->job_id;
+		msg_arg->job_id = step_ptr->job_ptr->job_id;
 		msg_arg->step_id = step_ptr->step_id;
 		msg_arg->argc    = cnt;
 		msg_arg->argv    = xmalloc(sizeof(char *) * cnt);

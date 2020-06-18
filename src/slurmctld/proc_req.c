@@ -1144,8 +1144,8 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 
 	memset(&cred_arg, 0, sizeof(cred_arg));
 
-	cred_arg.jobid    = job_ptr->job_id;
-	cred_arg.stepid   = step_ptr->step_id;
+	cred_arg.step_id.job_id = job_ptr->job_id;
+	cred_arg.step_id.step_id = step_ptr->step_id;
 	cred_arg.uid      = job_ptr->user_id;
 	cred_arg.gid      = job_ptr->group_id;
 	cred_arg.x11             = job_ptr->details->x11;
@@ -2386,9 +2386,12 @@ static void _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	job_step_kill_msg_t *job_step_kill_msg =
 		(job_step_kill_msg_t *) msg->data;
+	char step_str[64];
 
-	log_flag(STEPS, "Processing RPC: REQUEST_CANCEL_JOB_STEP JobId=%u StepId=%u uid=%u",
-		 job_step_kill_msg->job_id, job_step_kill_msg->job_step_id,
+	log_flag(STEPS, "Processing RPC: REQUEST_CANCEL_JOB_STEP JobId=%u %s uid=%u",
+		 job_step_kill_msg->step_id.job_id,
+		 build_step_id(step_str, sizeof(step_str),
+			       job_step_kill_msg->step_id.step_id),
 		 uid);
 	_throttle_start(&active_rpc_cnt);
 
@@ -2822,11 +2825,11 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		if ((error_code == ESLURM_PROLOG_RUNNING) ||
 		    (error_code == ESLURM_DISABLED))
 			log_flag(STEPS, "%s for suspended JobId=%u: %s",
-				 __func__, req_step_msg->job_id,
+				 __func__, req_step_msg->step_id.job_id,
 				 slurm_strerror(error_code));
 		else
 			log_flag(STEPS, "%s for JobId=%u: %s",
-				 __func__, req_step_msg->job_id,
+				 __func__, req_step_msg->step_id.job_id,
 				 slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
@@ -3807,12 +3810,15 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	bool dump_job = false;
+	char step_str[64];
 
 	/* init */
 	START_TIMER;
-	log_flag(STEPS, "Processing RPC: REQUEST_STEP_COMPLETE for JobId=%u StepId=%u nodes %u-%u rc=%u uid=%u",
-		 req->job_id, req->job_step_id, req->range_first,
-		 req->range_last, req->step_rc, uid);
+	log_flag(STEPS, "Processing RPC: REQUEST_STEP_COMPLETE for JobId=%u %s nodes %u-%u rc=%u uid=%u",
+		 req->step_id.job_id,
+		 build_step_id(step_str, sizeof(step_str),
+			       req->step_id.step_id),
+		 req->range_first, req->range_last, req->step_rc, uid);
 
 	if (!running_composite) {
 		_throttle_start(&active_rpc_cnt);
@@ -3841,13 +3847,18 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 
 	/* return result */
 	if (error_code) {
-		log_flag(STEPS, "%s 1 JobId=%u StepId=%u %s",
-			 __func__, req->job_id, req->job_step_id,
+		log_flag(STEPS, "%s 1 JobId=%u %s %s",
+			 __func__, req->step_id.job_id,
+			 build_step_id(step_str, sizeof(step_str),
+				       req->step_id.step_id),
 			 slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		log_flag(STEPS, "%s JobId=%u StepId=%u %s",
-			 __func__, req->job_id, req->job_step_id, TIME_STR);
+		log_flag(STEPS, "%s JobId=%u %s %s",
+			 __func__, req->step_id.job_id,
+			 build_step_id(step_str, sizeof(step_str),
+				       req->step_id.step_id),
+			 TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		dump_job = true;
 	}

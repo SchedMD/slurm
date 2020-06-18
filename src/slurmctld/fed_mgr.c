@@ -1140,9 +1140,9 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 
 	/* Build and pack a kill_req msg to put in a sib_msg */
 	memset(&kill_req, 0, sizeof(job_step_kill_msg_t));
-	kill_req.job_id      = job_id;
+	kill_req.step_id.job_id      = job_id;
 	kill_req.sjob_id     = NULL;
-	kill_req.job_step_id = SLURM_BATCH_SCRIPT;
+	kill_req.step_id.step_id = SLURM_BATCH_SCRIPT;
 	kill_req.signal      = signal;
 	kill_req.flags       = flags;
 
@@ -1767,9 +1767,9 @@ static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
 
 		/* Build and pack a kill_req msg to put in a sib_msg */
 		kill_req = xmalloc(sizeof(job_step_kill_msg_t));
-		kill_req->job_id      = job_update_info->job_id;
+		kill_req->step_id.job_id = job_update_info->job_id;
 		kill_req->sjob_id     = NULL;
-		kill_req->job_step_id = SLURM_BATCH_SCRIPT;
+		kill_req->step_id.step_id = SLURM_BATCH_SCRIPT;
 		kill_req->signal      = SIGKILL;
 		kill_req->flags       = 0;
 
@@ -5893,7 +5893,7 @@ static int _q_sib_job_cancel(slurm_msg_t *msg, uint32_t uid)
 		req_uid = uid;
 
 	job_update_info->type     = FED_JOB_CANCEL;
-	job_update_info->job_id   = kill_msg->job_id;
+	job_update_info->job_id   = kill_msg->step_id.job_id;
 	job_update_info->kill_msg = kill_msg;
 	job_update_info->uid      = req_uid;
 

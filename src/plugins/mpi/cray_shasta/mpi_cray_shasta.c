@@ -124,7 +124,7 @@ static int _create_app_dir(const stepd_step_rec_t *job)
 	// Format the directory name
 	appdir = xstrdup_printf("%s/%s/%u.%u",
 				slurm_conf.slurmd_spooldir, MPI_CRAY_DIR,
-				job->jobid, job->stepid);
+				job->step_id.job_id, job->step_id.step_id);
 
 	// Create the directory
 	if ((mkdir(appdir, 0700) == -1) && (errno != EEXIST)) {
@@ -249,8 +249,8 @@ extern int p_mpi_hook_slurmstepd_task(
 	const mpi_plugin_task_info_t *job, char ***env)
 {
 	// Set environment variables
-	env_array_overwrite_fmt(env, PALS_APID_ENV, "%u.%u", job->jobid,
-				job->stepid);
+	env_array_overwrite_fmt(env, PALS_APID_ENV, "%u.%u",
+				job->jobid, job->stepid);
 	env_array_overwrite_fmt(env, PALS_RANKID_ENV, "%u", job->gtaskid);
 	env_array_overwrite_fmt(env, PALS_NODEID_ENV, "%u", job->nodeid);
 	env_array_overwrite_fmt(env, PALS_SPOOL_DIR_ENV, "%s", appdir);

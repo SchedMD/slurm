@@ -186,7 +186,7 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
+		jobid = job->step_id.job_id;
 	if (*job_cgroup_path == '\0') {
 		if (snprintf(job_cgroup_path, PATH_MAX, "%s/job_%u",
 			     user_cgroup_path, jobid) >= PATH_MAX) {
@@ -199,21 +199,21 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 	/* build job step cgroup relative path (should not be) */
 	if (*jobstep_cgroup_path == '\0') {
 		int cc;
-		if (job->stepid == SLURM_BATCH_SCRIPT) {
+		if (job->step_id.step_id == SLURM_BATCH_SCRIPT) {
 			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
 				      "%s/step_batch", job_cgroup_path);
-		} else if (job->stepid == SLURM_EXTERN_CONT) {
+		} else if (job->step_id.step_id == SLURM_EXTERN_CONT) {
 			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
 				      "%s/step_extern", job_cgroup_path);
 		} else {
 			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
 				      "%s/step_%u",
-				      job_cgroup_path, job->stepid);
+				      job_cgroup_path, job->step_id.step_id);
 		}
 		if (cc >= PATH_MAX) {
 			error("proctrack/cgroup unable to build job step %u.%u "
 			      "freezer cg relative path: %m",
-			      jobid, job->stepid);
+			      jobid, job->step_id.step_id);
 			goto bail;
 		}
 	}

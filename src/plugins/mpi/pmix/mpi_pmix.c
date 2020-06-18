@@ -169,7 +169,7 @@ extern int p_mpi_hook_slurmstepd_prefork(
 
 err_ext:
 	/* Abort the whole job if error! */
-	slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
+	slurm_kill_job_step(job->step_id.job_id, job->step_id.step_id, SIGKILL);
 	return ret;
 }
 

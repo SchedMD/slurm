@@ -152,7 +152,7 @@ main (int argc, char **argv)
 		goto ending;
 	}
 
-	if (job->stepid != SLURM_EXTERN_CONT)
+	if (job->step_id.step_id != SLURM_EXTERN_CONT)
 		close_slurmd_conn();
 
 	/* slurmstepd is the only daemon that should survive upgrade. If it
@@ -617,8 +617,10 @@ _init_from_slurmd(int sock, char **argv,
 		stepid = ((batch_job_launch_msg_t *)msg->data)->step_id;
 		break;
 	case LAUNCH_TASKS:
-		jobid = ((launch_tasks_request_msg_t *)msg->data)->job_id;
-		stepid = ((launch_tasks_request_msg_t *)msg->data)->job_step_id;
+		jobid = ((launch_tasks_request_msg_t *)msg->data)->
+			step_id.job_id;
+		stepid = ((launch_tasks_request_msg_t *)msg->data)->
+			step_id.step_id;
 		break;
 	default:
 		fatal("%s: Unrecognized launch RPC (%d)", __func__, step_type);
@@ -684,9 +686,11 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 
 	/* Establish GRES environment variables */
 	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
-		gres_plugin_job_state_log(job->job_gres_list, job->jobid);
-		gres_plugin_step_state_log(job->step_gres_list, job->jobid,
-					   job->stepid);
+		gres_plugin_job_state_log(job->job_gres_list,
+					  job->step_id.job_id);
+		gres_plugin_step_state_log(job->step_gres_list,
+					   job->step_id.job_id,
+					   job->step_id.step_id);
 	}
 	if (msg->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
 		gres_plugin_job_set_env(&job->env, job->job_gres_list, 0);

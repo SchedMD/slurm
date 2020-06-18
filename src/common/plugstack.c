@@ -2018,7 +2018,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		if (spank->stack->type == S_TYPE_LOCAL)
 			*p2uint32 = launcher_job->jobid;
 		else if (spank->stack->type == S_TYPE_REMOTE)
-			*p2uint32 = slurmd_job->jobid;
+			*p2uint32 = slurmd_job->step_id.job_id;
 		else if (spank->stack->type == S_TYPE_JOB_SCRIPT)
 			*p2uint32 = s_job_info->jobid;
 		break;
@@ -2027,7 +2027,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		if (spank->stack->type == S_TYPE_LOCAL)
 			*p2uint32 = launcher_job->stepid;
 		else if (slurmd_job)
-			*p2uint32 = slurmd_job->stepid;
+			*p2uint32 = slurmd_job->step_id.step_id;
 		else
 			*p2uint32 = 0;
 		break;

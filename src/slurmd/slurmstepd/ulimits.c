@@ -181,14 +181,14 @@ set_umask(stepd_step_rec_t *job)
 	char *val;
 
 	if (!(val = getenvp(job->env, "SLURM_UMASK"))) {
-		if (job->stepid != SLURM_EXTERN_CONT)
+		if (job->step_id.step_id != SLURM_EXTERN_CONT)
 			debug("Couldn't find SLURM_UMASK in environment");
 		return SLURM_ERROR;
 	}
 
 	mask = strtol(val, (char **)NULL, 8);
-	if ((job->stepid == SLURM_EXTERN_CONT) ||
-	    (job->stepid == SLURM_BATCH_SCRIPT))
+	if ((job->step_id.step_id == SLURM_EXTERN_CONT) ||
+	    (job->step_id.step_id == SLURM_BATCH_SCRIPT))
 		unsetenvp(job->env, "SLURM_UMASK");
 	umask(mask);
 	return SLURM_SUCCESS;

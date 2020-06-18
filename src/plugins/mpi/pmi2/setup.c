@@ -108,7 +108,7 @@ _setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
 
 	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
 		job_info.jobid  = job->het_job_id;
-		job_info.stepid = job->stepid;
+		job_info.stepid = job->step_id.step_id;
 		job_info.nnodes = job->het_job_nnodes;
 		job_info.nodeid = job->nodeid + job->het_job_node_offset;
 		job_info.ntasks = job->het_job_ntasks;
@@ -119,8 +119,8 @@ _setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
 					    job->het_job_task_offset;
 		}
 	} else {
-		job_info.jobid  = job->jobid;
-		job_info.stepid = job->stepid;
+		job_info.jobid  = job->step_id.job_id;
+		job_info.stepid = job->step_id.step_id;
 		job_info.nnodes = job->nnodes;
 		job_info.nodeid = job->nodeid;
 		job_info.ntasks = job->ntasks;

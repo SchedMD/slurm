@@ -2391,34 +2391,34 @@ int _print_step_id(job_step_info_t * step, int width, bool right, char* suffix)
 	if (step == NULL) {	/* Print the Header instead */
 		_print_str("STEPID", width, right, true);
 	} else if (step->array_job_id) {
-		if (step->step_id == SLURM_PENDING_STEP) {	/* Pending */
+		if (step->step_id.step_id == SLURM_PENDING_STEP) {	/* Pending */
 			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.TBD",
 				 step->array_job_id, step->array_task_id);
-		} else if (step->step_id == SLURM_EXTERN_CONT) {
+		} else if (step->step_id.step_id == SLURM_EXTERN_CONT) {
 			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.Extern",
 				 step->array_job_id, step->array_task_id);
-		} else if (step->step_id == SLURM_BATCH_SCRIPT) {
+		} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
 			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.Batch",
 				 step->array_job_id, step->array_task_id);
 		} else {
 			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.%u",
 				 step->array_job_id, step->array_task_id,
-				 step->step_id);
+				 step->step_id.step_id);
 		}
 		_print_str(id, width, right, true);
 	} else {
-		if (step->step_id == SLURM_PENDING_STEP) {	/* Pending */
+		if (step->step_id.step_id == SLURM_PENDING_STEP) {	/* Pending */
 			snprintf(id, FORMAT_STRING_SIZE, "%u.TBD",
-				 step->job_id);
-		} else if (step->step_id == SLURM_EXTERN_CONT) {
+				 step->step_id.job_id);
+		} else if (step->step_id.step_id == SLURM_EXTERN_CONT) {
 			snprintf(id, FORMAT_STRING_SIZE, "%u.Extern",
-				 step->job_id);
-		} else if (step->step_id == SLURM_BATCH_SCRIPT) {
+				 step->step_id.job_id);
+		} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
 			snprintf(id, FORMAT_STRING_SIZE, "%u.Batch",
-				 step->job_id);
+				 step->step_id.job_id);
 		} else {
 			snprintf(id, FORMAT_STRING_SIZE, "%u.%u",
-				 step->job_id, step->step_id);
+				 step->step_id.job_id, step->step_id.step_id);
 		}
 		_print_str(id, width, right, true);
 	}
@@ -2559,7 +2559,7 @@ int _print_step_array_job_id(job_step_info_t * step, int width, bool right,
 	else if (step->array_job_id != NO_VAL)
 		_print_int(step->array_job_id, width, right, true);
 	else
-		_print_int(step->job_id, width, right, true);
+		_print_int(step->step_id.job_id, width, right, true);
 
 	if (suffix)
 		printf("%s", suffix);
@@ -2587,7 +2587,7 @@ int _print_step_job_id(job_step_info_t * step, int width, bool right,
 	if (step == NULL)
 		_print_str("JOB_ID", width, right, true);
 	else
-		_print_int(step->job_id, width, right, true);
+		_print_int(step->step_id.job_id, width, right, true);
 
 	if (suffix)
 		printf("%s", suffix);
@@ -2818,15 +2818,19 @@ static int _filter_job(job_info_t * job)
 		iterator = list_iterator_create(params.job_list);
 		while ((job_step_id = list_next(iterator))) {
 			if (((job_step_id->array_id == NO_VAL)             &&
-			     ((job_step_id->job_id  == job->array_job_id)  ||
-			      (job_step_id->job_id  == job->job_id)))      ||
+			     ((job_step_id->step_id.job_id ==
+			       job->array_job_id) ||
+			      (job_step_id->step_id.job_id ==
+			       job->job_id))) ||
 			    ((job_step_id->array_id == job->array_task_id) &&
-			     (job_step_id->job_id   == job->array_job_id))) {
+			     (job_step_id->step_id.job_id ==
+			      job->array_job_id))) {
 				filter = 0;
 				break;
 			}
 			if ((job_step_id->array_id != NO_VAL)             &&
-			    (job_step_id->job_id   == job->array_job_id)  &&
+			    (job_step_id->step_id.job_id ==
+			     job->array_job_id) &&
 			    (job->array_bitmap &&
 			     bit_test((bitstr_t *)job->array_bitmap,
 				      job_step_id->array_id))) {
@@ -2834,7 +2838,7 @@ static int _filter_job(job_info_t * job)
 				partial_array = true;
 				break;
 			}
-			if (job_step_id->job_id == job->het_job_id) {
+			if (job_step_id->step_id.job_id == job->het_job_id) {
 				filter = 0;
 				break;
 			}
@@ -2984,7 +2988,8 @@ static int _filter_job(job_info_t * job)
 		new_array_bitmap = bit_alloc(array_len);
 		iterator = list_iterator_create(params.job_list);
 		while ((job_step_id = list_next(iterator))) {
-			if ((job_step_id->job_id == job->array_job_id) &&
+			if ((job_step_id->step_id.job_id ==
+			     job->array_job_id) &&
 			    (job_step_id->array_id < array_len)) {
 				bit_set(new_array_bitmap,job_step_id->array_id);
 			}
@@ -3057,10 +3062,13 @@ static int _filter_step(job_step_info_t * step)
 		iterator = list_iterator_create(params.job_list);
 		while ((job_step_id = list_next(iterator))) {
 			if (((job_step_id->array_id == NO_VAL)   &&
-			     ((job_step_id->job_id  == step->array_job_id)  ||
-			      (job_step_id->job_id  == step->job_id)))      ||
+			     ((job_step_id->step_id.job_id ==
+			       step->array_job_id) ||
+			      (job_step_id->step_id.job_id ==
+			       step->step_id.job_id))) ||
 			    ((job_step_id->array_id == step->array_task_id) &&
-			     (job_step_id->job_id   == step->array_job_id))) {
+			     (job_step_id->step_id.job_id ==
+			      step->array_job_id))) {
 				filter = 0;
 				break;
 			}
@@ -3088,13 +3096,17 @@ static int _filter_step(job_step_info_t * step)
 		filter = 1;
 		iterator = list_iterator_create(params.step_list);
 		while ((job_step_id = list_next(iterator))) {
-			if (job_step_id->step_id != step->step_id)
+			if (job_step_id->step_id.step_id !=
+			    step->step_id.step_id)
 				continue;
-			if (((job_step_id->array_id == NO_VAL)  &&
-			     ((job_step_id->job_id  == step->array_job_id) ||
-			      (job_step_id->job_id  == step->job_id)))      ||
+			if (((job_step_id->array_id == NO_VAL) &&
+			     ((job_step_id->step_id.job_id ==
+			       step->array_job_id) ||
+			      (job_step_id->step_id.job_id ==
+			       step->step_id.job_id))) ||
 			    ((job_step_id->array_id == step->array_task_id) &&
-			     (job_step_id->job_id   == step->array_job_id))) {
+			     (job_step_id->step_id.job_id ==
+			      step->array_job_id))) {
 				filter = 0;
 				break;
 			}

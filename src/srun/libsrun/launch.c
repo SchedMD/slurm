@@ -180,8 +180,10 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	}
 
 	slurm_step_ctx_params_t_init(&job->ctx_params);
-	job->ctx_params.job_id = job->jobid;
-	job->ctx_params.step_id = job->stepid;
+
+	memcpy(&job->ctx_params.step_id, &job->step_id,
+	       sizeof(job->ctx_params.step_id));
+
 	job->ctx_params.uid = opt_local->uid;
 
 	/* Validate minimum and maximum node counts */
@@ -359,7 +361,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	}
 
 	debug("requesting job %u, user %u, nodes %u including (%s)",
-	      job->ctx_params.job_id, job->ctx_params.uid,
+	      job->ctx_params.step_id.job_id, job->ctx_params.uid,
 	      job->ctx_params.min_nodes, job->ctx_params.node_list);
 	debug("cpus %u, tasks %u, name %s, relative %u",
 	      job->ctx_params.cpu_count, job->ctx_params.task_count,
@@ -368,7 +370,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	for (i = 0; (!(*destroy_job)); i++) {
 		if (srun_opt->no_alloc) {
 			job->step_ctx = slurm_step_ctx_create_no_alloc(
-				&job->ctx_params, job->stepid);
+				&job->ctx_params, job->step_id.step_id);
 		} else {
 			if (opt_local->immediate) {
 				step_wait = MAX(1, opt_local->immediate -
@@ -387,7 +389,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		if (job->step_ctx != NULL) {
 			if (i > 0) {
 				info("Step created for job %u",
-				     job->ctx_params.job_id);
+				     job->ctx_params.step_id.job_id);
 			}
 			break;
 		}
@@ -400,7 +402,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		    ((rc != ESLURM_PROLOG_RUNNING) &&
 		     !slurm_step_retry_errno(rc))) {
 			error("Unable to create step for job %u: %m",
-			      job->ctx_params.job_id);
+			      job->ctx_params.step_id.job_id);
 			return SLURM_ERROR;
 		}
 
@@ -408,10 +410,10 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 			if (rc == ESLURM_PROLOG_RUNNING) {
 				verbose("Resources allocated for job %u and "
 					"being configured, please wait",
-					job->ctx_params.job_id);
+					job->ctx_params.step_id.job_id);
 			} else {
 				info("Job %u step creation temporarily disabled, retrying (%s)",
-				     job->ctx_params.job_id,
+				     job->ctx_params.step_id.job_id,
 				     slurm_strerror(rc));
 			}
 			xsignal_unblock(sig_array);
@@ -420,11 +422,11 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		} else {
 			if (rc == ESLURM_PROLOG_RUNNING)
 				verbose("Job %u step creation still disabled, retrying (%s)",
-					job->ctx_params.job_id,
+					job->ctx_params.step_id.job_id,
 					slurm_strerror(rc));
 			else
 				info("Job %u step creation still disabled, retrying (%s)",
-				     job->ctx_params.job_id,
+				     job->ctx_params.step_id.job_id,
 				     slurm_strerror(rc));
 		}
 
@@ -437,12 +439,13 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		xsignal_block(sig_array);
 		if (*destroy_job) {
 			info("Cancelled pending step for job %u",
-			     job->ctx_params.job_id);
+			     job->ctx_params.step_id.job_id);
 			return SLURM_ERROR;
 		}
 	}
 
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_STEPID, &job->stepid);
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_STEPID,
+			   &job->step_id.step_id);
 	/*
 	 *  Number of hosts in job may not have been initialized yet if
 	 *    --jobid was used or only SLURM_JOB_ID was set in user env.

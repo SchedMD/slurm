@@ -195,7 +195,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	char *allowed_devices[PATH_MAX], *allowed_dev_major[PATH_MAX];
 	xcgroup_t devices_cg;
 	uint32_t jobid;
-	uint32_t stepid = job->stepid;
+	uint32_t stepid = job->step_id.step_id;
 	uid_t uid = job->uid;
 	uid_t gid = job->gid;
 
@@ -228,7 +228,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
+		jobid = job->step_id.job_id;
 	if (*job_cgroup_path == '\0') {
 		if (snprintf(job_cgroup_path, PATH_MAX, "%s/job_%u",
 			     user_cgroup_path, jobid) >= PATH_MAX) {
@@ -385,8 +385,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	}
 
 
-	if ((job->stepid != SLURM_BATCH_SCRIPT) &&
-	    (job->stepid != SLURM_EXTERN_CONT)) {
+	if ((job->step_id.step_id != SLURM_BATCH_SCRIPT) &&
+	    (job->step_id.step_id != SLURM_EXTERN_CONT)) {
 		/*
 		 * with the current cgroup devices subsystem design (whitelist
 		 * only supported) we need to allow all different devices that

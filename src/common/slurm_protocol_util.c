@@ -163,8 +163,8 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t *msg, char *name)
 	int i;
 	int node_id = nodelist_find(msg->complete_nodelist, name);
 
-	debug3("job_id: %u", msg->job_id);
-	debug3("job_step_id: %u", msg->job_step_id);
+	debug3("job_id: %u", msg->step_id.job_id);
+	debug3("job_step_id: %u", msg->step_id.step_id);
 	if (msg->het_job_step_cnt != NO_VAL)
 		debug3("het_job_step_cnt: %u", msg->het_job_step_cnt);
 	if (msg->het_job_id != NO_VAL)

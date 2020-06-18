@@ -661,8 +661,8 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 		step_id = msg->step_id;
 	} else if (agent_ptr->msg_type == SRUN_TIMEOUT) {
 		srun_timeout_msg_t *msg = *agent_ptr->msg_args_pptr;
-		job_id  = msg->job_id;
-		step_id = msg->step_id;
+		job_id  = msg->step_id.job_id;
+		step_id = msg->step_id.step_id;
 	} else if (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION) {
 		resource_allocation_response_msg_t *msg =
 			*agent_ptr->msg_args_pptr;
@@ -1002,7 +1002,7 @@ static void *_thread_per_group_rpc(void *args)
 				task_ptr->msg_args_ptr;
 			rc = SLURM_SUCCESS;
 			lock_slurmctld(job_write_lock);
-			if (job_epilog_complete(kill_job->job_id,
+			if (job_epilog_complete(kill_job->step_id.job_id,
 						ret_data_info->node_name, rc))
 				run_scheduler = true;
 			unlock_slurmctld(job_write_lock);
@@ -1079,7 +1079,7 @@ static void *_thread_per_group_rpc(void *args)
 
 			if ((msg_ptr->signal == SIGCONT) ||
 			    (msg_ptr->signal == SIGSTOP)) {
-				job_id = msg_ptr->job_id;
+				job_id = msg_ptr->step_id.job_id;
 				lock_slurmctld(job_write_lock);
 				job_ptr = find_job_record(job_id);
 				if (job_ptr == NULL) {
@@ -1180,7 +1180,7 @@ cleanup:
 			task_ptr->msg_args_ptr;
 		if ((msg_ptr->signal == SIGCONT) ||
 		    (msg_ptr->signal == SIGSTOP)) {
-			job_id = msg_ptr->job_id;
+			job_id = msg_ptr->step_id.job_id;
 			lock_slurmctld(job_write_lock);
 			job_ptr = find_job_record(job_id);
 			if (job_ptr)
@@ -2197,11 +2197,11 @@ static int _signal_defer(queued_request_t *queued_req_ptr)
 
 	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 	signal_msg_ptr = (signal_tasks_msg_t *)agent_arg_ptr->msg_args;
-	job_ptr = find_job_record(signal_msg_ptr->job_id);
+	job_ptr = find_job_record(signal_msg_ptr->step_id.job_id);
 
 	if (job_ptr == NULL) {
 		info("agent(signal_task): removed pending request for cancelled JobId=%u",
-		     signal_msg_ptr->job_id);
+		     signal_msg_ptr->step_id.job_id);
 		return -1;	/* job cancelled while waiting */
 	}
 

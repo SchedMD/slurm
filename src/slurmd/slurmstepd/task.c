@@ -196,7 +196,8 @@ _run_script_and_set_env(const char *name, const char *path,
 	if (path == NULL || path[0] == '\0')
 		return 0;
 
-	debug("[job %u] attempting to run %s [%s]", job->jobid, name, path);
+	debug("[job %u] attempting to run %s [%s]",
+	      job->step_id.job_id, name, path);
 
 	if (access(path, R_OK | X_OK) < 0) {
 		error("Could not run %s [%s]: %m", name, path);
@@ -315,7 +316,7 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
 
 	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
 		info->jobid   = job->het_job_id;
-		info->stepid  = job->stepid;
+		info->stepid  = job->step_id.step_id;
 		info->nnodes  = job->het_job_nnodes;
 		info->nodeid  = job->het_job_node_offset + job->nodeid;
 		info->ntasks  = job->het_job_ntasks;
@@ -326,8 +327,8 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
 		info->self    = job->envtp->self;
 		info->client  = job->envtp->cli;
 	} else {
-		info->jobid   = job->jobid;
-		info->stepid  = job->stepid;
+		info->jobid   = job->step_id.job_id;
+		info->stepid  = job->step_id.step_id;
 		info->nnodes  = job->nnodes;
 		info->nodeid  = job->nodeid;
 		info->ntasks  = job->ntasks;
@@ -364,8 +365,8 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 	if (job->het_job_id != NO_VAL)
 		job->envtp->jobid = job->het_job_id;
 	else
-		job->envtp->jobid = job->jobid;
-	job->envtp->stepid = job->stepid;
+		job->envtp->jobid = job->step_id.job_id;
+	job->envtp->stepid = job->step_id.step_id;
 	job->envtp->nodeid = job->nodeid + node_offset;
 	job->envtp->cpus_on_node = job->cpus;
 	job->envtp->procid = task->gtid + task_offset;
@@ -408,7 +409,7 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 
 	xfree(job->envtp->task_count);
 
-	if (!job->batch && (job->stepid != SLURM_EXTERN_CONT)) {
+	if (!job->batch && (job->step_id.step_id != SLURM_EXTERN_CONT)) {
 		if (switch_g_job_attach(job->switch_job, &job->env,
 					job->nodeid, (uint32_t) local_proc_id,
 					job->nnodes, job->ntasks,

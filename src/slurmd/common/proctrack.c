@@ -184,7 +184,7 @@ extern int proctrack_g_add(stepd_step_rec_t * job, pid_t pid)
 		if (i++ > max_retry)
 			break;
 		debug("%s: %u.%u couldn't add pid %u, sleeping and trying again",
-		      __func__, job->jobid, job->stepid, pid);
+		      __func__, job->step_id.job_id, job->step_id.step_id, pid);
 		sleep(1);
 	}
 

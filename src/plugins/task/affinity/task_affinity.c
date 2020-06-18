@@ -257,7 +257,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 	int rc = SLURM_SUCCESS;
 
 	debug("%s: affinity jobid %u.%u, task:%u bind:%u",
-		  __func__, job->jobid, job->stepid,
+		  __func__, job->step_id.job_id, job->step_id.job_id,
 		  job->envtp->procid, job->cpu_bind_type);
 
 	/*** CPU binding support ***/
@@ -314,7 +314,7 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
 extern int task_p_post_term (stepd_step_rec_t *job, stepd_step_task_info_t *task)
 {
 	debug("%s: affinity %u.%u, task %d",
-	      __func__, job->jobid, job->stepid, task->id);
+	      __func__, job->step_id.job_id, job->step_id.job_id, task->id);
 
 	return SLURM_SUCCESS;
 }

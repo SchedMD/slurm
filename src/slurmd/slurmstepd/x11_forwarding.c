@@ -245,7 +245,7 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 	};
 
 	*tmp_xauthority = NULL;
-	job_id = job->jobid;
+	job_id = job->step_id.job_id;
 	x11_target = xstrdup(job->x11_target);
 	x11_target_port = job->x11_target_port;
 

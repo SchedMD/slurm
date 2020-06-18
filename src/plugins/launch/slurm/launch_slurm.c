@@ -292,11 +292,12 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 		       msg->node_name, slurm_strerror(msg->return_code));
 	}
 
-	task_state = task_state_find(msg->job_id, msg->step_id, NO_VAL,
+	task_state = task_state_find(msg->step_id.job_id,
+				     msg->step_id.step_id, NO_VAL,
 				     task_state_list);
 	if (!task_state) {
 		error("%s: Could not locate task state for step %u.%u",
-		      __func__, msg->job_id, msg->step_id);
+		      __func__, msg->step_id.job_id, msg->step_id.step_id);
 	}
 	for (i = 0; i < msg->count_of_pids; i++) {
 		local_task_id = msg->task_ids[i];
@@ -340,14 +341,14 @@ static void _task_finish(task_exit_msg_t *msg)
 
 	iter = list_iterator_create(local_job_list);
 	while ((my_srun_job = (srun_job_t *) list_next(iter))) {
-		if ((my_srun_job->jobid  == msg->job_id) &&
-		    (my_srun_job->stepid == msg->step_id))
+		if ((my_srun_job->step_id.job_id  == msg->step_id.job_id) &&
+		    (my_srun_job->step_id.step_id == msg->step_id.step_id))
 			break;
 	}
 	list_iterator_destroy(iter);
 	if (!my_srun_job) {
 		error("Ignoring exit message from unrecognized step %u.%u",
-		      msg->job_id, msg->step_id);
+		      msg->step_id.job_id, msg->step_id.step_id);
 		return;
 	}
 
@@ -360,7 +361,7 @@ static void _task_finish(task_exit_msg_t *msg)
 	}
 
 	verbose("Received task exit notification for %d %s of step %u.%u (status=0x%04x).",
-		msg->num_tasks, task_str, msg->job_id, msg->step_id,
+		msg->num_tasks, task_str, msg->step_id.job_id, msg->step_id.step_id,
 		msg->return_code);
 
 	/*
@@ -449,14 +450,15 @@ static void _task_finish(task_exit_msg_t *msg)
 	xfree(tasks);
 	xfree(hosts);
 
-	task_state = task_state_find(msg->job_id, msg->step_id, NO_VAL,
+	task_state = task_state_find(msg->step_id.job_id,
+				     msg->step_id.step_id, NO_VAL,
 				     task_state_list);
 	if (task_state) {
 		_update_task_exit_state(task_state, msg->num_tasks,
 					msg->task_id_list, !normal_exit);
 	} else {
 		error("%s: Could not find task state for step %u.%u", __func__,
-		      msg->job_id, msg->step_id);
+		      msg->step_id.job_id, msg->step_id.step_id);
 	}
 
 	if (task_state_first_abnormal_exit(task_state_list) &&
@@ -583,8 +585,8 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 	/* set the jobid for totalview */
 	if (!totalview_jobid) {
-		xstrfmtcat(totalview_jobid,  "%u", job->jobid);
-		xstrfmtcat(totalview_stepid, "%u", job->stepid);
+		xstrfmtcat(totalview_jobid,  "%u", job->step_id.job_id);
+		xstrfmtcat(totalview_stepid, "%u", job->step_id.step_id);
 	}
 
 	return SLURM_SUCCESS;
@@ -693,10 +695,11 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	slurm_step_launch_params_t_init(&launch_params);
 	memcpy(&callbacks, step_callbacks, sizeof(callbacks));
 
-	task_state = task_state_find(job->jobid, job->stepid,
+	task_state = task_state_find(job->step_id.job_id, job->step_id.step_id,
 				     job->het_job_offset, task_state_list);
 	if (!task_state) {
-		task_state = task_state_create(job->jobid, job->stepid,
+		task_state = task_state_create(job->step_id.job_id,
+					       job->step_id.step_id,
 					       job->het_job_offset, job->ntasks,
 					       job->het_job_task_offset);
 		slurm_mutex_lock(&het_job_lock);
@@ -867,7 +870,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 			MPIR_Breakpoint(job);
 	} else {
 		info("Job step %u.%u aborted before step completely launched.",
-		     job->jobid, job->stepid);
+		     job->step_id.job_id, job->step_id.step_id);
 	}
 
 cleanup:
@@ -910,9 +913,10 @@ static int _step_signal(int signal)
 	iter = list_iterator_create(local_job_list);
 	while ((my_srun_job = (srun_job_t *) list_next(iter))) {
 		info("Terminating job step %u.%u",
-		      my_srun_job->jobid, my_srun_job->stepid);
-		rc2 = slurm_kill_job_step(my_srun_job->jobid,
-					  my_srun_job->stepid, signal);
+		      my_srun_job->step_id.job_id,
+		     my_srun_job->step_id.step_id);
+		rc2 = slurm_kill_job_step(my_srun_job->step_id.job_id,
+					  my_srun_job->step_id.step_id, signal);
 		if (rc2)
 			rc = rc2;
 	}

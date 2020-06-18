@@ -87,8 +87,8 @@ _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	uint32_t node_cnt = ctx->step_resp->step_layout->node_cnt;
 
 	memset(&arg, 0, sizeof(slurm_cred_arg_t));
-	arg.jobid          = ctx->job_id;
-	arg.stepid         = ctx->step_resp->job_step_id;
+	arg.step_id.job_id = ctx->job_id;
+	arg.step_id.step_id = ctx->step_resp->job_step_id;
 	arg.uid            = ctx->user_id;
 
 	arg.job_nhosts     = node_cnt;
@@ -128,7 +128,6 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->exclusive  = step_params->exclusive;
 	step_req->features = xstrdup(step_params->features);
 	step_req->immediate  = step_params->immediate;
-	step_req->job_id = step_params->job_id;
 	step_req->max_nodes = step_params->max_nodes;
 	step_req->mem_per_tres = xstrdup(step_params->mem_per_tres);
 	step_req->min_nodes = step_params->min_nodes;
@@ -144,7 +143,9 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->resv_port_cnt = step_params->resv_port_cnt;
 	step_req->srun_pid = (uint32_t) getpid();
 	step_req->step_het_grps = xstrdup(step_params->step_het_grps);
-	step_req->step_id = step_params->step_id;
+	memcpy(&step_req->step_id, &step_params->step_id,
+	       sizeof(step_req->step_id));
+
 	step_req->task_dist = step_params->task_dist;
 	step_req->tres_bind = xstrdup(step_params->tres_bind);
 	step_req->tres_freq = xstrdup(step_params->tres_freq);
@@ -202,9 +203,17 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 	ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
 	ctx->launch_state = NULL;
 	ctx->magic	= STEP_CTX_MAGIC;
-	ctx->job_id	= step_req->job_id;
+	ctx->job_id	= step_req->step_id.job_id;
 	ctx->user_id	= step_req->user_id;
 	ctx->step_req   = step_req;
+
+	/*
+	 * Grab the step id here if we don't already have it, we will
+	 * need to to send to the slurmd.
+	 */
+	if (step_req->step_id.step_id == NO_VAL)
+		step_req->step_id.step_id = step_resp->job_step_id;
+
 	ctx->step_resp	= step_resp;
 	ctx->verbose_level = step_params->verbose_level;
 
@@ -313,9 +322,16 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 		ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
 		ctx->launch_state = NULL;
 		ctx->magic	= STEP_CTX_MAGIC;
-		ctx->job_id	= step_req->job_id;
+		ctx->job_id	= step_req->step_id.job_id;
 		ctx->user_id	= step_req->user_id;
 		ctx->step_req   = step_req;
+		/*
+		 * Grab the step id here if we don't already have it, we will
+		 * need to to send to the slurmd.
+		 */
+		if (step_req->step_id.step_id == NO_VAL)
+			step_req->step_id.step_id = step_resp->job_step_id;
+
 		ctx->step_resp	= step_resp;
 		ctx->verbose_level = step_params->verbose_level;
 		ctx->launch_state = step_launch_state_create(ctx);
@@ -371,7 +387,7 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 		step_req->num_tasks);
 
 	if (switch_g_alloc_jobinfo(&step_resp->switch_job,
-				   step_req->job_id,
+				   step_req->step_id.job_id,
 				   step_resp->job_step_id) < 0)
 		fatal("switch_g_alloc_jobinfo: %m");
 	if (switch_g_build_jobinfo(step_resp->switch_job,
@@ -386,9 +402,17 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 	ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
 	ctx->launch_state = NULL;
 	ctx->magic	= STEP_CTX_MAGIC;
-	ctx->job_id	= step_req->job_id;
+	ctx->job_id	= step_req->step_id.job_id;
 	ctx->user_id	= step_req->user_id;
 	ctx->step_req   = step_req;
+
+	/*
+	 * Grab the step id here if we don't already have it, we will
+	 * need to to send to the slurmd.
+	 */
+	if (step_req->step_id.step_id == NO_VAL)
+		step_req->step_id.step_id = step_resp->job_step_id;
+
 	ctx->step_resp	= step_resp;
 	ctx->verbose_level = step_params->verbose_level;
 
@@ -645,16 +669,16 @@ extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 	ptr->task_dist = SLURM_DIST_CYCLIC;
 	ptr->plane_size = NO_VAL16;
 	ptr->resv_port_cnt = NO_VAL16;
-	ptr->step_id = NO_VAL;
+	ptr->step_id.step_id = NO_VAL;
 
 	ptr->uid = getuid();
 
 	if ((jobid_str = getenv("SLURM_JOB_ID")) != NULL) {
-		ptr->job_id = (uint32_t)atol(jobid_str);
+		ptr->step_id.job_id = (uint32_t)atol(jobid_str);
 	} else if ((jobid_str = getenv("SLURM_JOBID")) != NULL) {
 		/* handle old style env variable for backwards compatibility */
-		ptr->job_id = (uint32_t)atol(jobid_str);
+		ptr->step_id.job_id = (uint32_t)atol(jobid_str);
 	} else {
-		ptr->job_id = NO_VAL;
+		ptr->step_id.job_id = NO_VAL;
 	}
 }

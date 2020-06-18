@@ -494,9 +494,9 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
+		jobid = job->step_id.job_id;
 
-	job->mpmd_set->apid      = SLURM_ID_HASH(jobid, job->stepid);
+	job->mpmd_set->apid      = SLURM_ID_HASH(jobid, job->step_id.step_id);
 	job->mpmd_set->args      = xmalloc(sizeof(char *) * job->ntasks);
 	job->mpmd_set->command   = xmalloc(sizeof(char *) * job->ntasks);
 	job->mpmd_set->first_pe  = xmalloc(sizeof(int) * job->ntasks);

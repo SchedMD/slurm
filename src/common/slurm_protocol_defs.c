@@ -1267,7 +1267,6 @@ extern void slurm_free_node_registration_status_msg(
 		xfree(msg->features_avail);
 		if (msg->gres_info)
 			free_buf(msg->gres_info);
-		xfree(msg->job_id);
 		xfree(msg->node_name);
 		xfree(msg->os);
 		xfree(msg->step_id);

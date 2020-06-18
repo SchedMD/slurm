@@ -95,8 +95,8 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 		return -1;
 	}
 	memset(&rpc, 0, sizeof(rpc));
-	rpc.job_id = allocation->job_id;
-	rpc.job_step_id = SLURM_BATCH_SCRIPT;
+	rpc.step_id.job_id = allocation->job_id;
+	rpc.step_id.step_id = SLURM_BATCH_SCRIPT;
 	rpc.signal = signal;
 	rpc.flags = KILL_JOB_BATCH;
 
@@ -128,8 +128,7 @@ static int _signal_job_step(const job_step_info_t *step,
 
 	/* same remote procedure call for each node */
 	memset(&rpc, 0, sizeof(rpc));
-	rpc.job_id = step->job_id;
-	rpc.job_step_id = step->step_id;
+	memcpy(&rpc.step_id, &step->step_id, sizeof(rpc.step_id));
 	rpc.signal = signal;
 
 	rc = _local_send_recv_rc_msgs(allocation->node_list,
@@ -153,8 +152,8 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
 	}
 
 	memset(&rpc, 0, sizeof(rpc));
-	rpc.job_id = allocation->job_id;
-	rpc.job_step_id = SLURM_BATCH_SCRIPT;
+	rpc.step_id.job_id = allocation->job_id;
+	rpc.step_id.step_id = SLURM_BATCH_SCRIPT;
 	rpc.signal = (uint16_t)-1; /* not used by slurmd */
 
 	slurm_msg_t_init(&msg);
@@ -194,8 +193,7 @@ static int _terminate_job_step(const job_step_info_t *step,
 	 *  Send REQUEST_TERMINATE_TASKS to all nodes of the step
 	 */
 	memset(&rpc, 0, sizeof(rpc));
-	rpc.job_id = step->job_id;
-	rpc.job_step_id = step->step_id;
+	memcpy(&rpc.step_id, &step->step_id, sizeof(rpc.step_id));
 	rpc.signal = (uint16_t)-1; /* not used by slurmd */
 	rc = _local_send_recv_rc_msgs(allocation->node_list,
 				      REQUEST_TERMINATE_TASKS, &rpc);
@@ -227,7 +225,8 @@ slurm_signal_job (uint32_t job_id, uint16_t signal)
 
 	/* same remote procedure call for each node */
 	memset(&rpc, 0, sizeof(rpc));
-	rpc.job_id = job_id;
+	rpc.step_id.job_id = job_id;
+	rpc.step_id.step_id = NO_VAL;
 	rpc.signal = signal;
 	rpc.flags = KILL_STEPS_ONLY;
 
@@ -285,8 +284,8 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
  		goto fail;
  	}
 	for (i = 0; i < step_info->job_step_count; i++) {
-		if ((step_info->job_steps[i].job_id == job_id) &&
-		    (step_info->job_steps[i].step_id == step_id)) {
+		if ((step_info->job_steps[i].step_id.job_id == job_id) &&
+		    (step_info->job_steps[i].step_id.step_id == step_id)) {
  			rc = _signal_job_step(&step_info->job_steps[i],
  					      alloc_info, signal);
  			save_errno = rc;
@@ -343,8 +342,8 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 		goto fail;
 	}
 	for (i = 0; i < step_info->job_step_count; i++) {
-		if ((step_info->job_steps[i].job_id == job_id) &&
-		    (step_info->job_steps[i].step_id == step_id)) {
+		if ((step_info->job_steps[i].step_id.job_id == job_id) &&
+		    (step_info->job_steps[i].step_id.step_id == step_id)) {
 			rc = _terminate_job_step(&step_info->job_steps[i],
 						 alloc_info);
 			save_errno = errno;
@@ -376,7 +375,7 @@ extern int slurm_notify_job (uint32_t job_id, char *message)
 	 * Request message:
 	 */
 	memset(&req, 0, sizeof(req));
-	req.job_id      = job_id;
+	req.job_id = job_id;
 	req.job_step_id = NO_VAL;	/* currently not used */
 	req.message     = message;
 	msg.msg_type    = REQUEST_JOB_NOTIFY;

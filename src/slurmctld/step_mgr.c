@@ -215,8 +215,8 @@ static int _purge_duplicate_steps(job_record_t *job_ptr,
 			_free_step_rec(step_ptr);
 			break;
 		}
-		if ((step_specs->step_id != NO_VAL) &&
-		    (step_specs->step_id == step_ptr->step_id))
+		if ((step_specs->step_id.step_id != NO_VAL) &&
+		    (step_specs->step_id.step_id == step_ptr->step_id))
 			rc = ESLURM_DUPLICATE_STEP_ID;
 	}
 	list_iterator_destroy(step_iterator);
@@ -456,6 +456,7 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 {
 	uint64_t mem_value = step_spec->pn_min_memory;
 	char *mem_type = "node";
+	char step_str[64];
 
 	if (mem_value & MEM_PER_CPU) {
 		mem_value &= (~MEM_PER_CPU);
@@ -463,10 +464,13 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	}
 
 	log_flag(CPU_FREQ, "StepDesc: user_id=%u JobId=%u cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u",
-		 step_spec->user_id, step_spec->job_id, step_spec->cpu_freq_gov,
+		 step_spec->user_id, step_spec->step_id.job_id,
+		 step_spec->cpu_freq_gov,
 		 step_spec->cpu_freq_max, step_spec->cpu_freq_min);
-	debug3("StepDesc: user_id=%u JobId=%u StepId=%u node_count=%u-%u cpu_count=%u num_tasks=%u",
-	       step_spec->user_id, step_spec->job_id, step_spec->step_id,
+	debug3("StepDesc: user_id=%u JobId=%u %s node_count=%u-%u cpu_count=%u num_tasks=%u",
+	       step_spec->user_id, step_spec->step_id.job_id,
+	       build_step_id(step_str, sizeof(step_str),
+			     step_spec->step_id.step_id),
 	       step_spec->min_nodes, step_spec->max_nodes,
 	       step_spec->cpu_count, step_spec->num_tasks);
 	debug3("   cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u "
@@ -537,8 +541,7 @@ step_record_t *find_step_record(job_record_t *job_ptr, uint32_t step_id)
 
 /*
  * job_step_signal - signal the specified job step
- * IN job_id - id of the job to be cancelled
- * IN step_id - id of the job step to be cancelled
+ * IN step_id - filled in slurm_step_id_t
  * IN signal - user id of user issuing the RPC
  * IN flags - RPC flags
  * IN uid - user id of user issuing the RPC
@@ -546,16 +549,16 @@ step_record_t *find_step_record(job_record_t *job_ptr, uint32_t step_id)
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-int job_step_signal(uint32_t job_id, uint32_t step_id,
-		    uint16_t signal, uint16_t flags, uid_t uid)
+extern int job_step_signal(slurm_step_id_t *step_id,
+			   uint16_t signal, uint16_t flags, uid_t uid)
 {
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
 	int rc = SLURM_SUCCESS;
 
-	job_ptr = find_job_record(job_id);
+	job_ptr = find_job_record(step_id->job_id);
 	if (job_ptr == NULL) {
-		error("job_step_signal: invalid JobId=%u", job_id);
+		error("job_step_signal: invalid JobId=%u", step_id->job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
@@ -571,16 +574,16 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 			return rc;
 	} else if (!IS_JOB_RUNNING(job_ptr)) {
 		verbose("job_step_signal: %pJ StepId=%u can not be sent signal %u from state=%s",
-			job_ptr, step_id, signal,
+			job_ptr, step_id->step_id, signal,
 			job_state_string(job_ptr->job_state));
 		if (signal != SIG_NODE_FAIL)
 			return ESLURM_TRANSITION_STATE_NO_UPDATE;
 	}
 
-	step_ptr = find_step_record(job_ptr, step_id);
+	step_ptr = find_step_record(job_ptr, step_id->step_id);
 	if (step_ptr == NULL) {
 		info("%s: %pJ StepId=%u not found",
-		     __func__, job_ptr, step_id);
+		     __func__, job_ptr, step_id->step_id);
 		return ESLURM_INVALID_JOB_ID;
 	} else if (flags & KILL_OOM) {
 		step_ptr->exit_code = SIG_OOM;
@@ -628,8 +631,8 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 	agent_args->retry    = 1;
 	agent_args->hostlist = hostlist_create(NULL);
 	signal_tasks_msg = xmalloc(sizeof(signal_tasks_msg_t));
-	signal_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
-	signal_tasks_msg->job_step_id = step_ptr->step_id;
+	signal_tasks_msg->step_id.job_id = step_ptr->job_ptr->job_id;
+	signal_tasks_msg->step_id.step_id = step_ptr->step_id;
 	signal_tasks_msg->signal      = signal;
 
 #ifdef HAVE_FRONT_END
@@ -708,8 +711,8 @@ void signal_step_tasks_on_node(char* node_name, step_record_t *step_ptr,
 		fatal("Invalid node_name: %s", node_name);
 #endif
 	signal_tasks_msg = xmalloc(sizeof(signal_tasks_msg_t));
-	signal_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
-	signal_tasks_msg->job_step_id = step_ptr->step_id;
+	signal_tasks_msg->step_id.job_id = step_ptr->job_ptr->job_id;
+	signal_tasks_msg->step_id.step_id = step_ptr->step_id;
 	signal_tasks_msg->signal      = signal;
 	agent_args->msg_args = signal_tasks_msg;
 	agent_queue_request(agent_args);
@@ -2331,7 +2334,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	bool tmp_step_layout_used = false;
 
 	*new_step_record = NULL;
-	job_ptr = find_job_record (step_specs->job_id);
+	job_ptr = find_job_record (step_specs->step_id.job_id);
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID ;
 
@@ -2508,10 +2511,10 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->start_time = time(NULL);
 	step_ptr->state      = JOB_RUNNING;
 
-	if (step_specs->step_id != NO_VAL) {
-		step_ptr->step_id = step_specs->step_id;
+	if (step_specs->step_id.step_id != NO_VAL) {
+		step_ptr->step_id = step_specs->step_id.step_id;
 		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
-					    step_specs->step_id);
+					    step_specs->step_id.step_id);
 		job_ptr->next_step_id++;
 	} else if (job_ptr->het_job_id &&
 		   (job_ptr->het_job_id != job_ptr->job_id)) {
@@ -3069,6 +3072,8 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, Buf buffer,
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
+
+		/* This needs to match the pack of pack_step_id */
 		pack32(step_ptr->job_ptr->job_id, buffer);
 		pack32(step_ptr->step_id, buffer);
 		pack32(step_ptr->job_ptr->user_id, buffer);
@@ -3354,8 +3359,8 @@ extern int kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 				step_node_inx++;
 		}
 		memset(&req, 0, sizeof(step_complete_msg_t));
-		req.job_id = job_ptr->job_id;
-		req.job_step_id = step_ptr->step_id;
+		req.step_id.job_id = job_ptr->job_id;
+		req.step_id.step_id = step_ptr->step_id;
 		req.range_first = step_node_inx;
 		req.range_last = step_node_inx;
 		req.step_rc = 9;
@@ -3406,9 +3411,9 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 	int nodes, rem_nodes;
 
 	/* find the job, step, and validate input */
-	job_ptr = find_job_record (req->job_id);
+	job_ptr = find_job_record(req->step_id.job_id);
 	if (job_ptr == NULL) {
-		info("%s: JobId=%u invalid", __func__, req->job_id);
+		info("%s: JobId=%u invalid", __func__, req->step_id.job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
@@ -3428,11 +3433,11 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 		return ESLURM_USER_ID_MISSING;
 	}
 
-	step_ptr = find_step_record(job_ptr, req->job_step_id);
+	step_ptr = find_step_record(job_ptr, req->step_id.step_id);
 
 	if (step_ptr == NULL) {
 		info("step_partial_comp: %pJ StepID=%u invalid",
-		     job_ptr, req->job_step_id);
+		     job_ptr, req->step_id.step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 	if (step_ptr->batch_step) {
@@ -4258,9 +4263,9 @@ static void _signal_step_timelimit(job_record_t *job_ptr, step_record_t *step_pt
 	agent_args->retry = 1;
 	agent_args->hostlist = hostlist_create(NULL);
 	kill_step = xmalloc(sizeof(kill_job_msg_t));
-	kill_step->job_id    = job_ptr->job_id;
+	kill_step->step_id.job_id = job_ptr->job_id;
 	kill_step->het_job_id = job_ptr->het_job_id;
-	kill_step->step_id   = step_ptr->step_id;
+	kill_step->step_id.step_id = step_ptr->step_id;
 	kill_step->job_state = job_ptr->job_state;
 	kill_step->job_uid   = job_ptr->user_id;
 	kill_step->job_gid   = job_ptr->group_id;
@@ -4406,8 +4411,8 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		} else {
 			if (req->step_id >= job_ptr->next_step_id)
 				return ESLURM_INVALID_JOB_ID;
-			if (!(step_ptr
-			      = find_step_record(job_ptr, req->step_id))) {
+			if (!(step_ptr = find_step_record(
+				      job_ptr, req->step_id))) {
 				/*
 				 * If updating this after the fact we need to
 				 * remake the step so we can send the updated
