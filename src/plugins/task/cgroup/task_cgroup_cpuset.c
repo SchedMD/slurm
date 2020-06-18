@@ -1065,7 +1065,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	char *job_alloc_cores = NULL;
 	char *step_alloc_cores = NULL;
 	pid_t pid;
-	int rc;
+	int rc = SLURM_ERROR;
 #ifdef HAVE_NATIVE_CRAY
 	char expected_usage[32];
 #endif
