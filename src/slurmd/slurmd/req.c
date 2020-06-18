@@ -170,7 +170,6 @@ static void _rpc_timelimit(slurm_msg_t *);
 static void _rpc_reattach_tasks(slurm_msg_t *);
 static void _rpc_suspend_job(slurm_msg_t *msg);
 static void _rpc_terminate_job(slurm_msg_t *);
-static void _rpc_update_time(slurm_msg_t *);
 static void _rpc_shutdown(slurm_msg_t *msg);
 static void _rpc_reconfig(slurm_msg_t *msg);
 static void _rpc_reconfig_with_config(slurm_msg_t *msg);
@@ -321,10 +320,6 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		_rpc_complete_batch(msg);
-		break;
-	case REQUEST_UPDATE_JOB_TIME:
-		_rpc_update_time(msg);
-		last_slurmctld_msg = time(NULL);
 		break;
 	case REQUEST_SHUTDOWN:
 		_rpc_shutdown(msg);
@@ -5540,34 +5535,6 @@ _pause_for_job_completion (uint32_t job_id, char *nodes, int max_time)
 	 * Return true if job is NOT running
 	 */
 	return (!rc);
-}
-
-/*
- * Does nothing and returns SLURM_SUCCESS (if uid authenticates).
- *
- * Timelimit is not currently used in the slurmd or slurmstepd.
- */
-static void
-_rpc_update_time(slurm_msg_t *msg)
-{
-	int   rc      = SLURM_SUCCESS;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
-
-	if ((req_uid != slurm_conf.slurm_user_id) && (req_uid != 0)) {
-		rc = ESLURM_USER_ID_MISSING;
-		error("Security violation, uid %d can't update time limit",
-		      req_uid);
-		goto done;
-	}
-
-/* 	if (shm_update_job_timelimit(req->job_id, req->expiration_time) < 0) { */
-/* 		error("updating lifetime for job %u: %m", req->job_id); */
-/* 		rc = ESLURM_INVALID_JOB_ID; */
-/* 	} else */
-/* 		debug("reset job %u lifetime", req->job_id); */
-
-done:
-	slurm_send_rc_msg(msg, rc);
 }
 
 static void _free_job_env(job_env_t *env_ptr)

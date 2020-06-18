@@ -1413,11 +1413,6 @@ extern void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 	}
 }
 
-extern void slurm_free_update_job_time_msg(job_time_msg_t * msg)
-{
-	xfree(msg);
-}
-
 extern void slurm_free_task_exit_msg(task_exit_msg_t * msg)
 {
 	if (msg) {
@@ -4969,9 +4964,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_TERMINATE_JOB:
 		slurm_free_kill_job_msg(data);
 		break;
-	case REQUEST_UPDATE_JOB_TIME:
-		slurm_free_update_job_time_msg(data);
-		break;
 	case REQUEST_JOB_ID:
 		slurm_free_job_id_request_msg(data);
 		break;
@@ -5457,8 +5449,7 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_HET_JOB_ALLOCATION";
 	case RESPONSE_HET_JOB_ALLOCATION:
 		return "RESPONSE_HET_JOB_ALLOCATION";
-	case REQUEST_UPDATE_JOB_TIME:
-		return "REQUEST_UPDATE_JOB_TIME";
+
 	case REQUEST_JOB_READY:
 		return "REQUEST_JOB_READY";
 	case RESPONSE_JOB_READY:				/* 4020 */

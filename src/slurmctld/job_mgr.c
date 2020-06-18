@@ -264,8 +264,6 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
-static void _xmit_new_end_time(job_record_t *job_ptr);
-
 
 static char *_get_mail_user(const char *user_name, uid_t user_id)
 {
@@ -12297,10 +12295,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				}
 				if (job_ptr->end_time < now)
 					job_ptr->end_time = now;
-				if (IS_JOB_RUNNING(job_ptr) &&
-				    (list_is_empty(job_ptr->step_list) == 0)) {
-					_xmit_new_end_time(job_ptr);
-				}
 				job_ptr->end_time_exp = job_ptr->end_time;
 			}
 			sched_info("%s: setting time_limit to %u for %pJ",
@@ -14687,56 +14681,6 @@ static void _remove_defunct_batch_dirs(List batch_dirs)
 		delete_job_desc_files(*job_id_ptr);
 	}
 	list_iterator_destroy(batch_dir_inx);
-}
-
-/*
- *  _xmit_new_end_time
- *	Tell all slurmd's associated with a job of its new end time
- * IN job_ptr - pointer to terminating job
- * globals: node_record_count - number of nodes in the system
- *	node_record_table_ptr - pointer to global node table
- */
-static void _xmit_new_end_time(job_record_t *job_ptr)
-{
-#ifndef HAVE_FRONT_END
-	int i;
-#endif
-	job_time_msg_t *job_time_msg_ptr;
-	agent_arg_t *agent_args;
-
-	agent_args = xmalloc(sizeof(agent_arg_t));
-	agent_args->msg_type = REQUEST_UPDATE_JOB_TIME;
-	agent_args->retry = 1;
-	agent_args->hostlist = hostlist_create(NULL);
-	job_time_msg_ptr = xmalloc(sizeof(job_time_msg_t));
-	job_time_msg_ptr->job_id          = job_ptr->job_id;
-	job_time_msg_ptr->expiration_time = job_ptr->end_time;
-
-#ifdef HAVE_FRONT_END
-	xassert(job_ptr->batch_host);
-	if (job_ptr->front_end_ptr)
-		agent_args->protocol_version =
-			job_ptr->front_end_ptr->protocol_version;
-	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
-	agent_args->node_count  = 1;
-#else
-	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
-			continue;
-		if (agent_args->protocol_version >
-		    node_record_table_ptr[i].protocol_version)
-			agent_args->protocol_version =
-				node_record_table_ptr[i].protocol_version;
-		hostlist_push_host(agent_args->hostlist,
-			      node_record_table_ptr[i].name);
-		agent_args->node_count++;
-	}
-#endif
-
-	agent_args->msg_args = job_time_msg_ptr;
-	agent_queue_request(agent_args);
-	return;
 }
 
 /*

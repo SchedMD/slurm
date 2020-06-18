@@ -2765,48 +2765,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_update_job_time_msg(job_time_msg_t * msg, Buf buffer,
-			  uint16_t protocol_version)
-{
-	xassert(msg);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32((uint32_t)msg->job_id, buffer);
-		pack_time(msg->expiration_time, buffer);
-	} else {
-		error("_pack_update_job_time_msg: protocol_version "
-		      "%hu not supported", protocol_version);
-	}
-}
-
-static int
-_unpack_update_job_time_msg(job_time_msg_t ** msg, Buf buffer,
-			    uint16_t protocol_version)
-{
-	job_time_msg_t *tmp_ptr;
-
-	/* alloc memory for structure */
-	xassert(msg);
-	tmp_ptr = xmalloc(sizeof(job_time_msg_t));
-	*msg = tmp_ptr;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&(tmp_ptr->job_id), buffer);
-		safe_unpack_time(& (tmp_ptr->expiration_time), buffer);
-	} else {
-		error("_unpack_update_job_time_msg: protocol_version "
-		      "%hu not supported", protocol_version);
-		goto unpack_error;
-	}
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_update_job_time_msg(tmp_ptr);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
 extern void _pack_job_step_create_response_msg(
 	job_step_create_response_msg_t *msg, Buf buffer,
 	uint16_t protocol_version)
@@ -12205,11 +12163,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				      buffer,
 				      msg->protocol_version);
 		break;
-	case REQUEST_UPDATE_JOB_TIME:
-		_pack_update_job_time_msg((job_time_msg_t *)
-					  msg->data, buffer,
-					  msg->protocol_version);
-		break;
 	case RESPONSE_JOB_STEP_INFO:
 		_pack_job_step_info_msg((slurm_msg_t *) msg, buffer);
 		break;
@@ -12882,12 +12835,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_epilog_comp_msg((epilog_complete_msg_t **)
 					     & (msg->data), buffer,
 					     msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_JOB_TIME:
-		rc = _unpack_update_job_time_msg(
-			(job_time_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
 		break;
 	case RESPONSE_JOB_STEP_INFO:
 		rc = _unpack_job_step_info_response_msg(

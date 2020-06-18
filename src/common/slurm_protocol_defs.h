@@ -318,7 +318,7 @@ typedef enum {
 	RESPONSE_JOB_ALLOCATION_INFO,
 	DEFUNCT_RPC_4017, /* free for reuse */
 	DEFUNCT_RPC_4018, /* free for reuse */
-	REQUEST_UPDATE_JOB_TIME,
+	DEFUNCT_RPC_4019,
 	REQUEST_JOB_READY,
 	RESPONSE_JOB_READY,		/* 4020 */
 	REQUEST_JOB_END_TIME,
@@ -981,11 +981,6 @@ typedef struct kill_job_msg {
 	time_t   time;		/* slurmctld's time of request */
 } kill_job_msg_t;
 
-typedef struct job_time_msg {
-	uint32_t job_id;
-	time_t expiration_time;
-} job_time_msg_t;
-
 typedef struct reattach_tasks_request_msg {
 	uint32_t     job_id;
 	uint32_t     job_step_id;
@@ -1474,7 +1469,6 @@ extern void slurm_free_reattach_tasks_request_msg(
 extern void slurm_free_reattach_tasks_response_msg(
 		reattach_tasks_response_msg_t * msg);
 extern void slurm_free_kill_job_msg(kill_job_msg_t * msg);
-extern void slurm_free_update_job_time_msg(job_time_msg_t * msg);
 extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg);
 extern void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg);
 extern void slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg);
