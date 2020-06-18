@@ -176,7 +176,7 @@ static void _rpc_reconfig(slurm_msg_t *msg);
 static void _rpc_reconfig_with_config(slurm_msg_t *msg);
 static void _rpc_reboot(slurm_msg_t *msg);
 static void _rpc_pid2jid(slurm_msg_t *msg);
-static int  _rpc_file_bcast(slurm_msg_t *msg);
+static void _rpc_file_bcast(slurm_msg_t *msg);
 static void _file_bcast_cleanup(void);
 static int  _file_bcast_register_file(slurm_msg_t *msg,
 				      sbcast_cred_arg_t *cred_arg,
@@ -372,8 +372,7 @@ slurmd_req(slurm_msg_t *msg)
 		_rpc_pid2jid(msg);
 		break;
 	case REQUEST_FILE_BCAST:
-		rc = _rpc_file_bcast(msg);
-		slurm_send_rc_msg(msg, rc);
+		_rpc_file_bcast(msg);
 		break;
 	case REQUEST_STEP_COMPLETE:
 		_rpc_step_complete(msg);
@@ -4081,7 +4080,7 @@ void file_bcast_purge(void)
 	/* destroying list before exit, no need to unlock */
 }
 
-static int _rpc_file_bcast(slurm_msg_t *msg)
+static void _rpc_file_bcast(slurm_msg_t *msg)
 {
 	int rc;
 	int64_t offset, inx;
@@ -4096,8 +4095,10 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 
 	cred_arg = _valid_sbcast_cred(req, key.uid, key.gid,
 				      msg->protocol_version);
-	if (!cred_arg)
-		return ESLURMD_INVALID_JOB_CREDENTIAL;
+	if (!cred_arg) {
+		rc = ESLURMD_INVALID_JOB_CREDENTIAL;
+		goto done;
+	}
 
 #ifdef HAVE_NATIVE_CRAY
 	if (cred_arg->het_job_id && (cred_arg->het_job_id != NO_VAL))
@@ -4133,7 +4134,7 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 	if (req->block_no == 1) {
 		if ((rc = _file_bcast_register_file(msg, cred_arg, &key))) {
 			sbcast_cred_arg_free(cred_arg);
-			return rc;
+			goto done;
 		}
 	}
 	sbcast_cred_arg_free(cred_arg);
@@ -4143,7 +4144,8 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 		error("No registered file transfer for uid %u file `%s`.",
 		      key.uid, key.fname);
 		_fb_rdunlock();
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto done;
 	}
 
 	/* now decompress file */
@@ -4151,7 +4153,8 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 		error("sbcast: data decompression error for UID %u, file %s",
 		      key.uid, key.fname);
 		_fb_rdunlock();
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto done;
 	}
 
 	offset = 0;
@@ -4164,7 +4167,8 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 			error("sbcast: uid:%u can't write `%s`: %m",
 			      key.uid, key.fname);
 			_fb_rdunlock();
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto done;
 		}
 		offset += inx;
 	}
@@ -4194,7 +4198,9 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 	if (req->last_block) {
 		_file_bcast_close_file(&key);
 	}
-	return SLURM_SUCCESS;
+
+done:
+	slurm_send_rc_msg(msg, rc);
 }
 
 static int _file_bcast_register_file(slurm_msg_t *msg,
