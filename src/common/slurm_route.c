@@ -78,203 +78,6 @@ static slurm_route_ops_t ops;
 static plugin_context_t	*g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
-static bool this_is_collector = false; /* this node is a collector node */
-static slurm_addr_t *msg_collect_node = NULL; /* address of node to aggregate
-						 messages from this node */
-/* addresses of backup nodes to aggregate messages from this node */
-static uint32_t msg_backup_cnt = 0;
-static slurm_addr_t **msg_collect_backup  = NULL;
-
-/* _get_all_nodes creates a hostlist containing all the nodes in the
- * node_record_table.
- *
- * Caller must destroy the list.
- */
-static hostlist_t _get_all_nodes( void )
-{
-	int i;
-	hostlist_t nodes = hostlist_create(NULL);
-	for (i = 0; i < node_record_count; i++) {
-		hostlist_push_host(nodes, node_record_table_ptr[i].name);
-	}
-	return nodes;
-}
-
-/*
- * _set_collectors call the split_hostlist API on the all nodes hostlist
- * to set the node to be used as a collector for unsolicited node aggregation.
- *
- * If this node is a forwarding node (first node in any hostlist),
- * then its collector and backup are the ControlMachine and it's backup.
- *
- * Otherwise, we find the hostlist containing this node.
- * The forwarding node in that hostlist becomes a collector, the next node
- * which is not this node becomes the backup.
- * That list is split, we iterate through it and searching for a list in
- * which this node is a forwarding node. If found, we set the collector and
- * backup, else this process is repeated.
- */
-static void _set_collectors(char *this_node_name)
-{
-	slurm_conf_t *conf;
-	hostlist_t  nodes;
-	hostlist_t *hll = NULL;
-	uint32_t backup_cnt;
-	char *parent = NULL, **backup;
-	int i, j, f = -1;
-	int hl_count = 0;
-	uint16_t parent_port;
-	uint16_t backup_port;
-	bool ctldparent = true;
-	char *tmp = NULL;
-
-#ifdef HAVE_FRONT_END
-	return; /* on a FrontEnd system this would never be useful. */
-#endif
-
-	if (!running_in_slurmd())
-		return; /* Only compute nodes have collectors */
-
-	/*
-	 * Set the initial iteration, collector is controller,
-	 * full list is split
-	 */
-	xassert(this_node_name);
-
-	conf = slurm_conf_lock();
-	nodes = _get_all_nodes();
-	backup_cnt = conf->control_cnt;
-	backup = xmalloc(sizeof(char *) * backup_cnt);
-	if (conf->slurmctld_addr) {
-		parent = strdup(conf->slurmctld_addr);
-		backup_cnt = 1;
-	} else
-		parent = strdup(conf->control_addr[0]);
-	for (i = 0; i < backup_cnt; i++) {
-		if (conf->control_addr[i])
-			backup[i] = xstrdup(conf->control_addr[i]);
-		else
-			backup[i] = NULL;
-	}
-	msg_backup_cnt = backup_cnt + 2;
-	msg_collect_backup = xmalloc(sizeof(slurm_addr_t *) * msg_backup_cnt);
-	parent_port = conf->slurmctld_port;
-	backup_port = parent_port;
-	slurm_conf_unlock();
-	while (1) {
-		if (route_g_split_hostlist(nodes, &hll, &hl_count, 0)) {
-			error("unable to split forward hostlist");
-			goto clean; /* collector addrs remains null */
-		}
-		/* Find which hostlist contains this node */
-		for (i = 0; i < hl_count; i++) {
-			f = hostlist_find(hll[i], this_node_name);
-			if (f != -1)
-				break;
-		}
-		if (i == hl_count) {
-			fatal("ROUTE -- %s not found in node_record_table",
-			      this_node_name);
-		}
-		if (f == 0) {
-			/*
-			 * we are a forwarded to node,
-			 * so our parent is "parent"
-			 */
-			if (hostlist_count(hll[i]) > 1)
-				this_is_collector = true;
-			xfree(msg_collect_node);
-			msg_collect_node = xmalloc(sizeof(slurm_addr_t));
-			if (ctldparent) {
-				slurm_set_addr(msg_collect_node, parent_port,
-					       parent);
-			} else {
-				slurm_conf_get_addr(parent, msg_collect_node, 0);
-				msg_collect_node->sin_port = htons(parent_port);
-			}
-			log_flag(ROUTE, "ROUTE -- message collector (%s) address is %pA",
-				 parent, msg_collect_node);
-			msg_backup_cnt = 0;
-			xfree(msg_collect_backup[0]);
-			for (i = 1; (i < backup_cnt) && backup[i]; i++) {
-				msg_backup_cnt = i;
-				msg_collect_backup[i-1] =
-					xmalloc(sizeof(slurm_addr_t));
-				if (ctldparent) {
-					slurm_set_addr(msg_collect_backup[i-1],
-						       backup_port, backup[i]);
-				} else {
-					slurm_conf_get_addr(backup[i],
-						msg_collect_backup[i-1], 0);
-					msg_collect_backup[i-1]->sin_port =
-						htons(backup_port);
-				}
-				log_flag(ROUTE, "ROUTE -- message collector backup[%d] (%s) address is %pA",
-					 i, backup[i], msg_collect_backup[i-1]);
-			}
-			if ((i == 1) &&
-			    (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE))
-				info("ROUTE -- no message collector backup");
-			goto clean;
-		}
-
-		/*
-		 * We are not a forwarding node, the first node in this list
-		 * will split the forward_list.
-		 * We also know that the forwarding node is not a controller.
-		 *
-		 * clean up parent context
-		 */
-		ctldparent = false;
-		hostlist_destroy(nodes);
-		nodes = hostlist_copy(hll[i]);
-		for (j = 0; j < hl_count; j++) {
-			hostlist_destroy(hll[j]);
-		}
-		xfree(hll);
-
-		/* set our parent, backup, and continue search */
-		for (i = 0; i < backup_cnt; i++)
-			xfree(backup[i]);
-		if (parent)
-			free(parent);
-		parent = hostlist_shift(nodes);
-		tmp = hostlist_nth(nodes, 0);
-		backup[0] = xstrdup(tmp);
-		free(tmp);
-		tmp = NULL;
-		if (xstrcmp(backup[0], this_node_name) == 0) {
-			xfree(backup[0]);
-			if (hostlist_count(nodes) > 1) {
-				tmp = hostlist_nth(nodes, 1);
-				backup[0] = xstrdup(tmp);
-				free(tmp);
-				tmp = NULL;
-			}
-		}
-		parent_port =  slurm_conf_get_port(parent);
-		if (backup[0])
-			backup_port = slurm_conf_get_port(backup[0]);
-		else
-			backup_port = 0;
-	}
-clean:
-	log_flag(ROUTE, "ROUTE -- %s is a %s node (parent:%pA)",
-		 this_node_name,
-		 this_is_collector ? "collector" : "leaf",
-		 msg_collect_node);
-
-	hostlist_destroy(nodes);
-	if (parent)
-		free(parent);
-	for (i = 0; i < backup_cnt; i++)
-		xfree(backup[i]);
-	xfree(backup);
-	for (i = 0; i < hl_count; i++) {
-		hostlist_destroy(hll[i]);
-	}
-	xfree(hll);
-}
 
 extern int route_init(char *node_name)
 {
@@ -301,7 +104,6 @@ extern int route_init(char *node_name)
 	}
 
 	init_run = true;
-	_set_collectors(node_name);
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
@@ -310,7 +112,7 @@ done:
 
 extern int route_fini(void)
 {
-	int i, rc;
+	int rc;
 
 	if (!g_context)
 		return SLURM_SUCCESS;
@@ -318,12 +120,6 @@ extern int route_fini(void)
 	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
-
-	xfree(msg_collect_node);
-	for (i = 0; i < msg_backup_cnt; i++)
-		xfree(msg_collect_backup[i]);
-	xfree(msg_collect_backup);
-	msg_backup_cnt = 0;
 
 	return rc;
 }
