@@ -5117,27 +5117,16 @@ _rpc_complete_batch(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 	for (i = 0; i <= MAX_RETRY; i++) {
-		if (conf->msg_aggr_window_msgs > 1) {
-			slurm_msg_t *req_msg =
-				xmalloc_nz(sizeof(slurm_msg_t));
-			slurm_msg_t_init(req_msg);
-			req_msg->msg_type = msg->msg_type;
-			req_msg->data = msg->data;
-			msg->data = NULL;
+		slurm_msg_t req_msg;
+		slurm_msg_t_init(&req_msg);
+		req_msg.msg_type = msg->msg_type;
+		req_msg.data = msg->data;
+		msg_rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+							working_cluster_rec);
 
-			msg_aggr_add_msg(req_msg, 1, NULL);
-			return;
-		} else {
-			slurm_msg_t req_msg;
-			slurm_msg_t_init(&req_msg);
-			req_msg.msg_type = msg->msg_type;
-			req_msg.data	 = msg->data;
-			msg_rc = slurm_send_recv_controller_msg(
-				&req_msg, &resp_msg, working_cluster_rec);
+		if (msg_rc == SLURM_SUCCESS)
+			break;
 
-			if (msg_rc == SLURM_SUCCESS)
-				break;
-		}
 		info("Retrying job complete RPC for job %u", req->job_id);
 		sleep(RETRY_DELAY);
 	}
