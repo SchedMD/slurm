@@ -2422,10 +2422,6 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 	int		rc, i, msg_rc;
 	slurm_msg_t	req_msg;
 	complete_batch_script_msg_t req;
-	bool msg_to_ctld = true;
-
-	if (conf->msg_aggr_window_msgs > 1)
-		msg_to_ctld = false;
 
 	memset(&req, 0, sizeof(req));
 	req.job_id	= job->jobid;
@@ -2446,20 +2442,8 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 
 	/* Note: these log messages don't go to slurmd.log from here */
 	for (i = 0; i <= MAX_RETRY; i++) {
-		if (msg_to_ctld) {
-			msg_rc = slurm_send_recv_controller_rc_msg(&req_msg, &rc,
-							working_cluster_rec);
-		} else {
-			/*
-			 * Send msg to slurmd, which forwards to slurmctld.
-			 */
-			if (i == 0) {
-				slurm_set_addr_char(&req_msg.address,
-						    conf->port, conf->hostname);
-			}
-			msg_rc = slurm_send_recv_rc_msg_only_one(&req_msg,
-								 &rc, 0);
-		}
+		msg_rc = slurm_send_recv_controller_rc_msg(&req_msg, &rc,
+							   working_cluster_rec);
 		if (msg_rc == SLURM_SUCCESS)
 			break;
 		info("Retrying job complete RPC for %u.%u",
