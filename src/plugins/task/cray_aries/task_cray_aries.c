@@ -707,7 +707,7 @@ static int _check_status_file(stepd_step_rec_t *job,
 		}
 
 		verbose("%ps task %u exited without calling PMI_Finalize()",
-			&job->jobid, taskid);
+			&job->step_id, taskid);
 	}
 	return SLURM_SUCCESS;
 }
