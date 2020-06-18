@@ -352,6 +352,7 @@ static int _set_cond(int *start, int argc, char **argv,
 				}
 				selected_step->step_id.job_id =
 					atoi(start_char);
+				selected_step->step_id.step_het_comp= NO_VAL;
 				selected_step->array_task_id = NO_VAL;
 				selected_step->het_job_offset = NO_VAL;
 				start_char = end_char + 1;

@@ -263,6 +263,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					selected_step->step_id.step_id =
 						atoi(dot);
 				}
+				selected_step->step_id.step_het_comp = NO_VAL;
 				selected_step->step_id.job_id =
 					atoi(start_char);
 				start_char = end_char + 1;

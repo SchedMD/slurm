@@ -1143,6 +1143,7 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	kill_req.step_id.job_id      = job_id;
 	kill_req.sjob_id     = NULL;
 	kill_req.step_id.step_id = SLURM_BATCH_SCRIPT;
+	kill_req.step_id.step_het_comp = NO_VAL;
 	kill_req.signal      = signal;
 	kill_req.flags       = flags;
 
@@ -1770,6 +1771,7 @@ static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
 		kill_req->step_id.job_id = job_update_info->job_id;
 		kill_req->sjob_id     = NULL;
 		kill_req->step_id.step_id = SLURM_BATCH_SCRIPT;
+		kill_req->step_id.step_het_comp = NO_VAL;
 		kill_req->signal      = SIGKILL;
 		kill_req->flags       = 0;
 

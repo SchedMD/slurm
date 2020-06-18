@@ -1835,10 +1835,11 @@ static int _list_find_cred_state(void *x, void *key)
 {
 	cred_state_t *s = (cred_state_t *) x;
 	slurm_cred_t *cred = (slurm_cred_t *) key;
-	if ((s->step_id.job_id == cred->step_id.job_id)  &&
-	    (s->step_id.step_id == cred->step_id.step_id) &&
-	    (s->ctime  == cred->ctime))
+
+	if (!memcmp(&s->step_id, &cred->step_id, sizeof(s->step_id)) &&
+	    (s->ctime == cred->ctime))
 		return 1;
+
 	return 0;
 }
 

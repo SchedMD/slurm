@@ -87,8 +87,7 @@ _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	uint32_t node_cnt = ctx->step_resp->step_layout->node_cnt;
 
 	memset(&arg, 0, sizeof(slurm_cred_arg_t));
-	arg.step_id.job_id = ctx->job_id;
-	arg.step_id.step_id = ctx->step_resp->job_step_id;
+	memcpy(&arg.step_id, &ctx->step_req->step_id, sizeof(arg.step_id));
 	arg.uid            = ctx->user_id;
 
 	arg.job_nhosts     = node_cnt;

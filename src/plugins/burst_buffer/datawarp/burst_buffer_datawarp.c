@@ -1557,6 +1557,7 @@ static void _update_system_comment(job_record_t *job_ptr, char *operation,
 		selected_step.step_id.job_id = job_ptr->job_id;
 		selected_step.het_job_offset = NO_VAL;
 		selected_step.step_id.step_id = NO_VAL;
+		selected_step.step_id.step_het_comp = NO_VAL;
 		job_cond.step_list = list_create(NULL);
 		list_append(job_cond.step_list, &selected_step);
 

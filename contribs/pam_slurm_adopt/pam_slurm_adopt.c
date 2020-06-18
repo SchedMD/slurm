@@ -443,6 +443,7 @@ static int _try_rpc(pam_handle_t *pamh, struct passwd *pwd)
 		*/
 		stepd.step_id.job_id = job_id;
 		stepd.step_id.step_id = SLURM_EXTERN_CONT;
+		stepd.step_id.step_het_comp = NO_VAL;
 
 		/* Adopt the process. If the adoption succeeds, return SUCCESS.
 		 * If not, maybe the adoption failed because the user hopped

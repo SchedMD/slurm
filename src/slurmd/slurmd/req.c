@@ -1507,8 +1507,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		slurm_mutex_lock(&job_limits_mutex);
 		if (!job_limits_list)
 			job_limits_list = list_create(xfree_ptr);
-		step_info.step_id.job_id  = req->step_id.job_id;
-		step_info.step_id.step_id = req->step_id.step_id;
+		memcpy(&step_info.step_id, &req->step_id,
+		       sizeof(step_info.step_id));
 		job_limits_ptr = list_find_first(job_limits_list,
 						 _step_limits_match,
 						 &step_info);

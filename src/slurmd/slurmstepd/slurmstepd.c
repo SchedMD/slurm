@@ -616,6 +616,7 @@ _init_from_slurmd(int sock, char **argv,
 	case LAUNCH_BATCH_JOB:
 		step_id.job_id = ((batch_job_launch_msg_t *)msg->data)->job_id;
 		step_id.step_id = SLURM_BATCH_SCRIPT;
+		step_id.step_het_comp = NO_VAL;
 		break;
 	case LAUNCH_TASKS:
 		memcpy(&step_id,
