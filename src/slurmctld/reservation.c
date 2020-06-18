@@ -4726,15 +4726,17 @@ static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 		   (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS)) {
 		log_flag(RESERVATION, "%s: reservation %s requests all %d nodes",
 			__func__, resv_desc_ptr->name, total_node_cnt);
-		return select_g_resv_test(resv_desc_ptr, node_cnt,
-					  avail_bitmap, core_bitmap);
+		ret_bitmap = select_g_resv_test(resv_desc_ptr, node_cnt,
+						avail_bitmap, core_bitmap);
+		goto fini;
 	} else if ((node_cnt == 0) &&
 		   ((resv_desc_ptr->core_cnt == NULL) ||
 		    (resv_desc_ptr->core_cnt[0] == 0)) &&
 		   (resv_desc_ptr->flags & RESERVE_FLAG_ANY_NODES)) {
 		log_flag(RESERVATION, "%s: reservation %s requests any of all %d nodes",
 			__func__, resv_desc_ptr->name, total_node_cnt);
-		return bit_alloc(bit_size(avail_bitmap));
+		ret_bitmap = bit_alloc(bit_size(avail_bitmap));
+		goto fini;
 	}
 
 	orig_bitmap = bit_copy(avail_bitmap);
