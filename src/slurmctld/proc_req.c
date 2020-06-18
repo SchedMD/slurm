@@ -1144,8 +1144,7 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 
 	memset(&cred_arg, 0, sizeof(cred_arg));
 
-	cred_arg.step_id.job_id = job_ptr->job_id;
-	cred_arg.step_id.step_id = step_ptr->step_id;
+	memcpy(&cred_arg.step_id, &step_ptr->step_id, sizeof(cred_arg.step_id));
 	cred_arg.uid      = job_ptr->user_id;
 	cred_arg.gid      = job_ptr->group_id;
 	cred_arg.x11             = job_ptr->details->x11;
@@ -2586,9 +2585,9 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 			step_ptr = build_batch_step(job_ptr);
 		}
 
-		if (step_ptr->step_id != SLURM_BATCH_SCRIPT) {
+		if (step_ptr->step_id.step_id != SLURM_BATCH_SCRIPT) {
 			error("%s: %pJ Didn't find batch step, found step %u. This should never happen.",
-			      __func__, job_ptr, step_ptr->step_id);
+			      __func__, job_ptr, step_ptr->step_id.step_id);
 		} else {
 			step_ptr->exit_code = comp_msg->job_rc;
 			jobacctinfo_destroy(step_ptr->jobacct);
@@ -2834,7 +2833,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 			 __func__, step_rec, req_step_msg->node_list, TIME_STR);
 
 		memset(&job_step_resp, 0, sizeof(job_step_resp));
-		job_step_resp.job_step_id = step_rec->step_id;
+		job_step_resp.job_step_id = step_rec->step_id.step_id;
 		job_step_resp.resv_ports  = step_rec->resv_ports;
 
 		job_step_resp.step_layout = step_rec->step_layout;

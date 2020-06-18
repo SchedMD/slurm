@@ -207,7 +207,7 @@ static int _purge_duplicate_steps(job_record_t *job_ptr,
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
-		if ((step_ptr->step_id  == SLURM_PENDING_STEP)   &&
+		if ((step_ptr->step_id.step_id == SLURM_PENDING_STEP)   &&
 		    (step_ptr->state    == JOB_PENDING)          &&
 		    (step_ptr->srun_pid	== step_specs->srun_pid) &&
 		    (xstrcmp(step_ptr->host, step_specs->host) == 0)) {
@@ -216,7 +216,7 @@ static int _purge_duplicate_steps(job_record_t *job_ptr,
 			break;
 		}
 		if ((step_specs->step_id.step_id != NO_VAL) &&
-		    (step_specs->step_id.step_id == step_ptr->step_id))
+		    (step_specs->step_id.step_id == step_ptr->step_id.step_id))
 			rc = ESLURM_DUPLICATE_STEP_ID;
 	}
 	list_iterator_destroy(step_iterator);
@@ -243,7 +243,8 @@ static void _build_pending_step(job_record_t *job_ptr,
 	step_ptr->srun_pid	= step_specs->srun_pid;
 	step_ptr->host		= xstrdup(step_specs->host);
 	step_ptr->state		= JOB_PENDING;
-	step_ptr->step_id	= SLURM_PENDING_STEP;
+	step_ptr->step_id.job_id = job_ptr->job_id;
+	step_ptr->step_id.step_id = SLURM_PENDING_STEP;
 	if (job_ptr->node_bitmap)
 		step_ptr->step_node_bitmap = bit_copy(job_ptr->node_bitmap);
 	step_ptr->time_last_active = time(NULL);
@@ -257,7 +258,7 @@ static void _internal_step_complete(job_record_t *job_ptr,
 	bool add_energy = true;
 
 	if ((slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN) &&
-	    (step_ptr->step_id != SLURM_EXTERN_CONT))
+	    (step_ptr->step_id.step_id != SLURM_EXTERN_CONT))
 		add_energy = false;
 
 	if (add_energy && jobacct && job_ptr->tres_alloc_cnt &&
@@ -283,15 +284,15 @@ static void _internal_step_complete(job_record_t *job_ptr,
 
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 
-	if (step_ptr->step_id == SLURM_PENDING_STEP)
+	if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
 		return;
 
 	/*
 	 * Derived exit code is the highest exit code of srun steps, so we
 	 * exclude the batch and extern steps.
 	 */
-	if ((step_ptr->step_id != SLURM_EXTERN_CONT) &&
-	    (step_ptr->step_id != SLURM_BATCH_SCRIPT) &&
+	if ((step_ptr->step_id.step_id != SLURM_EXTERN_CONT) &&
+	    (step_ptr->step_id.step_id != SLURM_BATCH_SCRIPT) &&
 	    ((step_ptr->exit_code == SIG_OOM) ||
 	     (step_ptr->exit_code > job_ptr->derived_ec)))
 		job_ptr->derived_ec = step_ptr->exit_code;
@@ -319,7 +320,7 @@ extern void delete_step_records(job_record_t *job_ptr)
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
 		/* Only check if not a pending step */
-		if (step_ptr->step_id != SLURM_PENDING_STEP) {
+		if (step_ptr->step_id.step_id != SLURM_PENDING_STEP) {
 			uint16_t cleaning = 0;
 			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
 						    SELECT_JOBDATA_CLEANING,
@@ -513,7 +514,7 @@ extern int _find_step_id(void *step_entry, void *key)
 {
 	uint32_t step_id = *(uint32_t *)key;
 
-	if (((step_record_t *)step_entry)->step_id == step_id)
+	if (((step_record_t *)step_entry)->step_id.step_id == step_id)
 		return 1;
 	else
 		return 0;
@@ -628,8 +629,8 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 	agent_args->retry    = 1;
 	agent_args->hostlist = hostlist_create(NULL);
 	signal_tasks_msg = xmalloc(sizeof(signal_tasks_msg_t));
-	signal_tasks_msg->step_id.job_id = step_ptr->job_ptr->job_id;
-	signal_tasks_msg->step_id.step_id = step_ptr->step_id;
+	memcpy(&signal_tasks_msg->step_id, &step_ptr->step_id,
+	       sizeof(signal_tasks_msg->step_id));
 	signal_tasks_msg->signal      = signal;
 
 #ifdef HAVE_FRONT_END
@@ -708,8 +709,8 @@ void signal_step_tasks_on_node(char* node_name, step_record_t *step_ptr,
 		fatal("Invalid node_name: %s", node_name);
 #endif
 	signal_tasks_msg = xmalloc(sizeof(signal_tasks_msg_t));
-	signal_tasks_msg->step_id.job_id = step_ptr->job_ptr->job_id;
-	signal_tasks_msg->step_id.step_id = step_ptr->step_id;
+	memcpy(&signal_tasks_msg->step_id, &step_ptr->step_id,
+	       sizeof(signal_tasks_msg->step_id));
 	signal_tasks_msg->signal      = signal;
 	agent_args->msg_args = signal_tasks_msg;
 	agent_queue_request(agent_args);
@@ -1457,8 +1458,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			 * Don't consider the batch and extern steps when
 			 * looking for "idle" nodes.
 			 */
-			if ((step_ptr->step_id == SLURM_BATCH_SCRIPT) ||
-			    (step_ptr->step_id == SLURM_EXTERN_CONT))
+			if ((step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) ||
+			    (step_ptr->step_id.step_id == SLURM_EXTERN_CONT))
 				continue;
 
 			if (!step_ptr->step_node_bitmap) {
@@ -1944,7 +1945,7 @@ extern void step_alloc_lps(step_record_t *step_ptr)
 				job_node_inx, first_step_node,
 				step_ptr->step_layout->tasks[step_node_inx],
 				rem_nodes, job_ptr->job_id,
-				step_ptr->step_id);
+				step_ptr->step_id.step_id);
 		first_step_node = false;
 		rem_nodes--;
 		if (step_ptr->pn_min_memory && _is_mem_resv()) {
@@ -1985,7 +1986,7 @@ extern void step_alloc_lps(step_record_t *step_ptr)
 			break;
 	}
 	gres_plugin_step_state_log(step_ptr->gres_list, job_ptr->job_id,
-				   step_ptr->step_id);
+				   step_ptr->step_id.step_id);
 }
 
 /* Dump a job step's CPU binding information.
@@ -2509,7 +2510,8 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->state      = JOB_RUNNING;
 
 	if (step_specs->step_id.step_id != NO_VAL) {
-		step_ptr->step_id = step_specs->step_id.step_id;
+		memcpy(&step_ptr->step_id, &step_specs->step_id,
+		       sizeof(step_ptr->step_id));
 		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
 					    step_specs->step_id.step_id);
 		job_ptr->next_step_id++;
@@ -2518,14 +2520,16 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		job_record_t *het_job;
 		het_job = find_job_record(job_ptr->het_job_id);
 		if (het_job)
-			step_ptr->step_id = het_job->next_step_id++;
+			step_ptr->step_id.step_id = het_job->next_step_id++;
 		else
-			step_ptr->step_id = job_ptr->next_step_id++;
+			step_ptr->step_id.step_id = job_ptr->next_step_id++;
 		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
-					    step_ptr->step_id);
+					    step_ptr->step_id.step_id);
 	} else {
-		step_ptr->step_id = job_ptr->next_step_id++;
+		step_ptr->step_id.step_id = job_ptr->next_step_id++;
 	}
+
+	step_ptr->step_id.job_id = job_ptr->job_id;
 
 	/* Here is where the node list is set for the step */
 	if (step_specs->node_list &&
@@ -2558,7 +2562,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->gres_list = step_gres_list;
 	step_gres_list      = (List) NULL;
 	gres_plugin_step_state_log(step_ptr->gres_list, job_ptr->job_id,
-				   step_ptr->step_id);
+				   step_ptr->step_id.step_id);
 
 	step_ptr->port = step_specs->port;
 	step_ptr->srun_pid = step_specs->srun_pid;
@@ -2698,7 +2702,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		}
 
 		/* Get the step record from the first component in the step */
-		het_step_ptr = find_step_record(het_job_ptr, step_ptr->step_id);
+		het_step_ptr = find_step_record(het_job_ptr, step_ptr->step_id.step_id);
 
 		jobid = job_ptr->het_job_id;
 		if (!het_step_ptr || !het_step_ptr->switch_job) {
@@ -2754,7 +2758,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	if (step_layout) {
 		if (switch_g_alloc_jobinfo(&step_ptr->switch_job,
 					   jobid,
-					   step_ptr->step_id) < 0)
+					   step_ptr->step_id.step_id) < 0)
 			fatal("%s: switch_g_alloc_jobinfo error", __func__);
 
 		if (switch_g_build_jobinfo(step_ptr->switch_job,
@@ -2950,7 +2954,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 							step_ptr->cpus_per_task,
 							rem_nodes, false,
 							job_ptr->job_id,
-							step_ptr->step_id);
+							step_ptr->step_id.step_id);
 			if (usable_cpus > gres_cpus)
 				usable_cpus = gres_cpus;
 			if (usable_cpus <= 0) {
@@ -3070,9 +3074,8 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, Buf buffer,
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 
-		/* This needs to match the pack of pack_step_id */
-		pack32(step_ptr->job_ptr->job_id, buffer);
-		pack32(step_ptr->step_id, buffer);
+		pack_step_id(&step_ptr->step_id, buffer, protocol_version);
+
 		pack32(step_ptr->job_ptr->user_id, buffer);
 		pack32(cpu_cnt, buffer);
 		pack32(step_ptr->cpu_freq_min, buffer);
@@ -3125,8 +3128,7 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, Buf buffer,
 	} else if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
-		pack32(step_ptr->job_ptr->job_id, buffer);
-		pack_old_step_id(step_ptr->step_id, buffer);
+		pack_step_id(&step_ptr->step_id, buffer, protocol_version);
 		pack32(step_ptr->job_ptr->user_id, buffer);
 		pack32(cpu_cnt, buffer);
 		pack32(step_ptr->cpu_freq_min, buffer);
@@ -3179,8 +3181,7 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, Buf buffer,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
-		pack32(step_ptr->job_ptr->job_id, buffer);
-		pack_old_step_id(step_ptr->step_id, buffer);
+		pack_step_id(&step_ptr->step_id, buffer, protocol_version);
 		pack16(0, buffer); /* was ckpt_interval */
 		pack32(step_ptr->job_ptr->user_id, buffer);
 		pack32(cpu_cnt, buffer);
@@ -3288,7 +3289,7 @@ extern int pack_ctld_job_step_info_response_msg(
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = list_next(step_iterator))) {
 			if ((step_id != NO_VAL) &&
-			    (step_ptr->step_id != step_id))
+			    (step_ptr->step_id.step_id != step_id))
 				continue;
 			_pack_ctld_job_step_info(step_ptr, buffer,
 						 protocol_version);
@@ -3356,8 +3357,9 @@ extern int kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 				step_node_inx++;
 		}
 		memset(&req, 0, sizeof(step_complete_msg_t));
-		req.step_id.job_id = job_ptr->job_id;
-		req.step_id.step_id = step_ptr->step_id;
+
+		memcpy(&req.step_id, &step_ptr->step_id, sizeof(req.step_id));
+
 		req.range_first = step_node_inx;
 		req.range_last = step_node_inx;
 		req.step_rc = 9;
@@ -3521,7 +3523,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 	/* The step has finished, finish it completely */
 	if (!*rem && finish) {
 		uint16_t cleaning = 0;
-		if (step_ptr->step_id == SLURM_PENDING_STEP)
+		if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
 			return SLURM_SUCCESS;
 
 		/* If the job is already cleaning we have already been here
@@ -3559,7 +3561,7 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 	xfree(step_ptr->tres_alloc_str);
 	xfree(step_ptr->tres_fmt_alloc_str);
 
-	if ((step_ptr->step_id == SLURM_BATCH_SCRIPT) &&
+	if ((step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) &&
 	    step_ptr->job_ptr->job_resrcs) {
 		/* get the cpus and memory on the first node */
 		if (step_ptr->job_ptr->job_resrcs->cpus)
@@ -3567,7 +3569,7 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 		if (step_ptr->job_ptr->job_resrcs->memory_allocated)
 			mem_count = step_ptr->job_ptr->job_resrcs->
 				memory_allocated[0];
-	} else if ((step_ptr->step_id == SLURM_EXTERN_CONT) &&
+	} else if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) &&
 		   step_ptr->job_ptr->tres_alloc_str) {
 		/* get the tres from the whole job */
 		step_ptr->tres_alloc_str =
@@ -3781,7 +3783,7 @@ extern int dump_job_step_state(void *x, void *arg)
 
 	pack16((uint16_t) STEP_FLAG, buffer);
 
-	pack32(step_ptr->step_id, buffer);
+	pack32(step_ptr->step_id.step_id, buffer);
 	pack16(step_ptr->cyclic_alloc, buffer);
 	pack32(step_ptr->srun_pid, buffer);
 	pack16(step_ptr->port, buffer);
@@ -3815,7 +3817,7 @@ extern int dump_job_step_state(void *x, void *arg)
 
 	(void) gres_plugin_step_state_pack(step_ptr->gres_list, buffer,
 					   step_ptr->job_ptr->job_id,
-					   step_ptr->step_id,
+					   step_ptr->step_id.step_id,
 					   SLURM_PROTOCOL_VERSION);
 
 	pack16(step_ptr->batch_step, buffer);
@@ -4121,7 +4123,8 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		goto unpack_error;
 
 	/* set new values */
-	step_ptr->step_id      = step_id;
+	step_ptr->step_id.job_id = job_ptr->job_id;
+	step_ptr->step_id.step_id = step_id;
 	step_ptr->cpu_count    = cpu_count;
 	step_ptr->cpus_per_task= cpus_per_task;
 	step_ptr->cyclic_alloc = cyclic_alloc;
@@ -4150,7 +4153,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 	slurm_step_layout_destroy(step_ptr->step_layout);
 	step_ptr->step_layout  = step_layout;
 
-	if ((step_ptr->step_id == SLURM_EXTERN_CONT) && switch_tmp) {
+	if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) && switch_tmp) {
 		switch_g_free_jobinfo(switch_tmp);
 		switch_tmp = NULL;
 	} else
@@ -4262,9 +4265,9 @@ static void _signal_step_timelimit(job_record_t *job_ptr, step_record_t *step_pt
 	agent_args->retry = 1;
 	agent_args->hostlist = hostlist_create(NULL);
 	kill_step = xmalloc(sizeof(kill_job_msg_t));
-	kill_step->step_id.job_id = job_ptr->job_id;
+	memcpy(&kill_step->step_id, &step_ptr->step_id,
+	       sizeof(kill_step->step_id));
 	kill_step->het_job_id = job_ptr->het_job_id;
-	kill_step->step_id.step_id = step_ptr->step_id;
 	kill_step->job_state = job_ptr->job_state;
 	kill_step->job_uid   = job_ptr->user_id;
 	kill_step->job_gid   = job_ptr->group_id;
@@ -4300,7 +4303,7 @@ static void _signal_step_timelimit(job_record_t *job_ptr, step_record_t *step_pt
 	} else {
 		/* Could happen on node failure */
 		info("%s: %pJ Step %u has NULL node_bitmap", __func__,
-		     job_ptr, step_ptr->step_id);
+		     job_ptr, step_ptr->step_id.step_id);
 	}
 #endif
 
@@ -4404,7 +4407,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 			step_ptr->requid     = -1;
 			step_ptr->step_node_bitmap =
 				bit_copy(job_ptr->node_bitmap);
-			req->step_id = step_ptr->step_id =
+			req->step_id = step_ptr->step_id.step_id =
 				job_ptr->next_step_id++;
 			new_step = 1;
 		} else {
@@ -4421,7 +4424,8 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 				step_ptr->job_ptr    = job_ptr;
 				step_ptr->jobacct    = jobacctinfo_create(NULL);
 				step_ptr->requid     = -1;
-				step_ptr->step_id    = req->step_id;
+				step_ptr->step_id.job_id = job_ptr->job_id;
+				step_ptr->step_id.step_id = req->step_id;
 				new_step = 1;
 			}
 		}
@@ -4586,7 +4590,7 @@ extern int post_job_step(step_record_t *step_ptr)
 	_step_dealloc_lps(step_ptr);
 	gres_plugin_step_dealloc(step_ptr->gres_list,
 				 job_ptr->gres_list, job_ptr->job_id,
-				 step_ptr->step_id);
+				 step_ptr->step_id.step_id);
 
 	/* Don't need to set state. Will be destroyed in next steps. */
 	/* step_ptr->state = JOB_COMPLETE; */
@@ -4623,7 +4627,8 @@ extern step_record_t *build_extern_step(job_record_t *job_ptr)
 	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
 	step_ptr->state = JOB_RUNNING;
 	step_ptr->start_time = job_ptr->start_time;
-	step_ptr->step_id = SLURM_EXTERN_CONT;
+	step_ptr->step_id.job_id = job_ptr->job_id;
+	step_ptr->step_id.step_id = SLURM_EXTERN_CONT;
 	if (job_ptr->node_bitmap)
 		step_ptr->step_node_bitmap =
 			bit_copy(job_ptr->node_bitmap);
@@ -4659,7 +4664,8 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
 	step_ptr->state = JOB_RUNNING;
 	step_ptr->start_time = job_ptr->start_time;
-	step_ptr->step_id = SLURM_BATCH_SCRIPT;
+	step_ptr->step_id.job_id = job_ptr->job_id;
+	step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
 	step_ptr->batch_step = 1;
 
 	if (node_name2bitmap(job_ptr->batch_host, false,

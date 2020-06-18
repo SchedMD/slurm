@@ -236,7 +236,7 @@ static uint16_t _is_step_cleaning(job_record_t *job_ptr)
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
 		/* Only check if not a pending step */
-		if (step_ptr->step_id != SLURM_PENDING_STEP) {
+		if (step_ptr->step_id.step_id != SLURM_PENDING_STEP) {
 			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
 						    SELECT_JOBDATA_CLEANING,
 						    &cleaning);

@@ -1822,13 +1822,12 @@ _exec_prog(slurm_msg_t *msg)
 		error("%s: called with no command to execute", __func__);
 		return;
 	} else if (exec_msg->argc > 2) {
-		verbose("Exec '%s %s' for %u.%u",
+		verbose("Exec '%s %s' for %ps",
 			exec_msg->argv[0], exec_msg->argv[1],
-			exec_msg->job_id, exec_msg->step_id);
+			&exec_msg->step_id);
 	} else {
-		verbose("Exec '%s' for %u.%u",
-			exec_msg->argv[0],
-			exec_msg->job_id, exec_msg->step_id);
+		verbose("Exec '%s' for %ps",
+			exec_msg->argv[0], &exec_msg->step_id);
 	}
 
 	if (pipe(pfd) == -1) {

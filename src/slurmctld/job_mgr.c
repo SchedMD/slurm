@@ -14217,8 +14217,8 @@ static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
 	xassert(job_ptr);
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
-		if ((step_ptr->step_id == SLURM_EXTERN_CONT) ||
-		    (step_ptr->step_id == SLURM_BATCH_SCRIPT) ||
+		if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) ||
+		    (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) ||
 		    (step_ptr->state != JOB_RUNNING))
 			continue;
 		if (!bit_test(step_ptr->step_node_bitmap, node_inx))
@@ -14241,7 +14241,7 @@ static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
 			 * on this node before its reboot, but that should be
 			 * very rare and there is no srun to work with (POE) */
 			info("Node %s rebooted, killing missing step %u.%u",
-			     node_name, job_ptr->job_id, step_ptr->step_id);
+			     node_name, job_ptr->job_id, step_ptr->step_id.step_id);
 			signal_step_tasks_on_node(node_name, step_ptr, SIGKILL,
 						  REQUEST_TERMINATE_TASKS);
 		}
@@ -15309,12 +15309,9 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 		step_record_t *step_ptr;
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = list_next(step_iterator))) {
-			slurm_step_id_t step_id = { .job_id = job_ptr->job_id,
-						    .step_id =
-						    step_ptr->step_id };
 			/* Since we have already checked the uid,
 			 * we can send this signal as uid 0. */
-			job_step_signal(&step_id, signal, 0, 0);
+			job_step_signal(&step_ptr->step_id, signal, 0, 0);
 		}
 		list_iterator_destroy (step_iterator);
 

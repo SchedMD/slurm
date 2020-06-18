@@ -1119,10 +1119,9 @@ typedef struct {
 } config_response_msg_t;
 
 typedef struct srun_exec_msg {
-	uint32_t job_id;	/* slurm job_id */
-	uint32_t step_id;	/* step_id or NO_VAL */
 	uint32_t argc;		/* argument count */
 	char **  argv;		/* program arguments */
+	slurm_step_id_t step_id;
 } srun_exec_msg_t;
 
 typedef struct kvs_get_msg {

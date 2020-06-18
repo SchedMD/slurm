@@ -3438,7 +3438,8 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	job.start_time = step_comp_msg->start_time;
 	job.tres_alloc_str = step_comp_msg->job_tres_alloc_str;
 	step.state = step_comp_msg->state;
-	step.step_id = step_comp_msg->step_id;
+	step.step_id.job_id = step_comp_msg->job_id;
+	step.step_id.step_id = step_comp_msg->step_id;
 	details.submit_time = step_comp_msg->job_submit_time;
 	details.num_tasks = step_comp_msg->total_tasks;
 
@@ -3506,7 +3507,8 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.start_protocol_ver = slurmdbd_conn->conn->version;
 	step.start_time = step_start_msg->start_time;
 	details.submit_time = step_start_msg->job_submit_time;
-	step.step_id = step_start_msg->step_id;
+	step.step_id.job_id = step_start_msg->job_id;
+	step.step_id.step_id = step_start_msg->step_id;
 	details.num_tasks = step_start_msg->total_tasks;
 	step.cpu_freq_min = step_start_msg->req_cpufreq_min;
 	step.cpu_freq_max = step_start_msg->req_cpufreq_max;

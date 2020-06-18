@@ -767,15 +767,8 @@ static char *_stepid2fmt(step_record_t *step_ptr, char *buf, int buf_size)
 	if (step_ptr->magic != STEP_MAGIC)
 		return " StepId=CORRUPT";
 
-	if (step_ptr->step_id == SLURM_EXTERN_CONT) {
-		return " StepId=Extern";
-	} else if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
-		return " StepId=Batch";
-	} else if (step_ptr->step_id == SLURM_PENDING_STEP) {
-		return " StepId=TBD";
-	} else {
-		snprintf(buf, buf_size, " StepId=%u", step_ptr->step_id);
-	}
+	return log_build_step_id_str(&step_ptr->step_id, buf, buf_size,
+				     STEP_ID_FLAG_SPACE | STEP_ID_FLAG_NO_JOB);
 
 	return buf;
 }
@@ -1501,6 +1494,8 @@ extern char *log_build_step_id_str(
 {
 	int pos = 0;
 
+	if (flags & STEP_ID_FLAG_SPACE)
+		pos += snprintf(buf + pos, buf_size - pos, " ");
 	/*
 	 * NOTE: You will notice we put a %.0s in front of the string if running
 	 * with %ps like interactions.

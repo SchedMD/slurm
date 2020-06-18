@@ -4614,7 +4614,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 	 */
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->step_id == SLURM_PENDING_STEP)
+		if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
 			continue;
 		select_g_step_finish(step_ptr, true);
 	}

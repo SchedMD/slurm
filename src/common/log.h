@@ -242,6 +242,7 @@ extern int get_sched_log_level(void);
 #define STEP_ID_FLAG_PS        0x0001
 #define STEP_ID_FLAG_NO_JOB    0x0002
 #define STEP_ID_FLAG_NO_PREFIX 0x0004
+#define STEP_ID_FLAG_SPACE     0x0008
 
 /*
  * log_build_step_id_str() - print a slurm_step_id_t as " StepId=...", with
