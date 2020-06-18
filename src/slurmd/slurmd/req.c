@@ -279,14 +279,13 @@ slurmd_req(slurm_msg_t *msg)
 		return;
 	}
 
+	debug2("Processing RPC: %s", rpc_num2string(msg->msg_type));
 	switch (msg->msg_type) {
 	case REQUEST_LAUNCH_PROLOG:
-		debug2("Processing RPC: REQUEST_LAUNCH_PROLOG");
 		_rpc_prolog(msg);
 		last_slurmctld_msg = time(NULL);
 		break;
 	case REQUEST_BATCH_JOB_LAUNCH:
-		debug2("Processing RPC: REQUEST_BATCH_JOB_LAUNCH");
 		/* Mutex locking moved into _rpc_batch_job() due to
 		 * very slow prolog on Blue Gene system. Only batch
 		 * jobs are supported on Blue Gene (no job steps). */
@@ -294,77 +293,61 @@ slurmd_req(slurm_msg_t *msg)
 		last_slurmctld_msg = time(NULL);
 		break;
 	case REQUEST_LAUNCH_TASKS:
-		debug2("Processing RPC: REQUEST_LAUNCH_TASKS");
 		slurm_mutex_lock(&launch_mutex);
 		_rpc_launch_tasks(msg);
 		slurm_mutex_unlock(&launch_mutex);
 		break;
 	case REQUEST_SIGNAL_TASKS:
-		debug2("Processing RPC: REQUEST_SIGNAL_TASKS");
 		_rpc_signal_tasks(msg);
 		break;
 	case REQUEST_TERMINATE_TASKS:
-		debug2("Processing RPC: REQUEST_TERMINATE_TASKS");
 		_rpc_terminate_tasks(msg);
 		break;
 	case REQUEST_KILL_PREEMPTED:
-		debug2("Processing RPC: REQUEST_KILL_PREEMPTED");
 		last_slurmctld_msg = time(NULL);
 		_rpc_timelimit(msg);
 		break;
 	case REQUEST_KILL_TIMELIMIT:
-		debug2("Processing RPC: REQUEST_KILL_TIMELIMIT");
 		last_slurmctld_msg = time(NULL);
 		_rpc_timelimit(msg);
 		break;
 	case REQUEST_REATTACH_TASKS:
-		debug2("Processing RPC: REQUEST_REATTACH_TASKS");
 		_rpc_reattach_tasks(msg);
 		break;
 	case REQUEST_SUSPEND_INT:
-		debug2("Processing RPC: REQUEST_SUSPEND_INT");
 		_rpc_suspend_job(msg);
 		last_slurmctld_msg = time(NULL);
 		break;
 	case REQUEST_ABORT_JOB:
-		debug2("Processing RPC: REQUEST_ABORT_JOB");
 		last_slurmctld_msg = time(NULL);
 		_rpc_abort_job(msg);
 		break;
 	case REQUEST_TERMINATE_JOB:
-		debug2("Processing RPC: REQUEST_TERMINATE_JOB");
 		last_slurmctld_msg = time(NULL);
 		_rpc_terminate_job(msg);
 		break;
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		debug2("Processing RPC: REQUEST_COMPLETE_BATCH_SCRIPT");
 		_rpc_complete_batch(msg);
 		break;
 	case REQUEST_UPDATE_JOB_TIME:
-		debug2("Processing RPC: REQUEST_UPDATE_JOB_TIME");
 		_rpc_update_time(msg);
 		last_slurmctld_msg = time(NULL);
 		break;
 	case REQUEST_SHUTDOWN:
-		debug2("Processing RPC: REQUEST_SHUTDOWN");
 		_rpc_shutdown(msg);
 		break;
 	case REQUEST_RECONFIGURE:
-		debug2("Processing RPC: REQUEST_RECONFIGURE");
 		_rpc_reconfig(msg);
 		last_slurmctld_msg = time(NULL);
 		break;
 	case REQUEST_RECONFIGURE_WITH_CONFIG:
-		debug2("Processing RPC: REQUEST_RECONFIGURE_WITH_CONFIG");
 		_rpc_reconfig_with_config(msg);
 		last_slurmctld_msg = time(NULL);
 		break;
 	case REQUEST_REBOOT_NODES:
-		debug2("Processing RPC: REQUEST_REBOOT_NODES");
 		_rpc_reboot(msg);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
-		debug2("Processing RPC: REQUEST_NODE_REGISTRATION_STATUS");
 		get_reg_resp = 1;
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
 		rc = _rpc_ping(msg);
@@ -378,17 +361,14 @@ slurmd_req(slurm_msg_t *msg)
 		last_slurmctld_msg = time(NULL);
 		break;
 	case REQUEST_HEALTH_CHECK:
-		debug2("Processing RPC: REQUEST_HEALTH_CHECK");
 		_rpc_health_check(msg);
 		last_slurmctld_msg = time(NULL);
 		break;
 	case REQUEST_ACCT_GATHER_UPDATE:
-		debug2("Processing RPC: REQUEST_ACCT_GATHER_UPDATE");
 		_rpc_acct_gather_update(msg);
 		last_slurmctld_msg = time(NULL);
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
-		debug2("Processing RPC: REQUEST_ACCT_GATHER_ENERGY");
 		_rpc_acct_gather_energy(msg);
 		break;
 	case REQUEST_JOB_ID:
@@ -417,7 +397,6 @@ slurmd_req(slurm_msg_t *msg)
 		_rpc_forward_data(msg);
 		break;
 	case REQUEST_NETWORK_CALLERID:
-		debug2("Processing RPC: REQUEST_NETWORK_CALLERID");
 		_rpc_network_callerid(msg);
 		break;
 	default:
