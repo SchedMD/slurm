@@ -279,7 +279,7 @@ void slurmctld_req(slurm_msg_t *msg)
 			     msg->conn->rem_host, rpc_uid);
 		} else {
 			slurm_addr_t cli_addr;
-			slurm_get_peer_addr(msg->conn_fd, &cli_addr);
+			(void) slurm_get_peer_addr(msg->conn_fd, &cli_addr);
 			info("%s: received opcode %s from %pA uid %u",
 			     __func__, p, &cli_addr, rpc_uid);
 		}

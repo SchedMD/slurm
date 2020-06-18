@@ -1251,7 +1251,7 @@ static void *_service_connection(void *arg)
 	 */
 	if (slurm_receive_msg(fd, &msg, 0) != 0) {
 		slurm_addr_t cli_addr;
-		slurm_get_peer_addr(fd, &cli_addr);
+		(void) slurm_get_peer_addr(fd, &cli_addr);
 		error("slurm_receive_msg [%pA]: %m", &cli_addr);
 		/* close the new socket */
 		close(fd);
