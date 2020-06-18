@@ -79,7 +79,6 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/msg_aggr.h"
 #include "src/common/node_conf.h"
 #include "src/common/node_features.h"
 #include "src/common/node_select.h"
@@ -188,7 +187,6 @@ static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
 static int       _drain_node(char *reason);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
-static uint64_t  _get_int(const char *my_str);
 static void      _handle_connection(int fd, slurm_addr_t *client);
 static void      _hup_handler(int);
 static void      _increment_thd_count(void);
@@ -198,7 +196,6 @@ static bool      _is_core_spec_cray(void);
 static void      _kill_old_slurmd(void);
 static int       _memory_spec_init(void);
 static void      _msg_engine(void);
-static uint64_t  _parse_msg_aggr_params(int type, char *params);
 static void      _print_conf(void);
 static void      _print_config(void);
 static void      _print_gres(void);
@@ -211,7 +208,6 @@ static int       _resource_spec_init(void);
 static int       _restore_cred_state(slurm_cred_ctx_t ctx);
 static void      _select_spec_cores(void);
 static void     *_service_connection(void *);
-static void      _set_msg_aggr_params(void);
 static int       _set_slurmd_spooldir(const char *dir);
 static int       _set_topo_info(void);
 static int       _slurmd_init(void);
@@ -394,10 +390,6 @@ main (int argc, char **argv)
 	record_launched_jobs();
 
 	run_script_health_check();
-
-	msg_aggr_sender_init(conf->hostname, conf->port,
-			     conf->msg_aggr_window_time,
-			     conf->msg_aggr_window_msgs);
 
 	slurm_thread_create_detached(NULL, _registration_engine, NULL);
 
@@ -1039,8 +1031,6 @@ _read_config(void)
 	if (cc != -1)
 		conf->acct_freq_task = cc;
 
-	_set_msg_aggr_params();
-
 	if ( (conf->node_name == NULL) ||
 	     (conf->node_name[0] == '\0') )
 		fatal("Node name lookup failure");
@@ -1101,9 +1091,6 @@ _reconfigure(void)
 	slurm_topo_build_config();
 	_set_topo_info();
 	route_g_reconfigure();
-
-	msg_aggr_sender_reconfig(conf->msg_aggr_window_time,
-				 conf->msg_aggr_window_msgs);
 
 	/*
 	 * In case the administrator changed the cpu frequency set capabilities
@@ -2011,7 +1998,6 @@ extern void slurmd_shutdown(int signum)
 		_shutdown = 1;
 		if (msg_pthread && (pthread_self() != msg_pthread))
 			pthread_kill(msg_pthread, SIGTERM);
-		msg_aggr_sender_fini();
 	}
 }
 
@@ -2245,60 +2231,6 @@ static int _set_topo_info(void)
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	return rc;
-}
-
-static uint64_t _get_int(const char *my_str)
-{
-	char *end = NULL;
-	uint64_t value;
-
-	if (!my_str)
-		return NO_VAL;
-	value = strtol(my_str, &end, 10);
-	if (my_str == end)
-		return NO_VAL;
-	return value;
-}
-
-static uint64_t _parse_msg_aggr_params(int type, char *params)
-{
-	uint64_t value = NO_VAL;
-	char *sub_str = NULL;
-
-	if (!params)
-		return NO_VAL;
-
-	switch (type) {
-	case WINDOW_TIME:
-		if ((sub_str = xstrcasestr(params, "WindowTime=")))
-			value = _get_int(sub_str + 11);
-		break;
-	case WINDOW_MSGS:
-		if ((sub_str = xstrcasestr(params, "WindowMsgs=")))
-			value = _get_int(sub_str + 11);
-		break;
-	default:
-		fatal("invalid message aggregation parameters: %s", params);
-	}
-	return value;
-}
-
-static void _set_msg_aggr_params(void)
-{
-	conf->msg_aggr_window_time =
-		_parse_msg_aggr_params(WINDOW_TIME, slurm_conf.msg_aggr_params);
-	conf->msg_aggr_window_msgs =
-		_parse_msg_aggr_params(WINDOW_MSGS, slurm_conf.msg_aggr_params);
-
-	if (conf->msg_aggr_window_time == NO_VAL)
-		conf->msg_aggr_window_time = DEFAULT_MSG_AGGR_WINDOW_TIME;
-	if (conf->msg_aggr_window_msgs == NO_VAL)
-		conf->msg_aggr_window_msgs = DEFAULT_MSG_AGGR_WINDOW_MSGS;
-	if (conf->msg_aggr_window_msgs > 1) {
-		info("Message aggregation enabled: WindowMsgs=%"PRIu64", WindowTime=%"PRIu64,
-		     conf->msg_aggr_window_msgs, conf->msg_aggr_window_time);
-	} else
-		info("Message aggregation disabled");
 }
 
 /*

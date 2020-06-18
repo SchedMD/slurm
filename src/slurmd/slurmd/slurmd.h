@@ -56,14 +56,6 @@ extern pid_t getpgid(pid_t pid);
 extern int devnull;
 extern bool get_reg_resp;
 
-/*
- * Message aggregation types
- */
-typedef enum {
-	WINDOW_TIME,
-	WINDOW_MSGS
-} msg_aggr_param_type_t;
-
 typedef struct {
 	char **gres_job_env;
 	uint32_t het_job_id;
@@ -143,8 +135,6 @@ typedef struct slurmd_config {
 
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        acct_freq_task;
-	uint64_t        msg_aggr_window_msgs; /* msg aggr window size in msgs */
-	uint64_t        msg_aggr_window_time; /* msg aggr window size in time */
 
 	List		starting_steps; /* steps that are starting but cannot
 					   receive RPCs yet */
