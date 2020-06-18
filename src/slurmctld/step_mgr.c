@@ -171,7 +171,7 @@ static step_record_t *_create_step_record(job_record_t *job_ptr,
 	/* NOTE: Reserve highest step ID values for
 	 * SLURM_EXTERN_CONT and SLURM_BATCH_SCRIPT and any other
 	 * special step that may come our way. */
-	if (job_ptr->next_step_id >= 0xfffffff0) {
+	if (job_ptr->next_step_id >= SLURM_MAX_NORMAL_STEP_ID) {
 		/* avoid step records in the accounting database */
 		info("%pJ has reached step id limit", job_ptr);
 		return NULL;
