@@ -3470,6 +3470,8 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 	step_record_t *step_ptr;
 	int nodes, rem_nodes;
 
+	xassert(rem);
+
 	/* find the job, step, and validate input */
 	job_ptr = find_job_record(req->step_id.job_id);
 	if (job_ptr == NULL) {
@@ -3548,8 +3550,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 		 req->range_first, req->range_last);
 	rem_nodes = bit_clear_count(step_ptr->exit_node_bitmap);
 #endif
-	if (rem)
-		*rem = rem_nodes;
+	*rem = rem_nodes;
 	if (rem_nodes == 0) {
 		/* release all switch windows */
 		if (step_ptr->switch_job) {
