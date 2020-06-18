@@ -263,8 +263,9 @@ try_again:
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
-	if (job_setapid(pid, SLURM_ID_HASH(jobid, job->stepid)) == -1) {
+		jobid = job->step_id.job_id;
+	if (job_setapid(pid, SLURM_ID_HASH(jobid,
+					   job->step_id.step_id)) == -1) {
 		error("Failed to set pid %d apid: %m", pid);
 		return SLURM_ERROR;
 	}

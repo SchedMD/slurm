@@ -298,7 +298,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
 	else
-		jobid = job->step_id.jobid;
+		jobid = job->step_id.job_id;
 
 	if (job->het_job_task_offset != NO_VAL)
 		offset = job->het_job_task_offset;
@@ -648,7 +648,7 @@ static int _check_status_file(stepd_step_rec_t *job,
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
 	else
-		jobid = job->step_id.jobid;
+		jobid = job->step_id.job_id;
 
 	if (job->het_job_task_offset != NO_VAL)
 		offset = job->het_job_task_offset;
