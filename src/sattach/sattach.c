@@ -538,8 +538,8 @@ _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 
 	if ((msg->step_id.job_id != opt.jobid) ||
 	    (msg->step_id.step_id != opt.stepid)) {
-		debug("Received MESSAGE_TASK_EXIT from wrong job: %u.%u",
-		      msg->step_id.job_id, msg->step_id.step_id);
+		debug("Received MESSAGE_TASK_EXIT from wrong job: %ps",
+		      &msg->step_id);
 		return;
 	}
 

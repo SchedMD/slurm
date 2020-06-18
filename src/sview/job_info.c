@@ -614,9 +614,19 @@ static int _cancel_step_id(uint32_t job_id, uint32_t step_id,
 {
 	int error_code = SLURM_SUCCESS, i;
 	char *temp = NULL;
+	char tmp_char[45];
+	slurm_step_id_t step_id_tmp = {
+		.job_id = job_id,
+		.step_het_comp = NO_VAL,
+		.step_id = step_id,
+	};
+
+	log_build_step_id_str(&step_id_tmp, tmp_char, sizeof(tmp_char),
+			      STEP_ID_FLAG_NONE);
 
 	if (signal == (uint16_t)-1)
 		signal = SIGKILL;
+
 	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
 		/* NOTE: RPC always sent to slurmctld rather than directly
 		 * to slurmd daemons */
@@ -626,8 +636,8 @@ static int _cancel_step_id(uint32_t job_id, uint32_t step_id,
 		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
 			&& errno != ESLURM_JOB_PENDING))
 			break;
-		temp = g_strdup_printf("Sending signal %u to job step %u.%u",
-				       signal, job_id, step_id);
+		temp = g_strdup_printf("Sending signal %u to %s",
+				       signal, tmp_char);
 		display_edit_note(temp);
 		g_free(temp);
 		sleep ( 5 + i );
@@ -637,8 +647,8 @@ static int _cancel_step_id(uint32_t job_id, uint32_t step_id,
 		error_code = slurm_get_errno();
 		if (error_code != ESLURM_ALREADY_DONE) {
 			temp = g_strdup_printf(
-				"Kill job error on job step id %u.%u: %s",
-		 		job_id, step_id,
+				"Kill job error on %s: %s",
+		 		tmp_char,
 				slurm_strerror(slurm_get_errno()));
 			display_edit_note(temp);
 			g_free(temp);

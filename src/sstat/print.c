@@ -246,17 +246,9 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_JOBID:
-			if (step->step_id.step_id == SLURM_BATCH_SCRIPT)
-				snprintf(outbuf, sizeof(outbuf), "%u.batch",
-					 step->job_ptr->jobid);
-			else if (step->step_id.step_id == SLURM_EXTERN_CONT)
-				snprintf(outbuf, sizeof(outbuf), "%u.extern",
-					 step->job_ptr->jobid);
-			else
-				snprintf(outbuf, sizeof(outbuf), "%u.%u",
-					 step->job_ptr->jobid,
-					 step->step_id.step_id);
-
+			log_build_step_id_str(&step->step_id, outbuf,
+					      sizeof(outbuf),
+					      STEP_ID_FLAG_NO_PREFIX);
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));

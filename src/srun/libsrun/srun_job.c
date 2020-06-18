@@ -1721,8 +1721,7 @@ static void _handle_intr(srun_job_t *job)
 	gettimeofday(&now, NULL);
 	if (!sropt.quit_on_intr && (_diff_tv_str(&last_intr, &now) > 1000000)) {
 		if (sropt.disable_status) {
-			info("sending Ctrl-C to job %u.%u",
-			     job->step_id.job_id, job->step_id.step_id);
+			info("sending Ctrl-C to %ps", &job->step_id);
 			launch_g_fwd_signal(SIGINT);
 		} else if (job->state < SRUN_JOB_FORCETERM) {
 			info("interrupt (one more within 1 sec to abort)");
@@ -1742,8 +1741,7 @@ static void _handle_intr(srun_job_t *job)
 				return;
 			}
 
-			info("sending Ctrl-C to job %u.%u",
-			     job->step_id.job_id, job->step_id.step_id);
+			info("sending Ctrl-C to %ps", &job->step_id);
 			last_intr_sent = now;
 			launch_g_fwd_signal(SIGINT);
 		} else

@@ -774,8 +774,8 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	}
 
 	str = (char *)bit_fmt_hexmask(req_map);
-	debug3("task/affinity: job %u.%u core mask from slurmctld: %s",
-		req->step_id.job_id, req->step_id.step_id, str);
+	debug3("task/affinity: %ps core mask from slurmctld: %s",
+	       &req->step_id, str);
 	xfree(str);
 
 	for (p = 0; p < num_cpus; p++) {
@@ -820,8 +820,8 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	}
 
 	str = (char *)bit_fmt_hexmask(hw_map);
-	debug3("task/affinity: job %u.%u CPU final mask for local node: %s",
-		req->step_id.job_id, req->step_id.step_id, str);
+	debug3("task/affinity: %ps CPU final mask for local node: %s",
+	       &req->step_id, str);
 	xfree(str);
 
 	FREE_NULL_BITMAP(req_map);

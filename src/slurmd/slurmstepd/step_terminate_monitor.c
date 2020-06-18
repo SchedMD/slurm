@@ -124,7 +124,7 @@ static void *_monitor(void *arg)
 
 	rc = pthread_cond_timedwait(&cond, &lock, &ts);
 	if (rc == ETIMEDOUT) {
-		char entity[24], time_str[24];
+		char entity[45], time_str[24];
 		time_t now = time(NULL);
 		int rc;
 
@@ -137,8 +137,11 @@ static void *_monitor(void *arg)
 			snprintf(entity, sizeof(entity),
 				 "EXTERN STEP FOR %u", job->step_id.job_id);
 		} else {
-			snprintf(entity, sizeof(entity), "STEP %u.%u",
-				 job->step_id.job_id, job->step_id.step_id);
+			char tmp_char[33];
+			log_build_step_id_str(&job->step_id, tmp_char,
+					      sizeof(tmp_char),
+					      STEP_ID_FLAG_NO_PREFIX);
+			snprintf(entity, sizeof(entity), "STEP %s", tmp_char);
 		}
 		slurm_make_time_str(&now, time_str, sizeof(time_str));
 

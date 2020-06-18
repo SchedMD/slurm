@@ -1905,18 +1905,27 @@ _print_options(void)
 	}
 
 	if ((params.verbose > 1) && params.step_list) {
+		char tmp_char[34];
 		i = 0;
 		iterator = list_iterator_create( params.step_list );
 		while ( (job_step_id = list_next( iterator )) ) {
 			if (job_step_id->array_id == NO_VAL) {
-				printf( "step_list[%d] = %u.%u\n", i++,
-					job_step_id->step_id.job_id,
-					job_step_id->step_id.step_id );
+				log_build_step_id_str(&job_step_id->step_id,
+						      tmp_char,
+						      sizeof(tmp_char),
+						      STEP_ID_FLAG_NO_PREFIX);
+				printf( "step_list[%d] = %s\n", i++,
+					tmp_char);
 			} else {
-				printf( "step_list[%d] = %u_%u.%u\n", i++,
+				log_build_step_id_str(&job_step_id->step_id,
+						      tmp_char,
+						      sizeof(tmp_char),
+						      (STEP_ID_FLAG_NO_PREFIX |
+						       STEP_ID_FLAG_NO_JOB));
+				printf( "step_list[%d] = %u_%u.%s\n", i++,
 					job_step_id->step_id.job_id,
 					job_step_id->array_id,
-					job_step_id->step_id.step_id );
+					tmp_char);
 			}
 		}
 		list_iterator_destroy( iterator );

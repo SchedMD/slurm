@@ -958,8 +958,8 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		return SLURM_ERROR;
 
 	if ((arg.step_id.job_id != jobid) || (arg.step_id.step_id != stepid)) {
-		error("job credential for %u.%u, expected %u.%u",
-		      arg.step_id.job_id, arg.step_id.step_id, jobid, stepid);
+		error("job credential for %ps, expected %ps",
+		      &arg.step_id, &req->step_id);
 		goto fail;
 	}
 
@@ -1004,9 +1004,9 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	}
 
 	if (!hostset_within(s_hset, conf->node_name)) {
-		error("Invalid job %u.%u credential for user %u: "
+		error("Invalid %ps credential for user %u: "
 		      "host %s not in hostset %s",
-		      arg.step_id.job_id, arg.step_id.step_id, arg.uid,
+		      &arg.step_id, arg.uid,
 		      conf->node_name, arg.step_hostlist);
 		goto fail;
 	}
@@ -1072,9 +1072,9 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 				per_step = "_per_CPU";
 			}
 			info("====================");
-			info("step_id:%u.%u job_mem:%"PRIu64"MB%s "
+			info("%ps job_mem:%"PRIu64"MB%s "
 			     "step_mem:%"PRIu64"MB%s",
-			     arg.step_id.job_id, arg.step_id.step_id, job_mem, per_job,
+			     &arg.step_id, job_mem, per_job,
 			     step_mem, per_step);
 		}
 
@@ -1137,9 +1137,9 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 			/* This is expected with the --overcommit option
 			 * or hyperthreads */
 			debug("cons_res: More than one tasks per logical "
-			      "processor (%d > %u) on host [%u.%u %ld %s] ",
-			      tasks_to_launch, step_cpus, arg.step_id.job_id,
-			      arg.step_id.step_id, (long) arg.uid, arg.step_hostlist);
+			      "processor (%d > %u) on host [%ps %ld %s] ",
+			      tasks_to_launch, step_cpus, &arg.step_id,
+			      (long) arg.uid, arg.step_hostlist);
 		}
 	} else {
 		step_cpus = 1;
@@ -1172,8 +1172,8 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	req->job_core_spec = arg.job_core_spec;
 	req->node_cpus = step_cpus;
 #if 0
-	info("%u.%u node_id:%d mem orig:%"PRIu64" cpus:%u limit:%"PRIu64"",
-	     jobid, stepid, node_id, arg.job_mem_limit,
+	info("%ps node_id:%d mem orig:%"PRIu64" cpus:%u limit:%"PRIu64"",
+	     &req->step_id, node_id, arg.job_mem_limit,
 	     step_cpus, req->job_mem_lim);
 #endif
 
@@ -1488,8 +1488,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	 * test if the credential has since been revoked and exit as needed.
 	 */
 	if (slurm_cred_revoked(conf->vctx, req->cred)) {
-		info("Job %u already killed, do not launch step %u.%u",
-		     req->step_id.job_id, req->step_id.job_id, req->step_id.step_id);
+		info("Job %u already killed, do not launch %ps",
+		     req->step_id.job_id, &req->step_id);
 		errnum = ESLURMD_CREDENTIAL_REVOKED;
 		goto done;
 	}
@@ -1525,10 +1525,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 			job_limits_ptr->job_mem  = req->job_mem_lim;
 			job_limits_ptr->step_mem = req->step_mem_lim;
 #if _LIMIT_INFO
-			info("AddLim step:%u.%u job_mem:%"PRIu64" "
+			info("AddLim %ps job_mem:%"PRIu64" "
 			     "step_mem:%"PRIu64"",
-			     job_limits_ptr->step_id.job_id,
-			     job_limits_ptr->step_id.step_id,
+			     &job_limits_ptr->step_id,
 			     job_limits_ptr->job_mem,
 			     job_limits_ptr->step_mem);
 #endif
@@ -1999,9 +1998,9 @@ static int _make_prolog_mem_container(slurm_msg_t *msg)
 			job_limits_ptr->step_id.step_het_comp = NO_VAL;
 			job_limits_ptr->step_mem = req->job_mem_limit;
 #if _LIMIT_INFO
-			info("AddLim step:%u.%u job_mem:%"PRIu64""
+			info("AddLim %ps job_mem:%"PRIu64""
 			     " step_mem:%"PRIu64"",
-			     job_limits_ptr->step_id.job_id, job_limits_ptr->step_id,
+			     &job_limits_ptr->step_id,
 			     job_limits_ptr->job_mem,
 			     job_limits_ptr->step_mem);
 #endif
@@ -2585,13 +2584,11 @@ _rpc_job_notify(slurm_msg_t *msg)
 		fd = stepd_connect(stepd->directory, stepd->nodename,
 				   &stepd->step_id, &stepd->protocol_version);
 		if (fd == -1) {
-			debug3("Unable to connect to step %u.%u",
-			       stepd->step_id.job_id, stepd->step_id.step_id);
+			debug3("Unable to connect to %ps", &stepd->step_id);
 			continue;
 		}
 
-		info("send notification to job %u.%u",
-		     stepd->step_id.job_id, stepd->step_id.step_id);
+		info("send notification to %ps", &stepd->step_id);
 		if (stepd_notify_job(fd, stepd->protocol_version,
 				     req->message) < 0)
 			debug("notify jobid=%u failed: %m",
@@ -2875,9 +2872,8 @@ _load_job_limits(void)
 
 		if (stepd_get_mem_limits(fd, stepd->protocol_version,
 					 &stepd_mem_info) != SLURM_SUCCESS) {
-			error("Error reading step %u.%u memory limits from "
-			      "slurmstepd",
-			      stepd->step_id.job_id, stepd->step_id.step_id);
+			error("Error reading %ps memory limits from slurmstepd",
+			      &stepd->step_id);
 			close(fd);
 			continue;
 		}
@@ -2894,10 +2890,9 @@ _load_job_limits(void)
 			job_limits_ptr->step_mem =
 				stepd_mem_info.step_mem_limit;
 #if _LIMIT_INFO
-			info("RecLim step:%u.%u job_mem:%"PRIu64""
+			info("RecLim %ps job_mem:%"PRIu64""
 			     " step_mem:%"PRIu64"",
-			     job_limits_ptr->step_id.job_id,
-			     job_limits_ptr->step_id.step_id,
+			     &job_limits_ptr->step_id,
 			     job_limits_ptr->job_mem,
 			     job_limits_ptr->step_mem);
 #endif
@@ -3038,9 +3033,8 @@ _enforce_job_mem_limit(void)
 					    &step_vsize,
 					    stepd->protocol_version);
 #if _LIMIT_INFO
-			info("Step:%u.%u RSS:%"PRIu64" B VSIZE:%"PRIu64" B",
-			     stepd->step_id.job_id, stepd->step_id.step_id,
-			     step_rss, step_vsize);
+			info("%ps RSS:%"PRIu64" B VSIZE:%"PRIu64" B",
+			     &stepd->step_id, step_rss, step_vsize);
 #endif
 			if (step_rss != INFINITE64) {
 				step_rss /= 1048576;	/* B to MB */
@@ -3314,21 +3308,20 @@ _signal_jobstep(slurm_step_id_t *step_id, uint16_t signal,
 	 * Return failure so caller can retry.
 	 */
 	if (_prolog_is_running(step_id->job_id)) {
-		info("signal %d req for %u.%u while prolog is running. Returning failure.",
-		     signal, step_id->job_id, step_id->step_id);
+		info("signal %d req for %ps while prolog is running. Returning failure.",
+		     signal, &step_id->job_id);
 		return ESLURM_TRANSITION_STATE_NO_UPDATE;
 	}
 
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   step_id, &protocol_version);
 	if (fd == -1) {
-		debug("signal for nonexistent %u.%u stepd_connect failed: %m",
-		      step_id->job_id, step_id->step_id);
+		debug("signal for nonexistent %ps stepd_connect failed: %m",
+		      &step_id->job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	debug2("container signal %d to job %u.%u",
-	       signal, step_id->job_id, step_id->step_id);
+	debug2("container signal %d to %ps", signal, &step_id);
 	rc = stepd_signal_container(fd, protocol_version, signal, flags,
 				    req_uid);
 	if (rc == -1)
@@ -3373,8 +3366,8 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 		_kill_all_active_steps(req->step_id.job_id, req->signal,
 				       req->flags, false, req_uid);
 	} else {
-		debug("%s: sending signal %u to step %u.%u flag %u", __func__,
-		      req->signal, req->step_id.job_id, req->step_id.step_id, req->flags);
+		debug("%s: sending signal %u to %ps flag %u", __func__,
+		      req->signal, &req->step_id, req->flags);
 		rc = _signal_jobstep(&req->step_id,
 				     req->signal, req->flags, req_uid);
 	}
@@ -3396,24 +3389,23 @@ _rpc_terminate_tasks(slurm_msg_t *msg)
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   &req->step_id, &protocol_version);
 	if (fd == -1) {
-		debug("kill for nonexistent job %u.%u stepd_connect "
-		      "failed: %m", req->step_id.job_id, req->step_id.step_id);
+		debug("kill for nonexistent %ps stepd_connect "
+		      "failed: %m", &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}
 
 	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
-		debug("terminate_tasks couldn't read from the step %u.%u: %m",
-		      req->step_id.job_id, req->step_id.step_id);
+		debug("terminate_tasks couldn't read from the %ps: %m",
+		      &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done2;
 	}
 
 	if ((req_uid != uid)
 	    && (!_slurm_authorized_user(req_uid))) {
-		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
-		      (long) req_uid, req->step_id.job_id, req->step_id.step_id,
-		      (long) uid);
+		debug("kill req from uid %ld for %ps owned by uid %ld",
+		      (long) req_uid, &req->step_id, (long) uid);
 		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
 		goto done2;
 	}
@@ -3440,8 +3432,7 @@ static void _rpc_step_complete(slurm_msg_t *msg)
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   &req->step_id, &protocol_version);
 	if (fd == -1) {
-		error("stepd_connect to %u.%u failed: %m",
-		      req->step_id.job_id, req->step_id.step_id);
+		error("stepd_connect to %ps failed: %m", &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}
@@ -3449,9 +3440,8 @@ static void _rpc_step_complete(slurm_msg_t *msg)
 	/* step completion messages are only allowed from other slurmstepd,
 	   so only root or SlurmUser is allowed here */
 	if (!_slurm_authorized_user(req_uid)) {
-		debug("step completion from uid %ld for job %u.%u",
-		      (long) req_uid, req->step_id.job_id,
-		      req->step_id.step_id);
+		debug("step completion from uid %ld for %ps",
+		      (long) req_uid, &req->step_id);
 		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
 		goto done2;
 	}
@@ -3487,8 +3477,7 @@ _get_step_list(void)
 
 		if (stepd_state(fd, stepd->protocol_version)
 		    == SLURMSTEPD_NOT_RUNNING) {
-			debug("stale domain socket for stepd %u.%u ",
-			      stepd->step_id.job_id, stepd->step_id.step_id);
+			debug("stale domain socket for %ps", &stepd->step_id);
 			close(fd);
 			continue;
 		}
@@ -3560,15 +3549,13 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg)
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req, &protocol_version);
 	if (fd == -1) {
-		error("stepd_connect to %u.%u failed: %m",
-		      req->job_id, req->step_id);
+		error("stepd_connect to %ps failed: %m", req);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 		return;
 	}
 
 	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
-		debug("stat_jobacct couldn't read from the step %u.%u: %m",
-		      req->job_id, req->step_id);
+		debug("stat_jobacct couldn't read from %ps: %m", req);
 		close(fd);
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
@@ -3599,8 +3586,7 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg)
 
 	if (stepd_stat_jobacct(fd, protocol_version, req, resp)
 	    == SLURM_ERROR) {
-		debug("accounting for nonexistent job %u.%u requested",
-		      req->job_id, req->step_id);
+		debug("accounting for nonexistent %ps requested", req);
 	}
 
 	/* FIX ME: This should probably happen in the
@@ -3608,8 +3594,7 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg)
 	*/
 	if (stepd_list_pids(fd, protocol_version, &resp->step_pids->pid,
 			    &resp->step_pids->pid_cnt) == SLURM_ERROR) {
-		debug("No pids for nonexistent job %u.%u requested",
-		      req->job_id, req->step_id);
+		debug("No pids for nonexistent %ps requested", req);
 	}
 
 	close(fd);
@@ -3757,8 +3742,7 @@ static void _rpc_list_pids(slurm_msg_t *msg)
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req, &protocol_version);
 	if (fd == -1) {
-		error("stepd_connect to %u.%u failed: %m",
-		      req->job_id, req->step_id);
+		error("stepd_connect to %ps failed: %m", req);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 		slurm_free_job_step_pids(resp);
 		return;
@@ -3766,8 +3750,7 @@ static void _rpc_list_pids(slurm_msg_t *msg)
 
 	if (stepd_list_pids(fd, protocol_version,
 			    &resp->pid, &resp->pid_cnt) == SLURM_ERROR) {
-		debug("No pids for nonexistent job %u.%u requested",
-		      req->job_id, req->step_id);
+		debug("No pids for nonexistent %ps requested", req);
 	}
 
 	close(fd);
@@ -4270,16 +4253,15 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   &req->step_id, &protocol_version);
 	if (fd == -1) {
-		debug("reattach for nonexistent job %u.%u stepd_connect"
-		      " failed: %m", req->step_id.job_id, req->step_id.step_id);
+		debug("reattach for nonexistent %ps stepd_connect failed: %m",
+		      req);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}
 
 	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
-		debug("_rpc_reattach_tasks couldn't read from the "
-		      "step %u.%u: %m",
-		      req->step_id.job_id, req->step_id.step_id);
+		debug("_rpc_reattach_tasks couldn't read from the %ps: %m",
+		      req);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done2;
 	}
@@ -4289,9 +4271,8 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	debug2("_rpc_reattach_tasks: nodeid %d in the job step", nodeid);
 
 	if ((req_uid != uid) && (!_slurm_authorized_user(req_uid))) {
-		error("uid %ld attempt to attach to job %u.%u owned by %ld",
-		      (long) req_uid, req->step_id.job_id, req->step_id.step_id,
-		      (long) uid);
+		error("uid %ld attempt to attach to %ps owned by %ld",
+		      (long) req_uid, &req->step_id, (long) uid);
 		rc = EPERM;
 		goto done2;
 	}
@@ -4376,16 +4357,15 @@ static uid_t _get_job_uid(uint32_t jobid)
 		fd = stepd_connect(stepd->directory, stepd->nodename,
 				   &stepd->step_id, &stepd->protocol_version);
 		if (fd == -1) {
-			debug3("Unable to connect to step %u.%u",
-			       stepd->step_id.job_id, stepd->step_id.step_id);
+			debug3("Unable to connect to %ps", &stepd->step_id);
 			continue;
 		}
 		uid = stepd_get_uid(fd, stepd->protocol_version);
 
 		close(fd);
 		if ((int)uid < 0) {
-			debug("stepd_get_uid failed %u.%u: %m",
-			      stepd->step_id.job_id, stepd->step_id.step_id);
+			debug("stepd_get_uid failed %ps: %m",
+			      &stepd->step_id);
 			continue;
 		}
 		break;
@@ -4483,13 +4463,11 @@ extern int ume_notify(void)
 		fd = stepd_connect(stepd->directory, stepd->nodename,
 				   &stepd->step_id, &stepd->protocol_version);
 		if (fd == -1) {
-			debug3("Unable to connect to step %u.%u",
-			       stepd->step_id.job_id, stepd->step_id.step_id);
+			debug3("Unable to connect to %ps", &stepd->step_id);
 			continue;
 		}
 
-		debug2("container SIG_UME to job %u.%u",
-		       stepd->step_id.job_id, stepd->step_id.step_id);
+		debug2("container SIG_UME to %ps", &stepd->step_id);
 		if (stepd_signal_container(
 			    fd, stepd->protocol_version, SIG_UME, 0,
 			    getuid()) < 0)
@@ -4537,16 +4515,13 @@ _terminate_all_steps(uint32_t jobid, bool batch)
 		fd = stepd_connect(stepd->directory, stepd->nodename,
 				   &stepd->step_id, &stepd->protocol_version);
 		if (fd == -1) {
-			debug3("Unable to connect to step %u.%u",
-			       stepd->step_id.job_id, stepd->step_id.step_id);
+			debug3("Unable to connect to %ps", &stepd->step_id);
 			continue;
 		}
 
-		debug2("terminate job step %u.%u", jobid,
-		       stepd->step_id.step_id);
+		debug2("terminate %ps", &stepd->step_id);
 		if (stepd_terminate(fd, stepd->protocol_version) < 0)
-			debug("kill jobid=%u.%u failed: %m", jobid,
-			      stepd->step_id.step_id);
+			debug("kill %ps failed: %m", &stepd->step_id);
 		close(fd);
 	}
 	list_iterator_destroy(i);
@@ -4846,9 +4821,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 						&stepd->step_id,
 						&protocol_version[fdi]);
 			if (fd[fdi] == -1) {
-				debug3("Unable to connect to step %u.%u",
-				       stepd->step_id.job_id,
-				       stepd->step_id.step_id);
+				debug3("Unable to connect to %ps",
+				       &stepd->step_id);
 				continue;
 			}
 
@@ -5744,9 +5718,12 @@ _remove_starting_step(uint16_t type, void *req)
 	if (!list_delete_all(conf->starting_steps,
 			     _compare_starting_steps,
 			     &starting_step)) {
-		error("%s: step %u.%u not found", __func__,
-		      starting_step.job_id,
-		      starting_step.step_id);
+		slurm_step_id_t tmp = {
+			.job_id = starting_step.job_id,
+			.step_het_comp = NO_VAL,
+			.step_id = starting_step.step_id,
+		};
+		error("%s: %ps not found", __func__, &tmp);
 		rc = SLURM_ERROR;
 	}
 	slurm_cond_broadcast(&conf->starting_steps_cond);

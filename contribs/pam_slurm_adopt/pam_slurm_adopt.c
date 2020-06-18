@@ -122,15 +122,14 @@ static int _adopt_process(pam_handle_t *pamh, pid_t pid, step_loc_t *stepd)
 
 	if (!stepd)
 		return -1;
-	debug("_adopt_process: trying to get %u.%u to adopt %d",
-	      stepd->step_id.job_id, stepd->step_id.step_id, pid);
+	debug("_adopt_process: trying to get %ps to adopt %d",
+	      &stepd->step_id, pid);
 	fd = stepd_connect(stepd->directory, stepd->nodename,
 			   &stepd->step_id, &protocol_version);
 	if (fd < 0) {
 		/* It's normal for a step to exit */
-		debug3("unable to connect to step %u.%u on %s: %m",
-		       stepd->step_id.job_id, stepd->step_id.step_id,
-		       stepd->nodename);
+		debug3("unable to connect to %ps on %s: %m",
+		       &stepd->step_id, stepd->nodename);
 		return -1;
 	}
 
@@ -188,9 +187,8 @@ static uid_t _get_job_uid(step_loc_t *stepd)
 			   &stepd->step_id, &stepd->protocol_version);
 	if (fd < 0) {
 		/* It's normal for a step to exit */
-		debug3("unable to connect to step %u.%u on %s: %m",
-		       stepd->step_id.job_id, stepd->step_id.step_id,
-		       stepd->nodename);
+		debug3("unable to connect to %ps on %s: %m",
+		       &stepd->step_id, stepd->nodename);
 		return -1;
 	}
 
@@ -199,9 +197,8 @@ static uid_t _get_job_uid(step_loc_t *stepd)
 
 	/* The step may have exited. Not a big concern. */
 	if ((int32_t)uid == -1)
-		debug3("unable to determine uid of step %u.%u on %s",
-		       stepd->step_id.job_id, stepd->step_id.step_id,
-		       stepd->nodename);
+		debug3("unable to determine uid of %ps on %s",
+		       &stepd->step_id, stepd->nodename);
 
 	return uid;
 }

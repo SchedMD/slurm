@@ -266,7 +266,7 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
 {
 	DEF_TIMERS;
 	START_TIMER;
-	debug("%s: %u.%u",  __func__, job->step_id.job_id, job->step_id.step_id);
+	debug("%s: %ps",  __func__, &job->step_id);
 
 #ifdef HAVE_NATIVE_CRAY
 	if (!job->batch)
@@ -306,8 +306,8 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 	taskid = offset + job->task[job->envtp->localid]->gtid;
 
 	apid = SLURM_ID_HASH(jobid, job->step_id.step_id);
-	debug2("%s: %u.%u, apid %"PRIu64", task %u", __func__,
-	       job->step_id.job_id, job->step_id.step_id, apid, taskid);
+	debug2("%s: %ps, apid %"PRIu64", task %u", __func__, &job->step_id,
+	       apid, taskid);
 
 	/*
 	 * Send the rank to the application's PMI layer via an environment
@@ -369,7 +369,7 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
 	START_TIMER;
 
 #ifdef HAVE_NATIVE_CRAY
-	debug("%s: %u.%u", __func__, job->step_id.job_id, job->step_id.step_id);
+	debug("%s: %ps", __func__, &job->step_id);
 
 	if (track_status) {
 		rc = _make_status_file(job);
@@ -395,8 +395,7 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 	START_TIMER;
 
 #ifdef HAVE_NATIVE_CRAY
-	debug("%s: %u.%u, task %d", __func__,
-	      job->step_id.job_id, job->step_id.step_id, task->id);
+	debug("%s: %ps, task %d", __func__, &job->step_id, task->id);
 
 	if (track_status) {
 		rc = _check_status_file(job, task);
@@ -707,9 +706,8 @@ static int _check_status_file(stepd_step_rec_t *job,
 			return SLURM_SUCCESS;
 		}
 
-		verbose("step %u.%u task %u exited without calling "
-			"PMI_Finalize()",
-			job->jobid, job->step_id.step_id, taskid);
+		verbose("%ps task %u exited without calling PMI_Finalize()",
+			&job->jobid, taskid);
 	}
 	return SLURM_SUCCESS;
 }

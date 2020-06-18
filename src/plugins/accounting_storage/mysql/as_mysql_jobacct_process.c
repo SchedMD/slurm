@@ -944,7 +944,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				step_row[STEP_REQ_STEPID]);
 			step->step_id.step_het_comp =
 				slurm_atoul(step_row[STEP_REQ_STEP_HET_COMP]);
-			/* info("got step %ps", &step->step_id); */
+			/* info("got %ps", &step->step_id); */
 			step->state = slurm_atoul(step_row[STEP_REQ_STATE]);
 			step->exitcode =
 				slurm_atoul(step_row[STEP_REQ_EXIT_CODE]);

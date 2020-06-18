@@ -788,8 +788,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 		if (stepd_state(fd, stepd->protocol_version)
 		    == SLURMSTEPD_NOT_RUNNING) {
-			debug("stale domain socket for stepd %u.%u ",
-			      stepd->step_id.job_id, stepd->step_id.step_id);
+			debug("stale domain socket for %ps ", &stepd->step_id);
 			--(msg->job_count);
 			close(fd);
 			continue;
@@ -800,8 +799,8 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 			debug("%s: found apparently running job %u",
 			      __func__, stepd->step_id.job_id);
 		} else {
-			debug("%s: found apparently running step %u.%u",
-			      __func__, stepd->step_id.job_id, stepd->step_id.step_id);
+			debug("%s: found apparently running %ps",
+			      __func__, &stepd->step_id);
 		}
 		memcpy(&msg->step_id[n], &stepd->step_id,
 		       sizeof(msg->step_id[n]));
@@ -2159,8 +2158,7 @@ static void _update_logging(void)
 
 		if (stepd_reconfig(fd, stepd->protocol_version)
 		    != SLURM_SUCCESS)
-			debug("Reconfig jobid=%u.%u failed: %m",
-			      stepd->step_id.job_id, stepd->step_id.step_id);
+			debug("Reconfig %ps failed: %m", &stepd->step_id);
 		close(fd);
 	}
 	list_iterator_destroy(i);

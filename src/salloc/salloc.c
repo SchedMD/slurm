@@ -1158,8 +1158,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 			}
 		}
 	} else {
-		verbose("Job step %u.%u is finished.",
-			comp->job_id, comp->step_id);
+		verbose("%ps is finished.", &comp->step_id);
 	}
 }
 

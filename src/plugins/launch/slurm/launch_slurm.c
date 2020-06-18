@@ -297,7 +297,7 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 				     msg->step_id.step_het_comp,
 				     task_state_list);
 	if (!task_state) {
-		error("%s: Could not locate task state for step %ps",
+		error("%s: Could not locate task state for %ps",
 		      __func__, &msg->step_id);
 	}
 	for (i = 0; i < msg->count_of_pids; i++) {
@@ -351,8 +351,8 @@ static void _task_finish(task_exit_msg_t *msg)
 	}
 	list_iterator_destroy(iter);
 	if (!my_srun_job) {
-		error("Ignoring exit message from unrecognized step %u.%u",
-		      msg->step_id.job_id, msg->step_id.step_id);
+		error("Ignoring exit message from unrecognized %ps",
+		      &msg->step_id);
 		return;
 	}
 
@@ -364,9 +364,8 @@ static void _task_finish(task_exit_msg_t *msg)
 			reduce_task_exit_msg = 0;
 	}
 
-	verbose("Received task exit notification for %d %s of step %u.%u (status=0x%04x).",
-		msg->num_tasks, task_str, msg->step_id.job_id, msg->step_id.step_id,
-		msg->return_code);
+	verbose("Received task exit notification for %d %s of %ps (status=0x%04x).",
+		msg->num_tasks, task_str, &msg->step_id, msg->return_code);
 
 	/*
 	 * Only build the "tasks" and "hosts" strings as needed.
@@ -462,8 +461,8 @@ static void _task_finish(task_exit_msg_t *msg)
 		_update_task_exit_state(task_state, msg->num_tasks,
 					msg->task_id_list, !normal_exit);
 	} else {
-		error("%s: Could not find task state for step %u.%u", __func__,
-		      msg->step_id.job_id, msg->step_id.step_id);
+		error("%s: Could not find task state for %ps", __func__,
+		      &msg->step_id);
 	}
 
 	if (task_state_first_abnormal_exit(task_state_list) &&
@@ -874,8 +873,8 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		else if (srun_opt->parallel_debug)
 			MPIR_Breakpoint(job);
 	} else {
-		info("Job step %u.%u aborted before step completely launched.",
-		     job->step_id.job_id, job->step_id.step_id);
+		info("%ps aborted before step completely launched.",
+		     &job->step_id);
 	}
 
 cleanup:
@@ -917,9 +916,7 @@ static int _step_signal(int signal)
 
 	iter = list_iterator_create(local_job_list);
 	while ((my_srun_job = (srun_job_t *) list_next(iter))) {
-		info("Terminating job step %u.%u",
-		      my_srun_job->step_id.job_id,
-		     my_srun_job->step_id.step_id);
+		info("Terminating %ps", &my_srun_job->step_id);
 		rc2 = slurm_kill_job_step(my_srun_job->step_id.job_id,
 					  my_srun_job->step_id.step_id, signal);
 		if (rc2)

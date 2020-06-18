@@ -634,8 +634,7 @@ stepd_cleanup_sockets(const char *directory, const char *nodename)
 			path = NULL;
 			xstrfmtcat(path, "%s/%s", directory, ent->d_name);
 
-			verbose("Cleaning up stray job step %u.%u",
-				step_id.job_id, step_id.step_id);
+			verbose("Cleaning up stray %ps", &step_id);
 
 			/* signal the slurmstepd to terminate its step */
 			fd = stepd_connect((char *) directory,
@@ -649,8 +648,8 @@ stepd_cleanup_sockets(const char *directory, const char *nodename)
 					    fd, protocol_version, SIGKILL, 0,
 					    getuid())
 				    == -1) {
-					debug("Error sending SIGKILL to job step %u.%u",
-					      step_id.job_id, step_id.step_id);
+					debug("Error sending SIGKILL to %ps",
+					      &step_id);
 				}
 				close(fd);
 			}
@@ -1039,9 +1038,8 @@ stepd_completion(int fd, uint16_t protocol_version, step_complete_msg_t *sent)
 
 	buffer = init_buf(0);
 
-	debug("Entering stepd_completion for %u.%u, range_first = %d, range_last = %d",
-	      sent->step_id.job_id, sent->step_id.step_id,
-	      sent->range_first, sent->range_last);
+	debug("Entering stepd_completion for %ps, range_first = %d, range_last = %d",
+	      &sent->step_id, sent->range_first, sent->range_last);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &req, sizeof(int));
@@ -1099,8 +1097,7 @@ stepd_stat_jobacct(int fd, uint16_t protocol_version,
 	if (!(resp->jobacct = jobacctinfo_create(NULL)))
 		return rc;
 
-	debug("Entering %s for job %u.%u",
-	      __func__, sent->job_id, sent->step_id);
+	debug("Entering %s for %ps", __func__, sent);
 
 	safe_write(fd, &req, sizeof(int));
 

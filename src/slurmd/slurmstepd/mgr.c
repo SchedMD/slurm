@@ -357,8 +357,7 @@ batch_finish(stepd_step_rec_t *job, int rc)
 
 	if (job->aborted) {
 		if (job->step_id.step_id != SLURM_BATCH_SCRIPT)
-			info("step %u.%u abort completed",
-			     job->step_id.job_id, job->step_id.step_id);
+			info("%ps abort completed", &job->step_id);
 		else
 			info("job %u abort completed", job->step_id.job_id);
 	} else if (job->step_id.step_id == SLURM_BATCH_SCRIPT) {
@@ -367,8 +366,8 @@ batch_finish(stepd_step_rec_t *job, int rc)
 		_send_complete_batch_script_msg(job, rc, step_complete.step_rc);
 	} else {
 		stepd_wait_for_children_slurmstepd(job);
-		verbose("job %u.%u completed with slurm_rc = %d, job_rc = %d",
-			job->step_id.job_id, job->step_id.step_id, rc, step_complete.step_rc);
+		verbose("%ps completed with slurm_rc = %d, job_rc = %d",
+			&job->step_id, rc, step_complete.step_rc);
 		stepd_send_step_complete_msgs(job);
 	}
 
@@ -1025,8 +1024,8 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	job->pgid = pid;
 
 	if ((rc = proctrack_g_add(job, pid)) != SLURM_SUCCESS) {
-		error("%s: Step %u.%u unable to add pid %d to the proctrack plugin",
-		      __func__, job->step_id.job_id, job->step_id.step_id, pid);
+		error("%s: %ps unable to add pid %d to the proctrack plugin",
+		      __func__, &job->step_id, pid);
 		killpg(pid, SIGKILL);
 		kill(pid, SIGKILL);
 		/* let the slurmd know we actually are done with the setup */
@@ -1160,8 +1159,8 @@ job_manager(stepd_step_rec_t *job)
 	bool io_initialized = false;
 	char *err_msg = NULL;
 
-	debug3("Entered job_manager for %u.%u pid=%d",
-	       job->step_id.job_id, job->step_id.step_id, job->jmgr_pid);
+	debug3("Entered job_manager for %ps pid=%d",
+	       &job->step_id, job->jmgr_pid);
 
 #ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
@@ -1230,8 +1229,8 @@ job_manager(stepd_step_rec_t *job)
 		error("Failed mpi_hook_slurmstepd_prefork");
 		rc = SLURM_ERROR;
 		xstrfmtcat(err_msg,
-			   "mpi_hook_slurmstepd_prefork failure for job %u.%u on %s",
-			   job->step_id.job_id, job->step_id.step_id, conf->hostname);
+			   "mpi_hook_slurmstepd_prefork failure for %ps on %s",
+			   &job->step_id, conf->hostname);
 		(void) log_ctld(LOG_LEVEL_ERROR, err_msg);
 		xfree(err_msg);
 		goto fail3;
@@ -1527,8 +1526,8 @@ static int exec_wait_signal_child (struct exec_wait_info *e)
 
 static int exec_wait_signal (struct exec_wait_info *e, stepd_step_rec_t *job)
 {
-	debug3 ("Unblocking %u.%u task %d, writefd = %d",
-		job->step_id.job_id, job->step_id.step_id, e->id, e->parentfd);
+	debug3 ("Unblocking %ps task %d, writefd = %d",
+		&job->step_id, e->id, e->parentfd);
 	exec_wait_signal_child (e);
 	return (0);
 }
@@ -2458,8 +2457,7 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 							   working_cluster_rec);
 		if (msg_rc == SLURM_SUCCESS)
 			break;
-		info("Retrying job complete RPC for %u.%u",
-		     job->step_id.job_id, job->step_id.step_id);
+		info("Retrying job complete RPC for %ps", &job->step_id);
 		sleep(RETRY_DELAY);
 	}
 	if (i > MAX_RETRY) {

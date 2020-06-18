@@ -759,8 +759,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 		info("Job step aborted");	/* no need to wait */
 
 	if (!force_terminated_job && task_exit_signal)
-		info("Force Terminated job step %u.%u",
-		     ctx->job_id, ctx->step_resp->job_step_id);
+		info("Force Terminated %ps", &ctx->step_req->step_id);
 
 	/*
 	 * task_exit_signal != 0 when srun receives a message that a task
@@ -892,8 +891,8 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	slurm_mutex_unlock(&sls->lock);
 
 	if (!hostlist_count(hl)) {
-		verbose("no active tasks in step %u.%u to send signal %d",
-		        ctx->job_id, ctx->step_resp->job_step_id, signo);
+		verbose("no active tasks in %ps to send signal %d",
+		        &ctx->step_req->step_id, signo);
 		hostlist_destroy(hl);
 		return;
 	}
@@ -907,8 +906,8 @@ RESEND:	slurm_msg_t_init(&req);
 	if (ctx->step_resp->use_protocol_ver)
 		req.protocol_version = ctx->step_resp->use_protocol_ver;
 
-	debug2("sending signal %d to step %u.%u on hosts %s",
-	       signo, ctx->job_id, ctx->step_resp->job_step_id, name);
+	debug2("sending signal %d to %ps on hosts %s",
+	       signo, &ctx->step_req->step_id, name);
 
 	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0))) {
 		error("fwd_signal: slurm_send_recv_msgs really failed badly");
@@ -928,9 +927,10 @@ RESEND:	slurm_msg_t_init(&req);
 		    (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH) &&
 		    (rc != EAGAIN) &&
 		    (rc != ESLURM_TRANSITION_STATE_NO_UPDATE)) {
-			error("Failure sending signal %d to step %u.%u on node %s: %s",
-			      signo, ctx->job_id, ctx->step_resp->job_step_id,
-			      ret_data_info->node_name, slurm_strerror(rc));
+			error("Failure sending signal %d to %ps on node %s: %s",
+			      signo, &ctx->step_req->step_id,
+			      ret_data_info->node_name,
+			      slurm_strerror(rc));
 		}
 		if ((rc == EAGAIN) || (rc == ESLURM_TRANSITION_STATE_NO_UPDATE))
 			retry = true;
@@ -1229,8 +1229,8 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 
 	if ((msg->step_id.job_id != sls->mpi_info->jobid) ||
 	    (msg->step_id.step_id != sls->mpi_info->stepid)) {
-		debug("Received MESSAGE_TASK_EXIT from wrong job: %u.%u",
-		      msg->step_id.job_id, msg->step_id.step_id);
+		debug("Received MESSAGE_TASK_EXIT from wrong job: %ps",
+		      &msg->step_id);
 		return;
 	}
 
@@ -1268,8 +1268,7 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 		verbose("Complete job %u received",
 			step_msg->job_id);
 	} else {
-		verbose("Complete job step %u.%u received",
-			step_msg->job_id, step_msg->step_id);
+		verbose("Complete %ps received", &step_msg->step_id);
 	}
 
 	if (sls->callback.step_complete)
@@ -1388,9 +1387,8 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 	int   num_tasks;
 	bool  active;
 
-	debug("Step %u.%u missing from node(s) %s",
-	      step_missing->step_id.job_id, step_missing->step_id.step_id,
-	      step_missing->nodelist);
+	debug("Step %ps missing from node(s) %s",
+	      &step_missing->step_id, step_missing->nodelist);
 
 	/* Ignore this message in the unusual "user_managed_io" case.  No way
 	   to confirm a bad connection, since a test message goes straight to
@@ -1506,8 +1504,8 @@ static void
 _step_step_signal(struct step_launch_state *sls, slurm_msg_t *signal_msg)
 {
 	job_step_kill_msg_t *step_signal = signal_msg->data;
-	debug2("Signal %u requested for step %u.%u", step_signal->signal,
-	       step_signal->step_id.job_id, step_signal->step_id.step_id);
+	debug2("Signal %u requested for step %ps", step_signal->signal,
+	       &step_signal->step_id);
 	if (sls->callback.step_signal)
 		(sls->callback.step_signal)(step_signal->signal);
 
@@ -1754,10 +1752,9 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 
 			errno = tot_rc;
 			tot_rc = SLURM_ERROR;
-			error("Task launch for %u.%u failed on "
-			      "node %s: %m",
-			      ctx->job_id, ctx->step_resp->job_step_id,
-			      ret_data->node_name);
+			error("Task launch for %ps failed on node %s: %m",
+			      &ctx->step_req->step_id, ret_data->node_name);
+
 		} else {
 #if 0 /* only for debugging, might want to make this a callback */
 			errno = ret_data->err;
@@ -1801,9 +1798,8 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 	task_list = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
 
-	info("launching %u.%u on host %s, %u tasks: %s",
-	     msg->step_id.job_id, msg->step_id.step_id, hostname,
-	     msg->tasks_to_launch[nodeid], task_list);
+	info("launching %ps on host %s, %u tasks: %s",
+	     &msg->step_id, hostname, msg->tasks_to_launch[nodeid], task_list);
 	xfree(task_list);
 
 	debug3("uid:%ld gid:%ld cwd:%s %d", (long) msg->uid,
