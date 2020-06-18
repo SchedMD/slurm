@@ -288,9 +288,7 @@ slurmd_req(slurm_msg_t *msg)
 		last_slurmctld_msg = time(NULL);
 		break;
 	case REQUEST_LAUNCH_TASKS:
-		slurm_mutex_lock(&launch_mutex);
 		_rpc_launch_tasks(msg);
-		slurm_mutex_unlock(&launch_mutex);
 		break;
 	case REQUEST_SIGNAL_TASKS:
 		_rpc_signal_tasks(msg);
@@ -1370,6 +1368,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	int node_id = 0;
 	bitstr_t *numa_bitmap = NULL;
 
+	slurm_mutex_lock(&launch_mutex);
+
 #ifndef HAVE_FRONT_END
 	/* It is always 0 for front end systems */
 	node_id = nodelist_find(req->complete_nodelist, conf->node_name);
@@ -1572,6 +1572,8 @@ done:
 	 */
 	if (errnum == ESLURMD_PROLOG_FAILED)
 		send_registration_msg(errnum, false);
+
+	slurm_mutex_unlock(&launch_mutex);
 }
 
 /*
