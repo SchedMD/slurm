@@ -634,7 +634,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 				     int start, int end)
 {
 	int count = 0;
-	char *dot, *name, *plus, *under;
+	char *dot, *name, *plus = NULL, *under;
 	slurmdb_selected_step_t *selected_step = NULL;
 
 	if ((end-start) <= 0)
@@ -650,6 +650,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 	}
 
 	selected_step = xmalloc(sizeof(slurmdb_selected_step_t));
+	selected_step->step_id.step_het_comp = NO_VAL;
 
 	if ((dot = strstr(name, "."))) {
 		*dot++ = 0;
@@ -662,6 +663,13 @@ static int _addto_step_list_internal(List step_list, char *names,
 			selected_step->step_id.step_id = atoi(dot);
 		else
 			fatal("Bad step specified: %s", name);
+		plus = xstrchr(dot, '+');
+		if (plus) {
+			/* het step */
+			plus++;
+			selected_step->step_id.step_het_comp =
+				slurm_atoul(plus);
+		}
 	} else {
 		debug2("No jobstep requested");
 		selected_step->step_id.step_id = NO_VAL;
@@ -674,7 +682,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 		else
 			fatal("Bad job array element specified: %s", name);
 		selected_step->het_job_offset = NO_VAL;
-	} else if ((plus = strstr(name, "+"))) {
+	} else if (!plus && (plus = strstr(name, "+"))) {
 		selected_step->array_task_id = NO_VAL;
 		*plus++ = 0;
 		if (isdigit(*plus))
