@@ -1308,11 +1308,10 @@ static int _unpack_msg_uid(Buf buffer, uint16_t protocol_version)
  * IN open_fd	- file descriptor to receive msg on
  * IN/OUT msg	- a slurm_msg struct to be filled in by the function
  *		  we use the orig_addr from this var for forwarding.
- * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
 int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
-				  slurm_msg_t *msg, int timeout)
+				  slurm_msg_t *msg)
 {
 	char *buf = NULL;
 	size_t buflen = 0;
@@ -1338,26 +1337,14 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 
 	msg->ret_list = list_create(destroy_data_info);
 
-	if (timeout <= 0) {
-		log_flag(NET, "%s: Overriding timeout of %d milliseconds to %d seconds",
-			 __func__, timeout, slurm_conf.msg_timeout);
-		/* convert secs to msec */
-		timeout = slurm_conf.msg_timeout * 1000;
-	} else if (timeout < 1000) {
-		log_flag(NET, "%s: Sending a message with a very short timeout of %d milliseconds",
-			 __func__, timeout);
-	} else if (timeout >= (slurm_conf.msg_timeout * 10000)) {
-		log_flag(NET, "%s: Sending a message with timeout's greater than %d seconds, requested timeout is %d seconds",
-			 __func__, (slurm_conf.msg_timeout * 10),
-			 (timeout/1000));
-	}
 
 	/*
 	 * Receive a msg. slurm_msg_recvfrom() will read the message
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
+	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0,
+				       (slurm_conf.msg_timeout * 1000)) < 0) {
 		forward_init(&header.forward);
 		rc = errno;
 		goto total_return;
