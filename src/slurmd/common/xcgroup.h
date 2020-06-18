@@ -41,6 +41,7 @@
 #include <sys/types.h>
 
 #include "src/common/xcgroup_read_config.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #define XCGROUP_ERROR    1
 #define XCGROUP_SUCCESS  0
@@ -317,6 +318,29 @@ int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value);
  */
 int xcgroup_move_process(xcgroup_t *cg, pid_t pid);
 
+extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns);
+
+/*
+ * Create normal hierarchy for Slurm jobs/steps
+ *
+ * returned values:
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
+ */
+extern int xcgroup_create_hierarchy(const char *calling_func,
+				    stepd_step_rec_t *job,
+				    xcgroup_ns_t *ns,
+				    xcgroup_t *job_cg,
+				    xcgroup_t *step_cg,
+				    xcgroup_t *user_cg,
+				    char job_cgroup_path[],
+				    char step_cgroup_path[],
+				    char user_cgroup_path[],
+				    int (*callback)(const char *calling_func,
+						    xcgroup_ns_t *ns,
+						    void *callback_arg),
+				    void *callback_arg);
+
 /*
  * Wait for a pid to move out of a cgroup.
  *
@@ -325,3 +349,22 @@ int xcgroup_move_process(xcgroup_t *cg, pid_t pid);
 int xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
 
 #endif
+	/* if (*step_cgroup_path == '\0') { */
+	/* 	int len; */
+	/* 	char tmp_char[64]; */
+
+	/* 	log_build_step_id_str(&job->step_id, */
+	/* 			      tmp_char, */
+	/* 			      sizeof(tmp_char), */
+	/* 			      STEP_ID_FLAG_NO_PREFIX | */
+	/* 			      STEP_ID_FLAG_NO_JOB); */
+
+	/* 	len = snprintf(step_cgroup_path, PATH_MAX, */
+	/* 		       "%s/step_%s", job_cgroup_path, tmp_char); */
+
+	/* 	if (len >= PATH_MAX) { */
+	/* 		error("%s: unable to build %ps memory cg relative path : %m", */
+	/* 		      calling_func, &job->step_id); */
+	/* 		return SLURM_ERROR; */
+	/* 	} */
+	/* } */

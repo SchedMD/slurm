@@ -417,7 +417,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 
 			if (!tmp_task_cnt) {
 				fatal("%s: job %u has NULL task array",
-				      __func__, job->jobid);
+				      __func__, job->step_id.job_id);
 				break;	/* To eliminate CLANG error */
 			}
 			memcpy(het_job_task_cnts + node_offset, tmp_task_cnt,
@@ -430,7 +430,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 						  &tmp_tids);
 			if (!tmp_tids) {
 				fatal("%s: job %u has NULL task ID array",
-				      __func__, job->jobid);
+				      __func__, job->step_id.job_id);
 				break;	/* To eliminate CLANG error */
 			}
 			for (node_inx = 0; node_inx < job->nhosts; node_inx++) {
@@ -450,7 +450,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 						  &node_list);
 			if (!node_list) {
 				fatal("%s: job %u has NULL hostname",
-				      __func__, job->jobid);
+				      __func__, job->step_id.job_id);
 			}
 			if (het_job_node_list)
 				xstrfmtcat(het_job_node_list, ",%s", node_list);
@@ -563,7 +563,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 						  &job->het_job_node_list);
 			if (!job->het_job_node_list)
 				fatal("%s: job %u has NULL hostname",
-				      __func__, job->jobid);
+				      __func__, job->step_id.job_id);
 
 			job->het_job_tid_offsets = xcalloc(job->ntasks,
 							   sizeof(uint32_t));
@@ -651,8 +651,8 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	if (job->het_job_id != NO_VAL)
 		env->jobid = job->het_job_id;
 	else
-		env->jobid = job->jobid;
-	env->stepid = job->stepid;
+		env->jobid = job->step_id.job_id;
+	env->stepid = job->step_id.step_id;
 	env->account = job->account;
 	env->qos = job->qos;
 	env->resv_name = job->resv_name;
@@ -744,10 +744,11 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 		params->dst_fname = xstrdup(srun_opt->bcast_file);
 	} else {
 		xstrfmtcat(params->dst_fname, "%s/slurm_bcast_%u.%u",
-			   opt_local->chdir, job->jobid, job->stepid);
+			   opt_local->chdir, job->step_id.job_id,
+			   job->step_id.step_id);
 	}
 	params->fanout = 0;
-	params->job_id = job->jobid;
+	params->job_id = job->step_id.job_id;
 	params->force = true;
 	if (srun_opt->het_grp_bits)
 		params->het_job_offset = bit_ffs(srun_opt->het_grp_bits);
@@ -755,7 +756,7 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 		params->het_job_offset = NO_VAL;
 	params->preserve = true;
 	params->src_fname = srun_opt->argv[0];
-	params->step_id = job->stepid;
+	params->step_id = job->step_id.step_id;
 	params->timeout = 0;
 	params->verbose = 0;
 

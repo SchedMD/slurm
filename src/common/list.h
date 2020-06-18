@@ -265,6 +265,13 @@ void *list_pop(List l);
  */
 void *list_peek(List l);
 
+/*
+ *  Peeks at the data item at the end of the stack (or tail of the queue) [l].
+ *  Returns the data's ptr, or NULL if the stack (or queue) is empty.
+ *  Note: The item is not removed from the list.
+ */
+void *list_peek_last(List l);
+
 /****************************
  *  Queue Access Functions  *
  ****************************/

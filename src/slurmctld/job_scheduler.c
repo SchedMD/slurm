@@ -236,7 +236,7 @@ static uint16_t _is_step_cleaning(job_record_t *job_ptr)
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
 		/* Only check if not a pending step */
-		if (step_ptr->step_id != SLURM_PENDING_STEP) {
+		if (step_ptr->step_id.step_id != SLURM_PENDING_STEP) {
 			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
 						    SELECT_JOBDATA_CLEANING,
 						    &cleaning);
@@ -2125,7 +2125,6 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 		xmalloc(sizeof(batch_job_launch_msg_t));
 	launch_msg_ptr->job_id = job_ptr->job_id;
 	launch_msg_ptr->het_job_id = job_ptr->het_job_id;
-	launch_msg_ptr->step_id = NO_VAL;
 	launch_msg_ptr->array_job_id = job_ptr->array_job_id;
 	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
 	launch_msg_ptr->uid = job_ptr->user_id;
@@ -2569,8 +2568,8 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 
 	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
 
-	cred_arg.jobid     = launch_msg_ptr->job_id;
-	cred_arg.stepid    = launch_msg_ptr->step_id;
+	cred_arg.step_id.job_id = launch_msg_ptr->job_id;
+	cred_arg.step_id.step_id = SLURM_BATCH_SCRIPT;
 	cred_arg.uid       = launch_msg_ptr->uid;
 	cred_arg.gid       = launch_msg_ptr->gid;
 	cred_arg.pw_name   = launch_msg_ptr->user_name;
@@ -2602,7 +2601,8 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 
 	if (launch_msg_ptr->cred)
 		return SLURM_SUCCESS;
-	error("slurm_cred_create failure for batch job %u", cred_arg.jobid);
+	error("slurm_cred_create failure for batch job %u",
+	      cred_arg.step_id.job_id);
 	return SLURM_ERROR;
 }
 

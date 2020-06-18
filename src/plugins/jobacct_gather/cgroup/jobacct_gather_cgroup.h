@@ -80,8 +80,19 @@ extern int jobacct_gather_cgroup_memory_attach_task(
 /* extern int jobacct_gather_cgroup_blkio_attach_task( */
 /* 	pid_t pid, jobacct_id_t *jobacct_id); */
 
-extern char* jobacct_cgroup_create_slurm_cg (xcgroup_ns_t* ns);
-
 extern int find_task_cg_info(void *x, void *key);
 
 extern void free_task_cg_info(void *task_cg);
+
+extern int create_jobacct_cgroups(const char *calling_func,
+				  const jobacct_id_t *jobacct_id,
+				  pid_t pid,
+				  xcgroup_ns_t *ns,
+				  xcgroup_t *job_cg,
+				  xcgroup_t *step_cg,
+				  List task_cg_list,
+				  xcgroup_t *user_cg,
+				  char job_cgroup_path[],
+				  char step_cgroup_path[],
+				  char task_cgroup_path[],
+				  char user_cgroup_path[]);

@@ -36,7 +36,7 @@ proc print_err { test_type func_type } {
 #
 proc inc21_21_good { test_type limit } {
 
-	global number bin_id ta srun test_node selectparam nthreads
+	global number bin_id ta srun test_node selectparam nthreads re_word_str
 	set exit_code 0
 	set job_id 0
 	set val 0
@@ -69,7 +69,7 @@ proc inc21_21_good { test_type limit } {
 	spawn $srun -v -t1 $add [lindex $limit 0][lindex $limit 1] \
 	    --account=$ta $bin_id
 	expect {
-		-re "launching ($number)" {
+		-re "launching StepId=($number)\.$re_word_str" {
 			set job_id $expect_out(1,string)
 			incr matches
 			exp_continue
@@ -105,7 +105,7 @@ proc inc21_21_good { test_type limit } {
 #
 proc inc21_21_bad { test_type limit } {
 
-	global number bin_id ta srun test_node nthreads selectparam
+	global number bin_id ta srun test_node nthreads selectparam re_word_str
 	set exit_code 0
 	set job_id 0
 	set over_lim [expr [lindex $limit 1] + 1]
@@ -128,7 +128,7 @@ proc inc21_21_bad { test_type limit } {
 			print_err $test_type "inc21_21_bad"
 			exp_continue
 		}
-		-re "launching ($number)" {
+		-re "launching StepId=($number)\.$re_word_str" {
 			set job_id $expect_out(1,string)
 			send_user "\nFAILURE: job should not have run. "
 			print_err $test_type "inc21_21_bad"
@@ -623,7 +623,7 @@ proc inc21_21_submit_test { limit } {
 #
 proc inc21_21_grpwall { test_type limit } {
 
-	global number bin_id ta srun bin_sleep bin_rm file_in test_qos
+	global number bin_id ta srun bin_sleep bin_rm file_in test_qos re_word_str
 	set exit_code 0
 	set job_id 0
 	set timeout 120
@@ -646,7 +646,7 @@ proc inc21_21_grpwall { test_type limit } {
 	spawn $srun -v [lindex $limit 0][lindex $limit 1] --account=$ta \
 	    -I $file_in
 	expect {
-		-re "launching ($number)" {
+		-re "launching StepId=($number)\.$re_word_str" {
 			set job_id $expect_out(1,string)
 			incr matches
 			exp_continue
@@ -688,7 +688,7 @@ proc inc21_21_grpwall { test_type limit } {
 			print_err $test_type "inc21_21_grpwall"
 			exp_continue
 		}
-		-re "launching ($number)" {
+		-re "launching StepId=($number)\.$re_word_str" {
 			set job_id $expect_out(1,string)
 			send_user "\nFAILURE: job should not have run. "
 			print_err $test_type "inc21_21_grpwall"

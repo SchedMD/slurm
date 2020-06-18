@@ -2722,7 +2722,6 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 
 	req.assoc_id    = step_ptr->job_ptr->assoc_id;
 	req.db_index    = step_ptr->job_ptr->db_index;
-	req.job_id      = step_ptr->job_ptr->job_id;
 	req.name        = step_ptr->name;
 	req.nodes       = node_list;
 	if (step_ptr->step_node_bitmap) {
@@ -2739,7 +2738,9 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 		req.job_submit_time   = step_ptr->job_ptr->resize_time;
 	else if (step_ptr->job_ptr->details)
 		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
-	req.step_id     = step_ptr->step_id;
+
+	memcpy(&req.step_id, &step_ptr->step_id, sizeof(req.step_id));
+
 	if (step_ptr->step_layout)
 		req.task_dist   = step_ptr->step_layout->task_dist;
 	req.task_dist   = task_dist;
@@ -2771,7 +2772,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	persist_msg_t msg = {0};
 	dbd_step_comp_msg_t req;
 
-	if (step_ptr->step_id == SLURM_BATCH_SCRIPT)
+	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
 		tasks = 1;
 	else {
 		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
@@ -2802,11 +2803,10 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	 */
 	req.jobacct     = step_ptr->jobacct;
 #else
-	if (step_ptr->step_id == SLURM_BATCH_SCRIPT)
+	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
 		req.jobacct     = step_ptr->jobacct;
 #endif
 
-	req.job_id      = step_ptr->job_ptr->job_id;
 	req.req_uid     = step_ptr->requid;
 	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
 		req.start_time = step_ptr->start_time;
@@ -2822,7 +2822,9 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		req.job_tres_alloc_str = step_ptr->job_ptr->tres_alloc_str;
 
 	req.state       = step_ptr->state;
-	req.step_id     = step_ptr->step_id;
+
+	memcpy(&req.step_id, &step_ptr->step_id, sizeof(req.step_id));
+
 	req.total_tasks = tasks;
 
 	msg.msg_type    = DBD_STEP_COMPLETE;

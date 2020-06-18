@@ -114,4 +114,20 @@ extern void pack_config_response_msg(config_response_msg_t *msg,
 				     Buf buffer, uint16_t protocol_version);
 extern int unpack_config_response_msg(config_response_msg_t **msg_ptr,
 				      Buf buffer, uint16_t protocol_version);
+
+extern void pack_step_id(slurm_step_id_t *msg, Buf buffer,
+			 uint16_t protocol_version);
+extern int unpack_step_id_members(slurm_step_id_t *msg, Buf buffer,
+				  uint16_t protocol_version);
+extern int unpack_step_id(slurm_step_id_t **msg_ptr, Buf buffer,
+			  uint16_t protocol_version);
+
+/*
+ * Remove these 2 functions pack_old_step_id and convert_old_step_id 2 versions
+ * after 20.11.  They are only here for convenience and will no longer be needed
+ * after 2 versions after 20.11.
+ */
+extern void pack_old_step_id(uint32_t step_id, Buf buffer);
+extern void convert_old_step_id(uint32_t *step_id);
+
 #endif

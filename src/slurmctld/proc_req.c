@@ -1144,8 +1144,7 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 
 	memset(&cred_arg, 0, sizeof(cred_arg));
 
-	cred_arg.jobid    = job_ptr->job_id;
-	cred_arg.stepid   = step_ptr->step_id;
+	memcpy(&cred_arg.step_id, &step_ptr->step_id, sizeof(cred_arg.step_id));
 	cred_arg.uid      = job_ptr->user_id;
 	cred_arg.gid      = job_ptr->group_id;
 	cred_arg.x11             = job_ptr->details->x11;
@@ -2387,8 +2386,8 @@ static void _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg)
 	job_step_kill_msg_t *job_step_kill_msg =
 		(job_step_kill_msg_t *) msg->data;
 
-	log_flag(STEPS, "Processing RPC: REQUEST_CANCEL_JOB_STEP JobId=%u StepId=%u uid=%u",
-		 job_step_kill_msg->job_id, job_step_kill_msg->job_step_id,
+	log_flag(STEPS, "Processing RPC: REQUEST_CANCEL_JOB_STEP %ps uid=%u",
+		 &job_step_kill_msg->step_id,
 		 uid);
 	_throttle_start(&active_rpc_cnt);
 
@@ -2578,17 +2577,19 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 	if (association_based_accounting && job_ptr &&
 	    (job_ptr->job_state != JOB_PENDING)) {
 		/* This logic was taken from _slurm_rpc_step_complete() */
-		step_record_t *step_ptr =
-			find_step_record(job_ptr, SLURM_BATCH_SCRIPT);
+		slurm_step_id_t step_id = { .job_id = job_ptr->job_id,
+					    .step_id = SLURM_BATCH_SCRIPT,
+					    .step_het_comp = NO_VAL };
+		step_record_t *step_ptr = find_step_record(job_ptr, &step_id);
 		if (!step_ptr) {
 			error("%s: Could not find batch step for %pJ, this should never happen",
 			      __func__, job_ptr);
 			step_ptr = build_batch_step(job_ptr);
 		}
 
-		if (step_ptr->step_id != SLURM_BATCH_SCRIPT) {
+		if (step_ptr->step_id.step_id != SLURM_BATCH_SCRIPT) {
 			error("%s: %pJ Didn't find batch step, found step %u. This should never happen.",
-			      __func__, job_ptr, step_ptr->step_id);
+			      __func__, job_ptr, step_ptr->step_id.step_id);
 		} else {
 			step_ptr->exit_code = comp_msg->job_rc;
 			jobacctinfo_destroy(step_ptr->jobacct);
@@ -2596,7 +2597,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 			comp_msg->jobacct = NULL;
 			step_ptr->state |= JOB_COMPLETING;
 			jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
-			delete_step_record(job_ptr, step_ptr->step_id);
+			delete_step_record(job_ptr, step_ptr);
 		}
 	}
 
@@ -2822,23 +2823,23 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		if ((error_code == ESLURM_PROLOG_RUNNING) ||
 		    (error_code == ESLURM_DISABLED))
 			log_flag(STEPS, "%s for suspended JobId=%u: %s",
-				 __func__, req_step_msg->job_id,
+				 __func__, req_step_msg->step_id.job_id,
 				 slurm_strerror(error_code));
 		else
 			log_flag(STEPS, "%s for JobId=%u: %s",
-				 __func__, req_step_msg->job_id,
+				 __func__, req_step_msg->step_id.job_id,
 				 slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		slurm_step_layout_t *layout = step_rec->step_layout;
-
 		log_flag(STEPS, "%s: %pS %s %s",
 			 __func__, step_rec, req_step_msg->node_list, TIME_STR);
 
 		memset(&job_step_resp, 0, sizeof(job_step_resp));
-		job_step_resp.job_step_id = step_rec->step_id;
+		job_step_resp.job_step_id = step_rec->step_id.step_id;
 		job_step_resp.resv_ports  = step_rec->resv_ports;
-		job_step_resp.step_layout = layout;
+
+		job_step_resp.step_layout = step_rec->step_layout;
+
 #ifdef HAVE_FRONT_END
 		if (step_rec->job_ptr->batch_host) {
 			job_step_resp.step_layout->front_end =
@@ -2894,7 +2895,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 	} else {
 		Buf buffer = init_buf(BUF_SIZE);
 		error_code = pack_ctld_job_step_info_response_msg(
-			request->job_id, request->step_id,
+			request->step_id.job_id, request->step_id.step_id,
 			uid, request->show_flags, buffer,
 			msg->protocol_version);
 		unlock_slurmctld(job_read_lock);
@@ -3443,7 +3444,11 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 
 	if ((error_code == SLURM_SUCCESS) && job_ptr
 	    && (job_info_msg->step_id != NO_VAL)) {
-		step_ptr = find_step_record(job_ptr, job_info_msg->step_id);
+		slurm_step_id_t step_id = { .job_id = job_ptr->job_id,
+					    .step_id = job_info_msg->step_id,
+					    .step_het_comp = NO_VAL };
+
+		step_ptr = find_step_record(job_ptr, &step_id);
 		if (!step_ptr) {
 			job_ptr = NULL;
 			error_code = ESLURM_INVALID_JOB_ID;
@@ -3810,16 +3815,16 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 
 	/* init */
 	START_TIMER;
-	log_flag(STEPS, "Processing RPC: REQUEST_STEP_COMPLETE for JobId=%u StepId=%u nodes %u-%u rc=%u uid=%u",
-		 req->job_id, req->job_step_id, req->range_first,
-		 req->range_last, req->step_rc, uid);
+	log_flag(STEPS, "Processing RPC: REQUEST_STEP_COMPLETE for %ps nodes %u-%u rc=%u uid=%u",
+		 &req->step_id,
+		 req->range_first, req->range_last, req->step_rc, uid);
 
 	if (!running_composite) {
 		_throttle_start(&active_rpc_cnt);
 		lock_slurmctld(job_write_lock);
 	}
 
-	rc = step_partial_comp(req, uid, &rem, &step_rc);
+	rc = step_partial_comp(req, uid, true, &rem, &step_rc);
 
 	if (rc || rem) {	/* some error or not totally done */
 		/* Note: Error printed within step_partial_comp */
@@ -3833,8 +3838,6 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 		return;
 	}
 
-	error_code = job_step_complete(req->job_id, req->job_step_id,
-				       uid, false, step_rc);
 	if (!running_composite) {
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
@@ -3843,13 +3846,14 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 
 	/* return result */
 	if (error_code) {
-		log_flag(STEPS, "%s 1 JobId=%u StepId=%u %s",
-			 __func__, req->job_id, req->job_step_id,
+		log_flag(STEPS, "%s 1 %ps %s",
+			 __func__, &req->step_id,
 			 slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		log_flag(STEPS, "%s JobId=%u StepId=%u %s",
-			 __func__, req->job_id, req->job_step_id, TIME_STR);
+		log_flag(STEPS, "%s %ps %s",
+			 __func__, &req->step_id,
+			 TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		dump_job = true;
 	}
@@ -3866,7 +3870,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
 	DEF_TIMERS;
-	job_step_id_msg_t *req = (job_step_id_msg_t *)msg->data;
+	slurm_step_id_t *req = (slurm_step_id_t *)msg->data;
 	slurm_step_layout_t *step_layout = NULL;
 	/* Locks: Read config job, write node */
 	slurmctld_lock_t job_read_lock = {
@@ -3896,7 +3900,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 		return;
 	}
 
-	step_ptr = find_step_record(job_ptr, req->step_id);
+	step_ptr = find_step_record(job_ptr, req);
 	if (!step_ptr) {
 		unlock_slurmctld(job_read_lock);
 		log_flag(STEPS, "%s: %pJ StepId=%u Not Found",
@@ -5565,13 +5569,13 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 
 	/* do RPC call */
 	lock_slurmctld(job_read_lock);
-	job_ptr = find_job_record(notify_msg->job_id);
+	job_ptr = find_job_record(notify_msg->step_id.job_id);
 
 	/* If job is found on the cluster, it could be pending, the origin
 	 * cluster, or running on the sibling cluster. If it's not there then
 	 * route it to the origin. */
 	if (!job_ptr &&
-	    !_route_msg_to_origin(msg, NULL, notify_msg->job_id, uid)) {
+	    !_route_msg_to_origin(msg, NULL, notify_msg->step_id.job_id, uid)) {
 		unlock_slurmctld(job_read_lock);
 		return;
 	}

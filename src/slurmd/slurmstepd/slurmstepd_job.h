@@ -126,8 +126,7 @@ typedef struct {
 	slurmstepd_state_t state;	/* Job state			*/
 	pthread_cond_t state_cond;	/* Job state conditional	*/
 	pthread_mutex_t state_mutex;	/* Job state mutex		*/
-	uint32_t       jobid;  /* Current Slurm job id                      */
-	uint32_t       stepid; /* Current step id (or NO_VAL)               */
+	slurm_step_id_t step_id; /* Current step id (or NO_VAL)               */
 	uint32_t       array_job_id;  /* job array master job ID            */
 	uint32_t       array_task_id; /* job array ID                       */
 	uint32_t       nnodes; /* number of nodes in current job            */

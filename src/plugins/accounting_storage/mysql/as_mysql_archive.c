@@ -152,6 +152,20 @@ typedef struct {
 	char *work_dir;
 } local_job_t;
 
+static void _convert_old_step_id(char **step_id)
+{
+	if (!step_id || !*step_id)
+		return;
+
+	if (!xstrcmp(*step_id, "-2")) {
+		xfree(*step_id);
+		*step_id = xstrdup_printf("%d", SLURM_BATCH_SCRIPT);
+	} else if (!xstrcmp(*step_id, "-1")) {
+		xfree(*step_id);
+		*step_id = xstrdup_printf("%d", SLURM_EXTERN_CONT);
+	}
+}
+
 static void _free_local_job_members(local_job_t *object)
 {
 	if (object) {
@@ -260,6 +274,7 @@ typedef struct {
 	char *req_cpufreq_gov;
 	char *state;
 	char *stepid;
+	char *step_het_comp;
 	char *sys_sec;
 	char *sys_usec;
 	char *tasks;
@@ -306,6 +321,7 @@ static void _free_local_step_members(local_step_t *object)
 		xfree(object->req_cpufreq_gov);
 		xfree(object->state);
 		xfree(object->stepid);
+		xfree(object->step_het_comp);
 		xfree(object->sys_sec);
 		xfree(object->sys_usec);
 		xfree(object->tasks);
@@ -598,6 +614,7 @@ enum {
 static char *step_req_inx[] = {
 	"job_db_inx",
 	"id_step",
+	"step_het_comp",
 	"deleted",
 	"time_start",
 	"time_end",
@@ -643,6 +660,7 @@ static char *step_req_inx[] = {
 enum {
 	STEP_REQ_DB_INX,
 	STEP_REQ_STEPID,
+	STEP_REQ_STEP_HET_COMP,
 	STEP_REQ_DELETED,
 	STEP_REQ_START,
 	STEP_REQ_END,
@@ -1503,6 +1521,7 @@ static void _pack_local_step(local_step_t *object,
 	packstr(object->req_cpufreq_gov, buffer);
 	packstr(object->state, buffer);
 	packstr(object->stepid, buffer);
+	packstr(object->step_het_comp, buffer);
 	packstr(object->sys_sec, buffer);
 	packstr(object->sys_usec, buffer);
 	packstr(object->tasks, buffer);
@@ -1536,7 +1555,71 @@ static int _unpack_local_step(local_step_t *object,
 	uint32_t tmp32;
 	char *tmp_char;
 
-	if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&object->act_cpufreq, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->consumed_energy,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_suspended,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_min,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_max,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_gov,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->step_het_comp, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->task_dist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_ave,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_tot,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_ave,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_tot,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_usec, &tmp32, buffer);
+	} else if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object->act_cpufreq, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
@@ -1555,6 +1638,7 @@ static int _unpack_local_step(local_step_t *object,
 		safe_unpackstr_xmalloc(&object->req_cpufreq_gov, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
+		_convert_old_step_id(&object->stepid);
 		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
@@ -1604,6 +1688,7 @@ static int _unpack_local_step(local_step_t *object,
 		safe_unpackstr_xmalloc(&object->req_cpufreq_gov, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
+		_convert_old_step_id(&object->stepid);
 		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
@@ -1757,6 +1842,7 @@ static int _unpack_local_step(local_step_t *object,
 		safe_unpackstr_xmalloc(&object->req_cpufreq_gov, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
+		_convert_old_step_id(&object->stepid);
 		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
@@ -1913,6 +1999,7 @@ static int _unpack_local_step(local_step_t *object,
 		safe_unpackstr_xmalloc(&object->req_cpufreq_max, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
+		_convert_old_step_id(&object->stepid);
 		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
@@ -3241,6 +3328,7 @@ static Buf _pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 		step.req_cpufreq_gov = row[STEP_REQ_REQ_CPUFREQ_GOV];
 		step.state = row[STEP_REQ_STATE];
 		step.stepid = row[STEP_REQ_STEPID];
+		step.step_het_comp = row[STEP_REQ_STEP_HET_COMP];
 		step.sys_sec = row[STEP_REQ_SYS_SEC];
 		step.sys_usec = row[STEP_REQ_SYS_USEC];
 		step.tasks = row[STEP_REQ_TASKS];
@@ -3309,9 +3397,13 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 		if (i)
 			xstrcat(insert, ", ");
 
+		if (!object.step_het_comp)
+			object.step_het_comp = xstrdup_printf("%u", NO_VAL);
+
 		xstrfmtcat(insert, format,
 			   object.job_db_inx,
 			   object.stepid,
+			   object.step_het_comp,
 			   object.deleted,
 			   object.period_start,
 			   object.period_end,

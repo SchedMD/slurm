@@ -480,12 +480,8 @@ parse_command_line( int argc, char* *argv )
 	}
 
 	if (params.job_list && (list_count(params.job_list) == 1)) {
-		ListIterator iterator;
-		uint32_t *job_id_ptr;
-		iterator = list_iterator_create(params.job_list);
-		job_id_ptr = list_next(iterator);
-		params.job_id = *job_id_ptr;
-		list_iterator_destroy(iterator);
+		squeue_job_step_t *job_step_ptr = list_peek(params.job_list);
+		params.job_id = job_step_ptr->step_id.job_id;
 	}
 	if (params.user_list && (list_count(params.user_list) == 1)) {
 		ListIterator iterator;
@@ -1860,10 +1856,10 @@ _print_options(void)
 		while ( (job_step_id = list_next( iterator )) ) {
 			if (job_step_id->array_id == NO_VAL) {
 				printf( "job_list[%d] = %u\n", i++,
-					job_step_id->job_id );
+					job_step_id->step_id.job_id );
 			} else {
 				printf( "job_list[%d] = %u_%u\n", i++,
-					job_step_id->job_id,
+					job_step_id->step_id.job_id,
 					job_step_id->array_id );
 			}
 		}
@@ -1909,18 +1905,27 @@ _print_options(void)
 	}
 
 	if ((params.verbose > 1) && params.step_list) {
+		char tmp_char[34];
 		i = 0;
 		iterator = list_iterator_create( params.step_list );
 		while ( (job_step_id = list_next( iterator )) ) {
 			if (job_step_id->array_id == NO_VAL) {
-				printf( "step_list[%d] = %u.%u\n", i++,
-					job_step_id->job_id,
-					job_step_id->step_id );
+				log_build_step_id_str(&job_step_id->step_id,
+						      tmp_char,
+						      sizeof(tmp_char),
+						      STEP_ID_FLAG_NO_PREFIX);
+				printf( "step_list[%d] = %s\n", i++,
+					tmp_char);
 			} else {
-				printf( "step_list[%d] = %u_%u.%u\n", i++,
-					job_step_id->job_id,
+				log_build_step_id_str(&job_step_id->step_id,
+						      tmp_char,
+						      sizeof(tmp_char),
+						      (STEP_ID_FLAG_NO_PREFIX |
+						       STEP_ID_FLAG_NO_JOB));
+				printf( "step_list[%d] = %u_%u.%s\n", i++,
+					job_step_id->step_id.job_id,
 					job_step_id->array_id,
-					job_step_id->step_id );
+					tmp_char);
 			}
 		}
 		list_iterator_destroy( iterator );
@@ -1970,7 +1975,7 @@ _build_job_list( char* str )
 		}
 
 		job_step_id = xmalloc( sizeof( squeue_job_step_t ) );
-		job_step_id->job_id   = job_id;
+		job_step_id->step_id.job_id   = job_id;
 		job_step_id->array_id = array_id;
 		list_append( my_list, job_step_id );
 		job = strtok_r (NULL, ",", &tmp_char);
@@ -2110,9 +2115,9 @@ _build_step_list( char* str )
 			exit(1);
 		}
 		job_step_id = xmalloc(sizeof(squeue_job_step_t));
-		job_step_id->job_id   = job_id;
+		job_step_id->step_id.job_id   = job_id;
 		job_step_id->array_id = array_id;
-		job_step_id->step_id  = step_id;
+		job_step_id->step_id.step_id  = step_id;
 		list_append(my_list, job_step_id);
 		step = strtok_r(NULL, ",", &tmp_char);
 	}

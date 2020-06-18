@@ -58,7 +58,7 @@
 #include "src/common/list.h"
 #include "src/common/run_command.h"
 
-static int shutdown = 0;
+static int command_shutdown = 0;
 static int child_proc_count = 0;
 static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -67,13 +67,13 @@ static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* used to initialize run_command module */
 extern void run_command_init(void)
 {
-	shutdown = 0;
+	command_shutdown = 0;
 }
 
 /* used to terminate any outstanding commands */
 extern void run_command_shutdown(void)
 {
-	shutdown = 1;
+	command_shutdown = 1;
 }
 
 /* Return count of child processes */
@@ -192,7 +192,7 @@ extern char *run_command(char *script_type, char *script_path,
 		if (tid)
 			track_script_reset_cpid(tid, cpid);
 		while (1) {
-			if (shutdown) {
+			if (command_shutdown) {
 				error("%s: killing %s operation on shutdown",
 				      __func__, script_type);
 				break;

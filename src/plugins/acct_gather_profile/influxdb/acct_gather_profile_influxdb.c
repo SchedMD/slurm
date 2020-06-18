@@ -559,7 +559,8 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 			xstrfmtcat(str, "%s,job=%d,step=%d,task=%s,"
 				   "host=%s value=%"PRIu64" "
 				   "%"PRIu64"\n", table->names[i],
-				   g_job->jobid, g_job->stepid,
+				   g_job->step_id.job_id,
+				   g_job->step_id.step_id,
 				   table->name, g_job->node_name,
 				   ((union data_t*)data)[i].u,
 				   (uint64_t)sample_time);
@@ -568,7 +569,8 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 			xstrfmtcat(str, "%s,job=%d,step=%d,task=%s,"
 				   "host=%s value=%.2f %"PRIu64""
 				   "\n", table->names[i],
-				   g_job->jobid, g_job->stepid,
+				   g_job->step_id.job_id,
+				   g_job->step_id.step_id,
 				   table->name, g_job->node_name,
 				   ((union data_t*)data)[i].d,
 				   (uint64_t)sample_time);

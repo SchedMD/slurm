@@ -666,9 +666,13 @@ int
 step_rec_to_hv(slurmdb_step_rec_t *rec, HV* hv)
 {
     HV* stats_hv = (HV*)sv_2mortal((SV*)newHV());
+    HV *step_id_hv = (HV*)sv_2mortal((SV*)newHV());
 
     stats_to_hv(&rec->stats, stats_hv);
     hv_store_sv(hv, "stats", newRV((SV*)stats_hv));
+
+    step_id_to_hv(&rec->step_id, step_id_hv);
+    hv_store_sv(hv, "step_id", newRV((SV*)step_id_hv));
 
     STORE_FIELD(hv, rec, elapsed,         uint32_t);
     STORE_FIELD(hv, rec, end,             time_t);
@@ -683,7 +687,6 @@ step_rec_to_hv(slurmdb_step_rec_t *rec, HV* hv)
     STORE_FIELD(hv, rec, requid,          uint32_t);
     STORE_FIELD(hv, rec, start,           time_t);
     STORE_FIELD(hv, rec, state,           uint32_t);
-    STORE_FIELD(hv, rec, stepid,          uint32_t);
     STORE_FIELD(hv, rec, stepname,        charp);
     STORE_FIELD(hv, rec, suspended,       uint32_t);
     STORE_FIELD(hv, rec, sys_cpu_sec,     uint32_t);

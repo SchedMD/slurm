@@ -405,7 +405,11 @@ extern void
 scontrol_print_step (char *job_step_id_str)
 {
 	int error_code, i, print_cnt = 0;
-	uint32_t job_id = NO_VAL, step_id = NO_VAL;
+	slurm_step_id_t step_id = {
+		.job_id = 0,
+		.step_het_comp = NO_VAL,
+		.step_id = NO_VAL,
+	};
 	uint32_t array_id = NO_VAL;
 	char *next_str;
 	job_step_info_response_msg_t *job_step_info_ptr;
@@ -416,11 +420,13 @@ scontrol_print_step (char *job_step_id_str)
 	uint16_t show_flags = 0;
 
 	if (job_step_id_str) {
-		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
+		step_id.job_id = (uint32_t)strtol(job_step_id_str, &next_str,
+						  10);
 		if (next_str[0] == '_')
 			array_id = (uint32_t) strtol(next_str+1, &next_str, 10);
 		else if (next_str[0] == '.')
-			step_id = (uint32_t) strtol (next_str+1, NULL, 10);
+			step_id.step_id = (uint32_t)strtol(next_str + 1, NULL,
+							   10);
 	}
 
 	if (all_flag)
@@ -428,13 +434,13 @@ scontrol_print_step (char *job_step_id_str)
 	if (local_flag)
 		show_flags |= SHOW_LOCAL;
 
-	if ((old_job_step_info_ptr) && (last_job_id == job_id) &&
-	    (last_array_id == array_id) && (last_step_id == step_id)) {
+	if ((old_job_step_info_ptr) && (last_job_id == step_id.job_id) &&
+	    (last_array_id == array_id) && (last_step_id == step_id.step_id)) {
 		if (last_show_flags != show_flags)
 			old_job_step_info_ptr->last_update = (time_t) 0;
 		error_code = slurm_get_job_steps(
 			old_job_step_info_ptr->last_update,
-			job_id, step_id, &job_step_info_ptr,
+			step_id.job_id, step_id.step_id, &job_step_info_ptr,
 			show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg (
@@ -451,7 +457,8 @@ scontrol_print_step (char *job_step_id_str)
 				old_job_step_info_ptr);
 			old_job_step_info_ptr = NULL;
 		}
-		error_code = slurm_get_job_steps ( (time_t) 0, job_id, step_id,
+		error_code = slurm_get_job_steps ( (time_t) 0, step_id.job_id,
+						   step_id.step_id,
 						   &job_step_info_ptr,
 						   show_flags);
 	}
@@ -465,8 +472,8 @@ scontrol_print_step (char *job_step_id_str)
 
 	old_job_step_info_ptr = job_step_info_ptr;
 	last_show_flags = show_flags;
-	last_job_id = job_id;
-	last_step_id = step_id;
+	last_job_id = step_id.job_id;
+	last_step_id = step_id.step_id;
 
 	if (quiet_flag == -1) {
 		char time_str[32];
@@ -489,12 +496,18 @@ scontrol_print_step (char *job_step_id_str)
 		if (job_step_id_str) {
 			exit_code = 1;
 			if (quiet_flag != 1) {
+				char tmp_char[45];
+				log_build_step_id_str(&step_id, tmp_char,
+						      sizeof(tmp_char),
+						      (STEP_ID_FLAG_NO_PREFIX |
+						       STEP_ID_FLAG_NO_JOB));
 				if (array_id == NO_VAL) {
-					printf ("Job step %u.%u not found\n",
-						job_id, step_id);
+					printf("Job step %u.%s not found\n",
+					       step_id.job_id, tmp_char);
 				} else {
-					printf ("Job step %u_%u.%u not found\n",
-						job_id, array_id, step_id);
+					printf("Job step %u_%u.%s not found\n",
+					       step_id.job_id, array_id,
+					       tmp_char);
 				}
 			}
 		} else if (quiet_flag != 1)
@@ -527,31 +540,39 @@ static int _parse_jobid(const char *jobid_str, uint32_t *out_jobid)
 }
 
 /* Return 1 on success, 0 on failure to find a stepid in the string */
-static int _parse_stepid(const char *jobid_str, uint32_t *out_stepid)
+static int _parse_stepid(const char *jobid_str, slurm_step_id_t *step_id)
 {
 	char *ptr, *job, *step;
-	long stepid;
+	int rc = 1;
 
 	job = xstrdup(jobid_str);
 	ptr = xstrchr(job, '.');
 	if (ptr == NULL) {
 		/* did not find a period, so no step ID in this string */
 		xfree(job);
-		return 0;
+		return rc;
 	} else {
 		step = ptr + 1;
 	}
 
-	stepid = strtol(step, &ptr, 10);
+	step_id->step_id = (uint32_t)strtol(step, &ptr, 10);
+
+	step = xstrchr(ptr, '+');
+	if (step) {
+		/* het step */
+		step++;
+		step_id->step_het_comp = (uint32_t)strtol(step, &ptr, 10);
+	} else
+		step_id->step_het_comp = NO_VAL;
+
 	if (!xstring_is_whitespace(ptr)) {
-		fprintf(stderr, "\"%s\" does not look like a stepid\n", step);
-		xfree(job);
-		return 0;
+		fprintf(stderr, "\"%s\" does not look like a stepid\n",
+			jobid_str);
+		rc = 0;
 	}
 
-	*out_stepid = (uint32_t) stepid;
 	xfree(job);
-	return 1;
+	return rc;
 }
 
 
@@ -571,7 +592,7 @@ _in_task_array(pid_t pid, slurmstepd_task_info_t *task_array,
 
 
 static void
-_list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
+_list_pids_one_step(const char *node_name, slurm_step_id_t *step_id)
 {
 	int fd;
 	slurmstepd_task_info_t *task_info = NULL;
@@ -580,14 +601,17 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 	uint32_t tcount = 0;
 	int i;
 	uint16_t protocol_version;
+	char tmp_char[64];
 
-	fd = stepd_connect(NULL, node_name, jobid, stepid, &protocol_version);
+	fd = stepd_connect(NULL, node_name, step_id, &protocol_version);
 	if (fd == -1) {
 		exit_code = 1;
 		if (errno == ENOENT) {
 			fprintf(stderr,
-				"Job step %u.%u does not exist on this node.\n",
-				jobid, stepid);
+				"%s does not exist on this node.\n",
+				log_build_step_id_str(step_id, tmp_char,
+						      sizeof(tmp_char),
+						      STEP_ID_FLAG_NONE));
 			exit_code = 1;
 		} else {
 			perror("Unable to connect to slurmstepd");
@@ -595,35 +619,26 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 		return;
 	}
 
+	log_build_step_id_str(step_id, tmp_char, sizeof(tmp_char),
+			      STEP_ID_FLAG_NO_JOB | STEP_ID_FLAG_NO_PREFIX);
+
 	stepd_task_info(fd, protocol_version, &task_info, &tcount);
 	for (i = 0; i < (int)tcount; i++) {
-		if (!task_info[i].exited) {
-			if (stepid == SLURM_BATCH_SCRIPT)
-				printf("%-8d %-8u %-6s %-7d %-8d\n",
-				       task_info[i].pid,
-				       jobid,
-				       "batch",
-				       task_info[i].id,
-				       task_info[i].gtid);
-			else
-				printf("%-8d %-8u %-6u %-7d %-8d\n",
-				       task_info[i].pid,
-				       jobid,
-				       stepid,
-				       task_info[i].id,
-				       task_info[i].gtid);
-		}
+		if (task_info[i].exited)
+			continue;
+		printf("%-8d %-8u %-8s %-7d %-8d\n",
+		       task_info[i].pid,
+		       step_id->job_id,
+		       tmp_char,
+		       task_info[i].id,
+		       task_info[i].gtid);
 	}
 
 	stepd_list_pids(fd, protocol_version, &pids, &count);
 	for (i = 0; i < count; i++) {
 		if (!_in_task_array((pid_t)pids[i], task_info, tcount)) {
-			if (stepid == SLURM_BATCH_SCRIPT)
-				printf("%-8d %-8u %-6s %-7s %-8s\n",
-				       pids[i], jobid, "batch", "-", "-");
-			else
-				printf("%-8d %-8u %-6u %-7s %-8s\n",
-				       pids[i], jobid, stepid, "-", "-");
+			printf("%-8d %-8u %-8s %-7s %-8s\n",
+			       pids[i], step_id->job_id, tmp_char, "-", "-");
 		}
 	}
 
@@ -633,16 +648,26 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 }
 
 static void
-_list_pids_all_steps(const char *node_name, uint32_t jobid)
+_list_pids_all_steps(const char *node_name, slurm_step_id_t *step_id)
 {
 	List steps;
 	ListIterator itr;
 	step_loc_t *stepd;
 	int count = 0;
+	char tmp_char[64];
+
+	if (step_id->step_het_comp != NO_VAL) {
+		_list_pids_one_step(node_name, step_id);
+		return;
+	}
 
 	steps = stepd_available(NULL, node_name);
 	if (!steps || list_count(steps) == 0) {
-		fprintf(stderr, "Job %u does not exist on this node.\n", jobid);
+		fprintf(stderr, "%s does not exist on node %s.\n",
+			log_build_step_id_str(step_id, tmp_char,
+					      sizeof(tmp_char),
+					      STEP_ID_FLAG_NONE),
+			node_name);
 		FREE_NULL_LIST(steps);
 		exit_code = 1;
 		return;
@@ -650,18 +675,29 @@ _list_pids_all_steps(const char *node_name, uint32_t jobid)
 
 	itr = list_iterator_create(steps);
 	while ((stepd = list_next(itr))) {
-		if (jobid == stepd->jobid) {
-			_list_pids_one_step(stepd->nodename, stepd->jobid,
-					    stepd->stepid);
-			count++;
-		}
+		if (step_id->job_id != stepd->step_id.job_id)
+			continue;
+
+		if ((step_id->step_id != NO_VAL) &&
+		    (step_id->step_id != stepd->step_id.step_id))
+			continue;
+
+		_list_pids_one_step(stepd->nodename, &stepd->step_id);
+		count++;
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(steps);
 
 	if (count == 0) {
-		fprintf(stderr, "Job %u does not exist on this node.\n",
-			jobid);
+		if (step_id->step_id != NO_VAL) {
+			fprintf(stderr, "%s does not exist on node %s.\n",
+				log_build_step_id_str(step_id, tmp_char,
+						      sizeof(tmp_char),
+						      STEP_ID_FLAG_NONE),
+				node_name);
+		} else
+			fprintf(stderr, "There are no steps for job %u on node %s.\n",
+				step_id->job_id, node_name);
 		exit_code = 1;
 	}
 }
@@ -683,8 +719,7 @@ _list_pids_all_jobs(const char *node_name)
 
 	itr = list_iterator_create(steps);
 	while((stepd = list_next(itr))) {
-		_list_pids_one_step(stepd->nodename, stepd->jobid,
-				    stepd->stepid);
+		_list_pids_one_step(stepd->nodename, &stepd->step_id);
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(steps);
@@ -704,26 +739,27 @@ _list_pids_all_jobs(const char *node_name)
 extern void
 scontrol_list_pids(const char *jobid_str, const char *node_name)
 {
-	uint32_t jobid = 0, stepid = 0;
+	slurm_step_id_t step_id = {
+		.job_id = 0,
+		.step_id = NO_VAL,
+		.step_het_comp = NO_VAL,
+	};
 
 	/* Job ID is optional */
 	if (jobid_str != NULL
 	    && jobid_str[0] != '*'
-	    && !_parse_jobid(jobid_str, &jobid)) {
+	    && !_parse_jobid(jobid_str, &step_id.job_id)) {
 		exit_code = 1;
 		return;
 	}
 
 	/* Step ID is optional */
-	printf("%-8s %-8s %-6s %-7s %-8s\n",
+	printf("%-8s %-8s %-8s %-7s %-8s\n",
 	       "PID", "JOBID", "STEPID", "LOCALID", "GLOBALID");
 	if (jobid_str == NULL || jobid_str[0] == '*') {
 		_list_pids_all_jobs(node_name);
-	} else if (_parse_stepid(jobid_str, &stepid)) {
-		_list_pids_one_step(node_name, jobid, stepid);
-	} else {
-		_list_pids_all_steps(node_name, jobid);
-	}
+	} else if (_parse_stepid(jobid_str, &step_id))
+		_list_pids_all_steps(node_name, &step_id);
 }
 
 extern void scontrol_getent(const char *node_name)
@@ -742,8 +778,8 @@ extern void scontrol_getent(const char *node_name)
 
 	itr = list_iterator_create(steps);
 	while ((stepd = list_next(itr))) {
-		fd = stepd_connect(NULL, node_name, stepd->jobid,
-				   stepd->stepid,
+		char tmp_char[45];
+		fd = stepd_connect(NULL, node_name, &stepd->step_id,
 				   &stepd->protocol_version);
 
 		if (fd < 0)
@@ -755,14 +791,9 @@ extern void scontrol_getent(const char *node_name)
 			close(fd);
 			continue;
 		}
-
-		if (stepd->stepid == SLURM_EXTERN_CONT)
-			printf("JobId=%u.Extern:\nUser:\n", stepd->jobid);
-		else if (stepd->stepid == SLURM_BATCH_SCRIPT)
-			printf("JobId=%u.Batch:\nUser:\n", stepd->jobid);
-		else
-			printf("JobId=%u.%u:\nUser:\n",
-			       stepd->jobid, stepd->stepid);
+		log_build_step_id_str(&stepd->step_id, tmp_char,
+				      sizeof(tmp_char), STEP_ID_FLAG_NO_PREFIX);
+		printf("JobId=%s:\nUser:\n", tmp_char);
 
 		printf("%s:%s:%u:%u:%s:%s:%s\nGroups:\n",
 		       pwd->pw_name, pwd->pw_passwd, pwd->pw_uid, pwd->pw_gid,

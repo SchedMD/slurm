@@ -122,7 +122,7 @@ int main (int argc, char *argv[])
 	 * Create a job step context.
 	 */
 	slurm_step_ctx_params_t_init(step_params);
-	step_params->job_id = job_resp->job_id;
+	step_params->step_id.job_id = job_resp->job_id;
 	step_params->min_nodes = nodes;
 	step_params->task_count = tasks;
 

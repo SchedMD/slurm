@@ -266,7 +266,7 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
 {
 	DEF_TIMERS;
 	START_TIMER;
-	debug("%s: %u.%u",  __func__, job->jobid, job->stepid);
+	debug("%s: %ps",  __func__, &job->step_id);
 
 #ifdef HAVE_NATIVE_CRAY
 	if (!job->batch)
@@ -291,22 +291,23 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 	uint64_t apid;
 	uint32_t jobid;
 	uint32_t taskid;
-	uint32_t offset;
+	uint32_t offset = 0;
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
+	else
+		jobid = job->step_id.jobid;
+
+	if (job->het_job_task_offset != NO_VAL)
 		offset = job->het_job_task_offset;
-	} else {
-		jobid = job->jobid;
-		offset = 0;
-	}
+
 	taskid = offset + job->task[job->envtp->localid]->gtid;
 
-	apid = SLURM_ID_HASH(jobid, job->stepid);
-	debug2("%s: %u.%u, apid %"PRIu64", task %u", __func__,
-	       job->jobid, job->stepid, apid, taskid);
+	apid = SLURM_ID_HASH(jobid, job->step_id.step_id);
+	debug2("%s: %ps, apid %"PRIu64", task %u", __func__, &job->step_id,
+	       apid, taskid);
 
 	/*
 	 * Send the rank to the application's PMI layer via an environment
@@ -368,7 +369,7 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
 	START_TIMER;
 
 #ifdef HAVE_NATIVE_CRAY
-	debug("%s: %u.%u", __func__, job->jobid, job->stepid);
+	debug("%s: %ps", __func__, &job->step_id);
 
 	if (track_status) {
 		rc = _make_status_file(job);
@@ -394,8 +395,7 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 	START_TIMER;
 
 #ifdef HAVE_NATIVE_CRAY
-	debug("%s: %u.%u, task %d", __func__,
-	      job->jobid, job->stepid, task->id);
+	debug("%s: %ps, task %d", __func__, &job->step_id, task->id);
 
 	if (track_status) {
 		rc = _check_status_file(job, task);
@@ -427,9 +427,9 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
+		jobid = job->step_id.job_id;
 	if (track_status) {
-		apid = SLURM_ID_HASH(jobid, job->stepid);
+		apid = SLURM_ID_HASH(jobid, job->step_id.step_id);
 		// Get the lli file name
 		snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE, apid);
 
@@ -470,7 +470,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	 *
 	 * NUMA node: mems (or cpuset.mems)
 	 */
-	if (job->stepid == SLURM_BATCH_SCRIPT) {
+	if (job->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		// Batch Job Step
 		rc = snprintf(path, sizeof(path),
 			      "/dev/cpuset/slurm/uid_%d/job_%"
@@ -479,7 +479,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 			CRAY_ERR("snprintf failed. Return code: %d", rc);
 			return SLURM_ERROR;
 		}
-	} else if (job->stepid == SLURM_EXTERN_CONT) {
+	} else if (job->step_id.step_id == SLURM_EXTERN_CONT) {
 		// Container for PAM to use for externally launched processes
 		rc = snprintf(path, sizeof(path),
 			      "/dev/cpuset/slurm/uid_%d/job_%"
@@ -497,7 +497,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 		rc = snprintf(path, sizeof(path),
 			      "/dev/cpuset/slurm/uid_%d/job_%"
 			      PRIu32 "/step_%" PRIu32,
-			      job->uid, jobid, job->stepid);
+			      job->uid, jobid, job->step_id.step_id);
 		if (rc < 0) {
 			CRAY_ERR("snprintf failed. Return code: %d", rc);
 			return SLURM_ERROR;
@@ -575,8 +575,8 @@ static int _make_status_file(stepd_step_rec_t *job)
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
-	apid = SLURM_ID_HASH(jobid, job->stepid);
+		jobid = job->step_id.job_id;
+	apid = SLURM_ID_HASH(jobid, job->step_id.step_id);
 
 	// Get the lli file name
 	snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE, apid);
@@ -638,25 +638,26 @@ static int _check_status_file(stepd_step_rec_t *job,
 	int rv, fd;
 	uint32_t jobid;
 	uint32_t taskid;
-	uint32_t offset;
+	uint32_t offset = 0;
 
 	// We only need to special case termination with exit(0)
 	// srun already handles abnormal exit conditions fine
 	if (!WIFEXITED(task->estatus) || (WEXITSTATUS(task->estatus) != 0))
 		return SLURM_SUCCESS;
 
-	if (job->het_job_id && (job->het_job_id != NO_VAL)) {
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
+	else
+		jobid = job->step_id.jobid;
+
+	if (job->het_job_task_offset != NO_VAL)
 		offset = job->het_job_task_offset;
-	} else {
-		jobid = job->jobid;
-		offset = 0;
-	}
+
 	taskid = offset + task->gtid;
 
 	// Get the lli file name
 	snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE,
-		 SLURM_ID_HASH(jobid, job->stepid));
+		 SLURM_ID_HASH(jobid, job->step_id.step_id));
 
 	// Open the lli file.
 	fd = open(llifile, O_RDONLY);
@@ -705,9 +706,8 @@ static int _check_status_file(stepd_step_rec_t *job,
 			return SLURM_SUCCESS;
 		}
 
-		verbose("step %u.%u task %u exited without calling "
-			"PMI_Finalize()",
-			job->jobid, job->stepid, taskid);
+		verbose("%ps task %u exited without calling PMI_Finalize()",
+			&job->jobid, taskid);
 	}
 	return SLURM_SUCCESS;
 }

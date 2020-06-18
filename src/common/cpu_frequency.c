@@ -442,15 +442,16 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 			set_batch_freq = 0;
 	}
 
-	if (((job->stepid == SLURM_BATCH_SCRIPT) && !set_batch_freq) ||
-	    (job->stepid == SLURM_EXTERN_CONT))
+	if (((job->step_id.step_id == SLURM_BATCH_SCRIPT) && !set_batch_freq) ||
+	    (job->step_id.step_id == SLURM_EXTERN_CONT))
 		return;
 
 	log_flag(CPU_FREQ, "%s: request: min=(%12d  %8x) max=(%12d %8x) governor=%8x",
 		 __func__, job->cpu_freq_min, job->cpu_freq_min,
 		 job->cpu_freq_max, job->cpu_freq_max, job->cpu_freq_gov);
 	log_flag(CPU_FREQ, "  jobid=%u, stepid=%u, tasks=%u cpu/task=%u, cpus=%u",
-		 job->jobid, job->stepid, job->node_tasks, job->cpus_per_task,
+		 job->step_id.job_id, job->step_id.step_id,
+		 job->node_tasks, job->cpus_per_task,
 		 job->cpus);
 	log_flag(CPU_FREQ, "  cpu_bind_type=%4x, cpu_bind map=%s",
 		 job->cpu_bind_type, job->cpu_bind);
@@ -534,15 +535,16 @@ cpu_freq_cgroup_validate(stepd_step_rec_t *job, char *step_alloc_cores)
 			set_batch_freq = 0;
 	}
 
-	if (((job->stepid == SLURM_BATCH_SCRIPT) && !set_batch_freq) ||
-	    (job->stepid == SLURM_EXTERN_CONT))
+	if (((job->step_id.step_id == SLURM_BATCH_SCRIPT) && !set_batch_freq) ||
+	    (job->step_id.step_id == SLURM_EXTERN_CONT))
 		return;
 
 	log_flag(CPU_FREQ, "%s: request: min=(%12d  %8x) max=(%12d %8x) governor=%8x",
 		 __func__, job->cpu_freq_min, job->cpu_freq_min,
 		 job->cpu_freq_max, job->cpu_freq_max, job->cpu_freq_gov);
 	log_flag(CPU_FREQ, "  jobid=%u, stepid=%u, tasks=%u cpu/task=%u, cpus=%u",
-		 job->jobid,job->stepid,job->node_tasks, job->cpus_per_task,
+		 job->step_id.job_id, job->step_id.step_id,
+		 job->node_tasks, job->cpus_per_task,
 		 job->cpus);
 	log_flag(CPU_FREQ, "  cpu_bind_type=%4x, cpu_bind map=%s",
 		 job->cpu_bind_type, job->cpu_bind);
@@ -689,7 +691,7 @@ _cpu_freq_set_gov(stepd_step_rec_t *job, int cpuidx, char* gov )
 	rc = SLURM_SUCCESS;
 	snprintf(path, sizeof(path), PATH_TO_CPU
 		 "cpu%u/cpufreq/scaling_governor", cpuidx);
-	fd = _set_cpu_owner_lock(cpuidx, job->jobid);
+	fd = _set_cpu_owner_lock(cpuidx, job->step_id.job_id);
 	if ((fp = fopen(path, "w"))) {
 		fputs(gov, fp);
 		fputc('\n', fp);
@@ -768,7 +770,7 @@ _cpu_freq_set_scaling_freq(stepd_step_rec_t *job, int cpx, uint32_t freq,
 	rc = SLURM_SUCCESS;
 	snprintf(path, sizeof(path), PATH_TO_CPU
 		 "cpu%u/cpufreq/%s", cpx, option);
-	fd = _set_cpu_owner_lock(cpx, job->jobid);
+	fd = _set_cpu_owner_lock(cpx, job->step_id.job_id);
 	if ((fp = fopen(path, "w"))) {
 		fprintf(fp, "%u\n", freq);
 		fclose(fp);
@@ -1237,9 +1239,9 @@ cpu_freq_reset(stepd_step_rec_t *job)
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
 		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
+		jobid = job->step_id.job_id;
 #else
-	jobid = job->jobid;
+	jobid = job->step_id.job_id;
 #endif
 
 	for (i = 0; i < cpu_freq_count; i++) {

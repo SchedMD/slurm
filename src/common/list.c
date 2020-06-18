@@ -116,6 +116,7 @@ struct xlist {
 	unsigned int          magic;        /* sentinel for asserting validity   */
 	struct listNode      *head;         /* head of the list                  */
 	struct listNode     **tail;         /* addr of last node's 'next' ptr    */
+	struct listNode      *tail_ptr;     /* tail ptr of the list  */
 	struct listIterator  *iNext;        /* iterator chain for list_destroy() */
 	ListDelF              fDel;         /* function to delete node data      */
 	int                   count;        /* number of nodes in list           */
@@ -152,6 +153,7 @@ list_create (ListDelF f)
 	l->magic = LIST_MAGIC;
 	l->head = NULL;
 	l->tail = &l->head;
+	l->tail_ptr = l->head;
 	l->iNext = NULL;
 	l->fDel = f;
 	l->count = 0;
@@ -614,6 +616,24 @@ list_peek (List l)
 	return v;
 }
 
+/*
+ * list_peek_last()
+ */
+void *list_peek_last(List l)
+{
+	void *v;
+
+	xassert(l != NULL);
+	slurm_mutex_lock(&l->mutex);
+	xassert(l->magic == LIST_MAGIC);
+
+	v = l->tail_ptr ? l->tail_ptr->data : NULL;
+
+	slurm_mutex_unlock(&l->mutex);
+
+	return v;
+}
+
 /* list_enqueue()
  */
 void *
@@ -850,8 +870,11 @@ static void *_list_node_create(List l, ListNode *pp, void *x)
 	p = list_node_alloc();
 
 	p->data = x;
-	if (!(p->next = *pp))
+	if (!(p->next = *pp)) {
 		l->tail = &p->next;
+		l->tail_ptr = p;
+	}
+
 	*pp = p;
 	l->count++;
 
@@ -890,8 +913,10 @@ static void *_list_node_destroy(List l, ListNode *pp)
 		return NULL;
 
 	v = p->data;
-	if (!(*pp = p->next))
+	if (!(*pp = p->next)) {
 		l->tail = pp;
+		l->tail_ptr = p;
+	}
 	l->count--;
 
 	for (i = l->iNext; i; i = i->iNext) {

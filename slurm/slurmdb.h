@@ -1050,8 +1050,7 @@ typedef struct {
 typedef struct {
 	uint32_t array_task_id;		/* task_id of a job array or NO_VAL */
 	uint32_t het_job_offset;	/* het_job_offset or NO_VAL */
-	uint32_t jobid;
-	uint32_t stepid;
+	slurm_step_id_t step_id;
 } slurmdb_selected_step_t;
 
 typedef struct {
@@ -1070,7 +1069,7 @@ typedef struct {
 	time_t start;
 	uint32_t state;
 	slurmdb_stats_t stats;
-	uint32_t stepid;	/* job's step number */
+	slurm_step_id_t step_id;	/* job's step number */
 	char *stepname;
 	uint32_t suspended;
 	uint32_t sys_cpu_sec;

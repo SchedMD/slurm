@@ -33,22 +33,24 @@
 int main(int argc, char **argv)
 {
 	int i, rc = 0;
-	uint32_t job_id = 0, step_id = 0;
 	job_step_stat_response_msg_t *resp = NULL;
 	job_step_stat_t *step_stat = NULL;
 	ListIterator itr;
 	job_info_msg_t *job_info_msg;
 	slurm_job_info_t *job_ptr;
+	slurm_step_id_t step_id;
 
 	if (argc < 3) {
 		printf("Usage: job_id step_id\n");
 		exit(1);
 	}
-	job_id = atoi(argv[1]);
-	step_id = atoi(argv[2]);
-	printf("job_id:%u step_id:%u\n", job_id, step_id);
+	step_id.job_id = atoi(argv[1]);
+	step_id.step_id = atoi(argv[2]);
+	step_id.step_het_comp = NO_VAL;
+	printf("job_id:%u step_id:%u\n", step_id.job_id, step_id.step_id);
 
-	rc = slurm_job_step_stat(job_id, step_id, NULL, NO_VAL16, &resp);
+
+	rc = slurm_job_step_stat(&step_id, NULL, NO_VAL16, &resp);
 	if (rc != SLURM_SUCCESS) {
 		slurm_perror("slurm_job_step_stat");
 		exit(1);
@@ -62,7 +64,7 @@ int main(int argc, char **argv)
 	slurm_list_iterator_destroy(itr);
 	slurm_job_step_pids_response_msg_free(resp);
 
-	rc = slurm_load_job(&job_info_msg, job_id, SHOW_ALL);
+	rc = slurm_load_job(&job_info_msg, step_id.job_id, SHOW_ALL);
 	if (rc != SLURM_SUCCESS) {
 		slurm_perror("slurm_load_job");
 		exit(1);

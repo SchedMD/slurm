@@ -2775,15 +2775,6 @@ static front_end_record_t * _front_end_reg(
 	return front_end_ptr;
 }
 
-static char *_build_step_id(char *buf, int buf_len, uint32_t step_id)
-{
-	if (step_id == SLURM_BATCH_SCRIPT)
-		snprintf(buf, buf_len, "StepId=Batch");
-	else
-		snprintf(buf, buf_len, "StepId=%u", step_id);
-	return buf;
-}
-
 /*
  * validate_nodes_via_front_end - validate all nodes on a cluster as having
  *	a valid configuration as soon as the front-end registers. Individual
@@ -2808,7 +2799,6 @@ extern int validate_nodes_via_front_end(
 	char *host_str = NULL, *reason_down = NULL;
 	uint32_t node_flags;
 	front_end_record_t *front_end_ptr;
-	char step_str[64];
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
@@ -2840,42 +2830,37 @@ extern int validate_nodes_via_front_end(
 
 	/* First validate the job info */
 	for (i = 0; i < reg_msg->job_count; i++) {
-		if ( (reg_msg->job_id[i] >= MIN_NOALLOC_JOBID) &&
-		     (reg_msg->job_id[i] <= MAX_NOALLOC_JOBID) ) {
-			info("NoAllocate JobId=%u %s reported",
-			     reg_msg->job_id[i],
-			     _build_step_id(step_str, sizeof(step_str),
-					    reg_msg->step_id[i]));
+		if ( (reg_msg->step_id[i].job_id >= MIN_NOALLOC_JOBID) &&
+		     (reg_msg->step_id[i].job_id <= MAX_NOALLOC_JOBID) ) {
+			info("NoAllocate %ps reported",
+			     &reg_msg->step_id[i]);
 			continue;
 		}
 
-		job_ptr = find_job_record(reg_msg->job_id[i]);
+		job_ptr = find_job_record(reg_msg->step_id[i].job_id);
 		node_ptr = node_record_table_ptr;
 		if (job_ptr && job_ptr->node_bitmap &&
 		    ((j = bit_ffs(job_ptr->node_bitmap)) >= 0))
 			node_ptr += j;
 
 		if (job_ptr == NULL) {
-			error("Orphan JobId=%u %s reported on node %s",
-			      reg_msg->job_id[i],
-			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i]),
+			error("Orphan %ps reported on node %s",
+			      &reg_msg->step_id[i],
 			      front_end_ptr->name);
-			abort_job_on_node(reg_msg->job_id[i],
+			abort_job_on_node(reg_msg->step_id[i].job_id,
 					  job_ptr, front_end_ptr->name);
 			continue;
 		} else if (job_ptr->batch_host == NULL) {
 			error("Resetting NULL batch_host of JobId=%u to %s",
-			      reg_msg->job_id[i], front_end_ptr->name);
+			      reg_msg->step_id[i].job_id, front_end_ptr->name);
 			job_ptr->batch_host = xstrdup(front_end_ptr->name);
 		}
 
 
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
-			debug3("Registered %pJ %s on %s",
+			debug3("Registered %pJ %ps on %s",
 			       job_ptr,
-			       _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i]),
+			       &reg_msg->step_id[i],
 			       front_end_ptr->name);
 			if (job_ptr->batch_flag) {
 				/* NOTE: Used for purging defunct batch jobs */
@@ -2894,28 +2879,25 @@ extern int validate_nodes_via_front_end(
 		else if (IS_JOB_PENDING(job_ptr)) {
 			/* Typically indicates a job requeue and the hung
 			 * slurmd that went DOWN is now responding */
-			error("Registered PENDING %pJ %s on %s",
+			error("Registered PENDING %pJ %ps on %s",
 			      job_ptr,
-			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i]),
+			      &reg_msg->step_id[i],
 			      front_end_ptr->name);
-			abort_job_on_node(reg_msg->job_id[i], job_ptr,
+			abort_job_on_node(reg_msg->step_id[i].job_id, job_ptr,
 					  front_end_ptr->name);
 		} else if (difftime(now, job_ptr->end_time) <
 		           slurm_conf.msg_timeout) {
 			/* Race condition */
-			debug("Registered newly completed %pJ %s on %s",
+			debug("Registered newly completed %pJ %ps on %s",
 			      job_ptr,
-			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i]),
+			      &reg_msg->step_id[i],
 			      front_end_ptr->name);
 		}
 
 		else {		/* else job is supposed to be done */
-			error("Registered %pJ %s in state %s on %s",
+			error("Registered %pJ %ps in state %s on %s",
 			      job_ptr,
-			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i]),
+			      &reg_msg->step_id[i],
 			      job_state_string(job_ptr->job_state),
 			      front_end_ptr->name);
 			kill_job_on_node(job_ptr, node_ptr);

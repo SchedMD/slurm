@@ -767,15 +767,8 @@ static char *_stepid2fmt(step_record_t *step_ptr, char *buf, int buf_size)
 	if (step_ptr->magic != STEP_MAGIC)
 		return " StepId=CORRUPT";
 
-	if (step_ptr->step_id == SLURM_EXTERN_CONT) {
-		return " StepId=Extern";
-	} else if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
-		return " StepId=Batch";
-	} else if (step_ptr->step_id == SLURM_PENDING_STEP) {
-		return " StepId=TBD";
-	} else {
-		snprintf(buf, buf_size, " StepId=%u", step_ptr->step_id);
-	}
+	return log_build_step_id_str(&step_ptr->step_id, buf, buf_size,
+				     STEP_ID_FLAG_SPACE | STEP_ID_FLAG_NO_JOB);
 
 	return buf;
 }
@@ -834,6 +827,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				switch (*(p + 2)) {
 				case 'A':
 				case 'J':
+				case 's':
 				case 'S':
 					is_our_format = true;
 					/*
@@ -914,7 +908,34 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					va_end(ap_copy);
 					break;
 				}
-				/* "%pS" => "JobId=... StepId=..." */
+				/*
+				 * "%ps" => "StepId=... " on a
+				 * slurm_step_id_t
+				 */
+				case 's':
+				{
+					int i;
+					void *ptr = NULL;
+					slurm_step_id_t *step_id = NULL;
+					va_list	ap_copy;
+
+					va_copy(ap_copy, ap);
+					for (i = 0; i < cnt; i++ )
+						ptr = va_arg(ap_copy, void *);
+					step_id = ptr;
+					xstrcat(intermediate_fmt,
+						log_build_step_id_str(
+							step_id,
+							substitute_on_stack,
+							sizeof(substitute_on_stack),
+							STEP_ID_FLAG_PS));
+					va_end(ap_copy);
+					break;
+				}
+				/*
+				 * "%pS" => "JobId=... StepId=..." on a
+				 * step_record_t
+				 */
 				case 'S':
 				{
 					int i;
@@ -1462,4 +1483,63 @@ extern int get_log_level(void)
 extern int get_sched_log_level(void)
 {
 	return MAX(highest_log_level, highest_sched_log_level);
+}
+
+/*
+ * log_build_step_id_str() - print a slurm_step_id_t as " StepId=...", with
+ * Batch and Extern used as appropriate.
+ */
+extern char *log_build_step_id_str(
+	slurm_step_id_t *step_id, char *buf, int buf_size, uint16_t flags)
+{
+	int pos = 0;
+
+	if (flags & STEP_ID_FLAG_SPACE)
+		pos += snprintf(buf + pos, buf_size - pos, " ");
+	/*
+	 * NOTE: You will notice we put a %.0s in front of the string if running
+	 * with %ps like interactions.
+	 * This is to handle the fact that we can't remove the step_id
+	 * argument from the va_list directly. So when we call vsnprintf()
+	 * to handle the va_list this will effectively skip this argument.
+	 */
+	if (flags & STEP_ID_FLAG_PS)
+		pos += snprintf(buf + pos, buf_size - pos, "%%.0s");
+
+	if (!(flags & STEP_ID_FLAG_NO_PREFIX))
+		pos += snprintf(buf + pos, buf_size - pos, "%s",
+				(!step_id || (step_id->step_id != NO_VAL)) ?
+				"StepId=" : "JobId=");
+
+	if (!step_id || !step_id->job_id) {
+		snprintf(buf + pos, buf_size - pos, "Invalid");
+		return buf;
+	}
+
+	if (step_id->job_id && !(flags & STEP_ID_FLAG_NO_JOB))
+		pos += snprintf(buf + pos, buf_size - pos,
+				"%u%s", step_id->job_id,
+				step_id->step_id == NO_VAL ? "" : ".");
+
+	if ((pos >= buf_size) || (step_id->step_id == NO_VAL))
+		return buf;
+
+	if (step_id->step_id == SLURM_BATCH_SCRIPT)
+		pos += snprintf(buf + pos, buf_size - pos, "batch");
+	else if (step_id->step_id == SLURM_EXTERN_CONT)
+		pos += snprintf(buf + pos, buf_size - pos, "extern");
+	else if (step_id->step_id == SLURM_PENDING_STEP)
+		pos += snprintf(buf + pos, buf_size - pos, "TDB");
+	else
+		pos += snprintf(buf + pos, buf_size - pos, "%u",
+				step_id->step_id);
+
+	if (pos >= buf_size)
+		return buf;
+
+	if (step_id->step_het_comp != NO_VAL)
+		snprintf(buf + pos, buf_size - pos, "+%u",
+			 step_id->step_het_comp);
+
+	return buf;
 }

@@ -1554,9 +1554,9 @@ static void _update_system_comment(job_record_t *job_ptr, char *operation,
 		memset(&selected_step, 0, sizeof(slurmdb_selected_step_t));
 
 		selected_step.array_task_id = NO_VAL;
-		selected_step.jobid = job_ptr->job_id;
+		selected_step.step_id.job_id = job_ptr->job_id;
 		selected_step.het_job_offset = NO_VAL;
-		selected_step.stepid = NO_VAL;
+		selected_step.step_id.step_id = NO_VAL;
 		job_cond.step_list = list_create(NULL);
 		list_append(job_cond.step_list, &selected_step);
 

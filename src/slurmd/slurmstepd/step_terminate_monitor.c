@@ -74,8 +74,8 @@ void step_terminate_monitor_start(stepd_step_rec_t *job)
 	slurm_thread_create(&tid, _monitor, job);
 
 	running_flag = 1;
-	recorded_jobid = job->jobid;
-	recorded_stepid = job->stepid;
+	recorded_jobid = job->step_id.job_id;
+	recorded_stepid = job->step_id.step_id;
 
 	slurm_mutex_unlock(&lock);
 }
@@ -124,21 +124,24 @@ static void *_monitor(void *arg)
 
 	rc = pthread_cond_timedwait(&cond, &lock, &ts);
 	if (rc == ETIMEDOUT) {
-		char entity[24], time_str[24];
+		char entity[45], time_str[24];
 		time_t now = time(NULL);
 		int rc;
 
 		_call_external_program(job);
 
-		if (job->stepid == SLURM_BATCH_SCRIPT) {
+		if (job->step_id.step_id == SLURM_BATCH_SCRIPT) {
 			snprintf(entity, sizeof(entity),
-				 "JOB %u", job->jobid);
-		} else if (job->stepid == SLURM_EXTERN_CONT) {
+				 "JOB %u", job->step_id.job_id);
+		} else if (job->step_id.step_id == SLURM_EXTERN_CONT) {
 			snprintf(entity, sizeof(entity),
-				 "EXTERN STEP FOR %u", job->jobid);
+				 "EXTERN STEP FOR %u", job->step_id.job_id);
 		} else {
-			snprintf(entity, sizeof(entity), "STEP %u.%u",
-				 job->jobid, job->stepid);
+			char tmp_char[33];
+			log_build_step_id_str(&job->step_id, tmp_char,
+					      sizeof(tmp_char),
+					      STEP_ID_FLAG_NO_PREFIX);
+			snprintf(entity, sizeof(entity), "STEP %s", tmp_char);
 		}
 		slurm_make_time_str(&now, time_str, sizeof(time_str));
 
@@ -156,7 +159,7 @@ static void *_monitor(void *arg)
 
 		if (!job->batch) {
 			/* Notify waiting sruns */
-			if (job->stepid != SLURM_EXTERN_CONT)
+			if (job->step_id.step_id != SLURM_EXTERN_CONT)
 				while (stepd_send_pending_exit_msgs(job)) {;}
 
 			if ((step_complete.rank > -1)) {

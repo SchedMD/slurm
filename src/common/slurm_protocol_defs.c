@@ -655,14 +655,16 @@ static int _addto_step_list_internal(List step_list, char *names,
 		*dot++ = 0;
 		/* can't use NO_VAL since that means all */
 		if (!xstrcmp(dot, "batch"))
-			selected_step->stepid = INFINITE;
+			selected_step->step_id.step_id = SLURM_BATCH_SCRIPT;
+		else if (!xstrcmp(dot, "extern"))
+			selected_step->step_id.step_id = SLURM_EXTERN_CONT;
 		else if (isdigit(*dot))
-			selected_step->stepid = atoi(dot);
+			selected_step->step_id.step_id = atoi(dot);
 		else
 			fatal("Bad step specified: %s", name);
 	} else {
 		debug2("No jobstep requested");
-		selected_step->stepid = NO_VAL;
+		selected_step->step_id.step_id = NO_VAL;
 	}
 
 	if ((under = strstr(name, "_"))) {
@@ -685,7 +687,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 		selected_step->het_job_offset = NO_VAL;
 	}
 
-	selected_step->jobid = atoi(name);
+	selected_step->step_id.job_id = atoi(name);
 	xfree(name);
 
 	if (!list_find_first(step_list,
@@ -766,6 +768,50 @@ extern int slurm_sort_char_list_desc(void *v1, void *v2)
 	return 0;
 }
 
+extern resource_allocation_response_msg_t *
+slurm_copy_resource_allocation_response_msg(
+	resource_allocation_response_msg_t *msg)
+{
+	resource_allocation_response_msg_t *new;
+
+	if (!msg)
+		return NULL;
+
+	new = xmalloc(sizeof(*msg));
+
+	memcpy(new, msg, sizeof(*msg));
+	new->account = xstrdup(msg->account);
+	new->alias_list = xstrdup(msg->alias_list);
+
+	if (msg->cpus_per_node) {
+		new->cpus_per_node = xcalloc(new->num_cpu_groups,
+					     sizeof(*new->cpus_per_node));
+		memcpy(new->cpus_per_node, msg->cpus_per_node,
+		       new->num_cpu_groups * sizeof(*new->cpus_per_node));
+	}
+
+	if (msg->cpu_count_reps) {
+		new->cpu_count_reps = xcalloc(new->num_cpu_groups,
+					      sizeof(*new->cpu_count_reps));
+		memcpy(new->cpu_count_reps, msg->cpu_count_reps,
+		       new->num_cpu_groups * sizeof(*new->cpu_count_reps));
+	}
+
+	new->environment = env_array_copy((const char **)msg->environment);
+	new->job_submit_user_msg = xstrdup(msg->job_submit_user_msg);
+	if (msg->node_addr) {
+		new->node_addr = xmalloc(sizeof(*new->node_addr));
+		memcpy(new->node_addr, msg->node_addr, sizeof(*new->node_addr));
+	}
+	new->node_list = xstrdup(msg->node_list);
+	new->partition = xstrdup(msg->partition);
+	new->qos = xstrdup(msg->qos);
+	new->resv_name = xstrdup(msg->resv_name);
+	new->working_cluster_rec = NULL;
+	return new;
+}
+
+
 extern void slurm_free_last_update_msg(last_update_msg_t * msg)
 {
 	xfree(msg);
@@ -837,7 +883,7 @@ extern void slurm_free_job_user_id_msg(job_user_id_msg_t * msg)
 	xfree(msg);
 }
 
-extern void slurm_free_job_step_id_msg(job_step_id_msg_t * msg)
+extern void slurm_free_step_id(slurm_step_id_t *msg)
 {
 	xfree(msg);
 }
@@ -1223,7 +1269,6 @@ extern void slurm_free_node_registration_status_msg(
 		xfree(msg->features_avail);
 		if (msg->gres_info)
 			free_buf(msg->gres_info);
-		xfree(msg->job_id);
 		xfree(msg->node_name);
 		xfree(msg->os);
 		xfree(msg->step_id);
@@ -4932,7 +4977,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_JOB_STEP_STAT:
 	case REQUEST_JOB_STEP_PIDS:
 	case REQUEST_STEP_LAYOUT:
-		slurm_free_job_step_id_msg(data);
+		slurm_free_step_id(data);
 		break;
 	case RESPONSE_JOB_STEP_STAT:
 		slurm_free_job_step_stat(data);
@@ -5888,4 +5933,23 @@ extern uint64_t suffix_mult(char *suffix)
 	}
 
 	return multiplier;
+}
+
+extern bool verify_step_id(slurm_step_id_t *object, slurm_step_id_t *key)
+{
+	/* Any step will do */
+	if (key->step_id == NO_VAL)
+		return 1;
+
+	/*
+	 * See if we have the same step id.  If we do check to see if we
+	 * have the same step_het_comp or if the key's is NO_VAL,
+	 * meaning we are not looking directly for a het step.
+	 */
+	if ((key->step_id == object->step_id) &&
+	    ((key->step_het_comp == object->step_het_comp) ||
+	     (key->step_het_comp == NO_VAL)))
+		return 1;
+	else
+		return 0;
 }

@@ -71,6 +71,12 @@
 #define cpu_set_t cpuset_t
 #endif
 
+typedef struct {
+	char *cpus;
+	char *cpuset_meta;
+	stepd_step_rec_t *job;
+} task_cpuset_create_callback_t;
+
 # if HWLOC_API_VERSION <= 0x00010000
 /*
  * After this version the cpuset structure and all it's functions
@@ -1046,239 +1052,78 @@ extern int task_cgroup_cpuset_fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
+static int _cgroup_create_callback(const char *calling_func,
+				   xcgroup_ns_t *ns,
+				   void *callback_arg)
 {
+	task_cpuset_create_callback_t *cgroup_callback =
+		(task_cpuset_create_callback_t *)callback_arg;
+	char *cpuset_meta = cgroup_callback->cpuset_meta;
+	char *cpus = cgroup_callback->cpus;
+	stepd_step_rec_t *job = cgroup_callback->job;
+	char *user_alloc_cores = NULL;
+	char *job_alloc_cores = NULL;
+	char *step_alloc_cores = NULL;
+	pid_t pid;
 	int rc;
-	int fstatus = SLURM_ERROR;
-	xcgroup_t cpuset_cg;
-	uint32_t jobid;
-	uint32_t stepid = job->stepid;
-	uid_t uid = job->uid;
-	uid_t gid = job->gid;
-	char* user_alloc_cores = NULL;
-	char* job_alloc_cores = NULL;
-	char* step_alloc_cores = NULL;
-	char cpuset_meta[PATH_MAX];
-	char *cpus = NULL;
-	size_t cpus_size;
-	char *slurm_cgpath;
-	xcgroup_t slurm_cg;
 #ifdef HAVE_NATIVE_CRAY
 	char expected_usage[32];
 #endif
 
-	/* create slurm root cg in this cg namespace */
-	slurm_cgpath = task_cgroup_create_slurm_cg(&cpuset_ns);
-	if (slurm_cgpath == NULL)
-		return SLURM_ERROR;
-
-	/* check that this cgroup has cpus allowed or initialize them */
-	if (xcgroup_load(&cpuset_ns,&slurm_cg,slurm_cgpath) != XCGROUP_SUCCESS){
-		error("task/cgroup: unable to load slurm cpuset xcgroup");
-		xfree(slurm_cgpath);
-		return SLURM_ERROR;
-	}
-again:
-	snprintf(cpuset_meta, sizeof(cpuset_meta), "%scpus", cpuset_prefix);
-	rc = xcgroup_get_param(&slurm_cg, cpuset_meta, &cpus, &cpus_size);
-	if ((rc != XCGROUP_SUCCESS) || (cpus_size == 1)) {
-		if (!cpuset_prefix_set && (rc != XCGROUP_SUCCESS)) {
-			cpuset_prefix_set = 1;
-			cpuset_prefix = "cpuset.";
-			xfree(cpus);
-			goto again;
-		}
-
-		/* initialize the cpusets as it was non-existent */
-		if (_xcgroup_cpuset_init(&slurm_cg) != XCGROUP_SUCCESS) {
-			xfree(cpus);
-			xfree(slurm_cgpath);
-			xcgroup_destroy(&slurm_cg);
-			return SLURM_ERROR;
-		}
-	}
-	xfree(cpus);
-	xcgroup_destroy(&slurm_cg);
-
-	/* build user cgroup relative path if not set (should not be) */
-	if (*user_cgroup_path == '\0') {
-		if (snprintf(user_cgroup_path, PATH_MAX,
-			     "%s/uid_%u", slurm_cgpath, uid) >= PATH_MAX) {
-			error("task/cgroup: unable to build uid %u cgroup "
-			      "relative path : %m", uid);
-			xfree(slurm_cgpath);
-			return SLURM_ERROR;
-		}
-	}
-	xfree(slurm_cgpath);
-
-	/* build job cgroup relative path if no set (should not be) */
-	if (job->het_job_id && (job->het_job_id != NO_VAL))
-		jobid = job->het_job_id;
-	else
-		jobid = job->jobid;
-	if (*job_cgroup_path == '\0') {
-		if (snprintf(job_cgroup_path,PATH_MAX,"%s/job_%u",
-			     user_cgroup_path, jobid) >= PATH_MAX) {
-			error("task/cgroup: unable to build job %u cpuset "
-			      "cg relative path : %m", jobid);
-			return SLURM_ERROR;
-		}
-	}
-
-	/* build job step cgroup relative path (should not be) */
-	if (*jobstep_cgroup_path == '\0') {
-		int cc;
-		if (stepid == SLURM_BATCH_SCRIPT) {
-			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
-				      "%s/step_batch", job_cgroup_path);
-		} else if (stepid == SLURM_EXTERN_CONT) {
-			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
-				      "%s/step_extern", job_cgroup_path);
-		} else {
-			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
-				      "%s/step_%u", job_cgroup_path, stepid);
-		}
-		if (cc >= PATH_MAX) {
-			error("task/cgroup: unable to build job step %u.%u "
-			      "cpuset cg relative path: %m",
-			      jobid, stepid);
-			return SLURM_ERROR;
-		}
-	}
-
-	/*
-	 * create cpuset root cg and lock it
-	 *
-	 * we will keep the lock until the end to avoid the effect of a release
-	 * agent that would remove an existing cgroup hierarchy while we are
-	 * setting it up. As soon as the step cgroup is created, we can release
-	 * the lock.
-	 * Indeed, consecutive slurm steps could result in cg being removed
-	 * between the next EEXIST instantiation and the first addition of
-	 * a task. The release_agent will have to lock the root cpuset cgroup
-	 * to avoid this scenario.
-	 */
-	if (xcgroup_create(&cpuset_ns, &cpuset_cg, "", 0,0) != XCGROUP_SUCCESS){
-		error("task/cgroup: unable to create root cpuset xcgroup");
-		return SLURM_ERROR;
-	}
-	if (xcgroup_lock(&cpuset_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&cpuset_cg);
-		error("task/cgroup: unable to lock root cpuset cg");
-		return SLURM_ERROR;
-	}
-
 	/*
 	 * build job and job steps allocated cores lists
 	 */
-	debug("task/cgroup: job abstract cores are '%s'",
-	      job->job_alloc_cores);
-	debug("task/cgroup: step abstract cores are '%s'",
-	      job->step_alloc_cores);
+	debug("%s: job abstract cores are '%s'",
+	      calling_func, job->job_alloc_cores);
+	debug("%s: step abstract cores are '%s'",
+	      calling_func, job->step_alloc_cores);
 	if (xcpuinfo_abs_to_mac(job->job_alloc_cores,
 				&job_alloc_cores) != SLURM_SUCCESS) {
-		error("task/cgroup: unable to build job physical cores");
-		goto error;
+		error("%s: unable to build job physical cores",
+		      calling_func);
+		goto endit;
 	}
 	if (xcpuinfo_abs_to_mac(job->step_alloc_cores,
 				&step_alloc_cores) != SLURM_SUCCESS) {
-		error("task/cgroup: unable to build step physical cores");
-		goto error;
+		error("%s: unable to build step physical cores",
+		      calling_func);
+		goto endit;
 	}
-	debug("task/cgroup: job physical cores are '%s'",
-	      job_alloc_cores);
-	debug("task/cgroup: step physical cores are '%s'",
-	      step_alloc_cores);
-
-	/*
-	 * create user cgroup in the cpuset ns (it could already exist)
-	 */
-	if (xcgroup_create(&cpuset_ns,&user_cpuset_cg, user_cgroup_path,
-			   getuid(), getgid()) != XCGROUP_SUCCESS) {
-		goto error;
-	}
-	if (xcgroup_instantiate(&user_cpuset_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&user_cpuset_cg);
-		goto error;
-	}
+	debug("%s: job physical cores are '%s'",
+	      calling_func, job_alloc_cores);
+	debug("%s: step physical cores are '%s'",
+	      calling_func, step_alloc_cores);
 
 	/*
 	 * check that user's cpuset cgroup is consistant and add the job cores
 	 */
-	rc = xcgroup_get_param(&user_cpuset_cg, cpuset_meta, &cpus, &cpus_size);
-	if (rc != XCGROUP_SUCCESS || cpus_size == 1) {
-		/* initialize the cpusets as it was non-existent */
-		if (_xcgroup_cpuset_init(&user_cpuset_cg) != XCGROUP_SUCCESS) {
-			(void)xcgroup_delete(&user_cpuset_cg);
-			xcgroup_destroy(&user_cpuset_cg);
-			xfree(cpus);
-			goto error;
-		}
-	}
 	user_alloc_cores = xstrdup(job_alloc_cores);
-	if ((cpus != NULL) && (cpus_size > 1)) {
-		cpus[cpus_size-1]='\0';
-		xstrcat(user_alloc_cores, ",");
-		xstrcat(user_alloc_cores, cpus);
-	}
-	xcgroup_set_param(&user_cpuset_cg, cpuset_meta, user_alloc_cores);
-	xfree(cpus);
+	if (cpus)
+		xstrfmtcat(user_alloc_cores, ",%s", cpus);
 
-	/*
-	 * create job cgroup in the cpuset ns (it could already exist)
-	 */
-	if (xcgroup_create(&cpuset_ns,&job_cpuset_cg,
-			   job_cgroup_path,
-			   getuid(),getgid()) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&user_cpuset_cg);
-		goto error;
-	}
-	if (xcgroup_instantiate(&job_cpuset_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&user_cpuset_cg);
-		xcgroup_destroy(&job_cpuset_cg);
-		goto error;
-	}
+	xcgroup_set_param(&user_cpuset_cg, cpuset_meta, user_alloc_cores);
+
 	if (_xcgroup_cpuset_init(&job_cpuset_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		xcgroup_destroy(&job_cpuset_cg);
-		goto error;
+		goto endit;
 	}
 	xcgroup_set_param(&job_cpuset_cg, cpuset_meta, job_alloc_cores);
-	/*
-	 * create step cgroup in the cpuset ns (it should not exists)
-	 * use job's user uid/gid to enable tasks cgroups creation by
-	 * the user inside the step cgroup owned by root
-	 */
-	if (xcgroup_create(&cpuset_ns,&step_cpuset_cg,
-			   jobstep_cgroup_path,
-			   uid,gid) != XCGROUP_SUCCESS) {
-		/* do not delete user/job cgroup as */
-		/* they can exist for other steps */
-		xcgroup_destroy(&user_cpuset_cg);
-		xcgroup_destroy(&job_cpuset_cg);
-		goto error;
-	}
-	if (xcgroup_instantiate(&step_cpuset_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&user_cpuset_cg);
-		xcgroup_destroy(&job_cpuset_cg);
-		xcgroup_destroy(&step_cpuset_cg);
-		goto error;
-	}
+
 	if (_xcgroup_cpuset_init(&step_cpuset_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		xcgroup_destroy(&job_cpuset_cg);
 		(void)xcgroup_delete(&step_cpuset_cg);
 		xcgroup_destroy(&step_cpuset_cg);
-		goto error;
+		goto endit;
 	}
 	xcgroup_set_param(&step_cpuset_cg, cpuset_meta, step_alloc_cores);
 
+#ifdef HAVE_NATIVE_CRAY
 	/*
 	 * on Cray systems, set the expected usage in bytes.
 	 * This is used by the Cray OOM killer
 	 */
-#ifdef HAVE_NATIVE_CRAY
 	snprintf(expected_usage, sizeof(expected_usage), "%"PRIu64,
 		 (uint64_t)job->step_mem * 1024 * 1024);
 	xcgroup_set_param(&step_cpuset_cg, "expected_usage_in_bytes",
@@ -1286,26 +1131,87 @@ again:
 #endif
 
 	/* attach the slurmstepd to the step cpuset cgroup */
-	pid_t pid = getpid();
-	rc = xcgroup_add_pids(&step_cpuset_cg,&pid,1);
+	pid = getpid();
+	rc = xcgroup_add_pids(&step_cpuset_cg, &pid, 1);
 	if (rc != XCGROUP_SUCCESS) {
-		error("task/cgroup: unable to add slurmstepd to cpuset cg '%s'",
-		      step_cpuset_cg.path);
-		fstatus = SLURM_ERROR;
+		error("%s: unable to add slurmstepd to cpuset cg '%s'",
+		      calling_func, step_cpuset_cg.path);
+		rc = SLURM_ERROR;
 	} else
-		fstatus = SLURM_SUCCESS;
+		rc = SLURM_SUCCESS;
 
 	/* validate the requested cpu frequency and set it */
 	cpu_freq_cgroup_validate(job, step_alloc_cores);
-error:
-	xcgroup_unlock(&cpuset_cg);
-	xcgroup_destroy(&cpuset_cg);
-
+endit:
 	xfree(user_alloc_cores);
 	xfree(job_alloc_cores);
 	xfree(step_alloc_cores);
+	return rc;
+}
 
-	return fstatus;
+extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
+{
+	int rc;
+	char cpuset_meta[PATH_MAX];
+	char *slurm_cgpath;
+	xcgroup_t slurm_cg;
+	size_t cpus_size;
+	task_cpuset_create_callback_t cgroup_callback = {
+		.cpuset_meta = cpuset_meta,
+		.job = job,
+	};
+
+	/* create slurm root cg in this cg namespace */
+	slurm_cgpath = xcgroup_create_slurm_cg(&cpuset_ns);
+	if (slurm_cgpath == NULL)
+		return SLURM_ERROR;
+
+	/* check that this cgroup has cpus allowed or initialize them */
+	if (xcgroup_load(&cpuset_ns, &slurm_cg, slurm_cgpath) !=
+	    XCGROUP_SUCCESS){
+		error("task/cgroup: unable to load slurm cpuset xcgroup");
+		xfree(slurm_cgpath);
+		return SLURM_ERROR;
+	}
+again:
+	snprintf(cpuset_meta, sizeof(cpuset_meta), "%scpus", cpuset_prefix);
+	rc = xcgroup_get_param(&slurm_cg, cpuset_meta, &cgroup_callback.cpus, &cpus_size);
+	if ((rc != XCGROUP_SUCCESS) || (cpus_size == 1)) {
+		if (!cpuset_prefix_set && (rc != XCGROUP_SUCCESS)) {
+			cpuset_prefix_set = 1;
+			cpuset_prefix = "cpuset.";
+			xfree(cgroup_callback.cpus);
+			goto again;
+		}
+
+		/* initialize the cpusets as it was non-existent */
+		if (_xcgroup_cpuset_init(&slurm_cg) != XCGROUP_SUCCESS) {
+			xfree(cgroup_callback.cpus);
+			xfree(slurm_cgpath);
+			xcgroup_destroy(&slurm_cg);
+			return SLURM_ERROR;
+		}
+	}
+	xfree(slurm_cgpath);
+	xcgroup_destroy(&slurm_cg);
+
+	if (cgroup_callback.cpus && (cpus_size > 1))
+		cgroup_callback.cpus[cpus_size-1] = '\0';
+
+	rc = xcgroup_create_hierarchy(__func__,
+				      job,
+				      &cpuset_ns,
+				      &job_cpuset_cg,
+				      &step_cpuset_cg,
+				      &user_cpuset_cg,
+				      job_cgroup_path,
+				      jobstep_cgroup_path,
+				      user_cgroup_path,
+				      _cgroup_create_callback,
+				      &cgroup_callback);
+
+	xfree(cgroup_callback.cpus);
+	return rc;
 }
 
 extern int task_cgroup_cpuset_attach_task(stepd_step_rec_t *job)

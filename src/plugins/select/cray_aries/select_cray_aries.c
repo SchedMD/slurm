@@ -443,7 +443,7 @@ static void _initialize_event(alpsc_ev_app_t *event, step_record_t *step_ptr,
 	else
 		jobid = job_ptr->job_id;
 
-	event->apid = SLURM_ID_HASH(jobid, step_ptr->step_id);
+	event->apid = SLURM_ID_HASH(jobid, step_ptr->step_id.step_id);
 	event->uid = job_ptr->user_id;
 	event->app_name = xstrdup(step_ptr->name);
 	event->batch_id = xstrdup_printf("%u", job_ptr->job_id);
@@ -454,7 +454,7 @@ static void _initialize_event(alpsc_ev_app_t *event, step_record_t *step_ptr,
 	// Fill in nodes and num_nodes if available
 	if (step_ptr->step_layout)
 		hl = hostlist_create(step_ptr->step_layout->node_list);
-	else if ((step_ptr->step_id == SLURM_EXTERN_CONT) &&
+	else if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) &&
 		 job_ptr->job_resrcs)
 		hl = hostlist_create(job_ptr->job_resrcs->nodes);
 
@@ -609,7 +609,7 @@ static void _update_app(step_record_t *step_ptr, alpsc_ev_app_state_e state)
 		else
 			jobid = job_ptr->job_id;
 
-		apid = SLURM_ID_HASH(jobid, step_ptr->step_id);
+		apid = SLURM_ID_HASH(jobid, step_ptr->step_id.step_id);
 		for (i = 0; i < app_list_size; i++) {
 			if (app_list[i].apid == apid) {
 				found = 1;
@@ -643,7 +643,7 @@ static void _update_app(step_record_t *step_ptr, alpsc_ev_app_state_e state)
 		else
 			jobid = job_ptr->job_id;
 
-		apid = SLURM_ID_HASH(jobid, step_ptr->step_id);
+		apid = SLURM_ID_HASH(jobid, step_ptr->step_id.step_id);
 		for (i = 0; i < app_list_size; i++) {
 			if (app_list[i].apid == apid) {
 				// Found it, update the state
@@ -1658,7 +1658,7 @@ extern int select_p_step_start(step_record_t *step_ptr)
 #endif
 
 	jobinfo = step_ptr->job_ptr->select_jobinfo->data;
-	if (jobinfo->npc && (step_ptr->step_id != SLURM_EXTERN_CONT)) {
+	if (jobinfo->npc && (step_ptr->step_id.step_id != SLURM_EXTERN_CONT)) {
 		int i;
 		select_jobinfo_t *step_jobinfo = step_ptr->select_jobinfo->data;
 		select_nodeinfo_t *nodeinfo;

@@ -123,6 +123,7 @@ int sattach(int argc, char **argv)
 	message_thread_state_t *mts;
 	client_io_t *io;
 	char *hosts;
+	slurm_step_id_t step_id;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
@@ -145,8 +146,11 @@ int sattach(int argc, char **argv)
 		      slurm_conf.launch_type);
 		exit(error_exit);
 	}
-
-	layout = slurm_job_step_layout_get(opt.jobid, opt.stepid);
+	/* FIXME: this does not work with hetsteps */
+	step_id.job_id = opt.jobid;
+	step_id.step_id = opt.stepid;
+	step_id.step_het_comp = NO_VAL;
+	layout = slurm_job_step_layout_get(&step_id);
 	if (layout == NULL) {
 		error("Could not get job step info: %m");
 		exit(error_exit);
@@ -286,8 +290,9 @@ static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
 	slurm_cred_t *cred;
 
 	memset(&arg, 0, sizeof(slurm_cred_arg_t));
-	arg.jobid    = jobid;
-	arg.stepid   = stepid;
+	arg.step_id.job_id = jobid;
+	arg.step_id.step_id = stepid;
+	arg.step_id.step_het_comp = NO_VAL;
 	arg.uid      = uid;
 
 	arg.job_hostlist  = nodelist;
@@ -398,8 +403,9 @@ static int _attach_to_tasks(uint32_t jobid,
 
 	slurm_msg_t_init(&msg);
 
-	reattach_msg.job_id = jobid;
-	reattach_msg.job_step_id = stepid;
+	reattach_msg.step_id.job_id = jobid;
+	reattach_msg.step_id.step_id = stepid;
+	reattach_msg.step_id.step_het_comp = NO_VAL;
 	reattach_msg.num_resp_port = num_resp_ports;
 	reattach_msg.resp_port = resp_ports; /* array of response ports */
 	reattach_msg.num_io_port = num_io_ports;
@@ -530,9 +536,10 @@ _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 	int i;
 	int rc;
 
-	if ((msg->job_id != opt.jobid) || (msg->step_id != opt.stepid)) {
-		debug("Received MESSAGE_TASK_EXIT from wrong job: %u.%u",
-		      msg->job_id, msg->step_id);
+	if ((msg->step_id.job_id != opt.jobid) ||
+	    (msg->step_id.step_id != opt.stepid)) {
+		debug("Received MESSAGE_TASK_EXIT from wrong job: %ps",
+		      &msg->step_id);
 		return;
 	}
 

@@ -49,6 +49,7 @@
 #include <syslog.h>
 #include <stdio.h>
 
+#include "slurm/slurm.h"
 #include "src/common/macros.h"
 #include "src/common/cbuf.h"
 
@@ -235,6 +236,20 @@ extern int get_log_level(void);
  * Returns the greater of the sched_log_level or the log_level.
  */
 extern int get_sched_log_level(void);
+
+
+#define STEP_ID_FLAG_NONE      0x0000
+#define STEP_ID_FLAG_PS        0x0001
+#define STEP_ID_FLAG_NO_JOB    0x0002
+#define STEP_ID_FLAG_NO_PREFIX 0x0004
+#define STEP_ID_FLAG_SPACE     0x0008
+
+/*
+ * log_build_step_id_str() - print a slurm_step_id_t as " StepId=...", with
+ * Batch and Extern used as appropriate.
+ */
+extern char *log_build_step_id_str(
+	slurm_step_id_t *step_id, char *buf, int buf_size, uint16_t flags);
 
 /*
  * the following log a message to the log facility at the appropriate level:

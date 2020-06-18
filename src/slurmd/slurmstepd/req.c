@@ -190,7 +190,7 @@ _create_socket(const char *name)
 
 static int
 _domain_socket_create(const char *dir, const char *nodename,
-		     uint32_t jobid, uint32_t stepid)
+		      slurm_step_id_t *step_id)
 {
 	int fd;
 	char *name = NULL;
@@ -210,7 +210,11 @@ _domain_socket_create(const char *dir, const char *nodename,
 	/*
 	 * Now build the name of socket, and create the socket.
 	 */
-	xstrfmtcat(name, "%s/%s_%u.%u", dir, nodename, jobid, stepid);
+	xstrfmtcat(name, "%s/%s_%u.%u", dir, nodename, step_id->job_id,
+		   step_id->step_id);
+
+	if (step_id->step_het_comp != NO_VAL)
+		xstrfmtcat(name, ".%u", step_id->step_het_comp);
 
 	/*
 	 * First check to see if the named socket already exists.
@@ -221,8 +225,8 @@ _domain_socket_create(const char *dir, const char *nodename,
 		 * and recreate it.
 		 */
 		if (unlink(name) != 0) {
-			error("%s: failed unlink(%s) job %u step %u %m",
-			      __func__, name, jobid, stepid);
+			error("%s: failed unlink(%s): %m",
+			      __func__, name);
 			xfree(name);
 			errno = ESLURMD_STEP_EXISTS;
 			return -1;
@@ -269,8 +273,8 @@ static int _wait_for_job_running(stepd_step_rec_t *job)
 	}
 
 	if (job->state < SLURMSTEPD_STEP_RUNNING) {
-		debug("step %u.%u not running yet %d [cont_id:%"PRIu64"]",
-		      job->jobid, job->stepid, job->state, job->cont_id);
+		debug("%ps not running yet %d [cont_id:%"PRIu64"]",
+		      &job->step_id, job->state, job->cont_id);
 		rc = ESLURMD_JOB_NOTRUNNING;
 	}
 
@@ -297,7 +301,7 @@ msg_thr_create(stepd_step_rec_t *job)
 	eio_obj_t *eio_obj;
 	errno = 0;
 	fd = _domain_socket_create(conf->spooldir, conf->node_name,
-				   job->jobid, job->stepid);
+				   &job->step_id);
 	if (fd == -1)
 		return SLURM_ERROR;
 
@@ -607,8 +611,8 @@ _handle_info(int fd, stepd_step_rec_t *job)
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 
 	safe_write(fd, &job->uid, sizeof(uid_t));
-	safe_write(fd, &job->jobid, sizeof(uint32_t));
-	safe_write(fd, &job->stepid, sizeof(uint32_t));
+	safe_write(fd, &job->step_id.job_id, sizeof(uint32_t));
+	safe_write(fd, &job->step_id.step_id, sizeof(uint32_t));
 
 	/* protocol_version was added in Slurm version 2.2,
 	 * so it needed to be added later in the data sent
@@ -619,6 +623,7 @@ _handle_info(int fd, stepd_step_rec_t *job)
 	safe_write(fd, &job->nodeid, sizeof(uint32_t));
 	safe_write(fd, &job->job_mem, sizeof(uint64_t));
 	safe_write(fd, &job->step_mem, sizeof(uint64_t));
+	safe_write(fd, &job->step_id.step_het_comp, sizeof(uint32_t));
 
 	return SLURM_SUCCESS;
 rwfail:
@@ -671,13 +676,13 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	safe_read(fd, &flag, sizeof(int));
 	safe_read(fd, &req_uid, sizeof(uid_t));
 
-	debug("_handle_signal_container for step=%u.%u uid=%d signal=%d",
-	      job->jobid, job->stepid, (int) req_uid, sig);
+	debug("_handle_signal_container for %ps uid=%d signal=%d",
+	      &job->step_id, (int) req_uid, sig);
 	/* verify uid off uid instead of req_uid as we can trust that one */
 	if ((uid != job->uid) && !_slurm_authorized_user(uid)) {
-		error("signal container req from uid %ld for step=%u.%u "
+		error("signal container req from uid %ld for %ps "
 		      "owned by uid %ld",
-		      (long)req_uid, job->jobid, job->stepid, (long)job->uid);
+		      (long)req_uid, &job->step_id, (long)job->uid);
 		rc = -1;
 		errnum = EPERM;
 		goto done;
@@ -711,17 +716,20 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 		}
 	}
 
-	if ((job->stepid != SLURM_EXTERN_CONT) &&
+	if ((job->step_id.step_id != SLURM_EXTERN_CONT) &&
 	    (job->nodeid == msg_target_node_id) && (msg_sent == 0) &&
 	    (job->state < SLURMSTEPD_STEP_ENDING)) {
 		time_t now = time(NULL);
-		char entity[24], time_str[24];
+		char entity[45], time_str[24];
 
-		if (job->stepid == SLURM_BATCH_SCRIPT) {
-			snprintf(entity, sizeof(entity), "JOB %u", job->jobid);
+		if (job->step_id.step_id == SLURM_BATCH_SCRIPT) {
+			snprintf(entity, sizeof(entity), "JOB %u", job->step_id.job_id);
 		} else {
-			snprintf(entity, sizeof(entity), "STEP %u.%u",
-				 job->jobid, job->stepid);
+			char tmp_char[33];
+			log_build_step_id_str(&job->step_id, tmp_char,
+					      sizeof(tmp_char),
+					      STEP_ID_FLAG_NO_PREFIX);
+			snprintf(entity, sizeof(entity), "STEP %s", tmp_char);
 		}
 		slurm_make_time_str(&now, time_str, sizeof(time_str));
 
@@ -797,7 +805,7 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	/*
 	 * Specific handle for the batch container and some related flags.
 	 */
-	if (job->stepid == SLURM_BATCH_SCRIPT &&
+	if (job->step_id.step_id == SLURM_BATCH_SCRIPT &&
 	    ((flag & KILL_JOB_BATCH) || (flag & KILL_FULL_JOB))) {
 
 		if (flag & KILL_FULL_JOB)
@@ -805,18 +813,16 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 		else
 			rc = kill(job->pgid, sig);
 		if (rc < 0) {
-			error("%s: failed signal %d pid %u job %u.%u %m",
-			      __func__, sig, job->pgid,
-			      job->jobid, job->stepid);
+			error("%s: failed signal %d pid %u %ps %m",
+			      __func__, sig, job->pgid, &job->step_id);
 			rc = SLURM_ERROR;
 			errnum = errno;
 			slurm_mutex_unlock(&suspend_mutex);
 			goto done;
 		}
 
-		verbose("%s: sent signal %d to pid %u job %u.%u",
-			__func__, sig, job->pgid,
-			job->jobid, job->stepid);
+		verbose("%s: sent signal %d to pid %u %ps",
+			__func__, sig, job->pgid, &job->step_id);
 		rc = SLURM_SUCCESS;
 		errnum = 0;
 		slurm_mutex_unlock(&suspend_mutex);
@@ -829,11 +835,10 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	if (proctrack_g_signal(job->cont_id, sig) < 0) {
 		rc = -1;
 		errnum = errno;
-		verbose("Error sending signal %d to %u.%u: %m",
-			sig, job->jobid, job->stepid);
+		verbose("Error sending signal %d to %ps: %m",
+			sig, &job->step_id);
 	} else {
-		verbose("Sent signal %d to %u.%u",
-			sig, job->jobid, job->stepid);
+		verbose("Sent signal %d to %ps", sig, &job->step_id);
 	}
 	slurm_mutex_unlock(&suspend_mutex);
 
@@ -853,8 +858,7 @@ _handle_notify_job(int fd, stepd_step_rec_t *job, uid_t uid)
 	int len;
 	char *message = NULL;
 
-	debug3("_handle_notify_job for job %u.%u",
-	       job->jobid, job->stepid);
+	debug3("_handle_notify_job for %ps", &job->step_id);
 
 	safe_read(fd, &len, sizeof(int));
 	if (len) {
@@ -864,9 +868,9 @@ _handle_notify_job(int fd, stepd_step_rec_t *job, uid_t uid)
 
 	debug3("  uid = %d", uid);
 	if ((uid != job->uid) && !_slurm_authorized_user(uid)) {
-		debug("notify req from uid %ld for job %u.%u "
+		debug("notify req from uid %ld for %ps "
 		      "owned by uid %ld",
-		      (long)uid, job->jobid, job->stepid, (long)job->uid);
+		      (long)uid, &job->step_id, (long)job->uid);
 		rc = EPERM;
 		goto done;
 	}
@@ -893,15 +897,14 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 	uint32_t i;
 
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
-		debug("terminate req from uid %ld for job %u.%u "
+		debug("terminate req from uid %ld for %ps "
 		      "owned by uid %ld",
-		      (long)uid, job->jobid, job->stepid, (long)job->uid);
+		      (long)uid, &job->step_id, (long)job->uid);
 		rc = -1;
 		errnum = EPERM;
 		goto done;
 	}
-	debug("_handle_terminate for step=%u.%u uid=%d",
-	      job->jobid, job->stepid, uid);
+	debug("_handle_terminate for %ps uid=%d", &job->step_id, uid);
 	step_terminate_monitor_start(job);
 
 	/*
@@ -935,8 +938,7 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 	 */
 	slurm_mutex_lock(&suspend_mutex);
 	if (suspended) {
-		debug("Terminating suspended job step %u.%u",
-		      job->jobid, job->stepid);
+		debug("Terminating suspended %ps", &job->step_id);
 		suspended = false;
 	}
 
@@ -945,11 +947,10 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 			rc = -1;
 			errnum = errno;
 		}
-		verbose("Error sending SIGKILL signal to %u.%u: %m",
-			job->jobid, job->stepid);
+		verbose("Error sending SIGKILL signal to %ps: %m",
+			&job->step_id);
 	} else {
-		verbose("Sent SIGKILL signal to %u.%u",
-			job->jobid, job->stepid);
+		verbose("Sent SIGKILL signal to %ps", &job->step_id);
 	}
 	slurm_mutex_unlock(&suspend_mutex);
 
@@ -970,7 +971,7 @@ _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid)
 	uint32_t *gtids = NULL, *pids = NULL;
 	int len, i;
 
-	debug("_handle_attach for job %u.%u", job->jobid, job->stepid);
+	debug("_handle_attach for %ps", &job->step_id);
 
 	srun       = xmalloc(sizeof(srun_info_t));
 	srun->key  = (srun_key_t *)xmalloc(SLURM_IO_KEY_SIZE);
@@ -998,8 +999,8 @@ _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid)
 	 * call, so only _slurm_authorized_user is allowed.
 	 */
 	if (!_slurm_authorized_user(uid)) {
-		error("uid %ld attempt to attach to job %u.%u owned by %ld",
-		      (long) uid, job->jobid, job->stepid, (long)job->uid);
+		error("uid %ld attempt to attach to %ps owned by %ld",
+		      (long) uid, &job->step_id, (long)job->uid);
 		rc = EPERM;
 		goto done;
 	}
@@ -1070,8 +1071,7 @@ _handle_pid_in_container(int fd, stepd_step_rec_t *job)
 	bool rc = false;
 	pid_t pid;
 
-	debug("_handle_pid_in_container for job %u.%u",
-	      job->jobid, job->stepid);
+	debug("_handle_pid_in_container for %ps", &job->step_id);
 
 	safe_read(fd, &pid, sizeof(pid_t));
 
@@ -1169,14 +1169,13 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid)
 	extern_pid_t *extern_pid;
 	jobacct_id_t jobacct_id;
 
-	if (job->stepid != SLURM_EXTERN_CONT) {
+	if (job->step_id.step_id != SLURM_EXTERN_CONT) {
 		error("%s: non-extern step (%u) given for job %u.",
-		      __func__, job->stepid, job->jobid);
+		      __func__, job->step_id.step_id, job->step_id.job_id);
 		return SLURM_ERROR;
 	}
 
-	debug("%s: for job %u.%u, pid %d",
-	      __func__, job->jobid, job->stepid, pid);
+	debug("%s: for %ps, pid %d", __func__, &job->step_id, pid);
 
 	extern_pid = xmalloc(sizeof(extern_pid_t));
 	extern_pid->job = job;
@@ -1190,17 +1189,20 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid)
 	jobacct_id.job = job;
 
 	if (proctrack_g_add(job, pid) != SLURM_SUCCESS) {
-		error("%s: Job %u can't add pid %d to proctrack plugin in the extern_step.", __func__, job->jobid, pid);
+		error("%s: Job %u can't add pid %d to proctrack plugin in the extern_step.",
+		      __func__, job->step_id.job_id, pid);
 		return SLURM_ERROR;
 	}
 
 	if (task_g_add_pid(pid) != SLURM_SUCCESS) {
-		error("%s: Job %u can't add pid %d to task plugin in the extern_step.", __func__, job->jobid, pid);
+		error("%s: Job %u can't add pid %d to task plugin in the extern_step.",
+		      __func__, job->step_id.job_id, pid);
 		return SLURM_ERROR;
 	}
 
 	if (jobacct_gather_add_task(pid, &jobacct_id, 1) != SLURM_SUCCESS) {
-		error("%s: Job %u can't add pid %d to jobacct_gather plugin in the extern_step.", __func__, job->jobid, pid);
+		error("%s: Job %u can't add pid %d to jobacct_gather plugin in the extern_step.",
+		      __func__, job->step_id.job_id, pid);
 		return SLURM_ERROR;
 	}
 
@@ -1427,12 +1429,12 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 
 	safe_read(fd, &job_core_spec, sizeof(uint16_t));
 
-	debug("_handle_suspend for step:%u.%u uid:%ld core_spec:%u",
-	      job->jobid, job->stepid, (long)uid, job_core_spec);
+	debug("_handle_suspend for %ps uid:%ld core_spec:%u",
+	      &job->step_id, (long)uid, job_core_spec);
 
 	if (!_slurm_authorized_user(uid)) {
-		debug("job step suspend request from uid %ld for job %u.%u ",
-		      (long)uid, job->jobid, job->stepid);
+		debug("job step suspend request from uid %ld for %ps ",
+		      (long)uid, &job->step_id);
 		rc = -1;
 		errnum = EPERM;
 		goto done;
@@ -1468,16 +1470,16 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 		 * also permit longer time periods when more than one job can
 		 * be running on each resource (not good). */
 		if (proctrack_g_signal(job->cont_id, SIGTSTP) < 0) {
-			verbose("Error suspending %u.%u (SIGTSTP): %m",
-				job->jobid, job->stepid);
+			verbose("Error suspending %ps (SIGTSTP): %m",
+				&job->step_id);
 		} else
 			sleep(2);
 
 		if (proctrack_g_signal(job->cont_id, SIGSTOP) < 0) {
-			verbose("Error suspending %u.%u (SIGSTOP): %m",
-				job->jobid, job->stepid);
+			verbose("Error suspending %ps (SIGSTOP): %m",
+				&job->step_id);
 		} else {
-			verbose("Suspended %u.%u", job->jobid, job->stepid);
+			verbose("Suspended %ps", &job->step_id);
 		}
 		suspended = true;
 	}
@@ -1506,12 +1508,12 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 
 	safe_read(fd, &job_core_spec, sizeof(uint16_t));
 
-	debug("_handle_resume for step:%u.%u uid:%ld core_spec:%u",
-	      job->jobid, job->stepid, (long)uid, job_core_spec);
+	debug("_handle_resume for %ps uid:%ld core_spec:%u",
+	      &job->step_id, (long)uid, job_core_spec);
 
 	if (!_slurm_authorized_user(uid)) {
-		debug("job step resume request from uid %ld for job %u.%u ",
-		      (long)uid, job->jobid, job->stepid);
+		debug("job step resume request from uid %ld for %ps ",
+		      (long)uid, &job->step_id);
 		rc = -1;
 		errnum = EPERM;
 		goto done;
@@ -1539,10 +1541,9 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 						      job_core_spec))
 			error("core_spec_g_resume: %m");
 		if (proctrack_g_signal(job->cont_id, SIGCONT) < 0) {
-			verbose("Error resuming %u.%u: %m",
-				job->jobid, job->stepid);
+			verbose("Error resuming %ps: %m", &job->step_id);
 		} else {
-			verbose("Resumed %u.%u", job->jobid, job->stepid);
+			verbose("Resumed %ps", &job->step_id);
 		}
 		suspended = false;
 	}
@@ -1582,13 +1583,12 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 	Buf buffer = NULL;
 	bool lock_set = false;
 
-	debug("_handle_completion for job %u.%u",
-	      job->jobid, job->stepid);
+	debug("_handle_completion for %ps", &job->step_id);
 
 	debug3("  uid = %d", uid);
 	if (!_slurm_authorized_user(uid)) {
-		debug("step completion message from uid %ld for job %u.%u ",
-		      (long)uid, job->jobid, job->stepid);
+		debug("step completion message from uid %ld for %ps ",
+		      (long)uid, &job->step_id);
 		rc = -1;
 		errnum = EPERM;
 		/* Send the return code and errno */
@@ -1690,14 +1690,13 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *job, uid_t uid)
 	jobacctinfo_t *temp_jobacct = NULL;
 	int i = 0;
 	int num_tasks = 0;
-	debug("_handle_stat_jobacct for job %u.%u",
-	      job->jobid, job->stepid);
+	debug("_handle_stat_jobacct for %ps", &job->step_id);
 
 	debug3("  uid = %d", uid);
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
-		debug("stat jobacct from uid %ld for job %u.%u "
+		debug("stat jobacct from uid %ld for %ps "
 		      "owned by uid %ld",
-		      (long)uid, job->jobid, job->stepid, (long)job->uid);
+		      (long)uid, &job->step_id, (long)job->uid);
 		/* Send NULL */
 		jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd,
 				    SLURM_PROTOCOL_VERSION);
@@ -1736,7 +1735,7 @@ _handle_task_info(int fd, stepd_step_rec_t *job)
 	int i;
 	stepd_step_task_info_t *task;
 
-	debug("_handle_task_info for job %u.%u", job->jobid, job->stepid);
+	debug("_handle_task_info for %ps", &job->step_id);
 
 	safe_write(fd, &job->node_tasks, sizeof(uint32_t));
 	for (i = 0; i < job->node_tasks; i++) {
@@ -1762,7 +1761,7 @@ _handle_list_pids(int fd, stepd_step_rec_t *job)
 	int npids = 0;
 	uint32_t pid;
 
-	debug("_handle_list_pids for job %u.%u", job->jobid, job->stepid);
+	debug("_handle_list_pids for %ps", &job->step_id);
 	proctrack_g_get_pids(job->cont_id, &pids, &npids);
 	safe_write(fd, &npids, sizeof(uint32_t));
 	for (i = 0; i < npids; i++) {
@@ -1786,9 +1785,8 @@ _handle_reconfig(int fd, stepd_step_rec_t *job, uid_t uid)
 	int errnum = 0;
 
 	if (!_slurm_authorized_user(uid)) {
-		debug("job step reconfigure request from uid %ld "
-		      "for job %u.%u ",
-		      (long)uid, job->jobid, job->stepid);
+		debug("job step reconfigure request from uid %ld for %ps",
+		      (long)uid, &job->step_id);
 		rc = -1;
 		errnum = EPERM;
 		goto done;
@@ -1798,8 +1796,7 @@ _handle_reconfig(int fd, stepd_step_rec_t *job, uid_t uid)
 	   reconfigure since the file could had rolled thus making
 	   the currect fd incorrect. */
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
-	debug("_handle_reconfigure for job %u.%u successful",
-	      job->jobid, job->stepid);
+	debug("_handle_reconfigure for %ps successful", &job->step_id);
 
 done:
 	/* Send the return code and errno */

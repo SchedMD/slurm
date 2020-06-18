@@ -42,7 +42,7 @@
 
 #include "src/common/list.h"
 
-typedef struct task_state_struct *task_state_t;
+typedef struct task_state_struct task_state_t;
 
 typedef enum {
 	TS_START_SUCCESS,
@@ -57,32 +57,32 @@ typedef void (*log_f) (const char *, ...);
  * Given a het group and task count, return a task_state structure
  * Free memory using task_state_destroy()
  */
-extern task_state_t task_state_create(uint32_t job_id, uint32_t step_id,
-				      uint32_t het_group, int ntasks,
-				      uint32_t task_offset);
+extern task_state_t *task_state_create(slurm_step_id_t *step_id,
+				       int ntasks,
+				       uint32_t task_offset);
 
 /*
  * Find the task_state structure for a given job_id, step_id and/or het group
  * on a list. Specify values of NO_VAL for values that are not to be matched
  * Returns NULL if not found
  */
-extern task_state_t task_state_find(uint32_t job_id, uint32_t step_id,
-				    uint32_t het_group, List task_state_list);
+extern task_state_t *task_state_find(slurm_step_id_t *step_id,
+				     List task_state_list);
 
 /*
  * Modify the task count for a previously created task_state structure
  */
-extern void task_state_alter(task_state_t ts, int ntasks);
+extern void task_state_alter(task_state_t *ts, int ntasks);
 
 /*
  * Destroy a task_state structure build by task_state_create()
  */
-extern void task_state_destroy(task_state_t ts);
+extern void task_state_destroy(task_state_t *ts);
 
 /*
  * Update the state of a specific task ID in a specific task_state structure
  */
-extern void task_state_update(task_state_t ts, int task_id,
+extern void task_state_update(task_state_t *ts, int task_id,
 			      task_state_type_t t);
 
 /*
@@ -105,6 +105,6 @@ extern void task_state_print(List task_state_list, log_f fn);
 /*
  * Translate hetjob local task ID to a global task ID
  */
-extern uint32_t task_state_global_id(task_state_t ts, uint32_t local_task_id);
+extern uint32_t task_state_global_id(task_state_t *ts, uint32_t local_task_id);
 
 #endif /* !_HAVE_TASK_STATE_H */

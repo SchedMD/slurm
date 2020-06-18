@@ -73,7 +73,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			if (set)
 				xstrcat(extra, " || ");
 			tmp = xstrdup_printf("jobid=%u",
-					      selected_step->jobid);
+					     selected_step->step_id.job_id);
 			xstrcat(extra, tmp);
 			set = 1;
 			xfree(tmp);

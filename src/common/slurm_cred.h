@@ -137,8 +137,7 @@ int  slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, Buf buffer);
  * to this STEP
  */
 typedef struct {
-	uint32_t  jobid;
-	uint32_t  stepid;
+	slurm_step_id_t step_id;
 	uid_t uid;
 	gid_t gid;
 	char *pw_name;

@@ -970,7 +970,7 @@ typedef struct {
 	dynamic_plugin_data_t *select_jobinfo;/* opaque data, BlueGene */
 	uint32_t srun_pid;		/* PID of srun (also see host/port) */
 	uint32_t state;			/* state of the step. See job_states */
-	uint32_t step_id;		/* step number */
+	slurm_step_id_t step_id;	/* step number */
 	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
 					  * in the step */
 	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job
@@ -1149,10 +1149,10 @@ extern int delete_partition(delete_part_msg_t *part_desc_ptr);
  * delete_step_record - delete record for job step for specified job_ptr
  *	and step_id
  * IN job_ptr - pointer to job table entry to have step record removed
- * IN step_id - id of the desired job step
+ * IN step_ptr - pointer to step table entry of the desired job step
  * RET 0 on success, errno otherwise
  */
-extern int delete_step_record(job_record_t *job_ptr, uint32_t step_id);
+extern int delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr);
 
 /*
  * delete_step_records - delete step record for specified job_ptr
@@ -1266,10 +1266,11 @@ extern part_record_t *find_part_record(char *name);
  * find_step_record - return a pointer to the step record with the given
  *	job_id and step_id
  * IN job_ptr - pointer to job table entry to have step record added
- * IN step_id - id of the desired job step
+ * IN step_id - id+het_comp of the desired job step
  * RET pointer to the job step's record, NULL on error
  */
-extern step_record_t *find_step_record(job_record_t *job_ptr, uint32_t step_id);
+extern step_record_t *find_step_record(job_record_t *job_ptr,
+				       slurm_step_id_t *step_id);
 
 /*
  * free_null_array_recs - free an xmalloc'd job_array_struct_t structure inside
@@ -1680,23 +1681,8 @@ extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
 		       uint16_t protocol_version);
 
 /*
- * job_step_complete - note normal completion the specified job step
- * IN job_id - id of the job to be completed
- * IN step_id - id of the job step to be completed
- * IN uid - user id of user issuing the RPC
- * IN requeue - job should be run again if possible
- * IN job_return_code - job's return code, if set then set state to JOB_FAILED
- * RET 0 on success, otherwise ESLURM error code
- * global: job_list - pointer global job list
- *	last_job_update - time of last job table update
- */
-extern int job_step_complete (uint32_t job_id, uint32_t job_step_id,
-			uid_t uid, bool requeue, uint32_t job_return_code);
-
-/*
  * job_step_signal - signal the specified job step
- * IN job_id - id of the job to be cancelled
- * IN step_id - id of the job step to be cancelled
+ * IN step_id - filled in slurm_step_id_t
  * IN signal - user id of user issuing the RPC
  * IN flags - RPC flags
  * IN uid - user id of user issuing the RPC
@@ -1704,8 +1690,8 @@ extern int job_step_complete (uint32_t job_id, uint32_t job_step_id,
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-int job_step_signal(uint32_t job_id, uint32_t step_id,
-		    uint16_t signal, uint16_t flags, uid_t uid);
+extern int job_step_signal(slurm_step_id_t *step_id,
+			   uint16_t signal, uint16_t flags, uid_t uid);
 
 /*
  * job_time_limit - terminate jobs which have exceeded their time limit
@@ -2393,11 +2379,12 @@ extern int step_epilog_complete(job_record_t *job_ptr, char *node_name);
  *	some of its nodes
  * IN req     - step_completion_msg RPC from slurmstepd
  * IN uid     - UID issuing the request
+ * IN finish  - If true, no error, and no rem is 0 finish the step.
  * OUT rem    - count of nodes for which responses are still pending
  * OUT max_rc - highest return code for any step thus far
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
+extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 			     int *rem, uint32_t *max_rc);
 
 /*

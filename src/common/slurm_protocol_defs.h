@@ -596,9 +596,8 @@ typedef struct priority_factors_request_msg {
 } priority_factors_request_msg_t;
 
 typedef struct job_notify_msg {
-	uint32_t job_id;
-	uint32_t job_step_id;	/* currently not used */
 	char *   message;
+	slurm_step_id_t step_id;
 } job_notify_msg_t;
 
 typedef struct job_id_msg {
@@ -611,11 +610,6 @@ typedef struct job_user_id_msg {
 	uint16_t show_flags;
 } job_user_id_msg_t;
 
-typedef struct job_step_id_msg {
-	uint32_t job_id;
-	uint32_t step_id;
-} job_step_id_msg_t;
-
 typedef struct job_info_request_msg {
 	time_t last_update;
 	uint16_t show_flags;
@@ -625,8 +619,7 @@ typedef struct job_info_request_msg {
 
 typedef struct job_step_info_request_msg {
 	time_t last_update;
-	uint32_t job_id;
-	uint32_t step_id;
+	slurm_step_id_t step_id;
 	uint16_t show_flags;
 } job_step_info_request_msg_t;
 
@@ -682,19 +675,17 @@ typedef struct complete_prolog {
 } complete_prolog_msg_t;
 
 typedef struct step_complete_msg {
-	uint32_t job_id;
-	uint32_t job_step_id;
 	uint32_t range_first;	/* First node rank within job step's alloc */
 	uint32_t range_last;	/* Last node rank within job step's alloc */
+	slurm_step_id_t step_id;
  	uint32_t step_rc;	/* largest task return code */
 	jobacctinfo_t *jobacct;
 } step_complete_msg_t;
 
 typedef struct signal_tasks_msg {
 	uint16_t flags;
-	uint32_t job_id;
-	uint32_t job_step_id;
 	uint16_t signal;
+	slurm_step_id_t step_id;
 } signal_tasks_msg_t;
 
 typedef struct epilog_complete_msg {
@@ -740,7 +731,6 @@ typedef struct job_step_specs {
 	char *host;		/* host to contact initiating srun */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
-	uint32_t job_id;	/* job ID */
 	uint64_t pn_min_memory; /* minimum real memory per node OR
 				 * real memory per CPU | MEM_PER_CPU,
 				 * default=0 (use job limit) */
@@ -761,8 +751,11 @@ typedef struct job_step_specs {
 	uint16_t port;		/* port to contact initiating srun */
 	uint16_t relative;	/* first node to use of job's allocation */
 	uint16_t resv_port_cnt;	/* reserve ports for MPI if set */
+	uint32_t step_het_comp_cnt; /* How many het componets in the step. Used
+				     * for a het step inside a non-het job
+				     * allocation. */
 	char *step_het_grps;	/* what het groups are used by step */
-	uint32_t step_id;	/* Desired step ID or NO_VAL */
+	slurm_step_id_t step_id;
 	uint32_t srun_pid;	/* PID of srun command, also see host */
 	uint32_t task_dist;	/* see enum task_dist_state in slurm.h */
 	uint32_t time_limit;	/* maximum run time in minutes, default is
@@ -799,8 +792,6 @@ typedef struct job_step_create_response_msg {
 #define LAUNCH_NO_ALLOC 	0x00000040
 
 typedef struct launch_tasks_request_msg {
-	uint32_t  job_id;
-	uint32_t  job_step_id;
 	uint32_t  het_job_node_offset;	/* Hetjob node offset or NO_VAL */
 	uint32_t  het_job_id;		/* Hetjob ID or NO_VAL */
 	uint32_t  het_job_nnodes;	/* total node count for entire hetjob */
@@ -827,6 +818,7 @@ typedef struct launch_tasks_request_msg {
 	uint64_t  job_mem_lim;	/* MB of memory reserved by job per node OR
 				 * real memory per CPU | MEM_PER_CPU,
 				 * default=0 (no limit) */
+	slurm_step_id_t step_id;
 	uint64_t  step_mem_lim;	/* MB of memory reserved by step */
 	uint16_t  *tasks_to_launch;
 	uint32_t  envc;
@@ -968,7 +960,6 @@ typedef struct control_status_msg {
 typedef struct kill_job_msg {
 	uint32_t het_job_id;
 	List job_gres_info;	/* Used to set Epilog environment variables */
-	uint32_t job_id;
 	uint32_t job_state;
 	uint32_t job_uid;
 	uint32_t job_gid;
@@ -977,13 +968,11 @@ typedef struct kill_job_msg {
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
 	time_t   start_time;	/* time of job start, track job requeue */
-	uint32_t step_id;
+	slurm_step_id_t step_id;
 	time_t   time;		/* slurmctld's time of request */
 } kill_job_msg_t;
 
 typedef struct reattach_tasks_request_msg {
-	uint32_t     job_id;
-	uint32_t     job_step_id;
 	uint16_t     num_resp_port;
 	uint16_t    *resp_port; /* array of available response ports */
 	uint16_t     num_io_port;
@@ -991,6 +980,7 @@ typedef struct reattach_tasks_request_msg {
 	slurm_cred_t *cred;      /* used only a weak authentication mechanism
 				   for the slurmstepd to use when connecting
 				   back to the client */
+	slurm_step_id_t step_id;
 } reattach_tasks_request_msg_t;
 
 typedef struct reattach_tasks_response_msg {
@@ -1040,7 +1030,6 @@ typedef struct batch_job_launch_msg {
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	uint32_t het_job_id;
 	uint32_t job_id;
-	uint32_t step_id;
 	uint32_t uid;
 	uint32_t gid;
 	char    *user_name;
@@ -1130,10 +1119,9 @@ typedef struct {
 } config_response_msg_t;
 
 typedef struct srun_exec_msg {
-	uint32_t job_id;	/* slurm job_id */
-	uint32_t step_id;	/* step_id or NO_VAL */
 	uint32_t argc;		/* argument count */
 	char **  argv;		/* program arguments */
+	slurm_step_id_t step_id;
 } srun_exec_msg_t;
 
 typedef struct kvs_get_msg {
@@ -1239,14 +1227,13 @@ typedef struct slurm_node_registration_status_msg {
 	uint32_t hash_val;      /* hash value of slurm.conf and included files
 				 * existing on node */
 	uint32_t job_count;	/* number of associate job_id's */
-	uint32_t *job_id;	/* IDs of running job (if any) */
 	char *node_name;
 	uint16_t boards;
 	char *os;
 	uint64_t real_memory;
 	time_t slurmd_start_time;
 	uint32_t status;	/* node status code, same as return codes */
-	uint32_t *step_id;	/* IDs of running job steps (if any) */
+	slurm_step_id_t *step_id;	/* IDs of running job steps (if any) */
 	uint16_t sockets;
 	switch_node_info_t *switch_nodeinfo;	/* set only if startup != 0 */
 	uint16_t threads;
@@ -1370,6 +1357,10 @@ extern int slurm_find_char_in_list(void *x, void *key);
 extern int slurm_sort_char_list_asc(void *, void *);
 extern int slurm_sort_char_list_desc(void *, void *);
 
+extern resource_allocation_response_msg_t *
+slurm_copy_resource_allocation_response_msg(
+	resource_allocation_response_msg_t *msg);
+
 /* free message functions */
 extern void slurm_free_dep_msg(dep_msg_t *msg);
 extern void slurm_free_dep_update_origin_msg(dep_update_origin_msg_t *msg);
@@ -1433,7 +1424,7 @@ extern void slurm_free_job_id_response_msg(job_id_response_msg_t * msg);
 extern void slurm_free_config_request_msg(config_request_msg_t *msg);
 extern void slurm_free_config_response_msg(config_response_msg_t *msg);
 
-extern void slurm_free_job_step_id_msg(job_step_id_msg_t *msg);
+extern void slurm_free_step_id(slurm_step_id_t *msg);
 
 extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 
@@ -1632,6 +1623,11 @@ extern char *rpc_num2string(uint16_t opcode);
  * The return value for an invalid suffix is NO_VAL64.
  */
 extern uint64_t suffix_mult(char *suffix);
+/*
+ * See if the step_id 'key' coming in matches enough of the step_id 'object'
+ */
+extern bool verify_step_id(slurm_step_id_t *object, slurm_step_id_t *key);
+
 
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\

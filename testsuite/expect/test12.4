@@ -123,7 +123,7 @@ expect {
 set job_id 0
 spawn $srun -N1 -v --account=$test_acct $bin_id
 expect {
-	-re "launching ($number)" {
+	-re "launching StepId=($number)\.$re_word_str" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
@@ -532,7 +532,7 @@ expect {
 set job_id 0
 spawn $srun -N1 -v --account=$test_acct $bin_id
 expect {
-	-re "launching ($number)" {
+	-re "launching StepId=($number)\.$re_word_str" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}

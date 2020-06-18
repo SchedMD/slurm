@@ -10,7 +10,6 @@
 
 #include "slurm-perl.h"
 
-
 /*
  * convert job_step_info_t to perl HV
  */
@@ -19,12 +18,16 @@ job_step_info_to_hv(job_step_info_t *step_info, HV *hv)
 {
 	int j;
 	AV *av;
+	HV *step_id_hv = (HV*)sv_2mortal((SV*)newHV());
+
+	step_id_to_hv(&step_info->step_id, step_id_hv);
+	hv_store_sv(hv, "step_id", newRV((SV*)step_id_hv));
 
 	STORE_FIELD(hv, step_info, array_job_id, uint32_t);
 	STORE_FIELD(hv, step_info, array_task_id, uint32_t);
 	if (step_info->tres_per_node)
 		STORE_FIELD(hv, step_info, tres_per_node, charp);
-	STORE_FIELD(hv, step_info, job_id, uint32_t);
+
 	if (step_info->name)
 		STORE_FIELD(hv, step_info, name, charp);
 	if (step_info->network)
@@ -47,7 +50,6 @@ job_step_info_to_hv(job_step_info_t *step_info, HV *hv)
 		STORE_FIELD(hv, step_info, resv_ports, charp);
 	STORE_FIELD(hv, step_info, run_time, time_t);
 	STORE_FIELD(hv, step_info, start_time, time_t);
-	STORE_FIELD(hv, step_info, step_id, uint32_t);
 	STORE_FIELD(hv, step_info, time_limit, uint32_t);
 	STORE_FIELD(hv, step_info, user_id, uint32_t);
 	STORE_FIELD(hv, step_info, state, uint32_t);
@@ -65,12 +67,16 @@ hv_to_job_step_info(HV *hv, job_step_info_t *step_info)
 	AV *av;
 	int i, n;
 
+	HV *step_id_hv = (HV*)sv_2mortal((SV*)newHV());
+
 	memset(step_info, 0, sizeof(job_step_info_t));
+
+	hv_to_step_id(&step_info->step_id, step_id_hv);
+	hv_store_sv(hv, "step_id", newRV((SV*)step_id_hv));
 
 	FETCH_FIELD(hv, step_info, array_job_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, array_task_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, tres_per_node, charp, FALSE);
-	FETCH_FIELD(hv, step_info, job_id, uint16_t, TRUE);
 	FETCH_FIELD(hv, step_info, name, charp, FALSE);
 	FETCH_FIELD(hv, step_info, network, charp, FALSE);
 	FETCH_FIELD(hv, step_info, nodes, charp, FALSE);
@@ -95,7 +101,6 @@ hv_to_job_step_info(HV *hv, job_step_info_t *step_info)
 	FETCH_FIELD(hv, step_info, resv_ports, charp, FALSE);
 	FETCH_FIELD(hv, step_info, run_time, time_t, TRUE);
 	FETCH_FIELD(hv, step_info, start_time, time_t, TRUE);
-	FETCH_FIELD(hv, step_info, step_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, time_limit, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, user_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, state, uint32_t, TRUE);
@@ -236,9 +241,10 @@ job_step_pids_response_msg_to_hv(job_step_pids_response_msg_t *pids_msg, HV *hv)
 	AV *av;
 	HV *hv_pids;
 	job_step_pids_t *pids;
-	
-	STORE_FIELD(hv, pids_msg, job_id, uint32_t);
-	STORE_FIELD(hv, pids_msg, step_id, uint32_t);
+	HV *step_id_hv = (HV*)sv_2mortal((SV*)newHV());
+
+	step_id_to_hv(&pids_msg->step_id, step_id_hv);
+	hv_store_sv(hv, "step_id", newRV((SV*)step_id_hv));
 
 	av = newAV();
 	itr = slurm_list_iterator_create(pids_msg->pid_list);
@@ -292,9 +298,10 @@ job_step_stat_response_msg_to_hv(job_step_stat_response_msg_t *stat_msg, HV *hv)
 	job_step_stat_t *stat;
 	AV *av;
 	HV *hv_stat;
+	HV *step_id_hv = (HV*)sv_2mortal((SV*)newHV());
 
-	STORE_FIELD(hv, stat_msg, job_id, uint32_t);
-	STORE_FIELD(hv, stat_msg, step_id, uint32_t);
+	step_id_to_hv(&stat_msg->step_id, step_id_hv);
+	hv_store_sv(hv, "step_id", newRV((SV*)step_id_hv));
 
 	av = newAV();
 	itr = slurm_list_iterator_create(stat_msg->stats_list);

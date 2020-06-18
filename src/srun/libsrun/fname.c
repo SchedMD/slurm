@@ -68,7 +68,7 @@ extern fname_t *fname_create(srun_job_t *job, char *format, int task_count)
 	unsigned long int taskid  = 0;
 	fname_t *fname = NULL;
 	char *p, *q, *name, *tmp_env, *tmp_perc;
-	uint32_t array_job_id  = job->jobid;
+	uint32_t array_job_id  = job->step_id.job_id;
 	uint32_t array_task_id = NO_VAL;
 	char *esc;
 	char *end;
@@ -175,20 +175,21 @@ extern fname_t *fname_create(srun_job_t *job, char *format, int task_count)
 			case 'j':  /* '%j' => jobid          */
 				xmemcat(name, q, p - 1);
 				xstrfmtcat(name, "%0*d", wid,
-					   job->jobid);
+					   job->step_id.job_id);
 
 				if ((*p == 'J') &&
-				    (job->stepid != SLURM_BATCH_SCRIPT))
+				    (job->step_id.step_id !=
+				     SLURM_BATCH_SCRIPT))
 					xstrfmtcat(name, ".%d",
-						   job->stepid);
+						   job->step_id.step_id);
 				xfree(tmp_perc);
 				tmp_perc = NULL;
 				q = ++p;
 				break;
-			case 's':  /* '%s' => stepid         */
+			case 's':  /* '%s' => step_id.step_id         */
 				xmemcat(name, q, p - 1);
 				xstrfmtcat(name, "%0*d", wid,
-					   job->stepid);
+					   job->step_id.step_id);
 				xfree(tmp_perc);
 				tmp_perc = NULL;
 				q = ++p;

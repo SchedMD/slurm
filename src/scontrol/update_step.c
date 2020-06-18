@@ -55,8 +55,8 @@ static uint32_t _get_step_time(uint32_t job_id, uint32_t step_id)
 	rc = slurm_get_job_steps((time_t) 0, job_id, step_id, &resp, SHOW_ALL);
 	if (rc == SLURM_SUCCESS) {
 		for (i = 0; i < resp->job_step_count; i++) {
-			if ((resp->job_steps[i].job_id != job_id) ||
-			    (resp->job_steps[i].step_id != step_id))
+			if ((resp->job_steps[i].step_id.job_id != job_id) ||
+			    (resp->job_steps[i].step_id.step_id != step_id))
 				continue;	/* should not happen */
 			time_limit = resp->job_steps[i].time_limit;
 			break;

@@ -309,18 +309,19 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	 * Use a more user friendly string "batch" rather
 	 * then 4294967294.
 	 */
-	if (g_job->stepid == SLURM_BATCH_SCRIPT) {
+	if (g_job->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		profile_file_name = xstrdup_printf("%s/%s/%u_%s_%s.h5",
 						   hdf5_conf.dir,
 						   g_job->user_name,
-						   g_job->jobid,
+						   g_job->step_id.job_id,
 						   "batch",
 						   g_job->node_name);
 	} else {
 		profile_file_name = xstrdup_printf(
 			"%s/%s/%u_%u_%s.h5",
 			hdf5_conf.dir, g_job->user_name,
-			g_job->jobid, g_job->stepid, g_job->node_name);
+			g_job->step_id.job_id, g_job->step_id.step_id,
+			g_job->node_name);
 	}
 
 	log_flag(PROFILE, "PROFILE: node_step_start, opt=%s file=%s",

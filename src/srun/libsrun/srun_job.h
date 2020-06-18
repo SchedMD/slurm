@@ -79,8 +79,7 @@ typedef struct fname {
 
 typedef struct srun_job {
 	int fir_nodeid;
-	uint32_t jobid;		/* assigned job id 	                  */
-	uint32_t stepid;	/* assigned step id 	                  */
+	slurm_step_id_t step_id; /* assigned step id */
 	uint32_t het_job_node_offset;	/* Hetjob node offset or NO_VAL */
 	uint32_t het_job_id;	/* Hetjob leader or NO_VAL */
 	char    *het_job_node_list; /* node list for combined hetjob */

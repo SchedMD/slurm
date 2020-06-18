@@ -201,12 +201,8 @@ static void _handle_user_msg(struct allocation_msg_thread *msg_thr,
 static void _handle_ping(struct allocation_msg_thread *msg_thr,
 			     slurm_msg_t *msg)
 {
-	srun_ping_msg_t *ping = (srun_ping_msg_t *)msg->data;
 	debug3("received ping message");
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-
-	if (msg_thr->callback.ping != NULL)
-		(msg_thr->callback.ping)(ping);
 }
 
 static void _handle_job_complete(struct allocation_msg_thread *msg_thr,

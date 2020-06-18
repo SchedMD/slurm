@@ -1166,7 +1166,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		nodes = step_ptr->step_layout->node_cnt;
 		task_dist = step_ptr->step_layout->task_dist;
 		node_inx = step_ptr->network;
-	} else if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
+	} else if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		if (step_ptr->step_node_bitmap) {
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					   step_ptr->step_node_bitmap);
@@ -1240,13 +1240,13 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 
 	/* we want to print a -1 for the requid so leave it a
 	   %d */
-	/* The stepid could be -2 so use %d not %u */
+	/* The stepid could be negative so use %d not %u */
 	query = xstrdup_printf(
-		"insert into \"%s_%s\" (job_db_inx, id_step, time_start, "
-		"step_name, state, tres_alloc, "
+		"insert into \"%s_%s\" (job_db_inx, id_step, step_het_comp, "
+		"time_start, step_name, state, tres_alloc, "
 		"nodes_alloc, task_cnt, nodelist, node_inx, "
 		"task_dist, req_cpufreq, req_cpufreq_min, req_cpufreq_gov) "
-		"values (%"PRIu64", %d, %d, '%s', %d, '%s', %d, %d, "
+		"values (%"PRIu64", %d, %u, %d, '%s', %d, '%s', %d, %d, "
 		"'%s', '%s', %d, %u, %u, %u) "
 		"on duplicate key update "
 		"nodes_alloc=%d, task_cnt=%d, time_end=0, state=%d, "
@@ -1255,7 +1255,8 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		"tres_alloc='%s';",
 		mysql_conn->cluster_name, step_table,
 		step_ptr->job_ptr->db_index,
-		step_ptr->step_id,
+		step_ptr->step_id.step_id,
+		step_ptr->step_id.step_het_comp,
 		(int)start_time, step_ptr->name,
 		JOB_RUNNING, step_ptr->tres_alloc_str,
 		nodes, tasks, node_list, node_inx, task_dist,
@@ -1306,7 +1307,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			tasks = step_ptr->job_ptr->details->num_tasks;
 		else
 			tasks = step_ptr->cpu_count;
-	} else if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
+	} else if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		now = time(NULL);
 		tasks = 1;
 	} else {
@@ -1365,7 +1366,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	/* The stepid could be -2 so use %d not %u */
+	/* The stepid could be negative so use %d not %u */
 	query = xstrdup_printf(
 		"update \"%s_%s\" set time_end=%d, state=%u, "
 		"kill_requid=%d, exit_code=%d",
@@ -1506,12 +1507,13 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		slurmdb_free_slurmdb_stats_members(&stats);
 	}
 
-	/* id_step has to be %d here to handle the -2 -1 for the batch and
-	   extern steps.  Don't change it to a %u.
+	/* id_step has to be %d here to handle the negative values for the batch
+	   and extern steps.  Don't change it to a %u.
 	*/
 	xstrfmtcat(query,
-		   " where job_db_inx=%"PRIu64" and id_step=%d",
-		   step_ptr->job_ptr->db_index, step_ptr->step_id);
+		   " where job_db_inx=%"PRIu64" and id_step=%d and step_het_comp=%u",
+		   step_ptr->job_ptr->db_index, step_ptr->step_id.step_id,
+		   step_ptr->step_id.step_het_comp);
 	DB_DEBUG(DB_STEP, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);

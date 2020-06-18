@@ -3232,13 +3232,13 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 
 	START_TIMER;
 	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(job_step_kill_msg->job_id);
+	job_ptr = find_job_record(job_step_kill_msg->step_id.job_id);
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	/* do RPC call */
-	if (job_step_kill_msg->job_step_id == SLURM_BATCH_SCRIPT) {
+	if (job_step_kill_msg->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		/* NOTE: SLURM_BATCH_SCRIPT == NO_VAL */
-		error_code = job_signal_id(job_step_kill_msg->job_id,
+		error_code = job_signal_id(job_step_kill_msg->step_id.job_id,
 					   job_step_kill_msg->signal,
 					   job_step_kill_msg->flags, uid,
 					   false);
@@ -3264,8 +3264,7 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 			schedule_job_save();
 		}
 	} else {
-		error_code = job_step_signal(job_step_kill_msg->job_id,
-					     job_step_kill_msg->job_step_id,
+		error_code = job_step_signal(&job_step_kill_msg->step_id,
 					     job_step_kill_msg->signal,
 					     job_step_kill_msg->flags,
 					     uid);
@@ -3276,20 +3275,23 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		if (error_code) {
 			log_flag(STEPS, "Signal %u of JobId=%u StepId=%u by UID=%u: %s",
 				 job_step_kill_msg->signal,
-				 job_step_kill_msg->job_id,
-				 job_step_kill_msg->job_step_id, uid,
+				 job_step_kill_msg->step_id.job_id,
+				 job_step_kill_msg->step_id.step_id, uid,
 				 slurm_strerror(error_code));
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL)
 				log_flag(STEPS, "%s: Cancel of JobId=%u StepId=%u by UID=%u %s",
-					 __func__, job_step_kill_msg->job_id,
-					 job_step_kill_msg->job_step_id, uid,
+					 __func__,
+					 job_step_kill_msg->step_id.job_id,
+					 job_step_kill_msg->step_id.step_id,
+					 uid,
 					 TIME_STR);
 			else
 				log_flag(STEPS, "%s: Signal %u of JobId=%u StepId=%u by UID=%u %s",
 					 __func__, job_step_kill_msg->signal,
-					 job_step_kill_msg->job_id,
-					 job_step_kill_msg->job_step_id, uid,
+					 job_step_kill_msg->step_id.job_id,
+					 job_step_kill_msg->step_id.step_id,
+					 uid,
 					 TIME_STR);
 
 			/* Below function provides its own locking */
@@ -3319,10 +3321,10 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 	ListIterator iter;
 
 	lock_slurmctld(job_read_lock);
-	job_ptr = find_job_record(job_step_kill_msg->job_id);
+	job_ptr = find_job_record(job_step_kill_msg->step_id.job_id);
 	if (job_ptr && job_ptr->het_job_list &&
 	    (job_step_kill_msg->signal == SIGKILL) &&
-	    (job_step_kill_msg->job_step_id != SLURM_BATCH_SCRIPT)) {
+	    (job_step_kill_msg->step_id.step_id != SLURM_BATCH_SCRIPT)) {
 		cnt = list_count(job_ptr->het_job_list);
 		het_job_ids = xcalloc(cnt, sizeof(uint32_t));
 		i = 0;
@@ -3336,11 +3338,11 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 
 	if (!job_ptr) {
 		info("%s: invalid JobId=%u",
-		      __func__, job_step_kill_msg->job_id);
+		      __func__, job_step_kill_msg->step_id.job_id);
 		error_code = ESLURM_INVALID_JOB_ID;
 	} else if (het_job_ids) {
 		for (i = 0; i < cnt; i++) {
-			job_step_kill_msg->job_id = het_job_ids[i];
+			job_step_kill_msg->step_id.job_id = het_job_ids[i];
 			rc = _kill_job_step(job_step_kill_msg, uid);
 			if (rc != SLURM_SUCCESS)
 				error_code = rc;
@@ -5661,8 +5663,16 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 #endif
 	agent_args->hostlist	= hostlist_create(job_ptr->batch_host);
 	signal_tasks_msg = xmalloc(sizeof(signal_tasks_msg_t));
-	signal_tasks_msg->job_id      = job_ptr->job_id;
-	signal_tasks_msg->job_step_id = NO_VAL;
+	signal_tasks_msg->step_id.job_id      = job_ptr->job_id;
+	/*
+	 * SLURM_BATCH_SCRIPT changed in 20.11, after 2 versions this can be
+	 * simplified.
+	 */
+	if (agent_args->protocol_version >= SLURM_20_11_PROTOCOL_VERSION)
+		signal_tasks_msg->step_id.step_id = SLURM_BATCH_SCRIPT;
+	else
+		signal_tasks_msg->step_id.step_id = NO_VAL;
+	signal_tasks_msg->step_id.step_het_comp = NO_VAL;
 
 	signal_tasks_msg->flags = flags;
 	signal_tasks_msg->signal = signal;
@@ -10739,11 +10749,11 @@ static void _reset_step_bitmaps(job_record_t *job_ptr)
 				      &step_ptr->step_node_bitmap))) {
 			error("Invalid step_node_list (%s) for %pS",
 			      step_ptr->step_layout->node_list, step_ptr);
-			delete_step_record (job_ptr, step_ptr->step_id);
+			delete_step_record(job_ptr, step_ptr);
 		}
 		if (step_ptr->step_node_bitmap == NULL) {
 			error("Missing node_list for %pS", step_ptr);
-			delete_step_record (job_ptr, step_ptr->step_id);
+			delete_step_record(job_ptr, step_ptr);
 		}
 	}
 
@@ -13863,9 +13873,10 @@ static void _send_job_kill(job_record_t *job_ptr)
 	last_node_update    = time(NULL);
 	kill_job->job_gres_info	=
 		gres_plugin_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
-	kill_job->job_id    = job_ptr->job_id;
+	kill_job->step_id.job_id = job_ptr->job_id;
 	kill_job->het_job_id = job_ptr->het_job_id;
-	kill_job->step_id   = NO_VAL;
+	kill_job->step_id.step_id = NO_VAL;
+	kill_job->step_id.step_het_comp = NO_VAL;
 	kill_job->job_state = job_ptr->job_state;
 	kill_job->job_uid   = job_ptr->user_id;
 	kill_job->job_gid   = job_ptr->group_id;
@@ -13986,15 +13997,6 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 		job_ptr->bit_flags |= JOB_RESIZED;
 }
 
-static char *_build_step_id(char *buf, int buf_len, uint32_t step_id)
-{
-	if (step_id == SLURM_BATCH_SCRIPT)
-		snprintf(buf, buf_len, "StepId=Batch");
-	else
-		snprintf(buf, buf_len, "StepId=%u", step_id);
-	return buf;
-}
-
 /*
  * validate_jobs_on_node - validate that any jobs that should be on the node
  *	are actually running, if not clean up the job records and/or node
@@ -14008,7 +14010,6 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 	node_record_t *node_ptr;
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
-	char step_str[64];
 	time_t now = time(NULL);
 
 	node_ptr = find_node_record(reg_msg->node_name);
@@ -14043,24 +14044,19 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 
 	/* Check that jobs running are really supposed to be there */
 	for (i = 0; i < reg_msg->job_count; i++) {
-		if ( (reg_msg->job_id[i] >= MIN_NOALLOC_JOBID) &&
-		     (reg_msg->job_id[i] <= MAX_NOALLOC_JOBID) ) {
-			info("NoAllocate JobId=%u %s reported on node %s",
-			     reg_msg->job_id[i],
-			     _build_step_id(step_str, sizeof(step_str),
-					    reg_msg->step_id[i]),
-			     reg_msg->node_name);
+		if ( (reg_msg->step_id[i].job_id >= MIN_NOALLOC_JOBID) &&
+		     (reg_msg->step_id[i].job_id <= MAX_NOALLOC_JOBID) ) {
+			info("NoAllocate %ps reported on node %s",
+			     &reg_msg->step_id[i], reg_msg->node_name);
 			continue;
 		}
 
-		job_ptr = find_job_record(reg_msg->job_id[i]);
+		job_ptr = find_job_record(reg_msg->step_id[i].job_id);
 		if (job_ptr == NULL) {
-			error("Orphan JobId=%u %s reported on node %s",
-			      reg_msg->job_id[i],
-			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i]),
+			error("Orphan %ps reported on node %s",
+			      &reg_msg->step_id[i],
 			      reg_msg->node_name);
-			abort_job_on_node(reg_msg->job_id[i],
+			abort_job_on_node(reg_msg->step_id[i].job_id,
 					  job_ptr, node_ptr->name);
 		}
 
@@ -14075,7 +14071,7 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 					job_ptr->time_last_active = now;
 				}
 				step_ptr = find_step_record(job_ptr,
-							    reg_msg->
+							    &reg_msg->
 							    step_id[i]);
 				if (step_ptr)
 					step_ptr->time_last_active = now;
@@ -14085,16 +14081,15 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 				/* Typically indicates a job requeue and
 				 * restart on another nodes. A node from the
 				 * original allocation just responded here. */
-				error("Registered %pJ %s on wrong node %s",
+				error("Registered %pJ %ps on wrong node %s",
 				      job_ptr,
-				       _build_step_id(step_str,
-						      sizeof(step_str),
-						      reg_msg->step_id[i]),
+				      &reg_msg->step_id[i],
 				      reg_msg->node_name);
 				info("%s: job nodes %s count %d inx %d",
 				     __func__, job_ptr->nodes,
 				     job_ptr->node_cnt, node_inx);
-				abort_job_on_node(reg_msg->job_id[i], job_ptr,
+				abort_job_on_node(reg_msg->step_id[i].job_id,
+						  job_ptr,
 						  node_ptr->name);
 			}
 		}
@@ -14111,28 +14106,25 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		else if (IS_JOB_PENDING(job_ptr)) {
 			/* Typically indicates a job requeue and the hung
 			 * slurmd that went DOWN is now responding */
-			error("Registered PENDING %pJ %s on node %s",
+			error("Registered PENDING %pJ %ps on node %s",
 			      job_ptr,
-			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i]),
+			      &reg_msg->step_id[i],
 			      reg_msg->node_name);
-			abort_job_on_node(reg_msg->job_id[i],
+			abort_job_on_node(reg_msg->step_id[i].job_id,
 					  job_ptr, node_ptr->name);
 		} else if (difftime(now, job_ptr->end_time) <
 		           slurm_conf.msg_timeout) {
 			/* Race condition */
-			debug("Registered newly completed %pJ %s on %s",
+			debug("Registered newly completed %pJ %ps on %s",
 			      job_ptr,
-			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i]),
+			      &reg_msg->step_id[i],
 			      node_ptr->name);
 		}
 
 		else {		/* else job is supposed to be done */
-			error("Registered %pJ %s in state %s on node %s",
+			error("Registered %pJ %ps in state %s on node %s",
 			      job_ptr,
-			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->step_id[i]),
+			      &reg_msg->step_id[i],
 			      job_state_string(job_ptr->job_state),
 			      reg_msg->node_name);
 			kill_job_on_node(job_ptr, node_ptr);
@@ -14227,8 +14219,8 @@ static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
 	xassert(job_ptr);
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
-		if ((step_ptr->step_id == SLURM_EXTERN_CONT) ||
-		    (step_ptr->step_id == SLURM_BATCH_SCRIPT) ||
+		if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) ||
+		    (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) ||
 		    (step_ptr->state != JOB_RUNNING))
 			continue;
 		if (!bit_test(step_ptr->step_node_bitmap, node_inx))
@@ -14251,7 +14243,7 @@ static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
 			 * on this node before its reboot, but that should be
 			 * very rare and there is no srun to work with (POE) */
 			info("Node %s rebooted, killing missing step %u.%u",
-			     node_name, job_ptr->job_id, step_ptr->step_id);
+			     node_name, job_ptr->job_id, step_ptr->step_id.step_id);
 			signal_step_tasks_on_node(node_name, step_ptr, SIGKILL,
 						  REQUEST_TERMINATE_TASKS);
 		}
@@ -14280,8 +14272,9 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 	kill_job_msg_t *kill_req;
 
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
-	kill_req->job_id	= job_id;
-	kill_req->step_id	= NO_VAL;
+	kill_req->step_id.job_id = job_id;
+	kill_req->step_id.step_id = NO_VAL;
+	kill_req->step_id.step_het_comp = NO_VAL;
 	kill_req->time          = time(NULL);
 	kill_req->nodes		= xstrdup(node_name);
 	if (job_ptr) {  /* NULL if unknown */
@@ -14373,8 +14366,9 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 		kill_req->job_gres_info	=
 			gres_plugin_epilog_build_env(job_ptr->gres_list,
 						     job_ptr->nodes);
-		kill_req->job_id	= job_ptr->job_id;
-		kill_req->step_id	= NO_VAL;
+		kill_req->step_id.job_id = job_ptr->job_id;
+		kill_req->step_id.step_id = NO_VAL;
+		kill_req->step_id.step_het_comp = NO_VAL;
 		kill_req->time          = time(NULL);
 		kill_req->nodes		= bitmap2node_name(tmp_node_bitmap);
 		kill_req->het_job_id	= job_ptr->het_job_id;
@@ -14413,8 +14407,9 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 	kill_req->job_gres_info	=
 		gres_plugin_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
 	kill_req->het_job_id	= job_ptr->het_job_id;
-	kill_req->job_id	= job_ptr->job_id;
-	kill_req->step_id	= NO_VAL;
+	kill_req->step_id.job_id = job_ptr->job_id;
+	kill_req->step_id.step_id = NO_VAL;
+	kill_req->step_id.step_het_comp = NO_VAL;
 	kill_req->time          = time(NULL);
 	kill_req->start_time	= job_ptr->start_time;
 	kill_req->nodes		= xstrdup(node_ptr->name);
@@ -15321,8 +15316,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 		while ((step_ptr = list_next(step_iterator))) {
 			/* Since we have already checked the uid,
 			 * we can send this signal as uid 0. */
-			job_step_signal(job_ptr->job_id, step_ptr->step_id,
-					signal, 0, 0);
+			job_step_signal(&step_ptr->step_id, signal, 0, 0);
 		}
 		list_iterator_destroy (step_iterator);
 
@@ -15334,14 +15328,15 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 	agent_args->retry = 1;
 	agent_args->hostlist = hostlist_create(NULL);
 	signal_job_msg = xmalloc(sizeof(signal_tasks_msg_t));
-	signal_job_msg->job_id = job_ptr->job_id;
+	signal_job_msg->step_id.job_id = job_ptr->job_id;
 
 	/*
 	 * We don't ever want to kill a step with this message.  The flags below
 	 * will make sure that does happen.  Just in case though, set the
 	 * step_id to an impossible number.
 	 */
-	signal_job_msg->job_step_id = slurm_conf.max_step_cnt + 1;
+	signal_job_msg->step_id.step_id = slurm_conf.max_step_cnt + 1;
+	signal_job_msg->step_id.step_het_comp = NO_VAL;
 
 	/*
 	 * Encode the flags for slurm stepd to know what steps get signaled
@@ -16730,8 +16725,9 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 		return ESLURM_INVALID_JOB_ID;
 
 	memset(timeout_msg, 0, sizeof(srun_timeout_msg_t));
-	timeout_msg->job_id  = time_req_msg->job_id;
-	timeout_msg->step_id = NO_VAL;
+	timeout_msg->step_id.job_id = time_req_msg->job_id;
+	timeout_msg->step_id.step_id = NO_VAL;
+	timeout_msg->step_id.step_het_comp = NO_VAL;
 	timeout_msg->timeout = job_ptr->end_time;
 	return SLURM_SUCCESS;
 }
