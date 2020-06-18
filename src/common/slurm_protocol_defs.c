@@ -4932,7 +4932,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_priority_factors_response_msg(data);
 		break;
 	case REQUEST_STEP_COMPLETE:
-	case REQUEST_STEP_COMPLETE_AGGR:
 		slurm_free_step_complete_msg(data);
 		break;
 	case REQUEST_JOB_STEP_STAT:
@@ -5548,9 +5547,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_NETWORK_CALLERID";
 	case RESPONSE_NETWORK_CALLERID:
 		return "RESPONSE_NETWORK_CALLERID";
-	case REQUEST_STEP_COMPLETE_AGGR:
-		return "REQUEST_STEP_COMPLETE_AGGR";
-	case REQUEST_TOP_JOB:
+
+	case REQUEST_TOP_JOB:					/* 5038 */
 		return "REQUEST_TOP_JOB";
 	case REQUEST_AUTH_TOKEN:
 		return "REQUEST_AUTH_TOKEN";

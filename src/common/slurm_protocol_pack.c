@@ -12297,7 +12297,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			msg->protocol_version);
 		break;
 	case REQUEST_STEP_COMPLETE:
-	case REQUEST_STEP_COMPLETE_AGGR:
 		_pack_step_complete_msg((step_complete_msg_t *)msg->data,
 					buffer,
 					msg->protocol_version);
@@ -12979,7 +12978,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			msg->protocol_version);
 		break;
 	case REQUEST_STEP_COMPLETE:
-	case REQUEST_STEP_COMPLETE_AGGR:
 		rc = _unpack_step_complete_msg((step_complete_msg_t
 						**) & (msg->data),
 					       buffer,
