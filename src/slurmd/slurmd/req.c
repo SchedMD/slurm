@@ -183,17 +183,17 @@ static int  _file_bcast_register_file(slurm_msg_t *msg,
 				      file_bcast_info_t *key);
 static int  _rpc_ping(slurm_msg_t *);
 static void _rpc_health_check(slurm_msg_t *);
-static int  _rpc_acct_gather_update(slurm_msg_t *);
-static int  _rpc_acct_gather_energy(slurm_msg_t *);
-static int  _rpc_step_complete(slurm_msg_t *msg);
-static int  _rpc_stat_jobacct(slurm_msg_t *msg);
-static int  _rpc_list_pids(slurm_msg_t *msg);
-static int  _rpc_daemon_status(slurm_msg_t *msg);
+static void _rpc_acct_gather_update(slurm_msg_t *);
+static void _rpc_acct_gather_energy(slurm_msg_t *);
+static void _rpc_step_complete(slurm_msg_t *msg);
+static void _rpc_stat_jobacct(slurm_msg_t *msg);
+static void _rpc_list_pids(slurm_msg_t *msg);
+static void _rpc_daemon_status(slurm_msg_t *msg);
 static int  _run_epilog(job_env_t *job_env);
 static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred,
 			bool remove_running);
 static void _rpc_forward_data(slurm_msg_t *msg);
-static int  _rpc_network_callerid(slurm_msg_t *msg);
+static void _rpc_network_callerid(slurm_msg_t *msg);
 
 static bool _pause_for_job_completion(uint32_t jobid, char *nodes,
 				      int maxtime);
@@ -376,13 +376,13 @@ slurmd_req(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, rc);
 		break;
 	case REQUEST_STEP_COMPLETE:
-		(void) _rpc_step_complete(msg);
+		_rpc_step_complete(msg);
 		break;
 	case REQUEST_JOB_STEP_STAT:
-		(void) _rpc_stat_jobacct(msg);
+		_rpc_stat_jobacct(msg);
 		break;
 	case REQUEST_JOB_STEP_PIDS:
-		(void) _rpc_list_pids(msg);
+		_rpc_list_pids(msg);
 		break;
 	case REQUEST_DAEMON_STATUS:
 		_rpc_daemon_status(msg);
@@ -3181,8 +3181,7 @@ static void _rpc_health_check(slurm_msg_t *msg)
 }
 
 
-static int
-_rpc_acct_gather_update(slurm_msg_t *msg)
+static void _rpc_acct_gather_update(slurm_msg_t *msg)
 {
 	int        rc = SLURM_SUCCESS;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -3234,11 +3233,9 @@ _rpc_acct_gather_update(slurm_msg_t *msg)
 
 		acct_gather_energy_destroy(acct_msg.energy);
 	}
-	return rc;
 }
 
-static int
-_rpc_acct_gather_energy(slurm_msg_t *msg)
+static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 {
 	int        rc = SLURM_SUCCESS;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -3270,7 +3267,7 @@ _rpc_acct_gather_energy(slurm_msg_t *msg)
 			rc = SLURM_PROTOCOL_VERSION_ERROR;
 			if (slurm_send_rc_msg(msg, rc) < 0)
 				error("Error responding to energy request: %m");
-			return rc;
+			return;
 		}
 
 		acct_gather_energy_g_get_data(req->context_id,
@@ -3302,7 +3299,6 @@ _rpc_acct_gather_energy(slurm_msg_t *msg)
 
 		acct_gather_energy_destroy(acct_msg.energy);
 	}
-	return rc;
 }
 
 static int
@@ -3430,8 +3426,7 @@ done:
 	slurm_send_rc_msg(msg, rc);
 }
 
-static int
-_rpc_step_complete(slurm_msg_t *msg)
+static void _rpc_step_complete(slurm_msg_t *msg)
 {
 	step_complete_msg_t *req = (step_complete_msg_t *)msg->data;
 	int               rc = SLURM_SUCCESS;
@@ -3466,8 +3461,6 @@ done2:
 	close(fd);
 done:
 	slurm_send_rc_msg(msg, rc);
-
-	return rc;
 }
 
 /* Get list of active jobs and steps, xfree returned value */
@@ -3519,8 +3512,7 @@ _get_step_list(void)
 	return step_list;
 }
 
-static int
-_rpc_daemon_status(slurm_msg_t *msg)
+static void _rpc_daemon_status(slurm_msg_t *msg)
 {
 	slurm_msg_t      resp_msg;
 	slurmd_status_t *resp = NULL;
@@ -3547,11 +3539,9 @@ _rpc_daemon_status(slurm_msg_t *msg)
 	resp_msg.data     = resp;
 	slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	slurm_free_slurmd_status(resp);
-	return SLURM_SUCCESS;
 }
 
-static int
-_rpc_stat_jobacct(slurm_msg_t *msg)
+static void _rpc_stat_jobacct(slurm_msg_t *msg)
 {
 	job_step_id_msg_t *req = (job_step_id_msg_t *)msg->data;
 	slurm_msg_t        resp_msg;
@@ -3571,7 +3561,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 		error("stepd_connect to %u.%u failed: %m",
 		      req->job_id, req->step_id);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
-		return	ESLURM_INVALID_JOB_ID;
+		return;
 	}
 
 	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
@@ -3580,7 +3570,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 		close(fd);
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
-		return	ESLURM_INVALID_JOB_ID;
+		return;
 	}
 
 	/*
@@ -3593,8 +3583,9 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 
 		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+			/* or bad in this case */
 			close(fd);
-			return ESLURM_USER_ID_MISSING;/* or bad in this case */
+			return;
 		}
 	}
 
@@ -3626,7 +3617,6 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 
 	slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	slurm_free_job_step_stat(resp);
-	return SLURM_SUCCESS;
 }
 
 static int
@@ -3659,8 +3649,7 @@ _callerid_find_job(callerid_conn_t conn, uint32_t *job_id)
 	return SLURM_SUCCESS;
 }
 
-static int
-_rpc_network_callerid(slurm_msg_t *msg)
+static void _rpc_network_callerid(slurm_msg_t *msg)
 {
 	network_callerid_msg_t *req = (network_callerid_msg_t *)msg->data;
 	slurm_msg_t resp_msg;
@@ -3718,11 +3707,9 @@ _rpc_network_callerid(slurm_msg_t *msg)
 
 	slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	slurm_free_network_callerid_resp(resp);
-	return rc;
 }
 
-static int
-_rpc_list_pids(slurm_msg_t *msg)
+static void _rpc_list_pids(slurm_msg_t *msg)
 {
 	job_step_id_msg_t *req = (job_step_id_msg_t *)msg->data;
 	slurm_msg_t        resp_msg;
@@ -3741,7 +3728,7 @@ _rpc_list_pids(slurm_msg_t *msg)
 		      req->job_id);
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
-		return  ESLURM_INVALID_JOB_ID;
+		return;
 	}
 
 	/*
@@ -3755,7 +3742,8 @@ _rpc_list_pids(slurm_msg_t *msg)
 
 		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-			return ESLURM_USER_ID_MISSING;/* or bad in this case */
+			/* or bad in this case */
+			return;
 		}
 	}
 
@@ -3771,8 +3759,7 @@ _rpc_list_pids(slurm_msg_t *msg)
 		      req->job_id, req->step_id);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 		slurm_free_job_step_pids(resp);
-		return  ESLURM_INVALID_JOB_ID;
-
+		return;
 	}
 
 	if (stepd_list_pids(fd, protocol_version,
@@ -3788,7 +3775,6 @@ _rpc_list_pids(slurm_msg_t *msg)
 
 	slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	slurm_free_job_step_pids(resp);
-	return SLURM_SUCCESS;
 }
 
 /*
