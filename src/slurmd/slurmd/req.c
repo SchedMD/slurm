@@ -182,7 +182,7 @@ static int  _file_bcast_register_file(slurm_msg_t *msg,
 				      sbcast_cred_arg_t *cred_arg,
 				      file_bcast_info_t *key);
 static int  _rpc_ping(slurm_msg_t *);
-static int  _rpc_health_check(slurm_msg_t *);
+static void _rpc_health_check(slurm_msg_t *);
 static int  _rpc_acct_gather_update(slurm_msg_t *);
 static int  _rpc_acct_gather_energy(slurm_msg_t *);
 static int  _rpc_step_complete(slurm_msg_t *msg);
@@ -3148,8 +3148,7 @@ _rpc_ping(slurm_msg_t *msg)
 	return rc;
 }
 
-static int
-_rpc_health_check(slurm_msg_t *msg)
+static void _rpc_health_check(slurm_msg_t *msg)
 {
 	int        rc = SLURM_SUCCESS;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -3179,7 +3178,6 @@ _rpc_health_check(slurm_msg_t *msg)
 	_enforce_job_mem_limit();
 	/* Clear up any stalled file transfers as well */
 	_file_bcast_cleanup();
-	return rc;
 }
 
 
