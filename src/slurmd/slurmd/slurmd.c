@@ -579,8 +579,7 @@ _service_connection(void *arg)
 	}
 	debug2("Start processing RPC: %s", rpc_num2string(msg->msg_type));
 
-	if (msg->msg_type != MESSAGE_COMPOSITE)
-		slurmd_req(msg);
+	slurmd_req(msg);
 
 cleanup:
 	if ((msg->conn_fd >= 0) && close(msg->conn_fd) < 0)

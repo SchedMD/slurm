@@ -76,7 +76,6 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/msg_aggr.h"
 #include "src/common/node_features.h"
 #include "src/common/node_select.h"
 #include "src/common/plugstack.h"
@@ -420,15 +419,6 @@ slurmd_req(slurm_msg_t *msg)
 	case REQUEST_NETWORK_CALLERID:
 		debug2("Processing RPC: REQUEST_NETWORK_CALLERID");
 		_rpc_network_callerid(msg);
-		break;
-	case MESSAGE_COMPOSITE:
-		error("Processing RPC: MESSAGE_COMPOSITE: "
-		      "This should never happen");
-		msg_aggr_add_msg(msg, 0, NULL);
-		break;
-	case RESPONSE_MESSAGE_COMPOSITE:
-		debug2("Processing RPC: RESPONSE_MESSAGE_COMPOSITE");
-		msg_aggr_resp(msg);
 		break;
 	default:
 		error("slurmd_req: invalid request msg type %d",
