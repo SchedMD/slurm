@@ -181,7 +181,7 @@ static void _file_bcast_cleanup(void);
 static int  _file_bcast_register_file(slurm_msg_t *msg,
 				      sbcast_cred_arg_t *cred_arg,
 				      file_bcast_info_t *key);
-static int  _rpc_ping(slurm_msg_t *);
+static void _rpc_ping(slurm_msg_t *);
 static void _rpc_health_check(slurm_msg_t *);
 static void _rpc_acct_gather_update(slurm_msg_t *);
 static void _rpc_acct_gather_energy(slurm_msg_t *);
@@ -264,8 +264,6 @@ static List file_bcast_list = NULL;
 void
 slurmd_req(slurm_msg_t *msg)
 {
-	int rc;
-
 	if (msg == NULL) {
 		if (startup == 0)
 			startup = time(NULL);
@@ -345,13 +343,9 @@ slurmd_req(slurm_msg_t *msg)
 		_rpc_reboot(msg);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
-		get_reg_resp = 1;
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
-		rc = _rpc_ping(msg);
+		_rpc_ping(msg);
 		last_slurmctld_msg = time(NULL);
-		/* Then initiate a separate node registration */
-		if (rc == SLURM_SUCCESS)
-			send_registration_msg(SLURM_SUCCESS, true);
 		break;
 	case REQUEST_PING:
 		_rpc_ping(msg);
@@ -3097,8 +3091,7 @@ _enforce_job_mem_limit(void)
 	xfree(job_mem_info_ptr);
 }
 
-static int
-_rpc_ping(slurm_msg_t *msg)
+static void _rpc_ping(slurm_msg_t *msg)
 {
 	int        rc = SLURM_SUCCESS;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -3138,13 +3131,17 @@ _rpc_ping(slurm_msg_t *msg)
 		resp_msg.data     = &ping_resp;
 
 		slurm_send_node_msg(msg->conn_fd, &resp_msg);
-	}
 
-	/* Take this opportunity to enforce any job memory limits */
-	_enforce_job_mem_limit();
-	/* Clear up any stalled file transfers as well */
-	_file_bcast_cleanup();
-	return rc;
+		/* Take this opportunity to enforce any job memory limits */
+		_enforce_job_mem_limit();
+		/* Clear up any stalled file transfers as well */
+		_file_bcast_cleanup();
+
+		if (msg->msg_type == REQUEST_NODE_REGISTRATION_STATUS) {
+			get_reg_resp = true;
+			send_registration_msg(SLURM_SUCCESS, true);
+		}
+	}
 }
 
 static void _rpc_health_check(slurm_msg_t *msg)
