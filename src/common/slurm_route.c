@@ -64,8 +64,6 @@ typedef struct slurm_route_ops {
 				   hostlist_t** sp_hl,
 				   int* count, uint16_t tree_width);
 	int  (*reconfigure)       (void);
-	slurm_addr_t* (*next_collector) (bool* is_collector);
-	slurm_addr_t* (*next_collector_backup) (void);
 } slurm_route_ops_t;
 
 /*
@@ -74,8 +72,6 @@ typedef struct slurm_route_ops {
 static const char *syms[] = {
 	"route_p_split_hostlist",
 	"route_p_reconfigure",
-	"route_p_next_collector",
-	"route_p_next_collector_backup"
 };
 
 static slurm_route_ops_t ops;
@@ -404,35 +400,6 @@ extern int route_g_reconfigure(void)
 }
 
 /*
- * route_g_next_collector - return address of next collector
- *
- * IN: is_collector - bool* - flag indication if this node is a collector
- *
- * RET: slurm_addr_t* - address of node to send messages to be aggregated.
- */
-extern slurm_addr_t* route_g_next_collector(bool *is_collector)
-{
-	if (route_init(NULL) != SLURM_SUCCESS)
-		return NULL;
-
-	return (*(ops.next_collector))(is_collector);
-}
-
-/*
- * route_g_next_collector_backup
- *
- * RET: slurm_addr_t* - address of backup node to send messages to be aggregated.
- */
-extern slurm_addr_t* route_g_next_collector_backup(void)
-{
-	if (route_init(NULL) != SLURM_SUCCESS)
-		return NULL;
-
-	return (*(ops.next_collector_backup))();
-}
-
-
-/*
  * route_split_hostlist_treewidth - logic to split an input hostlist into
  *                                  a set of hostlists to forward to.
  *
@@ -491,30 +458,4 @@ extern int route_split_hostlist_treewidth(hostlist_t hl,
 	*count = nhl;
 
 	return SLURM_SUCCESS;
-}
-
-/*
- * route_next_collector - get collector node address based
- *
- * IN: is_collector - bool* - flag indication if this node is a collector
- *
- * RET: slurm_addr_t* - address of node to send messages to be aggregated.
- */
-extern slurm_addr_t* route_next_collector(bool *is_collector)
-{
-	*is_collector = this_is_collector;
-	return msg_collect_node;
-}
-
-/*
- * route_next_collector_backup - get collector backup address based on offset
- *
- * backup_inx IN - Backup server index (between 1 and msg_backup_cnt-1)
- * RET: slurm_addr_t* - address of backup node to send messages to be aggregated
- */
-extern slurm_addr_t* route_next_collector_backup(int backup_inx)
-{
-	if ((backup_inx <= 0) || (backup_inx >= msg_backup_cnt))
-		return NULL;
-	return msg_collect_backup[backup_inx];
 }

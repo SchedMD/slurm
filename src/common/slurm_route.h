@@ -90,23 +90,6 @@ extern int route_g_split_hostlist(hostlist_t hl,
  */
 extern int route_g_reconfigure(void);
 
-/*
- * route_g_next_collector - return address of next collector
- *
- * IN: is_collector - bool* - flag indication if this node is a collector
- *
- * RET: slurm_addr_t* - address of node to send messages to be aggregated.
- */
-extern slurm_addr_t* route_g_next_collector ( bool *is_collector );
-
-/*
- * route_g_next_collector_backup
- *
- * RET: slurm_addr_t* - address of backup node to send messages to be aggregated
- */
-extern slurm_addr_t* route_g_next_collector_backup ( void );
-
-
 /*****************************************************************************\
  *  Plugin Common Functions
 \*****************************************************************************/
@@ -134,22 +117,5 @@ extern slurm_addr_t* route_g_next_collector_backup ( void );
 extern int route_split_hostlist_treewidth(hostlist_t hl,
 					  hostlist_t** sp_hl,
 					  int* count, uint16_t tree_width);
-
-/*
- * route_next_collector - return address of next collector
- *
- * IN: is_collector - bool* - flag indication if this node is a collector
- *
- * RET: slurm_addr_t* - address of node to send messages to be aggregated.
- */
-extern slurm_addr_t* route_next_collector ( bool *is_collector );
-
-/*
- * route_next_collector_backup - get collector backup address based on offset
- *
- * backup_inx IN - Backup server index (between 1 and MAX_CONTROLLERS-1)
- * RET: slurm_addr_t* - address of backup node to send messages to be aggregated
- */
-extern slurm_addr_t* route_next_collector_backup(int backup_inx);
 
 #endif /*___SLURM_ROUTE_PLUGIN_API_H__*/
