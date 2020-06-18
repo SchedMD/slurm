@@ -4458,9 +4458,9 @@ static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
 				continue;
 			}
 
-			tmp_bitmap = _pick_node_cnt(avail_bitmaps[b],
-						    resv_desc_ptr, remain_nodes,
-						    &core_bitmaps[b]);
+			tmp_bitmap = _pick_node_cnt(
+				avail_bitmaps[b], resv_desc_ptr, remain_nodes,
+				(core_bitmaps ? &core_bitmaps[b] : NULL));
 			if (tmp_bitmap == NULL) {	/* allocation failure */
 				log_flag(RESERVATION, "%s: reservation %s of 0/%zu nodes with bitmap:%s[%zu]",
 					 __func__, resv_desc_ptr->name,
