@@ -5928,6 +5928,9 @@ extern uint64_t suffix_mult(char *suffix)
 
 extern bool verify_step_id(slurm_step_id_t *object, slurm_step_id_t *key)
 {
+	if (key->job_id != object->job_id)
+		return 0;
+
 	/* Any step will do */
 	if (key->step_id == NO_VAL)
 		return 1;
