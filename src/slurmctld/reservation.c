@@ -4703,8 +4703,8 @@ static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 {
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
-	bitstr_t *orig_bitmap, *save_bitmap = NULL;
-	bitstr_t *ret_bitmap = NULL, *tmp_bitmap;
+	bitstr_t *orig_bitmap = NULL, *save_bitmap = NULL;
+	bitstr_t *ret_bitmap = NULL, *tmp_bitmap = NULL;
 	int total_node_cnt, requested_node_cnt;
 	bitstr_t *orig_avail_bitmap = NULL, *orig_core_bitmap = NULL;
 
