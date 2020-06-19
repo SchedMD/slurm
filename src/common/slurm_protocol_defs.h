@@ -500,6 +500,17 @@ typedef struct slurm_msg {
 				 * so that we'll respond with the same auth
 				 * plugin used to connect to us originally.
 				 */
+	uid_t auth_uid;		/* NEVER PACK. Authenticated uid from auth
+				 * credential. Only valid if auth_uid_set is
+				 * true. Set to SLURM_AUTH_NOBODY if not set
+				 * yet.
+				 */
+	bool auth_uid_set;	/* NEVER PACK. True when auth_uid has been set.
+				 * This is a safety measure against handling
+				 * a slurm_msg_t that has been xmalloc()'d but
+				 * slurm_msg_t_init() was not called since
+				 * auth_uid would be root.
+				 */
 	uint32_t body_offset; /* DON'T PACK: offset in buffer where body part of
 				 buffer starts. */
 	Buf buffer; /* DON't PACK! ptr to buffer that msg was unpacked from. */

@@ -52,6 +52,7 @@
 #include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_acct_gather_energy.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_jobacct_gather.h"
@@ -124,6 +125,7 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
 {
 	memset(msg, 0, sizeof(slurm_msg_t));
 
+	msg->auth_uid = SLURM_AUTH_NOBODY;
 	msg->conn_fd = -1;
 	msg->msg_type = NO_VAL16;
 	msg->protocol_version = NO_VAL16;
