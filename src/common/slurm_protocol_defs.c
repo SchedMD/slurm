@@ -1727,23 +1727,6 @@ extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg)
 	}
 }
 
-extern void slurm_free_spank_env_request_msg(spank_env_request_msg_t *msg)
-{
-	xfree(msg);
-}
-
-extern void slurm_free_spank_env_responce_msg(spank_env_responce_msg_t *msg)
-{
-	uint32_t i;
-
-	if (msg->spank_job_env) {
-		for (i = 0; i < msg->spank_job_env_size; i++)
-			xfree(msg->spank_job_env[i]);
-		xfree(msg->spank_job_env);
-	}
-	xfree(msg);
-}
-
 /* Free job array oriented response with individual return codes by task ID */
 extern void slurm_free_job_array_resp(job_array_resp_msg_t *msg)
 {

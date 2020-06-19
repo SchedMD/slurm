@@ -1312,15 +1312,6 @@ typedef struct {
 	uint16_t rpc_version;
 } accounting_update_msg_t;
 
-typedef struct {
-	uint32_t job_id;	/* ID of job of request */
-} spank_env_request_msg_t;
-
-typedef struct {
-	uint32_t spank_job_env_size;
-	char **spank_job_env;	/* spank environment */
-} spank_env_responce_msg_t;
-
 typedef slurm_conf_t slurm_ctl_conf_info_msg_t;
 /*****************************************************************************\
  *	SLURM MESSAGE INITIALIZATION
@@ -1516,8 +1507,6 @@ extern void slurm_free_job_notify_msg(job_notify_msg_t * msg);
 extern void slurm_free_ctld_multi_msg(ctld_list_msg_t *msg);
 
 extern void slurm_free_accounting_update_msg(accounting_update_msg_t *msg);
-extern void slurm_free_spank_env_request_msg(spank_env_request_msg_t *msg);
-extern void slurm_free_spank_env_responce_msg(spank_env_responce_msg_t *msg);
 extern void slurm_free_requeue_msg(requeue_msg_t *);
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
 extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg);
