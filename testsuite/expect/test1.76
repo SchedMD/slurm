@@ -1,7 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose:  Test of route/topology plugin
-#
 ############################################################################
 #  Copyright (C) 2014 Bull S. A. S.
 #		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
@@ -60,8 +59,8 @@ print_header	$test_id
 #
 # Returns
 # 0 on success, 1 on failure
- # 2 if measured frequency differs too much from target frequency
-#   FAILURE message is sent to user on failure.
+# 2 if measured frequency differs too much from target frequency
+#   ERROR message is sent to user on failure.
 ################################################################
 proc test_freq {opt expmin expcur expmax expgov} {
 	global bin_rm srun sbatch test_node test_cpu wd number

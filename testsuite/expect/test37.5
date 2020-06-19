@@ -73,7 +73,7 @@ if {[test_all_up]} {
 	pass
 }
 
-proc cancel_all_jobs { } {
+proc cancel_federation_jobs { } {
 	global bin_sleep scancel user_name fedc1 fedc2 fedc3
 
 	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
@@ -90,7 +90,7 @@ proc cleanup { } {
 		long_script complete_script fail_script exit_script \
 		exithold_script file_out
 
-	cancel_all_jobs
+	cancel_federation_jobs
 	exec $bin_rm -f $long_script $complete_script $fail_script \
 			$exit_script $exithold_script $file_out
 

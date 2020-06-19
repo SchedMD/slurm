@@ -68,14 +68,6 @@ proc cleanup { } {
 	return [delete_federations $fed_name]
 }
 
-proc end_it { exit_code } {
-	global test_id
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
-}
-
 proc test_fed_status {cname fed_flags cluster_list} {
 	# Match db info with what cluster has.
 	global fed_slurm_base fed_name eol
@@ -128,9 +120,8 @@ proc test_fed_status {cname fed_flags cluster_list} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
 			slow_kill $my_pid
-			end_it 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -138,13 +129,11 @@ proc test_fed_status {cname fed_flags cluster_list} {
 	}
 
 	if {$lines != $expected_matches} {
-		log_error "Line count and expected matches don't match: $lines != $expected_matches"
-		end_it 1
+		fail "Line count and expected matches don't match: $lines != $expected_matches"
 	}
 
 	if {$matches != $expected_matches} {
-		log_error "Failed to match $matches != $expected_matches"
-		end_it 1
+		fail "Failed to match $matches != $expected_matches"
 	}
 }
 
@@ -153,19 +142,17 @@ if {[test_federation_setup]} {
 }
 
 if {[test_all_up]} {
-	exit 0
+	skip "All of the clusters in the federation must be up"
 }
 
 # Remove existing setup
 if {[cleanup] != 0} {
-	log_error "Failed to cleanup"
-	end_it 1
+	fail "Failed to cleanup"
 }
 
 # add clusters to federation
 if {[setup_federation $fed_name]} {
-	log_error "Failed to setup federation"
-	end_it 1
+	fail "Failed to setup federation"
 }
 
 # Get cluster/fed info from db
@@ -193,7 +180,7 @@ test_fed_status $fedc3 $fed_flags [array get clusters]
 
 log_info "Remove $fedc3 and test from $fedc1 and $fedc2"
 if {[remove_cluster_from_fed $fedc3 $fed_name]} {
-	end_it 1
+	fail "Unable to remove cluster $fedc3 from federation $fed_name"
 }
 array unset clusters $fedc3
 dict set clusters($fedc1) conn Self
@@ -206,7 +193,7 @@ test_fed_status $fedc2 $fed_flags [array get clusters]
 
 log_info "Remove $fedc1 and test from $fedc2"
 if {[remove_cluster_from_fed $fedc1 $fed_name]} {
-	end_it 1
+	fail "Unable to remove cluster $fedc1 from federation $fed_name"
 }
 array unset clusters $fedc1
 dict set clusters($fedc2) conn Self
@@ -215,13 +202,13 @@ test_fed_status $fedc2 $fed_flags [array get clusters]
 log_info "Remove $fedc2 and test from $fedc2"
 array unset clusters
 if {[remove_cluster_from_fed $fedc2 $fed_name]} {
-	end_it 1
+	fail "Unable to remove cluster $fedc2 from federation $fed_name"
 }
 test_fed_status $fedc2 $fed_flags [array get clusters]
 
 log_info "Add $fedc1 and test from $fedc1"
 if {[add_cluster_to_fed $fedc1 $fed_name]} {
-	end_it 1
+	fail "Unable to add cluster $fedc1 to federation $fed_name"
 }
 array set clusters [get_clusterfed_info $fed_name]
 dict set clusters($fedc1) conn Self
@@ -229,7 +216,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 
 log_info "Add $fedc2 and test from $fedc1"
 if {[add_cluster_to_fed $fedc2 $fed_name]} {
-	end_it 1
+	fail "Unable to add cluster $fedc2 to federation $fed_name"
 }
 sleep 5
 array set clusters [get_clusterfed_info $fed_name]
@@ -239,7 +226,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 
 log_info "Add $fedc3 and test from $fedc1"
 if {[add_cluster_to_fed $fedc3 $fed_name]} {
-	end_it 1
+	fail "Unable to add cluster $fedc3 to federation $fed_name"
 }
 sleep 5
 array set clusters [get_clusterfed_info $fed_name]
@@ -279,8 +266,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 #	}
 #}
 #if {$exit_code || $matches != 4} {
-#	log_error "Setting LLC flag"
-#	end_it 1
+#	fail "Setting LLC flag"
 #}
 #
 #set fed_flags "LLC"
@@ -321,8 +307,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 #	}
 #}
 #if {$exit_code || $matches != 4} {
-#	log_error "Removing federation flags. Got $matches"
-#	end_it 1
+#	fail "Removing federation flags. Got $matches"
 #}
 #
 #set fed_flags "None"
@@ -367,8 +352,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 5} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+	fail "Unexpected error. Got $matches"
 }
 
 array set clusters [get_clusterfed_info $fed_name]
@@ -407,8 +391,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+	fail "Unexpected error. Got $matches"
 }
 
 array set clusters [get_clusterfed_info $fed_name]
@@ -447,8 +430,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+	fail "Unexpected error. Got $matches"
 }
 
 array set clusters [get_clusterfed_info $fed_name]
@@ -488,8 +470,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+	fail "Unexpected error. Got $matches"
 }
 
 array set clusters [get_clusterfed_info $fed_name]
@@ -502,5 +483,3 @@ log_info "Delete federation and test from $fedc1"
 delete_federations $fed_name
 array unset clusters
 test_fed_status $fedc2 $fed_flags [array get clusters]
-
-end_it 0

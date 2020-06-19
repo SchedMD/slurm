@@ -97,7 +97,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Inspect the job's output file
 #
 if {[wait_for_file $file_out] != 0} {
-	exit 1
+	fail "Job $job_id's output file ($file_out) did not get created"
 }
 set fini    0
 set matches 0

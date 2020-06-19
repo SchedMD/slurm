@@ -220,7 +220,7 @@ proc scancel_mod { sibling job_id regex} {
 	}
 }
 
-proc cancel_all_jobs { } {
+proc cancel_federation_jobs { } {
 	global scancel user_name fedc1 fedc2 fedc3
 
 	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
@@ -236,7 +236,7 @@ proc cleanup { } {
 	global scancel fed_name user_name bin_rm fedc1 fedc2 fedc3
 	global test_id bin_bash my_sacctmgr
 
-	cancel_all_jobs
+	cancel_federation_jobs
 	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
 
 	return [delete_federations $fed_name]
@@ -411,7 +411,7 @@ log_info "################################################################"
 log_info "Scancel --sibling=<clustername><jobid> will remove on active pending"
 log_info "################################################################"
 
-cancel_all_jobs
+cancel_federation_jobs
 
 set ji0 [sbatch]
 set ji1 [sbatch]

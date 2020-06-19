@@ -171,7 +171,7 @@ proc verify {fed job_id pattern error_message} {
 	}
 }
 
-proc cancel_all_jobs { } {
+proc cancel_federation_jobs { } {
 	global scancel user_name fedc1 fedc2 fedc3
 
 	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
@@ -187,7 +187,7 @@ proc cleanup { } {
 	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
 	global test_id bin_bash
 
-	cancel_all_jobs
+	cancel_federation_jobs
 	exec $bin_rm -f $file_in
 	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
 
@@ -343,7 +343,7 @@ set my_sbatch "${fed_slurm_base}/$fedc1/bin/sbatch"
 log_info "################################################################"
 log_info "Modify Feature of Running Job"
 log_info "################################################################"
-cancel_all_jobs
+cancel_federation_jobs
 
 #first job
 
@@ -440,7 +440,7 @@ verify $fedc3 $job_id "PD\\s+$fedc1,$fedc2,$fedc3\\s+NA" "Job not running on des
 log_info "################################################################"
 log_info "Modify Feature of Held Job"
 log_info "################################################################"
-cancel_all_jobs
+cancel_federation_jobs
 
 set job_id [sbatch $my_sbatch $script fa -H]
 
@@ -487,7 +487,7 @@ log_info "################################################################"
 log_info "Test Clearing Features"
 log_info "################################################################"
 
-cancel_all_jobs
+cancel_federation_jobs
 
 #fill up clusters with jobs
 
@@ -518,7 +518,7 @@ verify $fedc3 $job_id "PD\\s+$fedc1,$fedc2,$fedc3\\s+NA" "Job not running on des
 log_info "################################################################"
 log_info "Modify Federation Cluster Features"
 log_info "################################################################"
-cancel_all_jobs
+cancel_federation_jobs
 
 sbatch $my_sbatch $script fa
 sbatch $my_sbatch $script fb
@@ -607,7 +607,7 @@ log_info "################################################################"
 log_info "Federations and Negative ClusterFeatures"
 log_info "################################################################"
 
-cancel_all_jobs
+cancel_federation_jobs
 
 set jid(0) [sbatch $my_sbatch $script !fc,fb]
 set jid(1) [sbatch $my_sbatch $script !fa,fc]

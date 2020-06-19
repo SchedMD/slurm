@@ -36,12 +36,11 @@ set node1      ""
 set node2      ""
 set prompt	"PROMPT: "
 
-proc end_it { exit_code } {
+proc cleanup { } {
 	global pack_job_id scancel
 	if {$pack_job_id > 0} {
 		exec $scancel $pack_job_id
 	}
-	exit $exit_code
 }
 
 print_header $test_id
@@ -96,16 +95,14 @@ expect {
 		#log_debug "Job initiated"
 	}
 	timeout {
-		log_error "salloc: allocation not granted in $timeout seconds"
-		end_it 1
+		fail "salloc: allocation not granted in $timeout seconds"
 	}
 	eof {
 		wait
 	}
 }
 if {$pack_job_id == 0} {
-	log_error "salloc failure"
-	end_it 1
+	fail "salloc failure"
 }
 
 make_bash_script $script1 "
