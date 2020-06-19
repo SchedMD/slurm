@@ -349,22 +349,3 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 int xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
 
 #endif
-	/* if (*step_cgroup_path == '\0') { */
-	/* 	int len; */
-	/* 	char tmp_char[64]; */
-
-	/* 	log_build_step_id_str(&job->step_id, */
-	/* 			      tmp_char, */
-	/* 			      sizeof(tmp_char), */
-	/* 			      STEP_ID_FLAG_NO_PREFIX | */
-	/* 			      STEP_ID_FLAG_NO_JOB); */
-
-	/* 	len = snprintf(step_cgroup_path, PATH_MAX, */
-	/* 		       "%s/step_%s", job_cgroup_path, tmp_char); */
-
-	/* 	if (len >= PATH_MAX) { */
-	/* 		error("%s: unable to build %ps memory cg relative path : %m", */
-	/* 		      calling_func, &job->step_id); */
-	/* 		return SLURM_ERROR; */
-	/* 	} */
-	/* } */

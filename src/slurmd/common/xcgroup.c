@@ -847,7 +847,6 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 				    void *callback_arg)
 {
 	xcgroup_t root_cg;
-	uint32_t stepid = job->step_id.step_id;
 	uint32_t jobid;
 	int rc = SLURM_SUCCESS;
 	char *slurm_cgpath = xcgroup_create_slurm_cg(ns);
@@ -882,17 +881,16 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 	/* build job step cgroup relative path if not set (may not be) */
 	if (*step_cgroup_path == '\0') {
 		int len;
-		if (stepid == SLURM_BATCH_SCRIPT) {
-			len = snprintf(step_cgroup_path, PATH_MAX,
-				       "%s/step_batch", job_cgroup_path);
-		} else if (stepid == SLURM_EXTERN_CONT) {
-			len = snprintf(step_cgroup_path, PATH_MAX,
-				       "%s/step_extern", job_cgroup_path);
-		} else {
-			len = snprintf(step_cgroup_path, PATH_MAX,
-				       "%s/step_%u",
-				       job_cgroup_path, stepid);
-		}
+		char tmp_char[64];
+
+		len = snprintf(step_cgroup_path, PATH_MAX,
+			       "%s/step_%s", job_cgroup_path,
+			       log_build_step_id_str(&job->step_id,
+				      tmp_char,
+				      sizeof(tmp_char),
+				      STEP_ID_FLAG_NO_PREFIX |
+				      STEP_ID_FLAG_NO_JOB));
+
 		if (len >= PATH_MAX) {
 			error("%s: unable to build %ps memory cg relative path : %m",
 			      calling_func, &job->step_id);
