@@ -365,6 +365,16 @@ extern data_t *data_list_append(data_t *data);
 extern data_t *data_list_prepend(data_t *data);
 
 /*
+ * Copy and join array of data into a single list.
+ * IN data - array of data objects (list type only) to copy/merge into a single
+ * data list. Last entry must be NULL.
+ * IN flatten_lists - if data is a list, add items in list as if there were
+ * separate data items in data. Will only flatten 1 level.
+ * RET new data object with merged lists.
+ */
+extern data_t *data_list_join(const data_t **data, bool flatten_lists);
+
+/*
  * Get number of entities in list
  * IN data data object to count list entities
  * RET cardinality of data (may return 0 for empty list)

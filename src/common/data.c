@@ -627,6 +627,36 @@ extern data_t *data_list_prepend(data_t *data)
 	return ndata;
 }
 
+static data_for_each_cmd_t _data_list_join(const data_t *src, void *arg)
+{
+	data_t *dst = (data_t *) arg;
+	_check_magic(src);
+	_check_magic(dst);
+	xassert(data_get_type(dst) == DATA_TYPE_LIST);
+
+	log_flag(DATA, "%s: list join data (0x%"PRIXPTR") to (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) src, (uintptr_t) dst);
+
+	 data_copy(data_list_append(dst), src);
+
+	 return DATA_FOR_EACH_CONT;
+}
+
+extern data_t *data_list_join(const data_t **data, bool flatten_lists)
+{
+	data_t *dst = data_set_list(data_new());
+
+	for (size_t i = 0; data[i]; i++) {
+		if (flatten_lists && (data_get_type(data[i]) == DATA_TYPE_LIST))
+			(void) data_list_for_each_const(data[i],
+							_data_list_join, dst);
+		else /* simple join */
+			_data_list_join(data[i], dst);
+	}
+
+	return dst;
+}
+
 const data_t *data_key_get_const(const data_t *data, const char *key)
 {
 	const data_list_node_t *i;
