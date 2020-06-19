@@ -973,6 +973,9 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer)
 		goto total_return;
 	}
 
+	msg->auth_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	msg->auth_uid_set = true;
+
 	/*
 	 * Unpack message body
 	 */
@@ -1234,6 +1237,9 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		goto total_return;
 	}
 
+	msg.auth_uid = g_slurm_auth_get_uid(msg.auth_cred);
+	msg.auth_uid_set = true;
+
 	/*
 	 * Unpack message body
 	 */
@@ -1448,6 +1454,9 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto total_return;
 	}
+
+	msg->auth_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	msg->auth_uid_set = true;
 
 	/*
 	 * Unpack message body
