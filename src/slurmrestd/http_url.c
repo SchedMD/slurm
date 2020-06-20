@@ -247,7 +247,8 @@ static int _add_path(data_t *d, char **buffer, bool convert_types)
 	return SLURM_SUCCESS;
 }
 
-extern data_t *parse_url_path(const char *path, bool convert_types)
+extern data_t *parse_url_path(const char *path, bool convert_types,
+			      bool allow_templates)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *d = data_new();
@@ -263,6 +264,27 @@ extern data_t *parse_url_path(const char *path, bool convert_types)
 		}
 
 		switch (*ptr) {
+		case '{': /* OASv3.0.3 section 4.7.8.2 template variable */
+			if (!allow_templates) {
+				debug("%s: unexpected OAS template character: %c",
+				      __func__, *ptr);
+				rc = SLURM_ERROR;
+				break;
+			} else {
+				/* find end of template */
+				char *end = xstrstr(ptr, "}");
+
+				if (!end) {
+					debug("%s: missing terminated OAS template character: }",
+					      __func__);
+					rc = SLURM_ERROR;
+					break;
+				}
+
+				xstrncat(buffer, ptr, (end - ptr + 1));
+				ptr = end;
+				break;
+			}
 		case '%': /* rfc3986 */
 		{
 			const char c = _decode_seq(ptr);

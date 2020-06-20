@@ -213,7 +213,7 @@ static int _operations_router_reject(const on_http_request_args_t *args,
 static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 			 data_t *params)
 {
-	data_t *path = parse_url_path(args->path, true);
+	data_t *path = parse_url_path(args->path, true, false);
 	if (!path)
 		return _operations_router_reject(
 			args, "Unable to parse URL path.",

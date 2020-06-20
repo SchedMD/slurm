@@ -47,9 +47,11 @@
  * 	breaks /path/to/url/ -> [path,to,url]
  * 	into a data_t sequence
  * IN convert_types if true, call data_convert_type() on each value
+ * IN allow_templates - allow sections to be template variables e.g.: "{name}"
  * RET data ptr or NULL on error
  */
-extern data_t *parse_url_path(const char *path, bool convert_types);
+extern data_t *parse_url_path(const char *path, bool convert_types,
+			      bool allow_templates);
 
 /*
  * Parses url query into a data struct.
