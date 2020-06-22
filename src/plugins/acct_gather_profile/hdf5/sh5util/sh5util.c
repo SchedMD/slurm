@@ -197,6 +197,7 @@ main(int argc, char **argv)
 {
 	int cc;
 
+	slurm_conf_init(NULL);
 	cc = _set_options(argc, argv);
 	if (cc < 0)
 		goto ouch;
