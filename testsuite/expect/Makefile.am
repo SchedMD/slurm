@@ -483,18 +483,6 @@ EXTRA_DIST = \
 	test21.28			\
 	test21.29			\
 	test21.30                       \
-	test21.31			\
-	test21.32			\
-	test21.33			\
-	test21.34			\
-	test21.35			\
-	test21.36			\
-	test21.37			\
-	test21.38			\
-	test21.39			\
-	test21.40			\
-	test21.41			\
-	test21.42			\
 	inc21.30.1                      \
 	inc21.30.2                      \
 	inc21.30.3                      \
@@ -512,9 +500,22 @@ EXTRA_DIST = \
 	inc21.30.15			\
 	inc21.30.16			\
 	inc21.30.17			\
+	test21.31			\
+	test21.32			\
+	test21.33			\
+	test21.34			\
 	inc21.34.1			\
 	inc21.34.2			\
 	inc21.34_tests			\
+	test21.35			\
+	test21.36			\
+	test21.37			\
+	test21.38			\
+	test21.39			\
+	test21.40			\
+	test21.41			\
+	test21.42			\
+	test21.43			\
 	test22.1			\
 	inc22.1.1                       \
 	inc22.1.2                       \
