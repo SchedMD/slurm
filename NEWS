@@ -63,6 +63,7 @@ documents those changes that are of interest to users and administrators.
     plugins.
  -- slurmrestd - unlink named unix sockets before closing.
  -- slurmrestd - fix invalid formatting in openapi.json.
+ -- Fix batch jobs stuck in CF state on FrontEnd mode.
 
 * Changes in Slurm 20.02.3
 ==========================
