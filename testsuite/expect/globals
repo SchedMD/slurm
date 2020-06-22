@@ -2666,7 +2666,7 @@ proc test_cons_tres { } {
 #
 ################################################################
 proc get_total_cpus {} {
-	global sinfo scontrol re_word_str
+	global sinfo scontrol re_word_str exit_code
 
 	set partition [default_partition]
 	set cpu_cnt 0
@@ -2682,7 +2682,7 @@ proc get_total_cpus {} {
 		}
 		timeout {
 			log_error "sinfo not responding"
-			end_it 1
+			set exit_code 1
 		}
 		eof {
 			wait
