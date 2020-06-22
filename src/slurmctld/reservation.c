@@ -2230,10 +2230,14 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	if ((resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) ||
 	    (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
 		if (resv_desc_ptr->node_list) {
+			info("%s: REPLACE or REPLACE_DOWN flags should be used with the NodeCnt reservation option; do not specify Nodes",
+				__func__);
 			rc = ESLURM_INVALID_NODE_NAME;
 			goto bad_parse;
 		}
 		if (resv_desc_ptr->core_cnt) {
+			info("%s: REPLACE or REPLACE_DOWN flags should be used with the NodeCnt reservation option; do not specify CoreCnt",
+				__func__);
 			rc = ESLURM_INVALID_CPU_COUNT;
 			goto bad_parse;
 		}
