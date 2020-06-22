@@ -99,7 +99,7 @@ static void _log_step_rec(const stepd_step_rec_t *job)
 	int i;
 
 	info("STEPD_STEP_REC");
-	info("job_id:%u step_id:%u", job->jobid, job->stepid);
+	info("%ps", &job->step_id);
 	info("ntasks:%u nnodes:%u node_id:%u", job->ntasks, job->nnodes,
 	     job->nodeid);
 	info("node_tasks:%u", job->node_tasks);
@@ -109,7 +109,7 @@ static void _log_step_rec(const stepd_step_rec_t *job)
 		info("task_cnts[%d]:%u", i, job->task_cnts[i]);
 
 	if ((job->het_job_id != 0) && (job->het_job_id != NO_VAL))
-		info("het_job_id:%u step_id:%u", job->het_jobid, job->stepid);
+		info("het_job_id:%u", job->het_jobid);
 
 	if (job->het_job_offset != NO_VAL);
 		info("het_job_ntasks:%u het_job_nnodes:%u", job->het_job_ntasks,
@@ -129,9 +129,9 @@ static void _log_mpi_rec(const mpi_plugin_client_info_t *job)
 	int i, j;
 
 	info("MPI_PLUGIN_CLIENT_INFO");
-	info("job_id:%u step_id:%u", job->jobid, job->stepid);
+	info("%ps", &job->step_id);
 	if ((job->het_job_id != 0) && (job->het_job_id != NO_VAL)) {
-		info("het_job_id:%u step_id:%u", job->het_job_id, job->stepid);
+		info("het_job_id:%u", job->het_job_id);
 	}
 	if (layout) {
 		info("node_cnt:%u task_cnt:%u", layout->node_cnt,
@@ -152,7 +152,7 @@ static void _log_mpi_rec(const mpi_plugin_client_info_t *job)
 static void _log_task_rec(const mpi_plugin_task_info_t *job)
 {
 	info("MPI_PLUGIN_TASK_INFO");
-	info("job_id:%u step_id:%u", job->jobid, job->stepid);
+	info("%ps", &job->step_id);
 	info("nnodes:%u node_id:%u", job->nnodes, job->nodeid);
 	info("ntasks:%u local_tasks:%u", job->ntasks, job->ltasks);
 	info("global_task_id:%u local_task_id:%u", job->gtaskid, job->ltaskid);

@@ -131,13 +131,13 @@ int pmixp_info_set(const stepd_step_rec_t *job, char ***env)
 	_pmixp_job_info.uid = job->uid;
 	_pmixp_job_info.gid = job->gid;
 
+	memcpy(&_pmixp_job_info.step_id, &job->step_id,
+	       sizeof(_pmixp_job_info.step_id));
+
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
-		_pmixp_job_info.jobid = job->het_job_id;
-	else
-		_pmixp_job_info.jobid = job->step_id.job_id;
+		_pmixp_job_info.step_id.job_id = job->het_job_id;
 
 	if (job->het_job_offset != NO_VAL) {
-		_pmixp_job_info.stepid = job->step_id.step_id;
 		_pmixp_job_info.node_id = job->nodeid +
 					  job->het_job_node_offset;
 		_pmixp_job_info.node_tasks = job->node_tasks;
@@ -156,7 +156,6 @@ int pmixp_info_set(const stepd_step_rec_t *job, char ***env)
 						   job->het_job_task_offset;
 		}
 	} else {
-		_pmixp_job_info.stepid = job->step_id.step_id;
 		_pmixp_job_info.node_id = job->nodeid;
 		_pmixp_job_info.node_tasks = job->node_tasks;
 		_pmixp_job_info.ntasks = job->ntasks;
@@ -173,10 +172,8 @@ int pmixp_info_set(const stepd_step_rec_t *job, char ***env)
 	}
 #if 0
 	if ((job->het_job_id != 0) && (job->het_job_id != NO_VAL))
-		info("HET_JOB_ID:%u", _pmixp_job_info.jobid);
-	else
-		info("JOBID:%u", _pmixp_job_info.jobid);
-	info("STEPID:%u", _pmixp_job_info.stepid);
+		info("HET_JOB_ID:%u", _pmixp_job_info.step_id.job_id);
+	info("%ps", &_pmixp_job_info.step_id);
 	info("NODEID:%u", _pmixp_job_info.node_id);
 	info("NODE_TASKS:%u", _pmixp_job_info.node_tasks);
 	info("NTASKS:%u", _pmixp_job_info.ntasks);

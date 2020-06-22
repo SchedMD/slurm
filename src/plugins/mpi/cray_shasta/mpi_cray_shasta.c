@@ -250,7 +250,7 @@ extern int p_mpi_hook_slurmstepd_task(
 {
 	// Set environment variables
 	env_array_overwrite_fmt(env, PALS_APID_ENV, "%u.%u",
-				job->jobid, job->stepid);
+				job->step_id.job_id, job->step_id.step_id);
 	env_array_overwrite_fmt(env, PALS_RANKID_ENV, "%u", job->gtaskid);
 	env_array_overwrite_fmt(env, PALS_NODEID_ENV, "%u", job->nodeid);
 	env_array_overwrite_fmt(env, PALS_SPOOL_DIR_ENV, "%s", appdir);

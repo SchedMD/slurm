@@ -187,7 +187,8 @@ _handle_abort(int fd, int lrank, client_req_t *req)
 	client_req_get_bool(req, ISWORLD_KEY, &is_world);
 	/* no response needed. just cancel the job step if required */
 	if (is_world) {
-		slurm_kill_job_step(job_info.jobid, job_info.stepid, SIGKILL);
+		slurm_kill_job_step(job_info.step_id.job_id,
+				    job_info.step_id.step_id, SIGKILL);
 	}
 	return rc;
 }
@@ -299,13 +300,14 @@ _handle_kvs_fence(int fd, int lrank, client_req_t *req)
 	if (tasks_to_wait == 0 && children_to_wait == 0) {
 		rc = temp_kvs_send();
 		if (rc != SLURM_SUCCESS) {
-			error("mpi/pmi2: failed to send temp kvs to %s",
-			      tree_info.parent_node ?: "srun");
+			error("mpi/pmi2: %d failed to send temp kvs to %s",
+			      __LINE__, tree_info.parent_node ?: "srun");
 			send_kvs_fence_resp_to_clients(
 				rc,
 				"mpi/pmi2: failed to send temp kvs");
 			/* cancel the step to avoid tasks hang */
-			slurm_kill_job_step(job_info.jobid, job_info.stepid,
+			slurm_kill_job_step(job_info.step_id.job_id,
+					    job_info.step_id.step_id,
 					    SIGKILL);
 		} else {
 			waiting_kvs_resp = 1;

@@ -612,7 +612,8 @@ _setup_exec_srun(spawn_req_t *req)
 	env = env_array_copy((const char **)job_info.job_env);
 	/* TODO: unset some env-vars */
 
-	env_array_overwrite_fmt(&env, "SLURM_JOB_ID", "%u", job_info.jobid);
+	env_array_overwrite_fmt(&env, "SLURM_JOB_ID", "%u",
+				job_info.step_id.job_id);
 	env_array_overwrite_fmt(&env, PMI2_SPAWNER_JOBID_ENV, "%s",
 				job_info.pmi_jobid);
 	env_array_overwrite_fmt(&env, PMI2_PMI_JOBID_ENV, "%s-%u",

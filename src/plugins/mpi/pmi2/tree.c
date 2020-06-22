@@ -150,7 +150,8 @@ _handle_kvs_fence(int fd, Buf buf)
 				      " to compute nodes");
 			}
 			/* cancel the step to avoid tasks hang */
-			slurm_kill_job_step(job_info.jobid, job_info.stepid,
+			slurm_kill_job_step(job_info.step_id.job_id,
+					    job_info.step_id.step_id,
 					    SIGKILL);
 		} else {
 			if (in_stepd())
@@ -212,7 +213,8 @@ _handle_kvs_fence_resp(int fd, Buf buf)
 resp:
 	send_kvs_fence_resp_to_clients(rc, errmsg);
 	if (rc != SLURM_SUCCESS) {
-		slurm_kill_job_step(job_info.jobid, job_info.stepid, SIGKILL);
+		slurm_kill_job_step(job_info.step_id.job_id,
+				    job_info.step_id.step_id, SIGKILL);
 	}
 	return rc;
 

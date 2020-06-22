@@ -315,12 +315,13 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
 	mpi_plugin_task_info_t info[1];
 
 	if (job->het_job_id && (job->het_job_id != NO_VAL))
-		info->jobid   = job->het_job_id;
+		info->step_id.job_id   = job->het_job_id;
 	else
-		info->jobid   = job->step_id.job_id;
+		info->step_id.job_id   = job->step_id.job_id;
 
 	if (job->het_job_offset != NO_VAL) {
-		info->stepid  = job->step_id.step_id;
+		info->step_id.step_id  = job->step_id.step_id;
+		info->step_id.step_het_comp  = job->step_id.step_het_comp;
 		info->nnodes  = job->het_job_nnodes;
 		info->nodeid  = job->het_job_node_offset + job->nodeid;
 		info->ntasks  = job->het_job_ntasks;
@@ -331,7 +332,8 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
 		info->self    = job->envtp->self;
 		info->client  = job->envtp->cli;
 	} else {
-		info->stepid  = job->step_id.step_id;
+		info->step_id.step_id  = job->step_id.step_id;
+		info->step_id.step_het_comp  = job->step_id.step_het_comp;
 		info->nnodes  = job->nnodes;
 		info->nodeid  = job->nodeid;
 		info->ntasks  = job->ntasks;

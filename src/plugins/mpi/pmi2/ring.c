@@ -229,7 +229,8 @@ static int pmix_stepd_send(const char* buf, uint32_t size, int rank)
 		retries++;
 		if (retries >= MAX_RETRIES) {
 			/* cancel the step to avoid tasks hang */
-			slurm_kill_job_step(job_info.jobid, job_info.stepid,
+			slurm_kill_job_step(job_info.step_id.job_id,
+					    job_info.step_id.step_id,
 					    SIGKILL);
 		}
 

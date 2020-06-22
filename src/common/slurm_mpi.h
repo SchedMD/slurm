@@ -51,14 +51,12 @@ typedef void mpi_plugin_client_state_t;
 typedef struct {
 	uint32_t het_job_id;		/* Hetjob leader id or NO_VAL */
 	uint32_t het_job_task_offset;	/* Hetjob task offset or NO_VAL */
-	uint32_t jobid;
-	uint32_t stepid;
+	slurm_step_id_t step_id; /* Current step id (or NO_VAL)               */
 	slurm_step_layout_t *step_layout;
 } mpi_plugin_client_info_t;
 
 typedef struct {
-	uint32_t jobid;  /* Current Slurm job id                      */
-	uint32_t stepid; /* Current step id (or NO_VAL)               */
+	slurm_step_id_t step_id; /* Current step id (or NO_VAL)               */
 	uint32_t nnodes; /* number of nodes in current job step       */
 	uint32_t nodeid; /* relative position of this node in job     */
 	uint32_t ntasks; /* total number of tasks in current job      */

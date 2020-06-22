@@ -974,10 +974,10 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->abort = false;
 	sls->abort_action_taken = false;
 	/* NOTE: No malloc() of sls->mpi_info required */
-	sls->mpi_info->jobid = ctx->step_req->step_id.job_id;
+	memcpy(&sls->mpi_info->step_id, &ctx->step_req->step_id,
+	       sizeof(sls->mpi_info->step_id));
 	sls->mpi_info->het_job_id = NO_VAL;
 	sls->mpi_info->het_job_task_offset = NO_VAL;
-	sls->mpi_info->stepid = ctx->step_resp->job_step_id;
 	sls->mpi_info->step_layout = layout;
 	sls->mpi_state = NULL;
 	slurm_mutex_init(&sls->lock);
@@ -1227,8 +1227,8 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	void (*task_finish)(task_exit_msg_t *);
 	int i;
 
-	if ((msg->step_id.job_id != sls->mpi_info->jobid) ||
-	    (msg->step_id.step_id != sls->mpi_info->stepid)) {
+	if ((msg->step_id.job_id != sls->mpi_info->step_id.job_id) ||
+	    (msg->step_id.step_id != sls->mpi_info->step_id.step_id)) {
 		debug("Received MESSAGE_TASK_EXIT from wrong job: %ps",
 		      &msg->step_id);
 		return;

@@ -50,8 +50,7 @@ typedef struct {
 	int magic;
 #endif
 	char nspace[PMIXP_MAX_NSLEN];
-	uint32_t jobid; /* Current Slurm job id */
-	uint32_t stepid; /* Current step id (or NO_VAL) */
+	slurm_step_id_t step_id; /* Current step id (or NO_VAL) */
 	uint32_t nnodes; /* number of nodes in current step */
 	uint32_t nnodes_job; /* number of nodes in current job */
 	uint32_t ntasks; /* total number of tasks in current step */
@@ -141,13 +140,13 @@ static inline uint32_t pmixp_info_jobgid(void)
 static inline uint32_t pmixp_info_jobid(void)
 {
 	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
-	return _pmixp_job_info.jobid;
+	return _pmixp_job_info.step_id.job_id;
 }
 
 static inline uint32_t pmixp_info_stepid(void)
 {
 	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
-	return _pmixp_job_info.stepid;
+	return _pmixp_job_info.step_id.step_id;
 }
 
 static inline char *pmixp_info_namespace(void)

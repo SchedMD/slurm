@@ -190,7 +190,8 @@ _handle_barrier_in(int fd, int lrank, client_req_t *req)
 				rc,
 				"mpi/pmi2: failed to send temp kvs");
 			/* cancel the step to avoid tasks hang */
-			slurm_kill_job_step(job_info.jobid, job_info.stepid,
+			slurm_kill_job_step(job_info.step_id.job_id,
+					    job_info.step_id.step_id,
 					    SIGKILL);
 		} else {
 			waiting_kvs_resp = 1;
@@ -226,7 +227,8 @@ _handle_abort(int fd, int lrank, client_req_t *req)
 {
 	debug3("mpi/pmi2: in _handle_abort");
 	/* no response needed. just cancel the job */
-	slurm_kill_job_step(job_info.jobid, job_info.stepid, SIGKILL);
+	slurm_kill_job_step(job_info.step_id.job_id, job_info.step_id.step_id,
+			    SIGKILL);
 	debug3("mpi/pmi2: out _handle_abort");
 	return SLURM_SUCCESS;
 }
@@ -241,7 +243,8 @@ _handle_get_my_kvsname(int fd, int lrank, client_req_t *req)
 	resp = client_resp_new();
 	client_resp_append(resp, CMD_KEY"="GETMYKVSNAMERESP_CMD" "
 			   RC_KEY"=%d " KVSNAME_KEY"=%u.%u\n",
-			   rc, job_info.jobid, job_info.stepid);
+			   rc, job_info.step_id.job_id,
+			   job_info.step_id.step_id);
 	rc = client_resp_send(resp, fd);
 	client_resp_free(resp);
 	debug3("mpi/pmi2: out _handle_get_my_kvsname");
