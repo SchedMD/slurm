@@ -3236,8 +3236,8 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	/* do RPC call */
-	if (job_step_kill_msg->step_id.step_id == SLURM_BATCH_SCRIPT) {
-		/* NOTE: SLURM_BATCH_SCRIPT == NO_VAL */
+	if (job_step_kill_msg->step_id.step_id == NO_VAL) {
+		/* NO_VAL means the whole job, not individual steps */
 		error_code = job_signal_id(job_step_kill_msg->step_id.job_id,
 					   job_step_kill_msg->signal,
 					   job_step_kill_msg->flags, uid,
