@@ -720,9 +720,8 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 	bool storage_init = false;
 	char *db_host = db_info->host;
 	unsigned int my_timeout = 30;
-#ifdef MYSQL_OPT_RECONNECT
-	my_bool reconnect = 1;
-#endif
+	bool reconnect = 1;
+
 	xassert(mysql_conn);
 
 	slurm_mutex_lock(&mysql_conn->lock);
@@ -733,16 +732,14 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 		      mysql_error(mysql_conn->db_conn));
 	}
 
-	/* If this ever changes you will need to alter
+	mysql_options(mysql_conn->db_conn, MYSQL_OPT_RECONNECT, &reconnect);
+
+	/*
+	 * If this ever changes you will need to alter
 	 * src/common/slurmdbd_defs.c function _send_init_msg to
 	 * handle a different timeout when polling for the
 	 * response.
 	 */
-#ifdef MYSQL_OPT_RECONNECT
-	/* make sure reconnect is on */
-	mysql_options(mysql_conn->db_conn, MYSQL_OPT_RECONNECT,
-		      &reconnect);
-#endif
 	mysql_options(mysql_conn->db_conn, MYSQL_OPT_CONNECT_TIMEOUT,
 		      (char *)&my_timeout);
 	while (!storage_init) {
