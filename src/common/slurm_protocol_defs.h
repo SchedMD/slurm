@@ -727,6 +727,8 @@ typedef struct job_step_specs {
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
 	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
+	char *exc_nodes;	/* comma separated list of nodes excluded
+				 * from step's allocation, default NONE */
 	char *features;		/* required node features, default NONE */
 	char *host;		/* host to contact initiating srun */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,

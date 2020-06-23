@@ -2377,6 +2377,7 @@ extern void _pack_job_step_create_request_msg(
 		packstr(msg->name, buffer);
 		packstr(msg->network, buffer);
 		packstr(msg->node_list, buffer);
+		packstr(msg->exc_nodes, buffer);
 		packstr(msg->features, buffer);
 		pack32(msg->step_het_comp_cnt, buffer);
 		packstr(msg->step_het_grps, buffer);
@@ -2481,6 +2482,8 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpackstr_xmalloc(&tmp_ptr->network, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->exc_nodes, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp,
 				       buffer);

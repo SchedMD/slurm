@@ -299,6 +299,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	}
 	job->ctx_params.overcommit = opt_local->overcommit ? 1 : 0;
 	job->ctx_params.node_list = opt_local->nodelist;
+	job->ctx_params.exc_nodes = opt_local->exclude;
+
 	job->ctx_params.network = opt_local->network;
 	job->ctx_params.no_kill = opt_local->no_kill;
 	if (slurm_option_set_by_cli(opt_local, 'J'))

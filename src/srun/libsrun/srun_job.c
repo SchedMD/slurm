@@ -229,13 +229,15 @@ extern srun_job_t *job_step_create_allocation(
 		ai->nodelist = xstrdup(srun_opt->alloc_nodelist);
 	else
 		ai->nodelist = xstrdup(resp->node_list);
+
 	hl = hostlist_create(ai->nodelist);
 	hostlist_uniq(hl);
 	alloc_count = hostlist_count(hl);
 	ai->nnodes = alloc_count;
 	hostlist_destroy(hl);
 
-	if (opt_local->exclude) {
+	/* exclude is handled elsewhere for het steps */
+	if (!local_het_step && opt_local->exclude) {
 		hostlist_t exc_hl = hostlist_create(opt_local->exclude);
 		hostlist_t inc_hl = NULL;
 		char *node_name = NULL;
@@ -729,6 +731,58 @@ static void _set_step_opts(slurm_opt_t *opt_local)
 	}
 }
 
+static int _handle_het_step_exclude(srun_job_t *job, slurm_opt_t *opt_local,
+				    hostlist_t exclude_hl_in)
+{
+	hostlist_t exclude_hl, allocation_hl;
+	int rc = SLURM_SUCCESS;
+
+	if (!exclude_hl_in || !hostlist_count(exclude_hl_in))
+		return rc;
+
+	allocation_hl = hostlist_create(job->nodelist);
+	hostlist_uniq(allocation_hl);
+
+	exclude_hl = hostlist_copy(exclude_hl_in);
+	hostlist_push(exclude_hl, opt_local->exclude);
+	hostlist_uniq(exclude_hl);
+	hostlist_sort(exclude_hl);
+
+	xfree(opt_local->exclude);
+	opt_local->exclude = hostlist_ranged_string_xmalloc(exclude_hl);
+
+	if ((hostlist_count(allocation_hl) - hostlist_count(exclude_hl)) <
+	    opt_local->min_nodes) {
+		error("Allocation failure of %d nodes: job size of %d, already allocated %d nodes to previous components.",
+		      opt_local->min_nodes, hostlist_count(allocation_hl),
+		      hostlist_count(exclude_hl));
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	if (opt_local->nodelist) {
+		char *node_name = NULL;
+		hostlist_t inc_hl = hostlist_create(opt_local->nodelist);
+		while ((node_name = hostlist_shift(exclude_hl))) {
+			if (hostlist_find(inc_hl, node_name) >= 0) {
+				error("Requested nodelist %s overlaps with excluded %s.",
+				      opt_local->nodelist,
+				      opt_local->exclude);
+				error("Job not submitted.");
+				rc = SLURM_ERROR;
+				break;
+			}
+			free(node_name);
+		}
+		FREE_NULL_HOSTLIST(inc_hl);
+	}
+end_it:
+	FREE_NULL_HOSTLIST(allocation_hl);
+	FREE_NULL_HOSTLIST(exclude_hl);
+
+	return rc;
+}
+
 /*
  * Create the job step(s). For a heterogeneous job, each step is requested in
  * a separate RPC. create_job_step() references "opt", so we need to match up
@@ -748,6 +802,11 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 	int rc = 0;
 
 	if (srun_job_list) {
+		hostlist_t exclude_hl = NULL;
+
+		if (local_het_step)
+			exclude_hl = hostlist_create(NULL);
+
 		if (opt_list)
 			opt_iter = list_iterator_create(opt_list);
 		job_iter = list_iterator_create(srun_job_list);
@@ -782,12 +841,24 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			job->het_job_task_offset = task_offset;
 			if (step_id != NO_VAL)
 				job->step_id.step_id = step_id;
+
+			if ((rc = _handle_het_step_exclude(
+				     job, opt_local, exclude_hl)) !=
+			    SLURM_SUCCESS)
+				break;
+
 			rc = create_job_step(job, use_all_cpus, opt_local);
 			if (rc < 0)
 				break;
 			if (step_id == NO_VAL)
 				step_id = job->step_id.step_id;
-
+			if (exclude_hl) {
+				slurm_step_layout_t *step_layout =
+					launch_common_get_slurm_step_layout(
+						job);
+				hostlist_push(exclude_hl,
+					      step_layout->node_list);
+			}
 			if ((slurm_step_ctx_get(job->step_ctx,
 						SLURM_STEP_CTX_RESP,
 						&step_resp) == SLURM_SUCCESS) &&
@@ -800,6 +871,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			node_offset += job->nhosts;
 			task_offset += job->ntasks;
 		}
+
+		FREE_NULL_HOSTLIST(exclude_hl);
 
 		if (resv_ports) {
 			/*

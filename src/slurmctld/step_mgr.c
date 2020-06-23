@@ -1004,6 +1004,44 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	if (!nodes_avail)
 		nodes_avail = bit_copy (job_ptr->node_bitmap);
 	bit_and(nodes_avail, up_node_bitmap);
+
+	if (step_spec->exc_nodes) {
+		bitstr_t *exc_bitmap = NULL;
+		error_code = node_name2bitmap(step_spec->exc_nodes, false,
+					      &exc_bitmap);
+		if (error_code) {
+			*return_code = ESLURM_INVALID_NODE_NAME;
+			FREE_NULL_BITMAP(exc_bitmap);
+			goto cleanup;
+		}
+		bit_and_not(nodes_avail, exc_bitmap);
+
+		if (step_spec->node_list) {
+			bitstr_t *req_nodes = NULL;
+			error_code = node_name2bitmap(
+				step_spec->node_list, false,
+				&req_nodes);
+			if (error_code) {
+				info("%s: invalid requested node list %s",
+				     __func__,
+				     step_spec->node_list);
+				FREE_NULL_BITMAP(exc_bitmap);
+				FREE_NULL_BITMAP(req_nodes);
+				goto cleanup;
+			}
+			if (bit_overlap_any(req_nodes, exc_bitmap)) {
+				info("%s: %ps requested nodes %s is also excluded %s",
+				     __func__, &step_spec->step_id,
+				     step_spec->node_list,
+				     step_spec->exc_nodes);
+				FREE_NULL_BITMAP(exc_bitmap);
+				FREE_NULL_BITMAP(req_nodes);
+				goto cleanup;
+			}
+		}
+		FREE_NULL_BITMAP(exc_bitmap);
+	}
+
 	if (step_spec->features) {
 		/*
 		 * We only select for a single feature name here.
