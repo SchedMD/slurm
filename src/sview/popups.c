@@ -315,6 +315,9 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 				   slurm_conf.accounting_storage_pass);
 	sprintf(tmp_str, "%u", slurm_conf.accounting_storage_port);
 	add_display_treestore_line(update, treestore, &iter,
+				   "AccountingStorageParameters",
+				   slurm_conf.accounting_storage_params);
+	add_display_treestore_line(update, treestore, &iter,
 				   "AccountingStoragePort", tmp_str);
 	add_display_treestore_line(update, treestore, &iter,
 	                           "AccountingStorageType",

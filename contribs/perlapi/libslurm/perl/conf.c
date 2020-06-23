@@ -37,6 +37,8 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 	STORE_FIELD(hv, conf, accounting_storage_enforce, uint16_t);
 	if (conf->accounting_storage_host)
 		STORE_FIELD(hv, conf, accounting_storage_host, charp);
+	if (conf->accounting_storage_params)
+		STORE_FIELD(hv, conf, accounting_storage_params, charp);
 	if (conf->accounting_storage_pass)
 		STORE_FIELD(hv, conf, accounting_storage_pass, charp);
 	STORE_FIELD(hv, conf, accounting_storage_port, uint16_t);
@@ -408,6 +410,7 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, accounting_storage_enforce, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, accounting_storage_backup_host, charp, FALSE);
 	FETCH_FIELD(hv, conf, accounting_storage_host, charp, FALSE);
+	FETCH_FIELD(hv, conf, accounting_storage_params, charp, FALSE);
 	FETCH_FIELD(hv, conf, accounting_storage_pass, charp, FALSE);
 	FETCH_FIELD(hv, conf, accounting_storage_port, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, accounting_storage_type, charp, FALSE);

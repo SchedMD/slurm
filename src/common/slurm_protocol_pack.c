@@ -3943,6 +3943,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->accounting_storage_enforce, buffer);
 		packstr(build_ptr->accounting_storage_backup_host, buffer);
 		packstr(build_ptr->accounting_storage_host, buffer);
+		packstr(build_ptr->accounting_storage_params, buffer);
 		pack16(build_ptr->accounting_storage_port, buffer);
 		packstr(build_ptr->accounting_storage_tres, buffer);
 		packstr(build_ptr->accounting_storage_type, buffer);
@@ -4845,6 +4846,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 			&build_ptr->accounting_storage_backup_host,
 			&uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_host,
+		                       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_params,
 		                       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->accounting_storage_port, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_tres,

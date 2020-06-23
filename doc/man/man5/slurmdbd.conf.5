@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "May 2020" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "June 2020" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -552,6 +552,29 @@ Default is none.
 \fBStorageLoc\fR
 Specify the name of the database as the location where accounting
 records are written. Defaults to "slurm_acct_db".
+
+.TP
+\fBStorageParameters\fR
+Comma separated list of key-value pair parameters. Currently
+supported values include options to establish a secure connection to the
+database:
+.RS
+.TP 2
+\fBSSL_CERT\fR
+The path name of the client public key certificate file.
+.TP
+\fBSSL_CA\fR
+The path name of the Certificate Authority (CA) certificate file.
+.TP
+\fBSSL_CAPATH\fR
+The path name of the directory that contains trusted SSL CA certificate files.
+.TP
+\fBSSL_KEY\fR
+The path name of the client private key file.
+.TP
+\fBSSL_CIPHER\fR
+The list of permissible ciphers for SSL encryption.
+.RE
 
 .TP
 \fBStoragePass\fR

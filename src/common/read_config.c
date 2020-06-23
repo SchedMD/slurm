@@ -200,6 +200,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"AccountingStorageHost", S_P_STRING},
 	{"AccountingStorageBackupHost", S_P_STRING},
 	{"AccountingStorageLoc", S_P_STRING},
+	{"AccountingStorageParameters", S_P_STRING},
 	{"AccountingStoragePass", S_P_STRING},
 	{"AccountingStoragePort", S_P_UINT16},
 	{"AccountingStorageType", S_P_STRING},
@@ -2724,6 +2725,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->accounting_storage_backup_host);
 	xfree (ctl_conf_ptr->accounting_storage_ext_host);
 	xfree (ctl_conf_ptr->accounting_storage_host);
+	xfree (ctl_conf_ptr->accounting_storage_params);
 	xfree (ctl_conf_ptr->accounting_storage_pass);
 	xfree (ctl_conf_ptr->accounting_storage_tres);
 	xfree (ctl_conf_ptr->accounting_storage_type);
@@ -2871,6 +2873,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->accounting_storage_enforce          = 0;
 	xfree (ctl_conf_ptr->accounting_storage_ext_host);
 	xfree (ctl_conf_ptr->accounting_storage_host);
+	xfree (ctl_conf_ptr->accounting_storage_params);
 	xfree (ctl_conf_ptr->accounting_storage_pass);
 	ctl_conf_ptr->accounting_storage_port             = 0;
 	xfree (ctl_conf_ptr->accounting_storage_tres);
@@ -4168,6 +4171,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_boolean(&truth, "AccountingStoreJobComment", hashtbl)
 	    || truth)
 		conf->conf_flags |= CTL_CONF_SJC;
+
+	s_p_get_string(&conf->accounting_storage_params,
+		       "AccountingStorageParameters", hashtbl);
 
 	if (!s_p_get_uint16(&conf->accounting_storage_port,
 			    "AccountingStoragePort", hashtbl)) {

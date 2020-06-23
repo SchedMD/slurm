@@ -170,6 +170,7 @@ extern int read_slurmdbd_conf(void)
 		{"StorageBackupHost", S_P_STRING},
 		{"StorageHost", S_P_STRING},
 		{"StorageLoc", S_P_STRING},
+		{"StorageParameters", S_P_STRING},
 		{"StoragePass", S_P_STRING},
 		{"StoragePort", S_P_UINT16},
 		{"StorageType", S_P_STRING},
@@ -498,6 +499,8 @@ extern int read_slurmdbd_conf(void)
 			       "StorageHost", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_loc,
 			       "StorageLoc", tbl);
+		s_p_get_string(&slurm_conf.accounting_storage_params,
+			       "StorageParameters", tbl);
 		s_p_get_string(&slurm_conf.accounting_storage_pass,
 			       "StoragePass", tbl);
 		s_p_get_uint16(&slurm_conf.accounting_storage_port,
@@ -709,6 +712,7 @@ extern void log_config(void)
 	debug2("StorageHost       = %s",
 	       slurm_conf.accounting_storage_host);
 	debug2("StorageLoc        = %s", slurmdbd_conf->storage_loc);
+	debug2("StorageParameters = %s", slurm_conf.accounting_storage_params);
 	/* debug2("StoragePass       = %s",
 	       slurm_conf.accounting_storage_pass); */
 	debug2("StoragePort       = %u", slurm_conf.accounting_storage_port);
@@ -992,6 +996,11 @@ extern List dump_config(void)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("StorageLoc");
 	key_pair->value = xstrdup(slurmdbd_conf->storage_loc);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("StorageParameters");
+	key_pair->value = xstrdup(slurm_conf.accounting_storage_params);
 	list_append(my_list, key_pair);
 
 	/* StoragePass should NOT be passed due to security reasons */

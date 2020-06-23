@@ -658,6 +658,8 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 		xstrdup(conf->accounting_storage_host);
 	conf_ptr->accounting_storage_backup_host =
 		xstrdup(conf->accounting_storage_backup_host);
+	conf_ptr->accounting_storage_params =
+		xstrdup(conf->accounting_storage_params);
 	conf_ptr->accounting_storage_port = conf->accounting_storage_port;
 	conf_ptr->accounting_storage_tres =
 		xstrdup(conf->accounting_storage_tres);

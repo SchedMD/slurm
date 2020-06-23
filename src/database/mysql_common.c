@@ -585,6 +585,48 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	return SLURM_SUCCESS;
 }
 
+void _set_mysql_ssl_opts(MYSQL *db_conn, const char *options)
+{
+	char *tmp_opts, *token, *save_ptr = NULL;
+	const char *key = NULL, *cert = NULL, *ca = NULL, *ca_path = NULL;
+	const char *cipher = NULL;
+
+	if (!options)
+		return;
+
+	tmp_opts = xstrdup(options);
+	token = strtok_r(tmp_opts, ",", &save_ptr);
+	while (token) {
+		char *opt_str, *val_str = NULL;
+
+		opt_str = strtok_r(token, "=", &val_str);
+
+		if (!opt_str || !val_str) {
+			error("Invalid storage option/val");
+			goto next;
+		} else if (!xstrcasecmp(opt_str, "SSL_CERT"))
+			cert = val_str;
+		else if (!xstrcasecmp(opt_str, "SSL_CA"))
+			ca = val_str;
+		else if (!xstrcasecmp(opt_str, "SSL_CAPATH"))
+			ca_path = val_str;
+		else if (!xstrcasecmp(opt_str, "SSL_KEY"))
+			key = val_str;
+		else if (!xstrcasecmp(opt_str, "SSL_CIPHER"))
+			cipher = val_str;
+		else {
+			error("Invalid storage option '%s'", opt_str);
+			goto next;
+		}
+next:
+		token = strtok_r(NULL, ",", &save_ptr);
+	}
+
+	mysql_ssl_set(db_conn, key, cert, ca, ca_path, cipher);
+
+	xfree(tmp_opts);
+}
+
 /* NOTE: Ensure that mysql_conn->lock is set on function entry */
 static int _create_db(char *db_name, mysql_db_info_t *db_info)
 {
@@ -598,6 +640,8 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 		rc = SLURM_SUCCESS;
 		if (!(mysql_db = mysql_init(mysql_db)))
 			fatal("mysql_init failed: %s", mysql_error(mysql_db));
+
+		_set_mysql_ssl_opts(mysql_db, db_info->params);
 
 		db_host = db_info->host;
 		db_ptr = mysql_real_connect(mysql_db,
@@ -685,6 +729,7 @@ extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
 			xstrdup(slurm_conf.accounting_storage_backup_host);
 		db_info->user = xstrdup(slurm_conf.accounting_storage_user);
 		db_info->pass = xstrdup(slurm_conf.accounting_storage_pass);
+		db_info->params = xstrdup(slurm_conf.accounting_storage_params);
 		break;
 	case SLURM_MYSQL_PLUGIN_JC:
 		if (!slurm_conf.job_comp_port)
@@ -693,6 +738,7 @@ extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
 		db_info->host = xstrdup(slurm_conf.job_comp_host);
 		db_info->user = xstrdup(slurm_conf.job_comp_user);
 		db_info->pass = xstrdup(slurm_conf.job_comp_pass);
+		db_info->params = xstrdup(slurm_conf.accounting_storage_params);
 		break;
 	default:
 		xfree(db_info);
@@ -742,6 +788,9 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 	 */
 	mysql_options(mysql_conn->db_conn, MYSQL_OPT_CONNECT_TIMEOUT,
 		      (char *)&my_timeout);
+
+	_set_mysql_ssl_opts(mysql_conn->db_conn, db_info->params);
+
 	while (!storage_init) {
 		debug2("Attempting to connect to %s:%d", db_host,
 		       db_info->port);
@@ -756,6 +805,14 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 				debug("Database %s not created.  Creating",
 				      db_name);
 				rc = _create_db(db_name, db_info);
+
+				/*
+				 * When using ca, cert and key the next
+				 * connect will fail. Setting the options again
+				 * fixes it.
+				 */
+				_set_mysql_ssl_opts(mysql_conn->db_conn,
+						    db_info->params);
 				continue;
 			}
 

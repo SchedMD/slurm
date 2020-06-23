@@ -100,6 +100,8 @@ static void _print_slurm_config(void)
 	       slurm_conf.accounting_storage_backup_host);
 	printf("AccountingStorageHost  = %s\n",
 	       slurm_conf.accounting_storage_host);
+	printf("AccountingStorageParameters = %s\n",
+	       slurm_conf.accounting_storage_params);
 	printf("AccountingStoragePass  = %s\n",
 	       slurm_conf.accounting_storage_pass);
 	printf("AccountingStoragePort  = %u\n",
