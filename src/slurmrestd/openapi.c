@@ -315,11 +315,13 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 	int count = 0;
 	entry_t *entry;
 
-	if (data_get_type(data) != DATA_TYPE_DICT)
-		return DATA_FOR_EACH_FAIL;
-
 	if ((method->method = get_http_method(key)) == HTTP_REQUEST_INVALID)
-		return DATA_FOR_EACH_FAIL;
+		/* Ignore none HTTP method dictionary keys */
+		return DATA_FOR_EACH_CONT;
+
+	if (data_get_type(data) != DATA_TYPE_DICT)
+		fatal("%s: unexpected data type %s instead of dictionary",
+		      __func__, data_type_to_string(data_get_type(data)));
 
 	for (entry = args->entries; entry->type; entry++)
 		count++;
