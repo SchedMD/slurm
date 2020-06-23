@@ -1214,7 +1214,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				info("%s: Invalid ActiveFeatures (\'%s\' not subset of \'%s\' on node %s)",
 				     __func__, features_act, features_avail,
 				     node_ptr->name);
-				error_code = ESLURM_INVALID_FEATURE;
+				error_code = ESLURM_ACTIVE_FEATURE_NOT_SUBSET;
 				xfree(update_node_msg->features);
 				xfree(update_node_msg->features_act);
 			}

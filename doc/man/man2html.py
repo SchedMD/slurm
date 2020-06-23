@@ -120,6 +120,11 @@ def llnl_references(line):
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
+        manStr = '<A HREF="/cgi-bin/man/man2html?8+logrotate">logrotate</A>'
+        htmlStr = 'logrotate'
+        lineFix = line.replace(manStr,htmlStr)
+        if lineFix != line:
+            return lineFix
         return line
 
 def relative_reference(lineIn):

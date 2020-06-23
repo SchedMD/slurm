@@ -65,6 +65,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - unlink named unix sockets before closing.
  -- slurmrestd - fix invalid formatting in openapi.json.
  -- Fix batch jobs stuck in CF state on FrontEnd mode.
+ -- Add a separate explicit error message when rejecting changes to active node
+    features.
 
 * Changes in Slurm 20.02.3
 ==========================
