@@ -98,8 +98,8 @@ static char *slurm_conf_filename = NULL;
 /* Number of requested threads */
 static int thread_count = 20;
 /* User to become once loaded */
-uid_t uid = 0;
-gid_t gid = 0;
+static uid_t uid = 0;
+static gid_t gid = 0;
 
 /* SIGPIPE handler - mostly a no-op */
 static void _sigpipe_handler(int signum)
