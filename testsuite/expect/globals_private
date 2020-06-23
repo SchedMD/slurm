@@ -36,7 +36,7 @@ set _global_bkp_noexist  {}
 # Proc: _wait_for_single_job
 #
 # Purpose:  Wait for a previously submitted Slurm job to reach
-# the desired state. Polls every $poll_interval seconds.
+# the desired state. Polls every $testsuite_poll_interval seconds.
 #
 # Returns: A non-zero return code indicates a failure.
 #
@@ -55,7 +55,7 @@ set _global_bkp_noexist  {}
 #
 ################################################################
 proc _wait_for_single_job { job_id desired_state } {
-	global scontrol max_job_state_delay poll_interval
+	global scontrol max_job_state_delay testsuite_poll_interval
 
 	# First verify that desired_state is supported
 	switch $desired_state {
@@ -146,7 +146,7 @@ proc _wait_for_single_job { job_id desired_state } {
 			return 1
 		}
 
-		exec sleep $poll_interval
-		set my_delay [expr $my_delay + $poll_interval]
+		exec sleep $testsuite_poll_interval
+		set my_delay [expr $my_delay + $testsuite_poll_interval]
 	}
 }
