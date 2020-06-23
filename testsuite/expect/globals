@@ -1013,7 +1013,7 @@ proc wait_for_account_done { accounts } {
 		}
 
 		if { !$found } {
-			log_info "Account(s) $accounts is/are empty"
+			log_debug "Account(s) $accounts is/are empty"
 			break;
 		}
 
@@ -1080,7 +1080,7 @@ proc wait_for_part_done { part } {
 		}
 
 		if { !$found } {
-			log_info "Partition $part is empty"
+			log_debug "Partition $part is empty"
 			break;
 		}
 
@@ -3208,7 +3208,7 @@ proc check_acct_associations { } {
 
 	set rc 1
 	log_user 0
-	log_info "Testing Associations"
+	log_debug "Sanity-Checking Associations"
 	#
 	# Use sacctmgr to check associations
 	#
