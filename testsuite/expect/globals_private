@@ -65,13 +65,13 @@ proc _wait_for_single_job { job_id desired_state } {
 		"SPECIAL_EXIT" {}
 		"SUSPENDED" {}
 		default {
-			send_user "WARNING: wait_for_single_job with invalid state: $desired_state\n"
+			log_warn "wait_for_single_job with invalid state: $desired_state"
 			return 1
 		}
 	}
 
 	if {$job_id == 0} {
-		send_user "WARNING: wait_for_single_job with invalid job ID: $job_id\n"
+		log_warn "wait_for_single_job with invalid job ID: $job_id"
 		return 1
 	}
 
@@ -96,60 +96,53 @@ proc _wait_for_single_job { job_id desired_state } {
 			"PREEMPTED" -
 			"TIMEOUT" {
 				if {[string compare $desired_state "DONE"] == 0} {
-					send_user "Job $job_id is DONE ($state)\n"
+					log_info "Job $job_id is DONE ($state)"
 					sleep 2
 					return 0
 				}
 				if {[string compare $desired_state "RUNNING"] == 0} {
-					send_user "Job $job_id is $state, "
-					send_user "but we wanted RUNNING\n"
+					log_info "Job $job_id is $state, but we wanted RUNNING"
 				}
 				if {[string compare $desired_state "SUSPENDED"] == 0} {
-					send_user "Job $job_id is $state, "
-					send_user "but we wanted SUSPENDED\n"
+					log_info "Job $job_id is $state, but we wanted SUSPENDED"
 				}
 				return 1
 			}
 			"PENDING" {
 				if {[string compare $desired_state "PENDING"] == 0} {
-					send_user "Job $job_id is PENDING\n"
+					log_info "Job $job_id is PENDING"
 					return 0
 				}
-				send_user "Job $job_id is in state $state, "
-				send_user "desire $desired_state\n"
+				log_info "Job $job_id is in state $state, desire $desired_state"
 			}
 			"RUNNING" {
 				if {[string compare $desired_state "RUNNING"] == 0} {
-					send_user "Job $job_id is RUNNING\n"
+					log_info "Job $job_id is RUNNING"
 					return 0
 				}
-				send_user "Job $job_id is in state $state, "
-				send_user "desire $desired_state\n"
+				log_info "Job $job_id is in state $state, desire $desired_state"
 			}
 			"SPECIAL_EXIT" {
 				if {[string compare $desired_state "SPECIAL_EXIT"] == 0} {
-					send_user "Job $job_id is SPECIAL_EXIT\n"
+					log_info "Job $job_id is SPECIAL_EXIT"
 					return 0
 				}
-				send_user "Job $job_id is in state $state, "
-				send_user "desire $desired_state\n"
+				log_info "Job $job_id is in state $state, desire $desired_state"
 			}
 			"SUSPENDED" {
 				if {[string compare $desired_state "SUSPENDED"] == 0} {
-					send_user "Job $job_id is SUSPENDED\n"
+					log_info "Job $job_id is SUSPENDED"
 					return 0
 				}
-				send_user "Job $job_id is in state $state, "
-				send_user "desire $desired_state\n"
+				log_info "Job $job_id is in state $state, desire $desired_state"
 			}
 			default {
-				send_user "Job $job_id is in state $state, "
-				send_user "desire $desired_state\n"
+				log_info "Job $job_id is in state $state, desire $desired_state"
 			}
 		}
 
 		if { $my_delay > $max_job_state_delay } {
-			send_user "WARNING: Timeout waiting for job state $desired_state\n"
+			log_warn "Timeout waiting for job state $desired_state"
 			return 1
 		}
 

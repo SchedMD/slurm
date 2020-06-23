@@ -4917,7 +4917,7 @@ proc get_het_job_ids { jobid {use_offset 0}} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set id_list ""
 		}
 		eof {

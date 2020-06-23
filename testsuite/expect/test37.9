@@ -274,9 +274,9 @@ if {[setup_federation $fed_name]} {
 # get number of nodes per cluster
 set node_count [available_nodes "" ""]
 
-send_user "\n################################################################\n"
-send_user "Setup cluster features"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
 
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
@@ -379,9 +379,9 @@ if {$exit_code || $matches != 4} {
 
 make_bash_script $file_in "env; $my_srun sleep 900 & $my_srun sleep 900"
 
-send_user "\n################################################################\n"
-send_user "verify federated squeue output"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Verify federated squeue output"
+log_info "################################################################"
 
 set ji0 [sbatch]
 set ji1 [sbatch]
@@ -459,9 +459,9 @@ set output [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
 
 verify $ji2 $output
 
-send_user "\n################################################################\n"
-send_user "verify federated sinfo output"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Verify federated sinfo output"
+log_info "################################################################"
 
 cancel_all_jobs
 
@@ -480,9 +480,9 @@ if {[info exists env(SPRIO_FORMAT)]} {
     unset env(SPRIO_FORMAT)
 }
 
-send_user "\n################################################################\n"
-send_user "verify federated sprio output"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Verify federated sprio output"
+log_info "################################################################"
 
 set ji0 [sbatch]
 wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3
@@ -505,9 +505,9 @@ sprio "-M$fedc1" "(\\s+($ji3|$ji4).+\\n){2}"
 sprio "-M$fedc2" "(\\s+($ji3|$ji5).+\\n){2}"
 sprio "-M$fedc3" "(\\s+($ji3|$ji6).+\\n){2}"
 
-send_user "\n################################################################\n"
-send_user "verify federated scontrol show jobs output"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Verify federated scontrol show jobs output"
+log_info "################################################################"
 
 cancel_all_jobs
 

@@ -190,7 +190,6 @@ expect {
 		wait
 	}
 }
-send_user "\n\n"
 
 make_bash_script $file_in "
   $srun --mpi=none --test_suite_srun=5 --pack-group=0,1 $bin_sum $spank_conf_file
@@ -359,7 +358,7 @@ if {[wait_for_file $spank_out] == 0} {
 		log_warn "Check for matching checksums on the plugstack.conf file. Different checksums could indicate file system delays"
 		end_it 1
 	}
-	send_user "\nRemote (slurmd) spank plugin success\n"
+	log_info "Remote (slurmd) spank plugin success"
 } else {
 	end_it 1
 }
