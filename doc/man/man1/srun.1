@@ -1369,7 +1369,7 @@ or \fBsbatch\fR).
 
 NOTE: A memory size specification of zero is treated as a special case and
 grants the job access to all of the memory on each node for newly submitted jobs
-and all available job memory to a new job steps.
+and all available job memory to new job steps.
 
 Specifying new memory limits for job steps are only advisory.
 
@@ -1391,8 +1391,8 @@ Minimum memory required per allocated CPU.
 Default units are megabytes unless the SchedulerParameters configuration
 parameter includes the "default_gbytes" option for gigabytes.
 Different units can be specified using the suffix [K|M|G|T].
-Default value is \fBDefMemPerCPU\fR and the maximum value is \fBMaxMemPerCPU\fR
-(see exception below). If configured, both of parameters can be
+The default value is \fBDefMemPerCPU\fR and the maximum value is
+\fBMaxMemPerCPU\fR (see exception below). If configured, both parameters can be
 seen using the \fBscontrol show config\fR command.
 Note that if the job's \fB\-\-mem\-per\-cpu\fR value exceeds the configured
 \fBMaxMemPerCPU\fR, then the user's limit will be treated as a memory limit
@@ -1413,9 +1413,9 @@ Also see \fB\-\-mem\fR and \fB\-\-mem\-per\-gpu\fR.
 The \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR and \fB\-\-mem\-per\-gpu\fR
 options are mutually exclusive.
 
-NOTE:If the final amount of memory requested by job
-(eg.: when \-\-mem\-per\-cpu use with \-\-exclusive option)
-can't be satisfied by any of nodes configured in the
+NOTE: If the final amount of memory requested by a job
+(e.g. when \-\-mem\-per\-cpu is used with the \-\-exclusive option)
+can't be satisfied by any of the nodes configured in the
 partition, the job will be rejected.
 
 .TP
@@ -2354,7 +2354,7 @@ job allocations.
 \fB\-x\fR, \fB\-\-exclude\fR=<\fIhost1,host2,...\fR or \fIfilename\fR>
 Request that a specific list of hosts not be included in the resources
 allocated to this job. The host list will be assumed to be a filename
-if it contains a "/"character. This option applies to job allocations.
+if it contains a "/" character. This option applies to job allocations.
 
 .TP
 \fB\-\-x11\fR[=<\fIall\fR|\fIfirst\fR|\fIlast\fR>]
