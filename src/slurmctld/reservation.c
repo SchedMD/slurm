@@ -2809,7 +2809,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto update_failure;
 		}
 		resv_ptr->end_time = resv_desc_ptr->end_time;
-		resv_ptr->duration = 0;
+		resv_ptr->duration = NO_VAL;
 	}
 
 	if (resv_desc_ptr->duration == INFINITE) {
