@@ -1035,6 +1035,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		goto alloc_job;
 	}
 	_free_avail_res_array(avail_res_array);
+	avail_res_array = NULL;
 
 	if ((gang_mode == 0) && (job_node_req == NODE_CR_ONE_ROW)) {
 		/*
