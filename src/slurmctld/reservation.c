@@ -2684,8 +2684,11 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_HOLD_JOBS)
 			resv_ptr->flags |= RESERVE_FLAG_NO_HOLD_JOBS;
-		if (resv_desc_ptr->flags & RESERVE_FLAG_PROM)
+		if ((resv_desc_ptr->flags & RESERVE_FLAG_PROM) &&
+		    !(resv_ptr->flags & RESERVE_FLAG_PROM)) {
 			resv_ptr->flags |= RESERVE_FLAG_PROM;
+			list_append(prom_resv_list, resv_ptr);
+		}
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_PROM) {
 			resv_ptr->flags &= (~RESERVE_FLAG_PROM);
 			(void)list_remove_first(
