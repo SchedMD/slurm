@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
     first, followed by reserved nodes under OVERLAP|MAINT reservations, and
     finally all nodes in the partition for MAINT reservations.
  -- Add [Accounting]StorageParameters slurm[dbd].conf parameter.
+ -- Improve detection and logging of incompatible options involving the
+    REPLACE[_DOWN] flags when creating/updating reservations.
 
 * Changes in Slurm 20.02.4
 ==========================
