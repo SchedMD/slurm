@@ -1109,9 +1109,12 @@ The \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR and \fB\-\-mem\-per\-gpu\fR
 options are mutually exclusive.
 
 NOTE: If the final amount of memory requested by a job
-(e.g. when \-\-mem\-per\-cpu is used with the \-\-exclusive option)
 can't be satisfied by any of the nodes configured in the
 partition, the job will be rejected.
+This could happen if \fB\-\-mem\-per\-cpu\fR is used with the
+\fB\-\-exclusive\fR option for a job allocation and \fB\-\-mem\-per\-cpu\fR
+times the number of CPUs on a node is greater than the total memory of that
+node.
 
 .TP
 \fB\-\-mem\-per\-gpu\fR=<\fIsize[units]\fR>
