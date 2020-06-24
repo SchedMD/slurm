@@ -322,7 +322,6 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 	}
 
 	strlcpy(sa.sun_path, fmt_tree_sock_addr, sizeof(sa.sun_path));
-	xfree(fmt_tree_sock_addr);
 
 	unlink(sa.sun_path);    /* remove possible old socket */
 	xfree(spool);
