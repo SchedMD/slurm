@@ -2630,6 +2630,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		    (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
 			if ((resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
 			    (resv_ptr->full_nodes == 0)) {
+				info("%s: reservation %s can't be updated with REPLACE or REPLACE_DOWN flags; they should be updated on a NodeCnt reservation",
+				     __func__, resv_desc_ptr->name);
 				error_code = ESLURM_NOT_SUPPORTED;
 				goto update_failure;
 			}
