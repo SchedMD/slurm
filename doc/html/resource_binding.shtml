@@ -12,7 +12,7 @@
 
 <h2><a name="overview">Overview</a></h2>
 
-<p>Slurm version 18.08 has a rich set of options to control the default
+<p>Slurm has a rich set of options to control the default
 binding of tasks to resources.
 For example, tasks can be bound to individual threads, cores, sockets, NUMA
 or boards.
@@ -85,6 +85,6 @@ Its value may be viewed or modified using the scontrol command.</p>
 <p>The last possible source of the resource binding information is the
 TaskPluginParam configuration parameter from the slurm.conf file.</p>
 
-<p style="text-align:center;">Last modified 6 December 2017</p>
+<p style="text-align:center;">Last modified 24 June 2020</p>
 
 <!--#include virtual="footer.txt"-->

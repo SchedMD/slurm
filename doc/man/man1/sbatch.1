@@ -1089,8 +1089,8 @@ the next periodic accounting sample.
 Minimum memory required per allocated CPU.
 Default units are megabytes unless the SchedulerParameters configuration
 parameter includes the "default_gbytes" option for gigabytes.
-Default value is \fBDefMemPerCPU\fR and the maximum value is \fBMaxMemPerCPU\fR
-(see exception below). If configured, both parameters can be
+The default value is \fBDefMemPerCPU\fR and the maximum value is
+\fBMaxMemPerCPU\fR (see exception below). If configured, both parameters can be
 seen using the \fBscontrol show config\fR command.
 Note that if the job's \fB\-\-mem\-per\-cpu\fR value exceeds the configured
 \fBMaxMemPerCPU\fR, then the user's limit will be treated as a memory limit
@@ -1108,10 +1108,13 @@ Also see \fB\-\-mem\fR and \fB\-\-mem\-per\-gpu\fR.
 The \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR and \fB\-\-mem\-per\-gpu\fR
 options are mutually exclusive.
 
-NOTE:If the final amount of memory requested by job
-(eg.: when \-\-mem\-per\-cpu use with \-\-exclusive option)
-can't be satisfied by any of nodes configured in the
+NOTE: If the final amount of memory requested by a job
+can't be satisfied by any of the nodes configured in the
 partition, the job will be rejected.
+This could happen if \fB\-\-mem\-per\-cpu\fR is used with the
+\fB\-\-exclusive\fR option for a job allocation and \fB\-\-mem\-per\-cpu\fR
+times the number of CPUs on a node is greater than the total memory of that
+node.
 
 .TP
 \fB\-\-mem\-per\-gpu\fR=<\fIsize[units]\fR>

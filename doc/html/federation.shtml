@@ -19,7 +19,7 @@
 </ul>
 
 <h2><a name="overview">Overview</a></h2>
-<p>Slurm version 17.11 includes support for creating a federation of clusters
+<p>Slurm includes support for creating a federation of clusters
 and scheduling jobs in a peer-to-peer fashion between them. Jobs submitted to a
 federation receive a unique job ID that is unique among all clusters in the
 federation. A job is submitted to the local cluster (the cluster defined in the
@@ -461,6 +461,6 @@ issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
 	<li>sview grid is disabled in a federated view.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 23 Jan 2020</p>
+<p style="text-align:center;">Last modified 24 Jun 2020</p>
 
 <!--#include virtual="footer.txt"-->
