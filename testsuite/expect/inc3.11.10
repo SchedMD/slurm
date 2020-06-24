@@ -45,7 +45,7 @@ proc inc3_11_10 {} {
 		delete_res $res_name
 		fail "Reservation did not fail but should have (Within: inc3.11.10)"
 	} else {
-		log_debug "\033\[32mExpected error. You can turn that frown upside-down.(Within: inc3.11.10)"
+		log_debug "Expected error. You can turn that frown upside-down.(Within: inc3.11.10)"
 	}
 
 	# Test for reservation conflict
@@ -55,7 +55,7 @@ proc inc3_11_10 {} {
 		delete_res $res_name
 		fail "Reservation did not fail but should have (Within: inc3.11.10)"
 	} else {
-		log_debug "\033\[32mExpected error. You can turn that frown upside-down.(Within: inc3.11.10)"
+		log_debug "Expected error. You can turn that frown upside-down.(Within: inc3.11.10)"
 	}
 
 

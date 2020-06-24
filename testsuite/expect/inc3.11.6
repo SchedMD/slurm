@@ -51,7 +51,7 @@ proc inc3_11_6 {} {
 		delete_res $res_name
 		fail "Reservation $test did not fail but should have (Within: inc3.11.6)"
 	} else {
-		log_debug "\033\[32mExpected error. You can turn that frown upside-down.(Within: inc3.11.6)"
+		log_debug "Expected error. You can turn that frown upside-down.(Within: inc3.11.6)"
 	}
 
 	# Delete the reservation
@@ -76,7 +76,7 @@ proc inc3_11_6 {} {
 		delete_res $res_name
 		fail "Reservation $test did not fail but should have. (Within: inc3.11.6)"
 	} else {
-		log_debug "\033\[32mExpected error. You can turn that frown upside-down.(Within: inc3.11.6)"
+		log_debug "Expected error. You can turn that frown upside-down.(Within: inc3.11.6)"
 	}
 	# Delete the reservation
 	set ret_code [delete_res $res_name_save]

@@ -285,7 +285,7 @@ proc inc3_11_9 {} {
 		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 
-	log_debug "\033\[32mJOB is running as expected (Within: inc3.11.9)"
+	log_debug "JOB is running as expected (Within: inc3.11.9)"
 
 	# Submit a batch job: a job using more cores than available in first 5 nodes
 	set core_res_num   [ expr $cores_per_node / 2 ]

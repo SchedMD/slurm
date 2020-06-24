@@ -74,7 +74,7 @@ proc inc3_11_1 {} {
 			delete_res $res_name
 			fail "Reservation $test did not fail but should have (Within: inc3.11.1)"
 		} else {
-			log_debug "\033\[32mExpected error. You can turn that frown upside-down. (Within: inc3.11.1)"
+			log_debug "Expected error. You can turn that frown upside-down. (Within: inc3.11.1)"
 		}
 	}
 
@@ -103,13 +103,13 @@ proc inc3_11_1 {} {
 		if {$ret_code != 0} {
 			fail "Unable to create a valid reservation (Within: inc3.11.1)"
 		} else {
-			log_debug "\033\[32mReservation created as expected. (Within: inc3.11.1)"
+			log_debug "Reservation created as expected. (Within: inc3.11.1)"
 		}
 		set ret_code [delete_res $res_name]
 		if {$ret_code != 0} {
 			fail "Unable to delete a reservation (Within: inc3.11.1)"
 		} else {
-			log_debug "\033\[32mReservation deleted as expected. (Within: inc3.11.1)"
+			log_debug "Reservation deleted as expected. (Within: inc3.11.1)"
 		}
 	}
 }

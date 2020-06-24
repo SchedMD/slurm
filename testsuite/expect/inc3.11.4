@@ -81,7 +81,7 @@ proc inc3_11_4 {} {
 		log_error "Job $job_id should have been rejected from reservation restricted to root.  Expected rejection message not given. (Within: inc3.11.4)"
 		set exit_code 1
 	} else {
-		log_debug "\033\[32mExpected error, no worries mate. (Within: inc3.11.4)"
+		log_debug "Expected error, no worries mate. (Within: inc3.11.4)"
 	}
 	# Delete the reservation
 	set ret_code [delete_res $res_name]
