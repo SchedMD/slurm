@@ -2689,7 +2689,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags |= RESERVE_FLAG_PROM;
 			list_append(prom_resv_list, resv_ptr);
 		}
-		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_PROM) {
+		if ((resv_desc_ptr->flags & RESERVE_FLAG_NO_PROM) &&
+		    (resv_ptr->flags & RESERVE_FLAG_PROM)) {
 			resv_ptr->flags &= (~RESERVE_FLAG_PROM);
 			(void)list_remove_first(
 				prom_resv_list, _find_resv_ptr, resv_ptr);
