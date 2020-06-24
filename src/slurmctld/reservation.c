@@ -2655,6 +2655,13 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 				error_code = ESLURM_INVALID_NODE_NAME;
 				goto update_failure;
 			}
+			if ((resv_ptr->flags & RESERVE_FLAG_REPLACE) ||
+			    (resv_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
+				info("%s: reservation %s can't be updated with PART_NODES flag; it is incompatible with REPLACE[_DOWN]",
+				     __func__, resv_desc_ptr->name);
+				error_code = ESLURM_NOT_SUPPORTED;
+				goto update_failure;
+			}
 			resv_ptr->flags |= RESERVE_FLAG_PART_NODES;
 			/* Explicitly set the node_list to ALL */
 			xfree(resv_desc_ptr->node_list);
@@ -2870,6 +2877,13 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->node_cnt = 0;
 	}
 	if (resv_desc_ptr->node_list) {		/* Change bitmap last */
+		if ((resv_ptr->flags & RESERVE_FLAG_REPLACE) ||
+		    (resv_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
+			info("%s: reservation %s can't be updated with Nodes option; it is incompatible with REPLACE[_DOWN]",
+			     __func__, resv_desc_ptr->name);
+			error_code = ESLURM_NOT_SUPPORTED;
+			goto update_failure;
+		}
 		bitstr_t *node_bitmap;
 		resv_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
 		if (xstrcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
