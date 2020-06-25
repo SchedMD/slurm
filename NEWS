@@ -73,6 +73,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix updating reservations to set the duration correctly if updating the
     start time.
  -- Fix update reservation to promiscuous mode.
+ -- Fix override of job tasks count to max when ntasks-per-node present.
+ -- Fix min CPUs per node not being at least CPUs per task requested.
+ -- Fix CPUs allocated to match CPUs requested when requesting GRES and
+    threads per core equal to one.
 
 * Changes in Slurm 20.02.3
 ==========================
