@@ -80,6 +80,7 @@ documents those changes that are of interest to users and administrators.
     threads per core equal to one.
  -- Fix NodeName config parsing with Boards and without CPUs.
  -- Ensure SLURM_JOB_USER and SLURM_JOB_UID are set in SrunProlog/Epilog.
+ -- Fix error messages for certain invalid salloc/sbatch/srun options.
 
 * Changes in Slurm 20.02.3
 ==========================

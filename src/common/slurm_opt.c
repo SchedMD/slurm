@@ -328,7 +328,7 @@ COMMON_OPTION_RESET(field, NO_VAL64)
 static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
 {								\
 	if ((opt->field = str_to_mbytes2(arg)) == NO_VAL64) {	\
-		error("Invalid ##field specification");		\
+		error("Invalid " #option " specification");	\
 		exit(-1);					\
 	}							\
 								\
@@ -341,10 +341,10 @@ static int arg_set_data_##field(slurm_opt_t *opt, const data_t *arg,	\
 	char *str = NULL;						\
 	int rc;								\
 	if ((rc = data_get_string_converted(arg, &str)))		\
-		ADD_DATA_ERROR("Invalid ##field specification string",	\
+		ADD_DATA_ERROR("Invalid " #option " specification string", \
 			       rc);					\
 	else if ((opt->field = str_to_mbytes2(str)) == NO_VAL64)	\
-		ADD_DATA_ERROR("Invalid ##field specification",		\
+		ADD_DATA_ERROR("Invalid " #option " specification",	\
 			       (rc = SLURM_ERROR));			\
 	xfree(str);							\
 	return rc;							\
@@ -2477,7 +2477,7 @@ static slurm_cli_opt_t slurm_opt_mem_bind = {
 	.reset_each_pass = true,
 };
 
-COMMON_MBYTES_OPTION(mem_per_cpu, "--mem-per-cpu");
+COMMON_MBYTES_OPTION(mem_per_cpu, --mem-per-cpu);
 static slurm_cli_opt_t slurm_opt_mem_per_cpu = {
 	.name = "mem-per-cpu",
 	.has_arg = required_argument,
@@ -2489,7 +2489,7 @@ static slurm_cli_opt_t slurm_opt_mem_per_cpu = {
 	.reset_each_pass = true,
 };
 
-COMMON_MBYTES_OPTION(mem_per_gpu, "--mem-per-gpu");
+COMMON_MBYTES_OPTION(mem_per_gpu, --mem-per-gpu);
 static slurm_cli_opt_t slurm_opt_mem_per_gpu = {
 	.name = "mem-per-gpu",
 	.has_arg = required_argument,
@@ -4265,7 +4265,7 @@ static slurm_cli_opt_t slurm_opt_time_min = {
 	.reset_func = arg_reset_time_min,
 };
 
-COMMON_MBYTES_OPTION(pn_min_tmp_disk, "--tmp");
+COMMON_MBYTES_OPTION(pn_min_tmp_disk, --tmp);
 static slurm_cli_opt_t slurm_opt_tmp = {
 	.name = "tmp",
 	.has_arg = required_argument,
