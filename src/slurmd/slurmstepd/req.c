@@ -1835,9 +1835,11 @@ _handle_reconfig(int fd, stepd_step_rec_t *job, uid_t uid)
 		goto done;
 	}
 
-	/* We just want to make sure the file handle is correct on a
-	   reconfigure since the file could had rolled thus making
-	   the currect fd incorrect. */
+	/*
+	 * We just want to make sure the file handle is correct on a
+	 * reconfigure since the file could had rolled thus making the
+	 * current fd incorrect.
+	 */
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
 	debug("_handle_reconfigure for job %u.%u successful",
 	      job->jobid, job->stepid);
