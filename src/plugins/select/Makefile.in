@@ -801,8 +801,8 @@ uninstall-am:
 .PRECIOUS: Makefile
 
 
-# Each plugin here needs a plugin_id, here are the currect plug_ids
-# for each plugin.
+# Each plugin here needs a plugin_id.
+# Here are the current plugin_ids for each plugin.
 
 # bluegene	           = 100 ==> Not currently used
 # cons_res	           = 101
