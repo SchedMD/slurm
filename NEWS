@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix 'scontrol hold' to work with 'JobName'.
  -- sbatch - handle --uid/--gid in #SBATCH directives properly.
  -- Fix race condition in job termination on slurmd.
+ -- Print specific error messages if trying to run use certain
+    priority/multifactor factors that cannot work without SlurmDBD.
 
 * Changes in Slurm 20.02.3
 ==========================

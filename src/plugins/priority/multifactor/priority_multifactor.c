@@ -1756,15 +1756,12 @@ int init ( void )
 	if (xstrcasecmp(temp, "accounting_storage/slurmdbd")
 	    && xstrcasecmp(temp, "accounting_storage/mysql")) {
 		time_t start_time = time(NULL);
-		error("You are not running a supported "
-		      "accounting_storage plugin\n(%s).\n"
-		      "Fairshare can only be calculated with either "
-		      "'accounting_storage/slurmdbd' "
-		      "or 'accounting_storage/mysql' enabled.  "
-		      "If you want multifactor priority without fairshare "
-		      "ignore this message.",
-		      temp);
+		if (weight_age)
+			error("PriorityWeightAge can only be used with SlurmDBD, ignoring");
+		if (weight_fs)
+			error("PriorityWeightFairshare can only be used with SlurmDBD, ignoring");
 		calc_fairshare = 0;
+		weight_age = 0;
 		weight_fs = 0;
 
 		/* Initialize job priority factors for valid sprio output */
