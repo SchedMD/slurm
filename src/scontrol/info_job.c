@@ -124,7 +124,8 @@ scontrol_pid_info(pid_t job_pid)
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
-			slurm_perror ("slurm_pid2jobid error");
+			fprintf(stderr,
+				"Failed to locate job for requested pid\n");
 		return;
 	}
 
@@ -132,13 +133,13 @@ scontrol_pid_info(pid_t job_pid)
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
-			slurm_perror ("slurm_get_end_time error");
+			slurm_perror("Failed to get job end time");
 		return;
 	}
-	printf("Slurm job id %u ends at %s\n", job_id, slurm_ctime2(&end_time));
+	printf("Slurm JobId=%u ends at %s\n", job_id, slurm_ctime2(&end_time));
 
 	rem_time = slurm_get_rem_time(job_id);
-	printf("slurm_get_rem_time is %ld\n", rem_time);
+	printf("Job remaining time is %ld seconds\n", rem_time);
 	return;
 }
 
