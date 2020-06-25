@@ -57,6 +57,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
 #define PATH_TO_CPU	"/sys/devices/system/cpu/"
@@ -433,6 +434,7 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 	char *cpu_bind;
 	char *cpu_str;
 	char *savestr = NULL;
+	char cpu_bind_type_string[128];
 
 	if (set_batch_freq == -1) {
 		if (xstrcasestr(slurm_conf.launch_params,
@@ -445,6 +447,8 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 	if (((job->step_id.step_id == SLURM_BATCH_SCRIPT) && !set_batch_freq) ||
 	    (job->step_id.step_id == SLURM_EXTERN_CONT))
 		return;
+
+	slurm_sprint_cpu_bind_type(cpu_bind_type_string, job->cpu_bind_type);
 
 	log_flag(CPU_FREQ, "%s: request: min=(%12d  %8x) max=(%12d %8x) governor=%8x",
 		 __func__, job->cpu_freq_min, job->cpu_freq_min,
@@ -460,7 +464,14 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 		return;
 
 	if (job->cpu_bind == NULL) {
-		error("cpu_freq_cpuset_validate: cpu_bind string is null");
+		/*
+		 * slurm_verify_cpu_bind will set cpu_bind to NULL for manual
+		 * binding that doesn't require an argument
+		 */
+		if ((job->cpu_bind_type != CPU_BIND_NONE) &&
+		    (job->cpu_bind_type != CPU_BIND_RANK) &&
+		    (job->cpu_bind_type != CPU_BIND_LDRANK))
+			error("cpu_freq_cpuset_validate: cpu_bind string is null");
 		return;
 	}
 	cpu_bind = xstrdup(job->cpu_bind);
