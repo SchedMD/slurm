@@ -1374,7 +1374,6 @@ extern void slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
 extern void slurm_free_sib_msg(sib_msg_t *msg);
 extern void slurm_free_stats_info_request_msg(stats_info_request_msg_t *msg);
 extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg);
-extern void slurm_free_step_alloc_info_msg(step_alloc_info_msg_t * msg);
 extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t *msg);
 extern void slurm_free_set_debug_flags_msg(set_debug_flags_msg_t *msg);
 extern void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);

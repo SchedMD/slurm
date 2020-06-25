@@ -6963,13 +6963,13 @@ _pack_step_alloc_info_msg(step_alloc_info_msg_t * job_desc_ptr, Buf buffer,
 {
 	/* load the data values */
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		pack32(job_desc_ptr->job_id, buffer);
-		pack32(job_desc_ptr->het_job_offset, buffer);
-		pack32(job_desc_ptr->step_id, buffer);
+		slurm_pack_selected_step(job_desc_ptr, protocol_version,
+					 buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(job_desc_ptr->job_id, buffer);
+		pack32(job_desc_ptr->step_id.job_id, buffer);
 		pack32(job_desc_ptr->het_job_offset, buffer);
-		pack_old_step_id(job_desc_ptr->step_id, buffer);
+		pack_old_step_id(job_desc_ptr->step_id.step_id,
+				 buffer);
 	}
 }
 
@@ -6978,33 +6978,36 @@ _unpack_step_alloc_info_msg(step_alloc_info_msg_t **
 			    job_desc_buffer_ptr, Buf buffer,
 			    uint16_t protocol_version)
 {
-	step_alloc_info_msg_t *job_desc_ptr;
-
-	/* alloc memory for structure */
-	xassert(job_desc_buffer_ptr);
-	job_desc_ptr = xmalloc(sizeof(step_alloc_info_msg_t));
-	*job_desc_buffer_ptr = job_desc_ptr;
-
 	/* load the data values */
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		safe_unpack32(&job_desc_ptr->job_id, buffer);
-		safe_unpack32(&job_desc_ptr->het_job_offset, buffer);
-		safe_unpack32(&job_desc_ptr->step_id, buffer);
+		if (slurm_unpack_selected_step(
+			    job_desc_buffer_ptr, protocol_version, buffer) !=
+		    SLURM_SUCCESS)
+			return SLURM_ERROR;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&job_desc_ptr->job_id, buffer);
+		step_alloc_info_msg_t *job_desc_ptr;
+
+		/* alloc memory for structure */
+		xassert(job_desc_buffer_ptr);
+		job_desc_ptr = xmalloc(sizeof(step_alloc_info_msg_t));
+		*job_desc_buffer_ptr = job_desc_ptr;
+
+		safe_unpack32(&job_desc_ptr->step_id.job_id, buffer);
 		safe_unpack32(&job_desc_ptr->het_job_offset, buffer);
-		safe_unpack32(&job_desc_ptr->step_id, buffer);
-		convert_old_step_id(&job_desc_ptr->step_id);
+		safe_unpack32(&job_desc_ptr->step_id.step_id, buffer);
+		convert_old_step_id(&job_desc_ptr->step_id.step_id);
+
+		return SLURM_SUCCESS;
+
+	unpack_error:
+		slurm_destroy_selected_step(job_desc_ptr);
+		*job_desc_buffer_ptr = NULL;
+		return SLURM_ERROR;
 	} else {
-		goto unpack_error;
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_step_alloc_info_msg(job_desc_ptr);
-	*job_desc_buffer_ptr = NULL;
-	return SLURM_ERROR;
 }
 
 static void _pack_node_reg_resp(

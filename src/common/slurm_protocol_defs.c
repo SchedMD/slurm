@@ -870,11 +870,6 @@ extern void slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg)
 	}
 }
 
-extern void slurm_free_step_alloc_info_msg(step_alloc_info_msg_t * msg)
-{
-	xfree(msg);
-}
-
 extern void slurm_free_return_code_msg(return_code_msg_t * msg)
 {
 	xfree(msg);
@@ -4898,7 +4893,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_job_alloc_info_msg(data);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
-		slurm_free_step_alloc_info_msg(data);
+		slurm_destroy_selected_step(data);
 		break;
 	case REQUEST_SHUTDOWN:
 		slurm_free_shutdown_msg(data);

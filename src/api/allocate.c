@@ -891,9 +891,11 @@ extern int slurm_sbcast_lookup(uint32_t job_id, uint32_t het_job_offset,
 	slurm_msg_t resp_msg;
 
 	memset(&req, 0, sizeof(req));
-	req.job_id = job_id;
+	req.step_id.job_id = job_id;
+	req.array_task_id = NO_VAL;
 	req.het_job_offset = het_job_offset;
-	req.step_id = step_id;
+	req.step_id.step_id = step_id;
+	req.step_id.step_het_comp = NO_VAL;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_SBCAST_CRED;

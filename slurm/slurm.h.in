@@ -2226,16 +2226,13 @@ typedef struct update_layout_msg {
 	char* arg;
 } update_layout_msg_t;
 
-typedef struct step_alloc_info_msg {
-	uint32_t het_job_offset;	/* HetJob component index (or NO_VAL) */
-	uint32_t job_id;		/* job ID (or hetjob ID) */
-	uint32_t step_id;		/* step ID (or NO_VAL for whole job) */
-} step_alloc_info_msg_t;
 typedef struct {
 	uint32_t array_task_id;		/* task_id of a job array or NO_VAL */
 	uint32_t het_job_offset;	/* het_job_offset or NO_VAL */
 	slurm_step_id_t step_id;
 } slurm_selected_step_t;
+
+typedef slurm_selected_step_t step_alloc_info_msg_t;
 
 typedef struct powercap_info_msg {
 	uint32_t power_cap;	/* power cap value in watts */
