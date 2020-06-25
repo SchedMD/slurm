@@ -1858,6 +1858,9 @@ This option can be used to maintain a constant number of idle resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify
 specific nodes to be included in the reservation.
+
+\fBNOTE\fR: Removing a node from the cluster while in a reservation with the
+\fIREPLACE\fR flag will not cause it to be replaced.
 .TP
 \fIREPLACE_DOWN\fR
 Nodes which are DOWN or DRAINED are automatically replenished using idle resources.
@@ -1865,6 +1868,9 @@ This option can be used to maintain a constant sized pool of resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify
 specific nodes to be included in the reservation.
+
+\fBNOTE\fR: Removing a node from the cluster while in a reservation with the
+\fIREPLACE_DOWN\fR flag will not cause it to be replaced.
 .TP
 \fISPEC_NODES\fR
 Reservation is for specific nodes (output only)
