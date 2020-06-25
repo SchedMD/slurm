@@ -1626,8 +1626,8 @@ static void _listen_accept(void *x)
 	con_mgr_fd_t *con = x;
 	con_mgr_t *mgr = con->mgr;
 	int rc;
-	struct sockaddr *addr = xmalloc(sizeof(*addr));
-	socklen_t addrlen = sizeof(*addr);
+	socklen_t addrlen = sizeof(struct sockaddr_storage);
+	struct sockaddr *addr = xmalloc(addrlen);
 	int fd;
 
 	_check_magic_fd(con);
@@ -1673,7 +1673,7 @@ static void _listen_accept(void *x)
 	}
 
 	xassert(addrlen > 0);
-	xassert(addrlen <= sizeof(*addr));
+	xassert(addrlen <= sizeof(struct sockaddr_storage));
 
 	/* hand over FD for normal processing */
 	if ((rc = _con_mgr_process_fd_internal(mgr, con, fd, fd, con->events,
