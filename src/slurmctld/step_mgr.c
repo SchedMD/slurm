@@ -1038,6 +1038,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				FREE_NULL_BITMAP(req_nodes);
 				goto cleanup;
 			}
+			FREE_NULL_BITMAP(req_nodes);
 		}
 		FREE_NULL_BITMAP(exc_bitmap);
 	}
