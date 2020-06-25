@@ -73,3 +73,5 @@ API CHANGES
     see slurm.h for new implementation.  If not running hetsteps just put
     NO_VAL as the value for step_het_comp.
  -- slurmdb_selected_step_t has been renamed slurm_selected_step_t.
+ -- slurm_sbcast_lookup() arguments have changed.  It now takes a populated
+    slurm_selected_step_t instead of job_id, het_job_offset, step_id.

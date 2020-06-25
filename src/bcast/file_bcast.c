@@ -138,10 +138,7 @@ static int _get_job_info(struct bcast_parameters *params)
 	slurm_get_selected_step_id(job_id_str, sizeof(job_id_str),
 				   params->selected_step);
 
-	rc = slurm_sbcast_lookup(params->selected_step->step_id.job_id,
-				 params->selected_step->het_job_offset,
-				 params->selected_step->step_id.step_id,
-				 &sbcast_cred);
+	rc = slurm_sbcast_lookup(params->selected_step, &sbcast_cred);
 	if (rc != SLURM_SUCCESS) {
 		error("Slurm job %s lookup error: %s",
 		      job_id_str, slurm_strerror(slurm_get_errno()));
