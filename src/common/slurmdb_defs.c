@@ -3113,32 +3113,37 @@ extern char *slurmdb_get_selected_step_id(
 	char *job_id_str, int len,
 	slurmdb_selected_step_t *selected_step)
 {
-	char id[FORMAT_STRING_SIZE];
+	int pos = 0;
 
-	xassert(selected_step);
+	pos = snprintf(job_id_str, len, "%u",
+		       selected_step->step_id.job_id);
+	if (pos > len)
+		goto endit;
 
-	if (selected_step->array_task_id != NO_VAL) {
-		snprintf(id, FORMAT_STRING_SIZE,
-			 "%u_%u",
-			 selected_step->step_id.job_id,
-			 selected_step->array_task_id);
-	} else if (selected_step->het_job_offset != NO_VAL) {
-		snprintf(id, FORMAT_STRING_SIZE,
-			 "%u+%u",
-			 selected_step->step_id.job_id,
-			 selected_step->het_job_offset);
-	} else {
-		snprintf(id, FORMAT_STRING_SIZE,
-			 "%u",
-			 selected_step->step_id.job_id);
+	if (selected_step->array_task_id != NO_VAL)
+		pos += snprintf(job_id_str + pos, len - pos, "_%u",
+				selected_step->array_task_id);
+	if (pos > len)
+		goto endit;
+
+	if (selected_step->het_job_offset != NO_VAL)
+		pos += snprintf(job_id_str + pos, len - pos, "+%u",
+				selected_step->het_job_offset);
+	if (pos > len)
+		goto endit;
+
+	if (selected_step->step_id.step_id != NO_VAL) {
+		job_id_str[pos++] = '.';
+
+		if (pos > len)
+			goto endit;
+
+		log_build_step_id_str(&selected_step->step_id,
+				      job_id_str + pos, len - pos,
+				      STEP_ID_FLAG_NO_PREFIX |
+				      STEP_ID_FLAG_NO_JOB);
 	}
-
-	if (selected_step->step_id.step_id != SLURM_BATCH_SCRIPT)
-		snprintf(job_id_str, len, "%s.%u",
-			 id, selected_step->step_id.step_id);
-	else
-		snprintf(job_id_str, len, "%s", id);
-
+endit:
 	return job_id_str;
 }
 
