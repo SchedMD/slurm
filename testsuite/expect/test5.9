@@ -95,7 +95,7 @@ if { [test_using_slurmdbd] == 0 } {
 if {[string compare [check_accounting_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator"
 }
-set available [available_nodes $partition idle]
+set available [available_nodes "" idle]
 if {$available < 2} {
     skip "Not enough nodes currently available ($available avail, 2 needed)"
 }

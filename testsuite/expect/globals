@@ -141,11 +141,6 @@ cset bjobs     	 "${slurm_dir}/bin/bjobs"
 cset bkill     	 "${slurm_dir}/bin/bkill"
 cset bsub     	 "${slurm_dir}/bin/bsub"
 
-# If length of string partition is zero, use output of function
-#	default_partition, otherwise use the partition explicitly
-#	named in your globals.local file (or below) for poe commands
-cset partition ""
-
 # If using MPICH-2 or other version of MPI requiring pmi libary, use this
 #cset mpicc	"/home/jette/mpich2-install/bin/mpicc"
 #cset use_pmi	1

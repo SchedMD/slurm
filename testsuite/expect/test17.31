@@ -41,7 +41,7 @@ set min_mem     1024
 
 print_header $test_id
 
-set available [available_nodes $partition ""]
+set available [available_nodes "" ""]
 if {$available < $node_cnt} {
 	skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
 }
