@@ -88,7 +88,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 1))) {
 			if (!job_cond->step_list)
 				job_cond->step_list = list_create(
-					slurmdb_destroy_selected_step);
+					slurm_destroy_selected_step);
 			slurm_addto_step_list(job_cond->step_list, argv[i]+end);
 			if (!list_count(job_cond->step_list))
 				FREE_NULL_LIST(job_cond->step_list);

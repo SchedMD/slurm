@@ -258,7 +258,7 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 					   char *cluster_name, char **extra)
 {
 	ListIterator itr = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
+	slurm_selected_step_t *selected_step = NULL;
 
 	if (!job_cond || (job_cond->flags & JOBCOND_FLAG_RUNAWAY))
 		return;
@@ -466,7 +466,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 {
 	char *query = NULL;
 	char *extra = xstrdup(sent_extra);
-	slurmdb_selected_step_t *selected_step = NULL;
+	slurm_selected_step_t *selected_step = NULL;
 	MYSQL_RES *result = NULL, *step_result = NULL;
 	MYSQL_ROW row, step_row;
 	slurmdb_job_rec_t *job = NULL;

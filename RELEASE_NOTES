@@ -72,3 +72,4 @@ API CHANGES
  -- slurm_job_step_get_pids() parameters has changed to use slurm_step_id_t
     see slurm.h for new implementation.  If not running hetsteps just put
     NO_VAL as the value for step_het_comp.
+ -- slurmdb_selected_step_t has been renamed slurm_selected_step_t.

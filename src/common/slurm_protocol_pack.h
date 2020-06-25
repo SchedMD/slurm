@@ -130,4 +130,9 @@ extern int unpack_step_id(slurm_step_id_t **msg_ptr, Buf buffer,
 extern void pack_old_step_id(uint32_t step_id, Buf buffer);
 extern void convert_old_step_id(uint32_t *step_id);
 
+extern void slurm_pack_selected_step(void *in, uint16_t protocol_version,
+				       Buf buffer);
+extern int slurm_unpack_selected_step(slurm_selected_step_t **step,
+					uint16_t protocol_version, Buf buffer);
+
 #endif

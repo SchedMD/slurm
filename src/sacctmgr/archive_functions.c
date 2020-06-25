@@ -237,7 +237,7 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Jobs",
 					 MAX(command_len, 1))) {
 			char *end_char = NULL, *start_char = argv[i] + end;
-			slurmdb_selected_step_t *selected_step = NULL;
+			slurm_selected_step_t *selected_step = NULL;
 			char *dot = NULL;
 			if (!job_cond->step_list)
 				job_cond->step_list = list_create(xfree_ptr);
@@ -249,7 +249,7 @@ static int _set_cond(int *start, int argc, char **argv,
 				if (start_char[0] == '\0')
 					continue;
 				selected_step = xmalloc(
-					sizeof(slurmdb_selected_step_t));
+					sizeof(slurm_selected_step_t));
 				selected_step->array_task_id = NO_VAL;
 				selected_step->het_job_offset = NO_VAL;
 				list_append(job_cond->step_list, selected_step);

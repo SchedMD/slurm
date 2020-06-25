@@ -257,7 +257,7 @@ int main(int argc, char **argv)
 		.step_id = NO_VAL,
 		.step_het_comp = NO_VAL,
 	};
-	slurmdb_selected_step_t *selected_step = NULL;
+	slurm_selected_step_t *selected_step = NULL;
 
 	slurm_conf_init(NULL);
 	print_fields_list = list_create(NULL);

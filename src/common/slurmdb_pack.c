@@ -3643,7 +3643,7 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 		_pack_list_of_str(object->resv_list, buffer);
 		_pack_list_of_str(object->resvid_list, buffer);
 
-		slurm_pack_list(object->step_list, slurmdb_pack_selected_step,
+		slurm_pack_list(object->step_list, slurm_pack_selected_step,
 				buffer, protocol_version);
 
 		_pack_list_of_str(object->state_list, buffer);
@@ -3668,7 +3668,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 	uint32_t count;
 	slurmdb_job_cond_t *object_ptr = xmalloc(sizeof(slurmdb_job_cond_t));
 	char *tmp_info = NULL;
-	slurmdb_selected_step_t *job = NULL;
+	slurm_selected_step_t *job = NULL;
 
 	*object = object_ptr;
 
@@ -3834,10 +3834,10 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->step_list =
-				list_create(slurmdb_destroy_selected_step);
+				list_create(slurm_destroy_selected_step);
 			for (i = 0; i < count; i++) {
-				if (slurmdb_unpack_selected_step(
-					&job, protocol_version, buffer)
+				if (slurm_unpack_selected_step(
+					    &job, protocol_version, buffer)
 				    != SLURM_SUCCESS) {
 					error("unpacking selected step");
 					goto unpack_error;
@@ -3846,7 +3846,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 				 * if we process it the database will
 				 * return all jobs. */
 				if (!job->step_id.job_id)
-					slurmdb_destroy_selected_step(job);
+					slurm_destroy_selected_step(job);
 				else
 					list_append(object_ptr->step_list, job);
 			}
@@ -3933,7 +3933,7 @@ extern void slurmdb_pack_job_modify_cond(void *in, uint16_t protocol_version,
 	if (!cond->step_list || !list_count(cond->step_list))
 		pack32(NO_VAL, buffer);
 	else {
-		slurmdb_selected_step_t *selected_step =
+		slurm_selected_step_t *selected_step =
 			list_peek(cond->step_list);
 		pack32(selected_step->step_id.job_id, buffer);
 	}
@@ -3947,7 +3947,7 @@ extern int slurmdb_unpack_job_modify_cond(void **object,
 {
 	uint32_t uint32_tmp;
 	char *cluster = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
+	slurm_selected_step_t *selected_step = NULL;
 	slurmdb_job_cond_t *object_ptr = NULL;
 
 	/* This is no longer valid for current Slurm */
@@ -3963,8 +3963,8 @@ extern int slurmdb_unpack_job_modify_cond(void **object,
 
 	safe_unpack32(&object_ptr->flags, buffer);
 
-	object_ptr->step_list = list_create(slurmdb_destroy_selected_step);
-	selected_step = xmalloc(sizeof(slurmdb_selected_step_t));
+	object_ptr->step_list = list_create(slurm_destroy_selected_step);
+	selected_step = xmalloc(sizeof(slurm_selected_step_t));
 	list_append(object_ptr->step_list, selected_step);
 	selected_step->array_task_id = NO_VAL;
 	safe_unpack32(&selected_step->step_id.job_id, buffer);
@@ -4844,60 +4844,6 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 unpack_error:
 	slurmdb_destroy_reservation_cond(object_ptr);
 	*object = NULL;
-	return SLURM_ERROR;
-}
-
-extern void slurmdb_pack_selected_step(void *in, uint16_t protocol_version,
-				       Buf buffer)
-{
-	slurmdb_selected_step_t *step = (slurmdb_selected_step_t *) in;
-
-	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		pack_step_id(&step->step_id, buffer, protocol_version);
-		pack32(step->array_task_id, buffer);
-		pack32(step->het_job_offset, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(step->array_task_id, buffer);
-		pack32(step->step_id.job_id, buffer);
-		pack32(step->het_job_offset, buffer);
-		pack_old_step_id(step->step_id.step_id, buffer);
-	}
-}
-
-extern int slurmdb_unpack_selected_step(slurmdb_selected_step_t **step,
-					uint16_t protocol_version, Buf buffer)
-{
-	slurmdb_selected_step_t *step_ptr =
-		xmalloc(sizeof(slurmdb_selected_step_t));
-
-	*step = step_ptr;
-
-	step_ptr->array_task_id = NO_VAL;
-
-	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		if (unpack_step_id_members(&step_ptr->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
-			goto unpack_error;
-		safe_unpack32(&step_ptr->array_task_id, buffer);
-		safe_unpack32(&step_ptr->het_job_offset, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&step_ptr->array_task_id, buffer);
-		safe_unpack32(&step_ptr->step_id.job_id, buffer);
-		safe_unpack32(&step_ptr->het_job_offset, buffer);
-		safe_unpack32(&step_ptr->step_id.step_id, buffer);
-		/* Old Slurm used to use INFINITE To denote the batch script */
-		if (step_ptr->step_id.step_id == INFINITE)
-			step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
-		convert_old_step_id(&step_ptr->step_id.step_id);
-		step_ptr->step_id.step_het_comp = NO_VAL;
-	} else
-		goto unpack_error;
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurmdb_destroy_selected_step(step_ptr);
-	*step = NULL;
 	return SLURM_ERROR;
 }
 

@@ -677,7 +677,7 @@ extern void parse_command_line(int argc, char **argv)
 	extern int optind;
 	int c, i, optionIndex = 0;
 	char *end = NULL, *start = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
+	slurm_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	struct stat stat_buf;
 	char *dot = NULL;
@@ -862,7 +862,7 @@ extern void parse_command_line(int argc, char **argv)
 		case 'j':
 			if (!job_cond->step_list)
 				job_cond->step_list = list_create(
-					slurmdb_destroy_selected_step);
+					slurm_destroy_selected_step);
 			slurm_addto_step_list(job_cond->step_list, optarg);
 			if (!list_count(job_cond->step_list))
 				FREE_NULL_LIST(job_cond->step_list);
@@ -1249,7 +1249,7 @@ extern void parse_command_line(int argc, char **argv)
 		while ((selected_step = list_next(itr))) {
 			char id[FORMAT_STRING_SIZE];
 
-			debug2("\t: %s", slurmdb_get_selected_step_id(
+			debug2("\t: %s", slurm_get_selected_step_id(
 				       id, sizeof(id), selected_step));
 		}
 		list_iterator_destroy(itr);

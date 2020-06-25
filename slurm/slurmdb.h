@@ -319,7 +319,7 @@ typedef struct {
 	List resv_list;		/* list of char * */
 	List resvid_list;	/* list of char * */
 	List state_list;        /* list of char * */
-	List step_list;         /* list of slurmdb_selected_step_t */
+	List step_list;         /* list of slurm_selected_step_t */
 	uint32_t timelimit_max; /* max timelimit */
 	uint32_t timelimit_min; /* min timelimit */
 	time_t usage_end;
@@ -1046,12 +1046,6 @@ typedef struct {
 			 * job usage is requested.
 			 */
 } slurmdb_reservation_rec_t;
-
-typedef struct {
-	uint32_t array_task_id;		/* task_id of a job array or NO_VAL */
-	uint32_t het_job_offset;	/* het_job_offset or NO_VAL */
-	slurm_step_id_t step_id;
-} slurmdb_selected_step_t;
 
 typedef struct {
 	uint32_t elapsed;
@@ -1822,7 +1816,6 @@ extern void slurmdb_destroy_update_object(void *object);
 extern void slurmdb_destroy_used_limits(void *object);
 extern void slurmdb_destroy_print_tree(void *object);
 extern void slurmdb_destroy_hierarchical_rec(void *object);
-extern void slurmdb_destroy_selected_step(void *object);
 
 extern void slurmdb_destroy_report_job_grouping(void *object);
 extern void slurmdb_destroy_report_acct_grouping(void *object);

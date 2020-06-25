@@ -635,7 +635,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 {
 	int count = 0;
 	char *name;
-	slurmdb_selected_step_t *selected_step = NULL;
+	slurm_selected_step_t *selected_step = NULL;
 
 	if ((end-start) <= 0)
 		return 0;
@@ -658,7 +658,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 		list_append(step_list, selected_step);
 		count++;
 	} else
-		slurmdb_destroy_selected_step(selected_step);
+		slurm_destroy_selected_step(selected_step);
 
 	return count;
 }
@@ -730,9 +730,9 @@ extern int slurm_sort_char_list_desc(void *v1, void *v2)
 	return 0;
 }
 
-extern slurmdb_selected_step_t *slurm_parse_step_str(char *name)
+extern slurm_selected_step_t *slurm_parse_step_str(char *name)
 {
-	slurmdb_selected_step_t *selected_step;
+	slurm_selected_step_t *selected_step;
 	char *dot, *plus = NULL, *under;
 
 	xassert(name);
@@ -946,6 +946,12 @@ extern void slurm_free_update_step_msg(step_update_request_msg_t * msg)
 		xfree(msg->name);
 		xfree(msg);
 	}
+}
+
+extern void slurm_destroy_selected_step(void *object)
+{
+	slurm_selected_step_t *step = (slurm_selected_step_t *)object;
+	xfree(step);
 }
 
 extern void slurm_free_job_id_response_msg(job_id_response_msg_t * msg)
@@ -5959,4 +5965,42 @@ extern bool verify_step_id(slurm_step_id_t *object, slurm_step_id_t *key)
 		return 1;
 	else
 		return 0;
+}
+
+extern char *slurm_get_selected_step_id(
+	char *job_id_str, int len,
+	slurm_selected_step_t *selected_step)
+{
+	int pos = 0;
+
+	pos = snprintf(job_id_str, len, "%u",
+		       selected_step->step_id.job_id);
+	if (pos > len)
+		goto endit;
+
+	if (selected_step->array_task_id != NO_VAL)
+		pos += snprintf(job_id_str + pos, len - pos, "_%u",
+				selected_step->array_task_id);
+	if (pos > len)
+		goto endit;
+
+	if (selected_step->het_job_offset != NO_VAL)
+		pos += snprintf(job_id_str + pos, len - pos, "+%u",
+				selected_step->het_job_offset);
+	if (pos > len)
+		goto endit;
+
+	if (selected_step->step_id.step_id != NO_VAL) {
+		job_id_str[pos++] = '.';
+
+		if (pos > len)
+			goto endit;
+
+		log_build_step_id_str(&selected_step->step_id,
+				      job_id_str + pos, len - pos,
+				      STEP_ID_FLAG_NO_PREFIX |
+				      STEP_ID_FLAG_NO_JOB);
+	}
+endit:
+	return job_id_str;
 }

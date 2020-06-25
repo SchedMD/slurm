@@ -126,7 +126,7 @@ hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond)
 	char *jobids = (char *) (SvPV_nolen(*svp));
 	if (!job_cond->step_list)
 	    job_cond->step_list =
-		    slurm_list_create(slurmdb_destroy_selected_step);
+		    slurm_list_create(slurm_destroy_selected_step);
 	slurm_addto_step_list(job_cond->step_list, jobids);
     }
     if ( (svp = hv_fetch (hv, "usage_start", strlen("usage_start"), FALSE)) ) {

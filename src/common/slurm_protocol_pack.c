@@ -13414,3 +13414,56 @@ extern void convert_old_step_id(uint32_t *step_id)
 	else if (*step_id == INFINITE)
 		*step_id = SLURM_EXTERN_CONT;
 }
+
+extern void slurm_pack_selected_step(void *in, uint16_t protocol_version,
+				     Buf buffer)
+{
+	slurm_selected_step_t *step = (slurm_selected_step_t *) in;
+
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		pack_step_id(&step->step_id, buffer, protocol_version);
+		pack32(step->array_task_id, buffer);
+		pack32(step->het_job_offset, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(step->array_task_id, buffer);
+		pack32(step->step_id.job_id, buffer);
+		pack32(step->het_job_offset, buffer);
+		pack_old_step_id(step->step_id.step_id, buffer);
+	}
+}
+
+extern int slurm_unpack_selected_step(slurm_selected_step_t **step,
+				      uint16_t protocol_version, Buf buffer)
+{
+	slurm_selected_step_t *step_ptr = xmalloc(sizeof(*step_ptr));
+
+	*step = step_ptr;
+
+	step_ptr->array_task_id = NO_VAL;
+
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&step_ptr->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&step_ptr->array_task_id, buffer);
+		safe_unpack32(&step_ptr->het_job_offset, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&step_ptr->array_task_id, buffer);
+		safe_unpack32(&step_ptr->step_id.job_id, buffer);
+		safe_unpack32(&step_ptr->het_job_offset, buffer);
+		safe_unpack32(&step_ptr->step_id.step_id, buffer);
+		/* Old Slurm used to use INFINITE To denote the batch script */
+		if (step_ptr->step_id.step_id == INFINITE)
+			step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
+		convert_old_step_id(&step_ptr->step_id.step_id);
+		step_ptr->step_id.step_het_comp = NO_VAL;
+	} else
+		goto unpack_error;
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_destroy_selected_step(step_ptr);
+	*step = NULL;
+	return SLURM_ERROR;
+}

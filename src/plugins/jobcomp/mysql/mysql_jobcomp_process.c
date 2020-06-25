@@ -53,7 +53,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	char *extra = NULL;
 	char *tmp = NULL;
 	char *selected_part = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
+	slurm_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;

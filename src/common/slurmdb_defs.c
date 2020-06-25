@@ -1364,12 +1364,6 @@ extern void slurmdb_destroy_hierarchical_rec(void *object)
 	}
 }
 
-extern void slurmdb_destroy_selected_step(void *object)
-{
-	slurmdb_selected_step_t *step = (slurmdb_selected_step_t *)object;
-	xfree(step);
-}
-
 extern void slurmdb_destroy_report_job_grouping(void *object)
 {
 	slurmdb_report_job_grouping_t *job_grouping =
@@ -3109,44 +3103,6 @@ extern slurmdb_report_cluster_rec_t *slurmdb_cluster_rec_2_report(
 	return slurmdb_report_cluster;
 }
 
-extern char *slurmdb_get_selected_step_id(
-	char *job_id_str, int len,
-	slurmdb_selected_step_t *selected_step)
-{
-	int pos = 0;
-
-	pos = snprintf(job_id_str, len, "%u",
-		       selected_step->step_id.job_id);
-	if (pos > len)
-		goto endit;
-
-	if (selected_step->array_task_id != NO_VAL)
-		pos += snprintf(job_id_str + pos, len - pos, "_%u",
-				selected_step->array_task_id);
-	if (pos > len)
-		goto endit;
-
-	if (selected_step->het_job_offset != NO_VAL)
-		pos += snprintf(job_id_str + pos, len - pos, "+%u",
-				selected_step->het_job_offset);
-	if (pos > len)
-		goto endit;
-
-	if (selected_step->step_id.step_id != NO_VAL) {
-		job_id_str[pos++] = '.';
-
-		if (pos > len)
-			goto endit;
-
-		log_build_step_id_str(&selected_step->step_id,
-				      job_id_str + pos, len - pos,
-				      STEP_ID_FLAG_NO_PREFIX |
-				      STEP_ID_FLAG_NO_JOB);
-	}
-endit:
-	return job_id_str;
-}
-
 /*
  * get the first cluster that will run a job
  * IN: req - description of resource allocation request
@@ -4134,8 +4090,8 @@ extern int slurmdb_find_qos_in_list(void *x, void *key)
 
 extern int slurmdb_find_selected_step_in_list(void *x, void *key)
 {
-	slurmdb_selected_step_t *selected_step = (slurmdb_selected_step_t *)x;
-	slurmdb_selected_step_t *query_step = (slurmdb_selected_step_t *)key;
+	slurm_selected_step_t *selected_step = (slurm_selected_step_t *)x;
+	slurm_selected_step_t *query_step = (slurm_selected_step_t *)key;
 
 	if (!memcmp(&query_step->step_id, &selected_step->step_id,
 		    sizeof(query_step->step_id)) &&

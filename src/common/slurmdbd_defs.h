@@ -203,7 +203,7 @@ typedef struct dbd_get_jobs_msg {
 				 * of accounting record */
 	uint32_t gid;		/* group id */
 	time_t last_update;	/* time of latest info */
-	List selected_steps;	/* List of slurmdb_selected_step_t *'s */
+	List selected_steps;	/* List of slurm_selected_step_t *'s */
 	List selected_parts;	/* List of char *'s */
 	char *user;		/* user name */
 } dbd_get_jobs_msg_t;

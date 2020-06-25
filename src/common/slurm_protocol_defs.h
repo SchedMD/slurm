@@ -1350,7 +1350,7 @@ extern int slurm_find_char_in_list(void *x, void *key);
 extern int slurm_sort_char_list_asc(void *, void *);
 extern int slurm_sort_char_list_desc(void *, void *);
 
-extern slurmdb_selected_step_t *slurm_parse_step_str(char *name);
+extern slurm_selected_step_t *slurm_parse_step_str(char *name);
 
 extern resource_allocation_response_msg_t *
 slurm_copy_resource_allocation_response_msg(
@@ -1621,6 +1621,11 @@ extern uint64_t suffix_mult(char *suffix);
  */
 extern bool verify_step_id(slurm_step_id_t *object, slurm_step_id_t *key);
 
+/* OUT: job_id_str - filled in with the id of the job/array
+ * RET: job_id_str */
+extern char *slurm_get_selected_step_id(
+	char *job_id_str, int len,
+	slurm_selected_step_t *selected_step);
 
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\

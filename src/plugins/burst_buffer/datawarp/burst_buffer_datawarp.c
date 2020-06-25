@@ -1546,12 +1546,12 @@ static void _update_system_comment(job_record_t *job_ptr, char *operation,
 	if (update_database) {
 		slurmdb_job_cond_t job_cond;
 		slurmdb_job_rec_t job_rec;
-		slurmdb_selected_step_t selected_step;
+		slurm_selected_step_t selected_step;
 		List ret_list;
 
 		memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
 		memset(&job_rec, 0, sizeof(slurmdb_job_rec_t));
-		memset(&selected_step, 0, sizeof(slurmdb_selected_step_t));
+		memset(&selected_step, 0, sizeof(slurm_selected_step_t));
 
 		selected_step.array_task_id = NO_VAL;
 		selected_step.step_id.job_id = job_ptr->job_id;

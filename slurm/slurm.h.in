@@ -2231,6 +2231,11 @@ typedef struct step_alloc_info_msg {
 	uint32_t job_id;		/* job ID (or hetjob ID) */
 	uint32_t step_id;		/* step ID (or NO_VAL for whole job) */
 } step_alloc_info_msg_t;
+typedef struct {
+	uint32_t array_task_id;		/* task_id of a job array or NO_VAL */
+	uint32_t het_job_offset;	/* het_job_offset or NO_VAL */
+	slurm_step_id_t step_id;
+} slurm_selected_step_t;
 
 typedef struct powercap_info_msg {
 	uint32_t power_cap;	/* power cap value in watts */
@@ -4131,6 +4136,8 @@ extern void slurm_job_step_stat_response_msg_free(void *object);
  * IN step_msg - step update messasge descriptor
  * RET 0 or -1 on error */
 extern int slurm_update_step(step_update_request_msg_t *step_msg);
+
+extern void slurm_destroy_selected_step(void *object);
 
 /*****************************************************************************\
  *	SLURM NODE CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

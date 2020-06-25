@@ -145,8 +145,7 @@ void _init_params()
 static void _addto_job_list(char *names)
 {
 	if (!params.opt_job_list)
-		params.opt_job_list = list_create(
-			slurmdb_destroy_selected_step);
+		params.opt_job_list = list_create(slurm_destroy_selected_step);
 
 	(void)slurm_addto_step_list(params.opt_job_list, names);
 }
@@ -184,7 +183,7 @@ void parse_command_line(int argc, char **argv)
 	extern int optind;
 	int c, i, optionIndex = 0;
 	char *end = NULL, *start = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
+	slurm_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
