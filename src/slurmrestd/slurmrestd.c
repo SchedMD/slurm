@@ -333,6 +333,9 @@ int main(int argc, char **argv)
 
 	run_mode.listen = !list_is_empty(socket_listen);
 
+	if (slurm_conf_init(slurm_conf_filename))
+		fatal("Unable to load Slurm configuration");
+
 	if (thread_count < 2)
 		fatal("Request at least 2 threads for processing");
 	if (thread_count > 1024)
@@ -367,9 +370,6 @@ int main(int argc, char **argv)
 
 	if (init_rest_auth(auth_type))
 		fatal("Unable to initialize rest authentication");
-
-	if (slurm_conf_init(slurm_conf_filename))
-		fatal("Unable to load Slurm configuration");
 
 	/* Sanity check modes */
 	if (run_mode.stdin_socket) {
