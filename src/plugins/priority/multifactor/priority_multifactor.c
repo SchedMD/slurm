@@ -1697,10 +1697,12 @@ int init ( void )
 	/* Check to see if we are running a supported accounting plugin */
 	if (!slurm_with_slurmdbd()) {
 		time_t start_time = time(NULL);
-		error("You are not running a supported accounting_storage plugin\n"
-		      "Fairshare can only be calculated with 'accounting_storage/slurmdbd' enabled.\n"
-		      "If you want multifactor priority without fairshare ignore this message.");
+		if (weight_age)
+			error("PriorityWeightAge can only be used with SlurmDBD, ignoring");
+		if (weight_fs)
+			error("PriorityWeightFairshare can only be used with SlurmDBD, ignoring");
 		calc_fairshare = 0;
+		weight_age = 0;
 		weight_fs = 0;
 
 		/* Initialize job priority factors for valid sprio output */

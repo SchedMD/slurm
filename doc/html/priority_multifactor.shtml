@@ -105,6 +105,10 @@ Job_priority =
 <a name=age>
 <h2>Age Factor</h2></a>
 
+<P><b>Note:</b> Computing the age factor requires the installation
+and operation of the <a href="accounting.html">Slurm Accounting
+Database</a>.</P>
+
 <P> The age factor represents the length of time a job has been sitting in the queue and eligible to run.  In general, the longer a job waits in the queue, the larger its age factor grows.  However, the age factor for a dependent job will not change while it waits for the job it depends on to complete.  Also, the age factor will not change when scheduling is withheld for a job whose node or time limits exceed the cluster's current limits.</P>
 
 <P> At some configurable length of time (<i>PriorityMaxAge</i>), the age factor will max out to 1.0.</P>
@@ -427,6 +431,6 @@ PriorityWeightPartition=1000
 PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
-<p style="text-align:center;">Last modified 1 November 2013</p>
+<p style="text-align:center;">Last modified 25 June 2020</p>
 
 <!--#include virtual="footer.txt"-->
