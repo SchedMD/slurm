@@ -64,7 +64,6 @@ slurmd_conf_t *conf = NULL;
 
 static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 			 bool is_epilog);
-static void _destroy_env(char **env);
 static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id);
 
 extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
@@ -97,16 +96,16 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 	if ((rc = run_script(name, path, jobid, timeout, env, job_env->uid)))
 		status = rc;
 
-	_destroy_env(env);
+	env_array_free(env);
 
 	return status;
 }
 
-/* NOTE: call _destroy_env() to free returned value */
+/* NOTE: call env_array_free() to free returned value */
 static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 			 bool is_epilog)
 {
-	char **env = xmalloc(sizeof(char *));
+	char **env = env_array_create();
 	bool user_name_set = 0;
 
 	env[0] = NULL;
@@ -177,16 +176,6 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 	}
 
 	return env;
-}
-
-static void _destroy_env(char **env)
-{
-	if (!env)
-		return;
-
-	for (int i = 0; env[i]; i++)
-		xfree(env[i]);
-	xfree(env);
 }
 
 static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id)
