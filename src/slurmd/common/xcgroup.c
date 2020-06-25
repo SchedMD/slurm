@@ -867,7 +867,7 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 		if (snprintf(job_cgroup_path, PATH_MAX, "%s/job_%u",
 			     user_cgroup_path, job->step_id.job_id)
 		    >= PATH_MAX) {
-			error("%s: unable to build job %u memory cg relative path : %m",
+			error("%s: unable to build job %u cg relative path : %m",
 			      calling_func, job->step_id.job_id);
 			return SLURM_ERROR;
 		}
@@ -887,7 +887,7 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 				      STEP_ID_FLAG_NO_JOB));
 
 		if (len >= PATH_MAX) {
-			error("%s: unable to build %ps memory cg relative path : %m",
+			error("%s: unable to build %ps cg relative path : %m",
 			      calling_func, &job->step_id);
 			return SLURM_ERROR;
 		}
@@ -926,7 +926,7 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 	 */
 	if (xcgroup_create(ns, user_cg, user_cgroup_path, 0, 0) !=
 	    XCGROUP_SUCCESS) {
-		error("%s: unable to create user %u memory cgroup",
+		error("%s: unable to create user %u cgroup",
 		      calling_func, job->uid);
 		rc = SLURM_ERROR;
 		goto endit;
@@ -934,7 +934,7 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 
 	if (xcgroup_instantiate(user_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(user_cg);
-		error("%s: unable to instantiate user %u memory cgroup",
+		error("%s: unable to instantiate user %u cgroup",
 		      calling_func, job->uid);
 		rc = SLURM_ERROR;
 		goto endit;
