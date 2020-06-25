@@ -447,8 +447,8 @@ int xcgroup_instantiate(xcgroup_t* cg)
 			umask(omask);
 			return fstatus;
 		} else {
-			debug("%s: cgroup '%s' already exists",
-			      __func__, file_path);
+			debug3("%s: cgroup '%s' already exists",
+			       __func__, file_path);
 		}
 	}
 	umask(omask);
