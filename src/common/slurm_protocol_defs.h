@@ -1350,6 +1350,8 @@ extern int slurm_find_char_in_list(void *x, void *key);
 extern int slurm_sort_char_list_asc(void *, void *);
 extern int slurm_sort_char_list_desc(void *, void *);
 
+extern slurmdb_selected_step_t *slurm_parse_step_str(char *name);
+
 extern resource_allocation_response_msg_t *
 slurm_copy_resource_allocation_response_msg(
 	resource_allocation_response_msg_t *msg);

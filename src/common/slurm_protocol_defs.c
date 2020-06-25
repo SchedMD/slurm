@@ -634,7 +634,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 				     int start, int end)
 {
 	int count = 0;
-	char *dot, *name, *plus = NULL, *under;
+	char *name;
 	slurmdb_selected_step_t *selected_step = NULL;
 
 	if ((end-start) <= 0)
@@ -649,53 +649,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 		return 0;
 	}
 
-	selected_step = xmalloc(sizeof(slurmdb_selected_step_t));
-	selected_step->step_id.step_het_comp = NO_VAL;
-
-	if ((dot = strstr(name, "."))) {
-		*dot++ = 0;
-		/* can't use NO_VAL since that means all */
-		if (!xstrcmp(dot, "batch"))
-			selected_step->step_id.step_id = SLURM_BATCH_SCRIPT;
-		else if (!xstrcmp(dot, "extern"))
-			selected_step->step_id.step_id = SLURM_EXTERN_CONT;
-		else if (isdigit(*dot))
-			selected_step->step_id.step_id = atoi(dot);
-		else
-			fatal("Bad step specified: %s", name);
-		plus = xstrchr(dot, '+');
-		if (plus) {
-			/* het step */
-			plus++;
-			selected_step->step_id.step_het_comp =
-				slurm_atoul(plus);
-		}
-	} else {
-		debug2("No jobstep requested");
-		selected_step->step_id.step_id = NO_VAL;
-	}
-
-	if ((under = strstr(name, "_"))) {
-		*under++ = 0;
-		if (isdigit(*under))
-			selected_step->array_task_id = atoi(under);
-		else
-			fatal("Bad job array element specified: %s", name);
-		selected_step->het_job_offset = NO_VAL;
-	} else if (!plus && (plus = strstr(name, "+"))) {
-		selected_step->array_task_id = NO_VAL;
-		*plus++ = 0;
-		if (isdigit(*plus))
-			selected_step->het_job_offset = atoi(plus);
-		else
-			fatal("Bad hetjob offset specified: %s", name);
-	} else {
-		debug2("No jobarray or hetjob requested");
-		selected_step->array_task_id = NO_VAL;
-		selected_step->het_job_offset = NO_VAL;
-	}
-
-	selected_step->step_id.job_id = atoi(name);
+	selected_step = slurm_parse_step_str(name);
 	xfree(name);
 
 	if (!list_find_first(step_list,
@@ -774,6 +728,64 @@ extern int slurm_sort_char_list_desc(void *v1, void *v2)
 		return 1;
 
 	return 0;
+}
+
+extern slurmdb_selected_step_t *slurm_parse_step_str(char *name)
+{
+	slurmdb_selected_step_t *selected_step;
+	char *dot, *plus = NULL, *under;
+
+	xassert(name);
+
+	selected_step = xmalloc(sizeof(*selected_step));
+	selected_step->step_id.step_het_comp = NO_VAL;
+
+	if ((dot = xstrstr(name, "."))) {
+		*dot++ = 0;
+		/* can't use NO_VAL since that means all */
+		if (!xstrcmp(dot, "batch"))
+			selected_step->step_id.step_id = SLURM_BATCH_SCRIPT;
+		else if (!xstrcmp(dot, "extern"))
+			selected_step->step_id.step_id = SLURM_EXTERN_CONT;
+		else if (isdigit(*dot))
+			selected_step->step_id.step_id = atoi(dot);
+		else
+			fatal("Bad step specified: %s", name);
+		plus = xstrchr(dot, '+');
+		if (plus) {
+			/* het step */
+			plus++;
+			selected_step->step_id.step_het_comp =
+				slurm_atoul(plus);
+		}
+	} else {
+		debug2("No jobstep requested");
+		selected_step->step_id.step_id = NO_VAL;
+	}
+
+	if ((under = xstrstr(name, "_"))) {
+		*under++ = 0;
+		if (isdigit(*under))
+			selected_step->array_task_id = atoi(under);
+		else
+			fatal("Bad job array element specified: %s", name);
+		selected_step->het_job_offset = NO_VAL;
+	} else if (!plus && (plus = xstrstr(name, "+"))) {
+		selected_step->array_task_id = NO_VAL;
+		*plus++ = 0;
+		if (isdigit(*plus))
+			selected_step->het_job_offset = atoi(plus);
+		else
+			fatal("Bad hetjob offset specified: %s", name);
+	} else {
+		debug2("No jobarray or hetjob requested");
+		selected_step->array_task_id = NO_VAL;
+		selected_step->het_job_offset = NO_VAL;
+	}
+
+	selected_step->step_id.job_id = atoi(name);
+
+	return selected_step;
 }
 
 extern resource_allocation_response_msg_t *
