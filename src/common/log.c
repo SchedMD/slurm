@@ -1493,7 +1493,8 @@ extern char *log_build_step_id_str(
 	int pos = 0;
 
 	if (flags & STEP_ID_FLAG_SPACE)
-		pos += snprintf(buf + pos, buf_size - pos, " ");
+		buf[pos++] = ' ';
+
 	/*
 	 * NOTE: You will notice we put a %.0s in front of the string if running
 	 * with %ps like interactions.
