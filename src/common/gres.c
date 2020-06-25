@@ -9693,6 +9693,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 	int node_cnt, rem_node_cnt;
 	int job_fini = -1;	/* -1: not applicable, 0: more work, 1: fini */
 	uint32_t **tasks_per_node_socket = NULL;
+	int rc = SLURM_SUCCESS;
 
 	if (!job_res || !job_res->node_bitmap)
 		return SLURM_ERROR;
@@ -9846,11 +9847,12 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 		if (job_fini == 0) {
 			error("%s job %u failed to satisfy gres-per-job counter",
 			      __func__, job_id);
+			rc = ESLURM_NODE_NOT_AVAIL;
 		}
 	}
 	_free_tasks_per_node_sock(tasks_per_node_socket, node_cnt);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
