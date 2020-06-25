@@ -71,7 +71,7 @@ static void     _usage( void );
  */
 extern void parse_command_line(int argc, char **argv)
 {
-	char *end_ptr = NULL, *env_val = NULL, *sep, *tmp;
+	char *env_val = NULL, *sep, *tmp;
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
@@ -106,10 +106,6 @@ extern void parse_command_line(int argc, char **argv)
 	if (getenv("SBCAST_FORCE"))
 		params.force = true;
 
-	params.job_id  = NO_VAL;
-	params.het_job_offset = NO_VAL;
-	params.step_id = NO_VAL;
-
 	if (getenv("SBCAST_PRESERVE"))
 		params.preserve = true;
 	if ( ( env_val = getenv("SBCAST_SIZE") ) )
@@ -138,13 +134,7 @@ extern void parse_command_line(int argc, char **argv)
 			params.fanout = atoi(optarg);
 			break;
 		case (int)'j':
-			params.job_id = strtol(optarg, &end_ptr, 10);
-			if (end_ptr[0] == '+') {
-				params.het_job_offset =
-					strtol(end_ptr+1, &end_ptr, 10);
-			}
-			if (end_ptr[0] == '.')
-				params.step_id = strtol(end_ptr+1, NULL, 10);
+			params.selected_step = slurm_parse_step_str(optarg);
 			break;
 		case (int)'p':
 			params.preserve = true;
@@ -177,16 +167,16 @@ extern void parse_command_line(int argc, char **argv)
 		exit(1);
 	}
 
-	if (params.job_id == NO_VAL) {
+	if (!params.selected_step ||
+	    (params.selected_step->step_id.job_id == NO_VAL)) {
 		if (!(env_val = getenv("SLURM_JOB_ID"))) {
 			error("Need a job id to run this command.  "
 			      "Run from within a Slurm job or use the "
 			      "--jobid option.");
 			exit(1);
 		}
-		params.job_id = strtol(env_val, &end_ptr, 10);
-		if (end_ptr[0] == '.')
-			params.step_id = strtol(end_ptr+1, NULL, 10);
+		slurm_destroy_selected_step(params.selected_step);
+		params.selected_step = slurm_parse_step_str(env_val);
 	}
 
 	params.src_fname = xstrdup(argv[optind]);
@@ -243,28 +233,16 @@ static uint32_t _map_size( char *buf )
 /* print the parameters specified */
 static void _print_options( void )
 {
+	char job_id_str[64];
+
 	info("-----------------------------");
 	info("block_size = %u", params.block_size);
 	info("compress   = %u", params.compress);
 	info("force      = %s", params.force ? "true" : "false");
 	info("fanout     = %d", params.fanout);
-	if (params.step_id == NO_VAL) {
-		if (params.het_job_offset == NO_VAL) {
-			info("jobid      = %u", params.job_id);
-		} else {
-			info("jobid      = %u+%u",
-			     params.job_id, params.het_job_offset);
-		}
-	} else {
-		if (params.het_job_offset == NO_VAL) {
-			info("jobid      = %u.%u", params.job_id,
-			     params.step_id);
-		} else {
-			info("jobid      = %u+%u.%u",
-			     params.job_id, params.het_job_offset,
-			     params.step_id);
-		}
-	}
+	info("jobid      = %s",
+	     slurm_get_selected_step_id(job_id_str, sizeof(job_id_str),
+					params.selected_step));
 	info("preserve   = %s", params.preserve ? "true" : "false");
 	info("timeout    = %d", params.timeout);
 	info("verbose    = %d", params.verbose);

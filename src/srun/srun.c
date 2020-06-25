@@ -751,15 +751,18 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 			   job->step_id.step_id);
 	}
 	params->fanout = 0;
-	params->job_id = job->step_id.job_id;
+	params->selected_step = xmalloc(sizeof(*params->selected_step));
+	params->selected_step->array_task_id = NO_VAL;
+	memcpy(&params->selected_step->step_id, &job->step_id,
+	       sizeof(params->selected_step->step_id));
 	params->force = true;
 	if (srun_opt->het_grp_bits)
-		params->het_job_offset = bit_ffs(srun_opt->het_grp_bits);
+		params->selected_step->het_job_offset =
+			bit_ffs(srun_opt->het_grp_bits);
 	else
-		params->het_job_offset = NO_VAL;
+		params->selected_step->het_job_offset = NO_VAL;
 	params->preserve = true;
 	params->src_fname = srun_opt->argv[0];
-	params->step_id = job->step_id.step_id;
 	params->timeout = 0;
 	params->verbose = 0;
 
@@ -770,6 +773,7 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	} else {
 		xfree(params->dst_fname);
 	}
+	slurm_destroy_selected_step(params->selected_step);
 	xfree(params);
 
 	return rc;
