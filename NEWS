@@ -77,6 +77,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix min CPUs per node not being at least CPUs per task requested.
  -- Fix CPUs allocated to match CPUs requested when requesting GRES and
     threads per core equal to one.
+ -- Fix NodeName config parsing with Boards and without CPUs.
+ -- Ensure SLURM_JOB_USER and SLURM_JOB_UID are set in SrunProlog/Epilog.
 
 * Changes in Slurm 20.02.3
 ==========================

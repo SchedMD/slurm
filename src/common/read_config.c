@@ -848,9 +848,6 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 				      "reset to 1", n->nodenames);
 				n->sockets = 1;
 			}
-			if (no_cpus) {		/* infer missing CPUs= */
-				n->cpus = n->sockets * n->cores * n->threads;
-			}
 		} else {
 			/* In this case Boards=# is used.
 			 * CPUs=# or Procs=# are ignored.
@@ -888,6 +885,11 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 				n->sockets = n->boards;
 			}
 		}
+
+		if (no_cpus) {		/* infer missing CPUs= */
+			n->cpus = n->sockets * n->cores * n->threads;
+		}
+
 		/* Node boards are factored into sockets */
 		if ((n->cpus != n->sockets) &&
 		    (n->cpus != n->sockets * n->cores) &&
