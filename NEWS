@@ -83,6 +83,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix error messages for certain invalid salloc/sbatch/srun options.
  -- pmi2 - clean up sockets at step termination.
  -- Fix 'scontrol hold' to work with 'JobName'.
+ -- sbatch - handle --uid/--gid in #SBATCH directives properly.
 
 * Changes in Slurm 20.02.3
 ==========================
@@ -361,6 +362,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 19.05.8
 ==========================
+ -- sbatch - handle --uid/--gid in #SBATCH directives properly.
 
 * Changes in Slurm 19.05.7
 ==========================
