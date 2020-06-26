@@ -435,7 +435,8 @@ static int _compute_plane_dist(job_record_t *job_ptr,
 static void _block_sync_core_bitmap(job_record_t *job_ptr,
 				    const uint16_t cr_type)
 {
-	uint32_t c, s, i, j, n, b, z, size, csize, core_cnt;
+	uint32_t c, s, i, j, b, z, csize, core_cnt;
+	int n, n_first, n_last;
 	uint16_t cpus, num_bits, vpus = 1;
 	uint16_t cpus_per_task = job_ptr->details->cpus_per_task;
 	job_resources_t *job_res = job_ptr->job_resrcs;
@@ -489,7 +490,12 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 		}
 	}
 
-	size  = bit_size(job_res->node_bitmap);
+	n_first = bit_ffs(job_res->node_bitmap);
+	if (n_first != -1)
+		n_last = bit_fls(job_res->node_bitmap);
+	else
+		n_last = -2;
+
 	csize = bit_size(job_res->core_bitmap);
 
 	sockets_nb  = select_node_record[0].sockets;
@@ -499,7 +505,7 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 	boards_core_cnt = xcalloc(boards_nb, sizeof(int));
 	sort_brds_core_cnt = xcalloc(boards_nb, sizeof(int));
 
-	for (c = 0, i = 0, n = 0; n < size; n++) {
+	for (c = 0, i = 0, n = n_first; n < n_last; n++) {
 		if (!bit_test(job_res->node_bitmap, n))
 			continue;
 
