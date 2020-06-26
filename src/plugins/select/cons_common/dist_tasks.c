@@ -477,6 +477,18 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 		return;
 	}
 
+	n_first = bit_ffs(job_res->node_bitmap);
+	if (n_first != -1) {
+		n_last = bit_fls(job_res->node_bitmap);
+		sockets_nb  = select_node_record[n_first].sockets;
+		sockets_core_cnt = xcalloc(sockets_nb, sizeof(int));
+		sockets_used = xcalloc(sockets_nb, sizeof(bool));
+		boards_nb = select_node_record[n_first].boards;
+		boards_core_cnt = xcalloc(boards_nb, sizeof(int));
+		sort_brds_core_cnt = xcalloc(boards_nb, sizeof(int));
+	} else
+		return;
+
 	if (cr_type & CR_SOCKET)
 		alloc_sockets = true;
 	else if (cr_type & CR_CORE)
@@ -490,20 +502,8 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 		}
 	}
 
-	n_first = bit_ffs(job_res->node_bitmap);
-	if (n_first != -1)
-		n_last = bit_fls(job_res->node_bitmap);
-	else
-		n_last = -2;
-
 	csize = bit_size(job_res->core_bitmap);
 
-	sockets_nb  = select_node_record[0].sockets;
-	sockets_core_cnt = xcalloc(sockets_nb, sizeof(int));
-	sockets_used = xcalloc(sockets_nb, sizeof(bool));
-	boards_nb = select_node_record[0].boards;
-	boards_core_cnt = xcalloc(boards_nb, sizeof(int));
-	sort_brds_core_cnt = xcalloc(boards_nb, sizeof(int));
 
 	for (c = 0, i = 0, n = n_first; n < n_last; n++) {
 		if (!bit_test(job_res->node_bitmap, n))
