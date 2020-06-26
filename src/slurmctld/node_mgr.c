@@ -1647,7 +1647,7 @@ extern void restore_node_features(int recover)
 			&node_ptr->gres_list,
 			slurm_conf.conf_flags & CTL_CONF_OR,
 			node_ptr->cores,
-			(node_ptr->boards * node_ptr->tot_sockets));
+			node_ptr->tot_sockets);
 		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 	}
 	_update_node_avail_features(NULL, NULL, FEATURE_MODE_PEND);

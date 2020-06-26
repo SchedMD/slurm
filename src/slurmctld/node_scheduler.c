@@ -3598,8 +3598,7 @@ static int _build_node_list(job_record_t *job_ptr,
 	while ((config_ptr = list_next(config_iterator))) {
 		bool cpus_ok = false, mem_ok = false, disk_ok = false;
 		bool job_mc_ok = false, config_filter = false;
-		total_cores = config_ptr->boards * config_ptr->tot_sockets *
-			      config_ptr->cores;
+		total_cores = config_ptr->tot_sockets * config_ptr->cores;
 		adj_cpus = adjust_cpus_nppcu(_get_ntasks_per_core(detail_ptr),
 					     detail_ptr->cpus_per_task,
 					     total_cores, config_ptr->cpus);

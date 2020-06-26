@@ -1089,15 +1089,15 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 		config_ptr = node_ptr[i].config_ptr;
 		select_node_record[i].cpus    = config_ptr->cpus;
 		select_node_record[i].boards  = config_ptr->boards;
-		select_node_record[i].sockets = config_ptr->tot_sockets;
+		select_node_record[i].tot_sockets = config_ptr->tot_sockets;
 		select_node_record[i].cores   = config_ptr->cores;
 		select_node_record[i].threads = config_ptr->threads;
 		select_node_record[i].vpus    = config_ptr->threads;
 		select_node_record[i].real_memory = config_ptr->real_memory;
 
-		select_node_record[i].tot_sockets =
-			select_node_record[i].boards *
-			select_node_record[i].sockets;
+		select_node_record[i].sockets =
+			select_node_record[i].tot_sockets /
+			select_node_record[i].boards;
 		select_node_record[i].tot_cores =
 			select_node_record[i].tot_sockets *
 			select_node_record[i].cores;
