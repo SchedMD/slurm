@@ -3885,6 +3885,7 @@ extern int dump_job_step_state(void *x, void *arg)
 	pack16((uint16_t) STEP_FLAG, buffer);
 
 	pack32(step_ptr->step_id.step_id, buffer);
+	pack32(step_ptr->step_id.step_het_comp, buffer);
 	pack16(step_ptr->cyclic_alloc, buffer);
 	pack32(step_ptr->srun_pid, buffer);
 	pack16(step_ptr->port, buffer);
@@ -3983,6 +3984,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id.step_id, buffer);
+		safe_unpack32(&step_id.step_het_comp, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack32(&srun_pid, buffer);
 		safe_unpack16(&port, buffer);
