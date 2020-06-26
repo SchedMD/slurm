@@ -874,6 +874,18 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 	    (job_ptr->details == NULL))
 		return error_code;
 
+	n_first = bit_ffs(job_res->node_bitmap);
+	if (n_first != -1) {
+		n_last = bit_fls(job_res->node_bitmap);
+		sock_size  = select_node_record[n_first].sockets;
+		sock_avoid = xcalloc(sock_size, sizeof(bool));
+		sock_start = xcalloc(sock_size, sizeof(uint32_t));
+		sock_end   = xcalloc(sock_size, sizeof(uint32_t));
+		sock_used  = xcalloc(sock_size, sizeof(bool));
+	} else
+		return error_code;
+
+
 	if (cr_type & CR_SOCKET)
 		alloc_sockets = true;
 	else if (cr_type & CR_CORE)
@@ -890,18 +902,6 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 		if (mc_ptr->ntasks_per_socket)
 			ntasks_per_socket = mc_ptr->ntasks_per_socket;
 	}
-
-	n_first = bit_ffs(job_res->node_bitmap);
-	if (n_first != -1)
-		n_last = bit_fls(job_res->node_bitmap);
-	else
-		n_last = -2;
-
-	sock_size  = select_node_record[0].sockets;
-	sock_avoid = xcalloc(sock_size, sizeof(bool));
-	sock_start = xcalloc(sock_size, sizeof(uint32_t));
-	sock_end   = xcalloc(sock_size, sizeof(uint32_t));
-	sock_used  = xcalloc(sock_size, sizeof(bool));
 
 	csize = bit_size(core_map);
 	for (c = 0, i = 0, n = n_first; n < n_last; n++) {
