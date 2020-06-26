@@ -43,6 +43,7 @@
 #include "src/common/data.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/plugin.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -73,6 +74,25 @@ typedef enum {
 	OPENAPI_TYPE_ARRAY,
 	OPENAPI_TYPE_MAX
 } parameter_type_t;
+
+typedef struct {
+	int (*init)(void);
+	int (*fini)(void);
+	data_t *(*get_oas)(void);
+} slurm_openapi_ops_t;
+
+/*
+ * Must be synchronized with slurm_openapi_ops_t above.
+ */
+static const char *syms[] = {
+	"slurm_openapi_p_init",
+	"slurm_openapi_p_fini",
+	"slurm_openapi_p_get_specification",
+};
+
+static slurm_openapi_ops_t *ops;
+static int g_context_cnt = -1;
+static plugin_context_t **g_context = NULL;
 
 static data_for_each_cmd_t _match_server_path_string(const data_t *data,
 						     void *arg);
@@ -772,21 +792,47 @@ static int _op_handler_openapi(const char *context_id,
 	return SLURM_SUCCESS;
 }
 
-extern int init_openapi()
+extern int init_openapi(const plugin_handle_t *plugin_handles,
+			const size_t plugin_count)
 {
 	slurm_rwlock_wrlock(&paths_lock);
 
 	if (spec)
 		fatal_abort("%s called twice", __func__);
 
-	/* only 1 specification currently */
-	spec = xcalloc(2, sizeof(spec));
-
 	paths = list_create(_list_delete_path_t);
 
-	static_ref_json_to_data_t(spec[0], openapi_json);
+	/* Load OpenAPI plugins */
+	xassert(g_context_cnt == -1);
+	g_context_cnt = 0;
+
+	xrecalloc(ops, (plugin_count + 1), sizeof(slurm_openapi_ops_t));
+	xrecalloc(g_context, (plugin_count + 1), sizeof(plugin_context_t *));
+	xrecalloc(spec, (plugin_count + 1), sizeof(spec));
+
+	for (size_t i = 0; (i < plugin_count); i++) {
+		if (plugin_handles[i] == PLUGIN_INVALID_HANDLE)
+			fatal("Invalid plugin to load?");
+
+		if (plugin_get_syms(plugin_handles[i],
+				    (sizeof(syms)/sizeof(syms[0])),
+				    syms, (void **)&ops[g_context_cnt])
+		    < (sizeof(syms)/sizeof(syms[0])))
+			fatal("Incomplete plugin detected");
+
+		spec[g_context_cnt] = (*(ops[g_context_cnt].get_oas))();
+		xassert(spec[g_context_cnt]);
+
+		g_context_cnt++;
+	}
+
+	for (size_t i = 0; (g_context_cnt > 0) && (i < g_context_cnt); i++)
+		(*(ops[i].init))();
 
 	slurm_rwlock_unlock(&paths_lock);
+
+	if (!g_context_cnt)
+		return SLURM_SUCCESS;
 
 	bind_operation_handler("/openapi.yaml", _op_handler_openapi, 0);
 	bind_operation_handler("/openapi.json", _op_handler_openapi, 0);
@@ -798,9 +844,21 @@ extern int init_openapi()
 
 extern void destroy_openapi(void)
 {
-	unbind_operation_handler(_op_handler_openapi);
+	if (g_context_cnt > 0)
+		unbind_operation_handler(_op_handler_openapi);
 
 	slurm_rwlock_wrlock(&paths_lock);
+
+	for (int i = 0; (g_context_cnt > 0) && (i < g_context_cnt); i++) {
+		(*(ops[i].fini))();
+
+		if (g_context[i] && plugin_context_destroy(g_context[i]))
+				fatal_abort("%s: unable to unload plugin",
+					    __func__);
+	}
+	xfree(ops);
+	xfree(g_context);
+	g_context_cnt = -1;
 
 	FREE_NULL_LIST(paths);
 

@@ -43,6 +43,8 @@
 #define SLURMRESTD_OPENAPI_H
 
 #include "src/common/data.h"
+#include "src/common/list.h"
+#include "src/common/plugin.h"
 #include "src/slurmrestd/http.h"
 
 /*
@@ -77,9 +79,12 @@ extern int find_path_tag(const data_t *path, data_t *params,
 /*
  * Init the OAS data structs.
  * only call once!
+ * IN plugin_handles - array of plugin handles loaded
+ * IN plugin_count - number of plugins loaded
  * RET SLURM_SUCCESS or error
  */
-extern int init_openapi(void);
+extern int init_openapi(const plugin_handle_t *plugin_handles,
+			const size_t plugin_count);
 
 /*
  * Free openapi

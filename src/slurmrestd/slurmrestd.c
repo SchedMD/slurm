@@ -55,6 +55,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
+#include "src/common/plugrack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
@@ -100,6 +101,11 @@ static int thread_count = 20;
 /* User to become once loaded */
 static uid_t uid = 0;
 static gid_t gid = 0;
+static char *oas_specs = NULL;
+static plugin_handle_t *plugin_handles = NULL;
+static char **plugin_types = NULL;
+static size_t plugin_count = 0;
+static plugrack_t *rack = NULL;
 
 /* SIGPIPE handler - mostly a no-op */
 static void _sigpipe_handler(int signum)
@@ -155,6 +161,11 @@ static void _parse_env(void)
 
 	if ((buffer = getenv("SLURMRESTD_AUTH_TYPES")))
 		_set_auth_type(buffer);
+
+	if ((buffer = getenv("SLURMRESTD_OPENAPI_PLUGINS")) != NULL) {
+		xfree(oas_specs);
+		oas_specs = xstrdup(buffer);
+	}
 }
 
 static void _examine_stdin(void)
@@ -238,7 +249,7 @@ static void _parse_commandline(int argc, char **argv)
 	int c = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "a:f:g:ht:u:vV")) != -1) {
+	while ((c = getopt(argc, argv, "a:f:g:hs:t:u:vV")) != -1) {
 		switch (c) {
 		case 'a':
 			_set_auth_type(optarg);
@@ -254,6 +265,10 @@ static void _parse_commandline(int argc, char **argv)
 		case 'h':
 			_usage();
 			exit(0);
+			break;
+		case 's':
+			xfree(oas_specs);
+			oas_specs = xstrdup(optarg);
 			break;
 		case 't':
 			thread_count = atoi(optarg);
@@ -309,6 +324,26 @@ static void *_setup_http_context(con_mgr_fd_t *con)
 	return setup_http_context(con, operations_router);
 }
 
+static void _plugrack_foreach(const char *full_type, const char *fq_path,
+			      const plugin_handle_t id)
+{
+	plugin_count += 1;
+	xrecalloc(plugin_handles, plugin_count, sizeof(*plugin_handles));
+	xrecalloc(plugin_types, plugin_count, sizeof(*plugin_types));
+
+	plugin_types[plugin_count - 1] = xstrdup(full_type);
+	plugin_handles[plugin_count - 1] = id;
+
+	debug5("%s: plugin type:%s path:%s",
+	       __func__, full_type, fq_path);
+}
+
+static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
+				   const plugin_handle_t id)
+{
+	info("%s", full_type);
+}
+
 int main(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
@@ -350,7 +385,50 @@ int main(int argc, char **argv)
 	if (init_operations())
 		fatal("Unable to initialize operations structures");
 
-	if (init_openapi())
+	rack = plugrack_create("openapi");
+	plugrack_read_dir(rack, slurm_conf.plugindir);
+
+	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
+		info("Possible OpenAPI plugins:");
+		plugrack_foreach(rack, _plugrack_foreach_list);
+		exit(0);
+	} else if (oas_specs) {
+		/* User provide which plugins they want */
+		char *type, *last = NULL;
+
+		type = strtok_r(oas_specs, ",", &last);
+		while (type) {
+			xstrtrim(type);
+
+			/* Permit both prefix and no-prefix for plugin names. */
+			if (xstrncmp(type, "openapi/", 8) == 0)
+				type += 8;
+			type = xstrdup_printf("openapi/%s", type);
+			xstrtrim(type);
+
+			_plugrack_foreach(type, NULL, PLUGIN_INVALID_HANDLE);
+
+			xfree(type);
+			type = strtok_r(NULL, ",", &last);
+		}
+
+		xfree(oas_specs);
+	} else /* Add all possible */
+		plugrack_foreach(rack, _plugrack_foreach);
+
+	if (!plugin_count)
+		fatal("No plugins to load. Nothing to do.");
+
+	for (size_t i = 0; i < plugin_count; i++) {
+		if ((plugin_handles[i] == PLUGIN_INVALID_HANDLE) &&
+		    (plugin_handles[i] =
+		     plugrack_use_by_type(rack, plugin_types[i])) ==
+		    PLUGIN_INVALID_HANDLE)
+				fatal("Unable to find plugin: %s",
+				      plugin_types[i]);
+	}
+
+	if (init_openapi(plugin_handles, plugin_count))
 		fatal("Unable to initialize OpenAPI structures");
 
 	if (init_op_diag())
@@ -418,6 +496,16 @@ int main(int argc, char **argv)
 	free_con_mgr(conmgr);
 	data_destroy_static();
 
+	for (size_t i = 0; i < plugin_count; i++) {
+		plugrack_release_by_type(rack, plugin_types[i]);
+		xfree(plugin_types[i]);
+	}
+
+	if ((rc = plugrack_destroy(rack)))
+		fatal_abort("unable to clean up plugrack: %s",
+			    slurm_strerror(rc));
+
+	rack = NULL;
 	slurm_select_fini();
 	slurm_auth_fini();
 	slurm_conf_destroy();

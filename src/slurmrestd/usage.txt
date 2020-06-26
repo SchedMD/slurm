@@ -5,6 +5,8 @@ Usage: slurmrestd [OPTIONS] [host:port]...
 		Use specified file for slurmctld configuration
 	-h
 		Print this help message.
+	-s <OpenAPI plugins to load>
+		CSV list of OpenAPI plugins.
 	-t <thread count>
 		Number of threads to use for processing.
 	-u <user>
