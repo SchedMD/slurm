@@ -829,7 +829,6 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			/* This case is exactly like if was without boards,
 			 * Except SocketsPerBoard=# can be used,
 			 * But it can't be used with Sockets=# */
-			n->boards = 1;
 			if (!no_sockets_per_board) {
 				if (!no_sockets)
 					error("NodeNames=%s Sockets=# and "
