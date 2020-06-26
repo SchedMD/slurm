@@ -85,11 +85,11 @@ set rem_time 999
 if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
-		-re "job id ($number)" {
+		-re "JobId=($number)" {
 			set scontrol_id $expect_out(1,string)
 			exp_continue
 		}
-		-re "slurm_get_rem_time is ($number)" {
+		-re "Job remaining time is ($number)" {
 			set rem_time $expect_out(1,string)
 			exp_continue
 		}
