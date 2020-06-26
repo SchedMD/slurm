@@ -65,6 +65,25 @@ set access_err  0
 
 print_header $test_id
 
+#
+# Verify preconditions
+#
+if { [test_account_storage] == 0 } {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if { [test_assoc_enforced] == 0 } {
+        skip "This test can't be run without AccountingStorageEnforce=associations"
+}
+
+if { [test_enforce_qos_set] == 0 } {
+        skip "This test can't be run without AccountingStorageEnforce=qos"
+}
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
+
 proc check_rc { exit_code } {
 	if {$exit_code != 0} {
 		fail "Subcommand failed with exit code $exit_code"
@@ -75,7 +94,7 @@ proc check_rc { exit_code } {
 proc create_accounts {} {
 	global ta1 ta2 tq1 tq2 tu1 user_req_1 user_req_2
 	global qos_1 qos_2
-	log_info "create account and QOS"
+	log_debug "create account and QOS"
 
 
 	# Create test assoc and accounts
@@ -93,28 +112,20 @@ proc cleanup_accounts {} {
 
 	wait_for_account_done $ta1,$ta2
 
-	log_info "remove QOS: $tq1,$tq2"
+	log_debug "remove QOS: $tq1,$tq2"
 	remove_qos $tq1,$tq2
 
-	log_info "remove account: $ta1,$ta2"
+	log_debug "remove account: $ta1,$ta2"
 	remove_acct "" $ta1,$ta2
 }
 
-proc endit { exit_code } {
-	global config_file test_id cwd bin_cp bin_rm test_id part_name
+proc cleanup { } {
+	global config_file part_name
 
-	wait_for_part_done $part_name
+	cleanup_accounts
 
 	restore_conf $config_file
 	reconfigure
-
-	if {$exit_code == 0} {
-		cleanup_accounts
-	}
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
 }
 
 proc test_salloc { qos account num_nodes } {
@@ -129,18 +140,15 @@ proc test_salloc { qos account num_nodes } {
 			set job_id $expect_out(1,string)
 		}
 		-re "error" {
-			log_warn "salloc job was not submitted"
-			endit 1
+			fail "salloc job was not submitted"
 		}
 		timeout {
-			log_error "salloc not responding"
-			endit 1
+			fail "salloc not responding"
 		}
 	}
 
 	if { $job_id == 0 } {
-		log_error "submit failure"
-		endit 1
+		fail "Submit failure"
 	}
 
 	return $job_id
@@ -164,8 +172,7 @@ proc check_job_reason { job_id state why } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			endit 1
+			fail "scontrol not responding"
 		}
 		eof {
 			lassign [wait] pid spawnid os_error_flag rc
@@ -174,8 +181,7 @@ proc check_job_reason { job_id state why } {
 
 	log_user 1
 	if { $state_found != $state } {
-		log_error "Job $job_id state found was $state_found, expected $state"
-		endit 1
+		fail "Job $job_id state found was $state_found, expected $state"
 	}
 
 	set found_reason 0
@@ -187,11 +193,10 @@ proc check_job_reason { job_id state why } {
 	}
 
 	if { !$found_reason } {
-		log_error "Job $job_id scontrol returned Reason=$found_why instead of Reason='$why'"
-		endit 1
+		fail "Job $job_id scontrol returned Reason=$found_why instead of Reason='$why'"
 	}
 
-	log_info "Found jobid $job_id with correct state '$state' and reason '$found_why'"
+	log_debug "Found jobid $job_id with correct state '$state' and reason '$found_why'"
 	return 0
 }
 
@@ -217,14 +222,14 @@ proc run_test { run_qos } {
 	if { $run_qos } {
 		# remove test qos
 		if { [remove_qos $qos] } {
-			log_info "We hit the race trying to get the job running before it hits the database before we removed the qos.  This can be expected, trying again."
+			log_debug "We hit the race trying to get the job running before it hits the database before we removed the qos.  This can be expected, trying again."
 			wait_for_part_done $part_name
 			return 1
 		}
 	} else {
 		#remove test acct
 		if { [remove_acct "" $acct] } {
-			log_info "We hit the race trying to get the job running before it hits the database before we removed the account.  This can be expected, trying again."
+			log_debug "We hit the race trying to get the job running before it hits the database before we removed the account.  This can be expected, trying again."
 			wait_for_part_done $part_name
 			return 1
 		}
@@ -250,25 +255,12 @@ proc run_test { run_qos } {
 	return 0
 }
 
-#
-# Check accounting config and bail if not found.
-#
-if { [test_account_storage] == 0 } {
-	skip "This test can't be run without a usable AccountStorageType"
-}
-
-if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
-}
-
 cleanup_accounts
 create_accounts
 
 # Get the location of the slurm.conf file
 set config_dir [get_conf_path]
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+fail_on_error "Unable to determine configuration path"
 set config_file $config_dir/slurm.conf
 
 #
@@ -284,7 +276,7 @@ reconfigure
 delete_part $part_name
 
 if { [create_part $part_name 1] } {
-	endit 1
+	fail "Unable to create partition $part_name"
 }
 
 for {set i 0} {$i < 2} {incr i} {
@@ -298,8 +290,8 @@ for {set i 0} {$i < 2} {incr i} {
 		incr cnt
 	}
 	if { $rc } {
-		break
+		set credential [expr $i == 0 ? "account" : "qos"]
+		fail "Too many ($cnt) failures trying to remove $credential from job"
 	}
 }
 
-endit $rc
