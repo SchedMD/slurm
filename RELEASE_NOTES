@@ -44,6 +44,9 @@ HIGHLIGHTS
     inherited from libpmi.so.
  -- accounting_storage/filetxt has been removed as an option.  Please consider
     using accounting_storage/slurmdbd as an alternative.
+ -- setting of number of Sockets per node was standardized for configuration
+    line with and without Boards=. Specifically in case of Boards=1 and #CPUs
+    given the default value of Sockets will be set to #CPUs / #Cores / #Threads.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
