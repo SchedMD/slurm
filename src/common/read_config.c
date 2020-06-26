@@ -825,6 +825,12 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			sockets_per_board = 1;
 		}
 
+		if (!no_sockets && n->tot_sockets==0) {
+			/* make sure tot_sockets is non-zero */
+			error("NodeNames=%s Sockets=0 is invalid, reset to 1", n->nodenames);
+			n->tot_sockets = 1;
+		}
+
 		if (!no_sockets_per_board && !no_sockets) {
 			error("NodeNames=%s Sockets=# and SocketsPerBoard=# is invalid , using SocketsPerBoard",
 			      n->nodenames);
@@ -844,12 +850,6 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 							    n->threads);
 			}
 
-			if (n->tot_sockets == 0) {
-				/* make sure sockets != 0 */
-				error("NodeNames=%s Sockets=0 is invalid, "
-				      "reset to 1", n->nodenames);
-				n->tot_sockets = 1;
-			}
 		} else {
 			/* In this case Boards=# is used.
 			 * CPUs=# or Procs=# are ignored.
@@ -869,13 +869,6 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 				      " not recommended, assume "
 				      "SocketsPerBoard was meant",
 				      n->nodenames);
-				if (n->tot_sockets == 0) {
-					/* make sure tot_sockets is non-zero */
-					error("NodeNames=%s Sockets=0 is "
-					      "invalid, reset to 1",
-					      n->nodenames);
-					n->tot_sockets = 1;
-				}
 				n->tot_sockets = n->boards * n->tot_sockets;
 			} else {
 				n->tot_sockets = n->boards;
