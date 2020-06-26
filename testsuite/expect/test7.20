@@ -33,6 +33,7 @@ set exit_code		 0
 set exit_code_skip	 -123123
 set cwd			"[$bin_pwd]"
 set job_name		"test$test_id"
+set is_skip              0
 
 set ta1	    "test$test_id-account.1"
 set tu1     [get_my_user_name]
@@ -151,7 +152,7 @@ proc restore_backup { file } {
 }
 
 proc endit { exit_code } {
-	global test_id config_dir exit_code_skip
+	global test_id config_dir exit_code_skip is_skip
 
 	cleanup_accounts
 	restore_backup $config_dir/job_submit.lua
@@ -160,10 +161,10 @@ proc endit { exit_code } {
 
 	if {$exit_code == $exit_code_skip} {
 		skip "Unable to run test with available nodes"
-	} elseif {$exit_code != 0} {
-		log_error "exiting with exit code $exit_code"
 	}
-
+	if {$is_skip} {
+		skip "Some subtests were skipped"
+	}
 	if {$exit_code != 0} {
 		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
@@ -177,18 +178,26 @@ proc check_rc { exit_code } {
 }
 
 proc test_bin_pass { num bin args het_job count } {
-	global job_name salloc ta1 tq2 srun number
+	global job_name salloc ta1 tq2 srun number is_skip
 
 	set got_init 0
 	set got_sub1 0
 	set got_sub2 0
 	set got_sub3 0
 	set rc -12345
+	set is_builtin [check_conf_param "SchedulerType" "sched/builtin"]
 
 	log_info "**** TEST PASS $num ****"
 	eval spawn $bin [join $args " "]
 	set pid [exp_pid]
 	expect {
+		-re "^(srun|salloc|sbatch): error: .*: Requested operation not supported on this system\r\n" {
+			if { $het_job && $is_builtin } {
+				log_warn "Hetjobs are not supported with sched/builtin this failure is expected"
+				set is_skip 1
+				return 0
+			}
+		}
 		-re "^(srun|salloc|sbatch): initialized\r\n" {
 			incr got_init
 			exp_continue
@@ -234,18 +243,26 @@ proc test_bin_pass { num bin args het_job count } {
 }
 
 proc test_bin_fail { num bin args het_job count } {
-	global job_name ta1 tq1 tq2 srun number
+	global job_name ta1 tq1 tq2 srun number is_skip
 
 	set got_init 0
 	set got_sub1 0
 	set got_sub2 0
 	set got_sub3 0
 	set rc -12345
+	set is_builtin [check_conf_param "SchedulerType" "sched/builtin"]
 
 	log_info "**** TEST FAIL $num ****"
 	eval spawn $bin [join $args " "]
 	set pid [exp_pid]
 	expect {
+		-re "^(srun|salloc|sbatch): error: .*: Requested operation not supported on this system\r\n" {
+			if { $het_job && $is_builtin } {
+				log_warn "Hetjobs are not supported with sched/builtin this failure is expected"
+				set is_skip 1
+				return 0
+			}
+		}
 		-re "^(srun|salloc|sbatch): error: initialized\r\n" {
 			incr got_init
 			exp_continue
