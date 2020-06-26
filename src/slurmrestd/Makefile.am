@@ -60,8 +60,6 @@ slurmrestd_LDADD = \
 	$(YAML_LDFLAGS) $(JSON_LDFLAGS) \
 	libslurmrest_ref.la \
 	ops/libslurmrest_ops.la
-else
-EXTRA_slurmrestd_SOURCES = $(SRCS)
 endif
 force:
 $(convenience_libs) : force

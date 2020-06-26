@@ -207,8 +207,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libslurmrest_ref_la_SOURCES) $(slurmrestd_SOURCES) \
-	$(EXTRA_slurmrestd_SOURCES)
+SOURCES = $(libslurmrest_ref_la_SOURCES) $(slurmrestd_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -538,7 +537,6 @@ SRCS = \
 @WITH_SLURMRESTD_TRUE@	libslurmrest_ref.la \
 @WITH_SLURMRESTD_TRUE@	ops/libslurmrest_ops.la
 
-@WITH_SLURMRESTD_FALSE@EXTRA_slurmrestd_SOURCES = $(SRCS)
 all: all-recursive
 
 .SUFFIXES:
