@@ -335,6 +335,34 @@ static void _job_queue_del(void *x)
 	}
 }
 
+static void _set_bb_state(job_record_t *job_ptr, bb_job_t *bb_job,
+			  int new_state)
+{
+	const char *new_state_str = NULL;
+
+	xassert(bb_job);
+
+	/*
+	 * Set state (integer) in bb_job and set the state (string) in job_ptr.
+	 * bb_job is used in this plugin. The string is used to display to the
+	 * user and to save the state in StateSaveLocation if slurmctld is
+	 * ever restarted.
+	 */
+	new_state_str = bb_state_string(new_state);
+	bb_job->state = new_state;
+	if (!job_ptr) {
+		/* This should never happen, but handle it just in case. */
+		error("%s: Could not find job_ptr for JobId=%u, unable to set new burst buffer state %s in job.",
+		      __func__, bb_job->job_id, new_state_str);
+		return;
+	}
+
+	log_flag(BURST_BUF, "Modify %pJ burst buffer state from %s to %s",
+		 job_ptr, job_ptr->burst_buffer_state, new_state_str);
+	xfree(job_ptr->burst_buffer_state);
+	job_ptr->burst_buffer_state = xstrdup(new_state_str);
+}
+
 /* Purge files we have created for the job.
  * bb_state.bb_mutex is locked on function entry.
  * job_ptr may be NULL if not found */
@@ -405,10 +433,10 @@ static int _alloc_job_bb(job_record_t *job_ptr, bb_job_t *bb_job,
 		return EAGAIN;
 
 	if (bb_job->state < BB_STATE_STAGING_IN) {
-		bb_job->state = BB_STATE_STAGING_IN;
+		_set_bb_state(job_ptr, bb_job, BB_STATE_STAGING_IN);
 		rc = _queue_stage_in(job_ptr, bb_job);
 		if (rc != SLURM_SUCCESS) {
-			bb_job->state = BB_STATE_TEARDOWN;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
 			_queue_teardown(job_ptr->job_id, job_ptr->user_id,
 					true);
 		}
@@ -491,7 +519,7 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 		bb_job->partition = xstrdup(job_ptr->part_ptr->name);
 	if (job_ptr->qos_ptr)
 		bb_job->qos = xstrdup(job_ptr->qos_ptr->name);
-	bb_job->state = BB_STATE_PENDING;
+	_set_bb_state(job_ptr, bb_job, BB_STATE_PENDING);
 	bb_job->user_id = job_ptr->user_id;
 	bb_specs = xstrdup(job_ptr->burst_buffer);
 	tok = strtok_r(bb_specs, "\n", &save_ptr);
@@ -1653,7 +1681,7 @@ static void *_start_stage_in(void *x)
 			error("unable to find bb_job record for %pJ",
 			      job_ptr);
 		} else {
-			bb_job->state = BB_STATE_STAGING_IN;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_STAGING_IN);
 			bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
 			if (!bb_alloc && bb_job->total_size) {
 				/* Not found (from restart race condtion) and
@@ -1802,7 +1830,7 @@ static void *_start_stage_in(void *x)
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_job = bb_job_find(&bb_state, stage_args->job_id);
 		if (bb_job)
-			bb_job->state = BB_STATE_STAGED_IN;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_STAGED_IN);
 		if (bb_job && bb_job->total_size) {
 			if (real_size > bb_job->req_size) {
 				info("%pJ total_size increased from %"PRIu64" to %"PRIu64,
@@ -1971,7 +1999,7 @@ static void *_start_stage_out(void *x)
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_job = _get_bb_job(job_ptr);
 		if (bb_job)
-			bb_job->state = BB_STATE_STAGING_OUT;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_STAGING_OUT);
 		slurm_mutex_unlock(&bb_state.bb_mutex);
 	}
 	unlock_slurmctld(job_write_lock);
@@ -2049,7 +2077,7 @@ static void *_start_stage_out(void *x)
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_job = _get_bb_job(job_ptr);
 		if ((rc == SLURM_SUCCESS) && bb_job)
-			bb_job->state = BB_STATE_TEARDOWN;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
 		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
 		if (bb_alloc) {
 			if (rc == SLURM_SUCCESS) {
@@ -2248,7 +2276,8 @@ static void *_start_teardown(void *x)
 				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 			}
 			if ((bb_job = _get_bb_job(job_ptr)))
-				bb_job->state = BB_STATE_COMPLETE;
+				_set_bb_state(job_ptr, bb_job,
+					      BB_STATE_COMPLETE);
 			job_ptr->job_state &= (~JOB_STAGE_OUT);
 			if (!IS_JOB_PENDING(job_ptr) &&	/* No email if requeue */
 			    (job_ptr->mail_type & MAIL_JOB_STAGE_OUT)) {
@@ -3835,7 +3864,8 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		if (bb_job == NULL)
 			continue;
 		if (bb_job->state == BB_STATE_COMPLETE)
-			bb_job->state = BB_STATE_PENDING;     /* job requeued */
+			_set_bb_state(job_ptr, bb_job,
+				      BB_STATE_PENDING); /* job requeued */
 		else if (bb_job->state >= BB_STATE_POST_RUN)
 			continue;	/* Requeued job still staging out */
 		job_rec = xmalloc(sizeof(bb_job_queue_rec_t));
@@ -3900,7 +3930,8 @@ extern int bb_p_job_test_stage_in(job_record_t *job_ptr, bool test_only)
 	if (bb_state.last_load_time != 0)
 		bb_job = _get_bb_job(job_ptr);
 	if (bb_job && (bb_job->state == BB_STATE_COMPLETE))
-		bb_job->state = BB_STATE_PENDING;	/* job requeued */
+		_set_bb_state(job_ptr, bb_job,
+			      BB_STATE_PENDING); /* job requeued */
 	if (bb_job == NULL) {
 		rc = -1;
 	} else if (bb_job->state < BB_STATE_STAGING_IN) {
@@ -3994,9 +4025,9 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 		   slurm_conf.state_save_location, hash_inx, job_ptr->job_id);
 	xstrfmtcat(client_nodes_file_nid, "%s/client_nids", job_dir);
 	if (do_pre_run)
-		bb_job->state = BB_STATE_PRE_RUN;
+		_set_bb_state(job_ptr, bb_job, BB_STATE_PRE_RUN);
 	else
-		bb_job->state = BB_STATE_RUNNING;
+		_set_bb_state(job_ptr, bb_job, BB_STATE_RUNNING);
 	if (bb_state.bb_config.flags & BB_FLAG_SET_EXEC_HOST)
 		set_exec_host = true;
 	else
@@ -4209,7 +4240,8 @@ static void *_start_pre_run(void *x)
 			if (IS_JOB_RUNNING(job_ptr))
 				run_kill_job = true;
 			if (bb_job) {
-				bb_job->state = BB_STATE_TEARDOWN;
+				_set_bb_state(job_ptr, bb_job,
+					      BB_STATE_TEARDOWN);
 				if (bb_job->retry_cnt++ > MAX_RETRY_CNT)
 					hold_job = true;
 			}
@@ -4219,9 +4251,9 @@ static void *_start_pre_run(void *x)
 	} else if (bb_job) {
 		/* Pre-run success and the job's BB record exists */
 		if (bb_job->state == BB_STATE_ALLOC_REVOKE)
-			bb_job->state = BB_STATE_STAGED_IN;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_STAGED_IN);
 		else
-			bb_job->state = BB_STATE_RUNNING;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_RUNNING);
 	}
 	if (job_ptr) {
 		if (run_kill_job)
@@ -4260,9 +4292,9 @@ extern int bb_p_job_revoke_alloc(job_record_t *job_ptr)
 		bb_job = _get_bb_job(job_ptr);
 	if (bb_job) {
 		if (bb_job->state == BB_STATE_RUNNING)
-			bb_job->state = BB_STATE_STAGED_IN;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_STAGED_IN);
 		else if (bb_job->state == BB_STATE_PRE_RUN)
-			bb_job->state = BB_STATE_ALLOC_REVOKE;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_ALLOC_REVOKE);
 	} else {
 		rc = SLURM_ERROR;
 	}
@@ -4300,10 +4332,10 @@ extern int bb_p_job_start_stage_out(job_record_t *job_ptr)
 			job_ptr);
 	} else if (bb_job->state < BB_STATE_RUNNING) {
 		/* Job never started. Just teardown the buffer */
-		bb_job->state = BB_STATE_TEARDOWN;
+		_set_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
 		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
 	} else if (bb_job->state < BB_STATE_POST_RUN) {
-		bb_job->state = BB_STATE_POST_RUN;
+		_set_bb_state(job_ptr, bb_job, BB_STATE_POST_RUN);
 		job_ptr->job_state |= JOB_STAGE_OUT;
 		xfree(job_ptr->state_desc);
 		xstrfmtcat(job_ptr->state_desc, "%s: Stage-out in progress",
@@ -4436,11 +4468,12 @@ extern int bb_p_job_cancel(job_record_t *job_ptr)
 	if (!bb_job) {
 		/* Nothing ever allocated, nothing to clean up */
 	} else if (bb_job->state == BB_STATE_PENDING) {
-		bb_job->state = BB_STATE_COMPLETE;  /* Nothing to clean up */
+		_set_bb_state(job_ptr, bb_job,
+			      BB_STATE_COMPLETE); /* Nothing to clean up */
 	} else {
 		/* Note: Persistent burst buffer actions already completed
 		 * for the job are not reversed */
-		bb_job->state = BB_STATE_TEARDOWN;
+		_set_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
 		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
 		if (bb_alloc) {
 			bb_alloc->state = BB_STATE_TEARDOWN;
@@ -4535,7 +4568,7 @@ static int _create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 			}
 			bb_limit_add(job_ptr->user_id, buf_ptr->size,
 				     buf_ptr->pool, &bb_state, true);
-			bb_job->state = BB_STATE_ALLOCATING;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_ALLOCATING);
 			buf_ptr->state = BB_STATE_ALLOCATING;
 			create_args = xmalloc(sizeof(create_buf_data_t));
 			create_args->access = xstrdup(buf_ptr->access);
@@ -4575,7 +4608,7 @@ static int _create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 				continue;
 			}
 
-			bb_job->state = BB_STATE_DELETING;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_DELETING);
 			buf_ptr->state = BB_STATE_DELETING;
 			create_args = xmalloc(sizeof(create_buf_data_t));
 			create_args->hurry = buf_ptr->hurry;
@@ -4603,7 +4636,8 @@ static int _create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 						    job_ptr->user_id,
 						    &bb_state);
 			if (bb_alloc && (bb_alloc->state == BB_STATE_ALLOCATED))
-				bb_job->state = BB_STATE_ALLOCATED;
+				_set_bb_state(job_ptr, bb_job,
+					      BB_STATE_ALLOCATED);
 			else
 				rc++;
 		}
@@ -4629,7 +4663,7 @@ static bool _test_persistent_use_ready(bb_job_t *bb_job,
 		bb_alloc = bb_find_name_rec(buf_ptr->name, job_ptr->user_id,
 					    &bb_state);
 		if (bb_alloc && (bb_alloc->state == BB_STATE_ALLOCATED)) {
-			bb_job->state = BB_STATE_ALLOCATED;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_ALLOCATED);
 		} else {
 			not_ready_cnt++;
 			break;
@@ -4707,10 +4741,11 @@ static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 		break;
 	}
 	if (!active_buf) {
+		job_record_t *job_ptr = find_job_record(job_id);
 		if (bb_job->state == BB_STATE_ALLOCATING)
-			bb_job->state = BB_STATE_ALLOCATED;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_ALLOCATED);
 		else if (bb_job->state == BB_STATE_DELETING)
-			bb_job->state = BB_STATE_DELETED;
+			_set_bb_state(job_ptr, bb_job, BB_STATE_DELETED);
 		queue_job_scheduler();
 	}
 }
@@ -4963,6 +4998,11 @@ static void *_destroy_persistent(void *x)
 	} else {
 		assoc_mgr_lock_t assoc_locks =
 			{ .assoc = READ_LOCK, .qos = READ_LOCK };
+		/*
+		 * job_write_lock needed for _reset_buf_state() since it will
+		 * call _set_bb_state() to modify job_ptr->burst_buffer_state
+		 */
+		lock_slurmctld(job_write_lock);
 		/* assoc_mgr needs locking to call bb_post_persist_delete */
 		if (bb_alloc)
 			assoc_mgr_lock(&assoc_locks);
@@ -4986,6 +5026,7 @@ static void *_destroy_persistent(void *x)
 		slurm_mutex_unlock(&bb_state.bb_mutex);
 		if (bb_alloc)
 			assoc_mgr_unlock(&assoc_locks);
+		unlock_slurmctld(job_write_lock);
 	}
 	xfree(resp_msg);
 	_free_create_args(destroy_args);
