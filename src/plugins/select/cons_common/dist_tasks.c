@@ -857,8 +857,9 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 				    const uint16_t cr_type, bool preempt_mode)
 {
-	uint32_t c, i, j, k, s, n;
-	uint32_t *sock_start, *sock_end, size, csize, core_cnt;
+	uint32_t c, i, j, k, s;
+	int n, n_first, n_last;
+	uint32_t *sock_start, *sock_end, csize, core_cnt;
 	uint16_t cps = 0, cpus, vpus, sockets, sock_size, orig_cpu_cnt;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bitstr_t *core_map;
@@ -890,15 +891,20 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 			ntasks_per_socket = mc_ptr->ntasks_per_socket;
 	}
 
+	n_first = bit_ffs(job_res->node_bitmap);
+	if (n_first != -1)
+		n_last = bit_fls(job_res->node_bitmap);
+	else
+		n_last = -2;
+
 	sock_size  = select_node_record[0].sockets;
 	sock_avoid = xcalloc(sock_size, sizeof(bool));
 	sock_start = xcalloc(sock_size, sizeof(uint32_t));
 	sock_end   = xcalloc(sock_size, sizeof(uint32_t));
 	sock_used  = xcalloc(sock_size, sizeof(bool));
 
-	size  = bit_size(job_res->node_bitmap);
 	csize = bit_size(core_map);
-	for (c = 0, i = 0, n = 0; n < size; n++) {
+	for (c = 0, i = 0, n = n_first; n < n_last; n++) {
 		if (bit_test(job_res->node_bitmap, n) == 0)
 			continue;
 		sockets = select_node_record[n].sockets;
