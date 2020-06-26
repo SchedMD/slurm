@@ -193,7 +193,8 @@ static void *_window_manager(void *arg);
  * General declarations
  **********************************************************************/
 static void *_io_thr(void *);
-static int _send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job);
+static int _send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job,
+			     bool init);
 static void _send_eof_msg(struct task_read_info *out);
 static struct io_buf *_task_build_message(struct task_read_info *out,
 					  stepd_step_rec_t *job, cbuf_t *cbuf);
@@ -1564,8 +1565,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
 	}
 
 	fd_set_blocking(sock);  /* just in case... */
-
-	_send_io_init_msg(sock, srun->key, job);
+	_send_io_init_msg(sock, srun->key, job, true);
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
@@ -1622,8 +1622,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 	}
 
 	fd_set_blocking(sock);  /* just in case... */
-
-	_send_io_init_msg(sock, srun->key, job);
+	_send_io_init_msg(sock, srun->key, job, false);
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
@@ -1652,12 +1651,19 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 }
 
 static int
-_send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job)
+_send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job, bool init)
 {
 	struct slurm_io_init_msg msg;
 
 	memcpy(msg.cred_signature, key->data, SLURM_IO_KEY_SIZE);
 	msg.nodeid = job->nodeid;
+	/*
+	 * The initial message does not need the node_offset it is needed for
+	 * sattach
+	 */
+	if (!init && (job->step_id.step_het_comp != NO_VAL))
+		msg.nodeid += job->het_job_node_offset;
+
 	if (job->stdout_eio_objs == NULL)
 		msg.stdout_objs = 0;
 	else

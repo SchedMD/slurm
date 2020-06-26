@@ -3881,6 +3881,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	job_record_t *job_ptr = NULL;
 	step_record_t *step_ptr = NULL;
+	ListIterator itr;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_STEP_LAYOUT, from uid=%d", uid);
@@ -3903,15 +3904,39 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 		return;
 	}
 
-	step_ptr = find_step_record(job_ptr, req);
-	if (!step_ptr) {
+	/* We can't call find_step_record here since we may need more than 1 */
+	itr = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = list_next(itr))) {
+		if (!verify_step_id(&step_ptr->step_id, req))
+			continue;
+
+		if (step_layout)
+			slurm_step_layout_merge(step_layout,
+						step_ptr->step_layout);
+		else
+			step_layout = slurm_step_layout_copy(
+				step_ptr->step_layout);
+
+		/* break if don't need to look for futher het_steps */
+		if (step_ptr->step_id.step_het_comp == NO_VAL)
+			break;
+		/*
+		 * If we are looking for a specific het step we can break here
+		 * as well.
+		 */
+		if (req->step_het_comp != NO_VAL)
+			break;
+	}
+	list_iterator_destroy(itr);
+
+	if (!step_layout) {
 		unlock_slurmctld(job_read_lock);
 		log_flag(STEPS, "%s: %pJ StepId=%u Not Found",
 			 __func__, job_ptr, req->step_id);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 		return;
 	}
-	step_layout = slurm_step_layout_copy(step_ptr->step_layout);
+
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host)
 		step_layout->front_end = xstrdup(job_ptr->batch_host);

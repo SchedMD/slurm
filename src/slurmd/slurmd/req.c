@@ -2814,6 +2814,14 @@ static int _step_limits_match(void *x, void *key)
 	return 0;
 }
 
+static int _find_step_loc(void *x, void *key)
+{
+	step_loc_t *step_loc = (step_loc_t *) x;
+	slurm_step_id_t *step_id = (slurm_step_id_t *) key;
+
+	return verify_step_id(&step_loc->step_id, step_id);
+}
+
 /* Call only with job_limits_mutex locked */
 static void
 _load_job_limits(void)
@@ -4221,20 +4229,37 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	uid_t uid = -1;
 	uint16_t protocol_version;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	List steps = stepd_available(conf->spooldir, conf->node_name);;
+	step_loc_t *stepd = NULL;
 
 	slurm_msg_t_copy(&resp_msg, msg);
+
+	/*
+	 * At the time of writing only 1 stepd could be running for a step
+	 * (het step) on a node at a time.  If this ever is resolved this will
+	 * need to be altered.
+	 */
+	stepd = list_find_first(steps, _find_step_loc, &req->step_id);
+
+	if (!stepd) {
+		debug("%s: Couldn't find %ps: %m",
+		      __func__, &req->step_id);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
+
 	fd = stepd_connect(conf->spooldir, conf->node_name,
-			   &req->step_id, &protocol_version);
+			   &stepd->step_id, &protocol_version);
 	if (fd == -1) {
 		debug("reattach for nonexistent %ps stepd_connect failed: %m",
-		      req);
+		      &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}
 
 	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
 		debug("_rpc_reattach_tasks couldn't read from the %ps: %m",
-		      req);
+		      &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done2;
 	}
@@ -4310,6 +4335,7 @@ done:
 
 	slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	slurm_free_reattach_tasks_response_msg(resp);
+	FREE_NULL_LIST(steps);
 }
 
 static uid_t _get_job_uid(uint32_t jobid)
