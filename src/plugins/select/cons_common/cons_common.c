@@ -2034,11 +2034,11 @@ extern int select_p_update_node_config(int index)
 	 * different NUMA configuration
 	 */
 	if (!(slurm_conf.conf_flags & CTL_CONF_OR) &&
-	    (select_node_record[index].sockets !=
+	    (select_node_record[index].tot_sockets !=
 	     select_node_record[index].node_ptr->config_ptr->tot_sockets) &&
 	    (select_node_record[index].cores !=
 	     select_node_record[index].node_ptr->config_ptr->cores) &&
-	    ((select_node_record[index].sockets *
+	    ((select_node_record[index].tot_sockets *
 	      select_node_record[index].cores) ==
 	     (select_node_record[index].node_ptr->tot_sockets *
 	      select_node_record[index].node_ptr->cores))) {
@@ -2046,7 +2046,9 @@ extern int select_p_update_node_config(int index)
 			select_node_record[index].node_ptr->config_ptr->cores;
 		select_node_record[index].sockets =
 			select_node_record[index].node_ptr->config_ptr->
-				tot_sockets;
+				tot_sockets /
+			select_node_record[index].node_ptr->config_ptr->boards;
+
 		/* tot_sockets should be the same */
 		/* tot_cores should be the same */
 	}
