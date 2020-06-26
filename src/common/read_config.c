@@ -838,22 +838,11 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			n->tot_sockets = 0;
 		}
 
-		if (no_boards) {
-			/* This case is exactly like if was without boards,
-			 * Except SocketsPerBoard=# can be used,
-			 * But it can't be used with Sockets=# */
-		} else {
-			/* In this case Boards=# is used.
-			 * CPUs=# or Procs=# are ignored.
-			 */
-			if (n->boards == 0) {
-				/* make sure boards is non-zero */
-				error("NodeNames=%s Boards=0 is "
-				      "invalid, reset to 1",
-				      n->nodenames);
-				n->boards = 1;
-			}
-
+		if (!no_boards && n->boards == 0) {
+			/* make sure boards is non-zero */
+			error("NodeNames=%s Boards=0 is invalid, reset to 1",
+			      n->nodenames);
+			n->boards = 1;
 		}
 
 		if (no_sockets) {
