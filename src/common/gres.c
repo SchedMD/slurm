@@ -9797,7 +9797,6 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 			} else if (job_specs->gres_per_job) {
 				uint16_t cpus_per_core;
 				cpus_per_core = node_table_ptr->cpus /
-						node_table_ptr->boards /
 						node_table_ptr->tot_sockets /
 						node_table_ptr->cores;
 				job_fini = _set_job_bits1(job_res, i, node_inx,
