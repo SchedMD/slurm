@@ -347,11 +347,11 @@ int main(int argc, char **argv)
 	if (!(conmgr = init_con_mgr(run_mode.listen ? thread_count : 1)))
 		fatal("Unable to initialize connection manager");
 
-	if (init_openapi())
-		fatal("Unable to initialize OpenAPI structures");
-
 	if (init_operations())
 		fatal("Unable to initialize operations structures");
+
+	if (init_openapi())
+		fatal("Unable to initialize OpenAPI structures");
 
 	if (init_op_diag())
 		fatal("Unable to initialize diag ops");
