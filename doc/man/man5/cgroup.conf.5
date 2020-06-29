@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "Slurm Configuration File" "December 2016" "Slurm Configuration File"
+.TH "cgroup.conf" "5" "Slurm Configuration File" "June 2020" "Slurm Configuration File"
 
 .SH "NAME"
 cgroup.conf \- Slurm configuration file for the cgroup support
@@ -101,11 +101,11 @@ The default value is "no".
 .TP
 \fBConstrainKmemSpace\fR=<yes|no>
 If configured to "yes" then constrain the job's Kmem RAM usage in addition to
-RAM usage. Only takes effect if ConstrainRAMSpace is set to "yes". The default
-value is "no". If set to yes, the job's Kmem limit will be set to
-AllowedKmemSpace if set; otherwise, the job's Kmem limit will be set to its RAM
-limit.
-Also see \fBAllowedKmemSpace\fR.
+RAM usage. Only takes effect if \fBConstrainRAMSpace\fR is set to "yes". If
+enabled, the job's Kmem limit will be assigned the value of
+\fBAllowedKmemSpace\fR or the value coming from \fBMaxKmemPercent\fR.
+The default value is "no" which will leave Kmem setting untouched by Slurm.
+Also see \fBAllowedKmemSpace\fR, \fBMaxKmemPercent\fR.
 
 .TP
 \fBConstrainRAMSpace\fR=<yes|no>
@@ -152,8 +152,11 @@ The default value is 100.
 
 .TP
 \fBMaxKmemPercent\fR=\fIPERCENT\fR
-Set an upper bound in percent of total Kmem for a job. The \fIPERCENT\fR may be an
-arbitrary floating point number. The default value is 100.
+Set an upper bound in percent of total RAM as the maximum Kmem for a job. The
+\fIPERCENT\fR may be an arbitrary floating point number, however, the product
+of \fBMaxKmemPercent\fR and job requested memory has to fall between
+\fBMinKmemSpace\fR and job requested memory, otherwise the boundary value is
+used. The default value is 100.
 
 .TP
 \fBMemorySwappiness\fR=<number>
