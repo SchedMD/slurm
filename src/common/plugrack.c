@@ -396,3 +396,18 @@ extern int plugrack_print_all_plugin(plugrack_t *rack)
 
 	return SLURM_SUCCESS;
 }
+
+static int _foreach_plugin(void *x, void *arg)
+{
+	plugrack_entry_t *entry = (plugrack_entry_t *) x;
+	plugrack_foreach_t f = (plugrack_foreach_t) arg;
+
+	f(entry->full_type, entry->fq_path, entry->plug);
+
+	return 0;
+}
+
+extern void plugrack_foreach(plugrack_t *rack, plugrack_foreach_t f)
+{
+	(void) list_for_each(rack->entries, _foreach_plugin, f);
+}

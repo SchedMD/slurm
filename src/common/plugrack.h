@@ -85,4 +85,11 @@ plugin_handle_t plugrack_use_by_type(plugrack_t *rack, const char *type);
  */
 int plugrack_print_all_plugin(plugrack_t *rack);
 
+/*
+ * Call function f for each plugin found in rack
+ */
+typedef void (*plugrack_foreach_t)(const char *full_type, const char *fq_path,
+				   const plugin_handle_t id);
+extern void plugrack_foreach(plugrack_t *rack, plugrack_foreach_t f);
+
 #endif /*__PLUGRACK_H__*/
