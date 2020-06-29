@@ -308,7 +308,15 @@ extern int rest_authenticate_http_request(on_http_request_args_t *args)
 	    _auth_user_psk(args, context))
 		goto fail;
 
-	if (auth_type & AUTH_TYPE_LOCAL)
+	/*
+	 * auth_type may be AUTH_TYPE_USER_PSK | AUTH_TYPE_LOCAL.
+	 * If so, the context->type will have changed if the PSK auth
+	 * was successful, and thus we should not double-authenticate the
+	 * connection. If it is still AUTH_TYPE_INVALID then we will try
+	 * local authentication as a fall-back here.
+	 */
+	if ((auth_type & AUTH_TYPE_LOCAL) &&
+	    (context->type == AUTH_TYPE_INVALID))
 		_auth_local(args, context);
 
 	if (context->type == AUTH_TYPE_INVALID)
