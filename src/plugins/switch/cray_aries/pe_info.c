@@ -135,7 +135,7 @@ int build_alpsc_pe_info(stepd_step_rec_t *job,
 	}
 
 	// Print pe info if debug flag is set
-	if (debug_flags & DEBUG_FLAG_SWITCH) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
 		_print_alpsc_pe_info(alpsc_pe_info, *cmd_index);
 	}
 
