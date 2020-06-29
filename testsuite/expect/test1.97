@@ -308,9 +308,9 @@ expect {
 	}
 }
 
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Error waiting for job $job_id to complete"
-	cancel_job $job_id
+if {[wait_for_job $tmp_id "DONE"] != 0} {
+	log_error "Error waiting for job $tmp_id to complete"
+	cancel_job $tmp_id
 	set exit_code 1
 }
 
