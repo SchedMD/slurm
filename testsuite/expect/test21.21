@@ -473,6 +473,9 @@ if {$job_id == 0} {
 #
 if { [test_limits_enforced] == 1 } {
 	_test_limits
+} else {
+	log_warn "Tests requiring limits enforcement were skipped"
+	set is_skip 1
 }
 
 # Check for partials skips
