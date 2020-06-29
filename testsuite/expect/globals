@@ -6129,13 +6129,22 @@ proc get_node_config { {request_args "-n1 -t1"} } {
 			}
 			exp_continue
 		}
+		-re "srun: error: (\[^\\n\]*)" {
+			log_error "srun: error: $expect_out(1,string)"
+			set exit_code 1
+			exp_continue
+		}
 		timeout {
 			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
 		eof {
-			wait
+			lassign [wait] pid spawnid os_error status
+			if {$status != 0} {
+				log_error "srun exit code: $status"
+				set exit_code 1
+			}
 		}
 	}
 	exec $bin_rm -f $file_in
