@@ -372,7 +372,7 @@ extern int plugrack_print_all_plugin(plugrack_t *rack)
 
 	xassert(rack->entries);
 	itr = list_iterator_create(rack->entries);
-	info("MPI types are...");
+	info("%s types are...", rack->major_type);
 	while ((e = list_next(itr))) {
 		/*
 		 * Support symbolic links for various pmix plugins with names
