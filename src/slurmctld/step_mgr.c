@@ -326,7 +326,7 @@ static void _internal_step_complete(job_record_t *job_ptr,
 
 /*
  * _find_step_id - Find specific step_id entry in the step list,
- *	           see common/list.h for documentation
+ *		   see common/list.h for documentation
  * - object - the step list from a job_record_t
  * - key - slurm_step_id_t
  */
@@ -789,7 +789,7 @@ static void _wake_pending_steps(job_record_t *job_ptr)
 		char *sched_params = slurm_get_sched_params();
 		char *tmp_ptr;
 		long int param;
-		config_start_count = 8;	
+		config_start_count = 8;
 		config_max_age = 60;
 
 		if ((tmp_ptr = xstrcasestr(sched_params, "step_retry_count="))) {
@@ -2103,8 +2103,8 @@ static void _dump_step_layout(step_record_t *step_ptr)
 			     sock_inx<job_resrcs_ptr->sockets_per_node[i];
 			     sock_inx++) {
 				for (core_inx=0;
-			 	     core_inx<job_resrcs_ptr->cores_per_socket[i];
-			 	     core_inx++) {
+				     core_inx<job_resrcs_ptr->cores_per_socket[i];
+				     core_inx++) {
 					if (bit_test(step_ptr->
 						     core_bitmap_job,
 						     bit_inx++)) {
@@ -2330,7 +2330,7 @@ static void _set_def_cpu_bind(job_record_t *job_ptr)
 
 	/* Use global default from TaskPluginParams */
 	job_ptr->details->cpu_bind_type = bind_bits |
-	                                  slurm_conf.task_plugin_param;
+					  slurm_conf.task_plugin_param;
 	return;
 }
 
@@ -2401,7 +2401,7 @@ static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
  * OUT new_step_record - pointer to the new step_record (NULL on error)
  * RET - 0 or error code
  * NOTE: don't free the returned step_record because that is managed through
- * 	the job.
+ *	the job.
  */
 extern int step_create(job_step_create_request_msg_t *step_specs,
 		       step_record_t** new_step_record,
@@ -3132,9 +3132,9 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	}
 
 	/* if (set_tasks < num_tasks) { */
-	/* 	error("Resources only available for %u of %u tasks", */
-	/* 	     set_tasks, num_tasks); */
-	/* 	return NULL; */
+	/*	error("Resources only available for %u of %u tasks", */
+	/*	     set_tasks, num_tasks); */
+	/*	return NULL; */
 	/* } */
 
 	/* layout the tasks on the nodes */
