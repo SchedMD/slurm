@@ -2843,6 +2843,35 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 			 */
 			step_layout = NULL;
 		}
+       } else if (step_specs->step_id.step_het_comp != NO_VAL) {
+               slurm_step_id_t step_id = {
+                       .job_id = step_ptr->step_id.job_id,
+                       .step_id = step_ptr->step_id.step_id,
+                       .step_het_comp = 0,
+               };
+               /* get the first het step component */
+               step_record_t *het_step_ptr =
+		       find_step_record(job_ptr, &step_id);
+
+               jobid = job_ptr->job_id;
+               if (!het_step_ptr || !het_step_ptr->switch_job) {
+                       memset(&tmp_step_layout, 0, sizeof(tmp_step_layout));
+                       step_layout = &tmp_step_layout;
+                       step_layout->node_list = xstrdup(job_ptr->nodes);
+                       step_layout->node_cnt = job_ptr->node_cnt;
+                       tmp_step_layout_used = true;
+               } else {
+                       if (!het_step_ptr->switch_job)
+                               return ESLURM_INTERCONNECT_FAILURE;
+
+                       switch_g_duplicate_jobinfo(het_step_ptr->switch_job,
+                                                  &step_ptr->switch_job);
+                       /*
+                        * Prevent switch_g_build_jobinfo from getting a new
+                        * cookie below.
+                        */
+                       step_layout = NULL;
+               }
 	} else {
 		step_layout = step_ptr->step_layout;
 		jobid = job_ptr->job_id;
@@ -2851,11 +2880,6 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	step_layout = step_ptr->step_layout;
 	jobid = job_ptr->job_id;
 #endif
-
-	/*
-	 * FIXME: we need to make sure the switch is set up correctly on a het
-	 * step
-	 */
 
 	if (step_layout) {
 		if (switch_g_alloc_jobinfo(&step_ptr->switch_job,
