@@ -47,6 +47,8 @@ documents those changes that are of interest to users and administrators.
  -- Print specific error messages if trying to run use certain
     priority/multifactor factors that cannot work without SlurmDBD.
  -- Avoid partial GRES allocation when --gpus-per-job is not satisfied.
+ -- Cray - Avoid referencing a variable outside of it's correct scope when
+    dealing with creating steps within a het job.
 
 * Changes in Slurm 20.02.3
 ==========================
