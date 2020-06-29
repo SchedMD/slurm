@@ -3430,14 +3430,22 @@ extern char *bb_state_string(uint16_t state)
 		return "allocating";
 	if (state == BB_STATE_ALLOCATED)
 		return "allocated";
+	if (state == BB_STATE_DELETING)
+		return "deleting";
+	if (state == BB_STATE_DELETED)
+		return "deleted";
 	if (state == BB_STATE_STAGING_IN)
 		return "staging-in";
 	if (state == BB_STATE_STAGED_IN)
 		return "staged-in";
+	if (state == BB_STATE_PRE_RUN)
+		return "pre-run";
 	if (state == BB_STATE_RUNNING)
 		return "running";
 	if (state == BB_STATE_SUSPEND)
 		return "suspended";
+	if (state == BB_STATE_POST_RUN)
+		return "post-run";
 	if (state == BB_STATE_STAGING_OUT)
 		return "staging-out";
 	if (state == BB_STATE_STAGED_OUT)
@@ -3461,14 +3469,22 @@ extern uint16_t bb_state_num(char *tok)
 		return BB_STATE_ALLOCATING;
 	if (!xstrcasecmp(tok, "allocated"))
 		return BB_STATE_ALLOCATED;
+	if (!xstrcasecmp(tok, "deleting"))
+		return BB_STATE_DELETING;
+	if (!xstrcasecmp(tok, "deleted"))
+		return BB_STATE_DELETED;
 	if (!xstrcasecmp(tok, "staging-in"))
 		return BB_STATE_STAGING_IN;
 	if (!xstrcasecmp(tok, "staged-in"))
 		return BB_STATE_STAGED_IN;
+	if (!xstrcasecmp(tok, "pre-run"))
+		return BB_STATE_PRE_RUN;
 	if (!xstrcasecmp(tok, "running"))
 		return BB_STATE_RUNNING;
 	if (!xstrcasecmp(tok, "suspend"))
 		return BB_STATE_SUSPEND;
+	if (!xstrcasecmp(tok, "post-run"))
+		return BB_STATE_POST_RUN;
 	if (!xstrcasecmp(tok, "staging-out"))
 		return BB_STATE_STAGING_OUT;
 	if (!xstrcasecmp(tok, "staged-out"))
