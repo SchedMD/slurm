@@ -2422,6 +2422,9 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	uint32_t jobid;
 	slurm_step_layout_t *step_layout = NULL;
 	bool tmp_step_layout_used = false;
+#ifdef HAVE_NATIVE_CRAY
+	slurm_step_layout_t tmp_step_layout;
+#endif
 
 	*new_step_record = NULL;
 	job_ptr = find_job_record (step_specs->step_id.job_id);
@@ -2801,7 +2804,6 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 
 		jobid = job_ptr->het_job_id;
 		if (!het_step_ptr || !het_step_ptr->switch_job) {
-			slurm_step_layout_t tmp_step_layout;
 			job_record_t *het_job_comp_ptr;
 			hostlist_t hl = hostlist_create(NULL);
 			ListIterator itr;
