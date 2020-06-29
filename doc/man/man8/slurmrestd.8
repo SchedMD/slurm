@@ -28,6 +28,10 @@ life of the process.
 Listen on local UNIX socket. Must have permission to create socket in
 filesystem.
 .TP
+\fB\-a <authentication types>\fR
+Comma delimited list of authentication types to allow.
+Possible types: local, psk
+.TP
 \fB\-f <file>\fR
 Read Slurm configuration from the specified file. See \fBNOTES\fR below.
 .TP
@@ -61,6 +65,9 @@ compiled into slurmctld.
 .TP 20
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.TP
+\fBSLURMRESTD_AUTH_TYPES\fR
+Set allowed authentication types. See \fB\-a\fR
 .TP
 \fBSLURMRESTD_DEBUG\fR
 Set debug level explicitly. Valid values are 1-10. See \fB\-v\fR

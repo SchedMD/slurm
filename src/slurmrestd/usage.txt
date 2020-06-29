@@ -1,4 +1,6 @@
 Usage: slurmrestd [OPTIONS] [host:port]...
+	-a <authentication types>
+		List of authentication types to accept.
 	-f file
 		Use specified file for slurmctld configuration
 	-h

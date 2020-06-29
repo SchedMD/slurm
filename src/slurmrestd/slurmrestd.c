@@ -107,6 +107,28 @@ static void _sigpipe_handler(int signum)
 	debug5("%s: received SIGPIPE", __func__);
 }
 
+static void _set_auth_type(const char *str)
+{
+	/* split comma delimited list */
+	char *tok = NULL, *save_ptr = NULL, *types;
+	char *auth_types = xstrdup(str);
+
+	auth_type = AUTH_TYPE_INVALID;
+
+	types = auth_types;
+	while ((tok = strtok_r(types, ",", &save_ptr))) {
+		if (!xstrcasecmp(tok, "local"))
+			auth_type |= AUTH_TYPE_LOCAL;
+		else if (!xstrcasecmp(tok, "psk"))
+			auth_type |= AUTH_TYPE_USER_PSK;
+		else
+			fatal("Unknown authentication type: %s", tok);
+
+		types = NULL; /* for next strok_r() */
+	}
+	xfree(auth_types);
+}
+
 static void _parse_env(void)
 {
 	char *buffer = NULL;
@@ -130,6 +152,9 @@ static void _parse_env(void)
 		}
 		xfree(toklist);
 	}
+
+	if ((buffer = getenv("SLURMRESTD_AUTH_TYPES")))
+		_set_auth_type(buffer);
 }
 
 static void _examine_stdin(void)
@@ -213,8 +238,11 @@ static void _parse_commandline(int argc, char **argv)
 	int c = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "f:g:ht:u:vV")) != -1) {
+	while ((c = getopt(argc, argv, "a:f:g:ht:u:vV")) != -1) {
 		switch (c) {
+		case 'a':
+			_set_auth_type(optarg);
+			break;
 		case 'f':
 			xfree(slurm_conf_filename);
 			slurm_conf_filename = xstrdup(optarg);
