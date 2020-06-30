@@ -3728,6 +3728,9 @@ extern int kill_running_job_by_node_name(char *node_name)
 	int kill_job_cnt = 0;
 	time_t now = time(NULL);
 
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+
 	node_ptr = find_node_record(node_name);
 	if (node_ptr == NULL)	/* No such node */
 		return 0;

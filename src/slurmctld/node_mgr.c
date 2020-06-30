@@ -2801,7 +2801,7 @@ extern int validate_nodes_via_front_end(
 	front_end_record_t *front_end_ptr;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
-	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
 	if (reg_msg->up_time > now) {
