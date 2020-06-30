@@ -91,6 +91,8 @@ documents those changes that are of interest to users and administrators.
  -- Cray - Avoid referencing a variable outside of it's correct scope when
     dealing with creating steps within a het job.
  -- slurmrestd - correctly handle larger addresses from accept().
+ -- Avoid freeing wrong pointer with SlurmctldParameters=max_dbd_msg_action
+    with another option after that.
 
 * Changes in Slurm 20.02.3
 ==========================
