@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include <dirent.h>
+#include <dlfcn.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -361,6 +362,33 @@ plugin_handle_t plugrack_use_by_type(plugrack_t *rack, const char *full_type)
 	/* Couldn't find a suitable plugin. */
 	list_iterator_destroy(it);
 	return PLUGIN_INVALID_HANDLE;
+}
+
+static int _foreach_release_plugin(void *x, void *arg)
+{
+	plugrack_entry_t *entry = (plugrack_entry_t *) x;
+	const char *type = (const char *) arg;
+
+	if (entry->plug == PLUGIN_INVALID_HANDLE)
+		return 0;
+
+	entry->refcount--;
+
+	if (entry->refcount <= 0) {
+		debug5("%s: closing plugin type: %s", __func__, type);
+		if (dlclose(entry->plug))
+			fatal_abort("%s: unable to dlclose plugin type: %s",
+				    __func__, type);
+		entry->plug = PLUGIN_INVALID_HANDLE;
+	}
+
+	return 0;
+}
+
+void plugrack_release_by_type(plugrack_t *rack, const char *type)
+{
+	(void) list_for_each(rack->entries, _foreach_release_plugin,
+			     (void *) type);
 }
 
 extern int plugrack_print_all_plugin(plugrack_t *rack)

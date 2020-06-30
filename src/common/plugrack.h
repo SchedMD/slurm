@@ -79,6 +79,12 @@ int plugrack_read_dir(plugrack_t *rack, const char *dir);
 plugin_handle_t plugrack_use_by_type(plugrack_t *rack, const char *type);
 
 /*
+ * Find a plugin in the rack which matches the given minor type,
+ * and unload it if ref count is <= 0.
+ */
+extern void plugrack_release_by_type(plugrack_t *rack, const char *type);
+
+/*
  * print all plugins in rack
  *
  * Returns a Slurm errno.
