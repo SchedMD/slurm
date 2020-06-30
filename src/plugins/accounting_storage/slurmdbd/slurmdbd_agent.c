@@ -1278,7 +1278,7 @@ extern void slurmdbd_agent_config_setup(void)
 		else
 			fatal("Unknown SlurmctldParameters option for max_dbd_msg_action '%s'",
 			      type);
-		xfree(tmp_ptr);
+		xfree(type);
 	} else
 		max_dbd_msg_action = MAX_DBD_DEFAULT_ACTION;
 }
