@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
  -- Avoid freeing wrong pointer with SlurmctldParameters=max_dbd_msg_action
     with another option after that.
  -- Restore MCS label when suspended job is resumed.
+ -- Fix insufficient lock levels.
 
 * Changes in Slurm 20.02.3
 ==========================
