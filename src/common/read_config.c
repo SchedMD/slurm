@@ -2379,39 +2379,6 @@ extern char *slurm_conf_get_nodeaddr(const char *node_hostname)
 }
 
 /*
- * slurm_conf_get_nodename_from_addr - Return the NodeName for given NodeAddr
- *
- * NOTE: Call xfree() to release returned value's memory.
- * NOTE: Caller must NOT be holding slurm_conf_lock().
- */
-extern char *slurm_conf_get_nodename_from_addr(const char *node_addr)
-{
-	char hostname[NI_MAXHOST];
-	unsigned long addr = inet_addr(node_addr);
-	char *start_name, *ret_name = NULL, *dot_ptr;
-
-	if (get_name_info((struct sockaddr *)&addr,
-			  sizeof(addr), hostname) != 0) {
-		error("%s: No node found with addr %s", __func__, node_addr);
-		return NULL;
-	}
-
-	if (!xstrcmp(hostname, "localhost")) {
-		start_name = xshort_hostname();
-	} else {
-		start_name = xstrdup(hostname);
-		dot_ptr = strchr(start_name, '.');
-		if (dot_ptr)
-			dot_ptr[0] = '\0';
-	}
-
-	ret_name = slurm_conf_get_aliases(start_name);
-	xfree(start_name);
-
-	return ret_name;
-}
-
-/*
  * slurm_conf_get_aliased_nodename - Return the NodeName for the
  * complete hostname string returned by gethostname if there is
  * such a match, otherwise iterate through any aliases returned
