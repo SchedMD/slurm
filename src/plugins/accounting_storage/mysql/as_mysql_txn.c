@@ -225,7 +225,7 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if (name_extra) {
 		if (extra)
-			xstrfmtcat(extra, " && (%s)", name_extra);
+			xstrfmtcat(extra, " || (%s)", name_extra);
 		else
 			xstrfmtcat(extra, " where (%s)", name_extra);
 		xfree(name_extra);
