@@ -197,7 +197,7 @@ log_user 0
 set tmp_cnt 99999
 set tmp_name ""
 set node_name ""
-spawn $sinfo -h -o%n=%c
+spawn $sinfo -h -o%N=%c -N
 expect {
 	-re "($re_word_str)=($number)" {
 		if { $expect_out(2,string) < $tmp_cnt } {
@@ -224,7 +224,7 @@ set node_h $node_name
 set cpu_h_cnt $tmp_cnt
 
 # Get highest node of different
-spawn $sinfo -h -o%n=%c
+spawn $sinfo -h -o%N=%c -N
 expect {
 	-re "($re_word_str)=($number)" {
 		if { $expect_out(2,string) > $cpu_l_cnt &&
@@ -244,7 +244,7 @@ expect {
 }
 
 # Get node between highest and lowest
-spawn $sinfo -h -o%n=%c
+spawn $sinfo -h -o%N=%c -N
 expect {
 	-re "($re_word_str)=($number)" {
 		if { $expect_out(2,string) > $cpu_l_cnt &&
