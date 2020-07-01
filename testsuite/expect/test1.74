@@ -153,7 +153,7 @@ cleanup
 
 # Setup
 set partition [default_partition]
-set node_cnt [available_nodes $partition "idle,alloc,comp"]
+set node_cnt [available_nodes "idle,alloc,comp"]
 if {$node_cnt < 3} {
 	skip "Partition $partition has too few nodes ($node_cnt < 3)"
 }
@@ -162,7 +162,7 @@ if {$node_cnt < 3} {
 if {[wait_for_node $partition idle 3]} {
 	skip "Partition $partition lacks 3 idle nodes"
 }
-set node_cnt [available_nodes $partition idle]
+set node_cnt [available_nodes idle]
 
 # Add parent account (off root)
 if {[add_child "root" $acct -1 -1]} {

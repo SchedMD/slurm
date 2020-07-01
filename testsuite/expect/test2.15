@@ -44,7 +44,7 @@ if {[test_front_end] != 0} {
 }
 
 set node_cnt 2
-set available [available_nodes "" ""]
+set available [available_nodes]
 if {$available < $node_cnt} {
 	skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
 }

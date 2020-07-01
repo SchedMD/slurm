@@ -2948,7 +2948,7 @@ proc uint2hex {value} {
 #
 ################################################################
 
-proc available_nodes { partition state } {
+proc available_nodes { {state ""} {partition ""} } {
 	global sinfo
 
 	if {[string length $partition] == 0} {
@@ -5966,8 +5966,7 @@ proc create_part { part_name num_nodes_in } {
 		return 1
 	}
 
-	set def_part [default_partition]
-	if {[string length $def_part] == 0} {
+	if {[string length [default_partition]] == 0} {
 		log_warn "create_part does not work without a default partition"
 		return 1
 	}
@@ -5975,7 +5974,7 @@ proc create_part { part_name num_nodes_in } {
 	if { $num_nodes_in } {
 		set num_nodes $num_nodes_in
 	} else {
-		set num_nodes [available_nodes $def_part idle]
+		set num_nodes [available_nodes idle]
 	}
 
 	log_user 0

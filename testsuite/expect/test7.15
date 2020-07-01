@@ -52,7 +52,7 @@ if {![string compare [test_launch_type] "runjob"]} {
 if {$have_runjob} {
 	set nnodes 1
 } else {
-	set nnodes [available_nodes $partition idle]
+	set nnodes [available_nodes idle $partition]
 }
 
 #

@@ -35,7 +35,7 @@ set job_id      0
 
 print_header $test_id
 
-set node_cnt [available_nodes "" ""]
+set node_cnt [available_nodes]
 if {$node_cnt < 2} {
 	skip "Not enough nodes in partition ($node_cnt < 2)"
 }
