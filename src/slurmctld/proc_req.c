@@ -4980,7 +4980,7 @@ static void _slurm_rpc_resv_delete(slurm_msg_t * msg)
 
 	/* node_write_lock needed for validate_resv_uid */
 	lock_slurmctld(node_write_lock);
-	if (/* !validate_operator(uid) && */
+	if (!validate_operator(uid) &&
 	    !validate_resv_uid(resv_desc_ptr->name, uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, DELETE_RESERVATION RPC from uid=%d",
