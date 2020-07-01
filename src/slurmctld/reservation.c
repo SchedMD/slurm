@@ -2159,6 +2159,23 @@ static List _license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 	return license_list;
 }
 
+static int _delete_resv_internal(slurmctld_resv_t *resv_ptr)
+{
+	if (_is_resv_used(resv_ptr))
+		return ESLURM_RESERVATION_BUSY;
+
+	if (resv_ptr->flags_set_node) {
+		time_t now = time(NULL);
+		resv_ptr->flags_set_node = false;
+		_set_nodes_flags(resv_ptr, now,
+				 (NODE_STATE_RES | NODE_STATE_MAINT),
+				 false);
+		last_node_update = now;
+	}
+
+	return _post_resv_delete(resv_ptr);
+}
+
 /* Create a resource reservation */
 extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 {
@@ -3075,7 +3092,6 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
 	int rc = SLURM_SUCCESS;
-	time_t now = time(NULL);
 
 	log_flag(RESERVATION, "%s: Name=%s", __func__, resv_desc_ptr->name);
 
@@ -3083,22 +3099,12 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 	while ((resv_ptr = list_next(iter))) {
 		if (xstrcmp(resv_ptr->name, resv_desc_ptr->name))
 			continue;
-		if (_is_resv_used(resv_ptr)) {
-			rc = ESLURM_RESERVATION_BUSY;
-			break;
-		}
 
-		if (resv_ptr->flags_set_node) {
-			resv_ptr->flags_set_node = false;
-			_set_nodes_flags(resv_ptr, now,
-					 (NODE_STATE_RES | NODE_STATE_MAINT),
-					 false);
-			last_node_update = now;
+		if ((rc = _delete_resv_internal(resv_ptr)) !=
+		    ESLURM_RESERVATION_BUSY) {
+			_clear_job_resv(resv_ptr);
+			list_delete_item(iter);
 		}
-
-		rc = _post_resv_delete(resv_ptr);
-		_clear_job_resv(resv_ptr);
-		list_delete_item(iter);
 		break;
 	}
 	list_iterator_destroy(iter);
