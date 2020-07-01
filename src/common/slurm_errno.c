@@ -372,6 +372,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "ConfigLess mode is disabled"				},
 	{ ESLURM_ENVIRONMENT_MISSING,
 	  "Environment is missing in job"			},
+	{ ESLURM_RESERVATION_NO_SKIP,
+	  "Reservation given is not skipable, try deleting instead"},
 
 	/* slurmd error codes */
 	{ ESLURMD_PIPE_ERROR_ON_TASK_SPAWN,

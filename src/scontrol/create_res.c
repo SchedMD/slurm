@@ -115,16 +115,25 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 
 		if (!val && xstrncasecmp(argv[i], "res", 3) == 0) {
 			continue;
-		} else if (!val || taglen == 0) {
+		}
+
+		if (val) {
+			if (val[-1] == '+' || val[-1] == '-') {
+				plus_minus = val[-1];
+				taglen--;
+			}
+			val++;
+		} else if (!xstrncasecmp(tag, "Skip", MAX(taglen, 2))) {
+			if (resv_msg_ptr->flags == NO_VAL64)
+				resv_msg_ptr->flags = RESERVE_FLAG_SKIP;
+			else
+				resv_msg_ptr->flags |= RESERVE_FLAG_SKIP;
+			continue;
+		} else {
 			exit_code = 1;
-			error("Unknown parameter %s.  %s", argv[i], msg);
+			error("Misformatted parameter '%s', most options have a parameter after '='.  %s", argv[i], msg);
 			return SLURM_ERROR;
 		}
-		if (val[-1] == '+' || val[-1] == '-') {
-			plus_minus = val[-1];
-			taglen--;
-		}
-		val++;
 
 		if (!xstrncasecmp(tag, "Accounts", MAX(taglen, 1))) {
 			if (resv_msg_ptr->accounts) {
@@ -179,7 +188,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			   == 0) {
 			resv_msg_ptr->burst_buffer = val;
 
-		} else if (xstrncasecmp(tag, "StartTime", MAX(taglen, 1)) == 0){
+		} else if (xstrncasecmp(tag, "StartTime", MAX(taglen, 2)) == 0){
 			time_t  t = parse_time(val, 0);
 			if (errno == ESLURM_INVALID_TIME_VALUE) {
 				exit_code = 1;

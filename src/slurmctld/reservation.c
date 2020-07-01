@@ -2580,6 +2580,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	slurmctld_resv_t *resv_backup, *resv_ptr;
 	resv_desc_msg_t resv_desc;
 	int error_code = SLURM_SUCCESS, i, rc;
+	bool skip_it = false;
 
 	_create_resv_lists(false);
 	_dump_resv_req(resv_desc_ptr, "update_resv");
@@ -2713,6 +2714,18 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags &= (~RESERVE_FLAG_MAGNETIC);
 			(void)list_remove_first(
 				magnetic_resv_list, _find_resv_ptr, resv_ptr);
+		}
+
+		/* handle skipping later */
+		if (resv_desc_ptr->flags & RESERVE_FLAG_SKIP) {
+			if (!(resv_ptr->flags & (RESERVE_FLAG_DAILY |
+						 RESERVE_FLAG_WEEKDAY |
+						 RESERVE_FLAG_WEEKEND |
+						 RESERVE_FLAG_WEEKLY))) {
+				error_code = ESLURM_RESERVATION_NO_SKIP;
+				goto update_failure;
+			}
+			skip_it = true;
 		}
 	}
 
@@ -2991,8 +3004,22 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 
 	_set_tres_cnt(resv_ptr, resv_backup);
 
+	/* Now check if we are skipping this one */
+	if (skip_it) {
+		if ((error_code = _delete_resv_internal(resv_ptr)) !=
+		    SLURM_SUCCESS)
+			goto update_failure;
+		if (_advance_resv_time(resv_ptr) != SLURM_SUCCESS) {
+			error_code = ESLURM_RESERVATION_NO_SKIP;
+			error("Couldn't skip reservation %s, this should never happen",
+			      resv_ptr->name);
+			goto update_failure;
+		}
+	}
+
 	_del_resv_rec(resv_backup);
 	(void) set_node_maint_mode(true);
+
 	last_resv_update = now;
 	schedule_resv_save();
 	return error_code;

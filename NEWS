@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd/v0.0.36 - Simplify nodes for jobs submissions.
  -- slurmrestd/v0.0.36 - Use "/slurm/v0.0.36/" as server instead of "/" to
     simply naming for clients.
+ -- Add 'scontrol update res=name skip' to skip the current/next reoccurring
+    reservation.
 
 * Changes in Slurm 20.02.4
 ==========================
