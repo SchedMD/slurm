@@ -158,7 +158,7 @@ static uint32_t _max_constraint_planning(constraint_planning_t* sched,
 					 time_t *start, time_t *end);
 
 
-static void _advance_resv_time(slurmctld_resv_t *resv_ptr);
+static int _advance_resv_time(slurmctld_resv_t *resv_ptr);
 static void _advance_time(time_t *res_time, int day_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
 				char ***account_list, bool *account_not);
@@ -4035,7 +4035,7 @@ int _filter_resv(void *x, void *arg)
 		return 0;
 	}
 	if (resv_ptr->end_time <= args->now)
-		_advance_resv_time(resv_ptr);
+		(void)_advance_resv_time(resv_ptr);
 	if (resv_ptr->node_bitmap == NULL) {
 		log_flag(RESERVATION, "%s: reservation %s has no nodes to filter for reservation %s",
 			 __func__, resv_ptr->name, args->resv_desc_ptr->name);
@@ -5096,7 +5096,7 @@ extern void job_time_adj_resv(job_record_t *job_ptr)
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
 		if (resv_ptr->end_time <= now)
-			_advance_resv_time(resv_ptr);
+			(void)_advance_resv_time(resv_ptr);
 		if (job_ptr->resv_ptr == resv_ptr)
 			continue;	/* authorized user of reservation */
 		if (resv_ptr->start_time <= now)
@@ -5301,7 +5301,7 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(job_record_t *job_ptr,
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
 		if (resv_ptr->end_time <= now)
-			_advance_resv_time(resv_ptr);
+			(void)_advance_resv_time(resv_ptr);
 
 		if (reboot)
 			job_end_time_use =
@@ -5349,7 +5349,7 @@ extern int job_test_lic_resv(job_record_t *job_ptr, char *lic_name,
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
 		if (resv_ptr->end_time <= now)
-			_advance_resv_time(resv_ptr);
+			(void)_advance_resv_time(resv_ptr);
 
 		if (reboot)
 			job_end_time_use =
@@ -5555,7 +5555,7 @@ static void _get_rel_start_end(slurmctld_resv_t *resv_ptr, time_t now,
 		}
 	} else {
 		if (resv_ptr->end_time <= now)
-			_advance_resv_time(resv_ptr);
+			(void)_advance_resv_time(resv_ptr);
 		*start_relative = resv_ptr->start_time_first;
 		*end_relative = resv_ptr->end_time;
 	}
@@ -5589,7 +5589,7 @@ extern uint32_t job_test_watts_resv(job_record_t *job_ptr, time_t when,
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
 		if (resv_ptr->end_time <= now)
-			_advance_resv_time(resv_ptr);
+			(void)_advance_resv_time(resv_ptr);
 		if (resv_ptr->resv_watts == NO_VAL ||
 		    resv_ptr->resv_watts == 0)
 			continue;       /* not a power reservation */
@@ -5694,7 +5694,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			bit_nset(*node_bitmap, 0, (node_record_count - 1));
 		} else {
 			if (resv_ptr->end_time <= now)
-				_advance_resv_time(resv_ptr);
+				(void)_advance_resv_time(resv_ptr);
 			if (*when < resv_ptr->start_time) {
 				/* reservation starts later */
 				*when = resv_ptr->start_time;
@@ -6024,17 +6024,17 @@ static void *_update_resv_jobs(void *arg)
 
 /* Advance a expired reservation's time stamps one day or one week
  * as appropriate. */
-static void _advance_resv_time(slurmctld_resv_t *resv_ptr)
+static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 {
 	time_t now;
 	struct tm tm;
 	int day_cnt = 0;
-
+	int rc = SLURM_ERROR;
 	/* Make sure we have node write locks. */
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
-		return;		/* Not applicable */
+		return rc;		/* Not applicable */
 
 	if (resv_ptr->flags & RESERVE_FLAG_DAILY) {
 		day_cnt = 1;
@@ -6091,10 +6091,12 @@ static void _advance_resv_time(slurmctld_resv_t *resv_ptr)
 		_post_resv_create(resv_ptr);
 		last_resv_update = time(NULL);
 		schedule_resv_save();
+		rc = SLURM_SUCCESS;
 	} else {
 		log_flag(RESERVATION, "%s: skipping reservation %s for being advanced by any days",
 			 __func__, resv_ptr->name);
 	}
+	return rc;
 }
 
 static void _free_script_arg(resv_thread_args_t *args)
@@ -6222,7 +6224,7 @@ extern void job_resv_check(void)
 		}
 		if (!resv_ptr->run_prolog || !resv_ptr->run_epilog)
 			continue;
-		_advance_resv_time(resv_ptr);
+		(void)_advance_resv_time(resv_ptr);
 		if ((!resv_ptr->job_run_cnt ||
 		     (resv_ptr->flags & RESERVE_FLAG_FLEX)) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_DAILY )  == 0) &&
