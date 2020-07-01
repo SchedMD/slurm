@@ -187,6 +187,7 @@
 #define	list_prepend		slurm_list_prepend
 #define	list_find_first		slurm_list_find_first
 #define	list_delete_all		slurm_list_delete_all
+#define	list_delete_ptr		slurm_list_delete_ptr
 #define	list_for_each		slurm_list_for_each
 #define	list_for_each_max	slurm_list_for_each_max
 #define	list_sort		slurm_list_sort
