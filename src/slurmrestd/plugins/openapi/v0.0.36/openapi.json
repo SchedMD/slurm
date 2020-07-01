@@ -31,7 +31,14 @@
 	"summary": "ping test",
 	"responses": {
 	  "200": {
-	    "description": "results of ping test"
+	    "description": "results of ping test",
+	    "content": {
+	      "application/json": {
+		"schema": {
+		  "$ref": "#/components/schemas/pings"
+		}
+	      }
+	    }
 	  }
 	}
       }
@@ -319,6 +326,50 @@
   },
   "components": {
     "schemas": {
+      "pings": {
+	"type": "object",
+	"properties": {
+	  "errors": {
+	    "type": "array",
+	    "description": "slurm errors",
+	    "items": {
+	      "$ref": "#/components/schemas/error"
+	    }
+	  },
+	  "pings": {
+	    "type": "array",
+	    "description": "slurm controller pings",
+	    "items": {
+	      "$ref": "#/components/schemas/ping"
+	    }
+	  }
+	}
+      },
+      "ping": {
+	"type": "object",
+	"properties": {
+	  "hostname": {
+	    "type": "string",
+	    "description": "slurm controller hostname"
+	  },
+	  "ping": {
+	    "type": "string",
+	    "description": "slurm controller host up",
+	    "enum": [
+	      "UP",
+	      "DOWN"
+	    ]
+	  },
+	  "mode": {
+	    "type": "string",
+	    "description": "slurm controller mode"
+	  },
+	  "status": {
+	    "type": "integer",
+	    "description": "slurm controller status"
+	  }
+	}
+      },
       "partition": {
 	"type": "object",
 	"properties": {

@@ -175,8 +175,8 @@ static int _op_handler_ping(const char *context_id,
 			    __func__);
 
 	if (slurm_ctl_conf_ptr) {
-		data_t *pings = data_key_set(resp_ptr, "ping");
-		data_set_dict(pings);
+		data_t *pings = data_key_set(resp_ptr, "pings");
+		data_set_list(pings);
 
 		xassert(slurm_ctl_conf_ptr->control_cnt);
 		for (size_t i = 0; i < slurm_ctl_conf_ptr->control_cnt; i++) {
@@ -191,17 +191,19 @@ static int _op_handler_ping(const char *context_id,
 			else
 				snprintf(mode, sizeof(mode), "backup%zu", i);
 
-			data_t *ping = data_key_set(
-				pings, slurm_ctl_conf_ptr->control_machine[i]);
-			data_set_dict(ping);
-			data_set_string(data_key_set(pings, "ping"),
-					status == SLURM_SUCCESS ? "UP" :
-								  "DOWN");
-			data_set_int(data_key_set(pings, "status"), status);
-			data_set_string(data_key_set(pings, "mode"), mode);
+			data_t *ping = data_set_dict(data_list_append(pings));
+
+			data_set_string(data_key_set(ping, "hostname"),
+					slurm_ctl_conf_ptr->control_machine[i]);
+
+			data_set_string(data_key_set(ping, "ping"),
+					(status == SLURM_SUCCESS ? "UP" :
+								   "DOWN"));
+			data_set_int(data_key_set(ping, "status"), status);
+			data_set_string(data_key_set(ping, "mode"), mode);
 		}
 	} else {
-		_ping_error("%s: slurmctl config is missing", __func__);
+		_ping_error("%s: slurmctld config is missing", __func__);
 	}
 
 	slurm_free_ctl_conf(slurm_ctl_conf_ptr);
