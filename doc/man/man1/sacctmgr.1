@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "May 2020" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "July 2020" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -2367,7 +2367,7 @@ before you can add users.
 .br
 -> sacctmgr list associations cluster=tux format=Account,Cluster,User,Fairshare tree withd
 .br
--> sacctmgr list transactions StartTime=11/03\-10:30:00 format=Timestamp,Action,Actor
+-> sacctmgr list transactions Action="Add Users" Start=11/03-10:30:00 format=Where,Time
 .br
 -> sacctmgr dump cluster=tux file=tux_data_file
 .br
