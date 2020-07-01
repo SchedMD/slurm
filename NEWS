@@ -97,6 +97,8 @@ documents those changes that are of interest to users and administrators.
     with another option after that.
  -- Restore MCS label when suspended job is resumed.
  -- Fix insufficient lock levels.
+ -- slurmrestd - use errno from job submission.
+ -- Fix "user" filter for sacctmgr show transactions.
 
 * Changes in Slurm 20.02.3
 ==========================
