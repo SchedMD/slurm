@@ -92,7 +92,7 @@ proc check_rc { exit_code } {
 proc create_accounts {} {
 	global ta1 ta2 tq1 tq2 tu1 user_req_1 user_req_2
 	global qos_1 qos_2
-	log_debug "create account and QOS"
+	log_debug "Create account and QOS"
 
 
 	# Create test assoc and accounts
@@ -110,10 +110,10 @@ proc cleanup_accounts {} {
 
 	wait_for_account_done $ta1,$ta2
 
-	log_debug "remove QOS: $tq1,$tq2"
+	log_debug "Remove QOS: $tq1,$tq2"
 	remove_qos $tq1,$tq2
 
-	log_debug "remove account: $ta1,$ta2"
+	log_debug "Remove account: $ta1,$ta2"
 	remove_acct "" $ta1,$ta2
 }
 
@@ -293,3 +293,120 @@ for {set i 0} {$i < 2} {incr i} {
 	}
 }
 
+log_info "Testing that PD jobs that lost their QOS will not lunch until restored"
+
+# Return to clean slate
+cleanup_accounts
+
+# Add test qos
+run_command -fail "$sacctmgr -vi add qos $tq1"
+
+# Add test account
+run_command -fail "$sacctmgr -vi add account name=$ta1 set qos=normal,$tq1"
+
+# Add test user to account
+run_command -fail "$sacctmgr -vi add user name=$tu1 account=$ta1"
+
+# Check what we just added to make sure it is there
+if {![regexp -line "^\\S+\\|$ta1\\|$tu1\\|normal,$tq1" [run_command_output "$sacctmgr -n -P show assoc format=cluster,account,user,qos"]]} {
+	fail "Association with the right account, user and qos was not found"
+}
+
+# Submit a delayed job that wants to run in the test qos
+regexp {Submitted batch job (\d+)} [run_command_output -fail "$sbatch --begin=now+2 --qos=$tq1 -A $ta1 --wrap \"srun sleep 10\""] {} job_id_1
+
+# The first job should get queued
+if {[wait_for_job $job_id_1 "PENDING"] != 0} {
+	fail "Job $job_id_1 did not enter the pending state"
+}
+
+# Remove the test qos out from under the job
+run_command "$sacctmgr -vi modify account name=$ta1 user=$tu1 set qos=normal"
+
+# Submit a second delayed job requesting the test qos. It should be rejected
+if {![run_command_status -none "$sbatch --begin=now+2 --qos=$tq1 -A $ta1 --wrap \"srun sleep 10\""]} {
+	fail "Job submitted with unassociated qos should have failed"
+} else {
+	log_debug "The preceding job failure was expected"
+}
+
+# Wait for the first job to pend with Reason=InvalidQOS
+set condition_matched false
+wait_for {$condition_matched} {
+	set scontrol_out [run_command_output -fail "$scontrol -o show job $job_id_1"]
+	regexp {JobState=([^ ]+) Reason=([^ ]+)} $scontrol_out {} job_state reason
+	if {$job_state eq "PENDING" && $reason eq "InvalidQOS"} {
+		set condition_matched true
+	}
+}
+assert_or_fail {$condition_matched} "Job $job_id_1 did not pend on InvalidQOS as expected"
+
+# Add back the test qos
+run_command -fail "$sacctmgr -vi modify account name=$ta1 user=$tu1 set qos=normal,$tq1"
+
+# Wait for the first job to begin running
+if {[wait_for_job $job_id_1 "RUNNING"] != 0} {
+	fail "Job $job_id_1 did not run after adding back the qos"
+}
+
+log_info "Testing that PD jobs that lost their Account will not resume until restored"
+
+# Return to clean slate
+cleanup_accounts
+
+# Add test qos
+run_command -fail "$sacctmgr -vi add qos $tq1"
+
+# Add test accounts
+run_command -fail "$sacctmgr -vi add account name=$ta1 set qos=normal,$tq1"
+run_command -fail "$sacctmgr -vi add account name=$ta2 set qos=normal,$tq1"
+
+# Add test user to accounts
+run_command -fail "$sacctmgr -vi add user name=$tu1 account=$ta1"
+run_command -fail "$sacctmgr -vi add user name=$tu1 account=$ta2"
+
+# Check what we just added to make sure it is there
+if {![regexp -line "^\\S+\\|$ta1\\|$tu1\\|normal,$tq1" [run_command_output "$sacctmgr -n -P show assoc format=cluster,account,user,qos"]]} {
+	fail "Test qos $tq1 has not been added to test account $ta1"
+}
+if {![regexp -line "^\\S+\\|$ta2\\|$tu1\\|normal,$tq1" [run_command_output "$sacctmgr -n -P show assoc format=cluster,account,user,qos"]]} {
+	fail "Test qos $tq1 has not been added to test account $ta2"
+}
+
+# Submit a delayed job that wants to run with the test qos and test account 2
+regexp {Submitted batch job (\d+)} [run_command_output -fail "$sbatch --begin=now+2 --qos=$tq1 -A $ta2 --wrap \"srun sleep 10\""] {} job_id_1
+
+# The first job should get queued
+if {[wait_for_job $job_id_1 "PENDING"] != 0} {
+	fail "Job $job_id_1 did not enter the pending state"
+}
+
+# Remove the test account out from under the job
+run_command -fail "$sacctmgr -vi delete account name=$ta2"
+
+# Submit a second delayed job requesting test account 2. It should be rejected
+if {![run_command_status -none "$sbatch --begin=now+2 --qos=$tq1 -A $ta2 --wrap \"srun sleep 10\""]} {
+	fail "Job submitted with unassociated account should have failed"
+} else {
+	log_debug "The preceding job failure was expected"
+}
+
+# Wait for the first job to pend with Reason=InvalidAccount
+set condition_matched false
+wait_for {$condition_matched} {
+	set scontrol_out [run_command_output -fail "$scontrol -o show job $job_id_1"]
+	regexp {JobState=([^ ]+) Reason=([^ ]+)} $scontrol_out {} job_state reason
+	if {$job_state eq "PENDING" && $reason eq "InvalidAccount"} {
+		set condition_matched true
+	}
+}
+assert_or_fail {$condition_matched} "Job $job_id_1 did not pend on InvalidAccount as expected"
+
+# Add back the test account
+run_command -fail "$sacctmgr -vi add account name=$ta2 set qos=normal,$tq1"
+run_command -fail "$sacctmgr -vi add user name=$tu1 account=$ta2"
+
+# Wait for the first job to begin running
+if {[wait_for_job $job_id_1 "RUNNING"] != 0} {
+	fail "Job $job_id_1 did not run after adding back the qos"
+}
