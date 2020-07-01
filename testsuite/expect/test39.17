@@ -1054,10 +1054,6 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 			incr match2
 			exp_continue
 		}
-		-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES:NoDevFiles " {
-			incr bad_cuda_cnt
-			exp_continue
-		}
 		-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES: " {
 			incr bad_cuda_cnt
 			exp_continue
