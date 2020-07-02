@@ -273,7 +273,7 @@ if {[test_select_type_params "CR_CORE"]} {
 }
 
 # Get the number of nodes in the default partition
-set num_nodes [available_nodes [default_partition] "idle"]
+set num_nodes [available_nodes "idle"]
 
 if {$num_nodes == 0} {
 	fail "No cpus were found"

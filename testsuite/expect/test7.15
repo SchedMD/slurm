@@ -42,13 +42,7 @@ exec $bin_cc -O -o $file_prog ${file_prog}.c
 #  Run on multiple nodes in case the failure of this test
 #   is intermittent.
 #
-if { $partition == "" } {
-	if {[info exists env(SLURM_PARTITION)] } {
-		set partition $env(SLURM_PARTITION)
-	} else {
-		set partition [default_partition]
-	}
-}
+set partition [default_partition]
 
 set have_runjob 0
 if {![string compare [test_launch_type] "runjob"]} {
@@ -58,7 +52,7 @@ if {![string compare [test_launch_type] "runjob"]} {
 if {$have_runjob} {
 	set nnodes 1
 } else {
-	set nnodes [available_nodes $partition idle]
+	set nnodes [available_nodes idle $partition]
 }
 
 #
