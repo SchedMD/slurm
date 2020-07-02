@@ -451,7 +451,7 @@ if {$matches == 0} {
 	log_error "No error for exceeding processor count"
 	set exit_code   1
 } else {
-	send_user "This error is expected, no worries\n"
+	log_info "This error is expected, no worries"
 }
 
 #
@@ -460,7 +460,7 @@ if {$matches == 0} {
 send "exit\r"
 expect {
 	-re "error.*Exit 1" {
-		send_user "This error is expected, no worries\n"
+		log_info "This error is expected, no worries"
 		exp_continue
 	}
 	timeout {
