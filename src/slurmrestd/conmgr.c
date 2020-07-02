@@ -1619,8 +1619,8 @@ static void _listen_accept(void *x)
 	con_mgr_fd_t *con = x;
 	con_mgr_t *mgr = con->mgr;
 	int rc;
-	socklen_t addrlen = sizeof(struct sockaddr_storage);
-	struct sockaddr *addr = xmalloc(addrlen);
+	struct sockaddr addr = {0};
+	socklen_t addrlen = sizeof(addr);
 	int fd;
 
 	_check_magic_fd(con);
@@ -1629,23 +1629,23 @@ static void _listen_accept(void *x)
 	if (con->input_fd == -1) {
 		log_flag(NET, "%s: [%s] skipping accept on closed connection",
 			 __func__, con->name);
-		goto cleanup;
+		return;
 	} else
 		log_flag(NET, "%s: [%s] attempting to accept new connection",
 			 __func__, con->name);
 
 	/* try to get the new file descriptor and retry on errors */
-	if ((fd = accept(con->input_fd, addr, &addrlen)) < 0) {
+	if ((fd = accept(con->input_fd, &addr, &addrlen)) < 0) {
 		if (errno == EINTR) {
 			log_flag(NET, "%s: [%s] interrupt on accept()",
 				 __func__, con->name);
 			_close_con(false, con);
-			goto cleanup;
+			return;
 		}
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 			log_flag(NET, "%s: [%s] retry: %m", __func__, con->name);
 			rc = SLURM_SUCCESS;
-			goto cleanup;
+			return;
 		}
 
 		error("%s: [%s] Error on accept socket: %m",
@@ -1655,33 +1655,28 @@ static void _listen_accept(void *x)
 		    (errno == ENOBUFS) || (errno == ENOMEM)) {
 			error("%s: [%s] retry on error: %m",
 			      __func__, con->name);
-			rc = SLURM_SUCCESS;
-			goto cleanup;
+			return;
 		}
 
-		rc = errno;
 		/* socket is likely dead: fail out */
 		_close_con(false, con);
-		goto cleanup;
+		return;
 	}
 
 	if (addrlen <= 0)
 		fatal("%s: empty address returned from accept()",
 		      __func__);
-	if (addrlen > sizeof(struct sockaddr_storage))
+	if (addrlen > sizeof(addr))
 		fatal("%s: unexpected large address returned from accept(): %u bytes",
 		      __func__, addrlen);
 
 	/* hand over FD for normal processing */
 	if ((rc = _con_mgr_process_fd_internal(mgr, con, fd, fd, con->events,
-					       addr, addrlen))) {
+					       &addr, addrlen))) {
 		log_flag(NET, "%s: [fd:%d] _con_mgr_process_fd_internal rejected: %s",
 			 __func__, fd, slurm_strerror(rc));
 		_close_con(false, con);
 	}
-
-cleanup:
-	xfree(addr);
 }
 
 extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
