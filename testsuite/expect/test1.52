@@ -45,11 +45,10 @@ if { [test_front_end] } {
 }
 
 # Determine if we have enough nodes to test functionality
-set def_part [default_partition]
-spawn $scontrol show partition $def_part
+spawn $scontrol show partition [default_partition]
 expect {
 	-re "not found" {
-		fail "Partition $def_part doesn't exist"
+		fail "Default partition doesn't exist"
 	}
 	-re "MaxNodes=($number)" {
 		set max_nodes $expect_out(1,string)
@@ -67,12 +66,12 @@ expect {
 	}
 }
 
-set idle_nodes [available_nodes $def_part idle]
+set idle_nodes [available_nodes idle]
 if { ($idle_nodes < 3) || ($max_nodes < 3) } {
 	if { $max_nodes == 999999 } {
-		skip "Partition $def_part must have at least 3 idle nodes and MaxNodes >= 3 to run this test on. IDLE:$idle_nodes MaxNodes:UNLIMITED"
+		skip "Default partition must have at least 3 idle nodes and MaxNodes >= 3 to run this test on. IDLE:$idle_nodes MaxNodes:UNLIMITED"
 	} else {
-		skip "Partition $def_part must have at least 3 idle nodes and MaxNodes >= 3 to run this test on. IDLE:$idle_nodes MaxNodes:$max_nodes"
+		skip "Default partition must have at least 3 idle nodes and MaxNodes >= 3 to run this test on. IDLE:$idle_nodes MaxNodes:$max_nodes"
 	}
 }
 

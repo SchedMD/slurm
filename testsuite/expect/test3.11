@@ -389,7 +389,7 @@ if {$heterogeneous != 0} {
 	log_warn "Cluster is heterogeneous and some tests may fail"
 }
 set cores_per_node [expr $cores_per_socket * $sockets_per_node]
-set node_count [available_nodes $def_partition ""]
+set node_count [available_nodes]
 set cluster_cpus [expr $cores_per_node * $node_count]
 
 set cr_socket 0

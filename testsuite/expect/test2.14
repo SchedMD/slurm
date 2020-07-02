@@ -42,7 +42,7 @@ if {[test_front_end]} {
     skip "This test is incompatible with front-end systems"
 }
 
-set available [available_nodes $partition ""]
+set available [available_nodes]
 if {$available < $node_cnt} {
     skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
 }

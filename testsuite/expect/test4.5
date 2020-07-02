@@ -80,9 +80,8 @@ proc reset_state { } {
 }
 
 print_header $test_id
-if (![string compare $partition ""]) {
-	set partition [default_partition]
-}
+
+set partition [default_partition]
 
 #
 # Get some values to test against

@@ -46,7 +46,7 @@ set host_2      ""
 set host_3      ""
 set node_cnt 3
 
-set available [available_nodes $partition ""]
+set available [available_nodes]
 if {$available < $node_cnt} {
     skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
 }

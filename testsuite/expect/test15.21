@@ -35,6 +35,7 @@ source ./globals
 
 set test_id     "15.21"
 set exit_code   0
+set partition   [default_partition]
 
 print_header $test_id
 
@@ -44,13 +45,9 @@ if {[test_front_end]} {
 	skip "This test is incompatible topology configured systems"
 }
 
-set available [available_nodes $partition ""]
+set available [available_nodes]
 if {$available < 3} {
 	skip "This test requires 3 nodes, but only $available available"
-}
-
-if {[string length $partition] == 0} {
-	set partition [default_partition]
 }
 
 #

@@ -54,7 +54,7 @@ proc end_it { exit_code } {
 	pass
 }
 
-set available [available_nodes $partition ""]
+set available [available_nodes]
 if {$available < $node_cnt} {
 	skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
 }
