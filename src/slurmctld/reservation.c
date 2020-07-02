@@ -5672,10 +5672,13 @@ extern void job_resv_check(void)
 
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
-		if (resv_ptr->job_run_cnt || resv_ptr->job_pend_cnt)
-			resv_ptr->idle_start_time = 0;
-		else if (!resv_ptr->idle_start_time)
-			resv_ptr->idle_start_time = now;
+		if (resv_ptr->start_time <= now) {
+			if (resv_ptr->job_run_cnt || resv_ptr->job_pend_cnt)
+				resv_ptr->idle_start_time = 0;
+			else if (!resv_ptr->idle_start_time)
+				resv_ptr->idle_start_time = now;
+		}
+
 		if ((resv_ptr->flags & RESERVE_FLAG_PURGE_COMP) &&
 		    resv_ptr->idle_start_time &&
 		    (resv_ptr->end_time > now) &&
@@ -5686,6 +5689,13 @@ extern void job_resv_check(void)
 				      tmp_pct, sizeof(tmp_pct));
 			info("Reservation %s has no more jobs for %s, ending it",
 			     resv_ptr->name, tmp_pct);
+
+			/*
+			 * Reset time here for reoccurring reservations so we
+			 * don't continually keep running this.
+			 */
+			resv_ptr->idle_start_time = 0;
+
 			resv_backup = _copy_resv(resv_ptr);
 			resv_ptr->end_time = now;
 			_post_resv_update(resv_ptr, resv_backup); /* accounting */
