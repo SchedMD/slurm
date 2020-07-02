@@ -184,7 +184,19 @@
 	"summary": "get all node info",
 	"responses": {
 	  "200": {
-	    "description": "nodes information"
+	    "description": "node information",
+	    "content": {
+	      "application/json": {
+		"schema": {
+		  "$ref": "#/components/schemas/node_info"
+		}
+	      },
+	      "application/x-yaml": {
+		"schema": {
+		  "$ref": "#/components/schemas/node_info"
+		}
+	      }
+	    }
 	  },
 	  "500": {
 	    "description": "no nodes in cluster"
@@ -668,6 +680,169 @@
 	  "wckey": {
 	    "type": "string",
 	    "description": "Specify wckey to be used with job."
+	  }
+	}
+      },
+      "node": {
+	"type": "object",
+	"properties": {
+	  "architecture": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "burstbuffer_network_address": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "boards": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "boot_time": {
+	    "type": "integer",
+	    "format": "int64",
+	    "description": ""
+	  },
+	  "cores": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "cpu_binding": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "cpu_load": {
+	    "type": "integer",
+	    "format": "int64",
+	    "description": ""
+	  },
+	  "free_memory": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "cpus": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "features": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "active_features": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "gres": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "gres_drained": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "gres_used": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "mcs_label": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "name": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "next_state_after_reboot": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "address": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "hostname": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "state": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "operating_system": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "owner": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "port": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "real_memory": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "reason": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "reason_changed_at": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "reason_set_by_user": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "slurmd_start_time": {
+	    "type": "integer",
+	    "format": "int64",
+	    "description": ""
+	  },
+	  "sockets": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "threads": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "temporary_disk": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "weight": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "tres": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "slurmd_version": {
+	    "type": "string",
+	    "description": ""
+	  }
+	}
+      },
+      "node_info": {
+	"type": "object",
+	"properties": {
+	  "errors": {
+	    "type": "array",
+	    "description": "slurm errors",
+	    "items": {
+	      "$ref": "#/components/schemas/error"
+	    }
+	  },
+	  "nodes": {
+	    "type": "array",
+	    "description": "nodes info",
+	    "items": {
+	      "$ref": "#/components/schemas/node"
+	    }
 	  }
 	}
       }

@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Parse multiple OpenAPI specifications for path resolution.
  -- slurmrestd - Add v0.0.36 OpenAPI plugin.
  -- slurmrestd/v0.0.36 - Add error schema.
+ -- slurmrestd/v0.0.36 - return array of nodes instead of dictionary.
 
 * Changes in Slurm 20.02.4
 ==========================
