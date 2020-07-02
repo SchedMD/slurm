@@ -1665,8 +1665,12 @@ static void _listen_accept(void *x)
 		goto cleanup;
 	}
 
-	xassert(addrlen > 0);
-	xassert(addrlen <= sizeof(struct sockaddr_storage));
+	if (addrlen <= 0)
+		fatal("%s: empty address returned from accept()",
+		      __func__);
+	if (addrlen > sizeof(struct sockaddr_storage))
+		fatal("%s: unexpected large address returned from accept(): %u bytes",
+		      __func__, addrlen);
 
 	/* hand over FD for normal processing */
 	if ((rc = _con_mgr_process_fd_internal(mgr, con, fd, fd, con->events,
