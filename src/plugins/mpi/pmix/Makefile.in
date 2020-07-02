@@ -143,7 +143,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_yaml.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
+DIST_COMMON = $(srcdir)/Makefile.am
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
@@ -185,16 +185,6 @@ am__DEPENDENCIES_2 = $(pmix_internal_libs) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 @HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_DEPENDENCIES =  \
 @HAVE_PMIX_V1_TRUE@	$(am__DEPENDENCIES_2)
-am__mpi_pmix_v1_la_SOURCES_DIST = mpi_pmix.c pmixp_common.h \
-	pmixp_coll.h pmixp_agent.c pmixp_client.c pmixp_nspaces.c \
-	pmixp_info.c pmixp_agent.h pmixp_client.h pmixp_nspaces.h \
-	pmixp_info.h pmixp_server.c pmixp_state.c pmixp_io.c \
-	pmixp_utils.c pmixp_dmdx.c pmixp_server.h pmixp_state.h \
-	pmixp_io.h pmixp_utils.h pmixp_dmdx.h pmixp_conn.c \
-	pmixp_dconn.c pmixp_dconn_tcp.c pmixp_conn.h pmixp_dconn.h \
-	pmixp_dconn_tcp.h pmixp_coll.c pmixp_coll_tree.c \
-	pmixp_coll_ring.c pmixp_dconn_ucx.c pmixp_dconn_ucx.h \
-	pmixp_client_v1.c
 @HAVE_UCX_TRUE@am__objects_1 = mpi_pmix_v1_la-pmixp_dconn_ucx.lo
 am__objects_2 = mpi_pmix_v1_la-mpi_pmix.lo \
 	mpi_pmix_v1_la-pmixp_agent.lo mpi_pmix_v1_la-pmixp_client.lo \
@@ -220,16 +210,6 @@ mpi_pmix_v1_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @HAVE_PMIX_V1_TRUE@am_mpi_pmix_v1_la_rpath = -rpath $(pkglib_v1dir)
 @HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_DEPENDENCIES =  \
 @HAVE_PMIX_V2_TRUE@	$(am__DEPENDENCIES_2)
-am__mpi_pmix_v2_la_SOURCES_DIST = mpi_pmix.c pmixp_common.h \
-	pmixp_coll.h pmixp_agent.c pmixp_client.c pmixp_nspaces.c \
-	pmixp_info.c pmixp_agent.h pmixp_client.h pmixp_nspaces.h \
-	pmixp_info.h pmixp_server.c pmixp_state.c pmixp_io.c \
-	pmixp_utils.c pmixp_dmdx.c pmixp_server.h pmixp_state.h \
-	pmixp_io.h pmixp_utils.h pmixp_dmdx.h pmixp_conn.c \
-	pmixp_dconn.c pmixp_dconn_tcp.c pmixp_conn.h pmixp_dconn.h \
-	pmixp_dconn_tcp.h pmixp_coll.c pmixp_coll_tree.c \
-	pmixp_coll_ring.c pmixp_dconn_ucx.c pmixp_dconn_ucx.h \
-	pmixp_client_v2.c
 @HAVE_UCX_TRUE@am__objects_3 = mpi_pmix_v2_la-pmixp_dconn_ucx.lo
 am__objects_4 = mpi_pmix_v2_la-mpi_pmix.lo \
 	mpi_pmix_v2_la-pmixp_agent.lo mpi_pmix_v2_la-pmixp_client.lo \
@@ -251,16 +231,6 @@ mpi_pmix_v2_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @HAVE_PMIX_V2_TRUE@am_mpi_pmix_v2_la_rpath = -rpath $(pkglib_v2dir)
 @HAVE_PMIX_V3_TRUE@mpi_pmix_v3_la_DEPENDENCIES =  \
 @HAVE_PMIX_V3_TRUE@	$(am__DEPENDENCIES_2)
-am__mpi_pmix_v3_la_SOURCES_DIST = mpi_pmix.c pmixp_common.h \
-	pmixp_coll.h pmixp_agent.c pmixp_client.c pmixp_nspaces.c \
-	pmixp_info.c pmixp_agent.h pmixp_client.h pmixp_nspaces.h \
-	pmixp_info.h pmixp_server.c pmixp_state.c pmixp_io.c \
-	pmixp_utils.c pmixp_dmdx.c pmixp_server.h pmixp_state.h \
-	pmixp_io.h pmixp_utils.h pmixp_dmdx.h pmixp_conn.c \
-	pmixp_dconn.c pmixp_dconn_tcp.c pmixp_conn.h pmixp_dconn.h \
-	pmixp_dconn_tcp.h pmixp_coll.c pmixp_coll_tree.c \
-	pmixp_coll_ring.c pmixp_dconn_ucx.c pmixp_dconn_ucx.h \
-	pmixp_client_v2.c
 @HAVE_UCX_TRUE@am__objects_5 = mpi_pmix_v3_la-pmixp_dconn_ucx.lo
 am__objects_6 = mpi_pmix_v3_la-mpi_pmix.lo \
 	mpi_pmix_v3_la-pmixp_agent.lo mpi_pmix_v3_la-pmixp_client.lo \
@@ -282,16 +252,6 @@ mpi_pmix_v3_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @HAVE_PMIX_V3_TRUE@am_mpi_pmix_v3_la_rpath = -rpath $(pkglib_v3dir)
 @HAVE_PMIX_V4_TRUE@mpi_pmix_v4_la_DEPENDENCIES =  \
 @HAVE_PMIX_V4_TRUE@	$(am__DEPENDENCIES_2)
-am__mpi_pmix_v4_la_SOURCES_DIST = mpi_pmix.c pmixp_common.h \
-	pmixp_coll.h pmixp_agent.c pmixp_client.c pmixp_nspaces.c \
-	pmixp_info.c pmixp_agent.h pmixp_client.h pmixp_nspaces.h \
-	pmixp_info.h pmixp_server.c pmixp_state.c pmixp_io.c \
-	pmixp_utils.c pmixp_dmdx.c pmixp_server.h pmixp_state.h \
-	pmixp_io.h pmixp_utils.h pmixp_dmdx.h pmixp_conn.c \
-	pmixp_dconn.c pmixp_dconn_tcp.c pmixp_conn.h pmixp_dconn.h \
-	pmixp_dconn_tcp.h pmixp_coll.c pmixp_coll_tree.c \
-	pmixp_coll_ring.c pmixp_dconn_ucx.c pmixp_dconn_ucx.h \
-	pmixp_client_v2.c
 @HAVE_UCX_TRUE@am__objects_7 = mpi_pmix_v4_la-pmixp_dconn_ucx.lo
 am__objects_8 = mpi_pmix_v4_la-mpi_pmix.lo \
 	mpi_pmix_v4_la-pmixp_agent.lo mpi_pmix_v4_la-pmixp_client.lo \
@@ -419,10 +379,6 @@ am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(mpi_pmix_v1_la_SOURCES) $(mpi_pmix_v2_la_SOURCES) \
 	$(mpi_pmix_v3_la_SOURCES) $(mpi_pmix_v4_la_SOURCES)
-DIST_SOURCES = $(am__mpi_pmix_v1_la_SOURCES_DIST) \
-	$(am__mpi_pmix_v2_la_SOURCES_DIST) \
-	$(am__mpi_pmix_v3_la_SOURCES_DIST) \
-	$(am__mpi_pmix_v4_la_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -447,9 +403,6 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/auxdir/depcomp \
-	TODO
-DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -1608,40 +1561,6 @@ cscopelist-am: $(am__tagged_files)
 
 distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
-
-distdir: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) distdir-am
-
-distdir-am: $(DISTFILES)
-	@srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
-	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
-	list='$(DISTFILES)'; \
-	  dist_files=`for file in $$list; do echo $$file; done | \
-	  sed -e "s|^$$srcdirstrip/||;t" \
-	      -e "s|^$$topsrcdirstrip/|$(top_builddir)/|;t"`; \
-	case $$dist_files in \
-	  */*) $(MKDIR_P) `echo "$$dist_files" | \
-			   sed '/\//!d;s|^|$(distdir)/|;s,/[^/]*$$,,' | \
-			   sort -u` ;; \
-	esac; \
-	for file in $$dist_files; do \
-	  if test -f $$file || test -d $$file; then d=.; else d=$(srcdir); fi; \
-	  if test -d $$d/$$file; then \
-	    dir=`echo "/$$file" | sed -e 's,/[^/]*$$,,'`; \
-	    if test -d "$(distdir)/$$file"; then \
-	      find "$(distdir)/$$file" -type d ! -perm -700 -exec chmod u+rwx {} \;; \
-	    fi; \
-	    if test -d $(srcdir)/$$file && test $$d != $(srcdir); then \
-	      cp -fpR $(srcdir)/$$file "$(distdir)$$dir" || exit 1; \
-	      find "$(distdir)/$$file" -type d ! -perm -700 -exec chmod u+rwx {} \;; \
-	    fi; \
-	    cp -fpR $$d/$$file "$(distdir)$$dir" || exit 1; \
-	  else \
-	    test -f "$(distdir)/$$file" \
-	    || cp -p $$d/$$file "$(distdir)/$$file" \
-	    || exit 1; \
-	  fi; \
-	done
 check-am: all-am
 check: check-am
 all-am: Makefile $(LTLIBRARIES)
@@ -1906,21 +1825,20 @@ uninstall-am: uninstall-pkglib_v1LTLIBRARIES \
 	clean-pkglib_v2LTLIBRARIES clean-pkglib_v3LTLIBRARIES \
 	clean-pkglib_v4LTLIBRARIES cscopelist-am ctags ctags-am \
 	distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-exec-hook install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-pkglib_v1LTLIBRARIES \
-	install-pkglib_v2LTLIBRARIES install-pkglib_v3LTLIBRARIES \
-	install-pkglib_v4LTLIBRARIES install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
-	uninstall-hook uninstall-pkglib_v1LTLIBRARIES \
-	uninstall-pkglib_v2LTLIBRARIES uninstall-pkglib_v3LTLIBRARIES \
-	uninstall-pkglib_v4LTLIBRARIES
+	distclean-libtool distclean-tags dvi dvi-am html html-am info \
+	info-am install install-am install-data install-data-am \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-exec-hook install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-pkglib_v1LTLIBRARIES install-pkglib_v2LTLIBRARIES \
+	install-pkglib_v3LTLIBRARIES install-pkglib_v4LTLIBRARIES \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags tags-am uninstall uninstall-am uninstall-hook \
+	uninstall-pkglib_v1LTLIBRARIES uninstall-pkglib_v2LTLIBRARIES \
+	uninstall-pkglib_v3LTLIBRARIES uninstall-pkglib_v4LTLIBRARIES
 
 .PRECIOUS: Makefile
 

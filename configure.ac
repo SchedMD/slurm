@@ -22,7 +22,7 @@ dnl
 dnl If you ever change to use AM_INIT_AUTOMAKE(subdir-objects) edit
 dnl auxdir/slurm.m4 to not define VERSION
 dnl
-AM_INIT_AUTOMAKE(no-define)
+AM_INIT_AUTOMAKE(no-define no-dist)
 AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_HEADERS([slurm/slurm.h])
