@@ -2832,19 +2832,30 @@ proc test_select_type { } {
 
 ################################################################
 #
-# Proc: get_select_type_params
+# NAME
+#	get_select_type_params
 #
-# Purpose: Determine SelectTypeParameters being used for a
-#          given partition
+# SYNOPSIS
+#	get_select_type_params ?partition?
 #
-# Returns string containing SelectTypeParameters
+# DESCRIPTION
+#	Determine SelectTypeParameters being used for a given partition.
+#	If the partition is not specified, the default partition will be used.
+#
+# RETURN VALUE
+#	Returns a string containing SelectTypeParameters
 #
 ################################################################
-proc get_select_type_params { partition } {
+proc get_select_type_params { {partition ""} } {
 	global scontrol bin_bash bin_grep re_word_str
 
 	log_user 0
 	set params ""
+
+	if {[string length $partition] == 0} {
+		set partition [default_partition]
+	}
+
 	if {[string compare $partition ""]} {
 		spawn -noecho $bin_bash -c "exec $scontrol show part $partition | $bin_grep SelectTypeParameters"
 		expect {
@@ -3225,18 +3236,22 @@ proc uint2hex {value} {
 
 ################################################################
 #
-# Proc: available_nodes
+# NAME
+#	available_nodes
 #
-# Purpose: Check to see if a given partition has a at least
-#          "num_nodes" number of nodes in the alloc, idle, or comp
-#          state.  This can be used to avoid launching a job that
-#          will never run because nodes are in the "drained" state
-#          or otherwise unavailable.
+# SYNOPSIS
+#	available_nodes state partition
 #
-# Returns: Returns the number of available nodes in the partition, or
-#          -1 on failure.
+# DESCRIPTION
+#	Check to see if a given partition has a at least "num_nodes" number
+#	of nodes in the alloc, idle, or comp state.  This can be used to
+#	avoid launching a job that will never run because nodes are in the
+#	"drained" state or otherwise unavailable.
+#	If the partition is not specified, the default partition will be used.
 #
-# Input: partition - name of a partition
+# RETURN VALUE
+#	Returns the number of available nodes in the partition, or
+#	-1 on failure.
 #
 ################################################################
 
@@ -3268,21 +3283,27 @@ proc available_nodes { {state ""} {partition ""} } {
 
 ################################################################
 #
-# Proc: partition_oversubscribe
+# NAME
+#	partition_oversubscribe
 #
-# Purpose: Determine the oversubscribe configuration of the specified
-#          partition
+# SYNOPSIS
+#	partition_oversubscribe ?partition?
 #
-# Returns: Return the oversubscribe configuration of the specified
-#          partition
+# DESCRIPTION
+#	Determine the oversubscribe configuration of the specified partition.
+#	If the partition is not specified, the default partition will be used.
 #
-#
-# Input: partition - name of a partition
+# RETURN VALUE
+#	Return the oversubscribe configuration of the specified partition.
 #
 ################################################################
 
-proc partition_oversubscribe { partition } {
+proc partition_oversubscribe { {partition ""} } {
 	global sinfo
+
+	if {[string length $partition] == 0} {
+		set partition [default_partition]
+	}
 
 	set oversubscribe "NO"
 	log_debug "$sinfo --noheader --partition $partition --format %h"
@@ -3806,16 +3827,26 @@ proc get_node_cnt { } {
 
 ################################################################
 #
-# Proc: get_node_cnt_in_part
+# NAME
+#	get_node_cnt_in_part
 #
-# Purpose: Determine how many nodes are in a given partition
+# SYNOPSIS
+#	get_node_cnt_in_part ?partition?
 #
-# Returns count of nodes in a partition or 0 if unknown
+# DESCRIPTION
+#	Determine how many nodes are in a given partition.
+#	If the partition is not specified, the default partition will be used.
+#
+# RETURN VALUE
+#	Returns count of nodes in a partition or 0 if unknown.
 #
 ################################################################
-
-proc get_node_cnt_in_part { partition } {
+proc get_node_cnt_in_part { {partition ""} } {
 	global scontrol number
+
+	if {[string length $partition] == 0} {
+		set partition [default_partition]
+	}
 
 	log_user 0
 	set node_cnt 0
@@ -3841,16 +3872,26 @@ proc get_node_cnt_in_part { partition } {
 
 ################################################################
 #
-# Proc: get_idle_node_in_part
+# NAME
+#	get_idle_node_in_part
 #
-# Purpose: Get an idle node in a given partition
+# SYNOPSIS
+#	get_idle_node_in_part ?partition?
 #
-# Returns name of node in a partition or "" if unknown
+# DESCRIPTION
+#	Get an idle node in a given partition.
+#	If the partition is not specified, the default partition will be used.
+#
+# RETURN VALUE
+#	Returns name of node in a partition or "" if unknown.
 #
 ################################################################
-
-proc get_idle_node_in_part { partition } {
+proc get_idle_node_in_part { {partition ""} } {
 	global scontrol sinfo re_word_str
+
+	if {[string length $partition] == 0} {
+		set partition [default_partition]
+	}
 
 	log_user 0
 	set host_list ""
@@ -4280,21 +4321,34 @@ proc job_submit_all_partitions { } {
 
 ################################################################
 #
-# Proc: wait_for_node
+# NAME
+#	wait_for_node
 #
-# Purpose: Wait for a certain number of nodes in a partition to reach a
-#          certain state. Polls every $testsuite_poll_interval seconds.
+# SYNOPSIS
+#	wait_for_node state num_nodes partition
 #
-# Returns: 1 on failure.
+# DESCRIPTION
+#	Wait for a certain number of nodes in a partition to
+#	reach a certain state. Polls every $testsuite_poll_interval
+#	seconds. If the partition argument is empty, the default
+#	partition will be used.
+#
+# RETURN VALUE
+#	Returns: 1 on failure.
 #
 ################################################################
-proc wait_for_node {partition state num_nodes} {
+
+proc wait_for_node {state num_nodes {partition ""} } {
+	global sinfo number testsuite_poll_interval
+
 	set wait_time 0
 	set done      0
 	set cnt       0
 	set rt        0
 
-	global sinfo number testsuite_poll_interval
+	if {[string length $partition] == 0} {
+		set partition [default_partition]
+	}
 
 	while {$done != 1 && $wait_time < 3} {
 
@@ -4715,20 +4769,23 @@ proc get_partition_maximum_time_limit {partition} {
 	return $secs
 }
 
-#####################################################################
+################################################################
 #
-# Proc: get_partition_default_time_limit
+# NAME
+#	get_partition_default_time_limit
 #
-# Purpose: Get the default time limit in a given partition
+# SYNOPSIS
+#	get_partition_default_time_limit ?partition?
 #
-# Input:   partition - partition to default time limit of
+# DESCRIPTION
+#	Get the default time limit in a given partition.
+#	If the partition is not specified, the default partition will be used.
 #
-# Returns: time limit in seconds, -1 if undefined or error
+# RETURN VALUE
+#	Returns: time limit in seconds, -1 if undefined or error.
 #
-#####################################################################
-
-proc get_partition_default_time_limit {partition} {
-
+################################################################
+proc get_partition_default_time_limit { {partition ""} } {
 	global sinfo number exit_code
 
 	if {[string length $partition] == 0} {
@@ -4958,26 +5015,36 @@ proc get_part_total_cores {part states} {
 
 #####################################################################
 #
-# Proc: check_hosts_contiguous
+# NAME
+#	check_hosts_contiguous - verify if all hosts belong to the partition and
+#	                         are contiguous
 #
-# Purpose:	Given a partition and a list of hosts, verify if all
-#		hosts belong to the partition and are contiguous.
+# SYNOPSIS
+#	check_hosts_contiguous check_hosts_list partition
 #
-# Input part			- partition
-#	check_hosts_list	- hosts to check contiguous
+# DESCRIPTION
+#	Given a partition and a list of hosts, verify if all
+#	hosts belong to the partition and are contiguous.
+#	If the partition argument is empty, the default partition
+#	will be used.
 #
-# Returns: 0 on SUCCESS, 1 otherwise
+# RETURN VALUE
+#	Returns: 0 on SUCCESS, 1 otherwise.
 #
 #####################################################################
 
-proc check_hosts_contiguous {part check_hosts_list} {
+proc check_hosts_contiguous { check_hosts_list {partition ""} } {
 
 	global sinfo re_word_str
+
+	if {[string length $partition] == 0} {
+		set partition [default_partition]
+	}
 
 	set part_hosts_list {}
 
 	log_user 0
-	set sinfo_pid [spawn $sinfo --noheader -p $part -N -o %N]
+	set sinfo_pid [spawn $sinfo --noheader -p $partition -N -o %N]
 	expect {
 		-re "($re_word_str)" {
 			lappend part_hosts_list $expect_out(1,string)
@@ -5003,7 +5070,7 @@ proc check_hosts_contiguous {part check_hosts_list} {
 	foreach host $check_hosts_list {
 		set idx_cur [lsearch $part_hosts_list $host]
 		if {$idx_cur == -1} {
-			log_error "$host not found in list of hosts from partition $part"
+			log_error "$host not found in list of hosts from partition $partition"
 			return 1
 		}
 		if {[info exists idx_old]} {

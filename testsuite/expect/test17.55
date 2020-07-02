@@ -72,7 +72,7 @@ if {$found == 1} {
 #
 # Identify usable nodes in default partition
 #
-set def_node [get_idle_node_in_part [default_partition]]
+set def_node [get_idle_node_in_part]
 if {[string compare $def_node ""] == 0} {
 	fail "Default partition seems to have no nodes"
 }

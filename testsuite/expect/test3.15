@@ -151,7 +151,6 @@ if {[is_super_user] == 0} {
 	skip "This test can't be run except as SlurmUser"
 }
 
-set def_part_name [default_partition]
 if {[test_linear]} {
 	skip "This test is incompatible with select/linear"
 } elseif {[default_part_exclusive]} {

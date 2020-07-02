@@ -29,7 +29,6 @@ source ./globals
 set test_id     "1.113"
 set exit_code   0
 set needed_nodes 2
-set partition [default_partition]
 set matches 0
 set ncpus ""
 
@@ -40,7 +39,7 @@ if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 }
 
 log_user 0
-spawn $sinfo -N -h -p $partition -t idle -o "%c"
+spawn $sinfo -N -h -p [default_partition] -t idle -o "%c"
 expect {
 	-re "($number)" {
 		incr matches
@@ -62,12 +61,12 @@ expect {
 log_user 1
 
 if {$matches < $needed_nodes} {
-	skip "$needed_nodes idle nodes required in partition $partition, only $matches found"
+	skip "$needed_nodes idle nodes required in default partition, only $matches found"
 }
 
 set nodes 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -t1 -p $partition -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES]
+set srun_pid [spawn $srun -t1 -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES]
 expect {
 	-re "srun: job $number queued and waiting for resources" {
 		exp_continue

@@ -43,8 +43,7 @@ if {[test_front_end]} {
 	skip "This test is incompatible with front-end systems"
 }
 
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
+set nb_nodes [get_node_cnt_in_part]
 if {$nb_nodes < 2} {
 	skip "This test requires 2 or more nodes in the default partition"
 }

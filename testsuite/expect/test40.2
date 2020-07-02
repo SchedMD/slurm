@@ -44,8 +44,7 @@ if {[test_cons_tres]} {
 	skip "This test is only compatible with select/cons_tres"
 }
 
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
+set nb_nodes [get_node_cnt_in_part]
 
 set mps_cnt [get_mps_count 1]
 if {$mps_cnt < 0} {

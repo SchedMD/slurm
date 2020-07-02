@@ -283,8 +283,7 @@ proc submit_tasks {ntasks ntaskpn} {
 }
 
 ######################## Test Starts Here ########################
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
+set nb_nodes [get_node_cnt_in_part]
 if {$nb_nodes < 3} {
 	skip "This test requires at least 3 nodes in the cluster"
 }

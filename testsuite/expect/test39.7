@@ -127,10 +127,9 @@ if {$gpu_cnt < 1} {
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
 set cpus_per_node $node_conf(CPUTot)
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
+set nb_nodes [get_node_cnt_in_part]
 log_debug "GPU count is $gpu_cnt"
-log_debug "Node count in partition default parition $def_part_name is $nb_nodes"
+log_debug "Node count in default parition is $nb_nodes"
 log_debug "Sockets per node is $node_conf(Sockets)"
 log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
 log_debug "CPUs per node is $cpus_per_node"

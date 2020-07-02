@@ -125,11 +125,10 @@ if {$gpu_cnt < 1} {
 	skip "This test requires 1 or more GPUs in the default partition"
 }
 array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
+set nb_nodes [get_node_cnt_in_part]
 log_debug "GPU count is $gpu_cnt"
 log_debug "Memory Size is $node_conf(RealMemory)"
-log_debug "Node count in partition default parition $def_part_name is $nb_nodes"
+log_debug "Node count in partition default partition is $nb_nodes"
 
 #
 # Build input script file

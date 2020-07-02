@@ -29,7 +29,6 @@ source ./globals
 set test_id     "15.39"
 set exit_code   0
 set needed_nodes 2
-set partition [default_partition]
 set matches 0
 set ncpus ""
 
@@ -40,7 +39,7 @@ if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 }
 
 log_user 0
-spawn $sinfo -N -h -p $partition -t idle -o "%c"
+spawn $sinfo -N -h -p [default_partition] -t idle -o "%c"
 expect {
 	-re "($number)" {
 		incr matches
@@ -62,12 +61,12 @@ expect {
 log_user 1
 
 if {$matches < $needed_nodes} {
-	skip "$needed_nodes idle nodes required in partition $partition, only $matches found"
+	skip "$needed_nodes idle nodes required in default partition, only $matches found"
 }
 
 set job_id 0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -t1 -p $partition -N1-2 --use-min-nodes -n$ncpus $bin_printenv]
+set salloc_pid [spawn $salloc -t1 -N1-2 --use-min-nodes -n$ncpus $bin_printenv]
 expect {
 	-re "salloc: Pending job allocation $number" {
 		exp_continue

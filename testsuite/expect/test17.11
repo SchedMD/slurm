@@ -36,8 +36,7 @@ set job_id      0
 
 print_header $test_id
 
-set def_part [default_partition]
-set oversubscribe [partition_oversubscribe $def_part]
+set oversubscribe [partition_oversubscribe]
 if {[string compare $oversubscribe "FORCE"] == 0} {
 	set force_part 1
 }

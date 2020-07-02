@@ -152,15 +152,14 @@ proc add_child {parent child maxnode grpnode} {
 cleanup
 
 # Setup
-set partition [default_partition]
 set node_cnt [available_nodes "idle,alloc,comp"]
 if {$node_cnt < 3} {
-	skip "Partition $partition has too few nodes ($node_cnt < 3)"
+	skip "Default partition has too few nodes ($node_cnt < 3)"
 }
 
 # Wait for 3 nodes to be in idle state
-if {[wait_for_node $partition idle 3]} {
-	skip "Partition $partition lacks 3 idle nodes"
+if {[wait_for_node idle 3]} {
+	skip "Default Partition lacks 3 idle nodes"
 }
 set node_cnt [available_nodes idle]
 
