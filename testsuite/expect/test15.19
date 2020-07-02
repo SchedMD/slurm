@@ -96,7 +96,7 @@ expect {
 		exp_continue
 	}
 	-re "Invalid node name specified" {
-		send_user "\nThis error is expected, no worries\n"
+		log_info "This error is expected, no worries"
 		set alloc_fail 1
 	}
 	timeout {
