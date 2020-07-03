@@ -28,8 +28,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "21.39"
-
 set part_name   "test$test_id\_part"
 set ta1		"test$test_id-account.1"
 set ta2		"test$test_id-account.2"
@@ -63,7 +61,7 @@ set qos_1(Description)   "test qos 2"
 
 set access_err  0
 
-print_header $test_id
+print_header
 
 #
 # Verify preconditions

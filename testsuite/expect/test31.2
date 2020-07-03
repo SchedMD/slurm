@@ -33,6 +33,7 @@ set good_prolog     "test$test_id\_good.sh"
 set bad_prolog      "test$test_id\_bad.sh"
 set test_node       [get_idle_node_in_part [default_partition]]
 set job_id          0
+set job_list        {}
 set test_script     "test$test_id\.sh"
 
 print_header $test_id
@@ -44,10 +45,12 @@ if {[test_front_end] != 0} {
         skip "This test is incompatible with front-end systems"
 }
 
-proc clean_up { } {
-
+proc cleanup { } {
 	global cwd config_file exit_code bin_rm bin_cp good_prolog bad_prolog
-	global scontrol test_node test_script test_id
+	global scontrol test_node test_script test_id scancel job_list
+
+	# Cancel any lingering jobs
+	spawn $scancel $job_list
 
 	restore_conf $config_file
 	exec $bin_rm $test_script $good_prolog $bad_prolog
@@ -56,7 +59,7 @@ proc clean_up { } {
 	spawn $scontrol update node=$test_node state=idle
 	expect {
 		timeout {
-			log_error "scontrol is not respinding"
+			log_warn "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -77,9 +80,7 @@ sleep 20
 
 # Get the location of the slurm.conf file
 set config_dir [get_conf_path]
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+fail_on_error "Unable to determine configuration directory"
 set config_file $config_dir/slurm.conf
 
 #
@@ -101,37 +102,23 @@ spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
+		lappend job_list $job_id
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	log_error "sbatch did not submit job"
-	set exit_code 1
-}
-if {$exit_code} {
-	cancel_job $job_id
-	clean_up
-	exit $exit_code
+	fail "sbatch did not submit job"
 }
 
 # Check that job starts running correctly
 if {[wait_job_reason $job_id "RUNNING" "None"] != 0} {
-	log_error "Job $job_id should be Running and have reason: None"
-	set exit_code 1
-}
-
-cancel_job $job_id
-
-if {$exit_code} {
-	clean_up
-	exit $exit_code;
+	fail "Job $job_id should be Running and have reason: None"
 }
 
 exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_file
@@ -145,20 +132,17 @@ spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
+		lappend job_list $job_id
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	set exit_code 1
-}
-if {$exit_code} {
 	fail "sbatch did not submit job"
 }
 
@@ -166,14 +150,7 @@ if {$exit_code} {
 # Either state is possible due to race conditions
 if {[wait_job_reason $job_id "PENDING" {"launch_failed_requeued_held" \
                                         "JobHeldAdmin"}]} {
-	log_error "Job $job_id is not in the correct state or reason."
-	set exit_code 1
-}
-
-if {$exit_code} {
-	cancel_job $job_id
-	clean_up
-	exit $exit_code
+	fail "Job $job_id is not in the correct state or reason."
 }
 
 # Check that the node that the job ran on is in fact drained
@@ -185,24 +162,16 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$match == 0} {
-	log_error "Node $test_node was not drained when it should be"
-	set exit_code 1
+	fail "Node $test_node was not drained when it should be"
 }
 
-cancel_job $job_id
-
-if {$exit_code} {
-	clean_up
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
 log_info "RESUMING NODE"
 spawn $scontrol update node=$test_node state=RESUME
 
@@ -218,24 +187,23 @@ spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
+		lappend job_list $job_id
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	set exit_code 1
+	fail "sbatch did not submit job"
 }
 
 # Wait a bit for the pending reason to be set
 if {[wait_job_reason $job_id] != 0} {
-	log_error "error waiting for job $job_id to start"
-	set exit_code 1
+	fail "Error waiting for job $job_id to start"
 }
 
 # Check that the job doesn't have priority 0
@@ -246,20 +214,15 @@ expect {
 		set priority $expect_out(2,string)
 	}
 	timeout {
-		log_error "squeue is not responding"
-		set exit_code 1
+		fail "squeue is not responding"
 	}
 	eof {
 		wait
 	}
 }
 
-assert_or_error {$priority != 0} "job $job_id is held, while it shouldn't"
+assert_or_error {$priority != 0} "Job $job_id is held, while it shouldn't be"
 
-cancel_job $job_id
-
-if {$exit_code == 0} {
-	clean_up
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

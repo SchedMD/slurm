@@ -14,10 +14,6 @@
 #          fedr/fed2/...
 #          fedr/fed3/...
 #          3. controllers are up and running.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Isaac Hartung <ihartung@schedmd.com>
@@ -207,7 +203,7 @@ proc my_cat { id } {
 	}
 }
 
-proc cancel_all_jobs { } {
+proc cancel_federation_jobs { } {
 	global scancel user_name fedc1 fedc2 fedc3
 
 	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
@@ -223,7 +219,7 @@ proc cleanup { } {
 	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
 	global test_id bin_bash my_sacctmgr jid
 
-	cancel_all_jobs
+	cancel_federation_jobs
 	exec $bin_rm -f $file_in slurm-$jid(0).out slurm-$jid(1).out slurm-$jid(2).out
 	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
 
@@ -376,7 +372,7 @@ log_info "################################################################"
 log_info "Verify federated scontrol notify <message>"
 log_info "################################################################"
 
-cancel_all_jobs
+cancel_federation_jobs
 
 set jid(0) [sbatch "-M$fedc1"]
 set jid(1) [sbatch "-M$fedc2"]

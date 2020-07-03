@@ -14,10 +14,6 @@
 #          fedr/fed2/...
 #          fedr/fed3/...
 #          3. controllers are up and running.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Isaac Hartung <ihartung@schedmd.com>
@@ -94,16 +90,14 @@ proc sbatch { args } {
 			set job_id $expect_out(1,string)
 		}
 		timeout {
-			log_error "sbatch not responding"
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		log_error "batch submit failure"
-		end_it 1
+		fail "batch submit failure"
 	}
 	return $job_id
 }
@@ -128,13 +122,12 @@ proc sacct { options regex } {
 		}
 	}
 	if {$matches != 1} {
-		log_error "unexpected error in squeue. expected $regex"
-		end_it 1
+		fail "Unexpected error in squeue. Expected $regex"
 	}
 }
 
 
-proc cancel_all_jobs { } {
+proc cancel_federation_jobs { } {
 	global scancel user_name fedc1 fedc2 fedc3
 
 	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
@@ -150,17 +143,11 @@ proc cleanup { } {
 	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
 	global test_id bin_bash my_sacctmgr
 
-	cancel_all_jobs
+	cancel_federation_jobs
 	exec $bin_rm -f $file_in
 	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
 
 	return [delete_federations $fed_name]
-}
-
-proc end_it { exit_code } {
-	global test_id my_squeue
-	cleanup
-	exit $exit_code
 }
 
 #start test
@@ -177,14 +164,12 @@ set user_name [get_my_user_name]
 
 # Remove existing setup
 if {[cleanup] != 0} {
-	log_error "failed to cleanup"
-	end_it 1
+	fail "failed to cleanup"
 }
 
 # add clusters to federation
 if {[setup_federation $fed_name]} {
-	log_error "failed to setup federation"
-	end_it 1
+	fail "failed to setup federation"
 }
 
 # get number of nodes per cluster
@@ -223,8 +208,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+	fail "Unexpected error. Got $matches"
 }
 
 set matches 0
@@ -256,8 +240,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+	fail "Unexpected error. Got $matches"
 }
 
 set matches 0
@@ -290,8 +273,7 @@ expect {
 	}
 }
 if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+	fail "Unexpected error. Got $matches"
 }
 
 make_bash_script $file_in "sleep 15"
@@ -344,6 +326,3 @@ set reg_D "$reg\\s*($runrv1|$runrv2){2}"
 
 sacct ""    "$reg"
 sacct "-D"  "$reg_D"
-
-# All Done
-end_it 0

@@ -47,16 +47,13 @@ if { $node_count < 2 } {
 #
 set host_0      ""
 set task_cnt    0
-set can_not_run 0
 set timeout $max_job_delay
 
 set srun_pid [spawn $srun -N1-1 -c 1 -l -t1 $bin_printenv SLURM_NODEID]
 expect {
 	-re "(Task count specification invalid|configuration is not available)" {
 		if { [test_front_end] } {
-			set can_not_run 1
-			log_warn "Error expected, Testing is incompatible with front-end systems"
-#
+			skip "Error expected, Testing is incompatible with front-end systems"
 		}
 		exp_continue
 	}
@@ -75,9 +72,6 @@ expect {
 	eof {
 		wait
 	}
-}
-if {$can_not_run == 1} {
-	exit 0
 }
 
 if {[string compare $host_0 ""] == 0} {
