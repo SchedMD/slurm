@@ -572,42 +572,6 @@ static int _thread_update_node_energy(void)
 	return SLURM_SUCCESS;
 }
 
-/*
- * _thread_init initializes values and conf for the ipmi thread
- */
-static int _thread_init(void)
-{
-	static bool first = true;
-	static int first_init = SLURM_ERROR;
-
-	/*
-	 * If we are here we are a new slurmd thread serving
-	 * a request. In that case we must init a new ipmi_ctx,
-	 * update the sensor and return because the freeipmi lib
-	 * context cannot be shared among threads.
-	 */
-	if (_init_ipmi_config() != SLURM_SUCCESS) {
-		log_flag(ENERGY, "%s thread init error on _init_ipmi_config()",
-			 plugin_name);
-		goto cleanup;
-	}
-
-	if (!first)
-		return first_init;
-
-	first = false;
-
-	log_flag(ENERGY, "%s thread init success", plugin_name);
-
-	first_init = SLURM_SUCCESS;
-	return SLURM_SUCCESS;
-cleanup:
-	info("%s thread init error", plugin_name);
-	first_init = SLURM_ERROR;
-
-	return SLURM_ERROR;
-}
-
 static int _ipmi_send_profile(void)
 {
 	/*
@@ -680,7 +644,7 @@ static void *_thread_ipmi_run(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	slurm_mutex_lock(&ipmi_mutex);
-	if (_thread_init() != SLURM_SUCCESS) {
+	if (_init_ipmi_config() != SLURM_SUCCESS) {
 		log_flag(ENERGY, "ipmi-thread: aborted");
 		slurm_mutex_unlock(&ipmi_mutex);
 
@@ -879,7 +843,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	case ENERGY_DATA_JOULES_TASK:
 		slurm_mutex_lock(&ipmi_mutex);
 		if (running_in_slurmd()) {
-			if (_thread_init() == SLURM_SUCCESS)
+			if (_init_ipmi_config() == SLURM_SUCCESS)
 				_thread_update_node_energy();
 		} else {
 			_get_joules_task(10);
