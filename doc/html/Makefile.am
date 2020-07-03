@@ -151,8 +151,6 @@ html_DATA = \
 
 MOSTLYCLEANFILES = ${generated_html}
 
-EXTRA_DIST = $(html_DATA)
-
 SUFFIXES = .html
 
 .shtml.html:

@@ -441,7 +441,6 @@ test_sources = \
 	       $(perl_dir)/t/06-jobs_get.t \
 	       $(perl_dir)/t/07-qos_get.t
 
-EXTRA_DIST = $(perl_sources) $(test_sources)
 AM_CPPFLAGS = \
 	-DVERSION=\"$(VERSION)\" \
 	-I$(top_srcdir) \

@@ -127,5 +127,3 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_update_partition.3 \
 	slurm_update_reservation.3 \
 	slurm_update_step.3
-
-EXTRA_DIST = $(man3_MANS)

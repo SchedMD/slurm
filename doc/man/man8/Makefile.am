@@ -7,8 +7,6 @@ man8_MANS = slurmctld.8 \
 	slurmstepd.8 \
 	spank.8
 
-EXTRA_DIST = $(man8_MANS)
-
 if HAVE_MAN2HTML
 
 html_DATA = \
@@ -20,8 +18,6 @@ html_DATA = \
 	spank.html
 
 MOSTLYCLEANFILES = ${html_DATA}
-
-EXTRA_DIST += $(html_DATA)
 
 SUFFIXES = .html
 

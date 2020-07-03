@@ -597,7 +597,6 @@ html_DATA = \
 	usage_pies.gif
 
 MOSTLYCLEANFILES = ${generated_html}
-EXTRA_DIST = $(html_DATA)
 SUFFIXES = .html
 all: all-am
 

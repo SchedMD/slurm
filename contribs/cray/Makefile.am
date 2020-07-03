@@ -22,18 +22,7 @@ capmc_suspend_LDFLAGS  = -export-dynamic $(JSON_LDFLAGS)
 capmc_resume_SOURCES   = capmc_resume.c
 capmc_resume_LDADD     = $(convenience_libs)
 capmc_resume_LDFLAGS   = -export-dynamic $(JSON_LDFLAGS)
-else
-NATIVE_EXTRA_DIST = capmc_suspend.c capmc_resume.c
 endif
-
-EXTRA_DIST = \
-	$(NATIVE_EXTRA_DIST)		\
-	etc_sysconfig_slurm		\
-	opt_modulefiles_slurm.in	\
-	pam_job.c 			\
-	plugstack.conf.template		\
-	slurm.conf.template		\
-	slurmconfgen.py.in
 
 # Don't rely on autoconf to replace variables outside of makefiles
 opt_modulefiles_slurm: opt_modulefiles_slurm.in Makefile

@@ -28,8 +28,6 @@ if BUILD_SVIEW
 man1_MANS += sview.1
 endif
 
-EXTRA_DIST = $(man1_MANS)
-
 if HAVE_MAN2HTML
 
 html_DATA = \
@@ -60,8 +58,6 @@ html_DATA += sview.html
 endif
 
 MOSTLYCLEANFILES = ${html_DATA}
-
-EXTRA_DIST += $(html_DATA)
 
 SUFFIXES = .html
 

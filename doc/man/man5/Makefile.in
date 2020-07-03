@@ -89,7 +89,6 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@HAVE_MAN2HTML_TRUE@am__append_1 = $(html_DATA)
 subdir = doc/man/man5
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -464,7 +463,6 @@ man5_MANS = \
 	slurmdbd.conf.5 \
 	topology.conf.5
 
-EXTRA_DIST = $(man5_MANS) $(am__append_1)
 @HAVE_MAN2HTML_TRUE@html_DATA = \
 @HAVE_MAN2HTML_TRUE@	acct_gather.conf.html \
 @HAVE_MAN2HTML_TRUE@	burst_buffer.conf.html \

@@ -12,8 +12,6 @@ man5_MANS = \
 	slurmdbd.conf.5 \
 	topology.conf.5
 
-EXTRA_DIST = $(man5_MANS)
-
 if HAVE_MAN2HTML
 
 html_DATA = \
@@ -29,8 +27,6 @@ html_DATA = \
 	topology.conf.html
 
 MOSTLYCLEANFILES = ${html_DATA}
-
-EXTRA_DIST += $(html_DATA)
 
 SUFFIXES = .html
 

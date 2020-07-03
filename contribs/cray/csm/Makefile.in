@@ -13,10 +13,6 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
-
-#
-# Makefile for cray/csm scripts
-#
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -422,12 +418,6 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = \
-	gres.conf.j2			\
-	slurm.conf.j2			\
-	slurmconfgen_smw.py		\
-	slurm_playbook.yaml
-
 all: all-am
 
 .SUFFIXES:
@@ -588,6 +578,10 @@ uninstall-am:
 
 .PRECIOUS: Makefile
 
+
+#
+# Makefile for cray/csm scripts
+#
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

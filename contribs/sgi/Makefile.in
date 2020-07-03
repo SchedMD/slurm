@@ -480,11 +480,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-@HAVE_NETLOC_FALSE@EXTRA_DIST = \
-@HAVE_NETLOC_FALSE@	netloc_to_topology.c	\
-@HAVE_NETLOC_FALSE@	README.txt
-
-@HAVE_NETLOC_TRUE@EXTRA_DIST = README.txt
 @HAVE_NETLOC_TRUE@netloc_to_topology_SOURCES = netloc_to_topology.c
 @HAVE_NETLOC_TRUE@netloc_to_topology_CPPFLAGS = $(NETLOC_CPPFLAGS) $(HWLOC_CPPFLAGS)
 @HAVE_NETLOC_TRUE@netloc_to_topology_LDFLAGS = $(NETLOC_LDFLAGS) $(NETLOC_LIBS) $(HWLOC_LDFLAGS) $(HWLOC_LIBS)
