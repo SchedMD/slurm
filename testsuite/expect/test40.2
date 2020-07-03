@@ -33,13 +33,15 @@ set file_in2   "test$test_id.input2"
 set file_out1  "test$test_id.output1"
 set file_out2  "test$test_id.output2"
 set job_id      0
+set job_list    {}
+set failure_count 0
 
-print_header $test_id
+print_header
 
 if {[test_cons_tres]} {
-    log_debug "Valid configuration, using select/cons_tres"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
-    skip "This test is only compatible with select/cons_tres"
+	skip "This test is only compatible with select/cons_tres"
 }
 
 set def_part_name [default_partition]
@@ -49,17 +51,20 @@ set mps_cnt [get_mps_count 1]
 if {$mps_cnt < 0} {
 	fail "Error getting MPS count"
 }
-if {$mps_cnt < 1} {
-	skip "This test requires 1 or more MPS in the default partition"
-}
 if {$mps_cnt < 100} {
-#	This could be a legitimate configuration for testing purposes, but not likley for production use
-	log_error "MPS count per node is unexpectedly low ($mps_cnt < 100). Check your configuration"
-	set exit_code 1
+	skip "This test requires 100 or more MPS in the default partition"
 }
 log_debug "MPS count is $mps_cnt"
 if {$mps_cnt > 100} {
 	set mps_cnt 100
+}
+
+proc cleanup {} {
+	global bin_rm file_in1 file_in2 file_out1 file_out2 job_list scancel
+
+	$scancel $job_list
+
+	exec $bin_rm -f $file_in1 $file_in2 $file_out1 $file_out2
 }
 
 #
@@ -87,7 +92,7 @@ expect {
 	-re "CUDA_VISIBLE_DEVICES:($number)" {
 		if {$expect_out(1,string) != 0} {
 			log_error "CUDA_VISIBLE_DEVICES != 0"
-			set exit_code 1
+			incr failure_count
 		}
 		incr matches
 		exp_continue
@@ -97,9 +102,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-                log_error "srun not responding"
-                slow_kill $srun_pid
-		set exit_code 1
+		slow_kill $srun_pid
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -107,7 +111,7 @@ expect {
 }
 if {$matches != 3} {
 	log_error "Output is bad ($matches != 3)"
-	set exit_code 1
+	incr failure_count
 }
 
 #
@@ -135,24 +139,21 @@ set sbatch_pid [spawn $sbatch --gres=mps:$target_job -n1 -t1 -o $file_out1 -J "t
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
+		lappend job_list $job_id
 		exp_continue
 	}
 	timeout {
-        log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	log_error "Job not submitted"
-	set exit_code 1
+	fail "Job not submitted"
 }
 if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Job $job_id did not complete"
-	cancel_job $job_id
-	set exit_code 1
+	fail "Job $job_id did not complete"
 }
 if {[wait_for_file $file_out1] != 0} {
 	fail "No output file"
@@ -163,7 +164,7 @@ expect {
 	-re "CUDA_VISIBLE_DEVICES:($number) CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
 		if {$expect_out(1,string) != 0} {
 			log_error "CUDA_VISIBLE_DEVICES != 0"
-			set exit_code 1
+			incr failure_count
 		}
 		incr match
 		if {$match == 1} {
@@ -174,10 +175,10 @@ expect {
 			} else {
 				if {$perc_sum != $expect_out(2,string)} {
 					log_error "Bad CUDA percentage ($perc_sum != $expect_out(2,string))"
-					set exit_code 1
+					incr failure_count
 				} elseif {[expr $perc - $perc_sum - $expect_out(2,string)] > 1} {
 					log_error "Bad CUDA percentage ($perc != ($perc_sum - $expect_out(2,string))"
-					set exit_code 1
+					incr failure_count
 				}
 			}
 		}
@@ -189,7 +190,7 @@ expect {
 }
 if {$match != 3} {
 	log_error "Bad CUDA information about job ($match != 3)"
-	set exit_code 1
+	incr failure_count
 }
 
 #
@@ -203,7 +204,7 @@ expect {
 	-re "CUDA_VISIBLE_DEVICES:($number) CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
 		if {$expect_out(1,string) != 0} {
 			log_error "CUDA_VISIBLE_DEVICES != 0"
-			set exit_code 1
+			incr failure_count
 		}
 		incr match
 		if {$match == 1} {
@@ -214,19 +215,18 @@ expect {
 			} else {
 				if {$perc_sum != $expect_out(2,string)} {
 					log_error "Bad CUDA percentage ($perc_sum != $expect_out(2,string))"
-					set exit_code 1
+					incr failure_count
 				} elseif {[expr $perc - $perc_sum - $expect_out(2,string)] > 1} {
 					log_error "Bad CUDA percentage ($perc != ($perc_sum - $expect_out(2,string))"
-					set exit_code 1
+					incr failure_count
 				}
 			}
 		}
 		exp_continue
 	}
 	timeout {
-                log_error "salloc not responding"
-                slow_kill $salloc_pid
-		set exit_code 1
+		slow_kill $salloc_pid
+		fail "salloc not responding"
 	}
 	eof {
 		wait
@@ -234,7 +234,7 @@ expect {
 }
 if {$match != 3} {
 	log_error "Bad CUDA information about job ($match != 3)"
-	set exit_code 1
+	incr failure_count
 }
 
 #
@@ -261,24 +261,21 @@ set sbatch_pid [spawn $sbatch --gres=mps:$target_job -n1 -t1 -o $file_out1 -J "t
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
+		lappend job_list $job_id
 		exp_continue
 	}
 	timeout {
-        log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	log_error "Job not submitted"
-	set exit_code 1
+	fail "Job not submitted"
 }
 if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Job $job_id did not complete"
-	cancel_job $job_id
-	set exit_code 1
+	fail "Job $job_id did not complete"
 }
 if {[wait_for_file $file_out1] != 0} {
 	fail "No output file"
@@ -289,7 +286,7 @@ expect {
 	-re "CUDA_VISIBLE_DEVICES:($number) CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
 		if {$expect_out(1,string) != 0} {
 			log_error "CUDA_VISIBLE_DEVICES != 0"
-			set exit_code 1
+			incr failure_count
 		}
 		incr match
 		if {$match == 1} {
@@ -297,7 +294,7 @@ expect {
 		} else {
 			if {$perc != $expect_out(2,string)} {
 				log_error "Inconsistent step MPS percentages ($perc != $expect_out(2,string))"
-				set exit_code 1
+				incr failure_count
 			}
 		}
 		exp_continue
@@ -308,7 +305,7 @@ expect {
 }
 if {$match != 3} {
 	log_error "Bad CUDA information about job ($match != 3)"
-	set exit_code 1
+	incr failure_count
 }
 log_user 0
 set match 0
@@ -325,7 +322,7 @@ expect {
 log_user 1
 if {$match != 1} {
 	log_error "Failed to delay step for sufficient MPS resources ($match != 1)"
-	set exit_code 1
+	incr failure_count
 }
 
 #
@@ -347,24 +344,21 @@ set sbatch_pid [spawn $sbatch --gres=mps:$target_job -n1 -t1 -o $file_out1 -J "t
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
+		lappend job_list $job_id
 		exp_continue
 	}
 	timeout {
-        log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	log_error "Job not submitted"
-	set exit_code 1
+	fail "Job not submitted"
 }
 if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Job $job_id did not complete"
-	cancel_job $job_id
-	set exit_code 1
+	fail "Job $job_id did not complete"
 }
 if {[wait_for_file $file_out1] != 0} {
 	fail "No output file"
@@ -379,7 +373,7 @@ expect {
 	}
 	-re "CUDA_VISIBLE_DEVICES" {
 		log_error "Failed to reject bad step ($match != 1)"
-		set exit_code 1
+		incr failure_count
 	}
 	eof {
 		wait
@@ -387,7 +381,7 @@ expect {
 }
 if {$match != 1} {
 	log_error "Failed to reject bad step ($match != 1)"
-	set exit_code 1
+	incr failure_count
 }
 
 #
@@ -415,14 +409,13 @@ expect {
 			log_debug "Duplicate SLURMD_HOSTNAME in front-end mode as expected"
 		} elseif {[string compare $hostname $expect_out(1,string)] == 0} {
 			log_error "Two tasks ran on same node ($hostname))"
-			set exit_code 1
+			incr failure_count
 		}
 		exp_continue
 	}
 	timeout {
-        log_error "srun not responding"
-        slow_kill $srun_pid
-		set exit_code 1
+		slow_kill $srun_pid
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -430,7 +423,7 @@ expect {
 }
 if {$match != $node_cnt} {
 	log_error "Failed to get data from multiple nodes ($match != $node_cnt)"
-	set exit_code 1
+	incr failure_count
 }
 
 #
@@ -459,11 +452,11 @@ if {[test_front_end] == 0} {
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id1 $expect_out(1,string)
+			lappend job_list $job_id1
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
-			set exit_code 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -471,9 +464,7 @@ if {[test_front_end] == 0} {
 	}
 	sleep 30
 	if {[wait_for_job $job_id1 "DONE"] != 0} {
-		log_error "Job $job_id1 did not complete"
-		cancel_job $job_id1
-		set exit_code 1
+		fail "Job $job_id1 did not complete"
 	}
 	if {[wait_for_file $file_out1] != 0} {
 		fail "No output file"
@@ -493,6 +484,7 @@ if {[test_front_end] == 0} {
 		}
 		-re "Submitted batch job ($number)" {
 			set job_id2 $expect_out(1,string)
+			lappend job_list $job_id2
 			exp_continue
 		}
 		eof {
@@ -501,21 +493,19 @@ if {[test_front_end] == 0} {
 	}
 	if {$match == 0} {
 		log_error "CUDA_VISIBLE_DEVICES not set"
-		set exit_code 1
+		incr failure_count
 	}
 	if {$dev1 == -1} {
 		log_error "GPU device index not found"
-		set exit_code 1
+		incr failure_count
 	}
 	if {$job_id2 == 0} {
 		log_error "Failed to submit second job"
-		set exit_code 1
+		incr failure_count
 	}
 
 	if {[wait_for_job $job_id2 "DONE"] != 0} {
-		log_error "Job $job_id2 did not complete"
-		cancel_job $job_id2
-		set exit_code 1
+		fail "Job $job_id2 did not complete"
 	}
 	if {[wait_for_file $file_out2] != 0} {
 		fail "No output file"
@@ -550,17 +540,17 @@ if {[test_front_end] == 0} {
 	}
 	if {$match != 2} {
 		log_error "CUDA_VISIBLE_DEVICES or CUDA_MPS_ACTIVE_THREAD_PERCENTAGE not set"
-		set exit_code 1
+		incr failure_count
 	}
 	if {$dev2 == -1} {
 		log_error "GPU device index not found"
-		set exit_code 1
+		incr failure_count
 	} elseif {$dev1 == $dev2} {
 		if {$running == 0} {
 			log_debug "The jobs are using the same GPU ($dev1) and running at different times, which is fine"
 		} else {
 			log_error "The jobs are using the same GPU ($dev1) and running at the same time"
-			set exit_code 1
+			incr failure_count
 		}
 	} else {
 		log_debug "The jobs are using different GPUs ($dev1 != $dev2), which is fine"
@@ -570,7 +560,6 @@ if {[test_front_end] == 0} {
 #
 # Clean up and exit
 #
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in1 $file_in2 $file_out1 $file_out2
+if {$failure_count != 0} {
+	fail "Test failed due to previous errors (\$failure_count = $failure_count)"
 }
-exit $exit_code

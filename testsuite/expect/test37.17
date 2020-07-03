@@ -14,10 +14,6 @@
 #          fedr/fed2/...
 #          fedr/fed3/...
 #          3. controllers are up and running.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2020 SchedMD LLC.
 # Written by Marshall Garey <marshall@schedmd.com>
@@ -66,7 +62,7 @@ set all_clusters "$c1,$c2,$c3"
 # Functions
 ###############################################################################
 
-proc cancel_all_jobs { } {
+proc cancel_federation_jobs { } {
 	global user_name c1 c2 c3 my_scancel all_clusters test_id
 
 	spawn $my_scancel -M$all_clusters --jobname test${test_id}_job
@@ -94,15 +90,9 @@ proc cleanup { rc } {
 	global bin_rm file_in_long file_in_short fed_name test_id
 
 	delete_federations $fed_name
-	cancel_all_jobs
+	cancel_federation_jobs
 	exec $bin_rm -f $file_in_long
 	exec $bin_rm -f $file_in_short
-	if { $rc > 0 } {
-		print_failure $test_id
-	} else {
-		print_success $test_id
-	}
-	exit $rc
 }
 
 proc submit_job { options cdir file_in } {
@@ -122,17 +112,15 @@ proc submit_job { options cdir file_in } {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
 			slow_kill $sbatch_pid
-			cleanup 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if { $job_id == 0 } {
-		log_error "Failed to submit job\n"
-		cleanup 1
+		fail "Failed to submit job\n"
 	}
 
 	return $job_id
@@ -179,8 +167,7 @@ proc get_job_dependency { job_id } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			cleanup 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -243,8 +230,7 @@ proc wait_for_depend { job_id expected_reason expected_dependency } {
 		}
 
 		if { $error } {
-			log_error "Job $job_id actual: reason=\"$reason\"; dependency=\"$dependency\"; expected: reason=\"$expected_reason\"; dependency=\"expected_dependency\""
-			cleanup 1
+			fail "Job $job_id actual: reason=\"$reason\"; dependency=\"$dependency\"; expected: reason=\"$expected_reason\"; dependency=\"expected_dependency\""
 		}
 
 		exec sleep $poll_interval
@@ -255,7 +241,7 @@ proc wait_for_depend { job_id expected_reason expected_dependency } {
 proc my_wait_for_fed_job { job_id state cluster } {
 	set ret_cluster [wait_for_fed_job $job_id $state $cluster]
 	if { [string compare $cluster $ret_cluster] } {
-		cleanup 1
+		fail "Job $job_id did not reach state $state on cluster $cluster"
 	}
 }
 
@@ -277,8 +263,7 @@ proc is_job_on_cluster { job_id cluster } {
 		}
 		timeout {
 			log_user 1
-			log_error "scontrol not responding"
-			cleanup 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -288,11 +273,9 @@ proc is_job_on_cluster { job_id cluster } {
 
 proc test_local_after { } {
 	global c1 file_in_long bin_sleep
-	send_user "
-#############################################################################
-# Test local after
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test local after"
+	log_info "#############################################################"
 
 	# Local dependency succeeds
 	log_info "after: test that local dependency succeeds:"
@@ -312,11 +295,9 @@ proc test_local_after { } {
 proc test_remote_after { } {
 	global c1 c2 file_in_long bin_sleep
 
-	send_user "
-#############################################################################
-# Test remote after
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test remote after"
+	log_info "#############################################################"
 
 	# Remote dependency succeeds
 	log_info "after: test that remote dependency succeeds:"
@@ -355,11 +336,9 @@ proc test_remote_after { } {
 proc test_local_afterany { } {
 	global c1 file_in_long
 
-	send_user "
-#############################################################################
-# Test local afterany
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test local afterany"
+	log_info "#############################################################"
 
 	# Local dependency succeeds
 	log_info "afterany: test that local dependency succeeds:"
@@ -378,11 +357,9 @@ proc test_local_afterany { } {
 proc test_remote_afterany { } {
 	global c1 c2 file_in_long
 
-	send_user "
-#############################################################################
-# Test remote afterany
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test remote afterany"
+	log_info "#############################################################"
 
 	# Remote dependency succeeds
 	log_info "afterany: test that remote dependency succeeds:"
@@ -411,17 +388,15 @@ proc test_remote_afterany { } {
 	wait_for_depend $job_id2 "Dependency" "afterany:$job_id1\(unfulfilled\)"
 	wait_for_depend $job_id3 "Dependency" \
 		"afterany:$job_id1\(unfulfilled\),afterany:$job_id2\(unfulfilled\)"
-	cancel_all_jobs
+	cancel_federation_jobs
 }
 
 proc test_local_aftercorr { } {
 	global c1 kill_invalid_depend file_in_long file_in_short
 
-	send_user "
-#############################################################################
-# Test local aftercorr
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test local aftercorr"
+	log_info "#############################################################"
 
 	# Local dependency succeeds
 	log_info "aftercorr: test that local dependency succeeds:"
@@ -475,11 +450,9 @@ proc test_local_aftercorr { } {
 proc test_remote_aftercorr { } {
 	global c1 c2 kill_invalid_depend file_in_long file_in_short
 
-	send_user "
-#############################################################################
-# Test remote aftercorr
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test remote aftercorr"
+	log_info "#############################################################"
 
 	# Remote dependency succeeds
 	log_info "aftercorr: test that remote dependency succeeds:"
@@ -535,11 +508,9 @@ proc test_remote_aftercorr { } {
 proc test_local_afterok { } {
 	global c1 kill_invalid_depend file_in_long file_in_short
 
-	send_user "
-#############################################################################
-# Test local afterok
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test local afterok"
+	log_info "#############################################################"
 
 	# Local dependency succeeds
 	log_info "afterok: test that local dependency succeeds:"
@@ -575,11 +546,9 @@ proc test_local_afterok { } {
 proc test_remote_afterok { } {
 	global c1 c2 kill_invalid_depend file_in_long file_in_short
 
-	send_user "
-#############################################################################
-# Test remote afterok
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test remote afterok"
+	log_info "#############################################################"
 
 	# Remote dependency succeeds
 	log_info "afterok: test that remote dependency succeeds:"
@@ -615,11 +584,9 @@ proc test_remote_afterok { } {
 proc test_local_afternotok { } {
 	global c1 kill_invalid_depend file_in_long file_in_short
 
-	send_user "
-#############################################################################
-# Test local afternotok
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test local afternotok"
+	log_info "#############################################################"
 
 	# Local dependency succeeds
 	log_info "afternotok: test that local dependency succeeds:"
@@ -657,11 +624,9 @@ proc test_local_afternotok { } {
 proc test_remote_afternotok { } {
 	global c1 c2 kill_invalid_depend file_in_long file_in_short
 
-	send_user "
-#############################################################################
-# Test remote afternotok
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test remote afternotok"
+	log_info "#############################################################"
 
 	# Remote dependency succeeds
 	log_info "afternotok: test that remote dependency succeeds:"
@@ -699,11 +664,9 @@ proc test_remote_afternotok { } {
 proc test_local_singleton { } {
 	global c1 disable_remote_singleton file_in_long
 
-	send_user "
-#############################################################################
-# Test local singleton
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test local singleton"
+	log_info "#############################################################"
 
 	# Test one cluster
 	log_info "singleton: test on one cluster"
@@ -723,11 +686,9 @@ proc test_local_singleton { } {
 proc test_remote_singleton { } {
 	global c1 c2 c3 disable_remote_singleton file_in_long
 
-	send_user "
-#############################################################################
-# Test remote singleton
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test remote singleton"
+	log_info "#############################################################"
 
 	# Test multiple clusters
 	if { $disable_remote_singleton } {
@@ -788,11 +749,9 @@ proc test_add_remove_clusters { } {
 	# jobs on that cluster to fail.
 	# Adding a cluster to a federation means that any singleton dependencies
 	# have to be fulfilled on that cluster.
-	send_user "
-#############################################################################
-# Test adding/removing a cluster from the federation.
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test adding/removing a cluster from the federation"
+	log_info "#############################################################"
 
 	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
 	set job_id2 [submit_job "-M$c2" $c2 $file_in_long]
@@ -809,7 +768,7 @@ proc test_add_remove_clusters { } {
 
 	log_info "Test that removing cluster $c3 from fed $fed_name makes dependencies on jobs on $c3 fail"
 	if { [remove_cluster_from_fed $c3 $fed_name] } {
-		cleanup 1
+		fail "Unable to remove cluster $c3 from federation $fed_name"
 	}
 	wait_for_depend $job_id4 "DependencyNeverSatisfied" \
 		"afterok:$job_id3\(failed\)"
@@ -827,7 +786,7 @@ proc test_add_remove_clusters { } {
 
 	log_info "Test that the singleton dependency was resent back to cluster $c3 when it was added back to the federation."
 	if { [add_cluster_to_fed $c3 $fed_name] } {
-		cleanup 1
+		fail "Unable to add cluster $c3 to federation $fed_name"
 	}
 	cancel_job $job_id1 $c1
 	cancel_job $job_id2 $c2
@@ -840,11 +799,9 @@ proc test_add_remove_clusters { } {
 proc test_submit_to_all_clusters { } {
 	global c1 c2 c3 file_in_long
 
-	send_user "
-#############################################################################
-# Test submitting a dependent job to all clusters.
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test submitting a dependent job to all clusters"
+	log_info "#############################################################"
 
 	log_info "Test that a dependent job is only on its origin cluster while dependent and that it is submitted to all clusters when its dependency is cleared."
 	set job_id1 [submit_job "-M$c2" $c2 $file_in_long]
@@ -859,8 +816,7 @@ proc test_submit_to_all_clusters { } {
 	log_info "Test that job $job_id2 is not on clusters $c2 or $c3."
 	if { [is_job_on_cluster $job_id2 $c2] || \
 		[is_job_on_cluster $job_id2 $c3] } {
-			log_error "Job $job_id2 is in cluster $c2 and/or $c3 when it shouldn't be."
-			cleanup 1
+			fail "Job $job_id2 is in cluster $c2 and/or $c3 when it shouldn't be."
 	}
 
 	log_info "Test that job $job_id2 is submitted to all sibling clusters $c2 and $c3 when its dependency is fulfilled."
@@ -875,11 +831,9 @@ proc test_submit_to_all_clusters { } {
 proc test_local_or_dependencies { } {
 	global c1 file_in_long kill_invalid_depend
 
-	send_user "
-#############################################################################
-# Test local OR dependencies.
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test local OR dependencies"
+	log_info "#############################################################"
 
 	log_info "OR dependencies: Test that one fulfilled dependency makes the whole dependency fulfilled:"
 	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
@@ -926,11 +880,9 @@ proc test_local_or_dependencies { } {
 proc test_remote_or_dependencies { } {
 	global c1 c2 file_in_long kill_invalid_depend
 
-	send_user "
-#############################################################################
-# Test remote OR dependencies.
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test remote OR dependencies"
+	log_info "#############################################################"
 
 	log_info "OR dependencies: Test that one fulfilled dependency makes the whole dependency fulfilled:"
 	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
@@ -977,11 +929,9 @@ proc test_remote_or_dependencies { } {
 proc test_local_and_dependencies { } {
 	global c1 file_in_long kill_invalid_depend
 
-	send_user "
-#############################################################################
-# Test local AND dependencies.
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test local AND dependencies"
+	log_info "#############################################################"
 
 	log_info "AND dependencies: Test that the dependency isn't fulfilled until all dependencies are fulfilled:"
 	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
@@ -1028,11 +978,9 @@ proc test_local_and_dependencies { } {
 proc test_remote_and_dependencies { } {
 	global c1 c2 file_in_long kill_invalid_depend
 
-	send_user "
-#############################################################################
-# Test remote AND dependencies.
-#############################################################################
-	\n\n"
+	log_info "#############################################################"
+	log_info "# Test remote AND dependencies"
+	log_info "#############################################################"
 
 	log_info "AND dependencies: Test that the dependency isn't fulfilled until all dependencies are fulfilled:"
 	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
@@ -1083,19 +1031,18 @@ proc test_remote_and_dependencies { } {
 print_header $test_id
 
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if {![test_federation_setup]} {
 
 	if {[test_all_up]} {
-		exit 0
+		skip "All of the clusters in the federation must be up"
 	}
 
 	delete_federations $fed_name
 	if { [setup_federation $fed_name] } {
-		cleanup 1
+		fail "Unable to set up federation $fed_name"
 	}
 } else {
 	log_warn "Not running remote dependency tests"
@@ -1117,7 +1064,7 @@ set kill_invalid_depend [test_dependency_params "kill_invalid_depend"]
 set disable_remote_singleton [test_dependency_params "disable_remote_singleton"]
 log_info "kill_invalid_depend: $kill_invalid_depend; disable_remote_singleton: $disable_remote_singleton\n"
 
-cancel_all_jobs
+cancel_federation_jobs
 
 test_local_after
 test_local_afterany
@@ -1142,5 +1089,3 @@ if {![test_federation_setup]} {
 	test_add_remove_clusters
 	test_submit_to_all_clusters
 }
-
-cleanup 0

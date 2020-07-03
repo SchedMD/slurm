@@ -158,9 +158,8 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 }
 sleep 60
 if {[wait_for_job $job_id DONE] != 0} {
-	log_error "Error completing job $job_id"
 	cancel_job $job_id
-	exit 1
+	fail "Error completing job $job_id"
 }
 if {[wait_for_file $file_out_time] != 0} {
 	log_error "File $file_out_time is missing"

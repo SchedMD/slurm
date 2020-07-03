@@ -121,8 +121,7 @@ if {[test_using_slurmdbd] == 0 } {
 
 array set node_conf [get_node_config "--gres=gpu:2"]
 if {[array size node_conf] == 0} {
-	log_warn "This test requires 2 or more GPUs in a node of the default partition. Skipping.\n"
-	exit $exit_code
+	skip "This test requires 2 or more GPUs in a node of the default partition"
 }
 set hostname $node_conf(NodeName)
 set gpu_tot  $node_conf(GPUTot)

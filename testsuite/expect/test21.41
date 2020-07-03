@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test sacctmgr update job [condition] set newwckey="newkey"
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC
 # Written by Albert Gil <albert.gil@schedmd.com>
@@ -78,7 +74,7 @@ set jobid08       "1008"
 #       clusters.
 #
 ###############################################################################
-proc clean_it {} {
+proc cleanup {} {
 	global exit_code bin_rm
 	global sql_in_clus1 sql_in_clus2
 	global sql_rem_clus1 sql_rem_clus2
@@ -93,22 +89,6 @@ proc clean_it {} {
 	exec $bin_rm $sql_in_clus1 $sql_in_clus2 $sql_rem_clus1 $sql_rem_clus2
 }
 
-###############################################################################
-#
-# Proc: Calls cleant_it, print test result and exits the test.
-#
-###############################################################################
-proc end_it {} {
-	global exit_code test_id
-
-	if {$exit_code == 0} {
-		clean_it
-		print_success $test_id
-	} else {
-		print_failure $test_id
-	}
-	exit $exit_code
-}
 
 ###############################################################################
 #
@@ -124,9 +104,7 @@ proc end_it {} {
 proc create_sql {cluster sql_in sql_rem} {
 
 	global bin_rm
-	global end_it
 	global exit_code test_name
-# 	global cluster1 cluster2
 	global account1 account2
 	global wckey1 wckey2
 	global user1acct1 user1acct2
@@ -284,17 +262,10 @@ proc _run_test { update_str expected_jobs } {
 	incr exit_code [archive_load $sql_rem_clus2]
 	incr exit_code [archive_load $sql_in_clus1]
 	incr exit_code [archive_load $sql_in_clus2]
-
-	if { $exit_code } {
-		end_it
-	}
+	fail_on_error "Unable to load archive"
 
 	incr exit_code [test_job_update $update_str $expected_jobs]
-
-	if { $exit_code } {
-		log_error "Update failed with: $update_str"
-		end_it
-	}
+	fail_on_error "Update failed with: $update_str"
 }
 
 #
@@ -302,19 +273,16 @@ proc _run_test { update_str expected_jobs } {
 # TODO: chack also slurm.conf!!
 #
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType."
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 set wc_key_track [check_wckey_tracking_slurmdbd]
 if { $wc_key_track == 0 } {
-	log_warn "This test can't be run without TrackWCKey set in slurmdbd.conf."
-	exit 0
+	skip "This test can't be run without TrackWCKey set in slurmdbd.conf"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin."
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 # Cluster Request
@@ -340,21 +308,15 @@ remove_cluster $clusters
 # Add cluster
 incr exit_code [add_cluster $cluster1 [array get clus_req]]
 incr exit_code [add_cluster $cluster2 [array get clus_req]]
-if { $exit_code } {
-	end_it
-}
+fail_on_error "Unable to add clusters"
 
 # Add accounts
 incr exit_code [add_acct "$account1,$account2" [array get acct_req]]
-if { $exit_code } {
-	end_it
-}
+fail_on_error "Unable to add accounts"
 
 # Add users
 incr exit_code [add_user $users [array get user_req]]
-if { $exit_code } {
-	end_it
-}
+fail_on_error "Unable to add users"
 
 #
 # Get the association ids
@@ -442,9 +404,7 @@ expect {
 }
 
 if {!$user1acct1 || !$user1acct2 || !$user2acct1 || !$user2acct2} {
-	log_error "Didn't get one of the user associations $user1acct1 $user1acct2 $user2acct1 $user2acct2."
-	incr exit_code 1
-	end_it
+	fail "Didn't get one of the user associations $user1acct1 $user1acct2 $user2acct1 $user2acct2."
 }
 
 #
@@ -488,9 +448,7 @@ expect {
 }
 
 if {!$user1wckey1 || !$user2wckey1 || !$user1wckey2 || !$user2wckey2} {
-	log_error "Didn't get one of the user wckeys $user1wckey1 $user2wckey1 $user1wckey2 $user2wckey2."
-	incr exit_code 1
-	end_it
+	fail "Didn't get one of the user wckeys $user1wckey1 $user2wckey1 $user1wckey2 $user2wckey2."
 }
 
 #
@@ -744,8 +702,3 @@ _run_test "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey2
 
 # 2 clusters, 2 accounts, 2 wckeys
 _run_test "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey1,$wckey2" [list $jobid01 $jobid03 $jobid01 $jobid03 $jobid05 $jobid07 $jobid05 $jobid07 $jobid02 $jobid04 $jobid02 $jobid04 $jobid06 $jobid08 $jobid06 $jobid08]
-
-#
-# Finish
-#
-end_it

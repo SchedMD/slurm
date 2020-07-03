@@ -70,7 +70,7 @@ proc sbatch {} {
 	return $job_id
 }
 
-proc cancel_all_jobs { } {
+proc cancel_job_id { } {
 	global scancel job_id
 
 	if {$job_id != 0} {
@@ -88,7 +88,7 @@ proc cleanup { } {
 
 proc end_it { exit_code } {
 	global test_id
-	cancel_all_jobs
+	cancel_job_id
 	if {$exit_code == 0} {
 		cleanup
 	}

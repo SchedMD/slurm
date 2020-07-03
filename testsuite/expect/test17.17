@@ -3,7 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Confirm that node sharing flags are respected  (--nodelist and
 #          --oversubscribe options).
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -48,8 +47,7 @@ set timeout $max_job_delay
 
 array set node_conf [get_node_config "--gres=gpu:2"]
 if {[array size node_conf] == 0} {
-	log_warn "This test requires 2 or more GPUs in a node of the default partition. Skipping.\n"
-	exit $exit_code
+	skip "This test requires 2 or more GPUs in a node of the default partition"
 }
 set hostname $node_conf(NodeName)
 set gpu_tot  $node_conf(GPUTot)

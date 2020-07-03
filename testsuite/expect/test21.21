@@ -31,7 +31,6 @@ source ./globals
 source ./globals_accounting
 source ./inc21.21_tests
 
-set test_id     "21.21"
 set exit_code   0
 set test_qos    "test$test_id\_qos"
 set file_in     "test.$test_id.input"
@@ -205,7 +204,6 @@ if {$totcpus == 0} {
 	set acct_mod_assoc_vals(grpcpurunmins) "-n [expr $totcpus - $nthreads]"
 }
 
-
 proc assoc_setup { limit_type limit_val } {
 
 	global acct_mod_assoc_test_vals exit_code
@@ -318,7 +316,7 @@ if {$aamatches != 1} {
 #
 set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$ta]
 expect {
-	 timeout {
+	timeout {
 		slow_kill $sadd_pid
 		fail "sacctmgr add not responding"
 	}

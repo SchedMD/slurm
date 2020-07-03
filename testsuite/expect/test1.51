@@ -2,7 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test propagation of umask to spawned tasks.
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2005 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
