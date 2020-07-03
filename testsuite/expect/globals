@@ -214,12 +214,6 @@ cset bin_wc	"wc"
 cset max_job_delay 120
 
 #
-# Default timeout waiting for commands to return an expected output.
-# See wait_for_command.
-#
-cset max_command_delay 60
-
-#
 # Files must be propagated between nodes within this number of seconds.
 # The delay may be due to NFS.
 #
@@ -245,18 +239,18 @@ cset max_stress_tasks 4
 #
 cset sleep_error_message "(invalid time interval)|(bad character in argument)|(usage: sleep seconds)"
 
-#
-# The poll interval (how many seconds to sleep between polls in functions like
-# wait_for_file and wait_for_job)
-#
-cset poll_interval 1
-
 # Force LANG, as the expect tests aren't localized
 set ::env(LANG)          "en_US.UTF-8"
 
 # Testsuite level variables
 cset testsuite_log_level $LOG_LEVEL_DEBUG
 cset testsuite_cleanup_on_failure false
+
+#
+# The poll interval (how many seconds to sleep between polls in functions like
+# wait_for_file and wait_for_job)
+#
+cset testsuite_poll_interval 1
 
 if {[info exists env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)]} {
 	set testsuite_cleanup_on_failure $env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)
@@ -489,6 +483,229 @@ proc print_time { } {
 	}
 
 	return
+}
+
+#
+# Tcl < 8.7 lacks a built in 'dict get' with ability to specify the default
+# value
+#
+# https://core.tcl-lang.org/tips/doc/trunk/tip/342.md
+# https://core.tcl-lang.org/tcl/tktview/2370575
+#
+proc dict_getdef {D args} {
+	if {[dict exists $D {*}[lrange $args 0 end-1]]} then {
+		dict get $D {*}[lrange $args 0 end-1]
+	} else {
+		lindex $args end
+	}
+}
+
+################################################################
+#
+# Usage: run_command ?options? command
+#
+# Description:
+#   Executes a command and returns a dictionary that includes the output,
+#   exit code, etc. An action can be taken (fail, warn, none)  if the
+#   command's exit code or timeout is unexpected. By default, the action
+#   will be applied if the command fails. If the -xfail option is specified,
+#   the behavior will be reversed to apply the action if the command ran
+#   successfully.
+#
+# Options:
+#   If the initial arguments start with - then they are treated as options.
+#   The following options are currently supported:
+#   -fail - if the exit code or timeout is unexpected, the action that will
+#           be taken is to fail the test
+#   -warn - if the exit code or timeout is unexpected, the action that will
+#           be taken is to log a warning (this is the default)
+#   -none - if the exit code or timeout is unexpected, no action will be taken
+#   -xfail - if the command exits with zero and does not time out, the action
+#            will be applied. Without this option, the action will be applied
+#            if the command exits with a non-zero exit code or times out.
+#   -timeout <float_number> - time in seconds to wait for the command
+#                             to complete before timing out (default is 60.0)
+#
+# Input:
+#   command -- a string containing the command and arguments to execute
+#
+# Returns:
+#   A dictionary containing the following elements:
+#   command    - The command that was invoked
+#   exit_code  - Exit code
+#   output     - The combined standard output and standard error
+#   start_time - The time (epoch with milliseconds) the command was executed
+#   duration   - The duration (seconds and milliseconds) the command took to run
+#
+################################################################
+proc run_command args {
+	global bin_bash exit_code
+
+	set exit_status 0
+	set action "warn"
+	set timeout 60
+	set expect_failure false
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-fail    {set action "fail"; set args [lrange $args 1 end]}
+			-none    {set action "none"; set args [lrange $args 1 end]}
+			-timeout {set args [lassign $args - timeout]}
+			-warn    {set action "warn"; set args [lrange $args 1 end]}
+			-xfail   {set expect_failure true; set args [lrange $args 1 end]}
+			-*       {fail "Unknown option: [lindex $args 0]"}
+			default  break
+		}
+	}
+	if {[llength $args] == 1} {
+		lassign $args command
+	} else {
+		fail "Invalid number of arguments [llength $args]: $args"
+	}
+
+	set orig_log_user [log_user -info]
+	log_user 0
+
+	log_debug "Invoking command \"$command\""
+	set start_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+	set expect_pid [spawn -noecho $bin_bash -c "$command"]
+	expect {
+		-re "(.+)" {
+			append output $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			set message "Command \"$command\" timed out after $timeout seconds"
+			slow_kill $expect_pid
+			set exit_status 1
+		}
+		eof {
+			lassign [wait] pid spawnid os_error_flag errno
+			set exit_status [expr $errno > 128 ? $errno - 256 : $errno]
+		}
+	}
+	set end_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+	set duration [format "%.3f" [expr $end_time - $start_time]]
+	set exit_code $exit_status
+
+	log_debug "Command Results:"
+	log_debug "	Start Time: $start_time"
+	log_debug "	Duration: $duration"
+	log_debug "	Exit Code: $exit_code"
+	if {[info exists output]} {
+		log_debug "	Output: $output"
+	}
+
+	if {! $expect_failure && $exit_status != 0} {
+		cset message "Command \"$command\" failed with rc=$exit_status"
+		if {[info exists output] && $output != ""} {
+			append message ": [string trimright $output]"
+		}
+		if {$action eq "warn"} {
+			log_warn $message
+		} elseif {$action eq "fail"} {
+			fail $message
+		}
+	} elseif {$expect_failure && $exit_status == 0} {
+		cset message "Command \"$command\" was expected to fail but succeeeded"
+		if {$action eq "warn"} {
+			log_warn $message
+		} elseif {$action eq "fail"} {
+			fail $message
+		}
+	}
+	log_user $orig_log_user
+
+	dict set result command $command
+	dict set result exit_code $exit_status
+	if [info exists output] {
+		dict set result output "$output"
+	}
+	dict set result start_time $start_time
+	dict set result duration $duration
+
+	return $result
+}
+
+################################################################
+#
+# Usage: run_command_output ?options? command
+#
+# Description:
+#   Executes a command and returns the output. An action can be taken (fail,
+#   warn, none) if the command's exit code or timeout is unexpected. By
+#   default, the action will be applied if the command fails. If the -xfail
+#   option is specified, the behavior will be reversed to apply the action
+#   if the command ran successfully.
+#
+# Options:
+#   If the initial arguments start with - then they are treated as options.
+#   The following options are currently supported:
+#   -fail - if the exit code or timeout is unexpected, the action that will
+#           be taken is to fail the test
+#   -warn - if the exit code or timeout is unexpected, the action that will
+#           be taken is to log a warning (this is the default)
+#   -none - if the exit code or timeout is unexpected, no action will be taken
+#   -xfail - if the command exits with zero and does not time out, the action
+#            will be applied. Without this option, the action will be applied
+#            if the command exits with a non-zero exit code or times out.
+#   -timeout <float_number> - time in seconds to wait for the command to
+#                             complete before timing out (default is 60.0)
+#
+# Input:
+#   command -- a string containing the command and arguments to execute
+#
+# Returns:
+#   A string containing the combined standard output and standard error
+#
+################################################################
+proc run_command_output args {
+	global exit_code
+
+	set result [run_command {*}$args]
+
+	if [dict exists $result output] {
+		return [dict get $result output]
+	} else {
+		return ""
+	}
+}
+
+################################################################
+#
+# Usage: run_command_status ?options? command
+#
+# Description:
+#   Executes a command and returns the exit code. An action can be taken
+#   (fail, warn, none) if the command's exit code or timeout is unexpected.
+#   By default, the action will be applied if the command fails. If the
+#   -xfail option is specified, the behavior will be reversed to apply the
+#   action if the command ran successfully.
+#
+# Options:
+#   If the initial arguments start with - then they are treated as options.
+#   The following options are currently supported:
+#   -fail - if the exit code or timeout is unexpected, the action that will
+#           be taken is to fail the test
+#   -warn - if the exit code or timeout is unexpected, the action that will
+#           be taken is to log a warning (this is the default)
+#   -none - if the exit code or timeout is unexpected, no action will be taken
+#   -xfail - if the command exits with zero and does not time out, the action
+#            will be applied. Without this option, the action will be applied
+#            if the command exits with a non-zero exit code or times out.
+#   -timeout <float_number> - time in seconds to wait for the command to
+#                             complete before timing out (default is 60.0)
+#
+# Input: command -- a string containing the command and arguments to execute
+#
+# Returns: The exit code for the invoked command
+#
+################################################################
+proc run_command_status args {
+	global exit_code
+
+	set result [run_command {*}$args]
+
+	return [dict get $result exit_code]
 }
 
 ################################################################
@@ -782,10 +999,88 @@ proc print_header { { test_id_in "" } } {
 
 ################################################################
 #
+# Usage: wait_for ?options? condition body
+#
+# Description:
+#   Generic wait utility allowing you to repeatedly execute a generic
+#   block of code until a specified boolean expression is met. The code block
+#   and condition check occur every poll interval until a timeout is reached.
+#
+# Options:
+#   If the initial arguments start with - then they are treated as options.
+#   The following options are currently supported:
+#   -timeout <float_number> - time in seconds to wait for the command to
+#                             complete before timing out (default is 60.0)
+#   -pollinterval <floa_number> - time in seconds between each loop execution
+#                                 and condition check (defaults to 1.0)
+#
+# Purpose:
+#   Generic wait utility allowing you to repeatedly execute a generic
+#   block of code until a specified boolean expression is met. The code block
+#   and condition check occur every poll interval until a timeout is reached.
+#
+# Input: condition -- The boolean expression to test
+# Input: body -- a block of code to evaluate in the invoking stack frame
+#
+# Returns: true if the condition is met before the timeout occurs
+#          false if the timeout occurs before the condition is met
+#
+################################################################
+proc wait_for args {
+	set timeout 60
+	set poll_interval 1
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - poll_interval]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	if {[llength $args] == 2} {
+		lassign $args condition body
+	} else {
+		fail "Invalid number of arguments [llength $args]: $args"
+	}
+
+	set start_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+
+	log_debug "Waiting for $condition starting at [clock format [expr int($start_time)] -format %Y-%m-%dT%X].[lindex [split $start_time '.'] 1]"
+
+	while {1} {
+		# Evaluate code block
+		log_trace "Evaluating code block ([string trim $body])"
+		set ret [catch {uplevel $body} result]
+
+		# Check condition
+		if {[uplevel expr [format "{%s}" $condition]]} {
+			set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+			log_debug "Condition ($condition) was met at [clock format [expr int($now)] -format %Y-%m-%dT%X].[lindex [split $now '.'] 1]"
+			return true
+		} else {
+			log_trace "Condition ($condition) was not met"
+		}
+
+		# Sleep poll interval
+		log_trace "Sleeping for $poll_interval seconds"
+		after [expr {int($poll_interval * 1000)}]
+
+		# Check if we have surpassed our timeout
+		set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+		log_trace "Checking whether the current time ([clock format [expr int($now)] -format %Y-%m-%dT%X].[lindex [split $now '.'] 1]) is greater than the start time plus the timeout ([clock format [expr int($start_time + $timeout)] -format %Y-%m-%dT%X].[lindex [split [expr $start_time + $timeout] '.'] 1])"
+		if {$now > $start_time + $timeout} {
+			log_warn "Condition ($condition) did not occur before timeout ($timeout) seconds"
+			return false
+		}
+	}
+}
+
+################################################################
+#
 # Proc: wait_for_command
 #
-# Executes a command every poll_interval until a regex pattern is
-# matched in the output, or timeout after max_delay.
+# Executes a command every testsuite_poll_interval until a regex
+# pattern is matched in the output, or timeout after max_delay.
 #
 # command    - The command to run via spawn.
 # args       - The arguments to the command, as a single string.
@@ -802,7 +1097,7 @@ proc print_header { { test_id_in "" } } {
 #                matches found.
 # max_delay  - The timeout seconds to execute the command
 #              and wait on the output before giving up. Defaults
-#              to global max_command_delay.
+#              to 120.
 #
 # Returns: 0 on success and 1 on failure. On failure, an error is
 #          logged to the output. If matches_out is specified, the
@@ -811,14 +1106,11 @@ proc print_header { { test_id_in "" } } {
 #
 ################################################################
 proc wait_for_command { command args regex {matches_in 1} {or_more 0}
-                        {matches_out ""} {max_delay max_command_delay} } {
-	global bin_sleep poll_interval max_command_delay
+                        {matches_out ""} {max_delay 120} } {
+	global bin_sleep testsuite_poll_interval
 
 	if {$matches_out != ""} {
 		upvar $matches_out matches
-	}
-	if {$max_delay == "max_command_delay"} {
-		set max_delay $max_command_delay
 	}
 
 	set delay 0
@@ -848,8 +1140,8 @@ proc wait_for_command { command args regex {matches_in 1} {or_more 0}
 		}
 
 		log_info "[lindex [info level 0] 0] polled $matches matches of '$regex', but expecting $matches_in"
-		exec $bin_sleep $poll_interval
-		incr delay $poll_interval
+		exec $bin_sleep $testsuite_poll_interval
+		incr delay $testsuite_poll_interval
 
 	}
 	if {$or_more == 1} {
@@ -871,7 +1163,7 @@ proc wait_for_command { command args regex {matches_in 1} {or_more 0}
 # Purpose:  Wait for the specified file to exist and have a
 #           non-zero size. Note that if JobFileAppend=0 is
 #           configured, a file can exist and be purged then
-#           be re-created. Polls every $poll_interval seconds.
+#           be re-created. Polls every $testsuite_poll_interval seconds.
 #
 # Returns: A non-zero return code indicates a failure.
 #
@@ -880,16 +1172,16 @@ proc wait_for_command { command args regex {matches_in 1} {or_more 0}
 ################################################################
 
 proc wait_for_file { file_name } {
-	global bin_sleep max_file_delay poll_interval
+	global bin_sleep max_file_delay testsuite_poll_interval
 
 	for {set my_delay 0} {$my_delay <= $max_file_delay} \
-	                     {set my_delay [expr $my_delay + $poll_interval]} {
+	                     {set my_delay [expr $my_delay + $testsuite_poll_interval]} {
 		if {[file exists $file_name]} {
 #			Add small delay for I/O buffering
 			exec $bin_sleep 1
 			return 0
 		}
-		exec $bin_sleep $poll_interval
+		exec $bin_sleep $testsuite_poll_interval
 #
 #		Expect may fail to load current NFS info.
 #		Use the ls command to load current info.
@@ -958,8 +1250,8 @@ proc wait_for_job { job_id desired_state {het_job 0}} {
 #
 # Proc: wait_for_account_done
 #
-# Purpose:  Cancel jobs on and wait for them to be finished in account(s) given.
-#           Polls every $poll_interval seconds.
+# Purpose:  Cancel jobs on and wait for them to be finished in account(s)
+#           given. Polls every $testsuite_poll_interval seconds.
 #
 # Returns: A non-zero return code indicates a failure.
 #
@@ -971,7 +1263,7 @@ proc wait_for_job { job_id desired_state {het_job 0}} {
 ################################################################
 
 proc wait_for_account_done { accounts } {
-	global scancel squeue max_job_state_delay re_word_str poll_interval
+	global scancel squeue max_job_state_delay re_word_str testsuite_poll_interval
 
 	if { $accounts == "" } {
 		log_error "wait_for_account_done: no account given"
@@ -1017,8 +1309,8 @@ proc wait_for_account_done { accounts } {
 			return 1
 		}
 
-		exec sleep $poll_interval
-		set my_delay [expr $my_delay + $poll_interval]
+		exec sleep $testsuite_poll_interval
+		set my_delay [expr $my_delay + $testsuite_poll_interval]
 	}
 	log_user 1
 	return 0
@@ -1028,8 +1320,8 @@ proc wait_for_account_done { accounts } {
 #
 # Proc: wait_for_part_done
 #
-# Purpose:  Cancel jobs on and wait for them to be finished in partition given.
-#           Polls every $poll_interval seconds.
+# Purpose:  Cancel jobs on and wait for them to be finished in partition
+#           given. Polls every $testsuite_poll_interval seconds.
 #
 # Returns: A non-zero return code indicates a failure.
 #
@@ -1041,7 +1333,7 @@ proc wait_for_account_done { accounts } {
 ################################################################
 
 proc wait_for_part_done { part } {
-	global scancel squeue max_job_state_delay re_word_str poll_interval
+	global scancel squeue max_job_state_delay re_word_str testsuite_poll_interval
 
 	if { $part == "" } {
 		log_error "wait_for_part_done: no partition given"
@@ -1084,8 +1376,8 @@ proc wait_for_part_done { part } {
 			return 1
 		}
 
-		exec sleep $poll_interval
-		set my_delay [expr $my_delay + $poll_interval]
+		exec sleep $testsuite_poll_interval
+		set my_delay [expr $my_delay + $testsuite_poll_interval]
 	}
 	log_user 1
 	return 0
@@ -1096,7 +1388,7 @@ proc wait_for_part_done { part } {
 # Proc: wait_for_step
 #
 # Purpose: Wait for a job step to be found.
-#          Polls every $poll_interval seconds.
+#          Polls every $testsuite_poll_interval seconds.
 #
 # Returns: A non-zero return code indicates a failure.
 #
@@ -1106,7 +1398,7 @@ proc wait_for_part_done { part } {
 ################################################################
 
 proc wait_for_step { step_id } {
-	global scontrol max_job_state_delay poll_interval
+	global scontrol max_job_state_delay testsuite_poll_interval
 	set my_delay    0
 	while 1 {
 		set fd [open "|$scontrol -o show step $step_id"]
@@ -1123,9 +1415,9 @@ proc wait_for_step { step_id } {
 			return 1
 		}
 
-		log_info "Step $step_id not done yet. Waiting for $poll_interval seconds"
-		exec sleep $poll_interval
-		set my_delay [expr $my_delay + $poll_interval]
+		log_info "Step $step_id not done yet. Waiting for $testsuite_poll_interval seconds"
+		exec sleep $testsuite_poll_interval
+		set my_delay [expr $my_delay + $testsuite_poll_interval]
 	}
 }
 
@@ -1134,7 +1426,7 @@ proc wait_for_step { step_id } {
 # Proc: wait_for_all_jobs
 #
 # Purpose:  Wait for previously submitted Slurm jobs to finish of a
-#           certain name. Iterates every $poll_interval seconds.
+#           certain name. Iterates every $testsuite_poll_interval seconds.
 #
 # Returns: -1 on failure, 0 if all jobs are done, and the remaining job count
 #          if not all jobs are done after $wait_for_all_jobs_iterations
@@ -1144,7 +1436,7 @@ proc wait_for_step { step_id } {
 #
 ################################################################
 proc wait_for_all_jobs { job_name } {
-	global scancel squeue bin_sleep wait_for_all_jobs_iterations poll_interval
+	global scancel squeue bin_sleep wait_for_all_jobs_iterations testsuite_poll_interval
 
 	set matches 0
 	set timeout 30
@@ -1177,7 +1469,7 @@ proc wait_for_all_jobs { job_name } {
 		}
 		if {$matches > 0} {
 			log_info "  $matches jobs remaining"
-			exec sleep $poll_interval
+			exec sleep $testsuite_poll_interval
 		}
 		if {$matches == -1} {
 			break
@@ -1214,7 +1506,7 @@ proc wait_for_all_jobs { job_name } {
 ################################################################
 proc wait_job_reason { job_id {desired_state "PENDING"}
 		       {desired_reason_list ""} } {
-	global scontrol re_word_str max_job_state_delay poll_interval
+	global scontrol re_word_str max_job_state_delay testsuite_poll_interval
 	set final_state "COMPLETED CANCELLED FAILED TIMEOUT DEADLINE
 	                 OUT_OF_MEMORY"
 
@@ -1273,10 +1565,10 @@ proc wait_job_reason { job_id {desired_state "PENDING"}
 		                 $job_state $job_reason \
 		                 $desired_state $desired_reason_list]
 		log_info [format "Polling again in %ss, %ss to timeout." \
-		                 $poll_interval $remamining_sec]
+		                 $testsuite_poll_interval $remamining_sec]
 
-		sleep $poll_interval
-		set my_delay [expr $my_delay + $poll_interval]
+		sleep $testsuite_poll_interval
+		set my_delay [expr $my_delay + $testsuite_poll_interval]
 	}
 
 	log_user $log_user_prev
@@ -3989,8 +4281,8 @@ proc job_submit_all_partitions { } {
 #
 # Proc: wait_for_node
 #
-# Purpose: Wait for a certain number of nodes in a partition to
-#          reach a certain state. Polls every $poll_interval seconds.
+# Purpose: Wait for a certain number of nodes in a partition to reach a
+#          certain state. Polls every $testsuite_poll_interval seconds.
 #
 # Returns: 1 on failure.
 #
@@ -4001,7 +4293,7 @@ proc wait_for_node {partition state num_nodes} {
 	set cnt       0
 	set rt        0
 
-	global sinfo number poll_interval
+	global sinfo number testsuite_poll_interval
 
 	while {$done != 1 && $wait_time < 3} {
 
@@ -4026,7 +4318,7 @@ proc wait_for_node {partition state num_nodes} {
 			set done 1
 		} else {
 			log_debug "partition $partition has $cnt nodes idle and we want $num_nodes"
-			sleep $poll_interval
+			sleep $testsuite_poll_interval
 			incr wait_time 1
 		}
 	}
@@ -5961,7 +6253,7 @@ proc create_part { part_name num_nodes_in } {
 	}
 
 	if {$found == 1} {
-		log_error "there is already a partition $part_name"
+		log_error "There is already a partition $part_name"
 		return 1
 	}
 
@@ -5998,10 +6290,10 @@ proc create_part { part_name num_nodes_in } {
 	}
 
 	if {[string length $nodes] == 0} {
-		log_error "did not get a valid node list"
+		log_error "Did not get a valid node list"
 		return 1
 	} elseif { $num_nodes_out != $num_nodes_in } {
-		log_error "did not get enough nodes ($num_nodes_out != $num_nodes_in) to run test"
+		log_error "Did not get enough nodes ($num_nodes_out != $num_nodes_in) to run test"
 		return 1
 	}
 
@@ -6369,4 +6661,3 @@ proc assert_or_warn { condition message } {
 proc assert_or_skip { condition message } {
 	assert "$condition" "$message" "skip"
 }
-
