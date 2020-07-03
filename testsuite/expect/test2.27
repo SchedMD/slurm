@@ -46,7 +46,7 @@ if {[test_front_end]} {
 	exit $exit_code
 }
 
-set available [available_nodes $partition ""]
+set available [available_nodes]
 if {$available < $node_cnt} {
 	log_warn "not enough nodes currently available ($available avail, $node_cnt needed)"
 	exit $exit_code
