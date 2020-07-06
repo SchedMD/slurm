@@ -7177,7 +7177,7 @@ proc have_nvml { } {
 	log_user 1
 
 	if {$grep_fail == 1} {
-		log_error "Could not grep $config_h for HAVE_NVML"
+		log_warn "Could not grep $config_h for HAVE_NVML"
 		set have_nvml 0
 	}
 
