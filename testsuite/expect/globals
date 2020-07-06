@@ -4476,7 +4476,7 @@ proc get_node_cnt_in_part { {partition ""} } {
 	set scon_pid [spawn -noecho $scontrol show partition $partition]
 	expect {
 		-re "not found" {
-			log_error "partition $partition doesn't exist"
+			log_error "Partition $partition doesn't exist"
 		}
 		-re "TotalNodes=($number)" {
 			set node_cnt $expect_out(1,string)
@@ -4523,7 +4523,7 @@ proc get_idle_node_in_part { {partition ""} } {
 	spawn $sinfo -oNAME=%N -h -p$partition --state=idle
 	expect {
 		-re "not found" {
-			log_error "partition $partition doesn't exist"
+			log_error "Partition $partition doesn't exist"
 		}
 		-re "NAME=($re_word_str)" {
 			set host_list $expect_out(1,string)
@@ -4652,7 +4652,7 @@ proc change_subbp_state { node ionodes state } {
 			exp_continue
 		}
 		-re "Unable to contact" {
-			log_error "slurm appears to be down"
+			log_error "Slurm appears to be down"
 			exp_continue
 		}
 		timeout {
@@ -4681,7 +4681,7 @@ proc change_subbp_state { node ionodes state } {
 			exp_continue
 		}
 		-re "Unable to contact" {
-			log_error "slurm appears to be down"
+			log_error "Slurm appears to be down"
 			exp_continue
 		}
 		timeout {
@@ -5066,7 +5066,7 @@ proc wait_for_node {state num_nodes {partition ""} } {
 		if {$num_nodes <= $cnt} {
 			set done 1
 		} else {
-			log_debug "partition $partition has $cnt nodes idle and we want $num_nodes"
+			log_debug "Partition $partition has $cnt nodes idle and we want $num_nodes"
 			sleep $testsuite_poll_interval
 			incr wait_time 1
 		}
@@ -5818,7 +5818,7 @@ proc check_hosts_contiguous { check_hosts_list {partition ""} } {
 		}
 		-re "Unable to contact" {
 			log_user 1
-			log_error "slurm appears to be down"
+			log_error "Slurm appears to be down"
 			return 1
 		}
 		timeout {
@@ -5841,7 +5841,7 @@ proc check_hosts_contiguous { check_hosts_list {partition ""} } {
 		}
 		if {[info exists idx_old]} {
 			if {$idx_cur != [expr $idx_old + 1]} {
-				log_error "node sequence number not contiguous"
+				log_error "Node sequence number not contiguous"
 				return 1
 			}
 		}
