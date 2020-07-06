@@ -1095,7 +1095,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	      calling_func, step_alloc_cores);
 
 	/*
-	 * check that user's cpuset cgroup is consistant and add the job cores
+	 * check that user's cpuset cgroup is consistent and add the job cores
 	 */
 	user_alloc_cores = xstrdup(job_alloc_cores);
 	if (cpus)
