@@ -1142,8 +1142,8 @@ proc print_header { { test_id_in "" } } {
 		set test_id_in $test_id
 	}
 
-	puts "============================================"
-	puts "TEST: $test_id_in"
+	puts [string repeat = 78]
+	puts [format "%-9s" "TEST:"]test$test_id_in
 }
 
 
