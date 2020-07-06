@@ -1203,7 +1203,7 @@ again:
 	}
 
 	/*
-	 * check that user's cpuset cgroup is consistant and add the job cores
+	 * check that user's cpuset cgroup is consistent and add the job cores
 	 */
 	rc = xcgroup_get_param(&user_cpuset_cg, cpuset_meta, &cpus, &cpus_size);
 	if (rc != XCGROUP_SUCCESS || cpus_size == 1) {

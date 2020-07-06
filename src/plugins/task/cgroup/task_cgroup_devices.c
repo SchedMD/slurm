@@ -298,7 +298,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	}
 
 	/* TODO
-	 * check that user's devices cgroup is consistant and allow the
+	 * check that user's devices cgroup is consistent and allow the
 	 * appropriate devices
 	 */
 
