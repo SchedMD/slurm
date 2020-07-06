@@ -541,9 +541,8 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 		}
 
 		if (nboards_nb > MAX_BOARDS) {
-			debug3("%s: %s: node[%u]: exceeds max boards; "
-			       "doing best-fit across sockets only",
-			       plugin_type, __func__, n);
+			info("%s: %s: node[%u]: exceeds max boards(%d); doing best-fit across sockets only",
+			       plugin_type, __func__, n, MAX_BOARDS);
 			nboards_nb = 1;
 		}
 
