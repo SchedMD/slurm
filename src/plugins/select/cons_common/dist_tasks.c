@@ -480,7 +480,7 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 	n_first = bit_ffs(job_res->node_bitmap);
 	if (n_first != -1) {
 		n_last = bit_fls(job_res->node_bitmap);
-		sockets_nb  = select_node_record[n_first].sockets;
+		sockets_nb  = select_node_record[n_first].tot_sockets;
 		sockets_core_cnt = xcalloc(sockets_nb, sizeof(int));
 		sockets_used = xcalloc(sockets_nb, sizeof(bool));
 		boards_nb = select_node_record[n_first].boards;
@@ -511,7 +511,7 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 
 		core_cnt = 0;
 		ncores_nb = select_node_record[n].cores;
-		nsockets_nb = select_node_record[n].sockets;
+		nsockets_nb = select_node_record[n].tot_sockets;
 		nboards_nb = select_node_record[n].boards;
 		num_bits =  nsockets_nb * ncores_nb;
 
@@ -559,14 +559,8 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 		}
 
 		/* Count available cores on each socket and board */
-		if (nsockets_nb >= nboards_nb) {
-			sock_per_brd = nsockets_nb / nboards_nb;
-		} else {
-			error("%s: %s: Node socket count lower than board count (%u < %u), %pJ node %s",
-			      plugin_type, __func__, nsockets_nb, nboards_nb,
-			      job_ptr, node_record_table_ptr[n].name);
-			sock_per_brd = 1;
-		}
+		sock_per_brd = select_node_record[n].sockets;
+
 		for (b = 0; b < nboards_nb; b++) {
 			boards_core_cnt[b] = 0;
 			sort_brds_core_cnt[b] = 0;

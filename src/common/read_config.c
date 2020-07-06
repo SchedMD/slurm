@@ -852,14 +852,30 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 				/* infer missing Sockets= based on cpus */
 				n->tot_sockets = n->cpus / (n->cores *
 							    n->threads);
+				info("NodeNames=%s setting Sockets=%d based on CPUs(%d)/(CoresPerSocket(%d)/ThreadsPerCore(%d))",
+				     n->nodenames,
+				     n->tot_sockets,
+				     n->cpus,
+				     n->cores,
+				     n->threads);
 			} else {
 				/* default to one socket per board */
 				n->tot_sockets = n->boards;
+				info("NodeNames=%s setting Sockets=Boards(%d)",
+				     n->nodenames, n->boards);
 			}
 		}
 
 		if (no_cpus) {		/* infer missing CPUs= */
 			n->cpus = n->tot_sockets * n->cores * n->threads;
+		}
+
+		if (n->tot_sockets < n->boards) {
+			error("NodeNames=%s Sockets(%d) < Boards(%d) resetting Boards=1",
+			      n->nodenames,
+			      n->tot_sockets,
+			      n->boards);
+			n->boards = 1;
 		}
 
 		/* Node boards are factored into sockets */
