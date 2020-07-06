@@ -1661,7 +1661,7 @@ proc wait_for_all_jobs { job_name } {
 				set matches -1
 			}
 			timeout {
-				log_info "No response from squeue"
+				log_warn "No response from squeue"
 				set matches -1
 			}
 			eof {
