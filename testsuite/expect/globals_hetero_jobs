@@ -35,6 +35,7 @@
 
 source ./globals
 
+
 # parse the string contained in PACK_JOB_ID_SET
 # only use if there are three components to 
 # pack_job

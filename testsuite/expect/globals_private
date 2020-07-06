@@ -33,27 +33,36 @@ set _global_bkp_noexist  {}
 
 ################################################################
 #
-# Proc: _wait_for_single_job
+# NAME
+#	_wait_for_single_job - waits for a job to reach the desired state
 #
-# Purpose:  Wait for a previously submitted Slurm job to reach
-# the desired state. Polls every $testsuite_poll_interval seconds.
+# SYNOPSIS
+#	_wait_for_single_job job_id desired_state
 #
-# Returns: A non-zero return code indicates a failure.
+# DESCRIPTION
+#	Wait for a previously submitted Slurm job to reach
+#	the desired state. Polls every $testsuite_poll_interval seconds.
 #
-# Input: job_id   -- The Slurm job id of a job we want to
-#                    wait for.
-#        desired_state -- The state you want the job to attain before
-#                         returning.  Currently supports:
-#                            DONE any terminated state
-#                            PENDING job is pending
-#                            RUNNING job is running
-#                            SPECIAL_EXIT
-#                            SUSPENDED job is suspended
+# ARGUMENTS
+#	job_id
+#		The Slurm job id of a job we want to wait for.
+#	desired_state
+#		The state you want the job to attain before
+#		returning.  Currently supports:
+#			DONE any terminated state
+#			PENDING job is pending
+#			RUNNING job is running
+#			SPECIAL_EXIT
+#			SUSPENDED job is suspended
+#
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
 #
 # NOTE: We sleep for two seconds before replying that a job is
 # done to give time for I/O completion (stdout/stderr files)
 #
 ################################################################
+
 proc _wait_for_single_job { job_id desired_state } {
 	global scontrol max_job_state_delay testsuite_poll_interval
 

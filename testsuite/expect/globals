@@ -59,11 +59,17 @@ source ./globals_private
 global sacctmgr sacct salloc sattach sbatch sbcast scancel scontrol sinfo
 global smap smd squeue sreport srun sstat strigger
 
+
 ################################################################
 #
-# Proc: cset
+# NAME
+#	cset - conditional set
 #
-# Purpose: Conditional set.  Only set variable if variable does not yet exist.
+# SYNOPSIS
+#	cset name value
+#
+# DESCRIPTION
+#	Conditional set.  Only set variable if variable does not yet exist.
 #
 # Input: name  -- name of the variable to set
 #	 value -- value to set to 'name'
@@ -76,6 +82,7 @@ proc cset {name value} {
 		set tmp $value
 	}
 }
+
 
 cset local_globals_file "./globals.local"
 
@@ -290,13 +297,17 @@ set gpu_sock_list {}
 
 ################################################################
 #
-# Proc: get_test_name
+# NAME
+#	get_test_name - gets the name of the invoking source script
 #
-# Purpose: Gets the name of the invoking source script
+# SYNOPSIS
+#	get_test_name
 #
-# Returns: The name of the originally called script
+# RETURN VALUE
+#	The name of the originally called script
 #
 ################################################################
+
 proc get_test_name { } {
 
 	set test_name unknown
@@ -312,6 +323,7 @@ proc get_test_name { } {
 	return $test_name
 }
 
+
 #
 # Name of the originally invoked test script, e.g. test1.1
 #
@@ -321,6 +333,7 @@ set test_name [get_test_name]
 # Suffix of the test script, e.g. 1.1
 #
 set test_id   [string map {test ""} $test_name]
+
 
 ################################################################
 #
@@ -339,7 +352,9 @@ set test_id   [string map {test ""} $test_name]
 # NOTE: DO NOT call exit in your local cleanup procedure
 #
 ################################################################
+
 rename exit __exit
+
 proc exit { {status 0} } {
 	global testsuite_cleanup_on_failure
 
@@ -382,23 +397,31 @@ proc exit { {status 0} } {
 	__exit $status
 }
 
+
 ################################################################
 #
-# Proc: fail
+# NAME
+#	fail - fails a test
 #
-# Purpose: To be used when an error is fatal for the test. This routine
-#          prints the specified error message, optionally cleans up, prints
-#          a final test failure message, and exits the test with exit code 1.
+# SYNOPSIS
+#	fail message
 #
-# Input: message -- The error message to print
+# DESCRIPTION
+#	To be used when an error is fatal for the test. This routine
+#	prints the specified error message, optionally cleans up, prints
+#	a final test failure message, and exits the test with exit code 1.
 #
-# NOTE: Whether or not the cleanup procedure is called depends on the setting
-#       of the $testsuite_cleanup_on_failure set in the globals.local file or
-#       overridden with the SLURM_TESTSUITE_CLEANUP_ON_FAILURE environment
-#       variable.
-# NOTE: DO NOT call this within your local cleanup procedure.
+# ENVIRONMENT
+#	Whether or not the cleanup procedure is called depends on the setting
+#	of the $testsuite_cleanup_on_failure set in the globals.local file or
+#	overridden with the SLURM_TESTSUITE_CLEANUP_ON_FAILURE environment
+#	variable.
+#
+# NOTE
+#	DO NOT call this within your local cleanup procedure.
 #
 ################################################################
+
 proc fail { message } {
 
 	log_fatal $message
@@ -407,20 +430,26 @@ proc fail { message } {
 	exit 1
 }
 
+
 ################################################################
 #
-# Proc: skip
+# NAME
+#	skip - skips a test
 #
-# Purpose: To be used when a precondition for the test fails and the test
-#          should be skipped. This routine prints the specified warning message,
-#          calls the cleanup procedure if defined, prints a final test skipped
-#          message, and exits the test with exit code -1 (aka 255).
+# SYNOPSIS
+#	skip message
 #
-# Input: message -- The warning message to print
+# DESCRIPTION
+#	To be used when a precondition for the test fails and the test
+#	should be skipped. This routine prints the specified warning message,
+#	calls the cleanup procedure if defined, prints a final test skipped
+#	message, and exits the test with exit code -1 (aka 255).
 #
-# NOTE: DO NOT call this within your local cleanup procedure.
+# NOTE
+#	DO NOT call this within your local cleanup procedure.
 #
 ################################################################
+
 proc skip { message } {
 
 	log_warn $message
@@ -429,35 +458,49 @@ proc skip { message } {
 	exit -1
 }
 
+
 ################################################################
 #
-# Proc: pass
+# NAME
+#	pass - passes a test
 #
-# Purpose: To be used when a test passes and should complete with success.
-#          This routine calls the cleanup procedure if defined, prints a final
-#          test success message, and exits with exit code 0.
+# SYNOPSIS
+#	pass
 #
-#  NOTE: DO NOT call this within your local cleanup procedure.
+# DESCRIPTION
+#	To be used when a test passes and should complete with success.
+#	This routine calls the cleanup procedure if defined, prints a final
+#	test success message, and exits with exit code 0.
+#
+# NOTE
+#	DO NOT call this within your local cleanup procedure.
 #
 ################################################################
+
 proc pass { } {
 
 	# Exit will handle the cleanup procedure and print the success message.
 	exit 0
 }
 
+
 ################################################################
 #
-# Proc: fail_on_error
+# NAME
+#	fail_on_error - fails if exit_code is non-zero
 #
-# Purpose: If exit_code global variable is non-zero it calls fail with the
-#          message.
+# SYNOPSIS
+#	fail_on_error message
 #
-# Input: message -- The failure message to print if exit_code is non-zero.
+# DESCRIPTION
+#	If exit_code global variable is non-zero it calls fail with the
+#	message.
 #
-# NOTE: DO NOT call this within your local cleanup procedure.
+# NOTE
+#	DO NOT call this within your local cleanup procedure.
 #
 ################################################################
+
 proc fail_on_error { message } {
 	global exit_code
 
@@ -466,13 +509,17 @@ proc fail_on_error { message } {
 	}
 }
 
+
 ################################################################
 #
-# Proc: print_time
+# NAME
+#	print_time - prints the current date and time
 #
-# Purpose:  Print the current date and time
+# SYNOPSIS
+#	print_time
 #
 ################################################################
+
 proc print_time { } {
 	global bin_date
 
@@ -486,13 +533,29 @@ proc print_time { } {
 	return
 }
 
+################################################################
 #
-# Tcl < 8.7 lacks a built in 'dict get' with ability to specify the default
-# value
+# NAME
+#	dict_getdef - 'dict get' with ability to specify the default value
 #
-# https://core.tcl-lang.org/tips/doc/trunk/tip/342.md
-# https://core.tcl-lang.org/tcl/tktview/2370575
+# SYNOPSIS
+#	dict_getdef dictionary_value key default_value
 #
+# DESCRIPTION
+#	Tcl < 8.7 lacks a built in 'dict get' with ability to specify the
+#	default value. Tcl 8.7 adds a dict getdef.
+#	This proc returns the value from the dictionary corresponding to the
+#	keys if it exists, or the default value otherwise.
+#
+# EXAMPLE
+#	dict_getdef $option_dict action "warn"
+#
+# SOURCE
+#	https://core.tcl-lang.org/tips/doc/trunk/tip/342.md
+#	https://core.tcl-lang.org/tcl/tktview/2370575
+#
+################################################################
+
 proc dict_getdef {D args} {
 	if {[dict exists $D {*}[lrange $args 0 end-1]]} then {
 		dict get $D {*}[lrange $args 0 end-1]
@@ -501,42 +564,55 @@ proc dict_getdef {D args} {
 	}
 }
 
+
 ################################################################
 #
-# Usage: run_command ?options? command
+# NAME
+#	run_command - executes a command and returns a dictionary result
 #
-# Description:
-#   Executes a command and returns a dictionary that includes the output,
-#   exit code, etc. An action can be taken (fail, warn, none)  if the
-#   command's exit code or timeout is unexpected. By default, the action
-#   will be applied if the command fails. If the -xfail option is specified,
-#   the behavior will be reversed to apply the action if the command ran
-#   successfully.
+# SYNOPSIS
+#	run_command ?options? command
 #
-# Options:
-#   If the initial arguments start with - then they are treated as options.
-#   The following options are currently supported:
-#   -fail - if the exit code or timeout is unexpected, the action that will
-#           be taken is to fail the test
-#   -warn - if the exit code or timeout is unexpected, the action that will
-#           be taken is to log a warning (this is the default)
-#   -none - if the exit code or timeout is unexpected, no action will be taken
-#   -xfail - if the command exits with zero and does not time out, the action
-#            will be applied. Without this option, the action will be applied
-#            if the command exits with a non-zero exit code or times out.
-#   -timeout <float_number> - time in seconds to wait for the command
-#                             to complete before timing out (default is 60.0)
+# DESCRIPTION
+#	Executes a command and returns a dictionary that includes the output,
+#	exit code, etc. An action can be taken (fail, warn, none)  if the
+#	command's exit code or timeout is unexpected. By default, the action
+#	will be applied if the command fails. If the -xfail option is
+#	specified, the behavior will be reversed to apply the action if the
+#	command ran successfully.
 #
-# Input:
-#   command -- a string containing the command and arguments to execute
+# OPTIONS
+#	-fail
+#		if the exit code or timeout is unexpected, the action that will
+#		be taken is to fail the test
+#	-warn
+#		if the exit code or timeout is unexpected, the action that will
+#		be taken is to log a warning (this is the default)
+#	-none
+#		if the exit code or timeout is unexpected, no action will be
+#		taken
+#	-xfail
+#		if the command exits with zero and does not time out, the
+#		action will be applied. Without this option, the action will
+#		be applied if the command exits with a non-zero exit code or
+#		times out.
+#	-timeout <float_number>
+#		time in seconds to wait for the command to complete before
+#		timing out (default is 60.0)
 #
-# Returns:
-#   A dictionary containing the following elements:
-#   command    - The command that was invoked
-#   exit_code  - Exit code
-#   output     - The combined standard output and standard error
-#   start_time - The time (epoch with milliseconds) the command was executed
-#   duration   - The duration (seconds and milliseconds) the command took to run
+# ARGUMENTS
+#	command
+#		a string containing the command and arguments to execute
+#
+# RETURN VALUE
+#	A dictionary containing the following elements:
+#		command    - The command that was invoked
+#		exit_code  - Exit code
+#		output     - The combined standard output and standard error
+#		start_time - The time (epoch with milliseconds) the command was
+#		             executed
+#		duration   - The duration (seconds and milliseconds) the
+#		             command took to run
 #
 ################################################################
 proc run_command args {
@@ -627,36 +703,48 @@ proc run_command args {
 	return $result
 }
 
+
 ################################################################
 #
-# Usage: run_command_output ?options? command
+# NAME
+#	run_command_output - executes a command and returns the output
 #
-# Description:
-#   Executes a command and returns the output. An action can be taken (fail,
-#   warn, none) if the command's exit code or timeout is unexpected. By
-#   default, the action will be applied if the command fails. If the -xfail
-#   option is specified, the behavior will be reversed to apply the action
-#   if the command ran successfully.
+# SYNOPSIS
+#	run_command_output ?options? command
 #
-# Options:
-#   If the initial arguments start with - then they are treated as options.
-#   The following options are currently supported:
-#   -fail - if the exit code or timeout is unexpected, the action that will
-#           be taken is to fail the test
-#   -warn - if the exit code or timeout is unexpected, the action that will
-#           be taken is to log a warning (this is the default)
-#   -none - if the exit code or timeout is unexpected, no action will be taken
-#   -xfail - if the command exits with zero and does not time out, the action
-#            will be applied. Without this option, the action will be applied
-#            if the command exits with a non-zero exit code or times out.
-#   -timeout <float_number> - time in seconds to wait for the command to
-#                             complete before timing out (default is 60.0)
+# DESCRIPTION
+#	Executes a command and returns a dictionary that includes the output,
+#	exit code, etc. An action can be taken (fail, warn, none)  if the
+#	command's exit code or timeout is unexpected. By default, the action
+#	will be applied if the command fails. If the -xfail option is
+#	specified, the behavior will be reversed to apply the action if the
+#	command ran successfully.
 #
-# Input:
-#   command -- a string containing the command and arguments to execute
+# OPTIONS
+#	-fail
+#		if the exit code or timeout is unexpected, the action that will
+#		be taken is to fail the test
+#	-warn
+#		if the exit code or timeout is unexpected, the action that will
+#		be taken is to log a warning (this is the default)
+#	-none
+#		if the exit code or timeout is unexpected, no action will be
+#		taken
+#	-xfail
+#		if the command exits with zero and does not time out, the
+#		action will be applied. Without this option, the action will
+#		be applied if the command exits with a non-zero exit code or
+#		times out.
+#	-timeout <float_number>
+#		time in seconds to wait for the command to complete before
+#		timing out (default is 60.0)
 #
-# Returns:
-#   A string containing the combined standard output and standard error
+# ARGUMENTS
+#	command
+#		a string containing the command and arguments to execute
+#
+# RETURN VALUE
+#	A string containing the combined standard output and standard error
 #
 ################################################################
 proc run_command_output args {
@@ -671,34 +759,48 @@ proc run_command_output args {
 	}
 }
 
+
 ################################################################
 #
-# Usage: run_command_status ?options? command
+# NAME
+#	run_command_status - executes a command and returns the exit code
 #
-# Description:
-#   Executes a command and returns the exit code. An action can be taken
-#   (fail, warn, none) if the command's exit code or timeout is unexpected.
-#   By default, the action will be applied if the command fails. If the
-#   -xfail option is specified, the behavior will be reversed to apply the
-#   action if the command ran successfully.
+# SYNOPSIS
+#	run_command_status ?options? command
 #
-# Options:
-#   If the initial arguments start with - then they are treated as options.
-#   The following options are currently supported:
-#   -fail - if the exit code or timeout is unexpected, the action that will
-#           be taken is to fail the test
-#   -warn - if the exit code or timeout is unexpected, the action that will
-#           be taken is to log a warning (this is the default)
-#   -none - if the exit code or timeout is unexpected, no action will be taken
-#   -xfail - if the command exits with zero and does not time out, the action
-#            will be applied. Without this option, the action will be applied
-#            if the command exits with a non-zero exit code or times out.
-#   -timeout <float_number> - time in seconds to wait for the command to
-#                             complete before timing out (default is 60.0)
+# DESCRIPTION
+#	Executes a command and returns a dictionary that includes the output,
+#	exit code, etc. An action can be taken (fail, warn, none)  if the
+#	command's exit code or timeout is unexpected. By default, the action
+#	will be applied if the command fails. If the -xfail option is
+#	specified, the behavior will be reversed to apply the action if the
+#	command ran successfully.
 #
-# Input: command -- a string containing the command and arguments to execute
+# OPTIONS
+#	-fail
+#		if the exit code or timeout is unexpected, the action that will
+#		be taken is to fail the test
+#	-warn
+#		if the exit code or timeout is unexpected, the action that will
+#		be taken is to log a warning (this is the default)
+#	-none
+#		if the exit code or timeout is unexpected, no action will be
+#		taken
+#	-xfail
+#		if the command exits with zero and does not time out, the
+#		action will be applied. Without this option, the action will
+#		be applied if the command exits with a non-zero exit code or
+#		times out.
+#	-timeout <float_number>
+#		time in seconds to wait for the command to complete before
+#		timing out (default is 60.0)
 #
-# Returns: The exit code for the invoked command
+# ARGUMENTS
+#	command
+#		a string containing the command and arguments to execute
+#
+# RETURN VALUE
+#	The exit code for the invoked command
 #
 ################################################################
 proc run_command_status args {
@@ -709,19 +811,26 @@ proc run_command_status args {
 	return [dict get $result exit_code]
 }
 
+
 ################################################################
 #
-# Proc: cancel_job
+# NAME
+#	cancel_job - cancels the specified job
 #
-# Purpose:  Cancel the specified job
+# SYNOPSIS
+#	cancel_job job_id ?het_job?
 #
-# Returns: A non-zero return code indicates a failure.
+# ARGUMENTS
+#	job_id
+#		The Slurm job id of a job we want to cancel
+#	het_job
+#		For a het job confirm each component job has completed
 #
-# Input: job_id  -- The Slurm job id of a job we want to cancel.
-#        het_job -- (optional) For a het job confirm each component
-#        job has completed.
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
 #
 ################################################################
+
 proc cancel_job { job_id {het_job 0}} {
 	global scancel bin_sleep
 
@@ -735,17 +844,20 @@ proc cancel_job { job_id {het_job 0}} {
 	return [wait_for_job $job_id "DONE" $het_job]
 }
 
+
 ################################################################
 #
-# Proc: get_line_cnt
+# NAME
+#	get_line_cnt - returns the size of the specified file
 #
-# Purpose:  Return size of the specified file
+# SYNOPSIS
+#	get_line_cnt file_name
 #
-# Returns: Number of lines in the specified file.
-#
-# Input: file_name  -- Name of file to inspect.
+# RETURN VALUE
+#	Number of lines in the specified file.
 #
 ################################################################
+
 proc get_line_cnt { file_name } {
 	global bin_wc number
 	set lines 0
@@ -762,14 +874,21 @@ proc get_line_cnt { file_name } {
 	return $lines
 }
 
+
 ################################################################
 #
-# Proc: slow_kill
+# NAME
+#	slow_kill - kills a process slowly
 #
-# Purpose:  Kill a process slowly, first trying SIGINT, pausing for
+# SYNOPSIS
+#	slow_kill pid
+#
+# DESCRIPTION
+#	Kill a process slowly, first trying SIGINT, pausing for
 #       a second, then sending SIGKILL.
 #
-# Returns: A non-zero return code indicates a failure.
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
 #
 ################################################################
 
@@ -784,14 +903,17 @@ proc slow_kill { pid } {
 	return 0
 }
 
+
 ################################################################
 #
-# Proc: get_my_id
+# NAME
+#	get_my_id - gets the id from the running user
 #
-# Purpose:  gets the id from the running user
+# SYNOPSIS
+#	get_my_id
 #
-# Returns: output of id
-#
+# RETURN VALUE
+#	output of id
 #
 ################################################################
 
@@ -822,14 +944,17 @@ proc get_my_id {} {
 	return $login_info
 }
 
+
 ################################################################
 #
-# Proc: get_my_user_name
+# NAME
+#	get_my_user_name - gets the name from the running user
 #
-# Purpose:  gets the name uid from the running user
+# SYNOPSIS
+#	get_my_user_name
 #
-# Returns: A non-zero return code indicates a failure.
-#
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
 #
 ################################################################
 
@@ -858,14 +983,17 @@ proc get_my_user_name {  } {
 	return $user_name
 }
 
+
 ################################################################
 #
-# Proc: get_my_uid
+# NAME
+#	get_my_uid - gets the uid from the running user
 #
-# Purpose:  gets the uid from the running user
+# SYNOPSIS
+#	get_my_uid
 #
-# Returns: A non-zero return code indicates a failure.
-#
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
 #
 ################################################################
 
@@ -890,14 +1018,17 @@ proc get_my_uid {  } {
 	return $uid
 }
 
+
 ################################################################
 #
-# Proc: get_my_gid
+# NAME
+#	get_my_gid - gets the gid from the running user
 #
-# Purpose:  gets the gid from the running user
+# SYNOPSIS
+#	get_my_gid
 #
-# Returns: A non-zero return code indicates a failure.
-#
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
 #
 ################################################################
 
@@ -925,15 +1056,22 @@ proc get_my_gid {  } {
 
 ################################################################
 #
-# Proc: kill_salloc
+# NAME
+#	kill_salloc - kills all salloc commands associated with this user
 #
-# Purpose:  Kill all salloc commands associated with this user.
+# SYNOPSIS
+#	kill_salloc
+#
+# DESCRIPTION
+#	Kill all salloc commands associated with this user.
 #	Issue two SIGINT, sleep 1 and a SIGKILL
 #
-# Returns: A non-zero return code indicates a failure.
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
 #
-# NOTE: Use slow_kill instead of kill_salloc if you can capture
-#       the process id
+# NOTE
+#	Use slow_kill instead of kill_salloc if you can capture
+#	the process id
 #
 ################################################################
 
@@ -952,15 +1090,22 @@ proc kill_salloc {  } {
 
 ################################################################
 #
-# Proc: kill_srun
+# NAME
+#	kill_srun - kills all srun commands associated with this user
 #
-# Purpose:  Kill all srun commands associated with this user.
+# SYNOPSIS
+#	kill_srun
+#
+# DESCRIPTION
+#	Kill all srun commands associated with this user.
 #	Issue two SIGINT, sleep 1 and a SIGKILL
 #
-# Returns: A non-zero return code indicates a failure.
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
 #
-# NOTE: Use slow_kill instead of kill_srun if you can capture
-#       the process id
+# NOTE
+#	Use slow_kill instead of kill_srun if you can capture
+#	the process id
 #
 ################################################################
 
@@ -979,11 +1124,14 @@ proc kill_srun {  } {
 
 ################################################################
 #
-# Proc: print_header
+# NAME
+#	print_header - prints a test header
 #
-# Purpose:  Print header with test ID
+# SYNOPSIS
+#	print_header ?test_id?
 #
-# Input (optional): test_id -- The Slurm regression test ID.
+# DESCRIPTION
+#	Print header with test ID
 #
 ################################################################
 
@@ -998,33 +1146,37 @@ proc print_header { { test_id_in "" } } {
 	puts "TEST: $test_id_in"
 }
 
+
 ################################################################
 #
-# Usage: wait_for ?options? condition body
+# NAME
+#	wait_for - generic wait utility
 #
-# Description:
-#   Generic wait utility allowing you to repeatedly execute a generic
-#   block of code until a specified boolean expression is met. The code block
-#   and condition check occur every poll interval until a timeout is reached.
+# SYNOPSIS
+#	wait_for ?options? condition body
 #
-# Options:
-#   If the initial arguments start with - then they are treated as options.
-#   The following options are currently supported:
-#   -timeout <float_number> - time in seconds to wait for the command to
-#                             complete before timing out (default is 60.0)
-#   -pollinterval <floa_number> - time in seconds between each loop execution
-#                                 and condition check (defaults to 1.0)
+# DESCRIPTION
+#	Generic wait utility allowing you to repeatedly execute a generic block
+#	of code until a specified boolean expression is met. The code block and
+#	condition check occur every poll interval until a timeout is reached.
 #
-# Purpose:
-#   Generic wait utility allowing you to repeatedly execute a generic
-#   block of code until a specified boolean expression is met. The code block
-#   and condition check occur every poll interval until a timeout is reached.
+# OPTIONS
+#	-timeout <float_number>
+#		time in seconds to wait for the command to complete before
+#		timing out (default is 60.0)
+#	-pollinterval <floa_number>
+#		time in seconds between each loop execution and condition check
+#		(defaults to 1.0)
 #
-# Input: condition -- The boolean expression to test
-# Input: body -- a block of code to evaluate in the invoking stack frame
+# ARGUMENTS
+#	condition
+#		The boolean expression to test
+#	body
+#		A block of code to evaluate in the invoking stack frame
 #
-# Returns: true if the condition is met before the timeout occurs
-#          false if the timeout occurs before the condition is met
+# RETURN VALUE
+#	true if the condition is met before the timeout occurs
+#	false if the timeout occurs before the condition is met
 #
 ################################################################
 proc wait_for args {
@@ -1078,34 +1230,44 @@ proc wait_for args {
 
 ################################################################
 #
-# Proc: wait_for_command
+# NAME
+#	wait_for_command - waits for command output to match a pattern
 #
-# Executes a command every testsuite_poll_interval until a regex
-# pattern is matched in the output, or timeout after max_delay.
+# SYNOPSIS
+#	wait_for_command command args regex ?matches_in? ?or_more? ?matches_out? ?max_delay?
 #
-# command    - The command to run via spawn.
-# args       - The arguments to the command, as a single string.
-# regex      - The regex pattern to search for in the command
-#              output. Can be a simple string.
-# matches_in - The number of times to match the regex. Defaults
-#              to 1.
-# or_more    - If 1, allow for matching the regex pattern
-#              match_cnt *or more* times, instead of exactly
-#              match_cnt times. Defaults to 0.
-# matches_out  - The upvar (a variable name to "pass by reference"
-#                in TCL) to set/return the number of matches found.
-#                Useful if or_more is 1 and the caller wants the
-#                matches found.
-# max_delay  - The timeout seconds to execute the command
-#              and wait on the output before giving up. Defaults
-#              to 120.
+# DESCRIPTION
+#	Executes a command every testsuite_poll_interval until a regex
+#	pattern is matched in the output, or timeout after max_delay.
 #
-# Returns: 0 on success and 1 on failure. On failure, an error is
-#          logged to the output. If matches_out is specified, the
-#          number of matches will be returned via the reference/upvar
-#          matches_out.
+# ARGUMENTS
+#	command
+#		The command to run via spawn.
+#	args
+#		The arguments to the command, as a single string.
+#	regex
+#		The regex pattern to search for in the command
+#		output. Can be a simple string.
+#	matches_in
+#		The number of times to match the regex. Defaults to 1.
+#	or_more
+#		If 1, allow for matching the regex pattern match_cnt *or more*
+#		times, instead of exactly match_cnt times. Defaults to 0.
+#	matches_out
+#		The upvar (a variable name to "pass by reference" in TCL)
+#		to set/return the number of matches found.
+#		Useful if or_more is 1 and the caller wants the	matches found.
+#	max_delay
+#		The timeout seconds to execute the command and wait on the
+#		output before giving up. Defaults to global max_command_delay.
+#
+# RETURN VALUE
+#	0 on success and 1 on failure. On failure, an error is logged to
+#	the output. If matches_out is specified, the number of matches will
+#	be returned via the reference/upvar matches_out.
 #
 ################################################################
+
 proc wait_for_command { command args regex {matches_in 1} {or_more 0}
                         {matches_out ""} {max_delay 120} } {
 	global bin_sleep testsuite_poll_interval
@@ -1157,18 +1319,23 @@ proc wait_for_command { command args regex {matches_in 1} {or_more 0}
 	return 1
 }
 
+
 ################################################################
 #
-# Proc: wait_for_file
+# NAME
+#	wait_for_file - waits for a file to exist with non-zero size
 #
-# Purpose:  Wait for the specified file to exist and have a
-#           non-zero size. Note that if JobFileAppend=0 is
-#           configured, a file can exist and be purged then
-#           be re-created. Polls every $testsuite_poll_interval seconds.
+# SYNOPSIS
+#	wait_for_file file_name
 #
-# Returns: A non-zero return code indicates a failure.
+# DESCRIPTION
+#	Wait for the specified file to exist and have a non-zero size.
+#	Note that if JobFileAppend=0 is configured, a file can exist and
+#	be purged then be re-created. Polls every $testsuite_poll_interval
+#	seconds.
 #
-# Input: file_name   -- Name of the file to wait for.
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
 #
 ################################################################
 
@@ -1200,29 +1367,41 @@ proc wait_for_file { file_name } {
 	return 1
 }
 
+
 ################################################################
 #
-# Proc: wait_for_job
+# NAME
+#	wait_for_job - waits for job to be in desired state
 #
-# Purpose: Wait for job to be in desired state. Can handle het job
-#          components.
+# SYNOPSIS
+#	wait_for_job job_id desired_state ?het_job?
 #
-# Input: job_id   -- The Slurm job id of a job we want to
-#                    wait for.
-#        desired_state -- The state you want the job to attain before
-#                         returning.  Currently supports:
-#                            DONE any terminated state
-#                            PENDING job is pending
-#                            RUNNING job is running
-#                            SPECIAL_EXIT
-#                            SUSPENDED job is suspended
-#        het_job (optional) -- If set, checks the state of each
-#                              component job if the job is a het one.
+# DESCRIPTION
+#	Wait for job to be in desired state. Can handle het job components.
 #
-# Returns: A non-zero return code indicates a failure. See
-# wait_for_single_job.
+# ARGUMENTS
+#	job_id
+#		The Slurm job id of a job we want to wait for.
+#	desired_state
+#		The state you want the job to attain before returning.
+#		Currently supports:
+#			DONE any terminated state
+#			PENDING job is pending
+#			RUNNING job is running
+#			SPECIAL_EXIT
+#			SUSPENDED job is suspended
+#	het_job
+#		If set, checks the state of each component job if the job
+#		is a het one.
+#
+# RETURN VALUE
+#	A non-zero return code indicates a failure
+#
+# SEE ALSO
+#	_wait_for_single_job
 #
 ################################################################
+
 proc wait_for_job { job_id desired_state {het_job 0}} {
 	set jid_list ""
 
@@ -1247,19 +1426,25 @@ proc wait_for_job { job_id desired_state {het_job 0}} {
 	return $rc
 }
 
+
 ################################################################
 #
-# Proc: wait_for_account_done
+# NAME
+#	wait_for_account_done - cancels and waits on jobs in specified accounts
 #
-# Purpose:  Cancel jobs on and wait for them to be finished in account(s)
-#           given. Polls every $testsuite_poll_interval seconds.
+# SYNOPSIS
+#	wait_for_account_done accounts
 #
-# Returns: A non-zero return code indicates a failure.
+# DESCRIPTION
+#	Cancel jobs on and wait for them to be finished in account(s) given.
+#	Polls every $testsuite_poll_interval seconds.
 #
-# Input: accounts -- The Slurm account(s) we want to wait to be empty.
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
 #
-# NOTE: We sleep for two seconds before replying that a job is
-# done to give time for I/O completion (stdout/stderr files)
+# NOTE
+#	We sleep for two seconds before replying that a job is
+#	done to give time for I/O completion (stdout/stderr files)
 #
 ################################################################
 
@@ -1317,19 +1502,25 @@ proc wait_for_account_done { accounts } {
 	return 0
 }
 
+
 ################################################################
 #
-# Proc: wait_for_part_done
+# NAME
+#	wait_for_part_done - cancels and waits on jobs in specified partition
 #
-# Purpose:  Cancel jobs on and wait for them to be finished in partition
-#           given. Polls every $testsuite_poll_interval seconds.
+# SYNOPSIS
+#	wait_for_part_done partition
 #
-# Returns: A non-zero return code indicates a failure.
+# DESCRIPTION
+#	Cancel jobs on and wait for them to be finished in partition given.
+#	Polls every $testsuite_poll_interval seconds.
 #
-# Input: part -- The Slurm partition we want to wait to be empty.
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
 #
-# NOTE: We sleep for two seconds before replying that a job is
-# done to give time for I/O completion (stdout/stderr files)
+# NOTE
+#	We sleep for two seconds before replying that a job is
+#	done to give time for I/O completion (stdout/stderr files)
 #
 ################################################################
 
@@ -1384,17 +1575,21 @@ proc wait_for_part_done { part } {
 	return 0
 }
 
+
 ################################################################
 #
-# Proc: wait_for_step
+# NAME
+#	wait_for_step - waits for a job step to be found
 #
-# Purpose: Wait for a job step to be found.
-#          Polls every $testsuite_poll_interval seconds.
+# SYNOPSIS
+#	wait_for_step step_id
 #
-# Returns: A non-zero return code indicates a failure.
+# DESCRIPTION
+#	Wait for a job step to be found.
+#	Polls every $testsuite_poll_interval seconds.
 #
-# Input: step_id   -- The Slurm step id of a job we want to
-#                     wait for.
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
 #
 ################################################################
 
@@ -1422,20 +1617,30 @@ proc wait_for_step { step_id } {
 	}
 }
 
+
 ################################################################
 #
-# Proc: wait_for_all_jobs
+# NAME
+#	wait_for_all_jobs - waits for jobs to finish having a specified name
 #
-# Purpose:  Wait for previously submitted Slurm jobs to finish of a
-#           certain name. Iterates every $testsuite_poll_interval seconds.
+# SYNOPSIS
+#	wait_for_all_jobs job_name
 #
-# Returns: -1 on failure, 0 if all jobs are done, and the remaining job count
-#          if not all jobs are done after $wait_for_all_jobs_iterations
-#          iterations.
+# DESCRIPTION
+#	Wait for previously submitted Slurm jobs to finish of a
+#	certain name. Iterates every $testsuite_poll_interval seconds.
 #
-# Input: job_name   -- The name of job to wait for.
+# ARGUMENTS
+#	job_name
+#		The name of job to wait for
+#
+# RETURN VALUE
+#	-1 on failure, 0 if all jobs are done, and the remaining job count
+#	if not all jobs are done after $wait_for_all_jobs_iterations
+#	iterations.
 #
 ################################################################
+
 proc wait_for_all_jobs { job_name } {
 	global scancel squeue bin_sleep wait_for_all_jobs_iterations testsuite_poll_interval
 
@@ -1490,21 +1695,34 @@ proc wait_for_all_jobs { job_name } {
 	return $matches
 }
 
+
 ################################################################
 #
-# Proc: wait_job_reason
+# NAME
+#	wait_job_reason - waits for a desired job state and reason
+#
+# SYNOPSIS
+#	wait_job_reason job_id ?desired_state? ?desired_reason_list?
+#
+# DESCRIPTION
 #	Wait until the job is in desired state and reason is one
 #	of the desired ones. Or to max_job_state_delay.
 #
-# Input: job_id              - The job to wait for.
-#        desired_state       - Desired state.
-#        desired_reason_list - List of desired reasons. Empty list
-#                              means that any reason is ok.
+# ARGUMENTS
+#	job_id
+#		The job to wait for
+#	desired_state
+#		Desired state.
+#	desired_reason_list
+#		List of desired reasons. Empty list means that any reason
+#		is ok.
 #
-# Returns: 0 when job is in the desired state and reason is one
-#          of the desired ones, or 1 otherwise.
+# RETURN VALUE
+#	0 when job is in the desired state and reason is one
+#	of the desired ones, or 1 otherwise.
 #
 ################################################################
+
 proc wait_job_reason { job_id {desired_state "PENDING"}
 		       {desired_reason_list ""} } {
 	global scontrol re_word_str max_job_state_delay testsuite_poll_interval
@@ -1576,13 +1794,20 @@ proc wait_job_reason { job_id {desired_state "PENDING"}
 	return $rc
 }
 
+
 ################################################################
 #
-# Proc: test_fast_schedule
+# NAME
+#	test_fast_schedule - returns value of FastSchedule from slurm.conf
 #
-# Returns value of FastSchedule from slurm.conf
+# SYNOPSIS
+#	test_fast_schedule
+#
+# RETURN VALUE
+#	Returns value of FastSchedule from slurm.conf
 #
 ################################################################
+
 proc test_fast_schedule { } {
 	global scontrol number
 
@@ -1603,17 +1828,24 @@ proc test_fast_schedule { } {
 	return $fast_schedule
 }
 
+
 ################################################################
 #
-# Proc: test_assoc_enforced
+# NAME
+#	test_assoc_enforced - determines if we need an association to run a job
 #
-# Purpose: Determine if we need an association to run a job.
-# This is based upon
-# the value of AccountingStorageEnforce in the slurm.conf.
+# SYNOPSIS
+#	test_assoc_enforced
 #
-# Returns level of association enforcement, 0 if none
+# DESCRIPTION
+#	Determine if we need an association to run a job. This is based upon
+#	the value of AccountingStorageEnforce in the slurm.conf.
+#
+# RETURN VALUE
+#	Returns level of association enforcement, 0 if none
 #
 ################################################################
+
 proc test_assoc_enforced { } {
 	global scontrol number
 
@@ -1634,15 +1866,20 @@ proc test_assoc_enforced { } {
 	return $assoc_enforced
 }
 
+
 ################################################################
 #
-# Proc: test_limits_enforced
+# NAME
+#	test_limits_enforced - check if AccountingStorageEnforce limits is set
 #
-# Purpose: Check if AccountingStorageEnforce limits is set
+# SYNOPSIS
+#	test_limits_enforced
 #
-# Returns 1 if limits is set, else 0
+# RETURN VALUE
+#	Returns 1 if limits is set, else 0
 #
 ################################################################
+
 proc test_limits_enforced { } {
 	global scontrol
 
@@ -1663,15 +1900,20 @@ proc test_limits_enforced { } {
 	return $enforced
 }
 
+
 ################################################################
 #
-# Proc: test_enforce_part_limits
+# NAME
+#	test_enforce_part_limits - returns value of EnforcePartLimits
 #
-# Purpose: Return value of EnforcePartLimits
+# SYNOPSIS
+#	test_enforce_part_limits
 #
-# Returns EnforcePartLimits value (ALL, ANY, or NO)
+# RETURN VALUE
+#	Returns EnforcePartLimits value (ALL, ANY, or NO)
 #
 ################################################################
+
 proc test_enforce_part_limits { } {
 	global re_word_str scontrol
 
@@ -1692,15 +1934,20 @@ proc test_enforce_part_limits { } {
 	return $enforced
 }
 
+
 ################################################################
 #
-# Proc: test_gang
+# NAME
+#	test_gang - determines if gang scheduling is configured
 #
-# Purpose: Determine if gang scheduling is configured
+# SYNOPSIS
+#	test_gang
 #
-# Returns level of association enforcement, 0 if none
+# RETURN VALUE
+#	Returns level of association enforcement, 0 if none
 #
 ################################################################
+
 proc test_gang { } {
 	global scontrol
 
@@ -1721,13 +1968,20 @@ proc test_gang { } {
 	return $gang
 }
 
+
 ################################################################
 #
-# Proc: test_power_save
+# NAME
+#	test_power_save - checks whether power save mode is enabled
 #
-# Return 1 if power save mode is enabled, 0 otherwise
+# SYNOPSIS
+#	test_power_save
+#
+# RETURN VALUE
+#	Return 1 if power save mode is enabled, 0 otherwise
 #
 ################################################################
+
 proc test_power_save { } {
 	global scontrol number
 
@@ -1753,13 +2007,20 @@ proc test_power_save { } {
 	return $power_save
 }
 
+
 ################################################################
 #
-# Proc: slurmd_user_root
+# NAME
+#	slurmd_user_root - checks whether SlurmUser is root
 #
-# Return 1 if the SlurmdUser is root, 0 otherwise
+# SYNOPSIS
+#	slurmd_user_root
+#
+# RETURN VALUE
+#	Return 1 if the SlurmdUser is root, 0 otherwise
 #
 ################################################################
+
 proc slurmd_user_root { } {
 	global scontrol
 
@@ -1780,15 +2041,20 @@ proc slurmd_user_root { } {
 	return $rc
 }
 
+
 ################################################################
 #
-# Proc: test_topology
+# NAME
+#	test_topology - determines if system is topology aware
 #
-# Purpose: Determine if system is topology aware
+# SYNOPSIS
+#	test_topology
 #
-# Returns level of association enforcement, 0 if none
+# RETURN VALUE
+#	Returns level of association enforcement, 0 if none
 #
 ################################################################
+
 proc test_topology { } {
 	global scontrol
 
@@ -1808,17 +2074,28 @@ proc test_topology { } {
 	return $have_topology
 }
 
+
 ################################################################
 #
-# Proc: get_conf_param
+# NAME
+#	get_conf_param - returns the value of a configuration parameter
 #
-# Purpose: Return the value of specific configuration parameter
+# SYNOPSIS
+#	get_conf_param parameter_name
 #
-# Returns string with conf parameter value or UNKNOWN, and exit_code 1 on error
+# DESCRIPTION
+#	Return the value of specific configuration parameter
 #
-# Input: param - configuration parameter to be returned (e.g. SchedulerType)
+# ARGUMENTS
+#	parameter_name
+#		configuration parameter to be returned (e.g. SchedulerType)
+#
+# RETURN VALUE
+#	Returns string with conf parameter value or UNKNOWN, and exit_code
+#	1 on error
 #
 ################################################################
+
 proc get_conf_param { param } {
 	global scontrol bin_bash bin_grep
 
@@ -1844,18 +2121,29 @@ proc get_conf_param { param } {
 	return $param_value
 }
 
+
 ################################################################
 #
-# Proc: check_conf_param
+# NAME
+#	check_conf_param - check whether a configuration parameter contains the specified value
 #
-# Purpose: Check if given parameter contains given value
+# SYNOPSIS
+#	check_conf_param parameter_name parameter_value
 #
-# Returns Bool if value is in param
+# DESCRIPTION
+#	Check if given parameter contains given value
 #
-# Input: param - configuration parameter to be checked (e.g. SchedulerType)
-#        value - value to look for in specific param (e.g sched/builtin)
+# ARGUMENTS
+#	parameter_name
+#		configuration parameter to be checked (e.g. SchedulerType)
+#	parameter_value
+#		value to look for in specific param (e.g sched/builtin)
+#
+# RETURN VALUE
+#	Returns Bool if value is in param
 #
 ################################################################
+
 proc check_conf_param { param value } {
 	set param_value [ get_conf_param $param ]
 	set match 0
@@ -1867,15 +2155,20 @@ proc check_conf_param { param value } {
 	return $match
 }
 
+
 ################################################################
 #
-# Proc: get_affinity_types
+# NAME
+#	get_affinity_types - gets the task plugins running with task/ stripped
 #
-# Purpose: get the task plugins running with task/ stripped
+# SYNOPSIS
+#	get_affinity_types
 #
-# Returns Returns comma separated list of task plugins running without the task/
+# RETURN VALUE
+#	Returns comma separated list of task plugins running without the task/
 #
 ################################################################
+
 proc get_affinity_types { } {
 	global scontrol re_word_str
 
@@ -1902,15 +2195,20 @@ proc get_affinity_types { } {
 	return $affinity
 }
 
+
 ################################################################
 #
-# Proc: get_affinity_params
+# NAME
+#	get_affinity_params - gets the task plugin parameters
 #
-# Purpose: get the task plugin parameters
+# SYNOPSIS
+#	get_affinity_params
 #
-# Returns Returns value of TaskPluginParam
+# RETURN VALUE
+#	Returns value of TaskPluginParam
 #
 ################################################################
+
 proc get_affinity_params { } {
 	global scontrol re_word_str
 
@@ -1930,16 +2228,24 @@ proc get_affinity_params { } {
 	return $params
 }
 
+
 ################################################################
 #
-# Proc: test_constrain_devices
+# NAME
+#	test_constrain_devices - determines if devices are constrained by cgroup
 #
-# Purpose: Determine if devices are constrained by cgroup.
-# the value of ConstrainDevices in the gres.conf.
+# SYNOPSIS
+#	test_constrain_devices
 #
-# Returns 1 if constrained, 0 otherwise
+# DESCRIPTION
+#	Determine if devices are constrained by cgroup.
+#	the value of ConstrainDevices in the gres.conf.
+#
+# RETURN VALUE
+#	Returns 1 if constrained, 0 otherwise
 #
 ################################################################
+
 proc test_constrain_devices { } {
 	global scontrol number
 
@@ -1960,13 +2266,20 @@ proc test_constrain_devices { } {
 	return $constrain_devices
 }
 
+
 ################################################################
 #
-# Proc: get_mps_count_by_index
+# NAME
+#	get_mps_count_by_index - gets the count of a specific gres/mps device
 #
-# Return the Count of a specific gres/mps device
+# SYNOPSIS
+#	get_mps_count_by_index index hostname
+#
+# RETURN VALUE
+#	Returns the Count of a specific gres/mps device
 #
 ################################################################
+
 proc get_mps_count_by_index { index hostname } {
 	global slurmd number re_word_str
 
@@ -1987,15 +2300,23 @@ proc get_mps_count_by_index { index hostname } {
 	return $count
 }
 
+
 ################################################################
 #
-# Proc: get_bb_emulate
+# NAME
+#	get_bb_emulate - determines if Cray burst buffers API is emulated
 #
-# Purpose: Determine if Cray burst buffers API is emulated
+# SYNOPSIS
+#	get_bb_emulate
 #
-# Returns: 1 if true, 0 if false
+# DESCRIPTION
+#	Determine if Cray burst buffers API is emulated
+#
+# RETURN VALUE
+#	1 if true, 0 if false
 #
 ################################################################
+
 proc get_bb_emulate { } {
 	global scontrol
 
@@ -2015,15 +2336,23 @@ proc get_bb_emulate { } {
 	return $bb_emulate
 }
 
+
 ################################################################
 #
-# Proc: get_bb_persistent
+# NAME
+#	get_bb_persistent - determines if persistent burst buffers can be created by users
 #
-# Purpose: Determine if persistent burst buffers can be created by users
+# SYNOPSIS
+#	get_bb_persistent
 #
-# Returns: 1 if true, 0 if false
+# DESCRIPTION
+#	Determine if persistent burst buffers can be created by users
+#
+# RETURN VALUE
+#	1 if true, 0 if false
 #
 ################################################################
+
 proc get_bb_persistent { } {
 	global scontrol
 
@@ -2043,15 +2372,20 @@ proc get_bb_persistent { } {
 	return $bb_persistent
 }
 
+
 ################################################################
 #
-# Proc: get_bb_types
+# NAME
+#	get_bb_types - gets the burst buffer plugins running with task/ stripped
 #
-# Purpose: get the burst buffer plugins running with task/ stripped
+# SYNOPSIS
+#	get_bb_types
 #
-# Returns Returns comma separated list of task plugins running without the task/
+# RETURN VALUE
+#	Returns comma separated list of task plugins running without the task/
 #
 ################################################################
+
 proc get_bb_types { } {
 	global scontrol re_word_str
 
@@ -2078,15 +2412,20 @@ proc get_bb_types { } {
 	return $bb_types
 }
 
+
 ################################################################
 #
-# Proc: get_cpu_governors
+# NAME
+#	get_cpu_governors - gets the CpuFreqGovernor configuration parameter
 #
-# Purpose: get the CpuFreqGovernor configuration parameter
+# SYNOPSIS
+#	get_cpu_governors
 #
-# Returns Returns comma separated list of available CPU governor's
+# RETURN VALUE
+#	Returns comma separated list of available CPU governor's
 #
 ################################################################
+
 proc get_cpu_governors { } {
 	global scontrol re_word_str
 
@@ -2107,15 +2446,20 @@ proc get_cpu_governors { } {
 	return $governors
 }
 
+
 ################################################################
 #
-# Proc: test_cpu_affinity
+# NAME
+#	test_cpu_affinity - determines if system is using the task/affinity plugin
 #
-# Purpose: Determine if system is using the task/affinity plugin
+# SYNOPSIS
+#	test_cpu_affinity
 #
-# Returns 1 if enforcing, 0 if none
+# RETURN VALUE
+#	Returns 1 if enforcing, 0 if none
 #
 ################################################################
+
 proc test_cpu_affinity { } {
 	log_user 0
 
@@ -2130,16 +2474,24 @@ proc test_cpu_affinity { } {
 	return $affinity
 }
 
+
 ################################################################
 #
-# Proc: test_cpu_affinity_or_cgroup
+# NAME
+#	test_cpu_affinity_or_cgroup - determines if system is enforcing CPU affinity
 #
-# Purpose: Determine if system is enforcing CPU affinity (using
-# either the task/affinity and/or task/cgroup plugin)
+# SYNOPSIS
+#	test_cpu_affinity_or_cgroup
 #
-# Returns 1 if enforcing, 0 if none
+# DESCRIPTION
+#	Determine if system is enforcing CPU affinity (using
+#	either the task/affinity and/or task/cgroup plugin)
+#
+# RETURN VALUE
+#	Returns 1 if enforcing, 0 if none
 #
 ################################################################
+
 proc test_cpu_affinity_or_cgroup { } {
 	global scontrol re_word_str
 
@@ -2167,15 +2519,20 @@ proc test_cpu_affinity_or_cgroup { } {
 	return $affinity
 }
 
+
 ################################################################
 #
-# Proc: test_mem_affinity
+# NAME
+#	test_mem_affinity - determines if system is enforcing memory affinity
 #
-# Purpose: Determine if system is enforcing memory affinity
+# SYNOPSIS
+#	test_mem_affinity
 #
-# Returns 1 if enforcing, 0 if none
+# RETURN VALUE
+#	Returns 1 if enforcing, 0 if none
 #
 ################################################################
+
 proc test_mem_affinity { } {
 	global scontrol re_word_str
 
@@ -2192,16 +2549,24 @@ proc test_mem_affinity { } {
 	return $affinity
 }
 
+
 ################################################################
 #
-# Proc: test_track_wckey_slurmctld
+# NAME
+#	test_track_wckey_slurmctld - determines if we track wckeys
 #
-# Purpose: Determine if we track workload characterization keys.
-# This is based upon the value of TrackWCKey in the slurm.conf.
+# SYNOPSIS
+#	test_track_wckey_slurmctld
 #
-# Returns value of TrackWCKey
+# DESCRIPTION
+#	Determine if we track workload characterization keys.
+#	This is based upon the value of TrackWCKey in the slurm.conf.
+#
+# RETURN VALUE
+#	Returns value of TrackWCKey
 #
 ################################################################
+
 proc test_track_wckey_slurmctld { } {
 	global scontrol number
 
@@ -2222,17 +2587,22 @@ proc test_track_wckey_slurmctld { } {
 	return $track_wckey
 }
 
+
 ################################################################
 #
-# Proc: test_account_storage
+# NAME
+#	test_account_storage - determines if we are using a usable accounting storage plugin
 #
-# Purpose: Determine if we are using a usable accounting storage
-# package.
-# This is based upon
-# the value of AccountingStorageType in the slurm.conf.
+# SYNOPSIS
+#	test_account_storage
 #
-# Returns 1 if the system is running an accounting storage type
-# that is complete, 0 otherwise
+# DESCRIPTION
+#	Determine if we are using a usable accounting storage package.
+#	This is based upon the value of AccountingStorageType in the slurm.conf.
+#
+# RETURN VALUE
+#	Returns 1 if the system is running an accounting storage type
+#	that is complete, 0 otherwise
 #
 ################################################################
 
@@ -2256,15 +2626,21 @@ proc test_account_storage { } {
 	return $account_storage
 }
 
+
 ################################################################
 #
-# Proc: test_enforce_limits
+# NAME
+#	test_enforce_limits - determines if resource limits are enforced
 #
-# Purpose: Determine resouce limits are enforced
-# This is based upon
-# the value of AccountingStorageEnforce in the slurm.conf.
+# SYNOPSIS
+#	test_enforce_limits
 #
-# Returns 1 if the system is enforcing limits, 0 otherwise
+# DESCRIPTION
+#	Determine whether resouce limits are enforced. This is based upon
+#	the value of AccountingStorageEnforce in the slurm.conf.
+#
+# RETURN VALUE
+#	Returns 1 if the system is enforcing limits, 0 otherwise
 #
 ################################################################
 
@@ -2293,16 +2669,23 @@ proc test_enforce_limits { } {
 	return $enforce_limits
 }
 
+
 ################################################################
 #
-# Proc: test_allow_spec_resources
+# NAME
+#	test_allow_spec_resources - returns the value of AllowSpecResources
 #
-# Purpose: Return value of AllowSpecResources
+# SYNOPSIS
+#	test_allow_spec_resources
 #
-# Returns 1 if AllowSpecResources is set, 0 if not and 2 in case of error
-# It also sets the global variable exit_code to 1 in case of error.
+# RETURN VALUE
+#	Returns 1 if AllowSpecResources is set, 0 if not and 2 in case of error
+#
+# ENVIRONMENT
+#	It also sets the global variable exit_code to 1 in case of error.
 #
 ################################################################
+
 proc test_allow_spec_resc { } {
 	global exit_code number scontrol
 
@@ -2332,13 +2715,20 @@ proc test_allow_spec_resc { } {
 	return $allow_spec_resc
 }
 
+
 ################################################################
 #
-# Proc: test_enforce_safe_set
+# NAME
+#	test_enforce_safe_set - determines if AccountingStorageEnforce=safe is set
 #
-# Purpose: Determine if AccountingStorageEnforce=safe is set in the slurm.conf.
+# SYNOPSIS
+#	test_enforce_safe_set
 #
-# Returns 1 if the system is running with safe limits, 0 otherwise
+# DESCRIPTION
+#	Determine if AccountingStorageEnforce=safe is set in the slurm.conf.
+#
+# RETURN VALUE
+#	Returns 1 if the system is running with safe limits, 0 otherwise
 #
 ################################################################
 
@@ -2367,11 +2757,17 @@ proc test_enforce_safe_set { } {
 
 ################################################################
 #
-# Proc: test_enforce_qos_set
+# NAME
+#	test_enforce_qos_set - determines if AccountingStorageEnforce=qos is set
 #
-# Purpose: Determine if AccountingStorageEnforce=qos is set in the slurm.conf.
+# SYNOPSIS
+#	test_enforce_qos_set
 #
-# Returns 1 if the system is running with safe limits, 0 otherwise
+# DESCRIPTION
+#	Determine if AccountingStorageEnforce=qos is set in the slurm.conf.
+#
+# RETURN VALUE
+#	Returns 1 if the system is running with safe limits, 0 otherwise
 #
 ################################################################
 
@@ -2397,16 +2793,22 @@ proc test_enforce_qos_set { } {
 	return $enforce_limits
 }
 
+
 ################################################################
 #
-# Proc: test_using_slurmdbd
+# NAME
+#	test_using_slurmdbd - checks whether using slurmdbd
 #
-# Purpose: Since there is a lag at which the slurmdbd processes a job start
-# we need to wait a bit to make sure the data has been set before proceeding.
-# This is based upon
-# the value of AccountingStorageType in the slurm.conf.
+# SYNOPSIS
+#	test_using_slurmdbd
 #
-# Returns 1 if the system is running with slurmdbd, 0 otherwise
+# DESCRIPTION
+#	Since there is a lag at which the slurmdbd processes a job start we
+#	need to wait a bit to make sure the data has been set before proceeding.
+#	This is based upon the value of AccountingStorageType in the slurm.conf.
+#
+# RETURN VALUE
+#	Returns 1 if the system is running with slurmdbd, 0 otherwise
 #
 ################################################################
 
@@ -2430,13 +2832,20 @@ proc test_using_slurmdbd { } {
 	return $account_storage
 }
 
+
 ################################################################
 #
-# Proc: priority_type
+# NAME
+#	priority_type - gets the priority plugin type
 #
-# Purpose: Use scontrol to determine the priority plugin
+# SYNOPSIS
+#	priority_type
 #
-# Returns: Name of priority type
+# DESCRIPTION
+#	Use scontrol to determine the priority plugin
+#
+# RETURN VALUE
+#	Name of priority type
 #
 ################################################################
 
@@ -2462,13 +2871,20 @@ proc priority_type {} {
 	return $name
 }
 
+
 ################################################################
 #
-# Proc: get_min_job_age
+# NAME
+#	get_min_job_age - determines the MinJobAge
 #
-# Purpose: Use scontrol to determine the MinJobAge
+# SYNOPSIS
+#	get_min_job_age
 #
-# Returns: MinJobAge value
+# DESCRIPTION
+#	Use scontrol to determine the MinJobAge
+#
+# RETURN VALUE
+#	MinJobAge value
 #
 ################################################################
 
@@ -2495,13 +2911,17 @@ proc get_min_job_age {} {
 	return $age
 }
 
+
 ################################################################
 #
-# Proc: get_default_acct
+# NAME
+#	get_default_acct - gets user's default account
 #
-# Purpose: get users default account.
+# SYNOPSIS
+#	get_default_acct user
 #
-# Returns name of default account if exists, NULL otherwise
+# RETURN VALUE
+#	Returns name of default account if exists, NULL otherwise
 #
 ################################################################
 
@@ -2530,15 +2950,22 @@ proc get_default_acct { user } {
 	return $def_acct
 }
 
+
 ################################################################
 #
-# Proc: test_front_end
+# NAME
+#	test_front_end - checks if execution host executes on a front-end node
 #
-# Purpose: Determine if the execution host is one in which the
-# slurmd daemon executes on a front-end node rather than the
-# compute hosts (e.g. Blue Gene systems).
+# SYNOPSIS
+#	test_front_end
 #
-# Returns 1 if the system uses a front-end, 0 otherwise
+# DESCRIPTION
+#	Determine if the execution host is one in which the
+#	slurmd daemon executes on a front-end node rather than the
+#	compute hosts (e.g. Blue Gene systems).
+#
+# RETURN VALUE
+#	Returns 1 if the system uses a front-end, 0 otherwise
 #
 ################################################################
 
@@ -2562,11 +2989,17 @@ proc test_front_end { } {
 	return $front_end
 }
 
+
 ################################################################
 #
-# Proc: test_multiple_slurmd
+# NAME
+#	test_multiple_slurmd - checks if running multiple slurmds per node
 #
-# Returns 1 if running multiple slurmd per node
+# SYNOPSIS
+#	test_multiple_slurmd
+#
+# RETURN VALUE
+#	Returns 1 if running multiple slurmd per node
 #
 ################################################################
 
@@ -2590,13 +3023,17 @@ proc test_multiple_slurmd { } {
 	return $multiple_slurmd
 }
 
+
 ################################################################
 #
-# Proc: test_cray
+# NAME
+#	test_cray - determine if the system is a native cray system
 #
-# Purpose: Determine if the system is a native cray system
+# SYNOPSIS
+#	test_cray
 #
-# Returns 1 if the system is a cray, 0 otherwise
+# RETURN VALUE
+#	Returns 1 if the system is a cray, 0 otherwise
 #
 ################################################################
 
@@ -2620,13 +3057,17 @@ proc test_cray { } {
 	return $cray
 }
 
+
 ################################################################
 #
-# Proc: test_launch_type
+# NAME
+#	test_launch_type - determines launch type plugin
 #
-# Purpose: Determine launch type plugin.
+# SYNOPSIS
+#	test_launch_type
 #
-# Returns the launch plugin type
+# RETURN VALUE
+#	Returns the launch plugin type
 #
 ################################################################
 
@@ -2650,13 +3091,17 @@ proc test_launch_type { } {
 	return $type
 }
 
+
 ################################################################
 #
-# Proc: test_launch_test_exec
+# NAME
+#	test_launch_test_exec - determines launch type plugin
 #
-# Purpose: Determine launch type plugin.
+# SYNOPSIS
+#	test_launch_test_exec
 #
-# Returns the launch plugin type
+# RETURN VALUE
+#	Returns the launch plugin type
 #
 ################################################################
 
@@ -2681,13 +3126,17 @@ proc test_launch_test_exec { } {
 	return $test_exec
 }
 
+
 ################################################################
 #
-# Proc: test_node_features_plugin
+# NAME
+#	test_node_features_plugin - determines NodeFeaturesPlugin type
 #
-# Purpose: Determine NodeFeaturesPlugin type.
+# SYNOPSIS
+#	test_node_features_plugin
 #
-# Returns the NodeFeaturesPlugin type
+# RETURN VALUE
+#	Returns the NodeFeaturesPlugin type
 #
 ################################################################
 
@@ -2718,14 +3167,21 @@ proc test_node_features_plugin { } {
 	return $type
 }
 
+
 ################################################################
 #
-# Proc: test_emulated
+# NAME
+#	test_emulated - determines if the system is emulated
 #
-# Purpose: Determine if the system is emulated (not running on
-#          actual Cray or Bluegene hardware
+# SYNOPSIS
+#	test_emulated
 #
-# Returns 1 if the system is emulated otherwise
+# DESCRIPTION
+#	Determine if the system is emulated (not running on
+#	actual Cray or Bluegene hardware
+#
+# RETURN VALUE
+#	Returns 1 if the system is emulated otherwise
 #
 ################################################################
 
@@ -2749,14 +3205,20 @@ proc test_emulated { } {
 	return $emulated
 }
 
+
 ################################################################
 #
-# Proc: test_killonbadexit
+# NAME
+#	test_killonbadexit - determines if KillOnBadExit is configured to be 1
 #
-# Purpose: Determine if KillOnBadExit is configured to be 1.
+# SYNOPSIS
+#	test_killonbadexit
 #
+# DESCRIPTION
+#	Determine if KillOnBadExit is configured to be 1.
 #
-# Returns 1 if KillOnBadExit is 1.
+# RETURN VALUE
+#	Returns 1 if KillOnBadExit is 1.
 #
 ################################################################
 
@@ -2780,14 +3242,21 @@ proc test_killonbadexit { } {
 	return $killonbadexit
 }
 
+
 ################################################################
 #
-# Proc: get_cycle_count
+# NAME
+#	get_cycle_count - get desired iteration count
 #
-# Purpose: For tests with iteration counts (e.g. test9.1, test9.2)
-#	   return the desired iteration count
+# SYNOPSIS
+#	get_cycle_count
 #
-# Returns desired iteration count
+# DESCRIPTION
+#	For tests with iteration counts (e.g. test9.1, test9.2)
+#	return the desired iteration count
+#
+# RETURN VALUE
+#	Returns desired iteration count
 #
 ################################################################
 
@@ -2800,13 +3269,17 @@ proc get_cycle_count { } {
 	return 100
 }
 
+
 ################################################################
 #
-# Proc: test_select_type
+# NAME
+#	test_select_type - determine which select plugin is being used
 #
-# Purpose: Determine which select plugin is being used
+# SYNOPSIS
+#	test_select_type
 #
-# Returns name of select plugin
+# RETURN VALUE
+#	Returns name of select plugin
 #
 ################################################################
 
@@ -2830,10 +3303,11 @@ proc test_select_type { } {
 	return $type
 }
 
+
 ################################################################
 #
 # NAME
-#	get_select_type_params
+#	get_select_type_params - determines SelectTypeParameters being used for a given partition
 #
 # SYNOPSIS
 #	get_select_type_params ?partition?
@@ -2846,6 +3320,7 @@ proc test_select_type { } {
 #	Returns a string containing SelectTypeParameters
 #
 ################################################################
+
 proc get_select_type_params { {partition ""} } {
 	global scontrol bin_bash bin_grep re_word_str
 
@@ -2888,15 +3363,20 @@ proc get_select_type_params { {partition ""} } {
 	return $params
 }
 
+
 ################################################################
 #
-# Proc: test_linear
+# NAME
+#	test_linear - determines if system is configured with linear plugin
 #
-# Purpose: Determine if system is configured with linear plugin.
+# SYNOPSIS
+#	test_linear
 #
-# Returns 1 if configured, 0 otherwise
+# RETURN VALUE
+#	Returns 1 if configured, 0 otherwise
 #
 ################################################################
+
 proc test_linear { } {
 	global scontrol number
 
@@ -2915,15 +3395,20 @@ proc test_linear { } {
 	return 0
 }
 
+
 ################################################################
 #
-# Proc: test_cons_res
+# NAME
+#	test_cons_res - determines if system is configured with cons_res plugin
 #
-# Purpose: Determine if system is configured with cons_res plugin.
+# SYNOPSIS
+#	test_cons_res
 #
-# Returns 1 if configured, 0 otherwise
+# RETURN VALUE
+#	Returns 1 if configured, 0 otherwise
 #
 ################################################################
+
 proc test_cons_res { } {
 	global scontrol number
 
@@ -2941,15 +3426,23 @@ proc test_cons_res { } {
 	return 0
 }
 
+
 ################################################################
 #
-# Proc: test_cons_tres
+# NAME
+#	test_cons_tres - determines if system is configured with cons_tres plugin
 #
-# Purpose: Determine if system is configured with cons_tres plugin.
+# SYNOPSIS
+#	test_cons_tres
 #
-# Returns 1 if configured, 0 otherwise
+# DESCRIPTION
+#	Determine if system is configured with cons_tres plugin.
+#
+# RETURN VALUE
+#	Returns 1 if configured, 0 otherwise
 #
 ################################################################
+
 proc test_cons_tres { } {
 	global scontrol number
 
@@ -2967,15 +3460,23 @@ proc test_cons_tres { } {
 	return 0
 }
 
+
 ################################################################
 #
-# Proc: get_total_cpus
+# NAME
+#	get_total_cpus - gets the total amount of CPUs on the default partition
 #
-# Return: The total amount of CPUs on the default partition.
+# SYNOPSIS
+#	get_total_cpus
 #
-# NOTE: CoreSpecCount are not part of the total.
+# RETURN VALUE
+#	The total amount of CPUs on the default partition.
+#
+# NOTE
+#	CoreSpecCount are not part of the total.
 #
 ################################################################
+
 proc get_total_cpus {} {
 	global sinfo scontrol re_word_str exit_code
 
@@ -3016,11 +3517,17 @@ proc get_total_cpus {} {
 
 ################################################################
 #
-# Proc: test_scheduler_params
+# NAME
+#	test_scheduler_params - tests SchedulerParameters being used
 #
-# Purpose: Test SchedulerParameters being used
+# SYNOPSIS
+#	test_scheduler_params type
 #
-# Returns 1 if "type" (input) is found, 0 otherwise
+# DESCRIPTION
+#	Test SchedulerParameters being used
+#
+# RETURN VALUE
+#	Returns 1 if "type" (input) is found, 0 otherwise
 #
 ################################################################
 
@@ -3057,13 +3564,17 @@ proc test_scheduler_params { type } {
 	return $ret
 }
 
+
 ################################################################
 #
-# Proc: test_select_type_params
+# NAME
+#	test_select_type_params - determines SelectTypeParameters being used
 #
-# Purpose: Determine SelectTypeParameters being used
+# SYNOPSIS
+#	test_select_type_params type
 #
-# Returns 1 if "type" (input) is found, 0 otherwise
+# RETURN VALUE
+#	Returns 1 if "type" (input) is found, 0 otherwise
 #
 ################################################################
 
@@ -3111,11 +3622,14 @@ proc test_select_type_params { type } {
 	return $ret
 }
 
+
 ################################################################
 #
-# Proc: test_root_user
+# NAME
+#	test_root_user - determines if user is root
 #
-# Purpose: Determine if user is root
+# SYNOPSIS
+#	test_root_user
 #
 ################################################################
 
@@ -3130,12 +3644,18 @@ proc test_root_user { } {
 	return 0
 }
 
+
 ################################################################
 #
-# Proc: test_super_user
+# NAME
+#	test_super_user - determines if user is a Slurm super user
 #
-# Purpose: Determine if user is a Slurm super user (i.e. user
-# root or configured SlurmUser)
+# SYNOPSIS
+#	test_super_user
+#
+# DESCRIPTION
+#	Determine if user is a Slurm super user (i.e. user
+#	root or configured SlurmUser)
 #
 ################################################################
 
@@ -3181,20 +3701,28 @@ proc test_super_user { } {
 	return $super_user
 }
 
+
 ################################################################
 #
-# Proc: dec2hex
+# NAME
+#	dec2hex - creates a 32 bit hex number from a signed decimal number
 #
-# Purpose: Create a 32 bit hex number from a signed decimal number
+# SYNOPSIS
+#	dec2hex value
 #
-# Returns: 32 bit hex version of input 'value'
+# DESCRIPTION
+#	Create a 32 bit hex number from a signed decimal number
 #
-# Input: value -- decimal number to convert
+# RETURN VALUE
+#	32 bit hex version of input 'value'
 #
-# Courtesy of Chris Cornish
-# http://aspn.activestate.com/ASPN/Cookbook/Tcl/Recipe/415982
+# SOURCE
+#	Courtesy of Chris Cornish
+#	http://aspn.activestate.com/ASPN/Cookbook/Tcl/Recipe/415982
+#
 ################################################################
 # Replace all non-decimal characters
+
 proc dec2hex {value} {
 	regsub -all {[^0-x\.-]} $value {} newtemp
 	set value [string trim $newtemp]
@@ -3208,21 +3736,32 @@ proc dec2hex {value} {
 	}
 }
 
+
 ################################################################
 #
-# Proc: uint2hex
+# NAME
+#	uint2hex - creates a 32 bit hex number from an unsigned decimal
 #
-# Purpose: Create a 32 bit hex number from an unsigned decimal
-# number.
+# SYNOPSIS
+#	uint2hex value
 #
-# Returns: 32 bit hex version of input 'value'
+# DESCRIPTION
+#	Create a 32 bit hex number from an unsigned decimal number.
 #
-# Input: value -- unsigneddecimal number to convert
+# ARGUMENTS
+#	value
+#		unsigneddecimal number to convert
 #
-# Courtesy of Chris Cornish
-# http://aspn.activestate.com/ASPN/Cookbook/Tcl/Recipe/415982
+# RETURN VALUE
+#	32 bit hex version of input 'value'
+#
+# SOURCE
+#	Courtesy of Chris Cornish
+#	http://aspn.activestate.com/ASPN/Cookbook/Tcl/Recipe/415982
+#
 ################################################################
 # Replace all non-decimal characters
+
 proc uint2hex {value} {
 	regsub -all {[^0-x\.-]} $value {} newtemp
 	set value [string trim $newtemp]
@@ -3234,13 +3773,14 @@ proc uint2hex {value} {
 	}
 }
 
+
 ################################################################
 #
 # NAME
-#	available_nodes
+#	available_nodes - returns number of available nodes
 #
 # SYNOPSIS
-#	available_nodes state partition
+#	available_nodes ?state? ?partition?
 #
 # DESCRIPTION
 #	Check to see if a given partition has a at least "num_nodes" number
@@ -3281,10 +3821,11 @@ proc available_nodes { {state ""} {partition ""} } {
 	return $available
 }
 
+
 ################################################################
 #
 # NAME
-#	partition_oversubscribe
+#	partition_oversubscribe - determines the oversubscribe configuration of the specified partition
 #
 # SYNOPSIS
 #	partition_oversubscribe ?partition?
@@ -3314,13 +3855,20 @@ proc partition_oversubscribe { {partition ""} } {
 	return $oversubscribe
 }
 
+
 ################################################################
 #
-# Proc: default_partition
+# NAME
+#	default_partition - determines the name of the default partition
 #
-# Purpose: Use scontrol to determine the name of the default partition
+# SYNOPSIS
+#	default_partition
 #
-# Returns: Name of the current default partition
+# DESCRIPTION
+#	Use scontrol to determine the name of the default partition
+#
+# RETURN VALUE
+#	Name of the current default partition
 #
 ################################################################
 
@@ -3344,14 +3892,21 @@ proc default_partition {} {
 	return $name
 }
 
+
 ################################################################
 #
-# Proc: default_part_exclusive
+# NAME
+#	default_part_exclusive - determines if the default partition allocates whole nodes to jobs
 #
-# Purpose: Use scontrol to determine if the default partition
-#          allocates whole nodes to jobs
+# SYNOPSIS
+#	default_part_exclusive
 #
-# Returns: Name of the current default partition
+# DESCRIPTION
+#	Use scontrol to determine if the default partition
+#	allocates whole nodes to jobs
+#
+# RETURN VALUE
+#	Name of the current default partition
 #
 ################################################################
 
@@ -3365,13 +3920,20 @@ proc default_part_exclusive {} {
 	}
 }
 
+
 ################################################################
 #
-# Proc: switch_type
+# NAME
+#	switch_type - determines the switch type
 #
-# Purpose: Use scontrol to determine the switch type
+# SYNOPSIS
+#	switch_type
 #
-# Returns: Name of SwitchType
+# DESCRIPTION
+#	Use scontrol to determine the switch type
+#
+# RETURN VALUE
+#	Name of SwitchType
 #
 ################################################################
 
@@ -3395,22 +3957,31 @@ proc switch_type {} {
 	return $name
 }
 
+
 ################################################################
 #
-# Proc: make_bash_script
+# NAME
+#	make_bash_script - creates a bash script
 #
-# Purpose: Create a bash script of name "script_name", and
-#          make the body of the script "script_contents".
-#          make_bash_script removes the file if it already exists,
-#          then generates the #! line, and then dumps "script_contents"
-#          to the file.  Finally, it makes certain that the script
-#          is executable.
+# SYNOPSIS
+#	make_bash_script script_name script_contents
 #
-# Returns: Nothing.
+# DESCRIPTION
+#	Create a bash script of name "script_name", and
+#	make the body of the script "script_contents".
+#	make_bash_script removes the file if it already exists,
+#	then generates the #! line, and then dumps "script_contents"
+#	to the file.  Finally, it makes certain that the script
+#	is executable.
 #
-# Input: script_name - file name for the bash script
-#        script_contents - body of the script, not including the
-#                          initial #! line.
+# ARGUMENTS
+#	script_name
+#		file name for the bash script
+#	script_contents
+#		body of the script, not including the initial #! line.
+#
+# RETURN VALUE
+#	Nothing.
 #
 ################################################################
 
@@ -3425,17 +3996,23 @@ proc make_bash_script { script_name script_contents } {
 	exec $bin_chmod 700 $script_name
 }
 
+
 ################################################################
 #
-# Proc: get_suffix
+# NAME
+#	get_suffix - given a hostname, returns it's numeric suffix
 #
-# Purpose: Given a hostname, return it's numeric suffix
+# SYNOPSIS
+#	get_suffix hostname
 #
-# Returns: numerical suffix for input 'hostname' or -1 if not a number
+# DESCRIPTION
+#	Given a hostname, return it's numeric suffix
 #
-# Input: hostname -- hostname for which to return suffix
+# RETURN VALUE
+#	numerical suffix for input 'hostname' or -1 if not a number
 #
 ################################################################
+
 proc get_suffix { hostname } {
 	set host_len [string length $hostname]
 	set host_inx [expr $host_len-1]
@@ -3467,13 +4044,20 @@ proc get_suffix { hostname } {
 	return [string range $suffix $suffix_inx $suffix_len]
 }
 
+
 ################################################################
 #
-# Proc: is_super_user
+# NAME
+#	is_super_user - checks if we are user root or SlurmUser
 #
-# Purpose: Check if we are user root or SlurmUser
+# SYNOPSIS
+#	is_super_user
 #
-# Returns: 1 if true, 0 if false
+# DESCRIPTION
+#	Check if we are user root or SlurmUser
+#
+# RETURN VALUE
+#	1 if true, 0 if false
 #
 ################################################################
 
@@ -3502,15 +4086,23 @@ proc is_super_user { } {
 	return $found_user
 }
 
+
 ################################################################
 #
-# Proc: check_acct_associations
+# NAME
+#	check_acct_associations - checks associations
 #
-# Purpose: Use sacctmgr to check associations
+# SYNOPSIS
+#	check_acct_associations
 #
-# Returns: 0 on any error
+# DESCRIPTION
+#	Use sacctmgr to check associations
+#
+# RETURN VALUE
+#	0 on any error
 #
 ################################################################
+
 proc check_acct_associations { } {
 	global sacctmgr number re_word_str exit_code
 
@@ -3580,15 +4172,20 @@ proc check_acct_associations { } {
 	return $rc
 }
 
+
 ################################################################
 #
-# Proc: get_job_acct_freq
+# NAME
+#	get_job_acct_freq - gets the value of the job account gather frequency
 #
-# Purpose: gets the value of the job account gather frequency
+# SYNOPSIS
+#	get_job_acct_freq
 #
-# Returns: job account gather frequency
+# RETURN VALUE
+#	job account gather frequency
 #
 ################################################################
+
 proc get_job_acct_freq { } {
 	global scontrol number
 
@@ -3618,15 +4215,20 @@ proc get_job_acct_freq { } {
 	return $freq_val
 }
 
+
 ################################################################
 #
-# Proc: get_job_acct_type
+# NAME
+#	get_job_acct_type - gets the value of JobAcctGatherType
 #
-# Purpose: gets the value of JobAcctGatherType
+# SYNOPSIS
+#	get_job_acct_type
 #
-# Returns: JobAcctGatherType value
+# RETURN VALUE
+#	JobAcctGatherType value
 #
 ################################################################
+
 proc get_job_acct_type { } {
 	global scontrol re_word_str
 
@@ -3652,15 +4254,20 @@ proc get_job_acct_type { } {
 	return $gather_type
 }
 
+
 ################################################################
 #
-# Proc:check_accounting_admin_level
+# NAME
+#	check_accounting_admin_level - gets the admin_level for the current user
 #
-# Purpose: get the admin_level for the current user
+# SYNOPSIS
+#	check_accounting_admin_level
 #
-# Returns: admin_level for the current user
+# RETURN VALUE
+#	admin_level for the current user
 #
 ################################################################
+
 proc check_accounting_admin_level { } {
 	global sacctmgr re_word_str re_word_str bin_id exit_code
 
@@ -3702,15 +4309,20 @@ proc check_accounting_admin_level { } {
 	return $admin_level
 }
 
+
 ################################################################
 #
-# Proc: get_cluster_name
+# NAME
+#	get_cluster_name - gets the cluster name
 #
-# Purpose: get the cluster name
+# SYNOPSIS
+#	get_cluster_name
 #
-# Returns: name of the cluster
+# RETURN VALUE
+#	name of the cluster
 #
 ################################################################
+
 proc get_cluster_name { } {
 	global scontrol re_word_str exit_code
 	#
@@ -3737,15 +4349,20 @@ proc get_cluster_name { } {
 	return $cluster_name
 }
 
+
 ################################################################
 #
-# Proc: get_control_machine
+# NAME
+#	get_control_machine - gets the ControlMachine parameter
 #
-# Purpose: get ControlMachine parameter
+# SYNOPSIS
+#	get_control_machine
 #
-# Returns: ControlMachine value
+# RETURN VALUE
+#	ControlMachine value
 #
 ################################################################
+
 proc get_control_machine { } {
 	global scontrol re_word_str exit_code
 	#
@@ -3790,13 +4407,17 @@ proc get_control_machine { } {
 	return $control_machine
 }
 
+
 ################################################################
 #
-# Proc: get_node_cnt
+# NAME
+#	get_node_cnt - determines how many nodes are on the system
 #
-# Purpose: Determine how many nodes are on the system
+# SYNOPSIS
+#	get_node_cnt
 #
-# Returns count of nodes on system or 0 if unknown
+# RETURN VALUE
+#	Returns count of nodes on system or 0 if unknown
 #
 ################################################################
 
@@ -3825,10 +4446,11 @@ proc get_node_cnt { } {
 	return $node_cnt
 }
 
+
 ################################################################
 #
 # NAME
-#	get_node_cnt_in_part
+#	get_node_cnt_in_part - determines how many nodes are in a given partition
 #
 # SYNOPSIS
 #	get_node_cnt_in_part ?partition?
@@ -3841,6 +4463,7 @@ proc get_node_cnt { } {
 #	Returns count of nodes in a partition or 0 if unknown.
 #
 ################################################################
+
 proc get_node_cnt_in_part { {partition ""} } {
 	global scontrol number
 
@@ -3870,10 +4493,11 @@ proc get_node_cnt_in_part { {partition ""} } {
 	return $node_cnt
 }
 
+
 ################################################################
 #
 # NAME
-#	get_idle_node_in_part
+#	get_idle_node_in_part - gets an idle node in a given partition
 #
 # SYNOPSIS
 #	get_idle_node_in_part ?partition?
@@ -3886,6 +4510,7 @@ proc get_node_cnt_in_part { {partition ""} } {
 #	Returns name of node in a partition or "" if unknown.
 #
 ################################################################
+
 proc get_idle_node_in_part { {partition ""} } {
 	global scontrol sinfo re_word_str
 
@@ -3929,13 +4554,17 @@ proc get_idle_node_in_part { {partition ""} } {
 	return $node_name
 }
 
+
 ################################################################
 #
-# Proc: print_failure
+# NAME
+#	print_failure - prints a final failure test status message
 #
-# Purpose:  Print failure with test ID
+# SYNOPSIS
+#	print_failure ?test_id?
 #
-# Input (optional): test_id_in -- The Slurm regression test ID.
+# DESCRIPTION
+#	Print FAILURE with test ID
 #
 ################################################################
 
@@ -3949,13 +4578,17 @@ proc print_failure { {test_id_in ""} } {
 	puts "\nFAILURE: test$test_id_in"
 }
 
+
 ################################################################
 #
-# Proc: print_skipped
+# NAME
+#	print_skipped - prints a final skipped test status message
 #
-# Purpose:  Print skipped with test ID
+# SYNOPSIS
+#	print_skipped ?test_id?
 #
-# Input (optional): test_id_in -- The Slurm regression test ID.
+# DESCRIPTION
+#	Print SKIPPED with test ID
 #
 ################################################################
 
@@ -3969,13 +4602,17 @@ proc print_skipped { {test_id_in ""} } {
 	puts "\nSKIPPED: test$test_id_in"
 }
 
+
 ################################################################
 #
-# Proc: print_success
+# NAME
+#	print_success - prints a final success test status message
 #
-# Purpose:  Print success with test ID
+# SYNOPSIS
+#	print_success ?test_id?
 #
-# Input (optional): test_id_in -- The Slurm regression test ID.
+# DESCRIPTION
+#	Print SUCCESS with test ID
 #
 ################################################################
 
@@ -3989,14 +4626,17 @@ proc print_success { {test_id_in ""} } {
 	puts "\nSUCCESS: test$test_id_in"
 }
 
+
 ###############################################################
 #
-#Proc: change_subbp_state
+# NAME
+#	change_subbp_state - sets sub mid plane state
 #
-#Purpose: Set sub mid plane state
+# SYNOPSIS
+#	change_subbp_state node ionodes state
 #
-#Returns SUCCESS if state of mid plane is changed
-#
+# RETURN VALUE
+#	Returns SUCCESS if state of mid plane is changed
 #
 ###############################################################
 
@@ -4062,13 +4702,20 @@ proc change_subbp_state { node ionodes state } {
 	return $return_code
 }
 
+
 ################################################################
 #
-# Proc: get_array_config
+# NAME
+#	get_array_config - determines the MaxArraySize
 #
-# Purpose: Use scontrol to determine the MaxArraySize
+# SYNOPSIS
+#	get_array_config
 #
-# Returns: MaxArraySize value
+# DESCRIPTION
+#	Use scontrol to determine the MaxArraySize
+#
+# RETURN VALUE
+#	MaxArraySize value
 #
 ################################################################
 
@@ -4091,13 +4738,20 @@ proc get_array_config { } {
 	return $array_size
 }
 
+
 ################################################################
 #
-# Proc: get_max_tasks
+# NAME
+#	get_max_tasks - determines the MaxTasksPerNode
 #
-# Purpose: Use scontrol to determine the MaxTasksPerNode
+# SYNOPSIS
+#	get_max_tasks
 #
-# Returns: MaxTasksPerNode value
+# DESCRIPTION
+#	Use scontrol to determine the MaxTasksPerNode
+#
+# RETURN VALUE
+#	MaxTasksPerNode value
 #
 ################################################################
 
@@ -4120,13 +4774,20 @@ proc get_max_tasks { } {
 	return $max_tasks
 }
 
+
 #################################################
 #
-# Proc: scale_to_megs
+# NAME
+#	scale_to_megs - scales the value by the factor T|G|M to megabytes
 #
-# Purpose: scale the value by the factor T|G|M
-#          to megabytes
-# Returns: the scaled variable
+# SYNOPSIS
+#	scale_to_megs value factor
+#
+# DESCRIPTION
+#	scale the value by the factor T|G|M to megabytes
+#
+# RETURN VALUE
+#	the scaled variable
 #
 #################################################
 
@@ -4149,13 +4810,20 @@ proc scale_to_megs { value factor } {
 	return $value
 }
 
+
 #################################################
 #
-# Proc: scale_to_ks
+# NAME
+#	scale_to_ks - scales the value by the factor G|M|K to kilobytes
 #
-# Purpose: scale the value by the factor G|M|K
-#          to kilobytes
-# Returns: the scaled variable
+# SYNOPSIS
+#	scale_to_ks value factor
+#
+# DESCRIPTION
+#	scale the value by the factor G|M|K to kilobytes
+#
+# RETURN VALUE
+#	the scaled variable
 #
 #################################################
 
@@ -4175,13 +4843,17 @@ proc scale_to_ks { value factor } {
 	return $value
 }
 
+
 ############################################################
 #
-# Proc: check_node_mem
+# NAME
+#	check_node_mem - checks that the nodes have memory configured
 #
-# Purpose: check that the nodes have memory configured
+# SYNOPSIS
+#	check_node_mem
 #
-# Returns: 1 if the nodes have memory, 0 otherwise
+# RETURN VALUE
+#	1 if the nodes have memory, 0 otherwise
 #
 ############################################################
 
@@ -4211,15 +4883,23 @@ proc check_node_mem { } {
 
 }
 
+
 ################################################################
 #
-# Proc: get_fs_damping_factor
+# NAME
+#	get_fs_damping_factor - gets FairShareDampeningFactor configuration parameter
 #
-# Purpose: get FairShareDampeningFactor configuration parameter
+# SYNOPSIS
+#	get_fs_damping_factor
 #
-# Returns FairShareDampeningFactor
+# DESCRIPTION
+#	get FairShareDampeningFactor configuration parameter
+#
+# RETURN VALUE
+#	Returns FairShareDampeningFactor
 #
 ################################################################
+
 proc get_fs_damping_factor { } {
 	global scontrol number exit_code
 
@@ -4245,14 +4925,20 @@ proc get_fs_damping_factor { } {
 	return $damp
 }
 
+
 ################################################################
 #
-# Proc: slurmctld_plug_stack_nonstop
+# NAME
+#	slurmctld_plug_stack_nonstop - verifies that the SlurmctldPlugstack is set to nonstop
 #
-# Purpose: Use scontrol to determine that the
-#	   SlurmctldPlugstack is set to nonstop.
+# SYNOPSIS
+#	slurmctld_plug_stack_nonstop
 #
-# Returns: 1 if the value is set to nonstop.
+# DESCRIPTION
+#	Use scontrol to determine that the SlurmctldPlugstack is set to nonstop.
+#
+# RETURN VALUE
+#	1 if the value is set to nonstop.
 #
 ################################################################
 
@@ -4282,14 +4968,21 @@ proc slurmctld_plug_stack_nonstop { } {
 	return $nonstop_enforce
 }
 
+
 ################################################################
 #
-# Proc: job_submit_all_partitions
+# NAME
+#	job_submit_all_partitions - determines if the JobSubmitPlugins includes "all_partitions"
 #
-# Purpose: Use scontrol to determine if the JobSubmitPlugins
-#          includes "all_partitions".
+# SYNOPSIS
+#	job_submit_all_partitions
 #
-# Returns: 1 if the value is set to nonstop.
+# DESCRIPTION
+#	Use scontrol to determine if the JobSubmitPlugins
+#	includes "all_partitions".
+#
+# RETURN VALUE
+#	1 if the value is set to nonstop.
 #
 ################################################################
 
@@ -4319,10 +5012,11 @@ proc job_submit_all_partitions { } {
 	return $all_partitions
 }
 
+
 ################################################################
 #
 # NAME
-#	wait_for_node
+#	wait_for_node - waits for nodes in a partition to reach a certain state
 #
 # SYNOPSIS
 #	wait_for_node state num_nodes partition
@@ -4384,15 +5078,20 @@ proc wait_for_node {state num_nodes {partition ""} } {
 	return $rt
 }
 
+
 #####################################################################
 #
-# Proc: test_preempttype_part
+# NAME
+#	test_preempttype_part - determines if preempt mode partition_prio is configured
 #
-# Purpose: Determine if preempt mode partition_prio is configured
+# SYNOPSIS
+#	test_preempttype_part
 #
-# Returns: 0 if none
+# RETURN VALUE
+#	0 if none
 #
 #####################################################################
+
 proc test_preempttype_part { } {
 
 	global scontrol
@@ -4412,15 +5111,20 @@ proc test_preempttype_part { } {
 	return $part_prio
 }
 
+
 #####################################################################
 #
-# Proc: test_preempttype_qos
+# NAME
+#	test_preempttype_qos - determines if preempt mode qos is configured
 #
-# Purpose: Determine if preempt mode qos is configured
+# SYNOPSIS
+#	test_preempttype_qos
 #
-# Returns: 0 if none
+# RETURN VALUE
+#	0 if none
 #
 #####################################################################
+
 proc test_preempttype_qos { } {
 
 	global scontrol
@@ -4440,13 +5144,17 @@ proc test_preempttype_qos { } {
 	return $qos
 }
 
+
 #####################################################################
 #
-# Proc: test_proctrack
+# NAME
+#	test_proctrack - determines the ProctrackType
 #
-# Purpose: Determine the ProctrackType
+# SYNOPSIS
+#	test_proctrack
 #
-# Returns: the proctrack type
+# RETURN VALUE
+#	the proctrack type
 #
 #####################################################################
 
@@ -4470,13 +5178,17 @@ proc test_proctrack { } {
 	return $proctype
 }
 
+
 #####################################################################
 #
-# Proc: get_srun_ports
+# NAME
+#	get_srun_ports - determines the SrunPortRange
 #
-# Purpose: Determine the SrunPortRange
+# SYNOPSIS
+#	get_srun_ports
 #
-# Returns: the SrunPortRange
+# RETURN VALUE
+#	the SrunPortRange
 #
 #####################################################################
 
@@ -4500,17 +5212,24 @@ proc get_srun_ports { } {
 	return $ports
 }
 
+
 #####################################################################
 #
-# Proc: available_nodes_hostnames
+# NAME
+#	available_nodes_hostnames - gets all available nodes in the system
 #
-# Purpose: Get all available nodes in the system.
+# SYNOPSIS
+#	available_nodes_hostnames partition ?also_power_save?
 #
-# Input: partition -- to only return nodes of an specific partition
-#        also_power_save -- to include POWERING_DOWN and POWER_DOWN
-#                           nodes
+# ARGUMENTS
 #
-# Returns: idle nodes, and also_power_save nodes if specified
+#	partition
+#		to only return nodes of an specific partition
+#	also_power_save
+#		to include POWERING_DOWN and POWER_DOWN nodes
+#
+# RETURN VALUE
+#	idle nodes, and also_power_save nodes if specified
 #
 #####################################################################
 
@@ -4550,14 +5269,20 @@ proc available_nodes_hostnames { partition {also_power_save false} } {
 	return $idle_nodelist
 }
 
+
 #####################################################################
 #
-# Proc: test_accting_steps
+# NAME
+#	test_accting_steps - determines if nostep or nojobs is set for AccoutingStorageEnforce
 #
-# Purpose: Determine if nostep or nojobs is set for
-#          AccoutingStorageEnforce
+# SYNOPSIS
+#	test_accting_steps
 #
-# Returns: 1 if set else 0
+# DESCRIPTION
+#	Determine if nostep or nojobs is set for AccoutingStorageEnforce
+#
+# RETURN VALUE
+#	1 if set else 0
 #
 #####################################################################
 
@@ -4587,6 +5312,7 @@ proc test_accting_steps { } {
 	return $enforce_limits
 }
 
+
 # Print the current line number in the script.  Calling like this
 #  [get_curr_line_num [info frame]]
 # will return the current line number
@@ -4596,16 +5322,26 @@ proc get_curr_line_num {frame_info} {
 	set result [dict get [info frame $frame_info] line]
 }
 
+
 #####################################################################
 #
-# Proc: get_partition_nodes
+# NAME
+#	get_partition_nodes - gets the list of node names in a given partition/states
 #
-# Purpose: Get the list of node names in a given partition/states
+# SYNOPSIS
+#	get_partition_nodes partition states
 #
-# Input:	partition - partition to get nodes off
-#		states - states to filter on nodes
+# DESCRIPTION
+#	Get the list of node names in a given partition/states
 #
-# Returns: node names list, -1 on sinfo error
+# ARGUMENTS
+#	partition
+#		partition to get nodes off
+#	states
+#		states to filter on nodes
+#
+# RETURN VALUE
+#	node names list, -1 on sinfo error
 #
 #####################################################################
 
@@ -4644,16 +5380,17 @@ proc get_partition_nodes {partition states} {
 	return $node_list
 }
 
+
 #####################################################################
 #
-# Proc: set_partition_maximum_time_limit
+# NAME
+#	set_partition_maximum_time_limit - sets the maximum time limit in a given partition
 #
-# Purpose: Set the maximum time limit in a given partition
+# SYNOPSIS
+#	set_partition_maximum_time_limit partition limit
 #
-# Input:   partition - partition to set the max time limit of
-#          limit - the new time limit
-#
-# Returns: 0 if succeeded, -1 if error
+# RETURN VALUE
+#	0 if succeeded, -1 if error
 #
 #####################################################################
 
@@ -4701,15 +5438,20 @@ proc set_partition_maximum_time_limit {partition limit} {
 	return 0
 }
 
+
 #####################################################################
 #
-# Proc: get_partition_maximum_time_limit
+# NAME
+#	get_partition_maximum_time_limit - gets the maximum time limit in a given partition
 #
-# Purpose: Get the maximum time limit in a given partition
+# SYNOPSIS
+#	get_partition_maximum_time_limit partition
 #
-# Input:   partition - partition to get the max time limit of
+# DESCRIPTION
+#	Get the maximum time limit in a given partition
 #
-# Returns: time limit in seconds, -1 if undefined or error
+# RETURN VALUE
+#	time limit in seconds, -1 if undefined or error
 #
 #####################################################################
 
@@ -4769,10 +5511,11 @@ proc get_partition_maximum_time_limit {partition} {
 	return $secs
 }
 
+
 ################################################################
 #
 # NAME
-#	get_partition_default_time_limit
+#	get_partition_default_time_limit - gets the default time limit in a given partition
 #
 # SYNOPSIS
 #	get_partition_default_time_limit ?partition?
@@ -4785,6 +5528,7 @@ proc get_partition_maximum_time_limit {partition} {
 #	Returns: time limit in seconds, -1 if undefined or error.
 #
 ################################################################
+
 proc get_partition_default_time_limit { {partition ""} } {
 	global sinfo number exit_code
 
@@ -4840,18 +5584,24 @@ proc get_partition_default_time_limit { {partition ""} } {
 	return $secs
 }
 
+
 #####################################################################
 #
-# Proc: get_node_cores
+# NAME
+#	get_node_cores - given a node, returns its total number of cores
 #
-# Purpose:	Given a node, return its total number of cores
-#		(not the CoresPerSocket, but the total cores)
+# SYNOPSIS
+#	get_node_cores node
 #
-# Input: node - node to get cores from
+# DESCRIPTION
+#	Given a node, return its total number of cores
+#	(not the CoresPerSocket, but the total cores)
 #
-# Returns: node cores if retrieved, -1 otherwise
+# RETURN VALUE
+#	node cores if retrieved, -1 otherwise
 #
 #####################################################################
+
 proc get_node_cores {node} {
 
 	global sinfo number
@@ -4892,20 +5642,26 @@ proc get_node_cores {node} {
 	return $cores
 }
 
+
 #####################################################################
 #
-# Proc: get_node_cpus
+# NAME
+#	get_node_cpus - given a node, returns its total number of threads we account for
 #
-# Purpose:	Given a node, return its total number of threads we account for.
-#		(not always ThreadsPerCore, but how many threads are in use.
-#               i.e. CPUs=6 CoresPerSocket=6 ThreadsPerCore=2 Socket=1 would
-#               result in only 1 thread we care about instead of the 2 listed.)
+# SYNOPSIS
+#	get_node_cpus node
 #
-# Input: node - node to get threads from
+# DESCRIPTION
+#	Given a node, return its total number of threads we account for.
+#	(not always ThreadsPerCore, but how many threads are in use.
+#	i.e. CPUs=6 CoresPerSocket=6 ThreadsPerCore=2 Socket=1 would
+#	result in only 1 thread we care about instead of the 2 listed.)
 #
-# Returns: list of node [ tot_cpus threads ] if retrieved, [ -1 -1 ] otherwise
+# RETURN VALUE
+#	list of node [ tot_cpus threads ] if retrieved, [ -1 -1 ] otherwise
 #
 #####################################################################
+
 proc get_node_cpus {node} {
 
 	global scontrol number
@@ -4957,16 +5713,26 @@ proc get_node_cpus {node} {
 	return [list $totcpus $nthreads]
 }
 
+
 #####################################################################
 #
-# Proc: get_part_total_cores
+# NAME
+#	get_part_total_cores - given a partition and/or states, return its total cores
 #
-# Purpose: Given a partition and/or states, return its total cores
+# SYNOPSIS
+#	get_part_total_cores partition states
 #
-# Input part - partition to check cores
-#	states - states to filter on partition cores
+# DESCRIPTION
+#	Given a partition and/or states, return its total cores
 #
-# Returns: partition cores
+# ARGUMENTS
+#	partition
+#		partition to check cores
+#	states
+#		states to filter on partition cores
+#
+# RETURN VALUE
+#	partition cores
 #
 #####################################################################
 
@@ -5013,11 +5779,11 @@ proc get_part_total_cores {part states} {
 	return $cores
 }
 
+
 #####################################################################
 #
 # NAME
-#	check_hosts_contiguous - verify if all hosts belong to the partition and
-#	                         are contiguous
+#	check_hosts_contiguous - verify if all hosts belong to the partition and are contiguous
 #
 # SYNOPSIS
 #	check_hosts_contiguous check_hosts_list partition
@@ -5088,16 +5854,20 @@ proc check_hosts_contiguous { check_hosts_list {partition ""} } {
 
 #####################################################################
 #
-# Proc: stop_root_user
+# NAME
+#	stop_root_user - detect, warn, and stop root user
 #
-# Purpose:	Detect, warn, and stop root user
+# SYNOPSIS
+#	stop_root_user
 #
+# DESCRIPTION
+#	Detect, warn, and stop root user
 #
-# Input
-#
-# Returns: uid if not root user, exits otherwise
+# RETURN VALUE
+#	uid if not root user, exits otherwise
 #
 #####################################################################
+
 proc stop_root_user {} {
 
 	global bin_id number
@@ -5112,15 +5882,20 @@ proc stop_root_user {} {
 	return $uid
 }
 
+
 ################################################################
 #
-# Proc: get_requeue_exit
+# NAME
+#	get_requeue_exit - gets RequeueExit configuration parameter
 #
-# Purpose: get RequeueExit configuration parameter
+# SYNOPSIS
+#	get_requeue_exit
 #
-# Returns RequeueExit number
+# RETURN VALUE
+#	Returns RequeueExit number
 #
 ################################################################
+
 proc get_requeue_exit { } {
 	global scontrol number exit_code
 
@@ -5146,15 +5921,20 @@ proc get_requeue_exit { } {
 	return $re
 }
 
+
 ################################################################
 #
-# Proc: get_requeue_exit_hold
+# NAME
+#	get_requeue_exit_hold - gets RequeueExitHold configuration parameter
 #
-# Purpose: get RequeueExitHold configuration parameter
+# SYNOPSIS
+#	get_requeue_exit_hold
 #
-# Returns RequeueExitHold number
+# RETURN VALUE
+#	Returns RequeueExitHold number
 #
 ################################################################
+
 proc get_requeue_exit_hold { } {
 	global scontrol number exit_code
 
@@ -5180,15 +5960,20 @@ proc get_requeue_exit_hold { } {
 	return $re
 }
 
+
 ################################################################
 #
-# Proc: get_prolog
+# NAME
+#	get_prolog - gets Prolog configuration parameter
 #
-# Purpose: get Prolog configuration parameter
+# SYNOPSIS
+#	get_prolog
 #
-# Returns Prolog parameter
+# RETURN VALUE
+#	Returns Prolog parameter
 #
 ################################################################
+
 proc get_prolog { } {
 	global scontrol re_word_str exit_code
 
@@ -5213,6 +5998,7 @@ proc get_prolog { } {
 
 	return $prolog
 }
+
 
 proc expect_extern_step { } {
 	global scontrol
@@ -5239,21 +6025,32 @@ proc expect_extern_step { } {
 	return $extern_step
 }
 
+
 ################################################################
 #
-# Proc: get_het_job_ids
+# NAME
+#	get_het_job_ids - gets list of component job ids for a het job
 #
-# Purpose: Gets list of component job ids for a het job.
+# SYNOPSIS
+#	get_het_job_ids job_id ?use_offset?
 #
-# Input: jobid - Slurm job id
-#        use_offset (optional) - If zero, returns list of
-#        integer job ids, else returns ids in the form of X+Y
-#        where X is het job master id and Y is the offset.
+# DESCRIPTION
+#	Gets list of component job ids for a het job.
 #
-# Returns: A list of ids for a hetjob or an empty list if jobid
-# is not a het one.
+# ARGUMENTS
+#	job_id
+#		Slurm job id
+#	use_offset
+#		If zero, returns list of integer job ids, else returns ids in
+#		the form of X+Y where X is het job master id and Y is the
+#		offset.
+#
+# RETURN VALUE
+#	A list of ids for a hetjob or an empty list if jobid
+#	is not a het one.
 #
 ################################################################
+
 proc get_het_job_ids { jobid {use_offset 0}} {
 	global scontrol number
 
@@ -5282,14 +6079,20 @@ proc get_het_job_ids { jobid {use_offset 0}} {
 	return $id_list
 }
 
+
 ################################################################
 #
-# Proc: test_pack_step
+# NAME
+#	test_pack_step - tests if steps can span multiple heterogeneous job allocations
+#
+# SYNOPSIS
+#	test_pack_step
 #
 # Returns 1 if steps can span multiple heterogeneous job allocations,
 #	  0 otherwise
 #
 ################################################################
+
 proc test_pack_step { } {
 	global scontrol number exit_code
 
@@ -5358,18 +6161,30 @@ proc test_pack_step { } {
 	return $pack_step
 }
 
+
 ################################################################
 #
-# Proc: reconfigure
+# NAME
+#	reconfigure - calls scontrol reconfigure
 #
-# Purpose:	Calls scontrol reconfigure.
+# SYNOPSIS
+#	reconfigure ?cluster?
 #
-# Input (optional) cluster 	- The cluster to reconfigure.
-# Output global exit_code 	- Sets exit_code to 1 on failure.
+# DESCRIPTION
+#	Calls scontrol reconfigure.
 #
-# Returns void
+# ARGUMENTS
+#	cluster
+#		The cluster to reconfigure
+#
+# RETURN VALUE
+#	void
+#
+# ENVIRONMENT
+#	Sets exit_code to 1 on failure.
 #
 ################################################################
+
 proc reconfigure { {cluster ""} } {
 	global exit_code scontrol timeout
 
@@ -5409,6 +6224,7 @@ proc reconfigure { {cluster ""} } {
 	set timeout $save_timeout
 }
 
+
 proc log_fatal {msg} {
 	global testsuite_log_level LOG_LEVEL_FATAL
 
@@ -5416,6 +6232,7 @@ proc log_fatal {msg} {
 		puts "FATAL: $msg"
 	}
 }
+
 
 proc log_error {msg} {
 	global testsuite_log_level LOG_LEVEL_ERROR
@@ -5425,6 +6242,7 @@ proc log_error {msg} {
 	}
 }
 
+
 proc log_warn {msg} {
 	global testsuite_log_level LOG_LEVEL_WARNING
 
@@ -5432,6 +6250,7 @@ proc log_warn {msg} {
 		puts "WARNING: $msg"
 	}
 }
+
 
 proc log_info {msg} {
 	global testsuite_log_level LOG_LEVEL_INFO
@@ -5441,6 +6260,7 @@ proc log_info {msg} {
 	}
 }
 
+
 proc log_debug {msg} {
 	global testsuite_log_level LOG_LEVEL_DEBUG
 
@@ -5448,6 +6268,7 @@ proc log_debug {msg} {
 		puts "DEBUG: $msg"
 	}
 }
+
 
 proc log_trace {msg} {
 	global testsuite_log_level LOG_LEVEL_TRACE
@@ -5457,14 +6278,20 @@ proc log_trace {msg} {
 	}
 }
 
+
 ################################################################
 #
-# Proc: in_fed
+# NAME
+#	in_fed - checks whether this cluster is in a federation
 #
-# Returns 1 if this cluster is in a federation
-#	  0 otherwise
+# SYNOPSIS
+#	in_fed
+#
+# RETURN VALUE
+#	Returns 1 if this cluster is in a federation, 0 otherwise
 #
 ################################################################
+
 proc in_fed {} {
 	global scontrol
 
@@ -5483,24 +6310,37 @@ proc in_fed {} {
 	return 0
 }
 
+
 ################################################################
 #
-# Proc: check_job_state
+# NAME
+#	check_job_state - checks if the state of a job is the expected one
 #
-# Checks if the state of a job is the expected one.
+# SYNOPSIS
+#	check_job_state job state ?het_job?
 #
-# Input: job    : Job ID to check
-# Input: state  : Desired state of the job to match
-# Input: het_job: If set, checks state of each component job if the
-#                 job is a hetjob.
+# DESCRIPTION
+#	Checks if the state of a job is the expected one.
 #
-# Returns: 1 if job was on the desired state, or the number of job components
-#          on that state if it's a hetjob and het_job option enabled.
-#          0 otherwise.
-#          Also sets exit_code to 1 if job (or component) if there are some
-#          error in the called commands.
+# ARGUMENTS
+#	job
+#		Job ID to check
+#	state
+#		Desired state of the job to match
+#	het_job
+#		If set, checks state of each component job if the
+#		job is a hetjob.
+#
+# RETURN VALUE
+#	1 if job was on the desired state, or the number of job components
+#	on that state if it's a hetjob and het_job option enabled. 0 otherwise.
+#
+# ENVIRONMENT
+#	Also sets exit_code to 1 if job (or component) if there are some
+#	error in the called commands.
 #
 ################################################################
+
 proc check_job_state { job state {het_job 0}} {
 
 	global scontrol exit_code
@@ -5539,51 +6379,78 @@ proc check_job_state { job state {het_job 0}} {
 	}
 }
 
+
 ################################################################
 #
-# Proc: get_craynetwork_count
+# NAME
+#	get_craynetwork_count - returns highest craynetworks per node
 #
-# For a given node count, returns number of craynetowrks per node on
-# those "node_count" nodes with the highest craynetworks counts
-# For example: node1 has 1 craynetwork, node2 has 2 craynetworks and
-# node3 has 3 craynetworks
-# [get_craynetwork_count 1] returns 3 (i.e. 1 node 3 craynetworks)
-# [get_craynetwork_count 2] returns 2 (i.e. 2 nodes have at least 2 each)
-# [get_craynetwork_count 3] returns 1 (i.e. 3 nodes have at least 1 each)
+# SYNOPSIS
+#	get_craynetwork_count ?node_count?
+#
+# DESCRIPTION
+#	For a given node count, returns number of craynetworks per node on
+#	those "node_count" nodes with the highest craynetworks counts
+#
+# EXAMPLE
+#	For example: node1 has 1 craynetwork, node2 has 2 craynetworks and
+#	node3 has 3 craynetworks
+#	[get_craynetwork_count 1] returns 3 (i.e. 1 node 3 craynetworks)
+#	[get_craynetwork_count 2] returns 2 (i.e. 2 nodes have at least 2 each)
+#	[get_craynetwork_count 3] returns 1 (i.e. 3 nodes have at least 1 each)
 #
 ################################################################
+
 proc get_craynetwork_count { {node_count 1} } {
 	get_gres_count $node_count "craynetwork"
 }
 
+
 ################################################################
 #
-# Proc: get_gpu_count
+# NAME
+#	get_gpu_count - returns number of GPUs per node on node_count nodes
 #
-# For a given node count, returns number of GPUs per node on
-# those "node_count" nodes with the highest GPU counts
-# For example: node1 has 1 GPU, node2 has 2 GPUs and node3 has 3 GPUs
-# [get_gpu_count 1] returns 3 (i.e. 1 node 3 GPUs)
-# [get_gpu_count 2] returns 2 (i.e. 2 nodes have at least 2 GPUs each)
-# [get_gpu_count 3] returns 1 (i.e. 3 nodes have at least 1 GPU each)
+# SYNOPSIS
+#	get_gpu_count node_count
+#
+# DESCRIPTION
+#	For a given node count, returns number of GPUs per node on
+#	those "node_count" nodes with the highest GPU counts
+#
+# EXAMPLE
+#	For example: node1 has 1 GPU, node2 has 2 GPUs and node3 has 3 GPUs
+#	[get_gpu_count 1] returns 3 (i.e. 1 node 3 GPUs)
+#	[get_gpu_count 2] returns 2 (i.e. 2 nodes have at least 2 GPUs each)
+#	[get_gpu_count 3] returns 1 (i.e. 3 nodes have at least 1 GPU each)
 #
 ################################################################
+
 proc get_gpu_count { node_count } {
 	get_gres_count $node_count "gpu"
 }
 
+
 ################################################################
 #
-# Proc: get_gres_count
+# NAME
+#	get_gres_count - returns number of GRES epr node on node_count nodes
 #
-# For a given node count and GRES name, returns number of GRES per node on
-# those "node_count" nodes with the highest GRES counts
-# For example: node1 has 1 GPU, node2 has 2 GPUs and node3 has 3 GPUs
-# [get_gres_count 1 "gpu"] returns 3 (i.e. 1 node 3 GPUs)
-# [get_gres_count 2 "gpu"] returns 2 (i.e. 2 nodes have at least 2 GPUs each)
-# [get_gres_count 3 "gpu"] returns 1 (i.e. 3 nodes have at least 1 GPU each)
+# SYNOPSIS
+#	get_gres_count node_count gres_name
+#
+# DESCRIPTION
+#	For a given node count and GRES name, returns number of GRES per node on
+#	those "node_count" nodes with the highest GRES counts
+#
+# EXAMPLE
+#	For example: node1 has 1 GPU, node2 has 2 GPUs and node3 has 3 GPUs
+#	[get_gres_count 1 "gpu"] returns 3 (i.e. 1 node 3 GPUs)
+#	[get_gres_count 2 "gpu"] returns 2 (i.e. 2 nodes have at least 2 GPUs each)
+#	[get_gres_count 3 "gpu"] returns 1 (i.e. 3 nodes have at least 1 GPU each)
 #
 ################################################################
+
 proc get_gres_count { node_count gres_name } {
 	global sinfo gres_regex
 	set fini 0
@@ -5652,11 +6519,21 @@ proc get_gres_count { node_count gres_name } {
 	return $count
 }
 
+
 ################################################################
-# Subroutine used by get_gpu_socket_count
-# Add a socket index to the array gpu_sock_list if not already
-# on the list.
+#
+# NAME
+#	_set_gpu_socket_inx - adds a socket index to the gpu_sock_list if not already on it
+#
+# SYNOPSIS
+#	_set_gpu_socket_inx sock_inx
+#
+# DESCRIPTION
+#	Add a socket index to the array gpu_sock_list if not already
+#	on the list. Subroutine used by get_gpu_socket_count
+#
 ################################################################
+
 proc _set_gpu_socket_inx { sock_inx } {
 	global gpu_sock_list
 
@@ -5674,11 +6551,13 @@ proc _set_gpu_socket_inx { sock_inx } {
 	lappend gpu_sock_list $sock_inx
 }
 
+
 ################################################################
 # Subroutine used by get_gpu_socket_count
 # Add a socket index to the array gpu_sock_list if not already
 # on the list.
 ################################################################
+
 proc _set_gpu_socket_range { sock_first_inx sock_last_inx } {
 	global gpu_sock_list
 
@@ -5701,16 +6580,23 @@ proc _set_gpu_socket_range { sock_first_inx sock_last_inx } {
 	}
 }
 
+
 ################################################################
 #
-# Proc: get_gpu_socket_count
+# NAME
+#	get_gpu_socket_count - returns the number of sockets with GPUS on a node with the given per-node GPU count
 #
-# Given a per-node GPU count, return the number of sockets with
-# GPUs on a node with the given per-node GPU count.
-# If the sockets_per_node has a value of 1 then just return 1
-# rather than determine the count (for performance reasons).
+# SYNOPSIS
+#	get_gpu_socket_count gpu_cnt sockets_per_node
+#
+# DESCRIPTION
+#	Given a per-node GPU count, return the number of sockets with
+#	GPUs on a node with the given per-node GPU count.
+#	If the sockets_per_node has a value of 1 then just return 1
+#	rather than determine the count (for performance reasons).
 #
 ################################################################
+
 proc get_gpu_socket_count { gpu_cnt sockets_per_node } {
 	global re_word_str bin_rm number scontrol srun
 	global gpu_sock_list
@@ -5789,25 +6675,39 @@ proc get_gpu_socket_count { gpu_cnt sockets_per_node } {
 	return $sockets_with_gpus
 }
 
+
 ################################################################
 #
-# Proc: get_mps_count
+# NAME
+#	get_mps_count - returns the number of MPS resources with the highest values
 #
-# For a given node count, returns number of MPS resources on
-# those "node_count" nodes with the highest values
+# SYNOPSIS
+#	get_mps_count node_count
+#
+# DESCRIPTION
+#	For a given node count, returns number of MPS resources on
+#	those "node_count" nodes with the highest values
 #
 ################################################################
+
 proc get_mps_count { node_count } {
 	get_gres_count $node_count "mps"
 }
 
+
 ################################################################
 #
-# Proc: get_mps_node_count
+# NAME
+#	get_mps_node_count - gets the number of nodes with a positive number of GRES MPS
 #
-# Return the count of nodes with a non-zero count of GRES MPS
+# SYNOPSIS
+#	get_mps_node_count
+#
+# RETURN VALUE
+#	Return the count of nodes with a non-zero count of GRES MPS
 #
 ################################################################
+
 proc get_mps_node_count { } {
 	global number sinfo re_word_str
 	set fini 0
@@ -5848,13 +6748,20 @@ proc get_mps_node_count { } {
 	return $node_inx
 }
 
+
 ################################################################
 #
-# Proc: get_over_time_limit
+# NAME
+#	get_over_time_limit - returns the value of OverTimeLimit
 #
-# Returns the value of OverTimeLimit in slurm.conf
+# SYNOPSIS
+#	get_over_time_limit
+#
+# RETURN VALUE
+#	Returns the value of OverTimeLimit in slurm.conf
 #
 ################################################################
+
 proc get_over_time_limit {} {
 	global number scontrol exit_code
 	set ret 0
@@ -5876,18 +6783,24 @@ proc get_over_time_limit {} {
 	return $ret
 }
 
+
 ################################################################
 #
-# Proc: cuda_count
+# NAME
+#	cuda_count - determines the count of allocated GPUs
 #
-# Purpose: Determine count of allocated GPUs
+# SYNOPSIS
+#	cuda_count cuda_string
 #
-# Returns: Return the number of GPUs or -1 on error
+# ARGUMENTS
+#	cuda_string
+#		Contents of a CUDA_VISIBLE_DEVICES environment variable
 #
-# Input: cuda_string - Contents of a CUDA_VISIBLE_DEVICES environment
-# variable
+# RETURN VALUE
+#	Return the number of GPUs or -1 on error
 #
 ################################################################
+
 proc cuda_count { cuda_string } {
 	set cuda_count 0
 	set has_number 0
@@ -5915,15 +6828,23 @@ proc cuda_count { cuda_string } {
 	return $cuda_count
 }
 
+
 ################################################################
 #
-# Proc: get_acct_store_tres
+# NAME
+#	get_acct_store_tres - gets the configured value of AccountingStorageTRES
 #
-# Purpose: Get the configured value of AccountingStorageTRES
+# SYNOPSIS
+#	get_acct_store_tres
 #
-# Returns Returns the configured value of AccountingStorageTRES
+# DESCRIPTION
+#	Get the configured value of AccountingStorageTRES
+#
+# RETURN VALUE
+#	Returns the configured value of AccountingStorageTRES
 #
 ################################################################
+
 proc get_acct_store_tres { } {
 	global scontrol re_word_str
 
@@ -5943,12 +6864,19 @@ proc get_acct_store_tres { } {
 	return $store_tres
 }
 
+
 ################################################################
-# Proc: get_conf_path
+# NAME
+#	get_conf_path - gets the path to the slurm.conf file
 #
-# Returns the path to the slurm.conf file
+# SYNOPSIS
+#	get_conf_path
+#
+# RETURN VALUE
+#	Returns the path to the slurm.conf file
 #
 ################################################################
+
 proc get_conf_path { } {
 	global scontrol re_word_str exit_code
 
@@ -5979,16 +6907,27 @@ proc get_conf_path { } {
 	return $config_path
 }
 
+
 ################################################################
-# Proc: copy_conf
 #
-# Copy the slurm.conf file to the a new file called
-# slurm.conf.orig in the current working directory
+# NAME
+#	copy_conf - backs up the slurm.conf file
 #
-# Input config_path - The path to slurm.conf
-# Input cwd - The full path of the current working directory
+# SYNOPSIS
+#	copy_conf config_path cwd
+#
+# DESCRIPTION
+#	Copy the slurm.conf file to the a new file called
+#	slurm.conf.orig in the current working directory
+#
+# ARGUMENTS
+#	config_path
+#		The path to slurm.conf
+#	cwd
+#		The full path of the current working directory
 #
 ################################################################
+
 proc copy_conf { config_path cwd } {
 	global bin_cp bin_rm exit_code
 
@@ -6005,27 +6944,33 @@ proc copy_conf { config_path cwd } {
 	}
 }
 
+
 ################################################################
 #
-# Proc: save_conf
+# NAME
+#	save_conf - saves a copy of the specfied configuration file
 #
-# Rename a file as <file_name>.<test_id> and make a copy of it
-# to its original name to be able to modify it.
-# It registers the saved files to allow to restore them properly
-# with restore_conf.
-# It will log_warn if the file dosn't exist, but will register it
-# to allow restore_conf to "restore" the original state: no file.
+# SYNOPSIS
+#	save_conf file_name
 #
-# It throws a TCL error (FATAL: ) if unsafe scenarios are detected,
-# like a backup file already existing, or any error with mv or cp.
-# It does this to encourage the user executing the test to manually
-# check the files to avoid automatically removing any original file.
+# DESCRIPTION
+#	Rename a file as <file_name>.<test_id> and make a copy of it
+#	to its original name to be able to modify it.
+#	It registers the saved files to allow to restore them properly
+#	with restore_conf.
+#	It will log_warn if the file dosn't exist, but will register it
+#	to allow restore_conf to "restore" the original state: no file.
 #
-# Input file_name - Path and name of file to backup
+#	It throws a TCL error (FATAL: ) if unsafe scenarios are detected,
+#	like a backup file already existing, or any error with mv or cp.
+#	It does this to encourage the user executing the test to manually
+#	check the files to avoid automatically removing any original file.
 #
-# See also restore_conf.
+# SEE ALSO
+#	restore_conf
 #
 ################################################################
+
 proc save_conf { file_name } {
 	global test_id
 	global bin_mv bin_cp bin_rm
@@ -6096,23 +7041,29 @@ proc save_conf { file_name } {
 	log_user $log_prev
 }
 
-################################################################
-#
-# Proc: restore_conf
-#
-# Restore the original file saved previously with save_config.
-#
-# It throws a TCL error (FATAL: ) if unsafe scenarios are detected,
-# like a file_name not previously saved or, or any error with the
-# mv command.
-# It does this to encourage the user executing the test to manually
-# check the files to avoid automatically removing any original file.
-#
-# Input file_name - Path and name of file to restore
-#
-# See also save_conf.
 
 ################################################################
+#
+# NAME
+#	restore_conf - restores the original confiration file
+#
+# SYNOPSIS
+#	restore_conf file_name
+#
+# DESCRIPTION
+#	Restore the original file saved previously with save_config.
+#
+#	It throws a TCL error (FATAL: ) if unsafe scenarios are detected,
+#	like a file_name not previously saved or, or any error with the
+#	mv command.
+#	It does this to encourage the user executing the test to manually
+#	check the files to avoid automatically removing any original file.
+#
+# SEE ALSO
+#	save_conf
+#
+################################################################
+
 proc restore_conf { file_name } {
 	global test_id
 	global bin_mv bin_rm
@@ -6189,13 +7140,20 @@ proc restore_conf { file_name } {
 	log_user $log_prev
 }
 
+
 ################################################################
 #
-# Proc: have_nvml
+# NAME
+#	have_nvml - checks if HAVE_NVML is set in config.h
 #
-# Returns 1 if HAVE_NVML is set in config.h. Else, returns 0.
+# SYNOPSIS
+#	have_nvml
+#
+# RETURN VALUE
+#	Returns 1 if HAVE_NVML is set in config.h. Else, returns 0.
 #
 ################################################################
+
 proc have_nvml { } {
 	global bin_grep number exit_code config_h
 
@@ -6226,15 +7184,17 @@ proc have_nvml { } {
 	return $have_nvml
 }
 
+
 ################################################################
 #
-# Proc: delete_part
+# NAME
+#	delete_part - deletes partition on system
 #
-# Delete partition on system
-#
-# Input part_name - Name of partition to delete
+# SYNOPSIS
+#	delete_part partition
 #
 ################################################################
+
 proc delete_part { part_name } {
 	global scontrol
 
@@ -6251,13 +7211,20 @@ proc delete_part { part_name } {
 	}
 }
 
+
 ################################################################
 #
-# Proc: have_lua
+# NAME
+#	have_lua - checks if HAVE_LUA is set in config.h
 #
-# Returns 1 if HAVE_LUA is set in config.h. Else, returns 0.
+# SYNOPSIS
+#	have_lua
+#
+# RETURN VALUE
+#	Returns 1 if HAVE_LUA is set in config.h. Else, returns 0.
 #
 ################################################################
+
 proc have_lua { } {
 	global bin_grep number exit_code config_h
 
@@ -6288,16 +7255,23 @@ proc have_lua { } {
 	return $have_lua
 }
 
+
 ################################################################
 #
-# Proc: create_part
+# NAME
+#	create_part - creates a partition
 #
-# Create partition on system
+# SYNOPSIS
+#	create_part partition num_nodes
 #
-# Input part_name - Name of partition to create
-# Input num_nodes_in - Number of nodes of partition to create
+# ARGUMENTS
+#	partition
+#		Name of partition to create
+#	num_nodes
+#		Number of nodes of partition to create
 #
 ################################################################
+
 proc create_part { part_name num_nodes_in } {
 	global scontrol srun bin_printenv number re_word_str
 
@@ -6402,27 +7376,35 @@ proc create_part { part_name num_nodes_in } {
 	return 0
 }
 
+
 ################################################################
 #
-# Proc: get_node_config
+# NAME
+#	get_node_config - obtains the configuration of a node with the requested resources
 #
-# Purpose: Obtain the node configuration of a node with the requested
-#          resources.
+# SYNOPSIS
+#	get_node_config ?request_args?
 #
-# Input: request_args -- Desired resources of a node in form of srun
-#                        arguments, e.g. "--gres=gpu:1 -n1 -t1"
+# DESCRIPTION
+#	Obtain the node configuration of a node with the requested resources.
 #
-# Returns: An array with the configuration of a node with at least the
-#          requested  resources. The keys of the arrays are the same that
-#          appear in the scontrol show node (e.g. CPUTot, State, RealMemory.)
-#          The array also includes some extra values:
-#          - GPUTot       : Total number of GPUs of the node.
-#          - CPUPerSocker : Number of CPUs per Socket (i.e. CPUTot / Sockets)
+# ARGUMENTS
+#	request_args
+#		Desired resources of a node in form of srun arguments,
+#		e.g. "--gres=gpu:1 -n1 -t1"
 #
-#          In no node is found, it returns an empty array.
-#          In case of other errors, the global exit_code is set to 1.
+# RETURN VALUE
+#	An array with the configuration of a node with at least the
+#	requested  resources. The keys of the arrays are the same that
+#	appear in the scontrol show node (e.g. CPUTot, State, RealMemory.)
+#	The array also includes some extra values:
+#		GPUTot       : Total number of GPUs of the node.
+#		CPUPerSocker : Number of CPUs per Socket (i.e. CPUTot / Sockets)
+#	If no node is found, it returns an empty array.
+#	In case of other errors, the global exit_code is set to 1.
 #
 ################################################################
+
 proc get_node_config { {request_args "-n1 -t1"} } {
 	global exit_code max_job_delay srun scontrol
 	global bin_rm
@@ -6504,6 +7486,7 @@ proc get_node_config { {request_args "-n1 -t1"} } {
 	array get node_conf
 }
 
+
 proc check_reason { job_id reason } {
 	global squeue
 
@@ -6528,19 +7511,30 @@ proc check_reason { job_id reason } {
 	return $found
 }
 
+
 ################################################################################
 #
-# Proc: compile_against_libslurm
+# NAME
+#	compile_against_libslurm - compiles a test program against either libslurm.so or libslurmfull.so
 #
-# Compile a test program against either libslurm.so or libslurmfull.so.
+# SYNOPSIS
+#	compile_against_libslurm test_prog ?use_full? ?build_args?
 #
-# test_prog  - The name of the test program (and .c file)
-# use_full   - If 1, use libslurmfull.so instead of libslurm.so. Defaults to 0.
-# build_args - Additional string to be appended to the build command.
-#              E.g. "-DUSING_VALGRIND -lm ${build_dir}/src/slurmctld/locks.o"
-#              (initial space will be added automatically).
+# DESCRIPTION
+#	Compile a test program against either libslurm.so or libslurmfull.so.
+#
+# ARGUMENTS
+#	test_prog
+#		The name of the test program (and .c file)
+#	use_full
+#		If 1, use libslurmfull.so instead of libslurm.so. Defaults to 0.
+#	build_args
+#		Additional string to be appended to the build command.
+#		E.g. "-DUSING_VALGRIND -lm ${build_dir}/src/slurmctld/locks.o"
+#		(initial space will be added automatically).
 #
 ################################################################################
+
 proc compile_against_libslurm { test_prog {use_full 0} {build_args ""} } {
 	global slurm_dir bin_cc src_dir build_dir exit_code bin_chmod
 
@@ -6582,26 +7576,36 @@ proc compile_against_libslurm { test_prog {use_full 0} {build_args ""} } {
 	exec $bin_chmod 700 $test_prog
 }
 
+
 ################################################################
 #
-# Proc: assert <condition> <message> [<action>]
+# NAME
+#	assert - tests a boolean expression
 #
-# Purpose: Tests a boolean expression. If the condition is false, the
-#          function will take the designated action (error, fail, skip,
-#          or warn) using the specified message.
+# SYNOPSIS
+#	assert condition message ?action?
 #
-# Input: condition -- The boolean expression to test
-# Input: message   -- The message to print with the action
-# Input: action    -- Specifies the action to take when false.
-#                     Optional, default is "error".
+# DESCRIPTION
+#	Tests a boolean expression. If the condition is false, the
+#	function will take the designated action (error, fail, skip,
+#	or warn) using the specified message.
 #
-# The action will be one of the following:
-# error - Prints an error if the boolean_expression is false [default]
-# fail  - Fails the test if the boolean_expression is false
-# skip  - Skips the test if the boolean_expression is false
-# warn  - Prints a warning if the boolean_expression is false
+# ARGUMENTS
+#	condition
+#		The boolean expression to test
+#	message
+#		The message to print with the action
+#	action
+#		Specifies the action to take when false. The default is "error"
+#		The action will be one of the following:
+
+#		error - Prints an error if the boolean_expression is false
+#		fail  - Fails the test if the boolean_expression is false
+#		skip  - Skips the test if the boolean_expression is false
+#		warn  - Prints a warning if the boolean_expression is false
 #
 ################################################################
+
 proc assert { condition message { action "error" } } {
 
 	# We must skip two levels if being called by one of the assert_* helpers
@@ -6625,62 +7629,103 @@ proc assert { condition message { action "error" } } {
 	}
 }
 
+
 ################################################################
 #
-# Proc: assert_or_fail <condition> <message>
+# NAME
+#	assert_or_fail - tests a boolean condition, failing if false
 #
-# Purpose: Tests a boolean condition. If the condition is false, the
-#          function will call fail with the specified message.
+# SYNOPSIS
+#	assert_or_fail condition message
 #
-# Input: condition -- The boolean expression to test
-# Input: message   -- The message to print on failure
+# DESCRIPTION
+#	Tests a boolean condition. If the condition is false, the
+#	function will call fail with the specified message.
+#
+# ARGUMENTS
+#	condition
+#		The boolean expression to test
+#	message
+#		The message to print with the action
 #
 ################################################################
+
 proc assert_or_fail { condition message } {
 	assert "$condition" "$message" "fail"
 }
 
+
 ################################################################
 #
-# Proc: assert_or_error <condition> <message>
+# NAME
+#	assert_or_error - tests a boolean expression, logging an error if false
 #
-# Purpose: Tests a boolean condition. If the condition is false, the
-#          function will log_error with the specified message.
+# SYNOPSIS
+#	assert_or_error condition message
 #
-# Input: condition -- The boolean expression to test
-# Input: message   -- The message to print on failure
+# DESCRIPTION
+#	Tests a boolean condition. If the condition is false, the
+#	function will log_error with the specified message.
+#
+# ARGUMENTS
+#	condition
+#		The boolean expression to test
+#	message
+#		The message to print with the action
 #
 ################################################################
+
 proc assert_or_error { condition message } {
 	assert "$condition" "$message" "error"
 }
 
+
 ################################################################
 #
-# Proc: assert_or_warn <condition> <message>
+# NAME
+#	assert_or_warn - tests a boolean expression, logging a warning if false
 #
-# Purpose: Tests a boolean condition. If the condition is false, the
-#          function will log_warn with the specified message.
+# SYNOPSIS
+#	assert_or_warn condition message
 #
-# Input: condition -- The boolean expression to test
-# Input: message   -- The message to print on failure
+# DESCRIPTION
+#	Tests a boolean condition. If the condition is false, the
+#	function will log_warn with the specified message.
+#
+# ARGUMENTS
+#	condition
+#		The boolean expression to test
+#	message
+#		The message to print with the action
 #
 ################################################################
+
 proc assert_or_warn { condition message } {
 	assert "$condition" "$message" "warn"
 }
 
+
 ################################################################
 #
-# Proc: assert_or_skip <condition> <message>
+# NAME
+#	assert_or_skip - tests a boolean expression, skipping the test if false
 #
-# Purpose: Tests a boolean condition. If the condition is false, the
-#          function will call skip with the specified message.
+# SYNOPSIS
+#	assert_or_skip condition message
 #
-# Input: condition -- The boolean expression to test
-# Input: message   -- The message to print on failure
+# DESCRIPTION
+#	Tests a boolean condition. If the condition is false, the
+#	function will call skip with the specified message.
+#
+# ARGUMENTS
+#	condition
+#		The boolean expression to test
+#	message
+#		The message to print with the action
 #
 ################################################################
+
 proc assert_or_skip { condition message } {
 	assert "$condition" "$message" "skip"
 }
+

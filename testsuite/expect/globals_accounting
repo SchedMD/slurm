@@ -117,6 +117,7 @@ proc add_cluster { name clus_req_in } {
 	return $exit_code
 }
 
+
 #
 # Use sacctmgr to remove the test cluster
 #
@@ -193,6 +194,7 @@ proc remove_cluster {name} {
 	return $exit_code
 }
 
+
 proc mod_cluster { name clus_req_in } {
 	global sacctmgr timeout
 
@@ -265,6 +267,7 @@ proc mod_cluster { name clus_req_in } {
 
 	return $exit_code
 }
+
 
 #
 # Use sacctmgr to add an account
@@ -345,6 +348,7 @@ proc add_acct { name acct_req_in } {
 	return $exit_code
 }
 
+
 #
 # Use sacctmgr to remove an account
 #
@@ -424,6 +428,7 @@ proc remove_acct { cluster name } {
 	return $exit_code
 }
 
+
 #
 # Use sacctmgr to modify an account
 #
@@ -444,6 +449,7 @@ proc remove_acct { cluster name } {
 #     acct_mod_acct_vals_in - account values consist of parent,
 #     organization, description
 ########################################################################
+
 proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_in } {
 
 	global sacctmgr timeout
@@ -559,6 +565,7 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 	return $exit_code
 }
 
+
 #
 # Use sacctmgr to add a user
 #
@@ -643,6 +650,7 @@ proc add_user { name user_req_in } {
 
 }
 
+
 #
 # Use sacctmgr to remove an user
 #
@@ -726,6 +734,7 @@ proc remove_user { cluster acct user } {
 
 	return $exit_code
 }
+
 
 #
 # Use sacctmgr to modify an user
@@ -864,6 +873,7 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 	return $exit_code
 }
 
+
 #
 # Use sacctmgr to create a QoS
 #
@@ -937,6 +947,7 @@ proc add_qos {name qos_req_in} {
 	return $exit_code
 }
 
+
 #
 # Modify QoS
 #
@@ -987,6 +998,7 @@ proc mod_qos { qos_name qos_mod_val_in} {
 	}
 	return $exit_code
 }
+
 
 #
 # Use sacctmgr to remove the test QoS
@@ -1064,6 +1076,7 @@ proc remove_qos {name} {
 	return $exit_code
 }
 
+
 #
 # Use sacctmgr to add a coordinator
 #
@@ -1139,6 +1152,7 @@ proc add_coor { accounts names } {
 	}
 	return $exit_code
 }
+
 
 #
 # Use sacctmgr to remove a coordinator
@@ -1218,6 +1232,7 @@ proc remove_coor { accounts names } {
 	return $exit_code
 }
 
+
 proc archive_load { file } {
 	global sacctmgr timeout
 	#
@@ -1252,6 +1267,7 @@ proc archive_load { file } {
 	}
 	return $exit_code
 }
+
 
 #
 # Use sacctmgr to create a resource
@@ -1315,6 +1331,7 @@ proc add_resource {name res_limits} {
 	return $exit_code
 }
 
+
 #
 # Use sacctmgr to create a clus_res
 #
@@ -1374,6 +1391,7 @@ proc add_clus_res {name allowed} {
 
 	return $exit_code
 }
+
 
 #
 # Use sacctmgr to remove the test res
@@ -1504,15 +1522,20 @@ proc remove_clus_res {name} {
 	return $exit_code
 }
 
+
 ################################################################
 #
-# Proc: check_assoc_limit
+# NAME
+#	check_assoc_limit - checks that the association limits are correct
 #
-# Purpose: check that the association limits are correct
+# SYNOPSIS
+#	check_assoc_limit assoc type name assoc_val
 #
-# Returns: 1 if association limits are correct, 0 otherwise
+# RETURN VALUE
+#	1 if association limits are correct, 0 otherwise
 #
 ################################################################
+
 proc check_assoc_limit { assoc type name assoc_val } {
 	global sacctmgr number exit_code
 	array set assoc_arr $assoc_val
@@ -1608,15 +1631,20 @@ proc check_assoc_limit { assoc type name assoc_val } {
 	log_user 1
 }
 
+
 ################################################################
 #
-# Proc: reset_account_usage
+# NAME
+#	reset_account_usage - resets account association limits on a given cluster
 #
-# Purpose: reset account association limits on a given cluster
+# SYNOPSIS
+#	reset_account_usage cluster account
 #
-# Returns: 1 if usage reset was successful, 0 otherwise
+# RETURN VALUE
+#	1 if usage reset was successful, 0 otherwise
 #
 ################################################################
+
 proc reset_account_usage { cluster acct } {
 	global sacctmgr exit_code
 
@@ -1642,15 +1670,20 @@ proc reset_account_usage { cluster acct } {
 	}
 }
 
+
 ################################################################
 #
-# Proc: reset_qos_usage
+# NAME
+#	reset_qos_usage - resets QOS usage on a given cluster
 #
-# Purpose: reset QOS usage on a given cluster
+# SYNOPSIS
+#	reset_qos_usage cluster qos
 #
-# Returns: 1 if successful, 0 otherwise
+# RETURN VALUE
+#	1 if successful, 0 otherwise
 #
 ################################################################
+
 proc reset_qos_usage { cluster qos } {
 	global sacctmgr exit_code
 
@@ -1679,15 +1712,20 @@ proc reset_qos_usage { cluster qos } {
 
 ###############################################################
 #
-# Proc: check_wckey_tracking_slurmdbd
+# NAME
+#	check_wckey_tracking_slurmdbd - checks to see if wckey tracking is enabled in the SlurmDBD
 #
-# Purpose: Check to see that wcky tracking is enabled in the
-# SlurmDBD
+# SYNOPSIS
+#	check_wckey_tracking_slurmdbd
 #
-# Returns: 1 if successful, 0 otherwise
+# DESCRIPTION
+#	Check to see that wckey tracking is enabled in the SlurmDBD
 #
+# RETURN VALUE
+#	1 if successful, 0 otherwise
 #
 ###############################################################
+
 proc check_wckey_tracking_slurmdbd { } {
 	global sacctmgr
 
@@ -1711,16 +1749,20 @@ proc check_wckey_tracking_slurmdbd { } {
 	return $wckey
 }
 
+
 ###############################################################
 #
-# Proc: check_qos_limits
+# NAME
+#	check_qos_limits - verifies that the qos limits are correct
 #
-# Purpose: Verify that the qos limits are correct
+# SYNOPSIS
+#	check_qos_limits name qos_req
 #
-# Returns: 0 if successful, 1 otherwise
-#
+# RETURN VALUE
+#	0 if successful, 1 otherwise
 #
 ###############################################################
+
 proc check_qos_limits { name qos_req } {
 	global sacctmgr
 
@@ -1774,16 +1816,20 @@ proc check_qos_limits { name qos_req } {
 	return $exit_code
 }
 
+
 ###############################################################
 #
-# Proc: check_resource_limits
+# NAME
+#	check_resource_limits - verifies that the reservation limits are correct
 #
-# Purpose: Verify that the reservation limits are correct
+# SYNOPSIS
+#	check_resource_limits name res_limits
 #
-# Returns: 0 if successful, 1 otherwise
-#
+# RETURN VALUE
+#	0 if successful, 1 otherwise
 #
 ###############################################################
+
 proc check_resource_limits { name res_limits } {
 	global sacctmgr
 
@@ -1833,15 +1879,20 @@ proc check_resource_limits { name res_limits } {
 
 }
 
+
 ###############################################################
 #
-# Proc: mod_resource
+# NAME
+#	mod_resource - modifies existing resource limits
 #
-# Purpose: Modify existing resources limits
+# SYNOPSIS
+#	mod_resource name mod_limits
 #
-# Returns: 0 if successful, 1 otherwise
+# RETURN VALUE
+#	0 if successful, 1 otherwise
 #
 ###############################################################
+
 proc mod_resource {name mod_limits} {
 
 	global sacctmgr
@@ -1887,15 +1938,20 @@ proc mod_resource {name mod_limits} {
 	return $exit_code
 }
 
+
 ###############################################################
 #
-# Proc: get_assoc_id
+# NAME
+#	get_assoc_id - returns association ID for given user/account/cluster
 #
-# Purpose: Return association ID for given user/account/cluster
+# SYNOPSIS
+#	get_assoc_id user account cluster
 #
-# Returns: association ID if successful, -1 otherwise
+# RETURN VALUE
+#	association ID if successful, -1 otherwise
 #
 ###############################################################
+
 proc get_assoc_id {user acct cluster} {
 	global sacctmgr number
 

@@ -43,6 +43,7 @@ cset fedc3 		""
 
 set eol "\r\n"
 
+
 proc test_federation_setup { } {
 	global fed_slurm_base fedc1 fedc2 fedc3
 	set rc 0
@@ -55,6 +56,7 @@ proc test_federation_setup { } {
 
 	return $rc
 }
+
 
 proc setup_federation { fed_name } {
 	global sacctmgr fedc1 fedc2 fedc3 eol
@@ -134,6 +136,7 @@ proc setup_federation { fed_name } {
 	return $rc
 }
 
+
 proc test_cluster_up { cname } {
 	set rc 0
 	set matches 0
@@ -178,6 +181,7 @@ proc test_all_up {} {
 
 	return $rc
 }
+
 
 proc delete_federations { names } {
 	global sacctmgr
@@ -232,6 +236,7 @@ proc delete_federations { names } {
 	return $rc
 }
 
+
 proc get_clusterfed_info { fed_name } {
 	global sacctmgr eol
 	set matches 0
@@ -266,6 +271,7 @@ proc get_clusterfed_info { fed_name } {
 
 	return [array get clusters]
 }
+
 
 #
 # Add a single cluster to the given federation.
@@ -312,6 +318,7 @@ proc add_cluster_to_fed {cname fed_name} {
 
 	return $rc
 }
+
 
 #
 # Remove a single cluster from the given federation.
@@ -399,25 +406,34 @@ proc modify_federation_flags {fed_name mode flags} {
 
 ################################################################
 #
-# Proc: wait_for_fed_job
+# NAME
+#	wait_for_fed_job - waits for a job to reach the desired state
 #
-# Purpose:  Wait for a previously submitted Slurm job to reach the
-#           desired state. Polls every $testsuite_poll_interval seconds.
+# SYNOPSIS
+#	wait_for_fed_job job_id desired_state clusters
 #
-# Returns: The name of the first cluster on which the job is found
-#          in the desired state. Empty string indicates a failure.
+# DESCRIPTION
+#	Wait for a previously submitted Slurm job to reach
+#	the desired state. Polls every $testsuite_poll_interval seconds.
 #
-# Input: job_id   -- The Slurm job id of a job we want to
-#                    wait for.
-#        desired_state -- The state you want the job to attain before
-#                         returning.  Currently supports:
-#                            DONE any terminated state
-#                            PENDING job is pending
-#                            RUNNING job is running
-#                            SUSPENDED job is suspended
+# ARGUMENTS
+#	job_id
+#		The Slurm job id of a job we want to wait for.
+#	desired_state
+#		The state you want the job to attain before
+#		returning.  Currently supports:
+#			DONE any terminated state
+#			PENDING job is pending
+#			RUNNING job is running
+#			SUSPENDED job is suspended
 #
-# NOTE: We sleep for two seconds before replying that a job is
-# done to give time for I/O completion (stdout/stderr files)
+# RETURN VALUE
+#	The name of the first cluster on which the job is found
+#	in the desired state. Empty string indicates a failure.
+#
+# NOTE
+#	We sleep for two seconds before replying that a job is
+#	done to give time for I/O completion (stdout/stderr files)
 #
 ################################################################
 
