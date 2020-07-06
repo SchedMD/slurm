@@ -4029,7 +4029,7 @@ proc get_suffix { hostname } {
 	incr host_inx
 
 	if {$host_inx == $host_len} {
-		log_warn "Hostname lacks a suffix:$hostname"
+		log_warn "Hostname lacks a suffix: $hostname"
 		return "-1"
 	}
 
