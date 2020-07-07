@@ -101,6 +101,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix insufficient lock levels.
  -- slurmrestd - use errno from job submission.
  -- Fix "user" filter for sacctmgr show transactions.
+ -- Fix preemption logic.
 
 * Changes in Slurm 20.02.3
 ==========================
