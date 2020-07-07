@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "April 2020" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "July 2020" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -1194,10 +1194,6 @@ the time will be the job's start time. The end time will be the specified \-E
 option if the job ends after the specified time, otherwise it will be
 the jobs end time.
 
-NOTE: If no \-s (\-\-state) option is given sacct will
-display jobs that ran during the specified time, otherwise it returns
-jobs that were in the state requested during that period of time.
-
 Without \-T (normal operation) sacct output would be like this.
 .RS
 .PP
@@ -1231,7 +1227,43 @@ is useful when determining exact run times during any given period.
 4         2014\-07\-03T11:40:00   2014\-07\-03T11:45:21   COMPLETED
 5         2014\-07\-03T11:41:01   2014\-07\-03T12:00:00   RUNNING
 
+.ft 1
+.fi
+.RE
+.PP
+\fBNOTE\fR: If no \fB\-s\fR (\fB\-\-state\fR) option is given sacct will
+display eligible jobs during the specified period of time, otherwise it
+will return jobs that were in the state requested during that period of
+time.
 
+This example demonstrates the differences running sacct with and without
+the \fB\-\-state\fR flag for the same time period. Without the
+\fB\-\-state\fR option, all eligible jobs in that time period are shown.
+.RS
+.PP
+.nf
+.ft 3
+# sacct -S11:20:00 -E11:25:00 -X -ojobid,start,end,state
+       JobID               Start                 End      State
+------------ ------------------- ------------------- ----------
+2955                    11:15:12            11:20:12  COMPLETED
+2956                    11:20:13            11:25:13  COMPLETED
+.ft 1
+.fi
+.RE
+.PP
+With the \fB\-\-state=pending\fR option, only job 2956 will be shown because
+it had a dependency on 2955 and was still PENDING from 11:20:00 until it
+started at 11:21:13. Note that even though we requested PENDING jobs, the
+State shows as COMPLETED because that is the current State of the job.
+.RS
+.PP
+.nf
+.ft 3
+# sacct --state=pending -S11:20:00 -E11:25:00 -X -ojobid,start,end,state
+       JobID               Start                 End      State
+------------ ------------------- ------------------- ----------
+2956                    11:20:13            11:25:13  COMPLETED
 .ft 1
 .fi
 .RE
