@@ -383,7 +383,13 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 		} else {
 			if (xstrncasecmp(tok, "cyclic", len) == 0) {
 				result = SLURM_DIST_CYCLIC;
-			} else if (xstrncasecmp(tok, "block", len) == 0) {
+			} else if ((xstrncasecmp(tok, "block", len) == 0) ||
+				   (xstrncasecmp(tok, "*", len) == 0)) {
+				/*
+				 * We can get here with syntax like this:
+				 * -m *,pack
+				 * '*' means get default (block for node dist).
+				 */
 				result = SLURM_DIST_BLOCK;
 			} else if ((xstrncasecmp(tok, "arbitrary", len) == 0) ||
 				   (xstrncasecmp(tok, "hostfile", len) == 0)) {
