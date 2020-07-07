@@ -1344,7 +1344,7 @@ static int arg_set_data_distribution(slurm_opt_t *opt, const data_t *arg,
 	if ((rc = data_get_string_converted(arg, &str)))
 		ADD_DATA_ERROR("Unable to read string", rc);
 	else {
-		// FIXME: always ignore SLURM_DIST_PLANESIZE envvar
+		/* FIXME: ignore SLURM_DIST_PLANESIZE envvar for slurmrestd */
 		opt->distribution = verify_dist_type(str, &opt->plane_size);
 
 		if (opt->distribution == SLURM_DIST_UNKNOWN) {
