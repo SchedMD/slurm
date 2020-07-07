@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "June 2020" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "July 2020" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1220,13 +1220,11 @@ Cyclic distribution is the default behavior if the number
 of tasks is no larger than the number of allocated nodes.
 .TP
 .B plane
-The tasks are distributed in blocks of a specified size.  The options
-include a number representing the size of the task block.  This is
-followed by an optional specification of the task distribution scheme
-within a block of tasks and between the blocks of tasks.  The number of tasks
+The tasks are distributed in blocks of a specified size. The number of tasks
 distributed to each node is the same as for cyclic distribution, but the
-taskids assigned to each node depend on the plane size. For more
-details (including examples and diagrams), please see
+taskids assigned to each node depend on the plane size. Additional distribution
+specifications cannot be combined with this option.
+For more details (including examples and diagrams), please see
 .br
 https://slurm.schedmd.com/mc_support.html
 .br
