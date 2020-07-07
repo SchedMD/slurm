@@ -2853,9 +2853,8 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 		}
 		_preempt_jobs(preemptee_job_list, kill_pending, &error_code,
 			      job_ptr);
-		if ((error_code == ESLURM_NODES_BUSY) &&
-		    (detail_ptr->preempt_start_time == 0)) {
-  			detail_ptr->preempt_start_time = now;
+		if ((error_code == ESLURM_NODES_BUSY) && kill_pending) {
+			detail_ptr->preempt_start_time = now;
 			job_ptr->preempt_in_progress = true;
 			if (job_ptr->array_recs)
 				job_ptr->array_recs->pend_run_tasks++;
