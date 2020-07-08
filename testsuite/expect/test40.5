@@ -26,15 +26,12 @@
 ############################################################################
 source ./globals
 
-set test_id          "40.5"
 set exit_code        0
 set file_in1         "test$test_id.input1"
 set file_in2         "test$test_id.input2"
 set file_in3         "test$test_id.input3"
 set file_out1        "test$test_id.output1"
 set file_out2        "test$test_id.output2"
-
-print_header $test_id
 
 if {![test_scheduler_params "permit_job_expansion"]} {
     skip "This test is only compatible with SchedulerParameters=permit_job_expansion"

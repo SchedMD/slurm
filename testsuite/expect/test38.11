@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set test_id    38.11
 set script1   "test$test_id.in1"
 set exit_code  0
 set job_id     0
@@ -42,8 +41,6 @@ proc cleanup { } {
 		exec $scancel $pack_job_id
 	}
 }
-
-print_header $test_id
 
 if {![test_accting_steps]} {
 	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"

@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "3.7"
 set exit_code      0
 set file_out1      "test$test_id.output.1"
 set file_out2      "test$test_id.output.2"
@@ -40,8 +39,6 @@ set job_id1        0
 set job_id2        0
 set host_name      ""
 set not_supported  0
-
-print_header $test_id
 
 if {[test_gang] != 0} {
 	skip "This test can't be run with gang scheduling"

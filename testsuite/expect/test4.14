@@ -27,13 +27,10 @@
 ############################################################################
 source ./globals
 
-set test_id        4.14
 set test_part_1    "test$test_id\_partition_1"
 set test_part_2    "test$test_id\_partition_2"
 set test_node      ""
 set exit_code      0
-
-print_header $test_id
 
 if {[test_super_user] == 0} {
 	skip "Can not test more unless SlurmUser or root"

@@ -27,12 +27,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.70"
 set file_out    "test$test_id.out"
 set file_in     "$srun"
 set exit_code   0
-
-print_header $test_id
 
 # Remove any remaining files
 exec $bin_rm -f $file_out

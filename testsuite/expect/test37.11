@@ -41,7 +41,6 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set test_id     "37.11"
 set exit_code   0
 set fed_name    "feda"
 set user_name   ""
@@ -52,8 +51,6 @@ set min_job_age [expr {[get_min_job_age] + 65}]
 set file_in          "test$test_id.in"
 
 set eol "\r\n"
-
-print_header $test_id
 
 #
 # Check accounting config and bail if not found.

@@ -28,13 +28,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.40"
 set file_in     "test$test_id.input"
 set exit_code   0
 set job_id1     0
 set job_id2     0
-
-print_header $test_id
 
 if {[test_assoc_enforced]} {
 	skip "This test will not work when associations are enforced"

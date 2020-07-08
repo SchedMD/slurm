@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.31"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
@@ -38,8 +37,6 @@ set delay       1
 set node_cnt    3
 set ppn_cnt     2
 set min_mem     1024
-
-print_header $test_id
 
 set available [available_nodes]
 if {$available < $node_cnt} {

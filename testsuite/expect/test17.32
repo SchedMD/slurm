@@ -28,13 +28,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.32"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set job_id      0
-
-print_header $test_id
 
 #
 # Submit a slurm job that will print slurm env vars and execute 'id'

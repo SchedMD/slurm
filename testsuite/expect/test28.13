@@ -26,12 +26,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "28.13"
 set exit_code   0
 set file_script "test$test_id.bash"
 set job_id      0
-
-print_header $test_id
 
 make_bash_script $file_script "
 if \[ \$SLURM_ARRAY_TASK_ID == 2 \]

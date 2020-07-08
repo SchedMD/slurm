@@ -31,7 +31,6 @@
 ############################################################################
 source ./globals
 
-set test_id      "9.1"
 set exit_code    0
 set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
@@ -42,8 +41,6 @@ set task_cnt    $max_stress_tasks
 set node_cnt	1-6
 
 set other_opts   "-O"
-
-print_header $test_id
 
 # Execute an srun job to cat input_file to output_file, wait for completion
 # Returns 0 on successful completion, returns 1 otherwise

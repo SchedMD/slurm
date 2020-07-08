@@ -28,7 +28,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id      21.32
 set exit_code    0
 set qos_test(0)  "test$test_id\_qos_0"
 set qos_test(1)  "test$test_id\_qos_1"
@@ -36,8 +35,6 @@ set qos_test(2)  "test$test_id\_qos_2"
 set qos_test(3)  "test$test_id\_qos_3"
 set qos_test(4)  "test$test_id\_qos_4"
 set access_err  0
-
-print_header $test_id
 
 set qos_names_str 0
 foreach inx [array names qos_test] {

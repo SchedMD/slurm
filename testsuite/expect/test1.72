@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id   "1.72"
 set freq_val  0
 set exit_code 0
 
@@ -40,8 +39,6 @@ if {[get_job_acct_freq] == 0} {
 if {[check_node_mem] == 0} {
 	skip "This test requires that the nodes have memory"
 }
-
-print_header $test_id
 
 #
 # set value of freq_val to JobAcctGatherFrequency

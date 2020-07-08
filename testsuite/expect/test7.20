@@ -26,7 +26,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id		"7.20"
 set test_lua_reject	"test$test_id\_scripts/reject.lua"
 set test_lua_pass	"test$test_id\_scripts/pass.lua"
 set exit_code		 0
@@ -63,7 +62,6 @@ set qos_2(Description)    "test_qos_2"
 set access_err  0
 
 set timeout $max_job_delay
-print_header $test_id
 
 # Create test assoc and accounts
 proc create_accounts {} {

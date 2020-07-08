@@ -28,11 +28,8 @@
 ############################################################################
 source ./globals
 
-set test_id              "1.58"
 set exit_code            0
 set jobid                0
-
-print_header $test_id
 
 #
 # Run an srun to grab a single node allocation, but not start any

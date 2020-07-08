@@ -28,11 +28,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.10"
 set exit_code   0
 set job_id      0
-
-print_header $test_id
 
 for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 	set tasks_set $inx

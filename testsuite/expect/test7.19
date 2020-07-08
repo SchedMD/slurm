@@ -26,10 +26,7 @@
 
 source ./globals
 
-set test_id	"7.19"
 set file_in	"bash"
-
-print_header $test_id
 
 proc test_sbatch { local } {
 	global sbatch number file_in

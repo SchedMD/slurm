@@ -33,10 +33,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.21"
 set exit_code   0
-
-print_header $test_id
 
 if {[test_front_end]} {
 	skip "This test is incompatible with front-end systems"

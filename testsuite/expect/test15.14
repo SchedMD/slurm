@@ -28,15 +28,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.14"
 set file_in1    "test$test_id.input1"
 set file_in2    "test$test_id.input2"
 set file_out2   "test$test_id.output2"
 set exit_code   0
 set job_id1     0
 set job_id2     0
-
-print_header $test_id
 
 #
 # Build input script files

@@ -27,13 +27,10 @@
 ############################################################################
 source ./globals
 
-set test_id		"1.116"
 set timeout		$max_job_delay
 set job_id		0
 set mem_spec		"100M"
 set job_min_memory_cpu 	0
-
-print_header $test_id
 
 #
 # submit srun job with a specific mem-per-cpu request

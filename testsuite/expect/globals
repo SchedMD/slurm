@@ -264,13 +264,16 @@ cset sleep_error_message "(invalid time interval)|(bad character in argument)|(u
 # Force LANG, as the expect tests aren't localized
 set ::env(LANG)          "en_US.UTF-8"
 
+# Testsuite level variables
+cset testsuite_shared_dir "[$bin_pwd]"
+
 #
 # The poll interval (how many seconds to sleep between polls in functions like
 # wait_for_file and wait_for_job)
 #
 cset testsuite_poll_interval 1
 
-# Testsuite level variables
+# Testsuite log variables
 cset testsuite_log_level $LOG_LEVEL_DEBUG
 cset testsuite_log_format "\[%{timestamp}s.%{msecs}03d] \(%{filename}s:%{lineno}d) %{loglevel}-7s %{message}s"
 cset testsuite_time_format "%Y-%m-%d %H:%M:%S"
@@ -367,69 +370,6 @@ set test_id   [string map {test ""} $test_name]
 
 ################################################################
 #
-# Overload the exit routine so we can consistently print the final test status
-#
-# When a test exits with a zero exit code, we print SUCCESS.
-# When a test exits with a negative exit code, we print SKIPPED.
-# When a test exits with a positive exit code, we print FAILURE.
-#
-# If a local cleanup procedure is defined, we will always call it for
-# successful or skipped tests. Whether or the cleanup procedure is called
-# for failed tests depends on the setting of the $testsuite_cleanup_on_failure
-# variable which can be set in the globals.local file or overridden with the
-# SLURM_TESTSUITE_CLEANUP_ON_FAILURE environment variable.
-#
-# NOTE: DO NOT call exit in your local cleanup procedure
-#
-################################################################
-
-rename exit __exit
-
-proc exit { {status 0} } {
-	global testsuite_cleanup_on_failure
-
-	# Avoid recursive calls from within cleanup
-	if {[info level] > 1 && [lindex [info level -1] 0] eq "cleanup"} {
-		log_warn "Do not call exit from your local cleanup procedure"
-		return
-	}
-
-	if {$status == 0} {
-		# Call the test's cleanup procedure if defined
-		if {[info procs cleanup] eq "cleanup"} {
-			if {[catch {cleanup} cleanup_error ]} {
-				log_warn "Cleanup had errors: $cleanup_error"
-			}
-		 }
-
-		print_success
-	} elseif {$status < 0} {
-		# Call the test's cleanup procedure if defined
-		if {[info procs cleanup] eq "cleanup"} {
-			if {[catch {cleanup} cleanup_error ]} {
-				log_warn "Cleanup had errors: $cleanup_error"
-			}
-		}
-
-		print_skipped
-	} else {
-		# Call the test's cleanup procedure if defined and allowed
-		if {$testsuite_cleanup_on_failure && [info procs cleanup] eq \
-		                                     "cleanup"} {
-			if {[catch {cleanup} cleanup_error ]} {
-				log_warn "Cleanup had errors: $cleanup_error"
-			}
-		}
-
-		print_failure
-	}
-
-	__exit $status
-}
-
-
-################################################################
-#
 # NAME
 #	fail - fails a test
 #
@@ -454,10 +394,16 @@ proc exit { {status 0} } {
 
 proc fail { message } {
 
+	# Avoid recursive calls from within cleanup
+	if {[info level] > 1 && [lindex [info level -1] 0] eq "cleanup"} {
+		log_error "Local cleanup shouldn't call pass, fail or skip"
+		return
+	}
+
 	log_fatal $message
 
-	# Exit will handle the cleanup procedure and print the failure message.
-	exit 1
+	# _test_fini will handle cleanup and print the failure message.
+	_test_fini 1
 }
 
 
@@ -482,10 +428,16 @@ proc fail { message } {
 
 proc skip { message } {
 
+	# Avoid recursive calls from within cleanup
+	if {[info level] > 1 && [lindex [info level -1] 0] eq "cleanup"} {
+		log_error "Local cleanup shouldn't call pass, fail or skip"
+		return
+	}
+
 	log_warn $message
 
-	# Exit will handle the cleanup procedure and print the skipped message.
-	exit -1
+	# _test_fini will handle cleanup and print the skipped message.
+	_test_fini -1
 }
 
 
@@ -509,8 +461,14 @@ proc skip { message } {
 
 proc pass { } {
 
-	# Exit will handle the cleanup procedure and print the success message.
-	exit 0
+	# Avoid recursive calls from within cleanup
+	if {[info level] > 1 && [lindex [info level -1] 0] eq "cleanup"} {
+		log_error "Local cleanup shouldn't call pass, fail or skip"
+		return
+	}
+
+	# _test_fini will handle cleanup and print the success message.
+	_test_fini 0
 }
 
 
@@ -1149,45 +1107,6 @@ proc kill_srun {  } {
 	catch {exec $bin_pkill -KILL -u $uid srun}
 
 	return 0
-}
-
-
-################################################################
-#
-# NAME
-#	print_header - prints a test header
-#
-# SYNOPSIS
-#	print_header ?test_id?
-#
-# DESCRIPTION
-#	Print header with test ID
-#
-# ENVIRONMENT
-#	testsuite_colorize
-#		Boolean that turns colorization on or off
-#	testsuite_color_header
-#		Can be set to define the color used for the header
-#
-################################################################
-
-proc print_header { { test_id_in "" } } {
-	global test_id testsuite_color_header testsuite_colorize COLOR_NONE
-
-	if { "$test_id_in" == "" } {
-		set test_id_in $test_id
-	}
-
-	if ($testsuite_colorize) {
-		append output $testsuite_color_header
-	}
-	append output [string repeat = 78]\n
-	append output [format "%-9s" "TEST:"]test$test_id_in\n
-	append output [string repeat = 78]
-	if ($testsuite_colorize) {
-		append output $COLOR_NONE
-	}
-	puts $output
 }
 
 
@@ -4599,123 +4518,6 @@ proc get_idle_node_in_part { {partition ""} } {
 }
 
 
-################################################################
-#
-# NAME
-#	print_failure - prints a final failure test status message
-#
-# SYNOPSIS
-#	print_failure ?test_id?
-#
-# DESCRIPTION
-#	Print FAILURE with test ID
-#
-# ENVIRONMENT
-#	testsuite_colorize
-#		Boolean that turns colorization on or off
-#	testsuite_color_<test_status>
-#		Can be set to define the color used for each test status
-#
-################################################################
-
-proc print_failure { {test_id_in ""} } {
-	global testsuite_color_failure test_id testsuite_colorize COLOR_NONE
-
-	if { "$test_id_in" == "" } {
-		set test_id_in $test_id
-	}
-
-	if ($testsuite_colorize) {
-		append output $testsuite_color_failure
-	}
-	append output [string repeat = 78]\n
-	append output [format "%-9s" "FAILURE:"]test${test_id_in}\n
-	append output [string repeat = 78]
-	if ($testsuite_colorize) {
-		append output $COLOR_NONE
-	}
-	puts $output
-}
-
-
-################################################################
-#
-# NAME
-#	print_skipped - prints a final skipped test status message
-#
-# SYNOPSIS
-#	print_skipped ?test_id?
-#
-# DESCRIPTION
-#	Print SKIPPED with test ID
-#
-# ENVIRONMENT
-#	testsuite_colorize
-#		Boolean that turns colorization on or off
-#	testsuite_color_<test_status>
-#		Can be set to define the color used for each test status
-#
-################################################################
-
-proc print_skipped { {test_id_in ""} } {
-	global testsuite_color_skipped test_id testsuite_colorize COLOR_NONE
-
-	if { "$test_id_in" == "" } {
-		set test_id_in $test_id
-	}
-
-	if ($testsuite_colorize) {
-		append output $testsuite_color_skipped
-	}
-	append output [string repeat = 78]\n
-	append output [format "%-9s" "SKIPPED:"]test${test_id_in}\n
-	append output [string repeat = 78]
-	if ($testsuite_colorize) {
-		append output $COLOR_NONE
-	}
-	puts $output
-}
-
-
-################################################################
-#
-# NAME
-#	print_success - prints a final success test status message
-#
-# SYNOPSIS
-#	print_success ?test_id?
-#
-# DESCRIPTION
-#	Print SUCCESS with test ID
-#
-# ENVIRONMENT
-#	testsuite_colorize
-#		Boolean that turns colorization on or off
-#	testsuite_color_<test_status>
-#		Can be set to define the color used for each test status
-#
-################################################################
-
-proc print_success { {test_id_in ""} } {
-	global test_id testsuite_color_success testsuite_colorize COLOR_NONE
-
-	if { "$test_id_in" == "" } {
-		set test_id_in $test_id
-	}
-
-	if ($testsuite_colorize) {
-		append output $testsuite_color_success
-	}
-	append output [string repeat = 78]\n
-	append output [format "%-9s" "SUCCESS:"]test${test_id_in}\n
-	append output [string repeat = 78]
-	if ($testsuite_colorize) {
-		append output $COLOR_NONE
-	}
-	puts $output
-}
-
-
 ###############################################################
 #
 # NAME
@@ -8000,3 +7802,335 @@ proc _log_format { log_level message } {
 	}
 	puts $output
 }
+
+
+################################################################
+#
+# NAME
+#	_print_header - prints a test header
+#
+# SYNOPSIS
+#	_print_header
+#
+# ENVIRONMENT
+#	testsuite_colorize
+#		Boolean that turns colorization on or off
+#	testsuite_color_header
+#		Can be set to define the color used for the header
+#
+################################################################
+
+proc _print_header { } {
+	global test_name testsuite_color_header testsuite_colorize COLOR_NONE
+
+	if ($testsuite_colorize) {
+		append output $testsuite_color_header
+	}
+	append output [string repeat = 78]\n
+	append output [format "%-9s" "TEST:"]${test_name}\n
+	append output [string repeat = 78]
+	if ($testsuite_colorize) {
+		append output $COLOR_NONE
+	}
+	puts $output
+}
+
+
+################################################################
+#
+# NAME
+#	_print_failure - prints FAILURE status with test name
+#
+# SYNOPSIS
+#	_print_failure
+#
+# ENVIRONMENT
+#	testsuite_colorize
+#		Boolean that turns colorization on or off
+#	testsuite_color_<test_status>
+#		Can be set to define the color used for each test status
+#
+################################################################
+
+proc _print_failure { } {
+	global test_name testsuite_color_failure testsuite_colorize COLOR_NONE
+
+	if ($testsuite_colorize) {
+		append output $testsuite_color_failure
+	}
+	append output [string repeat = 78]\n
+	append output [format "%-9s" "FAILURE:"]${test_name}\n
+	append output [string repeat = 78]
+	if ($testsuite_colorize) {
+		append output $COLOR_NONE
+	}
+	puts $output
+}
+
+
+################################################################
+#
+# NAME
+#	_print_skipped - prints SKIPPED status with test name
+#
+# SYNOPSIS
+#	_print_skipped
+#
+# ENVIRONMENT
+#	testsuite_colorize
+#		Boolean that turns colorization on or off
+#	testsuite_color_<test_status>
+#		Can be set to define the color used for each test status
+#
+################################################################
+
+proc _print_skipped { } {
+	global test_name testsuite_color_skipped testsuite_colorize COLOR_NONE
+
+
+	if ($testsuite_colorize) {
+		append output $testsuite_color_skipped
+	}
+	append output [string repeat = 78]\n
+	append output [format "%-9s" "SKIPPED:"]${test_name}\n
+	append output [string repeat = 78]
+	if ($testsuite_colorize) {
+		append output $COLOR_NONE
+	}
+	puts $output
+}
+
+
+################################################################
+#
+# NAME
+#	_print_success - prints SUCCESS status with test name
+#
+# SYNOPSIS
+#	_print_success
+#
+# ENVIRONMENT
+#	testsuite_colorize
+#		Boolean that turns colorization on or off
+#	testsuite_color_<test_status>
+#		Can be set to define the color used for each test status
+#
+################################################################
+
+proc _print_success { } {
+	global test_name testsuite_color_success testsuite_colorize COLOR_NONE
+
+
+	if ($testsuite_colorize) {
+		append output $testsuite_color_success
+	}
+	append output [string repeat = 78]\n
+	append output [format "%-9s" "SUCCESS:"]${test_name}\n
+	append output [string repeat = 78]
+	if ($testsuite_colorize) {
+		append output $COLOR_NONE
+	}
+	puts $output
+}
+
+
+################################################################
+#
+# NAME
+#	_get_test_name - gets the name of the invoking source script
+#
+# SYNOPSIS
+#	_get_test_name
+#
+# RETURN VALUE
+#	The name of the originally called script
+#
+################################################################
+
+proc _get_test_name { } {
+
+	set test_name unknown
+	set frame_level 1
+	while { $frame_level <= [info frame] } {
+		if { [dict get [info frame $frame_level] type] == "source" } {
+			set test_name [file tail [dict get [info frame $frame_level] file]]
+			break
+		}
+		incr frame_level
+	}
+
+	return $test_name
+}
+
+
+################################################################
+#
+# NAME
+#	_test_cleanup - performs the test cleanup
+#
+# SYNOPSIS
+#	_test_cleanup
+#
+# DESCRIPTION
+#	This procedure removes the temporary test_dir and calls the
+#	test-defined cleanup procedure.
+#
+# NOTES
+#	This function should be called only from _test_init and _exit.
+#
+################################################################
+
+proc _test_cleanup {} {
+	global log_warn test_dir
+
+	set rc 0
+
+	# Call global cleanup procedure if it is defined by the test
+	if {[info procs cleanup] eq "cleanup"} {
+		if {[catch {cleanup} cleanup_error ]} {
+			log_error "Cleanup had errors: $cleanup_error"
+			set rc 1
+		}
+	 }
+
+	# Remove the temporary test directory
+	exec rm -rf $test_dir
+
+	return $rc
+}
+
+################################################################
+#
+# NAME
+#	_test_init - performs test initialization
+#
+# SYNOPSIS
+#	_test_init
+#
+# DESCRIPTION
+#	This procedure is called automatically at the beginning of each test.
+#	It prints the header, creates the temporary test dir, etc.
+#
+################################################################
+
+proc _test_init {} {
+	global test_dir test_id test_name testsuite_shared_dir
+
+	# Set test name to name of originally invoked test script, e.g. test1.1
+	set test_name [_get_test_name]
+
+	# Set test id to suffix of the test script, e.g. 1.1
+	set test_id [string map {test ""} $test_name]
+
+	# Temporary test directory used to stash saved configs, output files...
+	set test_dir  "$testsuite_shared_dir/${test_name}dir"
+
+	# Print test header
+	_print_header
+
+	# Cleanup in case test was not cleaned up on last execution
+	if { [_test_cleanup] } {
+		fail "Error in the initial cleanup"
+	}
+
+	# Create temporary shared test directory
+	exec mkdir -p $test_dir
+}
+
+
+################################################################
+#
+# NAME
+#	_test_fini - performs test finalization
+#
+# SYNOPSIS
+#	_test_fini ?status?
+#
+# DESCRIPTION
+#	This procedure is called automatically from the ending functions
+#	pass, skip and failure.
+#	It cleans up based on the status and the testsuite_cleanup_on_failure
+#	variable, prints the final test status/summary, and exits the test.
+#
+#	When status is zero, we print SUCCESS.
+#	When status is negative, we print SKIPPED.
+#	When status is positive, we print FAILURE.
+#
+#	We will always cleanup for SUCCESS or SKIPPED tests.
+#	Whether or not the cleanup procedure is called for FAILURE tests
+#	depends on the setting of the $testsuite_cleanup_on_failure variable
+#	which can be set in the globals.local file or overridden with the
+#	SLURM_TESTSUITE_CLEANUP_ON_FAILURE environment variable.
+#
+################################################################
+
+proc _test_fini { status } {
+	global testsuite_cleanup_on_failure
+
+	if {$status == 0} {
+		# Successful test
+		_test_cleanup
+		_print_success
+	} elseif {$status < 0} {
+		# Skipped test
+		_test_cleanup
+		_print_skipped
+	} else {
+		# Failed test
+		# Only cleanup the test if configured to do so
+		if {$testsuite_cleanup_on_failure} {
+			_test_cleanup
+		}
+		_print_failure
+	}
+
+	__exit $status
+}
+
+
+################################################################
+#
+# Overload the exit routine to ensure that no one is explicitly
+# calling it, and to enforce _test_fini if exit is called when
+# the test reach its EOF.
+#
+# All tests should exit using pass, skip or fail.
+#
+################################################################
+
+rename exit __exit
+
+proc exit { {status 0} } {
+	global test_name
+
+	#
+	# Minor sanity check to detect if exit was explicitly called (not
+	# allowed) or automatically executed when the test ends
+	#
+	if {[info level] > 1 || $status != 0} {
+		# exit was called from a function, and it shouldn't
+		error "Exit should not be directly called, use pass, skip or fail instead"
+	} else {
+		set frame_level 1
+		while { $frame_level <= [info frame] } {
+			if { [dict get [info frame $frame_level] type] == "source" } {
+				if { [file tail [dict get [info frame $frame_level] file]] eq $test_name } {
+					# exit was called explicitly from the
+					# test, and it shouldn't
+					error "Exit should not be directly called, use pass, skip or fail instead"
+				}
+				break
+			}
+			incr frame_level
+		}
+	}
+
+	# The exit was called implicitly when the test ends, allowed but
+	# _test_fini call enforced
+	_test_fini $status
+}
+
+
+# Call _test_init at the beginning of each test
+_test_init
+

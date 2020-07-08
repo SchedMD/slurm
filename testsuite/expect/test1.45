@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.45"
 set exit_code        0
 set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
@@ -42,8 +41,6 @@ set num_procs        6
 set num_procs_test1  ""
 set num_procs_test2  ""
 set num_procs_test3  ""
-
-print_header $test_id
 
 #
 # Build input script file

@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set test_id			"7.21"
 set cwd				"[$bin_pwd]"
 set exit_code	    0
 set file_in         "${cwd}/test${test_id}.in"
@@ -40,8 +39,6 @@ set new_spank_conf  "${cwd}/test${test_id}.new_conf"
 set spank_out       "${cwd}/test${test_id}.spank.out"
 
 set NO_VAL 4294967294
-
-print_header $test_id
 
 if {[test_super_user] == 0} {
 	skip "This test must be run as SlurmUser"

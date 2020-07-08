@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id      1.97
 set num_nodes    3
 set nodelist     ""
 set cputot       0
@@ -40,8 +39,6 @@ array set tasks {}
 
 # some systems take a while to run the | sort -V | uniq -c stuff
 set timeout 60
-
-print_header $test_id
 
 if {![test_select_type_params "CR_PACK_NODES"]} {
 	skip "This test requires SelectTypeParameters=CR_PACK_NODES"

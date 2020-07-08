@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "21.17"
 set exit_code   0
 set tc1		"test$test_id-cluster-1"
 set tc2		"test$test_id-cluster-2"
@@ -75,8 +74,6 @@ array set user_mod_assoc2 {
 	maxwall    00:07:00
 }
 
-
-print_header $test_id
 
 set timeout 60
 

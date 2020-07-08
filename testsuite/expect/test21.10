@@ -29,7 +29,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "21.10"
 set exit_code   0
 set acmatches   0
 set damatches   0
@@ -63,8 +62,6 @@ set acct(Organization)  "Account_Org_A1"
 set acct(Description)   "Test_Account_A1"
 
 set access_err  0
-
-print_header $test_id
 
 #
 # Check accounting config and bail if not found.

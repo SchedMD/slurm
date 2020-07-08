@@ -28,11 +28,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.12"
 set exit_code   0
 set file_in     "test$test_id.input"
-
-print_header $test_id
 
 #
 # Submit a job with invalid constraint requirement

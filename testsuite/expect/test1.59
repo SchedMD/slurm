@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.59"
 set exit_code   0
 set file_in     "test$test_id.input"
 set num_nodes   3
@@ -36,8 +35,6 @@ set node_count  0
 set task_count  0
 set job_id      0
 set hostfile    "test$test_id.hostfile"
-
-print_header $test_id
 
 exec $bin_rm -f $hostfile
 if { [test_front_end] } {

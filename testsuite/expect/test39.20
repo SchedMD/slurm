@@ -32,7 +32,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id        "39.20"
 set acct           "test$test_id\_acct"
 set cluster        [get_cluster_name]
 set exit_code      0
@@ -72,8 +71,6 @@ proc cleanup { } {
 
 	remove_acct "" $acct
 }
-
-print_header $test_id
 
 set store_tres [string tolower [get_acct_store_tres]]
 set store_mps [string first "gres/gpu:" $store_tres]

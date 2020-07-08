@@ -26,12 +26,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "20.9"
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set exit_code   0
-
-print_header $test_id
 
 if {[file executable $qalter] == 0} {
 	skip "$qalter does not exist"

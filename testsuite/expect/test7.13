@@ -27,13 +27,10 @@
 ############################################################################
 source ./globals
 
-set test_id          "7.13"
 set exit_code        0
 set file_in          "test$test_id.input"
 set file_prog1       "test$test_id.prog1"
 set file_prog2       "test$test_id.prog2"
-
-print_header $test_id
 
 if {![test_accting_steps]} {
 	skip "This test can not be run with nosteps or nojobs (AccoutingStorageEnforce)"

@@ -26,10 +26,7 @@
 ############################################################################
 source ./globals
 
-set test_id    "20.10"
 set exit_code  0
-
-print_header $test_id
 
 if {[file executable $qrerun] == 0} {
 	skip "qrerun was not found"

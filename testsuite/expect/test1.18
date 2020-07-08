@@ -28,10 +28,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.18"
 set exit_code   0
-
-print_header $test_id
 
 #
 # Run a job attempting to get some dummy license name

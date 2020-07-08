@@ -26,16 +26,12 @@
 ############################################################################
 source ./globals
 
-set test_id        "15.32"
 set file_in        "test$test_id.bash"
 set test_salloc    "test$test_id.test_salloc"
 set job_id         0
 set authorized     1
 set exit_code      0
 set part_name      "QA_TEST"
-
-
-print_header $test_id
 
 if {[test_super_user] == 0} {
 	skip "Can not test more unless SlurmUser or root"

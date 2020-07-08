@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "21.15"
 set exit_code   0
 set tc1		"test$test_id-cluster-1"
 set tc2		"test$test_id-cluster-2"
@@ -85,8 +84,6 @@ array set user_req2 {
 set user_req2(cluster) $tc1
 set user_req2(account) $ta1
 set user_req2(defaultqos) $dqos1
-
-print_header $test_id
 
 set timeout 60
 

@@ -29,14 +29,11 @@
 ############################################################################
 source ./globals
 
-set test_id          "17.25"
 set exit_code        0
 set file_in          "test$test_id.input"
 set job_id           0
 set timeout          $max_job_delay
 set account	     "dummy_acct"
-
-print_header $test_id
 
 if {[test_assoc_enforced]} {
 	log_warn "Using users default account instead of $account since associations are enforced"

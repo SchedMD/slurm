@@ -28,10 +28,7 @@
 ############################################################################
 source ./globals
 
-set test_id              "17.22"
 set exit_code            0
-
-print_header $test_id
 
 #
 # Submit a slurm job that will execute bogus job name

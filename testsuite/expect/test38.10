@@ -26,10 +26,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "38.10"
 set exit_code	0
 
-print_header $test_id
 set prompt           "PROMPT: "
 
 if {[test_front_end]} {

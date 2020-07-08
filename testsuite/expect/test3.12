@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "3.12"
 set authorized     1
 set exit_code      0
 set node_list      ""
@@ -37,8 +36,6 @@ set node_name      ""
 set node_old_state ""
 set node_new_state ""
 set read_state     ""
-
-print_header $test_id
 
 set matches     0
 set node_name   ""

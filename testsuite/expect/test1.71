@@ -26,15 +26,12 @@
 ############################################################################
 source ./globals
 
-set test_id      "1.71"
 set file_out     "test$test_id.testfile"
 set file_c       "segv.c"
 set script       "test$test_id.script"
 set err_num_c    0
 set err_num_srun 0
 set exit_code    0
-
-print_header $test_id
 
 # Remove any remaining files
 exec $bin_rm -f $file_out $script $file_c

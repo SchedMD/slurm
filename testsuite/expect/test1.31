@@ -30,14 +30,11 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.31"
 set env_flag_debug   0
 set env_name_debug   "SLURM_DEBUG"
 set env_valu_debug   1
 set env_name_nnodes  "SLURM_NNODES"
 set file_in          "test$test_id.input"
-
-print_header $test_id
 
 set min_nodes        1
 set max_nodes        2

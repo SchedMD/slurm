@@ -30,7 +30,6 @@
 ############################################################################
 source ./globals
 
-set test_id      "1.44"
 set cycle_count  3
 set target_lines 1000
 set exit_code    0
@@ -38,8 +37,6 @@ set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
 set file_err     "test$test_id.error"
 set task_cnt     1
-
-print_header $test_id
 
 # Execute an srun job to cat input_file.  Read srun's stdout SLOWLY (1k/sec)
 # to create back pressure which used to reveal a stdout data-loss bug.

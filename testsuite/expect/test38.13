@@ -26,12 +26,9 @@
 ############################################################################
 source ./globals
 
-set test_id	"38.13"
 set exit_code	0
 set matches	0
 set pack_job_id	0
-
-print_header $test_id
 
 set sbatch_pid [spawn $sbatch -a 0-1 -t1 -N1 -o /dev/null : -N1 --wrap "date"]
 expect {

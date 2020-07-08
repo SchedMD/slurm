@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.60"
 set exit_code        0
 set file_out_n       "test$test_id.n.%n.output"
 set file_out_t       "test$test_id.t.%t.output"
@@ -41,8 +40,6 @@ set node_id          0
 set file_cnt         0
 set file_out_t_glob  ""
 set file_out_n_glob  ""
-
-print_header $test_id
 
 if {[test_front_end]} {
     skip "This test is incompatible with front-end systems"

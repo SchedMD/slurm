@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id    "17.40"
 set file_in    "test$test_id\.in"
 set file_out   "test$test_id\.out"
 set spec_in    "spec_thread_script\.in"
@@ -146,8 +145,6 @@ proc thread_spec_job {task node thread_spec exp_nodes} {
 # Tests begin here
 #
 #############################################################################
-
-print_header $test_id
 
 if {[test_linear]} {
 	skip "This test is incompatible with select/linear"

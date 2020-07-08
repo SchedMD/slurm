@@ -25,7 +25,6 @@
 ############################################################################
 source ./globals
 
-set test_id	"9.9"
 set exit_code   0
 set test_script "./test$test_id.bash"
 
@@ -34,8 +33,6 @@ set job_blocks  5000
 
 #   job_cnt     Number of batch jobs to be submitted
 set job_cnt     1000
-
-print_header $test_id
 
 if {[test_front_end] || $enable_memory_leak_debug != 0} {
 	set job_cnt 2

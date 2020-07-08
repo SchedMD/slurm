@@ -28,12 +28,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.30"
 set exit_code   0
 set error 0
 set srun_opts "-c1"
-
-print_header $test_id
 
 if { [test_front_end] } {
 	set max_node_cnt 2

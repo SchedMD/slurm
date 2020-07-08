@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "35.3"
 set array_end   3
 set data_in     "DATA_IN_0123456789"
 set data_out    "DATA_OUT_9876543210"
@@ -72,8 +71,6 @@ proc find_bb_data { file_name string_seek } {
 	}
 	return $found
 }
-
-print_header $test_id
 
 stop_root_user
 

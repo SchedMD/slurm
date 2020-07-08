@@ -29,14 +29,11 @@
 ############################################################################
 source ./globals
 
-set test_id     "6.15"
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_prog   "test$test_id.prog"
 
 set exit_code   0
-
-print_header $test_id
 
 #
 # Delete vestigial files

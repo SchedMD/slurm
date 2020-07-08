@@ -28,10 +28,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "21.25"
 set exit_code   0
-
-print_header $test_id
 
 #
 # Use sacctmgr to create a cluster

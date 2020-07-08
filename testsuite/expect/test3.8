@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id       "3.8"
 set exit_code     0
 set file_in       "test$test_id.input"
 set file_out      "test$test_id.output"
@@ -39,8 +38,6 @@ set file_flag_3   "test$test_id.run.3"
 set file_flag_4   "test$test_id.run.4"
 set job_id        0
 set node_cnt 1-4
-
-print_header $test_id
 
 if {[is_super_user] == 0} {
 	skip "This test can't be run except as SlurmUser"

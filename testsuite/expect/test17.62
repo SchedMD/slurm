@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id       17.62
 set exit_code     0
 set file_in       "test$test_id\.sh"
 set job_name      "test$test_id\_job"

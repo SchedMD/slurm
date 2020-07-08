@@ -26,12 +26,9 @@
 ############################################################################
 source ./globals
 
-set test_id    "17.42"
 set exit_code   0
 set file_in     "test$test_id.in"
 set job_id      0
-
-print_header $test_id
 
 #
 # Submit simple "sleep" batch job with --wait option

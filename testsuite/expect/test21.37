@@ -28,10 +28,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "21.37"
 set exit_code   0
-
-print_header $test_id
 
 if {[test_using_slurmdbd] == 0} {
 	skip "This test can't be run without AccountStorageType=slurmdbd"

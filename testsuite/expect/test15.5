@@ -30,15 +30,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.5"
 set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
 
 # NOTE: If you increase sleep_time, change job time limits as well
 set sleep_time  180
-
-print_header $test_id
 
 set inactive_limit  $sleep_time
 set kill_wait       $sleep_time

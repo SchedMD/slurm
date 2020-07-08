@@ -26,15 +26,12 @@
 ############################################################################
 source ./globals
 
-set test_id    "17.38"
 set exit_code   0
 set file_in     "test$test_id\_sc"
 set file_out    "test$test_id\_output"
 set file_prog   "test$test_id.prog"
 set elps_time   0
 set job_id      0
-
-print_header $test_id
 
 #
 # Cannot run the test if OverTimeLimit is set, since we test time limits.

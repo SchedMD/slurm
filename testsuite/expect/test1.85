@@ -31,11 +31,8 @@
 
 source ./globals
 
-set test_id     "1.85"
 set exit_code   0
 set prompt      "PROMPT: "
-
-print_header $test_id
 
 # spawn an allocation to run on 2
 # hosts with 4 tasks.

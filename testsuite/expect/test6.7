@@ -28,14 +28,11 @@
 ############################################################################
 source ./globals
 
-set test_id      "6.7"
 set exit_code    0
 set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
 set file_out2    "test$test_id.output2"
 set file_prog    "test$test_id.prog"
-
-print_header $test_id
 
 #
 # Cannot run the test if OverTimeLimit is set, since we test time limits.

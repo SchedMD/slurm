@@ -34,7 +34,6 @@ source ./globals
 # - task affinity either cgroups or cpusets
 # - fastschedule=0
 
-set test_id	"1.76"
 set nerr	0
 set exit_code	0
 set test_prog   "test$test_id.prog"
@@ -43,7 +42,6 @@ set nfreq	0
 set have_on_demand 1
 set have_user_space 1
 set wd		[pwd]
-print_header	$test_id
 
 ################################################################
 # Run a test case.

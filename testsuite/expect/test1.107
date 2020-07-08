@@ -26,12 +26,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.107"
 set exit_code   0
 set job_id      0
-
-print_header $test_id
-
 
 #
 # Since we make changes to configuration, call this function restore

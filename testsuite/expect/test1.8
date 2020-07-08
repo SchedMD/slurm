@@ -32,7 +32,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.8"
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
@@ -43,8 +42,6 @@ set job_grp_info         ""
 set got_job_grps         0
 set got_login_grps       0
 set got_sleep_err        0
-
-print_header $test_id
 
 #
 # Delete left-over stdin/out/err files

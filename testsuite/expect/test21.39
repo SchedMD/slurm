@@ -61,8 +61,6 @@ set qos_1(Description)   "test qos 2"
 
 set access_err  0
 
-print_header
-
 #
 # Verify preconditions
 #

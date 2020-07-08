@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id       17.44
 set exit_code     0
 set job_id1       0
 set job_id2       0
@@ -35,8 +34,6 @@ set output_base   "test$test_id\_out_"
 set script1       "test$test_id\_sc1"
 set script2       "test$test_id\_sc2"
 set tasks         10
-
-print_header $test_id
 
 for {set task_id 1} {$task_id <= $tasks} {incr task_id} {
 	set file_out_glob "${output_base}${task_id}"

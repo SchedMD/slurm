@@ -29,14 +29,11 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.21"
 set exit_code        0
 set job_id           0
 set matches          0
 set task_id          3
 set task_num         10
-
-print_header $test_id
 
 #
 # Spawn a shell via srun with stdout forwarding disabled

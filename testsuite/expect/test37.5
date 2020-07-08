@@ -28,7 +28,6 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set test_id             "37.5"
 set long_script         "test$test_id\.long"
 set complete_script     "test$test_id\.bash"
 set exit_script         "test$test_id\.exit"
@@ -46,8 +45,6 @@ set user_name           ""
 set origin_cluster      ""
 set non_origin_clusters ""
 set dbd_delay           10
-
-print_header $test_id
 
 #
 # Check accounting config and bail if not found.

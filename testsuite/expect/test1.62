@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.62"
 set exit_code        0
 set file_in          "test$test_id.bash"
 
@@ -123,8 +122,6 @@ proc run_gpu_fail { gres_spec } {
 	}
 	return
 }
-
-print_header $test_id
 
 #
 # Test if gres/gpu is configured

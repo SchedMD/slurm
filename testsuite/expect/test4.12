@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "4.12"
 set file_in     "test$test_id.in"
 set exit_code   0
 set pnumsc      0
@@ -280,8 +279,6 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 ############################################################################
 # test starts here
 ############################################################################
-
-print_header $test_id
 
 if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"

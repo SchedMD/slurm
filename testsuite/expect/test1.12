@@ -29,13 +29,10 @@
 ############################################################################
 source ./globals
 
-set test_id              "1.12"
 set exit_code            0
 set file_in              "test$test_id.input"
 set ckpt_in              12
 set ckpt_out             -1
-
-print_header $test_id
 
 #
 # Submit a slurm job that print it's info from scontrol

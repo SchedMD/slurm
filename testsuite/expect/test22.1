@@ -38,8 +38,6 @@ source ./inc22.1.4
 source ./inc22.1.5
 source ./inc22.1.fed
 
-set test_id     "22.1"
-set test_name   "test22.1"
 set test_nu     "test22-1"
 set exit_code   0
 set matches     0
@@ -91,9 +89,6 @@ array set user_req {}
 set user_req(cluster) "$cluster1,$cluster2"
 set user_req(account) $accounts
 set user_req(wckey) $wckey1
-
-
-print_header $test_id
 
 # Fri Thu Jan 31 00:00:00 2008 - Needed only for the 00:00:00 for timing purposes
 set midnight_time "Thu Jan 31 00:00:00 2008"

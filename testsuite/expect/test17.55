@@ -26,14 +26,11 @@
 ############################################################################
 source ./globals
 
-set test_id        "17.55"
 set job_id	   0
 set authorized     1
 set exit_code      0
 set part_name      "QA_TEST"
 set file_in        "test$test_id.input"
-
-print_header $test_id
 
 if {[test_super_user] == 0} {
 	skip "Can not test more unless SlurmUser or root"

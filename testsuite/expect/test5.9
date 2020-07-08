@@ -28,7 +28,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id      "5.9"
 set cwd           "[$bin_pwd]"
 set exit_code     0
 set test_node     ""
@@ -86,8 +85,6 @@ set sq_format(reqswitch)     1
 set sq_format(partition)     [default_partition]
 # comment
 set sq_format(comment)       1234567890
-
-print_header $test_id
 
 if { [test_using_slurmdbd] == 0 } {
 	skip "This test can't be run without AccountStorageType=slurmdbd"

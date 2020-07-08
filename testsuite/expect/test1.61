@@ -28,15 +28,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.61"
 set exit_code   0
 set job_id 0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
 set timeout 60
-
-print_header $test_id
 
 exec $bin_rm -f $file_in file_out file_err
 make_bash_script $file_in "

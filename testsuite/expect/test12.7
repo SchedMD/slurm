@@ -27,12 +27,9 @@
 ############################################################################
 source ./globals
 
-set test_id    12.7
 set job_id     0
 set node       ""
 set file_in    "test$test_id\_sc"
-
-print_header $test_id
 
 if {![test_accting_steps]} {
 	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
