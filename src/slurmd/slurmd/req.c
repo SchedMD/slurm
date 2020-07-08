@@ -5584,7 +5584,6 @@ static void *_prolog_timer(void *x)
 static int
 _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 {
-	DEF_TIMERS;
 	int diff_time, rc;
 	time_t start_time = time(NULL);
 	pthread_t       timer_id;
@@ -5606,20 +5605,14 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	timer_struct.timer_mutex = &timer_mutex;
 	slurm_thread_create(&timer_id, _prolog_timer, &timer_struct);
 
-	START_TIMER;
-
 	rc = prep_prolog(job_env, cred);
 
-	END_TIMER;
-	info("%s: run job script took %s", __func__, TIME_STR);
 	slurm_mutex_lock(&timer_mutex);
 	prolog_fini = true;
 	slurm_cond_broadcast(&timer_cond);
 	slurm_mutex_unlock(&timer_mutex);
 
 	diff_time = difftime(time(NULL), start_time);
-	info("%s: prolog with lock for job %u ran for %d seconds",
-	     __func__, job_env->jobid, diff_time);
 	if (diff_time >= (slurm_conf.msg_timeout / 2)) {
 		info("prolog for job %u ran for %d seconds",
 		     job_env->jobid, diff_time);
