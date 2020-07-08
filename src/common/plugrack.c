@@ -372,6 +372,9 @@ static int _foreach_release_plugin(void *x, void *arg)
 	if (entry->plug == PLUGIN_INVALID_HANDLE)
 		return 0;
 
+	if (xstrcmp(entry->full_type, type))
+		return 0;
+
 	entry->refcount--;
 
 	if (entry->refcount <= 0) {
