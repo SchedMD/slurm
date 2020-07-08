@@ -243,316 +243,6 @@ extern diag_stats_t slurmctld_diag_stats;
 static __thread bool drop_priv = false;
 #endif
 
-/*
- * slurmctld_req  - Process an individual RPC request
- * IN/OUT msg - the request message, data associated with the message is freed
- */
-void slurmctld_req(slurm_msg_t *msg)
-{
-	DEF_TIMERS;
-	bool run_scheduler = false;
-	uint32_t rpc_uid;
-
-	if (msg->conn_fd >= 0)
-		fd_set_nonblocking(msg->conn_fd);
-
-#ifndef NDEBUG
-	if ((msg->flags & SLURM_DROP_PRIV))
-		drop_priv = true;
-#endif
-
-	/* Validate the credential */
-	if (g_slurm_auth_verify(msg->auth_cred, slurm_conf.authinfo)) {
-		error("Bad authentication: %m");
-		return;
-	}
-	rpc_uid = (uint32_t) g_slurm_auth_get_uid(msg->auth_cred);
-
-	/* Debug the protocol layer.
-	 */
-	START_TIMER;
-	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
-		char *p = rpc_num2string(msg->msg_type);
-		if (msg->conn) {
-			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
-			     __func__, p, msg->conn->cluster_name,
-			     msg->conn->rem_host, rpc_uid);
-		} else {
-			slurm_addr_t cli_addr;
-			(void) slurm_get_peer_addr(msg->conn_fd, &cli_addr);
-			info("%s: received opcode %s from %pA uid %u",
-			     __func__, p, &cli_addr, rpc_uid);
-		}
-	}
-
-	switch (msg->msg_type) {
-	case REQUEST_RESOURCE_ALLOCATION:
-		_slurm_rpc_allocate_resources(msg);
-		break;
-	case REQUEST_HET_JOB_ALLOCATION:
-		_slurm_rpc_allocate_het_job(msg);
-		break;
-	case REQUEST_BUILD_INFO:
-		_slurm_rpc_dump_conf(msg);
-		break;
-	case REQUEST_JOB_INFO:
-		_slurm_rpc_dump_jobs(msg);
-		break;
-	case REQUEST_JOB_USER_INFO:
-		_slurm_rpc_dump_jobs_user(msg);
-		break;
-	case REQUEST_JOB_INFO_SINGLE:
-		_slurm_rpc_dump_job_single(msg);
-		break;
-	case REQUEST_BATCH_SCRIPT:
-		_slurm_rpc_dump_batch_script(msg);
-		break;
-	case REQUEST_SHARE_INFO:
-		_slurm_rpc_get_shares(msg);
-		break;
-	case REQUEST_PRIORITY_FACTORS:
-		_slurm_rpc_get_priority_factors(msg);
-		break;
-	case REQUEST_JOB_END_TIME:
-		_slurm_rpc_end_time(msg);
-		break;
-	case REQUEST_FED_INFO:
-		_slurm_rpc_get_fed(msg);
-		break;
-	case REQUEST_FRONT_END_INFO:
-		_slurm_rpc_dump_front_end(msg);
-		break;
-	case REQUEST_NODE_INFO:
-		_slurm_rpc_dump_nodes(msg);
-		break;
-	case REQUEST_NODE_INFO_SINGLE:
-		_slurm_rpc_dump_node_single(msg);
-		break;
-	case REQUEST_PARTITION_INFO:
-		_slurm_rpc_dump_partitions(msg);
-		break;
-	case MESSAGE_EPILOG_COMPLETE:
-		_slurm_rpc_epilog_complete(msg, &run_scheduler, 0);
-		break;
-	case REQUEST_CANCEL_JOB_STEP:
-		_slurm_rpc_job_step_kill(rpc_uid, msg);
-		break;
-	case REQUEST_COMPLETE_JOB_ALLOCATION:
-		_slurm_rpc_complete_job_allocation(msg);
-		break;
-	case REQUEST_COMPLETE_PROLOG:
-		_slurm_rpc_complete_prolog(msg);
-		break;
-	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		_slurm_rpc_complete_batch_script(msg, &run_scheduler, 0);
-		break;
-	case REQUEST_JOB_STEP_CREATE:
-		_slurm_rpc_job_step_create(msg);
-		break;
-	case REQUEST_JOB_STEP_INFO:
-		_slurm_rpc_job_step_get_info(msg);
-		break;
-	case REQUEST_JOB_WILL_RUN:
-		_slurm_rpc_job_will_run(msg);
-		break;
-	case REQUEST_SIB_JOB_LOCK:
-		_slurm_rpc_sib_job_lock(rpc_uid, msg);
-		break;
-	case REQUEST_SIB_JOB_UNLOCK:
-		_slurm_rpc_sib_job_unlock(rpc_uid, msg);
-		break;
-	case REQUEST_CTLD_MULT_MSG:
-		_proc_multi_msg(rpc_uid, msg);
-		break;
-	case MESSAGE_NODE_REGISTRATION_STATUS:
-		_slurm_rpc_node_registration(msg, 0);
-		break;
-	case REQUEST_JOB_ALLOCATION_INFO:
-		_slurm_rpc_job_alloc_info(msg);
-		break;
-	case REQUEST_HET_JOB_ALLOC_INFO:
-		_slurm_rpc_het_job_alloc_info(msg);
-		break;
-	case REQUEST_JOB_SBCAST_CRED:
-		_slurm_rpc_job_sbcast_cred(msg);
-		break;
-	case REQUEST_PING:
-		_slurm_rpc_ping(msg);
-		break;
-	case REQUEST_RECONFIGURE:
-		_slurm_rpc_reconfigure_controller(msg);
-		break;
-	case REQUEST_CONTROL:
-		_slurm_rpc_shutdown_controller(msg);
-		break;
-	case REQUEST_TAKEOVER:
-		_slurm_rpc_takeover(msg);
-		break;
-	case REQUEST_SHUTDOWN:
-		_slurm_rpc_shutdown_controller(msg);
-		break;
-	case REQUEST_SHUTDOWN_IMMEDIATE:
-		_slurm_rpc_shutdown_controller_immediate(msg);
-		break;
-	case REQUEST_SUBMIT_BATCH_JOB:
-		_slurm_rpc_submit_batch_job(msg);
-		break;
-	case REQUEST_SUBMIT_BATCH_HET_JOB:
-		_slurm_rpc_submit_batch_het_job(msg);
-		break;
-	case REQUEST_UPDATE_FRONT_END:
-		_slurm_rpc_update_front_end(msg);
-		break;
-	case REQUEST_UPDATE_JOB:
-		_slurm_rpc_update_job(msg);
-		break;
-	case REQUEST_UPDATE_NODE:
-		_slurm_rpc_update_node(msg);
-		break;
-	case REQUEST_UPDATE_LAYOUT:
-		_slurm_rpc_update_layout(msg);
-		break;
-	case REQUEST_CREATE_PARTITION:
-	case REQUEST_UPDATE_PARTITION:
-		_slurm_rpc_update_partition(msg);
-		break;
-	case REQUEST_UPDATE_POWERCAP:
-		_slurm_rpc_update_powercap(msg);
-		break;
-	case REQUEST_DELETE_PARTITION:
-		_slurm_rpc_delete_partition(msg);
-		break;
-	case REQUEST_CREATE_RESERVATION:
-		_slurm_rpc_resv_create(msg);
-		break;
-	case REQUEST_UPDATE_RESERVATION:
-		_slurm_rpc_resv_update(msg);
-		break;
-	case REQUEST_DELETE_RESERVATION:
-		_slurm_rpc_resv_delete(msg);
-		break;
-	case REQUEST_RESERVATION_INFO:
-		_slurm_rpc_resv_show(msg);
-		break;
-	case REQUEST_LAYOUT_INFO:
-		_slurm_rpc_layout_show(msg);
-		break;
-	case REQUEST_NODE_REGISTRATION_STATUS:
-		error("slurmctld is talking with itself. "
-		      "SlurmctldPort == SlurmdPort");
-		slurm_send_rc_msg(msg, EINVAL);
-		break;
-	case REQUEST_SUSPEND:
-		_slurm_rpc_suspend(msg);
-		break;
-	case REQUEST_TOP_JOB:
-		_slurm_rpc_top_job(msg);
-		break;
-	case REQUEST_AUTH_TOKEN:
-		_slurm_rpc_auth_token(msg);
-		break;
-	case REQUEST_JOB_REQUEUE:
-		_slurm_rpc_requeue(msg);
-		break;
-	case REQUEST_JOB_READY:
-		_slurm_rpc_job_ready(msg);
-		break;
-	case REQUEST_BURST_BUFFER_INFO:
-		_slurm_rpc_burst_buffer_info(msg);
-		break;
-	case REQUEST_STEP_COMPLETE:
-		_slurm_rpc_step_complete(msg, 0);
-		break;
-	case REQUEST_STEP_LAYOUT:
-		_slurm_rpc_step_layout(msg);
-		break;
-	case REQUEST_UPDATE_JOB_STEP:
-		_slurm_rpc_step_update(msg);
-		break;
-	case REQUEST_CONFIG:
-		_slurm_rpc_config_request(msg);
-		break;
-	case REQUEST_TRIGGER_SET:
-		_slurm_rpc_trigger_set(msg);
-		break;
-	case REQUEST_TRIGGER_GET:
-		_slurm_rpc_trigger_get(msg);
-		break;
-	case REQUEST_TRIGGER_CLEAR:
-		_slurm_rpc_trigger_clear(msg);
-		break;
-	case REQUEST_TRIGGER_PULL:
-		_slurm_rpc_trigger_pull(msg);
-		break;
-	case REQUEST_JOB_NOTIFY:
-		_slurm_rpc_job_notify(msg);
-		break;
-	case REQUEST_SET_DEBUG_FLAGS:
-		_slurm_rpc_set_debug_flags(msg);
-		break;
-	case REQUEST_SET_DEBUG_LEVEL:
-		_slurm_rpc_set_debug_level(msg);
-		break;
-	case REQUEST_SET_SCHEDLOG_LEVEL:
-		_slurm_rpc_set_schedlog_level(msg);
-		break;
-	case ACCOUNTING_UPDATE_MSG:
-		_slurm_rpc_accounting_update_msg(msg);
-		break;
-	case ACCOUNTING_FIRST_REG:
-		_slurm_rpc_accounting_first_reg(msg);
-		break;
-	case ACCOUNTING_REGISTER_CTLD:
-		_slurm_rpc_accounting_register_ctld(msg);
-		break;
-	case REQUEST_TOPO_INFO:
-		_slurm_rpc_get_topo(msg);
-		break;
-	case REQUEST_POWERCAP_INFO:
-		_slurm_rpc_get_powercap(msg);
-		break;
-	case REQUEST_REBOOT_NODES:
-		_slurm_rpc_reboot_nodes(msg);
-		break;
-	case REQUEST_STATS_INFO:
-		_slurm_rpc_dump_stats(msg);
-		break;
-	case REQUEST_LICENSE_INFO:
-		_slurm_rpc_dump_licenses(msg);
-		break;
-	case REQUEST_KILL_JOB:
-		_slurm_rpc_kill_job(msg);
-		break;
-	case REQUEST_ASSOC_MGR_INFO:
-		_slurm_rpc_assoc_mgr_info(msg);
-		break;
-	case REQUEST_PERSIST_INIT:
-		if (msg->conn)
-			error("We already have a persistent connect, this should never happen");
-		_slurm_rpc_persist_init(msg);
-		break;
-	case REQUEST_EVENT_LOG:
-		_slurm_rpc_event_log(msg);
-		break;
-	case REQUEST_SET_FS_DAMPENING_FACTOR:
-		_slurm_rpc_set_fs_dampening_factor(msg);
-		break;
-	case REQUEST_CONTROL_STATUS:
-		slurm_rpc_control_status(msg, control_time);
-		break;
-	case REQUEST_BURST_BUFFER_STATUS:
-		_slurm_rpc_burst_buffer_status(msg);
-		break;
-	default:
-		error("invalid RPC msg_type=%u", msg->msg_type);
-		slurm_send_rc_msg(msg, EINVAL);
-		break;
-	}
-
-	END_TIMER;
-	record_rpc_stats(msg->msg_type, rpc_uid, DELTA_TIMER);
-}
-
 extern void record_rpc_stats(uint16_t msg_type, uid_t rpc_uid, long delta)
 {
 	slurm_mutex_lock(&rpc_mutex);
@@ -6651,4 +6341,314 @@ inline static void  _slurm_rpc_set_fs_dampening_factor(slurm_msg_t *msg)
 
 	info("Set FairShareDampeningFactor to %u", factor);
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+}
+
+/*
+ * slurmctld_req  - Process an individual RPC request
+ * IN/OUT msg - the request message, data associated with the message is freed
+ */
+void slurmctld_req(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	bool run_scheduler = false;
+	uint32_t rpc_uid;
+
+	if (msg->conn_fd >= 0)
+		fd_set_nonblocking(msg->conn_fd);
+
+#ifndef NDEBUG
+	if ((msg->flags & SLURM_DROP_PRIV))
+		drop_priv = true;
+#endif
+
+	/* Validate the credential */
+	if (g_slurm_auth_verify(msg->auth_cred, slurm_conf.authinfo)) {
+		error("Bad authentication: %m");
+		return;
+	}
+	rpc_uid = (uint32_t) g_slurm_auth_get_uid(msg->auth_cred);
+
+	/* Debug the protocol layer.
+	 */
+	START_TIMER;
+	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
+		char *p = rpc_num2string(msg->msg_type);
+		if (msg->conn) {
+			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
+			     __func__, p, msg->conn->cluster_name,
+			     msg->conn->rem_host, rpc_uid);
+		} else {
+			slurm_addr_t cli_addr;
+			(void) slurm_get_peer_addr(msg->conn_fd, &cli_addr);
+			info("%s: received opcode %s from %pA uid %u",
+			     __func__, p, &cli_addr, rpc_uid);
+		}
+	}
+
+	switch (msg->msg_type) {
+	case REQUEST_RESOURCE_ALLOCATION:
+		_slurm_rpc_allocate_resources(msg);
+		break;
+	case REQUEST_HET_JOB_ALLOCATION:
+		_slurm_rpc_allocate_het_job(msg);
+		break;
+	case REQUEST_BUILD_INFO:
+		_slurm_rpc_dump_conf(msg);
+		break;
+	case REQUEST_JOB_INFO:
+		_slurm_rpc_dump_jobs(msg);
+		break;
+	case REQUEST_JOB_USER_INFO:
+		_slurm_rpc_dump_jobs_user(msg);
+		break;
+	case REQUEST_JOB_INFO_SINGLE:
+		_slurm_rpc_dump_job_single(msg);
+		break;
+	case REQUEST_BATCH_SCRIPT:
+		_slurm_rpc_dump_batch_script(msg);
+		break;
+	case REQUEST_SHARE_INFO:
+		_slurm_rpc_get_shares(msg);
+		break;
+	case REQUEST_PRIORITY_FACTORS:
+		_slurm_rpc_get_priority_factors(msg);
+		break;
+	case REQUEST_JOB_END_TIME:
+		_slurm_rpc_end_time(msg);
+		break;
+	case REQUEST_FED_INFO:
+		_slurm_rpc_get_fed(msg);
+		break;
+	case REQUEST_FRONT_END_INFO:
+		_slurm_rpc_dump_front_end(msg);
+		break;
+	case REQUEST_NODE_INFO:
+		_slurm_rpc_dump_nodes(msg);
+		break;
+	case REQUEST_NODE_INFO_SINGLE:
+		_slurm_rpc_dump_node_single(msg);
+		break;
+	case REQUEST_PARTITION_INFO:
+		_slurm_rpc_dump_partitions(msg);
+		break;
+	case MESSAGE_EPILOG_COMPLETE:
+		_slurm_rpc_epilog_complete(msg, &run_scheduler, 0);
+		break;
+	case REQUEST_CANCEL_JOB_STEP:
+		_slurm_rpc_job_step_kill(rpc_uid, msg);
+		break;
+	case REQUEST_COMPLETE_JOB_ALLOCATION:
+		_slurm_rpc_complete_job_allocation(msg);
+		break;
+	case REQUEST_COMPLETE_PROLOG:
+		_slurm_rpc_complete_prolog(msg);
+		break;
+	case REQUEST_COMPLETE_BATCH_SCRIPT:
+		_slurm_rpc_complete_batch_script(msg, &run_scheduler, 0);
+		break;
+	case REQUEST_JOB_STEP_CREATE:
+		_slurm_rpc_job_step_create(msg);
+		break;
+	case REQUEST_JOB_STEP_INFO:
+		_slurm_rpc_job_step_get_info(msg);
+		break;
+	case REQUEST_JOB_WILL_RUN:
+		_slurm_rpc_job_will_run(msg);
+		break;
+	case REQUEST_SIB_JOB_LOCK:
+		_slurm_rpc_sib_job_lock(rpc_uid, msg);
+		break;
+	case REQUEST_SIB_JOB_UNLOCK:
+		_slurm_rpc_sib_job_unlock(rpc_uid, msg);
+		break;
+	case REQUEST_CTLD_MULT_MSG:
+		_proc_multi_msg(rpc_uid, msg);
+		break;
+	case MESSAGE_NODE_REGISTRATION_STATUS:
+		_slurm_rpc_node_registration(msg, 0);
+		break;
+	case REQUEST_JOB_ALLOCATION_INFO:
+		_slurm_rpc_job_alloc_info(msg);
+		break;
+	case REQUEST_HET_JOB_ALLOC_INFO:
+		_slurm_rpc_het_job_alloc_info(msg);
+		break;
+	case REQUEST_JOB_SBCAST_CRED:
+		_slurm_rpc_job_sbcast_cred(msg);
+		break;
+	case REQUEST_PING:
+		_slurm_rpc_ping(msg);
+		break;
+	case REQUEST_RECONFIGURE:
+		_slurm_rpc_reconfigure_controller(msg);
+		break;
+	case REQUEST_CONTROL:
+		_slurm_rpc_shutdown_controller(msg);
+		break;
+	case REQUEST_TAKEOVER:
+		_slurm_rpc_takeover(msg);
+		break;
+	case REQUEST_SHUTDOWN:
+		_slurm_rpc_shutdown_controller(msg);
+		break;
+	case REQUEST_SHUTDOWN_IMMEDIATE:
+		_slurm_rpc_shutdown_controller_immediate(msg);
+		break;
+	case REQUEST_SUBMIT_BATCH_JOB:
+		_slurm_rpc_submit_batch_job(msg);
+		break;
+	case REQUEST_SUBMIT_BATCH_HET_JOB:
+		_slurm_rpc_submit_batch_het_job(msg);
+		break;
+	case REQUEST_UPDATE_FRONT_END:
+		_slurm_rpc_update_front_end(msg);
+		break;
+	case REQUEST_UPDATE_JOB:
+		_slurm_rpc_update_job(msg);
+		break;
+	case REQUEST_UPDATE_NODE:
+		_slurm_rpc_update_node(msg);
+		break;
+	case REQUEST_UPDATE_LAYOUT:
+		_slurm_rpc_update_layout(msg);
+		break;
+	case REQUEST_CREATE_PARTITION:
+	case REQUEST_UPDATE_PARTITION:
+		_slurm_rpc_update_partition(msg);
+		break;
+	case REQUEST_UPDATE_POWERCAP:
+		_slurm_rpc_update_powercap(msg);
+		break;
+	case REQUEST_DELETE_PARTITION:
+		_slurm_rpc_delete_partition(msg);
+		break;
+	case REQUEST_CREATE_RESERVATION:
+		_slurm_rpc_resv_create(msg);
+		break;
+	case REQUEST_UPDATE_RESERVATION:
+		_slurm_rpc_resv_update(msg);
+		break;
+	case REQUEST_DELETE_RESERVATION:
+		_slurm_rpc_resv_delete(msg);
+		break;
+	case REQUEST_RESERVATION_INFO:
+		_slurm_rpc_resv_show(msg);
+		break;
+	case REQUEST_LAYOUT_INFO:
+		_slurm_rpc_layout_show(msg);
+		break;
+	case REQUEST_NODE_REGISTRATION_STATUS:
+		error("slurmctld is talking with itself. "
+		      "SlurmctldPort == SlurmdPort");
+		slurm_send_rc_msg(msg, EINVAL);
+		break;
+	case REQUEST_SUSPEND:
+		_slurm_rpc_suspend(msg);
+		break;
+	case REQUEST_TOP_JOB:
+		_slurm_rpc_top_job(msg);
+		break;
+	case REQUEST_AUTH_TOKEN:
+		_slurm_rpc_auth_token(msg);
+		break;
+	case REQUEST_JOB_REQUEUE:
+		_slurm_rpc_requeue(msg);
+		break;
+	case REQUEST_JOB_READY:
+		_slurm_rpc_job_ready(msg);
+		break;
+	case REQUEST_BURST_BUFFER_INFO:
+		_slurm_rpc_burst_buffer_info(msg);
+		break;
+	case REQUEST_STEP_COMPLETE:
+		_slurm_rpc_step_complete(msg, 0);
+		break;
+	case REQUEST_STEP_LAYOUT:
+		_slurm_rpc_step_layout(msg);
+		break;
+	case REQUEST_UPDATE_JOB_STEP:
+		_slurm_rpc_step_update(msg);
+		break;
+	case REQUEST_CONFIG:
+		_slurm_rpc_config_request(msg);
+		break;
+	case REQUEST_TRIGGER_SET:
+		_slurm_rpc_trigger_set(msg);
+		break;
+	case REQUEST_TRIGGER_GET:
+		_slurm_rpc_trigger_get(msg);
+		break;
+	case REQUEST_TRIGGER_CLEAR:
+		_slurm_rpc_trigger_clear(msg);
+		break;
+	case REQUEST_TRIGGER_PULL:
+		_slurm_rpc_trigger_pull(msg);
+		break;
+	case REQUEST_JOB_NOTIFY:
+		_slurm_rpc_job_notify(msg);
+		break;
+	case REQUEST_SET_DEBUG_FLAGS:
+		_slurm_rpc_set_debug_flags(msg);
+		break;
+	case REQUEST_SET_DEBUG_LEVEL:
+		_slurm_rpc_set_debug_level(msg);
+		break;
+	case REQUEST_SET_SCHEDLOG_LEVEL:
+		_slurm_rpc_set_schedlog_level(msg);
+		break;
+	case ACCOUNTING_UPDATE_MSG:
+		_slurm_rpc_accounting_update_msg(msg);
+		break;
+	case ACCOUNTING_FIRST_REG:
+		_slurm_rpc_accounting_first_reg(msg);
+		break;
+	case ACCOUNTING_REGISTER_CTLD:
+		_slurm_rpc_accounting_register_ctld(msg);
+		break;
+	case REQUEST_TOPO_INFO:
+		_slurm_rpc_get_topo(msg);
+		break;
+	case REQUEST_POWERCAP_INFO:
+		_slurm_rpc_get_powercap(msg);
+		break;
+	case REQUEST_REBOOT_NODES:
+		_slurm_rpc_reboot_nodes(msg);
+		break;
+	case REQUEST_STATS_INFO:
+		_slurm_rpc_dump_stats(msg);
+		break;
+	case REQUEST_LICENSE_INFO:
+		_slurm_rpc_dump_licenses(msg);
+		break;
+	case REQUEST_KILL_JOB:
+		_slurm_rpc_kill_job(msg);
+		break;
+	case REQUEST_ASSOC_MGR_INFO:
+		_slurm_rpc_assoc_mgr_info(msg);
+		break;
+	case REQUEST_PERSIST_INIT:
+		if (msg->conn)
+			error("We already have a persistent connect, this should never happen");
+		_slurm_rpc_persist_init(msg);
+		break;
+	case REQUEST_EVENT_LOG:
+		_slurm_rpc_event_log(msg);
+		break;
+	case REQUEST_SET_FS_DAMPENING_FACTOR:
+		_slurm_rpc_set_fs_dampening_factor(msg);
+		break;
+	case REQUEST_CONTROL_STATUS:
+		slurm_rpc_control_status(msg, control_time);
+		break;
+	case REQUEST_BURST_BUFFER_STATUS:
+		_slurm_rpc_burst_buffer_status(msg);
+		break;
+	default:
+		error("invalid RPC msg_type=%u", msg->msg_type);
+		slurm_send_rc_msg(msg, EINVAL);
+		break;
+	}
+
+	END_TIMER;
+	record_rpc_stats(msg->msg_type, rpc_uid, DELTA_TIMER);
 }
