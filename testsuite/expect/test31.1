@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set config_dir       ""
 set inc_slurm        "pro_epi_$test_name"
 set pro_epi_prog     "$test_name\_prog"
 set proc             ""
@@ -44,19 +43,29 @@ if {[test_cray]} {
 if { [string compare [test_launch_type] "slurm"] } {
 	skip "This test is only compatible with systems using launch/slurm"
 }
+
+proc cleanup { } {
+	global bin_rm test_dir config_file
+
+	# Clean up vestigial files and restore original slurm.conf file
+	exec $bin_rm -fr $test_dir
+	restore_conf $config_file
+	reconfigure
+}
+
 set timeout $max_job_delay
 
 proc change_pro_epi { arg program_name conf_change task_pro } {
 
-	global inc_slurm bin_chmod bin_rm config_dir pro_epi_prog bin_echo test_name bin_pwd re_word_str make_file bin_bash exit_code cwd file_dir bin_ln
+	global inc_slurm bin_chmod bin_rm test_dir pro_epi_prog bin_echo test_name bin_pwd re_word_str make_file bin_bash exit_code file_dir bin_ln
 
 	if {$conf_change == 0} {
-		exec $bin_echo $arg=$config_dir/$pro_epi_prog > $config_dir/$inc_slurm
+		exec $bin_echo $arg=$test_dir/$pro_epi_prog > $test_dir/$inc_slurm
 	}
 
 	set make_ln 0
-	exec $bin_rm -f $cwd/$program_name
-	spawn $bin_bash -c "$bin_ln -sv /bin/sleep $cwd/$program_name"
+	exec $bin_rm -f $test_dir/$program_name
+	spawn $bin_bash -c "$bin_ln -sv /bin/sleep $test_dir/$program_name"
 	expect {
 		-re "$program_name" {
 			set make_ln 1
@@ -76,18 +85,18 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 		set exit_code 1
 	}
 
-	exec $bin_echo "#!$bin_bash\n" > $config_dir/$pro_epi_prog
+	exec $bin_echo "#!$bin_bash\n" > $test_dir/$pro_epi_prog
 	if {$make_file == 1} {
-		exec $bin_echo "touch $file_dir/$arg.$test_name.txt" >> $config_dir/$pro_epi_prog
+		exec $bin_echo "touch $file_dir/$arg.$test_name.txt" >> $test_dir/$pro_epi_prog
 	}
 
 	# task prologs are ran with fork_wait so don't do the sleep
 	if {!$task_pro} {
-		exec $bin_echo "$cwd/$program_name 1000&" >> $config_dir/$pro_epi_prog
+		exec $bin_echo "$test_dir/$program_name 1000&" >> $test_dir/$pro_epi_prog
 	}
-	exec $bin_echo "exit 0" >> $config_dir/$pro_epi_prog
+	exec $bin_echo "exit 0" >> $test_dir/$pro_epi_prog
 
-	exec $bin_chmod 700 $config_dir/$pro_epi_prog
+	exec $bin_chmod 700 $test_dir/$pro_epi_prog
 }
 
 proc check_file { file_name } {
@@ -147,7 +156,7 @@ proc check_proc {program_name} {
 
 proc run_job { file_type program_name conf_change task_pro} {
 
-	global srun run_host make_file exit_code bin_rm bin_printenv bin_sleep cwd test_name
+	global srun run_host make_file exit_code bin_rm bin_printenv bin_sleep test_dir test_name
 
 	# Change the included file to epilog in the slurm.conf
 	change_pro_epi $file_type $program_name $conf_change $task_pro
@@ -191,9 +200,17 @@ proc run_job { file_type program_name conf_change task_pro} {
 	}
 
 	# Remove link
-	exec $bin_rm -rf $cwd/$program_name
+	exec $bin_rm -rf $test_dir/$program_name
 }
 
+#
+# Copy slurm.conf file
+#
+set config_dir [get_conf_path]
+fail_on_error "Unable to get config path"
+set config_file $config_dir/slurm.conf
+
+save_conf $config_file
 
 if { [test_super_user] == 0 } {
 	skip "Test can only be run as SlurmUser"
@@ -201,10 +218,6 @@ if { [test_super_user] == 0 } {
 if { [test_front_end] == 1 } {
 	skip "Test can not be run with front-end configuration"
 }
-
-set config_dir [get_conf_path]
-fail_on_error "Unable to get config path"
-set config_file $config_dir/slurm.conf
 
 set get_name 0
 spawn $srun -t1 -l $bin_printenv SLURMD_NODENAME
@@ -223,16 +236,10 @@ expect {
 	}
 }
 
-set cwd "[$bin_pwd]"
 set file_dir "/tmp"
 if {$get_name != 1} {
 	fail "Did not get run_host"
 }
-
-#
-# Copy slurm.conf file
-#
-save_conf $config_file
 
 #
 # Test srun --task-epilog
@@ -243,7 +250,7 @@ reconfigure
 
 set sub_job 0
 set invalid_node 0
-spawn $srun -t1 -w$run_host --task-epilog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME
+spawn $srun -t1 -w$run_host --task-epilog=$test_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME
 expect {
 	-re "$run_host" {
 		set sub_job 1
@@ -271,7 +278,7 @@ if {$make_file == 1} {
 check_proc srun--task-epilog_$test_name
 
 # Remove link
-exec $bin_rm -rf $cwd/srun--task-epilog_$test_name
+exec $bin_rm -rf $test_dir/srun--task-epilog_$test_name
 
 #
 # Task Prolog Test
@@ -296,8 +303,8 @@ if {$make_file == 1} {
 	spawn $salloc -t1 -w$run_host $bin_bash
 	expect {
 		-re "Granted job allocation ($number)" {
-			send "$sbcast --force $config_dir/$pro_epi_prog $sbcast_file\n"
-			send "$srun -t1 --task-prolog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME\n"
+			send "$sbcast --force $test_dir/$pro_epi_prog $sbcast_file\n"
+			send "$srun -t1 --task-prolog=$test_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME\n"
 			send "exit\n"
 			exp_continue
 		}
@@ -323,10 +330,10 @@ if {$make_file == 1} {
 	check_file srun-task-prolog.$test_name.txt
 
 	# Remove link
-	exec $bin_rm -rf $cwd/srun--task-prolog_$test_name
+	exec $bin_rm -rf $test_dir/srun--task-prolog_$test_name
 
 	# Add a line in the slurm.conf file to include the epilogs and prologs
-	exec $bin_echo include $config_dir/$inc_slurm >> $config_dir/slurm.conf
+	exec $bin_echo include $test_dir/$inc_slurm >> $config_dir/slurm.conf
 
 	#
 	# Test TaskProlog
@@ -335,7 +342,7 @@ if {$make_file == 1} {
 
 } else {
 	# Add a line in the slurm.conf file to include the epilogs and prologs
-	exec $bin_echo include $config_dir/$inc_slurm >> $config_dir/slurm.conf
+	exec $bin_echo include $test_dir/$inc_slurm >> $config_dir/slurm.conf
 }
 
 ###############Epilog Test###############
@@ -357,12 +364,6 @@ run_job taskepilog taskepilog_$test_name 0 0
 #
 run_job prolog prolog_$test_name 0 0
 
-# Clean up vestigial files and restore original slurm.conf file
-restore_conf $config_file
-reconfigure
-
-if {$exit_code == 0} {
-	exec $bin_rm -fr $config_dir/$inc_slurm $config_dir/$pro_epi_prog
-} else {
+if {$exit_code} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
