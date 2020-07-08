@@ -111,7 +111,6 @@ extern int init (void)
 
 	/* enable subsystems based on conf */
 	if (use_cpuset) {
-		use_cpuset = true;
 		if (task_cgroup_cpuset_init() != SLURM_SUCCESS) {
 			return SLURM_ERROR;
 		}
@@ -120,7 +119,6 @@ extern int init (void)
 	}
 
 	if (use_memory) {
-		use_memory = true;
 		if (task_cgroup_memory_init() != SLURM_SUCCESS) {
 			return SLURM_ERROR;
 		}
