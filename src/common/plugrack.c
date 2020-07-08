@@ -391,7 +391,7 @@ void plugrack_release_by_type(plugrack_t *rack, const char *type)
 			     (void *) type);
 }
 
-extern int plugrack_print_all_plugin(plugrack_t *rack)
+extern int plugrack_print_mpi_plugins(plugrack_t *rack)
 {
 	ListIterator itr;
 	plugrack_entry_t *e = NULL;

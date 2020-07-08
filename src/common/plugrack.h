@@ -85,11 +85,11 @@ plugin_handle_t plugrack_use_by_type(plugrack_t *rack, const char *type);
 extern void plugrack_release_by_type(plugrack_t *rack, const char *type);
 
 /*
- * print all plugins in rack
+ * print all MPI plugins in rack
  *
  * Returns a Slurm errno.
  */
-int plugrack_print_all_plugin(plugrack_t *rack);
+int plugrack_print_mpi_plugins(plugrack_t *rack);
 
 /*
  * Call function f for each plugin found in rack

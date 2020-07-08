@@ -191,7 +191,7 @@ int _mpi_init (char *mpi_type)
 	if (!xstrcmp(mpi_type, "list")) {
 		plugrack_t *mpi_rack = plugrack_create("mpi");
 		plugrack_read_dir(mpi_rack, slurm_conf.plugindir);
-		plugrack_print_all_plugin(mpi_rack);
+		plugrack_print_mpi_plugins(mpi_rack);
 		exit(0);
 	}
 
