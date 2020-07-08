@@ -151,6 +151,9 @@ typedef struct kill_thread {
 	int       secs;
 } kill_thread_t;
 
+static pthread_t x11_signal_handler_thread = 0;
+static int sig_array[] = {SIGTERM, 0};
+
 /*
  * Prototypes
  */
@@ -183,6 +186,7 @@ static int  _run_script_as_user(const char *name, const char *path,
 				stepd_step_rec_t *job,
 				int max_wait, char **env);
 static void _unblock_signals(void);
+static void *_x11_signal_handler(void *arg);
 
 /*
  * Batch job management prototypes:
@@ -908,6 +912,39 @@ static void _set_job_state(stepd_step_rec_t *job, slurmstepd_state_t new_state)
 	slurm_mutex_unlock(&job->state_mutex);
 }
 
+static void *_x11_signal_handler(void *arg)
+{
+	stepd_step_rec_t *job = (stepd_step_rec_t *) arg;
+	struct priv_state sprivs = { 0 };
+	int sig;
+	sigset_t set;
+
+	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+	while (1) {
+		xsignal_sigset_create(sig_array, &set);
+		if (sigwait(&set, &sig) == EINTR)
+			continue;
+
+		switch (sig) {
+		case SIGTERM:	/* kill -15 */
+			debug("Terminate signal (SIGTERM) received");
+			if (_drop_privileges(job, true, &sprivs, false) < 0) {
+				error("Unable to drop privileges");
+				return NULL;
+			}
+			shutdown_x11_forward(job);
+			if (_reclaim_privileges(&sprivs) < 0)
+				error("Unable to reclaim privileges");
+			return NULL;	/* Normal termination */
+			break;
+		default:
+			error("Invalid signal (%d) received", sig);
+		}
+	}
+}
+
 static int _spawn_job_container(stepd_step_rec_t *job)
 {
 	jobacctinfo_t *jobacct = NULL;
@@ -917,14 +954,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	pid_t pid;
 	int rc = SLURM_SUCCESS;
 	uint32_t jobid;
-	int x11_pipe[2] = {0, 0};
-
-	if (job->x11 && (pipe(x11_pipe) < 0)) {
-		error("x11 pipe: %m");
-		/* let the slurmd know we actually are done with the setup */
-		close_slurmd_conn();
-		return SLURM_ERROR;
-	}
 
 	debug2("%s: Before call to spank_init()", __func__);
 	if (spank_init(job) < 0) {
@@ -942,72 +971,47 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	}
 
 	acct_gather_profile_g_task_start(0);
+
+	if (job->x11) {
+		struct priv_state sprivs = { 0 };
+
+		if (_drop_privileges(job, true, &sprivs, false) < 0) {
+			error ("Unable to drop privileges");
+			return SLURM_ERROR;
+		}
+		if (setup_x11_forward(job) != SLURM_SUCCESS) {
+			/* ssh forwarding setup failed */
+			error("x11 port forwarding setup failed");
+			_exit(127);
+		}
+		if (_reclaim_privileges(&sprivs) < 0) {
+			error ("Unable to reclaim privileges");
+			return SLURM_ERROR;
+		}
+
+		xsignal_block(sig_array);
+		slurm_thread_create(&x11_signal_handler_thread,
+				    _x11_signal_handler, job);
+
+		debug("x11 forwarding local display is %d", job->x11_display);
+		debug("x11 forwarding local xauthority is %s",
+		      job->x11_xauthority);
+	}
+
 	pid = fork();
 	if (pid == 0) {
 		setpgid(0, 0);
 		setsid();
 		acct_gather_profile_g_child_forked();
-
 		_unblock_signals();
-
-		if (job->x11) {
-			int display, len = 0;
-			char *xauthority;
-
-			close(x11_pipe[0]);
-
-			/* will create several detached threads to process */
-			if (setup_x11_forward(job, &display, &xauthority)) {
-				/* ssh forwarding setup failed */
-				error("x11 port forwarding setup failed");
-				exit(127);
-			}
-
-			/* send back x11 display number to parent stepd */
-			if (write(x11_pipe[1], &display, sizeof(int))
-			    != sizeof(int)) {
-				error("%s: failed sending display number back: %m",
-				      __func__);
-			}
-
-			/* send back temporary xauthority file location */
-			if (xauthority)
-				len = strlen(xauthority) + 1;
-
-			if (write(x11_pipe[1], &len, sizeof(int))
-			    != sizeof(int)) {
-				error("%s: failed sending XAUTHORITY back: %m",
-				      __func__);
-			}
-
-			if (write(x11_pipe[1], xauthority, len) != len) {
-				error("%s: failed sending XAUTHORITY back: %m",
-				      __func__);
-			}
-
-			xfree(xauthority);
-			close(x11_pipe[1]);
-
-			/*
-			 * Have this thread sleep indefinitely to prevent the
-			 * process from ending, since all other threads left
-			 * are detached.
-			 */
-			while (true) /* in case of interrupted sleep */
-				sleep(100000);
-
-			_exit(1);
-		} else {
-			/*
-			 * Need to exec() something for proctrack/linuxproc to
-			 * work, it will not keep a process named "slurmstepd"
-			 */
-
-			execl(SLEEP_CMD, "sleep", "100000000", NULL);
-			error("execl: %m");
-			sleep(1);
-			_exit(0);
-		}
+		/*
+		 * Need to exec() something for proctrack/linuxproc to
+		 * work, it will not keep a process named "slurmstepd"
+		 */
+		execl(SLEEP_CMD, "sleep", "100000000", NULL);
+		error("execl: %m");
+		sleep(1);
+		_exit(0);
 	} else if (pid < 0) {
 		error("fork: %m");
 		_set_job_state(job, SLURMSTEPD_STEP_ENDING);
@@ -1043,47 +1047,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	jobid = job->step_id.job_id;
 #endif
 	container_g_add_cont(jobid, job->cont_id);
-
-	/*
-	 * For the X11 forwarding, we need to know what local port number the
-	 * forwarding code has started listening on so that the slurmd can
-	 * set the correct DISPLAY variable for this node.
-	 * This also serves to signal that the forwarding code has started
-	 * and is ready to accept connections.
-	 * If the port is zero then the forwarding code failed, and the prolog
-	 * needs to be marked as having failed as well.
-	 */
-	if (job->x11) {
-		int len;
-
-		close(x11_pipe[1]);
-		if (read(x11_pipe[0], &job->x11_display, sizeof(int))
-		    != sizeof(int)) {
-			error("%s: failed retrieving x11 display value: %m",
-			      __func__);
-			job->x11_display = 0;
-		}
-
-		if (read(x11_pipe[0], &len, sizeof(int)) != sizeof(int)) {
-			error("%s: failed retrieving x11 authority value: %m",
-			      __func__);
-		}
-
-		if (len)
-			job->x11_xauthority = xmalloc(len);
-
-		if (read(x11_pipe[0], job->x11_xauthority, len) != len) {
-			error("%s: failed retrieving x11 authority value: %m",
-			      __func__);
-		}
-
-		close(x11_pipe[0]);
-
-		debug("x11 forwarding local display is %d", job->x11_display);
-		if (job->x11_xauthority)
-			debug("x11 forwarding local xauthority is %s",
-			      job->x11_xauthority);
-	}
 
 	_set_job_state(job, SLURMSTEPD_STEP_RUNNING);
 	if (!slurm_conf.job_acct_gather_freq)
@@ -1136,6 +1099,9 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	task_g_post_step(job);
 
 fail1:
+	if (x11_signal_handler_thread)
+		(void) pthread_kill(x11_signal_handler_thread, SIGTERM);
+
 	debug2("%s: Before call to spank_fini()", __func__);
 	if (spank_fini(job) < 0)
 		error("spank_fini failed");

@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- mpi/cray_shasta - fix PMI port parsing for non-contiguous port ranges.
  -- squeue and sinfo -O no longer repeat the last suffix specified.
  -- cons_tres - fix regression regarding gpus with --cpus-per-task.
+ -- Avoid non-async-signal-safe functions calls in X11 fowarding which can
+    lead to the extern step terminating unexpectedly.
 
 * Changes in Slurm 20.11.0rc1
 ==============================

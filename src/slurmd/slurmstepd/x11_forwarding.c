@@ -66,10 +66,7 @@
 static uint32_t job_id = NO_VAL;
 
 static bool local_xauthority = false;
-static char *xauthority = NULL;
 static char hostname[256] = {0};
-
-static int x11_display = 0;
 
 static eio_handle_t *eio_handle;
 
@@ -188,29 +185,23 @@ static char *_get_home(uid_t uid)
 	return xstrdup(pwd.pw_dir);
 }
 
-static void _shutdown_x11(int signal)
+extern int shutdown_x11_forward(stepd_step_rec_t *job)
 {
-	if (signal != SIGTERM)
-		return;
-
 	debug("x11 forwarding shutdown in progress");
-
 	eio_signal_shutdown(eio_handle);
 
-	if (xauthority) {
+	if (job->x11_xauthority) {
 		if (local_xauthority) {
-			if (unlink(xauthority))
+			if (unlink(job->x11_xauthority))
 				error("%s: problem unlinking xauthority file %s: %m",
-				      __func__, xauthority);
+				      __func__, job->x11_xauthority);
 		} else
-			x11_delete_xauth(xauthority, hostname, x11_display);
-
-		xfree(xauthority);
+			x11_delete_xauth(job->x11_xauthority, hostname,
+					 job->x11_display);
 	}
 
 	info("x11 forwarding shutdown complete");
-
-	exit(0);
+	_exit(0);
 }
 
 /*
@@ -218,12 +209,9 @@ static void _shutdown_x11(int signal)
  * separate tunnel through the remote salloc/srun process.
  *
  * IN: job
- * OUT: display - local X11 display number
- * OUT: tmp_xauthority - XAUTHORITY file in use
  * OUT: SLURM_SUCCESS or SLURM_ERROR
  */
-extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
-			     char **tmp_xauthority)
+extern int setup_x11_forward(stepd_step_rec_t *job)
 {
 	int listen_socket = -1;
 	uint16_t port;
@@ -233,7 +221,7 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 	 * as 'ssh -X' will start at 10 and work up from there.
 	 */
 	uint16_t ports[2] = {6020, 6099};
-	int sig_array[2] = {SIGTERM, 0};
+
 	/*
 	 * EIO handles both the local listening socket, as well as the individual
 	 * forwarded connections.
@@ -244,35 +232,13 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 		.handle_read = _x11_socket_read,
 	};
 
-	*tmp_xauthority = NULL;
 	job_id = job->step_id.job_id;
 	x11_target = xstrdup(job->x11_target);
 	x11_target_port = job->x11_target_port;
 
-	xsignal(SIGTERM, _shutdown_x11);
-	xsignal_unblock(sig_array);
-
 	slurm_set_addr(&alloc_node, job->x11_alloc_port, job->x11_alloc_host);
 
 	debug("X11Parameters: %s", slurm_conf.x11_params);
-
-	/*
-	 * Switch uid/gid to the user using seteuid/setegid.
-	 * DO NOT use setuid/setgid as a user could then attach to this
-	 * process and try to recover any sensitive data that may be in memory.
-	 */
-	if (setegid(job->gid)) {
-		error("%s: setegid failed: %m", __func__);
-		goto shutdown;
-	}
-	if (setgroups(1, &job->gid)) {
-		error("%s: setgroups failed: %m", __func__);
-		goto shutdown;
-	}
-	if (seteuid(job->uid)) {
-		error("%s: seteuid failed: %m", __func__);
-		goto shutdown;
-	}
 
 	if (xstrcasestr(slurm_conf.x11_params, "home_xauthority")) {
 		char *home = NULL;
@@ -280,18 +246,18 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 			error("could not find HOME in environment");
 			goto shutdown;
 		}
-		xauthority = xstrdup_printf("%s/.Xauthority", home);
+		job->x11_xauthority = xstrdup_printf("%s/.Xauthority", home);
 		xfree(home);
 	} else {
 		/* use a node-local XAUTHORITY file instead of ~/.Xauthority */
 		int fd;
 		local_xauthority = true;
-		xauthority = xstrdup_printf("%s/.Xauthority-XXXXXX",
-					    slurm_conf.tmp_fs);
+		job->x11_xauthority = xstrdup_printf("%s/.Xauthority-XXXXXX",
+						     slurm_conf.tmp_fs);
 
 		/* protect against weak file permissions in old glibc */
 		umask(0077);
-		if ((fd = mkstemp(xauthority)) == -1) {
+		if ((fd = mkstemp(job->x11_xauthority)) == -1) {
 			error("%s: failed to create temporary XAUTHORITY file: %m",
 			      __func__);
 			goto shutdown;
@@ -312,34 +278,27 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 		goto shutdown;
 	}
 
-	x11_display = port - X11_TCP_PORT_OFFSET;
-	if (x11_set_xauth(xauthority, job->x11_magic_cookie,
-			  hostname, x11_display)) {
+	job->x11_display = port - X11_TCP_PORT_OFFSET;
+	if (x11_set_xauth(job->x11_xauthority, job->x11_magic_cookie,
+			  hostname, job->x11_display)) {
 		error("%s: failed to run xauth", __func__);
 		goto shutdown;
 	}
 
 	info("X11 forwarding established on DISPLAY=%s:%d.0",
-	     hostname, x11_display);
+	     hostname, job->x11_display);
 
 	eio_handle = eio_handle_create(0);
 	obj = eio_obj_create(listen_socket, &x11_socket_ops, NULL);
 	eio_new_initial_obj(eio_handle, obj);
 	slurm_thread_create_detached(NULL, _eio_thread, NULL);
 
-	/*
-	 * EIO connection handling thread still running. Return now to signal
-	 * that the forwarding code setup has completed successfully, and let
-	 * steps needing X11 forwarding service launch.
-	 */
-	*display = x11_display;
-	*tmp_xauthority = xstrdup(xauthority);
-
 	return SLURM_SUCCESS;
 
 shutdown:
 	xfree(x11_target);
-	xfree(xauthority);
+	job->x11_display = 0;
+	xfree(job->x11_xauthority);
 	if (listen_socket != -1)
 		close(listen_socket);
 
