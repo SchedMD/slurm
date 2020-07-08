@@ -220,19 +220,12 @@ static int _op_handler_partitions(const char *context_id,
 	return rc;
 }
 
-extern int init_op_partitions(void)
+extern void init_op_partitions(void)
 {
-	int rc;
-
-	if ((rc = bind_operation_handler("/slurm/v0.0.35/partitions/",
-					 _op_handler_partitions,
-					 URL_TAG_PARTITIONS)))
-		/* no-op */;
-	else
-		rc = bind_operation_handler(
-			"/slurm/v0.0.35/partition/{partition_name}",
-			_op_handler_partitions, URL_TAG_PARTITION);
-	return rc;
+	bind_operation_handler("/slurm/v0.0.35/partitions/",
+			       _op_handler_partitions, URL_TAG_PARTITIONS);
+	bind_operation_handler("/slurm/v0.0.35/partition/{partition_name}",
+			       _op_handler_partitions, URL_TAG_PARTITION);
 }
 
 extern void destroy_op_partitions(void)

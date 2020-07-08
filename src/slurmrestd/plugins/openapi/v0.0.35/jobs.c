@@ -64,7 +64,6 @@
 
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
-#include "src/slurmrestd/ops/jobs.h"
 #include "src/slurmrestd/ref.h"
 #include "src/slurmrestd/xjson.h"
 
@@ -1499,17 +1498,13 @@ static int _op_handler_submit_job(const char *context_id,
 	return rc;
 }
 
-extern int init_op_jobs(void)
+extern void init_op_jobs(void)
 {
-	int rc;
-
 	lower_param_names = xcalloc(sizeof(char *), param_count);
 
-	if (!(rc = hcreate_r(param_count, &hash_params))) {
-		error("%s: unable to create hash table: rc=%u %m",
-		      __func__, rc);
-		return SLURM_ERROR;
-	}
+	if (!hcreate_r(param_count, &hash_params))
+		fatal("%s: unable to create hash table: %m",
+		      __func__);
 
 	/* populate hash table with all parameter names */
 	for (int i = 0; i < param_count; i++) {
@@ -1524,26 +1519,17 @@ extern int init_op_jobs(void)
 		/* force all lower characters */
 		xstrtolower(e.key);
 
-		if (!(rc = hsearch_r(e, ENTER, &re, &hash_params))) {
-			error("%s: unable to populate hash table: %m",
+		if (!hsearch_r(e, ENTER, &re, &hash_params))
+			fatal("%s: unable to populate hash table: %m",
 			      __func__);
-			return rc;
-		}
 	}
 
-	if ((rc = bind_operation_handler("/slurm/v0.0.35/jobs/",
-					     _op_handler_jobs, URL_TAG_JOBS)))
-		/* no-op */;
-	else if ((rc = bind_operation_handler("/slurm/v0.0.35/job/{job_id}",
-						  _op_handler_job,
-						  URL_TAG_JOB)))
-		/* no-op */;
-	else
-		rc = bind_operation_handler("/slurm/v0.0.35/job/submit",
-						_op_handler_submit_job,
-						URL_TAG_JOB_SUBMIT);
-
-	return rc;
+	bind_operation_handler("/slurm/v0.0.35/jobs/", _op_handler_jobs,
+			       URL_TAG_JOBS);
+	bind_operation_handler("/slurm/v0.0.35/job/{job_id}", _op_handler_job,
+			       URL_TAG_JOB);
+	bind_operation_handler("/slurm/v0.0.35/job/submit",
+			       _op_handler_submit_job, URL_TAG_JOB_SUBMIT);
 }
 
 extern void destroy_op_jobs(void)

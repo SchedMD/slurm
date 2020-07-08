@@ -13,8 +13,6 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
-
-
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -90,8 +88,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@WITH_SLURMRESTD_TRUE@sbin_PROGRAMS = slurmrestd$(EXEEXT)
-subdir = src/slurmrestd
+subdir = src/slurmrestd/plugins/openapi
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_check_zlib.m4 \
@@ -147,30 +144,6 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(sbindir)"
-PROGRAMS = $(sbin_PROGRAMS)
-LTLIBRARIES = $(noinst_LTLIBRARIES)
-@WITH_SLURMRESTD_TRUE@libslurmrest_ref_la_DEPENDENCIES =  \
-@WITH_SLURMRESTD_TRUE@	libslurmrest_ref.lo
-am_libslurmrest_ref_la_OBJECTS =
-libslurmrest_ref_la_OBJECTS = $(am_libslurmrest_ref_la_OBJECTS)
-AM_V_lt = $(am__v_lt_@AM_V@)
-am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
-am__v_lt_0 = --silent
-am__v_lt_1 = 
-@WITH_SLURMRESTD_TRUE@am_libslurmrest_ref_la_rpath =
-am__objects_1 = conmgr.$(OBJEXT) http.$(OBJEXT) \
-	http_content_type.$(OBJEXT) http_url.$(OBJEXT) \
-	openapi.$(OBJEXT) operations.$(OBJEXT) slurmrestd.$(OBJEXT) \
-	rest_auth.$(OBJEXT) xjson.$(OBJEXT) xyaml.$(OBJEXT)
-@WITH_SLURMRESTD_TRUE@am_slurmrestd_OBJECTS = $(am__objects_1)
-slurmrestd_OBJECTS = $(am_slurmrestd_OBJECTS)
-am__DEPENDENCIES_1 =
-@WITH_SLURMRESTD_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
-@WITH_SLURMRESTD_TRUE@	$(am__DEPENDENCIES_1)
-slurmrestd_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(slurmrestd_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -183,34 +156,7 @@ AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
 am__v_at_1 = 
-DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
-depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
-am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/conmgr.Po ./$(DEPDIR)/http.Po \
-	./$(DEPDIR)/http_content_type.Po ./$(DEPDIR)/http_url.Po \
-	./$(DEPDIR)/openapi.Po ./$(DEPDIR)/operations.Po \
-	./$(DEPDIR)/rest_auth.Po ./$(DEPDIR)/slurmrestd.Po \
-	./$(DEPDIR)/xjson.Po ./$(DEPDIR)/xyaml.Po
-am__mv = mv -f
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CFLAGS) $(CFLAGS)
-AM_V_CC = $(am__v_CC_@AM_V@)
-am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
-am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
-CCLD = $(CC)
-LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CCLD = $(am__v_CCLD_@AM_V@)
-am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
-am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
-SOURCES = $(libslurmrest_ref_la_SOURCES) $(slurmrestd_SOURCES)
+SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -506,45 +452,10 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = plugins
-AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.* *.bino
-REF = usage.txt openapi.json
-SRCS = \
-	conmgr.h conmgr.c \
-	http.c http.h \
-	http_content_type.c http_content_type.h \
-	http_url.c http_url.h \
-	openapi.c openapi.h \
-	operations.c operations.h \
-	slurmrestd.c \
-	ref.h \
-	rest_auth.h rest_auth.c \
-	xjson.h xjson.c \
-	xyaml.h xyaml.c
-
-@WITH_SLURMRESTD_TRUE@AM_CPPFLAGS = -I$(top_srcdir) $(JSON_CPPFLAGS)
-@WITH_SLURMRESTD_TRUE@BIN_REF = $(REF:.txt=.bino)
-@WITH_SLURMRESTD_TRUE@BIN_REF2 = $(BIN_REF:.json=.bino)
-
-# making a .la
-@WITH_SLURMRESTD_TRUE@noinst_LTLIBRARIES = libslurmrest_ref.la
-@WITH_SLURMRESTD_TRUE@libslurmrest_ref_la_SOURCES = 
-@WITH_SLURMRESTD_TRUE@slurmrestd_SOURCES = $(SRCS)
-@WITH_SLURMRESTD_TRUE@convenience_libs = $(LIB_SLURM) $(DL_LIBS)
-@WITH_SLURMRESTD_TRUE@slurmrestd_DEPENDENCIES = $(LIB_SLURM_BUILD) libslurmrest_ref.la
-@WITH_SLURMRESTD_TRUE@slurmrestd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
-@WITH_SLURMRESTD_TRUE@libslurmrest_ref_la_LIBADD = libslurmrest_ref.lo
-@WITH_SLURMRESTD_TRUE@slurmrestd_LDADD = \
-@WITH_SLURMRESTD_TRUE@	$(convenience_libs) $(HTTP_PARSER_LDFLAGS) \
-@WITH_SLURMRESTD_TRUE@	$(YAML_LDFLAGS) $(JSON_LDFLAGS) \
-@WITH_SLURMRESTD_TRUE@	libslurmrest_ref.la \
-@WITH_SLURMRESTD_TRUE@	ops/libslurmrest_ops.la
-
+SUBDIRS = v0.0.35
 all: all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -554,9 +465,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/slurmrestd/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/slurmrestd/plugins/openapi/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/slurmrestd/Makefile
+	  $(AUTOMAKE) --gnu src/slurmrestd/plugins/openapi/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -574,117 +485,6 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-install-sbinPROGRAMS: $(sbin_PROGRAMS)
-	@$(NORMAL_INSTALL)
-	@list='$(sbin_PROGRAMS)'; test -n "$(sbindir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(sbindir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(sbindir)" || exit 1; \
-	fi; \
-	for p in $$list; do echo "$$p $$p"; done | \
-	sed 's/$(EXEEXT)$$//' | \
-	while read p p1; do if test -f $$p \
-	 || test -f $$p1 \
-	  ; then echo "$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n;h' \
-	    -e 's|.*|.|' \
-	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
-	sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
-	    else { print "f", $$3 "/" $$4, $$1; } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	    test -z "$$files" || { \
-	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(sbindir)$$dir'"; \
-	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(sbindir)$$dir" || exit $$?; \
-	    } \
-	; done
-
-uninstall-sbinPROGRAMS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(sbin_PROGRAMS)'; test -n "$(sbindir)" || list=; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
-	      -e 's/$$/$(EXEEXT)/' \
-	`; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(sbindir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(sbindir)" && rm -f $$files
-
-clean-sbinPROGRAMS:
-	@list='$(sbin_PROGRAMS)'; test -n "$$list" || exit 0; \
-	echo " rm -f" $$list; \
-	rm -f $$list || exit $$?; \
-	test -n "$(EXEEXT)" || exit 0; \
-	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
-	echo " rm -f" $$list; \
-	rm -f $$list
-
-clean-noinstLTLIBRARIES:
-	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
-	@list='$(noinst_LTLIBRARIES)'; \
-	locs=`for p in $$list; do echo $$p; done | \
-	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
-	      sort -u`; \
-	test -z "$$locs" || { \
-	  echo rm -f $${locs}; \
-	  rm -f $${locs}; \
-	}
-
-libslurmrest_ref.la: $(libslurmrest_ref_la_OBJECTS) $(libslurmrest_ref_la_DEPENDENCIES) $(EXTRA_libslurmrest_ref_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK) $(am_libslurmrest_ref_la_rpath) $(libslurmrest_ref_la_OBJECTS) $(libslurmrest_ref_la_LIBADD) $(LIBS)
-
-slurmrestd$(EXEEXT): $(slurmrestd_OBJECTS) $(slurmrestd_DEPENDENCIES) $(EXTRA_slurmrestd_DEPENDENCIES) 
-	@rm -f slurmrestd$(EXEEXT)
-	$(AM_V_CCLD)$(slurmrestd_LINK) $(slurmrestd_OBJECTS) $(slurmrestd_LDADD) $(LIBS)
-
-mostlyclean-compile:
-	-rm -f *.$(OBJEXT)
-
-distclean-compile:
-	-rm -f *.tab.c
-
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conmgr.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_content_type.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_url.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/openapi.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/operations.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rest_auth.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmrestd.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xjson.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xyaml.Po@am__quote@ # am--include-marker
-
-$(am__depfiles_remade):
-	@$(MKDIR_P) $(@D)
-	@echo '# dummy' >$@-t && $(am__mv) $@-t $@
-
-am--depfiles: $(am__depfiles_remade)
-
-.c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
-
-.c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -792,12 +592,9 @@ distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 check-am: all-am
 check: check-recursive
-all-am: Makefile $(PROGRAMS) $(LTLIBRARIES)
+all-am: Makefile
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(sbindir)"; do \
-	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
-	done
 install: install-recursive
 install-exec: install-exec-recursive
 install-data: install-data-recursive
@@ -820,7 +617,6 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -831,23 +627,11 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-recursive
 
-clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
-	clean-sbinPROGRAMS mostlyclean-am
+clean-am: clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-recursive
-		-rm -f ./$(DEPDIR)/conmgr.Po
-	-rm -f ./$(DEPDIR)/http.Po
-	-rm -f ./$(DEPDIR)/http_content_type.Po
-	-rm -f ./$(DEPDIR)/http_url.Po
-	-rm -f ./$(DEPDIR)/openapi.Po
-	-rm -f ./$(DEPDIR)/operations.Po
-	-rm -f ./$(DEPDIR)/rest_auth.Po
-	-rm -f ./$(DEPDIR)/slurmrestd.Po
-	-rm -f ./$(DEPDIR)/xjson.Po
-	-rm -f ./$(DEPDIR)/xyaml.Po
 	-rm -f Makefile
-distclean-am: clean-am distclean-compile distclean-generic \
-	distclean-tags
+distclean-am: clean-am distclean-generic distclean-tags
 
 dvi: dvi-recursive
 
@@ -867,7 +651,7 @@ install-dvi: install-dvi-recursive
 
 install-dvi-am:
 
-install-exec-am: install-sbinPROGRAMS
+install-exec-am:
 
 install-html: install-html-recursive
 
@@ -890,23 +674,12 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-		-rm -f ./$(DEPDIR)/conmgr.Po
-	-rm -f ./$(DEPDIR)/http.Po
-	-rm -f ./$(DEPDIR)/http_content_type.Po
-	-rm -f ./$(DEPDIR)/http_url.Po
-	-rm -f ./$(DEPDIR)/openapi.Po
-	-rm -f ./$(DEPDIR)/operations.Po
-	-rm -f ./$(DEPDIR)/rest_auth.Po
-	-rm -f ./$(DEPDIR)/slurmrestd.Po
-	-rm -f ./$(DEPDIR)/xjson.Po
-	-rm -f ./$(DEPDIR)/xyaml.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-recursive
 
-mostlyclean-am: mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool
+mostlyclean-am: mostlyclean-generic mostlyclean-libtool
 
 pdf: pdf-recursive
 
@@ -916,52 +689,25 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-sbinPROGRAMS
+uninstall-am:
 
 .MAKE: $(am__recursive_targets) install-am install-strip
 
-.PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am \
-	am--depfiles check check-am clean clean-generic clean-libtool \
-	clean-noinstLTLIBRARIES clean-sbinPROGRAMS cscopelist-am ctags \
-	ctags-am distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags dvi dvi-am html html-am info \
-	info-am install install-am install-data install-data-am \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-sbinPROGRAMS install-strip installcheck \
-	installcheck-am installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-sbinPROGRAMS
+.PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am check \
+	check-am clean clean-generic clean-libtool cscopelist-am ctags \
+	ctags-am distclean distclean-generic distclean-libtool \
+	distclean-tags dvi dvi-am html html-am info info-am install \
+	install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	installdirs-am maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
+	ps ps-am tags tags-am uninstall uninstall-am
 
 .PRECIOUS: Makefile
 
-
-@WITH_SLURMRESTD_TRUE@%.bino: %.txt
-@WITH_SLURMRESTD_TRUE@	$(AM_V_GEN)pushd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; popd
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
-
-@WITH_SLURMRESTD_TRUE@%.bino: %.json
-@WITH_SLURMRESTD_TRUE@	$(AM_V_GEN)pushd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; popd
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
-
-@WITH_SLURMRESTD_TRUE@libslurmrest_ref.lo: $(BIN_REF2)
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# $@ - a libtool object file" >"$@"
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# Generated by $(shell @LIBTOOL@ --version | head -n 1)" >>"$@"
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "#" >>"$@"
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# Please DO NOT delete this file!" >>"$@"
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# It is necessary for linking the library." >>"$@"
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo >>"$@"
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# Name of the PIC object." >>"$@"
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "pic_object='$(BIN_REF2)'" >>"$@"
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo >>"$@"
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# Name of the non-PIC object" >>"$@"
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "non_pic_object=''" >>"$@"
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo >>"$@"
-force:
-$(convenience_libs) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

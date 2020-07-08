@@ -48,17 +48,71 @@
 
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
-#include "src/slurmrestd/ops/api.h"
 #include "src/slurmrestd/ref.h"
 #include "src/slurmrestd/xjson.h"
 
-extern int init_op_openapi(void)
+/*
+ * These variables are required by the generic plugin interface.  If they
+ * are not found in the plugin, the plugin loader will ignore it.
+ *
+ * plugin_name - a string giving a human-readable description of the
+ * plugin.  There is no maximum length, but the symbol must refer to
+ * a valid string.
+ *
+ * plugin_type - a string suggesting the type of the plugin or its
+ * applicability to a particular form of data or method of data handling.
+ * If the low-level plugin API is used, the contents of this string are
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
+ * interface which requires this string to be of the form
+ *
+ *	<application>/<method>
+ *
+ * where <application> is a description of the intended application of
+ * the plugin (e.g., "select" for Slurm node selection) and <method>
+ * is a description of how this plugin satisfies that application.  Slurm will
+ * only load select plugins if the plugin_type string has a
+ * prefix of "select/".
+ *
+ * plugin_version - an unsigned 32-bit integer containing the Slurm version
+ * (major.minor.micro combined into a single number).
+ */
+const char plugin_name[] = "REST v0.0.35";
+const char plugin_type[] = "openapi/v0.0.35";
+const uint32_t plugin_id = 100;
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+decl_static_data(openapi_json);
+
+extern void init_op_diag(void);
+extern void init_op_jobs(void);
+extern void init_op_nodes(void);
+extern void init_op_partitions(void);
+extern void destroy_op_diag(void);
+extern void destroy_op_jobs(void);
+extern void destroy_op_nodes(void);
+extern void destroy_op_partitions(void);
+
+extern data_t *slurm_openapi_p_get_specification(void)
 {
-	/* place holder for conversion to plugin */
-	return SLURM_SUCCESS;
+	data_t *spec = NULL;
+
+	static_ref_json_to_data_t(spec, openapi_json);
+
+	return spec;
 }
 
-extern void destroy_op_openapi(void)
+extern void slurm_openapi_p_init(void)
 {
-	/* place holder for conversion to plugin */
+	init_op_diag();
+	init_op_jobs();
+	init_op_nodes();
+	init_op_partitions();
+}
+
+extern void slurm_openapi_p_fini(void)
+{
+	destroy_op_diag();
+	destroy_op_jobs();
+	destroy_op_nodes();
+	destroy_op_partitions();
 }

@@ -196,18 +196,12 @@ static int _op_handler_nodes(const char *context_id,
 	return rc;
 }
 
-extern int init_op_nodes(void)
+extern void init_op_nodes(void)
 {
-	int rc;
-
-	if ((rc = bind_operation_handler("/slurm/v0.0.35/nodes/",
-					     _op_handler_nodes, URL_TAG_NODES)))
-		/* no-op */;
-	else
-		rc = bind_operation_handler(
-			"/slurm/v0.0.35/node/{node_name}", _op_handler_nodes,
-			URL_TAG_NODE);
-	return rc;
+	bind_operation_handler("/slurm/v0.0.35/nodes/", _op_handler_nodes,
+			       URL_TAG_NODES);
+	bind_operation_handler("/slurm/v0.0.35/node/{node_name}",
+			       _op_handler_nodes, URL_TAG_NODE);
 }
 
 extern void destroy_op_nodes(void)

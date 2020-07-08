@@ -48,7 +48,6 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmrestd/operations.h"
-#include "src/slurmrestd/ops/diag.h"
 #include "src/slurmrestd/ref.h"
 #include "src/slurmrestd/xjson.h"
 
@@ -210,17 +209,10 @@ static int _op_handler_ping(const char *context_id,
 	return rc;
 }
 
-extern int init_op_diag(void)
+extern void init_op_diag(void)
 {
-	int rc;
-
-	if ((rc = bind_operation_handler("/slurm/v0.0.35/diag/",
-					     _op_handler_diag, URL_TAG_DIAG)))
-		/* no-op */;
-	else
-		rc = bind_operation_handler("/slurm/v0.0.35/ping/",
-						_op_handler_ping, URL_TAG_DIAG);
-	return rc;
+	bind_operation_handler("/slurm/v0.0.35/diag/", _op_handler_diag, 0);
+	bind_operation_handler("/slurm/v0.0.35/ping/", _op_handler_ping, 0);
 }
 
 extern void destroy_op_diag(void)

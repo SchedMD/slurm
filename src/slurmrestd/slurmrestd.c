@@ -68,11 +68,6 @@
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
-#include "src/slurmrestd/ops/api.h"
-#include "src/slurmrestd/ops/diag.h"
-#include "src/slurmrestd/ops/jobs.h"
-#include "src/slurmrestd/ops/nodes.h"
-#include "src/slurmrestd/ops/partitions.h"
 #include "src/slurmrestd/ref.h"
 #include "src/slurmrestd/rest_auth.h"
 
@@ -431,21 +426,6 @@ int main(int argc, char **argv)
 	if (init_openapi(plugin_handles, plugin_count))
 		fatal("Unable to initialize OpenAPI structures");
 
-	if (init_op_diag())
-		fatal("Unable to initialize diag ops");
-
-	if (init_op_jobs())
-		fatal("Unable to initialize jobs ops");
-
-	if (init_op_nodes())
-		fatal("Unable to initialize nodes ops");
-
-	if (init_op_partitions())
-		fatal("Unable to initialize partitions ops");
-
-	if (init_op_openapi())
-		fatal("Unable to initialize jobs OpenAPI");
-
 	if (init_rest_auth(auth_type))
 		fatal("Unable to initialize rest authentication");
 
@@ -486,11 +466,6 @@ int main(int argc, char **argv)
 
 	/* cleanup everything */
 	destroy_rest_auth();
-	destroy_op_partitions();
-	destroy_op_nodes();
-	destroy_op_jobs();
-	destroy_op_diag();
-	destroy_op_openapi();
 	destroy_operations();
 	destroy_openapi();
 	free_con_mgr(conmgr);

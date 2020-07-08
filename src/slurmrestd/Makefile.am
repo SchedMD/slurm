@@ -1,4 +1,4 @@
-SUBDIRS = ops
+SUBDIRS = plugins
 
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.* *.bino
