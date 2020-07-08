@@ -53,6 +53,7 @@ libslurmrest_ref_la_SOURCES =
 slurmrestd_SOURCES = $(SRCS)
 convenience_libs = $(LIB_SLURM) $(DL_LIBS)
 slurmrestd_DEPENDENCIES = $(LIB_SLURM_BUILD) libslurmrest_ref.la
+slurmrestd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 libslurmrest_ref_la_LIBADD = libslurmrest_ref.lo
 slurmrestd_LDADD = \

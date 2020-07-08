@@ -168,6 +168,9 @@ slurmrestd_OBJECTS = $(am_slurmrestd_OBJECTS)
 am__DEPENDENCIES_1 =
 @WITH_SLURMRESTD_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
 @WITH_SLURMRESTD_TRUE@	$(am__DEPENDENCIES_1)
+slurmrestd_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(slurmrestd_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -530,6 +533,7 @@ SRCS = \
 @WITH_SLURMRESTD_TRUE@slurmrestd_SOURCES = $(SRCS)
 @WITH_SLURMRESTD_TRUE@convenience_libs = $(LIB_SLURM) $(DL_LIBS)
 @WITH_SLURMRESTD_TRUE@slurmrestd_DEPENDENCIES = $(LIB_SLURM_BUILD) libslurmrest_ref.la
+@WITH_SLURMRESTD_TRUE@slurmrestd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 @WITH_SLURMRESTD_TRUE@libslurmrest_ref_la_LIBADD = libslurmrest_ref.lo
 @WITH_SLURMRESTD_TRUE@slurmrestd_LDADD = \
 @WITH_SLURMRESTD_TRUE@	$(convenience_libs) $(HTTP_PARSER_LDFLAGS) \
@@ -636,7 +640,7 @@ libslurmrest_ref.la: $(libslurmrest_ref_la_OBJECTS) $(libslurmrest_ref_la_DEPEND
 
 slurmrestd$(EXEEXT): $(slurmrestd_OBJECTS) $(slurmrestd_DEPENDENCIES) $(EXTRA_slurmrestd_DEPENDENCIES) 
 	@rm -f slurmrestd$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(slurmrestd_OBJECTS) $(slurmrestd_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(slurmrestd_LINK) $(slurmrestd_OBJECTS) $(slurmrestd_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
