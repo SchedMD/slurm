@@ -31,6 +31,9 @@ set file_in	"bash"
 
 print_header $test_id
 
+# Increase timeout to account for sbatch --wait backoff
+set timeout 20
+
 proc test_sbatch { local } {
 	global sbatch number file_in
 
