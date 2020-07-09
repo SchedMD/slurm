@@ -202,6 +202,41 @@ void set_distribution(task_dist_states_t distribution,
 }
 
 /*
+ * Get the size of the plane distribution and put it in plane_size.
+ *
+ * An invalid plane size is zero, negative, or larger than INT_MAX.
+ *
+ * Return SLURM_DIST_PLANE for a valid plane size, SLURM_DIST_UNKNOWN otherwise.
+ */
+static task_dist_states_t _parse_plane_dist(const char *tok,
+					    uint32_t *plane_size)
+{
+	long tmp_long;
+	char *endptr, *plane_size_str;
+
+	/*
+	 * Check for plane size given after '=' sign or in SLURM_DIST_PLANESIZE
+	 * environment variable.
+	 */
+	if ((plane_size_str = strchr(tok, '=')))
+		plane_size_str++;
+	else if (!(plane_size_str = getenv("SLURM_DIST_PLANESIZE")))
+		return SLURM_DIST_UNKNOWN; /* No plane size given */
+	else if (*plane_size_str == '\0')
+		return SLURM_DIST_UNKNOWN; /* No plane size given */
+
+	tmp_long = strtol(plane_size_str, &endptr, 10);
+	if ((plane_size_str == endptr) || (*endptr != '\0')) {
+		/* No valid digits or there are characters after plane_size */
+		return SLURM_DIST_UNKNOWN;
+	} else if ((tmp_long > INT_MAX) || (tmp_long <= 0) ||
+		   ((errno == ERANGE) && (tmp_long == LONG_MAX)))
+		return SLURM_DIST_UNKNOWN; /* Number is too high/low */
+	*plane_size = (uint32_t)tmp_long;
+	return SLURM_DIST_PLANE;
+}
+
+/*
  * verify that a distribution type in arg is of a known form
  * returns the task_dist_states, or -1 if state is unknown
  */
@@ -224,28 +259,23 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 	if (!arg)
 		return result;
 
+	if (!xstrncasecmp(arg, "plane", 5)) {
+		/*
+		 * plane distribution can't be with any other type,
+		 * so just parse plane distribution and then break
+		 */
+		return _parse_plane_dist(arg, plane_size);
+	}
+
 	tmp = xstrdup(arg);
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
-		bool lllp_dist = false, plane_dist = false;
+		bool lllp_dist = false;
 		len = strlen(tok);
 		dist_str = strchr(tok, ':');
 		if (dist_str != NULL) {
 			/* -m cyclic|block:cyclic|block */
 			lllp_dist = true;
-		} else {
-			/* -m plane=<plane_size> */
-			dist_str = strchr(tok, '=');
-			if (!dist_str)
-				dist_str = getenv("SLURM_DIST_PLANESIZE");
-			else {
-				len = dist_str - tok;
-				dist_str++;
-			}
-			if (dist_str) {
-				*plane_size = atoi(dist_str);
-				plane_dist = true;
-			}
 		}
 
 		cur_ptr = tok;
@@ -350,14 +380,16 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 				== 0) {
 				result = SLURM_DIST_BLOCK_CFULL_CFULL;
 			}
-		} else if (plane_dist) {
-			if (xstrncasecmp(tok, "plane", len) == 0) {
-				result = SLURM_DIST_PLANE;
-			}
 		} else {
 			if (xstrncasecmp(tok, "cyclic", len) == 0) {
 				result = SLURM_DIST_CYCLIC;
-			} else if (xstrncasecmp(tok, "block", len) == 0) {
+			} else if ((xstrncasecmp(tok, "block", len) == 0) ||
+				   (xstrncasecmp(tok, "*", len) == 0)) {
+				/*
+				 * We can get here with syntax like this:
+				 * -m *,pack
+				 * '*' means get default (block for node dist).
+				 */
 				result = SLURM_DIST_BLOCK;
 			} else if ((xstrncasecmp(tok, "arbitrary", len) == 0) ||
 				   (xstrncasecmp(tok, "hostfile", len) == 0)) {

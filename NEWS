@@ -103,6 +103,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix "user" filter for sacctmgr show transactions.
  -- Fix preemption logic.
  -- Fix no_consume GRES for exclusive (whole node) requests.
+ -- Fix regression in 20.02 that caused an infinite loop in slurmctld when
+    requesting --distribution=plane for the job.
+ -- Fix parsing of the --distribution option.
 
 * Changes in Slurm 20.02.3
 ==========================

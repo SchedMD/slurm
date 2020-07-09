@@ -393,16 +393,16 @@ static int _compute_plane_dist(job_record_t *job_ptr,
 					continue;
 				more_tres_tasks = true;
 				if ((job_res->cpus[n] < avail_cpus[n]) ||
-				    over_subscribe)
-					continue;
-
-				tid++;
-				job_res->tasks_per_node[n]++;
-				for (l = 0;
-				     l < job_ptr->details->cpus_per_task;
-				     l++) {
-					if (job_res->cpus[n] < avail_cpus[n])
-						job_res->cpus[n]++;
+				    over_subscribe) {
+					tid++;
+					job_res->tasks_per_node[n]++;
+					for (l = 0;
+					     l <job_ptr->details->cpus_per_task;
+					     l++) {
+						if (job_res->cpus[n] <
+						    avail_cpus[n])
+							job_res->cpus[n]++;
+					}
 				}
 			}
 			if (!more_tres_tasks)
