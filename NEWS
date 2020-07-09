@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix creation of CoreCnt only reservations when the first node isn't
     available.
  -- Fix wrong DBD Agent queue size in sdiag when using accounting_storage/none.
+ -- Improve job constraints XOR option logic.
 
 * Changes in Slurm 20.02.4
 ==========================

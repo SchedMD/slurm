@@ -3515,6 +3515,7 @@ extern bool valid_feature_counts(job_record_t *job_ptr, bool use_active,
 				bit_or(feature_bitmap, work_bitmap);
 			} else {	/* FEATURE_OP_XOR or FEATURE_OP_XAND */
 				*has_xor = true;
+				bit_or(feature_bitmap, work_bitmap);
 			}
 			FREE_NULL_BITMAP(paren_bitmap);
 			work_bitmap = feature_bitmap;
@@ -4536,7 +4537,8 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 		}
 		if ((job_feat_ptr->op_code == FEATURE_OP_XAND) ||
 		    (job_feat_ptr->op_code == FEATURE_OP_XOR)  ||
-		    ((job_feat_ptr->op_code == FEATURE_OP_END)  &&
+		    ((job_feat_ptr->op_code != FEATURE_OP_XAND) &&
+		     (job_feat_ptr->op_code != FEATURE_OP_XOR)  &&
 		     ((last_op == FEATURE_OP_XAND) ||
 		      (last_op == FEATURE_OP_XOR)))) {
 			if (bit_overlap_any(config_ptr->node_bitmap,
