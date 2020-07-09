@@ -1256,7 +1256,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					job_ptr->details->pn_min_memory =
 						smallest_min_mem;
 			}
-#if 0
+#if _DEBUG
 {
 			char *tmp_str = bitmap2node_name(feature_bitmap);
 			info("%pJ needs %u nodes with feature %s, using %s, error_code=%d",
@@ -1344,7 +1344,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		job_ptr->details->min_nodes = saved_job_min_nodes;
 	}
 
-#if 0
+#if _DEBUG
 {
 	char *tmp_str = bitmap2node_name(job_ptr->details->req_node_bitmap);
 	info("%pJ requires %d:%d:%d req_nodes:%s err:%u",
@@ -1365,7 +1365,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	if ((resv_rc == ESLURM_RESERVATION_MAINT) &&
 	    (error_code == ESLURM_NODE_NOT_AVAIL))
 		error_code = ESLURM_RESERVATION_MAINT;
-#if 0
+#if _DEBUG
 {
 	char *tmp_str = bitmap2node_name(*select_bitmap);
 	info("%pJ allocated nodes:%s err:%u", job_ptr, tmp_str, error_code);
