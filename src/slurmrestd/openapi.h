@@ -46,12 +46,6 @@
 #include "src/slurmrestd/http.h"
 
 /*
- * Retrieve first loaded OpenAPI specification.
- * Previous version will not provided to users requesting spec.
- */
-extern const data_t *get_openapi_specification(void);
-
-/*
  * Register a given unique tag against a path.
  *
  * IN path - path to assign to given tag

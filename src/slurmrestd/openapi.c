@@ -50,6 +50,7 @@
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/http_url.h"
 #include "src/slurmrestd/openapi.h"
+#include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/ref.h"
 #include "src/slurmrestd/xjson.h"
 
@@ -758,7 +759,20 @@ static void _list_delete_path_t(void *x)
 	xfree(path);
 }
 
-extern int init_openapi(void)
+static int _op_handler_openapi(const char *context_id,
+			       http_request_method_t method,
+			       data_t *parameters, data_t *query,
+			       int tag, data_t *resp)
+{
+	if (!spec)
+		return SLURM_ERROR;
+
+	resp = data_copy(resp, spec[0]);
+
+	return SLURM_SUCCESS;
+}
+
+extern int init_openapi()
 {
 	slurm_rwlock_wrlock(&paths_lock);
 
@@ -774,11 +788,18 @@ extern int init_openapi(void)
 
 	slurm_rwlock_unlock(&paths_lock);
 
+	bind_operation_handler("/openapi.yaml", _op_handler_openapi, 0);
+	bind_operation_handler("/openapi.json", _op_handler_openapi, 0);
+	bind_operation_handler("/openapi", _op_handler_openapi, 0);
+	bind_operation_handler("/openapi/v3", _op_handler_openapi, 0);
+
 	return SLURM_SUCCESS;
 }
 
 extern void destroy_openapi(void)
 {
+	unbind_operation_handler(_op_handler_openapi);
+
 	slurm_rwlock_wrlock(&paths_lock);
 
 	FREE_NULL_LIST(paths);

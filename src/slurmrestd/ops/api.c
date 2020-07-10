@@ -52,47 +52,13 @@
 #include "src/slurmrestd/ref.h"
 #include "src/slurmrestd/xjson.h"
 
-typedef enum {
-	URL_TAG_UNKNOWN = 0,
-	URL_TAG_GENERATE,
-} url_tag_t;
-
-static int _op_handler_openapi(const char *context_id,
-			       http_request_method_t method,
-			       data_t *parameters, data_t *query,
-			       int tag, data_t *resp)
-{
-	int rc;
-
-	rc = data_copy(resp, get_openapi_specification()) ?
-			SLURM_SUCCESS :
-			SLURM_ERROR;
-
-	return rc;
-}
-
 extern int init_op_openapi(void)
 {
-	int rc;
-
-	if ((rc = bind_operation_handler("/openapi.yaml", _op_handler_openapi,
-					 URL_TAG_GENERATE)))
-		/* no-op */;
-	else if ((rc = bind_operation_handler("/openapi.json",
-					      _op_handler_openapi,
-					      URL_TAG_GENERATE)))
-		/* no-op */;
-	else if ((rc = bind_operation_handler("/openapi", _op_handler_openapi,
-					      URL_TAG_GENERATE)))
-		/* no-op */;
-	else
-		rc = bind_operation_handler("/openapi/v3", _op_handler_openapi,
-					    URL_TAG_GENERATE);
-
-	return rc;
+	/* place holder for conversion to plugin */
+	return SLURM_SUCCESS;
 }
 
 extern void destroy_op_openapi(void)
 {
-	unbind_operation_handler(_op_handler_openapi);
+	/* place holder for conversion to plugin */
 }
