@@ -164,8 +164,7 @@ proc sub_job { } {
 delete_part $test_part_1
 delete_part $test_part_2
 
-set def_part [default_partition]
-if {[string length $def_part] == 0} {
+if {[string length [default_partition]] == 0} {
 	skip "This test can not run without a default partition"
 }
 

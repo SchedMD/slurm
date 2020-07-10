@@ -69,11 +69,11 @@ proc set_cpu_bind { type name cpu_bind } {
 }
 
 proc run_prog { node_name cpu_bind } {
-	global exit_code srun def_part_name bin_printenv number re_word_str
+	global exit_code srun partition bin_printenv number re_word_str
 
 	set matches 0
 	set found_cpu_bind ""
-	set srun_pid [spawn $srun -p $def_part_name -w $node_name -v -t1 $bin_printenv SLURMD_NODENAME]
+	set srun_pid [spawn $srun -p $partition -w $node_name -v -t1 $bin_printenv SLURMD_NODENAME]
 	expect {
 		-re "CpuBindType=($re_word_str)" {
 			set found_cpu_bind $expect_out(1,string)
@@ -99,11 +99,11 @@ proc run_prog { node_name cpu_bind } {
 proc end_test { } {
 	global exit_code scontrol
 	global node_0 node_cpu_bind_0 node_1 node_cpu_bind_1
-	global partition_cpu_bind def_part_name
+	global partition_cpu_bind partition
 
 	set_cpu_bind "node" $node_0 $node_cpu_bind_0
 	set_cpu_bind "node" $node_1 $node_cpu_bind_1
-	set_cpu_bind "partition" $def_part_name $partition_cpu_bind
+	set_cpu_bind "partition" $partition $partition_cpu_bind
 	if {$exit_code != 0} {
 		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
@@ -116,8 +116,8 @@ if {![test_super_user]} {
 	skip "This test is only suitable for a super user (to restore down nodes)"
 }
 
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
+set partition [default_partition]
+set nb_nodes [get_node_cnt_in_part $partition]
 if {$nb_nodes < 2} {
 	skip "Need 2 or more nodes in default partition"
 }
@@ -137,7 +137,7 @@ set timeout $max_job_delay
 set node_0 ""
 set node_1 ""
 set node_cnt 0
-set srun_pid [spawn $srun -p $def_part_name -l -N2 -t1 $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun -l -N2 -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "($number): ($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
@@ -163,7 +163,7 @@ if {$node_cnt != 2} {
 }
 
 log_debug "Determine the node and partition current CpuBind configuration"
-set partition_cpu_bind [get_cpu_bind "partition" $def_part_name]
+set partition_cpu_bind [get_cpu_bind "partition" $partition]
 set node_cpu_bind_0 [get_cpu_bind "node" $node_0]
 set node_cpu_bind_1 [get_cpu_bind "node" $node_1]
 if {$exit_code != 0} {
@@ -172,7 +172,7 @@ if {$exit_code != 0} {
 
 set_cpu_bind "node" $node_0 "core"
 set_cpu_bind "node" $node_1 "thread"
-set_cpu_bind "partition" $def_part_name "socket"
+set_cpu_bind "partition" $partition "socket"
 if {$exit_code != 0} {
 	end_test
 }

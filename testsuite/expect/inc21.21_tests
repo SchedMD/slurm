@@ -52,8 +52,7 @@ proc inc21_21_good { test_type limit } {
 		set is_skip 1
 		return
 	}
-	set partition [default_partition]
-	set select_type_param [get_select_type_params $partition]
+	set select_type_param [get_select_type_params]
 	if { [string first "CR_SOCKET" $select_type_param] != -1} {
 		log_warn "This test can't be run SelectTypeParameters=CR_SOCKET"
 		set is_skip 1
@@ -156,8 +155,7 @@ proc inc21_21_grp_test { test_type limit } {
 		return
 	}
 
-	set partition [default_partition]
-	set select_type_param [get_select_type_params $partition]
+	set select_type_param [get_select_type_params]
 	if { [string first "CR_SOCKET" $select_type_param] != -1} {
 		log_warn "This test can't be run SelectTypeParameters=CR_SOCKET"
 		set is_skip 1

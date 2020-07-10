@@ -164,7 +164,7 @@ proc check_limit { type name } {
 proc cleanup { } {
 
 	global sacctmgr file_in bin_rm test_acct test_qos exit_code
-	global save_billing_weights scontrol
+	global partition save_billing_weights scontrol
 
 	# Delete test account and qos
 	spawn $sacctmgr -i delete account $test_acct
@@ -190,7 +190,7 @@ proc cleanup { } {
 	}
 
 	if {$save_billing_weights ne ""} {
-		spawn $scontrol update partitionname=[default_partition] TRESBillingWeights=$save_billing_weights
+		spawn $scontrol update partitionname=$partition TRESBillingWeights=$save_billing_weights
 		expect {
 			-re "error" {
 				log_error "Failed to reset TRESBillingWeights"
@@ -225,6 +225,8 @@ if {[test_super_user] == 0} {
 
 # Clean up any vestigial data
 cleanup
+
+set partition [default_partition]
 
 make_bash_script $file_in "
 sleep 2"
@@ -298,7 +300,7 @@ expect {
 	}
 }
 
-spawn $scontrol show part [default_partition]
+spawn $scontrol show part $partition
 expect {
 	-re "TRESBillingWeights=(\\S+)" {
 		set save_billing_weights $expect_out(1,string)
@@ -313,7 +315,7 @@ expect {
 	}
 }
 
-spawn $scontrol update partitionname=[default_partition] tresbillingweights=cpu=$tres_cpu_mult
+spawn $scontrol update partitionname=$partition tresbillingweights=cpu=$tres_cpu_mult
 expect {
 	-re "error" {
 		log_error "Failed to set TRESBillingWeights"

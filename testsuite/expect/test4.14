@@ -31,7 +31,6 @@ set test_id        4.14
 set test_part_1    "test$test_id\_partition_1"
 set test_part_2    "test$test_id\_partition_2"
 set test_node      ""
-set default_part   default_partition
 set exit_code      0
 
 print_header $test_id

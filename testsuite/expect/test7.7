@@ -153,8 +153,7 @@ if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
-set partition [default_partition]
-set select_type_param [get_select_type_params $partition]
+set select_type_param [get_select_type_params]
 if {[test_linear]} {
 	set alloc_unit_str "NODE"
 	set alloc_unit_num 1

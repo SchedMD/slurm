@@ -64,15 +64,12 @@ set units ""
 # find me an idle node in default partition
 log_user 0
 
-# find the default partition
-set def_part [default_partition]
-
 # find the nodes in the default partition
 log_user 0
 set def_hostlist ""
 set part_exclusive 0
 set part_oversubscribe_force 0
-spawn $scontrol show part $def_part
+spawn $scontrol show part [default_partition]
 expect {
 	-re " Nodes=($re_word_str)"  {
 		set def_hostlist $expect_out(1,string)

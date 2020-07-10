@@ -36,8 +36,7 @@ set exit_code   0
 print_header $test_id
 
 # find out if we have enough nodes to test functionality
-set partition [default_partition]
-set node_count [get_node_cnt_in_part $partition]
+set node_count [get_node_cnt_in_part]
 if { $node_count < 2 } {
 	skip "Insufficient nodes in default partition ($node_count < 2)"
 }

@@ -302,7 +302,7 @@ if {!$match} {
 	end_it 1
 }
 
-set idle_node [get_idle_node_in_part [default_partition]]
+set idle_node [get_idle_node_in_part]
 if {$idle_node == ""} {
 	log_error "no idle nodes"
 	end_it 1

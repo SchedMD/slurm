@@ -42,8 +42,7 @@ if {[test_front_end] != 0} {
 }
 
 # find out if we have enough nodes to test functionality
-set partition [default_partition]
-set node_count [get_node_cnt_in_part $partition]
+set node_count [get_node_cnt_in_part]
 if { $node_count < 4 } {
 	skip "Insufficient nodes in default partition ($node_count < 4)"
 }
