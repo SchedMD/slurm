@@ -2533,6 +2533,9 @@ skip_start:
 			    (orig_start_time < job_ptr->start_time)) {
 				/* Can start earlier in different partition */
 				job_ptr->start_time = orig_start_time;
+			} else {
+				log_flag(BACKFILL, "%pJ StartTime set but no backfill reservation created.",
+					 job_ptr);
 			}
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			continue;
@@ -2564,6 +2567,9 @@ skip_start:
 			    (orig_start_time < job_ptr->start_time)) {
 				/* Can start earlier in different partition */
 				job_ptr->start_time = orig_start_time;
+			} else {
+				log_flag(BACKFILL, "%pJ StartTime set to time after current backfill window. No reservation created",
+					 job_ptr);
 			}
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			continue;
