@@ -45,7 +45,6 @@ set host_3      ""
 set node_cnt 3
 set timeout $max_job_delay
 
-set partition [default_partition]
 set available [available_nodes idle]
 if {$available < $node_cnt} {
     skip "Not enough nodes currently available ($available avail, $node_cnt needed)"

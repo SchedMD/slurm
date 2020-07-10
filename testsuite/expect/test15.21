@@ -35,7 +35,6 @@ source ./globals
 
 set test_id     "15.21"
 set exit_code   0
-set partition   [default_partition]
 
 print_header $test_id
 
@@ -61,7 +60,7 @@ set host_1_num       0
 set host_2_num       0
 set job_id 0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N3-3 -p $partition --contiguous -t1 $srun -l $bin_printenv SLURMD_NODENAME]
+set salloc_pid [spawn $salloc -N3-3 --contiguous -t1 $srun -l $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Required node not available|Node count specification invalid|configuration not available" {
 		slow_kill $salloc_pid
@@ -109,7 +108,7 @@ if {[string compare $host_2_name ""] == 0} {
 
 lappend check_hosts_list $host_0_name $host_1_name $host_2_name
 
-set exit_code [check_hosts_contiguous $partition $check_hosts_list]
+set exit_code [check_hosts_contiguous $check_hosts_list]
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"

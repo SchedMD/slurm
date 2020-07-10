@@ -36,7 +36,6 @@ source ./globals
 
 set test_id     "1.83"
 set exit_code   0
-set partition   [default_partition]
 
 print_header $test_id
 
@@ -61,7 +60,7 @@ set host_0_num       0
 set host_1_num       0
 set host_2_num       0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N3-3 -p $partition --contiguous -l -t1 $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun -N3-3 --contiguous -l -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Required node not available|Node count specification invalid|configuration not available" {
 		slow_kill $srun_pid
@@ -101,7 +100,7 @@ if {[string compare $host_2_name ""] == 0} {
 
 lappend check_hosts_list $host_0_name $host_1_name $host_2_name
 
-set exit_code [check_hosts_contiguous $partition $check_hosts_list]
+set exit_code [check_hosts_contiguous $check_hosts_list]
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"

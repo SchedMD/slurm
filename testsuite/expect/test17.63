@@ -33,7 +33,6 @@ set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
 set exit_code   0
 set needed_nodes 2
-set partition [default_partition]
 set matches 0
 set ncpus ""
 
@@ -44,7 +43,7 @@ if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 }
 
 log_user 0
-spawn $sinfo -N -h -p $partition -t idle -o "%c"
+spawn $sinfo -N -h -p [default_partition] -t idle -o "%c"
 expect {
 	-re "($number)" {
 		incr matches
@@ -66,7 +65,7 @@ expect {
 log_user 1
 
 if {$matches < $needed_nodes} {
-	skip "$needed_nodes idle nodes required in partition $partition, only $matches found"
+	skip "$needed_nodes idle nodes required in default partition, only $matches found"
 }
 
 #
@@ -81,7 +80,7 @@ make_bash_script $file_in "
 
 set cwd "[$bin_pwd]"
 make_bash_script $file_script "
-  $sbatch -p $partition -N1-2 --use-min-nodes -n$ncpus --output=$file_out --error=$file_err $cwd/$file_in
+  $sbatch -N1-2 --use-min-nodes -n$ncpus --output=$file_out --error=$file_err $cwd/$file_in
   exit 0
 "
 

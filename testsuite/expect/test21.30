@@ -129,7 +129,8 @@ print_header $test_id
 # Check to see that there are enough resources in the default partition
 set tmpc 0
 set tmpn 0
-spawn $scontrol show part [default_partition]
+set partition [default_partition]
+spawn $scontrol show part $partition
 expect {
 	-re "TotalCPUs=($number)" {
 		set tmpc [expr $expect_out(1,string) - 1]
@@ -209,7 +210,7 @@ if {$totcpus == 0} {
 
 # Get the number of nodes in the default partition
 set num_nodes 0
-spawn $scontrol show partition [default_partition]
+spawn $scontrol show partition $partition
 expect {
 	-re "TotalNodes=($number)" {
 		set num_nodes [expr $expect_out(1,string) - 1]
@@ -274,7 +275,7 @@ proc endit { } {
 	}
 
 	if {$save_billing_weights ne ""} {
-		spawn $scontrol update partitionname=[default_partition] TRESBillingWeights=$save_billing_weights
+		spawn $scontrol update partitionname=$partition TRESBillingWeights=$save_billing_weights
 		expect {
 			-re "error" {
 				log_error "Failed to reset TRESBillingWeights"
@@ -655,7 +656,7 @@ set mod_qos_vals(MaxWall) "-1"
 
 # TRESBillingWeights
 
-spawn $scontrol update partitionname=[default_partition] tresbillingweights=cpu=$tres_cpu_mult
+spawn $scontrol update partitionname=$partition tresbillingweights=cpu=$tres_cpu_mult
 expect {
 	-re "error" {
 		log_error "Failed to set TRESBillingWeights"

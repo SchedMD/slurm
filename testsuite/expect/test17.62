@@ -35,7 +35,7 @@ set job_time      1
 set stdout        "/dev/null"
 set stderr        "/tmp/err"
 set job_id        0
-set node_list     [get_idle_node_in_part [default_partition]]
+set node_list     [get_idle_node_in_part $partition]
 
 if {[test_select_type_params "MEMORY"]} {
 	set job_mem  100

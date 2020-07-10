@@ -219,12 +219,10 @@ proc test_part {acct qos part qos_con } {
 # Delete any vestigial qos or accounts
 cleanup
 
-set user_name [get_my_user_name]
-
 # Setup
-set partition [default_partition]
-set node_name [ get_idle_node_in_part $partition ]
-set cluster_name [ get_cluster_name ]
+set user_name [get_my_user_name]
+set node_name [get_idle_node_in_part]
+set cluster_name [get_cluster_name]
 
 # NOTE: qos_good should always work and
 # qos_bad should always cause an error

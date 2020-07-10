@@ -29,7 +29,6 @@ source ./globals
 set test_id     "1.114"
 set node_cnt    0
 set exit_code   0
-set partition [default_partition]
 
 proc run_spread_job { task_cnt } {
 	global max_job_delay srun scontrol bin_printenv number exit_code
@@ -90,7 +89,7 @@ if {![test_cons_res] && ![test_cons_tres]} {
 }
 
 log_user 1
-spawn $sinfo -h -p $partition -t idle -o "NODES=%D CPUS=%c"
+spawn $sinfo -h -p [default_partition] -t idle -o "NODES=%D CPUS=%c"
 expect {
 	-re "NODES=($number)" {
 		set node_cnt $expect_out(1,string)
@@ -107,7 +106,7 @@ expect {
 log_user 1
 
 if {$node_cnt < 2} {
-	skip "Insufficient nodes for test in partition $partition ($node_cnt < 2)"
+	skip "Insufficient nodes for test in default partition ($node_cnt < 2)"
 }
 
 if {$node_cnt > 8} {

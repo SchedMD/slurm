@@ -191,10 +191,8 @@ proc test_part { acct part acct_con } {
 cleanup
 
 set user_name [get_my_user_name]
-set partition [default_partition]
-
-set node_name [ get_idle_node_in_part $partition ]
-set cluster_name [ get_cluster_name ]
+set node_name [get_idle_node_in_part]
+set cluster_name [get_cluster_name]
 
 # NOTE: acct_good should always work and
 # acct_bad should always cause an error

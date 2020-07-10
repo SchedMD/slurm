@@ -32,8 +32,7 @@ set job_id      0
 
 print_header $test_id
 
-set part_name [default_partition]
-set default_time [get_partition_default_time_limit $part_name]
+set default_time [get_partition_default_time_limit]
 if { $default_time != -1} {
 	skip "This test is not compatible with default partition having a default time limit ($part_name $default_time)"
 }

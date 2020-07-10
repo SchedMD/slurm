@@ -36,7 +36,7 @@ set job_qos          "test$test_id\_job_qos"
 set part_qos         "test$test_id\_part_qos"
 
 proc cleanup { } {
-	global test_acct job_qos part_qos scontrol sacctmgr test_part def_part
+	global test_acct job_qos part_qos scontrol sacctmgr test_part
 	global exit_code
 
 	# Delete the test QOS

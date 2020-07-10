@@ -40,8 +40,7 @@ if {[test_hetjob_step] == 0} {
 	skip "Heterogeneous steps not currently supported"
 }
 
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
+set nb_nodes [get_node_cnt_in_part]
 if {$nb_nodes < 3} {
 	skip "Need 3 or more nodes in default partition"
 }

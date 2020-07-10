@@ -102,8 +102,7 @@ if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 	set one_task_pc 1
 }
 
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
+set nb_nodes [get_node_cnt_in_part]
 log_debug "Default partition node count is $nb_nodes"
 if {$nb_nodes > 1} {
 	set nb_nodes 2
