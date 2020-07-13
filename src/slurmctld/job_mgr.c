@@ -1301,6 +1301,10 @@ static void _dump_job_state(job_record_t *dump_job_ptr, Buf buffer)
 
 	xassert(dump_job_ptr->magic == JOB_MAGIC);
 
+	/* Don't pack "unlinked" job. */
+	if (dump_job_ptr->job_id == NO_VAL)
+		return;
+
 	/* Dump basic job info */
 	pack32(dump_job_ptr->array_job_id, buffer);
 	pack32(dump_job_ptr->array_task_id, buffer);
@@ -1513,7 +1517,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	List gres_list = NULL, part_ptr_list = NULL;
 	job_record_t *job_ptr = NULL;
 	part_record_t *part_ptr;
-	int error_code, i, qos_error;
+	int error_code, i, qos_error, rc;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	job_resources_t *job_resources = NULL;
 	slurmdb_assoc_rec_t assoc_rec;
@@ -2243,6 +2247,13 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		goto unpack_error;
 	}
 
+	/* "Don't load "unlinked" job. */
+	if (job_ptr->job_id == NO_VAL) {
+		debug("skipping unlinked job");
+		rc = SLURM_SUCCESS;
+		goto free_it;
+	}
+
 	if (((job_state & JOB_STATE_BASE) >= JOB_END) ||
 	    (batch_flag > MAX_BATCH_REQUEUE)) {
 		error("Invalid data for JobId=%u: job_state=%u batch_flag=%u",
@@ -2590,6 +2601,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 unpack_error:
 	error("Incomplete job record");
+	rc = SLURM_ERROR;
+
+free_it:
 	xfree(alloc_node);
 	xfree(account);
 	xfree(admin_comment);
@@ -2636,7 +2650,8 @@ unpack_error:
 	for (i = 0; i < pelog_env_size; i++)
 		xfree(pelog_env[i]);
 	xfree(pelog_env);
-	return SLURM_ERROR;
+
+	return rc;
 }
 
 /*
