@@ -1037,7 +1037,7 @@ extern void jag_common_poll_data(
 			 * Even with min we want to get the max as we are
 			 * looking at a specific task aso we are always looking
 			 * at the max that task had, not the min (or lots of
-			 * things will be zero).  The min is from compairing
+			 * things will be zero).  The min is from comparing
 			 * ranks later when combining.  So here it will be the
 			 * same as the max value set above.
 			 * (same thing goes for the out)
