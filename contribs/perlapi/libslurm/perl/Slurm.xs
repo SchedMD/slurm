@@ -51,6 +51,11 @@ free_slurm(slurm_t self)
 MODULE = Slurm		PACKAGE = Slurm		PREFIX=slurm_
 PROTOTYPES: ENABLE
 
+BOOT:
+{
+	slurm_conf_init(NULL);
+}
+
 ######################################################################
 # 	CONSTRUCTOR/DESTRUCTOR FUNCTIONS
 ######################################################################
