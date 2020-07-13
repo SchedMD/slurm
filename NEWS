@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.11.2
 ==========================
+ -- jobacct_gather - correct calculating extern step memory usage with multiple
+    adopted extern processes.
 
 * Changes in Slurm 20.11.1
 ==========================

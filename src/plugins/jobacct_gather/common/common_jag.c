@@ -1067,8 +1067,18 @@ extern void jag_common_poll_data(
 				prec->tres_data[i].size_write;
 		}
 
-		total_job_mem += jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
-		total_job_vsize += jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
+		if (jobacct->id.job->step_id.step_id == SLURM_EXTERN_CONT) {
+			/* Extern steps only have a single task */
+			total_job_mem =
+				jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
+			total_job_vsize =
+				jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
+		} else {
+			total_job_mem +=
+				jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
+			total_job_vsize +=
+				jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
+		}
 
 		/* Update the cpu times */
 		jobacct->user_cpu_sec = (uint32_t)(prec->usec / (double)hertz);
