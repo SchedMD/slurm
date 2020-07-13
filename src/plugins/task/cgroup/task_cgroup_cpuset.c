@@ -71,12 +71,6 @@
 #define cpu_set_t cpuset_t
 #endif
 
-typedef struct {
-	char *cpus;
-	char *cpuset_meta;
-	stepd_step_rec_t *job;
-} task_cpuset_create_callback_t;
-
 # if HWLOC_API_VERSION <= 0x00010000
 /*
  * After this version the cpuset structure and all it's functions
@@ -132,6 +126,12 @@ static uint16_t bind_mode_ldom =
 			    CPU_BIND_LDMAP;
 
 #endif
+
+typedef struct {
+	char *cpus;
+	char *cpuset_meta;
+	stepd_step_rec_t *job;
+} task_cpuset_create_callback_t;
 
 static bool cpuset_prefix_set = false;
 static char *cpuset_prefix = "";
