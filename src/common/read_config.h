@@ -53,7 +53,6 @@
 extern slurm_conf_t slurm_conf;
 extern char *default_slurm_config_file;
 extern char *default_plugin_path;
-extern char *default_plugstack;
 
 #ifndef NDEBUG
 extern uint16_t drop_priv_flag;

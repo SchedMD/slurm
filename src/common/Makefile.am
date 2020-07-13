@@ -182,5 +182,4 @@ global_defaults.c : $(top_builddir)/config.h Makefile
 	   echo	"char *default_plugin_path = \"$(pkglibdir)\";"; \
 	   echo \
 	   "char *default_slurm_config_file = \"$(sysconfdir)/slurm.conf\";"; \
-	   echo "char *default_plugstack = \"$(sysconfdir)/plugstack.conf\";";\
 	 ) > global_defaults.c
