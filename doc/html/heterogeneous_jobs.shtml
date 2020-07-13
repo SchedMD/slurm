@@ -11,6 +11,7 @@
 <li><a href="#env_var">Environment Variables</a></li>
 <li><a href="#examples">Examples</a></li>
 <li><a href="#limitations">Limitations</a></li>
+<li><a href="#het_steps">Heterogeneous Steps</a></li>
 <li><a href="#sys_admin">System Administrator Information</a></li>
 </ul>
 
@@ -646,6 +647,33 @@ communication ports (no change in Slurm behavior).</p>
 to all components of the heterogeneous job (not possible today) plus changes to
 srun in order to better synchronize the step startup and error handling. -->
 
+<h2><a name="het_steps">Heterogeneous Steps</a></h2>
+
+<p>Slurm version 20.11 introduces the ability to request heterogeneous job
+steps from within a non-homogeneous job allocation. This allows you the
+flexibility to have different layouts for job steps without requiring the
+use of heterogeneous jobs, where having separate jobs for the components
+may be undesirable.</p>
+
+<p>Some limitations for heterogeneous steps are that the steps must be able
+to run on unique nodes. You also cannot request heterogeneous steps from within
+a heterogeneous job.</p>
+
+<p>An example scenario would be if you have a task that needs to use 1 GPU
+per processor while another task needs all the available GPUs on a node with
+only one processor. This can be accomplished like this:
+
+<pre>
+$ salloc -N2 --exclusive
+salloc: Granted job allocation 61034
+$ srun -N1 -n4 --gpus=4 printenv SLURMD_NODENAME : -N1 -n1 --gpus=6 printenv SLURMD_NODENAME
+node02
+node01
+node01
+node01
+node01
+</pre>
+
 <h2><a name="sys_admin">System Administrator Information</a></h2>
 
 <p>The job submit plugin is invoked independently for each component of a
@@ -722,6 +750,6 @@ Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
 
-<p style="text-align:center;">Last modified 30 March 2020</p>
+<p style="text-align:center;">Last modified 13 July 2020</p>
 
 <!--#include virtual="footer.txt"-->
