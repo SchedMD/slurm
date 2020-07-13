@@ -106,6 +106,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 20.02 that caused an infinite loop in slurmctld when
     requesting --distribution=plane for the job.
  -- Fix parsing of the --distribution option.
+ -- Add CONF READ_LOCK to _handle_fed_send_job_sync.
 
 * Changes in Slurm 20.02.3
 ==========================

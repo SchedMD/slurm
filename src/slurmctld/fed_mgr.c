@@ -2111,7 +2111,7 @@ extern int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	char *sib_name = job_update_info->submit_cluster;
 
 	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+		READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	lock_slurmctld(job_read_lock);
 
