@@ -63,6 +63,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix parsing of the --distribution option.
  -- Add CONF READ_LOCK to _handle_fed_send_job_sync.
  -- prep/script - always call slurmctld PrEp callback in _run_script().
+ -- Fix node estimation for jobs that use GPUs or --cpus-per-task.
 
 * Changes in Slurm 20.02.3
 ==========================
