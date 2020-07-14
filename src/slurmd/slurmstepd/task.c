@@ -266,8 +266,8 @@ _run_script_and_set_env(const char *name, const char *path,
  * Returns xmalloc()'d string that must be xfree()'d */
 static char *_build_path(char *fname, char **prog_env)
 {
-	char *path_env = NULL, *dir;
-	char *file_name;
+	char *path_env = NULL, *dir = NULL;
+	char *file_name, *last = NULL;
 	struct stat stat_buf;
 	int len = PATH_MAX;
 
@@ -294,14 +294,14 @@ static char *_build_path(char *fname, char **prog_env)
 
 	/* search for the file using PATH environment variable */
 	path_env = xstrdup(getenvp(prog_env, "PATH"));
-
-	dir = strtok(path_env, ":");
+	if (path_env)
+		dir = strtok_r(path_env, ":", &last);
 	while (dir) {
 		snprintf(file_name, len, "%s/%s", dir, fname);
 		if ((stat(file_name, &stat_buf) == 0)
 		    && (! S_ISDIR(stat_buf.st_mode)))
 			break;
-		dir = strtok(NULL, ":");
+		dir = strtok_r(NULL, ":", &last);
 	}
 	if (dir == NULL)	/* not found */
 		strlcpy(file_name, fname, len);
