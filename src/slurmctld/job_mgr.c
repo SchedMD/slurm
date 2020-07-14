@@ -10248,13 +10248,16 @@ static void _pack_default_job_details(job_record_t *job_ptr, Buf buffer,
 			} else if (detail_ptr->cpus_per_task > 1) {
 				/* min_nodes based upon task count and cpus
 				 * per task */
-				uint32_t min_cpus, min_nodes;
-				min_cpus = detail_ptr->num_tasks *
-					   detail_ptr->cpus_per_task;
-				min_nodes = min_cpus + max_cpu_cnt - 1;
-				min_nodes /= max_cpu_cnt;
+				uint32_t ntasks_per_node, min_nodes;
+				ntasks_per_node = max_cpu_cnt /
+						  detail_ptr->cpus_per_task;
+				ntasks_per_node = MAX(ntasks_per_node, 1);
+				min_nodes = detail_ptr->num_tasks /
+					    ntasks_per_node;
 				min_nodes = MAX(min_nodes,
 						detail_ptr->min_nodes);
+				if (detail_ptr->num_tasks % ntasks_per_node)
+					min_nodes++;
 				pack32(min_nodes, buffer);
 				pack32(detail_ptr->max_nodes, buffer);
 			} else if (detail_ptr->mc_ptr &&

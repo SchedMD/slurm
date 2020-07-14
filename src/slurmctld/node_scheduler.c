@@ -2396,6 +2396,9 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	if (error_code == SLURM_SUCCESS) {
 		error_code = ESLURM_NODES_BUSY;
+	}
+
+	if (possible_bitmap && runable_ever) {
 		*select_bitmap = possible_bitmap;
 	} else {
 		FREE_NULL_BITMAP(possible_bitmap);
