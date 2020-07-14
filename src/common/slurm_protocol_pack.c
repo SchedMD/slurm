@@ -7660,6 +7660,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 
 		pack32(msg->nnodes, buffer);
 		pack16(msg->cpus_per_task, buffer);
+		pack16(msg->threads_per_core, buffer);
 		pack32(msg->task_dist, buffer);
 		pack16(msg->node_cpus, buffer);
 		pack16(msg->job_core_spec, buffer);
@@ -7894,6 +7895,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		if (msg->nnodes >= NO_VAL)
 			goto unpack_error;
 		safe_unpack16(&msg->cpus_per_task, buffer);
+		safe_unpack16(&msg->threads_per_core, buffer);
 		safe_unpack32(&msg->task_dist, buffer);
 		safe_unpack16(&msg->node_cpus, buffer);
 		safe_unpack16(&msg->job_core_spec, buffer);

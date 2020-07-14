@@ -836,6 +836,7 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  argc;
 	uint16_t  node_cpus;
 	uint16_t  cpus_per_task;
+	uint16_t  threads_per_core;
 	char    **env;
 	char    **argv;
 	char     *cwd;
