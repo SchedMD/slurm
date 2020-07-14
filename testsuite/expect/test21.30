@@ -237,7 +237,7 @@ if {$num_nodes == 0} {
 
 proc endit { } {
 	global sacctmgr qostest acct test_id exit_code
-	global scontrol save_billing_weights
+	global scontrol save_billing_weights partition
 	# delete qos
 	spawn $sacctmgr -i delete qos $qostest
 	expect {
