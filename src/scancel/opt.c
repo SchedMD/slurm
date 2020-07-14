@@ -211,6 +211,18 @@ static void _opt_default(void)
 	opt.wckey	= NULL;
 }
 
+static void _opt_clusters(char *clusters)
+{
+	opt.ctld = true;
+	FREE_NULL_LIST(opt.clusters);
+	opt.clusters = slurmdb_get_info_cluster(clusters);
+	if (!opt.clusters) {
+		print_db_notok(clusters, 0);
+		exit(1);
+	}
+	working_cluster_rec = list_peek(opt.clusters);
+}
+
 /*
  * opt_env(): used by initialize_and_process_args to set options via
  *            environment variables. See comments above for how to
@@ -307,6 +319,16 @@ static void _opt_env(void)
 	if ( (val=getenv("SCANCEL_WCKEY")) ) {
 		opt.wckey = xstrdup(val);
 	}
+
+	if ((val = getenv("SLURM_CLUSTERS"))) {
+		/*
+		 * We must pass in a modifiable string, and we don't want to
+		 * modify the environment.
+		 */
+		char *valdup = xstrdup(val);
+		_opt_clusters(valdup);
+		xfree(valdup);
+	}
 }
 
 /*
@@ -372,14 +394,7 @@ static void _opt_args(int argc, char **argv)
 			opt.interactive = true;
 			break;
 		case (int)'M':
-			opt.ctld = true;
-			FREE_NULL_LIST(opt.clusters);
-			opt.clusters = slurmdb_get_info_cluster(optarg);
-			if (!opt.clusters) {
-				print_db_notok(optarg, 0);
-				exit(1);
-			}
-			working_cluster_rec = list_peek(opt.clusters);
+			_opt_clusters(optarg);
 			break;
 		case (int)'n':
 			opt.job_name = xstrdup(optarg);

@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
     slurmctld and/or job submission CLI tools segfaults due to bad return
     handling when the respective Lua script failed to load.
  -- Fix propagation of gpu options through hetjob components.
+ -- Add SLURM_CLUSTERS environment variable to scancel.
 
 * Changes in Slurm 20.02.3
 ==========================
