@@ -47,18 +47,12 @@ if {[have_nvml] == 0} {
 if {[slurmd_user_root] == 0} {
 	skip "SlurmdUser must be root to test GPU frequency operations"
 }
-print_time
 
-if {[test_cons_tres]} {
-        log_debug "Valid configuration, using select/cons_tres"
-} else {
+if {![test_cons_tres]} {
         skip "This test is only compatible with select/cons_tres"
 }
 
 set gpu_cnt [get_gpu_count 1]
-if {$gpu_cnt < 0} {
-	fail "Error getting GPU count"
-}
 if {$gpu_cnt < 1} {
 	skip "This test requires 1 or more GPU in the default partition"
 }
@@ -70,6 +64,7 @@ log_debug "GPU count is $gpu_cnt"
 #
 # Build input script file
 #
+print_time
 exec $bin_rm -f $file_in
 make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
 $scontrol -dd show job \$SLURM_JOB_ID
