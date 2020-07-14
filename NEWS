@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- select/linear will now allocate up to nodes RealMemory when configured with
     SelectTypeParameters=CR_Memory and --mem=0 specified. Previous behavior was
     no memory accouted and no memory limits implied to job.
+ -- Remove unneeded lock check from running the slurmctld prolog for a job.
 
 * Changes in Slurm 20.11.0rc1
 ==============================

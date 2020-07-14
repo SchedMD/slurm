@@ -4492,7 +4492,6 @@ extern void prolog_slurmctld(job_record_t *job_ptr)
 {
 	uint32_t *job_id;
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
-	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 
 	if (!prep_required(PREP_PROLOG_SLURMCTLD))
 		return;
