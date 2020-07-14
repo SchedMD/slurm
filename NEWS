@@ -79,6 +79,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix reoccurring reservations that have Purge_comp= to keep correct
     duration if they are purged.
  -- scontrol - changed the "PROMISCUOUS" flag to "MAGNETIC"
+ -- Early return from epilog_set_env in case of no_consume.
 
 * Changes in Slurm 20.02.3
 ==========================

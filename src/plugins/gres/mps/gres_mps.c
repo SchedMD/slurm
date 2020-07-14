@@ -853,6 +853,9 @@ extern void epilog_set_env(char ***epilog_env_ptr,
 	if (!gres_devices)
 		return;
 
+	if (epilog_info->node_cnt == 0)	/* no_consume */
+		return;
+
 	if (node_inx > epilog_info->node_cnt) {
 		error("%s: %s: bad node index (%d > %u)", plugin_type, __func__,
 		      node_inx, epilog_info->node_cnt);
