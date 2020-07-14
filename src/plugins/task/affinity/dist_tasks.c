@@ -950,7 +950,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
 	int *socket_last_pu = NULL;
-	int core_inx, pu_per_core, *core_tasks = NULL;
+	int core_inx, pu_per_core, *core_tasks = NULL, *core_threads = NULL;
 
 	info ("_task_layout_lllp_cyclic ");
 
@@ -975,6 +975,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 
 	pu_per_core = hw_threads;
 	core_tasks = xmalloc(sizeof(int) * hw_sockets * hw_cores);
+	core_threads = xmalloc(sizeof(int) * hw_sockets * hw_cores);
 	socket_last_pu = xmalloc(hw_sockets * sizeof(int));
 
 	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
@@ -1035,6 +1036,9 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			if ((req->ntasks_per_core != 0) &&
 			    (core_tasks[core_inx] >= req->ntasks_per_core))
 				continue;
+			if ((req->threads_per_core != NO_VAL16) &&
+			    (core_threads[core_inx] >= req->threads_per_core))
+				continue;
 
 			if (!masks[taskcount])
 				masks[taskcount] =
@@ -1053,6 +1057,8 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 				s = (s + 1) % hw_sockets;
 				already_switched = true;
 			}
+
+			core_threads[core_inx]++;
 
 			if (++p < req->cpus_per_task)
 				continue;
@@ -1127,7 +1133,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	int max_cpus = max_tasks * req->cpus_per_task;
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
-	int core_inx, pu_per_core, *core_tasks = NULL;
+	int core_inx, pu_per_core, *core_tasks = NULL, *core_threads = NULL;
 	int sock_inx, pu_per_socket, *socket_tasks = NULL;
 
 	info("_task_layout_lllp_block ");
@@ -1172,6 +1178,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 
 	pu_per_core = hw_threads;
 	core_tasks = xmalloc(sizeof(int) * hw_sockets * hw_cores);
+	core_threads = xmalloc(sizeof(int) * hw_sockets * hw_cores);
 	pu_per_socket = hw_cores * hw_threads;
 	socket_tasks = xmalloc(sizeof(int) * hw_sockets);
 
@@ -1204,6 +1211,9 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			if ((req->ntasks_per_socket != 0) &&
 			    (socket_tasks[sock_inx] >= req->ntasks_per_socket))
 				continue;
+			if ((req->threads_per_core != NO_VAL16) &&
+			    (core_threads[core_inx] >= req->threads_per_core))
+				continue;
 
 			if (!masks[taskcount])
 				masks[taskcount] = bit_alloc(
@@ -1214,6 +1224,8 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			/* skip unrequested threads */
 			if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
 				i += hw_threads - 1;
+
+			core_threads[core_inx]++;
 
 			if (++c < req->cpus_per_task)
 				continue;
