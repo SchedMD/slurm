@@ -1,4 +1,4 @@
-.TH sinfo "1" "Slurm Commands" "March 2020" "Slurm Commands"
+.TH sinfo "1" "Slurm Commands" "July 2020" "Slurm Commands"
 
 .SH "NAME"
 sinfo \- view information about Slurm nodes and partitions.
@@ -556,6 +556,9 @@ used to filtering nodes by the responding flag.
 .TP
 \fB\-T\fR, \fB\-\-reservation\fR
 Only display information about Slurm reservations.
+
+\fBNOTE\fR: This option causes \fBsinfo\fR to ignore most other options,
+which are focused on partition and node information.
 
 .TP
 \fB\-\-usage\fR
