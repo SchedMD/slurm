@@ -177,7 +177,7 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 	}
 
 	_fetch_child(controllers, flags);
-	return NULL;
+	_exit(0);
 }
 
 extern config_response_msg_t *fetch_config_from_controller(uint32_t flags)
