@@ -1671,9 +1671,9 @@ static int _open_as_other(char *path_name, int flags, int mode,
 
 	*fd = open(path_name, flags, mode);
 	if (*fd == -1) {
-		 error("%s: uid:%u can't open `%s`: %m code %d",
-			__func__, uid, path_name, errno);
-		 _exit(errno);
+		error("%s: uid:%u can't open `%s`: %m code %d",
+		      __func__, uid, path_name, errno);
+		_exit(errno);
 	}
 	send_fd_over_pipe(pipe[0], *fd);
 	close(*fd);
