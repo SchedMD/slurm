@@ -1254,6 +1254,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 	job_defaults_t *job_defaults;
 	char *cpu_bind = NULL, *tmp = NULL;
 	uint16_t tmp_16 = 0;
+	uint64_t tmp_64;
 	static s_p_options_t _partition_options[] = {
 		{"AllocNodes", S_P_STRING},
 		{"AllowAccounts",S_P_STRING},
@@ -1434,6 +1435,9 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			} else {
 				p->def_mem_per_cpu = 0;
 			}
+		} else if (s_p_get_uint64(&tmp_64, "DefMemPerCPU", tbl) ||
+		           s_p_get_uint64(&tmp_64, "DefMemPerCPU", dflt)) {
+			error("DefMemPerCPU ignored, since it's mutually exclusive with DefMemPerNode");
 		}
 
 		if (!s_p_get_uint64(&p->max_mem_per_cpu, "MaxMemPerNode",
@@ -1448,6 +1452,9 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			} else {
 				p->max_mem_per_cpu = 0;
 			}
+		} else if (s_p_get_uint64(&tmp_64, "MaxMemPerCPU", tbl) ||
+		           s_p_get_uint64(&tmp_64, "MaxMemPerCPU", dflt)) {
+			error("MaxMemPerCPU ignored, since it's mutually exclusive with MaxMemPerNode");
 		}
 
 		if (!s_p_get_boolean((bool *)&p->disable_root_jobs,
