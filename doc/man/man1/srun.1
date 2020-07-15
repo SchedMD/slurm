@@ -2900,10 +2900,6 @@ jobs, so the value indicates the total count of CPUs on the node.
 For the select/cons_res plugin, this number indicates the number of cores
 on this node allocated to the job.
 .TP
-\fBSLURM_CPUS_PER_GPU\fR
-Number of CPUs requested per allocated GPU.
-Only set if the \fB\-\-cpus\-per\-gpu\fR option is specified.
-.TP
 \fBSLURM_CPUS_PER_TASK\fR
 Number of cpus requested per task.
 Only set if the \fB\-\-cpus\-per\-task\fR option is specified.
@@ -2911,30 +2907,6 @@ Only set if the \fB\-\-cpus\-per\-task\fR option is specified.
 \fBSLURM_DISTRIBUTION\fR
 Distribution type for the allocated jobs. Set the distribution
 with \-m, \-\-distribution.
-.TP
-\fBSLURM_GPUS\fR
-Number of GPUs requested.
-Only set if the \fB\-G, \-\-gpus\fR option is specified.
-.TP
-\fBSLURM_GPU_BIND\fR
-Requested binding of tasks to GPU.
-Only set if the \fB\-\-gpu\-bind\fR option is specified.
-.TP
-\fBSLURM_GPU_FREQ\fR
-Requested GPU frequency.
-Only set if the \fB\-\-gpu\-freq\fR option is specified.
-.TP
-\fBSLURM_GPUS_PER_NODE\fR
-Requested GPU count per allocated node.
-Only set if the \fB\-\-gpus\-per\-node\fR option is specified.
-.TP
-\fBSLURM_GPUS_PER_SOCKET\fR
-Requested GPU count per allocated socket.
-Only set if the \fB\-\-gpus\-per\-socket\fR option is specified.
-.TP
-\fBSLURM_GPUS_PER_TASK\fR
-Requested GPU count per allocated task.
-Only set if the \fB\-\-gpus\-per\-task\fR option is specified.
 .TP
 \fBSLURM_GTIDS\fR
 Global task IDs running on this node.
@@ -2992,10 +2964,6 @@ Sort free cache pages (run zonesort on Intel KNL nodes).
 .TP
 \fBSLURM_MEM_BIND_VERBOSE\fR
 \-\-mem\-bind verbosity (quiet,verbose).
-.TP
-\fBSLURM_MEM_PER_GPU\fR
-Requested memory per allocated GPU.
-Only set if the \fB\-\-mem\-per\-gpu\fR option is specified.
 .TP
 \fBSLURM_JOB_NODES\fR
 Total number of nodes in the job's resource allocation.
