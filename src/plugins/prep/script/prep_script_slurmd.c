@@ -231,7 +231,7 @@ static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id)
 		execve(argv[0], argv, env);
 
 		error("execve(%s): %m", argv[0]);
-		exit(127);
+		_exit(127);
 	}
 
 	/* Parent Process */

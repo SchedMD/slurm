@@ -1266,7 +1266,7 @@ static char *_run_script(char *cmd_path, char **script_argv, int *status)
 		setpgid(0, 0);
 		execv(cmd_path, script_argv);
 		error("%s: execv(%s): %m", __func__, cmd_path);
-		exit(127);
+		_exit(127);
 	} else if (cpid < 0) {
 		close(pfd[0]);
 		close(pfd[1]);

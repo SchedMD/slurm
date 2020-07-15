@@ -284,14 +284,14 @@ extern char *power_run_script(char *script_name, char *script_path,
 					close(i);
 			}
 			if ((cpid = fork()) < 0)
-				exit(127);
+				_exit(127);
 			else if (cpid > 0)
-				exit(0);
+				_exit(0);
 		}
 		setpgid(0, 0);
 		execv(script_path, script_argv);
 		error("%s: execv(%s): %m", __func__, script_path);
-		exit(127);
+		_exit(127);
 	} else if (cpid < 0) {
 		if (data_in) {
 			close(fd_stdin[0]);

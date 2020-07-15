@@ -2043,7 +2043,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 			(void) close(fd1);
 		if (fd2 >= 0)	/* Avoid Coverity resource leak notification */
 			(void) close(fd2);
-		exit(1);
+		_exit(1);
 	}
 
 	close(fildes[1]);

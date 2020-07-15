@@ -3527,7 +3527,7 @@ static void _run_primary_prog(bool primary_on)
 			(void) close(i);
 		setpgid(0, 0);
 		execv(prog_name, argv);
-		exit(127);
+		_exit(127);
 	}
 
 	/* Create thread to wait for and log program completion */

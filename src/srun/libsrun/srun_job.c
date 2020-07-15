@@ -1788,7 +1788,7 @@ static int _run_srun_script (srun_job_t *job, char *script)
 		args[i+1] = NULL;
 		execv(script, args);
 		error("help! %m");
-		exit(127);
+		_exit(127);
 	}
 
 	do {
@@ -2105,7 +2105,7 @@ static int _shepherd_spawn(srun_job_t *job, List srun_job_list, bool got_alloc)
 	while (1) {
 		rc = read(shepherd_pipe[0], buf, 1);
 		if (rc == 1) {
-			exit(0);
+			_exit(0);
 		} else if (rc == 0) {
 			break;	/* EOF */
 		} else if (rc == -1) {
@@ -2131,7 +2131,7 @@ static int _shepherd_spawn(srun_job_t *job, List srun_job_list, bool got_alloc)
 			slurm_complete_job(job->jobid, NO_VAL);
 	}
 
-	exit(0);
+	_exit(0);
 	return -1;
 }
 

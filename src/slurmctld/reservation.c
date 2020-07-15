@@ -5624,7 +5624,7 @@ static void *_fork_script(void *x)
 	if (cpid == 0) {
 		setpgid(0, 0);
 		execve(argv[0], argv, envp);
-		exit(127);
+		_exit(127);
 	}
 
 	tm = slurm_get_prolog_timeout();

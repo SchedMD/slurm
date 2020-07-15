@@ -415,7 +415,7 @@ static int _run_ccm_prolog_epilog(ccm_info_t *ccm_info, char *ccm_type,
 		execv("/bin/sh", (char *const *)argv);
 		CRAY_ERR("CCM job %u %s %s execv failed, %m",
 			 ccm_info->job_id, ccm_type, ccm_script);
-		exit(127);
+		_exit(127);
 	} else {
 		/* parent */
 		while (1) {

@@ -655,7 +655,7 @@ _setup_exec_srun(spawn_req_t *req)
 		       "127.0.0.1");
 	spawn_resp_send_to_srun(resp);
 	spawn_resp_free(resp);
-	exit(errno);
+	_exit(errno);
 }
 
 extern int

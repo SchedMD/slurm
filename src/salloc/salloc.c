@@ -1007,7 +1007,7 @@ static pid_t _fork_command(char **command)
 		if (!cpath) {
 			error("%s: Unable to find command \"%s\"",
 			      __func__, command[0]);
-			exit(error_exit);
+			_exit(error_exit);
 		}
 
 		setpgid(getpid(), 0);
@@ -1031,7 +1031,7 @@ static pid_t _fork_command(char **command)
 		error("%s: Unable to exec command \"%s\": %m",
 		      __func__, cpath);
 		xfree(cpath);
-		exit(error_exit);
+		_exit(error_exit);
 	}
 	/* parent returns */
 	return pid;
