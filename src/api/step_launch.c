@@ -1851,6 +1851,7 @@ _exec_prog(slurm_msg_t *msg)
 		close(pfd[1]);
 		execvp(exec_msg->argv[0], exec_msg->argv);
 		error("execvp(%s): %m", exec_msg->argv[0]);
+		_exit(127);
 	} else if (child < 0) {
 		snprintf(buf, sizeof(buf), "fork: %s", strerror(errno));
 		error("%s", buf);
