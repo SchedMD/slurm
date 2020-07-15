@@ -362,10 +362,10 @@ static int _load_script(void)
         load = slurm_lua_loadscript(L, "cli_filter/lua",
 				    lua_script_path, req_fxns, &load_time,
 				    _loadscript_extra);
-        if (load == L)
-                return SLURM_SUCCESS;
         if (!load)
                 return SLURM_ERROR;
+        if (load == L)
+                return SLURM_SUCCESS;
 
         /* since complete finished error free, swap the states */
         if (L)
@@ -375,9 +375,12 @@ static int _load_script(void)
         return SLURM_SUCCESS;
 }
 
-extern int setup_defaults(slurm_opt_t *opt, bool early) {
-	int rc = SLURM_ERROR;
-	(void) _load_script();
+extern int setup_defaults(slurm_opt_t *opt, bool early)
+{
+	int rc = _load_script();
+
+	if (rc != SLURM_SUCCESS)
+		goto out;
 
 	lua_getglobal(L, "slurm_cli_setup_defaults");
 	if (lua_isnil(L, -1))
@@ -407,9 +410,10 @@ out:
 
 extern int pre_submit(slurm_opt_t *opt, int offset)
 {
-	int rc = SLURM_ERROR;
+	int rc = _load_script();
 
-	(void) _load_script();
+	if (rc != SLURM_SUCCESS)
+		goto out;
 
 	/*
 	 *  All lua script functions should have been verified during
@@ -446,8 +450,10 @@ out:
 
 extern int post_submit(int offset, uint32_t jobid, uint32_t stepid)
 {
-	int rc = SLURM_ERROR;
-	(void) _load_script();
+	int rc = _load_script();
+
+	if (rc != SLURM_SUCCESS)
+		goto out;
 
 	lua_getglobal(L, "slurm_cli_post_submit");
 	if (lua_isnil(L, -1))
