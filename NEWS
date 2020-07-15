@@ -64,6 +64,9 @@ documents those changes that are of interest to users and administrators.
  -- Add CONF READ_LOCK to _handle_fed_send_job_sync.
  -- prep/script - always call slurmctld PrEp callback in _run_script().
  -- Fix node estimation for jobs that use GPUs or --cpus-per-task.
+ -- Fix jobcomp, job_submit and cli_filter Lua implementation plugins causing
+    slurmctld and/or job submission CLI tools segfaults due to bad return
+    handling when the respective Lua script failed to load.
 
 * Changes in Slurm 20.02.3
 ==========================
