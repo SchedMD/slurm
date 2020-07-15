@@ -34,10 +34,16 @@ slurm_dir:                    slurm installation directory (prefix) [/usr]
 build_dir:                    slurm build directory [../..]
 max_file_delay:               maximum file propogation delay (e.g. nfs) [90]
 testsuite_cleanup_on_failure: runs cleanup procedure on test failure [false]
-testsuite_log_level:          logging threshold [$LOG_LEVEL_INFO]
+testsuite_log_level:          logging threshold [$LOG_LEVEL_DEBUG]
+testsuite_log_format:         specifies the tracing fields used in logging *
+testsuite_colorize:           boolean that turns colorization on or off
 
-The "globals.local" file can be in this directory, or the one configured in
-the environment variable SLURM_LOCAL_GLOBALS_FILE.
+* For the valid fields usable with testsuite_log_format, see the header
+comments for the _log_format procedure. See also the default defintion of
+testsuite_log_format in globals for an example of syntax.
+
+The "globals.local" file can be in the directory containing this README, or
+the one configured in the environment variable SLURM_LOCAL_GLOBALS_FILE.
 Each test can be executed independently. Upon successful completion, the test
 will print "SUCCESS" and terminate with an exit code of zero. Upon failure,
 the test will print "FAILURE" and terminate with a positive exit code. If a

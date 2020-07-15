@@ -84,10 +84,24 @@ proc cset {name value} {
 }
 
 
+#
+# Defining colors here to be able to use them in globals.local.
+# By default, these colors are bold
+#
+set COLOR_RED         "\033\[1;31m"
+set COLOR_RED_NORMAL  "\033\[31m"
+set COLOR_ORANGE      "\033\[1;38;5;208m"
+set COLOR_YELLOW      "\033\[1;33m"
+set COLOR_GREEN       "\033\[1;32m"
+set COLOR_BLUE        "\033\[1;34m"
+set COLOR_MAGENTA     "\033\[1;35m"
+set COLOR_CYAN        "\033\[1;36m"
+set COLOR_NONE        "\033\[0m"
+
 cset local_globals_file "./globals.local"
 
 # Log level "enum"
-# Define these early so they are available in globals.local
+# Define log levels here so they are available in globals.local
 set LOG_LEVEL_QUIET   0
 set LOG_LEVEL_FATAL   1
 set LOG_LEVEL_ERROR   2
@@ -249,16 +263,32 @@ cset sleep_error_message "(invalid time interval)|(bad character in argument)|(u
 # Force LANG, as the expect tests aren't localized
 set ::env(LANG)          "en_US.UTF-8"
 
-# Testsuite level variables
-cset testsuite_log_level $LOG_LEVEL_DEBUG
-cset testsuite_cleanup_on_failure false
-
 #
 # The poll interval (how many seconds to sleep between polls in functions like
 # wait_for_file and wait_for_job)
 #
 cset testsuite_poll_interval 1
 
+# Testsuite level variables
+cset testsuite_log_level $LOG_LEVEL_DEBUG
+cset testsuite_log_format "\[%{timestamp}s.%{msecs}03d] \(%{filename}s:%{lineno}d) %{loglevel}-7s %{message}s"
+cset testsuite_time_format "%Y-%m-%d %H:%M:%S"
+
+# Default to using color if writing to a terminal and not if writing to a file
+cset testsuite_colorize        [dict exists [fconfigure stdout] -mode]
+cset testsuite_color_fatal     $COLOR_RED
+cset testsuite_color_error     $COLOR_RED_NORMAL
+cset testsuite_color_warn      $COLOR_ORANGE
+cset testsuite_color_info      $COLOR_YELLOW
+cset testsuite_color_debug     $COLOR_BLUE
+cset testsuite_color_trace     $COLOR_MAGENTA
+cset testsuite_color_header    $COLOR_NONE
+cset testsuite_color_success   $COLOR_GREEN
+cset testsuite_color_failure   $COLOR_RED
+cset testsuite_color_skipped   $COLOR_ORANGE
+
+# To automatically call cleanup or not when ending the test
+cset testsuite_cleanup_on_failure false
 if {[info exists env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)]} {
 	set testsuite_cleanup_on_failure $env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)
 }
@@ -1140,17 +1170,31 @@ proc kill_srun {  } {
 # DESCRIPTION
 #	Print header with test ID
 #
+# ENVIRONMENT
+#	testsuite_colorize
+#		Boolean that turns colorization on or off
+#	testsuite_color_header
+#		Can be set to define the color used for the header
+#
 ################################################################
 
 proc print_header { { test_id_in "" } } {
-	global test_id
+	global test_id testsuite_color_header testsuite_colorize COLOR_NONE
 
 	if { "$test_id_in" == "" } {
 		set test_id_in $test_id
 	}
 
-	puts "============================================"
-	puts "TEST: $test_id_in"
+	if ($testsuite_colorize) {
+		append output $testsuite_color_header
+	}
+	append output [string repeat = 78]\n
+	append output [format "%-9s" "TEST:"]test$test_id_in\n
+	append output [string repeat = 78]
+	if ($testsuite_colorize) {
+		append output $COLOR_NONE
+	}
+	puts $output
 }
 
 
@@ -1668,7 +1712,7 @@ proc wait_for_all_jobs { job_name } {
 				set matches -1
 			}
 			timeout {
-				log_info "No response from squeue"
+				log_warn "No response from squeue"
 				set matches -1
 			}
 			eof {
@@ -4131,7 +4175,7 @@ proc get_suffix { hostname } {
 	incr host_inx
 
 	if {$host_inx == $host_len} {
-		log_warn "Hostname lacks a suffix:$hostname"
+		log_warn "Hostname lacks a suffix: $hostname"
 		return "-1"
 	}
 
@@ -4569,7 +4613,7 @@ proc get_node_cnt_in_part { {partition ""} } {
 	set scon_pid [spawn -noecho $scontrol show partition $partition]
 	expect {
 		-re "not found" {
-			log_error "partition $partition doesn't exist"
+			log_error "Partition $partition doesn't exist"
 		}
 		-re "TotalNodes=($number)" {
 			set node_cnt $expect_out(1,string)
@@ -4616,7 +4660,7 @@ proc get_idle_node_in_part { {partition ""} } {
 	spawn $sinfo -oNAME=%N -h -p$partition --state=idle
 	expect {
 		-re "not found" {
-			log_error "partition $partition doesn't exist"
+			log_error "Partition $partition doesn't exist"
 		}
 		-re "NAME=($re_word_str)" {
 			set host_list $expect_out(1,string)
@@ -4659,16 +4703,31 @@ proc get_idle_node_in_part { {partition ""} } {
 # DESCRIPTION
 #	Print FAILURE with test ID
 #
+# ENVIRONMENT
+#	testsuite_colorize
+#		Boolean that turns colorization on or off
+#	testsuite_color_<test_status>
+#		Can be set to define the color used for each test status
+#
 ################################################################
 
 proc print_failure { {test_id_in ""} } {
-	global test_id
+	global testsuite_color_failure test_id testsuite_colorize COLOR_NONE
 
 	if { "$test_id_in" == "" } {
 		set test_id_in $test_id
 	}
 
-	puts "\nFAILURE: test$test_id_in"
+	if ($testsuite_colorize) {
+		append output $testsuite_color_failure
+	}
+	append output [string repeat = 78]\n
+	append output [format "%-9s" "FAILURE:"]test${test_id_in}\n
+	append output [string repeat = 78]
+	if ($testsuite_colorize) {
+		append output $COLOR_NONE
+	}
+	puts $output
 }
 
 
@@ -4683,16 +4742,31 @@ proc print_failure { {test_id_in ""} } {
 # DESCRIPTION
 #	Print SKIPPED with test ID
 #
+# ENVIRONMENT
+#	testsuite_colorize
+#		Boolean that turns colorization on or off
+#	testsuite_color_<test_status>
+#		Can be set to define the color used for each test status
+#
 ################################################################
 
 proc print_skipped { {test_id_in ""} } {
-	global test_id
+	global testsuite_color_skipped test_id testsuite_colorize COLOR_NONE
 
 	if { "$test_id_in" == "" } {
 		set test_id_in $test_id
 	}
 
-	puts "\nSKIPPED: test$test_id_in"
+	if ($testsuite_colorize) {
+		append output $testsuite_color_skipped
+	}
+	append output [string repeat = 78]\n
+	append output [format "%-9s" "SKIPPED:"]test${test_id_in}\n
+	append output [string repeat = 78]
+	if ($testsuite_colorize) {
+		append output $COLOR_NONE
+	}
+	puts $output
 }
 
 
@@ -4707,16 +4781,31 @@ proc print_skipped { {test_id_in ""} } {
 # DESCRIPTION
 #	Print SUCCESS with test ID
 #
+# ENVIRONMENT
+#	testsuite_colorize
+#		Boolean that turns colorization on or off
+#	testsuite_color_<test_status>
+#		Can be set to define the color used for each test status
+#
 ################################################################
 
 proc print_success { {test_id_in ""} } {
-	global test_id
+	global test_id testsuite_color_success testsuite_colorize COLOR_NONE
 
 	if { "$test_id_in" == "" } {
 		set test_id_in $test_id
 	}
 
-	puts "\nSUCCESS: test$test_id_in"
+	if ($testsuite_colorize) {
+		append output $testsuite_color_success
+	}
+	append output [string repeat = 78]\n
+	append output [format "%-9s" "SUCCESS:"]test${test_id_in}\n
+	append output [string repeat = 78]
+	if ($testsuite_colorize) {
+		append output $COLOR_NONE
+	}
+	puts $output
 }
 
 
@@ -5083,7 +5172,7 @@ proc wait_for_node {state num_nodes {partition ""} } {
 		if {$num_nodes <= $cnt} {
 			set done 1
 		} else {
-			log_debug "partition $partition has $cnt nodes idle and we want $num_nodes"
+			log_debug "Partition $partition has $cnt nodes idle and we want $num_nodes"
 			sleep $testsuite_poll_interval
 			incr wait_time 1
 		}
@@ -5835,7 +5924,7 @@ proc check_hosts_contiguous { check_hosts_list {partition ""} } {
 		}
 		-re "Unable to contact" {
 			log_user 1
-			log_error "slurm appears to be down"
+			log_error "Slurm appears to be down"
 			return 1
 		}
 		timeout {
@@ -5858,7 +5947,7 @@ proc check_hosts_contiguous { check_hosts_list {partition ""} } {
 		}
 		if {[info exists idx_old]} {
 			if {$idx_cur != [expr $idx_old + 1]} {
-				log_error "node sequence number not contiguous"
+				log_error "Node sequence number not contiguous"
 				return 1
 			}
 		}
@@ -6242,56 +6331,134 @@ proc reconfigure { {cluster ""} } {
 }
 
 
-proc log_fatal {msg} {
+#####################################################################
+#
+# NAME
+#	log_fatal - prints a fatal message
+#
+# SYNOPSIS
+#	log_fatal message
+#
+# SEE ALSO
+#	_log_format for options governing the message format and colorization
+#
+#####################################################################
+
+proc log_fatal {message} {
 	global testsuite_log_level LOG_LEVEL_FATAL
 
 	if {$testsuite_log_level >= $LOG_LEVEL_FATAL} {
-		puts "FATAL: $msg"
+		_log_format "fatal" "$message"
 	}
 }
 
 
-proc log_error {msg} {
+#####################################################################
+#
+# NAME
+#	log_error - prints an error message
+#
+# SYNOPSIS
+#	log_error message
+#
+# SEE ALSO
+#	_log_format for options governing the message format and colorization
+#
+#####################################################################
+
+proc log_error {message} {
 	global testsuite_log_level LOG_LEVEL_ERROR
 
 	if {$testsuite_log_level >= $LOG_LEVEL_ERROR} {
-		puts "ERROR: $msg"
+		_log_format "error" "$message"
 	}
 }
 
 
-proc log_warn {msg} {
+#####################################################################
+#
+# NAME
+#	log_warn - prints a warning message
+#
+# SYNOPSIS
+#	log_warn message
+#
+# SEE ALSO
+#	_log_format for options governing the message format and colorization
+#
+#####################################################################
+
+proc log_warn {message} {
 	global testsuite_log_level LOG_LEVEL_WARNING
 
 	if {$testsuite_log_level >= $LOG_LEVEL_WARNING} {
-		puts "WARNING: $msg"
+		_log_format "warning" "$message"
 	}
 }
 
 
-proc log_info {msg} {
+#####################################################################
+#
+# NAME
+#	log_info - prints an information message
+#
+# SYNOPSIS
+#	log_info message
+#
+# SEE ALSO
+#	_log_format for options governing the message format and colorization
+#
+#####################################################################
+
+proc log_info {message} {
 	global testsuite_log_level LOG_LEVEL_INFO
 
 	if {$testsuite_log_level >= $LOG_LEVEL_INFO} {
-		puts "INFO: $msg"
+		_log_format "info" "$message"
 	}
 }
 
 
-proc log_debug {msg} {
+#####################################################################
+#
+# NAME
+#	log_debug - prints a debug level message
+#
+# SYNOPSIS
+#	log_debug message
+#
+# SEE ALSO
+#	_log_format for options governing the message format and colorization
+#
+#####################################################################
+
+proc log_debug {message} {
 	global testsuite_log_level LOG_LEVEL_DEBUG
 
 	if {$testsuite_log_level >= $LOG_LEVEL_DEBUG} {
-		puts "DEBUG: $msg"
+		_log_format "debug" "$message"
 	}
 }
 
 
-proc log_trace {msg} {
+#####################################################################
+#
+# NAME
+#	log_trace - prints a trace level message
+#
+# SYNOPSIS
+#	log_trace message
+#
+# SEE ALSO
+#	_log_format for options governing the message format and colorization
+#
+#####################################################################
+
+proc log_trace {message} {
 	global testsuite_log_level LOG_LEVEL_TRACE
 
 	if {$testsuite_log_level >= $LOG_LEVEL_TRACE} {
-		puts "TRACE: $msg"
+		_log_format "trace" "$message"
 	}
 }
 
@@ -7195,7 +7362,7 @@ proc have_nvml { } {
 	log_user 1
 
 	if {$grep_fail == 1} {
-		log_error "Could not grep $config_h for HAVE_NVML"
+		log_warn "Could not grep $config_h for HAVE_NVML"
 		set have_nvml 0
 	}
 
@@ -7791,3 +7958,107 @@ proc assert_or_skip { condition message } {
 	assert "$condition" "$message" "skip"
 }
 
+
+################################################################
+#
+# NAME
+#	_log_format - prints a log message with colorization and formatting
+#
+# SYNOPSIS
+#	_log_format log_level message
+#
+# DESCRIPTION
+#	This procedure is called by the log_<level> procedures and
+#	derives the relevant log level from the caller's procedure name.
+#
+# ARGUMENTS
+#	log_level
+#		The logging threshold that triggered the log statement
+#	message
+#		The message to print with colorization and formatting
+#
+# ENVIRONMENT
+#	testsuite_log_format
+#		Used as the template for the fields to be output.
+#		Fields must be expressed in the form:
+#			%{<field_name>}<format_conversion_specifier>
+#		Supported fields include the following:
+#			message
+#				The log message
+#			filename
+#				The file name where the log_<log_level>
+#				procedure was called from
+#			lineno
+#				The line number where the log_<log_level>
+#				procedure was called from
+#			timestamp
+#				The date and time when the log_<log_level>
+#				procedure was called at
+#			msecs
+#				The milliseconds when the log_<log_level>
+#				procedure was called at
+#			loglevel
+#				The log level that triggers the log_<log_level>
+#				procedure to be called
+#	testsuite_time_format
+#		Used as a template for the timestamp. See the format groups
+#		for the tcl clock format command.
+#	testsuite_colorize
+#		Boolean that turns colorization on or off
+#	testsuite_color_<log_level>
+#		Can be set to define the color used for each log level
+#
+################################################################
+
+proc _log_format { log_level message } {
+	global testsuite_colorize testsuite_log_format testsuite_time_format
+	global COLOR_NONE
+	global testsuite_color_fatal testsuite_color_error testsuite_color_warn
+	global testsuite_color_info testsuite_color_debug testsuite_color_trace
+
+	set format_string $testsuite_log_format
+	set milliseconds_since_epoch [clock milliseconds]
+	set date_time [clock format [expr {$milliseconds_since_epoch / 1000}] -format "$testsuite_time_format"]
+	set milliseconds [expr {$milliseconds_since_epoch % 1000}]
+
+	set frame_level -2
+	while { [dict get [info frame $frame_level] type] != "source" } {
+		incr frame_level -1
+	}
+
+	set format_args {}
+	while {[regexp "%{\[a-z]+}" $format_string format_field]} {
+		if {$format_field eq "%{message}"} {
+			lappend format_args $message
+		} elseif {$format_field eq "%{filename}"} {
+			lappend format_args [file tail [dict get [info frame $frame_level] file]]
+		} elseif {$format_field eq "%{lineno}"} {
+			lappend format_args [dict get [info frame $frame_level] line]
+		} elseif {$format_field eq "%{timestamp}"} {
+			lappend format_args $date_time
+		} elseif {$format_field eq "%{msecs}" || $format_field eq "%{milliseconds}"} {
+			lappend format_args $milliseconds
+		} elseif {$format_field eq "%{loglevel}" || $format_field eq "%{levelname}"} {
+			lappend format_args [string totitle $log_level]
+		} else {
+			fail "Invalid field ($format_field) specified in testsuite_log_format"
+		}
+		regsub $format_field $format_string "%" format_string
+	}
+
+	if ($testsuite_colorize) {
+		switch $log_level {
+			fatal   { append output $testsuite_color_fatal }
+			error   { append output $testsuite_color_error }
+			warning { append output $testsuite_color_warn }
+			info    { append output $testsuite_color_info }
+			debug   { append output $testsuite_color_debug }
+			trace   { append output $testsuite_color_trace }
+		}
+	}
+	append output [format $format_string {*}$format_args]
+	if ($testsuite_colorize) {
+		append output $COLOR_NONE
+	}
+	puts $output
+}
