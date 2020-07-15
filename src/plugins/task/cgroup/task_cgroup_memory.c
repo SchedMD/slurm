@@ -338,11 +338,12 @@ static uint64_t swap_limit_in_bytes (uint64_t mem)
 }
 
 /*
+ * Return kmem memory limit in bytes given a memory limit in bytes.
  * If Kmem space is disabled, it set to max percent of its RAM usage.
  */
 static uint64_t kmem_limit_in_bytes (uint64_t mlb)
 {
-	uint64_t totalKmem = percent_in_bytes(mlb, max_kmem_percent);
+	uint64_t totalKmem = mlb * (max_kmem_percent / 100.0);
 
 	if ( allowed_kmem_space < 0 ) {	/* Initial value */
 		if ( mlb > totalKmem )
