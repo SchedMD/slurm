@@ -2740,12 +2740,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 			   (job_ptr->priority == 0)) {
 			/* Held by select plugin due to some failure */
 		} else {
-			if (error_code == ESLURM_POWER_NOT_AVAIL)
-				job_ptr->state_reason = WAIT_POWER_NOT_AVAIL;
-			else if (error_code == ESLURM_POWER_RESERVED)
-				job_ptr->state_reason = WAIT_POWER_RESERVED;
-			else
-				job_ptr->state_reason = WAIT_RESOURCES;
+			job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
 		}
 		goto cleanup;

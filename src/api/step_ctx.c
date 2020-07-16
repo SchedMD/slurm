@@ -236,8 +236,6 @@ extern bool slurm_step_retry_errno(int rc)
 	    (rc == ESLURM_INTERCONNECT_BUSY) ||
 	    (rc == ESLURM_NODES_BUSY) ||
 	    (rc == ESLURM_PORTS_BUSY) ||
-	    (rc == ESLURM_POWER_NOT_AVAIL) ||
-	    (rc == ESLURM_POWER_RESERVED) ||
 	    (rc == SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
 		return true;
 	return false;

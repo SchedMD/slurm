@@ -4651,12 +4651,8 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 		job_ptr->state_reason = WAIT_QOS_THRES;
 	else if (rc == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)
 		job_ptr->state_reason = WAIT_PART_CONFIG;
-	else if (rc == ESLURM_POWER_NOT_AVAIL)
-		job_ptr->state_reason = WAIT_POWER_NOT_AVAIL;
 	else if (rc == ESLURM_BURST_BUFFER_WAIT)
 		job_ptr->state_reason = WAIT_BURST_BUFFER_RESOURCE;
-	else if (rc == ESLURM_POWER_RESERVED)
-		job_ptr->state_reason = WAIT_POWER_RESERVED;
 	else if (rc == ESLURM_PARTITION_DOWN)
 		job_ptr->state_reason = WAIT_PART_DOWN;
 	else if (rc == ESLURM_INVALID_QOS)
@@ -4915,9 +4911,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		 (error_code == ESLURM_ACCOUNTING_POLICY) ||
 		 (error_code == ESLURM_RESERVATION_NOT_USABLE) ||
 		 (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) ||
-		 (error_code == ESLURM_POWER_NOT_AVAIL) ||
 		 (error_code == ESLURM_BURST_BUFFER_WAIT) ||
-		 (error_code == ESLURM_POWER_RESERVED) ||
 		 (error_code == ESLURM_PARTITION_DOWN)) {
 		/* Not fatal error, but job can't be scheduled right now */
 		if (immediate) {

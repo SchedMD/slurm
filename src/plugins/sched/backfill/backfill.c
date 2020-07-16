@@ -2439,9 +2439,7 @@ skip_start:
 
 			if ((rc == ESLURM_RESERVATION_BUSY) ||
 			    (rc == ESLURM_ACCOUNTING_POLICY &&
-			     !assoc_limit_stop) ||
-			    (rc == ESLURM_POWER_NOT_AVAIL) ||
-			    (rc == ESLURM_POWER_RESERVED)) {
+			     !assoc_limit_stop)) {
 				/* Unknown future start time, just skip job */
 				job_ptr->start_time = orig_start_time;
 				_set_job_time_limit(job_ptr, orig_time_limit);
