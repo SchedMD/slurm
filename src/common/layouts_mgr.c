@@ -893,14 +893,13 @@ static int _layouts_init_layouts_walk_helper(void* x, void* arg)
 
 static void _layouts_mgr_parse_global_conf(layouts_mgr_t* mgr)
 {
-	char* layouts;
+	char* layouts = NULL;
 	char* parser;
 	char* saveptr = NULL;
 	char* slash;
 	layouts_conf_spec_t* nspec;
 
 	mgr->layouts_desc = list_create(layouts_conf_spec_free);
-	layouts = xstrdup(slurm_conf.layouts);
 	parser = strtok_r(layouts, ",", &saveptr);
 	while (parser) {
 		nspec = (layouts_conf_spec_t*)xmalloc(

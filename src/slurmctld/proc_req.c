@@ -369,7 +369,6 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 
 	conf_ptr->launch_params       = xstrdup(conf->launch_params);
 	conf_ptr->launch_type         = xstrdup(conf->launch_type);
-	conf_ptr->layouts             = xstrdup(conf->layouts);
 	conf_ptr->licenses            = xstrdup(conf->licenses);
 	conf_ptr->log_fmt             = conf->log_fmt;
 
@@ -4664,7 +4663,7 @@ static void _slurm_rpc_layout_show(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_LAYOUT_INFO");
 	if (layout_req_msg->layout_type == NULL) {
 		pack32((uint32_t) 2, buffer);	/* 1 record + trailing \n */
-		packstr(slurm_conf.layouts, buffer);
+		packnull(buffer);
 		packstr("\n", buffer); /* to be consistent with
 					* layouts internal prints */
 	} else {

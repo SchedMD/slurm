@@ -290,7 +290,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"KillWait", S_P_UINT16},
 	{"LaunchParameters", S_P_STRING},
 	{"LaunchType", S_P_STRING},
-	{"Layouts", S_P_STRING},
 	{"Licenses", S_P_STRING},
 	{"LogTimeFormat", S_P_STRING},
 	{"MailDomain", S_P_STRING},
@@ -2747,7 +2746,6 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_submit_plugins);
 	xfree (ctl_conf_ptr->launch_params);
 	xfree (ctl_conf_ptr->launch_type);
-	xfree (ctl_conf_ptr->layouts);
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_domain);
 	xfree (ctl_conf_ptr->mail_prog);
@@ -2911,7 +2909,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->kill_wait			= NO_VAL16;
 	xfree (ctl_conf_ptr->launch_params);
 	xfree (ctl_conf_ptr->launch_type);
-	xfree (ctl_conf_ptr->layouts);
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_domain);
 	xfree (ctl_conf_ptr->mail_prog);
@@ -4953,9 +4950,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->requeue_exit, "RequeueExit", hashtbl);
 	(void) s_p_get_string(&conf->requeue_exit_hold, "RequeueExitHold",
 			      hashtbl);
-
-	if (!s_p_get_string(&conf->layouts, "Layouts", hashtbl))
-		conf->layouts = xstrdup("");
 
 	/* srun eio network timeout with the slurmstepd
 	 */

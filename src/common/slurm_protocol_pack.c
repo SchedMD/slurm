@@ -4074,7 +4074,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		packstr(build_ptr->launch_params, buffer);
 		packstr(build_ptr->launch_type, buffer);
-		packstr(build_ptr->layouts, buffer);
 		packstr(build_ptr->licenses, buffer);
 		pack16(build_ptr->log_fmt, buffer);
 
@@ -4365,7 +4364,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		packstr(build_ptr->launch_params, buffer);
 		packstr(build_ptr->launch_type, buffer);
-		packstr(build_ptr->layouts, buffer);
+		packnull(buffer); /* was layouts */
 		packstr(build_ptr->licenses, buffer);
 		pack16(build_ptr->log_fmt, buffer);
 
@@ -4660,7 +4659,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		packstr(build_ptr->launch_params, buffer);
 		packstr(build_ptr->launch_type, buffer);
-		packstr(build_ptr->layouts, buffer);
+		packnull(buffer); /* was layouts */
 		packstr(build_ptr->licenses, buffer);
 		packnull(buffer); /* was licenses_used */
 		pack16(build_ptr->log_fmt, buffer);
@@ -4996,8 +4995,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->launch_params,
 		                       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->launch_type,
-		                       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->layouts,
 		                       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->licenses,
 		                       &uint32_tmp, buffer);
@@ -5392,8 +5389,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->launch_type,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->layouts,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&throw_away, &uint32_tmp, buffer);
+		xfree(throw_away); /* was layouts */
 		safe_unpackstr_xmalloc(&build_ptr->licenses,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->log_fmt, buffer);
@@ -5799,8 +5796,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->launch_type,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->layouts,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was layouts */
 		safe_unpackstr_xmalloc(&build_ptr->licenses,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);

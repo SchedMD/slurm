@@ -2752,7 +2752,6 @@ typedef struct {
 				 * on job termination */
 	char *launch_params;	/* step launcher plugin options */
 	char *launch_type;	/* type of step launcher to use */
-	char *layouts;		/* comma separted list of layouts plugins */
 	char *licenses;		/* licenses available on this cluster */
 	uint16_t log_fmt;       /* Log file timestamp format */
 	char *mail_domain;	/* default domain to append to usernames */
