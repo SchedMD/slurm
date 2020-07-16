@@ -1,4 +1,4 @@
-.TH scancel "1" "Slurm Commands" "April 2020" "Slurm Commands"
+.TH scancel "1" "Slurm Commands" "July 2020" "Slurm Commands"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
@@ -49,7 +49,7 @@ script (e.g. "trap <arg> <signals>"). See the shell documentation
 for details.
 
 .TP
-\fB-\-ctld\fR
+\fB\-\-ctld\fR
 Send the job signal request to the slurmctld daemon rather than directly to the
 slurmd daemons. This increases overhead, but offers better fault tolerance.
 This is the default behavior on architectures using front end nodes (e.g.
@@ -81,7 +81,7 @@ Interactive mode. Confirm each job_id.step_id before performing the cancel opera
 
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
-Clusters to issue commands to.
+Cluster to issue commands to. Implies \fB\-\-ctld\fR.
 Note that the SlurmDBD must be up for this option to work properly.
 
 .TP
@@ -237,6 +237,9 @@ environment variables, along with their corresponding options, are listed below.
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.TP
+\fBSLURM_CLUSTERS\fR
+\fB\-M\fR, \fB\-\-clusters\fR
 
 .SH "NOTES"
 .LP
