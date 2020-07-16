@@ -47,8 +47,6 @@ slurmctld_SOURCES =     \
 	port_mgr.h	\
 	power_save.c	\
 	power_save.h	\
-	powercapping.c	\
-	powercapping.h	\
 	preempt.c	\
 	preempt.h	\
 	prep_slurmctld.c \

@@ -38,7 +38,6 @@
 #include "cons_common.h"
 
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/powercapping.h"
 
 bool select_state_initializing = true;
 
@@ -349,12 +348,6 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 				      job_ptr);
 			}
 		}
-		if (job_ptr->details &&
-		    (powercap_get_cluster_current_cap() != 0) &&
-		    (which_power_layout() == 2)) {
-			adapt_layouts(job, job_ptr->details->cpu_freq_max, n,
-				      node_ptr->name, true);
-		}
 	}
 
 	if (action != 2) {
@@ -521,11 +514,6 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 				node_usage[i].alloc_memory -=
 					job->memory_allocated[n];
 			}
-		}
-		if ((powercap_get_cluster_current_cap() != 0) &&
-		    (which_power_layout() == 2)) {
-			adapt_layouts(job, job_ptr->details->cpu_freq_max, n,
-				      node_ptr->name, false);
 		}
 	}
 

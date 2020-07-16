@@ -61,7 +61,6 @@
 #include "src/common/gres.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
-#include "src/common/layouts_mgr.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
@@ -94,7 +93,6 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/power_save.h"
-#include "src/slurmctld/powercapping.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
@@ -2045,12 +2043,6 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	_throttle_fini(&active_rpc_cnt);
 	END_TIMER2("_slurm_rpc_complete_job_allocation");
 
-	/* synchronize power layouts key/values */
-	if ((powercap_get_cluster_current_cap() != 0) &&
-	    (which_power_layout() == 2)) {
-		layouts_entity_pull_kv("power", "Cluster", "CurrentSumPower");
-	}
-
 	/* return result */
 	if (error_code) {
 		slurm_send_rc_msg(msg, error_code);
@@ -2272,12 +2264,6 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 	/* this has to be done after the job_complete */
 
 	END_TIMER2("_slurm_rpc_complete_batch_script");
-
-	/* synchronize power layouts key/values */
-	if ((powercap_get_cluster_current_cap() != 0) &&
-	    (which_power_layout() == 2)) {
-		layouts_entity_pull_kv("power", "Cluster", "CurrentSumPower");
-	}
 
 	/* return result */
 	if (error_code) {
@@ -4305,75 +4291,6 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 	}
 }
 
-/* _slurm_rpc_update_powercap - process RPC to update the powercap */
-static void _slurm_rpc_update_powercap(slurm_msg_t * msg)
-{
-	int error_code = SLURM_SUCCESS;
-	DEF_TIMERS;
-	bool valid_cap = false;
-	uint32_t min, max, orig_cap;
-	update_powercap_msg_t *ptr = (update_powercap_msg_t *) msg->data;
-
-	/* Locks: write configuration, read node */
-	slurmctld_lock_t config_write_lock = {
-		WRITE_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
-
-	START_TIMER;
-	debug2("Processing RPC: REQUEST_UPDATE_POWERCAP from uid=%d", uid);
-	if (!validate_super_user(uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, UPDATE_POWERCAP RPC from uid=%d",
-		      uid);
-	}
-
-	if (error_code == SLURM_SUCCESS) {
-		/* do RPC call */
-		lock_slurmctld(config_write_lock);
-		if (ptr->power_cap == 0 ||
-		    ptr->power_cap == INFINITE) {
-			valid_cap = true;
-		} else if (!power_layout_ready()) {
-			/* Not using layouts/power framework */
-			valid_cap = true;
-		} else {
-			/* we need to set a cap if 
-			 * the current value is 0 in order to
-			 * enable the capping system and get 
-			 * the min and max values */
-			orig_cap = powercap_get_cluster_current_cap();
-			powercap_set_cluster_cap(INFINITE);
-			min = powercap_get_cluster_min_watts();
-			max = powercap_get_cluster_max_watts();
-			if (min <= ptr->power_cap && max >= ptr->power_cap)
-				valid_cap = true;
-			else
-				powercap_set_cluster_cap(orig_cap);
-		}
-		if (valid_cap)
-			powercap_set_cluster_cap(ptr->power_cap);
-		else
-			error_code = ESLURM_INVALID_POWERCAP;
-		unlock_slurmctld(config_write_lock);
-		END_TIMER2("_slurm_rpc_update_powercap");
-	}
-
-	/* return result */
-	if (error_code) {
-		info("_slurm_rpc_update_powercap: %s",
-		     slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
-	} else {
-		debug2("_slurm_rpc_update_powercap complete %s", TIME_STR);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-
-		/* NOTE: These functions provide their own locks */
-		if (!LOTS_OF_AGENTS)
-			schedule(0);	/* Has own locking */
-		save_all_state();	/* Has own locking */
-	}
-}
-
 /* _slurm_rpc_delete_partition - process RPC to delete a partition */
 static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
 {
@@ -5059,34 +4976,6 @@ inline static void  _slurm_rpc_get_topo(slurm_msg_t * msg)
 	response_msg.data     = topo_resp_msg;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	slurm_free_topo_info_msg(topo_resp_msg);
-}
-
-inline static void  _slurm_rpc_get_powercap(slurm_msg_t * msg)
-{
-	powercap_info_msg_t *powercap_resp_msg, *ptr;
-	slurm_msg_t response_msg;
-	/* Locks: read config lock */
-	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	DEF_TIMERS;
-
-	START_TIMER;
-	lock_slurmctld(config_read_lock);
-	powercap_resp_msg = xmalloc(sizeof(powercap_info_msg_t));
-	ptr = powercap_resp_msg;
-	ptr->power_cap = powercap_get_cluster_current_cap();
-	ptr->min_watts = powercap_get_cluster_min_watts();
-	ptr->cur_max_watts = powercap_get_cluster_current_max_watts();
-	ptr->adj_max_watts = powercap_get_cluster_adjusted_max_watts();
-	ptr->max_watts = powercap_get_cluster_max_watts();
-	unlock_slurmctld(config_read_lock);
-	END_TIMER2("_slurm_rpc_get_powercap");
-
-	response_init(&response_msg, msg);
-	response_msg.msg_type = RESPONSE_POWERCAP_INFO;
-	response_msg.data     = powercap_resp_msg;
-	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	slurm_free_powercap_info_msg(powercap_resp_msg);
 }
 
 inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
@@ -6328,9 +6217,6 @@ void slurmctld_req(slurm_msg_t *msg)
 	case REQUEST_UPDATE_PARTITION:
 		_slurm_rpc_update_partition(msg);
 		break;
-	case REQUEST_UPDATE_POWERCAP:
-		_slurm_rpc_update_powercap(msg);
-		break;
 	case REQUEST_DELETE_PARTITION:
 		_slurm_rpc_delete_partition(msg);
 		break;
@@ -6416,9 +6302,6 @@ void slurmctld_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_TOPO_INFO:
 		_slurm_rpc_get_topo(msg);
-		break;
-	case REQUEST_POWERCAP_INFO:
-		_slurm_rpc_get_powercap(msg);
 		break;
 	case REQUEST_REBOOT_NODES:
 		_slurm_rpc_reboot_nodes(msg);

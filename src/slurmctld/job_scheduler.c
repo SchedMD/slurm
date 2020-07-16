@@ -58,7 +58,6 @@
 #include "src/common/env.h"
 #include "src/common/gres.h"
 #include "src/common/group_cache.h"
-#include "src/common/layouts_mgr.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
@@ -93,7 +92,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
-#include "src/slurmctld/powercapping.h"
 
 #ifndef CORRESPOND_ARRAY_TASK_CNT
 #  define CORRESPOND_ARRAY_TASK_CNT 10
@@ -1777,13 +1775,6 @@ skip_start:
 			reject_array_job = NULL;
 			reject_array_part = NULL;
 
-			/* synchronize power layouts key/values */
-			if ((powercap_get_cluster_current_cap() != 0) &&
-			    (which_power_layout() == 2)) {
-				layouts_entity_pull_kv("power",
-						       "Cluster",
-						       "CurrentSumPower");
-			}
 			sched_info("Allocate %pJ NodeList=%s #CPUs=%u Partition=%s",
 				   job_ptr, job_ptr->nodes,
 				   job_ptr->total_cpus,

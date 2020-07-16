@@ -58,7 +58,6 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/slurmctld/powercapping.h"
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/slurmctld.h"
 

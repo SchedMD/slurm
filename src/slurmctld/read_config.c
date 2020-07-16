@@ -55,7 +55,6 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
-#include "src/common/layouts_mgr.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
@@ -1171,15 +1170,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (slurm_conf.slurmd_user_id != 0)
 		_test_cgroup_plugin_use();
 
-	if (layouts_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("Failed to initialize the layouts framework");
-			test_config_rc = 1;
-		} else {
-			fatal("Failed to initialize the layouts framework");
-		}
-	}
-
 	if (slurm_topo_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("Failed to initialize topology plugin");
@@ -1273,20 +1263,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	_set_slurmd_addr();
 
 	_stat_slurm_dirs();
-
-	/*
-	 * Load the layouts configuration.
-	 * Only load it at init time, not during reconfiguration stages.
-	 * It requires a full restart to switch to a new configuration for now.
-	 */
-	if (!reconfig && (layouts_load_config(recover) != SLURM_SUCCESS)) {
-		if (test_config) {
-			error("Failed to load the layouts framework configuration");
-			test_config_rc = 1;
-		} else {
-			fatal("Failed to load the layouts framework configuration");
-		}
-	}
 
 	/*
 	 * Set standard features and preserve the plugin controlled ones.

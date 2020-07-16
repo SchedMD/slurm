@@ -64,7 +64,6 @@
 #include "src/common/gres.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
-#include "src/common/layouts_mgr.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
@@ -109,7 +108,6 @@
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/port_mgr.h"
 #include "src/slurmctld/power_save.h"
-#include "src/slurmctld/powercapping.h"
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
@@ -843,7 +841,6 @@ int main(int argc, char **argv)
 		recover = 2;
 	}
 
-	layouts_fini();
 	g_slurm_jobcomp_fini();
 
 	/*

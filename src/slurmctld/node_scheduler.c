@@ -56,7 +56,6 @@
 #include "src/common/gres.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
-#include "src/common/layouts_mgr.h"
 #include "src/common/list.h"
 #include "src/common/node_features.h"
 #include "src/common/node_select.h"
@@ -78,7 +77,6 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/node_scheduler.h"
-#include "src/slurmctld/powercapping.h"
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
@@ -1199,8 +1197,6 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	bool old_feat_change = false;
 	bool has_xand = false;
 	bool resv_overlap = false;
-	uint32_t powercap;
-	int layout_power;
 
 	/*
 	 * Mark nodes reserved for other jobs as off limit for this job.
@@ -1583,182 +1579,6 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	xfree(tmp_str);
 }
 #endif
-
-	/*
-	 * PowerCapping logic : now that we have the list of selected nodes
-	 * we need to ensure that using this nodes respects the amount of
-	 * available power as returned by the capping logic.
-	 * If it is not the case, then ensure that the job stays pending
-	 * by returning a relevant error code:
-	 *  ESLURM_POWER_NOT_AVAIL : if the current capping is blocking
-	 *  ESLURM_POWER_RESERVED  : if the current capping and the power
-	 *                           reservations are blocking
-	 */
-	if (error_code != SLURM_SUCCESS) {
-		debug5("powercapping: checking %pJ : skipped, not eligible",
-		       job_ptr);
-	} else if ((powercap = powercap_get_cluster_current_cap()) == 0) {
-		debug5("powercapping: checking %pJ : skipped, capping disabled",
-		       job_ptr);
-	} else if ((layout_power = which_power_layout()) == 0) {
-		debug5("powercapping disabled %d", which_power_layout());
-	} else if (!power_layout_ready()){
-		debug3("powercapping: checking job %pJ : skipped, problems with layouts, capping disabled",
-		       job_ptr);
-	} else {
-		uint32_t min_watts, max_watts, job_cap, tmp_pcap_cpu_freq = 0;
-		uint32_t cur_max_watts, tmp_max_watts = 0;
-		uint32_t cpus_per_node, *tmp_max_watts_dvfs = NULL;
-		bitstr_t *tmp_bitmap;
-		int k = 1, *allowed_freqs = NULL;
-		float ratio = 0;
-		bool reboot;
-
-		/*
-		 * centralized synchronization of all key/values
-		 */
-		layouts_entity_pull_kv("power", "Cluster", "CurrentSumPower");
-
-		/*
-		 * get current powercapping logic state (min,cur,max)
-		 */
-		max_watts = powercap_get_cluster_max_watts();
-		min_watts = powercap_get_cluster_min_watts();
-		cur_max_watts = powercap_get_cluster_current_max_watts();
-		/*
-		 * in case of INFINITE cap, set it to max watts as it
-		 * is done in the powercapping logic
-		 */
-		if (powercap == INFINITE)
-			powercap = max_watts;
-
-		/*
-		 * build a temporary bitmap using idle_node_bitmap and
-		 * remove the selected bitmap from this bitmap.
-		 * Then compute the amount of power required for such a
-		 * configuration to check that is is allowed by the current
-		 * power cap
-		 */
-		tmp_bitmap = bit_copy(idle_node_bitmap);
-		bit_and_not(tmp_bitmap, *select_bitmap);
-		if (layout_power == 1)
-			tmp_max_watts =
-				 powercap_get_node_bitmap_maxwatts(tmp_bitmap);
-		else if (layout_power == 2) {
-			allowed_freqs =
-				 powercap_get_job_nodes_numfreq(*select_bitmap,
-					  job_ptr->details->cpu_freq_min,
-					  job_ptr->details->cpu_freq_max);
-			if (allowed_freqs[0] != 0) {
-				tmp_max_watts_dvfs =
-					xcalloc((allowed_freqs[0] + 1),
-						sizeof(uint32_t));
-			}
-			if (job_ptr->details->min_nodes == 0) {
-				error("%s: %pJ min_nodes is zero",
-				      __func__, job_ptr);
-				job_ptr->details->min_nodes = 1;
-			}
-			cpus_per_node = job_ptr->details->min_cpus /
-					job_ptr->details->min_nodes;
-			tmp_max_watts =
-				powercap_get_node_bitmap_maxwatts_dvfs(
-					tmp_bitmap, *select_bitmap,
-					tmp_max_watts_dvfs, allowed_freqs,
-					cpus_per_node);
-		}
-		bit_free(tmp_bitmap);
-
-		/*
-		 * get job cap based on power reservation on the system,
-		 * if no reservation matches the job caracteristics, the
-		 * powercap or the max_wattswill be returned.
-		 * select the return code based on the impact of
-		 * reservations on the failure
-		 */
-		reboot = node_features_reboot_test(job_ptr, *select_bitmap);
-		job_cap = powercap_get_job_cap(job_ptr, time(NULL), reboot);
-
-		if ((layout_power == 1) ||
-		    ((layout_power == 2) && (allowed_freqs[0] == 0))) {
-			if (tmp_max_watts > job_cap) {
-				FREE_NULL_BITMAP(*select_bitmap);
-				if ((job_cap < powercap) &&
-				    (tmp_max_watts <= powercap))
-					error_code = ESLURM_POWER_RESERVED;
-				else
-					error_code = ESLURM_POWER_NOT_AVAIL;
-			}
-		} else if (layout_power == 2) {
-			if (((tmp_max_watts > job_cap) ||
-			    (job_cap < powercap) ||
-			    (powercap < max_watts)) && (tmp_max_watts_dvfs)) {
-
-			/*
-			 * Calculation of the CPU Frequency to set for the job:
-			 * The optimal CPU Frequency is the maximum allowed
-			 * CPU Frequency that all idle nodes could run so that
-			 * the total power consumption of the cluster is below
-			 * the powercap value.since the number of Idle nodes
-			 * may change in every schedule the optimal CPU
-			 * Frequency may also change from one job to another.
-			 */
-				k = powercap_get_job_optimal_cpufreq(job_cap,
-							  allowed_freqs);
-				while ((tmp_max_watts_dvfs[k] > job_cap) &&
-				       (k < allowed_freqs[0] + 1)) {
-					k++;
-				}
-				if (k == allowed_freqs[0] + 1) {
-					if ((job_cap < powercap) &&
-					    (tmp_max_watts_dvfs[k] <= powercap)){
-						error_code =
-							ESLURM_POWER_RESERVED;
-					} else {
-						error_code =
-							ESLURM_POWER_NOT_AVAIL;
-					}
-				} else {
-					tmp_max_watts = tmp_max_watts_dvfs[k];
-					tmp_pcap_cpu_freq =
-						powercap_get_cpufreq(
-							*select_bitmap,
-							allowed_freqs[k]);
-				}
-
-				job_ptr->details->cpu_freq_min = tmp_pcap_cpu_freq;
-				job_ptr->details->cpu_freq_max = tmp_pcap_cpu_freq;
-				job_ptr->details->cpu_freq_gov = 0x10;
-
-			/*
-			 * Since we alter the DVFS of jobs we need to deal with
-			 * their time_limit to calculate the extra time needed
-			 * for them to complete the execution without getting
-			 * killed there should be a parameter to declare the
-			 * effect of cpu frequency on execution time for the
-			 * moment we use time_limit and time_min
-			 * This has to be done to allow backfilling
-			 */
-				ratio = (1 + (float)allowed_freqs[k] /
-					     (float)allowed_freqs[-1]);
-				if ((job_ptr->time_limit != INFINITE) &&
-				    (job_ptr->time_limit != NO_VAL))
-					job_ptr->time_limit = (ratio *
-						  job_ptr->time_limit);
-				if ((job_ptr->time_min != INFINITE) &&
-				    (job_ptr->time_min != NO_VAL))
-					job_ptr->time_min = (ratio *
-						  job_ptr->time_min);
-			}
-		}
-		xfree(allowed_freqs);
-		xfree(tmp_max_watts_dvfs);
-
-		debug2("powercapping: checking %pJ : min=%u cur=%u [new=%u] [resv_cap=%u] [cap=%u] max=%u : %s",
-		       job_ptr, min_watts, cur_max_watts, tmp_max_watts,
-		       job_cap, powercap, max_watts,
-		       slurm_strerror(error_code));
-	}
 
 	FREE_NULL_LIST(preemptee_candidates);
 
