@@ -22,8 +22,7 @@ scontrol_SOURCES =	\
 	update_job.c	\
 	update_node.c	\
 	update_part.c	\
-	update_step.c   \
-	update_powercap.c
+	update_step.c
 
 scontrol_LDADD = $(LIB_SLURM) $(DL_LIBS) -lm $(READLINE_LIBS)
 scontrol_DEPENDENCIES = $(LIB_SLURM_BUILD)

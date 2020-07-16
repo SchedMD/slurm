@@ -155,8 +155,7 @@ am_scontrol_OBJECTS = create_res.$(OBJEXT) info_burst_buffer.$(OBJEXT) \
 	info_lics.$(OBJEXT) info_node.$(OBJEXT) info_part.$(OBJEXT) \
 	info_res.$(OBJEXT) reboot_node.$(OBJEXT) scontrol.$(OBJEXT) \
 	update_job.$(OBJEXT) update_node.$(OBJEXT) \
-	update_part.$(OBJEXT) update_step.$(OBJEXT) \
-	update_powercap.$(OBJEXT)
+	update_part.$(OBJEXT) update_step.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
 am__DEPENDENCIES_1 =
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -188,8 +187,7 @@ am__depfiles_remade = ./$(DEPDIR)/create_res.Po \
 	./$(DEPDIR)/info_part.Po ./$(DEPDIR)/info_res.Po \
 	./$(DEPDIR)/reboot_node.Po ./$(DEPDIR)/scontrol.Po \
 	./$(DEPDIR)/update_job.Po ./$(DEPDIR)/update_node.Po \
-	./$(DEPDIR)/update_part.Po ./$(DEPDIR)/update_powercap.Po \
-	./$(DEPDIR)/update_step.Po
+	./$(DEPDIR)/update_part.Po ./$(DEPDIR)/update_step.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -507,8 +505,7 @@ scontrol_SOURCES = \
 	update_job.c	\
 	update_node.c	\
 	update_part.c	\
-	update_step.c   \
-	update_powercap.c
+	update_step.c
 
 scontrol_LDADD = $(LIB_SLURM) $(DL_LIBS) -lm $(READLINE_LIBS)
 scontrol_DEPENDENCIES = $(LIB_SLURM_BUILD)
@@ -620,7 +617,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_job.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_node.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_part.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_powercap.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_step.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -763,7 +759,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/update_job.Po
 	-rm -f ./$(DEPDIR)/update_node.Po
 	-rm -f ./$(DEPDIR)/update_part.Po
-	-rm -f ./$(DEPDIR)/update_powercap.Po
 	-rm -f ./$(DEPDIR)/update_step.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -824,7 +819,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/update_job.Po
 	-rm -f ./$(DEPDIR)/update_node.Po
 	-rm -f ./$(DEPDIR)/update_part.Po
-	-rm -f ./$(DEPDIR)/update_powercap.Po
 	-rm -f ./$(DEPDIR)/update_step.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

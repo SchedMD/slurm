@@ -330,7 +330,7 @@ Display the state of the specified entity with the specified identification.
 \fIENTITY\fP may be \fIaliases\fP, \fIassoc_mgr\fP, \fIbbstat\fP,
 \fIburstbuffer\fP, \fIconfig\fP, \fIdaemons\fP, \fIdwstat\fP,
 \fIfederation\fP, \fIfrontend\fP, \fIjob\fP, \fInode\fP,
-\fIpartition\fP, \fIpowercap\fP, \fIreservation\fP, \fIslurmd\fP, \fIstep\fP,
+\fIpartition\fP, \fIreservation\fP, \fIslurmd\fP, \fIstep\fP,
 \fItopology\fP, \fIhostlist\fP, \fIhostlistsorted\fP or \fIhostnames\fP
 \fIID\fP can be used to identify a specific element of the identified
 entity: job ID, node name, partition name, reservation name, or job step ID for
@@ -448,7 +448,7 @@ system administrator (also see the \fBhold\fP command).
 
 .TP
 \fBupdate\fP \fISPECIFICATION\fP
-Update job, step, node, partition, powercapping or reservation configuration per
+Update job, step, node, partition, or reservation configuration per
 the supplied specification. \fISPECIFICATION\fP is in the same format as the
 Slurm configuration file and the output of the \fIshow\fP command described 
 above. It may be desirable to execute the \fIshow\fP command (described above)
@@ -1622,18 +1622,6 @@ will be used in calculating the usage of a job. The calculated usage is used
 when calculating fairshare and when enforcing the TRES billing limit on jobs.
 Updates affect new jobs and not existing jobs.
 See the slurm.conf man page for more information.
-
-
-.TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, POWERCAP\fR
-
-.TP
-\fIPowerCap\fP=<count>
-Set the amount of watts the cluster is limited to.
-Specify a number, "INFINITE" to enable the power capping logic without
-power restriction or "0" to disable the power capping logic.
-Update slurm.conf with any changes meant to be persistent across normal
-restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
 \fBSPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, RESERVATIONS\fR

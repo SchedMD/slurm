@@ -1704,8 +1704,6 @@ static void _show_it(int argc, char **argv)
 	} else if (xstrncasecmp(tag, "partitions", MAX(tag_len, 2)) == 0 ||
 		   xstrncasecmp(tag, "partitionname", MAX(tag_len, 2)) == 0) {
 		scontrol_print_part (val);
-	} else if (xstrncasecmp(tag, "powercapping", MAX(tag_len, 2)) == 0) {
-		scontrol_print_powercap (val);
 	} else if (xstrncasecmp(tag, "reservations", MAX(tag_len, 1)) == 0 ||
 		   xstrncasecmp(tag, "reservationname", MAX(tag_len, 1)) == 0) {
 		scontrol_print_res (val);
@@ -1739,7 +1737,6 @@ static void _update_it(int argc, char **argv)
 	int node_tag = 0, part_tag = 0, job_tag = 0;
 	int res_tag = 0;
 	int debug_tag = 0, step_tag = 0, front_end_tag = 0;
-	int powercap_tag = 0;
 	int jerror_code = SLURM_SUCCESS;
 
 	/* First identify the entity to update */
@@ -1774,8 +1771,6 @@ static void _update_it(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "SlurmctldDebug",
 					 MAX(tag_len, 2))) {
 			debug_tag = 1;
-		} else if (!xstrncasecmp(tag, "PowerCap", MAX(tag_len, 3))) {
-			powercap_tag = 1;
 		}
 	}
 	/* The order of tests matters here.  An update job request can include
@@ -1799,8 +1794,6 @@ static void _update_it(int argc, char **argv)
 		error_code = scontrol_update_part (argc, argv);
 	else if (debug_tag)
 		error_code = _update_slurmctld_debug(val);
-	else if (powercap_tag)
-		error_code = scontrol_update_powercap (argc, argv);
 	else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in update command\n");
