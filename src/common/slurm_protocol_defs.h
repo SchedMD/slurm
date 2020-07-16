@@ -276,8 +276,8 @@ typedef enum {
 	RESPONSE_ASSOC_MGR_INFO,
 	REQUEST_EVENT_LOG,
 	DEFUNCT_RPC_2046, /* free for reuse */
-	REQUEST_LAYOUT_INFO,
-	RESPONSE_LAYOUT_INFO,
+	DEFUNCT_RPC_2047,
+	DEFUNCT_RPC_2048,
 	REQUEST_FED_INFO,
 	RESPONSE_FED_INFO,		/* 2050 */
 	REQUEST_BATCH_SCRIPT,
@@ -298,7 +298,7 @@ typedef enum {
 	REQUEST_UPDATE_RESERVATION,
 	DEFUNCT_RPC_3010,  /* free for reuse */
 	REQUEST_UPDATE_FRONT_END,		/* 3011 */
-	REQUEST_UPDATE_LAYOUT,
+	DEFUNCT_RPC_3012,
 	REQUEST_UPDATE_POWERCAP,
 
 	REQUEST_RESOURCE_ALLOCATION = 4001,
@@ -645,15 +645,6 @@ typedef struct part_info_request_msg {
 typedef struct resv_info_request_msg {
         time_t last_update;
 } resv_info_request_msg_t;
-
-#define LAYOUTS_DUMP_NOLAYOUT 0x00000001
-#define LAYOUTS_DUMP_STATE    0x10000000
-typedef struct layout_info_request_msg {
-	char* layout_type;
-	char* entities;
-	char* type;
-	uint32_t flags;
-} layout_info_request_msg_t;
 
 typedef struct complete_job_allocation {
 	uint32_t job_id;
@@ -1424,7 +1415,6 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 
 extern void slurm_free_update_front_end_msg(update_front_end_msg_t * msg);
 extern void slurm_free_update_node_msg(update_node_msg_t * msg);
-extern void slurm_free_update_layout_msg(update_layout_msg_t * msg);
 extern void slurm_free_update_part_msg(update_part_msg_t * msg);
 extern void slurm_free_delete_part_msg(delete_part_msg_t * msg);
 extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg);
@@ -1490,8 +1480,6 @@ extern void slurm_init_node_info_t(node_info_t * msg, bool clear);
 extern void slurm_free_node_info_members(node_info_t * node);
 extern void slurm_free_partition_info_msg(partition_info_msg_t * msg);
 extern void slurm_free_partition_info_members(partition_info_t * part);
-extern void slurm_free_layout_info_msg(layout_info_msg_t * msg);
-extern void slurm_free_layout_info_request_msg(layout_info_request_msg_t * msg);
 extern void slurm_free_reservation_info_msg(reserve_info_msg_t * msg);
 extern void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
 extern void slurm_free_kvs_comm_set(kvs_comm_set_t *msg);

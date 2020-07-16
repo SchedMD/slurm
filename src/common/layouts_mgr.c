@@ -70,6 +70,9 @@
 #define UPDATE_DONE     0x00000004
 #define PARSE_RELATIONS 0x00000008
 
+#define LAYOUTS_DUMP_NOLAYOUT 0x00000001
+#define LAYOUTS_DUMP_STATE    0x10000000
+
 /*****************************************************************************\
  *                            STRUCTURES AND TYPES                           *
 \*****************************************************************************/
