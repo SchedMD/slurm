@@ -1623,8 +1623,7 @@ static void _show_it(int argc, char **argv)
 
 	if (!xstrncasecmp(argv[1], "assoc_mgr", MAX(tag_len, 2)) ||
 	    !xstrncasecmp(argv[1], "bbstat",    MAX(tag_len, 2)) ||
-	    !xstrncasecmp(argv[1], "dwstat",    MAX(tag_len, 2)) ||
-	    !xstrncasecmp(argv[1], "layouts",   MAX(tag_len, 2)))
+	    !xstrncasecmp(argv[1], "dwstat",    MAX(tag_len, 2)))
 		allow_opt = true;
 
 	if ((argc > 3) && !allow_opt) {
@@ -1698,8 +1697,6 @@ static void _show_it(int argc, char **argv)
 	} else if (xstrncasecmp(tag, "jobs", MAX(tag_len, 1)) == 0 ||
 		   xstrncasecmp(tag, "jobid", MAX(tag_len, 1)) == 0 ) {
 		scontrol_print_job (val);
-	} else if (xstrncasecmp(tag, "layouts", MAX(tag_len, 2)) == 0) {
-		scontrol_print_layout(argc-1, argv + 1);
 	} else if (xstrncasecmp(tag, "licenses", MAX(tag_len, 2)) == 0) {
 		scontrol_print_licenses(val);
 	} else if (xstrncasecmp(tag, "nodes", MAX(tag_len, 1)) == 0) {
@@ -1742,7 +1739,6 @@ static void _update_it(int argc, char **argv)
 	int node_tag = 0, part_tag = 0, job_tag = 0;
 	int res_tag = 0;
 	int debug_tag = 0, step_tag = 0, front_end_tag = 0;
-	int layout_tag = 0;
 	int powercap_tag = 0;
 	int jerror_code = SLURM_SUCCESS;
 
@@ -1778,9 +1774,6 @@ static void _update_it(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "SlurmctldDebug",
 					 MAX(tag_len, 2))) {
 			debug_tag = 1;
-		} else if (!xstrncasecmp(tag, "Layouts",
-					 MAX(tag_len, 5))) {
-			layout_tag = 1;
 		} else if (!xstrncasecmp(tag, "PowerCap", MAX(tag_len, 3))) {
 			powercap_tag = 1;
 		}
@@ -1806,8 +1799,6 @@ static void _update_it(int argc, char **argv)
 		error_code = scontrol_update_part (argc, argv);
 	else if (debug_tag)
 		error_code = _update_slurmctld_debug(val);
-	else if (layout_tag)
-		error_code = scontrol_update_layout(argc, argv);
 	else if (powercap_tag)
 		error_code = scontrol_update_powercap (argc, argv);
 	else {
@@ -1965,9 +1956,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 									   \n\
   <ENTITY> may be \"aliases\", \"assoc_mgr\", \"bbstat\", \"burstBuffer\", \n\
        \"config\", \"daemons\", \"dwstat\", \"federation\", \"frontend\",  \n\
-       \"hostlist\", \"hostlistsorted\", \"hostnames\",                    \n\
-       \"job\", \"layouts\", \"node\", \"partition\", \"reservation\",     \n\
-       \"slurmd\", \"step\", or \"topology\"                               \n\
+       \"hostlist\", \"hostlistsorted\", \"hostnames\", \"job\", \"node\", \n\
+       \"partition\", \"reservation\", \"slurmd\", \"step\", or \"topology\"\n\
 									   \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\
        name, reservation name, job step id, or hostlist or pathname to a   \n\

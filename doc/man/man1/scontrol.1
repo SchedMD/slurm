@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "June 2020" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "July 2020" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -1959,28 +1959,6 @@ Note that a reservation that contains nodes or cores is associated with
 one partition, and can't span resources over multiple partitions.
 The only exception from this is when
 the reservation is created with explicitly requested nodes.
-
-.TP
-\fBSPECIFICATIONS FOR SHOW COMMAND, LAYOUTS\fR
-.PP
-Without options, lists all configured layouts. With a layout specified,
-shows entities with following options:
-
-.TP
-\fIKey\fP=<value>
-Keys/Values to update for the entities. The format must respect the layout.d
-configuration files. Key=Type cannot be updated. One Key/Value is required,
-several can be set.
-.TP
-\fIEntity\fP=<value>
-Entities to show, default is not used. Can be set to "*".
-.TP
-\fIType\fP=<value>
-Type of entities to show, default is not used.
-.TP
-\fInolayout\fP
-If not used, only entities with defining the tree are shown.
-With the option, only leaves are shown.
 
 .SH "PERFORMANCE"
 .PP

@@ -12,7 +12,6 @@ scontrol_SOURCES =	\
 	info_assoc_mgr.c \
 	info_fed.c 	\
 	info_job.c	\
-	info_layout.c	\
 	info_lics.c	\
 	info_node.c	\
 	info_part.c	\
@@ -21,7 +20,6 @@ scontrol_SOURCES =	\
 	scontrol.c	\
 	scontrol.h	\
 	update_job.c	\
-	update_layout.c \
 	update_node.c	\
 	update_part.c	\
 	update_step.c   \
