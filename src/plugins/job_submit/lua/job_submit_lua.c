@@ -98,10 +98,13 @@ static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/job_submit.lua";
 static time_t lua_script_last_loaded = (time_t) 0;
 static lua_State *L = NULL;
 static char *user_msg = NULL;
-
 time_t last_lua_jobs_update = (time_t) 0;
 time_t last_lua_resv_update = (time_t) 0;
-
+static const char *req_fxns[] = {
+	"slurm_job_submit",
+	"slurm_job_modify",
+	NULL
+};
 /*
  *  Mutex for protecting multi-threaded access to this plugin.
  *   (Only 1 thread at a time should be in here)
@@ -1223,32 +1226,6 @@ static void _loadscript_extra(lua_State *st)
 	_register_lua_slurm_struct_functions(st);
 }
 
-static int _load_script(void)
-{
-	lua_State *load = NULL;
-	time_t load_time = lua_script_last_loaded;
-	const char *req_fxns[] = {
-		"slurm_job_submit",
-		"slurm_job_modify",
-		NULL
-	};
-
-	load = slurm_lua_loadscript(L, "job_submit/lua",
-				    lua_script_path, req_fxns, &load_time,
-				    _loadscript_extra);
-	if (!load)
-		return SLURM_ERROR;
-	if (load == L)
-		return SLURM_SUCCESS;
-
-	/* since complete finished error free, swap the states */
-	if (L)
-		lua_close(L);
-	L = load;
-	lua_script_last_loaded = load_time;
-	return SLURM_SUCCESS;
-}
-
 /*
  *  NOTE: The init callback should never be called multiple times,
  *   let alone called from multiple threads. Therefore, locking
@@ -1261,7 +1238,10 @@ int init(void)
 	if ((rc = slurm_lua_init()) != SLURM_SUCCESS)
 		return rc;
 
-	return _load_script();
+	return slurm_lua_loadscript(&L, "job_submit/lua",
+				    lua_script_path, req_fxns,
+				    &lua_script_last_loaded,
+				    _loadscript_extra);
 }
 
 int fini(void)
@@ -1283,10 +1263,14 @@ int fini(void)
 extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 		      char **err_msg)
 {
-	int rc = SLURM_ERROR;
+	int rc;
 	slurm_mutex_lock (&lua_lock);
 
-	if ((rc = _load_script()))
+	rc = slurm_lua_loadscript(&L, "job_submit/lua",
+				  lua_script_path, req_fxns,
+				  &lua_script_last_loaded, _loadscript_extra);
+
+	if (rc != SLURM_SUCCESS)
 		goto out;
 
 	/*
@@ -1333,10 +1317,14 @@ out:	slurm_mutex_unlock (&lua_lock);
 extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 		      uint32_t submit_uid)
 {
-	int rc = SLURM_ERROR;
+	int rc;
 	slurm_mutex_lock (&lua_lock);
 
-	if ((rc = _load_script()))
+	rc = slurm_lua_loadscript(&L, "job_submit/lua",
+				  lua_script_path, req_fxns,
+				  &lua_script_last_loaded, _loadscript_extra);
+
+	if (rc == SLURM_ERROR)
 		goto out;
 
 	/*

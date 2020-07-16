@@ -89,13 +89,20 @@ static lua_State *L = NULL;
 static char **stored_data = NULL;
 static size_t stored_n = 0;
 static size_t stored_sz = 0;
-static time_t last_load_time = 0;
+static time_t lua_script_last_loaded = 0;
+
+static const char *req_fxns[] = {
+	"slurm_cli_setup_defaults",
+	"slurm_cli_pre_submit",
+	"slurm_cli_post_submit",
+	NULL
+};
 
 static int _lua_cli_json(lua_State *st);
 static int _lua_cli_json_env(lua_State *st);
 static int _store_data(lua_State *st);
 static int _retrieve_data(lua_State *st);
-static int _load_script(void);
+static void _loadscript_extra(lua_State *st);
 
 static const struct luaL_Reg slurm_functions[] = {
 	{ "json_cli_options",_lua_cli_json },
@@ -120,7 +127,9 @@ int init(void)
 	stored_data = xmalloc(sizeof(char *) * 24);
 	stored_sz = 24;
 
-        return _load_script();
+	return slurm_lua_loadscript(&L, "cli_filter/lua",
+				    lua_script_path, req_fxns,
+				    &lua_script_last_loaded, _loadscript_extra);
 }
 
 int fini(void)
@@ -348,36 +357,13 @@ static void _loadscript_extra(lua_State *st)
 	lua_setglobal(st, "slurm");
 }
 
-static int _load_script(void)
-{
-        lua_State *load = NULL;
-        time_t load_time = last_load_time;
-        const char *req_fxns[] = {
-		"slurm_cli_setup_defaults",
-		"slurm_cli_pre_submit",
-		"slurm_cli_post_submit",
-		NULL
-        };
-
-        load = slurm_lua_loadscript(L, "cli_filter/lua",
-				    lua_script_path, req_fxns, &load_time,
-				    _loadscript_extra);
-        if (!load)
-                return SLURM_ERROR;
-        if (load == L)
-                return SLURM_SUCCESS;
-
-        /* since complete finished error free, swap the states */
-        if (L)
-                lua_close(L);
-        L = load;
-	last_load_time = load_time;
-        return SLURM_SUCCESS;
-}
-
 extern int cli_filter_p_setup_defaults(slurm_opt_t *opt, bool early)
 {
-	int rc = _load_script();
+	int rc;
+
+	rc = slurm_lua_loadscript(&L, "cli_filter/lua",
+				  lua_script_path, req_fxns,
+				  &lua_script_last_loaded, _loadscript_extra);
 
 	if (rc != SLURM_SUCCESS)
 		goto out;
@@ -410,11 +396,14 @@ out:
 
 extern int cli_filter_p_pre_submit(slurm_opt_t *opt, int offset)
 {
-	int rc = _load_script();
+	int rc;
+
+	rc = slurm_lua_loadscript(&L, "cli_filter/lua",
+				  lua_script_path, req_fxns,
+				  &lua_script_last_loaded, _loadscript_extra);
 
 	if (rc != SLURM_SUCCESS)
 		goto out;
-
 	/*
 	 *  All lua script functions should have been verified during
 	 *   initialization:
@@ -451,7 +440,11 @@ out:
 extern void cli_filter_p_post_submit(
 	int offset, uint32_t jobid, uint32_t stepid)
 {
-	int rc = _load_script();
+	int rc;
+
+	rc = slurm_lua_loadscript(&L, "cli_filter/lua",
+				  lua_script_path, req_fxns,
+				  &lua_script_last_loaded, _loadscript_extra);
 
 	if (rc != SLURM_SUCCESS)
 		goto out;

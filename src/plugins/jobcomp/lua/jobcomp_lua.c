@@ -84,35 +84,16 @@ static int _job_rec_field_index(lua_State *L);
 static void _push_job_rec(job_record_t *job_ptr);
 static int _set_job_rec_field_index(lua_State *L);
 
+static const char *req_fxns[] = {
+	"slurm_jobcomp_log_record",
+	NULL
+};
+
 /*
  *  Mutex for protecting multi-threaded access to this plugin.
  *   (Only 1 thread at a time should be in here)
  */
 static pthread_mutex_t lua_lock = PTHREAD_MUTEX_INITIALIZER;
-
-static int _load_script(void)
-{
-	lua_State *load = NULL;
-	time_t load_time = lua_script_last_loaded;
-	const char *req_fxns[] = {
-		"slurm_jobcomp_log_record",
-		NULL
-	};
-
-	load = slurm_lua_loadscript(L, "jobcomp/lua", lua_script_path,
-				    req_fxns, &load_time, NULL);
-	if (!load)
-		return SLURM_ERROR;
-	if (load == L)
-		return SLURM_SUCCESS;
-
-	/* since complete finished error free, swap the states */
-	if (L)
-		lua_close(L);
-	L = load;
-	lua_script_last_loaded = load_time;
-	return SLURM_SUCCESS;
-}
 
 static void _push_job_rec(job_record_t *job_ptr)
 {
@@ -179,7 +160,9 @@ extern int init(void)
 		return rc;
 
 	slurm_mutex_lock(&lua_lock);
-	rc = _load_script();
+	rc = slurm_lua_loadscript(&L, "job_comp/lua",
+				  lua_script_path, req_fxns,
+				  &lua_script_last_loaded, NULL);
 	slurm_mutex_unlock(&lua_lock);
 
 	return rc;
@@ -210,17 +193,19 @@ extern int slurm_jobcomp_set_location(char * location)
 
 extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 {
-	int rc = SLURM_ERROR;
+	int rc;
 	slurm_mutex_lock(&lua_lock);
 
-	if ((rc = _load_script()))
+	rc = slurm_lua_loadscript(&L, "jobcomp/lua", lua_script_path,
+				  req_fxns, &lua_script_last_loaded, NULL);
+
+	if (rc != SLURM_SUCCESS)
 		goto out;
 
 	/*
 	 *  All lua script functions should have been verified during
 	 *   initialization:
 	 */
-
 	lua_getglobal(L, "slurm_jobcomp_log_record");
 	if (lua_isnil(L, -1))
 		goto out;

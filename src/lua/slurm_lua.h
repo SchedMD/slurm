@@ -43,20 +43,22 @@
 #include <lauxlib.h>
 #include <lualib.h>
 #include "src/slurmctld/slurmctld.h"
+#include "slurm/slurm_errno.h"
 
 /* Generic stack dump function for debugging purposes */
 extern void slurm_lua_stack_dump(const char *plugin,
 				 char *header, lua_State *L);
 
 /*
- * function for create a new lua state object, loading a lua script, setting up
- * basic slurm/lua integration and returning the lua state to the caller.
- * If the script mtime is greater than *load_time, a new lua state will be
- * allocated and configured, the caller should close the old one after
- * completing any remaining setup.
+ * This function loads a new lua state object.
+ *
+ * The new lua state object will be initialized and assigned to *L depending
+ * on its mtime vs *load_time and whether the new script is succesfully loaded.
+ * If it cannot load *L won't be touched and SLURM_ERROR or SUCCESS will be
+ * returned depending on if *L was NULL or the old script can still be in use.
  *
  * Parameters:
- * curr (in)   - current lua state object, should be NULL on first call
+ * L (in/out)   - current lua state object, should be NULL on first call
  * plugin (in) - string identifying the calling plugin, e.g. "job_submit/lua"
  * script_path (in) - path to script file
  * req_fxns (in) - NULL terminated array of functions that must exist in the
@@ -64,18 +66,15 @@ extern void slurm_lua_stack_dump(const char *plugin,
  * load_time (in/out) - mtime of script from the curr lua state object
  *
  * Returns:
- * pointer to new lua_State object - the caller should complete setup of the
- *                                   new environment, and possibly free any
- *                                   existing.
- * NULL -- an error occured, the caller should continue using the current object
- * same value as curr - no error, or a strong suggestion that the caller should
- *                      continue using the same state obj, with no further setup
+ * SLURM_SUCCESS - if a correct Lua object is set.
+ * SLURM_ERROR - an error occured, and there's no lua state loaded.
  */
-extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
-				       const char *script_path,
-				       const char **req_fxns,
-				       time_t *load_time,
-				       void (*local_options)(lua_State *L));
+extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
+				const char *script_path,
+				const char **req_fxns,
+				time_t *load_time,
+				void (*local_options)(lua_State *L));
+
 extern void slurm_lua_table_register(lua_State *L, const char *libname,
 				     const luaL_Reg *l);
 

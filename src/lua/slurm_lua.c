@@ -630,14 +630,14 @@ extern void slurm_lua_stack_dump(const char *plugin, char *header, lua_State *L)
 #endif
 }
 
-extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
-				       const char *script_path,
-				       const char **req_fxns,
-				       time_t *load_time,
-				       void (*local_options)(lua_State *L))
+extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
+				const char *script_path,
+				const char **req_fxns,
+				time_t *load_time,
+				void (*local_options)(lua_State *L))
 {
-
 	lua_State *new = NULL;
+	lua_State *curr = *L;
 	struct stat st;
 	int rc = 0;
 
@@ -645,17 +645,17 @@ extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
 		if (curr) {
 			(void) error("%s: Unable to stat %s, using old script: %s",
 			             plugin, script_path, strerror(errno));
-			return curr;
+			return SLURM_SUCCESS;
 		}
 		(void) error("%s: Unable to stat %s: %s",
 		             plugin, script_path, strerror(errno));
-		return NULL;
+		return SLURM_ERROR;
 	}
 
 	if (st.st_mtime <= *load_time) {
 		debug3("%s: %s: skipping loading Lua script: %s", plugin,
 		       __func__, script_path);
-		return curr;
+		return SLURM_SUCCESS;
 	}
 	debug3("%s: %s: loading Lua script: %s", __func__, plugin, script_path);
 
@@ -665,7 +665,7 @@ extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
 	if (!(new = luaL_newstate())) {
 		error("%s: %s: luaL_newstate() failed to allocate.",
 		      plugin, __func__);
-		return curr;
+		return SLURM_SUCCESS;
 	}
 
 	luaL_openlibs(new);
@@ -675,13 +675,13 @@ extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
 			      plugin, script_path,
 			      lua_tostring(new, -1));
 			lua_close(new);
-			return curr;
+			return SLURM_SUCCESS;
 		}
 		error("%s: %s: %s", plugin, script_path,
 		      lua_tostring(new, -1));
 		lua_pop(new, 1);
 		lua_close(new);
-		return NULL;
+		return SLURM_ERROR;
 	}
 
 	/*
@@ -704,13 +704,13 @@ extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
 			      plugin, script_path,
 			      lua_tostring(new, -1));
 			lua_close(new);
-			return curr;
+			return SLURM_SUCCESS;
 		}
 		error("%s: %s: %s", plugin, script_path,
 		      lua_tostring(new, -1));
 		lua_pop(new, 1);
 		lua_close(new);
-		return NULL;
+		return SLURM_ERROR;
 	}
 
 	/*
@@ -722,13 +722,13 @@ extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
 			(void) error("%s: %s: returned %d on load, using previous script",
 			             plugin, script_path, rc);
 			lua_close(new);
-			return curr;
+			return SLURM_SUCCESS;
 		}
 		(void) error("%s: %s: returned %d on load", plugin,
 			     script_path, rc);
 		lua_pop(new, 1);
 		lua_close(new);
-		return NULL;
+		return SLURM_ERROR;
 	}
 
 	/*
@@ -740,14 +740,17 @@ extern lua_State *slurm_lua_loadscript(lua_State *curr, const char *plugin,
 			(void) error("%s: %s: required function(s) not present, using previous script",
 			             plugin, script_path);
 			lua_close(new);
-			return curr;
+			return SLURM_SUCCESS;
 		}
 		lua_close(new);
-		return NULL;
+		return SLURM_ERROR;
 	}
 
 	*load_time = st.st_mtime;
-	return new;
+	if (curr)
+		lua_close(curr);
+	*L = new;
+	return SLURM_SUCCESS;
 }
 #endif
 
