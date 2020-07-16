@@ -4255,52 +4255,6 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 	trigger_reconfig();
 }
 
-/*
- * _slurm_rpc_update_layout - process RPC to update the configuration of a
- *	layout (e.g. params of entities)
- */
-static void _slurm_rpc_update_layout(slurm_msg_t * msg)
-{
-	int error_code = SLURM_SUCCESS;
-	Buf buffer;
-	DEF_TIMERS;
-	update_layout_msg_t *msg_ptr = (update_layout_msg_t *) msg->data;
-	int shrink_size;
-
-	/* Locks: Write job and write node */
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
-
-	START_TIMER;
-	debug2("Processing RPC: REQUEST_UPDATE_LAYOUT from uid=%d", uid);
-	if (!validate_super_user(uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, UPDATE_LAYOUT RPC from uid=%d", uid);
-	}
-
-	if (error_code == SLURM_SUCCESS) {
-		/* do RPC call */
-		buffer = init_buf(BUF_SIZE);
-		packstr(msg_ptr->arg, buffer);
-		shrink_size = (int)get_buf_offset(buffer) - size_buf(buffer);
-		set_buf_offset(buffer, 0);
-		grow_buf(buffer, shrink_size);	/* Shrink actually */
-		error_code = layouts_update_layout(msg_ptr->layout, buffer);
-		free_buf(buffer);
-		END_TIMER2("_slurm_rpc_update_node");
-	}
-
-	/* return result */
-	if (error_code) {
-		info("_slurm_rpc_update_layout for %s: %s",
-		     msg_ptr->layout, slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
-	} else {
-		debug2("_slurm_rpc_update_layout complete for %s %s",
-		       msg_ptr->layout, TIME_STR);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-	}
-}
-
 /* _slurm_rpc_update_partition - process RPC to update the configuration
  *	of a partition (e.g. UP/DOWN) */
 static void _slurm_rpc_update_partition(slurm_msg_t * msg)
@@ -4645,54 +4599,6 @@ static void _slurm_rpc_resv_show(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		xfree(dump);
 	}
-}
-
-/* _slurm_rpc_layout_show - process RPC to dump layout info */
-static void _slurm_rpc_layout_show(slurm_msg_t * msg)
-{
-	layout_info_request_msg_t *layout_req_msg = (layout_info_request_msg_t *)
-		msg->data;
-	DEF_TIMERS;
-	slurm_msg_t response_msg;
-	char *dump;
-	int dump_size;
-	static int high_buffer_size = (1024 * 1024);
-	Buf buffer = init_buf(high_buffer_size);
-
-	START_TIMER;
-	debug2("Processing RPC: REQUEST_LAYOUT_INFO");
-	if (layout_req_msg->layout_type == NULL) {
-		pack32((uint32_t) 2, buffer);	/* 1 record + trailing \n */
-		packnull(buffer);
-		packstr("\n", buffer); /* to be consistent with
-					* layouts internal prints */
-	} else {
-		if ( layouts_pack_layout(layout_req_msg->layout_type,
-					 layout_req_msg->entities,
-					 layout_req_msg->type,
-					 layout_req_msg->flags,
-					 buffer) != SLURM_SUCCESS) {
-			debug2("%s: unable to get layout[%s]",
-			       __func__, layout_req_msg->layout_type);
-			slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
-			free_buf(buffer);
-			return;
-		}
-	}
-
-	dump_size = get_buf_offset(buffer);
-	high_buffer_size = MAX(high_buffer_size, dump_size);
-	dump = xfer_buf_data(buffer);
-	END_TIMER2("_slurm_rpc_resv_show");
-
-	response_init(&response_msg, msg);
-	response_msg.msg_type = RESPONSE_LAYOUT_INFO;
-	response_msg.data = dump;
-	response_msg.data_size = dump_size;
-
-	/* send message */
-	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	xfree(dump);
 }
 
 /* determine of nodes are ready for the job */
@@ -6418,9 +6324,6 @@ void slurmctld_req(slurm_msg_t *msg)
 	case REQUEST_UPDATE_NODE:
 		_slurm_rpc_update_node(msg);
 		break;
-	case REQUEST_UPDATE_LAYOUT:
-		_slurm_rpc_update_layout(msg);
-		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		_slurm_rpc_update_partition(msg);
@@ -6442,9 +6345,6 @@ void slurmctld_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_RESERVATION_INFO:
 		_slurm_rpc_resv_show(msg);
-		break;
-	case REQUEST_LAYOUT_INFO:
-		_slurm_rpc_layout_show(msg);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		error("slurmctld is talking with itself. "

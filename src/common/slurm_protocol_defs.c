@@ -1333,15 +1333,6 @@ extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 	}
 }
 
-extern void slurm_free_update_layout_msg(update_layout_msg_t * msg)
-{
-	if (msg) {
-		xfree(msg->layout);
-		xfree(msg->arg);
-		xfree(msg);
-	}
-}
-
 extern void slurm_free_update_part_msg(update_part_msg_t * msg)
 {
 	if (msg) {
@@ -1386,29 +1377,6 @@ extern void slurm_free_resv_name_msg(reservation_name_msg_t * msg)
 extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t * msg)
 {
 	xfree(msg);
-}
-
-extern void slurm_free_layout_info_request_msg(layout_info_request_msg_t * msg)
-{
-	if (msg) {
-		xfree(msg->layout_type);
-		xfree(msg->entities);
-		xfree(msg);
-	}
-}
-
-extern void slurm_free_layout_info_msg(layout_info_msg_t * msg)
-{
-	int i;
-
-	if (msg) {
-		if (msg->records) {
-			for (i = 0; i < msg->record_count; i++)
-				xfree(msg->records[i]);
-			xfree(msg->records);
-		}
-		xfree(msg);
-	}
 }
 
 extern void slurm_free_job_step_create_request_msg(
@@ -4904,9 +4872,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_NODE:
 		slurm_free_update_node_msg(data);
 		break;
-	case REQUEST_UPDATE_LAYOUT:
-		slurm_free_update_layout_msg(data);
-		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		slurm_free_update_part_msg(data);
@@ -4927,9 +4892,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_RESERVATION_INFO:
 		slurm_free_resv_info_request_msg(data);
-		break;
-	case REQUEST_LAYOUT_INFO:
-		slurm_free_layout_info_request_msg(data);
 		break;
 	case REQUEST_FRONT_END_INFO:
 		slurm_free_front_end_info_request_msg(data);
@@ -5428,11 +5390,8 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_ASSOC_MGR_INFO";
 	case REQUEST_EVENT_LOG:
 		return "REQUEST_EVENT_LOG";
-	case REQUEST_LAYOUT_INFO:
-		return "REQUEST_LAYOUT_INFO";
-	case RESPONSE_LAYOUT_INFO:
-		return "RESPONSE_LAYOUT_INFO";
-	case REQUEST_FED_INFO:
+
+	case REQUEST_FED_INFO:					/* 2048 */
 		return "REQUEST_FED_INFO";
 	case RESPONSE_FED_INFO:
 		return "RESPONSE_FED_INFO";
@@ -5469,9 +5428,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_UPDATE_RESERVATION";
 	case REQUEST_UPDATE_FRONT_END:				/* 3011 */
 		return "REQUEST_UPDATE_FRONT_END";
-	case REQUEST_UPDATE_LAYOUT:
-		return "REQUEST_UPDATE_LAYOUT";
-	case REQUEST_UPDATE_POWERCAP:
+
+	case REQUEST_UPDATE_POWERCAP:				/* 3013 */
 		return "REQUEST_UPDATE_POWERCAP";
 
 	case REQUEST_RESOURCE_ALLOCATION:			/* 4001 */

@@ -76,7 +76,6 @@
 #define _pack_partition_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_stats_response_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_reserve_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
-#define _pack_layout_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_assoc_mgr_info_msg(msg,buf)      _pack_buffer_msg(msg,buf)
 
 static int _unpack_node_info_members(node_info_t * node, Buf buffer,
@@ -1008,50 +1007,6 @@ _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer,
 
 unpack_error:
 	slurm_free_update_node_msg(tmp_ptr);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-static void
-_pack_update_layout_msg(update_layout_msg_t * msg, Buf buffer,
-			uint16_t protocol_version)
-{
-	xassert(msg);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		packstr(msg->layout, buffer);
-		packstr(msg->arg, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
-	}
-}
-
-static int _unpack_update_layout_msg(update_layout_msg_t ** msg, Buf buffer,
-				     uint16_t protocol_version)
-{
-	uint32_t uint32_tmp;
-	update_layout_msg_t *tmp_ptr;
-
-	/* alloc memory for structure */
-	xassert(msg);
-	tmp_ptr = xmalloc(sizeof(update_layout_msg_t));
-	*msg = tmp_ptr;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&tmp_ptr->layout,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->arg,
-				       &uint32_tmp, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
-		goto unpack_error;
-	}
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_update_layout_msg(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -2986,50 +2941,6 @@ unpack_error:
 	slurm_free_partition_info_members(part);
 	return SLURM_ERROR;
 }
-
-static int
-_unpack_layout_info_msg(layout_info_msg_t ** msg, Buf buffer,
-			uint16_t protocol_version)
-{
-	int i;
-	char **records;
-	uint32_t utmp32, record_count = 0;
-	char *tmp_str = NULL;
-
-	xassert(msg);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		*msg = xmalloc(sizeof(layout_info_msg_t));
-		(*msg)->record_count = 0;
-		safe_unpack32(&record_count, buffer);
-		safe_xcalloc((*msg)->records, record_count, sizeof(char *));
-		records = (*msg)->records;
-		for (i = 0; i < record_count; i++) {
-			safe_unpackstr_xmalloc(&tmp_str, &utmp32, buffer);
-			if (tmp_str != NULL) {
-				if (tmp_str[0] == '\0') {
-					xfree(tmp_str);
-				} else {
-					records[(*msg)->record_count] = tmp_str;
-					// tmp_str = NULL; /* Nothing to free */
-					((*msg)->record_count)++;
-				}
-			}
-		}
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
-		goto unpack_error;
-	}
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_layout_info_msg(*msg);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-
 
 static int
 _unpack_reserve_info_msg(reserve_info_msg_t ** msg, Buf buffer,
@@ -9198,38 +9109,6 @@ unpack_error:
 }
 
 static void
-_pack_layout_info_request_msg(layout_info_request_msg_t * msg, Buf buffer,
-			      uint16_t protocol_version)
-{
-	packstr(msg->layout_type, buffer);
-	packstr(msg->entities, buffer);
-	packstr(msg->type, buffer);
-	pack32(msg->flags, buffer);
-}
-
-static int
-_unpack_layout_info_request_msg(layout_info_request_msg_t ** msg, Buf buffer,
-				uint16_t protocol_version)
-{
-	layout_info_request_msg_t* layout_info;
-	uint32_t uint32_tmp;
-
-	layout_info = xmalloc(sizeof(layout_info_request_msg_t));
-	*msg = layout_info;
-
-	safe_unpackstr_xmalloc(&layout_info->layout_type, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&layout_info->entities, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&layout_info->type, &uint32_tmp, buffer);
-	safe_unpack32(&layout_info->flags, buffer);
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_layout_info_request_msg(layout_info);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-static void
 _pack_slurm_addr_array(slurm_addr_t * slurm_address,
 		       uint32_t size_val, Buf buffer,
 		       uint16_t protocol_version)
@@ -11999,11 +11878,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					    msg->data, buffer,
 					    msg->protocol_version);
 		break;
-	case REQUEST_LAYOUT_INFO:
-		_pack_layout_info_request_msg((layout_info_request_msg_t *)
-					      msg->data, buffer,
-					      msg->protocol_version);
-		break;
 	case REQUEST_BUILD_INFO:
 		_pack_last_update_msg((last_update_msg_t *)
 				      msg->data, buffer,
@@ -12157,11 +12031,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				      buffer,
 				      msg->protocol_version);
 		break;
-	case REQUEST_UPDATE_LAYOUT:
-		_pack_update_layout_msg((update_layout_msg_t *) msg->data,
-					buffer,
-					msg->protocol_version);
-		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		_pack_update_partition_msg((update_part_msg_t *) msg->
@@ -12181,9 +12050,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case RESPONSE_RESERVATION_INFO:
 		_pack_reserve_info_msg((slurm_msg_t *) msg, buffer);
-		break;
-	case RESPONSE_LAYOUT_INFO:
-		_pack_layout_info_msg((slurm_msg_t *) msg, buffer);
 		break;
 	case REQUEST_DELETE_RESERVATION:
 	case RESPONSE_CREATE_RESERVATION:
@@ -12649,11 +12515,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						   & (msg->data), buffer,
 						   msg->protocol_version);
 		break;
-	case REQUEST_LAYOUT_INFO:
-		rc = _unpack_layout_info_request_msg((layout_info_request_msg_t **)
-						     & (msg->data), buffer,
-						     msg->protocol_version);
-		break;
 	case REQUEST_BUILD_INFO:
 		rc = _unpack_last_update_msg((last_update_msg_t **) &
 					     (msg->data), buffer,
@@ -12820,11 +12681,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					     (msg->data), buffer,
 					     msg->protocol_version);
 		break;
-	case REQUEST_UPDATE_LAYOUT:
-		rc = _unpack_update_layout_msg((update_layout_msg_t **) &
-					       (msg->data), buffer,
-					       msg->protocol_version);
-		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		rc = _unpack_update_partition_msg((update_part_msg_t **) &
@@ -12852,11 +12708,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_reserve_info_msg((reserve_info_msg_t **)
 					      &(msg->data), buffer,
 					      msg->protocol_version);
-		break;
-	case RESPONSE_LAYOUT_INFO:
-		rc = _unpack_layout_info_msg((layout_info_msg_t **)
-					     &(msg->data), buffer,
-					     msg->protocol_version);
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		rc = _unpack_launch_tasks_request_msg(

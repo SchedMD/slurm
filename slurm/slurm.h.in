@@ -4523,23 +4523,6 @@ extern int slurm_update_partition(update_part_msg_t *part_msg);
 extern int slurm_delete_partition(delete_part_msg_t *part_msg);
 
 /*****************************************************************************\
- *      SLURM LAYOUT PRINT/UPDATE FUNCTIONS
-\*****************************************************************************/
-extern void slurm_print_layout_info(FILE* out,
-				    layout_info_msg_t *layout_info_ptr,
-				    int one_liner );
-
-extern int slurm_load_layout(char *layout_type,
-			     char *entities,
-			     char *type,
-			     uint32_t no_relation,
-			     layout_info_msg_t **resp);
-
-extern int slurm_update_layout(update_layout_msg_t *layout_info_msg);
-
-extern void slurm_free_layout_info_msg(layout_info_msg_t *layout_info_msg);
-
-/*****************************************************************************\
  *	SLURM RESERVATION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
 

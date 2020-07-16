@@ -219,12 +219,12 @@ am__objects_1 = account_functions.lo archive_functions.lo \
 am__objects_2 = allocate.lo allocate_msg.lo block_info.lo \
 	burst_buffer_info.lo assoc_mgr_info.lo cancel.lo complete.lo \
 	config_info.lo federation_info.lo front_end_info.lo init.lo \
-	init_msg.lo job_info.lo job_step_info.lo layout_info.lo \
-	license_info.lo node_info.lo partition_info.lo pmi_server.lo \
-	powercap_info.lo reservation_info.lo signal.lo \
-	slurm_get_statistics.lo slurm_pmi.lo step_ctx.lo step_io.lo \
-	step_launch.lo submit.lo suspend.lo token.lo topo_info.lo \
-	triggers.lo reconfigure.lo update_config.lo $(am__objects_1)
+	init_msg.lo job_info.lo job_step_info.lo license_info.lo \
+	node_info.lo partition_info.lo pmi_server.lo powercap_info.lo \
+	reservation_info.lo signal.lo slurm_get_statistics.lo \
+	slurm_pmi.lo step_ctx.lo step_io.lo step_launch.lo submit.lo \
+	suspend.lo token.lo topo_info.lo triggers.lo reconfigure.lo \
+	update_config.lo $(am__objects_1)
 am_libslurmhelper_la_OBJECTS = $(am__objects_2)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
 libslurmhelper_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
@@ -267,11 +267,11 @@ am__depfiles_remade = ./$(DEPDIR)/account_functions.Plo \
 	./$(DEPDIR)/init.Plo ./$(DEPDIR)/init_msg.Plo \
 	./$(DEPDIR)/job_functions.Plo ./$(DEPDIR)/job_info.Plo \
 	./$(DEPDIR)/job_report_functions.Plo \
-	./$(DEPDIR)/job_step_info.Plo ./$(DEPDIR)/layout_info.Plo \
-	./$(DEPDIR)/license_info.Plo ./$(DEPDIR)/node_info.Plo \
-	./$(DEPDIR)/partition_info.Plo ./$(DEPDIR)/pmi_server.Plo \
-	./$(DEPDIR)/powercap_info.Plo ./$(DEPDIR)/qos_functions.Plo \
-	./$(DEPDIR)/reconfigure.Plo ./$(DEPDIR)/reservation_info.Plo \
+	./$(DEPDIR)/job_step_info.Plo ./$(DEPDIR)/license_info.Plo \
+	./$(DEPDIR)/node_info.Plo ./$(DEPDIR)/partition_info.Plo \
+	./$(DEPDIR)/pmi_server.Plo ./$(DEPDIR)/powercap_info.Plo \
+	./$(DEPDIR)/qos_functions.Plo ./$(DEPDIR)/reconfigure.Plo \
+	./$(DEPDIR)/reservation_info.Plo \
 	./$(DEPDIR)/resource_functions.Plo ./$(DEPDIR)/signal.Plo \
 	./$(DEPDIR)/slurm_get_statistics.Plo ./$(DEPDIR)/slurm_pmi.Plo \
 	./$(DEPDIR)/step_ctx.Plo ./$(DEPDIR)/step_io.Plo \
@@ -698,7 +698,6 @@ slurmapi_src = \
 	init_msg.c       \
 	job_info.c       \
 	job_step_info.c  \
-	layout_info.c    \
 	license_info.c   \
 	node_info.c      \
 	partition_info.c \
@@ -944,7 +943,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_report_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_step_info.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/layout_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/license_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partition_info.Plo@am__quote@ # am--include-marker
@@ -1130,7 +1128,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/job_info.Plo
 	-rm -f ./$(DEPDIR)/job_report_functions.Plo
 	-rm -f ./$(DEPDIR)/job_step_info.Plo
-	-rm -f ./$(DEPDIR)/layout_info.Plo
 	-rm -f ./$(DEPDIR)/license_info.Plo
 	-rm -f ./$(DEPDIR)/node_info.Plo
 	-rm -f ./$(DEPDIR)/partition_info.Plo
@@ -1227,7 +1224,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/job_info.Plo
 	-rm -f ./$(DEPDIR)/job_report_functions.Plo
 	-rm -f ./$(DEPDIR)/job_step_info.Plo
-	-rm -f ./$(DEPDIR)/layout_info.Plo
 	-rm -f ./$(DEPDIR)/license_info.Plo
 	-rm -f ./$(DEPDIR)/node_info.Plo
 	-rm -f ./$(DEPDIR)/partition_info.Plo

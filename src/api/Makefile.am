@@ -117,7 +117,6 @@ slurmapi_src =           \
 	init_msg.c       \
 	job_info.c       \
 	job_step_info.c  \
-	layout_info.c    \
 	license_info.c   \
 	node_info.c      \
 	partition_info.c \
