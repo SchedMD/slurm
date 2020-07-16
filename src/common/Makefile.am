@@ -119,9 +119,6 @@ libcommon_la_SOURCES = 			\
 	node_conf.h node_conf.c		\
 	gpu.h gpu.c			\
 	gres.h gres.c			\
-	entity.h entity.c		\
-	layout.h layout.c		\
-	layouts_mgr.h layouts_mgr.c	\
 	mapping.c mapping.h		\
 	xcgroup_read_config.c xcgroup_read_config.h \
 	callerid.c callerid.h		\

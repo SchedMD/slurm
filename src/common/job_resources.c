@@ -45,7 +45,6 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/job_resources.h"
-#include "src/common/layouts_mgr.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/xassert.h"
