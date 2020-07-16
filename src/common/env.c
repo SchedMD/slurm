@@ -2013,7 +2013,9 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		return NULL;
 	}
 	if (child == 0) {
-		setenv("ENVIRONMENT", "BATCH", 1);
+		char **tmp_env = NULL;
+		tmp_env = env_array_create();
+		env_array_overwrite(&tmp_env, "ENVIRONMENT", "BATCH");
 		setpgid(0, 0);
 		close(0);
 		if ((fd1 = open("/dev/null", O_RDONLY)) == -1)
@@ -2023,14 +2025,14 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		if ((fd2 = open("/dev/null", O_WRONLY)) == -1)
 			error("%s: open(/dev/null): %m", __func__);
 		if      (mode == 1)
-			execl(SUCMD, "su", username, "-c", cmdstr, NULL);
+			execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
 		else if (mode == 2)
-			execl(SUCMD, "su", "-", username, "-c", cmdstr, NULL);
+			execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
 		else {	/* Default system configuration */
 #ifdef LOAD_ENV_NO_LOGIN
-			execl(SUCMD, "su", username, "-c", cmdstr, NULL);
+			execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
 #else
-			execl(SUCMD, "su", "-", username, "-c", cmdstr, NULL);
+			execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
 #endif
 		}
 		if (fd1 >= 0)	/* Avoid Coverity resource leak notification */

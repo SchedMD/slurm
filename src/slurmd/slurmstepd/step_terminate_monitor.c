@@ -215,7 +215,7 @@ static int _call_external_program(stepd_step_rec_t *job)
 	if (cpid == 0) {
 		/* child */
 		char *argv[2];
-		char buf[16];
+		char **env = NULL;
 
 		/* container_g_join needs to be called in the
 		   forked process part of the fork to avoid a race
@@ -226,19 +226,17 @@ static int _call_external_program(stepd_step_rec_t *job)
 		if (container_g_join(recorded_jobid, getuid())
 		    != SLURM_SUCCESS)
 			error("container_g_join(%u): %m", recorded_jobid);
-
-		snprintf(buf, 16, "%u", recorded_jobid);
-		setenv("SLURM_JOBID", buf, 1);
-		setenv("SLURM_JOB_ID", buf, 1);
-		snprintf(buf, 16, "%u", recorded_stepid);
-		setenv("SLURM_STEPID", buf, 1);
-		setenv("SLURM_STEP_ID", buf, 1);
+		env = env_array_create();
+		env_array_append_fmt(&env, "SLURM_JOBID", "%u", recorded_jobid);
+		env_array_append_fmt(&env, "SLURM_JOB_ID", "%u", recorded_jobid);
+		env_array_append_fmt(&env, "SLURM_STEPID", "%u", recorded_stepid);
+		env_array_append_fmt(&env, "SLURM_STEP_ID", "%u", recorded_stepid);
 
 		argv[0] = program_name;
 		argv[1] = NULL;
 
 		setpgid(0, 0);
-		execv(program_name, argv);
+		execve(program_name, argv, env);
 		error("step_terminate_monitor execv(): %m");
 		_exit(127);
 	}

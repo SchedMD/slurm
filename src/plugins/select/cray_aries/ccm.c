@@ -369,7 +369,7 @@ static int _run_ccm_prolog_epilog(ccm_info_t *ccm_info, char *ccm_type,
 				  const char *ccm_script)
 {
 	int cpid, ret, status, wait_rc, kill = 1;
-	char strval[128], *nid_list_file = NULL;
+	char *nid_list_file = NULL;
 	const char *argv[4];
 	DEF_TIMERS;
 
@@ -398,15 +398,16 @@ static int _run_ccm_prolog_epilog(ccm_info_t *ccm_info, char *ccm_type,
 		return kill;
 	} else if (cpid == 0) {
 		/* child */
+		char **env = env_array_create();
 		setsid();
 		setpgid(0, 0);
-		snprintf(strval, sizeof(strval), "%u", ccm_info->job_id);
-		setenv("ALPS_PREP_BATCHID", strval, 1);
-		snprintf(strval, sizeof(strval), "%u", ccm_info->user_id);
-		setenv("ALPS_PREP_UID", strval, 1);
+		env_array_append_fmt(&env, "ALPS_PREP_BATCHID", "%u",
+		                     ccm_info->job_id);
+		env_array_append_fmt(&env, "ALPS_PREP_UID", "%u",
+		                     ccm_info->user_id);
 		if (nid_list_file) {
-			setenv("ALPS_PREP_NIDFILE",
-			       (const char *)nid_list_file, 1);
+			env_array_append_fmt(&env, "ALPS_PREP_NIDFILE", "%s",
+			                     nid_list_file);
 		}
 		argv[0] = "sh";
 		argv[1] = "-c";
@@ -414,7 +415,7 @@ static int _run_ccm_prolog_epilog(ccm_info_t *ccm_info, char *ccm_type,
 		argv[3] = NULL;
 		debug("CCM job %u invoking %s %s", ccm_info->job_id, ccm_type,
 		      ccm_script);
-		execv("/bin/sh", (char *const *)argv);
+		execve("/bin/sh", (char *const *)argv, env);
 		CRAY_ERR("CCM job %u %s %s execv failed, %m",
 			 ccm_info->job_id, ccm_type, ccm_script);
 		_exit(127);

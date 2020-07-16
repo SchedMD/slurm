@@ -698,17 +698,15 @@ static void _do_suspend(char *host)
  * arg2 IN	- second program argumentor NULL
  * job_id IN	- Passed as SLURM_JOB_ID environment variable
  */
-static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id)
+static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id) //use common
 {
 	int i;
-	char *argv[4], job_id_str[32], *pname;
+	char *argv[4], *pname;
 	pid_t child;
 
 	if (prog == NULL)	/* disabled, useful for testing */
 		return -1;
 
-	if (job_id)
-		snprintf(job_id_str, sizeof(job_id_str), "%u", job_id);
 	pname = strrchr(prog, '/');
 	if (pname == NULL)
 		argv[0] = prog;
@@ -720,13 +718,17 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id)
 
 	child = fork();
 	if (child == 0) {
+		char **env = NULL;
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
 		setpgid(0, 0);
-		setenv("SLURM_CONF", slurm_conf.slurm_conf, 1);
+
+		env = env_array_create();
+		env_array_append(&env, "SLURM_CONF", slurm_conf.slurm_conf);
 		if (job_id)
-			setenv("SLURM_JOB_ID", job_id_str, 1);
-		execv(prog, argv);
+			env_array_append_fmt(&env, "SLURM_JOB_ID", "%u",
+					     job_id);
+		execve(prog, argv, env);
 		_exit(1);
 	} else if (child < 0) {
 		error("fork: %m");
