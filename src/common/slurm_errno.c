@@ -319,8 +319,6 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Required power not available now"			},
 	{ ESLURM_POWER_RESERVED,
 	  "Required power at least partially reserved"		},
-	{ ESLURM_INVALID_POWERCAP,
-	  "Required powercap is not valid, check min/max values"},
 	{ ESLURM_INVALID_MCS_LABEL,
 	  "Invalid mcs_label specified"				},
 	{ ESLURM_BURST_BUFFER_WAIT,

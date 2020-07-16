@@ -11122,40 +11122,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_powercap_info_msg(powercap_info_msg_t *msg, Buf buffer,
-				    uint16_t protocol_version)
-{
-	pack32(msg->power_cap, buffer);
-	pack32(msg->power_floor, buffer);
-	pack32(msg->power_change, buffer);
-	pack32(msg->min_watts, buffer);
-	pack32(msg->cur_max_watts, buffer);
-	pack32(msg->adj_max_watts, buffer);
-	pack32(msg->max_watts, buffer);
-}
-
-static int  _unpack_powercap_info_msg(powercap_info_msg_t **msg, Buf buffer,
-				      uint16_t protocol_version)
-{
-	powercap_info_msg_t *msg_ptr = xmalloc(sizeof(powercap_info_msg_t));
-
-	*msg = msg_ptr;
-	safe_unpack32(&msg_ptr->power_cap, buffer);
-	safe_unpack32(&msg_ptr->power_floor, buffer);
-	safe_unpack32(&msg_ptr->power_change, buffer);
-	safe_unpack32(&msg_ptr->min_watts, buffer);
-	safe_unpack32(&msg_ptr->cur_max_watts, buffer);
-	safe_unpack32(&msg_ptr->adj_max_watts, buffer);
-	safe_unpack32(&msg_ptr->max_watts, buffer);
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_powercap_info_msg(msg_ptr);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
 static void _pack_stats_request_msg(stats_info_request_msg_t *msg, Buf buffer,
 				    uint16_t protocol_version)
 {
@@ -11978,7 +11944,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
-	case REQUEST_POWERCAP_INFO:
 	case REQUEST_FED_INFO:
 		/* Message contains no body/information */
 		break;
@@ -12374,12 +12339,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			(topo_info_response_msg_t *)msg->data, buffer,
 			msg->protocol_version);
 		break;
-	case REQUEST_UPDATE_POWERCAP:
-	case RESPONSE_POWERCAP_INFO:
-		_pack_powercap_info_msg(
-			(powercap_info_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
 	case RESPONSE_JOB_SBCAST_CRED:
 		_pack_job_sbcast_cred_msg(
 			(job_sbcast_cred_msg_t *)msg->data, buffer,
@@ -12625,7 +12584,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
-	case REQUEST_POWERCAP_INFO:
 	case REQUEST_FED_INFO:
 		/* Message contains no body/information */
 		break;
@@ -13055,12 +13013,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case RESPONSE_TOPO_INFO:
 		rc = _unpack_topo_info_msg(
 			(topo_info_response_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_POWERCAP:
-	case RESPONSE_POWERCAP_INFO:
-		rc = _unpack_powercap_info_msg(
-			(powercap_info_msg_t **)&msg->data, buffer,
 			msg->protocol_version);
 		break;
 	case RESPONSE_JOB_SBCAST_CRED:

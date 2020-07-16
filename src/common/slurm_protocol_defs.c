@@ -4499,18 +4499,6 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 	}
 }
 
-/*
- * slurm_free_powercap_info_msg - free the powercapping information
- *	response message
- * IN msg - pointer to powercapping information response message
- * NOTE: buffer is loaded by slurm_load_powercap.
- */
-extern void slurm_free_powercap_info_msg(powercap_info_msg_t *msg)
-{
-	xfree(msg);
-}
-
-
 extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 {
 	if (msg) {
@@ -4876,9 +4864,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_PARTITION:
 		slurm_free_update_part_msg(data);
 		break;
-	case REQUEST_UPDATE_POWERCAP:
-		slurm_free_powercap_info_msg(data);
-		break;
 	case REQUEST_DELETE_PARTITION:
 		slurm_free_delete_part_msg(data);
 		break;
@@ -5014,7 +4999,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case ACCOUNTING_NODES_CHANGE_DB:
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
-	case REQUEST_POWERCAP_INFO:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_FED_INFO:
 		/* No body to free */
@@ -5380,11 +5364,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_JOB_USER_INFO";
 	case REQUEST_NODE_INFO_SINGLE:				/* 2040 */
 		return "REQUEST_NODE_INFO_SINGLE";
-	case REQUEST_POWERCAP_INFO:
-		return "REQUEST_POWERCAP_INFO";
-	case RESPONSE_POWERCAP_INFO:
-		return "RESPONSE_POWERCAP_INFO";
-	case REQUEST_ASSOC_MGR_INFO:
+
+	case REQUEST_ASSOC_MGR_INFO:				/* 2043 */
 		return "REQUEST_ASSOC_MGR_INFO";
 	case RESPONSE_ASSOC_MGR_INFO:
 		return "RESPONSE_ASSOC_MGR_INFO";
@@ -5428,9 +5409,6 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_UPDATE_RESERVATION";
 	case REQUEST_UPDATE_FRONT_END:				/* 3011 */
 		return "REQUEST_UPDATE_FRONT_END";
-
-	case REQUEST_UPDATE_POWERCAP:				/* 3013 */
-		return "REQUEST_UPDATE_POWERCAP";
 
 	case REQUEST_RESOURCE_ALLOCATION:			/* 4001 */
 		return "REQUEST_RESOURCE_ALLOCATION";
