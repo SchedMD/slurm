@@ -186,17 +186,6 @@ slurm_delete_partition ( delete_part_msg_t * part_msg )
 }
 
 /*
- * slurm_update_powercap - issue RPC to update powercapping cap 
- * IN powercap_msg - description of powercapping updates
- * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
- */
-int
-slurm_update_powercap ( update_powercap_msg_t * powercap_msg )
-{
-	return _slurm_update ((void *) powercap_msg, REQUEST_UPDATE_POWERCAP);
-}
-
-/*
  * slurm_create_reservation - create a new reservation, only usable by user root
  * IN resv_msg - description of reservation
  * RET name of reservation on success (caller must free the memory),

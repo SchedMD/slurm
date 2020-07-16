@@ -122,7 +122,6 @@ slurmapi_src =           \
 	partition_info.c \
 	pmi_server.c     \
 	pmi_server.h     \
-	powercap_info.c  \
 	reservation_info.c \
 	signal.c         \
 	slurm_get_statistics.c \

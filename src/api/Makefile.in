@@ -220,7 +220,7 @@ am__objects_2 = allocate.lo allocate_msg.lo block_info.lo \
 	burst_buffer_info.lo assoc_mgr_info.lo cancel.lo complete.lo \
 	config_info.lo federation_info.lo front_end_info.lo init.lo \
 	init_msg.lo job_info.lo job_step_info.lo license_info.lo \
-	node_info.lo partition_info.lo pmi_server.lo powercap_info.lo \
+	node_info.lo partition_info.lo pmi_server.lo \
 	reservation_info.lo signal.lo slurm_get_statistics.lo \
 	slurm_pmi.lo step_ctx.lo step_io.lo step_launch.lo submit.lo \
 	suspend.lo token.lo topo_info.lo triggers.lo reconfigure.lo \
@@ -269,9 +269,8 @@ am__depfiles_remade = ./$(DEPDIR)/account_functions.Plo \
 	./$(DEPDIR)/job_report_functions.Plo \
 	./$(DEPDIR)/job_step_info.Plo ./$(DEPDIR)/license_info.Plo \
 	./$(DEPDIR)/node_info.Plo ./$(DEPDIR)/partition_info.Plo \
-	./$(DEPDIR)/pmi_server.Plo ./$(DEPDIR)/powercap_info.Plo \
-	./$(DEPDIR)/qos_functions.Plo ./$(DEPDIR)/reconfigure.Plo \
-	./$(DEPDIR)/reservation_info.Plo \
+	./$(DEPDIR)/pmi_server.Plo ./$(DEPDIR)/qos_functions.Plo \
+	./$(DEPDIR)/reconfigure.Plo ./$(DEPDIR)/reservation_info.Plo \
 	./$(DEPDIR)/resource_functions.Plo ./$(DEPDIR)/signal.Plo \
 	./$(DEPDIR)/slurm_get_statistics.Plo ./$(DEPDIR)/slurm_pmi.Plo \
 	./$(DEPDIR)/step_ctx.Plo ./$(DEPDIR)/step_io.Plo \
@@ -703,7 +702,6 @@ slurmapi_src = \
 	partition_info.c \
 	pmi_server.c     \
 	pmi_server.h     \
-	powercap_info.c  \
 	reservation_info.c \
 	signal.c         \
 	slurm_get_statistics.c \
@@ -947,7 +945,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partition_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pmi_server.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/powercap_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qos_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reconfigure.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reservation_info.Plo@am__quote@ # am--include-marker
@@ -1132,7 +1129,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/node_info.Plo
 	-rm -f ./$(DEPDIR)/partition_info.Plo
 	-rm -f ./$(DEPDIR)/pmi_server.Plo
-	-rm -f ./$(DEPDIR)/powercap_info.Plo
 	-rm -f ./$(DEPDIR)/qos_functions.Plo
 	-rm -f ./$(DEPDIR)/reconfigure.Plo
 	-rm -f ./$(DEPDIR)/reservation_info.Plo
@@ -1228,7 +1224,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/node_info.Plo
 	-rm -f ./$(DEPDIR)/partition_info.Plo
 	-rm -f ./$(DEPDIR)/pmi_server.Plo
-	-rm -f ./$(DEPDIR)/powercap_info.Plo
 	-rm -f ./$(DEPDIR)/qos_functions.Plo
 	-rm -f ./$(DEPDIR)/reconfigure.Plo
 	-rm -f ./$(DEPDIR)/reservation_info.Plo
