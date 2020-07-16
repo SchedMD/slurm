@@ -5,15 +5,12 @@
 ############################################################################
 source ./globals
 
-set test_id    "20.12"
 set file_err   "test$test_id.error"
 set file_in    "test$test_id.input"
 set file_out   "test$test_id.output"
 set exit_code  0
 set variable1_value "var1"
 set variable2_value "var2"
-
-print_header $test_id
 
 if {[file executable $qsub] == 0} {
 	skip "qsub was not found"

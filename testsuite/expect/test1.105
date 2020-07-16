@@ -26,11 +26,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.105"
 set exit_code   0
 set job_id      0
-
-print_header $test_id
 
 set default_time [get_partition_default_time_limit]
 if { $default_time != -1} {

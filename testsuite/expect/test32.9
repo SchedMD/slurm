@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id       "32.9"
 set job_id        0
 set hostname      ""
 set file_in       "test${test_id}.in"
@@ -34,8 +33,6 @@ set file_out      "test${test_id}.out"
 set sgather_tmp   "/tmp/test${test_id}"
 set sgather_out   "test${test_id}_sgather.out"
 set exit_code     0
-
-print_header $test_id
 
 if {[file executable $sgather] == 0} {
 	skip "$sgather does not exist"

@@ -28,15 +28,12 @@
 ############################################################################
 source ./globals
 
-set test_id          "2.14"
 set exit_code        0
 set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
 set file_out2        "test$test_id.output2"
 set job_id           0
 set node_cnt         2
-
-print_header $test_id
 
 if {[test_front_end]} {
     skip "This test is incompatible with front-end systems"

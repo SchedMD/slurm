@@ -28,8 +28,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "37.1"
-set test_id_2   "37_1"
 set exit_code   0
 
 set max_federations 64
@@ -48,7 +46,6 @@ set fed2 	"fed2_$test_id_2"
 set fed3 	"fed3_$test_id_2"
 
 set timeout	60
-print_header $test_id
 
 #
 # Check accounting config and bail if not found.
@@ -139,7 +136,6 @@ proc cleanup { } {
 }
 
 proc end_it { exit_code } {
-	global test_id
 	if {$exit_code != 0} {
 		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}

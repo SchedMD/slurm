@@ -30,12 +30,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "7.3"
 set exit_code   0
 set io_prog     "test$test_id.io"
 set test_prog   "test$test_id.prog"
-
-print_header $test_id
 
 if {[test_front_end] != 0} {
     skip "This test is incompatible with front-end systems"

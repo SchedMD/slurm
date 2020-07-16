@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "21.14"
 set exit_code   0
 set tc1		"test$test_id-cluster-1"
 set tc2		"test$test_id-cluster-2"
@@ -97,8 +96,6 @@ set acct_mod_desc6(cluster) $tc1
 array set acct_mod_acct_vals6 {}
 array set acct_mod_assoc_vals6 {}
 set acct_mod_assoc_vals6(parent) $ta2
-
-print_header $test_id
 
 set timeout 60
 

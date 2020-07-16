@@ -29,12 +29,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.91"
 set exit_code   0
 set file_prog   "test$test_id.prog"
 set prompt      "PROMPT:"
-
-print_header $test_id
 
 if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"

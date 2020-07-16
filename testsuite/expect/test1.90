@@ -28,12 +28,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.90"
 set exit_code   0
 set file_prog   "test$test_id.prog"
 set prompt      "PROMPT:"
-
-print_header $test_id
 
 #
 # Test if memory affinity support is supported.

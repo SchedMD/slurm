@@ -28,10 +28,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "2.10"
 set exit_code   0
-
-print_header $test_id
 
 #
 # Report all slurm nodes, multi-line (default) mode

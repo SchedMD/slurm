@@ -29,11 +29,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.64"
 set exit_code   0
 set matches     0
-
-print_header $test_id
 
 #
 # Spawn initial program via srun

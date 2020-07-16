@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id      "28.2"
 set file_script  "test$test_id.sh"
 set file_out     "test$test_id-%A_%a.output"
 set file_error   "test$test_id-%A_%a.error"
@@ -39,8 +38,6 @@ set array_id     ""
 set array_in     ""
 set array_var    ""
 set exit_code    0
-
-print_header $test_id
 
 if {[get_array_config] < [expr $array_end + 1]} {
 	skip "MaxArraySize is too small"

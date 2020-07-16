@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.52"
 set exit_code   0
 set num_nodes   2
 set num_tasks   2
@@ -37,8 +36,6 @@ set idle_nodes  0
 set max_nodes   0
 set task_count  0
 set hostfile    "test$test_id.hostfile"
-
-print_header $test_id
 
 if { [test_front_end] } {
 	skip "This test incompatible with front-end systems"

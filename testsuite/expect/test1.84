@@ -33,11 +33,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.84"
 set exit_code   0
 set file_in     "test$test_id.bash"
-
-print_header $test_id
 
 if { [test_front_end] } {
 	skip "This test is incompatible with FRONT_END systems"

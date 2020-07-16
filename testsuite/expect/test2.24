@@ -27,15 +27,12 @@
 ############################################################################
 source ./globals
 
-set test_id       2.24
 set option        ""
 set value         ""
 array set conf_val {}
 set new_conf      ""
 set opt_cnt       0
 set exit_code     0
-
-print_header $test_id
 
 if {[is_super_user] == 0} {
 	skip "This test requires that the user be root or the SlurmUser"

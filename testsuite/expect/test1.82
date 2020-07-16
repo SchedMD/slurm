@@ -30,10 +30,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.82"
 set exit_code   0
-
-print_header $test_id
 
 #
 # Submit a 3+ node job

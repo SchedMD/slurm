@@ -26,10 +26,7 @@
 
 source ./globals
 
-set test_id	"7.19"
 set file_in	"bash"
-
-print_header $test_id
 
 # Increase timeout to account for sbatch --wait backoff
 set timeout 20

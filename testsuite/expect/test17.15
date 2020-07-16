@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id          "17.15"
 set exit_code        0
 set file_err         "test$test_id.error"
 set file_in          "test$test_id.input"
@@ -41,8 +40,6 @@ set limit_nofile     1016
 set limit_nproc      1230
 set limit_stack      2021
 set matches          0
-
-print_header $test_id
 
 #
 # Delete left-over programs and rebuild them.

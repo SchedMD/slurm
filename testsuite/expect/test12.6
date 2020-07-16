@@ -28,13 +28,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "12.6"
 set exit_code   0
 set file_out    "test$test_id.output"
 set file_prog   "test$test_id.prog"
 set job_id      0
-
-print_header $test_id
 
 if {[test_front_end]} {
 	skip "This test is incompatible with front-end systems"

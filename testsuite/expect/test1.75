@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id      1.75
 set file_id      "test$test_id\_id.bash"
 set file_in      "test$test_id\.bash"
 set file_out     "test$test_id\.out"
@@ -46,8 +45,6 @@ array set freq_lvl_2 {
 	performance   0
 	powersave     0
 }
-
-print_header $test_id
 
 if { [test_using_slurmdbd] == 0 } {
 	skip "This test can't be run without AccountStorageType=slurmdbd"

@@ -28,10 +28,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "2.12"
 set exit_code   0
-
-print_header $test_id
 
 # test if running with Topology/Tree
 set topology_tree 0

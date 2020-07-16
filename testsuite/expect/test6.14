@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "6.14"
 set exit_code      0
 set file_in        "test$test_id.input"
 set num_procs      10
@@ -41,8 +40,6 @@ set tmp_map_entry  {}
 set submitted_jobs {}
 set job_list       {}
 set job_index      -1
-
-print_header $test_id
 
 #
 # Build input script file

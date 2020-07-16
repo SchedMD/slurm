@@ -25,12 +25,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "7.17"
 set exit_code   0
 set test_prog   "test$test_id.prog"
 set cfgdir      [pwd]
-
-print_header $test_id
 
 if {[test_cray]} {
 #	Many Cray-specific changes required in slurm.conf test files

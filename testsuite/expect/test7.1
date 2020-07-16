@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id              "7.1"
 set exit_code            0
 set file_in              "test$test_id.input"
 set job_id1              0
@@ -38,8 +37,6 @@ set prio1                -1
 set prio2                -1
 set prio3                -1
 set multi                0
-
-print_header $test_id
 
 # expected outcome is different under multifactor rule
 if { ![string compare [priority_type] multifactor] } {

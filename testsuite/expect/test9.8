@@ -30,7 +30,6 @@
 ############################################################################
 source ./globals
 
-set test_id      "9.8"
 set exit_code    0
 set file_in      "test$test_id.input"
 set job_cnt      10
@@ -38,8 +37,6 @@ set delay        10
 set job_name     "test$test_id"
 set sleep_time   300
 set task_cnt     60
-
-print_header $test_id
 
 if {![test_select_type_params "Memory"]} {
 	set mem_per_step 0

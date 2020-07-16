@@ -28,12 +28,9 @@
 ############################################################################
 source ./globals
 
-set test_id      "1.51"
 set exit_code    0
 set file_in      "test$test_id.input"
 set file_script  "test$test_id.script"
-
-print_header $test_id
 
 if {[test_front_end] != 0} {
 	skip "This test is incompatible with front-end systems"

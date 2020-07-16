@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id		"3.15"
 set exit_code		0
 set license_name        "test$test_id"
 set resv_name           "resv$test_id"
@@ -145,8 +144,6 @@ proc test_license_count {want_total want_used want_free } {
 }
 
 ################# TEST STARTS HERE ######################
-print_header $test_id
-
 if {[is_super_user] == 0} {
 	skip "This test can't be run except as SlurmUser"
 }

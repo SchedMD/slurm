@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set test_id       "2.13"
 set exit_code     0
 set file_in1      "test$test_id.input1"
 set file_in2      "test$test_id.input2"
@@ -36,8 +35,6 @@ set job_id        0
 set step_id       0
 set orig_time     0
 set new_time      0
-
-print_header $test_id
 
 #
 # Build input batch file

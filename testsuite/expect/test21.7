@@ -29,7 +29,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "21.7"
 set exit_code   0
 set amatches    0
 set dmatches    0
@@ -51,8 +50,6 @@ set cluster(MaxSubmitJobs) 500
 set cluster(MaxNodes)      300
 set cluster(MaxWall)       01:00:00
 set access_err  0
-
-print_header $test_id
 
 if { [test_account_storage] == 0 } {
 	skip "This test can't be run without a usable AccountStorageType"

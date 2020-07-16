@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.29"
 set exit_code        0
 set file_err         "test$test_id.error"
 set file_in          "test$test_id.input"
@@ -41,8 +40,6 @@ set limit_nofile     1016
 set limit_nproc      34500
 set limit_stack      5021
 set matches          0
-
-print_header $test_id
 
 if {[test_front_end] != 0 && [test_super_user] == 0} {
 	skip "This test is incompatible with front-end systems"

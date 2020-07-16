@@ -29,14 +29,11 @@
 ############################################################################
 source ./globals
 
-set test_id          "15.22"
 set def_part_name    ""
 set exit_code        0
 set file_in          "test$test_id.input"
 set job_id           0
 set other_part_name  ""
-
-print_header $test_id
 
 #
 # Identify the partitions in the cluster, identifying the default

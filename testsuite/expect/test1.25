@@ -29,11 +29,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.25"
 set exit_code   0
 set sleep_time  30
-
-print_header $test_id
 
 #
 # Submit a job with one thread fanout

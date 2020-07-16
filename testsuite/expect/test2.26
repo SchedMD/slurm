@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id		"2.26"
 set exit_code		0
 set file_in		"test$test_id.input"
 set job_name		"test$test_id"
@@ -123,8 +122,6 @@ proc end_it { } {
 	}
 	pass
 }
-
-print_header $test_id
 
 if {[test_super_user] == 0 && [top_enabled] == 0} {
 	skip "Scontrol top operation disabled for this user"

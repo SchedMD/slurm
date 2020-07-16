@@ -35,12 +35,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "24.3"
 set exit_code   0
 set test_prog   "test$test_id.prog"
 set matches     0
-
-print_header $test_id
 
 set damp [get_fs_damping_factor]
 if {$damp != 1} {

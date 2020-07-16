@@ -29,12 +29,9 @@
 ############################################################################
 source ./globals
 
-set test_id          "15.16"
 set exit_code        0
 set timeout          $max_job_delay
 global env
-
-print_header $test_id
 
 #
 # Run trivial test with SALLOC_BELL env var

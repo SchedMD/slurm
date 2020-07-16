@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.16"
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
@@ -38,8 +37,6 @@ set arg2        "arg_two"
 set arg_match   0
 set exit_code   0
 set job_id      0
-
-print_header $test_id
 
 #
 # Delete left-over input script plus stdout/err files

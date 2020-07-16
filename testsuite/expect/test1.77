@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set test_id	"1.77"
 set exit_code	0
 set job_id      0
 set number      "\[0-9\]+"
@@ -38,8 +37,6 @@ set file_out    "test$test_id.out"
 
 # Set env path to SLURM_JOB_NAME
 set env(SLURM_JOB_NAME) "zebra"
-
-print_header $test_id
 
 make_bash_script $file_in "
 /usr/bin/env|grep SLURM_JOB_NAME

@@ -27,7 +27,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id          21.36
 set sql_query        "test$test_id\-query.sql"
 set sql_query_rem    "test$test_id\-query-rem.sql"
 set cluster          [get_cluster_name]
@@ -68,8 +67,6 @@ proc endit { } {
 	pass
 }
 
-
-print_header $test_id
 
 if {[test_using_slurmdbd] == 0} {
 	skip "This test can't be run without AccountStorageType=slurmdbd"

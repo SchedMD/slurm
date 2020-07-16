@@ -32,12 +32,9 @@ source ./globals_het_jobs
 
 set timeout 60
 
-set test_id      "38.3"
 set exit_code    0
 set file_in      "test$test_id.in"
 set job_id       0
-
-print_header $test_id
 
 proc salloc {} {
 	global number salloc bin_sleep job_id

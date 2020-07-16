@@ -32,7 +32,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.11"
 set name_read   ""
 
 set complete_flag        0
@@ -43,8 +42,6 @@ set job_grp_info         ""
 set job_id               0
 set got_job_grps         0
 set got_login_grps       0
-
-print_header $test_id
 
 #
 # Spawn a srun job with a really long name and confirm it is accepted or truncated

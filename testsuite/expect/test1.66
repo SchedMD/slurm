@@ -27,13 +27,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.66"
 set exit_code   0
 set script      "test$test_id.bash"
 set file_out    "test$test_id.out"
 set job_id      0
-
-print_header $test_id
 
 set node_cnt [available_nodes]
 if {$node_cnt < 2} {

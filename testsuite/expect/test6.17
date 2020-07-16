@@ -26,10 +26,7 @@
 ############################################################################
 source ./globals
 
-set test_id      "6.17"
 set exit_code    0
-
-print_header $test_id
 
 #
 # Test scancel with name filter that finds no jobs

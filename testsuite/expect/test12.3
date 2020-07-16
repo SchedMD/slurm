@@ -33,7 +33,6 @@ source ./globals_accounting
 source ./inc12.3.1
 source ./inc12.3.2
 
-set test_id     "12.3"
 set exit_code   0
 set job_name_1  "JOB1"
 set job_name_2  "JOB2"
@@ -41,8 +40,6 @@ set job_name_3  "JOB3"
 set file_in     "test.$test_id.input"
 set test_acct	"slurm_test-account.1"
 set step_id	0
-
-print_header $test_id
 
 if {[test_front_end]} {
 	skip "This test can't be run on a front end system"

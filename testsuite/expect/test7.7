@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "7.7"
 set exit_code   0
 set file_in    "test$test_id.input"
 set file_out   "test$test_id.output"
@@ -146,8 +145,6 @@ proc test_alloc_size { task_cnt } {
 		set exit_code 1
 	}
 }
-
-print_header $test_id
 
 if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"

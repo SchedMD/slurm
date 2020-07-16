@@ -30,13 +30,10 @@
 source ./globals
 source ./globals_het_jobs
 
-set test_id      "38.5"
 set exit_code    0
 set file_in      "test$test_id.in"
 set file_out     "test$test_id.out"
 set job_id 0
-
-print_header $test_id
 
 if {[in_fed]} {
 	skip "This test should not be run in a federation"

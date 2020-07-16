@@ -29,7 +29,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "21.5"
 set exit_code   0
 set dmatches    0
 # Test Clusters
@@ -50,8 +49,6 @@ set cluster(MaxNodes)      300
 set cluster(MaxWall)       01:00:00
 set cluster(DefaultQos)    "test$test_id\_qos"
 set access_err  0
-
-print_header $test_id
 
 #
 # Check accounting config and bail if not found.

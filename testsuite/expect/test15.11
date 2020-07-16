@@ -28,13 +28,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.11"
 set exit_code   0
 set job_id      0
 set job_name    "jobname$test_id"
 set name_read   ""
-
-print_header $test_id
 
 set prio_type [priority_type]
 if {[string compare $prio_type "multifactor"] == 0} {

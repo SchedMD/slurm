@@ -26,13 +26,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "20.8"
 set file_in     "test$test_id\.bash"
 set job_name    "test$test_id\.newname"
 set job_id      0
 set exit_code   0
-
-print_header $test_id
 
 if {[file executable $qalter] == 0} {
 	skip "$qalter does not exist"

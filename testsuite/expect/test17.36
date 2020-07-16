@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id       17.36
 set file_in       "test$test_id\_sc"
 set test_part_1   "test$test_id\_part_1"
 set test_part_2   "test$test_id\_part_2"
@@ -42,8 +41,6 @@ set oversubscribe_j_cnt  2
 set job_id        0
 set node_name     ""
 set exit_code     0
-
-print_header $test_id
 
 if {[test_linear]} {
 	skip "Test is not compatible with a config of SelectType=select/linear"

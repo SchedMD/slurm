@@ -41,7 +41,6 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set test_id      "37.15"
 set exit_code    0
 set fed_name     "feda"
 set user_name    ""
@@ -51,8 +50,6 @@ set my_squeue    "${fed_slurm_base}/$fedc1/bin/squeue"
 set my_scontrol  "${fed_slurm_base}/$fedc1/bin/scontrol"
 
 set eol "\r\n"
-
-print_header $test_id
 
 #
 # Check accounting config and bail if not found.

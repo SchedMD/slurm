@@ -28,12 +28,9 @@
 ############################################################################
 source ./globals
 
-set test_id        "3.5"
 set authorized     1
 set exit_code      0
 set part_name      "QA_TEST"
-
-print_header $test_id
 
 if {[test_super_user] == 0} {
 	skip "Can not test more unless SlurmUser or root"

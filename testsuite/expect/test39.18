@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id		"39.18"
 set exit_code		0
 set test_prog		"test$test_id.prog"
 set cfgdir		"test${test_id}_configs"
@@ -52,8 +51,6 @@ set gres_conf_file_err	"fatal: gres.conf for $re_word_str, some records have \"F
 
 set debug_mode 0
 # set debug_mode 1
-
-print_header $test_id
 
 if {[test_cray]} {
 #	Many Cray-specific changes required in slurm.conf test files

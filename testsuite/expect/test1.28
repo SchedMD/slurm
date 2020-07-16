@@ -28,14 +28,11 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.28"
 set file_in          "test$test_id.input"
 set test_env_name    "TEST_ENV_$test_id"
 set test_env_val     123
 set exit_code        0
 set matches          0
-
-print_header $test_id
 
 make_bash_script $file_in "env | grep TEST; exit 0"
 

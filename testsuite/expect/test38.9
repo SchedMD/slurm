@@ -26,12 +26,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "38.9"
 set exit_code	0
 set prompt	"PROMPT:"
 set task_num	2
-
-print_header $test_id
 
 if {[test_front_end]} {
         skip "This test is incompatible with front-end systems"

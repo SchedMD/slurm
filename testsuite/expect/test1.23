@@ -29,10 +29,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.23"
 set exit_code   0
-
-print_header $test_id
 
 #
 # Submit a job with invalid mincpus requirement

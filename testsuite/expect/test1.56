@@ -28,12 +28,9 @@
 ############################################################################
 source ./globals
 
-set test_id              "1.56"
 set file_in              "test$test_id.input"
 set file_out             "test$test_id.output"
 set slurmstepd_cbuf_size 4096
-
-print_header $test_id
 
 set short_string "foo bar baz "
 set count [expr $slurmstepd_cbuf_size / [string length $short_string] + 1]

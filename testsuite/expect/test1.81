@@ -30,10 +30,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.81"
 set exit_code   0
-
-print_header $test_id
 
 # find out if we have enough nodes to test functionality
 set node_count [get_node_cnt_in_part]

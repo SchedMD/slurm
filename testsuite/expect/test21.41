@@ -27,15 +27,11 @@
 source ./globals
 source ./globals_accounting
 
-set test_id       "21.41"
-set test_name     "test21_41"
 set exit_code     0
 
 # globals
 set access_err    0
 set timeout 120
-
-print_header $test_id
 
 set sql_in_clus1  "$test_name-clus1-in.sql"
 set sql_rem_clus1 "$test_name-clus1-rem.sql"

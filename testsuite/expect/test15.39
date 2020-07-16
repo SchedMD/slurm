@@ -26,13 +26,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.39"
 set exit_code   0
 set needed_nodes 2
 set matches 0
 set ncpus ""
-
-print_header $test_id
 
 if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"

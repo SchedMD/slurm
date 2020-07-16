@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.12"
 set exit_code   0
 set file_in     "test$test_id.input"
 set test_part   "test$test_id\_part"
@@ -40,8 +39,6 @@ set feat4       "test$test_id\_four"
 array set nodes {}
 array set def_active_node_feat {}
 array set def_avail_node_feat  {}
-
-print_header $test_id
 
 proc check_job_nodes {test_job node_name find_node} {
 	global exit_code sbatch test_part file_in

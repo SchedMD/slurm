@@ -33,12 +33,18 @@ configure several testsuite variables, for example:
 slurm_dir:                    slurm installation directory (prefix) [/usr]
 build_dir:                    slurm build directory [../..]
 max_file_delay:               maximum file propogation delay (e.g. nfs) [90]
-testsuite_cleanup_on_failure: runs cleanup procedure on test failure [false]
+testsuite_cleanup_on_failure: run cleanup and remove test_dir on failure [false]
+testsuite_shared_dir:         cluster-wide shared directory [.]
 testsuite_log_level:          logging threshold [$LOG_LEVEL_DEBUG]
-testsuite_log_format:         specifies the tracing fields used in logging *
+testsuite_log_format:         specifies the tracing fields used in logging
 testsuite_colorize:           boolean that turns colorization on or off
 
-* For the valid fields usable with testsuite_log_format, see the header
+The testsuite needs at least one cluster-wide shared file system.
+By default, we assume that it's the testsuite/expect directory (i.e. ".").
+Files created within this directory on one node in the cluster should be
+visible to all other nodes in the cluster.
+
+For the valid fields usable with testsuite_log_format, see the header
 comments for the _log_format procedure. See also the default defintion of
 testsuite_log_format in globals for an example of syntax.
 
@@ -50,10 +56,16 @@ the test will print "FAILURE" and terminate with a positive exit code. If a
 test fails its precondition checks, it will print "SKIPPED" and terminate with
 a negative exit code. Use the fail, skip or pass procedures to end the test.
 
-The test is designed to be executed from a cluster-wide file system.
-Files created on one node in the cluster should be visible to all other
-nodes in the cluster. If not executed in such an environment, many tests
-will fail.
+A test can expect to have some global variables defined that it can make use
+of within the test. These include:
+
+test_name:  the name of the test script, e.g. test1.1
+test_id:    the numeric suffix for the test, e.g. 1.1
+test_dir:   a temporary subdirectory created within the testsuite_shared_dir *
+
+* The test_dir will get removed at the end of the test unless the test failed
+  and testsuite_cleanup_on_failure was set to false. The test_dir will be
+  (removed and) recreated the next time the test is run.
 
 The script "regression.py" will execute all of the tests and summarize the
 results. Standard output contains detailed logging of all events, which is

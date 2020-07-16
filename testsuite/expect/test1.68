@@ -27,15 +27,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.68"
 set file_in     "test$test_id.bash"
 set test_timer  "test$test_id.test_timer"
 set test_srun   "test$test_id.test_srun"
 set stop_srun   "test$test_id.stop_srun"
 set job_id      0
 set exit_code   0
-
-print_header $test_id
 
 #remove any remaining files
 exec $bin_rm -f $test_timer $test_srun $file_in $stop_srun

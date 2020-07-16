@@ -25,7 +25,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.93"
 set exit_code   0
 set file_prog   "test$test_id.prog"
 
@@ -109,8 +108,6 @@ proc end_test { } {
 	}
 	pass
 }
-
-print_header $test_id
 
 if {![test_super_user]} {
 	skip "This test is only suitable for a super user (to restore down nodes)"

@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id                          21.33
 set exit_code                        0
 set test_cluster                     "test$test_id\_cluster"
 set test_res1                        "test$test_id\_res1"
@@ -89,8 +88,6 @@ proc check_val { res_name } {
 
 	return $rc
 }
-
-print_header $test_id
 
 if { [test_using_slurmdbd] == 0 } {
     skip "This test can't be run without AccountStorageType=slurmdbd"

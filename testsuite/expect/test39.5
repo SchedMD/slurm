@@ -26,14 +26,11 @@
 ############################################################################
 source ./globals
 
-set test_id        "39.5"
 set exit_code      0
 set file_in1       "test$test_id.input1"
 set file_in2       "test$test_id.input2"
 set number_commas  "\[0-9_,\]+"
 set one_task_pc    0
-
-print_header $test_id
 
 if {[test_cons_tres]} {
 	log_debug "Valid configuration, using select/cons_tres"

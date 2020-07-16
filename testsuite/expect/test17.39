@@ -27,13 +27,10 @@
 ############################################################################
 source ./globals
 
-set test_id       17.39
 set slow_id       0
 set fast_id       0
 set dep_id        0
 set exit_code     0
-
-print_header $test_id
 
 set nb_nodes [get_node_cnt_in_part]
 if {[test_linear]} {

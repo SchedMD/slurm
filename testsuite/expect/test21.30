@@ -44,7 +44,6 @@ source ./inc21.30.15
 source ./inc21.30.16
 source ./inc21.30.17
 
-set test_id	"21.30"
 set exit_code	0
 set test_node   ""
 # Total cpus in test node
@@ -123,8 +122,6 @@ array set mod_qos_vals {
 	MaxTRESMinsPerJob=billing   -1
 	MaxTRESPerUser=billing      -1
 }
-
-print_header $test_id
 
 # Check to see that there are enough resources in the default partition
 set tmpc 0

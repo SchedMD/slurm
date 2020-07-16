@@ -40,7 +40,6 @@
 ############################################################################
 source ./globals
 
-set test_id       "7.6"
 set exit_code     0
 set job_id        0
 set test_prog     "test$test_id.prog"
@@ -48,8 +47,6 @@ set timeout       $max_job_delay
 
 # Note this appears as a single argv value to totalviewcli
 set no_bulk       "dset TV::bulk_launch_enabled false"
-
-print_header $test_id
 
 #
 # Test for existence of mpi compiler and totalview

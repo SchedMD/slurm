@@ -9,15 +9,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "29.5"
 set file_in     "test$test_id.script"
 set node_name   ""
 set job_id      0
 set exit_code   0
 
 # this test is for the nonstop --replace-node test
-
-print_header $test_id
 
 if {![slurmctld_plug_stack_nonstop]} {
 	skip "This test is only compatible when SlurmctldPlugstack includes nonstop"

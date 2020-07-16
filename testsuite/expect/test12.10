@@ -26,12 +26,9 @@
 
 source ./globals
 
-set test_id     "12.10"
 set exit_code   0
 set timeout     60
 set ntest       0
-
-print_header $test_id
 
 ############################################################################
 #

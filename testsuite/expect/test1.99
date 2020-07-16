@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set test_id      1.99
 set exit_code    0
 set chk_ports    [get_srun_ports]
 set cwd          "[$bin_pwd]"
@@ -36,8 +35,6 @@ set config_path  ""
 set file_in      "test$test_id\_sc"
 set tmp_job      "test$test_id\_tmp_job"
 array set ports {}
-
-print_header $test_id
 
 if { ![test_super_user] } {
     skip "This test can't be run without being a super user of the cluster"

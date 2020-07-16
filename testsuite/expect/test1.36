@@ -28,10 +28,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.36"
 set exit_code    0
-
-print_header $test_id
 
 #
 # Spawn srun with $task_cnt tasks each of which runs a $mult way /bin/id

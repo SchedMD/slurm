@@ -30,12 +30,9 @@
 source ./globals
 source ./globals_het_jobs
 
-set test_id      "38.1"
 set exit_code    0
 set file_in      "test$test_id.in"
 set job_id       0
-
-print_header $test_id
 
 proc sbatch {} {
 	global number sbatch file_in bin_sleep

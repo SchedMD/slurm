@@ -36,7 +36,6 @@
 ############################################################################
 source ./globals
 
-set test_id       "9.4"
 set exit_code     0
 set file_in       "test$test_id.input"
 set file_in_task  "test$test_id.%t.input"
@@ -51,8 +50,6 @@ if { [string compare [test_launch_type] "slurm"] } {
 	set node_cnt 1-4
 }
 set other_opts    "-O"
-
-print_header $test_id
 
 # Execute an srun job to print hostname to output_file with task_cnt tasks
 # per node, wait for completion

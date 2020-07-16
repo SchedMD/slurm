@@ -29,12 +29,9 @@
 ############################################################################
 source ./globals
 
-set test_id        "1.34"
 set exit_code      0
 set file_in        "test$test_id.bash"
 set test_prog      "test$test_id.prog"
-
-print_header $test_id
 
 if {[test_front_end] != 0} {
 	skip "This test is incompatible with front-end systems"

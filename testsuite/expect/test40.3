@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "40.3"
 set exit_code      0
 set file_in1       "test$test_id.input1"
 set file_in2       "test$test_id.input2"
@@ -192,8 +191,6 @@ proc test_out_file { file_out target } {
 		set exit_code 1
 	}
 }
-
-print_header $test_id
 
 set store_tres [string tolower [get_acct_store_tres]]
 set store_mps [string first "gres/mps" $store_tres]

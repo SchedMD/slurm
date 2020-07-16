@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id            "1.95"
 set exit_code          0
 set file_in            "test$test_id.input"
 set file_out           "test$test_id.output"
@@ -35,8 +34,6 @@ set test_prog          "test$test_id.prog"
 set job_id             0
 set task_cnt           2
 set thread_cnt         4
-
-print_header $test_id
 
 #
 # Test for existence of UPC compiler

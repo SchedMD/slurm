@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "2.18"
 set user_name      ""
 set node_name      ""
 set cluster_name   ""
@@ -34,8 +33,6 @@ set acct_good      "test${test_id}_acct_good"
 set acct_bad       "test${test_id}_acct_bad"
 set part_name      "test${test_id}_part"
 set exit_code      0
-
-print_header $test_id
 
 #
 # Check accounting config and bail if not found.

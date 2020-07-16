@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "35.4"
 set exit_code   0
 set output_use  "test$test_id.use.output"
 set script_mk   "test$test_id.mk.bash"
@@ -49,8 +48,6 @@ proc find_bb_name { fname bb_name } {
 	}
 	return $found
 }
-
-print_header $test_id
 
 set bb_types [get_bb_types]
 if {[string first "datawarp" $bb_types] == -1} {

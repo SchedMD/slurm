@@ -27,13 +27,10 @@
 
 source ./globals
 
-set test_id     "36.4"
 set exit_code   0
 set file_err	"test$test_id.error"
 set file_in	"test$test_id.input"
 set file_out	"test$test_id.output"
-
-print_header $test_id
 
 if {[file executable $bsub] == 0} {
 	skip "$bsub not found"

@@ -30,11 +30,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.26"
 set iterations 100
 set exit_code   0
-
-print_header $test_id
 
 if {[is_super_user] == 0} {
 	skip "This test can't be run except as SlurmUser"

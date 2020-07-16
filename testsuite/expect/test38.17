@@ -26,7 +26,6 @@
 
 source ./globals
 
-set test_id      "38.17"
 set exit_code    0
 set file_in1     "test$test_id.in1"
 set file_in2     "test$test_id.in2"
@@ -45,8 +44,6 @@ proc end_it { exit_code } {
 	}
 	pass
 }
-
-print_header $test_id
 
 # find out if we have enough nodes to test functionality
 set node_count [get_node_cnt_in_part]

@@ -79,8 +79,6 @@ array set acct_mod_assoc_test_vals {
 	maxsubmit    -1
 }
 
-print_header
-
 #
 # Check test requirements
 #

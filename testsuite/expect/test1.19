@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.19"
 set exit_code        0
 set file_err_j       "test$test_id.j.%j.error"
 set file_in          "test$test_id.input"
@@ -44,8 +43,6 @@ set file_err_u       "test$test_id.u.%u.error"
 set user_name        ""
 set job_id           0
 set task_cnt         5
-
-print_header $test_id
 
 #
 # Gets current user

@@ -26,12 +26,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "39.8"
 set exit_code   0
 set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
-
-print_header $test_id
 
 if {[test_cons_tres]} {
     log_debug "Valid configuration, using select/cons_tres"

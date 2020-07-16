@@ -26,12 +26,9 @@
 ############################################################################
 source ./globals
 
-set test_id            "2.23"
 set script             "test$test_id\.bash"
 set job_id             0
 set exit_code          0
-
-print_header $test_id
 
 set min_age [get_min_job_age]
 if {$min_age < 10} {

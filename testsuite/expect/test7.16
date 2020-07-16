@@ -26,10 +26,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "7.16"
 set exit_code   0
-
-print_header $test_id
 
 #
 # Try to get allocation with bad credential

@@ -29,13 +29,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "2.8"
 set exit_code   0
 set job_id1     0
 set job_id2     0
 set step_id	0
-
-print_header $test_id
 
 set nb_nodes [get_node_cnt_in_part]
 if {[test_linear]} {

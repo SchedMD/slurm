@@ -29,13 +29,10 @@
 ############################################################################
 source ./globals
 
-set test_id          "17.27"
 set exit_code        0
 set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
 set job_id           0
-
-print_header $test_id
 
 #
 # Submit a 3+ node job

@@ -28,13 +28,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.11"
 set exit_code   0
 set file_in     "test$test_id.input"
 set force_part  0
 set job_id      0
-
-print_header $test_id
 
 set oversubscribe [partition_oversubscribe]
 if {[string compare $oversubscribe "FORCE"] == 0} {

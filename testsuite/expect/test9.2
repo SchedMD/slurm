@@ -31,7 +31,6 @@
 ############################################################################
 source ./globals
 
-set test_id      "9.2"
 set exit_code    0
 set file_out     "test$test_id.output"
 set job_name     "test$test_id"
@@ -40,8 +39,6 @@ set cycle_count [get_cycle_count]
 set task_cnt    $max_stress_tasks
 set node_cnt	1-4
 set other_opts   "-O"
-
-print_header $test_id
 
 # Execute an srun job to print hostname to output_file with task_cnt tasks per node,
 # wait for completion

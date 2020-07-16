@@ -26,12 +26,9 @@
 ############################################################################
 source ./globals
 
-set test_id	"38.14"
 set exit_code	0
 set file_out    test${test_id}.output
 set het_job_id	0
-
-print_header $test_id
 
 if {[test_hetjob_step] == 0} {
 	skip "Heterogeneous steps not currently supported"

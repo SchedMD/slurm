@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "21.27"
 set tc1		"test$test_id-cluster-1"
 set tc2		"test$test_id-cluster-2"
 set ta1		"test$test_id-account.1"
@@ -40,8 +39,6 @@ set tu3		mysql
 
 set access_err  0
 set timeout     120
-
-print_header $test_id
 
 #
 # Check accounting config and bail if not found.

@@ -26,15 +26,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "39.9"
 set exit_code   0
 set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
 set freq_parse_nvml "GpuFreq=memory_freq:($number),graphics_freq:($number)"
 set freq_parse_generic "GpuFreq=control_disabled"
 set generic_msg "The gpu/generic plugin is loaded, so Slurm can't really test GPU frequency operations. Please set `Autodetect=nvml` in gres.conf to load the gpu/nvml plugin instead."
-
-print_header $test_id
 
 if {[have_nvml] == 0} {
 	skip "NVML must be installed and enabled to test GPU frequency operations"

@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set test_id      "4.5"
 set exit_code    0
 set matches      0
 set name_string  "\[a-zA-Z0-9\]\[^ ]*"
@@ -74,8 +73,6 @@ proc reset_state { } {
 		}
 	}
 }
-
-print_header $test_id
 
 set partition [default_partition]
 

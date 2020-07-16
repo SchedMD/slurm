@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set test_id      "17.17"
 set exit_code    0
 set file_err     "test$test_id.error"
 set file_in      "test$test_id.input"
@@ -40,8 +39,6 @@ set nodelist_name ""
 set hostname     ""
 set gpu_tot      0
 set job_tres_cnt 0
-
-print_header $test_id
 
 set timeout $max_job_delay
 

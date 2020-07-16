@@ -29,7 +29,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "1.74"
 set node_cnt    0
 set cluster     [get_cluster_name]
 set node_name   ""
@@ -45,8 +44,6 @@ array set mod_acct_desc_vals {}
 array set mod_acct_vals {}
 array set mod_acct_assoc_vals {}
 set mod_acct_assoc_vals(qos) $qos
-
-print_header $test_id
 
 if { [test_using_slurmdbd] == 0 } {
 	skip "This test can't be run without AccountStorageType=slurmdbd"
