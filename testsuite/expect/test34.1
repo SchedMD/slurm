@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id        34.1
 set exit_code      0
 set part_name_1    "test$test_id\_part1"
 set part_name_2    "test$test_id\_part2"
@@ -37,8 +36,6 @@ set job2           "test$test_id\_job2_sc"
 set job_id         0
 set nodes          ""
 set file_in        "test$test_id\_sc"
-
-print_header $test_id
 
 if {[test_preempttype_part] == 0} {
 	skip "This test requires that PreemptType=preempt/partition_prio"

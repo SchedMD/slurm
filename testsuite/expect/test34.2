@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id     34.2
 set exit_code   0
 set user        ""
 set acct_1      "test$test_id\_acct1"
@@ -38,8 +37,6 @@ set qos_2_id    0
 set file_in     "test$test_id\_sc"
 set nodes       [available_nodes idle]
 set job_id      0
-
-print_header $test_id
 
 if {[test_preempttype_qos] == 0} {
 	skip "This test requires that PreemptType=preempt/qos"

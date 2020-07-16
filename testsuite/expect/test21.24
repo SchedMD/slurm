@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "21.24"
 set file_in     "test$test_id.input"
 set file_in2    "test$test_id.input2"
 set file_in3    "test$test_id.input3"
@@ -238,8 +237,6 @@ set clus_req(qos) $qs2
 
 set timeout     60
 set access_err  0
-
-print_header $test_id
 
 set timeout 60
 

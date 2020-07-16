@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "1.104"
 set file_in        "test$test_id.bash"
 set test_srun      "test$test_id.test_srun"
 set job_id         0
@@ -34,9 +33,6 @@ set authorized     1
 set exit_code      0
 set part_name      "QA_TEST"
 set test_script    "./test$test_id.bash"
-
-
-print_header $test_id
 
 if {[test_super_user] == 0} {
 	skip "Can not test more unless SlurmUser or root"

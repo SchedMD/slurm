@@ -28,12 +28,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.10"
 set debug_get   0
 set debug_set   4
 set exit_code   0
-
-print_header $test_id
 
 if {[test_launch_test_exec]} {
 	skip "This test is incompatible with LaunchParameters=test_exec"

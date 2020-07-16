@@ -26,14 +26,11 @@
 ############################################################################
 source ./globals
 
-set test_id     "40.8"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_prog   "test$test_id.prog"
 set job_id      0
-
-print_header $test_id
 
 if {[test_cons_tres]} {
     log_debug "Valid configuration, using select/cons_tres"

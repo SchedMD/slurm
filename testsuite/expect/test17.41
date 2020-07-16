@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id        17.41
 set test_part      [default_partition]
 set part_inv       "$test_part\g"
 set file_in        "test$test_id\.sc"

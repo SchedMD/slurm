@@ -28,13 +28,10 @@
 ############################################################################
 source ./globals
 
-set test_id        "1.33"
 set exit_code      0
 set exit_script    "./test$test_id.exit.bash"
 set test_script    "./test$test_id.bash"
 set task_cnt       2
-
-print_header $test_id
 
 #
 # Delete left-over scripts and build new ones

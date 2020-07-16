@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set test_id         "test1.73"
 set config_dir      ""
 set conf_script     "$test_id\_conf_script"
 set bad_script      "$test_id\_bad_script"
@@ -36,8 +35,6 @@ set good_job        "$test_id\_good_job_sc"
 set bad_job         "$test_id\_bad_job_sc"
 set timeout         [expr $max_job_delay + 500]
 set exit_code       0
-
-print_header $test_id
 
 if {[is_super_user] == 0} {
 	skip "This test can't be run except as SlurmUser"

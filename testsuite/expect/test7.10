@@ -29,11 +29,8 @@
 ############################################################################
 source ./globals
 
-set test_id              "7.10"
 set exit_code            0
 set ld_preload           "ld_preload"
-
-print_header $test_id
 
 if {[test_super_user] == 1} {
 	skip "This test can't be run as SlurmUser"

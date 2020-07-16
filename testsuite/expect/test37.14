@@ -41,7 +41,6 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set test_id     "37.14"
 set exit_code   0
 set fed_name    "feda"
 set user_name   ""
@@ -58,8 +57,6 @@ set jid(1) 0
 set jid(2) 0
 
 set eol "\r\n"
-
-print_header $test_id
 
 #
 # Check accounting config and bail if not found.

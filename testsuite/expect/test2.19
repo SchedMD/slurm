@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "2.19"
 set user_name      ""
 set node_name      ""
 set host_name      ""
@@ -37,8 +36,6 @@ set qos_good       "test${test_id}_qos_good"
 set qos_bad        "test${test_id}_qos_bad"
 set part_name      "test${test_id}_part"
 set exit_code      0
-
-print_header $test_id
 
 #
 # Check accounting config and bail if not found.

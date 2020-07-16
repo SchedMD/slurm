@@ -29,11 +29,8 @@
 ############################################################################
 source ./globals
 
-set test_id          "7.2"
 set exit_code        0
 set file_prog_get    "test$test_id.prog"
-
-print_header $test_id
 
 # PMI library not in Cray RPM
 if {[test_cray]} {

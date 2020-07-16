@@ -27,11 +27,8 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.115"
 set exit_code        0
 set file_in          "test$test_id.input"
-
-print_header $test_id
 
 print_time
 

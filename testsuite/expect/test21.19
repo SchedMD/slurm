@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "21.19"
 set test_nu     "test21-19"
 set exit_code   0
 set clu		cluster
@@ -93,8 +92,6 @@ set acct_req(cluster) [format "%s%s" $test_nu "clus1"],[format "%s%s" $test_nu "
 array set user_req {}
 set user_req(cluster) [format "%s%s" $test_nu "clus1"],[format "%s%s" $test_nu "clus2"],[format "%s%s" $test_nu "clus3"]
 set user_req(account) [format "%s%s" $test_nu "acct1"],[format "%s%s" $test_nu "acct2"],[format "%s%s" $test_nu "acct3"]
-
-print_header $test_id
 
 set timeout 60
 

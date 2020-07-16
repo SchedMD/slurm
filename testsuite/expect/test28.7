@@ -26,12 +26,9 @@
 ############################################################################
 source ./globals
 
-set test_id       "28.7"
 set exit_code     0
 set array_size    3
 set top_array_task_id [expr $array_size - 1]
-
-print_header $test_id
 
 if {$array_size > [get_array_config]} {
 	skip "MaxArraySize is too small"

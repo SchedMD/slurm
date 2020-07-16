@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "39.19"
 set exit_code      0
 set file_in1       "test$test_id.input1"
 set file_in2       "test$test_id.input2"
@@ -192,8 +191,6 @@ proc test_out_file { file_out target } {
 		set exit_code 1
 	}
 }
-
-print_header $test_id
 
 if { [test_account_storage] == 0 } {
 	skip "This test can't be run without a usable AccountStorageType"

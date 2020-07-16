@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "test21.29"
 set test_nu     "test21-29"
 set usagefactor_reset  1.000000
 set priority_reset     0
@@ -55,8 +54,6 @@ set qos(Preempt)       "normal"
 set qos(PreemptMode)   "cluster"
 set qos(Priority)      2500
 set qos(UsageFactor)   5.000000
-
-print_header $test_id
 
 set timeout 60
 

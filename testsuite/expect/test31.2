@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set test_id         31.2
 set exit_code       0
 set good_prolog     "test$test_id\_good.sh"
 set bad_prolog      "test$test_id\_bad.sh"
@@ -35,8 +34,6 @@ set test_node       [get_idle_node_in_part]
 set job_id          0
 set job_list        {}
 set test_script     "test$test_id\.sh"
-
-print_header $test_id
 
 if { [test_super_user] == 0 } {
 	skip "Test can only be run as SlurmUser"

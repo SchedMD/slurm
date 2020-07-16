@@ -28,7 +28,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.31"
+set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set delay       1
@@ -39,8 +39,6 @@ set job_id      0
 global env
 set env_pbs_ignore "SBATCH_IGNORE_PBS"
 set env($env_pbs_ignore) 0
-
-print_header $test_id
 
 proc end_it { exit_code } {
         global job_id test_id

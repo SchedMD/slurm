@@ -26,15 +26,12 @@
 ############################################################################
 source ./globals
 
-set test_id      17.52
 set exit_code    0
 set cwd          "[$bin_pwd]"
 set config_path  ""
 set tmp_job      "test$test_id\_tmp_job"
 set file_in	 "test${test_id}.in"
 set file_out     "test${test_id}.out"
-
-print_header $test_id
 
 if {[is_super_user] == 0} {
 	skip "This test can't be run except as SlurmUser"

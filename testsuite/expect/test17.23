@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.23"
 set exit_code   0
 set file_in     "test$test_id.input"
 set job_id1     0
@@ -37,8 +36,6 @@ set job_id3     0
 set job_prio1   0
 set job_prio2   0
 set job_prio3   0
-
-print_header $test_id
 
 #
 # Build input script file

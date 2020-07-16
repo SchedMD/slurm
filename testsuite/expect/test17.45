@@ -26,14 +26,11 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.45"
 set file_bbf    "test$test_id.bbf"
 set file_script "test$test_id.bash"
 set file_out    "test$test_id.output"
 
 set exit_code   0
-
-print_header $test_id
 
 #
 # Build job script

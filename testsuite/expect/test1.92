@@ -29,13 +29,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.92"
 set exit_code   0
 set file_bash   "test$test_id.bash"
 set job_id      0
 set prompt      "PROMPT: "
-
-print_header $test_id
 
 if {[test_front_end]} {
         skip "This test is incompatible with front-end systems"

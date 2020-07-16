@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "40.2"
 set exit_code   0
 set file_in1   "test$test_id.input1"
 set file_in2   "test$test_id.input2"
@@ -35,8 +34,6 @@ set file_out2  "test$test_id.output2"
 set job_id      0
 set job_list    {}
 set failure_count 0
-
-print_header
 
 if {[test_cons_tres]} {
 	log_debug "Valid configuration, using select/cons_tres"

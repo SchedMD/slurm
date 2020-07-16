@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "12.2"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
@@ -47,8 +46,6 @@ set num_tasks   3
 set max_time_error 5
 set max_mem_error 4300
 set step_id	0
-
-print_header $test_id
 
 if {[test_front_end]} {
 	skip "This test is incompatible with front-end systems"

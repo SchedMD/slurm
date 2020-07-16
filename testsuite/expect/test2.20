@@ -26,10 +26,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "2.20"
 set exit_code   0
-
-print_header $test_id
 
 #
 # test single bracket hostnames

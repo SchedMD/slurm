@@ -41,7 +41,6 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set test_id "37.17"
 set c1 $fedc1
 set c2 $fedc2
 set c3 $fedc3
@@ -1027,8 +1026,6 @@ proc test_remote_and_dependencies { } {
 ###############################################################################
 # Begin test
 ###############################################################################
-
-print_header $test_id
 
 if { [test_account_storage] == 0 } {
 	skip "This test can't be run without a usable AccountStorageType"

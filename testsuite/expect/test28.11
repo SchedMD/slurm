@@ -30,7 +30,6 @@
 
 source ./globals
 
-set test_id "28.11"
 set exit_code 0
 set feature_regex "\[^,\r\n\]"
 set file_script "test$test_id.sh"
@@ -70,8 +69,6 @@ proc get_single_node_feature { } {
 	}
 	return $ret_features
 }
-
-print_header $test_id
 
 if {[test_super_user] != 1} {
 	skip "This test must be run as SlurmUser or root"

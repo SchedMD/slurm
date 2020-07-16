@@ -28,12 +28,9 @@
 ############################################################################
 source ./globals
 
-set test_id      "6.11"
 set exit_code    0
 set file_in      "test$test_id.input"
 set job_id       0
-
-print_header $test_id
 
 make_bash_script $file_in { $bin_id }
 

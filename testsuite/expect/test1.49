@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id              "1.49"
 set exit_code            0
 set cwd                  "[$bin_pwd]"
 set file_in		 "$cwd/test$test_id.in"
@@ -36,8 +35,6 @@ set task_prolog          "$cwd/test$test_id.prolog"
 set task_epilog          "$cwd/test$test_id.epilog"
 set file_out_pre         "$cwd/test$test_id.output_pre"
 set file_out_post        "$cwd/test$test_id.output_post"
-
-print_header $test_id
 
 #
 # Delete left-over scripts and rebuild,

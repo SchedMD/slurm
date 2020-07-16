@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "21.23"
 set exit_code   0
 set cwd          "[$bin_pwd]"
 set file_in     "test.$test_id.input"
@@ -41,8 +40,6 @@ set timeout 60
 set config_path [get_conf_path]
 fail_on_error "Error getting config path"
 set config_file $config_path/slurm.conf
-
-print_header $test_id
 
 #
 # Check accounting config and bail if not found.

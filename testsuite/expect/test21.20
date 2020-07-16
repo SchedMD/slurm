@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "test21.20"
 set exit_code   0
 set tc1		"$test_id-cluster-1"
 set tc2		"$test_id-cluster-2"
@@ -83,8 +82,6 @@ set user_mod_info3(account) "'$ta2'"
 array set user_mod_acct3 {}
 array set user_mod_assoc3 {}
 set user_mod_assoc3(qoslevel) "'-$qs2'"
-
-print_header $test_id
 
 set timeout 60
 

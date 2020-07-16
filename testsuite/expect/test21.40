@@ -27,7 +27,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id          21.40
 set exit_code        0
 set file_in          "test$test_id.bash"
 set test_acct        "test$test_id\_acct"

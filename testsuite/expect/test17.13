@@ -28,13 +28,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.13"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set matches     0
-
-print_header $test_id
 
 # These are the variables for which we are checking existence.
 # If the number following a variable name is 1, then we check to make

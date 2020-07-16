@@ -28,15 +28,12 @@
 ############################################################################
 source ./globals
 
-set test_id          "17.26"
 set exit_code        0
 set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
 set file_script      "test$test_id.sh"
 set job_id           0
 set timeout          $max_job_delay
-
-print_header $test_id
 
 #
 # Build input script file

@@ -28,15 +28,12 @@
 ############################################################################
 source ./globals
 
-set test_id            "1.88"
 set exit_code          0
 set file_in            "test$test_id.input"
 set file_out           "test$test_id.output"
 set file_err           "test$test_id.error"
 set test_prog          "test$test_id.prog"
 set job_id             0
-
-print_header $test_id
 
 #
 # Test for existence of mpi compiler

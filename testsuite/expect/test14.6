@@ -28,15 +28,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "14.6"
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
 
 set exit_code            0
 set job_id               0
-
-print_header $test_id
 
 if {![test_accting_steps]} {
 	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"

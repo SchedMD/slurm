@@ -30,14 +30,11 @@
 ############################################################################
 source ./globals
 
-set test_id        "28.8"
 set array_size     4
 set exit_code      0
 set file_script    "test$test_id.bash"
 set job_id         0
 set not_supported  0
-
-print_header $test_id
 
 if {[get_array_config] < [expr $array_size + 1]} {
 	skip "MaxArraySize is to small for this test"

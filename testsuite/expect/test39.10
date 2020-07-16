@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "39.10"
 set exit_code   0
 set file_in     "test$test_id.input"
 
@@ -105,8 +104,6 @@ proc run_gpu_per_task { mem_per_gpu gpu_cnt } {
 		set exit_code 1
 	}
 }
-
-print_header $test_id
 
 if {[test_cons_tres]} {
         log_debug "Valid configuration, using select/cons_tres"

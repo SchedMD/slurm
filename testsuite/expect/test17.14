@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id          "17.14"
 set test_env_name    "TEST_ENV_$test_id"
 set test_env_val     123
 set exit_code        0
@@ -38,8 +37,6 @@ set job_id           0
 
 global env
 set env($test_env_name) $test_env_val
-
-print_header $test_id
 
 #
 # Delete left-over input script

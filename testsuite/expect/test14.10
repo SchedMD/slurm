@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id    14.10
 set file_in1   "test$test_id.in1"
 set file_in2   "test$test_id.in2"
 set exit_code  0
@@ -34,8 +33,6 @@ set job_id     0
 set hostlist   ""
 set node1      ""
 set node2      ""
-
-print_header $test_id
 
 if {![test_accting_steps]} {
 	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"

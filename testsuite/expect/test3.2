@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "3.2"
 set authorized     1
 set exit_code      0
 set job_runnable   0
@@ -37,8 +36,6 @@ set part_old_state ""
 set part_new_state ""
 set read_state     ""
 set timeout        $max_job_delay
-
-print_header $test_id
 
 # Execute a srun job in the specified partition name
 # Returns 0 on successful completion, returns 1 otherwise

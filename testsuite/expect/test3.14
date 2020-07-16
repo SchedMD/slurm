@@ -26,14 +26,11 @@
 ############################################################################
 source ./globals
 
-set test_id		"3.14"
 set exit_code		0
 set node_list_new       ""
 set node_list_orig      ""
 set resv_name           "resv$test_id"
 set user_name		""
-
-print_header $test_id
 
 if {[is_super_user] == 0} {
 	skip "This test can't be run except as SlurmUser"

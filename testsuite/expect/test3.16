@@ -26,13 +26,10 @@
 ############################################################################
 source ./globals
 
-set test_id         "3.16"
 set exit_code       0
 set lic_a           "lic_a_test$test_id"
 set lic_b           "lic_b_test$test_id"
 set lic_c           "lic_c_test$test_id"
-
-print_header $test_id
 
 set cluster [get_cluster_name]
 

@@ -29,7 +29,6 @@ source ./globals
 source ./globals_accounting
 source  ./inc21.34_tests
 
-set test_id          21.34
 set exit_code        0
 set test_node        ""
 # Total cpus in test node
@@ -137,8 +136,6 @@ array set mod_part_qos {
 	MaxTRESMinsPerJob=billing   -1
 	MaxTRESPerUser=billing      -1
 }
-
-print_header $test_id
 
 #
 # Cannot run the test if OverTimeLimit is set, since we test time limits.

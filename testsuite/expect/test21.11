@@ -29,7 +29,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "21.11"
 set exit_code   0
 set almatches   0
 set damatches   0
@@ -71,8 +70,6 @@ set acct(Description)   "Test_Account_A1"
 
 set access_err  0
 set timeout 60
-
-print_header $test_id
 
 if { [test_account_storage] == 0 } {
 	skip "This test can't be run without a usable AccountStorageType"

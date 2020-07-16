@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set test_id          5.11
 set exit_code        0
 set node_list        ""
 set highest_cpu_cnt  0
@@ -41,8 +40,6 @@ set cpu_m_cnt        0
 set node_h           ""
 set cpu_h_cnt        0
 set test_part        "test$test_id\_part"
-
-print_header $test_id
 
 make_bash_script $script "
 sleep 10

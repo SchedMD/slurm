@@ -26,11 +26,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.30"
 set exit_code   0
 set job_id      0
-
-print_header $test_id
 
 #
 # Spawn a job that deadline is too late

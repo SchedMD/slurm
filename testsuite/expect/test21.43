@@ -43,8 +43,6 @@ set qoses {
 	zero {UsageFactor 0}
 }
 
-print_header
-
 if {![test_using_slurmdbd]} {
 	skip "This test can't be run without AccountStorageType=slurmdbd"
 }

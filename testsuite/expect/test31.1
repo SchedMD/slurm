@@ -26,8 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id          "31.1"
-set test_name        "test31.1"
 set config_dir       ""
 set inc_slurm        "pro_epi_$test_name"
 set pro_epi_prog     "$test_name\_prog"
@@ -36,8 +34,6 @@ set run_host         ""
 set make_file        0
 set exit_code        0
 set pcmd_prog        "/opt/cray/nodehealth/default/bin/pcmd"
-
-print_header $test_id
 
 if {[test_cray]} {
 	set make_file 1

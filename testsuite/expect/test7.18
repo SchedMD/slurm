@@ -28,11 +28,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "7.18"
 set exit_code   0
 set test_prog   "test$test_id.prog"
-
-print_header $test_id
 
 #
 # Delete left-over programs and rebuild them.

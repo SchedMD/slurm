@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.35"
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
@@ -36,8 +35,6 @@ set file_err    "test$test_id.error"
 set exit_code            0
 set job_id               0
 set steps_started        30
-
-print_header $test_id
 
 log_user 0
 set job_mem_opt  "--comment=no_mem"
