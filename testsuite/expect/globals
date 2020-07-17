@@ -8107,9 +8107,9 @@ proc exit { {status 0} } {
 	# Minor sanity check to detect if exit was explicitly called (not
 	# allowed) or automatically executed when the test ends
 	#
-	if {[info level] > 1 || $status != 0} {
+	if {[info level] > 1} {
 		# exit was called from a function, and it shouldn't
-		error "Exit should not be directly called, use pass, skip or fail instead"
+		log_error "Exit should not be directly called, use pass, skip or fail instead"
 	} else {
 		set frame_level 1
 		while { $frame_level <= [info frame] } {
@@ -8117,7 +8117,7 @@ proc exit { {status 0} } {
 				if { [file tail [dict get [info frame $frame_level] file]] eq $test_name } {
 					# exit was called explicitly from the
 					# test, and it shouldn't
-					error "Exit should not be directly called, use pass, skip or fail instead"
+					log_error "Exit should not be directly called, use pass, skip or fail instead"
 				}
 				break
 			}
