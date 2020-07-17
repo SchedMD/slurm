@@ -250,7 +250,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = $(SUBDIRS)
+DIST_SUBDIRS = plugins
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -506,7 +506,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = plugins
+@WITH_SLURMRESTD_TRUE@SUBDIRS = plugins
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.* *.bino
 REF = usage.txt openapi.json

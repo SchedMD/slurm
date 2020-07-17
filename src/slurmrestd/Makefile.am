@@ -1,4 +1,6 @@
+if WITH_SLURMRESTD
 SUBDIRS = plugins
+endif
 
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.* *.bino
