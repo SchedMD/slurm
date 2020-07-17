@@ -114,6 +114,7 @@ documents those changes that are of interest to users and administrators.
     handling when the respective Lua script failed to load.
  -- Fix propagation of gpu options through hetjob components.
  -- Add SLURM_CLUSTERS environment variable to scancel.
+ -- Fix packing/unpacking of "unlinked" jobs.
 
 * Changes in Slurm 20.02.3
 ==========================
