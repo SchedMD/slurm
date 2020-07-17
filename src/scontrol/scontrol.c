@@ -1799,8 +1799,7 @@ static void _update_it(int argc, char **argv)
 		fprintf(stderr, "No valid entity in update command\n");
 		fprintf(stderr, "Input line must include \"NodeName\", ");
 		fprintf(stderr, "\"PartitionName\", \"Reservation\", "
-			"\"JobId\", \"SlurmctldDebug\" , \"PowerCap\"" 
-			"or \"Layouts\"\n");
+			"\"JobId\", or \"SlurmctldDebug\"\n");
 	}
 
 	if (error_code) {
