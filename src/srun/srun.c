@@ -613,6 +613,8 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 		env->ntasks_per_socket = opt_local->ntasks_per_socket;
 	if (opt_local->ntasks_per_core != NO_VAL)
 		env->ntasks_per_core = opt_local->ntasks_per_core;
+	if (opt_local->threads_per_core != NO_VAL)
+		env->threads_per_core = opt_local->threads_per_core;
 	env->distribution = opt_local->distribution;
 	if (opt_local->plane_size != NO_VAL)
 		env->plane_size = opt_local->plane_size;
