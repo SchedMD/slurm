@@ -189,6 +189,8 @@ script for Slurm?</a></li>
     error in the database. How do I fix that?</a></li>
 <li><a href="#cray_sigbus">Why are applications on my Cray system failing
     with SIGBUS (bus error)?</a></li>
+<li><a href="#sysv_memory">How do I configure Slurm to work with System V IPC
+    enabled applications?</a></li>
 </ul>
 
 <h2>For Management</h2>
@@ -2230,7 +2232,37 @@ cray_netroot_preload.settings.load.data.compute.size_limit: 0
 <p>This is a generally useful technique for preventing remote lookups of commonly
 accessed files within jobs.</p>
 
+<p><a name="sysv_memory"><b>How do I configure Slurm to work with System V IPC
+    enabled applications?</b></a><br>
+Slurm is generally agnostic to
+<a href="http://man7.org/linux/man-pages/man2/ipc.2.html">
+System V IPC</a> (a.k.a. "sysv ipc" in the Linux kernel).
+Memory accounting of processes using sysv ipc changes depending on the value
+of <a href="https://www.kernel.org/doc/Documentation/sysctl/kernel.txt">
+sysctl kernel.shm_rmid_forced</a> (added in Linux kernel 3.1):
+<ul>
+<li>shm_rmid_forced = 1</li>
+Forces all shared memory usage of processes to be accounted and reported by the
+kernel to Slurm. This breaks the separate namespace of sysv ipc and may cause
+unexpected application issues without careful planning. Processes that share
+the same sysv ipc namespaces across jobs may end up getting OOM killed when
+another job ends and their allocation percentage increases.
+<li>shm_rmid_forced = 0 (default in most Linux distributions)</li>
+System V memory usage will not be reported by Slurm for jobs.
+It is generally suggested to configure the
+<a href="https://www.kernel.org/doc/Documentation/sysctl/kernel.txt">
+sysctl kernel.shmmax</a> parameter. The value of kernel.shmmax times the
+maximum number of job processes should be deducted from each node's
+configured RealMemory in your slurm.conf. Most Linux distributions set the
+default to what is effectively unlimited, which can cause the OOM killer
+to activate for unrelated new jobs or even for the slurmd process. If any
+processes use sysv memory mechanisms, the Linux kernel OOM killer will never
+be able to free the used memory. A Slurm job epilog script will be needed to
+free any of the user memory. Setting kernel.shmmax=0 will disable sysv ipc
+memory allocations but may cause application issues.
+</ul>
+</p>
 
-<p style="text-align:center;">Last modified 4 March 2020</p>
+<p style="text-align:center;">Last modified 17 July 2020</p>
 
 <!--#include virtual="footer.txt"-->
