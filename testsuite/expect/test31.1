@@ -36,12 +36,18 @@ set pcmd_prog        "/opt/cray/nodehealth/default/bin/pcmd"
 
 if {[test_cray]} {
 	set make_file 1
-	if { [file exists $pcmd_prog] == 0 } {
+	if { ![file exists $pcmd_prog] } {
 		skip "The file $pcmd_prog was not found"
 	}
 }
 if { [string compare [test_launch_type] "slurm"] } {
 	skip "This test is only compatible with systems using launch/slurm"
+}
+if { ![test_super_user] } {
+	skip "Test can only be run as SlurmUser"
+}
+if { [test_front_end] } {
+	skip "Test can not be run with front-end configuration"
 }
 
 proc cleanup { } {
@@ -211,13 +217,6 @@ fail_on_error "Unable to get config path"
 set config_file $config_dir/slurm.conf
 
 save_conf $config_file
-
-if { [test_super_user] == 0 } {
-	skip "Test can only be run as SlurmUser"
-}
-if { [test_front_end] == 1 } {
-	skip "Test can not be run with front-end configuration"
-}
 
 set get_name 0
 spawn $srun -t1 -l $bin_printenv SLURMD_NODENAME
