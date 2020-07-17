@@ -1,1 +1,1 @@
-SUBDIRS = v0.0.35
+SUBDIRS = v0.0.35 v0.0.36

@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
  -- Set default unit when parsing #BSUB -M to KB to match LSF documentation.
  -- slurmrestd - fatal() when accept() returns an unexpected result.
  -- slurmrestd - Parse multiple OpenAPI specifications for path resolution.
+ -- slurmrestd - Add v0.0.36 OpenAPI plugin.
 
 * Changes in Slurm 20.02.4
 ==========================
