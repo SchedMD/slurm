@@ -4262,7 +4262,15 @@ static slurm_cli_opt_t slurm_opt_thread_spec = {
 	.reset_each_pass = true,
 };
 
-COMMON_INT_OPTION_SET(threads_per_core, "--threads-per-core");
+static int arg_set_threads_per_core(slurm_opt_t *opt, const char *arg)
+{
+	opt->threads_per_core = parse_int("--threads-per-core", arg, true);
+	if (opt->srun_opt)
+		slurm_verify_cpu_bind("threads", &opt->srun_opt->cpu_bind,
+				      &opt->srun_opt->cpu_bind_type, 0);
+
+	return SLURM_SUCCESS;
+}
 COMMON_INT_OPTION_SET_DATA(threads_per_core);
 COMMON_INT_OPTION_GET(threads_per_core);
 COMMON_OPTION_RESET(threads_per_core, NO_VAL);
