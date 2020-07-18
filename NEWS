@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - fatal() when accept() returns an unexpected result.
  -- slurmrestd - Parse multiple OpenAPI specifications for path resolution.
  -- slurmrestd - Add v0.0.36 OpenAPI plugin.
+ -- slurmrestd/v0.0.36 - Add error schema.
 
 * Changes in Slurm 20.02.4
 ==========================

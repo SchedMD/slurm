@@ -300,6 +300,19 @@
   },
   "components": {
     "schemas": {
+      "error": {
+	"type": "object",
+	"properties": {
+	  "error": {
+	    "type": "string",
+	    "description": "error message"
+	  },
+	  "errno": {
+	    "type": "integer",
+	    "description": "error number"
+	  }
+	}
+      },
       "signal": {
 	"oneOf": [
 	  {
