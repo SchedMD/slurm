@@ -531,34 +531,25 @@
 	}
       },
       "signal": {
-	"oneOf": [
-	  {
-	    "type": "integer",
-	    "description": "POSIX signal number",
-	    "format": "int32"
-	  },
-	  {
-	    "type": "string",
-	    "description": "POSIX signal name",
-	    "format": "int32",
-	    "enum": [
-	      "HUP",
-	      "INT",
-	      "QUIT",
-	      "ABRT",
-	      "KILL",
-	      "ALRM",
-	      "TERM",
-	      "USR1",
-	      "USR2",
-	      "URG",
-	      "CONT",
-	      "STOP",
-	      "TSTP",
-	      "TTIN",
-	      "TTOU"
-	    ]
-	  }
+	"type": "string",
+	"description": "POSIX signal name",
+	"format": "int32",
+	"enum": [
+	  "HUP",
+	  "INT",
+	  "QUIT",
+	  "ABRT",
+	  "KILL",
+	  "ALRM",
+	  "TERM",
+	  "USR1",
+	  "USR2",
+	  "URG",
+	  "CONT",
+	  "STOP",
+	  "TSTP",
+	  "TTIN",
+	  "TTOU"
 	]
       },
       "job_properties": {
