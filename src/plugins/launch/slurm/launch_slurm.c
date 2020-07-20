@@ -272,6 +272,14 @@ _handle_openmpi_port_error(const char *tasks, const char *hosts,
 	slurm_kill_job_step(step_id.job_id, step_id.step_id, SIGKILL);
 }
 
+static char *_mpir_get_host_name(char *node_name)
+{
+	if ((xstrcasestr(slurm_conf.launch_params, "mpir_use_nodeaddr")))
+		return slurm_conf_get_nodeaddr(NULL, node_name);
+
+	return xstrdup(node_name);
+}
+
 static void _task_start(launch_tasks_response_msg_t *msg)
 {
 	MPIR_PROCDESC *table;
@@ -305,7 +313,7 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 			continue;
 		}
 		table = &MPIR_proctable[global_task_id];
-		table->host_name = xstrdup(msg->node_name);
+		table->host_name = _mpir_get_host_name(msg->node_name);
 		/* table->executable_name set in mpir_set_executable_names() */
 		table->pid = msg->local_pids[i];
 		if (!task_state) {

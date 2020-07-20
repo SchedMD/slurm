@@ -153,6 +153,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld segfault due to tight reconfigure RPC requests by serializing
     the RPC handler processing logic.
  -- Use _exit() instead exit() after fork().
+ -- Add LaunchParameters=mpir_use_nodeaddr configuration option.
 
 * Changes in Slurm 20.02.5
 ==========================
