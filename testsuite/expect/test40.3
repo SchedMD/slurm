@@ -206,6 +206,10 @@ if {[test_cons_tres]} {
 	skip "This test is only compatible with select/cons_tres"
 }
 
+if { [get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test requires AccountStorageType=slurmdbd"
+}
+
 set nb_nodes [get_node_cnt_in_part]
 log_debug "Default partition node count is $nb_nodes"
 if {$nb_nodes > 2} {
