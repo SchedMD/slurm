@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd/v0.0.36 - return array of pings instead of dictionary
  -- slurmrestd/v0.0.36 - Simplify possible signals for canceling jobs.
  -- slurmrestd/v0.0.36 - Simplify exclusive for jobs submissions.
+ -- slurmrestd/v0.0.36 - Simplify nodes for jobs submissions.
 
 * Changes in Slurm 20.02.4
 ==========================

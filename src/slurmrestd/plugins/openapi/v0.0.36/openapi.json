@@ -760,21 +760,13 @@
 	    "description": "Do not automatically terminate a job if one of the nodes it has been allocated fails."
 	  },
 	  "nodes": {
-	    "oneOf": [
-	      {
-		"type": "integer",
-		"description": "Request that a minimum of minnodes nodes be allocated to this job."
-	      },
-	      {
-		"maxItems": 2,
-		"minItems": 2,
-		"type": "array",
-		"description": "Request that a minimum of minnodes nodes and a maximum node count.",
-		"items": {
-		  "type": "integer"
-		}
-	      }
-	    ]
+	    "maxItems": 2,
+	    "minItems": 1,
+	    "type": "array",
+	    "description": "Request that a minimum of minnodes nodes and a maximum node count.",
+	    "items": {
+	      "type": "integer"
+	    }
 	  },
 	  "open_mode": {
 	    "type": "string",
