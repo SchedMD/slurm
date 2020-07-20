@@ -202,6 +202,66 @@ error:
 
 }
 
+static void _set_min_node_count(allocation_info_t *ai,
+				resource_allocation_response_msg_t *resp,
+				slurm_opt_t *opt_local)
+{
+	int num_tasks;
+
+	if (opt_local->nodes_set)
+		return;
+
+	opt_local->nodes_set = true;
+
+	if (!local_het_step) {
+		/*
+		 * we don't want to set the number of nodes =
+		 * to the number of requested processes unless we
+		 * know it is less than the number of nodes
+		 * in the allocation
+		 */
+		if (opt_local->ntasks_set &&
+		    (opt_local->ntasks < ai->nnodes))
+			opt_local->min_nodes = opt_local->ntasks;
+		else
+			opt_local->min_nodes = ai->nnodes;
+		return;
+	}
+
+	/*
+	 * Here we want to try to figure out what the minimum amount of nodes
+	 * should be needed to put this step into the allocation.
+	 */
+	num_tasks = 0;
+	opt_local->min_nodes = 0;
+	for (int i = 0; ((i < resp->num_cpu_groups) &&
+			 (opt_local->min_nodes < resp->node_cnt));
+	     i++) {
+		for (int j = 0; j < resp->cpu_count_reps[i]; j++) {
+			/*
+			 * Given this node, figure out how many tasks could fit
+			 * on it.
+			 */
+			int ntasks_per_node = resp->cpus_per_node[i];
+
+			if (opt_local->cpus_per_task)
+				ntasks_per_node /=
+					opt_local->cpus_per_task;
+
+			if ((opt_local->ntasks_per_node != NO_VAL) &&
+			    (ntasks_per_node >= opt_local->ntasks_per_node))
+				ntasks_per_node = opt_local->ntasks_per_node;
+
+			/* Then add it to the total task count */
+			num_tasks += ntasks_per_node;
+
+			opt_local->min_nodes++;
+			if (num_tasks >= opt_local->ntasks)
+				return;
+		}
+	}
+}
+
 /*
  * Create an srun job structure for a step w/out an allocation response msg.
  * (i.e. inside an allocation)
@@ -337,19 +397,8 @@ extern srun_job_t *job_step_create_allocation(
 
 		hostlist_destroy(hl);
 	} else {
-		if (!opt_local->nodes_set) {
-			/* we don't want to set the number of nodes =
-			 * to the number of requested processes unless we
-			 * know it is less than the number of nodes
-			 * in the allocation
-			 */
-			if (opt_local->ntasks_set &&
-			    (opt_local->ntasks < ai->nnodes))
-				opt_local->min_nodes = opt_local->ntasks;
-			else
-				opt_local->min_nodes = ai->nnodes;
-			opt_local->nodes_set = true;
-		}
+		_set_min_node_count(ai, resp, opt_local);
+
 		if (!opt_local->max_nodes)
 			opt_local->max_nodes = opt_local->min_nodes;
 		if ((opt_local->max_nodes > 0) &&

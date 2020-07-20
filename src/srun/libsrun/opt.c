@@ -336,6 +336,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	bitstr_t *het_grp_bits;
 	int i, i_first, i_last;
 	bool opt_found = false;
+	static bool check_het_step = false;
 
 	het_grp_bits = _get_het_group(argc, argv, default_het_job_offset++,
 				      &opt_found);
@@ -389,6 +390,48 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 
 		if (argc_off)
 			*argc_off = optind;
+
+		if (!check_het_step) {
+			/*
+			 * SLURM_JOB_NUM_NODES is only ever set on a normal
+			 * allocation, on a het job it is
+			 * SLURM_JOB_NUM_NODES_$PACKID.
+			 *
+			 * Here we are seeing if we are trying to run a het step
+			 * in the normal allocation.  If so and we didn't
+			 * request nodes on the command line we will clear this
+			 * env variable and figure it out later instead of
+			 * trying to use the whole allocation.
+			 */
+			if (getenv("SLURM_JOB_NUM_NODES") &&
+			    (optind >= 0) && (optind < argc)) {
+				for (int i2 = optind; i2 < argc; i2++) {
+					if (!xstrcmp(argv[i2], ":")) {
+						local_het_step = true;
+						break;
+					}
+				}
+			}
+			check_het_step = true;
+
+			if (local_het_step) {
+				/*
+				 * If we are a het step don't just unset the
+				 * JOB_NUM_NODES to avoid using it.
+				 */
+				unsetenv("SLURM_JOB_NUM_NODES");
+
+				/*
+				 * If we already set the nodes based off this
+				 * env var reset it.
+				 */
+				if (slurm_option_set_by_env(&opt, 'N')) {
+					opt.nodes_set = false;
+					opt.min_nodes = 1;
+					opt.max_nodes = 0;
+				}
+			}
+		}
 
 		if (cli_filter_g_pre_submit(&opt, i)) {
 			error("cli_filter plugin terminated with error");
