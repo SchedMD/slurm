@@ -12,11 +12,11 @@
   },
   "servers": [
     {
-      "url": "/"
+      "url": "/slurm/v0.0.36/"
     }
   ],
   "paths": {
-    "/slurm/v0.0.36/diag/": {
+    "/diag/": {
       "get": {
 	"operationId": "diag",
 	"summary": "get diagnostics",
@@ -27,7 +27,7 @@
 	}
       }
     },
-    "/slurm/v0.0.36/ping/": {
+    "/ping/": {
       "get": {
 	"operationId": "ping",
 	"summary": "ping test",
@@ -45,7 +45,7 @@
 	}
       }
     },
-    "/slurm/v0.0.36/jobs/": {
+    "/jobs/": {
       "get": {
 	"operationId": "get_jobs",
 	"summary": "get list of jobs",
@@ -56,7 +56,7 @@
 	}
       }
     },
-    "/slurm/v0.0.36/job/{job_id}": {
+    "/job/{job_id}": {
       "get": {
 	"operationId": "get_job",
 	"summary": "get job info",
@@ -163,7 +163,7 @@
 	}
       }
     },
-    "/slurm/v0.0.36/job/submit": {
+    "/job/submit": {
       "post": {
 	"operationId": "submit_job",
 	"summary": "submit new job",
@@ -193,7 +193,7 @@
 	}
       }
     },
-    "/slurm/v0.0.36/nodes/": {
+    "/nodes/": {
       "get": {
 	"operationId": "get_nodes",
 	"summary": "get all node info",
@@ -219,7 +219,7 @@
 	}
       }
     },
-    "/slurm/v0.0.36/node/{node_name}": {
+    "/node/{node_name}": {
       "get": {
 	"operationId": "get_node",
 	"summary": "get node info",
@@ -246,7 +246,7 @@
 	}
       }
     },
-    "/slurm/v0.0.36/partitions/": {
+    "/partitions/": {
       "get": {
 	"operationId": "get_partitions",
 	"summary": "get all partition info",
@@ -260,7 +260,7 @@
 	}
       }
     },
-    "/slurm/v0.0.36/partition/{partition_name}": {
+    "/partition/{partition_name}": {
       "get": {
 	"operationId": "get_partition",
 	"summary": "get partition info",
@@ -302,7 +302,12 @@
 	    "description": "OpenAPI Specification"
 	  }
 	}
-      }
+      },
+      "servers": [
+	{
+	  "url": "/"
+	}
+      ]
     },
     "/openapi.json": {
       "get": {
@@ -312,7 +317,12 @@
 	    "description": "OpenAPI Specification"
 	  }
 	}
-      }
+      },
+      "servers": [
+	{
+	  "url": "/"
+	}
+      ]
     },
     "/openapi": {
       "get": {
@@ -322,7 +332,12 @@
 	    "description": "OpenAPI Specification"
 	  }
 	}
-      }
+      },
+      "servers": [
+	{
+	  "url": "/"
+	}
+      ]
     },
     "/openapi/v3": {
       "get": {
@@ -332,7 +347,12 @@
 	    "description": "OpenAPI Specification"
 	  }
 	}
-      }
+      },
+      "servers": [
+	{
+	  "url": "/"
+	}
+      ]
     }
   },
   "components": {
