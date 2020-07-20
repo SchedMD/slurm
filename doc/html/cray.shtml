@@ -76,6 +76,13 @@
   normal configuration.
 <ul>
 
+<li>AcctGatherEnergyType</li>
+<p>
+  Set <b><i>AcctGatherEnergyType=acct_gather_energy/pm_counters/i></b> to
+  have the Cray XC baseboard management controller report energy usage
+  data to Slurm.
+</p>
+
 <li>BurstBuffer</li>
 <p>
   Set <b><i>BurstBufferPlugins=burst_buffer/datawarp</i></b> to use.
@@ -211,6 +218,6 @@ is down and prevents any new jobs from being started.
 </p>
 
 
-<p style="text-align:center;">Last modified 7 March 2019</p>
+<p style="text-align:center;">Last modified 20 August 2020</p>
 
 <!--#include virtual="footer.txt"-->

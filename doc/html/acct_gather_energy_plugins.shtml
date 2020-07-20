@@ -25,6 +25,8 @@ for the type of energy accounting. We currently use
 <li><b>none</b> &mdash; No energy consumption data is provided.
 <li><b>ipmi</b> &mdash; Gets energy consumption data from the
 BMC (Baseboard Management Controller) using the
+<li><b>pm_counters</b> &mdash; Energy consumption data is collected from the
+Baseboard Management Controller (BMC) for HPE Cray systems.
 IPMI (Intelligent Platform Management Interface) tool.
 <li><b>rapl</b> &mdash; Gets energy consumption data from hardware sensors on each
 core/socket, using RAPL (Running Average Power Limit) sensors. Note that
@@ -123,7 +125,7 @@ plugin and the frequency at which to gather node energy data.</p>
 </dl>
 
 
-<p style="text-align:center;">Last modified 14 April 2020</p>
+<p style="text-align:center;">Last modified 20 August 2020</p>
 
 <!--#include virtual="footer.txt"-->
 
