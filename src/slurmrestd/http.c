@@ -122,6 +122,20 @@ static void _reinit_request_t(request_t *request, bool create)
 		request->headers = NULL;
 }
 
+static void _http_parser_url_init(struct http_parser_url *url)
+{
+#if (HTTP_PARSER_VERSION_MAJOR == 2 && HTTP_PARSER_VERSION_MINOR >= 6) || \
+	(HTTP_PARSER_VERSION_MAJOR > 2)
+	http_parser_url_init(url);
+#else
+	/*
+	 * Explicit init was only added with 2.6.0
+	 * https://github.com/nodejs/http-parser/pull/225
+	 */
+	memset(url, 0, sizeof(*url));
+#endif
+}
+
 static void _free_request_t(request_t *request)
 {
 	_reinit_request_t(request, false);
@@ -140,7 +154,7 @@ static int _on_url(http_parser *parser, const char *at, size_t length)
 	request_t *request = parser->data;
 	xassert(request->path == NULL);
 
-	http_parser_url_init(&url);
+	_http_parser_url_init(&url);
 
 	if (http_parser_parse_url(at, length, false, &url)) {
 		if (strnlen(at, length) == length)
@@ -671,7 +685,7 @@ extern parsed_host_port_t *parse_host_port(const char *str)
 		return NULL;
 	}
 
-	http_parser_url_init(&url);
+	_http_parser_url_init(&url);
 
 	if (http_parser_parse_url(str, strlen(str), true, &url)) {
 		error("%s: invalid host string: %s", __func__, str);
