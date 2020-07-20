@@ -59,8 +59,7 @@ libslurmrest_ref_la_LIBADD = libslurmrest_ref.lo
 slurmrestd_LDADD = \
 	$(convenience_libs) $(HTTP_PARSER_LDFLAGS) \
 	$(YAML_LDFLAGS) $(JSON_LDFLAGS) \
-	libslurmrest_ref.la \
-	ops/libslurmrest_ops.la
+	libslurmrest_ref.la
 endif
 force:
 $(convenience_libs) : force
