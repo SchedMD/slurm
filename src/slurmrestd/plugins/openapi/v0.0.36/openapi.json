@@ -650,20 +650,13 @@
 	    "description": "Dictionary of environment entries."
 	  },
 	  "exclusive": {
-	    "oneOf": [
-	      {
-		"type": "string",
-		"description": "The job allocation can share nodes just other users with the \"user\" option or with the \"mcs\" option).",
-		"enum": [
-		  "user",
-		  "mcs"
-		]
-	      },
-	      {
-		"type": "boolean",
-		"description": "Request exclusive use of nodes.",
-		"default": true
-	      }
+	    "type": "string",
+	    "description": "The job allocation can share nodes just other users with the \"user\" option or with the \"mcs\" option).",
+	    "enum": [
+	      "user",
+	      "mcs",
+	      "true",
+	      "false"
 	    ]
 	  },
 	  "get_user_environment": {
