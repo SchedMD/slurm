@@ -116,6 +116,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix propagation of gpu options through hetjob components.
  -- Add SLURM_CLUSTERS environment variable to scancel.
  -- Fix packing/unpacking of "unlinked" jobs.
+ -- Connect slurmstepd's stderr to srun for steps launched with --pty.
 
 * Changes in Slurm 20.02.3
 ==========================
