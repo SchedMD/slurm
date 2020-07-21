@@ -233,6 +233,7 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 	time_t most_recent = 0, cgroup_time = 0;
 	char uidcg[PATH_MAX];
 	char *cgroup_suffix = "";
+	char *cgroup_res = "";
 	slurm_cgroup_conf_t *cg_conf;
 
 	if (opts.action_unknown == CALLERID_ACTION_DENY) {
@@ -251,11 +252,24 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
 	cg_conf = xcgroup_get_slurm_cgroup_conf();
 
-	if (snprintf(uidcg, PATH_MAX, "%s/memory/slurm%s/uid_%u",
-		     cg_conf->cgroup_mountpoint, cgroup_suffix, uid)
+	/* pick a cgroup that is likely to exist */
+	if (cg_conf->constrain_ram_space ||
+	    cg_conf->constrain_swap_space) {
+		cgroup_res = "memory";
+	} else if (cg_conf->constrain_cores) {
+		cgroup_res = "cpuset";
+	} else if (cg_conf->constrain_devices) {
+		cgroup_res = "devices";
+	} else {
+		/* last resort, from proctrack/cgroup */
+		cgroup_res = "freezer";
+	}
+
+	if (snprintf(uidcg, PATH_MAX, "%s/%s/slurm%s/uid_%u",
+		     cg_conf->cgroup_mountpoint, cgroup_res, cgroup_suffix, uid)
 	    >= PATH_MAX) {
-		info("snprintf: '%s/memory/slurm%s/uid_%u' longer than PATH_MAX of %d",
-		     cg_conf->cgroup_mountpoint, cgroup_suffix,
+		info("snprintf: '%s/%s/slurm%s/uid_%u' longer than PATH_MAX of %d",
+		     cg_conf->cgroup_mountpoint, cgroup_res, cgroup_suffix,
 		     uid, PATH_MAX);
 		/* Make the uidcg an empty string. This will effectively switch
 		 * to a (somewhat) random selection of job rather than picking
