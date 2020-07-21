@@ -4534,7 +4534,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	     (job_gres_data->gres_per_socket &&
 	      (job_gres_data->gres_per_socket >
 	       job_gres_data->gres_per_job)))) {
-		log_flag(GRES, "Failed to ensure gres_per_job >= gres_per_node >= gres_per_socket");
+		error("Failed to ensure gres_per_job >= gres_per_node >= gres_per_socket");
 		return -1;
 	}
 
@@ -4545,7 +4545,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	     (job_gres_data->gres_per_socket &&
 	      (job_gres_data->gres_per_socket >
 	       job_gres_data->gres_per_node)))) {
-		log_flag(GRES, "Failed to ensure gres_per_job >= gres_per_task");
+		error("Failed to ensure gres_per_job >= gres_per_task");
 		return -1;
 	}
 
@@ -4562,13 +4562,13 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	if (job_gres_data->gres_per_job && job_gres_data->gres_per_node) {
 		if (job_gres_data->gres_per_job % job_gres_data->gres_per_node){
 			/* gres_per_job not multiple of gres_per_node */
-			log_flag(GRES, "Failed to validate job spec, gres_per_job is not multiple of gres_per_node");
+			error("Failed to validate job spec, gres_per_job is not multiple of gres_per_node");
 			return -1;
 		}
 		req_nodes = job_gres_data->gres_per_job /
 			job_gres_data->gres_per_node;
 		if ((req_nodes < *min_nodes) || (req_nodes > *max_nodes)) {
-			log_flag(GRES, "Failed to validate job spec. Based on gres_per_job and gres_per_node required nodes (%u) doesn't fall between min_nodes (%u) and max_nodes (%u) boundaries.", req_nodes, *min_nodes, *max_nodes);
+			error("Failed to validate job spec. Based on gres_per_job and gres_per_node required nodes (%u) doesn't fall between min_nodes (%u) and max_nodes (%u) boundaries.", req_nodes, *min_nodes, *max_nodes);
 			return -1;
 		}
 		*min_nodes = *max_nodes = req_nodes;
@@ -4582,7 +4582,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 		if (job_gres_data->gres_per_node %
 		    job_gres_data->gres_per_socket) {
 			/* gres_per_node not multiple of gres_per_socket */
-			log_flag(GRES, "Failed to validate job spec, gres_per_node not multiple of gres_per_socket.");
+			error("Failed to validate job spec, gres_per_node not multiple of gres_per_socket.");
 			return -1;
 		}
 		req_sockets = job_gres_data->gres_per_node /
@@ -4590,7 +4590,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 		if (*sockets_per_node == NO_VAL16)
 			*sockets_per_node = req_sockets;
 		else if (*sockets_per_node != req_sockets) {
-			log_flag(GRES, "Failed to validate job spec. Based on gres_per_node and gres_per_socket required number of sockets differ from --sockets-per-node.");
+			error("Failed to validate job spec. Based on gres_per_node and gres_per_socket required number of sockets differ from --sockets-per-node.");
 			return -1;
 		}
 	}
@@ -4603,7 +4603,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 			if (job_gres_data->gres_per_job %
 			    job_gres_data->gres_per_task) {
 				/* gres_per_job not multiple of gres_per_task */
-				log_flag(GRES, "Failed to validate job spec, gres_per_job not multiple of gres_per_task");
+				error("Failed to validate job spec, gres_per_job not multiple of gres_per_task");
 				return -1;
 			}
 			req_tasks = job_gres_data->gres_per_job /
@@ -4611,14 +4611,14 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 			if (*num_tasks == NO_VAL)
 				*num_tasks = req_tasks;
 			else if (*num_tasks != req_tasks) {
-				log_flag(GRES, "Failed to validate job spec. Based on gres_per_job and gres_per_task number of requested tasks differ from -n/--ntasks.");
+				error("Failed to validate job spec. Based on gres_per_job and gres_per_task number of requested tasks differ from -n/--ntasks.");
 				return -1;
 			}
 		} else if (*num_tasks != NO_VAL) {
 			job_gres_data->gres_per_job = *num_tasks *
 				job_gres_data->gres_per_task;
 		} else {
-			log_flag(GRES, "Failed to validate job spec. gres_per_task used without either gres_per_job or -n/--ntasks is not allowed.");
+			error("Failed to validate job spec. gres_per_task used without either gres_per_job or -n/--ntasks is not allowed.");
 			return -1;
 		}
 	}
@@ -4631,7 +4631,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 		if (job_gres_data->gres_per_node %
 		    job_gres_data->gres_per_task) {
 			/* gres_per_node not multiple of gres_per_task */
-			log_flag(GRES, "Failed to validate job spec, gres_per_node not multiple of gres_per_task.");
+			error("Failed to validate job spec, gres_per_node not multiple of gres_per_task.");
 			return -1;
 		}
 		req_tasks_per_node = job_gres_data->gres_per_node /
@@ -4640,7 +4640,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 		    (*ntasks_per_node == 0))
 			*ntasks_per_node = req_tasks_per_node;
 		else if (*ntasks_per_node != req_tasks_per_node) {
-			log_flag(GRES, "Failed to validate job spec. Based on gres_per_node and gres_per_task requested number of tasks per node differ from --ntasks-per-node.");
+			error("Failed to validate job spec. Based on gres_per_node and gres_per_task requested number of tasks per node differ from --ntasks-per-node.");
 			return -1;
 		}
 	}
@@ -4653,7 +4653,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 		if (job_gres_data->gres_per_socket %
 		    job_gres_data->gres_per_task) {
 			/* gres_per_socket not multiple of gres_per_task */
-			log_flag(GRES, "Failed to validate job spec, gres_per_socket not multiple of gres_per_task.");
+			error("Failed to validate job spec, gres_per_socket not multiple of gres_per_task.");
 			return -1;
 		}
 		req_tasks_per_socket = job_gres_data->gres_per_socket /
@@ -4662,7 +4662,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 		    (*ntasks_per_socket == 0))
 			*ntasks_per_socket = req_tasks_per_socket;
 		else if (*ntasks_per_socket != req_tasks_per_socket) {
-			log_flag(GRES, "Failed to validate job spec. Based on gres_per_socket and gres_per_task requested number of tasks per sockets differ from --ntasks-per-socket.");
+			error("Failed to validate job spec. Based on gres_per_socket and gres_per_task requested number of tasks per sockets differ from --ntasks-per-socket.");
 			return -1;
 		}
 	}
@@ -4678,7 +4678,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 		    (*cpus_per_task == 0))
 			*cpus_per_task = req_cpus_per_task;
 		else if (*cpus_per_task != req_cpus_per_task) {
-			log_flag(GRES, "Failed to validate job spec. Based on cpus_per_gres and gres_per_task requested number of cpus differ from -c/--cpus-per-task.");
+			error("Failed to validate job spec. Based on cpus_per_gres and gres_per_task requested number of cpus differ from -c/--cpus-per-task.");
 			return -1;
 		}
 	}
@@ -4686,7 +4686,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	/* Ensure tres_per_job >= node count */
 	if (job_gres_data->gres_per_job) {
 		if (job_gres_data->gres_per_job < *min_nodes) {
-			log_flag(GRES, "Failed to validate job spec, gres_per_job < min_nodes (-N)");
+			error("Failed to validate job spec, gres_per_job < min_nodes (-N)");
 			return -1;
 		}
 		if (job_gres_data->gres_per_job < *max_nodes)
