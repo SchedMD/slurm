@@ -1687,17 +1687,6 @@ size_t slurm_read_stream(int open_fd, char *buffer, size_t size)
  * address conversion and management functions
 \**********************************************************************/
 
-/* slurm_set_addr
- * initializes the slurm_address with the supplied port and host name
- * OUT slurm_address	- slurm_addr_t to be filled in
- * IN port		- port in host order
- * IN host		- hostname or dns name
- */
-void slurm_set_addr(slurm_addr_t * slurm_address, uint16_t port, char *host)
-{
-	slurm_set_addr_char(slurm_address, port, host);
-}
-
 /* slurm_get_ip_str
  * given a slurm_address it returns its port and ip address string
  * IN slurm_address	- slurm_addr_t to be queried

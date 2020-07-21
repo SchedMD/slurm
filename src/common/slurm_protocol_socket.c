@@ -632,7 +632,7 @@ done:
 #endif
 }
 
-extern void slurm_set_addr_char (slurm_addr_t * addr, uint16_t port, char *host)
+extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 {
 #if 1
 /* NOTE: gethostbyname() is obsolete, but the alternative function (below)
