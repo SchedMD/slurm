@@ -475,6 +475,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Authentication credential invalid"			},
 	{ ESLURM_AUTH_UNPACK,
 	  "Cannot unpack credential"				},
+	{ ESLURM_AUTH_SKIP,
+	  "Authentication does not apply to request"		},
 
 	/* accounting errors */
 	{ ESLURM_DB_CONNECTION,
