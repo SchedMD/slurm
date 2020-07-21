@@ -3031,7 +3031,7 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 	      cluster, host, port, rpc_version);
 
 	slurm_msg_t_init(&req);
-	slurm_set_addr_char(&req.address, port, host);
+	slurm_set_addr(&req.address, port, host);
 
 	req.protocol_version = rpc_version;
 

@@ -2862,7 +2862,7 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 			char host[MAXHOSTNAMELEN];
 
 			if (!gethostname(host, MAXHOSTNAMELEN)) {
-				slurm_set_addr_char(sin, port, host);
+				slurm_set_addr(sin, port, host);
 				s_addr = sin->sin_addr.s_addr;
 			} else
 				fatal("slurm_setup_sockaddr: "

@@ -370,7 +370,7 @@ extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
 	info("First time to register cluster requesting "
 	     "running jobs and system information.");
 
-	slurm_set_addr_char(&ctld_address, port, host);
+	slurm_set_addr(&ctld_address, port, host);
 	fd = slurm_open_msg_conn(&ctld_address);
 	if (fd < 0) {
 		error("can not open socket back to slurmctld "

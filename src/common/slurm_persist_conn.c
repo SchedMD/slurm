@@ -553,8 +553,7 @@ extern int slurm_persist_conn_open_without_init(
 	if (persist_conn->timeout < 0)
 		persist_conn->timeout = slurm_conf.msg_timeout * 1000;
 
-	slurm_set_addr_char(&addr, persist_conn->rem_port,
-			    persist_conn->rem_host);
+	slurm_set_addr(&addr, persist_conn->rem_port, persist_conn->rem_host);
 	if ((persist_conn->fd = slurm_open_msg_conn(&addr)) < 0) {
 		if (_comm_fail_log(persist_conn)) {
 			if (persist_conn->flags & PERSIST_FLAG_SUPPRESS_ERR)
