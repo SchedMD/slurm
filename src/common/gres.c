@@ -10679,6 +10679,10 @@ extern int gres_plugin_job_select_whole_node(
 		gres_key_t job_search_key;
 		node_state_ptr = (gres_node_state_t *) node_gres_ptr->gres_data;
 
+		/*
+		 * Don't check for no_consume here, we need them added here and
+		 * will filter them out in gres_plugin_job_alloc_whole_node()
+		 */
 		if (!node_state_ptr->gres_cnt_config)
 			continue;
 
