@@ -27,6 +27,7 @@
 source ./globals
 
 set exit_code    0
+set is_skip      false
 
 if {[get_gpu_count 1] < 2} {
 	skip "This test requires 2 or more GPUs per node in the default partition"
@@ -488,14 +489,24 @@ proc test_mem_per_gpu {} {
 
 test_gpu_bind
 test_gpu_freq
-test_cpus_per_gpu
-test_gpus_per_job
 test_gpus_per_node
-test_gpus_per_socket
-test_gpus_per_task
-test_mem_per_gpu
+
+if {[test_cons_tres]} {
+	test_cpus_per_gpu
+	test_gpus_per_job
+	test_gpus_per_socket
+	test_gpus_per_task
+	test_mem_per_gpu
+} else {
+	log_warn "Some tests are skipped because they require SelectType=cons_tres."
+	set is_skip true
+}
 
 if {$exit_code} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
+
+if {$is_skip} {
+	skip "Some tests were skipped"
 }
 
