@@ -85,8 +85,6 @@ static uint64_t min_ram_space;  /* Don't constrain RAM below this value   */
 
 static char* _system_cgroup_create_slurm_cg (xcgroup_ns_t* ns);
 
-static int _xcgroup_cpuset_init(xcgroup_t* cg);
-
 static uint64_t _percent_in_bytes (uint64_t mb, float percent)
 {
 	return ((mb * 1024 * 1024) * (percent / 100.0));
@@ -135,7 +133,8 @@ again:
 		}
 
 		/* initialize the cpusets as it was nonexistent */
-		if (_xcgroup_cpuset_init(&slurm_cg) != XCGROUP_SUCCESS) {
+		if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
+					&slurm_cg) != XCGROUP_SUCCESS) {
 			xfree(slurm_cgpath);
 			xcgroup_destroy(&slurm_cg);
 			xcgroup_ns_destroy(&cpuset_ns);
@@ -158,7 +157,8 @@ again:
 	if (xcgroup_instantiate(&system_cpuset_cg) != XCGROUP_SUCCESS) {
 		goto error;
 	}
-	if (_xcgroup_cpuset_init(&system_cpuset_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
+				&system_cpuset_cg) != XCGROUP_SUCCESS) {
 		goto error;
 	}
 
@@ -348,82 +348,6 @@ static char* _system_cgroup_create_slurm_cg (xcgroup_ns_t* ns)
 	}
 
 	return pre;
-}
-
-/* when cgroups are configured with cpuset, at least
- * cpuset.cpus and cpuset.mems must be set or the cgroup
- * will not be available at all.
- * we duplicate the ancestor configuration in the init step */
-static int _xcgroup_cpuset_init(xcgroup_t* cg)
-{
-	int fstatus, i;
-
-	char* cpuset_metafiles[] = {
-		"cpus",
-		"mems"
-	};
-	char* cpuset_conf = NULL;
-	size_t csize = 0;
-
-	xcgroup_t acg;
-	char* acg_name = NULL;
-	char* p;
-
-	fstatus = XCGROUP_ERROR;
-
-	/* load ancestor cg */
-	acg_name = (char*) xstrdup(cg->name);
-	p = xstrrchr(acg_name, '/');
-	if (p == NULL) {
-		debug2("system cgroup: unable to get ancestor path for "
-		       "cpuset cg '%s' : %m", cg->path);
-		xfree(acg_name);
-		return fstatus;
-	} else
-		*p = '\0';
-	if (xcgroup_load(cg->ns, &acg, acg_name) != XCGROUP_SUCCESS) {
-		debug2("system cgroup: unable to load ancestor for "
-		       "cpuset cg '%s' : %m", cg->path);
-		xfree(acg_name);
-		return fstatus;
-	}
-	xfree(acg_name);
-
-	/* inherits ancestor params */
-	for (i = 0 ; i < 2 ; i++) {
-	again:
-		snprintf(cpuset_meta, sizeof(cpuset_meta), "%s%s",
-			 cpuset_prefix, cpuset_metafiles[i]);
-		if (xcgroup_get_param(&acg ,cpuset_meta,
-				      &cpuset_conf, &csize)
-		    != XCGROUP_SUCCESS) {
-			if (!cpuset_prefix_set) {
-				cpuset_prefix_set = 1;
-				cpuset_prefix = "cpuset.";
-				goto again;
-			}
-
-			debug("system cgroup: assuming no cpuset cg "
-			       "support for '%s'",acg.path);
-			xcgroup_destroy(&acg);
-			return fstatus;
-		}
-		if (csize > 0)
-			cpuset_conf[csize-1] = '\0';
-		if (xcgroup_set_param(cg,cpuset_meta, cpuset_conf)
-		    != XCGROUP_SUCCESS) {
-			debug("system cgroup: unable to write %s configuration "
-			       "(%s) for cpuset cg '%s'",cpuset_meta,
-			       cpuset_conf, cg->path);
-			xcgroup_destroy(&acg);
-			xfree(cpuset_conf);
-			return fstatus;
-		}
-		xfree(cpuset_conf);
-	}
-
-	xcgroup_destroy(&acg);
-	return XCGROUP_SUCCESS;
 }
 
 extern int set_system_cgroup_cpus(char *phys_cpu_str)

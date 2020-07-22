@@ -348,4 +348,20 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
  */
 int xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
 
+/*
+ * Init cpuset cgroup
+ *
+ * Will ensure cpuset.mems or cpuset.cpus is correctly set by inheriting parent
+ * values or setting it to 0 if there's nothing set. An empty value would mean
+ * we don't have any memory nodes/cpus assigned to the cpuset thus processes
+ * could not be added to the cgroup.
+ *
+ * IN: cpuset_prefix - cpuset prefix to set
+ * IN/OUT: prefix_set - wheter cpuset prefix is set or not
+ * IN: cg - cgroup to initialize
+ * OUT: XCGROUP_ERROR or XCGROUP_SUCCESS
+ *
+ */
+extern int xcgroup_cpuset_init(char *cpuset_prefix, bool *set, xcgroup_t *cg);
+
 #endif

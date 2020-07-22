@@ -146,84 +146,6 @@ static xcgroup_t user_cpuset_cg;
 static xcgroup_t job_cpuset_cg;
 static xcgroup_t step_cpuset_cg;
 
-static int _xcgroup_cpuset_init(xcgroup_t* cg);
-
-/* when cgroups are configured with cpuset, at least
- * cpuset.cpus and cpuset.mems must be set or the cgroup
- * will not be available at all.
- * we duplicate the ancestor configuration in the init step */
-static int _xcgroup_cpuset_init(xcgroup_t* cg)
-{
-	int fstatus,i;
-
-	char* cpuset_metafiles[] = {
-		"cpus",
-		"mems"
-	};
-	char cpuset_meta[PATH_MAX];
-	char* cpuset_conf;
-	size_t csize;
-	xcgroup_t acg;
-	char *acg_name, *p;
-
-	fstatus = XCGROUP_ERROR;
-
-	/* load ancestor cg */
-	acg_name = (char *)xstrdup(cg->name);
-	p = xstrrchr(acg_name, '/');
-	if (p == NULL) {
-		debug2("unable to get ancestor path for "
-		       "cpuset cg '%s' : %m", cg->path);
-		xfree(acg_name);
-		return fstatus;
-	} else {
-		*p = '\0';
-	}
-	if (xcgroup_load(cg->ns, &acg, acg_name) != XCGROUP_SUCCESS) {
-		debug2("unable to load ancestor for "
-		       "cpuset cg '%s' : %m", cg->path);
-		xfree(acg_name);
-		return fstatus;
-	}
-	xfree(acg_name);
-
-	/* inherits ancestor params */
-	for (i = 0; i < 2; i++) {
-	again:
-		snprintf(cpuset_meta, sizeof(cpuset_meta), "%s%s",
-			 cpuset_prefix, cpuset_metafiles[i]);
-		if (xcgroup_get_param(&acg,cpuset_meta,
-				      &cpuset_conf,&csize)
-		    != XCGROUP_SUCCESS) {
-			if (!cpuset_prefix_set) {
-				cpuset_prefix_set = 1;
-				cpuset_prefix = "cpuset.";
-				goto again;
-			}
-
-			debug("assuming no cpuset cg "
-			       "support for '%s'",acg.path);
-			xcgroup_destroy(&acg);
-			return fstatus;
-		}
-		if (csize > 0)
-			cpuset_conf[csize-1]='\0';
-		if (xcgroup_set_param(cg,cpuset_meta,cpuset_conf)
-		    != XCGROUP_SUCCESS) {
-			debug("unable to write %s configuration "
-			       "(%s) for cpuset cg '%s'",cpuset_meta,
-			       cpuset_conf,cg->path);
-			xcgroup_destroy(&acg);
-			xfree(cpuset_conf);
-			return fstatus;
-		}
-		xfree(cpuset_conf);
-	}
-
-	xcgroup_destroy(&acg);
-	return XCGROUP_SUCCESS;
-}
-
 #ifdef HAVE_HWLOC
 
 /*
@@ -1103,14 +1025,16 @@ static int _cgroup_create_callback(const char *calling_func,
 
 	xcgroup_set_param(&user_cpuset_cg, cpuset_meta, user_alloc_cores);
 
-	if (_xcgroup_cpuset_init(&job_cpuset_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
+				&job_cpuset_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		xcgroup_destroy(&job_cpuset_cg);
 		goto endit;
 	}
 	xcgroup_set_param(&job_cpuset_cg, cpuset_meta, job_alloc_cores);
 
-	if (_xcgroup_cpuset_init(&step_cpuset_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
+				&step_cpuset_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		xcgroup_destroy(&job_cpuset_cg);
 		(void)xcgroup_delete(&step_cpuset_cg);
@@ -1185,7 +1109,8 @@ again:
 		}
 
 		/* initialize the cpusets as it was non-existent */
-		if (_xcgroup_cpuset_init(&slurm_cg) != XCGROUP_SUCCESS) {
+		if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
+					&slurm_cg) != XCGROUP_SUCCESS) {
 			xfree(cgroup_callback.cpus);
 			xfree(slurm_cgpath);
 			xcgroup_destroy(&slurm_cg);
