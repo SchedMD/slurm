@@ -13,7 +13,7 @@
 <h2>Prerequisites</h2>
 <p>slurmrestd requires additional libraries for compilation:</p>
 <ul>
-	<li><a href="https://github.com/nodejs/http-parser">HTTP Parser</a></li>
+	<li><a href="https://github.com/nodejs/http-parser">HTTP Parser</a> (>= v2.6.0)</li>
 	<li><a href="https://github.com/yaml/libyaml">LibYAML</a></li>
 	<li><a href="https://github.com/json-c/json-c">JSON-C</a></li>
 </ul>

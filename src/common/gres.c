@@ -10388,22 +10388,27 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			node_gres_ptr->gres_cnt_alloc += gres_cnt;
 		}
 	} else if (node_gres_ptr->gres_bit_alloc) {
-		job_gres_ptr->gres_bit_alloc[node_offset] =
-				bit_alloc(node_gres_ptr->gres_cnt_avail);
+		int64_t gres_avail = node_gres_ptr->gres_cnt_avail;
+
 		i = bit_size(node_gres_ptr->gres_bit_alloc);
-		if (i < node_gres_ptr->gres_cnt_avail) {
-			error("gres/%s: node %s gres bitmap size bad "
-			      "(%"PRIu64" < %"PRIu64")",
+		if (plugin_id == mps_plugin_id)
+			gres_avail = i;
+		else if (i < gres_avail) {
+			error("gres/%s: node %s gres bitmap size bad (%"PRIi64" < %"PRIi64")",
 			      gres_name, node_name,
-			      i, node_gres_ptr->gres_cnt_avail);
+			      i, gres_avail);
 			node_gres_ptr->gres_bit_alloc =
 				bit_realloc(node_gres_ptr->gres_bit_alloc,
-					    node_gres_ptr->gres_cnt_avail);
+					    gres_avail);
 		}
+
+		job_gres_ptr->gres_bit_alloc[node_offset] =
+			bit_alloc(gres_avail);
+
 		if (core_bitmap)
 			alloc_core_bitmap = bit_alloc(bit_size(core_bitmap));
 		/* Pass 1: Allocate GRES overlapping all allocated cores */
-		for (i=0; i<node_gres_ptr->gres_cnt_avail && gres_cnt>0; i++) {
+		for (i=0; i<gres_avail && gres_cnt>0; i++) {
 			if (bit_test(node_gres_ptr->gres_bit_alloc, i))
 				continue;
 			if (!_cores_on_gres(core_bitmap, alloc_core_bitmap,
@@ -10416,7 +10421,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 		}
 		FREE_NULL_BITMAP(alloc_core_bitmap);
 		/* Pass 2: Allocate GRES overlapping any allocated cores */
-		for (i=0; i<node_gres_ptr->gres_cnt_avail && gres_cnt>0; i++) {
+		for (i=0; i<gres_avail && gres_cnt>0; i++) {
 			if (bit_test(node_gres_ptr->gres_bit_alloc, i))
 				continue;
 			if (!_cores_on_gres(core_bitmap, NULL, node_gres_ptr, i,
@@ -10432,7 +10437,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 				gres_name, job_id);
 		}
 		/* Pass 3: Allocate any available GRES */
-		for (i=0; i<node_gres_ptr->gres_cnt_avail && gres_cnt>0; i++) {
+		for (i=0; i<gres_avail && gres_cnt>0; i++) {
 			if (bit_test(node_gres_ptr->gres_bit_alloc, i))
 				continue;
 			bit_set(node_gres_ptr->gres_bit_alloc, i);

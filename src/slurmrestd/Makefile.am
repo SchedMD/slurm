@@ -21,7 +21,7 @@ SRCS = \
 	xyaml.h xyaml.c
 
 if WITH_SLURMRESTD
-AM_CPPFLAGS = -I$(top_srcdir) $(JSON_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) $(JSON_CPPFLAGS) $(HTTP_PARSER_CPPFLAGS)
 BIN_REF = $(REF:.txt=.bino)
 BIN_REF2 = $(BIN_REF:.json=.bino)
 

@@ -523,7 +523,7 @@ SRCS = \
 	xjson.h xjson.c \
 	xyaml.h xyaml.c
 
-@WITH_SLURMRESTD_TRUE@AM_CPPFLAGS = -I$(top_srcdir) $(JSON_CPPFLAGS)
+@WITH_SLURMRESTD_TRUE@AM_CPPFLAGS = -I$(top_srcdir) $(JSON_CPPFLAGS) $(HTTP_PARSER_CPPFLAGS)
 @WITH_SLURMRESTD_TRUE@BIN_REF = $(REF:.txt=.bino)
 @WITH_SLURMRESTD_TRUE@BIN_REF2 = $(BIN_REF:.json=.bino)
 
