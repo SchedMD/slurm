@@ -14892,7 +14892,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 
-	job_resv_clear_promiscous_flag(job_ptr);
+	job_resv_clear_haphazard_flag(job_ptr);
 
 	if (job_ptr->details) {
 		time_t now = time(NULL);

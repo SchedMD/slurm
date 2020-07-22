@@ -1689,7 +1689,7 @@ static int _attempt_backfill(void)
 
 		/* Run some final guaranteed logic after each job iteration */
 		if (job_ptr) {
-			job_resv_clear_promiscous_flag(job_ptr);
+			job_resv_clear_haphazard_flag(job_ptr);
 			fill_array_reasons(job_ptr, reject_array_job);
 
 			/* Restore preemption state if needed. */
@@ -1707,7 +1707,7 @@ static int _attempt_backfill(void)
 		bf_job_priority  = job_queue_rec->priority;
 		bf_array_task_id = job_queue_rec->array_task_id;
 
-		job_queue_rec_prom_resv(job_queue_rec);
+		job_queue_rec_haphazard_resv(job_queue_rec);
 		xfree(job_queue_rec);
 		if (slurmctld_config.shutdown_time ||
 		    (difftime(time(NULL),orig_sched_start) >= bf_max_time)){
@@ -2699,7 +2699,7 @@ skip_start:
 		}
 		bit_not(avail_bitmap);
 		if ((!bf_one_resv_per_job || !orig_start_time) &&
-		    !(job_ptr->bit_flags & JOB_PROM)) {
+		    !(job_ptr->bit_flags & JOB_HAPHAZARD)) {
 			_add_reservation(start_time, end_reserve, avail_bitmap,
 					 node_space, &node_space_recs);
 		}

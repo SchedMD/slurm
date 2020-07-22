@@ -219,7 +219,7 @@ static void _job_queue_append(List job_queue, job_record_t *job_ptr,
 	if (job_ptr->resv_name)
 		return;
 
-	job_resv_append_promiscuous(&job_queue_req);
+	job_resv_append_haphazard(&job_queue_req);
 }
 
 /* Return true if the job has some step still in a cleaning state, which
@@ -362,7 +362,7 @@ static bool _job_runnable_test3(job_record_t *job_ptr, part_record_t *part_ptr)
 	return true;
 }
 
-extern void job_queue_rec_prom_resv(job_queue_rec_t *job_queue_rec)
+extern void job_queue_rec_haphazard_resv(job_queue_rec_t *job_queue_rec)
 {
 	job_record_t *job_ptr;
 
@@ -376,7 +376,7 @@ extern void job_queue_rec_prom_resv(job_queue_rec_t *job_queue_rec)
 	job_ptr->resv_ptr = job_queue_rec->resv_ptr;
 	job_ptr->resv_name = xstrdup(job_ptr->resv_ptr->name);
 	job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
-	job_queue_rec->job_ptr->bit_flags |= JOB_PROM;
+	job_queue_rec->job_ptr->bit_flags |= JOB_HAPHAZARD;
 }
 
 /*
@@ -1334,7 +1334,7 @@ static int _schedule(uint32_t job_limit)
 	while (1) {
 		/* Run some final guaranteed logic after each job iteration */
 		if (job_ptr) {
-			job_resv_clear_promiscous_flag(job_ptr);
+			job_resv_clear_haphazard_flag(job_ptr);
 			fill_array_reasons(job_ptr, reject_array_job);
 		}
 
@@ -1392,7 +1392,7 @@ next_part:
 			part_ptr = job_queue_rec->part_ptr;
 			job_ptr->priority = job_queue_rec->priority;
 
-			job_queue_rec_prom_resv(job_queue_rec);
+			job_queue_rec_haphazard_resv(job_queue_rec);
 			xfree(job_queue_rec);
 
 			if (!avail_front_end(job_ptr)) {

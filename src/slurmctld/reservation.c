@@ -119,7 +119,7 @@ typedef struct resv_thread_args {
 
 time_t    last_resv_update = (time_t) 0;
 List      resv_list = (List) NULL;
-static List prom_resv_list = NULL;
+static List haphazard_resv_list = NULL;
 uint32_t  top_suffix = 0;
 
 /*
@@ -466,8 +466,8 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	dest_resv->user_list = src_resv->user_list;
 	src_resv->user_list = NULL;
 
-	if (dest_resv->flags & RESERVE_FLAG_PROM)
-		list_append(prom_resv_list, dest_resv);
+	if (dest_resv->flags & RESERVE_FLAG_HAPHAZARD)
+		list_append(haphazard_resv_list, dest_resv);
 }
 
 static void _del_resv_rec(void *x)
@@ -476,9 +476,9 @@ static void _del_resv_rec(void *x)
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
 
 	if (resv_ptr) {
-		if (resv_ptr->flags & RESERVE_FLAG_PROM)
+		if (resv_ptr->flags & RESERVE_FLAG_HAPHAZARD)
 			(void)list_remove_first(
-				prom_resv_list, _find_resv_ptr, resv_ptr);
+				haphazard_resv_list, _find_resv_ptr, resv_ptr);
 
 		xassert(resv_ptr->magic == RESV_MAGIC);
 		resv_ptr->magic = 0;
@@ -508,35 +508,35 @@ static void _del_resv_rec(void *x)
 static void _create_resv_lists(bool flush)
 {
 	if (flush && resv_list) {
-		list_flush(prom_resv_list);
+		list_flush(haphazard_resv_list);
 		list_flush(resv_list);
 		return;
 	}
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
-	if (!prom_resv_list)
-		prom_resv_list = list_create(NULL);
+	if (!haphazard_resv_list)
+		haphazard_resv_list = list_create(NULL);
 }
 
 static void _add_resv_to_lists(slurmctld_resv_t *resv_ptr)
 {
 	xassert(resv_list);
-	xassert(prom_resv_list);
+	xassert(haphazard_resv_list);
 
 	list_append(resv_list, resv_ptr);
-	if (resv_ptr->flags & RESERVE_FLAG_PROM)
-		list_append(prom_resv_list, resv_ptr);
+	if (resv_ptr->flags & RESERVE_FLAG_HAPHAZARD)
+		list_append(haphazard_resv_list, resv_ptr);
 }
 
-static int _queue_prom_resv(void *x, void *key)
+static int _queue_haphazard_resv(void *x, void *key)
 {
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
 	job_queue_req_t *job_queue_req = (job_queue_req_t *) key;
 
 	xassert(resv_ptr->magic == RESV_MAGIC);
 
-	if (!(resv_ptr->flags & RESERVE_FLAG_PROM))
+	if (!(resv_ptr->flags & RESERVE_FLAG_HAPHAZARD))
 		return 0;
 
 	job_queue_req->resv_ptr = resv_ptr;
@@ -2215,7 +2215,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_REPLACE     |
 					RESERVE_FLAG_REPLACE_DOWN |
 					RESERVE_FLAG_NO_HOLD_JOBS |
-					RESERVE_FLAG_PROM;
+					RESERVE_FLAG_HAPHAZARD;
 	}
 
 	/* Validate the request */
@@ -2569,7 +2569,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 /* Purge all reservation data structures */
 extern void resv_fini(void)
 {
-	FREE_NULL_LIST(prom_resv_list);
+	FREE_NULL_LIST(haphazard_resv_list);
 	FREE_NULL_LIST(resv_list);
 }
 
@@ -2703,16 +2703,16 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_HOLD_JOBS)
 			resv_ptr->flags |= RESERVE_FLAG_NO_HOLD_JOBS;
-		if ((resv_desc_ptr->flags & RESERVE_FLAG_PROM) &&
-		    !(resv_ptr->flags & RESERVE_FLAG_PROM)) {
-			resv_ptr->flags |= RESERVE_FLAG_PROM;
-			list_append(prom_resv_list, resv_ptr);
+		if ((resv_desc_ptr->flags & RESERVE_FLAG_HAPHAZARD) &&
+		    !(resv_ptr->flags & RESERVE_FLAG_HAPHAZARD)) {
+			resv_ptr->flags |= RESERVE_FLAG_HAPHAZARD;
+			list_append(haphazard_resv_list, resv_ptr);
 		}
-		if ((resv_desc_ptr->flags & RESERVE_FLAG_NO_PROM) &&
-		    (resv_ptr->flags & RESERVE_FLAG_PROM)) {
-			resv_ptr->flags &= (~RESERVE_FLAG_PROM);
+		if ((resv_desc_ptr->flags & RESERVE_FLAG_NO_HAPHAZARD) &&
+		    (resv_ptr->flags & RESERVE_FLAG_HAPHAZARD)) {
+			resv_ptr->flags &= (~RESERVE_FLAG_HAPHAZARD);
 			(void)list_remove_first(
-				prom_resv_list, _find_resv_ptr, resv_ptr);
+				haphazard_resv_list, _find_resv_ptr, resv_ptr);
 		}
 	}
 
@@ -5681,10 +5681,10 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		if (job_ptr->resv_id != resv_ptr->resv_id) {
 			job_ptr->resv_id = resv_ptr->resv_id;
 			/*
-			 * Update the database if not using a promiscuous
+			 * Update the database if not using a haphazard
 			 * reservation
 			 */
-			if (!(job_ptr->bit_flags & JOB_PROM))
+			if (!(job_ptr->bit_flags & JOB_HAPHAZARD))
 				jobacct_storage_g_job_start(
 					acct_db_conn, job_ptr);
 		}
@@ -6515,24 +6515,25 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 	}
 }
 
-extern void job_resv_append_promiscuous(job_queue_req_t *job_queue_req)
+extern void job_resv_append_haphazard(job_queue_req_t *job_queue_req)
 {
-	if (!prom_resv_list || !list_count(prom_resv_list))
+	if (!haphazard_resv_list || !list_count(haphazard_resv_list))
 		return;
 
-	list_for_each(prom_resv_list, _queue_prom_resv, job_queue_req);
+	list_for_each(haphazard_resv_list, _queue_haphazard_resv,
+		      job_queue_req);
 }
 
-extern void job_resv_clear_promiscous_flag(job_record_t *job_ptr)
+extern void job_resv_clear_haphazard_flag(job_record_t *job_ptr)
 {
-	if (!(job_ptr->bit_flags & JOB_PROM) ||
+	if (!(job_ptr->bit_flags & JOB_HAPHAZARD) ||
 	    (job_ptr->job_state & JOB_RUNNING))
 		return;
 
 	xfree(job_ptr->resv_name);
 	job_ptr->resv_id = 0;
 	job_ptr->resv_ptr = NULL;
-	job_ptr->bit_flags &= (~JOB_PROM);
+	job_ptr->bit_flags &= (~JOB_HAPHAZARD);
 }
 
 extern bool validate_resv_uid(char *resv_name, uid_t uid)
