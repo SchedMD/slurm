@@ -40,36 +40,18 @@
 #include <sys/types.h>
 
 #include "src/common/data.h"
+#include "src/common/plugin.h"
 #include "src/slurmrestd/http.h"
 
-/*
- * Bitmap of auth types that will be currently accepted
- */
-typedef enum {
-	AUTH_TYPE_INVALID = 0,
-	/*
-	 * No auth required (only for inetd mode).
-	 * Auth via owner of pipe or socket.
-	 */
-	AUTH_TYPE_LOCAL = 1 << 0,
-	/* preshared key per UID */
-	AUTH_TYPE_USER_PSK = 1 << 1,
-} rest_auth_type_t;
+#define HTTP_HEADER_USER_TOKEN "X-SLURM-USER-TOKEN"
+#define HTTP_HEADER_USER_NAME "X-SLURM-USER-NAME"
 
 typedef struct {
 	int magic;
-
-	/*
-	 * auth type of this connection.
-	 * only a single bit should ever be set
-	 * or none if auth failed.
-	 */
-	rest_auth_type_t type;
-
+	uint32_t plugin_id;
 	/* user supplied user name */
 	char *user_name;
-	/* user supplied token (may be null) */
-	char *token;
+	void *plugin_data;
 } rest_auth_context_t;
 
 /*
@@ -107,11 +89,12 @@ extern int rest_auth_context_apply(rest_auth_context_t *context);
 extern void rest_auth_context_clear(void);
 
 /*
- * Setup locks and register openapi.
+ * Setup locks and register REST authentication plugins.
  * 	Only call once!
  * IN type auth type to enforce
  */
-extern int init_rest_auth(rest_auth_type_t type);
+extern int init_rest_auth(const plugin_handle_t *plugin_handles,
+			  const size_t plugin_count);
 
 /*
  * Cleanup rest auth

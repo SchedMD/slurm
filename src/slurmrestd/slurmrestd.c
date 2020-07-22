@@ -82,8 +82,6 @@ typedef struct {
 	bool listen; /* running in listening daemon mode aka not INET mode */
 } run_mode_t;
 
-/* Allowed auth types */
-static rest_auth_type_t auth_type = (AUTH_TYPE_LOCAL | AUTH_TYPE_USER_PSK);
 /* Debug level to use */
 static int debug_level = 0;
 /* detected run mode */
@@ -96,38 +94,23 @@ static int thread_count = 20;
 /* User to become once loaded */
 static uid_t uid = 0;
 static gid_t gid = 0;
+
+static char *rest_auth = NULL;
+static plugin_handle_t *auth_plugin_handles = NULL;
+static char **auth_plugin_types = NULL;
+static size_t auth_plugin_count = 0;
+static plugrack_t *auth_rack = NULL;
+
 static char *oas_specs = NULL;
-static plugin_handle_t *plugin_handles = NULL;
-static char **plugin_types = NULL;
-static size_t plugin_count = 0;
-static plugrack_t *rack = NULL;
+static plugin_handle_t *oas_plugin_handles = NULL;
+static char **oas_plugin_types = NULL;
+static size_t oas_plugin_count = 0;
+static plugrack_t *oas_rack = NULL;
 
 /* SIGPIPE handler - mostly a no-op */
 static void _sigpipe_handler(int signum)
 {
 	debug5("%s: received SIGPIPE", __func__);
-}
-
-static void _set_auth_type(const char *str)
-{
-	/* split comma delimited list */
-	char *tok = NULL, *save_ptr = NULL, *types;
-	char *auth_types = xstrdup(str);
-
-	auth_type = AUTH_TYPE_INVALID;
-
-	types = auth_types;
-	while ((tok = strtok_r(types, ",", &save_ptr))) {
-		if (!xstrcasecmp(tok, "local"))
-			auth_type |= AUTH_TYPE_LOCAL;
-		else if (!xstrcasecmp(tok, "psk"))
-			auth_type |= AUTH_TYPE_USER_PSK;
-		else
-			fatal("Unknown authentication type: %s", tok);
-
-		types = NULL; /* for next strok_r() */
-	}
-	xfree(auth_types);
 }
 
 static void _parse_env(void)
@@ -154,8 +137,10 @@ static void _parse_env(void)
 		xfree(toklist);
 	}
 
-	if ((buffer = getenv("SLURMRESTD_AUTH_TYPES")))
-		_set_auth_type(buffer);
+	if ((buffer = getenv("SLURMRESTD_AUTH_TYPES"))) {
+		xfree(rest_auth);
+		rest_auth = xstrdup(buffer);
+	}
 
 	if ((buffer = getenv("SLURMRESTD_OPENAPI_PLUGINS")) != NULL) {
 		xfree(oas_specs);
@@ -247,7 +232,8 @@ static void _parse_commandline(int argc, char **argv)
 	while ((c = getopt(argc, argv, "a:f:g:hs:t:u:vV")) != -1) {
 		switch (c) {
 		case 'a':
-			_set_auth_type(optarg);
+			xfree(rest_auth);
+			rest_auth = xstrdup(optarg);
 			break;
 		case 'f':
 			xfree(slurm_conf_filename);
@@ -319,17 +305,35 @@ static void *_setup_http_context(con_mgr_fd_t *con)
 	return setup_http_context(con, operations_router);
 }
 
-static void _plugrack_foreach(const char *full_type, const char *fq_path,
+static void _auth_plugrack_foreach(const char *full_type, const char *fq_path,
 			      const plugin_handle_t id)
 {
-	plugin_count += 1;
-	xrecalloc(plugin_handles, plugin_count, sizeof(*plugin_handles));
-	xrecalloc(plugin_types, plugin_count, sizeof(*plugin_types));
+	auth_plugin_count += 1;
+	xrecalloc(auth_plugin_handles, auth_plugin_count,
+		  sizeof(*auth_plugin_handles));
+	xrecalloc(auth_plugin_types, auth_plugin_count,
+		  sizeof(*auth_plugin_types));
 
-	plugin_types[plugin_count - 1] = xstrdup(full_type);
-	plugin_handles[plugin_count - 1] = id;
+	auth_plugin_types[auth_plugin_count - 1] = xstrdup(full_type);
+	auth_plugin_handles[auth_plugin_count - 1] = id;
 
-	debug5("%s: plugin type:%s path:%s",
+	debug5("%s: auth plugin type:%s path:%s",
+	       __func__, full_type, fq_path);
+}
+
+static void _oas_plugrack_foreach(const char *full_type, const char *fq_path,
+			      const plugin_handle_t id)
+{
+	oas_plugin_count += 1;
+	xrecalloc(oas_plugin_handles, oas_plugin_count,
+		  sizeof(*oas_plugin_handles));
+	xrecalloc(oas_plugin_types, oas_plugin_count,
+		  sizeof(*oas_plugin_types));
+
+	oas_plugin_types[oas_plugin_count - 1] = xstrdup(full_type);
+	oas_plugin_handles[oas_plugin_count - 1] = id;
+
+	debug5("%s: OAS plugin type:%s path:%s",
 	       __func__, full_type, fq_path);
 }
 
@@ -380,12 +384,59 @@ int main(int argc, char **argv)
 	if (init_operations())
 		fatal("Unable to initialize operations structures");
 
-	rack = plugrack_create("openapi");
-	plugrack_read_dir(rack, slurm_conf.plugindir);
+	auth_rack = plugrack_create("rest_auth");
+	plugrack_read_dir(auth_rack, slurm_conf.plugindir);
+
+	if (rest_auth && !xstrcasecmp(rest_auth, "list")) {
+		info("Possible REST authentication plugins:");
+		plugrack_foreach(auth_rack, _plugrack_foreach_list);
+		exit(0);
+	} else if (rest_auth) {
+		/* User provide which plugins they want */
+		char *type, *last = NULL;
+
+		type = strtok_r(rest_auth, ",", &last);
+		while (type) {
+			xstrtrim(type);
+
+			/* Permit both prefix and no-prefix for plugin names. */
+			if (xstrncmp(type, "rest_auth/", 10) == 0)
+				type += 10;
+			type = xstrdup_printf("rest_auth/%s", type);
+			xstrtrim(type);
+
+			_auth_plugrack_foreach(type, NULL,
+					       PLUGIN_INVALID_HANDLE);
+
+			xfree(type);
+			type = strtok_r(NULL, ",", &last);
+		}
+
+		xfree(rest_auth);
+	} else /* Add all possible */
+		plugrack_foreach(auth_rack, _auth_plugrack_foreach);
+
+	if (!auth_plugin_count)
+		fatal("No authentication plugins to load.");
+
+	for (size_t i = 0; i < auth_plugin_count; i++) {
+		if ((auth_plugin_handles[i] == PLUGIN_INVALID_HANDLE) &&
+		    (auth_plugin_handles[i] =
+		     plugrack_use_by_type(auth_rack, auth_plugin_types[i])) ==
+		    PLUGIN_INVALID_HANDLE)
+				fatal("Unable to find plugin: %s",
+				      auth_plugin_types[i]);
+	}
+
+	if (init_rest_auth(auth_plugin_handles, auth_plugin_count))
+		fatal("Unable to initialize rest authentication");
+
+	oas_rack = plugrack_create("openapi");
+	plugrack_read_dir(oas_rack, slurm_conf.plugindir);
 
 	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
 		info("Possible OpenAPI plugins:");
-		plugrack_foreach(rack, _plugrack_foreach_list);
+		plugrack_foreach(oas_rack, _plugrack_foreach_list);
 		exit(0);
 	} else if (oas_specs) {
 		/* User provide which plugins they want */
@@ -401,7 +452,8 @@ int main(int argc, char **argv)
 			type = xstrdup_printf("openapi/%s", type);
 			xstrtrim(type);
 
-			_plugrack_foreach(type, NULL, PLUGIN_INVALID_HANDLE);
+			_oas_plugrack_foreach(type, NULL,
+					      PLUGIN_INVALID_HANDLE);
 
 			xfree(type);
 			type = strtok_r(NULL, ",", &last);
@@ -409,25 +461,22 @@ int main(int argc, char **argv)
 
 		xfree(oas_specs);
 	} else /* Add all possible */
-		plugrack_foreach(rack, _plugrack_foreach);
+		plugrack_foreach(oas_rack, _oas_plugrack_foreach);
 
-	if (!plugin_count)
-		fatal("No plugins to load. Nothing to do.");
+	if (!oas_plugin_count)
+		fatal("No OAS plugins to load. Nothing to do.");
 
-	for (size_t i = 0; i < plugin_count; i++) {
-		if ((plugin_handles[i] == PLUGIN_INVALID_HANDLE) &&
-		    (plugin_handles[i] =
-		     plugrack_use_by_type(rack, plugin_types[i])) ==
+	for (size_t i = 0; i < oas_plugin_count; i++) {
+		if ((oas_plugin_handles[i] == PLUGIN_INVALID_HANDLE) &&
+		    (oas_plugin_handles[i] =
+		     plugrack_use_by_type(oas_rack, oas_plugin_types[i])) ==
 		    PLUGIN_INVALID_HANDLE)
 				fatal("Unable to find plugin: %s",
-				      plugin_types[i]);
+				      oas_plugin_types[i]);
 	}
 
-	if (init_openapi(plugin_handles, plugin_count))
+	if (init_openapi(oas_plugin_handles, oas_plugin_count))
 		fatal("Unable to initialize OpenAPI structures");
-
-	if (init_rest_auth(auth_type))
-		fatal("Unable to initialize rest authentication");
 
 	/* Sanity check modes */
 	if (run_mode.stdin_socket) {
@@ -471,16 +520,23 @@ int main(int argc, char **argv)
 	free_con_mgr(conmgr);
 	data_destroy_static();
 
-	for (size_t i = 0; i < plugin_count; i++) {
-		plugrack_release_by_type(rack, plugin_types[i]);
-		xfree(plugin_types[i]);
+	for (size_t i = 0; i < oas_plugin_count; i++) {
+		plugrack_release_by_type(oas_rack, oas_plugin_types[i]);
+		xfree(oas_plugin_types[i]);
 	}
-
-	if ((rc = plugrack_destroy(rack)))
+	if ((rc = plugrack_destroy(oas_rack)))
+		fatal_abort("unable to clean up plugrack: %s",
+			    slurm_strerror(rc));
+	for (size_t i = 0; i < auth_plugin_count; i++) {
+		plugrack_release_by_type(auth_rack, auth_plugin_types[i]);
+		xfree(auth_plugin_types[i]);
+	}
+	if ((rc = plugrack_destroy(auth_rack)))
 		fatal_abort("unable to clean up plugrack: %s",
 			    slurm_strerror(rc));
 
-	rack = NULL;
+	oas_rack = NULL;
+	auth_rack = NULL;
 	slurm_select_fini();
 	slurm_auth_fini();
 	slurm_conf_destroy();

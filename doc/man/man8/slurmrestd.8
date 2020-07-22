@@ -28,9 +28,10 @@ life of the process.
 Listen on local UNIX socket. Must have permission to create socket in
 filesystem.
 .TP
-\fB\-a <authentication types>\fR
-Comma delimited list of authentication types to allow.
-Possible types: local, psk
+\fB\-a <authentication plugins>\fR
+Comma delimited list of authentication plugins to load.
+Set to "list" to dump a list of the possible plugins to load.
+Defaults: all builtin supported REST authentication plugins.
 .TP
 \fB\-f <file>\fR
 Read Slurm configuration from the specified file. See \fBNOTES\fR below.

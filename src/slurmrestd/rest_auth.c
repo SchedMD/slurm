@@ -36,19 +36,14 @@
 
 #include "config.h"
 
-#define _GNU_SOURCE /* needed for SO_PEERCRED */
-
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include "slurm/slurm.h"
 
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/plugin.h"
 #include "src/common/slurm_auth.h"
-#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -57,44 +52,108 @@
 #include "src/slurmrestd/rest_auth.h"
 #include "src/slurmrestd/xjson.h"
 
-/* only set by init_rest_auth() */
-static rest_auth_type_t auth_type = AUTH_TYPE_INVALID;
 static pthread_mutex_t init_lock = PTHREAD_MUTEX_INITIALIZER;
 
+typedef struct {
+	int (*init)(void);
+	int (*fini)(void);
+	int (*auth)(on_http_request_args_t *args, rest_auth_context_t *ctxt);
+	int (*apply)(rest_auth_context_t *context);
+	void (*free)(rest_auth_context_t *context);
+} slurm_rest_auth_ops_t;
+
+/*
+ * Must be synchronized with slurm_rest_auth_ops_t above.
+ */
+static const char *syms[] = {
+	"slurm_rest_auth_p_init",
+	"slurm_rest_auth_p_fini",
+	"slurm_rest_auth_p_authenticate",
+	"slurm_rest_auth_p_apply",
+	"slurm_rest_auth_p_free", /* release contents of plugin_data */
+};
+
+static slurm_rest_auth_ops_t *ops;
+static uint32_t *plugin_ids;
+static int g_context_cnt = -1;
+static plugin_context_t **g_context = NULL;
+
 #define MAGIC 0xDEDEDEDE
-#define HTTP_HEADER_USER_TOKEN "X-SLURM-USER-TOKEN"
-#define HTTP_HEADER_USER_NAME "X-SLURM-USER-NAME"
 
 static void _check_magic(rest_auth_context_t *ctx)
 {
 	xassert(ctx);
 	xassert(ctx->magic == MAGIC);
+
+	if (ctx->plugin_id) {
+		xassert(ctx->user_name);
+	} else {
+		xassert(!ctx->plugin_data);
+		xassert(!ctx->user_name);
+	}
 }
 
 extern void destroy_rest_auth(void)
 {
 	slurm_mutex_lock(&init_lock);
-	auth_type = AUTH_TYPE_INVALID;
+
+	for (int i = 0; (g_context_cnt > 0) && (i < g_context_cnt); i++) {
+		(*(ops[i].fini))();
+
+		if (g_context[i] && plugin_context_destroy(g_context[i]))
+				fatal_abort("%s: unable to unload plugin",
+					    __func__);
+	}
+	xfree(ops);
+	xfree(g_context);
+	g_context_cnt = -1;
+
 	slurm_mutex_unlock(&init_lock);
 }
 
-extern int init_rest_auth(rest_auth_type_t type)
+extern int init_rest_auth(const plugin_handle_t *plugin_handles,
+			  const size_t plugin_count)
 {
 	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&init_lock);
 
-	if (auth_type)
-		fatal_abort("%s: duplicate authentication init", __func__);
+	/* Load OpenAPI plugins */
+	xassert(g_context_cnt == -1);
+	g_context_cnt = 0;
 
-	if (type == AUTH_TYPE_INVALID)
-		fatal("%s: invalid authentication type requested", __func__);
-	auth_type = type;
+	xrecalloc(ops, (plugin_count + 1), sizeof(slurm_rest_auth_ops_t));
+	xrecalloc(plugin_ids, (plugin_count + 1), sizeof(plugin_ids));
+	xrecalloc(g_context, (plugin_count + 1), sizeof(plugin_context_t *));
 
-	if (type & AUTH_TYPE_LOCAL)
-		debug3("%s: AUTH_TYPE_LOCAL activated", __func__);
-	if (type & AUTH_TYPE_USER_PSK)
-		debug3("%s: AUTH_TYPE_USER_PSK activated", __func__);
+	for (size_t i = 0; (i < plugin_count); i++) {
+		void *id_ptr;
+
+		if (plugin_handles[i] == PLUGIN_INVALID_HANDLE)
+			fatal("Invalid plugin to load?");
+
+		if (plugin_get_syms(plugin_handles[i],
+				    (sizeof(syms)/sizeof(syms[0])),
+				    syms, (void **)&ops[g_context_cnt])
+		    < (sizeof(syms)/sizeof(syms[0])))
+			fatal("Incomplete plugin detected");
+
+		id_ptr = plugin_get_sym(plugin_handles[i], "plugin_id");
+		if (!id_ptr)
+			fatal("%s: unable to find plugin_id symbol",
+			      __func__);
+
+		plugin_ids[g_context_cnt] = *(uint32_t *)id_ptr;
+		if (!plugin_ids[g_context_cnt])
+			fatal("%s: invalid plugin_id: %u",
+			      __func__, plugin_ids[g_context_cnt]);
+		else
+			debug5("%s: found plugin_id: %u",
+			       __func__, plugin_ids[g_context_cnt]);
+
+		(*(ops[g_context_cnt].init))();
+		g_context_cnt++;
+	}
 
 	slurm_mutex_unlock(&init_lock);
 
@@ -105,234 +164,62 @@ static void _clear_auth(rest_auth_context_t *ctxt)
 {
 	_check_magic(ctxt);
 
-	ctxt->type = AUTH_TYPE_INVALID;
+	if (ctxt->plugin_id) {
+		bool found = false;
+
+		for (int i = 0; (g_context_cnt > 0) && (i < g_context_cnt); i++) {
+			if (plugin_ids[i] == ctxt->plugin_id) {
+				(*(ops[i].free))(ctxt);
+				found = true;
+				break;
+			}
+		}
+
+		if (!found)
+			fatal_abort("%s: unable to free auth context with plugin_id: %u",
+				    __func__, ctxt->plugin_id);
+	}
+
+	xassert(!ctxt->plugin_data);
 	xfree(ctxt->user_name);
-	xfree(ctxt->token);
+	ctxt->plugin_id = 0;
 
 	rest_auth_context_clear();
 }
 
-static void _auth_local(on_http_request_args_t *args, rest_auth_context_t *ctxt)
-{
-	struct stat status = { 0 };
-	uid_t uid = getuid();
-	uid_t auth_uid = SLURM_AUTH_NOBODY;
-	const char *header_user_name = find_http_header(args->headers,
-							HTTP_HEADER_USER_NAME);
-
-	const int input_fd = args->context->con->input_fd;
-	const int output_fd = args->context->con->output_fd;
-	const char *name = args->context->con->name;
-
-	/* ensure user name is always NULL */
-	xfree(ctxt->user_name);
-
-	if (input_fd < 0 || output_fd < 0) {
-		/* local auth requires there to be a valid fd */
-		debug3("%s: rejecting auth local with invalid input_fd:%u output_fd:%u",
-		       __func__, input_fd, output_fd);
-		_clear_auth(ctxt);
-		return;
-	}
-
-	if (args->context->con->is_socket && !args->context->con->unix_socket) {
-		/*
-		 * SO_PEERCRED only works on unix sockets
-		 */
-		debug("%s: [%s] socket authentication only supported on UNIX sockets",
-		      __func__, name);
-		_clear_auth(ctxt);
-		return;
-	} else if (args->context->con->is_socket &&
-		   args->context->con->unix_socket) {
-		struct ucred cred = { 0 };
-		socklen_t len = sizeof(cred);
-
-		if (getsockopt(input_fd, SOL_SOCKET, SO_PEERCRED, &cred,
-			       &len) == -1) {
-			/* socket may be remote, local auth doesn't apply */
-			debug("%s: [%s] unable to get socket ownership: %m",
-			      __func__, name);
-			_clear_auth(ctxt);
-			return;
-		}
-
-		if (cred.uid == -1 || cred.gid == -1 || cred.pid == 0) {
-			/* SO_PEERCRED failed silently */
-			error("%s: [%s] rejecting socket connection with invalid SO_PEERCRED response",
-			      __func__, name);
-			_clear_auth(ctxt);
-			return;
-		} else if (!cred.uid) {
-			/* requesting socket is root */
-			error("%s: [%s] accepted root socket connection with uid:%u gid:%u pid:%ld",
-			      __func__, name, cred.uid, cred.gid,
-			      (long) cred.pid);
-
-			xfree(ctxt->user_name);
-			ctxt->type |= AUTH_TYPE_LOCAL;
-			/*
-			 * root can be any user if they want - default to
-			 * running user. This will be rejected with auth/jwt.
-			 */
-			if (header_user_name) {
-				ctxt->user_name = xstrdup(header_user_name);
-				auth_uid = cred.uid;
-			} else
-				auth_uid = uid;
-		} else if (uid == cred.uid) {
-			info("%s: [%s] accepted user socket connection with uid:%u gid:%u pid:%ld",
-			     __func__, name, cred.uid, cred.gid,
-			     (long) cred.pid);
-
-			ctxt->type |= AUTH_TYPE_LOCAL;
-			auth_uid = cred.uid;
-		} else {
-			/* another user -> REJECT */
-			error("%s: [%s] rejecting socket connection with uid:%u gid:%u pid:%ld",
-			      __func__, name, cred.uid, cred.gid,
-			      (long) cred.pid);
-			_clear_auth(ctxt);
-			return;
-		}
-	} else if (fstat(input_fd, &status)) {
-		error("%s: [%s] unable to stat fd %d: %m",
-		      __func__, name, input_fd);
-		_clear_auth(ctxt);
-		return;
-	} else if (S_ISCHR(status.st_mode) || S_ISFIFO(status.st_mode) ||
-		   S_ISREG(status.st_mode)) {
-		if (status.st_mode & (S_ISUID | S_ISGID)) {
-			/* FIFO has sticky bits -> REJECT */
-			error("%s: [%s] rejecting PIPE connection sticky bits permissions: %07o",
-			      __func__, name, status.st_mode);
-			_clear_auth(ctxt);
-			return;
-		} else if (status.st_mode & S_IRWXO) {
-			/* FIFO has other read/write -> REJECT */
-			error("%s: [%s] rejecting PIPE connection other read or write bits permissions: %07o",
-			      __func__, name, status.st_mode);
-			_clear_auth(ctxt);
-			return;
-		} else if (status.st_uid == uid) {
-			/* FIFO is owned by same user */
-			info("%s: [%s] accepted connection from uid:%u",
-			     __func__, name, status.st_uid);
-
-			ctxt->type |= AUTH_TYPE_LOCAL;
-			auth_uid = status.st_uid;
-		}
-	} else {
-		error("%s: [%s] rejecting unknown file type with mode:%07o blk:%u char:%u dir:%u fifo:%u reg:%u link:%u",
-		      __func__, name, status.st_mode, S_ISBLK(status.st_mode),
-		      S_ISCHR(status.st_mode), S_ISDIR(status.st_mode),
-		      S_ISFIFO(status.st_mode), S_ISREG(status.st_mode),
-		      S_ISLNK(status.st_mode));
-		_clear_auth(ctxt);
-		return;
-	}
-
-	if (!ctxt->user_name)
-		ctxt->user_name = uid_to_string_or_null(auth_uid);
-
-	xfree(ctxt->token);
-	if (!ctxt->user_name) {
-		error("%s: [%s] unable to lookup user_name for uid:%u",
-		      __func__, args->context->con->name, auth_uid);
-		_clear_auth(ctxt);
-		return;
-	}
-
-	if (!(ctxt->type & AUTH_TYPE_LOCAL))
-		fatal_abort("%s: authentication failed but didn't return error",
-			    __func__);
-}
-
-static int _auth_user_psk(on_http_request_args_t *args,
-			  rest_auth_context_t *ctxt)
-{
-	const char *key = find_http_header(args->headers,
-					   HTTP_HEADER_USER_TOKEN);
-	const char *user_name = find_http_header(args->headers,
-						 HTTP_HEADER_USER_NAME);
-
-	_check_magic(ctxt);
-
-	if (!key && !user_name) {
-		debug3("%s: [%s] skipping token authentication",
-		       __func__, args->context->con->name);
-		return SLURM_SUCCESS;
-	}
-
-	if (!key) {
-		error("%s: [%s] missing header user token: %s",
-		      __func__, args->context->con->name,
-		      HTTP_HEADER_USER_TOKEN);
-		_clear_auth(ctxt);
-		return ESLURM_AUTH_CRED_INVALID;
-	}
-	if (!user_name) {
-		error("%s: [%s] missing header user name: %s",
-		      __func__, args->context->con->name,
-		      HTTP_HEADER_USER_NAME);
-		_clear_auth(ctxt);
-		return ESLURM_AUTH_CRED_INVALID;
-	}
-
-	debug3("%s: [%s] attempting user_name %s token authentication",
-	       __func__, args->context->con->name, user_name);
-
-	xfree(ctxt->user_name);
-	xfree(ctxt->token);
-
-	ctxt->type |= AUTH_TYPE_USER_PSK;
-	ctxt->user_name = xstrdup(user_name);
-	ctxt->token = xstrdup(key);
-
-	return SLURM_SUCCESS;
-}
-
 extern int rest_authenticate_http_request(on_http_request_args_t *args)
 {
+	int rc = ESLURM_AUTH_CRED_INVALID;
 	rest_auth_context_t *context =
 		(rest_auth_context_t *) args->context->auth;
-	_check_magic(context);
 
 	if (!context) {
 		context = rest_auth_context_new();
 		args->context->auth = context;
 	}
 
-	/* continue if already authenticated */
-	if (context->type)
-		return SLURM_SUCCESS;
-
-	/* favor PSK if it is provided */
-	if ((auth_type & AUTH_TYPE_USER_PSK) &&
-	    _auth_user_psk(args, context))
-		goto fail;
-
-	/*
-	 * auth_type may be AUTH_TYPE_USER_PSK | AUTH_TYPE_LOCAL.
-	 * If so, the context->type will have changed if the PSK auth
-	 * was successful, and thus we should not double-authenticate the
-	 * connection. If it is still AUTH_TYPE_INVALID then we will try
-	 * local authentication as a fall-back here.
-	 */
-	if ((auth_type & AUTH_TYPE_LOCAL) &&
-	    (context->type == AUTH_TYPE_INVALID))
-		_auth_local(args, context);
-
-	if (context->type == AUTH_TYPE_INVALID)
-		goto fail;
-
 	_check_magic(context);
 
-	return rest_auth_context_apply(context);
+	/* continue if already authenticated via plugin */
+	if (context->plugin_id)
+		return rest_auth_context_apply(context);
 
-fail:
-	g_slurm_auth_thread_clear();
-	return ESLURM_AUTH_CRED_INVALID;
+	for (int i = 0; (g_context_cnt > 0) && (i < g_context_cnt); i++) {
+		rc = (*(ops[i].auth))(args, context);
+
+		if (rc == ESLURM_AUTH_SKIP)
+			continue;
+
+		if (!rc) {
+			context->plugin_id = plugin_ids[i];
+			_check_magic(context);
+			return rest_auth_context_apply(context);
+		} else /* plugin explicit rejected */
+			break;
+	}
+
+	rest_auth_context_clear();
+	return rc;
 }
 
 extern rest_auth_context_t *rest_auth_context_new(void)
@@ -340,28 +227,21 @@ extern rest_auth_context_t *rest_auth_context_new(void)
 	rest_auth_context_t *context = xmalloc(sizeof(*context));
 
 	context->magic = MAGIC;
+	context->plugin_id = 0; /* explicitly set to 0 */
 
 	return context;
 }
 
 extern int rest_auth_context_apply(rest_auth_context_t *context)
 {
-	int rc = ESLURM_AUTH_CRED_INVALID;
+	if (!context->plugin_id)
+		return ESLURM_AUTH_CRED_INVALID;
 
-	if (context->type == AUTH_TYPE_INVALID) {
-		rest_auth_context_clear();
-	} else if (context->type == AUTH_TYPE_LOCAL) {
-		/* clear any previous auth */
-		rest_auth_context_clear();
-		/* local auth relies on callers authentication already setup */
-		rc = SLURM_SUCCESS;
-	} else if (context->type == AUTH_TYPE_USER_PSK) {
-		rc = g_slurm_auth_thread_config(context->token,
-						context->user_name);
-	} else
-		fatal_abort("%s: invalid auth type", __func__);
+	for (int i = 0; (g_context_cnt > 0) && (i < g_context_cnt); i++)
+		if (context->plugin_id == plugin_ids[i])
+			return (*(ops[i].apply))(context);
 
-	return rc;
+	return ESLURM_AUTH_CRED_INVALID;
 }
 
 extern void rest_auth_context_clear(void)
@@ -371,11 +251,25 @@ extern void rest_auth_context_clear(void)
 
 extern void rest_auth_context_free(rest_auth_context_t *context)
 {
+	bool found = false;
 	if (!context)
 		return;
 
 	_clear_auth(context);
+	if (context->plugin_id) {
+		for (int i = 0;
+		     (g_context_cnt > 0) && (i < g_context_cnt);
+		     i++) {
+			if (context->plugin_id == plugin_ids[i]) {
+				found = true;
+				(*(ops[i].free))(context);
+				xassert(!context->plugin_data);
+				break;
+			}
+		}
 
+		xassert(found);
+	}
 	context->magic = ~MAGIC;
 	xfree(context);
 }
