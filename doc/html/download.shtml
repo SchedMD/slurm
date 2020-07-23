@@ -93,8 +93,9 @@ and "rack[0-3]_blade[0-63]" are not supported).</li><br>
 <li><b>Interactive Script</b><br>
 A wrapper script that makes it very simple to get an interactive shell on a
 cluster. Download the code from:<br>
-<a href="https://github.com/alanorth/hpc_infrastructure_scripts/blob/master/slurm/interactive">
-https://github.com/alanorth/hpc_infrastructure_scripts/blob/master/slurm/interactive</a></li><br>
+<a href="https://github.com/ilri/hpc-infrastructure-scripts/blob/master/slurm/interactive">
+https://github.com/ilri/hpc-infrastructure-scripts/blob/master/slurm/interactive
+</a></li><br>
 
 <li><b>Interconnect</b> plugins (Switch plugin)</li>
 <ul>
