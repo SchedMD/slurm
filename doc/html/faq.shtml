@@ -1880,19 +1880,19 @@ case_sensitive = False
 <p><a name="ha_db"><b>How critical is configuring high availability for my
 database?</b></a></br>
 <ul>
-<li>Consider if you really need a mysql failover. A short outage of slurmdbd is not
-a problem, because slurmctld will store all data in memory and send it to
-slurmdbd when it's back operating. The slurmctld daemon will also cache all
-user limits and fair share information.</li>
-<li>You cannot use ndb, since slurmdbd/mysql uses keys on BLOB values (and
-maybe something more from the incompatibility list).</li>
-<li>You can set up "classical" Linux HA, with heartbeat/corosync to migrate
-IP between master/backup mysql servers and:</li>
+<li>Consider if you really need a high-availability MySQL setup. A short outage
+of slurmdbd is not a problem, because slurmctld will store all data in memory
+and send it to slurmdbd when it resumes operations. The slurmctld daemon will
+also cache all user limits and fair share information.</li>
+<li>You cannot use NDB, since SlurmDBD's MySQL implementation uses keys on BLOB
+values (and potentially other features on the incompatibility list).</li>
+<li>You can set up "classical" Linux HA, with heartbeat/corosync to migrate IP
+between primary/backup mysql servers and:</li>
 <ul>
-  <li>Configure one way replication of mysql, and change master/backup roles on
-    failure</li>
-  <li>Use shared storage for master/slave mysql servers database, and start
-    backup on master mysql failure.</li>
+<li>Configure one way replication of mysql, and change primary/backup roles on
+failure</li>
+<li>Use shared storage for primary/backup mysql servers database, and start
+backup on primary mysql failure.</li>
 </ul>
 </ul>
 

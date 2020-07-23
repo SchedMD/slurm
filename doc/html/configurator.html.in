@@ -325,7 +325,7 @@ Hostname values should not be the fully qualified domain
 name (e.g. use <I>tux</I> rather than <I>tux.abc.com</I>).
 <P>
 <input type="text" name="control_machine" value="linux0"> <B>SlurmctldHost</B>:
-Master Controller Hostname
+Primary Controller Hostname
 <P>
 <input type="text" name="backup_controller"> <B>BackupController</B>: Backup
 Controller Hostname (optional)
@@ -686,7 +686,7 @@ when to purge job records, how long to give a job to gracefully terminate, etc.
 <P>
 <input type="text" name="slurmctld_timeout" value="120">
 <B>SlurmctldTimeout</B>: How many seconds the backup controller waits before
-becoming the master controller
+becoming the active controller
 <P>
 <input type="text" name="slurmd_timeout" value="300">
 <B>SlurmdTimeout</B>: How many seconds the Slurm controller waits for the slurmd
