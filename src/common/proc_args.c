@@ -1605,12 +1605,13 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 				outflags |= RESERVE_FLAG_NO_PART_NODES;
 			else
 				outflags |= RESERVE_FLAG_PART_NODES;
-		} else if (!xstrncasecmp(curr, "promiscuous", MAX(taglen, 2))) {
+		} else if (!xstrncasecmp(curr, "haphazard", MAX(taglen, 2)) ||
+			   !xstrncasecmp(curr, "promiscuous", MAX(taglen, 2))) {
 			curr += taglen;
 			if (flip)
-				outflags |= RESERVE_FLAG_NO_PROM;
+				outflags |= RESERVE_FLAG_NO_HAPHAZARD;
 			else
-				outflags |= RESERVE_FLAG_PROM;
+				outflags |= RESERVE_FLAG_HAPHAZARD;
 		} else if (!xstrncasecmp(curr, "PURGE_COMP", MAX(taglen, 2))) {
 			if (curr[taglen] == '=') {
 				int num_end;

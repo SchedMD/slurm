@@ -74,6 +74,7 @@ documents those changes that are of interest to users and administrators.
  -- Handle MPS correctly when doing exclusive allocations.
  -- slurmrestd - fix compiling against libhttpparser in a non-default path.
  -- slurmrestd - avoid compilation issues with libhttpparser < 2.6.
+ -- scontrol - changed the "PROMISCUOUS" flag to "HAPHAZARD"
 
 * Changes in Slurm 20.02.3
 ==========================
