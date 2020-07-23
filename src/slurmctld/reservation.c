@@ -6222,8 +6222,7 @@ extern void job_resv_check(void)
 			(void)_post_resv_delete(resv_ptr);
 
 			if (!resv_ptr->run_epilog)
-				_run_script(slurmctld_conf.resv_epilog,
-					    resv_ptr);
+				_run_script(slurm_conf.resv_epilog, resv_ptr);
 
 			/*
 			 * If we are ending a reoccurring reservation advance
