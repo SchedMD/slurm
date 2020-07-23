@@ -2434,7 +2434,8 @@ typedef struct will_run_response_msg {
 							 * the reservation name
 							 * if they meet
 							 * eligibility status */
-#define RESERVE_FLAG_NO_HAPHAZARD  0x0000000200000000	/* Clear PROM flag */
+#define RESERVE_FLAG_NO_HAPHAZARD  0x0000000200000000	/* Clear HAPHAZARD
+							 * flag */
 
 typedef struct resv_core_spec {
 	char *node_name;	/* Name of reserved node */
