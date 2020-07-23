@@ -225,7 +225,7 @@ Hostname values should should not be the fully qualified domain
 name (e.g. use <I>tux</I> rather than <I>tux.abc.com</I>).
 <P>
 <input type="text" name="control_machine" value="linux0"> <B>SlurmctldHost</B>:
-Master Controller Hostname
+Primary Controller Hostname
 <P>
 
 <H2>Compute Machines</H2>
