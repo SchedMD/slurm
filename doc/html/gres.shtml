@@ -47,6 +47,12 @@ NodeName=tux[0-7] Gres=gpu:tesla:2,gpu:kepler:2,mps:400,bandwidth:lustre:no_cons
 file describing which resources are available on the node, their count,
 associated device files and cores which should be used with those resources.</P>
 
+<p>There are cases where you may want to define a Generic Resource on a node
+without specifying a quantity of that GRES. For example, the filesystem type
+of a node doesn't decrease in value as jobs run on that node.
+You can use the <b>no_consume</b> flag to allow users to request a GRES
+without having a defined count that gets used as it is requested.</p>
+
 <P>If <i>AutoDetect=nvml</i> is set in <I>gres.conf</I>,
 and the <i>NVIDIA Management Library</i> (NVML) is installed on the node and was
 found during Slurm configuration, configuration details will automatically be
@@ -424,6 +430,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 25 February 2020</p>
+<p style="text-align: center;">Last modified 23 July 2020</p>
 
 <!--#include virtual="footer.txt"-->
