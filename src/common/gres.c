@@ -821,36 +821,19 @@ extern int gres_plugin_reconfig(void)
 	return rc;
 }
 
-
-
-/*
- * Remove file-less GPUs from the final GRES list, since File is a requirement.
- */
-static void _remove_fileless_gpus(List gres_conf_list,
-				  slurm_gres_context_t *context_ptr)
+/* Return 1 if a gres_conf record is the correct plugin_id and has no file */
+static int _find_fileless_gres(void *x, void *arg)
 {
-	gres_slurmd_conf_t *gres_conf;
-	ListIterator iter;
+	gres_slurmd_conf_t *gres_conf = (gres_slurmd_conf_t *)x;
+	uint32_t plugin_id = *(uint32_t *)arg;
 
-	if (!gres_conf_list)
-		return;
-
-	/* Only work in the GPU plugin */
-	if (context_ptr->plugin_id != gres_plugin_build_id("gpu"))
-		return;
-
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_conf = list_next(iter))) {
-		if (gres_conf->plugin_id != context_ptr->plugin_id)
-			continue;
-
-		if (!gres_conf->file) {
-			debug("Removing file-less GPU %s:%s from final GRES list",
-			      gres_conf->name, gres_conf->type_name);
-			list_delete_item(iter);
-		}
+	if ((gres_conf->plugin_id == plugin_id) && !gres_conf->file) {
+		debug("Removing file-less GPU %s:%s from final GRES list",
+		      gres_conf->name, gres_conf->type_name);
+		return 1;
 	}
-	list_iterator_destroy(iter);
+	return 0;
+
 }
 
 /*
@@ -2070,10 +2053,10 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 	}
 
 	/* Postprocess gres_conf_list after all plugins' node_config_load */
-	for (i = 0; i < gres_context_cnt; i++) {
-		/* Remove every GPU with an empty File */
-		_remove_fileless_gpus(gres_conf_list, &gres_context[i]);
-	}
+
+	/* Remove every GPU with an empty File */
+	(void) list_delete_all(gres_conf_list, _find_fileless_gres,
+			       &gpu_plugin_id);
 
 	list_for_each(gres_conf_list, _log_gres_slurmd_conf, NULL);
 
