@@ -103,10 +103,12 @@ typedef struct {
 	int nfds;
 } poll_args_t;
 
+#ifndef NDEBUG
 static int _find_by_ptr(void *x, void *key)
 {
 	return (x == key);
 }
+#endif /*!NDEBUG */
 
 /*
  * Find by matching fd to connection
