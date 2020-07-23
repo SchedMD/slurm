@@ -6184,7 +6184,7 @@ static int _resv_list_reset_cnt(void *x, void *arg)
 extern void job_resv_check(void)
 {
 	ListIterator iter;
-	slurmctld_resv_t *resv_backup, *resv_ptr;
+	slurmctld_resv_t *resv_ptr;
 	time_t now = time(NULL);
 
 	if (!resv_list)
@@ -6195,10 +6195,13 @@ extern void job_resv_check(void)
 
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
-		if (resv_ptr->job_run_cnt || resv_ptr->job_pend_cnt)
-			resv_ptr->idle_start_time = 0;
-		else if (!resv_ptr->idle_start_time)
-			resv_ptr->idle_start_time = now;
+		if (resv_ptr->start_time <= now) {
+			if (resv_ptr->job_run_cnt || resv_ptr->job_pend_cnt)
+				resv_ptr->idle_start_time = 0;
+			else if (!resv_ptr->idle_start_time)
+				resv_ptr->idle_start_time = now;
+		}
+
 		if ((resv_ptr->flags & RESERVE_FLAG_PURGE_COMP) &&
 		    resv_ptr->idle_start_time &&
 		    (resv_ptr->end_time > now) &&
@@ -6209,12 +6212,42 @@ extern void job_resv_check(void)
 				      tmp_pct, sizeof(tmp_pct));
 			info("Reservation %s has no more jobs for %s, ending it",
 			     resv_ptr->name, tmp_pct);
-			resv_backup = _copy_resv(resv_ptr);
-			resv_ptr->end_time = now;
-			_post_resv_update(resv_ptr, resv_backup); /* accounting */
-			_del_resv_rec(resv_backup);
+
+			/*
+			 * Reset time here for reoccurring reservations so we
+			 * don't continually keep running this.
+			 */
+			resv_ptr->idle_start_time = 0;
+
+			(void)_post_resv_delete(resv_ptr);
+
+			if (!resv_ptr->run_epilog)
+				_run_script(slurmctld_conf.resv_epilog,
+					    resv_ptr);
+
+			/*
+			 * If we are ending a reoccurring reservation advance
+			 * it, otherwise delete it.
+			 */
+			if (!(resv_ptr->flags & (RESERVE_FLAG_DAILY |
+						 RESERVE_FLAG_WEEKDAY |
+						 RESERVE_FLAG_WEEKEND |
+						 RESERVE_FLAG_WEEKLY))) {
+				/*
+				 * Clear resv ptrs on finished jobs still
+				 * pointing to this reservation.
+				 */
+				_clear_job_resv(resv_ptr);
+				list_delete_item(iter);
+			} else {
+				resv_ptr->run_prolog = false;
+				resv_ptr->run_epilog = false;
+				_advance_resv_time(resv_ptr);
+			}
+
 			last_resv_update = now;
 			schedule_resv_save();
+			continue;
 		}
 		if ((resv_ptr->end_time >= now) ||
 		    (resv_ptr->duration && (resv_ptr->duration != NO_VAL) &&
