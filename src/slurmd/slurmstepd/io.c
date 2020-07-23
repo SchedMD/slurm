@@ -926,7 +926,6 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 		 * task gets an eio object for stdin.
 		 * Its not clear why that is. */
 		if (task->gtid == 0) {
-			int amaster, aslave;
 			debug("  stdin uses a pty object");
 #if HAVE_SETRESUID
 			/*
@@ -942,7 +941,8 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			if (setresuid(geteuid(), geteuid(), 0) < 0)
 				error ("pre openpty: setresuid: %m");
 #endif
-			if (openpty(&amaster, &aslave, NULL, NULL, NULL) < 0) {
+			if (openpty(&task->to_stdin, &task->stdin_fd,
+				    NULL, NULL, NULL) < 0) {
 				error("stdin openpty: %m");
 				return SLURM_ERROR;
 			}
@@ -950,9 +950,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			if (setresuid(0, getuid(), 0) < 0)
 				error ("post openpty: setresuid: %m");
 #endif
-			task->stdin_fd = aslave;
 			fd_set_close_on_exec(task->stdin_fd);
-			task->to_stdin = amaster;
 			fd_set_close_on_exec(task->to_stdin);
 			fd_set_nonblocking(task->to_stdin);
 			_spawn_window_manager(task, job);
