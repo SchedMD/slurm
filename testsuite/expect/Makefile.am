@@ -105,8 +105,8 @@ EXTRA_DIST = \
 	test1.92			\
 	test1.93			\
 	test1.94			\
-	test1.94.master.c		\
-	test1.94.slave.c		\
+	test1.94.client.c		\
+	test1.94.server.c		\
 	test1.95			\
 	test1.95.prog.upc		\
 	test1.96			\

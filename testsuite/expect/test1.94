@@ -32,8 +32,8 @@ set exit_code          0
 set file_in            "test$test_id.input"
 set file_out           "test$test_id.output"
 set file_err           "test$test_id.error"
-set master_prog        "test$test_id.master"
-set slave_prog         "test$test_id.slave"
+set server_prog        "test$test_id.server"
+set client_prog        "test$test_id.client"
 set job_id             0
 
 #
@@ -73,10 +73,10 @@ if {$invalid == 1} {
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $file_in $file_out $file_err
-exec $bin_rm -f $master_prog ${master_prog}.o
-exec $bin_rm -f $slave_prog  ${slave_prog}.o
-exec $mpicc -o $master_prog  ${master_prog}.c
-exec $mpicc -o $slave_prog   ${slave_prog}.c
+exec $bin_rm -f $server_prog ${server_prog}.o
+exec $bin_rm -f $client_prog  ${client_prog}.o
+exec $mpicc -o $server_prog  ${server_prog}.c
+exec $mpicc -o $client_prog  ${client_prog}.c
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -85,7 +85,7 @@ file delete $file_out $file_err
 # Build input script file
 #
 make_bash_script $file_in "
-  $srun -n1 --mem=0 $master_prog $slave_prog
+  $srun -n1 --mem=0 $server_prog $client_prog
 "
 
 #
@@ -171,8 +171,8 @@ if {[wait_for_file $file_out] == 0} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
-	exec $bin_rm -f $master_prog ${master_prog}.o
-	exec $bin_rm -f $slave_prog  ${slave_prog}.o
+	exec $bin_rm -f $server_prog ${server_prog}.o
+	exec $bin_rm -f $client_prog ${client_prog}.o
 } else {
 	set matches 0
 	spawn head $file_err

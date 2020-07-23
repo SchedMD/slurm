@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  test1.94.master.c - Test of MPICH2 task spawn logic
+ *  test1.94.server.c - Test of MPICH2 task spawn logic
  *****************************************************************************
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -30,19 +30,19 @@ int main(int argc, char *argv[])
 	MPI_Comm everyone;	/* intercommunicator */
 
 	if (argc < 2) {
-		printf("FAILURE: Usage %s <slave_program>\n", argv[0]);
+		printf("FAILURE: Usage %s <client_program>\n", argv[0]);
 		exit(1);
 	}
 
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 	if (world_size != 1) {
-		printf("FAILURE: Started %d master processes\n", world_size);
+		printf("FAILURE: Started %d server processes\n", world_size);
 		exit(1);
 	}
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	//printf("master rank:%d\n",rank);
+	//printf("server rank:%d\n",rank);
 
 	/* NOTE: Ideally MPI_UNIVERSE_SIZE would be the size of the job
 	 * allocation. Presently it is the size of the job step allocation.

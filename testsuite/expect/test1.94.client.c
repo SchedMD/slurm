@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  test1.93.slave.c - Simple ping test of operation with Slurm.
+ *  test1.93.client.c - Simple ping test of operation with Slurm.
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 	}
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	//printf("slave rank:%d size:%d\n", rank, size);
+	//printf("client rank:%d size:%d\n", rank, size);
  
 	buf = rank;	/* we only pass rank */
 	pass_its_neighbor(rank, size, &buf);
