@@ -32,15 +32,17 @@
 ############################################################################
 
 proc inc3_11_3 {} {
-	global user_name exit_code res_name
+	global user_name exit_code
 	global bin_rm file_in bin_sleep sbatch number scontrol
 	global re_word_str scancel
+
+	set res_name "resv3.11.3"
 
 	# TEST 3
 
 	log_info "+++++ STARTING TEST 3 (Within: inc3.11.3) +++++"
 	# Make the reservation
-	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
+	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name"]
 	if {$ret_code != 0} {
 		fail "Unable to create a valid reservation (Within: inc3.11.3)"
 	}

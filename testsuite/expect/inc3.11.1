@@ -36,8 +36,10 @@ proc inc3_11_1 {} {
 	global cons_res_actived def_node def_node_name
 	global def_partition exit_code
 	global part_cores part_node part_node_cnt part_node_cores
-	global res_name user_name
+	global user_name
 	global heterogeneous
+
+	set res_name "resv3.11.1"
 
 	# TEST 1
 	# Make a list of lists with a series of parameters to test.  All the tests
@@ -69,7 +71,7 @@ proc inc3_11_1 {} {
 	}
 
 	foreach test $badtests {
-		set ret_code [create_res $test 1]
+		set ret_code [create_res $res_name $test]
 		if {$ret_code == 0} {
 			delete_res $res_name
 			fail "Reservation $test did not fail but should have (Within: inc3.11.1)"
@@ -99,7 +101,7 @@ proc inc3_11_1 {} {
 	}
 
 	foreach test $goodtests {
-		set ret_code [create_res $test 0]
+		set ret_code [create_res $res_name $test]
 		if {$ret_code != 0} {
 			fail "Unable to create a valid reservation (Within: inc3.11.1)"
 		} else {

@@ -47,18 +47,8 @@ set user_name [get_my_user_name]
 #
 # Create the advanced reservation
 #
-spawn $scontrol create reservation ReservationName=$resv_name starttime=now duration=2 nodecnt=2 flags=replace partition=$def_part_name users=$user_name
-expect {
-	-re "Error|error" {
-		fail "Error creating reservation"
-	}
-	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
+if { [create_res $resv_name "starttime=now duration=2 nodecnt=2 flags=replace partition=$def_part_name users=$user_name"] } {
+	fail "Error creating reservation"
 }
 
 #
@@ -170,20 +160,10 @@ if {![string compare $node_list_orig $node_list_new]} {
 #
 # Delete the advanced reservation
 #
-spawn $scontrol delete ReservationName=$resv_name
-expect {
-	-re "Error|error" {
-		log_error "Error deleting reservation"
-		set exit_code 1
-	}
-	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
+if { [delete_res $resv_name] } {
+	set exit_code 1
 }
+
 spawn $scontrol update NodeName=$node_list_new State=RESUME
 expect {
 	-re "Error|error" {
