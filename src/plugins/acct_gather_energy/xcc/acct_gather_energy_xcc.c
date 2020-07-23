@@ -193,8 +193,8 @@ typedef struct slurm_ipmi_conf {
 	uint32_t session_timeout;
 	uint8_t target_channel_number;
 	bool target_channel_number_is_set;
-	uint8_t target_slave_address;
-	bool target_slave_address_is_set;
+	uint8_t target_address;
+	bool target_address_is_set;
 	/* Timeout for the ipmi thread */
 	uint32_t timeout;
 	/* BMC username. Pass NULL ptr for default username.  Standard
@@ -266,8 +266,8 @@ static void _reset_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 		slurm_ipmi_conf->session_timeout = 0;
 		slurm_ipmi_conf->target_channel_number = 0x00;
 		slurm_ipmi_conf->target_channel_number_is_set = false;
-		slurm_ipmi_conf->target_slave_address = 0x20;
-		slurm_ipmi_conf->target_slave_address_is_set = false;
+		slurm_ipmi_conf->target_address = 0x20;
+		slurm_ipmi_conf->target_address_is_set = false;
 		slurm_ipmi_conf->timeout = DEFAULT_IPMI_TIMEOUT;
 		xfree(slurm_ipmi_conf->username);
 		slurm_ipmi_conf->username = xstrdup(DEFAULT_IPMI_USER);
@@ -396,13 +396,13 @@ static int _init_ipmi_config (void)
 	}
 
 	if (slurm_ipmi_conf.target_channel_number_is_set
-	    || slurm_ipmi_conf.target_slave_address_is_set) {
+	    || slurm_ipmi_conf.target_address_is_set) {
 		if (ipmi_ctx_set_target(
 			    ipmi_ctx,
 			    slurm_ipmi_conf.target_channel_number_is_set ?
 			    &slurm_ipmi_conf.target_channel_number : NULL,
-			    slurm_ipmi_conf.target_slave_address_is_set ?
-			    &slurm_ipmi_conf.target_slave_address : NULL) < 0) {
+			    slurm_ipmi_conf.target_address_is_set ?
+			    &slurm_ipmi_conf.target_address : NULL) < 0) {
 			error ("%s: error on ipmi_ctx_set_target: %s",
 			       __func__, ipmi_ctx_errormsg (ipmi_ctx));
 			goto cleanup;
