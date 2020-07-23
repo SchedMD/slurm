@@ -34,15 +34,15 @@ is no local configuration file on the compute node.</p>
 
 <p>The command line option takes "$host[:$port]", so an example would look like:
 <pre>
-slurmd --conf-server slurm-master:6817
+slurmd --conf-server slurmctl-primary:6817
 </pre>
 Specifying the port is optional and will default to 6817 if it is not present.
 </p>
 
 <p>The same information can be provided in a DNS SRV record. For example:
 <pre>
-_slurmctld._tcp 3600 IN SRV 10 0 6817 slurm-backup
-_slurmctld._tcp 3600 IN SRV 0 0 6817 slurm-master
+_slurmctld._tcp 3600 IN SRV 10 0 6817 slurmctl-backup
+_slurmctld._tcp 3600 IN SRV 0 0 6817 slurmctl-primary
 </pre>
 Will provide the required information to the slurmd on startup. As shown above,
 multiple SRV records can be specified if you have deployed Slurm in an HA
