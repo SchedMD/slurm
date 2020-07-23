@@ -3263,12 +3263,12 @@ extern char *reservation_flags_string(reserve_info_t * resv_ptr)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_HOLD_JOBS_AFTER_END");
 	}
-	if (flags & RESERVE_FLAG_HAPHAZARD) {
+	if (flags & RESERVE_FLAG_PROM) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "HAPHAZARD");
 	}
-	if (flags & RESERVE_FLAG_NO_HAPHAZARD) {
+	if (flags & RESERVE_FLAG_NO_PROM) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_HAPHAZARD");
