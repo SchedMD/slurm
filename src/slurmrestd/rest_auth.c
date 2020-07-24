@@ -268,7 +268,9 @@ extern void rest_auth_context_free(rest_auth_context_t *context)
 			}
 		}
 
-		xassert(found);
+		if (!found)
+			fatal_abort("%s: unable to find plugin_id: %u",
+				    __func__, context->plugin_id);
 	}
 	context->magic = ~MAGIC;
 	xfree(context);
