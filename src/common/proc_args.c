@@ -1538,7 +1538,7 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 		       && curr[taglen] != '=')
 			taglen++;
 
-		if (xstrncasecmp(curr, "Maintenance", MAX(taglen,1)) == 0) {
+		if (xstrncasecmp(curr, "Maintenance", MAX(taglen,3)) == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_MAINT;
@@ -1611,7 +1611,7 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 				outflags |= RESERVE_FLAG_NO_PART_NODES;
 			else
 				outflags |= RESERVE_FLAG_PART_NODES;
-		} else if (!xstrncasecmp(curr, "haphazard", MAX(taglen, 2)) ||
+		} else if (!xstrncasecmp(curr, "magnetic", MAX(taglen, 3)) ||
 			   !xstrncasecmp(curr, "promiscuous", MAX(taglen, 2))) {
 			curr += taglen;
 			if (flip)

@@ -121,11 +121,11 @@ documents those changes that are of interest to users and administrators.
  -- Handle MPS correctly when doing exclusive allocations.
  -- slurmrestd - fix compiling against libhttpparser in a non-default path.
  -- slurmrestd - avoid compilation issues with libhttpparser < 2.6.
- -- scontrol - changed the "PROMISCUOUS" flag to "HAPHAZARD"
  -- Fix compile issues when compiling slurmrestd without --enable-debug.
  -- Reset idle time on a reservation that is getting purged.
  -- Fix reoccurring reservations that have Purge_comp= to keep correct
     duration if they are purged.
+ -- scontrol - changed the "PROMISCUOUS" flag to "MAGNETIC"
 
 * Changes in Slurm 20.02.3
 ==========================
