@@ -78,8 +78,7 @@ static int _dump_part(data_t *p, partition_info_t *part)
 	data_set_int(data_key_set(d, "default_memory_per_cpu"),
 		     part->def_mem_per_cpu);
 	if (part->default_time == INFINITE)
-		data_set_string(data_key_set(d, "default_time_limit"),
-				"INFINITE");
+		data_set_int(data_key_set(d, "default_time_limit"), -1);
 	if (part->default_time == NO_VAL)
 		data_set_null(data_key_set(d, "default_time_limit"));
 	else
@@ -110,8 +109,7 @@ static int _dump_part(data_t *p, partition_info_t *part)
 		     part->grace_time);
 
 	if (part->max_cpus_per_node == INFINITE)
-		data_set_string(data_key_set(d, "maximum_cpus_per_node"),
-				"INFINITE");
+		data_set_int(data_key_set(d, "maximum_cpus_per_node"), -1);
 	else if (part->max_cpus_per_node == NO_VAL)
 		data_set_null(data_key_set(d, "maximum_cpus_per_node"));
 	else
@@ -122,14 +120,13 @@ static int _dump_part(data_t *p, partition_info_t *part)
 		     part->max_mem_per_cpu);
 
 	if (part->max_nodes == INFINITE)
-		data_set_string(data_key_set(d, "maximum_nodes_per_job"),
-				"INFINITE");
+		data_set_int(data_key_set(d, "maximum_nodes_per_job"), -1);
 	else
 		data_set_int(data_key_set(d, "maximum_nodes_per_job"),
 			     part->max_nodes);
 
 	if (part->max_time == INFINITE)
-		data_set_string(data_key_set(d, "max_time_limit"), "INFINITE");
+		data_set_int(data_key_set(d, "max_time_limit"), -1);
 	else
 		data_set_int(data_key_set(d, "max_time_limit"), part->max_time);
 	data_set_int(data_key_set(d, "min nodes per job"), part->min_nodes);

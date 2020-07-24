@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd/v0.0.36 - Add error schema.
  -- slurmrestd/v0.0.36 - return array of nodes instead of dictionary.
  -- slurmrestd/v0.0.36 - return array of partitions instead of dictionary
+ -- slurmrestd/v0.0.36 - return -1 (integer) instead of INFINITE (as a string)
 
 * Changes in Slurm 20.02.4
 ==========================
