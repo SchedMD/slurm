@@ -73,10 +73,10 @@ enum {
 extern int build_feature_list(job_record_t *job_ptr);
 
 /*
- * Set up job_queue_rec->job_ptr to use a haphazard reservation if the
+ * Set up job_queue_rec->job_ptr to use a magnetic reservation if the
  * job_queue_rec has resv_name filled in.
  */
-extern void job_queue_rec_haphazard_resv(job_queue_rec_t *job_queue_rec);
+extern void job_queue_rec_magnetic_resv(job_queue_rec_t *job_queue_rec);
 
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs

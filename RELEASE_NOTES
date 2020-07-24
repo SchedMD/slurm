@@ -58,7 +58,6 @@ COMMAND CHANGES (see man pages for details)
  -- The '%s' format in -e/-i/-o options to sbatch will expand to "batch" rather
     than "4294967294".
  -- squeue - added "pendingtime" as a option for --Format.
- -- scontrol - renamed the "PROMISCUOUS" reservation flag to "HAPHAZARD".
 
 API CHANGES
 ===========

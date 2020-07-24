@@ -231,9 +231,9 @@ extern bool job_borrow_from_resv_check(job_record_t *job_ptr,
 				       job_record_t *preemptor_ptr);
 
 
-extern void job_resv_append_haphazard(job_queue_req_t *job_queue_req);
+extern void job_resv_append_magnetic(job_queue_req_t *job_queue_req);
 
-extern void job_resv_clear_haphazard_flag(job_record_t *job_ptr);
+extern void job_resv_clear_magnetic_flag(job_record_t *job_ptr);
 
 extern bool validate_resv_uid(char *resv_name, uid_t uid);
 #endif /* !_RESERVATION_H */

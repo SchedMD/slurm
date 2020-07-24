@@ -1615,9 +1615,9 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 			   !xstrncasecmp(curr, "promiscuous", MAX(taglen, 2))) {
 			curr += taglen;
 			if (flip)
-				outflags |= RESERVE_FLAG_NO_HAPHAZARD;
+				outflags |= RESERVE_FLAG_NO_MAGNETIC;
 			else
-				outflags |= RESERVE_FLAG_HAPHAZARD;
+				outflags |= RESERVE_FLAG_MAGNETIC;
 		} else if (!xstrncasecmp(curr, "PURGE_COMP", MAX(taglen, 2))) {
 			if (curr[taglen] == '=') {
 				int num_end;
