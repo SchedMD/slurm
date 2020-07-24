@@ -3266,12 +3266,12 @@ extern char *reservation_flags_string(reserve_info_t * resv_ptr)
 	if (flags & RESERVE_FLAG_PROM) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "HAPHAZARD");
+		xstrcat(flag_str, "MAGNETIC");
 	}
 	if (flags & RESERVE_FLAG_NO_PROM) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "NO_HAPHAZARD");
+		xstrcat(flag_str, "NO_MAGNETIC");
 	}
 
 

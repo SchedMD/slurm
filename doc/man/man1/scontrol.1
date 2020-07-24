@@ -1811,10 +1811,6 @@ account may use this nodes plus possibly other nodes without this feature.
 \fIFIRST_CORES\fR
 Use the lowest numbered cores on a node only.
 .TP
-\fIHAPHAZARD\fR
-This flag allows jobs to be considered for this reservation even if they didn't
-request it.
-.TP
 \fIIGNORE_JOBS\fR
 Ignore currently running jobs when creating the reservation.
 This can be especially useful when reserving all nodes in the system
@@ -1827,6 +1823,10 @@ See \fIANY_NODES\fR.
 Maintenance mode, receives special accounting treatment.
 This reservation is permitted to use resources that are already in another
 reservation.
+.TP
+\fIMAGNETIC\fR
+This flag allows jobs to be considered for this reservation even if they didn't
+request it.
 .TP
 \fINO_HOLD_JOBS_AFTER\fR
 By default, when a reservation ends the reservation request will be removed from
