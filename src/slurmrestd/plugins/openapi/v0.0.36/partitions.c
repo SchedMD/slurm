@@ -61,7 +61,7 @@ typedef enum {
 
 static int _dump_part(data_t *p, partition_info_t *part)
 {
-	data_t *d = data_set_dict(data_key_set(p, part->name));
+	data_t *d = data_set_dict(data_list_append(p));
 	data_t *flags = data_set_list(data_key_set(d, "flags"));
 	data_t *pm = data_set_list(data_key_set(d, "preemption_mode"));
 
@@ -173,7 +173,7 @@ static int _op_handler_partitions(const char *context_id,
 	int rc = SLURM_SUCCESS;
 	data_t *d = data_set_dict(resp);
 	data_t *errors = data_set_list(data_key_set(d, "errors"));
-	data_t *partitions = data_set_dict(data_key_set(d, "partitions"));
+	data_t *partitions = data_set_list(data_key_set(d, "partitions"));
 	char *name = NULL;
 	partition_info_msg_t *part_info_ptr = NULL;
 

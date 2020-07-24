@@ -261,7 +261,14 @@
 	],
 	"responses": {
 	  "200": {
-	    "description": "partition information"
+	    "description": "partitions information",
+	    "content": {
+	      "application/json": {
+		"schema": {
+		  "$ref": "#/components/schemas/partition_info"
+		}
+	      }
+	    }
 	  },
 	  "500": {
 	    "description": "partition not found"
@@ -312,6 +319,153 @@
   },
   "components": {
     "schemas": {
+      "partition": {
+	"type": "object",
+	"properties": {
+	  "flags": {
+	    "type": "array",
+	    "description": "",
+	    "items": {
+	      "type": "string"
+	    }
+	  },
+	  "preemption_mode": {
+	    "type": "array",
+	    "description": "",
+	    "items": {
+	      "type": "string"
+	    }
+	  },
+	  "allowed_allocation_nodes": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "allowed_accounts": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "allowed_groups": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "allowed_qos": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "alternative": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "billing_weights": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "default_memory_per_cpu": {
+	    "type": "integer",
+	    "format": "int64",
+	    "description": ""
+	  },
+	  "default_time_limit": {
+	    "type": "integer",
+	    "format": "int64",
+	    "description": ""
+	  },
+	  "denied_accounts": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "denied_qos": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "preemption_grace_time": {
+	    "type": "integer",
+	    "format": "int64",
+	    "description": ""
+	  },
+	  "maximum_cpus_per_node": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "maximum_memory_per_node": {
+	    "type": "integer",
+	    "format": "int64",
+	    "description": ""
+	  },
+	  "maximum_nodes_per_job": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "max_time_limit": {
+	    "type": "integer",
+	    "format": "int64",
+	    "description": ""
+	  },
+	  "min_nodes_per_job": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "name": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "nodes": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "over_time_limit": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "priority_job_factor": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "priority_tier": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "qos": {
+	    "type": "string",
+	    "description": ""
+	  },
+	  "nodes_online": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "total_cpus": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "total_nodes": {
+	    "type": "integer",
+	    "description": ""
+	  },
+	  "tres": {
+	    "type": "string",
+	    "description": ""
+	  }
+	}
+      },
+      "partition_info": {
+	"type": "object",
+	"properties": {
+	  "errors": {
+	    "type": "array",
+	    "description": "slurm errors",
+	    "items": {
+	      "$ref": "#/components/schemas/error"
+	    }
+	  },
+	  "partitions": {
+	    "type": "array",
+	    "description": "partition info",
+	    "items": {
+	      "$ref": "#/components/schemas/partition"
+	    }
+	  }
+	}
+      },
       "error": {
 	"type": "object",
 	"properties": {
