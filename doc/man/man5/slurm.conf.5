@@ -4561,8 +4561,10 @@ The optional type field might be used to identify a model of that generic
 resource.
 It is forbidden to specify both an untyped GRES and a typed GRES with the same
 <name>.
-A generic resource can also be specified as non\-consumable (i.e. multiple
-jobs can use the same generic resource) with the optional field ":no_consume".
+The optional no_consume field allows you to specify that a
+generic resource does not have a finite number of that resource that gets
+consumed as it is requested. The no_consume field is a GRES specific setting
+and applies to the GRES, regardless of the type specified.
 The final field must specify a generic resources count.
 A suffix of "K", "M", "G", "T" or "P" may be used to multiply the number by
 1024, 1048576, 1073741824, etc. respectively.
