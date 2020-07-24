@@ -1154,6 +1154,9 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	acct_gather_profile_fini();
 
 	step_terminate_monitor_stop();
+	for (uint32_t i = 0; i < job->node_tasks; i++)
+		if (task_g_post_term(job, job->task[i]) == ENOMEM)
+			job->oom_error = true;
 
 	task_g_post_step(job);
 
