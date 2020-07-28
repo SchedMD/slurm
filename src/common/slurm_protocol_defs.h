@@ -180,6 +180,13 @@
 #define SLURMD_REG_FLAG_STARTUP  0x0001
 #define SLURMD_REG_FLAG_RESP     0x0002
 
+#define RESV_FREE_STR_USER      0x00000001
+#define RESV_FREE_STR_ACCT      0x00000002
+#define RESV_FREE_STR_TRES_BB   0x00000004
+#define RESV_FREE_STR_TRES_CORE 0x00000008
+#define RESV_FREE_STR_TRES_LIC  0x00000010
+#define RESV_FREE_STR_TRES_NODE 0x00000020
+
 /* These defines have to be here to avoid circular dependancy with
  * switch.h
  */
@@ -1417,6 +1424,8 @@ extern void slurm_free_update_front_end_msg(update_front_end_msg_t * msg);
 extern void slurm_free_update_node_msg(update_node_msg_t * msg);
 extern void slurm_free_update_part_msg(update_part_msg_t * msg);
 extern void slurm_free_delete_part_msg(delete_part_msg_t * msg);
+extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
+					  uint32_t res_free_flags);
 extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg);
 extern void slurm_free_resv_name_msg(reservation_name_msg_t * msg);
 extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t * msg);

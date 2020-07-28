@@ -1349,19 +1349,36 @@ extern void slurm_free_delete_part_msg(delete_part_msg_t * msg)
 	}
 }
 
+extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
+					  uint32_t res_free_flags)
+{
+	if (!msg)
+		return;
+
+	if (res_free_flags & RESV_FREE_STR_USER)
+		xfree(msg->users);
+	if (res_free_flags & RESV_FREE_STR_ACCT)
+		xfree(msg->accounts);
+	if (res_free_flags & RESV_FREE_STR_TRES_BB)
+		xfree(msg->burst_buffer);
+	if (res_free_flags & RESV_FREE_STR_TRES_CORE)
+		xfree(msg->core_cnt);
+	if (res_free_flags & RESV_FREE_STR_TRES_LIC)
+		xfree(msg->licenses);
+	if (res_free_flags & RESV_FREE_STR_TRES_NODE)
+		xfree(msg->node_cnt);
+}
+
 extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
 {
 	if (msg) {
-		xfree(msg->accounts);
-		xfree(msg->burst_buffer);
-		xfree(msg->core_cnt);
 		xfree(msg->features);
-		xfree(msg->licenses);
 		xfree(msg->name);
-		xfree(msg->node_cnt);
 		xfree(msg->node_list);
 		xfree(msg->partition);
-		xfree(msg->users);
+
+		slurm_free_resv_desc_msg_part(msg, 0xffffffff);
+
 		xfree(msg);
 	}
 }
