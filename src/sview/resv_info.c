@@ -233,10 +233,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 {
 	char *type = "";
 	char *err_msg = NULL;
-	int free_tres_license = 0;
-	int free_tres_bb = 0;
-	int free_tres_corecnt = 0;
-	int free_tres_nodecnt = 0;
+	uint32_t res_free_flags = 0;
 	int temp_int = 0;
 	uint64_t f;
 
@@ -271,7 +268,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			goto return_error;
 		}
 		if (state_control_parse_resv_corecnt(resv_msg, (char *)new_text,
-						     &free_tres_corecnt, false,
+						     &res_free_flags, false,
 						     &err_msg) == SLURM_ERROR) {
 			if (global_edit_error_msg)
 				g_free(global_edit_error_msg);
@@ -319,7 +316,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 	case SORTID_NODE_CNT:
 		type = "Node Count";
 		if (parse_resv_nodecnt(resv_msg, (char *)new_text,
-				       &free_tres_nodecnt, false,
+				       &res_free_flags, false,
 				       &err_msg) == SLURM_ERROR) {
 			if (global_edit_error_msg)
 				g_free(global_edit_error_msg);
@@ -347,10 +344,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 	case SORTID_TRES:
 		type = "TRES";
 		if (state_control_parse_resv_tres((char *)new_text, resv_msg,
-						  &free_tres_license,
-						  &free_tres_bb,
-						  &free_tres_corecnt,
-						  &free_tres_nodecnt, &err_msg)
+						  &res_free_flags, &err_msg)
 		    == SLURM_ERROR) {
 			if (global_edit_error_msg)
 				g_free(global_edit_error_msg);
@@ -378,9 +372,11 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 	if (xstrcmp(type, "unknown"))
 		global_send_update_msg = 1;
 
+	slurm_free_resv_desc_msg_part(resv_msg, res_free_flags);
 	return type;
 
 return_error:
+	slurm_free_resv_desc_msg_part(resv_msg, res_free_flags);
 	global_edit_error = 1;
 	return type;
 }

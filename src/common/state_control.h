@@ -70,12 +70,14 @@ extern int state_control_corecnt_supported(void);
  *
  * IN/OUT resv_msg_ptr - msg where core_cnt member is modified
  * IN val - CoreCnt value to parse
- * IN/OUT - free_tres_corecnt - set to 1 if caller needs to free resv->node_cnt
+ * OUT res_free_flags - uint32_t of flags to set various bits to free strings
+ *                      afterwards if needed.
+ *                      See RESV_FREE_STR_* in src/common/slurm_protocol_defs.h.
  * IN from_tres - used to discern if the count comes from TRES= or CoreCnt=
  * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
  */
 extern int state_control_parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr,
-					    char *val, int *free_tres_corecnt,
+					    char *val, uint32_t *res_free_flags,
 					    bool from_tres, char **err_msg);
 
 /*
@@ -83,12 +85,14 @@ extern int state_control_parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr,
  *
  * IN/OUT resv_msg_ptr - msg where node_cnt member is modified
  * IN val - NodeCnt value to parse
- * IN/OUT - free_tres_nodecnt - set to 1 if caller needs to free resv->node_cnt
+ * OUT res_free_flags - uint32_t of flags to set various bits to free strings
+ *                      afterwards if needed.
+ *                      See RESV_FREE_STR_* in src/common/slurm_protocol_defs.h.
  * IN from_tres - used to discern if the count comes from TRES= or NodeCnt=
  * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
  */
 extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-			      int *free_tres_nodecnt, bool from_tres,
+			      uint32_t *res_free_flags, bool from_tres,
 			      char **err_msg);
 
 
@@ -96,15 +100,14 @@ extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
  * Parse and process reservation request option TRES=
  * IN val - TRES value to parse
  * IN/OUT resv_msg_ptr - msg whose members might be modified
- * IN/OUT free_tres_* - set to 1 if caller needs to free the specific member
+ * OUT res_free_flags - uint32_t of flags to set various bits to free strings
+ *                      afterwards if needed.
+ *                      See RESV_FREE_STR_* in src/common/slurm_protocol_defs.h.
  * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
  */
 extern int state_control_parse_resv_tres(char *val,
 					 resv_desc_msg_t *resv_msg_ptr,
-					 int *free_tres_license,
-					 int *free_tres_bb,
-					 int *free_tres_corecnt,
-					 int *free_tres_nodecnt,
+					 uint32_t *res_free_flags,
 					 char **err_msg);
 
 #endif /* !_STATE_CONTROL_H */
