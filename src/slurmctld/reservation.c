@@ -314,6 +314,9 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 		resv_copy_ptr->core_bitmap = bit_copy(resv_orig_ptr->
 						      core_bitmap);
 	}
+
+	resv_copy_ptr->ctld_flags = resv_orig_ptr->ctld_flags;
+
 	resv_copy_ptr->core_cnt = resv_orig_ptr->core_cnt;
 	if (resv_orig_ptr->core_resrcs) {
 		resv_copy_ptr->core_resrcs = copy_job_resources(resv_orig_ptr->
@@ -1669,6 +1672,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 			pack_time(resv_ptr->idle_start_time, buffer);
 			packstr(resv_ptr->tres_str,	buffer);
 			pack8(resv_ptr->user_not,	buffer);
+			pack32(resv_ptr->ctld_flags,	buffer);
 		} else {
 			pack_bit_str_hex(resv_ptr->node_bitmap, buffer);
 			if (!resv_ptr->core_bitmap ||
@@ -1894,6 +1898,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpackstr_xmalloc(&resv_ptr->tres_str,
 				       &uint32_tmp, 	buffer);
 		safe_unpack8((uint8_t *)&resv_ptr->user_not,	buffer);
+		safe_unpack32(&resv_ptr->ctld_flags, buffer);
 		if (!resv_ptr->purge_comp_time)
 			resv_ptr->purge_comp_time = 300;
 	} else if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {

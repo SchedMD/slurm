@@ -414,6 +414,13 @@ extern uint16_t part_max_priority;      /* max priority_job_factor in all parts 
  *  RESERVATION parameters and data structures
 \*****************************************************************************/
 
+#define RESV_CTLD_ACCT_NOT       0x00000001
+#define RESV_CTLD_USER_NOT       0x00000002
+#define RESV_CTLD_FULL_NODE      0x00000004
+#define RESV_CTLD_NODE_FLAGS_SET 0x00000008
+#define RESV_CTLD_EPILOG         0x00000010
+#define RESV_CTLD_PROLOG         0x00000020
+
 typedef struct slurmctld_resv {
 	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
 				/* DO NOT ALPHABETIZE			*/
@@ -424,6 +431,7 @@ typedef struct slurmctld_resv {
 	char *assoc_list;	/* list of associations			*/
 	uint32_t boot_time;	/* time it would take to reboot a node	*/
 	char *burst_buffer;	/* burst buffer resources		*/
+	uint32_t ctld_flags;    /* see RESV_CTLD_* above */
 	bitstr_t *core_bitmap;	/* bitmap of reserved cores		*/
 	uint32_t core_cnt;	/* number of reserved cores		*/
 	job_resources_t *core_resrcs;	/* details of allocated cores	*/
