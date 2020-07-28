@@ -186,6 +186,7 @@
 #define RESV_FREE_STR_TRES_CORE 0x00000008
 #define RESV_FREE_STR_TRES_LIC  0x00000010
 #define RESV_FREE_STR_TRES_NODE 0x00000020
+#define RESV_FREE_STR_GROUP     0x00000040
 
 /* These defines have to be here to avoid circular dependancy with
  * switch.h

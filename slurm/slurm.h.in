@@ -2456,6 +2456,7 @@ typedef struct reserve_info {
 	time_t end_time;	/* end time of reservation */
 	char *features;		/* required node features */
 	uint64_t flags;		/* see RESERVE_FLAG_* above */
+	char *groups;		/* names of linux Groups permitted to use */
 	char *licenses;		/* names of licenses to be reserved */
 	uint32_t max_start_delay;/* Maximum delay in which jobs outside of the
 				  * reservation will be permitted to overlap
@@ -2492,6 +2493,7 @@ typedef struct resv_desc_msg {
 	time_t end_time;	/* end time of reservation */
 	char *features;		/* required node features */
 	uint64_t flags;		/* see RESERVE_FLAG_* above */
+	char *groups;		/* names of linux groups permitted to use */
 	char *licenses;		/* names of licenses to be reserved */
 	uint32_t max_start_delay;/* Maximum delay in which jobs outside of the
 				  * reservation will be permitted to overlap
