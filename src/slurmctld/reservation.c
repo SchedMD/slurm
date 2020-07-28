@@ -2893,7 +2893,16 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			error_code = rc;
 			goto update_failure;
 		}
-		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
+		/*
+		 * If the reservation was 0 node count before (ANY_NODES) this
+		 * could be NULL, if for some reason someone tried to update the
+		 * node count in this situation we will still not have a
+		 * node_bitmap.
+		 */
+		if (resv_ptr->node_bitmap)
+			resv_ptr->node_cnt =
+				bit_set_count(resv_ptr->node_bitmap);
+
 	}
 	memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
 	resv_desc.start_time  = resv_ptr->start_time;
@@ -3832,7 +3841,16 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
 	if (i == SLURM_SUCCESS) {
-		bit_or(resv_ptr->node_bitmap, tmp1_bitmap);
+		/*
+		 * If the reservation was 0 node count before (ANY_NODES) this
+		 * could be NULL, if for some reason someone tried to update the
+		 * node count in this situation we will still not have a
+		 * node_bitmap.
+		 */
+		if (resv_ptr->node_bitmap)
+			bit_or(resv_ptr->node_bitmap, tmp1_bitmap);
+		else
+			resv_ptr->node_bitmap = bit_copy(tmp1_bitmap);
 		FREE_NULL_BITMAP(tmp1_bitmap);
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 		resv_ptr->core_bitmap = core_bitmap;
