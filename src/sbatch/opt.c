@@ -1118,7 +1118,7 @@ static void _help(void)
 	slurm_conf_t *conf = slurm_conf_lock();
 
 	printf (
-"Usage: sbatch [OPTIONS...] executable [args...]\n"
+"Usage: sbatch [OPTIONS(0)...] [ : [OPTIONS(N)...]] script(0) [args(0)...]\n"
 "\n"
 "Parallel run options:\n"
 "  -a, --array=indexes         job array index values\n"
