@@ -354,7 +354,6 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->user_cnt = resv_orig_ptr->user_cnt;
 	resv_copy_ptr->user_list = xcalloc(resv_orig_ptr->user_cnt,
 					   sizeof(uid_t));
-	resv_copy_ptr->user_not = resv_orig_ptr->user_not;
 	for (i = 0; i < resv_copy_ptr->user_cnt; i++)
 		resv_copy_ptr->user_list[i] = resv_orig_ptr->user_list[i];
 
@@ -777,7 +776,8 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 
 	assoc_mgr_lock(&locks);
 	if (resv_ptr->account_cnt && resv_ptr->user_cnt) {
-		if (!resv_ptr->account_not && !resv_ptr->user_not) {
+		if (!resv_ptr->account_not &&
+		    !(resv_ptr->ctld_flags & RESV_CTLD_USER_NOT)) {
 			/* Add every association that matches both account
 			 * and user */
 			for (i=0; i < resv_ptr->user_cnt; i++) {
@@ -793,7 +793,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 				}
 			}
 		} else {
-			if (resv_ptr->user_not)
+			if (resv_ptr->ctld_flags & RESV_CTLD_USER_NOT)
 				assoc_list = assoc_list_deny;
 			else
 				assoc_list = assoc_list_allow;
@@ -827,7 +827,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 			}
 		}
 	} else if (resv_ptr->user_cnt) {
-		if (resv_ptr->user_not)
+		if (resv_ptr->ctld_flags & RESV_CTLD_USER_NOT)
 			assoc_list = assoc_list_deny;
 		else
 			assoc_list = assoc_list_allow;
@@ -1321,7 +1321,6 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 	int *u_type, minus_user = 0, plus_user = 0;
 	char **u_name;
 	bool found_it;
-	bool user_not = false;
 
 	if (!users)
 		return ESLURM_USER_ID_MISSING;
@@ -1368,7 +1367,7 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 			resv_ptr->users = xstrdup(users);
 		resv_ptr->user_cnt  = u_cnt;
 		resv_ptr->user_list = u_list;
-		resv_ptr->user_not  = user_not;
+		resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
 		xfree(u_cpy);
 		xfree(u_name);
 		xfree(u_type);
@@ -1377,8 +1376,10 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 
 	/* Modification of existing user list */
 	if ((resv_ptr->user_cnt == 0) && minus_user)
-		resv_ptr->user_not = true;
-	if (resv_ptr->user_not) {
+		resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
+	else
+		resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
+	if (resv_ptr->ctld_flags & RESV_CTLD_USER_NOT) {
 		/* change minus_user to plus_user (add to NOT list) and
 		 * change plus_user to minus_user (remove from NOT list) */
 		for (i = 0; i < u_cnt; i++) {
@@ -1442,7 +1443,7 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 		}
 		if ((resv_ptr->users == NULL) ||
 		    (strlen(resv_ptr->users) == 0)) {
-			resv_ptr->user_not = 0;
+			resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
 			xfree(resv_ptr->users);
 		}
 	}
@@ -1462,7 +1463,7 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 				continue;	/* duplicate entry */
 			if (resv_ptr->users && resv_ptr->users[0])
 				xstrcat(resv_ptr->users, ",");
-			if (resv_ptr->user_not)
+			if (resv_ptr->ctld_flags & RESV_CTLD_USER_NOT)
 				xstrcat(resv_ptr->users, "-");
 			xstrcat(resv_ptr->users, u_name[i]);
 			xrealloc(resv_ptr->user_list,
@@ -1613,6 +1614,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 	node_record_t *node_ptr;
 	job_resources_t *core_resrcs;
 	char *core_str;
+	uint8_t uint8_tmp = 0;
 
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
 		last_resv_update = now;
@@ -1671,7 +1673,6 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 			pack_time(resv_ptr->start_time,	buffer);
 			pack_time(resv_ptr->idle_start_time, buffer);
 			packstr(resv_ptr->tres_str,	buffer);
-			pack8(resv_ptr->user_not,	buffer);
 			pack32(resv_ptr->ctld_flags,	buffer);
 		} else {
 			pack_bit_str_hex(resv_ptr->node_bitmap, buffer);
@@ -1743,7 +1744,11 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 			pack_time(resv_ptr->start_time,	buffer);
 			pack_time(resv_ptr->idle_start_time, buffer);
 			packstr(resv_ptr->tres_str,	buffer);
-			pack8(resv_ptr->user_not,	buffer);
+			if (resv_ptr->ctld_flags & RESV_CTLD_USER_NOT)
+				uint8_tmp = 1;
+			else
+				uint8_tmp = 0;
+			pack8(uint8_tmp,	buffer);
 		} else {
 			pack_bit_str_hex(resv_ptr->node_bitmap, buffer);
 			if (!resv_ptr->core_bitmap ||
@@ -1811,7 +1816,11 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 			pack_time(resv_ptr->start_time_prev, buffer);
 			pack_time(resv_ptr->start_time,	buffer);
 			packstr(resv_ptr->tres_str,	buffer);
-			pack8(resv_ptr->user_not,	buffer);
+			if (resv_ptr->ctld_flags & RESV_CTLD_USER_NOT)
+				uint8_tmp = 1;
+			else
+				uint8_tmp = 0;
+			pack8(uint8_tmp,	buffer);
 		} else {
 			pack_bit_str_hex(resv_ptr->node_bitmap, buffer);
 			if (!resv_ptr->core_bitmap ||
@@ -1851,6 +1860,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 {
 	slurmctld_resv_t *resv_ptr;
 	uint32_t uint32_tmp = 0;
+	uint8_t uint8_tmp;
 
 	resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
 	resv_ptr->magic = RESV_MAGIC;
@@ -1897,7 +1907,6 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpack_time(&resv_ptr->idle_start_time, buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->tres_str,
 				       &uint32_tmp, 	buffer);
-		safe_unpack8((uint8_t *)&resv_ptr->user_not,	buffer);
 		safe_unpack32(&resv_ptr->ctld_flags, buffer);
 		if (!resv_ptr->purge_comp_time)
 			resv_ptr->purge_comp_time = 300;
@@ -1944,7 +1953,9 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpack_time(&resv_ptr->idle_start_time, buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->tres_str,
 				       &uint32_tmp, 	buffer);
-		safe_unpack8((uint8_t *)&resv_ptr->user_not,	buffer);
+		safe_unpack8((uint8_t *)&uint8_tmp,	buffer);
+		if (uint8_tmp)
+			resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
 		if (!resv_ptr->purge_comp_time)
 			resv_ptr->purge_comp_time = 300;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -1987,7 +1998,9 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpack_time(&resv_ptr->start_time, buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->tres_str,
 				       &uint32_tmp, 	buffer);
-		safe_unpack8((uint8_t *)&resv_ptr->user_not,	buffer);
+		safe_unpack8((uint8_t *)&uint8_tmp,	buffer);
+		if (uint8_tmp)
+			resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
 		if (!resv_ptr->purge_comp_time)
 			resv_ptr->purge_comp_time = 300;
 	} else
@@ -2611,6 +2624,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->account_not	= account_not;
 	resv_ptr->burst_buffer	= resv_desc_ptr->burst_buffer;
 	resv_desc_ptr->burst_buffer = NULL;	/* Nothing left to free */
+
+	if (user_not)
+		resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
+
 	resv_ptr->duration      = resv_desc_ptr->duration;
 	if (resv_desc_ptr->purge_comp_time != NO_VAL)
 		resv_ptr->purge_comp_time = resv_desc_ptr->purge_comp_time;
@@ -2648,7 +2665,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->user_cnt	= user_cnt;
 	resv_ptr->user_list	= user_list;
 	user_list = NULL;
-	resv_ptr->user_not	= user_not;
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
 
 	if (!resv_desc_ptr->core_cnt) {
@@ -3506,7 +3522,10 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		xfree(resv_ptr->user_list);
 		resv_ptr->user_cnt  = user_cnt;
 		resv_ptr->user_list = user_list;
-		resv_ptr->user_not  = user_not;
+		if (user_not)
+			resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
+		else
+			resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
 	}
 
 	if ((resv_ptr->flags & RESERVE_FLAG_PART_NODES) &&
@@ -5122,11 +5141,12 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 			return SLURM_SUCCESS;
 		}
 	} else {
-no_assocs:	if ((resv_ptr->user_cnt == 0) || resv_ptr->user_not)
+no_assocs:	if ((resv_ptr->user_cnt == 0) ||
+		    (resv_ptr->ctld_flags & RESV_CTLD_USER_NOT))
 			user_good = true;
 		for (i = 0; i < resv_ptr->user_cnt; i++) {
 			if (job_ptr->user_id == resv_ptr->user_list[i]) {
-				if (resv_ptr->user_not)
+				if (resv_ptr->ctld_flags & RESV_CTLD_USER_NOT)
 					user_good = false;
 				else
 					user_good = true;
