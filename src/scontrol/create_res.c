@@ -78,8 +78,7 @@ static char * _process_plus_minus(char plus_or_minus, char *src)
 }
 
 /*
- * scontrol_parse_res_options   parse options for creating or updating a
- reservation
+ * _parse_res_options   parse options for creating or updating a reservation
  * IN argc - count of arguments
  * IN argv - list of arguments
  * IN msg  - a string to append to any error message
@@ -87,12 +86,13 @@ static char * _process_plus_minus(char plus_or_minus, char *src)
  * OUT free_* - bool indicating specific member needs to be freed
  * RET 0 on success, -1 on err and prints message
  */
-extern int
-scontrol_parse_res_options(int argc, char **argv, const char *msg,
-			   resv_desc_msg_t  *resv_msg_ptr,
-			   int *free_user_str, int *free_acct_str,
-			   int *free_tres_license, int *free_tres_bb,
-			   int *free_tres_corecnt, int *free_tres_nodecnt)
+static int _parse_res_options(int argc, char **argv, const char *msg,
+			      resv_desc_msg_t  *resv_msg_ptr,
+			      int *free_user_str, int *free_acct_str,
+			      int *free_tres_license,
+			      int *free_tres_bb,
+			      int *free_tres_corecnt,
+			      int *free_tres_nodecnt)
 {
 	int i;
 	int duration = -3;   /* -1 == INFINITE, -2 == error, -3 == not set */
@@ -344,11 +344,11 @@ scontrol_update_res(int argc, char **argv)
 		free_tres_bb = 0, free_tres_corecnt = 0, free_tres_nodecnt = 0;
 
 	slurm_init_resv_desc_msg (&resv_msg);
-	err = scontrol_parse_res_options(argc, argv, "No reservation update.",
-					 &resv_msg, &free_user_str,
-					 &free_acct_str, &free_tres_license,
-					 &free_tres_bb, &free_tres_corecnt,
-					 &free_tres_nodecnt);
+	err = _parse_res_options(argc, argv, "No reservation update.",
+				 &resv_msg, &free_user_str,
+				 &free_acct_str, &free_tres_license,
+				 &free_tres_bb, &free_tres_corecnt,
+				 &free_tres_nodecnt);
 	if (err)
 		goto SCONTROL_UPDATE_RES_CLEANUP;
 
@@ -401,11 +401,11 @@ scontrol_create_res(int argc, char **argv)
 	int err, ret = 0;
 
 	slurm_init_resv_desc_msg (&resv_msg);
-	err = scontrol_parse_res_options(argc, argv, "No reservation created.",
-					 &resv_msg, &free_user_str,
-					 &free_acct_str, &free_tres_license,
-					 &free_tres_bb, &free_tres_corecnt,
-					 &free_tres_nodecnt);
+	err = _parse_res_options(argc, argv, "No reservation created.",
+				 &resv_msg, &free_user_str,
+				 &free_acct_str, &free_tres_license,
+				 &free_tres_bb, &free_tres_corecnt,
+				 &free_tres_nodecnt);
 
 	if (err)
 		goto SCONTROL_CREATE_RES_CLEANUP;
