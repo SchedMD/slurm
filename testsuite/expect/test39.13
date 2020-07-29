@@ -52,12 +52,20 @@ if {$gpu_cnt < 0} {
 if {$gpu_cnt < 1} {
 	skip "This test requires 1 or more GPUs in the default partition"
 }
-array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
-log_debug "GPU count is $gpu_cnt"
-log_debug "Sockets per node is $node_conf(Sockets)"
-log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
 
-set tot_cpus $node_conf(CPUTot)
+set node_name [get_nodes_by_request "--gres=gpu:1 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:1"
+}
+set cpus_per_node    [get_node_param $node_name "CPUTot"]
+set sockets_per_node [get_node_param $node_name "Sockets"]
+set cpus_per_socket  [expr $cpus_per_node / $sockets_per_node]
+
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets per node is $sockets_per_node"
+log_debug "CPUs per socket is $cpus_per_socket"
+
+set tot_cpus $cpus_per_node
 set tot_gpus $gpu_cnt
 if {$nb_nodes > 1} {
 	incr tot_gpus $gpu_cnt
@@ -79,18 +87,18 @@ make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$C
 #
 # Submit job with various --gpus counters, up to 2 full nodes or 32 GPUs
 #
-#	spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 -w $node_conf(NodeName) -J "test$test_id" --output=$ofile ./$file_in1
+#	spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 -w $node_name -J "test$test_id" --output=$ofile ./$file_in1
 for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	set job_id 0
 	set ofile ${file_out}.${inx}
 	exec $bin_rm -f $ofile
 	if {$tot_gpus > $tot_cpus} {
 #		Assumes no configured DefCPUsPerGPU
-		spawn $sbatch --gpus=$inx -t1 -w $node_conf(NodeName) \
+		spawn $sbatch --gpus=$inx -t1 -w $node_name \
 		              -J "test$test_id" --output=$ofile ./$file_in1
 	} else {
 		spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 \
-		              -w $node_conf(NodeName) -J "test$test_id" \
+		              -w $node_name -J "test$test_id" \
 		              --output=$ofile ./$file_in1
 	}
 	expect {

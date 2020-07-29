@@ -46,11 +46,19 @@ if {$gpu_cnt < 0} {
 if {$gpu_cnt < 1} {
 	skip "This test requires 1 or more GPUs per node in the default partition"
 }
-array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
+
+set node_name [get_nodes_by_request "--gres=gpu:1 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:1"
+}
+set cpus_per_node     [get_node_param $node_name "CPUTot"]
+set sockets_per_node  [get_node_param $node_name "Sockets"]
+set cpus_per_socket   [expr $cpus_per_node / $sockets_per_node]
+
 log_debug "GPUs per node count is $gpu_cnt"
-log_debug "Sockets per node is $node_conf(Sockets)"
-log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
-set cpus_per_node $node_conf(CPUTot)
+log_debug "Sockets per node is $sockets_per_node"
+log_debug "CPUs per socket is $cpus_per_socket"
+
 if {$gpu_cnt > $cpus_per_node} {
 	set gpu_cnt $cpus_per_node
 }
@@ -64,7 +72,7 @@ if {$nb_nodes > 1} {
 }
 set gpus_per_node $gpu_cnt
 if {$gpus_per_node > 1 && [expr $gpus_per_node % 2] == 0 && \
-    ($node_conf(Sockets) > 1 || $node_conf(CPUsPerSocket) > 1)} {
+    ($sockets_per_node > 1 || $cpus_per_socket > 1)} {
 	set ntasks [expr $nb_nodes * 2]
 } else {
 	set ntasks $nb_nodes

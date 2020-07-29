@@ -7303,13 +7303,103 @@ proc create_part { part_name num_nodes_in } {
 ################################################################
 #
 # NAME
-#	get_node_config - obtains the configuration of a node with the requested resources
+#	get_nodes - returns a dictionary of dictionaries of node parameters
 #
 # SYNOPSIS
-#	get_node_config ?request_args?
+#	get_nodes ?hostlist_expression?
 #
 # DESCRIPTION
-#	Obtain the node configuration of a node with the requested resources.
+#	Uses `scontrol show node` to query node parameters, returning a
+#	dictionary of dictionaries with the node names as keys of the first
+#	level dictionary and with the parameters as keys of the second level
+#	dictionary. Specifying an invalid node name will result in a failure.
+#
+# RETURN VALUE
+#	If the optional node expression argument is specified, the result will
+#	be constrained by the specified hostlist expression. Otherwise, the
+#	results for all nodes will be returned.
+#
+################################################################
+
+proc get_nodes { {hostlist_expression ""} } {
+	global scontrol
+
+	set command "$scontrol show node -o"
+	if {$hostlist_expression ne ""} {
+		append command " $hostlist_expression"
+	}
+	set output [run_command_output -fail -nolog "$command"]
+
+	# Iterate over each node parameter line
+	foreach line [split $output "\n"] {
+		if {$line eq ""} { continue }
+
+		# Peel off the node parameters one at a time
+		# The first quantifier sets the greediness for the whole RE
+		while {[regexp {^ *?([^ =]+)=(.*)(?= +[^ =]+=| *$)} $line {} param_name param_value]} {
+			# Remove the consumed parameter from the line
+			set line [regsub {^ *?[^ =]+=.*(?= +[^ =]+=| *$)} $line {}]
+			# Add it to the temporary node dictionary
+			dict set node_dict $param_name $param_value
+		}
+
+		set node_name [dict get $node_dict "NodeName"]
+
+		# Add the node dictionary to nodes dictionary
+		dict set nodes_dict $node_name $node_dict
+
+		# Clear the node dictionary for use by the next node
+		set node_dict {}
+	}
+
+	return $nodes_dict
+}
+
+
+################################################################
+#
+# NAME
+#	get_node_param - returns a specific parameter value for a specific node
+#
+# SYNOPSIS
+#	get_node_param node_name parameter_name
+#
+# DESCRIPTION
+#	Returns a specific parameter value for a specified node if the
+#	parameter exists for the node, or MISSING if it does not exist.
+#	Specifying an invalid node name will result in a failure.
+#
+################################################################
+
+proc get_node_param { node_name parameter_name } {
+
+	set nodes_dict [get_nodes $node_name]
+
+	if [dict exists $nodes_dict $node_name $parameter_name] {
+		return [dict get $nodes_dict $node_name $parameter_name]
+	} else {
+		log_warn "Parameter $parameter_name not found on node $node_name"
+		return "MISSING"
+	}
+}
+
+
+################################################################
+#
+# NAME
+#	get_nodes_by_request - get a list of nodes satisfying requested resources
+#
+# SYNOPSIS
+#	get_nodes_by_request ?options? ?request_args?
+#
+# DESCRIPTION
+#	Using srun (optionally with the specified arguments), returns a list
+#	of nodes having the requested resources.
+#	If an error occurs, the invoking test will fail.
+#
+# OPTIONS
+#	-fail
+#		fail the test if the execution of srun results in an error or timeout
 #
 # ARGUMENTS
 #	request_args
@@ -7317,96 +7407,47 @@ proc create_part { part_name num_nodes_in } {
 #		e.g. "--gres=gpu:1 -n1 -t1"
 #
 # RETURN VALUE
-#	An array with the configuration of a node with at least the
-#	requested  resources. The keys of the arrays are the same that
-#	appear in the scontrol show node (e.g. CPUTot, State, RealMemory.)
-#	The array also includes some extra values:
-#		GPUTot       : Total number of GPUs of the node.
-#		CPUPerSocker : Number of CPUs per Socket (i.e. CPUTot / Sockets)
-#	If no node is found, it returns an empty array.
-#	In case of other errors, the global exit_code is set to 1.
+#	A list of nodes with at least the requested resources, or an empty
+#	list otherwise.
 #
 ################################################################
 
-proc get_node_config { {request_args "-n1 -t1"} } {
-	global exit_code max_job_delay srun scontrol
-	global bin_rm
+proc get_nodes_by_request args {
+	global srun
 
-	array set node_conf {}
-	set node_conf(GPUTot) 0
-
-	set file_in "get_node_config"
-	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODELIST"
-
-	set timeout $max_job_delay
-	set log_prev [log_user -info]
-	log_user 0
-
-	set srun_pid [spawn $srun {*}$request_args -t1 ./$file_in]
-	expect {
-		# The regexp is an OR for all cases of Key=Value where
-		# Value has no whitespaces, and the Key "Os=" that may
-		# have Value with whitespaces, so we match until the
-		# end of the line
-		-re "(\ *(\[^=\\n\]+)=(\\S+)\|\\n\ *(OS)=(\[^\\n\]*))" {
-			if {[string first "OS=" $expect_out(0,string)] != -1 } {
-				# Use the last groups the main regexp
-				set node_conf($expect_out(4,string)) \
-					$expect_out(5,string)
-			} else {
-				# Use the first groups of the main regexp
-				set node_conf($expect_out(2,string)) \
-					$expect_out(3,string)
-
-				# Compute the GPUTot when Key is Gres
-				if {[string first "Gres=" $expect_out(0,string)] \
-					!= -1 } {
-					set gres_list [split \
-						$expect_out(3,string) ","]
-					foreach gres $gres_list {
-						if {[regexp {gpu:(\S+?):(\d+)} \
-							$gres match type count] \
-							== 1} {
-							incr node_conf(GPUTot) \
-								$count
-						}
-						if {[regexp {gpu:(\d+)} $gres \
-							match count] == 1} {
-							incr node_conf(GPUTot) \
-								$count
-						}
-					}
-				}
+	set options [list]
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-fail {
+				lappend options [lrange $args 0 0]
+				set args [lrange $args 1 end]
 			}
-			exp_continue
-		}
-		-re "srun: error: (\[^\\n\]*)" {
-			log_error "srun: error: $expect_out(1,string)"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			log_error "srun not responding"
-			slow_kill $srun_pid
-			set exit_code 1
-		}
-		eof {
-			lassign [wait] pid spawnid os_error status
-			if {$status != 0} {
-				log_error "srun exit code: $status"
-				set exit_code 1
-			}
+			default  break
 		}
 	}
-	exec $bin_rm -f $file_in
-	log_user $log_prev
-	if { [info exists node_conf(NodeName)] } {
-		set node_conf(CPUsPerSocket) \
-			[expr $node_conf(CPUTot) / $node_conf(Sockets)]
+
+	if {[llength $args] == 1} {
+		lassign $args request_args
+	} elseif {[llength $args] == 0} {
+		set request_args "-n1 -t1"
 	} else {
-		array unset node_conf
+		fail "[lindex [info level 0] 0]: Invalid number of arguments ([llength $args]): $args"
 	}
-	array get node_conf
+
+	set command "$srun $request_args printenv SLURMD_NODENAME"
+	set result [run_command {*}$options $command]
+
+	if [dict get $result exit_code] {
+		return {}
+	}
+
+	set output [dict get $result output]
+	foreach line [split $output "\n"] {
+		if {$line eq ""} { continue }
+		dict incr allocated_nodes $line
+	}
+
+	return [lsort [dict keys $allocated_nodes]]
 }
 
 
