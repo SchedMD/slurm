@@ -446,8 +446,6 @@ typedef struct slurmctld_resv {
 	uint32_t job_run_cnt;	/* number of running jobs		*/
 	List license_list;	/* structure with license info		*/
 	char *licenses;		/* required system licenses		*/
-	bool flags_set_node;	/* flags (i.e. NODE_STATE_MAINT |
-				 * NODE_STATE_RES) set for nodes	*/
 	uint32_t max_start_delay;/* Maximum delay in which jobs outside of the
 				  * reservation will be permitted to overlap
 				  * once any jobs are queued for the

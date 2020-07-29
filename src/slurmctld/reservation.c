@@ -331,7 +331,6 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->license_list = _list_dup(resv_orig_ptr->
 						license_list);
 	resv_copy_ptr->magic = resv_orig_ptr->magic;
-	resv_copy_ptr->flags_set_node = resv_orig_ptr->flags_set_node;
 	resv_copy_ptr->name = xstrdup(resv_orig_ptr->name);
 	if (resv_orig_ptr->node_bitmap) {
 		resv_copy_ptr->node_bitmap =
@@ -419,7 +418,6 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	src_resv->license_list = NULL;
 
 	dest_resv->magic = src_resv->magic;
-	dest_resv->flags_set_node = src_resv->flags_set_node;
 
 	xfree(dest_resv->name);
 	dest_resv->name = src_resv->name;
@@ -2317,9 +2315,9 @@ static int _delete_resv_internal(slurmctld_resv_t *resv_ptr)
 	if (_is_resv_used(resv_ptr))
 		return ESLURM_RESERVATION_BUSY;
 
-	if (resv_ptr->flags_set_node) {
+	if (resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET) {
 		time_t now = time(NULL);
-		resv_ptr->flags_set_node = false;
+		resv_ptr->ctld_flags &= (~RESV_CTLD_NODE_FLAGS_SET);
 		_set_nodes_flags(resv_ptr, now,
 				 (NODE_STATE_RES | NODE_STATE_MAINT),
 				 false);
@@ -6545,12 +6543,13 @@ extern int set_node_maint_mode(bool reset_all)
 		 * clear RESERVE_FLAG_MAINT for expired reservations */
 		iter = list_iterator_create(resv_list);
 		while ((resv_ptr = list_next(iter))) {
-			if ((resv_ptr->flags_set_node) &&
+			if ((resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET) &&
 			    (resv_ptr->flags & RESERVE_FLAG_MAINT) &&
 			    ((now <  resv_ptr->start_time) ||
 			     (now >= resv_ptr->end_time  ))) {
 				flags = NODE_STATE_MAINT;
-				resv_ptr->flags_set_node = false;
+				resv_ptr->ctld_flags &=
+					(~RESV_CTLD_NODE_FLAGS_SET);
 				_set_nodes_flags(resv_ptr, now, flags,
 						 reset_all);
 				last_node_update = now;
@@ -6568,7 +6567,7 @@ extern int set_node_maint_mode(bool reset_all)
 			flags = NODE_STATE_RES;
 			if (resv_ptr->flags & RESERVE_FLAG_MAINT)
 				flags |= NODE_STATE_MAINT;
-			resv_ptr->flags_set_node = true;
+			resv_ptr->ctld_flags &= (~RESV_CTLD_NODE_FLAGS_SET);
 			_set_nodes_flags(resv_ptr, now, flags, reset_all);
 			last_node_update = now;
 		}
@@ -6724,7 +6723,7 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 
 		node_ptr = node_record_table_ptr + i;
 		old_state = node_ptr->node_state;
-		if (resv_ptr->flags_set_node)
+		if (resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET)
 			node_ptr->node_state |= flags;
 		else
 			node_ptr->node_state &= (~flags);
