@@ -2052,81 +2052,58 @@ proc test_topology { } {
 ################################################################
 #
 # NAME
-#	get_conf_param - returns the value of a configuration parameter
-#
+#	get_config - returns a dictionary of slurm configuration parameters
+
 # SYNOPSIS
-#	get_conf_param parameter_name
+#	get_config
 #
 # DESCRIPTION
-#	Return the value of specific configuration parameter
-#
-# ARGUMENTS
-#	parameter_name
-#		configuration parameter to be returned (e.g. SchedulerType)
-#
-# RETURN VALUE
-#	Returns string with conf parameter value or UNKNOWN, and exit_code
-#	1 on error
+#	Uses `scontrol show config` to return the slurm configuration as
+#	a dictionary of parameter values.
 #
 ################################################################
 
-proc get_conf_param { param } {
-	global scontrol bin_bash bin_grep
+proc get_config { } {
+	global scontrol
 
-	set log_prev [log_user -info]
-	log_user 0
-	set param_value "UNKNOWN"
-	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep -i $param"
-	expect {
-		-re "$param *= (\[^\\n\]*)" {
-			set param_value $expect_out(1,string)
-		}
-		timeout {
-			log_error "scontrol show config time out"
-			set exit_code 1
+	set output [run_command_output -fail -nolog "$scontrol show config"]
+
+	foreach line [split $output "\n"] {
+		if {[regexp {^(\w+) += (.*)$} $line {} param_name param_value] == 1} {
+			dict set config_dict $param_name $param_value
 		}
 	}
-	if {[string equal $param_value "UNKNOWN"]} {
-		log_error "Configuration option $param not found"
-		set exit_code 1
-	}
-	log_user $log_prev
 
-	return $param_value
+	return $config_dict
 }
 
 
 ################################################################
 #
 # NAME
-#	check_conf_param - check whether a configuration parameter contains the specified value
+#	get_config_param - returns a slurm configuration parameter
 #
 # SYNOPSIS
-#	check_conf_param parameter_name parameter_value
+#	get_config_param parameter_name
 #
 # DESCRIPTION
-#	Check if given parameter contains given value
-#
-# ARGUMENTS
-#	parameter_name
-#		configuration parameter to be checked (e.g. SchedulerType)
-#	parameter_value
-#		value to look for in specific param (e.g sched/builtin)
+#	Returns a specific configuration parameter value.
 #
 # RETURN VALUE
-#	Returns Bool if value is in param
+#	Returns the value of the specified parameter or MISSING if it does not
+#	exist.
 #
 ################################################################
 
-proc check_conf_param { param value } {
-	set param_value [ get_conf_param $param ]
-	set match 0
+proc get_config_param { parameter_name } {
 
-	if {[regexp -nocase $value $param_value]} {
-		set match 1
+	set config_dict [get_config]
+
+	if [dict exists $config_dict $parameter_name] {
+		return [dict get $config_dict $parameter_name]
+	} else {
+		return "MISSING"
 	}
-
-	return $match
 }
 
 
