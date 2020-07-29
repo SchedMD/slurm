@@ -115,7 +115,7 @@ if {[test_cons_tres]} {
     skip "This test is only compatible with select/cons_tres"
 }
 
-set gpu_cnt [get_gpu_count 1]
+set gpu_cnt [get_highest_gres_count 1 "gpu"]
 if {$gpu_cnt < 0} {
 	fail "Error getting GPU count"
 }

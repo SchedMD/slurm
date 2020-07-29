@@ -43,7 +43,7 @@ set nb_nodes [get_node_cnt_in_part]
 if {$nb_nodes > 1} {
 	set nb_nodes 2
 }
-set gpu_cnt [get_gpu_count $nb_nodes]
+set gpu_cnt [get_highest_gres_count $nb_nodes "gpu"]
 if {$gpu_cnt < 0} {
 	fail "Error getting GPU count"
 }
@@ -51,7 +51,7 @@ if {$gpu_cnt < 1} {
 	skip "This test requires 1 or more GPUs per node for at least $nb_nodes nodes in the default partition"
 }
 
-set craynetwork_count [get_craynetwork_count $nb_nodes]
+set craynetwork_count [get_highest_gres_count 1 "craynetwork"]
 if {$craynetwork_count < 0} {
 	fail "Error getting craynetwork GRES count"
 }

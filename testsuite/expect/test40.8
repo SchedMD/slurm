@@ -38,19 +38,18 @@ if {[test_cons_tres]} {
     skip "This test is only compatible with select/cons_tres"
 }
 
-set mps_cnt [get_mps_count 1]
+set mps_cnt [get_highest_mps_count 1]
 if {$mps_cnt < 0} {
 	fail "Error getting MPS count"
 }
 if {$mps_cnt < 1} {
-	skip "This test requires 1 or more MPS in the default partition"
+	skip "This test requires 1 or more MPS per GPU in the default partition"
 }
 if {$mps_cnt < 100} {
-#	This could be a legitimate configuration for testing purposes, but not likley for production use
-	log_error "MPS per node is unexpectedly low ($mps_cnt < 100). Check your configuration"
-	set exit_code 1
+#	This could be a legitimate configuration for testing purposes, but not likely for production use
+	log_error "MPS per GPU is unexpectedly low ($mps_cnt < 100). Check your configuration"
 }
-log_debug "MPS count per node is $mps_cnt"
+log_debug "MPS count per GPU is $mps_cnt"
 
 #
 # Build input script file

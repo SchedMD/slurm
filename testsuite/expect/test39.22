@@ -45,7 +45,7 @@ if {$nb_nodes < 2} {
 	skip "This test requires 2 or more nodes in the default partition"
 }
 set nb_nodes 2
-set gpu_cnt [get_gpu_count $nb_nodes]
+set gpu_cnt [get_highest_gres_count $nb_nodes "gpu"]
 if {$gpu_cnt < 0} {
 	fail "Error getting GPU count"
 }

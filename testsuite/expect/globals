@@ -6337,139 +6337,81 @@ proc check_job_state { job state {het_job 0}} {
 }
 
 
-################################################################
-#
-# NAME
-#	get_craynetwork_count - returns highest craynetworks per node
-#
-# SYNOPSIS
-#	get_craynetwork_count ?node_count?
-#
-# DESCRIPTION
-#	For a given node count, returns number of craynetworks per node on
-#	those "node_count" nodes with the highest craynetworks counts
-#
-# EXAMPLE
-#	For example: node1 has 1 craynetwork, node2 has 2 craynetworks and
-#	node3 has 3 craynetworks
-#	[get_craynetwork_count 1] returns 3 (i.e. 1 node 3 craynetworks)
-#	[get_craynetwork_count 2] returns 2 (i.e. 2 nodes have at least 2 each)
-#	[get_craynetwork_count 3] returns 1 (i.e. 3 nodes have at least 1 each)
-#
-################################################################
-
-proc get_craynetwork_count { {node_count 1} } {
-	get_gres_count $node_count "craynetwork"
-}
 
 
 ################################################################
 #
 # NAME
-#	get_gpu_count - returns number of GPUs per node on node_count nodes
+#	get_gres_count - returns a dict of nodes and GRES counts
 #
 # SYNOPSIS
-#	get_gpu_count node_count
+#	get_gres_count gres_name ?node_list?
 #
 # DESCRIPTION
-#	For a given node count, returns number of GPUs per node on
-#	those "node_count" nodes with the highest GPU counts
+#	Returns a dict of node names and the count of a specifed
+#	GRES aggregating all its types on each node.
 #
-# EXAMPLE
-#	For example: node1 has 1 GPU, node2 has 2 GPUs and node3 has 3 GPUs
-#	[get_gpu_count 1] returns 3 (i.e. 1 node 3 GPUs)
-#	[get_gpu_count 2] returns 2 (i.e. 2 nodes have at least 2 GPUs each)
-#	[get_gpu_count 3] returns 1 (i.e. 3 nodes have at least 1 GPU each)
-#
-################################################################
-
-proc get_gpu_count { node_count } {
-	get_gres_count $node_count "gpu"
-}
-
-
-################################################################
-#
-# NAME
-#	get_gres_count - returns number of GRES epr node on node_count nodes
-#
-# SYNOPSIS
-#	get_gres_count node_count gres_name
-#
-# DESCRIPTION
-#	For a given node count and GRES name, returns number of GRES per node on
-#	those "node_count" nodes with the highest GRES counts
-#
-# EXAMPLE
-#	For example: node1 has 1 GPU, node2 has 2 GPUs and node3 has 3 GPUs
-#	[get_gres_count 1 "gpu"] returns 3 (i.e. 1 node 3 GPUs)
-#	[get_gres_count 2 "gpu"] returns 2 (i.e. 2 nodes have at least 2 GPUs each)
-#	[get_gres_count 3 "gpu"] returns 1 (i.e. 3 nodes have at least 1 GPU each)
+# RETURN VALUE
+#	If the node_list is not specified node name is specified,
+#	this function will return a dict with the GRES count for all
+#	the nodes of the default partition.
+#	If specified, a dict only with the nodes of the node_list.
 #
 ################################################################
 
-proc get_gres_count { node_count gres_name } {
-	global sinfo gres_regex
-	set fini 0
-	set node_inx 0
-	set def_part [default_partition]
-	# The first group lets us know if we started a new line (i.e. new node).
-	# The second, third, and fourth groups in $gres_regex match a GRES
-	# name, type, and count.
-	set regex "(GRES=|,)$gres_regex"
+proc get_gres_count { gres_name {node_list ""} } {
+	global gres_regex
 
-	if {$node_count <= 0} {
-		return 0
-	}
-
-	set line_count 0
-
-	log_user 0
-	spawn $sinfo -N -p$def_part -oGRES=%G -h
-	expect {
-		-re $regex {
-			set count 0
-			set line $expect_out(1,string)
-			set name $expect_out(2,string)
-			# Assume typed GRES of format gpu:1080:5 to start out
-			set type $expect_out(3,string)
-			set count $expect_out(4,string)
-
-			if {$line == "GRES="} {
-				if {$node_inx > 0} {
-					lappend gres_count $line_count
-					set line_count 0
+	set nodes_dict [get_nodes $node_list]
+	set gres_dict [dict create]
+	dict for {node_name node_dict} $nodes_dict {
+		set gres_count 0
+		if [dict exists $node_dict "Gres"] {
+			set gres_expression [dict get $node_dict "Gres"]
+			foreach gres [split $gres_expression ","] {
+				if {[regexp $gres_regex $gres {} name type count] == 1} {
+					if {$count eq ""} { set count $type }
+					if {$name eq $gres_name} {
+						incr gres_count $count
+					}
 				}
-				incr node_inx
 			}
-
-			# Skip all GRES of different names
-			if {$name != $gres_name} {
-				exp_continue
-			}
-
-			if {$count == ""} {
-				# Now assume GRES format gpu:5
-				set count $type
-			}
-			if { $count } {
-				incr line_count $count
-			}
-
-			exp_continue
 		}
-		eof {
-			wait
-		}
+		dict set gres_dict $node_name $gres_count
 	}
 
-	# Add the last node line's GRES
-	lappend gres_count $line_count
+	return $gres_dict
+}
 
-	log_user 1
 
-	if {$node_inx < $node_count} {
-		return 0
+################################################################
+#
+# NAME
+#	get_highest_gres_count - returns highest number of GRES per node on node_count nodes
+#
+# SYNOPSIS
+#	get_highest_gres_count node_count gres_name
+#
+# DESCRIPTION
+#	For a given number of nodes, returns the highest GRES count per
+#	node available on at least that number of nodes.
+#
+# EXAMPLE
+#	For example: node1 has 1 GPU, node2 has 2 GPUs and node3 has 3 GPUs
+#	[get_highest_gres_count 1 "gpu"] returns 3 (i.e. 1 node 3 GPUs)
+#	[get_highest_gres_count 2 "gpu"] returns 2 (i.e. 2 nodes have at least 2 GPUs each)
+#	[get_highest_gres_count 3 "gpu"] returns 1 (i.e. 3 nodes have at least 1 GPU each)
+#
+################################################################
+
+proc get_highest_gres_count { node_count gres_name } {
+
+	set available_nodes [available_nodes_hostnames [default_partition]]
+	set gres_dict [get_gres_count $gres_name $available_nodes]
+	set gres_count [list]
+
+	dict for {node gres} $gres_dict {
+		lappend gres_count $gres
 	}
 
 	set count [lindex [lsort -decreasing -integer $gres_count] [expr $node_count - 1]]
@@ -6636,19 +6578,43 @@ proc get_gpu_socket_count { gpu_cnt sockets_per_node } {
 ################################################################
 #
 # NAME
-#	get_mps_count - returns the number of MPS resources with the highest values
+#	get_highest_mps_count - get_highest_gres_count nodes mps, but for "mps per GPU"
 #
 # SYNOPSIS
-#	get_mps_count node_count
+#	get_highest_mps_count node_count
 #
 # DESCRIPTION
-#	For a given node count, returns number of MPS resources on
-#	those "node_count" nodes with the highest values
+#	For a given number of nodes, returns the higest number of MPS per GPU
+#	available at least on those number of nodes.
 #
 ################################################################
 
-proc get_mps_count { node_count } {
-	get_gres_count $node_count "mps"
+proc get_highest_mps_count { node_count } {
+	# We cannot use get_highest_gres_count because we need "per gpu",
+	# so we get all the mps per node and all gpus per node, to create
+	# a mps_per_gpu list to sort and get the count.
+	set available_nodes [available_nodes_hostnames [default_partition]]
+	set mps_dict [get_gres_count "mps" $available_nodes]
+	set gpu_dict [get_gres_count "gpu" $available_nodes]
+	set mps_per_gpu [list]
+
+	dict for {node mps} $mps_dict {
+		if { $mps > 0 } {
+			if [dict exists $gpu_dict $node] {
+				set gpu [dict get $gpu_dict $node]
+				if { $gpu > 0 } {
+					lappend mps_per_gpu [expr $mps / $gpu]
+				} else {
+					fail "All nodes with MPS should have a GPU"
+				}
+			} else {
+				fail "All nodes with MPS should have a GPU"
+			}
+		}
+	}
+
+	set count [lindex [lsort -decreasing -integer $mps_per_gpu] [expr $node_count - 1]]
+	return $count
 }
 
 

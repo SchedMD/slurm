@@ -114,7 +114,7 @@ if {![test_select_type_params "MEMORY"]} {
         skip "This test requires memory allocation management"
 }
 
-set gpu_cnt [get_gpu_count 1]
+set gpu_cnt [get_highest_gres_count 1 "gpu"]
 if {$gpu_cnt < 0} {
 	fail "Error getting GPU count"
 }
