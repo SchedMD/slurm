@@ -7451,6 +7451,82 @@ proc get_nodes_by_request args {
 }
 
 
+################################################################
+#
+# NAME
+#	get_jobs - returns a dictionary of dictionaries of job parameters
+#
+# SYNOPSIS
+#	get_jobs ?job_id?
+#
+# DESCRIPTION
+#	Uses `scontrol show job` to return a dictionary of dictionaries of job
+#	parameters. Specifying an invalid job id will result in a failure.
+#
+################################################################
+
+proc get_jobs { {job_id_in ""} } {
+	global scontrol
+
+	set command "$scontrol show job -o"
+	if {$job_id_in ne ""} {
+		append command " $job_id_in"
+	}
+	set output [run_command_output -fail "$command"]
+
+	# Iterate over each job's parameter list
+	foreach line [split $output "\n"] {
+		if {$line eq ""} { continue }
+
+		# Peel off the job parameters one at a time
+		# The first quantifier sets the greediness for the whole RE
+		while {[regexp {^ *?([^ =]+)=(.*)(?= +[^ =]+=| *$)} $line {} param_name param_value]} {
+			# Remove the consumed parameter from the line
+			set line [regsub {^ *?[^ =]+=.*(?= +[^ =]+=| *$)} $line {}]
+			# Add it to the temporary job dictionary
+			dict set job_dict $param_name $param_value
+		}
+
+		set job_id [dict get $job_dict "JobId"]
+
+		# Add the job dictionary to jobs dictionary
+		dict set jobs_dict $job_id $job_dict
+
+		# Clear the job dictionary for the next job
+		set job_dict {}
+	}
+
+	return $jobs_dict
+}
+
+
+################################################################
+#
+# NAME
+#	get_job_param - returns a specific parameter value for a specific job
+#
+# SYNOPSIS
+#	get_job_param job_id parameter_name
+#
+# DESCRIPTION
+#	Returns a specific parameter value for a specified job if the
+#	parameter exists for the job, or MISSING if it does not exist.
+#	Specifying an invalid job id will result in a failure.
+#
+################################################################
+
+proc get_job_param { job_id parameter_name } {
+
+	set jobs_dict [get_jobs $job_id]
+
+	if [dict exists $jobs_dict $job_id $parameter_name] {
+		return [dict get $jobs_dict $job_id $parameter_name]
+	} else {
+		return "MISSING"
+	}
+}
+
+
 proc check_reason { job_id reason } {
 	global squeue
 
