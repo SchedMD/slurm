@@ -325,7 +325,6 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->end_time = resv_orig_ptr->end_time;
 	resv_copy_ptr->features = xstrdup(resv_orig_ptr->features);
 	resv_copy_ptr->flags = resv_orig_ptr->flags;
-	resv_copy_ptr->full_nodes = resv_orig_ptr->full_nodes;
 	resv_copy_ptr->job_pend_cnt = resv_orig_ptr->job_pend_cnt;
 	resv_copy_ptr->job_run_cnt = resv_orig_ptr->job_run_cnt;
 	resv_copy_ptr->licenses = xstrdup(resv_orig_ptr->licenses);
@@ -408,7 +407,6 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	src_resv->features = NULL;
 
 	dest_resv->flags = src_resv->flags;
-	dest_resv->full_nodes = src_resv->full_nodes;
 	dest_resv->job_pend_cnt = src_resv->job_pend_cnt;
 	dest_resv->job_run_cnt = src_resv->job_run_cnt;
 
@@ -1665,7 +1663,6 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 			pack_job_resources(resv_ptr->core_resrcs, buffer,
 					   protocol_version);
 			pack32(resv_ptr->duration,	buffer);
-			pack8(resv_ptr->full_nodes,	buffer);
 			pack32(resv_ptr->resv_id,	buffer);
 			pack_time(resv_ptr->start_time_prev, buffer);
 			pack_time(resv_ptr->start_time,	buffer);
@@ -1740,7 +1737,11 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 			pack_job_resources(resv_ptr->core_resrcs, buffer,
 					   protocol_version);
 			pack32(resv_ptr->duration,	buffer);
-			pack8(resv_ptr->full_nodes,	buffer);
+			if (resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE)
+				uint8_tmp = 1;
+			else
+				uint8_tmp = 0;
+			pack8(uint8_tmp, buffer);
 			pack32(resv_ptr->resv_id,	buffer);
 			pack_time(resv_ptr->start_time_prev, buffer);
 			pack_time(resv_ptr->start_time,	buffer);
@@ -1817,7 +1818,11 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 			pack_job_resources(resv_ptr->core_resrcs, buffer,
 					   protocol_version);
 			pack32(resv_ptr->duration,	buffer);
-			pack8(resv_ptr->full_nodes,	buffer);
+			if (resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE)
+				uint8_tmp = 1;
+			else
+				uint8_tmp = 0;
+			pack8(uint8_tmp, buffer);
 			pack32(resv_ptr->resv_id,	buffer);
 			pack_time(resv_ptr->start_time_prev, buffer);
 			pack_time(resv_ptr->start_time,	buffer);
@@ -1905,7 +1910,6 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 					 protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&resv_ptr->duration,	buffer);
-		safe_unpack8((uint8_t *)&resv_ptr->full_nodes,	buffer);
 		safe_unpack32(&resv_ptr->resv_id,	buffer);
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
 		safe_unpack_time(&resv_ptr->start_time, buffer);
@@ -1953,7 +1957,9 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 					 protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&resv_ptr->duration,	buffer);
-		safe_unpack8((uint8_t *)&resv_ptr->full_nodes,	buffer);
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp)
+			resv_ptr->ctld_flags |= RESV_CTLD_FULL_NODE;
 		safe_unpack32(&resv_ptr->resv_id,	buffer);
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
 		safe_unpack_time(&resv_ptr->start_time, buffer);
@@ -2001,7 +2007,9 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 					 protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&resv_ptr->duration,	buffer);
-		safe_unpack8((uint8_t *)&resv_ptr->full_nodes,	buffer);
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp)
+			resv_ptr->ctld_flags |= RESV_CTLD_FULL_NODE;
 		safe_unpack32(&resv_ptr->resv_id,	buffer);
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
 		safe_unpack_time(&resv_ptr->start_time, buffer);
@@ -2088,7 +2096,7 @@ static bool _resv_overlap(resv_desc_msg_t *resv_desc_ptr,
 			continue;
 		if (!bit_overlap_any(resv_ptr->node_bitmap, node_bitmap))
 			continue;	/* no overlap */
-		if (!resv_ptr->full_nodes)
+		if (!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE))
 			continue;
 		if (_resv_time_overlap(resv_desc_ptr, resv_ptr)) {
 			rc = true;
@@ -2166,7 +2174,8 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	char *name1, *name2, *val1, *val2;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
-	if (resv_ptr->full_nodes && resv_ptr->node_bitmap) {
+	if ((resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) &&
+	    resv_ptr->node_bitmap) {
 		resv_ptr->core_cnt = 0;
 
 		for (i=0; i<node_record_count; i++, node_ptr++) {
@@ -2680,11 +2689,11 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (!resv_desc_ptr->core_cnt) {
 		log_flag(RESERVATION, "%s: reservation %s using full nodes",
 			 __func__, resv_ptr->name);
-		resv_ptr->full_nodes = 1;
+		resv_ptr->ctld_flags |= RESV_CTLD_FULL_NODE;
 	} else {
 		log_flag(RESERVATION, "%s: reservation %s using partial nodes",
 			 __func__, resv_ptr->name);
-		resv_ptr->full_nodes = 0;
+		resv_ptr->ctld_flags &= (~RESV_CTLD_FULL_NODE);
 	}
 
 	if ((rc = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS) {
@@ -2743,7 +2752,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		return ESLURM_RESERVATION_INVALID;
 
 	/* FIXME: Support more core based reservation updates */
-	if ((!resv_ptr->full_nodes &&
+	if ((!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) &&
 	     (resv_desc_ptr->node_cnt || resv_desc_ptr->node_list)) ||
 	    resv_desc_ptr->core_cnt) {
 		info("Core-based reservation %s can not be updated",
@@ -2797,7 +2806,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		if ((resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) ||
 		    (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
 			if ((resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
-			    (resv_ptr->full_nodes == 0)) {
+			    !(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
 				info("%s: reservation %s can't be updated with REPLACE or REPLACE_DOWN flags; they should be updated on a NodeCnt reservation",
 				     __func__, resv_desc_ptr->name);
 				error_code = ESLURM_NOT_SUPPORTED;
@@ -3751,7 +3760,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 		resv_desc.features    = resv_ptr->features;
 		resv_desc.flags       = resv_ptr->flags;
 		resv_desc.name        = resv_ptr->name;
-		if (!resv_ptr->full_nodes) {
+		if (!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
 			resv_desc.core_cnt = xcalloc(2, sizeof(uint32_t));
 			resv_desc.core_cnt[0] = resv_ptr->core_cnt;
 		}
@@ -3844,7 +3853,8 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc_msg_t resv_desc;
 
 	if ((resv_ptr->node_bitmap == NULL) ||
-	    (!resv_ptr->full_nodes && (resv_ptr->node_cnt > 1)) ||
+	    (!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) &&
+	     (resv_ptr->node_cnt > 1)) ||
 	    (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
 	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
 		return;
@@ -3869,7 +3879,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc.features   = resv_ptr->features;
 	resv_desc.flags      = resv_ptr->flags;
 	resv_desc.name       = resv_ptr->name;
-	if (!resv_ptr->full_nodes) {
+	if (!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
 		resv_desc.core_cnt = xcalloc(2, sizeof(uint32_t));
 		resv_desc.core_cnt[0] = resv_ptr->core_cnt;
 	}
@@ -4227,12 +4237,13 @@ int _filter_resv(void *x, void *arg)
 			 __func__, resv_ptr->name, args->resv_desc_ptr->name);
 		return 0;
 	}
-	if (!resv_ptr->core_bitmap && !resv_ptr->full_nodes) {
-		error("%s: Reservation %s has no core_bitmap and full_nodes is zero",
+	if (!resv_ptr->core_bitmap &&
+	    !(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
+		error("%s: Reservation %s has no core_bitmap and full_nodes is not set",
 		      __func__, resv_ptr->name);
-		resv_ptr->full_nodes = 1;
+		resv_ptr->ctld_flags |= RESV_CTLD_FULL_NODE;
 	}
-	if (resv_ptr->full_nodes) {
+	if (resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *nodes[2] = {
 				bitmap2node_name(resv_ptr->node_bitmap),
@@ -5256,7 +5267,8 @@ extern void job_claim_resv(job_record_t *job_ptr)
 	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
 			_find_resv_name, job_ptr->resv_name);
 	if (!resv_ptr ||
-	    (!resv_ptr->full_nodes && (resv_ptr->node_cnt > 1)) ||
+	    (!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) &&
+	     (resv_ptr->node_cnt > 1)) ||
 	    !(resv_ptr->flags & RESERVE_FLAG_REPLACE) ||
 	    (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
 	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
@@ -5942,7 +5954,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			    (res2_ptr->node_bitmap == NULL) ||
 			    (start_relative >= job_end_time_use) ||
 			    (end_relative   <= job_start_time) ||
-			    (!res2_ptr->full_nodes))
+			    (!(res2_ptr->ctld_flags & RESV_CTLD_FULL_NODE)))
 				continue;
 			if (bit_overlap_any(*node_bitmap,
 					    res2_ptr->node_bitmap)) {
@@ -6050,7 +6062,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 					lic_resv_time = resv_ptr->end_time;
 			}
 
-			if ((resv_ptr->full_nodes) ||
+			if ((resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) ||
 			    (job_ptr->details->whole_node == 1)) {
 				log_flag(RESERVATION, "%s: reservation %s uses full nodes or %pJ will not share nodes",
 					 __func__, resv_ptr->name, job_ptr);

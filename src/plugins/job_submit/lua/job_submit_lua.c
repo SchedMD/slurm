@@ -252,7 +252,9 @@ static int _resv_field(const slurmctld_resv_t *resv_ptr,
 	} else if (!xstrcmp(name, "flags")) {
 		lua_pushnumber(L, resv_ptr->flags);
 	} else if (!xstrcmp(name, "full_nodes")) {
-		lua_pushboolean(L, resv_ptr->full_nodes);
+		lua_pushboolean(L,
+				(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) ?
+				true : false);
 	} else if (!xstrcmp(name, "flags_set_node")) {
 		lua_pushboolean(L, resv_ptr->flags_set_node);
 	} else if (!xstrcmp(name, "licenses")) {
