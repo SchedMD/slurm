@@ -571,21 +571,21 @@ proc dict_getdef {D args} {
 #
 # OPTIONS
 #	-fail
-#		if the exit code or timeout is unexpected, the action that will
+#		If the exit code or timeout is unexpected, the action that will
 #		be taken is to fail the test
 #	-warn
-#		if the exit code or timeout is unexpected, the action that will
+#		If the exit code or timeout is unexpected, the action that will
 #		be taken is to log a warning (this is the default)
 #	-none
-#		if the exit code or timeout is unexpected, no action will be
+#		If the exit code or timeout is unexpected, no action will be
 #		taken
 #	-xfail
-#		if the command exits with zero and does not time out, the
+#		If the command exits with zero and does not time out, the
 #		action will be applied. Without this option, the action will
 #		be applied if the command exits with a non-zero exit code or
 #		times out.
 #	-timeout <float_number>
-#		time in seconds to wait for the command to complete before
+#		Time in seconds to wait for the command to complete before
 #		timing out (default is 60.0)
 #	-nolog
 #		Logging for this command will occur at trace threshold only
@@ -8009,6 +8009,7 @@ proc _test_cleanup {} {
 
 	return $rc
 }
+
 
 ################################################################
 #
