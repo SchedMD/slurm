@@ -6432,7 +6432,7 @@ extern void job_resv_check(void)
 				_clear_job_resv(resv_ptr);
 				list_delete_item(iter);
 			} else {
-				resv_ptr->run_prolog = false;
+				resv_ptr->ctld_flags &= (~RESV_CTLD_PROLOG);
 				resv_ptr->ctld_flags &= (~RESV_CTLD_EPILOG);
 				_advance_resv_time(resv_ptr);
 			}
@@ -6447,8 +6447,8 @@ extern void job_resv_check(void)
 			_validate_node_choice(resv_ptr);
 			continue;
 		}
-		if (!resv_ptr->run_prolog ||
-		    !(resv_ptr->ctld_flags & RESV_CTLD_EPILOG))
+		if (!(resv_ptr->ctld_flags &
+		      (RESV_CTLD_EPILOG | RESV_CTLD_PROLOG)))
 			continue;
 		(void)_advance_resv_time(resv_ptr);
 		if ((!resv_ptr->job_run_cnt ||
@@ -6575,9 +6575,10 @@ extern int set_node_maint_mode(bool reset_all)
 
 		if (reset_all)	/* Defer reservation prolog/epilog */
 			continue;
-		if ((resv_ptr->start_time <= now) && !resv_ptr->run_prolog) {
+		if ((resv_ptr->start_time <= now) &&
+		    !(resv_ptr->ctld_flags & RESV_CTLD_PROLOG)) {
 			res_start_cnt++;
-			resv_ptr->run_prolog = true;
+			resv_ptr->ctld_flags |= RESV_CTLD_PROLOG;
 			_run_script(slurm_conf.resv_prolog, resv_ptr);
 		}
 		if ((resv_ptr->end_time <= now) &&
