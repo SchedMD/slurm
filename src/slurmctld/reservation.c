@@ -304,7 +304,6 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->account_cnt = resv_orig_ptr->account_cnt;
 	resv_copy_ptr->account_list = xcalloc(resv_orig_ptr->account_cnt,
 					      sizeof(char *));
-	resv_copy_ptr->account_not = resv_orig_ptr->account_not;
 	for (i = 0; i < resv_copy_ptr->account_cnt; i++) {
 		resv_copy_ptr->account_list[i] =
 				xstrdup(resv_orig_ptr->account_list[i]);
@@ -380,8 +379,6 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	src_resv->account_cnt = 0;
 	dest_resv->account_list = src_resv->account_list;
 	src_resv->account_list = NULL;
-
-	dest_resv->account_not = src_resv->account_not;
 
 	xfree(dest_resv->assoc_list);
 	dest_resv->assoc_list = src_resv->assoc_list;
@@ -776,8 +773,8 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 
 	assoc_mgr_lock(&locks);
 	if (resv_ptr->account_cnt && resv_ptr->user_cnt) {
-		if (!resv_ptr->account_not &&
-		    !(resv_ptr->ctld_flags & RESV_CTLD_USER_NOT)) {
+		if (!(resv_ptr->ctld_flags &
+		      (RESV_CTLD_USER_NOT | RESV_CTLD_ACCT_NOT))) {
 			/* Add every association that matches both account
 			 * and user */
 			for (i=0; i < resv_ptr->user_cnt; i++) {
@@ -812,7 +809,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 					goto end_it;
 				}
 			}
-			if (resv_ptr->account_not)
+			if (resv_ptr->ctld_flags & RESV_CTLD_ACCT_NOT)
 				assoc_list = assoc_list_deny;
 			else
 				assoc_list = assoc_list_allow;
@@ -845,7 +842,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 			}
 		}
 	} else if (resv_ptr->account_cnt) {
-		if (resv_ptr->account_not)
+		if (resv_ptr->ctld_flags & RESV_CTLD_ACCT_NOT)
 			assoc_list = assoc_list_deny;
 		else
 			assoc_list = assoc_list_allow;
@@ -1096,7 +1093,6 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 	int *ac_type, minus_account = 0, plus_account = 0;
 	char **ac_list;
 	bool found_it;
-	bool account_not = false;
 
 	if (!accounts)
 		return ESLURM_INVALID_ACCOUNT;
@@ -1140,7 +1136,7 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 		xfree(resv_ptr->account_list);
 		resv_ptr->account_list = ac_list;
 		resv_ptr->account_cnt  = ac_cnt;
-		resv_ptr->account_not  = account_not;
+		resv_ptr->ctld_flags &= (~RESV_CTLD_ACCT_NOT);
 		xfree(ac_cpy);
 		xfree(ac_type);
 		return SLURM_SUCCESS;
@@ -1148,8 +1144,11 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 
 	/* Modification of existing account list */
 	if ((resv_ptr->account_cnt == 0) && minus_account)
-		resv_ptr->account_not = true;
-	if (resv_ptr->account_not) {
+		resv_ptr->ctld_flags |= RESV_CTLD_ACCT_NOT;
+	else
+		resv_ptr->ctld_flags &= (~RESV_CTLD_ACCT_NOT);
+
+	if (resv_ptr->ctld_flags & RESV_CTLD_ACCT_NOT) {
 		/* change minus_account to plus_account (add to NOT list) and
 		 * change plus_account to minus_account (remove from NOT list) */
 		for (i = 0; i < ac_cnt; i++) {
@@ -1195,7 +1194,7 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 		for (i=0; i<resv_ptr->account_cnt; i++) {
 			if (i)
 				xstrcat(resv_ptr->accounts, ",");
-			if (resv_ptr->account_not)
+			if (resv_ptr->ctld_flags & RESV_CTLD_ACCT_NOT)
 				xstrcat(resv_ptr->accounts, "-");
 			xstrcat(resv_ptr->accounts, resv_ptr->account_list[i]);
 		}
@@ -1226,7 +1225,7 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 		for (i=0; i<resv_ptr->account_cnt; i++) {
 			if (i)
 				xstrcat(resv_ptr->accounts, ",");
-			if (resv_ptr->account_not)
+			if (resv_ptr->ctld_flags & RESV_CTLD_ACCT_NOT)
 				xstrcat(resv_ptr->accounts, "-");
 			xstrcat(resv_ptr->accounts, resv_ptr->account_list[i]);
 		}
@@ -1654,7 +1653,6 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		packstr(resv_ptr->users,	buffer);
 
 		if (internal) {
-			pack8(resv_ptr->account_not,	buffer);
 			packstr(resv_ptr->assoc_list,	buffer);
 			pack32(resv_ptr->boot_time,	buffer);
 			/*
@@ -1725,7 +1723,11 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		packstr(resv_ptr->users,	buffer);
 
 		if (internal) {
-			pack8(resv_ptr->account_not,	buffer);
+			if (resv_ptr->ctld_flags & RESV_CTLD_ACCT_NOT)
+				uint8_tmp = 1;
+			else
+				uint8_tmp = 0;
+			pack8(uint8_tmp, buffer);
 			packstr(resv_ptr->assoc_list,	buffer);
 			pack32(resv_ptr->boot_time,	buffer);
 			/*
@@ -1798,7 +1800,11 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		packstr(resv_ptr->users,	buffer);
 
 		if (internal) {
-			pack8(resv_ptr->account_not,	buffer);
+			if (resv_ptr->ctld_flags & RESV_CTLD_ACCT_NOT)
+				uint8_tmp = 1;
+			else
+				uint8_tmp = 0;
+			pack8(uint8_tmp, buffer);
 			packstr(resv_ptr->assoc_list,	buffer);
 			pack32(resv_ptr->boot_time,	buffer);
 			/*
@@ -1892,7 +1898,6 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpackstr_xmalloc(&resv_ptr->users, &uint32_tmp, buffer);
 
 		/* Fields saved for internal use only (save state) */
-		safe_unpack8((uint8_t *)&resv_ptr->account_not,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,
 				       &uint32_tmp,	buffer);
 		safe_unpack32(&resv_ptr->boot_time,	buffer);
@@ -1938,7 +1943,9 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpackstr_xmalloc(&resv_ptr->users, &uint32_tmp, buffer);
 
 		/* Fields saved for internal use only (save state) */
-		safe_unpack8((uint8_t *)&resv_ptr->account_not,	buffer);
+		safe_unpack8((uint8_t *)&uint8_tmp, buffer);
+		if (uint8_tmp)
+			resv_ptr->ctld_flags |= RESV_CTLD_ACCT_NOT;
 		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,
 				       &uint32_tmp,	buffer);
 		safe_unpack32(&resv_ptr->boot_time,	buffer);
@@ -1984,7 +1991,9 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpackstr_xmalloc(&resv_ptr->users, &uint32_tmp, buffer);
 
 		/* Fields saved for internal use only (save state) */
-		safe_unpack8((uint8_t *)&resv_ptr->account_not,	buffer);
+		safe_unpack8((uint8_t *)&uint8_tmp, buffer);
+		if (uint8_tmp)
+			resv_ptr->ctld_flags |= RESV_CTLD_ACCT_NOT;
 		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,
 				       &uint32_tmp,	buffer);
 		safe_unpack32(&resv_ptr->boot_time,	buffer);
@@ -2621,12 +2630,13 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->account_list	= account_list;
 	account_cnt = 0;
 	account_list = NULL;
-	resv_ptr->account_not	= account_not;
 	resv_ptr->burst_buffer	= resv_desc_ptr->burst_buffer;
 	resv_desc_ptr->burst_buffer = NULL;	/* Nothing left to free */
 
 	if (user_not)
 		resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
+	if (account_not)
+		resv_ptr->ctld_flags |= RESV_CTLD_ACCT_NOT;
 
 	resv_ptr->duration      = resv_desc_ptr->duration;
 	if (resv_desc_ptr->purge_comp_time != NO_VAL)
@@ -3495,7 +3505,10 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		xfree(resv_ptr->account_list);
 		resv_ptr->account_cnt  = account_cnt;
 		resv_ptr->account_list = account_list;
-		resv_ptr->account_not  = account_not;
+		if (account_not)
+			resv_ptr->ctld_flags |= RESV_CTLD_ACCT_NOT;
+		else
+			resv_ptr->ctld_flags &= (~RESV_CTLD_ACCT_NOT);
 	}
 	if (resv_ptr->licenses) {
 		bool valid = true;
@@ -5158,13 +5171,14 @@ no_assocs:	if ((resv_ptr->user_cnt == 0) ||
 		if ((resv_ptr->user_cnt != 0) && (resv_ptr->account_cnt == 0))
 			return SLURM_SUCCESS;
 
-		if ((resv_ptr->account_cnt == 0) || resv_ptr->account_not)
+		if ((resv_ptr->account_cnt == 0) ||
+		    (resv_ptr->ctld_flags & RESV_CTLD_ACCT_NOT))
 			account_good = true;
 		for (i=0; (i<resv_ptr->account_cnt) && job_ptr->account; i++) {
 			if (resv_ptr->account_list[i] &&
 			    (xstrcmp(job_ptr->account,
 				    resv_ptr->account_list[i]) == 0)) {
-				if (resv_ptr->account_not)
+				if (resv_ptr->ctld_flags & RESV_CTLD_ACCT_NOT)
 					account_good = false;
 				else
 					account_good = true;
