@@ -587,6 +587,8 @@ proc dict_getdef {D args} {
 #	-timeout <float_number>
 #		time in seconds to wait for the command to complete before
 #		timing out (default is 60.0)
+#	-nolog
+#		Logging for this command will occur at trace threshold only
 #
 # ARGUMENTS
 #	command
@@ -610,6 +612,7 @@ proc run_command args {
 	set action "warn"
 	set timeout 60
 	set expect_failure false
+	set log_at_trace_level false
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
 			-fail    {set action "fail"; set args [lrange $args 1 end]}
@@ -617,6 +620,7 @@ proc run_command args {
 			-timeout {set args [lassign $args - timeout]}
 			-warn    {set action "warn"; set args [lrange $args 1 end]}
 			-xfail   {set expect_failure true; set args [lrange $args 1 end]}
+			-nolog   {set log_at_trace_level true; set args [lrange $args 1 end]}
 			-*       {fail "Unknown option: [lindex $args 0]"}
 			default  break
 		}
@@ -627,11 +631,18 @@ proc run_command args {
 		fail "Invalid number of arguments [llength $args]: $args"
 	}
 
+	if {$log_at_trace_level} {
+		interp alias {} log_alias {} log_trace
+	} else {
+		interp alias {} log_alias {} log_debug
+	}
+
 	set orig_log_user [log_user -info]
 	log_user 0
 
-	log_debug "Invoking command \"$command\""
+	log_alias "Invoking command \"$command\""
 	set start_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+	set stty_init raw ; # Prevent the terminal from inserting \r
 	set expect_pid [spawn -noecho $bin_bash -c "$command"]
 	expect {
 		-re "(.+)" {
@@ -652,12 +663,12 @@ proc run_command args {
 	set duration [format "%.3f" [expr $end_time - $start_time]]
 	set exit_code $exit_status
 
-	log_debug "Command Results:"
-	log_debug "	Start Time: $start_time"
-	log_debug "	Duration: $duration"
-	log_debug "	Exit Code: $exit_code"
+	log_alias "Command Results:"
+	log_alias "	Start Time: $start_time"
+	log_alias "	Duration: $duration"
+	log_alias "	Exit Code: $exit_code"
 	if {[info exists output]} {
-		log_debug "	Output: $output"
+		log_alias "	Output: $output"
 	}
 
 	if {! $expect_failure && $exit_status != 0} {
