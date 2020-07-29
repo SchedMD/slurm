@@ -6414,7 +6414,7 @@ extern void job_resv_check(void)
 
 			(void)_post_resv_delete(resv_ptr);
 
-			if (!resv_ptr->run_epilog)
+			if (!(resv_ptr->ctld_flags & RESV_CTLD_EPILOG))
 				_run_script(slurm_conf.resv_epilog, resv_ptr);
 
 			/*
@@ -6433,7 +6433,7 @@ extern void job_resv_check(void)
 				list_delete_item(iter);
 			} else {
 				resv_ptr->run_prolog = false;
-				resv_ptr->run_epilog = false;
+				resv_ptr->ctld_flags &= (~RESV_CTLD_EPILOG);
 				_advance_resv_time(resv_ptr);
 			}
 
@@ -6447,7 +6447,8 @@ extern void job_resv_check(void)
 			_validate_node_choice(resv_ptr);
 			continue;
 		}
-		if (!resv_ptr->run_prolog || !resv_ptr->run_epilog)
+		if (!resv_ptr->run_prolog ||
+		    !(resv_ptr->ctld_flags & RESV_CTLD_EPILOG))
 			continue;
 		(void)_advance_resv_time(resv_ptr);
 		if ((!resv_ptr->job_run_cnt ||
@@ -6579,8 +6580,9 @@ extern int set_node_maint_mode(bool reset_all)
 			resv_ptr->run_prolog = true;
 			_run_script(slurm_conf.resv_prolog, resv_ptr);
 		}
-		if ((resv_ptr->end_time <= now) && !resv_ptr->run_epilog) {
-			resv_ptr->run_epilog = true;
+		if ((resv_ptr->end_time <= now) &&
+		    !(resv_ptr->ctld_flags & RESV_CTLD_EPILOG)) {
+			resv_ptr->ctld_flags |= RESV_CTLD_EPILOG;
 			_run_script(slurm_conf.resv_epilog, resv_ptr);
 		}
 	}
