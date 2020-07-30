@@ -3245,7 +3245,7 @@ static bool _match_user_assoc(char *assoc_str, List assoc_list, bool deny)
 	ListIterator itr;
 	bool found = 0;
 	slurmdb_assoc_rec_t *assoc;
-	char tmp_char[1000];
+	char tmp_char[30];
 
 	if (!assoc_str || !assoc_list || !list_count(assoc_list))
 		return false;
