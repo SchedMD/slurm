@@ -57,6 +57,8 @@
 
 #include "slurm/slurm_errno.h"
 
+#include "groups.h"
+
 #define _DEBUG 0
 
 static void   _cache_del_func(void *x);
@@ -71,6 +73,115 @@ struct group_cache_rec {
 	int uid_cnt;
 	uid_t *group_uids;
 };
+
+/*
+ * _uid_cmp
+ */
+static int _uid_cmp(const void *x, const void *y)
+{
+	uid_t a;
+	uid_t b;
+
+	a = *(uid_t *)x;
+	b = *(uid_t *)y;
+
+	/* Sort in decreasing order so that the 0
+	 * as at the end.
+	 */
+	if (a > b)
+		return -1;
+	if (a < b)
+		return 1;
+	return 0;
+}
+
+/*
+ * _remove_duplicate_uids()
+ */
+static uid_t *_remove_duplicate_uids(uid_t *u)
+{
+	int i;
+	int j;
+	int num;
+	uid_t *v;
+	uid_t cur;
+
+	if (!u)
+		return NULL;
+
+	num = 1;
+	for (i = 0; u[i]; i++)
+		++num;
+
+	v = xcalloc(num, sizeof(uid_t));
+	qsort(u, num, sizeof(uid_t), _uid_cmp);
+
+	j = 0;
+	cur = u[0];
+	for (i = 0; u[i]; i++) {
+		if (u[i] == cur)
+			continue;
+		v[j] = cur;
+		cur = u[i];
+		++j;
+	}
+	v[j] = cur;
+
+	xfree(u);
+	return v;
+}
+
+/* _uid_list_size - return the count of uid's in a zero terminated list */
+static int _uid_list_size(uid_t * uid_list_ptr)
+{
+	int i;
+
+	if (uid_list_ptr == NULL)
+		return 0;
+
+	for (i = 0;; i++) {
+		if (uid_list_ptr[i] == 0)
+			break;
+	}
+
+	return i;
+}
+
+extern uid_t *get_groups_members(char *group_names)
+{
+	uid_t *group_uids = NULL;
+	uid_t *temp_uids  = NULL;
+	int i, j, k;
+	char *tmp_names = NULL, *name_ptr = NULL, *one_group_name = NULL;
+
+	if (group_names == NULL)
+		return NULL;
+
+	tmp_names = xstrdup(group_names);
+	one_group_name = strtok_r(tmp_names, ",", &name_ptr);
+	while (one_group_name) {
+		temp_uids = get_group_members(one_group_name);
+		if (temp_uids == NULL)
+			;
+		else if (group_uids == NULL) {
+			group_uids = temp_uids;
+		} else {
+			/* concatenate the uid_lists and free the new one */
+			i = _uid_list_size(group_uids);
+			j = _uid_list_size(temp_uids);
+			xrealloc(group_uids, sizeof(uid_t) * (i + j + 1));
+			for (k = 0; k <= j; k++)
+				group_uids[i + k] = temp_uids[k];
+			xfree(temp_uids);
+		}
+		one_group_name = strtok_r(NULL, ",", &name_ptr);
+	}
+	xfree(tmp_names);
+
+	group_uids = _remove_duplicate_uids(group_uids);
+
+	return group_uids;
+}
 
 /*
  * get_group_members - identify the users in a given group name
