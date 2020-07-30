@@ -2679,10 +2679,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->start_time_prev = resv_ptr->start_time;
 	resv_ptr->flags		= resv_desc_ptr->flags;
 	resv_ptr->users		= resv_desc_ptr->users;
+	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
 	resv_ptr->user_cnt	= user_cnt;
 	resv_ptr->user_list	= user_list;
 	user_list = NULL;
-	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
 
 	if (!resv_desc_ptr->core_cnt) {
 		log_flag(RESERVATION, "%s: reservation %s using full nodes",
