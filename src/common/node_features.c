@@ -623,7 +623,7 @@ extern List node_features_g_get_config(void)
 extern uint32_t node_features_g_reboot_weight(void)
 {
 	DEF_TIMERS;
-	int weight = INFINITE - 1;
+	uint32_t weight = INFINITE - 1;
 
 	START_TIMER;
 	(void) node_features_g_init();
