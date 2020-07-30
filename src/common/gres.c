@@ -7518,7 +7518,7 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 			local_s_p_n = s_p_n;	/* Maximize GRES per node */
 		else
 			local_s_p_n = NO_VAL;	/* No need to optimize socket */
-		if (core_bitmap && (bit_set_count(core_bitmap) == 0)) {
+		if (core_bitmap && (bit_ffs(core_bitmap) == -1)) {
 			sock_gres = NULL;	/* No cores available */
 		} else if (node_data_ptr->topo_cnt) {
 			uint32_t alt_plugin_id = 0;
