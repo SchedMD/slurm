@@ -213,7 +213,8 @@ slurm_create_reservation (resv_desc_msg_t * resv_msg)
 	switch (resp_msg.msg_type) {
 	case RESPONSE_CREATE_RESERVATION:
 		resp = (reservation_name_msg_t *) resp_msg.data;
-		resv_name = strdup(resp->name);
+		if (resp->name)
+			resv_name = strdup(resp->name);
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
