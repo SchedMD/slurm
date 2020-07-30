@@ -139,6 +139,8 @@ documents those changes that are of interest to users and administrators.
     duration if they are purged.
  -- scontrol - changed the "PROMISCUOUS" flag to "MAGNETIC"
  -- Early return from epilog_set_env in case of no_consume.
+ -- Fix cons_common/job_test start time discovery logic to prevent skewed
+    results between "will run test" executions.
 
 * Changes in Slurm 20.02.3
 ==========================
