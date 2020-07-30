@@ -67,6 +67,8 @@ proc inc3_11_11_resv_update_f { res_name args } {
 	set ret_code [update_res $res_name $args]
 	if {$ret_code == 0} {
 		inc3_11_11_fini $res_name "Reservation should have failed update with $args (Within: inc3.11.11)" 1
+	} else {
+		log_info "Expected error. You can turn that frown upside-down.(Within: inc3.11.11)"
 	}
 }
 
