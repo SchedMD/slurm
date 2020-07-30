@@ -2976,7 +2976,6 @@ extern int gres_plugin_node_config_validate(char *node_name,
 					    char **reason_down)
 {
 	int i, rc, rc2;
-	ListIterator gres_iter;
 	gres_state_t *gres_ptr, *gres_gpu_ptr = NULL, *gres_mps_ptr = NULL;
 	int core_cnt = sock_cnt * cores_per_sock;
 	int cpu_cnt  = core_cnt * threads_per_core;
@@ -2988,12 +2987,8 @@ extern int gres_plugin_node_config_validate(char *node_name,
 		*gres_list = list_create(_gres_node_list_delete);
 	for (i = 0; i < gres_context_cnt; i++) {
 		/* Find or create gres_state entry on the list */
-		gres_iter = list_iterator_create(*gres_list);
-		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
-				break;
-		}
-		list_iterator_destroy(gres_iter);
+		gres_ptr = list_find_first(*gres_list, _gres_find_id,
+		                           &gres_context[i].plugin_id);
 		if (gres_ptr == NULL) {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
@@ -3059,7 +3054,6 @@ extern void gres_plugin_node_feature(char *node_name,
 	char *new_gres = NULL, *tok, *save_ptr = NULL, *sep = "", *suffix = "";
 	gres_state_t *gres_ptr;
 	gres_node_state_t *gres_node_ptr;
-	ListIterator gres_iter;
 	uint32_t plugin_id;
 	uint64_t gres_scaled = 0;
 	int gres_name_len;
@@ -3091,12 +3085,8 @@ extern void gres_plugin_node_feature(char *node_name,
 	if (gres_context_cnt > 0) {
 		if (*gres_list == NULL)
 			*gres_list = list_create(_gres_node_list_delete);
-		gres_iter = list_iterator_create(*gres_list);
-		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-			if (gres_ptr->plugin_id == plugin_id)
-				break;
-		}
-		list_iterator_destroy(gres_iter);
+		gres_ptr = list_find_first(*gres_list, _gres_find_id,
+		                           &plugin_id);
 		if (gres_ptr == NULL) {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
 			gres_ptr->plugin_id = plugin_id;
@@ -3415,7 +3405,6 @@ static void _build_node_gres_str(List *gres_list, char **gres_str,
 {
 	gres_state_t *gres_ptr;
 	gres_node_state_t *gres_node_state;
-	ListIterator gres_iter;
 	bitstr_t *done_topo, *core_map;
 	uint64_t gres_sum;
 	char *sep = "", *suffix, *sock_info = NULL, *sock_str;
@@ -3425,12 +3414,8 @@ static void _build_node_gres_str(List *gres_list, char **gres_str,
 	xfree(*gres_str);
 	for (c = 0; c < gres_context_cnt; c++) {
 		/* Find gres_state entry on the list */
-		gres_iter = list_iterator_create(*gres_list);
-		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-			if (gres_ptr->plugin_id == gres_context[c].plugin_id)
-				break;
-		}
-		list_iterator_destroy(gres_iter);
+		gres_ptr = list_find_first(*gres_list, _gres_find_id,
+		                           &gres_context[c].plugin_id);
 		if (gres_ptr == NULL)
 			continue;	/* Node has none of this GRES */
 
@@ -3555,12 +3540,8 @@ extern int gres_plugin_node_reconfig(char *node_name,
 	/* First validate all of the requested GRES changes */
 	for (i = 0; (rc == SLURM_SUCCESS) && (i < gres_context_cnt); i++) {
 		/* Find gres_state entry on the list */
-		gres_iter = list_iterator_create(*gres_list);
-		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
-				break;
-		}
-		list_iterator_destroy(gres_iter);
+		gres_ptr = list_find_first(*gres_list, _gres_find_id,
+		                           &gres_context[i].plugin_id);
 		if (gres_ptr == NULL)
 			continue;
 		gres_ptr_array[i] = gres_ptr;
@@ -4242,7 +4223,6 @@ extern uint64_t gres_get_system_cnt(char *name)
 extern uint64_t gres_plugin_node_config_cnt(List gres_list, char *name)
 {
 	int i;
-	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 	gres_node_state_t *data_ptr;
 	uint64_t count = 0;
@@ -4256,13 +4236,8 @@ extern uint64_t gres_plugin_node_config_cnt(List gres_list, char *name)
 	for (i = 0; i < gres_context_cnt; i++) {
 		if (!xstrcmp(gres_context[i].gres_name, name)) {
 			/* Find or create gres_state entry on the list */
-			gres_iter = list_iterator_create(gres_list);
-			while ((gres_ptr = list_next(gres_iter))) {
-				if (gres_ptr->plugin_id ==
-				    gres_context[i].plugin_id)
-					break;
-			}
-			list_iterator_destroy(gres_iter);
+			gres_ptr = list_find_first(gres_list, _gres_find_id,
+			                           &gres_context[i].plugin_id);
 
 			if (!gres_ptr || !gres_ptr->gres_data)
 				break;
@@ -4281,13 +4256,8 @@ extern uint64_t gres_plugin_node_config_cnt(List gres_list, char *name)
 			}
 			type_str++;
 
-			gres_iter = list_iterator_create(gres_list);
-			while ((gres_ptr = list_next(gres_iter))) {
-				if (gres_ptr->plugin_id ==
-				    gres_context[i].plugin_id)
-					break;
-			}
-			list_iterator_destroy(gres_iter);
+			gres_ptr = list_find_first(gres_list, _gres_find_id,
+			                           &gres_context[i].plugin_id);
 
 			if (!gres_ptr || !gres_ptr->gres_data)
 				break;
@@ -6836,7 +6806,7 @@ extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
 					char *node_name)
 {
 	int i;
-	ListIterator  job_gres_iter, node_gres_iter;
+	ListIterator  job_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
 
 	if ((job_gres_list == NULL) || (core_bitmap == NULL))
@@ -6851,13 +6821,8 @@ extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
 	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
-		node_gres_iter = list_iterator_create(node_gres_list);
-		while ((node_gres_ptr = (gres_state_t *)
-				list_next(node_gres_iter))) {
-			if (job_gres_ptr->plugin_id == node_gres_ptr->plugin_id)
-				break;
-		}
-		list_iterator_destroy(node_gres_iter);
+		node_gres_ptr = list_find_first(node_gres_list, _gres_find_id,
+		                                &job_gres_ptr->plugin_id);
 		if (node_gres_ptr == NULL) {
 			/* node lack resources required by the job */
 			bit_nclear(core_bitmap, core_start_bit, core_end_bit);
@@ -6906,7 +6871,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 {
 	int i;
 	uint32_t core_cnt, tmp_cnt;
-	ListIterator job_gres_iter,  node_gres_iter;
+	ListIterator job_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
 	bool topo_set = false;
 
@@ -6921,13 +6886,8 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
-		node_gres_iter = list_iterator_create(node_gres_list);
-		while ((node_gres_ptr = (gres_state_t *)
-				list_next(node_gres_iter))) {
-			if (job_gres_ptr->plugin_id == node_gres_ptr->plugin_id)
-				break;
-		}
-		list_iterator_destroy(node_gres_iter);
+		node_gres_ptr = list_find_first(node_gres_list, _gres_find_id,
+		                                &job_gres_ptr->plugin_id);
 		if (node_gres_ptr == NULL) {
 			/* node lack resources required by the job */
 			core_cnt = 0;
@@ -7526,7 +7486,7 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 				  const uint32_t node_inx)
 {
 	List sock_gres_list = NULL;
-	ListIterator job_gres_iter,  node_gres_iter;
+	ListIterator job_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
 	gres_job_state_t  *job_data_ptr;
 	gres_node_state_t *node_data_ptr;
@@ -7543,13 +7503,8 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		sock_gres_t *sock_gres = NULL;
-		node_gres_iter = list_iterator_create(node_gres_list);
-		while ((node_gres_ptr = (gres_state_t *)
-				list_next(node_gres_iter))) {
-			if (job_gres_ptr->plugin_id == node_gres_ptr->plugin_id)
-				break;
-		}
-		list_iterator_destroy(node_gres_iter);
+		node_gres_ptr = list_find_first(node_gres_list, _gres_find_id,
+		                                &job_gres_ptr->plugin_id);
 		if (node_gres_ptr == NULL) {
 			/* node lack GRES of type required by the job */
 			FREE_NULL_LIST(sock_gres_list);
@@ -7575,15 +7530,9 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 					alt_plugin_id = gpu_plugin_id;
 			}
 			if (alt_plugin_id) {
-				node_gres_iter =
-					list_iterator_create(node_gres_list);
-				while ((node_gres_ptr = (gres_state_t *)
-						list_next(node_gres_iter))) {
-					if (node_gres_ptr->plugin_id ==
-					    alt_plugin_id)
-						break;
-				}
-				list_iterator_destroy(node_gres_iter);
+				node_gres_ptr = list_find_first(node_gres_list,
+				                                _gres_find_id,
+				                                &alt_plugin_id);
 			}
 			if (alt_plugin_id && node_gres_ptr) {
 				alt_node_data_ptr = (gres_node_state_t *)
@@ -11054,7 +11003,7 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 				   uint32_t user_id, bool job_fini)
 {
 	int i, rc, rc2;
-	ListIterator job_gres_iter,  node_gres_iter;
+	ListIterator job_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
 	char *gres_name = NULL;
 
@@ -11085,13 +11034,9 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 		} else
 			gres_name = gres_context[i].gres_name;
 
-		node_gres_iter = list_iterator_create(node_gres_list);
-		while ((node_gres_ptr = (gres_state_t *)
-				list_next(node_gres_iter))) {
-			if (job_gres_ptr->plugin_id == node_gres_ptr->plugin_id)
-				break;
-		}
-		list_iterator_destroy(node_gres_iter);
+		node_gres_ptr = list_find_first(node_gres_list, _gres_find_id,
+						&job_gres_ptr->plugin_id);
+
 		if (node_gres_ptr == NULL) {
 			error("%s: node %s lacks gres/%s for job %u", __func__,
 			      node_name, gres_name , job_id);
