@@ -38,18 +38,9 @@ if {[test_cons_tres]} {
     skip "This test is only compatible with select/cons_tres"
 }
 
-set mps_cnt [get_highest_mps_count 1]
-if {$mps_cnt < 0} {
-	fail "Error getting MPS count"
+if { [llength [get_nodes_by_request "--gres=mps:100 -t1"]] == 0} {
+	skip "This test requires being able to submit job with --gres=mps:100"
 }
-if {$mps_cnt < 1} {
-	skip "This test requires 1 or more MPS per GPU in the default partition"
-}
-if {$mps_cnt < 100} {
-#	This could be a legitimate configuration for testing purposes, but not likely for production use
-	log_error "MPS per GPU is unexpectedly low ($mps_cnt < 100). Check your configuration"
-}
-log_debug "MPS count per GPU is $mps_cnt"
 
 #
 # Build input script file
