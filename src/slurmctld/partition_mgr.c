@@ -49,7 +49,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 #include "src/common/assoc_mgr.h"
@@ -86,7 +85,6 @@ uint16_t part_max_priority = DEF_PART_MAX_PRIORITY;
 
 static int    _delete_part_record(char *name);
 static int    _dump_part_state(void *x, void *arg);
-static time_t _get_group_tlm(void);
 static void   _list_delete_part(void *part_entry);
 static int    _match_part_ptr(void *part_ptr, void *key);
 static Buf    _open_part_state_file(char **state_file);
@@ -1948,7 +1946,7 @@ void load_part_uid_allow_list(int force)
 	DEF_TIMERS;
 
 	START_TIMER;
-	temp_time = _get_group_tlm();
+	temp_time = get_group_tlm();
 	if ((force == 0) && (temp_time == last_update_time))
 		return;
 	debug("Updating partition uid access list");
@@ -1966,18 +1964,6 @@ void load_part_uid_allow_list(int force)
 
 	clear_group_cache();
 	END_TIMER2("load_part_uid_allow_list");
-}
-
-/* _get_group_tlm - return the time of last modification for the GROUP_FILE */
-time_t _get_group_tlm(void)
-{
-	struct stat stat_buf;
-
-	if (stat(GROUP_FILE, &stat_buf)) {
-		error("Can't stat file %s %m", GROUP_FILE);
-		return (time_t) 0;
-	}
-	return stat_buf.st_mtime;
 }
 
 /* part_fini - free all memory associated with partition records */

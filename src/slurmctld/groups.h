@@ -66,4 +66,7 @@ extern uid_t *get_groups_members(char *group_names);
  */
 extern uid_t *get_group_members(char *group_name);
 
+/* get_group_tlm - return the time of last modification for the GROUP_FILE */
+extern time_t get_group_tlm(void);
+
 #endif /* !_HAVE_GROUPS_H */

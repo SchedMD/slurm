@@ -109,11 +109,6 @@
 #define PERIODIC_NODE_ACCT 300
 #endif
 
-/* Pathname of group file record for checking update times */
-#ifndef GROUP_FILE
-#define GROUP_FILE	"/etc/group"
-#endif
-
 /* Seconds to wait for backup controller response to REQUEST_CONTROL RPC */
 #ifndef CONTROL_TIMEOUT
 #define CONTROL_TIMEOUT 30	/* seconds */

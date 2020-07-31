@@ -48,6 +48,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -58,6 +59,11 @@
 #include "slurm/slurm_errno.h"
 
 #include "groups.h"
+
+/* Pathname of group file record for checking update times */
+#ifndef GROUP_FILE
+#define GROUP_FILE	"/etc/group"
+#endif
 
 #define _DEBUG 0
 
@@ -349,6 +355,19 @@ extern void clear_group_cache(void)
 	FREE_NULL_LIST(group_cache_list);
 	slurm_mutex_unlock(&group_cache_mutex);
 }
+
+/* get_group_tlm - return the time of last modification for the GROUP_FILE */
+extern time_t get_group_tlm(void)
+{
+	struct stat stat_buf;
+
+	if (stat(GROUP_FILE, &stat_buf)) {
+		error("Can't stat file %s %m", GROUP_FILE);
+		return (time_t) 0;
+	}
+	return stat_buf.st_mtime;
+}
+
 
 /* Get a record from our group/uid cache.
  * Return NULL if not found. */
