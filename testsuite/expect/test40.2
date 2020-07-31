@@ -34,6 +34,7 @@ set file_out2  "test$test_id.output2"
 set job_id      0
 set job_list    {}
 set failure_count 0
+set mps_cnt     100
 
 if {[test_cons_tres]} {
 	log_debug "Valid configuration, using select/cons_tres"
@@ -41,18 +42,8 @@ if {[test_cons_tres]} {
 	skip "This test is only compatible with select/cons_tres"
 }
 
-set nb_nodes [get_node_cnt_in_part]
-
-set mps_cnt [get_highest_mps_count 1]
-if {$mps_cnt < 0} {
-	fail "Error getting MPS count"
-}
-if {$mps_cnt < 100} {
-	skip "This test requires 100 or more MPS in the default partition"
-}
-log_debug "MPS count is $mps_cnt"
-if {$mps_cnt > 100} {
-	set mps_cnt 100
+if {[llength [get_nodes_by_request "--gres=mps:100 -t1"]] == 0} {
+	skip "This test requires being able to submit job with --gres=mps:100"
 }
 
 proc cleanup {} {
