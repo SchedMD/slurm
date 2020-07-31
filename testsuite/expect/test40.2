@@ -49,9 +49,8 @@ if {[llength [get_nodes_by_request "--gres=mps:100 -t1"]] == 0} {
 proc cleanup {} {
 	global bin_rm file_in1 file_in2 file_out1 file_out2 job_list scancel
 
-	$scancel $job_list
-
-	exec $bin_rm -f $file_in1 $file_in2 $file_out1 $file_out2
+	run_command -none "$scancel $job_list"
+	run_command -none "$bin_rm -f $file_in1 $file_in2 $file_out1 $file_out2"
 }
 
 #
