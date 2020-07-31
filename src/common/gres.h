@@ -63,6 +63,7 @@ typedef struct {
 	char *path;
 } gres_device_t;
 
+#define GRES_CONF_SEEN          0x01    /* used to avoid loading a plugin */
 #define GRES_CONF_HAS_FILE	0x02	/* File= is configured */
 #define GRES_CONF_HAS_TYPE	0x04	/* Type= is configured */
 #define GRES_CONF_COUNT_ONLY	0x08	/* GRES lacks plugin to load */

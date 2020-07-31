@@ -1306,77 +1306,88 @@ static void _validate_slurm_conf(List slurm_conf_list,
 				    context_ptr);
 }
 
+static int _foreach_gres_conf(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = (gres_slurmd_conf_t *)x;
+	slurm_gres_context_t *context_ptr = (slurm_gres_context_t *)arg;
+	int new_has_file = -1, new_has_type = -1;
+	bool orig_has_file, orig_has_type;
+
+	/* Only look at the GRES under the current plugin (same name) */
+	if (gres_slurmd_conf->plugin_id != context_ptr->plugin_id)
+		return 0;
+
+	/*
+	 * If any plugin of this type has this set it will virally set
+	 * any other to be the same as we use the context_ptr from here
+	 * on out.
+	 */
+	if (gres_slurmd_conf->config_flags & GRES_CONF_COUNT_ONLY)
+		context_ptr->config_flags |= GRES_CONF_COUNT_ONLY;
+
+	/*
+	 * Since there could be multiple types of the same plugin we
+	 * need to only make sure we load it once.
+	 */
+	if (!(context_ptr->config_flags & GRES_CONF_LOADED)) {
+		/*
+		 * Ignore return code, as we will still support the gres
+		 * with or without the plugin.
+		 */
+		if (_load_gres_plugin(context_ptr) == SLURM_SUCCESS)
+			context_ptr->config_flags |= GRES_CONF_LOADED;
+	}
+
+	orig_has_file = gres_slurmd_conf->config_flags & GRES_CONF_HAS_FILE;
+	if (new_has_file == -1) {
+		if (gres_slurmd_conf->config_flags & GRES_CONF_HAS_FILE)
+			new_has_file = 1;
+		else
+			new_has_file = 0;
+	} else if ((new_has_file && !orig_has_file) ||
+		   (!new_has_file && orig_has_file)) {
+		fatal("gres.conf for %s, some records have \"File\" specification while others do not",
+		      context_ptr->gres_name);
+	}
+	orig_has_type = gres_slurmd_conf->config_flags &
+		GRES_CONF_HAS_TYPE;
+	if (new_has_type == -1) {
+		if (gres_slurmd_conf->config_flags &
+		    GRES_CONF_HAS_TYPE) {
+			new_has_type = 1;
+		} else
+			new_has_type = 0;
+	} else if ((new_has_type && !orig_has_type) ||
+		   (!new_has_type && orig_has_type)) {
+		fatal("gres.conf for %s, some records have \"Type=\" specification while others do not",
+		      context_ptr->gres_name);
+	}
+
+	if (!new_has_file &&
+	    !new_has_type &&
+	    (context_ptr->config_flags & GRES_CONF_SEEN)) {
+		fatal("gres.conf duplicate records for %s",
+		      context_ptr->gres_name);
+	}
+
+	context_ptr->config_flags |= GRES_CONF_SEEN;
+
+	if (new_has_file)
+		context_ptr->config_flags |= GRES_CONF_HAS_FILE;
+
+	return 0;
+}
+
 static void _validate_gres_conf(List gres_conf_list,
 				slurm_gres_context_t *context_ptr)
 {
-	ListIterator iter;
-	gres_slurmd_conf_t *gres_slurmd_conf;
-	int new_has_file = -1, new_has_type = -1, rec_count = 0;
-	bool orig_has_file, orig_has_type;
-
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
-		if (gres_slurmd_conf->plugin_id != context_ptr->plugin_id)
-			continue;
-
-		/*
-		 * If any plugin of this type has this set it will virally set
-		 * any other to be the same as we use the context_ptr from here
-		 * on out.
-		 */
-		if (gres_slurmd_conf->config_flags & GRES_CONF_COUNT_ONLY)
-			context_ptr->config_flags |= GRES_CONF_COUNT_ONLY;
-
-		/*
-		 * Since there could be multiple types of the same plugin we
-		 * need to only make sure we load it once.
-		 */
-		if (!(context_ptr->config_flags & GRES_CONF_LOADED)) {
-			/*
-			 * Ignore return code, as we will still support the gres
-			 * with or without the plugin.
-			 */
-			if (_load_gres_plugin(context_ptr) == SLURM_SUCCESS)
-				context_ptr->config_flags |= GRES_CONF_LOADED;
-		}
-
-		rec_count++;
-		orig_has_file = gres_slurmd_conf->config_flags &
-				GRES_CONF_HAS_FILE;
-		if (new_has_file == -1) {
-			if (gres_slurmd_conf->config_flags &
-			    GRES_CONF_HAS_FILE) {
-				new_has_file = 1;
-			} else
-				new_has_file = 0;
-		} else if (( new_has_file && !orig_has_file) ||
-			   (!new_has_file &&  orig_has_file)) {
-			fatal("gres.conf for %s, some records have \"File\" specification while others do not",
-			      context_ptr->gres_name);
-		}
-		orig_has_type = gres_slurmd_conf->config_flags &
-				GRES_CONF_HAS_TYPE;
-		if (new_has_type == -1) {
-			if (gres_slurmd_conf->config_flags &
-			    GRES_CONF_HAS_TYPE) {
-				new_has_type = 1;
-			} else
-				new_has_type = 0;
-		} else if (( new_has_type && !orig_has_type) ||
-			   (!new_has_type &&  orig_has_type)) {
-			fatal("gres.conf for %s, some records have \"Type=\" specification while others do not",
-			      context_ptr->gres_name);
-		}
-		if ((new_has_file == 0) && (new_has_type == 0) &&
-		    (rec_count > 1)) {
-			fatal("gres.conf duplicate records for %s",
-			      context_ptr->gres_name);
-		}
-
-		if (new_has_file)
-			context_ptr->config_flags |= GRES_CONF_HAS_FILE;
-	}
-	list_iterator_destroy(iter);
+	/*
+	 * Reset the GRES_CONF_SEEN here to tell if gres_conf_list has
+	 * duplicates
+	 */
+	context_ptr->config_flags &= ~GRES_CONF_SEEN;
+	(void)list_for_each_nobreak(gres_conf_list, _foreach_gres_conf,
+				    context_ptr);
 
 	if (!(context_ptr->config_flags & GRES_CONF_LOADED)) {
 		/*
