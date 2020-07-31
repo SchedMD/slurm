@@ -63,6 +63,7 @@ enum {
 	SORTID_DURATION,
 	SORTID_FEATURES,
 	SORTID_FLAGS,
+	SORTID_GROUPS,
 	SORTID_LICENSES,
 	SORTID_MSD,
 	SORTID_NAME,
@@ -119,6 +120,8 @@ static display_data_t display_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_USERS, "Users", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_GROUPS, "Groups", false, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features", false, EDIT_TEXTBOX,
@@ -162,6 +165,8 @@ static display_data_t create_data_resv[] = {
 	{G_TYPE_STRING, SORTID_BURST_BUFFER, "BurstBuffer", false,
 	 EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_USERS, "Users", false, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_GROUPS, "Groups", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -297,6 +302,10 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "flags";
 		if (f == INFINITE64)
 			goto return_error;
+		break;
+	case SORTID_GROUPS:
+		resv_msg->groups = xstrdup(new_text);
+		type = "groups";
 		break;
 	case SORTID_LICENSES:
 		resv_msg->licenses = xstrdup(new_text);
@@ -546,6 +555,11 @@ static void _layout_resv_record(GtkTreeView *treeview,
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_resv,
+						 SORTID_GROUPS),
+				   resv_ptr->groups);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_resv,
 						 SORTID_LICENSES),
 				   resv_ptr->licenses);
 
@@ -655,6 +669,7 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 			   SORTID_DURATION,   tmp_duration,
 			   SORTID_FEATURES,   resv_ptr->features,
 			   SORTID_FLAGS,      tmp_flags,
+			   SORTID_GROUPS,     resv_ptr->groups,
 			   SORTID_LICENSES,   resv_ptr->licenses,
 			   SORTID_MSD,        resv_ptr->max_start_delay ?
 			   tmp_msd : NULL,

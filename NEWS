@@ -59,6 +59,7 @@ documents those changes that are of interest to users and administrators.
     simply naming for clients.
  -- Add 'scontrol update res=name skip' to skip the current/next reoccurring
     reservation.
+ -- Add ability for reservations to be accessed by Linux Groups.
 
 * Changes in Slurm 20.02.4
 ==========================

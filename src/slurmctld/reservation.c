@@ -72,6 +72,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/burst_buffer.h"
+#include "src/slurmctld/groups.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -227,6 +228,7 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 				 char *accounts);
 static int  _update_uid_list(slurmctld_resv_t *resv_ptr, char *users);
+static int _update_group_uid_list(slurmctld_resv_t *resv_ptr, char *groups);
 static void _validate_all_reservations(void);
 static int  _valid_job_access_resv(job_record_t *job_ptr,
 				   slurmctld_resv_t *resv_ptr);
@@ -325,6 +327,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->end_time = resv_orig_ptr->end_time;
 	resv_copy_ptr->features = xstrdup(resv_orig_ptr->features);
 	resv_copy_ptr->flags = resv_orig_ptr->flags;
+	resv_copy_ptr->groups = xstrdup(resv_orig_ptr->groups);
 	resv_copy_ptr->job_pend_cnt = resv_orig_ptr->job_pend_cnt;
 	resv_copy_ptr->job_run_cnt = resv_orig_ptr->job_run_cnt;
 	resv_copy_ptr->licenses = xstrdup(resv_orig_ptr->licenses);
@@ -409,6 +412,10 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	dest_resv->job_pend_cnt = src_resv->job_pend_cnt;
 	dest_resv->job_run_cnt = src_resv->job_run_cnt;
 
+	xfree(dest_resv->groups);
+	dest_resv->groups = src_resv->groups;
+	src_resv->groups = NULL;
+
 	xfree(dest_resv->licenses);
 	dest_resv->licenses = src_resv->licenses;
 	src_resv->licenses = NULL;
@@ -486,6 +493,7 @@ static void _del_resv_rec(void *x)
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 		free_job_resources(&resv_ptr->core_resrcs);
 		xfree(resv_ptr->features);
+		xfree(resv_ptr->groups);
 		FREE_NULL_LIST(resv_ptr->license_list);
 		xfree(resv_ptr->licenses);
 		xfree(resv_ptr->name);
@@ -637,14 +645,12 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 		}
 	}
 
-	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d "
-	     "Flags=%s NodeCnt=%s CoreCnt=%s NodeList=%s Features=%s "
-	     "PartitionName=%s Users=%s Accounts=%s Licenses=%s BurstBuffer=%s "
-	     "TRES=%s Watts=%s",
+	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d Flags=%s NodeCnt=%s CoreCnt=%s NodeList=%s Features=%s PartitionName=%s Users=%s Groups=%s Accounts=%s Licenses=%s BurstBuffer=%s TRES=%s Watts=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
 	     flag_str, node_cnt_str, core_cnt_str, resv_ptr->node_list,
 	     resv_ptr->features, resv_ptr->partition,
-	     resv_ptr->users, resv_ptr->accounts, resv_ptr->licenses,
+	     resv_ptr->users, resv_ptr->groups, resv_ptr->accounts,
+	     resv_ptr->licenses,
 	     resv_ptr->burst_buffer, resv_ptr->tres_str, watts_str);
 
 	xfree(flag_str);
@@ -682,6 +688,8 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
 		key = resv_ptr->accounts;
 	else if (resv_ptr->users && resv_ptr->users[0])
 		key = resv_ptr->users;
+	else if (resv_ptr->groups && resv_ptr->groups[0])
+		key = resv_ptr->groups;
 	else
 		key = "resv";
 	if (key[0] == '-')
@@ -799,6 +807,15 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 					    accounting_enforce,
 					    assoc_list);
 				if (rc != SLURM_SUCCESS) {
+					/*
+					 * When using groups we might have users
+					 * that don't have associations, just
+					 * skip them
+					 */
+					if (resv_ptr->groups) {
+						rc = SLURM_SUCCESS;
+						continue;
+					}
 					error("No associations for UID %u",
 					      assoc.uid);
 					rc = ESLURM_INVALID_ACCOUNT;
@@ -831,6 +848,14 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 				    acct_db_conn, &assoc,
 				    accounting_enforce, assoc_list);
 			if (rc != SLURM_SUCCESS) {
+				/*
+				 * When using groups we might have users that
+				 * don't have associations, just skip them
+				 */
+				if (resv_ptr->groups) {
+					rc = SLURM_SUCCESS;
+					continue;
+				}
 				error("No associations for UID %u",
 				      assoc.uid);
 				rc = ESLURM_INVALID_ACCOUNT;
@@ -1391,6 +1416,7 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 			plus_user  = false;
 		}
 	}
+
 	if (minus_user) {
 		for (i=0; i<u_cnt; i++) {
 			if (u_type[i] != 1)	/* not minus */
@@ -1408,7 +1434,7 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 				break;
 			}
 			if (!found_it)
-				goto inval;
+				continue;
 
 			/* Now we need to remove from users string */
 			k = strlen(u_name[i]);
@@ -1478,6 +1504,124 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 	xfree(u_name);
 	xfree(u_type);
 	return ESLURM_USER_ID_MISSING;
+}
+
+/*
+ * Update a group/uid list for an existing reservation based upon an
+ *	update comma delimited specification of groups to add (+name),
+ *	remove (-name), or set value of
+ * IN/OUT resv_ptr - pointer to reservation structure being updated
+ * IN groups        - a list of user names, to set, add, or remove
+ * RETURN 0 on success
+ */
+static int _update_group_uid_list(slurmctld_resv_t *resv_ptr, char *groups)
+{
+	char *last = NULL, *g_cpy = NULL, *tok, *tok2, *resv_groups = NULL;
+	bool plus = false, minus = false;
+
+	if (!groups)
+		return ESLURM_GROUP_ID_MISSING;
+
+	/* Parse the incoming group expression */
+	g_cpy = xstrdup(groups);
+	tok = strtok_r(g_cpy, ",", &last);
+	if (tok)
+		resv_groups = xstrdup(resv_ptr->groups);
+
+	while (tok) {
+		if (tok[0] == '-') {
+			char *tmp = resv_groups;
+			int k;
+
+			tok++;
+			/* Now we need to remove from groups string */
+			k = strlen(tok);
+			while ((tok2 = xstrstr(tmp, tok))) {
+				if (((tok2 != resv_groups) &&
+				     (tok2[-1] != ',') && (tok2[-1] != '-')) ||
+				    ((tok2[k] != '\0') && (tok2[k] != ','))) {
+					tmp = tok2 + 1;
+					continue;
+				}
+				if (tok2[-1] == '-') {
+					tok2--;
+					k++;
+				}
+				if (tok2[-1] == ',') {
+					tok2--;
+					k++;
+				} else if (tok2[k] == ',')
+					k++;
+				for (int j=0; ; j++) {
+					tok2[j] = tok2[j+k];
+					if (tok2[j] == '\0')
+						break;
+				}
+			}
+			minus = true;
+		} else if (tok[0] == '+') {
+			tok++;
+			if ((tok2 = xstrstr(resv_groups, tok)))
+				continue;
+
+			xstrfmtcat(resv_groups, "%s%s",
+				   resv_groups ? "," : "",
+				   tok);
+			plus = true;
+		} else if (tok[0] == '\0') {
+			continue;
+		} else if (plus || minus) {
+			info("Reservation group expression invalid %s", groups);
+			goto inval;
+		} else {
+			/*
+			 * It is a straight list set the pointers right and
+			 * break
+			 */
+			xfree(resv_groups);
+			resv_groups = xstrdup(groups);
+			break;
+		}
+		tok = strtok_r(NULL, ",", &last);
+	}
+
+	/* Just a reset of group list */
+	resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
+
+	if (resv_groups && resv_groups[0] != '\0') {
+		uid_t *user_list = get_groups_members(resv_groups);
+
+		if (!user_list)
+			goto inval;
+
+		xfree(resv_ptr->groups);
+		resv_ptr->groups = resv_groups;
+		resv_groups = NULL;
+
+		/* set the count */
+		for (resv_ptr->user_cnt = 0;
+		     user_list[resv_ptr->user_cnt];
+		     resv_ptr->user_cnt++)
+			;
+
+		xfree(resv_ptr->user_list);
+		resv_ptr->user_list = user_list;
+		user_list = NULL;
+
+	} else {
+		xfree(resv_ptr->groups);
+		xfree(resv_ptr->user_list);
+		resv_ptr->user_cnt = 0;
+	}
+
+	xfree(g_cpy);
+	xfree(resv_groups);
+	return SLURM_SUCCESS;
+
+inval:
+	xfree(g_cpy);
+	xfree(resv_groups);
+	return ESLURM_GROUP_ID_MISSING;
 }
 
 /* Given a core_resrcs data structure (which has information only about the
@@ -1647,6 +1791,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack_time(start_relative,	buffer);
 		packstr(resv_ptr->tres_fmt_str,	buffer);
 		packstr(resv_ptr->users,	buffer);
+		packstr(resv_ptr->groups, buffer);
 
 		if (internal) {
 			packstr(resv_ptr->assoc_list,	buffer);
@@ -1899,6 +2044,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpackstr_xmalloc(&resv_ptr->tres_fmt_str,
 				       &uint32_tmp, 	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->users, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->groups, &uint32_tmp, buffer);
 
 		/* Fields saved for internal use only (save state) */
 		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,
@@ -2169,7 +2315,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	uint64_t cpu_cnt = 0;
 	node_record_t *node_ptr = node_record_table_ptr;
 	char start_time[32], end_time[32], tmp_msd[40];
-	char *name1, *name2, *val1, *val2;
+	char *name1, *name2, *name3, *val1, *val2, *val3;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	if ((resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) &&
@@ -2255,14 +2401,20 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	} else
 		name2 = val2 = "";
 
+	if (resv_ptr->groups) {
+		name3 = " groups=";
+		val3  = resv_ptr->groups;
+	} else
+		name3 = val3 = "";
+
 	if (resv_ptr->max_start_delay)
 		secs2time_str(resv_ptr->max_start_delay,
 			      tmp_msd, sizeof(tmp_msd));
 
-	sched_info("%s reservation=%s%s%s%s%s nodes=%s cores=%u "
+	sched_info("%s reservation=%s%s%s%s%s%s%s nodes=%s cores=%u "
 		   "licenses=%s tres=%s watts=%u start=%s end=%s MaxStartDelay=%s",
 		   old_resv_ptr ? "Updated" : "Created",
-		   resv_ptr->name, name1, val1, name2, val2,
+		   resv_ptr->name, name1, val1, name2, val2, name3, val3,
 		   resv_ptr->node_list, resv_ptr->core_cnt, resv_ptr->licenses,
 		   resv_ptr->tres_fmt_str, resv_ptr->resv_watts,
 		   start_time, end_time,
@@ -2435,12 +2587,19 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		goto bad_parse;
 	}
 
-	if ((resv_desc_ptr->accounts == NULL) &&
-	    (resv_desc_ptr->users == NULL)) {
-		info("Reservation request lacks users or accounts");
-		rc = ESLURM_INVALID_ACCOUNT;
+	if (resv_desc_ptr->users && resv_desc_ptr->groups) {
+		info("Reservation request with both users and groups, these are mutually exclusive.  You can have one or the other, but not both.");
+		rc = ESLURM_RESERVATION_USER_GROUP;
+		goto bad_parse;
+
+	} else if (!resv_desc_ptr->accounts &&
+	    !resv_desc_ptr->users &&
+	    !resv_desc_ptr->groups) {
+		info("Reservation request lacks users, accounts or groups");
+		rc = ESLURM_RESERVATION_EMPTY;
 		goto bad_parse;
 	}
+
 	if (resv_desc_ptr->accounts) {
 		rc = _build_account_list(resv_desc_ptr->accounts,
 					 &account_cnt, &account_list,
@@ -2454,6 +2613,20 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (rc)
 			goto bad_parse;
 	}
+
+	if (resv_desc_ptr->groups) {
+		user_list = get_groups_members(resv_desc_ptr->groups);
+
+		if (!user_list) {
+			rc = ESLURM_GROUP_ID_MISSING;
+			goto bad_parse;
+		}
+		info("processed groups %s", resv_desc_ptr->groups);
+		/* set the count */
+		for (user_cnt = 0; user_list[user_cnt]; user_cnt++)
+			info("uid %d", user_list[user_cnt]);
+	}
+
 	if (resv_desc_ptr->licenses) {
 		bool valid = true;
 		license_list = _license_validate2(resv_desc_ptr, &valid);
@@ -2680,6 +2853,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->flags		= resv_desc_ptr->flags;
 	resv_ptr->users		= resv_desc_ptr->users;
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
+	resv_ptr->groups = resv_desc_ptr->groups;
+	resv_desc_ptr->groups = NULL;
 	resv_ptr->user_cnt	= user_cnt;
 	resv_ptr->user_list	= user_list;
 	user_list = NULL;
@@ -2971,6 +3146,16 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		error_code = ESLURM_NOT_SUPPORTED;
 		goto update_failure;
 	}
+
+	/* Groups has to be done before users */
+	if (resv_desc_ptr->groups) {
+		rc = _update_group_uid_list(resv_ptr, resv_desc_ptr->groups);
+		if (rc) {
+			error_code = rc;
+			goto update_failure;
+		}
+	}
+
 	if (resv_desc_ptr->users) {
 		rc = _update_uid_list(resv_ptr, resv_desc_ptr->users);
 		if (rc) {
@@ -2978,8 +3163,17 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto update_failure;
 		}
 	}
-	if ((resv_ptr->users == NULL) && (resv_ptr->accounts == NULL)) {
-		info("Reservation %s request lacks users or accounts",
+
+	if (resv_ptr->users && resv_ptr->groups) {
+		info("Reservation requested both users and groups, these are mutually exclusive.  You can have one or the other, but not both.");
+		error_code = ESLURM_RESERVATION_USER_GROUP;
+		goto update_failure;
+	}
+
+	if (!resv_ptr->users &&
+	    !resv_ptr->accounts &&
+	    !resv_ptr->groups) {
+		info("Reservation %s request lacks users, accounts or groups",
 		     resv_desc_ptr->name);
 		error_code = ESLURM_RESERVATION_EMPTY;
 		goto update_failure;
@@ -3183,6 +3377,7 @@ update_failure:
 	/* Restore backup reservation data */
 	_restore_resv(resv_ptr, resv_backup);
 	_del_resv_rec(resv_backup);
+	info("returning %d", error_code);
 	return error_code;
 }
 
@@ -3546,6 +3741,26 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
 		else
 			resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
+	}
+
+	if (resv_ptr->groups) {
+		uid_t *user_list = get_groups_members(resv_ptr->groups);
+
+		if (!user_list) {
+			error("Reservation %s has invalid groups (%s)",
+			      resv_ptr->name, resv_ptr->groups);
+			return false;
+		}
+
+		/* set the count */
+		for (resv_ptr->user_cnt = 0;
+		     user_list[resv_ptr->user_cnt];
+		     resv_ptr->user_cnt++)
+			;
+
+		xfree(resv_ptr->user_list);
+		resv_ptr->user_list = user_list;
+		resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
 	}
 
 	if ((resv_ptr->flags & RESERVE_FLAG_PART_NODES) &&
@@ -6125,6 +6340,50 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 	return rc;
 }
 
+static int _update_resv_group_uid_access_list(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *)x;
+	int *updated = (int *)arg;
+	int user_cnt = 0;
+	uid_t *tmp_uids;
+
+	if (!resv_ptr->groups)
+		return 0;
+
+	if ((tmp_uids = get_groups_members(resv_ptr->groups)))
+		for (user_cnt = 0; tmp_uids[user_cnt]; user_cnt++)
+			;
+
+	/*
+	 * If the lists are different sizes clearly we are different.
+	 * If the memory isn't the same they are different as well
+	 * as the lists will be in the same order.
+	 */
+	if ((resv_ptr->user_cnt != user_cnt) ||
+	    memcmp(tmp_uids, resv_ptr->user_list,
+		   sizeof(*tmp_uids) * user_cnt)) {
+		char *old_assocs = xstrdup(resv_ptr->assoc_list);
+
+		resv_ptr->user_cnt = user_cnt;
+		xfree(resv_ptr->user_list);
+		resv_ptr->user_list = tmp_uids;
+		tmp_uids = NULL;
+
+		/* Now update the associations to match */
+		(void)_set_assoc_list(resv_ptr);
+
+		/* Now see if something really did change */
+		if (!association_based_accounting ||
+		    xstrcmp(old_assocs, resv_ptr->assoc_list))
+			*updated = 1;
+		xfree(old_assocs);
+	}
+
+	xfree(tmp_uids);
+
+	return 0;
+}
+
 /*
  * Determine the time of the first reservation to end after some time.
  * return zero of no reservation ends after that time.
@@ -6815,4 +7074,40 @@ end_it:
 	assoc_mgr_unlock(&locks);
 
 	return found_it;
+}
+
+/*
+ * reservation_update_groups - reload the user_list of reservations
+ *	with groups set
+ * IN force - if set then always reload the user_list
+ */
+extern void reservation_update_groups(int force)
+{
+	static time_t last_update_time;
+	int updated = 0;
+	time_t temp_time;
+	DEF_TIMERS;
+
+	START_TIMER;
+	temp_time = get_group_tlm();
+
+	if (!force && (temp_time == last_update_time))
+		return;
+
+	debug2("Updating reservations group's uid access lists");
+
+	last_update_time = temp_time;
+
+	list_for_each(resv_list, _update_resv_group_uid_access_list, &updated);
+
+	/*
+	 * Only update last_resv_update when changes made
+	 */
+	if (updated) {
+		debug2("%s: list updated, resetting last_resv_update time",
+		       __func__);
+		last_resv_update = time(NULL);
+	}
+
+	END_TIMER2("reservation_update_groups");
 }

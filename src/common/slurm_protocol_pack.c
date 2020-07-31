@@ -3090,6 +3090,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer,
 
 		safe_unpackstr_xmalloc(&resv->tres_str, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&resv->users,	&uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&resv->groups,	&uint32_tmp, buffer);
 
 		unpack_bit_str_hex_as_inx(&resv->node_inx, buffer);
 

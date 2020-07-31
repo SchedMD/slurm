@@ -153,8 +153,8 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	if ((resv_ptr->start_time <= now) && (resv_ptr->end_time >= now))
 		state = "ACTIVE";
 	xstrfmtcat(out,
-		   "Users=%s Accounts=%s Licenses=%s State=%s BurstBuffer=%s "
-		   "Watts=%s", resv_ptr->users, resv_ptr->accounts,
+		   "Users=%s Groups=%s Accounts=%s Licenses=%s State=%s BurstBuffer=%s Watts=%s",
+		   resv_ptr->users, resv_ptr->groups, resv_ptr->accounts,
 		   resv_ptr->licenses, state, resv_ptr->burst_buffer, watts_str);
 	xfree(watts_str);
 	xstrcat(out, line_end);

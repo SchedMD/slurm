@@ -157,6 +157,22 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			}
 			if (f == INFINITE64)
 				return SLURM_ERROR;
+		} else if (!xstrncasecmp(tag, "Groups", MAX(taglen, 1))) {
+			if (resv_msg_ptr->groups) {
+				exit_code = 1;
+				error("Parameter %s specified more than once",
+				      argv[i]);
+				return SLURM_ERROR;
+			}
+			if (plus_minus) {
+				resv_msg_ptr->groups =
+					_process_plus_minus(plus_minus, val);
+				*res_free_flags |= RESV_FREE_STR_GROUP;
+				plus_minus = '\0';
+			} else {
+				resv_msg_ptr->groups = val;
+			}
+
 		} else if (!xstrncasecmp(tag, "Users", MAX(taglen, 1))) {
 			if (resv_msg_ptr->users) {
 				exit_code = 1;
@@ -454,12 +470,19 @@ scontrol_create_res(int argc, char **argv)
 			resv_msg.flags |= RESERVE_FLAG_PART_NODES;
 		resv_msg.node_list = "ALL";
 	}
+
 	if ((resv_msg.users == NULL    || resv_msg.users[0] == '\0') &&
+	    (resv_msg.groups == NULL   || resv_msg.groups[0] == '\0') &&
 	    (resv_msg.accounts == NULL || resv_msg.accounts[0] == '\0')) {
 		exit_code = 1;
-		error("Either Users or Accounts must be specified.  No reservation created.");
+		error("Either Users/Groups and/or Accounts must be specified.  No reservation created.");
+		goto SCONTROL_CREATE_RES_CLEANUP;
+	} else if (resv_msg.users && resv_msg.groups) {
+		exit_code = 1;
+		error("Users and Groups are mutually exclusive.  You can have one or the other, but not both.  No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
+
 	if (resv_msg.resv_watts != NO_VAL &&
 	    (!(resv_msg.flags & RESERVE_FLAG_ANY_NODES) ||
 	     (resv_msg.core_cnt != 0) ||

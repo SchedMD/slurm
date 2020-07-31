@@ -283,7 +283,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INTERCONNECT_BUSY,
 	  "Switch resources currently not available"		},
 	{ ESLURM_RESERVATION_EMPTY,
-	  "Reservation request lacks users or accounts"		},
+	  "Reservation request lacks users, groups or accounts"		},
 	{ ESLURM_INVALID_ARRAY,
 	  "Invalid job array specification"			},
 	{ ESLURM_RESERVATION_NAME_DUP,
@@ -374,6 +374,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Environment is missing in job"			},
 	{ ESLURM_RESERVATION_NO_SKIP,
 	  "Reservation given is not skipable, try deleting instead"},
+	{ ESLURM_RESERVATION_USER_GROUP,
+	  "Reservations can't have users and groups specified, only one or the other"},
 
 	/* slurmd error codes */
 	{ ESLURMD_PIPE_ERROR_ON_TASK_SPAWN,

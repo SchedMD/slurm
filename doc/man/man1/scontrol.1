@@ -1639,9 +1639,9 @@ For create, if you do not want to give a reservation name, use
 List of accounts permitted to use the reserved nodes, for example
 "Accounts=physcode1,physcode2".
 A user in any of the accounts may use the reserved nodes.
-A new reservation must specify Users and/or Accounts.
-If both Users and Accounts are specified, a job must match both in order to
-use the reservation.
+A new reservation must specify Users or Groups and/or Accounts.
+If both Users/Groups and Accounts are specified, a job must match both in order
+to use the reservation.
 Accounts can also be denied access to reservations by preceding all of the
 account names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "Accounts=-physcode1,-physcode2" or "Accounts-=physcode1,physcode2"
@@ -1899,6 +1899,20 @@ advanced reservation should include 4 nodes with ALL of the features "knl",
 Value may be cleared with blank data value, "Features=".
 
 .TP
+\fIGroups\fP=<group list>
+List of groups permitted to use the reserved nodes, for example
+"Group=bio,chem".
+A new reservation must specify Users or Groups and/or Accounts.
+If both Users/Groups and Accounts are specified, a job must match both in order
+to use the reservation.
+Unlike users groups do not allow denied access to reservations.
+You can add or remove individual groups from an existing reservation by
+using the update command and adding a '+' or '\-' sign before the '=' sign.
+NOTE: Groups and Users are mutually exclusive in reservations, if you want to
+switch between the 2 you must update the reservation with a group='' or user=''
+and fill in the opposite with the appropriate setting.
+
+.TP
 \fISkip\fR
 Used on a reoccurring reservation, skip to the next reservation iteration.
 \fBNOTE\fR: Only available for update.
@@ -1907,9 +1921,9 @@ Used on a reoccurring reservation, skip to the next reservation iteration.
 \fIUsers\fP=<user list>
 List of users permitted to use the reserved nodes, for example
 "User=jones1,smith2".
-A new reservation must specify Users and/or Accounts.
-If both Users and Accounts are specified, a job must match both in order to
-use the reservation.
+A new reservation must specify Users or Groups and/or Accounts.
+If both Users/Groups and Accounts are specified, a job must match both in order
+to use the reservation.
 Users can also be denied access to reservations by preceding all of the
 user names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "User=-jones1,-smith2" or "User-=jones1,smith2"
@@ -1919,6 +1933,9 @@ using the update command and adding a '+' or '\-' sign before the '=' sign.
 If users are denied access to a reservation (user name preceded by a '\-'),
 then all other users are implicitly allowed to use the reservation and it is
 not possible to also explicitly specify allowed users.
+NOTE: Groups and Users are mutually exclusive in reservations, if you want to
+switch between the 2 you must update the reservation with a group='' or user=''
+and fill in the opposite with the appropriate setting.
 
 .TP
 \fITRES\fP=<tres_spec>

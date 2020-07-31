@@ -2113,6 +2113,7 @@ static void *_slurmctld_background(void *no_data)
 			now = time(NULL);
 			last_group_time = now;
 			load_part_uid_allow_list(slurm_conf.group_force);
+			reservation_update_groups(slurm_conf.group_force);
 			unlock_slurmctld(part_write_lock);
 			group_cache_cleanup();
 		}
