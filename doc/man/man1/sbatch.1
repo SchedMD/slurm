@@ -324,7 +324,9 @@ grouped with AND (e.g. "&") operands.
 .TP
 \fB\-\-contiguous\fR
 If set, then the allocated nodes must form a contiguous set.
-Not honored with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
+
+\fBNOTE\fR: If SelectPlugin=cons_res this option won't be honored
+with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
 plugins, both of which can modify the node ordering.
 
 .TP
