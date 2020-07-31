@@ -541,6 +541,38 @@ proc dict_getdef {D args} {
 ################################################################
 #
 # NAME
+#	_line_trace - returns an abbreviated call stack trace with line numbers
+#
+# SYNOPSIS
+#	_line_trace
+#
+################################################################
+
+proc _line_trace {} {
+	set line_trace ""
+	for {set f [expr [info frame] - 3]} {$f >= 1} {incr f -1} {
+		set frame_dict [info frame $f]
+		if [dict exists $frame_dict proc] {
+			set proc [namespace tail [dict get $frame_dict proc]]
+			if {$proc ne ""} {
+				append line_trace "$proc\@"
+			}
+		}
+		if [dict exists $frame_dict file] {
+			append line_trace [file tail [dict get $frame_dict file]]
+		}
+		if [dict exists $frame_dict line] {
+			append line_trace ":[dict get $frame_dict line]"
+		}
+		if {$f > 1} { append line_trace "," }
+	}
+	return $line_trace
+}
+
+
+################################################################
+#
+# NAME
 #	run_command - executes a command and returns a dictionary result
 #
 # SYNOPSIS
@@ -2246,7 +2278,7 @@ proc test_topology { } {
 #
 # NAME
 #	get_config - returns a dictionary of slurm configuration parameters
-
+#
 # SYNOPSIS
 #	get_config
 #
@@ -8027,7 +8059,6 @@ proc compile_against_libslurm { test_prog {use_full 0} {build_args ""} } {
 #	action
 #		Specifies the action to take when false. The default is "error"
 #		The action will be one of the following:
-
 #		error - Prints an error if the boolean_expression is false
 #		fail  - Fails the test if the boolean_expression is false
 #		skip  - Skips the test if the boolean_expression is false
@@ -8200,6 +8231,9 @@ proc assert_or_skip { condition message } {
 #			loglevel
 #				The log level that triggers the log_<log_level>
 #				procedure to be called
+#			backtrace
+#				An abbreviated call stack trace with line
+#				numbers
 #	testsuite_time_format
 #		Used as a template for the timestamp. See the format groups
 #		for the tcl clock format command.
@@ -8240,6 +8274,8 @@ proc _log_format { log_level message } {
 			lappend format_args $milliseconds
 		} elseif {$format_field eq "%{loglevel}" || $format_field eq "%{levelname}"} {
 			lappend format_args [string totitle $log_level]
+		} elseif {$format_field eq "%{backtrace}"} {
+			lappend format_args [_line_trace]
 		} else {
 			fail "Invalid field ($format_field) specified in testsuite_log_format"
 		}
