@@ -1413,7 +1413,7 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 			/* Now we need to remove from users string */
 			k = strlen(u_name[i]);
 			tmp = resv_ptr->users;
-			while ((tok = strstr(tmp, u_name[i]))) {
+			while ((tok = xstrstr(tmp, u_name[i]))) {
 				if (((tok != resv_ptr->users) &&
 				     (tok[-1] != ',') && (tok[-1] != '-')) ||
 				    ((tok[k] != '\0') && (tok[k] != ','))) {
@@ -3255,7 +3255,7 @@ static bool _match_user_assoc(char *assoc_str, List assoc_list, bool deny)
 		while (assoc) {
 			snprintf(tmp_char, sizeof(tmp_char), ",%s%u,",
 				 deny ? "-" : "", assoc->id);
-			if (strstr(assoc_str, tmp_char)) {
+			if (xstrstr(assoc_str, tmp_char)) {
 				found = 1;
 				goto end_it;
 			}
@@ -5136,26 +5136,26 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 			while (assoc) {
 				snprintf(tmp_char, sizeof(tmp_char), ",-%u,",
 					 assoc->id);
-				if (strstr(resv_ptr->assoc_list, tmp_char))
+				if (xstrstr(resv_ptr->assoc_list, tmp_char))
 					goto end_it;	/* explicitly denied */
 				assoc = assoc->usage->parent_assoc_ptr;
 			}
 		}
-		if (strstr(resv_ptr->assoc_list, ",1") ||
-		    strstr(resv_ptr->assoc_list, ",2") ||
-		    strstr(resv_ptr->assoc_list, ",3") ||
-		    strstr(resv_ptr->assoc_list, ",4") ||
-		    strstr(resv_ptr->assoc_list, ",5") ||
-		    strstr(resv_ptr->assoc_list, ",6") ||
-		    strstr(resv_ptr->assoc_list, ",7") ||
-		    strstr(resv_ptr->assoc_list, ",8") ||
-		    strstr(resv_ptr->assoc_list, ",9") ||
-		    strstr(resv_ptr->assoc_list, ",0")) {
+		if (xstrstr(resv_ptr->assoc_list, ",1") ||
+		    xstrstr(resv_ptr->assoc_list, ",2") ||
+		    xstrstr(resv_ptr->assoc_list, ",3") ||
+		    xstrstr(resv_ptr->assoc_list, ",4") ||
+		    xstrstr(resv_ptr->assoc_list, ",5") ||
+		    xstrstr(resv_ptr->assoc_list, ",6") ||
+		    xstrstr(resv_ptr->assoc_list, ",7") ||
+		    xstrstr(resv_ptr->assoc_list, ",8") ||
+		    xstrstr(resv_ptr->assoc_list, ",9") ||
+		    xstrstr(resv_ptr->assoc_list, ",0")) {
 			assoc = job_ptr->assoc_ptr;
 			while (assoc) {
 				snprintf(tmp_char, sizeof(tmp_char), ",%u,",
 					 assoc->id);
-				if (strstr(resv_ptr->assoc_list, tmp_char))
+				if (xstrstr(resv_ptr->assoc_list, tmp_char))
 					return SLURM_SUCCESS;
 				assoc = assoc->usage->parent_assoc_ptr;
 			}
