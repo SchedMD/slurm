@@ -32,7 +32,6 @@ set cputot         0
 set scontrol_cpu   0
 set sacct_cpu      0
 set gpu_tot        0
-set hostname       ""
 set job_tres_cnt   0
 set exit_code      0
 
@@ -116,12 +115,11 @@ if {[test_using_slurmdbd] == 0 } {
 	skip "Test invalid with slurmdbd"
 }
 
-array set node_conf [get_node_config "--gres=gpu:2"]
-if {[array size node_conf] == 0} {
-	skip "This test requires 2 or more GPUs in a node of the default partition"
+set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:2"
 }
-set hostname $node_conf(NodeName)
-set gpu_tot  $node_conf(GPUTot)
+set gpu_tot [dict get [get_gres_count "gpu" $node_name] $node_name]
 
 spawn $salloc -t1 -n1 --exclusive $srun -l $bin_printenv SLURMD_NODENAME
 expect {
@@ -170,7 +168,7 @@ check_alloc
 #
 set job_id 0
 
-spawn $salloc -t1 -n1 -w $hostname --gres=gpu --exclusive $srun -l $bin_printenv SLURMD_NODENAME
+spawn $salloc -t1 -n1 -w $node_name --gres=gpu --exclusive $srun -l $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

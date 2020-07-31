@@ -105,24 +105,31 @@ if {[test_cons_tres]} {
     skip "This test is only compatible with select/cons_tres"
 }
 
-set gpu_cnt [get_gpu_count 1]
+set gpu_cnt [get_highest_gres_count 1 "gpu"]
 if {$gpu_cnt < 0} {
 	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
 	skip "This test requires 1 or more GPUs in the default partition"
 }
-array set node_conf [get_node_config "--gres=gpu:1 -n1 -t1"]
-if {$node_conf(Sockets) < 2} {
+set node_name [get_nodes_by_request "--gres=gpu:1 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:1"
+}
+set cpus_per_node     [get_node_param $node_name "CPUTot"]
+set sockets_per_node  [get_node_param $node_name "Sockets"]
+set cpus_per_socket   [expr $cpus_per_node / $sockets_per_node]
+
+if {$sockets_per_node < 2} {
 	skip "This test requires 2 or more sockets per node in the default partition"
 }
-if {$node_conf(CPUsPerSocket) < 2} {
+if {$cpus_per_socket < 2} {
 	skip "This test requires 2 or more cores per socket in the default partition"
 }
-set cpus_per_node $node_conf(CPUTot)
+
 log_debug "GPU count is $gpu_cnt"
-log_debug "Sockets per node is $node_conf(Sockets)"
-log_debug "CPUs per socket is $node_conf(CPUsPerSocket)"
+log_debug "Sockets per node is $sockets_per_node"
+log_debug "CPUs per socket is $cpus_per_socket"
 log_debug "CPUs per node is $cpus_per_node"
 
 #
@@ -142,12 +149,12 @@ set multi_socket 0
 if {$gpu_cnt > $cpus_per_node} {
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt \
 	                          --nodes=1 --ntasks=1 \
-	                          --cpus-per-task=$node_conf(CPUsPerSocket) \
+	                          --cpus-per-task=$cpus_per_socket \
 	                          -t1 -l ./$file_in]
 } else {
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt \
 	                          --nodes=1 --ntasks=1 \
-	                          --cpus-per-task=$node_conf(CPUsPerSocket) \
+	                          --cpus-per-task=$cpus_per_socket \
 	                          -t1 -l ./$file_in]
 }
 expect {

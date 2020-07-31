@@ -100,12 +100,12 @@ log_debug "Default partition node count is $nb_nodes"
 if {$nb_nodes > 1} {
 	set nb_nodes 2
 }
-set mps_cnt [get_mps_count $nb_nodes]
+set mps_cnt [get_highest_mps_count $nb_nodes]
 if {$mps_cnt < 0} {
 	fail "Error getting MPS count"
 }
 if {$mps_cnt < 100} {
-	skip "This test requires 100 or more MPS per node in the default partition"
+	skip "This test requires 100 or more MPS per gpu in the default partition"
 }
 log_debug "MPS count is $mps_cnt"
 

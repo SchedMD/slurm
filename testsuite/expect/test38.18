@@ -29,7 +29,7 @@ source ./globals
 set exit_code    0
 set is_skip      false
 
-if {[get_gpu_count 1] < 2} {
+if {[get_highest_gres_count 1 "gpu"] < 2} {
 	skip "This test requires 2 or more GPUs per node in the default partition"
 }
 

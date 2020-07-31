@@ -36,7 +36,7 @@ if {[test_cons_tres]} {
     skip "This test is only compatible with select/cons_tres"
 }
 
-set craynetwork_count [get_craynetwork_count]
+set craynetwork_count [get_highest_gres_count 1 "craynetwork"]
 if {$craynetwork_count < 0} {
 	fail "Error getting craynetwork GRES count"
 }

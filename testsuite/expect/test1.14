@@ -36,18 +36,16 @@ set file_out2       "test$test_id.output2"
 set job_id           0
 set gpu_tot          0
 set job_tres_cnt     0
-set hostname         ""
 
 if {[test_front_end]} {
     skip "This test is incompatible with front-end systems"
 }
 
-array set node_conf [get_node_config "--gres=gpu:2"]
-if {[array size node_conf] == 0} {
-	skip "This test requires 2 or more GPUs in a node of the default partition. Skipping.\n"
+set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:2"
 }
-set hostname $node_conf(NodeName)
-set gpu_tot  $node_conf(GPUTot)
+set gpu_tot [dict get [get_gres_count "gpu" $node_name] $node_name]
 
 #
 # Delete left-over input script
@@ -230,7 +228,7 @@ if { $matches != 1 } {
 #
 set job_id 0
 
-spawn $srun -N1 -w $hostname --gres=gpu --exclusive $bin_printenv SLURM_JOBID
+spawn $srun -N1 -w $node_name --gres=gpu --exclusive $bin_printenv SLURM_JOBID
 expect {
 	-re "($number)" {
 		set job_id $expect_out(1,string)

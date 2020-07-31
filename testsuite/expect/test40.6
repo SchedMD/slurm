@@ -47,16 +47,8 @@ if {$constrain_devices} {
 	log_debug "Devices files are NOT constrained by cgroups"
 }
 
-set nb_nodes [available_nodes]
-if {$nb_nodes < 2} {
-    skip "Not enough nodes currently available ($nb_nodes avail, 2 needed)"
-}
-set mps_cnt [get_mps_count $nb_nodes]
-if {$mps_cnt < 0} {
-	fail "Error getting MPS count"
-}
-if {$mps_cnt < 100} {
-	skip "This test requires 100 or more MPS per node in the default partition"
+if {[llength [get_nodes_by_request "--gres=mps:100 -N2 -t2"]] == 0} {
+	skip "This test requires being able to submit job with --gres=mps:100 -N2"
 }
 
 #

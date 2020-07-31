@@ -126,7 +126,7 @@ proc run_gpu_fail { gres_spec } {
 #
 # Test if gres/gpu is configured
 #
-set gpu_cnt [get_gpu_count 1]
+set gpu_cnt [get_highest_gres_count 1 "gpu"]
 if {$gpu_cnt < 1} {
 	skip "This test can not be run without gres/gpu configured"
 }
