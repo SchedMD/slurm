@@ -183,7 +183,7 @@ proc test_bin_pass { num bin args het_job count } {
 	set got_sub2 0
 	set got_sub3 0
 	set rc -12345
-	set is_builtin [check_conf_param "SchedulerType" "sched/builtin"]
+	set is_builtin [string equal [get_config_param "SchedulerType"] "sched/builtin"]
 
 	log_info "**** TEST PASS $num ****"
 	eval spawn $bin [join $args " "]
@@ -248,7 +248,7 @@ proc test_bin_fail { num bin args het_job count } {
 	set got_sub2 0
 	set got_sub3 0
 	set rc -12345
-	set is_builtin [check_conf_param "SchedulerType" "sched/builtin"]
+	set is_builtin [string equal [get_config_param "SchedulerType"] "sched/builtin"]
 
 	log_info "**** TEST FAIL $num ****"
 	eval spawn $bin [join $args " "]

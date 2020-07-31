@@ -578,22 +578,24 @@ proc dict_getdef {D args} {
 #
 # OPTIONS
 #	-fail
-#		if the exit code or timeout is unexpected, the action that will
+#		If the exit code or timeout is unexpected, the action that will
 #		be taken is to fail the test
 #	-warn
-#		if the exit code or timeout is unexpected, the action that will
+#		If the exit code or timeout is unexpected, the action that will
 #		be taken is to log a warning (this is the default)
 #	-none
-#		if the exit code or timeout is unexpected, no action will be
+#		If the exit code or timeout is unexpected, no action will be
 #		taken
 #	-xfail
-#		if the command exits with zero and does not time out, the
+#		If the command exits with zero and does not time out, the
 #		action will be applied. Without this option, the action will
 #		be applied if the command exits with a non-zero exit code or
 #		times out.
 #	-timeout <float_number>
-#		time in seconds to wait for the command to complete before
+#		Time in seconds to wait for the command to complete before
 #		timing out (default is 60.0)
+#	-nolog
+#		Logging for this command will occur at trace threshold only
 #
 # ARGUMENTS
 #	command
@@ -617,6 +619,7 @@ proc run_command args {
 	set action "warn"
 	set timeout 60
 	set expect_failure false
+	set log_at_trace_level false
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
 			-fail    {set action "fail"; set args [lrange $args 1 end]}
@@ -624,6 +627,7 @@ proc run_command args {
 			-timeout {set args [lassign $args - timeout]}
 			-warn    {set action "warn"; set args [lrange $args 1 end]}
 			-xfail   {set expect_failure true; set args [lrange $args 1 end]}
+			-nolog   {set log_at_trace_level true; set args [lrange $args 1 end]}
 			-*       {fail "Unknown option: [lindex $args 0]"}
 			default  break
 		}
@@ -634,11 +638,18 @@ proc run_command args {
 		fail "Invalid number of arguments [llength $args]: $args"
 	}
 
+	if {$log_at_trace_level} {
+		interp alias {} log_alias {} log_trace
+	} else {
+		interp alias {} log_alias {} log_debug
+	}
+
 	set orig_log_user [log_user -info]
 	log_user 0
 
-	log_debug "Invoking command \"$command\""
+	log_alias "Invoking command \"$command\""
 	set start_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+	set stty_init raw ; # Prevent the terminal from inserting \r
 	set expect_pid [spawn -noecho $bin_bash -c "$command"]
 	expect {
 		-re "(.+)" {
@@ -659,12 +670,12 @@ proc run_command args {
 	set duration [format "%.3f" [expr $end_time - $start_time]]
 	set exit_code $exit_status
 
-	log_debug "Command Results:"
-	log_debug "	Start Time: $start_time"
-	log_debug "	Duration: $duration"
-	log_debug "	Exit Code: $exit_code"
+	log_alias "Command Results:"
+	log_alias "	Start Time: $start_time"
+	log_alias "	Duration: $duration"
+	log_alias "	Exit Code: $exit_code"
 	if {[info exists output]} {
-		log_debug "	Output: $output"
+		log_alias "	Output: $output"
 	}
 
 	if {! $expect_failure && $exit_status != 0} {
@@ -2052,81 +2063,58 @@ proc test_topology { } {
 ################################################################
 #
 # NAME
-#	get_conf_param - returns the value of a configuration parameter
-#
+#	get_config - returns a dictionary of slurm configuration parameters
+
 # SYNOPSIS
-#	get_conf_param parameter_name
+#	get_config
 #
 # DESCRIPTION
-#	Return the value of specific configuration parameter
-#
-# ARGUMENTS
-#	parameter_name
-#		configuration parameter to be returned (e.g. SchedulerType)
-#
-# RETURN VALUE
-#	Returns string with conf parameter value or UNKNOWN, and exit_code
-#	1 on error
+#	Uses `scontrol show config` to return the slurm configuration as
+#	a dictionary of parameter values.
 #
 ################################################################
 
-proc get_conf_param { param } {
-	global scontrol bin_bash bin_grep
+proc get_config { } {
+	global scontrol
 
-	set log_prev [log_user -info]
-	log_user 0
-	set param_value "UNKNOWN"
-	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep -i $param"
-	expect {
-		-re "$param *= (\[^\\n\]*)" {
-			set param_value $expect_out(1,string)
-		}
-		timeout {
-			log_error "scontrol show config time out"
-			set exit_code 1
+	set output [run_command_output -fail -nolog "$scontrol show config"]
+
+	foreach line [split $output "\n"] {
+		if {[regexp {^(\w+) += (.*)$} $line {} param_name param_value] == 1} {
+			dict set config_dict $param_name $param_value
 		}
 	}
-	if {[string equal $param_value "UNKNOWN"]} {
-		log_error "Configuration option $param not found"
-		set exit_code 1
-	}
-	log_user $log_prev
 
-	return $param_value
+	return $config_dict
 }
 
 
 ################################################################
 #
 # NAME
-#	check_conf_param - check whether a configuration parameter contains the specified value
+#	get_config_param - returns a slurm configuration parameter
 #
 # SYNOPSIS
-#	check_conf_param parameter_name parameter_value
+#	get_config_param parameter_name
 #
 # DESCRIPTION
-#	Check if given parameter contains given value
-#
-# ARGUMENTS
-#	parameter_name
-#		configuration parameter to be checked (e.g. SchedulerType)
-#	parameter_value
-#		value to look for in specific param (e.g sched/builtin)
+#	Returns a specific configuration parameter value.
 #
 # RETURN VALUE
-#	Returns Bool if value is in param
+#	Returns the value of the specified parameter or MISSING if it does not
+#	exist.
 #
 ################################################################
 
-proc check_conf_param { param value } {
-	set param_value [ get_conf_param $param ]
-	set match 0
+proc get_config_param { parameter_name } {
 
-	if {[regexp -nocase $value $param_value]} {
-		set match 1
+	set config_dict [get_config]
+
+	if [dict exists $config_dict $parameter_name] {
+		return [dict get $config_dict $parameter_name]
+	} else {
+		return "MISSING"
 	}
-
-	return $match
 }
 
 
@@ -6366,139 +6354,81 @@ proc check_job_state { job state {het_job 0}} {
 }
 
 
-################################################################
-#
-# NAME
-#	get_craynetwork_count - returns highest craynetworks per node
-#
-# SYNOPSIS
-#	get_craynetwork_count ?node_count?
-#
-# DESCRIPTION
-#	For a given node count, returns number of craynetworks per node on
-#	those "node_count" nodes with the highest craynetworks counts
-#
-# EXAMPLE
-#	For example: node1 has 1 craynetwork, node2 has 2 craynetworks and
-#	node3 has 3 craynetworks
-#	[get_craynetwork_count 1] returns 3 (i.e. 1 node 3 craynetworks)
-#	[get_craynetwork_count 2] returns 2 (i.e. 2 nodes have at least 2 each)
-#	[get_craynetwork_count 3] returns 1 (i.e. 3 nodes have at least 1 each)
-#
-################################################################
-
-proc get_craynetwork_count { {node_count 1} } {
-	get_gres_count $node_count "craynetwork"
-}
 
 
 ################################################################
 #
 # NAME
-#	get_gpu_count - returns number of GPUs per node on node_count nodes
+#	get_gres_count - returns a dict of nodes and GRES counts
 #
 # SYNOPSIS
-#	get_gpu_count node_count
+#	get_gres_count gres_name ?node_list?
 #
 # DESCRIPTION
-#	For a given node count, returns number of GPUs per node on
-#	those "node_count" nodes with the highest GPU counts
+#	Returns a dict of node names and the count of a specifed
+#	GRES aggregating all its types on each node.
 #
-# EXAMPLE
-#	For example: node1 has 1 GPU, node2 has 2 GPUs and node3 has 3 GPUs
-#	[get_gpu_count 1] returns 3 (i.e. 1 node 3 GPUs)
-#	[get_gpu_count 2] returns 2 (i.e. 2 nodes have at least 2 GPUs each)
-#	[get_gpu_count 3] returns 1 (i.e. 3 nodes have at least 1 GPU each)
-#
-################################################################
-
-proc get_gpu_count { node_count } {
-	get_gres_count $node_count "gpu"
-}
-
-
-################################################################
-#
-# NAME
-#	get_gres_count - returns number of GRES epr node on node_count nodes
-#
-# SYNOPSIS
-#	get_gres_count node_count gres_name
-#
-# DESCRIPTION
-#	For a given node count and GRES name, returns number of GRES per node on
-#	those "node_count" nodes with the highest GRES counts
-#
-# EXAMPLE
-#	For example: node1 has 1 GPU, node2 has 2 GPUs and node3 has 3 GPUs
-#	[get_gres_count 1 "gpu"] returns 3 (i.e. 1 node 3 GPUs)
-#	[get_gres_count 2 "gpu"] returns 2 (i.e. 2 nodes have at least 2 GPUs each)
-#	[get_gres_count 3 "gpu"] returns 1 (i.e. 3 nodes have at least 1 GPU each)
+# RETURN VALUE
+#	If the node_list is not specified node name is specified,
+#	this function will return a dict with the GRES count for all
+#	the nodes of the default partition.
+#	If specified, a dict only with the nodes of the node_list.
 #
 ################################################################
 
-proc get_gres_count { node_count gres_name } {
-	global sinfo gres_regex
-	set fini 0
-	set node_inx 0
-	set def_part [default_partition]
-	# The first group lets us know if we started a new line (i.e. new node).
-	# The second, third, and fourth groups in $gres_regex match a GRES
-	# name, type, and count.
-	set regex "(GRES=|,)$gres_regex"
+proc get_gres_count { gres_name {node_list ""} } {
+	global gres_regex
 
-	if {$node_count <= 0} {
-		return 0
-	}
-
-	set line_count 0
-
-	log_user 0
-	spawn $sinfo -N -p$def_part -oGRES=%G -h
-	expect {
-		-re $regex {
-			set count 0
-			set line $expect_out(1,string)
-			set name $expect_out(2,string)
-			# Assume typed GRES of format gpu:1080:5 to start out
-			set type $expect_out(3,string)
-			set count $expect_out(4,string)
-
-			if {$line == "GRES="} {
-				if {$node_inx > 0} {
-					lappend gres_count $line_count
-					set line_count 0
+	set nodes_dict [get_nodes $node_list]
+	set gres_dict [dict create]
+	dict for {node_name node_dict} $nodes_dict {
+		set gres_count 0
+		if [dict exists $node_dict "Gres"] {
+			set gres_expression [dict get $node_dict "Gres"]
+			foreach gres [split $gres_expression ","] {
+				if {[regexp $gres_regex $gres {} name type count] == 1} {
+					if {$count eq ""} { set count $type }
+					if {$name eq $gres_name} {
+						incr gres_count $count
+					}
 				}
-				incr node_inx
 			}
-
-			# Skip all GRES of different names
-			if {$name != $gres_name} {
-				exp_continue
-			}
-
-			if {$count == ""} {
-				# Now assume GRES format gpu:5
-				set count $type
-			}
-			if { $count } {
-				incr line_count $count
-			}
-
-			exp_continue
 		}
-		eof {
-			wait
-		}
+		dict set gres_dict $node_name $gres_count
 	}
 
-	# Add the last node line's GRES
-	lappend gres_count $line_count
+	return $gres_dict
+}
 
-	log_user 1
 
-	if {$node_inx < $node_count} {
-		return 0
+################################################################
+#
+# NAME
+#	get_highest_gres_count - returns highest number of GRES per node on node_count nodes
+#
+# SYNOPSIS
+#	get_highest_gres_count node_count gres_name
+#
+# DESCRIPTION
+#	For a given number of nodes, returns the highest GRES count per
+#	node available on at least that number of nodes.
+#
+# EXAMPLE
+#	For example: node1 has 1 GPU, node2 has 2 GPUs and node3 has 3 GPUs
+#	[get_highest_gres_count 1 "gpu"] returns 3 (i.e. 1 node 3 GPUs)
+#	[get_highest_gres_count 2 "gpu"] returns 2 (i.e. 2 nodes have at least 2 GPUs each)
+#	[get_highest_gres_count 3 "gpu"] returns 1 (i.e. 3 nodes have at least 1 GPU each)
+#
+################################################################
+
+proc get_highest_gres_count { node_count gres_name } {
+
+	set available_nodes [available_nodes_hostnames [default_partition]]
+	set gres_dict [get_gres_count $gres_name $available_nodes]
+	set gres_count [list]
+
+	dict for {node gres} $gres_dict {
+		lappend gres_count $gres
 	}
 
 	set count [lindex [lsort -decreasing -integer $gres_count] [expr $node_count - 1]]
@@ -6665,19 +6595,43 @@ proc get_gpu_socket_count { gpu_cnt sockets_per_node } {
 ################################################################
 #
 # NAME
-#	get_mps_count - returns the number of MPS resources with the highest values
+#	get_highest_mps_count - get_highest_gres_count nodes mps, but for "mps per GPU"
 #
 # SYNOPSIS
-#	get_mps_count node_count
+#	get_highest_mps_count node_count
 #
 # DESCRIPTION
-#	For a given node count, returns number of MPS resources on
-#	those "node_count" nodes with the highest values
+#	For a given number of nodes, returns the higest number of MPS per GPU
+#	available at least on those number of nodes.
 #
 ################################################################
 
-proc get_mps_count { node_count } {
-	get_gres_count $node_count "mps"
+proc get_highest_mps_count { node_count } {
+	# We cannot use get_highest_gres_count because we need "per gpu",
+	# so we get all the mps per node and all gpus per node, to create
+	# a mps_per_gpu list to sort and get the count.
+	set available_nodes [available_nodes_hostnames [default_partition]]
+	set mps_dict [get_gres_count "mps" $available_nodes]
+	set gpu_dict [get_gres_count "gpu" $available_nodes]
+	set mps_per_gpu [list]
+
+	dict for {node mps} $mps_dict {
+		if { $mps > 0 } {
+			if [dict exists $gpu_dict $node] {
+				set gpu [dict get $gpu_dict $node]
+				if { $gpu > 0 } {
+					lappend mps_per_gpu [expr $mps / $gpu]
+				} else {
+					fail "All nodes with MPS should have a GPU"
+				}
+			} else {
+				fail "All nodes with MPS should have a GPU"
+			}
+		}
+	}
+
+	set count [lindex [lsort -decreasing -integer $mps_per_gpu] [expr $node_count - 1]]
+	return $count
 }
 
 
@@ -7367,13 +7321,103 @@ proc create_part { part_name num_nodes_in } {
 ################################################################
 #
 # NAME
-#	get_node_config - obtains the configuration of a node with the requested resources
+#	get_nodes - returns a dictionary of dictionaries of node parameters
 #
 # SYNOPSIS
-#	get_node_config ?request_args?
+#	get_nodes ?hostlist_expression?
 #
 # DESCRIPTION
-#	Obtain the node configuration of a node with the requested resources.
+#	Uses `scontrol show node` to query node parameters, returning a
+#	dictionary of dictionaries with the node names as keys of the first
+#	level dictionary and with the parameters as keys of the second level
+#	dictionary. Specifying an invalid node name will result in a failure.
+#
+# RETURN VALUE
+#	If the optional node expression argument is specified, the result will
+#	be constrained by the specified hostlist expression. Otherwise, the
+#	results for all nodes will be returned.
+#
+################################################################
+
+proc get_nodes { {hostlist_expression ""} } {
+	global scontrol
+
+	set command "$scontrol show node -o"
+	if {$hostlist_expression ne ""} {
+		append command " $hostlist_expression"
+	}
+	set output [run_command_output -fail -nolog "$command"]
+
+	# Iterate over each node parameter line
+	foreach line [split $output "\n"] {
+		if {$line eq ""} { continue }
+
+		# Peel off the node parameters one at a time
+		# The first quantifier sets the greediness for the whole RE
+		while {[regexp {^ *?([^ =]+)=(.*)(?= +[^ =]+=| *$)} $line {} param_name param_value]} {
+			# Remove the consumed parameter from the line
+			set line [regsub {^ *?[^ =]+=.*(?= +[^ =]+=| *$)} $line {}]
+			# Add it to the temporary node dictionary
+			dict set node_dict $param_name $param_value
+		}
+
+		set node_name [dict get $node_dict "NodeName"]
+
+		# Add the node dictionary to nodes dictionary
+		dict set nodes_dict $node_name $node_dict
+
+		# Clear the node dictionary for use by the next node
+		set node_dict {}
+	}
+
+	return $nodes_dict
+}
+
+
+################################################################
+#
+# NAME
+#	get_node_param - returns a specific parameter value for a specific node
+#
+# SYNOPSIS
+#	get_node_param node_name parameter_name
+#
+# DESCRIPTION
+#	Returns a specific parameter value for a specified node if the
+#	parameter exists for the node, or MISSING if it does not exist.
+#	Specifying an invalid node name will result in a failure.
+#
+################################################################
+
+proc get_node_param { node_name parameter_name } {
+
+	set nodes_dict [get_nodes $node_name]
+
+	if [dict exists $nodes_dict $node_name $parameter_name] {
+		return [dict get $nodes_dict $node_name $parameter_name]
+	} else {
+		log_warn "Parameter $parameter_name not found on node $node_name"
+		return "MISSING"
+	}
+}
+
+
+################################################################
+#
+# NAME
+#	get_nodes_by_request - get a list of nodes satisfying requested resources
+#
+# SYNOPSIS
+#	get_nodes_by_request ?options? ?request_args?
+#
+# DESCRIPTION
+#	Using srun (optionally with the specified arguments), returns a list
+#	of nodes having the requested resources.
+#	If an error occurs, the invoking test will fail.
+#
+# OPTIONS
+#	-fail
+#		fail the test if the execution of srun results in an error or timeout
 #
 # ARGUMENTS
 #	request_args
@@ -7381,96 +7425,123 @@ proc create_part { part_name num_nodes_in } {
 #		e.g. "--gres=gpu:1 -n1 -t1"
 #
 # RETURN VALUE
-#	An array with the configuration of a node with at least the
-#	requested  resources. The keys of the arrays are the same that
-#	appear in the scontrol show node (e.g. CPUTot, State, RealMemory.)
-#	The array also includes some extra values:
-#		GPUTot       : Total number of GPUs of the node.
-#		CPUPerSocker : Number of CPUs per Socket (i.e. CPUTot / Sockets)
-#	If no node is found, it returns an empty array.
-#	In case of other errors, the global exit_code is set to 1.
+#	A list of nodes with at least the requested resources, or an empty
+#	list otherwise.
 #
 ################################################################
 
-proc get_node_config { {request_args "-n1 -t1"} } {
-	global exit_code max_job_delay srun scontrol
-	global bin_rm
+proc get_nodes_by_request args {
+	global srun
 
-	array set node_conf {}
-	set node_conf(GPUTot) 0
-
-	set file_in "get_node_config"
-	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODELIST"
-
-	set timeout $max_job_delay
-	set log_prev [log_user -info]
-	log_user 0
-
-	set srun_pid [spawn $srun {*}$request_args -t1 ./$file_in]
-	expect {
-		# The regexp is an OR for all cases of Key=Value where
-		# Value has no whitespaces, and the Key "Os=" that may
-		# have Value with whitespaces, so we match until the
-		# end of the line
-		-re "(\ *(\[^=\\n\]+)=(\\S+)\|\\n\ *(OS)=(\[^\\n\]*))" {
-			if {[string first "OS=" $expect_out(0,string)] != -1 } {
-				# Use the last groups the main regexp
-				set node_conf($expect_out(4,string)) \
-					$expect_out(5,string)
-			} else {
-				# Use the first groups of the main regexp
-				set node_conf($expect_out(2,string)) \
-					$expect_out(3,string)
-
-				# Compute the GPUTot when Key is Gres
-				if {[string first "Gres=" $expect_out(0,string)] \
-					!= -1 } {
-					set gres_list [split \
-						$expect_out(3,string) ","]
-					foreach gres $gres_list {
-						if {[regexp {gpu:(\S+?):(\d+)} \
-							$gres match type count] \
-							== 1} {
-							incr node_conf(GPUTot) \
-								$count
-						}
-						if {[regexp {gpu:(\d+)} $gres \
-							match count] == 1} {
-							incr node_conf(GPUTot) \
-								$count
-						}
-					}
-				}
+	set options [list]
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-fail {
+				lappend options [lrange $args 0 0]
+				set args [lrange $args 1 end]
 			}
-			exp_continue
-		}
-		-re "srun: error: (\[^\\n\]*)" {
-			log_error "srun: error: $expect_out(1,string)"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			log_error "srun not responding"
-			slow_kill $srun_pid
-			set exit_code 1
-		}
-		eof {
-			lassign [wait] pid spawnid os_error status
-			if {$status != 0} {
-				log_error "srun exit code: $status"
-				set exit_code 1
-			}
+			default  break
 		}
 	}
-	exec $bin_rm -f $file_in
-	log_user $log_prev
-	if { [info exists node_conf(NodeName)] } {
-		set node_conf(CPUsPerSocket) \
-			[expr $node_conf(CPUTot) / $node_conf(Sockets)]
+
+	if {[llength $args] == 1} {
+		lassign $args request_args
+	} elseif {[llength $args] == 0} {
+		set request_args "-n1 -t1"
 	} else {
-		array unset node_conf
+		fail "[lindex [info level 0] 0]: Invalid number of arguments ([llength $args]): $args"
 	}
-	array get node_conf
+
+	set command "$srun $request_args printenv SLURMD_NODENAME"
+	set result [run_command {*}$options $command]
+
+	if [dict get $result exit_code] {
+		return {}
+	}
+
+	set output [dict get $result output]
+	foreach line [split $output "\n"] {
+		if {$line eq ""} { continue }
+		dict incr allocated_nodes $line
+	}
+
+	return [lsort [dict keys $allocated_nodes]]
+}
+
+
+################################################################
+#
+# NAME
+#	get_jobs - returns a dictionary of dictionaries of job parameters
+#
+# SYNOPSIS
+#	get_jobs ?job_id?
+#
+# DESCRIPTION
+#	Uses `scontrol show job` to return a dictionary of dictionaries of job
+#	parameters. Specifying an invalid job id will result in a failure.
+#
+################################################################
+
+proc get_jobs { {job_id_in ""} } {
+	global scontrol
+
+	set command "$scontrol show job -o"
+	if {$job_id_in ne ""} {
+		append command " $job_id_in"
+	}
+	set output [run_command_output -fail "$command"]
+
+	# Iterate over each job's parameter list
+	foreach line [split $output "\n"] {
+		if {$line eq ""} { continue }
+
+		# Peel off the job parameters one at a time
+		# The first quantifier sets the greediness for the whole RE
+		while {[regexp {^ *?([^ =]+)=(.*)(?= +[^ =]+=| *$)} $line {} param_name param_value]} {
+			# Remove the consumed parameter from the line
+			set line [regsub {^ *?[^ =]+=.*(?= +[^ =]+=| *$)} $line {}]
+			# Add it to the temporary job dictionary
+			dict set job_dict $param_name $param_value
+		}
+
+		set job_id [dict get $job_dict "JobId"]
+
+		# Add the job dictionary to jobs dictionary
+		dict set jobs_dict $job_id $job_dict
+
+		# Clear the job dictionary for the next job
+		set job_dict {}
+	}
+
+	return $jobs_dict
+}
+
+
+################################################################
+#
+# NAME
+#	get_job_param - returns a specific parameter value for a specific job
+#
+# SYNOPSIS
+#	get_job_param job_id parameter_name
+#
+# DESCRIPTION
+#	Returns a specific parameter value for a specified job if the
+#	parameter exists for the job, or MISSING if it does not exist.
+#	Specifying an invalid job id will result in a failure.
+#
+################################################################
+
+proc get_job_param { job_id parameter_name } {
+
+	set jobs_dict [get_jobs $job_id]
+
+	if [dict exists $jobs_dict $job_id $parameter_name] {
+		return [dict get $jobs_dict $job_id $parameter_name]
+	} else {
+		return "MISSING"
+	}
 }
 
 proc get_job_gpu_cnt { job_id } {
@@ -8060,6 +8131,7 @@ proc _test_cleanup {} {
 
 	return $rc
 }
+
 
 ################################################################
 #

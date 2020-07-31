@@ -36,18 +36,16 @@ set file_out     "test$test_id.output"
 set job_id1      0
 set job_id2      0
 set nodelist_name ""
-set hostname     ""
 set gpu_tot      0
 set job_tres_cnt 0
 
 set timeout $max_job_delay
 
-array set node_conf [get_node_config "--gres=gpu:2"]
-if {[array size node_conf] == 0} {
-	skip "This test requires 2 or more GPUs in a node of the default partition"
+set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:2"
 }
-set hostname $node_conf(NodeName)
-set gpu_tot  $node_conf(GPUTot)
+set gpu_tot [dict get [get_gres_count "gpu" $node_name] $node_name]
 
 #
 # Submit a job and get the node's NodeName from the nodelist
@@ -147,7 +145,7 @@ if {$waited == 0} {
 #
 # Verify that all GPUs are allocated with the --exclusive flag
 #
-set sbatch_pid2 [spawn $sbatch -t1 -N1 -w $hostname --gres=gpu --exclusive --output=$file_out $file_in]
+set sbatch_pid2 [spawn $sbatch -t1 -N1 -w $node_name --gres=gpu --exclusive --output=$file_out $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)

@@ -43,7 +43,7 @@ if {[test_cons_tres]} {
 
 set nb_nodes [get_node_cnt_in_part]
 
-set mps_cnt [get_mps_count 1]
+set mps_cnt [get_highest_mps_count 1]
 if {$mps_cnt < 0} {
 	fail "Error getting MPS count"
 }
