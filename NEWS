@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix wrong DBD Agent queue size in sdiag when using accounting_storage/none.
  -- Improve job constraints XOR option logic.
  -- Fix preemption of hetjobs when needed nodes not in leader component.
+ -- Fix wrong bit_or() messing potential preemptor jobs node bitmap, causing
+    bad node deallocations and even allocation of nodes from other partitions.
 
 * Changes in Slurm 20.02.4
 ==========================

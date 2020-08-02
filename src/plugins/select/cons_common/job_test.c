@@ -1777,12 +1777,6 @@ static int _wrapper_job_res_rm_job(void *x, void *arg)
 			     job_ptr, wargs->action, wargs->job_fini,
 			     wargs->node_map);
 
-	/*
-	 * We might not had overlapped the main hetjob component partition, but
-	 * we might need these nodes.
-	 */
-	bit_or(wargs->node_map, job_ptr->node_bitmap);
-
 	return 0;
 }
 
