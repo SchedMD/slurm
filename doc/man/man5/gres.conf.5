@@ -5,7 +5,7 @@ gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
 
 .SH "DESCRIPTION"
 \fBgres.conf\fP is an ASCII file which describes the configuration
-of Generic RESource (GRES) on each compute node.
+of Generic RESource(s) (GRES) on each compute node.
 If the GRES information in the slurm.conf file does not fully describe those
 resources, then a gres.conf file should be included on each compute node.
 The file will always be located in the same directory as the \fBslurm.conf\fR.
@@ -78,7 +78,7 @@ E.g.: \fINodeName=tux3 AutoDetect=off Name=gpu File=/dev/nvidia[0\-3]\fR.
 
 .TP
 \fBCount\fR
-Number of resources of this type available on this node.
+Number of resources of this name/type available on this node.
 The default value is set to the number of \fBFile\fR values specified (if any),
 otherwise the default value is one. A suffix of "K", "M", "G", "T" or "P" may be
 used to multiply the number by 1024, 1048576, 1073741824, etc. respectively.
@@ -112,7 +112,7 @@ If \fB\-\-gres\-flags=disable\-binding\fR is specified, then any core can be
 used with the resources, which also increases the speed of Slurm's
 scheduling algorithm but can degrade the application performance.
 The \fB\-\-gres\-flags=disable\-binding\fR option is currently required to use
-more CPUs than are bound to a GRES (i.e. if a GPU is bound to the CPUs on one
+more CPUs than are bound to a GRES (e.g. if a GPU is bound to the CPUs on one
 socket, but resources on more than one socket are required to run the job).
 If any core can be effectively used with the resources, then do not specify the
 \fBcores\fR option for improved speed in the Slurm scheduling logic.
@@ -160,7 +160,7 @@ count of allocated resources rather than the state of each individual device
 file.
 
 NOTE: Drain a node before changing the count of records with \fBFile\fR
-parameters (i.e. if you want to add or remove GPUs from a node's configuration).
+parameters (e.g. if you want to add or remove GPUs from a node's configuration).
 Failure to do so will result in any job using those GRES being aborted.
 .IP
 
@@ -279,12 +279,16 @@ the example below.
 
 .TP
 \fBType\fR
-An optional arbitrary string identifying the type of device.
+An optional arbitrary string identifying the type of generic resource.
 For example, this might be used to identify a specific model of GPU, which users
 can then specify in a job request.
 If \fBType\fR is specified, then \fBCount\fR is limited in size (currently 1024).
 A restart of the \fBslurmctld\fR and \fBslurmd\fR daemons is required for changes
 to the \fBType\fR option to take effect.
+
+\fBNOTE\fR: If using autodetect functionality and defining the Type in your
+gres.conf file, the Type specified should match or be a substring of the value
+that is detected, using an underscore in lieu of any spaces.
 .IP
 
 .SH "EXAMPLES"
