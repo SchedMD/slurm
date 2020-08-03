@@ -187,7 +187,7 @@ extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 	 * NodeCnt and TRES=node= might appear within the same request,
 	 * so we free the first and realloc the second.
 	 */
-	if (*res_free_flags |= RESV_FREE_STR_TRES_NODE)
+	if (*res_free_flags & RESV_FREE_STR_TRES_NODE)
 		xfree(resv_msg_ptr->node_cnt);
 
 	node_cnt = xstrdup(val);
