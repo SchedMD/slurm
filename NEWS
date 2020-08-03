@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.02.5
 ==========================
+ -- Fix leak of TRESRunMins when job time is changed with --time-min
 
 * Changes in Slurm 20.02.4
 ==========================

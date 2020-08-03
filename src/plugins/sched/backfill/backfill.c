@@ -2063,13 +2063,15 @@ next_task:
 		}
 		if (deadline_time_limit)
 			comp_time_limit = MIN(time_limit, deadline_time_limit);
-		else
+		else if (job_ptr->time_min &&
+			 (job_ptr->time_min < time_limit)) {
+			time_limit = job_ptr->time_limit = job_ptr->time_min;
+			comp_time_limit = time_limit;
+		} else
 			comp_time_limit = time_limit;
 		if ((qos_flags & QOS_FLAG_NO_RESERVE) &&
 		    slurm_get_preempt_mode())
 			time_limit = job_ptr->time_limit = 1;
-		else if (job_ptr->time_min && (job_ptr->time_min < time_limit))
-			time_limit = job_ptr->time_limit = job_ptr->time_min;
 
 		later_start = now;
 
