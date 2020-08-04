@@ -6448,6 +6448,7 @@ extern char *assoc_mgr_make_tres_str_from_array(
 	int i;
 	char *tres_str = NULL;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+	uint64_t count;
 
 	if (!tres_cnt)
 		return NULL;
@@ -6466,20 +6467,22 @@ extern char *assoc_mgr_make_tres_str_from_array(
 		} else if (!tres_cnt[i])
 			continue;
 
+		count = tres_cnt[i];
+
 		if (flags & TRES_STR_FLAG_SIMPLE) {
 			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
 				   tres_str ? "," : "",
-				   assoc_mgr_tres_array[i]->id, tres_cnt[i]);
+				   assoc_mgr_tres_array[i]->id, count);
 		} else {
 			/* Always skip these when printing out named TRES */
-			if ((tres_cnt[i] == NO_VAL64) ||
-			    (tres_cnt[i] == INFINITE64))
+			if ((count == NO_VAL64) ||
+			    (count == INFINITE64))
 				continue;
 			if ((flags & TRES_STR_CONVERT_UNITS) &&
 			    ((assoc_mgr_tres_array[i]->id == TRES_MEM) ||
 			     !xstrcasecmp(assoc_mgr_tres_array[i]->type,"bb"))){
 				char outbuf[32];
-				convert_num_unit((double)tres_cnt[i], outbuf,
+				convert_num_unit((double)count, outbuf,
 						 sizeof(outbuf), UNIT_MEGA,
 						 NO_VAL,
 						 CONVERT_NUM_UNIT_EXACT);
@@ -6492,7 +6495,7 @@ extern char *assoc_mgr_make_tres_str_from_array(
 				   !xstrcasecmp(assoc_mgr_tres_array[i]->type,
 						"ic")) {
 				char outbuf[32];
-				convert_num_unit((double)tres_cnt[i], outbuf,
+				convert_num_unit((double)count, outbuf,
 						 sizeof(outbuf), UNIT_NONE,
 						 NO_VAL,
 						 CONVERT_NUM_UNIT_EXACT);
@@ -6504,7 +6507,7 @@ extern char *assoc_mgr_make_tres_str_from_array(
 				xstrfmtcat(tres_str, "%s%s=%"PRIu64,
 					   tres_str ? "," : "",
 					   assoc_mgr_tres_name_array[i],
-					   tres_cnt[i]);
+					   count);
 			}
 		}
 	}
