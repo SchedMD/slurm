@@ -31,12 +31,14 @@
 ############################################################################
 
 proc inc3_11_2 {} {
-	global def_node user_name def_partition exit_code res_name
+	global def_node user_name def_partition exit_code
+
+	set res_name "resv3.11.2"
 
 	# TEST 2
 
 	log_info "+++++ STARTING TEST 2 (Within inc3.11.2) +++++"
-	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
+	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name"]
 	if {$ret_code != 0} {
 		fail "Unable to create a valid reservation (Within inc3.11.2)"
 	}
@@ -57,7 +59,7 @@ proc inc3_11_2 {} {
 	}
 
 	foreach test $goodupdates {
-		set ret_code [update_res $res_name $test 0]
+		set ret_code [update_res $res_name $test]
 		if {$ret_code != 0} {
 			log_error "Unable to update a valid reservation  (Within inc3.11.2)"
 			set exit_code 1

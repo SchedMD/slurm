@@ -59,7 +59,6 @@ source ./globals_private
 global sacctmgr sacct salloc sattach sbatch sbcast scancel scontrol sinfo
 global smd squeue sreport srun sstat strigger
 
-
 ################################################################
 #
 # NAME
@@ -613,9 +612,10 @@ proc dict_getdef {D args} {
 #
 ################################################################
 proc run_command args {
-	global bin_bash exit_code
+	global bin_bash
 
 	set exit_status 0
+	set output ""
 	set action "warn"
 	set timeout 60
 	set expect_failure false
@@ -668,12 +668,11 @@ proc run_command args {
 	}
 	set end_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 	set duration [format "%.3f" [expr $end_time - $start_time]]
-	set exit_code $exit_status
 
 	log_alias "Command Results:"
 	log_alias "	Start Time: $start_time"
 	log_alias "	Duration: $duration"
-	log_alias "	Exit Code: $exit_code"
+	log_alias "	Exit Code: $exit_status"
 	if {[info exists output]} {
 		log_alias "	Output: $output"
 	}
@@ -698,13 +697,11 @@ proc run_command args {
 	}
 	log_user $orig_log_user
 
-	dict set result command $command
-	dict set result exit_code $exit_status
-	if [info exists output] {
-		dict set result output "$output"
-	}
+	dict set result command    $command
+	dict set result exit_code  $exit_status
+	dict set result output     $output
 	dict set result start_time $start_time
-	dict set result duration $duration
+	dict set result duration   $duration
 
 	return $result
 }
@@ -7194,6 +7191,172 @@ proc have_lua { } {
 	}
 
 	return $have_lua
+}
+
+
+################################################################
+#
+# NAME
+#	get_reservations - returns a dictionary of dictionaries of reservation parameters
+#
+# SYNOPSIS
+#	get_reservations ?resv_name?
+#
+# RETURN VALUE
+#	Uses `scontrol show reservation` to return a dictionary of dictionaries
+#	of job parameters. Specifying an invalid resv_name result in a failure.
+#
+################################################################
+
+proc get_reservations { {resv_name ""} } {
+	global scontrol
+
+	set command "$scontrol show reservation -o"
+	if {$resv_name ne ""} {
+		append command " $resv_name"
+	}
+	set output [run_command_output -fail "$command"]
+
+	# Iterate over each reservation's parameter list
+	foreach line [split $output "\n"] {
+		if {$line eq ""} { continue }
+
+		# Peel off the resv parameters one at a time
+		# The first quantifier sets the greediness for the whole RE
+		while {[regexp {^ *?([^ =]+)=(.*)(?= +[^ =]+=| *$)} $line {} param_name param_value]} {
+			# Remove the consumed parameter from the line
+			set line [regsub {^ *?[^ =]+=.*(?= +[^ =]+=| *$)} $line {}]
+			# Add it to the temporary job dictionary
+			dict set resv_dict $param_name $param_value
+		}
+
+		set resv_name_dict [dict get $resv_dict "ReservationName"]
+
+		# Add the resv dictionary to resvs dictionary
+		dict set resvs_dict $resv_name_dict $resv_dict
+
+		# Clear the resv dictionary for the next resv
+		set resv_dict {}
+	}
+
+	return $resvs_dict
+}
+
+
+################################################################
+#
+# NAME
+#	get_resvation_param - returns a specific parameter value for a specific reservation
+#
+# SYNOPSIS
+#	get_resvation_param resv_name parameter_name
+#
+# DESCRIPTION
+#	Returns a specific parameter value for a specified resvation if the
+#	parameter exists for the resvation, or MISSING if it does not exist.
+#	Specifying an invalid resvation name will result in a failure.
+#
+################################################################
+
+proc get_resvation_param { resv_name parameter_name } {
+
+	set resvs_dict [get_reservations $resv_name]
+
+	if [dict exists $resvs_dict $resv_name $parameter_name] {
+		return [dict get $resvs_dict $resv_name $parameter_name]
+	} else {
+		return "MISSING"
+	}
+}
+
+
+################################################################
+#
+# NAME
+#	create_res - create new reservation in system
+#
+# SYNOPSIS
+#	create_res ?res_name? ?res_params?
+#
+# RETURN VALUE
+#	the exit code of the scontrol command run
+#
+################################################################
+
+proc create_res { res_name res_params } {
+	global scontrol
+
+	set result   [run_command "$scontrol create res ReservationName=$res_name $res_params"]
+	set output   [dict get $result output]
+	set ret_code [dict get $result exit_code]
+
+	if { $ret_code } {
+		log_warn "[lindex [info level 0] 0]: error from scontrol: $output"
+	} else {
+		log_debug "[lindex [info level 0] 0]: success from scontrol: $output"
+	}
+
+	return $ret_code
+}
+
+
+################################################################
+#
+# NAME
+#	update_res - update exisiting reservation in system
+#
+# SYNOPSIS
+#	update_res ?res_name? ?res_params?
+#
+# RETURN VALUE
+#	the exit code of the scontrol command run
+#
+################################################################
+
+proc update_res { res_name res_params } {
+	global scontrol
+
+	set result   [run_command "$scontrol update ReservationName=$res_name $res_params"]
+	set output   [dict get $result output]
+	set ret_code [dict get $result exit_code]
+
+	if { $ret_code } {
+		log_warn "[lindex [info level 0] 0]: error from scontrol: $output"
+	} else {
+		log_debug "[lindex [info level 0] 0]: success from scontrol: $output"
+	}
+
+	return $ret_code
+}
+
+
+################################################################
+#
+# NAME
+#	delete_res - delete reservation from system
+#
+# SYNOPSIS
+#	delete_res ?res_name?
+#
+# RETURN VALUE
+#	the exit code of the scontrol command run
+#
+################################################################
+
+proc delete_res { res_name } {
+	global scontrol
+
+	set result   [run_command "$scontrol delete ReservationName=$res_name"]
+	set output   [dict get $result output]
+	set ret_code [dict get $result exit_code]
+
+	if { $ret_code } {
+		log_warn "[lindex [info level 0] 0]: error from scontrol: $output"
+	} else {
+		log_debug "[lindex [info level 0] 0]: success from scontrol: $output"
+	}
+
+	return $ret_code
 }
 
 
