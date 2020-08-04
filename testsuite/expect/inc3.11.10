@@ -24,44 +24,45 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 proc inc3_11_10 {} {
-	global user_name exit_code res_name
+	global user_name exit_code
+
+	set res_name "resv3.11.10"
+	set res_name_test "resv3.11.10.0"
 
 	# TEST 10
 	# Test node reservation conflict
 	#
 	log_info "+++++ STARTING TEST 10 (Within: inc3.11.10) +++++"
 	# Make the reservation
-	set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=[available_nodes_hostnames "" true] flags=DAILY user=$user_name" 0]
+	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 Nodes=[available_nodes_hostnames "" true] flags=DAILY user=$user_name"]
 	if {$ret_code != 0} {
 		fail "Unable to create a valid reservation (Within: inc3.11.10)"
 	}
 
-	set res_name_save $res_name
-
 	# Test for reservation conflict
-	set ret_code [create_res "StartTime=now Duration=120 NodeCnt=1 user=$user_name" 1]
+	set ret_code [create_res $res_name_test "StartTime=now Duration=120 NodeCnt=1 user=$user_name"]
 	if {$ret_code == 0} {
-		delete_res $res_name_save
+		delete_res $res_name_test
 		delete_res $res_name
 		fail "Reservation did not fail but should have (Within: inc3.11.10)"
 	} else {
-		log_debug "Expected error. You can turn that frown upside-down.(Within: inc3.11.10)"
+		log_info "Expected error. You can turn that frown upside-down.(Within: inc3.11.10)"
 	}
 
 	# Test for reservation conflict
-	set ret_code [create_res "StartTime=now+6days Duration=120 NodeCnt=1 user=$user_name" 2]
+	set ret_code [create_res $res_name_test "StartTime=now+6days Duration=120 NodeCnt=1 user=$user_name"]
 	if {$ret_code == 0} {
-		delete_res $res_name_save
+		delete_res $res_name_test
 		delete_res $res_name
 		fail "Reservation did not fail but should have (Within: inc3.11.10)"
 	} else {
-		log_debug "Expected error. You can turn that frown upside-down.(Within: inc3.11.10)"
+		log_info "Expected error. You can turn that frown upside-down.(Within: inc3.11.10)"
 	}
 
 
 	# Delete the reservation
-	set ret_code [delete_res $res_name_save]
+	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
-		fail "Unable to delete reservation ($res_name_save)"
+		fail "Unable to delete reservation ($res_name)"
 	}
 }

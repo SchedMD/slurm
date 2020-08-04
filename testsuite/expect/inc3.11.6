@@ -30,58 +30,57 @@
 ############################################################################
 
 proc inc3_11_6 {} {
-	global user_name exit_code res_name file_in bin_rm
+	global user_name exit_code file_in bin_rm
+
+	set res_name "resv3.11.6"
+	set res_name_test "resv3.11.6.0"
 
 	# TEST 6
 	# Test time reservation conflict
 	#
 	log_info "+++++ STARTING TEST 6 (Within: inc3.11.6) +++++"
 	# Make the reservation
-	set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=[available_nodes_hostnames ""] user=$user_name" 0]
+	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 Nodes=[available_nodes_hostnames ""] user=$user_name"]
 	if {$ret_code != 0} {
 		fail "Unable to create a valid reservation (Within: inc3.11.6)"
 	}
 
-	set res_name_save $res_name
-
 	# Test for time reservation conflict (front overlap)
-	set ret_code [create_res "StartTime=now+30minutes Duration=60 Nodes=[available_nodes_hostnames ""] user=$user_name" 1]
+	set ret_code [create_res $res_name_test "StartTime=now+30minutes Duration=60 Nodes=[available_nodes_hostnames ""] user=$user_name"]
 	if {$ret_code == 0} {
-		delete_res $res_name_save
+		delete_res $res_name_test
 		delete_res $res_name
 		fail "Reservation $test did not fail but should have (Within: inc3.11.6)"
 	} else {
-		log_debug "Expected error. You can turn that frown upside-down.(Within: inc3.11.6)"
+		log_info "Expected error. You can turn that frown upside-down.(Within: inc3.11.6)"
 	}
 
 	# Delete the reservation
-	set ret_code [delete_res $res_name_save]
+	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
-		fail "Unable to delete reservation ($res_name_save)"
+		fail "Unable to delete reservation ($res_name)"
 	}
 
 
 	# Make the reservation
-	set ret_code [create_res "StartTime=now+30minutes Duration=60 Nodes=[available_nodes_hostnames ""] user=$user_name" 0]
+	set ret_code [create_res $res_name "StartTime=now+30minutes Duration=60 Nodes=[available_nodes_hostnames ""] user=$user_name"]
 	if {$ret_code != 0} {
 		fail "Unable to create a valid reservation. (Within: inc3.11.6)"
 	}
 
-	set res_name_save $res_name
-
 	# Test for time reservation conflict (trail overlap)
-	set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=[available_nodes_hostnames ""] user=$user_name" 1]
+	set ret_code [create_res $res_name_test "StartTime=now+60minutes Duration=60 Nodes=[available_nodes_hostnames ""] user=$user_name"]
 	if {$ret_code == 0} {
-		delete_res $res_name_save
+		delete_res $res_name_test
 		delete_res $res_name
 		fail "Reservation $test did not fail but should have. (Within: inc3.11.6)"
 	} else {
-		log_debug "Expected error. You can turn that frown upside-down.(Within: inc3.11.6)"
+		log_info "Expected error. You can turn that frown upside-down.(Within: inc3.11.6)"
 	}
 	# Delete the reservation
-	set ret_code [delete_res $res_name_save]
+	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
-		fail "Unable to delete reservation ($res_name_save)"
+		fail "Unable to delete reservation ($res_name)"
 	}
 
 	#

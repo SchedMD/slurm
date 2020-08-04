@@ -32,8 +32,10 @@
 ############################################################################
 
 proc inc3_11_4 {} {
-	global user_name exit_code res_name
+	global user_name exit_code
 	global sbatch file_in number
+
+	set res_name "resv3.11.4"
 
 	# TEST 4
 	# If not running as root, make a reservation restricted to root, submit a job,
@@ -46,7 +48,7 @@ proc inc3_11_4 {} {
 	}
 
 	# Make the reservation
-	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=root" 0]
+	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 NodeCnt=1 User=root"]
 	if {$ret_code != 0} {
 		fail "Unable to create a reservation (Within: inc3.11.4)"
 	}

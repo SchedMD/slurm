@@ -32,10 +32,12 @@
 ############################################################################
 
 proc inc3_11_8 {} {
-	global user_name exit_code res_name
+	global user_name exit_code
 	global bin_rm file_in bin_sleep sbatch number scontrol
 	global re_word_str scancel
 	global cluster_cpus def_partition
+
+	set res_name "resv3.11.8"
 
 	log_info "+++++ STARTING TEST 8 (Within: inc3.11.8) +++++"
 
@@ -44,7 +46,7 @@ proc inc3_11_8 {} {
 	make_bash_script $file_in "$bin_sleep 100"
 
 	# Make a reservation, just to get node size information
-	set ret_code [create_res "StartTime=now Duration=1 NodeCnt=1 User=$user_name" 0]
+	set ret_code [create_res $res_name "StartTime=now Duration=1 NodeCnt=1 User=$user_name"]
 	if {$ret_code != 0} {
 		fail "Unable to create a valid reservation (Within: inc3.11.8)"
 	}
@@ -131,7 +133,7 @@ proc inc3_11_8 {} {
 	log_debug "Job is running as expected"
 
 	# Make the reservation using free cores in a node
-	set ret_code [create_res "StartTime=now Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name" 0]
+	set ret_code [create_res $res_name "StartTime=now Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name"]
 	if {$ret_code != 0} {
 		cancel_job $job_id
 		fail "Unable to create a valid reservation (Within: inc3.11.8)"
@@ -147,7 +149,7 @@ proc inc3_11_8 {} {
 
 	set core_res_num  [expr $core_res_num + 1]
 	# Make the reservation using more cores then free in a node
-	set ret_code [create_res "StartTime=now Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name" 1]
+	set ret_code [create_res $res_name "StartTime=now Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name"]
 	if {$ret_code != 0} {
 		log_info "Reservation can not be created as expected (Within: inc3.11.8)"
 	} else {
@@ -160,7 +162,7 @@ proc inc3_11_8 {} {
 
 	# Make the reservation using more cores than free in a node (now)
 	# but those cores being free at reservation start time
-	set ret_code [create_res "StartTime=now+3600 Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name" 0]
+	set ret_code [create_res $res_name "StartTime=now+3600 Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name"]
 	if {$ret_code != 0} {
 		log_error "Reservation can not be created when it should (Within: inc3.11.8)"
 		set exit_code 1
@@ -171,7 +173,7 @@ proc inc3_11_8 {} {
 	}
 
 	# Make the reservation using more cores than free at reservation start time
-	set ret_code [create_res "StartTime=now+300 Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name" 1]
+	set ret_code [create_res $res_name "StartTime=now+300 Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name"]
 	if {$ret_code != 0} {
 		log_info "Reservation can not be created as expected (Within 3.11.8)"
 	} else {
