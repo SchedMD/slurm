@@ -2086,7 +2086,6 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	    !test_only && !will_run && IS_NODE_COMPLETING(node_ptr)) {
 		/* Do not allocate more jobs to nodes with completing jobs,
 		 * backfill scheduler independently handles completing nodes */
-		cpus = 0;
 		return NULL;
 	}
 
