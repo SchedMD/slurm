@@ -220,7 +220,7 @@ Instruct all Slurm daemons to re\-read the configuration file.
 This command does not restart the daemons.
 This mechanism would be used to modify configuration parameters (Epilog,
 Prolog, SlurmctldLogFile, SlurmdLogFile, etc.).
-The Slurm controller (slurmctld) forwards the request all other daemons
+The Slurm controller (slurmctld) forwards the request to all other daemons
 (slurmd daemon on each compute node). Running jobs continue execution.
 Most configuration parameters can be changed by just running this command,
 however, Slurm daemons should be shutdown and restarted if any of these
