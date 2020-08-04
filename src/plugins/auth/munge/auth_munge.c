@@ -327,9 +327,10 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred)
 	} else {
 		slurm_addr_t addr = { .sin_addr.s_addr = cred->addr.s_addr };
 		uint16_t port;
-		error("%s: Lookup failed: %s", __func__, host_strerror(h_err));
 		hostname = xmalloc(16);
 		slurm_get_ip_str(&addr, &port, hostname, 16);
+		error("%s: Lookup failed for %s: %s",
+		      __func__, hostname, host_strerror(h_err));
 	}
 
 	return hostname;

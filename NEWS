@@ -83,6 +83,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix cons_common/job_test start time discovery logic to prevent skewed
     results between "will run test" executions.
  -- Ensure TRESRunMins limits are maintained during "scontrol reconfigure".
+ -- Improve error message when host lookup fails.
 
 * Changes in Slurm 20.02.3
 ==========================
