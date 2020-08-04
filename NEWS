@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix leak of TRESRunMins when job time is changed with --time-min
  -- pam_slurm - explicitly initialize slurm config to support configless mode.
+ -- scontrol - Fix exit code when creating/updating reservations with wrong
+    Flags.
 
 * Changes in Slurm 20.02.4
 ==========================

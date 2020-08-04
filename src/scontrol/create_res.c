@@ -153,8 +153,10 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			} else {
 				f = parse_resv_flags(val, msg, resv_msg_ptr);
 			}
-			if (f == INFINITE64)
+			if (f == INFINITE64) {
+				exit_code = 1;
 				return SLURM_ERROR;
+			}
 		} else if (!xstrncasecmp(tag, "Users", MAX(taglen, 1))) {
 			if (resv_msg_ptr->users) {
 				exit_code = 1;
@@ -330,17 +332,17 @@ extern int
 scontrol_update_res(int argc, char **argv)
 {
 	resv_desc_msg_t resv_msg;
-	int err, ret = 0;
+	int ret = 0;
 	int free_user_str = 0, free_acct_str = 0, free_tres_license = 0,
 		free_tres_bb = 0, free_tres_corecnt = 0, free_tres_nodecnt = 0;
 
 	slurm_init_resv_desc_msg (&resv_msg);
-	err = scontrol_parse_res_options(argc, argv, "No reservation update.",
+	ret = scontrol_parse_res_options(argc, argv, "No reservation update.",
 					 &resv_msg, &free_user_str,
 					 &free_acct_str, &free_tres_license,
 					 &free_tres_bb, &free_tres_corecnt,
 					 &free_tres_nodecnt);
-	if (err)
+	if (ret)
 		goto SCONTROL_UPDATE_RES_CLEANUP;
 
 	if (resv_msg.name == NULL) {
@@ -349,8 +351,8 @@ scontrol_update_res(int argc, char **argv)
 		goto SCONTROL_UPDATE_RES_CLEANUP;
 	}
 
-	err = slurm_update_reservation(&resv_msg);
-	if (err) {
+	ret = slurm_update_reservation(&resv_msg);
+	if (ret) {
 		exit_code = 1;
 		slurm_perror("Error updating the reservation");
 		ret = slurm_get_errno();
@@ -389,16 +391,16 @@ scontrol_create_res(int argc, char **argv)
 	char *new_res_name = NULL;
 	int free_user_str = 0, free_acct_str = 0, free_tres_license = 0,
 		free_tres_bb = 0, free_tres_corecnt = 0, free_tres_nodecnt = 0;
-	int err, ret = 0;
+	int ret = 0;
 
 	slurm_init_resv_desc_msg (&resv_msg);
-	err = scontrol_parse_res_options(argc, argv, "No reservation created.",
+	ret = scontrol_parse_res_options(argc, argv, "No reservation created.",
 					 &resv_msg, &free_user_str,
 					 &free_acct_str, &free_tres_license,
 					 &free_tres_bb, &free_tres_corecnt,
 					 &free_tres_nodecnt);
 
-	if (err)
+	if (ret)
 		goto SCONTROL_CREATE_RES_CLEANUP;
 
 	if (resv_msg.start_time == (time_t)NO_VAL) {
