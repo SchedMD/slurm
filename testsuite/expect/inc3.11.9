@@ -222,7 +222,9 @@ proc inc3_11_9 {} {
 
 	if {$core_res_num < 2} {
 		log_warn "Not enough cores for remaining tests (Within: inc3.11.9)"
-		set exit_code [delete_res $res_name]
+		if {[delete_res $res_name]} {
+			set exit_code 1
+		}
 		return
 	}
 
