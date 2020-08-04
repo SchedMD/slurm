@@ -8192,6 +8192,13 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			req_cores = MAX(req_cores, i);
 		}
 
+		if (req_cores > avail_cores_tot) {
+			log_flag(GRES, "%s: Job cannot run on node req_cores:%d > aval_cores_tot:%d",
+				 __func__, req_cores, avail_cores_tot);
+			*max_tasks_this_node = 0;
+			break;
+		}
+
 		/*
 		 * Clear extra avail_core bits on sockets we don't need
 		 * up to required number of cores based on max_tasks_this_node.
