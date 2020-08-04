@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix preemption of hetjobs when needed nodes not in leader component.
  -- Fix wrong bit_or() messing potential preemptor jobs node bitmap, causing
     bad node deallocations and even allocation of nodes from other partitions.
+ -- Fix double-deallocation of preempted non-leader hetjob components.
 
 * Changes in Slurm 20.02.4
 ==========================
