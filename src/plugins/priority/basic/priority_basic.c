@@ -174,6 +174,8 @@ extern void priority_p_job_end(job_record_t *job_ptr)
 	/* No decaying in basic priority. Just remove the total secs. */
 	unused_tres_run_secs = xmalloc(sizeof(uint64_t) * slurmctld_tres_cnt);
 	for (i=0; i<slurmctld_tres_cnt; i++) {
+		if (job_ptr->tres_alloc_cnt[i] == NO_CONSUME_VAL64)
+			continue;
 		unused_tres_run_secs[i] =
 			job_ptr->tres_alloc_cnt[i] * time_limit_secs;
 	}

@@ -3088,12 +3088,6 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	 * representing the amount of each GRES type requested and allocated.
 	 */
 	_fill_in_gres_fields(job_ptr);
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
-		char *tmp = _build_tres_str(job_ptr);
-		info("%s: %pJ gres:%s gres_alloc:%s",
-		     __func__, job_ptr, tmp, job_ptr->gres_alloc);
-		xfree(tmp);
-	}
 
 	/*
 	 * If ran with slurmdbd this is handled out of band in the
@@ -3393,8 +3387,7 @@ static int _fill_in_gres_fields(job_record_t *job_ptr)
 		if (job_ptr->gres_req == NULL)
 			xstrcat(job_ptr->gres_req, "");
 	} else if ((job_ptr->node_cnt > 0) && !job_ptr->gres_req) {
-		job_ptr->gres_req =
-			gres_plugin_job_alloc_count(job_ptr->gres_list);
+		job_ptr->gres_req = _build_tres_str(job_ptr);
 	}
 
 	if (!job_ptr->gres_alloc || (job_ptr->gres_alloc[0] == '\0') ) {

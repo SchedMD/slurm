@@ -479,6 +479,9 @@ Count of allocated CPUs. Equivalent to \f3NCPUS\fP.
 \f3AllocGRES\fP
 Names and counts of generic resources allocated.
 
+NOTE: When a generic resource is configured with the no_consume flag,
+the allocation will be printed with a zero.
+
 .TP
 \f3AllocNodes\fP
 Number of nodes allocated to the job/step.  0 if the job is pending.
@@ -488,6 +491,9 @@ Number of nodes allocated to the job/step.  0 if the job is pending.
 Trackable resources. These are the resources allocated to the job/step
 after the job started running.  For pending jobs this should be blank.
 For more details see AccountingStorageTRES in slurm.conf.
+
+NOTE: When a generic resource is configured with the no_consume flag,
+the allocation will be printed with a zero.
 
 .TP
 \f3Account\fP

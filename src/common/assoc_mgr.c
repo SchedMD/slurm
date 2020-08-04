@@ -6469,6 +6469,10 @@ extern char *assoc_mgr_make_tres_str_from_array(
 
 		count = tres_cnt[i];
 
+		/* We want to print no_consume with a 0 */
+		if (count == NO_CONSUME_VAL64)
+			count = 0;
+
 		if (flags & TRES_STR_FLAG_SIMPLE) {
 			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
 				   tres_str ? "," : "",
@@ -6581,6 +6585,9 @@ extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
 		double tres_value  = tres_cnt[i];
 
 		if (i == TRES_ARRAY_BILLING)
+			continue;
+
+		if (tres_cnt[i] == NO_CONSUME_VAL64)
 			continue;
 
 		debug3("TRES Weight: %s = %f * %f = %f",
