@@ -8160,12 +8160,10 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					    mc_ptr->threads_per_core);
 			else
 				threads_per_core = cpus_per_core;
-			cores_per_task = (mc_ptr->cpus_per_task /
-					  threads_per_core);
-
 			/* round up by full threads per core */
-			if (mc_ptr->cpus_per_task % threads_per_core)
-				cores_per_task += threads_per_core;
+			cores_per_task = mc_ptr->cpus_per_task;
+			cores_per_task += threads_per_core - 1;
+			cores_per_task /= threads_per_core;
 
 			req_cores *= cores_per_task;
 
