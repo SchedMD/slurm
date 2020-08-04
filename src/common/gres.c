@@ -172,6 +172,13 @@ typedef struct gres_search_key {
 	uint32_t type_id;
 } gres_key_t;
 
+typedef struct {
+	slurm_gres_context_t *context_ptr;
+	int new_has_file;
+	int new_has_type;
+	int rec_count;
+} foreach_gres_conf_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -1309,8 +1316,8 @@ static void _validate_slurm_conf(List slurm_conf_list,
 static int _foreach_gres_conf(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = (gres_slurmd_conf_t *)x;
-	slurm_gres_context_t *context_ptr = (slurm_gres_context_t *)arg;
-	int new_has_file = -1, new_has_type = -1;
+	foreach_gres_conf_t *foreach_gres_conf = (foreach_gres_conf_t *)arg;
+	slurm_gres_context_t *context_ptr = foreach_gres_conf->context_ptr;
 	bool orig_has_file, orig_has_type;
 
 	/* Only look at the GRES under the current plugin (same name) */
@@ -1338,41 +1345,40 @@ static int _foreach_gres_conf(void *x, void *arg)
 			context_ptr->config_flags |= GRES_CONF_LOADED;
 	}
 
+	foreach_gres_conf->rec_count++;
 	orig_has_file = gres_slurmd_conf->config_flags & GRES_CONF_HAS_FILE;
-	if (new_has_file == -1) {
+	if (foreach_gres_conf->new_has_file == -1) {
 		if (gres_slurmd_conf->config_flags & GRES_CONF_HAS_FILE)
-			new_has_file = 1;
+			foreach_gres_conf->new_has_file = 1;
 		else
-			new_has_file = 0;
-	} else if ((new_has_file && !orig_has_file) ||
-		   (!new_has_file && orig_has_file)) {
+			foreach_gres_conf->new_has_file = 0;
+	} else if ((foreach_gres_conf->new_has_file && !orig_has_file) ||
+		   (!foreach_gres_conf->new_has_file && orig_has_file)) {
 		fatal("gres.conf for %s, some records have \"File\" specification while others do not",
 		      context_ptr->gres_name);
 	}
 	orig_has_type = gres_slurmd_conf->config_flags &
 		GRES_CONF_HAS_TYPE;
-	if (new_has_type == -1) {
+	if (foreach_gres_conf->new_has_type == -1) {
 		if (gres_slurmd_conf->config_flags &
 		    GRES_CONF_HAS_TYPE) {
-			new_has_type = 1;
+			foreach_gres_conf->new_has_type = 1;
 		} else
-			new_has_type = 0;
-	} else if ((new_has_type && !orig_has_type) ||
-		   (!new_has_type && orig_has_type)) {
+			foreach_gres_conf->new_has_type = 0;
+	} else if ((foreach_gres_conf->new_has_type && !orig_has_type) ||
+		   (!foreach_gres_conf->new_has_type && orig_has_type)) {
 		fatal("gres.conf for %s, some records have \"Type=\" specification while others do not",
 		      context_ptr->gres_name);
 	}
 
-	if (!new_has_file &&
-	    !new_has_type &&
-	    (context_ptr->config_flags & GRES_CONF_SEEN)) {
+	if (!foreach_gres_conf->new_has_file &&
+	    !foreach_gres_conf->new_has_type &&
+	    (foreach_gres_conf->rec_count > 1)) {
 		fatal("gres.conf duplicate records for %s",
 		      context_ptr->gres_name);
 	}
 
-	context_ptr->config_flags |= GRES_CONF_SEEN;
-
-	if (new_has_file)
+	if (foreach_gres_conf->new_has_file)
 		context_ptr->config_flags |= GRES_CONF_HAS_FILE;
 
 	return 0;
@@ -1381,13 +1387,15 @@ static int _foreach_gres_conf(void *x, void *arg)
 static void _validate_gres_conf(List gres_conf_list,
 				slurm_gres_context_t *context_ptr)
 {
-	/*
-	 * Reset the GRES_CONF_SEEN here to tell if gres_conf_list has
-	 * duplicates
-	 */
-	context_ptr->config_flags &= ~GRES_CONF_SEEN;
+	foreach_gres_conf_t gres_conf = {
+		.context_ptr = context_ptr,
+		.new_has_file = -1,
+		.new_has_type = -1,
+		.rec_count = 0,
+	};
+
 	(void)list_for_each_nobreak(gres_conf_list, _foreach_gres_conf,
-				    context_ptr);
+				    &gres_conf);
 
 	if (!(context_ptr->config_flags & GRES_CONF_LOADED)) {
 		/*
