@@ -61,6 +61,9 @@ documents those changes that are of interest to users and administrators.
     reservation.
  -- Add ability for reservations to be accessed by Linux Groups.
 
+* Changes in Slurm 20.02.5
+==========================
+
 * Changes in Slurm 20.02.4
 ==========================
  -- srun - suppress job step creation warning message when waiting on
