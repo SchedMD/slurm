@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 20.02.5
+==========================
+
 * Changes in Slurm 20.02.4
 ==========================
  -- srun - suppress job step creation warning message when waiting on
