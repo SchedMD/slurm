@@ -33,7 +33,7 @@ set prolog_out      "test$test_id\_prolog.out"
 set epilog_out      "test$test_id\_epilog.out"
 set test_node       [get_idle_node_in_part]
 set job_id          0
-set skipped         0
+set skipped         ""
 
 proc cleanup { } {
 	global config_dir exit_code bin_rm
@@ -66,9 +66,6 @@ proc check_epilog { pattern } {
 		set exit_code 1
 	}
 }
-
-set mps_cnt [get_highest_mps_count  1]
-set gpu_cnt [get_highest_gres_count 1 "gpu"]
 
 # Get the location of the slurm.conf file
 set config_dir [get_conf_path]
@@ -141,7 +138,10 @@ check_epilog "SLURM_JOB_USER="
 check_prolog "SLURM_SCRIPT_CONTEXT=prolog_slurmd"
 check_epilog "SLURM_SCRIPT_CONTEXT=epilog_slurmd"
 
-if {$gpu_cnt > 0} {
+set test_node [get_nodes_by_request "--gres=gpu:1 -t1"]
+if {[llength $test_node] != 1} {
+	lappend skipped "This test requires being able to submit job with --gres=gpu:1"
+} else {
 	log_info "Checking for GPU-related env vars"
 	spawn $sbatch -t1 -N1 -w$test_node -o/dev/null --wrap="hostname" --gres=gpu:1
 	expect {
@@ -170,7 +170,10 @@ if {$gpu_cnt > 0} {
 	# check_epilog "ROCR_VISIBLE_DEVICES="
 }
 
-if {$mps_cnt > 0} {
+set test_node [get_nodes_by_request "--gres=mps:1 -t1"]
+if {[llength $test_node] != 1} {
+	lappend skipped "This test requires being able to submit job with --gres=mps:1"
+} else {
 	log_info "Checking for MPS-related env vars"
 	spawn $sbatch -t1 -N1 -w$test_node -o/dev/null --wrap="hostname" --gres=mps:1
 	expect {
@@ -195,11 +198,7 @@ if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
-if {$gpu_cnt < 1} {
-	skip "GPUs not found. Skip checking GPU-related env vars"
-}
-
-if {$mps_cnt < 1} {
-	skip "MPS not found. Skip checking MPS-related env vars"
+if {[llength $skipped]} {
+	skip [join $skipped "\n"]
 }
 
