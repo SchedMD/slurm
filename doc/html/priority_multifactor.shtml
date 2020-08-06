@@ -144,7 +144,7 @@ close to 0.0.</p>
 <h2>Nice Factor</h2></a>
 <P> Users can adjust the priority of their own jobs by setting the nice value
 on their jobs. Like the system nice, positive values negatively impact a job's
-priority and positive values increase a job's priority. Only privileged users
+priority and negative values increase a job's priority. Only privileged users
 can specify a negative value. The adjustment range is +/-2147483645.
 </P>
 
@@ -252,7 +252,7 @@ documentation for further details.
 <p>
 As of the 19.05 release, the "classic" fairshare algorithm is no longer the
 default, and will only be used if <i>PriorityFlags=NO_FAIR_TREE</i> is
-explicitly configured. Docmentation describing that algorithm has been moved
+explicitly configured. Documentation describing that algorithm has been moved
 to a separate <a href="classic_fair_share.html">Classic Fairshare</a>
 documentation page.
 </p>
@@ -352,7 +352,7 @@ PriorityType=priority/multifactor.
 	calculated as the MAX of individual TRES' on a node (e.g. cpus, mem,
 	gres) plus the sum of all global TRES' (e.g. licenses).</li>
 <li>NO_NORMAL_ALL: If set, all NO_NORMAL_* flags are set.</li>
-<li>NO_NORMAL_ASSOC: If set, the associaton factor is not normalized against
+<li>NO_NORMAL_ASSOC: If set, the association factor is not normalized against
 	the highest association priority.</li>
 <li>NO_NORMAL_PART: If set, the partition factor is not normalized against the
 	highest partition PriorityTier</li>
