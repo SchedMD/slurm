@@ -6466,10 +6466,6 @@ proc _set_gpu_socket_inx { sock_inx } {
 proc _set_gpu_socket_range { sock_first_inx sock_last_inx } {
 	global gpu_sock_list
 
-	if {$sock_inx == -1} {
-		set gpu_sock_list [lreplace $gpu_sock_list 0 99]
-	}
-
 	set sock_cnt [llength $gpu_sock_list]
 	for {set s $sock_first_inx} {$s <= $sock_last_inx} {incr s} {
 		set found 0
