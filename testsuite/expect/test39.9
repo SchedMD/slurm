@@ -54,7 +54,7 @@ if {![test_cons_tres]} {
 
 set gpu_cnt [get_highest_gres_count 1 "gpu"]
 if {$gpu_cnt < 1} {
-	skip "This test requires 1 or more GPU in the default partition"
+	skip "This test requires 1 or more GPU on 1 node of the default partition"
 }
 log_debug "GPU count is $gpu_cnt"
 

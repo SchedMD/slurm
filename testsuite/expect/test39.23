@@ -41,19 +41,17 @@ if {[test_front_end]} {
 }
 
 set nb_nodes [get_node_cnt_in_part]
-set gpu_cnt [get_highest_gres_count $nb_nodes "gpu"]
-if {$gpu_cnt < 0} {
-	fail "Error getting GPU count"
-}
-if {$gpu_cnt < 1} {
-	skip "This test requires 1 or more GPUs in the default partition"
-}
-log_debug "GPU count is $gpu_cnt"
 log_debug "Default partition node count $nb_nodes"
-
 if {$nb_nodes > 3} {
 	set nb_nodes 3
 }
+log_debug "Using node count $nb_nodes"
+
+set gpu_cnt [get_highest_gres_count $nb_nodes "gpu"]
+if {$gpu_cnt < 1} {
+	skip "This test requires 1 or more GPUs on $nb_nodes nodes of the default partition"
+}
+log_debug "GPU count is $gpu_cnt"
 
 #
 # Build input script files

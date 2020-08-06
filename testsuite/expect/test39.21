@@ -33,11 +33,8 @@ set file_prog   "test$test_id.prog"
 set job_id      0
 
 set gpu_cnt [get_highest_gres_count 1 "gpu"]
-if {$gpu_cnt < 0} {
-	fail "Error getting GPU count"
-}
 if {$gpu_cnt < 1} {
-	skip "This test requires 1 or more GPUs per node in the default partition"
+	skip "This test requires 1 or more GPUs on 1 node of the default partition"
 }
 log_debug "GPUs per node count is $gpu_cnt"
 
