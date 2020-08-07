@@ -5127,7 +5127,7 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 	unlock_slurmctld (config_write_lock);
 
 	if (debug_level != slurm_conf.slurmctld_debug)
-		info("Set debug level to %d", debug_level);
+		info("Set debug level to '%s'", log_num2string(debug_level));
 
 	slurm_conf.slurmctld_debug = debug_level;
 	slurm_conf.last_update = time(NULL);

@@ -2596,7 +2596,8 @@ _slurmd_job_log_init(stepd_step_rec_t *job)
 		}
 	}
 
-	verbose("debug level = %d", conf->log_opts.stderr_level);
+	verbose("debug level is '%s'",
+		log_num2string(conf->log_opts.stderr_level));
 	return SLURM_SUCCESS;
 }
 
