@@ -300,6 +300,8 @@ _slurm_match_allocation(uid_t uid)
 	char *nodename = NULL;
 	job_info_msg_t * msg;
 
+	slurm_conf_init(NULL);
+
 	if (_gethostname_short(hostname, sizeof(hostname)) < 0) {
 		_log_msg(LOG_ERR, "gethostname: %m");
 		return 0;

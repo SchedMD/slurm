@@ -64,6 +64,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 20.02.5
 ==========================
  -- Fix leak of TRESRunMins when job time is changed with --time-min
+ -- pam_slurm - explicitly initialize slurm config to support configless mode.
 
 * Changes in Slurm 20.02.4
 ==========================
