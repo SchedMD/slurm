@@ -31,6 +31,11 @@ set skipped     ""
 set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
 
+proc cleanup {} {
+	global bin_rm file_in
+	exec $bin_rm -f $file_in
+}
+
 if {[test_cons_tres]} {
 	log_debug "Valid configuration, using select/cons_tres"
 } else {
@@ -337,11 +342,7 @@ if {$match_gpu != $expected_gpus} {
 	fail "srun --gpus-per-task failure ($match_gpu != $expected_gpus)"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
 if {[llength $skipped] != 0} {
 	skip "Some tests skipped:\n[join $skipped \n]"
 }
