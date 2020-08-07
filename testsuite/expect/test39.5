@@ -27,6 +27,7 @@
 source ./globals
 
 set exit_code      0
+set skipped        ""
 set file_in1       "test$test_id.input1"
 set file_in2       "test$test_id.input2"
 set number_commas  "\[0-9_,\]+"
@@ -199,26 +200,35 @@ if {$match != $expected_gpus} {
 log_info "TEST: --gpus-per-socket option"
 set sockets_with_gpus [get_gpu_socket_count $gpu_cnt $sockets_per_node]
 set match 0
-set srun_pid [spawn $srun --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --ntasks-per-socket=1 --exclusive --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in1]
-expect {
-	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
-		incr match [cuda_count $expect_out(1,string)]
-		exp_continue
+set node_list [get_nodes_by_request "--gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --nodes=$nb_nodes"]
+if { [llength $node_list] != $nb_nodes } {
+	lappend skipped "This test need to be able to submit jobs with at least --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --nodes=$node_list"
+} else {
+	set srun_pid [spawn $srun --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --ntasks-per-socket=1 --exclusive --nodelist=[join $node_list ","] -t1 -J "test$test_id" -l ./$file_in1]
+	expect {
+		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+			incr match [cuda_count $expect_out(1,string)]
+			exp_continue
+		}
+		timeout {
+			log_error "srun not responding"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
-	timeout {
-		log_error "srun not responding"
-		slow_kill $srun_pid
+
+	set gpus_per_node [get_gres_count "gpu" [join $node_list ","]]
+	set expected_gpus 0
+	dict for {node gpus} $gpus_per_node {
+		incr expected_gpus $gpus
+	}
+	if {$match < $expected_gpus} {
+		log_error "srun --gpus-per-task failure ($match < $expected_gpus)"
 		set exit_code 1
 	}
-	eof {
-		wait
-	}
-}
-
-set expected_gpus [expr $sockets_with_gpus * $nb_nodes]
-if {$match < $expected_gpus} {
-	log_error "srun --gpus-per-task failure ($match < $expected_gpus)"
-	set exit_code 1
 }
 
 #
@@ -334,3 +344,7 @@ if {$exit_code == 0} {
 } else {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
+if {[llength $skipped] != 0} {
+	skip "Some tests skipped:\n[join $skipped \n]"
+}
+
