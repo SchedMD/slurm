@@ -983,12 +983,6 @@ extern int select_p_job_init(List job_list)
 	return SLURM_SUCCESS;
 }
 
-/* This plugin does not generate a node ranking. */
-extern bool select_p_node_ranking(node_record_t *node_ptr, int node_cnt)
-{
-	return false;
-}
-
 /* This is Part 1 of a 4-part procedure which can be found in
  * src/slurmctld/read_config.c. The whole story goes like this:
  *

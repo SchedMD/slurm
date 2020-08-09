@@ -1204,14 +1204,6 @@ extern int select_p_job_init(List job_list)
 	return other_job_init(job_list);
 }
 
-/*
- * select_p_node_ranking - generate node ranking for Cray nodes
- */
-extern bool select_p_node_ranking(node_record_t *node_ptr, int node_cnt)
-{
-	return false;
-}
-
 extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 {
 	select_nodeinfo_t *nodeinfo = NULL;

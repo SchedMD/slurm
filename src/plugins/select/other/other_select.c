@@ -65,7 +65,6 @@ const char *node_select_syms[] = {
 	"select_p_state_save",
 	"select_p_state_restore",
 	"select_p_job_init",
-	"select_p_node_ranking",
 	"select_p_node_init",
 	"select_p_job_test",
 	"select_p_job_begin",

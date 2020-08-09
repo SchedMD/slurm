@@ -3500,11 +3500,6 @@ extern int select_p_job_init(List job_list_arg)
 	return SLURM_SUCCESS;
 }
 
-extern bool select_p_node_ranking(node_record_t *node_ptr, int node_cnt)
-{
-	return false;
-}
-
 extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 {
 	if (node_ptr == NULL) {

@@ -441,8 +441,6 @@ extern int fini(void)
 
 /* select_p_job_init() in cons_common */
 
-/* select_p_node_ranking() in cons_common */
-
 /* select_p_node_init() in cons_common */
 
 /*

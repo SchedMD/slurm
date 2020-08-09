@@ -245,8 +245,7 @@ static void _reorder_nodes_by_name(void)
 
 /*
  * _reorder_nodes_by_rank - order node table in ascending order of node_rank
- * This depends on the TopologyPlugin and/or SelectPlugin, which may generate
- * such a ranking.
+ * This depends on the TopologyPlugin, which may generate such a ranking.
  */
 static void _reorder_nodes_by_rank(void)
 {
@@ -1098,7 +1097,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	int error_code, i, rc = 0, load_job_ret = SLURM_SUCCESS;
 	int old_node_record_count = 0;
 	node_record_t *old_node_table_ptr = NULL, *node_ptr;
-	bool do_reorder_nodes = false;
 	List old_part_list = NULL;
 	char *old_def_part_name = NULL;
 	char *old_auth_type = xstrdup(slurm_conf.authtype);
@@ -1241,14 +1239,11 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 
 	/*
-	 * Node reordering needs to be done by the topology and/or select
-	 * plugin. Reordering the table must be done before hashing the
+	 * Node reordering may be done by the topology plugin.
+	 * Reordering the table must be done before hashing the
 	 * nodes, and before any position-relative bitmaps are created.
 	 */
-	do_reorder_nodes |= slurm_topo_generate_node_ranking();
-	do_reorder_nodes |= select_g_node_ranking(node_record_table_ptr,
-						  node_record_count);
-	if (do_reorder_nodes)
+	if (slurm_topo_generate_node_ranking())
 		_reorder_nodes_by_rank();
 	else
 		_reorder_nodes_by_name();

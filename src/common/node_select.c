@@ -68,7 +68,6 @@ const char *node_select_syms[] = {
 	"select_p_state_save",
 	"select_p_state_restore",
 	"select_p_job_init",
-	"select_p_node_ranking",
 	"select_p_node_init",
 	"select_p_job_test",
 	"select_p_job_begin",
@@ -453,21 +452,6 @@ extern int select_g_job_init(List job_list)
 
 	return (*(ops[select_context_default].job_init))
 		(job_list);
-}
-
-/*
- * Assign a 'node_rank' value to each of the node_ptr entries.
- * IN node_ptr - current node data
- * IN node_count - number of node entries
- * Return true if node ranking was performed, false if not.
- */
-extern bool select_g_node_ranking(node_record_t *node_ptr, int node_cnt)
-{
-	if (slurm_select_init(0) < 0)
-		return SLURM_ERROR;
-
-	return (*(ops[select_context_default].node_ranking))
-		(node_ptr, node_cnt);
 }
 
 /*
