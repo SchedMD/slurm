@@ -172,9 +172,9 @@ extern void launch_prolog(job_record_t *job_ptr);
  *	active, otherwise use available features
  * IN/OUT node_bitmap - nodes available for use, clear if unusable
  * OUT has_xor - set if XOR/XAND found in feature expression
- * RET true if valid, false otherwise
+ * RET SLURM_SUCCESS or error
  */
-extern bool valid_feature_counts(job_record_t *job_ptr, bool use_active,
-				 bitstr_t *node_bitmap, bool *has_xor);
+extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
+				bitstr_t *node_bitmap, bool *has_xor);
 
 #endif /* !_HAVE_NODE_SCHEDULER_H */
