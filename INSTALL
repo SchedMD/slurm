@@ -132,9 +132,9 @@ Optional Features
    Some packages pay attention to `--enable-FEATURE' options to
 `configure', where FEATURE indicates an optional part of the package.
 They may also pay attention to `--with-PACKAGE' options, where PACKAGE
-is something like `gnu-as' or `x' (for the X Window System).  The
-`README' should mention any `--enable-' and `--with-' options that the
-package recognizes.
+is something like `gnu-ld' or `x11' (for the X Window System).  Information
+on any `--enable-' or `--with-` options that are supported can be found
+with `configure --help'.
 
    For packages that use the X Window System, `configure' can usually
 find the X include and library files automatically, but if it doesn't,
