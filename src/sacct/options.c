@@ -390,7 +390,7 @@ sacct [<OPTION>]                                                            \n \
                              consumedenergy,maxdiskread,maxdiskreadnode,    \n\
                              maxdiskreadtask,avediskread,maxdiskwrite,      \n\
                              maxdiskwritenode,maxdiskwritetask,avediskwrite,\n\
-                             allocgres,reqgres,reqtres,alloctres,           \n\
+                             reqtres,alloctres,                             \n\
                              tresusageinave,tresusageinmax,tresusageinmaxn, \n\
                              tresusageinmaxt,tresusageinmin,tresusageinminn,\n\
                              tresusageinmint,tresusageintot,tresusageoutmax,\n\
@@ -1362,6 +1362,13 @@ extern void parse_command_line(int argc, char **argv)
 		for (i = 0; fields[i].name; i++) {
 			if (!xstrncasecmp(fields[i].name, start, command_len))
 				goto foundfield;
+		}
+
+		if (!xstrcasecmp("AllocGRES", start)) {
+			fatal("AllocGRES is deprecated, please use AllocTRES");
+		}
+		if (!xstrcasecmp("ReqGRES", start)) {
+			fatal("ReqGRES is deprecated, please use ReqTRES");
 		}
 		error("Invalid field requested: \"%s\"", start);
 		exit(1);
