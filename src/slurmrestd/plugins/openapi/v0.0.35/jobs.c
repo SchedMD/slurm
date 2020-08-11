@@ -611,11 +611,12 @@ cleanup:
 	slurm_option_table_destroy(spanked);
 	xfree(opt_string);
 
-	if (!rc)
-		return req;
+	if (rc) {
+		slurm_free_job_desc_msg(req);
+		return NULL;
+	}
 
-	slurm_free_job_desc_msg(req);
-	return NULL;
+	return req;
 }
 
 typedef struct {
