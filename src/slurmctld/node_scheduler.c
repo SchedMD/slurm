@@ -3337,33 +3337,34 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 
 		last_op = job_feat_ptr->op_code;
 		last_paren_cnt = job_feat_ptr->paren;
-#if _DEBUG
-{
-		char *tmp_f, *tmp_w, *tmp_t;
-		tmp_f = bitmap2node_name(feature_bitmap);
-		tmp_w = bitmap2node_name(work_bitmap);
-		tmp_t = bitmap2node_name(tmp_bitmap);
-		info("%s: feature:%s feature_bitmap:%s work_bitmap:%s tmp_bitmap:%s", __func__, job_feat_ptr->name, tmp_f, tmp_w, tmp_t);
-		xfree(tmp_f);
-		xfree(tmp_w);
-		xfree(tmp_t);
-}
-#endif
 
+		if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
+			char *tmp_f, *tmp_w, *tmp_t;
+			tmp_f = bitmap2node_name(feature_bitmap);
+			tmp_w = bitmap2node_name(work_bitmap);
+			tmp_t = bitmap2node_name(tmp_bitmap);
+			log_flag(NODE_FEATURES, "%s: feature:%s feature_bitmap:%s work_bitmap:%s tmp_bitmap:%s count:%u",
+				 __func__, job_feat_ptr->name, tmp_f, tmp_w,
+				 tmp_t, job_feat_ptr->count);
+			xfree(tmp_f);
+			xfree(tmp_w);
+			xfree(tmp_t);
+		}
 	}
 	list_iterator_destroy(job_feat_iter);
 	if (!have_count)
 		bit_and(node_bitmap, work_bitmap);
 	FREE_NULL_BITMAP(feature_bitmap);
 	FREE_NULL_BITMAP(paren_bitmap);
-#if _DEBUG
-{
-	char * tmp;
-	tmp = bitmap2node_name(node_bitmap);
-	info("%s: NODES:%s HAS_XOR:%d", __func__, tmp, *has_xor);
-	xfree(tmp);
-}
-#endif
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
+		char *tmp = bitmap2node_name(node_bitmap);
+		log_flag(NODE_FEATURES, "%s: NODES:%s HAS_XOR:%c status:%s",
+			 __func__, tmp, (*has_xor ? 'T' : 'F'),
+			 slurm_strerror(rc));
+		xfree(tmp);
+	}
+
 	return rc;
 }
 
