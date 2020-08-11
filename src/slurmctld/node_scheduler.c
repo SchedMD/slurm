@@ -629,6 +629,37 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	return;
 }
 
+static void _log_feature_nodes(job_feature_t  *job_feat_ptr)
+{
+	char *tmp1, *tmp2, *tmp3, *tmp4 = NULL;
+
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES))
+		return;
+
+	if (job_feat_ptr->op_code == FEATURE_OP_OR)
+		tmp3 = "OR";
+	else if (job_feat_ptr->op_code == FEATURE_OP_AND)
+		tmp3 = "AND";
+	else if (job_feat_ptr->op_code == FEATURE_OP_XOR)
+		tmp3 = "XOR";
+	else if (job_feat_ptr->op_code == FEATURE_OP_XAND)
+		tmp3 = "XAND";
+	else if (job_feat_ptr->op_code == FEATURE_OP_END)
+		tmp3 = "END";
+	else {
+		xstrfmtcat(tmp4, "UNKNOWN:%u", job_feat_ptr->op_code);
+		tmp3 = tmp4;
+	}
+	tmp1 = bitmap2node_name(job_feat_ptr->node_bitmap_active);
+	tmp2 = bitmap2node_name(job_feat_ptr->node_bitmap_avail);
+	log_flag(NODE_FEATURES, "%s: FEAT:%s COUNT:%u PAREN:%d OP:%s ACTIVE:%s AVAIL:%s",
+	     __func__, job_feat_ptr->name, job_feat_ptr->count,
+	     job_feat_ptr->paren, tmp3, tmp1, tmp2);
+	xfree(tmp1);
+	xfree(tmp2);
+	xfree(tmp4);
+}
+
 /*
  * For every element in the feature_list, identify the nodes with that feature
  * either active or available and set the feature_list's node_bitmap_active and
@@ -671,31 +702,8 @@ extern void find_feature_nodes(List feature_list, bool can_reboot)
 			job_feat_ptr->node_bitmap_avail =
 				bit_copy(job_feat_ptr->node_bitmap_active);
 		}
-#if _DEBUG
-{
-		char *tmp1, *tmp2, *tmp3, *tmp4 = NULL;
-		if (job_feat_ptr->op_code == FEATURE_OP_OR)
-			tmp3 = "OR";
-		else if (job_feat_ptr->op_code == FEATURE_OP_AND)
-			tmp3 = "AND";
-		else if (job_feat_ptr->op_code == FEATURE_OP_XOR)
-			tmp3 = "XOR";
-		else if (job_feat_ptr->op_code == FEATURE_OP_XAND)
-			tmp3 = "XAND";
-		else {
-			xstrfmtcat(tmp4, "OTHER:%u", job_feat_ptr->op_code);
-			tmp3 = tmp4;
-		}
-		tmp1 = bitmap2node_name(job_feat_ptr->node_bitmap_active);
-		tmp2 = bitmap2node_name(job_feat_ptr->node_bitmap_avail);
-		info("%s: FEAT:%s COUNT:%u PAREN:%d OP:%s ACTIVE:%s AVAIL:%s",
-		     __func__, job_feat_ptr->name, job_feat_ptr->count,
-		     job_feat_ptr->paren, tmp3, tmp1, tmp2);
-		xfree(tmp1);
-		xfree(tmp2);
-		xfree(tmp4);
-}
-#endif
+
+		_log_feature_nodes(job_feat_ptr);
 	}
 	list_iterator_destroy(feat_iter);
 }
