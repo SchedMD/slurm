@@ -118,7 +118,6 @@ static int  _build_node_list(job_record_t *job_ptr,
 			     struct node_set **node_set_pptr,
 			     int *node_set_size, char **err_msg,
 			     bool test_only, bool can_reboot);
-static int  _fill_in_gres_fields(job_record_t *job_ptr);
 static bitstr_t *_find_grp_node_bitmap(job_record_t *job_ptr);
 static bool _first_array_task(job_record_t *job_ptr);
 static void _log_node_set(job_record_t *job_ptr,
@@ -157,220 +156,6 @@ static uint16_t _get_ntasks_per_core(struct job_details *details)
 		return details->mc_ptr->ntasks_per_core;
 	else
 		return 0xffff;
-}
-
-/*
- * _get_gres_alloc - Fill in the gres_alloc string field for a given
- *      job_record with the count of actually alllocated gres on each node
- * IN job_ptr - the job record whose "gres_alloc" field is to be constructed
- * RET Error number.  Currently not used (always set to 0).
- */
-static int _get_gres_alloc(job_record_t *job_ptr)
-{
-	char                gres_name[64];
-	int                 i, rv;
-	int                 gres_type_count;
-	uint32_t            *gres_count_ids;
-	uint64_t            *gres_count_vals;
-
-	xstrcat(job_ptr->gres_alloc, "");
-	if (!job_ptr->node_bitmap || !job_ptr->gres_list)
-		return SLURM_SUCCESS;
-
-	gres_type_count = list_count(job_ptr->gres_list);
-	gres_count_ids = xcalloc(gres_type_count, sizeof(uint32_t));
-	gres_count_vals = xcalloc(gres_type_count, sizeof(uint64_t));
-	rv = gres_plugin_job_count(job_ptr->gres_list, gres_type_count,
-				   gres_count_ids, gres_count_vals);
-	if (rv == SLURM_SUCCESS) {
-		char *sep = "";
-		for (i = 0; i < gres_type_count; i++) {
-			if (!gres_count_ids[i])
-				break;
-			/* Map the GRES type ID back to a GRES type name. */
-			gres_gresid_to_gresname(gres_count_ids[i], gres_name,
-						sizeof(gres_name));
-			xstrfmtcat(job_ptr->gres_alloc, "%s%s:%"PRIu64,
-				   sep, gres_name, gres_count_vals[i]);
-			sep = ",";
-		}
-	}
-	xfree(gres_count_ids);
-	xfree(gres_count_vals);
-
-	return rv;
-}
-
-/*
- * _get_gres_config - Fill in the gres_alloc string field for a given
- *      job_record with the count of gres on each node (e.g. for whole node
- *	allocations).
- * IN job_ptr - the job record whose "gres_alloc" field is to be constructed
- * RET Error number.  Currently not used (always set to 0).
- */
-static int _get_gres_config(job_record_t *job_ptr)
-{
-	List                gres_list;
-	bitstr_t *	    node_bitmap = job_ptr->node_bitmap;
-	node_record_t *node_ptr;
-	uint32_t            *gres_count_ids = NULL;
-	uint32_t            *gres_count_ids_loc = NULL;
-	uint64_t            *gres_count_vals = NULL;
-	uint64_t            *gres_count_vals_loc = NULL;
-	int                 ix, jx, kx, i_first, i_last, rv = 0;
-	int                 count    = 0;
-	int                 gres_type_count = 4; /* Guess number GRES types */
-	int                 oldcount = 0;
-	char *sep = "";
-
-	xstrcat(job_ptr->gres_alloc, "");
-	if (node_bitmap) {
-		i_first = bit_ffs(node_bitmap);
-		i_last  = bit_fls(node_bitmap);
-	} else {
-		log_flag(GRES, "%s: %pJ -- No nodes in bitmap of job_record!",
-			 __func__, job_ptr);
-		return rv;
-	}
-	if (i_first == -1)      /* job has no nodes */
-		i_last = -2;
-
-	gres_count_ids = xcalloc(gres_type_count, sizeof(uint32_t));
-	gres_count_vals = xcalloc(gres_type_count, sizeof(uint64_t));
-
-	/*
-	 * Loop through each node allocated to the job tallying all GRES
-	 * types found.
-	 */
-	for (ix = i_first; ix <= i_last; ix++) {
-		if (!bit_test(node_bitmap, ix))
-			continue;
-
-		node_ptr  = node_record_table_ptr + ix;
-		gres_list = node_ptr->gres_list;
-		if (gres_list)
-			count = list_count(gres_list);
-		else
-			count = 0;
-
-		log_flag(GRES, "%s %pJ -- Count of GRES types in the gres_list is: %d",
-			 __func__, job_ptr, count);
-
-		/*
-		 * Only reallocate when there is an increase in size of the
-		 * local arrays.
-		 */
-		if (count > oldcount) {
-			log_flag(GRES, "%s %pJ -- Old GRES count: %d New GRES count: %d",
-				 __func__, job_ptr, oldcount, count);
-
-			/*
-			 * Allocate arrays to hold each GRES type and its
-			 * associated value found on this node.
-			 */
-			oldcount = count;
-			xrecalloc(gres_count_ids_loc, count, sizeof(uint32_t));
-			xrecalloc(gres_count_vals_loc, count, sizeof(uint64_t));
-		}
-
-		if (gres_list) {
-			gres_plugin_node_count(gres_list, count,
-					       gres_count_ids_loc,
-					       gres_count_vals_loc,
-					       GRES_VAL_TYPE_CONFIG);
-		}
-
-		/* Combine the local results into the master count results */
-		for (jx = 0; jx < count; jx++) {
-			int found = 0;
-
-			/* Find matching GRES type. */
-			for (kx = 0; kx < gres_type_count; kx++) {
-				if (!gres_count_ids[kx])
-					break;
-
-				if (gres_count_ids_loc[jx] !=
-				    gres_count_ids[kx])
-					continue;
-
-				/* If slot is found, update current value.*/
-				gres_count_vals[kx] += gres_count_vals_loc[jx];
-				found = 1;
-				break;
-			}
-
-			/*
-			 * If the local GRES type doesn't already appear in the
-			 * list then add it.
-			 */
-			if (!found) {
-				/*
-				 * If necessary, expand the array of GRES types
-				 * being reported.
-				 */
-				if (kx >= gres_type_count) {
-					gres_type_count *= 2;
-					xrecalloc(gres_count_ids,
-						  gres_type_count,
-						  sizeof(uint32_t));
-					xrecalloc(gres_count_vals,
-						  gres_type_count,
-						  sizeof(uint64_t));
-				}
-				gres_count_ids[kx]   = gres_count_ids_loc[jx];
-				gres_count_vals[kx] += gres_count_vals_loc[jx];
-			}
-	 	}
-	}
-	xfree(gres_count_ids_loc);
-	xfree(gres_count_vals_loc);
-
-	/* Append value to the gres string. */
-	for (jx = 0; jx < gres_type_count; jx++) {
-		char gres_name[64];
-
-		if (!gres_count_ids[jx])
-			break;
-
-		/* Map the GRES type ID back to a GRES type name. */
-		gres_gresid_to_gresname(gres_count_ids[jx], gres_name,
-					sizeof(gres_name));
-
-		xstrfmtcat(job_ptr->gres_alloc, "%s%s:%"PRIu64,
-			   sep, gres_name, gres_count_vals[jx]);
-		sep = ",";
-	}
-	xfree(gres_count_ids);
-	xfree(gres_count_vals);
-
-	return rv;
-}
-
-/*
- * _build_gres_alloc_string - Fill in the gres_alloc string field for a
- *      given job_record
- *	also claim required licenses and resources reserved by accounting
- *	policy association
- * IN job_ptr - the job record whose "gres_alloc" field is to be constructed
- * RET Error number.  Currently not used (always set to 0).
- */
-static int _build_gres_alloc_string(job_record_t *job_ptr)
-{
-	static uint32_t cr_enabled = NO_VAL;
-	int error_code;
-
-	if (cr_enabled == NO_VAL) {
-		cr_enabled = 0; /* select/linear and others are no-ops */
-		error_code = select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
-							   NULL, &cr_enabled);
-		if (error_code != SLURM_SUCCESS)
-			cr_enabled = NO_VAL;
-	}
-
-	if (cr_enabled == 0)	/* Whole node allocations */
-		return _get_gres_config(job_ptr);
-	else
-		return _get_gres_alloc(job_ptr);
 }
 
 /*
@@ -2358,39 +2143,6 @@ static void _end_null_job(job_record_t *job_ptr)
 	epilog_slurmctld(job_ptr);
 }
 
-/*
- * Convert a job's TRES_PER_* specifications into a string
- * xfree return value
- */
-static char *_build_tres_str(job_record_t *job_ptr)
-{
-	char *sep = "", *tres_str = NULL;
-
-	if (job_ptr->tres_per_job) {
-		xstrfmtcat(tres_str, "PER_JOB:%s", job_ptr->tres_per_job);
-		sep = " ";
-	}
-	if (job_ptr->tres_per_node) {
-		xstrfmtcat(tres_str, "%sPER_NODE:%s", sep,
-			   job_ptr->tres_per_node);
-		sep = " ";
-	}
-	if (job_ptr->tres_per_socket) {
-		xstrfmtcat(tres_str, "%sPER_SOCKET:%s", sep,
-			   job_ptr->tres_per_socket);
-		sep = " ";
-	}
-	if (job_ptr->tres_per_task) {
-		xstrfmtcat(tres_str, "%sPER_TASK:%s", sep,
-			   job_ptr->tres_per_task);
-		/* sep = " ";	Reported as "dead assignment" by Clang */
-	}
-	if (!tres_str)
-		tres_str = xstrdup("NONE");
-
-	return tres_str;
-}
-
 static List _handle_exclusive_gres(job_record_t *job_ptr,
 				   bitstr_t *select_bitmap, bool test_only)
 {
@@ -2899,12 +2651,6 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	job_claim_resv(job_ptr);
 
 	/*
-	 * Update the job_record's gres and gres_alloc fields with strings
-	 * representing the amount of each GRES type requested and allocated.
-	 */
-	_fill_in_gres_fields(job_ptr);
-
-	/*
 	 * If ran with slurmdbd this is handled out of band in the
 	 * job if happening right away.  If the job has already
 	 * become eligible and registered in the db then the start message.
@@ -3179,43 +2925,6 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 	/* Launch the RPC via agent */
 	agent_queue_request(agent_arg_ptr);
-}
-
-/*
- * Update a job_record's gres (required GRES)
- * and gres_alloc (allocated GRES) fields according
- * to the information found in the job_record and its
- * substructures.
- * IN job_ptr - A job's job_record.
- * RET an integer representing any potential errors--
- *     currently not used.
- */
-static int _fill_in_gres_fields(job_record_t *job_ptr)
-{
-	int      rv = SLURM_SUCCESS;
-
-	/* First build the GRES requested field. */
-	if (!job_ptr->gres_list || (list_count(job_ptr->gres_list) == 0)) {
-		log_flag(GRES, "%s: %pJ GRES list is empty or NULL; this is OK if no GRES requested",
-			 __func__, job_ptr);
-		if (job_ptr->gres_req == NULL)
-			xstrcat(job_ptr->gres_req, "");
-	} else if ((job_ptr->node_cnt > 0) && !job_ptr->gres_req) {
-		job_ptr->gres_req = _build_tres_str(job_ptr);
-	}
-
-	if (!job_ptr->gres_alloc || (job_ptr->gres_alloc[0] == '\0') ) {
-		/* Now build the GRES allocated field. */
-		rv = _build_gres_alloc_string(job_ptr);
-		if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
-			char *tmp = _build_tres_str(job_ptr);
-			info("%s %pJ gres_req:%s gres_alloc:%s",
-			     __func__, job_ptr, tmp, job_ptr->gres_alloc);
-			xfree(tmp);
-		}
-	}
-
-	return rv;
 }
 
 /*
