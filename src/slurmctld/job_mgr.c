@@ -1407,8 +1407,6 @@ static void _dump_job_state(job_record_t *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->admin_comment, buffer);
 	packstr(dump_job_ptr->comment, buffer);
-	packstr(dump_job_ptr->gres_alloc, buffer);
-	packstr(dump_job_ptr->gres_req, buffer);
 	packstr(dump_job_ptr->gres_used, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->licenses, buffer);
@@ -1501,7 +1499,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	char *resv_name = NULL, *batch_host = NULL;
-	char *gres_alloc = NULL, *gres_req = NULL, *gres_used = NULL;
+	char *gres_used = NULL;
 	char *burst_buffer = NULL, *burst_buffer_state = NULL;
 	char *admin_comment = NULL, *task_id_str = NULL, *mcs_label = NULL;
 	char *clusters = NULL, *het_job_id_set = NULL, *user_name = NULL;
@@ -1527,6 +1525,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				   .qos = READ_LOCK,
 				   .tres = READ_LOCK,
 				   .user = READ_LOCK };
+	void *tmp_ptr;
 
 	memset(&limit_set, 0, sizeof(limit_set));
 	limit_set.tres = xcalloc(slurmctld_tres_cnt, sizeof(uint16_t));
@@ -1670,8 +1669,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
 		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres_alloc, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres_req, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
@@ -1895,8 +1892,10 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
 		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres_alloc, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres_req, &name_len, buffer);
+		safe_unpackstr_xmalloc(tmp_ptr, &name_len, buffer);
+		xfree(tmp_ptr);
+		safe_unpackstr_xmalloc(tmp_ptr, &name_len, buffer);
+		xfree(tmp_ptr);
 		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
@@ -2121,8 +2120,10 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
 		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres_alloc, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres_req, &name_len, buffer);
+		safe_unpackstr_xmalloc(tmp_ptr, &name_len, buffer);
+		xfree(tmp_ptr);
+		safe_unpackstr_xmalloc(tmp_ptr, &name_len, buffer);
+		xfree(tmp_ptr);
 		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
@@ -2320,12 +2321,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->comment      = comment;
 	comment               = NULL;  /* reused, nothing left to free */
 	job_ptr->billable_tres = billable_tres;
-	xfree(job_ptr->gres_alloc);
-	job_ptr->gres_alloc   = gres_alloc;
-	gres_alloc            = NULL;  /* reused, nothing left to free */
-	xfree(job_ptr->gres_req);
-	job_ptr->gres_req    = gres_req;
-	gres_req              = NULL;  /* reused, nothing left to free */
 	xfree(job_ptr->gres_used);
 	job_ptr->gres_used    = gres_used;
 	gres_used             = NULL;  /* reused, nothing left to free */
@@ -2595,8 +2590,6 @@ free_it:
 	xfree(burst_buffer);
 	xfree(clusters);
 	xfree(comment);
-	xfree(gres_alloc);
-	xfree(gres_req);
 	xfree(gres_used);
 	xfree(het_job_id_set);
 	free_job_fed_details(&job_fed_details);
@@ -4539,8 +4532,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	}
 	job_ptr_pend->gres_detail_cnt = 0;
 	job_ptr_pend->gres_detail_str = NULL;
-	job_ptr_pend->gres_alloc = NULL;
-	job_ptr_pend->gres_req = NULL;
 	job_ptr_pend->gres_used = NULL;
 
 	job_ptr_pend->limit_set.tres = xcalloc(slurmctld_tres_cnt,
@@ -9423,9 +9414,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->cpus_per_tres);
 	free_job_fed_details(&job_ptr->fed_details);
 	free_job_resources(&job_ptr->job_resrcs);
-	xfree(job_ptr->gres_alloc);
 	_clear_job_gres_details(job_ptr);
-	xfree(job_ptr->gres_req);
 	xfree(job_ptr->gres_used);
 	FREE_NULL_LIST(job_ptr->gres_list);
 	xfree(job_ptr->licenses);

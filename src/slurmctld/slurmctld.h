@@ -715,13 +715,9 @@ struct job_record {
 	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
 					 * this job */
 	List gres_list;			/* generic resource allocation detail */
-	char *gres_alloc;		/* Allocated GRES added over all nodes
-					 * to be passed to slurmdbd */
 	uint32_t gres_detail_cnt;	/* Count of gres_detail_str records,
 					 * one per allocated node */
 	char **gres_detail_str;		/* Details of GRES index alloc per node */
-	char *gres_req;			/* Requested GRES added over all nodes
-					 * to be passed to slurmdbd */
 	char *gres_used;		/* Actual GRES use added over all nodes
 					 * to be passed to slurmdbd */
 	uint32_t group_id;		/* group submitted under */

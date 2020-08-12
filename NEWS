@@ -63,6 +63,8 @@ documents those changes that are of interest to users and administrators.
  -- Let users submit to multiple reservations as they can partitions.
  -- Report a wider range of error codes for sbcast when opening a file.
  -- Rename acct_gather_energy/cray_aries to acct_gather_energy/pm_counters.
+ -- Removed gres_alloc and gres_req from job_record_t.Tres should be used
+    instead.
 
 * Changes in Slurm 20.02.5
 ==========================
