@@ -33,7 +33,7 @@ set exit_code        0
 set file_prog_get    "test$test_id.prog"
 
 # PMI library not in Cray RPM
-if {[test_cray]} {
+if {[get_config_param "SwitchType"] eq "switch/cray"} {
 	skip "This test is incompatible with Cray systems"
 }
 

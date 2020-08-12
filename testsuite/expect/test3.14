@@ -32,7 +32,7 @@ set node_list_orig      ""
 set resv_name           "resv$test_id"
 set user_name		""
 
-if {[is_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
 

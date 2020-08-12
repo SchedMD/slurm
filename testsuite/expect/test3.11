@@ -59,9 +59,11 @@ set def_node_inx_max	-1
 set ii			0
 set log_cpu_cnt		0
 
-if {[is_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
-} elseif {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+}
+set select_type_parameters [get_config_param "SelectTypeParameters"]
+if {[param_contains $select_type_parameters "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
@@ -181,7 +183,7 @@ set node_count [available_nodes]
 set cluster_cpus [expr $cores_per_node * $node_count]
 
 set cr_socket 0
-if {[test_select_type_params "CR_SOCKET"]} {
+if {[param_contains $select_type_parameters "CR_SOCKET*"]} {
 	set cr_socket 1
 }
 
@@ -210,7 +212,8 @@ set user_name [get_my_user_name]
 
 set cons_res_actived 0
 if {$def_oversubscribe_force == 0} {
-	if {[test_cons_res] || [test_cons_tres]} {
+	if {[check_config_select "cons_res"] ||
+	    [check_config_select "cons_tres"]} {
 		set cons_res_actived 1
 	}
 }

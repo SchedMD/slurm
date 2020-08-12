@@ -62,7 +62,7 @@ set acct(Description)   "Test_Account_A1"
 set access_err  0
 set timeout 60
 
-if { [test_account_storage] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
 }
 

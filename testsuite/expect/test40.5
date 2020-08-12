@@ -33,20 +33,18 @@ set file_in3         "test$test_id.input3"
 set file_out1        "test$test_id.output1"
 set file_out2        "test$test_id.output2"
 
-if {![test_scheduler_params "permit_job_expansion"]} {
+if {![param_contains [get_config_param "SchedulerParameters"] "permit_job_expansion"]} {
     skip "This test is only compatible with SchedulerParameters=permit_job_expansion"
 }
 
-if {[test_cons_tres]} {
-    log_debug "Valid configuration, using select/cons_tres"
-} else {
+if {![check_config_select "cons_tres"]} {
     skip "This test is only compatible with select/cons_tres"
 }
-if {[test_front_end]} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
 }
 
-set constrain_devices [test_constrain_devices]
+set constrain_devices [expr {[get_config_param "ConstrainDevices"] eq "yes"}]
 if {$constrain_devices} {
 	log_debug "Devices files are constrained by cgroups"
 } else {

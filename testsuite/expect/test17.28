@@ -35,9 +35,8 @@ set file_out    "test$test_id.output"
 set job_name    "TEST_NAME"
 set delay       1
 
-set enforce [test_enforce_part_limits]
-if {![string compare $enforce "NO"]} {
-	skip "This test is incompatible EnforcePartLimits = $enforce"
+if {[get_config_param "EnforcePartLimits"] eq "NO"} {
+	skip "This test is incompatible EnforcePartLimits = NO"
 }
 
 make_bash_script $file_in "

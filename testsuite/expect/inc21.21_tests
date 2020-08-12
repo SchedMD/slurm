@@ -143,7 +143,7 @@ proc inc21_21_grp_test { test_type limit } {
 	log_info "===== Test $test_type within: inc21.21_tests function: inc21_21_grp_test) ====="
 
 	if  { ![string compare $test_type "grpcpumins"] &&
-	      ![test_enforce_safe_set] } {
+	      ![param_contains [get_config_param "AccountingStorageEnforce"] "safe"] } {
 		log_warn "This test can't be run without AccountingStorageEnforce having \"safe\" in it"
 		set is_skip 1
 		return

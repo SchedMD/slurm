@@ -35,7 +35,7 @@ set matches          0
 # These are the variables for which we are checking existence.
 # If the number following a variable name is 1, then we check to make
 # certain that the value of the env variable is greater than 0
-if {[test_front_end]} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	array set good_vars {
 	    SLURM_CPUS_ON_NODE 1
 	    SLURM_CPUS_PER_TASK 1

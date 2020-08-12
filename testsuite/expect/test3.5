@@ -32,7 +32,7 @@ set authorized     1
 set exit_code      0
 set part_name      "QA_TEST"
 
-if {[test_super_user] == 0} {
+if {![is_super_user]} {
 	skip "Can not test more unless SlurmUser or root"
 }
 

@@ -192,7 +192,7 @@ proc test_out_file { file_out target } {
 	}
 }
 
-if { [test_account_storage] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
@@ -200,13 +200,11 @@ set store_tres [string tolower [get_acct_store_tres]]
 set store_gpu [string first "gres/gpu" $store_tres]
 if {$store_gpu == -1} {
 	skip "This test requires accounting for GPUs"
-} elseif {[test_front_end]} {
+} elseif {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 
-if {[test_cons_tres]} {
-	log_debug "Valid configuration, using select/cons_tres"
-} else {
+if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
 

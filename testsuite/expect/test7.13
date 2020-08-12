@@ -32,7 +32,8 @@ set file_in          "test$test_id.input"
 set file_prog1       "test$test_id.prog1"
 set file_prog2       "test$test_id.prog2"
 
-if {![test_accting_steps]} {
+set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
+if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
 	skip "This test can not be run with nosteps or nojobs (AccoutingStorageEnforce)"
 }
 
@@ -113,7 +114,7 @@ if {$matches != 2} {
 #
 # Confirm the job record in the db has the same exit codes
 #
-if { [test_account_storage] == 1 } {
+if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
 	sleep 2
 	set matches 0
 	spawn $sacct -n -P -j $job_id -o JobID,ExitCode,DerivedExitCode,Comment
@@ -216,7 +217,7 @@ if {$matches != 2} {
 #
 # Confirm the job record in the db has the same exit codes
 #
-if { [test_account_storage] == 1 } {
+if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
 	sleep 2
 	set matches 0
 	spawn $sacct -n -P -j $job_id -o JobID,ExitCode,DerivedExitCode,Comment

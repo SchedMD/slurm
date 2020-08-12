@@ -34,12 +34,13 @@ set hostlist   ""
 set node1      ""
 set node2      ""
 
-if {![test_accting_steps]} {
+set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
+if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
 	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
 }
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
-} elseif {[slurmd_user_root] == 0} {
+} elseif {[get_config_param "SlurmdUser"] ne "root(0)"} {
 	skip "This test requires that the SlurmdUser be root"
 }
 

@@ -32,7 +32,7 @@ set exit_code    0
 set file_in      "test$test_id.input"
 set file_script  "test$test_id.script"
 
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 

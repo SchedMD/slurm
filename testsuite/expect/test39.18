@@ -52,7 +52,7 @@ set gres_conf_file_err	"fatal: gres.conf for $re_word_str, some records have \"F
 set debug_mode 0
 # set debug_mode 1
 
-if {[test_cray]} {
+if {[get_config_param "SwitchType"] eq "switch/cray"} {
 #	Many Cray-specific changes required in slurm.conf test files
 	skip "This test can not run on a Cray system"
 }
@@ -423,7 +423,7 @@ check_configuration 0.4 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_ou
 # gpu/generic will be used and CPU ranges will be set to null, failing the tests
 # ##############################################################################
 
-if {[have_nvml] == 1} {
+if [have_nvml] {
 	if {$test_minor_in == ""} {
 		log_info "Running NVML-specific tests:"
 	}

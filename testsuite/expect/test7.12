@@ -38,7 +38,7 @@ set step_id	0
 set pid_count	1
 set test_prog   "test$test_id.prog"
 
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
 }
 

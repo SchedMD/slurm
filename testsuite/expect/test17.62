@@ -36,7 +36,7 @@ set stderr        "/tmp/err"
 set job_id        0
 set node_list     [get_idle_node_in_part $partition]
 
-if {[test_select_type_params "MEMORY"]} {
+if {[param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
 	set job_mem  100
 } else {
 	set job_mem  1
@@ -91,7 +91,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 
 foreach option [array names check_list] {
 	#log_debug "$option=$check_list($option)"
-	if {[string compare $option "BatchHost"] == 0 && [test_front_end] != 0} {
+	if {[string compare $option "BatchHost"] == 0 && [get_config_param "FrontendName"] ne "MISSING"} {
 		continue
 	}
 

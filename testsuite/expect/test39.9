@@ -41,14 +41,14 @@ proc cleanup {} {
 	exec $bin_rm -f $file_in
 }
 
-if {[have_nvml] == 0} {
+if {![have_nvml]} {
 	skip "NVML must be installed and enabled to test GPU frequency operations"
 }
-if {[slurmd_user_root] == 0} {
+if {[get_config_param "SlurmdUser"] ne "root(0)"} {
 	skip "SlurmdUser must be root to test GPU frequency operations"
 }
 
-if {![test_cons_tres]} {
+if {![check_config_select "cons_tres"]} {
         skip "This test is only compatible with select/cons_tres"
 }
 

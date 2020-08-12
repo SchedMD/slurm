@@ -32,7 +32,7 @@ source ./globals
 
 set exit_code   0
 
-if { [test_front_end] } {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front end systems"
 }
 
@@ -101,7 +101,7 @@ if {[string compare $tested_layout $expected_layout1] &&
 	set exit_code 1
 }
 
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "Additional testing is incompatible with front-end systems"
 }
 

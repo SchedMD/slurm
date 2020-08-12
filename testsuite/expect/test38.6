@@ -33,17 +33,14 @@ set orig_spank_conf "${cwd}/test${test_id}.orig_conf"
 set new_spank_conf  "${cwd}/test${test_id}.new_conf"
 set spank_out       "${cwd}/test${test_id}.spank.out"
 
-if {[test_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test must be run as SlurmUser"
 }
-if {[test_front_end]} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
 }
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
-}
-if {[test_pack_step] == 0} {
-	skip "Heterogeneous steps not currently supported"
 }
 
 proc end_it { exit_code } {

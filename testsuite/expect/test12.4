@@ -35,7 +35,7 @@ set timeout 60
 #
 # Check accounting config and bail if not found.
 #
-if { [test_account_storage] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
@@ -43,7 +43,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
-set using_slurmdbd [test_using_slurmdbd]
+set accounting_storage_type [get_config_param "AccountingStorageType"]
 
 set cluster [get_cluster_name]
 #
@@ -158,7 +158,7 @@ if {$job_id == 0} {
 	}
 }
 
-if { $using_slurmdbd } {
+if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
 	sleep 12
 }
 
@@ -175,7 +175,7 @@ if { $using_slurmdbd } {
 ################################################################
 
 proc sacct_job { soption job_id} {
-	global sacct using_slurmdbd
+	global sacct accounting_storage_type
 	set debug       0
 	set exit_code   0
 	set matches     0
@@ -477,10 +477,6 @@ proc sacct_vargs { soption vargs job_id} {
 }
 ################################################################
 
-set using_slurmdbd [test_using_slurmdbd]
-
-set cluster [get_cluster_name]
-
 #
 # Use sacctmgr to add an account
 #
@@ -566,7 +562,7 @@ if {$job_id == 0} {
 		set exit_code 1
 	}
 
-	if { $using_slurmdbd } {
+	if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
 		sleep 12
 	}
 

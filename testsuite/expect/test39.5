@@ -38,12 +38,10 @@ proc cleanup {} {
 	exec $bin_rm -f $file_in1 $file_in2
 }
 
-if {[test_cons_tres]} {
-	log_debug "Valid configuration, using select/cons_tres"
-} else {
+if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
-if {[test_front_end]} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 
@@ -56,7 +54,7 @@ if {$gpu_cnt < 1} {
 	skip "This test requires 1 or more GPUs on $nb_nodes nodes of the default partition"
 }
 # Determine what the selecttype param is
-if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+if {[param_contains [get_config_param "SelectTypeParameters"] "CR_ONE_TASK_PER_CORE"]} {
 	set one_task_pc 1
 }
 

@@ -29,7 +29,7 @@ source ./globals
 set freq_val  0
 set exit_code 0
 
-if {[test_cray]} {
+if {[get_config_param "SwitchType"] eq "switch/cray"} {
         set timeout 60
 }
 

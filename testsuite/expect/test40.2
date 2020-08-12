@@ -37,9 +37,7 @@ set job_list    {}
 set failure_count 0
 set mps_cnt     100
 
-if {[test_cons_tres]} {
-	log_debug "Valid configuration, using select/cons_tres"
-} else {
+if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
 
@@ -399,7 +397,7 @@ expect {
 		incr match
 		if {$match == 1} {
 			set hostname $expect_out(1,string)
-		} elseif {[test_front_end]} {
+		} elseif {[get_config_param "FrontendName"] ne "MISSING"} {
 			log_debug "Duplicate SLURMD_HOSTNAME in front-end mode as expected"
 		} elseif {[string compare $hostname $expect_out(1,string)] == 0} {
 			log_error "Two tasks ran on same node ($hostname))"
@@ -424,7 +422,7 @@ if {$match != $node_cnt} {
 # Make sure that gres/gpu and gres/mps jobs either do not share the same GPU
 # or run at different times
 #
-if {[test_front_end]} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	log_warn "SKIP: Subtest 7 doesn't work with front_end"
 	incr skips
 } else {

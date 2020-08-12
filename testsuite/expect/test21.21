@@ -86,7 +86,7 @@ if { [string compare [priority_type] multifactor] } {
 	skip "This test is only compatible with priority/multifactor plugin"
 }
 
-if { [test_account_storage] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
@@ -94,7 +94,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin."
 }
 
-if {[test_linear]} {
+if {[check_config_select "linear"]} {
 	set nb_nodes [get_node_cnt_in_part]
 	if {$nb_nodes < 2} {
 		skip "This test is incompatible with select/linear and only one node"
@@ -102,12 +102,11 @@ if {[test_linear]} {
 }
 
 # Determine what the selecttype param is
-if {[test_select_type_params "CR_CORE"]} {
+set select_type_parameters [get_config_param "SelectTypeParameters"]
+if {[param_contains $select_type_parameters "CR_CORE*"]} {
 	set selectparam 1
 }
-
-# Determine what the selecttype param is
-if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+if {[param_contains $select_type_parameters "CR_ONE_TASK_PER_CORE"]} {
 	set one_task_pc 1
 }
 
@@ -466,7 +465,7 @@ if {$job_id == 0} {
 #
 # Run included tests if limits are enforced
 #
-if { [test_limits_enforced] == 1 } {
+if [param_contains [get_config_param "AccountingStorageEnforce"] "limits"] {
 	_test_limits
 } else {
 	log_warn "Tests requiring limits enforcement were skipped"

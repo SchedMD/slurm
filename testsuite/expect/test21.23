@@ -44,7 +44,7 @@ set config_file $config_path/slurm.conf
 #
 # Check accounting config and bail if not found.
 #
-if { [test_account_storage] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
@@ -52,7 +52,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin."
 }
 
-set using_slurmdbd [test_using_slurmdbd]
+set accounting_storage_type [get_config_param "AccountingStorageType"]
 
 set cn [get_cluster_name]
 
@@ -124,7 +124,7 @@ expect {
 # Enable TrackWCKey
 #
 set reconfigured false
-if {![test_track_wckey_slurmctld]} {
+if {[get_config_param "TrackWCKey"] ne "Yes"} {
 	log_info "Enabling TrackWCKey..."
 
 	save_conf $config_file
@@ -162,7 +162,7 @@ expect {
 	}
 }
 
-if {$using_slurmdbd} {
+if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
 	sleep 5
 }
 
@@ -226,7 +226,7 @@ if {$job_id == 0} {
 			wait
 		}
 	}
-	if {$using_slurmdbd} {
+	if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
 		sleep 5
 	}
 
@@ -288,7 +288,7 @@ if {$job_id == 0} {
 		}
 	}
 
-	if {$using_slurmdbd} {
+	if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
 		sleep 5
 	}
 

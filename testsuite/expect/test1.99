@@ -36,7 +36,7 @@ set file_in      "test$test_id\_sc"
 set tmp_job      "test$test_id\_tmp_job"
 array set ports {}
 
-if { ![test_super_user] } {
+if {![is_super_user]} {
     skip "This test can't be run without being a super user of the cluster"
 }
 if {$chk_ports == 0} {

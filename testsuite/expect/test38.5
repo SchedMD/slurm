@@ -38,7 +38,7 @@ set job_id 0
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
 }
-if {[in_fed]} {
+if [in_fed] {
 	skip "This test should not be run in a federation"
 }
 

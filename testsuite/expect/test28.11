@@ -73,7 +73,7 @@ proc get_single_node_feature { } {
 	return $ret_features
 }
 
-if {[test_super_user] != 1} {
+if {![is_super_user]} {
 	skip "This test must be run as SlurmUser or root"
 }
 

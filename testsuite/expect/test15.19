@@ -49,7 +49,7 @@ expect {
 		if {$job_id != 0} {
              cancel_job $job_id
 		}
-		if { [test_front_end] } {
+		if {[get_config_param "FrontendName"] ne "MISSING"} {
 			skip "Error expected, Testing is incompatible with front-end systems"
 		} else {
 			 skip "Test not compatible with this configuration"
@@ -162,7 +162,7 @@ if {[string compare $host_0 ""] == 0} {
 if {[string compare $host_1 ""] != 0} {
 	log_error "Started two tasks instead of one"
 }
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "Additional testing is incompatible with front-end systems"
 }
 

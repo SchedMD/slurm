@@ -243,10 +243,10 @@ proc test_case {opt expmin expcur expmax expgov} {
 }
 
 # Check environment
-if {[test_cpu_affinity_or_cgroup] == 0} {
+if {![param_contains [get_affinity_types] "affinity"] && [get_config_param "TaskAffinity"] ne "yes"} {
 	skip "This test requires some form of task affinity"
 }
-if {[test_fast_schedule] != 0} {
+if {[get_config_param "FastSchedule"] != 0} {
 	log_warn "FastSchedule=0 is recommended. Proceeding assuming that the number of CPUs declared is accurate"
 }
 log_user 0

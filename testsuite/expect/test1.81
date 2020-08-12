@@ -48,7 +48,7 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -N1-1 -c 1 -l -t1 $bin_printenv SLURM_NODEID]
 expect {
 	-re "(Task count specification invalid|configuration is not available)" {
-		if { [test_front_end] } {
+		if {[get_config_param "FrontendName"] ne "MISSING"} {
 			skip "Error expected, Testing is incompatible with front-end systems"
 		}
 		exp_continue
@@ -143,7 +143,7 @@ if {[string compare $host_0 ""] == 0} {
 if {[string compare $host_1 ""] != 0} {
 	log_error "Started two tasks instead of one"
 }
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	log_warn "Additional testing is incompatible with front-end systems"
 	pass
 }

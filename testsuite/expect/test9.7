@@ -37,7 +37,7 @@ set task_cnt     10
 # A single slurmd can't handle a large task count without
 # running out of memory and pthreads
 #
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	set task_cnt 2
 }
 

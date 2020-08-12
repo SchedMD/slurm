@@ -42,7 +42,7 @@ source ./globals
 set exit_code   0
 set test_prog   "test$test_id.prog"
 
-if { [test_front_end] == 1 } {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "Test incompatible with front-end systems"
 }
 
@@ -94,7 +94,7 @@ TreeWidth=50
 DebugFlags=Route\n"
 
 # Set the params if needed for certain systems
-if {[test_cray]} {
+if {[get_config_param "SwitchType"] eq "switch/cray"} {
 	set params "$params
 MPIParams=ports=12000-13000\nProctrackType=proctrack/cray_aries\n"
 }

@@ -40,7 +40,7 @@ exec $bin_cc -O -o $file_prog ${file_prog}.c
 #   is intermittent.
 #
 set have_runjob 0
-if {![string compare [test_launch_type] "runjob"]} {
+if {[get_config_param "LaunchType"] eq "launch/runjob"} {
 	set have_runjob 1
 }
 

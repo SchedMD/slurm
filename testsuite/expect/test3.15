@@ -120,11 +120,11 @@ proc test_license_count {want_total want_used want_free } {
 }
 
 ################# TEST STARTS HERE ######################
-if {[is_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
 
-if {[test_linear]} {
+if {[check_config_select "linear"]} {
 	skip "This test is incompatible with select/linear"
 } elseif {[default_part_exclusive]} {
 	skip "This test is incompatible with exclusive node allocations"

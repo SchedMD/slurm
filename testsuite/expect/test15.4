@@ -34,7 +34,7 @@ set job_grp_info         ""
 set got_job_grps         0
 set got_login_grps       0
 
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 

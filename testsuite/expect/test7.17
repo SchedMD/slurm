@@ -29,7 +29,7 @@ set exit_code   0
 set test_prog   "test$test_id.prog"
 set cfgdir      [pwd]
 
-if {[test_cray]} {
+if {[get_config_param "SwitchType"] eq "switch/cray"} {
 #	Many Cray-specific changes required in slurm.conf test files
 	skip "This test can not run on a Cray system"
 }

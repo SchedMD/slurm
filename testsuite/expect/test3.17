@@ -28,7 +28,7 @@ set exit_code   0
 set feature	"test$test_id"
 set file_in     "test$test_id.input"
 
-if { ![test_super_user] } {
+if {![is_super_user]} {
 	skip "This test can't be run without being a super user of the cluster"
 }
 

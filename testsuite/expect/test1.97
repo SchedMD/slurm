@@ -40,11 +40,11 @@ array set tasks {}
 # some systems take a while to run the | sort -V | uniq -c stuff
 set timeout 60
 
-if {![test_select_type_params "CR_PACK_NODES"]} {
+if {![param_contains [get_config_param "SelectTypeParameters"] "CR_PACK_NODES"]} {
 	skip "This test requires SelectTypeParameters=CR_PACK_NODES"
 }
 
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is not compatible with front-end configurations"
 }
 

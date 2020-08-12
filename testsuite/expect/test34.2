@@ -38,10 +38,10 @@ set file_in     "test$test_id\_sc"
 set nodes       [available_nodes idle]
 set job_id      0
 
-if {[test_preempttype_qos] == 0} {
+if {[get_config_param "PreemptType"] ne "preempt/qos"} {
 	skip "This test requires that PreemptType=preempt/qos"
 }
-if {[test_using_slurmdbd] == 0} {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test requires use of Slurmdbd"
 }
 

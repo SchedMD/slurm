@@ -85,7 +85,7 @@ proc cleanup { } {
 
 }
 
-if { ![test_super_user] } {
+if {![is_super_user]} {
     skip "This test can't be run without being a super user of the cluster"
 }
 

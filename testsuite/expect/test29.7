@@ -17,7 +17,7 @@ set exit_code   0
 if {![slurmctld_plug_stack_nonstop]} {
 	skip "This test is only compatible when SlurmctldPlugstack includes nonstop"
 }
-if {![test_super_user]} {
+if {![is_super_user]} {
 	skip "This test is only suitable for a super user (to restore down nodes)"
 }
 

@@ -34,7 +34,7 @@ set exit_code   0
 set io_prog     "test$test_id.io"
 set test_prog   "test$test_id.prog"
 
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
 }
 

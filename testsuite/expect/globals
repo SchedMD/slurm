@@ -296,12 +296,6 @@ set no_delim_slash       "\[^(,:/\r\n\]"
 set gres_regex "($no_delim_slash*):($no_delim*)?:?($no_delim*)"
 
 #
-# Cache SlurmUser to check for SuperUser requests
-#
-cset super_user     0
-cset super_user_set 0
-
-#
 # Global variable used in multiple functions in "globals" file
 #
 set gpu_sock_list {}
@@ -1998,286 +1992,6 @@ proc wait_job_reason args {
 ################################################################
 #
 # NAME
-#	test_fast_schedule - returns value of FastSchedule from slurm.conf
-#
-# SYNOPSIS
-#	test_fast_schedule
-#
-# RETURN VALUE
-#	Returns value of FastSchedule from slurm.conf
-#
-################################################################
-
-proc test_fast_schedule { } {
-	global scontrol number
-
-	log_user 0
-	set fast_schedule -1
-	spawn $scontrol show config
-	expect {
-		-re "FastSchedule *= ($number)" {
-			set fast_schedule $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-
-	log_user 1
-	return $fast_schedule
-}
-
-
-################################################################
-#
-# NAME
-#	test_assoc_enforced - determines if we need an association to run a job
-#
-# SYNOPSIS
-#	test_assoc_enforced
-#
-# DESCRIPTION
-#	Determine if we need an association to run a job. This is based upon
-#	the value of AccountingStorageEnforce in the slurm.conf.
-#
-# RETURN VALUE
-#	Returns level of association enforcement, 0 if none
-#
-################################################################
-
-proc test_assoc_enforced { } {
-	global scontrol number
-
-	log_user 0
-	set assoc_enforced 0
-	spawn $scontrol show config
-	expect {
-		-re "AccountingStorageEnforce *= associations" {
-			set assoc_enforced 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-
-	log_user 1
-	return $assoc_enforced
-}
-
-
-################################################################
-#
-# NAME
-#	test_limits_enforced - check if AccountingStorageEnforce limits is set
-#
-# SYNOPSIS
-#	test_limits_enforced
-#
-# RETURN VALUE
-#	Returns 1 if limits is set, else 0
-#
-################################################################
-
-proc test_limits_enforced { } {
-	global scontrol
-
-	log_user 0
-	set enforced 0
-	spawn $scontrol show config
-	expect {
-		-re "AccountingStorageEnforce *= (\[a-z]+),limits" {
-			set enforced 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-
-	log_user 1
-	return $enforced
-}
-
-
-################################################################
-#
-# NAME
-#	test_enforce_part_limits - returns value of EnforcePartLimits
-#
-# SYNOPSIS
-#	test_enforce_part_limits
-#
-# RETURN VALUE
-#	Returns EnforcePartLimits value (ALL, ANY, or NO)
-#
-################################################################
-
-proc test_enforce_part_limits { } {
-	global re_word_str scontrol
-
-	log_user 0
-	set enforced "UNKNOWN"
-	spawn $scontrol show config
-	expect {
-		-re "EnforcePartLimits *= ($re_word_str)" {
-			set enforced $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-
-	log_user 1
-	return $enforced
-}
-
-
-################################################################
-#
-# NAME
-#	test_gang - determines if gang scheduling is configured
-#
-# SYNOPSIS
-#	test_gang
-#
-# RETURN VALUE
-#	Returns level of association enforcement, 0 if none
-#
-################################################################
-
-proc test_gang { } {
-	global scontrol
-
-	log_user 0
-	set gang 0
-	spawn $scontrol show config
-	expect {
-		-re "PreemptMode *= .*GANG" {
-			set gang 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-
-	log_user 1
-	return $gang
-}
-
-
-################################################################
-#
-# NAME
-#	test_power_save - checks whether power save mode is enabled
-#
-# SYNOPSIS
-#	test_power_save
-#
-# RETURN VALUE
-#	Return 1 if power save mode is enabled, 0 otherwise
-#
-################################################################
-
-proc test_power_save { } {
-	global scontrol number
-
-	log_user 0
-	set suspend_time 0
-	spawn $scontrol show config
-	expect {
-		-re "SuspendTime *= ($number)" {
-			set suspend_time $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	if {$suspend_time == 0} {
-		set power_save 0
-	} else {
-		set power_save 1
-	}
-	return $power_save
-}
-
-
-################################################################
-#
-# NAME
-#	slurmd_user_root - checks whether SlurmUser is root
-#
-# SYNOPSIS
-#	slurmd_user_root
-#
-# RETURN VALUE
-#	Return 1 if the SlurmdUser is root, 0 otherwise
-#
-################################################################
-
-proc slurmd_user_root { } {
-	global scontrol
-
-	log_user 0
-	set rc 0
-	spawn $scontrol show config
-	expect {
-		-re "SlurmdUser *= root" {
-			set rc 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $rc
-}
-
-
-################################################################
-#
-# NAME
-#	test_topology - determines if system is topology aware
-#
-# SYNOPSIS
-#	test_topology
-#
-# RETURN VALUE
-#	Returns level of association enforcement, 0 if none
-#
-################################################################
-
-proc test_topology { } {
-	global scontrol
-
-	log_user 0
-	set have_topology 1
-	spawn $scontrol show config
-	expect {
-		-re "TopologyPlugin *= *topology/none" {
-			set have_topology 0
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $have_topology
-}
-
-
-################################################################
-#
-# NAME
 #	get_config - returns a dictionary of slurm configuration parameters
 #
 # SYNOPSIS
@@ -2329,6 +2043,33 @@ proc get_config_param { parameter_name } {
 		return [dict get $config_dict $parameter_name]
 	} else {
 		return "MISSING"
+	}
+}
+
+
+################################################################
+#
+# NAME
+#	param_contains - test whether a comma-separated-list contains a specified value
+#
+# SYNOPSIS
+#	param_contains haystack needle
+#
+# DESCRIPTION
+#	Searches for the specified value (needle) in the comma-separated-list
+#	string (haystack). Needle can be a glob-style pattern.
+#
+# RETURN VALUE
+#	Returns a boolean value indicating whether the value (needle) was found
+#	in the comma-separated-list string (haystack)
+#
+################################################################
+
+proc param_contains { haystack needle } {
+	if {[lsearch [split $haystack ","] $needle] != -1} {
+		return true
+	} else {
+		return false
 	}
 }
 
@@ -2403,44 +2144,6 @@ proc get_affinity_params { } {
 	}
 	log_user 1
 	return $params
-}
-
-
-################################################################
-#
-# NAME
-#	test_constrain_devices - determines if devices are constrained by cgroup
-#
-# SYNOPSIS
-#	test_constrain_devices
-#
-# DESCRIPTION
-#	Determine if devices are constrained by cgroup.
-#	the value of ConstrainDevices in the gres.conf.
-#
-# RETURN VALUE
-#	Returns 1 if constrained, 0 otherwise
-#
-################################################################
-
-proc test_constrain_devices { } {
-	global scontrol number
-
-	log_user 0
-	set constrain_devices 0
-	spawn $scontrol show config
-	expect {
-		-re "ConstrainDevices *= yes" {
-			set constrain_devices 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-
-	log_user 1
-	return $constrain_devices
 }
 
 
@@ -2627,392 +2330,6 @@ proc get_cpu_governors { } {
 ################################################################
 #
 # NAME
-#	test_cpu_affinity - determines if system is using the task/affinity plugin
-#
-# SYNOPSIS
-#	test_cpu_affinity
-#
-# RETURN VALUE
-#	Returns 1 if enforcing, 0 if none
-#
-################################################################
-
-proc test_cpu_affinity { } {
-	log_user 0
-
-	set affinity 0
-	set parts [split [get_affinity_types] ","]
-
-	if { [lsearch $parts "affinity"] != -1 } {
-		set affinity 1
-	}
-
-	log_user 1
-	return $affinity
-}
-
-
-################################################################
-#
-# NAME
-#	test_cpu_affinity_or_cgroup - determines if system is enforcing CPU affinity
-#
-# SYNOPSIS
-#	test_cpu_affinity_or_cgroup
-#
-# DESCRIPTION
-#	Determine if system is enforcing CPU affinity (using
-#	either the task/affinity and/or task/cgroup plugin)
-#
-# RETURN VALUE
-#	Returns 1 if enforcing, 0 if none
-#
-################################################################
-
-proc test_cpu_affinity_or_cgroup { } {
-	global scontrol re_word_str
-
-	log_user 0
-
-	set affinity 0
-	set parts [split [get_affinity_types] ","]
-
-	if { [lsearch $parts "affinity"] != -1 } {
-		set affinity 1
-	} elseif { [lsearch $parts "cgroup"] != -1 } {
-		spawn $scontrol show config
-		expect {
-			-re "TaskAffinity *= yes" {
-				set affinity 1
-				exp_continue
-			}
-			eof {
-				wait
-			}
-		}
-	}
-
-	log_user 1
-	return $affinity
-}
-
-
-################################################################
-#
-# NAME
-#	test_mem_affinity - determines if system is enforcing memory affinity
-#
-# SYNOPSIS
-#	test_mem_affinity
-#
-# RETURN VALUE
-#	Returns 1 if enforcing, 0 if none
-#
-################################################################
-
-proc test_mem_affinity { } {
-	global scontrol re_word_str
-
-	log_user 0
-
-	set affinity 0
-	set parts [split [get_affinity_types] ","]
-
-	if { [lsearch $parts "affinity"] != -1 } {
-		set affinity 1
-	}
-
-	log_user 1
-	return $affinity
-}
-
-
-################################################################
-#
-# NAME
-#	test_track_wckey_slurmctld - determines if we track wckeys
-#
-# SYNOPSIS
-#	test_track_wckey_slurmctld
-#
-# DESCRIPTION
-#	Determine if we track workload characterization keys.
-#	This is based upon the value of TrackWCKey in the slurm.conf.
-#
-# RETURN VALUE
-#	Returns value of TrackWCKey
-#
-################################################################
-
-proc test_track_wckey_slurmctld { } {
-	global scontrol number
-
-	log_user 0
-	set track_wckey 0
-	spawn $scontrol show config
-	expect {
-		-re "TrackWCKey *= Yes" {
-			set track_wckey 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-
-	log_user 1
-	return $track_wckey
-}
-
-
-################################################################
-#
-# NAME
-#	test_account_storage - determines if we are using a usable accounting storage plugin
-#
-# SYNOPSIS
-#	test_account_storage
-#
-# DESCRIPTION
-#	Determine if we are using a usable accounting storage package.
-#	This is based upon the value of AccountingStorageType in the slurm.conf.
-#
-# RETURN VALUE
-#	Returns 1 if the system is running an accounting storage type
-#	that is complete, 0 otherwise
-#
-################################################################
-
-proc test_account_storage { } {
-	global scontrol
-
-	log_user 0
-	set account_storage 0
-	spawn $scontrol show config
-	expect {
-		-re "(accounting_storage/slurmdbd|accounting_storage/mysql|accounting_storage/pgsql)" {
-			set account_storage 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $account_storage
-}
-
-
-################################################################
-#
-# NAME
-#	test_enforce_limits - determines if resource limits are enforced
-#
-# SYNOPSIS
-#	test_enforce_limits
-#
-# DESCRIPTION
-#	Determine whether resouce limits are enforced. This is based upon
-#	the value of AccountingStorageEnforce in the slurm.conf.
-#
-# RETURN VALUE
-#	Returns 1 if the system is enforcing limits, 0 otherwise
-#
-################################################################
-
-proc test_enforce_limits { } {
-	global re_word_str scontrol
-
-	log_user 0
-	set enforce_limits 0
-	spawn $scontrol show config
-	expect {
-		-re "AccountingStorageEnforce *= ($re_word_str)" {
-			if {[string first "safe" $expect_out(1,string)] != -1 } {
-				set enforce_limits 1
-			}
-			if {[string first "limits" $expect_out(1,string)] != -1 } {
-				set enforce_limits 1
-			}
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $enforce_limits
-}
-
-
-################################################################
-#
-# NAME
-#	test_allow_spec_resources - returns the value of AllowSpecResources
-#
-# SYNOPSIS
-#	test_allow_spec_resources
-#
-# RETURN VALUE
-#	Returns 1 if AllowSpecResources is set, 0 if not and 2 in case of error
-#
-# ENVIRONMENT
-#	It also sets the global variable exit_code to 1 in case of error.
-#
-################################################################
-
-proc test_allow_spec_resc { } {
-	global exit_code number scontrol
-
-	log_user 0
-	set allow_spec_resc 2
-	spawn $scontrol show config
-	expect {
-		-re "AllowSpecResourcesUsage *= ($number)" {
-			set allow_spec_resc $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol show config time out"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$allow_spec_resc == 2} {
-		log_error "AllowSpecResourcesUsage not found in scontrol show config"
-		set exit_code 1
-	}
-
-	log_user 1
-	return $allow_spec_resc
-}
-
-
-################################################################
-#
-# NAME
-#	test_enforce_safe_set - determines if AccountingStorageEnforce=safe is set
-#
-# SYNOPSIS
-#	test_enforce_safe_set
-#
-# DESCRIPTION
-#	Determine if AccountingStorageEnforce=safe is set in the slurm.conf.
-#
-# RETURN VALUE
-#	Returns 1 if the system is running with safe limits, 0 otherwise
-#
-################################################################
-
-proc test_enforce_safe_set { } {
-	global re_word_str scontrol
-
-	log_user 0
-	set enforce_limits 0
-	spawn $scontrol show config
-	expect {
-		-re "AccountingStorageEnforce *= ($re_word_str)" {
-			if {[string first "safe" $expect_out(1,string)] != -1 } {
-				set enforce_limits 1
-			}
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $enforce_limits
-}
-
-
-################################################################
-#
-# NAME
-#	test_enforce_qos_set - determines if AccountingStorageEnforce=qos is set
-#
-# SYNOPSIS
-#	test_enforce_qos_set
-#
-# DESCRIPTION
-#	Determine if AccountingStorageEnforce=qos is set in the slurm.conf.
-#
-# RETURN VALUE
-#	Returns 1 if the system is running with safe limits, 0 otherwise
-#
-################################################################
-
-proc test_enforce_qos_set { } {
-	global re_word_str scontrol
-
-	log_user 0
-	set enforce_limits 0
-	spawn $scontrol show config
-	expect {
-		-re "AccountingStorageEnforce *= ($re_word_str)" {
-			if {[string first "qos" $expect_out(1,string)] != -1 } {
-				set enforce_limits 1
-			}
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $enforce_limits
-}
-
-
-################################################################
-#
-# NAME
-#	test_using_slurmdbd - checks whether using slurmdbd
-#
-# SYNOPSIS
-#	test_using_slurmdbd
-#
-# DESCRIPTION
-#	Since there is a lag at which the slurmdbd processes a job start we
-#	need to wait a bit to make sure the data has been set before proceeding.
-#	This is based upon the value of AccountingStorageType in the slurm.conf.
-#
-# RETURN VALUE
-#	Returns 1 if the system is running with slurmdbd, 0 otherwise
-#
-################################################################
-
-proc test_using_slurmdbd { } {
-	global scontrol
-
-	log_user 0
-	set account_storage 0
-	spawn $scontrol show config
-	expect {
-		-re "(accounting_storage/slurmdbd)" {
-			set account_storage 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $account_storage
-}
-
-
-################################################################
-#
-# NAME
 #	priority_type - gets the priority plugin type
 #
 # SYNOPSIS
@@ -3131,298 +2448,6 @@ proc get_default_acct { user } {
 ################################################################
 #
 # NAME
-#	test_front_end - checks if execution host executes on a front-end node
-#
-# SYNOPSIS
-#	test_front_end
-#
-# DESCRIPTION
-#	Determine if the execution host is one in which the
-#	slurmd daemon executes on a front-end node rather than the
-#	compute hosts (e.g. Blue Gene systems).
-#
-# RETURN VALUE
-#	Returns 1 if the system uses a front-end, 0 otherwise
-#
-################################################################
-
-proc test_front_end { } {
-	global enable_front_end scontrol
-
-	log_user 0
-	set front_end 0
-	spawn $scontrol show frontend
-	expect {
-		"FrontendName=" {
-			set front_end 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $front_end
-}
-
-
-################################################################
-#
-# NAME
-#	test_multiple_slurmd - checks if running multiple slurmds per node
-#
-# SYNOPSIS
-#	test_multiple_slurmd
-#
-# RETURN VALUE
-#	Returns 1 if running multiple slurmd per node
-#
-################################################################
-
-proc test_multiple_slurmd { } {
-	global scontrol
-
-	log_user 0
-	set multiple_slurmd 0
-	spawn $scontrol show config
-	expect {
-		"MULTIPLE_SLURMD" {
-			set multiple_slurmd 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $multiple_slurmd
-}
-
-
-################################################################
-#
-# NAME
-#	test_cray - determine if the system is a native cray system
-#
-# SYNOPSIS
-#	test_cray
-#
-# RETURN VALUE
-#	Returns 1 if the system is a cray, 0 otherwise
-#
-################################################################
-
-proc test_cray { } {
-	global scontrol bin_bash bin_grep
-
-	log_user 0
-	set cray 0
-	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SwitchType"
-	expect {
-		"switch/cray" {
-			set cray 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $cray
-}
-
-
-################################################################
-#
-# NAME
-#	test_launch_type - determines launch type plugin
-#
-# SYNOPSIS
-#	test_launch_type
-#
-# RETURN VALUE
-#	Returns the launch plugin type
-#
-################################################################
-
-proc test_launch_type { } {
-	global scontrol bin_bash bin_grep re_word_str
-
-	log_user 0
-	set type ""
-	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep LaunchType"
-	expect {
-		-re "launch/($re_word_str)" {
-			set type $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $type
-}
-
-
-################################################################
-#
-# NAME
-#	test_launch_test_exec - determines launch type plugin
-#
-# SYNOPSIS
-#	test_launch_test_exec
-#
-# RETURN VALUE
-#	Returns the launch plugin type
-#
-################################################################
-
-proc test_launch_test_exec { } {
-	global scontrol bin_bash bin_grep re_word_str
-
-	log_user 0
-	set test_exec 0
-	set type ""
-	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep LaunchParameters"
-	expect {
-		-re "test_exec" {
-			set test_exec 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $test_exec
-}
-
-
-################################################################
-#
-# NAME
-#	test_node_features_plugin - determines NodeFeaturesPlugin type
-#
-# SYNOPSIS
-#	test_node_features_plugin
-#
-# RETURN VALUE
-#	Returns the NodeFeaturesPlugin type
-#
-################################################################
-
-proc test_node_features_plugin { } {
-	global scontrol bin_bash bin_grep re_word_str
-
-	log_user 0
-	set type ""
-	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep NodeFeaturesPlugins"
-	expect {
-		-re "node_features/($re_word_str)" {
-			set type $expect_out(1,string)
-			exp_continue
-		}
-		-re "null" {
-			exp_continue
-		}
-		-re "($re_word_str)" {
-			set type $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $type
-}
-
-
-################################################################
-#
-# NAME
-#	test_emulated - determines if the system is emulated
-#
-# SYNOPSIS
-#	test_emulated
-#
-# DESCRIPTION
-#	Determine if the system is emulated (not running on
-#	actual Cray or Bluegene hardware
-#
-# RETURN VALUE
-#	Returns 1 if the system is emulated otherwise
-#
-################################################################
-
-proc test_emulated { } {
-	global scontrol bin_bash
-
-	log_user 0
-	set emulated 0
-	spawn -noecho $bin_bash -c "exec $scontrol show config"
-	expect {
-		"Emulated * = yes" {
-			set emulated 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $emulated
-}
-
-
-################################################################
-#
-# NAME
-#	test_killonbadexit - determines if KillOnBadExit is configured to be 1
-#
-# SYNOPSIS
-#	test_killonbadexit
-#
-# DESCRIPTION
-#	Determine if KillOnBadExit is configured to be 1.
-#
-# RETURN VALUE
-#	Returns 1 if KillOnBadExit is 1.
-#
-################################################################
-
-proc test_killonbadexit { } {
-	global scontrol bin_bash bin_grep
-
-	log_user 0
-	set killonbadexit 0
-	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep KillOnBadExit"
-	expect {
-		-re "KillOnBadExit *= *1" {
-			set killonbadexit 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $killonbadexit
-}
-
-
-################################################################
-#
-# NAME
 #	get_cycle_count - get desired iteration count
 #
 # SYNOPSIS
@@ -3450,17 +2475,17 @@ proc get_cycle_count { } {
 ################################################################
 #
 # NAME
-#	test_select_type - determine which select plugin is being used
+#	get_select_type - determine which select plugin is being used
 #
 # SYNOPSIS
-#	test_select_type
+#	get_select_type
 #
 # RETURN VALUE
 #	Returns name of select plugin
 #
 ################################################################
 
-proc test_select_type { } {
+proc get_select_type { } {
 	global scontrol bin_bash bin_grep re_word_str
 
 	log_user 0
@@ -3544,97 +2569,49 @@ proc get_select_type_params { {partition ""} } {
 ################################################################
 #
 # NAME
-#	test_linear - determines if system is configured with linear plugin
+#	check_config_select - checks if effectively using the select type
 #
 # SYNOPSIS
-#	test_linear
-#
-# RETURN VALUE
-#	Returns 1 if configured, 0 otherwise
-#
-################################################################
-
-proc test_linear { } {
-	global scontrol number
-
-	log_user 0
-	set select_type [test_select_type]
-
-	if {![string compare $select_type "linear"]} {
-		return 1
-	} elseif {![string compare $select_type "cray_aries"] &&
-		  ![test_select_type_params "other_cons_res"] &&
-		  ![test_select_type_params "other_cons_tres"]} {
-		return 1
-	}
-	log_user 1
-
-	return 0
-}
-
-
-################################################################
-#
-# NAME
-#	test_cons_res - determines if system is configured with cons_res plugin
-#
-# SYNOPSIS
-#	test_cons_res
-#
-# RETURN VALUE
-#	Returns 1 if configured, 0 otherwise
-#
-################################################################
-
-proc test_cons_res { } {
-	global scontrol number
-
-	log_user 0
-	set select_type [test_select_type]
-
-	if {![string compare $select_type "cons_res"]} {
-		return 1
-	} elseif {![string compare $select_type "cray_aries"] &&
-		  [test_select_type_params "other_cons_res"]} {
-		return 1
-	}
-	log_user 1
-
-	return 0
-}
-
-
-################################################################
-#
-# NAME
-#	test_cons_tres - determines if system is configured with cons_tres plugin
-#
-# SYNOPSIS
-#	test_cons_tres
+#	check_config_select type
 #
 # DESCRIPTION
-#	Determine if system is configured with cons_tres plugin.
+#	Determine if SelectType is equivalent to the passed one by also
+#	checking other_cons_res and other_cons_tres on SelectTypeParameters
+#	in case that select/cray_aries is configured.
+#
+# ARGUMENTS
+#	type
+#		the desired SelectType to check (e.g. cons_tres)
 #
 # RETURN VALUE
-#	Returns 1 if configured, 0 otherwise
+#	Returns true if configured, false otherwise
 #
 ################################################################
 
-proc test_cons_tres { } {
-	global scontrol number
+proc check_config_select { type } {
+	set select_type [get_config_param "SelectType"]
+	set select_type_parameters [get_config_param "SelectTypeParameters"]
 
-	log_user 0
-	set select_type [test_select_type]
-
-	if {![string compare $select_type "cons_tres"]} {
-		return 1
-	} elseif {![string compare $select_type "cray_aries"] &&
-		  [test_select_type_params "other_cons_tres"]} {
-		return 1
+	if {$select_type eq "select/$type"} {
+		return true
 	}
-	log_user 1
+	if {$select_type eq "select/cray_aries"} {
+		if {$type eq "linear" &&
+		    ![param_contains $select_type_parameters "other_cons_res"] &&
+		    ![param_contains $select_type_parameters "other_cons_tres"]} {
+			return true
+		}
+		if {$type eq "cons_res" &&
+		    [param_contains $select_type_parameters "other_cons_res"]} {
+			return true
+		}
+		if {$type eq "cons_tres" &&
+		    [param_contains $select_type_parameters "other_cons_tres"]} {
+			return true
+		}
+	}
 
-	return 0
+	return false
 }
 
 
@@ -3695,187 +2672,36 @@ proc get_total_cpus {} {
 ################################################################
 #
 # NAME
-#	test_scheduler_params - tests SchedulerParameters being used
+#	is_super_user - determines if user is root or SlurmUser
 #
 # SYNOPSIS
-#	test_scheduler_params type
-#
-# DESCRIPTION
-#	Test SchedulerParameters being used
-#
-# RETURN VALUE
-#	Returns 1 if "type" (input) is found, 0 otherwise
-#
-################################################################
-
-proc test_scheduler_params { type } {
-	global scontrol bin_bash bin_grep re_word_str
-
-	log_user 0
-	set ret 0
-	set params ""
-	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SchedulerParameters"
-	expect {
-		-re "SchedulerParameters *= *($re_word_str)" {
-			set params $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-
-	# Since string first doesn't have any case
-	# distinction just make it always be upper.
-	set type [string toupper $type]
-	set params [string toupper $params]
-	set params [split $params ,]
-
-	# We have to search with the '*' since some options have an =value
-	# on them.
-	if { [lsearch $params "$type*"] != -1 } {
-		set ret 1
-	}
-	log_user 1
-
-	return $ret
-}
-
-
-################################################################
-#
-# NAME
-#	test_select_type_params - determines SelectTypeParameters being used
-#
-# SYNOPSIS
-#	test_select_type_params type
-#
-# RETURN VALUE
-#	Returns 1 if "type" (input) is found, 0 otherwise
-#
-################################################################
-
-proc test_select_type_params { type } {
-	global scontrol bin_bash bin_grep re_word_str
-
-	log_user 0
-	set ret 0
-	set params ""
-	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
-	expect {
-		-re "SelectTypeParameters *= *($re_word_str)" {
-			set params $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-
-	# Since string first doesn't have any case
-	# distinction just make it always be upper.
-	set type [string toupper $type]
-	set params [string toupper $params]
-	set params [split $params ,]
-
-	foreach item $params {
-		# If argument is "MEMORY" then search for "_MEMORY"
-		if {![string compare $type "MEMORY"] &&
-		    [string first "_MEMORY" $item] != -1} {
-			set ret 1
-			break
-		# i.e. Check for CR_CORE_MEMORY or CR_CORE
-		} elseif {[string first "MEMORY" $item] != -1 &&
-		          [string first $type $item] != -1} {
-			set ret 1
-			break
-		} elseif {![string compare $type $item]} {
-			set ret 1
-			break
-		}
-	}
-	log_user 1
-
-	return $ret
-}
-
-
-################################################################
-#
-# NAME
-#	test_root_user - determines if user is root
-#
-# SYNOPSIS
-#	test_root_user
-#
-################################################################
-
-proc test_root_user { } {
-	global super_user super_user_set
-	set uid [get_my_uid]
-	if {$uid == 0} {
-		set super_user 1
-		set super_user_set 1
-		return 1
-	}
-	return 0
-}
-
-
-################################################################
-#
-# NAME
-#	test_super_user - determines if user is a Slurm super user
-#
-# SYNOPSIS
-#	test_super_user
+#	is_super_user
 #
 # DESCRIPTION
 #	Determine if user is a Slurm super user (i.e. user
 #	root or configured SlurmUser)
 #
+# RETURN VALUE
+#	true is user is root or SlurmUser, false otherwise
+#
 ################################################################
 
-proc test_super_user { } {
-	global re_word_str bin_id number scontrol super_user super_user_set
+proc is_super_user { } {
 
-	if {$super_user_set != 0} {
-		return $super_user
-	}
-
-#
-#	Check if user root
-#
-	set uid [get_my_uid]
-	if {$uid == 0} {
-		set super_user 1
-		set super_user_set 1
-		return $super_user
-	}
-
-#
-#	Check if SlurmUser
-#
 	set user [get_my_user_name]
 
-	log_user 0
-	spawn $scontrol show config
-	set slurm_user ""
-	expect {
-		-re "SlurmUser *= ($re_word_str)\[\(\]($number)\[\)\]" {
-			set slurm_user $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
+	# Check if user is root
+	if {[string compare $user "root"] == 0} {
+		return true
 	}
+
+	# Check if user is SlurmUser
+	set slurm_user [get_config_param "SlurmUser"]
 	if {[string compare $user $slurm_user] == 0} {
-		set super_user 1
+		return true
 	}
-	set super_user_set 1
-	log_user 1
-	return $super_user
+
+	return false
 }
 
 
@@ -4225,48 +3051,6 @@ proc get_suffix { hostname } {
 ################################################################
 #
 # NAME
-#	is_super_user - checks if we are user root or SlurmUser
-#
-# SYNOPSIS
-#	is_super_user
-#
-# DESCRIPTION
-#	Check if we are user root or SlurmUser
-#
-# RETURN VALUE
-#	1 if true, 0 if false
-#
-################################################################
-
-proc is_super_user { } {
-	global re_word_str bin_id scontrol
-
-	log_user 0
-	set user_name [get_my_user_name]
-	if {[string compare $user_name "root"] == 0} {
-		log_user 1
-		return 1
-	}
-
-	set found_user 0
-	spawn $scontrol show config
-	expect {
-		-re "SlurmUser *= $user_name" {
-			set found_user 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $found_user
-}
-
-
-################################################################
-#
-# NAME
 #	check_acct_associations - checks associations
 #
 # SYNOPSIS
@@ -4453,7 +3237,7 @@ proc check_accounting_admin_level { } {
 
 	log_user 0
 
-	if { [test_super_user] } {
+	if {[is_super_user]} {
 		return "Administrator"
 	}
 
@@ -5224,106 +4008,6 @@ proc wait_for_node args {
 #####################################################################
 #
 # NAME
-#	test_preempttype_part - determines if preempt mode partition_prio is configured
-#
-# SYNOPSIS
-#	test_preempttype_part
-#
-# RETURN VALUE
-#	0 if none
-#
-#####################################################################
-
-proc test_preempttype_part { } {
-
-	global scontrol
-	log_user 0
-	set part_prio 0
-	spawn $scontrol show config
-	expect {
-		-re "PreemptType *= preempt/partition_prio" {
-			set part_prio 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $part_prio
-}
-
-
-#####################################################################
-#
-# NAME
-#	test_preempttype_qos - determines if preempt mode qos is configured
-#
-# SYNOPSIS
-#	test_preempttype_qos
-#
-# RETURN VALUE
-#	0 if none
-#
-#####################################################################
-
-proc test_preempttype_qos { } {
-
-	global scontrol
-	log_user 0
-	set qos 0
-	spawn $scontrol show config
-	expect {
-		-re "PreemptType *= preempt/qos" {
-			set qos 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $qos
-}
-
-
-#####################################################################
-#
-# NAME
-#	test_proctrack - determines the ProctrackType
-#
-# SYNOPSIS
-#	test_proctrack
-#
-# RETURN VALUE
-#	the proctrack type
-#
-#####################################################################
-
-proc test_proctrack { } {
-
-	global scontrol re_word_str
-	log_user 0
-	set proctype ""
-	spawn $scontrol show config
-	expect {
-		-re "ProctrackType *=* proctrack/($re_word_str)" {
-			set proctype $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $proctype
-}
-
-
-#####################################################################
-#
-# NAME
 #	get_srun_ports - determines the SrunPortRange
 #
 # SYNOPSIS
@@ -5409,59 +4093,6 @@ proc available_nodes_hostnames { partition {also_power_save false} } {
 	}
 	log_user 1
 	return $idle_nodelist
-}
-
-
-#####################################################################
-#
-# NAME
-#	test_accting_steps - determines if nostep or nojobs is set for AccoutingStorageEnforce
-#
-# SYNOPSIS
-#	test_accting_steps
-#
-# DESCRIPTION
-#	Determine if nostep or nojobs is set for AccoutingStorageEnforce
-#
-# RETURN VALUE
-#	1 if set else 0
-#
-#####################################################################
-
-proc test_accting_steps { } {
-
-	global scontrol re_word_str
-	log_user 0
-	set enforce_limits 1
-	spawn $scontrol show config
-	expect {
-		-re "AccountingStorageEnforce *= ($re_word_str)" {
-			if {[string first "nosteps" $expect_out(1,string)] != -1 } {
-				set enforce_limits 0
-			}
-			if {[string first "nojobs" $expect_out(1,string)] != -1 } {
-				set enforce_limits 0
-			}
-			exp_continue
-		}
-		eof {
-			wait
-		}
-
-	}
-	log_user 1
-
-	return $enforce_limits
-}
-
-
-# Print the current line number in the script.  Calling like this
-#  [get_curr_line_num [info frame]]
-# will return the current line number
-proc get_curr_line_num {frame_info} {
-	# Getting value of the key 'line' from the dictionary
-	# returned by 'info frame'
-	set result [dict get [info frame $frame_info] line]
 }
 
 
@@ -6222,88 +4853,6 @@ proc get_het_job_ids { jobid {use_offset 0}} {
 ################################################################
 #
 # NAME
-#	test_pack_step - tests if steps can span multiple heterogeneous job allocations
-#
-# SYNOPSIS
-#	test_pack_step
-#
-# Returns 1 if steps can span multiple heterogeneous job allocations,
-#	  0 otherwise
-#
-################################################################
-
-proc test_pack_step { } {
-	global scontrol number exit_code
-
-	log_user 0
-	set pack_step 0
-	set major 0
-	set minor 0
-	spawn $scontrol -V
-	expect {
-		-re " ($number)\.($number)\.($number)" {
-			set version_major $expect_out(1,string)
-			set version_minor $expect_out(2,string)
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$version_major >= 19} {
-		set pack_step 1
-	} elseif {$version_major >= 18} {
-		set pack_step 1
-		spawn $scontrol show config
-		expect {
-			-re "select/cray" {
-				set pack_step 0
-				exp_continue
-			}
-			timeout {
-				log_error "scontrol not responding"
-				set exit_code 1
-			}
-			eof {
-				wait
-			}
-		}
-	} elseif {$version_major == 17 && $version_minor == 11} {
-		spawn $scontrol show config
-		expect {
-			-re "select/cray" {
-				set pack_step 0
-				exp_continue
-			}
-			-re "disable_hetero_steps" {
-				set pack_step 0
-				exp_continue
-			}
-			-re "enable_hetero_steps" {
-				set pack_step 1
-				exp_continue
-			}
-			timeout {
-				log_error "scontrol not responding"
-				set exit_code 1
-			}
-			eof {
-				wait
-			}
-		}
-	}
-	log_user 1
-	return $pack_step
-}
-
-
-################################################################
-#
-# NAME
 #	reconfigure - calls scontrol reconfigure
 #
 # SYNOPSIS
@@ -6505,7 +5054,7 @@ proc log_trace {message} {
 #	in_fed
 #
 # RETURN VALUE
-#	Returns 1 if this cluster is in a federation, 0 otherwise
+#	Returns true if this cluster is in a federation, false otherwise
 #
 ################################################################
 
@@ -6515,7 +5064,7 @@ proc in_fed {} {
 	spawn $scontrol show fed
 	expect {
 		-re "Federation" {
-			return 1
+			return true
 		}
 		timeout {
 			log_error "scontrol not responding"
@@ -6524,7 +5073,7 @@ proc in_fed {} {
 			wait
 		}
 	}
-	return 0
+	return false
 }
 
 
@@ -7330,7 +5879,7 @@ proc restore_conf { file_name } {
 #	have_nvml
 #
 # RETURN VALUE
-#	Returns 1 if HAVE_NVML is set in config.h. Else, returns 0.
+#	Returns true if HAVE_NVML is set in config.h. Else, returns false
 #
 ################################################################
 
@@ -7338,12 +5887,12 @@ proc have_nvml { } {
 	global bin_grep number exit_code config_h
 
 	set grep_fail 0
-	set have_nvml 0
+	set have_nvml false
 	log_user 0
 	spawn $bin_grep "HAVE_NVML" $config_h
 	expect {
-		-re "HAVE_NVML ($number)" {
-			set have_nvml $expect_out(1,string)
+		-re "HAVE_NVML 1" {
+			set have_nvml true
 			exp_continue
 		}
 		timeout {
@@ -7358,7 +5907,7 @@ proc have_nvml { } {
 
 	if {$grep_fail == 1} {
 		log_warn "Could not grep $config_h for HAVE_NVML"
-		set have_nvml 0
+		set have_nvml false
 	}
 
 	return $have_nvml
@@ -7401,7 +5950,7 @@ proc delete_part { part_name } {
 #	have_lua
 #
 # RETURN VALUE
-#	Returns 1 if HAVE_LUA is set in config.h. Else, returns 0.
+#	Returns true if HAVE_LUA is set in config.h. Else, returns false
 #
 ################################################################
 
@@ -7409,12 +5958,12 @@ proc have_lua { } {
 	global bin_grep number exit_code config_h
 
 	set grep_fail 0
-	set have_lua 0
+	set have_lua false
 	log_user 0
 	spawn $bin_grep "HAVE_LUA" $config_h
 	expect {
-		-re "HAVE_LUA ($number)" {
-			set have_lua $expect_out(1,string)
+		-re "HAVE_LUA 1" {
+			set have_lua true
 			exp_continue
 		}
 		timeout {
@@ -7429,7 +5978,7 @@ proc have_lua { } {
 
 	if {$grep_fail == 1} {
 		log_error "Could not grep $config_h for HAVE_LUA"
-		set have_lua 0
+		set have_lua false
 	}
 
 	return $have_lua

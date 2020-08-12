@@ -34,7 +34,7 @@ set test_part_1   "test$test_id\_part1"
 set test_part_2   "test$test_id\_part2"
 set exit_code     0
 
-if {[test_super_user] == 0} {
+if {![is_super_user]} {
 	skip "Can not test more unless SlurmUser"
 }
 

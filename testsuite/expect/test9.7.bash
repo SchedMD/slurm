@@ -93,6 +93,4 @@ else
 	rm $log
 fi
 echo "########## EXIT_CODE $exit_code ########## "
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+exit $exit_code

@@ -33,11 +33,11 @@ source ./globals
 set iterations 100
 set exit_code   0
 
-if {[is_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
 
-if {[test_front_end]} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
 }
 
@@ -149,7 +149,7 @@ if {[string compare $host_1 $include_node]} {
 # logic has time to be processed (slurmd -> slurmctld messages)
 # Note: process output in order of expected completion
 #
-set front_end [test_front_end]
+set front_end {[get_config_param "FrontendName"] ne "MISSING"}
 
 set successes 0
 for {set inx 0} {$inx < $iterations} {incr inx} {

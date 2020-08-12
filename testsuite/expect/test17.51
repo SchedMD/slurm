@@ -31,7 +31,7 @@ set cwd          "[$bin_pwd]"
 set config_path  ""
 set tmp_job      "test$test_id\_tmp_job"
 
-if {[is_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
 
@@ -207,7 +207,7 @@ if {$found == 0} {
 }
 set found 0
 #test sacct if accounting, wait a few seconds for accounting data to reach DB
-if { [test_account_storage] != 0 } {
+if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
 	sleep 5
 	spawn $sacct -j $job_id --noheader -o "mcslabel"
 	expect {

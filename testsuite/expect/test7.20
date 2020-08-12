@@ -306,16 +306,14 @@ proc test_bin_fail { num bin args het_job count } {
 	}
 }
 
-if {[have_lua] == 0} {
+if {![have_lua]} {
 	skip "LUA must be installed and enabled to test lua job_submit plugin."
 }
 
-if { [test_account_storage] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
-} elseif { [test_enforce_limits] == 0 } {
-	skip "This test can't be run without a usable AccountingStorageEnforce"
 }
-if { [test_limits_enforced] == 0 } {
+if {![param_contains [get_config_param "AccountingStorageEnforce"] "limits"]} {
 	skip "This test can't be run without enforcing limits"
 }
 
