@@ -918,7 +918,6 @@ extern void slurmdb_destroy_job_rec(void *object)
 	if (job) {
 		xfree(job->account);
 		xfree(job->admin_comment);
-		xfree(job->alloc_gres);
 		xfree(job->array_task_str);
 		xfree(job->blockid);
 		xfree(job->cluster);
@@ -928,7 +927,6 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->mcs_label);
 		xfree(job->partition);
 		xfree(job->nodes);
-		xfree(job->req_gres);
 		xfree(job->resv_name);
 		slurmdb_free_slurmdb_stats_members(&job->stats);
 		FREE_NULL_LIST(job->steps);

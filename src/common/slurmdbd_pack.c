@@ -446,8 +446,6 @@ static void _pack_job_start_msg(void *in,
 		pack64(msg->db_index, buffer);
 		pack_time(msg->eligible_time, buffer);
 		pack32(msg->gid, buffer);
-		packstr(msg->gres_alloc, buffer);
-		packstr(msg->gres_req, buffer);
 		packstr(msg->gres_used, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_state, buffer);
@@ -486,8 +484,8 @@ static void _pack_job_start_msg(void *in,
 		pack64(msg->db_index, buffer);
 		pack_time(msg->eligible_time, buffer);
 		pack32(msg->gid, buffer);
-		packstr(msg->gres_alloc, buffer);
-		packstr(msg->gres_req, buffer);
+		packnull(buffer);
+		packnull(buffer);
 		packstr(msg->gres_used, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_state, buffer);
@@ -521,6 +519,7 @@ static int _unpack_job_start_msg(void **msg,
 	uint32_t uint32_tmp;
 	dbd_job_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_start_msg_t));
 	*msg = msg_ptr;
+	void * tmp_ptr;
 
 	msg_ptr->array_job_id = 0;
 	msg_ptr->array_task_id = NO_VAL;
@@ -541,10 +540,6 @@ static int _unpack_job_start_msg(void **msg,
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);
 		safe_unpack32(&msg_ptr->gid, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->gres_alloc, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->gres_req, &uint32_tmp,
-				       buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->gres_used, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);
@@ -590,10 +585,10 @@ static int _unpack_job_start_msg(void **msg,
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);
 		safe_unpack32(&msg_ptr->gid, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->gres_alloc, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->gres_req, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(tmp_ptr, &uint32_tmp, buffer);
+		xfree(tmp_ptr);
+		safe_unpackstr_xmalloc(tmp_ptr, &uint32_tmp, buffer);
+		xfree(tmp_ptr);
 		safe_unpackstr_xmalloc(&msg_ptr->gres_used, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);

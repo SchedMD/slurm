@@ -117,8 +117,6 @@ typedef struct {
 	char *end;
 	char *flags;
 	char *gid;
-	char *gres_alloc;
-	char *gres_req;
 	char *gres_used;
 	char *het_job_id;
 	char *het_job_offset;
@@ -188,8 +186,6 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->end);
 		xfree(object->flags);
 		xfree(object->gid);
-		xfree(object->gres_alloc);
-		xfree(object->gres_req);
 		xfree(object->gres_used);
 		xfree(object->het_job_id);
 		xfree(object->het_job_offset);
@@ -490,8 +486,6 @@ static char *job_req_inx[] = {
 	"time_eligible",
 	"time_end",
 	"id_group",
-	"gres_alloc",
-	"gres_req",
 	"gres_used",
 	"het_job_id",
 	"het_job_offset",
@@ -545,8 +539,6 @@ enum {
 	JOB_REQ_ELIGIBLE,
 	JOB_REQ_END,
 	JOB_REQ_GID,
-	JOB_REQ_GRES_ALLOC,
-	JOB_REQ_GRES_REQ,
 	JOB_REQ_GRES_USED,
 	JOB_REQ_HET_JOB_ID,
 	JOB_REQ_HET_JOB_OFFSET,
@@ -886,8 +878,6 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->eligible, buffer);
 	packstr(object->end, buffer);
 	packstr(object->gid, buffer);
-	packstr(object->gres_alloc, buffer);
-	packstr(object->gres_req, buffer);
 	packstr(object->gres_used, buffer);
 	packstr(object->job_db_inx, buffer);
 	packstr(object->jobid, buffer);
@@ -970,8 +960,6 @@ static int _unpack_local_job(local_job_t *object,
 		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->gres_alloc, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->gres_req, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->gres_used, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
@@ -2949,8 +2937,6 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.eligible = row[JOB_REQ_ELIGIBLE];
 		job.end = row[JOB_REQ_END];
 		job.gid = row[JOB_REQ_GID];
-		job.gres_alloc = row[JOB_REQ_GRES_ALLOC];
-		job.gres_req = row[JOB_REQ_GRES_REQ];
 		job.gres_used = row[JOB_REQ_GRES_USED];
 		job.het_job_id = row[JOB_REQ_HET_JOB_ID];
 		job.het_job_offset = row[JOB_REQ_HET_JOB_OFFSET];
@@ -3008,8 +2994,6 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 		JOB_REQ_ELIGIBLE,
 		JOB_REQ_END,
 		JOB_REQ_GID,
-		JOB_REQ_GRES_ALLOC,
-		JOB_REQ_GRES_REQ,
 		JOB_REQ_GRES_USED,
 		JOB_REQ_HET_JOB_ID,
 		JOB_REQ_HET_JOB_OFFSET,
@@ -3140,8 +3124,6 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.eligible,
 			   object.end,
 			   object.gid,
-			   object.gres_alloc,
-			   object.gres_req,
 			   object.gres_used,
 			   object.het_job_id,
 			   object.het_job_offset,

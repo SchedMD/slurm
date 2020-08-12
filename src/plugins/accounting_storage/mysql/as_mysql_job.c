@@ -491,10 +491,6 @@ no_rollup_change:
 			xstrcat(query, ", wckey");
 		if (job_ptr->network)
 			xstrcat(query, ", node_inx");
-		if (job_ptr->gres_req)
-			xstrcat(query, ", gres_req");
-		if (job_ptr->gres_alloc)
-			xstrcat(query, ", gres_alloc");
 		if (array_recs && array_recs->task_id_str)
 			xstrcat(query, ", array_task_str, array_max_tasks, "
 				"array_task_pending");
@@ -541,10 +537,6 @@ no_rollup_change:
 			xstrfmtcat(query, ", '%s'", job_ptr->wckey);
 		if (job_ptr->network)
 			xstrfmtcat(query, ", '%s'", job_ptr->network);
-		if (job_ptr->gres_req)
-			xstrfmtcat(query, ", '%s'", job_ptr->gres_req);
-		if (job_ptr->gres_alloc)
-			xstrfmtcat(query, ", '%s'", job_ptr->gres_alloc);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcat(query, ", '%s', %u, %u",
 				   array_recs->task_id_str,
@@ -605,11 +597,6 @@ no_rollup_change:
 			xstrfmtcat(query, ", wckey='%s'", job_ptr->wckey);
 		if (job_ptr->network)
 			xstrfmtcat(query, ", node_inx='%s'", job_ptr->network);
-		if (job_ptr->gres_req)
-			xstrfmtcat(query, ", gres_req='%s'", job_ptr->gres_req);
-		if (job_ptr->gres_alloc)
-			xstrfmtcat(query, ", gres_alloc='%s'",
-				   job_ptr->gres_alloc);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcat(query, ", array_task_str='%s', "
 				   "array_max_tasks=%u, array_task_pending=%u",
@@ -667,12 +654,6 @@ no_rollup_change:
 			xstrfmtcat(query, "wckey='%s', ", job_ptr->wckey);
 		if (job_ptr->network)
 			xstrfmtcat(query, "node_inx='%s', ", job_ptr->network);
-		if (job_ptr->gres_req)
-			xstrfmtcat(query, "gres_req='%s', ",
-				   job_ptr->gres_req);
-		if (job_ptr->gres_alloc)
-			xstrfmtcat(query, "gres_alloc='%s', ",
-				   job_ptr->gres_alloc);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcat(query, "array_task_str='%s', "
 				   "array_max_tasks=%u, "

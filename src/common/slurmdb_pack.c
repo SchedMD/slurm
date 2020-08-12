@@ -3997,7 +3997,6 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		packstr(job->account, buffer);
 		packstr(job->admin_comment, buffer);
-		packstr(job->alloc_gres, buffer);
 		pack32(job->alloc_nodes, buffer);
 		pack32(job->array_job_id, buffer);
 		pack32(job->array_max_tasks, buffer);
@@ -4031,7 +4030,6 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->priority, buffer);
 		pack32(job->qosid, buffer);
 		pack32(job->req_cpus, buffer);
-		packstr(job->req_gres, buffer);
 		pack64(job->req_mem, buffer);
 		pack32(job->requid, buffer);
 		packstr(job->resv_name, buffer);
@@ -4079,7 +4077,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 	} else if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		packstr(job->account, buffer);
 		packstr(job->admin_comment, buffer);
-		packstr(job->alloc_gres, buffer);
+		packnull(buffer); /* was alloc_gres */
 		pack32(job->alloc_nodes, buffer);
 		pack32(job->array_job_id, buffer);
 		pack32(job->array_max_tasks, buffer);
@@ -4113,7 +4111,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->priority, buffer);
 		pack32(job->qosid, buffer);
 		pack32(job->req_cpus, buffer);
-		packstr(job->req_gres, buffer);
+		packnull(buffer); /* was req_gres */
 		pack64(job->req_mem, buffer);
 		pack32(job->requid, buffer);
 		packstr(job->resv_name, buffer);
@@ -4161,7 +4159,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(job->account, buffer);
 		packstr(job->admin_comment, buffer);
-		packstr(job->alloc_gres, buffer);
+		packnull(buffer); /* was alloc_gres */
 		pack32(job->alloc_nodes, buffer);
 		pack32(job->array_job_id, buffer);
 		pack32(job->array_max_tasks, buffer);
@@ -4194,7 +4192,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->priority, buffer);
 		pack32(job->qosid, buffer);
 		pack32(job->req_cpus, buffer);
-		packstr(job->req_gres, buffer);
+		packnull(buffer); /* was req_gres */
 		pack64(job->req_mem, buffer);
 		pack32(job->requid, buffer);
 		packstr(job->resv_name, buffer);
@@ -4253,14 +4251,13 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 	slurmdb_step_rec_t *step = NULL;
 	uint32_t count = 0;
 	uint32_t uint32_tmp;
+	void *tmp_ptr;
 
 	*job = job_ptr;
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->admin_comment, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->alloc_gres, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&job_ptr->alloc_nodes, buffer);
 		safe_unpack32(&job_ptr->array_job_id, buffer);
@@ -4299,7 +4296,6 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->priority, buffer);
 		safe_unpack32(&job_ptr->qosid, buffer);
 		safe_unpack32(&job_ptr->req_cpus, buffer);
-		safe_unpackstr_xmalloc(&job_ptr->req_gres, &uint32_tmp, buffer);
 		safe_unpack64(&job_ptr->req_mem, buffer);
 		safe_unpack32(&job_ptr->requid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->resv_name, &uint32_tmp,
@@ -4354,8 +4350,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->admin_comment, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->alloc_gres, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(tmp_ptr, &uint32_tmp, buffer);
+		xfree(tmp_ptr);
 		safe_unpack32(&job_ptr->alloc_nodes, buffer);
 		safe_unpack32(&job_ptr->array_job_id, buffer);
 		safe_unpack32(&job_ptr->array_max_tasks, buffer);
@@ -4393,7 +4389,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->priority, buffer);
 		safe_unpack32(&job_ptr->qosid, buffer);
 		safe_unpack32(&job_ptr->req_cpus, buffer);
-		safe_unpackstr_xmalloc(&job_ptr->req_gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(tmp_ptr, &uint32_tmp, buffer);
+		xfree(tmp_ptr);
 		safe_unpack64(&job_ptr->req_mem, buffer);
 		safe_unpack32(&job_ptr->requid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->resv_name, &uint32_tmp,
@@ -4449,8 +4446,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->admin_comment, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->alloc_gres, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(tmp_ptr, &uint32_tmp, buffer);
+		xfree(tmp_ptr);
 		safe_unpack32(&job_ptr->alloc_nodes, buffer);
 		safe_unpack32(&job_ptr->array_job_id, buffer);
 		safe_unpack32(&job_ptr->array_max_tasks, buffer);
@@ -4487,7 +4484,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->priority, buffer);
 		safe_unpack32(&job_ptr->qosid, buffer);
 		safe_unpack32(&job_ptr->req_cpus, buffer);
-		safe_unpackstr_xmalloc(&job_ptr->req_gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(tmp_ptr, &uint32_tmp, buffer);
+		xfree(tmp_ptr);
 		safe_unpack64(&job_ptr->req_mem, buffer);
 		safe_unpack32(&job_ptr->requid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->resv_name, &uint32_tmp,

@@ -725,7 +725,6 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
     hv_store_sv(hv, "steps", newRV((SV*)steps_av));
 
     STORE_FIELD(hv, rec, account,         charp);
-    STORE_FIELD(hv, rec, alloc_gres,      charp);
     STORE_FIELD(hv, rec, alloc_nodes,     uint32_t);
     STORE_FIELD(hv, rec, array_job_id,    uint32_t);
     STORE_FIELD(hv, rec, array_max_tasks, uint32_t);
@@ -750,7 +749,6 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, priority,        uint32_t);
     STORE_FIELD(hv, rec, qosid,           uint32_t);
     STORE_FIELD(hv, rec, req_cpus,        uint32_t);
-    STORE_FIELD(hv, rec, req_gres,        charp);
     STORE_FIELD(hv, rec, req_mem,         uint64_t);
     STORE_FIELD(hv, rec, requid,          uint32_t);
     STORE_FIELD(hv, rec, resvid,          uint32_t);

@@ -134,8 +134,6 @@ static void _partial_free_dbd_job_start(void *object)
 		xfree(req->partition);
 		xfree(req->node_inx);
 		xfree(req->wckey);
-		xfree(req->gres_alloc);
-		xfree(req->gres_req);
 		xfree(req->gres_used);
 		xfree(req->tres_alloc_str);
 		xfree(req->tres_req_str);
@@ -238,8 +236,6 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->wckey         = xstrdup(job_ptr->wckey);
 	req->uid           = job_ptr->user_id;
 	req->qos_id        = job_ptr->qos_id;
-	req->gres_alloc    = xstrdup(job_ptr->gres_alloc);
-	req->gres_req      = xstrdup(job_ptr->gres_req);
 	req->gres_used     = xstrdup(job_ptr->gres_used);
 
 	return SLURM_SUCCESS;

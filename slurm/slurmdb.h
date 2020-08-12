@@ -772,7 +772,6 @@ typedef struct {
 typedef struct {
 	char    *account;
 	char	*admin_comment;
-	char	*alloc_gres;
 	uint32_t alloc_nodes;
 	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */
 	uint32_t array_max_tasks; /* How many tasks of the array can be
@@ -808,7 +807,6 @@ typedef struct {
 	uint32_t priority;
 	uint32_t qosid;
 	uint32_t req_cpus;
-	char	*req_gres;
 	uint64_t req_mem;
 	uint32_t requid;
 	uint32_t resvid;

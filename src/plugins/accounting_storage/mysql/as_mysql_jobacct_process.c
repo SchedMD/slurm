@@ -96,8 +96,6 @@ char *job_req_inx[] = {
 	"t1.timelimit",
 	"t1.track_steps",
 	"t1.wckey",
-	"t1.gres_alloc",
-	"t1.gres_req",
 	"t1.gres_used",
 	"t1.tres_alloc",
 	"t1.tres_req",
@@ -152,8 +150,6 @@ enum {
 	JOB_REQ_TIMELIMIT,
 	JOB_REQ_TRACKSTEPS,
 	JOB_REQ_WCKEY,
-	JOB_REQ_GRES_ALLOC,
-	JOB_REQ_GRES_REQ,
 	JOB_REQ_GRES_USED,
 	JOB_REQ_TRESA,
 	JOB_REQ_TRESR,
@@ -642,10 +638,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			list_append(job_list, job);
 		last_id = curr_id;
 
-		if (row[JOB_REQ_GRES_ALLOC])
-			job->alloc_gres = xstrdup(row[JOB_REQ_GRES_ALLOC]);
-		else
-			job->alloc_gres = xstrdup("");
 		job->alloc_nodes = slurm_atoul(row[JOB_REQ_ALLOC_NODES]);
 		job->associd = slurm_atoul(row[JOB_REQ_ASSOCID]);
 		job->array_job_id = slurm_atoul(row[JOB_REQ_ARRAYJOBID]);
@@ -832,10 +824,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->track_steps = slurm_atoul(row[JOB_REQ_TRACKSTEPS]);
 		job->priority = slurm_atoul(row[JOB_REQ_PRIORITY]);
 		job->req_cpus = slurm_atoul(row[JOB_REQ_REQ_CPUS]);
-		if (row[JOB_REQ_GRES_REQ])
-			job->req_gres = xstrdup(row[JOB_REQ_GRES_REQ]);
-		else
-			job->req_gres = xstrdup("");
 		job->req_mem = slurm_atoull(row[JOB_REQ_REQ_MEM]);
 		job->requid = slurm_atoul(row[JOB_REQ_KILL_REQUID]);
 		job->qosid = slurm_atoul(row[JOB_REQ_QOS]);
