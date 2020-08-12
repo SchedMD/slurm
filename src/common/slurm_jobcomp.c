@@ -97,7 +97,7 @@ jobcomp_destroy_job(void *object)
 		xfree(job->bg_start_point);
 		xfree(job->work_dir);
 		xfree(job->resv_name);
-		xfree(job->req_gres);
+		xfree(job->tres_fmt_req_str);
 		xfree(job->account);
 		xfree(job->qos_name);
 		xfree(job->wckey);

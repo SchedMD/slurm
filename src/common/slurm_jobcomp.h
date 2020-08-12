@@ -73,7 +73,7 @@ typedef struct {
 	char *bg_start_point;
 	char *work_dir;
 	char *resv_name;
-	char *req_gres;
+	char *tres_fmt_req_str;
 	char *account;
 	char *qos_name;
 	char *wckey;

@@ -145,7 +145,9 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 		} else if (!xstrcasecmp("ReservationName", jobcomp_info->name)) {
 			job->resv_name = xstrdup(jobcomp_info->val);
 		} else if (!xstrcasecmp("Gres", jobcomp_info->name)) {
-			job->req_gres = xstrdup(jobcomp_info->val);
+			job->tres_fmt_req_str = xstrdup(jobcomp_info->val);
+		} else if (!xstrcasecmp("Tres", jobcomp_info->name)) {
+			job->tres_fmt_req_str = xstrdup(jobcomp_info->val);
 		} else if (!xstrcasecmp("Account", jobcomp_info->name)) {
 			job->account = xstrdup(jobcomp_info->val);
 		} else if (!xstrcasecmp("QOS", jobcomp_info->name)) {

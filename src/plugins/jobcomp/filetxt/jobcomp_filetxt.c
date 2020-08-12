@@ -82,7 +82,7 @@ const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
 #define JOB_FORMAT "JobId=%lu UserId=%s(%lu) GroupId=%s(%lu) Name=%s JobState=%s Partition=%s "\
 		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u ProcCnt=%u "\
-		"WorkDir=%s ReservationName=%s Gres=%s Account=%s QOS=%s "\
+		"WorkDir=%s ReservationName=%s Tres=%s Account=%s QOS=%s "\
 		"WcKey=%s Cluster=%s SubmitTime=%s EligibleTime=%s%s%s "\
 		"DerivedExitCode=%s ExitCode=%s %s\n"
 
@@ -188,7 +188,7 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 	int rc = SLURM_SUCCESS, tmp_int, tmp_int2;
 	char job_rec[1024];
 	char usr_str[32], grp_str[32], start_str[32], end_str[32], lim_str[32];
-	char *resv_name, *gres, *account, *qos, *wckey, *cluster;
+	char *resv_name, *tres, *account, *qos, *wckey, *cluster;
 	char *exit_code_str = NULL, *derived_ec_str = NULL;
 	char submit_time[32], eligible_time[32], array_id[64], het_id[64];
 	char select_buf[128], *state_string, *work_dir;
@@ -257,10 +257,10 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 	else
 		resv_name = "";
 
-	if (job_ptr->gres_req && job_ptr->gres_req[0])
-		gres = job_ptr->gres_req;
+	if (job_ptr->tres_fmt_req_str && job_ptr->tres_fmt_req_str[0])
+		tres = job_ptr->tres_fmt_req_str;
 	else
-		gres = "";
+		tres = "";
 
 	if (job_ptr->account && job_ptr->account[0])
 		account = job_ptr->account;
@@ -339,7 +339,7 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 		 (unsigned long) job_ptr->group_id, job_ptr->name,
 		 state_string, job_ptr->partition, lim_str, start_str,
 		 end_str, job_ptr->nodes, job_ptr->node_cnt,
-		 job_ptr->total_cpus, work_dir, resv_name, gres, account, qos,
+		 job_ptr->total_cpus, work_dir, resv_name, tres, account, qos,
 		 wckey, cluster, submit_time, eligible_time, array_id, het_id,
 		 derived_ec_str, exit_code_str, select_buf);
 	tot_size = strlen(job_rec);

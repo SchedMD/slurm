@@ -784,15 +784,15 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 		xfree(str);
 	}
 
-	if (job_ptr->gres_req && job_ptr->gres_req[0]) {
-		char *str = _json_escape(job_ptr->gres_req);
-		xstrfmtcat(json_str, ",\"gres_req\":\"%s\"", str);
+	if (job_ptr->tres_fmt_req_str && job_ptr->tres_fmt_req_str[0]) {
+		char *str = _json_escape(job_ptr->tres_fmt_req_str);
+		xstrfmtcat(json_str, ",\"tres_req\":\"%s\"", str);
 		xfree(str);
 	}
 
-	if (job_ptr->gres_alloc && job_ptr->gres_alloc[0]) {
-		char *str = _json_escape(job_ptr->gres_alloc);
-		xstrfmtcat(json_str, ",\"gres_alloc\":\"%s\"", str);
+	if (job_ptr->tres_fmt_alloc_str && job_ptr->tres_fmt_alloc_str[0]) {
+		char *str = _json_escape(job_ptr->tres_fmt_alloc_str);
+		xstrfmtcat(json_str, ",\"tres_alloc\":\"%s\"", str);
 		xfree(str);
 	}
 
