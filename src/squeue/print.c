@@ -115,6 +115,15 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 				continue;
 			job_rec_ptr = xmalloc(sizeof(squeue_job_rec_t));
 			job_rec_ptr->job_ptr = jobs + i;
+			/*
+			 * Note: for multi-partition definitions the following
+			 * is ill-defined, and you should really use the -P
+			 * option for a consistent view.
+			 * This will sort such jobs alphabetically, but that
+			 * may be confusing as to why "foo,bar" and "bar,foo"
+			 * submissions end up in different places.
+			 */
+			job_rec_ptr->part_name = xstrdup(jobs[i].partition);
 			list_append(l, (void *) job_rec_ptr);
 		}
 	}

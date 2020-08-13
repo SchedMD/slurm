@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix sbcast --fanout option.
  -- Tighten up keyword matching for --dependency.
+ -- Fix "squeue -S P" not sorting by partition name.
 
 * Changes in Slurm 20.02.5
 ==========================
