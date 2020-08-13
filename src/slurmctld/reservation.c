@@ -540,6 +540,17 @@ static int _queue_magnetic_resv(void *x, void *key)
 	return 0;
 }
 
+static int _find_running_job_with_resv_ptr(void *x, void *key)
+{
+	job_record_t *job_ptr = (job_record_t *) x;
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) key;
+
+	if ((!IS_JOB_FINISHED(job_ptr)) &&
+	    (job_ptr->resv_id == resv_ptr->resv_id))
+		return 1;
+	return 0;
+}
+
 static int _find_resv_id(void *x, void *key)
 {
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
@@ -3376,21 +3387,12 @@ update_failure:
 /* Determine if a running or pending job is using a reservation */
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr)
 {
-	ListIterator job_iterator;
-	job_record_t *job_ptr;
-	bool match = false;
+	if (list_find_first(resv_list,
+			    _find_running_job_with_resv_ptr,
+			    resv_ptr))
+		return true;
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if ((!IS_JOB_FINISHED(job_ptr)) &&
-		    (job_ptr->resv_id == resv_ptr->resv_id)) {
-			match = true;
-			break;
-		}
-	}
-	list_iterator_destroy(job_iterator);
-
-	return match;
+	return false;
 }
 
 /* Clear the reservation pointers for jobs referencing a defunct reservation */
