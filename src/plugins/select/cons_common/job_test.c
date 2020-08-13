@@ -51,6 +51,15 @@ typedef struct {
 	int rc;
 } wrapper_rm_job_args_t;
 
+typedef struct {
+	List preemptee_candidates;
+	List cr_job_list;
+	node_use_record_t *future_usage;
+	part_res_record_t *future_part;
+	bitstr_t *orig_map;
+	bool *qos_preemptor;
+} cr_job_list_args_t;
+
 uint64_t def_cpu_per_gpu = 0;
 uint64_t def_mem_per_gpu = 0;
 bool preempt_strict_order = false;
@@ -1735,6 +1744,66 @@ static int _job_res_rm_job(part_res_record_t *part_record_ptr,
 	return 0;
 }
 
+static int _build_cr_job_list(void *x, void *arg)
+{
+	int action;
+	job_record_t *tmp_job_ptr = (job_record_t *)x;
+	job_record_t *job_ptr_preempt = NULL;
+	cr_job_list_args_t *args = (cr_job_list_args_t *)arg;
+
+	if (!IS_JOB_RUNNING(tmp_job_ptr) &&
+	    !IS_JOB_SUSPENDED(tmp_job_ptr))
+		return 0;
+	if (tmp_job_ptr->end_time == 0) {
+		error("Active %pJ has zero end_time", tmp_job_ptr);
+		return 0;
+	}
+	if (tmp_job_ptr->node_bitmap == NULL) {
+		/*
+		 * This should indicate a requeued job was cancelled
+		 * while NHC was running
+		 */
+		error("%pJ has NULL node_bitmap", tmp_job_ptr);
+		return 0;
+	}
+	/*
+	 * For hetjobs, only the leader component is potentially added
+	 * to the preemptee_candidates. If the leader is preemptable,
+	 * it will be removed in the else statement alongside all of the
+	 * rest of the components. For such case, we don't want to
+	 * append non-leaders to cr_job_list, otherwise we would be
+	 * double deallocating them (once in this else statement and
+	 * twice later in the simulation of jobs removal).
+	 */
+	job_ptr_preempt = tmp_job_ptr;
+	if (tmp_job_ptr->het_job_id) {
+		job_ptr_preempt = find_job_record(tmp_job_ptr->het_job_id);
+		if (!job_ptr_preempt) {
+			error("%pJ HetJob leader not found", tmp_job_ptr);
+			return 0;
+		}
+	}
+	if (!_is_preemptable(job_ptr_preempt, args->preemptee_candidates)) {
+		/* Queue job for later removal from data structures */
+		list_append(args->cr_job_list, tmp_job_ptr);
+	} else if (tmp_job_ptr == job_ptr_preempt) {
+		uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
+		if (mode == PREEMPT_MODE_OFF)
+			return 0;
+		if (mode == PREEMPT_MODE_SUSPEND) {
+			action = 2;	/* remove cores, keep memory */
+			if (preempt_by_qos)
+				*args->qos_preemptor = true;
+		} else
+			action = 0;	/* remove cores and memory */
+		/* Remove preemptable job now */
+		_job_res_rm_job(args->future_part, args->future_usage,
+				tmp_job_ptr, action, false,
+				args->orig_map);
+	}
+	return 0;
+}
+
 /*
  * Determine where and when the job at job_ptr can begin execution by updating
  * a scratch cr_record structure to reflect each job terminating at the
@@ -1750,14 +1819,15 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 {
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
-	job_record_t *tmp_job_ptr, *job_ptr_preempt = NULL;
+	job_record_t *tmp_job_ptr;
 	List cr_job_list;
 	ListIterator job_iterator, preemptee_iterator;
 	bitstr_t *orig_map;
-	int action, rc = SLURM_ERROR;
+	int rc = SLURM_ERROR;
 	time_t now = time(NULL);
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
 	bool qos_preemptor = false;
+	cr_job_list_args_t args;
 
 	orig_map = bit_copy(node_bitmap);
 
@@ -1795,64 +1865,15 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 	/* Build list of running and suspended jobs */
 	cr_job_list = list_create(NULL);
-	job_iterator = list_iterator_create(job_list);
-	while ((tmp_job_ptr = list_next(job_iterator))) {
-		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
-		    !IS_JOB_SUSPENDED(tmp_job_ptr))
-			continue;
-		if (tmp_job_ptr->end_time == 0) {
-			error("Active %pJ has zero end_time",
-			      tmp_job_ptr);
-			continue;
-		}
-		if (tmp_job_ptr->node_bitmap == NULL) {
-			/*
-			 * This should indicate a requeued job was cancelled
-			 * while NHC was running
-			 */
-			error("%pJ has NULL node_bitmap",
-			      tmp_job_ptr);
-			continue;
-		}
-		/*
-		 * For hetjobs, only the leader component is potentially added
-		 * to the preemptee_candidates. If the leader is preemptable,
-		 * it will be removed in the else statement alongside all of the
-		 * rest of the components. For such case, we don't want to
-		 * append non-leaders to cr_job_list, otherwise we would be
-		 * double deallocating them (once in this else statement and
-		 * twice later in the simulation of jobs removal).
-		 */
-		job_ptr_preempt = tmp_job_ptr;
-		if (tmp_job_ptr->het_job_id) {
-			job_ptr_preempt =
-				find_job_record(tmp_job_ptr->het_job_id);
-			if (!job_ptr_preempt) {
-				error("%s: %pJ HetJob leader not found",
-				      __func__, tmp_job_ptr);
-				continue;
-			}
-		}
-		if (!_is_preemptable(job_ptr_preempt, preemptee_candidates)) {
-			/* Queue job for later removal from data structures */
-			list_append(cr_job_list, tmp_job_ptr);
-		} else if (tmp_job_ptr == job_ptr_preempt) {
-			uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
-			if (mode == PREEMPT_MODE_OFF)
-				continue;
-			if (mode == PREEMPT_MODE_SUSPEND) {
-				action = 2;	/* remove cores, keep memory */
-				if (preempt_by_qos)
-					qos_preemptor = true;
-			} else
-				action = 0;	/* remove cores and memory */
-			/* Remove preemptable job now */
-			_job_res_rm_job(future_part, future_usage,
-					tmp_job_ptr, action, false,
-					orig_map);
-		}
-	}
-	list_iterator_destroy(job_iterator);
+	args = (cr_job_list_args_t) {
+		.preemptee_candidates = preemptee_candidates,
+		.cr_job_list = cr_job_list,
+		.future_usage = future_usage,
+		.future_part = future_part,
+		.orig_map = orig_map,
+		.qos_preemptor = &qos_preemptor,
+	};
+	list_for_each(job_list, _build_cr_job_list, &args);
 
 	/* Test with all preemptable jobs gone */
 	if (preemptee_candidates) {
