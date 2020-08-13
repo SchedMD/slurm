@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr QoS modify test
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,7 +28,6 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "test21.20"
 set exit_code   0
 set tc1		"$test_id-cluster-1"
 set tc2		"$test_id-cluster-2"
@@ -89,21 +83,17 @@ array set user_mod_acct3 {}
 array set user_mod_assoc3 {}
 set user_mod_assoc3(qoslevel) "'-$qs2'"
 
-print_header $test_id
-
 set timeout 60
 
 #
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 #make sure we have a clean system and permission to do this work
@@ -112,8 +102,7 @@ remove_acct "" "$ta1,$ta2,$ta3"
 remove_qos "$qs1,$qs2,$qs3"
 remove_cluster "$tc1,$tc2,$tc3"
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 
 #add cluster
@@ -123,7 +112,7 @@ if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_qos "$qs1,$qs2,$qs3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
 }
 
 #add qos
@@ -133,7 +122,7 @@ if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_qos "$qs1,$qs2,$qs3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add qos ($qs1,$qs2,$qs3)"
 }
 
 #add accounts
@@ -143,7 +132,7 @@ if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_qos "$qs1,$qs2,$qs3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add account ($ta1,$ta2,$ta3)"
 }
 
 #add users
@@ -154,7 +143,7 @@ if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_qos "$qs1,$qs2,$qs3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add user ($tu1,$tu2,$tu3)"
 }
 
 #
@@ -164,7 +153,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	        log_error "There was a problem with the sacctmgr command"
 	    	incr exit_code 1
 	}
 	-re "(($tu1|$tu2|$tu3).($qs1|$qs2))." {
@@ -172,7 +161,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -182,7 +171,7 @@ expect {
 }
 
 if {$matches != 27} {
-	send_user "\nFAILURE:  Account addition 27 incorrect with only $matches.\n"
+	log_error "Account addition 27 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -198,7 +187,7 @@ if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_qos "$qs1,$qs2,$qs3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to modify user ($tu1)"
 }
 
 #
@@ -208,8 +197,8 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "$tu1.$qs3." {
 		incr matches
@@ -220,7 +209,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -230,7 +219,7 @@ expect {
 }
 
 if {$matches != 21} {
-	send_user "\nFAILURE:  Account addition 21 incorrect with only $matches.\n"
+	log_error "Account addition 21 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -247,7 +236,7 @@ if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_qos "$qs1,$qs2,$qs3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to modify user ($tu2)"
 }
 
 #
@@ -257,8 +246,8 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "$tu1.$qs3." {
 		incr matches
@@ -273,7 +262,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -283,7 +272,7 @@ expect {
 }
 
 if {$matches != 15} {
-	send_user "\nFAILURE:  Account addition 15 incorrect with only $matches.\n"
+	log_error "Account addition 15 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -301,7 +290,7 @@ if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_qos "$qs1,$qs2,$qs3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to modify user ($tu3)"
 }
 
 #
@@ -311,8 +300,8 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+	    log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "$tu1.$qs3." {
 		incr matches
@@ -327,7 +316,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -337,7 +326,7 @@ expect {
 }
 
 if {$matches != 9} {
-	send_user "\nFAILURE:  Account addition 9 incorrect with only $matches.\n"
+	log_error "Account addition 9 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -348,10 +337,6 @@ incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
 incr exit_code [remove_qos "$qs1,$qs2,$qs3"]
 incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 
-if {$exit_code == 0} {
-	print_success $test_id
-} else {
-	send_user "\nFAILURE\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors"
 }
-exit $exit_code
-

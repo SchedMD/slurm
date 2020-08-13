@@ -51,6 +51,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
@@ -121,7 +122,8 @@ int sattach(int argc, char **argv)
 	slurm_cred_t *fake_cred;
 	message_thread_state_t *mts;
 	client_io_t *io;
-	char *hosts, *launch_type;
+	char *hosts;
+	slurm_step_id_t step_id;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
@@ -136,14 +138,19 @@ int sattach(int argc, char **argv)
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
 	}
-	launch_type = slurm_get_launch_type();
-	if (launch_type && xstrcmp(launch_type, "launch/slurm")) {
-		error("sattach does not support LaunchType=%s", launch_type);
+
+	slurm_conf_init(NULL);
+
+	if (xstrcmp(slurm_conf.launch_type, "launch/slurm")) {
+		error("sattach does not support LaunchType=%s",
+		      slurm_conf.launch_type);
 		exit(error_exit);
 	}
-	xfree(launch_type);
-
-	layout = slurm_job_step_layout_get(opt.jobid, opt.stepid);
+	/* FIXME: this does not work with hetsteps */
+	step_id.job_id = opt.jobid;
+	step_id.step_id = opt.stepid;
+	step_id.step_het_comp = NO_VAL;
+	layout = slurm_job_step_layout_get(&step_id);
 	if (layout == NULL) {
 		error("Could not get job step info: %m");
 		exit(error_exit);
@@ -283,8 +290,9 @@ static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
 	slurm_cred_t *cred;
 
 	memset(&arg, 0, sizeof(slurm_cred_arg_t));
-	arg.jobid    = jobid;
-	arg.stepid   = stepid;
+	arg.step_id.job_id = jobid;
+	arg.step_id.step_id = stepid;
+	arg.step_id.step_het_comp = NO_VAL;
 	arg.uid      = uid;
 
 	arg.job_hostlist  = nodelist;
@@ -389,16 +397,15 @@ static int _attach_to_tasks(uint32_t jobid,
 {
 	slurm_msg_t msg;
 	List nodes_resp = NULL;
-	int timeout;
+	int timeout = slurm_conf.msg_timeout * 1000; /* sec to msec */
 	reattach_tasks_request_msg_t reattach_msg;
 	char *hosts;
 
 	slurm_msg_t_init(&msg);
 
-	timeout = slurm_get_msg_timeout() * 1000; /* sec to msec */
-
-	reattach_msg.job_id = jobid;
-	reattach_msg.job_step_id = stepid;
+	reattach_msg.step_id.job_id = jobid;
+	reattach_msg.step_id.step_id = stepid;
+	reattach_msg.step_id.step_het_comp = NO_VAL;
 	reattach_msg.num_resp_port = num_resp_ports;
 	reattach_msg.resp_port = resp_ports; /* array of response ports */
 	reattach_msg.num_io_port = num_io_ports;
@@ -413,7 +420,7 @@ static int _attach_to_tasks(uint32_t jobid,
 		hosts = layout->front_end;
 	else
 		hosts = layout->node_list;
-	nodes_resp = slurm_send_recv_msgs(hosts, &msg, timeout, false);
+	nodes_resp = slurm_send_recv_msgs(hosts, &msg, timeout);
 	if (nodes_resp == NULL) {
 		error("slurm_send_recv_msgs failed: %m");
 		return SLURM_ERROR;
@@ -529,9 +536,10 @@ _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 	int i;
 	int rc;
 
-	if ((msg->job_id != opt.jobid) || (msg->step_id != opt.stepid)) {
-		debug("Received MESSAGE_TASK_EXIT from wrong job: %u.%u",
-		      msg->job_id, msg->step_id);
+	if ((msg->step_id.job_id != opt.jobid) ||
+	    (msg->step_id.step_id != opt.stepid)) {
+		debug("Received MESSAGE_TASK_EXIT from wrong job: %ps",
+		      &msg->step_id);
 		return;
 	}
 
@@ -568,20 +576,14 @@ _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 static void
 _handle_msg(void *arg, slurm_msg_t *msg)
 {
-	static uid_t slurm_uid;
-	static bool slurm_uid_set = false;
 	message_thread_state_t *mts = (message_thread_state_t *)arg;
 	uid_t req_uid;
 	uid_t uid = getuid();
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 
-	if (!slurm_uid_set) {
-		slurm_uid = slurm_get_slurm_user_id();
-		slurm_uid_set = true;
-	}
-
-	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
+	if ((req_uid != slurm_conf.slurm_user_id) && (req_uid != 0) &&
+	    (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u",
 		       (unsigned int) req_uid);
 		return;

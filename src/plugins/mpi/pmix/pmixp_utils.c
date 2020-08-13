@@ -60,6 +60,18 @@
 /* must come after the above pmixp includes */
 #include "src/common/forward.h"
 
+extern int pmixp_count_digits_base10(uint32_t val)
+{
+	int digit_count = 0;
+
+	while (val) {
+		digit_count++;
+		val /= 10;
+	}
+
+	return digit_count;
+}
+
 void pmixp_xfree_xmalloced(void *x)
 {
 	xfree(x);
@@ -363,7 +375,8 @@ int pmixp_stepd_send(const char *nodelist, const char *address,
 
 		/* wait with constantly increasing delay */
 		struct timespec ts =
-		{(delay / 1000), ((delay % 1000) * 1000000)};
+		{(delay / MSEC_IN_SEC),
+		 ((delay % MSEC_IN_SEC) * NSEC_IN_MSEC)};
 		nanosleep(&ts, NULL);
 		delay *= 2;
 	}
@@ -394,13 +407,14 @@ static int _pmix_p2p_send_core(const char *nodename, const char *address,
 	msg.msg_type = REQUEST_FORWARD_DATA;
 	msg.data = &req;
 
-	if (slurm_conf_get_addr(nodename, &msg.address) == SLURM_ERROR) {
+	if (slurm_conf_get_addr(nodename, &msg.address, msg.flags)
+	    == SLURM_ERROR) {
 		PMIXP_ERROR("Can't find address for host "
 			    "%s, check slurm.conf", nodename);
 		return SLURM_ERROR;
 	}
 
-	timeout = slurm_get_msg_timeout() * 1000;
+	timeout = slurm_conf.msg_timeout * 1000;
 	msg.forward.timeout = timeout;
 	msg.forward.cnt = 0;
 	msg.forward.nodelist = NULL;
@@ -460,7 +474,8 @@ int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
 
 		/* wait with constantly increasing delay */
 		struct timespec ts =
-		{(delay / 1000), ((delay % 1000) * 1000000)};
+		{(delay / MSEC_IN_SEC),
+		 ((delay % MSEC_IN_SEC) * NSEC_IN_MSEC)};
 		nanosleep(&ts, NULL);
 		delay *= 2;
 	}
@@ -542,7 +557,7 @@ int pmixp_fixrights(char *path, uid_t uid, mode_t mode)
 	char nested_path[PATH_MAX];
 	DIR *dp;
 	struct dirent *ent;
-	int rc;
+	int rc = 0;
 
 	/*
 	 * Make sure that "directory" exists and is a directory.
@@ -570,7 +585,7 @@ int pmixp_fixrights(char *path, uid_t uid, mode_t mode)
 				PMIXP_ERROR_STD("cannot fix permissions for "
 						"\"%s\"",
 						nested_path);
-				return -1;
+				goto exit;
 			}
 			pmixp_rmdir_recursively(nested_path);
 		} else {
@@ -578,12 +593,14 @@ int pmixp_fixrights(char *path, uid_t uid, mode_t mode)
 				PMIXP_ERROR_STD("cannot fix permissions for "
 						"\"%s\"",
 						nested_path);
-				return -1;
+				goto exit;
 			}
 		}
 	}
+
+exit:
 	closedir(dp);
-	return 0;
+	return rc;
 }
 
 int pmixp_mkdir(char *path, mode_t rights)

@@ -48,6 +48,7 @@
 #include "slurm/slurm_errno.h"
 #include "slurm/slurm.h"
 #include "src/common/bitstring.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xcgroup_read_config.h"
 #include "src/common/xstring.h"
@@ -463,7 +464,6 @@ extern int attach_system_memory_pid(pid_t pid)
 
 extern bool check_corespec_cgroup_job_confinement(void)
 {
-	char *task_plugin_type = NULL;
 	bool status = false;
 	slurm_cgroup_conf_t *cg_conf;
 
@@ -471,13 +471,11 @@ extern bool check_corespec_cgroup_job_confinement(void)
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
 	cg_conf = xcgroup_get_slurm_cgroup_conf();
 
-	task_plugin_type = slurm_get_task_plugin();
 	if (cg_conf->constrain_cores &&
-	    strstr(task_plugin_type, "cgroup"))
+	    xstrstr(slurm_conf.task_plugin, "cgroup"))
 		status = true;
 	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
-	xfree(task_plugin_type);
 	return status;
 }
 

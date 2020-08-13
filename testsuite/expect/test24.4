@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose:  Test of Fair Tree multifactor
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # Note:    This script generates and then deletes files in the working directory
 #          named test24.4.prog
 ############################################################################
@@ -37,18 +33,14 @@
 ############################################################################
 source ./globals
 
-set test_id     "24.4"
 set exit_code   0
 set test_prog   "test$test_id.prog"
 set matches     0
 set expected_matches 35
 
-print_header $test_id
-
 set damp [get_fs_damping_factor]
 if {$damp != 1} {
-	send_user "Unable to run with FairShareDampeningFactor=$damp (must be 1)\n"
-	exit 0
+	skip "Unable to run with FairShareDampeningFactor=$damp (must be 1)"
 }
 
 #
@@ -56,20 +48,20 @@ if {$damp != 1} {
 #
 file delete $test_prog
 
-send_user "build_dir is $build_dir\n"
-send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o ${build_dir}/src/slurmctld/locks.o  ${build_dir}/src/sshare/process.o -ldl -lm -export-dynamic \n"
-exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o ${build_dir}/src/slurmctld/locks.o ${build_dir}/src/sshare/process.o -ldl -lm -export-dynamic
-exec $bin_chmod 700 $test_prog
+compile_against_libslurm ${test_prog} 1 "-ldl -lm -export-dynamic \
+					 ${build_dir}/src/slurmctld/locks.o \
+					 ${build_dir}/src/sshare/process.o"
+fail_on_error "Cannot compile test program"
 
 # Usage: test24.4.prog
 spawn ./$test_prog
 expect {
 	"No last decay" {
-		send_user "This error is expected.  No worries.\n"
+		log_debug "This error is expected. No worries"
 		exp_continue
 	}
 	"error: Can't save decay state" {
-		send_user "This error is expected.  No worries.\n"
+		log_debug "This error is expected. No worries"
 		exp_continue
 	}
 
@@ -215,7 +207,7 @@ expect {
 	}
 
 	timeout {
-		send_user "\nFAILURE: spawn IO not responding\n"
+		log_error "spawn IO not responding"
 		cancel_job $job_id
 		set exit_code 1
 	}
@@ -225,19 +217,19 @@ expect {
 }
 
 if {$matches != $expected_matches} {
-	send_user "\nFAILURE: we didn't get the correct priorities from the plugin ($matches != $expected_matches)\n"
-	send_user "Some potentially useful information is below:
+	log_error "We didn't get the correct priorities from the plugin ($matches != $expected_matches)"
+	log_debug "Some potentially useful information is below:
 * Account aA, aB, and aC are general purpose algorithm tests with various shares, usage values, children counts, and depths
 * Account aD is used to test USE_PARENT. Any account that is USE_PARENT should have its children effectively reparented to the parent's parent. Any user with USE_PARENT should be ranked highest in its account, subject to ties with any other association with level_fs==1.0. uD2 and uD3 do NOT have the same level_fs; sshare doesn't show enough digits to visually distinguish.
 * Account aE and its children should have fairshare==1.0 as a result of tie handling code.
 * Account aF is similar to aE except its shares are different; they should still be 1.0.
 * Accounts aE and aF and their descendants and u1 (root) should have fairshare==1.0 or ranking is broken.
-* Account aG is set up so that uGA1 and uG1 will have equivalent fs factors due to the tie handling code but uGA2 will not.\n"
+* Account aG is set up so that uGA1 and uG1 will have equivalent fs factors due to the tie handling code but uGA2 will not."
 	set exit_code 1
 }
 
 if {$exit_code == 0} {
 	file delete $test_prog
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

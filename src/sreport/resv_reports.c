@@ -79,7 +79,7 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 	resv_cond->with_usage = 1;
 
 	if (!resv_cond->cluster_list)
-		resv_cond->cluster_list = list_create(slurm_destroy_char);
+		resv_cond->cluster_list = list_create(xfree_ptr);
 	if (cluster_flag)
 		slurm_addto_char_list(resv_cond->cluster_list, cluster_flag);
 
@@ -101,8 +101,7 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 			  || !xstrncasecmp(argv[i], "Names",
 					   MAX(command_len, 1))) {
 			if (!resv_cond->name_list)
-				resv_cond->name_list =
-					list_create(slurm_destroy_char);
+				resv_cond->name_list = list_create(xfree_ptr);
 			slurm_addto_char_list(resv_cond->name_list,
 					      argv[i]+end);
 			set = 1;
@@ -118,7 +117,7 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Flags",
 					 MAX(command_len, 2))) {
 			resv_cond->flags = parse_resv_flags(argv[i]+end,
-							    __func__);
+							    __func__, NULL);
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 2))) {
@@ -128,8 +127,7 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Ids",
 					 MAX(command_len, 1))) {
 			if (!resv_cond->id_list)
-				resv_cond->id_list =
-					list_create(slurm_destroy_char);
+				resv_cond->id_list = list_create(xfree_ptr);
 			slurm_addto_char_list(resv_cond->id_list, argv[i]+end);
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Nodes",
@@ -157,9 +155,8 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 
 	if (!local_cluster_flag && !list_count(resv_cond->cluster_list)) {
 		/* Get the default Cluster since no cluster is specified */
-		char *temp = slurm_get_cluster_name();
-		if (temp)
-			list_append(resv_cond->cluster_list, temp);
+		list_append(resv_cond->cluster_list,
+			    xstrdup(slurm_conf.cluster_name));
 	}
 
 	/* This needs to be done on some systems to make sure
@@ -460,10 +457,16 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_FLAGS:
-			temp_char = reservation_flags_string(resv_ptr->flags);
+		{
+			reserve_info_t resv_info = {
+				.flags = resv_ptr->flags,
+			};
+
+			temp_char = reservation_flags_string(&resv_info);
 			field->print_routine(field, temp_char,
 					     (curr_inx == field_count));
 			break;
+		}
 		case PRINT_RESV_TIME:
 			field->print_routine(field, (uint32_t)total_time,
 					     (curr_inx == field_count));
@@ -502,7 +505,7 @@ extern int resv_utilization(int argc, char **argv)
 	List resv_list = NULL;
 	List req_tres_list = tres_list;
 
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(xfree_ptr);
 
 	print_fields_list = list_create(destroy_print_field);
 

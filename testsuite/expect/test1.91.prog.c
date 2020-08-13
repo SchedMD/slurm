@@ -27,7 +27,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #define _GNU_SOURCE
-#define __USE_GNU
 #include <errno.h>
 #include <inttypes.h>
 #include <sched.h>

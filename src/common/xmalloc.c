@@ -50,19 +50,11 @@
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
-#if NDEBUG
-#  define xmalloc_assert(expr)  ((void) (0))
-#else
-static void malloc_assert_failed(char *, const char *, int,
-                                 const char *, const char *);
-#  define xmalloc_assert(expr)  do {                                          \
-          (expr) ? ((void)(0)) :                                              \
-          malloc_assert_failed(__STRING(expr), file, line, func,              \
-                               __func__);                             \
-          } while (0)
-#endif /* NDEBUG */
+strong_alias(xfree_ptr, slurm_xfree_ptr);
+strong_alias(xsize, slurm_xsize);
 
 #define XMALLOC_MAGIC 0x42
 
@@ -159,7 +151,7 @@ extern void * slurm_xrecalloc(void **item, size_t count, size_t size,
 		p = (size_t *)*item - 2;
 
 		/* magic cookie still there? */
-		xmalloc_assert(p[0] == XMALLOC_MAGIC);
+		xassert(p[0] == XMALLOC_MAGIC);
 		old_size = p[1];
 
 		p = realloc(p, total_size);
@@ -171,7 +163,7 @@ extern void * slurm_xrecalloc(void **item, size_t count, size_t size,
 			if (clear)
 				memset(p_new, 0, (count_size - old_size));
 		}
-		xmalloc_assert(p[0] == XMALLOC_MAGIC);
+		xassert(p[0] == XMALLOC_MAGIC);
 	} else {
 		/* Initalize new memory */
 		if (clear)
@@ -198,11 +190,11 @@ error:
  * Return the size of a buffer.
  *   item (IN)		pointer to allocated space
  */
-size_t slurm_xsize(void *item, const char *file, int line, const char *func)
+size_t xsize(void *item)
 {
 	size_t *p = (size_t *)item - 2;
-	xmalloc_assert(item != NULL);
-	xmalloc_assert(p[0] == XMALLOC_MAGIC); /* CLANG false positive here */
+	xassert(item != NULL);
+	xassert(p[0] == XMALLOC_MAGIC); /* CLANG false positive here */
 	return p[1];
 }
 
@@ -211,24 +203,24 @@ size_t slurm_xsize(void *item, const char *file, int line, const char *func)
  * object.
  *   item (IN/OUT)	double-pointer to allocated space
  */
-void slurm_xfree(void **item, const char *file, int line, const char *func)
+void slurm_xfree(void **item)
 {
 	if (*item != NULL) {
 		size_t *p = (size_t *)*item - 2;
 		/* magic cookie still there? */
-		xmalloc_assert(p[0] == XMALLOC_MAGIC);
+		xassert(p[0] == XMALLOC_MAGIC);
 		p[0] = 0;	/* make sure xfree isn't called twice */
 		free(p);
 		*item = NULL;
 	}
 }
 
-#ifndef NDEBUG
-static void malloc_assert_failed(char *expr, const char *file,
-		                 int line, const char *caller, const char *func)
+/*
+ * Since xfree() is a macro it cannot be used for the ListDelF in list_create()
+ * and a number of locations where handling it as a function-pointer is
+ * desired. Use this wrapper to get around that problem.
+ */
+void xfree_ptr(void *ptr)
 {
-	error("%s() Error: from %s:%d: %s(): Assertion (%s) failed",
-	      func, file, line, caller, expr);
-	abort();
+	slurm_xfree(&ptr);
 }
-#endif

@@ -31,8 +31,6 @@ We recommend a limit of at least 32,832.</li>
 <li><b>/proc/sys/net/ipv4/tcp_max_syn_backlog</b>:
 The maximum number of SYN requests to keep in memory that we have yet to get
 the third packet in a 3-way handshake from.
-The tcp_max_syn_backlog variable is overridden by the tcp_syncookies variable,
-which needs to be turned on for this variable to have any effect. 
 The default value is 1024 for systems with more than 128Mb of memory, and 128
 for low memory machines. If server suffers of overload, try to increase this
 number.</li>
@@ -47,16 +45,17 @@ In other words, this tells the system how many times to try to establish a
 passive TCP connection that was started by another host.
 This variable takes an integer value, but should under no circumstances be
 larger than 255.
-Each retransmission will take aproximately 30 to 40 seconds.
+Each retransmission will take approximately 30 to 40 seconds.
 The default value of 5, which results in a timeout of passive TCP connections
-of aproximately 180 seconds and is generally satisfactory.
+of approximately 180 seconds and is generally satisfactory.
 <li><b>/proc/sys/net/core/somaxconn</b>:
 Limit of socket listen() backlog, known in userspace as SOMAXCONN. Defaults to
 128. The value should be raised substantially to support bursts of request.
 For example, to support a burst of 1024 requests, set somaxconn to 1024.</li>
 <li><b>/proc/sys/net/ipv4/ip_local_port_range</b>:
 Identify the ephermeral ports available, which are used for many Slurm
-communcations. The value may be raised to support a high volume of communcations.
+communications. The value may be raised to support a high volume of
+communications.
 For example, write the value "32768 65535" into the ip_local_port_range file
 in order to make that range of ports available.</li>
 </ul>
@@ -134,7 +133,7 @@ This option may improve system responsiveness when large numbers of jobs
 initiation time of individual jobs.</li>
 <li><b>sched_min_interval</b> is yet another configuration parameter to control
 how frequently the scheduling logic runs. It can still be triggered on each
-job submit, job terminiation, or other state change which could permit a new
+job submit, job termination, or other state change which could permit a new
 job to be started. However that triggering does not cause the scheduling logic
 to be started immediately, but only within the configured <b>sched_interval</b>.
 For example, if sched_min_interval=2000000 (microseconds) and 100 jobs are submitted
@@ -178,6 +177,12 @@ messages on more than one port in order to avoid having incoming messages
 discarded by the operating system due to exceeding the SOMAXCONN limit
 described above. Using between two and ten ports is suggested when large
 numbers of simultaneous requests are to be supported.</li>
+<li><b>PrologSlurmctld/EpilogSlurmctld</b>:
+Neither of these is recommended for a high throughput environment. When they
+are enabled a separate slurmctld thread has to be created for every job start
+(or task for a job array).
+Current architecture requires acquisition of a job write lock in every thread,
+which is a costly operation that severely limits scheduler throughput.
 <li><b>SlurmctldDebug</b>:
 More detailed logging will decrease system throughput. Set to 2 (log errors
 only) or 3 (general information logging). Each increment in the logging level

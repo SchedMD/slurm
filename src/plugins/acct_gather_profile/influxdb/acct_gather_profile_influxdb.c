@@ -168,23 +168,6 @@ static uint32_t _determine_profile(void)
 	return profile;
 }
 
-static bool _run_in_daemon(void)
-{
-	static bool set = false;
-	static bool run = false;
-
-	debug3("%s %s called", plugin_type, __func__);
-
-	if (!set) {
-		set = 1;
-		run = run_in_daemon("slurmstepd");
-	}
-
-	return run;
-}
-
-
-
 /* Callback to handle the HTTP response */
 static size_t _write_callback(void *contents, size_t size, size_t nmemb,
 			      void *userp)
@@ -229,9 +212,8 @@ static int _send_data(const char *data)
 		xstrcat(datastr, data);
 		length = strlen(data);
 		datastrlen += length;
-		if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE)
-			info("%s %s: %zu bytes of data added to buffer. New buffer size: %d",
-			     plugin_type, __func__, length, datastrlen);
+		log_flag(PROFILE, "%s %s: %zu bytes of data added to buffer. New buffer size: %d",
+			 plugin_type, __func__, length, datastrlen);
 		return rc;
 	}
 
@@ -297,7 +279,7 @@ static int _send_data(const char *data)
 		rc = SLURM_ERROR;
 		debug2("%s %s: data write failed, response code: %ld",
 		       plugin_type, __func__, response_code);
-		if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_PROFILE) {
 			/* Strip any trailing newlines. */
 			while (chunk.message[strlen(chunk.message) - 1] == '\n')
 				chunk.message[strlen(chunk.message) - 1] = '\0';
@@ -315,9 +297,8 @@ cleanup_global_init:
 	curl_global_cleanup();
 
 	END_TIMER;
-	if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE)
-		debug("%s %s: took %s to send data", plugin_type, __func__,
-		      TIME_STR);
+	log_flag(PROFILE, "%s %s: took %s to send data",
+		 plugin_type, __func__, TIME_STR);
 
 	if (data) {
 		datastr = xstrdup(data);
@@ -338,7 +319,7 @@ extern int init(void)
 {
 	debug3("%s %s called", plugin_type, __func__);
 
-	if (!_run_in_daemon())
+	if (!running_in_slurmstepd())
 		return SLURM_SUCCESS;
 
 	datastr = xmalloc(BUF_SIZE);
@@ -454,7 +435,7 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 
 	debug3("%s %s called", plugin_type, __func__);
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmstepd());
 
 	g_job = job;
 	profile_str = acct_gather_profile_to_string(g_job->profile);
@@ -475,7 +456,7 @@ extern int acct_gather_profile_p_node_step_end(void)
 	int rc = SLURM_SUCCESS;
 	debug3("%s %s called", plugin_type, __func__);
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmstepd());
 
 	return rc;
 }
@@ -487,7 +468,7 @@ extern int acct_gather_profile_p_task_start(uint32_t taskid)
 	debug3("%s %s called with %d prof", plugin_type, __func__,
 	       g_profile_running);
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmstepd());
 	xassert(g_job);
 
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
@@ -578,19 +559,21 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 			xstrfmtcat(str, "%s,job=%d,step=%d,task=%s,"
 				   "host=%s value=%"PRIu64" "
 				   "%"PRIu64"\n", table->names[i],
-				   g_job->jobid, g_job->stepid,
+				   g_job->step_id.job_id,
+				   g_job->step_id.step_id,
 				   table->name, g_job->node_name,
 				   ((union data_t*)data)[i].u,
-				   sample_time);
+				   (uint64_t)sample_time);
 			break;
 		case PROFILE_FIELD_DOUBLE:
 			xstrfmtcat(str, "%s,job=%d,step=%d,task=%s,"
 				   "host=%s value=%.2f %"PRIu64""
 				   "\n", table->names[i],
-				   g_job->jobid, g_job->stepid,
+				   g_job->step_id.job_id,
+				   g_job->step_id.step_id,
 				   table->name, g_job->node_name,
 				   ((union data_t*)data)[i].d,
-				   sample_time);
+				   (uint64_t)sample_time);
 			break;
 		case PROFILE_FIELD_NOT_SET:
 			break;

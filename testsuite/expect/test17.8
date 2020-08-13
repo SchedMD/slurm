@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Confirm that sbatch sets appropriate time limit (--time
 #          option)
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,13 +29,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.8"
 set exit_code   0
 set file_in     "test$test_id.input"
 set time_set    13
 set time_get    0
-
-print_header $test_id
 
 #
 # Since we make changes to configuration, call this function restore
@@ -50,11 +43,10 @@ proc endit { } {
 	reconfigure
 	if {$exit_code == 0} {
 		exec $bin_rm -f $file_in
-		send_user "\nSUCCESS\n"
+		pass
 	} else {
-		send_user "\nFAILURE: exiting with exit code $exit_code\n"
+		fail "Exiting with exit code $exit_code"
 	}
-	exit $exit_code
 }
 
 #
@@ -62,8 +54,7 @@ proc endit { } {
 # otherwise this test may fail.
 #
 if {[test_super_user] == 0} {
-	log_warn "You must be SlurmUser or root to run this test."
-	exit 0
+	skip "You must be SlurmUser or root to run this test"
 }
 
 #
@@ -97,7 +88,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -106,7 +97,7 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
+	log_error "Failed to submit job"
 	set exit_code 1
 	endit
 }
@@ -122,7 +113,7 @@ expect {
 	}
 }
 if {$time_set != $time_get} {
-	send_user "\nFAILURE: sbatch failed to set time limit ($time_set != $time_get)\n"
+	log_error "sbatch failed to set time limit ($time_set != $time_get)"
 	set exit_code 1
 }
 cancel_job $job_id
@@ -142,13 +133,12 @@ expect {
 		exp_continue
 	}
 	-re "time limit exceeds" {
-		send_user "\nWARNING: unable to fully test time limits\n"
-		# Don't use endit here since we don't want to print "SUCCESS"
 		reconfigure
-		exit $exit_code
+		log_warn "Unable to fully test time limits"
+		pass
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -157,7 +147,7 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
+	log_error "Failed to submit job"
 	set exit_code 1
 	endit
 }
@@ -173,7 +163,7 @@ expect {
 	}
 }
 if {$time_get != 121} {
-	send_user "\nFAILURE: sbatch failed to set time limit ($time_get != 121)\n"
+	log_error "sbatch failed to set time limit ($time_get != 121)"
 	set exit_code 1
 }
 cancel_job $job_id
@@ -193,7 +183,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -202,7 +192,7 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
+	log_error "Failed to submit job"
 	set exit_code 1
 	endit
 }
@@ -218,7 +208,7 @@ expect {
 	}
 }
 if {$time_get != 1500} {
-	send_user "\nFAILURE: sbatch failed to set time limit ($time_get != 1500)\n"
+	log_error "sbatch failed to set time limit ($time_get != 1500)"
 	set exit_code 1
 }
 set rc [cancel_job $job_id]

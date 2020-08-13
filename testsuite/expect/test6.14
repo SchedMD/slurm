@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test scancel --nodelist option.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2008 Lawrence Livermore National Security
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "6.14"
 set exit_code      0
 set file_in        "test$test_id.input"
 set num_procs      10
@@ -43,11 +38,22 @@ set found          0
 set tmp_job_list   {}
 set tmp_map_entry  {}
 set submitted_jobs {}
+set submitted_jobs_all {}
 set job_list       {}
 set job_index      -1
 
-print_header $test_id
+proc cleanup {} {
+	global scancel submitted_jobs_all file_in
 
+	#
+	# Clean up any jobs submitted by this test, which were not mapped to a node,
+	# and thus not cancelled in the previous block of code
+	#
+	run_command "$scancel -v [join $submitted_jobs_all ","]"
+
+	# cleanup vestigial files
+	exec rm -f $file_in
+}
 #
 # Build input script file
 #
@@ -58,25 +64,23 @@ make_bash_script $file_in "$srun $bin_sleep 600"
 #
 set timeout 20
 for {set ii 0} {$ii < $num_procs} {incr ii} {
-	set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -n1 -N1 $file_in]
+	set sbatch_pid [spawn $sbatch -J $test_name --output=/dev/null --error=/dev/null -n1 -N1 $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			lappend submitted_jobs $job_id
+			lappend submitted_jobs_all $job_id
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
-			slow_kill $sbatch_pid
-			set exit_code 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: job submit failure\n"
-		exit 1
+		fail "Job submit failure"
 	}
 }
 
@@ -89,9 +93,9 @@ for {set ii 0} {$ii < $num_procs} {incr ii} {
 # Only put jobs into the map if they were submitted by this test.
 #
 
-spawn $squeue -h -t running -u $env(USER) -o "%10i %40N"
+spawn $squeue -h -t running -n $test_name  -o "%10i %40N"
 expect {
-	-re "($number) *($alpha_numeric) *\r\n" {
+	-re "($number) *($re_word_str) *\r\n" {
 		set job_id $expect_out(1,string)
 		set node_name $expect_out(2,string)
 
@@ -99,7 +103,7 @@ expect {
 		if { [lsearch $submitted_jobs $job_id] == -1 } {
 			exp_continue
 		}
-		#send_user "job $job_id: node $node_name\n"
+		#log_debug "Job $job_id: node $node_name"
 		#Insert into a table with node_name as the key, job_id as the value
 		set found 0
 		for {set ii 0} {$ii < [llength $job_map]} {incr ii} {
@@ -116,7 +120,7 @@ expect {
 		exp_continue
 	}
 }
-#send_user "job map: $job_map\n"
+#log_debug "Job map: $job_map"
 
 
 #
@@ -130,9 +134,9 @@ for {set ii 0} {$ii < [llength $job_map]} {incr ii} {
 	set job_list  [lindex [lindex $job_map $ii] 1]
 
 	if {$ii == 0} {
-		spawn $scancel -v -u $env(USER) --nodelist $node_name
+		spawn $scancel -v -n $test_name --nodelist $node_name
 	} else {
-		spawn $scancel -v -u $env(USER) -w $node_name
+		spawn $scancel -v -n $test_name -w $node_name
 	}
 	expect {
 		-re "scancel: Terminating job ($number)" {
@@ -155,42 +159,16 @@ for {set ii 0} {$ii < [llength $job_map]} {incr ii} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scancel not responding while cancelling for node $node_name\n"
-			set exit_code 1
+			fail "scancel not responding while cancelling for node $node_name"
 		}
 		eof {
 			wait
 		}
 	}
 	if { [llength $job_list] != 0 } {
-		send_user "\nFAILURE: scancel did not remove jobs $job_list from node $node_name\n"
-		set exit_code 1
-	}
-}
-
-#
-# Clean up any jobs submitted by this test, which were not mapped to a node,
-# and thus not cancelled in the previous block of code
-#
-
-foreach job_id $submitted_jobs {
-	spawn $scancel $job_id
-	expect {
-		timeout {
-			send_user "\nFAILURE: scancel not responding while cancelling job $job_id\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+		fail "scancel did not remove jobs $job_list from node $node_name"
 	}
 }
 
 
-
-if {$exit_code == 0} {
-	exec rm -f $file_in
-	send_user "\nSUCCESS\n"
-}
-exit $exit_code
-
+fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"

@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Confirm that a job executes with the proper node count
 #          (--nodes option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -35,10 +30,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.19"
 set exit_code   0
-
-print_header $test_id
 
 #
 # Submit a 1 node job and validate that we don't get more than one
@@ -54,17 +46,16 @@ expect {
 		exp_continue
 	}
 	-re "(Task count specification invalid|configuration not available)" {
-		if { [test_front_end] } {
-			send_user "\nWARNING: error expected, Testing is incompatible with front-end systems\n"
-		} else {
-			 send_user "\nWARNING: test not compatible with this configuration\n"
-		}
 		if {$job_id != 0} {
-                        cancel_job $job_id
+             cancel_job $job_id
 		}
-		exit $exit_code
+		if { [test_front_end] } {
+			skip "Error expected, Testing is incompatible with front-end systems"
+		} else {
+			 skip "Test not compatible with this configuration"
+		}
 	}
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		if {$task_cnt == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -72,7 +63,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -85,9 +76,7 @@ expect {
 }
 
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURMD_NODENAME of task 0\n"
-	set exit_code   1
-	exit $exit_code
+	fail "Did not get SLURMD_NODENAME of task 0"
 }
 
 set alloc_fail 0
@@ -104,11 +93,11 @@ expect {
 		exp_continue
 	}
 	-re "Invalid node name specified" {
-		send_user "\nThis error is expected, no worries\n"
+		log_info "This error is expected, no worries"
 		set alloc_fail 1
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -120,11 +109,11 @@ expect {
 	}
 }
 if { $alloc_fail == 0 } {
-	send_user "\nFAILURE: Did not generate expected error message\n"
+	log_error "Did not generate expected error message"
 	set exit_code   1
 }
 if { $task_cnt2 != 0 } {
-	send_user "\nFAILURE: allocated more tasks than processors\n"
+	log_error "Allocated more tasks than processors"
 	set exit_code   1
 }
 
@@ -141,7 +130,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -151,7 +140,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -167,15 +156,14 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODENAME of task 0\n"
+	log_error "Did not get SLURM_NODENAME of task 0"
 	set exit_code   1
 }
 if {[string compare $host_1 ""] != 0} {
-	send_user "\nFAILURE: Started two tasks instead of one\n"
+	log_error "Started two tasks instead of one"
 }
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "Additional testing is incompatible with front-end systems"
 }
 
 #
@@ -193,7 +181,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -209,7 +197,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -225,11 +213,11 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURMD_NODENAME of task 0\n"
+	log_error "Did not get SLURMD_NODENAME of task 0"
 	set exit_code   1
 }
 if {[string compare $host_3 ""] != 0} {
-	send_user "\nFAILURE: Started more than three tasks\n"
+	log_error "Started more than three tasks"
 	set exit_code   1
 }
 set dup_host 0
@@ -243,19 +231,14 @@ if {[string compare $host_0 $host_3] == 0} {
 	set dup_host 1
 }
 if {$dup_host == 1} {
-	send_user "\nFAILURE: Re-used a node in the allocation\n"
+	log_error "Re-used a node in the allocation"
 	set exit_code 1
 }
 
 # find out if we have enough nodes to test functionality
-set partition [default_partition]
-set node_count [get_node_cnt_in_part $partition]
+set node_count [get_node_cnt_in_part]
 if { $node_count < 2 } {
-	send_user "WARNING: Insufficient nodes in default partition to continue ($node_count < 2)\n"
-	if {$exit_code == 0} {
-		send_user "\nSUCCESS\n"
-	}
-	exit $exit_code
+	skip "Insufficient nodes in default partition to continue ($node_count < 2)"
 }
 
 #
@@ -274,13 +257,12 @@ expect {
 		exp_continue
 	}
 	-re "salloc: error" {
-		send_user "\nWARNING: can't test salloc task distribution\n"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
-		exit $exit_code
+		skip "Can't test salloc task distribution"
 	}
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -296,7 +278,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -312,15 +294,15 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURMD_NODENAME of task 0\n"
+	log_error "Did not get SLURMD_NODENAME of task 0"
 	set exit_code   1
 }
 if {[string compare $host_1 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURMD_NODENAME of task 1\n"
+	log_error "Did not get SLURMD_NODENAME of task 1"
 	set exit_code   1
 }
 if {[string compare $host_3 ""] != 0} {
-	send_user "\nFAILURE: Started more than three tasks\n"
+	log_error "Started more than three tasks"
 	set exit_code   1
 }
 set dup_host 0
@@ -334,11 +316,10 @@ if {[string compare $host_0 $host_3] == 0} {
 	set dup_host 1
 }
 if {$dup_host == 1} {
-	send_user "\nFAILURE: Re-used a node in the allocation\n"
+	log_error "Re-used a node in the allocation"
 	set exit_code   1
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

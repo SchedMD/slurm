@@ -10,13 +10,12 @@
 
 /* these declaration are not in slurm.h */
 #ifndef xfree
-#define xfree(__p) \
-	slurm_xfree((void **)&(__p), __FILE__, __LINE__, __func__)
+#define xfree(__p) slurm_xfree((void **)&(__p))
 #define xmalloc(__sz) \
 	slurm_xcalloc(1, __sz, true, false, __FILE__, __LINE__, __func__)
 #endif
 
-extern void slurm_xfree(void **, const char *, int, const char *);
+extern void slurm_xfree(void **);
 extern void *slurm_xcalloc(size_t, size_t, bool, bool, const char *, int, const char *);
 
 extern void slurm_api_clear_config(void);
@@ -92,8 +91,8 @@ extern int hv_to_update_part_msg(HV *hv, update_part_msg_t *part_msg);
 extern int hv_to_delete_part_msg(HV *hv, delete_part_msg_t *delete_msg);
 
 /********** ctl config conversion functions **********/
-extern int slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv);
-extern int hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf);
+extern int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv);
+extern int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf);
 extern int slurmd_status_to_hv(slurmd_status_t *status, HV *hv);
 extern int hv_to_slurmd_status(HV *hv, slurmd_status_t *status);
 extern int hv_to_step_update_request_msg(HV *hv, step_update_request_msg_t *update_msg);

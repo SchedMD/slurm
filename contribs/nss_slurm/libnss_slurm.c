@@ -141,14 +141,14 @@ static struct passwd *_pw_internal(int mode, uid_t uid, const char *name)
 	itr = list_iterator_create(steps);
         while ((stepd = list_next(itr))) {
 		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   stepd->jobid, stepd->stepid,
-				   &stepd->protocol_version);
+				   &stepd->step_id, &stepd->protocol_version);
 
 		if (fd < 0)
 			continue;
 
-		if ((pwd = stepd_getpw(fd, stepd->protocol_version,
-				       mode, uid, name)))
+		pwd = stepd_getpw(fd, stepd->protocol_version, mode, uid, name);
+		close(fd);
+		if (pwd)
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -250,7 +250,7 @@ int _nss_slurm_endpwent(void)
 	return NSS_STATUS_SUCCESS;
 }
 
-static struct group **_gr_internal(int mode, gid_t uid, const char *name)
+static struct group **_gr_internal(int mode, gid_t gid, const char *name)
 {
 	List steps = NULL;
 	ListIterator itr = NULL;
@@ -272,14 +272,15 @@ static struct group **_gr_internal(int mode, gid_t uid, const char *name)
 	itr = list_iterator_create(steps);
         while ((stepd = list_next(itr))) {
 		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   stepd->jobid, stepd->stepid,
-				   &stepd->protocol_version);
+				   &stepd->step_id, &stepd->protocol_version);
 
 		if (fd < 0)
 			continue;
 
-		if ((grps = stepd_getgr(fd, stepd->protocol_version,
-				        mode, uid, name)))
+		grps = stepd_getgr(fd, stepd->protocol_version, mode, gid,
+				   name);
+		close(fd);
+		if (grps)
 			break;
 	}
 	list_iterator_destroy(itr);

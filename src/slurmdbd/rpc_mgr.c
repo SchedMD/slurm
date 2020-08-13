@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  rpc_mgr.h - functions for processing RPCs.
+ *  rpc_mgr.c - functions for processing RPCs.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
@@ -76,7 +76,7 @@ extern void *rpc_mgr(void *no_data)
 	master_thread_id = pthread_self();
 
 	/* initialize port for RPCs */
-	if ((sockfd = slurm_init_msg_engine_port(get_dbd_port()))
+	if ((sockfd = slurm_init_msg_engine_port(slurmdbd_conf->dbd_port))
 	    == SLURM_ERROR)
 		fatal("slurm_init_msg_engine_port error %m");
 
@@ -109,7 +109,7 @@ extern void *rpc_mgr(void *no_data)
 		conn_arg->conn->callback_fini = _connection_fini_callback;
 		conn_arg->conn->shutdown = &shutdown_time;
 		conn_arg->conn->version = SLURM_MIN_PROTOCOL_VERSION;
-		conn_arg->conn->rem_host = xmalloc_nz(16);
+		conn_arg->conn->rem_host = xmalloc(16);
 		/* Don't fill in the rem_port here.  It will be filled in
 		 * later if it is a slurmctld connection. */
 		slurm_get_ip_str(&cli_addr, &port,

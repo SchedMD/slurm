@@ -8,10 +8,6 @@
 #          want to remove /dev/nvidia2 on a node with /dev/nvidia[0-3]).
 #          We use gres/gpu for this test since those need to be associated
 #          with specific device files.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC
 # Written by Morris Jette
@@ -36,16 +32,12 @@
 ############################################################################
 source ./globals
 
-set test_id        "3.18"
 set authorized     1
 set exit_code      0
 set file_in        "test$test_id.input"
 
-print_header $test_id
-
 if { ![test_super_user] } {
-	send_user "\nWARNING: This test can't be run without being a super user of the cluster.\n"
-	exit 0
+	skip "This test can't be run without being a super user of the cluster"
 }
 
 #
@@ -56,13 +48,13 @@ set timeout $max_job_delay
 set matches 0
 set srun_pid [spawn $srun -n1 --gres=gpu:2 $file_in]
 expect {
-        -re "HOST:($alpha_numeric_under)" {
+        -re "HOST:($re_word_str)" {
                 incr matches
 		set host_name $expect_out(1,string)
                 exp_continue
         }
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -72,8 +64,7 @@ expect {
 }
 exec $bin_rm -f $file_in
 if {$matches != 1} {
-	send_user "\nWARNING: This test can't be run without a node with at least 2 gres/gpu.\n"
-	exit 0
+	skip "This test can't be run without a node with at least 2 gres/gpu"
 }
 
 #
@@ -87,7 +78,7 @@ expect {
                 exp_continue
         }
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -95,8 +86,7 @@ expect {
 	}
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: Something seems to be wrong with the state of node $host_name.\n"
-	exit 1
+	fail "Something seems to be wrong with the state of node $host_name"
 }
 
 #
@@ -107,12 +97,12 @@ set matches 0
 spawn $scontrol update NodeName=$host_name Gres=gpu:1
 expect {
         -re "Invalid generic resource" {
-                incr matches
-		send_user "\nError is expected, no worries.\n"
-                exp_continue
+            incr matches
+			log_debug "Error is expected, no worries"
+            exp_continue
         }
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -120,12 +110,9 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Node GRES change request not rejected.\n"
-	send_user "\nFAILURE: Configuration of node $host_name is likely left in a bad state.\n"
-	exit 1
+	fail "Node GRES change request not rejected. Configuration of node $host_name is likely left in a bad state"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

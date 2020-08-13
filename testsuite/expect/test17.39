@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validates that the OR dependency option is enforced
 #          when a job runs to completion
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -31,25 +27,19 @@
 ############################################################################
 source ./globals
 
-set test_id       17.39
 set slow_id       0
 set fast_id       0
 set dep_id        0
 set exit_code     0
 
-print_header $test_id
-
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
+set nb_nodes [get_node_cnt_in_part]
 if {[test_linear]} {
 	if {$nb_nodes < 2} {
-		send_user "\nWARNING: This test is incompatible with select/linear and only one node\n"
-		exit $exit_code
+		skip "This test is incompatible with select/linear and only one node"
 	}
 } elseif {[default_part_exclusive]} {
 	if {$nb_nodes < 2} {
-		send_user "\nWARNING: This test is incompatible with exclusive node allocations and only one node\n"
-		exit $exit_code
+		skip "This test is incompatible with exclusive node allocations and only one node"
 	}
 }
 
@@ -61,7 +51,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not reponding\n"
+		log_error "sbatch is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -69,23 +59,21 @@ expect {
 	}
 }
 if {$slow_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 # Submit job 2 of 3
 spawn $sbatch -t3 -o /dev/null --wrap "sleep 30"
 expect {
 	-re "Node count specification invalid" {
-		send_user "\nWARNING: can't test with less than two nodes\n"
-		exit 0
+		skip "Can't test with less than two nodes"
 	}
 	-re "Submitted batch job ($number)" {
 		set fast_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not reponding\n"
+		log_error "sbatch is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -93,8 +81,7 @@ expect {
 	}
 }
 if {$fast_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 # Submit dependency job, 3 of 3
@@ -105,7 +92,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not reponding\n"
+		log_error "sbatch is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -113,8 +100,7 @@ expect {
 	}
 }
 if {$dep_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 # Check that dependent job is pending
@@ -126,7 +112,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue is not reponding\n"
+		log_error "squeue is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -134,21 +120,20 @@ expect {
 	}
 }
 if {$match == 0} {
-	send_user "\nFAILURE: job $dep_id is in the wrong state should be "
-	send_user "state PENDING and have REASON Dependency\n"
+	log_error "Job $dep_id is in the wrong state should be state PENDING and have REASON Dependency"
 	set exit_code 1
 }
 
 # Wait for the fast job to finish after submitting dependent job
 if {[wait_for_job $fast_id "DONE"] != 0} {
-	send_user "\nFAILURE: error waiting for job $fast_id to complete\n"
+	log_error "Error waiting for job $fast_id to complete"
 	set exit_code 1
 	cancel_job $fast_id
 }
 
 # Wait for dependency job to start once the fast job is complete
 if {[wait_for_job $dep_id RUNNING]} {
-	send_user "\nFAILURE: job $dep_id should be running\n"
+	log_error "Job $dep_id should be running"
 	set exit_code 1
 }
 
@@ -162,7 +147,6 @@ cancel_job $fast_id
 cancel_job $slow_id
 cancel_job $dep_id
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

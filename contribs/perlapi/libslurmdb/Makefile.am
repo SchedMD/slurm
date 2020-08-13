@@ -21,8 +21,6 @@ test_sources = \
 	       $(perl_dir)/t/06-jobs_get.t \
 	       $(perl_dir)/t/07-qos_get.t
 
-EXTRA_DIST = $(perl_sources) $(test_sources)
-
 $(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL
 	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
 		for f in ${perl_sources}; do \

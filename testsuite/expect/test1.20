@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Test srun stdout/err disabling (--output and --error options with
 #          argument of "none").
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,10 +29,7 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.20"
 set exit_code        0
-
-print_header $test_id
 
 #
 # Spawn a program via srun with stdout forwarding disabled
@@ -45,17 +38,17 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun --output=none -t1 $bin_id]
 expect {
 	-re "uid=" {
-		send_user "\nFAILURE: srun improperly forwarded stdout\n"
+		log_error "srun improperly forwarded stdout"
 		set exit_code 1
 		exp_continue
 	}
 	-re "groups=" {
-		send_user "\nFAILURE: srun improperly forwarded stdout\n"
+		log_error "srun improperly forwarded stdout"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -71,17 +64,17 @@ set matches 0
 set srun_pid [spawn $srun --error=none -t1 $bin_sleep aaa]
 expect {
 	-re "invalid" {
-		send_user "\nFAILURE: srun improperly forwarded stderr\n"
+		log_error "srun improperly forwarded stderr"
 		set exit_code 1
 		exp_continue
 	}
 	-re "exit code $number" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set matches 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -91,11 +84,10 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: srun exit code does not indicate error\n"
+	log_error "srun exit code does not indicate error"
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

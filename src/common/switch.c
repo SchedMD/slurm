@@ -47,6 +47,7 @@
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
@@ -111,8 +112,6 @@ typedef struct slurm_switch_ops {
 					    Buf buffer,
 					    uint16_t protocol_version );
 	int          (*free_nodeinfo)     ( switch_node_info_t **nodeinfo );
-	char *       (*sprintf_nodeinfo)  ( switch_node_info_t *nodeinfo,
-					    char *buf, size_t size );
 	int          (*step_complete)     ( switch_jobinfo_t *jobinfo,
 					    char *nodelist );
 	int          (*step_part_comp)    ( switch_jobinfo_t *jobinfo,
@@ -168,7 +167,6 @@ static const char *syms[] = {
 	"switch_p_pack_node_info",
 	"switch_p_unpack_node_info",
 	"switch_p_free_node_info",
-	"switch_p_sprintf_node_info",
 	"switch_p_job_step_complete",
 	"switch_p_job_step_part_comp",
 	"switch_p_part_comp",
@@ -231,7 +229,6 @@ extern int switch_init(bool only_default)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "switch";
-	char *switch_type = NULL;
 	int i, j, plugin_cnt;
 	List plugin_names = NULL;
 	_plugin_args_t plugin_args = {0};
@@ -246,14 +243,12 @@ extern int switch_init(bool only_default)
 
 	switch_context_cnt = 0;
 
-	switch_type = slurm_get_switch_type();
-
 	plugin_args.plugin_type    = plugin_type;
-	plugin_args.default_plugin = switch_type;
+	plugin_args.default_plugin = slurm_conf.switch_type;
 
 	if (only_default) {
-		plugin_names = list_create(slurm_destroy_char);
-		list_append(plugin_names, xstrdup(switch_type));
+		plugin_names = list_create(xfree_ptr);
+		list_append(plugin_names, xstrdup(slurm_conf.switch_type));
 	} else {
 		plugin_names = plugin_get_plugins_of_type(plugin_type);
 	}
@@ -267,7 +262,7 @@ extern int switch_init(bool only_default)
 
 
 	if (switch_context_default == -1)
-		fatal("Can't find plugin for %s", switch_type);
+		fatal("Can't find plugin for %s", slurm_conf.switch_type);
 
 	/* Ensure that plugin_id is valid and unique */
 	for (i = 0; i < switch_context_cnt; i++) {
@@ -292,7 +287,6 @@ extern int switch_init(bool only_default)
 
 done:
 	slurm_mutex_unlock( &context_lock );
-	xfree(switch_type);
 	FREE_NULL_LIST(plugin_names);
 
 	return retval;
@@ -472,6 +466,17 @@ extern int switch_g_unpack_jobinfo(dynamic_plugin_data_t **jobinfo, Buf buffer,
 	     ((switch_jobinfo_t **)&jobinfo_ptr->data, buffer,
 	      protocol_version))
 		goto unpack_error;
+
+	/*
+	 * Free nodeinfo_ptr if it is different from local cluster as it is not
+	 * relevant to this cluster.
+	 */
+	if ((jobinfo_ptr->plugin_id != switch_context_default) &&
+	    running_in_slurmctld()) {
+		switch_g_free_jobinfo(jobinfo_ptr);
+		*jobinfo = _create_dynamic_plugin_data(switch_context_default);
+	}
+
 
 	return SLURM_SUCCESS;
 
@@ -756,16 +761,6 @@ extern int switch_g_free_node_info(switch_node_info_t **switch_node)
 		return SLURM_ERROR;
 
 	return (*(ops[switch_context_default].free_nodeinfo))( switch_node );
-}
-
-extern char*switch_g_sprintf_node_info(switch_node_info_t *switch_node,
-				       char *buf, size_t size)
-{
-	if ( switch_init(0) < 0 )
-		return NULL;
-
-	return (*(ops[switch_context_default].sprintf_nodeinfo))
-		( switch_node, buf, size );
 }
 
 extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,

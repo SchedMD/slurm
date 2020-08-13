@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          qsub command tests for Grid Engine options
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2016 SchedMD LLC.
 # Written by Danny Auble <da@schedmd.com>
@@ -30,17 +26,13 @@
 ############################################################################
 source ./globals
 
-set test_id     "20.13"
 set exit_code   0
 set file_err	"test$test_id.error"
 set file_in	"test$test_id.input"
 set file_out	"test$test_id.output"
 
-print_header $test_id
-
 if {[file executable $qsub] == 0} {
-	send_user "\nWARNING: $qsub not found\n"
-	exit 0
+	skip "$qsub not found"
 }
 
 set exe "hostname"
@@ -55,7 +47,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -64,7 +56,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: qsub -b option did not set up correctly\n"
+	log_error "qsub -b option did not set up correctly"
 	set exit_code 1
 }
 
@@ -78,7 +70,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -87,7 +79,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: qsub -pe option did not set up correctly\n"
+	log_error "qsub -pe option did not set up correctly"
 	set exit_code 1
 }
 
@@ -101,7 +93,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -118,7 +110,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -136,7 +128,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -146,7 +138,7 @@ expect {
 
 
 if {$matches != 1} {
-	send_user "\nFAILURE: qsub -D option did not set up correctly\n"
+	log_error "qsub -D option did not set up correctly"
 	set exit_code 1
 }
 
@@ -161,7 +153,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -170,7 +162,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: qsub -l h_rt option did not set up correctly\n"
+	log_error "qsub -l h_rt option did not set up correctly"
 	set exit_code 1
 }
 
@@ -184,7 +176,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -193,7 +185,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: qsub -l h_rt option did not set up correctly\n"
+	log_error "qsub -l h_rt option did not set up correctly"
 	set exit_code 1
 }
 
@@ -207,7 +199,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -216,12 +208,11 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: qsub -l h_vmem option did not set up correctly\n"
-	set exit_code 1
+	fail "qsub -l h_vmem option did not set up correctly"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -34,6 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include "affinity.h"
 #include "dist_tasks.h"
 #include "src/common/bitstring.h"
@@ -109,7 +111,7 @@ static void _task_layout_display_masks(launch_tasks_request_msg_t *req,
 	for(i = 0; i < maxtasks; i++) {
 		str = (char *)bit_fmt_hexmask(masks[i]);
 		debug3("_task_layout_display_masks jobid [%u:%d] %s",
-		       req->job_id, gtid[i], str);
+		       req->step_id.job_id, gtid[i], str);
 		xfree(str);
 	}
 }
@@ -239,7 +241,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 #endif
 	if (task_cnt) {
 		req->cpu_bind_type = CPU_BIND_MASK;
-		if (conf->task_plugin_param & CPU_BIND_VERBOSE)
+		if (slurm_conf.task_plugin_param & CPU_BIND_VERBOSE)
 			req->cpu_bind_type |= CPU_BIND_VERBOSE;
 		xfree(req->cpu_bind);
 		req->cpu_bind = (char *)bit_fmt_hexmask(hw_map);
@@ -421,8 +423,8 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 			xfree(avail_mask);
 		}
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-		info("lllp_distribution jobid [%u] manual binding: %s",
-		     req->job_id, buf_type);
+		info("%s: JobId=%u manual binding: %s",
+		     __func__, req->step_id.job_id, buf_type);
 		return;
 	}
 
@@ -431,7 +433,6 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		 * No bind unit (sockets, cores) specified by user,
 		 * pick something reasonable
 		 */
-		uint32_t task_plugin_param = slurm_get_task_plugin_param();
 		bool auto_def_set = false;
 		int spec_thread_cnt = 0;
 		int max_tasks = req->tasks_to_launch[(int)node_id] *
@@ -440,10 +441,9 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 					       &whole_nodes,  &whole_sockets,
 					       &whole_cores,  &whole_threads,
 					       &part_sockets, &part_cores);
-		debug("binding tasks:%d to "
-		      "nodes:%d sockets:%d:%d cores:%d:%d threads:%d",
-		      max_tasks, whole_nodes, whole_sockets ,part_sockets,
-		      whole_cores, part_cores, whole_threads);
+		debug("%s: binding tasks:%d to nodes:%d sockets:%d:%d cores:%d:%d threads:%d",
+		      __func__, max_tasks, whole_nodes, whole_sockets,
+		      part_sockets, whole_cores, part_cores, whole_threads);
 		if ((req->job_core_spec != NO_VAL16) &&
 		    (req->job_core_spec &  CORE_SPEC_THREAD)  &&
 		    (req->job_core_spec != CORE_SPEC_THREAD)) {
@@ -467,15 +467,17 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 			goto make_auto;
 		}
 
-		if (task_plugin_param & CPU_AUTO_BIND_TO_THREADS) {
+		if (slurm_conf.task_plugin_param & CPU_AUTO_BIND_TO_THREADS) {
 			auto_def_set = true;
 			req->cpu_bind_type |= CPU_BIND_TO_THREADS;
 			goto make_auto;
-		} else if (task_plugin_param & CPU_AUTO_BIND_TO_CORES) {
+		} else if (slurm_conf.task_plugin_param &
+			   CPU_AUTO_BIND_TO_CORES) {
 			auto_def_set = true;
 			req->cpu_bind_type |= CPU_BIND_TO_CORES;
 			goto make_auto;
-		} else if (task_plugin_param & CPU_AUTO_BIND_TO_SOCKETS) {
+		} else if (slurm_conf.task_plugin_param &
+			   CPU_AUTO_BIND_TO_SOCKETS) {
 			auto_def_set = true;
 			req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
 			goto make_auto;
@@ -488,27 +490,29 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		}
 
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-		info("lllp_distribution jobid [%u] auto binding off: %s",
-		     req->job_id, buf_type);
+		info("%s: JobId=%u auto binding off: %s",
+		     __func__, req->step_id.job_id, buf_type);
 		return;
 
   make_auto:	xfree(avail_mask);
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-		info("lllp_distribution jobid [%u] %s auto binding: "
-		     "%s, dist %d", req->job_id,
+		info("%s: JobId=%u %s auto binding: %s, dist %d",
+		     __func__, req->step_id.job_id,
 		     (auto_def_set) ? "default" : "implicit",
 		     buf_type, req->task_dist);
 	} else {
 		/* Explicit bind unit (sockets, cores) specified by user */
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-		info("lllp_distribution jobid [%u] binding: %s, dist %d",
-		     req->job_id, buf_type, req->task_dist);
+		info("%s: JobId=%u binding: %s, dist %d",
+		     __func__, req->step_id.job_id, buf_type, req->task_dist);
 	}
 
-	switch (req->task_dist & SLURM_DIST_STATE_BASE) {
+	switch (req->task_dist & SLURM_DIST_NODESOCKMASK) {
 	case SLURM_DIST_BLOCK_BLOCK:
 	case SLURM_DIST_CYCLIC_BLOCK:
 	case SLURM_DIST_PLANE:
+		debug2("%s: JobId=%u will use lllp_block",
+		       __func__, req->step_id.job_id);
 		/* tasks are distributed in blocks within a plane */
 		rc = _task_layout_lllp_block(req, node_id, &masks);
 		break;
@@ -516,8 +520,9 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	case SLURM_DIST_BLOCK:
 	case SLURM_DIST_CYCLIC:
 	case SLURM_DIST_UNKNOWN:
-		if (slurm_get_select_type_param()
-		    & CR_CORE_DEFAULT_DIST_BLOCK) {
+		if (slurm_conf.select_type_param & CR_CORE_DEFAULT_DIST_BLOCK) {
+			debug2("%s: JobId=%u will use lllp_block because of SelectTypeParameters",
+			       __func__, req->step_id.job_id);
 			rc = _task_layout_lllp_block(req, node_id, &masks);
 			break;
 		}
@@ -526,6 +531,8 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		 * default dist block.
 		 */
 	default:
+		debug2("%s: JobId=%u will use lllp_cyclic because of SelectTypeParameters",
+		       __func__, req->step_id.job_id);
 		rc = _task_layout_lllp_cyclic(req, node_id, &masks);
 		break;
 	}
@@ -561,9 +568,10 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 			req->cpu_bind_type |= CPU_BIND_MASK;
 		}
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-		error("lllp_distribution jobid [%u] overriding binding: %s",
-		      req->job_id, buf_type);
-		error("Verify socket/core/thread counts in configuration");
+		error("%s: JobId=%u overriding binding: %s",
+		      __func__, req->step_id.job_id, buf_type);
+		error("%s: Verify socket/core/thread counts in configuration",
+		      __func__);
 	}
 	if (masks)
 		_lllp_free_masks(maxtasks, masks);
@@ -766,8 +774,8 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	}
 
 	str = (char *)bit_fmt_hexmask(req_map);
-	debug3("task/affinity: job %u.%u core mask from slurmctld: %s",
-		req->job_id, req->job_step_id, str);
+	debug3("task/affinity: %ps core mask from slurmctld: %s",
+	       &req->step_id, str);
 	xfree(str);
 
 	for (p = 0; p < num_cpus; p++) {
@@ -812,8 +820,8 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	}
 
 	str = (char *)bit_fmt_hexmask(hw_map);
-	debug3("task/affinity: job %u.%u CPU final mask for local node: %s",
-		req->job_id, req->job_step_id, str);
+	debug3("task/affinity: %ps CPU final mask for local node: %s",
+	       &req->step_id, str);
 	xfree(str);
 
 	FREE_NULL_BITMAP(req_map);
@@ -1037,9 +1045,9 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			bit_set(masks[taskcount], bit);
 
 			if (!already_switched &&
-			    (((req->task_dist & SLURM_DIST_STATE_BASE) ==
+			    (((req->task_dist & SLURM_DIST_NODESOCKMASK) ==
 			     SLURM_DIST_CYCLIC_CFULL) ||
-			    ((req->task_dist & SLURM_DIST_STATE_BASE) ==
+			    ((req->task_dist & SLURM_DIST_NODESOCKMASK) ==
 			     SLURM_DIST_BLOCK_CFULL))) {
 				/* This means we are laying out cpus
 				 * within a task cyclically as well. */
@@ -1368,5 +1376,5 @@ static void _lllp_generate_cpu_bind(launch_tasks_request_msg_t *req,
 
 	slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 	info("_lllp_generate_cpu_bind jobid [%u]: %s, %s",
-	     req->job_id, buf_type, masks_str);
+	     req->step_id.job_id, buf_type, masks_str);
 }

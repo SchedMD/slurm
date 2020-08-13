@@ -1,0 +1,64 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test sacctmgr show <ENTITY> format= options.
+############################################################################
+# Copyright (C) 2019 SchedMD LLC.
+# Written by Marcin Stolarek <cinek@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set exit_code   0
+
+#
+# Report the sacctmgr usage format
+#
+
+proc test_header_in_format { entity } {
+	global sacctmgr exit_code
+	log_info "Verifying sacctmgr show $entity format="
+	log_user 0
+	spawn $sacctmgr show $entity -p
+	expect {
+		-re "(\[a-zA-Z| \]+)" {
+			set names [ split $expect_out(buffer) "|" ]
+			foreach name $names {
+				if { $name != "" } {
+					spawn $sacctmgr show $entity format=$name
+					expect {
+						-re "Unknown field" {
+							log_error "Failed to validate use of $name in sacctmgr show $entity format."
+							set exit_code 1
+						}
+					}
+				}
+			}
+		}
+	log_user 1
+	}
+}
+
+test_header_in_format "qos"
+
+
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

@@ -32,12 +32,17 @@ The <b>slurmd</b> daemons provide fault-tolerant hierarchical communications.
 There is an optional <b>slurmdbd</b> (Slurm DataBase Daemon) which can be used
 to record accounting information for multiple Slurm-managed clusters in a
 single database.
+There is an optional
+<a href="rest.html"><b>slurmrestd</b> (Slurm REST API Daemon)</a>
+which can be used to interact with Slurm through its
+<a href="https://en.wikipedia.org/wiki/Representational_state_transfer">
+REST API</a>.
 User tools include <b>srun</b> to initiate jobs,
 <b>scancel</b> to terminate queued or running jobs,
 <b>sinfo</b> to report system status,
 <b>squeue</b> to report the status of jobs, and
 <b>sacct</b> to get information about jobs and job steps that are running or have completed.
-The <b>smap</b> and <b>sview</b> commands graphically reports system and
+The <b>sview</b> commands graphically reports system and
 job status including network topology.
 There is an administrative tool <b>scontrol</b> available to monitor
 and/or modify configuration and state information on the cluster.
@@ -69,10 +74,6 @@ building block approach. These plugins presently include:
 
 <li><a href="authplugins.html">Authentication of communications</a>:
   Provides authentication mechanism between various components of Slurm.
-</li>
-
-<li><a href="checkpoint_plugins.html">Checkpoint</a>:
-  Interface to various checkpoint mechanisms.
 </li>
 
 <li><a href="containers.html">Containers</a>:
@@ -153,7 +154,7 @@ building block approach. These plugins presently include:
 </li>
 
 <li><a href="taskplugins.html">Task Affinity</a>:
-  Provides mechanism to bind a job and it's individual tasks to specific
+  Provides mechanism to bind a job and its individual tasks to specific
   processors.
 </li>
 
@@ -237,6 +238,6 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 24 April 2019</p>
+<p style="text-align:center;">Last modified 7 Februrary 2020</p>
 
 <!--#include virtual="footer.txt"-->

@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate scontrol update command for partitions.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "3.2"
 set authorized     1
 set exit_code      0
 set job_runnable   0
@@ -41,8 +36,6 @@ set part_old_state ""
 set part_new_state ""
 set read_state     ""
 set timeout        $max_job_delay
-
-print_header $test_id
 
 # Execute a srun job in the specified partition name
 # Returns 0 on successful completion, returns 1 otherwise
@@ -53,7 +46,7 @@ proc run_job { part_name } {
 	set srun_pid [spawn $srun --output=none --error=none -p $part_name -N1-128 -t1 $bin_printenv SLURMD_NODENAME]
 	expect {
 		-re "Unable to contact" {
-			send_user "\nFAILURE: slurm appears to be down\n"
+			log_error "Slurm appears to be down"
 			return 1
 		}
 		-re "uid" {
@@ -65,7 +58,7 @@ proc run_job { part_name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nsrun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			return 1
 		}
@@ -82,14 +75,14 @@ proc run_job { part_name } {
 #
 spawn $scontrol show part
 expect {
-	-re "PartitionName=($alpha_numeric_under)" {
+	-re "PartitionName=($re_word_str)" {
 		if {[string compare $part_name ""] == 0} {
 			set part_name $expect_out(1,string)
 		}
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -99,12 +92,12 @@ expect {
 
 spawn $scontrol show part $part_name
 expect {
-	-re "State=($alpha_cap) " {
+	-re "State=($re_word_str) " {
 		set part_old_state $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -116,13 +109,10 @@ expect {
 # Validate current partition information
 #
 if {[string compare $part_name ""] == 0} {
-	send_user "\nFAILURE: scontrol unable to identify any partition\n"
-	exit 1
+	fail "scontrol unable to identify any partition"
 }
 if {[string compare $part_old_state ""] == 0} {
-	send_user "\nFAILURE: scontrol unable to identify state of"
-	send_user " partition $part_name\n"
-	exit 1
+	fail "scontrol unable to identify state of partition $part_name"
 }
 if {[string compare $part_old_state "UP"] == 0} {
 	set job_runable 1
@@ -133,9 +123,7 @@ if {[string compare $part_old_state "DOWN"] == 0} {
 	set part_new_state "UP"
 }
 if {[string compare $part_new_state ""] == 0} {
-	send_user "\nFAILURE: state of partition $part_name is"
-	send_user " invalid: $part_old_state\n"
-	exit 1
+	fail "State of partition $part_name is invalid: $part_old_state"
 }
 
 #
@@ -143,7 +131,7 @@ if {[string compare $part_new_state ""] == 0} {
 #
 if {$job_runable == 0} {
 	if {[run_job $part_name] == 0} {
-		send_user "\nFAILURE: Job ran in DOWN partition\n"
+		log_error "Job ran in DOWN partition"
 		set exit_code 1
 	}
 }
@@ -153,7 +141,7 @@ if {$job_runable == 0} {
 #
 spawn $scontrol update PartitionName=$part_name State=$part_new_state
 expect {
-	-re "slurm_update error: ($alpha_numeric_under) ($alpha_numeric_under)" {
+	-re "slurm_update error: ($re_word_str) ($re_word_str)" {
 		set access_err 0
 		set err_msg1 $expect_out(1,string)
 		set err_msg2 $expect_out(2,string)
@@ -164,15 +152,14 @@ expect {
 			set access_err 1
 		}
 		if {$access_err == 1} {
-			send_user "\nWARNING: user not authorized to change slurm state\n"
-			exit $exit_code
+			skip "User not authorized to change slurm state"
 		} else {
 			set authorized 0
 		}
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -185,12 +172,12 @@ expect {
 #
 spawn $scontrol show partition $part_name
 expect {
-	-re "State=($alpha_cap) " {
+	-re "State=($re_word_str) " {
 		set read_state $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -199,7 +186,7 @@ expect {
 }
 if {$authorized == 1} {
 	if {[string compare $read_state $part_new_state] != 0} {
-		send_user "\nFAILURE: scontrol state change error\n"
+		log_error "scontrol state change error"
 		set exit_code 1
 	}
 }
@@ -209,7 +196,7 @@ if {$authorized == 1} {
 #
 if {$job_runable == 1} {
 	if {[run_job $part_name] == 0} {
-		send_user "\nFAILURE: Job ran in DOWN partition\n"
+		log_error "Job ran in DOWN partition"
 		set exit_code 1
 	}
 }
@@ -223,12 +210,12 @@ expect {
 		exp_continue
 	}
 	-re "slurm_update error:" {
-		send_user "\nFAILURE: scontrol update error\n"
+		log_error "scontrol update error"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -243,7 +230,7 @@ spawn  $scontrol show partition $part_name
 expect {
 
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -251,7 +238,6 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

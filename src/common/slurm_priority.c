@@ -43,14 +43,14 @@
 
 typedef struct slurm_priority_ops {
 	uint32_t (*set)            (uint32_t last_prio,
-				    struct job_record *job_ptr);
+				    job_record_t *job_ptr);
 	void     (*reconfig)       (bool assoc_clear);
 	void     (*set_assoc_usage)(slurmdb_assoc_rec_t *assoc);
 	double   (*calc_fs_factor) (long double usage_efctv,
 				    long double shares_norm);
 	List	 (*get_priority_factors)
 	(priority_factors_request_msg_t *req_msg, uid_t uid);
-	void     (*job_end)        (struct job_record *job_ptr);
+	void     (*job_end)        (job_record_t *job_ptr);
 } slurm_priority_ops_t;
 
 /*
@@ -72,8 +72,8 @@ static bool init_run = false;
 
 extern int priority_sort_part_tier(void *x, void *y)
 {
-	struct part_record *parta = *(struct part_record **) x;
-	struct part_record *partb = *(struct part_record **) y;
+	part_record_t *parta = *(part_record_t **) x;
+	part_record_t *partb = *(part_record_t **) y;
 
 	if (parta->priority_tier > partb->priority_tier)
 		return -1;
@@ -90,7 +90,6 @@ extern int slurm_priority_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "priority";
-	char *type = NULL;
 
 	if (init_run && g_priority_context)
 		return retval;
@@ -100,13 +99,14 @@ extern int slurm_priority_init(void)
 	if (g_priority_context)
 		goto done;
 
-	type = slurm_get_priority_type();
-
-	g_priority_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+	g_priority_context = plugin_context_create(plugin_type,
+						   slurm_conf.priority_type,
+						   (void **) &ops, syms,
+						   sizeof(syms));
 
 	if (!g_priority_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.priority_type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -114,7 +114,6 @@ extern int slurm_priority_init(void)
 
 done:
 	slurm_mutex_unlock(&g_priority_context_lock);
-	xfree(type);
 	return retval;
 }
 
@@ -131,7 +130,7 @@ extern int slurm_priority_fini(void)
 	return rc;
 }
 
-extern uint32_t priority_g_set(uint32_t last_prio, struct job_record *job_ptr)
+extern uint32_t priority_g_set(uint32_t last_prio, job_record_t *job_ptr)
 {
 	if (slurm_priority_init() < 0)
 		return 0;
@@ -177,7 +176,7 @@ extern List priority_g_get_priority_factors_list(
 	return (*(ops.get_priority_factors))(req_msg, uid);
 }
 
-extern void priority_g_job_end(struct job_record *job_ptr)
+extern void priority_g_job_end(job_record_t *job_ptr)
 {
 	if (slurm_priority_init() < 0)
 		return;

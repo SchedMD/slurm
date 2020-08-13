@@ -49,6 +49,7 @@
 #include <unistd.h>
 
 #include "src/common/proc_args.h"
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -70,8 +71,7 @@ static void     _usage( void );
  */
 extern void parse_command_line(int argc, char **argv)
 {
-	char *sbcast_parameters;
-	char *end_ptr = NULL, *env_val = NULL, *sep, *tmp;
+	char *env_val = NULL, *sep, *tmp;
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
@@ -89,8 +89,7 @@ extern void parse_command_line(int argc, char **argv)
 		{NULL,        0,                 0, 0}
 	};
 
-	if ((sbcast_parameters = slurm_get_sbcast_parameters()) &&
-	    (tmp = strcasestr(sbcast_parameters, "Compression="))) {
+	if ((tmp = xstrcasestr(slurm_conf.sbcast_parameters, "Compression="))) {
 		tmp += 12;
 		sep = strchr(tmp, ',');
 		if (sep)
@@ -107,10 +106,6 @@ extern void parse_command_line(int argc, char **argv)
 	if (getenv("SBCAST_FORCE"))
 		params.force = true;
 
-	params.job_id  = NO_VAL;
-	params.pack_job_offset = NO_VAL;
-	params.step_id = NO_VAL;
-
 	if (getenv("SBCAST_PRESERVE"))
 		params.preserve = true;
 	if ( ( env_val = getenv("SBCAST_SIZE") ) )
@@ -121,7 +116,7 @@ extern void parse_command_line(int argc, char **argv)
 		params.timeout = (atoi(env_val) * 1000);
 
 	optind = 0;
-	while ((opt_char = getopt_long(argc, argv, "CfF:j:ps:t:vV",
+	while ((opt_char = getopt_long(argc, argv, "C::fF:j:ps:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -139,13 +134,7 @@ extern void parse_command_line(int argc, char **argv)
 			params.fanout = atoi(optarg);
 			break;
 		case (int)'j':
-			params.job_id = strtol(optarg, &end_ptr, 10);
-			if (end_ptr[0] == '+') {
-				params.pack_job_offset =
-					strtol(end_ptr+1, &end_ptr, 10);
-			}
-			if (end_ptr[0] == '.')
-				params.step_id = strtol(end_ptr+1, NULL, 10);
+			params.selected_step = slurm_parse_step_str(optarg);
 			break;
 		case (int)'p':
 			params.preserve = true;
@@ -178,24 +167,24 @@ extern void parse_command_line(int argc, char **argv)
 		exit(1);
 	}
 
-	if (params.job_id == NO_VAL) {
+	if (!params.selected_step ||
+	    (params.selected_step->step_id.job_id == NO_VAL)) {
 		if (!(env_val = getenv("SLURM_JOB_ID"))) {
 			error("Need a job id to run this command.  "
 			      "Run from within a Slurm job or use the "
 			      "--jobid option.");
 			exit(1);
 		}
-		params.job_id = strtol(env_val, &end_ptr, 10);
-		if (end_ptr[0] == '.')
-			params.step_id = strtol(end_ptr+1, NULL, 10);
+		slurm_destroy_selected_step(params.selected_step);
+		params.selected_step = slurm_parse_step_str(env_val);
 	}
 
 	params.src_fname = xstrdup(argv[optind]);
 
 	if (argv[optind+1][0] == '/') {
 		params.dst_fname = xstrdup(argv[optind+1]);
-	} else if (sbcast_parameters &&
-		   (tmp = strcasestr(sbcast_parameters, "DestDir="))) {
+	} else if ((tmp = xstrcasestr(slurm_conf.sbcast_parameters,
+				      "DestDir="))) {
 		tmp += 8;
 		sep = strchr(tmp, ',');
 		if (sep)
@@ -213,8 +202,6 @@ extern void parse_command_line(int argc, char **argv)
 		xstrfmtcat(params.dst_fname, "%s/%s", tmp, argv[optind+1]);
 		free(tmp);
 	}
-
-	xfree(sbcast_parameters);
 
 	if (params.verbose)
 		_print_options();
@@ -246,28 +233,16 @@ static uint32_t _map_size( char *buf )
 /* print the parameters specified */
 static void _print_options( void )
 {
+	char job_id_str[64];
+
 	info("-----------------------------");
 	info("block_size = %u", params.block_size);
 	info("compress   = %u", params.compress);
 	info("force      = %s", params.force ? "true" : "false");
 	info("fanout     = %d", params.fanout);
-	if (params.step_id == NO_VAL) {
-		if (params.pack_job_offset == NO_VAL) {
-			info("jobid      = %u", params.job_id);
-		} else {
-			info("jobid      = %u+%u",
-			     params.job_id, params.pack_job_offset);
-		}
-	} else {
-		if (params.pack_job_offset == NO_VAL) {
-			info("jobid      = %u.%u", params.job_id,
-			     params.step_id);
-		} else {
-			info("jobid      = %u+%u.%u",
-			     params.job_id, params.pack_job_offset,
-			     params.step_id);
-		}
-	}
+	info("jobid      = %s",
+	     slurm_get_selected_step_id(job_id_str, sizeof(job_id_str),
+					params.selected_step));
 	info("preserve   = %s", params.preserve ? "true" : "false");
 	info("timeout    = %d", params.timeout);
 	info("verbose    = %d", params.verbose);
@@ -289,7 +264,7 @@ Usage: sbcast [OPTIONS] SOURCE DEST\n\
   -C, --compress[=lib]  compress the file being transmitted\n\
   -f, --force           replace destination file as required\n\
   -F, --fanout=num      specify message fanout\n\
-  -j, --jobid=#[+#][.#] specify job ID with optional pack job offset and/or step ID\n\
+  -j, --jobid=#[+#][.#] specify job ID with optional hetjob offset and/or step ID\n\
   -p, --preserve        preserve modes and times of source file\n\
   -s, --size=num        block size in bytes (rounded off)\n\
   -t, --timeout=secs    specify message timeout (seconds)\n\

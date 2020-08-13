@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validate that sacct -D shows correct job steps and states
 #          when a job is requeued
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -31,29 +27,25 @@
 ############################################################################
 source ./globals
 
-set test_id    12.7
 set job_id     0
 set node       ""
 set file_in    "test$test_id\_sc"
 
-print_header $test_id
-
 if {![test_accting_steps]} {
-	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
-	send_user "(AccountingStorageEnforce)\n"
-	exit 0
+	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
 }
 if { [test_super_user] == 0 } {
-	send_user "WARNING: Test can only be run as SlurmUser\n"
-	exit 0
+	skip "Test can only be run as SlurmUser"
 }
 
 proc endit { exit_code msg } {
 	global job_id bin_rm file_in
 	cancel_job $job_id
 	exec $bin_rm $file_in
-	send_user "\n$msg\n"
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "$msg"
+	}
+	pass
 }
 
 proc mod_state { state reason } {
@@ -68,7 +60,7 @@ proc mod_state { state reason } {
 			exp_continue
 		}
 		timeout {
-			endit 1 "FAILURE: scontrol is not responding"
+			endit 1 "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -80,7 +72,7 @@ proc mod_state { state reason } {
 		spawn $scontrol show config
 		expect {
 			-re "ReturnToService *= 2" {
-				send_user "WARNING: This error is expected, no worries\n"
+				log_warn "This error is expected, no worries"
 				set bad_state 0
 				exp_continue
 			}
@@ -91,7 +83,7 @@ proc mod_state { state reason } {
 		log_user 1
 	}
 	if {$bad_state == 1} {
-		endit 1 "FAILURE: problem changing node state"
+		endit 1 "Problem changing node state"
 	}
 }
 
@@ -103,11 +95,11 @@ proc check_step { num } {
 	expect {
 		-re "batch" {
 			incr steps
-			send_user "got here with $steps\n"
+			log_debug "Got here with $steps"
 			exp_continue
 		}
 		timeout {
-			endit 1 "FAILURE: sacct is not responding"
+			endit 1 "sacct is not responding"
 		}
 		eof {
 			wait
@@ -116,7 +108,7 @@ proc check_step { num } {
 	}
 
 	if {$num != $steps} {
-		endit 1 "FAILURE: found $steps step(s) when expecting $num steps"
+		endit 1 "Found $steps step(s) when expecting $num steps"
 	}
 }
 
@@ -144,7 +136,7 @@ proc check_sacct_states { states log_it } {
 			exp_continue
 		}
 		timeout {
-			endit 1 "FAILURE: sacct is not responding"
+			endit 1 "sacct is not responding"
 		}
 		eof {
 			wait
@@ -156,8 +148,7 @@ proc check_sacct_states { states log_it } {
 }
 
 if {[test_using_slurmdbd] != 1} {
-	send_user "\nWARNING: not using accounting_storage/slurmdbd\n"
-	exit 0
+	skip "Not using accounting_storage/slurmdbd"
 }
 
 make_bash_script $file_in "sleep 2"
@@ -170,40 +161,38 @@ expect {
 		exp_continue
 	}
 	timeout {
-		endit 1 "FAILURE: sbatch is not responding"
+		endit 1 "sbatch is not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "Sbatch did not submit job"
 }
 
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	log_error "Error waiting for job $job_id to start"
 	set exit_code 1
 }
 
 set found 0
 spawn $scontrol show job $job_id
 expect {
-	-re "NodeList=($alpha_numeric_nodelist)" {
+	-re "NodeList=($re_word_str)" {
 		set node $expect_out(1,string)
 		set found 1
 		exp_continue
 	}
 	timeout {
-		endit 1 "FAILURE: scontrol is not responding"
+		endit 1 "scontrol is not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: was not able to identify a usable node\n"
-	exit 1
+	fail "Was not able to identify a usable node"
 }
 
 cancel_job $job_id
@@ -211,7 +200,7 @@ cancel_job $job_id
 make_bash_script $file_in "sleep 20"
 
 # Submit job to be requeued
-send_user "\n\nTest 1\n"
+log_info "Test 1"
 set job_id 0
 spawn $sbatch -N1 -w$node --exclusive -o/dev/null --requeue $file_in
 expect {
@@ -220,7 +209,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		endit 1 "FAILURE: sbatch is not responding"
+		endit 1 "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -228,12 +217,11 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "Sbatch did not submit job"
 }
 
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	log_error "Error waiting for job $job_id to start"
 	set exit_code 1
 }
 # Wait for batch script to start (after message delays, prologs, etc.)
@@ -250,9 +238,9 @@ mod_state "resume" "test$test_id"
 
 
 # Check the job state
-send_user "\n\nTest 2\n"
+log_info "Test 2"
 if {[wait_for_job $job_id "PENDING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to pend\n"
+	log_error "Error waiting for job $job_id to pend"
 	set exit_code 1
 }
 # Wait for the state changes to propagate to the database for sacct
@@ -260,49 +248,49 @@ sleep 3
 # The job state should be NODE_FAIL
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
-	endit 1 "FAILURE: Bad NODE_FAIL count ($fail_count != 1)"
+	endit 1 "Bad NODE_FAIL count ($fail_count != 1)"
 }
 # The batch step state should be CANCELLED
 set canc_count [check_sacct_states "CANCELLED" 0]
 if {$canc_count != 1} {
-	endit 1 "FAILURE: Bad CANCELLED count ($canc_count != 1)"
+	endit 1 "Bad CANCELLED count ($canc_count != 1)"
 }
 # The requeued job state should be PENDING
 set pend_count [check_sacct_states "PENDING" 0]
 if {$pend_count != 1} {
-	endit 1 "FAILURE: Bad PENDING count ($pend_count != 1)"
+	endit 1 "Bad PENDING count ($pend_count != 1)"
 }
-send_user "So far, so good\n\n"
+log_info "So far, so good"
 
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	log_error "Error waiting for job $job_id to start"
 	set exit_code 1
 }
 # Wait for batch script to start (after message delays, prologs, etc.)
 sleep 5
 
 
-send_user "\n\nTest 3\n"
+log_info "Test 3"
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
-	endit 1 "FAILURE: Bad NODE_FAIL count ($fail_count != 1)"
+	endit 1 "Bad NODE_FAIL count ($fail_count != 1)"
 }
 set canc_count [check_sacct_states "CANCELLED" 0]
 if {$canc_count != 1} {
-	endit 1 "FAILURE: Bad CANCELLED count ($canc_count != 1)"
+	endit 1 "Bad CANCELLED count ($canc_count != 1)"
 }
 set run_count [check_sacct_states "RUNNING" 0]
 # The requeued job and its batch step should now be running.
 if {$run_count != 2} {
-	endit 1 "FAILURE: Bad RUNNING count ($run_count != 1)"
+	endit 1 "Bad RUNNING count ($run_count != 1)"
 }
-send_user "So far, so good\n\n"
+log_info "So far, so good"
 
 # Requeue the job
 spawn $scontrol requeue $job_id
 expect {
 	timeout {
-		endit 1 "FAILURE: scontrol is not responding"
+		endit 1 "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -312,33 +300,33 @@ expect {
 # Wait a bit for the job to be requeued then check its state
 sleep 8
 if {[wait_for_job $job_id "PENDING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to pend\n"
+	log_error "Error waiting for job $job_id to pend"
 	set exit_code 1
 }
 # Wait for the state changes to propagate to the database for sacct
 sleep 3
-send_user "\n\nTest 4\n"
+log_info "Test 4"
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
-	endit 1 "FAILURE: Bad NODE_FAIL count ($fail_count != 1)"
+	endit 1 "Bad NODE_FAIL count ($fail_count != 1)"
 }
 set req_count [check_sacct_states "REQUEUE" 0]
 if {$req_count != 1} {
-	endit 1 "FAILURE: Bad REQUEUE count ($req_count != 1)"
+	endit 1 "Bad REQUEUE count ($req_count != 1)"
 }
 # The first and second batch steps should both show CANCELLED
 set canc_count [check_sacct_states "CANCELLED" 0]
 if {$canc_count != 2} {
-	endit 1 "FAILURE: Bad CANCELLED count ($canc_count != 1)"
+	endit 1 "Bad CANCELLED count ($canc_count != 1)"
 }
 set pend_count [check_sacct_states "PENDING" 0]
 if {$pend_count != 1} {
-	endit 1 "FAILURE: Bad PENDING count ($pend_count != 1)"
+	endit 1 "Bad PENDING count ($pend_count != 1)"
 }
-send_user "So far, so good\n\n"
+log_info "So far, so good"
 
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	log_error "Error waiting for job $job_id to start"
 	set exit_code 1
 }
 # Wait for batch script to start (after message delays, prologs, etc.)
@@ -349,50 +337,50 @@ sleep 5
 check_step 3
 
 
-send_user "\n\nTest 5\n"
+log_info "Test 5"
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
-	endit 1 "FAILURE: Bad NODE_FAIL count ($fail_count != 1)"
+	endit 1 "Bad NODE_FAIL count ($fail_count != 1)"
 }
 set req_count [check_sacct_states "REQUEUE" 0]
 if {$req_count != 1} {
-	endit 1 "FAILURE: Bad REQUEUE count ($req_count != 1)"
+	endit 1 "Bad REQUEUE count ($req_count != 1)"
 }
 set canc_count [check_sacct_states "CANCELLED" 0]
 if {$canc_count != 2} {
-	endit 1 "FAILURE: Bad CANCELLED count ($canc_count != 1)"
+	endit 1 "Bad CANCELLED count ($canc_count != 1)"
 }
 # The job and its batch step should be RUNNING
 set run_count [check_sacct_states "RUNNING" 0]
 if {$run_count != 2} {
-	endit 1 "FAILURE: Bad RUNNING count ($run_count != 1)"
+	endit 1 "Bad RUNNING count ($run_count != 1)"
 }
-send_user "So far, so good\n\n"
+log_info "So far, so good"
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	log_error "Error waiting for job $job_id to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
 
 # Check steps after job has completed
 check_step 3
-send_user "\n\nTest 6\n"
+log_info "Test 6"
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
-	endit 1 "FAILURE: Bad NODE_FAIL count ($fail_count != 1)"
+	endit 1 "Bad NODE_FAIL count ($fail_count != 1)"
 }
 set req_count [check_sacct_states "REQUEUE" 0]
 if {$req_count != 1} {
-	endit 1 "FAILURE: Bad REQUEUE count ($req_count != 1)"
+	endit 1 "Bad REQUEUE count ($req_count != 1)"
 }
 set canc_count [check_sacct_states "CANCELLED" 0]
 if {$canc_count != 2} {
-	endit 1 "FAILURE: Bad CANCELLED count ($canc_count != 1)"
+	endit 1 "Bad CANCELLED count ($canc_count != 1)"
 }
 set comp_count [check_sacct_states "COMPLETED" 0]
 if {$comp_count != 2} {
-	endit 1 "FAILURE: Bad COMPLETED count ($comp_count != 2)"
+	endit 1 "Bad COMPLETED count ($comp_count != 2)"
 }
 
-endit 0 "SUCCESS"
+endit 0 ""

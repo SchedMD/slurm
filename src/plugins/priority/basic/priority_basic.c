@@ -103,7 +103,7 @@ int fini ( void )
  * The remainder of this file implements the standard Slurm priority API.
  */
 
-extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
+extern uint32_t priority_p_set(uint32_t last_prio, job_record_t *job_ptr)
 {
 	uint32_t new_prio = 1;
 
@@ -162,7 +162,7 @@ extern List priority_p_get_priority_factors_list(
 	return(list_create(NULL));
 }
 
-extern void priority_p_job_end(struct job_record *job_ptr)
+extern void priority_p_job_end(job_record_t *job_ptr)
 {
 	uint64_t time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
 	slurmdb_assoc_rec_t *assoc_ptr;

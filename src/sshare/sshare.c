@@ -51,7 +51,7 @@ static int      _get_info(shares_request_msg_t *shares_req,
 static int      _addto_name_char_list(List char_list, char *names, bool gid);
 static int 	_single_cluster(shares_request_msg_t *req_msg);
 static int 	_multi_cluster(shares_request_msg_t *req_msg);
-static char *   _convert_to_name(int id, bool gid);
+static char *   _convert_to_name(uint32_t id, bool is_gid);
 static void     _print_version( void );
 static void	_usage(void);
 static void     _help_format_msg(void);
@@ -114,8 +114,7 @@ int main (int argc, char **argv)
 			break;
 		case 'A':
 			if (!req_msg.acct_list)
-				req_msg.acct_list =
-					list_create(slurm_destroy_char);
+				req_msg.acct_list = list_create(xfree_ptr);
 			slurm_addto_char_list(req_msg.acct_list, optarg);
 			break;
 		case 'e':
@@ -161,8 +160,7 @@ int main (int argc, char **argv)
 			}
 			all_users = 0;
 			if (!req_msg.user_list)
-				req_msg.user_list =
-					list_create(slurm_destroy_char);
+				req_msg.user_list = list_create(xfree_ptr);
 			_addto_name_char_list(req_msg.user_list, optarg, 0);
 			break;
 		case 'U':
@@ -212,8 +210,7 @@ int main (int argc, char **argv)
 		struct passwd *pwd;
 		if ((pwd = getpwuid(getuid()))) {
 			if (!req_msg.user_list) {
-				req_msg.user_list =
-					list_create(slurm_destroy_char);
+				req_msg.user_list = list_create(xfree_ptr);
 			}
 			temp = xstrdup(pwd->pw_name);
 			list_append(req_msg.user_list, temp);
@@ -224,22 +221,14 @@ int main (int argc, char **argv)
 		}
 	}
 
-	if (req_msg.acct_list && list_count(req_msg.acct_list)) {
-		if (verbosity) {
-			fprintf(stderr, "Accounts requested:\n");
-			ListIterator itr = list_iterator_create(req_msg.acct_list);
-			while ((temp = list_next(itr)))
-				fprintf(stderr, "\t: %s\n", temp);
-			list_iterator_destroy(itr);
-		}
-	} else {
-		if (req_msg.acct_list
-		   && list_count(req_msg.acct_list)) {
-			FREE_NULL_LIST(req_msg.acct_list);
-		}
-		if (verbosity)
-			fprintf(stderr, "Accounts requested:\n\t: all\n");
-
+	if (verbosity && req_msg.acct_list && list_count(req_msg.acct_list)) {
+		ListIterator itr = list_iterator_create(req_msg.acct_list);
+		fprintf(stderr, "Accounts requested:\n");
+		while ((temp = list_next(itr)))
+			fprintf(stderr, "\t: %s\n", temp);
+		list_iterator_destroy(itr);
+	} else if (verbosity) {
+		fprintf(stderr, "Accounts requested:\n\t: all\n");
 	}
 
 	if (clusters)
@@ -247,6 +236,8 @@ int main (int argc, char **argv)
 	else
 		exit_code = _single_cluster(&req_msg);
 
+	FREE_NULL_LIST(req_msg.acct_list);
+	FREE_NULL_LIST(req_msg.user_list);
 	exit(exit_code);
 }
 
@@ -282,7 +273,8 @@ static int _multi_cluster(shares_request_msg_t *req_msg)
 			printf("\n");
 		printf("CLUSTER: %s\n", working_cluster_rec->name);
 		rc2 = _single_cluster(req_msg);
-		rc  = MAX(rc, rc2);
+		if (rc2)
+			rc = 1;
 	}
 	list_iterator_destroy(itr);
 
@@ -360,7 +352,8 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 					memcpy(name, names+start, (i-start));
 					//info("got %s %d", name, i-start);
 					if (isdigit((int) *name)) {
-						int id = atoi(name);
+						uint32_t id = strtoul(name,
+								      NULL, 10);
 						xfree(name);
 						name = _convert_to_name(
 							id, gid);
@@ -395,7 +388,7 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 			memcpy(name, names+start, (i-start));
 
 			if (isdigit((int) *name)) {
-				int id = atoi(name);
+				uint32_t id = strtoul(name, NULL, 10);
 				xfree(name);
 				name = _convert_to_name(id, gid);
 			}
@@ -416,21 +409,21 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 	return count;
 }
 
-static char *_convert_to_name(int id, bool gid)
+static char *_convert_to_name(uint32_t id, bool is_gid)
 {
 	char *name = NULL;
 
-	if (gid) {
+	if (is_gid) {
 		struct group *grp;
-		if (!(grp=getgrgid(id))) {
-			fprintf(stderr, "Invalid group id: %s\n", name);
+		if (!(grp = getgrgid((gid_t) id))) {
+			fprintf(stderr, "Invalid group id: %u\n", id);
 			exit(1);
 		}
 		name = xstrdup(grp->gr_name);
 	} else {
 		struct passwd *pwd;
-		if (!(pwd=getpwuid(id))) {
-			fprintf(stderr, "Invalid user id: %s\n", name);
+		if (!(pwd = getpwuid((uid_t) id))) {
+			fprintf(stderr, "Invalid user id: %u\n", id);
 			exit(1);
 		}
 		name = xstrdup(pwd->pw_name);

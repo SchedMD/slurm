@@ -127,7 +127,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   the user (-c/--constraint options).<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   Node features used by this plugin when configuring or booting a node.
-  A string with it's memory allocated by xmalloc (i.e. the return value
+  A string with its memory allocated by xmalloc (i.e. the return value
   must be released using Slurm's xfree function).</p>
 
 <p class="commandline"> bitstr_t *node_features_g_get_node_bitmap(void)
@@ -166,7 +166,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   Determine if this node update request is valid. For example, validate that a
    non-KNL node does not include any MCDRAM or NUMA modes that are KNL specific.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
-  <span class="commandline"> node_ptr:</span> Pointer to struct node_record record
+  <span class="commandline"> node_ptr:</span> Pointer to node_record_t record
   being updated.<br>
   <span class="commandline"> update_node_msg:</span> Node update request.</br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -184,7 +184,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   Translate a node's new active feature specification as needed to preserve any
   original features (i.e. features outside of the domain of this plugin).
   Also validate that the new features are a subset of available features.
-  For example, a node's new features may be "cache,quad", while it's original
+  For example, a node's new features may be "cache,quad", while its original
   features may have been "knl,rack1,flat,hemi".
   The original plugin-specific features are "flat,hemi", while
   features configured outside of the domain of this plugin are "knl,rack1".
@@ -199,7 +199,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   <span class="commandline"> node_inx:</span> Node's index in the slurmctld daemon's node record table.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   Node's currently active features, validate and sorted.
-  A string with it's memory allocated by xmalloc (i.e. the return value
+  A string with its memory allocated by xmalloc (i.e. the return value
   must be released using Slurm's xfree function).</p>
 
 <p class="commandline"> char *node_features_p_node_xlate2(char *new_features)
@@ -213,7 +213,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   <span class="commandline"> new_features:</span> Node's newly configured features.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   Node's currently available features, validate and sorted.
-  A string with it's memory allocated by xmalloc (i.e. the return value
+  A string with its memory allocated by xmalloc (i.e. the return value
   must be released using Slurm's xfree function).</p>
 
 <p class="commandline"> void node_features_p_step_config(bool mem_sort, bitstr_t *numa_bitmap)
@@ -234,6 +234,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   True if user can change node active features to other available features.</p>
 
 
-<p style="text-align:center;">Last modified 15 May 2018</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

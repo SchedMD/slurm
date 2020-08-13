@@ -71,10 +71,10 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				bool reset, bool is_job, int *global_id);
 
 /* Send GRES information from slurmd on the specified file descriptor */
-extern void common_send_stepd(int fd, List gres_devices);
+extern void common_send_stepd(Buf buffer, List gres_devices);
 
 /* Receive GRES information from slurmd on the specified file descriptor */
-extern void common_recv_stepd(int fd, List *gres_devices);
+extern void common_recv_stepd(Buf buffer, List *gres_devices);
 
 /*
  * A one-liner version of _print_gres_conf_full()

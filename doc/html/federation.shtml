@@ -19,7 +19,7 @@
 </ul>
 
 <h2><a name="overview">Overview</a></h2>
-<p>Slurm version 17.11 includes support for creating a federation of clusters
+<p>Slurm includes support for creating a federation of clusters
 and scheduling jobs in a peer-to-peer fashion between them. Jobs submitted to a
 federation receive a unique job ID that is unique among all clusters in the
 federation. A job is submitted to the local cluster (the cluster defined in the
@@ -181,6 +181,13 @@ prevent the shell from interpreting the <b>!</b> (e.g
 When using both the <b>--cluster-constraint=</b> and
 <b>--clusters=</b> options together, the origin cluster will only submit
 sibling jobs to clusters that meet both requirements.
+</p>
+
+<p>
+Held or dependent jobs are kept on the origin cluster until they are released
+or are no longer dependent, at which time they are submitted to other viable
+clusters in the federation. If a job becomes held or dependent
+after being submitted, the job is removed from every cluster but the origin.
 </p>
 
 <h2><a name="jobscheduling">Job Scheduling</a></h2>
@@ -448,13 +455,12 @@ issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
 		submitted to other sibling clusters even if it could run on
 		them.</li>
 	<li>Job arrays only run on the cluster that they were submitted to.</li>
-	<li>Job dependencies are not supported across clusters.</li>
 	<li>Job modification must succeed on the origin cluster for the changes
 		to be pushed to the sibling jobs on remote clusters. </li>
 	<li>Modifications to anything other than jobs are disabled in sview.</li>
 	<li>sview grid is disabled in a federated view.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 15 June 2017</p>
+<p style="text-align:center;">Last modified 24 Jun 2020</p>
 
 <!--#include virtual="footer.txt"-->

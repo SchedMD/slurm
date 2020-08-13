@@ -135,6 +135,7 @@ typedef enum {
 #define	QOS_FLAG_DENY_LIMIT          0x00000040
 #define	QOS_FLAG_OVER_PART_QOS       0x00000080
 #define	QOS_FLAG_NO_DECAY            0x00000100
+#define	QOS_FLAG_USAGE_FACTOR_SAFE   0x00000200
 
 /* Define Server Resource flags */
 #define	SLURMDB_RES_FLAG_BASE        0x0fffffff /* apply to get real flags */
@@ -147,8 +148,6 @@ typedef enum {
 #define	FEDERATION_FLAG_NOTSET         0x10000000
 #define	FEDERATION_FLAG_ADD            0x20000000
 #define	FEDERATION_FLAG_REMOVE         0x40000000
-
-#define SLURMDB_MODIFY_NO_WAIT       0x00000001
 
 /* SLURM CLUSTER FEDERATION STATES */
 enum cluster_fed_states {
@@ -169,7 +168,7 @@ enum cluster_fed_states {
 /* when we come up with some */
 
 /*
- * Translation of db_flags in the struct job_record and flag
+ * Translation of db_flags in job_record_t and flag
  * slurmdb_job_[rec|cond]_t
  */
 #define SLURMDB_JOB_FLAG_NONE     0x00000000 /* No flags */
@@ -180,7 +179,10 @@ enum cluster_fed_states {
 					      * scheduler */
 #define SLURMDB_JOB_FLAG_BACKFILL 0x00000008 /* Job was started from backfill */
 
-/* Slurm job condition flags */
+/*
+ * Slurm job condition flags
+ * slurmdb_job_cond_t
+ */
 #define JOBCOND_FLAG_DUP      0x00000001 /* Report duplicate job entries */
 #define JOBCOND_FLAG_NO_STEP  0x00000002 /* Don't report job step info */
 #define JOBCOND_FLAG_NO_TRUNC 0x00000004 /* Report info. without truncating
@@ -193,6 +195,12 @@ enum cluster_fed_states {
 #define JOBCOND_FLAG_NO_WHOLE_HETJOB 0x00000020 /* Only report info about
 						 * requested hetjob components
 						 */
+#define JOBCOND_FLAG_NO_WAIT          0x00000040 /* Tell dbd plugin not to wait
+						  * around for result.
+						  */
+#define JOBCOND_FLAG_NO_DEFAULT_USAGE 0x00000080 /* Use usage_time as the
+						  * submit_time of the job.
+						  */
 
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number
@@ -219,19 +227,21 @@ enum cluster_fed_states {
 #define CLUSTER_FLAG_A6     0x00000020 /* UNUSED */
 #define CLUSTER_FLAG_A7     0x00000040 /* UNUSED */
 #define CLUSTER_FLAG_MULTSD 0x00000080 /* This cluster is multiple slurmd */
-#define CLUSTER_FLAG_CRAYXT 0x00000100 /* This cluster is a ALPS cray
-					* Removed v19.05 */
-#define CLUSTER_FLAG_CRAY_A 0x00000100 /* This cluster is a ALPS cray
-					* Removed v19.05 */
+#define CLUSTER_FLAG_A9     0x00000100 /* UNUSED */
+#define CLUSTER_FLAG_A10    0x00000100 /* UNUSED */
 #define CLUSTER_FLAG_FE     0x00000200 /* This cluster is a front end system */
 #define CLUSTER_FLAG_CRAY_N 0x00000400 /* This cluster is a Native cray */
 #define CLUSTER_FLAG_FED    0x00000800 /* This cluster is in a federation. */
+#define CLUSTER_FLAG_EXT    0x00001000 /* This cluster is external */
 
 
 /* Cluster Combo flags */
 #define CLUSTER_FLAG_CRAY   0x00000500 /* This cluster is a cray.
 					  Combo of CRAY_A | CRAY_N */
 
+
+/* Assoc flags */
+#define ASSOC_FLAG_DELETED  0x0001
 /********************************************/
 
 /* Association conditions used for queries of the database */
@@ -309,7 +319,7 @@ typedef struct {
 	List resv_list;		/* list of char * */
 	List resvid_list;	/* list of char * */
 	List state_list;        /* list of char * */
-	List step_list;         /* list of slurmdb_selected_step_t */
+	List step_list;         /* list of slurm_selected_step_t */
 	uint32_t timelimit_max; /* max timelimit */
 	uint32_t timelimit_min; /* min timelimit */
 	time_t usage_end;
@@ -450,7 +460,7 @@ typedef struct slurmdb_assoc_rec {
 
 	uint32_t def_qos_id;       /* Which QOS id is this
 				    * associations default */
-
+	uint16_t flags;            /* various flags see ASSOC_FLAG_* */
 	uint32_t grp_jobs;	   /* max number of jobs the
 				    * underlying group of associations can run
 				    * at one time */
@@ -720,7 +730,7 @@ typedef struct {
 	uint16_t event_type;    /* type of events (slurmdb_event_type_t),
 				 * default is all */
 	List format_list; 	/* list of char * */
-	List node_list;	        /* list of char * */
+	char *node_list;        /* node list string */
 	time_t period_end;      /* period end of events */
 	time_t period_start;    /* period start of events */
 	List reason_list;       /* list of char * */
@@ -739,7 +749,7 @@ typedef struct {
 	char *reason;           /* reason node is in state during time
 				   period (only set in a node event) */
 	uint32_t reason_uid;    /* uid of that who set the reason */
-	uint16_t state;         /* State of node during time
+	uint32_t state;         /* State of node during time
 				   period (only set in a node event) */
 	char *tres_str;         /* TRES touched by this event */
 } slurmdb_event_rec_t;
@@ -759,14 +769,6 @@ typedef struct {
 
 /* slurmdb_job_cond_t is defined above alphabetical */
 
-
-typedef struct {
-	char *cluster;
-	uint32_t flags;
-	uint32_t job_id;
-	time_t submit_time;
-} slurmdb_job_modify_cond_t;
-
 typedef struct {
 	char    *account;
 	char	*admin_comment;
@@ -785,6 +787,7 @@ typedef struct {
 	char	*blockid;
 	char    *cluster;
 	char    *constraints;
+	uint64_t db_index; /* index in the table */
 	uint32_t derived_ec;
 	char	*derived_es; /* aka "comment" */
 	uint32_t elapsed;
@@ -794,14 +797,14 @@ typedef struct {
 	uint32_t flags;
 	void *first_step_ptr;
 	uint32_t gid;
+	uint32_t het_job_id;
+	uint32_t het_job_offset;
 	uint32_t jobid;
 	char	*jobname;
 	uint32_t lft;
 	char 	*mcs_label;
 	char	*nodes;
 	char	*partition;
-	uint32_t pack_job_id;
-	uint32_t pack_job_offset;
 	uint32_t priority;
 	uint32_t qosid;
 	uint32_t req_cpus;
@@ -1014,7 +1017,7 @@ typedef struct {
 typedef struct {
 	List cluster_list; /* cluster reservations are on list of
 			    * char * */
-	uint32_t flags; /* flags for reservation. */
+	uint64_t flags; /* flags for reservation. */
 	List format_list;/* list of char * */
 	List id_list;   /* ids of reservations. list of char * */
 	List name_list; /* name of reservations. list of char * */
@@ -1027,7 +1030,7 @@ typedef struct {
 typedef struct {
 	char *assocs; /* comma separated list of associations */
 	char *cluster; /* cluster reservation is for */
-	uint32_t flags; /* flags for reservation. */
+	uint64_t flags; /* flags for reservation. */
 	uint32_t id;   /* id of reservation. */
 	char *name; /* name of reservation */
 	char *nodes; /* list of nodes in reservation */
@@ -1045,13 +1048,6 @@ typedef struct {
 } slurmdb_reservation_rec_t;
 
 typedef struct {
-	uint32_t array_task_id;		/* task_id of a job array or NO_VAL */
-	uint32_t jobid;
-	uint32_t pack_job_offset;	/* pack_job_offset or NO_VAL */
-	uint32_t stepid;
-} slurmdb_selected_step_t;
-
-typedef struct {
 	uint32_t elapsed;
 	time_t end;
 	int32_t exitcode;
@@ -1067,7 +1063,7 @@ typedef struct {
 	time_t start;
 	uint32_t state;
 	slurmdb_stats_t stats;
-	uint32_t stepid;	/* job's step number */
+	slurm_step_id_t step_id;	/* job's step number */
 	char *stepname;
 	uint32_t suspended;
 	uint32_t sys_cpu_sec;
@@ -1297,27 +1293,38 @@ typedef struct {
 	List tres_list;	/* list of slurmdb_tres_rec_t *'s */
 } slurmdb_report_cluster_grouping_t;
 
-#define ROLLUP_HOUR	0
-#define ROLLUP_DAY	1
-#define ROLLUP_MONTH	2
-#define ROLLUP_COUNT	3
-typedef struct rollup_stats {
-	uint32_t rollup_time[ROLLUP_COUNT];
-} rollup_stats_t;
+enum {
+	DBD_ROLLUP_HOUR,
+	DBD_ROLLUP_DAY,
+	DBD_ROLLUP_MONTH,
+	DBD_ROLLUP_COUNT
+};
 
 typedef struct {
-	uint16_t *rollup_count;		/* Length should be ROLLUP_COUNT */
-	uint64_t *rollup_time;		/* Length should be ROLLUP_COUNT */
-	uint64_t *rollup_max_time;	/* Length should be ROLLUP_COUNT */
+	char *cluster_name;                      /* Cluster name */
+	uint16_t count[DBD_ROLLUP_COUNT]; /* How many rollups have
+					   * happened in time period */
+	time_t timestamp[DBD_ROLLUP_COUNT]; /* Timestamps of last rollup. */
+	uint64_t time_last[DBD_ROLLUP_COUNT]; /* Last rollup time */
+	uint64_t time_max[DBD_ROLLUP_COUNT]; /* What was the longest time
+						     * for each rollup */
+	uint64_t time_total[DBD_ROLLUP_COUNT]; /* Time it took to do each
+						 * rollup */
+} slurmdb_rollup_stats_t;
 
-	uint32_t type_cnt;		/* Length of rpc_type arrays */
-	uint16_t *rpc_type_id;		/* RPC type */
-	uint32_t *rpc_type_cnt;		/* count of RPCs processed */
-	uint64_t *rpc_type_time;	/* total usecs this type RPC */
-	uint32_t user_cnt;		/* Length of rpc_user arrays */
-	uint32_t *rpc_user_id;		/* User ID issuing RPC */
-	uint32_t *rpc_user_cnt;		/* count of RPCs processed */
-	uint64_t *rpc_user_time;	/* total usecs this user's RPCs */
+typedef struct {
+	uint32_t cnt;	   /* count of object processed */
+	uint32_t id;	   /* ID of object */
+	uint64_t time;	   /* total usecs this object */
+	uint64_t time_ave; /* ave usecs this object (DON'T PACK) */
+} slurmdb_rpc_obj_t;
+
+typedef struct {
+	slurmdb_rollup_stats_t *dbd_rollup_stats;
+	List rollup_stats;              /* List of Clusters rollup stats */
+	List rpc_list;                  /* list of RPCs sent to the dbd. */
+	time_t time_start;              /* When we started collecting data */
+	List user_list;                 /* list of users issuing RPCs */
 } slurmdb_stats_rec_t;
 
 
@@ -1526,16 +1533,12 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 
 /*
  * get a new connection to the slurmdb
- * RET: pointer used to access db
- */
-extern void *slurmdb_connection_get();
-/*
- * get a new connection to the slurmdb
  * OUT: persist_conn_flags - Flags returned from connection if any see
  *                           slurm_persist_conn.h.
  * RET: pointer used to access db
  */
-extern void *slurmdb_connection_get2(uint16_t *persist_conn_flags);
+extern void *slurmdb_connection_get(uint16_t *persist_conn_flags);
+
 /*
  * release connection to the storage unit
  * IN/OUT: void ** pointer returned from
@@ -1614,12 +1617,12 @@ extern List slurmdb_federations_get(void *db_conn,
 
 /*
  * modify existing job in the accounting system
- * IN:  slurmdb_job_modify_cond_t *job_cond
+ * IN:  slurmdb_job_cond_t *job_cond
  * IN:  slurmdb_job_rec_t *job
  * RET: List containing (char *'s) else NULL on error
  */
 extern List slurmdb_job_modify(void *db_conn,
-			       slurmdb_job_modify_cond_t *job_cond,
+			       slurmdb_job_cond_t *job_cond,
 			       slurmdb_job_rec_t *job);
 
 /*
@@ -1759,7 +1762,7 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
  * working_cluster_rec to pack the job_desc's jobinfo. See previous commit for
  * an example of how to thread this.
  */
-extern int slurmdb_get_first_pack_cluster(List job_req_list,
+extern int slurmdb_get_first_het_job_cluster(List job_req_list,
 	char *cluster_names, slurmdb_cluster_rec_t **cluster_rec);
 
 /************** helper functions **************/
@@ -1802,7 +1805,6 @@ extern void slurmdb_destroy_tres_cond(void *object);
 extern void slurmdb_destroy_assoc_cond(void *object);
 extern void slurmdb_destroy_event_cond(void *object);
 extern void slurmdb_destroy_job_cond(void *object);
-extern void slurmdb_destroy_job_modify_cond(void *object);
 extern void slurmdb_destroy_qos_cond(void *object);
 extern void slurmdb_destroy_reservation_cond(void *object);
 extern void slurmdb_destroy_res_cond(void *object);
@@ -1812,14 +1814,15 @@ extern void slurmdb_destroy_archive_cond(void *object);
 
 extern void slurmdb_destroy_update_object(void *object);
 extern void slurmdb_destroy_used_limits(void *object);
-extern void slurmdb_destroy_update_shares_rec(void *object);
 extern void slurmdb_destroy_print_tree(void *object);
 extern void slurmdb_destroy_hierarchical_rec(void *object);
-extern void slurmdb_destroy_selected_step(void *object);
 
 extern void slurmdb_destroy_report_job_grouping(void *object);
 extern void slurmdb_destroy_report_acct_grouping(void *object);
 extern void slurmdb_destroy_report_cluster_grouping(void *object);
+extern void slurmdb_destroy_rpc_obj(void *object);
+extern void slurmdb_destroy_rollup_stats(void *object);
+extern void slurmdb_free_stats_rec_members(void *object);
 extern void slurmdb_destroy_stats_rec(void *object);
 
 extern void slurmdb_free_slurmdb_stats_members(slurmdb_stats_t *stats);
@@ -1974,14 +1977,14 @@ extern int slurmdb_usage_get(void *db_conn,
  * IN: sent_start (option time to do a re-roll or start from this point)
  * IN: sent_end (option time to do a re-roll or end at this point)
  * IN: archive_data (if 0 old data is not archived in a monthly rollup)
- * IN/OUT: rollup_stats data structure in which to save rollup statistics
+ * OUT: rollup_stats_list_in (list containing stats about each clusters rollup)
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int slurmdb_usage_roll(void *db_conn,
 			      time_t sent_start,
 			      time_t sent_end,
 			      uint16_t archive_data,
-			      rollup_stats_t *rollup_stats);
+			      List *rollup_stats_list_in);
 
 /************** user functions **************/
 

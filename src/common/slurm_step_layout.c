@@ -104,10 +104,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 		 * Normally we would not permit execution of job steps,
 		 * but can fake it by just allocating all tasks to
 		 * one of the allocated nodes. */
-		if (cluster_flags & CLUSTER_FLAG_CRAY_A)
-			step_layout->node_cnt  = step_layout_req->num_hosts;
-		else
-			step_layout->node_cnt  = 1;
+		step_layout->node_cnt  = 1;
 	} else
 		step_layout->node_cnt = step_layout_req->num_hosts;
 
@@ -230,6 +227,57 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 	}
 
 	return layout;
+}
+
+extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
+				    slurm_step_layout_t *step_layout2)
+{
+	hostlist_t hl, hl2;
+	hostlist_iterator_t host_itr;
+	int new_pos = 0, node_task_cnt;
+	char *host;
+
+	xassert(step_layout1);
+	xassert(step_layout2);
+
+	hl = hostlist_create(step_layout1->node_list);
+	hl2 = hostlist_create(step_layout2->node_list);
+
+	host_itr = hostlist_iterator_create(hl2);
+	while ((host = hostlist_next(host_itr))) {
+		int pos = hostlist_find(hl, host);
+
+		if (pos == -1) {
+			/* If the host doesn't exist push it on the end */
+			hostlist_push_host(hl, host);
+			pos = step_layout1->node_cnt++;
+			xrecalloc(step_layout1->tasks,
+				  step_layout1->node_cnt,
+				  sizeof(uint16_t));
+			xrecalloc(step_layout1->tids,
+				  step_layout1->node_cnt,
+				  sizeof(uint32_t *));
+		}
+		free(host);
+
+		/* set the end position of the array */
+		node_task_cnt = step_layout1->tasks[pos];
+		step_layout1->tasks[pos] +=
+			step_layout2->tasks[new_pos];
+		xrecalloc(step_layout1->tids[pos],
+			  step_layout1->tasks[pos],
+			  sizeof(uint32_t));
+		for (int i = 0; i < step_layout2->tasks[new_pos]; i++) {
+			step_layout1->tids[pos][node_task_cnt++] =
+				step_layout2->tids[new_pos][i];
+		}
+		new_pos++;
+	}
+	hostlist_iterator_destroy(host_itr);
+
+	step_layout1->task_cnt += step_layout2->task_cnt;
+	step_layout1->node_list = hostlist_ranged_string_xmalloc(hl);
+	hostlist_destroy(hl);
 }
 
 extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
@@ -481,8 +529,8 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	hostlist_t step_alloc_hosts = NULL;
 
 	int step_inx = 0, step_hosts_cnt = 0;
-	struct node_record **step_hosts_ptrs = NULL;
-	struct node_record *host_ptr = NULL;
+	node_record_t **step_hosts_ptrs = NULL;
+	node_record_t *host_ptr = NULL;
 
 	debug2("job list is %s", step_layout->node_list);
 	if (!arbitrary_nodes) {
@@ -512,7 +560,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	 */
 	step_hosts_cnt  = hostlist_count(step_alloc_hosts);
 	step_hosts_ptrs = xcalloc(step_hosts_cnt,
-				  sizeof(struct node_record *));
+				  sizeof(node_record_t *));
 
 	step_inx = 0;
 	while((host = hostlist_next(itr_task))) {
@@ -577,7 +625,7 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 	bool pack_nodes;
 
 	if (select_params == NO_VAL16)
-		select_params = slurm_get_select_type_param();
+		select_params = slurm_conf.select_type_param;
 	if (step_layout->task_dist & SLURM_DIST_PACK_NODES)
 		pack_nodes = true;
 	else if (step_layout->task_dist & SLURM_DIST_NO_PACK_NODES)

@@ -99,19 +99,6 @@
 # define NTOH_uint64(x)   UINT64_SWAP_LE_BE (x)
 #endif	/* SLURM_BIGENDIAN */
 
-#ifndef __STRING
-#  define __STRING(arg)		#arg
-#endif
-
-/* define macros for GCC function attributes if we're using gcc */
-
-#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 4)
-#  define __NORETURN_ATTR				\
-          __attribute__((__noreturn__))
-#else  /* !__GNUC__ */
-#  define __NORETURN_ATTR			((void)0)
-#endif /* __GNUC__ */
-
 #define slurm_cond_init(cond, cont_attr)				\
 	do {								\
 		int err = pthread_cond_init(cond, cont_attr);		\
@@ -378,12 +365,12 @@
 #ifndef strong_alias
 #  if USE_ALIAS
 #    define strong_alias(name, aliasname) \
-     extern __typeof (name) aliasname __attribute ((alias (#name)))
+     extern __typeof__(name) aliasname __attribute__((alias(#name)))
 #  else
 #    define strong_alias(name, aliasname) \
      __asm__(".global _" #aliasname); \
      __asm__(".set _" #aliasname ", _" #name); \
-     extern __typeof (name) aliasname
+     extern __typeof__(name) aliasname
 #  endif
 #endif
 
@@ -401,7 +388,7 @@ do {									\
 } while (0)
 
 /* There are places where we put NO_VAL or INFINITE into a float or double
- * Use fuzzy_equal below to test for those values rather than an comparision
+ * Use fuzzy_equal below to test for those values rather than an comparison
  * which could fail due to rounding errors. */
 #define FUZZY_EPSILON 0.00001
 #define fuzzy_equal(v1, v2) ((((v1)-(v2)) > -FUZZY_EPSILON) && (((v1)-(v2)) < FUZZY_EPSILON))

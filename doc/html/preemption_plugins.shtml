@@ -67,8 +67,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
-<p class="commandline">List find_preemptable_jobs(
-struct job_record *job_ptr)</p>
+<p class="commandline">List find_preemptable_jobs(job_record_t *job_ptr)</p>
 <p style="margin-left:.2in"><b>Description</b>: Identifies the jobs
 which can be preempted by a specific pending job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -83,8 +82,7 @@ preempt to least attractive to preempt (e.g. lowest to highest priority).
 For example, even within a given partition or QOS one might want to
 smaller jobs first.</p>
 
-<p class="commandline">uint16_t job_preempt_mode(
-struct job_record *job_ptr)</p>
+<p class="commandline">uint16_t job_preempt_mode(job_record_t *job_ptr)</p>
 <p style="margin-left:.2in"><b>Description</b>: Identifies the mechanism
 used to preempt the specified job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -100,6 +98,6 @@ preemption is enabled.</p>
 preempted, otherwise false</p>
 
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

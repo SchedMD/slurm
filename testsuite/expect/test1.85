@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Test of node selection from within a job step on existing allocation
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # NOTE:    This assumes node names are of the form <alpha><number>, where
 #          the value of <number> indicates the nodes relative location.
 #          Change tha node name parsing logic as needed for other formats.
@@ -36,11 +31,8 @@
 
 source ./globals
 
-set test_id     "1.85"
 set exit_code   0
 set prompt      "PROMPT: "
-
-print_header $test_id
 
 # spawn an allocation to run on 2
 # hosts with 4 tasks.
@@ -49,16 +41,14 @@ set job_id 0
 set salloc_id [spawn $salloc --gres=craynetwork:0 -N 2 -n 4 -t 1 $bin_bash]
 expect {
 	-re "Node count specification invalid|More processors requested|not available" {
-		send_user "\nWARNING: can't test srun task distribution\n"
-		exit 0
+		skip "Can't test srun task distribution"
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send_user "Allocation started\n"
+		log_debug "Allocation started"
 		send "export PS1=\"$prompt\"\r"
 		exp_continue
 	}
@@ -69,14 +59,12 @@ expect {
 	-re "$prompt" {
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
 		slow_kill $salloc_id
-		exit 1
+		fail "salloc not responding"
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: salloc failed to allocate a job\n"
-	exit 1
+	fail "salloc failed to allocate a job"
 }
 
 # srun the nodelist allocated by slurm.
@@ -84,13 +72,13 @@ set host_num 0
 set host_list ""
 send "$srun -l -n 1 -N 1 $bin_printenv SLURM_NODELIST\r"
 expect {
-	-re "($number): *($alpha_numeric_nodelist)" {
+	-re "($number): *($re_word_str)" {
 		set host_num $expect_out(1,string)
 		set host_list $expect_out(2,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	-re $prompt {
@@ -103,7 +91,7 @@ set host1 ""
 set host2 ""
 send "$srun -l -n1 -N1 $scontrol show hostnames $host_list\r"
 expect {
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		if { $count == 0 } {
 			set host1 $expect_out(2,string)
 			incr count
@@ -116,27 +104,27 @@ expect {
 		}
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	-re $prompt {
 	}
 }
-send_user "Got exec hosts $host1 $host2\n"
+log_debug "Got exec hosts $host1 $host2"
 
 # reset the spawn process to be initial allocation
 # then srun a first task.
 set hostname ""
 send "$srun -l -n 1 -N 1 $bin_printenv SLURM_STEP_NODELIST\r"
 expect {
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		set hostname $expect_out(2,string)
 		exp_continue
 	}
 	-re $prompt {
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {
@@ -150,7 +138,7 @@ expect {
 set hostname ""
 send "$srun -l -n 1 -N 1 -w $host2 $bin_printenv SLURM_STEP_NODELIST\r"
 expect {
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		set hostname $expect_out(2,string)
 		exp_continue
 	}
@@ -158,7 +146,7 @@ expect {
 		send "exit\r"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {
@@ -167,8 +155,5 @@ expect {
 }
 
 if {[ string compare $host2 $hostname] != 0} {
-	send_user "\nFAILURE: The execution hostname $hostname != $host2 requested hostname.\n"
-	exit 1
+	fail "The execution hostname $hostname != $host2 requested hostname."
 }
-
-send_user "\nSUCCESS\n"

@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of setting and viewing SiteFactor
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC.
 # Written by Brian Christiansen <brian@schedmd.com>
@@ -29,10 +25,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "24.5"
 set exit_code   0
 set timeout	60
-print_header	$test_id
 
 set jobid1 0
 set jobid2 0
@@ -41,12 +35,10 @@ set jobid2 0
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 if { [string compare [priority_type] multifactor] } {
-	log_warn "This test can't be run without a usable PriorityType"
-	exit 0
+	skip "This test can't be run without a usable PriorityType"
 }
 
 #
@@ -54,8 +46,7 @@ if { [string compare [priority_type] multifactor] } {
 #
 set select_type_params [get_select_type_params ""]
 if { [string first "CR_ONE_TASK_PER_CORE" $select_type_params] != -1 } {
-	log_warn "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
-	exit 0
+	skip "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
 proc end_it { exit_code } {
@@ -68,38 +59,12 @@ proc end_it { exit_code } {
 		cancel_job $jobid2
 	}
 
-	if {$exit_code == 0} {
-		print_success $test_id
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
+	pass
 }
 
-
-proc def_cpu_cnt { } {
-	global sinfo number
-
-	set partition [default_partition]
-	set cpu_cnt 1
-	spawn $sinfo -h -o "%P %C" -p $partition --state=idle
-	expect {
-		-re "$partition\\* ($number)(K?)/($number)(K?)" {
-			set cpu_cnt $expect_out(3,string)
-			if {[string compare $expect_out(4,string) ""]} {
-				set cpu_cnt [expr $cpu_cnt * 1024]
-			}
-
-			exp_continue
-		}
-		timeout {
-			log_error "sbatch not responding"
-			end_it 1
-		}
-		eof {
-			wait
-		}
-	}
-	return $cpu_cnt
-}
 
 proc sub_job { cpu_cnt state } {
 	global number sbatch test_id bin_sleep
@@ -133,27 +98,10 @@ proc sub_job { cpu_cnt state } {
 	return $jobid
 }
 
+
 proc sprio_args { args regex match_cnt } {
-	global number float sprio
-	set matches 0
-
-	spawn $sprio {*}$args
-	expect {
-		-re $regex {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			log_error "sprio not responding"
-			end_it 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != $match_cnt} {
-		log_error "sprio $args failed to match '$regex' $match_cnt times"
+	global sprio
+	if {[wait_for_command $sprio $args $regex $match_cnt]} {
 		end_it 1
 	}
 }
@@ -188,7 +136,7 @@ proc update_job { jobid prio {error ""} } {
 }
 
 ################################################################
-set cpu_cnt [def_cpu_cnt]
+set cpu_cnt [get_total_cpus]
 set jobid1 [sub_job $cpu_cnt RUNNING]
 set jobid2 [sub_job $cpu_cnt PENDING]
 

@@ -4,7 +4,6 @@ man5_MANS = \
 	acct_gather.conf.5 \
 	burst_buffer.conf.5 \
 	cgroup.conf.5 \
-	cray.conf.5 \
 	ext_sensors.conf.5 \
 	gres.conf.5 \
 	knl.conf.5 \
@@ -13,15 +12,12 @@ man5_MANS = \
 	slurmdbd.conf.5 \
 	topology.conf.5
 
-EXTRA_DIST = $(man5_MANS)
-
 if HAVE_MAN2HTML
 
 html_DATA = \
 	acct_gather.conf.html \
 	burst_buffer.conf.html \
 	cgroup.conf.html \
-	cray.conf.html \
 	ext_sensors.conf.html \
 	gres.conf.html \
 	knl.conf.html \
@@ -31,8 +27,6 @@ html_DATA = \
 	topology.conf.html
 
 MOSTLYCLEANFILES = ${html_DATA}
-
-EXTRA_DIST += $(html_DATA)
 
 SUFFIXES = .html
 

@@ -63,7 +63,7 @@ int spank_init (stepd_step_rec_t *job);
 
 int spank_slurmd_init (void);
 
-int spank_job_prolog (uint32_t jobid, uid_t uid);
+int spank_job_prolog(uint32_t jobid, uid_t uid, gid_t gid);
 
 int spank_init_allocator (void);
 
@@ -81,7 +81,7 @@ int spank_task_post_fork (stepd_step_rec_t *job, int taskid);
 
 int spank_task_exit (stepd_step_rec_t *job, int taskid);
 
-int spank_job_epilog (uint32_t jobid, uid_t uid);
+int spank_job_epilog(uint32_t jobid, uid_t uid, gid_t gid);
 
 int spank_slurmd_exit (void);
 
@@ -136,7 +136,7 @@ int spank_process_option (int optval, const char *optarg);
  *   after which the usage text may be displayed, and `left_pad' is the
  *   amount of space to pad on the left before printing the --option.
  */
-int spank_print_options (FILE *fp, int width, int left_pad);
+int spank_print_options(FILE *fp, int left_pad, int width);
 
 /*  Set all registered remote options (i.e. those passed to
  *   spank_process_option) in the job options `options'.

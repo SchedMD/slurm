@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of --deadline option too short
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 CEA/DAM/DIF
 # Written by Aline Roy <aline.roy@cea.fr>
@@ -30,11 +26,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.31"
 set job_id	0
 set exit_code   0
-
-print_header $test_id
 
 #
 # Since we make changes to configuration, call this function restore
@@ -43,12 +36,10 @@ print_header $test_id
 proc endit { } {
 	global exit_code
 	reconfigure
-	if {$exit_code == 0} {
-		send_user "\nSUCCESS\n"
-	} else {
-		send_user "\nFAILURE: exiting with exit code $exit_code\n"
+	if {$exit_code != 0} {
+		fail "Exiting due to previous errors with exit code $exit_code"
 	}
-	exit $exit_code
+	pass
 }
 
 #
@@ -56,8 +47,7 @@ proc endit { } {
 # otherwise this test may fail.
 #
 if {[test_super_user] == 0} {
-	log_warn "You must be SlurmUser or root to run this test."
-	exit 0
+	skip "You must be SlurmUser or root to run this test."
 }
 
 #
@@ -85,7 +75,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		set exit_code 1
 	}
 	eof {
@@ -97,17 +87,17 @@ if {$job_id != 0} {
 	spawn $scontrol show job $job_id
 	expect {
 		-re "TimeLimit=00:59" {
-			send_user "\nTimelimit OK\n"
+			log_debug "Timelimit OK"
 		}
 		-re "TimeLimit=01:00:00" {
-			send_user "\nTimelimit OK\n"
+			log_debug "Timelimit OK"
 		}
 		-re "TimeLimit=" {
-			send_user "\nFAILURE : Timelimit not OK with deadline\n"
+			log_error "Timelimit not OK with deadline"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 			exp_continue
 		}

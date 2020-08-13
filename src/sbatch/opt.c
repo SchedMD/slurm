@@ -90,9 +90,9 @@ static void _usage(void);
 sbatch_opt_t sbopt;
 slurm_opt_t opt =
 	{ .sbatch_opt = &sbopt, .help_func = _help, .usage_func = _usage };
-sbatch_env_t pack_env;
+sbatch_env_t het_job_env;
 int   error_exit = 1;
-bool  is_pack_job = false;
+bool  is_het_job = false;
 
 /*---- forward declarations of static functions  ----*/
 
@@ -100,7 +100,7 @@ typedef struct env_vars env_vars_t;
 
 /* set options from batch script */
 static bool _opt_batch_script(const char *file, const void *body, int size,
-			      int pack_inx);
+			      int het_job_inx);
 
 /* set options based upon env vars  */
 static void _opt_env(void);
@@ -179,7 +179,6 @@ env_vars_t env_vars[] = {
   { "SBATCH_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
   { "SBATCH_BATCH", LONG_OPT_BATCH },
   { "SBATCH_BURST_BUFFER", LONG_OPT_BURST_BUFFER_SPEC },
-  { "SBATCH_CHECKPOINT", LONG_OPT_CHECKPOINT },
   { "SBATCH_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
   { "SBATCH_CLUSTERS", 'M' },
   { "SLURM_CLUSTERS", 'M' },
@@ -205,7 +204,9 @@ env_vars_t env_vars[] = {
   { "SBATCH_HINT", LONG_OPT_HINT },
   { "SBATCH_JOB_NAME", 'J' },
   { "SBATCH_MEM_BIND", LONG_OPT_MEM_BIND },
+  { "SBATCH_MEM_PER_CPU", LONG_OPT_MEM_PER_CPU },
   { "SBATCH_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
+  { "SBATCH_MEM_PER_NODE", LONG_OPT_MEM },
   { "SBATCH_NETWORK", LONG_OPT_NETWORK },
   { "SBATCH_NO_KILL", 'k' },
   { "SBATCH_NO_REQUEUE", LONG_OPT_NO_REQUEUE },
@@ -281,14 +282,14 @@ extern char *process_options_first_pass(int argc, char **argv)
 	slurm_reset_all_options(&opt, true);
 
 	/* cli_filter plugins can change the defaults */
-	if (cli_filter_plugin_setup_defaults(&opt, true)) {
+	if (cli_filter_g_setup_defaults(&opt, true)) {
 		error("cli_filter plugin terminated with error");
 		exit(error_exit);
 	}
 
 	_opt_early_env();
 
-	/* Remove pack job separator and capture all options of interest from
+	/* Remove hetjob separator and capture all options of interest from
 	 * all job components (e.g. "sbatch -N1 -v : -N2 -v tmp" -> "-vv") */
 	local_argv = xmalloc(sizeof(char *) * argc);
 	for (i = 0; i < argc; i++) {
@@ -302,6 +303,7 @@ extern char *process_options_first_pass(int argc, char **argv)
 		slurm_process_option(&opt, opt_char, optarg, true, true);
 	}
 	slurm_option_table_destroy(optz);
+	xfree(opt_string);
 
 	if ((local_argc > optind) && (sbopt.wrap != NULL)) {
 		error("Script arguments not permitted with --wrap option");
@@ -344,11 +346,11 @@ extern char *process_options_first_pass(int argc, char **argv)
  * argc IN - Count of elements in argv
  * argv IN - Array of elements to parse
  * argc_off OUT - Offset of first non-parsable element
- * pack_inx IN - pack job component ID, zero origin
- * more_packs OUT - more packs job specifications in script to process
+ * het_job_inx IN - hetjob component ID, zero origin
+ * more_het_comps OUT - more hetjob components specs in script to process
  */
 extern void process_options_second_pass(int argc, char **argv, int *argc_off,
-					int pack_inx, bool *more_packs,
+					int het_job_inx, bool *more_het_comps,
 					const char *file,
 					const void *script_body,
 					int script_size)
@@ -359,14 +361,14 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 	slurm_reset_all_options(&opt, false);
 
 	/* cli_filter plugins can change the defaults */
-	if (cli_filter_plugin_setup_defaults(&opt, false)) {
+	if (cli_filter_g_setup_defaults(&opt, false)) {
 		error("cli_filter plugin terminated with error");
 		exit(error_exit);
 	}
 
 	/* set options from batch script */
-	*more_packs = _opt_batch_script(file, script_body, script_size,
-				        pack_inx);
+	*more_het_comps = _opt_batch_script(file, script_body, script_size,
+					    het_job_inx);
 
 	for (i = WRPR_START + 1; !sbopt.ignore_pbs && i < WRPR_CNT; i++) {
 		/* Convert command from batch script to sbatch command */
@@ -382,7 +384,7 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 	/* set options from command line */
 	*argc_off = _set_options(argc, argv);
 
-	if (cli_filter_plugin_pre_submit(&opt, pack_inx)) {
+	if (cli_filter_g_pre_submit(&opt, het_job_inx)) {
 		error("cli_filter plugin terminated with error");
 		exit(error_exit);
 	}
@@ -452,13 +454,21 @@ extern char *get_argument(const char *file, int lineno, const char *line,
 	char q_char = '\0';
 	bool escape_flag = false;
 	bool quoted = false;
+	static bool logged = false;
 	int i;
 
 	ptr = line;
 	*skipped = 0;
 
-	if ((argument = strcasestr(line, "packjob")))
+	if ((argument = strcasestr(line, "packjob"))) {
+		if (!logged) {
+			info("Warning: the \"packjob\" component separator is being deprecated. Please, use \"hetjob\" instead.");
+			logged = true;
+		}
 		memcpy(argument, "       ", 7);
+	} else if ((argument = strcasestr(line, "hetjob"))) {
+		memcpy(argument, "      ", 6);
+	}
 
 	/* skip whitespace */
 	while (isspace(*ptr) && *ptr != '\0') {
@@ -517,10 +527,10 @@ extern char *get_argument(const char *file, int lineno, const char *line,
  *
  * Build an argv-style array of options from the script "body",
  * then pass the array to _set_options for() further parsing.
- * RET - True if more pack job specifications to process
+ * RET - True if more hetjob specifications to process
  */
 static bool _opt_batch_script(const char * file, const void *body, int size,
-			      int pack_inx)
+			      int het_job_inx)
 {
 	char *magic_word1 = "#SBATCH";
 	char *magic_word2 = "#SLURM";
@@ -532,8 +542,8 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 	char *option;
 	char *ptr;
 	int skipped = 0, warned = 0, lineno = 0;
-	int i, pack_scan_inx = 0;
-	bool more_packs = false;
+	int i, het_job_scan_inx = 0;
+	bool more_het_comps = false;
 
 	magic_word_len1 = strlen(magic_word1);
 	magic_word_len2 = strlen(magic_word2);
@@ -573,14 +583,17 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 		}
 
 		/* this line starts with the magic word */
-		if (strcasestr(line, "packjob"))
-			pack_scan_inx++;
-		if (pack_scan_inx < pack_inx) {
+		if (strcasestr(line, "packjob")) {
+			het_job_scan_inx++;
+		} else if (strcasestr(line, "hetjob")) {
+			het_job_scan_inx++;
+		}
+		if (het_job_scan_inx < het_job_inx) {
 			xfree(line);
 			continue;
 		}
-		if (pack_scan_inx > pack_inx) {
-			more_packs = true;
+		if (het_job_scan_inx > het_job_inx) {
+			more_het_comps = true;
 			xfree(line);
 			break;
 		}
@@ -604,7 +617,7 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 		xfree(argv[i]);
 	xfree(argv);
 
-	return more_packs;
+	return more_het_comps;
 }
 
 static int _set_options(int argc, char **argv)
@@ -620,6 +633,7 @@ static int _set_options(int argc, char **argv)
 	}
 
 	slurm_option_table_destroy(optz);
+	xfree(opt_string);
 	return optind;
 }
 
@@ -759,14 +773,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if ((opt.pn_min_memory != NO_VAL64) && (opt.mem_per_cpu != NO_VAL64)) {
-		if (opt.pn_min_memory < opt.mem_per_cpu) {
-			info("mem < mem-per-cpu - resizing mem to be equal "
-			     "to mem-per-cpu");
-			opt.pn_min_memory = opt.mem_per_cpu;
-		}
-		error("--mem and --mem-per-cpu are mutually exclusive.");
-	}
+	validate_memory_options(&opt);
 
 	/* Check to see if user has specified enough resources to
 	 * satisfy the plane distribution with the specified
@@ -796,15 +803,15 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.cpus_set)
-		 pack_env.cpus_per_task = opt.cpus_per_task;
+		 het_job_env.cpus_per_task = opt.cpus_per_task;
 
 	set_distribution(opt.distribution, &dist, &dist_lllp);
 	if (dist)
-		 pack_env.dist = xstrdup(dist);
+		 het_job_env.dist = xstrdup(dist);
 	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
-		 pack_env.plane_size = opt.plane_size;
+		 het_job_env.plane_size = opt.plane_size;
 	if (dist_lllp)
-		 pack_env.dist_lllp = xstrdup(dist_lllp);
+		 het_job_env.dist_lllp = xstrdup(dist_lllp);
 
 	/* massage the numbers */
 	if ((opt.nodes_set || opt.extra_set)				&&
@@ -881,13 +888,16 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.ntasks_set && (opt.ntasks > 0))
-		pack_env.ntasks = opt.ntasks;
+		het_job_env.ntasks = opt.ntasks;
 
 	if (opt.ntasks_per_core != NO_VAL)
-		pack_env.ntasks_per_core = opt.ntasks_per_core;
+		het_job_env.ntasks_per_core = opt.ntasks_per_core;
+
+	if (opt.ntasks_per_node != NO_VAL)
+		het_job_env.ntasks_per_node = opt.ntasks_per_node;
 
 	if (opt.ntasks_per_socket != NO_VAL)
-		pack_env.ntasks_per_socket = opt.ntasks_per_socket;
+		het_job_env.ntasks_per_socket = opt.ntasks_per_socket;
 
 	if (hl)
 		hostlist_destroy(hl);
@@ -932,28 +942,33 @@ static bool _opt_verify(void)
 	if (opt.mem_bind_type && (getenv("SBATCH_MEM_BIND") == NULL)) {
 		char *tmp = slurm_xstr_mem_bind_type(opt.mem_bind_type);
 		if (opt.mem_bind) {
-			xstrfmtcat(pack_env.mem_bind, "%s:%s",
+			xstrfmtcat(het_job_env.mem_bind, "%s:%s",
 				   tmp, opt.mem_bind);
 		} else {
-			pack_env.mem_bind = xstrdup(tmp);
+			het_job_env.mem_bind = xstrdup(tmp);
 		}
 		xfree(tmp);
 	}
 	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND_SORT") == NULL) &&
 	    (opt.mem_bind_type & MEM_BIND_SORT)) {
-		pack_env.mem_bind_sort = xstrdup("sort");
+		het_job_env.mem_bind_sort = xstrdup("sort");
 	}
 
 	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND_VERBOSE") == NULL)) {
 		if (opt.mem_bind_type & MEM_BIND_VERBOSE) {
-			pack_env.mem_bind_verbose = xstrdup("verbose");
+			het_job_env.mem_bind_verbose = xstrdup("verbose");
 		} else {
-			pack_env.mem_bind_verbose = xstrdup("quiet");
+			het_job_env.mem_bind_verbose = xstrdup("quiet");
 		}
 	}
 
 	cpu_freq_set_env("SLURM_CPU_FREQ_REQ",
 			 opt.cpu_freq_min, opt.cpu_freq_max, opt.cpu_freq_gov);
+
+	if (opt.gpus_per_socket && (opt.sockets_per_node == NO_VAL)) {
+		error("--gpus-per-socket option requires --sockets-per-node specification");
+		exit(error_exit);
+	}
 
 	return verified;
 }
@@ -1079,7 +1094,7 @@ static void _usage(void)
 "              [--chdir=directory] [--oversubscibe] [-m dist] [-J jobname]\n"
 "              [--verbose] [--gid=group] [--uid=user]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
-"              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
+"              [--account=name] [--dependency=type:jobid[+time]] [--comment=name]\n"
 "              [--mail-type=type] [--mail-user=user][--nice[=value]] [--wait]\n"
 "              [--requeue] [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
@@ -1100,10 +1115,10 @@ static void _usage(void)
 
 static void _help(void)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf = slurm_conf_lock();
 
 	printf (
-"Usage: sbatch [OPTIONS...] executable [args...]\n"
+"Usage: sbatch [OPTIONS(0)...] [ : [OPTIONS(N)...]] script(0) [args(0)...]\n"
 "\n"
 "Parallel run options:\n"
 "  -a, --array=indexes         job array index values\n"
@@ -1115,7 +1130,7 @@ static void _help(void)
 "      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 
-"  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
+"  -d, --dependency=type:jobid[:time] defer job until condition on jobid is satisfied\n"
 "      --deadline=time         remove the job if no ending possible before\n"
 "                              this deadline (start > (deadline - time[-min]))\n"
 "      --delay-boot=mins       delay boot for desired node features\n"
@@ -1129,7 +1144,7 @@ static void _help(void)
 "      --gres=list             required generic resources\n"
 "      --gres-flags=opts       flags related to GRES management\n"
 "  -H, --hold                  submit job in held state\n"
-"      --ignore-pbs            Ignore #PBS options in the batch script\n"
+"      --ignore-pbs            Ignore #PBS and #BSUB options in the batch script\n"
 "  -i, --input=in              file for batch script's standard input\n"
 "  -J, --job-name=jobname      name of job\n"
 "  -k, --no-kill               do not kill job on node failure\n"
@@ -1166,7 +1181,7 @@ static void _help(void)
 "      --requeue               if set, permit the job to be requeued\n"
 "  -s, --oversubscribe         over subscribe resources with other jobs\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
-"      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
+"      --signal=[[R][B]:]num[@time] send signal when time limit within time seconds\n"
 "      --spread-job            spread job across as many nodes as possible\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
@@ -1215,7 +1230,6 @@ static void _help(void)
 "\n"
 "      --ntasks-per-core=n     number of tasks to invoke on each core\n"
 "      --ntasks-per-socket=n   number of tasks to invoke on each socket\n");
-	conf = slurm_conf_lock();
 	if (xstrstr(conf->task_plugin, "affinity")) {
 		printf(
 "      --hint=                 Bind tasks according to application hints\n"
@@ -1273,76 +1287,76 @@ extern void init_envs(sbatch_env_t *local_env)
 }
 
 extern void set_envs(char ***array_ptr, sbatch_env_t *local_env,
-		     int pack_offset)
+		     int het_job_offset)
 {
 	if ((local_env->cpus_per_task != NO_VAL) &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_CPUS_PER_TASK",
-					  pack_offset, "%u",
-					  local_env->cpus_per_task)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_CPUS_PER_TASK",
+					 het_job_offset, "%u",
+					 local_env->cpus_per_task)) {
 		error("Can't set SLURM_CPUS_PER_TASK env variable");
 	}
 	if (local_env->dist &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_DISTRIBUTION",
-					  pack_offset, "%s",
-					  local_env->dist)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_DISTRIBUTION",
+					 het_job_offset, "%s",
+					 local_env->dist)) {
 		error("Can't set SLURM_DISTRIBUTION env variable");
 	}
 	if (local_env->mem_bind &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_MEM_BIND",
-					  pack_offset, "%s",
-					  local_env->mem_bind)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_MEM_BIND",
+					 het_job_offset, "%s",
+					 local_env->mem_bind)) {
 		error("Can't set SLURM_MEM_BIND env variable");
 	}
 	if (local_env->mem_bind_sort &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_MEM_BIND_SORT",
-					  pack_offset, "%s",
-					  local_env->mem_bind_sort)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_MEM_BIND_SORT",
+					 het_job_offset, "%s",
+					 local_env->mem_bind_sort)) {
 		error("Can't set SLURM_MEM_BIND_SORT env variable");
 	}
 	if (local_env->mem_bind_verbose &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_MEM_BIND_VERBOSE",
-					  pack_offset, "%s",
-					  local_env->mem_bind_verbose)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_MEM_BIND_VERBOSE",
+					 het_job_offset, "%s",
+					 local_env->mem_bind_verbose)) {
 		error("Can't set SLURM_MEM_BIND_VERBOSE env variable");
 	}
 	if (local_env->dist_lllp &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_DIST_LLLP",
-					  pack_offset, "%s",
-					  local_env->dist_lllp)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_DIST_LLLP",
+					 het_job_offset, "%s",
+					 local_env->dist_lllp)) {
 		error("Can't set SLURM_DIST_LLLP env variable");
 	}
 	if (local_env->ntasks != NO_VAL) {
-		if (!env_array_overwrite_pack_fmt(array_ptr, "SLURM_NPROCS",
-						  pack_offset, "%u",
-						  local_env->ntasks))
+		if (!env_array_overwrite_het_fmt(array_ptr, "SLURM_NPROCS",
+						 het_job_offset, "%u",
+						 local_env->ntasks))
 			error("Can't set SLURM_NPROCS env variable");
-		if (!env_array_overwrite_pack_fmt(array_ptr, "SLURM_NTASKS",
-						  pack_offset, "%u",
-						  local_env->ntasks))
+		if (!env_array_overwrite_het_fmt(array_ptr, "SLURM_NTASKS",
+						 het_job_offset, "%u",
+						 local_env->ntasks))
 			error("Can't set SLURM_NTASKS env variable");
 	}
 	if ((local_env->ntasks_per_core != NO_VAL) &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_NTASKS_PER_CORE",
-					  pack_offset, "%u",
-					  local_env->ntasks_per_core)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_NTASKS_PER_CORE",
+					 het_job_offset, "%u",
+					 local_env->ntasks_per_core)) {
 		error("Can't set SLURM_NTASKS_PER_CORE env variable");
 	}
 	if ((local_env->ntasks_per_node != NO_VAL) &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_NTASKS_PER_NODE",
-					  pack_offset, "%u",
-					  local_env->ntasks_per_node)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_NTASKS_PER_NODE",
+					 het_job_offset, "%u",
+					 local_env->ntasks_per_node)) {
 		error("Can't set SLURM_NTASKS_PER_NODE env variable");
 	}
 	if ((local_env->ntasks_per_socket != NO_VAL) &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_NTASKS_PER_SOCKET",
-					  pack_offset, "%u",
-					  local_env->ntasks_per_socket)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_NTASKS_PER_SOCKET",
+					 het_job_offset, "%u",
+					 local_env->ntasks_per_socket)) {
 		error("Can't set SLURM_NTASKS_PER_SOCKET env variable");
 	}
 	if ((local_env->plane_size != NO_VAL) &&
-	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_DIST_PLANESIZE",
-					  pack_offset, "%u",
-					  local_env->plane_size)) {
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_DIST_PLANESIZE",
+					 het_job_offset, "%u",
+					 local_env->plane_size)) {
 		error("Can't set SLURM_DIST_PLANESIZE env variable");
 	}
 }

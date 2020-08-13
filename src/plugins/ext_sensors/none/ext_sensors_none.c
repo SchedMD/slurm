@@ -100,12 +100,12 @@ extern int ext_sensors_p_update_component_data(void)
 	return SLURM_SUCCESS;
 }
 
-extern int ext_sensors_p_get_stepstartdata(struct step_record *step_rec)
+extern int ext_sensors_p_get_stepstartdata(step_record_t *step_rec)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int ext_sensors_p_get_stependdata(struct step_record *step_rec)
+extern int ext_sensors_p_get_stependdata(step_record_t *step_rec)
 {
 	return SLURM_SUCCESS;
 }

@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Submit job to not be killed on node failure (--no-kill option).
 #          NOTE: We need to actually kill slurmd daemons to fully test this.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -34,11 +29,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.25"
 set exit_code   0
 set sleep_time  30
-
-print_header $test_id
 
 #
 # Submit a job with one thread fanout
@@ -50,12 +42,12 @@ set timeout [expr $max_job_delay + $sleep_time]
 set srun_pid [spawn $srun -N$node_cnt --no-kill -t1 $bin_sleep $sleep_time]
 expect {
 	-re "error" {
-		send_user "\nFAILURE: some error occurred\n"
+		log_error "Some error occurred"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -64,7 +56,6 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

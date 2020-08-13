@@ -241,8 +241,8 @@ int switch_p_job_postfini (stepd_step_rec_t *job)
 			(unsigned long) pgid);
 		kill(-pgid, SIGKILL);
 	} else
-		debug("Job %u.%u: Bad pid valud %lu", job->jobid,
-		      job->stepid, (unsigned long) pgid);
+		debug("%ps: Bad pid valud %lu", &job->step_id,
+		      (unsigned long) pgid);
 
 	return SLURM_SUCCESS;
 }
@@ -295,17 +295,6 @@ extern int switch_p_unpack_node_info(switch_node_info_t **switch_node,
 extern int switch_p_free_node_info(switch_node_info_t **switch_node)
 {
 	return SLURM_SUCCESS;
-}
-
-extern char*switch_p_sprintf_node_info(switch_node_info_t *switch_node,
-	char *buf, size_t size)
-{
-	if ((buf != NULL) && size) {
-		buf[0] = '\0';
-		return buf;
-	}
-
-	return NULL;
 }
 
 extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,

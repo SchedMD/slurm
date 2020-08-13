@@ -100,8 +100,7 @@ propagated to the caller, no matter the return code.<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int job_modify(struct job_descriptor *job_desc, struct job_record *job_ptr,
-uint32_t modify_uid)
+int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr, uint32_t modify_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with job modification parameters
 supplied by the scontrol or sview command. It can be used to log and/or
@@ -134,7 +133,8 @@ if (job_desc.environment.LANGUAGE == "en_US") then<br>
 
 
 <p class="commandline">
-int job_submit(struct job_descriptor *job_desc, List part_list, uint32_t submit_uid)
+int slurm_job_submit(job_desc_msg_t *job_desc, List part_list, uint32_t
+submit_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with job submission parameters
 supplied by the salloc, sbatch or srun command. It can be used to log and/or
@@ -171,7 +171,7 @@ Job submission rejected due to missing size specification.<br>
 Job submission rejected due to missing time limit.<br>
 
 <p class="commandline">
-int job_modify(struct job_descriptor *job_desc, struct job_record *job_ptr,
+int slurm_job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 List part_list, int modify_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with job modification parameters
@@ -192,6 +192,18 @@ be modified.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <a href="#job_modify_returns">Returns from job_modify() are the same as the returns from job_submit().</a>
 
+<h2>Lua Job Attributes</h2>
+<p>The available job attributes change occasionally with different versions of
+Slurm. To find the job attributes that are available for the version of Slurm
+you're using, go to the <a href="https://github.com/SchedMD/slurm"> SchedMD
+github page</a>, and navigate to
+<b>src/plugins/job_submit/lua/job_submit_lua.c</b>.
+<b>_job_rec_field()</b> contains the list of attributes available for the
+job_record (e.g. current record in Slurm). <b>_get_job_req_field()</b> contains
+the list of attributes available for the job_descriptor (e.g. submission or
+modification request).
+</p>
+
 <h2>Building</h2>
 <p>Generally using a LUA interface for a job submit plugin is best:
 It is simple to write and maintain with minimal dependencies upon the Slurm
@@ -206,7 +218,7 @@ Then just build and install Slurm with that new code.
 Building a new plugin outside of the Slurm distribution is possible, but
 far more complex.
 It also requires access to a multitude of Slurm header files as shown in the
-proceedure below.</p>
+procedure below.</p>
 
 <a name="job_modify_manualbuild">
 <ol>
@@ -274,6 +286,6 @@ cp job_submit_mine.so file \
    /usr/local/lib/slurm/job_submit_mine.so
 </pre>
 
-<p style="text-align:center;">Last modified 29 September 2017</p>
+<p style="text-align:center;">Last modified 18 December 2019</p>
 
 <!--#include virtual="footer.txt"-->

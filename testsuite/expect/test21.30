@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #         Test that checks if the QOS limits are enforced.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2012 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -48,7 +44,6 @@ source ./inc21.30.15
 source ./inc21.30.16
 source ./inc21.30.17
 
-set test_id	"21.30"
 set exit_code	0
 set test_node   ""
 # Total cpus in test node
@@ -128,12 +123,11 @@ array set mod_qos_vals {
 	MaxTRESPerUser=billing      -1
 }
 
-print_header $test_id
-
 # Check to see that there are enough resources in the default partition
 set tmpc 0
 set tmpn 0
-spawn $scontrol show part [default_partition]
+set partition [default_partition]
+spawn $scontrol show part $partition
 expect {
 	-re "TotalCPUs=($number)" {
 		set tmpc [expr $expect_out(1,string) - 1]
@@ -148,7 +142,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -156,8 +150,7 @@ expect {
 	}
 }
 if {$tmpc == 0 || $tmpn == 0} {
-	send_user "\nWARNING: not enough Nodes and/or CPUs\n"
-	exit 0
+	skip "Not enough Nodes and/or CPUs"
 }
 
 if { ![string compare [priority_type] "multifactor"] } {
@@ -179,13 +172,13 @@ if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 set got_node 0
 spawn $srun -N1 printenv SLURM_NODELIST
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set test_node $expect_out(1,string)
 		set got_node 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -194,16 +187,14 @@ expect {
 }
 
 if {$got_node != 1} {
-	send_user "\nFAILURE: did not get node for testing\n"
-	exit 0
+	fail "Did not get node for testing"
 }
 
 # Get the number of cpus on a node
 lassign [get_node_cpus $test_node] totcpus nthreads
 
 if {$totcpus == 0} {
-	send_user "\nFAILURE: no cpus where found\n"
-	exit 1
+	fail "No cpus were found"
 } else {
 	# Set QoS CPU values
 	set grcpu_num [expr $totcpus - $nthreads]
@@ -216,14 +207,14 @@ if {$totcpus == 0} {
 
 # Get the number of nodes in the default partition
 set num_nodes 0
-spawn $scontrol show partition [default_partition]
+spawn $scontrol show partition $partition
 expect {
 	-re "TotalNodes=($number)" {
 		set num_nodes [expr $expect_out(1,string) - 1]
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -232,8 +223,7 @@ expect {
 }
 
 if {$num_nodes == 0} {
-	send_user "\nFAILURE: no cpus where found\n"
-	exit 1
+	fail "No cpus were found"
 } else {
 	# Set QoS node values
 	set grn_num     $num_nodes
@@ -244,7 +234,7 @@ if {$num_nodes == 0} {
 
 proc endit { } {
 	global sacctmgr qostest acct test_id exit_code
-	global scontrol save_billing_weights
+	global scontrol save_billing_weights partition
 	# delete qos
 	spawn $sacctmgr -i delete qos $qostest
 	expect {
@@ -252,10 +242,10 @@ proc endit { } {
 			exp_continue
 		}
 		-re "Error" {
-			send_user "\nFAILURE: QOS was not deleted\n"
+			log_error "QOS was not deleted"
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -269,11 +259,11 @@ proc endit { } {
 			exp_continue
 		}
 		-re "Error" {
-			send_user "\nFAILURE: account was not deleted\n"
+			log_error "account was not deleted"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -282,14 +272,14 @@ proc endit { } {
 	}
 
 	if {$save_billing_weights ne ""} {
-		spawn $scontrol update partitionname=[default_partition] TRESBillingWeights=$save_billing_weights
+		spawn $scontrol update partitionname=$partition TRESBillingWeights=$save_billing_weights
 		expect {
 			-re "error" {
-				send_user "\nFAILURE: failed to reset TRESBillingWeights\n"
+				log_error "Failed to reset TRESBillingWeights"
 				set exit_code 1
 			}
 			timeout {
-				send_user "\nFAILURE: scontrol is not responding\n"
+				log_error "scontrol is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -298,44 +288,36 @@ proc endit { } {
 		}
 	}
 
-	if {$exit_code == 0} {
-		print_success $test_id
-	} else {
-		send_user "\nFAILURE: test $test_id\n"
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 
-	exit $exit_code
+	pass
 }
 
 #
 # Check accounting configuration and terminate if limits not enforced.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 } elseif { [test_enforce_limits] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountingStorageEnforce\n"
-	exit 0
+	skip "This test can't be run without a usable AccountingStorageEnforce"
 }
 if { [test_limits_enforced] == 0 } {
-	send_user "\nWARNING: This test can't be run without enforcing limits\n"
-	exit 0
+	skip "This test can't be run without enforcing limits"
 }
 if {[test_super_user] == 0} {
-	send_user "\nWARNING Test can only be ran as SlurmUser\n"
-	exit 0
+	skip "Test can only be ran as SlurmUser"
 }
 
 #
 # Some tests will not work properly when allocating sockets or whole nodes to jobs
 #
 if {[test_linear] || [default_part_exclusive]} {
-	send_user "\nWARNING: This test is incompatible with exclusive node allocations\n"
-	exit 0
+	skip "This test is incompatible with exclusive node allocations"
 }
 if {[test_select_type_params "CR_SOCKET"]} {
-	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
-	exit 0
+	skip "This test is incompatible with CR_SOCKET allocations"
 }
 
 # Remove any vestigial accounts or qos
@@ -345,10 +327,10 @@ expect {
 		exp_continue
 	}
 	-re "Error" {
-		send_user "\nFAILURE: QOS was not deleted\n"
+		log_error "QOS was not deleted"
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -362,11 +344,11 @@ expect {
 		exp_continue
 	}
 	-re "Error" {
-		send_user "\nFAILURE: account was not deleted\n"
+		log_error "Account was not deleted"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -387,7 +369,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr did not add QOS\n"
+		log_error "sacctmgr did not add QOS"
 		set exit_code 1
 	}
 	eof {
@@ -404,7 +386,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -413,15 +395,14 @@ expect {
 	}
 }
 if {$acctmatch != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem adding the account\n"
-	exit 1
+	fail "sacctmgr had a problem adding the account"
 }
 
 # Add user to account
 spawn $sacctmgr -i create user name=$user_name account=$acct
 expect {
 	timeout {
-		send_user "\nFAILURE: sacctmgr not responding\n"
+		log_error "sacctmgr not responding"
 	}
 	eof {
 		wait
@@ -672,14 +653,14 @@ set mod_qos_vals(MaxWall) "-1"
 
 # TRESBillingWeights
 
-spawn $scontrol update partitionname=[default_partition] tresbillingweights=cpu=$tres_cpu_mult
+spawn $scontrol update partitionname=$partition tresbillingweights=cpu=$tres_cpu_mult
 expect {
 	-re "error" {
-		send_user "\nFAILURE: failed to set TRESBillingWeights\n"
+		log_error "Failed to set TRESBillingWeights"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {

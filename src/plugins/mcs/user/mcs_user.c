@@ -91,7 +91,7 @@ extern int fini(void)
 /*
  * mcs_p_set_mcs_label() is called to obtain mcs_label.
  */
-extern int mcs_p_set_mcs_label (struct job_record *job_ptr, char *label)
+extern int mcs_p_set_mcs_label(job_record_t *job_ptr, char *label)
 {
 	char *user = NULL;
 	int rc = SLURM_SUCCESS;

@@ -54,13 +54,9 @@
 
 /* SlurmDBD configuration parameters */
 typedef struct {
-	time_t		last_update;	/* time slurmdbd.conf read	*/
 	char *		archive_dir;    /* location to locally store
 					 * data if not using a script   */
 	char *		archive_script;	/* script to archive old data	*/
-	char *		auth_alt_types;	/* alt authentication plugins	*/
-	char *		auth_info;	/* authentication info		*/
-	char *		auth_type;	/* authentication mechanism	*/
 	uint16_t        commit_delay;   /* On busy systems delay
 					 * commits from slurmctld this
 					 * many seconds                 */
@@ -68,23 +64,17 @@ typedef struct {
 	char *		dbd_backup;	/* hostname of Slurm DBD backup */
 	char *		dbd_host;	/* hostname of Slurm DBD	*/
 	uint16_t	dbd_port;	/* port number for RPCs to DBD	*/
-	uint64_t	debug_flags;	/* Debug flags set              */
 	uint16_t	debug_level;	/* Debug level, default=3	*/
 	char *	 	default_qos;	/* default qos setting when
 					 * adding clusters              */
 	char *		log_file;	/* Log file			*/
-	uint16_t	syslog_debug;	/* output to both logfile and syslog*/
-	uint16_t        log_fmt;        /* Log file timestamt format    */
 	uint32_t	max_time_range;	/* max time range for user queries */
-	uint16_t        msg_timeout;    /* message timeout		*/
 	char *		parameters;	/* parameters to change behavior with
 					 * the slurmdbd directly	*/
 	uint16_t        persist_conn_rc_flags; /* flags to be sent back on any
 						* persist connection init
 						*/
 	char *		pid_file;	/* where to store current PID	*/
-	char *		plugindir;	/* dir to look for plugins	*/
-	uint16_t        private_data;   /* restrict information         */
 					/* purge variable format
 					 * controlled by PURGE_FLAGS	*/
 	uint32_t        purge_event;    /* purge events older than
@@ -98,20 +88,11 @@ typedef struct {
 					 * than this in months or days	*/
 	uint32_t        purge_usage;    /* purge usage data older
 					 * than this in months or days	*/
-	uint32_t	slurm_user_id;	/* uid of slurm_user_name	*/
-	char *		slurm_user_name;/* user that slurmcdtld runs as	*/
-	char *		storage_backup_host;/* backup host where DB is
-					     * running */
-	char *		storage_host;	/* host where DB is running	*/
 	char *		storage_loc;	/* database name		*/
-	char *		storage_pass;   /* password for DB write	*/
-	uint16_t	storage_port;	/* port DB is listening to	*/
-	char *		storage_type;	/* DB to be used for storage	*/
-	char *		storage_user;	/* user authorized to write DB	*/
+	uint16_t	syslog_debug;	/* output to both logfile and syslog*/
 	uint16_t        track_wckey;    /* Whether or not to track wckey*/
 	uint16_t        track_ctld;     /* Whether or not track when a
 					 * slurmctld goes down or not   */
-	uint16_t        tcp_timeout;    /* tcp timeout			*/
 } slurmdbd_conf_t;
 
 extern pthread_mutex_t conf_mutex;
@@ -123,13 +104,6 @@ extern slurmdbd_conf_t *slurmdbd_conf;
  *	slurmdbd_conf
  */
 extern void free_slurmdbd_conf(void);
-
-/* Return the DbdPort value */
-extern uint16_t get_dbd_port(void);
-
-/* lock and unlock the dbd_conf */
-extern void slurmdbd_conf_lock(void);
-extern void slurmdbd_conf_unlock(void);
 
 /* Log the current configuration using verbose() */
 extern void log_config(void);

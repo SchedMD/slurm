@@ -4,11 +4,6 @@
 #          We start a large number of job steps, the simultaneously
 #          cancel them all. Message can get lost/retransmitted, so
 #          there is a delayed test for job step removal.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -35,7 +30,6 @@
 ############################################################################
 source ./globals
 
-set test_id      "9.8"
 set exit_code    0
 set file_in      "test$test_id.input"
 set job_cnt      10
@@ -43,8 +37,6 @@ set delay        10
 set job_name     "test$test_id"
 set sleep_time   300
 set task_cnt     60
-
-print_header $test_id
 
 if {![test_select_type_params "Memory"]} {
 	set mem_per_step 0
@@ -91,11 +83,11 @@ for {set inx 0} {$inx < $job_cnt} {incr inx} {
 			exp_continue
 		}
 		-re "Unable to contact" {
-			send_user "\nFAILURE: slurm appears to be down\n"
+			log_error "Slurm appears to be down"
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			slow_kill $sbatch_pid
 			set exit_code 1
 		}
@@ -105,10 +97,10 @@ for {set inx 0} {$inx < $job_cnt} {incr inx} {
 	}
 }
 if {$start_cnt < $job_cnt} {
-	send_user "\nFAILURE: $job_cnt of $start_cnt jobs submitted\n"
+	log_error "$job_cnt of $start_cnt jobs submitted"
 	set exit_code 1
 } else {
-	send_user "\nAll $start_cnt jobs submitted\n"
+	log_debug "All $start_cnt jobs submitted"
 }
 
 set user_name [get_my_user_name]
@@ -138,7 +130,7 @@ while { 1 } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue not responding\n"
+			log_error "squeue not responding"
 			set exit_code 1
 		}
 		eof {
@@ -154,12 +146,12 @@ while { 1 } {
 			exp_continue
 		}
 		-re "error:" {
-			send_user "\nFAILURE: squeue error\n"
+			log_error "squeue error"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue not responding\n"
+			log_error "squeue not responding"
 			set exit_code 1
 		}
 		eof {
@@ -171,7 +163,7 @@ while { 1 } {
 	}
 	set scaled_task_cnt [expr $job_count * $desired_tasks]
 	if {$step_count >= $scaled_task_cnt} {
-		send_user "\nOnly started $job_count jobs, reducing step count target to $scaled_task_cnt\n"
+		log_debug "Only started $job_count jobs, reducing step count target to $scaled_task_cnt"
 		set desired_tasks $scaled_task_cnt
 	}
 	exec $bin_sleep 3
@@ -179,11 +171,10 @@ while { 1 } {
 
 log_user 1
 if {$step_count < $desired_tasks} {
-	send_user "\nFAILURE: only started $job_count jobs and $step_count steps\n"
-	send_user "  We expected at least $desired_tasks and possibly hundreds\n"
+	log_error "Only started $job_count jobs and $step_count steps. We expected at least $desired_tasks and possibly hundreds"
 	set exit_code 1
 } else {
-	send_user "\nWe found $job_count jobs and $step_count steps\n"
+	log_debug "We found $job_count jobs and $step_count steps"
 }
 spawn $scancel --quiet --user $user_name
 expect {
@@ -216,13 +207,13 @@ expect {
 }
 #
 # The following logic handles the scancel request failing
-# due to a very busy system (reports FAILURE above)
+# due to a very busy system (reports failure above)
 #
 # Increasing the MessageTimeout configuration parameter
 # should fix this problem.
 #
 if {$running_jobs != 0} {
-	send_user "\nFAILURE: jobs not all cancelled\n"
+	log_error "Jobs not all cancelled"
 	set exit_code 1
 
 	spawn $scancel --quiet --user $user_name
@@ -233,8 +224,8 @@ if {$running_jobs != 0} {
 	}
 }
 if {$completing_jobs != 0} {
-	send_user "\nWaiting for slurmctld to re-send job kill RPC\n"
-	send_user "This will take 120 seconds...\n"
+	log_info "Waiting for slurmctld to re-send job kill RPC"
+	log_info "This will take 120 seconds.."
 	exec $bin_sleep 120
 	set completing_jobs 0
 	spawn $squeue --noheader --user $user_name
@@ -248,7 +239,7 @@ if {$completing_jobs != 0} {
 		}
 	}
 	if {$completing_jobs != 0} {
-		send_user "\nFAILURE: jobs not completing\n"
+		log_error "Jobs not completing"
 		set exit_code 1
 	}
 }
@@ -270,11 +261,11 @@ if {$completing_jobs != 0} {
 	}
 }
 if {$completing_jobs != 0} {
-	send_user "\nFAILURE: Jobs not completing. Subsequent tests may fail!\n"
+	log_error "Jobs not completing. Subsequent tests may fail!"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

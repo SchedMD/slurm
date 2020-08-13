@@ -1,15 +1,13 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">Slurm Elastic Computing (Cloud Bursting)</a></h1>
+<h1><a name="top">Cloud Scheduling Guide</a></h1>
 
 <h2>Overview</h2>
 
 <p>Slurm has the ability to support a cluster that grows and
 shrinks on demand, typically relying upon a service such as
 <a href="http://aws.amazon.com/ec2/">Amazon Elastic Computing Cloud (Amazon EC2)</a>
-and <a href="https://cloud.google.com">Google Cloud Platform</a> (GCP
-integration scripts can be found at
-<a href="https://github.com/SchedMD/slurm-gcp">https://github.com/SchedMD/slurm-gcp</a>)
+and <a href="https://cloud.google.com">Google Cloud Platform</a>
 for resources.
 These resources can be combined with an existing cluster to process excess
 workload (cloud bursting) or it can operate as an independent self-contained
@@ -18,18 +16,18 @@ Good responsiveness and throughput can be achieved while you only pay for the
 resources needed.</p>
 
 <p>The rest of this document describes details about Slurm's infrastructure that
-can be used to support Elastic Computing.</p>
+can be used to support cloud scheduling.</p>
 
-<p>Slurm's Elastic Computing logic relies heavily upon the existing power save
+<p>Slurm's cloud scheduling logic relies heavily upon the existing power save
 logic.
 Review of Slurm's <a href="power_save.html">Power Saving Guide</a> is strongly
 recommended.
 This logic initiates programs when nodes are required for use and another
 program when those nodes are no longer required.
-For Elastic Computing, these programs will need to provision the resources
+For cloud scheduling, these programs will need to provision the resources
 from the cloud and notify Slurm of the node's name and network address and
 later relinquish the nodes back to the cloud.
-Most of the Slurm changes to support Elastic Computing were changes to
+Most of the Slurm changes to support cloud scheduling were changes to
 support node addressing that can change.</p>
 
 <h2>Slurm Configuration</h2>
@@ -55,18 +53,8 @@ configured <b>SlurmdTimeout</b> value with an updated BootTime, the node will
 be placed in a DOWN state and the job requesting the node will be requeued.
 If the node isn't actually rebooted (i.e. when multiple-slurmd is configured)
 starting slurmd with "-b" option might be useful.
-<dt><b>SelectType</b>
-<dd>Generally must be "select/linear".
-If Slurm is configured to allocate individual CPUs to jobs rather than whole
-nodes (e.g. SelectType=select/cons_res rather than SelectType=select/linear),
-then Slurm maintains bitmaps to track the state of every CPU in the system.
-If the number of CPUs to be allocated on each node is not known when the
-slurmctld daemon is started, one must allocate whole nodes to jobs rather
-than individual processors.
-The use of "select/cons_res" requires each node to have a CPU count set and
-the node eventually selected must have at least that number of CPUs.
 <dt><b>SlurmctldParameters=cloud_dns</b>
-<dd>By default, Slurm expects that the network addresses for cloud nodes won't
+<dd>By default, Slurm expects that the network addresses for cloud nodes
 won't be known until creation of the node and that Slurm will be notified of
 the node's address (e.g. scontrol update nodename=&lt;name&gt;
 nodeaddr=&lt;addr&gt;). Since Slurm communications rely on the node
@@ -86,8 +74,12 @@ provisioned from cloud.
 <dd>The program executed when a node is no longer required and can be
 relinquished to the cloud.
 <dt><b>SuspendTime</b>
-<dd>The time interval that a node will be left idle before a request is made to
-relinquish it. Units are seconds.
+<dd>The time interval that a node will be left idle or down before a request is
+made to relinquish it. Units are in seconds.
+<dt><b>TCPTimeout</b>
+<dd>Time permitted for TCP connections to be established. This value may need
+to be increased from the default (2 seconds) to account for latency between
+your local site and machines in the cloud.
 <dt><b>TreeWidth</b>
 <dd>Since the slurmd daemons are not aware of the network addresses of other
 nodes in the cloud, the slurmd daemons on each node should be sent messages
@@ -128,9 +120,9 @@ resources from the cloud by using the "--constraint" option.
 </p>
 
 <pre>
-. Slurm configuration
 # Excerpt of slurm.conf
-SelectType=select/linear
+SelectType=select/cons_res
+SelectTypeParameters=CR_CORE_Memory
 
 SuspendProgram=/usr/sbin/slurm_suspend
 ResumeProgram=/usr/sbin/slurm_suspend
@@ -138,6 +130,7 @@ SuspendTime=600
 SuspendExcNodes=tux[0-127]
 TreeWidth=128
 
+NodeName=DEFAULT    Sockets=1 CoresPerSocket=4 ThreadsPerCore=2
 NodeName=tux[0-127] Weight=1 Feature=local State=UNKNOWN
 NodeName=ec[0-127]  Weight=8 Feature=cloud State=CLOUD
 PartitionName=debug MaxTime=1:00:00 Nodes=tux[0-32] Default=yes
@@ -158,7 +151,7 @@ Note that configuration file will generally be identical on all nodes and not
 include NodeAddr or NodeHostname configuration parameters for any nodes in the
 cloud.
 Slurm commands executed on this node only need to communicate with the
-slurmctld daemon on the ControlMachine.
+slurmctld daemon on the SlurmctldHost.
 <li>Notify the slurmctld daemon of the node's hostname and network address:<br>
 <i>scontrol update nodename=ec0 nodeaddr=123.45.67.89 nodehostname=whatever</i><br>
 Note that the node address and hostname information set by the scontrol command
@@ -193,6 +186,6 @@ expands (adds resources).</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 14 March 2018</p>
+<p style="text-align:center;">Last modified 19 March 2020</p>
 
 <!--#include virtual="footer.txt"-->

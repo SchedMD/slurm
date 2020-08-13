@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm sreport functionality
 #          sreport h, n, p, P, t, V options.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2009 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,17 +28,14 @@
 ############################################################################
 source ./globals
 
-set test_id     "22.2"
 set exit_code   0
 set timeout 60
-print_header $test_id
 
 #
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 ################################################################
@@ -63,7 +56,7 @@ proc sreport_opt { soption } {
 	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "$sreport -$soption \n"
+	log_debug "$sreport -$soption "
 
 	if { $soption == "-help"|| $soption == "-usage" || $soption == "h" } {
 
@@ -74,22 +67,22 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		-re "sreport...OPTION.....COMMAND" {
-			if {$debug} {send_user "\nmatch1\n"}
+			if {$debug} {log_debug "Match1"}
 			incr matches
 			exp_continue
 		}
 		-re "Valid .OPTION. values are" {
-			if {$debug} {send_user "\nmatch2\n"}
+			if {$debug} {log_debug "Match2"}
 			incr matches
 			exp_continue
 		}
 		-re "Valid .COMMAND. values are" {
-			if {$debug} {send_user "\nmatch3\n"}
+			if {$debug} {log_debug "Match3"}
 			incr matches
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sreport not responding\n"
+			log_error "sreport not responding"
 			set exit_code 1
 		}
 		eof {
@@ -98,12 +91,11 @@ proc sreport_opt { soption } {
 	}
 
 	if {$not_support == 1} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
+		skip "Can not test without accounting enabled"
 	}
 
 	if {$matches != 3} {
-		send_user "\nFAILURE: sreport -$soption failed ($matches)\n"
+		log_error "sreport -$soption failed ($matches)"
 		set exit_code 1
 	}
 	return $matches
@@ -118,12 +110,12 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		-re "Cluster|Account|0-49 CPUs|50-249 CPUs|250-499 CPUs|500-999 CPUs|1000 CPUs|of cluster" {
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {log_debug "Match4"}
 			incr matches
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sreport not responding\n"
+			log_error "sreport not responding"
 			set exit_code 1
 		}
 		eof {
@@ -132,11 +124,10 @@ proc sreport_opt { soption } {
 	}
 
 	if {$not_support == 1} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
+		skip "Can not test without accounting enabled"
 	}
 	if {$matches != 0} {
-		send_user "\nFAILURE: sreport -$soption failed ($matches)\n"
+		log_error "sreport -$soption failed ($matches)"
 		set exit_code 1
 	}
 	return $matches
@@ -151,17 +142,17 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		-re "Cluster\\|Account\\|0-49 CPUs\\|50-249 CPUs\\|250-499 CPUs\\|" {
-			if {$debug} {send_user "\nmatch5\n"}
+			if {$debug} {log_debug "Match5"}
 			incr matches
 			exp_continue
 		}
 		-re "500-999 CPUs\\|>= 1000 CPUs\\|% of cluster\\|" {
-			if {$debug} {send_user "\nmatch6\n"}
+			if {$debug} {log_debug "Match6"}
 			incr matches
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sreport not responding\n"
+			log_error "sreport not responding"
 			set exit_code 1
 		}
 		eof {
@@ -170,8 +161,7 @@ proc sreport_opt { soption } {
 	}
 
 	if {$not_support != 0} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
+		skip "Can not test without accounting enabled"
 	}
 	return $matches
 }
@@ -185,17 +175,17 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		-re "Cluster\\|Account\\|0-49 CPUs\\|50-249 CPUs\\|250-499 CPUs\\|" {
-			if {$debug} {send_user "\nmatch7\n"}
+			if {$debug} {log_debug "Match7"}
 			incr matches
 			exp_continue
 		}
 		-re "500-999 CPUs\\|>= 1000 CPUs\\|% of cluster" {
-			if {$debug} {send_user "\nmatch8\n"}
+			if {$debug} {log_debug "Match8"}
 			incr matches
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sreport not responding\n"
+			log_error "sreport not responding"
 			set exit_code 1
 		}
 		eof {
@@ -204,12 +194,11 @@ proc sreport_opt { soption } {
 	}
 
 	if {$not_support == 1} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
+		skip "Can not test without accounting enabled"
 	}
 
 	if {$matches != 2} {
-		send_user "\nFAILURE: sreport -$soption failed ($matches)\n"
+		log_error "sreport -$soption failed ($matches)"
 		set exit_code 1
 	}
 		return $matches
@@ -224,12 +213,12 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		-re "slurm $number.$number.$number" {
-			if {$debug} {send_user "\nmatch9\n"}
+			if {$debug} {log_debug "Match9"}
 			incr matches
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sreport not responding\n"
+			log_error "sreport not responding"
 			set exit_code 1
 		}
 		eof {
@@ -238,12 +227,11 @@ proc sreport_opt { soption } {
 	}
 
 	if {$not_support == 1} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
+		skip "Can not test without accounting enabled"
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE: sreport -$soption failed ($matches)\n"
+		log_error "sreport -$soption failed ($matches)"
 		set exit_code 1
 	}
 		return $matches
@@ -254,71 +242,59 @@ proc sreport_opt { soption } {
 
 set matches [sreport_opt h ]
 if {$matches != 3} {
-	send_user "\nFAILURE: sreport -h failed ($matches)\n"
-	set exit_code 1
+	fail "sreport -h failed ($matches)"
 }
 
 set matches [sreport_opt -help ]
 if {$matches != 3} {
-	send_user "\nFAILURE: sreport --help failed ($matches)\n"
-	set exit_code 1
+	fail "sreport --help failed ($matches)"
 }
 
 set matches [sreport_opt -usage ]
 if {$matches != 3} {
-	send_user "\nFAILURE: sreport --usage failed ($matches)\n"
-	set exit_code 1
+	fail "sreport --usage failed ($matches)"
 }
 
 set matches [sreport_opt n ]
 if {$matches != 0} {
-	send_user "\nFAILURE: sreport -n failed ($matches)\n"
-	set exit_code 1
+	fail "sreport -n failed ($matches)"
 }
 
 set matches [sreport_opt -noheader ]
 if {$matches != 0} {
-	send_user "\nFAILURE: sreport --noheader failed ($matches)\n"
-	set exit_code 1
+	fail "sreport --noheader failed ($matches)"
 }
 
 set matches [sreport_opt p ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sreport -p failed ($matches)\n"
-	set exit_code 1
+	fail "sreport -p failed ($matches)"
 }
 
 set matches [sreport_opt -parsable ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sreport --parsable failed ($matches)\n"
-	set exit_code 1
+	fail "sreport --parsable failed ($matches)"
 }
 
 set matches [sreport_opt P ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sreport -P failed ($matches)\n"
-	set exit_code 1
+	fail "sreport -P failed ($matches)"
 }
 
 set matches [sreport_opt -parsable2 ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sreport --parsable2 failed ($matches)\n"
-	set exit_code 1
+	fail "sreport --parsable2 failed ($matches)"
 }
 
 set matches [sreport_opt V ]
 if {$matches != 1} {
-	send_user "\nFAILURE: sreport -V failed ($matches)\n"
-	set exit_code 1
+	fail "sreport -V failed ($matches)"
 }
 
 set matches [sreport_opt -version ]
 if {$matches != 1} {
-	send_user "\nFAILURE: sreport --verbose failed ($matches)\n"
-	set exit_code 1
+	fail "sreport --verbose failed ($matches)"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

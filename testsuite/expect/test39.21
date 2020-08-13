@@ -1,54 +1,45 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Simple CUDA test
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC
 # Written by Morris Jette
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 ############################################################################
 source ./globals
 
-set test_id     "39.21"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_prog   "test$test_id.prog"
 set job_id      0
 
-print_header $test_id
-
-set gpu_cnt [get_gpu_count 1]
+set gpu_cnt [get_highest_gres_count 1 "gpu"]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs per node in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPUs per node in the default partition"
 }
-send_user "\nGPUs per node count is $gpu_cnt\n"
+log_debug "GPUs per node count is $gpu_cnt"
 
 #
 # Build input script file
@@ -69,7 +60,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -77,17 +68,15 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted\n"
-	exit 1
+	fail "Batch not submitted"
 }
 
 #
 # Wait for job to complete and check for file
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Waiting for job to complete"
 }
 if {[wait_for_file $file_out] == 0} {
 	set matches 0
@@ -111,17 +100,16 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$no_nvcc != 0} {
-		send_user "\nWARNING: Could not find program nvcc (CUDA compiler)\n"
+		log_warn "Could not find program nvcc (CUDA compiler)"
 	} elseif {$matches != 1} {
-		send_user "\nFAILURE: CUDA output not as expected\n"
-		set exit_code 1
+		fail "CUDA output not as expected"
 	}
 } else {
-	set exit_code 1
+	fail "Failed waiting for file ($file_out)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_prog
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -49,6 +49,7 @@
 #include "src/common/env.h" /* For unsetenvp() */
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
@@ -99,9 +100,6 @@ int set_user_limits(stepd_step_rec_t *job)
 	slurm_rlimits_info_t *rli;
 	struct rlimit r;
 	rlim_t task_mem_bytes;
-#ifdef SLURM_RLIMIT_VSIZE
-	uint16_t vsize_factor;
-#endif
 
 	if (getrlimit(RLIMIT_CPU, &r) == 0) {
 		if (r.rlim_max != RLIM_INFINITY) {
@@ -142,11 +140,10 @@ int set_user_limits(stepd_step_rec_t *job)
 #endif
 
 #ifdef SLURM_RLIMIT_VSIZE
-	if ((task_mem_bytes) &&
-	    ((vsize_factor = slurm_get_vsize_factor()) != 0) &&
+	if ((task_mem_bytes) && slurm_conf.vsize_factor &&
 	    (getrlimit(SLURM_RLIMIT_VSIZE, &r) == 0) &&
 	    (r.rlim_max > task_mem_bytes)) {
-		r.rlim_max = task_mem_bytes * (vsize_factor / 100.0);
+		r.rlim_max = task_mem_bytes * (slurm_conf.vsize_factor / 100.0);
 		r.rlim_cur = r.rlim_max;
 		if (setrlimit(SLURM_RLIMIT_VSIZE, &r)) {
 			/* Indicates that limit has already been exceeded */
@@ -184,14 +181,14 @@ set_umask(stepd_step_rec_t *job)
 	char *val;
 
 	if (!(val = getenvp(job->env, "SLURM_UMASK"))) {
-		if (job->stepid != SLURM_EXTERN_CONT)
+		if (job->step_id.step_id != SLURM_EXTERN_CONT)
 			debug("Couldn't find SLURM_UMASK in environment");
 		return SLURM_ERROR;
 	}
 
 	mask = strtol(val, (char **)NULL, 8);
-	if ((job->stepid == SLURM_EXTERN_CONT) ||
-	    (job->stepid == SLURM_BATCH_SCRIPT))
+	if ((job->step_id.step_id == SLURM_EXTERN_CONT) ||
+	    (job->step_id.step_id == SLURM_BATCH_SCRIPT))
 		unsetenvp(job->env, "SLURM_UMASK");
 	umask(mask);
 	return SLURM_SUCCESS;

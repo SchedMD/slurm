@@ -59,8 +59,8 @@ Waittime=0
 # SCHEDULING
 SchedulerType=sched/backfill
 #SchedulerAuth=
-#SelectType=select/linear
-FastSchedule=1
+SelectType=select/cons_tres
+SelectTypeParameters=CR_Core
 #PriorityType=priority/multifactor
 #PriorityDecayHalfLife=14-0
 #PriorityUsageResetPeriod=14-0
@@ -71,9 +71,9 @@ FastSchedule=1
 #PriorityMaxAge=1-0
 #
 # LOGGING
-SlurmctldDebug=3
+SlurmctldDebug=info
 SlurmctldLogFile=/var/log/slurmctld.log
-SlurmdDebug=3
+SlurmdDebug=info
 SlurmdLogFile=/var/log/slurmd.log
 JobCompType=jobcomp/none
 #JobCompLoc=

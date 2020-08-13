@@ -107,7 +107,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ltversion.m4 \
 	$(top_srcdir)/auxdir/lt~obsolete.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
-	$(top_srcdir)/auxdir/x_ac__system_configuration.m4 \
+	$(top_srcdir)/auxdir/slurmrestd.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
 	$(top_srcdir)/auxdir/x_ac_c99.m4 \
 	$(top_srcdir)/auxdir/x_ac_cgroup.m4 \
@@ -119,14 +119,14 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
+	$(top_srcdir)/auxdir/x_ac_http_parser.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
-	$(top_srcdir)/auxdir/x_ac_iso.m4 \
 	$(top_srcdir)/auxdir/x_ac_json.m4 \
+	$(top_srcdir)/auxdir/x_ac_jwt.m4 \
 	$(top_srcdir)/auxdir/x_ac_lua.m4 \
 	$(top_srcdir)/auxdir/x_ac_lz4.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
-	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_netloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_nvml.m4 \
 	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
@@ -136,14 +136,16 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
+	$(top_srcdir)/auxdir/x_ac_rsmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_systemd.m4 \
 	$(top_srcdir)/auxdir/x_ac_ucx.m4 \
 	$(top_srcdir)/auxdir/x_ac_uid_gid_size.m4 \
-	$(top_srcdir)/auxdir/x_ac_x11.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/auxdir/x_ac_x11.m4 \
+	$(top_srcdir)/auxdir/x_ac_yaml.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
+DIST_COMMON = $(srcdir)/Makefile.am
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
@@ -189,6 +191,13 @@ am__v_lt_1 =
 libslurm_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libslurm_la_LDFLAGS) $(LDFLAGS) -o $@
+libslurm_pmi_la_DEPENDENCIES = $(convenience_libs)
+am_libslurm_pmi_la_OBJECTS =
+libslurm_pmi_la_OBJECTS = $(am_libslurm_pmi_la_OBJECTS)
+libslurm_pmi_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libslurm_pmi_la_LDFLAGS) $(LDFLAGS) \
+	-o $@
 libslurmfull_la_DEPENDENCIES = $(convenience_libs)
 am_libslurmfull_la_OBJECTS =
 libslurmfull_la_OBJECTS = $(am_libslurmfull_la_OBJECTS)
@@ -208,14 +217,14 @@ am__objects_1 = account_functions.lo archive_functions.lo \
 	tres_functions.lo usage_functions.lo user_functions.lo \
 	user_report_functions.lo wckey_functions.lo
 am__objects_2 = allocate.lo allocate_msg.lo block_info.lo \
-	burst_buffer_info.lo assoc_mgr_info.lo cancel.lo checkpoint.lo \
-	complete.lo config_info.lo federation_info.lo \
-	front_end_info.lo init_msg.lo job_info.lo job_step_info.lo \
-	layout_info.lo license_info.lo node_info.lo partition_info.lo \
-	pmi_server.lo powercap_info.lo reservation_info.lo signal.lo \
-	slurm_get_statistics.lo slurm_pmi.lo step_ctx.lo step_io.lo \
-	step_launch.lo submit.lo suspend.lo topo_info.lo triggers.lo \
-	reconfigure.lo update_config.lo $(am__objects_1)
+	burst_buffer_info.lo assoc_mgr_info.lo cancel.lo complete.lo \
+	config_info.lo federation_info.lo front_end_info.lo init.lo \
+	init_msg.lo job_info.lo job_step_info.lo license_info.lo \
+	node_info.lo partition_info.lo pmi_server.lo \
+	reservation_info.lo signal.lo slurm_get_statistics.lo \
+	slurm_pmi.lo step_ctx.lo step_io.lo step_launch.lo submit.lo \
+	suspend.lo token.lo topo_info.lo triggers.lo reconfigure.lo \
+	update_config.lo $(am__objects_1)
 am_libslurmhelper_la_OBJECTS = $(am__objects_2)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
 libslurmhelper_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
@@ -247,8 +256,7 @@ am__depfiles_remade = ./$(DEPDIR)/account_functions.Plo \
 	./$(DEPDIR)/archive_functions.Plo \
 	./$(DEPDIR)/assoc_functions.Plo ./$(DEPDIR)/assoc_mgr_info.Plo \
 	./$(DEPDIR)/block_info.Plo ./$(DEPDIR)/burst_buffer_info.Plo \
-	./$(DEPDIR)/cancel.Plo ./$(DEPDIR)/checkpoint.Plo \
-	./$(DEPDIR)/cluster_functions.Plo \
+	./$(DEPDIR)/cancel.Plo ./$(DEPDIR)/cluster_functions.Plo \
 	./$(DEPDIR)/cluster_report_functions.Plo \
 	./$(DEPDIR)/complete.Plo ./$(DEPDIR)/config_info.Plo \
 	./$(DEPDIR)/connection_functions.Plo \
@@ -256,21 +264,21 @@ am__depfiles_remade = ./$(DEPDIR)/account_functions.Plo \
 	./$(DEPDIR)/extra_get_functions.Plo \
 	./$(DEPDIR)/federation_functions.Plo \
 	./$(DEPDIR)/federation_info.Plo ./$(DEPDIR)/front_end_info.Plo \
-	./$(DEPDIR)/init_msg.Plo ./$(DEPDIR)/job_functions.Plo \
-	./$(DEPDIR)/job_info.Plo ./$(DEPDIR)/job_report_functions.Plo \
-	./$(DEPDIR)/job_step_info.Plo ./$(DEPDIR)/layout_info.Plo \
-	./$(DEPDIR)/license_info.Plo ./$(DEPDIR)/node_info.Plo \
-	./$(DEPDIR)/partition_info.Plo ./$(DEPDIR)/pmi_server.Plo \
-	./$(DEPDIR)/powercap_info.Plo ./$(DEPDIR)/qos_functions.Plo \
+	./$(DEPDIR)/init.Plo ./$(DEPDIR)/init_msg.Plo \
+	./$(DEPDIR)/job_functions.Plo ./$(DEPDIR)/job_info.Plo \
+	./$(DEPDIR)/job_report_functions.Plo \
+	./$(DEPDIR)/job_step_info.Plo ./$(DEPDIR)/license_info.Plo \
+	./$(DEPDIR)/node_info.Plo ./$(DEPDIR)/partition_info.Plo \
+	./$(DEPDIR)/pmi_server.Plo ./$(DEPDIR)/qos_functions.Plo \
 	./$(DEPDIR)/reconfigure.Plo ./$(DEPDIR)/reservation_info.Plo \
 	./$(DEPDIR)/resource_functions.Plo ./$(DEPDIR)/signal.Plo \
 	./$(DEPDIR)/slurm_get_statistics.Plo ./$(DEPDIR)/slurm_pmi.Plo \
 	./$(DEPDIR)/step_ctx.Plo ./$(DEPDIR)/step_io.Plo \
 	./$(DEPDIR)/step_launch.Plo ./$(DEPDIR)/submit.Plo \
-	./$(DEPDIR)/suspend.Plo ./$(DEPDIR)/topo_info.Plo \
-	./$(DEPDIR)/tres_functions.Plo ./$(DEPDIR)/triggers.Plo \
-	./$(DEPDIR)/update_config.Plo ./$(DEPDIR)/usage_functions.Plo \
-	./$(DEPDIR)/user_functions.Plo \
+	./$(DEPDIR)/suspend.Plo ./$(DEPDIR)/token.Plo \
+	./$(DEPDIR)/topo_info.Plo ./$(DEPDIR)/tres_functions.Plo \
+	./$(DEPDIR)/triggers.Plo ./$(DEPDIR)/update_config.Plo \
+	./$(DEPDIR)/usage_functions.Plo ./$(DEPDIR)/user_functions.Plo \
 	./$(DEPDIR)/user_report_functions.Plo \
 	./$(DEPDIR)/wckey_functions.Plo
 am__mv = mv -f
@@ -292,10 +300,9 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libslurm_la_SOURCES) $(libslurmfull_la_SOURCES) \
-	$(libslurmhelper_la_SOURCES) $(libslurm_o_SOURCES)
-DIST_SOURCES = $(libslurm_la_SOURCES) $(libslurmfull_la_SOURCES) \
-	$(libslurmhelper_la_SOURCES) $(libslurm_o_SOURCES)
+SOURCES = $(libslurm_la_SOURCES) $(libslurm_pmi_la_SOURCES) \
+	$(libslurmfull_la_SOURCES) $(libslurmhelper_la_SOURCES) \
+	$(libslurm_o_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -320,8 +327,6 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/auxdir/depcomp
-DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -363,8 +368,7 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
-# This is needed if compiling on windows
-EXEEXT = 
+EXEEXT = @EXEEXT@
 FGREP = @FGREP@
 FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
 FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
@@ -382,7 +386,6 @@ H5CC = @H5CC@
 H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HDF5_CC = @HDF5_CC@
 HDF5_CFLAGS = @HDF5_CFLAGS@
 HDF5_CPPFLAGS = @HDF5_CPPFLAGS@
@@ -393,6 +396,8 @@ HDF5_LDFLAGS = @HDF5_LDFLAGS@
 HDF5_LIBS = @HDF5_LIBS@
 HDF5_TYPE = @HDF5_TYPE@
 HDF5_VERSION = @HDF5_VERSION@
+HTTP_PARSER_CPPFLAGS = @HTTP_PARSER_CPPFLAGS@
+HTTP_PARSER_LDFLAGS = @HTTP_PARSER_LDFLAGS@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -403,6 +408,8 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 JSON_CPPFLAGS = @JSON_CPPFLAGS@
 JSON_LDFLAGS = @JSON_LDFLAGS@
+JWT_CPPFLAGS = @JWT_CPPFLAGS@
+JWT_LDFLAGS = @JWT_LDFLAGS@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBCURL = @LIBCURL@
@@ -429,7 +436,6 @@ MUNGE_LDFLAGS = @MUNGE_LDFLAGS@
 MUNGE_LIBS = @MUNGE_LIBS@
 MYSQL_CFLAGS = @MYSQL_CFLAGS@
 MYSQL_LIBS = @MYSQL_LIBS@
-NCURSES = @NCURSES@
 NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
 NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
 NETLOC_LIBS = @NETLOC_LIBS@
@@ -438,6 +444,7 @@ NMEDIT = @NMEDIT@
 NUMA_LIBS = @NUMA_LIBS@
 NVML_CPPFLAGS = @NVML_CPPFLAGS@
 NVML_LIBS = @NVML_LIBS@
+OBJCOPY = @OBJCOPY@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OFED_CPPFLAGS = @OFED_CPPFLAGS@
@@ -464,6 +471,8 @@ PMIX_V2_CPPFLAGS = @PMIX_V2_CPPFLAGS@
 PMIX_V2_LDFLAGS = @PMIX_V2_LDFLAGS@
 PMIX_V3_CPPFLAGS = @PMIX_V3_CPPFLAGS@
 PMIX_V3_LDFLAGS = @PMIX_V3_LDFLAGS@
+PMIX_V4_CPPFLAGS = @PMIX_V4_CPPFLAGS@
+PMIX_V4_LDFLAGS = @PMIX_V4_LDFLAGS@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
@@ -474,6 +483,9 @@ RELEASE = @RELEASE@
 RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
 RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
 RRDTOOL_LIBS = @RRDTOOL_LIBS@
+RSMI_CPPFLAGS = @RSMI_CPPFLAGS@
+RSMI_LDFLAGS = @RSMI_LDFLAGS@
+RSMI_LIBS = @RSMI_LIBS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -482,6 +494,7 @@ SLURMCTLD_PORT = @SLURMCTLD_PORT@
 SLURMCTLD_PORT_COUNT = @SLURMCTLD_PORT_COUNT@
 SLURMDBD_PORT = @SLURMDBD_PORT@
 SLURMD_PORT = @SLURMD_PORT@
+SLURMRESTD_PORT = @SLURMRESTD_PORT@
 SLURM_API_AGE = @SLURM_API_AGE@
 SLURM_API_CURRENT = @SLURM_API_CURRENT@
 SLURM_API_MAJOR = @SLURM_API_MAJOR@
@@ -501,6 +514,8 @@ UCX_LDFLAGS = @UCX_LDFLAGS@
 UCX_LIBS = @UCX_LIBS@
 UTIL_LIBS = @UTIL_LIBS@
 VERSION = @VERSION@
+YAML_CPPFLAGS = @YAML_CPPFLAGS@
+YAML_LDFLAGS = @YAML_LDFLAGS@
 ZLIB_CPPFLAGS = @ZLIB_CPPFLAGS@
 ZLIB_LDFLAGS = @ZLIB_LDFLAGS@
 ZLIB_LIBS = @ZLIB_LIBS@
@@ -572,14 +587,28 @@ AM_CPPFLAGS = -I$(top_srcdir)
 @WITH_GNU_LD_TRUE@VERSION_SCRIPT = \
 @WITH_GNU_LD_TRUE@	version.map
 
+# With libslurm we have magic init/fini callers so the linker does not have to
+# worry about knowing to call slurm_conf_init()
 @WITH_GNU_LD_TRUE@OTHER_FLAGS = \
-@WITH_GNU_LD_TRUE@	-Wl,--version-script=$(VERSION_SCRIPT)
+@WITH_GNU_LD_TRUE@	-Wl,--version-script=$(VERSION_SCRIPT) \
+@WITH_GNU_LD_TRUE@	-Wl,-init,slurm_library_init \
+@WITH_GNU_LD_TRUE@	-Wl,-fini,slurm_library_fini
 
 @WITH_GNU_LD_TRUE@FULL_VERSION_SCRIPT = \
 @WITH_GNU_LD_TRUE@	full_version.map
 
+# With libslurmfull we expect the process to know they have to call
+# slurm_conf_init() since they are inside of slurm at this point.
+# We do not have the init/fini that libslurm has.
 @WITH_GNU_LD_TRUE@FULL_OTHER_FLAGS = \
 @WITH_GNU_LD_TRUE@	-Wl,--version-script=$(FULL_VERSION_SCRIPT)
+
+# With libslurm_pmi we have magic init/fini callers so the linker does not
+# have to worry about knowing to call slurm_conf_init()
+@WITH_GNU_LD_TRUE@SLURM_PMI_OTHER_FLAGS = \
+@WITH_GNU_LD_TRUE@	-Wl,--version-script=$(VERSION_SCRIPT) \
+@WITH_GNU_LD_TRUE@	-Wl,-init,slurm_library_init \
+@WITH_GNU_LD_TRUE@	-Wl,-fini,slurm_library_fini
 
 
 # libslurm version information :
@@ -614,11 +643,15 @@ lib_LTLIBRARIES = libslurm.la
 # The ABI of libslurmfull can easily change from 1 micro version to another.
 # To avoid issue we will install this lib alongside the plugins to protect
 # from version issues.
-pkglib_LTLIBRARIES = libslurmfull.la
+#
+# The unversioned libslurm_pmi is hidden there as well.
+pkglib_LTLIBRARIES = libslurmfull.la libslurm_pmi.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.
-BUILT_SOURCES = $(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) libslurm.la
+BUILT_SOURCES = $(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)\
+		$(SLURM_PMI_VERSION_SCRIPT) libslurm.la
+
 
 # Note that libslurmhelper is mostly the same as libslurm, except that
 # it exports ALL symbols used by the process, libcommon, libeio, etc.
@@ -656,21 +689,19 @@ slurmapi_src = \
 	burst_buffer_info.c \
 	assoc_mgr_info.c    \
 	cancel.c         \
-	checkpoint.c     \
 	complete.c       \
 	config_info.c    \
 	federation_info.c \
 	front_end_info.c \
+	init.c           \
 	init_msg.c       \
 	job_info.c       \
 	job_step_info.c  \
-	layout_info.c    \
 	license_info.c   \
 	node_info.c      \
 	partition_info.c \
 	pmi_server.c     \
 	pmi_server.h     \
-	powercap_info.c  \
 	reservation_info.c \
 	signal.c         \
 	slurm_get_statistics.c \
@@ -684,6 +715,7 @@ slurmapi_src = \
 	step_launch.h    \
 	submit.c         \
 	suspend.c        \
+	token.c          \
 	topo_info.c      \
 	triggers.c       \
 	reconfigure.c    \
@@ -720,6 +752,13 @@ libslurmfull_la_LDFLAGS = \
 	-avoid-version \
         $(FULL_OTHER_FLAGS)
 
+libslurm_pmi_la_SOURCES = 
+libslurm_pmi_la_LIBADD = $(convenience_libs)
+libslurm_pmi_la_LDFLAGS = \
+        $(LIB_LDFLAGS) \
+	-avoid-version \
+        $(SLURM_PMI_OTHER_FLAGS)
+
 
 # This was made so we could export all symbols from libcommon
 # on multiple platforms
@@ -729,10 +768,10 @@ libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
 	$(top_builddir)/src/common/libcommon.o
 
 CLEANFILES = \
-	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(SLURM_PMI_VERSION_SCRIPT)
 
 DISTCLEANFILES = \
-	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(SLURM_PMI_VERSION_SCRIPT)
 
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -862,6 +901,9 @@ clean-pkglibLTLIBRARIES:
 libslurm.la: $(libslurm_la_OBJECTS) $(libslurm_la_DEPENDENCIES) $(EXTRA_libslurm_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libslurm_la_LINK) -rpath $(libdir) $(libslurm_la_OBJECTS) $(libslurm_la_LIBADD) $(LIBS)
 
+libslurm_pmi.la: $(libslurm_pmi_la_OBJECTS) $(libslurm_pmi_la_DEPENDENCIES) $(EXTRA_libslurm_pmi_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libslurm_pmi_la_LINK) -rpath $(pkglibdir) $(libslurm_pmi_la_OBJECTS) $(libslurm_pmi_la_LIBADD) $(LIBS)
+
 libslurmfull.la: $(libslurmfull_la_OBJECTS) $(libslurmfull_la_DEPENDENCIES) $(EXTRA_libslurmfull_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libslurmfull_la_LINK) -rpath $(pkglibdir) $(libslurmfull_la_OBJECTS) $(libslurmfull_la_LIBADD) $(LIBS)
 
@@ -883,7 +925,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/block_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cancel.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/checkpoint.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster_report_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/complete.Plo@am__quote@ # am--include-marker
@@ -894,17 +935,16 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/federation_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/federation_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/front_end_info.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/init.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/init_msg.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_report_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_step_info.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/layout_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/license_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partition_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pmi_server.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/powercap_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qos_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reconfigure.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reservation_info.Plo@am__quote@ # am--include-marker
@@ -917,6 +957,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_launch.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/submit.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/suspend.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/token.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topo_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tres_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/triggers.Plo@am__quote@ # am--include-marker
@@ -1010,40 +1051,6 @@ cscopelist-am: $(am__tagged_files)
 
 distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
-
-distdir: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) distdir-am
-
-distdir-am: $(DISTFILES)
-	@srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
-	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
-	list='$(DISTFILES)'; \
-	  dist_files=`for file in $$list; do echo $$file; done | \
-	  sed -e "s|^$$srcdirstrip/||;t" \
-	      -e "s|^$$topsrcdirstrip/|$(top_builddir)/|;t"`; \
-	case $$dist_files in \
-	  */*) $(MKDIR_P) `echo "$$dist_files" | \
-			   sed '/\//!d;s|^|$(distdir)/|;s,/[^/]*$$,,' | \
-			   sort -u` ;; \
-	esac; \
-	for file in $$dist_files; do \
-	  if test -f $$file || test -d $$file; then d=.; else d=$(srcdir); fi; \
-	  if test -d $$d/$$file; then \
-	    dir=`echo "/$$file" | sed -e 's,/[^/]*$$,,'`; \
-	    if test -d "$(distdir)/$$file"; then \
-	      find "$(distdir)/$$file" -type d ! -perm -700 -exec chmod u+rwx {} \;; \
-	    fi; \
-	    if test -d $(srcdir)/$$file && test $$d != $(srcdir); then \
-	      cp -fpR $(srcdir)/$$file "$(distdir)$$dir" || exit 1; \
-	      find "$(distdir)/$$file" -type d ! -perm -700 -exec chmod u+rwx {} \;; \
-	    fi; \
-	    cp -fpR $$d/$$file "$(distdir)$$dir" || exit 1; \
-	  else \
-	    test -f "$(distdir)/$$file" \
-	    || cp -p $$d/$$file "$(distdir)/$$file" \
-	    || exit 1; \
-	  fi; \
-	done
 check-am: all-am
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
@@ -1102,7 +1109,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/block_info.Plo
 	-rm -f ./$(DEPDIR)/burst_buffer_info.Plo
 	-rm -f ./$(DEPDIR)/cancel.Plo
-	-rm -f ./$(DEPDIR)/checkpoint.Plo
 	-rm -f ./$(DEPDIR)/cluster_functions.Plo
 	-rm -f ./$(DEPDIR)/cluster_report_functions.Plo
 	-rm -f ./$(DEPDIR)/complete.Plo
@@ -1113,17 +1119,16 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/federation_functions.Plo
 	-rm -f ./$(DEPDIR)/federation_info.Plo
 	-rm -f ./$(DEPDIR)/front_end_info.Plo
+	-rm -f ./$(DEPDIR)/init.Plo
 	-rm -f ./$(DEPDIR)/init_msg.Plo
 	-rm -f ./$(DEPDIR)/job_functions.Plo
 	-rm -f ./$(DEPDIR)/job_info.Plo
 	-rm -f ./$(DEPDIR)/job_report_functions.Plo
 	-rm -f ./$(DEPDIR)/job_step_info.Plo
-	-rm -f ./$(DEPDIR)/layout_info.Plo
 	-rm -f ./$(DEPDIR)/license_info.Plo
 	-rm -f ./$(DEPDIR)/node_info.Plo
 	-rm -f ./$(DEPDIR)/partition_info.Plo
 	-rm -f ./$(DEPDIR)/pmi_server.Plo
-	-rm -f ./$(DEPDIR)/powercap_info.Plo
 	-rm -f ./$(DEPDIR)/qos_functions.Plo
 	-rm -f ./$(DEPDIR)/reconfigure.Plo
 	-rm -f ./$(DEPDIR)/reservation_info.Plo
@@ -1136,6 +1141,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/step_launch.Plo
 	-rm -f ./$(DEPDIR)/submit.Plo
 	-rm -f ./$(DEPDIR)/suspend.Plo
+	-rm -f ./$(DEPDIR)/token.Plo
 	-rm -f ./$(DEPDIR)/topo_info.Plo
 	-rm -f ./$(DEPDIR)/tres_functions.Plo
 	-rm -f ./$(DEPDIR)/triggers.Plo
@@ -1198,7 +1204,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/block_info.Plo
 	-rm -f ./$(DEPDIR)/burst_buffer_info.Plo
 	-rm -f ./$(DEPDIR)/cancel.Plo
-	-rm -f ./$(DEPDIR)/checkpoint.Plo
 	-rm -f ./$(DEPDIR)/cluster_functions.Plo
 	-rm -f ./$(DEPDIR)/cluster_report_functions.Plo
 	-rm -f ./$(DEPDIR)/complete.Plo
@@ -1209,17 +1214,16 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/federation_functions.Plo
 	-rm -f ./$(DEPDIR)/federation_info.Plo
 	-rm -f ./$(DEPDIR)/front_end_info.Plo
+	-rm -f ./$(DEPDIR)/init.Plo
 	-rm -f ./$(DEPDIR)/init_msg.Plo
 	-rm -f ./$(DEPDIR)/job_functions.Plo
 	-rm -f ./$(DEPDIR)/job_info.Plo
 	-rm -f ./$(DEPDIR)/job_report_functions.Plo
 	-rm -f ./$(DEPDIR)/job_step_info.Plo
-	-rm -f ./$(DEPDIR)/layout_info.Plo
 	-rm -f ./$(DEPDIR)/license_info.Plo
 	-rm -f ./$(DEPDIR)/node_info.Plo
 	-rm -f ./$(DEPDIR)/partition_info.Plo
 	-rm -f ./$(DEPDIR)/pmi_server.Plo
-	-rm -f ./$(DEPDIR)/powercap_info.Plo
 	-rm -f ./$(DEPDIR)/qos_functions.Plo
 	-rm -f ./$(DEPDIR)/reconfigure.Plo
 	-rm -f ./$(DEPDIR)/reservation_info.Plo
@@ -1232,6 +1236,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/step_launch.Plo
 	-rm -f ./$(DEPDIR)/submit.Plo
 	-rm -f ./$(DEPDIR)/suspend.Plo
+	-rm -f ./$(DEPDIR)/token.Plo
 	-rm -f ./$(DEPDIR)/topo_info.Plo
 	-rm -f ./$(DEPDIR)/tres_functions.Plo
 	-rm -f ./$(DEPDIR)/triggers.Plo
@@ -1265,8 +1270,8 @@ uninstall-am: uninstall-libLTLIBRARIES uninstall-pkglibLTLIBRARIES
 	clean-noinstLTLIBRARIES clean-noinstPROGRAMS \
 	clean-pkglibLTLIBRARIES cscopelist-am ctags ctags-am distclean \
 	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-dvi \
+	distclean-tags dvi dvi-am html html-am info info-am install \
+	install-am install-data install-data-am install-dvi \
 	install-dvi-am install-exec install-exec-am install-html \
 	install-html-am install-info install-info-am \
 	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
@@ -1299,9 +1304,7 @@ $(VERSION_SCRIPT) :
 	 echo "};") > $(VERSION_SCRIPT)
 
 $(FULL_VERSION_SCRIPT) :
-	(echo "{ global: *;";   \
-	 echo "  local: *;"; \
-	 echo "};") > $(FULL_VERSION_SCRIPT)
+	(echo "{ global: *; };") > $(FULL_VERSION_SCRIPT)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test for the qrerun --help option
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -30,14 +26,10 @@
 ############################################################################
 source ./globals
 
-set test_id    "20.10"
 set exit_code  0
 
-print_header $test_id
-
 if {[file executable $qrerun] == 0} {
-	send_user "\nWARNING: qrerun was not found\n"
-	exit 0
+	skip "qrerun was not found"
 }
 
 set found 0
@@ -48,7 +40,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qrerun is not responding\n"
+		log_error "qrerun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -56,11 +48,9 @@ expect {
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: qrerun --help option failed\n"
-	set exit_code 1
+	fail "qrerun --help option failed"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

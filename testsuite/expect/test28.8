@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of job array suspend/resume.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2005-2007 The Regents of the University of California.
 # Copyright (C) 2008 Lawrence Livermore National Security.
@@ -35,26 +30,20 @@
 ############################################################################
 source ./globals
 
-set test_id        "28.8"
 set array_size     4
 set exit_code      0
 set file_script    "test$test_id.bash"
 set job_id         0
 set not_supported  0
 
-print_header $test_id
-
 if {[get_array_config] < [expr $array_size + 1]} {
-	send_user "\nWARNING: MaxArraySize is to small for this test\n"
-	exit 0
+	skip "MaxArraySize is to small for this test"
 }
 if {[test_gang] != 0} {
-	send_user "\nWARNING: This test can't be run with gang scheduling\n"
-	exit 0
+	skip "This test can't be run with gang scheduling"
 }
 if {[is_super_user] == 0} {
-	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
-	exit 0
+	skip "This test can't be run except as SlurmUser"
 }
 
 proc suspend_job { job_id operation } {
@@ -63,7 +52,7 @@ proc suspend_job { job_id operation } {
 	spawn $scontrol $operation $job_id
 	expect {
 		-re "Requested operation not supported" {
-			send_user "\nWARNING: job suspend not supported\n"
+			log_warn "Job suspend not supported"
 			set not_supported 1
 			exp_continue
 		}
@@ -71,12 +60,12 @@ proc suspend_job { job_id operation } {
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: scontrol error\n"
+			log_error "scontrol error"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -101,7 +90,7 @@ proc check_output { file_name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: cat not responding\n"
+			log_error "cat not responding"
 			set exit_code 1
 		}
 		eof {
@@ -110,11 +99,11 @@ proc check_output { file_name } {
 	}
 
 	if { $match1 == 0 } {
-		send_user "\nFAILURE: job never suspended\n"
+		log_error "Job never suspended"
 		set exit_code 1
 	}
 	if { $match2 == 0 } {
-		send_user "\nFAILURE: job failed to run to completion\n"
+		log_error "Job failed to run to completion"
 		set exit_code 1
 	}
 }
@@ -126,15 +115,15 @@ spawn $sbatch -N1 --array=0-[expr $array_size -1] --output=/dev/null -t1 $file_s
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		send_user "\njob $job_id was submitted\n"
+		log_debug "Job $job_id was submitted"
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
+		log_error "sbatch did not submit jobs"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -142,9 +131,8 @@ expect {
 	}
 }
 if {[wait_for_job ${job_id}_1 RUNNING] != 0} {
-	send_user "\nFAILURE: error starting job ${job_id}_1\n"
 	cancel_job $job_id
-	exit 1
+	fail "Error starting job ${job_id}_1"
 }
 
 sleep 5
@@ -152,26 +140,24 @@ suspend_job $job_id suspend
 if {$not_supported == 1} {
 	exec $bin_rm -f $file_script
 	cancel_job $job_id
-	exit 0
+	skip "Job suspend not supported"
 }
 
 
 if {[wait_for_job ${job_id}_1 SUSPENDED] != 0} {
-	send_user "\nFAILURE: error suspending job $job_id\n"
 	cancel_job $job_id
-	exit 1
+	fail "Error suspending job $job_id"
 }
 
 suspend_job $job_id resume
 if {[wait_for_job ${job_id}_1 RUNNING] != 0} {
-	send_user "\nFAILURE: error resuming job $job_id\n"
 	cancel_job $job_id
-	exit 1
+	fail "Error resuming job $job_id"
 }
 cancel_job $job_id
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_script
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

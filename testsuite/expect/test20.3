@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          qdel command tests
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,21 +28,16 @@
 ############################################################################
 source ./globals
 
-set test_id     "20.3"
 set exit_code   0
 set file_in	"test$test_id.input"
 set file_out	"test$test_id.output"
 set file_err	"test$test_id.error"
 
-print_header $test_id
-
 if {[file executable $qsub] == 0} {
-	send_user "\nWARNING: $qsub does not exists\n"
-	exit 0
+	skip "$qsub does not exists"
 }
 if {[file executable $qdel] == 0} {
-	send_user "\nWARNING: $qdel does not exists\n"
-	exit 0
+	skip "$qdel does not exists"
 }
 
 set job_id 0
@@ -58,7 +49,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -66,20 +57,27 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: qsub failed to submit job\n"
-	exit 1
+	fail "qsub failed to submit job"
+}
+
+#
+# Wait for job to start
+#
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	cancel_job $job_id
+	fail "Waiting for job to start"
 }
 
 set status 1
 spawn $qdel $job_id
 expect {
 	-re "Invalid job id" {
-		send_user "\nFAILURE: qdel failed to delete job\n"
+		log_error "qdel failed to delete job"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qdel not responding\n"
+		log_error "qdel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -89,7 +87,7 @@ expect {
 }
 
 if {$status != 0} {
-	send_user "\nFAILURE: it appears things worked ok, but we got a non-zero exit from qdel\n"
+	log_error "It appears things worked ok, but we got a non-zero exit from qdel"
 	set exit_code 1
 }
 
@@ -98,12 +96,12 @@ set matches 0
 spawn $qdel $job_id
 expect {
 	-re "already completing or completed" {
-		send_user "\nWe shouldn't see this because qdel doesn't print an error for this.\n"
+		log_debug "We shouldn't see this because qdel doesn't print an error for this"
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qdel not responding\n"
+		log_error "qdel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -114,12 +112,11 @@ expect {
 
 # we should get an error code here from qdel, but no message
 if {($matches != 0) || ($status == 0)} {
-	send_user "\nFAILURE: No error on attempt to cancel terminated job\n"
-	set exit_code 1
+	fail "No error on attempt to cancel terminated job"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

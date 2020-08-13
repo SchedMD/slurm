@@ -131,27 +131,31 @@ int pmixp_info_set(const stepd_step_rec_t *job, char ***env)
 	_pmixp_job_info.uid = job->uid;
 	_pmixp_job_info.gid = job->gid;
 
-	if ((job->pack_jobid != 0) && (job->pack_jobid != NO_VAL)) {
-		_pmixp_job_info.jobid = job->pack_jobid;
-		_pmixp_job_info.stepid = job->stepid;
-		_pmixp_job_info.node_id = job->nodeid  + job->node_offset;
+	memcpy(&_pmixp_job_info.step_id, &job->step_id,
+	       sizeof(_pmixp_job_info.step_id));
+
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		_pmixp_job_info.step_id.job_id = job->het_job_id;
+
+	if (job->het_job_offset != NO_VAL) {
+		_pmixp_job_info.node_id = job->nodeid +
+					  job->het_job_node_offset;
 		_pmixp_job_info.node_tasks = job->node_tasks;
-		_pmixp_job_info.ntasks = job->pack_ntasks;
-		_pmixp_job_info.nnodes = job->pack_nnodes;
+		_pmixp_job_info.ntasks = job->het_job_ntasks;
+		_pmixp_job_info.nnodes = job->het_job_nnodes;
 		msize = _pmixp_job_info.nnodes * sizeof(uint32_t);
 		_pmixp_job_info.task_cnts = xmalloc(msize);
 		for (i = 0; i < _pmixp_job_info.nnodes; i++)
-			_pmixp_job_info.task_cnts[i] = job->pack_task_cnts[i];
+			_pmixp_job_info.task_cnts[i] =
+						job->het_job_task_cnts[i];
 
 		msize = _pmixp_job_info.node_tasks * sizeof(uint32_t);
 		_pmixp_job_info.gtids = xmalloc(msize);
 		for (i = 0; i < job->node_tasks; i++) {
 			_pmixp_job_info.gtids[i] = job->task[i]->gtid +
-						   job->pack_task_offset;
+						   job->het_job_task_offset;
 		}
 	} else {
-		_pmixp_job_info.jobid = job->jobid;
-		_pmixp_job_info.stepid = job->stepid;
 		_pmixp_job_info.node_id = job->nodeid;
 		_pmixp_job_info.node_tasks = job->node_tasks;
 		_pmixp_job_info.ntasks = job->ntasks;
@@ -167,11 +171,9 @@ int pmixp_info_set(const stepd_step_rec_t *job, char ***env)
 			_pmixp_job_info.gtids[i] = job->task[i]->gtid;
 	}
 #if 0
-	if ((job->pack_jobid != 0) && (job->pack_jobid != NO_VAL))
-		info("PACK JOBID:%u", _pmixp_job_info.jobid);
-	else
-		info("JOBID:%u", _pmixp_job_info.jobid);
-	info("STEPID:%u", _pmixp_job_info.stepid);
+	if ((job->het_job_id != 0) && (job->het_job_id != NO_VAL))
+		info("HET_JOB_ID:%u", _pmixp_job_info.step_id.job_id);
+	info("%ps", &_pmixp_job_info.step_id);
 	info("NODEID:%u", _pmixp_job_info.node_id);
 	info("NODE_TASKS:%u", _pmixp_job_info.node_tasks);
 	info("NTASKS:%u", _pmixp_job_info.ntasks);
@@ -320,7 +322,7 @@ static int _resources_set(char ***env)
 	if (!p) {
 		p = getenvp(*env, PMIXP_JOB_NODES_ENV_DEP);
 		if (!p) {
-			/* shouldn't happen if we are under SLURM! */
+			/* shouldn't happen if we are under Slurm! */
 			PMIXP_ERROR_NO(ENOENT,
 				       "Neither of nodelist environment variables: %s OR %s was found!",
 				       PMIXP_JOB_NODES_ENV,
@@ -372,7 +374,8 @@ static int _env_set(char ***env)
 
 	xassert(_pmixp_job_info.hostname);
 
-	_pmixp_job_info.server_addr_unfmt = slurm_get_slurmd_spooldir(NULL);
+	_pmixp_job_info.server_addr_unfmt =
+		xstrdup(slurm_conf.slurmd_spooldir);
 
 	_pmixp_job_info.lib_tmpdir = slurm_conf_expand_slurmd_path(
 				_pmixp_job_info.server_addr_unfmt,
@@ -402,11 +405,11 @@ static int _env_set(char ***env)
 	}
 
 	_pmixp_job_info.cli_tmpdir =
-			xstrdup_printf("%s/spmix_appdir_%d.%d",
+			xstrdup_printf("%s/spmix_appdir_%u_%d.%d",
 				       _pmixp_job_info.cli_tmpdir_base,
+				       pmixp_info_jobuid(),
 				       pmixp_info_jobid(),
 				       pmixp_info_stepid());
-
 
 	/* ----------- Timeout setting ------------- */
 	/* TODO: also would be nice to have a cluster-wide setting in Slurm */

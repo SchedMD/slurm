@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "Slurm suspend, resume and requeue functions" "April 2015" "Slurm suspend, resume and requeue functions"
+.TH "Slurm API" "3" "Slurm suspend, resume and requeue functions" "November 2019" "Slurm suspend, resume and requeue functions"
 
 .SH "NAME"
 slurm_suspend, slurm_suspend2, slurm_resume, slurm_resume2, slurm_requeue,
@@ -110,13 +110,11 @@ for the response array.
 .TP
 \fBslurm_requeue\fR
 Requeue a running or pending Slurm batch job.
-The job script will be restarted from its beginning,
-ignoring any previous checkpoint.
+The job script will be restarted from its beginning.
 .TP
 \fBslurm_requeue2\fR
 Requeue a running or pending Slurm batch job or job array.
-The job script will be restarted from its beginning,
-ignoring any previous checkpoint.
+The job script will be restarted from its beginning.
 Call the function \fBslurm_free_job_array_resp\fR to release memory allocated
 for the response array.
 .TP

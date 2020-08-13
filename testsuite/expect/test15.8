@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of immediate allocation option (--immediate option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,11 +28,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.8"
 set exit_code   0
 set matches     0
-
-print_header $test_id
 
 #
 # Spawn a srun immediate execution job with hold (priority==0) option,
@@ -56,12 +49,12 @@ expect {
 		exp_continue
 	}
 	-re "Unable to allocate resources" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -73,10 +66,10 @@ expect {
 	}
 }
 if {$matches != 3} {
-	send_user "\nFAILURE: failed to hold job as requested ($matches != 3)\n"
+	log_error "Failed to hold job as requested ($matches != 3)"
 	set exit_code 1
 } else {
-	send_user "\nSo far, so good\n\n"
+	log_debug "So far, so good"
 }
 
 #
@@ -88,7 +81,7 @@ set matches 0
 set salloc_pid [spawn $salloc --immediate -t1 $bin_pwd]
 expect {
 	-re "error: Job submit/allocate failed" {
-		send_user "This error is not unexpected, no worries\n"
+		log_debug "This error is not unexpected, no worries"
 		incr matches
 		exp_continue
 	}
@@ -98,7 +91,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -111,10 +104,8 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: Immediate initiation option failure\n"
-	set exit_code 1
+	fail "Immediate initiation option failure"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

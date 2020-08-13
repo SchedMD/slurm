@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validate scontrol show commands for configuration, daemons,
 #          nodes, frontends, and partitions.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2011 Lawrence Livermore National Security.
@@ -34,10 +30,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "2.5"
 set exit_code   0
-
-print_header $test_id
 
 #
 # Report the slurm configuration
@@ -58,7 +51,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -68,9 +61,9 @@ expect {
 
 if {$matches != 3} {
 	if {$matches == 2} {
-		send_user "\nWARNING: it appears you are running with multiple slurmds.\n"
+		log_warn "It appears you are running with multiple slurmds"
 	} else {
-		send_user "\nFAILURE: scontrol show config command failed\n"
+		log_error "scontrol show config command failed"
 		set exit_code 1
 	}
 }
@@ -82,13 +75,13 @@ set matches     0
 set part_name   ""
 spawn $scontrol show partition
 expect {
-	-re "PartitionName=($alpha_numeric_under)" {
+	-re "PartitionName=($re_word_str)" {
 		set part_name $expect_out(1,string)
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -96,7 +89,7 @@ expect {
 	}
 }
 if {$matches < 1} {
-	send_user "\nFAILURE: scontrol show partition command failed\n"
+	log_error "scontrol show partition command failed"
 	set exit_code 1
 }
 
@@ -106,14 +99,14 @@ if {$matches < 1} {
 set matches     0
 spawn $scontrol show partition $part_name
 expect {
-	-re "PartitionName=($alpha_numeric_under)" {
+	-re "PartitionName=($re_word_str)" {
 		if {[string compare $expect_out(1,string) $part_name] == 0} {
 			incr matches
 		}
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -121,8 +114,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol show partition command"
-	send_user " with name failed\n"
+	log_error "scontrol show partition command with name failed"
 	set exit_code 1
 }
 
@@ -133,13 +125,13 @@ set matches     0
 set node_name   ""
 spawn $scontrol show frontend
 expect {
-	-re "FrontendName=($alpha_numeric_under)" {
+	-re "FrontendName=($re_word_str)" {
 		set node_name $expect_out(1,string)
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -147,7 +139,7 @@ expect {
 	}
 }
 if {$matches < 1} {
-	send_user "\nWARNING: no front end nodes found\n"
+	log_warn "No front end nodes found"
 } else {
 #
 #	Report one slurm front end node
@@ -155,14 +147,14 @@ if {$matches < 1} {
 	set matches     0
 	spawn $scontrol show frontend $node_name
 	expect {
-		-re "FrontendName=($alpha_numeric_under)" {
+		-re "FrontendName=($re_word_str)" {
 			if {[string compare $expect_out(1,string) $node_name] == 0} {
 				incr matches
 			}
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -170,7 +162,7 @@ if {$matches < 1} {
 		}
 	}
 	if {$matches != 1} {
-		send_user "\nFAILURE: scontrol show frontend command with name failed\n"
+		log_error "scontrol show frontend command with name failed"
 		set exit_code 1
 	}
 }
@@ -182,13 +174,13 @@ set matches     0
 set node_name   ""
 spawn $scontrol show node
 expect {
-	-re "NodeName=($alpha_numeric_under)" {
+	-re "NodeName=($re_word_str)" {
 		set node_name $expect_out(1,string)
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -196,7 +188,7 @@ expect {
 	}
 }
 if {$matches < 1} {
-	send_user "\nFAILURE: scontrol show node command failed\n"
+	log_error "scontrol show node command failed"
 	set exit_code 1
 }
 
@@ -206,14 +198,14 @@ if {$matches < 1} {
 set matches     0
 spawn $scontrol show node $node_name
 expect {
-	-re "NodeName=($alpha_numeric_under)" {
+	-re "NodeName=($re_word_str)" {
 		if {[string compare $expect_out(1,string) $node_name] == 0} {
 			incr matches
 		}
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -221,7 +213,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol show node command with name failed\n"
+	log_error "scontrol show node command with name failed"
 	set exit_code 1
 }
 
@@ -240,7 +232,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -248,7 +240,6 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

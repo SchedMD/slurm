@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of sbatch --bbf option
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2016 SchedMD LLC
 # Written by Morris Jette <jette(at)schedmd.com>
@@ -30,14 +26,11 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.45"
 set file_bbf    "test$test_id.bbf"
 set file_script "test$test_id.bash"
 set file_out    "test$test_id.output"
 
 set exit_code   0
-
-print_header $test_id
 
 #
 # Build job script
@@ -69,7 +62,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -78,15 +71,14 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	fail "Failed to submit job"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	set exit_code 1
 }
 
@@ -94,7 +86,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Check for desired output
 #
 if {[wait_for_file $file_out] != 0} {
-        send_user "\nFAILURE: file $file_out is missing\n"
+        log_error "File $file_out is missing"
         set exit_code 1
 } else {
 	set match 0
@@ -105,7 +97,7 @@ if {[wait_for_file $file_out] != 0} {
 			exp_continue
 		}
 		-re "test_script" {
-			send_user "\nFAILURE: bbf file not inserted at start of script\n"
+			log_error "bbf file not inserted at start of script"
 			set exit_code 1
 			exp_continue
 		}
@@ -114,13 +106,12 @@ if {[wait_for_file $file_out] != 0} {
 		}
 	}
 	if {$match != 1} {
-		send_user "\nFAILURE: bbf file not inserted at start of script\n"
-		set exit_code 1
+		fail "bbf file not inserted at start of script"
 	}
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_bbf $file_script $file_out
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

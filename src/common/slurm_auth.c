@@ -71,6 +71,9 @@ typedef struct {
 	int		(*pack)		(void *cred, Buf buf,
 					 uint16_t protocol_version);
 	void *		(*unpack)	(Buf buf, uint16_t protocol_version);
+	int		(*thread_config) (const char *token, const char *username);
+	void		(*thread_clear) (void);
+	char *		(*token_generate) (const char *username, int lifespan);
 } slurm_auth_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -87,6 +90,9 @@ static const char *syms[] = {
 	"slurm_auth_get_host",
 	"slurm_auth_pack",
 	"slurm_auth_unpack",
+	"slurm_auth_thread_config",
+	"slurm_auth_thread_clear",
+	"slurm_auth_token_generate",
 };
 
 /*
@@ -102,8 +108,9 @@ extern int slurm_auth_init(char *auth_type)
 {
 	int retval = SLURM_SUCCESS;
 	char *auth_alt_types = NULL, *list = NULL;
-	char *auth_plugin_type = NULL, *type, *last = NULL;
+	char *type, *last = NULL;
 	char *plugin_type = "auth";
+	static bool daemon_run = false, daemon_set = false;
 
 	if (init_run && (g_context_num > 0))
 		return retval;
@@ -113,15 +120,21 @@ extern int slurm_auth_init(char *auth_type)
 	if (g_context_num > 0)
 		goto done;
 
-	if (auth_type)
-		slurm_set_auth_type(auth_type);
+	if (getenv("SLURM_JWT")) {
+		xfree(slurm_conf.authtype);
+		slurm_conf.authtype = xstrdup("auth/jwt");
+	} else if (auth_type) {
+		xfree(slurm_conf.authtype);
+		slurm_conf.authtype = xstrdup(auth_type);
+	}
 
-	type = auth_plugin_type = slurm_get_auth_type();
-	if (run_in_daemon("slurmctld,slurmdbd"))
-		list = auth_alt_types = slurm_get_auth_alt_types();
-	g_context_num = 0;
-	if (!auth_plugin_type || auth_plugin_type[0] == '\0')
+	type = slurm_conf.authtype;
+	if (!type || type[0] == '\0')
 		goto done;
+
+	if (run_in_daemon(&daemon_run, &daemon_set, "slurmctld,slurmdbd"))
+		list = auth_alt_types = xstrdup(slurm_conf.authalttypes);
+	g_context_num = 0;
 
 	/*
 	 * This loop construct ensures that the AuthType is in position zero
@@ -159,7 +172,6 @@ extern int slurm_auth_init(char *auth_type)
 	init_run = true;
 
 done:
-	xfree(auth_plugin_type);
 	xfree(auth_alt_types);
 	slurm_mutex_unlock(&context_lock);
 	return retval;
@@ -293,18 +305,8 @@ int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)
 	if (!wrap || slurm_auth_init(NULL) < 0)
 		return SLURM_ERROR;
 
-	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(*ops[wrap->index].plugin_id, buf);
-		return (*(ops[wrap->index].pack))(cred, buf, protocol_version);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		packstr(ops[wrap->index].plugin_type, buf);
-		/*
-		 * This next field was packed with plugin_version within each
-		 * individual auth plugin, but upon unpack was never checked
-		 * against anything. Rather than expose the protocol_version
-		 * symbol, just pack a zero here instead.
-		 */
-		pack32(0, buf);
 		return (*(ops[wrap->index].pack))(cred, buf, protocol_version);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -321,7 +323,7 @@ void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 	if (!buf || slurm_auth_init(NULL) < 0)
 		return NULL;
 
-	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&plugin_id, buf);
 		for (int i = 0; i < g_context_num; i++) {
 			if (plugin_id == *(ops[i].plugin_id)) {
@@ -335,29 +337,43 @@ void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 		error("%s: remote plugin_id %u not found",
 		      __func__, plugin_id);
 		return NULL;
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		char *plugin_type;
-		uint32_t uint32_tmp, version;
-		safe_unpackmem_ptr(&plugin_type, &uint32_tmp, buf);
-		safe_unpack32(&version, buf);
-		for (int i = 0; i < g_context_num; i++) {
-			if (!xstrcmp(plugin_type, ops[i].plugin_type)) {
-				cred = (*(ops[i].unpack))(buf,
-							  protocol_version);
-				if (cred)
-					cred->index = i;
-				return cred;
-			}
-		}
-		error("%s: remote plugin_type %s not found",
-		      __func__, plugin_type);
-		return NULL;
-	} else {
+	}  else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
 		return NULL;
 	}
 
 unpack_error:
+	return NULL;
+}
+
+int g_slurm_auth_thread_config(const char *token, const char *username)
+{
+	if (slurm_auth_init(NULL) < 0)
+		return SLURM_ERROR;
+
+	return (*(ops[0].thread_config))(token, username);
+}
+
+void g_slurm_auth_thread_clear(void)
+{
+	if (slurm_auth_init(NULL) < 0)
+		return;
+
+	(*(ops[0].thread_clear))();
+}
+
+char *g_slurm_auth_token_generate(int plugin_id, const char *username,
+				  int lifespan)
+{
+	if (slurm_auth_init(NULL) < 0)
+		return NULL;
+
+	for (int i = 0; i < g_context_num; i++) {
+		if (plugin_id == *(ops[i].plugin_id)) {
+			return (*(ops[i].token_generate))(username, lifespan);
+		}
+	}
+
 	return NULL;
 }

@@ -142,160 +142,12 @@ void _init_params()
 }
 
 /* returns number of objects added to list */
-static int _addto_job_list(List job_list, char *names)
+static void _addto_job_list(char *names)
 {
-	int i = 0, start = 0;
-	char *name = NULL, *dot, *plus, *under;
-	slurmdb_selected_step_t *selected_step = NULL;
-	slurmdb_selected_step_t *curr_step = NULL;
+	if (!params.opt_job_list)
+		params.opt_job_list = list_create(slurm_destroy_selected_step);
 
-	ListIterator itr = NULL;
-	char quote_c = '\0';
-	int quote = 0;
-	int count = 0;
-
-	if (!job_list) {
-		error("No list was given to fill in");
-		return 0;
-	}
-
-	itr = list_iterator_create(job_list);
-	if (names) {
-		if (names[i] == '\"' || names[i] == '\'') {
-			quote_c = names[i];
-			quote = 1;
-			i++;
-		}
-		start = i;
-		while (names[i]) {
-			//info("got %d - %d = %d", i, start, i-start);
-			if (quote && names[i] == quote_c)
-				break;
-			else if (names[i] == '\"' || names[i] == '\'')
-				names[i] = '`';
-			else if (names[i] == ',') {
-				if ((i-start) > 0) {
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
-
-					selected_step = xmalloc(
-						sizeof(slurmdb_selected_step_t));
-					dot = strstr(name, ".");
-					if (dot == NULL) {
-						debug2("No jobstep requested");
-						selected_step->stepid = NO_VAL;
-					} else {
-						*dot++ = 0;
-						/* can't use NO_VAL
-						 * since that means all */
-						if (!xstrcasecmp(dot, "batch"))
-							selected_step->stepid =
-								SSTAT_BATCH_STEP;
-						else if (!xstrcasecmp(dot,
-								     "extern"))
-							selected_step->stepid =
-								SSTAT_EXTERN_STEP;
-						else
-							selected_step->stepid =
-								atoi(dot);
-					}
-
-					selected_step->array_task_id = NO_VAL;
-					selected_step->pack_job_offset = NO_VAL;
-					if ((under = strstr(name, "_"))) {
-						*under++ = 0;
-						selected_step->array_task_id =
-							atoi(under);
-					} else if ((plus = strstr(name, "+"))) {
-						*plus++ = 0;
-						selected_step->pack_job_offset =
-							atoi(plus);
-					} else {
-						debug2("No array/pack job requested");
-					}
-
-					selected_step->jobid =
-						slurm_xlate_job_id(name);
-					xfree(name);
-
-					while ((curr_step = list_next(itr))) {
-						if ((curr_step->jobid
-						     == selected_step->jobid)
-						    && (curr_step->stepid
-						        == selected_step->
-						       stepid))
-							break;
-					}
-
-					if (!curr_step) {
-						list_append(job_list,
-							    selected_step);
-						count++;
-					} else
-						slurmdb_destroy_selected_step(
-							selected_step);
-					list_iterator_reset(itr);
-				}
-				i++;
-				start = i;
-			}
-			i++;
-		}
-		if ((i-start) > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-
-			selected_step =
-				xmalloc(sizeof(slurmdb_selected_step_t));
-			dot = strstr(name, ".");
-			if (dot == NULL) {
-				debug2("No jobstep requested");
-				selected_step->stepid = NO_VAL;
-			} else {
-				*dot++ = 0;
-				/* can't use NO_VAL since that means all */
-				if (!xstrcasecmp(dot, "batch"))
-					selected_step->stepid =
-						SSTAT_BATCH_STEP;
-				else if (!xstrcasecmp(dot, "extern"))
-					selected_step->stepid =
-						SSTAT_EXTERN_STEP;
-				else
-					selected_step->stepid = atoi(dot);
-			}
-
-			selected_step->array_task_id = NO_VAL;
-			selected_step->pack_job_offset = NO_VAL;
-			if ((under = strstr(name, "_"))) {
-				*under++ = 0;
-				selected_step->array_task_id = atoi(under);
-			} else if ((plus = strstr(name, "+"))) {
-				*plus++ = 0;
-				selected_step->pack_job_offset = atoi(plus);
-			} else {
-				debug2("No array/pack job requested");
-			}
-
-			selected_step->jobid = slurm_xlate_job_id(name);
-			xfree(name);
-
-			while ((curr_step = list_next(itr))) {
-				if ((curr_step->jobid == selected_step->jobid)
-				    && (curr_step->stepid
-				       == selected_step->stepid))
-					break;
-			}
-
-			if (!curr_step) {
-				list_append(job_list, selected_step);
-				count++;
-			} else
-				slurmdb_destroy_selected_step(
-					selected_step);
-		}
-	}
-	list_iterator_destroy(itr);
-	return count;
+	(void)slurm_addto_step_list(params.opt_job_list, names);
 }
 
 int decode_state_char(char *state)
@@ -331,7 +183,7 @@ void parse_command_line(int argc, char **argv)
 	extern int optind;
 	int c, i, optionIndex = 0;
 	char *end = NULL, *start = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
+	slurm_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
@@ -379,11 +231,8 @@ void parse_command_line(int argc, char **argv)
 				   STAT_FIELDS_PID);
 			break;
 		case 'j':
-			if (!params.opt_job_list)
-				params.opt_job_list = list_create(
-					slurmdb_destroy_selected_step);
-			_addto_job_list(params.opt_job_list, optarg);
-			break;
+			_addto_job_list(optarg);
+ 			break;
 		case 'n':
 			print_fields_have_header = 0;
 			break;
@@ -428,10 +277,7 @@ void parse_command_line(int argc, char **argv)
 
 	if (optind < argc) {
 		optarg = argv[optind];
-		if (!params.opt_job_list)
-			params.opt_job_list = list_create(
-				slurmdb_destroy_selected_step);
-		_addto_job_list(params.opt_job_list, optarg);
+		_addto_job_list(optarg);
 	}
 
 	if (!params.opt_field_list)
@@ -449,13 +295,11 @@ void parse_command_line(int argc, char **argv)
 		debug("Jobs requested:\n");
 		itr = list_iterator_create(params.opt_job_list);
 		while ((selected_step = list_next(itr))) {
-			if (selected_step->stepid != NO_VAL)
-				debug("\t: %d.%d\n",
-					selected_step->jobid,
-					selected_step->stepid);
+			if (selected_step->step_id.step_id != NO_VAL)
+				debug("\t: %ps\n", &selected_step->step_id);
 			else
-				debug("\t: %d\n",
-					selected_step->jobid);
+				debug("\t: All steps for job %u\n",
+				      selected_step->step_id.job_id);
 		}
 		list_iterator_destroy(itr);
 	}

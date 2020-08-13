@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of --deadline and --begin option and --time_min too long
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 CEA/DAM/DIF
 # Written by Aline Roy <aline.roy@cea.fr>
@@ -30,12 +26,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.60"
 set file_in     "test$test_id.input"
 set exit_code   0
 set job_id      0
-
-print_header $test_id
 
 #
 # Build input script file
@@ -63,7 +56,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -71,16 +64,14 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted with a deadline too short\n"
-	exit 1
+	fail "Batch not submitted with a deadline too short"
 }
 
 #
 # test status deadline in scontrol and sacct
 #
 if {[wait_for_job $job_id DONE] != 0} {
-	send_user "\nFAILURE: job failed to run to completion\n"
-	exit 1
+	fail "Job failed to run to completion"
 }
 
 spawn $scontrol show job $job_id
@@ -89,12 +80,12 @@ expect {
 		exp_continue
 	}
 	-re "JobState=" {
-		send_user "\nFAILURE: invalid job state\n"
+		log_error "Invalid job state"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -120,7 +111,7 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 			break
 		}
 		timeout {
-			send_user "\nFAILURE: sacct not responding\n"
+			log_error "sacct not responding"
 			set exit_code 1
 		}
 		eof {
@@ -130,13 +121,14 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	sleep 10
 }
 if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
+	skip "Can not test without accounting enabled"
 }
 
 if {$exit_code == 1} {
-	send_user "\nFAILURE: batch submitted with a deadline too short\n"
+	fail "Batch submitted with a deadline too short"
 } else {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

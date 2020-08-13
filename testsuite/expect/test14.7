@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test sbcast security issues.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "14.7"
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
@@ -40,11 +35,8 @@ set file_err    "test$test_id.error"
 set exit_code            0
 set job_id               0
 
-print_header $test_id
-
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit 0
+	skip "This test is incompatible with front-end systems"
 }
 
 stop_root_user
@@ -71,7 +63,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -81,15 +73,14 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete and check output file
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "waiting for job to complete"
 	set exit_code 1
 }
 
@@ -98,22 +89,22 @@ if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
 		-re "error: REQUEST_FILE_BCAST" {
-			send_user "These errors are expected, no worries\n"
+			log_debug "These errors are expected, no worries"
 			incr matches
 			exp_continue
 		}
 		-re "ls.* No such file" {
-			send_user "These errors are expected, no worries\n"
+			log_debug "These errors are expected, no worries"
 			incr matches
 			exp_continue
 		}
 		-re "ls.* does not exist" {
-			send_user "These errors are expected, no worries\n"
+			log_debug "These errors are expected, no worries"
 			incr matches
 			exp_continue
 		}
 		-re "ls.* not found" {
-			send_user "These errors are expected, no worries\n"
+			log_debug "These errors are expected, no worries"
 			incr matches
 			exp_continue
 		}
@@ -123,12 +114,11 @@ if {[wait_for_file $file_err] == 0} {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: sbcast wrote into root file system without root access ($matches)\n"
-	set exit_code 1
+	fail "sbcast wrote into root file system without root access ($matches)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

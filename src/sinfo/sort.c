@@ -71,6 +71,8 @@ static int _sort_by_max_time(void *void1, void *void2);
 static int _sort_by_memory(void *void1, void *void2);
 static int _sort_by_node_list(void *void1, void *void2);
 static int _sort_by_node_addr(void *void1, void *void2);
+static int _sort_by_nodelist_nodeaddr_hostnames(void *void1, void *void2,
+						int type);
 static int _sort_by_nodes_ai(void *void1, void *void2);
 static int _sort_by_nodes(void *void1, void *void2);
 static int _sort_by_oversubscribe(void *void1, void *void2);
@@ -438,126 +440,6 @@ static int _sort_by_groups(void *void1, void *void2)
 	return diff;
 }
 
-static int _sort_by_node_addr(void *void1, void *void2)
-{
-	int diff = 0;
-	sinfo_data_t *sinfo1;
-	sinfo_data_t *sinfo2;
-	char *val1, *val2;
-	char *ptr1, *ptr2;
-#if	PURE_ALPHA_SORT == 0
-	int inx;
-#endif
-
-	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
-
-	val1 = hostlist_shift(sinfo1->node_addr);
-	if (val1) {
-		hostlist_push_host(sinfo1->node_addr, val1);
-		hostlist_sort(sinfo1->node_addr);
-		ptr1 = val1;
-	} else
-		ptr1 = "";
-
-	val2 = hostlist_shift(sinfo2->node_addr);
-	if (val2) {
-		hostlist_push_host(sinfo2->node_addr, val2);
-		hostlist_sort(sinfo2->node_addr);
-		ptr2 = val2;
-	} else
-		ptr2 = "";
-
-#if	PURE_ALPHA_SORT
-	diff = xstrcmp(ptr1, ptr2);
-#else
-	for (inx = 0; ; inx++) {
-		if (ptr1[inx] == ptr2[inx]) {
-			if (ptr1[inx] == '\0')
-				break;
-			continue;
-		}
-		if ((isdigit((int)ptr1[inx])) &&
-		    (isdigit((int)ptr2[inx]))) {
-			int num1, num2;
-			num1 = atoi(ptr1 + inx);
-			num2 = atoi(ptr2 + inx);
-			diff = num1 - num2;
-		} else
-			diff = xstrcmp(ptr1, ptr2);
-		break;
-	}
-#endif
-	if (val1)
-		free(val1);
-	if (val2)
-		free(val2);
-
-	if (reverse_order)
-		diff = -diff;
-
-	return diff;
-}
-
-static int _sort_by_hostnames(void *void1, void *void2)
-{
-	int diff = 0;
-	sinfo_data_t *sinfo1;
-	sinfo_data_t *sinfo2;
-	char *val1, *val2;
-	char *ptr1, *ptr2;
-#if	PURE_ALPHA_SORT == 0
-	int inx;
-#endif
-
-	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
-
-	val1 = hostlist_shift(sinfo1->hostnames);
-	if (val1) {
-		hostlist_push_host(sinfo1->hostnames, val1);
-		hostlist_sort(sinfo1->hostnames);
-		ptr1 = val1;
-	} else
-		ptr1 = "";
-
-	val2 = hostlist_shift(sinfo2->hostnames);
-	if (val2) {
-		hostlist_push_host(sinfo2->hostnames, val2);
-		hostlist_sort(sinfo2->hostnames);
-		ptr2 = val2;
-	} else
-		ptr2 = "";
-
-#if	PURE_ALPHA_SORT
-	diff = xstrcmp(ptr1, ptr2);
-#else
-	for (inx = 0; ; inx++) {
-		if (ptr1[inx] == ptr2[inx]) {
-			if (ptr1[inx] == '\0')
-				break;
-			continue;
-		}
-		if ((isdigit((int)ptr1[inx])) &&
-		    (isdigit((int)ptr2[inx]))) {
-			int num1, num2;
-			num1 = atoi(ptr1 + inx);
-			num2 = atoi(ptr2 + inx);
-			diff = num1 - num2;
-		} else
-			diff = xstrcmp(ptr1, ptr2);
-		break;
-	}
-#endif
-	if (val1)
-		free(val1);
-	if (val2)
-		free(val2);
-
-	if (reverse_order)
-		diff = -diff;
-
-	return diff;
-}
-
 static int _sort_by_job_size(void *void1, void *void2)
 {
 	int diff;
@@ -619,65 +501,93 @@ static int _sort_by_memory(void *void1, void *void2)
 	return diff;
 }
 
-static int _sort_by_node_list(void *void1, void *void2)
+/*
+ * Sorts an sinfo_data_t list by nodelist, hostnames, or node_addr.
+ *
+ * type:	0 for nodelist, 1 for node_addr, and 2 for hostname.
+ */
+static int _sort_by_nodelist_nodeaddr_hostnames(void *void1, void *void2,
+						int type)
 {
 	int diff = 0;
 	sinfo_data_t *sinfo1;
 	sinfo_data_t *sinfo2;
+	hostlist_t hl1 = NULL;
+	hostlist_t hl2 = NULL;
+#if	PURE_ALPHA_SORT
 	char *val1, *val2;
 	char *ptr1, *ptr2;
-#if	PURE_ALPHA_SORT == 0
-	int inx;
 #endif
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	val1 = hostlist_shift(sinfo1->nodes);
+	switch (type) {
+	case 0:
+		hl1 = sinfo1->nodes;
+		hl2 = sinfo2->nodes;
+		break;
+	case 1:
+		hl1 = sinfo1->node_addr;
+		hl2 = sinfo2->node_addr;
+		break;
+	case 2:
+		hl1 = sinfo1->hostnames;
+		hl2 = sinfo2->hostnames;
+		break;
+	default:
+		fatal("%s: invalid type `%d` specified", __func__, type);
+	}
+
+#if	PURE_ALPHA_SORT
+	val1 = hostlist_shift(hl1);
 	if (val1) {
-		hostlist_push_host(sinfo1->nodes, val1);
-		hostlist_sort(sinfo1->nodes);
+		hostlist_push_host(hl1, val1);
+		hostlist_sort(hl1);
 		ptr1 = val1;
 	} else
 		ptr1 = "";
 
-	val2 = hostlist_shift(sinfo2->nodes);
+	val2 = hostlist_shift(hl2);
 	if (val2) {
-		hostlist_push_host(sinfo2->nodes, val2);
-		hostlist_sort(sinfo2->nodes);
+		hostlist_push_host(hl2, val2);
+		hostlist_sort(hl2);
 		ptr2 = val2;
 	} else
 		ptr2 = "";
-
-#if	PURE_ALPHA_SORT
 	diff = xstrcmp(ptr1, ptr2);
-#else
-	for (inx = 0; ; inx++) {
-		if (ptr1[inx] == ptr2[inx]) {
-			if (ptr1[inx] == '\0')
-				break;
-			continue;
-		}
-		if ((isdigit((int)ptr1[inx])) &&
-		    (isdigit((int)ptr2[inx]))) {
-			int num1, num2;
-			num1 = atoi(ptr1 + inx);
-			num2 = atoi(ptr2 + inx);
-			diff = num1 - num2;
-		} else
-			diff = xstrcmp(ptr1, ptr2);
-		break;
-	}
-#endif
 	if (val1)
 		free(val1);
 	if (val2)
 		free(val2);
+#else
+	/*
+	 * The hostlist in sinfo_data_t should each only have one hostrange, and
+	 * each hostrange should only have one node name/host name
+	 */
+	diff = hostlist_cmp_first(hl1, hl2);
+#endif
 
 	if (reverse_order)
 		diff = -diff;
 
 	return diff;
 }
+
+static int _sort_by_node_list(void *void1, void *void2)
+{
+	return _sort_by_nodelist_nodeaddr_hostnames(void1, void2, 0);
+}
+
+static int _sort_by_node_addr(void *void1, void *void2)
+{
+	return _sort_by_nodelist_nodeaddr_hostnames(void1, void2, 1);
+}
+
+static int _sort_by_hostnames(void *void1, void *void2)
+{
+	return _sort_by_nodelist_nodeaddr_hostnames(void1, void2, 2);
+}
+
 
 static int _sort_by_nodes_ai(void *void1, void *void2)
 {

@@ -308,8 +308,8 @@ sbatch --depend=afternotok:123 my.job
 
 <p>The following Slurm commands do not currently recognize job arrays and their
 use requires the use of Slurm job IDs, which are unique for each array element:
-sacct, sbcast, smap, sreport, sshare, sstat, and strigger.
-The sattach, sprio and sstat commands have been modified to permit
+sbcast, sprio, sreport, sshare and sstat.
+The sacct, sattach and strigger commands have been modified to permit
 specification of either job IDs or job array elements.
 The sview command has been modified to permit display of a job's ArrayJobId
 and ArrayTaskId fields. Both fields are displayed with a value of "N/A" if
@@ -337,6 +337,6 @@ manage large job counts.
 Each task of the job array will have a unique Slurm "job_id", but
 all will have the same "array_job_id" value.</p>
 
-<p style="text-align:center;">Last modified 7 November 2017</p>
+<p style="text-align:center;">Last modified 23 September 2019</p>
 
 <!--#include virtual="footer.txt"-->

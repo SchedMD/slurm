@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Verify that user environment variables are propagated to the job.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,14 +28,11 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.28"
 set file_in          "test$test_id.input"
 set test_env_name    "TEST_ENV_$test_id"
 set test_env_val     123
 set exit_code        0
 set matches          0
-
-print_header $test_id
 
 make_bash_script $file_in "env | grep TEST; exit 0"
 
@@ -56,7 +49,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -65,8 +58,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Environment variables not propagated ($matches != 1)\n"
-	exit 1
+	fail "Environment variables not propagated ($matches != 1)"
 }
 
 #
@@ -84,7 +76,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -93,8 +85,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Environment variables not propagated ($matches != 1)\n"
-	exit 1
+	fail "Environment variables not propagated ($matches != 1)"
 }
 
 #
@@ -110,7 +101,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -119,8 +110,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Environment variables not propagated ($matches != 1)\n"
-	exit 1
+	fail "Environment variables not propagated ($matches != 1)"
 }
 
 #
@@ -136,7 +126,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -145,12 +135,11 @@ expect {
 	}
 }
 if {$matches != 0} {
-	send_user "\nFAILURE: Environment variables were propagated ($matches != 0)\n"
-	exit 1
+	fail "Environment variables were propagated ($matches != 0)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

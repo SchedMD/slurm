@@ -1,0 +1,19 @@
+The OpenAPI specification for Slurm's RESTful interface, as described in the
+openapi.json file in this directory, is made available under the following
+license terms:
+
+Under Slurm's license described in LICENSE.OpenSSL in the top level of the
+Slurm source, and generally referred to as "GPLv2+ with OpenSSL linking
+exception".
+
+Or, under the terms of The Apache License, Version 2.0, and abbreviated as
+"Apache 2.0" within the OpenAPI specification itself. A copy of this license is
+available at https://www.apache.org/licenses/LICENSE-2.0.html.
+
+As an additional requirement for changes to this specification: Contributors
+wishing to submit changes to these files must sign SchedMD's Contributor
+License Agreement ("CLA"). (https://slurm.schedmd.com/contributor.html).
+By signing the CLA, contributors are specifically licensing any changes,
+modifications, revisions, or edits to the OpenAPI specification for Slurm’s
+RESTful interface back to SchedMD to the maximum extent permitted by the
+relevant law and the CLA.

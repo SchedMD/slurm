@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr create qos/account job and then delete account/qos
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC.
 # Written by Nathan Rini <nate@schedmd.com>
@@ -32,14 +28,13 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "21.39"
-
 set part_name   "test$test_id\_part"
 set ta1		"test$test_id-account.1"
 set ta2		"test$test_id-account.2"
 set tu1     [get_my_user_name]
 set tq1     "test$test_id-qos.1"
 set tq2     "test$test_id-qos.2"
+set exit_code	0
 
 # account options
 array set acct_1 {}
@@ -66,12 +61,28 @@ set qos_1(Description)   "test qos 2"
 
 set access_err  0
 
-print_header $test_id
+#
+# Verify preconditions
+#
+if { [test_account_storage] == 0 } {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if { [test_assoc_enforced] == 0 } {
+        skip "This test can't be run without AccountingStorageEnforce=associations"
+}
+
+if { [test_enforce_qos_set] == 0 } {
+        skip "This test can't be run without AccountingStorageEnforce=qos"
+}
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
 
 proc check_rc { exit_code } {
 	if {$exit_code != 0} {
-		log_error "exiting with exit code $exit_code"
-		exit $exit_code
+		fail "Subcommand failed with exit code $exit_code"
 	}
 }
 
@@ -79,7 +90,7 @@ proc check_rc { exit_code } {
 proc create_accounts {} {
 	global ta1 ta2 tq1 tq2 tu1 user_req_1 user_req_2
 	global qos_1 qos_2
-	log_info "create account and QOS"
+	log_debug "Create account and QOS"
 
 
 	# Create test assoc and accounts
@@ -97,29 +108,20 @@ proc cleanup_accounts {} {
 
 	wait_for_account_done $ta1,$ta2
 
-	log_info "remove QOS: $tq1,$tq2"
+	log_debug "Remove QOS: $tq1,$tq2"
 	remove_qos $tq1,$tq2
 
-	log_info "remove account: $ta1,$ta2"
+	log_debug "Remove account: $ta1,$ta2"
 	remove_acct "" $ta1,$ta2
 }
 
-proc endit { exit_code } {
-	global config_dir cwd bin_cp bin_rm test_id part_name
+proc cleanup { } {
+	global config_file part_name
 
-	wait_for_part_done $part_name
+	cleanup_accounts
 
-	exec $bin_cp -v $cwd/slurm.conf.orig $config_dir/slurm.conf
-	exec $bin_rm -f $cwd/slurm.conf.orig
+	restore_conf $config_file
 	reconfigure
-
-	if {$exit_code == 0} {
-		cleanup_accounts
-		print_success $test_id
-	} else {
-		print_failure $test_id
-	}
-	exit $exit_code
 }
 
 proc test_salloc { qos account num_nodes } {
@@ -134,25 +136,22 @@ proc test_salloc { qos account num_nodes } {
 			set job_id $expect_out(1,string)
 		}
 		-re "error" {
-			log_warn "salloc job was not submitted"
-			endit 1
+			fail "salloc job was not submitted"
 		}
 		timeout {
-			log_error "salloc not responding"
-			endit 1
+			fail "salloc not responding"
 		}
 	}
 
 	if { $job_id == 0 } {
-		log_error "submit failure"
-		endit 1
+		fail "Submit failure"
 	}
 
 	return $job_id
 }
 
 proc check_job_reason { job_id state why } {
-	global scontrol alpha_numeric alpha
+	global scontrol re_word_str re_word_str
 
 	set found_why ""
 	set state_found ""
@@ -160,17 +159,16 @@ proc check_job_reason { job_id state why } {
 	log_user 0
 	spawn $scontrol show job $job_id
 	expect {
-		-re "State=($alpha)" {
+		-re "State=($re_word_str)" {
 			set state_found $expect_out(1,string)
 			exp_continue
 		}
-		-re "Reason=($alpha_numeric)" {
+		-re "Reason=($re_word_str)" {
 			set found_why $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			endit 1
+			fail "scontrol not responding"
 		}
 		eof {
 			lassign [wait] pid spawnid os_error_flag rc
@@ -179,8 +177,7 @@ proc check_job_reason { job_id state why } {
 
 	log_user 1
 	if { $state_found != $state } {
-		log_error "Job $job_id state found was $state_found, expected $state"
-		endit 1
+		fail "Job $job_id state found was $state_found, expected $state"
 	}
 
 	set found_reason 0
@@ -192,11 +189,10 @@ proc check_job_reason { job_id state why } {
 	}
 
 	if { !$found_reason } {
-		log_error "Job $job_id scontrol returned Reason=$found_why instead of Reason='$why'"
-		endit 1
+		fail "Job $job_id scontrol returned Reason=$found_why instead of Reason='$why'"
 	}
 
-	log_info "Found jobid $job_id with correct state '$state' and reason '$found_why'"
+	log_debug "Found jobid $job_id with correct state '$state' and reason '$found_why'"
 	return 0
 }
 
@@ -217,18 +213,19 @@ proc run_test { run_qos } {
 
 	set job_id_1 [test_salloc $qos $acct 1]
 	set job_id_2 [test_salloc $qos $acct 1]
+	check_rc [wait_for_job $job_id_1 "RUNNING"]
 
 	if { $run_qos } {
 		# remove test qos
 		if { [remove_qos $qos] } {
-			log_info "We hit the race trying to get the job running before it hits the database before we removed the qos.  This can be expected, trying again."
+			log_debug "We hit the race trying to get the job running before it hits the database before we removed the qos.  This can be expected, trying again."
 			wait_for_part_done $part_name
 			return 1
 		}
 	} else {
 		#remove test acct
 		if { [remove_acct "" $acct] } {
-			log_info "We hit the race trying to get the job running before it hits the database before we removed the account.  This can be expected, trying again."
+			log_debug "We hit the race trying to get the job running before it hits the database before we removed the account.  This can be expected, trying again."
 			wait_for_part_done $part_name
 			return 1
 		}
@@ -254,40 +251,28 @@ proc run_test { run_qos } {
 	return 0
 }
 
-#
-# Check accounting config and bail if not found.
-#
-if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
-}
-
-if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin."
-	exit 0
-}
-
 cleanup_accounts
 create_accounts
 
 # Get the location of the slurm.conf file
 set config_dir [get_conf_path]
+fail_on_error "Unable to determine configuration path"
+set config_file $config_dir/slurm.conf
 
 #
 # Copy slurm.conf file
 #
-set cwd [$bin_pwd]
-copy_conf $config_dir $cwd
+save_conf $config_file
 
 # Comment out PrologFlags in the slurm.conf
-exec $bin_sed -i {s/^\(PrologFlags=\)/#\1/gI} $config_dir/slurm.conf
+exec $bin_sed -i {s/^\(PrologFlags=\)/#\1/gI} $config_file
 
 reconfigure
 
 delete_part $part_name
 
 if { [create_part $part_name 1] } {
-	endit 1
+	fail "Unable to create partition $part_name"
 }
 
 for {set i 0} {$i < 2} {incr i} {
@@ -301,8 +286,125 @@ for {set i 0} {$i < 2} {incr i} {
 		incr cnt
 	}
 	if { $rc } {
-		break
+		set credential [expr $i == 0 ? "account" : "qos"]
+		fail "Too many ($cnt) failures trying to remove $credential from job"
 	}
 }
 
-endit $rc
+log_info "Testing that PD jobs that lost their QOS will not lunch until restored"
+
+# Return to clean slate
+cleanup_accounts
+
+# Add test qos
+run_command -fail "$sacctmgr -vi add qos $tq1"
+
+# Add test account
+run_command -fail "$sacctmgr -vi add account name=$ta1 set qos=normal,$tq1"
+
+# Add test user to account
+run_command -fail "$sacctmgr -vi add user name=$tu1 account=$ta1"
+
+# Check what we just added to make sure it is there
+if {![regexp -line "^\\S+\\|$ta1\\|$tu1\\|normal,$tq1" [run_command_output "$sacctmgr -n -P show assoc format=cluster,account,user,qos"]]} {
+	fail "Association with the right account, user and qos was not found"
+}
+
+# Submit a delayed job that wants to run in the test qos
+regexp {Submitted batch job (\d+)} [run_command_output -fail "$sbatch --begin=now+2 --qos=$tq1 -A $ta1 --wrap \"srun sleep 10\""] {} job_id_1
+
+# The first job should get queued
+if {[wait_for_job $job_id_1 "PENDING"] != 0} {
+	fail "Job $job_id_1 did not enter the pending state"
+}
+
+# Remove the test qos out from under the job
+run_command "$sacctmgr -vi modify account name=$ta1 user=$tu1 set qos=normal"
+
+# Submit a second delayed job requesting the test qos. It should be rejected
+if {![run_command_status -none "$sbatch --begin=now+2 --qos=$tq1 -A $ta1 --wrap \"srun sleep 10\""]} {
+	fail "Job submitted with unassociated qos should have failed"
+} else {
+	log_debug "The preceding job failure was expected"
+}
+
+# Wait for the first job to pend with Reason=InvalidQOS
+set condition_matched false
+wait_for {$condition_matched} {
+	set scontrol_out [run_command_output -fail "$scontrol -o show job $job_id_1"]
+	regexp {JobState=([^ ]+) Reason=([^ ]+)} $scontrol_out {} job_state reason
+	if {$job_state eq "PENDING" && $reason eq "InvalidQOS"} {
+		set condition_matched true
+	}
+}
+assert_or_fail {$condition_matched} "Job $job_id_1 did not pend on InvalidQOS as expected"
+
+# Add back the test qos
+run_command -fail "$sacctmgr -vi modify account name=$ta1 user=$tu1 set qos=normal,$tq1"
+
+# Wait for the first job to begin running
+if {[wait_for_job $job_id_1 "RUNNING"] != 0} {
+	fail "Job $job_id_1 did not run after adding back the qos"
+}
+
+log_info "Testing that PD jobs that lost their Account will not resume until restored"
+
+# Return to clean slate
+cleanup_accounts
+
+# Add test qos
+run_command -fail "$sacctmgr -vi add qos $tq1"
+
+# Add test accounts
+run_command -fail "$sacctmgr -vi add account name=$ta1 set qos=normal,$tq1"
+run_command -fail "$sacctmgr -vi add account name=$ta2 set qos=normal,$tq1"
+
+# Add test user to accounts
+run_command -fail "$sacctmgr -vi add user name=$tu1 account=$ta1"
+run_command -fail "$sacctmgr -vi add user name=$tu1 account=$ta2"
+
+# Check what we just added to make sure it is there
+if {![regexp -line "^\\S+\\|$ta1\\|$tu1\\|normal,$tq1" [run_command_output "$sacctmgr -n -P show assoc format=cluster,account,user,qos"]]} {
+	fail "Test qos $tq1 has not been added to test account $ta1"
+}
+if {![regexp -line "^\\S+\\|$ta2\\|$tu1\\|normal,$tq1" [run_command_output "$sacctmgr -n -P show assoc format=cluster,account,user,qos"]]} {
+	fail "Test qos $tq1 has not been added to test account $ta2"
+}
+
+# Submit a delayed job that wants to run with the test qos and test account 2
+regexp {Submitted batch job (\d+)} [run_command_output -fail "$sbatch --begin=now+2 --qos=$tq1 -A $ta2 --wrap \"srun sleep 10\""] {} job_id_1
+
+# The first job should get queued
+if {[wait_for_job $job_id_1 "PENDING"] != 0} {
+	fail "Job $job_id_1 did not enter the pending state"
+}
+
+# Remove the test account out from under the job
+run_command -fail "$sacctmgr -vi delete account name=$ta2"
+
+# Submit a second delayed job requesting test account 2. It should be rejected
+if {![run_command_status -none "$sbatch --begin=now+2 --qos=$tq1 -A $ta2 --wrap \"srun sleep 10\""]} {
+	fail "Job submitted with unassociated account should have failed"
+} else {
+	log_debug "The preceding job failure was expected"
+}
+
+# Wait for the first job to pend with Reason=InvalidAccount
+set condition_matched false
+wait_for {$condition_matched} {
+	set scontrol_out [run_command_output -fail "$scontrol -o show job $job_id_1"]
+	regexp {JobState=([^ ]+) Reason=([^ ]+)} $scontrol_out {} job_state reason
+	if {$job_state eq "PENDING" && $reason eq "InvalidAccount"} {
+		set condition_matched true
+	}
+}
+assert_or_fail {$condition_matched} "Job $job_id_1 did not pend on InvalidAccount as expected"
+
+# Add back the test account
+run_command -fail "$sacctmgr -vi add account name=$ta2 set qos=normal,$tq1"
+run_command -fail "$sacctmgr -vi add user name=$tu1 account=$ta2"
+
+# Wait for the first job to begin running
+if {[wait_for_job $job_id_1 "RUNNING"] != 0} {
+	fail "Job $job_id_1 did not run after adding back the qos"
+}

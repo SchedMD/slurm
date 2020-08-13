@@ -25,8 +25,14 @@ int main(void)
 	gettimeofday(&tv1, NULL);
 
 	// Allocate Unified Memory – accessible from CPU or GPU
-	cudaMallocManaged(&x, N * sizeof(float));
-	cudaMallocManaged(&y, N * sizeof(float));
+	if (cudaMallocManaged(&x, N * sizeof(float)) != cudaSuccess) {
+	        std::cerr << "Couldn't allocate memory for x: " << errno << std::endl;
+		return 1;
+	}
+	if (cudaMallocManaged(&y, N * sizeof(float)) != cudaSuccess) {
+	        std::cerr << "Couldn't allocate memory for y: " << errno << std::endl;
+		return 1;
+	}
 
 	// initialize x and y arrays on the host
 	for (i = 0; i < N; i++) {

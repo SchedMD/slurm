@@ -104,7 +104,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ltversion.m4 \
 	$(top_srcdir)/auxdir/lt~obsolete.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
-	$(top_srcdir)/auxdir/x_ac__system_configuration.m4 \
+	$(top_srcdir)/auxdir/slurmrestd.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
 	$(top_srcdir)/auxdir/x_ac_c99.m4 \
 	$(top_srcdir)/auxdir/x_ac_cgroup.m4 \
@@ -116,14 +116,14 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
+	$(top_srcdir)/auxdir/x_ac_http_parser.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
-	$(top_srcdir)/auxdir/x_ac_iso.m4 \
 	$(top_srcdir)/auxdir/x_ac_json.m4 \
+	$(top_srcdir)/auxdir/x_ac_jwt.m4 \
 	$(top_srcdir)/auxdir/x_ac_lua.m4 \
 	$(top_srcdir)/auxdir/x_ac_lz4.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
-	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_netloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_nvml.m4 \
 	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
@@ -133,14 +133,16 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
+	$(top_srcdir)/auxdir/x_ac_rsmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_systemd.m4 \
 	$(top_srcdir)/auxdir/x_ac_ucx.m4 \
 	$(top_srcdir)/auxdir/x_ac_uid_gid_size.m4 \
-	$(top_srcdir)/auxdir/x_ac_x11.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/auxdir/x_ac_x11.m4 \
+	$(top_srcdir)/auxdir/x_ac_yaml.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
+DIST_COMMON = $(srcdir)/Makefile.am
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
@@ -175,15 +177,8 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 task_affinity_la_LIBADD =
-am__task_affinity_la_SOURCES_DIST = affinity.c affinity.h cpuset.c \
-	dist_tasks.c dist_tasks.h numa.c schedutils.c task_affinity.c
-@HAVE_SCHED_SETAFFINITY_TRUE@am_task_affinity_la_OBJECTS =  \
-@HAVE_SCHED_SETAFFINITY_TRUE@	affinity.lo cpuset.lo \
-@HAVE_SCHED_SETAFFINITY_TRUE@	dist_tasks.lo numa.lo \
-@HAVE_SCHED_SETAFFINITY_TRUE@	schedutils.lo task_affinity.lo
-am__EXTRA_task_affinity_la_SOURCES_DIST = affinity.c affinity.h \
-	cpuset.c dist_tasks.c dist_tasks.h numa.c schedutils.c \
-	task_affinity.c
+am_task_affinity_la_OBJECTS = affinity.lo dist_tasks.lo numa.lo \
+	schedutils.lo task_affinity.lo
 task_affinity_la_OBJECTS = $(am_task_affinity_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -193,8 +188,6 @@ task_affinity_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(task_affinity_la_LDFLAGS) $(LDFLAGS) \
 	-o $@
-@HAVE_SCHED_SETAFFINITY_TRUE@am_task_affinity_la_rpath = -rpath \
-@HAVE_SCHED_SETAFFINITY_TRUE@	$(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -210,7 +203,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/affinity.Plo ./$(DEPDIR)/cpuset.Plo \
+am__depfiles_remade = ./$(DEPDIR)/affinity.Plo \
 	./$(DEPDIR)/dist_tasks.Plo ./$(DEPDIR)/numa.Plo \
 	./$(DEPDIR)/schedutils.Plo ./$(DEPDIR)/task_affinity.Plo
 am__mv = mv -f
@@ -232,10 +225,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(task_affinity_la_SOURCES) \
-	$(EXTRA_task_affinity_la_SOURCES)
-DIST_SOURCES = $(am__task_affinity_la_SOURCES_DIST) \
-	$(am__EXTRA_task_affinity_la_SOURCES_DIST)
+SOURCES = $(task_affinity_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -260,8 +250,6 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/auxdir/depcomp
-DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -321,7 +309,6 @@ H5CC = @H5CC@
 H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HDF5_CC = @HDF5_CC@
 HDF5_CFLAGS = @HDF5_CFLAGS@
 HDF5_CPPFLAGS = @HDF5_CPPFLAGS@
@@ -332,6 +319,8 @@ HDF5_LDFLAGS = @HDF5_LDFLAGS@
 HDF5_LIBS = @HDF5_LIBS@
 HDF5_TYPE = @HDF5_TYPE@
 HDF5_VERSION = @HDF5_VERSION@
+HTTP_PARSER_CPPFLAGS = @HTTP_PARSER_CPPFLAGS@
+HTTP_PARSER_LDFLAGS = @HTTP_PARSER_LDFLAGS@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -342,6 +331,8 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 JSON_CPPFLAGS = @JSON_CPPFLAGS@
 JSON_LDFLAGS = @JSON_LDFLAGS@
+JWT_CPPFLAGS = @JWT_CPPFLAGS@
+JWT_LDFLAGS = @JWT_LDFLAGS@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBCURL = @LIBCURL@
@@ -368,7 +359,6 @@ MUNGE_LDFLAGS = @MUNGE_LDFLAGS@
 MUNGE_LIBS = @MUNGE_LIBS@
 MYSQL_CFLAGS = @MYSQL_CFLAGS@
 MYSQL_LIBS = @MYSQL_LIBS@
-NCURSES = @NCURSES@
 NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
 NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
 NETLOC_LIBS = @NETLOC_LIBS@
@@ -377,6 +367,7 @@ NMEDIT = @NMEDIT@
 NUMA_LIBS = @NUMA_LIBS@
 NVML_CPPFLAGS = @NVML_CPPFLAGS@
 NVML_LIBS = @NVML_LIBS@
+OBJCOPY = @OBJCOPY@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OFED_CPPFLAGS = @OFED_CPPFLAGS@
@@ -403,6 +394,8 @@ PMIX_V2_CPPFLAGS = @PMIX_V2_CPPFLAGS@
 PMIX_V2_LDFLAGS = @PMIX_V2_LDFLAGS@
 PMIX_V3_CPPFLAGS = @PMIX_V3_CPPFLAGS@
 PMIX_V3_LDFLAGS = @PMIX_V3_LDFLAGS@
+PMIX_V4_CPPFLAGS = @PMIX_V4_CPPFLAGS@
+PMIX_V4_LDFLAGS = @PMIX_V4_LDFLAGS@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
@@ -413,6 +406,9 @@ RELEASE = @RELEASE@
 RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
 RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
 RRDTOOL_LIBS = @RRDTOOL_LIBS@
+RSMI_CPPFLAGS = @RSMI_CPPFLAGS@
+RSMI_LDFLAGS = @RSMI_LDFLAGS@
+RSMI_LIBS = @RSMI_LIBS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -421,6 +417,7 @@ SLURMCTLD_PORT = @SLURMCTLD_PORT@
 SLURMCTLD_PORT_COUNT = @SLURMCTLD_PORT_COUNT@
 SLURMDBD_PORT = @SLURMDBD_PORT@
 SLURMD_PORT = @SLURMD_PORT@
+SLURMRESTD_PORT = @SLURMRESTD_PORT@
 SLURM_API_AGE = @SLURM_API_AGE@
 SLURM_API_CURRENT = @SLURM_API_CURRENT@
 SLURM_API_MAJOR = @SLURM_API_MAJOR@
@@ -440,6 +437,8 @@ UCX_LDFLAGS = @UCX_LDFLAGS@
 UCX_LIBS = @UCX_LIBS@
 UTIL_LIBS = @UTIL_LIBS@
 VERSION = @VERSION@
+YAML_CPPFLAGS = @YAML_CPPFLAGS@
+YAML_LDFLAGS = @YAML_LDFLAGS@
 ZLIB_CPPFLAGS = @ZLIB_CPPFLAGS@
 ZLIB_LDFLAGS = @ZLIB_LDFLAGS@
 ZLIB_LIBS = @ZLIB_LIBS@
@@ -509,25 +508,15 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
-@HAVE_SCHED_SETAFFINITY_FALSE@pkglib_LTLIBRARIES = 
-@HAVE_SCHED_SETAFFINITY_TRUE@pkglib_LTLIBRARIES = task_affinity.la
-@HAVE_SCHED_SETAFFINITY_TRUE@task_affinity_la_SOURCES = \
-@HAVE_SCHED_SETAFFINITY_TRUE@	affinity.c affinity.h \
-@HAVE_SCHED_SETAFFINITY_TRUE@	cpuset.c \
-@HAVE_SCHED_SETAFFINITY_TRUE@	dist_tasks.c dist_tasks.h \
-@HAVE_SCHED_SETAFFINITY_TRUE@	numa.c \
-@HAVE_SCHED_SETAFFINITY_TRUE@	schedutils.c \
-@HAVE_SCHED_SETAFFINITY_TRUE@	task_affinity.c
+pkglib_LTLIBRARIES = task_affinity.la
+task_affinity_la_SOURCES = \
+	affinity.c affinity.h \
+	dist_tasks.c dist_tasks.h \
+	numa.c \
+	schedutils.c \
+	task_affinity.c
 
-@HAVE_SCHED_SETAFFINITY_TRUE@task_affinity_la_LDFLAGS = $(NUMA_LIBS) $(PLUGIN_FLAGS)
-@HAVE_SCHED_SETAFFINITY_FALSE@EXTRA_task_affinity_la_SOURCES = \
-@HAVE_SCHED_SETAFFINITY_FALSE@	affinity.c affinity.h \
-@HAVE_SCHED_SETAFFINITY_FALSE@	cpuset.c \
-@HAVE_SCHED_SETAFFINITY_FALSE@	dist_tasks.c dist_tasks.h \
-@HAVE_SCHED_SETAFFINITY_FALSE@	numa.c \
-@HAVE_SCHED_SETAFFINITY_FALSE@	schedutils.c \
-@HAVE_SCHED_SETAFFINITY_FALSE@	task_affinity.c
-
+task_affinity_la_LDFLAGS = $(NUMA_LIBS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -598,7 +587,7 @@ clean-pkglibLTLIBRARIES:
 	}
 
 task_affinity.la: $(task_affinity_la_OBJECTS) $(task_affinity_la_DEPENDENCIES) $(EXTRA_task_affinity_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(task_affinity_la_LINK) $(am_task_affinity_la_rpath) $(task_affinity_la_OBJECTS) $(task_affinity_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(task_affinity_la_LINK) -rpath $(pkglibdir) $(task_affinity_la_OBJECTS) $(task_affinity_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -607,7 +596,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affinity.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpuset.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dist_tasks.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/numa.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/schedutils.Plo@am__quote@ # am--include-marker
@@ -697,40 +685,6 @@ cscopelist-am: $(am__tagged_files)
 
 distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
-
-distdir: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) distdir-am
-
-distdir-am: $(DISTFILES)
-	@srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
-	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
-	list='$(DISTFILES)'; \
-	  dist_files=`for file in $$list; do echo $$file; done | \
-	  sed -e "s|^$$srcdirstrip/||;t" \
-	      -e "s|^$$topsrcdirstrip/|$(top_builddir)/|;t"`; \
-	case $$dist_files in \
-	  */*) $(MKDIR_P) `echo "$$dist_files" | \
-			   sed '/\//!d;s|^|$(distdir)/|;s,/[^/]*$$,,' | \
-			   sort -u` ;; \
-	esac; \
-	for file in $$dist_files; do \
-	  if test -f $$file || test -d $$file; then d=.; else d=$(srcdir); fi; \
-	  if test -d $$d/$$file; then \
-	    dir=`echo "/$$file" | sed -e 's,/[^/]*$$,,'`; \
-	    if test -d "$(distdir)/$$file"; then \
-	      find "$(distdir)/$$file" -type d ! -perm -700 -exec chmod u+rwx {} \;; \
-	    fi; \
-	    if test -d $(srcdir)/$$file && test $$d != $(srcdir); then \
-	      cp -fpR $(srcdir)/$$file "$(distdir)$$dir" || exit 1; \
-	      find "$(distdir)/$$file" -type d ! -perm -700 -exec chmod u+rwx {} \;; \
-	    fi; \
-	    cp -fpR $$d/$$file "$(distdir)$$dir" || exit 1; \
-	  else \
-	    test -f "$(distdir)/$$file" \
-	    || cp -p $$d/$$file "$(distdir)/$$file" \
-	    || exit 1; \
-	  fi; \
-	done
 check-am: all-am
 check: check-am
 all-am: Makefile $(LTLIBRARIES)
@@ -775,7 +729,6 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/affinity.Plo
-	-rm -f ./$(DEPDIR)/cpuset.Plo
 	-rm -f ./$(DEPDIR)/dist_tasks.Plo
 	-rm -f ./$(DEPDIR)/numa.Plo
 	-rm -f ./$(DEPDIR)/schedutils.Plo
@@ -826,7 +779,6 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/affinity.Plo
-	-rm -f ./$(DEPDIR)/cpuset.Plo
 	-rm -f ./$(DEPDIR)/dist_tasks.Plo
 	-rm -f ./$(DEPDIR)/numa.Plo
 	-rm -f ./$(DEPDIR)/schedutils.Plo
@@ -854,17 +806,17 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
 	clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 	cscopelist-am ctags ctags-am distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-pkglibLTLIBRARIES install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-pkglibLTLIBRARIES
+	distclean-generic distclean-libtool distclean-tags dvi dvi-am \
+	html html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-pkglibLTLIBRARIES install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
+	uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 

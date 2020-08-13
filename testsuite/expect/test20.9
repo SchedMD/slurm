@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test for the qalter --man option
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -30,21 +26,16 @@
 ############################################################################
 source ./globals
 
-set test_id     "20.9"
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set exit_code   0
 
-print_header $test_id
-
 if {[file executable $qalter] == 0} {
-	send_user "\nWARNING: $qalter does not exist\n"
-	exit 0
+	skip "$qalter does not exist"
 }
 
 if {[file executable $bin_perldoc] == 0} {
-	send_user "\nWARNING: $bin_perldoc does not exist\n"
-	exit 0
+	skip "$bin_perldoc does not exist"
 }
 
 # If perl-doc isn't installed there is sometimes a useless perldoc script
@@ -53,9 +44,7 @@ log_user 0
 spawn $bin_perldoc
 expect {
 	-re "You need to install the perl-doc" {
-		send_user "\nWARNING: $bin_perldoc not installed\n"
-		exit 0
-
+		skip "$bin_perldoc not installed"
 	}
 	eof {
 		wait
@@ -78,12 +67,11 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: qalter did not return the man pages ($matches != 1)\n"
-	set exit_code 1
+	fail "qalter did not return the man pages ($matches != 1)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

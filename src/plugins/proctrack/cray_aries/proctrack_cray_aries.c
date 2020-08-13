@@ -57,8 +57,18 @@
 #include "src/common/macros.h"
 #include "src/common/timers.h"
 
+#include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+extern slurm_conf_t slurm_conf __attribute__((weak_import));
+#else
+slurm_conf_t slurm_conf;
+#endif
 
 const char plugin_name[]      = "Process tracking via Cray/Aries job module";
 const char plugin_type[]      = "proctrack/cray_aries";
@@ -72,7 +82,6 @@ static pthread_t threadid = 0;
 static pthread_cond_t notify = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t notify_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
-static uint64_t debug_flags = 0;
 
 extern bool proctrack_p_has_pid (uint64_t cont_id, pid_t pid);
 
@@ -128,8 +137,6 @@ static void _end_container_thread(void)
  */
 extern int init(void)
 {
-	debug_flags = slurm_get_debug_flags();
-
 	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -155,6 +162,15 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 		init();
 
 	if (!job->cont_id) {
+		/*
+		 * If we are forked then we can just use the pid from the fork
+		 * instead of using the thread method below.
+		 */
+		if (proctrack_forked) {
+			job->cont_id = (uint64_t)job_create(0, job->uid, 0);
+			goto endit;
+		}
+
 		/*
 		 * Since the cray job lib will create the container off the
 		 * process calling job_create we don't want to call it from
@@ -191,9 +207,9 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 			      job->cont_id, threadid);
 	} else
 		error("proctrack_p_create: already have a cont_id");
-
+endit:
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
@@ -219,8 +235,12 @@ int proctrack_p_add(stepd_step_rec_t *job, pid_t pid)
 	START_TIMER;
 
 try_again:
-	// Attach to the job container
-	if (job_attachpid(pid, job->cont_id) == (jid_t) -1) {
+	/*
+	 * If we aren't forked (pid was added in the job_create() call) this is
+	 * the time to add the pid to the job container.
+	 */
+	if (!proctrack_forked &&
+	    job_attachpid(pid, job->cont_id) == (jid_t) -1) {
 		if (errno == EINVAL && (count < 1)) {
 			jid_t jid;
 			if (proctrack_p_has_pid(job->cont_id, pid)) {
@@ -249,11 +269,12 @@ try_again:
 
 #ifdef HAVE_NATIVE_CRAY
 	// Set apid for this pid
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-		jobid = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
-	if (job_setapid(pid, SLURM_ID_HASH(jobid, job->stepid)) == -1) {
+		jobid = job->step_id.job_id;
+	if (job_setapid(pid, SLURM_ID_HASH(jobid,
+					   job->step_id.step_id)) == -1) {
 		error("Failed to set pid %d apid: %m", pid);
 		return SLURM_ERROR;
 	}
@@ -273,7 +294,7 @@ try_again:
 	TEMP_FAILURE_RETRY(close(fd));
 #endif
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
@@ -294,7 +315,7 @@ int proctrack_p_signal(uint64_t id, int sig)
 		error("Trying to send signal %d a container 0x%08lx "
 		      "that hasn't had anything added to it yet", sig, id);
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 	return (SLURM_SUCCESS);
 }
@@ -315,7 +336,7 @@ int proctrack_p_destroy(uint64_t id)
 	 * return SUCCESS to slurmd so it doesn't retry continuously
 	 */
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 	return SLURM_SUCCESS;
 }
@@ -329,7 +350,7 @@ uint64_t proctrack_p_find(pid_t pid)
 	if ((jid = job_getjid(pid)) == (jid_t) -1)
 		return ((uint64_t) 0);
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return ((uint64_t) jid);
@@ -400,7 +421,7 @@ int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 		*npids = 0;
 	}
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;

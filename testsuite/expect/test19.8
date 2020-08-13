@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validates that strigger --noheader does not print header
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -30,14 +26,11 @@
 ############################################################################
 source ./globals
 
-set test_id           "19.8"
 set trigger_file_in   "test$test_id\_trig_in"
 set trigger_file_out  "test$test_id\_trig_out"
 set cwd               "[$bin_pwd]"
 set permission        0
 set exit_code         0
-
-print_header $test_id
 
 #
 # get my uid and clear any vestigial triggers
@@ -65,7 +58,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: strigger is not responding\b"
+		log_error "strigger is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -73,13 +66,11 @@ expect {
 	}
 }
 if {$permission == 1} {
-	send_user "\nWARNING: Current configuration prevents setting triggers\n"
-	send_user "         Need to run the tests as SlurmUser or make SlurmUser=root\n"
 	exec $bin_rm -f $trigger_file_in
-	exit $exit_code
+	skip "Current configuration prevents setting triggers. Need to run the tests as SlurmUser or make SlurmUser=root"
 }
 if {$match != 1} {
-	send_user "\nFAILURE: trigger was not set\n"
+	log_error "Trigger was not set"
 	set exit_code 1
 }
 
@@ -91,7 +82,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: strigger is not responding\n"
+		log_error "strigger is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -99,7 +90,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: strigger failed to display headers when it should have\n"
+	log_error "strigger failed to display headers when it should have"
 	set exit_code 1
 }
 
@@ -111,7 +102,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: strigger is not responding\n"
+		log_error "strigger is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -119,7 +110,7 @@ expect {
 	}
 }
 if {$match != 0} {
-	send_user "\nFAILURE: strigger displayed headers when it should not\n"
+	log_error "strigger displayed headers when it should not"
 	set exit_code 1
 }
 
@@ -127,7 +118,7 @@ set match 0
 spawn $strigger --clear -v --user=$uid
 expect {
 	timeout {
-		send_user "\nFAILURE: strigger is not responding\n"
+		log_error "strigger is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -137,8 +128,6 @@ expect {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $trigger_file_in $trigger_file_out
-	send_user "\nSUCCESS\n"
 } else {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

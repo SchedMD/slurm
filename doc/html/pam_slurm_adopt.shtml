@@ -58,7 +58,7 @@ is on a shared filesystem, such as NFS, then this is suggested to avoid being
 locked out of a node while the shared filesystem is mounting or down.</p>
 
 <p>pam_slurm_adopt must be used with the task/cgroup task plugin and either the
-proctrack/cgroup or the proctrack/cray proctrack plugin.
+proctrack/cgroup or the proctrack/cray_aries proctrack plugin.
 The pam_systemd module will conflict with pam_slurm_adopt, so you need to
 disable it in all files that are included in sshd or system-auth (e.g.
 password-auth, common-session, etc.). You should also stop and mask
@@ -160,6 +160,8 @@ can ssh in but may be adopted into a job that exits earlier than the
 job they intended to check on. The ssh connection will at least be
 subject to appropriate limits and the user can be informed of better
 ways to accomplish their objectives if this becomes a problem.
+NOTE: If the module fails to retrieve the cgroup mtime, then the picked
+job may not be the newest one.
 </dd>
 <dt><b>allow</b></dt>
 <dd>Let the connection through without adoption.</dd>

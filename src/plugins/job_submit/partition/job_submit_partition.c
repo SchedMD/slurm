@@ -86,7 +86,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 /* Test if this user can run jobs in the selected partition based upon
  * the partition's AllowGroups parameter. */
 static bool _user_access(uid_t run_uid, uint32_t submit_uid,
-			 struct part_record *part_ptr)
+			 part_record_t *part_ptr)
 {
 	int i;
 
@@ -109,8 +109,7 @@ static bool _user_access(uid_t run_uid, uint32_t submit_uid,
 	return false;		/* User not in AllowGroups */
 }
 
-static bool _valid_memory(struct part_record *part_ptr,
-			  struct job_descriptor *job_desc)
+static bool _valid_memory(part_record_t *part_ptr, job_desc_msg_t *job_desc)
 {
 	uint64_t job_limit, part_limit;
 
@@ -152,18 +151,18 @@ static bool _valid_memory(struct part_record *part_ptr,
 /* This example code will set a job's default partition to the partition with
  * highest priority_tier is available to this user. This is only an example
  * and tremendous flexibility is available. */
-extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
+extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 		      char **err_msg)
 {
 	ListIterator part_iterator;
-	struct part_record *part_ptr;
-	struct part_record *top_prio_part = NULL;
+	part_record_t *part_ptr;
+	part_record_t *top_prio_part = NULL;
 
 	if (job_desc->partition)	/* job already specified partition */
 		return SLURM_SUCCESS;
 
 	part_iterator = list_iterator_create(part_list);
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+	while ((part_ptr = list_next(part_iterator))) {
 		if (!(part_ptr->state_up & PARTITION_SUBMIT))
 			continue;	/* nobody can submit jobs here */
 		if (!_user_access(job_desc->user_id, submit_uid, part_ptr))
@@ -190,8 +189,8 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 	return SLURM_SUCCESS;
 }
 
-extern int job_modify(struct job_descriptor *job_desc,
-		      struct job_record *job_ptr, uint32_t submit_uid)
+extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
+		      uint32_t submit_uid)
 {
 	return SLURM_SUCCESS;
 }

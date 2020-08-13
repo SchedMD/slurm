@@ -22,15 +22,15 @@ Slurm provides support for allocating these resources, staging files in,
 scheduling compute nodes for jobs using these resources, then staging files out.
 Burst buffers can also be used as temporary storage during a job's lifetime,
 without file staging.
-Another typical use case is for persist storage, not associated with any
+Another typical use case is for persistent storage, not associated with any
 specific job.
 This support is provided using a plugin mechanism so that a various burst
 buffer infrastructures may be easily configured.
-Two plugins are provided initially:</p>
+<!--Two plugins are-->One plugin is provided currently:</p>
 <ol>
 <li><b>datawarp</b> - Uses Cray APIs to perform underlying management functions</li>
-<li><b>generic</b> - Uses system administrator defined scripts to perform
-underlying management functions, currently under development</li>
+<!--<li><b>generic</b> - Uses system administrator defined scripts to perform
+underlying management functions, currently under development</li>-->
 </ol>
 <p>Additional plugins may be provided in future releases of Slurm.</p>
 
@@ -50,7 +50,7 @@ underlying management functions, currently under development</li>
 <h2><a name="configuration">Configuration  (for system administrators)</a></h2>
 
 <p>Burst buffer support in Slurm is enabled by specifying the plugin(s) to
-loaded for managing these resources using the <i>BurstBufferType</i>
+load for managing these resources using the <i>BurstBufferType</i>
 configuration parameter in the <i>slurm.conf</i> file.
 Multiple plugin names may be specified in a comma separated list.
 Detailed logging of burst buffer specific actions may be generated for debugging
@@ -61,17 +61,19 @@ use in a production system.</p>
 
 <pre>
 # Excerpt of example slurm.conf file
-BurstBufferType=burst_buffer/generic
+BurstBufferType=burst_buffer/datawarp
 # DebugFlags=BurstBuffer # Commented out
 </pre>
 
 <p>Burst buffer specific options should be defined in a <i>burst_buffer.conf</i>
 file.
+<!--
 If multiple burst buffer plugins are configured, an independent configuration
 file can be specified for each plugin with a file name including the plugin name.
 For example files named "burst_buffer_datawarp.conf" and
 "burst_buffer_generic.conf" can be used independently by the datawarp and
 generic burst buffer plugins respectively.
+-->
 This file can contain information about who can or can not use burst buffers,
 timeouts, and paths of scripts used to perform various functions, etc.
 <a href="resource_limits.html">TRES limits</a> can be configured to establish
@@ -80,6 +82,7 @@ The size of a job's burst buffer requirements can be used as a factor in
 setting the job priority as described in the
 <a href="priority_multifactor.html">multifactor priority</a> document.</p>
 
+<!--
 <p>Note that sample scripts for performing burst buffer operations for the
 burst_buffer/generic plugin are included with the Slurm distribution.
 These scripts were intended for Slurm development and testing purposes and
@@ -108,6 +111,7 @@ StartStageOut=/usr/local/slurm/15.08/sbin/SSO
 StopStageIn=/usr/local/slurm/15.08/sbin/PSI
 StopStageOut=/usr/local/slurm/15.08/sbin/PSO
 </pre>
+-->
 
 <p><b>Note for Cray systems:</b> The JSON-C library must be installed in order
 to build Slurm's burst_buffer/datawarp plugin, which must parse JSON format data.
@@ -142,7 +146,7 @@ and all file stage-out happens after computation.</p>
 For both commands, the "--bb" or "--bbf" option is used to specify the job's
 burst buffer requirements. 
 Note the burst buffer may not be accessible from a login node, but require
-that salloc spawn a shell on one of it's allocated compute nodes. See the
+that salloc spawn a shell on one of its allocated compute nodes. See the
 description of SallocDefaultCommand in the slurm.conf man page for more
 information about how to spawn a remote shell.</p>
 
@@ -182,10 +186,10 @@ The <b>capacity</b> (size) specification can include a suffix of "N" (nodes),
 "MB", "GB", "TB", "PB" (for powers of 1000). NOTE: Usually Slurm interprets
 KB, MB, GB, TB, PB, TB units as powers of 1024, but for Burst Buffers size
 specifications Slurm supports both IEC/SI formats. This is because the CRAY API
-for supports both formats.
+supports both formats.
 The <b>access</b> parameter identifies the buffer access mode. Supported access
 modes for the burst_buffer/datawarp plugin include: striped, private, and ldbalance.
-The <b>pool</b> parameter identifies the resource pool from in the burst buffer
+The <b>pool</b> parameter identifies the resource pool from which the burst buffer
 should be created. The default and available pools are configuration dependent.
 The <b>type</b> parameter identifies the buffer type. Supported type
 modes for the burst_buffer/datawarp plugin include: cache and scratch.
@@ -213,7 +217,7 @@ job allocations.</p>
 limited by the "Flags" option in the burst_buffer.conf file.
 See the burst_buffer.conf man page for more information.
 By default only <a href="user_permissions.html">privileged users</a>
-(Slurm operators and administrators)
+(i.e. Slurm operators and administrators)
 can create or destroy persistent burst buffers.</p>
 
 <h2><a name="interactive">Interactive Job Options</a></h2>
@@ -229,7 +233,7 @@ a collection of burst buffer operations identical to that used for batch jobs.
 This file may contain file staging directives.
 Alternately the "--bb" option may be used to specify burst buffer directives
 as the option argument. The format of those directives can either be identical
-to those used in a batch script OR a very limited set of directives can be uses,
+to those used in a batch script OR a very limited set of directives can be used,
 which are translated to the equivalent script for later processing.
 Multiple directives should be space separated.</p>
 <ul>
@@ -246,7 +250,7 @@ The capacity (size) specification can include a suffix of "N" (nodes),
 "MB", "GB", "TB", "PB" (for powers of 1000). NOTE: Usually Slurm interprets
 KB, MB, GB, TB, PB, TB units as powers of 1024, but for Burst Buffers size
 specifications Slurm supports both IEC/SI formats. This is because the CRAY API
-for supports both formats.
+supports both formats.
 A sample command line follows and we also show the equivalent burst buffer
 script generated by the options:</p>
 <pre>
@@ -256,6 +260,26 @@ srun --bb="capacity=1G access=striped type=scratch" a.out
 # Equivalent script as generated by Slurm's burst_buffer/datawarp plugin
 #DW jobdw capacity=1GiB access_mode=striped type=scratch
 </pre>
+
+<h2><a name="symbols">Symbol Replacement</a></h2>
+
+<p>Slurm supports a number of symbols that can be used to automatically
+fill in certain job details, e.g., to make stage_in or stage_out directory
+paths vary with each job submission.</p>
+
+<p>Supported symbols include:
+
+<table border=1 cellspacing=4 cellpadding=4>
+<tr><td>%%</td><td>%</td></tr>
+<tr><td>%A</td><td>Array Master Job Id</td></tr>
+<tr><td>%a</td><td>Array Task Id</td></tr>
+<tr><td>%d</td><td>Workdir</td></tr>
+<tr><td>%j</td><td>Job Id</td></tr>
+<tr><td>%u</td><td>User Name</td></tr>
+<tr><td>%x</td><td>Job Name</td></tr>
+<tr><td>\\</td><td>Stop further processing of the line</td></tr>
+</table>
+</p>
 
 <h2><a name="status">Status Commands</a></h2>
 
@@ -324,13 +348,13 @@ The argument consists of four elements:<br>
 If no plugin is specified, the reservation applies to all configured burst
 buffer plugins.<br><br>
 <i>pool</i> specifies a Cray generic burst buffer resource pool.
-if "type" is not specified, the number is a measure of storage space.<br><br>
+If "type" is not specified, the number is a measure of storage space.<br><br>
 <i>units</i> may be "N" (nodes), "K|KiB", "M|MiB", "G|GiB", "T|TiB", "P|PiB"
 (for powers of 1024) and "KB", "MB", "GB", "TB", "PB" (for powers of 1000). The
 default units are bytes for reservations of storage space.
 NOTE: Usually Slurm interprets KB, MB, GB, TB, PB, TB units as powers of 1024,
 but for Burst Buffers size specifications Slurm supports both IEC/SI formats.
-This is because the CRAY API for supports both formats.<br><br>
+This is because the Cray DataWarp API supports both formats.<br><br>
 
 Jobs using this reservation are not restricted to these burst buffer resources,
 but may use these reserved resources plus any which are generally available.
@@ -352,9 +376,9 @@ $ scontrol create reservation StartTime=16:00 duration=60 \
 
 <h2><a name="dependencies">Job Dependencies</a></h2>
 
-<p>If two jobs use burst buffers and one is depend on the other (e.g.
+<p>If two jobs use burst buffers and one is dependent on the other (e.g.
 "sbatch --dependency=afterok:123 ...") then the second job will not begin until
-the first job completes and it's burst buffer stage out completes.
+the first job completes and its burst buffer stage out completes.
 If the second job does not use a burst buffer, but is dependent upon the first
 job's completion, then it will not wait for the stage out operation of the first
 job to complete.
@@ -362,6 +386,6 @@ The second job can be made to wait for the first job's stage out operation to
 complete using the "afterburstbuffer" dependency option (e.g.
 "sbatch --dependency=afterburstbuffer:123 ...").</p>
 
-<p style="text-align:center;">Last modified 7 March 2019</p>
+<p style="text-align:center;">Last modified 31 March 2020</p>
 
 <!--#include virtual="footer.txt"-->

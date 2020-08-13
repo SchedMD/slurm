@@ -47,14 +47,14 @@
  *
  * Returns a SLURM errno.
  */
-extern int cli_filter_plugin_init(void);
+extern int cli_filter_init(void);
 
 /*
  * Terminate the cli filter plugin. Free memory.
  *
  * Returns a SLURM errno.
  */
-extern int cli_filter_plugin_fini(void);
+extern int cli_filter_fini(void);
 
 /*
  **************************************************************************
@@ -77,7 +77,7 @@ extern int cli_filter_plugin_fini(void);
  *		- SLURM_ERROR	if any condition is determined that should
  *				cease processing of the CLI
  */
-extern int cli_filter_plugin_setup_defaults(slurm_opt_t *opt, bool early);
+extern int cli_filter_g_setup_defaults(slurm_opt_t *opt, bool early);
 
 /*
  * Execute the pre_submit() function in each cli filter plugin.
@@ -93,7 +93,7 @@ extern int cli_filter_plugin_setup_defaults(slurm_opt_t *opt, bool early);
  *		- SLURM_ERROR   if any condition is determined that should
  *				cease processing of the CLI
  */
-extern int cli_filter_plugin_pre_submit(slurm_opt_t *opt, int offset);
+extern int cli_filter_g_pre_submit(slurm_opt_t *opt, int offset);
 
 /*
  * Execute the post_submit() function in each cli filter plugin.
@@ -107,7 +107,7 @@ extern int cli_filter_plugin_pre_submit(slurm_opt_t *opt, int offset);
  * IN jobid	- job identifier back from the controller.
  * IN stepid	- step identifier (NOVAL if not set)
  */
-extern void cli_filter_plugin_post_submit(int offset, uint32_t jobid,
-					  uint32_t stepid);
+extern void cli_filter_g_post_submit(int offset, uint32_t jobid,
+				     uint32_t stepid);
 
 #endif /* !_CLI_FILTER_H */

@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Check node information, both regular and long (--Node, --long,
 #          and --exact options).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,11 +29,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "4.4"
 set exit_code   0
 set matches     0
-
-print_header $test_id
 
 #
 # Check the sinfo regular format
@@ -70,7 +63,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -79,7 +72,7 @@ expect {
 }
 
 if {$matches != 4} {
-	send_user "\nFAILURE: sinfo node format error\n"
+	log_error "sinfo node format error"
 	set exit_code 1
 }
 
@@ -127,7 +120,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -136,15 +129,12 @@ expect {
 }
 
 if {$ranges != 0} {
-	send_user "\nFAILURE: sinfo exact match option failure\n"
-	set exit_code 1
+	fail "sinfo exact match option failure"
 }
 
 if {$matches != 6} {
-	send_user "\nFAILURE: sinfo node long format error\n"
-	set exit_code 1
+	fail "sinfo node long format error"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

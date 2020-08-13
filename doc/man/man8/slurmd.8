@@ -1,4 +1,4 @@
-.TH slurmd "8" "Slurm Daemon" "January 2019" "Slurm Daemon"
+.TH slurmd "8" "Slurm Daemon" "March 2020" "Slurm Daemon"
 
 .SH "NAME"
 slurmd \- The compute node daemon for Slurm.
@@ -24,7 +24,13 @@ abnormally.
 .TP
 \fB\-C\fR
 Print actual hardware configuration and exit. The format of output is the same
-as used in \fBslurm.conf\fR to describe a node's configuration plus it's uptime.
+as used in \fBslurm.conf\fR to describe a node's configuration plus its uptime.
+
+.TP
+\fB\--conf-server <host>[:<port>]\fR
+Specify the host and (optionally) port number of the primary slurmctld. This
+host is where slurmd will fetch the configuration from when running in
+"configless" mode.
 
 .TP
 \fB\-d <file>\fR
@@ -38,8 +44,8 @@ Run slurmd in the foreground. Error and debug messages will be copied to stderr.
 Read configuration from the specified file. See \fBNOTES\fR below.
 .TP
 \fB\-G\fR
-Print Generic RESource (GRES) configuration (based upon gres.conf contents
-for this node) and exit.
+Print Generic RESource (GRES) configuration (based upon slurm.conf GRES merged
+with gres.conf contents for this node) and exit.
 .TP
 \fB\-h\fR
 Help; print a brief summary of command options.
@@ -53,6 +59,9 @@ paging of the slurmd process. This may help in cases where nodes are
 marked DOWN during periods of heavy swap activity. If the mlockall (2)
 system call is not available, an error will be printed to the log
 and slurmd will continue as normal.
+
+It is suggested to set \fBLaunchParameters=slurmstepd_memlock\fR in
+\fBslurm.conf\fR(5) when setting \fB\-M\fR.
 
 .TP
 \fB\-n <value>\fR
@@ -79,6 +88,21 @@ compiled into slurmd.
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.  This is overridden by
 explicitly naming a configuration file on the command line.
+
+.SH "SIGNALS"
+.TP
+\fBSIGTERM SIGINT\fR
+\fBslurmd\fR will shutdown cleanly, waiting for in-progress rollups to finish.
+.TP
+\fBSIGHUP\fR
+Reloads the slurm configuration files, similar to 'scontrol reconfigure'.
+.TP
+\fBSIGUSR2\fR
+Reread the log level from the configs, and then reopen the log file.  This
+should be used when setting up \fBlogrotate\fR(8).
+.TP
+\fBSIGPIPE\fR
+This signal is explicitly ignored.
 
 .SH "CORE FILE LOCATION"
 If slurmd is started with the \fB\-D\fR option then the core file will be

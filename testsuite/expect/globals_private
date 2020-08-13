@@ -1,0 +1,161 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Functions and variables to eb used from the main globals files,
+#          not directly from tests.
+############################################################################
+# Copyright (C) 2016 SchedMD LLC.
+# Written by Albert Gil <albert.gil@schedmd.com>
+
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the supplied file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+#
+# List of files backed up used for save/restore_conf
+#
+set _global_bkp_register {}
+set _global_bkp_noexist  {}
+
+################################################################
+#
+# NAME
+#	_wait_for_single_job - waits for a job to reach the desired state
+#
+# SYNOPSIS
+#	_wait_for_single_job job_id desired_state
+#
+# DESCRIPTION
+#	Wait for a previously submitted Slurm job to reach
+#	the desired state. Polls every $testsuite_poll_interval seconds.
+#
+# ARGUMENTS
+#	job_id
+#		The Slurm job id of a job we want to wait for.
+#	desired_state
+#		The state you want the job to attain before
+#		returning.  Currently supports:
+#			DONE any terminated state
+#			PENDING job is pending
+#			RUNNING job is running
+#			SPECIAL_EXIT
+#			SUSPENDED job is suspended
+#
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
+#
+# NOTE: We sleep for two seconds before replying that a job is
+# done to give time for I/O completion (stdout/stderr files)
+#
+################################################################
+
+proc _wait_for_single_job { job_id desired_state } {
+	global scontrol max_job_state_delay testsuite_poll_interval
+
+	# First verify that desired_state is supported
+	switch $desired_state {
+		"DONE" {}
+		"PENDING" {}
+		"RUNNING" {}
+		"SPECIAL_EXIT" {}
+		"SUSPENDED" {}
+		default {
+			log_warn "wait_for_single_job with invalid state: $desired_state"
+			return 1
+		}
+	}
+
+	if {$job_id == 0} {
+		log_warn "wait_for_single_job with invalid job ID: $job_id"
+		return 1
+	}
+
+	set my_delay    0
+	while 1 {
+		set fd [open "|$scontrol -o show job $job_id"]
+		gets $fd line
+		catch {close $fd}
+		if {[regexp {JobState\s*=\s*(\w+)} $line foo state] != 1} {
+			set state "NOT_FOUND"
+		}
+
+		switch $state {
+			"NOT_FOUND" -
+			"BOOT_FAIL" -
+			"CANCELLED" -
+			"COMPLETED" -
+			"DEADLINE" -
+			"FAILED" -
+			"NODE_FAIL" -
+			"OUT_OF_MEMORY" -
+			"PREEMPTED" -
+			"TIMEOUT" {
+				if {[string compare $desired_state "DONE"] == 0} {
+					log_info "Job $job_id is DONE ($state)"
+					sleep 2
+					return 0
+				}
+				if {[string compare $desired_state "RUNNING"] == 0} {
+					log_info "Job $job_id is $state, but we wanted RUNNING"
+				}
+				if {[string compare $desired_state "SUSPENDED"] == 0} {
+					log_info "Job $job_id is $state, but we wanted SUSPENDED"
+				}
+				return 1
+			}
+			"PENDING" {
+				if {[string compare $desired_state "PENDING"] == 0} {
+					log_info "Job $job_id is PENDING"
+					return 0
+				}
+				log_info "Job $job_id is in state $state, desire $desired_state"
+			}
+			"RUNNING" {
+				if {[string compare $desired_state "RUNNING"] == 0} {
+					log_info "Job $job_id is RUNNING"
+					return 0
+				}
+				log_info "Job $job_id is in state $state, desire $desired_state"
+			}
+			"SPECIAL_EXIT" {
+				if {[string compare $desired_state "SPECIAL_EXIT"] == 0} {
+					log_info "Job $job_id is SPECIAL_EXIT"
+					return 0
+				}
+				log_info "Job $job_id is in state $state, desire $desired_state"
+			}
+			"SUSPENDED" {
+				if {[string compare $desired_state "SUSPENDED"] == 0} {
+					log_info "Job $job_id is SUSPENDED"
+					return 0
+				}
+				log_info "Job $job_id is in state $state, desire $desired_state"
+			}
+			default {
+				log_info "Job $job_id is in state $state, desire $desired_state"
+			}
+		}
+
+		if { $my_delay > $max_job_state_delay } {
+			log_warn "Timeout waiting for job state $desired_state"
+			return 1
+		}
+
+		exec sleep $testsuite_poll_interval
+		set my_delay [expr $my_delay + $testsuite_poll_interval]
+	}
+}

@@ -32,29 +32,26 @@ START_TEST(invalid_protocol)
 }
 END_TEST
 
-START_TEST(pack_1702_null_federation_rec)
+START_TEST(pack_back2_null_federation_rec)
 {
 	int rc;
 	Buf buf = init_buf(1024);
-	slurmdb_federation_rec_t pack_fr = {0};
 
 	slurmdb_pack_federation_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
-	slurmdb_federation_rec_t *unpack_fr;
+	slurmdb_federation_rec_t *unpack_fr = NULL;
 	rc = slurmdb_unpack_federation_rec((void **)&unpack_fr, SLURM_MIN_PROTOCOL_VERSION, buf);
-	ck_assert(rc                   == SLURM_SUCCESS);
-	ck_assert(pack_fr.name         == unpack_fr->name);
-	ck_assert(pack_fr.flags        == unpack_fr->flags);
-	ck_assert(pack_fr.cluster_list == unpack_fr->cluster_list);
+	ck_assert(rc        == SLURM_SUCCESS);
+	ck_assert(unpack_fr == NULL);
 
 	free_buf(buf);
 	slurmdb_destroy_federation_rec(unpack_fr);
 }
 END_TEST
 
-START_TEST(pack_1702_federation_rec)
+START_TEST(pack_back2_federation_rec)
 {
 	int rc;
 
@@ -90,7 +87,7 @@ START_TEST(pack_1702_federation_rec)
 END_TEST
 
 
-START_TEST(pack_1702_federation_rec_empty_list)
+START_TEST(pack_back2_federation_rec_empty_list)
 {
 	int rc;
 
@@ -118,31 +115,7 @@ START_TEST(pack_1702_federation_rec_empty_list)
 END_TEST
 
 
-/* This test sets up the buffer so that it fails when unpacking the cluster rec.
- */
-START_TEST(pack_1702_federation_rec_fail)
-{
-	int rc;
-	char *name = xstrdup("Saint Augustine");
-	Buf buf = init_buf(18*sizeof(uint32_t));
-	packstr(name, buf);
-	pack32(7, buf);
-	pack32(1, buf);
-
-	set_buf_offset(buf, 0);
-
-	slurmdb_federation_rec_t *unpack_fr;
-	rc = slurmdb_unpack_federation_rec((void **)&unpack_fr, SLURM_MIN_PROTOCOL_VERSION, buf);
-	ck_assert_int_eq(rc, SLURM_ERROR);
-
-	free_buf(buf);
-	xfree(name);
-}
-END_TEST
-
-
-/* 17.11 */
-START_TEST(pack_1711_null_federation_rec)
+START_TEST(pack_back1_null_federation_rec)
 {
 	int rc;
 	Buf buf = init_buf(1024);
@@ -161,7 +134,7 @@ START_TEST(pack_1711_null_federation_rec)
 }
 END_TEST
 
-START_TEST(pack_1711_federation_rec)
+START_TEST(pack_back1_federation_rec)
 {
 	int rc;
 
@@ -197,7 +170,7 @@ START_TEST(pack_1711_federation_rec)
 END_TEST
 
 
-START_TEST(pack_1711_federation_rec_empty_list)
+START_TEST(pack_back1_federation_rec_empty_list)
 {
 	int rc;
 
@@ -230,19 +203,18 @@ END_TEST
  * TEST SUITE                                                                *
  ****************************************************************************/
 
-Suite* suite(void)
+Suite *suite(void)
 {
-	Suite* s = suite_create("Pack slurmdb_federation_rec_t");
-	TCase* tc_core = tcase_create("Pack slurmdb_federation_rec_t");
+	Suite *s = suite_create("Pack slurmdb_federation_rec_t");
+	TCase *tc_core = tcase_create("Pack slurmdb_federation_rec_t");
 	tcase_add_test(tc_core, invalid_protocol);
-	tcase_add_test(tc_core, pack_1702_federation_rec);
-	tcase_add_test(tc_core, pack_1702_null_federation_rec);
-	tcase_add_test(tc_core, pack_1702_federation_rec_empty_list);
-	tcase_add_test(tc_core, pack_1702_federation_rec_fail);
+	tcase_add_test(tc_core, pack_back2_federation_rec);
+	tcase_add_test(tc_core, pack_back2_null_federation_rec);
+	tcase_add_test(tc_core, pack_back2_federation_rec_empty_list);
 
-	tcase_add_test(tc_core, pack_1711_federation_rec);
-	tcase_add_test(tc_core, pack_1711_null_federation_rec);
-	tcase_add_test(tc_core, pack_1711_federation_rec_empty_list);
+	tcase_add_test(tc_core, pack_back1_federation_rec);
+	tcase_add_test(tc_core, pack_back1_null_federation_rec);
+	tcase_add_test(tc_core, pack_back1_federation_rec_empty_list);
 
 	suite_add_tcase(s, tc_core);
 	return s;
@@ -255,7 +227,7 @@ Suite* suite(void)
 int main(void)
 {
 	int number_failed;
-	SRunner* sr = srunner_create(suite());
+	SRunner *sr = srunner_create(suite());
 
 	//srunner_set_fork_status(sr, CK_NOFORK);
 

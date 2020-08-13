@@ -80,7 +80,7 @@ to indicate the reason for failure.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_sched_p_newalloc (struct job_record *job_ptr);</p>
+<p class="commandline">int slurm_sched_p_newalloc(job_record_t *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the successful allocation of resources to a job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: Pointer to the slurmctld job structure. This can be used to
 get partition, allocated resources, time limit, etc.</p>
@@ -88,7 +88,7 @@ get partition, allocated resources, time limit, etc.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_sched_p_freealloc (struct job_record *job_ptr);</p>
+<p class="commandline">int slurm_sched_p_freealloc(job_record_t *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the successful release of resources for a job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: Pointer to the slurmctld job structure. This can be used to
 get partition, allocated resources, time limit, etc.</p>
@@ -96,8 +96,7 @@ get partition, allocated resources, time limit, etc.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">uint32_t slurm_sched_p_initial_priority (
-uint32_t last_prio, struct job_record *job_ptr);</p>
+<p class="commandline">uint32_t slurm_sched_p_initial_priority(uint32_t last_prio, job_record_t *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Establish the initial priority of a new job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <b>last_prio</b> (input) default priority of the previously submitted job.
@@ -131,6 +130,6 @@ command.</p>
 <p style="margin-left:.2in"><b>Returns</b>: A string containing configuration
 information. The return value is released using the <i>xfree()</i> function.</p>
 
-<p style="text-align:center;">Last modified 7 March 2019</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of batch job with multiple concurrent job steps
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.35"
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
@@ -41,16 +36,14 @@ set exit_code            0
 set job_id               0
 set steps_started        30
 
-print_header $test_id
-
 log_user 0
 set job_mem_opt  "--comment=no_mem"
 set step_mem_opt "--comment=no_mem"
 spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
 expect {
 	-re "MEMORY" {
-		set job_mem_opt  "--mem-per-cpu=256"
-		set step_mem_opt "--mem-per-cpu=2"
+		set job_mem_opt  "--mem-per-cpu=128M"
+		set step_mem_opt "--mem-per-cpu=4M"
 		exp_continue
 	}
 	eof {
@@ -89,7 +82,7 @@ set timeout $max_job_delay
 set srun_pid [eval spawn $sbatch -N$node_cnt --output=$file_out --error=$file_err -t1 --gres=craynetwork:0 $job_mem_opt $file_in]
 expect {
 	-re "Requested node configuration is not available" {
-		send_user "\nFAILURE: Memory is allocated, but your nodes don't have even 256MB configured\n"
+		log_error "Memory is allocated, but your nodes don't have even 256MB configured"
 		set exit_code 1
 	}
 	-re "Submitted batch job ($number)" {
@@ -97,7 +90,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -107,8 +100,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
@@ -116,7 +108,7 @@ if {$job_id == 0} {
 #
 sleep 30
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -151,16 +143,16 @@ if {$step_cnt != $steps_started} {
 		}
 	}
 	if {$mem_err == 1} {
-		send_user "\nWARNING: Test could not complete due to memory limit\n"
+		log_warn "Test could not complete due to memory limit"
 		set step_cnt $steps_started
 	} else {
-		send_user "\nFAILURE: not all steps reported by squeue\n"
+		log_error "Not all steps reported by squeue"
 		set exit_code 1
 	}
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $file_in $file_out $file_err
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

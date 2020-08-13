@@ -41,7 +41,6 @@
 
 #define _GNU_SOURCE
 
-#include <assert.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <grp.h>
@@ -63,7 +62,6 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/checkpoint.h"
 #include "src/common/env.h"
 #include "src/common/gres.h"
 #include "src/common/fd.h"
@@ -89,7 +87,6 @@ static void  _make_tmpdir(stepd_step_rec_t *job);
 static int   _run_script_and_set_env(const char *name, const char *path,
 				     stepd_step_rec_t *job);
 static void  _proc_stdout(char *buf, stepd_step_rec_t *job);
-static char *_uint32_array_to_str(int array_len, const uint32_t *array);
 
 /*
  * Process TaskProlog output
@@ -199,7 +196,8 @@ _run_script_and_set_env(const char *name, const char *path,
 	if (path == NULL || path[0] == '\0')
 		return 0;
 
-	debug("[job %u] attempting to run %s [%s]", job->jobid, name, path);
+	debug("[job %u] attempting to run %s [%s]",
+	      job->step_id.job_id, name, path);
 
 	if (access(path, R_OK | X_OK) < 0) {
 		error("Could not run %s [%s]: %m", name, path);
@@ -265,7 +263,7 @@ _run_script_and_set_env(const char *name, const char *path,
 /* Given a program name, translate it to a fully qualified pathname as needed
  * based upon the PATH environment variable and current working directory
  * Returns xmalloc()'d string that must be xfree()'d */
-extern char *_build_path(char *fname, char **prog_env, char *cwd)
+static char *_build_path(char *fname, char **prog_env)
 {
 	char *path_env = NULL, *dir;
 	char *file_name;
@@ -285,15 +283,11 @@ extern char *_build_path(char *fname, char **prog_env, char *cwd)
 	}
 
 	if (fname[0] == '.') {
-		if (cwd) {
-			snprintf(file_name, len, "%s/%s", cwd, fname);
-		} else {
-			dir = (char *) xmalloc(len);
-			if (!getcwd(dir, len))
-				error("getcwd failed: %m");
-			snprintf(file_name, len, "%s/%s", dir, fname);
-			xfree(dir);
-		}
+		dir = xmalloc(len);
+		if (!getcwd(dir, len))
+			error("getcwd failed: %m");
+		snprintf(file_name, len, "%s/%s", dir, fname);
+		xfree(dir);
 		return file_name;
 	}
 
@@ -320,21 +314,26 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
 {
 	mpi_plugin_task_info_t info[1];
 
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
-		info->jobid   = job->pack_jobid;
-		info->stepid  = job->stepid;
-		info->nnodes  = job->pack_nnodes;
-		info->nodeid  = job->node_offset + job->nodeid;
-		info->ntasks  = job->pack_ntasks ;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		info->step_id.job_id   = job->het_job_id;
+	else
+		info->step_id.job_id   = job->step_id.job_id;
+
+	if (job->het_job_offset != NO_VAL) {
+		info->step_id.step_id  = job->step_id.step_id;
+		info->step_id.step_het_comp  = job->step_id.step_het_comp;
+		info->nnodes  = job->het_job_nnodes;
+		info->nodeid  = job->het_job_node_offset + job->nodeid;
+		info->ntasks  = job->het_job_ntasks;
 		info->ltasks  = job->node_tasks;
-		info->gtaskid = job->pack_task_offset +
+		info->gtaskid = job->het_job_task_offset +
 				job->task[ltaskid]->gtid;
 		info->ltaskid = job->task[ltaskid]->id;
 		info->self    = job->envtp->self;
 		info->client  = job->envtp->cli;
 	} else {
-		info->jobid   = job->jobid;
-		info->stepid  = job->stepid;
+		info->step_id.step_id  = job->step_id.step_id;
+		info->step_id.step_het_comp  = job->step_id.step_het_comp;
 		info->nnodes  = job->nnodes;
 		info->nodeid  = job->nodeid;
 		info->ntasks  = job->ntasks;
@@ -353,29 +352,26 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
  */
 extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 {
-	uint32_t *gtids;		/* pointer to array of ranks */
 	int fd, j;
 	stepd_step_task_info_t *task = job->task[local_proc_id];
 	char **tmp_env;
 	int saved_errno;
 	uint32_t node_offset = 0, task_offset = 0;
 
-	if (job->node_offset != NO_VAL)
-		node_offset = job->node_offset;
-	if (job->pack_task_offset != NO_VAL)
-		task_offset = job->pack_task_offset;
+	if (job->het_job_node_offset != NO_VAL)
+		node_offset = job->het_job_node_offset;
+	if (job->het_job_task_offset != NO_VAL)
+		task_offset = job->het_job_task_offset;
 
-	gtids = xmalloc(job->node_tasks * sizeof(uint32_t));
 	for (j = 0; j < job->node_tasks; j++)
-		gtids[j] = job->task[j]->gtid + task_offset;
-	job->envtp->sgtids = _uint32_array_to_str(job->node_tasks, gtids);
-	xfree(gtids);
+		xstrfmtcat(job->envtp->sgtids, "%s%u", j ? "," : "",
+			   job->task[j]->gtid + task_offset);
 
-	if (job->pack_jobid != NO_VAL)
-		job->envtp->jobid = job->pack_jobid;
+	if (job->het_job_id != NO_VAL)
+		job->envtp->jobid = job->het_job_id;
 	else
-		job->envtp->jobid = job->jobid;
-	job->envtp->stepid = job->stepid;
+		job->envtp->jobid = job->step_id.job_id;
+	job->envtp->stepid = job->step_id.step_id;
 	job->envtp->nodeid = job->nodeid + node_offset;
 	job->envtp->cpus_on_node = job->cpus;
 	job->envtp->procid = task->gtid + task_offset;
@@ -418,21 +414,11 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 
 	xfree(job->envtp->task_count);
 
-	if (task->argv[0] && *task->argv[0] != '/') {
-		/*
-		 * Normally the client (srun) expands the command name
-		 * to a fully qualified path, but in --multi-prog mode it
-		 * is left up to the server to search the PATH for the
-		 * executable.
-		 */
-		task->argv[0] = _build_path(task->argv[0], job->env, NULL);
-	}
-
-	if (!job->batch && (job->stepid != SLURM_EXTERN_CONT)) {
+	if (!job->batch && (job->step_id.step_id != SLURM_EXTERN_CONT)) {
 		if (switch_g_job_attach(job->switch_job, &job->env,
 					job->nodeid, (uint32_t) local_proc_id,
 					job->nnodes, job->ntasks,
-					task->gtid) < 0) {
+					task->gtid + task_offset) < 0) {
 			error("Unable to attach to interconnect: %m");
 			log_fini();
 			exit(1);
@@ -461,7 +447,7 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 		job->envtp->env = env_array_copy((const char **) job->env);
 		gres_plugin_step_set_env(&job->envtp->env, job->step_gres_list,
 					 job->accel_bind_type, job->tres_bind,
-					 job->tres_freq, local_proc_id);
+					 local_proc_id);
 		tmp_env = job->env;
 		job->env = job->envtp->env;
 		env_array_free(tmp_env);
@@ -472,15 +458,9 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 		exit(1);
 	}
 
-	if (conf->task_prolog) {
-		char *my_prolog;
-		slurm_mutex_lock(&conf->config_mutex);
-		my_prolog = xstrdup(conf->task_prolog);
-		slurm_mutex_unlock(&conf->config_mutex);
+	if (slurm_conf.task_prolog)
 		_run_script_and_set_env("slurm task_prolog",
-					my_prolog, job);
-		xfree(my_prolog);
-	}
+					slurm_conf.task_prolog, job);
 	if (job->task_prolog) {
 		_run_script_and_set_env("user task_prolog",
 					job->task_prolog, job);
@@ -501,18 +481,22 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 		job->env[0] = (char *)NULL;
 	}
 
-	if (job->restart_dir) {
-		info("restart from %s", job->restart_dir);
-		/* no return on success */
-		checkpoint_restart_task(job, job->restart_dir, task->gtid);
-		error("Restart task failed: %m");
-		exit(errno);
-	}
-
 	if (task->argv[0] == NULL) {
 		error("No executable program specified for this task");
 		exit(2);
 	}
+
+	if (*task->argv[0] != '/') {
+		/*
+		 * Handle PATH resolution for the command to launch.
+		 * Need to handle this late so that SPANK and other plugins
+		 * have a chance to manipulate the PATH and/or change the
+		 * filesystem namespaces into the final arrangement, which
+		 * may affect which executable we select.
+		 */
+		task->argv[0] = _build_path(task->argv[0], job->env);
+	}
+
 
 	/* Do this last so you don't worry too much about the users
 	   limits including the slurmstepd in with it.
@@ -589,30 +573,4 @@ _make_tmpdir(stepd_step_rec_t *job)
 	}
 
 	return;
-}
-
-/*
- * Return a string representation of an array of uint32_t elements.
- * Each value in the array is printed in decimal notation and elements
- * are separated by a comma.
- *
- * Returns an xmalloc'ed string.  Free with xfree().
- */
-static char *_uint32_array_to_str(int array_len, const uint32_t *array)
-{
-	int i;
-	char *sep = ",";  /* seperator */
-	char *str = xstrdup("");
-
-	if (array == NULL)
-		return str;
-
-	for (i = 0; i < array_len; i++) {
-
-		if (i == array_len-1) /* last time through loop */
-			sep = "";
-		xstrfmtcat(str, "%u%s", array[i], sep);
-	}
-
-	return str;
 }

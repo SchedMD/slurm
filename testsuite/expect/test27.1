@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test sdiag --usage option. (initially same as --help)
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2012 SchedMD LLC
 #
@@ -29,11 +25,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "27.1"
 set exit_code   0
 set matches     0
-
-print_header $test_id
 
 #
 # Report the sdiag usage format
@@ -46,7 +39,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sdiag not responding\n"
+		log_error "sdiag not responding"
 		set exit_code 1
 	}
 	eof {
@@ -55,11 +48,9 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: sdiag --usage failed ($matches)\n"
-	set exit_code 1
+	fail "sdiag --usage failed ($matches)"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

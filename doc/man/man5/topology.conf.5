@@ -3,6 +3,13 @@
 .SH "NAME"
 topology.conf \- Slurm configuration file for defining the network topology
 
+.SH "PREREQUISITES"
+
+Topology.conf can only represent a hierarchical network. All nodes in the
+network must be connected to at least one switch. The network must be fully
+connected to use a RoutePlugin. Jobs can only span nodes connected by the same
+switch fabric, even if there are available idle nodes.
+
 .SH "DESCRIPTION"
 \fBtopology.conf\fP is an ASCII file which describes the
 cluster's network topology for optimized job resource allocation.

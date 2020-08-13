@@ -46,9 +46,8 @@ struct bcast_parameters {
 	char *dst_fname;
 	int fanout;
 	bool force;
-	uint32_t job_id;		/* Job ID or Pack Job ID */
-	uint32_t pack_job_offset;	/* Pack Job Offset or NO_VAL */
 	bool preserve;
+	slurm_selected_step_t *selected_step;
 	char *src_fname;
 	uint32_t step_id;
 	int timeout;

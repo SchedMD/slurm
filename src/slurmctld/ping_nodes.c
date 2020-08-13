@@ -77,9 +77,8 @@ bool is_ping_done (void)
 		is_done = false;
 		if (!ping_msg_sent &&
 		    (difftime(time(NULL), ping_start) >= PING_TIMEOUT)) {
-			error("Node ping apparently hung, "
-			      "many nodes may be DOWN or configured "
-			      "SlurmdTimeout should be increased");
+			error("A node ping cycle took more than %d seconds. Node RPC requests like ping, register status, health check and/or accounting gather update are triggered less frequently than configured. Either many nodes are non-responsive or one of SlurmdTimeout, HealthCheckInterval, JobAcctGatherFrequency, ExtSensorsFreq should be increased.",
+			      PING_TIMEOUT);
 			ping_msg_sent = true;
 		}
 	} else
@@ -147,9 +146,9 @@ void ping_nodes (void)
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr = NULL;
 #else
-	struct node_record *node_ptr = NULL;
-	time_t old_cpu_load_time = now - slurmctld_conf.slurmd_timeout;
-	time_t old_free_mem_time = now - slurmctld_conf.slurmd_timeout;
+	node_record_t *node_ptr = NULL;
+	time_t old_cpu_load_time = now - slurm_conf.slurmd_timeout;
+	time_t old_free_mem_time = now - slurm_conf.slurmd_timeout;
 #endif
 
 	ping_agent_args = xmalloc (sizeof (agent_arg_t));
@@ -179,12 +178,12 @@ void ping_nodes (void)
 	} else {
 		node_dead_time = last_ping_time - last_ping_timeout;
 	}
-	still_live_time = now - (slurmctld_conf.slurmd_timeout / 3);
+	still_live_time = now - (slurm_conf.slurmd_timeout / 3);
 	last_ping_time  = now;
-	last_ping_timeout = slurmctld_conf.slurmd_timeout;
+	last_ping_timeout = slurm_conf.slurmd_timeout;
 
 	if (max_reg_threads == 0) {
-		max_reg_threads = MAX(slurm_get_tree_width(), 1);
+		max_reg_threads = MAX(slurm_conf.tree_width, 1);
 	}
 	offset += max_reg_threads;
 	if ((offset > node_record_count) &&
@@ -194,7 +193,7 @@ void ping_nodes (void)
 #ifdef HAVE_FRONT_END
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
-		if ((slurmctld_conf.slurmd_timeout == 0)	&&
+		if ((slurm_conf.slurmd_timeout == 0)	&&
 		    (!restart_flag)				&&
 		    (!IS_NODE_UNKNOWN(front_end_ptr))		&&
 		    (!IS_NODE_NO_RESPOND(front_end_ptr)))
@@ -219,10 +218,8 @@ void ping_nodes (void)
 			continue;
 		}
 
-		if (restart_flag) {
-			front_end_ptr->last_response =
-				slurmctld_conf.last_update;
-		}
+		if (restart_flag)
+			front_end_ptr->last_response = slurm_conf.last_update;
 
 		/* Request a node registration if its state is UNKNOWN or
 		 * on a periodic basis (about every MAX_REG_FREQUENCY ping,
@@ -267,11 +264,11 @@ void ping_nodes (void)
 	     i < node_record_count; i++, node_ptr++) {
 		if (IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWER_SAVE(node_ptr) ||
-		    IS_NODE_POWER_UP(node_ptr))
+		    IS_NODE_POWER_UP(node_ptr) ||
+		    (IS_NODE_DOWN(node_ptr) && IS_NODE_REBOOT(node_ptr)))
 			continue;
-		if ((slurmctld_conf.slurmd_timeout == 0) &&
-		    (!restart_flag)			 &&
-		    (!IS_NODE_UNKNOWN(node_ptr))         &&
+		if ((slurm_conf.slurmd_timeout == 0) && (!restart_flag) &&
+		    (!IS_NODE_UNKNOWN(node_ptr)) &&
 		    (!IS_NODE_NO_RESPOND(node_ptr)))
 			continue;
 
@@ -299,8 +296,8 @@ void ping_nodes (void)
 		   accidentally mark them as "unexpectedly rebooted".
 		*/
 		if (restart_flag
-		    && (node_ptr->last_response < slurmctld_conf.last_update))
-			node_ptr->last_response = slurmctld_conf.last_update;
+		    && (node_ptr->last_response < slurm_conf.last_update))
+		        node_ptr->last_response = slurm_conf.last_update;
 
 		/* Request a node registration if its state is UNKNOWN or
 		 * on a periodic basis (about every MAX_REG_FREQUENCY ping,
@@ -383,7 +380,7 @@ extern void run_health_check(void)
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int node_test_cnt = 0, node_limit, node_states, run_cyclic;
 	static int base_node_loc = -1;
 	static time_t cycle_start_time = (time_t) 0;
@@ -420,10 +417,10 @@ extern void run_health_check(void)
 	}
 #else
 	node_limit = 0;
-	run_cyclic = slurmctld_conf.health_check_node_state &
-		     HEALTH_CHECK_CYCLE;
-	node_states = slurmctld_conf.health_check_node_state &
-		      (~HEALTH_CHECK_CYCLE);
+	run_cyclic = slurm_conf.health_check_node_state &
+	             HEALTH_CHECK_CYCLE;
+	node_states = slurm_conf.health_check_node_state &
+	              (~HEALTH_CHECK_CYCLE);
 	if (run_cyclic) {
 		time_t now = time(NULL);
 		if (cycle_start_time == (time_t) 0)
@@ -431,14 +428,14 @@ extern void run_health_check(void)
 		else if (base_node_loc >= 0)
 			;	/* mid-cycle */
 		else if (difftime(now, cycle_start_time) <
-			 slurmctld_conf.health_check_interval) {
+		         slurm_conf.health_check_interval) {
 			return;	/* Wait to start next cycle */
 		}
 		cycle_start_time = now;
 		/* Determine how many nodes we want to test on each call of
 		 * run_health_check() to spread out the work. */
 		node_limit = (node_record_count * 2) /
-			     slurmctld_conf.health_check_interval;
+		             slurm_conf.health_check_interval;
 		node_limit = MAX(node_limit, 10);
 	}
 	if ((node_states != HEALTH_CHECK_NODE_ANY) &&
@@ -470,11 +467,7 @@ extern void run_health_check(void)
 			continue;
 		if (node_states != HEALTH_CHECK_NODE_ANY) {
 			uint16_t cpus_total, cpus_used = 0;
-			if (slurmctld_conf.fast_schedule) {
-				cpus_total = node_ptr->config_ptr->cpus;
-			} else {
-				cpus_total = node_ptr->cpus;
-			}
+			cpus_total = node_ptr->config_ptr->cpus;
 			if (!IS_NODE_IDLE(node_ptr)) {
 				select_g_select_nodeinfo_get(
 						node_ptr->select_nodeinfo,
@@ -535,7 +528,7 @@ extern void update_nodes_acct_gather_data(void)
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 #endif
 	int i;
 	char *host_str = NULL;
@@ -580,8 +573,7 @@ extern void update_nodes_acct_gather_data(void)
 	} else {
 		hostlist_uniq(agent_args->hostlist);
 		host_str = hostlist_ranged_string_xmalloc(agent_args->hostlist);
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_ENERGY)
-			info("Updating acct_gather data for %s", host_str);
+		log_flag(ENERGY, "Updating acct_gather data for %s", host_str);
 		xfree(host_str);
 		ping_begin();
 		agent_queue_request(agent_args);

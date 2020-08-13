@@ -17,7 +17,7 @@ time limit or a job terminating.
 These events can cause actions such as the execution of an arbitrary
 script.
 Typical uses include notifying system administrators of node failures
-and gracefully terminating a job when it's time limit is approaching.
+and gracefully terminating a job when its time limit is approaching.
 A hostlist expression for the nodelist or job ID is passed as an argument
 to the program.
 
@@ -288,6 +288,19 @@ Name of the user requesting the action
 .TP
 \fBPROGRAM\fP
 Pathname of the program to execute when the event occurs
+
+.SH "PERFORMANCE"
+.PP
+Executing \fBstrigger\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBstrigger\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBstrigger\fR or other Slurm client commands that send remote
+procedure calls to \fBslurmctld\fR from loops in shell scripts or other
+programs. Ensure that programs limit calls to \fBstrigger\fR to the minimum
+necessary for the information you are trying to gather.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP

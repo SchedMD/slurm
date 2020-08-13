@@ -13,17 +13,16 @@ System Dependencies:
   libslurm.so
 
 Overview:
-  Restricts access to compute nodes in a cluster using SLURM.
+  Restricts access to compute nodes in a cluster using Slurm.
 
 Recognized Arguments:
   debug; no_sys_info; no_warn; rsh_kludge; rlogin_kludge
 
 Description:
-  This module restricts access to compute nodes in a cluster where Simple 
-  Linux Utility for Resource Managment (SLURM) is in use.  Access is granted
-  to root, any user with an SLURM-launched job currently running on the node,
-  or any user who has allocated resources on the node according to the SLURM
-  database.
+  This module restricts access to compute nodes in a cluster where the
+  Slurm workload manager is in use.  Access is granted to root, any user
+  with an Slurm-launched job currently running on the node, or any user
+  who has allocated resources on the node according to the Slurm database.
 
   The behavior of this module can be modified with the following flags:
 

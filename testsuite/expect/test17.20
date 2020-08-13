@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of mail options (--mail-type and --mail-user options).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,18 +28,14 @@
 ############################################################################
 source ./globals
 
-set test_id              "17.20"
 set exit_code            0
 set file_in              "test$test_id.input"
 set file_out             "test$test_id.input"
 set got_job_grps         0
 set got_login_grps       0
 
-print_header $test_id
-
 if {[test_front_end] != 0 && [test_super_user] == 0} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
 #
@@ -74,21 +66,19 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch failed to submit job\n"
-	exit 1
+	fail "sbatch failed to submit job"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Waiting for job to complete"
 }
 
 if {[wait_for_file $file_out] != 0} {
-	exit 1
+	fail "Job did not produce output"
 }
 
 spawn $bin_cat $file_out
@@ -103,12 +93,11 @@ expect {
 }
 
 if {$got_job_grps == 0} {
-	send_user "\nFAILURE: Did not get user info from slurm job\n"
-	exit 1
+	fail "Did not get user info from slurm job"
 }
 
 if {$exit_code == 0} {
 	file delete $file_in $file_out
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -4,10 +4,6 @@
 #          Verify that Slurm directed environment variables are processed:
 #          SLURM_DEBUG, SLURM_NNODES, SLURN_NPROCS, SLURM_OVERCOMMIT,
 #          SLURM_STDOUTMODE.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -34,14 +30,11 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.31"
 set env_flag_debug   0
 set env_name_debug   "SLURM_DEBUG"
 set env_valu_debug   1
 set env_name_nnodes  "SLURM_NNODES"
 set file_in          "test$test_id.input"
-
-print_header $test_id
 
 set min_nodes        1
 set max_nodes        2
@@ -62,7 +55,7 @@ set timeout          $max_job_delay
 global env
 set env($env_name_debug)   $env_valu_debug
 set env($env_name_nnodes)  $env_valu_nnodes
-send_user "$env_valu_nnodes $env_valu_nprocs\n";
+log_debug "$env_valu_nnodes $env_valu_nprocs";
 set env($env_name_nprocs)  $env_valu_nprocs
 set env($env_name_stdout)  $env_valu_stdout
 set env($env_name_overcom) $env_valu_overcom
@@ -81,7 +74,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -91,17 +84,14 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: did not get job_id\n"
-	exit 1
+	fail "Did not get job_id"
 }
 
 #
 # Look at output file to confirm processing of environment variables
 #
 if {[wait_for_file $env_valu_stdout] != 0} {
-	send_user "\nFAILURE: did not process"
-	send_user " $env_name_stdout environment variable\n"
-	exit 1
+	fail "Did not process $env_name_stdout environment variable"
 }
 
 set stale_cnt     0
@@ -140,7 +130,7 @@ expect {
 	}
 
 	timeout {
-		send_user "\nFAILURE: $bin_sort not responding\n"
+		log_error "$bin_sort not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -150,28 +140,22 @@ expect {
 }
 
 if {$stale_cnt != 0} {
-	send_user "\nWARNING: Stale file handles $task_cnt for $stale_cnt tasks\n"
+	log_warn "Stale file handles $task_cnt for $stale_cnt tasks"
 	incr task_cnt $stale_cnt
 }
 if {$task_cnt != $env_valu_nprocs} {
-	send_user "\nFAILURE: did not process"
-	send_user " $env_name_nprocs environment variable"
-	send_user " ($task_cnt != $env_valu_nprocs)\n"
+	log_error "Did not process $env_name_nprocs environment variable ($task_cnt != $env_valu_nprocs)"
 	set exit_code 1
 }
 
 # Note zero origin conversion
 incr max_node_val
 if {$max_node_val < $min_nodes} {
-	send_user "\nFAILURE: did not process"
-	send_user " $env_name_nnodes environment variable"
-	send_user " ($max_node_val < $min_nodes)\n"
+	log_error "Did not process $env_name_nnodes environment variable ($max_node_val < $min_nodes)"
 	set exit_code 1
 }
 if {$max_node_val > $max_nodes} {
-	send_user "\nFAILURE: did not process"
-	send_user " $env_name_nnodes environment variable"
-	send_user " ($max_node_val > $max_nodes)\n"
+	log_error "Did not process $env_name_nnodes environment variable ($max_node_val > $max_nodes)"
 	set exit_code 1
 }
 
@@ -180,6 +164,6 @@ if {$max_node_val > $max_nodes} {
 #
 if {$exit_code == 0} {
 	exec $bin_rm -f $env_valu_stdout $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

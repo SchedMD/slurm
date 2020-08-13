@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Increase size of job with allocated MPS
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC
 # Written by Morris Jette
@@ -31,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id          "40.5"
 set exit_code        0
 set file_in1         "test$test_id.input1"
 set file_in2         "test$test_id.input2"
@@ -39,44 +33,28 @@ set file_in3         "test$test_id.input3"
 set file_out1        "test$test_id.output1"
 set file_out2        "test$test_id.output2"
 
-print_header $test_id
-
 if {![test_scheduler_params "permit_job_expansion"]} {
-        send_user "\nWARNING: This test is only compatible with SchedulerParameters=permit_job_expansion\n"
-        exit $exit_code
+    skip "This test is only compatible with SchedulerParameters=permit_job_expansion"
 }
 
 if {[test_cons_tres]} {
-        send_user "\nValid configuration, using select/cons_tres\n"
+    log_debug "Valid configuration, using select/cons_tres"
 } else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit $exit_code
+    skip "This test is only compatible with select/cons_tres"
 }
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+    skip "This test is incompatible with front-end systems"
 }
 
 set constrain_devices [test_constrain_devices]
 if {$constrain_devices} {
-	send_user "Devices files are constrained by cgroups\n"
+	log_debug "Devices files are constrained by cgroups"
 } else {
-	send_user "Devices files are NOT constrained by cgroups\n"
+	log_debug "Devices files are NOT constrained by cgroups"
 }
 
-set nb_nodes [available_nodes $partition ""]
-if {$nb_nodes < 2} {
-    send_user "\nWARNING: not enough nodes currently available ($nb_nodes avail, 2 needed)\n"
-    exit $exit_code
-}
-set mps_cnt [get_mps_count $nb_nodes]
-if {$mps_cnt < 0} {
-	send_user "\nFAILURE: Error getting MPS count\n"
-	exit 1
-}
-if {$mps_cnt < 100} {
-	send_user "\nWARNING: This test requires 100 or more MPS per node in the default partition\n"
-	exit 0
+if {[llength [get_nodes_by_request "--gres=mps:100 -N2 -t2"]] == 0} {
+	skip "This test requires being able to submit job with --gres=mps:100 -N2"
 }
 
 #
@@ -131,7 +109,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -139,13 +117,11 @@ expect {
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: job 1 not submitted\n"
-	exit 1
+	fail "Job 1 not submitted"
 }
 if {[wait_for_job $job_id1 "RUNNING"] != 0} {
-	send_user "\nFAILURE: job 1 did not start\n"
 	cancel_job $job_id1
-	exit 1
+	fail "Job 1 did not start"
 }
 
 #
@@ -159,7 +135,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -167,29 +143,25 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	send_user "\nFAILURE: job 2 not submitted\n"
 	cancel_job $job_id1
-	exit 1
+	fail "Job 2 not submitted"
 }
 if {[wait_for_job $job_id1 "DONE"] != 0} {
-	send_user "\nFAILURE: job 1 did not complete\n"
 	cancel_job $job_id1
 	cancel_job $job_id2
-	exit 1
+	fail "Job 1 did not complete"
 }
 if {[wait_for_job $job_id2 "DONE"] != 0} {
-	send_user "\nFAILURE: job 2 did not complete\n"
 	cancel_job $job_id2
-	exit 1
+	fail "Job 2 did not complete"
 }
 
 #
 # Parse the output files from job 1
 #
-send_user "\n\nParse job 1 output\n"
+log_info "Parse job 1 output"
 if {[wait_for_file $file_out1] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
+	fail "No output file"
 }
 
 set match 0
@@ -206,7 +178,7 @@ expect {
 	}
 }
 if {$match != 3} {
-	send_user "\nFAILURE: Bad CUDA information about job 1 ($match != 3)\n"
+	log_error "Bad CUDA information about job 1 ($match != 3)"
 	set exit_code 1
 }
 
@@ -235,10 +207,10 @@ if {$exit_code == 0 && $constrain_devices == 0} {
 	if {$count > 0} {
 		set count [expr 10 * 100 / $count]
 		if {$percentage != $count} {
-			send_user "\nFAILURE: Bad CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value ($percentage != $count)\n"
+			log_error "Bad CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value ($percentage != $count)"
 			set exit_code 1
 		} else {
-			send_user "\n CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value is good\n"
+			log_debug "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value is good"
 		}
 	}
 }
@@ -247,10 +219,9 @@ if {$exit_code == 0 && $constrain_devices == 0} {
 # Parse the output files from job 2
 # Not currently looking for anything, but do log it's contents before purge
 #
-send_user "\n\nParse job 2 output\n"
+log_info "Parse job 2 output"
 if {[wait_for_file $file_out2] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
+	fail "No output file"
 }
 set match 0
 spawn $bin_cat $file_out2
@@ -264,6 +235,6 @@ if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2 $file_in3 $file_out1 $file_out2
 	exec $bin_rm -f slurm_job_${job_id2}_resize.csh
 	exec $bin_rm -f slurm_job_${job_id2}_resize.sh
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

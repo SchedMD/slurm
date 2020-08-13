@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validate scontrol exit, quit, and !! commands.
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # NOTE: The interaction processing is a bit strange to deal with the
 # behavior of readline() in RedHat 9, that keeps printing the prompt
 # for each keystroke.
@@ -36,10 +32,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "2.4"
 set exit_code   0
-
-print_header $test_id
 
 #
 # Report the slurm daemon status and explicitly exit
@@ -68,7 +61,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -76,7 +69,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol ping or exit command failed\n"
+	log_error "scontrol ping or exit command failed"
 	set exit_code 1
 }
 
@@ -107,7 +100,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -115,7 +108,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol ping or quit command failed\n"
+	log_error "scontrol ping or quit command failed"
 	set exit_code 1
 }
 
@@ -154,7 +147,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -162,11 +155,9 @@ expect {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: scontrol ping, !!, or quit command failed\n"
-	set exit_code 1
+	fail "scontrol ping, !!, or quit command failed"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

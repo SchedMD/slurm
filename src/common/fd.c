@@ -35,15 +35,23 @@
  *  Refer to "fd.h" for documentation on public functions.
 \*****************************************************************************/
 
-#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <poll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-#include "src/common/macros.h"
+#include "slurm/slurm_errno.h"
+
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/timers.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
@@ -51,7 +59,9 @@
  */
 strong_alias(fd_set_blocking,	slurm_fd_set_blocking);
 strong_alias(fd_set_nonblocking,slurm_fd_set_nonblocking);
-
+strong_alias(fd_get_socket_error, slurm_fd_get_socket_error);
+strong_alias(send_fd_over_pipe, slurm_send_fd_over_pipe);
+strong_alias(receive_fd_over_pipe, slurm_receive_fd_over_pipe);
 
 static int fd_get_lock(int fd, int cmd, int type);
 static pid_t fd_test_lock(int fd, int type);
@@ -59,7 +69,7 @@ static pid_t fd_test_lock(int fd, int type);
 
 void fd_set_close_on_exec(int fd)
 {
-	assert(fd >= 0);
+	xassert(fd >= 0);
 
 	if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
 		error("fcntl(F_SETFD) failed: %m");
@@ -68,7 +78,7 @@ void fd_set_close_on_exec(int fd)
 
 void fd_set_noclose_on_exec(int fd)
 {
-	assert(fd >= 0);
+	xassert(fd >= 0);
 
 	if (fcntl(fd, F_SETFD, 0) < 0)
 		error("fcntl(F_SETFD) failed: %m");
@@ -79,7 +89,7 @@ void fd_set_nonblocking(int fd)
 {
 	int fval;
 
-	assert(fd >= 0);
+	xassert(fd >= 0);
 
 	if ((fval = fcntl(fd, F_GETFL, 0)) < 0)
 		error("fcntl(F_GETFL) failed: %m");
@@ -92,7 +102,7 @@ void fd_set_blocking(int fd)
 {
 	int fval;
 
-	assert(fd >= 0);
+	xassert(fd >= 0);
 
 	if ((fval = fcntl(fd, F_GETFL, 0)) < 0)
 		error("fcntl(F_GETFL) failed: %m");
@@ -123,11 +133,23 @@ pid_t fd_is_read_lock_blocked(int fd)
 	return(fd_test_lock(fd, F_RDLCK));
 }
 
+int fd_get_socket_error(int fd, int *err)
+{
+	socklen_t errlen = sizeof(err);
+
+	xassert(fd >= 0);
+
+	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&err, &errlen))
+		return errno;
+	else
+		return SLURM_SUCCESS;
+}
+
 static int fd_get_lock(int fd, int cmd, int type)
 {
 	struct flock lock;
 
-	assert(fd >= 0);
+	xassert(fd >= 0);
 
 	lock.l_type = type;
 	lock.l_start = 0;
@@ -142,7 +164,7 @@ static pid_t fd_test_lock(int fd, int type)
 {
 	struct flock lock;
 
-	assert(fd >= 0);
+	xassert(fd >= 0);
 
 	lock.l_type = type;
 	lock.l_start = 0;
@@ -188,4 +210,156 @@ extern int wait_fd_readable(int fd, int time_limit)
 			time_left = time_limit - (time(NULL) - start);
 		}
 	}
+}
+
+/*
+ * fsync() then close() a file.
+ * Execute fsync() and close() multiple times if necessary and log failures
+ * RET 0 on success or -1 on error
+ */
+extern int fsync_and_close(int fd, const char *file_type)
+{
+	int rc = 0, retval, pos;
+	DEF_TIMERS;
+
+	/*
+	 * Slurm state save files are commonly stored on shared filesystems,
+	 * so lets give fsync() three tries to sync the data to disk.
+	 */
+	START_TIMER;
+	for (retval = 1, pos = 1; retval && pos < 4; pos++) {
+		retval = fsync(fd);
+		if (retval && (errno != EINTR)) {
+			error("fsync() error writing %s state save file: %m",
+			      file_type);
+		}
+	}
+	END_TIMER2("fsync_and_close:fsync");
+	if (retval)
+		rc = retval;
+
+	START_TIMER;
+	for (retval = 1, pos = 1; retval && pos < 4; pos++) {
+		retval = close(fd);
+		if (retval && (errno != EINTR)) {
+			error("close () error on %s state save file: %m",
+			      file_type);
+		}
+	}
+	END_TIMER2("fsync_and_close:close");
+	if (retval)
+		rc = retval;
+
+	return rc;
+}
+
+extern char *fd_resolve_path(int fd)
+{
+	char *resolved = NULL;
+	char *path = NULL;
+
+#if defined(__linux__)
+	struct stat sb = {0};
+
+	path = xstrdup_printf("/proc/self/fd/%u", fd);
+	if (lstat(path, &sb) == -1) {
+		debug("%s: unable to lstat(%s): %m", __func__, path);
+	} else {
+		size_t name_len = sb.st_size + 1;
+		resolved = xmalloc(name_len);
+		if (readlink(path, resolved, name_len) <= 0) {
+			debug("%s: unable to readlink(%s): %m",
+			      __func__, path);
+			xfree(resolved);
+		}
+	}
+#endif
+
+	// TODO: use fcntl(fd, F_GETPATH, filePath) on macOS
+
+	xfree(path);
+	return resolved;
+}
+
+extern void fd_set_oob(int fd, int value)
+{
+	if (setsockopt(fd, SOL_SOCKET, SO_OOBINLINE, &value, sizeof(value)))
+		fatal("Unable disable inline OOB messages on socket: %m");
+}
+
+extern char *poll_revents_to_str(const short revents)
+{
+	char *txt = NULL;
+
+	if (revents & POLLIN)
+		xstrfmtcat(txt, "POLLIN");
+	if (revents & POLLPRI)
+		xstrfmtcat(txt, "%sPOLLPRI", (txt ? "|" : ""));
+	if (revents & POLLOUT)
+		xstrfmtcat(txt, "%sPOLLOUT", (txt ? "|" : ""));
+	if (revents & POLLHUP)
+		xstrfmtcat(txt, "%sPOLLHUP", (txt ? "|" : ""));
+	if (revents & POLLNVAL)
+		xstrfmtcat(txt, "%sPOLLNVAL", (txt ? "|" : ""));
+	if (revents & POLLERR)
+		xstrfmtcat(txt, "%sPOLLERR", (txt ? "|" : ""));
+
+	if (!revents)
+		xstrfmtcat(txt, "0");
+	else
+		xstrfmtcat(txt, "(0x%04" PRIx16 ")", revents);
+
+	return txt;
+}
+
+/* pass an open file descriptor back to the parent process */
+extern void send_fd_over_pipe(int socket, int fd)
+{
+	struct msghdr msg = { 0 };
+	struct cmsghdr *cmsg;
+	char buf[CMSG_SPACE(sizeof(fd))];
+	memset(buf, '\0', sizeof(buf));
+
+	msg.msg_iov = NULL;
+	msg.msg_iovlen = 0;
+	msg.msg_control = buf;
+	msg.msg_controllen = sizeof(buf);
+
+	cmsg = CMSG_FIRSTHDR(&msg);
+	cmsg->cmsg_level = SOL_SOCKET;
+	cmsg->cmsg_type = SCM_RIGHTS;
+	cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+
+	memmove(CMSG_DATA(cmsg), &fd, sizeof(fd));
+	msg.msg_controllen = cmsg->cmsg_len;
+
+	if (sendmsg(socket, &msg, 0) < 0)
+		error("%s: failed to send fd: %m", __func__);
+}
+
+/* receive an open file descriptor from fork()'d child over unix socket */
+extern int receive_fd_over_pipe(int socket)
+{
+	struct msghdr msg = {0};
+	struct cmsghdr *cmsg;
+	int fd;
+	msg.msg_iov = NULL;
+	msg.msg_iovlen = 0;
+	char c_buffer[256];
+	msg.msg_control = c_buffer;
+	msg.msg_controllen = sizeof(c_buffer);
+
+	if (recvmsg(socket, &msg, 0) < 0) {
+		error("%s: failed to receive fd: %m", __func__);
+		return -1;
+	}
+
+	cmsg = CMSG_FIRSTHDR(&msg);
+	if (!cmsg) {
+		error("%s: CMSG_FIRSTHDR error: %m", __func__);
+		return -1;
+	}
+	memmove(&fd, CMSG_DATA(cmsg), sizeof(fd));
+
+	return fd;
 }

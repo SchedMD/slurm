@@ -65,6 +65,7 @@ print_field_t fields[] = {
 	 PRINT_CONSUMED_ENERGY_RAW},
 	{10, "CPUTime", print_fields_time_from_secs, PRINT_CPU_TIME},
 	{10, "CPUTimeRAW", print_fields_uint64, PRINT_CPU_TIME_RAW},
+	{-10, "DBIndex", print_fields_uint64, PRINT_DB_INX},
 	{15, "DerivedExitCode", print_fields_str, PRINT_DERIVED_EC},
 	{10, "Elapsed", print_fields_time_from_secs, PRINT_ELAPSED},
 	{10, "ElapsedRaw", print_fields_uint32, PRINT_ELAPSED_RAW},

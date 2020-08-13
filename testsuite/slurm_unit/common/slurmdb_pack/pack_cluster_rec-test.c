@@ -20,7 +20,7 @@ START_TEST(invalid_protocol)
 }
 END_TEST
 
-START_TEST(pack_1702_null_rec)
+START_TEST(pack_back2_null_rec)
 {
 	int rc;
 	slurmdb_cluster_rec_t pack_rec;
@@ -64,7 +64,7 @@ START_TEST(pack_1702_null_rec)
 }
 END_TEST
 
-START_TEST(pack_1702_rec)
+START_TEST(pack_back2_rec)
 {
 	int rc;
 	Buf buf = init_buf(1024);
@@ -85,6 +85,9 @@ START_TEST(pack_1702_rec)
 	pack_rec.name             = xstrdup("name");
 	pack_rec.nodes            = xstrdup("nodes");
 	pack_rec.plugin_id_select = 8;
+	pack_rec.fed.feature_list = list_create(xfree_ptr);
+	slurm_addto_mode_char_list(pack_rec.fed.feature_list, "a,b,c", 0);
+	ck_assert_int_eq(list_count(pack_rec.fed.feature_list), 3);
 
 	/* will be tested separately. */
 	pack_rec.root_assoc       = NULL;
@@ -126,9 +129,14 @@ START_TEST(pack_1702_rec)
 	ck_assert_str_eq(pack_rec.name, unpack_rec->name);
 	ck_assert_str_eq(pack_rec.nodes, unpack_rec->nodes);
 
-	/* 17.11 */
-	ck_assert(pack_rec.fed.feature_list == unpack_rec->fed.feature_list);
-
+	char *feature;
+	ck_assert_int_eq(list_count(pack_rec.fed.feature_list), list_count(unpack_rec->fed.feature_list));
+	ListIterator itr = list_iterator_create(pack_rec.fed.feature_list);
+	while ((feature = list_next(itr))) {
+		if (!list_find_first(unpack_rec->fed.feature_list, slurm_find_char_in_list, feature))
+			ck_abort_msg("Didn't find feature %s in unpacked list",
+				     feature);
+	}
 
 	FREE_NULL_LIST(pack_rec.accounting_list);
 	xfree(pack_rec.control_host);
@@ -140,7 +148,7 @@ START_TEST(pack_1702_rec)
 }
 END_TEST
 
-START_TEST(pack_1702_rec_null_ptrs)
+START_TEST(pack_back2_rec_null_ptrs)
 {
 	Buf buf = init_buf(1024);
 	slurmdb_cluster_rec_t pack_rec = {0};
@@ -185,7 +193,6 @@ START_TEST(pack_1702_rec_null_ptrs)
 	ck_assert(pack_rec.rpc_version      == unpack_rec->rpc_version);
 	ck_assert(pack_rec.fed.recv         == unpack_rec->fed.recv);
 	ck_assert(pack_rec.fed.send         == unpack_rec->fed.send);
-	/* 17.11 */
 	ck_assert(pack_rec.fed.feature_list == unpack_rec->fed.feature_list);
 
 	free_buf(buf);
@@ -193,7 +200,7 @@ START_TEST(pack_1702_rec_null_ptrs)
 }
 END_TEST
 
-START_TEST(pack_1711_null_rec)
+START_TEST(pack_back1_null_rec)
 {
 	int rc;
 	slurmdb_cluster_rec_t pack_rec;
@@ -204,7 +211,6 @@ START_TEST(pack_1711_null_rec)
 	pack_rec.fed.state        = 0;
 	pack_rec.dimensions       = 1;
 	pack_rec.plugin_id_select = NO_VAL;
-
 	slurmdb_pack_cluster_rec(NULL, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
@@ -218,7 +224,6 @@ START_TEST(pack_1711_null_rec)
 	ck_assert(pack_rec.nodes           == unpack_rec->nodes);
 	ck_assert(pack_rec.fed.recv        == unpack_rec->fed.recv);
 	ck_assert(pack_rec.fed.send        == unpack_rec->fed.send);
-	/* 17.11 */
 	ck_assert(pack_rec.fed.feature_list == unpack_rec->fed.feature_list);
 
 	/* root_assoc gets unpacked into a empty structure */
@@ -237,7 +242,7 @@ START_TEST(pack_1711_null_rec)
 }
 END_TEST
 
-START_TEST(pack_1711_rec)
+START_TEST(pack_back1_rec)
 {
 	int rc;
 	Buf buf = init_buf(1024);
@@ -258,7 +263,7 @@ START_TEST(pack_1711_rec)
 	pack_rec.name             = xstrdup("name");
 	pack_rec.nodes            = xstrdup("nodes");
 	pack_rec.plugin_id_select = 8;
-	pack_rec.fed.feature_list = list_create(slurm_destroy_char);
+	pack_rec.fed.feature_list = list_create(xfree_ptr);
 	slurm_addto_mode_char_list(pack_rec.fed.feature_list, "a,b,c", 0);
 	ck_assert_int_eq(list_count(pack_rec.fed.feature_list), 3);
 
@@ -302,7 +307,6 @@ START_TEST(pack_1711_rec)
 	ck_assert_str_eq(pack_rec.name, unpack_rec->name);
 	ck_assert_str_eq(pack_rec.nodes, unpack_rec->nodes);
 
-	/* 17.11 */
 	char *feature;
 	ck_assert_int_eq(list_count(pack_rec.fed.feature_list), list_count(unpack_rec->fed.feature_list));
 	ListIterator itr = list_iterator_create(pack_rec.fed.feature_list);
@@ -322,7 +326,7 @@ START_TEST(pack_1711_rec)
 }
 END_TEST
 
-START_TEST(pack_1711_rec_null_ptrs)
+START_TEST(pack_back1_rec_null_ptrs)
 {
 	Buf buf = init_buf(1024);
 	slurmdb_cluster_rec_t pack_rec = {0};
@@ -367,7 +371,6 @@ START_TEST(pack_1711_rec_null_ptrs)
 	ck_assert(pack_rec.rpc_version      == unpack_rec->rpc_version);
 	ck_assert(pack_rec.fed.recv         == unpack_rec->fed.recv);
 	ck_assert(pack_rec.fed.send         == unpack_rec->fed.send);
-	/* 17.11 */
 	ck_assert(pack_rec.fed.feature_list == unpack_rec->fed.feature_list);
 
 	free_buf(buf);
@@ -379,19 +382,19 @@ END_TEST
  * TEST SUITE                                                                *
  ****************************************************************************/
 
-Suite* suite(void)
+Suite *suite(void)
 {
-	Suite* s = suite_create("Pack slurmdb_cluster_rec_t");
-	TCase* tc_core = tcase_create("Pack slurmdb_cluster_rec_t");
+	Suite *s = suite_create("Pack slurmdb_cluster_rec_t");
+	TCase *tc_core = tcase_create("Pack slurmdb_cluster_rec_t");
 	tcase_add_test(tc_core, invalid_protocol);
 
-	tcase_add_test(tc_core, pack_1711_null_rec);
-	tcase_add_test(tc_core, pack_1711_rec);
-	tcase_add_test(tc_core, pack_1711_rec_null_ptrs);
+	tcase_add_test(tc_core, pack_back1_null_rec);
+	tcase_add_test(tc_core, pack_back1_rec);
+	tcase_add_test(tc_core, pack_back1_rec_null_ptrs);
 
-	tcase_add_test(tc_core, pack_1702_null_rec);
-	tcase_add_test(tc_core, pack_1702_rec);
-	tcase_add_test(tc_core, pack_1702_rec_null_ptrs);
+	tcase_add_test(tc_core, pack_back2_null_rec);
+	tcase_add_test(tc_core, pack_back2_rec);
+	tcase_add_test(tc_core, pack_back2_rec_null_ptrs);
 
 	suite_add_tcase(s, tc_core);
 	return s;
@@ -404,7 +407,7 @@ Suite* suite(void)
 int main(void)
 {
 	int number_failed;
-	SRunner* sr = srunner_create(suite());
+	SRunner *sr = srunner_create(suite());
 
 	//srunner_set_fork_status(sr, CK_NOFORK);
 

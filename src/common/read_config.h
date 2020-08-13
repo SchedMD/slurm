@@ -48,11 +48,11 @@
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/parse_config.h"
+#include "src/common/run_in_daemon.h"
 
-extern slurm_ctl_conf_t slurmctld_conf;
+extern slurm_conf_t slurm_conf;
 extern char *default_slurm_config_file;
 extern char *default_plugin_path;
-extern char *default_plugstack;
 
 #ifndef NDEBUG
 extern uint16_t drop_priv_flag;
@@ -72,12 +72,12 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_ACCOUNTING_ENFORCE  0
 #define DEFAULT_ACCOUNTING_STORAGE_TYPE "accounting_storage/none"
 #define DEFAULT_AUTH_TYPE          "auth/munge"
+#define DEFAULT_AUTH_TOKEN_LIFESPAN 1800
 #define DEFAULT_BATCH_START_TIMEOUT 10
 #define DEFAULT_COMPLETE_WAIT       0
 #define DEFAULT_CRED_TYPE           "cred/munge"
 #define DEFAULT_EPILOG_MSG_TIME     2000
 #define DEFAULT_EXT_SENSORS_TYPE    "ext_sensors/none"
-#define DEFAULT_FAST_SCHEDULE       1
 #define DEFAULT_FIRST_JOB_ID        1
 #define DEFAULT_GET_ENV_TIMEOUT     2
 #define DEFAULT_GROUP_TIME          600
@@ -95,9 +95,7 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_ACCT_GATHER_FILESYSTEM_TYPE "acct_gather_filesystem/none"
 #define ACCOUNTING_STORAGE_TYPE_NONE "accounting_storage/none"
 #define DEFAULT_CORE_SPEC_PLUGIN    "core_spec/none"
-#define DEFAULT_DISABLE_ROOT_JOBS   0
 #define DEFAULT_ENFORCE_PART_LIMITS 0
-#define DEFAULT_JOB_CKPT_DIR        "/var/slurm/checkpoint"
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #define DEFAULT_JOB_COMP_LOC        "/var/log/slurm_jobcomp.log"
 #define DEFAULT_JOB_COMP_DB         "slurm_jobcomp_db"
@@ -116,6 +114,7 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_MAIL_PROG           "/bin/mail"
 #define DEFAULT_MAIL_PROG_ALT       "/usr/bin/mail"
 #define DEFAULT_MAX_ARRAY_SIZE      1001
+#define DEFAULT_MAX_DBD_MSGS        10000
 #define DEFAULT_MAX_JOB_COUNT       10000
 #define DEFAULT_MAX_JOB_ID          0x03ff0000
 #define DEFAULT_MAX_STEP_COUNT      40000
@@ -128,9 +127,13 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_MSG_AGGR_WINDOW_TIME 100
 #define DEFAULT_MSG_TIMEOUT         10
 #define DEFAULT_POWER_PLUGIN        ""
-#define DEFAULT_CHECKPOINT_TYPE     "checkpoint/none"
-#define DEFAULT_PROCTRACK_TYPE      "proctrack/cgroup"
+#if defined WITH_CGROUP
+#  define DEFAULT_PROCTRACK_TYPE      "proctrack/cgroup"
+#else
+#  define DEFAULT_PROCTRACK_TYPE      "proctrack/pgid"
+#endif
 #define DEFAULT_PREEMPT_TYPE        "preempt/none"
+#define DEFAULT_PREP_PLUGINS        "prep/script"
 #define DEFAULT_PRIORITY_DECAY      604800 /* 7 days */
 #define DEFAULT_PRIORITY_CALC_PERIOD 300 /* in seconds */
 #define DEFAULT_PRIORITY_TYPE       "priority/basic"
@@ -201,6 +204,7 @@ typedef struct slurm_conf_node {
 	char *nodenames;
 	char *hostnames;
 	char *addresses;
+	char *bcast_addresses;
 	char *gres;		/* arbitrary list of node's generic resources */
 	char *feature;		/* arbitrary list of node's features */
 	char *port_str;
@@ -280,6 +284,12 @@ typedef struct slurm_conf_downnodes {
 	char *reason;
 	char *state;
 } slurm_conf_downnodes_t;
+
+typedef struct {
+	char *feature;
+	char *name;
+	char *nodes;
+} slurm_conf_nodeset_t;
 
 typedef struct {
 	char *name;
@@ -383,7 +393,7 @@ void slurm_conf_install_fork_handlers(void);
  */
 extern int slurm_conf_destroy(void);
 
-extern slurm_ctl_conf_t *slurm_conf_lock(void);
+extern slurm_conf_t *slurm_conf_lock(void);
 
 extern void slurm_conf_unlock(void);
 
@@ -419,6 +429,14 @@ extern int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[]);
  * Return value is the length of the array.
  */
 extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[]);
+
+/*
+ * Set "ptr_array" with the pointer to an array of pointers to
+ * slurm_conf_nodeset_t structures.
+ *
+ * Return value is the length of the array.
+ */
+extern int slurm_conf_nodeset_array(slurm_conf_nodeset_t **ptr_array[]);
 
 /*
  * slurm_reset_alias - Reset the address and hostname of a specific node name
@@ -463,14 +481,6 @@ extern char *slurm_conf_get_aliases(const char *node_hostname);
 extern char *slurm_conf_get_nodeaddr(const char *node_hostname);
 
 /*
- * slurm_conf_get_nodename_from_addr - Return the NodeName for given NodeAddr
- *
- * NOTE: Call xfree() to release returned value's memory.
- * NOTE: Caller must NOT be holding slurm_conf_lock().
- */
-extern char *slurm_conf_get_nodename_from_addr(const char *node_addr);
-
-/*
  * slurm_conf_get_aliased_nodename - Return the NodeName matching an alias
  * of the local hostname
  *
@@ -480,6 +490,16 @@ extern char *slurm_conf_get_nodename_from_addr(const char *node_addr);
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern char *slurm_conf_get_aliased_nodename(void);
+
+/*
+ * Return BcastAddr (if set) for a given NodeName, or NULL
+ *
+ * Returned string was allocated with xmalloc(), and must be freed by
+ * the caller using xfree().
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char *slurm_conf_get_bcast_address(const char *node_name);
 
 /*
  * slurm_conf_get_port - Return the port for a given NodeName
@@ -495,7 +515,8 @@ extern uint16_t slurm_conf_get_port(const char *node_name);
  *
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
-extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address);
+extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
+			       uint16_t flags);
 
 /*
  * slurm_conf_get_cpus_bsct -
@@ -528,16 +549,15 @@ extern int slurm_conf_get_res_spec_info(const char *node_name,
  *	file pathname (slurm_conf) is not changed.
  * IN/OUT ctl_conf_ptr - pointer to data structure to be initialized
  */
-extern void init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
+extern void init_slurm_conf(slurm_conf_t *ctl_conf_ptr);
 
 /*
- * free_slurm_conf - free all storage associated with a slurm_ctl_conf_t.
+ * free_slurm_conf - free all storage associated with a slurm_conf_t.
  * IN/OUT ctl_conf_ptr - pointer to data structure to be freed
  * IN purge_node_hash - purge system-wide node hash table if set,
  *			set to zero if clearing private copy of config data
  */
-extern void free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr,
-			     bool purge_node_hash);
+extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash);
 
 /*
  * gethostname_short - equivalent to gethostname(), but return only the first
@@ -622,13 +642,6 @@ extern int sort_key_pairs(void *v1, void *v2);
  * return value must be xfreed
  */
 extern char *get_extra_conf_path(char *conf_name);
-
-/* Determine slurm_prog_name (calling process) is in list of daemons
- *
- * in - daemons (comma separated list of daemons i.e. slurmd,slurmstepd
- * returns true if slurm_prog_name (set in log.c) is in list, false otherwise.
- */
-extern bool run_in_daemon(char *daemons);
 
 /* Translate a job constraint specification into a node feature specification
  * RET - String MUST be xfreed */

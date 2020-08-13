@@ -45,6 +45,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/forward.h"
 #include "src/common/xmalloc.h"
@@ -117,8 +118,7 @@ extern int slurm_shutdown(uint16_t options)
 	 * Explicity send the message to both primary and backup controllers
 	 */
 	if (!working_cluster_rec) {
-		uint32_t control_cnt = slurm_get_control_cnt();
-		for (i = 1; i < control_cnt; i++)
+		for (i = 1; i < slurm_conf.control_cnt; i++)
 			(void) _send_message_controller(i, &req_msg);
 	}
 	return _send_message_controller(0, &req_msg);

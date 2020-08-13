@@ -83,7 +83,7 @@ static int _set_wckey_cond(int *start, int argc, char **argv,
 	wckey_cond->with_deleted = 1;
 
 	if (!wckey_cond->cluster_list)
-		wckey_cond->cluster_list = list_create(slurm_destroy_char);
+		wckey_cond->cluster_list = list_create(xfree_ptr);
 	if (cluster_flag)
 		slurm_addto_char_list(wckey_cond->cluster_list, cluster_flag);
 
@@ -109,8 +109,7 @@ static int _set_wckey_cond(int *start, int argc, char **argv,
 			  || !xstrncasecmp(argv[i], "WCKeys",
 					   MAX(command_len, 3))) {
 			if (!wckey_cond->name_list)
-				wckey_cond->name_list =
-					list_create(slurm_destroy_char);
+				wckey_cond->name_list = list_create(xfree_ptr);
 			if (slurm_addto_char_list(wckey_cond->name_list,
 						 argv[i]+end))
 				set = 1;
@@ -118,7 +117,7 @@ static int _set_wckey_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 3))) {
 			if (!wckey_cond->cluster_list)
 				wckey_cond->cluster_list =
-					list_create(slurm_destroy_char);
+					list_create(xfree_ptr);
 			if (slurm_addto_char_list(wckey_cond->cluster_list,
 						 argv[i]+end))
 				set = 1;
@@ -138,8 +137,7 @@ static int _set_wckey_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "User",
 					 MAX(command_len, 1))) {
 			if (!wckey_cond->user_list)
-				wckey_cond->user_list =
-					list_create(slurm_destroy_char);
+				wckey_cond->user_list = list_create(xfree_ptr);
 			if (slurm_addto_char_list_with_case(
 				    wckey_cond->user_list,
 				    argv[i]+end, user_case_norm))
@@ -154,9 +152,8 @@ static int _set_wckey_cond(int *start, int argc, char **argv,
 
 	if (!local_cluster_flag && !list_count(wckey_cond->cluster_list)) {
 		/* Get the default Cluster since no cluster is specified */
-		char *temp = slurm_get_cluster_name();
-		if (temp)
-			list_append(wckey_cond->cluster_list, temp);
+		list_append(wckey_cond->cluster_list,
+			    xstrdup(slurm_conf.cluster_name));
 	}
 
 	/* This needs to be done on some systems to make sure
@@ -192,7 +189,7 @@ static int _set_assoc_cond(int *start, int argc, char **argv,
 	assoc_cond->with_deleted = 1;
 
 	if (!assoc_cond->cluster_list)
-		assoc_cond->cluster_list = list_create(slurm_destroy_char);
+		assoc_cond->cluster_list = list_create(xfree_ptr);
 	if (cluster_flag)
 		slurm_addto_char_list(assoc_cond->cluster_list, cluster_flag);
 
@@ -217,8 +214,7 @@ static int _set_assoc_cond(int *start, int argc, char **argv,
 			  || !xstrncasecmp(argv[i], "Users",
 					   MAX(command_len, 1))) {
 			if (!assoc_cond->user_list)
-				assoc_cond->user_list =
-					list_create(slurm_destroy_char);
+				assoc_cond->user_list = list_create(xfree_ptr);
 			slurm_addto_char_list_with_case(assoc_cond->user_list,
 							argv[i]+end,
 							user_case_norm);
@@ -228,8 +224,7 @@ static int _set_assoc_cond(int *start, int argc, char **argv,
 			   || !xstrncasecmp(argv[i], "Acct",
 					   MAX(command_len, 4))) {
 			if (!assoc_cond->acct_list)
-				assoc_cond->acct_list =
-					list_create(slurm_destroy_char);
+				assoc_cond->acct_list = list_create(xfree_ptr);
 			slurm_addto_char_list(assoc_cond->acct_list,
 					argv[i]+end);
 			set = 1;
@@ -261,9 +256,8 @@ static int _set_assoc_cond(int *start, int argc, char **argv,
 
 	if (!local_cluster_flag && !list_count(assoc_cond->cluster_list)) {
 		/* Get the default Cluster since no cluster is specified */
-		char *temp = slurm_get_cluster_name();
-		if (temp)
-			list_append(assoc_cond->cluster_list, temp);
+		list_append(assoc_cond->cluster_list,
+			    xstrdup(slurm_conf.cluster_name));
 	}
 
 	/* This needs to be done on some systems to make sure
@@ -298,7 +292,7 @@ static int _set_cluster_cond(int *start, int argc, char **argv,
 	cluster_cond->with_usage = 1;
 
 	if (!cluster_cond->cluster_list)
-		cluster_cond->cluster_list = list_create(slurm_destroy_char);
+		cluster_cond->cluster_list = list_create(xfree_ptr);
 	if (cluster_flag)
 		slurm_addto_char_list(cluster_cond->cluster_list, cluster_flag);
 
@@ -345,9 +339,8 @@ static int _set_cluster_cond(int *start, int argc, char **argv,
 
 	if (!local_cluster_flag && !list_count(cluster_cond->cluster_list)) {
 		/* Get the default Cluster since no cluster is specified */
-		char *temp = slurm_get_cluster_name();
-		if (temp)
-			list_append(cluster_cond->cluster_list, temp);
+		list_append(cluster_cond->cluster_list,
+			    xstrdup(slurm_conf.cluster_name));
 	}
 
 	/* This needs to be done on some systems to make sure
@@ -846,7 +839,7 @@ extern int cluster_account_by_user(int argc, char **argv)
 	ListIterator itr = NULL;
 	ListIterator tres_itr = NULL;
 	ListIterator cluster_itr = NULL;
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(xfree_ptr);
 	List slurmdb_report_cluster_list = NULL;
 	int i = 0;
 	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = NULL;
@@ -1057,7 +1050,7 @@ extern int cluster_user_by_account(int argc, char **argv)
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ListIterator cluster_itr = NULL;
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(xfree_ptr);
 	List slurmdb_report_cluster_list = NULL;
 	int i = 0;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
@@ -1252,7 +1245,7 @@ extern int cluster_user_by_wckey(int argc, char **argv)
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ListIterator cluster_itr = NULL;
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(xfree_ptr);
 	List slurmdb_report_cluster_list = NULL;
 	int i = 0;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
@@ -1473,7 +1466,7 @@ extern int cluster_utilization(int argc, char **argv)
 	slurmdb_cluster_rec_t *cluster = NULL;
 	uint32_t total_time = 0;
 	List cluster_list = NULL;
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(xfree_ptr);
 	slurmdb_cluster_accounting_rec_t total_acct;
 	print_field_t *field;
 	slurmdb_tres_rec_t *tres;
@@ -1714,7 +1707,7 @@ extern int cluster_wckey_by_user(int argc, char **argv)
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ListIterator cluster_itr = NULL;
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(xfree_ptr);
 	List slurmdb_report_cluster_list = NULL;
 	int i = 0;
 	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = NULL;

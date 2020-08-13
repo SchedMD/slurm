@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Sets the job name environment variable, and changes it using srun,
 #          sbatch and salloc.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 SchedMD LLC
 # Written by Martin Thomas <mt@schedmd.com>
@@ -31,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set test_id	"1.77"
 set exit_code	0
 set job_id      0
 set number      "\[0-9\]+"
@@ -42,8 +37,6 @@ set file_out    "test$test_id.out"
 
 # Set env path to SLURM_JOB_NAME
 set env(SLURM_JOB_NAME) "zebra"
-
-print_header $test_id
 
 make_bash_script $file_in "
 /usr/bin/env|grep SLURM_JOB_NAME
@@ -59,9 +52,8 @@ expect {
             set found 1
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -69,10 +61,8 @@ expect {
 }
 
 if  {$found != 1} {
-	send_user "\nFAILURE: COULD NOT FIND SLURM_JOB_NAME=banana\n"
-	exit 1
+	fail "Could not find SLURM_JOB_NAME=banana"
 }
-send_user "SUCCESS\n"
 
 #
 # Tests -J using sbatch
@@ -85,9 +75,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -96,8 +85,8 @@ expect {
 set wait_file [wait_for_file $file_out]
 spawn $bin_grep SLURM_JOB_NAME=banana $file_out
 expect {
-        -re "SLURM_JOB_NAME=($alpha_numeric)" {
-            send_user "Job name matched $expect_out(1,string)\n"
+	-re "SLURM_JOB_NAME=($re_word_str)" {
+            log_debug "Job name matched $expect_out(1,string)"
             set found 1
             exp_continue
 	}
@@ -107,12 +96,10 @@ expect {
 }
 
 if {$found != 1} {
-	send_user "\nFAILURE: COULD NOT FIND SLURM_JOB_NAME=banana\n"
-	exit 1
+	fail "Could not find SLURM_JOB_NAME=banana"
 }
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_out
-	send_user "SUCCESS\n"
 }
 exec rm -f slurm-$job_id.out
 
@@ -126,19 +113,18 @@ expect {
 		set found 1
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
 		slow_kill $salloc_pid
-		exit 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
 
-if  {$found != 1} {
-	send_user "\nFAILURE: COULD NOT FIND SLURM_JOB_NAME=banana\n"
-	exit 1
+if {$found != 1} {
+	fail "Could not find SLURM_JOB_NAME=banana"
 }
 exec rm -f $file_in
-send_user "SUCCESS\n"
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

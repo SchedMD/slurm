@@ -36,7 +36,11 @@ been completely fixed in the 2.6.38 kernel.</li>
 the kernel command line: <pre>cgroup_enable=memory swapaccount=1</pre>
 This can usually be placed in /etc/default/grub inside the
 <i>GRUB_CMDLINE_LINUX</i> variable.  A command such as <i>update-grub</i> must
-be run after updating the file.
+be run after updating the file.</li>
+<li>Linux allows you to use the JoinControllers parameters to have multiple
+controllers mounted in a single hierarchy, however Slurm does not work
+correctly with this configuration. Please make sure your system.conf does
+not use JoinControllers.</li>
 </ul>
 
 <h2>Use of Cgroups in Slurm</h2>
@@ -120,8 +124,8 @@ details.</p>
 
 <h2>Use of Cgroups for Resource Specialization</h2>
 <p>Resource Specialization may be used to reserve a subset of cores on each compute 
-node for exclusive use. Slurm compute node daemons (slurmd, slurmstepd). It
-may also be used to apply a real memory limit to the daemons. The daemons are 
+node for exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
+It may also be used to apply a real memory limit to the daemons. The daemons are
 confined to the reserved cores using a special <i>system</i> cgroup in the 
 cpuset hierarchy. The memory limit is enforced using a <i>system</i> cgroup 
 in the memory hierarchy. System-level resource specialization is enabled with 
@@ -151,6 +155,6 @@ hierarchies:</p>
 use more than one node will have a cgroup structure on each node.</p>
 
 
-<p style="text-align:center;">Last modified 7 November 2017</p>
+<p style="text-align:center;">Last modified 16 June 2020</p>
 
 <!--#include virtual="footer.txt"-->

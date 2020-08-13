@@ -205,7 +205,7 @@ int pmixp_coll_tree_init(pmixp_coll_t *coll, hostlist_t *hl)
 	tree = &coll->state.tree;
 	tree->state = PMIXP_COLL_TREE_SYNC;
 
-	width = slurm_get_tree_width();
+	width = slurm_conf.tree_width;
 	reverse_tree_info(coll->my_peerid, coll->peers_cnt, width,
 			  &tree->prnt_peerid, &tree->chldrn_cnt, &depth,
 			  &max_depth);

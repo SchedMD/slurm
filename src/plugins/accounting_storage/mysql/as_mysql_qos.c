@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  as_mysql_qos.c - functions dealing with qos.
  *****************************************************************************
- *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -680,8 +679,7 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			   qos_table, cols, vals, extra);
 
 
-		if (debug_flags & DEBUG_FLAG_DB_QOS)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		DB_DEBUG(DB_QOS, mysql_conn->conn, "query\n%s", query);
 		object->id = (uint32_t)mysql_db_insert_ret_id(
 			mysql_conn, query);
 		xfree(query);
@@ -862,7 +860,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	rc = 0;
-	ret_list = list_create(slurm_destroy_char);
+	ret_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_qos_rec_t *qos_rec = NULL;
 		uint32_t id = slurm_atoul(row[MQOS_ID]);
@@ -1003,9 +1001,8 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		if (debug_flags & DEBUG_FLAG_DB_QOS)
-			DB_DEBUG(mysql_conn->conn,
-				 "didn't effect anything\n%s", query);
+		DB_DEBUG(DB_QOS, mysql_conn->conn,
+		         "didn't affect anything\n%s", query);
 		xfree(vals);
 		xfree(query);
 		return ret_list;
@@ -1121,7 +1118,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	name_char = NULL;
-	ret_list = list_create(slurm_destroy_char);
+	ret_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_qos_rec_t *qos_rec = NULL;
 
@@ -1152,8 +1149,8 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		if (debug_flags & DEBUG_FLAG_DB_QOS)
-			DB_DEBUG(mysql_conn->conn, "didn't effect anything\n%s", query);
+		DB_DEBUG(DB_QOS, mysql_conn->conn,
+		         "didn't affect anything\n%s", query);
 		xfree(query);
 		return ret_list;
 	}
@@ -1163,8 +1160,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	query = xstrdup_printf("update %s set mod_time=%ld %s where deleted=0;",
 			       assoc_table, now, extra);
 	xfree(extra);
-	if (debug_flags & DEBUG_FLAG_DB_QOS)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_QOS, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 	if (rc != SLURM_SUCCESS) {
@@ -1369,8 +1365,7 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 
-	if (debug_flags & DEBUG_FLAG_DB_QOS)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_QOS, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);

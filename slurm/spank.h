@@ -52,7 +52,7 @@ typedef int (spank_f) (spank_t spank, int ac, char *argv[]);
  *  Plug-in callbacks are completed at the following points in slurmd:
  *
  *   slurmd
- *        `-> slurmd_init()
+ *        `-> init()
  *        |
  *        `-> job_prolog()
  *        |
@@ -92,13 +92,12 @@ typedef int (spank_f) (spank_t spank, int ac, char *argv[]);
  *   In sbatch/salloc only the init(), init_post_opt(), and exit() callbacks
  *    are used.
  *
- *   In slurmd proper, only the slurmd_init(), slurmd_exit(), and
+ *   In slurmd proper, only the init(), slurmd_exit(), and
  *    job_prolog/epilog callbacks are used.
  *
  */
 
 extern spank_f slurm_spank_init;
-extern spank_f slurm_spank_slurmd_init;
 extern spank_f slurm_spank_job_prolog;
 extern spank_f slurm_spank_init_post_opt;
 extern spank_f slurm_spank_local_user_init;
@@ -304,8 +303,10 @@ spank_err_t spank_option_register (spank_t spank, struct spank_option *opt);
  *  Check whether spank plugin option [opt] has been activated.
  *   If the option takes an argument, then the option argument
  *   (if found) will be returned in *optarg.
- *  This function can only be invoked from slurm_spank_job_prolog() and
- *   slurm_spank_job_epilog().
+ *  This function can be invoked from the following functions:
+ *  slurm_spank_job_prolog, slurm_spank_local_user_init, slurm_spank_user_init,
+ *  slurm_spank_task_init_privileged, slurm_spank_task_init,
+ *  slurm_spank_task_exit, and slurm_spank_job_epilog.
  *
  *  Returns
  *   ESPANK_SUCCESS if the option was used by user. In this case
@@ -419,6 +420,14 @@ extern void slurm_debug (const char *format, ...)
 extern void slurm_debug2 (const char *format, ...)
   __attribute__ ((format (printf, 1, 2)));
 extern void slurm_debug3 (const char *format, ...)
+  __attribute__ ((format (printf, 1, 2)));
+
+/*
+ * Print at the same log level as error(), but without prefixing the message
+ * with "error: ". Useful to report back to srun commands from SPANK plugins,
+ * as info() will only go to the logs.
+ */
+extern void slurm_spank_log(const char *, ...)
   __attribute__ ((format (printf, 1, 2)));
 
 #ifdef __cplusplus

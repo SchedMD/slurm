@@ -164,7 +164,7 @@ static int _group_cache_lookup_internal(gids_cache_needle_t *needle, gid_t **gid
 		       __func__, entry->username);
 	}
 
-	entry->expiration = needle->now + slurmctld_conf.group_time;
+	entry->expiration = needle->now + slurm_conf.group_time;
 
 	/* Cache lookup failed or entry value was too old, fetch new
 	 * value and insert it into cache.  */

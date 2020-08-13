@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of node feature changes with reconfiguration.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#	  "FAILURE: ..." otherwise with an explanation of the failure, OR
-#	  anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 #
@@ -28,16 +24,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "3.17"
 set exit_code   0
 set feature	"test$test_id"
 set file_in     "test$test_id.input"
 
-print_header $test_id
-
 if { ![test_super_user] } {
-	send_user "\nWARNING: This test can't be run without being a super user of the cluster.\n"
-	exit 0
+	skip "This test can't be run without being a super user of the cluster"
 }
 
 proc set_node_feature {node_name new_avail_feature new_active_feature} {
@@ -46,7 +38,7 @@ proc set_node_feature {node_name new_avail_feature new_active_feature} {
 	spawn $scontrol update node=$node_name AvailableFeatures=$new_avail_feature ActiveFeatures=$new_active_feature
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -64,17 +56,16 @@ make_bash_script $file_in "
 set timeout $max_job_delay
 set srun_pid [spawn $srun -t1 --exclusive -N1 $file_in]
 expect {
-	-re "NodeList=($alpha_numeric)" {
+	-re "NodeList=($re_word_str)" {
 		set node_name $expect_out(1,string)
 		set match 1
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: Slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -83,15 +74,14 @@ expect {
 	}
 }
 if {$match == 0} {
-	send_user "\nFAILURE: Could not run job in exclusive node\n"
-	exit 1
+	fail "Could not run job in exclusive node"
 }
 
 # Save the node's current features
 set match 0
 spawn $scontrol show node $node_name
 expect {
-	-re "AvailableFeatures=($alpha_numeric_comma)" {
+	-re "AvailableFeatures=($re_word_str)" {
 		if {![string compare orig_avail_node_feat "(null)"]} {
 			set orig_avail_node_feat ""
 		} else {
@@ -105,7 +95,7 @@ expect {
 		incr match
 		exp_continue
 	}
-	-re "ActiveFeatures=($alpha_numeric_comma)" {
+	-re "ActiveFeatures=($re_word_str)" {
 		if {![string compare orig_avail_node_feat "(null)"]} {
 			set orig_active_node_feat ""
 		} else {
@@ -120,7 +110,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -128,8 +118,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	send_user "\nFAILURE: Could not determine current features for node $node_name\n"
-	exit 1
+	fail "Could not determine current features for node $node_name"
 }
 
 # Set new feature names to use
@@ -156,11 +145,11 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: Slurm appears to be down\n"
+		log_error "Slurm appears to be down"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -169,7 +158,7 @@ expect {
 	}
 }
 if {$match == 0} {
-	send_user "\nFAILURE: Could not run job with constraint\n"
+	log_error "Could not run job with constraint"
 	set exit_code 1
 }
 
@@ -181,16 +170,16 @@ set match 0
 set srun_pid [spawn $srun -t1 -C $feature -N1 $file_in]
 expect {
 	-re "Invalid feature" {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		set match 1
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: Slurm appears to be down\n"
+		log_error "Slurm appears to be down"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -199,8 +188,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: Ran job with what should be invalid constraint\n"
-	set exit_code 1
+	fail "Ran job with what should be invalid constraint"
 }
 
 # Explicitly reset features, just to be safe
@@ -208,6 +196,6 @@ set_node_feature $node_name $orig_avail_node_feat $orig_active_node_feat
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

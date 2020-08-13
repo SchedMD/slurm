@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test scancel verbose option (--verbose option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,14 +28,11 @@
 ############################################################################
 source ./globals
 
-set test_id      "6.5"
 set exit_code    0
 set file_in      "test$test_id.input"
 set job_id1      0
 set job_id2      0
 set matches      0
-
-print_header $test_id
 
 #
 # Build input script file
@@ -57,17 +50,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: srun job initiation failure\n"
-	exit 1
+	fail "srun job initiation failure"
 }
 
 set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t1 $file_in]
@@ -77,18 +68,16 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id2  == 0} {
-	send_user "\nFAILURE: srun job initiation failure\n"
 	cancel_job $job_id1
-	exit 1
+	fail "srun job initiation failure"
 }
 exec $bin_rm -f $file_in
 
@@ -103,7 +92,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -111,7 +100,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scancel verbose option failed\n"
+	log_error "scancel verbose option failed"
 	set exit_code 1
 }
 
@@ -123,7 +112,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -131,11 +120,9 @@ expect {
 	}
 }
 if {$matches != 0} {
-	send_user "\nFAILURE: scancel verbose option failed\n"
-	set exit_code 1
+	fail "scancel verbose option failed"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

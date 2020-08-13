@@ -22,7 +22,7 @@ dnl
 dnl If you ever change to use AM_INIT_AUTOMAKE(subdir-objects) edit
 dnl auxdir/slurm.m4 to not define VERSION
 dnl
-AM_INIT_AUTOMAKE(no-define)
+AM_INIT_AUTOMAKE(no-define no-dist)
 AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_HEADERS([slurm/slurm.h])
@@ -50,6 +50,9 @@ AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
 PKG_PROG_PKG_CONFIG([0.9.0])
 
+dnl Find objcopy and setup path
+AC_CHECK_TARGET_TOOL([OBJCOPY], objcopy, [], [])
+
 dnl Silence warning: ar: 'u' modifier ignored since 'D' is the default
 dnl
 AC_SUBST(AR_FLAGS, [cr])
@@ -69,6 +72,7 @@ AC_SEARCH_LIBS([socket],        [socket])
 AC_SEARCH_LIBS([gethostbyname], [nsl])
 AC_SEARCH_LIBS([hstrerror],     [resolv])
 AC_SEARCH_LIBS([kstat_open],    [kstat])
+AC_SEARCH_LIBS([ns_initparse],  [resolv])
 
 dnl Checks for header files.
 dnl
@@ -76,7 +80,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
 		 stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
 		 stdlib.h dirent.h pthread.h sys/prctl.h \
 		 sysint.h inttypes.h termcap.h netdb.h sys/socket.h  \
-		 sys/systemcfg.h ncurses.h curses.h sys/dr.h sys/vfs.h \
+		 sys/systemcfg.h sys/dr.h sys/vfs.h \
 		 pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
 		 pty.h utmp.h \
 		 sys/syslog.h linux/sched.h \
@@ -93,10 +97,6 @@ old_CFLAGS=$CFLAGS
 CFLAGS="$CFLAGS -Werror"
 AC_HEADER_MAJOR
 CFLAGS=$old_CFLAGS
-
-dnl Checks for structures.
-dnl
-X_AC__SYSTEM_CONFIGURATION
 
 dnl Check for dlfcn
 dnl
@@ -123,10 +123,6 @@ dnl Check to see how we link to libslurm
 X_AC_LIBSLURM
 
 dnl
-dnl Check for ISO compliance
-X_AC_ISO
-
-dnl
 dnl Check if we want to load .login with sbatch --get-user-env option
 X_AC_ENV_LOGIC
 
@@ -144,6 +140,15 @@ X_AC_UID_GID_SIZE_CHECK
 dnl Check for JSON parser
 X_AC_JSON
 
+dnl Check for JWT library
+X_AC_JWT
+
+dnl Check for HTTP parser
+X_AC_HTTP_PARSER
+
+dnl Check for yaml parser
+X_AC_YAML
+
 dnl Checks for compiler characteristics.
 dnl
 AC_PROG_GCC_TRADITIONAL([])
@@ -155,7 +160,6 @@ AX_GCC_BUILTIN(__builtin_popcountll)
 
 dnl checks for library functions.
 dnl
-AC_FUNC_MALLOC
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS( \
    fdatasync \
@@ -177,6 +181,7 @@ AC_CHECK_FUNCS( \
    eaccess \
    statvfs \
    statfs \
+   memfd_create \
 )
 
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
@@ -211,15 +216,12 @@ AX_CHECK_ZLIB([], [])
 X_AC_LZ4
 X_AC_HWLOC
 X_AC_NVML
+X_AC_RSMI
 X_AC_PMIX
 X_AC_FREEIPMI
 X_AC_RRDTOOL
 X_AC_UCX
 X_AC_X11
-
-X_AC_NCURSES
-AM_CONDITIONAL(HAVE_SOME_CURSES, test "x$ac_have_some_curses" = "xyes")
-AC_SUBST(HAVE_SOME_CURSES)
 
 X_AC_CGROUP
 
@@ -300,6 +302,8 @@ else
 fi
 AC_SUBST(SLURM_PREFIX)
 
+X_AC_SLURMRESTD([6820])
+
 dnl check for netloc library
 dnl
 X_AC_NETLOC
@@ -364,15 +368,6 @@ dnl Check for compilation of Slurm with CURL support:
 dnl
 LIBCURL_CHECK_CONFIG
 
-dnl
-dnl Set some configuration based upon multiple configuration parameters
-dnl
-ac_build_smap="no"
-if test "x$ac_have_some_curses" = "xyes" ; then
-   ac_build_smap="yes"
-fi
-AM_CONDITIONAL(BUILD_SMAP, test "x$ac_build_smap" = "xyes")
-
 dnl Check word size so we can deprecate 32-bit systems
 AC_CHECK_SIZEOF([void *], 8)
 
@@ -419,10 +414,8 @@ AC_CONFIG_FILES([Makefile
 		 src/api/Makefile
 		 src/bcast/Makefile
 		 src/common/Makefile
-		 src/layouts/Makefile
-		 src/layouts/power/Makefile
-		 src/layouts/unit/Makefile
 		 src/database/Makefile
+		 src/lua/Makefile
 		 src/sacct/Makefile
 		 src/sacctmgr/Makefile
 		 src/sreport/Makefile
@@ -440,7 +433,14 @@ AC_CONFIG_FILES([Makefile
 		 src/slurmd/slurmd/Makefile
 		 src/slurmd/slurmstepd/Makefile
 		 src/slurmdbd/Makefile
-		 src/smap/Makefile
+		 src/slurmrestd/Makefile
+		 src/slurmrestd/plugins/Makefile
+		 src/slurmrestd/plugins/auth/Makefile
+		 src/slurmrestd/plugins/auth/jwt/Makefile
+		 src/slurmrestd/plugins/auth/local/Makefile
+		 src/slurmrestd/plugins/openapi/Makefile
+		 src/slurmrestd/plugins/openapi/v0.0.35/Makefile
+		 src/slurmrestd/plugins/openapi/v0.0.36/Makefile
 		 src/sprio/Makefile
 		 src/squeue/Makefile
 		 src/srun/Makefile
@@ -452,16 +452,16 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/Makefile
 		 src/plugins/accounting_storage/Makefile
 		 src/plugins/accounting_storage/common/Makefile
-		 src/plugins/accounting_storage/filetxt/Makefile
 		 src/plugins/accounting_storage/mysql/Makefile
 		 src/plugins/accounting_storage/none/Makefile
 		 src/plugins/accounting_storage/slurmdbd/Makefile
 		 src/plugins/acct_gather_energy/Makefile
 		 src/plugins/acct_gather_energy/cray_aries/Makefile
-		 src/plugins/acct_gather_energy/rapl/Makefile
 		 src/plugins/acct_gather_energy/ibmaem/Makefile
 		 src/plugins/acct_gather_energy/ipmi/Makefile
 		 src/plugins/acct_gather_energy/none/Makefile
+		 src/plugins/acct_gather_energy/rapl/Makefile
+		 src/plugins/acct_gather_energy/rsmi/Makefile
 		 src/plugins/acct_gather_energy/xcc/Makefile
 		 src/plugins/acct_gather_interconnect/Makefile
 		 src/plugins/acct_gather_interconnect/ofed/Makefile
@@ -475,17 +475,19 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/acct_gather_profile/influxdb/Makefile
 		 src/plugins/acct_gather_profile/none/Makefile
 		 src/plugins/auth/Makefile
+		 src/plugins/auth/jwt/Makefile
 		 src/plugins/auth/munge/Makefile
 		 src/plugins/auth/none/Makefile
 		 src/plugins/burst_buffer/Makefile
 		 src/plugins/burst_buffer/common/Makefile
 		 src/plugins/burst_buffer/datawarp/Makefile
 		 src/plugins/burst_buffer/generic/Makefile
-		 src/plugins/checkpoint/Makefile
-		 src/plugins/checkpoint/none/Makefile
-		 src/plugins/checkpoint/ompi/Makefile
 		 src/plugins/cli_filter/Makefile
+		 src/plugins/cli_filter/common/Makefile
+		 src/plugins/cli_filter/lua/Makefile
 		 src/plugins/cli_filter/none/Makefile
+		 src/plugins/cli_filter/syslog/Makefile
+		 src/plugins/cli_filter/user_defaults/Makefile
 		 src/plugins/core_spec/Makefile
 		 src/plugins/core_spec/cray_aries/Makefile
 		 src/plugins/core_spec/none/Makefile
@@ -498,6 +500,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/gpu/Makefile
 		 src/plugins/gpu/generic/Makefile
 		 src/plugins/gpu/nvml/Makefile
+		 src/plugins/gpu/rsmi/Makefile
 		 src/plugins/gres/Makefile
 		 src/plugins/gres/common/Makefile
 		 src/plugins/gres/gpu/Makefile
@@ -512,6 +515,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/elasticsearch/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
+		 src/plugins/jobcomp/lua/Makefile
 		 src/plugins/jobcomp/none/Makefile
 		 src/plugins/jobcomp/script/Makefile
 		 src/plugins/jobcomp/mysql/Makefile
@@ -549,6 +553,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/priority/Makefile
 		 src/plugins/priority/basic/Makefile
 		 src/plugins/priority/multifactor/Makefile
+		 src/plugins/prep/Makefile
+		 src/plugins/prep/script/Makefile
 		 src/plugins/proctrack/Makefile
 		 src/plugins/proctrack/cray_aries/Makefile
 		 src/plugins/proctrack/cgroup/Makefile
@@ -562,6 +568,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/builtin/Makefile
 		 src/plugins/sched/hold/Makefile
 		 src/plugins/select/Makefile
+		 src/plugins/select/cons_common/Makefile
 		 src/plugins/select/cons_res/Makefile
 		 src/plugins/select/cons_tres/Makefile
 		 src/plugins/select/cray_aries/Makefile
@@ -576,8 +583,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/switch/generic/Makefile
 		 src/plugins/switch/none/Makefile
 		 src/plugins/mpi/Makefile
+		 src/plugins/mpi/cray_shasta/Makefile
 		 src/plugins/mpi/none/Makefile
-		 src/plugins/mpi/openmpi/Makefile
 		 src/plugins/mpi/pmi2/Makefile
 		 src/plugins/mpi/pmix/Makefile
 		 src/plugins/task/Makefile
@@ -588,7 +595,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/topology/Makefile
 		 src/plugins/topology/3d_torus/Makefile
 		 src/plugins/topology/hypercube/Makefile
-		 src/plugins/topology/node_rank/Makefile
 		 src/plugins/topology/none/Makefile
 		 src/plugins/topology/tree/Makefile
 		 testsuite/Makefile
@@ -599,6 +605,7 @@ AC_CONFIG_FILES([Makefile
 		 testsuite/slurm_unit/common/Makefile
 		 testsuite/slurm_unit/common/slurm_protocol_pack/Makefile
 		 testsuite/slurm_unit/common/slurmdb_pack/Makefile
+		 testsuite/slurm_unit/common/bitstring/Makefile
 		 ]
 )
 

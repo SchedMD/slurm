@@ -49,8 +49,8 @@
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct slurm_power_ops {
-	void		(*job_resume)	(struct job_record *job_ptr);
-	void		(*job_start)	(struct job_record *job_ptr);
+	void		(*job_resume)	(job_record_t *job_ptr);
+	void		(*job_start)	(job_record_t *job_ptr);
 	void		(*reconfig)	(void);
 } slurm_power_ops_t;
 
@@ -67,7 +67,6 @@ static const char *syms[] = {
 static int g_context_cnt = -1;
 static slurm_power_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
-static char *power_plugin_list = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
@@ -75,7 +74,7 @@ static bool init_run = false;
 extern int power_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
-	char *last = NULL, *names;
+	char *last = NULL, *names, *power_plugin;
 	char *plugin_type = "power";
 	char *type;
 
@@ -86,12 +85,11 @@ extern int power_g_init(void)
 	if (g_context_cnt >= 0)
 		goto fini;
 
-	power_plugin_list = slurm_get_power_plugin();
 	g_context_cnt = 0;
-	if ((power_plugin_list == NULL) || (power_plugin_list[0] == '\0'))
+	if (!slurm_conf.power_plugin || !slurm_conf.power_plugin[0])
 		goto fini;
 
-	names = power_plugin_list;
+	names = power_plugin = xstrdup(slurm_conf.power_plugin);
 	while ((type = strtok_r(names, ",", &last))) {
 		xrealloc(ops, (sizeof(slurm_power_ops_t)*(g_context_cnt + 1)));
 		xrealloc(g_context,
@@ -114,6 +112,7 @@ extern int power_g_init(void)
 		g_context_cnt++;
 		names = NULL; /* for next iteration */
 	}
+	xfree(power_plugin);
 	init_run = true;
 
 fini:
@@ -141,7 +140,6 @@ extern void power_g_fini(void)
 	}
 	xfree(ops);
 	xfree(g_context);
-	xfree(power_plugin_list);
 	g_context_cnt = -1;
 
 fini:	slurm_mutex_unlock(&g_context_lock);
@@ -161,7 +159,7 @@ extern void power_g_reconfig(void)
 }
 
 /* Note that a suspended job has been resumed */
-extern void power_g_job_resume(struct job_record *job_ptr)
+extern void power_g_job_resume(job_record_t *job_ptr)
 {
 	int i;
 
@@ -173,7 +171,7 @@ extern void power_g_job_resume(struct job_record *job_ptr)
 }
 
 /* Note that a job has been allocated resources and is ready to start */
-extern void power_g_job_start(struct job_record *job_ptr)
+extern void power_g_job_start(job_record_t *job_ptr)
 {
 	int i;
 

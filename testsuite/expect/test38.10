@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of scontrol update job for heterogeneous jobs.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Isaac Hartung <ihartung@schedmd.com>
@@ -30,32 +26,30 @@
 ############################################################################
 source ./globals
 
-set test_id     "38.10"
 set exit_code	0
 
-print_header $test_id
 set prompt           "PROMPT: "
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+        skip "This test is incompatible with front-end systems"
 } else {
 	set task_num 2
 }
 
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
+set nb_nodes [get_node_cnt_in_part]
 if {$nb_nodes < 3} {
-	send_user "\nWARNING: Need 3 or more nodes in default partition\n"
-	exit $exit_code
+	skip "Need 3 or more nodes in default partition"
 }
 
 proc end_it { exit_code } {
-	global pack_job_id scancel
-	if {$pack_job_id > 0} {
-		exec $scancel $pack_job_id
+	global het_job_id scancel
+	if {$het_job_id > 0} {
+		exec $scancel $het_job_id
 	}
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 proc check { id tl matches } {
@@ -70,7 +64,7 @@ proc check { id tl matches } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding\n"
+			log_error "scontrol not responding"
 			end_it 1
 		}
 		eof {
@@ -78,17 +72,17 @@ proc check { id tl matches } {
 		}
 	}
 	if {$count != $matches} {
-		log_error "scontrol failure ($count != 3)\n"
+		log_error "scontrol failure ($count != 3)"
 		end_it 1
 	}
 }
 
-set pack_job_id 0
+set het_job_id 0
 set timeout $max_job_delay
 spawn $salloc -t9 -N1 : -N1 : -N1 $bin_bash
 expect {
 	-re "job ($number) has been allocated resources" {
-		set pack_job_id $expect_out(1,string)
+		set het_job_id $expect_out(1,string)
 		send "export PS1=\"$prompt\"\r"
 		exp_continue
 	}
@@ -97,18 +91,18 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
-		log_error "salloc : allocation not granted in $timeout seconds\n"
+		log_error "salloc : allocation not granted in $timeout seconds"
 		end_it 1
 	}
 	eof {
 		wait
 	}
 }
-if {$pack_job_id == 0} {
-	log_error "salloc failure\n"
+if {$het_job_id == 0} {
+	log_error "salloc failure"
 	end_it 1
 }
 
@@ -116,22 +110,21 @@ expect *
 
 set timeout 3
 
-check $pack_job_id 9 3
+check $het_job_id 9 3
 
-exec $scontrol update job=$pack_job_id Timelimit=8
-check $pack_job_id 8 3
+exec $scontrol update job=$het_job_id Timelimit=8
+check $het_job_id 8 3
 
-exec $scontrol update job=$pack_job_id+0 Timelimit=5
-check $pack_job_id+0 5 1
+exec $scontrol update job=$het_job_id+0 Timelimit=5
+check $het_job_id+0 5 1
 
-exec $scontrol update job=$pack_job_id+1 Timelimit=6
-check $pack_job_id+1 6 1
+exec $scontrol update job=$het_job_id+1 Timelimit=6
+check $het_job_id+1 6 1
 
-exec $scontrol update job=$pack_job_id+2 Timelimit=7
-check $pack_job_id+2 7 1
+exec $scontrol update job=$het_job_id+2 Timelimit=7
+check $het_job_id+2 7 1
 
-check $pack_job_id+1 6 1
-check $pack_job_id+0 5 1
+check $het_job_id+1 6 1
+check $het_job_id+0 5 1
 
-send_user "\nSUCCESS\n"
 end_it 0

@@ -157,7 +157,7 @@ static int _valid_gpu_freq(const char *arg)
 		if (!eq) {
 			rc = _test_val(tok);
 			if ((rc != 0) && !strcmp(tok, "verbose"))
-				rc = 0;	/* "verbose" is undocumented option */
+				rc = 0;
 		} else {
 			eq[0] = '\0';
 			if (!strcmp(tok, "memory")) {

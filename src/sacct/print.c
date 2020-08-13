@@ -266,12 +266,12 @@ static void _xlate_task_str(slurmdb_job_rec_t *job_ptr)
 	if (!in_buf)
 		return;
 
-	if (strlen(in_buf) < 3 || in_buf[1] != 'x')
+	i = strlen(in_buf);
+	if (i < 3 || in_buf[1] != 'x')
 		return;
 
-	i = strlen(in_buf);
 	task_bitmap = bit_alloc(i * 4);
-	bit_unfmt_hexmask(task_bitmap, in_buf);
+	(void)bit_unfmt_hexmask(task_bitmap, in_buf);
 
 	/* Check first for a step function */
 	i_first = bit_ffs(task_bitmap);
@@ -821,6 +821,22 @@ extern void print_fields(type_t type, void *object)
 					     tmp_uint64,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_DB_INX:
+			switch(type) {
+			case JOB:
+				tmp_uint64 = job->db_index;
+				break;
+			case JOBSTEP:
+				tmp_uint64 = step->job_ptr->db_index;
+				break;
+			default:
+				tmp_uint64 = NO_VAL64;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_uint64,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_DERIVED_EC:
 			tmp_int = tmp_int2 = 0;
 			switch (type) {
@@ -1033,11 +1049,11 @@ extern void print_fields(type_t type, void *object)
 						 "%u_%u",
 						 job->array_job_id,
 						 job->array_task_id);
-				} else if (job->pack_job_id) {
+				} else if (job->het_job_id) {
 					snprintf(id, FORMAT_STRING_SIZE,
 						 "%u+%u",
-						 job->pack_job_id,
-						 job->pack_job_offset);
+						 job->het_job_id,
+						 job->het_job_offset);
 				} else {
 					snprintf(id, FORMAT_STRING_SIZE,
 						 "%u",
@@ -1050,17 +1066,16 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = xstrdup(id);
 				break;
 			case JOBSTEP:
-				if (step->stepid == SLURM_BATCH_SCRIPT) {
-					tmp_char = xstrdup_printf(
-						"%s.batch", id);
-				} else if (step->stepid == SLURM_EXTERN_CONT) {
-					tmp_char = xstrdup_printf(
-						"%s.extern", id);
-				} else {
-					tmp_char = xstrdup_printf(
-						"%s.%u",
-						id, step->stepid);
-				}
+				tmp_int = 64;
+				tmp_char = xmalloc(tmp_int);
+				tmp_int2 =
+					snprintf(tmp_char, tmp_int, "%s.", id);
+				tmp_int -= tmp_int2;
+				log_build_step_id_str(&step->step_id,
+						      tmp_char + tmp_int2,
+						      tmp_int,
+						      STEP_ID_FLAG_NO_PREFIX |
+						      STEP_ID_FLAG_NO_JOB);
 				break;
 			case JOBCOMP:
 				tmp_char = xstrdup_printf("%u",
@@ -1080,20 +1095,13 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = xstrdup_printf("%u", job->jobid);
 				break;
 			case JOBSTEP:
-				if (step->stepid == SLURM_BATCH_SCRIPT) {
-					tmp_char = xstrdup_printf(
-						"%u.batch",
-						step->job_ptr->jobid);
-				} else if (step->stepid == SLURM_EXTERN_CONT) {
-					tmp_char = xstrdup_printf(
-						"%u.extern",
-						step->job_ptr->jobid);
-				} else {
-					tmp_char = xstrdup_printf(
-						"%u.%u",
-						step->job_ptr->jobid,
-						step->stepid);
-				}
+				log_build_step_id_str(&step->step_id, id,
+						      sizeof(id),
+						      (STEP_ID_FLAG_NO_PREFIX |
+						       STEP_ID_FLAG_NO_JOB));
+				tmp_char = xstrdup_printf("%u.%s",
+							  step->job_ptr->jobid,
+							  id);
 				break;
 			case JOBCOMP:
 				tmp_char = xstrdup_printf("%u",
@@ -2360,10 +2368,10 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_UID:
 			switch(type) {
 			case JOB:
-				if (job->user) {
-					if ((pw=getpwnam(job->user)))
-						tmp_int = pw->pw_uid;
-				} else
+				if (params.use_local_uid && job->user &&
+				    (pw = getpwnam(job->user)))
+					tmp_int = pw->pw_uid;
+				else
 					tmp_int = job->uid;
 				break;
 			case JOBSTEP:
@@ -2385,10 +2393,8 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				if (job->user)
 					tmp_char = job->user;
-				else if (job->uid != -1) {
-					if ((pw=getpwuid(job->uid)))
+				else if ((pw=getpwuid(job->uid)))
 						tmp_char = pw->pw_name;
-				}
 				break;
 			case JOBSTEP:
 

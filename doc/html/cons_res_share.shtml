@@ -6,7 +6,7 @@
 <P>
 (Disclaimer: In this "CPU Management" section, the term "consumable resource"
 does not include memory. The management of memory as a consumable resource is
-discussed in it's own section below.)
+discussed in its own section below.)
 </P>
 <P>
 The per-partition <CODE>OverSubscribe</CODE> setting applies to the <U>entity
@@ -163,9 +163,9 @@ running on it, and each job could be from a different partition.</TD>
 <TD>Two partitions assigned the same set of nodes: one partition is
 <CODE>OverSubscribe=FORCE</CODE>, and the other is <CODE>OverSubscribe=NO</CODE></TD>
 <TD>A node will only run jobs from one partition at a time. If a node is
-running jobs from the <CODE>OverSubscribe=NO</CODE> partition, then none of it's
+running jobs from the <CODE>OverSubscribe=NO</CODE> partition, then none of its
 consumable resources will be shared. If a node is running jobs from the
-<CODE>OverSubscribe=FORCE</CODE> partition, then it's consumable resources can be
+<CODE>OverSubscribe=FORCE</CODE> partition, then its consumable resources can be
 shared.</TD>
 </TR><TR>
 <TD>Two <CODE>OverSubscribe=FORCE</CODE> partitions assigned the same set of nodes</TD>

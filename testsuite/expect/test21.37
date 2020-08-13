@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr show stats
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,29 +28,20 @@
 ############################################################################
 source ./globals
 
-set test_id     "21.37"
 set exit_code   0
 
-print_header $test_id
-
 if {[test_using_slurmdbd] == 0} {
-	send_user "\nThis test can't be run without AccountStorageType=slurmdbd\n"
-	exit 0
+	skip "This test can't be run without AccountStorageType=slurmdbd"
 }
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 set matches 0
 set rpc_rec_cnt 0
 set as_pid [spawn $sacctmgr show stats]
 expect {
-	-re "Rollup statistics" {
-		incr matches
-		exp_continue
-	}
-	-re "Month *count:$number" {
+	-re "sacctmgr show stats" {
 		incr matches
 		exp_continue
 	}
@@ -75,7 +62,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr show stats not responding.\n"
+		log_error "sacctmgr show stats not responding"
 		set exit_code 1
 		slow_kill $as_pid
 	}
@@ -87,11 +74,8 @@ expect {
 if {$rpc_rec_cnt > 0} {
 	incr matches
 }
-if {$matches != 6} {
-	send_user "\nFAILURE: sacctmgr show stats response bad ($matches != 6).\n"
-	set exit_code 1
+assert_or_fail {$matches == 5} "sacctmgr show stats response bad ($matches != 5)"
+
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
-exit $exit_code

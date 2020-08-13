@@ -74,200 +74,31 @@
 
 #define _DEBUG 0
 
+strong_alias(init_node_conf, slurm_init_node_conf);
+strong_alias(build_all_nodeline_info, slurm_build_all_nodeline_info);
+strong_alias(rehash_node, slurm_rehash_node);
+strong_alias(hostlist2bitmap, slurm_hostlist2bitmap);
+
 /* Global variables */
 List config_list  = NULL;	/* list of config_record entries */
 List front_end_list = NULL;	/* list of slurm_conf_frontend_t entries */
 time_t last_node_update = (time_t) 0;	/* time of last update */
-struct node_record *node_record_table_ptr = NULL;	/* node records */
+node_record_t *node_record_table_ptr = NULL;	/* node records */
 xhash_t* node_hash_table = NULL;
 int node_record_count = 0;		/* count in node_record_table_ptr */
 uint16_t *cr_node_num_cores = NULL;
 uint32_t *cr_node_cores_offset = NULL;
 
-/* Local function defiitions */
-static int	_build_single_nodeline_info(slurm_conf_node_t *node_ptr,
-					    struct config_record *config_ptr);
+/* Local function definitions */
 static int	_delete_config_record (void);
 #if _DEBUG
 static void	_dump_hash (void);
 #endif
-static struct node_record *
-		_find_node_record (char *name,bool test_alias,bool log_missing);
+static node_record_t *_find_node_record(char *name, bool test_alias,
+					bool log_missing);
 static void	_list_delete_config (void *config_entry);
-static int	_list_find_config (void *config_entry, void *key);
 static void _node_record_hash_identity (void* item, const char** key,
 					uint32_t* key_len);
-
-/*
- * _build_single_nodeline_info - From the slurm.conf reader, build table,
- * 	and set values
- * RET 0 if no error, error code otherwise
- * Note: Operates on common variables
- *	default_node_record - default node configuration values
- */
-static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
-				       struct config_record *config_ptr)
-{
-	int error_code = SLURM_SUCCESS;
-	struct node_record *node_rec = NULL;
-	hostlist_t address_list = NULL;
-	hostlist_t alias_list = NULL;
-	hostlist_t hostname_list = NULL;
-	hostlist_t port_list = NULL;
-	char *address = NULL;
-	char *alias = NULL;
-	char *hostname = NULL;
-	char *port_str = NULL;
-	int state_val = NODE_STATE_UNKNOWN;
-	int address_count, alias_count, hostname_count, port_count;
-	uint16_t port = 0;
-
-	if (node_ptr->state != NULL) {
-		state_val = state_str2int(node_ptr->state, node_ptr->nodenames);
-		if (state_val == NO_VAL)
-			goto cleanup;
-	}
-
-	if ((address_list = hostlist_create(node_ptr->addresses)) == NULL) {
-		fatal("Unable to create NodeAddr list from %s",
-		      node_ptr->addresses);
-		error_code = errno;
-		goto cleanup;
-	}
-	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
-		fatal("Unable to create NodeName list from %s",
-		      node_ptr->nodenames);
-		error_code = errno;
-		goto cleanup;
-	}
-	if ((hostname_list = hostlist_create(node_ptr->hostnames)) == NULL) {
-		fatal("Unable to create NodeHostname list from %s",
-		      node_ptr->hostnames);
-		error_code = errno;
-		goto cleanup;
-	}
-	if (node_ptr->port_str && node_ptr->port_str[0] &&
-	    (node_ptr->port_str[0] != '[') &&
-	    (strchr(node_ptr->port_str, '-') ||
-	     strchr(node_ptr->port_str, ','))) {
-		xstrfmtcat(port_str, "[%s]", node_ptr->port_str);
-		port_list = hostlist_create(port_str);
-		xfree(port_str);
-	} else {
-		port_list = hostlist_create(node_ptr->port_str);
-	}
-	if (port_list == NULL) {
-		error("Unable to create Port list from %s",
-		      node_ptr->port_str);
-		error_code = errno;
-		goto cleanup;
-	}
-
-	/* some sanity checks */
-	address_count  = hostlist_count(address_list);
-	alias_count    = hostlist_count(alias_list);
-	hostname_count = hostlist_count(hostname_list);
-	port_count     = hostlist_count(port_list);
-#ifdef HAVE_FRONT_END
-	if ((hostname_count != alias_count) && (hostname_count != 1)) {
-		error("NodeHostname count must equal that of NodeName "
-		      "records of there must be no more than one");
-		goto cleanup;
-	}
-	if ((address_count != alias_count) && (address_count != 1)) {
-		error("NodeAddr count must equal that of NodeName "
-		      "records of there must be no more than one");
-		goto cleanup;
-	}
-#else
-#ifdef MULTIPLE_SLURMD
-	if ((address_count != alias_count) && (address_count != 1)) {
-		error("NodeAddr count must equal that of NodeName "
-		      "records of there must be no more than one");
-		goto cleanup;
-	}
-#else
-	if (address_count < alias_count) {
-		error("At least as many NodeAddr are required as NodeName");
-		goto cleanup;
-	}
-	if (hostname_count < alias_count) {
-		error("At least as many NodeHostname are required "
-		      "as NodeName");
-		goto cleanup;
-	}
-#endif	/* MULTIPLE_SLURMD */
-#endif	/* HAVE_FRONT_END */
-	if ((port_count != alias_count) && (port_count > 1)) {
-		error("Port count must equal that of NodeName records or there must be no more than one (%u != %u)",
-		      port_count, alias_count);
-		goto cleanup;
-	}
-
-	/* now build the individual node structures */
-	while ((alias = hostlist_shift(alias_list))) {
-		if (address_count > 0) {
-			address_count--;
-			if (address)
-				free(address);
-			address = hostlist_shift(address_list);
-		}
-		if (hostname_count > 0) {
-			hostname_count--;
-			if (hostname)
-				free(hostname);
-			hostname = hostlist_shift(hostname_list);
-		}
-		if (port_count > 0) {
-			int port_int;
-			port_count--;
-			if (port_str)
-				free(port_str);
-			port_str = hostlist_shift(port_list);
-			port_int = atoi(port_str);
-			if ((port_int <= 0) || (port_int > 0xffff))
-				fatal("Invalid Port %s", node_ptr->port_str);
-			port = port_int;
-		}
-
-		node_rec = find_node_record2(alias);
-		if (node_rec == NULL) {
-			node_rec = create_node_record(config_ptr, alias);
-			if ((state_val != NO_VAL) &&
-			    (state_val != NODE_STATE_UNKNOWN))
-				node_rec->node_state = state_val;
-			node_rec->last_response = (time_t) 0;
-			node_rec->comm_name = xstrdup(address);
-			node_rec->cpu_bind  = node_ptr->cpu_bind;
-			node_rec->node_hostname = xstrdup(hostname);
-			node_rec->port      = port;
-			node_rec->weight    = node_ptr->weight;
-			node_rec->features  = xstrdup(node_ptr->feature);
-			node_rec->reason    = xstrdup(node_ptr->reason);
-		} else {
-			/* FIXME - maybe should be fatal? */
-			error("Reconfiguration for node %s, ignoring!", alias);
-		}
-		free(alias);
-	}
-	/* free allocated storage */
-cleanup:
-	if (address)
-		free(address);
-	if (hostname)
-		free(hostname);
-	if (port_str)
-		free(port_str);
-	if (address_list)
-		hostlist_destroy(address_list);
-	if (alias_list)
-		hostlist_destroy(alias_list);
-	if (hostname_list)
-		hostlist_destroy(hostname_list);
-	if (port_list)
-		hostlist_destroy(port_list);
-	return error_code;
-}
 
 /*
  * _delete_config_record - delete all configuration records
@@ -277,8 +108,9 @@ cleanup:
 static int _delete_config_record (void)
 {
 	last_node_update = time (NULL);
-	(void) list_delete_all(config_list,    &_list_find_config,  NULL);
-	(void) list_delete_all(front_end_list, &list_find_frontend, NULL);
+	list_flush(config_list);
+	list_flush(front_end_list);
+
 	return SLURM_SUCCESS;
 }
 
@@ -291,8 +123,8 @@ static void xhash_walk_helper_cbk (void* item, void* arg)
 {
 	static int i = 0; /* sequential walk, so just update a static i */
 	int inx;
-	struct node_record *node_ptr;
-	node_ptr = (struct node_record *) item;
+	node_record_t *node_ptr = (node_record_t *) item;
+
 	inx = node_ptr -  node_record_table_ptr;
 	debug3("node_hash[%d]:%d(%s)", i++, inx, node_ptr->name);
 }
@@ -316,8 +148,7 @@ static void _dump_hash (void)
  *	see list.h for documentation */
 static void _list_delete_config (void *config_entry)
 {
-	struct config_record *config_ptr = (struct config_record *)
-					   config_entry;
+	config_record_t *config_ptr = (config_record_t *) config_entry;
 
 	xassert(config_ptr);
 	xassert(config_ptr->magic == CONFIG_MAGIC);
@@ -332,26 +163,13 @@ static void _list_delete_config (void *config_entry)
 }
 
 /*
- * _list_find_config - find an entry in the config list, see list.h for
- *	documentation
- * IN key - is NULL for all config
- * RET 1 if key == NULL, 0 otherwise
- */
-static int _list_find_config (void *config_entry, void *key)
-{
-	if (key == NULL)
-		return 1;
-	return 0;
-}
-
-/*
  * xhash helper function to index node_record per name field
  * in node_hash_table
  */
 static void _node_record_hash_identity (void* item, const char** key,
 					uint32_t* key_len)
 {
-	struct node_record *node_ptr = (struct node_record *) item;
+	node_record_t *node_ptr = (node_record_t *) item;
 	*key = node_ptr->name;
 	*key_len = strlen(node_ptr->name);
 }
@@ -451,12 +269,7 @@ extern int build_all_frontend_info (bool is_slurmd_context)
 #ifdef HAVE_FRONT_END
 	slurm_conf_frontend_t *fe_single, *fe_line;
 	int i, count, max_rc = SLURM_SUCCESS;
-	bool front_end_debug;
 
-	if (slurm_get_debug_flags() & DEBUG_FLAG_FRONT_END)
-		front_end_debug = true;
-	else
-		front_end_debug = false;
 	count = slurm_conf_frontend_array(&ptr_array);
 	if (count == 0)
 		fatal("No FrontendName information available!");
@@ -505,7 +318,8 @@ extern int build_all_frontend_info (bool is_slurmd_context)
 			if (fe_line->reason && fe_line->reason[0])
 				fe_single->reason = xstrdup(fe_line->reason);
 			fe_single->node_state = fe_line->node_state;
-			if (front_end_debug && !is_slurmd_context)
+			if ((slurm_conf.debug_flags & DEBUG_FLAG_FRONT_END) &&
+			    !is_slurmd_context)
 				_dump_front_end(fe_single);
 		}
 		hostlist_destroy(hl_addr);
@@ -519,6 +333,32 @@ extern int build_all_frontend_info (bool is_slurmd_context)
 #endif
 }
 
+static void _check_callback(char *alias, char *hostname,
+			    char *address, char *bcast_address,
+			    uint16_t port, int state_val,
+			    slurm_conf_node_t *node_ptr,
+			    config_record_t *config_ptr)
+{
+	node_record_t *node_rec;
+
+	if ((node_rec = find_node_record2(alias)))
+		fatal("Duplicated NodeHostName %s in config file", alias);
+
+	node_rec = create_node_record(config_ptr, alias);
+	if ((state_val != NO_VAL) &&
+	    (state_val != NODE_STATE_UNKNOWN))
+		node_rec->node_state = state_val;
+	node_rec->last_response = (time_t) 0;
+	node_rec->comm_name = xstrdup(address);
+	node_rec->cpu_bind  = node_ptr->cpu_bind;
+	node_rec->node_hostname = xstrdup(hostname);
+	node_rec->bcast_address = xstrdup(bcast_address);
+	node_rec->port      = port;
+	node_rec->weight    = node_ptr->weight;
+	node_rec->features  = xstrdup(node_ptr->feature);
+	node_rec->reason    = xstrdup(node_ptr->reason);
+}
+
 /*
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
@@ -530,12 +370,13 @@ extern int build_all_frontend_info (bool is_slurmd_context)
 extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 {
 	slurm_conf_node_t *node, **ptr_array;
-	struct config_record *config_ptr = NULL;
+	config_record_t *config_ptr = NULL;
 	int count;
 	int i, rc, max_rc = SLURM_SUCCESS;
 	bool in_daemon;
+	static bool daemon_run = false, daemon_set = false;
 
-	in_daemon = run_in_daemon("slurmctld,slurmd");
+	in_daemon = run_in_daemon(&daemon_run, &daemon_set, "slurmctld,slurmd");
 
 	count = slurm_conf_nodename_array(&ptr_array);
 	if (count == 0)
@@ -575,15 +416,15 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 							       node->nodenames);
 		}
 
-		rc = _build_single_nodeline_info(node, config_ptr);
+		rc = check_nodeline_info(node, config_ptr, LOG_LEVEL_FATAL,
+					 _check_callback);
 		max_rc = MAX(max_rc, rc);
 	}
 
 	if (set_bitmap) {
 		ListIterator config_iterator;
 		config_iterator = list_iterator_create(config_list);
-		while ((config_ptr = (struct config_record *)
-				list_next(config_iterator))) {
+		while ((config_ptr = list_next(config_iterator))) {
 			node_name2bitmap(config_ptr->nodes, true,
 					 &config_ptr->node_bitmap);
 		}
@@ -591,6 +432,172 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 	}
 
 	return max_rc;
+}
+
+/*
+ * check_nodeline_info - From the slurm.conf reader, build table,
+ * 	and set values
+ * RET 0 if no error, error code otherwise
+ * Note: Operates on common variables
+ *	default_node_record - default node configuration values
+ */
+extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
+			       config_record_t *config_ptr,
+			       log_level_t lvl,
+			       void (*_callback) (
+				       char *alias, char *hostname,
+				       char *address, char *bcast_address,
+				       uint16_t port, int state_val,
+				       slurm_conf_node_t *node_ptr,
+				       config_record_t *config_ptr))
+{
+	int error_code = SLURM_SUCCESS;
+	hostlist_t address_list = NULL;
+	hostlist_t alias_list = NULL;
+	hostlist_t bcast_list = NULL;
+	hostlist_t hostname_list = NULL;
+	hostlist_t port_list = NULL;
+	char *address = NULL;
+	char *alias = NULL;
+	char *bcast_address = NULL;
+	char *hostname = NULL;
+	char *port_str = NULL;
+	int state_val = NODE_STATE_UNKNOWN;
+	int address_count, alias_count, bcast_count, hostname_count, port_count;
+	uint16_t port = 0;
+
+	if ((node_ptr->nodenames == NULL) || (node_ptr->nodenames[0] == '\0'))
+		return -1;
+
+	if (node_ptr->state != NULL) {
+		state_val = state_str2int(node_ptr->state, node_ptr->nodenames);
+		if (state_val == NO_VAL)
+			fatal("Invalid state %s from %s",
+			      node_ptr->state, node_ptr->nodenames);
+	}
+
+	if (!(address_list = hostlist_create(node_ptr->addresses)))
+		fatal("Unable to create NodeAddr list from %s",
+		      node_ptr->addresses);
+
+	if (!(alias_list = hostlist_create(node_ptr->nodenames)))
+		fatal("Unable to create NodeName list from %s",
+		      node_ptr->nodenames);
+
+	if (!(bcast_list = hostlist_create(node_ptr->bcast_addresses)))
+		fatal("Unable to create BcastAddr list from %s",
+		      node_ptr->bcast_addresses);
+
+	if (!(hostname_list = hostlist_create(node_ptr->hostnames)))
+		fatal("Unable to create NodeHostname list from %s",
+		      node_ptr->hostnames);
+
+	if (node_ptr->port_str && node_ptr->port_str[0] &&
+	    (node_ptr->port_str[0] != '[') &&
+	    (strchr(node_ptr->port_str, '-') ||
+	     strchr(node_ptr->port_str, ','))) {
+		xstrfmtcat(port_str, "[%s]", node_ptr->port_str);
+		port_list = hostlist_create(port_str);
+		xfree(port_str);
+	} else
+		port_list = hostlist_create(node_ptr->port_str);
+
+	if (!port_list)
+		fatal("Unable to create Port list from %s",
+		      node_ptr->port_str);
+
+	/* some sanity checks */
+	address_count  = hostlist_count(address_list);
+	bcast_count = hostlist_count(bcast_list);
+	alias_count    = hostlist_count(alias_list);
+	hostname_count = hostlist_count(hostname_list);
+	port_count     = hostlist_count(port_list);
+#ifdef HAVE_FRONT_END
+	if ((hostname_count != alias_count) && (hostname_count != 1))
+		fatal("NodeHostname count must equal that of NodeName records of there must be no more than one");
+
+	if ((address_count != alias_count) && (address_count != 1))
+		fatal("NodeAddr count must equal that of NodeName records of there must be no more than one");
+#else
+#ifdef MULTIPLE_SLURMD
+	if ((address_count != alias_count) && (address_count != 1))
+		fatal("NodeAddr count must equal that of NodeName records of there must be no more than one");
+	if (bcast_count && (bcast_count != alias_count) && (bcast_count != 1))
+		fatal("BcastAddr count must equal that of NodeName records, or there must be no more than one");
+#else
+	if (address_count < alias_count)
+		fatal("At least as many NodeAddr are required as NodeName");
+
+	if (bcast_count && (bcast_count < alias_count))
+		fatal("At least as many BcastAddr are required as NodeName");
+
+	if (hostname_count < alias_count)
+		fatal("At least as many NodeHostname are required as NodeName");
+#endif	/* MULTIPLE_SLURMD */
+#endif	/* HAVE_FRONT_END */
+	if ((port_count != alias_count) && (port_count > 1))
+		fatal("Port count must equal that of NodeName records or there must be no more than one (%u != %u)",
+		      port_count, alias_count);
+
+	/* now build the individual node structures */
+	while ((alias = hostlist_shift(alias_list))) {
+		if (address_count > 0) {
+			address_count--;
+			if (address)
+				free(address);
+			address = hostlist_shift(address_list);
+		}
+		if (bcast_count > 0) {
+			bcast_count--;
+			if (bcast_address)
+				free(bcast_address);
+			bcast_address = hostlist_shift(bcast_list);
+		}
+		if (hostname_count > 0) {
+			hostname_count--;
+			if (hostname)
+				free(hostname);
+			hostname = hostlist_shift(hostname_list);
+		}
+		if (port_count > 0) {
+			int port_int;
+			port_count--;
+			if (port_str)
+				free(port_str);
+			port_str = hostlist_shift(port_list);
+			port_int = atoi(port_str);
+			if ((port_int <= 0) || (port_int > 0xffff)) {
+				log_var(lvl, "Invalid Port %s",
+					node_ptr->port_str);
+			}
+			port = port_int;
+		}
+
+		(*_callback)(alias, hostname, address, bcast_address,
+			     port, state_val, node_ptr, config_ptr);
+
+		free(alias);
+	}
+	/* free allocated storage */
+	if (address)
+		free(address);
+	if (bcast_address)
+		free(bcast_address);
+	if (hostname)
+		free(hostname);
+	if (port_str)
+		free(port_str);
+	if (address_list)
+		hostlist_destroy(address_list);
+	if (alias_list)
+		hostlist_destroy(alias_list);
+	if (bcast_list)
+		hostlist_destroy(bcast_list);
+	if (hostname_list)
+		hostlist_destroy(hostname_list);
+	if (port_list)
+		hostlist_destroy(port_list);
+	return error_code;
 }
 
 /*
@@ -602,15 +609,15 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
  * NOTE: memory allocated will remain in existence until
  *	_delete_config_record() is called to delete all configuration records
  */
-extern struct config_record * create_config_record (void)
+extern config_record_t *create_config_record(void)
 {
-	struct config_record *config_ptr = xmalloc(sizeof(*config_ptr));
+	config_record_t *config_ptr = xmalloc(sizeof(*config_ptr));
 
 	last_node_update = time (NULL);
 
+	config_ptr->magic = CONFIG_MAGIC;
 	config_ptr->nodes = NULL;
 	config_ptr->node_bitmap = NULL;
-	xassert (config_ptr->magic = CONFIG_MAGIC);  /* set value */
 
 	list_append(config_list, config_ptr);
 
@@ -625,10 +632,10 @@ extern struct config_record * create_config_record (void)
  * NOTE: allocates memory at node_record_table_ptr that must be xfreed when
  *	the global node table is no longer required
  */
-extern struct node_record *create_node_record (
-			struct config_record *config_ptr, char *node_name)
+extern node_record_t *create_node_record(config_record_t *config_ptr,
+					 char *node_name)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int old_buffer_size, new_buffer_size;
 
 	last_node_update = time (NULL);
@@ -636,11 +643,11 @@ extern struct node_record *create_node_record (
 	xassert(node_name);
 
 	/* round up the buffer size to reduce overhead of xrealloc */
-	old_buffer_size = (node_record_count) * sizeof (struct node_record);
+	old_buffer_size = (node_record_count) * sizeof(node_record_t);
 	old_buffer_size =
 		((int) ((old_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
 	new_buffer_size =
-		(node_record_count + 1) * sizeof (struct node_record);
+		(node_record_count + 1) * sizeof(node_record_t);
 	new_buffer_size =
 		((int) ((new_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
 	if (!node_record_table_ptr) {
@@ -681,7 +688,8 @@ extern struct node_record *create_node_record (
 	node_ptr->mcs_label = NULL;
 	node_ptr->next_state = NO_VAL;
 	node_ptr->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
-	xassert (node_ptr->magic = NODE_MAGIC)  /* set value */;
+	node_ptr->magic = NODE_MAGIC;
+
 	return node_ptr;
 }
 
@@ -691,7 +699,7 @@ extern struct node_record *create_node_record (
  * RET: pointer to node record or NULL if not found
  * NOTE: Logs an error if the node name is NOT found
  */
-extern struct node_record *find_node_record (char *name)
+extern node_record_t *find_node_record(char *name)
 {
 	return _find_node_record(name, true, true);
 }
@@ -702,7 +710,7 @@ extern struct node_record *find_node_record (char *name)
  * RET: pointer to node record or NULL if not found
  * NOTE: Does not log an error if the node name is NOT found
  */
-extern struct node_record *find_node_record2 (char *name)
+extern node_record_t *find_node_record2(char *name)
 {
 	return _find_node_record(name, true, false);
 }
@@ -714,7 +722,7 @@ extern struct node_record *find_node_record2 (char *name)
  * RET: pointer to node record or NULL if not found
  * NOTE: Logs an error if the node name is NOT found
  */
-extern struct node_record *find_node_record_no_alias (char *name)
+extern node_record_t *find_node_record_no_alias(char *name)
 {
 	return _find_node_record(name, false, true);
 }
@@ -726,10 +734,10 @@ extern struct node_record *find_node_record_no_alias (char *name)
  * IN: log_missing - if set, then print an error message if the node is not found
  * RET: pointer to node record or NULL if not found
  */
-static struct node_record *_find_node_record (char *name, bool test_alias,
-					      bool log_missing)
+static node_record_t *_find_node_record(char *name, bool test_alias,
+					bool log_missing)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if ((name == NULL) || (name[0] == '\0')) {
 		info("%s: passed NULL node name", __func__);
@@ -741,8 +749,7 @@ static struct node_record *_find_node_record (char *name, bool test_alias,
 		return NULL;
 
 	/* try to find via hash table, if it exists */
-	if ((node_ptr =
-	     (struct node_record*) xhash_get_str(node_hash_table, name))) {
+	if ((node_ptr = xhash_get_str(node_hash_table, name))) {
 		xassert(node_ptr->magic == NODE_MAGIC);
 		return node_ptr;
 	}
@@ -783,7 +790,7 @@ extern int init_node_conf (void)
 {
 	last_node_update = time (NULL);
 	int i;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++)
@@ -808,7 +815,7 @@ extern int init_node_conf (void)
 extern void node_fini2 (void)
 {
 	int i;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if (config_list) {
 		FREE_NULL_LIST(config_list);
@@ -859,7 +866,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 	}
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
-		struct node_record *node_ptr;
+		node_record_t *node_ptr;
 		node_ptr = _find_node_record(this_node_name, best_effort, true);
 		if (node_ptr) {
 			bit_set (my_bitmap, (bitoff_t) (node_ptr -
@@ -897,7 +904,7 @@ extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap)
 
 	hi = hostlist_iterator_create(hl);
 	while ((name = hostlist_next(hi))) {
-		struct node_record *node_ptr;
+		node_record_t *node_ptr;
 		node_ptr = _find_node_record(name, best_effort, true);
 		if (node_ptr) {
 			bit_set (my_bitmap, (bitoff_t) (node_ptr -
@@ -917,7 +924,7 @@ extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap)
 }
 
 /* Purge the contents of a node record */
-extern void purge_node_rec (struct node_record *node_ptr)
+extern void purge_node_rec(node_record_t *node_ptr)
 {
 	xfree(node_ptr->arch);
 	xfree(node_ptr->comm_name);
@@ -949,7 +956,7 @@ extern void purge_node_rec (struct node_record *node_ptr)
 extern void rehash_node (void)
 {
 	int i;
-	struct node_record *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr = node_record_table_ptr;
 
 	xhash_free (node_hash_table);
 	node_hash_table = xhash_init(_node_record_hash_identity, NULL);
@@ -997,8 +1004,7 @@ extern int state_str2int(const char *state_str, char *node_name)
 }
 
 /* (re)set cr_node_num_cores arrays */
-extern void cr_init_global_core_data(struct node_record *node_ptr, int node_cnt,
-				     uint16_t fast_schedule)
+extern void cr_init_global_core_data(node_record_t *node_ptr, int node_cnt)
 {
 	uint32_t n;
 
@@ -1008,14 +1014,8 @@ extern void cr_init_global_core_data(struct node_record *node_ptr, int node_cnt,
 	cr_node_cores_offset = xmalloc((node_cnt+1) * sizeof(uint32_t));
 
 	for (n = 0; n < node_cnt; n++) {
-		uint16_t cores;
-		if (fast_schedule) {
-			cores  = node_ptr[n].config_ptr->cores;
-			cores *= node_ptr[n].config_ptr->sockets;
-		} else {
-			cores  = node_ptr[n].cores;
-			cores *= node_ptr[n].sockets;
-		}
+		uint16_t cores = node_ptr[n].config_ptr->cores;
+		cores *= node_ptr[n].config_ptr->sockets;
 
 		cr_node_num_cores[n] = cores;
 		if (n > 0) {

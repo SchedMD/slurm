@@ -110,7 +110,7 @@ present. Build dependencies for various plugins and commands are denoted below:
 <li> <b>IPMI Engergy Consumption</b> The <i>acct_gather_energy/ipmi</i>
 		accouting plugin will be built if the <i>freeimpi</i>
 		development library is present.</li>
-<li> <b>InfiniBand Accounting</b> The <i>acct_gather_infiniband/ofed</i>
+<li> <b>InfiniBand Accounting</b> The <i>acct_gather_interconnect/ofed</i>
 		InfiniBand accounting plugin will be built if the
 		<i>libibmad</i> and <i>libibumad</i> development libraries are
 		present.</li>
@@ -132,8 +132,6 @@ present. Build dependencies for various plugins and commands are denoted below:
 <li> <b>RRD External Sensor Data Collection </b> The <i>ext_sensors/rrd</i>
 		plugin will be built if the <i>rrdtool</i> development library
 		is present.</li>
-<li> <b>smap</b> The smap command will be built only if the <i>ncurses</i>
-		development library is installed.</li>
 <li> <b>sview</b> The sview command will be built only if <i>gtk+-2.0</i>
 		is installed.</li>
 </ul>
@@ -142,7 +140,7 @@ required software to build these plugins.</p>
 
 <p>To build RPMs directly, copy the distributed tarball into a directory
 and execute (substituting the appropriate Slurm version
-number):<br><code>rpmbuild -ta slurm-17.02.0.tar.bz2</code></p>
+number):<br><code>rpmbuild -ta slurm-20.02.1.tar.bz2</code></p>
 The rpm files will be installed under the <code>$(HOME)/rpmbuild</code>
 directory of the user building them.
 
@@ -253,7 +251,8 @@ responsiveness, the transition back and forth should go undetected.</p>
 <p>Prior to 18.08, Slurm used the <a href="slurm.conf.html#OPT_BackupAddr">
 &quot;BackupAddr&quot;</a> and <a href="slurm.conf.html#OPT_BackupController">
 &quot;BackupController&quot;</a> parameters for High Availability. These
-parameters still work, but will be deprecated at some point in the future.
+parameters have been deprecated and are replaced by
+<a href="slurm.conf.html#OPT_SlurmctldHost">&quot;SlurmctldHost&quot;</a>.
 Also see <a href="slurm.conf.html#OPT_SlurmctldPrimaryOnProg">&quot;
 SlurmctldPrimaryOnProg&quot;</a> and
 <a href="slurm.conf.html#OPT_SlurmctldPrimaryOffProg">&quot;
@@ -429,7 +428,6 @@ SlurmctldHost=mcrj(12.34.56.79)
 #
 AuthType=auth/munge
 Epilog=/usr/local/slurm/etc/epilog
-FastSchedule=1
 JobCompLoc=/var/tmp/jette/slurm.job.log
 JobCompType=jobcomp/filetxt
 JobCredentialPrivateKey=/usr/local/etc/slurm.key
@@ -607,16 +605,16 @@ that represent both the major Slurm release and maintenance release level.
 The first two parts combine together to represent the major release, and match
 the year and month of that major release. The third number in the version
 designates a specific maintenance level:
-year.month.maintenance-release (e.g. 17.11.5 is major Slurm release 17.11, and
-maintenance version 5).
-Thus version 17.11.x was initially released in November 2017.
+year.month.maintenance-release (e.g. 20.02.2 is major Slurm release 20.02, and
+maintenance version 2).
+Thus version 20.02.x was initially released in February 2020.
 Changes in the RPCs (remote procedure calls) and state files will only be made
 if the major release number changes, which typically happens about every nine
 months. A list of most recent major Slurm releases is shown below.</p>
 <ul>
-<li>16.05.x  (Released May 2016)</li>
-<li>17.02.x  (Released February 2017)</li>
-<li>17.11.x  (Released November 2017)</li>
+<li>18.08.x (Released August 2018)</li>
+<li>19.05.x (Released May 2019)</li>
+<li>20.02.x (Released February 2020)</li>
 </ul>
 
 <p>Slurm's MPI libraries may also change if the major release number change,
@@ -624,8 +622,8 @@ requiring applications be re-linked (behavior may vary depending upon
 the MPI implementation used and the specific Slurm changes between releases).
 Locally developed Slurm plugins may also require modification.
 Slurm daemons will support RPCs and state files from the two previous major
-releases (e.g. a version 17.11.x SlurmDBD will support slurmctld daemons and
-commands with a version of 17.11.x, 17.02.x or 16.05.x).
+releases (e.g. a version 20.02.x SlurmDBD will support slurmctld daemons and
+commands with a version of 20.02.x, 19.05.x, or 18.08.x).
 This means that upgrading at least once each year is recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
 Changes in the mainenance release number generally represent only bug fixes,
@@ -634,12 +632,28 @@ but may also include minor enhancements.</p>
 <p>If the SlurmDBD daemon is used, it must be at the same or higher major
 release number as the Slurmctld daemons.
 In other words, when changing the version to a higher release number (e.g
-from 16.05.x to 17.02.x) <b>always upgrade the SlurmDBD daemon first</b>.
+from 19.05.x to 20.02.x) <b>always upgrade the SlurmDBD daemon first</b>.
 Database table changes may be required for the upgrade, for example
 adding new fields to existing tables.
 If the database contains a large number of entries, <b>the SlurmDBD daemon
 may require tens of minutes to update the database and be unresponsive
 during this time interval</b>.</p>
+
+<p>Before upgrading SlurmDBD <b>it is strongly recommended to make a backup of
+the database</b>. When using mysqldump, the default behavior is to lock the
+tables, which can cause issues if SlurmDBD is still trying to send updates to
+the database. To avoid locking the tables we recommend you use the
+<b>--single-transaction</b> flag with mysqldump. This will dump a consistent
+state of the database without blocking any applications. Note that in order for
+this flag to have the desired effect you must be using the InnoDB storage
+engine (specified by default when Slurm automatically creates any table).
+The <b>--single-transaction</b> flag permits a live logical backup (and is thus
+useful for periodic backups while in production). When upgrading Slurm, it is
+recommended to first stop the SlurmDBD daemon and then dump the database using
+mysqldump before proceeding with the upgrade, as stated in the upgrade guide a
+few paragraphs below. Note that requests intended for SlurmDBD from Slurmctld
+will be queued while SlurmDBD is down, but the queue size is limited and you
+should monitor the DBD Agent Queue size with the <b>sdiag</b> command.</p>
 
 <p>The slurmctld daemon must also be upgraded before or at the same time as
 the slurmd daemons on the compute nodes.
@@ -648,14 +662,14 @@ although rolling upgrades are also possible (i.e. upgrading the head node(s)
 first then upgrading the compute and login nodes later at various times).
 Also see the note above about reverse compatibility.</p>
 
-<p>Almost every new major release of Slurm (e.g. 16.05.x to 17.02.x)
+<p>Almost every new major release of Slurm (e.g. 19.05.x to 20.02.x)
 involves changes to the state files with new data structures, new options, etc.
-Slurm permits upgrades between any two versions whose major release numbers
-differ by two or less (e.g. 16.05.x or 17.02.x to 17.11.x) without loss of
+Slurm permits upgrades to a new major release from the past two major releases,
+which happen every nine months (e.g. 18.08.x or 19.05.x to 20.02.x) without loss of
 jobs or other state information.
 State information from older versions will not be recognized and will be
 discarded, resulting in loss of all running and pending jobs.
-State files are <b>not</b> recognized when downgrading (e.g. from 17.02.x to 16.05.x)
+State files are <b>not</b> recognized when downgrading (e.g. from 19.05.x to 18.08.x)
 and will be discarded, resulting in loss of all running and pending jobs.
 For this reason, creating backup copies of state files (as described below)
 can be of value.
@@ -667,7 +681,7 @@ recover the jobs.
 Jobs submitted under the new version will not be in those state files,
 but it can let you recover most jobs.
 An exception to this is that jobs may be lost when installing new pre-release
-versions (e.g. 17.11.0-pre1 to 17.11.0-pre2).
+versions (e.g. 20.02.0-pre1 to 20.02.0-pre2).
 Developers will try to note these cases in the NEWS file.
 Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
@@ -677,7 +691,7 @@ Sometimes it works to just symlink the old .so name(s) to the new one, but this
 has no guarantee of working.</p>
 
 <p><b>Be mindful of your configured SlurmdTimeout and SlurmctldTimeout values</b>.
-If the Slurm daemon's are down for longer than the specified timeout during an
+If the Slurm daemons are down for longer than the specified timeout during an
 upgrade, nodes may be marked DOWN and their jobs killed.
 You can either increase the timeout values during an upgrade or ensure that the
 slurmd daemons on compute nodes are not down for longer than SlurmdTimeout.
@@ -728,6 +742,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 26 April 2019</p>
+<p style="text-align:center;">Last modified 5 June 2020</p>
 
 <!--#include virtual="footer.txt"-->

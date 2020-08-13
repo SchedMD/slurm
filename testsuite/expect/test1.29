@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Verify that user user limits are propagated to the job.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.29"
 set exit_code        0
 set file_err         "test$test_id.error"
 set file_in          "test$test_id.input"
@@ -46,11 +41,8 @@ set limit_nproc      34500
 set limit_stack      5021
 set matches          0
 
-print_header $test_id
-
 if {[test_front_end] != 0 && [test_super_user] == 0} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
 #
@@ -147,7 +139,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -157,23 +149,21 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
-	exit 1
+	fail "Waiting for job to complete"
 }
 
 #
 # Inspect the job's output file
 #
 if {[wait_for_file $file_out] != 0} {
-	exit 1
+	fail "Failed waiting for file ($file_out)"
 }
 spawn $bin_sort $file_out
 expect {
@@ -182,7 +172,7 @@ expect {
 		if {$expect_out(1,string) == $target} {
 			incr matches
 		} else {
-			send_user "\nCORE value bad ($expect_out(1,string) != $target)\n"
+			log_warn "CORE value bad ($expect_out(1,string) != $target)"
 		}
 		exp_continue
 	}
@@ -191,7 +181,7 @@ expect {
 		if {$expect_out(1,string) == $target} {
 			incr matches
 		} else {
-			send_user "\nFSIZE value bad ($expect_out(1,string) != $target)\n"
+			log_warn "FSIZE value bad ($expect_out(1,string) != $target)"
 		}
 		exp_continue
 	}
@@ -199,7 +189,7 @@ expect {
 		if {$expect_out(1,string) == $limit_nofile} {
 			incr matches
 		} else {
-			send_user "\nNOFILE value bad ($expect_out(1,string) != $limit_nofile)\n"
+			log_warn "NOFILE value bad ($expect_out(1,string) != $limit_nofile)"
 		}
 		exp_continue
 	}
@@ -207,7 +197,7 @@ expect {
 		if {$expect_out(1,string) == $limit_nproc} {
 			incr matches
 		} else {
-			send_user "\nNPROC value bad ($expect_out(1,string) != $limit_nproc)\n"
+			log_warn "NPROC value bad ($expect_out(1,string) != $limit_nproc)"
 		}
 		exp_continue
 	}
@@ -220,7 +210,7 @@ expect {
 		if {$expect_out(1,string) == [expr $limit_stack * 1024]} {
 			incr matches
 		} else {
-			send_user "\nSTACK value bad ($expect_out(1,string) != $target)\n"
+			log_warn "STACK value bad ($expect_out(1,string) != $target)"
 		}
 		exp_continue
 	}
@@ -229,7 +219,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sort not responding\n"
+		log_error "Sort not responding"
 		set exit_code 1
 	}
 	eof {
@@ -239,17 +229,12 @@ expect {
 
 set target 5
 if {$matches != $target} {
-	send_user "\nFAILURE: User limits not propagated got $matches of $target matches\n"
-	send_user "Check PropagateResourceLimits configuration parameter\n"
-	send_user "Check $file_err for errors\n"
-	send_user "A long running slurmd could cause a file size limit error\n"
-	send_user "slurmd could have been started with limits lower than user launching the task\n"
-	set exit_code 1
+	fail "User limits not propagated got $matches of $target matches. Check PropagateResourceLimits configuration parameter. Check $file_err for errors. A long running slurmd could cause a file size limit error. slurmd could have been started with limits lower than user launching the task"
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-        exec $bin_rm -f $file_err $file_in $file_prog_get $file_out
+    exec $bin_rm -f $file_err $file_in $file_prog_get $file_out
 
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

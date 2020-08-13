@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate scontrol ping command.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Portions Copyright (C) 2017 SchedMD LLC.
 # Copyright (C) 2002 The Regents of the University of California.
@@ -33,11 +29,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "2.3"
 set exit_code   0
 set matches     0
-
-print_header $test_id
 
 #
 # Report the slurm daemon status
@@ -45,7 +38,7 @@ print_header $test_id
 
 spawn $scontrol ping
 expect {
-	-re "Slurmctld.primary. at $controlmachine_regex is ($alpha_cap)" {
+	-re "Slurmctld.primary. at $re_word_str is ($re_word_str)" {
 		set status $expect_out(1,string)
 		if {![string compare $status "DOWN"] || ![string compare $status "UP"]} {
 			incr matches
@@ -53,7 +46,7 @@ expect {
 		}
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -62,10 +55,8 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol ping output error ($matches != 1)\n"
-	set exit_code 1
+	fail "scontrol ping output error ($matches != 1)"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

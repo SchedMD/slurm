@@ -62,10 +62,13 @@ __Examples__
     user1     user2     user3     user4 
     
     root@frontend:~ # scontrol <tab><tab>
-    abort        delete       pidinfo      requeue      shutdown     update       
-    checkpoint   hold         ping         resume       suspend      version      
-    completing   listpids     reconfigure  setdebug     takeover     
-    create       notify       release      show         uhold        
+    abort          errnumstr      pidinfo        requeue        setdebugflags  update
+    cluster        help           ping           requeuehold    show           verbose
+    completing     hold           quit           resume         shutdown       version
+    create         listpids       reboot_nodes   schedloglevel  suspend        wait_job
+    delete         notify         reconfigure    script         takeover
+    details        oneliner       release        setdebug       uhold
+
     root@frontend:~ # scontrol update <tab><tab>
     jobid=            nodename=         partitionname=    reservationname=  step=
     root@frontend:~ # scontrol update nodename=<tab><tab>

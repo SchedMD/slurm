@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate scontrol update size of running job.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id          "2.14"
 set exit_code        0
 set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
@@ -41,17 +35,13 @@ set file_out2        "test$test_id.output2"
 set job_id           0
 set node_cnt         2
 
-print_header $test_id
-
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+    skip "This test is incompatible with front-end systems"
 }
 
-set available [available_nodes $partition ""]
+set available [available_nodes]
 if {$available < $node_cnt} {
-    send_user "\nWARNING: not enough nodes currently available ($available avail, $node_cnt needed)\n"
-    exit $exit_code
+    skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
 }
 
 #
@@ -79,7 +69,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -87,28 +77,25 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job did not complete"
 }
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
+	fail "No output file"
 }
 set task_count 0
 set node_count 0
 spawn $bin_cat $file_out
 expect {
 	-re "slurm_allocation_lookup" {
-		send_user "\nFAILURE: Couldn't look up the job correctly\n\n\n"
+		log_error "Couldn't look up the job correctly"
 		set exit_code 1
 	}
 	-re "No such file or directory" {
-		send_user "\nFAILURE: For some reason the resize script wasn't found\n\n\n"
+		log_error "For some reason the resize script wasn't found"
 		set exit_code 1
 	}
 	-re "($number): *uid=" {
@@ -125,20 +112,19 @@ expect {
 }
 set task_target [expr $node_cnt + 1]
 if {$task_count != $task_target} {
-	send_user "\nFAILURE: Invalid task count ($task_count != $task_target)\n\n\n"
+	log_error "Invalid task count ($task_count != $task_target)"
 	set exit_code 1
 }
 if {$node_count != 1} {
-	send_user "\nFAILURE: Invalid node count ($node_count != 1)\n\n\n"
+	log_error "Invalid node count ($node_count != 1)"
 	set exit_code 1
 }
 if {$exit_code == 0} {
-	send_user "\nSo far, so good...\n\n\n"
+	log_debug "So far, so good.."
 }
 
 if {[wait_for_file $file_out2] != 0} {
-	send_user "\nFAILURE: no output file2\n"
-	exit 1
+	fail "No output file2"
 }
 set node_count 0
 spawn $bin_cat $file_out2
@@ -152,12 +138,11 @@ expect {
 	}
 }
 if {$node_count != 3} {
-	send_user "\nFAILURE: Invalid node count ($node_count != 3)\n"
-	set exit_code 1
+	fail "Invalid node count ($node_count != 3)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_out2
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

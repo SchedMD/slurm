@@ -176,7 +176,7 @@ static List _process_grouped_report(
 	}
 	if (!grouping_list) {
 		destroy_grouping_list = 1;
-		grouping_list = list_create(slurm_destroy_char);
+		grouping_list = list_create(xfree_ptr);
 		slurm_addto_char_list(grouping_list, "50,250,500,1000");
 	}
 

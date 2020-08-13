@@ -102,23 +102,6 @@ ID of the node on which resources are being acquired (zero origin).</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_p_slurmd_reserve_resources (
-launch_tasks_request_msg_t *req, uint32_t node_id);</p>
-<p style="margin-left:.2in"><b>Description</b>: Reserve resources for
-the initiation of a job. Executed by the <b>slurmd</b> daemon as user root.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline">req</span>&nbsp;&nbsp;&nbsp;(input)
-Task launch request specification including node, socket, and
-core specifications.
-See <b>src/common/slurm_protocol_defs.h</b> for the
-data structure definition.<br>
-<span class="commandline">node_id</span>&nbsp;&nbsp;&nbsp;(input)
-ID of the node on which the resources are being acquired
-(zero origin).</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
-On failure, the plugin should return SLURM_ERROR and set the errno to an
-appropriate value to indicate the reason for failure.</p>
-
 <p class="commandline">int task_p_slurmd_suspend_job (uint32_t job_id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Temporarily release resources
 previously reserved for a job.
@@ -137,16 +120,6 @@ Executed by the <b>slurmd</b> daemon as user root.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline">job_id</span>&nbsp;&nbsp;&nbsp;(input)
 ID of the job which is being resumed.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
-On failure, the plugin should return SLURM_ERROR and set the errno to an
-appropriate value to indicate the reason for failure.</p>
-
-<p class="commandline">int task_p_slurmd_release_resources (uint32_t job_id);</p>
-<p style="margin-left:.2in"><b>Description</b>: Release resources previously
-reserved for a job. Executed by the <b>slurmd</b> daemon as user root.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:
-<span class="commandline">job_id</span>&nbsp;&nbsp;&nbsp;(input)
-ID of the job which has completed.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
@@ -227,6 +200,6 @@ On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
 
-<p style="text-align:center;">Last modified 30 January 2018</p>
+<p style="text-align:center;">Last modified 17 June 2020</p>
 
 <!--#include virtual="footer.txt"-->

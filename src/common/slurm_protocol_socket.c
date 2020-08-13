@@ -54,6 +54,7 @@
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -164,7 +165,7 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
 extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
 {
 	return slurm_msg_sendto_timeout(fd, buffer, size,
-					(slurm_get_msg_timeout() * 1000));
+	                                (slurm_conf.msg_timeout * 1000));
 }
 
 ssize_t slurm_msg_sendto_timeout(int fd, char *buffer,
@@ -461,12 +462,10 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 #ifdef HAVE_NATIVE_CRAY
 	static int check_quiesce = -1;
 	if (check_quiesce == -1) {
-		char *comm_params = slurm_get_comm_parameters();
-		if (xstrcasestr(comm_params, "CheckGhalQuiesce"))
+		if (xstrcasestr(slurm_conf.comm_params, "CheckGhalQuiesce"))
 			check_quiesce = 1;
 		else
 			check_quiesce = 0;
-		xfree(comm_params);
 	}
 
 	if (check_quiesce) {
@@ -562,7 +561,6 @@ static int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	 * Timeouts in excess of 3 minutes have been observed, resulting
 	 * in serious problems for slurmctld. Making the connect call
 	 * non-blocking and polling seems to fix the problem. */
-	static int timeout = 0;
 	int rc, flags, flags_save, err;
 	socklen_t len;
 	struct pollfd ufds;
@@ -587,10 +585,8 @@ static int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	ufds.events = POLLIN | POLLOUT;
 	ufds.revents = 0;
 
-	if (timeout == 0)
-		timeout = slurm_get_tcp_timeout() * 1000;
-
-again:	rc = poll(&ufds, 1, timeout);
+again:
+	rc = poll(&ufds, 1, slurm_conf.tcp_timeout * 1000);
 	if (rc == -1) {
 		/* poll failed */
 		if (errno == EINTR) {
@@ -636,7 +632,7 @@ done:
 #endif
 }
 
-extern void slurm_set_addr_char (slurm_addr_t * addr, uint16_t port, char *host)
+extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 {
 #if 1
 /* NOTE: gethostbyname() is obsolete, but the alternative function (below)
@@ -720,21 +716,6 @@ extern void slurm_get_addr (slurm_addr_t *addr, uint16_t *port, char *host,
 		host[0] = '\0';
 	}
 	return;
-}
-
-extern void slurm_print_slurm_addr ( slurm_addr_t * address, char *buf,
-				     size_t n )
-{
-	char addrbuf[INET_ADDRSTRLEN];
-
-	if (!address) {
-		snprintf(buf, n, "NULL");
-		return;
-	}
-
-	inet_ntop(AF_INET, &address->sin_addr, addrbuf, INET_ADDRSTRLEN);
-	/* warning: silently truncates */
-	snprintf(buf, n, "%s:%d", addrbuf, ntohs(address->sin_port));
 }
 
 extern void slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)

@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Check squeue formating options (--noheader, --format and --step
 #          options and SQUEUE_FORMAT environment variable).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,14 +29,11 @@
 ############################################################################
 source ./globals
 
-set test_id      "5.4"
 set exit_code    0
 set file_in      "test$test_id.input"
 set job_id1      0
 set job_id2      0
 set step_id      0
-
-print_header $test_id
 
 #
 # Delete left-over input script
@@ -58,17 +51,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: srun job submit failure\n"
-	exit 1
+	fail "srun job submit failure"
 }
 
 set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --hold -t1 $file_in]
@@ -78,24 +69,21 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id2 == 0} {
-        send_user "\nFAILURE: srun job submit failure\n"
-	exit 1
+    fail "srun job submit failure"
 }
 
 if {[wait_for_job $job_id1 RUNNING] != 0} {
-	send_user "\nFAILURE to start job $job_id1\n"
 	cancel_job $job_id1
 	cancel_job $job_id2
-	exit 1
+	fail "Failed to start job $job_id1"
 }
 exec $bin_rm -f $file_in
 
@@ -111,7 +99,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
+		log_error "squeue not responding"
 		cancel_job $job_id2
 		set exit_code 1
 	}
@@ -121,7 +109,7 @@ expect {
 }
 
 if {$have_header > 0} {
-	send_user "\nFAILURE: squeue noheader error\n"
+	log_error "squeue noheader error"
 	set exit_code 1
 }
 
@@ -145,7 +133,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
+		log_error "squeue not responding"
 		set exit_code 1
 	}
 	eof {
@@ -154,11 +142,11 @@ expect {
 }
 
 if {$have_job_ids == 0} {
-	send_user "\nFAILURE: squeue format error\n"
+	log_error "squeue format error"
 	set exit_code 1
 }
 if {$have_job_ids == 1} {
-	send_user "\nFAILURE: squeue found only 1 of 2 jobs\n"
+	log_error "squeue found only 1 of 2 jobs"
 	set exit_code 1
 }
 
@@ -181,7 +169,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
+		log_error "squeue not responding"
 		set exit_code 1
 	}
 	eof {
@@ -191,11 +179,11 @@ expect {
 unset env(SQUEUE_FORMAT)
 
 if {$have_job_ids == 0} {
-	send_user "\nFAILURE: squeue format error\n"
+	log_error "squeue format error"
 	set exit_code 1
 }
 if {$have_job_ids == 1} {
-	send_user "\nFAILURE: squeue found only 1 of 2 jobs\n"
+	log_error "squeue found only 1 of 2 jobs"
 	set exit_code 1
 }
 
@@ -222,7 +210,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
+		log_error "squeue not responding"
 		set exit_code 1
 	}
 	eof {
@@ -231,18 +219,16 @@ expect {
 }
 
 if {$step_found == 0} {
-	send_user "\nFAILURE: squeue step format error\n"
-	set exit_code 1
+	fail "squeue step format error"
 }
 
 if {[cancel_job $job_id1] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id1)"
 }
 if {[cancel_job $job_id2] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id2)"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
 

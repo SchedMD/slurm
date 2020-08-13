@@ -680,8 +680,7 @@ int PMI_Barrier( void )
 		return rc;
 
 	/* Issue the RPC */
-	if (slurm_get_kvs_comm_set(&kvs_set_ptr, pmi_rank, pmi_size)
-			!= SLURM_SUCCESS)
+	if (slurm_pmi_get_kvs_comm_set(&kvs_set_ptr, pmi_rank, pmi_size))
 		return PMI_FAIL;
 	if (kvs_set_ptr == NULL)
 		return PMI_SUCCESS;
@@ -704,7 +703,7 @@ int PMI_Barrier( void )
 	}
 
 	/* Release temporary storage from RPC */
-	slurm_free_kvs_comm_set(kvs_set_ptr);
+	slurm_pmi_free_kvs_comm_set(kvs_set_ptr);
 	return rc;
 }
 
@@ -844,8 +843,8 @@ int PMI_Abort(int exit_code, const char error_msg[])
 			/* Simple operation without srun */
 			kill(0, SIGKILL);
 		} else {
-			slurm_kill_job_step((uint32_t) pmi_jobid,
-					    (uint32_t) pmi_stepid, SIGKILL);
+			slurm_pmi_kill_job_step((uint32_t) pmi_jobid,
+						(uint32_t) pmi_stepid, SIGKILL);
 		}
 	}
 	exit(exit_code);
@@ -1304,8 +1303,7 @@ int PMI_KVS_Commit( const char kvsname[] )
 	}
 
 	/* Send the RPC */
-	if (slurm_send_kvs_comm_set(&kvs_set, pmi_rank, pmi_size)
-			!= SLURM_SUCCESS) {
+	if (slurm_pmi_send_kvs_comm_set(&kvs_set, pmi_rank, pmi_size)) {
 		rc = PMI_FAIL;
 	}
 	_pmi_mutex_unlock(&kvs_mutex); /* DO NOT use slurm_mutex_un/lock */

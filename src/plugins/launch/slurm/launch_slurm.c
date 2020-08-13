@@ -43,8 +43,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "src/common/slurm_opt.h"
 #include "src/common/slurm_xlator.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/api/pmi_server.h"
 #include "src/srun/libsrun/allocate.h"
@@ -94,7 +94,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static List local_job_list = NULL;
 static uint32_t *local_global_rc = NULL;
 static pthread_mutex_t launch_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t pack_lock   = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t het_job_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  start_cond  = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t start_mutex = PTHREAD_MUTEX_INITIALIZER;
 static slurm_opt_t *opt_save = NULL;
@@ -199,7 +199,7 @@ static char *_task_array_to_string(int ntasks, uint32_t *taskids,
 	return str;
 }
 
-static void _update_task_exit_state(task_state_t task_state, uint32_t ntasks,
+static void _update_task_exit_state(task_state_t *task_state, uint32_t ntasks,
 				    uint32_t *taskids, int abnormal)
 {
 	int i;
@@ -213,7 +213,7 @@ static int _kill_on_bad_exit(void)
 {
 	xassert(opt_save->srun_opt);
 	if (!opt_save || (opt_save->srun_opt->kill_bad_exit == NO_VAL))
-		return slurm_get_kill_on_bad_exit();
+		return slurm_conf.kill_on_bad_exit;
 	return opt_save->srun_opt->kill_bad_exit;
 }
 
@@ -245,7 +245,7 @@ static int _is_openmpi_port_error(int errcode)
 		return 0;
 	if (opt_save && (opt_save->srun_opt->resv_port_cnt == NO_VAL))
 		return 0;
-	if (difftime(time(NULL), launch_start_time) > slurm_get_msg_timeout())
+	if (difftime(time(NULL), launch_start_time) > slurm_conf.msg_timeout)
 		return 0;
 	return 1;
 }
@@ -254,7 +254,7 @@ static void
 _handle_openmpi_port_error(const char *tasks, const char *hosts,
 			   slurm_step_ctx_t *step_ctx)
 {
-	uint32_t job_id, step_id;
+	slurm_step_id_t step_id;
 	char *msg = "retrying";
 
 	if (!retry_step_begin) {
@@ -267,10 +267,9 @@ _handle_openmpi_port_error(const char *tasks, const char *hosts,
 	error("%s: tasks %s unable to claim reserved port, %s.",
 	      hosts, tasks, msg);
 
-	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
-	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
-	info("Terminating job step %u.%u", job_id, step_id);
-	slurm_kill_job_step(job_id, step_id, SIGKILL);
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEP_ID, &step_id);
+	info("Terminating job step %ps", &step_id);
+	slurm_kill_job_step(step_id.job_id, step_id.step_id, SIGKILL);
 }
 
 static void _task_start(launch_tasks_response_msg_t *msg)
@@ -278,7 +277,7 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 	MPIR_PROCDESC *table;
 	uint32_t local_task_id, global_task_id;
 	int i;
-	task_state_t task_state;
+	task_state_t *task_state;
 
 	if (msg->count_of_pids) {
 		verbose("Node %s, %d tasks started",
@@ -292,11 +291,10 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 		       msg->node_name, slurm_strerror(msg->return_code));
 	}
 
-	task_state = task_state_find(msg->job_id, msg->step_id, NO_VAL,
-				     task_state_list);
+	task_state = task_state_find(&msg->step_id, task_state_list);
 	if (!task_state) {
-		error("%s: Could not locate task state for step %u.%u",
-		      __func__, msg->job_id, msg->step_id);
+		error("%s: Could not locate task state for %ps",
+		      __func__, &msg->step_id);
 	}
 	for (i = 0; i < msg->count_of_pids; i++) {
 		local_task_id = msg->task_ids[i];
@@ -325,6 +323,27 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 
 }
 
+static int _find_step(void *object, void *key)
+{
+	srun_job_t *srun_job = (srun_job_t *)object;
+	slurm_step_id_t *step_id = (slurm_step_id_t *)key;
+
+	return verify_step_id(&srun_job->step_id, step_id);
+}
+
+/*
+ * Find the task_state structure for a given job_id, step_id and/or het group
+ * on a list. Specify values of NO_VAL for values that are not to be matched
+ * Returns NULL if not found
+ */
+static srun_job_t *_find_srun_job(slurm_step_id_t *step_id)
+{
+	if (!local_job_list)
+		return NULL;
+
+	return list_find_first(local_job_list, _find_step, step_id);
+}
+
 static void _task_finish(task_exit_msg_t *msg)
 {
 	char *tasks = NULL, *hosts = NULL;
@@ -333,21 +352,13 @@ static void _task_finish(task_exit_msg_t *msg)
 	int normal_exit = 0;
 	static int reduce_task_exit_msg = -1;
 	static int msg_printed = 0, oom_printed = 0, last_task_exit_rc;
-	task_state_t task_state;
+	task_state_t *task_state;
 	const char *task_str = _taskstr(msg->num_tasks);
-	srun_job_t *my_srun_job;
-	ListIterator iter;
+	srun_job_t *my_srun_job = _find_srun_job(&msg->step_id);
 
-	iter = list_iterator_create(local_job_list);
-	while ((my_srun_job = (srun_job_t *) list_next(iter))) {
-		if ((my_srun_job->jobid  == msg->job_id) &&
-		    (my_srun_job->stepid == msg->step_id))
-			break;
-	}
-	list_iterator_destroy(iter);
 	if (!my_srun_job) {
-		error("Ignoring exit message from unrecognized step %u.%u",
-		      msg->job_id, msg->step_id);
+		error("Ignoring exit message from unrecognized %ps",
+		      &msg->step_id);
 		return;
 	}
 
@@ -359,9 +370,8 @@ static void _task_finish(task_exit_msg_t *msg)
 			reduce_task_exit_msg = 0;
 	}
 
-	verbose("Received task exit notification for %d %s of step %u.%u (status=0x%04x).",
-		msg->num_tasks, task_str, msg->job_id, msg->step_id,
-		msg->return_code);
+	verbose("Received task exit notification for %d %s of %ps (status=0x%04x).",
+		msg->num_tasks, task_str, &msg->step_id, msg->return_code);
 
 	/*
 	 * Only build the "tasks" and "hosts" strings as needed.
@@ -449,14 +459,13 @@ static void _task_finish(task_exit_msg_t *msg)
 	xfree(tasks);
 	xfree(hosts);
 
-	task_state = task_state_find(msg->job_id, msg->step_id, NO_VAL,
-				     task_state_list);
+	task_state = task_state_find(&msg->step_id, task_state_list);
 	if (task_state) {
 		_update_task_exit_state(task_state, msg->num_tasks,
 					msg->task_id_list, !normal_exit);
 	} else {
-		error("%s: Could not find task state for step %u.%u", __func__,
-		      msg->job_id, msg->step_id);
+		error("%s: Could not find task state for %ps", __func__,
+		      &msg->step_id);
 	}
 
 	if (task_state_first_abnormal_exit(task_state_list) &&
@@ -583,8 +592,8 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 	/* set the jobid for totalview */
 	if (!totalview_jobid) {
-		xstrfmtcat(totalview_jobid,  "%u", job->jobid);
-		xstrfmtcat(totalview_stepid, "%u", job->stepid);
+		xstrfmtcat(totalview_jobid,  "%u", job->step_id.job_id);
+		xstrfmtcat(totalview_stepid, "%u", job->step_id.step_id);
 	}
 
 	return SLURM_SUCCESS;
@@ -603,7 +612,7 @@ static char **_build_user_env(srun_job_t *job, slurm_opt_t *opt_local)
 	} else {
 		all = false;
 		tmp_env = xstrdup(srun_opt->export_env);
-		tok = strtok_r(tmp_env, ",", &save_ptr);
+		tok = find_quote_token(tmp_env, ",", &save_ptr);
 		while (tok) {
 			if (xstrcasecmp(tok, "ALL") == 0)
 				all = true;
@@ -622,7 +631,7 @@ static char **_build_user_env(srun_job_t *job, slurm_opt_t *opt_local)
 							    value);
 				}
 			}
-			tok = strtok_r(NULL, ",", &save_ptr);
+			tok = find_quote_token(NULL, ",", &save_ptr);
 		}
 		xfree(tmp_env);
 	}
@@ -639,15 +648,15 @@ static char **_build_user_env(srun_job_t *job, slurm_opt_t *opt_local)
 
 static void _task_state_del(void *x)
 {
-	task_state_t task_state = (task_state_t) x;
+	task_state_t *task_state = (task_state_t *)x;
 
 	task_state_destroy(task_state);
 }
 
 /*
- * Return only after all pack job components reach this point (or timeout)
+ * Return only after all hetjob components reach this point (or timeout)
  */
-static void _wait_all_pack_started(slurm_opt_t *opt_local)
+static void _wait_all_het_job_comps_started(slurm_opt_t *opt_local)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	static int start_cnt = 0;
@@ -659,7 +668,7 @@ static void _wait_all_pack_started(slurm_opt_t *opt_local)
 
 	slurm_mutex_lock(&start_mutex);
 	if (total_cnt == -1)
-		total_cnt = srun_opt->pack_step_cnt;
+		total_cnt = srun_opt->het_step_cnt;
 	start_cnt++;
 	while (start_cnt < total_cnt) {
 		gettimeofday(&now, NULL);
@@ -684,7 +693,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
 	int rc = SLURM_SUCCESS;
-	task_state_t task_state;
+	task_state_t *task_state;
 	bool first_launch = false;
 	uint32_t def_cpu_bind_type = 0;
 	char tmp_str[128];
@@ -693,18 +702,17 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	slurm_step_launch_params_t_init(&launch_params);
 	memcpy(&callbacks, step_callbacks, sizeof(callbacks));
 
-	task_state = task_state_find(job->jobid, job->stepid, job->pack_offset,
-				     task_state_list);
+	task_state = task_state_find(&job->step_id, task_state_list);
+
 	if (!task_state) {
-		task_state = task_state_create(job->jobid, job->stepid,
-					       job->pack_offset, job->ntasks,
-					       job->pack_task_offset);
-		slurm_mutex_lock(&pack_lock);
+		task_state = task_state_create(&job->step_id, job->ntasks,
+					       job->het_job_task_offset);
+		slurm_mutex_lock(&het_job_lock);
 		if (!local_job_list)
 			local_job_list = list_create(NULL);
 		if (!task_state_list)
 			task_state_list = list_create(_task_state_del);
-		slurm_mutex_unlock(&pack_lock);
+		slurm_mutex_unlock(&het_job_lock);
 		local_srun_job = job;
 		local_global_rc = global_rc;
 		list_append(local_job_list, local_srun_job);
@@ -727,17 +735,17 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.remote_output_filename = fname_remote_string(job->ofname);
 	launch_params.remote_input_filename  = fname_remote_string(job->ifname);
 	launch_params.remote_error_filename  = fname_remote_string(job->efname);
-	launch_params.node_offset = job->node_offset;
-	launch_params.pack_jobid  = job->pack_jobid;
-	launch_params.pack_nnodes = job->pack_nnodes;
-	launch_params.pack_ntasks = job->pack_ntasks;
-	launch_params.pack_offset = job->pack_offset;
-	launch_params.pack_step_cnt = srun_opt->pack_step_cnt;
-	launch_params.pack_task_offset = job->pack_task_offset;
-	launch_params.pack_task_cnts = job->pack_task_cnts;
-	launch_params.pack_tids = job->pack_tids;
-	launch_params.pack_tid_offsets = job->pack_tid_offsets;
-	launch_params.pack_node_list = job->pack_node_list;
+	launch_params.het_job_node_offset = job->het_job_node_offset;
+	launch_params.het_job_id  = job->het_job_id;
+	launch_params.het_job_nnodes = job->het_job_nnodes;
+	launch_params.het_job_ntasks = job->het_job_ntasks;
+	launch_params.het_job_offset = job->het_job_offset;
+	launch_params.het_job_step_cnt = srun_opt->het_step_cnt;
+	launch_params.het_job_task_offset = job->het_job_task_offset;
+	launch_params.het_job_task_cnts = job->het_job_task_cnts;
+	launch_params.het_job_tids = job->het_job_tids;
+	launch_params.het_job_tid_offsets = job->het_job_tid_offsets;
+	launch_params.het_job_node_list = job->het_job_node_list;
 	launch_params.partition = job->partition;
 	launch_params.profile = opt_local->profile;
 	launch_params.task_prolog = srun_opt->task_prolog;
@@ -852,23 +860,22 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		 */
 		if (srun_opt->multi_prog) {
 			mpir_set_multi_name(job->ntasks,
-					    launch_params.argv[0],
-					    launch_params.cwd);
+					    launch_params.argv[0]);
 		} else {
 			mpir_set_executable_names(launch_params.argv[0],
-						  job->pack_task_offset,
+						  job->het_job_task_offset,
 						  job->ntasks);
 		}
 
-		_wait_all_pack_started(opt_local);
+		_wait_all_het_job_comps_started(opt_local);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 		if (srun_opt->debugger_test)
 			mpir_dump_proctable();
 		else if (srun_opt->parallel_debug)
 			MPIR_Breakpoint(job);
 	} else {
-		info("Job step %u.%u aborted before step completely launched.",
-		     job->jobid, job->stepid);
+		info("%ps aborted before step completely launched.",
+		     &job->step_id);
 	}
 
 cleanup:
@@ -883,7 +890,7 @@ extern int launch_p_step_wait(srun_job_t *job, bool got_alloc,
 	slurm_step_launch_wait_finish(job->step_ctx);
 	if ((MPIR_being_debugged == 0) && retry_step_begin &&
 	    (retry_step_cnt < MAX_STEP_RETRIES) &&
-	     (job->pack_jobid == NO_VAL)) {	/* Not pack step */
+	     (job->het_job_id == NO_VAL)) {	/* Not hetjob step */
 		retry_step_begin = false;
 		slurm_step_ctx_destroy(job->step_ctx);
 		if (got_alloc) 
@@ -910,10 +917,9 @@ static int _step_signal(int signal)
 
 	iter = list_iterator_create(local_job_list);
 	while ((my_srun_job = (srun_job_t *) list_next(iter))) {
-		info("Terminating job step %u.%u",
-		      my_srun_job->jobid, my_srun_job->stepid);
-		rc2 = slurm_kill_job_step(my_srun_job->jobid,
-					  my_srun_job->stepid, signal);
+		info("Terminating %ps", &my_srun_job->step_id);
+		rc2 = slurm_kill_job_step(my_srun_job->step_id.job_id,
+					  my_srun_job->step_id.step_id, signal);
 		if (rc2)
 			rc = rc2;
 	}

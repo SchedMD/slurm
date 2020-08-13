@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validates that a resource can be added to a cluster after
 #          it has been created
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -31,7 +27,6 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id                          21.33
 set exit_code                        0
 set test_cluster                     "test$test_id\_cluster"
 set test_res1                        "test$test_id\_res1"
@@ -83,7 +78,7 @@ proc check_val { res_name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -94,14 +89,10 @@ proc check_val { res_name } {
 	return $rc
 }
 
-print_header $test_id
-
 if { [test_using_slurmdbd] == 0 } {
-        send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
-        exit $exit_code
+    skip "This test can't be run without AccountStorageType=slurmdbd"
 } elseif { [test_super_user] == 0} {
-        send_user "\nWARNING: This test can't be run without superuser permissions\n"
-        exit $exit_code
+    skip "This test can't be run without superuser permissions"
 }
 
 # Delete any vestigial data
@@ -115,7 +106,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -124,8 +115,7 @@ expect {
 }
 
 if {$added != 1} {
-	send_user "\nFAILURE: test cluster was not added\n"
-	exit 1
+	fail "Test cluster was not added"
 }
 
 #
@@ -133,13 +123,13 @@ if {$added != 1} {
 #
 add_resource $test_res1 [array get res1]
 if {[check_resource_limits $test_res1 [array get res1]]} {
-	send_user "\nFAILURE: $test_res1 has bad values\n"
+	log_error "$test_res1 has bad values"
 	clean_up
 }
 
 add_resource $test_res2 [array get res2]
 if {[check_resource_limits $test_res2 [array get res2]]} {
-	send_user "\nFAILURE: $test_res2 has bad values\n"
+	log_error "$test_res2 has bad values"
 	clean_up
 }
 
@@ -149,8 +139,7 @@ if {[check_resource_limits $test_res2 [array get res2]]} {
 add_resource $test_res1 [array get res1_cluster]
 
 if {[check_val $test_res1] != 1} {
-	send_user "\nFAILURE: sacctmgr did not add resource $test_res1 to "
-	send_user "cluster $test_cluster\n"
+	log_error "sacctmgr did not add resource $test_res1 to cluster $test_cluster"
 	set exit_code 1
 }
 
@@ -160,8 +149,7 @@ if {[check_val $test_res1] != 1} {
 add_resource $test_res2 [array get res2_cluster]
 
 if {[check_val $test_res2] != 1} {
-	send_user "\nFAILURE: sacctmgr did not add resource $test_res2 to "
-	send_user "cluster $test_cluster\n"
+	log_error "sacctmgr did not add resource $test_res2 to cluster $test_cluster"
 	set exit_code 1
 }
 
@@ -177,7 +165,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -186,13 +174,12 @@ expect {
 }
 
 if {$deleted != 1} {
-	send_user "\nFAILURE: resource $test_res1 was not deleted\n"
+	log_error "Resource $test_res1 was not deleted"
 	set exit_code 1
 }
 
 if {[check_val $test_res2] != 1} {
-	send_user "\nFAILURE: only $test_res2 should be associated with "
-	send_user "cluster $test_cluster\n"
+	log_error "only $test_res2 should be associated with cluster $test_cluster"
 	set exit_code 1
 }
 
@@ -211,7 +198,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not reponding\n"
+		log_error "sacctmgr is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -220,15 +207,12 @@ expect {
 }
 
 if {$match != 0} {
-	send_user "\nFAILURE: $test_res1 and $test_res2 were not deleted\n"
+	log_error "$test_res1 and $test_res2 were not deleted"
 	set exit_code 1
 }
 
 remove_cluster $test_cluster
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
-	send_user "\nFAILURE\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

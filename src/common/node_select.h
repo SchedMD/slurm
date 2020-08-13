@@ -54,7 +54,7 @@ typedef struct {
 	bitstr_t *avail_nodes;      /* usable nodes are set on input, nodes
 				     * not required to satisfy the request
 				     * are cleared, other left set */
-	struct job_record *job_ptr; /* pointer to job being scheduled
+	job_record_t *job_ptr;      /* pointer to job being scheduled
 				     * start_time is set when we can
 				     * possibly start job. Or must not
 				     * increase for success of running
@@ -73,12 +73,9 @@ typedef struct slurm_select_ops {
 	int		(*state_save)		(char *dir_name);
 	int		(*state_restore)	(char *dir_name);
 	int		(*job_init)		(List job_list);
-	int		(*node_ranking)		(struct node_record *node_ptr,
+	int		(*node_init)		(node_record_t *node_ptr,
 						 int node_cnt);
-	int		(*node_init)		(struct node_record *node_ptr,
-						 int node_cnt);
-	int		(*block_init)		(List block_list);
-	int		(*job_test)		(struct job_record *job_ptr,
+	int		(*job_test)		(job_record_t *job_ptr,
 						 bitstr_t *bitmap,
 						 uint32_t min_nodes,
 						 uint32_t max_nodes,
@@ -87,26 +84,26 @@ typedef struct slurm_select_ops {
 						 List preeemptee_candidates,
 						 List *preemptee_job_list,
 						 bitstr_t *exc_core_bitmap);
-	int		(*job_begin)		(struct job_record *job_ptr);
-	int		(*job_ready)		(struct job_record *job_ptr);
-	int		(*job_expand)		(struct job_record *from_job_ptr,
-						 struct job_record *to_job_ptr);
-	int		(*job_resized)		(struct job_record *job_ptr,
-						 struct node_record *node_ptr);
-	int		(*job_signal)		(struct job_record *job_ptr,
+	int		(*job_begin)		(job_record_t *job_ptr);
+	int		(*job_ready)		(job_record_t *job_ptr);
+	int		(*job_expand)		(job_record_t *from_job_ptr,
+						 job_record_t *to_job_ptr);
+	int		(*job_resized)		(job_record_t *job_ptr,
+						 node_record_t *node_ptr);
+	int		(*job_signal)		(job_record_t *job_ptr,
 						 int signal);
-	int		(*job_mem_confirm)	(struct job_record *job_ptr);
-	int		(*job_fini)		(struct job_record *job_ptr);
-	int		(*job_suspend)		(struct job_record *job_ptr,
+	int		(*job_mem_confirm)	(job_record_t *job_ptr);
+	int		(*job_fini)		(job_record_t *job_ptr);
+	int		(*job_suspend)		(job_record_t *job_ptr,
 						 bool indf_susp);
-	int		(*job_resume)		(struct job_record *job_ptr,
+	int		(*job_resume)		(job_record_t *job_ptr,
 						 bool indf_susp);
-	bitstr_t *      (*step_pick_nodes)      (struct job_record *job_ptr,
+	bitstr_t *      (*step_pick_nodes)      (job_record_t *job_ptr,
 						 select_jobinfo_t *step_jobinfo,
 						 uint32_t node_count,
 						 bitstr_t **avail_nodes);
-	int             (*step_start)           (struct step_record *step_ptr);
-	int             (*step_finish)          (struct step_record *step_ptr,
+	int             (*step_start)           (step_record_t *step_ptr);
+	int             (*step_finish)          (step_record_t *step_ptr,
 						 bool killing_step);
 	int		(*nodeinfo_pack)	(select_nodeinfo_t *nodeinfo,
 						 Buf buffer,
@@ -117,7 +114,7 @@ typedef struct slurm_select_ops {
 	select_nodeinfo_t *(*nodeinfo_alloc)	(void);
 	int		(*nodeinfo_free)	(select_nodeinfo_t *nodeinfo);
 	int		(*nodeinfo_set_all)	(void);
-	int		(*nodeinfo_set)		(struct job_record *job_ptr);
+	int		(*nodeinfo_set)		(job_record_t *job_ptr);
 	int		(*nodeinfo_get)		(select_nodeinfo_t *nodeinfo,
 						 enum
 						 select_nodedata_type dinfo,
@@ -147,10 +144,9 @@ typedef struct slurm_select_ops {
 						 int mode);
 	int		(*get_info_from_plugin)	(enum
 						 select_plugindata_info dinfo,
-						 struct job_record *job_ptr,
+						 job_record_t *job_ptr,
 						 void *data);
 	int		(*update_node_config)	(int index);
-	int		(*update_node_state)	(struct node_record *node_ptr);
 	int		(*reconfigure)		(void);
 	bitstr_t *      (*resv_test)            (resv_desc_msg_t *resv_desc_ptr,
 						 uint32_t node_cnt,
@@ -215,13 +211,7 @@ extern int select_g_state_restore(char *dir_name);
  * IN node_ptr - current node data
  * IN node_count - number of node entries
  */
-extern int select_g_node_init(struct node_record *node_ptr, int node_cnt);
-
-/*
- * Note re/initialization of partition record data structure
- * IN part_list - list of partition records
- */
-extern int select_g_block_init(List part_list);
+extern int select_g_node_init(node_record_t *node_ptr, int node_cnt);
 
 /*
  * Note the initialization of job records, issued upon restart of
@@ -273,7 +263,7 @@ extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo);
 
 /* Reset select plugin specific information about a job
  * IN job_ptr - The updated job */
-extern int select_g_select_nodeinfo_set(struct job_record *job_ptr);
+extern int select_g_select_nodeinfo_set(job_record_t *job_ptr);
 
 /* Update slect plugin information about every node as needed (if changed since
  * previous query) */
@@ -299,22 +289,6 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
 extern int select_g_update_node_config (int index);
-
-/*
- * Assign a 'node_rank' value to each of the node_ptr entries.
- * IN node_ptr - current node data
- * IN node_count - number of node entries
- * Return true if node ranking was performed, false if not.
- */
-extern bool select_g_node_ranking(struct node_record *node_ptr, int node_cnt);
-
-/*
- * Updated a node state in the plugin, this should happen when a node is
- * drained or put into a down state then changed back.
- * IN node_ptr - Pointer to the node that has been updated
- * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
- */
-extern int select_g_update_node_state (struct node_record *node_ptr);
 
 /******************************************************\
  * JOB SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
@@ -463,7 +437,7 @@ extern char *select_g_select_jobinfo_xstrdup(dynamic_plugin_data_t *jobinfo,
  * IN exc_core_bitmap - cores reserved and not usable
  * RET zero on success, EINVAL otherwise
  */
-extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes,
 			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
@@ -475,20 +449,20 @@ extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
  * after select_g_job_test(). Executed from slurmctld.
  * IN job_ptr - pointer to job being initiated
  */
-extern int select_g_job_begin(struct job_record *job_ptr);
+extern int select_g_job_begin(job_record_t *job_ptr);
 
 /*
  * determine if job is ready to execute per the node select plugin
  * IN job_ptr - pointer to job being tested
  * RET -1 on error, 1 if ready to execute, 0 otherwise
  */
-extern int select_g_job_ready(struct job_record *job_ptr);
+extern int select_g_job_ready(job_record_t *job_ptr);
 
 /*
  * Note termination of job is starting. Executed from slurmctld.
  * IN job_ptr - pointer to job being terminated
  */
-extern int select_g_job_fini(struct job_record *job_ptr);
+extern int select_g_job_fini(job_record_t *job_ptr);
 
 /*
  * Pass job-step signal to plugin before signaling any job steps, so that
@@ -496,7 +470,7 @@ extern int select_g_job_fini(struct job_record *job_ptr);
  * IN job_ptr - job to be signaled
  * IN signal  - signal(7) number
  */
-extern int select_g_job_signal(struct job_record *job_ptr, int signal);
+extern int select_g_job_signal(job_record_t *job_ptr, int signal);
 
 /*
  * Confirm that a job's memory allocation is still valid after a node is
@@ -505,7 +479,7 @@ extern int select_g_job_signal(struct job_record *job_ptr, int signal);
  * it is allocated to the job. This would mostly be an issue on an Intel KNL
  * node where the memory size would vary with the MCDRAM cache mode.
  */
-extern int select_g_job_mem_confirm(struct job_record *job_ptr);
+extern int select_g_job_mem_confirm(job_record_t *job_ptr);
 
 /*
  * Suspend a job. Executed from slurmctld.
@@ -514,7 +488,7 @@ extern int select_g_job_mem_confirm(struct job_record *job_ptr);
  *                or admin, otherwise suspended for gang scheduling
  * RET SLURM_SUCCESS or error code
  */
-extern int select_g_job_suspend(struct job_record *job_ptr, bool indf_susp);
+extern int select_g_job_suspend(job_record_t *job_ptr, bool indf_susp);
 
 /*
  * Resume a job. Executed from slurmctld.
@@ -523,7 +497,7 @@ extern int select_g_job_suspend(struct job_record *job_ptr, bool indf_susp);
  *                or admin, otherwise resume from gang scheduling
  * RET SLURM_SUCCESS or error code
  */
-extern int select_g_job_resume(struct job_record *job_ptr, bool indf_susp);
+extern int select_g_job_resume(job_record_t *job_ptr, bool indf_susp);
 
 /*
  * Move the resource allocated to one job into that of another job.
@@ -531,16 +505,15 @@ extern int select_g_job_resume(struct job_record *job_ptr, bool indf_susp);
  *	"to_job_ptr". Also see other_job_resized().
  * RET: 0 or an error code
  */
-extern int select_g_job_expand(struct job_record *from_job_ptr,
-			       struct job_record *to_job_ptr);
+extern int select_g_job_expand(job_record_t *from_job_ptr,
+			       job_record_t *to_job_ptr);
 
 /*
  * Modify internal data structures for a job that has changed size
  *	Only support jobs shrinking now.
  * RET: 0 or an error code
  */
-extern int select_g_job_resized(struct job_record *job_ptr,
-				struct node_record *node_ptr);
+extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr);
 
 /*******************************************************\
  * STEP SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
@@ -563,7 +536,7 @@ extern int select_g_job_resized(struct job_record *job_ptr,
  * select plugin need to select resources and take system topology into
  * consideration.
  */
-extern bitstr_t * select_g_step_pick_nodes(struct job_record *job_ptr,
+extern bitstr_t * select_g_step_pick_nodes(job_record_t *job_ptr,
 					   dynamic_plugin_data_t *step_jobinfo,
 					   uint32_t node_count,
 					   bitstr_t **avail_nodes);
@@ -571,7 +544,7 @@ extern bitstr_t * select_g_step_pick_nodes(struct job_record *job_ptr,
  * Post pick_nodes operations for the step.
  * IN/OUT step_ptr - step pointer to operate on.
  */
-extern int select_g_step_start(struct step_record *step_ptr);
+extern int select_g_step_start(step_record_t *step_ptr);
 
 /*
  * clear what happened in select_g_step_pick_nodes and/or select_g_step_start
@@ -579,7 +552,7 @@ extern int select_g_step_start(struct step_record *step_ptr);
  * IN killing_step - if true then we are just starting to kill the step
  *                   if false, the step is completely terminated
  */
-extern int select_g_step_finish(struct step_record *step_ptr, bool killing_step);
+extern int select_g_step_finish(step_record_t *step_ptr, bool killing_step);
 
 /*********************************\
  * ADVANCE RESERVATION FUNCTIONS *
@@ -616,8 +589,7 @@ extern bitstr_t * select_g_resv_test(resv_desc_msg_t *resv_desc_ptr,
  * IN job_ptr   - pointer to the job that's related to this query (may be NULL)
  * IN/OUT data  - the data to get from node record
  */
-extern int select_g_get_info_from_plugin (enum select_plugindata_info dinfo,
-					  struct job_record *job_ptr,
-					  void *data);
+extern int select_g_get_info_from_plugin(enum select_plugindata_info dinfo,
+					 job_record_t *job_ptr, void *data);
 
 #endif /*__SELECT_PLUGIN_API_H__*/

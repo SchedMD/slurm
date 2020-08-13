@@ -146,17 +146,57 @@ the QOS RawUsage value reset to 0 (zero) to again allow jobs submitted
 with this QOS to be queued (if DenyOnLimit is set) or run (pending with
 QOSGrp{TRES}MinutesLimit or QOSGrpWallLimit
 reasons, where {TRES} is some type of trackable resource).
+
+<li><b>UsageFactorSafe</b> If set, and <b>AccountingStorageEnforce</b> includes
+<b>Safe</b>, jobs will only be able to run if the job can run to completion
+with the <b>UsageFactor</b> applied.
 </ul>
 
 <li><b>GraceTime</b> Preemption grace time to be extended to a job
   which has been selected for preemption.
-<li><b>UsageFactor</b> Usage factor when running with this QOS
-  (i.e. .5 would make it use only half the time as normal in
-  accounting and 2 would make it use twice as much.) This only applies to the
-  internal wall TRES usage used for limits and determining priority in the
-  slurmctld and doesn't modify the real usage in the database. The usage factor
-  only applies to the jobs QOS and not the partition QOS, and partition QOS
-  limits (if configured).
+
+<li><p><b>UsageFactor</b>
+A float that is factored into a job’s TRES usage (e.g. RawUsage, TRESMins,
+TRESRunMins). For example, if the usagefactor was 2, for every TRESBillingUnit
+second a job ran it would count for 2. If the usagefactor was .5, every second
+would only count for half of the time. A setting of 0 would add no timed usage
+from the job.
+</p>
+
+<p>
+The usage factor only applies to the job's QOS and not the partition QOS.
+</p>
+
+<p>
+If the <b>UsageFactorSafe</b> flag <b>is</b> set and
+<b>AccountingStorageEnforce</b> includes <b>Safe</b>, jobs will only be
+able to run if the job can run to completion with the <b>UsageFactor</b>
+applied.
+</p>
+
+<p>
+If the <b>UsageFactorSafe</b> flag is <b>not</b> set and
+<b>AccountingStorageEnforce</b> includes <b>Safe</b>, a job will be able to be
+scheduled without the <b>UsageFactor</b> applied and will be able to run
+without being killed due to limits.
+</p>
+
+<p>
+If the <b>UsageFactorSafe</b> flag is <b>not</b> set and
+<b>AccountingStorageEnforce</b> does not include <b>Safe</b>, a job will be
+able to be scheduled without the <b>UsageFactor</b> applied and could be killed
+due to limits.
+</p>
+
+<p>
+See <b>AccountingStorageEnforce</b> in slurm.conf man page.
+</p>
+
+<p>
+Default is 1. To clear a previously set value use the modify command with a new
+value of -1.
+</p>
+
 <li><b>UsageThreshold</b>
 A float representing the lowest fairshare of an association allowable
 to run a job.  If an association falls below this threshold and has
@@ -282,6 +322,6 @@ $ sacctmgr delete qos alligator
   alligator
 </pre>
 
-<p style="text-align: center;">Last modified 7 November 2017</p>
+<p style="text-align: center;">Last modified 9 July 2019</p>
 
 </ul></body></html>

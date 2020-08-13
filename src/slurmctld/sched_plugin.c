@@ -51,7 +51,7 @@
 
 typedef struct slurm_sched_ops {
 	uint32_t	(*initial_priority)	( uint32_t,
-						  struct job_record * );
+						  job_record_t * );
 	int		(*reconfig)		( void );
 } slurm_sched_ops_t;
 
@@ -78,7 +78,6 @@ extern int slurm_sched_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "sched";
-	char *type = NULL;
 
 	if ( init_run && g_context )
 		return retval;
@@ -88,12 +87,13 @@ extern int slurm_sched_init(void)
 	if ( g_context )
 		goto done;
 
-	type = slurm_get_sched_type();
-	g_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+	g_context = plugin_context_create(plugin_type,
+					  slurm_conf.schedtype,
+					  (void **) &ops, syms, sizeof(syms));
 
 	if (!g_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.schedtype);
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -101,7 +101,6 @@ extern int slurm_sched_init(void)
 
 done:
 	slurm_mutex_unlock( &g_context_lock );
-	xfree(type);
 	return retval;
 }
 
@@ -131,8 +130,8 @@ extern int slurm_sched_g_reconfig(void)
 	return (*(ops.reconfig))();
 }
 
-uint32_t slurm_sched_g_initial_priority(uint32_t last_prio,
-					struct job_record *job_ptr)
+extern uint32_t slurm_sched_g_initial_priority(uint32_t last_prio,
+					       job_record_t *job_ptr)
 {
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;

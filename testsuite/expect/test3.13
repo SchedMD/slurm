@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate scontrol update command for jobs.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008 Lawrence Livermore National Security.
@@ -33,15 +29,12 @@
 ############################################################################
 source ./globals
 
-set test_id       "3.13"
 set authorized    1
 set exit_code     0
 set file_in       "test$test_id.input"
 set job_id        0
 set new_prio      1
 set read_priority -1
-
-print_header $test_id
 
 #
 # Build input script file
@@ -58,7 +51,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -68,8 +61,7 @@ expect {
 }
 exec $bin_rm -f $file_in
 if {$job_id == 0} {
-	send_user "\nFAILURE: srun failed to initiate job\n"
-	exit 1
+	fail "srun failed to initiate job"
 }
 
 #
@@ -82,7 +74,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -90,7 +82,7 @@ expect {
 	}
 }
 if {$read_priority != 0} {
-	send_user "\nFAILURE: hold priority error\n"
+	log_error "Hold priority error"
 	set exit_code 1
 }
 
@@ -100,13 +92,11 @@ if {$read_priority != 0} {
 spawn $scontrol release $job_id
 expect {
 	-re "slurm_update error: Access.*denied" {
-		send_user "\nWARNING: User not authorized to modify jobs\n"
 		cancel_job $job_id
-		exit $exit_code
-		exp_continue
+		skip "User not authorized to modify jobs"
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -117,7 +107,7 @@ expect {
 #
 # Test modification of job with bad JobName/UserID specification
 #
-send_user "\n\nTest 1\n"
+log_info "Test 1"
 set no_jobs 0
 spawn $scontrol update JobName=$file_in UserID=1 Priority=$new_prio
 expect {
@@ -126,7 +116,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -134,14 +124,14 @@ expect {
 	}
 }
 if {$no_jobs == 0} {
-	send_user "\nFAILURE: No error with bad JobName/UserID specification\n"
+	log_error "No error with bad JobName/UserID specification"
 	set exit_code 1
 }
 
 #
 # Change that job's priority
 #
-send_user "\n\nTest 2\n"
+log_info "Test 2"
 set no_jobs 0
 set my_uid  [get_my_uid]
 spawn $scontrol update JobName=$file_in UserID=$my_uid Priority=$new_prio
@@ -151,7 +141,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -159,7 +149,7 @@ expect {
 	}
 }
 if {$no_jobs != 0} {
-	send_user "\nFAILURE: Error with valid JobName/UserID specification\n"
+	log_error "Error with valid JobName/UserID specification"
 	set exit_code 1
 }
 
@@ -173,7 +163,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -181,14 +171,12 @@ expect {
 	}
 }
 if {$read_priority == 0} {
-	send_user "\nFAILURE: scontrol priority change error\n"
-	set exit_code 1
+	fail "scontrol priority change error"
 }
 
 if {[cancel_job $job_id] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id)"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

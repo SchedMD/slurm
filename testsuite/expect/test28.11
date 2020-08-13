@@ -4,11 +4,6 @@
 #          Confirms that a job array that requested a feature with
 #          the --constraint option is correctly purged from the controller
 #          (see bug 5702).
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Marshall Garey
@@ -35,7 +30,6 @@
 
 source ./globals
 
-set test_id "28.11"
 set exit_code 0
 set feature_regex "\[^,\r\n\]"
 set file_script "test$test_id.sh"
@@ -43,18 +37,10 @@ set config_path ""
 set cwd "[$bin_pwd]"
 
 proc cleanup { } {
-	global exit_code file_script reconfigure bin_cp cwd config_path
-	send_user "\nChanging slurm.conf back\n"
-	exec $bin_cp -v $cwd/slurm.conf.orig $config_path/slurm.conf
-	file delete $file_script $cwd/slurm.conf.orig
+	global exit_code file_script reconfigure bin_cp cwd config_file test_id
+	restore_conf $config_file
+	file delete $file_script
 	reconfigure
-
-	if { $exit_code == 0 } {
-		send_user "\nSUCCESS\n"
-	} else {
-		send_user "\nFAILURE\n"
-	}
-	exit $exit_code
 }
 
 proc get_single_node_feature { } {
@@ -84,44 +70,31 @@ proc get_single_node_feature { } {
 	return $ret_features
 }
 
-print_header $test_id
-
 if {[test_super_user] != 1} {
-	send_user "\nWARNING: This test must be run as SlurmUser or root\n"
-	exit 0
+	skip "This test must be run as SlurmUser or root"
 }
 
 set config_path [get_conf_path]
-if { $exit_code != 0 } {
-	cleanup
-}
+fail_on_error "Not able to get config_path"
 
-copy_conf $config_path $cwd
-if { $exit_code != 0 } {
-	cleanup
-}
+set config_file $config_path/slurm.conf
+
+save_conf $config_file
 
 # Change the slurm.conf MinJobAge=10 so we don't have to wait very long.
-exec $bin_sed -i /^\[\t\s\]*MinJobAge\[\t\s\]*=/Id $config_path/slurm.conf
-exec $bin_echo -e "\nMinJobAge=10" >> $config_path/slurm.conf
+exec $bin_sed -i /^\[\t\s\]*MinJobAge\[\t\s\]*=/Id $config_file
+exec $bin_echo -e "\nMinJobAge=10" >> $config_file
 
 reconfigure
-if { $exit_code != 0 } {
-	cleanup
-}
+fail_on_error "Not able to reconfigure"
 
 # Verify that MinJobAge was set
 set min_job_age [get_min_job_age]
-if { $min_job_age != 10 } {
-	log_error "Failed to set MinJobAge"
-	set exit_code 1
-	cleanup
-}
+assert_or_fail {$min_job_age == 10} "Failed to set MinJobAge"
 
 set node_feature [get_single_node_feature]
 if { $node_feature == "" } {
-	log_warn "Cannot run this test without any node features."
-	cleanup
+	skip "Cannot run this test without any node features."
 }
 
 # It doesn't matter how long the job sleeps; it will be cancelled anyway.
@@ -132,7 +105,7 @@ spawn $sbatch --constraint=$node_feature --array=1-2 --output="/dev/null" \
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		send_user "\njob $job_id was submitted\n"
+		log_debug "Job $job_id was submitted"
 		exp_continue
 	}
 	-re "Batch job submission failed" {
@@ -149,15 +122,13 @@ expect {
 	}
 }
 
-if { $exit_code != 0 } {
-	cleanup
-}
+fail_on_error "Error submitting job"
 
 # Wait enough time for the jobs to be in the controller
 $bin_sleep 1
 set count 0
 set count_exp 2
-send_user "Verifying the jobs correctly requested the feature $node_feature\n"
+log_info "Verifying the jobs correctly requested the feature $node_feature"
 spawn $scontrol show job $job_id
 expect {
 	-re "Features=$node_feature" {
@@ -173,22 +144,17 @@ expect {
 	}
 }
 
-if { $count != $count_exp } {
-	log_error "Expected each of the $count_exp jobs to have features=$node_feature, but got $count"
-	cleanup
-}
+assert_or_fail { $count == $count_exp } [format "Expected each of the %s jobs to have features=%s, but got %s" \
+                                                $count_exp $node_feature $count]
 
 # Cancel the jobs and wait for them to purged from the controller
 set exit_code [cancel_job $job_id]
-if { $exit_code != 0 } {
-	log_fail "Problem cancelling job $job_id"
-	cleanup
-}
+fail_on_error "Problem cancelling job $job_id"
 
 set exit_code 1
 set sleep_time $min_job_age
 incr sleep_time 10
-send_user "Waiting for $sleep_time seconds for the jobs to be purged from the controller\n"
+log_info "Waiting for $sleep_time seconds for the jobs to be purged from the controller"
 $bin_sleep $sleep_time
 spawn $scontrol show job $job_id
 expect {
@@ -206,4 +172,4 @@ expect {
 	}
 }
 
-cleanup
+pass

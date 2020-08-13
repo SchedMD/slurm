@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr delete N (abort) test
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,7 +28,6 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "21.28"
 set exit_code   0
 set tc1		"test$test_id-cluster-1"
 set tc2		"test$test_id-cluster-2"
@@ -73,21 +67,17 @@ set user_req(cluster) $tc1,$tc2,$tc3
 set user_req(account) $ta1,$ta2,$ta3
 set user_req(defaultaccount) $ta2
 
-print_header $test_id
-
 set timeout 60
 
 #
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 #make sure we have a clean system and permission to do this work
@@ -95,8 +85,7 @@ remove_user "" "" "$tu1,$tu2,$tu3"
 remove_acct "" "$ta1,$ta2,$ta3"
 remove_cluster "$tc1,$tc2,$tc3"
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 
 #add cluster
@@ -105,7 +94,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
 }
 
 #add accounts
@@ -114,7 +103,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add account ($ta1,$ta2,$ta3)"
 }
 
 #add users
@@ -123,7 +112,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add user ($tu1,$tu2,$tu3)"
 }
 
 ################################################################
@@ -144,14 +133,14 @@ proc list_test_users { } {
 	set my_pid [spawn $sacctmgr -n -p list user format="User,DefaultA,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw"  names=$tu1,$tu2,$tu3 withassoc]
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			log_error "There was a problem with the sacctmgr command"
 		}
 		-re "(($tu1|$tu2|$tu3).$ta2.$user_req(adminlevel).($tc1|$tc2|$tc3).($ta1|$ta2|$ta3).$user_req(fairshare).$user_req(maxcpumins).$user_req(maxjobs).$user_req(maxnodes).$user_req(maxwall).)" {
 			incr matches
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr list associations not responding\n"
+			log_error "sacctmgr list associations not responding"
 			slow_kill $my_pid
 		}
 		eof {
@@ -178,14 +167,14 @@ proc list_test_object { to1 to2 to3 tname} {
 	set my_pid [spawn $sacctmgr -n -p list $tname $to1,$to2,$to3]
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			log_error "There was a problem with the sacctmgr command"
 		}
 		-re "($to1|$to2|$to3)" {
 			incr tmatches
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr list associations not responding\n"
+			log_error "sacctmgr list associations not responding"
 			slow_kill $my_pid
 		}
 		eof {
@@ -206,7 +195,7 @@ foreach atest $lista {
 			send "N"
 			exp_continue
 			timeout {
-				send_user "\nFAILURE: sacctmgr list account timing out.\n"
+				log_error "sacctmgr list account timing out"
 				slow_kill $my_pid
 			}
 		}
@@ -216,8 +205,7 @@ foreach atest $lista {
 
 set count [list_test_users]
 if { $count != 27 } {
-	send_user "\nFAILURE 1: This test$test_id concludes that sacctmgr did not abort delete of accounts $count.\n"
-	exit 1
+	fail "This test$test_id concludes that sacctmgr did not abort delete of accounts $count"
 }
 
 #
@@ -228,7 +216,7 @@ foreach ctest $listc {
 			send "N"
 			exp_continue
 			timeout {
-				send_user "\nFAILURE: sacctmgr list cluster timing out.\n"
+				log_error "sacctmgr list cluster timing out"
 				slow_kill $my_pid
 			}
 		}
@@ -238,8 +226,7 @@ foreach ctest $listc {
 
 set count [list_test_users]
 if { $count != 27 } {
-	send_user "\nFAILURE 2: This test$test_id concludes that sacctmgr did not abort delete of $clu $count\n"
-	exit 1
+	fail "This test$test_id concludes that sacctmgr did not abort delete of $clu $count"
 }
 
 #
@@ -250,7 +237,7 @@ foreach utest $listu {
 			send "N"
 			exp_continue
 			timeout {
-				send_user "\nFAILURE: sacctmgr list $usr timing out.\n"
+				log_error "sacctmgr list $usr timing out"
 				slow_kill $my_pid
 			}
 		}
@@ -259,8 +246,7 @@ foreach utest $listu {
 
 set count [list_test_users]
 if { $count != 27 } {
-	send_user "\nFAILURE 3: This test$test_id concludes that sacctmgr did not abort delete of users $count.\n"
-	exit 1
+	fail "This test$test_id concludes that sacctmgr did not abort delete of users $count"
 }
 
 ################################################################
@@ -275,7 +261,7 @@ foreach udtest $listu {
 			send "y"
 			exp_continue
 			timeout {
-				send_user "\nFAILURE: sacctmgr list $usr timing out.\n"
+				log_error "sacctmgr list $usr timing out"
 				slow_kill $my_pid
 			}
 		}
@@ -283,8 +269,7 @@ foreach udtest $listu {
 }
 
 if { [list_test_object $tu1 $tu2 $tu3 user] != 0 } {
-	send_user "\nFAILURE 4: This test$test_id concludes that sacctmgr did not delete users.\n"
-	exit 1
+	fail "This test$test_id concludes that sacctmgr did not delete users"
 }
 
 #
@@ -296,7 +281,7 @@ foreach adtest $lista {
 			send "y"
 			exp_continue
 			timeout {
-				send_user "\nFAILURE: sacctmgr list account timing out.\n"
+				log_error "sacctmgr list account timing out"
 				slow_kill $my_pid
 			}
 		}
@@ -305,8 +290,7 @@ foreach adtest $lista {
 
 
 if { [list_test_object $ta1 $ta2 $ta3 account] != 0 } {
-	send_user "\nFAILURE 5: This test$test_id concludes that sacctmgr did not delete accounts.\n"
-	exit 1
+	fail "This test$test_id concludes that sacctmgr did not delete accounts"
 }
 
 #
@@ -317,7 +301,7 @@ foreach cdtest $listc {
 			send "y"
 			exp_continue
 			timeout {
-				send_user "\nFAILURE: sacctmgr list cluster timing out.\n"
+				log_error "sacctmgr list cluster timing out"
 				slow_kill $my_pid
 			}
 		}
@@ -326,8 +310,7 @@ foreach cdtest $listc {
 
 
 if { [list_test_object $tc1 $tc2 $tc3 cluster] != 0 } {
-	send_user "\nFAILURE 6: This test$test_id concludes that sacctmgr did not delete $clu\n"
-	exit 1
+	fail "This test$test_id concludes that sacctmgr did not delete $clu"
 }
 
 # This is the end below here
@@ -336,9 +319,6 @@ incr exit_code [remove_user "" "" "$tu1,$tu2,$tu3"]
 incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
 incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 
-if {$exit_code == 0} {
-	print_success $test_id
-} else {
-	send_user "\nFAILURE\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

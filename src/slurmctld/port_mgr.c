@@ -56,8 +56,8 @@ int        port_resv_max   = 0;
 
 static void _dump_resv_port_info(void);
 static void _make_all_resv(void);
-static void _make_step_resv(struct step_record *step_ptr);
-static void _rebuild_port_array(struct step_record *step_ptr);
+static void _make_step_resv(step_record_t *step_ptr);
+static void _rebuild_port_array(step_record_t *step_ptr);
 
 static void _dump_resv_port_info(void)
 {
@@ -77,7 +77,7 @@ static void _dump_resv_port_info(void)
 }
 
 /* Builds the job step's resv_port_array based upon resv_ports (a string) */
-static void _rebuild_port_array(struct step_record *step_ptr)
+static void _rebuild_port_array(step_record_t *step_ptr)
 {
 	int i;
 	char *tmp_char;
@@ -112,7 +112,7 @@ static void _rebuild_port_array(struct step_record *step_ptr)
 
 /* Update the local reservation table for one job step.
  * Builds the job step's resv_port_array based upon resv_ports (a string) */
-static void _make_step_resv(struct step_record *step_ptr)
+static void _make_step_resv(step_record_t *step_ptr)
 {
 	int i, j;
 
@@ -137,15 +137,14 @@ static void _make_step_resv(struct step_record *step_ptr)
  * reservation into the local reservation table. */
 static void _make_all_resv(void)
 {
-	struct job_record *job_ptr;
-	struct step_record *step_ptr;
+	job_record_t *job_ptr;
+	step_record_t *step_ptr;
 	ListIterator job_iterator, step_iterator;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		step_iterator = list_iterator_create(job_ptr->step_list);
-		while ((step_ptr = (struct step_record *)
-				   list_next(step_iterator))) {
+		while ((step_ptr = list_next(step_iterator))) {
 			if (step_ptr->state < JOB_RUNNING)
 				continue;
 			_make_step_resv(step_ptr);
@@ -215,7 +214,7 @@ extern int reserve_port_config(char *mpi_params)
  *       set of available ports. This helps avoid re-using busy ports when
  *       restarting job steps.
  * RET SLURM_SUCCESS or an error code */
-extern int resv_port_alloc(struct step_record *step_ptr)
+extern int resv_port_alloc(step_record_t *step_ptr)
 {
 	int i, port_inx;
 	int *port_array = NULL;
@@ -239,8 +238,8 @@ extern int resv_port_alloc(struct step_record *step_ptr)
 	for (i=0; i<port_resv_cnt; i++) {
 		if (++last_port_alloc >= port_resv_cnt)
 			last_port_alloc = 0;
-		if (bit_overlap(step_ptr->step_node_bitmap,
-				port_resv_table[last_port_alloc]))
+		if (bit_overlap_any(step_ptr->step_node_bitmap,
+				    port_resv_table[last_port_alloc]))
 			continue;
 		port_array[port_inx++] = last_port_alloc;
 		if (port_inx >= step_ptr->resv_port_cnt)
@@ -276,7 +275,7 @@ extern int resv_port_alloc(struct step_record *step_ptr)
 
 /* Release reserved ports for a job step
  * RET SLURM_SUCCESS or an error code */
-extern void resv_port_free(struct step_record *step_ptr)
+extern void resv_port_free(step_record_t *step_ptr)
 {
 	int i, j;
 

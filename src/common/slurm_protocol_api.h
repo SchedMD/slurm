@@ -76,12 +76,6 @@ enum {
  * protocol configuration functions
 \**********************************************************************/
 
-/* slurm_get_auth_info
- * returns the auth_info from slurmctld_conf object (AuthInfo parameter)
- * RET char * - AuthInfo value,  MUST be xfreed by caller
- */
-char *slurm_get_auth_info(void);
-
 /*
  * slurm_auth_opts_to_socket
  * Convert AuthInfo to a socket path. Accepts two input formats:
@@ -91,326 +85,12 @@ char *slurm_get_auth_info(void);
  */
 char *slurm_auth_opts_to_socket(char *opts);
 
-/* slurm_get_sbcast_parameters
- * RET char * - SbcastParameters from slurm.conf,  MUST be xfreed by caller
- */
-char *slurm_get_sbcast_parameters(void);
-
 /* slurm_get_auth_ttl
  * returns the credential Time To Live option from the AuthInfo parameter
  * cache value in local buffer for best performance
  * RET int - Time To Live in seconds or 0 if not specified
  */
 int slurm_get_auth_ttl(void);
-
-/* slurm_get_batch_start_timeout
- * RET BatchStartTimeout value from slurm.conf
- */
-uint16_t slurm_get_batch_start_timeout(void);
-
-/* slurm_get_cli_filter_plugins
- * get cli_filter_plugins from slurmctld_conf object from
- * slurmctld_conf object
- * RET char *   - cli_filter_plugins, MUST be xfreed by caller
- */
-char *slurm_get_cli_filter_plugins(void);
-
-/*
- * slurm_get_control_cnt
- * RET Count of SlurmctldHost records from slurm.conf
- * (slurmctld server count, primary plus backups)
- */
-uint32_t slurm_get_control_cnt(void);
-
-/* slurm_get_suspend_timeout
- * RET SuspendTimeout value from slurm.conf
- */
-uint16_t slurm_get_suspend_timeout(void);
-
-/* slurm_get_resume_timeout
- * RET ResumeTimeout value from slurm.conf
- */
-uint16_t slurm_get_resume_timeout(void);
-
-/* slurm_get_suspend_time
- * RET SuspendTime value from slurm.conf
- */
-uint32_t slurm_get_suspend_time(void);
-
-/* slurm_get_complete_wait
- * RET CompleteWait value from slurm.conf
- */
-uint16_t slurm_get_complete_wait(void);
-
-/* slurm_get_cpu_freq_def
- * RET CpuFreqDef value from slurm.conf
- */
-uint32_t slurm_get_cpu_freq_def(void);
-
-/* slurm_get_cpu_freq_govs
- * RET CpuFreqGovernors value from slurm.conf
- */
-uint32_t slurm_get_cpu_freq_govs(void);
-
-/* slurm_get_prolog_flags
- * RET PrologFlags value from slurm.conf
- */
-uint32_t slurm_get_prolog_flags(void);
-
-/* slurm_get_debug_flags
- * RET DebugFlags value from slurm.conf
- */
-uint64_t slurm_get_debug_flags(void);
-
-/* slurm_set_debug_flags
- */
-void slurm_set_debug_flags(uint64_t debug_flags);
-
-/* slurm_get_def_mem_per_cpu
- * RET DefMemPerCPU/Node value from slurm.conf
- */
-uint64_t slurm_get_def_mem_per_cpu(void);
-
-/* slurm_get_kill_on_bad_exit
- * RET KillOnBadExit value from slurm.conf
- */
-uint16_t slurm_get_kill_on_bad_exit(void);
-
-/* slurm_get_max_mem_per_cpu
- * RET MaxMemPerCPU/Node value from slurm.conf
- */
-uint64_t slurm_get_max_mem_per_cpu(void);
-
-/* slurm_get_epilog_msg_time
- * RET EpilogMsgTime value from slurm.conf
- */
-uint32_t slurm_get_epilog_msg_time(void);
-
-/* slurm_get_env_timeout
- * return default timeout for srun/sbatch --get-user-env option
- */
-extern int slurm_get_env_timeout(void);
-
-/* slurm_get_max_array_size
- * return MaxArraySize configuration parameter
- */
-extern uint32_t slurm_get_max_array_size(void);
-
-/* slurm_get_mpi_default
- * get default mpi value from slurmctld_conf object
- * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller
- */
-char *slurm_get_mpi_default(void);
-
-/* slurm_get_mpi_params
- * get mpi parameters value from slurmctld_conf object
- * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller
- */
-char *slurm_get_mpi_params(void);
-
-/* slurm_get_msg_aggr_params
- * get message aggregation parameters value from slurmctld_conf object
- * RET char *   - msg aggregation parameters default value from slurm.conf,
- *                MUST be xfreed by caller
- */
-char *slurm_get_msg_aggr_params(void);
-
-/* slurm_get_msg_timeout
- * get default message timeout value from slurmctld_conf object
- */
-extern uint16_t slurm_get_msg_timeout(void);
-
-/* slurm_get_reboot_program
- * RET char * - RebootProgram from slurm.conf, MUST be xfreed by caller
- */
-extern char *slurm_get_reboot_program(void);
-
-/* slurm_get_tcp_timeout
- * get default tcp timeout value from slurmctld_conf object
- */
-extern uint16_t slurm_get_tcp_timeout(void);
-
-/* slurm_api_set_default_config
- *	called by the send_controller_msg function to ensure that at least
- *	the compiled in default slurm_protocol_config object is initialized
- * RET int 		- return code
- */
-extern int slurm_api_set_default_config(void);
-
-/* slurm_api_clear_config
- * execute this only at program termination to free all memory */
-extern void slurm_api_clear_config(void);
-
-/* slurm_get_hash_val
- * get hash val of the slurm.conf from slurmctld_conf object from
- * slurmctld_conf object
- * RET uint32_t  - hash_val
- */
-uint32_t slurm_get_hash_val(void);
-
-/* slurm_get_health_check_program
- * get health_check_program from slurmctld_conf object from
- * slurmctld_conf object
- * RET char *   - health_check_program, MUST be xfreed by caller
- */
-char *slurm_get_health_check_program(void);
-
-/* slurm_get_gres_plugins
- * get gres_plugins from slurmctld_conf object from
- * slurmctld_conf object
- * RET char *   - gres_plugins, MUST be xfreed by caller
- */
-char *slurm_get_gres_plugins(void);
-
-/* slurm_get_job_submit_plugins
- * get job_submit_plugins from slurmctld_conf object from
- * slurmctld_conf object
- * RET char *   - job_submit_plugins, MUST be xfreed by caller
- */
-char *slurm_get_job_submit_plugins(void);
-
-/* slurm_get_slurmctld_logfile
- * get slurmctld_logfile from slurmctld_conf object from slurmctld_conf object
- * RET char *   - slurmctld_logfile, MUST be xfreed by caller
- */
-char *slurm_get_job_slurmctld_logfile(void);
-
-/* slurm_get_node_features_plugins
- * get node_features_plugins from slurmctld_conf object
- * RET char *   - knl_plugins, MUST be xfreed by caller
- */
-char *slurm_get_node_features_plugins(void);
-
-/* slurm_get_slurmctld_plugstack
- * get slurmctld_plugstack from slurmctld_conf object from
- * slurmctld_conf object
- * RET char *   - slurmctld_plugstack, MUST be xfreed by caller
- */
-char *slurm_get_slurmctld_plugstack(void);
-
-/* slurm_get_slurmctld_timeout
- * get slurmctld_timeout from slurmctld_conf object from
- * slurmctld_conf object
- * RET uint16_t - slurmctld timeout in seconds
- */
-uint16_t slurm_get_slurmctld_timeout(void);
-
-/* slurm_get_plugin_dir
- * get plugin directory from slurmctld_conf object from slurmctld_conf object
- * RET char *   - plugin directory, MUST be xfreed by caller
- */
-char *slurm_get_plugin_dir(void);
-
-/* slurm_get_priority_decay_hl
- * returns the priority decay half life in seconds from slurmctld_conf object
- * RET uint32_t - decay_hl in secs.
- */
-uint32_t slurm_get_priority_decay_hl(void);
-
-/* slurm_get_priority_calc_period
- * returns the seconds between priority decay calculation from slurmctld_conf
- * RET uint32_t - calc_period in secs.
- */
-uint32_t slurm_get_priority_calc_period(void);
-
-/* slurm_get_priority_favor_small
- * returns weither or not we are favoring small jobs from slurmctld_conf object
- * RET bool - true if favor small, false else.
- */
-bool slurm_get_priority_favor_small(void);
-
-/* slurm_get_priority_flags
- * returns the priority flags bitmap from slurmctld_conf object
- * RET uint16_t - priority flags
- */
-uint16_t slurm_get_priority_flags(void);
-
-/* slurm_get_priority_max_age
- * returns the priority age max in seconds from slurmctld_conf object
- * RET uint32_t - max_age in secs.
- */
-uint32_t slurm_get_priority_max_age(void);
-
-/* slurm_get_priority_params
- * RET char * - Value of PriorityParameters, MUST be xfreed by caller */
-char *slurm_get_priority_params(void);
-
-/* slurm_get_priority_reset_period
- * returns the priority usage reset period in seconds from slurmctld_conf object
- * RET uint16_t - flag, see PRIORITY_RESET_* in slurm/slurm.h.
- */
-uint16_t slurm_get_priority_reset_period(void);
-
-/* slurm_get_priority_site_factor_params
- * returns the site_factor_params value from slurmctld_conf object
- * RET char *    - site_factor_params, MUST be xfreed by caller
- */
-char *slurm_get_priority_site_factor_params(void);
-
-/* slurm_get_priority_site_factor_plugin
- * returns the site_factor_plugin value from slurmctld_conf object
- * RET char *    - site_factor_plugin, MUST be xfreed by caller
- */
-char *slurm_get_priority_site_factor_plugin(void);
-
-/* slurm_get_priority_type
- * returns the priority type from slurmctld_conf object
- * RET char *    - priority type, MUST be xfreed by caller
- */
-char *slurm_get_priority_type(void);
-
-/* slurm_get_priority_weight_age
- * returns the priority weight for age from slurmctld_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_age(void);
-
-/* slurm_get_priority_weight_assoc
- * returns the priority weight for association from slurmctld_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_assoc(void);
-
-/* slurm_get_priority_weight_fairshare
- * returns the priority weight for fairshare from slurmctld_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_fairshare(void);
-
-/* slurm_get_fs_dampening_factor
- * returns the dampening factor for fairshare from slurmctld_conf object
- * RET uint32_t - factor.
- */
-uint16_t slurm_get_fs_dampening_factor(void);
-
-/* slurm_set_fs_dampening_factor
- * sets the value of fs_dampening in slurmctld_conf object
- */
-void slurm_set_fs_dampening_factor(uint16_t);
-
-/* slurm_get_priority_weight_job_size
- * returns the priority weight for job size from slurmctld_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_job_size(void);
-
-/* slurm_get_priority_weight_partition
- * returns the priority weight for partitions from slurmctld_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_partition(void);
-
-/* slurm_get_priority_weight_qos
- * returns the priority weight for QOS from slurmctld_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_qos(void);
-
-/* slurm_get_priority_weight_tres
- * returns the priority weights for TRES' from slurmctld_conf object
- * RET char * of the tres weights.
- */
-char *slurm_get_priority_weight_tres(void);
 
 /* slurm_get_tres_weight_array
  * IN weights_str - string of tres and weights to be parsed.
@@ -421,30 +101,6 @@ char *slurm_get_priority_weight_tres(void);
  */
 double *slurm_get_tres_weight_array(char *weights_str, int tres_cnt, bool fail);
 
-/* slurm_get_private_data
- * get private data from slurmctld_conf object
- * RET uint16_t   - private_data
- */
-uint16_t slurm_get_private_data(void);
-
-/* slurm_get_resume_fail_program
- * returns the ResumeFailProgram from slurmctld_conf object
- * RET char *    - ResumeFailProgram, MUST be xfreed by caller
- */
-char *slurm_get_resume_fail_program(void);
-
-/* slurm_get_resume_program
- * returns the ResumeProgram from slurmctld_conf object
- * RET char *    - ResumeProgram, MUST be xfreed by caller
- */
-char *slurm_get_resume_program(void);
-
-/* slurm_get_state_save_location
- * get state_save_location from slurmctld_conf object from slurmctld_conf object
- * RET char *   - state_save_location directory, MUST be xfreed by caller
- */
-char *slurm_get_state_save_location(void);
-
 /* slurm_get_stepd_loc
  * get path to the slurmstepd
  * RET char * - absolute path to the slurmstepd, MUST be xfreed by caller
@@ -452,368 +108,41 @@ char *slurm_get_state_save_location(void);
 extern char *slurm_get_stepd_loc(void);
 
 /* slurm_get_tmp_fs
- * returns the TmpFS configuration parameter from slurmctld_conf object
+ * returns the TmpFS configuration parameter from slurm_conf object
  * RET char *    - tmp_fs, MUST be xfreed by caller
  */
 extern char *slurm_get_tmp_fs(char *node_name);
 
-/* slurm_get_auth_alt_types
- * returns the alternate authentication types from slurmctld_conf object
- * RET char *    - auth alternate types, MUST be xfreed by caller
- */
-extern char *slurm_get_auth_alt_types(void);
-
-/* slurm_get_auth_type
- * returns the authentication type from slurmctld_conf object
- * RET char *    - auth type, MUST be xfreed by caller
- */
-extern char *slurm_get_auth_type(void);
-
-/* slurm_set_auth_type
- * set the authentication type in slurmctld_conf object
- * used for security testing purposes
- * RET 0 or error code
- */
-extern int slurm_set_auth_type(char *auth_type);
-
-/* slurm_get_bb_params
- * returns the BurstBufferParameters (bb_params) from slurmctld_conf object
- * RET char *    - BurstBufferParameters, MUST be xfreed by caller
- */
-extern char *slurm_get_bb_params(void);
-
-/* slurm_get_bb_type
- * returns the BurstBufferType (bb_type) from slurmctld_conf object
- * RET char *    - BurstBufferType, MUST be xfreed by caller
- */
-extern char *slurm_get_bb_type(void);
-
-/* slurm_get_checkpoint_type
- * returns the checkpoint_type from slurmctld_conf object
- * RET char *    - checkpoint type, MUST be xfreed by caller
- */
-extern char *slurm_get_checkpoint_type(void);
-
- /* slurm_get_checkpoint_dir
-  * returns the checkpoint_dir from slurmctld_conf object
-  * RET char *    - checkpoint dir, MUST be xfreed by caller
-  */
-extern char *slurm_get_checkpoint_dir(void);
-
-/* slurm_get_cluster_name
- * returns the cluster name from slurmctld_conf object
- * RET char *    - cluster name,  MUST be xfreed by caller
- */
-char *slurm_get_cluster_name(void);
-
-/* slurm_get_comm_parameters
- * returns the value of comm_param in slurmctld_conf object
- * RET char *    - comm parameters, MUST be xfreed by caller
- */
-extern char *slurm_get_comm_parameters(void);
-
-/* slurm_get_cred_type
- * returns the cred_type from slurmctld_conf object
- * RET char *    - cred type, MUST be xfreed by caller
- */
-extern char *slurm_get_cred_type(void);
-
-/* slurm_get_fast_schedule
- * returns the value of fast_schedule in slurmctld_conf object
- */
-extern uint16_t slurm_get_fast_schedule(void);
-
-/* slurm_get_use_spec_resources
- * returns the value of use_spec_resources in slurmctld_conf object
- */
-extern uint16_t slurm_get_use_spec_resources(void);
-
-/* slurm_get_power_parameters
- * returns the PowerParameters from slurmctld_conf object
- * RET char *    - PowerParameters, MUST be xfreed by caller
- */
-extern char *slurm_get_power_parameters(void);
-
-/* slurm_set_power_parameters
- * reset the PowerParameters object
- */
-extern void slurm_set_power_parameters(char *power_parameters);
-
-/* slurm_get_power_plugin
- * returns the PowerPlugin from slurmctld_conf object
- * RET char *    - PowerPlugin, MUST be xfreed by caller
- */
-extern char *slurm_get_power_plugin(void);
-
 /* slurm_get_track_wckey
- * returns the value of track_wckey in slurmctld_conf object
+ * returns the value of track_wckey in slurm_conf object
  */
 extern uint16_t slurm_get_track_wckey(void);
 
-/* slurm_get_topology_param
- * returns the value of topology_param in slurmctld_conf object
- * RET char *    - topology parameters, MUST be xfreed by caller
+/* slurm_with_slurmdbd
+ * returns true if operating with slurmdbd
  */
-extern char * slurm_get_topology_param(void);
-
-/* slurm_get_topology_plugin
- * returns the value of topology_plugin in slurmctld_conf object
- * RET char *    - topology type, MUST be xfreed by caller
- */
-extern char * slurm_get_topology_plugin(void);
-
-/* slurm_set_tree_width
- * sets the value of tree_width in slurmctld_conf object
- * RET 0 or error code
- */
-extern int slurm_set_tree_width(uint16_t tree_width);
-
-/* slurm_get_tree_width
- * returns the value of tree_width in slurmctld_conf object
- */
-extern uint16_t slurm_get_tree_width(void);
-
-/* slurm_get_vsize_factor
- * returns the value of vsize_factor in slurmctld_conf object
- */
-extern uint16_t slurm_get_vsize_factor(void);
-
-/* slurm_get_accounting_storage_type
- * returns the accounting storage type from slurmctld_conf object
- * RET char *    - accounting storage type,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_type(void);
-
-/* slurm_get_accounting_storage_tres
- * returns the accounting storage tres from slurmctld_conf object
- * RET char *    - accounting storage tres,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_tres(void);
-
-/* slurm_set_accounting_storage_tres
- * sets the value of accounting_storage_tres in slurmctld_conf object
- * RET 0 or error_code
- */
-extern int slurm_set_accounting_storage_tres(char *tres);
-
-/* slurm_get_accounting_storage_user
- * returns the storage user from slurmctld_conf object
- * RET char *    - storage user,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_user(void);
-
-/* slurm_set_accounting_storage_user
- * IN: char *user (name of file or database)
- * RET 0 or error code
- */
-int slurm_set_accounting_storage_user(char *user);
-
-/* slurm_get_accounting_storage_backup_host
- * returns the storage host from slurmctld_conf object
- * RET char *    - storage backup host,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_backup_host(void);
-
-/* slurm_get_accounting_storage_host
- * returns the storage host from slurmctld_conf object
- * RET char *    - storage host,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_host(void);
-
-/* slurm_set_accounting_storage_host
- * IN: char *host (name of file or database)
- * RET 0 or error code
- */
-int slurm_set_accounting_storage_host(char *host);
-
-/* slurm_get_accounting_storage_enforce
- * returns what level to enforce associations at
- */
-uint16_t slurm_get_accounting_storage_enforce(void);
-
-/* slurm_get_is_association_based_accounting
- * returns if we are doing accounting by associations
- */
-int slurm_get_is_association_based_accounting(void);
-
-/* slurm_get_accounting_storage_pass
- * returns the storage password from slurmctld_conf object
- * RET char *    - storage location,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_loc(void);
-
-/* slurm_set_accounting_storage_loc
- * IN: char *loc (name of file or database)
- * RET 0 or error code
- */
-int slurm_set_accounting_storage_loc(char *loc);
-
-/* slurm_get_accounting_storage_pass
- * returns the storage password from slurmctld_conf object
- * RET char *    - storage password,  MUST be xfreed by caller
- */
-char *slurm_get_accounting_storage_pass(void);
-
-/* slurm_get_accounting_storage_port
- * returns the storage port from slurmctld_conf object
- * RET uint32_t   - storage port
- */
-uint32_t slurm_get_accounting_storage_port(void);
-
-/* slurm_set_accounting_storage_port
- * sets the storage port in slurmctld_conf object
- * RET 0 or error code
- */
-int slurm_set_accounting_storage_port(uint32_t storage_port);
-
-/* slurm_get_launch_params
- * get launch_params from slurmctld_conf object
- * RET char *   - launch_params, MUST be xfreed by caller
- */
-char *slurm_get_launch_params(void);
-
-/* slurm_get_launch_type
- * get launch_type from slurmctld_conf object
- * RET char *   - launch_type, MUST be xfreed by caller
- */
-char *slurm_get_launch_type(void);
-
-/* slurm_set_launch_type
- * set launch_type in slurmctld_conf object
- * RET 0 or error code
- */
-int slurm_set_launch_type(char *launch_type);
-
-/* slurm_get_mcs_plugin
- * RET mcs_plugin name, must be xfreed by caller */
-char *slurm_get_mcs_plugin(void);
-
-/* slurm_get_mcs_plugin_params
- * RET mcs_plugin_params name, must be xfreed by caller */
-char *slurm_get_mcs_plugin_params(void);
-
-/* slurm_get_preempt_mode
- * returns the PreemptMode value from slurmctld_conf object
- * RET uint16_t   - PreemptMode value (See PREEMPT_MODE_* in slurm.h)
- */
-uint16_t slurm_get_preempt_mode(void);
-
-/* slurm_get_jobacct_gather_type
- * returns the job accounting type from slurmctld_conf object
- * RET char *    - job accounting type,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_gather_type(void);
-
-/* slurm_get_jobacct_gather_params
- * returns the job accounting params from the slurmctld_conf object
- * RET char *    - job accounting params,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_gather_params(void);
-
-/* slurm_get_job_acct_oom_kill
- * returns the job_acct_oom_kill setting from the slurmctld_conf object
- * which represents the value of the OverMemoryKill flag.
- * RET bool *    - job_acct_oom_kill parameter
- */
-bool slurm_get_job_acct_oom_kill(void);
-
-/* slurm_get_jobacct_gather_freq
- * returns the job accounting poll frequency from the slurmctld_conf object
- * RET int    - job accounting frequency
- */
-char *slurm_get_jobacct_gather_freq(void);
-
-/* slurm_get_jobcomp_type
- * returns the job completion logger type from slurmctld_conf object
- * RET char *    - job completion type,  MUST be xfreed by caller
- */
-char *slurm_get_jobcomp_type(void);
-
-/* slurm_get_jobcomp_loc
- * returns the job completion loc from slurmctld_conf object
- * RET char *    - job completion location,  MUST be xfreed by caller
- */
-char *slurm_get_jobcomp_loc(void);
-
-/* slurm_get_jobcomp_user
- * returns the storage user from slurmctld_conf object
- * RET char *    - storage user,  MUST be xfreed by caller
- */
-char *slurm_get_jobcomp_user(void);
-
-/* slurm_get_jobcomp_host
- * returns the storage host from slurmctld_conf object
- * RET char *    - storage host,  MUST be xfreed by caller
- */
-char *slurm_get_jobcomp_host(void);
-
-/* slurm_get_jobcomp_pass
- * returns the storage password from slurmctld_conf object
- * RET char *    - storage password,  MUST be xfreed by caller
- */
-char *slurm_get_jobcomp_pass(void);
-
-/* slurm_get_jobcomp_port
- * returns the storage port from slurmctld_conf object
- * RET uint32_t   - storage port
- */
-uint32_t slurm_get_jobcomp_port(void);
-
-/* slurm_set_jobcomp_port
- * sets the jobcomp port in slurmctld_conf object
- * RET 0 or error code
- */
-int slurm_set_jobcomp_port(uint32_t port);
+bool slurm_with_slurmdbd(void);
 
 /* slurm_get_keep_alive_time
- * returns keep_alive_time slurmctld_conf object
+ * returns keep_alive_time slurm_conf object
  * RET uint16_t        - keep_alive_time
  */
 uint16_t slurm_get_keep_alive_time(void);
 
-/* slurm_get_kill_wait
- * returns kill_wait from slurmctld_conf object
- * RET uint16_t        - kill_wait
- */
-uint16_t slurm_get_kill_wait(void);
-
 /* slurm_get_preempt_type
- * get PreemptType from slurmctld_conf object
+ * get PreemptType from slurm_conf object
  * RET char *   - preempt type, MUST be xfreed by caller
  */
 char *slurm_get_preempt_type(void);
 
-/* slurm_get_propagate_prio_process
- * return the PropagatePrioProcess flag from slurmctld_conf object
- */
-extern uint16_t slurm_get_propagate_prio_process(void);
-
-/* slurm_get_proctrack_type
- * get ProctrackType from slurmctld_conf object
- * RET char *   - proctrack type, MUST be xfreed by caller
- */
-char *slurm_get_proctrack_type(void);
-
-/* slurm_get_acct_gather_energy_type
- * get EnergyAccountingType from slurmctld_conf object
- * RET char *   - acct_gather_energy type, MUST be xfreed by caller
- */
-char *slurm_get_acct_gather_energy_type(void);
-
-/* slurm_get_acct_gather_profile_type
- * get ProfileAccountingType from slurmctld_conf object
- * RET char *   - acct_gather_profile_type, MUST be xfreed by caller
- */
-char *slurm_get_acct_gather_profile_type(void);
-
 /* slurm_get_acct_interconnect_profile_type
- * get InterconnectAccountingType from slurmctld_conf object
+ * get InterconnectAccountingType from slurm_conf object
  * RET char *   - acct_gather_interconnect_type, MUST be xfreed by caller
  */
 char *slurm_get_acct_gather_interconnect_type(void);
 
 /* slurm_get_acct_filesystem_profile_type
- * get FilesystemAccountingType from slurmctld_conf object
+ * get FilesystemAccountingType from slurm_conf object
  * RET char *   - acct_gather_filesystem_type, MUST be xfreed by caller
  */
 char *slurm_get_acct_gather_filesystem_type(void);
@@ -821,116 +150,36 @@ char *slurm_get_acct_gather_filesystem_type(void);
 
 /* slurm_get_acct_gather_node_freq
  * returns the accounting poll frequency for requesting info from a
- * node from the slurmctld_conf object
+ * node from the slurm_conf object
  * RET int    - accounting node frequency
  */
 extern uint16_t slurm_get_acct_gather_node_freq(void);
 
 /* slurm_get_ext_sensors_type
- * get ExtSensorsType from slurmctld_conf object
+ * get ExtSensorsType from slurm_conf object
  * RET char *   - ext_sensors type, MUST be xfreed by caller
  */
 char *slurm_get_ext_sensors_type(void);
 
 /* slurm_get_ext_sensors_freq
- * returns the external sensors sampling frequency from the slurmctld_conf
+ * returns the external sensors sampling frequency from the slurm_conf
  * object for requesting info from a hardware component (node, switch, etc.)
  * RET int    - external sensors sampling frequency
  */
 extern uint16_t slurm_get_ext_sensors_freq(void);
 
-/* slurm_get_route_plugin
- * returns the value of route_plugin in slurmctld_conf object
- * RET char *    - routing type, MUST be xfreed by caller
- */
-extern char * slurm_get_route_plugin(void);
-
 /* slurm_get_sched_params
  * RET char * - Value of SchedulerParameters, MUST be xfreed by caller */
 extern char *slurm_get_sched_params(void);
 
-/*
- * slurm_get_slurmctld_parmams
- * returns slurmctld_params
- * RET char * - slurmctld_params
- */
-char *slurm_get_slurmctld_params(void);
-
-/* slurm_get_slurmd_port
- * returns slurmd port from slurmctld_conf object
- * RET uint16_t	- slurmd port
- */
-extern uint16_t slurm_get_slurmd_port(void);
-
-/* slurm_get_slurm_user_id
- * returns slurm uid from slurmctld_conf object
- * RET uint32_t	- slurm user id
- */
-uint32_t slurm_get_slurm_user_id(void);
-
-/* slurm_get_slurmd_user_id
- * returns slurmd uid from slurmctld_conf object
- * RET uint32_t	- slurmd user id
- */
-uint32_t slurm_get_slurmd_user_id(void);
-
-/*
- * slurm_get_slurmd_parmams
- * returns slurmd_params
- * RET char * - slurmd_params
- */
-char *slurm_get_slurmd_params(void);
-
-/* slurm_get_sched_type
- * get sched type from slurmctld_conf object
- * RET char *   - sched type, MUST be xfreed by caller
- */
-char *slurm_get_sched_type(void);
-
 /* slurm_get_select_type
- * get select_type from slurmctld_conf object
+ * get select_type from slurm_conf object
  * RET char *   - select_type, MUST be xfreed by caller
  */
 char *slurm_get_select_type(void);
 
-/* slurm_get_select_type_param
- * get select_type_param from slurmctld_conf object
- * RET uint16_t   - select_type_param
- */
-uint16_t slurm_get_select_type_param(void);
-
-/* slurm_set_select_type_param
- * set select_type_param for slurmctld_conf object
- * IN uint16_t   - select_type_param
- */
-void slurm_set_select_type_param(uint16_t select_type_param);
-
 /** Return true if (remote) system runs Cray XT/XE */
 bool is_cray_select_type(void);
-
-/* slurm_get_switch_type
- * get switch type from slurmctld_conf object
- * RET char *   - switch type, MUST be xfreed by caller
- */
-char *slurm_get_switch_type(void);
-
-/* slurm_get_wait_time
- * returns wait_time from slurmctld_conf object
- * RET uint16_t        - wait_time
- */
-uint16_t slurm_get_wait_time(void);
-
-/* slurm_get_srun_prolog
- * return the name of the srun prolog program
- * RET char *   - name of prolog program, must be xfreed by caller
- */
-char *slurm_get_srun_prolog(void);
-
-/* slurm_get_srun_epilog
- * return the name of the srun epilog program
- * RET char *   - name of epilog program, must be xfreed by caller
- */
-char *slurm_get_srun_epilog(void);
 
 /* slurm_get_srun_port_range()
  *
@@ -939,52 +188,9 @@ char *slurm_get_srun_epilog(void);
  */
 uint16_t *slurm_get_srun_port_range(void);
 
-/* slurm_get_task_epilog
- * RET task_epilog name, must be xfreed by caller */
-char *slurm_get_task_epilog(void);
-
-/* slurm_get_task_prolog
- * RET task_prolog name, must be xfreed by caller */
-char *slurm_get_task_prolog(void);
-
-/* slurm_get_task_plugin
- * RET task_plugin name, must be xfreed by caller */
-char *slurm_get_task_plugin(void);
-
-/* slurm_get_task_plugin_param */
-uint32_t slurm_get_task_plugin_param(void);
-
-/* Get SchedulerTimeSlice (secs) */
-uint16_t slurm_get_time_slice(void);
-
 /* slurm_get_core_spec_plugin
  * RET core_spec plugin name, must be xfreed by caller */
 char *slurm_get_core_spec_plugin(void);
-
-/* slurm_get_job_container_plugin
- * RET job_container plugin name, must be xfreed by caller */
-char *slurm_get_job_container_plugin(void);
-
-/* slurm_get_slurmd_spooldir
- * RET slurmd_spooldir name, must be xfreed by caller */
-char *slurm_get_slurmd_spooldir(char *node_name);
-
-/* slurm_get_layouts
- * RET comma seperated list of layouts in a string, must be xfreed by caller
- */
-char *slurm_get_layouts(void);
-
-/* slurm_get_srun_eio_timeout()
- *
- * Return the eio timeout for srun.
- */
-int16_t slurm_get_srun_eio_timeout(void);
-
-/* slurm_get_prolog_timeout()
- *
- * Return the timeout used for prolog/epilog
- */
-extern uint16_t slurm_get_prolog_timeout(void);
 
 /*
  * slurm_get_jobcomp_type
@@ -1022,16 +228,6 @@ extern int sock_bind_range(int, uint16_t *, bool local);
 
 /* In the socket implementation it creates a socket, binds to it, and
  *	listens for connections.
- *
- * IN  addr_name        - address to bind the msg server to (NULL means any)
- * IN port		- port to bind the msg server to
- * RET slurm_fd		- file descriptor of the connection created
- */
-extern int slurm_init_msg_engine_addrname_port(char *addr_name,
-						    uint16_t port);
-
-/* In the socket implementation it creates a socket, binds to it, and
- *	listens for connections.
  * IN slurm_address 	- slurm_addr_t to bind the msg server to
  * RET slurm_fd		- file descriptor of the connection created
  */
@@ -1048,7 +244,8 @@ extern int slurm_accept_msg_conn(int open_fd, slurm_addr_t * slurm_address);
  * receive message functions
 \**********************************************************************/
 
-/* unpack a complete recieved message
+/*
+ * unpack a complete received message
  * OUT msg - a slurm_msg struct to be filled in by the function
  * IN  fd - file descriptor the message came from
  * IN  buffer - Buf we will fill in the message with
@@ -1091,24 +288,20 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout);
 List slurm_receive_msgs(int fd, int steps, int timeout);
 
 /*
- *  Receive a slurm message on the open slurm descriptor "fd" waiting
- *    at most "timeout" seconds for the message data. This will also
- *    forward the message to the nodes contained in the forward_t
- *    structure inside the header of the message.  If timeout is
- *    zero, a default timeout is used. The 'resp' is the actual message
- *    received and contains the ret_list of it's children and the
- *    forward_structure_t containing information about it's children
- *    also. Memory is allocated for the returned msg and the returned
- *    list both must be freed at some point using the
- *    slurm_free_functions and list_destroy function.
+ *  Receive a slurm message on the open slurm descriptor "fd". This will also
+ *  forward the message to the nodes contained in the forward_t structure
+ *  inside the header of the message. The 'resp' is the actual message received
+ *  and contains the ret_list of it's children and the forward_structure_t
+ *  containing information about it's children also. Memory is allocated for
+ *  the returned msg and the returned list both must be freed at some point
+ *  using the slurm_free_functions and list_destroy function.
  *
  * IN open_fd	- file descriptor to receive msg on
  * OUT resp	- a slurm_msg struct to be filled in by the function
- * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
 int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
-				  slurm_msg_t *resp, int timeout);
+				  slurm_msg_t *resp);
 
 /**********************************************************************\
  * send message functions
@@ -1167,26 +360,18 @@ extern int slurm_open_msg_conn(slurm_addr_t * slurm_address);
  * IN open_fd		- file descriptor to write on
  * IN buffer		- buffer to send
  * IN size		- size of buffer send
- * IN timeout		- how long to wait in milliseconds
  * RET size_t		- bytes sent , or -1 on errror
  */
 extern size_t slurm_write_stream(int open_fd, char *buffer, size_t size);
-extern size_t slurm_write_stream_timeout(int open_fd,
-					 char *buffer, size_t size,
-					 int timeout);
 
 /* slurm_read_stream
  * read into buffer grom a stream file descriptor
  * IN open_fd		- file descriptor to read from
  * OUT buffer	- buffer to receive into
  * IN size		- size of buffer
- * IN timeout		- how long to wait in milliseconds
  * RET size_t		- bytes read , or -1 on errror
  */
 extern size_t slurm_read_stream(int open_fd, char *buffer, size_t size);
-extern size_t slurm_read_stream_timeout(int open_fd,
-					char *buffer, size_t size,
-					int timeout);
 
 /**********************************************************************\
  * address conversion and management functions
@@ -1305,13 +490,11 @@ int slurm_send_recv_node_msg(slurm_msg_t * request_msg,
  * IN nodelist	    - list of nodes to send to.
  * IN msg           - a slurm_msg struct to be sent by the function
  * IN timeout	    - how long to wait in milliseconds
- * IN quiet         - if set, reduce logging details
  * RET List	    - List containing the responses of the children
  *                    (if any) we forwarded the message to. List
  *                    containing type (ret_types_t).
  */
-List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout,
-			  bool quiet);
+List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout);
 
 /*
  * Sends back reroute_msg_t which directs the client to make the request to

@@ -45,6 +45,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xmalloc.h"
@@ -131,13 +132,9 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 
 static bool _have_task_affinity(void)
 {
-	bool rc = true;
-	char *plugin_name = slurm_get_task_plugin();
-
-	if (plugin_name && !xstrcmp(plugin_name, "task/none"))
-		rc = false;
-	xfree(plugin_name);
-	return rc;
+	if (!xstrcmp(slurm_conf.task_plugin, "task/none"))
+		return false;
+	return true;
 }
 
 /*
@@ -181,8 +178,6 @@ void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type)
 		strcat(str, "map_ldom,");
 	if (cpu_bind_type & CPU_BIND_LDMASK)
 		strcat(str, "mask_ldom,");
-	if (cpu_bind_type & CPU_BIND_CPUSETS)
-		strcat(str, "cpusets,");
 	if (cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
 		strcat(str, "one_thread,");
 

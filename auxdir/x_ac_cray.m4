@@ -224,4 +224,14 @@ AC_DEFUN([X_AC_CRAY],
 
   AC_SUBST(DATAWARP_CPPFLAGS)
   AC_SUBST(DATAWARP_LDFLAGS)
+
+  case ${host_os} in
+  darwin* | freebsd* | netbsd* )
+    with_switch_cray_aries=no
+    ;;
+  *)
+    with_switch_cray_aries=yes
+    ;;
+  esac
+  AM_CONDITIONAL(WITH_SWITCH_CRAY_ARIES, test x$with_switch_cray_aries = xyes)
 ])

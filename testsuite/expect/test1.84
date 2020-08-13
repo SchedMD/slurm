@@ -4,11 +4,6 @@
 #          Test of cpus-per-task option on a single node (--cpus-per-task
 #          option).
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # NOTE:    This assumes node names are of the form <alpha><number>, where
 #          the value of <number> indicates the nodes relative location.
 #          Change tha node name parsing logic as needed for other formats.
@@ -38,22 +33,17 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.84"
 set exit_code   0
 set file_in     "test$test_id.bash"
 
-print_header $test_id
-
 if { [test_front_end] } {
-	send_user "\nWARNING: This test is incompatible with FRONT_END systems\n"
-	exit 0
+	skip "This test is incompatible with FRONT_END systems"
 }
 
 # Various configurations allocate nodes, sockets, cores, cpus or threads;
 # not all of which are compatible with this test
 if {[test_linear]} {
-	send_user "\nWARNING: This test is incompatible with select/linear\n"
-	exit 0
+	skip "This test is incompatible with select/linear"
 }
 
 #
@@ -71,21 +61,18 @@ set units ""
 # find me an idle node in default partition
 log_user 0
 
-# find the default partition
-set def_part [default_partition]
-
 # find the nodes in the default partition
 log_user 0
 set def_hostlist ""
 set part_exclusive 0
 set part_oversubscribe_force 0
-spawn $scontrol show part $def_part
+spawn $scontrol show part [default_partition]
 expect {
-	-re " Nodes=($alpha_numeric_nodelist)"  {
+	-re " Nodes=($re_word_str)"  {
 		set def_hostlist $expect_out(1,string)
 		exp_continue
 	}
-	-re " BasePartitions=($alpha_numeric_nodelist)" {
+	-re " BasePartitions=($re_word_str)" {
 		set def_hostlist $expect_out(1,string)
 		exp_continue
 	}
@@ -98,7 +85,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -106,8 +93,7 @@ expect {
 	}
 }
 if {$part_oversubscribe_force != 0} {
-	send_user "\nWARNING: This test is incompatible with forced sharing of nodes\n"
-	exit 0
+	skip "This test is incompatible with forced sharing of nodes"
 }
 
 # Add sleep for any epilog clean up of previous jobs
@@ -131,19 +117,17 @@ catch {close $fd}
 log_user 1
 
 if {!$cpu_cnt} {
-	send_user "\nFAILURE: couldn't find an idle node in the default partition\n"
-	exit 1
+	fail "Couldn't find an idle node in the default partition"
 }
 
 #
 # Check CPU count
 #
 if {[string compare $host ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname from idle node\n"
-	exit 1
+	fail "Did not get hostname from idle node"
 }
 
-send_user "found idle node $host with $cpu_cnt processors\n"
+log_debug "Found idle node $host with $cpu_cnt processors"
 
 set srun_pid [spawn $srun -N1 -w$host --cpus-per-task=1 --exclusive -l -t1 $bin_printenv SLURM_PROCID]
 expect {
@@ -152,12 +136,10 @@ expect {
 		exp_continue
 	}
 	-re "Task count specification invalid" {
-		send_user "\nWARNING: nodes have too many CPUs for test\n"
-		exit 0
- 		exp_continue
+		skip "Nodes have too many CPUs for test"
  	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -176,18 +158,15 @@ if {$cpu_cnt != $task_cnt} {
 		set cpu_cnt [expr $cpu_cnt * $threads_per_core]
 	}
 	if {$cpu_cnt == $task_cnt} {
-		send_user "NOTE: Allocated $core_cnt cores and $threads_per_core CPUs per core\n"
+		log_debug "Allocated $core_cnt cores and $threads_per_core CPUs per core"
 	}
 }
 if {$cpu_cnt != $task_cnt} {
-	send_user "FAILURE: Should have run $cpu_cnt tasks (one per core) "
-	send_user "instead of $task_cnt tasks\n"
-	send_user "NOTE: This could be due to memory limit per allocated CPU, MaxCPUsPerNode, CR_ONE_TASK_PER_CORE, or OverSubscribe=FORCE\n\n"
+	log_error "Should have run $cpu_cnt tasks (one per core) instead of $task_cnt tasks. This could be due to memory limit per allocated CPU, MaxCPUsPerNode, CR_ONE_TASK_PER_CORE, or OverSubscribe=FORCE"
 	set exit_code 1
 }
 if {$cpu_cnt < 2} {
-	send_user "\nWARNING: The node only has one core\n"
-	exit $exit_code
+	skip "The node only has one core"
 }
 
 #
@@ -197,17 +176,14 @@ set task_cnt  0
 set srun_pid [spawn $srun -N1 --cpus-per-task=2 --exclusive -l -t1 --nodelist=$host $bin_printenv SLURM_PROCID]
 expect {
 	-re "Invalid node name specified" {
-		send_user "\nWARNING: Appears you are using "
-		send_user "multiple slurmd testing.\n"
-		send_user "This test won't work in that fashion.\n"
-		exit 0
+		skip "Appears you are using multiple slurmd testing. This test won't work in that fashion"
 	}
-	-re "$number: *($alpha_numeric_under)" {
+	-re "$number: *($re_word_str)" {
 		incr task_cnt
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -220,12 +196,10 @@ expect {
 # Verify that half the number of tasks were spawned
 #
 if {$task_cnt != [expr $cpu_cnt / 2]} {
-	send_user "\nFAILURE: Improper task count for given cpus-per-task\n"
-	send_user "NOTE: This could be due to memory limit per allocated CPU or OverSubscribe=FORCE\n\n"
+	log_error "Improper task count for given cpus-per-task. This could be due to memory limit per allocated CPU or OverSubscribe=FORCE"
 	set exit_code   1
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

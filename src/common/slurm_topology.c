@@ -48,7 +48,7 @@
 #include "src/common/xstring.h"
 
 /* defined here but is really tree plugin related */
-struct switch_record *switch_record_table = NULL;
+switch_record_t *switch_record_table = NULL;
 int switch_record_cnt = 0;
 int switch_levels = 0;               /* number of switch levels     */
 
@@ -90,7 +90,6 @@ extern int slurm_topo_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "topo";
-	char *type = NULL;
 
 	if (init_run && g_context)
 		return retval;
@@ -100,13 +99,13 @@ extern int slurm_topo_init(void)
 	if (g_context)
 		goto done;
 
-	type = slurm_get_topology_plugin();
-
-	g_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+	g_context = plugin_context_create(plugin_type,
+					  slurm_conf.topology_plugin,
+					  (void **) &ops, syms, sizeof(syms));
 
 	if (!g_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.topology_plugin);
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -114,7 +113,6 @@ extern int slurm_topo_init(void)
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
-	xfree(type);
 	return retval;
 }
 

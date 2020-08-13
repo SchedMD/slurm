@@ -103,6 +103,7 @@ TESTS = $(am__EXEEXT_1)
 @HAVE_CHECK_TRUE@	 pack_assoc_rec-test \
 @HAVE_CHECK_TRUE@	 pack_assoc_usage-test \
 @HAVE_CHECK_TRUE@	 pack_assoc_rec_with_usage-test \
+@HAVE_CHECK_TRUE@	 pack_event_cond-test \
 @HAVE_CHECK_TRUE@	 pack_event_rec-test
 
 subdir = testsuite/slurm_unit/common/slurmdb_pack
@@ -118,7 +119,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ltversion.m4 \
 	$(top_srcdir)/auxdir/lt~obsolete.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
-	$(top_srcdir)/auxdir/x_ac__system_configuration.m4 \
+	$(top_srcdir)/auxdir/slurmrestd.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
 	$(top_srcdir)/auxdir/x_ac_c99.m4 \
 	$(top_srcdir)/auxdir/x_ac_cgroup.m4 \
@@ -130,14 +131,14 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
+	$(top_srcdir)/auxdir/x_ac_http_parser.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
-	$(top_srcdir)/auxdir/x_ac_iso.m4 \
 	$(top_srcdir)/auxdir/x_ac_json.m4 \
+	$(top_srcdir)/auxdir/x_ac_jwt.m4 \
 	$(top_srcdir)/auxdir/x_ac_lua.m4 \
 	$(top_srcdir)/auxdir/x_ac_lz4.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
-	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_netloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_nvml.m4 \
 	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
@@ -147,14 +148,16 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
+	$(top_srcdir)/auxdir/x_ac_rsmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_systemd.m4 \
 	$(top_srcdir)/auxdir/x_ac_ucx.m4 \
 	$(top_srcdir)/auxdir/x_ac_uid_gid_size.m4 \
-	$(top_srcdir)/auxdir/x_ac_x11.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/auxdir/x_ac_x11.m4 \
+	$(top_srcdir)/auxdir/x_ac_yaml.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
+DIST_COMMON = $(srcdir)/Makefile.am
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
@@ -171,6 +174,7 @@ CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@	pack_assoc_rec-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	pack_assoc_usage-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	pack_assoc_rec_with_usage-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	pack_event_cond-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	pack_event_rec-test$(EXEEXT)
 am__EXEEXT_2 = $(am__EXEEXT_1)
 pack_account_rec_test_SOURCES = pack_account_rec-test.c
@@ -260,6 +264,15 @@ pack_coord_rec_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(pack_coord_rec_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+pack_event_cond_test_SOURCES = pack_event_cond-test.c
+pack_event_cond_test_OBJECTS =  \
+	pack_event_cond_test-pack_event_cond-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@pack_event_cond_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
+pack_event_cond_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(pack_event_cond_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 pack_event_rec_test_SOURCES = pack_event_rec-test.c
 pack_event_rec_test_OBJECTS =  \
 	pack_event_rec_test-pack_event_rec-test.$(OBJEXT)
@@ -321,6 +334,7 @@ am__depfiles_remade =  \
 	./$(DEPDIR)/pack_cluster_acct_rec_test-pack_cluster_acct_rec-test.Po \
 	./$(DEPDIR)/pack_cluster_rec_test-pack_cluster_rec-test.Po \
 	./$(DEPDIR)/pack_coord_rec_test-pack_coord_rec-test.Po \
+	./$(DEPDIR)/pack_event_cond_test-pack_event_cond-test.Po \
 	./$(DEPDIR)/pack_event_rec_test-pack_event_rec-test.Po \
 	./$(DEPDIR)/pack_federation_rec_test-pack_federation_rec-test.Po \
 	./$(DEPDIR)/pack_used_limits_test-pack_used_limits-test.Po \
@@ -348,16 +362,9 @@ SOURCES = pack_account_rec-test.c pack_accting_rec-test.c \
 	pack_assoc_rec-test.c pack_assoc_rec_with_usage-test.c \
 	pack_assoc_usage-test.c pack_clus_res_rec-test.c \
 	pack_cluster_acct_rec-test.c pack_cluster_rec-test.c \
-	pack_coord_rec-test.c pack_event_rec-test.c \
-	pack_federation_rec-test.c pack_used_limits-test.c \
-	pack_user_rec-test.c
-DIST_SOURCES = pack_account_rec-test.c pack_accting_rec-test.c \
-	pack_assoc_rec-test.c pack_assoc_rec_with_usage-test.c \
-	pack_assoc_usage-test.c pack_clus_res_rec-test.c \
-	pack_cluster_acct_rec-test.c pack_cluster_rec-test.c \
-	pack_coord_rec-test.c pack_event_rec-test.c \
-	pack_federation_rec-test.c pack_used_limits-test.c \
-	pack_user_rec-test.c
+	pack_coord_rec-test.c pack_event_cond-test.c \
+	pack_event_rec-test.c pack_federation_rec-test.c \
+	pack_used_limits-test.c pack_user_rec-test.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -586,9 +593,6 @@ TEST_LOGS = $(am__test_logs2:.test.log=.log)
 TEST_LOG_DRIVER = $(SHELL) $(top_srcdir)/auxdir/test-driver
 TEST_LOG_COMPILE = $(TEST_LOG_COMPILER) $(AM_TEST_LOG_FLAGS) \
 	$(TEST_LOG_FLAGS)
-am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/auxdir/depcomp \
-	$(top_srcdir)/auxdir/test-driver
-DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -648,7 +652,6 @@ H5CC = @H5CC@
 H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HDF5_CC = @HDF5_CC@
 HDF5_CFLAGS = @HDF5_CFLAGS@
 HDF5_CPPFLAGS = @HDF5_CPPFLAGS@
@@ -659,6 +662,8 @@ HDF5_LDFLAGS = @HDF5_LDFLAGS@
 HDF5_LIBS = @HDF5_LIBS@
 HDF5_TYPE = @HDF5_TYPE@
 HDF5_VERSION = @HDF5_VERSION@
+HTTP_PARSER_CPPFLAGS = @HTTP_PARSER_CPPFLAGS@
+HTTP_PARSER_LDFLAGS = @HTTP_PARSER_LDFLAGS@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -669,6 +674,8 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 JSON_CPPFLAGS = @JSON_CPPFLAGS@
 JSON_LDFLAGS = @JSON_LDFLAGS@
+JWT_CPPFLAGS = @JWT_CPPFLAGS@
+JWT_LDFLAGS = @JWT_LDFLAGS@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBCURL = @LIBCURL@
@@ -695,7 +702,6 @@ MUNGE_LDFLAGS = @MUNGE_LDFLAGS@
 MUNGE_LIBS = @MUNGE_LIBS@
 MYSQL_CFLAGS = @MYSQL_CFLAGS@
 MYSQL_LIBS = @MYSQL_LIBS@
-NCURSES = @NCURSES@
 NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
 NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
 NETLOC_LIBS = @NETLOC_LIBS@
@@ -704,6 +710,7 @@ NMEDIT = @NMEDIT@
 NUMA_LIBS = @NUMA_LIBS@
 NVML_CPPFLAGS = @NVML_CPPFLAGS@
 NVML_LIBS = @NVML_LIBS@
+OBJCOPY = @OBJCOPY@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OFED_CPPFLAGS = @OFED_CPPFLAGS@
@@ -730,6 +737,8 @@ PMIX_V2_CPPFLAGS = @PMIX_V2_CPPFLAGS@
 PMIX_V2_LDFLAGS = @PMIX_V2_LDFLAGS@
 PMIX_V3_CPPFLAGS = @PMIX_V3_CPPFLAGS@
 PMIX_V3_LDFLAGS = @PMIX_V3_LDFLAGS@
+PMIX_V4_CPPFLAGS = @PMIX_V4_CPPFLAGS@
+PMIX_V4_LDFLAGS = @PMIX_V4_LDFLAGS@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
@@ -740,6 +749,9 @@ RELEASE = @RELEASE@
 RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
 RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
 RRDTOOL_LIBS = @RRDTOOL_LIBS@
+RSMI_CPPFLAGS = @RSMI_CPPFLAGS@
+RSMI_LDFLAGS = @RSMI_LDFLAGS@
+RSMI_LIBS = @RSMI_LIBS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -748,6 +760,7 @@ SLURMCTLD_PORT = @SLURMCTLD_PORT@
 SLURMCTLD_PORT_COUNT = @SLURMCTLD_PORT_COUNT@
 SLURMDBD_PORT = @SLURMDBD_PORT@
 SLURMD_PORT = @SLURMD_PORT@
+SLURMRESTD_PORT = @SLURMRESTD_PORT@
 SLURM_API_AGE = @SLURM_API_AGE@
 SLURM_API_CURRENT = @SLURM_API_CURRENT@
 SLURM_API_MAJOR = @SLURM_API_MAJOR@
@@ -767,6 +780,8 @@ UCX_LDFLAGS = @UCX_LDFLAGS@
 UCX_LIBS = @UCX_LIBS@
 UTIL_LIBS = @UTIL_LIBS@
 VERSION = @VERSION@
+YAML_CPPFLAGS = @YAML_CPPFLAGS@
+YAML_LDFLAGS = @YAML_LDFLAGS@
 ZLIB_CPPFLAGS = @ZLIB_CPPFLAGS@
 ZLIB_LDFLAGS = @ZLIB_LDFLAGS@
 ZLIB_LIBS = @ZLIB_LIBS@
@@ -861,6 +876,8 @@ LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 @HAVE_CHECK_TRUE@pack_assoc_usage_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@pack_assoc_rec_with_usage_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@pack_assoc_rec_with_usage_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@pack_event_cond_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@pack_event_cond_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@pack_event_rec_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@pack_event_rec_test_LDADD = $(LDADD) @CHECK_LIBS@
 all: all-am
@@ -942,6 +959,10 @@ pack_coord_rec-test$(EXEEXT): $(pack_coord_rec_test_OBJECTS) $(pack_coord_rec_te
 	@rm -f pack_coord_rec-test$(EXEEXT)
 	$(AM_V_CCLD)$(pack_coord_rec_test_LINK) $(pack_coord_rec_test_OBJECTS) $(pack_coord_rec_test_LDADD) $(LIBS)
 
+pack_event_cond-test$(EXEEXT): $(pack_event_cond_test_OBJECTS) $(pack_event_cond_test_DEPENDENCIES) $(EXTRA_pack_event_cond_test_DEPENDENCIES) 
+	@rm -f pack_event_cond-test$(EXEEXT)
+	$(AM_V_CCLD)$(pack_event_cond_test_LINK) $(pack_event_cond_test_OBJECTS) $(pack_event_cond_test_LDADD) $(LIBS)
+
 pack_event_rec-test$(EXEEXT): $(pack_event_rec_test_OBJECTS) $(pack_event_rec_test_DEPENDENCIES) $(EXTRA_pack_event_rec_test_DEPENDENCIES) 
 	@rm -f pack_event_rec-test$(EXEEXT)
 	$(AM_V_CCLD)$(pack_event_rec_test_LINK) $(pack_event_rec_test_OBJECTS) $(pack_event_rec_test_LDADD) $(LIBS)
@@ -973,6 +994,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_cluster_acct_rec_test-pack_cluster_acct_rec-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_cluster_rec_test-pack_cluster_rec-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_coord_rec_test-pack_coord_rec-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_event_cond_test-pack_event_cond-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_event_rec_test-pack_event_rec-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_federation_rec_test-pack_federation_rec-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_used_limits_test-pack_used_limits-test.Po@am__quote@ # am--include-marker
@@ -1130,6 +1152,20 @@ pack_coord_rec_test-pack_coord_rec-test.obj: pack_coord_rec-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_coord_rec-test.c' object='pack_coord_rec_test-pack_coord_rec-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_coord_rec_test_CFLAGS) $(CFLAGS) -c -o pack_coord_rec_test-pack_coord_rec-test.obj `if test -f 'pack_coord_rec-test.c'; then $(CYGPATH_W) 'pack_coord_rec-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_coord_rec-test.c'; fi`
+
+pack_event_cond_test-pack_event_cond-test.o: pack_event_cond-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_event_cond_test_CFLAGS) $(CFLAGS) -MT pack_event_cond_test-pack_event_cond-test.o -MD -MP -MF $(DEPDIR)/pack_event_cond_test-pack_event_cond-test.Tpo -c -o pack_event_cond_test-pack_event_cond-test.o `test -f 'pack_event_cond-test.c' || echo '$(srcdir)/'`pack_event_cond-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_event_cond_test-pack_event_cond-test.Tpo $(DEPDIR)/pack_event_cond_test-pack_event_cond-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_event_cond-test.c' object='pack_event_cond_test-pack_event_cond-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_event_cond_test_CFLAGS) $(CFLAGS) -c -o pack_event_cond_test-pack_event_cond-test.o `test -f 'pack_event_cond-test.c' || echo '$(srcdir)/'`pack_event_cond-test.c
+
+pack_event_cond_test-pack_event_cond-test.obj: pack_event_cond-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_event_cond_test_CFLAGS) $(CFLAGS) -MT pack_event_cond_test-pack_event_cond-test.obj -MD -MP -MF $(DEPDIR)/pack_event_cond_test-pack_event_cond-test.Tpo -c -o pack_event_cond_test-pack_event_cond-test.obj `if test -f 'pack_event_cond-test.c'; then $(CYGPATH_W) 'pack_event_cond-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_event_cond-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_event_cond_test-pack_event_cond-test.Tpo $(DEPDIR)/pack_event_cond_test-pack_event_cond-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_event_cond-test.c' object='pack_event_cond_test-pack_event_cond-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_event_cond_test_CFLAGS) $(CFLAGS) -c -o pack_event_cond_test-pack_event_cond-test.obj `if test -f 'pack_event_cond-test.c'; then $(CYGPATH_W) 'pack_event_cond-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_event_cond-test.c'; fi`
 
 pack_event_rec_test-pack_event_rec-test.o: pack_event_rec-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_event_rec_test_CFLAGS) $(CFLAGS) -MT pack_event_rec_test-pack_event_rec-test.o -MD -MP -MF $(DEPDIR)/pack_event_rec_test-pack_event_rec-test.Tpo -c -o pack_event_rec_test-pack_event_rec-test.o `test -f 'pack_event_rec-test.c' || echo '$(srcdir)/'`pack_event_rec-test.c
@@ -1470,6 +1506,13 @@ pack_assoc_rec_with_usage-test.log: pack_assoc_rec_with_usage-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+pack_event_cond-test.log: pack_event_cond-test$(EXEEXT)
+	@p='pack_event_cond-test$(EXEEXT)'; \
+	b='pack_event_cond-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 pack_event_rec-test.log: pack_event_rec-test$(EXEEXT)
 	@p='pack_event_rec-test$(EXEEXT)'; \
 	b='pack_event_rec-test'; \
@@ -1491,40 +1534,6 @@ pack_event_rec-test.log: pack_event_rec-test$(EXEEXT)
 @am__EXEEXT_TRUE@	--log-file $$b.log --trs-file $$b.trs \
 @am__EXEEXT_TRUE@	$(am__common_driver_flags) $(AM_TEST_LOG_DRIVER_FLAGS) $(TEST_LOG_DRIVER_FLAGS) -- $(TEST_LOG_COMPILE) \
 @am__EXEEXT_TRUE@	"$$tst" $(AM_TESTS_FD_REDIRECT)
-
-distdir: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) distdir-am
-
-distdir-am: $(DISTFILES)
-	@srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
-	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
-	list='$(DISTFILES)'; \
-	  dist_files=`for file in $$list; do echo $$file; done | \
-	  sed -e "s|^$$srcdirstrip/||;t" \
-	      -e "s|^$$topsrcdirstrip/|$(top_builddir)/|;t"`; \
-	case $$dist_files in \
-	  */*) $(MKDIR_P) `echo "$$dist_files" | \
-			   sed '/\//!d;s|^|$(distdir)/|;s,/[^/]*$$,,' | \
-			   sort -u` ;; \
-	esac; \
-	for file in $$dist_files; do \
-	  if test -f $$file || test -d $$file; then d=.; else d=$(srcdir); fi; \
-	  if test -d $$d/$$file; then \
-	    dir=`echo "/$$file" | sed -e 's,/[^/]*$$,,'`; \
-	    if test -d "$(distdir)/$$file"; then \
-	      find "$(distdir)/$$file" -type d ! -perm -700 -exec chmod u+rwx {} \;; \
-	    fi; \
-	    if test -d $(srcdir)/$$file && test $$d != $(srcdir); then \
-	      cp -fpR $(srcdir)/$$file "$(distdir)$$dir" || exit 1; \
-	      find "$(distdir)/$$file" -type d ! -perm -700 -exec chmod u+rwx {} \;; \
-	    fi; \
-	    cp -fpR $$d/$$file "$(distdir)$$dir" || exit 1; \
-	  else \
-	    test -f "$(distdir)/$$file" \
-	    || cp -p $$d/$$file "$(distdir)/$$file" \
-	    || exit 1; \
-	  fi; \
-	done
 check-am: all-am
 	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
@@ -1579,6 +1588,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/pack_cluster_acct_rec_test-pack_cluster_acct_rec-test.Po
 	-rm -f ./$(DEPDIR)/pack_cluster_rec_test-pack_cluster_rec-test.Po
 	-rm -f ./$(DEPDIR)/pack_coord_rec_test-pack_coord_rec-test.Po
+	-rm -f ./$(DEPDIR)/pack_event_cond_test-pack_event_cond-test.Po
 	-rm -f ./$(DEPDIR)/pack_event_rec_test-pack_event_rec-test.Po
 	-rm -f ./$(DEPDIR)/pack_federation_rec_test-pack_federation_rec-test.Po
 	-rm -f ./$(DEPDIR)/pack_used_limits_test-pack_used_limits-test.Po
@@ -1637,6 +1647,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/pack_cluster_acct_rec_test-pack_cluster_acct_rec-test.Po
 	-rm -f ./$(DEPDIR)/pack_cluster_rec_test-pack_cluster_rec-test.Po
 	-rm -f ./$(DEPDIR)/pack_coord_rec_test-pack_coord_rec-test.Po
+	-rm -f ./$(DEPDIR)/pack_event_cond_test-pack_event_cond-test.Po
 	-rm -f ./$(DEPDIR)/pack_event_rec_test-pack_event_rec-test.Po
 	-rm -f ./$(DEPDIR)/pack_federation_rec_test-pack_federation_rec-test.Po
 	-rm -f ./$(DEPDIR)/pack_used_limits_test-pack_used_limits-test.Po
@@ -1664,13 +1675,13 @@ uninstall-am:
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-TESTS \
 	check-am clean clean-checkPROGRAMS clean-generic clean-libtool \
 	cscopelist-am ctags ctags-am distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
+	distclean-generic distclean-libtool distclean-tags dvi dvi-am \
+	html html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	recheck tags tags-am uninstall uninstall-am

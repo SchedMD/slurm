@@ -1,10 +1,10 @@
 Copyright (C) 2014 Silicon Graphics International Corp.
 All rights reserved.
 
-The SGI hypercube topology plugin for SLURM enables SLURM to understand the
+The SGI hypercube topology plugin for Slurm enables Slurm to understand the
 hypercube topologies on some SGI ICE InfiniBand clusters. With this
 understanding about where nodes are physically located in relation to each
-other, SLURM can make better decisions about which sets of nodes to allocate to
+other, Slurm can make better decisions about which sets of nodes to allocate to
 jobs.
 
 The plugin requires a properly set up topology.conf file. This is built using
@@ -35,7 +35,7 @@ group's netloc and hwloc tools. Please execute the following steps:
    $ netloc_ib_gather_raw --out-dir ib-raw --sudo --force-subnet mlx4_0:1
    $ netloc_ib_extract_dats
 
-8) Run netloc_to_topology to turn the netloc and hwloc data into a SLURM
+8) Run netloc_to_topology to turn the netloc and hwloc data into a Slurm
    topology.conf.
    $ netloc_to_topology -d /data/slurm/cluster_data/
    netloc_to_topology assumes a InfiniBand fabric ID of "fe80:0000:0000:0000".
@@ -48,9 +48,9 @@ group's netloc and hwloc tools. Please execute the following steps:
    Use the first four couplets:
    $ netloc_to_topology -d /data/slurm/cluster_data/ -f fec0:0000:0000:0000 
 
-9) Copy the resulting topology.conf file into SLURM's location for configuration
+9) Copy the resulting topology.conf file into Slurm's location for configuration
    files. The following command copies it to the compute nodes. Make sure to
    copy it to the node(s) running slurmctld as well.
    $ cpush topology.conf /etc/slurm/topology.conf
 
-10) Restart SLURM
+10) Restart Slurm

@@ -58,7 +58,7 @@ extern void start_power_mgr(pthread_t *thread_id);
 extern bool power_save_test(void);
 
 /* power_job_reboot - Reboot compute nodes for a job from the head node */
-extern int power_job_reboot(struct job_record *job_ptr);
+extern int power_job_reboot(job_record_t *job_ptr);
 
 /* Free module's allocated memory */
 extern void power_save_fini(void);

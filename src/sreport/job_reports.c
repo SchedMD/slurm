@@ -253,7 +253,7 @@ static int _set_cond(int *start, int argc, char **argv,
 	int command_len = 0;
 
 	if (!job_cond->cluster_list)
-		job_cond->cluster_list = list_create(slurm_destroy_char);
+		job_cond->cluster_list = list_create(xfree_ptr);
 	if (cluster_flag)
 		slurm_addto_char_list(job_cond->cluster_list, cluster_flag);
 
@@ -291,16 +291,14 @@ static int _set_cond(int *start, int argc, char **argv,
 			   || !xstrncasecmp(argv[i], "Acct",
 					   MAX(command_len, 4))) {
 			if (!job_cond->acct_list)
-				job_cond->acct_list =
-					list_create(slurm_destroy_char);
+				job_cond->acct_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->acct_list,
 					      argv[i]+end);
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Associations",
 					 MAX(command_len, 2))) {
 			if (!job_cond->associd_list)
-				job_cond->associd_list =
-					list_create(slurm_destroy_char);
+				job_cond->associd_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->associd_list,
 					      argv[i]+end);
 			set = 1;
@@ -314,8 +312,7 @@ static int _set_cond(int *start, int argc, char **argv,
 				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!xstrncasecmp(argv[i], "Gid", MAX(command_len, 2))) {
 			if (!job_cond->groupid_list)
-				job_cond->groupid_list =
-					list_create(slurm_destroy_char);
+				job_cond->groupid_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->groupid_list,
 					      argv[i]+end);
 			set = 1;
@@ -329,11 +326,10 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Jobs",
 					 MAX(command_len, 1))) {
 			char *end_char = NULL, *start_char = argv[i]+end;
-			slurmdb_selected_step_t *selected_step = NULL;
+			slurm_selected_step_t *selected_step = NULL;
 			char *dot = NULL;
 			if (!job_cond->step_list)
-				job_cond->step_list =
-					list_create(slurm_destroy_char);
+				job_cond->step_list = list_create(xfree_ptr);
 
 			while ((end_char = strstr(start_char, ","))) {
 				*end_char = 0;
@@ -342,20 +338,23 @@ static int _set_cond(int *start, int argc, char **argv,
 				if (start_char[0] == '\0')
 					continue;
 				selected_step = xmalloc(
-					sizeof(slurmdb_selected_step_t));
+					sizeof(slurm_selected_step_t));
 				list_append(job_cond->step_list, selected_step);
 
 				dot = strstr(start_char, ".");
 				if (dot == NULL) {
 					debug2("No jobstep requested");
-					selected_step->stepid = NO_VAL;
+					selected_step->step_id.step_id = NO_VAL;
 				} else {
 					*dot++ = 0;
-					selected_step->stepid = atoi(dot);
+					selected_step->step_id.step_id =
+						atoi(dot);
 				}
-				selected_step->jobid = atoi(start_char);
+				selected_step->step_id.job_id =
+					atoi(start_char);
+				selected_step->step_id.step_het_comp= NO_VAL;
 				selected_step->array_task_id = NO_VAL;
-				selected_step->pack_job_offset = NO_VAL;
+				selected_step->het_job_offset = NO_VAL;
 				start_char = end_char + 1;
 			}
 
@@ -375,7 +374,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 2))) {
 			if (!job_cond->partition_list)
 				job_cond->partition_list =
-					list_create(slurm_destroy_char);
+					list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->partition_list,
 					      argv[i]+end);
 			set = 1;
@@ -386,16 +385,14 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Users",
 					 MAX(command_len, 1))) {
 			if (!job_cond->userid_list)
-				job_cond->userid_list =
-					list_create(slurm_destroy_char);
+				job_cond->userid_list = list_create(xfree_ptr);
 			_addto_uid_char_list(job_cond->userid_list,
 					     argv[i]+end);
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Wckeys",
 					 MAX(command_len, 2))) {
 			if (!job_cond->wckey_list)
-				job_cond->wckey_list =
-					list_create(slurm_destroy_char);
+				job_cond->wckey_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->wckey_list,
 					      argv[i]+end);
 			set = 1;
@@ -409,9 +406,8 @@ static int _set_cond(int *start, int argc, char **argv,
 
 	if (!local_cluster_flag && !list_count(job_cond->cluster_list)) {
 		/* Get the default Cluster since no cluster is specified */
-		char *temp = slurm_get_cluster_name();
-		if (temp)
-			list_append(job_cond->cluster_list, temp);
+		list_append(job_cond->cluster_list,
+			    xstrdup(slurm_conf.cluster_name));
 	}
 
 	/* This needs to be done on some systems to make sure
@@ -779,8 +775,8 @@ static int _run_report(int type, int argc, char **argv)
 	slurmdb_report_time_format_t temp_format;
 	List slurmdb_report_cluster_grouping_list = NULL;
 	List assoc_list = NULL;
-	List format_list = list_create(slurm_destroy_char);
-	List grouping_list = list_create(slurm_destroy_char);
+	List format_list = list_create(xfree_ptr);
+	List grouping_list = list_create(xfree_ptr);
 	List header_list = NULL;
 	char *object_str = "";
 

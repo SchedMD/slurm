@@ -41,20 +41,24 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="reservations.html">Advanced Resource Reservation Guide</a></li>
 <li><a href="burst_buffer.html">Burst Buffer Guide</a></li>
 <li><a href="cgroups.html">Cgroups Guide</a></li>
+<li><a href="configless_slurm.html">"Configless" Slurm Operation</a></li>
 <li><a href="configurator.html">Configuration Tool (Full version)</a></li>
 <li><a href="configurator.easy.html">Configuration Tool (Simplified version)</a></li>
 <li><a href="containers.html">Containers</a></li>
 <li><a href="cpu_management.html">CPU Management User and Administrator Guide</a></li>
 <li><a href="elasticsearch.html">Elasticsearch Guide</a></li>
+<li><a href="jwt.html">JSON Web Tokens Authentication</a></li>
 <li><a href="nonstop.html">Failure Management Support</a></li>
 <li><a href="federation.html">Federated Scheduling Guide</a></li>
 <li><a href="pam_slurm_adopt.html">Job Containment with pam_slurm_adopt</a></li>
 <li><a href="big_sys.html">Large Cluster Administration Guide</a></li>
 <li><a href="licenses.html">License Management</a></li>
 <li><a href="mcs.html">Multi-Category Security (MCS) Guide</a></li>
+<li><a href="nss_slurm.html">Name Service Caching Through NSS Slurm</a></li>
 <li><a href="power_mgmt.html">Power Management Guide (power capping)</a></li>
 <li><a href="power_save.html">Power Saving Guide (power down idle nodes)</a></li>
 <li><a href="prolog_epilog.html">Prolog and Epilog Guide</a></li>
+<li><a href="rest.html">Slurm REST API</a></li>
 <li><a href="troubleshoot.html">Troubleshooting Guide</a></li>
 <li><a href="user_permissions.html">User Permissions</a></li>
 <li><a href="wckey.html">WCKey Management</a></li>
@@ -71,7 +75,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="sched_config.html">Scheduling Configuration Guide</a></li>
 <li><a href="cons_res.html">Consumable Resources Guide</a></li>
 <li><a href="core_spec.html">Core Specialization</a></li>
-<li><a href="elastic_computing.html">Elastic Computing (Cloud Bursting)</a></li>
 <li><a href="gang_scheduling.html">Gang Scheduling</a></li>
 <li><a href="gres.html">Generic Resource (GRES) Scheduling</a></li>
 <li><a href="high_throughput.html">High Throughput Computing Guide</a></li>
@@ -89,6 +92,12 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="cray.html">Cray User and Administrator Guide with Native Slurm</a></li>
 </ul>
 </li>
+<li>Cloud
+<ul>
+<li><a href="elastic_computing.html">Cloud Scheduling Guide</a></li>
+<li><a href="https://github.com/schedmd/slurm-gcp">Slurm on Google Cloud Platform</a></li>
+</ul>
+</li>
 </ul>
 
 <h2>Slurm Developers</h2>
@@ -96,7 +105,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="contributor.html">Contributor Agreement</a></li>
 <li><a href="programmer_guide.html">Programmer Guide</a></li>
 <li><a href="api.html">Application Programmer Interface (API) Guide</a></li>
-<li><a href="rpc.html">Remote Procedure Call (RPC) Update Guide</a></li>
 <li><a href="add.html">Adding Files or Plugins to Slurm</a></li>
 <li>Design Information
 <ul>
@@ -118,7 +126,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="ext_sensorsplugins.html">External Sensors Plugin Programmer Guide</a></li>
 <li><a href="gres_plugins.html">Generic Resources (GRES) Plugin Programmer Guide</a></li>
 <li><a href="jobacct_gatherplugins.html">Job Accounting Gather Plugin Programmer Guide</a></li>
-<li><a href="checkpoint_plugins.html">Job Checkpoint Plugin Programmer Guide</a></li>
 <li><a href="jobcompplugins.html">Job Completion Logging Plugin Programmer Guide</a></li>
 <li><a href="job_container_plugins.html">Job Container Plugin API</a></li>
 <li><a href="job_submit_plugins.html">Job Submission Plugin Programmer Guide</a></li>
@@ -128,6 +135,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="node_features_plugins.html">Node Features Plugin Programmer Guide</a></li>
 <li><a href="power_plugins.html">Power Management Plugin Programmer Guide</a></li>
 <li><a href="preemption_plugins.html">Preemption Plugin Programmer Guide</a></li>
+<li><a href="prep_plugins.html">PrEp Plugin Programmer Guide</a></li>
 <li><a href="priority_plugins.html">Priority Plugin Programmer Guide</a></li>
 <li><a href="proctrack_plugins.html">Process Tracking Plugin Programmer Guide</a></li>
 <li><a href="acct_gather_profile_plugins.html">Profile Accounting Plugin Programmer Guide</a></li>
@@ -142,6 +150,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 24 April 2019</p>
+<p style="text-align:center;">Last modified 22 April 2020</p>
 
 <!--#include virtual="footer.txt"-->

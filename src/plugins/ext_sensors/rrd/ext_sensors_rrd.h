@@ -71,10 +71,10 @@ extern void ext_sensors_free_conf(void);
 extern int ext_sensors_p_update_component_data(void);
 
 /* get external sensors data at start of jobstep */
-extern int ext_sensors_p_get_stepstartdata(struct step_record *step_rec);
+extern int ext_sensors_p_get_stepstartdata(step_record_t *step_rec);
 
 /* get external sensors data at end of jobstep */
-extern int ext_sensors_p_get_stependdata(struct step_record *step_rec);
+extern int ext_sensors_p_get_stependdata(step_record_t *step_rec);
 
 /* get external sensor config file */
 extern List ext_sensors_p_get_config(void);

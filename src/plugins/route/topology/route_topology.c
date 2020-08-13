@@ -53,11 +53,11 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-extern struct switch_record *switch_record_table __attribute__((weak_import));
+extern switch_record_t *switch_record_table __attribute__((weak_import));
 extern int switch_record_cnt __attribute__((weak_import));
 extern int switch_levels __attribute__((weak_import));
 #else
-struct switch_record *switch_record_table = NULL;
+switch_record_t *switch_record_table = NULL;
 int switch_record_cnt = 0;
 int switch_levels = 0;
 #endif
@@ -92,8 +92,8 @@ const char plugin_type[]        = "route/topology";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /* Global data */
-static uint64_t debug_flags = 0;
 static pthread_mutex_t route_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool run_in_slurmctld = false;
 
 /*****************************************************************************\
  *  Functions required of all plugins
@@ -104,13 +104,10 @@ static pthread_mutex_t route_lock = PTHREAD_MUTEX_INITIALIZER;
  */
 extern int init(void)
 {
-	char *topotype;
-	topotype = slurm_get_topology_plugin();
-	if (xstrcasecmp(topotype,"topology/tree") != 0) {
+	if (xstrcmp(slurm_conf.topology_plugin, "topology/tree"))
 		fatal("ROUTE: route/topology requires topology/tree");
-	}
-	xfree(topotype);
-	debug_flags = slurm_get_debug_flags();
+
+	run_in_slurmctld = running_in_slurmctld();
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -121,20 +118,6 @@ extern int init(void)
 extern int fini(void)
 {
 	return SLURM_SUCCESS;
-}
-
-/* Only run when in the slurmctld */
-static bool _run_in_slurmctld(void)
-{
-	static bool set = false;
-	static bool run = false;
-
-	if (!set) {
-		set = 1;
-		run = run_in_daemon("slurmctld");
-	}
-
-	return run;
 }
 
 /*****************************************************************************\
@@ -167,7 +150,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 	msg_count = hostlist_count(hl);
 	slurm_mutex_lock(&route_lock);
 	if (switch_record_cnt == 0) {
-		if (_run_in_slurmctld())
+		if (run_in_slurmctld)
 			fatal_abort("%s: Somehow we have 0 for switch_record_cnt and we are here in the slurmctld.  This should never happen.", __func__);
 		/* configs have not already been processed */
 		slurm_conf_init(NULL);
@@ -186,14 +169,14 @@ extern int route_p_split_hostlist(hostlist_t hl,
 	slurm_mutex_unlock(&route_lock);
 	*sp_hl = (hostlist_t*) xmalloc(switch_record_cnt * sizeof(hostlist_t));
 	/* Only acquire the slurmctld lock if running as the slurmctld. */
-	if (_run_in_slurmctld())
+	if (run_in_slurmctld)
 		lock_slurmctld(node_read_lock);
 	/* create bitmap of nodes to send message too */
 	if (hostlist2bitmap (hl, false, &nodes_bitmap) != SLURM_SUCCESS) {
 		buf = hostlist_ranged_string_xmalloc(hl);
 		fatal("ROUTE: Failed to make bitmap from hostlist=%s.", buf);
 	}
-	if (_run_in_slurmctld())
+	if (run_in_slurmctld)
 		unlock_slurmctld(node_read_lock);
 
 	/* Find lowest level switch containing all the nodes in the list */
@@ -221,7 +204,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		 * single slurmctld daemon, and sending something like a
 		 * node_registation request to all nodes.
 		 * Revert to default behavior*/
-		if (debug_flags & DEBUG_FLAG_ROUTE) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 			buf = hostlist_ranged_string_xmalloc(hl);
 			debug("ROUTE: didn't find switch containing nodes=%s",
 			      buf);
@@ -255,7 +238,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		/* Now remove nodes from this switch from message list */
 		bit_and_not(nodes_bitmap, fwd_bitmap);
 		FREE_NULL_BITMAP(fwd_bitmap);
-		if (debug_flags & DEBUG_FLAG_ROUTE) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 			buf = hostlist_ranged_string_xmalloc((*sp_hl)[hl_ndx]);
 			debug("ROUTE: ... sublist[%d] switch=%s :: %s",
 			      i, switch_record_table[i].name, buf);
@@ -280,34 +263,5 @@ extern int route_p_split_hostlist(hostlist_t hl,
  */
 extern int route_p_reconfigure (void)
 {
-	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
-}
-
-
-/*
- * route_p_next_collector - return address of next collector
- *
- * IN: is_collector - bool* - flag indication if this node is a collector
- *
- * RET: slurm_addr_t* - address of node to send messages to be aggregated.
- */
-extern slurm_addr_t* route_p_next_collector ( bool *is_collector )
-{
-	return route_next_collector(is_collector);
-}
-
-/*
- * route_g_next_collector_backup
- *
- * RET: slurm_addr_t* - address of backup node to send messages to be aggregated.
- */
-extern slurm_addr_t* route_p_next_collector_backup ( void )
-{
-	/* return NULL until we have a clearly defined backup.
-	 * Otherwise we could get into a sending loop if the primary
-	 * fails with us sending to a sibling that may have me as a
-	 * parent.
-	 */
-	return NULL;
 }

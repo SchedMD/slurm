@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Confirm that salloc exit code processing.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,12 +28,9 @@
 ############################################################################
 source ./globals
 
-set test_id            "15.9"
 set exit_code          0
 set job_id             0
 set slurm_jobid        0
-
-print_header $test_id
 
 #
 # Submit a slurm allocate job
@@ -70,7 +63,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -87,11 +80,11 @@ expect {
 # Confirm the job_ids match.
 #
 if { $job_id == 0 } {
-	send_user "\nFAILURE: salloc  failure\n"
+	log_error "salloc failure"
 	set exit_code 1
 } else {
 	if { $job_id != $slurm_jobid } {
-		send_user "\nFAILURE: salloc failed to set valid SLURM_JOB_ID\n"
+		log_error "salloc failed to set valid SLURM_JOB_ID"
 		set exit_code 1
 	}
 }
@@ -100,11 +93,9 @@ if { $job_id == 0 } {
 # Confirm exit code is propagated
 #
 if { $match != 1 } {
-	send_user "\nFAILURE: salloc exit code not reported\n"
-	set exit_code 1
+	fail "salloc exit code not reported"
 }
 
-if { $exit_code == 0 } {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

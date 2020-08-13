@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          test that a scontrol can hold and release a whole job array
 #          or an individual job index.
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -32,18 +27,14 @@
 ############################################################################
 source ./globals
 
-set test_id      "28.5"
 set exit_code    0
 set job_id       0
 set array_in     2
 set array_size   4
 set file_script  "test$test_id.sh"
 
-print_header $test_id
-
 if {[get_array_config] < [expr $array_size + 1]} {
-	send_user "\nWARNING: MaxArraySize is to small for this test\n"
-	exit 0
+	skip "MaxArraySize is to small for this test"
 }
 
 proc hold_job {job} {
@@ -53,7 +44,7 @@ proc hold_job {job} {
 	spawn $scontrol hold $job
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -69,7 +60,7 @@ proc release_job {job} {
 	spawn $scontrol release $job
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -93,7 +84,7 @@ proc check_hold_job {job} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -101,7 +92,7 @@ proc check_hold_job {job} {
 		}
 	}
 	if {$pmatch!=1} {
-		send_user "\nFAILURE: job $job did not hold\n"
+		log_error "Job $job did not hold"
 		set exit_code 1
 	}
 }
@@ -120,7 +111,7 @@ proc check_release_job { job } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -129,7 +120,7 @@ proc check_release_job { job } {
 	}
 
 	if {$pmatch!=1} {
-		send_user "\nFAILURE: job $job was not released\n"
+		log_error "Job $job was not released"
 		set exit_code 1
 	}
 }
@@ -141,15 +132,15 @@ spawn $sbatch -N1 --array=0-[expr $array_size -1] --begin=midnight --output=/dev
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		send_user "\njob $job_id was submitted\n"
+		log_debug "Job $job_id was submitted"
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
+		log_error "sbatch did not submit jobs"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -161,36 +152,36 @@ expect {
 # hold the whole array then release individual jobs in the array
 if {$job_id != 0} {
 
-	send_user "\nHolding entire job array\n"
+	log_debug "Holding entire job array"
 	hold_job $job_id
 	check_hold_job ${job_id}_0
 	check_hold_job ${job_id}_1
 
-	send_user "\nReleasing job index $array_in in the array\n"
+	log_debug "Releasing job index $array_in in the array"
 	release_job ${job_id}_$array_in
 	check_hold_job ${job_id}_0
 	check_release_job ${job_id}_$array_in
 
-	send_user "\nReleasing the entire job array\n"
+	log_debug "Releasing the entire job array"
 	release_job $job_id
 	check_release_job ${job_id}_0
 	check_release_job ${job_id}_1
 
-	send_user "\nHolding job index $array_in in the array\n"
+	log_debug "Holding job index $array_in in the array"
 	hold_job ${job_id}_$array_in
 	check_hold_job ${job_id}_$array_in
 
-	send_user "\nReleasing job index $array_in in the array\n"
+	log_debug "Releasing job index $array_in in the array"
 	release_job ${job_id}_$array_in
 	check_release_job ${job_id}_$array_in
 
 	if {[cancel_job $job_id] != 0} {
-		set exit_code 1
+		fail "Unable to cancel job ($job_id)"
 	}
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_script
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

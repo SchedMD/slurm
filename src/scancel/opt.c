@@ -52,6 +52,7 @@
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -182,15 +183,11 @@ static void _opt_default(void)
 #ifdef HAVE_FRONT_END
 	opt.ctld	= true;
 #else
-{
-	char *launch_type = slurm_get_launch_type();
 	/* do this for all but slurm (poe, aprun, etc...) */
-	if (xstrcmp(launch_type, "launch/slurm"))
+	if (xstrcmp(slurm_conf.launch_type, "launch/slurm"))
 		opt.ctld	= true;
 	else
 		opt.ctld	= false;
-	xfree(launch_type);
-}
 #endif
 	opt.full	= false;
 	opt.hurry	= false;
@@ -209,6 +206,18 @@ static void _opt_default(void)
 	opt.user_name	= NULL;
 	opt.verbose	= 0;
 	opt.wckey	= NULL;
+}
+
+static void _opt_clusters(char *clusters)
+{
+	opt.ctld = true;
+	FREE_NULL_LIST(opt.clusters);
+	opt.clusters = slurmdb_get_info_cluster(clusters);
+	if (!opt.clusters) {
+		print_db_notok(clusters, 0);
+		exit(1);
+	}
+	working_cluster_rec = list_peek(opt.clusters);
 }
 
 /*
@@ -307,6 +316,16 @@ static void _opt_env(void)
 	if ( (val=getenv("SCANCEL_WCKEY")) ) {
 		opt.wckey = xstrdup(val);
 	}
+
+	if ((val = getenv("SLURM_CLUSTERS"))) {
+		/*
+		 * We must pass in a modifiable string, and we don't want to
+		 * modify the environment.
+		 */
+		char *valdup = xstrdup(val);
+		_opt_clusters(valdup);
+		xfree(valdup);
+	}
 }
 
 /*
@@ -372,14 +391,7 @@ static void _opt_args(int argc, char **argv)
 			opt.interactive = true;
 			break;
 		case (int)'M':
-			opt.ctld = true;
-			FREE_NULL_LIST(opt.clusters);
-			opt.clusters = slurmdb_get_info_cluster(optarg);
-			if (!opt.clusters) {
-				print_db_notok(optarg, 0);
-				exit(1);
-			}
-			working_cluster_rec = list_peek(opt.clusters);
+			_opt_clusters(optarg);
 			break;
 		case (int)'n':
 			opt.job_name = xstrdup(optarg);
@@ -520,7 +532,7 @@ _xlate_job_step_ids(char **rest)
 				exit (1);
 			}
 			opt.array_id[buf_offset] = tmp_l;
-		} else if (next_str[0] == '+') {	/* Pack job component */
+		} else if (next_str[0] == '+') {	/* Hetjob component */
 			tmp_l = strtol(&next_str[1], &next_str, 10);
 			if (tmp_l < 0) {
 				error ("Invalid job id %s", id_args[i]);
@@ -638,16 +650,26 @@ static void _opt_list(void)
 				     i, opt.job_id[i], opt.array_id[i]);
 			}
 		} else {
+			char tmp_char[23];
+			slurm_step_id_t tmp_step_id = {
+				.job_id = opt.job_id[i],
+				.step_het_comp = NO_VAL,
+				.step_id = opt.step_id[i],
+			};
+			log_build_step_id_str(&tmp_step_id, tmp_char,
+					      sizeof(tmp_char),
+					      (STEP_ID_FLAG_NO_PREFIX |
+					       STEP_ID_FLAG_NO_JOB));
 			if (opt.array_id[i] == NO_VAL) {
-				info("job_step_id[%d] : %u.%u",
-				     i, opt.job_id[i], opt.step_id[i]);
+				info("job_step_id[%d] : %u.%s",
+				     i, opt.job_id[i], tmp_char);
 			} else if (opt.array_id[i] == INFINITE) {
-				info("job_step_id[%d] : %u_*.%u",
-				     i, opt.job_id[i], opt.step_id[i]);
+				info("job_step_id[%d] : %u_*.%s",
+				     i, opt.job_id[i], tmp_char);
 			} else {
-				info("job_step_id[%d] : %u_%u.%u",
+				info("job_step_id[%d] : %u_%u.%s",
 				     i, opt.job_id[i], opt.array_id[i],
-				     opt.step_id[i]);
+				     tmp_char);
 			}
 		}
 	}

@@ -817,7 +817,7 @@ extern void set_page_opts(int page, display_data_t *display_data,
 	page_opts = &working_sview_config.page_opts[page];
 	if (!page_opts->col_list) {
 		page_opts->def_col_list = 1;
-		page_opts->col_list = list_create(slurm_destroy_char);
+		page_opts->col_list = list_create(xfree_ptr);
 		slurm_addto_char_list(page_opts->col_list, initial_opts);
 	}
 
@@ -1004,8 +1004,8 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 {
 	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
 	GtkTreeStore *treestore =
-		gtk_tree_store_new(3, GTK_TYPE_STRING,
-				   GTK_TYPE_STRING, GTK_TYPE_STRING);
+		gtk_tree_store_new(3, G_TYPE_STRING,
+				   G_TYPE_STRING, G_TYPE_STRING);
 	GtkTreeViewColumn *col = gtk_tree_view_column_new();
 	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
 

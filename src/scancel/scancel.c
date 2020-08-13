@@ -99,6 +99,7 @@ static	pthread_cond_t   num_active_threads_cond;
 static	pthread_mutex_t  max_delay_lock;
 static	uint32_t max_resp_time = 0;
 static	int request_count = 0;
+opt_t opt;
 
 int
 main (int argc, char **argv)
@@ -343,7 +344,7 @@ static void _filter_job_records(void)
 		}
 
 		if ((opt.state != JOB_END) &&
-		    (job_ptr->job_state != opt.state)) {
+		    (job_base_state != opt.state)) {
 			job_ptr->job_id = 0;
 			continue;
 		}
@@ -658,10 +659,10 @@ static void _add_delay(void)
 
 	slurm_mutex_lock(&max_delay_lock);
 	if (target_resp_time < 0) {
-		target_resp_time = slurm_get_msg_timeout() / 4;
+		target_resp_time = slurm_conf.msg_timeout / 4;
 		target_resp_time = MAX(target_resp_time, 3);
 		target_resp_time = MIN(target_resp_time, 5);
-		target_resp_time *= 1000000;
+		target_resp_time *= USEC_IN_SEC;
 		debug("%s: target response time = %d", __func__,
 		      target_resp_time);
 	}
@@ -672,7 +673,7 @@ static void _add_delay(void)
 	}
 
 	/* Maximum delay of 1 second. Start at 10 msec with Fibonacci backoff */
-	my_delay = MIN((delay_time + previous_delay), 1000000);
+	my_delay = MIN((delay_time + previous_delay), USEC_IN_SEC);
 	previous_delay = delay_time;
 	delay_time = my_delay;
 	slurm_mutex_unlock(&max_delay_lock);
@@ -740,8 +741,9 @@ _cancel_job_id (void *ci)
 
 		memset(&kill_msg, 0, sizeof(job_step_kill_msg_t));
 		kill_msg.flags	= flags;
-		kill_msg.job_id      = NO_VAL;
-		kill_msg.job_step_id = NO_VAL;
+		kill_msg.step_id.job_id = NO_VAL;
+		kill_msg.step_id.step_id = NO_VAL;
+		kill_msg.step_id.step_het_comp = NO_VAL;
 		kill_msg.sibling     = opt.sibling;
 		kill_msg.signal      = cancel_info->sig;
 		kill_msg.sjob_id     = cancel_info->job_id_str;
@@ -756,7 +758,7 @@ _cancel_job_id (void *ci)
 		if ((error_code == 0) ||
 		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
 			break;
-		verbose("Job is in transistional state, retrying");
+		verbose("Job is in transitional state, retrying");
 		sleep(5 + i);
 	}
 	if (error_code) {
@@ -764,7 +766,7 @@ _cancel_job_id (void *ci)
 		if ((opt.verbose > 0) ||
 		    ((error_code != ESLURM_ALREADY_DONE) &&
 		     (error_code != ESLURM_INVALID_JOB_ID) &&
-		     ((error_code != ESLURM_NOT_PACK_WHOLE) ||
+		     ((error_code != ESLURM_NOT_WHOLE_HET_JOB) ||
 		      (opt.job_cnt != 0)))) {
 			error("Kill job error on job id %s: %s",
 			      cancel_info->job_id_str,
@@ -850,7 +852,7 @@ _cancel_step_id (void *ci)
 		    ((errno != ESLURM_TRANSITION_STATE_NO_UPDATE) &&
 		     (errno != ESLURM_JOB_PENDING)))
 			break;
-		verbose("Job is in transistional state, retrying");
+		verbose("Job is in transitional state, retrying");
 		sleep(5 + i);
 	}
 	if (error_code) {

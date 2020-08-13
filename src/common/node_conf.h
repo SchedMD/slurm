@@ -50,13 +50,14 @@
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xhash.h"
 
 #define CONFIG_MAGIC	0xc065eded
 #define NODE_MAGIC	0x0de575ed
 
-struct config_record {
+typedef struct {
 	uint32_t magic;		/* magic cookie to test data integrity */
 	uint16_t cpus;		/* count of processors running on the node */
 	char *cpu_spec_list;	/* arbitrary list of specialized cpus */
@@ -77,11 +78,12 @@ struct config_record {
 	char *gres;		/* arbitrary list of node's generic resources */
 	char *nodes;		/* name of nodes with this configuration */
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
-};
+} config_record_t;
 extern List config_list;	/* list of config_record entries */
 
 extern List front_end_list;	/* list of slurm_conf_frontend_t entries */
 
+typedef struct node_record node_record_t;
 struct node_record {
 	uint32_t magic;			/* magic cookie for data integrity */
 	char *name;			/* name of the node. NULL==defunct */
@@ -110,11 +112,12 @@ struct node_record {
 	uint64_t mem_spec_limit;	/* MB memory limit for specialization */
 	uint32_t tmp_disk;		/* MB total disk in TMP_FS */
 	uint32_t up_time;		/* seconds since node boot */
-	struct config_record *config_ptr;  /* configuration spec ptr */
+	config_record_t *config_ptr;	/* configuration spec ptr */
 	uint16_t part_cnt;		/* number of associated partitions */
-	struct part_record **part_pptr;	/* array of pointers to partitions
+	void **part_pptr;		/* array of pointers to partitions
 					 * associated with this node*/
 	char *comm_name;		/* communications path name to node */
+	char *bcast_address;		/* BcastAddr */
 	uint16_t port;			/* TCP port number of the slurmd */
 	slurm_addr_t slurm_addr;	/* network address */
 	uint16_t comp_job_cnt;		/* count of jobs completing on node */
@@ -145,7 +148,7 @@ struct node_record {
 					 * scheduling purposes. */
 	char *arch;			/* computer architecture */
 	char *os;			/* operating system now running */
-	struct node_record *node_next;	/* next entry with same hash index */
+	node_record_t *node_next;	/* next entry with same hash index */
 	uint32_t node_rank;		/* Hilbert number based on node name,
 					 * or other sequence number used to
 					 * order nodes by location,
@@ -170,7 +173,7 @@ struct node_record {
 	uint64_t *tres_cnt;		/* tres this node has. NO_PACK*/
 	char *mcs_label;		/* mcs_label if mcs plugin in use */
 };
-extern struct node_record *node_record_table_ptr;  /* ptr to node records */
+extern node_record_t *node_record_table_ptr;  /* ptr to node records */
 extern int node_record_count;		/* count in node_record_table_ptr */
 extern xhash_t* node_hash_table;	/* hash table for node records */
 extern time_t last_node_update;		/* time of last node record update */
@@ -228,6 +231,23 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt);
 extern int build_all_frontend_info (bool is_slurmd_context);
 
 /*
+ * check_nodeline_info - From the slurm.conf reader, build table,
+ * 	and set values
+ * RET 0 if no error, error code otherwise
+ * Note: Operates on common variables
+ *	default_node_record - default node configuration values
+ */
+extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
+			       config_record_t *config_ptr,
+			       log_level_t lvl,
+			       void (*_callback) (
+				       char *alias, char *hostname,
+				       char *address, char *bcast_addr,
+				       uint16_t port, int state_val,
+				       slurm_conf_node_t *node_ptr,
+				       config_record_t *config_ptr));
+
+/*
  * create_config_record - create a config_record entry and set is values to
  *	the defaults. each config record corresponds to a line in the
  *	slurm.conf file and typically describes the configuration of a
@@ -236,7 +256,7 @@ extern int build_all_frontend_info (bool is_slurmd_context);
  * NOTE: memory allocated will remain in existence until
  *	_delete_config_record() is called to delete all configuration records
  */
-extern struct config_record *create_config_record (void);
+extern config_record_t *create_config_record(void);
 
 /*
  * create_node_record - create a node record and set its values to defaults
@@ -246,8 +266,8 @@ extern struct config_record *create_config_record (void);
  * NOTE: allocates memory at node_record_table_ptr that must be xfreed when
  *	the global node table is no longer required
  */
-extern struct node_record *create_node_record (
-			struct config_record *config_ptr, char *node_name);
+extern node_record_t *create_node_record(config_record_t *config_ptr,
+					 char *node_name);
 
 /*
  * find_node_record - find a record for node with specified name
@@ -255,7 +275,7 @@ extern struct node_record *create_node_record (
  * RET: pointer to node record or NULL if not found
  * NOTE: Logs an error if the node name is NOT found
  */
-extern struct node_record *find_node_record (char *name);
+extern node_record_t *find_node_record(char *name);
 
 /*
  * find_node_record2 - find a record for node with specified name
@@ -263,7 +283,7 @@ extern struct node_record *find_node_record (char *name);
  * RET: pointer to node record or NULL if not found
  * NOTE: Does not log an error if the node name is NOT found
  */
-extern struct node_record *find_node_record2 (char *name);
+extern node_record_t *find_node_record2(char *name);
 
 /*
  * find_node_record_no_alias - find a record for node with specified name
@@ -272,7 +292,7 @@ extern struct node_record *find_node_record2 (char *name);
  * RET: pointer to node record or NULL if not found
  * NOTE: Does not log an error if the node name is NOT found
  */
-extern struct node_record *find_node_record_no_alias (char *name);
+extern node_record_t *find_node_record_no_alias(char *name);
 
 /*
  * hostlist2bitmap - given a hostlist, build a bitmap representation
@@ -307,7 +327,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 			     bitstr_t **bitmap);
 
 /* Purge the contents of a node record */
-extern void purge_node_rec (struct node_record *node_ptr);
+extern void purge_node_rec(node_record_t *node_ptr);
 
 /*
  * rehash_node - build a hash table of the node_record entries.
@@ -319,8 +339,7 @@ extern void rehash_node (void);
 extern int state_str2int(const char *state_str, char *node_name);
 
 /* (re)set cr_node_num_cores arrays */
-extern void cr_init_global_core_data(struct node_record *node_ptr,
-				     int node_cnt, uint16_t fast_schedule);
+extern void cr_init_global_core_data(node_record_t *node_ptr, int node_cnt);
 
 extern void cr_fini_global_core_data(void);
 

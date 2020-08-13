@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Confirm that srun sets appropriate working directory (--chdir option).
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # NOTE:    Due to symbolic links, we only look to match the last component
 #          of the directory name (e.g "cd /tmp; pwd" might return "/var/tmp").
 ############################################################################
@@ -35,12 +31,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.6"
 set exit_code   0
 set matches     0
 set tmp_dir	"/tmp"
-
-print_header $test_id
 
 #
 # Change working directory on execute line and then print where jobs runs
@@ -53,11 +46,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -67,10 +59,8 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: srun failed to change working directory\n"
-	set exit_code 1
+	fail "Srun failed to change working directory"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

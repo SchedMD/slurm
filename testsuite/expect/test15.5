@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Confirm that job time limit function works (--time and
 #          --kill-command options).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008 Lawrence Livermore National Security.
@@ -34,15 +30,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.5"
 set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
 
 # NOTE: If you increase sleep_time, change job time limits as well
 set sleep_time  180
-
-print_header $test_id
 
 set inactive_limit  $sleep_time
 set kill_wait       $sleep_time
@@ -67,7 +60,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -79,16 +72,13 @@ if {$inactive_limit == 0} {
 	set inactive_limit $sleep_time
 }
 if {$inactive_limit < 120} {
-	send_user "\nWARNING: InactiveLimit ($inactive_limit) is too low for this test\n"
-	exit 0
+	skip "InactiveLimit ($inactive_limit) is too low for this test"
 }
 if {$kill_wait > 60} {
-	send_user "\nWARNING: KillWait ($kill_wait) is too high for this test\n"
-	exit 0
+	skip "KillWait ($kill_wait) is too high for this test"
 }
 if {$over_time_limit > 0} {
-	send_user "\nWARNING: OverTimeLimit too high for this test ($over_time_limit > 0)\n"
-	exit 0
+	skip "OverTimeLimit too high for this test ($over_time_limit > 0)"
 }
 
 #
@@ -100,7 +90,7 @@ make_bash_script $file_in "
 "
 
 proc date {} {
-	send_user "local time: [clock format [clock seconds]]\n"
+	puts "local time: [clock format [clock seconds]]"
 }
 
 #
@@ -128,13 +118,13 @@ expect {
 		exp_continue
 	}
 	-re "FINI" {
-		send_user "\nFAILURE: job time limit not honored\n"
+		log_error "Job time limit not honored"
 		exec date
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -165,7 +155,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -177,12 +167,11 @@ expect {
 	}
 }
 if {$completions != 1} {
-	send_user "\nFAILURE: job failed to complete properly ($completions)\n"
-	set exit_code 1
+	fail "Job failed to complete properly ($completions)"
 }
 
 if {$exit_code == 0} {
 	file delete $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

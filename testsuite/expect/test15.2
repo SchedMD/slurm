@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Confirm that salloc help option works (--help option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,11 +28,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.2"
 set exit_code   0
 set matches     0
-
-print_header $test_id
 
 #
 # Report the salloc help message
@@ -53,7 +46,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		set exit_code 1
 	}
 	eof {
@@ -62,10 +55,8 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE: salloc failed to report help message\n"
-	set exit_code 1
+	fail "salloc failed to report help message"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

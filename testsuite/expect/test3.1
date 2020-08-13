@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate scontrol reconfigure command.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,19 +28,15 @@
 ############################################################################
 source ./globals
 
-set test_id     "3.1"
 set exit_code   0
 set file_in     "test$test_id.input"
-
-print_header $test_id
 
 #
 # This test must be run as a Slurm administrator, root, or SlurmUser in order to
 # issue scontrol reconfigure.
 #
 if {(![is_super_user]) && ([check_accounting_admin_level] != "Administrator")} {
-	log_warn "This test can't be run except as SlurmUser or Admin"
-	exit 0
+	skip "This test can't be run except as SlurmUser or Admin"
 }
 
 #
@@ -61,7 +53,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		catch {exec $bin_kill -KILL $sbatch_pid}
 		set exit_code 1
 	}
@@ -70,13 +62,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch job submit failed\n"
-	exit 1
+	fail "sbatch job submit failed"
 }
 if {[wait_for_job $job_id RUNNING] != 0} {
-	send_user "\nFAILURE: waiting for job $job_id to start\n"
 	cancel_job $job_id
-	exit 1
+	fail "Waiting for job $job_id to start"
 }
 
 #
@@ -85,13 +75,12 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 reconfigure
 
 if {[wait_for_job $job_id RUNNING] != 0} {
-	send_user "\nFAILURE: job $job_id not running after reconfiguration\n"
-	set exit_code 1
+	fail "Job $job_id not running after reconfiguration"
 }
 cancel_job $job_id
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

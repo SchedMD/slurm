@@ -1,3 +1,4 @@
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          to be called from test3.11
@@ -29,35 +30,34 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 proc inc3_11_5 {} {
-	global user_name exit_code res_name
+	global user_name exit_code
+
+	set res_name "resv3.11.5"
+	set res_name_test "resv3.11.5.0"
 
 	# TEST 5
 	# Test node reservation conflict
 	#
-	send_user "\n+++++ STARTING TEST 5 (Within: inc3.11.5) +++++\n"
+	log_info "+++++ STARTING TEST 5 (Within: inc3.11.5) +++++"
 	# Make the reservation
-	set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=[available_nodes_hostnames ""] user=$user_name" 0]
+	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 Nodes=[available_nodes_hostnames "" true] user=$user_name"]
 	if {$ret_code != 0} {
-		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation (Within: inc3.11.5)\033\[m\n"
-		exit $ret_code
+		fail "Unable to create a valid reservation (Within: inc3.11.5)"
 	}
 
-	set res_name_save $res_name
-
 	# Test for node reservation conflict
-	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 user=$user_name" 1]
+	set ret_code [create_res $res_name_test "StartTime=now+60minutes Duration=60 NodeCnt=1 user=$user_name"]
 	if {$ret_code == 0} {
-		send_user "\n\033\[31mFAILURE: Reservation did not fail but should have (Within: inc3.11.5)\033\[m\n"
-		delete_res $res_name_save
+		delete_res $res_name_test
 		delete_res $res_name
-		exit 1
+		fail "Reservation did not fail but should have (Within: inc3.11.5)"
 	} else {
-		send_user "\033\[32mExpected error.  You can turn that frown upside-down.(Within: inc3.11.5)\033\[m\n"
+		log_info "Expected error. You can turn that frown upside-down.(Within: inc3.11.5)"
 	}
 
 	# Delete the reservation
-	set ret_code [delete_res $res_name_save]
+	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
-		exit $ret_code
+		fail "Unable to delete reservation ($res_name)"
 	}
 }

@@ -42,14 +42,24 @@
 
 #include "select_cons_res.h"
 
-/* Distribute tasks over CPUs
- * IN job_ptr - job to be allocated resources
- * IN cr_type - allocation type (sockets, cores, etc.)
- * IN preempt_mode - true if testing with simulated preempted jobs
- * IN avail_core_bitmap - system-wide bitmap of cores originally available to
- *		the job, only used to identify specialized cores
+/* dist_tasks_compute_c_b - compute the number of tasks on each
+ * of the node for the cyclic and block distribution. We need to do
+ * this in the case of consumable resources so that we have an exact
+ * count for the needed hardware resources which will be used later to
+ * update the different used resources per node structures.
+ *
+ * The most common case is when we have more resources than needed. In
+ * that case we just "take" what we need and "release" the remaining
+ * resources for other jobs. In the case where we oversubscribe the
+ * CPUs/Logical processors resources we keep the initial set of
+ * resources.
+ *
+ * IN/OUT job_ptr - pointer to job being scheduled. The per-node
+ *                  job_res->cpus array is recomputed here.
+ * NULL gres_task_limit
+ *
  */
-extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
-		   bool preempt_mode, bitstr_t *avail_core_bitmap);
+extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
+				  uint32_t *gres_task_limit);
 
 #endif /* !_CONS_RES_DIST_TASKS_H */

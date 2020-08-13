@@ -112,10 +112,6 @@ extern uint32_t slurmdb_setup_cluster_flags(void)
 
 static uint32_t _str_2_cluster_flags(char *flags_in)
 {
-	if (xstrcasestr(flags_in, "AlpsCray")
-	    || xstrcasestr(flags_in, "CrayXT"))
-		return CLUSTER_FLAG_CRAY_A;
-
 	if (xstrcasestr(flags_in, "FrontEnd"))
 		return CLUSTER_FLAG_FE;
 
@@ -150,12 +146,6 @@ extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
 {
 	char *cluster_flags = NULL;
 
-	if (flags_in & CLUSTER_FLAG_CRAY_A) {
-		if (cluster_flags)
-			xstrcat(cluster_flags, ",");
-		xstrcat(cluster_flags, "AlpsCray");
-	}
-
 	if (flags_in & CLUSTER_FLAG_FE) {
 		if (cluster_flags)
 			xstrcat(cluster_flags, ",");
@@ -172,6 +162,12 @@ extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
 		if (cluster_flags)
 			xstrcat(cluster_flags, ",");
 		xstrcat(cluster_flags, "Cray");
+	}
+
+	if (flags_in & CLUSTER_FLAG_EXT) {
+		if (cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "External");
 	}
 
 	if (!cluster_flags)

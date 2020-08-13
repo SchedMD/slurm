@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of job submit to multiple partitions (--partition).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -33,11 +29,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.19"
 set exit_code   0
 set file_in     "test$test_id.input"
-
-print_header $test_id
 
 #
 # Delete left-over stdin/out/err files
@@ -59,8 +52,7 @@ while {[gets $fd line] != -1} {
 catch {close $fd}
 
 if {$part_cnt == 0} {
-	send_user "FAILURE: could not identify the any usable partitions\n"
-	exit 1
+	fail "Could not identify the any usable partitions"
 }
 
 #
@@ -74,7 +66,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -83,8 +75,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch failed to submit job\n"
-	exit 1
+	fail "sbatch failed to submit job"
 }
 
 set matches 0
@@ -95,7 +86,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -104,16 +95,15 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: sbatch failed to set partition properly\n"
-	exit 1
+	fail "sbatch failed to set partition properly"
 }
 if {[cancel_job $job_id] != 0} {
 	set exit_code 1
 }
 if {$exit_code != 0} {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-send_user "\n\nSo far, so good....\n\n\n"
+log_debug "So far, so good..."
 
 #
 # Submit job to two partitions, including one invalid name
@@ -127,12 +117,12 @@ expect {
 		exp_continue
 	}
 	-re "Invalid partition name specified" {
-		send_user "\nNo worries, this error is expected\n"
+		log_debug "No worries, this error is expected"
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -141,20 +131,19 @@ expect {
 	}
 }
 if {$job_id != 0} {
-	send_user "\nFAILURE: sbatch submitted job to invalid partition name\n"
+	log_error "sbatch submitted job to invalid partition name"
 	if {[cancel_job $job_id] != 0} {
 		set exit_code 1
 	}
 	set exit_code 1
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: sbatch failed to report invalid partition name\n"
-	exit 1
+	fail "sbatch failed to report invalid partition name"
 }
 if {$exit_code != 0} {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-send_user "\n\nSo far, so good....\n\n\n"
+log_debug "So far, so good..."
 
 #
 # Quit here if only one partition
@@ -162,9 +151,10 @@ send_user "\n\nSo far, so good....\n\n\n"
 if {$part_cnt < 2} {
 	if {$exit_code == 0} {
 		exec $bin_rm -f $file_in
-		send_user "\nSUCCESS\n"
+		skip "Test needs more than one partition to run the rest of subtests"
+	} else {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
 }
 
 #
@@ -178,7 +168,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -187,8 +177,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch failed to submit job\n"
-	exit 1
+	fail "sbatch failed to submit job"
 }
 
 set matches 0
@@ -207,7 +196,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -216,15 +205,14 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: sbatch failed to set partition properly\n"
-	exit 1
+	fail "sbatch failed to set partition properly"
 }
 if {[cancel_job $job_id] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

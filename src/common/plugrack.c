@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include <dirent.h>
+#include <dlfcn.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -363,7 +364,37 @@ plugin_handle_t plugrack_use_by_type(plugrack_t *rack, const char *full_type)
 	return PLUGIN_INVALID_HANDLE;
 }
 
-extern int plugrack_print_all_plugin(plugrack_t *rack)
+static int _foreach_release_plugin(void *x, void *arg)
+{
+	plugrack_entry_t *entry = (plugrack_entry_t *) x;
+	const char *type = (const char *) arg;
+
+	if (entry->plug == PLUGIN_INVALID_HANDLE)
+		return 0;
+
+	if (xstrcmp(entry->full_type, type))
+		return 0;
+
+	entry->refcount--;
+
+	if (entry->refcount <= 0) {
+		debug5("%s: closing plugin type: %s", __func__, type);
+		if (dlclose(entry->plug))
+			fatal_abort("%s: unable to dlclose plugin type: %s",
+				    __func__, type);
+		entry->plug = PLUGIN_INVALID_HANDLE;
+	}
+
+	return 0;
+}
+
+void plugrack_release_by_type(plugrack_t *rack, const char *type)
+{
+	(void) list_for_each(rack->entries, _foreach_release_plugin,
+			     (void *) type);
+}
+
+extern int plugrack_print_mpi_plugins(plugrack_t *rack)
 {
 	ListIterator itr;
 	plugrack_entry_t *e = NULL;
@@ -395,4 +426,19 @@ extern int plugrack_print_all_plugin(plugrack_t *rack)
 	list_iterator_destroy(itr);
 
 	return SLURM_SUCCESS;
+}
+
+static int _foreach_plugin(void *x, void *arg)
+{
+	plugrack_entry_t *entry = (plugrack_entry_t *) x;
+	plugrack_foreach_t f = (plugrack_foreach_t) arg;
+
+	f(entry->full_type, entry->fq_path, entry->plug);
+
+	return 0;
+}
+
+extern void plugrack_foreach(plugrack_t *rack, plugrack_foreach_t f)
+{
+	(void) list_for_each(rack->entries, _foreach_plugin, f);
 }

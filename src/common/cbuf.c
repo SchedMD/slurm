@@ -35,7 +35,6 @@
  *  Refer to "cbuf.h" for documentation on public functions.
  *****************************************************************************/
 
-
 #include "config.h"
 
 #include <assert.h>
@@ -90,37 +89,36 @@ typedef int (*cbuf_iof) (void *cbuf_data, void *arg, int len);
  *  Prototypes  *
  ****************/
 
-static int cbuf_find_replay_line (cbuf_t cb, int chars, int *nlines, int *nl);
-static int cbuf_find_unread_line (cbuf_t cb, int chars, int *nlines);
+static int cbuf_find_replay_line(cbuf_t *cb, int chars, int *nlines, int *nl);
+static int cbuf_find_unread_line(cbuf_t *cb, int chars, int *nlines);
 
 static int cbuf_get_fd (void *dstbuf, int *psrcfd, int len);
 static int cbuf_get_mem (void *dstbuf, unsigned char **psrcbuf, int len);
 static int cbuf_put_fd (void *srcbuf, int *pdstfd, int len);
 static int cbuf_put_mem (void *srcbuf, unsigned char **pdstbuf, int len);
 
-static int cbuf_copier (cbuf_t src, cbuf_t dst, int len, int *ndropped);
-static int cbuf_dropper (cbuf_t cb, int len);
-static int cbuf_reader (cbuf_t src, int len, cbuf_iof putf, void *dst);
-static int cbuf_replayer (cbuf_t src, int len, cbuf_iof putf, void *dst);
-static int cbuf_writer (cbuf_t dst, int len, cbuf_iof getf, void *src,
-       int *ndropped);
+static int cbuf_copier(cbuf_t *src, cbuf_t *dst, int len, int *ndropped);
+static int cbuf_dropper(cbuf_t *cb, int len);
+static int cbuf_reader(cbuf_t *src, int len, cbuf_iof putf, void *dst);
+static int cbuf_replayer(cbuf_t *src, int len, cbuf_iof putf, void *dst);
+static int cbuf_writer(cbuf_t *dst, int len, cbuf_iof getf, void *src,
+		       int *ndropped);
 
-static int cbuf_grow (cbuf_t cb, int n);
-static int cbuf_shrink (cbuf_t cb);
+static int cbuf_grow(cbuf_t *cb, int n);
+static int cbuf_shrink(cbuf_t *cb);
 
 #ifndef NDEBUG
-static int _cbuf_is_valid (cbuf_t cb);
-static int _cbuf_mutex_is_locked (cbuf_t cb);
+static int _cbuf_is_valid(cbuf_t *cb);
+static int _cbuf_mutex_is_locked(cbuf_t *cb);
 #endif /* !NDEBUG */
 
 /***************
  *  Functions  *
  ***************/
 
-cbuf_t
-cbuf_create (int minsize, int maxsize)
+cbuf_t *cbuf_create(int minsize, int maxsize)
 {
-    cbuf_t cb;
+    cbuf_t *cb;
 
     if (minsize <= 0) {
         errno = EINVAL;
@@ -173,8 +171,7 @@ cbuf_create (int minsize, int maxsize)
 }
 
 
-void
-cbuf_destroy (cbuf_t cb)
+void cbuf_destroy(cbuf_t *cb)
 {
     assert(cb != NULL);
     slurm_mutex_lock(&cb->mutex);
@@ -198,8 +195,7 @@ cbuf_destroy (cbuf_t cb)
 }
 
 
-void
-cbuf_flush (cbuf_t cb)
+void cbuf_flush(cbuf_t *cb)
 {
     assert(cb != NULL);
     slurm_mutex_lock(&cb->mutex);
@@ -216,8 +212,7 @@ cbuf_flush (cbuf_t cb)
 }
 
 
-int
-cbuf_size (cbuf_t cb)
+int cbuf_size(cbuf_t *cb)
 {
     int size;
 
@@ -230,8 +225,7 @@ cbuf_size (cbuf_t cb)
 }
 
 
-int
-cbuf_free (cbuf_t cb)
+int cbuf_free(cbuf_t *cb)
 {
     int nfree;
 
@@ -244,8 +238,7 @@ cbuf_free (cbuf_t cb)
 }
 
 
-int
-cbuf_used (cbuf_t cb)
+int cbuf_used(cbuf_t *cb)
 {
     int used;
 
@@ -258,8 +251,7 @@ cbuf_used (cbuf_t cb)
 }
 
 
-int
-cbuf_lines_used (cbuf_t cb)
+int cbuf_lines_used(cbuf_t *cb)
 {
     int lines = -1;
 
@@ -272,8 +264,7 @@ cbuf_lines_used (cbuf_t cb)
 }
 
 
-int
-cbuf_reused (cbuf_t cb)
+int cbuf_reused(cbuf_t *cb)
 {
 /*  If (O > R)
  *    n = O - R
@@ -292,8 +283,7 @@ cbuf_reused (cbuf_t cb)
 }
 
 
-int
-cbuf_lines_reused (cbuf_t cb)
+int cbuf_lines_reused(cbuf_t *cb)
 {
     int lines = -1;
 
@@ -306,8 +296,7 @@ cbuf_lines_reused (cbuf_t cb)
 }
 
 
-int
-cbuf_is_empty (cbuf_t cb)
+int cbuf_is_empty(cbuf_t *cb)
 {
     int used;
 
@@ -320,8 +309,7 @@ cbuf_is_empty (cbuf_t cb)
 }
 
 
-int
-cbuf_opt_get (cbuf_t cb, cbuf_opt_t name, int *value)
+int cbuf_opt_get(cbuf_t *cb, cbuf_opt_t name, int *value)
 {
     int rc = 0;
 
@@ -345,8 +333,7 @@ cbuf_opt_get (cbuf_t cb, cbuf_opt_t name, int *value)
 }
 
 
-int
-cbuf_opt_set (cbuf_t cb, cbuf_opt_t name, int value)
+int cbuf_opt_set(cbuf_t *cb, cbuf_opt_t name, int value)
 {
     int rc = 0;
 
@@ -375,8 +362,7 @@ cbuf_opt_set (cbuf_t cb, cbuf_opt_t name, int value)
 }
 
 
-int
-cbuf_drop (cbuf_t src, int len)
+int cbuf_drop(cbuf_t *src, int len)
 {
     assert(src != NULL);
 
@@ -405,8 +391,7 @@ cbuf_drop (cbuf_t src, int len)
 }
 
 
-int
-cbuf_peek (cbuf_t src, void *dstbuf, int len)
+int cbuf_peek(cbuf_t *src, void *dstbuf, int len)
 {
     int n;
 
@@ -428,8 +413,7 @@ cbuf_peek (cbuf_t src, void *dstbuf, int len)
 }
 
 
-int
-cbuf_read (cbuf_t src, void *dstbuf, int len)
+int cbuf_read(cbuf_t *src, void *dstbuf, int len)
 {
     int n;
 
@@ -454,8 +438,7 @@ cbuf_read (cbuf_t src, void *dstbuf, int len)
 }
 
 
-int
-cbuf_replay (cbuf_t src, void *dstbuf, int len)
+int cbuf_replay(cbuf_t *src, void *dstbuf, int len)
 {
     int n;
 
@@ -477,8 +460,7 @@ cbuf_replay (cbuf_t src, void *dstbuf, int len)
 }
 
 
-int
-cbuf_rewind (cbuf_t src, int len)
+int cbuf_rewind(cbuf_t *src, int len)
 {
     int reused;
 
@@ -511,8 +493,7 @@ cbuf_rewind (cbuf_t src, int len)
 }
 
 
-int
-cbuf_write (cbuf_t dst, void *srcbuf, int len, int *ndropped)
+int cbuf_write(cbuf_t *dst, void *srcbuf, int len, int *ndropped)
 {
     int n;
 
@@ -537,8 +518,7 @@ cbuf_write (cbuf_t dst, void *srcbuf, int len, int *ndropped)
 }
 
 
-int
-cbuf_drop_line (cbuf_t src, int len, int lines)
+int cbuf_drop_line(cbuf_t *src, int len, int lines)
 {
     int n;
 
@@ -564,8 +544,7 @@ cbuf_drop_line (cbuf_t src, int len, int lines)
 }
 
 
-int
-cbuf_peek_line (cbuf_t src, char *dstbuf, int len, int lines)
+int cbuf_peek_line(cbuf_t *src, char *dstbuf, int len, int lines)
 {
     int n, m, l;
     char *pdst;
@@ -601,8 +580,7 @@ cbuf_peek_line (cbuf_t src, char *dstbuf, int len, int lines)
 }
 
 
-int
-cbuf_read_line (cbuf_t src, char *dstbuf, int len, int lines)
+int cbuf_read_line(cbuf_t *src, char *dstbuf, int len, int lines)
 {
     int n, m, l;
     char *pdst;
@@ -639,8 +617,7 @@ cbuf_read_line (cbuf_t src, char *dstbuf, int len, int lines)
 }
 
 
-int
-cbuf_replay_line (cbuf_t src, char *dstbuf, int len, int lines)
+int cbuf_replay_line(cbuf_t *src, char *dstbuf, int len, int lines)
 {
     int n, m, l;
     int nl;
@@ -685,8 +662,7 @@ cbuf_replay_line (cbuf_t src, char *dstbuf, int len, int lines)
 }
 
 
-int
-cbuf_rewind_line (cbuf_t src, int len, int lines)
+int cbuf_rewind_line(cbuf_t *src, int len, int lines)
 {
     int n;
 
@@ -713,8 +689,7 @@ cbuf_rewind_line (cbuf_t src, int len, int lines)
 }
 
 
-int
-cbuf_write_line (cbuf_t dst, char *srcbuf, int *ndropped)
+int cbuf_write_line(cbuf_t *dst, char *srcbuf, int *ndropped)
 {
     int len;
     int nfree, ncopy, n;
@@ -795,8 +770,7 @@ cbuf_write_line (cbuf_t dst, char *srcbuf, int *ndropped)
 }
 
 
-int
-cbuf_peek_to_fd (cbuf_t src, int dstfd, int len)
+int cbuf_peek_to_fd(cbuf_t *src, int dstfd, int len)
 {
     int n = 0;
 
@@ -820,8 +794,7 @@ cbuf_peek_to_fd (cbuf_t src, int dstfd, int len)
 }
 
 
-int
-cbuf_read_to_fd (cbuf_t src, int dstfd, int len)
+int cbuf_read_to_fd(cbuf_t *src, int dstfd, int len)
 {
     int n = 0;
 
@@ -848,8 +821,7 @@ cbuf_read_to_fd (cbuf_t src, int dstfd, int len)
 }
 
 
-int
-cbuf_replay_to_fd (cbuf_t src, int dstfd, int len)
+int cbuf_replay_to_fd(cbuf_t *src, int dstfd, int len)
 {
     int n = 0;
 
@@ -873,8 +845,7 @@ cbuf_replay_to_fd (cbuf_t src, int dstfd, int len)
 }
 
 
-int
-cbuf_write_from_fd (cbuf_t dst, int srcfd, int len, int *ndropped)
+int cbuf_write_from_fd(cbuf_t *dst, int srcfd, int len, int *ndropped)
 {
     int n = 0;
 
@@ -908,8 +879,7 @@ cbuf_write_from_fd (cbuf_t dst, int srcfd, int len, int *ndropped)
 }
 
 
-int
-cbuf_copy (cbuf_t src, cbuf_t dst, int len, int *ndropped)
+int cbuf_copy(cbuf_t *src, cbuf_t *dst, int len, int *ndropped)
 {
     int n = 0;
 
@@ -957,8 +927,7 @@ cbuf_copy (cbuf_t src, cbuf_t dst, int len, int *ndropped)
 }
 
 
-int
-cbuf_move (cbuf_t src, cbuf_t dst, int len, int *ndropped)
+int cbuf_move(cbuf_t *src, cbuf_t *dst, int len, int *ndropped)
 {
     int n = 0;
 
@@ -1009,8 +978,7 @@ cbuf_move (cbuf_t src, cbuf_t dst, int len, int *ndropped)
 }
 
 
-static int
-cbuf_find_replay_line (cbuf_t cb, int chars, int *nlines, int *nl)
+static int cbuf_find_replay_line(cbuf_t *cb, int chars, int *nlines, int *nl)
 {
 /*  Finds the specified number of lines from the replay region of the buffer.
  *  If ([nlines] > 0), returns the number of bytes comprising the line count,
@@ -1104,8 +1072,7 @@ cbuf_find_replay_line (cbuf_t cb, int chars, int *nlines, int *nl)
 }
 
 
-static int
-cbuf_find_unread_line (cbuf_t cb, int chars, int *nlines)
+static int cbuf_find_unread_line(cbuf_t *cb, int chars, int *nlines)
 {
 /*  Finds the specified number of lines from the unread region of the buffer.
  *  If ([nlines] > 0), returns the number of bytes comprising the line count,
@@ -1238,8 +1205,7 @@ cbuf_put_mem (void *srcbuf, unsigned char **pdstbuf, int len)
 }
 
 
-static int
-cbuf_copier (cbuf_t src, cbuf_t dst, int len, int *ndropped)
+static int cbuf_copier(cbuf_t *src, cbuf_t *dst, int len, int *ndropped)
 {
 /*  Copies up to [len] bytes from the [src] cbuf into the [dst] cbuf.
  *  Returns the number of bytes copied, or -1 on error (with errno set).
@@ -1324,8 +1290,7 @@ cbuf_copier (cbuf_t src, cbuf_t dst, int len, int *ndropped)
 }
 
 
-static int
-cbuf_dropper (cbuf_t cb, int len)
+static int cbuf_dropper(cbuf_t *cb, int len)
 {
 /*  Discards exactly [len] bytes of unread data from [cb].
  *  Returns the number of bytes dropped.
@@ -1350,8 +1315,7 @@ cbuf_dropper (cbuf_t cb, int len)
 }
 
 
-static int
-cbuf_reader (cbuf_t src, int len, cbuf_iof putf, void *dst)
+static int cbuf_reader(cbuf_t *src, int len, cbuf_iof putf, void *dst)
 {
 /*  Reads up to [len] bytes from [src] into the object pointed at by [dst].
  *    The I/O function [putf] specifies how data is written into [dst].
@@ -1406,8 +1370,7 @@ cbuf_reader (cbuf_t src, int len, cbuf_iof putf, void *dst)
 }
 
 
-static int
-cbuf_replayer (cbuf_t src, int len, cbuf_iof putf, void *dst)
+static int cbuf_replayer(cbuf_t *src, int len, cbuf_iof putf, void *dst)
 {
 /*  Replays up to [len] bytes from [src] into the object pointed at by [dst].
  *    The I/O function [putf] specifies how data is written into [dst].
@@ -1463,8 +1426,7 @@ cbuf_replayer (cbuf_t src, int len, cbuf_iof putf, void *dst)
 }
 
 
-static int
-cbuf_writer (cbuf_t dst, int len, cbuf_iof getf, void *src, int *ndropped)
+static int cbuf_writer(cbuf_t *dst, int len, cbuf_iof getf, void *src, int *ndropped)
 {
 /*  Writes up to [len] bytes from the object pointed at by [src] into [dst].
  *    The I/O function [getf] specifies how data is read from [src].
@@ -1550,8 +1512,7 @@ cbuf_writer (cbuf_t dst, int len, cbuf_iof getf, void *src, int *ndropped)
 }
 
 
-static int
-cbuf_grow (cbuf_t cb, int n)
+static int cbuf_grow(cbuf_t *cb, int n)
 {
 /*  Attempts to grow the circular buffer [cb] by at least [n] bytes.
  *  Returns the number of bytes by which the buffer has grown (which may be
@@ -1620,8 +1581,7 @@ cbuf_grow (cbuf_t cb, int n)
 }
 
 
-static int
-cbuf_shrink (cbuf_t cb)
+static int cbuf_shrink(cbuf_t *cb)
 {
 /*  XXX: DOCUMENT ME.
  */
@@ -1643,8 +1603,7 @@ cbuf_shrink (cbuf_t cb)
 
 
 #ifndef NDEBUG
-static int
-_cbuf_mutex_is_locked (cbuf_t cb)
+static int _cbuf_mutex_is_locked(cbuf_t *cb)
 {
 /*  Returns true if the mutex is locked; o/w, returns false.
  */
@@ -1655,8 +1614,7 @@ _cbuf_mutex_is_locked (cbuf_t cb)
     return(rc == EBUSY ? 1 : 0);
 }
 
-static int
-_cbuf_is_valid (cbuf_t cb)
+static int _cbuf_is_valid(cbuf_t *cb)
 {
 /*  Validates the data structure.  All invariants should be tested here.
  *  Returns true if everything is valid; o/w, aborts due to assertion failure.

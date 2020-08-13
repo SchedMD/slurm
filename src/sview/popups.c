@@ -297,19 +297,6 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	List dbd_config_list = NULL;
 
 	/* first load accounting parms from slurm.conf */
-	char *acct_storage_backup_host =
-		slurm_get_accounting_storage_backup_host();
-	char *acct_storage_host = slurm_get_accounting_storage_host();
-	char *acct_storage_loc  = slurm_get_accounting_storage_loc();
-	char *acct_storage_pass = slurm_get_accounting_storage_pass();
-	uint32_t acct_storage_port = slurm_get_accounting_storage_port();
-	char *acct_storage_type = slurm_get_accounting_storage_type();
-	char *acct_storage_user = slurm_get_accounting_storage_user();
-	char *auth_type = slurm_get_auth_type();
-	uint16_t msg_timeout = slurm_get_msg_timeout();
-	char *plugin_dir = slurm_get_plugin_dir();
-	uint16_t private_data = slurm_get_private_data();
-	uint32_t slurm_user_id = slurm_get_slurm_user_id();
 	uint16_t track_wckey = slurm_get_track_wckey();
 
 	slurm_make_time_str(&now, tmp_str, sizeof(tmp_str));
@@ -319,32 +306,37 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 
 	add_display_treestore_line(update, treestore, &iter,
 				   "AccountingStorageBackupHost",
-				   acct_storage_backup_host);
+				   slurm_conf.accounting_storage_backup_host);
 	add_display_treestore_line(update, treestore, &iter,
-				   "AccountingStorageHost", acct_storage_host);
+				   "AccountingStorageHost",
+				   slurm_conf.accounting_storage_host);
 	add_display_treestore_line(update, treestore, &iter,
-				   "AccountingStorageLoc", acct_storage_loc);
+				   "AccountingStoragePass",
+				   slurm_conf.accounting_storage_pass);
+	sprintf(tmp_str, "%u", slurm_conf.accounting_storage_port);
 	add_display_treestore_line(update, treestore, &iter,
-				   "AccountingStoragePass", acct_storage_pass);
-	sprintf(tmp_str, "%u", acct_storage_port);
+				   "AccountingStorageParameters",
+				   slurm_conf.accounting_storage_params);
 	add_display_treestore_line(update, treestore, &iter,
 				   "AccountingStoragePort", tmp_str);
 	add_display_treestore_line(update, treestore, &iter,
-				   "AccountingStorageType", acct_storage_type);
+	                           "AccountingStorageType",
+	                           slurm_conf.accounting_storage_type);
 	add_display_treestore_line(update, treestore, &iter,
-				   "AccountingStorageUser", acct_storage_user);
-	add_display_treestore_line(update, treestore, &iter,
-				   "AuthType", auth_type);
-	sprintf(tmp_str, "%u sec", msg_timeout);
+				   "AccountingStorageUser",
+				   slurm_conf.accounting_storage_user);
+	add_display_treestore_line(update, treestore, &iter, "AuthType",
+				   slurm_conf.authtype);
+	snprintf(tmp_str, sizeof(tmp_str), "%u sec", slurm_conf.msg_timeout);
 	add_display_treestore_line(update, treestore, &iter,
 				   "MessageTimeout", tmp_str);
-	add_display_treestore_line(update, treestore, &iter,
-				   "PluginDir", plugin_dir);
-	private_data_string(private_data, tmp_str, sizeof(tmp_str));
+	add_display_treestore_line(update, treestore, &iter, "PluginDir",
+                                   slurm_conf.plugindir);
+	private_data_string(slurm_conf.private_data, tmp_str, sizeof(tmp_str));
 	add_display_treestore_line(update, treestore, &iter,
 				   "PrivateData", tmp_str);
-	user_name = uid_to_string_cached(slurm_user_id);
-	sprintf(tmp_str, "%s(%u)", user_name, slurm_user_id);
+	user_name = uid_to_string_cached(slurm_conf.slurm_user_id);
+	sprintf(tmp_str, "%s(%u)", user_name, slurm_conf.slurm_user_id);
 	add_display_treestore_line(update, treestore, &iter,
 				   "SlurmUserId", tmp_str);
 	add_display_treestore_line(update, treestore, &iter,
@@ -354,15 +346,6 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	sprintf(tmp_str, "%u", track_wckey);
 	add_display_treestore_line(update, treestore, &iter,
 				   "TrackWCKey", tmp_str);
-
-	xfree(acct_storage_backup_host);
-	xfree(acct_storage_host);
-	xfree(acct_storage_loc);
-	xfree(acct_storage_pass);
-	xfree(acct_storage_type);
-	xfree(acct_storage_user);
-	xfree(auth_type);
-	xfree(plugin_dir);
 
 	/* now load accounting parms from slurmdbd.conf */
 

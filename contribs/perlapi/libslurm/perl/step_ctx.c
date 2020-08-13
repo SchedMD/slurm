@@ -16,10 +16,13 @@
 int
 hv_to_slurm_step_ctx_params(HV *hv, slurm_step_ctx_params_t *params)
 {
+	HV *step_id_hv = (HV*)sv_2mortal((SV*)newHV());
+
 	slurm_step_ctx_params_t_init(params);
 
-	FETCH_FIELD(hv, params, ckpt_dir, charp, FALSE);
-	FETCH_FIELD(hv, params, ckpt_interval, uint16_t, FALSE);
+	hv_to_step_id(&params->step_id, step_id_hv);
+	hv_store_sv(hv, "step_id", newRV((SV*)step_id_hv));
+
 	FETCH_FIELD(hv, params, cpu_count, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, cpu_freq_min, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, cpu_freq_max, uint32_t, FALSE);
@@ -27,7 +30,6 @@ hv_to_slurm_step_ctx_params(HV *hv, slurm_step_ctx_params_t *params)
 	FETCH_FIELD(hv, params, exclusive, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, features, charp, FALSE);
 	FETCH_FIELD(hv, params, immediate, uint16_t, FALSE);
-	FETCH_FIELD(hv, params, job_id, uint32_t, FALSE); /* for slurm_step_ctx_create_no_alloc */
 	FETCH_FIELD(hv, params, pn_min_memory, uint64_t, FALSE);
 	FETCH_FIELD(hv, params, name, charp, FALSE);
 	FETCH_FIELD(hv, params, network, charp, FALSE);
@@ -213,8 +215,6 @@ hv_to_slurm_step_launch_params(HV *hv, slurm_step_launch_params_t *params)
 	FETCH_FIELD(hv, params, open_mode, uint8_t, FALSE);
 	FETCH_FIELD(hv, params, acctg_freq, charp, FALSE);
 	FETCH_FIELD(hv, params, pty, bool, FALSE);
-	FETCH_FIELD(hv, params, ckpt_dir, charp, FALSE);
-	FETCH_FIELD(hv, params, restart_dir, charp, FALSE);
 	
 	if((svp = hv_fetch(hv, "spank_job_env", 13, FALSE))) {
 		if(SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVHV) {
@@ -296,6 +296,10 @@ task_exit_msg_to_hv(task_exit_msg_t *exit_msg, HV *hv)
 {
 	AV *av;
 	int i;
+	HV *step_id_hv = (HV*)sv_2mortal((SV*)newHV());
+
+	step_id_to_hv(&exit_msg->step_id, step_id_hv);
+	hv_store_sv(hv, "step_id", newRV((SV*)step_id_hv));
 
 	STORE_FIELD(hv, exit_msg, num_tasks, uint32_t);
 	if (exit_msg->num_tasks > 0) {
@@ -306,8 +310,7 @@ task_exit_msg_to_hv(task_exit_msg_t *exit_msg, HV *hv)
 		hv_store_sv(hv, "task_id_list", newRV_noinc((SV*)av));
 	}
 	STORE_FIELD(hv, exit_msg, return_code, uint32_t);
-	STORE_FIELD(hv, exit_msg, job_id, uint32_t);
-	STORE_FIELD(hv, exit_msg, step_id, uint32_t);
+
 	return 0;
 }
 

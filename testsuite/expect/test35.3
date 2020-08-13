@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Cray burst buffer use by job arrays
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015-2018 SchedMD LLC.
 # Written by Morris Jette <jette(at)schedmd.com>
@@ -31,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "35.3"
 set array_end   3
 set data_in     "DATA_IN_0123456789"
 set data_out    "DATA_OUT_9876543210"
@@ -78,14 +72,11 @@ proc find_bb_data { file_name string_seek } {
 	return $found
 }
 
-print_header $test_id
-
 stop_root_user
 
 set bb_types [get_bb_types]
 if {[string first "datawarp" $bb_types] == -1} {
-	send_user "\nWARNING: This test can only be run with the burst_buffer/datawarp plugin\n"
-	exit 0
+	skip "This test can only be run with the burst_buffer/datawarp plugin"
 }
 
 set cwd [$bin_pwd]
@@ -119,7 +110,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -128,10 +119,10 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: job did not launch\n"
+	log_error "Job did not launch"
 	set exit_code 1
 } elseif {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id
 }
@@ -140,22 +131,22 @@ for {set cnt 1} {$cnt<=$array_end} {incr cnt} {
 	set job_array_id "${job_id}_${cnt}"
 	set output_file "test${test_id}-${job_array_id}.output"
 	if {[wait_for_file $output_file] != 0} {
-		send_user "\nFAILURE: output file was not created or not the correct format. $output_file not found\n"
+		log_error "Output file was not created or not the correct format. $output_file not found"
 		set exit_code 1
 	} elseif {[find_bb_jobid $output_file $job_array_id] == 0} {
-		send_user "\nFAILURE: job array $job_array_id burst buffer not found\n"
+		log_error "Job array $job_array_id burst buffer not found"
 		set exit_code 1
 	} elseif {[find_bb_data $output_file $data_in] == 0} {
-		send_user "\nFAILURE: job array $job_array_id burst buffer input data not found\n"
+		log_error "Job array $job_array_id burst buffer input data not found"
 		set exit_code 1
 	} else {
-		send_user "Job array task $cnt output file is good\n\n"
+		log_debug "Job array task $cnt output file is good"
 		exec $bin_rm -f $output_file
 	}
 }
 
 if {[find_bb_data $output_data $data_out] == 0} {
-	send_user "\nFAILURE: job burst buffer output data not found\n"
+	log_error "Job burst buffer output data not found"
 	set exit_code 1
 }
 
@@ -169,7 +160,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -177,12 +168,11 @@ expect {
 	}
 }
 if {$found != 0} {
-	send_user "\nFAILURE: job burst buffer not removed\n"
-	set exit_code 1
+	fail "Job burst buffer not removed"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $input_data $output_data $script_use
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

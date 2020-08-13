@@ -78,14 +78,12 @@ typedef struct {
 	bool force_row_break;
 } button_processor_t;
 
-GStaticMutex blinking_mutex = G_STATIC_MUTEX_INIT;
-
 static gboolean _mouseover_node(GtkWidget *widget, GdkEventButton *event,
 				grid_button_t *grid_button)
 {
 	gboolean rc = true;
 
-	grid_button->last_state = GTK_WIDGET_STATE(widget);
+	grid_button->last_state = gtk_widget_get_state(widget);
 #ifdef GTK2_USE_TOOLTIP
 	gtk_widget_set_tooltip_text(grid_button->button,
 				    grid_button->node_name);
@@ -392,7 +390,7 @@ static void _each_highlightd(GtkTreeModel *model,
 				     sview_colors[color_inx],
 				     color, 0, 0);
 
-		if (GTK_WIDGET_STATE(grid_button->button) != GTK_STATE_NORMAL)
+		if (gtk_widget_get_state(grid_button->button) != GTK_STATE_NORMAL)
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_NORMAL);
 
@@ -432,7 +430,7 @@ static void _each_highlight_selected(GtkTreeModel *model,
 		 * (previously this assumed only one selected). */
 		if (grid_button->inx != node_inx)
 			continue;
-		else if (GTK_WIDGET_STATE(grid_button->button)
+		else if (gtk_widget_get_state(grid_button->button)
 			 != GTK_STATE_NORMAL) {
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_NORMAL);
@@ -492,23 +490,6 @@ static void _calc_coord_3d(int x, int y, int z, int default_y_offset,
 	*coord_y = (y_offset - y) + z;
 }
 
-static int *_get_cluster_dims(void)
-{
-	int *my_dim_size = slurmdb_setup_cluster_dim_size();
-
-	if ((cluster_flags & CLUSTER_FLAG_CRAY_A) && my_dim_size) {
-		static int cray_dim_size[3] = {-1, -1, -1};
-		/* For now, assume four nodes per coordinate all in
-		 * the same cage. Need to refine. */
-		cray_dim_size[0] = my_dim_size[0];
-		cray_dim_size[1] = my_dim_size[1];
-		cray_dim_size[2] = my_dim_size[2];
-		return cray_dim_size;
-	}
-
-	return my_dim_size;
-}
-
 /* Add a button for a given node. If node_ptr == NULL then fill in any gaps
  * in the grid just for a clean look. Always call with node_ptr == NULL for
  * the last call in the sequence. */
@@ -519,10 +500,10 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	static int node_exists_cnt = 1;
 	grid_button_t *grid_button = button_processor->grid_button;
 	int *dim_size = NULL, i, coord_x = 0, coord_y = 0;
-	int len = 0, len_a = 0;
+	int len = 0;
 
 	if (cluster_dims > 1) {
-		dim_size = _get_cluster_dims();
+		dim_size = slurmdb_setup_cluster_dim_size();
 		if (dim_size == NULL) {
 			g_error("Could not read dim_size\n");
 			return SLURM_ERROR;
@@ -547,32 +528,16 @@ static int _add_button_to_list(node_info_t *node_ptr,
 				g_error("bad node name %s\n", node_ptr->name);
 				return SLURM_ERROR;
 			}
-			if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
-				len_a = strlen(node_ptr->node_addr);
-				if (len_a < cluster_dims) {
-					g_error("bad node addr %s\n",
-						node_ptr->node_addr);
-					return SLURM_ERROR;
-				}
-			}
 		}
 	}
 
 	if (cluster_dims == 3) {
 		int x, y, z;
 		if (node_ptr) {
-			if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
-				x = select_char2coord(
-					node_ptr->node_addr[len_a-3]);
-				y = select_char2coord(
-					node_ptr->node_addr[len_a-2]);
-				z = select_char2coord(
-					node_ptr->node_addr[len_a-1]);
-			} else {
-				x = select_char2coord(node_ptr->name[len-3]);
-				y = select_char2coord(node_ptr->name[len-2]);
-				z = select_char2coord(node_ptr->name[len-1]);
-			}
+			x = select_char2coord(node_ptr->name[len-3]);
+			y = select_char2coord(node_ptr->name[len-2]);
+			z = select_char2coord(node_ptr->name[len-1]);
+
 			i = (x * dim_size[1] + y) * dim_size[2] + z;
 			node_exists[i] = true;
 			_calc_coord_3d(x, y, z,
@@ -809,7 +774,7 @@ static int _init_button_processor(button_processor_t *button_processor,
 	memset(button_processor, 0, sizeof(button_processor_t));
 
 	if (cluster_dims > 1) {
-		dim_size = _get_cluster_dims();
+		dim_size = slurmdb_setup_cluster_dim_size();
 		if (dim_size == NULL) {
 			g_error("could not read dim_size\n");
 			return SLURM_ERROR;
@@ -1055,7 +1020,7 @@ extern void highlight_grid(GtkTreeView *tree_view,
 	itr = list_iterator_create(button_list);
 	while ((grid_button = list_next(itr))) {
 		/* clear everyone */
-		if ((GTK_WIDGET_STATE(grid_button->button)
+		if ((gtk_widget_get_state(grid_button->button)
 		     != GTK_STATE_ACTIVE)) {
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_ACTIVE);
@@ -1096,7 +1061,7 @@ extern void highlight_grid_range(int start, int end, List button_list)
 			if ((grid_button->inx < start)
 			    || (grid_button->inx > end)) {
 				/* clear everyone else */
-				if ((GTK_WIDGET_STATE(grid_button->button)
+				if ((gtk_widget_get_state(grid_button->button)
 				     != GTK_STATE_ACTIVE))
 					gtk_widget_set_state(
 						grid_button->button,
@@ -1106,7 +1071,7 @@ extern void highlight_grid_range(int start, int end, List button_list)
 		/* highlight this one, if it is already hightlighted,
 		 * put it back to normal */
 		//g_print("highlighting %d\n", grid_button->inx);
-		if ((GTK_WIDGET_STATE(grid_button->button)
+		if ((gtk_widget_get_state(grid_button->button)
 		     != GTK_STATE_NORMAL))
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_NORMAL);

@@ -1,3 +1,4 @@
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          to be called from test3.11
@@ -35,13 +36,16 @@ proc inc3_11_1 {} {
 	global cons_res_actived def_node def_node_name
 	global def_partition exit_code
 	global part_cores part_node part_node_cnt part_node_cores
-	global res_name user_name
+	global user_name
+	global heterogeneous
+
+	set res_name "resv3.11.1"
 
 	# TEST 1
 	# Make a list of lists with a series of parameters to test.  All the tests
 	# in goodtests should pass, all those in badtests should fail.
 	#
-	send_user "\n+++++ STARTING TEST 1 (Within: inc3.11.1) +++++\n"
+	log_info "+++++ STARTING TEST 1 (Within: inc3.11.1) +++++"
 	set badtests "
 	{}
 	{Duration=5   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
@@ -67,19 +71,17 @@ proc inc3_11_1 {} {
 	}
 
 	foreach test $badtests {
-		set ret_code [create_res $test 1]
+		set ret_code [create_res $res_name $test]
 		if {$ret_code == 0} {
-			send_user "\n\033\[31mFAILURE: Reservation $test did not fail but should have (Within: inc3.11.1)\033\[m\n"
 			delete_res $res_name
-			exit 1
+			fail "Reservation $test did not fail but should have (Within: inc3.11.1)"
 		} else {
-			send_user "\033\[32mExpected error. You can turn that frown upside-down. (Within: inc3.11.1)\033\[m\n"
+			log_info "Expected error. You can turn that frown upside-down. (Within: inc3.11.1)"
 		}
 	}
 
 	if {[test_super_user] == 0} {
-		send_user "\n\033\[34mWARNING: can not test more unless SlurmUser or root (Within: inc3.11.1)\033\[m\n"
-		exit $exit_code
+		skip "Can not test more unless SlurmUser or root (Within: inc3.11.1)"
 	}
 
 	set corecnt [ expr $part_cores / 2 ]
@@ -93,25 +95,23 @@ proc inc3_11_1 {} {
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=Maint Flags=ignore_jobs}
 "
 	#{StartTime=now   Duration=5   NodeCnt=10 CoreCnt=11  User=$user_name}
-	if {$cons_res_actived == 1} {
+	if {$cons_res_actived == 1 && $heterogeneous == 0} {
 		set more_goodtests "StartTime=now Duration=5 NodeCnt=$part_node_cnt CoreCnt=$corecnt User=$user_name"
 		lappend goodtests $more_goodtests
 	}
 
 	foreach test $goodtests {
-		set ret_code [create_res $test 0]
+		set ret_code [create_res $res_name $test]
 		if {$ret_code != 0} {
-			send_user "\n\033\[31mFAILURE: Unable to create a valid reservation (Within: inc3.11.1)\033\[m\n"
-			exit $ret_code
+			fail "Unable to create a valid reservation (Within: inc3.11.1)"
 		} else {
-			send_user "\033\[32mReservation created as expected. (Within: inc3.11.1)\033\[m\n"
+			log_debug "Reservation created as expected. (Within: inc3.11.1)"
 		}
 		set ret_code [delete_res $res_name]
 		if {$ret_code != 0} {
-			send_user "\n\033\[31mFAILURE: Unable to delete a reservation (Within: inc3.11.1)\033\[m\n"
-			exit $ret_code
+			fail "Unable to delete a reservation (Within: inc3.11.1)"
 		} else {
-			send_user "\033\[32mReservation deleted as expected. (Within: inc3.11.1)\033\[m\n"
+			log_debug "Reservation deleted as expected. (Within: inc3.11.1)"
 		}
 	}
 }

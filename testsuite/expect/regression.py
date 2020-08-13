@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 ############################################################################
 # Copyright (C) 2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -26,24 +26,23 @@
 
 """This script makes it easier to run the Slurm expect test scripts."""
 
+from __future__ import print_function
 import os
 import re
 import sys
 import time
 from optparse import OptionParser
 from optparse import OptionValueError
+from subprocess import Popen
 
 def main(argv=None):
-    try:
-        from subprocess import Popen
-    except:
-        Popen = poor_Popen_substitute
-
     # "tests" is a list containing tuples of length 3 of the form
     # (test major number, test minor number, test filename)
     tests = []
     failed_tests = []
     passed_tests = []
+    skipped_tests = []
+    begin = (1,1)
 
     # Handle command line parameters
     if argv is None:
@@ -60,19 +59,23 @@ def main(argv=None):
                       help='comma or space separated string of tests to include')
     parser.add_option('-k', '--keep-logs', action='store_true', default=False)
     parser.add_option('-s', '--stop-on-first-fail', action='store_true', default=False)
+    parser.add_option('-b', '--begin-from-test', type='string',
+                      dest='begin_from_test', action='callback',
+                      callback=test_parser)
+
     (options, args) = parser.parse_args(args=argv)
 
     # Sanity check
     if not os.path.isfile('globals'):
-        print >>sys.stderr, 'ERROR: "globals" not here as needed'
+        print('ERROR: "globals" not here as needed', file=sys.stderr)
         return -1
 
-	# Clear any environment variables that could break the tests.
-	# Cray sets some squeue format options that break tests
-	del os.environ['SQUEUE_ALL']
-	del os.environ['SQUEUE_SORT']
-	del os.environ['SQUEUE_FORMAT']
-	del os.environ['SQUEUE_FORMAT2']
+        # Clear any environment variables that could break the tests.
+        # Cray sets some squeue format options that break tests
+        del os.environ['SQUEUE_ALL']
+        del os.environ['SQUEUE_SORT']
+        del os.environ['SQUEUE_FORMAT']
+        del os.environ['SQUEUE_FORMAT2']
 
     # Read the current working directory and build a sorted list
     # of the available tests.
@@ -87,15 +90,27 @@ def main(argv=None):
                         or test_in_list(major, minor, options.include_tests)):
                 tests.append((major, minor, filename))
     if not tests:
-        print >>sys.stderr, 'ERROR: no test files found in current working directory'
+        print('ERROR: no test files found in current working directory', file=sys.stderr)
         return -1
-    tests.sort(test_cmp)
+    # sory by major, minor
+    tests.sort(key=lambda t: (t[0],t[1]))
+
+    # Set begin value
+    if options.begin_from_test is not None:
+        begin  = options.begin_from_test[0]
 
     # Now run the tests
     start_time = time.time()
-    print >>sys.stdout, 'Started:', time.asctime(time.localtime(start_time))
+    test_env = os.environ.copy()
+    if options.stop_on_first_fail:
+        test_env["SLURM_TESTSUITE_CLEANUP_ON_FAILURE"] = "false"
+    else:
+        test_env["SLURM_TESTSUITE_CLEANUP_ON_FAILURE"] = "true"
+    print('Started:', time.asctime(time.localtime(start_time)), file=sys.stdout)
     sys.stdout.flush()
     for test in tests:
+        if begin[0] > test[0] or (begin[0] == test[0] and begin[1] > test[1]):
+            continue
         sys.stdout.write('Running test %d.%d ' % (test[0],test[1]))
         sys.stdout.flush()
         testlog_name = 'test%d.%d.log' % (test[0],test[1])
@@ -103,12 +118,12 @@ def main(argv=None):
             os.remove(testlog_name+'.failed')
         except:
             pass
-        testlog = file(testlog_name, 'w+')
+        testlog = open(testlog_name, 'w+')
 
         if options.time_individual:
             t1 = time.time()
         retcode = Popen(('expect', test[2]), shell=False,
-                        stdout=testlog, stderr=testlog).wait()
+                        env=test_env, stdout=testlog, stderr=testlog).wait()
         if options.time_individual:
             t2 = time.time()
             minutes = int(t2-t1)/60
@@ -125,8 +140,17 @@ def main(argv=None):
                 try:
                     os.remove(testlog_name)
                 except IOError as e:
-                    print >> sys.stderr, 'ERROR failed to close %s %s' \
-                        % (testlog_name, e)
+                    print('ERROR failed to close %s %s' % (testlog_name, e),
+                            file=sys.stederr);
+        elif retcode > 127:
+            skipped_tests.append(test)
+            sys.stdout.write('SKIPPED\n')
+            if not options.keep_logs:
+                try:
+                    os.remove(testlog_name)
+                except IOError as e:
+                    print('ERROR failed to close %s %s' % (testlog_name, e),
+                            file=sys.stederr);
         else:
             failed_tests.append(test)
             os.rename(testlog_name, testlog_name+'.failed')
@@ -136,30 +160,24 @@ def main(argv=None):
         sys.stdout.flush()
 
     end_time = time.time()
-    print >>sys.stdout, 'Ended:', time.asctime(time.localtime(end_time))
-    print >>sys.stdout, '\nTestsuite ran for %d minutes %d seconds'\
-          %((end_time-start_time)/60,(end_time-start_time)%60)
-    print >>sys.stdout
-    print >>sys.stdout, 'Completions  :', len(passed_tests)
-    print >>sys.stdout, 'Failures     :', len(failed_tests)
+    print('Ended:', time.asctime(time.localtime(end_time)), file=sys.stdout)
+    print('\nTestsuite ran for %d minutes %d seconds'\
+          %((end_time-start_time)/60,(end_time-start_time)%60), file=sys.stdout)
+    print('Completions  :', len(passed_tests), file=sys.stdout)
+    print('Failures     :', len(failed_tests), file=sys.stdout)
+    print('Skipped      :', len(skipped_tests), file=sys.stdout)
     if len(failed_tests) > 0:
-        print >>sys.stdout, 'Failed tests : ',
+        print('Failed tests : ', file=sys.stdout)
         first = True
         for test in failed_tests:
             if first:
                 first = False
             else:
-                sys.stdout.write(', ')
+                sys.stdout.write(',')
             sys.stdout.write('%d.%d'%(test[0], test[1]))
         sys.stdout.write('\n')
         sys.stdout.flush()
         return 1
-
-def test_cmp(testA, testB):
-    rc = cmp(testA[0], testB[0])
-    if rc != 0:
-        return rc
-    return cmp(testA[1], testB[1])
 
 def test_in_list(major, minor, test_list):
     '''Test for whether a test numbered major.minor is in test_list.
@@ -227,41 +245,6 @@ def test_parser(option, opt_str, value, parser):
         if minor != '*':
             minor = int(minor)
         l.append((major, minor))
-
-class poor_Popen_substitute:
-    '''subprocess.Popen work-alike function.
-
-    The subprocess module and its subprocess.Popen class were
-    added in Python 2.4.  This function is provided to supply the
-    subset of Popen functionality need by this program if run under
-    older python interpreters.
-    '''
-    def __init__(self, args, shell=False, stdout=None, stderr=None):
-        if shell is not False:
-            raise Exception("This substitute Popen only supports shell=True")
-        self.stdin = None
-        self.stdout = None
-        self.stderr = None
-        self.pid = None
-        self.returncode = None
-
-        pid = os.fork()
-        if pid > 0:
-            self.pid = pid
-            return
-        elif pid == 0:
-            if sys.stdout is not None:
-                os.dup2(stdout.fileno(), sys.stdout.fileno())
-                if sys.stdout == 'STDOUT':
-                    os.dup2(stdout.fileno(), sys.stderr.fileno())
-            if sys.stderr is not None:
-                os.dup2(stderr.fileno(), sys.stderr.fileno())
-
-            os.execvp(args[0], args)
-
-    def wait(self):
-        (pid, rc) = os.waitpid(self.pid, 0)
-        return rc
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -37,12 +37,6 @@
 #  include "config.h"
 #endif
 
-#define _GNU_SOURCE
-
-#ifndef __USE_GNU
-#  define  __USE_GNU
-#endif
-
 #ifdef HAVE_NUMA
 #  include <numa.h>
 #endif
@@ -107,16 +101,6 @@ int	get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job);
 void	reset_cpuset(cpu_set_t *new_mask, cpu_set_t *cur_mask);
 int	slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask);
 int	slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
-
-/*** from cpuset.c ***/
-#ifdef HAVE_NUMA
-int	slurm_set_memset(char *path, nodemask_t *new_mask);
-int	slurm_memset_available(void);
-#endif
-int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid);
-int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask);
-int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
-		const cpu_set_t *mask);
 
 /*** from numa.c ***/
 #ifdef HAVE_NUMA

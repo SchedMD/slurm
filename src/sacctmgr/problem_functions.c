@@ -69,8 +69,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			  || !xstrncasecmp(argv[i], "Problems",
 					   MAX(command_len, 2))) {
 			if (!assoc_cond->id_list)
-				assoc_cond->id_list =
-					list_create(slurm_destroy_char);
+				assoc_cond->id_list = list_create(xfree_ptr);
 			slurm_addto_char_list(assoc_cond->id_list,
 					      argv[i]+end);
 			set = 1;
@@ -79,8 +78,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			   || !xstrncasecmp(argv[i], "Acct",
 					    MAX(command_len, 4))) {
 			if (!assoc_cond->acct_list)
-				assoc_cond->acct_list =
-					list_create(slurm_destroy_char);
+				assoc_cond->acct_list = list_create(xfree_ptr);
 			slurm_addto_char_list(assoc_cond->acct_list,
 					argv[i]+end);
 			set = 1;
@@ -88,7 +86,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 1))) {
 			if (!assoc_cond->cluster_list)
 				assoc_cond->cluster_list =
-					list_create(slurm_destroy_char);
+					list_create(xfree_ptr);
 			slurm_addto_char_list(assoc_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
@@ -101,15 +99,14 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 4))) {
 			if (!assoc_cond->partition_list)
 				assoc_cond->partition_list =
-					list_create(slurm_destroy_char);
+					list_create(xfree_ptr);
 			slurm_addto_char_list(assoc_cond->partition_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Users",
 					 MAX(command_len, 1))) {
 			if (!assoc_cond->user_list)
-				assoc_cond->user_list =
-					list_create(slurm_destroy_char);
+				assoc_cond->user_list = list_create(xfree_ptr);
 			slurm_addto_char_list_with_case(assoc_cond->user_list,
 							argv[i]+end,
 							user_case_norm);
@@ -141,7 +138,7 @@ extern int sacctmgr_list_problem(int argc, char **argv)
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(xfree_ptr);
 	List print_fields_list; /* types are of print_field_t */
 
 	for (i=0; i<argc; i++) {

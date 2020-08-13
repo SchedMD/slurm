@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate that preemption by partition is enforced
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -30,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id        34.1
 set exit_code      0
 set part_name_1    "test$test_id\_part1"
 set part_name_2    "test$test_id\_part2"
@@ -42,12 +37,8 @@ set job_id         0
 set nodes          ""
 set file_in        "test$test_id\_sc"
 
-print_header $test_id
-
 if {[test_preempttype_part] == 0} {
-	send_user "\nWARNING: This test requires that "
-	send_user "PreemptType=preempt/partition_prio\n"
-	exit $exit_code
+	skip "This test requires that PreemptType=preempt/partition_prio"
 }
 
 proc create_part { part nodes priority pre_type } {
@@ -57,11 +48,10 @@ proc create_part { part nodes priority pre_type } {
 	spawn $scontrol create partitionname=$part nodes=$nodes priority=$priority preemptmode=$pre_type
 	expect {
 		-re "invalid user" {
-			send_user "\nWARNING: User not authorized to run this test\n"
-			exit 0
+			skip "User not authorized to run this test"
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -78,7 +68,7 @@ proc create_part { part nodes priority pre_type } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo is not responding\n"
+			log_error "sinfo is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -89,7 +79,7 @@ proc create_part { part nodes priority pre_type } {
 	log_user 1
 
 	if { $match != 1 } {
-		send_user "\nFAILURE: scontrol did not create partition $part\n"
+		log_error "scontrol did not create partition $part"
 		set exit_code 1
 	}
 }
@@ -101,7 +91,7 @@ proc mod_part { part pre_type } {
 	spawn $scontrol update partitionname=$part preemptmode=$pre_type
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -118,7 +108,7 @@ proc mod_part { part pre_type } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo is not responding\n"
+			log_error "sinfo is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -129,7 +119,7 @@ proc mod_part { part pre_type } {
 	log_user 1
 
 	if { $match != 1 } {
-		send_user "\nFAILURE: scontrol did not create partition $part\n"
+		log_error "scontrol did not create partition $part"
 		set exit_code 1
 	}
 
@@ -142,7 +132,7 @@ proc delete_part { part } {
 	spawn $scontrol delete partitionname=$part
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -159,7 +149,7 @@ proc delete_part { part } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo is not responding\n"
+			log_error "sinfo is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -170,7 +160,7 @@ proc delete_part { part } {
 	log_user 1
 
 	if { $match == 1 } {
-		send_user "\nFAILURE: scontrol did not delete partition $part\n"
+		log_error "scontrol did not delete partition $part"
 		set exit_code 1
 	}
 
@@ -188,7 +178,7 @@ proc sub_job { part job } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch is not responding\n"
+			log_error "sbatch is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -197,7 +187,7 @@ proc sub_job { part job } {
 	}
 
 	if { $job_id == 0 } {
-		send_user "\nFAILURE: sbatch did not submit job\n"
+		log_error "sbatch did not submit job"
 		cleanup 1
 	} else {
 		return $job_id
@@ -214,13 +204,12 @@ proc clean_up { rc } {
 	delete_part $part_name_2
 
 	if {$rc != 0} {
-		exit $rc
+		fail "Test failed due to previous errors (\$rc = $rc)"
 	}
 }
 
 if {[is_super_user] == 0} {
-	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
-	exit 0
+	skip "This test can't be run except as SlurmUser"
 }
 
 make_bash_script $file_in "sleep 5"
@@ -235,7 +224,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not reponding\n"
+		log_error "sbatch is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -243,26 +232,25 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 if { [wait_for_job $job_id "DONE"] != 0} {
 	cancel_job $job_id
-	exit 1
+	fail "Failed waiting for job to be done"
 }
 
 # Identify node to use for testing
 set got_node 0
 spawn $scontrol show job $job_id
 expect {
-	-re "NodeList=($alpha_numeric_nodelist)" {
+	-re "NodeList=($re_word_str)" {
 		set nodes $expect_out(1,string)
 		set got_node 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -270,12 +258,11 @@ expect {
 	}
 }
 if {$got_node != 1} {
-	send_user "\nFAILURE: no node was set for job\n"
-	exit 1
+	fail "No node was set for job"
 }
 
 ###################### Test preempt cancel ######################
-send_user "\n*** TEST PREEMPT CANCEL ***\n"
+log_info "*** TEST PREEMPT CANCEL ***"
 
 delete_part $part_name_1
 delete_part $part_name_2
@@ -284,13 +271,13 @@ create_part $part_name_2 $nodes 2 off
 
 set part_id_1 [sub_job $part_name_1 $job1]
 if { [wait_for_job $part_id_1 "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $part_id_1 failed to start\n"
+	log_error "Job $part_id_1 failed to start"
 	clean_up 1
 }
 
 set part_id_2 [sub_job $part_name_2 $job2]
 if { [wait_for_job $part_id_2 "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $part_id_1 failed to start\n"
+	log_error "Job $part_id_1 failed to start"
 	clean_up 1
 }
 
@@ -301,19 +288,19 @@ cancel_job $part_id_1
 
 ###################### Test preempt suspend ######################
 if { [test_gang] == 1 } {
-	send_user "\n*** TEST PREEMPT SUSPEND ***\n"
+	log_info "*** TEST PREEMPT SUSPEND ***"
 
 	mod_part $part_name_1 suspend
 	set part_id_1 [sub_job $part_name_1 $job1]
 	if { [wait_for_job $part_id_1 "RUNNING"] != 0} {
-		send_user "\nFAILURE: job $part_id_1 failed to start\n"
+		log_error "Job $part_id_1 failed to start"
 		clean_up 1
 	}
 
 	set part_id_2 [sub_job $part_name_2 $job2]
 	# Wait for the job to start
 	if { [wait_for_job $part_id_2 "RUNNING"] != 0} {
-		send_user "\nFAILURE: job $part_id_2 failed to start\n"
+		log_error "Job $part_id_2 failed to start"
 		clean_up 1
 	}
 
@@ -321,11 +308,11 @@ if { [test_gang] == 1 } {
 	check_job_state $part_id_1 SUSPENDED
 
 	if { [wait_for_job $part_id_2 "DONE"] != 0} {
-		send_user "\nFAILURE: job $part_id_2 failed to complete\n"
+		log_error "Job $part_id_2 failed to complete"
 		clean_up 1
 	}
 	if { [wait_for_job $part_id_1 "RUNNING"] != 0} {
-		send_user "\nFAILURE: job $part_id_1 failed to start\n"
+		log_error "Job $part_id_1 failed to start"
 		clean_up 1
 	}
 
@@ -334,18 +321,18 @@ if { [test_gang] == 1 } {
 }
 
 ###################### Test preempt requeue ######################
-send_user "\n*** TEST PREEMPT REQUEUE ***\n"
+log_info "*** TEST PREEMPT REQUEUE ***"
 
 mod_part $part_name_1 requeue
 set part_id_1 [sub_job $part_name_1 $job1]
 if { [wait_for_job $part_id_1 "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $part_id_1 failed to start\n"
+	log_error "Job $part_id_1 failed to start"
 	clean_up 1
 }
 
 set part_id_2 [sub_job $part_name_2 $job2]
 if { [wait_for_job $part_id_2 "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $part_id_2 failed to start\n"
+	log_error "Job $part_id_2 failed to start"
 	clean_up 1
 }
 
@@ -354,12 +341,12 @@ check_job_state $part_id_1 PENDING
 
 # Wait for job 1 to be requeued
 if { [wait_for_job $part_id_2 "DONE"] != 0} {
-	send_user "\nFAILURE: job $part_id_2 failed to complete\n"
-	clean_up 1
+	clean_up 0
+	fail "Job $part_id_2 failed to complete"
 }
 if { [wait_for_job $part_id_1 "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $part_id_1 failed to start\n"
-	clean_up 1
+	clean_up 0
+	fail "Job $part_id_1 failed to start"
 }
 
 sleep 5
@@ -369,6 +356,6 @@ clean_up 0
 
 if {$exit_code == 0} {
 	exec $bin_rm $job1 $job2 $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

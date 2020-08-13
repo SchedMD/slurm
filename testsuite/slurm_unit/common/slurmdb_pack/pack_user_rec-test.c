@@ -134,10 +134,10 @@ END_TEST
  * TEST SUITE                                                                *
  ****************************************************************************/
 
-Suite* suite(void)
+Suite *suite(void)
 {
-	Suite* s = suite_create("Pack slurmdb_user_rec_t");
-	TCase* tc_core = tcase_create("Pack slurmdb_user_rec_t");
+	Suite *s = suite_create("Pack slurmdb_user_rec_t");
+	TCase *tc_core = tcase_create("Pack slurmdb_user_rec_t");
 	tcase_add_test(tc_core, invalid_protocol);
 	tcase_add_test(tc_core, pack_1702_rec);
 	tcase_add_test(tc_core, pack_1702_null_rec);
@@ -153,7 +153,7 @@ Suite* suite(void)
 int main(void)
 {
 	int number_failed;
-	SRunner* sr = srunner_create(suite());
+	SRunner *sr = srunner_create(suite());
 
 	//srunner_set_fork_status(sr, CK_NOFORK);
 

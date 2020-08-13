@@ -126,6 +126,21 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 	}
 }
 
+extern int init(void)
+{
+	debug("%s: %s loaded", __func__, plugin_name);
+
+	return SLURM_SUCCESS;
+}
+
+extern int fini(void)
+{
+	debug("%s: unloading %s", __func__, plugin_name);
+	FREE_NULL_LIST(gres_devices);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * We could load gres state or validate it using various mechanisms here.
  * This only validates that the configuration was specified in gres.conf.
@@ -195,15 +210,15 @@ extern void step_reset_env(char ***step_env_ptr, void *gres_ptr,
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */
-extern void send_stepd(int fd)
+extern void send_stepd(Buf buffer)
 {
-	common_send_stepd(fd, gres_devices);
+	common_send_stepd(buffer, gres_devices);
 }
 
 /* Receive GRES information from slurmd on the specified file descriptor */
-extern void recv_stepd(int fd)
+extern void recv_stepd(Buf buffer)
 {
-	common_recv_stepd(fd, &gres_devices);
+	common_recv_stepd(buffer, &gres_devices);
 }
 
 /*

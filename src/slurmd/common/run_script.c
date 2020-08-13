@@ -156,12 +156,6 @@ _run_one_script(const char *name, const char *path, uint32_t job_id,
 	return status;
 }
 
-static void _xfree_f (void *x)
-{
-	xfree (x);
-}
-
-
 static int _ef (const char *p, int errnum)
 {
 	return error ("run_script: glob: %s: %s", p, strerror (errno));
@@ -179,7 +173,7 @@ static List _script_list_create (const char *pattern)
 	int rc = glob (pattern, GLOB_ERR, _ef, &gl);
 	switch (rc) {
 	case 0:
-		l = list_create ((ListDelF) _xfree_f);
+		l = list_create(xfree_ptr);
 		for (i = 0; i < gl.gl_pathc; i++)
 			list_push (l, xstrdup (gl.gl_pathv[i]));
 		break;

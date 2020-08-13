@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Testing of hidden partitions.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,12 +28,9 @@
 ############################################################################
 source ./globals
 
-set test_id        "3.6"
 set authorized     1
 set exit_code      0
 set part_name      "QA_TEST"
-
-print_header $test_id
 
 #
 # This test can only be run on a development build. If this is not a development
@@ -46,12 +39,7 @@ print_header $test_id
 # set in globals.local to a nonzero value.
 #
 if { ![info exists slurm_testsuite_dev_build] || !$slurm_testsuite_dev_build } {
-	send_user "
-		WARNING: Cannot run this test on a non-development
-		build. If you are on a development build, set
-		slurm_testsuite_dev_build in globals.local in order to
-		run this test.\n"
-	exit 0
+	skip "Cannot run this test on a non-development build. If you are on a development build, set slurm_testsuite_dev_build in globals.local in order to run this test"
 }
 
 #
@@ -65,12 +53,12 @@ set ::env(SLURM_TESTSUITE_DROP_PRIV) 1
 spawn  $scontrol show part
 expect {
 	-re "Hidden=YES" {
-		send_user "\nFAILURE: scontrol hidden partition seen\n"
+		log_error "scontrol hidden partition seen"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -89,7 +77,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -97,10 +85,7 @@ expect {
 	}
 }
 if {$found == 1} {
-	if {$exit_code == 0} {
-		send_user "\nSUCCESS\n"
-	}
-	exit $exit_code
+	fail "Hidden partitions were found"
 }
 
 #
@@ -108,8 +93,7 @@ if {$found == 1} {
 # created to test this feature, which only super users can do
 #
 if {[test_super_user] == 0} {
-	send_user "\nWARNING: can not test more unless SlurmUser\n"
-	exit $exit_code
+	skip "Can not test more unless SlurmUser"
 }
 
 #
@@ -119,7 +103,7 @@ set found -1
 spawn $scontrol -a show part $part_name
 expect {
 	-re "not found" {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		set found 0
 		exp_continue
 	}
@@ -128,7 +112,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -136,12 +120,10 @@ expect {
 	}
 }
 if {$found == -1} {
-	send_user "\nFAILURE: scontrol output format error\n"
-	exit 1
+	fail "scontrol output format error"
 }
 if {$found == 1} {
-	send_user "\nFAILURE: partition $part_name already exists\n"
-	exit 1
+	fail "Partition $part_name already exists"
 }
 
 #
@@ -155,12 +137,12 @@ unset ::env(SLURM_TESTSUITE_DROP_PRIV)
 spawn $scontrol create PartitionName=$part_name Hidden=YES
 expect {
 	-re "error" {
-		send_user "\nFAILURE: something bad happened on partition create\n"
+		log_error "Something bad happened on partition create"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -188,7 +170,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -196,11 +178,10 @@ expect {
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: partition not created\n"
-	exit 1
+	fail "Partition not created"
 }
 if {$hidden == 0} {
-	send_user "\nFAILURE: partition not hidden\n"
+	log_error "Partition not hidden"
 	set exit_code 1
 }
 
@@ -210,7 +191,7 @@ if {$hidden == 0} {
 spawn $scontrol delete PartitionName=$part_name
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -225,7 +206,7 @@ set found -1
 spawn $scontrol -a show part $part_name
 expect {
 	-re "not found" {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		set found 0
 		exp_continue
 	}
@@ -234,7 +215,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -242,11 +223,9 @@ expect {
 	}
 }
 if {$found != 0} {
-	send_user "\nFAILURE: partition not deleted\n"
-	exit 1
+	fail "Partition not deleted"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -55,8 +55,6 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_time.h"
-#include "src/common/tres_bind.h"
-#include "src/common/tres_frequency.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -147,7 +145,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *msg)
 	if (msg->step_id == NO_VAL)
 		info("Force Terminated job %u", msg->job_id);
 	else
-		info("Force Terminated job %u.%u", msg->job_id, msg->step_id);
+		info("Force Terminated %ps", msg);
 }
 
 /*
@@ -172,12 +170,6 @@ static void _timeout_handler(srun_timeout_msg_t *msg)
 static void _user_msg_handler(srun_user_msg_t *msg)
 {
 	info("%s", msg->msg);
-}
-
-static void _ping_handler(srun_ping_msg_t *msg)
-{
-	/* the api will respond so there really isn't anything to do
-	   here */
 }
 
 static void _node_fail_handler(srun_node_fail_msg_t *msg)
@@ -240,14 +232,12 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	int is_ready = 0, i, rc;
 	double cur_delay = 0;
 	double cur_sleep = 0;
-	int suspend_time, resume_time, max_delay;
+	int max_delay;
 	bool job_killed = false;
 
-	suspend_time = slurm_get_suspend_timeout();
-	resume_time  = slurm_get_resume_timeout();
-	if ((suspend_time == 0) || (resume_time == 0))
+	if (!slurm_conf.suspend_timeout || !slurm_conf.resume_timeout)
 		return 1;	/* Power save mode disabled */
-	max_delay = suspend_time + resume_time;
+	max_delay = slurm_conf.suspend_timeout + slurm_conf.resume_timeout;
 	max_delay *= 5;		/* Allow for ResumeRate support */
 
 	pending_job_id = alloc->job_id;
@@ -262,7 +252,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 				debug("Waited %f sec and still waiting: next sleep for %f sec",
 				      cur_delay, cur_sleep);
 			}
-			usleep(1000000 * cur_sleep);
+			usleep(USEC_IN_SEC * cur_sleep);
 			cur_delay += cur_sleep;
 		}
 
@@ -386,9 +376,8 @@ extern resource_allocation_response_msg_t *
 		return NULL;
 	}
 
-	j->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
+	j->origin_cluster = xstrdup(slurm_conf.cluster_name);
 
-	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;
 	callbacks.job_complete = _job_complete_handler;
 	callbacks.job_suspend = NULL;
@@ -435,7 +424,7 @@ extern resource_allocation_response_msg_t *
 		 * in the step creation.
 		 */
 		opt_local->pn_min_memory = NO_VAL64;
-		opt_local->mem_per_cpu = -1;
+		opt_local->mem_per_cpu = NO_VAL64;
 		if (resp->pn_min_memory != NO_VAL64) {
 			if (resp->pn_min_memory & MEM_PER_CPU) {
 				opt_local->mem_per_cpu = (resp->pn_min_memory &
@@ -469,7 +458,7 @@ extern resource_allocation_response_msg_t *
 
 relinquish:
 	if (resp) {
-		if (!destroy_job)
+		if (destroy_job)
 			slurm_complete_job(resp->job_id, 1);
 		slurm_free_resource_allocation_response_msg(resp);
 	}
@@ -478,14 +467,14 @@ relinquish:
 }
 
 /*
- * Allocate nodes for heterogeneous/pack job from the slurm controller -- 
+ * Allocate nodes for heterogeneous job from the slurm controller --
  * retrying the attempt if the controller appears to be down, and optionally
  * waiting for resources if none are currently available (see opt.immediate)
  *
  * Returns a pointer to a resource_allocation_response_msg which must
  * be freed with slurm_free_resource_allocation_response_msg()
  */
-List allocate_pack_nodes(bool handle_signals)
+List allocate_het_job_nodes(bool handle_signals)
 {
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j, *first_job = NULL;
@@ -506,12 +495,14 @@ List allocate_pack_nodes(bool handle_signals)
 		if (srun_opt->relative != NO_VAL)
 			fatal("--relative option invalid for job allocation request");
 
-		if ((j = _job_desc_msg_create_from_opts(opt_local)) == NULL)
+		if ((j = _job_desc_msg_create_from_opts(opt_local)) == NULL) {
+			FREE_NULL_LIST(job_req_list);
 			return NULL;
+		}
 		if (!first_job)
 			first_job = j;
 
-		j->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
+		j->origin_cluster = xstrdup(slurm_conf.cluster_name);
 
 		list_append(job_req_list, j);
 	}
@@ -519,18 +510,20 @@ List allocate_pack_nodes(bool handle_signals)
 
 	if (!first_job) {
 		error("%s: No job requests found", __func__);
+		FREE_NULL_LIST(job_req_list);
 		return NULL;
 	}
 
 	if (first_opt && first_opt->clusters &&
-	    (slurmdb_get_first_pack_cluster(job_req_list, first_opt->clusters,
-					    &working_cluster_rec)
+	    (slurmdb_get_first_het_job_cluster(job_req_list,
+					       first_opt->clusters,
+					       &working_cluster_rec)
 	     != SLURM_SUCCESS)) {
 		print_db_notok(first_opt->clusters, 0);
+		FREE_NULL_LIST(job_req_list);
 		return NULL;
 	}
 
-	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;
 	callbacks.job_complete = _job_complete_handler;
 	callbacks.job_suspend = NULL;
@@ -550,7 +543,7 @@ List allocate_pack_nodes(bool handle_signals)
 	}
 
 	while (first_opt && !job_resp_list) {
-		job_resp_list = slurm_allocate_pack_job_blocking(job_req_list,
+		job_resp_list = slurm_allocate_het_job_blocking(job_req_list,
 				 first_opt->immediate, _set_pending_job_id);
 		if (destroy_job) {
 			/* cancelled by signal */
@@ -559,6 +552,7 @@ List allocate_pack_nodes(bool handle_signals)
 			break;
 		}
 	}
+	FREE_NULL_LIST(job_req_list);
 
 	if (job_resp_list && !destroy_job) {
 		/*
@@ -595,7 +589,7 @@ List allocate_pack_nodes(bool handle_signals)
 			if (opt_local->pn_min_memory != NO_VAL64)
 				opt_local->pn_min_memory =
 					(resp->pn_min_memory & (~MEM_PER_CPU));
-			else if (opt_local->mem_per_cpu > -1)
+			else if (opt_local->mem_per_cpu != NO_VAL64)
 				opt_local->mem_per_cpu =
 					(resp->pn_min_memory & (~MEM_PER_CPU));
 
@@ -625,8 +619,15 @@ List allocate_pack_nodes(bool handle_signals)
 
 relinquish:
 	if (job_resp_list) {
-		if (!destroy_job && my_job_id)
+		if (my_job_id == 0) {
+			resp = (resource_allocation_response_msg_t *)
+			       list_peek(job_resp_list);
+			my_job_id = resp->job_id;
+		}
+
+		if (destroy_job && my_job_id) {
 			slurm_complete_job(my_job_id, 1);
+		}
 		list_destroy(job_resp_list);
 	}
 	exit(error_exit);
@@ -654,8 +655,21 @@ extern List existing_allocation(void)
 	if (sropt.jobid == NO_VAL)
 		return NULL;
 
+	if (opt.clusters) {
+		List clusters = NULL;
+		if (!(clusters = slurmdb_get_info_cluster(opt.clusters))) {
+			print_db_notok(opt.clusters, 0);
+			exit(1);
+		}
+		working_cluster_rec = list_peek(clusters);
+		debug2("Looking for job %d on cluster %s (addr: %s)",
+		       sropt.jobid,
+		       working_cluster_rec->name,
+		       working_cluster_rec->control_host);
+	}
+
 	old_job_id = (uint32_t) sropt.jobid;
-	if (slurm_pack_job_lookup(old_job_id, &job_resp_list) < 0) {
+	if (slurm_het_job_lookup(old_job_id, &job_resp_list) < 0) {
 		if (sropt.parallel_debug)
 			return NULL;    /* create new allocation as needed */
 		if (errno == ESLURM_ALREADY_DONE)
@@ -848,7 +862,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->pn_min_cpus = opt_local->pn_min_cpus;
 	if (opt_local->pn_min_memory != NO_VAL64)
 		j->pn_min_memory = opt_local->pn_min_memory;
-	else if (opt_local->mem_per_cpu > -1)
+	else if (opt_local->mem_per_cpu != NO_VAL64)
 		j->pn_min_memory = opt_local->mem_per_cpu | MEM_PER_CPU;
 	if (opt_local->pn_min_tmp_disk != NO_VAL64)
 		j->pn_min_tmp_disk = opt_local->pn_min_tmp_disk;
@@ -874,6 +888,8 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	if (opt_local->shared != NO_VAL16)
 		j->shared = opt_local->shared;
 
+	if (opt_local->warn_flags)
+		j->warn_flags = opt_local->warn_flags;
 	if (opt_local->warn_signal)
 		j->warn_signal = opt_local->warn_signal;
 	if (opt_local->warn_time)
@@ -912,41 +928,23 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	 * and run it there */
 	j->clusters = xstrdup(opt_local->clusters);
 
-	if (opt.cpus_per_gpu)
-		xstrfmtcat(j->cpus_per_tres, "gpu:%d", opt.cpus_per_gpu);
-	if (opt.gpu_bind)
-		xstrfmtcat(opt.tres_bind, "gpu:%s", opt.gpu_bind);
-	if (tres_bind_verify_cmdline(opt.tres_bind)) {
-		if (tres_bind_err_log) {	/* Log once */
-			error("Invalid --tres-bind argument: %s. Ignored",
-			      opt.tres_bind);
-			tres_bind_err_log = false;
-		}
-		xfree(opt.tres_bind);
-	}
-	j->tres_bind = xstrdup(opt.tres_bind);
-	xfmt_tres_freq(&opt.tres_freq, "gpu", opt.gpu_freq);
-	if (tres_freq_verify_cmdline(opt.tres_freq)) {
-		if (tres_freq_err_log) {	/* Log once */
-			error("Invalid --tres-freq argument: %s. Ignored",
-			      opt.tres_freq);
-			tres_freq_err_log = false;
-		}
-		xfree(opt.tres_freq);
-	}
-	j->tres_freq = xstrdup(opt.tres_freq);
-	xfmt_tres(&j->tres_per_job,    "gpu", opt.gpus);
-	xfmt_tres(&j->tres_per_node,   "gpu", opt.gpus_per_node);
+	if (opt_local->cpus_per_gpu)
+		xstrfmtcat(j->cpus_per_tres, "gpu:%d", opt_local->cpus_per_gpu);
+	j->tres_bind = xstrdup(opt_local->tres_bind);
+	j->tres_freq = xstrdup(opt_local->tres_freq);
+	xfmt_tres(&j->tres_per_job,    "gpu", opt_local->gpus);
+	xfmt_tres(&j->tres_per_node,   "gpu", opt_local->gpus_per_node);
 	if (opt_local->gres && xstrcasecmp(opt_local->gres, "NONE")) {
 		if (j->tres_per_node)
 			xstrfmtcat(j->tres_per_node, ",%s", opt_local->gres);
 		else
 			j->tres_per_node = xstrdup(opt_local->gres);
 	}
-	xfmt_tres(&j->tres_per_socket, "gpu", opt.gpus_per_socket);
-	xfmt_tres(&j->tres_per_task,   "gpu", opt.gpus_per_task);
-	if (opt.mem_per_gpu != NO_VAL64)
-		xstrfmtcat(j->mem_per_tres, "gpu:%"PRIu64, opt.mem_per_gpu);
+	xfmt_tres(&j->tres_per_socket, "gpu", opt_local->gpus_per_socket);
+	xfmt_tres(&j->tres_per_task,   "gpu", opt_local->gpus_per_task);
+	if (opt_local->mem_per_gpu != NO_VAL64)
+		xstrfmtcat(j->mem_per_tres, "gpu:%"PRIu64,
+			   opt_local->mem_per_gpu);
 
 	return j;
 }

@@ -1,37 +1,32 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Test of resource allocation layout. Specifically make sure that
 #          no excess CPUs are allocate to the job. See bug 6274.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC
 # Written by Morris Jette
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 ############################################################################
 source ./globals
 
-set test_id     "7.7"
 set exit_code   0
 set file_in    "test$test_id.input"
 set file_out   "test$test_id.output"
@@ -52,7 +47,7 @@ proc test_alloc_size { task_cnt } {
 			exp_continue
 		}
 		timeout {
-		        send_user "\nFAILURE: sbatch not responding\n"
+		    log_error "sbatch not responding"
 			set exit_code 1
 		}
 		eof {
@@ -60,13 +55,13 @@ proc test_alloc_size { task_cnt } {
 		}
 	}
 	if {[wait_for_job $job_id "DONE"] != 0} {
-		send_user "\nWARNING: job $job_id did not complete\n"
+		log_warn "Job $job_id did not complete"
 		cancel_job $job_id
 		set max_tasks $task_cnt
 		return
 	}
 	if {[wait_for_file $file_out] != 0} {
-		send_user "\nFAILURE: no output file\n"
+		log_error "No output file"
 		set exit_code 1
 		return
 	}
@@ -132,35 +127,30 @@ proc test_alloc_size { task_cnt } {
 	} elseif {$alloc_unit_num == 1} {
 		set alloc_unit [expr $threads_per_core * $cores_per_socket * $sockets_per_node]
 	} else {
-		send_user "\nFAILURE: Invalid allocation unit: $alloc_unit_num\n"
+		log_error "Invalid allocation unit: $alloc_unit_num"
 		set exit_code 1
 		set alloc_unit 0
 	}
 
 	set max_alloc [expr $task_cnt + (($alloc_unit - 1) * $num_nodes)]
 	if {$num_cpus > $max_alloc} {
-		send_user "\nFAILURE: Job with $task_cnt tasks allocated too many CPUs ($num_cpus > $max_alloc)\n"
-		send_user "TASKS:$task_cnt\n"
-		send_user "CPUS:$num_cpus\n"
-		send_user "NODES:$num_nodes\n"
-		send_user "MAX_THREADS_PER_CORE:$threads_per_core\n"
-		send_user "MAX_CORES_PER_SOCKET:$cores_per_socket\n"
-		send_user "MAX_SOCKETS_PER_NODE:$sockets_per_node\n"
-		send_user "ALLOCATION_UNIT:$alloc_unit\n"
+		log_error "Job with $task_cnt tasks allocated too many CPUs ($num_cpus > $max_alloc)"
+		log_error "TASKS:$task_cnt"
+		log_error "CPUS:$num_cpus"
+		log_error "NODES:$num_nodes"
+		log_error "MAX_THREADS_PER_CORE:$threads_per_core"
+		log_error "MAX_CORES_PER_SOCKET:$cores_per_socket"
+		log_error "MAX_SOCKETS_PER_NODE:$sockets_per_node"
+		log_error "ALLOCATION_UNIT:$alloc_unit"
 		set exit_code 1
 	}
 }
 
-print_header $test_id
-
 if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
-	send_user "\nWARNING: This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE\n"
-	exit 0
+	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
-set partition [default_partition]
-set total_cpus [get_total_cpus $partition]
-set select_type_param [get_select_type_params $partition]
+set select_type_param [get_select_type_params]
 if {[test_linear]} {
 	set alloc_unit_str "NODE"
 	set alloc_unit_num 1
@@ -177,9 +167,9 @@ if {[test_linear]} {
 	set alloc_unit_str "CPU"
 	set alloc_unit_num 4
 }
-set max_tasks [get_total_cpus $partition]
-send_user "\nResource allocation unit: $alloc_unit_str\n"
-send_user "CPUs in default partition: $max_tasks\n\n"
+set max_tasks [get_total_cpus]
+log_debug "Resource allocation unit: $alloc_unit_str"
+log_debug "CPUs in default partition: $max_tasks"
 if {$max_tasks > 32} {
 	set max_tasks 20
 }
@@ -206,6 +196,6 @@ for {set inx 1} {$inx < $max_tasks && $exit_code == 0} {incr inx} {
 #
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

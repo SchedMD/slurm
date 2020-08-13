@@ -32,6 +32,7 @@
 
 #include "src/api/slurm_pmi.h"
 #include "src/common/macros.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/timers.h"
@@ -151,7 +152,12 @@ static void *_msg_thread(void *x)
 		msg_arg_ptr->bar_ptr->port,
 		msg_arg_ptr->bar_ptr->hostname);
 
-	timeout = slurm_get_msg_timeout() * 10000;
+	/*
+	 * Multiple jobs and highly parallel jobs using PMI sometimes result in
+	 * slow message responses and timeouts. Raise the default TCPTimeout
+	 * by 10x.
+	 */
+	timeout = slurm_conf.msg_timeout * MSEC_IN_SEC * 10;
 	if (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		error("slurm_send_recv_rc_msg_only_one to %s:%hu : %m",
 		      msg_arg_ptr->bar_ptr->hostname,
@@ -197,7 +203,7 @@ static void *_agent(void *x)
 	for (i=0; i<args->barrier_xmit_cnt; i++) {
 		if (args->barrier_xmit_ptr[i].port == 0)
 			continue;	/* already sent message to host */
-		kvs_host_list = xmalloc(sizeof(struct kvs_hosts) * pmi_fanout);
+		kvs_host_list = xcalloc(pmi_fanout, sizeof(struct kvs_hosts));
 		host_cnt = 0;
 
 		/* This code enables key-pair forwarding between

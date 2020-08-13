@@ -1,114 +1,71 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Validate proper GRES operation under heavy load (many jobs)
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Morris Jette
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 ############################################################################
 source ./globals
 
-set test_id        "39.13"
 set exit_code      0
 set file_in1       "test$test_id.input1"
 set file_in2       "test$test_id.input2"
 set file_out       "test$test_id.output"
 set number_commas  "\[0-9_,\]+"
 
-proc get_node_config {} {
-	global cpus_per_socket sockets_per_node test_id
-	global exit_code file_in1 max_job_delay number srun scontrol
-	global hostname alpha_numeric_nodelist
-
-	set cpus_tot 1
-	set hostname "UNKNOWN"
-	set sockets_per_node 1
-	set cpus_per_socket 1
-	make_bash_script $file_in1 "$scontrol show node \$SLURM_JOB_NODENAME"
-	set timeout $max_job_delay
-	log_user 1
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gres=gpu:1 -n1 -t1 -J "test$test_id" $file_in1]
-	expect {
-		-re "NodeName=($alpha_numeric_nodelist)" {
-			set hostname $expect_out(1,string)
-			exp_continue
-		}
-		-re "CPUTot=($number)" {
-			set cpus_tot $expect_out(1,string)
-			exp_continue
-		}
-		-re "Sockets=($number)" {
-			set sockets_per_node $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: srun not responding\n"
-			slow_kill $srun_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
-}
-
-print_header $test_id
-
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
-	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-	exit 0
+	skip "This test is only compatible with select/cons_tres"
 }
 if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
+set nb_nodes [get_node_cnt_in_part]
 if {$nb_nodes > 1} {
 	set nb_nodes 2
 }
-set gpu_cnt [get_gpu_count $nb_nodes]
+set gpu_cnt [get_highest_gres_count $nb_nodes "gpu"]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPUs in the default partition"
 }
-get_node_config
-send_user "\nGPU count is $gpu_cnt\n"
-send_user "Sockets per node is $sockets_per_node\n"
-send_user "CPUs per socket is $cpus_per_socket\n"
 
-set tot_cpus [expr $sockets_per_node * $cpus_per_socket]
+set node_name [get_nodes_by_request "--gres=gpu:1 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:1"
+}
+set cpus_per_node    [get_node_param $node_name "CPUTot"]
+set sockets_per_node [get_node_param $node_name "Sockets"]
+set cpus_per_socket  [expr $cpus_per_node / $sockets_per_node]
+
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets per node is $sockets_per_node"
+log_debug "CPUs per socket is $cpus_per_socket"
+
+set tot_cpus $cpus_per_node
 set tot_gpus $gpu_cnt
 if {$nb_nodes > 1} {
 	incr tot_gpus $gpu_cnt
@@ -130,16 +87,19 @@ make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$C
 #
 # Submit job with various --gpus counters, up to 2 full nodes or 32 GPUs
 #
-#	spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 -w $hostname -J "test$test_id" --output=$ofile ./$file_in1
+#	spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 -w $node_name -J "test$test_id" --output=$ofile ./$file_in1
 for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	set job_id 0
 	set ofile ${file_out}.${inx}
 	exec $bin_rm -f $ofile
 	if {$tot_gpus > $tot_cpus} {
 #		Assumes no configured DefCPUsPerGPU
-		spawn $sbatch --gpus=$inx -t1 -w $hostname -J "test$test_id" --output=$ofile ./$file_in1
+		spawn $sbatch --gpus=$inx -t1 -w $node_name \
+		              -J "test$test_id" --output=$ofile ./$file_in1
 	} else {
-		spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 -w $hostname -J "test$test_id" --output=$ofile ./$file_in1
+		spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 \
+		              -w $node_name -J "test$test_id" \
+		              --output=$ofile ./$file_in1
 	}
 	expect {
 		-re "Submitted batch job ($number)" {
@@ -147,7 +107,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			log_error "sbatch not responding"
 			set exit_code 1
 		}
 		eof {
@@ -155,7 +115,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\nFAILURE: sbatch job submit failure\n"
+		log_error "sbatch job submit failure"
 		set exit_code 1
 		set tot_gpus [expr $inx - 1]
 		break
@@ -176,7 +136,7 @@ if {$tot_gpus > 4 && $max_file_delay > 30} {
 for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	set ofile ${file_out}.${inx}
 	if {[wait_for_file $ofile] != 0} {
-		send_user "\nFAILURE: output file $ofile not found\n"
+		log_error "Output file $ofile not found"
 		set exit_code 1
 	} else {
 		set match 0
@@ -191,7 +151,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 			}
 		}
 		if {$match != $inx} {
-			send_user "\nFAILURE: Bad GPU count in file $ofile ($match != $inx)\n"
+			log_error "Bad GPU count in file $ofile ($match != $inx)"
 			set exit_code 1
 		} else {
 			exec $bin_rm -f $ofile
@@ -207,7 +167,7 @@ if {$exit_code != 0} {
 	spawn $squeue -tall -n "test$test_id"
 	expect {
 		timeout {
-			send_user "\nFAILURE: squeue not responding\n"
+			log_error "squeue not responding"
 			set exit_code 1
 		}
 		eof {
@@ -219,6 +179,6 @@ exec $scancel -n "test$test_id"
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

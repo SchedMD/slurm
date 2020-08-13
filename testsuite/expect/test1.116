@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Extended MPI functionality tests via srun.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Portions Copyright (C) 2019  SchedMD LLC.
 # Copyright (C) 2002 The Regents of the University of California.
@@ -34,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set test_id            "1.116"
 set exit_code          0
 set file_in            "test$test_id.input"
 set file_out           "test$test_id.output"
@@ -42,22 +36,17 @@ set file_err           "test$test_id.error"
 set test_prog          "test$test_id.prog"
 set job_id             0
 
-print_header $test_id
-
 #
 # Test for existence of mpi compiler
 #
 if {[info exists mpicc] == 0} {
-	send_user "\nWARNING: mpicc not defined, can't perform mpi testing\n"
-	exit 0
+	skip "mpicc not defined, can't perform mpi testing"
 }
 if {[file executable $mpicc] == 0} {
-	send_user "\nWARNING: $mpicc does not exists\n"
-	exit 0
+	skip "$mpicc does not exists"
 }
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit 0
+	skip "This test is incompatible with front-end systems"
 }
 
 #
@@ -80,8 +69,7 @@ if {$use_pmi} {
 	}
 }
 if {![file exists $test_prog]} {
-	send_user "\nWARNING: Unable to build test program\n"
-	exit 0
+	skip "Unable to build test program"
 }
 
 # Delete left-over stdout/err files
@@ -118,11 +106,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -131,22 +118,20 @@ expect {
 	}
 }
 if {$no_start != 0} {
-	send_user "\nWARNING: partition too small for test\n"
 	if {$job_id != 0} {
 		cancel_job $job_id
 	}
-	exit 0
+	skip "Partition too small for test"
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure\n"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job $job_id to complete\n"
+	log_error "Waiting for job $job_id to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -161,34 +146,31 @@ if {[wait_for_file $file_out] == 0} {
 	set global_sum 0
 	spawn $bin_cat $file_out
 	expect {
-                -re "Rank.($number). GlobalSum=($number)" {
+		-re "Rank.($number). GlobalSum=($number)" {
 			if {$expect_out(1,string) != 0} {
-				send_user "\nFAILURE: GlobalSum from wrong rank ($expect_out(1,string) != 0)\n"
+				log_error "GlobalSum from wrong rank ($expect_out(1,string) != 0)"
 				set exit_code 1
 			}
 			incr global_sum $expect_out(2,string)
 			incr matches
-                        exp_continue
-                }
+			exp_continue
+		}
 		-re "TEST_COMPLETE" {
 			incr complete
 			exp_continue
 		}
-                eof {
+		eof {
 			wait
-                }
-        }
+		}
+	}
 	if {$matches == 0} {
-		send_user "\nFAILURE: No MPI communications occurred\n"
-		send_user "  The version of MPI you are using may be incompatible "
-		send_user "with the configured switch\n"
-		send_user "  Core files may be present from failed MPI tasks\n\n"
+		log_error "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
 		set exit_code 1
 	} elseif {$complete == 0} {
-		send_user "\nFAILURE: test failed to complete\n"
+		log_error "Test failed to complete"
 		set exit_code 1
 	} elseif {$global_sum != $expected_sum} {
-		send_user "\nFAILURE: Invalid global sum computed ($global_sum != $expected_sum)\n"
+		log_error "Invalid global sum computed ($global_sum != $expected_sum)"
 		set exit_code 1
 	}
 } else {
@@ -197,7 +179,6 @@ if {[wait_for_file $file_out] == 0} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
-	send_user "\nSUCCESS\n"
 } else {
 	set matches 0
 	spawn head $file_err
@@ -211,12 +192,8 @@ if {$exit_code == 0} {
 		}
 	}
 	if {$matches != 0} {
-		send_user "WARNING: If using MVAPICH then\n"
-		send_user "         Configure \"PropagateResourceLimitsExcept=MEMLOCK\"\n"
-		send_user "         Also start slurmd with \"ulimit -l unlimited\"\n"
+		fail "Test failed due to previous errors (\$exit_code = $exit_code). If using MVAPICH then configure \"PropagateResourceLimitsExcept=MEMLOCK. Also start slurmd with \"ulimit -l unlimited\""
 	} else {
-		send_user "Check contents of $file_err\n"
+		fail "Test failed due to previous errors (\$exit_code = $exit_code). Check contents of $file_err"
 	}
 }
-
-exit $exit_code

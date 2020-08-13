@@ -54,14 +54,6 @@ static bool	_is_job_id(char *job_str);
 static bool	_is_single_job(char *job_id_str);
 static char *	_job_name2id(char *job_name, uint32_t job_uid);
 static char *	_next_job_id(void);
-static int	_parse_checkpoint_args(int argc,
-				       char **argv,
-				       uint16_t *max_wait,
-				       char **image_dir);
-static int	_parse_restart_args(int argc,
-				    char **argv,
-				    uint16_t *stick,
-				    char **image_dir);
 static void	_update_job_size(uint32_t job_id);
 
 /* Local variables for managing job IDs */
@@ -213,163 +205,6 @@ fini:	xfree(local_job_str);
 }
 
 /*
- * scontrol_checkpoint - perform some checkpoint/resume operation
- * IN op - checkpoint operation
- * IN job_step_id_str - either a job name (for all steps of the given job) or
- *			a step name: "<jid>.<step_id>"
- * IN argc - argument count
- * IN argv - arguments of the operation
- * RET 0 if no slurm error, errno otherwise. parsing error prints
- *			error message and returns 0
- */
-extern int scontrol_checkpoint(char *op,
-			       char *job_step_id_str,
-			       int argc,
-			       char **argv)
-{
-	int rc = SLURM_SUCCESS;
-	uint32_t job_id = 0, step_id = 0;
-	char *next_str;
-	uint32_t ckpt_errno;
-	char *ckpt_strerror = NULL;
-	int oplen = strlen(op);
-	uint16_t max_wait = CKPT_WAIT, stick = 0;
-	char *image_dir = NULL;
-
-	if (job_step_id_str) {
-		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
-		if (next_str[0] == '.') {
-			step_id = (uint32_t) strtol (&next_str[1], &next_str,
-						     10);
-		} else
-			step_id = NO_VAL;
-		if (next_str[0] != '\0') {
-			fprintf(stderr, "Invalid job step name\n");
-			return 0;
-		}
-	} else {
-		fprintf(stderr, "Invalid job step name\n");
-		return 0;
-	}
-
-	if (xstrncasecmp(op, "able", MAX(oplen, 1)) == 0) {
-		time_t start_time;
-		rc = slurm_checkpoint_able (job_id, step_id, &start_time);
-		if (rc == SLURM_SUCCESS) {
-			if (start_time) {
-				char time_str[32];
-				slurm_make_time_str(&start_time, time_str,
-						    sizeof(time_str));
-				printf("Began at %s\n", time_str);
-			} else
-				printf("Yes\n");
-		} else if (slurm_get_errno() == ESLURM_DISABLED) {
-			printf("No\n");
-			rc = SLURM_SUCCESS;	/* not real error */
-		}
-	}
-	else if (xstrncasecmp(op, "complete", MAX(oplen, 2)) == 0) {
-		/* Undocumented option used for testing purposes */
-		static uint32_t error_code = 1;
-		char error_msg[64];
-		sprintf(error_msg, "test error message %d", error_code);
-		rc = slurm_checkpoint_complete(job_id, step_id, (time_t) 0,
-			error_code++, error_msg);
-	}
-	else if (xstrncasecmp(op, "disable", MAX(oplen, 1)) == 0)
-		rc = slurm_checkpoint_disable (job_id, step_id);
-	else if (xstrncasecmp(op, "enable", MAX(oplen, 2)) == 0)
-		rc = slurm_checkpoint_enable (job_id, step_id);
-	else if (xstrncasecmp(op, "create", MAX(oplen, 2)) == 0) {
-		if (_parse_checkpoint_args(argc, argv, &max_wait, &image_dir)){
-			return 0;
-		}
-		rc = slurm_checkpoint_create (job_id, step_id, max_wait,
-					      image_dir);
-
-	} else if (xstrncasecmp(op, "requeue", MAX(oplen, 2)) == 0) {
-		if (_parse_checkpoint_args(argc, argv, &max_wait, &image_dir)){
-			return 0;
-		}
-		rc = slurm_checkpoint_requeue (job_id, max_wait, image_dir);
-
-	} else if (xstrncasecmp(op, "vacate", MAX(oplen, 2)) == 0) {
-		if (_parse_checkpoint_args(argc, argv, &max_wait, &image_dir)){
-			return 0;
-		}
-		rc = slurm_checkpoint_vacate (job_id, step_id, max_wait,
-					      image_dir);
-
-	} else if (xstrncasecmp(op, "restart", MAX(oplen, 2)) == 0) {
-		if (_parse_restart_args(argc, argv, &stick, &image_dir)) {
-			return 0;
-		}
-		rc = slurm_checkpoint_restart (job_id, step_id, stick,
-					       image_dir);
-
-	} else if (xstrncasecmp(op, "error", MAX(oplen, 2)) == 0) {
-		rc = slurm_checkpoint_error (job_id, step_id,
-			&ckpt_errno, &ckpt_strerror);
-		if (rc == SLURM_SUCCESS) {
-			printf("error(%u): %s\n", ckpt_errno, ckpt_strerror);
-			free(ckpt_strerror);
-		}
-	}
-
-	else {
-		fprintf (stderr, "Invalid checkpoint operation: %s\n", op);
-		return 0;
-	}
-
-	return rc;
-}
-
-static int _parse_checkpoint_args(int argc,
-				  char **argv,
-				  uint16_t *max_wait,
-				  char **image_dir)
-{
-	int i;
-
-	for (i=0; i< argc; i++) {
-		if (xstrncasecmp(argv[i], "MaxWait=", 8) == 0) {
-			*max_wait = (uint16_t) strtol(&argv[i][8],
-						      (char **) NULL, 10);
-		} else if (xstrncasecmp(argv[i], "ImageDir=", 9) == 0) {
-			*image_dir = &argv[i][9];
-		} else {
-			exit_code = 1;
-			error("Invalid input: %s", argv[i]);
-			error("Request aborted");
-			return -1;
-		}
-	}
-	return 0;
-}
-
-static int _parse_restart_args(int argc,
-			       char **argv,
-			       uint16_t *stick,
-			       char **image_dir)
-{
-	int i;
-
-	for (i=0; i< argc; i++) {
-		if (xstrncasecmp(argv[i], "StickToNodes", 5) == 0) {
-			*stick = 1;
-		} else if (xstrncasecmp(argv[i], "ImageDir=", 9) == 0) {
-			*image_dir = &argv[i][9];
-		} else {
-			exit_code = 1;
-			error("Invalid input: %s", argv[i]);
-			error("Request aborted");
-			return -1;
-		}
-	}
-	return 0;
-}
-
-/*
  * scontrol_hold - perform some job hold/release operation
  * IN op	- hold/release operation
  * IN job_str	- a job ID or job name
@@ -439,6 +274,11 @@ scontrol_hold(char *op, char *job_str)
 	} else if (job_str) {
 		if (!xstrncasecmp(job_str, "Name=", 5)) {
 			job_str += 5;
+			job_id = 0;
+			job_name = job_str;
+			last_job_id = NO_VAL;
+		} else if (!xstrncasecmp(job_str, "JobName=", 8)) {
+			job_str += 8;
 			job_id = 0;
 			job_name = job_str;
 			last_job_id = NO_VAL;
@@ -1268,6 +1108,20 @@ extern int scontrol_update_job(int argc, char **argv)
 			if ((job_msg.deadline = parse_time(val, 0))) {
 				update_cnt++;
 			}
+		} else if (!xstrncasecmp(tag, "WorkDir", MAX(taglen, 2))) {
+			job_msg.work_dir = val;
+			update_cnt++;
+		} else if (!xstrncasecmp(tag, "MailType", MAX(taglen, 5))) {
+			job_msg.mail_type = parse_mail_type(val);
+			if (job_msg.mail_type == INFINITE16) {
+				fprintf(stderr, "Invalid MailType: %s\n", val);
+				exit_code = 1;
+				return 0;
+			}
+			update_cnt++;
+		} else if (!xstrncasecmp(tag, "MailUser", MAX(taglen, 5))) {
+			job_msg.mail_user = val;
+			update_cnt++;
 		}
 		else {
 			exit_code = 1;

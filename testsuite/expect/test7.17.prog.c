@@ -52,12 +52,14 @@
 #include "src/common/gres.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
+#include "src/common/read_config.h"
+#include "src/common/strlcpy.h"
 #include "src/common/xstring.h"
 
 /*
  * main - slurmctld main function, start various threads and process RPCs
  * test7.17.prog <TRES_PER_NODE> <CONFIG_DIR_HEAD> <CONFIG_SUB_DIR> <CPU_COUNT>
- * 
+ *
  */
 int main(int argc, char *argv[])
 {
@@ -81,10 +83,11 @@ int main(int argc, char *argv[])
 	int core_count, sock_count;
 
 	/* Setup slurm.conf and gres.conf test paths */
-	strcpy(config_dir, argv[2]);
-	strcpy(config_dir,strcat(config_dir, "/test7.17_configs"));
-	strcpy(test, strcat(config_dir, argv[3]));
-	strcpy(slurm_conf, strcat(test, "/slurm.conf"));
+	strlcpy(config_dir, argv[2], sizeof(config_dir));
+	strlcpy(config_dir, strcat(config_dir, "/test7.17_configs"),
+		sizeof(config_dir));
+	strlcpy(test, strcat(config_dir, argv[3]), sizeof(config_dir));
+	strlcpy(slurm_conf, strcat(test, "/slurm.conf"), sizeof(slurm_conf));
 
 	/* Enable detailed logging for now */
 	opts.stderr_level = LOG_LEVEL_DEBUG;
@@ -94,29 +97,12 @@ int main(int argc, char *argv[])
 	 * Logic normally executed by slurmd daemon
 	 */
 	setenv("SLURM_CONF", slurm_conf, 1);
+
+	slurm_conf_init(NULL);
+
 	rc = gres_plugin_init();
-	if (rc != SLURM_SUCCESS) {
-		slurm_perror("failure: gres_plugin_init");
-		exit(1);
-	}
-
-	setenv("SLURM_CONFIG_DIR", config_dir, 1);
-
-	cpu_count = strtol(argv[4], NULL, 10);
-	node_name = "test_node";
-	rc = gres_plugin_node_config_load(cpu_count, node_name, NULL, NULL,
-					  NULL);
-	if (rc != SLURM_SUCCESS) {
-		slurm_perror("failure: gres_plugin_node_config_load");
-		exit(1);
-	}
-
-	buffer = init_buf(1024);
-	rc = gres_plugin_node_config_pack(buffer);
-	if (rc != SLURM_SUCCESS) {
-		slurm_perror("failure: gres_plugin_node_config_pack");
-		exit(1);
-	}
+	if (rc)
+		fatal("failure: gres_plugin_init: %s", slurm_strerror(rc));
 
 	/*
 	 * Logic normally executed by slurmctld daemon
@@ -124,10 +110,23 @@ int main(int argc, char *argv[])
 	orig_config = "gpu:8";
 	rc = gres_plugin_init_node_config(node_name, orig_config,
 					  &node_gres_list);
-	if (rc != SLURM_SUCCESS) {
-		slurm_perror("failure: gres_plugin_init_node_config");
-		exit(1);
-	}
+	if (rc)
+		fatal("failure: gres_plugin_init_node_config: %s",
+		      slurm_strerror(rc));
+
+	cpu_count = strtol(argv[4], NULL, 10);
+	node_name = "test_node";
+	rc = gres_plugin_node_config_load(cpu_count, node_name, node_gres_list,
+					  NULL);
+	if (rc)
+		fatal("failure: gres_plugin_node_config_load: %s",
+		      slurm_strerror(rc));
+
+	buffer = init_buf(1024);
+	rc = gres_plugin_node_config_pack(buffer);
+	if (rc)
+		fatal("failure: gres_plugin_node_config_pack: %s",
+		      slurm_strerror(rc));
 
 	set_buf_offset(buffer, 0);
 	rc = gres_plugin_node_config_unpack(buffer, node_name);
@@ -142,10 +141,9 @@ int main(int argc, char *argv[])
 					      &new_config, &node_gres_list,
 					      cpu_count, core_count, sock_count,
 					      0, &reason_down);
-	if (rc != SLURM_SUCCESS) {
-		slurm_perror("failure: gres_plugin_node_config_validate");
-		exit(1);
-	}
+	if (rc)
+		fatal("failure: gres_plugin_node_config_validate: %s",
+		      slurm_strerror(rc));
 
 	if (argc > 2)
 		tres_per_node = xstrdup(argv[1]);
@@ -165,11 +163,9 @@ int main(int argc, char *argv[])
 					    &sockets_per_node,
 					    &cpus_per_task,
 					    &job_gres_list);
-	if (rc != SLURM_SUCCESS) {
-		slurm_seterrno(rc);
-		slurm_perror("failure: gres_plugin_job_state_validate");
-		exit(1);
-	}
+	if (rc)
+		fatal("failure: gres_plugin_job_state_validate: %s",
+		      slurm_strerror(rc));
 
 	gres_plugin_node_state_log(node_gres_list, node_name);
 	gres_plugin_job_state_log(job_gres_list, job_id);
@@ -178,18 +174,16 @@ int main(int argc, char *argv[])
 	bit_nset(cpu_bitmap, 0, cpu_count - 1);
 	cpu_alloc = gres_plugin_job_test(job_gres_list, node_gres_list, true,
 					 cpu_bitmap, 0, cpu_count - 1,
-					 job_id, node_name);
+					 job_id, node_name, false);
 	if (cpu_alloc == NO_VAL)
 		printf("cpu_alloc=ALL\n");
 	else
 		printf("cpu_alloc=%u\n", cpu_alloc);
 
 	rc = gres_plugin_fini();
-	if (rc != SLURM_SUCCESS) {
-		slurm_perror("failure: gres_plugin_fini");
-		exit(1);
-	}
+	if (rc != SLURM_SUCCESS)
+		fatal("failure: gres_plugin_fini: %s", slurm_strerror(rc));
 
 	printf("Test %s ran to completion\n\n", argv[3]);
-	exit(0);
+	return rc;
 }

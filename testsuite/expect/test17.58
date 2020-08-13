@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of --deadline option and time_min and time too long
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 CEA/DAM/DIF
 # Written by Aline Roy <aline.roy@cea.fr>
@@ -31,12 +27,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.58"
 set file_in     "test$test_id.input"
 set exit_code   0
 set job_id      0
-
-print_header $test_id
 
 #
 # Since we make changes to configuration, call this function restore
@@ -47,11 +40,10 @@ proc endit { } {
 	reconfigure
 	if {$exit_code == 0} {
 		exec $bin_rm -f $file_in
-		send_user "\nSUCCESS\n"
+		pass
 	} else {
-		send_user "\nFAILURE: exiting with exit code $exit_code\n"
+		fail "Exiting with exit code $exit_code"
 	}
-	exit $exit_code
 }
 
 #
@@ -59,8 +51,7 @@ proc endit { } {
 # otherwise this test may fail.
 #
 if {[test_super_user] == 0} {
-	log_warn "You must be SlurmUser or root to run this test."
-	exit 0
+	skip "You must be SlurmUser or root to run this test"
 }
 
 #
@@ -94,7 +85,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -103,7 +94,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted\n"
+	log_error "Batch not submitted"
 	set exit_code 1
 	endit
 }
@@ -113,8 +104,7 @@ if {$job_id == 0} {
 #
 if {[wait_for_job $job_id DONE] != 0} {
 	cancel_job $job_id
-	send_user "\nFAILURE: job failed to run to completion\n"
-	send_user "FAILURE: This can be due to QOS or account time limit <120 minutes\n"
+	log_error "Job failed to run to completion. This can be due to QOS or account time limit <120 minutes"
 	set exit_code 1
 	endit
 }
@@ -129,12 +119,12 @@ expect {
 		exp_continue
 	}
 	-re "TimeLimit=" {
-		send_user "\nFAILURE: time limit is different from deadline\n"
+		log_error "Time limit is different from deadline"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {

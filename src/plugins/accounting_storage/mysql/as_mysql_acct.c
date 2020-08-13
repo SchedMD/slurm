@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  as_mysql_acct.c - functions dealing with accounts.
  *****************************************************************************
- *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -131,7 +130,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *extra = NULL, *tmp_extra = NULL;
 
 	int affect_rows = 0;
-	List assoc_list = list_create(slurmdb_destroy_assoc_rec);
+	List assoc_list;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -154,6 +153,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		 */
 	}
 
+	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(acct_list);
 	while ((object = list_next(itr))) {
@@ -180,8 +180,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			"on duplicate key update deleted=0, mod_time=%ld %s;",
 			acct_table, cols, vals,
 			now, extra);
-		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(cols);
 		xfree(vals);
@@ -192,12 +191,11 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 		affect_rows = last_affected_rows(mysql_conn);
-		/* if (debug_flags & DEBUG_FLAG_DB_ASSOC) */
-		/* 	DB_DEBUG(mysql_conn->conn, "affected %d", affect_rows); */
+		//DB_DEBUG(DB_ASSOC, mysql_conn->conn, "affected %d",
+		//         affect_rows);
 
 		if (!affect_rows) {
-			if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-				DB_DEBUG(mysql_conn->conn, "nothing changed");
+			DB_DEBUG(DB_ASSOC, mysql_conn->conn, "nothing changed");
 			xfree(extra);
 			continue;
 		}
@@ -344,8 +342,7 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	query = xstrdup_printf("select name from %s %s;", acct_table, extra);
 	xfree(extra);
-	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);
@@ -354,7 +351,7 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	rc = 0;
-	ret_list = list_create(slurm_destroy_char);
+	ret_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		object = xstrdup(row[0]);
 		list_append(ret_list, object);
@@ -370,9 +367,8 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-			DB_DEBUG(mysql_conn->conn,
-				 "didn't effect anything\n%s", query);
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+		         "didn't affect anything\n%s", query);
 		xfree(query);
 		xfree(vals);
 		return ret_list;
@@ -490,7 +486,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	rc = 0;
-	ret_list = list_create(slurm_destroy_char);
+	ret_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
@@ -507,9 +503,8 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-			DB_DEBUG(mysql_conn->conn,
-				 "didn't effect anything\n%s", query);
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+		         "didn't affect anything\n%s", query);
 		xfree(query);
 		return ret_list;
 	}
@@ -563,7 +558,6 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	uint16_t private_data = 0;
 	slurmdb_user_rec_t user;
 
 	/* if this changes you will need to edit the corresponding enum */
@@ -585,9 +579,7 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	private_data = slurm_get_private_data();
-
-	if (private_data & PRIVATE_DATA_ACCOUNTS) {
+	if (slurm_conf.private_data & PRIVATE_DATA_ACCOUNTS) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			if (!is_user_any_coord(mysql_conn, &user)) {
@@ -667,7 +659,7 @@ empty:
 	 * if this flag is set.  We also include any accounts they may be
 	 * coordinator of.
 	 */
-	if (!is_admin && (private_data & PRIVATE_DATA_ACCOUNTS)) {
+	if (!is_admin && (slurm_conf.private_data & PRIVATE_DATA_ACCOUNTS)) {
 		slurmdb_coord_rec_t *coord = NULL;
 		set = 0;
 		itr = list_iterator_create(user.coord_accts);
@@ -690,8 +682,7 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 
-	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);

@@ -1,4 +1,4 @@
-.TH slurmctld "8" "Slurm Daemon" "June 2018" "Slurm Daemon"
+.TH slurmctld "8" "Slurm Daemon" "March 2020" "Slurm Daemon"
 
 .SH "NAME"
 slurmctld \- The central management daemon of Slurm.
@@ -24,6 +24,9 @@ NOTE: It is rare you would ever want to use this in production as all
 jobs will be killed.
 
 .TP
+\fB\-d\fR
+Run \fBslurmctld\fR in the background.
+.TP
 \fB\-D\fR
 Run \fBslurmctld\fR in the foreground with logging copied to stdout.
 .TP
@@ -35,6 +38,8 @@ Help; print a brief summary of command options.
 .TP
 \fB\-i\fR
 Ignore errors found while reading in state files on startup.
+Warning: Use of this option will mean losing the data that wasn't recovered
+from the state files.
 .TP
 \fB\-L <file>\fR
 Write log messages to the specified file.
@@ -83,6 +88,26 @@ or "/var/tmp/" as a last resort. If none of the above directories have
 write permission for SlurmUser, no core file will be produced.
 The command "scontrol abort" can be used to abort the slurmctld daemon and
 generate a core file.
+
+.SH "SIGNALS"
+.TP
+\fBSIGTERM SIGINT\fR
+\fBslurmctld\fR will shutdown cleanly, saving its current state to the state
+save directory.
+.TP
+\fBSIGABRT\fR
+\fBslurmctld\fR will shutdown cleanly, saving its current state, and perform a
+core dump.
+.TP
+\fBSIGHUP\fR
+Reloads the slurm configuration files, similar to 'scontrol reconfigure'.
+.TP
+\fBSIGUSR2\fR
+Reread the log level from the configs, and then reopen the log file.  This
+should be used when setting up \fBlogrotate\fR(8).
+.TP
+\fBSIGCHLD SIGUSR1 SIGTSTP SIGXCPU SIGQUIT SIGPIPE SIGALRM\fR
+These signals are explicitly ignored.
 
 .SH "NOTES"
 It may be useful to experiment with different \fBslurmctld\fR specific

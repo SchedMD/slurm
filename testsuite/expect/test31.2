@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validate that a job is held and reason is set to launch
 #          failed requeued held when the prolog fails
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -31,38 +27,36 @@
 ############################################################################
 source ./globals
 
-set test_id         31.2
 set exit_code       0
 set good_prolog     "test$test_id\_good.sh"
 set bad_prolog      "test$test_id\_bad.sh"
-set test_node       [get_idle_node_in_part [default_partition]]
+set test_node       [get_idle_node_in_part]
 set job_id          0
+set job_list        {}
 set test_script     "test$test_id\.sh"
 
-print_header $test_id
-
 if { [test_super_user] == 0 } {
-	send_user "WARNING: Test can only be run as SlurmUser\n"
-	exit $exit_code
+	skip "Test can only be run as SlurmUser"
 }
 if {[test_front_end] != 0} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit 0
+        skip "This test is incompatible with front-end systems"
 }
 
-proc clean_up { } {
+proc cleanup { } {
+	global cwd config_file exit_code bin_rm bin_cp good_prolog bad_prolog
+	global scontrol test_node test_script test_id scancel job_list
 
-	global cwd config_dir exit_code bin_rm bin_cp good_prolog bad_prolog
-	global scontrol test_node test_script
+	# Cancel any lingering jobs
+	spawn $scancel $job_list
 
-	exec $bin_cp -v $cwd/slurm.conf.orig $config_dir/slurm.conf
-	exec $bin_rm $test_script $good_prolog $bad_prolog $cwd/slurm.conf.orig
+	restore_conf $config_file
+	exec $bin_rm $test_script $good_prolog $bad_prolog
 	reconfigure
 
 	spawn $scontrol update node=$test_node state=idle
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not respinding\n"
+			log_warn "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -83,88 +77,51 @@ sleep 20
 
 # Get the location of the slurm.conf file
 set config_dir [get_conf_path]
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+fail_on_error "Unable to determine configuration directory"
+set config_file $config_dir/slurm.conf
 
 #
 # Copy slurm.conf file
 #
 set cwd [$bin_pwd]
-copy_conf $config_dir $cwd
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+save_conf $config_file
 
-exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
+# Ensure that Prolog and nohold_on_prolog_fail params are removed
+exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_file
+exec $bin_sed -i {s/nohold_on_prolog_fail//gI; \
+		  s/^SchedulerParameters=$//gI} $config_file
 
 # Append Prolog config to the slurm.conf
-exec $bin_echo "Prolog=$cwd/$good_prolog" >> $config_dir/slurm.conf
+exec $bin_echo "Prolog=$cwd/$good_prolog" >> $config_file
 reconfigure
 
 spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
+		lappend job_list $job_id
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	set exit_code 1
-}
-if {$exit_code} {
-	cancel_job $job_id
-	clean_up
-	exit $exit_code
+	fail "sbatch did not submit job"
 }
 
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to start\n"
-	set exit_code 1
+# Check that job starts running correctly
+if {[wait_job_reason $job_id "RUNNING" "None"] != 0} {
+	fail "Job $job_id should be Running and have reason: None"
 }
 
-# Check that the job was submitted with no error
-set match 0
-spawn $squeue -h -j$job_id -o%t|%r
-expect {
-	-re "R.None" {
-		set match 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$match == 0} {
-	send_user "\nFAILURE: job $job_id is not in the correct state."
-	send_user "Job $job_id should be Running and have reason: None\n"
-	set exit_code 1
-}
-
-cancel_job $job_id
-
-if {$exit_code} {
-	clean_up
-	exit $exit_code;
-}
-
-exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
+exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_file
 
 # Append Prolog config to the slurm.conf
-exec $bin_echo "Prolog=$cwd/$bad_prolog" >> $config_dir/slurm.conf
+exec $bin_echo "Prolog=$cwd/$bad_prolog" >> $config_file
 reconfigure
 
 set job_id 0
@@ -172,89 +129,25 @@ spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
+		lappend job_list $job_id
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	set exit_code 1
+	fail "sbatch did not submit job"
 }
-if {$exit_code} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	clean_up
-	exit $exit_code
-}
-
-
-# Wait a bit for the pending reason to be set
-sleep 10
 
 # Check that the job is held due to the failed prolog or JobHeldAdmin
 # Either state is possible due to race conditions
-set cleaning 0
-set match 0
-spawn $squeue -h -j$job_id -o%t|%r
-expect {
-	-re "PD.Cleaning" {
-		set cleaning 1
-		exp_continue
-	}
-	-re "PD.launch failed requeued held" {
-		set match 1
-		exp_continue
-	}
-	-re "PD.JobHeldAdmin" {
-		set match 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$cleaning == 1} {
-	send_user "\nWARNING: Waiting longer for job cleanup\n"
-	sleep 30
-	set match 0
-	spawn $squeue -h -j$job_id -o%t|%r
-	expect {
-		-re "PD.launch failed requeued held" {
-			set match 1
-			exp_continue
-		}
-		-re "PD.JobHeldAdmin" {
-			set match 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: squeue is not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-}
-if {$match == 0} {
-	send_user "\nFAILURE: job $job_id is not in the correct state. "
-	send_user "Job $job_id should be Pending and have reason: "
-	send_user "\"launch failed requeued held\" or \"JobHeldAdmin\"\n"
-	set exit_code 1
-}
-
-if {$exit_code} {
-	cancel_job $job_id
-	clean_up
-	exit $exit_code
+if {[wait_job_reason $job_id "PENDING" {"launch_failed_requeued_held" \
+                                        "JobHeldAdmin"}]} {
+	fail "Job $job_id is not in the correct state or reason."
 }
 
 # Check that the node that the job ran on is in fact drained
@@ -266,24 +159,67 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not repsonding\n"
-		set exit_code 1
+		fail "sinfo is not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$match == 0} {
+	fail "Node $test_node was not drained when it should be"
+}
+
+log_info "RESUMING NODE"
+spawn $scontrol update node=$test_node state=RESUME
+
+#Comment out SchedulerParameters
+exec $bin_sed -i {s/^\(SchedulerParameters=\)/#\1/gI} $config_dir/slurm.conf
+#Append SchedulerParameters=nohold_on_prolog_fail to SchedulerParameters
+exec $bin_echo "SchedulerParameters=nohold_on_prolog_fail" \
+	 >> $config_dir/slurm.conf
+reconfigure
+
+set job_id 0
+spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		lappend job_list $job_id
+		exp_continue
+	}
+	timeout {
+		fail "sbatch is not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	fail "sbatch did not submit job"
+}
+
+# Wait a bit for the pending reason to be set
+if {[wait_job_reason $job_id] != 0} {
+	fail "Error waiting for job $job_id to start"
+}
+
+# Check that the job doesn't have priority 0
+set priority 0
+spawn $squeue -h -j$job_id -o%t.%Q
+expect {
+	-re "($re_word_str).($number)" {
+		set priority $expect_out(2,string)
+	}
+	timeout {
+		fail "squeue is not responding"
 	}
 	eof {
 		wait
 	}
 }
 
-if {$match == 0} {
-	send_user "\nFAILURE: node $test_node was not drained when "
-	send_user "it should be\n"
-	set exit_code 1
-}
+assert_or_error {$priority != 0} "Job $job_id is held, while it shouldn't be"
 
-cancel_job $job_id
-clean_up
-
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

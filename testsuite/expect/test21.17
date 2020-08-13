@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr modify a user
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,7 +28,6 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "21.17"
 set exit_code   0
 set tc1		"test$test_id-cluster-1"
 set tc2		"test$test_id-cluster-2"
@@ -81,21 +75,17 @@ array set user_mod_assoc2 {
 }
 
 
-print_header $test_id
-
 set timeout 60
 
 #
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 #make sure we have a clean system and permission to do this work
@@ -103,8 +93,7 @@ remove_user "" "" "$tu1,$tu2,$tu3"
 remove_acct "" "$ta1,$ta2,$ta3"
 remove_cluster "$tc1,$tc2,$tc3"
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 
 #add cluster
@@ -113,7 +102,7 @@ if { $exit_code } {
      	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
 }
 
 #add accounts
@@ -122,7 +111,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add account ($ta1,$ta2,$ta3)"
 }
 
 #add users
@@ -131,7 +120,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to add user ($tu1,$tu2,$tu3)"
 }
 
 # First test change the AdminLevel and DefaultAccount of a user
@@ -142,7 +131,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to modify user ($tu1)"
 }
 
 #
@@ -152,7 +141,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user names=$tu1,$tu2,$tu3 format="User,DefaultA,Admin" cluster=$tc1]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	        log_error "There was a problem with the sacctmgr command"
 	    	incr exit_code 1
 	}
 	-re "($tu1.$ta2.$user_mod_acct(adminlevel).|($tu2|$tu3).$ta1.$user_mod_acct2(adminlevel).)" {
@@ -160,7 +149,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -170,9 +159,7 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE:  User modification 3 incorrect with only $matches.\n"
-	incr exit_code 1
-	exit $exit_code
+	fail "User modification 3 incorrect with only $matches"
 }
 
 # Next, test change the limits of one user
@@ -183,7 +170,7 @@ if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2,$tc3"
-	exit $exit_code
+	fail "Unable to modify user ($tu2)"
 }
 
 #
@@ -193,15 +180,15 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list assoc users=$tu1,$tu2,$tu3 format="User,Cluster,Fairshare,Maxcpum,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "($tu2.($tc1|$tc2|$tc3).$user_mod_assoc2(fairshare).$user_mod_assoc2(maxcpumin).$user_mod_assoc2(maxjob).$user_mod_assoc2(maxnode).$user_mod_assoc2(maxwall).|($tu1|$tu3).($tc1|$tc2|$tc3).1.....)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -211,7 +198,7 @@ expect {
 }
 
 if {$matches != 27} {
-	send_user "\nFAILURE:  User modification 27 incorrect with only $matches.\n"
+	log_error "User modification 27 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -221,10 +208,6 @@ incr exit_code [remove_user "" "" "$tu1,$tu2,$tu3"]
 incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
 incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 
-if {$exit_code == 0} {
-	print_success $test_id
-} else {
-	send_user "\nFAILURE\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors"
 }
-exit $exit_code
-

@@ -123,7 +123,6 @@ const char plugin_type[] = "acct_gather_energy/rapl";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static acct_gather_energy_t *local_energy = NULL;
-static uint64_t debug_flags = 0;
 
 static int dataset_id = -1; /* id of the dataset for profile data */
 
@@ -134,7 +133,10 @@ static char hostname[MAXHOSTNAMELEN];
 
 static int nb_pkg = 0;
 
-extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl);
+static stepd_step_rec_t *job = NULL;
+
+extern void acct_gather_energy_p_conf_set(
+	int context_id_in, s_p_hashtbl_t *tbl);
 
 static char *_msr_string(int which)
 {
@@ -154,7 +156,8 @@ static uint64_t _read_msr(int fd, int which)
 		error("lseek of /dev/cpu/#/msr: %m");
 	if (read(fd, &data, sizeof(data)) != sizeof(data)) {
 		if (which == MSR_DRAM_ENERGY_STATUS) {
-			if (first && (debug_flags & DEBUG_FLAG_ENERGY)) {
+			if (first &&
+			    (slurm_conf.debug_flags & DEBUG_FLAG_ENERGY)) {
 				first = false;
 				info("It appears you don't have any DRAM, "
 				     "this can be common.  Check your system "
@@ -267,21 +270,7 @@ static void _hardware(void)
 	}
 	fclose(fd);
 
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("RAPL Found: %d packages", nb_pkg);
-}
-
-static bool _run_in_daemon(void)
-{
-	static bool set = false;
-	static bool run = false;
-
-	if (!set) {
-		set = 1;
-		run = run_in_daemon("slurmd,slurmstepd");
-	}
-
-	return run;
+	log_flag(ENERGY, "RAPL Found: %d packages", nb_pkg);
 }
 
 /*
@@ -336,7 +325,7 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	result = _read_msr(pkg_fd[0], MSR_RAPL_POWER_UNIT);
 	energy_units = pow(0.5, (double)((result>>8)&0x1f));
 
-	if (debug_flags & DEBUG_FLAG_ENERGY) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_ENERGY) {
 		double power_units = pow(0.5, (double)(result&0xf));
 		unsigned long max_power;
 
@@ -362,8 +351,7 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 
 	ret = (double)result * energy_units;
 
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("RAPL Result %"PRIu64" = %.6f Joules", result, ret);
+	log_flag(ENERGY, "RAPL Result %"PRIu64" = %.6f Joules", result, ret);
 
 	if (energy->consumed_energy) {
 		time_t interval;
@@ -387,10 +375,8 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	energy->previous_consumed_energy = (uint64_t)ret;
 	energy->poll_time = time(NULL);
 
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("_get_joules_task: current %.6f Joules, "
-		     "consumed %"PRIu64"",
-		     ret, energy->consumed_energy);
+	log_flag(ENERGY, "%s: current %.6f Joules, consumed %"PRIu64"",
+		 __func__, ret, energy->consumed_energy);
 }
 
 static int _running_profile(void)
@@ -419,15 +405,14 @@ static int _send_profile(void)
 	if (!_running_profile())
 		return SLURM_SUCCESS;
 
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("_send_profile: consumed %u watts",
-		     local_energy->current_watts);
+	log_flag(ENERGY, "%s: consumed %u watts",
+		 __func__, local_energy->current_watts);
 
 	if (dataset_id < 0) {
 		dataset_id = acct_gather_profile_g_create_dataset(
 			"Energy", NO_PARENT, dataset);
-		if (debug_flags & DEBUG_FLAG_ENERGY)
-			debug("Energy: dataset created (id = %d)", dataset_id);
+		log_flag(ENERGY, "Energy: dataset created (id = %d)",
+			 dataset_id);
 		if (dataset_id == SLURM_ERROR) {
 			error("Energy: Failed to create the dataset for RAPL");
 			return SLURM_ERROR;
@@ -435,9 +420,8 @@ static int _send_profile(void)
 	}
 
 	curr_watts = (uint64_t)local_energy->current_watts;
-	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		info("PROFILE-Energy: power=%u", local_energy->current_watts);
-	}
+	log_flag(PROFILE, "PROFILE-Energy: power=%u",
+		 local_energy->current_watts);
 
 	return acct_gather_profile_g_add_sample_data(dataset_id,
 	                                             (void *)&curr_watts,
@@ -448,12 +432,12 @@ extern int acct_gather_energy_p_update_node_energy(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmd_stepd());
 
 	if (!local_energy) {
 		debug("%s: trying to update node energy, but no local_energy "
 		      "yet.", __func__);
-		acct_gather_energy_p_conf_set(NULL);
+		acct_gather_energy_p_conf_set(0, NULL);
 	}
 
 	if (local_energy->current_watts == NO_VAL)
@@ -470,8 +454,6 @@ extern int acct_gather_energy_p_update_node_energy(void)
  */
 extern int init(void)
 {
-	debug_flags = slurm_get_debug_flags();
-
 	gethostname(hostname, MAXHOSTNAMELEN);
 
 	/* put anything that requires the .conf being read in
@@ -485,7 +467,7 @@ extern int fini(void)
 {
 	int i;
 
-	if (!_run_in_daemon())
+	if (!running_in_slurmd_stepd())
 		return SLURM_SUCCESS;
 
 	for (i = 0; i < nb_pkg; i++) {
@@ -508,12 +490,12 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	time_t *last_poll = (time_t *)data;
 	uint16_t *sensor_cnt = (uint16_t *)data;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmd_stepd());
 
 	if (!local_energy) {
 		debug("%s: trying to get data %d, but no local_energy yet.",
 		      __func__, data_type);
-		acct_gather_energy_p_conf_set(NULL);
+		acct_gather_energy_p_conf_set(0, NULL);
 	}
 
 	switch (data_type) {
@@ -548,15 +530,18 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 {
 	int rc = SLURM_SUCCESS;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmd_stepd());
 
 	switch (data_type) {
 	case ENERGY_DATA_RECONFIG:
-		debug_flags = slurm_get_debug_flags();
 		break;
 	case ENERGY_DATA_PROFILE:
 		_get_joules_task(local_energy);
 		_send_profile();
+		break;
+	case ENERGY_DATA_STEP_PTR:
+		/* set global job if needed later */
+		job = (stepd_step_rec_t *)data;
 		break;
 	default:
 		error("acct_gather_energy_p_set_data: unknown enum %d",
@@ -573,12 +558,13 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 	return;
 }
 
-extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
+extern void acct_gather_energy_p_conf_set(int context_id_in,
+					  s_p_hashtbl_t *tbl)
 {
 	int i;
 	uint64_t result;
 
-	if (!_run_in_daemon())
+	if (!running_in_slurmd_stepd())
 		return;
 
 	/* Already been here, we shouldn't need to visit again */

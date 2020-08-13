@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of job suspend/resume.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2005-2007 The Regents of the University of California.
 # Copyright (C) 2008 Lawrence Livermore National Security.
@@ -34,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "3.7"
 set exit_code      0
 set file_out1      "test$test_id.output.1"
 set file_out2      "test$test_id.output.2"
@@ -46,15 +40,11 @@ set job_id2        0
 set host_name      ""
 set not_supported  0
 
-print_header $test_id
-
 if {[test_gang] != 0} {
-	send_user "\nWARNING: This test can't be run with gang scheduling\n"
-	exit 0
+	skip "This test can't be run with gang scheduling"
 }
 if {[is_super_user] == 0} {
-	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
-	exit 0
+	skip "This test can't be run except as SlurmUser"
 }
 
 proc suspend_job { job_id operation } {
@@ -63,17 +53,17 @@ proc suspend_job { job_id operation } {
 	spawn $scontrol $operation $job_id
 	expect {
 		-re "Requested operation not supported" {
-			send_user "\nWARNING: job suspend not supported\n"
+			log_warn "Job suspend not supported"
 			set not_supported 1
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: scontrol error\n"
+			log_error "scontrol error"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -98,7 +88,7 @@ proc check_output { file_name } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: cat not responding\n"
+			log_error "cat not responding"
 			set exit_code 1
 		}
 		eof {
@@ -107,11 +97,11 @@ proc check_output { file_name } {
 	}
 
 	if { $match1 == 0 } {
-		send_user "\nFAILURE: job never suspended\n"
+		log_error "Job never suspended"
 		set exit_code 1
 	}
 	if { $match2 == 0 } {
-		send_user "\nFAILURE: job failed to run to completion\n"
+		log_error "Job failed to run to completion"
 		set exit_code 1
 	}
 }
@@ -147,46 +137,41 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: sbatch failed to report jobid\n"
-	exit 1
+	fail "sbatch failed to report jobid"
 }
 # Get the job's allocate host name
 if {[wait_for_job $job_id1 RUNNING] != 0} {
-	send_user "\nFAILURE: waiting for job $job_id1 to run\n"
-	exit 1
+	fail "Waiting for job $job_id1 to run"
 }
 spawn $scontrol show job $job_id1
 expect {
-	-re " NodeList=($alpha_numeric_under)" {
+	-re " NodeList=($re_word_str)" {
 		set host_name $expect_out(1,string)
 		exp_continue
 	}
-	-re "MidplaneList=($alpha_numeric_under)" {
+	-re "MidplaneList=($re_word_str)" {
 		set host_name $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
 		cancel_job $job_id1
-		exit 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {[string compare $host_name ""] == 0} {
-	send_user "\nFAILURE: did not get hostname for job $job_id1\n"
 	cancel_job $job_id1
-	exit 1
+	fail "Did not get hostname for job $job_id1"
 }
 # Submit another job to that same node
 set sbatch_pid [spawn $sbatch -N1 -t2 --output=$file_out2 --mem=${job_mem} $file_prog_sh2]
@@ -196,18 +181,16 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id2 == 0} {
-	send_user "\nFAILURE: sbatch failed to report jobid\n"
 	cancel_job $job_id1
-	exit 1
+	fail "sbatch failed to report jobid"
 }
 
 #
@@ -223,31 +206,28 @@ suspend_job $job_id1 suspend
 if {$not_supported == 1} {
 	exec $bin_rm -f $file_out1 $file_out2 $file_prog $file_prog_sh1 $file_prog_sh2
 	cancel_job $job_id1
-	exit 0
+	fail "Job suspension is not supported"
 }
 if {$not_supported == 0} {
 	if {[wait_for_job $job_id2 RUNNING] != 0} {
-		send_user "\nFAILURE: waiting for job $job_id2 to run\n"
 		cancel_job $job_id1
 		cancel_job $job_id2
-		exit 1
+		fail "Waiting for job $job_id2 to run"
 	}
 	sleep 5
 	suspend_job $job_id2 suspend
 	suspend_job $job_id1 resume
 	if {[wait_for_job $job_id1 DONE] != 0} {
-		send_user "\nFAILURE: waiting for job $job_id1 to complete\n"
 		cancel_job $job_id1
 		cancel_job $job_id2
-		exit 1
+		fail "Waiting for job $job_id1 to complete"
 	}
 	suspend_job $job_id2 resume
 }
 if {[wait_for_job $job_id2 DONE] != 0} {
-	send_user "\nFAILURE: waiting for job $job_id1 to complete\n"
 	cancel_job $job_id1
 	cancel_job $job_id2
-	exit 1
+	fail "Waiting for job $job_id1 to complete"
 }
 if {$not_supported == 0} {
 	wait_for_file $file_out1
@@ -259,8 +239,6 @@ if {$not_supported == 0} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_out1 $file_out2 $file_prog $file_prog_sh1 $file_prog_sh2
-	send_user "\nSUCCESS\n"
 } else {
-	send_user "\nFAILURE: May be due to use of gang scheduler, a race conditions, or the ProcTrack plugin not identifying the application as part of the job.\n"
+	fail "Test failed due to previous errors (\$exit_code = $exit_code). Failure may be due to use of gang scheduler, a race conditions, or the ProcTrack plugin not identifying the application as part of the job"
 }
-exit $exit_code

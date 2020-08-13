@@ -63,22 +63,22 @@ typedef struct slurm_bb_ops {
 	int		(*state_pack)	(uid_t uid, Buf buffer,
 					 uint16_t protocol_version);
 	int		(*reconfig)	(void);
-	int		(*job_validate)	(struct job_descriptor *job_desc,
+	int		(*job_validate)	(job_desc_msg_t *job_desc,
 					 uid_t submit_uid);
-	int		(*job_validate2)(struct job_record *job_ptr,
-					 char **err_msg);
-	void		(*job_set_tres_cnt) (struct job_record *job_ptr,
+	int		(*job_validate2) (job_record_t *job_ptr,
+					  char **err_msg);
+	void		(*job_set_tres_cnt) (job_record_t *job_ptr,
 					     uint64_t *tres_cnt, bool locked);
-	time_t		(*job_get_est_start) (struct job_record *job_ptr);
+	time_t		(*job_get_est_start) (job_record_t *job_ptr);
 	int		(*job_try_stage_in) (List job_queue);
-	int		(*job_test_stage_in) (struct job_record *job_ptr,
+	int		(*job_test_stage_in) (job_record_t *job_ptr,
 					      bool test_only);
-	int		(*job_begin) (struct job_record *job_ptr);
-	int		(*job_revoke_alloc) (struct job_record *job_ptr);
-	int		(*job_start_stage_out) (struct job_record *job_ptr);
-	int		(*job_test_post_run) (struct job_record *job_ptr);
-	int		(*job_test_stage_out) (struct job_record *job_ptr);
-	int		(*job_cancel) (struct job_record *job_ptr);
+	int		(*job_begin) (job_record_t *job_ptr);
+	int		(*job_revoke_alloc) (job_record_t *job_ptr);
+	int		(*job_start_stage_out) (job_record_t *job_ptr);
+	int		(*job_test_post_run) (job_record_t *job_ptr);
+	int		(*job_test_stage_out) (job_record_t *job_ptr);
+	int		(*job_cancel) (job_record_t *job_ptr);
 	char *		(*xlate_bb_2_tres_str) (char *burst_buffer);
 } slurm_bb_ops_t;
 
@@ -132,7 +132,7 @@ extern int bb_g_init(void)
 	if (g_context_cnt >= 0)
 		goto fini;
 
-	bb_plugin_list = slurm_get_bb_type();
+	bb_plugin_list = xstrdup(slurm_conf.bb_type);
 	g_context_cnt = 0;
 	if ((bb_plugin_list == NULL) || (bb_plugin_list[0] == '\0'))
 		goto fini;
@@ -360,8 +360,7 @@ extern uint64_t bb_g_get_system_size(char *name)
  * submit_uid IN - ID of the user submitting the job.
  * Returns a Slurm errno.
  */
-extern int bb_g_job_validate(struct job_descriptor *job_desc,
-			     uid_t submit_uid)
+extern int bb_g_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid)
 {
 	DEF_TIMERS;
 	int i, rc, rc2;
@@ -385,7 +384,7 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
  *
  * Returns a Slurm errno.
  */
-extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg)
+extern int bb_g_job_validate2(job_record_t *job_ptr, char **err_msg)
 {
 	DEF_TIMERS;
 	int i, rc, rc2;
@@ -404,26 +403,27 @@ extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg)
 }
 
 
-/* Return true if pack job separator in the script */
-static bool _pack_check(char *tok)
+/* Return true if hetjob separator in the script */
+static bool _hetjob_check(char *tok)
 {
 	if (strncmp(tok + 1, "SLURM",  5) &&
 	    strncmp(tok + 1, "SBATCH", 6))
 		return false;
-	if (!strstr(tok+6, "packjob"))
+	if (!strstr(tok+6, "packjob") &&
+	    !strstr(tok+6, "hetjob"))
 		return false;
 	return true;
 }
 
 /*
- * Convert a pack job batch script into a script containing only the portions
- * relevant to a specific pack job component.
+ * Convert a hetjob batch script into a script containing only the portions
+ * relevant to a specific hetjob component.
  *
  * script IN - Whole job batch script
- * pack_job_offset IN - Zero origin pack job component ID
+ * het_job_offset IN - Zero origin hetjob component ID
  * RET script for that job component, call xfree() to release memory
  */
-extern char *bb_g_build_pack_script(char *script, uint32_t pack_job_offset)
+extern char *bb_g_build_het_job_script(char *script, uint32_t het_job_offset)
 {
 	char *result = NULL, *tmp = NULL;
 	char *tok, *save_ptr = NULL;
@@ -444,11 +444,11 @@ extern char *bb_g_build_pack_script(char *script, uint32_t pack_job_offset)
 			xstrfmtcat(result, "%s\n", tok);
 		} else if (tok[0] != '#') {
 			fini = true;
-		} else if (_pack_check(tok)) {
+		} else if (_hetjob_check(tok)) {
 			cur_offset++;
-			if (cur_offset > pack_job_offset)
+			if (cur_offset > het_job_offset)
 				fini = true;
-		} else if (cur_offset == pack_job_offset) {
+		} else if (cur_offset == het_job_offset) {
 			xstrfmtcat(result, "%s\n", tok);
 		}
 		if (fini)
@@ -456,7 +456,7 @@ extern char *bb_g_build_pack_script(char *script, uint32_t pack_job_offset)
 		tok = strtok_r(NULL, "\n", &save_ptr);
 	}
 
-	if (pack_job_offset == 0) {
+	if (het_job_offset == 0) {
 		while (tok) {
 			char *sep = "";
 			if ((tok[0] == '#') &&
@@ -484,8 +484,7 @@ extern char *bb_g_build_pack_script(char *script, uint32_t pack_job_offset)
  * IN/OUT tres_cnt - fill in this already allocated array with tres_cnts
  * IN locked - if the assoc_mgr tres read locked is locked or not
  */
-extern void bb_g_job_set_tres_cnt(struct job_record *job_ptr,
-				  uint64_t *tres_cnt,
+extern void bb_g_job_set_tres_cnt(job_record_t *job_ptr, uint64_t *tres_cnt,
 				  bool locked)
 {
 	DEF_TIMERS;
@@ -504,8 +503,8 @@ extern void bb_g_job_set_tres_cnt(struct job_record *job_ptr,
 /* sort jobs by expected start time */
 static int _sort_job_queue(void *x, void *y)
 {
-	struct job_record *job_ptr1 = *(struct job_record **) x;
-	struct job_record *job_ptr2 = *(struct job_record **) y;
+	job_record_t *job_ptr1 = *(job_record_t **) x;
+	job_record_t *job_ptr2 = *(job_record_t **) y;
 	time_t t1, t2;
 
 	t1 = job_ptr1->start_time;
@@ -520,7 +519,7 @@ static int _sort_job_queue(void *x, void *y)
 /*
  * For a given job, return our best guess if when it might be able to start
  */
-extern time_t bb_g_job_get_est_start(struct job_record *job_ptr)
+extern time_t bb_g_job_get_est_start(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
 	int i;
@@ -550,14 +549,14 @@ extern int bb_g_job_try_stage_in(void)
 	DEF_TIMERS;
 	int i, rc = 1, rc2;
 	ListIterator job_iterator;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	time_t now = time(NULL);
 	List job_queue;
 
 	START_TIMER;
 	job_queue = list_create(NULL);
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;
 		if ((job_ptr->burst_buffer == NULL) ||
@@ -593,7 +592,7 @@ extern int bb_g_job_try_stage_in(void)
  *      1 - stage-in complete
  *     -1 - stage-in not started or burst buffer in some unexpected state
  */
-extern int bb_g_job_test_stage_in(struct job_record *job_ptr, bool test_only)
+extern int bb_g_job_test_stage_in(job_record_t *job_ptr, bool test_only)
 {
 	DEF_TIMERS;
 	int i, rc = 1, rc2;
@@ -613,12 +612,12 @@ extern int bb_g_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 }
 
 /* Attempt to claim burst buffer resources.
- * At this time, bb_g_job_test_stage_in() should have been run sucessfully AND
+ * At this time, bb_g_job_test_stage_in() should have been run successfully AND
  * the compute nodes selected for the job.
  *
  * Returns a Slurm errno.
  */
-extern int bb_g_job_begin(struct job_record *job_ptr)
+extern int bb_g_job_begin(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
 	int i, rc = SLURM_SUCCESS, rc2;
@@ -644,7 +643,7 @@ extern int bb_g_job_begin(struct job_record *job_ptr)
  *
  * Returns a Slurm errno.
  */
-extern int bb_g_job_revoke_alloc(struct job_record *job_ptr)
+extern int bb_g_job_revoke_alloc(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
 	int i, rc = SLURM_SUCCESS, rc2;
@@ -669,7 +668,7 @@ extern int bb_g_job_revoke_alloc(struct job_record *job_ptr)
  *
  * Returns a Slurm errno.
  */
-extern int bb_g_job_start_stage_out(struct job_record *job_ptr)
+extern int bb_g_job_start_stage_out(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
 	int i, rc, rc2;
@@ -694,7 +693,7 @@ extern int bb_g_job_start_stage_out(struct job_record *job_ptr)
  *      1 - post_run complete
  *     -1 - fatal error
  */
-extern int bb_g_job_test_post_run(struct job_record *job_ptr)
+extern int bb_g_job_test_post_run(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
 	int i, rc = 1, rc2;
@@ -725,7 +724,7 @@ extern int bb_g_job_test_post_run(struct job_record *job_ptr)
  *      1 - stage-out complete
  *     -1 - fatal error
  */
-extern int bb_g_job_test_stage_out(struct job_record *job_ptr)
+extern int bb_g_job_test_stage_out(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
 	int i, rc = 1, rc2;
@@ -759,7 +758,7 @@ extern int bb_g_job_test_stage_out(struct job_record *job_ptr)
  *
  * Returns a Slurm errno.
  */
-extern int bb_g_job_cancel(struct job_record *job_ptr)
+extern int bb_g_job_cancel(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
 	int i, rc, rc2;

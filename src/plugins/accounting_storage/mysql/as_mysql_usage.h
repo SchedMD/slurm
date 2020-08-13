@@ -53,7 +53,8 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			  void *in, slurmdbd_msg_type_t type,
 			  time_t start, time_t end);
 extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
-			  time_t sent_start, time_t sent_end,
-			  uint16_t archive_data, rollup_stats_t *rollup_stats);
+			       time_t sent_start, time_t sent_end,
+			       uint16_t archive_data,
+			       List *rollup_stats_list_in);
 
 #endif

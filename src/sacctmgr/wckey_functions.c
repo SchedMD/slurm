@@ -78,8 +78,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			  || !xstrncasecmp(argv[i], "Names",
 					   MAX(command_len, 3))) {
 			if (!wckey_cond->name_list)
-				wckey_cond->name_list =
-					list_create(slurm_destroy_char);
+				wckey_cond->name_list = list_create(xfree_ptr);
 			if (slurm_addto_char_list(wckey_cond->name_list,
 						 argv[i]+end))
 				set = 1;
@@ -90,8 +89,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			uint32_t id = 0;
 
 			if (!wckey_cond->id_list)
-				wckey_cond->id_list =
-					list_create(slurm_destroy_char);
+				wckey_cond->id_list = list_create(xfree_ptr);
 
 			if (slurm_addto_char_list(wckey_cond->id_list,
 						 argv[i]+end))
@@ -111,7 +109,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 3))) {
 			if (!wckey_cond->cluster_list)
 				wckey_cond->cluster_list =
-					list_create(slurm_destroy_char);
+					list_create(xfree_ptr);
 			if (slurm_addto_char_list(wckey_cond->cluster_list,
 						 argv[i]+end))
 				set = 1;
@@ -129,8 +127,7 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Users",
 					 MAX(command_len, 1))) {
 			if (!wckey_cond->user_list)
-				wckey_cond->user_list =
-					list_create(slurm_destroy_char);
+				wckey_cond->user_list = list_create(xfree_ptr);
 			if (slurm_addto_char_list_with_case(wckey_cond->user_list,
 							    argv[i]+end,
 							    user_case_norm))
@@ -161,7 +158,7 @@ extern int sacctmgr_list_wckey(int argc, char **argv)
 	print_field_t *field = NULL;
 	int field_count = 0;
 
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(xfree_ptr);
 	List print_fields_list; /* types are of print_field_t */
 
 	enum {

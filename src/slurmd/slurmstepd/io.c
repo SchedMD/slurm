@@ -93,11 +93,9 @@ struct io_operations client_ops = {
 	.handle_write = &_client_write,
 };
 
+#define CLIENT_IO_MAGIC 0x10102
 struct client_io_info {
-#ifndef NDEBUG
-#define CLIENT_IO_MAGIC  0x10102
 	int                   magic;
-#endif
 	stepd_step_rec_t    *job;		 /* pointer back to job data   */
 
 	/* incoming variables */
@@ -145,11 +143,9 @@ struct io_operations task_write_ops = {
 	.handle_error = &_task_write_error,
 };
 
+#define TASK_IN_MAGIC 0x10103
 struct task_write_info {
-#ifndef NDEBUG
-#define TASK_IN_MAGIC  0x10103
 	int              magic;
-#endif
 	stepd_step_rec_t    *job;		 /* pointer back to job data   */
 
 	List msg_queue;
@@ -168,16 +164,14 @@ struct io_operations task_read_ops = {
 	.handle_read = &_task_read,
 };
 
-struct task_read_info {
-#ifndef NDEBUG
 #define TASK_OUT_MAGIC  0x10103
+struct task_read_info {
 	int              magic;
-#endif
 	uint16_t         type;           /* type of IO object          */
 	uint16_t         gtaskid;
 	uint16_t         ltaskid;
 	stepd_step_rec_t    *job;		 /* pointer back to job data   */
-	cbuf_t           buf;
+	cbuf_t          *buf;
 	bool		 eof;
 	bool		 eof_msg_sent;
 };
@@ -199,10 +193,11 @@ static void *_window_manager(void *arg);
  * General declarations
  **********************************************************************/
 static void *_io_thr(void *);
-static int _send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job);
+static int _send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job,
+			     bool init);
 static void _send_eof_msg(struct task_read_info *out);
 static struct io_buf *_task_build_message(struct task_read_info *out,
-					  stepd_step_rec_t *job, cbuf_t cbuf);
+					  stepd_step_rec_t *job, cbuf_t *cbuf);
 static void *_io_thr(void *arg);
 static void _route_msg_task_to_client(eio_obj_t *obj);
 static void _free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *job);
@@ -562,8 +557,8 @@ _local_file_write(eio_obj_t *obj, List objs)
 	buf = client->out_msg->data +
 		(client->out_msg->length - client->out_remaining);
 	n = write_labelled_message(obj->fd, buf, client->out_remaining,
-				   header.gtaskid, client->job->pack_offset,
-				   client->job->pack_task_offset,
+				   header.gtaskid, client->job->het_job_offset,
+				   client->job->het_job_task_offset,
 				   client->labelio, client->taskid_width);
 	if (n < 0) {
 		client->out_eof = true;
@@ -591,13 +586,10 @@ _local_file_write(eio_obj_t *obj, List objs)
 static eio_obj_t *
 _create_task_in_eio(int fd, stepd_step_rec_t *job)
 {
-	struct task_write_info *t = NULL;
+	struct task_write_info *t = xmalloc(sizeof(*t));
 	eio_obj_t *eio = NULL;
 
-	t = (struct task_write_info *)xmalloc(sizeof(struct task_write_info));
-#ifndef NDEBUG
 	t->magic = TASK_IN_MAGIC;
-#endif
 	t->job = job;
 	t->msg_queue = list_create(NULL); /* FIXME! Add destructor */
 	t->msg = NULL;
@@ -708,13 +700,10 @@ static eio_obj_t *
 _create_task_out_eio(int fd, uint16_t type,
 		     stepd_step_rec_t *job, stepd_step_task_info_t *task)
 {
-	struct task_read_info *out = NULL;
+	struct task_read_info *out = xmalloc(sizeof(*out));
 	eio_obj_t *eio = NULL;
 
-	out = (struct task_read_info *)xmalloc(sizeof(struct task_read_info));
-#ifndef NDEBUG
 	out->magic = TASK_OUT_MAGIC;
-#endif
 	out->type = type;
 	out->gtaskid = task->gtid;
 	out->ltaskid = task->id;
@@ -937,7 +926,6 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 		 * task gets an eio object for stdin.
 		 * Its not clear why that is. */
 		if (task->gtid == 0) {
-			int amaster, aslave;
 			debug("  stdin uses a pty object");
 #if HAVE_SETRESUID
 			/*
@@ -953,7 +941,8 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			if (setresuid(geteuid(), geteuid(), 0) < 0)
 				error ("pre openpty: setresuid: %m");
 #endif
-			if (openpty(&amaster, &aslave, NULL, NULL, NULL) < 0) {
+			if (openpty(&task->to_stdin, &task->stdin_fd,
+				    NULL, NULL, NULL) < 0) {
 				error("stdin openpty: %m");
 				return SLURM_ERROR;
 			}
@@ -961,9 +950,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			if (setresuid(0, getuid(), 0) < 0)
 				error ("post openpty: setresuid: %m");
 #endif
-			task->stdin_fd = aslave;
 			fd_set_close_on_exec(task->stdin_fd);
-			task->to_stdin = amaster;
 			fd_set_close_on_exec(task->to_stdin);
 			fd_set_nonblocking(task->to_stdin);
 			_spawn_window_manager(task, job);
@@ -1061,8 +1048,8 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 	} else {
 		/* create pipe and eio object */
 		int pout[2];
-		struct termios tio;
 #if HAVE_PTY_H
+		struct termios tio;
 		if (!(job->flags & LAUNCH_BUFFERED_IO)) {
 #if HAVE_SETRESUID
 			if (setresuid(geteuid(), geteuid(), 0) < 0)
@@ -1512,10 +1499,8 @@ io_create_local_client(const char *filename, int file_flags,
 	fd_set_close_on_exec(fd);
 
 	/* Now set up the eio object */
-	client = xmalloc(sizeof(struct client_io_info));
-#ifndef NDEBUG
+	client = xmalloc(sizeof(*client));
 	client->magic = CLIENT_IO_MAGIC;
-#endif
 	client->job = job;
 	client->msg_queue = list_create(NULL); /* FIXME - destructor */
 
@@ -1578,18 +1563,15 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
 	}
 
 	fd_set_blocking(sock);  /* just in case... */
-
-	_send_io_init_msg(sock, srun->key, job);
+	_send_io_init_msg(sock, srun->key, job, true);
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
 	fd_set_close_on_exec(sock);
 
 	/* Now set up the eio object */
-	client = xmalloc(sizeof(struct client_io_info));
-#ifndef NDEBUG
+	client = xmalloc(sizeof(*client));
 	client->magic = CLIENT_IO_MAGIC;
-#endif
 	client->job = job;
 	client->msg_queue = list_create(NULL); /* FIXME - destructor */
 
@@ -1638,18 +1620,15 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 	}
 
 	fd_set_blocking(sock);  /* just in case... */
-
-	_send_io_init_msg(sock, srun->key, job);
+	_send_io_init_msg(sock, srun->key, job, false);
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
 	fd_set_close_on_exec(sock);
 
 	/* Now set up the eio object */
-	client = xmalloc(sizeof(struct client_io_info));
-#ifndef NDEBUG
+	client = xmalloc(sizeof(*client));
 	client->magic = CLIENT_IO_MAGIC;
-#endif
 	client->job = job;
 	client->msg_queue = NULL; /* initialized in _client_writable */
 
@@ -1670,12 +1649,19 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 }
 
 static int
-_send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job)
+_send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job, bool init)
 {
 	struct slurm_io_init_msg msg;
 
 	memcpy(msg.cred_signature, key->data, SLURM_IO_KEY_SIZE);
 	msg.nodeid = job->nodeid;
+	/*
+	 * The initial message does not need the node_offset it is needed for
+	 * sattach
+	 */
+	if (!init && (job->step_id.step_het_comp != NO_VAL))
+		msg.nodeid += job->het_job_node_offset;
+
 	if (job->stdout_eio_objs == NULL)
 		msg.stdout_objs = 0;
 	else
@@ -1788,8 +1774,8 @@ _send_eof_msg(struct task_read_info *out)
 
 
 
-static struct io_buf *
-_task_build_message(struct task_read_info *out, stepd_step_rec_t *job, cbuf_t cbuf)
+static struct io_buf *_task_build_message(struct task_read_info *out,
+					  stepd_step_rec_t *job, cbuf_t *cbuf)
 {
 	struct io_buf *msg;
 	char *ptr;
@@ -1866,9 +1852,8 @@ _task_build_message(struct task_read_info *out, stepd_step_rec_t *job, cbuf_t cb
 struct io_buf *
 alloc_io_buf(void)
 {
-	struct io_buf *buf;
+	struct io_buf *buf = xmalloc(sizeof(*buf));
 
-	buf = xmalloc(sizeof(struct io_buf));
 	buf->ref_count = 0;
 	buf->length = 0;
 	/* The following "+ 1" is just temporary so I can stick a \0 at
@@ -2100,7 +2085,6 @@ io_find_filename_pattern( stepd_step_rec_t *job,
 int
 io_get_file_flags(stepd_step_rec_t *job)
 {
-	slurm_ctl_conf_t *conf;
 	int file_flags;
 
 	/* set files for opening stdout/err */
@@ -2109,7 +2093,7 @@ io_get_file_flags(stepd_step_rec_t *job)
 	else if (job->open_mode == OPEN_MODE_TRUNCATE)
 		file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
 	else {
-		conf = slurm_conf_lock();
+		slurm_conf_t *conf = slurm_conf_lock();
 		if (conf->job_file_append)
 			file_flags = O_CREAT|O_WRONLY|O_APPEND;
 		else

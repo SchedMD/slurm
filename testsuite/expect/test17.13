@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Verify the appropriate job environment variables are set
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,13 +28,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.13"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set matches     0
-
-print_header $test_id
 
 # These are the variables for which we are checking existence.
 # If the number following a variable name is 1, then we check to make
@@ -77,7 +70,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -85,15 +78,14 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	fail "Failed to submit job"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -102,13 +94,12 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Check for desired output
 #
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: Output file $file_out is missing\n"
-	exit 1
+	fail "Output file $file_out is missing"
 }
 
 spawn $bin_cat $file_out
 expect {
-	-re "(SLURM_$alpha_under)=($alpha_numeric_under)" {
+	-re "(SLURM_$re_word_str)=($re_word_str)" {
 		set found_vars($expect_out(1,string)) "$expect_out(2,string)"
 		exp_continue
 	}
@@ -119,27 +110,25 @@ expect {
 
 set total 0
 set good 0
-send_user "\n"
 foreach {slurm_var check_flag} [array get good_vars] {
     incr total
     if {[info exists found_vars($slurm_var)]} {
-	if { $check_flag == 1 && $found_vars($slurm_var) <= 0 } {
-		send_user "FAILURE: Found $slurm_var, but $found_vars($slurm_var) <= 0\n"
-	} else {
-	    incr good
-	}
+		if { $check_flag == 1 && $found_vars($slurm_var) <= 0 } {
+			log_error "Found $slurm_var, but $found_vars($slurm_var) <= 0"
+		} else {
+	    	incr good
+		}
     } else {
-	send_user "FAILURE: Variable $slurm_var not found\n"
+		fail "Variable $slurm_var not found"
     }
 }
 
 if {$good < $total} {
-	send_user "\nFAILURE: Only $good of $total Slurm environment variables set\n"
-	set exit_code 1
+	fail "Only $good of $total Slurm environment variables set"
 }
 
 if {$exit_code == 0} {
 	file delete $file_in $file_out
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

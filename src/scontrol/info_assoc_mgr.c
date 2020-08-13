@@ -631,7 +631,7 @@ extern void scontrol_print_assoc_mgr_info(int argc, char **argv)
 			goto endit;
 		} else if (!xstrncasecmp(tag, "accounts", MAX(tag_len, 1))) {
 			if (!req.acct_list)
-				req.acct_list = list_create(slurm_destroy_char);
+				req.acct_list = list_create(xfree_ptr);
 			slurm_addto_char_list(req.acct_list, val);
 		} else if (!xstrncasecmp(tag, "flags", MAX(tag_len, 1))) {
 			if (xstrcasestr(val, "users"))
@@ -650,11 +650,11 @@ extern void scontrol_print_assoc_mgr_info(int argc, char **argv)
 			}
 		} else if (!xstrncasecmp(tag, "qos", MAX(tag_len, 1))) {
 			if (!req.qos_list)
-				req.qos_list = list_create(slurm_destroy_char);
+				req.qos_list = list_create(xfree_ptr);
 			slurm_addto_char_list(req.qos_list, val);
 		} else if (!xstrncasecmp(tag, "users", MAX(tag_len, 1))) {
 			if (!req.user_list)
-				req.user_list = list_create(slurm_destroy_char);
+				req.user_list = list_create(xfree_ptr);
 			/*
 			 * Since we don't have a real connection to the dbd to
 			 * know if case is enforced or not so we will assume

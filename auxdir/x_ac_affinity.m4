@@ -13,10 +13,6 @@
 ##*****************************************************************************
 
 AC_DEFUN([X_AC_AFFINITY], [
-
-# Test if sched_setaffinity function exists
-  AC_CHECK_FUNCS(sched_setaffinity, [have_sched_setaffinity=yes])
-
 #
 # Test for NUMA memory afffinity functions and set the definitions
 #
@@ -32,24 +28,4 @@ AC_DEFUN([X_AC_AFFINITY], [
   else
     AC_MSG_WARN([unable to locate NUMA memory affinity functions])
   fi
-
-#
-# Test for cpuset directory
-#
-  cpuset_default_dir="/dev/cpuset"
-  AC_ARG_WITH([cpusetdir],
-              AS_HELP_STRING(--with-cpusetdir=PATH,specify path to cpuset directory default is /dev/cpuset),
-              [try_path=$withval])
-  for cpuset_dir in $try_path "" $cpuset_default_dir; do
-    if test -d "$cpuset_dir" ; then
-      AC_DEFINE_UNQUOTED(CPUSET_DIR, "$cpuset_dir", [Define location of cpuset directory])
-      have_sched_setaffinity=yes
-      break
-    fi
-  done
-
-#
-# Set HAVE_SCHED_SETAFFINITY if any task affinity supported
-AM_CONDITIONAL(HAVE_SCHED_SETAFFINITY, test "x$have_sched_setaffinity" = "xyes")
 ])
-

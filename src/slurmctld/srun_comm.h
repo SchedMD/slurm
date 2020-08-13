@@ -49,13 +49,13 @@
  * srun_allocate - notify srun of a resource allocation
  * IN job_ptr - job allocated resources
  */
-extern void srun_allocate(struct job_record *job_ptr);
+extern void srun_allocate(job_record_t *job_ptr);
 
 /*
  * srun_allocate_abort - notify srun of a resource allocation failure
  * IN job_ptr - job allocated resources
  */
-extern void srun_allocate_abort(struct job_record *job_ptr);
+extern void srun_allocate_abort(job_record_t *job_ptr);
 
 /*
  * srun_exec - request that srun execute a specific command
@@ -63,13 +63,13 @@ extern void srun_allocate_abort(struct job_record *job_ptr);
  * IN step_ptr - pointer to the slurmctld job step record
  * IN argv - command and arguments to execute
  */
-extern void srun_exec(struct step_record *step_ptr, char **argv);
+extern void srun_exec(step_record_t *step_ptr, char **argv);
 
 /*
  * srun_job_complete - notify srun of a job's termination
  * IN job_ptr - pointer to the slurmctld job record
  */
-extern void srun_job_complete (struct job_record *job_ptr);
+extern void srun_job_complete(job_record_t *job_ptr);
 
 
 /*
@@ -78,13 +78,13 @@ extern void srun_job_complete (struct job_record *job_ptr);
  * IN op - SUSPEND_JOB or RESUME_JOB (enum suspend_opts from slurm.h)
  * RET - true if message send, otherwise false
  */
-extern bool srun_job_suspend (struct job_record *job_ptr, uint16_t op);
+extern bool srun_job_suspend(job_record_t *job_ptr, uint16_t op);
 
 /*
  * srun_step_complete - notify srun of a job step's termination
  * IN step_ptr - pointer to the slurmctld job step record
  */
-extern void srun_step_complete (struct step_record *step_ptr);
+extern void srun_step_complete(step_record_t *step_ptr);
 
 /*
  * srun_step_missing - notify srun that a job step is missing from
@@ -92,8 +92,7 @@ extern void srun_step_complete (struct step_record *step_ptr);
  * IN step_ptr  - pointer to the slurmctld job step record
  * IN node_list - name of nodes we did not find the step on
  */
-extern void srun_step_missing (struct step_record *step_ptr,
-			       char *node_list);
+extern void srun_step_missing(step_record_t *step_ptr, char *node_list);
 
 /*
  * srun_step_signal - notify srun that a job step should be signaled
@@ -101,41 +100,43 @@ extern void srun_step_missing (struct step_record *step_ptr,
  * IN step_ptr  - pointer to the slurmctld job step record
  * IN signal - signal number
  */
-extern void srun_step_signal (struct step_record *step_ptr, uint16_t signal);
+extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal);
 
 /*
  * srun_node_fail - notify srun of a node's failure
  * IN job_ptr - job to notify
  * IN node_name - name of failed node
  */
-extern void srun_node_fail(struct job_record *job_ptr, char *node_name);
+extern void srun_node_fail(job_record_t *job_ptr, char *node_name);
 
-/* srun_ping - ping all srun commands that have not been heard from recently */
+/*
+ * srun_ping - Ping all allocations srun/salloc that have not been heard from
+ * recently. This does not ping sruns inside a allocation from sbatch or salloc.
+ */
 extern void srun_ping (void);
 
 /*
  * srun_response - note that srun has responded
- * IN job_id  - id of job responding
  * IN step_id - id of step responding or NO_VAL if not a step
  */
-extern void srun_response(uint32_t job_id, uint32_t step_id);
+extern void srun_response(slurm_step_id_t *step_id);
 
 /*
  * srun_step_timeout - notify srun of a job step's imminent timeout
  * IN step_ptr - pointer to the slurmctld step record
  * IN timeout_val - when it is going to time out
  */
-extern void srun_step_timeout(struct step_record *step_ptr, time_t timeout_val);
+extern void srun_step_timeout(step_record_t *step_ptr, time_t timeout_val);
 
 /*
  * srun_timeout - notify srun of a job's timeout
  * IN job_ptr - pointer to the slurmctld job record
  */
-extern void srun_timeout (struct job_record *job_ptr);
+extern void srun_timeout(job_record_t *job_ptr);
 
 /*
  * srun_user_message - Send arbitrary message to an srun job (no job steps)
  */
-extern int srun_user_message(struct job_record *job_ptr, char *msg);
+extern int srun_user_message(job_record_t *job_ptr, char *msg);
 
 #endif /* !_HAVE_SRUN_COMM_H */

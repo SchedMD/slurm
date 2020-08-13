@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate scontrol show topology option.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2009 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,10 +28,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "2.12"
 set exit_code   0
-
-print_header $test_id
 
 # test if running with Topology/Tree
 set topology_tree 0
@@ -53,8 +46,7 @@ expect {
 log_user 1
 
 if {$topology_tree == 0} {
-	send_user "\nWARNING: This test is only valid with a topology/tree configuration\n"
-	exit 0
+	skip "This test is only valid with a topology/tree configuration"
 }
 
 #
@@ -63,14 +55,14 @@ if {$topology_tree == 0} {
 set matches     0
 spawn $scontrol show topology
 expect {
-	-re "SwitchName=($alpha_numeric_under)" {
+	-re "SwitchName=($re_word_str)" {
 		if {$matches == 0} {
 			set switch_name $expect_out(1,string)
 		}
 		incr matches
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -79,8 +71,7 @@ expect {
 }
 
 if {$matches == 0} {
-	send_user "\nFAILURE: scontrol reported no switches\n"
-	exit 1
+	fail "scontrol reported no switches"
 }
 
 #
@@ -94,7 +85,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -102,11 +93,9 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol topology with switch name filter failed\n"
-	set exit_code 1
+	fail "scontrol topology with switch name filter failed"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Check partition information, both long and short (--long and
 #          --summarize options) and partition filtering (--partition option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,13 +29,10 @@
 ############################################################################
 source ./globals
 
-set test_id       "4.3"
 set def_part      0
 set def_part_name ""
 set exit_code     0
 set matches       0
-
-print_header $test_id
 
 #
 # Check the sinfo summarize format
@@ -79,7 +72,7 @@ expect {
 		incr matches -10
 		exp_continue
 	}
-	-re "($end_of_line)($alpha_numeric_under)(\[ \*\]) *up" {
+	-re "($end_of_line)($re_word_str)(\\*) *up" {
 		if (![string compare $expect_out(3,string) "*"]) {
 			set def_part 1
 			set def_part_name $expect_out(2,string)
@@ -87,7 +80,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -96,11 +89,11 @@ expect {
 }
 
 if {$matches != 5} {
-	send_user "\nFAILURE: sinfo partition summarize format error\n"
+	log_error "sinfo partition summarize format error"
 	set exit_code 1
 }
 if {$def_part == 0} {
-	send_user "\nFAILURE: sinfo shows no available default partition\n"
+	log_error "sinfo shows no available default partition"
 	set exit_code 1
 }
 
@@ -120,7 +113,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -129,7 +122,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: sinfo partition filtering error\n"
+	log_error "sinfo partition filtering error"
 	set exit_code 1
 }
 
@@ -181,7 +174,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -190,7 +183,7 @@ expect {
 }
 
 if {$matches != 6} {
-	send_user "\nFAILURE: sinfo partition normal format error $matches\n"
+	log_error "sinfo partition normal format error $matches"
 	set exit_code 1
 }
 
@@ -249,7 +242,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -258,10 +251,8 @@ expect {
 }
 
 if {$matches != 10} {
-	send_user "\nFAILURE: sinfo partition long format error\n"
-	set exit_code 1
+	fail "sinfo partition long format error"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

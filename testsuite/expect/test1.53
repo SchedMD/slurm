@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of --signal option.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2009 Lawrence Livermore National Security.
@@ -33,11 +29,8 @@
 ############################################################################
 source ./globals
 
-set test_id      "1.53"
 set exit_code    0
 set file_prog    "test$test_id.prog"
-
-print_header $test_id
 
 #
 # Delete left-over programs and rebuild them.
@@ -63,7 +56,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -72,16 +65,14 @@ expect {
 	}
 }
 if {$began_flag == 0} {
-	send_user "\nFAILURE: job never started\n"
-	set exit_code 1
+	fail "Job never started"
 } elseif {$run_time < 59 || $run_time > 121} {
-	send_user "\nFAILURE: problem with time limit signal\n"
-	set exit_code 1
+	fail "Problem with time limit signal"
 }
 
 if {$exit_code == 0} {
 	exec rm -f $file_prog
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
 

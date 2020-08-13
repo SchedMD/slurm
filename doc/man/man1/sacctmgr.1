@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "February 2019" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "July 2020" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -213,10 +213,11 @@ system configuration.
 
 .TP
 \fIcoordinator\fR
-A special privileged user usually an account manager or such that can
-add users or sub accounts to the account they are coordinator over.
+A special privileged user, usually an account manager, that can
+add users or sub-accounts to the account they are coordinator over.
 This should be a trusted person since they can change limits on
-account and user associations inside their realm.
+account and user associations, as well as cancel, requeue or reassign
+accounts of jobs inside their realm.
 
 .TP
 \fIevent\fR
@@ -228,8 +229,8 @@ A group of clusters that work together to schedule jobs.
 
 .TP
 \fIjob\fR
-Used to modify specific fields of a job: Derived Exit Code and
-the Comment String.
+Used to modify specific fields of a job: Derived Exit Code,
+the Comment String, or wckey.
 
 .TP
 \fIqos\fR
@@ -243,9 +244,11 @@ among clusters.
 .TP
 \fIRunawayJobs\fR
 Used only with the \fIlist\fR or \fIshow\fR command to report current
-jobs that have been orphanded on the local cluster and are now
+jobs that have been orphaned on the local cluster and are now
 runaway.  If there are jobs in this state it will also give you an
 option to "fix" them.
+NOTE: You must have an \fBAdminLevel\fR of at least \fBOperator\fR to preform
+this.
 
 .TP
 \fIstats\fR
@@ -287,17 +290,8 @@ this means that the parent association is used for fairshare.  If
 Fairshare=parent is set on an account, that account's children will be
 effectively reparented for fairshare calculations to the first parent
 of their parent that is not Fairshare=parent.  Limits remain the same,
-only it's fairshare value is affected.  To clear a previously set
+only its fairshare value is affected.  To clear a previously set
 value use the modify command with a new value of \-1.
-
-.TP
-\fIGraceTime\fP=<preemption grace time in seconds>
-Specifies, in units of seconds, the preemption grace time
-to be extended to a job which has been selected for preemption.
-The default value is zero, no preemption grace time is allowed on
-this QOS.
-
-NOTE: This value is only meaningful for QOS PreemptMode=CANCEL.
 
 .TP
 \fIGrpTRESMins\fP=<TRES=max TRES minutes,...>
@@ -372,7 +366,7 @@ jobs submitted with associations in the group will be delayed until
 they are able to run inside the limit.
 
 .TP
-\fIMaxTRESMins\fP=<max TRES minutes>
+\fIMaxTRESMinsPerJob\fP=<max TRES minutes>
 Maximum number of TRES minutes each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
@@ -380,7 +374,7 @@ To clear a previously set value use the modify command with a new
 value of \-1 for each TRES id.
 
 .TP
-\fIMaxTRES\fP=<max TRES>
+\fIMaxTRESPerJob\fP=<max TRES>
 Maximum number of TRES each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
@@ -414,7 +408,7 @@ Default is the cluster's limit.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
-\fIMaxWall\fP=<max wall>
+\fIMaxWallDurationPerJob\fP=<max wall>
 Maximum wall clock time each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
@@ -428,7 +422,7 @@ pending job.
 
 .TP
 \fIPriority\fP
-What priority will be added to a job\'s priority when using this assocation.
+What priority will be added to a job\'s priority when using this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -623,7 +617,7 @@ this means that the parent association is used for fairshare.  If
 Fairshare=parent is set on an account, that account's children will be
 effectively reparented for fairshare calculations to the first parent
 of their parent that is not Fairshare=parent.  Limits remain the same,
-only it's fairshare value is affected.
+only its fairshare value is affected.
 
 .TP
 \fIGrpTRESMins\fP
@@ -676,12 +670,16 @@ associations with a LFT inside this LFT and before the RGT are
 children of this association.
 
 .TP
-\fIMaxTRESMins\fP
+\fIMaxTRESPerJob\fP
+Maximum number of TRES each job is able to use.
+
+.TP
+\fIMaxTRESMinsPerJob\fP
 Maximum number of TRES minutes each job is able to use.
 
 .TP
-\fIMaxTRES\fP
-Maximum number of TRES each job is able to use.
+\fIMaxTRESPerNode\fP
+Maximum number of TRES each node in a job allocation can use.
 
 .TP
 \fIMaxJobs\fP
@@ -696,12 +694,20 @@ Maximum number of pending jobs able to accrue age priority at any given time.
 Maximum number of jobs pending or running state at any time.
 
 .TP
-\fIMaxWall\fP
+\fIMaxWallDurationPerJob\fP
 Maximum wall clock time each job is able to use.
 
 .TP
 \fIQos\fP
+.RS
 Valid QOS\' for this association.
+.RE
+
+.TP
+\fIQosRaw\fP
+.RS
+QOS\' ID.
+.RE
 
 .TP
 \fIParentID\fP
@@ -746,7 +752,8 @@ The name of a user in the association.
 
 .TP
 \fIClassification\fP=<classification>
-Type of machine, current classifications are capability and capacity.
+Type of machine, current classifications are capability, capacity and
+capapacity.
 
 .TP
 \fIFeatures\fP=<comma separated list of feature names>
@@ -785,11 +792,6 @@ cluster will accept jobs as a non\-federated cluster.
 .RE
 
 .TP
-\fIFlags\fP=<flag list>
-Comma separated list of Attributes for a particular cluster.  Current
-Flags include CrayXT, FrontEnd, and MultipleSlurmd.
-
-.TP
 \fIName\fP=<name>
 The name of a cluster.
 This should be equal to the \fIClusterName\fR parameter in the \fIslurm.conf\fR
@@ -817,7 +819,7 @@ NOTE: You can also use the general specifications list above in the
 
 .TP
 \fIClassification\fP
-Type of machine, i.e. capability or capacity.
+Type of machine, i.e. capability, capacity or capapacity.
 
 .TP
 \fICluster\fP
@@ -851,7 +853,14 @@ Numeric value of the name of the FedState.
 
 .TP
 \fIFlags\fP
-Attributes possessed by the cluster.
+Attributes possessed by the cluster. Current flags include Cray, External and
+MultipleSlurmd.
+
+External clusters are registration only clusters. A slurmctld can designate an
+external slurmdbd with the \fIAccountingStorageExternalHost\fR slurm.conf
+option. This allows a slurmctld to register to an external slurmdbd so that
+clusters attached to the external slurmdbd can communicate with the external
+cluster with Slurm commands.
 
 .TP
 \fIID\fP
@@ -1079,20 +1088,52 @@ The index of the cluster in the federation.
 .SH "SPECIFICATIONS FOR JOB"
 
 .TP
-\fIDerivedExitCode\fP
-The derived exit code can be modified after a job completes based on
-the user's judgement of whether the job succeeded or failed.  The user
-can only modify the derived exit code of their own job.
-
-.TP
-\f3Comment\fP
+\fIComment\fP=<comment>
 The job's comment string when the AccountingStoreJobComment parameter
 in the slurm.conf file is set (or defaults) to YES.  The user can only
 modify the comment string of their own job.
 
 .TP
-The \fIDerivedExitCode\fP and \f3Comment\fP fields are the only fields
-of a job record in the database that can be modified after job
+\fICluster\fP=<cluster_list>
+List of clusters to alter jobs on, defaults to local cluster.
+
+.TP
+\fIDerivedExitCode\fP=<derived_exit_code>
+The derived exit code can be modified after a job completes based on
+the user's judgment of whether the job succeeded or failed. The user
+can only modify the derived exit code of their own job.
+
+.TP
+\fIEndTime\fP
+Jobs must end before this time to be modified. Format output is,
+YYYY\-MM\-DDTHH:MM:SS, unless changed through the SLURM_TIME_FORMAT environment
+variable.
+
+.TP
+\fIJobID\fP=<jobid_list>
+The id of the job to change.  Not needed if altering multiple jobs using wckey
+specification.
+
+.TP
+\fINewWCKey\fP=<newwckey>
+Use to rename a wckey on job(s) in the accounting database
+
+.TP
+\fIStartTime\fP
+Jobs must start at or after this time to be modified in the same format as
+\f3EndTime\fP.
+
+.TP
+\fIUser\fP=<user_list>
+Used to specify the jobs of users jobs to alter.
+
+.TP
+\fIWCKey\fP=<wckey_list>
+Used to specify the wckeys to alter.
+
+.TP
+The \fIDerivedExitCode\fP, \fIComment\fP and \fIWCKey\fP fields are the only
+fields of a job record in the database that can be modified after job
 completion.
 
 .SH "LIST/SHOW JOB FORMAT OPTIONS"
@@ -1170,6 +1211,11 @@ GrpWall limits can be increased or the QOS RawUsage value reset to 0
 (zero) to again allow jobs submitted with this QOS to be queued (if
 DenyOnLimit is set) or run (pending with QOSGrp{TRES}MinutesLimit
 or QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).
+.TP
+\fIUsageFactorSafe\fP
+If set, and \fIAccountingStorageEnforce\fR includes \fISafe\fR, jobs will only
+be able to run if the job can run to completion with the \fIUsageFactor\fR
+applied.
 .RE
 
 .TP
@@ -1218,7 +1264,7 @@ running jobs will be killed.
 The id of the QOS.
 
 .TP
-\fIMaxTRESMins\fP
+\fIMaxTRESMinsPerJob\fP
 Maximum number of TRES minutes each job is able to use.
 
 .TP
@@ -1273,7 +1319,7 @@ Maximum number of jobs pending or running state at any time per account.
 Maximum number of jobs pending or running state at any time per user.
 
 .TP
-\fIMaxWall\fP
+\fIMaxWallDurationPerJob\fP
 Maximum wall clock time each job is able to use.
 
 .TP
@@ -1284,15 +1330,20 @@ Name of the QOS.
 \fIPreempt\fP
 Other QOS\' this QOS can preempt.
 
+\fBNOTE\fP: The \fIPriority\fP of a QOS is NOT related to QOS preemption, only
+\fIPreempt\fP is used to define which QOS can preempt others.
+
 .TP
 \fIPreemptMode\fP
-Mechanism used to preempt jobs of this QOS if the clusters \fIPreemptType\fP
-is configured to \fIpreempt/qos\fP.  The default preemption mechanism
-is specified by the cluster\-wide \fIPreemptMode\fP configuration parameter.
-Possible values are "Cluster" (meaning use cluster default), "Cancel",
-"Checkpoint" and "Requeue".  This option is not compatible with
-PreemptMode=OFF or PreemptMode=SUSPEND (i.e. preempted jobs must be removed
-from the resources).
+Mechanism used to preempt jobs or enable gang scheduling for this QOS
+when the cluster \fIPreemptType\fR is set to \fIpreempt/qos\fR.
+This QOS\-specific \fBPreemptMode\fR will override the cluster\-wide
+\fBPreemptMode\fR for this QOS. Unsetting the QOS specific \fBPreemptMode\fR,
+by specifying "OFF", "" or "Cluster", makes it use the default cluster\-wide
+\fBPreemptMode\fR.
+.br
+See the description of the cluster\-wide \fBPreemptMode\fR parameter
+for further details of the available modes.
 
 .TP
 \fIPreemptExemptTime\fP
@@ -1307,6 +1358,9 @@ global option in slurm.conf.
 \fIPriority\fP
 What priority will be added to a job\'s priority when using this QOS.
 
+\fBNOTE\fP: The \fIPriority\fP of a QOS is NOT related to QOS preemption, see
+\fIPreempt\fP instead.
+
 .TP
 \fIRawUsage\fP=<value>
 This allows an administrator to reset the raw usage accrued to a
@@ -1316,12 +1370,7 @@ accounts.
 
 .TP
 \fIUsageFactor\fP
-Usage factor when running with this QOS.
-(i.e. .5 would make it use only half the time as normal in accounting and 2
-would make it use twice as much.) This only applies to the internal wall TRES
-usage used for limits and determining priority in the slurmctld and doesn't
-modify the real usage in the database. The usage factor only applies to the
-jobs QOS and not the partition QOS, and partition QOS limits (if configured).
+Usage factor when running with this QOS. See below for more details.
 
 .TP
 \fIUsageThreshold\fP
@@ -1399,7 +1448,7 @@ submitted with this QOS will be delayed until they are able to run
 inside the limit.
 
 .TP
-\fIMaxTRESMins\fP
+\fIMaxTRESMinsPerJob\fP
 Maximum number of TRES minutes each job is able to use.
 To clear a previously set value use the modify command with a new
 value of \-1 for each TRES id.
@@ -1449,7 +1498,7 @@ Maximum number of jobs pending or running state at any time per user.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
-\fIMaxWall\fP
+\fIMaxWallDurationPerJob\fP
 Maximum wall clock time each job is able to use.
 <max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or
 <days>\-<hr>:<min>:<sec> or <days>\-<hr>.
@@ -1486,9 +1535,8 @@ Mechanism used to preempt jobs of this QOS if the clusters \fIPreemptType\fP
 is configured to \fIpreempt/qos\fP.  The default preemption mechanism
 is specified by the cluster\-wide \fIPreemptMode\fP configuration parameter.
 Possible values are "Cluster" (meaning use cluster default), "Cancel",
-"Checkpoint" and "Requeue".  This option is not compatible with
-PreemptMode=OFF or PreemptMode=SUSPEND (i.e. preempted jobs must be removed
-from the resources).
+and "Requeue".  This option is not compatible with PreemptMode=OFF or
+PreemptMode=SUSPEND (i.e. preempted jobs must be removed from the resources).
 
 .TP
 \fIPriority\fP
@@ -1497,13 +1545,33 @@ To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIUsageFactor\fP
-Usage factor when running with this QOS.  This is a float that is factored into
-the priority time calculations of running jobs.  e.g. if the usagefactor of a
-QOS was 2 for every TRESBillingUnit second a job ran it would count for 2.
-Also if the usagefactor was .5, every second would only count for half
-of the time.  Setting this value to 0 will make it so that running
-jobs will not add time to fairshare or association/qos limits.  To
-clear a previously set value use the modify command with a new value of \-1.
+A float that is factored into a job’s TRES usage (e.g. RawUsage, TRESMins,
+TRESRunMins). For example, if the usagefactor was 2, for every TRESBillingUnit
+second a job ran it would count for 2. If the usagefactor was .5, every second
+would only count for half of the time. A setting of 0 would add no timed usage
+from the job.
+
+The usage factor only applies to the job's QOS and not the partition QOS.
+
+If the \fIUsageFactorSafe\fR flag \fIis\fR set and
+\fIAccountingStorageEnforce\fR includes \fISafe\fR, jobs will only be
+able to run if the job can run to completion with the \fIUsageFactor\fR
+applied.
+
+If the \fIUsageFactorSafe\fR flag is \fInot\fR set and
+\fIAccountingStorageEnforce\fR includes \fISafe\fR, a job will be able to
+be scheduled without the \fIUsageFactor\fR applied and will be able to run
+without being killed due to limits.
+
+If the \fIUsageFactorSafe\fR flag is \fInot\fR set and
+\fIAccountingStorageEnforce\fR does not include \fISafe\fR, a job will be
+able to be scheduled without the \fIUsageFactor\fR applied and could be killed
+due to limits.
+
+See \fIAccountingStorageEnforce\fR in slurm.conf man page.
+
+Default is 1. To clear a previously set value use the modify command with a new
+value of -1.
 
 .SH "SPECIFICATIONS FOR RESERVATIONS"
 
@@ -1592,7 +1660,10 @@ List of TRES in the reservation.
 
 .TP
 \fIUnusedWall\fP
-Wall clock time in seconds unused by any job.
+Wall clock time in seconds unused by any job. A job's allocated usage is its
+run time multiplied by the ratio of its CPUs to the total number of CPUs in the
+reservation. For example, a job using all the CPUs in the reservation running
+for 1 minute would reduce unused_wall by 1 minute.
 
 
 .SH "SPECIFICATIONS FOR RESOURCE"
@@ -1625,7 +1696,7 @@ FlexNext Publisher Flexlm license server or Reprise License Manager RLM.
 \fINames\fP=<OPT>
 Comma separated list of the name of a resource configured on the
 system being controlled by a resource manager.  If this resource is
-seen on the slurmctld it's name will be name@server to distinguish it
+seen on the slurmctld its name will be name@server to distinguish it
 from local resources defined in a slurm.conf.
 
 .TP
@@ -1939,223 +2010,231 @@ justified.  A \-30 will print 30 characters left justified.
 .SH "FLAT FILE DUMP AND LOAD"
 sacctmgr has the capability to load and dump Slurm association data to and
 from a file.  This method can easily add a new cluster or copy an
-existing clusters associations into a new cluster with similar
+existing cluster's associations into a new cluster with similar
 accounts. Each file contains Slurm association data for a single
 cluster.  Comments can be put into the file with the # character.
-Each line of information must begin with one of the four titles; \fBCluster, Parent, Account or
-User\fP. Following the title is a space, dash, space, entity value,
-then specifications. Specifications are colon separated.  If any
-variable such as Organization has a space in it, surround the name with
-single or double quotes.
+Each line of information must begin with one of the four titles; \fBCluster\fP,
+\fBParent\fP, \fBAccount\fP or \fBUser\fP. Following the title is a space,
+dash, space, entity value, then specifications. Specifications are colon
+separated. If any variable, such as an Organization name, has a space in it,
+surround the name with single or double quotes.
 
-To create a file of associations one can run
-
-> sacctmgr dump tux file=tux.cfg
-.br
-(file=tux.cfg is optional)
+To create a file of associations you can run
+.RS
+\fBsacctmgr dump tux file=tux.cfg\fP
+.RE
 
 To load a previously created file you can run
+.RS
+\fBsacctmgr load file=tux.cfg\fP
+.RE
 
-> sacctmgr load file=tux.cfg
+sacctmgr dump/load must be run as a Slurm administrator or root. If using
+sacctmgr load on a database without any associations, it must be run as root
+(because there aren't any users in the database yet).
 
-Other options for load are \-
-
-clean \- delete what was already there and start from scratch with this
-information.
+Other options for load are:
+.RS
+\fBclean\fP     \- delete what was already there and start from scratch with
+this information.
 .br
-Cluster= \- specify a different name for the cluster than that which is
+\fBCluster=\fP  \- specify a different name for the cluster than that which is
 in the file.
-
-Quick explanation how the file works.
+.RE
 
 Since the associations in the system follow a hierarchy, so does the
 file.  Anything that is a parent needs to be defined before any
 children.  The only exception is the understood 'root' account.  This
 is always a default for any cluster and does not need to be defined.
 
-To edit/create a file start with a cluster line for the new cluster
+To edit/create a file start with a cluster line for the new cluster:
 
-\fBCluster\ \-\ cluster_name:MaxNodesPerJob=15\fP
+.nf
+\fBCluster\ \-\ cluster_name:MaxTRESPerJob=node=15\fP
+.ad
 
-Anything included on this line will be the defaults for all
-associations on this cluster.  These options are as follows...
+Anything included on this line will be the default for all
+associations on this cluster.  The options for the cluster are:
+.RS
 .TP
-\fIGrpTRESMins=\fP
+\fBGrpTRESMins=\fP
 The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this association and its children.
 .TP
-\fIGrpTRESRunMins=\fP
+\fBGrpTRESRunMins=\fP
 Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
 .TP
-\fIGrpTRES=\fP
+\fBGrpTRES=\fP
 Maximum number of TRES running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
-\fIGrpJobs=\fP
+\fBGrpJobs=\fP
 Maximum number of running jobs in aggregate for this
 association and all associations which are children of this association.
 .TP
-\fIGrpJobsAccrue\fP
+\fBGrpJobsAccrue=\fP
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 association and all associations which are children of this association.
 .TP
-\fIGrpNodes=\fP
+\fBGrpNodes=\fP
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
-\fIGrpSubmitJobs=\fP
+\fBGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
 associations which are children of this association.
 .TP
-\fIGrpWall=\fP
+\fBGrpWall=\fP
 Maximum wall clock time running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
-\fIFairShare=\fP
+\fBFairShare=\fP
 Number used in conjunction with other associations to determine job priority.
 .TP
-\fIMaxJobs=\fP
+\fBMaxJobs=\fP
 Maximum number of jobs the children of this association can run.
 .TP
-\fIMaxNodesPerJob=\fP
-Maximum number of nodes per job the children of this association can run.
+\fBMaxTRESPerJob=\fP
+Maximum number of trackable resources per job the children of this association
+can run.
 .TP
-\fIMaxWallDurationPerJob=\fP
+\fBMaxWallDurationPerJob=\fP
 Maximum time (not related to job size) children of this accounts jobs can run.
 .TP
-\fIQOS=\fP
+\fBQOS=\fP
+.RS
 Comma separated list of Quality of Service names (Defined in sacctmgr).
-.TP
+.RE
+.RE
 
-Followed by Accounts you want in this fashion...
+After the entry for the root account you will have entries for the other
+accounts on the system. The entries will look similar to this example:
 
-.na
-\fBParent\ \-\ root\fP (Defined by default)
-.br
-\fBAccount\ \-\ cs\fP:MaxNodesPerJob=5:MaxJobs=4:FairShare=399:MaxWallDurationPerJob=40:Description='Computer Science':Organization='LC'
-.br
-\fBParent\ \-\ cs\fP
-.br
-\fBAccount\ \-\ test\fP:MaxNodesPerJob=1:MaxJobs=1:FairShare=1:MaxWallDurationPerJob=1:Description='Test Account':Organization='Test'
+.nf
+\fBParent\ \-\ root
+Account\ \-\ cs:MaxTRESPerJob=node=5:MaxJobs=4:FairShare=399:MaxWallDurationPerJob=40:Description='Computer Science':Organization='LC'
+Parent\ \-\ cs
+Account\ \-\ test:MaxTRESPerJob=node=1:MaxJobs=1:FairShare=1:MaxWallDurationPerJob=1:Description='Test Account':Organization='Test'\fP
 .ad
 
-.TP
 Any of the options after a ':' can be left out and they can be in any order.
 If you want to add any sub accounts just list the Parent THAT HAS ALREADY
-BEEN CREATED before the account line in this fashion...
+BEEN CREATED before the account you are adding.
+
+Account options are:
+.RS
 .TP
-All account options are
-.TP
-\fIDescription=\fP
+\fBDescription=\fP
 A brief description of the account.
 .TP
-\fIGrpTRESMins=\fP
+\fBGrpTRESMins=\fP
 Maximum number of TRES hours running jobs are able to
 be allocated in aggregate for this association and all associations
 which are children of this association.
-\fIGrpTRESRunMins=\fP
+\fBGrpTRESRunMins=\fP
 Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
 .TP
-\fIGrpTRES=\fP
+\fBGrpTRES=\fP
 Maximum number of TRES running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
-\fIGrpJobs=\fP
+\fBGrpJobs=\fP
 Maximum number of running jobs in aggregate for this
 association and all associations which are children of this association.
 .TP
-\fIGrpJobsAccrue\fP
+\fBGrpJobsAccrue\fP
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 association and all associations which are children of this association.
 .TP
-\fIGrpNodes=\fP
+\fBGrpNodes=\fP
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
-\fIGrpSubmitJobs=\fP
+\fBGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
 associations which are children of this association.
 .TP
-\fIGrpWall=\fP
+\fBGrpWall=\fP
 Maximum wall clock time running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
-\fIFairShare=\fP
+\fBFairShare=\fP
 Number used in conjunction with other associations to determine job priority.
 .TP
-\fIMaxJobs=\fP
+\fBMaxJobs=\fP
 Maximum number of jobs the children of this association can run.
 .TP
-\fIMaxNodesPerJob=\fP
+\fBMaxNodesPerJob=\fP
 Maximum number of nodes per job the children of this association can run.
 .TP
-\fIMaxWallDurationPerJob=\fP
+\fBMaxWallDurationPerJob=\fP
 Maximum time (not related to job size) children of this accounts jobs can run.
 .TP
-\fIOrganization=
+\fBOrganization=
 Name of organization that owns this account.
 .TP
-\fI\fIQOS(=,+=,\-=)\fP
+\fBQOS(=,+=,\-=)\fP
 Comma separated list of Quality of Service names (Defined in sacctmgr).
-.TP
+.RE
 
-.TP
-To add users to a account add a line like this after a Parent \- line
-\fBParent\ \-\ test\fP
-.br
-.na
-\fBUser\ \-\ adam\fP:MaxNodesPerJob=2:MaxJobs=3:FairShare=1:MaxWallDurationPerJob=1:AdminLevel=Operator:Coordinator='test'
+
+To add users to an account add a line after the Parent line, similar to this:
+
+.nf
+\fBParent\ \-\ test
+User\ \-\ adam:MaxTRESPerJob=node:2:MaxJobs=3:FairShare=1:MaxWallDurationPerJob=1:AdminLevel=Operator:Coordinator='test'\fP
 .ad
 
+
+User options are:
+.RS
 .TP
-All user options are
-.TP
-\fIAdminLevel=\fP
+\fBAdminLevel=\fP
 Type of admin this user is (Administrator, Operator)
 .br
 \fBMust be defined on the first occurrence of the user.\fP
 .TP
-\fICoordinator=\fP
+\fBCoordinator=\fP
 Comma separated list of accounts this user is coordinator over
 .br
 \fBMust be defined on the first occurrence of the user.\fP
 .TP
-\fIDefaultAccount=\fP
-system wide default account name
+\fBDefaultAccount=\fP
+System wide default account name
 .br
 \fBMust be defined on the first occurrence of the user.\fP
 .TP
-\fIFairShare=\fP
+\fBFairShare=\fP
 Number used in conjunction with other associations to determine job priority.
 .TP
-\fIMaxJobs=\fP
+\fBMaxJobs=\fP
 Maximum number of jobs this user can run.
 .TP
-\fIMaxNodesPerJob=\fP
-Maximum number of nodes per job this user can run.
+\fBMaxTRESPerJob=\fP
+Maximum number of trackable resources per job this user can run.
 .TP
-\fIMaxWallDurationPerJob=\fP
+\fBMaxWallDurationPerJob=\fP
 Maximum time (not related to job size) this user can run.
 .TP
-\fIQOS(=,+=,\-=)\fP
+\fBQOS(=,+=,\-=)\fP
 Comma separated list of Quality of Service names (Defined in sacctmgr).
-
+.RE
 
 .SH "ARCHIVE FUNCTIONALITY"
 Sacctmgr has the capability to archive to a flatfile and or load that
@@ -2166,9 +2245,12 @@ completely understand what you are doing.  For slurmdbd options see
 Loading data into the database can be done from these files to either
 view old data or regenerate rolled up data.
 
-These are the options for both dump and load of archive information.
-
-archive dump
+.SS archive dump
+Dump accounting data to file. Data will not be archived unless the
+corresponding purge option is included in this command or in slurmdbd.conf.
+This operation cannot be rolled back
+once executed. If one of the following options is not specified when sacctmgr
+is called, the value configured in slurmdbd.conf is used.
 
 .TP
 \fIDirectory=\fP
@@ -2217,8 +2299,7 @@ all step data removed will be lost permanently.
 Archive Suspend Data.  If not specified and PurgeSuspendAfter is set
 all suspend data removed will be lost permanently.
 
-.TP
-\fIArchive Load\fP
+.SS archive load
 Load in to the database previously archived data. The archive file will not be
 loaded if the records already exist in the database - therefore, trying to load
 an archive file more than once will result in an error. When this data is again
@@ -2229,11 +2310,25 @@ will have duplicate records.
 
 .TP
 \fIFile=\fP
-File to load into database.
+File to load into database. The specified file must exist on the slurmdbd host,
+which is not necessarily the machine running the command.
 .TP
 \fIInsert=\fP
 SQL to insert directly into the database.  This should be used very
 cautiously since this is writing your sql into the database.
+
+.SH "PERFORMANCE"
+.PP
+Executing \fBsacctmgr\fR sends a remote procedure call to \fBslurmdbd\fR. If
+enough calls from \fBsacctmgr\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmdbd\fR daemon come in at once, it can result in a
+degradation of performance of the \fBslurmdbd\fR daemon, possibly resulting in a
+denial of service.
+.PP
+Do not run \fBsacctmgr\fR or other Slurm client commands that send remote
+procedure calls to \fBslurmdbd\fR from loops in shell scripts or other programs.
+Ensure that programs limit calls to \fBsacctmgr\fR to the minimum necessary for
+the information you are trying to gather.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP
@@ -2272,7 +2367,7 @@ before you can add users.
 .br
 -> sacctmgr list associations cluster=tux format=Account,Cluster,User,Fairshare tree withd
 .br
--> sacctmgr list transactions StartTime=11/03\-10:30:00 format=Timestamp,Action,Actor
+-> sacctmgr list transactions Action="Add Users" Start=11/03-10:30:00 format=Where,Time
 .br
 -> sacctmgr dump cluster=tux file=tux_data_file
 .br

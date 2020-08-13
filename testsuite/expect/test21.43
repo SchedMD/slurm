@@ -1,0 +1,239 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+# 	   sacctmgr usagefactor functionality
+############################################################################
+# Copyright (C) 2020 SchedMD LLC.
+# Written by Scott Jackson <scottmo@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals_accounting
+
+set cluster             [get_cluster_name]
+set partition           [default_partition]
+set qos_prefix          "${test_name}_qos_"
+set test_acct           "${test_name}_acct"
+set test_user           [get_my_user_name]
+set access_err          0
+set exit_code           0
+set job_list            {}
+set failure_count       0
+
+set qoses {
+	high {UsageFactor 2}
+	normal {UsageFactor 1}
+	low {UsageFactor .5}
+	zero {UsageFactor 0}
+}
+
+if {![test_using_slurmdbd]} {
+	skip "This test can't be run without AccountStorageType=slurmdbd"
+}
+if {![test_enforce_limits]} {
+	skip "This test can't be run without AccountingStorageEnforce=limits"
+}
+if {![test_enforce_qos_set]} {
+	skip "This test can't be run without AccountingStorageEnforce=qos"
+}
+if {[string compare [check_accounting_admin_level] "Administrator"]} {
+	skip "This test can't be run without being an Accounting administrator"
+}
+
+proc cleanup {} {
+	global job_list qos_prefix qoses scancel test_acct
+
+	log_debug "Cleaning up"
+
+	# Cancel any lingering jobs
+	spawn $scancel $job_list
+
+	# Delete test account
+	remove_acct "" $test_acct
+
+	# Delete test qoses
+	foreach key [dict keys $qoses] {
+		set test_qos "${qos_prefix}$key"
+		remove_qos $test_qos
+	}
+
+	# Reconfigure to restore the TRESBillingWeights
+	reconfigure
+}
+
+#
+# Start clean
+#
+cleanup
+
+#
+# Add test account
+#
+log_debug "Adding account $test_acct"
+if [add_acct $test_acct [list cluster $cluster]] {
+	fail "Unable to create account $test_acct"
+}
+
+#
+# Add user to the account
+#
+log_debug "Adding user $test_user to account $test_acct"
+if [add_user $test_user [list cluster $cluster account $test_acct]] {
+	fail "Unable to add user $test_user to account $test_acct"
+}
+
+#
+# Add test qoses and associate qos with user
+#
+dict for {key qos_spec} $qoses {
+	set test_qos "${qos_prefix}$key"
+
+	log_debug "Adding qos $test_qos"
+	if [add_qos $test_qos $qos_spec] {
+		fail "Unable to create qos $test_qos"
+	}
+
+	log_debug "Adding qos $test_qos to user $test_user"
+	if [mod_user $test_user [list cluster $cluster] [list qos +$test_qos] {}] {
+		fail "Unable to add qos $test_qos to user $test_user"
+	}
+}
+
+#
+# Modify TRESBillingWeights so this does not throw off the test
+#
+spawn $scontrol update partitionname=$partition TRESBillingWeights=
+expect {
+	-re "error" {
+		fail "Unable to reset TRESBillingWeights"
+	}
+	timeout {
+		fail "scontrol is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Clear the usage statistics
+#
+reset_account_usage "$cluster" "$test_acct"
+fail_on_error "Unable to reset account usage"
+
+#
+# Test Usage Factor Function
+#
+proc test_usage_factor { qos usage_factor } {
+	global failure_count sbatch scontrol test_acct number test_name
+
+	log_info "Testing for a usage factor of $usage_factor with qos $qos"
+
+	#
+	# Submit a short job to the specified qos
+	#
+	set job_time 2
+	set script "\"sleep 10\""
+	set command "$sbatch -J ${test_name} -t $job_time --account=$test_acct --qos=$qos --wrap $script"
+	set observed_usage -1
+	set job_id 0
+
+	spawn {*}$command
+	expect {
+		-re "Submitted batch job (\\d+)" {
+			set job_id $expect_out(1,string)
+			lappend job_list $job_id
+			exp_continue
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		fail "sbatch did not return a job id"
+	}
+
+	#
+	# Wait for job to enter running state
+	#
+	if {[wait_for_job $job_id "RUNNING"] != 0} {
+		fail "Error waiting for job $job_id to be RUNNING"
+	}
+
+	#
+	# Get the number of allocated CPUs of the job to compute the
+	# expected_usage
+	#
+	spawn $scontrol show job $job_id
+	expect {
+		-re "NumCPUs=($number)" {
+			set num_cpus $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	set expected_usage [expr $usage_factor * $job_time * $num_cpus]
+
+	#
+	# Verify that scontrol show assoc shows the appropriately scaled usage
+	# for the specified qos
+	#
+	spawn $scontrol show assoc_mgr qos=$qos flags=qos
+	expect {
+		-re "GrpTRESRunMins=cpu=\[^\\(\]+\\((\[^\\(\]+)\\)" {
+			set observed_usage $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$observed_usage != $expected_usage} {
+		log_error "Usage for qos $qos was expected to be $expected_usage but was observed to be $observed_usage"
+		incr failure_count
+	}
+
+	#
+	# Cancel the job
+	#
+	cancel_job $job_id
+}
+
+dict for {key qos_spec} $qoses {
+	set test_qos "${qos_prefix}$key"
+	dict with qos_spec {
+		test_usage_factor $test_qos $UsageFactor
+	}
+}
+
+# Fail test if any previous subtests failed
+if {$failure_count} {
+    fail "Test failed due to $failure_count prior subtest failures"
+}

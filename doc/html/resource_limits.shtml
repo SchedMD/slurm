@@ -84,7 +84,7 @@ each association in the database.  By setting this option, the
 'associations' option is also set.
 </li>
 <li>safe - This will ensure a job will only be launched when using an
-  association or qos that has a GrpCPUMins limit set if the job will be
+  association or qos that has a GrpTRESMins limit set if the job will be
   able to run to completion. Without this option set, jobs will be
   launched as long as their usage hasn't reached the cpu-minutes limit
   which can lead to jobs being launched but then killed when the limit is
@@ -98,8 +98,8 @@ each association in the database.  By setting this option, the
 </li>
 </ul>
 
-<p>(NOTE: The association is a combination of cluster, account,
-user names and optional partition name.)
+<p>NOTE: The association is a combination of cluster, account,
+user names and optional partition name.
 <br>
 Without AccountingStorageEnforce being set (the default behavior)
 jobs will be executed based upon policies configured in Slurm on each
@@ -132,11 +132,11 @@ specified then no limit will apply.</p>
 <p><b>NOTE:</b> Unless noted, if a job request breaches a given limit
 the job will pend unless the job's QOS has the DenyOnLimit
 flag set, which will cause the job to be denied at submission.  When
-Grp limits are considered with respects to this flag the Grp limit
+Grp limits are considered with respect to this flag the Grp limit
 is treated as a Max limit.</p>
 
 <p><b>NOTE:</b> When modifying a TRES field with <i>sacctmgr</i>, one must
-specify which TRES's to modify (see <a href="tres.html">TRES</a> for complete
+specify which TRES to modify (see <a href="tres.html">TRES</a> for complete
 list) as in the following examples: </p>
   <pre>
   SET:
@@ -199,7 +199,7 @@ list) as in the following examples: </p>
   PriorityDecayHalfLife).  It can also be reset (according to
   PriorityUsageResetPeriod) in order to allow jobs to run against the
   association tree or QOS again.  QOS that have the NoDecay flag set
-  do not decay GrpWall, see <a href="qos.html#qos_other">QOS Options</a> for
+  do not decay GrpWall. See <a href="qos.html#qos_other">QOS Options</a> for
   details.
 </li>
 
@@ -217,13 +217,14 @@ list) as in the following examples: </p>
   allocation can use.
 </li>
 
-<li><b>MaxWallDurationPerJob=</b> The maximum wall clock time any job
-  submitted can run for the given association/QOS.  If this limit is reached
+<li><b>MaxWallDurationPerJob=</b> The maximum wall clock time any individual job
+  can run for in the given association/QOS.  If this limit is reached
   the job will be denied at submission.
 </li>
 
-<li><b>MinPrioThreshold=</b> Used to override bf_min_prio_reserve,
-  see <a href="slurm.conf.html#OPT_bf_min_prio_reserve=#">bf_min_prio_reserve</a> for details.
+<li><b>MinPrioThreshold=</b> Used to override bf_min_prio_reserve.
+  See <a href="slurm.conf.html#OPT_bf_min_prio_reserve=#">
+  bf_min_prio_reserve</a> for details.
 </li>
 
 <!-- For future use
@@ -238,38 +239,38 @@ list) as in the following examples: </p>
 <h2>Association specific scheduling policies supported</h2>
 
 <p> These represent the scheduling policies unique to associations.
-  Shared policies and limits QOS has in common are listed later.</p>
+  Shared policies and limits a QOS has in common are listed above.</p>
 
 <ul>
 <li><b>Fairshare=</b> Integer value used for determining priority.
-  Essentially this is the amount of claim this association and it's
+  Essentially this is the amount of claim this association and its
   children have to the above system. Can also be the string "parent",
   when used on a user this means that the parent association is used
   for fairshare.  If Fairshare=parent is set on an account, that
   account's children will be effectively re-parented for fairshare
   calculations to the first parent of their parent that is not
-  Fairshare=parent.  Limits remain the same, only it's fairshare value
+  Fairshare=parent.  Limits remain the same, only its fairshare value
   is affected.
 </li>
 
 <li><b>MaxJobs=</b> The total number of jobs able to run at any given
-  time for the given association.  If this limit is reached new jobs will
-  be queued but only allowed to run after previous jobs complete from
-  the association.
+  time for the given association.  If this limit is reached, new jobs will
+  be queued but only allowed to run after existing jobs in the association
+  complete.
 </li>
 
 <li><b>MaxJobsAccrue=</b> The maximum number of pending jobs able to accrue age
   priority at any given time for the given association.  If this limit is
-  reached new jobs will be queued but not accrue age priority
-  until after previous jobs are removed from pending using this association.
-  This limit does not determine if the job can run or not, it only limits the
+  reached, new jobs will be queued but will not accrue age priority
+  until after existing jobs in the association are moved from a pending state.
+  This limit does not determine if the job can run, it only limits the
   age factor of the priority.
 </li>
 
 <li><b>MaxSubmitJobs=</b> The maximum number of jobs able to be submitted
   to the system at any given time from the given association.  If
-  this limit is reached new submission requests will be denied until
-  previous jobs complete from this association.
+  this limit is reached, new submission requests will be denied until
+  existing jobs in this association complete.
 </li>
 
 <li><b>QOS=</b> comma separated list of QOS's an association is
@@ -283,13 +284,13 @@ list) as in the following examples: </p>
 <ul>
 <li><b>MaxJobsAccruePerAccount=</b> The maximum number of pending jobs an
   account (or subacct) can have accruing age priority at any given time.
-  This limit does not determine if the job can run or not, it only limits the
+  This limit does not determine if the job can run, it only limits the
   age factor of the priority.
 </li>
 
 <li><b>MaxJobsAccruePerUser=</b> The maximum number of pending jobs a
   user can have accruing age priority at any given time.
-  This limit does not determine if the job can run or not, it only limits the
+  This limit does not determine if the job can run, it only limits the
   age factor of the priority.
 </li>
 
@@ -338,7 +339,7 @@ plugin description.</p>
 
 <h3>Specific limits over GRES</h3>
 <p> When a GRES has a type associated with it and a limit is applied
-  over this specific type, i.e. <i>MaxTRESPerUser=gres/gpu:tesla=1</i>, if a
+  over this specific type (e.g. <i>MaxTRESPerUser=gres/gpu:tesla=1</i>) if a
   user requests a generic gres, the type's limit will not be enforced. In this
   situation an additional lua job submit plugin to check the user request may
   become useful. For example, if one requests <i>--gres=gpu:2</i> having a
@@ -386,6 +387,6 @@ end
   See <a href="tres.html">Trackable Resources TRES</a> for details.
 </p>
 
-<p style="text-align: center;">Last modified 1 May 2018</p>
+<p style="text-align: center;">Last modified 8 April 2020</p>
 
 </ul></body></html>

@@ -149,17 +149,6 @@ slurm_update_node ( update_node_msg_t * node_msg)
 {
 	return _slurm_update ((void *) node_msg, REQUEST_UPDATE_NODE);
 }
-/*
- * slurm_update_layout - issue RPC to a layout's configuration per request,
- *	only usable by user root
- * IN layout_msg - command line (same format as conf)
- * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
- */
-int
-slurm_update_layout ( update_layout_msg_t * layout_msg)
-{
-	return _slurm_update ((void *) layout_msg, REQUEST_UPDATE_LAYOUT);
-}
 
 /*
  * slurm_create_partition - create a new partition, only usable by user root
@@ -197,17 +186,6 @@ slurm_delete_partition ( delete_part_msg_t * part_msg )
 }
 
 /*
- * slurm_update_powercap - issue RPC to update powercapping cap 
- * IN powercap_msg - description of powercapping updates
- * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
- */
-int
-slurm_update_powercap ( update_powercap_msg_t * powercap_msg )
-{
-	return _slurm_update ((void *) powercap_msg, REQUEST_UPDATE_POWERCAP);
-}
-
-/*
  * slurm_create_reservation - create a new reservation, only usable by user root
  * IN resv_msg - description of reservation
  * RET name of reservation on success (caller must free the memory),
@@ -235,7 +213,8 @@ slurm_create_reservation (resv_desc_msg_t * resv_msg)
 	switch (resp_msg.msg_type) {
 	case RESPONSE_CREATE_RESERVATION:
 		resp = (reservation_name_msg_t *) resp_msg.data;
-		resv_name = strdup(resp->name);
+		if (resp->name)
+			resv_name = strdup(resp->name);
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;

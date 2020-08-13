@@ -80,7 +80,7 @@ static int _set_cond(int *start, int argc, char **argv,
 	assoc_cond = user_cond->assoc_cond;
 
 	if (!assoc_cond->cluster_list)
-		assoc_cond->cluster_list = list_create(slurm_destroy_char);
+		assoc_cond->cluster_list = list_create(xfree_ptr);
 	if (cluster_flag)
 		slurm_addto_char_list(assoc_cond->cluster_list, cluster_flag);
 
@@ -102,8 +102,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			  || !xstrncasecmp(argv[i], "Users",
 					   MAX(command_len, 1))) {
 			if (!assoc_cond->user_list)
-				assoc_cond->user_list =
-					list_create(slurm_destroy_char);
+				assoc_cond->user_list = list_create(xfree_ptr);
 			slurm_addto_char_list_with_case(assoc_cond->user_list,
 							argv[i]+end,
 							user_case_norm);
@@ -113,8 +112,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			   || !xstrncasecmp(argv[i], "Acct",
 					    MAX(command_len, 4))) {
 			if (!assoc_cond->acct_list)
-				assoc_cond->acct_list =
-					list_create(slurm_destroy_char);
+				assoc_cond->acct_list = list_create(xfree_ptr);
 			slurm_addto_char_list(assoc_cond->acct_list,
 					      argv[i]+end);
 			set = 1;
@@ -150,9 +148,8 @@ static int _set_cond(int *start, int argc, char **argv,
 
 	if (!local_cluster_flag && !list_count(assoc_cond->cluster_list)) {
 		/* Get the default Cluster since no cluster is specified */
-		char *temp = slurm_get_cluster_name();
-		if (temp)
-			list_append(assoc_cond->cluster_list, temp);
+		list_append(assoc_cond->cluster_list,
+			    xstrdup(slurm_conf.cluster_name));
 	}
 
 	/* This needs to be done on some systems to make sure
@@ -456,7 +453,7 @@ extern int user_top(int argc, char **argv)
 	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
 	ListIterator itr = NULL, itr2 = NULL;
 	ListIterator cluster_itr = NULL;
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(xfree_ptr);
 	List slurmdb_report_cluster_list = NULL;
 	int i = 0;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;

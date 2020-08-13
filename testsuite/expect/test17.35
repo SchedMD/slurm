@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test performance/timing of job submissions.
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2014 SchedMD LLC
 # Written by Morris Jette <jette@schedmd.com>
@@ -31,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id    "17.35"
 set file_in    "test$test_id\.in"
 set exit_code  0
 set job_cnt    100
@@ -40,8 +34,6 @@ set target     200
 if {[test_cray]} {
 	set target 65
 }
-
-print_header $test_id
 
 make_bash_script $file_in "
 inx=0
@@ -81,7 +73,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -89,14 +81,14 @@ expect {
 	}
 }
 if {$match != $job_cnt} {
-	send_user "FAILURE: job count mismatch ($match != $job_cnt)\n"
+	log_error "Job count mismatch ($match != $job_cnt)"
 	set exit_code 1
 }
 
 spawn $scancel --name=$file_in
 expect {
 	timeout {
-		send_user "\nFAILURE: scancel is not responding\n"
+		log_error "scancel is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -109,15 +101,13 @@ if {$time_used == 0} {
 	set time_used 1
 }
 set rate [ expr ($job_cnt * 1000) / $time_used ]
-send_user "Job submit rate $rate jobs per second ($job_cnt jobs in $time_used msec)\n"
+log_debug "Job submit rate $rate jobs per second ($job_cnt jobs in $time_used msec)"
 if {$rate < $target} {
-	send_user "FAILURE: Job submit rate of $rate below target of $target\n"
-	send_user "FAILURE: This may be due to use of NFS rather than local storage for logs or state information\n"
-	set exit_code 1
+	fail "Job submit rate of $rate below target of $target. This may be due to use of NFS rather than local storage for logs or state information"
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $file_in
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

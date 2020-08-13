@@ -1,3 +1,4 @@
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          to be called from test21.30
@@ -28,9 +29,9 @@
 # Test MaxJobs limit
 proc inc21_30_7 { wait_reason } {
 
-	global salloc scontrol srun acct alpha bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code maxjobs_num
+	global salloc scontrol srun acct re_word_str bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code maxjobs_num
 
-	send_user "\nStarting MaxJob limit test (Within: inc21.30.7)\n\n"
+	log_info "Starting MaxJob limit test (Within: inc21.30.7)"
 	set check_num $maxjobs_num
 
 	set jobmatch 0
@@ -41,28 +42,28 @@ proc inc21_30_7 { wait_reason } {
 			-re "Granted job allocation ($number)" {
 				set job_id($inx) $expect_out(1,string)
 				if {$inx < $check_num} {
-					send_user "\njob $inx $job_id($inx) was submitted. (inc21.30.7)\n"
+					log_debug "Job $inx $job_id($inx) was submitted. (inc21.30.7)"
 					incr jobmatch
 				} else {
-					send_user "\nFAILURE: Job $inx $job_id($inx) wasn't suppose to work but it did, limit was $check_num? (Within: inc21.30.7)\n"
+					log_error "Job $inx $job_id($inx) wasn't suppose to work but it did, limit was $check_num? (Within: inc21.30.7)"
 					set exit_code 1
 				}
 			}
 			-re "job ($number) queued and waiting for resources" {
 				set job_id($inx) $expect_out(1,string)
 				if {$inx >= $check_num} {
-					send_user "\nJob $inx $job_id($inx) is waiting for resources. This is expected (Within: inc21.30.7)\n"
+					log_debug "Job $inx $job_id($inx) is waiting for resources. This is expected (Within: inc21.30.7)"
 					incr jobmatch
 				} else {
 					set test_reason 1
 				}
 			}
 			-re "error" {
-				send_user "\nFAILURE: Job allocation should not have failed. (Within: inc21.30.7)\n"
+				log_error "Job allocation should not have failed. (Within: inc21.30.7)"
 				set exit_code 1
 			}
 			timeout {
-				send_user "\nFAILURE: salloc is not responding. (Within: inc21.30.7)\n"
+				log_error "salloc is not responding. (Within: inc21.30.7)"
 				set exit_code 1
 			}
 			eof {
@@ -74,9 +75,9 @@ proc inc21_30_7 { wait_reason } {
 		if {$test_reason != 0 && $job_id($inx) != 0} {
 			spawn $scontrol show job $job_id($inx)
 			expect {
-				-re "Reason=($alpha)" {
+				-re "Reason=($re_word_str)" {
 					if {[string compare $expect_out(1,string) $wait_reason]} {
-						send_user "\nFAILURE: Job $inx $job_id($inx) was suppose to start but it didn't, limit was $check_num? (Within: inc21.30.7)\n"
+						log_error "Job $inx $job_id($inx) was suppose to start but it didn't, limit was $check_num? (Within: inc21.30.7)"
 						set exit_code 1
 					} else {
 						incr jobmatch
@@ -84,7 +85,7 @@ proc inc21_30_7 { wait_reason } {
 					exp_continue
 				}
 				timeout {
-					send_user "\nFAILURE: scontrol is not responding. (Within: inc21.30.7)\n"
+					log_error "scontrol is not responding. (Within: inc21.30.7)"
 					set exit_code 1
 				}
 				eof {
@@ -96,7 +97,7 @@ proc inc21_30_7 { wait_reason } {
 
 	set target_jobs [expr $check_num + 1]
 	if {$jobmatch != $target_jobs} {
-		send_user "\nFAILURE: Not all jobs were not submitted ($jobmatch != $target_jobs). (Within: inc21.30.7)\n"
+		log_error "Not all jobs were not submitted ($jobmatch != $target_jobs). (Within: inc21.30.7)"
 		set exit_code 1
 	}
 
@@ -104,7 +105,7 @@ proc inc21_30_7 { wait_reason } {
 	if [info exists job_id($check_num)] {
 		check_job_state $job_id($check_num) PENDING
 	} else {
-		send_user "\nFAILURE: didn't attempt to start enough jobs. (Within: inc21.30.7)\n"
+		log_error "Didn't attempt to start enough jobs. (Within: inc21.30.7)"
 		set exit_code 1
 	}
 

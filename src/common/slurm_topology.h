@@ -47,7 +47,7 @@
  *  SWITCH topology data structures
  *  defined here but is really tree plugin related
 \*****************************************************************************/
-struct switch_record {
+typedef struct {
 	uint64_t consumed_energy;	/* consumed energy, in joules */
 	int level;			/* level in hierarchy, leaf=0 */
 	uint32_t link_speed;		/* link speed, arbitrary units */
@@ -60,9 +60,9 @@ struct switch_record {
 	char *switches;			/* name of direct descendant switches */
 	uint16_t *switch_index;		/* indexes of child switches */
 	uint32_t temp;			/* temperature, in celsius */
-};
+} switch_record_t;
 
-extern struct switch_record *switch_record_table;  /* ptr to switch records */
+extern switch_record_t *switch_record_table;  /* ptr to switch records */
 extern int switch_record_cnt;		/* size of switch_record_table */
 extern int switch_levels;               /* number of switch levels     */
 

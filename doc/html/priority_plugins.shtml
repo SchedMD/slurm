@@ -101,7 +101,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
-<p class="commandline">uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)</p>
+<p class="commandline">uint32_t priority_p_set(uint32_t last_prio, job_record_t *job_ptr)</p>
 <p style="margin-left:.2in"><b>Description</b>: Sets the priority of the job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline">last_prio</span> (input) the priority assigned to the
@@ -135,7 +135,7 @@ that contains the specific jobs or users of interest (of any).</p>
 <p style="margin-left:.2in"><b>Returns</b>: a list of priority_factors_object_t's
 containing the requested job priority factors</p>
 
-<p class="commandline">void priority_p_job_end(struct job_record *job_ptr)</p>
+<p class="commandline">void priority_p_job_end(job_record_t *job_ptr)</p>
 <p style="margin-left:.2in"><b>Description</b>: Handle ending of job
   with decayable limits.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
@@ -143,6 +143,6 @@ containing the requested job priority factors</p>
 <p style="margin-left:.2in"><b>Returns</b>: void</p>
 
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

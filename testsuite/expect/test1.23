@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Verify node configuration specification (--mem, --mincpus, and
 #          --tmp options).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -34,10 +29,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.23"
 set exit_code   0
-
-print_header $test_id
 
 #
 # Submit a job with invalid mincpus requirement
@@ -48,16 +40,16 @@ set timeout	$max_job_delay
 set srun_pid [spawn $srun -N1 -l --mincpus=999999 -t1 $bin_date]
 expect {
 	-re "configuration is not available" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set err_msg 1
 		exp_continue
 	}
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -67,11 +59,11 @@ expect {
 }
 
 if {[string compare $this_date ""] != 0} {
-	send_user "\nFAILURE: job ran with invalid mincpus option\n"
+	log_error "Job ran with invalid mincpus option"
 	set exit_code   1
 }
 if {$err_msg != 1} {
-	send_user "\nFAILURE: job failed to report required error\n"
+	log_error "Job failed to report required error"
 	set exit_code   1
 }
 
@@ -82,17 +74,17 @@ set this_date	""
 set timeout	$max_job_delay
 set srun_pid [spawn $srun -N1 -l --mincpus=1 -t1 $bin_date]
 expect {
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
 	#needed for cray systems that don't have a prefix
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -102,7 +94,7 @@ expect {
 }
 
 if {[string compare $this_date ""] == 0} {
-	send_user "\nFAILURE: job failed with valid mincpus option\n"
+	log_error "Job failed with valid mincpus option"
 	set exit_code   1
 }
 
@@ -115,16 +107,16 @@ set timeout	$max_job_delay
 set srun_pid [spawn $srun -N1 -l --mem=999999 -t1 $bin_date]
 expect {
 	-re "not available" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set err_msg 1
 		exp_continue
 	}
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -134,11 +126,11 @@ expect {
 }
 
 if {[string compare $this_date ""] != 0} {
-	send_user "\nFAILURE: job ran with invalid mem option\n"
+	log_error "Job ran with invalid mem option"
 	set exit_code   1
 }
 if {$err_msg != 1} {
-	send_user "\nFAILURE: job failed to report required error\n"
+	log_error "Job failed to report required error"
 	set exit_code   1
 }
 
@@ -155,21 +147,21 @@ set timeout	$max_job_delay
 set srun_pid [spawn $srun -N1 -l --mem=10 -t1 $bin_date]
 expect {
 	-re "not available" {
-		send_user "This error is not unexpected, no worries\n"
+		log_debug "This error is not unexpected, no worries"
 		set err_msg 1
 		exp_continue
 	}
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
 	#needed for cray systems that don't have a prefix
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -179,7 +171,7 @@ expect {
 }
 
 if {$err_msg == 0 && [string compare $this_date ""] == 0} {
-	send_user "\nFAILURE: job failed with valid mem option\n"
+	log_error "Job failed with valid mem option"
 	set exit_code   1
 }
 
@@ -192,16 +184,16 @@ set timeout	$max_job_delay
 set srun_pid [spawn $srun -N1 -l --tmp=999999999 -t1 $bin_date]
 expect {
 	-re "configuration is not available" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set err_msg 1
 		exp_continue
 	}
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -211,11 +203,11 @@ expect {
 }
 
 if {[string compare $this_date ""] != 0} {
-	send_user "\nFAILURE: job ran with invalid tmp option\n"
+	log_error "Job ran with invalid tmp option"
 	set exit_code   1
 }
 if {$err_msg != 1} {
-	send_user "\nFAILURE: job failed to report required error\n"
+	log_error "Job failed to report required error"
 	set exit_code   1
 }
 
@@ -226,17 +218,17 @@ set this_date	""
 set timeout	$max_job_delay
 set srun_pid [spawn $srun -N1 -l --tmp=0 -t1 $bin_date]
 expect {
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
 	#needed for cray systems that don't have a prefix
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -246,11 +238,9 @@ expect {
 }
 
 if {[string compare $this_date ""] == 0} {
-	send_user "\nFAILURE: job failed with valid tmp option\n"
-	set exit_code   1
+	fail "Job failed with valid tmp option"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

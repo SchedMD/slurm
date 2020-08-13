@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Test of PMI functions available via API library. Tests
 #          --pmi-threads option in srun command.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2005-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,21 +29,16 @@
 ############################################################################
 source ./globals
 
-set test_id          "7.2"
 set exit_code        0
 set file_prog_get    "test$test_id.prog"
 
-print_header $test_id
-
 # PMI library not in Cray RPM
 if {[test_cray]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
+	skip "This test is incompatible with Cray systems"
 }
 
 if { [file exists ${slurm_dir}/lib/libpmi.so] == 0 } {
-    send_user "\nWARNING: PMI library not compiled, can't perform pmi testing\n"
-    exit 0
+    skip "PMI library not compiled, can't perform pmi testing"
 }
 
 #
@@ -60,16 +51,16 @@ exec $bin_chmod 700 $file_prog_get
 #
 # Run job stand-alone to validate basic operation with 1 task and no srun
 #
-send_user "\nRunning PMI test stand alone (without srun)\n"
+log_info "Running PMI test stand alone (without srun)"
 set prog_pid [spawn ./$file_prog_get]
 expect {
 	-re "(FAILURE|error)" {
-		send_user "\nFAILURE: some error occurred\n"
+		log_error "Some error occurred"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $prog_pid
 		set exit_code 1
 	}
@@ -79,9 +70,9 @@ expect {
 }
 
 if { $exit_code == 0 } {
-	send_user "\n\nSo far, so good\nNow run PMI test under srun\n"
+	log_info "So far, so good\nNow run PMI test under srun"
 } else {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 #
@@ -98,12 +89,12 @@ set timeout [expr $max_job_delay +  60]
 set srun_pid [spawn $srun -l -N$node_cnt -n$task_cnt -O -t1 --threads=1 ./$file_prog_get]
 expect {
 	-re "(FAILURE|error)" {
-		send_user "\nFAILURE: some error occurred\n"
+		log_error "Some error occurred"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -113,8 +104,7 @@ expect {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-        exec $bin_rm -f $file_prog_get
-
+	exec $bin_rm -f $file_prog_get
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

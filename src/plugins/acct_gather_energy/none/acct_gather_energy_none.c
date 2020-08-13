@@ -125,7 +125,8 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 	return;
 }
 
-extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
+extern void acct_gather_energy_p_conf_set(int context_id_in,
+					  s_p_hashtbl_t *tbl)
 {
 	return;
 }

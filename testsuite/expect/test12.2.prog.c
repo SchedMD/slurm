@@ -64,10 +64,14 @@ main (int argc, char **argv)
 
 	if (rank == 0) {
 		mem = malloc(mem_kb * 1024);
-		/* need to do a memset on the memory or AIX will not count
-		 * the memory in the job step's Resident Set Size
+		/* We need to do a memset on the memory or AIX will not count
+		 * the memory in the job step's Resident Set Size.
 		 */
 		memset(mem, 0, (mem_kb * 1024));
+		/* Then we touch some memory using the volatile keyword so
+		 * the compiler does not optimize out the memset.
+		 */
+		*(volatile char*)mem = *(volatile char*)mem;
 	}
 
 	if (rank == 1) {

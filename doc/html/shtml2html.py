@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import re
 import sys
@@ -19,7 +19,7 @@ page_title_regex = re.compile(page_title_pat)
 url_pat = r'(\s+href\s*=\s*")([^"#]+)(#[^"]+)?(")'
 url_regex = re.compile(url_pat)
 
-first_header_pat = r'(<[h|H]1>\s*[<a name="top">]*\s*([a-zA-Z0-9_ ()\'/-]+)[:]*.*\s*[</a>]*\s*</[h|H]1>)'
+first_header_pat = r'<[hH]1>\s*(<a name="top">)?\s*(?P<title>[a-zA-Z0-9_ ()\'/-]+)[:]*.*\s*[</a>]?\s*</[hH]1>'
 first_header_regex = re.compile(first_header_pat)
 
 version_pat = r'(@SLURM_VERSION@)'
@@ -37,7 +37,7 @@ def include_virtual(matchobj):
         filename = matchobj.group(2)
 
     if os.access(filename, os.F_OK):
-        #print 'Including file', filename
+        #print('Including file', filename)
         lines = open(filename, 'r').read()
         return lines
     else:
@@ -64,7 +64,7 @@ def url_rewrite(matchobj):
             newname = location[:-6] + '.html'
         else:
             newname = location[:-6] + '.html' + matchobj.group(3)
-        #print 'Rewriting', location, 'to', newname
+        #print('Rewriting', location, 'to', newname)
         return matchobj.group(1) + newname + matchobj.group(4)
     else:
         return matchobj.group(0)
@@ -81,7 +81,7 @@ for f in sys.argv[2:]:
     if f[-6:] == '.shtml':
         files.append(f)
     else:
-        #print 'Skipping file %s (extension is not .shtml)' % f
+        #print('Skipping file ', f, ' (extension is not .shtml)')
         pass
 
 for filename in files:
@@ -94,7 +94,7 @@ for filename in files:
     for line in shtml.readlines():
         result = first_header_regex.match(line)
         if result:
-            title = result.group(2)
+            title = result.group('title')
             break
 
     shtml.seek(0)

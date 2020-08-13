@@ -162,6 +162,19 @@ reverse_tree_info(int rank, int num_nodes, int width,
 		return;
 	}
 
+	/*
+	 * If width is more than nodes total, then don't bother trying to
+	 * figure out the tree as there isn't a tree. All nodes just directly
+	 * talk to the controller.
+	 */
+	if (width > num_nodes) {
+		*parent = -1;
+		*num_children = 0;
+		*depth = 0;	/* not used currently */
+		*max_depth = 0;	/* not used currently */
+		return;
+	}
+
 	*max_depth = dep(num_nodes, width);
 	if (rank == 0) {
 		*parent = -1;
@@ -188,6 +201,10 @@ int reverse_tree_direct_children(int rank, int num_nodes, int width,
 	int current, child_distance;
 	int max_depth, sub_depth, max_rank_children;
 	int i;
+
+	/* no children if tree is disabled */
+	if (width > num_nodes)
+		return 0;
 
 	max_depth = dep(num_nodes, width);
 	sub_depth = max_depth - depth;

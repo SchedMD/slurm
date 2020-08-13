@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test interruption of salloc while waiting for resource allocation.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2010 Lawrence Livermore National Security
@@ -33,10 +29,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.26"
 set exit_code   0
-
-print_header $test_id
 
 #
 # Spawn initial program via srun
@@ -49,7 +42,7 @@ expect {
 	-re "queued and waiting for resources" {
 		set wait_flag 1
 		exec $bin_kill -INT $salloc_pid
-		send_user "\nSent SIGINT\n"
+		log_debug "Sent SIGINT"
 		exp_continue
 	}
 	-re "Job allocation ($number) has been revoked" {
@@ -61,25 +54,20 @@ expect {
 		exp_continue;
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		set wait_flag -999
 		slow_kill $salloc_pid
 		set exit_code 1
 	}
 	eof {
-		send_user "\nEOF\n"
+		log_debug "EOF"
 		wait
 	}
 }
 if {[expr $wait_flag + $abort_flag] != 2} {
-	send_user "\nFAILURE: salloc failed to process SIGINT while waiting for allocation\n"
-	set exit_code 1
+	fail "salloc failed to process SIGINT while waiting for allocation"
 }
 
-#
-# Post-processing
-#
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

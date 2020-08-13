@@ -69,6 +69,11 @@
 #define	MAX_INPUT_FIELDS 128
 #define FORMAT_STRING_SIZE 34
 
+#define SA_SET_USER  0x0001
+#define SA_SET_ASSOC 0x0002
+#define SA_SET_CLUST 0x0004
+#define SA_SET_WCKEY 0x0008
+
 typedef enum {
 	/* COMMON */
 	PRINT_ACCT,
@@ -184,6 +189,8 @@ typedef enum {
 	PRINT_TIMESTART,
 	PRINT_STATERAW,
 	PRINT_STATE,
+	PRINT_TIMESUBMIT,
+	PRINT_TIMEELIGIBLE,
 
 	/* RESOURCE */
 	PRINT_COUNT = 9000,
@@ -219,6 +226,7 @@ extern List g_tres_list;
 
 extern bool user_case_norm;
 extern bool tree_display;
+extern bool have_db_conn;
 
 extern bool sacctmgr_check_default_qos(uint32_t qos_id,
 				       slurmdb_assoc_cond_t *assoc_cond);
@@ -246,7 +254,7 @@ extern int sacctmgr_list_assoc(int argc, char **argv);
 extern int sacctmgr_list_user(int argc, char **argv);
 extern int sacctmgr_list_account(int argc, char **argv);
 extern int sacctmgr_list_cluster(int argc, char **argv);
-extern int sacctmgr_list_config(bool have_db_conn);
+extern int sacctmgr_list_config(void);
 extern int sacctmgr_list_event(int argc, char **argv);
 extern int sacctmgr_list_federation(int argc, char **argv);
 extern int sacctmgr_list_problem(int argc, char **argv);

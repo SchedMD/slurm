@@ -84,7 +84,6 @@ typedef enum {
 	EPLUGIN_DLOPEN_FAILED,   /* Dlopen not successful               */
 	EPLUGIN_INIT_FAILED,     /* Plugin's init() callback failed     */
 	EPLUGIN_MISSING_NAME,    /* plugin_name/type/version missing    */
-	EPLUGIN_MISSING_SYMBOL,  /* some symbol needed isn't found      */
 	EPLUGIN_BAD_VERSION,     /* incompatible plugin version         */
 } plugin_err_t;
 

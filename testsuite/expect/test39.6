@@ -1,153 +1,136 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Ensure job requesting GPUs on multiple sockets gets CPUs on multiple
 #          sockets
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Morris Jette
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 ############################################################################
 source ./globals
 
-set test_id     "39.6"
 set exit_code   0
 set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
 
-proc get_node_config {} {
-	global bin_rm cpus_per_socket sockets_per_node
-	global exit_code file_in max_job_delay number srun scontrol
-
-	set cpus_tot 1
-	set sockets_per_node 1
-	set cpus_per_socket 1
-	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODENAME"
-	set timeout $max_job_delay
-	log_user 0
-	set srun_pid [spawn $srun --gres=gpu:1 -n1 -t1 $file_in]
-	expect {
-		-re "CPUTot=($number)" {
-			set cpus_tot $expect_out(1,string)
-			exp_continue
-		}
-		-re "Sockets=($number)" {
-			set sockets_per_node $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: srun not responding\n"
-			slow_kill $srun_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	exec $bin_rm -f $file_in
-	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
-}
-
 proc multi_socket_gres { gres_string } {
+	set offset 0
 	set multi_found 0
+	set sock0_found 0
+	set sock1_found 0
+	set socks_found 0
 	set gres_char "x"
 
-	set start [string first "gpu" $gres_string]
-	if {$start == -1} {
-		return 0
-	}
-	set len [string length $gres_string]
-	for {set char_inx [expr $start + 3]} {$char_inx < $len} {incr char_inx} {
-		set gres_char [string index $gres_string $char_inx]
-		if {[string match "," $gres_char]} {
+	while {1} {
+		set start [string first "gpu" $gres_string $offset]
+		if {$start == -1} {
 			return 0
 		}
-		if {![string match "(" $gres_char]} {
-			continue
-		}
-		incr char_inx
-		if {$char_inx >= $len} {
-			break
-		}
-		set gres_char [string index $gres_string $char_inx]
-		if {![string match "S" $gres_char]} {
-			break
-		}
-		incr char_inx
-		if {$char_inx >= $len} {
-			break
-		}
-		set gres_char [string index $gres_string $char_inx]
-		if {![string match ":" $gres_char]} {
-			break
-		}
-		for {incr char_inx} {$char_inx < $len} {incr char_inx} {
+		set offset [expr $start + 1]
+		set len [string length $gres_string]
+		for {set char_inx [expr $start + 3]} {$char_inx < $len} {incr char_inx} {
 			set gres_char [string index $gres_string $char_inx]
-			if {[string match "-" $gres_char] || [string match ";" $gres_char]} {
-				return 1
-			}
 			if {[string match "," $gres_char]} {
-				return 0
+				break
+			}
+			if {![string match "(" $gres_char]} {
+				continue
+			}
+			incr char_inx
+			if {$char_inx >= $len} {
+				break
+			}
+			set gres_char [string index $gres_string $char_inx]
+			if {![string match "S" $gres_char]} {
+				break
+			}
+			incr char_inx
+			if {$char_inx >= $len} {
+				break
+			}
+			set gres_char [string index $gres_string $char_inx]
+			if {![string match ":" $gres_char]} {
+				break
+			}
+			for {incr char_inx} {$char_inx < $len} {incr char_inx} {
+				set gres_char [string index $gres_string $char_inx]
+				if {[string match ")" $gres_char]} {
+					break;
+				}
+				if {[string match "-" $gres_char] || [string match "," $gres_char]} {
+					return 1
+				}
+				if {[string match "0" $gres_char]} {
+					if {$sock0_found != 0} {
+						incr socks_found
+						set sock0_found 1
+					}
+				}
+				if {[string match "1" $gres_char]} {
+					if {$sock1_found != 0} {
+						incr socks_found
+						set sock1_found 1
+					}
+				}
+			}
+			if {$socks_found > 1} {
+				return 1
 			}
 		}
 	}
 	return 0
 }
 
-print_header $test_id
-
 if {[test_cons_tres]} {
-        send_user "\nValid configuration, using select/cons_tres\n"
+    log_debug "Valid configuration, using select/cons_tres"
 } else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit 0
+    skip "This test is only compatible with select/cons_tres"
 }
 
-set gpu_cnt [get_gpu_count 1]
+set gpu_cnt [get_highest_gres_count 1 "gpu"]
 if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+	fail "Error getting GPU count"
 }
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPUs in the default partition"
 }
-get_node_config
+set node_name [get_nodes_by_request "--gres=gpu:1 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:1"
+}
+set cpus_per_node     [get_node_param $node_name "CPUTot"]
+set sockets_per_node  [get_node_param $node_name "Sockets"]
+set cpus_per_socket   [expr $cpus_per_node / $sockets_per_node]
+
 if {$sockets_per_node < 2} {
-	send_user "\nWARNING: This test requires 2 or more sockets per node in the default partition\n"
-	exit 0
+	skip "This test requires 2 or more sockets per node in the default partition"
 }
 if {$cpus_per_socket < 2} {
-	send_user "\nWARNING: This test requires 2 or more cores per socket in the default partition\n"
-	exit 0
+	skip "This test requires 2 or more cores per socket in the default partition"
 }
-set cpus_per_node [expr $sockets_per_node * $cpus_per_socket]
-send_user "\nGPU count is $gpu_cnt\n"
-send_user "Sockets per node is $sockets_per_node\n"
-send_user "CPUs per socket is $cpus_per_socket\n"
-send_user "CPUs per node is $cpus_per_node\n\n"
+
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets per node is $sockets_per_node"
+log_debug "CPUs per socket is $cpus_per_socket"
+log_debug "CPUs per node is $cpus_per_node"
 
 #
 # Build input script file
@@ -164,9 +147,15 @@ exit 0"
 set match 0
 set multi_socket 0
 if {$gpu_cnt > $cpus_per_node} {
-	set srun_pid [spawn $srun --gpus-per-node=$gpu_cnt --nodes=1 --ntasks=1 --cpus-per-task=$cpus_per_socket -t1 -l ./$file_in]
+	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt \
+	                          --nodes=1 --ntasks=1 \
+	                          --cpus-per-task=$cpus_per_socket \
+	                          -t1 -l ./$file_in]
 } else {
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --nodes=1 --ntasks=1 --cpus-per-task=$cpus_per_socket -t1 -l ./$file_in]
+	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt \
+	                          --nodes=1 --ntasks=1 \
+	                          --cpus-per-task=$cpus_per_socket \
+	                          -t1 -l ./$file_in]
 }
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
@@ -177,15 +166,14 @@ expect {
 		set multi_socket [multi_socket_gres $expect_out(1,string)]
 		exp_continue
 	}
-	-re "CPU_IDs=($controlmachine_regex)" {
+	-re "CPU_IDs=($re_word_str)" {
 		if {$multi_socket != 0 && [string first , $expect_out(1,string)] == -1} {
-			send_user "\nFAILURE: allocated CPUs do not appear to span multiple sockets\n"
-			set exit_code 1
+			log_warn "Allocated CPUs do not appear to span multiple sockets. This is fine if every GPU is bound to ALL sockets"
 		}
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -194,12 +182,11 @@ expect {
 	}
 }
 if {$match != $gpu_cnt} {
-	send_user "\nFAILURE: srun --gpus-per-node failure ($match != $gpu_cnt)\n"
-	set exit_code 1
+	fail "srun --gpus-per-node failure ($match != $gpu_cnt)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

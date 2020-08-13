@@ -131,7 +131,7 @@ For example, it is legal to remove the line "SwitchName=s4 Switches=s[0-3]"
 from the above topology.conf file.
 In that case, no job will span more than four compute nodes on any single leaf
 switch.
-This configuration can be useful if one wants to schedule multiple phyisical
+This configuration can be useful if one wants to schedule multiple physical
 clusters as a single logical cluster under the control of a single slurmctld
 daemon.</p>
 
@@ -172,7 +172,7 @@ configuration parameter with the <i>max_switch_wait</i> option.</p>
 <p>If the topology/tree plugin is used, two environment variables will be set
 to describe that job's network topology. Note that these environment variables
 will contain different data for the tasks launched on each node. Use of these
-environment variables is at the discression of the user.</p>
+environment variables is at the discretion of the user.</p>
 
 <p><b>SLURM_TOPOLOGY_ADDR</b>:
 The value will be set to the names network switches which may be involved in

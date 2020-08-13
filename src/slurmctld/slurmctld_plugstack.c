@@ -68,7 +68,6 @@ static const char *syms[] = {
 static int g_context_cnt = -1;
 static slurmctld_plugstack_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
-static char *slurmctld_plugstack_list = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
@@ -80,7 +79,7 @@ static bool init_run = false;
 extern int slurmctld_plugstack_init(void)
 {
 	int rc = SLURM_SUCCESS;
-	char *last = NULL, *names;
+	char *last = NULL, *names, *plugstack_list;
 	char *plugin_type = "slurmctld_plugstack";
 	char *type;
 
@@ -91,13 +90,12 @@ extern int slurmctld_plugstack_init(void)
 	if (g_context_cnt >= 0)
 		goto fini;
 
-	slurmctld_plugstack_list = slurm_get_slurmctld_plugstack();
 	g_context_cnt = 0;
-	if ((slurmctld_plugstack_list == NULL) ||
-	    (slurmctld_plugstack_list[0] == '\0'))
+	if (!slurm_conf.slurmctld_plugstack ||
+	    !slurm_conf.slurmctld_plugstack[0])
 		goto fini;
 
-	names = slurmctld_plugstack_list;
+	names = plugstack_list = xstrdup(slurm_conf.slurmctld_plugstack);
 	while ((type = strtok_r(names, ",", &last))) {
 		xrealloc(ops, (sizeof(slurmctld_plugstack_ops_t) *
 			      (g_context_cnt + 1)));
@@ -121,6 +119,7 @@ extern int slurmctld_plugstack_init(void)
 		g_context_cnt++;
 		names = NULL; /* for next iteration */
 	}
+	xfree(plugstack_list);
 	init_run = true;
 
 fini:
@@ -155,7 +154,6 @@ extern int slurmctld_plugstack_fini(void)
 	}
 	xfree(ops);
 	xfree(g_context);
-	xfree(slurmctld_plugstack_list);
 	g_context_cnt = -1;
 
 fini:	slurm_mutex_unlock(&g_context_lock);

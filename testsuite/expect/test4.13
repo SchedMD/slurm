@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validate that sinfo -O (--Format) option displays the
 #          correct user specified values.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -32,11 +28,9 @@
 source ./globals
 source ./globals_accounting
 
-set test_id             4.13
 set test_acct           "test$test_id\_acct"
 set test_part           "test$test_id\_part"
-set test_node           [get_idle_node_in_part [default_partition]]
-set alpha_numeric_dot   "\[a-zA-Z0-9/_.:\-\]+"
+set test_node           [get_idle_node_in_part]
 set exit_code           0
 
 array set node_sinfo_vals { }
@@ -73,8 +67,6 @@ array set part_info {
 	RootOnly           root
 }
 
-print_header $test_id
-set def_part [default_partition]
 
 proc cleanup { } {
 
@@ -83,7 +75,7 @@ proc cleanup { } {
 	spawn $scontrol delete partitionname=$test_part
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -94,11 +86,10 @@ proc cleanup { } {
 }
 
 if { ![test_super_user] } {
-        send_user "\nWARNING: This test can't be run without being a super user of the cluster.\n"
-	exit 0
+    skip "This test can't be run without being a super user of the cluster"
 }
 
-send_user "\n=== Testing Node Information ===\n"
+log_info "=== Testing Node Information ==="
 set first_option 1
 foreach option [array names node_info] {
 
@@ -109,12 +100,12 @@ foreach option [array names node_info] {
 	}
 	spawn $scontrol show node $test_node
 	expect {
-		-re "\\m$option=($alpha_numeric_dot)\\M" {
+		-re "\\m$option=($re_word_str)\\M" {
 			set node_sinfo_vals($node_info($option)) $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -127,15 +118,19 @@ foreach option [array names node_info] {
 set first_option 1
 foreach option [array names node_sinfo_vals] {
 
+	# Gres option (and potentially others) may include "(" and ")" as
+	# characters, they need to be escaped to be used as part of a regexp
+	set regexp [string map {\( \\( \) \\)} $node_sinfo_vals($option)]
+
 	set match 0
-	spawn $sinfo -n$test_node -O$option -h
+	spawn $sinfo -n$test_node -O$option:256 -h
 	expect {
-		-nocase -re "$node_sinfo_vals($option)" {
+		-nocase -re "$regexp" {
 			set match 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo is not responding\n"
+			log_error "sinfo is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -144,9 +139,7 @@ foreach option [array names node_sinfo_vals] {
 	}
 
 	if {$match != 1} {
-		send_user "\nFAILURE: Node information $option output does "
-		send_user "not match sinfo output. "
-		send_user "Looking for value: $option = $node_sinfo_vals($option)\n"
+		log_error "Node information $option output does not match sinfo output. Looking for value: $option = $node_sinfo_vals($option)"
 		set exit_code 1
 	}
 }
@@ -157,7 +150,7 @@ foreach option [array names node_sinfo_vals] {
 spawn $scontrol create partitionname=$test_part nodes=$test_node
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -173,7 +166,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -181,11 +174,10 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: test partition was not created\n"
-	exit 1
+	fail "Test partition was not created"
 }
 
-send_user "\n=== Testing Partition Information ===\n"
+log_info "=== Testing Partition Information ==="
 set first_option 1
 foreach option [array names part_info] {
 
@@ -198,13 +190,13 @@ foreach option [array names part_info] {
 	}
 	spawn $scontrol show partition $test_part
 	expect {
-		-re "\\m$option=($alpha_numeric_dot)\\M" {
+		-re "\\m$option=($re_word_str)\\M" {
 			set part_sinfo_vals($part_info($option)) \
 			    $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -225,7 +217,7 @@ foreach option [array names part_sinfo_vals] {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo is not responding\n"
+			log_error "sinfo is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -234,20 +226,13 @@ foreach option [array names part_sinfo_vals] {
 	}
 
 	if {$match != 1} {
-		send_user "\nFAILURE: Partition information $option "
-		send_user "output does not match sinfo output. "
-		send_user "Looking for value: "
-		send_user "$option = $part_sinfo_vals($option)\n"
+		log_error "Partition information $option output does not match sinfo output. Looking for value: $option = $part_sinfo_vals($option)"
 		set exit_code 1
 	}
 }
 
 cleanup
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
-	send_user "\nFAILURE\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors"
 }
-
-exit $exit_code

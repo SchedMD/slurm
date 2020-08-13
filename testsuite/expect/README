@@ -28,46 +28,54 @@
 
 This directory contains a battery of Slurm regression tests. The tests make
 use of the "expect" scripting language. You can create "globals.local" and
-identify locations of files to be used in testing, especially the variable
-"slurm_dir". These tests expect single node jobs submitted to the default
-partition to respond within a 120 seconds.  If that is not the case, modify
-the value of "max_job_delay" in the "globals.local" file to an appropriate
-value or the tests will report failures due to timeouts.  If there are file
-propagation delays (e.g. due to NFS), the value of "max_file_delay" in the
-"globals.local" file may need modification. For example:
-    $ cat globals.local
-    set slurm_dir     "/usr/local"
-    set max_job_delay 300
+configure several testsuite variables, for example:
 
+slurm_dir:                    slurm installation directory (prefix) [/usr]
+build_dir:                    slurm build directory [../..]
+max_file_delay:               maximum file propogation delay (e.g. nfs) [90]
+testsuite_cleanup_on_failure: run cleanup and remove test_dir on failure [false]
+testsuite_shared_dir:         cluster-wide shared directory [.]
+testsuite_log_level:          logging threshold [$LOG_LEVEL_DEBUG]
+testsuite_log_format:         specifies the tracing fields used in logging
+testsuite_colorize:           boolean that turns colorization on or off
+
+The testsuite needs at least one cluster-wide shared file system.
+By default, we assume that it's the testsuite/expect directory (i.e. ".").
+Files created within this directory on one node in the cluster should be
+visible to all other nodes in the cluster.
+
+For the valid fields usable with testsuite_log_format, see the header
+comments for the _log_format procedure. See also the default defintion of
+testsuite_log_format in globals for an example of syntax.
+
+The "globals.local" file can be in the directory containing this README, or
+the one configured in the environment variable SLURM_LOCAL_GLOBALS_FILE.
 Each test can be executed independently. Upon successful completion, the test
 will print "SUCCESS" and terminate with an exit code of zero. Upon failure,
-the test will typically print "FAILURE" and an explanation of the failure.
-The message "WARNING" indicates that the cluster configuration can not fully
-test some option (e.g. only one node or partition) and the test terminates
-with an exit code of zero. In the event of a configuration problem or other
-catastrophic test failure other messages could be printed and their cause
-should be investigated. In either case, failing tests will terminate with a
-non-zero exit code and successful tests will terminate with a zero exit code.
+the test will print "FAILURE" and terminate with a positive exit code. If a
+test fails its precondition checks, it will print "SKIPPED" and terminate with
+a negative exit code. Use the fail, skip or pass procedures to end the test.
 
-The test is designed to be executed from a cluster-wide file system.
-File created on one node in the cluster should be visible to all other
-nodes in the cluster. If not executed in such an environment, many tests
-will fail.
+A test can expect to have some global variables defined that it can make use
+of within the test. These include:
 
-The script "regression" will execute all of the tests and summarize the
+test_name:  the name of the test script, e.g. test1.1
+test_id:    the numeric suffix for the test, e.g. 1.1
+test_dir:   a temporary subdirectory created within the testsuite_shared_dir *
+
+* The test_dir will get removed at the end of the test unless the test failed
+  and testsuite_cleanup_on_failure was set to false. The test_dir will be
+  (removed and) recreated the next time the test is run.
+
+The script "regression.py" will execute all of the tests and summarize the
 results. Standard output contains detailed logging of all events, which is
 quite verbose. Failure information is written to standard error. A good
-way to run "regression" is to write its standard output to one file and
+way to run "regression.py" is to write its standard output to one file and
 either write standard error to another file or print it to the terminal.
 Execution time of the full test suite is roughly 80 minutes, but can vary
 considerably with the architecture, configuration, and system load. Some
 tests send e-mail, so check for four e-mail messages sent to the user
-running the tests. Here is an example.
-    $ ./regression >slurm.test.tux.Aug3
-    Completions:357
-    Failures:   0
-    Time (sec): 4375
-    Remember to check for mail send by tests
+running the tests.
 
 When failures do occur, check the standard output for details. Searching
 for the keyword "FAILURE" will typically locate the failing test. Note
@@ -100,8 +108,7 @@ test1.8    Confirm that basic srun stdin, stdout, and stderr options work
 test1.9    Test of srun verbose mode (--verbose option).
 test1.10   Test of srun/slurmd debug mode (--slurmd-debug option).
 test1.11   Test job name option (--job-name).
-test1.12   Test of --checkpoint option. This does not validate the
-	   checkpoint file itself.
+test1.12   DEFUNCT
 test1.13   Test of immediate allocation option (--immediate option).
 test1.14   Test exclusive resource allocation for a step (--exclusive option).
 test1.15   Test of wait option (--wait option).
@@ -141,12 +148,12 @@ test1.38   Test srun handling of SIGINT to get task status or kill the job
 test1.39   Test of linux light-weight core files.
 test1.40   Test of job account (--account option).
 test1.41   Validate Slurm debugger infrastructure (--debugger-test option).
-test1.42   Test of job dependencies (--dependency option).
+test1.42   DEFUNCT
 test1.43   Test of slurm_job_will_run API, (srun --test-only option).
 test1.44   Read srun's stdout slowly and test for lost data.
 test1.45   Test srun option --preserve-env
 test1.46   Test srun option --kill-on-bad-exit
-test1.47   Test of job dependencies with singleton parameter.
+test1.47   DEFUNCT
 test1.48   Test of srun mail options (--mail-type and --mail-user options).
 test1.49   Test of srun task-prolog and task-epilog options.
 test1.50   Test of running non-existent job, confirm timely termination.
@@ -222,6 +229,7 @@ test1.113  Test of --use-min-nodes option.
 test1.114  Test of srun --spread-job option.
 test1.115  Test of srun not hanging on ignored stdin.
 test1.116  Extended MPI functionality tests via srun.
+test1.117  Test of standalone srun not ignoring --mem-per-cpu
 
 test2.#    Testing of scontrol options (to be run as unprivileged user).
 ========================================================================
@@ -252,6 +260,7 @@ test2.23   Validate scontrol requeuehold State=SpecialExit.
 test2.24   Validate the scontrol write config creates accurate config
 test2.25   Validate scontrol show assoc_mgr command.
 test2.26   Validate scontrol top command to priority order jobs.
+test2.27   Validate scontrol update mail user and mail type.
 
 
 test3.#    Testing of scontrol options (best run as SlurmUser or root).
@@ -372,7 +381,7 @@ test7.18   Test of slurm_hostlist_find().
 test7.19   Test sbatch/srun/salloc path resolving
 test7.20   Test lua JobSubmitPlugin
 test7.21   Test SPANK plugins that link against libslurm
-test7.22   Test job handling on Prolog failure (uses SPANK plugin)
+test7.23   Test time_str2secs parsing of different formats
 
 test9.#    System stress testing. Exercises all commands and daemons.
 =====================================================================
@@ -385,24 +394,6 @@ test9.6    Stress test of per-task output files.
 test9.7    Stress test multiple simultaneous commands via multiple threads.
 test9.8    Stress test with maximum slurmctld message concurrency.
 test9.9    Throughput test for 5000 jobs for timing
-
-
-test10.#   Testing of smap options.
-===================================
-test10.1   Confirm smap usage option works (--usage option).
-test10.2   Confirm smap help option works (--help option).
-test10.3   Test slurm partition information (-Ds option).
-test10.4   Test slurm partition information, in command mode (-Ds -c option).
-test10.5   Test bg partition information (-Db option).
-test10.6   Test bg partition information, in command mode (-Db -c option).
-test10.7   (removed)
-test10.8   (removed)
-test10.9   Test smap iteration (--iterate option).
-test10.10  Check smap output without header (--noheader option).
-test10.11  Confirm that smap reports a proper version number
-	   (--version option).
-test10.12  (removed)
-test10.13  (removed)
 
 test12.#   Testing of sacct command and options
 ===============================================
@@ -640,6 +631,9 @@ test21.37  sacctmgr show stats
 test21.38  sacctmgr modify limits for nested accounts with multiple users
 test21.39  sacctmgr create qos/account job and then delete account/qos
 test21.40  Test association plus partition/job QoS unique node limits enforced
+test21.41  sacctmgr update job set newwckey=
+test21.42  Test if headers returned by sacctmgr show can be used as format= specifiers
+test21.43  Test usagefactor
 
 test22.#   Testing of sreport commands and options.
 	   These also test the sacctmgr archive dump/load functions.
@@ -716,6 +710,7 @@ test31.#   Test of Slurm Epilog and Prolog.
 ===========================================
 test31.1   Validate proper epilog and prolog child process management.
 test31.2   Validate that job is set to requeue held state at prolog failure.
+test31.3   Validate Prolog and Epilog Environment Variables.
 
 
 test32.#   Test of sgather command and options.
@@ -778,6 +773,7 @@ test37.13  Validate federated arrays
 test37.14  Validate federated scontrol notify
 test37.15  Validate federated scontrol suspend
 test37.16  Validate job cleanup when clusters are removed federation
+test37.17  Test local and remote job dependencies
 
 test38.#   Testing of heterogeneous jobs.
 =========================================
@@ -789,15 +785,16 @@ test38.5   Validate squeue heterogeneous job fields
 test38.6   Test of SPANK plugin with heterogeneous jobs
 test38.7   Test of MPI with heterogeneous jobs.
 test38.8   Test of sacct functionality for heterogeneous jobs.
-test38.9   Validate srun --pack-group option.
+test38.9   Validate srun --het-group option.
 test38.10  Test of scontrol update job for heterogeneous jobs.
-test38.11  Validate sbcast for a pack job allocation.
-test38.12  Test label option with pack job allocation.
-test38.13  Test that job arrays of pack jobs are rejected
-test38.14  Test pack job step output file labling and different commands/args
+test38.11  Validate sbcast for a hetjob allocation.
+test38.12  Test label option with hetjob allocation.
+test38.13  Test that job arrays of hetjobs are rejected
+test38.14  Test hetjob step output file labling and different commands/args
 test38.15  Test for proper handling of different rank end times
 test38.16  Test environment variables needed by MPI
-test38.17  Test for multiple, out of order srun --pack-group options
+test38.17  Test for multiple, out of order srun --het-group options
+test38.18  Validate heterogeneous gpu job options.
 
 test39.#   Test of job select/cons_tres and --gpu options.
 ==========================================================
@@ -823,6 +820,7 @@ test39.19  Test accounting for GPU resources with various allocation options
 test39.20  Test GPU resource limits with various allocation options
 test39.21  Simple CUDA test
 test39.22  Test heterogeneous job GPU allocations.
+test39.23  Test --gpus-per-task with implicit task count
 
 test40.#   Test of job select/cons_tres and gres/mps options.
 =============================================================

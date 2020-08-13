@@ -98,7 +98,7 @@ static void _print_tres(print_field_t *field, uint64_t *tres_cnts,
 
 extern int process(shares_response_msg_t *resp, uint16_t options)
 {
-	uint32_t flags = slurmctld_conf.priority_flags;
+	uint32_t flags = slurm_conf.priority_flags;
 	int rc = SLURM_SUCCESS, i;
 	assoc_shares_object_t *share = NULL;
 	ListIterator itr = NULL;
@@ -119,7 +119,7 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 	tres_names = resp->tres_names;
 	tres_cnt = resp->tres_cnt;
 
-	format_list = list_create(slurm_destroy_char);
+	format_list = list_create(xfree_ptr);
 	if (opt_field_list) {
 		slurm_addto_char_list(format_list, opt_field_list);
 	} else if (flags & PRIORITY_FLAGS_FAIR_TREE) {

@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          pbsnodes command tests
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,14 +28,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "20.4"
 set exit_code   0
 
-print_header $test_id
-
 if {[file executable $pbsnodes] == 0} {
-	send_user "\nWARNING: $pbsnodes does not exists\n"
-	exit 0
+	skip "$pbsnodes does not exists"
 }
 
 set matches 0
@@ -50,7 +42,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: pbsnodes not responding\n"
+		log_error "pbsnodes not responding"
 		set exit_code 1
 	}
 	eof {
@@ -58,11 +50,9 @@ expect {
 	}
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: pbsnodes output failure\n"
-	set exit_code 1
+	fail "pbsnodes output failure"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

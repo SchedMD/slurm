@@ -99,7 +99,7 @@
  *   | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 |
  *   | Bit_0  | Bit_1  | Bit_2  | Bit_3  | Bit_4  | Bit_5  | Bit_6  | Bit_7  |
  *
- * If a job changes size (reliquishes nodes), the node_bitmap will remain
+ * If a job changes size (relinquishes nodes), the node_bitmap will remain
  * unchanged, but cpus, cpus_used, cpus_array_*, and memory_used will be 
  * updated (e.g. cpus and mem_used on that node cleared).
  */
@@ -156,11 +156,10 @@ extern job_resources_t *create_job_resources(void);
  *
  * job_resources_t *job_resrcs_ptr = create_job_resources();
  * node_name2bitmap("dummy[2,5,12,16]", true, &(job_res_ptr->node_bitmap));
- * rc = build_job_resources(job_resrcs_ptr, node_record_table_ptr,
- *			     slurmctld_conf.fast_schedule);
+ * rc = build_job_resources(job_resrcs_ptr, node_record_table_ptr);
  */
 extern int build_job_resources(job_resources_t *job_resrcs_ptr,
-			       void *node_rec_table, uint16_t fast_schedule);
+			       void *node_rec_table);
 
 /* Rebuild cpu_array_cnt, cpu_array_value, and cpu_array_reps based upon the
  * values of cpus in an existing data structure
@@ -180,11 +179,10 @@ extern int build_job_resources_cpus_array(job_resources_t *job_resrcs_ptr);
  * change in a node's socket or core count require that any job running on
  * that node be killed. Example of use:
  *
- * rc = valid_job_resources(job_resrcs_ptr, node_record_table_ptr,
- *			     slurmctld_conf.fast_schedule);
+ * rc = valid_job_resources(job_resrcs_ptr, node_record_table_ptr);
  */
 extern int valid_job_resources(job_resources_t *job_resrcs_ptr,
-			       void *node_rec_table, uint16_t fast_schedule);
+			       void *node_rec_table);
 
 /* Make a copy of a job_resources data structure,
  * free using free_job_resources() */
@@ -319,13 +317,5 @@ extern void remove_job_from_cores(job_resources_t *job_resrcs_ptr,
  * node in the job_resrcs_ptr->cpus. Return -1 if invalid */
 extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr, 
 					     int node_inx);
-/*
- * adapt the power_cpufreq layout and set the CurrentCoreWatts value of the cores
- * based on the selection of the resources and the choice of CPU Frequency 
- * CurrentCoreWatts are set to IdleWatts when one or more jobs occupy other 
- * resources of the node and set to 0 when the node is liberated
- */
-extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
-                         uint32_t node_id, char* node_name, bool new_value);
 
 #endif /* !_JOB_RESOURCES_H */

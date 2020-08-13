@@ -45,6 +45,7 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 
+#include "src/common/read_config.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/xstring.h"
 #include "src/sprio/sprio.h"
@@ -95,17 +96,17 @@ int main (int argc, char **argv)
 		weight_part = slurm_ctl_conf_ptr->priority_weight_part;
 		weight_qos  = slurm_ctl_conf_ptr->priority_weight_qos;
 		weight_tres = slurm_ctl_conf_ptr->priority_weight_tres;
-		prio_type   = xstrdup(slurm_ctl_conf_ptr->priority_type);
+		prio_type = slurm_ctl_conf_ptr->priority_type;
 		slurm_free_ctl_conf(slurm_ctl_conf_ptr);
 	} else {
-		weight_age  = slurm_get_priority_weight_age();
-		weight_assoc  = slurm_get_priority_weight_assoc();
-		weight_fs   = slurm_get_priority_weight_fairshare();
-		weight_js   = slurm_get_priority_weight_job_size();
-		weight_part = slurm_get_priority_weight_partition();
-		weight_qos  = slurm_get_priority_weight_qos();
-		weight_tres = slurm_get_priority_weight_tres();
-		prio_type   = slurm_get_priority_type();
+		weight_age = slurm_conf.priority_weight_age;
+		weight_assoc = slurm_conf.priority_weight_assoc;
+		weight_fs = slurm_conf.priority_weight_fs;
+		weight_js = slurm_conf.priority_weight_js;
+		weight_part = slurm_conf.priority_weight_part;
+		weight_qos = slurm_conf.priority_weight_qos;
+		weight_tres = slurm_conf.priority_weight_tres;
+		prio_type = slurm_conf.priority_type;
 	}
 
 	/* Check to see if we are running a supported accounting plugin */
@@ -116,7 +117,6 @@ int main (int argc, char **argv)
 			 prio_type);
 		exit(1);
 	}
-	xfree(prio_type);
 
 	if (params.federation)
 		show_flags |= SHOW_FEDERATION;

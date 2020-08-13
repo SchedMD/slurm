@@ -4,10 +4,6 @@
 #          checks that the --array environment variables are correct, and
 #          checks that the --output and --error files were created and
 #          contain the correct information.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -32,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id      "28.2"
 set file_script  "test$test_id.sh"
 set file_out     "test$test_id-%A_%a.output"
 set file_error   "test$test_id-%A_%a.error"
@@ -44,11 +39,8 @@ set array_in     ""
 set array_var    ""
 set exit_code    0
 
-print_header $test_id
-
 if {[get_array_config] < [expr $array_end + 1]} {
-	send_user "\nWARNING: MaxArraySize is too small\n"
-	exit 0
+	skip "MaxArraySize is too small"
 }
 
 proc delete_file {} {
@@ -90,7 +82,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -99,18 +91,18 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
+	log_error "sbatch did not submit job"
 	set exit_code 1
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	set exit_code 1
 }
 
 for {set cnt 0} {$cnt<$array_end} {incr cnt} {
 	if {[wait_for_file slurm-$job_id\_$cnt\.out] != 0} {
-		send_user "\nFAILURE: output file was not created or not the correct format. slurm-$job_id\_$cnt\.out not found\n"
+		log_error "Output file was not created or not the correct format. slurm-$job_id\_$cnt\.out not found"
 		set exit_code 1
 	} else {
 		exec $bin_rm -f slurm-$job_id\_$cnt\.out
@@ -126,7 +118,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -136,27 +128,26 @@ expect {
 
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit jobs\n"
-	exit 1
+	fail "sbatch did not submit jobs"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	set exit_code 1
 }
 
 # Checks that the correct error and output files were created with the correct format
 for {set cnt 0} {$cnt<$array_end} {incr cnt} {
 	if {[wait_for_file test$test_id-$job_id\_$cnt\.output] != 0} {
-		send_user "\nFAILURE: output file was not created or not the correct format. test$test_id-$job_id\_$cnt\.output not found\n"
+		log_error "Output file was not created or not the correct format. test$test_id-$job_id\_$cnt\.output not found"
 		set exit_code 1
 	}
 	if {[wait_for_file test$test_id-$job_id\_$cnt\.error] !=0} {
-		send_user "\nFAILURE: error file was not created or not the correct format. test$test_id-$job_id\_$cnt\.error not found\n"
+		log_error "Error file was not created or not the correct format. test$test_id-$job_id\_$cnt\.error not found"
 		set exit_code 1
 	}
 }
-send_user "\nchecking environment variables\n"
+log_debug "Checking environment variables"
 # Checks that the array job ids are correct
 set max_inx [expr $array_end - 1]
 for {set index 0} {$index < $array_end} {incr index} {
@@ -192,7 +183,7 @@ for {set index 0} {$index < $array_end} {incr index} {
 		}
 	}
 	if {$env_cnt != 6} {
-		send_user "\nFAILURE: Missing environment variables in file test$test_id-$job_id\_$index\.output ($env_cnt != 6)\n"
+		log_error "Missing environment variables in file test$test_id-$job_id\_$index\.output ($env_cnt != 6)"
 		set exit_code 1
 	}
 }
@@ -203,7 +194,7 @@ for {set index 0} {$index < $array_end} {incr index} {
 	spawn $bin_cat test$test_id-$job_id\_$index\.error
 	expect {
 		-re "$sleep_error_message" {
-			send_user "\nDo not worry this error is expected\n"
+			log_debug "Do not worry this error is expected"
 			incr err_match
 		}
 		eof {
@@ -211,15 +202,13 @@ for {set index 0} {$index < $array_end} {incr index} {
 		}
 	}
 	if {$err_match != 1} {
-		send_user "\nFAILURE: Bad contents in the error file test$test_id-$job_id\_$index\.error\n"
+		log_error "Bad contents in the error file test$test_id-$job_id\_$index\.error"
 		set exit_code 1
 	}
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	delete_file
 } else {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

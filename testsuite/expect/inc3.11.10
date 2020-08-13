@@ -1,0 +1,68 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          to be called from test3.11
+#          Test DAILY reservation conflict
+#
+############################################################################
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+proc inc3_11_10 {} {
+	global user_name exit_code
+
+	set res_name "resv3.11.10"
+	set res_name_test "resv3.11.10.0"
+
+	# TEST 10
+	# Test node reservation conflict
+	#
+	log_info "+++++ STARTING TEST 10 (Within: inc3.11.10) +++++"
+	# Make the reservation
+	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 Nodes=[available_nodes_hostnames "" true] flags=DAILY user=$user_name"]
+	if {$ret_code != 0} {
+		fail "Unable to create a valid reservation (Within: inc3.11.10)"
+	}
+
+	# Test for reservation conflict
+	set ret_code [create_res $res_name_test "StartTime=now Duration=120 NodeCnt=1 user=$user_name"]
+	if {$ret_code == 0} {
+		delete_res $res_name_test
+		delete_res $res_name
+		fail "Reservation did not fail but should have (Within: inc3.11.10)"
+	} else {
+		log_info "Expected error. You can turn that frown upside-down.(Within: inc3.11.10)"
+	}
+
+	# Test for reservation conflict
+	set ret_code [create_res $res_name_test "StartTime=now+6days Duration=120 NodeCnt=1 user=$user_name"]
+	if {$ret_code == 0} {
+		delete_res $res_name_test
+		delete_res $res_name
+		fail "Reservation did not fail but should have (Within: inc3.11.10)"
+	} else {
+		log_info "Expected error. You can turn that frown upside-down.(Within: inc3.11.10)"
+	}
+
+
+	# Delete the reservation
+	set ret_code [delete_res $res_name]
+	if {$ret_code != 0} {
+		fail "Unable to delete reservation ($res_name)"
+	}
+}

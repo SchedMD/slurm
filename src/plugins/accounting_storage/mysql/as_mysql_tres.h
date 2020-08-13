@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  as_mysql_tres.c - functions dealing with tres.
  *****************************************************************************
- *
  *  Copyright (C) 2015 SchedMD LLC.
  *  Written by Danny Auble <da@schedmd.com>
  *

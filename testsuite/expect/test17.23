@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of nice value specification (--nice option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2005-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.23"
 set exit_code   0
 set file_in     "test$test_id.input"
 set job_id1     0
@@ -41,8 +36,6 @@ set job_id3     0
 set job_prio1   0
 set job_prio2   0
 set job_prio3   0
-
-print_header $test_id
 
 #
 # Build input script file
@@ -59,7 +52,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -67,8 +60,7 @@ expect {
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: sbatch submit failed\n"
-	exit 1
+	fail "sbatch submit failed"
 }
 
 spawn $sbatch --output=/dev/null --error=/dev/null -t2 --nice $file_in
@@ -78,7 +70,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -86,9 +78,8 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	send_user "\nFAILURE: sbatch submit failed\n"
 	cancel_job $job_id1
-	exit 1
+	fail "Sbatch submit failed"
 }
 
 spawn $sbatch --output=/dev/null --error=/dev/null -t2 --nice=200 $file_in
@@ -98,7 +89,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -106,10 +97,9 @@ expect {
 	}
 }
 if {$job_id3 == 0} {
-	send_user "\nFAILURE: sbatch submit failed\n"
 	cancel_job $job_id1
 	cancel_job $job_id2
-	exit 1
+	fail "sbatch submit failed"
 }
 
 exec $bin_rm -f $file_in
@@ -124,7 +114,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -138,7 +128,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -152,7 +142,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -164,21 +154,21 @@ expect {
 # Make sure the job priorities are as expected
 #
 if {$job_prio1 == 0 || $job_prio2 == 0 || $job_prio3 == 0} {
-	send_user "\nFAILURE: failed to job priorities of each submitted job\n"
+	log_error "Failed to job priorities of each submitted job"
 	set exit_code 1
 } elseif {$job_prio1 < 1000 || $job_prio2 < 1000 || $job_prio3 < 1000} {
-	send_user "\nWARNING: PriorityWeight factors result in a job priority too low for this test\n"
+	log_warn "PriorityWeight factors result in a job priority too low for this test"
 } else {
 	set diff2 [expr $job_prio1 - $job_prio2]
 	set diff3 [expr $job_prio1 - $job_prio3]
 #	Target for diff2 is 101
 	if {$diff2 < 91 || $diff2 > 111} {
-		send_user "\nFAILURE: job2 priority delta bad ($diff2, target is 101)\n"
+		log_error "Job2 priority delta bad ($diff2, target is 101)"
 		set exit_code 1
 	}
 #	Target for diff3 is 202
 	if {$diff3 < 192 || $diff3 > 212} {
-		send_user "\nFAILURE: job3 priority delta bad ($diff3, target is 202)\n"
+		log_error "Job3 priority delta bad ($diff3, target is 202)"
 		set exit_code 1
 	}
 }
@@ -186,8 +176,6 @@ if {$job_prio1 == 0 || $job_prio2 == 0 || $job_prio3 == 0} {
 cancel_job $job_id1
 cancel_job $job_id2
 cancel_job $job_id3
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
-

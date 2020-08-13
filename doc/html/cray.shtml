@@ -15,7 +15,7 @@
 
 <h2><a name="user_guide">User Guide</a></h2>
 
-<p>This document describes the unique features of Slurm on Cray
+<p>This document describes the unique features of Slurm on Cray XC
   computers natively, or without the use of Cray's Application Level
   Placement Scheduler (ALPS).  You should be familiar with the Slurm's
   mode of operation on Linux clusters before studying the differences
@@ -62,7 +62,7 @@
 
 <li>Core Specialization</li>
 <p>
-  To use set <b><i>CoreSpecPlugin=core_spec/cray</i></b>.
+  To use set <b><i>CoreSpecPlugin=core_spec/cray_aries</i></b>.
   Ability to reserve a number of cores allocated to the job for system
   operations and not used by the application. The application will not
   use these cores, but will be charged for their allocation.
@@ -87,12 +87,12 @@
 
 <li>CoreSpec</li>
 <p>
-  To use set <b><i>CoreSpecPlugin=core_spec/cray</i></b>.
+  To use set <b><i>CoreSpecPlugin=core_spec/cray_aries</i></b>.
 </p>
 
 <li>JobSubmit</li>
 <p>
-  Set <b><i>JobSubmitPlugins=job_submit/cray</i></b> to use.
+  Set <b><i>JobSubmitPlugins=job_submit/cray_aries</i></b> to use.
   This plugin is primarily used to set a gres=craynetwork value which
   is used to limit the number of applications that can run on a node
   at once.  For a node without MICs on it that number at most is 4.
@@ -110,7 +110,7 @@
 
 <li>Power</li>
 <p>
-  Set <b><i>PowerPlugin=power/cray</i></b> to use.
+  Set <b><i>PowerPlugin=power/cray_aries</i></b> to use.
   <b><i>PowerParameters</i></b> is also typically configured.
   For more information, see
   <a href="power_mgmt.html">Slurm Power Management Guide</a>.
@@ -118,12 +118,12 @@
 
 <li>Proctrack</li>
 <p>
-  Set <b><i>ProctrackType=proctrack/cray</i></b> to use.
+  Set <b><i>ProctrackType=proctrack/cray_aries</i></b> to use.
 </p>
 
 <li>Select</li>
 <p>
-  Set <b><i>SelectType=select/cray</i></b> to use.  This plugin is
+  Set <b><i>SelectType=select/cray_aries</i></b> to use.  This plugin is
   a layered plugin.  Which means it enhances a lower layer select
   plugin.  By default it is layered on top of the <i>select/linear</i>
   plugin.  It can also be layered on top of the <i>select/cons_res</i> plugin
@@ -145,24 +145,24 @@
 
 <li>Switch</li>
 <p>
-  Set <b><i>SwitchType=switch/cray</i></b> to use.
+  Set <b><i>SwitchType=switch/cray_aries</i></b> to use.
 </p>
 
 <li>Task</li>
 <p>
-  Set <b><i>TaskPlugin=cray,cgroup</i></b> to use. Use of the
-  <b><i>task/cgroup</i></b> plugin is required alongside <i>task/cray</i>.
+  Set <b><i>TaskPlugin=cray_aries,cgroup</i></b> to use. Use of the
+  <b><i>task/cgroup</i></b> plugin is required alongside <i>task/cray_aries</i>.
   You may also use the <i>task/affinity</i> plugin along with
-  <i>task/cray,task/cgroup</i> if desired (i.e.
-  <b><i>TaskPlugin=cray,affinity,cgroup</i></b>). Note that plugins
+  <i>task/cray_aries,task/cgroup</i> if desired (i.e.
+  <b><i>TaskPlugin=cray_aries,affinity,cgroup</i></b>). Note that plugins
   are used in the order they are defined in the comma separated list,
-  and that <i>task/cray</i> must be listed before <i>task/cgroup</i>
+  and that <i>task/cray_aries</i> must be listed before <i>task/cgroup</i>
   due to internal dependencies between the two plugins.
 </p>
 </ul>
 
 <h2><a name="setup">Cray system setup</a></h2>
-<p>Some Slurm plugins (burst_buffer/datawarp and power/cray) plugins
+<p>Some Slurm plugins (burst_buffer/datawarp and power/cray_aries) plugins
 parse JSON format data.
 These plugins are designed to make use of the JSON-C library for this purpose.
 See <a href="download.html#json">JSON-C installation instructions</a> for

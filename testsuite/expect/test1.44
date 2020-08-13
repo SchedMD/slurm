@@ -3,10 +3,6 @@
 # Purpose: Run "srun cat" and read srun's stdout SLOWLY, creating
 #          stdout back pressure in srun.  (srun used to lose data on stdout
 #          in this situation.)
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008 Lawrence Livermore National Security.
@@ -34,7 +30,6 @@
 ############################################################################
 source ./globals
 
-set test_id      "1.44"
 set cycle_count  3
 set target_lines 1000
 set exit_code    0
@@ -43,8 +38,6 @@ set file_out     "test$test_id.output"
 set file_err     "test$test_id.error"
 set task_cnt     1
 
-print_header $test_id
-
 # Execute an srun job to cat input_file.  Read srun's stdout SLOWLY (1k/sec)
 # to create back pressure which used to reveal a stdout data-loss bug.
 # Write the srun's stdout to a file so that the caller can compare the sizes
@@ -52,7 +45,7 @@ print_header $test_id
 proc run_cat_backpressure { input_file output_file } {
 	global bin_cat bin_sleep bin_rm srun node_cnt task_cnt timeout file_err
 
-	send_user "Running run_cat_backpressure (This is slow)."
+	log_debug "Running run_cat_backpressure (This is slow)"
 	exec $bin_rm -f $file_err $output_file
 	set iter 0
 
@@ -62,12 +55,12 @@ proc run_cat_backpressure { input_file output_file } {
 		puts -nonewline $output [read $srun_output 1]
 		incr iter
 		if {[expr $iter % 1000] == 0} {
-			send_user "."
+			puts -nonewline "."
 			exec $bin_sleep 1
 		}
 	}
 
-	send_user "\n"
+	puts ""
 	flush $output
 	close $output
 }
@@ -100,9 +93,9 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	}
 	if {$stdout_lines != $stdout_target} {
 		if {$stdout_lines == 0} {
-			send_user "\nFAILURE: stdout is empty, is current working directory writable from compute nodes?\n"
+			log_error "Stdout is empty, is current working directory writable from compute nodes?"
 		} else {
-			send_user "\nFAILURE:stdout is incomplete ($stdout_lines != $stdout_target)\n"
+			log_error "Stdout is incomplete ($stdout_lines != $stdout_target)"
 		}
 	        set exit_code 1
 	        break
@@ -113,9 +106,7 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 exec $bin_rm -f $file_in $file_out $file_err
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $file_err $file_in $file_out
 } else {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors with exit code $exit_code"
 }
-exit $exit_code

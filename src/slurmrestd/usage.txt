@@ -1,0 +1,17 @@
+Usage: slurmrestd [OPTIONS] [host:port]...
+	-a <authentication types>
+		List of authentication types to accept.
+	-f file
+		Use specified file for slurmctld configuration
+	-h
+		Print this help message.
+	-s <OpenAPI plugins to load>
+		CSV list of OpenAPI plugins.
+	-t <thread count>
+		Number of threads to use for processing.
+	-u <user>
+		setuid() to user after opening sockets.
+	-v
+		Verbose mode. Multiple -v's increase verbosity.
+	-V
+		Print version information and exit.

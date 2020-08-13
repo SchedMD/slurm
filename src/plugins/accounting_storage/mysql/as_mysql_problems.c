@@ -2,7 +2,6 @@
  *  as_mysql_problems.c - functions for finding out problems in the
  *                     associations and other places in the database.
  *****************************************************************************
- *
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
@@ -265,8 +264,7 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 
 	xfree(tmp);
 	xfree(extra);
-	if (debug_flags & DEBUG_FLAG_DB_QUERY)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);

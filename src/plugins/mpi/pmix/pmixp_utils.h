@@ -40,6 +40,8 @@
 
 #include "pmixp_common.h"
 
+extern int pmixp_count_digits_base10(uint32_t val);
+
 void pmixp_xfree_xmalloced(void *x);
 void pmixp_free_buf(void *x);
 int pmixp_usock_create_srv(char *path);

@@ -40,6 +40,8 @@
 
 #include "src/common/slurm_protocol_defs.h"
 
+#include "src/slurmd/slurmd/slurmd.h"
+
 /* Process request contained in slurm message `msg' from client at
  * msg->orig_addr
  *
@@ -47,7 +49,10 @@
  */
 void slurmd_req(slurm_msg_t *msg);
 
-void destroy_starting_step(void *x);
+/*
+ * Send the slurmd_conf over a pipe to a child process.
+ */
+extern int send_slurmd_conf_lite(int fd, slurmd_conf_t *cf);
 
 void gids_cache_purge(void);
 

@@ -43,8 +43,6 @@
 
 #include "config.h"
 
-#include "macros.h"
-
 #ifdef NDEBUG
 
 #  define xassert(expr)	((void) (0))
@@ -53,7 +51,7 @@
 
 #  define xassert(__ex)  do { \
      ((__ex)) ? ((void)0) : \
-     __xassert_failed(__STRING(__ex), __FILE__,  __LINE__, __func__);\
+     __xassert_failed(#__ex, __FILE__,  __LINE__, __func__);\
      } while (0)
 
 /*  This prints the assertion failed message to the slurm log facility
@@ -61,7 +59,7 @@
  *  (messages go to stderr if log is not initialized)
  */
 extern void __xassert_failed(char *, const char *, int, const char *)
-	    __NORETURN_ATTR;
+	__attribute__((noreturn));
 
 #endif /* NDEBUG. */
 

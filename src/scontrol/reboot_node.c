@@ -70,7 +70,7 @@ extern int scontrol_cancel_reboot(char *nodes)
 extern int scontrol_reboot_nodes(char *node_list, bool asap,
 				 uint32_t next_state, char *reason)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_conf_t *conf;
 	int rc;
 	slurm_msg_t msg;
 	reboot_msg_t req;

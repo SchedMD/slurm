@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr add multiple accounts
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,7 +29,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "21.11"
 set exit_code   0
 set almatches   0
 set damatches   0
@@ -76,27 +71,22 @@ set acct(Description)   "Test_Account_A1"
 set access_err  0
 set timeout 60
 
-print_header $test_id
-
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 #
 # Verify if Administrator privileges
 #
  if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 #make sure we have a clean system and permission to do this work
 remove_acct "" "$ta1,$ta2"
 remove_cluster "$tc1,$tc2"
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 
 #
@@ -105,12 +95,11 @@ if {$access_err != 0} {
 add_cluster "$tc1,$tc2" [array get cluster]
 
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
+	log_error "Our associations don't line up"
 	set exit_code 1
 }
 
@@ -125,7 +114,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -133,7 +122,7 @@ expect {
 	}
 }
 if {$qos_set != 1} {
-	send_user "\nFAILURE QOS $acct(DefaultQos) was not created\n"
+	log_error "QOS $acct(DefaultQos) was not created"
 	set exit_code 1
 }
 
@@ -157,16 +146,16 @@ expect {
 	}
 	-re "$tc2.$ta1" {
 		set exit_code 1
-		send_user "\nFAILURE: $ta1 account erroneously added to $tc2\n"
+		log_error "$ta1 account erroneously added to $tc2"
 		exp_continue
 	}
 	-re "$tc2.$ta2" {
 		exp_continue
-		send_user "\nFAILURE: $ta2 account erroneously added to $tc2\n"
+		log_error "$ta2 account erroneously added to $tc2"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $as_list_pid
 		set exit_code 1
 	}
@@ -176,8 +165,7 @@ expect {
 }
 
 if {$almatches != 2} {
-	send_user "\nFAILURE: Added associations not found.\n"
-	send_user "\n Need 2 matches and got $almatches instead.\n"
+	log_error "Added associations not found. Need 2 matches and got $almatches instead"
 	set exit_code 1
 }
 # Check that the Association was set correctly
@@ -186,7 +174,7 @@ check_assoc_limit 2 account $ta1 [array get acct]
 check_assoc_limit 2 account $ta2 [array get acct]
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
+	log_error "Our associations don't line up"
 	set exit_code 1
 }
 
@@ -200,7 +188,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -210,12 +198,12 @@ expect {
 }
 
 if {$damatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $damatches\n"
+	log_error "sacctmgr had a problem deleting cluster got $damatches"
 	set exit_code 1
 }
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
+	log_error "Our associations don't line up"
 	set exit_code 1
 }
 
@@ -229,7 +217,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -239,7 +227,7 @@ expect {
 }
 
 if {$dcmatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $dcmatches\n"
+	log_error "sacctmgr had a problem deleting cluster got $dcmatches"
 	set exit_code 1
 }
 
@@ -254,7 +242,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -264,7 +252,7 @@ expect {
 }
 
 if {$dmatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting QOS got $dmatches\n"
+	log_error "sacctmgr had a problem deleting QOS got $dmatches"
 	set exit_code 1
 }
 
@@ -275,16 +263,16 @@ set as2_list_pid [spawn $sacctmgr list association cluster=$tc1 ]
 expect {
 	-re "$tc1 *$ta1" {
 		exp_continue
-		send_user "\nFAILURE: test associations still exist.\n"
+		log_error "Test associations still exist"
 		set exit_code 1
 	}
 	-re "$tc1 *$ta2" {
 		exp_continue
-		send_user "\nFAILURE: test associations still exist.\n"
+		log_error "Test associations still exist"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nTest associations delete verified.\n"
+		log_debug "Test associations delete verified"
 		slow_kill $as2_list_pid
 	}
 	eof {
@@ -293,11 +281,9 @@ expect {
 }
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
-	set exit_code 1
+	fail "Our associations don't line up"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

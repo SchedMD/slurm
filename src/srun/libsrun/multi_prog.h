@@ -51,8 +51,7 @@ extern void mpir_init(int num_tasks);
 extern void mpir_set_executable_names(const char *executable_name,
 				      uint32_t task_offset,
 				      uint32_t task_count);
-extern int  mpir_set_multi_name(int ntasks, const char *config_fname,
-				const char * cwd);
+extern int mpir_set_multi_name(int ntasks, const char *config_fname);
 
 /*
  * Verify that we have a valid executable program specified for each task

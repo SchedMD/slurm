@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validates that sacctmgr show runawayjobs returns runawayjobs
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2016 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -31,7 +27,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id          21.36
 set sql_query        "test$test_id\-query.sql"
 set sql_query_rem    "test$test_id\-query-rem.sql"
 set cluster          [get_cluster_name]
@@ -63,27 +58,21 @@ proc endit { } {
 	global exit_code bin_rm sql_query sql_query_rem
 	cleanup
 
-	if {$exit_code == 0} {
-		send_user "\nSUCCESS\n"
-	} else {
-		send_user "\nFAILURE\n"
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors"
 	}
 
 	exec $bin_rm -f $sql_query $sql_query_rem
 
-	exit $exit_code
+	pass
 }
 
-
-print_header $test_id
 
 if {[test_using_slurmdbd] == 0} {
-	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
-	exit 0
+	skip "This test can't be run without AccountStorageType=slurmdbd"
 }
 if {[string compare [check_accounting_admin_level] "Administrator"]} {
-	send_user "\nThis test can't be run without being an Accounting administrator.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator"
 }
 
 exec $bin_rm -f $sql_query $sql_query_rem
@@ -147,7 +136,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		endit
 	}
 	eof {
@@ -156,8 +145,7 @@ expect {
 }
 
 if {$list_job != 1} {
-	send_user "\nFAILURE: sacctmgr did not find any runaway jobs when "
-	send_user "it should have\n"
+	log_error "sacctmgr did not find any runaway jobs when it should have"
 	endit
 }
 
@@ -170,7 +158,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		endit
 	}
 	eof {
@@ -179,8 +167,7 @@ expect {
 }
 
 if {$list_job != 1} {
-	send_user "\nFAILURE: sacctmgr found runaway jobs when "
-	send_user "it should not have\n"
+	log_error "sacctmgr found runaway jobs when it should not have"
 	endit
 }
 

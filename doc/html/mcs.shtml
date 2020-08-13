@@ -6,27 +6,27 @@
 <p>The MCS Plugin is meant to extend the current Slurm functionality related to
 job nodes <b>exclusivity</b> and job/node information display <b>privacy</b>.
 
-<p>Slurm <b>OverSubscribe</b> option controls the ability of a partition to
+<p>Slurm's <b>OverSubscribe</b> option controls the ability of a partition to
 execute more than one job at a time on each resource, no matter "what type"
 of job. Slurm job submission clients can also use the <b>--exclusive</b> and
 <b>--oversubscribe</b> parameters to request how the job can be
-<a href="cons_res_share.html">shared</a>. <b>ExclusiveUser</b>
+<a href="cons_res_share.html">shared</a>. The <b>ExclusiveUser</b>
 slurm.conf parameter and the --exclusive=<b>user</b> client parameter value
 modifies the exclusivity functionality. With this parameter enabled, the
 "type of job" now matters when considering exclusivity, so jobs can share
 resources <b>based on</b> job users, meaning that only jobs whose user is the
 same can share resources. This indeed adds a new dimension to how Slurm manages
 exclusivity. With the introduction of the MCS Plugin, Slurm can now be
-configured to associate a <b>MCS_label</b> to jobs and optionally ensure that
+configured to associate an <b>MCS_label</b> to jobs and optionally ensure that
 nodes can only be shared among jobs having the same label.
 This adds even more degrees of freedom to how Slurm manages exclusivity,
-providing end users with way much more flexibility on this area.</p>
+providing end users with much more flexibility in this area.</p>
 
 <p>Slurm also has the <b>PrivateData</b> <a href="slurm.conf.html">slurm.conf</a>
 parameter, which is used to control what type of information is hidden from
-regular users. Similarly to the exclusivity property, the MCS Plugin also
-extends the <b>privacy</b> one by filtering jobs and/or nodes information
-based on the users access to their <b>MCS_label</b>. This means that privacy
+regular users. Similar to the exclusivity property, the MCS Plugin also
+extends the <b>privacy</b> by filtering job and/or node information
+based on the user's access to their <b>MCS_label</b>. This means that privacy
 is now less restrictive, and information is not just hidden or not to regular
 users, but now it is filtered <b>depending</b> on these configurable/requestable
 labels in coordination with the PrivateData option.
@@ -56,7 +56,7 @@ the job's --uid.
 
 <p>MCS_labels on jobs can be displayed through 'squeue' with the format option
 <b>mcslabel</b> or through 'scontrol show job'. Nodes also acquire a MCS_label,
-which is inherited from the allocated job's MCS_label. The nodes label can be
+which is inherited from the allocated job's MCS_label. The node's label can be
 displayed with 'scontrol show nodes'. The 'sview' command can also be used to
 see these MCS_labels.</p>
 
@@ -69,8 +69,9 @@ associate a MCS label to a submited job, either the default value or the one
 requested by the user (if it's considered correct).</p>
 
 <p>The selection (exclusivity) of nodes can be filtered on MCS labels either
-on demand (ondemand) or always (select) or never (noselect). User can force the
-filter with <b>--exclusive=mcs</b> option (except if noselect mode is enabled).
+on demand (ondemand) or always (select) or never (noselect). Users can force
+the filter with the <b>--exclusive=mcs</b> option (except if noselect mode is
+enabled).
 </p>
 
 <p>Label enforcement, node selection filtering policy, private data based on
@@ -192,7 +193,7 @@ MCSParameters=enforced,select,privatedata
 
 <h2>View MCS parameters</h2>
 
-<p>Configured MCS parameters can be viewed using the <it>scontrol</it> command.
+<p>Configured MCS parameters can be viewed using the <i>scontrol</i> command.
 <pre>
 scontrol show config |grep MCS
 MCSPlugin          = mcs/group
@@ -216,7 +217,7 @@ srun -n10 -t 1000 -A another_account_than_default ./job &
 
 <h2>View MCS parameters in usage</h2>
 
-<p>The <it>squeue</it> command can also display the MCS with mcslabel
+<p>The <i>squeue</i> command can also display the MCS with mcslabel
 format option
 <pre>
 squeue -O jobid,username,mcslabel
@@ -225,7 +226,7 @@ JOBID               USER                MCSLABEL
 3	            bar                 groupB
 </pre>
 
-<p>The <it>scontrol</it> command will now display the MCS_label
+<p>The <i>scontrol</i> command will now display the MCS_label
 <pre>
 scontrol show nodes
 NodeName=node0001 Arch=x86_64 CoresPerSocket=4
@@ -246,6 +247,6 @@ NodeName=node0001 Arch=x86_64 CoresPerSocket=4
 for details on developing additional MCS plugins.</p>
 
 
-<p style="text-align:center;">Last modified 7 November 2017</p>
+<p style="text-align:center;">Last modified 10 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

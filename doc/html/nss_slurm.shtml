@@ -1,0 +1,153 @@
+<!--#include virtual="header.txt"-->
+
+<h1>nss_slurm</h1>
+
+<p>nss_slurm is an optional NSS plugin that can permit passwd and group
+resolution for a job on the compute node to be serviced through the local
+slurmstepd process, rather than through some alternate network-based service
+such as LDAP, SSSD, or NSLCD.</p>
+
+<p>When enabled on the cluster, for each job, the job's user will have their
+full <b>struct passwd</b> info &mdash; username, uid, primary gid, gecos info,
+home directory, and shell &mdash; securely sent as part of each step launch,
+and cached within the slurmstepd process. This info will then be provided to
+any process launched by that step through the
+<b>getpwuid()</b>/<b>getpwnam()</b>/<b>getpwent()</b> system calls.</p>
+
+<p>For group information &mdash; from the
+<b>getgrgid()</b>/<b>getgrnam()</b>/<b>getgrent()</b> system calls &mdash;,
+an abbreviated view of <b>struct group</b> will be provided. Within a given
+process, the response will include only those groups that the user belongs to,
+but with only the user themselves listed as a member. The full list of group
+members is not provided.</p>
+
+<h2><a name="INSTALLATION">Installation</a></h2>
+
+<h3>Source:</h3>
+
+<p>In your Slurm build directory, navigate to <b>contribs/nss_slurm/</b>
+and run:
+
+<pre>make &amp;&amp; make install</pre>
+
+This will install libnss_slurm.so.2 alongside your other Slurm library files
+in your install path.</p>
+
+<p>Depending on your Linux distribution, you will likely need to symlink this
+to the directory which includes your other NSS plugins to enable it.
+On Debian/Ubuntu, <span class="commandline">/lib/x86_64-linux-gnu</span> is
+recommended, and for RHEL-based distributions
+<span class="commandline">/usr/lib64</span> is recommended. If in doubt,
+a command such as
+<span class="commandline">find /lib /usr/ -name 'libnss*'</span> should help.
+
+<!-- RPM packaging currently not provided
+<h3>RPM:</h3>
+
+<p>The included slurm.spec will build a slurm-pam_slurm RPM which will install
+pam_slurm_adopt. Refer to the
+<a href="https://slurm.schedmd.com/quickstart_admin.html">Quick Start
+Administrator Guide</a> for instructions on managing an RPM-based install.</p>
+-->
+
+<h2><a name="SETUP">Setup</a></h2>
+
+<p>The slurmctld must be configured to lookup and send the appropriate passwd
+and group details as part of the launch credential. This is handled by setting
+<b>LaunchParameters=enable_nss_slurm</b> in slurm.conf and restarting
+slurmctld.</p>
+
+<p>Once enabled, the <span "class=commandline">scontrol getent</span> command
+can be used on a compute node to print all passwd and group info associated
+with job steps on that node. As an example:
+
+<pre>
+tim@node0001:~$ scontrol getent node0001
+JobId=1268.Extern:
+User:
+tim:x:1000:1000:Tim Wickberg:/home/tim:/bin/bash
+Groups:
+tim:x:1000:tim
+projecta:x:1001:tim
+
+JobId=1268.0:
+User:
+tim:x:1000:1000:Tim Wickberg:/home/tim:/bin/bash
+Groups:
+tim:x:1000:tim
+projecta:x:1001:tim
+</pre>
+</p>
+
+<h2><a name="NSS_SLURM_CONFIG">NSS Slurm Configuration</a></h2>
+
+<p>nss_slurm has an optional configuration file &mdash;
+<b>/etc/nss_slurm.conf</b>. This configuration file is only needed if:
+<ul>
+<li>The node's hostname does not match the NodeName, in which case you must
+explicitly set the NodeName option.</li>
+<li>The SlurmdSpoolDir does not match Slurm's default location of
+<b>/var/spool/slurmd</b>, in which case it must be provided as well.</li>
+</ul>
+
+<p>NodeName and SlurmdSpoolDir are the only configuration options supported
+at this time.</p>
+
+<h2><a name="INITIAL_TESTING">Initial Testing</a></h2>
+
+Before enabling NSS Slurm directly on the node, you should use the
+<b>-s slurm</b> option to <b>getent</b> within a newly launched job step
+to verify that the rest of the setup has been completed successfully. The
+<b>-s</b> option to getent allows it to query a specific database &mdash;
+even if it has not been enabled by default through the system's
+<b>nsswitch.conf</b>. Note that nss_slurm only responds to requests from
+processes within the job step itself &mdash; you must launch the getent
+command within a job step to see any data returned.</p>
+
+<p>As an example of a successful query:
+
+<pre>
+tim@blackhole:~$ srun getent -s slurm passwd
+tim:x:1000:1000:Tim Wickberg:/home/tim:/bin/bash
+tim@blackhole:~$ srun getent -s slurm group
+tim:x:1000:tim
+projecta:x:1001:tim
+</pre>
+</p>
+
+<h2><a name="NSS_CONFIG">NSS Configuration</a></h2>
+
+<p>Enabling nss_slurm is as simple as adding <b>slurm</b> to the passwd and
+group database in <b>/etc/nsswitch.conf</b>. It is recommended that
+<b>slurm</b> is listed first, as the order (from left to right) determines
+the sequence in which the NSS databases will be queried, and this ensures Slurm
+handles the request if able before submitting the query to other sources.</p>
+
+<p>Once enabled, test it by launching <b>getent</b> queries such as:
+
+<pre>
+tim@blackhole:~$ srun getent passwd tim
+tim:x:1000:1000:Tim Wickberg:/home/tim:/bin/bash
+tim@blackhole:~$ srun getent group projecta
+projecta:x:1001:tim
+</pre>
+</p>
+
+<h2><a name="LIMITATIONS">Limitations</a></h2>
+
+<p>nss_slurm will only return results for processes within a given job step.
+It will not return any results for processes outside of these steps, such as
+system monitoring, node health checks, prolog or epilog scripts, and related
+node system processes.</p>
+
+<p>nss_slurm is not meant as a full replacement for network directory services
+such as LDAP, but as a way to remove load from those systems to improve the
+performance of large-scale job launches. It accomplishes this by removing
+the "thundering-herd" issue should all tasks of a large job make simultaneous
+lookup requests &mdash; generally for info related to the user themselves,
+which is the only information nss_slurm will be able to provide &mdash; and
+overwhelm the underlying directory services.</p>
+
+<p style="text-align:center;">Last modified 2 July 2019</p>
+
+<!--#include virtual="footer.txt"-->

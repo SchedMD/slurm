@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate scontrol requeuehold requeues job to held pending state.
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -31,17 +26,13 @@
 ############################################################################
 source ./globals
 
-set test_id            "2.22"
 set script             "test$test_id.bash"
 set job_id             0
 set exit_code          0
 
-print_header $test_id
-
 set min_age [get_min_job_age]
 if {$min_age < 10} {
-	send_user "\nWARNING: MinJobAge too low for this test ($min_age < 10)\n"
-	exit 0
+	skip "MinJobAge too low for this test ($min_age < 10)"
 }
 
 # Remove any vestigial scripts
@@ -61,7 +52,7 @@ proc check_hold { job } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -70,7 +61,7 @@ proc check_hold { job } {
 	}
 
 	if { $hold != 1 } {
-		send_user "\nFAILURE: scontrol did not hold job after it was requeued\n"
+		log_error "scontrol did not hold job after it was requeued"
 		set exit_code 1
 	}
 }
@@ -87,7 +78,7 @@ proc check_release { job } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -96,7 +87,7 @@ proc check_release { job } {
 	}
 
 	if { $priority == 0 } {
-		send_user "\nFAILURE: priority was not set to a non zero value after it was released\n"
+		log_error "Priority was not set to a non zero value after it was released"
 		set exit_code 1
 	}
 }
@@ -108,7 +99,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1get_min_job_age
 	}
 	eof {
@@ -117,12 +108,11 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	log_error "Error waiting for job $job_id to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -130,7 +120,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 spawn $scontrol requeuehold $job_id
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -147,7 +137,7 @@ check_job_state $job_id PENDING
 spawn $scontrol release $job_id
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -160,8 +150,7 @@ check_release $job_id
 cancel_job $job_id
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $script
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-
-exit $exit_code

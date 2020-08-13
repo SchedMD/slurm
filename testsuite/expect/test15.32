@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of --deadline option and time limit partition
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 CEA/DAM/DIF
 # Written by Aline Roy <aline.roy@cea.fr>
@@ -30,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "15.32"
 set file_in        "test$test_id.bash"
 set test_salloc    "test$test_id.test_salloc"
 set job_id         0
@@ -38,12 +33,8 @@ set authorized     1
 set exit_code      0
 set part_name      "QA_TEST"
 
-
-print_header $test_id
-
 if {[test_super_user] == 0} {
-	send_user "\nWARNING: can not test more unless SlurmUser or root\n"
-	exit $exit_code
+	skip "Can not test more unless SlurmUser or root"
 }
 
 #
@@ -53,7 +44,7 @@ set found -1
 spawn $scontrol -a show part $part_name
 expect {
 	-re "not found" {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		set found 0
 		exp_continue
 	}
@@ -62,7 +53,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -70,26 +61,23 @@ expect {
 	}
 }
 if {$found == -1} {
-	send_user "\nFAILURE: scontrol output format error\n"
-	exit 1
+	fail "scontrol output format error"
 }
 if {$found == 1} {
-	send_user "\nFAILURE: partition $part_name already exists\n"
-	exit 1
+	fail "Partition $part_name already exists"
 }
 
 #
 # Identify usable nodes in default partition
 #
-set def_node [get_idle_node_in_part [default_partition]]
+set def_node [get_idle_node_in_part]
 if {[string compare $def_node ""] == 0} {
 #	Wait for possible Epilog
 	sleep 10
-	set def_node [get_idle_node_in_part [default_partition]]
+	set def_node [get_idle_node_in_part]
 }
 if {[string compare $def_node ""] == 0} {
-	send_user "\nFAILURE: default partition seems to have no nodes\n"
-	exit 1
+	fail "Default partition seems to have no nodes"
 }
 
 #
@@ -98,12 +86,12 @@ if {[string compare $def_node ""] == 0} {
 spawn $scontrol create PartitionName=$part_name Nodes=$def_node MaxTime=30
 expect {
 	-re "error" {
-		send_user "\nFAILURE: something bad happened on partition create\n"
+		log_error "Something bad happened on partition create"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -127,7 +115,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -135,15 +123,14 @@ expect {
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: partition not created\n"
-	exit 1
+	fail "Partition not created"
 }
 
 set found 0
 
 # Check EnforcePartLimits value
 set enforcepartlimits [test_enforce_part_limits]
-send_user "\nEnforcePartLimits=$enforcepartlimits\n\n"
+log_debug "EnforcePartLimits=$enforcepartlimits"
 
 #
 # Run a job in this new partition and validate the time limit
@@ -167,7 +154,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 		}
 
 		timeout {
-			send_user "\nFAILURE: salloc not responding\n"
+			log_error "salloc not responding"
 			set exit_code 1
 			exp_continue
 		}
@@ -180,7 +167,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 	# verify time limit. Add a temporization to wait for update reason
 	#
 	if {$job_id == 0} {
-		send_user "\nFAILURE: job_id = 0 : salloc not OK \n"
+		log_error "Job_id = 0 : salloc not OK "
 		set exit_code 1
 	} else {
 		set cycle_count 8
@@ -197,7 +184,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 					exp_continue
 				}
 				timeout {
-					send_user "\nFAILURE: scontrol not responding\n"
+					log_error "scontrol not responding"
 					set exit_code 1
 					exp_continue
 				}
@@ -207,7 +194,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 			}
 		}
 		if {$exit_code == 1} {
-			send_user "\nFAILURE: partition time limit not used\n"
+			log_error "Partition time limit not used"
 			set exit_code 1
 		}
 		cancel_job $job_id
@@ -226,7 +213,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
                         exp_continue
                 }
                 timeout {
-                        send_user "\nFAILURE: salloc not responding\n"
+                        log_error "salloc not responding"
                         set exit_code 1
                 }
                 eof {
@@ -241,7 +228,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 spawn $scontrol delete PartitionName=$part_name
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -256,7 +243,7 @@ set found -1
 spawn $scontrol show part $part_name
 expect {
 	-re "not found" {
-		send_user "This error was expected, no worries\n"
+		log_debug "This error was expected, no worries"
 		set found 0
 		exp_continue
 	}
@@ -265,7 +252,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -273,12 +260,11 @@ expect {
 	}
 }
 if {$found != 0} {
-	send_user "\nFAILURE: partition not deleted\n"
-	exit 1
+	fail "Partition not deleted"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm $test_salloc $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

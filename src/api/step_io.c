@@ -44,6 +44,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_cred.h"
@@ -600,8 +601,8 @@ static int _file_write(eio_obj_t *obj, List objs)
 		if ((n = write_labelled_message(obj->fd, ptr,
 					        info->out_remaining,
 					        info->out_msg->header.gtaskid,
-					        info->cio->pack_offset,
-					        info->cio->task_offset,
+					        info->cio->het_job_offset,
+					        info->cio->het_job_task_offset,
 					        info->cio->label,
 					        info->cio->taskid_width)) < 0) {
 			list_enqueue(info->cio->free_outgoing, info->out_msg);
@@ -1076,15 +1077,14 @@ _estimate_nports(int nclients, int cli_per_port)
 
 client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 				      int num_nodes, slurm_cred_t *cred,
-				      bool label, uint32_t pack_offset,
-				      uint32_t task_offset)
+				      bool label, uint32_t het_job_offset,
+				      uint32_t het_job_task_offset)
 {
 	client_io_t *cio;
 	int i;
 	uint32_t siglen;
 	char *sig;
 	uint16_t *ports;
-	uint16_t eio_timeout;
 
 	cio = (client_io_t *)xmalloc(sizeof(client_io_t));
 	if (cio == NULL)
@@ -1092,8 +1092,8 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 
 	cio->num_tasks   = num_tasks;
 	cio->num_nodes   = num_nodes;
-	cio->pack_offset = pack_offset;
-	cio->task_offset = task_offset;
+	cio->het_job_offset = het_job_offset;
+	cio->het_job_task_offset = het_job_task_offset;
 
 	cio->label = label;
 	if (cio->label)
@@ -1109,8 +1109,7 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 	memcpy(cio->io_key, sig, siglen);
 	/* no need to free "sig", it is just a pointer into the credential */
 
-	eio_timeout = slurm_get_srun_eio_timeout();
-	cio->eio = eio_handle_create(eio_timeout);
+	cio->eio = eio_handle_create(slurm_conf.eio_timeout);
 
 	/* Compute number of listening sockets needed to allow
 	 * all of the slurmds to establish IO streams with srun, without

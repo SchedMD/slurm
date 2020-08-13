@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of --deadline option too late
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 CEA/DAM/DIF
 # Written by Aline Roy <aline.roy@cea.fr>
@@ -30,11 +26,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.102"
 set exit_code   0
 set job_id      0
-
-print_header $test_id
 
 #
 # Spawn a job that deadline is too late
@@ -52,12 +45,10 @@ expect {
 		exp_continue
 	}
 	-re "Completed" {
-		send_user "\nFAILURE: srun is OK with a deadline too old\n"
-		set exit_code 1
-		exit 1
+		fail "srun is OK with a deadline too old"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set exit_code 1
 	}
 	eof {
@@ -65,7 +56,6 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

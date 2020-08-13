@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test that job arrays of pack jobs are rejected
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
+# Purpose: Test that job arrays of hetjobs are rejected
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Morris Jette <jette@schedmd.com>
@@ -30,17 +26,14 @@
 ############################################################################
 source ./globals
 
-set test_id	"38.13"
 set exit_code	0
 set matches	0
-set pack_job_id	0
-
-print_header $test_id
+set het_job_id	0
 
 set sbatch_pid [spawn $sbatch -a 0-1 -t1 -N1 -o /dev/null : -N1 --wrap "date"]
 expect {
 	-re "Submitted batch job ($number)" {
-		set pack_job_id $expect_out(1,string)
+		set het_job_id $expect_out(1,string)
 		exp_continue
 	}
 	-re "Invalid job array" {
@@ -48,7 +41,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "FAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -56,15 +49,14 @@ expect {
 		wait
 	}
 }
-if {$pack_job_id != 0} {
-	send_user "FAILURE: Heterogeneous job array should not be accepted\n"
+if {$het_job_id != 0} {
 	cancel_job $pack_job_id
-	set exit_code 1
+	fail "Heterogeneous job array should not be accepted"
 } elseif {$matches != 1} {
-	send_user "FAILURE: Heterogeneous job array should not be accepted ($matches != 1)\n"
-	set exit_code 1
+	fail "Heterogeneous job array should not be accepted ($matches != 1)"
 } else {
-	send_user "\nNo worries. This error is expected\n"
-	print_success $test_id
+	log_debug "No worries. This error is expected"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

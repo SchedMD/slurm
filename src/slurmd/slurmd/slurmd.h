@@ -56,13 +56,20 @@ extern pid_t getpgid(pid_t pid);
 extern int devnull;
 extern bool get_reg_resp;
 
-/*
- * Message aggregation types
- */
-typedef enum {
-	WINDOW_TIME,
-	WINDOW_MSGS
-} msg_aggr_param_type_t;
+typedef struct {
+	char **gres_job_env;
+	uint32_t het_job_id;
+	uint32_t jobid;
+	uint32_t step_id;
+	char *node_list;
+	char *partition;
+	char *resv_id;
+	char **spank_job_env;
+	uint32_t spank_job_env_size;
+	uid_t uid;
+	gid_t gid;
+	char *user_name;
+} job_env_t;
 
 /*
  * Global config type
@@ -71,10 +78,11 @@ typedef struct slurmd_config {
 	char         *prog;		/* Program basename		   */
 	char         ***argv;           /* pointer to argument vector      */
 	int          *argc;             /* pointer to argument count       */
-	char         *auth_info;	/* AuthInfo for msg authentication */ 
 	Buf          buf;               /* packed version of this lite config */
-	char         *cluster_name; 	/* conf ClusterName		   */
 	char         *hostname;	 	/* local hostname		   */
+	char         *conf_server;	/* slurmctld to fetch config from  */
+	char         *conf_cache;	/* cache of slurm configs          */
+					/* (if running configless)         */
 	uint16_t     cpus;              /* lowest-level logical processors */
 	uint16_t     boards;            /* total boards count              */
 	uint16_t     sockets;           /* total sockets count             */
@@ -99,42 +107,24 @@ typedef struct slurmd_config {
 	uint16_t     block_map_size;	/* size of block map               */
 	uint16_t     *block_map;	/* abstract->machine block map     */
 	uint16_t     *block_map_inv;	/* machine->abstract (inverse) map */
-	uint16_t      cr_type;		/* Consumable Resource Type:       *
-					 * CR_SOCKET, CR_CORE, CR_MEMORY,  *
-					 * CR_DEFAULT, etc.                */
 	char         *hwloc_xml;	/* path of hwloc xml file if using */
-	uint16_t     job_acct_oom_kill;  /* enforce mem limit on running job */
-	time_t       last_update;	/* last update time of the
-					 * build parameters */
 	int           nice;		/* command line nice value spec    */
 	char         *node_name;	/* node name                       */
-	char         *node_addr;	/* node's address                  */
 	char         *node_topo_addr;   /* node's topology address         */
 	char         *node_topo_pattern;/* node's topology address pattern */
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */
-	int          syslog_debug;	/* send output to both logfile and
+	uint32_t     syslog_debug;	/* send output to both logfile and
 					 * syslog */
 	char         *spooldir;		/* SlurmdSpoolDir		   */
-	char         *pidfile;		/* PidFile location		   */
-	char         *health_check_program; /* run on RPC request or at start */
-	uint64_t     health_check_interval; /* Interval between runs       */
-	char         *tmpfs;		/* directory of tmp FS             */
 	char         *pubkey;		/* location of job cred public key */
-	char         *epilog;		/* Path to Epilog script	   */
-	char         *prolog;		/* Path to prolog script           */
-	char         *select_type;	/* SelectType                      */
 	char         *stepd_loc;	/* slurmstepd path                 */
-	char         *task_prolog;	/* per-task prolog script          */
-	char         *task_epilog;	/* per-task epilog script          */
-	int           port;		/* local slurmd port               */
+	uint16_t      port;		/* local slurmd port               */
 	int           lfd;		/* slurmd listen file descriptor   */
 	pid_t         pid;		/* server pid                      */
 	log_options_t log_opts;         /* current logging options         */
-	uint16_t      log_fmt;          /* Log file timestamp format flag  */
-	int           debug_level;	/* logging detail level            */
+	uint32_t      debug_level;	/* logging detail level            */
 	uint16_t      debug_level_set;	/* debug_level set on command line */
-	uint64_t      debug_flags;	/* DebugFlags configured           */
 	int	      boot_time:1;      /* Report node boot time now (-b)  */
 	int           daemonize:1;	/* daemonize flag (-D)		   */
 	bool          def_config;       /* We haven't read in the config yet */
@@ -143,34 +133,16 @@ typedef struct slurmd_config {
 
 	slurm_cred_ctx_t vctx;          /* slurm_cred_t verifier context   */
 
-	uint16_t	slurmd_timeout;	/* SlurmdTimeout                   */
-	uid_t           slurm_user_id;	/* UID that slurmctld runs as      */
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        acct_freq_task;
-	char           *job_acct_gather_freq;
-	char           *job_acct_gather_type; /* job accounting gather type */
-	char           *job_acct_gather_params; /* job accounting gather params */
-	char           *acct_gather_energy_type; /*  */
-	char           *acct_gather_filesystem_type; /*  */
-	char           *acct_gather_interconnect_type; /*  */
-	char           *acct_gather_profile_type; /*  */
-	char           *msg_aggr_params;      /* message aggregation params */
-	uint64_t        msg_aggr_window_msgs; /* msg aggr window size in msgs */
-	uint64_t        msg_aggr_window_time; /* msg aggr window size in time */
-	uint16_t	use_pam;
-	uint32_t	task_plugin_param; /* TaskPluginParams, expressed
-					 * using cpu_bind_type_t flags */
-	uint16_t	propagate_prio;	/* PropagatePrioProcess flag       */
 
 	List		starting_steps; /* steps that are starting but cannot
 					   receive RPCs yet */
 	pthread_cond_t	starting_steps_cond;
 	List		prolog_running_jobs;
 	pthread_cond_t	prolog_running_cond;
-	char         *plugstack;	/* path to SPANK config file	*/
-	uint16_t      kill_wait;	/* seconds between SIGXCPU to SIGKILL
-					 * on job termination */
-	char           *x11_params;	/* X11Parameters */
+	char		*gres;		/* The node's slurm.conf GRES */
+	bool		print_gres;	/* Print gres info (-G) and exit */
 } slurmd_conf_t;
 
 extern slurmd_conf_t * conf;
@@ -179,6 +151,7 @@ extern uint32_t *fini_job_id;
 extern pthread_mutex_t fini_job_mutex;
 extern pthread_mutex_t tres_mutex;
 extern pthread_cond_t  tres_cond;
+extern bool tres_packed;
 
 /* Send node registration message with status to controller
  * IN status - same values slurm error codes (for node shutdown)

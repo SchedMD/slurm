@@ -51,8 +51,6 @@
 #include "src/common/uid.h"
 #include "filetxt_jobcomp_process.h"
 
-#define USE_ISO8601 1
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -176,38 +174,23 @@ static void _make_time_str (time_t *time, char *string, int size)
 {
 	struct tm time_tm;
 
-	slurm_localtime_r(time, &time_tm);
 	if ( *time == (time_t) 0 ) {
 		snprintf(string, size, "Unknown");
 	} else {
-#if USE_ISO8601
-		/* Format YYYY-MM-DDTHH:MM:SS, ISO8601 standard format,
-		 * NOTE: This is expected to break Maui, Moab and LSF
-		 * schedulers management of SLURM. */
-		snprintf(string, size,
-			"%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u",
-			(time_tm.tm_year + 1900), (time_tm.tm_mon+1),
-			time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min,
-			time_tm.tm_sec);
-#else
-		/* Format MM/DD-HH:MM:SS */
-		snprintf(string, size,
-			"%2.2u/%2.2u-%2.2u:%2.2u:%2.2u",
-			(time_tm.tm_mon+1), time_tm.tm_mday,
-			time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
-
-#endif
+		/* Format YYYY-MM-DDTHH:MM:SS, ISO8601 standard format */
+		localtime_r(time, &time_tm);
+		strftime(string, size, "%FT%T", &time_tm);
 	}
 }
 
-extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
+extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS, tmp_int, tmp_int2;
 	char job_rec[1024];
 	char usr_str[32], grp_str[32], start_str[32], end_str[32], lim_str[32];
 	char *resv_name, *gres, *account, *qos, *wckey, *cluster;
 	char *exit_code_str = NULL, *derived_ec_str = NULL;
-	char submit_time[32], eligible_time[32], array_id[64], pack_id[64];
+	char submit_time[32], eligible_time[32], array_id[64], het_id[64];
 	char select_buf[128], *state_string, *work_dir;
 	size_t offset = 0, tot_size, wrote;
 	uint32_t job_state;
@@ -321,12 +304,12 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 		array_id[0] = '\0';
 	}
 
-	if (job_ptr->pack_job_id) {
-		snprintf(pack_id, sizeof(pack_id),
-			 " PackJobId=%u PackJobOffset=%u",
-			 job_ptr->pack_job_id, job_ptr->pack_job_offset);
+	if (job_ptr->het_job_id) {
+		snprintf(het_id, sizeof(het_id),
+			 " HetJobId=%u HetJobOffset=%u",
+			 job_ptr->het_job_id, job_ptr->het_job_offset);
 	} else {
-		pack_id[0] = '\0';
+		het_id[0] = '\0';
 	}
 
 	tmp_int = tmp_int2 = 0;
@@ -357,7 +340,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 		 state_string, job_ptr->partition, lim_str, start_str,
 		 end_str, job_ptr->nodes, job_ptr->node_cnt,
 		 job_ptr->total_cpus, work_dir, resv_name, gres, account, qos,
-		 wckey, cluster, submit_time, eligible_time, array_id, pack_id,
+		 wckey, cluster, submit_time, eligible_time, array_id, het_id,
 		 derived_ec_str, exit_code_str, select_buf);
 	tot_size = strlen(job_rec);
 

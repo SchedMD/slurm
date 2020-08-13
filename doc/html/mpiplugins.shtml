@@ -16,7 +16,6 @@ conform to the Slurm Plugin API with the following specifications:</p>
 The major type must be &quot;mpi.&quot; The minor type can be any recognizable
 abbreviation for the type of node selection algorithm. We recommend, for example:</p>
 <ul>
-<li><b>openmpi</b> &mdash; For use with older versions of OpenMPI.</li>
 <li><b>pmi2</b> &mdash; For use with MPI2 and MVAPICH2.</li>
 <li><b>pmix</b> &mdash; Exascale PMI implementation (currently supported by
 	OpenMPI starting from version 2.0)</li>

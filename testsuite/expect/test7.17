@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose:  Test GRES APIs.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2014 SchedMD LLC
 # Written by Morris Jette
@@ -29,17 +25,13 @@
 ############################################################################
 source ./globals
 
-set test_id     "7.17"
 set exit_code   0
 set test_prog   "test$test_id.prog"
 set cfgdir      [pwd]
 
-print_header $test_id
-
 if {[test_cray]} {
 #	Many Cray-specific changes required in slurm.conf test files
-	send_user "\nWARNING: This test can not run on a Cray system\n"
-	exit $exit_code
+	skip "This test can not run on a Cray system"
 }
 
 #
@@ -47,18 +39,15 @@ if {[test_cray]} {
 #
 file delete $test_prog
 
-set cmd "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl"
-send_user "$cmd\n"
-eval exec $cmd
+compile_against_libslurm ${test_prog} 1
+fail_on_error "Cannot compile test program"
 
-exec $bin_chmod 700 $test_prog
-
-send_user "\n====test7.17.1====\n"
+log_info "====test7.17.1===="
 set cpu_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.1" 8
 expect {
 	-re "failure" {
-		send_user "\nFAILURE: running test7.17.1\n"
+		log_error "Failure running test program test7.17.1"
 		set exit_code 1
 		exp_continue
 	}
@@ -71,16 +60,16 @@ expect {
 	}
 }
 if {$cpu_match != 1} {
-	send_user "\nFAILURE: number of CPUs is incorrect\n"
+	log_error "Number of COREs is incorrect"
 	set exit_code 1
 }
 
-send_user "\n====test7.17.2====\n"
+log_info "====test7.17.2===="
 set cpu_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.2" 16
 expect {
 	-re "failure" {
-		send_user "\nFAILURE: running test7.17.2\n"
+		log_error "Failure running program test7.17.2"
 		set exit_code 1
 		exp_continue
 	}
@@ -93,16 +82,16 @@ expect {
 	}
 }
 if {$cpu_match != 1} {
-	send_user "\nFAILURE: number of cpu is incorrect\n"
+	log_error "Number of cpu is incorrect"
 	set exit_code 1
 }
 
-send_user "\n====test7.17.3====\n"
+log_info "====test7.17.3===="
 set cpu_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.3" 16
 expect {
 	-re "failure" {
-		send_user "\nFAILURE: running test7.17.3\n"
+		log_error "Failure running test program test7.17.3"
 		set exit_code 1
 		exp_continue
 	}
@@ -115,16 +104,16 @@ expect {
 	}
 }
 if {$cpu_match != 1} {
-	send_user "\nFAILURE: number of cpu is incorrect should be 16\n"
+	log_error "Number of cpu is incorrect should be 16"
 	set exit_code 1
 }
 
-send_user "\n====test7.17.4====\n"
+log_info "====test7.17.4===="
 set cpu_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.4" 16
 expect {
 	-re "failure" {
-		send_user "\nFAILURE: running test7.17.4\n"
+		log_error "Failure running test program test7.17.4"
 		set exit_code 1
 		exp_continue
 	}
@@ -137,7 +126,7 @@ expect {
 	}
 }
 if {$cpu_match != 1} {
-	send_user "\nFAILURE: number of cpu is incorrect, should be ALL\n"
+	log_error "Number of cpu is incorrect, should be ALL"
 	set exit_code 1
 }
 
@@ -146,12 +135,12 @@ if {$cpu_match != 1} {
 #######################################
 
 # Run a job with invalid job allocation
-send_user "\n====test7.17.5====\n"
+log_info "====test7.17.5===="
 set fail_match 0
 spawn ./$test_prog "craynetworks:100" "$cfgdir" "/test7.17.5" 16
 expect {
 	-re "failure" {
-		send_user "This error is expected\n"
+		log_debug "This error is expected"
 		set fail_match 1
 		exp_continue
 	}
@@ -160,17 +149,17 @@ expect {
 	}
 }
 if {$fail_match != 1} {
-	send_user "\nFAILURE: This test should have failed but did not\n"
+	log_error "This test should have failed but did not"
 	set exit_code 1
 }
 
 # Run with no gres.conf file
-send_user "\n====test7.17.6====\n"
+log_info "====test7.17.6===="
 set fail_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.6" 0
 expect {
 	-re "failure" {
-		send_user "This error is expected\n"
+		log_debug "This error is expected"
 		set fail_match 1
 		exp_continue
 	}
@@ -179,17 +168,17 @@ expect {
 	}
 }
 if {$fail_match != 1} {
-	send_user "\nFAILURE: This test should have failed but did not\n"
+	log_error "This test should have failed but did not"
 	set exit_code 1
 }
 
 # Test with invalid job allocation
-send_user "\n====test7.17.7====\n"
+log_info "====test7.17.7===="
 set fail_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.7" 8
 expect {
 	-re "fatal" {
-		send_user "This error is expected\n"
+		log_debug "This error is expected"
 		set fail_match 1
 		#exp_continue
 	}
@@ -198,12 +187,11 @@ expect {
 	}
 }
 if {$fail_match != 1} {
-	send_user "\nFAILURE: This test should have failed but did not\n"
-	set exit_code 1
+	fail "This test should have failed but did not"
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	file delete $test_prog
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

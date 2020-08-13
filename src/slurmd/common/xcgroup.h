@@ -41,6 +41,7 @@
 #include <sys/types.h>
 
 #include "src/common/xcgroup_read_config.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #define XCGROUP_ERROR    1
 #define XCGROUP_SUCCESS  0
@@ -316,6 +317,29 @@ int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value);
  *   - XCGROUP_SUCCESS
  */
 int xcgroup_move_process(xcgroup_t *cg, pid_t pid);
+
+extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns);
+
+/*
+ * Create normal hierarchy for Slurm jobs/steps
+ *
+ * returned values:
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
+ */
+extern int xcgroup_create_hierarchy(const char *calling_func,
+				    stepd_step_rec_t *job,
+				    xcgroup_ns_t *ns,
+				    xcgroup_t *job_cg,
+				    xcgroup_t *step_cg,
+				    xcgroup_t *user_cg,
+				    char job_cgroup_path[],
+				    char step_cgroup_path[],
+				    char user_cgroup_path[],
+				    int (*callback)(const char *calling_func,
+						    xcgroup_ns_t *ns,
+						    void *callback_arg),
+				    void *callback_arg);
 
 /*
  * Wait for a pid to move out of a cgroup.

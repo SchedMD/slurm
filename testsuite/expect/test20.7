@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test qalter's -o option for changing the stdout path of a job.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -30,22 +26,17 @@
 ############################################################################
 source ./globals
 
-set test_id      "20.7"
 set file_in      "test$test_id\.input"
 set job_id       0
 set out_path     "/tmp/null"
 set exit_code    0
 
-print_header $test_id
-
 if {[file executable $qalter] == 0} {
-	send_user "\nWARNING: $qalter does not exist\n"
-	exit 0
+	skip "$qalter does not exist"
 }
 
 if {[file executable $qsub] == 0} {
-	send_user "\nWARNING: $qsub does not exits\n"
-	exit 0
+	skip "$qsub does not exits"
 }
 
 # Clean up any vestigial files
@@ -57,17 +48,17 @@ proc check_output { path job_id } {
 	global scontrol exit_code
 
 #	Support leading options (i.e. original "stdout=...")
-	set alpha_numeric_comma_slash "\[a-zA-Z0-9=_,\-\/\]*"
+	set re_word_str_slash "\[a-zA-Z0-9=_,\-\/\]*"
 
 	set check_out 0
 	spawn $scontrol show job $job_id
 	expect {
-		-re "Comment=($alpha_numeric_comma_slash)stdout=($path)" {
+		-re "Comment=($re_word_str_slash)stdout=($path)" {
 			set check_out 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -75,8 +66,7 @@ proc check_output { path job_id } {
 		}
 	}
 	if {$check_out != 1} {
-		send_user "\nFAILURE: output path for job $job_id was not set"
-		send_user " to the correct value\n"
+		log_error "output path for job $job_id was not set to the correct value"
 		set exit_code 1
 	}
 }
@@ -89,7 +79,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub is not responding\n"
+		log_error "qsub is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -97,7 +87,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: qsub did not submit job\n"
+	log_error "qsub did not submit job"
 	set exit_code 1
 }
 
@@ -105,7 +95,7 @@ set found 0
 spawn $qalter -o $out_path $job_id
 expect {
 	timeout {
-		send_user "\nFAILURE: qalter is not responding\n"
+		log_error "qalter is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -116,11 +106,11 @@ expect {
 check_output $out_path $job_id
 
 if {[cancel_job $job_id] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

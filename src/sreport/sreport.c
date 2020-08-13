@@ -58,7 +58,6 @@ int exit_code;		/* sreport's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
 char *fed_name = NULL;	/* Operating in federation mode */
 bool federation_flag;	/* --federation option */
-int input_words;	/* number of words of input permitted */
 bool local_flag;	/* --local option */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 char *tres_str = NULL;	/* --tres= value */
@@ -91,10 +90,8 @@ static void	_user_rep (int argc, char **argv);
 int
 main (int argc, char **argv)
 {
-	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count;
-	char **input_fields;
+	int error_code = SLURM_SUCCESS, i, opt_char;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
-	char *temp = NULL;
 	int option_index;
 	uint16_t persist_conn_flags = 0;
 	static struct option long_options[] = {
@@ -120,28 +117,20 @@ main (int argc, char **argv)
 	exit_code         = 0;
 	exit_flag         = 0;
 	federation_flag   = false;
-	input_field_count = 0;
 	local_flag        = false;
 	quiet_flag        = 0;
 	slurm_conf_init(NULL);
 	log_init("sreport", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	/* Check to see if we are running a supported accounting plugin */
-	temp = slurm_get_accounting_storage_type();
-	if (xstrcasecmp(temp, "accounting_storage/slurmdbd")
-	   && xstrcasecmp(temp, "accounting_storage/mysql")) {
-		fprintf (stderr, "You are not running a supported "
-			 "accounting_storage plugin\n(%s).\n"
-			 "Only 'accounting_storage/slurmdbd' "
-			 "and 'accounting_storage/mysql' are supported.\n",
-			temp);
-		xfree(temp);
+	if (!slurm_with_slurmdbd()) {
+		fprintf(stderr,
+		        "You are not running a supported accounting_storage plugin\n"
+		        "Only 'accounting_storage/slurmdbd' is supported.\n");
 		exit(1);
 	}
-	xfree(temp);
 
-	if (slurmctld_conf.fed_params &&
-	    strstr(slurmctld_conf.fed_params, "fed_display"))
+	if (xstrstr(slurm_conf.fed_params, "fed_display"))
 		federation_flag = true;
 
 	if (getenv("SREPORT_CLUSTER")) {
@@ -152,9 +141,7 @@ main (int argc, char **argv)
 		federation_flag = true;
 	if (getenv("SREPORT_LOCAL"))
 		local_flag = true;
-	temp = getenv("SREPORT_TRES");
-	if (temp)
-		tres_str = xstrdup(temp);
+	tres_str = xstrdup(getenv("SREPORT_TRES"));
 
 	while ((opt_char = getopt_long(argc, argv, "aM:hnpPQs:t:T:vV",
 			long_options, &option_index)) != -1) {
@@ -232,22 +219,11 @@ main (int argc, char **argv)
 		exit(1);
 	}
 
-	if (argc > MAX_INPUT_FIELDS)	/* bogus input, but continue anyway */
-		input_words = argc;
-	else
-		input_words = 128;
-	input_fields = (char **) xmalloc (sizeof (char *) * input_words);
-	if (optind < argc) {
-		for (i = optind; i < argc; i++) {
-			input_fields[input_field_count++] = argv[i];
-		}
-	}
-
 	if (federation_flag && !all_clusters_flag && !cluster_flag &&
 	    !local_flag)
 		cluster_flag = _build_cluster_string();
 
-	db_conn = slurmdb_connection_get2(&persist_conn_flags);
+	db_conn = slurmdb_connection_get(&persist_conn_flags);
 	if (errno) {
 		fatal("Problem connecting to the database: %m");
 		exit(1);
@@ -258,17 +234,27 @@ main (int argc, char **argv)
 
 	_build_tres_list();
 
-	if (input_field_count)
-		exit_flag = 1;
-	else
-		error_code = _get_command (&input_field_count, input_fields);
-	while (error_code == SLURM_SUCCESS) {
-		error_code = _process_command (input_field_count,
-					       input_fields);
-		if (error_code || exit_flag)
-			break;
-		error_code = _get_command (&input_field_count, input_fields);
+	/* We are only running a single command and exiting */
+	if (optind < argc)
+		error_code = _process_command(argc - optind, argv + optind);
+	else {
+		/* We are running interactively multiple commands */
+		int input_field_count = 0;
+		char **input_fields = xcalloc(MAX_INPUT_FIELDS, sizeof(char *));
+		while (error_code == SLURM_SUCCESS) {
+			error_code = _get_command(
+				&input_field_count, input_fields);
+			if (error_code || exit_flag)
+				break;
+
+			error_code = _process_command(
+				input_field_count, input_fields);
+			if (exit_flag)
+				break;
+		}
+		xfree(input_fields);
 	}
+
 	if (exit_flag == 2)
 		putchar('\n');
 
@@ -301,7 +287,7 @@ static char *_build_cluster_string(void)
 	List fed_list = NULL;
 	List cluster_list = list_create(NULL);
 
-	list_append(cluster_list, slurmctld_conf.cluster_name);
+	list_append(cluster_list, slurm_conf.cluster_name);
 	slurmdb_init_federation_cond(&fed_cond, 0);
 	fed_cond.cluster_list = cluster_list;
 
@@ -591,7 +577,7 @@ _get_command (int *argc, char **argv)
 			exit_code = 1;
 			fprintf (stderr,
 				 "%s: can not process over %d words\n",
-				 command_name, input_words);
+				 command_name, MAX_INPUT_FIELDS - 1);
 			return E2BIG;
 		}
 		argv[(*argc)++] = &in_line[i];

@@ -164,8 +164,8 @@ static void _set_pmi_time(void)
 }
 
 /* Transmit PMI Keyval space data */
-int slurm_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
-		int pmi_rank, int pmi_size)
+extern int slurm_pmi_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
+				       int pmi_rank, int pmi_size)
 {
 	slurm_msg_t msg_send;
 	int rc, retries = 0, timeout = 0;
@@ -192,13 +192,13 @@ int slurm_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
 	 * 10 secs). */
 	_delay_rpc(pmi_rank, pmi_size);
 	if      (pmi_size > 4000)	/* 240 secs */
-		timeout = slurm_get_msg_timeout() * 24000;
+		timeout = slurm_conf.msg_timeout * 24000;
 	else if (pmi_size > 1000)	/* 120 secs */
-		timeout = slurm_get_msg_timeout() * 12000;
+		timeout = slurm_conf.msg_timeout * 12000;
 	else if (pmi_size > 100)	/* 50 secs */
-		timeout = slurm_get_msg_timeout() * 5000;
+		timeout = slurm_conf.msg_timeout * 5000;
 	else if (pmi_size > 10)		/* 20 secs */
-		timeout = slurm_get_msg_timeout() * 2000;
+		timeout = slurm_conf.msg_timeout * 2000;
 
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
@@ -213,8 +213,8 @@ int slurm_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
 }
 
 /* Wait for barrier and get full PMI Keyval space data */
-int  slurm_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
-			    int pmi_rank, int pmi_size)
+extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
+				      int pmi_rank, int pmi_size)
 {
 	int rc, srun_fd, retries = 0, timeout = 0;
 	slurm_msg_t msg_send, msg_rcv;
@@ -276,13 +276,13 @@ int  slurm_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	 */
 	_delay_rpc(pmi_rank, pmi_size);
 	if      (pmi_size > 4000)	/* 240 secs */
-		timeout = slurm_get_msg_timeout() * 24000;
+		timeout = slurm_conf.msg_timeout * 24000;
 	else if (pmi_size > 1000)	/* 120 secs */
-		timeout = slurm_get_msg_timeout() * 12000;
+		timeout = slurm_conf.msg_timeout * 12000;
 	else if (pmi_size > 100)	/* 60 secs */
-		timeout = slurm_get_msg_timeout() * 6000;
+		timeout = slurm_conf.msg_timeout * 6000;
 	else if (pmi_size > 10)		/* 20 secs */
-		timeout = slurm_get_msg_timeout() * 2000;
+		timeout = slurm_conf.msg_timeout * 2000;
 
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
@@ -362,6 +362,11 @@ static int _forward_comm_set(kvs_comm_set_t *kvs_set_ptr)
 	return rc;
 }
 
+extern void slurm_pmi_free_kvs_comm_set(kvs_comm_set_t *msg)
+{
+	slurm_free_kvs_comm_set(msg);
+}
+
 /* Finalization processing */
 void slurm_pmi_finalize(void)
 {
@@ -370,4 +375,14 @@ void slurm_pmi_finalize(void)
 		pmi_fd = -1;
 	}
 	srun_port = 0;
+}
+
+/*
+ * Wrapper for slurm_kill_job_step().
+ * We must keep this function signature intact even if we change that function.
+ */
+extern int slurm_pmi_kill_job_step(uint32_t job_id, uint32_t step_id,
+				   uint16_t signal)
+{
+	return slurm_kill_job_step(job_id, step_id, signal);
 }

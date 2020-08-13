@@ -262,7 +262,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		/* This should only be the name of the cluster, and is
 		   only used in the plugin for rollback purposes.
 		*/
-		update_object->objects = list_create(slurm_destroy_char);
+		update_object->objects = list_create(xfree_ptr);
 		break;
 	case SLURMDB_ADD_RES:
 		xassert(res->name);
@@ -370,7 +370,7 @@ extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
 	info("First time to register cluster requesting "
 	     "running jobs and system information.");
 
-	slurm_set_addr_char(&ctld_address, port, host);
+	slurm_set_addr(&ctld_address, port, host);
 	fd = slurm_open_msg_conn(&ctld_address);
 	if (fd < 0) {
 		error("can not open socket back to slurmctld "
@@ -420,14 +420,14 @@ extern int set_usage_information(char **usage_table,
 
 	/* Default is going to be the last day */
 	if (!end) {
-		if (!slurm_localtime_r(&my_time, &end_tm)) {
+		if (!localtime_r(&my_time, &end_tm)) {
 			error("Couldn't get localtime from end %ld",
 			      my_time);
 			return SLURM_ERROR;
 		}
 		end_tm.tm_hour = 0;
 	} else {
-		if (!slurm_localtime_r(&end, &end_tm)) {
+		if (!localtime_r(&end, &end_tm)) {
 			error("Couldn't get localtime from user end %ld",
 			      end);
 			return SLURM_ERROR;
@@ -438,7 +438,7 @@ extern int set_usage_information(char **usage_table,
 	end = slurm_mktime(&end_tm);
 
 	if (!start) {
-		if (!slurm_localtime_r(&my_time, &start_tm)) {
+		if (!localtime_r(&my_time, &start_tm)) {
 			error("Couldn't get localtime from start %ld",
 			      my_time);
 			return SLURM_ERROR;
@@ -446,7 +446,7 @@ extern int set_usage_information(char **usage_table,
 		start_tm.tm_hour = 0;
 		start_tm.tm_mday--;
 	} else {
-		if (!slurm_localtime_r(&start, &start_tm)) {
+		if (!localtime_r(&start, &start_tm)) {
 			error("Couldn't get localtime from user start %ld",
 			      start);
 			return SLURM_ERROR;
@@ -458,7 +458,7 @@ extern int set_usage_information(char **usage_table,
 
 	if (end-start < 3600) {
 		end = start + 3600;
-		if (!slurm_localtime_r(&end, &end_tm)) {
+		if (!localtime_r(&end, &end_tm)) {
 			error("2 Couldn't get localtime from user end %ld",
 			      end);
 			return SLURM_ERROR;
@@ -561,16 +561,13 @@ extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 	if (drop_priv)
 		return false;
 #endif
-	if (slurmdbd_conf) {
-		/* We have to check the authentication here in the
-		 * plugin since we don't know what accounts are being
-		 * referenced until after the query.
-		 */
-		if ((uid != slurmdbd_conf->slurm_user_id && uid != 0)
-		   && assoc_mgr_get_admin_level(db_conn, uid) < min_level)
-			is_admin = 0;
-	} else if ((uid != 0) && (uid != slurmctld_conf.slurm_user_id))
-		is_admin = 0;
+	/* We have to check the authentication here in the
+	 * plugin since we don't know what accounts are being
+	 * referenced until after the query.
+	 */
+	if ((uid != slurm_conf.slurm_user_id && uid != 0) &&
+	    assoc_mgr_get_admin_level(db_conn, uid) < min_level)
+		is_admin = false;
 
 	return is_admin;
 }
@@ -614,7 +611,7 @@ extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
 extern char *acct_get_db_name(void)
 {
 	char *db_name = NULL;
-	char *location = slurm_get_accounting_storage_loc();
+	char *location = slurmdbd_conf->storage_loc;
 
 	if (!location)
 		db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
@@ -631,9 +628,8 @@ extern char *acct_get_db_name(void)
 		}
 		if (location[i]) {
 			db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
-			xfree(location);
 		} else
-			db_name = location;
+			db_name = xstrdup(location);
 	}
 	return db_name;
 }
@@ -654,8 +650,7 @@ extern time_t archive_setup_end_time(time_t last_submit, uint32_t purge)
 		return 0;
 	}
 
-	/* use slurm_localtime to avoid any daylight savings issues */
-	if (!slurm_localtime_r(&last_submit, &time_tm)) {
+	if (!localtime_r(&last_submit, &time_tm)) {
 		error("Couldn't get localtime from first "
 		      "suspend start %ld", (long)last_submit);
 		return 0;
@@ -835,7 +830,7 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 	struct tm time_tm;
 	uint32_t num = 2;
 
-	slurm_localtime_r((time_t *)&period_start, &time_tm);
+	localtime_r(&period_start, &time_tm);
 	time_tm.tm_sec = 0;
 	time_tm.tm_min = 0;
 
@@ -857,7 +852,7 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 		   time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min,
 		   time_tm.tm_sec);
 
-	slurm_localtime_r((time_t *)&period_end, &time_tm);
+	localtime_r(&period_end, &time_tm);
 	/* Add end time to file name. */
 	xstrfmtcat(name, "%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u",
 		   (time_tm.tm_year + 1900), (time_tm.tm_mon + 1),

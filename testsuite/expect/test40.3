@@ -1,36 +1,31 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Test accounting for MPS resources with various allocation options
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC
 # Written by Morris Jette
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 ############################################################################
 source ./globals
 
-set test_id        "40.3"
 set exit_code      0
 set file_in1       "test$test_id.input1"
 set file_in2       "test$test_id.input2"
@@ -44,7 +39,7 @@ set file_out       "test$test_id.output"
 #	are reported based upon the job specification
 #
 proc test_acct { job_id job_mps step_mps have_mps_types } {
-	global alpha_numeric_under number
+	global re_word_str number
 	global bin_cat bin_rm bin_grep exit_code file_out sacct
 
 	if {$job_id == 0} {
@@ -52,7 +47,7 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 	}
 
 	sleep 2
-	send_user "\nJob $job_id Expected job MPS:$job_mps  Step MPS:$step_mps\n"
+	log_debug "Job $job_id Expected job MPS:$job_mps  Step MPS:$step_mps"
 	exec $bin_rm -f $file_out
 	exec >$file_out $sacct --job=$job_id --parsable2 --start=today -o JobID,AllocGRES,ReqGRES,AllocTRES
 
@@ -71,7 +66,7 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 			-re "mps:($number)" {
 				incr match
 				if {$expect_out(1,string) != $job_mps} {
-					send_user "\nFAILURE: bad step MPS count reported by sacct ($expect_out(1,string) != $step_mps)\n"
+					log_error "Bad step MPS count reported by sacct ($expect_out(1,string) != $step_mps)"
 					set exit_code 1
 				}
 				exp_continue
@@ -79,16 +74,16 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 			-re "gres/mps=($number)" {
 				incr match
 				if {$expect_out(1,string) != $step_mps} {
-					send_user "\nFAILURE: bad step MPS count reported by sacct ($expect_out(1,string) != $step_mps)\n"
+					log_error "Bad step MPS count reported by sacct ($expect_out(1,string) != $step_mps)"
 					set exit_code 1
 				}
 				exp_continue
 			}
-			-re "gres/mps:($alpha_numeric_under)=($number)" {
+			-re "gres/mps:($re_word_str)=($number)" {
 				if {$have_mps_types != 0} {
 					incr match
 					if {$expect_out(2,string) != $step_mps} {
-						send_user "\nFAILURE: bad step MPS count reported by sacct ($expect_out(2,string) != $step_mps)\n"
+						log_error "Bad step MPS count reported by sacct ($expect_out(2,string) != $step_mps)"
 						set exit_code 1
 					}
 				}
@@ -99,7 +94,7 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 			}
 		}
 		if {$match != 3} {
-			send_user "\nFAILURE: Missing step MPS count report from sacct ($match != 3)\n"
+			log_error "Missing step MPS count report from sacct ($match != 3)"
 		}
 	}
 
@@ -109,7 +104,7 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 		-re "mps:($number)" {
 			incr match
 			if {$expect_out(1,string) != $job_mps} {
-				send_user "\nFAILURE: bad batch MPS count reported by sacct ($expect_out(1,string) != $job_mps)\n"
+				log_error "Bad batch MPS count reported by sacct ($expect_out(1,string) != $job_mps)"
 				set exit_code 1
 			}
 			exp_continue
@@ -119,7 +114,7 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 		}
 	}
 	if {$match != 2} {
-		send_user "\nFAILURE: missing batch MPS count report from sacct ($match != 2)\n"
+		log_error "Missing batch MPS count report from sacct ($match != 2)"
 	}
 
 	set match 0
@@ -128,7 +123,7 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 		-re "mps:($number)" {
 			incr match
 			if {$expect_out(1,string) != $job_mps} {
-				send_user "\nFAILURE: Bad job MPS count reported by sacct ($expect_out(1,string) != $job_mps)\n"
+				log_error "Bad job MPS count reported by sacct ($expect_out(1,string) != $job_mps)"
 				set exit_code 1
 			}
 			exp_continue
@@ -136,16 +131,16 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 		-re "gres/mps=($number)" {
 			incr match
 			if {$expect_out(1,string) != $job_mps} {
-				send_user "\nFAILURE: Bad job MPS count reported by sacct ($expect_out(1,string) != $job_mps)\n"
+				log_error "Bad job MPS count reported by sacct ($expect_out(1,string) != $job_mps)"
 				set exit_code 1
 			}
 			exp_continue
 		}
-		-re "gres/mps:($alpha_numeric_under)=($number)" {
+		-re "gres/mps:($re_word_str)=($number)" {
 			if {$have_mps_types != 0} {
 				incr match
 				if {$expect_out(2,string) != $job_mps} {
-					send_user "\nFAILURE: Bad job MPS count reported by sacct ($expect_out(2,string) != $job_mps)\n"
+					log_error "Bad job MPS count reported by sacct ($expect_out(2,string) != $job_mps)"
 					set exit_code 1
 				}
 			}
@@ -156,7 +151,7 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 		}
 	}
 	if {$match != 3} {
-		send_user "\nFAILURE: Missing job MPS count report from sacct ($match != 3)\n"
+		log_error "Missing job MPS count report from sacct ($match != 3)"
 	}
 	exec $bin_rm -f $file_out
 	log_user 1
@@ -170,11 +165,10 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 #	are reported based upon the job specification
 #
 proc test_out_file { file_out target } {
-	global alpha_numeric_under number bin_cat exit_code
+	global re_word_str number bin_cat exit_code
 
 	if {[wait_for_file $file_out] != 0} {
-		send_user "\nFAILURE: no output file\n"
-		exit 1
+		fail "No output file"
 	}
 
 	set match 0
@@ -184,7 +178,7 @@ proc test_out_file { file_out target } {
 			set match $expect_out(1,string)
 			exp_continue
 		}
-		-re "TRES=.*,gres/mps:($alpha_numeric_under)=($number)" {
+		-re "TRES=.*,gres/mps:($re_word_str)=($number)" {
 			set match $expect_out(2,string)
 			exp_continue
 		}
@@ -193,52 +187,39 @@ proc test_out_file { file_out target } {
 		}
 	}
 	if {$match != $target} {
-		send_user "\nFAILURE: Failed to account for proper MPS count ($match != $target)\n"
+		log_error "Failed to account for proper MPS count ($match != $target)"
 		set exit_code 1
 	}
 }
 
-print_header $test_id
-
 set store_tres [string tolower [get_acct_store_tres]]
 set store_mps [string first "gres/mps" $store_tres]
 if {$store_mps == -1} {
-	send_user "\nWARNING: This test requires accounting for MPS\n"
-	exit $exit_code
+	skip "This test requires accounting for MPS"
 } elseif {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
-	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-	exit 0
+	skip "This test is only compatible with select/cons_tres"
 }
 
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
-send_user "\nDefault partition node count is $nb_nodes\n"
-if {$nb_nodes > 2} {
-	set nb_nodes 2
+if { [get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test requires AccountStorageType=slurmdbd"
 }
-set mps_cnt [get_mps_count $nb_nodes]
-if {$mps_cnt < 0} {
-	send_user "\nFAILURE: Error getting MPS count\n"
-	exit 1
+
+set nb_nodes [llength [get_nodes_by_request "--gres=mps:100 -N2 -t2"]]
+if { $nb_nodes == 0} {
+	skip "This test requires being able to submit job with --gres=mps:100 -N2"
 }
-if {$mps_cnt < 100} {
-	send_user "\nWARNING: This test requires 100 or more MPS per node in the default partition\n"
-	exit 0
-}
-send_user "\nMPS count is $mps_cnt\n"
 
 #
 # Test --gres=mps option by job
 #
 
-send_user "\n\nTEST 1: --gres=mps option by job\n"
+log_info "TEST 1: --gres=mps option by job"
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID} | grep mps
@@ -255,7 +236,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -263,19 +244,16 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
+	fail "No output file"
 }
 set have_mps_types 0
 set match 0
@@ -285,7 +263,7 @@ expect {
 		set match $expect_out(1,string)
 		exp_continue
 	}
-	-re "TRES=.*,gres/mps:($alpha_numeric_under)=($number)" {
+	-re "TRES=.*,gres/mps:($re_word_str)=($number)" {
 		if {$match == 0} {
 			set have_mps_types 1
 			set match $expect_out(2,string)
@@ -297,7 +275,7 @@ expect {
 	}
 }
 if {$match != $target} {
-	send_user "\nFAILURE: failed to account for proper MPS count ($match != $target)\n"
+	log_error "Failed to account for proper MPS count ($match != $target)"
 	set exit_code 1
 }
 test_acct $job_id $target -1 $have_mps_types
@@ -315,7 +293,7 @@ make_bash_script $file_in2 "
 	fi
 	exit 0"
 
-send_user "\n\nTEST 2: --gres=mps option by step\n"
+log_info "TEST 2: --gres=mps option by step"
 
 set target [expr $nb_nodes * 51]
 exec $bin_rm -f $file_out
@@ -328,7 +306,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -336,14 +314,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job not submitted\n"
-	exit 1
+	fail "Job not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Job $job_id did not complete"
 }
 
 test_out_file $file_out $target
@@ -351,6 +327,6 @@ test_acct $job_id $target $target $have_mps_types
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2 $file_out
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

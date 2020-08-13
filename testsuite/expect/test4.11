@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Check sinfo reason info for nodes (--list-reasons option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,11 +28,8 @@
 ############################################################################
 source ./globals
 
-set test_id      "4.11"
 set exit_code    0
 set matches      0
-
-print_header $test_id
 
 #
 # Check the sinfo --list-reasons option output
@@ -53,7 +46,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -61,11 +54,9 @@ expect {
 	}
 }
 if {$matches == 0} {
-	send_user "\nFAILURE: sinfo --list-reason output format failure\n"
-	set exit_code 1
+	fail "sinfo --list-reason output format failure"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

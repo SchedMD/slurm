@@ -90,9 +90,13 @@ int main (int argc, char *argv[])
 .br
 	}
 .LP
-	while ( (host = slurm_hostlist_shift(my_hostlist)) )
+	while ( (host = slurm_hostlist_shift(my_hostlist)) ) {
 .br
 		printf ("host = %s\\n", host);
+.br
+		free(host);
+.br
+	}
 .LP
 	slurm_hostlist_destroy (my_hostlist) ;
 .br

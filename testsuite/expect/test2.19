@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate that Allow/Deny Qos are enforced.
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -31,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "2.19"
 set user_name      ""
 set node_name      ""
 set host_name      ""
@@ -43,19 +37,14 @@ set qos_bad        "test${test_id}_qos_bad"
 set part_name      "test${test_id}_part"
 set exit_code      0
 
-print_header $test_id
-
 #
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\n"
-	send_user "Use: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
 proc set_part_val {part_type part_val} {
@@ -64,11 +53,11 @@ proc set_part_val {part_type part_val} {
 	spawn $scontrol update partitionname=$part_name $part_type=$part_val
 	expect {
 		-re "Error" {
-			send_user "\nFAILURE: $part_type was not set\n"
+			log_error "$part_type was not set"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -83,7 +72,7 @@ proc cleanup { } {
 	spawn $scancel -p $part_name
 	expect {
 		timeout {
-			send_user "FAILURE: scancel is not responding\n"
+			log_error "scancel is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -91,19 +80,17 @@ proc cleanup { } {
 		}
 	}
 
-	send_user "Any error, except for unresponsiveness, from the previous "
-	send_user "scancel is expected and should be ignored.\n"
+	log_debug "Any error, except for unresponsiveness, from the previous scancel is expected and should be ignored"
 
 	spawn $scontrol delete partition=$part_name
 	expect {
 		-re "error" {
-			send_user "\nFAILURE: scontrol did not remove "
-			"partition\n"
+			log_error "scontrol did not remove partition"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "FAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -119,7 +106,7 @@ proc cleanup { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -134,7 +121,7 @@ proc cleanup { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -157,7 +144,7 @@ proc create_qos { acct qos } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -173,7 +160,7 @@ proc create_qos { acct qos } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -185,7 +172,7 @@ proc create_qos { acct qos } {
 	spawn $sacctmgr -i create user $user_name account=$acct cluster=$cluster_name
 	expect {
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -194,7 +181,7 @@ proc create_qos { acct qos } {
 	}
 
 	if {$create_qos !=2} {
-		send_user "\nFAILURE: Qos was not set\n"
+		log_error "Qos was not set"
 		set exit_code 1
 	}
 }
@@ -209,15 +196,15 @@ proc test_part {acct qos part qos_con } {
 	expect {
 		-re "error" {
 			if { $qos_con == 1 } {
-				send_user "\nThis error is expected\n"
+				log_debug "This error is expected"
 			} else {
-				send_user "\nFAILURE: This error should not have occured\n"
+				log_error "This error should not have occured"
 				set exit_code 1
 			}
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun is not responding\n"
+			log_error "srun is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -229,12 +216,10 @@ proc test_part {acct qos part qos_con } {
 # Delete any vestigial qos or accounts
 cleanup
 
-set user_name [get_my_user_name]
-
 # Setup
-set partition [default_partition]
-set node_name [ get_idle_node_in_part $partition ]
-set cluster_name [ get_cluster_name ]
+set user_name [get_my_user_name]
+set node_name [get_idle_node_in_part]
+set cluster_name [get_cluster_name]
 
 # NOTE: qos_good should always work and
 # qos_bad should always cause an error
@@ -254,11 +239,11 @@ create_qos $acct2 $qos_bad
 spawn $scontrol create partition=$part_name nodes=$node_name
 expect {
 	-re "error" {
-		send_user "\nFAILURE: partition was not created\n"
+		log_error "Partition was not created"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not reponding\n"
+		log_error "scontrol is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -272,7 +257,7 @@ expect {
 set_part_val allowqos $qos_good
 
 ######Testing AllowQos######
-send_user "\nTesting AllowQos\n"
+log_info "Testing AllowQos"
 
 #
 # Test partition with good Qos
@@ -294,7 +279,7 @@ set_part_val allowqos ALL
 set_part_val denyqos $qos_bad
 
 ######Testing DenyQos#####
-send_user "\nTesting DenyQos\n"
+log_info "Testing DenyQos"
 
 #
 # Test partition with good Qos
@@ -310,11 +295,9 @@ test_part $acct2 $qos_bad $part_name 1
 
 sleep 5
 if {[cleanup] != 2} {
-	send_user "\nFAILURE: Qos/account was not deleted\n"
-	set exit_code 1
+	fail "Qos/account was not deleted"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

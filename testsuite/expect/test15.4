@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Confirm that a job executes as the appropriate user and group.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,18 +28,14 @@
 ############################################################################
 source ./globals
 
-set test_id              "15.4"
 set exit_code            0
 set login_grp_info       ""
 set job_grp_info         ""
 set got_job_grps         0
 set got_login_grps       0
 
-print_header $test_id
-
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
 #
@@ -69,7 +61,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -82,8 +74,7 @@ expect {
 }
 
 if {$got_job_grps == 0} {
-	send_user "\nFAILURE: Did not get user info from slurm job\n"
-	exit 1
+	fail "Did not get user info from slurm job"
 }
 
 #
@@ -92,10 +83,8 @@ if {$got_job_grps == 0} {
 #
 
 if {[string compare $login_grp_info $job_grp_info] != 0} {
-	send_user "\nFAILURE: Login and slurm user info mismatch\n"
-	set exit_code 1
+	fail "Login and slurm user info mismatch"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

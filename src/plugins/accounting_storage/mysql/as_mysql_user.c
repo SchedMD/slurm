@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  as_mysql_user.c - functions dealing with users and coordinators.
  *****************************************************************************
- *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -69,8 +68,7 @@ static int _change_user_name(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	xstrfmtcat(query, "update %s set user='%s' where user='%s';",
 		   acct_coord_table, user->name, user->old_name);
 
-	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
@@ -112,7 +110,7 @@ static List _get_other_user_names_to_mod(mysql_conn_t *mysql_conn, uint32_t uid,
 		itr = list_iterator_create(tmp_list);
 		while ((object = list_next(itr))) {
 			if (!ret_list)
-				ret_list = list_create(slurm_destroy_char);
+				ret_list = list_create(xfree_ptr);
 			slurm_addto_char_list(ret_list, object->user);
 		}
 		list_iterator_destroy(itr);
@@ -140,7 +138,7 @@ no_assocs:
 		itr = list_iterator_create(tmp_list);
 		while ((object = list_next(itr))) {
 			if (!ret_list)
-				ret_list = list_create(slurm_destroy_char);
+				ret_list = list_create(xfree_ptr);
 			slurm_addto_char_list(ret_list, object->user);
 		}
 		list_iterator_destroy(itr);
@@ -274,8 +272,8 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *user_name = NULL;
 	char *extra = NULL, *tmp_extra = NULL;
 	int affect_rows = 0;
-	List assoc_list = list_create(slurmdb_destroy_assoc_rec);
-	List wckey_list = list_create(slurmdb_destroy_wckey_rec);
+	List assoc_list;
+	List wckey_list;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -297,6 +295,9 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * parent they are trying to add to
 		 */
 	}
+
+	assoc_list = list_create(slurmdb_destroy_assoc_rec);
+	wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(user_list);
@@ -546,8 +547,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			   " on duplicate key update mod_time=%ld, "
 			   "deleted=0, user=VALUES(user);%s",
 			   (long)now, txn_query);
-		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		xfree(txn_query);
@@ -648,7 +648,7 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if (!ret_list)
-		ret_list = list_create(slurm_destroy_char);
+		ret_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_user_rec_t *user_rec = NULL;
 
@@ -682,9 +682,8 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 no_user_table:
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-			DB_DEBUG(mysql_conn->conn,
-				 "didn't effect anything\n%s", query);
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+		         "didn't affect anything\n%s", query);
 		xfree(vals);
 		xfree(query);
 		return ret_list;
@@ -781,6 +780,59 @@ end_it:
 	return ret_list;
 }
 
+/*
+ * If the coordinator has permissions to modify every account
+ * belonging to each user, return true. Otherwise return false.
+ */
+static bool _is_coord_over_all_accts(mysql_conn_t *mysql_conn,
+				     char *cluster_name, char *user_char,
+				     slurmdb_user_rec_t *coord)
+{
+	bool has_access;
+	char *query = NULL, *sep_str = "";
+	MYSQL_RES *result;
+	ListIterator itr;
+	slurmdb_coord_rec_t *coord_acct;
+
+	if (!coord->coord_accts || !list_count(coord->coord_accts)) {
+		/* This should never happen */
+		error("%s: We are here with no coord accts", __func__);
+		return false;
+	}
+
+	query = xstrdup_printf("select distinct acct from \"%s_%s\" where deleted=0 && (%s) && (",
+			       cluster_name, assoc_table, user_char);
+
+	/*
+	 * Add the accounts we are coordinator of.  If anything is returned
+	 * outside of this list we will know there are accounts in the request
+	 * that we are not coordinator over.
+	 */
+	itr = list_iterator_create(coord->coord_accts);
+	while ((coord_acct = (list_next(itr)))) {
+		xstrfmtcat(query, "%sacct != '%s'", sep_str, coord_acct->name);
+		sep_str = " && ";
+	}
+	list_iterator_destroy(itr);
+	xstrcat(query, ");");
+
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return false;
+	}
+	xfree(query);
+
+	/*
+	 * If nothing was returned we are coordinator over all these accounts
+	 * and users.
+	 */
+	has_access = !mysql_num_rows(result);
+
+	mysql_free_result(result);
+	return has_access;
+}
+
 extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				  slurmdb_user_cond_t *user_cond)
 {
@@ -790,16 +842,21 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL,
-		*name_char = NULL, *assoc_char = NULL;
+		*name_char = NULL, *assoc_char = NULL, *user_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	slurmdb_user_cond_t user_coord_cond;
+	slurmdb_user_rec_t user;
 	slurmdb_assoc_cond_t assoc_cond;
 	slurmdb_wckey_cond_t wckey_cond;
 	bool jobs_running = 0;
+	bool is_coord = false;
+
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
+	user.uid = uid;
 
 	if (!user_cond) {
 		error("we need something to remove");
@@ -810,8 +867,18 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
-		errno = ESLURM_ACCESS_DENIED;
-		return NULL;
+		/*
+		 * Allow coordinators to delete users from accounts that
+		 * they coordinate. After we have gotten every association that
+		 * the users belong to, check that the coordinator has access
+		 * to modify every affected account.
+		 */
+		is_coord = is_user_any_coord(mysql_conn, &user);
+		if (!is_coord) {
+			error("Only admins/coordinators can remove users");
+			errno = ESLURM_ACCESS_DENIED;
+			return NULL;
+		}
 	}
 
 	if (user_cond->assoc_cond && user_cond->assoc_cond->user_list
@@ -860,7 +927,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if (!ret_list)
-		ret_list = list_create(slurm_destroy_char);
+		ret_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result)))
 		slurm_addto_char_list(ret_list, row[0]);
 	mysql_free_result(result);
@@ -869,9 +936,8 @@ no_user_table:
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-			DB_DEBUG(mysql_conn->conn,
-				 "didn't effect anything\n%s", query);
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+		         "didn't affect anything\n%s", query);
 		xfree(query);
 		return ret_list;
 	}
@@ -893,9 +959,11 @@ no_user_table:
 
 		if (name_char) {
 			xstrfmtcat(name_char, " || name='%s'", object);
+			xstrfmtcat(user_char, " || user='%s'", object);
 			xstrfmtcat(assoc_char, " || t2.user='%s'", object);
 		} else {
 			xstrfmtcat(name_char, "name='%s'", object);
+			xstrfmtcat(user_char, "user='%s'", object);
 			xstrfmtcat(assoc_char, "t2.user='%s'", object);
 		}
 
@@ -924,6 +992,16 @@ no_user_table:
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while ((object = list_next(itr))) {
+
+		if (is_coord) {
+			if (!_is_coord_over_all_accts(mysql_conn, object,
+						      user_char, &user)) {
+				errno = ESLURM_ACCESS_DENIED;
+				rc = SLURM_ERROR;
+				break;
+			}
+		}
+
 		if ((rc = remove_common(mysql_conn, DBD_REMOVE_USERS, now,
 					user_name, user_table, name_char,
 					assoc_char, object, ret_list,
@@ -936,6 +1014,7 @@ no_user_table:
 
 	xfree(user_name);
 	xfree(name_char);
+	xfree(user_char);
 	if (rc == SLURM_ERROR) {
 		FREE_NULL_LIST(ret_list);
 		xfree(assoc_char);
@@ -1044,8 +1123,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!extra) {
 		errno = SLURM_ERROR;
-		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-			DB_DEBUG(mysql_conn->conn, "No conditions given");
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "No conditions given");
 		return NULL;
 	}
 
@@ -1053,8 +1131,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		"select user, acct from %s where deleted=0 && %s order by user",
 		acct_coord_table, extra);
 
-	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result =
 	      mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -1063,8 +1140,8 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 	xfree(query);
-	ret_list = list_create(slurm_destroy_char);
-	user_list = list_create(slurm_destroy_char);
+	ret_list = list_create(xfree_ptr);
+	user_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		if (!is_admin) {
 			slurmdb_coord_rec_t *coord = NULL;
@@ -1149,7 +1226,6 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	uint16_t private_data = 0;
 	slurmdb_user_rec_t user;
 
 	/* if this changes you will need to edit the corresponding enum */
@@ -1169,8 +1245,7 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	private_data = slurm_get_private_data();
-	if (private_data & PRIVATE_DATA_USERS) {
+	if (slurm_conf.private_data & PRIVATE_DATA_USERS) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			assoc_mgr_fill_in_user(
@@ -1239,7 +1314,7 @@ empty:
 	/* This is here to make sure we are looking at only this user
 	 * if this flag is set.
 	 */
-	if (!is_admin && (private_data & PRIVATE_DATA_USERS)) {
+	if (!is_admin && (slurm_conf.private_data & PRIVATE_DATA_USERS)) {
 		xstrfmtcat(extra, " && name='%s'", user.name);
 	}
 
@@ -1253,8 +1328,7 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 
-	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);

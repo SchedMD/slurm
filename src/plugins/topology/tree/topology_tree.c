@@ -41,6 +41,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
+#include "src/common/slurm_xlator.h"
+
 #include "slurm/slurm_errno.h"
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
@@ -48,6 +50,24 @@
 #include "src/common/slurm_topology.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
+
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+extern node_record_t *node_record_table_ptr __attribute__((weak_import));
+extern int node_record_count __attribute__((weak_import));
+extern switch_record_t *switch_record_table __attribute__((weak_import));
+extern int switch_record_cnt __attribute__((weak_import));
+extern int switch_levels __attribute__((weak_import));
+#else
+node_record_t *node_record_table_ptr;
+int node_record_count;
+switch_record_t *switch_record_table;
+int switch_record_cnt;
+int switch_levels;
+#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -129,7 +149,8 @@ extern int fini(void)
  */
 extern int topo_build_config(void)
 {
-	_validate_switches();
+	if (node_record_count)
+		_validate_switches();
 	return SLURM_SUCCESS;
 }
 
@@ -151,7 +172,7 @@ extern bool topo_generate_node_ranking(void)
  */
 extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int node_inx;
 	hostlist_t sl = NULL;
 
@@ -257,7 +278,7 @@ static void _validate_switches(void)
 {
 	slurm_conf_switches_t *ptr, **ptr_array;
 	int depth, i, j;
-	struct switch_record *switch_ptr, *prior_ptr;
+	switch_record_t *switch_ptr, *prior_ptr;
 	hostlist_t hl, invalid_hl = NULL;
 	char *child, *buf;
 	bool  have_root = false;
@@ -274,8 +295,8 @@ static void _validate_switches(void)
 		return;
 	}
 
-	switch_record_table = xmalloc(sizeof(struct switch_record) *
-				      switch_record_cnt);
+	switch_record_table = xcalloc(switch_record_cnt,
+				      sizeof(switch_record_t));
 	multi_homed_bitmap = bit_alloc(node_record_count);
 	switch_ptr = switch_record_table;
 	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
@@ -422,11 +443,10 @@ static void _validate_switches(void)
 			have_root = true;
 		}
 	}
-	if (!have_root) {
-		info("TOPOLOGY: warning -- no switch can reach all nodes"
-				" through its descendants."
-				"Do not use route/topology");
-	}
+
+	if (!have_root && running_in_daemon())
+		info("TOPOLOGY: warning -- no switch can reach all nodes through its descendants. If this is not intentional, fix the topology.conf file.");
+
 	s_p_hashtbl_destroy(conf_hashtbl);
 	_log_switches();
 }
@@ -434,7 +454,7 @@ static void _validate_switches(void)
 static void _log_switches(void)
 {
 	int i;
-	struct switch_record *switch_ptr;
+	switch_record_t *switch_ptr;
 
 	switch_ptr = switch_record_table;
 	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
@@ -452,7 +472,7 @@ static void _log_switches(void)
 static int _get_switch_inx(const char *name)
 {
 	int i;
-	struct switch_record *switch_ptr;
+	switch_record_t *switch_ptr;
 
 	switch_ptr = switch_record_table;
 	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
@@ -597,7 +617,7 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 	}
 
 	while ( (this_node_name = hostlist_shift(host_list)) ) {
-		struct node_record *node_ptr;
+		node_record_t *node_ptr;
 		node_ptr = find_node_record(this_node_name);
 		if (node_ptr) {
 			bit_set(my_bitmap, 

@@ -12,8 +12,8 @@
 
 AC_DEFUN([X_AC_CGROUP],
 [
-  case "$host" in
-  *-darwin*)
+  case ${host_os} in
+  darwin* | freebsd* | netbsd* )
     with_cgroup=no
     ;;
   *)
@@ -21,4 +21,7 @@ AC_DEFUN([X_AC_CGROUP],
     ;;
   esac
   AM_CONDITIONAL(WITH_CGROUP, test x$with_cgroup = xyes)
+  if test x$with_cgroup = xyes; then
+    AC_DEFINE(WITH_CGROUP, 1, [Building with Linux cgroup support])
+  fi
 ])

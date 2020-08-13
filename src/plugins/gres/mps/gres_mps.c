@@ -90,7 +90,6 @@ const char	*plugin_name		= "Gres MPS plugin";
 const char	*plugin_type		= "gres/mps";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
-static uint64_t	debug_flags		= 0;
 static char	*gres_name		= "mps";
 static List	gres_devices		= NULL;
 static List	mps_info		= NULL;
@@ -311,25 +310,28 @@ static void _distribute_count(List gres_conf_list, List gpu_conf_list,
 }
 
 /* Merge MPS records back to original list, updating and reordering as needed */
-static void _merge_lists(List gres_conf_list, List gpu_conf_list,
-			 List mps_conf_list)
+static int _merge_lists(List gres_conf_list, List gpu_conf_list,
+			List mps_conf_list)
 {
 	ListIterator gpu_itr, mps_itr;
 	gres_slurmd_conf_t *gpu_record, *mps_record;
 
+	if (!list_count(gpu_conf_list) && list_count(mps_conf_list)) {
+		error("%s: MPS specified without any GPU found", plugin_name);
+		return SLURM_ERROR;
+	}
+
 	/*
-	 * If gres/mps has Count, but no File specification and there is more
-	 * than one gres/gpu record, then evenly distribute gres/mps Count
-	 * evenly over all gres/gpu file records
+	 * If gres/mps has Count, but no File specification, then evenly
+	 * distribute gres/mps Count over all gres/gpu file records
 	 */
-	if ((list_count(mps_conf_list) == 1) &&
-	    (list_count(gpu_conf_list) >  1)) {
+	if (list_count(mps_conf_list) == 1) {
 		mps_record = list_peek(mps_conf_list);
 		if (!mps_record->file) {
 			_distribute_count(gres_conf_list, gpu_conf_list,
 					  mps_record->count);
 			list_flush(mps_conf_list);
-			return;
+			return SLURM_SUCCESS;
 		}
 	}
 
@@ -396,6 +398,7 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 		(void) list_delete_item(mps_itr);
 	}
 	list_iterator_destroy(mps_itr);
+	return SLURM_SUCCESS;
 }
 
 extern int init(void)
@@ -451,11 +454,6 @@ static int _compute_local_id(char *dev_file_name)
 	return local_id;
 }
 
-static void _mps_conf_del(void *x)
-{
-	xfree(x);
-}
-
 static uint64_t _build_mps_dev_info(List gres_conf_list)
 {
 	uint64_t mps_count = 0;
@@ -464,7 +462,7 @@ static uint64_t _build_mps_dev_info(List gres_conf_list)
 	mps_dev_info_t *mps_conf;
 	ListIterator iter;
 
-	mps_info = list_create(_mps_conf_del);
+	mps_info = list_create(xfree_ptr);
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_conf = list_next(iter))) {
 		if (gres_conf->plugin_id != mps_plugin_id)
@@ -492,14 +490,13 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 	bool have_fake_gpus = _test_gpu_list_fake();
 
 	/* Assume this state is caused by an scontrol reconfigure */
-	debug_flags = slurm_get_debug_flags();
 	if (gres_devices) {
 		debug("Resetting gres_devices");
 		FREE_NULL_LIST(gres_devices);
 	}
 	FREE_NULL_LIST(mps_info);
 
-	if (debug_flags & DEBUG_FLAG_GRES)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES)
 		log_lvl = LOG_LEVEL_VERBOSE;
 	else
 		log_lvl = LOG_LEVEL_DEBUG;
@@ -527,13 +524,15 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 	 * Merge MPS records back to original list, updating and reordering
 	 * as needed.
 	 */
-	_merge_lists(gres_conf_list, gpu_conf_list, mps_conf_list);
+	rc = _merge_lists(gres_conf_list, gpu_conf_list, mps_conf_list);
 	FREE_NULL_LIST(gpu_conf_list);
 	FREE_NULL_LIST(mps_conf_list);
+	if (rc != SLURM_SUCCESS)
+		fatal("%s: failed to merge MPS and GPU configuration", plugin_name);
 
 	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
 	if (rc != SLURM_SUCCESS)
-		fatal("%s failed to load configuration", plugin_name);
+		fatal("%s: failed to load configuration", plugin_name);
 	if (_build_mps_dev_info(gres_conf_list) == 0)
 		_remove_mps_recs(gres_conf_list);
 
@@ -588,9 +587,9 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 	int global_id = -1;
 
 	if (is_job)
-		slurm_env_var = "SLURM_JOB_GRES";
+		slurm_env_var = "SLURM_JOB_GPUS";
 	else
-		slurm_env_var = "SLURM_STEP_GRES";
+		slurm_env_var = "SLURM_STEP_GPUS";
 
 	if (*already_seen) {
 		global_list = xstrdup(getenvp(*env_ptr, slurm_env_var));
@@ -696,55 +695,58 @@ extern void step_reset_env(char ***step_env_ptr, void *gres_ptr,
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */
-extern void send_stepd(int fd)
+extern void send_stepd(Buf buffer)
 {
 	int mps_cnt;
 	mps_dev_info_t *mps_ptr;
 	ListIterator itr;
 
-	common_send_stepd(fd, gres_devices);
+	common_send_stepd(buffer, gres_devices);
 
 	if (!mps_info) {
 		mps_cnt = 0;
-		safe_write(fd, &mps_cnt, sizeof(int));
+		pack32(mps_cnt, buffer);
 	} else {
 		mps_cnt = list_count(mps_info);
-		safe_write(fd, &mps_cnt, sizeof(int));
+		pack32(mps_cnt, buffer);
 		itr = list_iterator_create(mps_info);
 		while ((mps_ptr = (mps_dev_info_t *) list_next(itr))) {
-			safe_write(fd, &mps_ptr->count, sizeof(uint64_t));
-			safe_write(fd, &mps_ptr->id, sizeof(int));
+			pack64(mps_ptr->count, buffer);
+			pack64(mps_ptr->id, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
 	return;
-
-rwfail:	error("%s: failed", __func__);
-	return;
 }
 
 /* Receive GRES information from slurmd on the specified file descriptor */
-extern void recv_stepd(int fd)
+extern void recv_stepd(Buf buffer)
 {
 	int i, mps_cnt;
 	mps_dev_info_t *mps_ptr = NULL;
+	uint64_t uint64_tmp;
+	uint32_t cnt;
 
-	common_recv_stepd(fd, &gres_devices);
+	common_recv_stepd(buffer, &gres_devices);
 
-	safe_read(fd, &mps_cnt, sizeof(int));
-	if (mps_cnt) {
-		mps_info = list_create(_mps_conf_del);
-		for (i = 0; i < mps_cnt; i++) {
-			mps_ptr = xmalloc(sizeof(mps_dev_info_t));
-			safe_read(fd, &mps_ptr->count, sizeof(uint64_t));
-			safe_read(fd, &mps_ptr->id, sizeof(int));
-			list_append(mps_info, mps_ptr);
-			mps_ptr = NULL;
-		}
+	safe_unpack32(&cnt, buffer);
+	mps_cnt = cnt;
+	if (!mps_cnt)
+		return;
+
+	mps_info = list_create(xfree_ptr);
+	for (i = 0; i < mps_cnt; i++) {
+		mps_ptr = xmalloc(sizeof(mps_dev_info_t));
+		safe_unpack64(&uint64_tmp, buffer);
+		mps_ptr->count = uint64_tmp;
+		safe_unpack64(&uint64_tmp, buffer);
+		mps_ptr->id = uint64_tmp;
+		list_append(mps_info, mps_ptr);
 	}
 	return;
 
-rwfail:	error("%s: failed", __func__);
+unpack_error:
+	error("%s: failed", __func__);
 	xfree(mps_ptr);
 	return;
 }
@@ -847,6 +849,12 @@ extern void epilog_set_env(char ***epilog_env_ptr,
 	xassert(epilog_env_ptr);
 
 	if (!epilog_info)
+		return;
+
+	if (!gres_devices)
+		return;
+
+	if (epilog_info->node_cnt == 0)	/* no_consume */
 		return;
 
 	if (node_inx > epilog_info->node_cnt) {

@@ -47,11 +47,22 @@
 typedef struct job_queue_rec {
 	uint32_t array_task_id;		/* Job array, task ID */
 	uint32_t job_id;		/* Job ID */
-	struct job_record *job_ptr;	/* Pointer to job record */
-	struct part_record *part_ptr;	/* Pointer to partition record. Each
+	job_record_t *job_ptr;		/* Pointer to job record */
+	part_record_t *part_ptr;	/* Pointer to partition record. Each
 					 * job may have multiple partitions. */
 	uint32_t priority;		/* Job priority in THIS partition */
+	slurmctld_resv_t *resv_ptr;     /* If job didn't ask for a reservation,
+					 * this reservation is one it can run
+					 * in without requesting */
 } job_queue_rec_t;
+
+/* Use as return values for test_job_dependency. */
+enum {
+	NO_DEPEND = 0,
+	LOCAL_DEPEND,
+	FAIL_DEPEND,
+	REMOTE_DEPEND
+};
 
 /*
  * build_feature_list - Translate a job's feature string into a feature_list
@@ -59,7 +70,13 @@ typedef struct job_queue_rec {
  * OUT details->feature_list
  * RET error code
  */
-extern int build_feature_list(struct job_record *job_ptr);
+extern int build_feature_list(job_record_t *job_ptr);
+
+/*
+ * Set up job_queue_rec->job_ptr to use a magnetic reservation if the
+ * job_queue_rec has resv_name filled in.
+ */
+extern void job_queue_rec_magnetic_resv(job_queue_rec_t *job_queue_rec);
 
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
@@ -71,28 +88,46 @@ extern int build_feature_list(struct job_record *job_ptr);
 extern List build_job_queue(bool clear_start, bool backfill);
 
 /* Given a scheduled job, return a pointer to it batch_job_launch_msg_t data */
-extern batch_job_launch_msg_t *build_launch_job_msg(
-					struct job_record *job_ptr,
-					uint16_t protocol_version);
+extern batch_job_launch_msg_t *build_launch_job_msg(job_record_t *job_ptr,
+						    uint16_t protocol_version);
 
 /* Determine if job's deadline specification is still valid, kill job if not
  * job_ptr IN - Job to test
  * func IN - function named used for logging, "sched" or "backfill"
  * RET - true of valid, false if invalid and job cancelled
  */
-extern bool deadline_ok(struct job_record *job_ptr, char *func);
+extern bool deadline_ok(job_record_t *job_ptr, char *func);
 
 /*
  * epilog_slurmctld - execute the prolog_slurmctld for a job that has just
  *	terminated.
  * IN job_ptr - pointer to job that has been terminated
  */
-extern void epilog_slurmctld(struct job_record *job_ptr);
+extern void epilog_slurmctld(job_record_t *job_ptr);
 
 /*
  * Delete a record from a job's feature_list
  */
 extern void feature_list_delete(void *x);
+
+/*
+ * Return a pointer to the dependency in job_ptr's dependency list that
+ * matches dep_ptr, or NULL if none is found.
+ *
+ * A dependency "matches" when the job_id and depend_type are the same.
+ */
+extern depend_spec_t *find_dependency(job_record_t *job_ptr,
+				      depend_spec_t *dep_ptr);
+
+/*
+ * Update a job's state_reason, state_desc, and dependency string based on the
+ * states of its dependencies.
+ *
+ * This is called by list_for_each() and thus has 2 void* parameters:
+ * object is a pointer to job_record_t.
+ * arg is unused.
+ */
+extern int handle_job_dependency_updates(void *object, void *arg);
 
 /*
  * job_is_completing - Determine if jobs are in the process of completing.
@@ -118,7 +153,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
  * launch_job - send an RPC to a slurmd to initiate a batch job
  * IN job_ptr - pointer to job that will be initiated
  */
-extern void launch_job(struct job_record *job_ptr);
+extern void launch_job(job_record_t *job_ptr);
 
 /*
  * make_batch_job_cred - add a job credential to the batch_job_launch_msg
@@ -128,7 +163,7 @@ extern void launch_job(struct job_record *job_ptr);
  * RET 0 or error code
  */
 extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
-			       struct job_record *job_ptr,
+			       job_record_t *job_ptr,
 			       uint16_t protocol_version);
 
 /*
@@ -136,7 +171,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
  * IN job_ptr - pointer to job that will be initiated
  * RET bitmap of nodes requiring a reboot for NodeFeaturesPlugin or NULL if none
  */
-extern bitstr_t *node_features_reboot(struct job_record *job_ptr);
+extern bitstr_t *node_features_reboot(job_record_t *job_ptr);
 
 /*
  * Determine if node boot required for this job
@@ -144,32 +179,32 @@ extern bitstr_t *node_features_reboot(struct job_record *job_ptr);
  * IN node_bitmap - nodes to be allocated
  * RET - true if reboot required
  */
-extern bool node_features_reboot_test(struct job_record *job_ptr,
+extern bool node_features_reboot_test(job_record_t *job_ptr,
 				      bitstr_t *node_bitmap);
 
 /* Print a job's dependency information based upon job_ptr->depend_list */
-extern void print_job_dependency(struct job_record *job_ptr);
+extern void print_job_dependency(job_record_t *job_ptr, const char *func);
 
 /* Decrement a job's prolog_running counter and launch the job if zero */
-extern void prolog_running_decr(struct job_record *job_ptr);
+extern void prolog_running_decr(job_record_t *job_ptr);
 
 /*
  * prolog_slurmctld - execute the prolog_slurmctld for a job that has just
  *	been allocated resources.
  * IN job_ptr - pointer to job that will be initiated
  */
-extern void prolog_slurmctld(struct job_record *job_ptr);
+extern void prolog_slurmctld(job_record_t *job_ptr);
 
 /*
  * reboot_job_nodes - Reboot the compute nodes allocated to a job.
  * IN job_ptr - pointer to job that will be initiated
  * RET SLURM_SUCCESS(0) or error code
  */
-extern int reboot_job_nodes(struct job_record *job_ptr);
+extern int reboot_job_nodes(job_record_t *job_ptr);
 
 /* If a job can run in multiple partitions, make sure that the one 
  * actually used is first in the string. Needed for job state save/restore */
-extern void rebuild_job_part_list(struct job_record *job_ptr);
+extern void rebuild_job_part_list(job_record_t *job_ptr);
 
 /*
  * schedule - attempt to schedule all pending jobs
@@ -207,11 +242,16 @@ extern int sort_job_queue2(void *x, void *y);
 
 /*
  * Determine if a job's dependencies are met
- * RET: 0 = no dependencies
- *      1 = dependencies remain
- *      2 = failure (job completion code not per dependency), delete the job
+ * Inputs: job_ptr
+ * Outputs: was_changed (optional) -
+ *          If it exists, set it to true if at least 1 dependency changed
+ *          state, otherwise false.
+ * RET: NO_DEPEND = no dependencies
+ *      LOCAL_DEPEND = dependencies remain
+ *      FAIL_DEPEND = failure (job completion code not per dependency),
+ *                    delete the job
  */
-extern int test_job_dependency(struct job_record *job_ptr);
+extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed);
 
 /*
  * Parse a job dependency string and use it to establish a "depend_spec"
@@ -221,6 +261,35 @@ extern int test_job_dependency(struct job_record *job_ptr);
  * IN new_depend - new dependency description
  * RET returns an error code from slurm_errno.h
  */
-extern int update_job_dependency(struct job_record *job_ptr, char *new_depend);
+extern int update_job_dependency(job_record_t *job_ptr, char *new_depend);
+
+/*
+ * new_depend_list is a dependency list that came from a sibling cluster. It
+ * has updates to the job dependencies on that cluster. Use those changes to
+ * update the dependency list of job_ptr.
+ * Return true if a dependency was updated, false if not.
+ */
+extern bool update_job_dependency_list(job_record_t *job_ptr,
+				       List new_depend_list);
+
+/*
+ * When an array job is rejected for some reason, the remaining array tasks will
+ * get skipped by both the main scheduler and the backfill scheduler (it's an
+ * optimization). Hence, their reasons should match the reason of the first job.
+ * This function sets those reasons.
+ *
+ * job_ptr		(IN) The current job being evaluated, after it has gone
+ * 			through the scheduling loop.
+ * reject_array_job	(IN) A pointer to the first job (array task) in the most
+ * 			recently rejected array job. If job_ptr belongs to the
+ * 			same array as reject_array_job, then set job_ptr's
+ * 			reason to match reject_array_job.
+ */
+extern void fill_array_reasons(struct job_record *job_ptr,
+			       struct job_record *reject_arr_job);
+
+
+/* Add a job_queue_rec_t to job_queue */
+extern void job_queue_append_internal(job_queue_req_t *job_queue_req);
 
 #endif /* !_JOB_SCHEDULER_H */

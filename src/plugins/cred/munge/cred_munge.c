@@ -48,6 +48,7 @@
 
 #include "slurm/slurm_errno.h"
 
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -55,6 +56,12 @@
 
 #define RETRY_COUNT		20
 #define RETRY_USEC		100000
+
+#if defined (__APPLE__)
+extern slurm_conf_t slurm_conf __attribute__((weak_import));
+#else
+slurm_conf_t slurm_conf;
+#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -95,19 +102,12 @@ enum local_error_code {
 	ESIG_CRED_REPLAYED,
 };
 
-static uid_t slurm_user = 0;
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
 extern int init(void)
 {
-	/*
-	 * Get slurm user id once. We use it later to verify credentials.
-	 */
-	slurm_user = slurm_get_slurm_user_id();
-
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -132,7 +132,7 @@ static void *_munge_ctx_setup(bool creator)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
-	char *opts, *socket;
+	char *socket;
 	int auth_ttl, rc;
 
 	if ((ctx = munge_ctx_create()) == NULL) {
@@ -140,8 +140,7 @@ static void *_munge_ctx_setup(bool creator)
 		return NULL;
 	}
 
-	opts = slurm_get_auth_info();
-	socket = slurm_auth_opts_to_socket(opts);
+	socket = slurm_auth_opts_to_socket(slurm_conf.authinfo);
 	if (socket) {
 		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
 		xfree(socket);
@@ -151,7 +150,6 @@ static void *_munge_ctx_setup(bool creator)
 			return NULL;
 		}
 	}
-	xfree(opts);
 
 	auth_ttl = slurm_get_auth_ttl();
 	if (auth_ttl)
@@ -165,7 +163,7 @@ static void *_munge_ctx_setup(bool creator)
 		 * get at the contents of job credentials.
 		 */
 		err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
-				    slurm_get_slurmd_user_id());
+				    slurm_conf.slurmd_user_id);
 
 		if (err != EMUNGE_SUCCESS) {
 			error("Unable to set uid restriction on munge credentials: %s",
@@ -277,9 +275,9 @@ again:
 #endif
 	}
 
-	if ((uid != slurm_user) && (uid != 0)) {
+	if ((uid != slurm_conf.slurm_user_id) && (uid != 0)) {
 		error("%s: Unexpected uid (%u) != Slurm uid (%u)",
-		      plugin_type, uid, slurm_user);
+		      plugin_type, uid, slurm_conf.slurm_user_id);
 		rc = ESIG_BAD_USERID;
 	} else if (buf_size != buf_out_size)
 		rc = ESIG_BUF_SIZE_MISMATCH;

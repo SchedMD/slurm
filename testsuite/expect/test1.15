@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of wait option (--wait option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,12 +28,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.15"
 set exit_code   0
 set file_in     "test$test_id.bash"
 set matches     0
-
-print_header $test_id
 
 #
 # Spawn tasks via srun and immediately exit task 1 only
@@ -46,7 +39,7 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -n10 -N1 -O -W2 -t2 ./$file_in]
 expect {
 	-re "First task exited" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		incr matches
 		exp_continue
 	}
@@ -55,7 +48,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -65,10 +58,8 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE: problem with srun wait option matches was $matches\n"
-	set exit_code 1
+	fail "Problem with srun wait option matches was $matches"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

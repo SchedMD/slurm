@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2011 Bull.
  *  Written by Martin Perry, <martin.perry@bull.com>, who borrowed heavily
- *  from other parts of SLURM
+ *  from other parts of Slurm
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.
@@ -64,6 +64,15 @@ extern slurmd_conf_t *conf __attribute__((weak_import));
 slurmd_conf_t *conf;
 #endif
 
+typedef struct {
+	uint32_t taskid;
+	pid_t pid;
+	uid_t uid;
+	gid_t gid;
+	List task_cg_list;
+	char *step_cgroup_path;
+	char *task_cgroup_path;
+} jobacct_cgroup_create_callback_t;
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -215,19 +224,6 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 
 }
 
-static bool _run_in_daemon(void)
-{
-	static bool set = false;
-	static bool run = false;
-
-	if (!set) {
-		set = 1;
-		run = run_in_daemon("slurmstepd");
-	}
-
-	return run;
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -237,7 +233,7 @@ extern int init (void)
 	/* If running on the slurmctld don't do any of this since it
 	   isn't needed.
 	*/
-	if (_run_in_daemon()) {
+	if (running_in_slurmstepd()) {
 		jag_common_init(0);
 
 		/* initialize cpuinfo internal data */
@@ -274,7 +270,7 @@ extern int init (void)
 
 extern int fini (void)
 {
-	if (_run_in_daemon()) {
+	if (running_in_slurmstepd()) {
 		jobacct_gather_cgroup_cpuacct_fini();
 		jobacct_gather_cgroup_memory_fini();
 		/* jobacct_gather_cgroup_blkio_fini(); */
@@ -342,51 +338,6 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 	return SLURM_SUCCESS;
 }
 
-extern char* jobacct_cgroup_create_slurm_cg(xcgroup_ns_t* ns)
- {
-	/* we do it here as we do not have access to the conf structure */
-	/* in libslurm (src/common/xcgroup.c) */
-	xcgroup_t slurm_cg;
-	char *pre;
-	slurm_cgroup_conf_t *cg_conf;
-
-	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
-
-	pre = xstrdup(cg_conf->cgroup_prepend);
-
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
-
-#ifdef MULTIPLE_SLURMD
-	if (conf->node_name != NULL) {
-		xstrsubstitute(pre, "%n", conf->node_name);
-	} else {
-		xfree(pre);
-		pre = (char*) xstrdup("/slurm");
-	}
-#endif
-
-	/* create slurm cgroup in the ns (it could already exist) */
-	if (xcgroup_create(ns, &slurm_cg, pre,
-			   getuid(), getgid()) != XCGROUP_SUCCESS) {
-		return pre;
-	}
-
-	if (xcgroup_instantiate(&slurm_cg) != XCGROUP_SUCCESS) {
-		error("unable to build slurm cgroup for ns %s: %m",
-		      ns->subsystems);
-		xcgroup_destroy(&slurm_cg);
-		return pre;
-	} else {
-		debug3("slurm cgroup %s successfully created for ns %s: %m",
-		       pre, ns->subsystems);
-		xcgroup_destroy(&slurm_cg);
-	}
-
-	return pre;
-}
-
 extern int find_task_cg_info(void *x, void *key)
 {
 	task_cg_info_t *task_cg = (task_cg_info_t*)x;
@@ -406,4 +357,113 @@ extern void free_task_cg_info(void *object)
 		xcgroup_destroy(&task_cg->task_cg);
 		xfree(task_cg);
 	}
+}
+
+static int _handle_task_cgroup(const char *calling_func,
+			       xcgroup_ns_t *ns,
+			       void *callback_arg)
+{
+	int rc;
+	bool need_to_add = false;
+	task_cg_info_t *task_cg_info;
+	jobacct_cgroup_create_callback_t *cgroup_callback =
+		(jobacct_cgroup_create_callback_t *)callback_arg;
+
+	uint32_t taskid = cgroup_callback->taskid;
+	pid_t pid = cgroup_callback->pid;
+	uid_t uid = cgroup_callback->uid;
+	gid_t gid = cgroup_callback->gid;
+	List task_cg_list = cgroup_callback->task_cg_list;
+	char *step_cgroup_path = cgroup_callback->step_cgroup_path;
+	char *task_cgroup_path = cgroup_callback->task_cgroup_path;
+
+	/* build task cgroup relative path */
+	if (snprintf(task_cgroup_path, PATH_MAX, "%s/task_%u",
+		     step_cgroup_path, taskid) >= PATH_MAX) {
+		error("%s: unable to build task %u memory cg relative path: %m",
+		      calling_func, taskid);
+		return SLURM_ERROR;
+	}
+
+	if (!(task_cg_info = list_find_first(task_cg_list,
+					     find_task_cg_info,
+					     &taskid))) {
+		task_cg_info = xmalloc(sizeof(*task_cg_info));
+		task_cg_info->taskid = taskid;
+		need_to_add = true;
+	}
+	/*
+	 * Create task cgroup in the memory ns
+	 */
+	if (xcgroup_create(ns, &task_cg_info->task_cg,
+			   task_cgroup_path,
+			   uid, gid) != XCGROUP_SUCCESS) {
+		/* Don't use free_task_cg_info as the task_cg isn't there */
+		xfree(task_cg_info);
+
+		error("%s: unable to create task %u cgroup",
+		      calling_func, taskid);
+		return SLURM_ERROR;
+	}
+
+	if (xcgroup_instantiate(&task_cg_info->task_cg) != XCGROUP_SUCCESS) {
+		free_task_cg_info(task_cg_info);
+		error("%s: unable to instantiate task %u cgroup",
+		      calling_func, taskid);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * Attach the slurmstepd to the task memory cgroup
+	 */
+	rc = xcgroup_add_pids(&task_cg_info->task_cg, &pid, 1);
+	if (rc != XCGROUP_SUCCESS) {
+		error("%s: unable to add slurmstepd to memory cg '%s'",
+		      calling_func, task_cg_info->task_cg.path);
+		rc = SLURM_ERROR;
+	} else
+		rc = SLURM_SUCCESS;
+
+	/* Add the task cgroup to the list now that it is initialized. */
+	if (need_to_add)
+		list_append(task_cg_list, task_cg_info);
+
+	return rc;
+}
+
+extern int create_jobacct_cgroups(const char *calling_func,
+				  const jobacct_id_t *jobacct_id,
+				  pid_t pid,
+				  xcgroup_ns_t *ns,
+				  xcgroup_t *job_cg,
+				  xcgroup_t *step_cg,
+				  List task_cg_list,
+				  xcgroup_t *user_cg,
+				  char job_cgroup_path[],
+				  char step_cgroup_path[],
+				  char task_cgroup_path[],
+				  char user_cgroup_path[])
+{
+	stepd_step_rec_t *job = jobacct_id->job;
+	jobacct_cgroup_create_callback_t cgroup_callback = {
+		.taskid = jobacct_id->taskid,
+		.pid = pid,
+		.uid = job->uid,
+		.gid = job->gid,
+		.task_cg_list = task_cg_list,
+		.step_cgroup_path = step_cgroup_path,
+		.task_cgroup_path = task_cgroup_path,
+	};
+
+	return xcgroup_create_hierarchy(__func__,
+					job,
+					ns,
+					job_cg,
+					step_cg,
+					user_cg,
+					job_cgroup_path,
+					step_cgroup_path,
+					user_cgroup_path,
+					_handle_task_cgroup,
+					&cgroup_callback);
 }

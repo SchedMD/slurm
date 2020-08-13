@@ -48,6 +48,8 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/read_config.h"
 
+#define MAX_DEADLOCK_ATTEMPTS 10
+
 static char *table_defs_table = "table_defs_table";
 
 typedef struct {
@@ -135,7 +137,9 @@ static MYSQL_RES *_get_last_result(MYSQL *db_conn)
 static int _mysql_query_internal(MYSQL *db_conn, char *query)
 {
 	int rc = SLURM_SUCCESS;
+	int deadlock_attempt = 0;
 
+try_again:
 	if (!db_conn)
 		fatal("You haven't inited this storage yet.");
 
@@ -151,8 +155,24 @@ static int _mysql_query_internal(MYSQL *db_conn, char *query)
 			errno = 0;
 			goto end_it;
 		}
-		error("mysql_query failed: %d %s\n%s", errno, err_str, query);
-		if (errno == ER_LOCK_WAIT_TIMEOUT) {
+		if (errno == ER_LOCK_DEADLOCK) {
+			/*
+			 * Mysql detected a deadlock and we should retry
+			 * a few times since this is mainly a race condition
+			 */
+			deadlock_attempt++;
+
+			if (deadlock_attempt < MAX_DEADLOCK_ATTEMPTS) {
+				error("%s: deadlock detected attempt %u/%u: %d %s",
+				      __func__, deadlock_attempt,
+				      MAX_DEADLOCK_ATTEMPTS, errno, err_str);
+				goto try_again;
+			} else {
+				fatal("%s: unable to resolve deadlock with attempts %u/%u: %d %s\nPlease call 'show engine innodb status;' in MySQL/MariaDB and open a bug report with SchedMD.",
+				      __func__, deadlock_attempt,
+				      MAX_DEADLOCK_ATTEMPTS, errno, err_str);
+			}
+		} else if (errno == ER_LOCK_WAIT_TIMEOUT) {
 			/* FIXME: If we get ER_LOCK_WAIT_TIMEOUT here we need
 			 * to restart the connections, but it appears restarting
 			 * the calling program is the only way to handle this.
@@ -168,6 +188,7 @@ static int _mysql_query_internal(MYSQL *db_conn, char *query)
 			      "You will need to call 'mysqladmin flush-hosts' "
 			      "to regain connectivity.");
 		}
+		error("mysql_query failed: %d %s\n%s", errno, err_str, query);
 		rc = SLURM_ERROR;
 	}
 end_it:
@@ -269,7 +290,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 		return SLURM_ERROR;
 	}
 	xfree(query);
-	columns = list_create(slurm_destroy_char);
+	columns = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		col = xstrdup(row[0]); //Field
 		list_append(columns, col);
@@ -564,6 +585,48 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	return SLURM_SUCCESS;
 }
 
+void _set_mysql_ssl_opts(MYSQL *db_conn, const char *options)
+{
+	char *tmp_opts, *token, *save_ptr = NULL;
+	const char *key = NULL, *cert = NULL, *ca = NULL, *ca_path = NULL;
+	const char *cipher = NULL;
+
+	if (!options)
+		return;
+
+	tmp_opts = xstrdup(options);
+	token = strtok_r(tmp_opts, ",", &save_ptr);
+	while (token) {
+		char *opt_str, *val_str = NULL;
+
+		opt_str = strtok_r(token, "=", &val_str);
+
+		if (!opt_str || !val_str) {
+			error("Invalid storage option/val");
+			goto next;
+		} else if (!xstrcasecmp(opt_str, "SSL_CERT"))
+			cert = val_str;
+		else if (!xstrcasecmp(opt_str, "SSL_CA"))
+			ca = val_str;
+		else if (!xstrcasecmp(opt_str, "SSL_CAPATH"))
+			ca_path = val_str;
+		else if (!xstrcasecmp(opt_str, "SSL_KEY"))
+			key = val_str;
+		else if (!xstrcasecmp(opt_str, "SSL_CIPHER"))
+			cipher = val_str;
+		else {
+			error("Invalid storage option '%s'", opt_str);
+			goto next;
+		}
+next:
+		token = strtok_r(NULL, ",", &save_ptr);
+	}
+
+	mysql_ssl_set(db_conn, key, cert, ca, ca_path, cipher);
+
+	xfree(tmp_opts);
+}
+
 /* NOTE: Ensure that mysql_conn->lock is set on function entry */
 static int _create_db(char *db_name, mysql_db_info_t *db_info)
 {
@@ -577,6 +640,8 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 		rc = SLURM_SUCCESS;
 		if (!(mysql_db = mysql_init(mysql_db)))
 			fatal("mysql_init failed: %s", mysql_error(mysql_db));
+
+		_set_mysql_ssl_opts(mysql_db, db_info->params);
 
 		db_host = db_info->host;
 		db_ptr = mysql_real_connect(mysql_db,
@@ -658,25 +723,22 @@ extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
 
 	switch (type) {
 	case SLURM_MYSQL_PLUGIN_AS:
-		db_info->port = slurm_get_accounting_storage_port();
-		if (!db_info->port) {
-			db_info->port = DEFAULT_MYSQL_PORT;
-			slurm_set_accounting_storage_port(db_info->port);
-		}
-		db_info->host = slurm_get_accounting_storage_host();
-		db_info->backup = slurm_get_accounting_storage_backup_host();
-		db_info->user = slurm_get_accounting_storage_user();
-		db_info->pass = slurm_get_accounting_storage_pass();
+		db_info->port = slurm_conf.accounting_storage_port;
+		db_info->host = xstrdup(slurm_conf.accounting_storage_host);
+		db_info->backup =
+			xstrdup(slurm_conf.accounting_storage_backup_host);
+		db_info->user = xstrdup(slurm_conf.accounting_storage_user);
+		db_info->pass = xstrdup(slurm_conf.accounting_storage_pass);
+		db_info->params = xstrdup(slurm_conf.accounting_storage_params);
 		break;
 	case SLURM_MYSQL_PLUGIN_JC:
-		db_info->port = slurm_get_jobcomp_port();
-		if (!db_info->port) {
-			db_info->port = DEFAULT_MYSQL_PORT;
-			slurm_set_jobcomp_port(db_info->port);
-		}
-		db_info->host = slurm_get_jobcomp_host();
-		db_info->user = slurm_get_jobcomp_user();
-		db_info->pass = slurm_get_jobcomp_pass();
+		if (!slurm_conf.job_comp_port)
+			slurm_conf.job_comp_port = DEFAULT_MYSQL_PORT;
+		db_info->port = slurm_conf.job_comp_port;
+		db_info->host = xstrdup(slurm_conf.job_comp_host);
+		db_info->user = xstrdup(slurm_conf.job_comp_user);
+		db_info->pass = xstrdup(slurm_conf.job_comp_pass);
+		db_info->params = xstrdup(slurm_conf.accounting_storage_params);
 		break;
 	default:
 		xfree(db_info);
@@ -704,9 +766,8 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 	bool storage_init = false;
 	char *db_host = db_info->host;
 	unsigned int my_timeout = 30;
-#ifdef MYSQL_OPT_RECONNECT
-	my_bool reconnect = 1;
-#endif
+	bool reconnect = 1;
+
 	xassert(mysql_conn);
 
 	slurm_mutex_lock(&mysql_conn->lock);
@@ -717,18 +778,19 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 		      mysql_error(mysql_conn->db_conn));
 	}
 
-	/* If this ever changes you will need to alter
+	mysql_options(mysql_conn->db_conn, MYSQL_OPT_RECONNECT, &reconnect);
+
+	/*
+	 * If this ever changes you will need to alter
 	 * src/common/slurmdbd_defs.c function _send_init_msg to
 	 * handle a different timeout when polling for the
 	 * response.
 	 */
-#ifdef MYSQL_OPT_RECONNECT
-	/* make sure reconnect is on */
-	mysql_options(mysql_conn->db_conn, MYSQL_OPT_RECONNECT,
-		      &reconnect);
-#endif
 	mysql_options(mysql_conn->db_conn, MYSQL_OPT_CONNECT_TIMEOUT,
 		      (char *)&my_timeout);
+
+	_set_mysql_ssl_opts(mysql_conn->db_conn, db_info->params);
+
 	while (!storage_init) {
 		debug2("Attempting to connect to %s:%d", db_host,
 		       db_info->port);
@@ -743,6 +805,14 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 				debug("Database %s not created.  Creating",
 				      db_name);
 				rc = _create_db(db_name, db_info);
+
+				/*
+				 * When using ca, cert and key the next
+				 * connect will fail. Setting the options again
+				 * fixes it.
+				 */
+				_set_mysql_ssl_opts(mysql_conn->db_conn,
+						    db_info->params);
 				continue;
 			}
 
@@ -955,8 +1025,8 @@ extern uint64_t mysql_db_insert_ret_id(mysql_conn_t *mysql_conn, char *query)
 		new_id = mysql_insert_id(mysql_conn->db_conn);
 		if (!new_id) {
 			/* should have new id */
-			error("We should have gotten a new id: %s",
-			      mysql_error(mysql_conn->db_conn));
+			error("%s: We should have gotten a new id: %s",
+			      __func__, mysql_error(mysql_conn->db_conn));
 		}
 	}
 	slurm_mutex_unlock(&mysql_conn->lock);

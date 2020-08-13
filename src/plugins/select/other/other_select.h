@@ -83,13 +83,7 @@ extern int other_job_init(List job_list);
  * IN node_ptr - current node data
  * IN node_count - number of node entries
  */
-extern int other_node_init(struct node_record *node_ptr, int node_cnt);
-
-/*
- * Note re/initialization of partition record data structure
- * IN part_list - list of partition records
- */
-extern int other_block_init(List part_list);
+extern int other_node_init(node_record_t *node_ptr, int node_cnt);
 
 /*
  * Get select data from a plugin
@@ -100,8 +94,7 @@ extern int other_block_init(List part_list);
  * IN/OUT data  - the data to get from node record
  */
 extern int other_get_info_from_plugin(enum select_plugindata_info dinfo,
-				       struct job_record *job_ptr,
-				       void *data);
+				      job_record_t *job_ptr, void *data);
 
 /*
  * Updated a node configuration. This happens when a node registers with
@@ -110,15 +103,6 @@ extern int other_get_info_from_plugin(enum select_plugindata_info dinfo,
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
 extern int other_update_node_config(int index);
-
-/*
- * Updated a node state in the plugin, this should happen when a node is
- * drained or put into a down state then changed back.
- * IN index  - index into the node record list
- * IN state  - state to update to
- * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
- */
-extern int other_update_node_state(struct node_record *node_ptr);
 
 /*
  * Select the "best" nodes for given job from those available
@@ -140,7 +124,7 @@ extern int other_update_node_state(struct node_record *node_ptr);
  * IN exc_core_bitmap - bitmap of cores being reserved.
  * RET zero on success, EINVAL otherwise
  */
-extern int other_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+extern int other_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes, uint16_t mode,
 			  List preemptee_candidates, List *preemptee_job_list,
@@ -151,14 +135,14 @@ extern int other_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
  * after other_job_test(). Executed from slurmctld.
  * IN job_ptr - pointer to job being initiated
  */
-extern int other_job_begin(struct job_record *job_ptr);
+extern int other_job_begin(job_record_t *job_ptr);
 
 /*
  * determine if job is ready to execute per the node select plugin
  * IN job_ptr - pointer to job being tested
  * RET -1 on error, 1 if ready to execute, 0 otherwise
  */
-extern int other_job_ready(struct job_record *job_ptr);
+extern int other_job_ready(job_record_t *job_ptr);
 
 /*
  * Move the resource allocated to one job into that of another job.
@@ -166,35 +150,34 @@ extern int other_job_ready(struct job_record *job_ptr);
  *	"to_job_ptr". Also see other_job_resized().
  * RET: 0 or an error code
  */
-extern int other_job_expand(struct job_record *from_job_ptr,
-			    struct job_record *to_job_ptr);
+extern int other_job_expand(job_record_t *from_job_ptr,
+			    job_record_t *to_job_ptr);
 
 /*
  * Modify internal data structures for a job that has decreased job size.
  *	Only support jobs shrinking. Also see other_job_expand();
  * RET: 0 or an error code
  */
-extern int other_job_resized(struct job_record *job_ptr,
-			     struct node_record *node_ptr);
+extern int other_job_resized(job_record_t *job_ptr, node_record_t *node_ptr);
 
 /*
  * Pass job-step signal to other plugin.
  * IN job_ptr - job to be signaled
  * IN signal  - signal(7) number
  */
-extern int other_job_signal(struct job_record *job_ptr, int signal);
+extern int other_job_signal(job_record_t *job_ptr, int signal);
 
 /*
  * Pass job memory allocation confirmation request to other plugin.
  * IN job_ptr - job to be signaled
  */
-extern int other_job_mem_confirm(struct job_record *job_ptr);
+extern int other_job_mem_confirm(job_record_t *job_ptr);
 
 /*
  * Note termination of job is starting. Executed from slurmctld.
  * IN job_ptr - pointer to job being terminated
  */
-extern int other_job_fini(struct job_record *job_ptr);
+extern int other_job_fini(job_record_t *job_ptr);
 
 /*
  * Suspend a job. Executed from slurmctld.
@@ -203,7 +186,7 @@ extern int other_job_fini(struct job_record *job_ptr);
  *                or admin, otherwise suspended for gang scheduling
  * RET SLURM_SUCCESS or error code
  */
-extern int other_job_suspend(struct job_record *job_ptr, bool indf_susp);
+extern int other_job_suspend(job_record_t *job_ptr, bool indf_susp);
 
 /*
  * Resume a job. Executed from slurmctld.
@@ -212,7 +195,7 @@ extern int other_job_suspend(struct job_record *job_ptr, bool indf_susp);
  *                or admin, otherwise resume from gang scheduling
  * RET SLURM_SUCCESS or error code
  */
-extern int other_job_resume(struct job_record *job_ptr, bool indf_susp);
+extern int other_job_resume(job_record_t *job_ptr, bool indf_susp);
 
 /*
  * Select the "best" nodes for given job from those available
@@ -225,12 +208,12 @@ extern int other_job_resume(struct job_record *job_ptr, bool indf_susp);
  * OUT avail_nodes - bitmap of available nodes according to the plugin.
  * RET map of slurm nodes to be used for step, NULL on failure
  */
-extern bitstr_t * other_step_pick_nodes(struct job_record *job_ptr,
+extern bitstr_t * other_step_pick_nodes(job_record_t *job_ptr,
 					select_jobinfo_t *jobinfo,
 					uint32_t node_count,
 					bitstr_t **avail_nodes);
 
-extern int other_step_start(struct step_record *step_ptr);
+extern int other_step_start(step_record_t *step_ptr);
 
 /*
  * clear what happened in select_g_step_pick_nodes
@@ -238,7 +221,7 @@ extern int other_step_start(struct step_record *step_ptr);
  * IN killing_step - if true then we are just starting to kill the step
  *                   if false, the step is completely terminated
  */
-extern int other_step_finish(struct step_record *step_ptr, bool killing_step);
+extern int other_step_finish(step_record_t *step_ptr, bool killing_step);
 
 /* allocate storage for a select job credential
  * RET jobinfo - storage for a select job credential
@@ -337,7 +320,7 @@ extern int other_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 extern int other_select_nodeinfo_set_all(void);
 
-extern int other_select_nodeinfo_set(struct job_record *job_ptr);
+extern int other_select_nodeinfo_set(job_record_t *job_ptr);
 
 extern int other_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 				     enum select_nodedata_type dinfo,

@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Confirm that a job allocates the proper processor count (--ntasks)
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,11 +28,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.10"
 set exit_code   0
 set job_id      0
-
-print_header $test_id
 
 for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 	set tasks_set $inx
@@ -55,11 +48,11 @@ for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 			exp_continue
 		}
 		-re "allocate failed" {
-			send_user "\nThis error is not unexpected, no worries\n"
+			log_debug "This error is not unexpected, no worries"
 			set tasks_get $tasks_set
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding\n"
+			log_error "salloc not responding"
 			if {$job_id != 0} {
 				cancel_job $job_id
 			}
@@ -68,18 +61,16 @@ for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 		}
 		eof {
 			if {$tasks_get < $tasks_set} {
-				send_user "\nFAILURE: Did not get proper number of tasks: "
-				send_user "$tasks_get < $tasks_set\n"
+				log_error "Did not get proper number of tasks: $tasks_get < $tasks_set"
 				set exit_code 1
 			} else {
-				send_user "test of $tasks_get processors good\n\n"
+				log_debug "Test of $tasks_get processors good"
 			}
 			wait
 		}
 	}
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

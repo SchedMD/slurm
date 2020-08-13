@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate scontrol displays and updates Allow/Deny accounts.
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -31,23 +26,18 @@
 ############################################################################
 source ./globals
 
-set test_id        "2.16"
 set part_name      "test$test_id\_part"
 set acct_name      "test$test_id\_acct"
 set exit_code      0
-
-print_header $test_id
 
 #
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 proc set_part_val {part_type part_val} {
@@ -57,11 +47,11 @@ proc set_part_val {part_type part_val} {
 	spawn $scontrol update partitionname=$part_name $part_type=$part_val
 	expect {
 		-re "Error" {
-			send_user "\nFAILURE: $part_type was not set\n"
+			log_error "$part_type was not set"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -82,7 +72,7 @@ proc check_part {part_type part_val} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -91,7 +81,7 @@ proc check_part {part_type part_val} {
 	}
 
 	if {$val_found != 1} {
-		send_user "\nFAILURE: $part_type was not set to $part_val\n"
+		log_error "$part_type was not set to $part_val"
 		set exit_code 1
 	}
 }
@@ -103,12 +93,12 @@ proc delete_part { } {
 	spawn $scontrol delete partition=$part_name
 	expect {
 		-re "error" {
-			send_user "\nFAILURE: scontrol did not remove partition\n"
+			log_error "scontrol did not remove partition"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "FAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -124,7 +114,7 @@ proc delete_part { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -133,7 +123,7 @@ proc delete_part { } {
 	}
 
 	if {$del_acct != 1} {
-		send_user "\nFAILURE: Account was not deleted\n"
+		log_error "Account was not deleted"
 		set exit_code 1
 	}
 
@@ -142,11 +132,11 @@ proc delete_part { } {
 spawn $scontrol create partition=$part_name
 expect {
 	-re "error" {
-		send_user "\nFAILURE: partition was not created\n"
+		log_error "Partition was not created"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not reponding\n"
+		log_error "scontrol is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -162,7 +152,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -170,7 +160,7 @@ expect {
 	}
 }
 if { $make_acct != 1 } {
-	send_user "\nFAILURE: Account was not added\n"
+	log_error "Account was not added"
 	set exit_code 1
 }
 
@@ -219,7 +209,6 @@ check_part DenyAccounts none
 #
 delete_part
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

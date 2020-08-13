@@ -8,6 +8,10 @@ A resource reservation identifies the resources in that reservation
 and a time period during which the reservation is available.
 The resources which can be reserved include cores, nodes, licenses and/or
 burst buffers.
+A reservation that contains nodes or cores is associated with one partition,
+and can't span resources over multiple partitions.
+The only exception from this is when
+the reservation is created with explicitly requested nodes.
 Note that resource reservations are not compatible with Slurm's
 gang scheduler plugin since the termination time of running jobs
 cannot be accurately predicted.</p>
@@ -15,7 +19,7 @@ cannot be accurately predicted.</p>
 <p>Note that reserved burst buffers and licenses are treated somewhat
 differently than reserved cores or nodes.
 When cores or nodes are reserved, then jobs using that reservation can use only
-those resources and no other jobs can use those resources.
+those resources (this behavior can be change using FLEX flag) and no other jobs can use those resources.
 Reserved burst buffers and licenses can only be used by jobs associated with
 that reservation, but licenses not explicitly reserved are available to any job.
 This eliminates the need to explicitly put licenses into every advanced
@@ -23,7 +27,7 @@ reservation created.</p>
 
 <p>Reservations can be created, updated, or destroyed only by user root
 or the configured <i>SlurmUser</i> using the <i>scontrol</i> command.
-The <i>scontrol</i>, <i>smap</i> and <i>sview</i> commands can be used
+The <i>scontrol</i> and <i>sview</i> commands can be used
 to view reservations.
 The man pages for the various commands contain details.</p>
 
@@ -435,7 +439,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 18 October 2018</p>
+<p style="text-align: center;">Last modified 23 September 2019</p>
 
 <!--#include virtual="footer.txt"-->
 

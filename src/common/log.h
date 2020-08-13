@@ -49,6 +49,7 @@
 #include <syslog.h>
 #include <stdio.h>
 
+#include "slurm/slurm.h"
 #include "src/common/macros.h"
 #include "src/common/cbuf.h"
 
@@ -197,11 +198,8 @@ void log_set_fpfx(char **pfx);
 void log_set_argv0(char *pfx);
 
 /* Return the FILE * of the current logfile (or stderr if not logging to
- * a file, but NOT both). Also see log_fatal() and log_oom() below. */
+ * a file, but NOT both). Also see log_oom() below. */
 FILE *log_fp(void);
-
-/* Log fatal error without message buffering */
-void log_fatal(const char *file, int line, const char *msg, const char *err_str);
 
 /* Log out of memory without message buffering */
 void log_oom(const char *file, int line, const char *func);
@@ -239,6 +237,20 @@ extern int get_log_level(void);
  */
 extern int get_sched_log_level(void);
 
+
+#define STEP_ID_FLAG_NONE      0x0000
+#define STEP_ID_FLAG_PS        0x0001
+#define STEP_ID_FLAG_NO_JOB    0x0002
+#define STEP_ID_FLAG_NO_PREFIX 0x0004
+#define STEP_ID_FLAG_SPACE     0x0008
+
+/*
+ * log_build_step_id_str() - print a slurm_step_id_t as " StepId=...", with
+ * Batch and Extern used as appropriate.
+ */
+extern char *log_build_step_id_str(
+	slurm_step_id_t *step_id, char *buf, int buf_size, uint16_t flags);
+
 /*
  * the following log a message to the log facility at the appropriate level:
  *
@@ -262,8 +274,10 @@ void	log_var(const log_level_t, const char *, ...)
 			__attribute__ ((format (printf, 2, 3)));
 void	sched_log_var(const log_level_t, const char *, ...)
 			__attribute__ ((format (printf, 2, 3)));
-void	fatal_abort(const char *, ...) __attribute__ ((format (printf, 1, 2)));
-void	fatal(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+extern void fatal_abort(const char *, ...)
+	__attribute__((format (printf, 1, 2))) __attribute__((noreturn));
+extern void fatal(const char *, ...)
+	__attribute__((format (printf, 1, 2))) __attribute__((noreturn));
 int	error(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	info(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
@@ -317,6 +331,30 @@ void	sched_verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 	do {								\
 		if (get_sched_log_level() >= LOG_LEVEL_DEBUG3)		\
 			sched_log_var(LOG_LEVEL_DEBUG3, fmt, ##__VA_ARGS__); \
+	} while (0)
+
+/*
+ * Print at the same log level as error(), but without prefixing the message
+ * with "error: ". Useful to report back to srun commands from SPANK plugins,
+ * as info() will only go to the logs.
+ */
+void spank_log(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+
+
+/*
+ * Used to print log messages only when a specific DEBUG_FLAG_* option has
+ * been enabled. Automatically prepends 'DEBUG_FLAG_' to the flag option name
+ * to save space. E.g., to print a message only when DEBUG_FLAG_STEPS is
+ * enabled, call `log_flag(STEPS, "%s: my important message", __func__);`.
+ *
+ * As this is implemented in a macro, this is no slower than the equivalent
+ * conditional check.
+ */
+#define log_flag(flag, fmt, ...)					\
+	do {								\
+		if (slurm_conf.debug_flags & DEBUG_FLAG_##flag)		\
+			log_var(LOG_LEVEL_VERBOSE, #flag ": " fmt,	\
+				##__VA_ARGS__);				\
 	} while (0)
 
 #endif /* !_LOG_H */

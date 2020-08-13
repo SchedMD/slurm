@@ -112,7 +112,7 @@ static void _load_config(void)
 	char *sched_params = slurm_get_sched_params();
 	char *tmp_ptr;
 
-	sched_timeout = slurm_get_msg_timeout() / 2;
+	sched_timeout = slurm_conf.msg_timeout / 2;
 	sched_timeout = MAX(sched_timeout, 1);
 	sched_timeout = MIN(sched_timeout, 10);
 
@@ -141,9 +141,8 @@ static void _compute_start_times(void)
 	int j, rc = SLURM_SUCCESS, job_cnt = 0;
 	List job_queue;
 	job_queue_rec_t *job_queue_rec;
-	List preemptee_candidates = NULL;
-	struct job_record *job_ptr;
-	struct part_record *part_ptr;
+	job_record_t *job_ptr;
+	part_record_t *part_ptr;
 	bitstr_t *alloc_bitmap = NULL, *avail_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL;
 	uint32_t max_nodes, min_nodes, req_nodes, time_limit;
@@ -203,7 +202,7 @@ static void _compute_start_times(void)
 		rc = select_g_job_test(job_ptr, avail_bitmap,
 				       min_nodes, max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN,
-				       preemptee_candidates, NULL,
+				       NULL, NULL,
 				       exc_core_bitmap);
 		if (rc == SLURM_SUCCESS) {
 			last_job_update = now;
@@ -216,7 +215,7 @@ static void _compute_start_times(void)
 				time_limit = job_ptr->part_ptr->max_time * 60;
 			else
 				time_limit = 365 * 24 * 60 * 60;
-			if (bit_overlap(alloc_bitmap, avail_bitmap) &&
+			if (bit_overlap_any(alloc_bitmap, avail_bitmap) &&
 			    (job_ptr->start_time <= last_job_alloc)) {
 				job_ptr->start_time = last_job_alloc;
 			}

@@ -62,7 +62,7 @@ int main (int argc, char *argv[])
 	/* info("uint64\t %ld", test64); */
 	/* info("converted LD\t %Lf", test_double2); */
 
-	unpackstr_ptr(&outbytes, &byte_cnt, buffer);
+	unpackmem_ptr(&outbytes, &byte_cnt, buffer);
 	TEST( ( strcmp(testbytes, outbytes) != 0 ) , "un/packstr_ptr");
 
 	unpackstr_xmalloc(&outstring, &byte_cnt, buffer);

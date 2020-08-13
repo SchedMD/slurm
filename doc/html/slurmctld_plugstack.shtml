@@ -69,7 +69,7 @@ The fini function will be called when the slurmctld daemon stops accepting RPCs.
 Other functions can be called at any time.
 In the case of the backup slurmctld daemon, the init and fini functions may
 be called multiple times (when it assumes control functions and then when it
-reliquishes them to the primary slurmctld daemon).</p>
+relinquishes them to the primary slurmctld daemon).</p>
 
 
 <p style="text-align:center;">Last modified 24 January 2018</p>

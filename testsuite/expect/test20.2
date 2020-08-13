@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          qstat command tests
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,26 +28,20 @@
 ############################################################################
 source ./globals
 
-set test_id     "20.2"
 set exit_code   0
 set file_in	"test$test_id.input"
 set file_out	"test$test_id.output"
 set file_err	"test$test_id.error"
 set job_name	"test$test_id"
 
-print_header $test_id
-
 if {[file executable $qsub] == 0} {
-	send_user "\nWARNING: $qsub does not exists\n"
-	exit 0
+	skip "$qsub does not exists"
 }
 if {[file executable $qstat] == 0} {
-	send_user "\nWARNING: $qstat does not exists\n"
-	exit 0
+	skip "$qstat does not exists"
 }
 if {[file executable $qdel] == 0} {
-	send_user "\nWARNING: $qdel does not exists\n"
-	exit 0
+	skip "$qdel does not exists"
 }
 
 set job_id 0
@@ -63,7 +53,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		log_error "qsub not responding"
 		set exit_code 1
 	}
 	eof {
@@ -71,8 +61,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: qsub failed to submit job\n"
-	exit 1
+	fail "qsub failed to submit job"
 }
 
 set matches 0
@@ -83,7 +72,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qstat not responding\n"
+		log_error "qstat not responding"
 		set exit_code 1
 	}
 	eof {
@@ -91,13 +80,12 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: qstat failed to report job\n"
-	set exit_code 1
+	fail "qstat failed to report job"
 }
 catch {exec $qdel $job_id}
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

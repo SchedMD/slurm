@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  as_mysql_resource.h - functions dealing with resources.
  *****************************************************************************
- *
  *  Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
  *

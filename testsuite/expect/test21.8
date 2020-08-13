@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr modify cluster
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,7 +29,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "21.8"
 set exit_code   0
 set mmatches    0
 set dmatches    0
@@ -72,19 +67,15 @@ set mod_cluster(MaxWall)       12:00:00
 set mod_cluster(DefaultQos)    "test$test_id\_qos_2"
 set access_err  0
 
-print_header $test_id
-
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 #
 # Verify if Administrator privileges
 #
  if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 #
@@ -101,19 +92,19 @@ expect {
 		exp_continue
 	}
 	-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		log_error "There was a problem with the sacctmgr command"
 		incr exit_code 1
 	}
 	-re "Problem getting" {
-		send_user "FAILURE: there was a problem getting information from the database\n"
+		log_error "There was a problem getting information from the database"
 		incr exit_code 1
 	}
 	-re "Problem adding" {
-		send_user "FAILURE: there was an unknown problem\n"
+		log_error "There was an unknown problem"
 		incr exit_code 1
 	}
 	-re "No associations" {
-		send_user "FAILURE: your command didn't return anything\n"
+		log_error "Your command didn't return anything"
 		incr exit_code 1
 	}
 	-re "Deleting clusters" {
@@ -126,7 +117,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -138,12 +129,12 @@ if {$access_err != 0} {
 	return 1
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $matches\n"
+	log_error "sacctmgr had a problem deleting cluster got $matches"
 	incr exit_code 1
 }
 if { !$nothing } {
 	if { ![check_acct_associations] } {
-		send_user "\nFAILURE:  Our associations don't line up\n"
+		log_error "Our associations don't line up"
 		incr exit_code 1
 	}
 }
@@ -162,7 +153,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -172,7 +163,7 @@ expect {
 }
 
 if {$dmatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting QOS got $dmatches\n"
+	log_error "sacctmgr had a problem deleting QOS got $dmatches"
 	set exit_code 1
 }
 
@@ -187,7 +178,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -195,7 +186,7 @@ expect {
 	}
 }
 if {$qos_set != 1} {
-	send_user "\nFAILURE QOS $dqos was not created\n"
+	log_error "QOS $dqos was not created"
 	set exit_code 1
 }
 
@@ -207,8 +198,7 @@ set access_err 0
 add_cluster "$tc1,$tc2,$tc3" [array get cluster]
 
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 
 # Check Cluster 1
@@ -221,7 +211,7 @@ check_assoc_limit 1 cluster $tc2 [array get cluster]
 check_assoc_limit 1 cluster $tc3 [array get cluster]
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
+	log_error "Our associations don't line up"
 	set exit_code 1
 }
 
@@ -232,22 +222,21 @@ set access_err 0
 mod_cluster $tc2 [array get mod_cluster]
 
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 
 # Check Cluster 2
 check_assoc_limit 1 cluster $tc2 [array get mod_cluster]
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
+	log_error "Our associations don't line up"
 	set exit_code 1
 }
 
 #
 # Check these cluster limits again after cluster 2 was modified
 #
-send_user "\nCheck Cluster limits after one cluster has been modified:"
+log_info "Check Cluster limits after one cluster has been modified:"
 # Check Cluster 1
 check_assoc_limit 1 cluster $tc1 [array get cluster]
 
@@ -281,7 +270,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -291,7 +280,7 @@ expect {
 }
 
 if {$dmatches != 4} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting cluster \n"
+	log_error "sacctmgr had a problem deleting cluster "
 	set exit_code 1
 }
 
@@ -307,7 +296,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -317,17 +306,13 @@ expect {
 }
 
 if {$dmatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting QOS got $dmatches\n"
-	set exit_code 1
+	fail "sacctmgr had a problem deleting QOS got $dmatches"
 }
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
-	set exit_code 1
+	fail "Our associations don't line up"
 }
 
-if {$exit_code == 0} {
-	print_success $test_id
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-
-exit $exit_code

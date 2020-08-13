@@ -38,6 +38,7 @@
 
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -84,8 +85,7 @@ extern int job_container_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "job_container";
-	char *container_plugin_type = NULL;
-	char *last = NULL, *job_container_plugin_list, *job_container = NULL;
+	char *type = NULL, *last = NULL, *plugin_list, *job_container = NULL;
 
 	if (init_run && (g_container_context_num >= 0))
 		return retval;
@@ -95,20 +95,17 @@ extern int job_container_init(void)
 	if (g_container_context_num >= 0)
 		goto done;
 
-	container_plugin_type = slurm_get_job_container_plugin();
 	g_container_context_num = 0; /* mark it before anything else */
-	if ((container_plugin_type == NULL) ||
-	    (container_plugin_type[0] == '\0'))
+	if (!slurm_conf.job_container_plugin ||
+	    !slurm_conf.job_container_plugin[0])
 		goto done;
 
-	job_container_plugin_list = container_plugin_type;
-	while ((job_container =
-		strtok_r(job_container_plugin_list, ",", &last))) {
-		xrealloc(ops,
-			 sizeof(job_container_ops_t) *
-			 (g_container_context_num + 1));
-		xrealloc(g_container_context, (sizeof(plugin_context_t *)
-					  * (g_container_context_num + 1)));
+	type = plugin_list = xstrdup(slurm_conf.job_container_plugin);
+	while ((job_container = strtok_r(plugin_list, ",", &last))) {
+		xrecalloc(ops, g_container_context_num + 1,
+			  sizeof(job_container_ops_t));
+		xrecalloc(g_container_context, g_container_context_num + 1,
+			  sizeof(plugin_context_t *));
 		if (xstrncmp(job_container, "job_container/", 14) == 0)
 			job_container += 14; /* backward compatibility */
 		job_container = xstrdup_printf("job_container/%s",
@@ -128,13 +125,13 @@ extern int job_container_init(void)
 
 		xfree(job_container);
 		g_container_context_num++;
-		job_container_plugin_list = NULL; /* for next iteration */
+		plugin_list = NULL; /* for next iteration */
 	}
 	init_run = true;
 
  done:
 	slurm_mutex_unlock(&g_container_context_lock);
-	xfree(container_plugin_type);
+	xfree(type);
 
 	if (retval != SLURM_SUCCESS)
 		job_container_fini();

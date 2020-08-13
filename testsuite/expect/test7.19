@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test sbatch/srun/salloc path resolving
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC.
 # Written by Nathan Rini <nate@schedmd.com>
@@ -30,10 +26,10 @@
 
 source ./globals
 
-set test_id	"7.19"
 set file_in	"bash"
 
-print_header $test_id
+# Increase timeout to account for sbatch --wait backoff
+set timeout 20
 
 proc test_sbatch { local } {
 	global sbatch number file_in
@@ -73,11 +69,11 @@ proc test_sbatch { local } {
 	}
 
 	if {$rc != 0 } {
-		send_user "\nThis error is expected, not a problem\n"
+		log_debug "This error is expected, not a problem"
 	}
 
 	if { $rc != $exp_rc } {
-		log_error "sbatch error submitting job $job_id rc: $rc instead of $exp_rc\n"
+		log_error "sbatch error submitting job $job_id rc: $rc instead of $exp_rc"
 		return 1
 	}
 
@@ -104,7 +100,7 @@ proc test_salloc { local } {
 			exp_continue
 		}
 		-re "error" {
-			log_warn "FAILURE: Job was not submitted"
+			log_error "Job was not submitted"
 			return 1
 		}
 		timeout {
@@ -117,16 +113,16 @@ proc test_salloc { local } {
 	}
 
 	if { $job_id == 0 } {
-		log_error "FAILURE: salloc submit failure"
+		log_error "salloc submit failure"
 		return 1
 	}
 
 	if {$rc != 0 } {
-		send_user "\nThis error is expected, not a problem\n"
+		log_debug "This error is expected, not a problem"
 	}
 
 	if { $rc != $exp_rc } {
-		log_error "salloc error submitting job $job_id rc: $rc instead of $exp_rc\n"
+		log_error "salloc error submitting job $job_id rc: $rc instead of $exp_rc"
 		return 1
 	}
 
@@ -134,7 +130,7 @@ proc test_salloc { local } {
 }
 
 proc test_srun { local } {
-	global srun number file_in
+	global srun number file_in re_word_str
 
 	set rc -12345
 	set job_id 0
@@ -148,7 +144,7 @@ proc test_srun { local } {
 	}
 	spawn $srun -v -t1 $file_in_loc -c /bin/false
 	expect {
-		-re "launching ($number).($number)" {
+		-re "launching StepId=($number)\.($re_word_str)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
@@ -168,11 +164,11 @@ proc test_srun { local } {
 	}
 
 	if {$rc != 0 } {
-		send_user "\nThis error is expected, not a problem\n"
+		log_debug "This error is expected, not a problem"
 	}
 
 	if { $rc != $exp_rc } {
-		log_error "srun error submitting job $job_id rc: $rc instead of $exp_rc\n"
+		log_error "srun error submitting job $job_id rc: $rc instead of $exp_rc"
 		return 1
 	}
 
@@ -186,38 +182,34 @@ make_bash_script $file_in "/bin/true"
 # Test tools expecting bash to be used instead of our local 'bash' script
 if { [test_sbatch 0] } {
 	exec $bin_rm $file_in
-	exit 1
+	fail "Failed testing sbatch"
 }
 
 if { [test_salloc 0] } {
 	exec $bin_rm $file_in
-	exit 1
+	fail "Failed testing salloc"
 }
 
 if { [test_srun 0] } {
 	exec $bin_rm $file_in
-	exit 1
+	fail "Failed testing srun"
 }
 
 # Test tools expecting our local 'bash' script to override the system bash
 if { [test_sbatch 1] } {
 	exec $bin_rm $file_in
-	exit 1
+	fail "Failed testing sbatch"
 }
 
 if { [test_salloc 1] } {
 	exec $bin_rm $file_in
-	exit 1
+	fail "Failed testing salloc"
 }
 
 if { [test_srun 1] } {
 	exec $bin_rm $file_in
-	exit 1
+	fail "Failed testing srun"
 }
 
 #cleanup
 exec $bin_rm $file_in
-
-send_user "\nSUCCESS\n"
-
-exit 0

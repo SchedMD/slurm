@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Cray persistent burst buffer creation
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015-2018 SchedMD LLC.
 # Written by Morris Jette <jette(at)schedmd.com>
@@ -31,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "35.1"
 set exit_code   0
 set output_mk   "test$test_id.mk.output"
 set output_rm   "test$test_id.rm.output"
@@ -57,16 +51,12 @@ proc find_bb_name { fname bb_name } {
 	return $found
 }
 
-print_header $test_id
-
 set bb_types [get_bb_types]
 if {[string first "datawarp" $bb_types] == -1} {
-	send_user "\nWARNING: This test can only be run with the burst_buffer/datawarp plugin\n"
-	exit 0
+	skip "This test can only be run with the burst_buffer/datawarp plugin"
 }
 if {[get_bb_persistent] == 0} {
-	send_user "\nWARNING: This test can only be run if persistent burst_buffers can be created/deleted\n"
-	exit 0
+	skip "This test can only be run if persistent burst_buffers can be created/deleted"
 }
 
 make_bash_script $script_mk "#BB create_persistent name=test$test_id capacity=48 access=striped type=scratch
@@ -81,7 +71,7 @@ $scontrol show burst"
 #
 # Remove any vestigial buffer
 #
-send_user "\n\nClean up vestigial burst buffer\n"
+log_debug "Clean up vestigial burst buffer"
 incr max_job_state_delay 300
 set job_id 0
 spawn $sbatch -t1 -N1 --output=/dev/null $script_rm
@@ -91,7 +81,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -99,11 +89,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job did not launch\n"
+	log_error "Job did not launch"
 	set exit_code 1
 }
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id
 }
@@ -112,7 +102,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Now submit a job to use the persistent burst buffer followed by a job
 # to create the burst buffer, make sure the buffer creation happens first
 #
-send_user "\n\nCreate and use a burst buffer\n"
+log_debug "Create and use a burst buffer"
 set job_id_use 0
 spawn $sbatch -t1 -N1 --output=$output_use $script_use
 expect {
@@ -121,7 +111,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -137,7 +127,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -146,30 +136,30 @@ expect {
 }
 
 if {$job_id_mk == 0} {
-	send_user "\nFAILURE: job did not launch\n"
+	log_error "Job did not launch"
 	set exit_code 1
 } elseif {[wait_for_job $job_id_mk "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id_mk
 }
 
 if {$job_id_use == 0} {
-	send_user "\nFAILURE: job did not launch\n"
+	log_error "Job did not launch"
 	set exit_code 1
 } elseif {[wait_for_job $job_id_use "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id_use
 } elseif {[wait_for_file $output_use] != 0} {
 	set exit_code 1
 } elseif {[find_bb_name $output_use test$test_id] == 0} {
-	send_user "\nFAILURE: job using burst buffer ran before creation\n"
+	log_error "Job using burst buffer ran before creation"
 	set exit_code 1
 } elseif {[wait_for_file $output_mk] != 0} {
 	set exit_code 1
 } elseif {[find_bb_name $output_mk test$test_id] == 0} {
-	send_user "\nFAILURE: job creating burst buffer failed to do so\n"
+	log_error "Job creating burst buffer failed to do so"
 	set exit_code 1
 }
 
@@ -184,7 +174,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -192,22 +182,19 @@ expect {
 	}
 }
 if {$job_id_rm == 0} {
-	send_user "\nFAILURE: job did not launch\n"
-	set exit_code 1
+	fail "Job did not launch"
 } elseif {[wait_for_job $job_id_rm "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
-	set exit_code 1
 	cancel_job $job_id_rm
+	fail "Job did not complete"
 } elseif {[wait_for_file $output_rm] != 0} {
-	set exit_code 1
+	fail "Failed withing for file ($output_rm)"
 } elseif {[find_bb_name $output_rm test$test_id] != 0} {
-	send_user "\nFAILURE: job deleting burst buffer failed to do so\n"
-	set exit_code 1
+	fail "Job deleting burst buffer failed to do so"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $output_mk $output_rm $output_use
 	exec $bin_rm -f $script_mk $script_rm $script_use
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

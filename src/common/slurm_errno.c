@@ -177,9 +177,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_AUTHTYPE_CHANGE,
 	  "AuthType change requires restart of all Slurm daemons and "
 	  "commands to take effect"},
-	{ ESLURM_INVALID_CHECKPOINT_TYPE_CHANGE,
-	  "CheckpointType change requires restart of all Slurm daemons "
-	  "to take effect"					},
+	{ ESLURM_ACTIVE_FEATURE_NOT_SUBSET,
+	  "Active features not subset of available features"	},
 	{ ESLURM_INVALID_CRED_TYPE_CHANGE,
 	  "CredType change requires restart of all Slurm daemons "
 	  "to take effect"					},
@@ -248,7 +247,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_PORTS_INVALID,
 	  "Requires more ports than can be reserved"		},
 	{ ESLURM_PROLOG_RUNNING,
-	  "SlurmctldProlog is still running"			},
+	  "PrologSlurmctld is still running"			},
 	{ ESLURM_NO_STEPS,
 	  "Job steps can not be run on this cluster"		},
 	{ ESLURM_INVALID_BLOCK_STATE,
@@ -284,7 +283,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INTERCONNECT_BUSY,
 	  "Switch resources currently not available"		},
 	{ ESLURM_RESERVATION_EMPTY,
-	  "Reservation request lacks users or accounts"		},
+	  "Reservation request lacks users, groups or accounts"		},
 	{ ESLURM_INVALID_ARRAY,
 	  "Invalid job array specification"			},
 	{ ESLURM_RESERVATION_NAME_DUP,
@@ -316,12 +315,6 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Burst Buffer request invalid"			},
 	{ ESLURM_PRIO_RESET_FAIL,
 	  "Changes to job priority are not persistent, change nice instead" },
-	{ ESLURM_POWER_NOT_AVAIL,
-	  "Required power not available now"			},
-	{ ESLURM_POWER_RESERVED,
-	  "Required power at least partially reserved"		},
-	{ ESLURM_INVALID_POWERCAP,
-	  "Required powercap is not valid, check min/max values"},
 	{ ESLURM_INVALID_MCS_LABEL,
 	  "Invalid mcs_label specified"				},
 	{ ESLURM_BURST_BUFFER_WAIT,
@@ -336,11 +329,11 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Reservation already started"				},
 	{ ESLURM_SUBMISSIONS_DISABLED,
 	  "System submissions disabled"				},
-	{ ESLURM_NOT_PACK_JOB,
+	{ ESLURM_NOT_HET_JOB,
 	  "Job not heterogeneous job"				},
-	{ ESLURM_NOT_PACK_JOB_LEADER,
+	{ ESLURM_NOT_HET_JOB_LEADER,
 	  "Job not heterogeneous job leader"			},
-	{ ESLURM_NOT_PACK_WHOLE,
+	{ ESLURM_NOT_WHOLE_HET_JOB,
 	  "Operation not permitted on individual component of heterogeneous job" },
 	{ ESLURM_CORE_RESERVATION_UPDATE,
 	  "Core-based reservation can not be updated"		},
@@ -370,6 +363,19 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested GRES option unsupported by configured SelectType plugin" },
 	{ ESLURM_INVALID_NICE,
 	  "Invalid --nice value"				},
+	{ ESLURM_INVALID_TIME_MIN_LIMIT,
+	  "Invalid time-min specification (exceeds job's time or other limits)"},
+	{ ESLURM_DEFER,
+	  "Immediate execution impossible. "
+	  "Individual job submission scheduling attempts deferred"},
+	{ ESLURM_CONFIGLESS_DISABLED,
+	  "ConfigLess mode is disabled"				},
+	{ ESLURM_ENVIRONMENT_MISSING,
+	  "Environment is missing in job"			},
+	{ ESLURM_RESERVATION_NO_SKIP,
+	  "Reservation given is not skipable, try deleting instead"},
+	{ ESLURM_RESERVATION_USER_GROUP,
+	  "Reservations can't have users and groups specified, only one or the other"},
 
 	/* slurmd error codes */
 	{ ESLURMD_PIPE_ERROR_ON_TASK_SPAWN,
@@ -473,6 +479,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Authentication credential invalid"			},
 	{ ESLURM_AUTH_UNPACK,
 	  "Cannot unpack credential"				},
+	{ ESLURM_AUTH_SKIP,
+	  "Authentication does not apply to request"		},
 
 	/* accounting errors */
 	{ ESLURM_DB_CONNECTION,
@@ -512,7 +520,15 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_MISSING_TIME_LIMIT,
 	  "Time limit specification required, but not provided"	},
 	{ ESLURM_INVALID_KNL,
-	  "Invalid KNL configuration (MCDRAM or NUMA option)"	}
+	  "Invalid KNL configuration (MCDRAM or NUMA option)"	},
+
+	/* REST errors */
+	{ ESLURM_REST_INVALID_QUERY,
+	  "Query empty or not RFC7320 compliant"},
+	{ ESLURM_REST_FAIL_PARSING,
+	  "Failure during parsing"},
+	{ ESLURM_REST_INVALID_JOBS_DESC,
+	  "Jobs description entry not found, empty or not dictionary or list"},
 };
 
 /*

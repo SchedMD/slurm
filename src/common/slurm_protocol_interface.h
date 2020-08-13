@@ -138,13 +138,6 @@ extern int slurm_recv_timeout(int open_fd, char *buffer, size_t size,
 /***************************/
 /* slurm address functions */
 /***************************/
-/* build a slurm address bassed upon host name and port number
- * OUT slurm_address - the constructed slurm_address
- * IN port - port to be used
- * IN host - name of host to connect with
- */
-extern void slurm_set_addr_char ( slurm_addr_t * slurm_address ,
-				  uint16_t port , char * host ) ;
 
 /* given a slurm_address it returns its port and hostname
  * IN slurm_address	- slurm_addr_t to be queried
@@ -155,14 +148,6 @@ extern void slurm_set_addr_char ( slurm_addr_t * slurm_address ,
 extern void slurm_get_addr ( slurm_addr_t * slurm_address ,
 			     uint16_t * port , char * host ,
 			     uint32_t buf_len ) ;
-
-/* prints a slurm_addr_t into a buf
- * IN address		- slurm_addr_t to print
- * IN buf		- space for string representation of slurm_addr
- * IN n			- max number of bytes to write (including NUL)
- */
-extern void slurm_print_slurm_addr ( slurm_addr_t * address,
-				     char *buf, size_t n ) ;
 
 /*****************************/
 /* slurm addr pack functions */

@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          validates that srun exit code matches that of a test program
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -30,15 +26,12 @@
 ############################################################################
 source ./globals
 
-set test_id      "1.71"
 set file_out     "test$test_id.testfile"
 set file_c       "segv.c"
 set script       "test$test_id.script"
 set err_num_c    0
 set err_num_srun 0
 set exit_code    0
-
-print_header $test_id
 
 # Remove any remaining files
 exec $bin_rm -f $file_out $script $file_c
@@ -66,7 +59,7 @@ spawn ./$script
 expect {
 
 	-re "Segmentation fault" {
-		send_user "\nThis error is expected do not worry\n"
+		log_debug "This error is expected do not worry"
 		incr error_match
 		exp_continue
 	}
@@ -75,7 +68,7 @@ expect {
 		incr error_match
 	 }
 	timeout {
-		send_user "\nFAILURE: program is not responding\n"
+		log_error "Program is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -84,7 +77,7 @@ expect {
 }
 
 if {$error_match != 2} {
-	send_user "\nFAILURE: program did not return a segmentation fault ($error_match != 2)\n"
+	log_error "Program did not return a segmentation fault ($error_match != 2)"
 	set exit_code 1
 }
 
@@ -102,7 +95,7 @@ expect {
 		}
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -111,14 +104,13 @@ expect {
 }
 
 if {$error_match != 2} {
-	send_user "\nFAILURE: srun did not have a segmentation error when running the program ($error_match != 2)\n"
-	set exit_code 1
+	fail "srun did not have a segmentation error when running the program ($error_match != 2)"
 } else {
-	send_user "\nThis error is expected\n"
+	log_debug "This error is expected"
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $file_out $script $file_c
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

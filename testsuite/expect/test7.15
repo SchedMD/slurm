@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Verify signal mask of tasks have no ignored signals.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -30,11 +26,8 @@
 ############################################################################
 source ./globals
 
-set test_id          "7.15"
 set exit_code        0
 set file_prog       "test$test_id.prog"
-
-print_header $test_id
 
 #
 # Delete left-over programs and rebuild them.
@@ -46,14 +39,6 @@ exec $bin_cc -O -o $file_prog ${file_prog}.c
 #  Run on multiple nodes in case the failure of this test
 #   is intermittent.
 #
-if { $partition == "" } {
-	if {[info exists env(SLURM_PARTITION)] } {
-		set partition $env(SLURM_PARTITION)
-	} else {
-		set partition [default_partition]
-	}
-}
-
 set have_runjob 0
 if {![string compare [test_launch_type] "runjob"]} {
 	set have_runjob 1
@@ -62,7 +47,7 @@ if {![string compare [test_launch_type] "runjob"]} {
 if {$have_runjob} {
 	set nnodes 1
 } else {
-	set nnodes [available_nodes $partition idle]
+	set nnodes [available_nodes idle]
 }
 
 #
@@ -70,20 +55,20 @@ if {$have_runjob} {
 #   default for the job.
 #
 set timeout $max_job_delay
-set srun_pid  [exp_spawn $srun -t1 -N$nnodes -p $partition ./$file_prog]
+set srun_pid  [exp_spawn $srun -t1 -N$nnodes ./$file_prog]
 expect {
 	-re "Signal ($number) is ignored!" {
 		set signal $expect_out(1,string)
 		if { $have_runjob && (($signal == 1) || ($signal == 5) || ($signal == 12) || ($signal == 13)) } {
-			send_user "Signal $signal is ignored by default when using runjob, this error is expected, turn that frown upside down!\n"
+			log_debug "Signal $signal is ignored by default when using runjob, this error is expected, turn that frown upside down!"
 			exp_continue
 		} else {
-			send_user "FAILURE: At least one signal is ignored!\n"
+			log_error "At least one signal is ignored!"
 			set exit_code 1
 		}
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -98,8 +83,7 @@ expect {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $file_prog
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-
-exit $exit_code

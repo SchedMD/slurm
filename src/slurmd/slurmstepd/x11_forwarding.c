@@ -245,7 +245,7 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 	};
 
 	*tmp_xauthority = NULL;
-	job_id = job->jobid;
+	job_id = job->step_id.job_id;
 	x11_target = xstrdup(job->x11_target);
 	x11_target_port = job->x11_target_port;
 
@@ -254,7 +254,7 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 
 	slurm_set_addr(&alloc_node, job->x11_alloc_port, job->x11_alloc_host);
 
-	debug("X11Parameters: %s", conf->x11_params);
+	debug("X11Parameters: %s", slurm_conf.x11_params);
 
 	/*
 	 * Switch uid/gid to the user using seteuid/setegid.
@@ -274,7 +274,7 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 		goto shutdown;
 	}
 
-	if (xstrcasestr(conf->x11_params, "home_xauthority")) {
+	if (xstrcasestr(slurm_conf.x11_params, "home_xauthority")) {
 		char *home = NULL;
 		if (!(home = _get_home(job->uid))) {
 			error("could not find HOME in environment");
@@ -287,7 +287,7 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 		int fd;
 		local_xauthority = true;
 		xauthority = xstrdup_printf("%s/.Xauthority-XXXXXX",
-					    conf->tmpfs);
+					    slurm_conf.tmp_fs);
 
 		/* protect against weak file permissions in old glibc */
 		umask(0077);

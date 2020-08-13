@@ -92,7 +92,7 @@ int slurm_jobcomp_set_location ( char * location )
 	return SLURM_SUCCESS;
 }
 
-int slurm_jobcomp_log_record ( struct job_record *job_ptr )
+int slurm_jobcomp_log_record(job_record_t *job_ptr)
 {
 	return SLURM_SUCCESS;
 }

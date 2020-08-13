@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "March 2019" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "June 2020" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -185,7 +185,7 @@ This value must be specified.
 \fBDbdPort\fR
 The port number that the Slurm Database Daemon (slurmdbd) listens
 to for work. The default value is SLURMDBD_PORT as established at system
-build time. If none is explicitly specified, it will be set to 6819.
+build time. If no value is explicitly specified, it will be set to 6819.
 This value must be equal to the \fBAccountingStoragePort\fR parameter in the
 slurm.conf file.
 
@@ -197,7 +197,7 @@ Most DebugFlags will result in verbose logging for the identified subsystems
 and could impact performance.
 Valid subsystems available today (with more to come) include:
 .RS
-.TP 17
+.TP
 \fBDB_ARCHIVE\fR
 SQL statements/queries when dealing with archiving and purging the database.
 .TP
@@ -208,10 +208,14 @@ SQL statements/queries when dealing with associations in the database.
 SQL statements/queries when dealing with (node) events in the database.
 .TP
 \fBDB_JOB\fR
+.RS
 SQL statements/queries when dealing with jobs in the database.
+.RE
 .TP
 \fBDB_QOS\fR
+.RS
 SQL statements/queries when dealing with QOS in the database.
+.RE
 .TP
 \fBDB_QUERY\fR
 SQL statements/queries when dealing with transactions and such in the database.
@@ -225,6 +229,9 @@ database.
 .TP
 \fBDB_STEP\fR
 SQL statements/queries when dealing with steps in the database.
+.TP
+\fBDB_TRES\fR
+SQL statements/queries when dealing with trackable resources in the database.
 .TP
 \fBDB_USAGE\fR
 SQL statements/queries when dealing with usage queries and inserts
@@ -404,7 +411,7 @@ or above.
 .TP
 \fBjobs\fR
 prevents users from viewing job records belonging
-to other users unless they are coordinators of the association running the job
+to other users unless they are coordinators of the account running the job
 when using sacct.
 .TP
 \fBreservations\fR
@@ -419,8 +426,8 @@ This applys to sreport.
 prevents users from viewing information of any user
 other than themselves, this also makes it so users can only see
 associations they deal with.
-Coordinators can see associations of all users they are coordinator of,
-but can only see themselves when listing users.
+Coordinators can see associations of all users in the account they are
+coordinator of, but can only see themselves when listing users.
 .RE
 
 .TP
@@ -434,7 +441,7 @@ everything older than 12 hours).
 The purge takes place at the start of the each purge interval.
 For example, if the purge time is 2 months, the purge would happen at the
 beginning of each month.
-If not set (default), then job step records are never purged.
+If not set (default), then event records are never purged.
 
 .TP
 \fBPurgeJobAfter\fR
@@ -487,7 +494,7 @@ everything older than 12 hours).
 The purge takes place at the start of the each purge interval.
 For example, if the purge time is 2 months, the purge would happen at the
 beginning of each month.
-If not set (default), then job step records are never purged.
+If not set (default), then suspend records are never purged.
 
 .TP
 \fBPurgeTXNAfter\fR
@@ -499,7 +506,7 @@ everything older than 12 hours).
 The purge takes place at the start of the each purge interval.
 For example, if the purge time is 2 months, the purge would happen at the
 beginning of each month.
-If not set (default), then job step records are never purged.
+If not set (default), then transaction records are never purged.
 
 .TP
 \fBPurgeUsageAfter\fR
@@ -512,7 +519,7 @@ everything older than 12 hours).
 The purge takes place at the start of the each purge interval.
 For example, if the purge time is 2 months, the purge would happen at the
 beginning of each month.
-If not set (default), then job step records are never purged.
+If not set (default), then usage records are never purged.
 
 .TP
 \fBSlurmUser\fR
@@ -547,6 +554,29 @@ Specify the name of the database as the location where accounting
 records are written. Defaults to "slurm_acct_db".
 
 .TP
+\fBStorageParameters\fR
+Comma separated list of key-value pair parameters. Currently
+supported values include options to establish a secure connection to the
+database:
+.RS
+.TP 2
+\fBSSL_CERT\fR
+The path name of the client public key certificate file.
+.TP
+\fBSSL_CA\fR
+The path name of the Certificate Authority (CA) certificate file.
+.TP
+\fBSSL_CAPATH\fR
+The path name of the directory that contains trusted SSL CA certificate files.
+.TP
+\fBSSL_KEY\fR
+The path name of the client private key file.
+.TP
+\fBSSL_CIPHER\fR
+The list of permissible ciphers for SSL encryption.
+.RE
+
+.TP
 \fBStoragePass\fR
 Define the password used to gain access to the database to store
 the job accounting data. The '#' character is not permitted in a password.
@@ -575,18 +605,18 @@ with to store the job accounting data.
 Time permitted for TCP connection to be established. Default value is 2 seconds.
 
 .TP
+\fBTrackSlurmctldDown\fR
+Boolean yes or no.  If set the slurmdbd will mark all idle resources on the
+cluster as down when a slurmctld disconnects or is no longer reachable.  The
+default is no.
+
+.TP
 \fBTrackWCKey\fR
 Boolean yes or no.  Used to set display and track of the Workload
 Characterization Key. Must be set to track wckey usage.  This must be set to
 generate rolled up usage tables from WCKeys.
 NOTE: If TrackWCKey is set here and not in your various slurm.conf files all
 jobs will be attributed to their default WCKey.
-
-.TP
-\fBTrackSlurmctldDown\fR
-Boolean yes or no.  If set the slurmdbd will mark all idle resources on the
-cluster as down when a slurmctld disconnects or is no longer reachable.  The
-default is no.
 
 .SH "EXAMPLE"
 .LP
@@ -636,11 +666,11 @@ PurgeUsageAfter=24month
 .br
 LogFile=/var/log/slurmdbd.log
 .br
-PidFile=/var/tmp/jette/slurmdbd.pid
+PidFile=/var/run/slurmdbd.pid
 .br
 SlurmUser=slurm_mgr
 .br
-StoragePass=shazaam
+StoragePass=password_to_database
 .br
 StorageType=accounting_storage/mysql
 .br

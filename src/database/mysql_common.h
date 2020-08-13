@@ -74,6 +74,7 @@ typedef struct {
 	uint32_t port;
 	char *host;
 	char *user;
+	char *params;
 	char *pass;
 } mysql_db_info_t;
 

@@ -1,110 +1,70 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Test --gpu-freq options
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Morris Jette
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 ############################################################################
 source ./globals
 
-set test_id     "39.9"
 set exit_code   0
 set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
 set freq_parse_nvml "GpuFreq=memory_freq:($number),graphics_freq:($number)"
 set freq_parse_generic "GpuFreq=control_disabled"
+set freq_parse_not_supported "Failed to get .* Not Supported"
 set generic_msg "The gpu/generic plugin is loaded, so Slurm can't really test GPU frequency operations. Please set `Autodetect=nvml` in gres.conf to load the gpu/nvml plugin instead."
+set not_supported_msg "This test requires a GPU that supports frequency scaling."
 
-proc get_node_config {} {
-	global cpus_per_socket sockets_per_node
-	global exit_code file_in max_job_delay number srun scontrol
-
-	set cpus_tot 1
-	set sockets_per_node 1
-	set cpus_per_socket 1
-	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODENAME"
-	set timeout $max_job_delay
-	log_user 0
-	set srun_pid [spawn $srun --gres=gpu:1 -n1 -t1 ./$file_in]
-	expect {
-		-re "CPUTot=($number)" {
-			set cpus_tot $expect_out(1,string)
-			exp_continue
-		}
-		-re "Sockets=($number)" {
-			set sockets_per_node $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: srun not responding\n"
-			slow_kill $srun_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
+# cleanup function automatically called by the testsuite
+proc cleanup {} {
+	global bin_rm file_in
+	exec $bin_rm -f $file_in
 }
-
-print_header $test_id
 
 if {[have_nvml] == 0} {
-	log_warn "NVML must be installed and enabled to test GPU frequency operations."
-	exit 0
+	skip "NVML must be installed and enabled to test GPU frequency operations"
 }
 if {[slurmd_user_root] == 0} {
-	log_warn "SlurmdUser must be root to test GPU frequency operations."
-	exit 0
-}
-print_time
-
-if {[test_cons_tres]} {
-        send_user "\nValid configuration, using select/cons_tres\n"
-} else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit 0
+	skip "SlurmdUser must be root to test GPU frequency operations"
 }
 
-set gpu_cnt [get_gpu_count 1]
-if {$gpu_cnt < 0} {
-	send_user "\nFAILURE: Error getting GPU count\n"
-	exit 1
+if {![test_cons_tres]} {
+        skip "This test is only compatible with select/cons_tres"
 }
+
+set gpu_cnt [get_highest_gres_count 1 "gpu"]
 if {$gpu_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more GPU in the default partition\n"
-	exit 0
+	skip "This test requires 1 or more GPU in the default partition"
 }
-get_node_config
-send_user "\nGPU count is $gpu_cnt\n"
+log_debug "GPU count is $gpu_cnt"
+
+# Test will be also skip if frequency scaling is disabled or not supported by
+# the GPU on TEST 1.
 
 #
 # Build input script file
 #
+print_time
 exec $bin_rm -f $file_in
 make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
 $scontrol -dd show job \$SLURM_JOB_ID
@@ -113,22 +73,23 @@ exit 0"
 #
 # Test of --gpu-freq=low,verbose
 #
-send_user "\n\nTEST 1\n"
+log_info "TEST 1"
 set timeout $max_job_delay
 set match 0
 set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=low,verbose -J "test$test_id" -t1 ./$file_in]
 expect {
+	-re $freq_parse_not_supported {
+		skip $not_supported_msg
+	}
+	-re $freq_parse_generic {
+		skip $generic_msg
+	}
 	-re $freq_parse_nvml {
 		incr match
 		exp_continue
 	}
-	-re $freq_parse_generic {
-		# Emit warning once and exit
-		log_warn $generic_msg
-		exit $exit_code
-	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -137,14 +98,14 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: srun '--gpu-freq=low,verbose' failure ($match != 1)\n"
+	log_error "srun '--gpu-freq=low,verbose' failure ($match != 1)"
 	set exit_code 1
 }
 
 #
 # Test of --gpu-freq=medium,memory=medium,verbose
 #
-send_user "\n\nTEST 2\n"
+log_info "TEST 2"
 set match 0
 set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=medium,memory=medium,verbose -J "test$test_id" -t1 ./$file_in]
 expect {
@@ -153,7 +114,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -162,14 +123,14 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: srun '--gpu-freq=medium,memory=medium,verbose' failure ($match != 1)\n"
+	log_error "srun '--gpu-freq=medium,memory=medium,verbose' failure ($match != 1)"
 	set exit_code 1
 }
 
 #
 # Test of --gpu-freq=highm1,verbose
 #
-send_user "\n\nTEST 3\n"
+log_info "TEST 3"
 set match 0
 set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=highm1,verbose -J "test$test_id" -t1 ./$file_in]
 expect {
@@ -178,7 +139,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -187,14 +148,14 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: srun '--gpu-freq=highm1,verbose' failure ($match != 1)\n"
+	log_error "srun '--gpu-freq=highm1,verbose' failure ($match != 1)"
 	set exit_code 1
 }
 
 #
 # Test of --gpu-freq=high,memory=high,verbose
 #
-send_user "\n\nTEST 4\n"
+log_info "TEST 4"
 set hostname "UNKNOWN"
 set match 0
 set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=high,memory=high,verbose -J "test$test_id" -t1 ./$file_in]
@@ -205,13 +166,13 @@ expect {
 		incr match
 		exp_continue
 	}
-	-re " NodeList=($controlmachine_regex)" {
+	-re " NodeList=($re_word_str)" {
 		set hostname $expect_out(1,string)
 		incr match
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -220,7 +181,7 @@ expect {
 	}
 }
 if {$match == 2} {
-	send_user "\n\nTEST 5\n"
+	log_info "TEST 5"
 	set srun_pid [spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=medium,memory=medium,verbose -J "test$test_id" -t1 ./$file_in]
 	expect {
 		-re $freq_parse_nvml {
@@ -230,7 +191,7 @@ if {$match == 2} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -239,7 +200,7 @@ if {$match == 2} {
 		}
 	}
 
-	send_user "\n\nTEST 6\n"
+	log_info "TEST 6"
 	set srun_pid [spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=low,memory=low,verbose -J "test$test_id" -t1 ./$file_in]
 	expect {
 		-re $freq_parse_nvml {
@@ -249,7 +210,7 @@ if {$match == 2} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set exit_code 1
 		}
@@ -258,20 +219,20 @@ if {$match == 2} {
 		}
 	}
 	if {$match != 4} {
-		send_user "\nFAILURE: srun '--gpu-freq=x,memory=x,verbose' failure ($match != 4)\n"
+		log_error "srun '--gpu-freq=x,memory=x,verbose' failure ($match != 4)"
 		set exit_code 1
 	} else {
 		if {$low_freq > $medium_freq || $medium_freq > $high_freq} {
-			send_user "\nFAILURE: GPU frequency low > medium or medium > high\n"
+			log_error "GPU frequency low > medium or medium > high"
 			set exit_code 1
 		}
 		if {$low_mem > $medium_mem || $medium_mem > $high_mem} {
-			send_user "\nFAILURE: GPU memory frequency low > medium or medium > high\n"
+			log_error "GPU memory frequency low > medium or medium > high"
 			set exit_code 1
 		}
 	}
 } else {
-	send_user "\nFAILURE: srun '--gpu-freq=x,memory=x,verbose' failure ($match != 2)\n"
+	log_error "srun '--gpu-freq=x,memory=x,verbose' failure ($match != 2)"
 	set exit_code 1
 }
 
@@ -279,7 +240,7 @@ if {$match == 2} {
 # Test of --gpu-freq=verbose
 # Frequency will be system default (see "GpuFreqDef" in slurm.conf)
 #
-send_user "\n\nTEST 7\n"
+log_info "TEST 7"
 set match 0
 set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=verbose -J "test$test_id" -t1 ./$file_in]
 expect {
@@ -288,7 +249,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -297,14 +258,10 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: srun '--gpu-freq=verbose' failure ($match != 1)\n"
-	set exit_code 1
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+	fail "srun '--gpu-freq=verbose' failure ($match != 1)"
 }
 
 print_time
-exit $exit_code
+if {$exit_code} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

@@ -171,8 +171,7 @@ static int _set_res_cond(int *start, int argc, char **argv,
 			   || !xstrncasecmp(argv[i], "Names",
 					    MAX(command_len, 1))) {
 			if (!res_cond->name_list) {
-				res_cond->name_list =
-					list_create(slurm_destroy_char);
+				res_cond->name_list = list_create(xfree_ptr);
 			}
 			if (slurm_addto_char_list(res_cond->name_list,
 						  argv[i]+end))
@@ -181,8 +180,7 @@ static int _set_res_cond(int *start, int argc, char **argv,
 			   || !xstrncasecmp(argv[i], "Clusters",
 					    MAX(command_len, 1))) {
 			if (!res_cond->cluster_list) {
-				res_cond->cluster_list =
-					list_create(slurm_destroy_char);
+				res_cond->cluster_list = list_create(xfree_ptr);
 			}
 
 			slurm_addto_char_list(res_cond->cluster_list,
@@ -197,9 +195,9 @@ static int _set_res_cond(int *start, int argc, char **argv,
 				set = 1;
 		} else if (!xstrncasecmp(argv[i], "Descriptions",
 					 MAX(command_len, 1))) {
-		if (!res_cond->description_list) {
-			res_cond->description_list =
-					list_create(slurm_destroy_char);
+			if (!res_cond->description_list) {
+				res_cond->description_list =
+					list_create(xfree_ptr);
 			}
 			if (slurm_addto_char_list(
 				    res_cond->description_list,
@@ -215,8 +213,7 @@ static int _set_res_cond(int *start, int argc, char **argv,
 			uint32_t id = 0;
 
 			if (!res_cond->id_list) {
-				res_cond->id_list =
-					list_create(slurm_destroy_char);
+				res_cond->id_list = list_create(xfree_ptr);
 			}
 			if (slurm_addto_char_list(res_cond->id_list,
 						  argv[i]+end))
@@ -235,8 +232,7 @@ static int _set_res_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "PercentAllowed",
 					 MAX(command_len, 1))) {
 			if (!res_cond->percent_list) {
-				res_cond->percent_list =
-					list_create(slurm_destroy_char);
+				res_cond->percent_list = list_create(xfree_ptr);
 			}
 			if (slurm_addto_char_list(res_cond->percent_list,
 						  argv[i]+end))
@@ -244,8 +240,7 @@ static int _set_res_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "ServerType",
 					 MAX(command_len, 7))) {
 			if (!res_cond->manager_list) {
-				res_cond->manager_list =
-					list_create(slurm_destroy_char);
+				res_cond->manager_list = list_create(xfree_ptr);
 			}
 			if (slurm_addto_char_list(res_cond->manager_list,
 						  argv[i]+end))
@@ -253,8 +248,7 @@ static int _set_res_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Server",
 					 MAX(command_len, 2))) {
 			if (!res_cond->server_list) {
-				res_cond->server_list =
-					list_create(slurm_destroy_char);
+				res_cond->server_list = list_create(xfree_ptr);
 			}
 			if (slurm_addto_char_list(res_cond->server_list,
 						  argv[i]+end))
@@ -506,8 +500,8 @@ extern int sacctmgr_add_res(int argc, char **argv)
 	slurmdb_res_rec_t *res = NULL;
 	slurmdb_res_rec_t *found_res = NULL;
 	slurmdb_res_rec_t *start_res = xmalloc(sizeof(slurmdb_res_rec_t));
-	List cluster_list = list_create(slurm_destroy_char);
-	List name_list = list_create(slurm_destroy_char);
+	List cluster_list = list_create(xfree_ptr);
+	List name_list = list_create(xfree_ptr);
 	char *name = NULL;
 	List res_list = NULL;
 	char *res_str = NULL;
@@ -691,7 +685,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 			if (found_itr)
 				list_iterator_destroy(found_itr);
 
-			if (res->percent_used > 100)
+			if (added && (res->percent_used > 100))
 				break;
 
 			list_iterator_reset(clus_itr);
@@ -781,7 +775,7 @@ extern int sacctmgr_list_res(int argc, char **argv)
 	slurmdb_clus_res_rec_t *clus_res = NULL;
 	List res_list = NULL;
 	int field_count = 0;
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(xfree_ptr);
 	List print_fields_list; /* types are of print_field_t */
 
 	slurmdb_init_res_cond(res_cond, 0);
@@ -811,17 +805,16 @@ extern int sacctmgr_list_res(int argc, char **argv)
 	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
-		FREE_NULL_LIST(print_fields_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 	res_list = slurmdb_res_get(db_conn, res_cond);
-	slurmdb_destroy_res_cond(res_cond);
 
 	if (!res_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with query.\n");
-		FREE_NULL_LIST(print_fields_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 	itr = list_iterator_create(res_list);
 	itr2 = list_iterator_create(print_fields_list);
@@ -845,7 +838,9 @@ extern int sacctmgr_list_res(int argc, char **argv)
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(res_list);
+end_it:
 	FREE_NULL_LIST(print_fields_list);
+	slurmdb_destroy_res_cond(res_cond);
 	return rc;
 }
 

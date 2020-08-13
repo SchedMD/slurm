@@ -4,10 +4,9 @@ After=network.target munge.service
 ConditionPathExists=@sysconfdir@/slurmsmwd.conf
 
 [Service]
-Type=forking
-ExecStart=@sbindir@/slurmsmwd
+Type=simple
+ExecStart=@sbindir@/slurmsmwd -D
 ExecReload=/bin/kill -HUP $MAINPID
-PIDFile=/var/run/slurmsmwd.pid
 
 [Install]
 WantedBy=multi-user.target

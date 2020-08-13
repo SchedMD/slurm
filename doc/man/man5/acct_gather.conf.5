@@ -1,4 +1,4 @@
-.TH "acct_gather.conf" "5" "Slurm Configuration File" "April 2015" "Slurm Configuration File"
+.TH "acct_gather.conf" "5" "Slurm Configuration File" "April 2020" "Slurm Configuration File"
 
 .SH "NAME"
 acct_gather.conf \- Slurm configuration file for the acct_gather plugins
@@ -33,7 +33,7 @@ might also have to change the related options as well.
 
 .TP
 \fBEnergyIPMI\fR
-Options used for AcctGatherEnergyType/ipmi are as follows:
+Options used for acct_gather_energy/ipmi are as follows:
 
 .RS
 .TP 10
@@ -87,8 +87,25 @@ Specify BMC Password.
 .RE
 
 .TP
+\fBEnergyXCC\fR
+Options used for acct_gather_energy/xcc include only in-band communications
+with XClarity Controller, thus a reduced set of configurations is supported:
+
+.RS
+.TP 10
+\fBEnergyIPMIFrequency\fR=<number>
+This parameter is the number of seconds between XCC access samples.
+Default is 30 seconds.
+
+.TP
+\fBEnergyIPMITimeout\fR=<number>
+Timeout, in seconds, for initializing the IPMI XCC context for a new gathering
+thread. Default is 10 seconds.
+.RE
+
+.TP
 \fBProfileHDF5\fR
-Options used for AcctGatherProfileType/hdf5 are as follows:
+Options used for acct_gather_profile/hdf5 are as follows:
 
 .RS
 .TP 10
@@ -133,7 +150,7 @@ Task (I/O, Memory, ...) data is collected.
 .RE
 .TP
 \fBProfileInfluxDB\fR
-Options used for AcctGatherProfileType/influxdb are as follows:
+Options used for acct_gather_profile/influxdb are as follows:
 
 .RS
 .TP 10
@@ -236,7 +253,7 @@ with specific job step tasks.
 
 .TP
 \fBInfinibandOFED\fR
-Options used for AcctGatherInfinbandType/ofed are as follows:
+Options used for acct_gather_interconnect/ofed are as follows:
 
 .RS
 .TP 10
@@ -254,7 +271,7 @@ The default port is 1.
 .br
 ###
 .br
-# Parameters for AcctGatherEnergy/impi plugin
+# Parameters for acct_gather_energy/impi plugin
 .br
 EnergyIPMIFrequency=10
 .br
@@ -262,11 +279,11 @@ EnergyIPMICalcAdjustment=yes
 .br
 #
 .br
-# Parameters for AcctGatherProfileType/hdf5 plugin
+# Parameters for acct_gather_profile/hdf5 plugin
 .br
 ProfileHDF5Dir=/app/slurm/profile_data
 .br
-# Parameters for AcctGatherInfiniband/ofed plugin
+# Parameters for acct_gather_interconnect/ofed plugin
 .br
 InfinibandOFEDPort=1
 .br

@@ -239,7 +239,7 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 		STORE_FIELD(hv, job_info, name, charp);
 	if(job_info->network)
 		STORE_FIELD(hv, job_info, network, charp);
-	STORE_FIELD(hv, job_info, nice, uint16_t);
+	STORE_FIELD(hv, job_info, nice, uint32_t);
 	if(job_info->nodes)
 		STORE_FIELD(hv, job_info, nodes, charp);
 	if(job_info->sched_nodes)
@@ -255,12 +255,6 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 	STORE_FIELD(hv, job_info, ntasks_per_core, uint16_t);
 	STORE_FIELD(hv, job_info, ntasks_per_node, uint16_t);
 	STORE_FIELD(hv, job_info, ntasks_per_socket, uint16_t);
-#ifdef HAVE_BG
-	slurm_get_select_jobinfo(job_info->select_jobinfo,
-				 SELECT_JOBDATA_NODE_CNT,
-				 &job_info->num_nodes);
-
-#endif
 	STORE_FIELD(hv, job_info, num_nodes, uint32_t);
 	STORE_FIELD(hv, job_info, num_cpus, uint32_t);
 	STORE_FIELD(hv, job_info, pn_min_memory, uint64_t);
@@ -375,7 +369,7 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, threads_per_core, uint16_t, TRUE);
 	FETCH_FIELD(hv, job_info, name, charp, FALSE);
 	FETCH_FIELD(hv, job_info, network, charp, FALSE);
-	FETCH_FIELD(hv, job_info, nice, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, nice, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, nodes, charp, FALSE);
 	FETCH_FIELD(hv, job_info, sched_nodes, charp, FALSE);
 	svp = hv_fetch(hv, "node_inx", 8, FALSE);

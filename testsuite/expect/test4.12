@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of sinfo cpu total and allocated
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2009 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "4.12"
 set file_in     "test$test_id.in"
 set exit_code   0
 set pnumsc      0
@@ -58,7 +53,7 @@ proc scontrol_test { node proc_cnt } {
 			set num_alloc $expect_out(1,string)
 			set found 1
 			if {$proc_cnt != $num_alloc} {
-				send_user "\nFAILURE: requested $proc_cnt but got $num_alloc instead\n"
+				log_error "Requested $proc_cnt but got $num_alloc instead"
 				set rc 1
 			}
 			exp_continue
@@ -66,7 +61,7 @@ proc scontrol_test { node proc_cnt } {
 		-re $prompt {
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $mypid
 			return 1
 		}
@@ -76,7 +71,7 @@ proc scontrol_test { node proc_cnt } {
 	}
 
 	if {!$found} {
-		send_user "\nFAILURE: didn't get expected output from scontrol\n"
+		log_error "Didn't get expected output from scontrol"
 		set rc 1
 	}
 
@@ -118,13 +113,13 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 			}
 
 			if { $num_alloc != $proc_cnt } {
-				send_user "\nFAILURE: sinfo 1 allocated cpus wrong, got $num_alloc but needed $proc_cnt\n"
+				log_error "sinfo 1 allocated cpus wrong, got $num_alloc but needed $proc_cnt"
 				set rc 1
 			} elseif { $num_idle != $idle_cpus } {
-				send_user "\nFAILURE: sinfo 1 idle cpus wrong, got $num_idle but needed $idle_cpus\n"
+				log_error "sinfo 1 idle cpus wrong, got $num_idle but needed $idle_cpus"
 				set rc 1
 			} elseif { $num_total != $total_procs } {
-				send_user "\nFAILURE: sinfo 1 total cpus wrong, got $num_total but needed $total_procs\n"
+				log_error "sinfo 1 total cpus wrong, got $num_total but needed $total_procs"
 				set rc 1
 			}
 			exp_continue
@@ -132,7 +127,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 		-re $prompt {
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo not responding\n"
+			log_error "sinfo not responding"
 			slow_kill $mypid
 			return 1
 		}
@@ -142,7 +137,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 	}
 
 	if {!$found} {
-		send_user "\nFAILURE: didn't get expected output from sinfo\n"
+		log_error "Didn't get expected output from sinfo"
 		set rc 1
 	}
 
@@ -193,7 +188,7 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 		-re $prompt {
 		}
 		timeout {
-			send_user "\nFAILURE: sinfo not responding\n"
+			log_error "sinfo not responding"
 			slow_kill $mypid
 			return 1
 		}
@@ -203,10 +198,10 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 	}
 
 	if { $num_alloc != $alloc_nodes } {
-		send_user "\nFAILURE: sinfo 2 allocated nodes wrong, got $num_alloc but needed $alloc_nodes\n"
+		log_error "sinfo 2 allocated nodes wrong, got $num_alloc but needed $alloc_nodes"
 		set rc 1
 	} elseif { $num_idle != $idle_nodes } {
-		send_user "\nFAILURE: sinfo 2 idle nodes wrong, got $num_idle but needed $idle_nodes\n"
+		log_error "sinfo 2 idle nodes wrong, got $num_idle but needed $idle_nodes"
 		set rc 1
 	}
 
@@ -215,7 +210,7 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 
 # allocate a set of nodes (node_cnt) and the quit right after
 proc allocate_and_quit { node proc_cnt total_procs } {
-	global bin_bash salloc scontrol sinfo number alpha_numeric_under
+	global bin_bash salloc scontrol sinfo number re_word_str
 	global prompt select_type procs_per_node test_id bin_rm
 
 	set file_in "test$test_id.input"
@@ -261,11 +256,11 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 		}
 
 		-re "Unable to contact" {
-			send_user "\nFAILURE: slurm appears to be down\n"
+			log_error "Slurm appears to be down"
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding\n"
+			log_error "salloc not responding"
 			if {$job_id != 0} {
 				cancel_job $job_id
 			}
@@ -285,11 +280,8 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 # test starts here
 ############################################################################
 
-print_header $test_id
-
 if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
-	send_user "\nWARNING: This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE\n"
-	exit 0
+	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
 # find the default partition
@@ -299,7 +291,7 @@ set def_part [default_partition]
 set def_node_name ""
 spawn $sinfo -h -o "=%N=" -p $def_part
 expect {
-	-re "=($alpha_numeric).($number)-($number).=" {
+	-re "=($re_word_str).($number)-($number).=" {
 		set def_node_name $expect_out(1,string)
 		exp_continue
 	}
@@ -308,8 +300,7 @@ expect {
 	}
 }
 if {[string compare $def_node_name ""] == 0} {
-	send_user "\nWARNING: Node name format not supported for this test\n"
-	exit $exit_code
+	skip "Node name format not supported for this test"
 }
 
 log_user 0
@@ -317,11 +308,11 @@ set def_hostlist ""
 set part_exclusive 0
 spawn $scontrol show part $def_part
 expect {
-	-re " Nodes=($alpha_numeric_nodelist)"  {
+	-re " Nodes=($re_word_str)"  {
 		set def_hostlist $expect_out(1,string)
 		exp_continue
 	}
-	-re " BasePartitions=($alpha_numeric_nodelist)" {
+	-re " BasePartitions=($re_word_str)" {
 		set def_hostlist $expect_out(1,string)
 		exp_continue
 	}
@@ -330,7 +321,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -340,13 +331,13 @@ expect {
 set host_cnt 0
 spawn $scontrol show hostnames $def_hostlist
 expect {
-	-re "($alpha_numeric_under)"  {
+	-re "($re_word_str)"  {
 		set host_name($host_cnt) $expect_out(1,string)
 		incr host_cnt
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -355,8 +346,7 @@ expect {
 }
 log_user 1
 if {$host_cnt == 0} {
-	send_user "\nFAILURE: could not find any nodes in default partition\n"
-	exit 1
+	fail "Could not find any nodes in default partition"
 }
 
 # find me an idle node in default partition
@@ -387,11 +377,10 @@ catch {close $fd}
 log_user 1
 
 if {!$inode_procs} {
-	send_user "\nFAILURE: couldn't find an idle node in the default partition\n"
-	exit 1
+	fail "Couldn't find an idle node in the default partition"
 }
 
-send_user "found idle node $inode_name with $inode_procs processors\n"
+log_debug "Found idle node $inode_name with $inode_procs processors"
 
 # figure out the select plugin we are using
 if {[test_linear]} {
@@ -408,7 +397,7 @@ if {[test_linear]} {
 	} elseif {[test_select_type_params "CR_SOCKET"]} {
 		set smallest [expr $inode_cores_per_socket *$inode_threads_per_core]
 	} else {
-		send_user "\nWARNING: failed to parse SelectTypeParameters '$select_params'\n"
+		log_warn "Failed to parse SelectTypeParameters '$select_params'"
 		set smallest $inode_procs
 	}
 }
@@ -419,8 +408,6 @@ if {!$exit_code && $smallest != $inode_procs} {
 	sleep 1
 	set exit_code [allocate_and_quit $inode_name $inode_procs $inode_procs]
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
-	exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

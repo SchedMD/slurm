@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr add an account
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,7 +29,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "21.10"
 set exit_code   0
 set acmatches   0
 set damatches   0
@@ -68,19 +63,15 @@ set acct(Description)   "Test_Account_A1"
 
 set access_err  0
 
-print_header $test_id
-
 #
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 #
@@ -97,19 +88,19 @@ set my_pid [spawn $sacctmgr -i delete cluster $tc1]
 			exp_continue
 		}
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			log_error "There was a problem with the sacctmgr command"
 			incr exit_code 1
 		}
 		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
+			log_error "There was a problem getting information from the database"
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknown problem\n"
+			log_error "There was an unknown problem"
 			incr exit_code 1
 		}
 		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
+			log_error "Your command didn't return anything"
 			incr exit_code 1
 		}
 		-re "Deleting clusters" {
@@ -122,7 +113,7 @@ set my_pid [spawn $sacctmgr -i delete cluster $tc1]
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			log_error "sacctmgr delete not responding"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -134,12 +125,12 @@ set my_pid [spawn $sacctmgr -i delete cluster $tc1]
 		return 1
 	}
 	if {$matches != 1} {
-		send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $matches\n"
+		log_error "sacctmgr had a problem deleting cluster got $matches"
 		incr exit_code 1
 	}
 	if { !$nothing } {
 		if { ![check_acct_associations] } {
-			send_user "\nFAILURE:  Our associations don't line up\n"
+			log_error "Our associations don't line up"
 			incr exit_code 1
 		}
 	}
@@ -155,19 +146,19 @@ set my_pid [spawn $sacctmgr -i delete cluster $tc1]
 	set my_pid [eval spawn $sacctmgr -i delete account $ta1]
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			log_error "There was a problem with the sacctmgr command"
 			incr exit_code 1
 		}
 		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
+			log_error "There was a problem getting information from the database"
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknown problem\n"
+			log_error "There was an unknown problem"
 			incr exit_code 1
 		}
 		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
+			log_error "Your command didn't return anything"
 			incr exit_code 1
 		}
 		-re "$check" {
@@ -180,7 +171,7 @@ set my_pid [spawn $sacctmgr -i delete cluster $tc1]
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr add not responding\n"
+			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -190,14 +181,13 @@ set my_pid [spawn $sacctmgr -i delete cluster $tc1]
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sacctmgr had a problem deleting account.
-	got $matches\n"
+		log_error "sacctmgr had a problem deleting account. Got $matches"
 		incr exit_code 1
 	}
 
 	if { !$nothing } {
 		if { ![check_acct_associations] } {
-			send_user "\nFAILURE:  Our associations don't line up\n"
+			log_error "Our associations don't line up"
 			incr exit_code 1
 		}
 	}
@@ -216,7 +206,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
+		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
 		set exit_code 1
 	}
@@ -225,17 +215,15 @@ expect {
 	}
 }
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 if {$acmatches != 1} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding clusters
-	got $acmatches\n"
+	log_error "sacctmgr had a problem adding clusters. Got $acmatches"
 	set exit_code 1
 }
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
+	log_error "Our associations don't line up"
 	set exit_code 1
 }
 
@@ -250,7 +238,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -260,7 +248,7 @@ expect {
 }
 
 if {$dmatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting QOS got $dmatches\n"
+	log_error "sacctmgr had a problem deleting QOS got $dmatches"
 	set exit_code 1
 }
 
@@ -275,7 +263,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -283,7 +271,7 @@ expect {
 	}
 }
 if {$qos_set != 1} {
-	send_user "\nFAILURE QOS $dqos1 was not created\n"
+	log_error "QOS $dqos1 was not created"
 	set exit_code 1
 }
 
@@ -299,7 +287,7 @@ add_acct $ta1 [array get acct]
 check_assoc_limit 2 account $ta1 [array get acct]
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
+	log_error "Our associations don't line up"
 	set exit_code 1
 }
 
@@ -313,7 +301,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -323,12 +311,12 @@ expect {
 }
 
 if {$damatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $damatches\n"
+	log_error "sacctmgr had a problem deleting cluster got $damatches"
 	set exit_code 1
 }
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
+	log_error "Our associations don't line up"
 	set exit_code 1
 }
 
@@ -342,7 +330,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -352,7 +340,7 @@ expect {
 }
 
 if {$dcmatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $dcmatches\n"
+	log_error "sacctmgr had a problem deleting cluster. Got $dcmatches"
 	set exit_code 1
 }
 
@@ -368,7 +356,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -378,7 +366,7 @@ expect {
 }
 
 if {$dmatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting QOS got $dmatches\n"
+	log_error "sacctmgr had a problem deleting QOS. Got $dmatches"
 	set exit_code 1
 }
 
@@ -389,11 +377,11 @@ set as2_list_pid [spawn $sacctmgr list associations account=$ta1 ]
 expect {
 	-re "$tc1 *$ta1" {
 		exp_continue
-		send_user "\nFAILURE: test associations still exist.\n"
+		log_error "Test associations still exist."
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nTest associations delete verified.\n"
+		log_debug "Test associations delete verified"
 		slow_kill $as2_list_pid
 	}
 	eof {
@@ -402,12 +390,9 @@ expect {
 }
 
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
-	set exit_code 1
+	fail "Our associations don't line up"
 }
 
-if {$exit_code == 0} {
-	print_success $test_id
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-
-exit $exit_code

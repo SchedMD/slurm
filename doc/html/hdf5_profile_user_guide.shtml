@@ -15,7 +15,7 @@
 
 <a id="Overview"></a>
 <h2>Overview</h2>
-<p>The AcctGatherProfileType/hdf5 plugin allows Slurm to coordinate collecting
+<p>The acct_gather_profile/hdf5 plugin allows Slurm to coordinate collecting
 data on jobs it runs on a cluster that is more detailed than is practical to
 include in its database. The data comes from periodically sampling various
 performance data either collected by Slurm, the operating system, or
@@ -24,8 +24,8 @@ as a <b>Time Series</b> and also accumulate totals for each statistic for
 the job.</p>
 
 <p>Time Series are energy data collected by an acct_gather_energy plugin,
-I/O data from a network interface collected by an acct_gather_infiniband plugin,
-I/O data from parallel file systems such as Lustre collected by an
+I/O data from a network interface collected by an acct_gather_interconnect
+plugin, I/O data from parallel file systems such as Lustre collected by an
 acct_gather_filesystem plugin, and task performance data such as local disk I/O,
 cpu consumption, and memory use from a jobacct_gather plugin.
 Data from other sources may be added in the future.</p>
@@ -262,7 +262,7 @@ Also appropriately set EnergyIPMIFrequency in acct_gather.conf.</p>
 <DD>Time of day at which the data sample was taken. This can be used to
 correlate activity with other sources such as logs.</DD></DT>
 <DT><B>Time</B>
-<DD>Elapsed time since the begining of the step.</DD></DT>
+<DD>Elapsed time since the beginning of the step.</DD></DT>
 <DT><B>Power</B>
 <DD>Power consumption during the interval.</DD></DT>
 <DT><B>CPU Frequency</B>
@@ -281,7 +281,7 @@ or in --acctg-freq on the command line.</p>
 <DD>Time of day at which the data sample was taken. This can be used to
 correlate activity with other sources such as logs.</DD></DT>
 <DT><B>Time</B>
-<DD>Elapsed time since the begining of the step.</DD></DT>
+<DD>Elapsed time since the beginning of the step.</DD></DT>
 <DT><B>Reads</B>
 <DD>Number of read operations.</DD></DT>
 <DT><B>Megabytes Read</B>
@@ -293,7 +293,7 @@ correlate activity with other sources such as logs.</DD></DT>
 </DL>
 
 <h3>Network (Infiniband Data)</h3>
-<p><b>JobAcctInfinibandType</b>=acct_gather_infiniband/ofed<p>
+<p><b>JobAcctInfinibandType</b>=acct_gather_interconnect/ofed<p>
 is required in slurm.conf to collect task data.
 Appropriately set network=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.</p>
@@ -304,7 +304,7 @@ data items.</p>
 <DD>Time of day at which the data sample was taken. This can be used to
 correlate activity with other sources such as logs.</DD></DT>
 <DT><B>Time</B>
-<DD>Elapsed time since the begining of the step.</DD></DT>
+<DD>Elapsed time since the beginning of the step.</DD></DT>
 <DT><B>Packets In</B>
 <DD>Number of packets coming in.</DD></DT>
 <DT><B>Megabytes Read</B>
@@ -327,7 +327,7 @@ items.</p>
 <DD>Time of day at which the data sample was taken. This can be used to
 correlate activity with other sources such as logs.</DD></DT>
 <DT><B>Time</B>
-<DD>Elapsed time since the begining of the step.</DD></DT>
+<DD>Elapsed time since the beginning of the step.</DD></DT>
 <DT><B>CPU Frequency</B>
 <DD>CPU Frequency at time of sample.</DD></DT>
 <DT><B>CPU Time</B>
@@ -348,6 +348,6 @@ correlate activity with other sources such as logs.</DD></DT>
 
 
 
-<p style="text-align:center;">Last modified 1 July 2013</p>
+<p style="text-align:center;">Last modified 30 January 2020</p>
 
 <!--#include virtual="footer.txt"-->

@@ -110,6 +110,7 @@ typedef enum {
 		PRINT_CONSUMED_ENERGY_RAW,
 		PRINT_CPU_TIME,
 		PRINT_CPU_TIME_RAW,
+		PRINT_DB_INX,
 		PRINT_DERIVED_EC,
 		PRINT_ELAPSED,
 		PRINT_ELAPSED_RAW,
@@ -209,6 +210,7 @@ typedef struct {
 	int opt_noheader;	/* can only be cleared */
 	int opt_uid;		/* running persons uid */
 	int units;		/* --units*/
+	bool use_local_uid;	/* --use-local-uid */
 } sacct_parameters_t;
 
 extern print_field_t fields[];

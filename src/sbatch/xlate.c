@@ -213,6 +213,9 @@ static void _set_bsub_options(int argc, char **argv) {
 		case 'M':
 			xlate_val = LONG_OPT_MEM_PER_CPU;
 			xlate_arg = xstrdup(optarg);
+			/* set the default unit to KB to match LSF behavior */
+			if (isdigit(optarg[strlen(optarg) - 1]))
+				xstrcat(xlate_arg, "K");
 			break;
 		case 'n':
 			/* Since it is valid in bsub to give a min and

@@ -54,12 +54,6 @@ extern void
 cpu_freq_fini(void);
 
 /*
- * reset debug flag (slurmd)
- */
-extern void
-cpu_freq_reconfig(void);
-
-/*
  * Send the cpu_frequency table info to slurmstepd
  */
 extern void

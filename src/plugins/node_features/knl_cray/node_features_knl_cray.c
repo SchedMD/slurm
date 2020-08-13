@@ -172,7 +172,6 @@ static uint32_t capmc_retries = DEFAULT_CAPMC_RETRIES;
 static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
 static char *cnselect_path = NULL;
 static uint32_t cpu_bind[KNL_NUMA_CNT];	/* Derived from numa_cpu_bind */
-static bool debug_flag = false;
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
 static char *mc_path = NULL;
@@ -315,13 +314,13 @@ static void _update_all_node_features(
 				numa_cfg_t *numa_cfg, int numa_cfg_cnt);
 static void _update_cpu_bind(void);
 static void _update_mcdram_pct(char *tok, int mcdram_num);
-static void _update_node_features(struct node_record *node_ptr,
+static void _update_node_features(node_record_t *node_ptr,
 				  mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt,
 				  mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
 				  numa_cap_t *numa_cap, int numa_cap_cnt,
 				  numa_cfg_t *numa_cfg, int numa_cfg_cnt);
 static int _update_node_state(char *node_list, bool set_locks);
-static void _validate_node_features(struct node_record *node_ptr);
+static void _validate_node_features(node_record_t *node_ptr);
 
 /* Function used both internally and externally */
 extern int node_features_p_node_update(char *active_features,
@@ -652,7 +651,7 @@ static void _update_cpu_bind(void)
 		      plugin_type, numa_cpu_bind);
 	}
 
-	if (debug_flag) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		for (i = 0; i < KNL_NUMA_CNT; i++) {
 			char cpu_bind_str[128], *numa_str;
 			if (cpu_bind[i] == 0)
@@ -888,10 +887,9 @@ static char *_load_mcdram_type(int cache_pct)
 	START_TIMER;
 	resp_msg = _run_script(cnselect_path, script_argv, &status);
 	END_TIMER;
-	if (debug_flag) {
-		info("%s: %s %s %s ran for %s", __func__,
-		     script_argv[0], script_argv[1], script_argv[2], TIME_STR);
-	}
+	log_flag(NODE_FEATURES, "%s: %s %s %s ran for %s",
+		 __func__, script_argv[0], script_argv[1], script_argv[2],
+		 TIME_STR);
 	if (resp_msg == NULL) {
 		debug("%s: %s %s %s returned no information",
 		      __func__, script_argv[0], script_argv[1], script_argv[2]);
@@ -949,10 +947,9 @@ static char *_load_numa_type(char *type)
 	START_TIMER;
 	resp_msg = _run_script(cnselect_path, script_argv, &status);
 	END_TIMER;
-	if (debug_flag) {
-		info("%s: %s %s %s ran for %s", __func__,
-		     script_argv[0], script_argv[1], script_argv[2], TIME_STR);
-	}
+	log_flag(NODE_FEATURES, "%s: %s %s %s ran for %s",
+		 __func__, script_argv[0], script_argv[1], script_argv[2],
+		 TIME_STR);
 	if (resp_msg == NULL) {
 		debug("%s: %s %s %s returned no information",
 		      __func__, script_argv[0], script_argv[1], script_argv[2]);
@@ -1069,7 +1066,7 @@ static void _log_script_argv(char **script_argv, char *resp_msg)
 	char *cmd_line = NULL;
 	int i;
 
-	if (!debug_flag)
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES))
 		return;
 
 	for (i = 0; script_argv[i]; i++) {
@@ -1379,7 +1376,7 @@ next_tok:	tok1 = strtok_r(NULL, ",", &save_ptr1);
 	xfree(tmp_str1);
 }
 
-static void _make_node_down(struct node_record *node_ptr)
+static void _make_node_down(node_record_t *node_ptr)
 {
 	if (!avail_node_bitmap) {
 		/*
@@ -1400,7 +1397,7 @@ static void _make_node_down(struct node_record *node_ptr)
  * Determine that the actual KNL mode matches the available and current node
  * features, otherwise DRAIN the node
  */
-static void _validate_node_features(struct node_record *node_ptr)
+static void _validate_node_features(node_record_t *node_ptr)
 {
 	char *tmp_str, *tok, *save_ptr = NULL;
 	uint16_t actual_mcdram = 0, actual_numa = 0;
@@ -1485,7 +1482,7 @@ static void _update_all_node_features(
 				numa_cap_t *numa_cap, int numa_cap_cnt,
 				numa_cfg_t *numa_cfg, int numa_cfg_cnt)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	char node_name[32], *prefix;
 	int i, node_inx, numa_inx, width = 5;
 	uint64_t mcdram_size;
@@ -1603,7 +1600,7 @@ static void _update_all_node_features(
  * Update a specific node's features and features_act fields based upon
  * its current configuration provided by capmc
  */
-static void _update_node_features(struct node_record *node_ptr,
+static void _update_node_features(node_record_t *node_ptr,
 				  mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt,
 				  mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
 				  numa_cap_t *numa_cap, int numa_cap_cnt,
@@ -1819,8 +1816,9 @@ static void *_ume_agent(void *args)
 		if (shutdown_time)
 			break;
 		/* Sleep before retry */
-		req.tv_sec  =  ume_check_interval / 1000000;
-		req.tv_nsec = (ume_check_interval % 1000000) * 1000;
+		req.tv_sec  =  ume_check_interval / USEC_IN_SEC;
+		req.tv_nsec = (ume_check_interval % USEC_IN_SEC) *
+			      NSEC_IN_USEC;
 		(void) nanosleep(&req, NULL);
 	}
 
@@ -1852,7 +1850,6 @@ extern int init(void)
 	for (i = 0; i < KNL_NUMA_CNT; i++)
 		cpu_bind[i] = 0;
 	xfree(cnselect_path);
-	debug_flag = false;
 	default_mcdram = KNL_CACHE;
 	default_numa = KNL_ALL2ALL;
 	xfree(mc_path);
@@ -1861,9 +1858,6 @@ extern int init(void)
 	mcdram_set = 0;
 	xfree(numa_cpu_bind);
 	xfree(syscfg_path);
-
-	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES)
-		debug_flag = true;
 
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
 	if ((stat(knl_conf_file, &stat_buf) == 0) &&
@@ -1934,7 +1928,7 @@ extern int init(void)
 	if (!syscfg_path)
 		verbose("SyscfgPath is not configured");
 
-	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		allow_mcdram_str = _knl_mcdram_str(allow_mcdram);
 		allow_numa_str = _knl_numa_str(allow_numa);
 		allow_user_str = _make_uid_str(allowed_uid, allowed_uid_cnt);
@@ -1965,7 +1959,7 @@ extern int init(void)
 	}
 	gres_plugin_add("hbm");
 
-	if (ume_check_interval && run_in_daemon("slurmd")) {
+	if (ume_check_interval && running_in_slurmd()) {
 		slurm_mutex_lock(&ume_mutex);
 		slurm_thread_create(&ume_thread, _ume_agent, NULL);
 		slurm_mutex_unlock(&ume_mutex);
@@ -2003,7 +1997,6 @@ extern int fini(void)
 	xfree(capmc_path);
 	xfree(cnselect_path);
 	capmc_timeout = 0;
-	debug_flag = false;
 	xfree(mc_path);
 	xfree(mcdram_per_node);
 	xfree(numa_cpu_bind);
@@ -2031,7 +2024,7 @@ static void _check_node_status(void)
 	json_object *j_value;
 	char *resp_msg, **script_argv;
 	int i, nid, num_ent, retry, status = 0;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	bitstr_t *capmc_node_bitmap = NULL;
 	DEF_TIMERS;
 
@@ -2042,8 +2035,8 @@ static void _check_node_status(void)
 		START_TIMER;
 		resp_msg = _run_script(capmc_path, script_argv, &status);
 		END_TIMER;
-		if (debug_flag)
-			info("%s: node_status ran for %s", __func__, TIME_STR);
+		log_flag(NODE_FEATURES, "%s: node_status ran for %s",
+			 __func__, TIME_STR);
 		_log_script_argv(script_argv, resp_msg);
 		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
 			break;	/* Success */
@@ -2122,7 +2115,7 @@ static void _check_node_status(void)
 		xfree(node_ptr->reason);
 		node_ptr->reason = xstrdup("Node not found by capmc");
 		node_ptr->reason_time = time(NULL);
-		node_ptr->reason_uid = slurm_get_slurm_user_id();
+		node_ptr->reason_uid = slurm_conf.slurm_user_id;
 		if (avail_node_bitmap)
 			bit_clear(avail_node_bitmap, i);
 	}
@@ -2225,7 +2218,7 @@ static int _update_node_state(char *node_list, bool set_locks)
 	numa_cfg2_t *numa_cfg2 = NULL;
 	int mcdram_cap_cnt = 0, mcdram_cfg_cnt = 0, mcdram_cfg2_cnt = 0;
 	int numa_cap_cnt = 0, numa_cfg_cnt = 0, numa_cfg2_cnt = 0;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	hostlist_t host_list;
 	char *node_name;
 
@@ -2252,10 +2245,8 @@ static int _update_node_state(char *node_list, bool set_locks)
 		START_TIMER;
 		resp_msg = _run_script(capmc_path, script_argv, &status);
 		END_TIMER;
-		if (debug_flag) {
-			info("%s: get_mcdram_capabilities ran for %s",
-			     __func__, TIME_STR);
-		}
+		log_flag(NODE_FEATURES, "%s: get_mcdram_capabilities ran for %s",
+			 __func__, TIME_STR);
 		_log_script_argv(script_argv, resp_msg);
 		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
 			break;	/* Success */
@@ -2309,10 +2300,8 @@ static int _update_node_state(char *node_list, bool set_locks)
 		START_TIMER;
 		resp_msg = _run_script(capmc_path, script_argv, &status);
 		END_TIMER;
-		if (debug_flag) {
-			info("%s: get_mcdram_cfg ran for %s",
-			     __func__, TIME_STR);
-		}
+		log_flag(NODE_FEATURES, "%s: get_mcdram_cfg ran for %s",
+			 __func__, TIME_STR);
 		_log_script_argv(script_argv, resp_msg);
 		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
 			break;	/* Success */
@@ -2368,10 +2357,8 @@ static int _update_node_state(char *node_list, bool set_locks)
 		START_TIMER;
 		resp_msg = _run_script(capmc_path, script_argv, &status);
 		END_TIMER;
-		if (debug_flag) {
-			info("%s: get_numa_capabilities ran for %s",
-			     __func__, TIME_STR);
-		}
+		log_flag(NODE_FEATURES, "%s: get_numa_capabilities ran for %s",
+			 __func__, TIME_STR);
 		_log_script_argv(script_argv, resp_msg);
 		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
 			break;	/* Success */
@@ -2425,8 +2412,8 @@ static int _update_node_state(char *node_list, bool set_locks)
 		START_TIMER;
 		resp_msg = _run_script(capmc_path, script_argv, &status);
 		END_TIMER;
-		if (debug_flag)
-			info("%s: get_numa_cfg ran for %s", __func__, TIME_STR);
+		log_flag(NODE_FEATURES, "%s: get_numa_cfg ran for %s",
+			 __func__, TIME_STR);
 		_log_script_argv(script_argv, resp_msg);
 		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
 			break;	/* Success */
@@ -2472,7 +2459,7 @@ static int _update_node_state(char *node_list, bool set_locks)
 
 	numa_cfg2 = _load_current_numa(&numa_cfg2_cnt);
 
-	if (debug_flag) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		_mcdram_cap_log(mcdram_cap, mcdram_cap_cnt);
 		_mcdram_cfg_log(mcdram_cfg, mcdram_cfg_cnt);
 		_mcdram_cfg2_log(mcdram_cfg2, mcdram_cfg2_cnt);
@@ -2596,8 +2583,8 @@ static int _update_node_state(char *node_list, bool set_locks)
 					  numa_cfg, numa_cfg_cnt);
 	}
 	END_TIMER;
-	if (debug_flag)
-		info("%s: update_node_features ran for %s", __func__, TIME_STR);
+	log_flag(NODE_FEATURES, "%s: update_node_features ran for %s",
+		 __func__, TIME_STR);
 
 	last_node_update = time(NULL);
 
@@ -2769,7 +2756,7 @@ extern int node_features_p_node_update(char *active_features,
 	int rc = SLURM_SUCCESS, numa_inx = -1;
 	int mcdram_inx = 0;
 	uint64_t mcdram_size;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	char *save_ptr = NULL, *tmp, *tok;
 
 	if (mcdram_per_node == NULL)
@@ -2834,13 +2821,13 @@ extern int node_features_p_node_update(char *active_features,
  * Return TRUE if the specified node update request is valid with respect
  * to features changes (i.e. don't permit a non-KNL node to set KNL features).
  *
- * arg IN - Pointer to struct node_record record
+ * arg IN - Pointer to node_record_t record
  * update_node_msg IN - Pointer to update request
  */
 extern bool node_features_p_node_update_valid(void *arg,
 					update_node_msg_t *update_node_msg)
 {
-	struct node_record *node_ptr = (struct node_record *) arg;
+	node_record_t *node_ptr = (node_record_t *) arg;
 	char *tmp, *save_ptr = NULL, *tok;
 	bool is_knl = false, invalid_feature = false;
 

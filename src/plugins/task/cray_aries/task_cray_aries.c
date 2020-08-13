@@ -63,7 +63,15 @@
 #  include "alpscomm_cn.h"
 #endif
 
-static uint64_t debug_flags = 0;
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+extern slurm_conf_t slurm_conf __attribute__((weak_import));
+#else
+slurm_conf_t slurm_conf;
+#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -160,22 +168,17 @@ extern int init (void)
 {
 	debug("%s loaded.", plugin_name);
 
-	char *task_plugin = slurm_get_task_plugin();
-	char *task_cgroup = strstr(task_plugin, "cgroup");
-	char *task_cray = strstr(task_plugin, "cray");
+	char *task_cgroup = xstrstr(slurm_conf.task_plugin, "cgroup");
+	char *task_cray = xstrstr(slurm_conf.task_plugin, "cray");
 
 	if (!task_cgroup || !task_cray || (task_cgroup < task_cray)) {
 		fatal("task/cgroup must be used with, and listed after, "
 		      "task/cray in TaskPlugin");
 	}
 
-	xfree(task_plugin);
-
 #ifdef HAVE_NATIVE_CRAY
 	int rc;
 	struct stat st;
-
-	debug_flags = slurm_get_debug_flags();
 
 	// Create the run directory
 	errno = 0;
@@ -227,16 +230,6 @@ extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 }
 
 /*
- * task_p_slurmd_reserve_resources()
- */
-extern int task_p_slurmd_reserve_resources (launch_tasks_request_msg_t *req,
-					    uint32_t node_id)
-{
-	debug("%s: %u %u", __func__, req->job_id, node_id);
-	return SLURM_SUCCESS;
-}
-
-/*
  * task_p_slurmd_suspend_job()
  */
 extern int task_p_slurmd_suspend_job (uint32_t job_id)
@@ -249,7 +242,7 @@ extern int task_p_slurmd_suspend_job (uint32_t job_id)
 	_step_epilogue();
 #endif
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
@@ -268,18 +261,9 @@ extern int task_p_slurmd_resume_job (uint32_t job_id)
 	_step_prologue();
 #endif
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
-	return SLURM_SUCCESS;
-}
-
-/*
- * task_p_slurmd_release_resources()
- */
-extern int task_p_slurmd_release_resources (uint32_t job_id)
-{
-	debug("task_p_slurmd_release_resources: %u", job_id);
 	return SLURM_SUCCESS;
 }
 
@@ -292,14 +276,14 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
 {
 	DEF_TIMERS;
 	START_TIMER;
-	debug("%s: %u.%u",  __func__, job->jobid, job->stepid);
+	debug("%s: %ps",  __func__, &job->step_id);
 
 #ifdef HAVE_NATIVE_CRAY
 	if (!job->batch)
 		_step_prologue();
 #endif
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
@@ -317,22 +301,23 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 	uint64_t apid;
 	uint32_t jobid;
 	uint32_t taskid;
-	uint32_t offset;
+	uint32_t offset = 0;
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
-		jobid = job->pack_jobid;
-		offset = job->pack_task_offset;
-	} else {
-		jobid = job->jobid;
-		offset = 0;
-	}
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
+	else
+		jobid = job->step_id.job_id;
+
+	if (job->het_job_task_offset != NO_VAL)
+		offset = job->het_job_task_offset;
+
 	taskid = offset + job->task[job->envtp->localid]->gtid;
 
-	apid = SLURM_ID_HASH(jobid, job->stepid);
-	debug2("%s: %u.%u, apid %"PRIu64", task %u", __func__,
-	       job->jobid, job->stepid, apid, taskid);
+	apid = SLURM_ID_HASH(jobid, job->step_id.step_id);
+	debug2("%s: %ps, apid %"PRIu64", task %u", __func__, &job->step_id,
+	       apid, taskid);
 
 	/*
 	 * Send the rank to the application's PMI layer via an environment
@@ -376,7 +361,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 			 ALPS_APP_ID_ENV);
 	}
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
@@ -394,14 +379,14 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
 	START_TIMER;
 
 #ifdef HAVE_NATIVE_CRAY
-	debug("%s: %u.%u", __func__, job->jobid, job->stepid);
+	debug("%s: %ps", __func__, &job->step_id);
 
 	if (track_status) {
 		rc = _make_status_file(job);
 	}
 #endif
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 	return rc;
 }
@@ -420,15 +405,14 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 	START_TIMER;
 
 #ifdef HAVE_NATIVE_CRAY
-	debug("%s: %u.%u, task %d", __func__,
-	      job->jobid, job->stepid, task->id);
+	debug("%s: %ps, task %d", __func__, &job->step_id, task->id);
 
 	if (track_status) {
 		rc = _check_status_file(job, task);
 	}
 #endif
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 	return rc;
 }
@@ -450,12 +434,12 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-		jobid = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
+		jobid = job->step_id.job_id;
 	if (track_status) {
-		apid = SLURM_ID_HASH(jobid, job->stepid);
+		apid = SLURM_ID_HASH(jobid, job->step_id.step_id);
 		// Get the lli file name
 		snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE, apid);
 
@@ -496,7 +480,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	 *
 	 * NUMA node: mems (or cpuset.mems)
 	 */
-	if (job->stepid == SLURM_BATCH_SCRIPT) {
+	if (job->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		// Batch Job Step
 		rc = snprintf(path, sizeof(path),
 			      "/dev/cpuset/slurm/uid_%d/job_%"
@@ -505,7 +489,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 			CRAY_ERR("snprintf failed. Return code: %d", rc);
 			return SLURM_ERROR;
 		}
-	} else if (job->stepid == SLURM_EXTERN_CONT) {
+	} else if (job->step_id.step_id == SLURM_EXTERN_CONT) {
 		// Container for PAM to use for externally launched processes
 		rc = snprintf(path, sizeof(path),
 			      "/dev/cpuset/slurm/uid_%d/job_%"
@@ -523,7 +507,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 		rc = snprintf(path, sizeof(path),
 			      "/dev/cpuset/slurm/uid_%d/job_%"
 			      PRIu32 "/step_%" PRIu32,
-			      job->uid, jobid, job->stepid);
+			      job->uid, jobid, job->step_id.step_id);
 		if (rc < 0) {
 			CRAY_ERR("snprintf failed. Return code: %d", rc);
 			return SLURM_ERROR;
@@ -559,7 +543,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	if (rc != 1)
 		return SLURM_ERROR;
 	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
@@ -580,9 +564,9 @@ static void _alpsc_debug(const char *file, int line, const char *func,
 		      err_msg ? err_msg : "No error message present");
 	} else if (err_msg) {
 		info("%s: %s", alpsc_func, err_msg);
-	} else if (debug_flags & DEBUG_FLAG_TASK) {
-		debug("Called %s", alpsc_func);
-	}
+	} else
+		log_flag(TASK, "Called %s", alpsc_func);
+
 	free(err_msg);
 }
 
@@ -598,11 +582,11 @@ static int _make_status_file(stepd_step_rec_t *job)
 	uint32_t jobid;
 	uint64_t apid;
 
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
-		jobid = job->pack_jobid;
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
 	else
-		jobid = job->jobid;
-	apid = SLURM_ID_HASH(jobid, job->stepid);
+		jobid = job->step_id.job_id;
+	apid = SLURM_ID_HASH(jobid, job->step_id.step_id);
 
 	// Get the lli file name
 	snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE, apid);
@@ -664,25 +648,26 @@ static int _check_status_file(stepd_step_rec_t *job,
 	int rv, fd;
 	uint32_t jobid;
 	uint32_t taskid;
-	uint32_t offset;
+	uint32_t offset = 0;
 
 	// We only need to special case termination with exit(0)
 	// srun already handles abnormal exit conditions fine
 	if (!WIFEXITED(task->estatus) || (WEXITSTATUS(task->estatus) != 0))
 		return SLURM_SUCCESS;
 
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
-		jobid = job->pack_jobid;
-		offset = job->pack_task_offset;
-	} else {
-		jobid = job->jobid;
-		offset = 0;
-	}
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
+	else
+		jobid = job->step_id.job_id;
+
+	if (job->het_job_task_offset != NO_VAL)
+		offset = job->het_job_task_offset;
+
 	taskid = offset + task->gtid;
 
 	// Get the lli file name
 	snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE,
-		 SLURM_ID_HASH(jobid, job->stepid));
+		 SLURM_ID_HASH(jobid, job->step_id.step_id));
 
 	// Open the lli file.
 	fd = open(llifile, O_RDONLY);
@@ -731,9 +716,8 @@ static int _check_status_file(stepd_step_rec_t *job,
 			return SLURM_SUCCESS;
 		}
 
-		verbose("step %u.%u task %u exited without calling "
-			"PMI_Finalize()",
-			job->jobid, job->stepid, taskid);
+		verbose("%ps task %u exited without calling PMI_Finalize()",
+			&job->step_id, taskid);
 	}
 	return SLURM_SUCCESS;
 }
@@ -810,21 +794,16 @@ again:
 		return -1;
 	}
 
-	if (debug_flags & DEBUG_FLAG_TASK) {
-		info("Bitmask %#lx size: %lu sizeof(*(bm->maskp)): %zu"
-		     " weight: %u",
-		     *(bm->maskp), bm->size, sizeof(*(bm->maskp)), *cnt);
-	}
+	log_flag(TASK, "Bitmask %#lx size: %lu sizeof(*(bm->maskp)): %zu weight: %u",
+		 *(bm->maskp), bm->size, sizeof(*(bm->maskp)), *cnt);
 
 	*numa_array = xmalloc(*cnt * sizeof(int32_t));
 
 	index = 0;
 	for (i = 0; i < bm->size; i++) {
 		if (*(bm->maskp) & ((long unsigned) 1 << i)) {
-			if (debug_flags & DEBUG_FLAG_TASK) {
-				info("(%s: %d: %s) NUMA Node %d is present",
-				     THIS_FILE,	__LINE__, __func__, i);
-			}
+			log_flag(TASK, "(%s: %d: %s) NUMA Node %d is present",
+				 THIS_FILE, __LINE__, __func__, i);
 			(*numa_array)[index++] = i;
 		}
 	}
@@ -927,7 +906,7 @@ static int _get_cpu_masks(int num_numa_nodes, int32_t *numa_array,
 		}
 	}
 
-	if (debug_flags & DEBUG_FLAG_TASK) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TASK) {
 		bitmask_str = NULL;
 		for (i = 0; i < num_numa_nodes; i++) {
 			for (j = 0; j < NUM_INTS_TO_HOLD_ALL_CPUS; j++) {
@@ -973,10 +952,8 @@ static int _get_cpu_masks(int num_numa_nodes, int32_t *numa_array,
 				CPU_SET(j, &cpusetptr[i]);
 			}
 		}
-		if (debug_flags & DEBUG_FLAG_TASK) {
-			info("CPU_COUNT() of set: %d",
-			     CPU_COUNT(&cpusetptr[i]));
-		}
+		log_flag(TASK, "CPU_COUNT() of set: %d",
+			 CPU_COUNT(&cpusetptr[i]));
 	}
 
 	*cpuMasks = cpusetptr;
@@ -1064,9 +1041,7 @@ static int _update_num_steps(int val)
 		TEMP_FAILURE_RETRY(close(fd));
 		return -1;
 	}
-	if (debug_flags & DEBUG_FLAG_TASK) {
-		debug("Wrote %d steps to %s", num_steps, NUM_STEPS_FILE);
-	}
+	log_flag(TASK, "Wrote %d steps to %s", num_steps, NUM_STEPS_FILE);
 
 	TEMP_FAILURE_RETRY(close(fd));
 	return num_steps;
@@ -1117,9 +1092,10 @@ static int _step_epilogue(void)
 		if (rc != 1) {
 			return SLURM_ERROR;
 		}
-	} else if (debug_flags & DEBUG_FLAG_TASK) {
-		debug("Skipping epilogue, %d other steps running", num_steps);
-	}
+	} else
+		log_flag(TASK, "Skipping epilogue, %d other steps running",
+			 num_steps);
+
 	return SLURM_SUCCESS;
 }
 #endif

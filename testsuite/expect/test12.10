@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm sacct with -s R, -S and -E options
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Albert Gil <albert.gil@schedmd.com>
@@ -30,12 +26,9 @@
 
 source ./globals
 
-set test_id     "12.10"
 set exit_code   0
 set timeout     60
 set ntest       0
-
-print_header $test_id
 
 ############################################################################
 #
@@ -53,13 +46,13 @@ print_header $test_id
 ############################################################################
 
 proc sacct_query {jobname sacct_args expected_job {expected_err false}} {
-	global sacct number ntest
+	global sacct ntest
 
 	set job_found false
 	set err_found false
 	set rc 0
 
-	set cmd_str "$sacct -v -X --format=job,jobname,eligible,start,end,state $sacct_args"
+	set cmd_str "$sacct -v -X -p --format=job,jobname,eligible,start,end,state $sacct_args"
 	spawn [lindex $cmd_str 0] {*}[lrange $cmd_str 1 end]
 	expect {
 		-re "($jobname)" {
@@ -134,8 +127,7 @@ proc get_time { } {
 ############################################################################
 
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType."
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType."
 }
 
 ############################################################################
@@ -198,17 +190,14 @@ if { [test_account_storage] == 0 } {
 
 ############################################################################
 
-global srun squeue sacct
-global bin_sleep bin_date
-global number
-
 set failures 0
 
 #
 # Get Random name for the job, to avoid errors with old/duplicated jobs
 #
-set jobname [exec bash -c "cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 4 | head -n 1"]
-log_info "Random job name used to avoid false test error with old/duplicated jobs: $jobname-test$test_id."
+set current_timestamp [clock seconds]
+set jobname "test${test_id}-${current_timestamp}"
+log_info "Unique job name used to avoid false test errors with old/duplicated jobs: $jobname."
 
 #
 # Get query times before any job is run (QsS and QeS)
@@ -222,8 +211,8 @@ exec $bin_sleep 2
 # Start a long job (will be cancelled)
 # Test job will depend on it to test non-eligible
 #
-set def_node [get_idle_node_in_part [default_partition]]
-set pid_queue [spawn $sbatch -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
+set def_node [get_idle_node_in_part]
+set pid_depend [spawn $sbatch -t5 -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
 expect {
 	-re "Submitted batch job ($number)" {
 		set jobid_dependent $expect_out(1,string)
@@ -231,7 +220,7 @@ expect {
 	}
 	timeout {
 		log_error "$sbatch not responding."
-		slow_kill $pid_batch
+		slow_kill $pid_depend
 		incr failures
 	}
 	eof {
@@ -249,8 +238,8 @@ wait_for_job $jobid_dependent "RUNNING"
 # Start a long job (will be cancelled)
 # Test job will wait until this job, to test eligible
 #
-set def_node [get_idle_node_in_part [default_partition]]
-set pid_queue [spawn $sbatch -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
+set def_node [get_idle_node_in_part]
+set pid_queue [spawn $sbatch -t5 -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
 expect {
 	-re "Submitted batch job ($number)" {
 		set jobid_queue $expect_out(1,string)
@@ -258,7 +247,7 @@ expect {
 	}
 	timeout {
 		log_error "$sbatch not responding."
-		slow_kill $pid_batch
+		slow_kill $pid_queue
 		incr failures
 	}
 	eof {
@@ -273,7 +262,7 @@ if {$jobid_queue == 0} {
 #
 # Start main job used for testing
 #
-set pid_batch [spawn $sbatch --dependency=afterany:$jobid_dependent -w $def_node -J $jobname-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
+set pid_batch [spawn $sbatch -t5 --dependency=afterany:$jobid_dependent -w $def_node -J $jobname-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
 expect {
 	-re "Submitted batch job ($number)" {
 		set jobid $expect_out(1,string)
@@ -2542,10 +2531,9 @@ log_info "QeC      : $QeC"
 log_info "TestCases: $ntest"
 log_info "Failures : $failures"
 
-if {$failures == 0} {
-	print_success $test_id
-} else {
-	print_failure $test_id
-	set exit_code 1
+if {$failures != 0} {
+	fail "Test failed due to previous failures (\$failures = $failures)"
 }
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

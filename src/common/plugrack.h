@@ -79,10 +79,23 @@ int plugrack_read_dir(plugrack_t *rack, const char *dir);
 plugin_handle_t plugrack_use_by_type(plugrack_t *rack, const char *type);
 
 /*
- * print all plugins in rack
+ * Find a plugin in the rack which matches the given minor type,
+ * and unload it if ref count is <= 0.
+ */
+extern void plugrack_release_by_type(plugrack_t *rack, const char *type);
+
+/*
+ * print all MPI plugins in rack
  *
  * Returns a Slurm errno.
  */
-int plugrack_print_all_plugin(plugrack_t *rack);
+int plugrack_print_mpi_plugins(plugrack_t *rack);
+
+/*
+ * Call function f for each plugin found in rack
+ */
+typedef void (*plugrack_foreach_t)(const char *full_type, const char *fq_path,
+				   const plugin_handle_t id);
+extern void plugrack_foreach(plugrack_t *rack, plugrack_foreach_t f);
 
 #endif /*__PLUGRACK_H__*/

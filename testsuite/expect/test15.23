@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Verify environment variables controlling salloc are processed:
 #          SALLOC_DEBUG and SALLOC_TIMELIMIT
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,11 +29,17 @@
 ############################################################################
 source ./globals
 
-set test_id          "15.23"
 set exit_code        0
 set job_id           0
 
-print_header $test_id
+proc end_it {} {
+	global exit_code
+
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
+}
 
 #
 # Set target environment variables
@@ -62,10 +64,10 @@ expect {
 		exp_continue
 	}
 	-re $prompt {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -78,19 +80,21 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: did not get job_id\n"
-	exit 1
+	log_error "job_id not found"
+	set exit_code 1
+	end_it
 }
 
 set timeout 5
 send "$scontrol show job $job_id\r"
 expect {
 	-re "TimeLimit=($number):($number):" {
-		set time_limit [expr $expect_out(1,string) * 60 + $expect_out(2,string)]
+		set time_limit [expr $expect_out(1,string) * 60 + \
+		                     $expect_out(2,string)]
 		if {$time_limit == 2} {
 			incr matches
 		} else {
-			send_user "FAILURE: TimeLimit not set\n"
+			log_error "TimeLimit not set"
 			set exit_code 1
 		}
 		exp_continue
@@ -100,7 +104,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "scontrol not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -113,11 +117,8 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE: processed $matches of 2 environment variables\n"
+	log_error "processed $matches of 2 environment variables"
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
-exit $exit_code
+end_it

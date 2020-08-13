@@ -96,13 +96,12 @@ typedef enum {
 } stepd_getgr_mode_t;
 
 typedef struct {
-	uid_t uid;
-	uint32_t jobid;
-	uint32_t stepid;
+	uint64_t job_mem_limit;		/* job's memory limit, MB */
 	uint32_t nodeid;
 	uint16_t protocol_version;
-	uint64_t job_mem_limit;		/* job's memory limit, MB */
+	slurm_step_id_t step_id;
 	uint64_t step_mem_limit;	/* step's memory limit, MB */
+	uid_t uid;
 } slurmstepd_info_t;
 
 typedef struct {
@@ -112,19 +111,18 @@ typedef struct {
 } slurmstepd_mem_info_t;
 
 typedef struct {
-	int             id;	    /* local task id */
-	uint32_t        gtid;	    /* global task id */
-	pid_t           pid;	    /* task pid */
-	bool            exited;     /* true if task has exited */
 	int             estatus;    /* exit status if exited is true*/
+	bool            exited;     /* true if task has exited */
+	uint32_t        gtid;	    /* global task id */
+	int             id;	    /* local task id */
+	pid_t           pid;	    /* task pid */
 } slurmstepd_task_info_t;
 
 typedef struct step_location {
-	uint32_t jobid;
-	uint32_t stepid;
-	char *nodename;
 	char *directory;
+	char *nodename;
 	uint16_t protocol_version;
+	slurm_step_id_t step_id;
 } step_loc_t;
 
 
@@ -148,7 +146,8 @@ int stepd_terminate(int fd, uint16_t protocol_version);
  * of the running stepd.
  */
 extern int stepd_connect(const char *directory, const char *nodename,
-		  uint32_t jobid, uint32_t stepid, uint16_t *protocol_version);
+			 slurm_step_id_t *step_id,
+			 uint16_t *protocol_version);
 
 /*
  * Retrieve a job step's current state.
@@ -166,12 +165,6 @@ slurmstepd_info_t *stepd_get_info(int fd);
  * Send job notification message to a batch job
  */
 int stepd_notify_job(int fd, uint16_t protocol_version, char *message);
-
-/*
- * Send a checkpoint request to all tasks of a job step.
- */
-int stepd_checkpoint(int fd, uint16_t protocol_version,
-		     time_t timestamp, char *image_dir);
 
 /*
  * Send a signal to the proctrack container of a job step.
@@ -297,7 +290,7 @@ int stepd_completion(int fd, uint16_t protocol_version,
  * resp receives a jobacctinfo_t which must be freed if SUCCESS.
  */
 int stepd_stat_jobacct(int fd, uint16_t protocol_version,
-		       job_step_id_msg_t *sent, job_step_stat_t *resp);
+		       slurm_step_id_t *sent, job_step_stat_t *resp);
 
 
 int stepd_task_info(int fd, uint16_t protocol_version,

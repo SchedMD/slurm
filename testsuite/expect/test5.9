@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validate that squeue -O (--Format) option displays the
 #          correct user specified values.
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -33,7 +28,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id      "5.9"
 set cwd           "[$bin_pwd]"
 set exit_code     0
 set test_node     ""
@@ -92,20 +86,15 @@ set sq_format(partition)     [default_partition]
 # comment
 set sq_format(comment)       1234567890
 
-print_header $test_id
-
 if { [test_using_slurmdbd] == 0 } {
-	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
-	exit $exit_code
+	skip "This test can't be run without AccountStorageType=slurmdbd"
 }
 if {[string compare [check_accounting_admin_level] "Administrator"]} {
-	send_user "\nThis test can't be run without being an Accounting administrator.\n"
-	exit $exit_code
+	skip "This test can't be run without being an Accounting administrator"
 }
-set available [available_nodes $partition idle]
+set available [available_nodes idle]
 if {$available < 2} {
-    send_user "\nWARNING: not enough nodes currently available ($available avail, 2 needed)\n"
-    exit $exit_code
+    skip "Not enough nodes currently available ($available avail, 2 needed)"
 }
 
 remove_acct [get_cluster_name] $test_acct
@@ -123,7 +112,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -132,12 +121,11 @@ expect {
 }
 
 if {$tmp_job == 0} {
-	send_user "\nFAILURE: job was not submitted\n"
-	exit 0
+	fail "Job was not submitted"
 }
 
 if {[wait_for_job $tmp_job "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $tmp_job to start\n"
+	log_error "Error waiting for job $tmp_job to start"
 	cancel_job $tmp_job
 	set exit_code 1
 }
@@ -145,13 +133,13 @@ if {[wait_for_job $tmp_job "RUNNING"] != 0} {
 set got_node 0
 spawn $scontrol show job $tmp_job
 expect {
-	-re "NodeList=($alpha_numeric_under)" {
+	-re "NodeList=($re_word_str)" {
 		set test_node $expect_out(1,string)
 		set got_node 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -160,10 +148,8 @@ expect {
 }
 
 if {$got_node != 1} {
-	send_user "\nFAILURE: was not able to get usable node\n"
-	exit 0
+	fail "Was not able to get usable node"
 }
-
 
 lassign [get_node_cpus $test_node] cpu_tot sq_format(cpuspertask)
 
@@ -179,7 +165,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		exp_continue
 	}
 	eof {
@@ -193,10 +179,7 @@ if {$sq_format(ntpernode) > $core_cnt} {
 }
 
 if {$sq_format(ntpersocket) == 0 || $sq_format(cpuspertask) == 0} {
-	send_user "\nFAILURE: failed to get number of threads or cores "
-	send_user "ThreadsPerCore=$sq_format(cpuspertask) & "
-	send_user "CoresPerSocket=$sq_format(ntpersocket)\n"
-	exit 0
+	fail "failed to get number of threads or cores ThreadsPerCore=$sq_format(cpuspertask) & CoresPerSocket=$sq_format(ntpersocket)"
 }
 
 # Remove the tmp script and cancel tmp job
@@ -213,7 +196,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "FAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -221,7 +204,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: account was not added\n"
+	log_error "Account was not added"
 	set exit_code 1
 }
 
@@ -233,7 +216,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "FAILURE: sacctmgr is not responding\n"
+		log_error "sacctmgr is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -241,7 +224,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: account was not added\n"
+	log_error "Account was not added"
 	set exit_code 1
 }
 
@@ -266,7 +249,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -275,7 +258,7 @@ expect {
 }
 
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	log_error "Error waiting for job $job_id to start"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -297,7 +280,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -305,7 +288,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	send_user "\nFAILURE: scontrol did not provide correct job values ($match != 1)\n"
+	log_error "scontrol did not provide correct job values ($match != 1)"
 	set exit_code 1
 }
 
@@ -323,7 +306,7 @@ foreach option [array names sq_format] {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue is not responding\n"
+			log_error "squeue is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -331,12 +314,12 @@ foreach option [array names sq_format] {
 		}
 	}
 	if {$this_match == 0} {
-		send_user "\nFAILURE: failed to match $option with $sq_format($option)\n"
+		log_error "Failed to match $option with $sq_format($option)"
 		set exit_code 1
 	}
 }
 if {$match != $cnt} {
-	send_user "\nFAILURE: not all squeue outputs match ($match != $cnt)\n"
+	log_error "Not all squeue outputs match ($match != $cnt)"
 	set exit_code 1
 }
 
@@ -344,7 +327,7 @@ set match 0
 spawn $squeue --job=$job_id --noheader -Ocomment:4
 expect {
 	-re "12345" {
-		send_user "\nFAILURE: field width control failure\n"
+		log_error "Field width control failure"
 		set exit_code 1
 		exp_continue
 	}
@@ -353,7 +336,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
+		log_error "squeue is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -361,7 +344,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	send_user "\nFAILURE: not all squeue outputs match ($match != 1)\n"
+	log_error "Not all squeue outputs match ($match != 1)"
 	set exit_code 1
 }
 ############################Step Format Test############################
@@ -389,7 +372,7 @@ set sq_step_format(username)    $sq_format(username)
 set match 0
 spawn $scontrol show step $sq_step_format(stepid)
 expect {
-	-re "State=($alpha_under)" {
+	-re "State=($re_word_str)" {
 		set sq_step_format(stepstate) $expect_out(1,string)
 		incr match 1
 		exp_continue
@@ -404,13 +387,13 @@ expect {
 		incr match 1
 		exp_continue
 	}
-	-re "Network=($alpha_numeric_under)" {
+	-re "Network=($re_word_str)" {
 		set sq_step_format(network) $expect_out(1,string)
 		incr match 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -418,7 +401,7 @@ expect {
 	}
 }
 if {$match != 4} {
-	send_user "\nFAILURE: scontrol did not provide correct step values ($match != 4)\n"
+	log_error "scontrol did not provide correct step values ($match != 4)"
 	set exit_code 1
 }
 
@@ -436,7 +419,7 @@ foreach option [array names sq_step_format] {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue is not responding\n"
+			log_error "squeue is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -444,19 +427,19 @@ foreach option [array names sq_step_format] {
 		}
 	}
 	if {$this_match == 0} {
-		send_user "\nFAILURE: failed to match $option with $sq_step_format($option)\n"
+		log_error "Failed to match $option with $sq_step_format($option)"
 		set exit_code 1
 	}
 }
 
 if {$match != $cnt} {
-	send_user "\nFAILURE: not all squeue outputs match ($match != $cnt)\n"
+	log_error "Not all squeue outputs match ($match != $cnt)"
 	set exit_code 1
 }
 
 cancel_job $job_id
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	log_error "Error waiting for job $job_id to complete"
 	set exit_code 1
 }
 
@@ -464,8 +447,6 @@ remove_acct "" $test_acct
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_err $file_out $file_in
-	send_user "\nSUCCESS\n"
 } else {
-	send_user "\nFAILURE\n"
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

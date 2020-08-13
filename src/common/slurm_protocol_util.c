@@ -40,13 +40,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_util.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmdbd/read_config.h"
 
@@ -75,9 +75,7 @@ int check_header_version(header_t * header)
 	} else if (header->version != check_version) {
 		switch (header->msg_type) {
 		case REQUEST_LAUNCH_TASKS:
-		case REQUEST_RUN_JOB_STEP:
 		case RESPONSE_LAUNCH_TASKS:
-		case RESPONSE_RUN_JOB_STEP:
 			if (working_cluster_rec) {
 				/* Disable job step creation/launch
 				 * between major releases. Other RPCs
@@ -165,14 +163,14 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t *msg, char *name)
 	int i;
 	int node_id = nodelist_find(msg->complete_nodelist, name);
 
-	debug3("job_id: %u", msg->job_id);
-	debug3("job_step_id: %u", msg->job_step_id);
-	if (msg->pack_step_cnt != NO_VAL)
-		debug3("pack_step_cnt: %u", msg->pack_step_cnt);
-	if (msg->pack_jobid != NO_VAL)
-		debug3("pack_jobid: %u", msg->pack_jobid);
-	if (msg->pack_offset != NO_VAL)
-		debug3("pack_offset: %u", msg->pack_offset);
+	debug3("job_id: %u", msg->step_id.job_id);
+	debug3("job_step_id: %u", msg->step_id.step_id);
+	if (msg->het_job_step_cnt != NO_VAL)
+		debug3("het_job_step_cnt: %u", msg->het_job_step_cnt);
+	if (msg->het_job_id != NO_VAL)
+		debug3("het_job_id: %u", msg->het_job_id);
+	if (msg->het_job_offset != NO_VAL)
+		debug3("het_job_offset: %u", msg->het_job_offset);
 	debug3("uid: %u", msg->uid);
 	debug3("gid: %u", msg->gid);
 	debug3("tasks_to_launch: %u", *(msg->tasks_to_launch));

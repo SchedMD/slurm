@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Confirm that node sharing flags are respected  (--nodelist and
 #          --oversubscribe options).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -34,15 +29,23 @@
 ############################################################################
 source ./globals
 
-set test_id      "17.17"
 set exit_code    0
 set file_err     "test$test_id.error"
 set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
 set job_id1      0
+set job_id2      0
 set nodelist_name ""
+set gpu_tot      0
+set job_tres_cnt 0
 
-print_header $test_id
+set timeout $max_job_delay
+
+set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:2"
+}
+set gpu_tot [dict get [get_gres_count "gpu" $node_name] $node_name]
 
 #
 # Submit a job and get the node's NodeName from the nodelist
@@ -50,12 +53,12 @@ print_header $test_id
 set timeout $max_job_delay
 set srun_pid [spawn $srun -v -N1 -l -t1 $bin_printenv SLURMD_NODENAME]
 expect {
-	-re "on host ($alpha_numeric_under)," {
+	-re "on host ($re_word_str)," {
 		set nodelist_name $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -64,12 +67,10 @@ expect {
 	}
 }
 if {[string compare $nodelist_name ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	exit 1
+	fail "Did not get hostname of task 0"
 }
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "Additional testing is incompatible with front-end systems"
 }
 
 #
@@ -91,17 +92,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
 		slow_kill $sbatch_pid
-		exit 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: sbatch failed to report jobid\n"
-	exit 1
+	fail "sbatch failed to report jobid"
 }
 
 set partition "dummy"
@@ -113,15 +112,14 @@ expect {
 		set waited 0
 		exp_continue
 	}
-	-re "Partition=($alpha_numeric_under)" {
+	-re "Partition=($re_word_str)" {
 		set partition $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
 		cancel_job $job_id1
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -131,7 +129,7 @@ if {$waited == 0} {
 	spawn $scontrol show partition
 	expect {
 		-re "OverSubscribe=FORCE" {
-			send_user "\nWARNING: Test incompatible with OverSubscribe=FORCE\n"
+			log_warn "Test incompatible with OverSubscribe=FORCE"
 			set waited 1
 			exp_continue
 		}
@@ -141,13 +139,54 @@ if {$waited == 0} {
 	}
 }
 if {$waited == 0} {
-	send_user "\nFAILURE: srun failed to wait for non-sharing job to complete\n"
+	fail "srun failed to wait for non-sharing job to complete"
+}
+
+#
+# Verify that all GPUs are allocated with the --exclusive flag
+#
+set sbatch_pid2 [spawn $sbatch -t1 -N1 -w $node_name --gres=gpu --exclusive --output=$file_out $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		log_error "sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id2 == 0} {
+	log_error "sbatch failed to report jobid\n"
+	set exit_code 1
+}
+
+if {[wait_for_job $job_id2 "RUNNING"] != 0} {
+	log_error "waiting for job to start running\n"
+	set exit_code 1
+}
+
+set job_gpu_cnt [get_job_gpu_cnt $job_id2]
+
+if {$gpu_tot != $job_gpu_cnt} {
+	log_error "Job didn't allocate all GPUs ($gpu_tot != $job_gpu_cnt)"
+	set exit_code 1
+} else {
+	log_info "Node GPU count matches Job GPU count ($gpu_tot == $job_gpu_cnt)"
+}
+
+if {[wait_for_job $job_id2 "DONE"] != 0} {
+	log_error "job wasn't able to complete\n"
+	cancel_job $job_id2
 	set exit_code 1
 }
 
 cancel_job $job_id1
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_err $file_in $file_out
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

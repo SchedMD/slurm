@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Check sinfo formating options (--format option and SINFO_FORMAT
 #          environment variable).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,11 +29,8 @@
 ############################################################################
 source ./globals
 
-set test_id      "4.9"
 set exit_code    0
 set matches      0
-
-print_header $test_id
 
 #
 # Check the sinfo format output via command line
@@ -48,12 +41,12 @@ print_header $test_id
 set format "--format=partition=%P node_cnt=%D"
 spawn $sinfo --noheader $format
 expect {
-	-re "partition=($alpha_numeric_under).* node_cnt=($number)" {
+	-re "partition=($re_word_str).* node_cnt=($number)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -62,7 +55,7 @@ expect {
 }
 
 if {$matches == 0} {
-	send_user "\nFAILURE: sinfo format error\n"
+	log_error "sinfo format error"
 	set exit_code 1
 }
 
@@ -74,12 +67,12 @@ set matches      0
 set env(SINFO_FORMAT) "part=%P nodes=%D"
 spawn $sinfo --noheader
 expect {
-	-re "part=($alpha_numeric_under).* nodes=($number)" {
+	-re "part=($re_word_str).* nodes=($number)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -89,12 +82,10 @@ expect {
 unset env(SINFO_FORMAT)
 
 if {$matches == 0} {
-	send_user "\nFAILURE: sinfo format error\n"
-	set exit_code 1
+	fail "sinfo format error"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
 

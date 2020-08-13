@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of srun --mpi=list option.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2012 SchedMD LLC.
 # Written by Morris Jette <jette@schedmd.com>
@@ -30,11 +26,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.65"
 set exit_code   0
 set matches     0
-
-print_header $test_id
 
 #
 # Report the srun help message
@@ -50,7 +43,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -61,10 +54,8 @@ expect {
 
 set target_matches 2
 if {$matches < $target_matches} {
-	send_user "\nFAILURE: srun failed to report help message ($matches of $target_matches)\n"
-	set exit_code 1
+	fail "srun failed to report help message ($matches of $target_matches)"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -73,8 +73,7 @@ static void _opt_env(void)
 {
 	char *env_val;
 
-	if (slurmctld_conf.fed_params &&
-	    strstr(slurmctld_conf.fed_params, "fed_display"))
+	if (xstrstr(slurm_conf.fed_params, "fed_display"))
 		params.federation = true;
 
 	if ((env_val = getenv("SLURM_CLUSTERS"))) {
@@ -427,7 +426,7 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify,
 {
 	int i = 0;
 
-	assert (token != NULL);
+	xassert(token);
 
 	if (token[i] == '.') {
 		*right_justify = true;

@@ -699,7 +699,7 @@ extern int load_defaults(void)
 		s_p_get_string(&col_list, tmp_str, hashtbl);
 		xfree(tmp_str);
 		if (col_list) {
-			page_opts->col_list = list_create(slurm_destroy_char);
+			page_opts->col_list = list_create(xfree_ptr);
 			slurm_addto_char_list(page_opts->col_list, col_list);
 			xfree(col_list);
 		}

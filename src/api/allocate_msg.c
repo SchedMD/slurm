@@ -53,6 +53,7 @@
 #include "src/common/half_duplex.h"
 #include "src/common/net.h"
 #include "src/common/macros.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
@@ -66,7 +67,6 @@ struct allocation_msg_thread {
 	pthread_t id;
 };
 
-static uid_t slurm_uid;
 static void _handle_msg(void *arg, slurm_msg_t *msg);
 static pthread_mutex_t msg_thr_start_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t msg_thr_start_cond = PTHREAD_COND_INITIALIZER;
@@ -101,11 +101,9 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 	struct allocation_msg_thread *msg_thr = NULL;
 	int cc;
 	uint16_t *ports;
-	uint16_t eio_timeout;
 
 	debug("Entering slurm_allocation_msg_thr_create()");
 
-	slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	msg_thr = (struct allocation_msg_thread *)xmalloc(
 		sizeof(struct allocation_msg_thread));
 
@@ -133,8 +131,7 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 	debug("port from net_stream_listen is %hu", *port);
 	obj = eio_obj_create(sock, &message_socket_ops, (void *)msg_thr);
 
-	eio_timeout = slurm_get_srun_eio_timeout();
-	msg_thr->handle = eio_handle_create(eio_timeout);
+	msg_thr->handle = eio_handle_create(slurm_conf.eio_timeout);
 	if (!msg_thr->handle) {
 		error("failed to create eio handle");
 		xfree(msg_thr);
@@ -204,12 +201,8 @@ static void _handle_user_msg(struct allocation_msg_thread *msg_thr,
 static void _handle_ping(struct allocation_msg_thread *msg_thr,
 			     slurm_msg_t *msg)
 {
-	srun_ping_msg_t *ping = (srun_ping_msg_t *)msg->data;
 	debug3("received ping message");
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-
-	if (msg_thr->callback.ping != NULL)
-		(msg_thr->callback.ping)(ping);
 }
 
 static void _handle_job_complete(struct allocation_msg_thread *msg_thr,
@@ -304,7 +297,8 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 
-	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
+	if ((req_uid != slurm_conf.slurm_user_id) && (req_uid != 0) &&
+	    (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u",
 		       (unsigned int) req_uid);
 		return;

@@ -90,7 +90,7 @@ extern void update_assocs_in_resvs(void);
  * Update reserved nodes for all reservations using a specific partition if the
  * resevation has NodeList=ALL and RESERVE_FLAGS_PART_NODES.
 */
-extern void update_part_nodes_in_resv(struct part_record *part_ptr);
+extern void update_part_nodes_in_resv(part_record_t *part_ptr);
 
 /*
  * Load the reservation state from file, recover on slurmctld restart.
@@ -105,12 +105,21 @@ extern void update_part_nodes_in_resv(struct part_record *part_ptr);
 extern int load_all_resv_state(int recover);
 
 /*
+ * Request validation of all reservation records, reset bitmaps, etc.
+ * Will purge any invalid reservation.
+ *
+ * IN run_now - true: apply changes now if previously called
+ *              false: defer changes until called with run_now=true
+ */
+extern void validate_all_reservations(bool run_now);
+
+/*
  * Determine if a job request can use the specified reservations
  *
  * IN/OUT job_ptr - job to validate, set its resv_id and resv_type
  * RET SLURM_SUCCESS or error code (not found or access denied)
  */
-extern int validate_job_resv(struct job_record *job_ptr);
+extern int validate_job_resv(job_record_t *job_ptr);
 
 /*
  * Determine how many burst buffer resources the specified job is prevented
@@ -122,7 +131,7 @@ extern int validate_job_resv(struct job_record *job_ptr);
  * RET burst buffer reservation structure, call
  *	 slurm_free_burst_buffer_info_msg() to free
  */
-extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
+extern burst_buffer_info_msg_t *job_test_bb_resv(job_record_t *job_ptr,
 						 time_t when, bool reboot);
 
 /*
@@ -135,7 +144,7 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
  * IN reboot    - true if node reboot required to start job
  * RET number of licenses of this type the job is prevented from using
  */
-extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
+extern int job_test_lic_resv(job_record_t *job_ptr, char *lic_name,
 			     time_t when, bool reboot);
 
 /*
@@ -147,7 +156,7 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
  * IN reboot    - true if node reboot required to start job
  * RET amount of watts the job is prevented from using
  */
-extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when,
+extern uint32_t job_test_watts_resv(job_record_t *job_ptr, time_t when,
 				    bool reboot);
 
 /*
@@ -171,7 +180,7 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when,
  *	ESLURM_NODES_BUSY job has no reservation, but required nodes are
  *			  reserved
  */
-extern int job_test_resv(struct job_record *job_ptr, time_t *when,
+extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			 bool move_time, bitstr_t **node_bitmap,
 			 bitstr_t **exc_core_bitmap, bool *resv_overlap,
 			 bool reboot);
@@ -182,7 +191,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
  * the reservation. Additional nodes will be added to the reservation from
  * those currently available.
  */
-extern void job_claim_resv(struct job_record *job_ptr);
+extern void job_claim_resv(job_record_t *job_ptr);
 
 /*
  * Determine the time of the first reservation to end after some time.
@@ -199,11 +208,11 @@ extern time_t find_resv_end(time_t start_time);
  * IN job_ptr      - job to test
  * RET	SLURM_SUCCESS if runable now, otherwise an error code
  */
-extern int job_test_resv_now(struct job_record *job_ptr);
+extern int job_test_resv_now(job_record_t *job_ptr);
 
 /* Adjust a job's time_limit and end_time as needed to avoid using
  *	reserved resources. Don't go below job's time_min value. */
-extern void job_time_adj_resv(struct job_record *job_ptr);
+extern void job_time_adj_resv(job_record_t *job_ptr);
 
 /*
  * Scan all jobs for valid reservations
@@ -213,5 +222,21 @@ extern void job_time_adj_resv(struct job_record *job_ptr);
  *	being actively used.
  */
 extern void job_resv_check(void);
+
+/*
+ * Tests if job_ptr is borrowing from a reservation a preempting job
+ * (preemptor_ptr) wants to use or not.
+ */
+extern bool job_borrow_from_resv_check(job_record_t *job_ptr,
+				       job_record_t *preemptor_ptr);
+
+
+extern void job_resv_append_magnetic(job_queue_req_t *job_queue_req);
+
+extern void job_resv_clear_magnetic_flag(job_record_t *job_ptr);
+
+extern bool validate_resv_uid(char *resv_name, uid_t uid);
+
+extern void reservation_update_groups(int force);
 
 #endif /* !_RESERVATION_H */

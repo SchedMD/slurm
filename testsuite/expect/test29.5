@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          validate smd -r (--replace-node) option.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -13,7 +9,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "29.5"
 set file_in     "test$test_id.script"
 set node_name   ""
 set job_id      0
@@ -21,29 +16,25 @@ set exit_code   0
 
 # this test is for the nonstop --replace-node test
 
-print_header $test_id
-
 if {![slurmctld_plug_stack_nonstop]} {
-	send_user "\nWARNING: This test is only compatible when SlurmctldPlugstack includes nonstop.\n"
-	exit $exit_code
+	skip "This test is only compatible when SlurmctldPlugstack includes nonstop"
 }
 if {![test_super_user]} {
-	send_user "\nWARNING: This test is only suitable for a super user (to restore down nodes).\n"
-	exit $exit_code
+	skip "This test is only suitable for a super user (to restore down nodes)"
 }
 
 proc get_node {job_id} {
-	global scontrol squeue alpha_numeric_nodelist alpha_numeric_under exit_code
+	global scontrol squeue re_word_str re_word_str exit_code
 
 	set node_list ""
 	spawn $squeue -j $job_id --noheader -o NodeList=%N
 	expect {
-		-re "NodeList=($alpha_numeric_nodelist)" {
+		-re "NodeList=($re_word_str)" {
 			set node_list $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue is not responding\n"
+			log_error "squeue is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -54,12 +45,12 @@ proc get_node {job_id} {
 	set node_name ""
 	spawn $scontrol show hostnames $node_list
 	expect {
-		-re "($alpha_numeric_under)" {
+		-re "($re_word_str)" {
 			set node_name $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -76,7 +67,7 @@ proc reset_state {node} {
 	spawn $scontrol update NodeName=$node State=RESUME
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -98,7 +89,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -106,7 +97,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
+	log_error "sbatch did not submit job"
 	set exit_code 1
 }
 
@@ -114,9 +105,8 @@ if {$job_id == 0} {
 # Wait for job to start
 #
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-        send_user "\nFAILURE: waiting for job to start\n"
         cancel_job $job_id
-        exit 1
+        fail "Waiting for job to start"
 }
 set node_name [get_node $job_id]
 
@@ -127,12 +117,12 @@ set sub_match 0
 spawn $smd -r $node_name $job_id
 expect {
 	-re "The specified node has not failed" {
-		send_user "\nThis error is expected.\n"
+		log_debug "This error is expected"
 		set sub_match 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: smd is not reponding\n"
+		log_error "smd is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -140,7 +130,7 @@ expect {
 	}
 }
 if {$sub_match != 1} {
-	send_user "\nFAILURE: there are nodes that are drained when there should not be\n"
+	log_error "There are nodes that are drained when there should not be"
 	set exit_code 1
 }
 
@@ -155,7 +145,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: smd is not reponding\n"
+		log_error "smd is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -163,7 +153,7 @@ expect {
 	}
 }
 if {$sub_match != 1} {
-	send_user "\nFAILURE: smd did not drain node\n"
+	log_error "smd did not drain node"
 	set exit_code 1
 }
 
@@ -178,7 +168,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: smd is not reponding\n"
+		log_error "smd is not reponding"
 		set exit_code 0
 	}
 	eof {
@@ -187,7 +177,7 @@ expect {
 
 }
 if {$sub_match != 1} {
-	send_user "\nFAILURE: smd did not replace the node\n"
+	log_error "smd did not replace the node"
 	set exit_code
 }
 
@@ -197,6 +187,6 @@ reset_state $node_name
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

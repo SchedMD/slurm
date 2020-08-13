@@ -77,8 +77,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			uint32_t id = 0;
 
 			if (!txn_cond->id_list)
-				txn_cond->id_list =
-					list_create(slurm_destroy_char);
+				txn_cond->id_list = list_create(xfree_ptr);
 
 			if (slurm_addto_char_list(txn_cond->id_list,
 						 argv[i]+end))
@@ -97,16 +96,14 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Accounts",
 					 MAX(command_len, 3))) {
 			if (!txn_cond->acct_list)
-				txn_cond->acct_list =
-					list_create(slurm_destroy_char);
+				txn_cond->acct_list = list_create(xfree_ptr);
 			if (slurm_addto_char_list(txn_cond->acct_list,
 						 argv[i]+end))
 				set = 1;
 		} else if (!xstrncasecmp(argv[i], "Action",
 					 MAX(command_len, 4))) {
 			if (!txn_cond->action_list)
-				txn_cond->action_list =
-					list_create(slurm_destroy_char);
+				txn_cond->action_list = list_create(xfree_ptr);
 
 			if (addto_action_char_list(txn_cond->action_list,
 						  argv[i]+end))
@@ -116,16 +113,14 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Actors",
 					 MAX(command_len, 4))) {
 			if (!txn_cond->actor_list)
-				txn_cond->actor_list =
-					list_create(slurm_destroy_char);
+				txn_cond->actor_list = list_create(xfree_ptr);
 			if (slurm_addto_char_list(txn_cond->actor_list,
 						 argv[i]+end))
 				set = 1;
 		} else if (!xstrncasecmp(argv[i], "Clusters",
 					 MAX(command_len, 3))) {
 			if (!txn_cond->cluster_list)
-				txn_cond->cluster_list =
-					list_create(slurm_destroy_char);
+				txn_cond->cluster_list = list_create(xfree_ptr);
 			if (slurm_addto_char_list(txn_cond->cluster_list,
 						 argv[i]+end))
 				set = 1;
@@ -143,8 +138,7 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Users",
 					 MAX(command_len, 1))) {
 			if (!txn_cond->user_list)
-				txn_cond->user_list =
-					list_create(slurm_destroy_char);
+				txn_cond->user_list = list_create(xfree_ptr);
 			if (slurm_addto_char_list_with_case(txn_cond->user_list,
 							    argv[i]+end,
 							    user_case_norm))
@@ -173,7 +167,7 @@ extern int sacctmgr_list_txn(int argc, char **argv)
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(slurm_destroy_char);
+	List format_list = list_create(xfree_ptr);
 	List print_fields_list; /* types are of print_field_t */
 
 	for (i=0; i<argc; i++) {

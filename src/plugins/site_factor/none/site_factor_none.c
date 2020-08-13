@@ -92,7 +92,7 @@ extern void site_factor_p_reconfig(void)
 	return;
 }
 
-extern void site_factor_p_set(struct job_record *job_ptr)
+extern void site_factor_p_set(job_record_t *job_ptr)
 {
 	/*
 	 * Set initial value for the admin_factor here.
@@ -111,7 +111,7 @@ extern void site_factor_p_set(struct job_record *job_ptr)
  */
 static int _update(void *x, void *ignored)
 {
-	struct job_record *job_ptr = (struct job_record *) x;
+	job_record_t *job_ptr = (job_record_t *) x;
 
 	/*
 	 * You will usually only want to change the priority for

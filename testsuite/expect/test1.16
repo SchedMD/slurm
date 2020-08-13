@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Confirm that srun buffering can be disabled (--unbuffered option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,13 +28,10 @@
 ############################################################################
 source ./globals
 
-set test_id            "1.16"
 set exit_code          0
 set job_id             0
 set matches            0
 set scratch_file       "scratch.$test_id"
-
-print_header $test_id
 
 #
 # Create a scratch file
@@ -52,7 +45,7 @@ exec $bin_touch $scratch_file
 set timeout $max_job_delay
 set srun_pid [spawn $srun --unbuffered --verbose -t1 $bin_rm -f -i $scratch_file]
 expect {
-	-re "launching ($number).0 on host" {
+	-re "launching StepId=($number).0 on host" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
@@ -62,7 +55,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -76,11 +69,9 @@ expect {
 #
 
 if {$matches != 1} {
-	send_user "\nFAILURE: srun --unbuffered option failure\n"
 	exec $bin_rm -f $scratch_file
-	set exit_code 1
+	fail "srun --unbuffered option failure"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

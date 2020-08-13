@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate requeue'ing of federated jobs.
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2013 SchedMD LLC
 # Written by Brian Christiansen <brian@schedmd.com>
@@ -33,7 +28,6 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set test_id             "37.5"
 set long_script         "test$test_id\.long"
 set complete_script     "test$test_id\.bash"
 set exit_script         "test$test_id\.exit"
@@ -52,39 +46,31 @@ set origin_cluster      ""
 set non_origin_clusters ""
 set dbd_delay           10
 
-print_header $test_id
-
 #
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator.\n \
-	 	  Use: sacctmgr mod user \$USER set admin=admin."
-	exit 0
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
 set min_age [get_min_job_age]
 if {$min_age < 10} {
-	log_warn "MinJobAge too low for this test ($min_age < 10)"
-	exit 0
+	skip "MinJobAge too low for this test ($min_age < 10)"
 }
 
 if {[test_federation_setup]} {
-	log_warn "WARNING: This test can't be run without fed_slurm_base,\
-		fedc1, fedc2, fedc3 setup in globals.local."
-	exit 0
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
 }
 
 if {[test_all_up]} {
-	exit 0
+	pass
 }
 
-proc cancel_all_jobs { } {
+proc cancel_federation_jobs { } {
 	global bin_sleep scancel user_name fedc1 fedc2 fedc3
 
 	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
@@ -101,7 +87,7 @@ proc cleanup { } {
 		long_script complete_script fail_script exit_script \
 		exithold_script file_out
 
-	cancel_all_jobs
+	cancel_federation_jobs
 	exec $bin_rm -f $long_script $complete_script $fail_script \
 			$exit_script $exithold_script $file_out
 
@@ -111,10 +97,10 @@ proc cleanup { } {
 proc end_it { exit_code } {
 	global test_id
 	cleanup
-	if {$exit_code == 0} {
-		print_success $test_id
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
+	pass
 }
 
 proc check_ctl_state { job_id state cluster } {
@@ -128,7 +114,7 @@ proc check_ctl_state { job_id state cluster } {
 			exp_continue
 		}
 		timeout {
-			log_error "FAILURE: scontrol is not responding"
+			log_error "scontrol is not responding"
 			end_it 1
 		}
 		eof {
@@ -153,7 +139,7 @@ proc check_missing_job { job_id cluster } {
 			exp_continue
 		}
 		timeout {
-			log_error "FAILURE: scontrol is not responding"
+			log_error "scontrol is not responding"
 			end_it 1
 		}
 		eof {
@@ -351,7 +337,7 @@ proc check_restart_cnt { file cnt } {
 
 spawn $bin_id -un
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set user_name $expect_out(1,string)
 	}
 	eof {
@@ -371,7 +357,7 @@ proc get_slurm_conf { cluster } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			slow_kill $scon_pid
 			set exit_code 1
 		}
@@ -421,7 +407,7 @@ if {$requeue_exithold_num} {
 
 
 # get number of nodes per cluster
-set node_count [available_nodes "" ""]
+set node_count [available_nodes]
 
 set origin_cluster [get_cluster_name]
 set all_cluster_list [list $fedc1 $fedc2 $fedc3]
@@ -430,9 +416,9 @@ set non_origin_clusters [join $non_origin_cluster_list ","]
 log_info "Origin: $origin_cluster non-origins: $non_origin_clusters"
 
 
-send_user "\n################################################################\n"
-send_user "Test requeue of a running job on origin cluster"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test requeue of a running job on origin cluster"
+log_info "################################################################"
 
 # Submit jobs that fill up fed2,fed3
 spawn $sbatch -N$node_count --exclusive -o /dev/null -e /dev/null -t999999 --requeue -M$fedc2 $long_script
@@ -482,7 +468,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "FAILURE: sbatch is not responding"
+		log_error "sbatch is not responding"
 		end_it 1
 	}
 	eof {
@@ -491,7 +477,7 @@ expect {
 }
 
 if { $job_id == 0 } {
-	log_error "FAILURE: sbatch did not submit job"
+	log_error "sbatch did not submit job"
 	end_it 1
 }
 
@@ -532,10 +518,9 @@ if {[cancel_job $job_id]} {
 	end_it 1
 }
 
-
-send_user "\n################################################################\n"
-send_user "Test requeue of a completed job on origin cluster"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test requeue of a completed job on origin cluster"
+log_info "################################################################"
 
 spawn $sbatch -N$node_count --exclusive -o /dev/null -e /dev/null -t1 --requeue $complete_script
 expect {
@@ -599,10 +584,9 @@ if {[cancel_job $job_id]} {
 	end_it 1
 }
 
-
-send_user "\n################################################################\n"
-send_user "Test requeue of a failed job on origin cluster"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test requeue of a failed job on origin cluster"
+log_info "################################################################"
 set job_id 0
 spawn $sbatch -N1 -o /dev/null -e /dev/null -t 1 --requeue $fail_script
 expect {
@@ -611,7 +595,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		end_it 1
 	}
 	eof {
@@ -620,7 +604,7 @@ expect {
 }
 
 if { $job_id == 0 } {
-	send_user "\nFAILURE: sbatch did not submit job\n"
+	log_error "sbatch did not submit job"
 	end_it 1
 }
 
@@ -667,10 +651,9 @@ if {[cancel_job $long_running_job_id2]} {
 	end_it 1
 }
 
-
-send_user "\n################################################################\n"
-send_user "Test requeue of running job on sibling cluster"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test requeue of running job on sibling cluster"
+log_info "################################################################"
 
 # Submit job that consumes all nodes on first cluster
 spawn $sbatch -N$node_count --exclusive -o /dev/null -e /dev/null -t999999 --requeue -M$origin_cluster $long_script
@@ -765,9 +748,9 @@ if {[cancel_job $job_id]} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Test requeue on subset of siblings"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test requeue on subset of siblings"
+log_info "################################################################"
 
 spawn $sbatch -N$node_count --exclusive -o /dev/null -e /dev/null -t1 --requeue -M$fedc1,$fedc2 $complete_script
 expect {
@@ -836,9 +819,9 @@ if {[cancel_job $job_id]} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Test requeue of a completed job that ran on sibling"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test requeue of a completed job that ran on sibling"
+log_info "################################################################"
 
 # long running job is already running on origin cluster so job should go to
 # other cluster
@@ -914,9 +897,9 @@ check_ctl_state $job_id PENDING $fedc1
 check_ctl_state $job_id PENDING $fedc2
 check_ctl_state $job_id PENDING $fedc3
 
-send_user "\n################################################################\n"
-send_user "Test that SLURM_RESTART_COUNT is set for job requeued on sibling"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test that SLURM_RESTART_COUNT is set for job requeued on sibling"
+log_info "################################################################"
 
 set run_cluster [wait_for_fed_job $job_id RUNNING $non_origin_clusters]
 if {[string compare $run_cluster ""] == 0} {
@@ -950,9 +933,9 @@ if {[cancel_job $job_id]} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Test requeue of a cancelled job that ran on sibling"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test requeue of a cancelled job that ran on sibling"
+log_info "################################################################"
 
 # long running job is already running on origin cluster so job should go to
 # other cluster
@@ -1048,9 +1031,9 @@ if {[cancel_job $job_id]} {
 }
 
 
-send_user "\n################################################################\n"
-send_user "Test scontrol requeuehold,release of a running sibling job"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test scontrol requeuehold,release of a running sibling job"
+log_info "################################################################"
 
 # long running job is already running on origin cluster so job should go to
 # other cluster
@@ -1145,10 +1128,9 @@ if {[string compare $run_cluster $origin_cluster] == 0} {
 
 check_restart_cnt $file_out 1
 
-
-send_user "\n################################################################\n"
-send_user "Test scontrol requeuehold,release of a completed sibling job"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test scontrol requeuehold,release of a completed sibling job"
+log_info "################################################################"
 
 # Just let previous job finish and then requeue it.
 
@@ -1214,10 +1196,9 @@ if {[cancel_job $job_id]} {
 	end_it 1
 }
 
-
-send_user "\n################################################################\n"
-send_user "Test scontrol requeuehold specialexit,release of a running sibling job"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test scontrol requeuehold specialexit,release of a running sibling job"
+log_info "################################################################"
 
 # long running job is already running on origin cluster so job should go to
 # other cluster
@@ -1312,9 +1293,9 @@ if {[string compare $run_cluster $origin_cluster] == 0} {
 
 check_restart_cnt $file_out 1
 
-send_user "\n################################################################\n"
-send_user "Test scontrol requeuehold specialexit,release of a completed sibling job"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test scontrol requeuehold specialexit,release of a completed sibling job"
+log_info "################################################################"
 
 # Just let previous job finish and then requeue it.
 
@@ -1381,11 +1362,10 @@ if {[cancel_job $job_id]} {
 	end_it 1
 }
 
-
 if {$requeue_exit_num} {
-	send_user "\n################################################################\n"
-	send_user "Test RequeueExit=#"
-	send_user "\n################################################################\n"
+	log_info "################################################################"
+	log_info "Test RequeueExit=#"
+	log_info "################################################################"
 
 	spawn $sbatch -N$node_count --exclusive -o $file_out -e /dev/null -t1 --requeue $exit_script
 	expect {
@@ -1458,9 +1438,9 @@ if {$requeue_exit_num} {
 }
 
 if {$requeue_exit_num} {
-	send_user "\n################################################################\n"
-	send_user "Test RequeueExitHold=#"
-	send_user "\n################################################################\n"
+	log_info "################################################################"
+	log_info "Test RequeueExitHold=#"
+	log_info "################################################################"
 
 	spawn $sbatch -N$node_count --exclusive -o $file_out -e /dev/null -t1 --requeue $exithold_script
 	expect {

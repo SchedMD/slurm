@@ -11,6 +11,7 @@
 <li><a href="#env_var">Environment Variables</a></li>
 <li><a href="#examples">Examples</a></li>
 <li><a href="#limitations">Limitations</a></li>
+<li><a href="#het_steps">Heterogeneous Steps</a></li>
 <li><a href="#sys_admin">System Administrator Information</a></li>
 </ul>
 
@@ -37,7 +38,7 @@ $ sbatch --cpus-per-task=4 --mem-per-cpu=1  --ntasks=128 : \
 <p>Options specified for one component of a heterogeneous job (or job step) will
 be used for subsequent components to the extent which is expected to be helpful.
 Propagated options can be reset as desired for each component (e.g. a different
-account name could be specified for each job component.
+account name could be specified for each hetjob component.
 For example, <i>--immediate</i> and <i>--job-name</i> are propagated, while
 <i>--ntasks</i> and <i>--mem-per-cpu</i> are reset to default values for each
 component.
@@ -46,7 +47,6 @@ A list of propagated options follows.</p>
 <li>--account</li>
 <li>--acctg-freq</li>
 <li>--begin</li>
-<li>--checkpoint</li>
 <li>--cluster-constraint</li>
 <li>--clusters</li>
 <li>--comment</li>
@@ -120,10 +120,10 @@ fashion on nodes "nid00003" and "nid00004" as shown below.</p>
 </table>
 <br>
 
-<p>Some options should be specified only in the first job component.
-For example, specifying a batch job output file in the second job component's
-options will result in the first job component (where the batch script executes)
-using the default output file name.</p>
+<p>Some options should be specified only in the first hetjob component.
+For example, specifying a batch job output file in the second hetjob component's
+options will result in the first hetjob component (where the batch script
+executes) using the default output file name.</p>
 
 <p>Environment variables used to specify default options for the job submit
 command will be applied to every component of the heterogeneous job
@@ -131,12 +131,12 @@ command will be applied to every component of the heterogeneous job
 
 <p>Batch job options can be included in the submitted script for multiple
 heterogeneous job components. Each component should be separated by a line
-containing the line "#SBATCH packjob" as shown below.</p>
+containing the line "#SBATCH hetjob" as shown below.</p>
 <pre>
 $ cat new.bash
 #!/bin/bash
 #SBATCH --cpus-per-task=4 --mem-per-cpu=16g --ntasks=1
-#SBATCH packjob
+#SBATCH hetjob
 #SBATCH --cpus-per-task=2 --mem-per-cpu=1g  --ntasks=8
 
 srun run.app
@@ -189,14 +189,14 @@ A sample batch script demonstrating this for a Cray system is appended.</p>
 #SBATCH --nodes=1 --constraint=haswell
 #BB create_persistent name=alpha capacity=10 access=striped type=scratch
 #DW persistentdw name=alpha
-#SBATCH packjob
+#SBATCH hetjob
 #SBATCH --nodes=16 --constraint=knl
 #DW persistentdw name=alpha
 ...
 </pre>
 
 <p><b>NOTE:</b> Cray's DataWarp interface directly reads the job script, but
-has no knowledge of "Slurm's "packjob" directive, so Slurm internally rebuilds
+has no knowledge of "Slurm's "hetjob" directive, so Slurm internally rebuilds
 the script for each job component so that only that job components burst buffer
 directives are included in that script. The batch script first component of the
 job will be modified in order to replace the "#DW" directives of other
@@ -214,7 +214,7 @@ above. An example is shown below:</p>
 #SBATCH --nodes=1 --constraint=haswell
 #BB create_persistent name=alpha capacity=10 access=striped type=scratch
 #DW persistentdw name=alpha
-#SBATCH packjob
+#SBATCH hetjob
 #SBATCH --nodes=16 --constraint=knl
 #EXCLUDED DW persistentdw name=alpha
 ...
@@ -234,23 +234,23 @@ exit 0
 <ul>
 <li><i>job_id</i>: Each component of a heterogeneous job will have its own
 unique <i>job_id</i>.</li>
-<li><i>pack_job_id</i>: This identification number applies to all components
+<li><i>het_job_id</i>: This identification number applies to all components
 of the heterogeneous job. All components of the same job will have the same
-<i>pack_job_id</i> value and it will be equal to the <i>job_id</i> of the
+<i>het_job_id</i> value and it will be equal to the <i>job_id</i> of the
 first component. We refer to this as the "heterogeneous job leader".</li>
-<li><i>pack_job_id_set</i>: Regular expression identifying all <i>job_id</i>
+<li><i>het_job_id_set</i>: Regular expression identifying all <i>job_id</i>
 values associated with the job.</li>
-<li><i>pack_job_offset</i>: A unique sequence number applied to each component
-of the heterogeneous job. The first component will have a <i>>pack_job_offset</i>
+<li><i>het_job_offset</i>: A unique sequence number applied to each component
+of the heterogeneous job. The first component will have a <i>het_job_offset</i>
 value of 0, the next a value of 1, etc.</li>
 </ul>
 
 <table width="100%" border=1 cellspacing=0 cellpadding=4>
 <tr>
   <th width="25%"><b>job_id</b></th>
-  <th width="25%"><b>pack_job_id</b></th>
-  <th width="25%"><b>pack_job_offset</b></th>
-  <th width="25%"><b>pack_job_id_set</b></th>
+  <th width="25%"><b>het_job_id</b></th>
+  <th width="25%"><b>het_job_offset</b></th>
+  <th width="25%"><b>het_job_id_set</b></th>
  </tr>
 
 <tr><td>123</td><td>123</td><td>0</td><td>123-127</td></tr>
@@ -261,11 +261,11 @@ value of 0, the next a value of 1, etc.</li>
 </table>
 <p>Table 1: Example job IDs</p>
 
-<p>The <i>smap</i>, <i>smap</i>, <i>squeue</i> and <i>sview</i> report the
+<p>The <i>squeue</i> and <i>sview</i> commands report the
 components of a heterogeneous job using the format
-"&lt;pack_job_id&gt;+&lt;pack_job_offset&gt;".
-For example "123+4" would represent heterogeneous job id 123 and it's fifth
-component (note: the first component has a <i>pack_job_offset</i> value of 0).</p>
+"&lt;het_job_id&gt;+&lt;het_job_offset&gt;".
+For example "123+4" would represent heterogeneous job id 123 and its fifth
+component (note: the first component has a <i>het_job_offset</i> value of 0).</p>
 
 <p>A request for a specific job ID that identifies a ID of the first component
 of a heterogeneous job (i.e. the "heterogeneous job leader") will return
@@ -299,7 +299,7 @@ JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
 </pre>
 
 <p>While a heterogeneous job is in pending state, only the entire job can be
-cancelled rather than it's individual components.
+cancelled rather than its individual components.
 A request to cancel an individual component of a heterogeneous job not in
 pending state will return an error.
 After the job has begun execution, the individual component can be cancelled.</p>
@@ -311,11 +311,11 @@ ignored.</p>
 
 <p>Requests to modify an individual component of a job using the scontrol
 command must specify the job ID with the "#+#" notation.
-A request to modify a job by specifying the pack_job_id will modify all
+A request to modify a job by specifying the het_job_id will modify all
 components of a heterogeneous job.
 For example:</p>
 <pre>
-# Change the account of compnent 2 of heterogeneous job 123:
+# Change the account of component 2 of heterogeneous job 123:
 $ scontrol update jobid=123+2 account=abc
 
 # Change the time limit of all components of heterogeneous job 123:
@@ -342,12 +342,12 @@ $ sbcast --jobid=123.1 app1 /tmp/app1
 </pre>
 
 <p>The srun commands --bcast option will transfer files to the nodes associated
-with the application to be launched as specified by the --pack-group option.</p>
+with the application to be launched as specified by the --het-group option.</p>
 
 <p>Slurm has a configuration option to control behavior of some commands with
 respect to heterogeneous jobs.
 By default a request to cancel, hold or release a job ID that is not the
-pack_job_id, but that of a job component will only operate that one component
+het_job_id, but that of a job component will only operate that one component
 of the heterogeneous job.
 If SchedulerParameters configuration parameter includes the option
 "whole_hetjob" then the operation would apply to all components of the job if
@@ -369,16 +369,16 @@ $ scancel 94 (where job ID 94 is equivalent to 93+1)
 
 <h3>Accounting</h3>
 
-<p>Slurm's accounting database records the pack_job_id and pack_job_offset
+<p>Slurm's accounting database records the het_job_id and het_job_offset
 fields.
 The sacct command reports job's using the format
-"&lt;pack_job_id&gt;+&lt;pack_job_offset&gt;" and can accept a job ID
+"&lt;het_job_id&gt;+&lt;het_job_offset&gt;" and can accept a job ID
 specification for filtering using the same format.
-If a pack_job_id value is specified as a job filter, then information about
+If a het_job_id value is specified as a job filter, then information about
 all components of that job will be reported as shown below by default.
 The <i>--whole-hetjob=[yes|no]</i> option can be used to force to report
 the information about all the components of that job or just about the specific
-component requested, no matter if the job filter includes the pack_job_id
+component requested, no matter if the job filter includes the het_job_id
 (leader) or not.
 </p>
 
@@ -412,23 +412,23 @@ $ sacct -j 67767+1 --whole-hetjob=yes
 By default, the application is launched only on the first component of a
 heterogeneous job, but options are available to support different behaviors.</p>
 
-<p>srun's "--pack-group" option defines which pack job component(s) are to have
-applications launched for them. The --pack-group option takes an expression
+<p>srun's "--het-group" option defines which hetjob component(s) are to have
+applications launched for them. The --het-group option takes an expression
 defining which component(s) are to launch an application for an individual
 execution of the srun command. The expression can contain one or more component
 index values in a comma separated list. Ranges of index values can be specified
 in a hyphen separated list. By default, an application is launched only on
 component number zero. Some examples follow:</p>
 <ul>
-<li>--pack-group=2</li>
-<li>--pack-group=0,4</li>
-<li>--pack-group=1,3-5</li>
+<li>--het-group=2</li>
+<li>--het-group=0,4</li>
+<li>--het-group=1,3-5</li>
 </ul>
 
 <p><b>IMPORTANT:</b> The ability to execute a single application across more
 than one job allocation does not work with all MPI implementations or Slurm MPI
 plugins. Slurm's ability to execute such an application can be disabled on the
-entire cluster by adding "disable_hetero_steps" to Slurm's SchedulerParameters
+entire cluster by adding "disable_hetjob_steps" to Slurm's SchedulerParameters
 configuration parameter.</p>
 
 <p><b>IMPORTANT:</b> While the srun command can be used to launch heterogeneous
@@ -459,7 +459,7 @@ $ srun --label -n2 : -n1 hostname
 <p>If multiple srun commands are executed concurrently, this may result in resource
 contention (e.g. memory limits preventing some job steps components from being
 allocated resources because of two srun commands executing at the same time).
-If the srun --pack-group option is used to create multiple job steps (for the
+If the srun --het-group option is used to create multiple job steps (for the
 different components of a heterogeneous job), those job steps will be created
 sequentially.
 When multiple srun commmands execute at the same time, this may result in some
@@ -474,35 +474,35 @@ the step ID values for individual job components.</p>
 $ salloc -n1 : -n2 beta bash
 salloc: Pending job allocation 1721
 salloc: Granted job allocation 1721
-$ srun --pack-group=0,1 true   # Launches steps 1721.0 and 1722.0
-$ srun --pack-group=0   true   # Launches step  1721.1, no 1722.1
-$ srun --pack-group=0,1 true   # Launches steps 1721.2 and 1722.2
+$ srun --het-group=0,1 true   # Launches steps 1721.0 and 1722.0
+$ srun --het-group=0   true   # Launches step  1721.1, no 1722.1
+$ srun --het-group=0,1 true   # Launches steps 1721.2 and 1722.2
 </pre>
 
-<p>The maximum pack-group specified in a job step allocation (either explicitly
+<p>The maximum het-group specified in a job step allocation (either explicitly
 specified or implied by the ":" separator) must not exceed the number of
 components in the heterogeneous job allocation. For example</p>
 <pre>
 $ salloc -n1 -C alpha : -n2 -C beta bash
 salloc: Pending job allocation 1728
 salloc: Granted job allocation 1728
-$ srun --pack-group=0,1 hostname
+$ srun --het-group=0,1 hostname
 nid00001
 nid00008
 nid00008
 $ srun hostname : date : id
-error: Attempt to run a job step with pack-group value of 2,
+error: Attempt to run a job step with het-group value of 2,
        but the job allocation has maximum value of 1
 </pre>
 
 <h2><a name="env_var">Environment Variables</a></h2>
 
 <p>Slurm environment variables will be set independently for each component of
-the job by appending "_PACK_GROUP_" and a sequence number the usual name.
+the job by appending "_HET_GROUP_" and a sequence number the usual name.
 In addition, the "SLURM_JOB_ID" environment variable will contain the job ID
-of the heterogeneous job leader and "SLURM_PACK_SIZE" will contain the number of
-components in the job. If using srun with a single specific pack group (for
-instance --pack-group=1) "SLURM_JOB_ID" will contain the job ID of that specific
+of the heterogeneous job leader and "SLURM_HET_SIZE" will contain the number of
+components in the job. If using srun with a single specific het group (for
+instance --het-group=1) "SLURM_JOB_ID" will contain the job ID of that specific
 component, behaving like a regular (non-heterogeneous job). For example:</p>
 <pre>
 $ salloc -N1 : -N2 bash
@@ -511,17 +511,17 @@ salloc: job 11741 queued and waiting for resources
 salloc: job 11741 has been allocated resources
 $ env | grep SLURM
 SLURM_JOB_ID=11741
-SLURM_PACK_SIZE=2
-SLURM_JOB_ID_PACK_GROUP_0=11741
-SLURM_JOB_ID_PACK_GROUP_1=11742
-SLURM_JOB_NODES_PACK_GROUP_0=1
-SLURM_JOB_NODES_PACK_GROUP_1=2
-SLURM_JOB_NODELIST_PACK_GROUP_0=nid00001
-SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
+SLURM_HET_SIZE=2
+SLURM_JOB_ID_HET_GROUP_0=11741
+SLURM_JOB_ID_HET_GROUP_1=11742
+SLURM_JOB_NODES_HET_GROUP_0=1
+SLURM_JOB_NODES_HET_GROUP_1=2
+SLURM_JOB_NODELIST_HET_GROUP_0=nid00001
+SLURM_JOB_NODELIST_HET_GROUP_1=nid[00011-00012]
 ...
-$ srun --pack-group=1 printenv SLURM_JOB_ID
+$ srun --het-group=1 printenv SLURM_JOB_ID
 11742
-$ srun --pack-group=0 printenv SLURM_JOB_ID
+$ srun --het-group=0 printenv SLURM_JOB_ID
 11741
 </pre>
 
@@ -537,13 +537,13 @@ salloc: job 11751 queued and waiting for resources
 salloc: job 11751 has been allocated resources
 $ env | grep SLURM
 SLURM_JOB_ID=11751
-SLURM_PACK_SIZE=2
-SLURM_JOB_ID_PACK_GROUP_0=11751
-SLURM_JOB_ID_PACK_GROUP_1=11752
-SLURM_JOB_NODELIST_PACK_GROUP_0=nid00001
-SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
+SLURM_HET_SIZE=2
+SLURM_JOB_ID_HET_GROUP_0=11751
+SLURM_JOB_ID_HET_GROUP_1=11752
+SLURM_JOB_NODELIST_HET_GROUP_0=nid00001
+SLURM_JOB_NODELIST_HET_GROUP_1=nid[00011-00012]
 ...
-$ srun --pack-group=0,1 env | grep SLURM
+$ srun --het-group=0,1 env | grep SLURM
 SLURM_JOB_ID=11751
 SLURM_JOB_NODELIST=nid[00001,00011-00012]
 ...
@@ -553,23 +553,23 @@ SLURM_JOB_NODELIST=nid[00001,00011-00012]
 
 <p>Create a heterogeneous resource allocation containing one node with 256GB
 of memory and a feature of "haswell" plus 2176 cores on 32 nodes with a
-feature of "knl". Then launch a program called "master" on the "haswell" node
-and "slave" on the "knl" nodes. Each application will be in its own
+feature of "knl". Then launch a program called "server" on the "haswell" node
+and "client" on the "knl" nodes. Each application will be in its own
 MPI_COMM_WORLD.</p>
 <pre>
 salloc -N1 --mem=256GB -C haswell : \
        -n2176 -N32 --ntasks-per-core=1 -C knl bash
-srun master &
-srun --pack-group=1 slave &
+srun server &
+srun --het-group=1 client &
 wait
 </pre>
 
-<p>This variation of the above example launches programs "master" and "slave"
+<p>This variation of the above example launches programs "server" and "client"
 in a single MPI_COMM_WORLD.</p>
 <pre>
 salloc -N1 --mem=256GB -C haswell : \
        -n2176 -N32 --ntasks-per-core=1 -C knl bash
-srun master : slave &
+srun server : client
 </pre>
 
 <p>The SLURM_PROCID and SLURM_TASKID environment variables will be set to
@@ -585,7 +585,7 @@ determined by examining Slurm environment variables.</p>
 
 <h2><a name="limitations">Limitations</a></h2>
 
-<p>The backfill scheduler has limiations in how it tracks usage of CPUs and
+<p>The backfill scheduler has limitations in how it tracks usage of CPUs and
 memory in the future.
 This typically requires the backfill scheduler be able to allocate each
 component of a heterogeneous job on a different node in order to begin its
@@ -597,6 +597,18 @@ the cluster from which the job is submitted. The heterogeneous job will not
 be eligible to migrate between clusters or to have different components of
 the job execute on different clusters in the federation.</p>
 
+<p>Caution must be taken when submitting heterogeneous jobs that request
+multiple overlapping partitions. When the partitions share the same resources
+it's possible to starve your own job by having the first job component request
+enough nodes that the scheduler isn't able to fill the subsequent request(s).
+Consider an example where you have partition <i>p1</i> that contains 10 nodes
+and partition <i>p2</i> that exists on 5 of the same nodes. If you submit a
+heterogeneous job that requests 5 nodes in <i>p1</i> and 5 nodes in <i>p2</i>,
+the scheduler may try to allocate some of the nodes from the <i>p2</i>
+partition for the first job component, preventing the scheduler from being
+able to fulfill the second request, resulting in a job that is never able to
+start.</p>
+
 <p>Job arrays of heterogeneous jobs are not supported.</p>
 
 <p>The srun command's --no-allocate option is not supported
@@ -604,7 +616,7 @@ for heterogeneous jobs.</p>
 
 <p>Only one job step per heterogeneous job component can be launched by a
 single srun command (e.g.
-"srun --pack-group=0 alpha : --pack-group=0 beta" is not supported).</p>
+"srun --het-group=0 alpha : --het-group=0 beta" is not supported).</p>
 
 <p>The sattach command can only be used to attach to a single component of
 a heterogeneous job at a time.</p>
@@ -634,6 +646,33 @@ communication ports (no change in Slurm behavior).</p>
 <!-- NOTE: Correcting this would necessitate assigning the same set of ports
 to all components of the heterogeneous job (not possible today) plus changes to
 srun in order to better synchronize the step startup and error handling. -->
+
+<h2><a name="het_steps">Heterogeneous Steps</a></h2>
+
+<p>Slurm version 20.11 introduces the ability to request heterogeneous job
+steps from within a non-homogeneous job allocation. This allows you the
+flexibility to have different layouts for job steps without requiring the
+use of heterogeneous jobs, where having separate jobs for the components
+may be undesirable.</p>
+
+<p>Some limitations for heterogeneous steps are that the steps must be able
+to run on unique nodes. You also cannot request heterogeneous steps from within
+a heterogeneous job.</p>
+
+<p>An example scenario would be if you have a task that needs to use 1 GPU
+per processor while another task needs all the available GPUs on a node with
+only one processor. This can be accomplished like this:
+
+<pre>
+$ salloc -N2 --exclusive
+salloc: Granted job allocation 61034
+$ srun -N1 -n4 --gpus=4 printenv SLURMD_NODENAME : -N1 -n1 --gpus=6 printenv SLURMD_NODENAME
+node02
+node01
+node01
+node01
+node01
+</pre>
 
 <h2><a name="sys_admin">System Administrator Information</a></h2>
 
@@ -711,6 +750,6 @@ Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
 
-<p style="text-align:center;">Last modified 18 October 2018</p>
+<p style="text-align:center;">Last modified 13 July 2020</p>
 
 <!--#include virtual="footer.txt"-->

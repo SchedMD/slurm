@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Test srun stdin/out routing with specific task number (--input
 #          and --output options with numeric argument).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,14 +29,11 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.21"
 set exit_code        0
 set job_id           0
 set matches          0
 set task_id          3
 set task_num         10
-
-print_header $test_id
 
 #
 # Spawn a shell via srun with stdout forwarding disabled
@@ -48,7 +41,7 @@ print_header $test_id
 set timeout $max_job_delay
 set srun_pid [spawn $srun --input=$task_id -N1 -n$task_num -O -v --wait=2 -t1 $bin_bash]
 expect {
-	-re "launching ($number).0 on host" {
+	-re "launching StepId=($number).0 on host" {
 		set job_id $expect_out(1,string)
 		send "$bin_env\r"
 		exp_continue
@@ -58,18 +51,18 @@ expect {
 		if {$task_id == $proc_id} {
 			incr matches
 		} else {
-			send_user "\nFAILURE: wrong task_id responded\n"
+			log_error "Wrong task_id responded"
 			set exit_code 1
 		}
 		send "exit\r"
 		exp_continue
 	}
 	-re "error: First task exited" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -78,20 +71,16 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: stdin to specific task_id failed\n"
+	log_error "Stdin to specific task_id failed"
 	set exit_code 1
 }
 
 if {[test_front_end]} {
-        send_user "\nWARNING: Additional portions of this test are incompatible with front-end systems\n"
-	if {$exit_code == 0} {
-		send_user "\nSUCCESS\n"
-	}
-	exit $exit_code
+    skip "Additional portions of this test are incompatible with front-end systems"
 }
 
 if {$exit_code == 0} {
-	send_user "\nSo far... stdin to specific task worked fine\n\n\n"
+	log_info "So far... stdin to specific task worked fine"
 }
 
 #
@@ -101,7 +90,7 @@ set job_id  0
 set matches 0
 set srun_pid [spawn $srun --output=$task_id -N1 -n$task_num -O -v -t1 env]
 expect {
-	-re "launching ($number).0 on host" {
+	-re "launching StepId=($number).0 on host" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
@@ -110,13 +99,13 @@ expect {
 		if {$task_id == $proc_id} {
 			incr matches
 		} else {
-			send_user "\nFAILURE: wrong task_id responded\n"
+			log_error "Wrong task_id responded"
 			set exit_code 1
 		}
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -125,11 +114,10 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: stdout from specific task_id failed\n"
+	log_error "Stdout from specific task_id failed"
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Verify that Slurm directed environment variables are processed:
 #          SALLOC_BELL and SALLOC_NO_BELL (can't really confirm from Expect)
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,12 +29,9 @@
 ############################################################################
 source ./globals
 
-set test_id          "15.16"
 set exit_code        0
 set timeout          $max_job_delay
 global env
-
-print_header $test_id
 
 #
 # Run trivial test with SALLOC_BELL env var
@@ -52,11 +45,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -68,7 +60,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: salloc failed to respond\n"
+	log_error "salloc failed to respond"
 	set exit_code 1
 }
 
@@ -85,11 +77,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -101,14 +92,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: salloc failed to respond\n"
-	set exit_code 1
+	fail "salloc failed to respond"
 }
 
 #
 # Post processing
 #
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

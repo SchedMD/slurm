@@ -50,7 +50,7 @@ extern void site_factor_g_reconfig(void);
 /*
  * Set an initial value for site_factor.
  */
-extern void site_factor_g_set(struct job_record *job_ptr);
+extern void site_factor_g_set(job_record_t *job_ptr);
 
 /*
  * Called to periodically update all site_factor values.

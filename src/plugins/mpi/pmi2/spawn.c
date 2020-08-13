@@ -149,10 +149,9 @@ spawn_req_pack(spawn_req_t *req, Buf buf)
 	int i, j;
 	spawn_subcmd_t *subcmd;
 	void *auth_cred;
-	char *auth_info = slurm_get_auth_info();
 
-	auth_cred = g_slurm_auth_create(AUTH_DEFAULT_INDEX, auth_info);
-	xfree(auth_info);
+	auth_cred = g_slurm_auth_create(AUTH_DEFAULT_INDEX,
+					slurm_conf.authinfo);
 	if (auth_cred == NULL) {
 		error("authentication: %m");
 		return;
@@ -198,7 +197,6 @@ spawn_req_unpack(spawn_req_t **req_ptr, Buf buf)
 	uint32_t temp32;
 	int i, j;
 	void *auth_cred;
-	char *auth_info;
 	uid_t auth_uid, my_uid;
 
 	/*
@@ -210,13 +208,10 @@ spawn_req_unpack(spawn_req_t **req_ptr, Buf buf)
 		error("authentication: %m");
 		return SLURM_ERROR;
 	}
-	auth_info = slurm_get_auth_info();
-	if (g_slurm_auth_verify(auth_cred, auth_info)) {
+	if (g_slurm_auth_verify(auth_cred, slurm_conf.authinfo)) {
 		error("authentication: %m");
-		xfree(auth_info);
 		return SLURM_ERROR;
 	}
-	xfree(auth_info);
 	auth_uid = g_slurm_auth_get_uid(auth_cred);
 	(void) g_slurm_auth_destroy(auth_cred);
 	my_uid = getuid();
@@ -365,7 +360,7 @@ unpack_error:
 }
 
 extern int
-spawn_resp_send_to_stepd(spawn_resp_t *resp, char *node)
+spawn_resp_send_to_stepd(spawn_resp_t *resp, char **node)
 {
 	Buf buf;
 	int rc;
@@ -377,7 +372,7 @@ spawn_resp_send_to_stepd(spawn_resp_t *resp, char *node)
 	pack16(cmd, buf);
 	spawn_resp_pack(resp, buf);
 
-	rc = slurm_forward_data(&node, tree_sock_addr,
+	rc = slurm_forward_data(node, tree_sock_addr,
 				get_buf_offset(buf),
 				get_buf_data(buf));
 	free_buf(buf);
@@ -617,7 +612,8 @@ _setup_exec_srun(spawn_req_t *req)
 	env = env_array_copy((const char **)job_info.job_env);
 	/* TODO: unset some env-vars */
 
-	env_array_overwrite_fmt(&env, "SLURM_JOB_ID", "%u", job_info.jobid);
+	env_array_overwrite_fmt(&env, "SLURM_JOB_ID", "%u",
+				job_info.step_id.job_id);
 	env_array_overwrite_fmt(&env, PMI2_SPAWNER_JOBID_ENV, "%s",
 				job_info.pmi_jobid);
 	env_array_overwrite_fmt(&env, PMI2_PMI_JOBID_ENV, "%s-%u",

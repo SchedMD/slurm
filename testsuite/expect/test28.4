@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validates that scontrol update will update job using
 #          the jobid and jobid with array index
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -31,18 +27,14 @@
 ############################################################################
 source ./globals
 
-set test_id       "28.4"
 set exit_code     0
 set array_size    4
 set file_script   "test$test_id.sh"
 set job_id        0
 set array_in      2
 
-print_header $test_id
-
 if {[get_array_config] < [expr $array_size + 1]} {
-	send_user "\nWARNING: MaxArraySize is too small\n"
-	exit 0
+	skip "MaxArraySize is too small"
 }
 
 proc check_update { job job_time } {
@@ -56,7 +48,7 @@ proc check_update { job job_time } {
 		-re "JobId=($number) ArrayJobId" {
 			set new_job_id $expect_out(1,string)
 			exp_continue
-		}	
+		}
 		-re "TimeLimit=00:($number):00" {
 			if {$expect_out(1,string) == $job_time } {
 				incr time_match
@@ -64,7 +56,7 @@ proc check_update { job job_time } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -72,11 +64,11 @@ proc check_update { job job_time } {
 		}
 	}
 	if {$new_job_id == 0} {
-		send_user "\nFAILURE: failed to get new job id\n"
+		log_error "Failed to get new job id"
 		set exit_code 1
 	}
 	if {$time_match != 1} {
-		send_user "\nFAILURE: job $job was never updated\n"
+		log_error "Job $job was never updated"
 		set exit_code 1
 	}
 	return $new_job_id
@@ -89,7 +81,7 @@ proc update_job { job job_time } {
 	spawn $scontrol update jobid=$job TimeLimit=$job_time
 	expect {
 		timeout {
-			send_user "FAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -109,11 +101,11 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
+		log_error "sbatch did not submit jobs"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -121,8 +113,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit jobs\n"
-	exit 1
+	fail "sbatch did not submit jobs"
 }
 
 # Update a specific job using job array syntax
@@ -137,11 +128,11 @@ set new_job_id [check_update ${job_id}_2 4]
 check_update ${job_id}_1 1
 
 if {[cancel_job $job_id] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_script
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

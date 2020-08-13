@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr list clusters
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,7 +29,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "21.7"
 set exit_code   0
 set amatches    0
 set dmatches    0
@@ -56,19 +51,15 @@ set cluster(MaxNodes)      300
 set cluster(MaxWall)       01:00:00
 set access_err  0
 
-print_header $test_id
-
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 #
 # Verify if Administrator privileges
 #
  if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 #
@@ -83,8 +74,7 @@ remove_cluster "$tc1,$tc2,$tc3"
 add_cluster "$tc1,$tc2,$tc3" [array get cluster]
 
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 
 #
@@ -117,7 +107,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
 		set exit_code 1
 	}
@@ -127,16 +117,12 @@ expect {
 }
 
 if {$dmatches != 4} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting cluster\n"
-	set exit_code 1
+	fail "sacctmgr had a problem deleting cluster"
 }
 if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
-	set exit_code 1
+	fail "Our associations don't line up"
 }
 
-if {$exit_code == 0} {
-print_success $test_id
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-
-exit $exit_code

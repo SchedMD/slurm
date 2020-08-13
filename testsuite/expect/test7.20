@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose:  Test lua JobSubmitPlugin
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC
 # Written by Nathan Rini
@@ -30,11 +26,13 @@
 source ./globals
 source ./globals_accounting
 
-set test_id		"7.20"
 set test_lua_reject	"test$test_id\_scripts/reject.lua"
 set test_lua_pass	"test$test_id\_scripts/pass.lua"
 set exit_code		 0
+set exit_code_skip	 -123123
 set cwd			"[$bin_pwd]"
+set job_name		"test$test_id"
+set is_skip              0
 
 set ta1	    "test$test_id-account.1"
 set tu1     [get_my_user_name]
@@ -43,9 +41,10 @@ set tq2     "test$test_id-qos.2"
 
 # account options
 array set acct_1 {}
-set acct(Organization)  "Account_Org_A1"
-set acct(Description)   "Test_Account_A1"
-set acct(Qos) $tq1
+set acct_1(Organization)  "Account_Org_A1"
+set acct_1(Description)   "Test_Account_A1"
+set acct_1(Qos) $tq1
+set acct_1(Cluster) [get_cluster_name]
 
 # user options
 array set user_req_1 {}
@@ -63,21 +62,20 @@ set qos_2(Description)    "test_qos_2"
 set access_err  0
 
 set timeout $max_job_delay
-print_header $test_id
 
-#Create test assoc and accounts
+# Create test assoc and accounts
 proc create_accounts {} {
-	global ta1 tq1 tq2 tu1 user_req_1 qos_1 qos_2
+	global ta1 acct_1 tq1 tq2 tu1 user_req_1 qos_1 qos_2
 	log_info "create account and QOS"
 
-	#Create test assoc and accounts
+	# Create test assoc and accounts
 	check_rc [add_qos $tq1 [array get qos_1]]
 	check_rc [add_qos $tq2 [array get qos_2]]
 	check_rc [add_acct $ta1 [array get acct_1]]
 	check_rc [add_user $tu1 [array get user_req_1]]
 }
 
-#Cleanup test assoc and accounts
+# Cleanup test assoc and accounts
 proc cleanup_accounts {} {
 	global ta1 tq1 tq2
 
@@ -101,8 +99,7 @@ proc do_copy { src dst } {
 		spawn $bin_cp -v $src $dst
 		expect {
 			timeout {
-				log_error "$file was not copied"
-				exit 1
+				fail "$file was not copied"
 			}
 			eof {
 				lassign [wait] pid spawnid os_error_flag rc
@@ -129,7 +126,7 @@ proc take_backup { file } {
 	if { [file exists $file ] } {
 		do_copy $file $cwd/$bfile.orig
 	} else {
-		log_info "skipping backup of non-existant $file"
+		log_info "skipping backup of non-existent $file"
 	}
 }
 
@@ -144,7 +141,7 @@ proc restore_backup { file } {
 
 		do_copy $cwd/$bfile.orig $file
 	} else {
-		log_info "skipping restore of non-existant $file"
+		log_info "skipping restore of non-existent $file"
 	}
 
 	if { [file exists $cwd/$bfile.orig ] } {
@@ -153,40 +150,52 @@ proc restore_backup { file } {
 }
 
 proc endit { exit_code } {
-	global test_id config_dir
+	global test_id config_dir exit_code_skip is_skip
 
-	if {$exit_code == 0} {
-		cleanup_accounts
-		restore_backup $config_dir/job_submit.lua
-		restore_backup $config_dir/slurm.conf
-		reconfigure
+	cleanup_accounts
+	restore_backup $config_dir/job_submit.lua
+	restore_backup $config_dir/slurm.conf
+	reconfigure
 
-		print_success $test_id
-	} else {
-		log_error "exiting with exit code $exit_code"
+	if {$exit_code == $exit_code_skip} {
+		skip "Unable to run test with available nodes"
 	}
-
-	exit $exit_code
+	if {$is_skip} {
+		skip "Some subtests were skipped"
+	}
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
 proc check_rc { exit_code } {
 	if {$exit_code != 0} {
-		log_error "exiting with exit code $exit_code"
-		exit $exit_code
+		fail "Exiting with exit code $exit_code"
 	}
 }
 
-proc test_bin_pass { bin args het_job count } {
-	global salloc ta1 tq2 srun number
+proc test_bin_pass { num bin args het_job count } {
+	global job_name salloc ta1 tq2 srun number is_skip
 
 	set got_init 0
 	set got_sub1 0
 	set got_sub2 0
 	set got_sub3 0
 	set rc -12345
+	set is_builtin [string equal [get_config_param "SchedulerType"] "sched/builtin"]
 
+	log_info "**** TEST PASS $num ****"
 	eval spawn $bin [join $args " "]
+	set pid [exp_pid]
 	expect {
+		-re "^(srun|salloc|sbatch): error: .*: Requested operation not supported on this system\r\n" {
+			if { $het_job && $is_builtin } {
+				log_warn "Hetjobs are not supported with sched/builtin this failure is expected"
+				set is_skip 1
+				return 0
+			}
+		}
 		-re "^(srun|salloc|sbatch): initialized\r\n" {
 			incr got_init
 			exp_continue
@@ -212,10 +221,7 @@ proc test_bin_pass { bin args het_job count } {
 		}
 		timeout {
 			log_error "$bin not responding"
-			if {$job_id != 0} {
-				cancel_job $job_id
-			}
-			slow_kill [expr 0 - $salloc_pid]
+			slow_kill [expr 0 - $pid]
 			endit 1
 		}
 		eof {
@@ -234,17 +240,27 @@ proc test_bin_pass { bin args het_job count } {
 	}
 }
 
-proc test_bin_fail { bin args het_job count } {
-	global ta1 tq1 tq2 srun number
+proc test_bin_fail { num bin args het_job count } {
+	global job_name ta1 tq1 tq2 srun number is_skip
 
 	set got_init 0
 	set got_sub1 0
 	set got_sub2 0
 	set got_sub3 0
 	set rc -12345
+	set is_builtin [string equal [get_config_param "SchedulerType"] "sched/builtin"]
 
+	log_info "**** TEST FAIL $num ****"
 	eval spawn $bin [join $args " "]
+	set pid [exp_pid]
 	expect {
+		-re "^(srun|salloc|sbatch): error: .*: Requested operation not supported on this system\r\n" {
+			if { $het_job && $is_builtin } {
+				log_warn "Hetjobs are not supported with sched/builtin this failure is expected"
+				set is_skip 1
+				return 0
+			}
+		}
 		-re "^(srun|salloc|sbatch): error: initialized\r\n" {
 			incr got_init
 			exp_continue
@@ -271,10 +287,7 @@ proc test_bin_fail { bin args het_job count } {
 		}
 		timeout {
 			log_error "$bin not responding"
-			if {$job_id != 0} {
-				cancel_job $job_id
-			}
-			slow_kill [expr 0 - $salloc_pid]
+			slow_kill [expr 0 - $pid]
 			endit 1
 		}
 		eof {
@@ -288,21 +301,43 @@ proc test_bin_fail { bin args het_job count } {
 	    ($got_sub1 != $count) ||
 	    ($got_sub2 != $count) ||
 	    ($got_sub3 != $count)} {
-			log_error "Invalid $bin response"
-			endit 1
+		log_error "Invalid $bin response"
+		endit 1
 	}
 }
 
+if {[have_lua] == 0} {
+	skip "LUA must be installed and enabled to test lua job_submit plugin."
+}
+
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 } elseif { [test_enforce_limits] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountingStorageEnforce\n"
-	exit 0
+	skip "This test can't be run without a usable AccountingStorageEnforce"
 }
 if { [test_limits_enforced] == 0 } {
-	send_user "\nWARNING: This test can't be run without enforcing limits\n"
-	exit 0
+	skip "This test can't be run without enforcing limits"
+}
+
+# Verify cluster is able to run largest test job
+set got_uid 0
+set srun_pid [spawn $srun -t1 -J $job_name --mpi=none --ntasks-per-node=5 -N 3 $bin_id]
+expect {
+	-re "(uid=.*\n)" {
+		set got_uid 1
+		exp_continue
+	}
+
+	timeout {
+		slow_kill $srun_pid
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if { $got_uid == 0 } {
+	skip "System too small for test"
 }
 
 set config_dir ""
@@ -323,8 +358,7 @@ expect {
 }
 log_user 1
 if { $config_dir == "" } {
-		log_error "scontrol did not provide SLURM_CONF"
-		exit 1
+	fail "scontrol did not provide SLURM_CONF"
 }
 
 cleanup_accounts
@@ -335,7 +369,7 @@ take_backup $config_dir/slurm.conf
 
 # Activate lua plugin
 exec $bin_sed -i {s/^\(JobSubmitPlugins\)/#\1/gI} $config_dir/slurm.conf
-exec $bin_echo "JobSubmitPlugins=lua" >> $config_dir/slurm.conf
+exec $bin_echo "\n### test7.20 additions####\nJobSubmitPlugins=lua" >> $config_dir/slurm.conf
 reconfigure
 
 do_copy $test_lua_reject $config_dir/job_submit.lua
@@ -344,14 +378,14 @@ sleep 1
 file mtime $config_dir/job_submit.lua [timestamp]
 
 # Check that all job types are rejected
-test_bin_fail $salloc {-t1 -A $ta1 --qos $tq2 -n5 "/bin/true"} 0 1
-test_bin_fail $salloc {-t1 -A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 1 1
-test_bin_fail $srun {-t1 -A $ta1 --qos $tq2 -n5 /bin/true} 0 1
-test_bin_fail $srun {-t1 -A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 1 1
-test_bin_fail $sbatch {-t1 -o /dev/null -W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 0 1
-test_bin_fail $sbatch {-t1 -o /dev/null -W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 0 1
-test_bin_fail $sbatch {-t1 -o /dev/null -W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 1 1
-test_bin_fail $sbatch {-t1 -o /dev/null -W -A $ta1 --qos $tq2 -n1 -J pass : -n3 -J error : -n5 --wrap /bin/true} 1 2
+test_bin_fail "R1" $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 "/bin/true"} 0 1
+test_bin_fail "R2" $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 1 1
+test_bin_fail "R3" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 /bin/true} 0 1
+test_bin_fail "R4" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 1 1
+test_bin_fail "R5" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 0 1
+test_bin_fail "R6" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 0 1
+test_bin_fail "R7" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 1 1
+test_bin_fail "R8" $sbatch {-t1 -J $job_name --comment=PASS -o /dev/null -W -A $ta1 --qos $tq2 -n1 : --comment=ERROR -n3 : --comment=ERROR -n5 --wrap /bin/true} 1 2
 
 do_copy $test_lua_pass $config_dir/job_submit.lua
 # Sleep for 1 second to make sure that modify time is different from last copy.
@@ -359,22 +393,22 @@ sleep 1
 file mtime $config_dir/job_submit.lua [timestamp]
 
 # Check that passing works
-test_bin_pass $salloc {-t1 -A $ta1 --qos $tq2 -n5 "/bin/true"} 0 1
-test_bin_pass $salloc {-t1 -A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 1 3
-test_bin_pass $srun {-t1 -A $ta1 --qos $tq2 -n5 /bin/true} 0 1
-test_bin_pass $srun {-t1 -A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 1 3
-test_bin_pass $sbatch {-t1 -o /dev/null -W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 0 1
-test_bin_pass $sbatch {-t1 -o /dev/null -W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 0 1
-test_bin_pass $sbatch {-t1 -o /dev/null -W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 1 3
+test_bin_pass "P1" $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 "/bin/true"} 0 1
+test_bin_pass "P2" $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 1 3
+test_bin_pass "P3" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 /bin/true} 0 1
+test_bin_pass "P4" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 1 3
+test_bin_pass "P5" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 0 1
+test_bin_pass "P6" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 0 1
+test_bin_pass "P7" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 1 3
 
 # Check that messages are still sent with failing QOS but passing filter
-test_bin_fail $salloc {-t1 -A $ta1 --qos $tq1 -n5 "/bin/true"} 0 1
-test_bin_fail $salloc {-t1 -A $ta1 --qos $tq1 -n5 : -n3 : -n1 "/bin/true"} 1 1
-test_bin_fail $srun {-t1 -A $ta1 --qos $tq1 -n5 /bin/true} 0 1
-test_bin_fail $srun {-t1 -A $ta1 --qos $tq1 -n5 : -n3 : -n1 /bin/true} 1 1
-test_bin_fail $sbatch {-t1 -o /dev/null -W -A $ta1 --qos $tq1 -n5 --wrap /bin/true} 0 1
-test_bin_fail $sbatch {-t1 -o /dev/null -W -A $ta1 --qos $tq1 -n5 --array 10 --wrap /bin/true} 0 1
-test_bin_fail $sbatch {-t1 -o /dev/null -W -A $ta1 --qos $tq1 -n5 : -n3 : -n1 --wrap /bin/true} 1 3
+test_bin_fail "F1" $salloc {-t1 -J $job_name -A $ta1 --qos $tq1 -n5 "/bin/true"} 0 1
+test_bin_fail "F2" $salloc {-t1 -J $job_name -A $ta1 --qos $tq1 -n5 : -n3 : -n1 "/bin/true"} 1 1
+test_bin_fail "F3" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq1 -n5 /bin/true} 0 1
+test_bin_fail "F4" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq1 -n5 : -n3 : -n1 /bin/true} 1 1
+test_bin_fail "F5" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 --wrap /bin/true} 0 1
+test_bin_fail "F6" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 --array 10 --wrap /bin/true} 0 1
+test_bin_fail "F7" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 : -n3 : -n1 --wrap /bin/true} 1 3
 
 check_rc $exit_code
 

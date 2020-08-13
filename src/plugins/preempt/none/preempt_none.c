@@ -45,6 +45,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/plugin.h"
+#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/job_scheduler.h"
 
@@ -63,24 +64,43 @@ extern void fini(void)
 	/* Empty. */
 }
 
-extern List find_preemptable_jobs(struct job_record *job_ptr)
-{
-	return (List) NULL;
-}
-
-extern uint16_t job_preempt_mode(struct job_record *job_ptr)
-{
-	return (uint16_t) PREEMPT_MODE_OFF;
-}
-
-extern bool preemption_enabled(void)
-{
-	return false;
-}
-
 /* Return true if the preemptor can preempt the preemptee, otherwise false */
-extern bool job_preempt_check(job_queue_rec_t *preemptor,
-			      job_queue_rec_t *preemptee)
+extern bool preempt_p_job_preempt_check(job_queue_rec_t *preemptor,
+					job_queue_rec_t *preemptee)
 {
 	return false;
+}
+
+extern bool preempt_p_preemptable(
+	job_record_t *preemptee, job_record_t *preemptor)
+{
+	return false;
+}
+
+extern int preempt_p_get_data(job_record_t *job_ptr,
+			      slurm_preempt_data_type_t data_type,
+			      void *data)
+{
+	int rc = SLURM_SUCCESS;
+
+	switch (data_type) {
+	case PREEMPT_DATA_ENABLED:
+		(*(bool *)data) = false;
+		break;
+	case PREEMPT_DATA_MODE:
+		(*(uint16_t *)data) = PREEMPT_MODE_OFF;
+		break;
+	case PREEMPT_DATA_PRIO:
+		(*(uint32_t *)data) = 0;
+		break;
+	case PREEMPT_DATA_GRACE_TIME:
+		(*(uint32_t *)data) = 0;
+		break;
+	default:
+		error("%s: unknown enum %d", __func__, data_type);
+		rc = SLURM_ERROR;
+		break;
+
+	}
+	return rc;
 }

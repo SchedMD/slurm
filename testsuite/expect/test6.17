@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test scancel handling of invalid job IDs and filters.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Morris Jette <jette@schedmd.com>
@@ -30,10 +26,7 @@
 ############################################################################
 source ./globals
 
-set test_id      "6.17"
 set exit_code    0
-
-print_header $test_id
 
 #
 # Test scancel with name filter that finds no jobs
@@ -46,7 +39,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -54,7 +47,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scancel failed to log no matching jobs\n"
+	log_error "scancel failed to log no matching jobs"
 	set exit_code 1
 }
 
@@ -65,12 +58,12 @@ set matches  0
 spawn $scancel INVALID
 expect {
 	-re "Invalid job id" {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -78,10 +71,9 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scancel failed to log invalid job ID\n"
+	log_error "scancel failed to log invalid job ID"
 	set exit_code 1
 }
-send_user "\n\n\n"
 
 #
 # Test scancel with invalid job ID
@@ -90,12 +82,12 @@ set matches  0
 spawn $scancel 0
 expect {
 	-re "Invalid job id" {
-		send_user "\nError is expected, no worries.\n"
+		log_debug "Error is expected, no worries"
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -103,14 +95,10 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scancel failed to log invalid job ID\n"
+	log_error "scancel failed to log invalid job ID"
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
-	send_user "\nFAILURE\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors"
 }
-exit $exit_code
-

@@ -124,7 +124,6 @@ const char plugin_type[]        = "switch/generic";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 const uint32_t plugin_id	= SWITCH_PLUGIN_GENERIC;
 
-uint64_t debug_flags = 0;
 pthread_mutex_t	global_lock = PTHREAD_MUTEX_INITIALIZER;
 sw_gen_libstate_t *libstate = NULL;
 
@@ -180,7 +179,7 @@ _hash_index(char *name)
 	int index = 0;
 	int j;
 
-	assert(name);
+	xassert(name);
 
 	/* Multiply each character by its numerical position in the
 	 * name string to add a bit of entropy, because host names such
@@ -202,7 +201,7 @@ _find_node(char *node_name)
 {
 	int i;
 	sw_gen_node_info_t *n;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if (node_name == NULL) {
 		error("%s: _find_node node name is NULL", plugin_type);
@@ -299,7 +298,6 @@ static void _cache_node_info(sw_gen_node_info_t *new_node_info)
 int init(void)
 {
 	debug("%s loaded", plugin_name);
-	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
 }
 
@@ -313,7 +311,6 @@ int fini(void)
 
 extern int switch_p_reconfig(void)
 {
-	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
 }
 
@@ -322,16 +319,14 @@ extern int switch_p_reconfig(void)
  */
 int switch_p_libstate_save(char * dir_name)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_libstate_save() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	/* No state saved or restored for this plugin */
 	return SLURM_SUCCESS;
 }
 
 int switch_p_libstate_restore(char * dir_name, bool recover)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_libstate_restore() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	/* No state saved or restored for this plugin, just initialize */
 	slurm_mutex_lock(&global_lock);
 	_alloc_libstate();
@@ -342,8 +337,7 @@ int switch_p_libstate_restore(char * dir_name, bool recover)
 
 int switch_p_libstate_clear(void)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_libstate_clear() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
@@ -355,8 +349,7 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job,
 {
 	sw_gen_step_info_t *gen_step_info;
 
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_alloc_jobinfo() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	xassert(switch_job);
 	gen_step_info = xmalloc(sizeof(sw_gen_step_info_t));
 	gen_step_info->magic = SW_GEN_STEP_INFO_MAGIC;
@@ -376,8 +369,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	char *host = NULL;
 	int i, j;
 
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_build_jobinfo() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	xassert(gen_step_info);
 	xassert(gen_step_info->magic == SW_GEN_STEP_INFO_MAGIC);
 	hl = hostlist_create(step_layout->node_list);
@@ -420,8 +412,7 @@ int switch_p_duplicate_jobinfo(switch_jobinfo_t *source,
 {
 	sw_gen_step_info_t *gen_step_info;
 
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_alloc_jobinfo() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	/* FIXME: If this is ever needed please flesh this out! */
 
 	xassert(source);
@@ -439,8 +430,7 @@ void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 	sw_gen_ifa_t *ifa_ptr;
 	int i, j;
 
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_free_jobinfo() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	xassert(gen_step_info);
 	xassert(gen_step_info->magic == SW_GEN_STEP_INFO_MAGIC);
 	for (i = 0; i < gen_step_info->node_cnt; i++) {
@@ -469,8 +459,7 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	sw_gen_ifa_t *ifa_ptr;
 	int i, j;
 
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_pack_jobinfo() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	xassert(gen_step_info);
 	xassert(gen_step_info->magic == SW_GEN_STEP_INFO_MAGIC);
 
@@ -481,11 +470,9 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		pack16(node_ptr->ifa_cnt, buffer);
 		for (j = 0; j < node_ptr->ifa_cnt; j++) {
 			ifa_ptr = node_ptr->ifa_array[j];
-			if (debug_flags & DEBUG_FLAG_SWITCH) {
-				info("node=%s name=%s family=%s addr=%s",
-				     node_ptr->node_name, ifa_ptr->ifa_name,
-				     ifa_ptr->ifa_family, ifa_ptr->ifa_addr);
-			}
+			log_flag(SWITCH, "node=%s name=%s family=%s addr=%s",
+				 node_ptr->node_name, ifa_ptr->ifa_name,
+				 ifa_ptr->ifa_family, ifa_ptr->ifa_addr);
 			packstr(ifa_ptr->ifa_addr, buffer);
 			packstr(ifa_ptr->ifa_family, buffer);
 			packstr(ifa_ptr->ifa_name, buffer);
@@ -507,8 +494,7 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, Buf buffer,
 	switch_p_alloc_jobinfo(switch_job, 0, 0);
 	gen_step_info = (sw_gen_step_info_t *) *switch_job;
 
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_unpack_jobinfo() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	safe_unpack32(&gen_step_info->node_cnt, buffer);
 	safe_xcalloc(gen_step_info->node_array, gen_step_info->node_cnt,
 		     sizeof(sw_gen_node_t *));
@@ -529,11 +515,9 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, Buf buffer,
 					       &uint32_tmp, buffer);
 			safe_unpackstr_xmalloc(&ifa_ptr->ifa_name, &uint32_tmp,
 					       buffer);
-			if (debug_flags & DEBUG_FLAG_SWITCH) {
-				info("node=%s name=%s family=%s addr=%s",
-				     node_ptr->node_name, ifa_ptr->ifa_name,
-				     ifa_ptr->ifa_family, ifa_ptr->ifa_addr);
-			}
+			log_flag(SWITCH, "node=%s name=%s family=%s addr=%s",
+				 node_ptr->node_name, ifa_ptr->ifa_name,
+				 ifa_ptr->ifa_family, ifa_ptr->ifa_addr);
 		}
 	}
 
@@ -549,16 +533,14 @@ unpack_error:
 
 void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_print_jobinfo() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return;
 }
 
 char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo, char *buf,
 			      size_t size)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_sprint_jobinfo() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	if ((buf != NULL) && size) {
 		buf[0] = '\0';
 		return buf;
@@ -571,15 +553,13 @@ char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo, char *buf,
  */
 int switch_p_node_init(void)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_node_init() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 int switch_p_node_fini(void)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_node_fini() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
@@ -590,7 +570,7 @@ int switch_p_job_preinit(switch_jobinfo_t *switch_job)
 	sw_gen_ifa_t *ifa_ptr;
 	int i, j;
 
-	if (debug_flags & DEBUG_FLAG_SWITCH) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
 		info("switch_p_job_preinit() starting");
 
 		for (i = 0; i < gen_step_info->node_cnt; i++) {
@@ -609,75 +589,65 @@ int switch_p_job_preinit(switch_jobinfo_t *switch_job)
 
 extern int switch_p_job_init(stepd_step_rec_t *job)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_init() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_job_suspend_test(switch_jobinfo_t *jobinfo)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_suspend_test() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 extern void switch_p_job_suspend_info_get(switch_jobinfo_t *jobinfo,
 					  void **suspend_info)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_suspend_info_get() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return;
 }
 
 extern void switch_p_job_suspend_info_pack(void *suspend_info, Buf buffer,
 					   uint16_t protocol_version)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_suspend_info_pack() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return;
 }
 
 extern int switch_p_job_suspend_info_unpack(void **suspend_info, Buf buffer,
 					    uint16_t protocol_version)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_suspend_info_unpack() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 extern void switch_p_job_suspend_info_free(void *suspend_info)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_suspend_info_free() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return;
 }
 
 extern int switch_p_job_suspend(void *suspend_info, int max_wait)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_suspend() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_job_resume(void *suspend_info, int max_wait)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_resume() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_fini() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 int switch_p_job_postfini(stepd_step_rec_t *job)
 {
 	uid_t pgid = job->jmgr_pid;
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_postfini() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	/*
 	 *  Kill all processes in the job's session
 	 */
@@ -686,8 +656,8 @@ int switch_p_job_postfini(stepd_step_rec_t *job)
 			(unsigned long) pgid);
 		kill(-pgid, SIGKILL);
 	} else
-		debug("Job %u.%u: Bad pid valud %lu", job->jobid,
-		      job->stepid, (unsigned long) pgid);
+		debug("%ps: Bad pid valud %lu", &job->step_id,
+		      (unsigned long) pgid);
 
 	return SLURM_SUCCESS;
 }
@@ -696,8 +666,7 @@ int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 			uint32_t nodeid, uint32_t procid, uint32_t nnodes,
 			uint32_t nprocs, uint32_t rank)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_attach() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
@@ -721,8 +690,7 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
 #endif
 	int triplet_len_max = IFNAMSIZ + INET6_ADDRSTRLEN + 5 + 5 + 1;
 
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_get_jobinfo() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 
 	if (!resulting_data) {
 		error("no pointer for resulting_data");
@@ -762,8 +730,7 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
  */
 extern int switch_p_clear_node_state(void)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_clear_node_state() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
@@ -771,8 +738,7 @@ extern int switch_p_alloc_node_info(switch_node_info_t **switch_node)
 {
 	sw_gen_node_info_t *gen_node_info;
 
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_alloc_node_info() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	xassert(switch_node);
 	gen_node_info = xmalloc(sizeof(sw_gen_node_info_t));
 	gen_node_info->magic = SW_GEN_NODE_INFO_MAGIC;
@@ -790,8 +756,7 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 	char addr_str[INET6_ADDRSTRLEN], *ip_family;
 	char hostname[256], *tmp;
 
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_build_node_info() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	xassert(gen_node_info);
 	xassert(gen_node_info->magic == SW_GEN_NODE_INFO_MAGIC);
 	if (gethostname(hostname, sizeof(hostname)) < 0)
@@ -830,11 +795,9 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 			ifa_ptr->ifa_name   = xstrdup(if_rec->ifa_name);
 			gen_node_info->ifa_array[gen_node_info->ifa_cnt++] =
 				ifa_ptr;
-			if (debug_flags & DEBUG_FLAG_SWITCH) {
-				info("%s: name=%s ip_family=%s address=%s",
-				     plugin_type, if_rec->ifa_name, ip_family,
-				     addr_str);
-			}
+			log_flag(SWITCH, "%s: name=%s ip_family=%s address=%s",
+				 plugin_type, if_rec->ifa_name, ip_family,
+				 addr_str);
 		}
 	}
 	freeifaddrs(if_array);
@@ -849,8 +812,7 @@ extern int switch_p_pack_node_info(switch_node_info_t *switch_node,
 	sw_gen_ifa_t *ifa_ptr;
 	int i;
 
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_pack_node_info() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	xassert(gen_node_info);
 	xassert(gen_node_info->magic == SW_GEN_NODE_INFO_MAGIC);
 	pack16(gen_node_info->ifa_cnt, buffer);
@@ -870,8 +832,7 @@ extern int switch_p_free_node_info(switch_node_info_t **switch_node)
 	sw_gen_node_info_t *gen_node_info = (sw_gen_node_info_t *) *switch_node;
 	int i;
 
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_free_node_info() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	xassert(gen_node_info);
 	xassert(gen_node_info->magic == SW_GEN_NODE_INFO_MAGIC);
 	for (i = 0; i < gen_node_info->ifa_cnt; i++) {
@@ -895,8 +856,7 @@ extern int switch_p_unpack_node_info(switch_node_info_t **switch_node,
 	uint32_t uint32_tmp;
 	int i;
 
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_unpack_node_info() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 
 	switch_p_alloc_node_info(switch_node);
 	gen_node_info = (sw_gen_node_info_t *) *switch_node;
@@ -913,12 +873,10 @@ extern int switch_p_unpack_node_info(switch_node_info_t **switch_node,
 		safe_unpackstr_xmalloc(&ifa_ptr->ifa_family, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&ifa_ptr->ifa_name, &uint32_tmp, buffer);
-		if (debug_flags & DEBUG_FLAG_SWITCH) {
-			info("%s: node=%s name=%s ip_family=%s address=%s",
-			     plugin_type, gen_node_info->node_name,
-			     ifa_ptr->ifa_name, ifa_ptr->ifa_family,
-			     ifa_ptr->ifa_addr);
-		}
+		log_flag(SWITCH, "%s: node=%s name=%s ip_family=%s address=%s",
+			 plugin_type, gen_node_info->node_name,
+			 ifa_ptr->ifa_name, ifa_ptr->ifa_family,
+			 ifa_ptr->ifa_addr);
 	}
 
 	_cache_node_info(gen_node_info);
@@ -932,97 +890,71 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern char *switch_p_sprintf_node_info(switch_node_info_t *switch_node,
-				        char *buf, size_t size)
-{
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_sprintf_node_info() starting");
-
-	if ((buf != NULL) && size) {
-		buf[0] = '\0';
-		return buf;
-	}
-	/* Incomplete */
-
-	return NULL;
-}
-
 extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 				      char *nodelist)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_step_complete() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_job_step_part_comp(switch_jobinfo_t *jobinfo,
 				       char *nodelist)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_step_part_comp() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 extern bool switch_p_part_comp(void)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_part_comp() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return false;
 }
 
 extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo,
 				       char *nodelist)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_step_allocated() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_slurmctld_init(void)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_slurmctld_init() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_slurmd_init(void)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_slurmd_init() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_slurmd_step_init(void)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_slurmd_step_init() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *job)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_step_pre_suspend() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_job_step_post_suspend(stepd_step_rec_t *job)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_step_post_suspend() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_job_step_pre_resume(stepd_step_rec_t *job)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_step_pre_resume() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_job_step_post_resume(stepd_step_rec_t *job)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_step_post_resume() starting");
+	log_flag(SWITCH, "%s() starting", __func__);
 	return SLURM_SUCCESS;
 }

@@ -1,4 +1,4 @@
-.TH sbcast "1" "Slurm Commands" "October 2016" "Slurm Commands"
+.TH sbcast "1" "Slurm Commands" "April 2020" "Slurm Commands"
 
 .SH "NAME"
 sbcast \- transmit a file to the nodes allocated to a Slurm job.
@@ -58,7 +58,7 @@ good performance.
 The default value is the file size or 8MB, whichever is smaller.
 This value may need to be set on systems with very limited memory.
 .TP
-\fB\-t\fB \fIseconds\fR, fB\-\-timeout\fR=\fIseconds\fR
+\fB\-t\fB \fIseconds\fR, \fB\-\-timeout\fR=\fIseconds\fR
 Specify the message timeout in seconds.
 The default value is \fIMessageTimeout\fR as reported by
 "scontrol show config".
@@ -71,6 +71,19 @@ Provide detailed event logging through program execution.
 \fB\-V\fR, \fB\-\-version\fR
 Print version information and exit.
 
+.SH "PERFORMANCE"
+.PP
+Executing \fBsbcast\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBsbcast\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBsbcast\fR or other Slurm client commands that send remote
+procedure calls to \fBslurmctld\fR from loops in shell scripts or other
+programs. Ensure that programs limit calls to \fBsbcast\fR to the minimum
+necessary for the information you are trying to gather.
+
 .SH "ENVIRONMENT VARIABLES"
 .PP
 Some \fBsbcast\fR options may be set via environment variables.
@@ -82,7 +95,7 @@ these settings.)
 \fB\-C, \-\-compress\fR
 .TP
 \fBSBCAST_FANOUT\fR
-\fB\-F\fB \fInumber\fR, fB\-\-fanout\fR=\fInumber\fR
+\fB\-F\fB \fInumber\fR, \fB\-\-fanout\fR=\fInumber\fR
 .TP
 \fBSBCAST_FORCE\fR
 \fB\-f, \-\-force\fR
@@ -94,16 +107,15 @@ these settings.)
 \fB\-s\fR \fIsize\fR, \fB\-\-size\fR=\fIsize\fR
 .TP
 \fBSBCAST_TIMEOUT\fR
-\fB\-t\fB \fIseconds\fR, fB\-\-timeout\fR=\fIseconds\fR
+\fB\-t\fB \fIseconds\fR, \fB\-\-timeout\fR=\fIseconds\fR
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
 
 .SH "AUTHORIZATION"
 
-When using the Slurm db, users who have AdminLevel's defined (Operator
-or Admin) and users who are account coordinators are given the
-authority to invoke sbcast on other user's jobs.
+When using SlurmDBD, users who have an AdminLevel defined (Operator
+or Admin) are given the authority to invoke sbcast on other users jobs.
 
 .SH "EXAMPLE"
 

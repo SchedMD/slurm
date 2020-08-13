@@ -44,7 +44,7 @@
 
 #include "fair_tree.h"
 
-static int  _ft_decay_apply_new_usage(struct job_record *job, time_t *start);
+static int  _ft_decay_apply_new_usage(job_record_t *job, time_t *start);
 static void _apply_priority_fs(void);
 
 /* Fair Tree code called from the decay thread loop */
@@ -89,7 +89,7 @@ static void _ft_set_assoc_usage_efctv(slurmdb_assoc_rec_t *assoc)
 
 
 /* Apply usage with decay factor. Call standard functions */
-static int _ft_decay_apply_new_usage(struct job_record *job, time_t *start)
+static int _ft_decay_apply_new_usage(job_record_t *job, time_t *start)
 {
 	/* Always return SUCCESS so that list_for_each will
 	 * continue processing list of jobs. For this reason,
@@ -219,6 +219,14 @@ static slurmdb_assoc_rec_t** _append_list_to_array(
 	slurmdb_assoc_rec_t *next;
 	size_t bytes;
 	size_t i = *merged_size;
+
+	if (!list) {
+		error("%s: unable to append NULL list to assoc list.",
+		      __func__);
+
+		return merged;
+	}
+
 	*merged_size += list_count(list);
 
 	/* must be null-terminated, so add one extra slot */
@@ -283,7 +291,7 @@ static slurmdb_assoc_rec_t** _merge_accounts(
 		List children = siblings[i]->usage->children_list;
 
 		/* the first account's debug was already printed */
-		if (priority_debug && i > begin)
+		if ((slurm_conf.debug_flags & DEBUG_FLAG_PRIO) && i > begin)
 			_ft_debug(siblings[i], assoc_level, true);
 
 		if (!children || list_is_empty(children)) {
@@ -325,6 +333,12 @@ static void _calc_tree_fs(slurmdb_assoc_rec_t** siblings,
 	bool tied = false;
 	size_t i;
 
+	if (!siblings) {
+		error("%s: unable to calculate fairshare on empty tree",
+		      __func__);
+		return;
+	}
+
 	/* Calculate level_fs for each child */
 	for (i = 0; (assoc = siblings[i]); i++)
 		_calc_assoc_fs(assoc);
@@ -344,7 +358,7 @@ static void _calc_tree_fs(slurmdb_assoc_rec_t** siblings,
 			tied = prev_level_fs == assoc->usage->level_fs;
 		}
 
-		if (priority_debug)
+		if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO)
 			_ft_debug(assoc, assoc_level, tied);
 
 		/* If user, set their final fairshare factor and
@@ -392,8 +406,7 @@ static void _apply_priority_fs(void)
 	uint32_t rnt = rank;
 	size_t child_count = 0;
 
-	if (priority_debug)
-		info("Fair Tree fairshare algorithm, starting at root:");
+	log_flag(PRIO, "Fair Tree fairshare algorithm, starting at root:");
 
 	assoc_mgr_root_assoc->usage->level_fs = (long double) NO_VAL;
 

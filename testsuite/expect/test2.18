@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate that Allow/Deny accounts are enforced.
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -31,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id        "2.18"
 set user_name      ""
 set node_name      ""
 set cluster_name   ""
@@ -40,18 +34,14 @@ set acct_bad       "test${test_id}_acct_bad"
 set part_name      "test${test_id}_part"
 set exit_code      0
 
-print_header $test_id
-
 #
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 proc set_part_val {part_type part_val} {
@@ -60,11 +50,11 @@ proc set_part_val {part_type part_val} {
 	spawn $scontrol update partitionname=$part_name $part_type=$part_val
 	expect {
 		-re "Error" {
-			send_user "\nFAILURE: $part_type was not set\n"
+			log_error "$part_type was not set"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -81,7 +71,7 @@ proc cleanup { } {
 	spawn $scancel -p $part_name
 	expect {
 		timeout {
-			send_user "FAILURE: scancel is not responding\n"
+			log_error "scancel is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -89,17 +79,17 @@ proc cleanup { } {
 		}
 	}
 
-	send_user "Any error, except for unresponsiveness, from the previous scancel is expected and should be ignored.\n"
+	log_debug "Any error, except for unresponsiveness, from the previous scancel is expected and should be ignored"
 
 	spawn $scontrol delete partition=$part_name
 	expect {
 		-re "error" {
-			send_user "\nFAILURE: scontrol did not remove partition $part_name\n"
+			log_error "scontrol did not remove partition $part_name"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "FAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -114,7 +104,7 @@ proc cleanup { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -137,7 +127,7 @@ proc create_acct { acct } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -148,7 +138,7 @@ proc create_acct { acct } {
 	spawn $sacctmgr -i create user $user_name account=$acct cluster=$cluster_name
 	expect {
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -157,7 +147,7 @@ proc create_acct { acct } {
 	}
 
 	if {$create_acct !=1 } {
-		send_user "\nFAILURE: Account was not added\n"
+		log_error "Account was not added"
 		set exit_code 1
 	}
 
@@ -175,15 +165,15 @@ proc test_part { acct part acct_con } {
 	expect {
 		-re "error" {
 			if { $acct_con == 1 } {
-				send_user "\nThis error is expected\n"
+				log_debug "This error is expected"
 			} else {
-				send_user "\nFAILURE: This error should not have occured\n"
+				log_error "This error should not have occured"
 				set exit_code 1
 			}
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun is not responding\n"
+			log_error "srun is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -198,13 +188,8 @@ proc test_part { acct part acct_con } {
 cleanup
 
 set user_name [get_my_user_name]
-
-if { [string length $partition] == 0 } {
-	 set partition [default_partition]
-}
-
-set node_name [ get_idle_node_in_part $partition ]
-set cluster_name [ get_cluster_name ]
+set node_name [get_idle_node_in_part]
+set cluster_name [get_cluster_name]
 
 # NOTE: acct_good should always work and
 # acct_bad should always cause an error
@@ -223,11 +208,11 @@ create_acct $acct_bad
 spawn $scontrol create partition=$part_name nodes=$node_name
 expect {
 	-re "error" {
-		send_user "\nFAILURE: partition was not created\n"
+		log_error "Partition was not created"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not reponding\n"
+		log_error "scontrol is not reponding"
 		set exit_code 1
 	}
 	eof {
@@ -241,7 +226,7 @@ expect {
 set_part_val allowaccount $acct_good
 
 ######Testing AllowAccount#####
-send_user "\nTesting AllowAccount\n"
+log_info "Testing AllowAccount"
 
 #
 # Test partition with good values
@@ -264,7 +249,7 @@ set_part_val denyaccount $acct_bad
 
 
 ######Testing DenyAccount#####
-send_user "\nTesting DenyAccount\n"
+log_info "Testing DenyAccount"
 
 #
 # Test partition with good values
@@ -282,11 +267,9 @@ test_part $acct_bad $part_name 1
 sleep 5
 # Delete partition and accounts
 if {[cleanup] != 1} {
-	send_user "\nFAILURE: Account was not deleted\n"
-	set exit_code 1
+	fail "Account was not deleted"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

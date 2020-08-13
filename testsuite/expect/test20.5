@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test the qalter --help option
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -30,14 +26,10 @@
 ############################################################################
 source ./globals
 
-set test_id      "20.5"
 set exit_code    0
 
-print_header $test_id
-
 if {[file executable $qalter] == 0} {
-	send_user "\nWARNING: $qalter does not exist\n"
-	exit 0
+	skip "$qalter does not exist"
 }
 
 set found 0
@@ -48,7 +40,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qalter is not responding\n"
+		log_error "qalter is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -56,11 +48,9 @@ expect {
 	}
 }
 if {$found != 1} {
-	send_user "\nFAILURE: qalter's help option did not work\n"
-	set exit_code 1
+	fail "qalter's help option did not work"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

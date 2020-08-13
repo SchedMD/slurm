@@ -162,11 +162,6 @@ typedef enum {
  * Slurm DBD protocol data structures
 \*****************************************************************************/
 
-typedef struct slurmdbd_msg {
-	uint16_t msg_type;	/* see slurmdbd_msg_type_t above */
-	void * data;		/* pointer to a message type below */
-} slurmdbd_msg_t;
-
 typedef struct {
 	List acct_list; /* list of account names (char *'s) */
 	slurmdb_user_cond_t *cond;
@@ -208,7 +203,7 @@ typedef struct dbd_get_jobs_msg {
 				 * of accounting record */
 	uint32_t gid;		/* group id */
 	time_t last_update;	/* time of latest info */
-	List selected_steps;	/* List of slurmdb_selected_step_t *'s */
+	List selected_steps;	/* List of slurm_selected_step_t *'s */
 	List selected_parts;	/* List of char *'s */
 	char *user;		/* user name */
 } dbd_get_jobs_msg_t;
@@ -262,6 +257,8 @@ typedef struct dbd_job_start_msg {
 	uint64_t db_index;	/* index into the db for this job */
 	time_t   eligible_time;	/* time job becomes eligible to run */
 	uint32_t gid;	        /* group ID */
+	uint32_t het_job_id;	/* ID of hetjob leader or 0 */
+	uint32_t het_job_offset; /* Hetjob component ID, zero-origin */
 	uint32_t job_id;	/* job ID */
 	uint32_t job_state;	/* job state */
 	char *   mcs_label;	/* job mcs_label */
@@ -269,8 +266,6 @@ typedef struct dbd_job_start_msg {
 	char *   nodes;		/* hosts allocated to the job */
 	char *   node_inx;      /* ranged bitmap string of hosts
 				 * allocated to the job */
-	uint32_t pack_job_id;	/* ID of pack job leader or 0 */
-	uint32_t pack_job_offset; /* Pack job component ID, zero-origin */
 	char *   partition;	/* partition job is running on */
 	uint32_t priority;	/* job priority */
 	uint32_t qos_id;        /* qos job is running with */
@@ -354,7 +349,6 @@ typedef struct dbd_step_comp_msg {
 	time_t   end_time;	/* job termintation time */
 	uint32_t exit_code;	/* job exit code or signal */
 	jobacctinfo_t *jobacct; /* status info */
-	uint32_t job_id;	/* job ID */
 	time_t   job_submit_time;/* job submit time needed to find job record
 				  * in db */
 	char    *job_tres_alloc_str;/* Simple comma separated list of TRES for
@@ -365,14 +359,13 @@ typedef struct dbd_step_comp_msg {
 	time_t   start_time;	/* step start time */
 	uint16_t state;         /* current state of node.  Used to get
 				   flags on the state (i.e. maintenance) */
-	uint32_t step_id;	/* step ID */
+	slurm_step_id_t step_id;
 	uint32_t total_tasks;	/* count of tasks for step */
 } dbd_step_comp_msg_t;
 
 typedef struct dbd_step_start_msg {
 	uint32_t assoc_id;	/* accounting association id */
 	uint64_t db_index;	/* index into the db for this job */
-	uint32_t job_id;	/* job ID */
 	char *   name;		/* step name */
 	char *   nodes;		/* hosts allocated to the step */
 	char *   node_inx;	/* bitmap index of hosts allocated to
@@ -384,7 +377,7 @@ typedef struct dbd_step_start_msg {
 	uint32_t req_cpufreq_min; /* requested minimum CPU frequency  */
 	uint32_t req_cpufreq_max; /* requested maximum CPU frequency  */
 	uint32_t req_cpufreq_gov; /* requested CPU frequency governor */
-	uint32_t step_id;	/* step ID */
+	slurm_step_id_t step_id;
 	uint32_t task_dist;     /* layout method of step */
 	uint32_t total_tasks;	/* count of tasks for step */
 	char *tres_alloc_str;   /* Simple comma separated list of TRES */
@@ -405,7 +398,7 @@ extern void slurmdbd_free_buffer(void *x);
 
 extern void slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg);
 extern void slurmdbd_free_cluster_tres_msg(dbd_cluster_tres_msg_t *msg);
-extern void slurmdbd_free_msg(slurmdbd_msg_t *msg);
+extern void slurmdbd_free_msg(persist_msg_t *msg);
 extern void slurmdbd_free_rec_msg(dbd_rec_msg_t *msg, slurmdbd_msg_type_t type);
 extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 				   slurmdbd_msg_type_t type);

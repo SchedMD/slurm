@@ -53,14 +53,14 @@
 
 /* Other useful includes */
 #include "slurm/slurm_errno.h"
-#include "src/common/slurm_mpi.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xassert.h"
 #include "src/common/eio.h"
-#include "src/common/mapping.h"
 #include "src/common/fd.h"
+#include "src/common/mapping.h"
 #include "src/common/net.h"
+#include "src/common/slurm_mpi.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /* ----------------------------------------------------------
  * Slurm environment that influence us:

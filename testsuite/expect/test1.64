@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test interruption of srun while waiting for resource allocation.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2010 Lawrence Livermore National Security
@@ -33,11 +29,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.64"
 set exit_code   0
 set matches     0
-
-print_header $test_id
 
 #
 # Spawn initial program via srun
@@ -49,7 +42,7 @@ expect {
 		incr matches
 		sleep 1
 		exec $bin_kill -INT $srun_pid
-		send_user "\nSent SIGINT\n"
+		log_debug "Sent SIGINT"
 		exp_continue
 	}
 	-re "Job allocation ($number) has been revoked" {
@@ -57,25 +50,23 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		set matches -999
 		slow_kill $srun_pid
 		set exit_code 1
 	}
 	eof {
-		send_user "\nEOF\n"
+		log_debug "EOF"
 		wait
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: srun failed to process SIGINT while waiting for allocation\n"
-	set exit_code 1
+	fail "srun failed to process SIGINT while waiting for allocation"
 }
 
 #
 # Post-processing
 #
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

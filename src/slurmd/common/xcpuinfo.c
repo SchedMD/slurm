@@ -188,7 +188,7 @@ extern int xcpuinfo_hwloc_topo_load(
 
 	if (full && first_full) {
 		/* Always regenerate file on slurmd startup */
-		if (run_in_daemon("slurmd"))
+		if (running_in_slurmd())
 			check_file = false;
 		first_full = false;
 	}

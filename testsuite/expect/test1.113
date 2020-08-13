@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of --use-min-nodes option.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2016 SchedMD LLC.
 # Written by Alejandro Sanchez <alex@schedmd.com>
@@ -30,22 +26,17 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.113"
 set exit_code   0
 set needed_nodes 2
-set partition [default_partition]
 set matches 0
 set ncpus ""
 
-print_header $test_id
-
 if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
-	send_user "\nWARNING: This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE\n"
-	exit 0
+	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
 log_user 0
-spawn $sinfo -N -h -p $partition -t idle -o "%c"
+spawn $sinfo -N -h -p [default_partition] -t idle -o "%c"
 expect {
 	-re "($number)" {
 		incr matches
@@ -57,7 +48,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
+		log_error "sinfo not responding"
 		set exit_code 1
 	}
 	eof {
@@ -67,13 +58,12 @@ expect {
 log_user 1
 
 if {$matches < $needed_nodes} {
-	send_user "\nWARNING: $needed_nodes idle nodes required in partition $partition, only $matches found.\n"
-	exit 0
+	skip "$needed_nodes idle nodes required in default partition, only $matches found"
 }
 
 set nodes 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -t1 -p $partition -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES]
+set srun_pid [spawn $srun -t1 -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES]
 expect {
 	-re "srun: job $number queued and waiting for resources" {
 		exp_continue
@@ -84,13 +74,13 @@ expect {
 	-re "($number)" {
 		set nodes $expect_out(1,string)
 		if {$nodes != 1} {
-			send_user "\nFAILURE: expected 1 allocated node\n"
+			log_error "Expected 1 allocated node"
 			set exit_code 1
 		}
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sun_pid
 		set exit_code 1
 	}
@@ -99,7 +89,6 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

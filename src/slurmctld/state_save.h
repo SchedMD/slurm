@@ -40,11 +40,6 @@
 #ifndef _SLURMCTLD_STATE_SAVE_H
 #define _SLURMCTLD_STATE_SAVE_H
 
-/* fsync() and close() a file,
- * Execute fsync() and close() multiple times if necessary and log failures
- * RET 0 on success or -1 on error */
-extern int fsync_and_close(int fd, char *file_type);
-
 /* Queue saving of front_end state information */
 extern void schedule_front_end_save(void);
 

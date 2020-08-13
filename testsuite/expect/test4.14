@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validate that multiple partitions can be specified
 #          in sinfo environment variables
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -32,19 +27,13 @@
 ############################################################################
 source ./globals
 
-set test_id        4.14
 set test_part_1    "test$test_id\_partition_1"
 set test_part_2    "test$test_id\_partition_2"
 set test_node      ""
-set alpha_num_dot  "\[a-zA-Z0-9_.\-\]+"
-set default_part   default_partition
 set exit_code      0
 
-print_header $test_id
-
 if {[test_super_user] == 0} {
-	send_user "\nWARNING: can not test more unless SlurmUser or root\n"
-	exit $exit_code
+	skip "Can not test more unless SlurmUser or root"
 }
 
 proc delete_part { } {
@@ -54,7 +43,7 @@ proc delete_part { } {
 	spawn $scontrol delete partition=$test_part_1
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -65,7 +54,7 @@ proc delete_part { } {
 	spawn $scontrol delete partition=$test_part_2
 	expect {
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -80,12 +69,12 @@ delete_part
 # get a node for the test partition
 spawn $bin_bash -c "$sinfo -h --state=idle -o%n | head -n1"
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set test_node $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -97,7 +86,7 @@ expect {
 spawn $scontrol create partition=$test_part_1 nodes=$test_node
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -108,7 +97,7 @@ expect {
 spawn $scontrol create partition=$test_part_2 nodes=$test_node
 expect {
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -129,7 +118,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -137,9 +126,8 @@ expect {
 	}
 }
 if {$found != 2} {
-	send_user "\nFAILURE: Test partition was not created ($found != 2)\n"
 	delete_part
-	exit 1
+	fail "Test partition was not created ($found != 2)"
 }
 
 #### Using the Environment Variable ####
@@ -147,7 +135,7 @@ set match 0
 set found 0
 spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P"
 expect {
-	-re "($alpha_num_dot)" {
+	-re "($re_word_str)" {
 		set str $expect_out(1,string)
 		if {![string compare $str $test_part_1] || \
 		    ![string compare $str $test_part_2] } {
@@ -157,7 +145,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -166,7 +154,7 @@ expect {
 }
 
 if {$match != 2 || $found != 2} {
-	send_user "\nFAILURE: partitions do not match (match:$match found:$found != 2)\n"
+	log_error "Partitions do not match (match:$match found:$found != 2)"
 	set exit_code 1
 }
 
@@ -174,7 +162,7 @@ if {$match != 2 || $found != 2} {
 set match 0
 spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P -p$test_part_2"
 expect {
-	-re "($alpha_num_dot)" {
+	-re "($re_word_str)" {
 		set str $expect_out(1,string)
 		if {![string compare $str $test_part_1] } {
 			set match -99
@@ -186,7 +174,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -195,7 +183,7 @@ expect {
 }
 
 if {$match != 1} {
-	send_user "\nFAILURE: sinfo -p did not override environment variable ($match != 1)\n"
+	log_error "sinfo -p did not override environment variable ($match != 1)"
 	set exit_code 1
 }
 
@@ -203,7 +191,7 @@ set match 0
 set found 0
 spawn $bin_bash -c "SINFO_ALL=1 $sinfo -h -o%P -p$test_part_1,$test_part_2"
 expect {
-	-re "($alpha_num_dot)" {
+	-re "($re_word_str)" {
 		set str $expect_out(1,string)
 		if {![string compare $str $test_part_1] || \
 		    ![string compare $str $test_part_2]} {
@@ -213,7 +201,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -222,14 +210,14 @@ expect {
 }
 
 if {$match != 2 || $found != 2} {
-	send_user "\nFAILURE: sinfo -p did not override env variable (match:$match found:$found != 2)\n"
+	log_error "sinfo -p did not override env variable (match:$match found:$found != 2)"
 	set exit_code 1
 }
 
 set match 0
 spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P -a"
 expect {
-	-re "($alpha_num_dot)" {
+	-re "($re_word_str)" {
 		set str $expect_out(1,string)
 		if {![string compare $str $test_part_1] || \
 		    ![string compare $str $test_part_2]} {
@@ -238,7 +226,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -247,7 +235,7 @@ expect {
 }
 
 if {$match != 2} {
-	send_user "\nFAILURE: sinfo did not show all partitions ($match != 2)\n"
+	log_error "sinfo did not show all partitions ($match != 2)"
 	set exit_code 1
 }
 
@@ -256,12 +244,12 @@ set match 0
 spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 SINFO_ALL=1 $sinfo"
 expect {
 	-re "Conflicting options" {
-		send_user "\nThis error is expected, do not worry.\n"
+		log_debug "This error is expected, do not worry"
 		set match 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -270,7 +258,7 @@ expect {
 }
 
 if {$match != 1} {
-	send_user "\nFAILURE: sinfo should have produced an error ($match != 1)\n"
+	log_error "sinfo should have produced an error ($match != 1)"
 	set exit_code 1
 }
 
@@ -278,12 +266,12 @@ set match 0
 spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -p$test_part_1 -a"
 expect {
 	-re "Conflicting options" {
-		send_user "\nThis error is expected, do not worry.\n"
+		log_debug "This error is expected, do not worry"
 		set match 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sinfo is not responding\n"
+		log_error "sinfo is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -292,15 +280,12 @@ expect {
 }
 
 if {$match != 1} {
-	send_user "\nFAILURE: sinfo should have produced an error ($match != 1)\n"
-	set exit_code 1
+	fail "sinfo should have produced an error ($match != 1)"
 }
 
 # Delete test partitions
 delete_part
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-
-exit $exit_code

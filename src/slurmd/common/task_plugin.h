@@ -84,14 +84,6 @@ extern int task_g_slurmd_launch_request(launch_tasks_request_msg_t *req,
 					uint32_t node_id);
 
 /*
- * Slurmd is reserving resources for the task.
- *
- * RET - slurm error code
- */
-extern int task_g_slurmd_reserve_resources(launch_tasks_request_msg_t *req,
-					   uint32_t node_id );
-
-/*
  * Slurmd is suspending a job.
  *
  * RET - slurm error code
@@ -104,13 +96,6 @@ extern int task_g_slurmd_suspend_job(uint32_t job_id);
  * RET - slurm error code
  */
 extern int task_g_slurmd_resume_job(uint32_t job_id);
-
-/*
- * Slurmd is releasing resources for the task.
- *
- * RET - slurm error code
- */
-extern int task_g_slurmd_release_resources(uint32_t job_id);
 
 /*
  * Note that a task launch is about to occur.

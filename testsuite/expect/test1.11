@@ -4,10 +4,6 @@
 #          Test of batch job and job name options (--batch and --job-name
 #          options).
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # Note:    This script generates and then deletes files in the working directory
 #          named test1.11.input, test1.11.output, and test1.11.error
 ############################################################################
@@ -36,7 +32,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.11"
 set name_read   ""
 
 set complete_flag        0
@@ -47,8 +42,6 @@ set job_grp_info         ""
 set job_id               0
 set got_job_grps         0
 set got_login_grps       0
-
-print_header $test_id
 
 #
 # Spawn a srun job with a really long name and confirm it is accepted or truncated
@@ -68,7 +61,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -78,7 +71,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: job submit failure\n"
+	log_error "Job submit failure"
 	set exit_code 1
 }
 
@@ -87,12 +80,12 @@ if {$job_id == 0} {
 #
 spawn $scontrol show job $job_id
 expect {
-	-re "Name=($alpha_cap) " {
+	-re "Name=($re_word_str) " {
 		set name_read $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -108,18 +101,15 @@ set size2  [ string length $name_read ]
 # Convert to zero origin
 incr size2  -1
 if {$size2 == 0} {
-	send_user "\nFAILURE: job name read failure\n"
+	log_error "Job name read failure"
 	set exit_code 1
 }
 set short1 [ string range $job_name  0 $size2 ]
 set short2 [ string range $name_read 0 $size2 ]
 if {[ string compare $short1 $short2 ] != 0} {
-	send_user "\nFAILURE: requested and actual job name mismatch\n"
-	send_user "Strings are:$short1:$short2:$size2:\n"
-	set exit_code 1
+	fail "Requested and actual job name mismatch. Strings are:$short1:$short2:$size2"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

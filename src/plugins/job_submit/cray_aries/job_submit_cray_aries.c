@@ -83,7 +83,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 /*
  * Append CRAY_GRES_POSTFIX to the gres provided by the user
  */
-static void _append_gres(struct job_descriptor *job_desc)
+static void _append_gres(job_desc_msg_t *job_desc)
 {
 	if (job_desc->tres_per_node == NULL) {
 		job_desc->tres_per_node = xstrdup(CRAY_GRES_POSTFIX);
@@ -106,14 +106,14 @@ int fini (void)
 	return SLURM_SUCCESS;
 }
 
-extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
+extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid)
 {
 	_append_gres(job_desc);
 	return SLURM_SUCCESS;
 }
 
-extern int job_modify(struct job_descriptor *job_desc,
-		      struct job_record *job_ptr, uint32_t submit_uid)
+extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
+		      uint32_t submit_uid)
 {
 	/* Don't call this on modify it shouldn't be needed and will
 	 * mess things up if modifying a running job

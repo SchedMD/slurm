@@ -37,29 +37,39 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-
-#include <sys/types.h>
-#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <sys/select.h>
-#include <sys/time.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
-#include <stdint.h>
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <unistd.h>
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
 #define	SOL_TCP		IPPROTO_TCP
 #endif
 
+#ifndef NI_MAXHOST
+#define NI_MAXHOST 1025
+#endif /* NI_MAXHOST */
+#ifndef NI_MAXSERV
+#define NI_MAXSERV 32
+#endif /* NI_MAXSERV */
+
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -221,4 +231,43 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 	}
 
 	return *fd;
+}
+
+extern char *sockaddr_to_string(const struct sockaddr *addr, socklen_t addrlen)
+{
+	int rc;
+	char *resp = NULL;
+	char host[NI_MAXHOST] = { 0 };
+	char serv[NI_MAXSERV] = { 0 };
+
+	if (addr->sa_family == AF_UNIX) {
+		const struct sockaddr_un *addr_un =
+			(const struct sockaddr_un *) addr;
+
+		/* path may not be set */
+		if (addr_un->sun_path[0])
+			return xstrdup_printf("unix:%s", addr_un->sun_path);
+		else
+			return NULL;
+	}
+
+	resp = xmalloc(NI_MAXHOST + NI_MAXSERV);
+	rc = getnameinfo(addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, 0);
+	if (rc == EAI_SYSTEM) {
+		error("Unable to get address: %m");
+	} else if (rc) {
+		error("Unable to get address: %s", gai_strerror(rc));
+	} else {
+		if (host[0] != '\0' && serv[0] != '\0')
+			xstrfmtcat(resp, "%s:%s", host, serv);
+		else if (serv[0] != '\0')
+			xstrfmtcat(resp, "*:%s", serv);
+	}
+
+	return resp;
+}
+
+extern char *addrinfo_to_string(const struct addrinfo *addr)
+{
+	return sockaddr_to_string(addr->ai_addr, addr->ai_addrlen);
 }

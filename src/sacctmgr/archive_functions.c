@@ -44,6 +44,7 @@
 #include <sys/param.h>		/* MAXPATHLEN */
 #include "src/common/proc_args.h"
 #include "src/common/uid.h"
+#include "src/common/util-net.h"
 
 static char *_string_to_uid( char *name )
 {
@@ -201,24 +202,21 @@ static int _set_cond(int *start, int argc, char **argv,
 			  || !xstrncasecmp(argv[i], "Clusters",
 					  MAX(command_len, 1))) {
 			if (!job_cond->cluster_list)
-				job_cond->cluster_list =
-					list_create(slurm_destroy_char);
+				job_cond->cluster_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->cluster_list,
 					      argv[i]+end);
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Accounts",
 					 MAX(command_len, 2))) {
 			if (!job_cond->acct_list)
-				job_cond->acct_list =
-					list_create(slurm_destroy_char);
+				job_cond->acct_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->acct_list,
 					      argv[i]+end);
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Associations",
 					 MAX(command_len, 2))) {
 			if (!job_cond->associd_list)
-				job_cond->associd_list =
-					list_create(slurm_destroy_char);
+				job_cond->associd_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->associd_list,
 					      argv[i]+end);
 			set = 1;
@@ -232,19 +230,17 @@ static int _set_cond(int *start, int argc, char **argv,
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Gid", MAX(command_len, 2))) {
 			if (!job_cond->groupid_list)
-				job_cond->groupid_list =
-					list_create(slurm_destroy_char);
+				job_cond->groupid_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->groupid_list,
 					      argv[i]+end);
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Jobs",
 					 MAX(command_len, 1))) {
 			char *end_char = NULL, *start_char = argv[i] + end;
-			slurmdb_selected_step_t *selected_step = NULL;
+			slurm_selected_step_t *selected_step = NULL;
 			char *dot = NULL;
 			if (!job_cond->step_list)
-				job_cond->step_list =
-					list_create(slurm_destroy_char);
+				job_cond->step_list = list_create(xfree_ptr);
 
 			while ((end_char = strstr(start_char, ","))) {
 				end_char[0] = '\0';
@@ -253,20 +249,23 @@ static int _set_cond(int *start, int argc, char **argv,
 				if (start_char[0] == '\0')
 					continue;
 				selected_step = xmalloc(
-					sizeof(slurmdb_selected_step_t));
+					sizeof(slurm_selected_step_t));
 				selected_step->array_task_id = NO_VAL;
-				selected_step->pack_job_offset = NO_VAL;
+				selected_step->het_job_offset = NO_VAL;
 				list_append(job_cond->step_list, selected_step);
 
 				dot = strstr(start_char, ".");
 				if (dot == NULL) {
 					debug2("No jobstep requested");
-					selected_step->stepid = NO_VAL;
+					selected_step->step_id.step_id = NO_VAL;
 				} else {
 					*dot++ = 0;
-					selected_step->stepid = atoi(dot);
+					selected_step->step_id.step_id =
+						atoi(dot);
 				}
-				selected_step->jobid = atoi(start_char);
+				selected_step->step_id.step_het_comp = NO_VAL;
+				selected_step->step_id.job_id =
+					atoi(start_char);
 				start_char = end_char + 1;
 			}
 
@@ -275,7 +274,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 2))) {
 			if (!job_cond->partition_list)
 				job_cond->partition_list =
-					list_create(slurm_destroy_char);
+					list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->partition_list,
 					      argv[i]+end);
 			set = 1;
@@ -427,8 +426,7 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Users",
 					 MAX(command_len, 1))) {
 			if (!job_cond->userid_list)
-				job_cond->userid_list =
-					list_create(slurm_destroy_char);
+				job_cond->userid_list = list_create(xfree_ptr);
 			_addto_uid_char_list(job_cond->userid_list,
 					     argv[i]+end);
 			set = 1;
@@ -445,6 +443,7 @@ static int _set_cond(int *start, int argc, char **argv,
 
 extern int sacctmgr_archive_dump(int argc, char **argv)
 {
+	char *warning = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_archive_cond_t *arch_cond =
 		xmalloc(sizeof(slurmdb_archive_cond_t));
@@ -540,20 +539,19 @@ extern int sacctmgr_archive_dump(int argc, char **argv)
 		}
 	}
 
-	rc = slurmdb_archive(db_conn, arch_cond);
-	if (rc == SLURM_SUCCESS) {
-		if (commit_check("Would you like to commit changes?")) {
-			slurmdb_connection_commit(db_conn, 1);
-		} else {
-			printf(" Changes Discarded\n");
-			slurmdb_connection_commit(db_conn, 0);
+	warning = "This may result in loss of accounting database records (if Purge* options enabled).\nAre you sure you want to continue?";
+	if (commit_check(warning)) {
+		rc = slurmdb_archive(db_conn, arch_cond);
+		if (rc != SLURM_SUCCESS) {
+			exit_code = 1;
+			fprintf(stderr, " Problem dumping archive: %s\n",
+				slurm_strerror(rc));
+			rc = SLURM_ERROR;
 		}
 	} else {
-		exit_code = 1;
-		fprintf(stderr, " Problem dumping archive: %s\n",
-			slurm_strerror(rc));
-		rc = SLURM_ERROR;
+		printf(" Changes Discarded\n");
 	}
+
 	slurmdb_destroy_archive_cond(arch_cond);
 
 	return rc;
@@ -565,7 +563,6 @@ extern int sacctmgr_archive_load(int argc, char **argv)
 	slurmdb_archive_rec_t *arch_rec =
 		xmalloc(sizeof(slurmdb_archive_rec_t));
 	int i, command_len = 0;
-	struct stat st;
 
 	for (i = 0; i < argc; i++) {
 		int end = parse_option_end(argv[i]);
@@ -582,6 +579,12 @@ extern int sacctmgr_archive_load(int argc, char **argv)
 		   || !xstrncasecmp(argv[i], "File", MAX(command_len, 1))) {
 			arch_rec->archive_file =
 				strip_quotes(argv[i]+end, NULL, 0);
+			if (!is_full_path(arch_rec->archive_file)) {
+				char *file = arch_rec->archive_file;
+				arch_rec->archive_file =
+					make_full_path(arch_rec->archive_file);
+				xfree(file);
+			}
 		} else if (!xstrncasecmp(argv[i], "Insert",
 					 MAX(command_len, 2))) {
 			arch_rec->insert = strip_quotes(argv[i]+end, NULL, 1);
@@ -596,31 +599,6 @@ extern int sacctmgr_archive_load(int argc, char **argv)
 		return SLURM_ERROR;
 	}
 
-	if (arch_rec->archive_file) {
-		char *fullpath;
-		char cwd[MAXPATHLEN + 1];
-		int  mode = F_OK;
-
-		if ((getcwd(cwd, MAXPATHLEN)) == NULL)
-			fatal("getcwd failed: %m");
-
-		if ((fullpath = search_path(cwd, arch_rec->archive_file,
-					    true, mode, false))) {
-			xfree(arch_rec->archive_file);
-			arch_rec->archive_file = fullpath;
-		}
-
-		if (stat(arch_rec->archive_file, &st) < 0) {
-			exit_code = errno;
-			fprintf(stderr, " load: Failed to stat %s: %s\n "
-				"Note: For archive load, the file must be on "
-				"the calling host.\n",
-				arch_rec->archive_file, slurm_strerror(errno));
-			slurmdb_destroy_archive_rec(arch_rec);
-			return SLURM_ERROR;
-		}
-	}
-
 	rc = slurmdb_archive_load(db_conn, arch_rec);
 	if (rc == SLURM_SUCCESS) {
 		if (commit_check("Would you like to commit changes?")) {
@@ -633,6 +611,10 @@ extern int sacctmgr_archive_load(int argc, char **argv)
 		exit_code = 1;
 		fprintf(stderr, " Problem loading archive file: %s\n",
 			slurm_strerror(rc));
+
+		if (rc == EACCES || rc == EISDIR || rc == ENOENT)
+			fprintf(stderr, " Note: For archive load, the file must be accessible on the slurmdbd host.\n");
+
 		rc = SLURM_ERROR;
 	}
 

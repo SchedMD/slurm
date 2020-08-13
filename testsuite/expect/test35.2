@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Cray job-specific burst buffer use
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015-2018 SchedMD LLC.
 # Written by Morris Jette <jette(at)schedmd.com>
@@ -31,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "35.2"
 set data_in     "DATA_IN_0123456789"
 set data_out    "DATA_OUT_9876543210"
 set exit_code   0
@@ -77,14 +71,11 @@ proc find_bb_data { file_name string_seek } {
 	return $found
 }
 
-print_header $test_id
-
 stop_root_user
 
 set bb_types [get_bb_types]
 if {[string first "datawarp" $bb_types] == -1} {
-	send_user "\nWARNING: This test can only be run with the burst_buffer/datawarp plugin\n"
-	exit 0
+	skip "This test can only be run with the burst_buffer/datawarp plugin"
 }
 
 set cwd [$bin_pwd]
@@ -118,7 +109,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -127,22 +118,22 @@ expect {
 }
 
 if {$job_id_use == 0} {
-	send_user "\nFAILURE: job did not launch\n"
+	log_error "Job did not launch"
 	set exit_code 1
 } elseif {[wait_for_job $job_id_use "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id_use
 } elseif {[wait_for_file $output_use] != 0} {
 	set exit_code 1
 } elseif {[find_bb_jobid $output_use $job_id_use] == 0} {
-	send_user "\nFAILURE: job burst buffer not found\n"
+	log_error "Job burst buffer not found"
 	set exit_code 1
 } elseif {[find_bb_data $output_use $data_in] == 0} {
-	send_user "\nFAILURE: job burst buffer input data not found\n"
+	log_error "Job burst buffer input data not found"
 	set exit_code 1
 } elseif {[find_bb_data $output_data $data_out] == 0} {
-	send_user "\nFAILURE: job burst buffer output data not found\n"
+	log_error "Job burst buffer output data not found"
 	set exit_code 1
 }
 
@@ -157,7 +148,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -165,18 +156,16 @@ expect {
 	}
 }
 if {$found != 0} {
-	send_user "\nFAILURE: job burst buffer not removed\n"
-	set exit_code 1
+	fail "Job burst buffer not removed"
 }
 
 if {[find_bb_data $output_data $data_out] == 0} {
-	send_user "\nFAILURE: job output burst buffer data not correct\n"
-	set exit_code 1
+	fail "Job output burst buffer data not correct"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $input_data $output_data
 	exec $bin_rm -f $output_use $script_use
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

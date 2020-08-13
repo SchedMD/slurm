@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Confirm that sbatch sets appropriate job name (--job-name option
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,12 +28,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.9"
 set exit_code   0
 set file_in     "test$test_id.input"
 set name_set    "my_name"
-
-print_header $test_id
 
 #
 # Delete left-over stdin/out/err files
@@ -60,7 +53,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 		exp_continue
 	}
@@ -69,8 +62,7 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	fail "Failed to submit job"
 }
 
 set matches 0
@@ -85,13 +77,12 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: sbatch failed to set job name\n"
-	set exit_code 1
+	fail "sbatch failed to set job name"
 }
 cancel_job $job_id
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

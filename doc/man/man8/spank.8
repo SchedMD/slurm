@@ -1,4 +1,4 @@
-.TH SPANK "8" "Slurm Component" "August 2017" "Slurm Component"
+.TH SPANK "8" "Slurm Component" "April 2020" "Slurm Component"
 
 .SH "NAME"
 \fBSPANK\fR \- Slurm Plug\-in Architecture for Node and job (K)control
@@ -58,7 +58,7 @@ and subsequent calls.
 In local context, only the \fBinit\fR, \fBexit\fR, \fBinit_post_opt\fR, and
 \fBlocal_user_init\fR functions are called. In allocator context, only the
 \fBinit\fR, \fBexit\fR, and \fBinit_post_opt\fR functions are called.
-Similarly, in slurmd context, only the \fBslurmd_init\fR and \fBslurmd_exit\fR
+Similarly, in slurmd context, only the \fBinit\fR and \fBslurmd_exit\fR
 callbacks are active, and in the job_script context, only the \fBjob_prolog\fR
 and \fBjob_epilog\fR callbacks are used.
 Plugins may query the context in which they are running with the
@@ -71,10 +71,7 @@ launch. A plugin may define the following functions:
 \fBslurm_spank_init\fR
 Called just after plugins are loaded. In remote context, this is just
 after job step is initialized. This function is called before any plugin
-option processing. This function is not called in slurmd context.
-.TP
-\fBslurm_spank_slurmd_init\fR
-Called in slurmd just after the daemon is started.
+option processing.
 .TP
 \fBslurm_spank_job_prolog\fR
 Called at the same time as the job prolog. If this function returns a
@@ -107,7 +104,9 @@ Called for each task just after fork, but before all elevated privileges
 are dropped. (remote context only)
 .TP
 \fBslurm_spank_task_init\fR
-Called for each task just before execve (2). (remote context only)
+Called for each task just before execve (2). If you are restricing memory
+with cgroups, memory allocated here will be in the job's cgroup. (remote
+context only)
 .TP
 \fBslurm_spank_task_post_fork\fR
 Called for each task from parent process after fork (2) is complete.
@@ -249,6 +248,12 @@ will be set to one of many error values defined in slurm/spank.h. The
 which may be used to translate a \fBspank_err_t\fR value into its
 string representation.
 
+.LP
+The \fBslurm_spank_log\fR function can be used to print messages back to the
+user at an error level.  This is to keep users from having to rely on the
+\fBslurm_error\fR function, which can be confusing because it prepends
+"\fBerror:\fR" to every message.
+
 .SH "SPANK OPTIONS"
 .LP
 SPANK plugins also have an interface through which they may define
@@ -376,7 +381,10 @@ struct spank_option \fIopt\fR has been used by the user. If \fIoptargp\fR
 is non-NULL then it is set to any option argument passed (if the option
 takes an argument). The use of this method is \fIrequired\fR to process
 options in \fBjob_script\fR context (\fBslurm_spank_job_prolog\fR and
-\fBslurm_spank_job_epilog\fR) and can not be used from other contexts.
+\fBslurm_spank_job_epilog\fR). This function is valid in the following contexts:
+slurm_spank_job_prolog, slurm_spank_local_user_init, slurm_spank_user_init,
+slurm_spank_task_init_privileged, slurm_spank_task_init, slurm_spank_task_exit,
+and slurm_spank_job_epilog.
 
 .SH "CONFIGURATION"
 .LP

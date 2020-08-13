@@ -67,10 +67,9 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid,
 extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid,
 			uint32_t protocol_version);
 
-extern void job_begin_callback(struct job_record *job_ptr);
-extern void job_fini_callback(struct job_record *job_ptr);
-extern void node_fail_callback(struct job_record *job_ptr,
-			       struct node_record *node_ptr);
+extern void job_begin_callback(job_record_t *job_ptr);
+extern void job_fini_callback(job_record_t *job_ptr);
+extern void node_fail_callback(job_record_t *job_ptr, node_record_t *node_ptr);
 
 /*
  * Register a callback port for job events, set port to zero to clear

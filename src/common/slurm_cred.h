@@ -137,8 +137,7 @@ int  slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, Buf buffer);
  * to this STEP
  */
 typedef struct {
-	uint32_t  jobid;
-	uint32_t  stepid;
+	slurm_step_id_t step_id;
 	uid_t uid;
 	gid_t gid;
 	char *pw_name;
@@ -255,7 +254,7 @@ void slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 
 /*
  * Revoke all credentials for job id jobid
- * time IN - the time the job terminiation was requested by slurmctld
+ * time IN - the time the job termination was requested by slurmctld
  *           (local time from slurmctld server)
  * start_time IN - job start time, used to recongnize job requeue
  */
@@ -355,7 +354,7 @@ void slurm_cred_print(slurm_cred_t *cred);
 
 typedef struct {
 	uint32_t job_id;
-	uint32_t pack_jobid;
+	uint32_t het_job_id;
 	uid_t uid;
 	gid_t gid;
 	char *user_name;
@@ -379,5 +378,6 @@ void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer,
 sbcast_cred_t *unpack_sbcast_cred(Buf buffer, uint16_t protocol_version);
 void print_sbcast_cred(sbcast_cred_t *sbcast_cred);
 void sbcast_cred_arg_free(sbcast_cred_arg_t *arg);
+extern bool slurm_cred_send_gids_enabled(void);
 
 #endif  /* _HAVE_SLURM_CREDS_H */

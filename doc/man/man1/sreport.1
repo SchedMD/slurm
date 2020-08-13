@@ -1,4 +1,4 @@
-.TH sreport "1" "Slurm Commands" "April 2017" "Slurm Commands"
+.TH sreport "1" "Slurm Commands" "May 2019" "Slurm Commands"
 
 .SH "NAME"
 sreport \- Generate reports from the slurm accounting data.
@@ -201,7 +201,7 @@ the tree for better visibility.
 NOTE: If there were reservations allowing a whole account any
 idle time in the reservation given to the association for the
 account, not the user associations in the account, so it can be
-possible a parent account can be larger than the sum of it's children.
+possible a parent account can be larger than the sum of its children.
 .TP
 .B cluster UserUtilizationByAccount
 This report will display users by account in order of utilization without
@@ -214,11 +214,49 @@ grouping multiple wckey by user into one, but displaying them
 on separate lines.
 .TP
 .B cluster Utilization
-This report will display total usage divided by Allocated, Down,
-Idle, and Reserved time for selected clusters.  Reserved time
-refers to time that a job was waiting for resources after the job
-had become eligible.  If the value is not of importance for you
-the number should be grouped with idle time.
+This report will display total usage divided amongst Allocated, Down,
+Planned Down, Idle, and Reserved time for selected clusters.
+.RS
+.IP Allocated 13
+Time that nodes were in use with active jobs or an active reservation.
+This does not include reservations created with the MAINT or IGNORE_JOBS
+flags.
+.IP Down
+Time that nodes were marked as Down or time that slurmctld was not
+responding (assuming TrackSlurmctldDown is set in slurmdbd.conf).
+.IP Idle
+Time where nodes had no active jobs or reservations.
+.IP Overcommited
+Time that the nodes were over allocated, either with the \fB-O,
+--overcommit\fP flag at submission time or \fBOverSubscribe\fP set to
+FORCE in the slurm.conf. This time is not counted against the total
+reported time.
+.IP PlannedDown
+Time that nodes were in use by a reservation created with the MAINT flag
+but not the IGNORE_JOBS flag.
+.IP Reserved
+Time that a node spent idle with eligible jobs in the queue that were
+unable to start due to time or size constraints. If this value is
+not of importance for you then the number can be grouped with idle time.
+.IP TresCount
+Configured number of TRES' on the reported nodes. See also the
+\fBTresName\fP field.
+.RE
+.RS 7
+
+Note: Reservations created with the IGNORE_JOBS flag are not tracked
+in the Cluster Utilization report due to the fact that allowing any
+current/active jobs to continue to run in the reservation introduces the
+possibility for them to be accounted for incorrectly.
+.RE
+.RS
+
+Note: The default view for the "Cluster Utilization" report includes the
+following fields: Cluster, Allocated, Down, PlannedDown, Idle, Reserved,
+Reported. You can include additional fields like OverCommitted and TresCount
+fields with the \fBFormat\fP option. The TresName will also be included if
+using the \fB\-T,  \-\-tres <tres_names>\fR option.
+.RE
 .TP
 .B cluster WCKeyUtilizationByUser
 This report will display wckey utilization sorted by WCKey name for
@@ -421,7 +459,8 @@ Cluster, Login, Proper, TresCount, Used, Wckey
 .in 10
 Utilization:
 .in 14
-Allocated, Cluster, Down, Idle, Overcommited, PlannedDown, Reported, Reserved, TresCount, TresName
+Allocated, Cluster, Down, Idle, Overcommited, PlannedDown, Reported, Reserved,
+TresCount, TresName
 
 .TP
 \fBFORMAT OPTIONS FOR JOB REPORTS\fP
@@ -451,6 +490,19 @@ Account, Cluster, Login, Proper, Used
 
 .TP
 All commands and options are case-insensitive.
+
+.SH "PERFORMANCE"
+.PP
+Executing \fBsreport\fR sends a remote procedure call to \fBslurmdbd\fR. If
+enough calls from \fBsreport\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmdbd\fR daemon come in at once, it can result in a
+degradation of performance of the \fBslurmdbd\fR daemon, possibly resulting in a
+denial of service.
+.PP
+Do not run \fBsreport\fR or other Slurm client commands that send remote
+procedure calls to \fBslurmdbd\fR from loops in shell scripts or other programs.
+Ensure that programs limit calls to \fBsreport\fR to the minimum necessary for
+the information you are trying to gather.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP

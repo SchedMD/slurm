@@ -1,3 +1,4 @@
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          to be called from test21.34
@@ -71,8 +72,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_1 "QOSGrpNodeLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	# Reset the value to 0
 	set mod_job_qos(GrpNodes) "-1"
@@ -88,8 +88,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_2 "QOSGrpCpuLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpCpus) "-1"
 	set mod_part_qos(GrpCpus) "-1"
@@ -104,8 +103,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_3 "QOSGrpJobsLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpJobs) "-1"
 	set mod_part_qos(GrpJobs) "-1"
@@ -120,8 +118,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_4
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpSubmit) "-1"
 	set mod_part_qos(GrpSubmit) "-1"
@@ -136,8 +133,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_5 "QOSMaxCpuPerJobLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxCpus) "-1"
 	set mod_part_qos(MaxCpus) "-1"
@@ -152,8 +148,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_6 "QOSMaxNodePerJobLimit|PartitionConfig"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxNodes) "-1"
 	set mod_part_qos(MaxNodes) "-1"
@@ -168,8 +163,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_7 "QOSMaxJobsPerUserLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxJobs) "-1"
 	set mod_part_qos(MaxJobs) "-1"
@@ -184,8 +178,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_8
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxSubmitJobs) "-1"
 	set mod_part_qos(MaxSubmitJobs) "-1"
@@ -200,8 +193,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_34_1 $part_qos "QOSGrpCPUMinutesLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpCpuMin) "-1"
 	set mod_part_qos(GrpCpuMin) "-1"
@@ -218,8 +210,7 @@ proc part_test { } {
 		sleep $time_spacing
 		inc21_30_10 "QOSGrpCPURunMinutesLimit"
 		if {$exit_code != 0} {
-			cleanup
-			exit 1
+			fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 		}
 		set mod_job_qos(GrpCpuRunMin) "-1"
 		set mod_part_qos(GrpCpuRunMin) "-1"
@@ -235,8 +226,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_11 "QOSGrpMemLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpMem) "-1"
 	set mod_part_qos(GrpMem) "-1"
@@ -253,8 +243,7 @@ proc part_test { } {
 		sleep $time_spacing
 		inc21_34_2 $part_qos
 		if {$exit_code != 0} {
-			cleanup
-			exit 1
+			fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 		}
 		set mod_job_qos(GrpWall) "-1"
 		set mod_part_qos(GrpWall) "-1"
@@ -270,8 +259,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_13 "QOSMaxCpuMinutesPerJobLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxCpuMin) "-1"
 	set mod_part_qos(MaxCpuMin) "-1"
@@ -286,8 +274,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_14 "QOSMaxWallDurationPerJobLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxWall) "-1"
 	set mod_part_qos(MaxWall) "-1"
@@ -307,8 +294,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_15 "QOSMaxCpuPerUserLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 
 	}
 	set mod_job_qos(MaxCpusPerUser) "-1"
@@ -324,8 +310,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_16 "QOSMaxNodePerUserLimit|PartitionConfig"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxNodesPerUser) "-1"
 	set mod_part_qos(MaxNodesPerUser) "-1"
@@ -340,8 +325,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_17
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxWall) "-1"
 	set mod_part_qos(MaxWall) "-1"
@@ -359,8 +343,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_2 "QOSGrpBilling"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpTRES=billing) "-1"
 	set mod_part_qos(GrpTRES=billing) "-1"
@@ -376,8 +359,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_34_1 $part_qos "QOSGrpBillingMinutes"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpTRESMins=billing) "-1"
 	set mod_part_qos(GrpTRESMins=billing) "-1"
@@ -395,8 +377,7 @@ proc part_test { } {
 		sleep $time_spacing
 		inc21_30_10 "QOSGrpBillingRunMinutes"
 		if {$exit_code != 0} {
-			cleanup
-			exit 1
+			fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 		}
 		set mod_job_qos(GrpTRESRunMins=billing) "-1"
 		set mod_part_qos(GrpTRESRunMins=billing) "-1"
@@ -413,8 +394,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_5 "QOSMaxBillingPerJob"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxTRESPerJob=billing) "-1"
 	set mod_part_qos(MaxTRESPerJob=billing) "-1"
@@ -429,8 +409,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_13 "QOSMaxBillingMinutesPerJob"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxTRESMinsPerJob=billing) "-1"
 	set mod_part_qos(MaxTRESMinsPerJob=billing) "-1"
@@ -449,8 +428,7 @@ proc part_test { } {
 	sleep $time_spacing
 	inc21_30_15 "QOSMaxBillingPerUser"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxTRESPerUser=billing) "-1"
 	set mod_part_qos(MaxTRESPerUser=billing) "-1"
@@ -487,8 +465,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_1 "QOSGrpNodeLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	# Reset the value to 0
 	set mod_job_qos(GrpNodes) "-1"
@@ -504,8 +481,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_2 "QOSGrpCpuLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpCpus) "-1"
 	set mod_part_qos(GrpCpus) "-1"
@@ -520,8 +496,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_3 "QOSGrpJobsLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpJobs) "-1"
 	set mod_part_qos(GrpJobs) "-1"
@@ -536,8 +511,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_4
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpSubmit) "-1"
 	set mod_part_qos(GrpSubmit) "-1"
@@ -552,8 +526,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_5 "QOSMaxCpuPerJobLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxCpus) "-1"
 	set mod_part_qos(MaxCpus) "-1"
@@ -568,8 +541,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_6 "QOSMaxNodePerJobLimit|PartitionConfig"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxNodes) "-1"
 	set mod_part_qos(MaxNodes) "-1"
@@ -584,8 +556,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_7 "QOSMaxJobsPerUserLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxJobs) "-1"
 	set mod_part_qos(MaxJobs) "-1"
@@ -600,8 +571,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_8
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxSubmitJobs) "-1"
 	set mod_part_qos(MaxSubmitJobs) "-1"
@@ -616,8 +586,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_34_1 $job_qos "QOSGrpCPUMinutesLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpCpuMin) "-1"
 	set mod_part_qos(GrpCpuMin) "-1"
@@ -634,8 +603,7 @@ proc qos_test { } {
 		sleep $time_spacing
 		inc21_30_10  "QOSGrpCPURunMinutesLimit"
 		if {$exit_code != 0} {
-			cleanup
-			exit 1
+			fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 		}
 		set mod_job_qos(GrpCpuRunMin) "-1"
 		set mod_part_qos(GrpCpuRunMin) "-1"
@@ -651,8 +619,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_11 "QOSGrpMemLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpMem) "-1"
 	set mod_part_qos(GrpMem) "-1"
@@ -669,8 +636,7 @@ proc qos_test { } {
 		sleep $time_spacing
 		inc21_34_2 $job_qos
 		if {$exit_code != 0} {
-			cleanup
-			exit 1
+			fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 		}
 		set mod_job_qos(GrpWall) "-1"
 		set mod_part_qos(GrpWall) "-1"
@@ -686,8 +652,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_13 "QOSMaxCpuMinutesPerJobLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxCpuMin) "-1"
 	set mod_part_qos(MaxCpuMin) "-1"
@@ -702,8 +667,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_14 "QOSMaxWallDurationPerJobLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxWall) "-1"
 	set mod_part_qos(MaxWall) "-1"
@@ -724,8 +688,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_15 "QOSMaxCpuPerUserLimit"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxCpusPerUser) "-1"
 	set mod_part_qos(MaxCpusPerUser) "-1"
@@ -740,8 +703,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_16 "QOSMaxNodesPerUserLimit|PartitionConfig"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxNodesPerUser) "-1"
 	set mod_part_qos(MaxNodesPerUser) "-1"
@@ -756,8 +718,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_17
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxWall) "-1"
 	set mod_part_qos(MaxWall) "-1"
@@ -775,8 +736,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_2 "QOSGrpBilling"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpTRES=billing) "-1"
 	set mod_part_qos(GrpTRES=billing) "-1"
@@ -792,8 +752,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_34_1 $job_qos "QOSGrpBillingMinutes"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(GrpTRESMins=billing) "-1"
 	set mod_part_qos(GrpTRESMins=billing) "-1"
@@ -811,8 +770,7 @@ proc qos_test { } {
 		sleep $time_spacing
 		inc21_30_10  "QOSGrpBillingRunMinutes"
 		if {$exit_code != 0} {
-			cleanup
-			exit 1
+			fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 		}
 		set mod_job_qos(GrpTRESRunMins=billing) "-1"
 		set mod_part_qos(GrpTRESRunMins=billing) "-1"
@@ -829,8 +787,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_5 "QOSMaxBillingPerJob"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxTRESPerJob=billing) "-1"
 	set mod_part_qos(MaxTRESPerJob=billing) "-1"
@@ -845,8 +802,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_13 "QOSMaxBillingMinutesPerJob"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxTRESMinsPerJob=billing) "-1"
 	set mod_part_qos(MaxTRESMinsPerJob=billing) "-1"
@@ -865,8 +821,7 @@ proc qos_test { } {
 	sleep $time_spacing
 	inc21_30_15 "QOSMaxBillingPerUser"
 	if {$exit_code != 0} {
-		cleanup
-		exit 1
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
 	set mod_job_qos(MaxTRESPerUser=billing) "-1"
 	set mod_part_qos(MaxTRESPerUser=billing) "-1"

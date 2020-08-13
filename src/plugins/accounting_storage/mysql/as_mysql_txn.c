@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  as_mysql_txn.c - functions dealing with transactions.
  *****************************************************************************
- *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -181,8 +180,8 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 		while ((object = list_next(itr))) {
 			xstrfmtcat(query, "select id_assoc from \"%s_%s\"%s",
 				   object, assoc_table, assoc_extra);
-			if (debug_flags & DEBUG_FLAG_DB_QUERY)
-				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s",
+			         query);
 			if (!(result = mysql_db_query_ret(
 				      mysql_conn, query, 0))) {
 				xfree(query);
@@ -225,7 +224,7 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if (name_extra) {
 		if (extra)
-			xstrfmtcat(extra, " && (%s)", name_extra);
+			xstrfmtcat(extra, " || (%s)", name_extra);
 		else
 			xstrfmtcat(extra, " where (%s)", name_extra);
 		xfree(name_extra);
@@ -378,8 +377,7 @@ empty:
 
 	xfree(tmp);
 
-	if (debug_flags & DEBUG_FLAG_DB_QUERY)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);

@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          test to verify job step time limit
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2009 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,15 +28,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.61"
 set exit_code   0
 set job_id 0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
 set timeout 60
-
-print_header $test_id
 
 exec $bin_rm -f $file_in file_out file_err
 make_bash_script $file_in "
@@ -59,7 +52,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -67,8 +60,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: did not get sbatch job_id\n"
-	exit 1
+	fail "Did not get sbatch job_id"
 }
 
 #
@@ -76,7 +68,7 @@ if {$job_id == 0} {
 #
 sleep 60
 if {[wait_for_job $job_id DONE] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	set exit_code 1
 }
 
@@ -93,11 +85,11 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$timed_out == 0} {
-		send_user "\nFAILURE: srun time limit not found\n"
+		log_error "srun time limit not found"
 		set exit_code 1
 	}
 } else {
-	send_user "\nFAILURE: Job output file missing\n"
+	log_error "Job output file missing"
 	set exit_code 1
 }
 
@@ -114,16 +106,14 @@ if {[wait_for_file $file_err] == 0} {
 		}
 	}
 	if {$timed_out == 0} {
-		send_user "\nFAILURE: srun time limit not enforced\n"
-		set exit_code 1
+		fail "srun time limit not enforced"
 	}
 } else {
-	send_user "\nFAILURE: Job error file missing\n"
-	set exit_code 1
+	fail "Job error file missing"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

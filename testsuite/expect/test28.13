@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test requeue of only incomplete tasks in the job array.
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC
 # Written by Morris Jette
@@ -31,12 +26,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "28.13"
 set exit_code   0
 set file_script "test$test_id.bash"
 set job_id      0
-
-print_header $test_id
 
 make_bash_script $file_script "
 if \[ \$SLURM_ARRAY_TASK_ID == 2 \]
@@ -51,15 +43,14 @@ spawn $sbatch -n1 --array=1-4 --requeue --output=/dev/null $file_script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		send_user "\njob $job_id was submitted\n"
+		log_debug "Job $job_id was submitted"
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
-		exit 1
+		fail "sbatch did not submit jobs"
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -69,9 +60,8 @@ expect {
 
 # wait for task 2 to complete
 if {[wait_for_job ${job_id}_2 "DONE"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
 	cancel_job $job_id
-	exit 1
+	fail "Error waiting for job $job_id to complete"
 }
 sleep 5
 
@@ -79,12 +69,12 @@ sleep 5
 spawn $squeue -tall --job=$job_id
 expect {
 	-re "error" {
-		send_user "\nFAILURE: error running squeue\n"
+		log_error "Error running squeue"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
+		log_error "squeue not responding"
 		set exit_code 1
 	}
 	eof {
@@ -96,12 +86,12 @@ expect {
 spawn $scontrol requeue incomplete $job_id
 expect {
 	-re "error" {
-		send_user "\nFAILURE: error running squeue\n"
+		log_error "Error running squeue"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
+		log_error "squeue not responding"
 		set exit_code 1
 	}
 	eof {
@@ -119,26 +109,25 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: error running squeue\n"
+		log_error "Error running squeue"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue not responding\n"
+		log_error "squeue not responding"
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
+cancel_job $job_id
 if {$match != 3} {
-	send_user "\nFAILURE: failed to requeue desired count of job array elements ($match != 3)\n"
-	set exit_code 1
+	fail "Failed to requeue desired count of job array elements ($match != 3)"
 }
 
-cancel_job $job_id
 if {$exit_code == 0} {
 	file delete $file_script
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

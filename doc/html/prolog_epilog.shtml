@@ -315,7 +315,8 @@ sets an environment variable for the user task<br>
 <span class="commandline">unset name</span>
 clears an environment variable from the user task<br>
 <span class="commandline">print ...</span>
-writes to the task's standard output.</p>
+writes to the task's standard output.<br>
+The above functionality is limited to the task prolog script.</p>
 
 <p>Unless otherwise specified, these environment variables are available
 to all of the programs.</p>
@@ -384,8 +385,8 @@ Available in PrologSlurmctld and EpilogSlurmctld only.</li>
 <li><b>SLURM_CLUSTER_NAME</b>
 Name of the cluster executing the job.</li>
 
-<li><b>SLURM_JOB_GRES</b>
-GRES IDs allocated to the job (if any).
+<li><b>SLURM_JOB_GPUS</b>
+GPU IDs allocated to the job (if any).
 Available in the Prolog only.</li>
 
 <li><b>SLURM_JOB_ACCOUNT</b>
@@ -479,7 +480,7 @@ to invoke logic in the user commands, slurmd daemon, and slurmstepd daemon.</p>
 
 <h3>Failure Handling</h3>
 <p>If the Epilog fails (returns a non-zero exit code), this will result in the
-node being set to a DOWN state.
+node being set to a DRAIN state.
 If the EpilogSlurmctld fails (returns a non-zero exit code), this will only
 be logged.
 If the Prolog fails (returns a non-zero exit code), this will result in the
@@ -493,6 +494,6 @@ the job to be requeued. Only batch jobs can be requeued. Interactive jobs
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 17 April 2019</p>
+<p style="text-align:center;">Last modified 24 March 2020</p>
 
 <!--#include virtual="footer.txt"-->

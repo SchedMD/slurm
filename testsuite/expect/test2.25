@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Validate that scontrol show assoc_mgr shows the data cached in
 #          the slurmctld
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -31,19 +27,14 @@
 ############################################################################
 source ./globals
 
-set test_id      2.25
 set test_acct    "test$test_id\_acct"
 set test_user    ""
 set exit_code    0
 
-print_header $test_id
-
 if {![test_super_user]} {
-	send_user "\nWARNING: This test can't be run except as SlurmUser or root\n"
-	exit 0
+	skip "This test can't be run except as SlurmUser or root"
 } elseif {![test_limits_enforced]} {
-	send_user "\nWARNING: AccountingStorageEnforce limits must be set\n"
-	exit 0
+	skip "AccountingStorageEnforce limits must be set"
 }
 
 proc mod_assoc_vals { } {
@@ -58,7 +49,7 @@ proc mod_assoc_vals { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -67,8 +58,7 @@ proc mod_assoc_vals { } {
 	}
 
 	if {!$modified} {
-		send_user "\nFAILURE: account limits were not modified\n"
-		exit 1
+		fail "Account limits were not modified"
 	}
 }
 
@@ -84,7 +74,7 @@ proc clear_assoc_vals { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -93,8 +83,7 @@ proc clear_assoc_vals { } {
 	}
 
 	if {!$modified} {
-		send_user "\nFAILURE: account limits were not modified\n"
-		exit 1
+		fail "Account limits were not modified"
 	}
 }
 
@@ -109,7 +98,7 @@ proc delete_test_acct { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -135,7 +124,7 @@ if {[test_using_slurmdbd]} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -144,8 +133,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {!$acct_added} {
-		send_user "\nFAILURE: could not add test account $test_acct\n"
-		exit 1
+		fail "Could not add test account $test_acct"
 	}
 
 	# Add user to test account
@@ -157,7 +145,7 @@ if {[test_using_slurmdbd]} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not reponding\n"
+			log_error "sacctmgr is not reponding"
 			set exit_code 1
 		}
 		eof {
@@ -166,8 +154,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {!$user_added} {
-		send_user "\nFAILURE: could not add user to test account\n"
-		exit 1
+		fail "Could not add user to test account"
 	}
 
 	set match 0
@@ -194,7 +181,7 @@ if {[test_using_slurmdbd]} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -203,7 +190,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 5} {
-		send_user "\nFAILURE: 1 scontrol show assoc_mgr did not show correct information ($match != 5).\n"
+		log_error "1. scontrol show assoc_mgr did not show correct information ($match != 5)"
 		set exit_code 1
 	}
 
@@ -238,7 +225,7 @@ if {[test_using_slurmdbd]} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -247,7 +234,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 6} {
-		send_user "\nFAILURE: 2 scontrol show assoc_mgr did not show correct information ($match != 6).\n"
+		log_error "2. scontrol show assoc_mgr did not show correct information ($match != 6)"
 		set exit_code 1
 	}
 
@@ -283,7 +270,7 @@ if {[test_using_slurmdbd]} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -292,7 +279,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 3 && $limit_match} {
-		send_user "\nFAILURE: 3 scontrol show assoc_mgr did not show correct information ($match != 3).\n"
+		log_error "3. scontrol show assoc_mgr did not show correct information ($match != 3)"
 		set exit_code 1
 	}
 
@@ -320,7 +307,7 @@ if {[test_using_slurmdbd]} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -329,12 +316,11 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 4} {
-		send_user "\nFAILURE: 4 scontrol show assoc_mgr did not show correct information ($match != 4)\n"
+		log_error "4. scontrol show assoc_mgr did not show correct information ($match != 4)"
 		set exit_code 1
 	}
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

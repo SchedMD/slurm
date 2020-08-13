@@ -97,6 +97,7 @@
 #define bit_unfmt		slurm_bit_unfmt
 #define	bitfmt2int		slurm_bitfmt2int
 #define	bit_fmt_hexmask		slurm_bit_fmt_hexmask
+#define	bit_fmt_hexmask_trim	slurm_bit_fmt_hexmask_trim
 #define bit_unfmt_hexmask	slurm_bit_unfmt_hexmask
 #define	bit_fmt_binmask		slurm_bit_fmt_binmask
 #define bit_unfmt_binmask	slurm_bit_unfmt_binmask
@@ -113,6 +114,8 @@
 /* fd.[ch] functions */
 #define fd_set_blocking		slurm_fd_set_blocking
 #define fd_set_nonblocking	slurm_fd_set_nonblocking
+#define send_fd_over_pipe	slurm_send_fd_over_pipe
+#define receive_fd_over_pipe	slurm_receive_fd_over_pipe
 
 /* hostlist.[ch] functions */
 #define	hostlist_create		slurm_hostlist_create
@@ -184,7 +187,9 @@
 #define	list_prepend		slurm_list_prepend
 #define	list_find_first		slurm_list_find_first
 #define	list_delete_all		slurm_list_delete_all
+#define	list_delete_ptr		slurm_list_delete_ptr
 #define	list_for_each		slurm_list_for_each
+#define	list_for_each_max	slurm_list_for_each_max
 #define	list_sort		slurm_list_sort
 #define	list_push		slurm_list_push
 #define	list_pop		slurm_list_pop
@@ -199,7 +204,6 @@
 #define	list_find		slurm_list_find
 #define	list_remove		slurm_list_remove
 #define	list_delete_item	slurm_list_delete_item
-#define	list_install_fork_handlers slurm_list_install_fork_handlers
 
 /* log.[ch] functions */
 #define get_log_level		slurm_get_log_level
@@ -227,6 +231,12 @@
 /* net.[ch] functions */
 #define net_stream_listen	slurm_net_stream_listen
 #define net_set_low_water	slurm_net_set_low_water
+
+/* node_conf.[ch] functions */
+#define init_node_conf          slurm_init_node_conf
+#define build_all_nodeline_info slurm_build_all_nodeline_info
+#define rehash_node		slurm_rehash_node
+#define hostlist2bitmap		slurm_hostlist2bitmap
 
 /* pack.[ch] functions */
 #define	create_buf		slurm_create_buf
@@ -282,20 +292,29 @@
 #define env_array_append_fmt	slurm_env_array_append_fmt
 #define env_array_overwrite	slurm_env_array_overwrite
 #define env_array_overwrite_fmt slurm_env_array_overwrite_fmt
-#define env_array_overwrite_pack_fmt  slurm_env_array_overwrite_pack_fmt
+#define env_array_overwrite_het_fmt  slurm_env_array_overwrite_het_fmt
 
 /* read_config.[ch] functions */
 #define destroy_config_key_pair	slurm_destroy_config_key_pair
 #define get_extra_conf_path	slurm_get_extra_conf_path
 #define sort_key_pairs		slurm_sort_key_pairs
+
+/* run_in_daemon.[ch] functions */
 #define run_in_daemon           slurm_run_in_daemon
+#define running_in_slurmctld    slurm_running_in_slurmctld
+#define running_in_slurmd       slurm_running_in_slurmd
+#define running_in_slurmdbd     slurm_running_in_slurmdbd
+#define running_in_slurmd_stepd slurm_running_in_slurmd_stepd
+#define running_in_slurmstepd   slurm_running_in_slurmstepd
 
 /* slurm_auth.[ch] functions
  * None exported today.
  * The header file used only for #define values. */
 
 /* strlcpy.[ch] functions */
+#ifndef HAVE_STRLCPY
 #define	strlcpy			slurm_strlcpy
+#endif
 
 /* switch.[ch] functions
  * None exported today.
@@ -303,6 +322,10 @@
 
 /* xassert.[ch] functions */
 #define	__xassert_failed	slurm_xassert_failed
+
+/* xmalloc.[ch] functions */
+#define xsize			slurm_xsize
+#define xfree_ptr		slurm_xfree_ptr
 
 /* xsignal.[ch] functions */
 #define	xsignal			slurm_xsignal
@@ -368,6 +391,7 @@
 /* slurmdbd_pack.[ch] functions */
 #define pack_slurmdbd_msg	slurm_pack_slurmdbd_msg
 #define unpack_slurmdbd_msg	slurm_unpack_slurmdbd_msg
+#define slurmdbd_pack_fini_msg	slurm_slurmdbd_pack_fini_msg
 
 /* plugin.[ch] functions */
 #define plugin_get_syms         slurm_plugin_get_syms

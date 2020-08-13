@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate scontrol show hostnames.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2013 SchedMD LLC
 # Written by Morris Jette
@@ -30,10 +26,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "2.20"
 set exit_code   0
-
-print_header $test_id
 
 #
 # test single bracket hostnames
@@ -58,7 +51,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -66,7 +59,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	send_user "\nFAILURE: show hostnames failure ($matches != 4)\n"
+	log_error "Show hostnames failure ($matches != 4)"
 	set exit_code 1
 }
 
@@ -93,7 +86,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -101,7 +94,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	send_user "\nFAILURE: show hostnames failure ($matches != 4)\n"
+	log_error "Show hostnames failure ($matches != 4)"
 	set exit_code 1
 }
 
@@ -144,7 +137,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -152,11 +145,9 @@ expect {
 	}
 }
 if {$matches != 8} {
-	send_user "\nFAILURE: show hostnames failure ($matches != 8)\n"
-	set exit_code 1
+	fail "Show hostnames failure ($matches != 8)"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

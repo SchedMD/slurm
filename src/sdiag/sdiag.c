@@ -48,13 +48,12 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "sdiag.h"
+
 /********************
  * Global Variables *
  ********************/
-int sdiag_param = STAT_COMMAND_GET;
-bool sort_by_id    = false;
-bool sort_by_time  = false;
-bool sort_by_time2 = false;
+struct sdiag_parameters params;
 
 stats_info_response_msg_t *buf;
 uint32_t *rpc_type_ave_time = NULL, *rpc_user_ave_time = NULL;
@@ -73,7 +72,7 @@ int main(int argc, char **argv)
 	slurm_conf_init(NULL);
 	parse_command_line(argc, argv);
 
-	if (sdiag_param == STAT_COMMAND_RESET) {
+	if (params.mode == STAT_COMMAND_RESET) {
 		req.command_id = STAT_COMMAND_RESET;
 		rc = slurm_reset_statistics((stats_info_request_msg_t *)&req);
 		if (rc == SLURM_SUCCESS)
@@ -88,7 +87,6 @@ int main(int argc, char **argv)
 			_sort_rpc();
 			rc = _print_stats();
 #ifdef MEMORY_LEAK_DEBUG
-			uid_cache_clear();
 			slurm_free_stats_response_msg(buf);
 			xfree(rpc_type_ave_time);
 			xfree(rpc_user_ave_time);
@@ -119,6 +117,7 @@ static int _print_stats(void)
 	printf("Server thread count:  %d\n", buf->server_thread_count);
 	printf("Agent queue size:     %d\n", buf->agent_queue_size);
 	printf("Agent count:          %d\n", buf->agent_count);
+	printf("Agent thread count:   %d\n", buf->agent_thread_count);
 	printf("DBD Agent queue size: %d\n\n", buf->dbd_agent_queue_size);
 
 	printf("Jobs submitted: %d\n", buf->jobs_submitted);
@@ -160,10 +159,15 @@ static int _print_stats(void)
 	printf("\tTotal backfilled jobs (since last stats cycle start): %u\n",
 	       buf->bf_last_backfilled_jobs);
 	printf("\tTotal backfilled heterogeneous job components: %u\n",
-	       buf->bf_backfilled_pack_jobs);
+	       buf->bf_backfilled_het_jobs);
 	printf("\tTotal cycles: %u\n", buf->bf_cycle_counter);
-	printf("\tLast cycle when: %s (%ld)\n",
-	       slurm_ctime2(&buf->bf_when_last_cycle), buf->bf_when_last_cycle);
+	if (buf->bf_when_last_cycle > 0) {
+		printf("\tLast cycle when: %s (%ld)\n",
+		       slurm_ctime2(&buf->bf_when_last_cycle),
+		       buf->bf_when_last_cycle);
+	} else {
+		printf("\tLast cycle when: N/A\n");
+	}
 	printf("\tLast cycle: %u\n", buf->bf_cycle_last);
 	printf("\tMax cycle:  %u\n", buf->bf_cycle_max);
 	if (buf->bf_cycle_counter > 0) {
@@ -183,6 +187,11 @@ static int _print_stats(void)
 		printf("\tQueue length mean: %u\n",
 		       buf->bf_queue_len_sum / buf->bf_cycle_counter);
 	}
+	printf("\tLast table size: %u\n", buf->bf_table_size);
+	if (buf->bf_cycle_counter > 0) {
+		printf("\tMean table size: %u\n",
+		       buf->bf_table_size_sum / buf->bf_cycle_counter);
+	}
 
 	printf("\nLatency for 1000 calls to gettimeofday(): %d microseconds\n",
 	       buf->gettimeofday_latency);
@@ -198,11 +207,16 @@ static int _print_stats(void)
 
 	printf("\nRemote Procedure Call statistics by user\n");
 	for (i = 0; i < buf->rpc_user_size; i++) {
+		char *user = uid_to_string_or_null(buf->rpc_user_id[i]);
+		if (!user)
+			xstrfmtcat(user, "%u", buf->rpc_user_id[i]);
+
 		printf("\t%-16s(%8u) count:%-6u "
 		       "ave_time:%-6u total_time:%"PRIu64"\n",
-		       uid_to_string_cached((uid_t)buf->rpc_user_id[i]),
-		       buf->rpc_user_id[i], buf->rpc_user_cnt[i],
+		       user, buf->rpc_user_id[i], buf->rpc_user_cnt[i],
 		       rpc_user_ave_time[i], buf->rpc_user_time[i]);
+
+		xfree(user);
 	}
 
 	printf("\nPending RPC statistics\n");
@@ -239,7 +253,7 @@ static void _sort_rpc(void)
 	rpc_type_ave_time = xmalloc(sizeof(uint32_t) * buf->rpc_type_size);
 	rpc_user_ave_time = xmalloc(sizeof(uint32_t) * buf->rpc_user_size);
 
-	if (sort_by_id) {
+	if (params.sort == SORT_ID) {
 		for (i = 0; i < buf->rpc_type_size; i++) {
 			for (j = i+1; j < buf->rpc_type_size; j++) {
 				if (buf->rpc_type_id[i] <= buf->rpc_type_id[j])
@@ -278,7 +292,7 @@ static void _sort_rpc(void)
 						       buf->rpc_user_cnt[i];
 			}
 		}
-	} else if (sort_by_time) {
+	} else if (params.sort == SORT_TIME) {
 		for (i = 0; i < buf->rpc_type_size; i++) {
 			for (j = i+1; j < buf->rpc_type_size; j++) {
 				if (buf->rpc_type_time[i] >= buf->rpc_type_time[j])
@@ -317,7 +331,7 @@ static void _sort_rpc(void)
 						       buf->rpc_user_cnt[i];
 			}
 		}
-	} else if (sort_by_time2) {
+	} else if (params.sort == SORT_TIME2) {
 		for (i = 0; i < buf->rpc_type_size; i++) {
 			if (buf->rpc_type_cnt[i]) {
 				rpc_type_ave_time[i] = buf->rpc_type_time[i] /

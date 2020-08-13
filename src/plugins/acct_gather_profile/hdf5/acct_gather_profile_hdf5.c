@@ -122,7 +122,6 @@ static hid_t     gid_samples = -1;
 static hid_t     gid_totals = -1;
 static char      group_node[MAX_GROUP_NAME+1];
 static slurm_hdf5_conf_t hdf5_conf;
-static uint64_t debug_flags = 0;
 static uint32_t g_profile_running = ACCT_GATHER_PROFILE_NOT_SET;
 static stepd_step_rec_t *g_job = NULL;
 static time_t step_start_time;
@@ -200,29 +199,14 @@ static int _create_directories(void)
 	return SLURM_SUCCESS;
 }
 
-static bool _run_in_daemon(void)
-{
-	static bool set = false;
-	static bool run = false;
-
-	if (!set) {
-		set = 1;
-		run = run_in_daemon("slurmstepd");
-	}
-
-	return run;
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
 extern int init(void)
 {
-	if (!_run_in_daemon())
+	if (!running_in_slurmstepd())
 		return SLURM_SUCCESS;
-
-	debug_flags = slurm_get_debug_flags();
 
 	/* Move HDF5 trace printing to log file instead of stderr */
 	H5Eset_auto(H5E_DEFAULT, (herr_t (*)(hid_t, void *))H5Eprint,
@@ -303,18 +287,15 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	int rc = SLURM_SUCCESS;
 
 	char *profile_file_name;
-	char *profile_str;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmstepd());
 
 	g_job = job;
 
 	xassert(hdf5_conf.dir);
 
-	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		profile_str = acct_gather_profile_to_string(g_job->profile);
-		info("PROFILE: option --profile=%s", profile_str);
-	}
+	log_flag(PROFILE, "PROFILE: option --profile=%s",
+		 acct_gather_profile_to_string(g_job->profile));
 
 	if (g_profile_running == ACCT_GATHER_PROFILE_NOT_SET)
 		g_profile_running = _determine_profile();
@@ -328,25 +309,24 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	 * Use a more user friendly string "batch" rather
 	 * then 4294967294.
 	 */
-	if (g_job->stepid == NO_VAL) {
+	if (g_job->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		profile_file_name = xstrdup_printf("%s/%s/%u_%s_%s.h5",
 						   hdf5_conf.dir,
 						   g_job->user_name,
-						   g_job->jobid,
+						   g_job->step_id.job_id,
 						   "batch",
 						   g_job->node_name);
 	} else {
 		profile_file_name = xstrdup_printf(
 			"%s/%s/%u_%u_%s.h5",
 			hdf5_conf.dir, g_job->user_name,
-			g_job->jobid, g_job->stepid, g_job->node_name);
+			g_job->step_id.job_id, g_job->step_id.step_id,
+			g_job->node_name);
 	}
 
-	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		profile_str = acct_gather_profile_to_string(g_profile_running);
-		info("PROFILE: node_step_start, opt=%s file=%s",
-		     profile_str, profile_file_name);
-	}
+	log_flag(PROFILE, "PROFILE: node_step_start, opt=%s file=%s",
+		 acct_gather_profile_to_string(g_profile_running),
+		 profile_file_name);
 
 	/*
 	 * Create a new file using the default properties
@@ -408,7 +388,7 @@ extern int acct_gather_profile_p_node_step_end(void)
 	int rc = SLURM_SUCCESS;
 	size_t i;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmstepd());
 
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
@@ -419,8 +399,7 @@ extern int acct_gather_profile_p_node_step_end(void)
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return rc;
 
-	if (debug_flags & DEBUG_FLAG_PROFILE)
-		info("PROFILE: node_step_end (shutdown)");
+	log_flag(PROFILE, "PROFILE: node_step_end (shutdown)");
 
 	/* close tables */
 	for (i = 0; i < tables_cur_len; ++i) {
@@ -451,7 +430,7 @@ extern int acct_gather_profile_p_task_start(uint32_t taskid)
 {
 	int rc = SLURM_SUCCESS;
 
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmstepd());
 	xassert(g_job);
 
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
@@ -459,16 +438,14 @@ extern int acct_gather_profile_p_task_start(uint32_t taskid)
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return rc;
 
-	if (debug_flags & DEBUG_FLAG_PROFILE)
-		info("PROFILE: task_start");
+	log_flag(PROFILE, "PROFILE: task_start");
 
 	return rc;
 }
 
 extern int acct_gather_profile_p_task_end(pid_t taskpid)
 {
-	if (debug_flags & DEBUG_FLAG_PROFILE)
-		info("PROFILE: task_end");
+	log_flag(PROFILE, "PROFILE: task_end");
 	return SLURM_SUCCESS;
 }
 
@@ -607,7 +584,7 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 	}
 
 	/* ensure that we have to record something */
-	xassert(_run_in_daemon());
+	xassert(running_in_slurmstepd());
 	xassert(g_job);
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 

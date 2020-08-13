@@ -575,22 +575,18 @@ extern void xcgroup_fini_slurm_cgroup_conf(void)
 extern bool xcgroup_mem_cgroup_job_confinement(void)
 {
 	slurm_cgroup_conf_t *cg_conf;
-	char *task_plugin_type = NULL;
 	bool status = false;
 
 	/* read cgroup configuration */
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
 	cg_conf = xcgroup_get_slurm_cgroup_conf();
 
-	task_plugin_type = slurm_get_task_plugin();
-
 	if ((cg_conf->constrain_ram_space ||
 	     cg_conf->constrain_swap_space) &&
-	    xstrstr(task_plugin_type, "cgroup"))
+	    xstrstr(slurm_conf.task_plugin, "cgroup"))
 		status = true;
 
 	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
-	xfree(task_plugin_type);
 	return status;
 }

@@ -45,7 +45,6 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/job_resources.h"
-#include "src/common/layouts_mgr.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/xassert.h"
@@ -71,23 +70,22 @@ extern job_resources_t *create_job_resources(void)
  *
  * job_resources_t *job_resrcs_ptr = create_job_resources();
  * node_name2bitmap("dummy[2,5,12,16]", true, &(job_res_ptr->node_bitmap));
- * rc = build_job_resources(job_resrcs_ptr, node_record_table_ptr,
- *			     slurmctld_conf.fast_schedule);
+ * rc = build_job_resources(job_resrcs_ptr, node_record_table_ptr);
  */
 extern int build_job_resources(job_resources_t *job_resrcs,
-			       void *node_rec_table, uint16_t fast_schedule)
+			       void *node_rec_table)
 {
 	int i, bitmap_len;
 	int core_cnt = 0, sock_inx = -1;
 	uint32_t cores, socks;
-	struct node_record *node_ptr, *node_record_table;
+	node_record_t *node_ptr, *node_record_table;
 
 	if (job_resrcs->node_bitmap == NULL) {
 		error("build_job_resources: node_bitmap is NULL");
 		return SLURM_ERROR;
 	}
 
-	node_record_table = (struct node_record *) node_rec_table;
+	node_record_table = (node_record_t *) node_rec_table;
 	xfree(job_resrcs->sockets_per_node);
 	xfree(job_resrcs->cores_per_socket);
 	xfree(job_resrcs->sock_core_rep_count);
@@ -103,13 +101,10 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 		if (!bit_test(job_resrcs->node_bitmap, i))
 			continue;
 		node_ptr = node_record_table + i;
-		if (fast_schedule) {
-			socks = node_ptr->config_ptr->sockets;
-			cores = node_ptr->config_ptr->cores;
-		} else {
-			socks = node_ptr->sockets;
-			cores = node_ptr->cores;
-		}
+
+		socks = node_ptr->config_ptr->sockets;
+		cores = node_ptr->config_ptr->cores;
+
 		if ((sock_inx < 0) ||
 		    (socks != job_resrcs->sockets_per_node[sock_inx]) ||
 		    (cores != job_resrcs->cores_per_socket[sock_inx])) {
@@ -120,8 +115,14 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 		job_resrcs->sock_core_rep_count[sock_inx]++;
 		core_cnt += (cores * socks);
 	}
-	job_resrcs->core_bitmap      = bit_alloc(core_cnt);
-	job_resrcs->core_bitmap_used = bit_alloc(core_cnt);
+	if (core_cnt) {
+		/*
+		 * A zero size job (for burst buffer create/destroy only)
+		 * will have no bitmaps.
+		 */
+		job_resrcs->core_bitmap = bit_alloc(core_cnt);
+		job_resrcs->core_bitmap_used = bit_alloc(core_cnt);
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -221,7 +222,7 @@ extern int build_job_resources_cpus_array(job_resources_t *job_resrcs_ptr)
  * the bitmap size or bit positions */
 extern int reset_node_bitmap(void *void_job_ptr)
 {
-	struct job_record *job_ptr = (struct job_record *) void_job_ptr;
+	job_record_t *job_ptr = (job_record_t *) void_job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int i;
 
@@ -250,14 +251,13 @@ extern int reset_node_bitmap(void *void_job_ptr)
 }
 
 extern int valid_job_resources(job_resources_t *job_resrcs,
-			       void *node_rec_table,
-			       uint16_t fast_schedule)
+			       void *node_rec_table)
 {
 	int i, bitmap_len;
 	int sock_inx = 0, sock_cnt = 0;
 	int total_job_cores, total_node_cores;
 	uint32_t cores, socks;
-	struct node_record *node_ptr, *node_record_table;
+	node_record_t *node_ptr, *node_record_table;
 
 	if (job_resrcs->node_bitmap == NULL) {
 		error("valid_job_resources: node_bitmap is NULL");
@@ -270,19 +270,16 @@ extern int valid_job_resources(job_resources_t *job_resrcs,
 		return SLURM_ERROR;
 	}
 
-	node_record_table = (struct node_record *) node_rec_table;
+	node_record_table = (node_record_t *) node_rec_table;
 	bitmap_len = bit_size(job_resrcs->node_bitmap);
 	for (i=0; i<bitmap_len; i++) {
 		if (!bit_test(job_resrcs->node_bitmap, i))
 			continue;
 		node_ptr = node_record_table + i;
-		if (fast_schedule) {
-			socks = node_ptr->config_ptr->sockets;
-			cores = node_ptr->config_ptr->cores;
-		} else {
-			socks = node_ptr->sockets;
-			cores = node_ptr->cores;
-		}
+
+		socks = node_ptr->config_ptr->sockets;
+		cores = node_ptr->config_ptr->cores;
+
 		if (sock_cnt >= job_resrcs->sock_core_rep_count[sock_inx]) {
 			sock_inx++;
 			sock_cnt = 0;
@@ -437,7 +434,7 @@ extern void free_job_resources(job_resources_t **job_resrcs_pptr)
  */
 extern void log_job_resources(void *void_job_ptr)
 {
-	struct job_record *job_ptr = (struct job_record *) void_job_ptr;
+	job_record_t *job_ptr = (job_record_t *) void_job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int bit_inx = 0, bit_reps, i;
 	int array_size, node_inx;
@@ -1659,139 +1656,4 @@ extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr,
 	}
 
 	return node_offset;
-}
-
-extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
-			 uint32_t node_id, char* node_name, bool new_value)
-{
-	int i, k = 0, bit_inx = 0, core_cnt = 0;
-	uint32_t max_watts, zero = 0, der;
-	uint32_t core_num,val = 0;
-	uint16_t num_freq;
-	char temp[128], ename[128], keyname[128];
-	uint32_t data[2], vals[2];
-	int num_counts = 0, activate = 0;
-	int *desalloc_cores;
-
-	xassert(job_resrcs_ptr);
-
-	for (i = 0; i < job_resrcs_ptr->nhosts; i++) {
-		if (job_resrcs_ptr->sock_core_rep_count[i] <= node_id) {
-			bit_inx += job_resrcs_ptr->sockets_per_node[i] *
-				   job_resrcs_ptr->cores_per_socket[i] *
-				   job_resrcs_ptr->sock_core_rep_count[i];
-			node_id -= job_resrcs_ptr->sock_core_rep_count[i];
-		} else {
-			bit_inx += job_resrcs_ptr->sockets_per_node[i] *
-				   job_resrcs_ptr->cores_per_socket[i] *
-				   node_id;
-			core_cnt = job_resrcs_ptr->sockets_per_node[i] *
-				   job_resrcs_ptr->cores_per_socket[i];
-			break;
-		}
-	}
-	if (core_cnt < 1) {
-		error("count_job_resources_node: core_cnt=0");
-		return 0;
-	}
-
-	i = bit_size(job_resrcs_ptr->core_bitmap);
-	if ((bit_inx + core_cnt) > i) {
-		error("count_job_resources_node: offset > bitmap size "
-		      "(%d >= %d)", (bit_inx + core_cnt), i);
-		return 0;
-	}
-
-	layouts_entity_get_kv("power", node_name, "NumFreqChoices",
-			      &num_freq, L_T_UINT16);
-	layouts_entity_get_mkv("power", node_name,
-			       "CoresCount,LastCore", data,
-			       (sizeof(uint32_t)*2),L_T_UINT32);
-	if (cpu_freq_max != 0) {
-		for (i = 1; i < num_freq + 1; i++) {
-			sprintf(temp, "Cpufreq%d", i);
-			layouts_entity_pullget_kv("power", node_name,
-						  temp, &val, L_T_UINT32);
-			if (val == cpu_freq_max) {
-				k = i;
-				break;
-			}
-		}
-	}
-
-	desalloc_cores = xcalloc(core_cnt, sizeof(int));
-	for (i = 0; i < core_cnt; i++) {
-		/*core_num=LastCore+1-CoresCount*/
-		core_num = data[1] + 1 - data[0] + i;
-		sprintf(ename, "virtualcore%u", core_num);
-		if (bit_test(job_resrcs_ptr->core_bitmap, bit_inx++)) {
-			if (new_value) {
-				if (cpu_freq_max != 0 && k != 0) {
-					sprintf(keyname, 
-						"Cpufreq%dWatts", k);
-					layouts_entity_get_kv("power",
-							ename, keyname,
-							&max_watts, L_T_UINT32);
-				} else {
-					layouts_entity_get_kv("power",
-							ename, "MaxCoreWatts",
-							&max_watts, L_T_UINT32);
-				}
-				layouts_entity_set_kv("power",
-						    ename, "CurrentCorePower",
-						    &max_watts, L_T_UINT32);
-			} else {
-				layouts_entity_set_kv("power",
-						    ename, "CurrentCorePower",
-						    &zero, L_T_UINT32);
-				desalloc_cores[num_counts] = i;
-				num_counts++;
-			}
-		} else {
-			layouts_entity_get_mkv("power", ename,
-					  "CurrentCorePower,IdleCoreWatts",
-					  vals, 
-					  (sizeof(uint32_t)*2) ,L_T_UINT32);
-			if (new_value) {
-				if (vals[0] == 0) {
-					layouts_entity_set_kv(
-							  "power",
-							  ename,
-							  "CurrentCorePower",
-							  &vals[1],
-							  L_T_UINT32);
-				}
-			} else {
-				if (vals[1] != vals[0]) {
-					activate = 1;
-				} else {
-					desalloc_cores[num_counts] = i;
-					num_counts++;
-					layouts_entity_set_kv(
-							  "power",
-							  ename,
-							  "CurrentCorePower",
-							  &zero,
-							  L_T_UINT32);		
-					layouts_entity_get_kv("power",
-							  ename,
-							  "CurrentCorePower",
-							  &der, L_T_UINT32);
-				}	
-			}
-		}
-	}
-
-	if (activate == 1) {
-		for (i = 0; i < num_counts; i++) {
-			core_num = data[1] + 1- data[0] + desalloc_cores[i];
-			sprintf(ename, "virtualcore%u", core_num);
-			layouts_entity_set_kv("power", ename,
-						  "CurrentCorePower", &vals[1],
-						  L_T_UINT32);	
-		}
-	}
-	xfree(desalloc_cores);
-
-	return 1;
 }

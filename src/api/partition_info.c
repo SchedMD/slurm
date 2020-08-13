@@ -300,7 +300,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	preempt_mode = part_ptr->preempt_mode;
 	if (preempt_mode == NO_VAL16)
-		preempt_mode = slurm_get_preempt_mode(); /* use cluster param */
+		preempt_mode = slurm_conf.preempt_mode; /* use cluster param */
 	xstrfmtcat(out, " PreemptMode=%s", preempt_mode_string(preempt_mode));
 
 	xstrcat(out, line_end);
@@ -561,9 +561,10 @@ extern int slurm_load_partitions(time_t update_time,
 	int rc;
 
 	if (working_cluster_rec)
-		cluster_name = xstrdup(working_cluster_rec->name);
+		cluster_name = working_cluster_rec->name;
 	else
-		cluster_name = slurm_get_cluster_name();
+		cluster_name = slurm_conf.cluster_name;
+
 	if ((show_flags & SHOW_FEDERATION) && !(show_flags & SHOW_LOCAL) &&
 	    (slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
 	    cluster_in_federation(ptr, cluster_name)) {
@@ -593,7 +594,6 @@ extern int slurm_load_partitions(time_t update_time,
 
 	if (ptr)
 		slurm_destroy_federation_rec(ptr);
-	xfree(cluster_name);
 
 	return rc;
 }

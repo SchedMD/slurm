@@ -44,20 +44,8 @@
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/slurm_time.h"
 
-static char    *acct_storage_backup_host = NULL;
-static char    *acct_storage_host = NULL;
-static char    *acct_storage_loc  = NULL;
-static char    *acct_storage_pass = NULL;
-static uint32_t acct_storage_port;
-static char    *acct_storage_type = NULL;
-static char    *acct_storage_user = NULL;
-static char    *auth_type = NULL;
-static uint16_t msg_timeout;
-static char    *plugin_dir = NULL;
-static uint16_t private_data;
-static uint32_t slurm_user_id;
-static uint16_t tcp_timeout;
 static uint16_t track_wckey;
 
 static List dbd_config_list = NULL;
@@ -94,32 +82,11 @@ static void _free_dbd_config(void)
 
 static void _load_slurm_config(void)
 {
-	acct_storage_backup_host = slurm_get_accounting_storage_backup_host();
-	acct_storage_host = slurm_get_accounting_storage_host();
-	acct_storage_loc  = slurm_get_accounting_storage_loc();
-	acct_storage_pass = slurm_get_accounting_storage_pass();
-	acct_storage_port = slurm_get_accounting_storage_port();
-	acct_storage_type = slurm_get_accounting_storage_type();
-	acct_storage_user = slurm_get_accounting_storage_user();
-	auth_type = slurm_get_auth_type();
-	msg_timeout = slurm_get_msg_timeout();
-	plugin_dir = slurm_get_plugin_dir();
-	private_data = slurm_get_private_data();
-	slurm_user_id = slurm_get_slurm_user_id();
-	tcp_timeout = slurm_get_tcp_timeout();
 	track_wckey = slurm_get_track_wckey();
 }
 
 static void _free_slurm_config(void)
 {
-	xfree(acct_storage_backup_host);
-	xfree(acct_storage_host);
-	xfree(acct_storage_loc);
-	xfree(acct_storage_pass);
-	xfree(acct_storage_type);
-	xfree(acct_storage_user);
-	xfree(auth_type);
-	xfree(plugin_dir);
 }
 
 static void _print_slurm_config(void)
@@ -129,27 +96,132 @@ static void _print_slurm_config(void)
 
 	slurm_make_time_str(&now, tmp_str, sizeof(tmp_str));
 	printf("Configuration data as of %s\n", tmp_str);
-	printf("AccountingStorageBackupHost  = %s\n", acct_storage_backup_host);
-	printf("AccountingStorageHost  = %s\n", acct_storage_host);
-	printf("AccountingStorageLoc   = %s\n", acct_storage_loc);
-	printf("AccountingStoragePass  = %s\n", acct_storage_pass);
-	printf("AccountingStoragePort  = %u\n", acct_storage_port);
-	printf("AccountingStorageType  = %s\n", acct_storage_type);
-	printf("AccountingStorageUser  = %s\n", acct_storage_user);
-	printf("AuthType               = %s\n", auth_type);
-	printf("MessageTimeout         = %u sec\n", msg_timeout);
-	printf("PluginDir              = %s\n", plugin_dir);
-	private_data_string(private_data, tmp_str, sizeof(tmp_str));
+	printf("AccountingStorageBackupHost  = %s\n",
+	       slurm_conf.accounting_storage_backup_host);
+	printf("AccountingStorageHost  = %s\n",
+	       slurm_conf.accounting_storage_host);
+	printf("AccountingStorageParameters = %s\n",
+	       slurm_conf.accounting_storage_params);
+	printf("AccountingStoragePass  = %s\n",
+	       slurm_conf.accounting_storage_pass);
+	printf("AccountingStoragePort  = %u\n",
+	       slurm_conf.accounting_storage_port);
+	printf("AccountingStorageType  = %s\n",
+	       slurm_conf.accounting_storage_type);
+	printf("AccountingStorageUser  = %s\n",
+	       slurm_conf.accounting_storage_user);
+	printf("AuthType               = %s\n", slurm_conf.authtype);
+	printf("MessageTimeout         = %u sec\n", slurm_conf.msg_timeout);
+	printf("PluginDir              = %s\n", slurm_conf.plugindir);
+	private_data_string(slurm_conf.private_data, tmp_str, sizeof(tmp_str));
 	printf("PrivateData            = %s\n", tmp_str);
-	user_name = uid_to_string_cached(slurm_user_id);
-	printf("SlurmUserId            = %s(%u)\n", user_name, slurm_user_id);
+	user_name = uid_to_string_cached(slurm_conf.slurm_user_id);
+	printf("SlurmUserId            = %s(%u)\n",
+	       user_name, slurm_conf.slurm_user_id);
 	printf("SLURM_CONF             = %s\n", default_slurm_config_file);
 	printf("SLURM_VERSION          = %s\n", SLURM_VERSION_STRING);
-	printf("TCPTimeout             = %u sec\n", tcp_timeout);
-	printf("TrackWCKey             = %u\n", track_wckey);
+	printf("TCPTimeout             = %u sec\n", slurm_conf.tcp_timeout);
+	printf("TrackWCKey             = %s\n", track_wckey ? "Yes" : "No");
 }
 
-extern int sacctmgr_list_config(bool have_db_conn)
+
+static void _print_rollup_stats(slurmdb_rollup_stats_t *rollup_stats, int i)
+{
+	uint64_t roll_ave;
+
+	if (!rollup_stats)
+		return;
+
+	printf(" last ran %s (%ld)\n",
+	       slurm_ctime2(&rollup_stats->timestamp[i]),
+	       rollup_stats->timestamp[i]);
+
+	roll_ave = rollup_stats->time_total[i];
+	if (rollup_stats->count[i] > 1)
+		roll_ave /= rollup_stats->count[i];
+
+	printf("\tLast cycle:   %"PRIu64"\n", rollup_stats->time_last[i]);
+	printf("\tMax cycle:    %"PRIu64"\n", rollup_stats->time_max[i]);
+	printf("\tTotal time:   %"PRIu64"\n", rollup_stats->time_total[i]);
+	printf("\tTotal cycles: %u\n", rollup_stats->count[i]);
+
+
+	printf("\tMean cycle:   %"PRIu64"\n", roll_ave);
+}
+
+static int _sort_rpc_obj_by_id(void *void1, void *void2)
+{
+	slurmdb_rpc_obj_t *rpc_obj1 = (slurmdb_rpc_obj_t *)void1;
+	slurmdb_rpc_obj_t *rpc_obj2 = (slurmdb_rpc_obj_t *)void2;
+
+	if (rpc_obj1->id < rpc_obj2->id)
+		return -1;
+	else if (rpc_obj1->id > rpc_obj2->id)
+		return 1;
+	return 0;
+}
+
+static int _sort_rpc_obj_by_ave_time(void *void1, void *void2)
+{
+	slurmdb_rpc_obj_t *rpc_obj1 = *(slurmdb_rpc_obj_t **)void1;
+	slurmdb_rpc_obj_t *rpc_obj2 = *(slurmdb_rpc_obj_t **)void2;
+
+	if (rpc_obj1->time_ave > rpc_obj2->time_ave)
+		return -1;
+	else if (rpc_obj1->time_ave < rpc_obj2->time_ave)
+		return 1;
+
+	return _sort_rpc_obj_by_id(void1, void2);
+}
+
+static int _sort_rpc_obj_by_time(void *void1, void *void2)
+{
+	slurmdb_rpc_obj_t *rpc_obj1 = *(slurmdb_rpc_obj_t **)void1;
+	slurmdb_rpc_obj_t *rpc_obj2 = *(slurmdb_rpc_obj_t **)void2;
+
+	if (rpc_obj1->time > rpc_obj2->time)
+		return -1;
+	else if (rpc_obj1->time < rpc_obj2->time)
+		return 1;
+
+	return _sort_rpc_obj_by_id(void1, void2);
+}
+
+static int _sort_rpc_obj_by_cnt(void *void1, void *void2)
+{
+	slurmdb_rpc_obj_t *rpc_obj1 = *(slurmdb_rpc_obj_t **)void1;
+	slurmdb_rpc_obj_t *rpc_obj2 = *(slurmdb_rpc_obj_t **)void2;
+
+	if (rpc_obj1->cnt > rpc_obj2->cnt)
+		return -1;
+	else if (rpc_obj1->cnt < rpc_obj2->cnt)
+		return 1;
+
+	return _sort_rpc_obj_by_time(void1, void2);
+}
+
+static int _print_rpc_obj(void *x, void *arg)
+{
+	slurmdb_rpc_obj_t *rpc_obj = (slurmdb_rpc_obj_t *)x;
+	int type = *(int *)arg;
+
+	if (type == 0)
+		printf("\t%-25s(%5u)",
+		       slurmdbd_msg_type_2_str(rpc_obj->id, 1),
+		       rpc_obj->id);
+	else
+		printf("\t%-20s(%10u)",
+		       uid_to_string_cached((uid_t)rpc_obj->id),
+		       rpc_obj->id);
+
+	printf(" count:%-6u ave_time:%-6"PRIu64" total_time:%"PRIu64"\n",
+	       rpc_obj->cnt,
+	       rpc_obj->time_ave, rpc_obj->time);
+
+	return 0;
+}
+
+extern int sacctmgr_list_config(void)
 {
 	_load_slurm_config();
 	_print_slurm_config();
@@ -166,34 +238,57 @@ extern int sacctmgr_list_config(bool have_db_conn)
 
 extern int sacctmgr_list_stats(int argc, char **argv)
 {
-	uint32_t *rpc_type_ave_time = NULL, *rpc_user_ave_time = NULL;
-	slurmdb_stats_rec_t *buf = NULL;
-	int error_code, i, j;
-	uint16_t type_id;
-	uint32_t type_ave, type_cnt, user_ave, user_cnt, user_id;
-	uint64_t roll_ave, type_time, user_time;
+	slurmdb_stats_rec_t *stats_rec = NULL;
+	slurmdb_rollup_stats_t *rollup_stats = NULL;
+	int error_code, i;
 	bool sort_by_ave_time = false, sort_by_total_time = false;
-	char *rollup_type;
+	time_t now = time(NULL);
+	int type;
 
-	error_code = slurmdb_get_stats(db_conn, &buf);
+	error_code = slurmdb_get_stats(db_conn, &stats_rec);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
-	printf("Rollup statistics\n");
-	for (i = 0; i < ROLLUP_COUNT; i++) {
-		if (i == ROLLUP_HOUR)
-			rollup_type = "Hour";
-		else if (i == ROLLUP_DAY)
-			rollup_type = "Day";
-		else	/* (i == ROLLUP_MONTH) */
-			rollup_type = "Month";
-		roll_ave = buf->rollup_time[i];
-		if (buf->rollup_count[i] > 1)
-			roll_ave /= buf->rollup_count[i];
-		printf("\t%-10s count:%-6u ave_time:%-6"PRIu64
-		       " max_time:%-12"PRIu64" total_time:%-12"PRIu64"\n",
-		       rollup_type, buf->rollup_count[i], roll_ave,
-		       buf->rollup_max_time[i], buf->rollup_time[i]);
+	rollup_stats = stats_rec->dbd_rollup_stats;
+	printf("*******************************************************************\n");
+	printf("sacctmgr show stats output at %s (%ld)\n",
+	       slurm_ctime2(&now), now);
+	printf("Data since                    %s (%ld)\n",
+	       slurm_ctime2(&stats_rec->time_start), stats_rec->time_start);
+	printf("All statistics are in microseconds\n");
+	printf("*******************************************************************\n");
+
+	for (i = 0; i < DBD_ROLLUP_COUNT; i++) {
+		if (rollup_stats->time_total[i] == 0)
+			continue;
+		if (i == 0)
+			printf("\nInternal DBD rollup");
+		else if (i == 1)
+			printf("\nUser RPC rollup call");
+		else
+			printf("\nunknown rollup");
+		_print_rollup_stats(rollup_stats, i);
+	}
+
+	if (stats_rec->rollup_stats && list_count(stats_rec->rollup_stats)) {
+		ListIterator itr =
+			list_iterator_create(stats_rec->rollup_stats);
+		while ((rollup_stats = list_next(itr))) {
+			bool first = true;
+
+			for (i = 0; i < DBD_ROLLUP_COUNT; i++) {
+				if (rollup_stats->time_total[i] == 0)
+					continue;
+				if (first) {
+					printf("\nCluster '%s' rollup statistics\n",
+					       rollup_stats->cluster_name);
+					first = false;
+				}
+				printf("%-5s", rollup_interval_to_string(i));
+				_print_rollup_stats(rollup_stats, i);
+			}
+		}
+		list_iterator_destroy(itr);
 	}
 
 	if (argc) {
@@ -203,167 +298,29 @@ extern int sacctmgr_list_stats(int argc, char **argv)
 			sort_by_total_time = true;
 	}
 
-	rpc_type_ave_time = xmalloc(sizeof(uint32_t) * buf->type_cnt);
-	rpc_user_ave_time = xmalloc(sizeof(uint32_t) * buf->user_cnt);
-
 	if (sort_by_ave_time) {
-		for (i = 0; i < buf->type_cnt; i++) {
-			if (buf->rpc_type_cnt[i]) {
-				rpc_type_ave_time[i] = buf->rpc_type_time[i] /
-						       buf->rpc_type_cnt[i];
-			}
-		}
-		for (i = 0; i < buf->type_cnt; i++) {
-			for (j = i+1; j < buf->type_cnt; j++) {
-				if (rpc_type_ave_time[i] >= rpc_type_ave_time[j])
-					continue;
-				type_ave  = rpc_type_ave_time[i];
-				type_id   = buf->rpc_type_id[i];
-				type_cnt  = buf->rpc_type_cnt[i];
-				type_time = buf->rpc_type_time[i];
-				rpc_type_ave_time[i]  = rpc_type_ave_time[j];
-				buf->rpc_type_id[i]   = buf->rpc_type_id[j];
-				buf->rpc_type_cnt[i]  = buf->rpc_type_cnt[j];
-				buf->rpc_type_time[i] = buf->rpc_type_time[j];
-				rpc_type_ave_time[j]  = type_ave;
-				buf->rpc_type_id[j]   = type_id;
-				buf->rpc_type_cnt[j]  = type_cnt;
-				buf->rpc_type_time[j] = type_time;
-			}
-		}
-		for (i = 0; i < buf->user_cnt; i++) {
-			if (buf->rpc_user_cnt[i]) {
-				rpc_user_ave_time[i] = buf->rpc_user_time[i] /
-						       buf->rpc_user_cnt[i];
-			}
-		}
-		for (i = 0; i < buf->user_cnt; i++) {
-			for (j = i+1; j < buf->user_cnt; j++) {
-				if (rpc_user_ave_time[i] >= rpc_user_ave_time[j])
-					continue;
-				user_ave  = rpc_user_ave_time[i];
-				user_id   = buf->rpc_user_id[i];
-				user_cnt  = buf->rpc_user_cnt[i];
-				user_time = buf->rpc_user_time[i];
-				rpc_user_ave_time[i]  = rpc_user_ave_time[j];
-				buf->rpc_user_id[i]   = buf->rpc_user_id[j];
-				buf->rpc_user_cnt[i]  = buf->rpc_user_cnt[j];
-				buf->rpc_user_time[i] = buf->rpc_user_time[j];
-				rpc_user_ave_time[j]  = user_ave;
-				buf->rpc_user_id[j]   = user_id;
-				buf->rpc_user_cnt[j]  = user_cnt;
-				buf->rpc_user_time[j] = user_time;
-			}
-		}
+		list_sort(stats_rec->rpc_list,
+			  (ListCmpF)_sort_rpc_obj_by_ave_time);
+		list_sort(stats_rec->user_list,
+			  (ListCmpF)_sort_rpc_obj_by_ave_time);
 	} else if (sort_by_total_time) {
-		for (i = 0; i < buf->type_cnt; i++) {
-			for (j = i+1; j < buf->type_cnt; j++) {
-				if (buf->rpc_type_time[i] >=
-				    buf->rpc_type_time[j])
-					continue;
-				type_id   = buf->rpc_type_id[i];
-				type_cnt  = buf->rpc_type_cnt[i];
-				type_time = buf->rpc_type_time[i];
-				buf->rpc_type_id[i]   = buf->rpc_type_id[j];
-				buf->rpc_type_cnt[i]  = buf->rpc_type_cnt[j];
-				buf->rpc_type_time[i] = buf->rpc_type_time[j];
-				buf->rpc_type_id[j]   = type_id;
-				buf->rpc_type_cnt[j]  = type_cnt;
-				buf->rpc_type_time[j] = type_time;
-			}
-			if (buf->rpc_type_cnt[i]) {
-				rpc_type_ave_time[i] = buf->rpc_type_time[i] /
-						       buf->rpc_type_cnt[i];
-			}
-		}
-		for (i = 0; i < buf->user_cnt; i++) {
-			for (j = i+1; j < buf->user_cnt; j++) {
-				if (buf->rpc_user_time[i] >=
-				    buf->rpc_user_time[j])
-					continue;
-				user_id   = buf->rpc_user_id[i];
-				user_cnt  = buf->rpc_user_cnt[i];
-				user_time = buf->rpc_user_time[i];
-				buf->rpc_user_id[i]   = buf->rpc_user_id[j];
-				buf->rpc_user_cnt[i]  = buf->rpc_user_cnt[j];
-				buf->rpc_user_time[i] = buf->rpc_user_time[j];
-				buf->rpc_user_id[j]   = user_id;
-				buf->rpc_user_cnt[j]  = user_cnt;
-				buf->rpc_user_time[j] = user_time;
-			}
-			if (buf->rpc_user_cnt[i]) {
-				rpc_user_ave_time[i] = buf->rpc_user_time[i] /
-						       buf->rpc_user_cnt[i];
-			}
-		}
+		list_sort(stats_rec->rpc_list, (ListCmpF)_sort_rpc_obj_by_time);
+		list_sort(stats_rec->user_list,
+			  (ListCmpF)_sort_rpc_obj_by_time);
 	} else {	/* sort by RPC count */
-		for (i = 0; i < buf->type_cnt; i++) {
-			for (j = i+1; j < buf->type_cnt; j++) {
-				if (buf->rpc_type_cnt[i] >=
-				    buf->rpc_type_cnt[j])
-					continue;
-				type_id   = buf->rpc_type_id[i];
-				type_cnt  = buf->rpc_type_cnt[i];
-				type_time = buf->rpc_type_time[i];
-				buf->rpc_type_id[i]   = buf->rpc_type_id[j];
-				buf->rpc_type_cnt[i]  = buf->rpc_type_cnt[j];
-				buf->rpc_type_time[i] = buf->rpc_type_time[j];
-				buf->rpc_type_id[j]   = type_id;
-				buf->rpc_type_cnt[j]  = type_cnt;
-				buf->rpc_type_time[j] = type_time;
-			}
-			if (buf->rpc_type_cnt[i]) {
-				rpc_type_ave_time[i] = buf->rpc_type_time[i] /
-						       buf->rpc_type_cnt[i];
-			}
-		}
-		for (i = 0; i < buf->user_cnt; i++) {
-			for (j = i+1; j < buf->user_cnt; j++) {
-				if (buf->rpc_user_cnt[i] >=
-				    buf->rpc_user_cnt[j])
-					continue;
-				user_id   = buf->rpc_user_id[i];
-				user_cnt  = buf->rpc_user_cnt[i];
-				user_time = buf->rpc_user_time[i];
-				buf->rpc_user_id[i]   = buf->rpc_user_id[j];
-				buf->rpc_user_cnt[i]  = buf->rpc_user_cnt[j];
-				buf->rpc_user_time[i] = buf->rpc_user_time[j];
-				buf->rpc_user_id[j]   = user_id;
-				buf->rpc_user_cnt[j]  = user_cnt;
-				buf->rpc_user_time[j] = user_time;
-			}
-			if (buf->rpc_user_cnt[i]) {
-				rpc_user_ave_time[i] = buf->rpc_user_time[i] /
-						       buf->rpc_user_cnt[i];
-			}
-		}
+		list_sort(stats_rec->rpc_list, (ListCmpF)_sort_rpc_obj_by_cnt);
+		list_sort(stats_rec->user_list, (ListCmpF)_sort_rpc_obj_by_cnt);
 	}
 
 	printf("\nRemote Procedure Call statistics by message type\n");
-	for (i = 0; i < buf->type_cnt; i++) {
-		if (buf->rpc_type_cnt[i] == 0)
-			continue;
-		printf("\t%-25s(%5u) count:%-6u "
-		       "ave_time:%-6u total_time:%"PRIu64"\n",
-		       slurmdbd_msg_type_2_str(buf->rpc_type_id[i], 1),
-		       buf->rpc_type_id[i], buf->rpc_type_cnt[i],
-		       rpc_type_ave_time[i], buf->rpc_type_time[i]);
-	}
+	type = 0;
+	list_for_each(stats_rec->rpc_list, _print_rpc_obj, &type);
 
 	printf("\nRemote Procedure Call statistics by user\n");
-	for (i = 0; i < buf->user_cnt; i++) {
-		if (buf->rpc_user_cnt[i] == 0)
-			continue;
-		printf("\t%-20s(%10u) count:%-6u "
-		       "ave_time:%-6u total_time:%"PRIu64"\n",
-		       uid_to_string_cached((uid_t)buf->rpc_user_id[i]),
-		       buf->rpc_user_id[i], buf->rpc_user_cnt[i],
-		       rpc_user_ave_time[i], buf->rpc_user_time[i]);
-	}
+	type = 1;
+	list_for_each(stats_rec->user_list, _print_rpc_obj, &type);
 
-	xfree(rpc_type_ave_time);
-	xfree(rpc_user_ave_time);
-	slurmdb_destroy_stats_rec(buf);
+	slurmdb_destroy_stats_rec(stats_rec);
 
 	return error_code;
 }

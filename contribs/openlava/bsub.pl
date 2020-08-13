@@ -359,7 +359,7 @@ Name if the job to be submitted.
 
 =item B<-m Host List>
 
-Space seperated list of hosts that this job will run on.
+Space separated list of hosts that this job will run on.
 
 =item B<-M Memory Limit>
 

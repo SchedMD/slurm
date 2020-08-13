@@ -56,7 +56,6 @@
 
 #include "src/common/macros.h"
 #include "src/common/slurm_time.h"
-#include "src/common/strlcpy.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -64,7 +63,7 @@
 #define XFGETS_CHUNKSIZE 64
 
 /* Static functions. */
-static char *_xstrdup_vprintf(const char *_fmt, va_list _ap);
+static size_t _xstrdup_vprintf(char **str, const char *_fmt, va_list _ap);
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -75,6 +74,7 @@ strong_alias(_xstrncat,		slurm_xstrncat);
 strong_alias(_xstrcatchar,	slurm_xstrcatchar);
 strong_alias(_xstrftimecat,	slurm_xstrftimecat);
 strong_alias(_xstrfmtcat,	slurm_xstrfmtcat);
+strong_alias(_xstrfmtcatat,	slurm_xstrfmtcatat);
 strong_alias(_xmemcat,		slurm_xmemcat);
 strong_alias(xstrdup,		slurm_xstrdup);
 strong_alias(xstrdup_printf,	slurm_xstrdup_printf);
@@ -96,14 +96,17 @@ strong_alias(xstrcasestr,       slurm_xstrcasestr);
 /*
  * Ensure that a string has enough space to add 'needed' characters.
  * If the string is uninitialized, it should be NULL.
+ * str (IN/OUT)		str
+ * str_len(IN)		current string length, if known. -1 otherwise
+ * needed (IN)		additional space needed
  */
-static void makespace(char **str, int needed)
+static void _makespace(char **str, int str_len, int needed)
 {
 	if (*str == NULL)
 		*str = xmalloc(needed + 1);
 	else {
 		int actual_size;
-		int used = strlen(*str) + 1;
+		int used = (str_len < 0) ? strlen(*str) + 1 : str_len + 1;
 		int min_new_size = used + needed;
 		int cur_size = xsize(*str);
 		if (min_new_size > cur_size) {
@@ -131,7 +134,7 @@ void _xstrcat(char **str1, const char *str2)
 	if (str2 == NULL)
 		str2 = "(null)";
 
-	makespace(str1, strlen(str2));
+	_makespace(str1, -1, strlen(str2));
 	strcat(*str1, str2);
 }
 
@@ -146,19 +149,8 @@ void _xstrncat(char **str1, const char *str2, size_t len)
 	if (str2 == NULL)
 		str2 = "(null)";
 
-	makespace(str1, len);
+	_makespace(str1, -1, len);
 	strncat(*str1, str2, len);
-}
-
-/*
- * append one char to str and null terminate
- */
-static void strcatchar(char *str, char c)
-{
-	int len = strlen(str);
-
-	str[len++] = c;
-	str[len] = '\0';
 }
 
 /*
@@ -168,8 +160,11 @@ static void strcatchar(char *str, char c)
  */
 void _xstrcatchar(char **str, char c)
 {
-	makespace(str, 1);
-	strcatchar(*str, c);
+	int len = (*str) ? strlen(*str) : 0;
+
+	_makespace(str, len, 1);
+	(*str)[len++] = c;
+	(*str)[len] = '\0';
 }
 
 /*
@@ -190,7 +185,7 @@ void _xstrftimecat(char **buf, const char *fmt)
 	if (time(&t) == (time_t) -1)
 		fprintf(stderr, "time() failed\n");
 
-	if (!slurm_localtime_r(&t, &tm))
+	if (!localtime_r(&t, &tm))
 		fprintf(stderr, "localtime_r() failed\n");
 
 	strftime(p, sizeof(p), fmt, &tm);
@@ -211,7 +206,7 @@ void _xiso8601timecat(char **buf, bool msec)
 	if (gettimeofday(&tv, NULL) == -1)
 		fprintf(stderr, "gettimeofday() failed\n");
 
-	if (!slurm_localtime_r(&tv.tv_sec, &tm))
+	if (!localtime_r(&tv.tv_sec, &tm))
 		fprintf(stderr, "localtime_r() failed\n");
 
 	if (strftime(p, sizeof(p), "%Y-%m-%dT%T", &tm) == 0)
@@ -237,7 +232,7 @@ void _xrfc5424timecat(char **buf, bool msec)
 	if (gettimeofday(&tv, NULL) == -1)
 		fprintf(stderr, "gettimeofday() failed\n");
 
-	if (!slurm_localtime_r(&tv.tv_sec, &tm))
+	if (!localtime_r(&tv.tv_sec, &tm))
 		fprintf(stderr, "localtime_r() failed\n");
 
 	if (strftime(p, sizeof(p), "%Y-%m-%dT%T", &tm) == 0)
@@ -263,24 +258,75 @@ void _xrfc5424timecat(char **buf, bool msec)
  * append formatted string with printf-style args to buf, expanding
  * buf as needed
  */
-int _xstrfmtcat(char **str, const char *fmt, ...)
+void _xstrfmtcat(char **str, const char *fmt, ...)
 {
-	int n;
 	char *p = NULL;
 	va_list ap;
 
 	va_start(ap, fmt);
-	p = _xstrdup_vprintf(fmt, ap);
+	_xstrdup_vprintf(&p, fmt, ap);
 	va_end(ap);
 
-	if (p == NULL)
-		return 0;
+	if (!p)
+		return;
 
-	n = strlen(p);
+	/* If str does not exist yet, just give it back p directly */
+	if (!*str) {
+		*str = p;
+		return;
+	}
+
 	xstrcat(*str, p);
 	xfree(p);
+}
 
-	return n;
+/*
+ * Append formatted string with printf-style args to str at pos,
+ * expanding buf as needed. pos is updated to the end of the appended
+ * string.
+ *
+ * Meant to be used in loops contructing longer strings that are performance
+ * sensitive, as xstrfmtcat() needs to re-seek to the end of str making the
+ * string construction worse by another O(log(strlen)) factor.
+ */
+void _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
+{
+	size_t orig_len, append_len;
+	char *p = NULL;
+	va_list ap;
+
+	va_start(ap, fmt);
+	append_len = _xstrdup_vprintf(&p, fmt, ap);
+	va_end(ap);
+
+	if (!p)
+		return;
+
+	/* No string yet to append to, so just return p. */
+	if (!*str) {
+		*str = p;
+		*pos = p + append_len;
+		return;
+	}
+
+	if (!*pos) {
+		orig_len = strlen(*str);
+		*pos = *str + orig_len;
+	} else {
+		xassert(*pos >= *str);
+		orig_len = *pos - *str;
+	}
+
+	_makespace(str, orig_len, append_len);
+
+	memcpy(*str + orig_len, p, append_len);
+	xfree(p);
+
+	/*
+	 * Update *pos. Cannot happen earlier as _makespace() may have
+	 * changed *str to a different address.
+	 */
+	*pos = *str + orig_len + append_len;
 }
 
 /*
@@ -325,21 +371,19 @@ char * xbasename(char *path)
  *   str (IN)		string to duplicate
  *   RETURN		copy of string
  */
-char * xstrdup(const char *str)
+char *xstrdup(const char *str)
 {
 	size_t siz;
-	size_t rsiz;
-	char   *result;
+	char *result;
 
-	if (str == NULL) {
+	if (!str)
 		return NULL;
-	}
+
 	siz = strlen(str) + 1;
 	result = xmalloc(siz);
 
-	rsiz = strlcpy(result, str, siz);
-	if (rsiz)
-		xassert(rsiz == siz-1);
+	/* includes terminating NUL from source string */
+	(void) memcpy(result, str, siz);
 
 	return result;
 }
@@ -355,7 +399,7 @@ char *xstrdup_printf(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	result = _xstrdup_vprintf(fmt, ap);
+	_xstrdup_vprintf(&result, fmt, ap);
 	va_end(ap);
 
 	return result;
@@ -375,13 +419,11 @@ char * xstrndup(const char *str, size_t n)
 	if (str == NULL)
 		return NULL;
 
-	siz = strlen(str);
-	if (n < siz)
-		siz = n;
-	siz++;
-	result = xmalloc(siz);
+	siz = strnlen(str, n);
+	result = xmalloc(siz + 1);
 
-	(void) strlcpy(result, str, siz);
+	(void) memcpy(result, str, siz);
+	result[siz] = '\0';
 
 	return result;
 }
@@ -431,7 +473,7 @@ bool _xstrsubstitute(char **str, const char *pattern, const char *replacement)
 
 	end_copy = xstrdup(ptr + pat_len);
 	if (rep_len != 0) {
-		makespace(str, rep_len-pat_len);
+		_makespace(str, -1, rep_len - pat_len);
 		strcpy((*str)+pat_offset, replacement);
 	}
 	strcpy((*str)+pat_offset+rep_len, end_copy);
@@ -469,13 +511,12 @@ char *xshort_hostname(void)
  */
 bool xstring_is_whitespace(const char *str)
 {
-	int i, len;
+	int i = 0;
 
-	len = strlen(str);
-	for (i = 0; i < len; i++) {
-		if (!isspace((int)str[i])) {
+	while (str[i] != '\0') {
+		if (!isspace((int)str[i]))
 			return false;
-		}
+		i++;
 	}
 
 	return true;
@@ -605,7 +646,7 @@ char *xstrcasestr(const char *haystack, const char *needle)
  *   fmt (IN)		format of string and args if any
  *   RETURN		copy of formated string
  */
-static char *_xstrdup_vprintf(const char *fmt, va_list ap)
+static size_t _xstrdup_vprintf(char **str, const char *fmt, va_list ap)
 {
 	/* Start out with a size of 100 bytes. */
 	int n, size = 100;
@@ -618,8 +659,10 @@ static char *_xstrdup_vprintf(const char *fmt, va_list ap)
 		n = vsnprintf(p, size, fmt, our_ap);
 		va_end(our_ap);
 		/* If that worked, return the string. */
-		if (n > -1 && n < size)
-			return p;
+		if (n > -1 && n < size) {
+			*str = p;
+			return n;
+		}
 		/* Else try again with more space. */
 		if (n > -1)               /* glibc 2.1 */
 			size = n + 1;           /* precisely what is needed */
@@ -628,4 +671,54 @@ static char *_xstrdup_vprintf(const char *fmt, va_list ap)
 		p = xrealloc(p, size);
 	}
 	/* NOTREACHED */
+}
+
+extern void xstrtrim(char *string)
+{
+	char *start, *end, *ptr = string;
+
+	if (!string || !(*string))
+		return;
+
+	/* walk start to the right until we find NULL or a real character */
+	while (*ptr && isspace(*ptr))
+		++ptr;
+
+	if (!(*ptr)) {
+		/* string is all whitespace */
+		string[0] = '\0';
+		return;
+	}
+
+	/* save start of non-space string */
+	start = ptr;
+
+	/* find the end of the string */
+	while (*ptr)
+		++ptr;
+
+	/* save real end of string as it will be overwritten later */
+	end = ptr;
+
+	/* walk to the left to find start of ending whitespace */
+	do {
+		char *sptr = ptr - 1;
+		/* we should never walk past start */
+		xassert(*sptr);
+
+		if (!*sptr || sptr <= start || !isspace(*sptr))
+			break;
+
+		ptr = sptr;
+		*ptr = '\0';
+	} while (true);
+
+	xassert(*ptr == '\0');
+	xassert(end >= ptr);
+	xassert(start >= string);
+	xassert(start <= end);
+
+	/* shift it over if necessary */
+	if (end != start)
+		memcpy(string, start, (ptr - start + 1));
 }

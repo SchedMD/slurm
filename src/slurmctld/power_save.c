@@ -122,11 +122,6 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id);
 static void  _shutdown_power(void);
 static bool  _valid_prog(char *file_name);
 
-static void _proc_track_list_del(void *x)
-{
-	xfree(x);
-}
-
 static void _exc_node_part_free(void *x)
 {
 	exc_node_partital_t *ext_part_struct = (exc_node_partital_t *) x;
@@ -206,8 +201,7 @@ static int _pick_exc_nodes(void *x, void *arg)
 	bitstr_t *exc_node_cnt_bitmap;
 	int i, i_first, i_last;
 	int avail_node_cnt, exc_node_cnt;
-	struct node_record *node_ptr;
-
+	node_record_t *node_ptr;
 
 	avail_node_cnt = bit_set_count(ext_part_struct->exc_node_cnt_bitmap);
 	if (ext_part_struct->exc_node_cnt >= avail_node_cnt) {
@@ -265,7 +259,7 @@ static void _do_power_work(time_t now)
 	uint32_t susp_state;
 	bitstr_t *avoid_node_bitmap = NULL, *failed_node_bitmap = NULL;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if (last_work_scan == 0) {
 		if (exc_nodes && (_parse_exc_nodes() != SLURM_SUCCESS))
@@ -273,7 +267,7 @@ static void _do_power_work(time_t now)
 
 		if (exc_parts) {
 			char *tmp = NULL, *one_part = NULL, *part_list = NULL;
-			struct part_record *part_ptr = NULL;
+			part_record_t *part_ptr = NULL;
 
 			part_list = xstrdup(exc_parts);
 			one_part = strtok_r(part_list, ",", &tmp);
@@ -505,11 +499,11 @@ static void _do_power_work(time_t now)
  * IN job_ptr - pointer to job that will be initiated
  * RET SLURM_SUCCESS(0) or error code
  */
-extern int power_job_reboot(struct job_record *job_ptr)
+extern int power_job_reboot(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	int i, i_first, i_last;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	bitstr_t *boot_node_bitmap = NULL, *feature_node_bitmap = NULL;
 	time_t now = time(NULL);
 	char *nodes, *reboot_features = NULL;
@@ -525,8 +519,9 @@ extern int power_job_reboot(struct job_record *job_ptr)
 		boot_node_bitmap = node_features_reboot(job_ptr);
 	if (boot_node_bitmap == NULL) {
 		/* At minimum, the powered down nodes require reboot */
-		if (bit_overlap(power_node_bitmap, job_ptr->node_bitmap) ||
-		    bit_overlap(booting_node_bitmap, job_ptr->node_bitmap)) {
+		if (bit_overlap_any(power_node_bitmap, job_ptr->node_bitmap) ||
+		    bit_overlap_any(booting_node_bitmap,
+				    job_ptr->node_bitmap)) {
 			job_ptr->job_state |= JOB_CONFIGURING;
 			job_ptr->bit_flags |= NODE_REBOOT;
 		}
@@ -629,7 +624,7 @@ extern int power_job_reboot(struct job_record *job_ptr)
  * job is not responding, they try running ResumeProgram again. */
 static void _re_wake(void)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	bitstr_t *wake_node_bitmap = NULL;
 	int i;
 
@@ -717,7 +712,7 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id)
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
 		setpgid(0, 0);
-		setenv("SLURM_CONF", slurmctld_conf.slurm_conf, 1);
+		setenv("SLURM_CONF", slurm_conf.slurm_conf, 1);
 		if (job_id)
 			setenv("SLURM_JOB_ID", job_id_str, 1);
 		execv(prog, argv);
@@ -851,28 +846,28 @@ static void _clear_power_config(void)
  */
 static int _init_power_config(void)
 {
-	last_config     = slurmctld_conf.last_update;
+	last_config = slurm_conf.last_update;
 	last_work_scan  = 0;
 	last_log	= 0;
-	idle_time       = slurmctld_conf.suspend_time - 1;
-	suspend_rate    = slurmctld_conf.suspend_rate;
-	resume_timeout  = slurmctld_conf.resume_timeout;
-	resume_rate     = slurmctld_conf.resume_rate;
-	slurmd_timeout  = slurmctld_conf.slurmd_timeout;
-	suspend_timeout = slurmctld_conf.suspend_timeout;
+	idle_time = slurm_conf.suspend_time - 1;
+	suspend_rate = slurm_conf.suspend_rate;
+	resume_timeout = slurm_conf.resume_timeout;
+	resume_rate = slurm_conf.resume_rate;
+	slurmd_timeout = slurm_conf.slurmd_timeout;
+	suspend_timeout = slurm_conf.suspend_timeout;
 	_clear_power_config();
-	if (slurmctld_conf.suspend_program)
-		suspend_prog = xstrdup(slurmctld_conf.suspend_program);
-	if (slurmctld_conf.resume_fail_program)
-		resume_fail_prog = xstrdup(slurmctld_conf.resume_fail_program);
-	if (slurmctld_conf.resume_program)
-		resume_prog = xstrdup(slurmctld_conf.resume_program);
-	if (slurmctld_conf.suspend_exc_nodes)
-		exc_nodes = xstrdup(slurmctld_conf.suspend_exc_nodes);
-	if (slurmctld_conf.suspend_exc_parts)
-		exc_parts = xstrdup(slurmctld_conf.suspend_exc_parts);
+	if (slurm_conf.suspend_program)
+		suspend_prog = xstrdup(slurm_conf.suspend_program);
+	if (slurm_conf.resume_fail_program)
+		resume_fail_prog = xstrdup(slurm_conf.resume_fail_program);
+	if (slurm_conf.resume_program)
+		resume_prog = xstrdup(slurm_conf.resume_program);
+	if (slurm_conf.suspend_exc_nodes)
+		exc_nodes = xstrdup(slurm_conf.suspend_exc_nodes);
+	if (slurm_conf.suspend_exc_parts)
+		exc_parts = xstrdup(slurm_conf.suspend_exc_parts);
 
-	idle_on_node_suspend = xstrcasestr(slurmctld_conf.slurmctld_params,
+	idle_on_node_suspend = xstrcasestr(slurm_conf.slurmctld_params,
 					   "idle_on_node_suspend");
 
 	if (idle_time < 0) {	/* not an error */
@@ -910,7 +905,7 @@ static int _init_power_config(void)
 		return -1;
 	}
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_POWER_SAVE)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_POWER_SAVE)
 		power_save_debug = true;
 	else
 		power_save_debug = false;
@@ -978,7 +973,7 @@ extern void start_power_mgr(pthread_t *thread_id)
 		return;
 	}
 	power_save_started = true;
-	proc_track_list = list_create(_proc_track_list_del);
+	proc_track_list = list_create(xfree_ptr);
 	slurm_mutex_unlock(&power_mutex);
 
 	slurm_thread_create(thread_id, _init_power_save, NULL);
@@ -1020,9 +1015,9 @@ static void *_init_power_save(void *arg)
         /* Locks: Read nodes */
         slurmctld_lock_t node_read_lock = {
                 NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
-        /* Locks: Write nodes */
+        /* Locks: Write jobs and nodes */
         slurmctld_lock_t node_write_lock = {
-                NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+                NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	time_t now, boot_time = 0, last_power_scan = 0;
 
 	if (power_save_config && !power_save_enabled) {
@@ -1037,7 +1032,7 @@ static void *_init_power_save(void *arg)
 
 		_reap_procs();
 
-		if ((last_config != slurmctld_conf.last_update) &&
+		if ((last_config != slurm_conf.last_update) &&
 		    (_init_power_config())) {
 			info("power_save mode has been disabled due to "
 			     "configuration changes");

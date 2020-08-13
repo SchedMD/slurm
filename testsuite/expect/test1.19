@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Test srun stdout/err file name formatting (--output and --error
 #          options with %j, %J, %n, %s and %t specifications).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.19"
 set exit_code        0
 set file_err_j       "test$test_id.j.%j.error"
 set file_in          "test$test_id.input"
@@ -48,8 +43,6 @@ set file_err_u       "test$test_id.u.%u.error"
 set user_name        ""
 set job_id           0
 set task_cnt         5
-
-print_header $test_id
 
 #
 # Gets current user
@@ -73,17 +66,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job initiation failed\n"
-	exit 1
+	fail "Job initiation failed"
 }
 set file_cnt 0
 for {set task_id 0} {$task_id < $task_cnt} {incr task_id} {
@@ -96,7 +87,7 @@ for {set task_id 0} {$task_id < $task_cnt} {incr task_id} {
 	}
 }
 if {$file_cnt != $task_cnt} {
-	send_user "\nFAILURE: file format of %t in stdout failed\n"
+	log_error "File format of %t in stdout failed"
 	set exit_code 1
 }
 
@@ -113,25 +104,23 @@ expect {
 		exp_continue
 	}
 	-re "exit code $number" {
-		send_user "This error is expected, no worries\n"
+		log_debug "This error is expected, no worries"
 		set srun_exit 1
 		exp_continue;
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job initiation failed\n"
-	exit 1
+	fail "Job initiation failed"
 }
 if {$srun_exit == 0} {
-	send_user "\nFAILURE: exit code failed to indicate an error\n"
+	log_error "Exit code failed to indicate an error"
 	set exit_code 1
 }
 
@@ -139,7 +128,7 @@ set file_err_j_glob  "test$test_id.j.$job_id.error"
 if {[wait_for_file $file_err_j_glob] == 0} {
 	exec $bin_rm -f $file_err_j_glob
 } else {
-	send_user "\nFAILURE: file format of %j in stderr failed\n"
+	log_error "File format of %j in stderr failed"
 	set exit_code 1
 }
 
@@ -155,20 +144,18 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job initiation failed\n"
-	exit 1
+	fail "Job initiation failed"
 }
 if {[wait_for_file $file_out_perc_result] != 0} {
-	send_user "\nFAILURE: file format of %% in stdout failed\n"
+	log_error "File format of %% in stdout failed"
 	set exit_code 1
 } else {
 	exec $bin_rm -f $file_out_perc_result
@@ -186,22 +173,20 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job initiation failed\n"
-	exit 1
+	fail "Job initiation failed"
 }
 set task_id  0
 set file_out_J_glob  "test$test_id.J.$job_id.$task_id.output"
 if {[wait_for_file $file_out_J_glob] != 0} {
-	send_user "\nFAILURE: file format of %J in stdout failed\n"
+	log_error "File format of %J in stdout failed"
 	set exit_code 1
 } else {
 	exec $bin_rm -f $file_out_J_glob
@@ -219,9 +204,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun is not responding"
 	}
 	eof {
 		wait
@@ -229,8 +213,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: srun did not submit job\n"
-	exit 1
+	fail "srun did not submit job"
 }
 
 #
@@ -241,7 +224,7 @@ set file_out_u_glob  "test$test_id.u.$user_name.output"
 if {[wait_for_file $file_out_u_glob]==0} {
 	exec $bin_rm -f $file_out_u_glob
 } else {
-	send_user "\nFAILURE: file format is not created correctly\n"
+	log_error "File format is not created correctly"
 	set exit_code 1
 }
 
@@ -257,14 +240,13 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nDo not worry this error is expected\n"
+		log_debug "Do not worry this error is expected"
 		set srun_exit 1
 		exp_continue;
 	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun is not responding"
 	}
 	eof {
 		wait
@@ -272,8 +254,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: srun did not submit job\n"
-	exit 1
+	fail "srun did not submit job"
 }
 
 #
@@ -284,7 +265,7 @@ set file_err_u_glob  "test$test_id.u.$user_name.error"
 if {[wait_for_file $file_err_u_glob]==0} {
 	exec $bin_rm -f $file_err_u_glob
 } else {
-	send_user "\nFAILURE: file format is not created correctly\n"
+	log_error "File format is not created correctly"
 	set exit_code 1
 }
 
@@ -304,24 +285,22 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job initiation failed\n"
-	exit 1
+	fail "Job initiation failed"
 }
 set file_cnt 0
 for {set node_id 0} {$node_id < 2} {incr node_id} {
 	set file_out_n_glob  "test$test_id.n.$node_id.output"
 
 	if {($node_id == 0) && ([wait_for_file $file_out_n_glob] != 0)} {
-		send_user "\nFAILURE: Missing file $file_out_n_glob\n"
+		log_error "Missing file $file_out_n_glob"
 		set exit_code 1
 	} else {
 		exec $bin_sleep 1
@@ -333,7 +312,7 @@ for {set node_id 0} {$node_id < 2} {incr node_id} {
 }
 
 if {$file_cnt != 1} {
-	send_user "\nFAILURE: file format of %n in stdout failed\n"
+	log_error "File format of %n in stdout failed"
 	set exit_code 1
 }
 
@@ -365,20 +344,18 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		exit 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: job initiation failed\n"
-	exit 1
+	fail "Job initiation failed"
 } else {
 	if {[wait_for_job $job_id DONE] != 0} {
-		send_user "\nFAILURE: error completing job $job_id\n"
+		log_error "Error completing job $job_id"
 		cancel_job $job_id
 		set exit_code 1
 	}
@@ -390,7 +367,7 @@ for {set step_id 0} {$step_id < 3} {incr step_id} {
 	set file_out_s_glob  "test$test_id.s.$step_id.output"
 
 	if {($step_id < 2) && ([wait_for_file $file_out_s_glob] != 0)} {
-		send_user "\nFAILURE: Missing file $file_out_s_glob\n"
+		log_error "Missing file $file_out_s_glob"
 		set exit_code 1
 	} else {
 		exec $bin_sleep 1
@@ -402,14 +379,13 @@ for {set step_id 0} {$step_id < 3} {incr step_id} {
 }
 
 if {$file_cnt != 2} {
-	send_user "\nFAILURE: file format of %s in stdout failed($file_cnt)\n"
+	log_error "File format of %s in stdout failed($file_cnt)"
 	set exit_code 1
 }
 
 #
 # Post-processing
 #
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

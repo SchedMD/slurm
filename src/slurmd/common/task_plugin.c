@@ -44,6 +44,7 @@
 
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -56,11 +57,8 @@ typedef struct slurmd_task_ops {
 	int	(*slurmd_batch_request)	    (batch_job_launch_msg_t *req);
 	int	(*slurmd_launch_request)    (launch_tasks_request_msg_t *req,
 					     uint32_t node_id);
-	int	(*slurmd_reserve_resources) (launch_tasks_request_msg_t *req,
-					     uint32_t node_id);
 	int	(*slurmd_suspend_job)	    (uint32_t job_id);
 	int	(*slurmd_resume_job)	    (uint32_t job_id);
-	int	(*slurmd_release_resources) (uint32_t job_id);
 
 	int	(*pre_setuid)		    (stepd_step_rec_t *job);
 	int	(*pre_launch_priv)	    (stepd_step_rec_t *job, pid_t pid);
@@ -77,10 +75,8 @@ typedef struct slurmd_task_ops {
 static const char *syms[] = {
 	"task_p_slurmd_batch_request",
 	"task_p_slurmd_launch_request",
-	"task_p_slurmd_reserve_resources",
 	"task_p_slurmd_suspend_job",
 	"task_p_slurmd_resume_job",
-	"task_p_slurmd_release_resources",
 	"task_p_pre_setuid",
 	"task_p_pre_launch_priv",
 	"task_p_pre_launch",
@@ -115,12 +111,11 @@ extern int slurmd_task_init(void)
 	if ( g_task_context_num >= 0 )
 		goto done;
 
-	task_plugin_type = slurm_get_task_plugin();
 	g_task_context_num = 0; /* mark it before anything else */
-	if (task_plugin_type == NULL || task_plugin_type[0] == '\0')
+	if (!slurm_conf.task_plugin || !slurm_conf.task_plugin[0])
 		goto done;
 
-	task_plugin_list = task_plugin_type;
+	task_plugin_list = task_plugin_type = xstrdup(slurm_conf.task_plugin);
 	while ((type = strtok_r(task_plugin_list, ",", &last))) {
 		xrealloc(ops,
 			 sizeof(slurmd_task_ops_t) * (g_task_context_num + 1));
@@ -245,33 +240,6 @@ extern int task_g_slurmd_launch_request(launch_tasks_request_msg_t *req,
 }
 
 /*
- * Slurmd is reserving resources for the task.
- *
- * RET - slurm error code
- */
-extern int task_g_slurmd_reserve_resources(launch_tasks_request_msg_t *req,
-					   uint32_t node_id )
-{
-	int i, rc = SLURM_SUCCESS;
-
-	if (slurmd_task_init())
-		return SLURM_ERROR;
-
-	slurm_mutex_lock( &g_task_context_lock );
-	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].slurmd_reserve_resources))(req, node_id);
-		if (rc != SLURM_SUCCESS) {
-			debug("%s: %s: %s", __func__,
-			      g_task_context[i]->type, slurm_strerror(rc));
-			break;
-		}
-	}
-	slurm_mutex_unlock( &g_task_context_lock );
-
-	return (rc);
-}
-
-/*
  * Slurmd is suspending a job.
  *
  * RET - slurm error code
@@ -312,32 +280,6 @@ extern int task_g_slurmd_resume_job(uint32_t job_id)
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
 		rc = (*(ops[i].slurmd_resume_job))(job_id);
-		if (rc != SLURM_SUCCESS) {
-			debug("%s: %s: %s", __func__,
-			      g_task_context[i]->type, slurm_strerror(rc));
-			break;
-		}
-	}
-	slurm_mutex_unlock( &g_task_context_lock );
-
-	return (rc);
-}
-
-/*
- * Slurmd is releasing resources for the task.
- *
- * RET - slurm error code
- */
-extern int task_g_slurmd_release_resources(uint32_t job_id)
-{
-	int i, rc = SLURM_SUCCESS;
-
-	if (slurmd_task_init())
-		return SLURM_ERROR;
-
-	slurm_mutex_lock( &g_task_context_lock );
-	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].slurmd_release_resources))(job_id);
 		if (rc != SLURM_SUCCESS) {
 			debug("%s: %s: %s", __func__,
 			      g_task_context[i]->type, slurm_strerror(rc));
@@ -584,6 +526,7 @@ extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str)
 	int base;
 	char *ptr = str;
 	char *ret = NULL;
+	bool leading_zeros = true;
 
 	for (base = CPU_SETSIZE - 4; base >= 0; base -= 4) {
 		char val = 0;
@@ -595,10 +538,18 @@ extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str)
 			val |= 4;
 		if (CPU_ISSET(base + 3, mask))
 			val |= 8;
+		/* If it's a leading zero, ignore it */
+		if (leading_zeros && !val)
+			continue;
 		if (!ret && val)
 			ret = ptr;
 		*ptr++ = slurm_hex_to_char(val);
+		/* All zeros from here on out will be written */
+		leading_zeros = false;
 	}
+	/* If the bitmask is all 0s, add a single 0 */
+	if (leading_zeros)
+		*ptr++ = '0';
 	*ptr = '\0';
 	return ret ? ret : ptr - 1;
 #endif

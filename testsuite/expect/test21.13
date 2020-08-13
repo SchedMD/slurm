@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr modify account, descriptions, limits
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,7 +29,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "21.13"
 set exit_code   0
 set tc1		"test$test_id-cluster-1"
 set tc2		"test$test_id-cluster-2"
@@ -78,31 +73,26 @@ array set acct_mod_assoc_vals3 {
 }
 
 
-print_header $test_id
-
 set timeout 60
 
 #
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 #
 # Verify if Administrator privileges
 #
  if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 #make sure we have a clean system and permission to do this work
 remove_cluster "$tc1,$tc2"
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 remove_acct "" "$ta1,$ta2,$ta3"
 
@@ -111,7 +101,7 @@ incr exit_code [add_cluster "$tc1,$tc2" ""]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
-	exit $exit_code
+	fail "Unable to add cluster ($tc1,$tc2)"
 }
 
 #add accounts
@@ -119,7 +109,7 @@ incr exit_code [add_acct "$ta1,$ta2,$ta3" [array get acct_req]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
-	exit $exit_code
+	fail "Unable to add account ($ta1,$ta2,$ta3)"
 }
 
 # OK This is the real test, first test change the desc and org of the accounts
@@ -127,7 +117,7 @@ incr exit_code [mod_acct "$ta1,$ta2,$ta3" [array get acct_mod_desc] [array get a
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
-	exit $exit_code
+	fail "Unable to modify account ($ta1,$ta2,$ta3)"
 }
 
 #
@@ -137,15 +127,15 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list account account=$ta1,$ta2,$ta3 format="Account,Description,Organization"]
 expect {
 	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "($ta1|$ta2|$ta3).$acct_mod_acct_vals(description).$acct_mod_acct_vals(organization)." {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -154,7 +144,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	send_user "\nFAILURE:  Account modification 1 incorrect with only $matches.\n"
+	log_error "Account modification 1 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -163,7 +153,7 @@ incr exit_code [mod_acct $ta1  [array get acct_mod_desc2] [array get acct_mod_as
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
-	exit $exit_code
+	fail "Unable to modify account ($ta1)"
 }
 
 #
@@ -173,15 +163,15 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list associations account=$ta1,$ta2,$ta3 format="Account,Cluster,Fairshare,MaxCPUM,MaxJobs,MaxNodes,MaxWall"]
 expect {
 	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	-re "($ta1.($tc1|$tc2).$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|($ta2|$ta3).($tc1|$tc2).1)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -191,7 +181,7 @@ expect {
 }
 
 if {$matches != 6} {
-	send_user "\nFAILURE:  Account modification 2 incorrect with only $matches.\n"
+	log_error "Account modification 2 incorrect with only $matches"
 	incr exit_code 1
 }
 
@@ -200,7 +190,7 @@ incr exit_code [mod_acct $ta1  [array get acct_mod_desc3] [array get acct_mod_as
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
-	exit $exit_code
+	fail "Unable to modify account ($ta1)"
 }
 
 #
@@ -210,8 +200,8 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -n -p list account withassoc account=$ta1,$ta2,$ta3 format="Account,Description,Organization,Cluster,Fairshare,MaxCPUM,MaxJobs,MaxNodes,MaxWall"]
 expect {
 	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		log_error "There was a problem with the sacctmgr command"
+	    incr exit_code 1
 	}
 	# Any time you use () around something you need to combine all
 	# those things together since you can miss some and they be thrown away
@@ -220,7 +210,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -230,7 +220,7 @@ expect {
 }
 
 if {$matches != 6} {
-	send_user "\nFAILURE:  Account modification 6 incorrect with $matches.\n"
+	log_error "Account modification 6 incorrect with $matches"
 	incr exit_code 1
 }
 
@@ -240,9 +230,6 @@ incr exit_code [remove_acct "$tc1,$tc2" "$ta1,$ta2,$ta3"]
 incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
 incr exit_code [remove_cluster "$tc1,$tc2"]
 
-if {$exit_code == 0} {
-	print_success $test_id
-} else {
-	send_user "\nFAILURE\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

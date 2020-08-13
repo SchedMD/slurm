@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate that aftercorr dependency is enforced.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -30,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id       17.44
 set exit_code     0
 set job_id1       0
 set job_id2       0
@@ -39,8 +34,6 @@ set output_base   "test$test_id\_out_"
 set script1       "test$test_id\_sc1"
 set script2       "test$test_id\_sc2"
 set tasks         10
-
-print_header $test_id
 
 for {set task_id 1} {$task_id <= $tasks} {incr task_id} {
 	set file_out_glob "${output_base}${task_id}"
@@ -57,7 +50,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -65,8 +58,7 @@ expect {
 	}
 }
 if { $job_id1 == 0 } {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 make_bash_script $script2 "$scontrol show job ${job_id1}_\$SLURM_ARRAY_TASK_ID"
@@ -79,7 +71,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -87,16 +79,15 @@ expect {
 	}
 }
 if { $job_id2 == 0 } {
-	send_user "\nFAILURE: sbatch did not submit job\n"
 	cancel_job $job_id1
-	exit 1
+	fail "sbatch did not submit job"
 }
 
-send_user "\nWaiting for output files...\n"
+log_debug "Waiting for output files.."
 for {set task_id 1} {$task_id <= $tasks} {incr task_id} {
 	set file_out_glob "${output_base}${task_id}"
 	if {[wait_for_file $file_out_glob] != 0} {
-		send_user "\nFAILURE: output file for task $task_id missing\n"
+		log_error "Output file for task $task_id missing"
 		set exit_code 1
 		break
 	} else {
@@ -112,7 +103,7 @@ for {set task_id 1} {$task_id <= $tasks} {incr task_id} {
 			}
 		}
 		if {$match == 0} {
-			send_user "\nFAILURE: bad job state for task $task_id\n"
+			log_error "Bad job state for task $task_id"
 			set exit_code 1
 		}
 	}
@@ -123,9 +114,8 @@ for {set task_id 1} {$task_id <= $tasks} {incr task_id} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $script1 $script2
-	send_user "\nSUCCESS\n"
 } else {
 	cancel_job $job_id1
 	cancel_job $job_id2
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

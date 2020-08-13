@@ -47,102 +47,32 @@
 #include "src/common/log.h"
 #include "src/common/plugin.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/job_scheduler.h"
-#include "src/slurmctld/acct_policy.h"
 
 const char	plugin_name[]	= "Preempt by partition priority plugin";
 const char	plugin_type[]	= "preempt/partition_prio";
 const uint32_t	plugin_version	= SLURM_VERSION_NUMBER;
 
-static uint32_t _gen_job_prio(struct job_record *job_ptr);
-static int _sort_by_prio(void *x, void *y);
-static int _sort_by_youngest(void *x, void *y);
-
-static bool youngest_order = false;
-
-extern int init(void)
+static uint16_t _job_preempt_mode(job_record_t *job_ptr)
 {
-	char *sched_params;
-	verbose("preempt/partition_prio loaded");
-	sched_params = slurm_get_sched_params();
-	if (xstrcasestr(sched_params, "preempt_youngest_first"))
-		youngest_order = true;
-	xfree(sched_params);
-	return SLURM_SUCCESS;
-}
-
-extern void fini(void)
-{
-	/* Empty. */
-}
-
-extern List find_preemptable_jobs(struct job_record *job_ptr)
-{
-	ListIterator job_iterator;
-	struct job_record *job_p;
-	List preemptee_job_list = NULL;
-
-	/* Validate the preemptor job */
-	if (job_ptr == NULL) {
-		error("find_preemptable_jobs: job_ptr is NULL");
-		return preemptee_job_list;
-	}
-	if (!IS_JOB_PENDING(job_ptr)) {
-		error("%s: %pJ not pending", __func__, job_ptr);
-		return preemptee_job_list;
-	}
-	if (job_ptr->part_ptr == NULL) {
-		error("%s: %pJ has NULL partition ptr", __func__, job_ptr);
-		return preemptee_job_list;
-	}
-	if (job_ptr->part_ptr->node_bitmap == NULL) {
-		error("find_preemptable_jobs: partition %s node_bitmap=NULL",
-		      job_ptr->part_ptr->name);
-		return preemptee_job_list;
+	part_record_t *part_ptr = job_ptr->part_ptr;
+	if (part_ptr && (part_ptr->preempt_mode != NO_VAL16)) {
+		if (part_ptr->preempt_mode & PREEMPT_MODE_GANG)
+			verbose("Partition '%s' preempt mode 'gang' has no "
+				"sense. Filtered out.\n", part_ptr->name);
+		return (part_ptr->preempt_mode & (~PREEMPT_MODE_GANG));
 	}
 
-	/* Build an array of pointers to preemption candidates */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_p = (struct job_record *) list_next(job_iterator))) {
-		if (!IS_JOB_RUNNING(job_p) && !IS_JOB_SUSPENDED(job_p))
-			continue;
-		if ((job_p->part_ptr == NULL) ||
-		    (job_p->part_ptr->priority_tier >=
-		     job_ptr->part_ptr->priority_tier) ||
-		    (job_p->part_ptr->preempt_mode == PREEMPT_MODE_OFF))
-			continue;
-		if ((job_p->node_bitmap == NULL) ||
-		    (bit_overlap(job_p->node_bitmap,
-				 job_ptr->part_ptr->node_bitmap) == 0))
-			continue;
-		if (job_ptr->details &&
-		    (job_ptr->details->expanding_jobid == job_p->job_id))
-			continue;
-		if (acct_policy_is_job_preempt_exempt(job_p))
-			continue;
-
-		/* This job is a preemption candidate */
-		if (preemptee_job_list == NULL) {
-			preemptee_job_list = list_create(NULL);
-		}
-		list_append(preemptee_job_list, job_p);
-	}
-	list_iterator_destroy(job_iterator);
-
-	if (preemptee_job_list && youngest_order)
-		list_sort(preemptee_job_list, _sort_by_youngest);
-	else if (preemptee_job_list)
-		list_sort(preemptee_job_list, _sort_by_prio);
-
-	return preemptee_job_list;
+	return (slurm_conf.preempt_mode & (~PREEMPT_MODE_GANG));
 }
 
 /* Generate a job priority. It is partly based upon the partition priority_tier
  * and partly based upon the job size. We want to put smaller jobs at the top
  * of the preemption queue and use a sort algorithm to minimize the number of
  * job's preempted. */
-static uint32_t _gen_job_prio(struct job_record *job_ptr)
+static uint32_t _gen_job_prio(job_record_t *job_ptr)
 {
 	uint32_t job_prio;
 
@@ -159,69 +89,76 @@ static uint32_t _gen_job_prio(struct job_record *job_ptr)
 	return job_prio;
 }
 
-static int _sort_by_prio(void *x, void *y)
+/* Return grace_time for job */
+static uint32_t _get_grace_time(struct job_record *job_ptr)
 {
-	int rc;
-	uint32_t job_prio1, job_prio2;
-	struct job_record *j1 = *(struct job_record **)x;
-	struct job_record *j2 = *(struct job_record **)y;
+	if (!job_ptr->part_ptr)
+		return 0;
 
-	job_prio1 = _gen_job_prio(j1);
-	job_prio2 = _gen_job_prio(j2);
-
-	if (job_prio1 > job_prio2)
-		rc = 1;
-	else if (job_prio1 < job_prio2)
-		rc = -1;
-	else
-		rc = 0;
-
-	return rc;
+	return job_ptr->part_ptr->grace_time;
 }
 
-static int _sort_by_youngest(void *x, void *y)
+extern int init(void)
 {
-	int rc;
-	struct job_record *j1 = *(struct job_record **) x;
-	struct job_record *j2 = *(struct job_record **) y;
-
-	if (j1->start_time < j2->start_time)
-		rc = 1;
-	else if (j1->start_time > j2->start_time)
-		rc = -1;
-	else
-		rc = 0;
-
-	return rc;
+	verbose("%s loaded", plugin_type);
+	return SLURM_SUCCESS;
 }
 
-extern uint16_t job_preempt_mode(struct job_record *job_ptr)
+extern void fini(void)
 {
-	struct part_record *part_ptr = job_ptr->part_ptr;
-	if (part_ptr && (part_ptr->preempt_mode != NO_VAL16)) {
-		if (part_ptr->preempt_mode & PREEMPT_MODE_GANG)
-			verbose("Partition '%s' preempt mode 'gang' has no "
-				"sense. Filtered out.\n", part_ptr->name);
-		return (part_ptr->preempt_mode & (~PREEMPT_MODE_GANG));
-	}
-
-	return (slurm_get_preempt_mode() & (~PREEMPT_MODE_GANG));
-}
-
-extern bool preemption_enabled(void)
-{
-	return (slurm_get_preempt_mode() != PREEMPT_MODE_OFF);
+	/* Empty. */
 }
 
 /* Return true if the preemptor can preempt the preemptee, otherwise false */
-extern bool job_preempt_check(job_queue_rec_t *preemptor,
-			      job_queue_rec_t *preemptee)
+extern bool preempt_p_job_preempt_check(job_queue_rec_t *preemptor,
+					job_queue_rec_t *preemptee)
 {
-	if (preemptor->part_ptr && preemptee->part_ptr) {
-		if (preemptor->part_ptr->priority_tier >
-		    preemptee->part_ptr->priority_tier)
+	if (preemptor->part_ptr && preemptee->part_ptr &&
+	    (bit_overlap_any(preemptor->part_ptr->node_bitmap,
+			     preemptee->part_ptr->node_bitmap)) &&
+	    (preemptor->part_ptr->priority_tier >
+	     preemptee->part_ptr->priority_tier))
 			return true;
-	}
 
 	return false;
+}
+
+extern bool preempt_p_preemptable(
+	job_record_t *preemptee, job_record_t *preemptor)
+{
+	if ((preemptee->part_ptr == NULL) ||
+	    (preemptee->part_ptr->priority_tier >=
+	     preemptor->part_ptr->priority_tier) ||
+	    (preemptee->part_ptr->preempt_mode == PREEMPT_MODE_OFF))
+		return false;
+
+	return true;
+}
+
+extern int preempt_p_get_data(job_record_t *job_ptr,
+			      slurm_preempt_data_type_t data_type,
+			      void *data)
+{
+	int rc = SLURM_SUCCESS;
+
+	switch (data_type) {
+	case PREEMPT_DATA_ENABLED:
+		(*(bool *)data) = slurm_conf.preempt_mode != PREEMPT_MODE_OFF;
+		break;
+	case PREEMPT_DATA_MODE:
+		(*(uint16_t *)data) = _job_preempt_mode(job_ptr);
+		break;
+	case PREEMPT_DATA_PRIO:
+		(*(uint32_t *)data) = _gen_job_prio(job_ptr);
+		break;
+	case PREEMPT_DATA_GRACE_TIME:
+		(*(uint32_t *)data) = _get_grace_time(job_ptr);
+		break;
+	default:
+		error("%s: unknown enum %d", __func__, data_type);
+		rc = SLURM_ERROR;
+		break;
+
+	}
+	return rc;
 }

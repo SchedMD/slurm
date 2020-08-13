@@ -14,10 +14,6 @@
 #          fedr/fed2/...
 #          fedr/fed3/...
 #          3. controllers are up and running.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Isaac Hartung <ihartung@schedmd.com>
@@ -45,7 +41,6 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set test_id      "37.16"
 set exit_code    0
 set fed_name     "feda"
 set user_name    ""
@@ -59,21 +54,16 @@ set my_scontrol  "${fed_slurm_base}/$fedc1/bin/scontrol"
 
 set eol "\r\n"
 
-print_header $test_id
-
 #
 # Check accounting config and bail if not found.
 #
 
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	log_warn "This test can't be run without being an Accounting administrator.\n \
-	 	  Use: sacctmgr mod user \$USER set admin=admin."
-	exit 0
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
 
@@ -100,7 +90,7 @@ proc setup_cluster_features {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr mod not responding\n"
+			log_error "sacctmgr mod not responding"
 			slow_kill $my_pid
 			set exit_code 1
 		}
@@ -109,7 +99,7 @@ proc setup_cluster_features {} {
 		}
 	}
 	if {$exit_code || $matches != 4} {
-		send_user "$matches FAILURE: unexpected error.\n"
+		log_error "Unexpected error. Got $matches"
 		end_it 1
 	}
 
@@ -133,7 +123,7 @@ proc setup_cluster_features {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr mod not responding\n"
+			log_error "sacctmgr mod not responding"
 			slow_kill $my_pid
 			set exit_code 1
 		}
@@ -142,7 +132,7 @@ proc setup_cluster_features {} {
 		}
 	}
 	if {$exit_code || $matches != 4} {
-		send_user "$matches FAILURE: unexpected error.\n"
+		log_error "Unexpected error. Got $matches"
 		end_it 1
 	}
 
@@ -166,7 +156,7 @@ proc setup_cluster_features {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr mod not responding\n"
+			log_error "sacctmgr mod not responding"
 			slow_kill $my_pid
 			set exit_code 1
 		}
@@ -175,7 +165,7 @@ proc setup_cluster_features {} {
 		}
 	}
 	if {$exit_code || $matches != 4} {
-		send_user "$matches FAILURE: unexpected error.\n"
+		log_error "Unexpected error. Got $matches"
 		end_it 1
 	}
 }
@@ -185,8 +175,8 @@ proc scontrol { fed job_id index regex } {
 
 	set matches 0
 
-	send_user "\nexecuting $my_scontrol -M$fed notify $job_id I'm Alive\n"
-	send_user "output: [exec $my_scontrol -M$fed notify $job_id I'm Alive]\n"
+	log_debug "Executing $my_scontrol -M$fed notify $job_id I'm Alive"
+	log_debug "Output: [exec $my_scontrol -M$fed notify $job_id I'm Alive]"
 
 	set spawn_id $srun_spawn_id($index)
 	expect {
@@ -288,7 +278,7 @@ proc squeue { fed m regex } {
 	}
 }
 
-proc cancel_all_jobs { } {
+proc cancel_federation_jobs { } {
 	global scancel user_name fedc1 fedc2 fedc3
 
 	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
@@ -314,7 +304,7 @@ proc cleanup { } {
 	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
 	global test_id bin_bash my_sacctmgr
 
-	cancel_all_jobs
+	cancel_federation_jobs
 	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
 
 	return [delete_federations $fed_name]
@@ -323,22 +313,20 @@ proc cleanup { } {
 proc end_it { exit_code } {
 	global test_id my_squeue
 	cleanup
-	if {$exit_code == 0} {
-		print_success $test_id
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
+	pass
 }
 
 #start test
 
 if {[test_federation_setup]} {
-	log_warn "WARNING: This test can't be run without fed_slurm_base,\
-		fedc1, fedc2, fedc3 setup in globals.local."
-	exit 0
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
 }
 
 if {[test_all_up]} {
-	exit 0
+	pass
 }
 
 set user_name [get_my_user_name]
@@ -357,11 +345,11 @@ if {[setup_federation $fed_name]} {
 setup_cluster_features
 
 
-send_user "\n################################################################\n"
-send_user "Test sacctmgr remove federation"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test sacctmgr remove federation"
+log_info "################################################################"
 
-cancel_all_jobs
+cancel_federation_jobs
 
 sleep 5
 
@@ -431,9 +419,9 @@ squeue "$fedc1" "11" $r1
 squeue "$fedc2" "9" $r2
 squeue "$fedc3" "5" $r3
 
-send_user "\n################################################################\n"
-send_user "Remove $fedc1"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Remove $fedc1"
+log_info "################################################################"
 spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$fedc1
 
 sleep 5
@@ -536,9 +524,9 @@ if {[string compare $run_cluster ""] == 0} {
 
 
 
-send_user "\n################################################################\n"
-send_user "Remove $fedc2"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Remove $fedc2"
+log_info "################################################################"
 spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$fedc2
 
 sleep 5
@@ -594,9 +582,9 @@ if {[string compare $run_cluster ""] == 0} {
 	end_it 1
 }
 
-send_user "\n################################################################\n"
-send_user "Remove $fedc3"
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Remove $fedc3"
+log_info "################################################################"
 spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$fedc3
 
 sleep 5
@@ -622,16 +610,16 @@ squeue "$fedc1" "3" $r1
 squeue "$fedc2" "4" $r2
 squeue "$fedc3" "3" $r3
 
-send_user "\n################################################################\n"
-send_user "Test revoked origin jobs are removed."
-send_user "\n################################################################\n"
+log_info "################################################################"
+log_info "Test revoked origin jobs are removed."
+log_info "################################################################"
 
 # Start from scratch
 # Start jobs on all clusters and remove non-origin clusters.
 # Remove non-origin clusters
 # Running jobs on the non-origin clusters should remain running.
 # Revoked tracking jobs on origin should go away.
-cancel_all_jobs
+cancel_federation_jobs
 
 exec $my_sacctmgr mod fed $fed_name set -i clusters=$fedc1,$fedc2,$fedc3
 

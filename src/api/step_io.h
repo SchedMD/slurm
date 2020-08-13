@@ -45,8 +45,9 @@ struct client_io {
 	int num_nodes;
 	bool label;
 	int taskid_width;	/* characters needed for task_id label */
-	uint32_t pack_offset;	/* offset within a pack-job or NO_VAL */
-	uint32_t task_offset;	/* task offset within a pack-job or NO_VAL */
+	uint32_t het_job_offset;	/* offset within a hetjob or NO_VAL */
+	uint32_t het_job_task_offset;	/* task offset within a hetjob or
+					 * NO_VAL */
 
 	char *io_key;
 
@@ -105,8 +106,8 @@ typedef struct client_io client_io_t;
  */
 client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 				      int num_nodes, slurm_cred_t *cred,
-				      bool label, uint32_t pack_offset,
-				      uint32_t task_offset);
+				      bool label, uint32_t het_job_offset,
+				      uint32_t het_job_task_offset);
 
 int client_io_handler_start(client_io_t *cio);
 

@@ -53,19 +53,20 @@
 #include "src/common/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
+#include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/common/tres_bind.h"
-#include "src/common/tres_frequency.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
 #include "src/sbatch/opt.h"
 
 #define MAX_RETRIES 15
+#define MAX_WAIT_SLEEP_TIME 32
 
 static void  _add_bb_to_script(char **script_body, char *burst_buffer_file);
 static void  _env_merge_filter(job_desc_msg_t *desc);
@@ -87,10 +88,10 @@ int main(int argc, char **argv)
 	submit_response_msg_t *resp = NULL;
 	char *script_name;
 	char *script_body;
-	char **pack_argv;
-	int script_size = 0, pack_argc, pack_argc_off = 0, pack_inx;
-	int i, rc = SLURM_SUCCESS, retries = 0, pack_limit = 0;
-	bool pack_fini = false;
+	char **het_job_argv;
+	int script_size = 0, het_job_argc, het_job_argc_off = 0, het_job_inx;
+	int i, rc = SLURM_SUCCESS, retries = 0, het_job_limit = 0;
+	bool het_job_fini = false;
 	List job_env_list = NULL, job_req_list = NULL;
 	sbatch_env_t *local_env = NULL;
 	bool quiet = false;
@@ -136,23 +137,24 @@ int main(int argc, char **argv)
 	if (script_body == NULL)
 		exit(error_exit);
 
-	pack_argc = argc - sbopt.script_argc;
-	pack_argv = argv;
-	for (pack_inx = 0; !pack_fini; pack_inx++) {
-		bool more_packs = false;
-		init_envs(&pack_env);
-		process_options_second_pass(pack_argc, pack_argv,
-					    &pack_argc_off, pack_inx,
-					    &more_packs, script_name ?
+	het_job_argc = argc - sbopt.script_argc;
+	het_job_argv = argv;
+	for (het_job_inx = 0; !het_job_fini; het_job_inx++) {
+		bool more_het_comps = false;
+		init_envs(&het_job_env);
+		process_options_second_pass(het_job_argc, het_job_argv,
+					    &het_job_argc_off, het_job_inx,
+					    &more_het_comps, script_name ?
 					    xbasename (script_name) : "stdin",
 					    script_body, script_size);
-		if ((pack_argc_off >= 0) && (pack_argc_off < pack_argc) &&
-		    !xstrcmp(pack_argv[pack_argc_off], ":")) {
-			/* pack_argv[0] moves from "salloc" to ":" */
-			pack_argc -= pack_argc_off;
-			pack_argv += pack_argc_off;
-		} else if (!more_packs) {
-			pack_fini = true;
+		if ((het_job_argc_off >= 0) &&
+		    (het_job_argc_off < het_job_argc) &&
+		    !xstrcmp(het_job_argv[het_job_argc_off], ":")) {
+			/* het_job_argv[0] moves from "salloc" to ":" */
+			het_job_argc -= het_job_argc_off;
+			het_job_argv += het_job_argc_off;
+		} else if (!more_het_comps) {
+			het_job_fini = true;
 		}
 
 		/*
@@ -201,16 +203,16 @@ int main(int argc, char **argv)
 			list_append(job_req_list, desc);
 		}
 		local_env = xmalloc(sizeof(sbatch_env_t));
-		memcpy(local_env, &pack_env, sizeof(sbatch_env_t));
+		memcpy(local_env, &het_job_env, sizeof(sbatch_env_t));
 		desc = xmalloc(sizeof(job_desc_msg_t));
 		slurm_init_job_desc_msg(desc);
 		if (_fill_job_desc_from_opts(desc) == -1)
 			exit(error_exit);
 		if (!first_desc)
 			first_desc = desc;
-		if (pack_inx || !pack_fini) {
+		if (het_job_inx || !het_job_fini) {
 			set_env_from_opts(&opt, &first_desc->environment,
-					  pack_inx);
+					  het_job_inx);
 		} else
 			set_env_from_opts(&opt, &first_desc->environment, -1);
 		if (!job_req_list) {
@@ -220,7 +222,7 @@ int main(int argc, char **argv)
 			list_append(job_req_list, desc);
 		}
 	}
-	pack_limit = pack_inx;
+	het_job_limit = het_job_inx;
 	if (!desc) {	/* For CLANG false positive */
 		error("Internal parsing error");
 		exit(1);
@@ -240,7 +242,7 @@ int main(int argc, char **argv)
 		list_iterator_destroy(desc_iter);
 
 	} else {
-		set_envs(&desc->environment, &pack_env, -1);
+		set_envs(&desc->environment, &het_job_env, -1);
 		desc->env_size = envcount(desc->environment);
 	}
 	if (!desc) {	/* For CLANG false positive */
@@ -254,7 +256,7 @@ int main(int argc, char **argv)
 	 */
 	if (opt.clusters) {
 		if (job_req_list) {
-			rc = slurmdb_get_first_pack_cluster(job_req_list,
+			rc = slurmdb_get_first_het_job_cluster(job_req_list,
 					opt.clusters, &working_cluster_rec);
 		} else {
 			rc = slurmdb_get_first_avail_cluster(desc,
@@ -268,7 +270,7 @@ int main(int argc, char **argv)
 
 	if (sbopt.test_only) {
 		if (job_req_list)
-			rc = slurm_pack_job_will_run(job_req_list);
+			rc = slurm_het_job_will_run(job_req_list);
 		else
 			rc = slurm_job_will_run(desc);
 
@@ -282,7 +284,7 @@ int main(int argc, char **argv)
 	while (true) {
 		static char *msg;
 		if (job_req_list)
-			rc = slurm_submit_batch_pack_job(job_req_list, &resp);
+			rc = slurm_submit_batch_het_job(job_req_list, &resp);
 		else
 			rc = slurm_submit_batch_job(desc, &resp);
 		if (rc >= 0)
@@ -319,8 +321,8 @@ int main(int argc, char **argv)
 	print_multi_line_string(resp->job_submit_user_msg, -1, LOG_LEVEL_INFO);
 
 	/* run cli_filter post_submit */
-	for (i = 0; i < pack_limit; i++)
-		cli_filter_plugin_post_submit(i, resp->job_id, NO_VAL);
+	for (i = 0; i < het_job_limit; i++)
+		cli_filter_g_post_submit(i, resp->job_id, NO_VAL);
 
 	if (!quiet) {
 		if (!sbopt.parsable) {
@@ -340,6 +342,15 @@ int main(int argc, char **argv)
 	if (sbopt.wait)
 		rc = _job_wait(resp->job_id);
 
+#ifdef MEMORY_LEAK_DEBUG
+	slurm_select_fini();
+	slurm_reset_all_options(&opt, false);
+	slurm_auth_fini();
+	slurm_conf_destroy();
+	log_fini();
+#endif /* MEMORY_LEAK_DEBUG */
+	xfree(script_body);
+
 	return rc;
 }
 
@@ -349,6 +360,7 @@ static void  _add_bb_to_script(char **script_body, char *burst_buffer_file)
 	char *orig_script = *script_body;
 	char *new_script, *sep, save_char;
 	int i;
+	char *bbf = NULL;
 
 	if (!burst_buffer_file || (burst_buffer_file[0] == '\0'))
 		return;	/* No burst buffer file or empty file */
@@ -357,14 +369,14 @@ static void  _add_bb_to_script(char **script_body, char *burst_buffer_file)
 		*script_body = xstrdup(burst_buffer_file);
 		return;
 	}
-
-	i = strlen(burst_buffer_file) - 1;
-	if (burst_buffer_file[i] != '\n')	/* Append new line as needed */
-		xstrcat(burst_buffer_file, "\n");
+	bbf = xstrdup(burst_buffer_file);
+	i = strlen(bbf) - 1;
+	if (bbf[i] != '\n')	/* Append new line as needed */
+		xstrcat(bbf, "\n");
 
 	if (orig_script[0] != '#') {
 		/* Prepend burst buffer file */
-		new_script = xstrdup(burst_buffer_file);
+		new_script = bbf;
 		xstrcat(new_script, orig_script);
 		*script_body = new_script;
 		return;
@@ -375,16 +387,18 @@ static void  _add_bb_to_script(char **script_body, char *burst_buffer_file)
 		save_char = sep[1];
 		sep[1] = '\0';
 		new_script = xstrdup(orig_script);
-		xstrcat(new_script, burst_buffer_file);
+		xstrcat(new_script, bbf);
 		sep[1] = save_char;
 		xstrcat(new_script, sep + 1);
 		*script_body = new_script;
+		xfree(bbf);
 		return;
 	} else {
 		new_script = xstrdup(orig_script);
 		xstrcat(new_script, "\n");
-		xstrcat(new_script, burst_buffer_file);
+		xstrcat(new_script, bbf);
 		*script_body = new_script;
+		xfree(bbf);
 		return;
 	}
 }
@@ -401,7 +415,14 @@ static int _job_wait(uint32_t job_id)
 	while (!complete) {
 		complete = true;
 		sleep(sleep_time);
-		sleep_time = MIN(sleep_time + 2, 10);
+		/*
+		 * min_job_age is factored into this to ensure the job can't
+		 * run, complete quickly, and be purged from slurmctld before
+		 * we've woken up and queried the job again.
+		 */
+		if ((sleep_time < (slurm_conf.min_job_age / 2)) &&
+		    (sleep_time < MAX_WAIT_SLEEP_TIME))
+			sleep_time *= 4;
 
 		rc = slurm_load_job(&resp, job_id, SHOW_ALL);
 		if (rc == SLURM_SUCCESS) {
@@ -432,51 +453,6 @@ static int _job_wait(uint32_t job_id)
 	return ec;
 }
 
-static char *_find_quote_token(char *tmp, char *sep, char **last)
-{
-	char *start;
-	int i, quote_single = 0, quote_double = 0;
-
-	xassert(last);
-	if (*last)
-		start = *last;
-	else
-		start = tmp;
-	if (start[0] == '\0')
-		return NULL;
-	for (i = 0; ; i++) {
-		if (start[i] == '\'') {
-			if (quote_single)
-				quote_single--;
-			else
-				quote_single++;
-		} else if (start[i] == '\"') {
-			if (quote_double)
-				quote_double--;
-			else
-				quote_double++;
-		} else if (((start[i] == sep[0]) || (start[i] == '\0')) &&
-			   (quote_single == 0) && (quote_double == 0)) {
-			if (((start[0] == '\'') && (start[i-1] == '\'')) ||
-			    ((start[0] == '\"') && (start[i-1] == '\"'))) {
-				start++;
-				i -= 2;
-			}
-			if (start[i] == '\0')
-				*last = &start[i];
-			else
-				*last = &start[i] + 1;
-			start[i] = '\0';
-			return start;
-		} else if (start[i] == '\0') {
-			error("Improperly formed environment variable (%s)",
-			      start);
-			*last = &start[i];
-			return start;
-		}
-
-	}
-}
 
 /* Propagate select user environment variables to the job.
  * If ALL is among the specified variables propagate
@@ -489,13 +465,13 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 	char *save_env[2] = { NULL, NULL }, *tmp, *tok, *last = NULL;
 
 	tmp = xstrdup(sbopt.export_env);
-	tok = _find_quote_token(tmp, ",", &last);
+	tok = find_quote_token(tmp, ",", &last);
 	while (tok) {
 
 		if (xstrcasecmp(tok, "ALL") == 0) {
 			env_array_merge(&desc->environment,
 					(const char **)environ);
-			tok = _find_quote_token(NULL, ",", &last);
+			tok = find_quote_token(NULL, ",", &last);
 			continue;
 		}
 
@@ -515,7 +491,7 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 				break;
 			}
 		}
-		tok = _find_quote_token(NULL, ",", &last);
+		tok = find_quote_token(NULL, ",", &last);
 	}
 	xfree(tmp);
 
@@ -707,8 +683,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.acctg_freq)
 		desc->acctg_freq = xstrdup(opt.acctg_freq);
 
-	desc->ckpt_interval = (uint16_t) sbopt.ckpt_interval;
-
 	if (opt.spank_job_env_size) {
 		desc->spank_job_env_size = opt.spank_job_env_size;
 		desc->spank_job_env =
@@ -734,20 +708,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	if (opt.cpus_per_gpu)
 		xstrfmtcat(desc->cpus_per_tres, "gpu:%d", opt.cpus_per_gpu);
-	if (opt.gpu_bind)
-		xstrfmtcat(opt.tres_bind, "gpu:%s", opt.gpu_bind);
-	if (tres_bind_verify_cmdline(opt.tres_bind)) {
-		error("Invalid --tres-bind argument: %s. Ignored",
-		      opt.tres_bind);
-		xfree(opt.tres_bind);
-	}
 	desc->tres_bind = xstrdup(opt.tres_bind);
-	xfmt_tres_freq(&opt.tres_freq, "gpu", opt.gpu_freq);
-	if (tres_freq_verify_cmdline(opt.tres_freq)) {
-		error("Invalid --tres-freq argument: %s. Ignored",
-		      opt.tres_freq);
-		xfree(opt.tres_freq);
-	}
 	desc->tres_freq = xstrdup(opt.tres_freq);
 	xfmt_tres(&desc->tres_per_job,    "gpu", opt.gpus);
 	xfmt_tres(&desc->tres_per_node,   "gpu", opt.gpus_per_node);

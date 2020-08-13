@@ -109,7 +109,8 @@ void *_forward_thread(void *arg)
 
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(hl))) {
-		if (slurm_conf_get_addr(name, &addr) == SLURM_ERROR) {
+		if (slurm_conf_get_addr(name, &addr, fwd_msg->header.flags)
+		    == SLURM_ERROR) {
 			error("forward_thread: can't find address for host "
 			      "%s, check slurm.conf", name);
 			slurm_mutex_lock(&fwd_struct->forward_mutex);
@@ -232,10 +233,10 @@ void *_forward_thread(void *arg)
 			static int message_timeout = -1;
 			if (message_timeout < 0)
 				message_timeout =
-					slurm_get_msg_timeout() * 1000;
+					slurm_conf.msg_timeout * 1000;
 			if (!fwd_msg->header.forward.tree_width)
 				fwd_msg->header.forward.tree_width =
-					slurm_get_tree_width();
+					slurm_conf.tree_width;
 			steps = (fwd_msg->header.forward.cnt+1) /
 					fwd_msg->header.forward.tree_width;
 			fwd_msg->timeout = (message_timeout*steps);
@@ -353,12 +354,13 @@ void *_fwd_tree_thread(void *arg)
 
 	slurm_msg_t_init(&send_msg);
 	send_msg.msg_type = fwd_tree->orig_msg->msg_type;
+	send_msg.flags = fwd_tree->orig_msg->flags;
 	send_msg.data = fwd_tree->orig_msg->data;
 	send_msg.protocol_version = fwd_tree->orig_msg->protocol_version;
 
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(fwd_tree->tree_hl))) {
-		if (slurm_conf_get_addr(name, &send_msg.address)
+		if (slurm_conf_get_addr(name, &send_msg.address, send_msg.flags)
 		    == SLURM_ERROR) {
 			error("fwd_tree_thread: can't find address for host "
 			      "%s, check slurm.conf", name);
@@ -491,7 +493,7 @@ static void _start_msg_tree_internal(hostlist_t hl, hostlist_t* sp_hl,
 
 	if (fwd_tree_in->timeout <= 0)
 		/* convert secs to msec */
-		fwd_tree_in->timeout  = slurm_get_msg_timeout() * 1000;
+		fwd_tree_in->timeout = slurm_conf.msg_timeout * 1000;
 
 	for (j = 0; j < hl_count; j++) {
 		fwd_tree = xmalloc(sizeof(fwd_tree_t));
@@ -532,7 +534,7 @@ static void _forward_msg_internal(hostlist_t hl, hostlist_t* sp_hl,
 
 	if (timeout <= 0)
 		/* convert secs to msec */
-		timeout  = slurm_get_msg_timeout() * 1000;
+		timeout = slurm_conf.msg_timeout * 1000;
 
 	for (j = 0; j < hl_count; j++) {
 		fwd_msg = xmalloc(sizeof(forward_msg_t));
@@ -561,27 +563,21 @@ static void _forward_msg_internal(hostlist_t hl, hostlist_t* sp_hl,
 			free(tmp_char);
 		}
 
-		forward_init(&fwd_msg->header.forward, NULL);
+		forward_init(&fwd_msg->header.forward);
 		fwd_msg->header.forward.nodelist = buf;
 		slurm_thread_create_detached(NULL, _forward_thread, fwd_msg);
 	}
 }
 
 /*
- * forward_init    - initilize forward structure
+ * forward_init    - initialize forward structure
  * IN: forward     - forward_t *   - struct to store forward info
- * IN: from        - forward_t *   - (OPTIONAL) can be NULL, can be used to
- *                                   init the forward to this state
  * RET: VOID
  */
-extern void forward_init(forward_t *forward, forward_t *from)
+extern void forward_init(forward_t *forward)
 {
-	if (from && from->init == FORWARD_INIT) {
-		memcpy(forward, from, sizeof(forward_t));
-	} else {
-		memset(forward, 0, sizeof(forward_t));
-		forward->init = FORWARD_INIT;
-	}
+	memset(forward, 0, sizeof(forward_t));
+	forward->init = FORWARD_INIT;
 }
 
 /*

@@ -40,10 +40,10 @@
 #ifndef _NET_H
 #define _NET_H
 
+#include <netdb.h>
 #include <stdint.h>
 #include <sys/socket.h>
-
-#include "src/common/macros.h"
+#include <sys/types.h>
 
 /* open a stream socket on an ephemereal port and put it into
  * the listen state. fd and port are filled in with the new
@@ -62,5 +62,20 @@ extern int net_set_low_water(int sock, socklen_t size);
 extern int net_set_keep_alive(int sock);
 
 extern int net_stream_listen_ports(int *, uint16_t *, uint16_t *, bool);
+
+/*
+ * dump sockaddr into a string
+ * IN addr address to dump
+ * IN addrlen size of addr
+ * RET ptr to string (must xfree) or NULL
+ */
+extern char *sockaddr_to_string(const struct sockaddr *addr, socklen_t addrlen);
+
+/*
+ * dump addrinfo into a string
+ * IN addr address to dump
+ * RET ptr to string (must xfree) or NULL
+ */
+extern char *addrinfo_to_string(const struct addrinfo *addr);
 
 #endif /* !_NET_H */

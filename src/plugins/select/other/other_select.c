@@ -3,7 +3,7 @@
  *
  *  NOTE: The node selection plugin itself is intimately tied to slurmctld
  *  functions and data structures. Some related functions (e.g. data structure
- *  un/packing, environment variable setting) are required by most SLURM
+ *  un/packing, environment variable setting) are required by most Slurm
  *  commands. Since some of these commands must be executed on the BlueGene
  *  front-end nodes, the functions they require are here rather than within
  *  the plugin. This is because functions required by the plugin can not be
@@ -65,9 +65,7 @@ const char *node_select_syms[] = {
 	"select_p_state_save",
 	"select_p_state_restore",
 	"select_p_job_init",
-	"select_p_node_ranking",
 	"select_p_node_init",
-	"select_p_block_init",
 	"select_p_job_test",
 	"select_p_job_begin",
 	"select_p_job_ready",
@@ -99,7 +97,6 @@ const char *node_select_syms[] = {
 	"select_p_select_jobinfo_xstrdup",
 	"select_p_get_info_from_plugin",
 	"select_p_update_node_config",
-	"select_p_update_node_state",
 	"select_p_reconfigure",
 	"select_p_resv_test",
 };
@@ -128,7 +125,7 @@ extern int other_select_init(void)
 		goto done;
 
 	if (!other_select_type_param)
-		other_select_type_param = slurm_get_select_type_param();
+		other_select_type_param = slurm_conf.select_type_param;
 
 	if (other_select_type_param & CR_OTHER_CONS_RES)
 		type = "select/cons_res";
@@ -217,25 +214,12 @@ extern int other_job_init(List job_list)
  * IN node_ptr - current node data
  * IN node_count - number of node entries
  */
-extern int other_node_init(struct node_record *node_ptr, int node_cnt)
+extern int other_node_init(node_record_t *node_ptr, int node_cnt)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
 
 	return (*(ops.node_init))(node_ptr, node_cnt);
-}
-
-
-/*
- * Note re/initialization of block record data structure
- * IN block_list - list of partition records
- */
-extern int other_block_init(List block_list)
-{
-	if (other_select_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(ops.block_init))(block_list);
 }
 
 /*
@@ -258,7 +242,7 @@ extern int other_block_init(List block_list)
  * IN exc_core_bitmap - bitmap of cores being reserved.
  * RET zero on success, EINVAL otherwise
  */
-extern int other_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+extern int other_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes, uint16_t mode,
 			  List preemptee_candidates, List *preemptee_job_list,
@@ -280,7 +264,7 @@ extern int other_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
  * after other_job_test(). Executed from slurmctld.
  * IN job_ptr - pointer to job being initiated
  */
-extern int other_job_begin(struct job_record *job_ptr)
+extern int other_job_begin(job_record_t *job_ptr)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -294,7 +278,7 @@ extern int other_job_begin(struct job_record *job_ptr)
  * RET: -2 fatal error, -1 try again, 1 if ready to execute,
  *	0 not ready to execute
  */
-extern int other_job_ready(struct job_record *job_ptr)
+extern int other_job_ready(job_record_t *job_ptr)
 {
 	if (other_select_init() < 0)
 		return -1;
@@ -308,8 +292,8 @@ extern int other_job_ready(struct job_record *job_ptr)
  *	"to_job_ptr". Also see other_job_resized().
  * RET: 0 or an error code
  */
-extern int other_job_expand(struct job_record *from_job_ptr,
-			    struct job_record *to_job_ptr)
+extern int other_job_expand(job_record_t *from_job_ptr,
+			    job_record_t *to_job_ptr)
 {
 	if (other_select_init() < 0)
 		return -1;
@@ -322,8 +306,7 @@ extern int other_job_expand(struct job_record *from_job_ptr,
  *	Only support jobs shrinking. Also see other_job_expand();
  * RET: 0 or an error code
  */
-extern int other_job_resized(struct job_record *job_ptr,
-			     struct node_record *node_ptr)
+extern int other_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 {
 	if (other_select_init() < 0)
 		return -1;
@@ -336,7 +319,7 @@ extern int other_job_resized(struct job_record *job_ptr,
  * IN job_ptr - job to be signaled
  * IN signal  - signal(7) number
  */
-extern int other_job_signal(struct job_record *job_ptr, int signal)
+extern int other_job_signal(job_record_t *job_ptr, int signal)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -348,7 +331,7 @@ extern int other_job_signal(struct job_record *job_ptr, int signal)
  * Pass job memory allocation confirmation request to other plugin.
  * IN job_ptr - job to be signaled
  */
-extern int other_job_mem_confirm(struct job_record *job_ptr)
+extern int other_job_mem_confirm(job_record_t *job_ptr)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -360,7 +343,7 @@ extern int other_job_mem_confirm(struct job_record *job_ptr)
  * Note termination of job is starting. Executed from slurmctld.
  * IN job_ptr - pointer to job being terminated
  */
-extern int other_job_fini(struct job_record *job_ptr)
+extern int other_job_fini(job_record_t *job_ptr)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -375,7 +358,7 @@ extern int other_job_fini(struct job_record *job_ptr)
  *                or admin, otherwise suspended for gang scheduling
  * RET SLURM_SUCCESS or error code
  */
-extern int other_job_suspend(struct job_record *job_ptr, bool indf_susp)
+extern int other_job_suspend(job_record_t *job_ptr, bool indf_susp)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -390,7 +373,7 @@ extern int other_job_suspend(struct job_record *job_ptr, bool indf_susp)
  * IN job_ptr - pointer to job being resumed
  * RET SLURM_SUCCESS or error code
  */
-extern int other_job_resume(struct job_record *job_ptr, bool indf_susp)
+extern int other_job_resume(job_record_t *job_ptr, bool indf_susp)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -412,7 +395,7 @@ extern int other_job_resume(struct job_record *job_ptr, bool indf_susp)
  *                  (not always set).
  * RET map of slurm nodes to be used for step, NULL on failure
  */
-extern bitstr_t *other_step_pick_nodes(struct job_record *job_ptr,
+extern bitstr_t *other_step_pick_nodes(job_record_t *job_ptr,
 				       select_jobinfo_t *jobinfo,
 				       uint32_t node_count,
 				       bitstr_t **avail_nodes)
@@ -424,7 +407,7 @@ extern bitstr_t *other_step_pick_nodes(struct job_record *job_ptr,
 					avail_nodes);
 }
 
-extern int other_step_start(struct step_record *step_ptr)
+extern int other_step_start(step_record_t *step_ptr)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -439,7 +422,7 @@ extern int other_step_start(struct step_record *step_ptr)
  * IN killing_step - if true then we are just starting to kill the step
  *                   if false, the step is completely terminated
  */
-extern int other_step_finish(struct step_record *step_ptr, bool killing_step)
+extern int other_step_finish(step_record_t *step_ptr, bool killing_step)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -492,7 +475,7 @@ extern int other_select_nodeinfo_set_all(void)
 	return (*(ops.nodeinfo_set_all))();
 }
 
-extern int other_select_nodeinfo_set(struct job_record *job_ptr)
+extern int other_select_nodeinfo_set(job_record_t *job_ptr)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -634,9 +617,8 @@ extern char *other_select_jobinfo_xstrdup(
  *                (see enum select_plugindata_info)
  * IN/OUT data  - the data to get from node record
  */
-extern int other_get_info_from_plugin (enum select_plugindata_info dinfo,
-					  struct job_record *job_ptr,
-					  void *data)
+extern int other_get_info_from_plugin(enum select_plugindata_info dinfo,
+				      job_record_t *job_ptr, void *data)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -657,21 +639,6 @@ extern int other_update_node_config (int index)
 
 	return (*(ops.
 		  update_node_config))(index);
-}
-
-/*
- * Updated a node state in the plugin, this should happen when a node is
- * drained or put into a down state then changed back.
- * IN index  - index into the node record list
- * IN state  - state to update to
- * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
- */
-extern int other_update_node_state (struct node_record *node_ptr)
-{
-	if (other_select_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(ops.update_node_state))(node_ptr);
 }
 
 /*

@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Submit job directly to slurmd without use of slurmctld scheduler.
 #          (--no-allocate option). NOTE: Needs to run as SlurmUser or root.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008 Lawrence Livermore National Security.
@@ -35,26 +30,20 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.26"
 set iterations 100
 set exit_code   0
 
-print_header $test_id
-
 if {[is_super_user] == 0} {
-	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
-	exit 0
+	skip "This test can't be run except as SlurmUser"
 }
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+    skip "This test is incompatible with front-end systems"
 }
 
 set switch [switch_type]
 if {[string compare $switch "none"]} {
-        send_user "\nWARNING: This test is incompatible with switch/$switch\n"
-        exit $exit_code
+        skip "This test is incompatible with switch/$switch"
 }
 
 #
@@ -69,20 +58,20 @@ set nodelist_name ""
 set timeout $max_job_delay
 set srun_pid [spawn $srun -v -N1 -l -t1 $bin_printenv SLURMD_NODENAME]
 expect {
-	-re "on host ($alpha_numeric_under)," {
+	-re "on host ($re_word_str)," {
 		set nodelist_name $expect_out(1,string)
 		exp_continue
 	}
-	-re "^0: ($alpha_numeric_under)" {
+	-re "^0: ($re_word_str)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}
-	-re "\n0: ($alpha_numeric_under)" {
+	-re "\n0: ($re_word_str)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -95,15 +84,13 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	exit 1
+	fail "Did not get hostname of task 0"
 }
 if {[string compare $nodelist_name ""] == 0} {
-	send_user "\nFAILURE: Did not get nodelist_name of task 0\n"
-	exit 1
+	fail "Did not get nodelist_name of task 0"
 }
 if {[string compare $host_0 $nodelist_name] != 0} {
-	send_user "\nWARNING: hostname inconsistency\n"
+	log_warn "Hostname inconsistency"
 }
 set include_node $host_0
 
@@ -116,29 +103,29 @@ set timeout     10
 set srun_pid [spawn $srun -N1 -l --nodelist=$include_node --no-allocate -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Invalid job credential" {
-		send_user "\nWARNING: Not SlurmUser or root.\n"
+		log_warn "Not SlurmUser or root"
 		set slurm_user 0
 		exp_continue
 	}
 	-re "error: .*try again" {
-		send_user "Can't avoid this possible error\n"
+		log_debug "Can't avoid this possible error"
 		set host_1 $host_0
 		exp_continue
 	}
 	-re "error: .*already in shared memory" {
-		send_user "Can't avoid this possible error\n"
+		log_debug "Can't avoid this possible error"
 		set host_1 $host_0
 		exp_continue
 	}
 	-re "error: .*exit code 1" {
 		exp_continue
 	}
-	-re "0: ($alpha_numeric_under)" {
+	-re "0: ($re_word_str)" {
 		set host_1 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding.\n"
+		log_error "srun not responding."
 		slow_kill $srun_pid
 		set slurm_user 0
 		set exit_code 1
@@ -148,10 +135,10 @@ expect {
 	}
 }
 if {$slurm_user == 0} {
-	exit 0;
+	pass
 }
 if {[string compare $host_1 $include_node]} {
-	send_user "\nFAILURE: Allocation lacked an included node\n"
+	log_error "Allocation lacked an included node"
 	set exit_code 1
 }
 
@@ -183,16 +170,16 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 	expect {
 		-i $noalloc2
 		-re "error:.*configuring interconnect" {
-			send_user "Can't avoid this possible error\n"
+			log_debug "Can't avoid this possible error"
 			exp_continue
 		}
 		-re "error:" {
-			send_user "\nFAILURE: some error happened\n"
+			log_error "Some error happened"
 			set failures 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid2
 			set failures 1
 		}
@@ -205,16 +192,16 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 	expect {
 		-i $noalloc1
 		-re "error:.*configuring interconnect" {
-			send_user "Can't avoid this possible error\n"
+			log_debug "Can't avoid this possible error"
 			exp_continue
 		}
 		-re "error:" {
-			send_user "\nFAILURE: some error happened\n"
+			log_error "Some error happened"
 			set failures 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid1
 			set failures 1
 		}
@@ -228,25 +215,25 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 	expect {
 		-i $alloc
 		-re "Invalid node name specified" {
-			send_user "\nFAILURE: some error happened\n"
+			log_error "Some error happened"
 			set failures 1
 			exp_continue
 		}
 		-re "error:.*configuring interconnect" {
-			send_user "Can't avoid this possible error\n"
+			log_debug "Can't avoid this possible error"
 			exp_continue
 		}
 		-re "error:" {
-			send_user "\nFAILURE: some error happened\n"
+			log_error "Some error happened"
 			set failures 1
 			exp_continue
 		}
-		-re "0: ($alpha_numeric_under)" {
+		-re "0: ($re_word_str)" {
 			set host_0 $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			log_error "srun not responding"
 			slow_kill $srun_pid
 			set failures 1
 		}
@@ -262,10 +249,9 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 	}
 }
 if {$successes != $iterations} {
-	send_user "\nFAILURE: only $successes of $iterations completed successfully\n"
+	fail "Only $successes of $iterations completed successfully"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

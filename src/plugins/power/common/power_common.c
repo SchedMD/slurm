@@ -68,25 +68,19 @@
 
 #include "power_common.h"
 
-static void _job_power_del(void *x)
-{
-	xfree(x);
-}
-
 /* For all nodes in a cluster
  * 1) set default values and
  * 2) return global power allocation/consumption information */
-extern void get_cluster_power(struct node_record *node_record_table_ptr,
+extern void get_cluster_power(node_record_t *node_record_table_ptr,
 			      int node_record_count,
 			      uint32_t *alloc_watts, uint32_t *used_watts)
 {
-	uint64_t debug_flag = slurm_get_debug_flags();
 	int i;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	*alloc_watts = 0;
 	*used_watts  = 0;
-	if ((debug_flag & DEBUG_FLAG_POWER) == 0)
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_POWER))
 		return;
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
@@ -119,20 +113,18 @@ extern void get_cluster_power(struct node_record *node_record_table_ptr,
  * NOTE: Job data structure must be locked on function entry
  * NOTE: Call list_delete() to free return value
  * NOTE: This function is currently unused. */
-extern List get_job_power(List job_list,
-			  struct node_record *node_record_table_ptr)
+extern List get_job_power(List job_list, node_record_t *node_record_table_ptr)
 {
-	struct node_record *node_ptr;
-	struct job_record *job_ptr;
+	node_record_t *node_ptr;
+	job_record_t *job_ptr;
 	ListIterator job_iterator;
 	power_by_job_t *power_ptr;
 	int i, i_first, i_last;
-	uint64_t debug_flag = slurm_get_debug_flags();
-	List job_power_list = list_create(_job_power_del);
+	List job_power_list = list_create(xfree_ptr);
 	time_t now = time(NULL);
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 		power_ptr = xmalloc(sizeof(power_by_job_t));
@@ -161,7 +153,7 @@ extern List get_job_power(List job_list,
 					node_ptr->energy->current_watts;
 			}
 		}
-		if (debug_flag & DEBUG_FLAG_POWER) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_POWER) {
 			info("%s: %pJ Age=%ld(sec) AllocWatts=%u UsedWatts=%u",
 			     __func__, job_ptr,
 			     (long int) difftime(now, power_ptr->start_time),
@@ -199,7 +191,7 @@ extern char *power_run_script(char *script_name, char *script_path,
 		resp = xstrdup("Slurm burst buffer configuration error");
 		return resp;
 	}
-	if (slurm_get_debug_flags() & DEBUG_FLAG_POWER) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_POWER) {
 		for (i = 0; i < 10; i++) {
 			if (!script_argv[i])
 				break;
@@ -386,11 +378,11 @@ extern char *power_run_script(char *script_name, char *script_path,
 
 /* For a newly starting job, set "new_job_time" in each of it's nodes
  * NOTE: The job and node data structures must be locked on function entry */
-extern void set_node_new_job(struct job_record *job_ptr,
-			     struct node_record *node_record_table_ptr)
+extern void set_node_new_job(job_record_t *job_ptr,
+			     node_record_t *node_record_table_ptr)
 {
 	int i, i_first, i_last;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	time_t now = time(NULL);
 
 	if (!job_ptr || !job_ptr->node_bitmap) {

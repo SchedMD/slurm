@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Confirm that salloc reports a proper version number (--version
 #          option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,11 +29,8 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.3"
 set exit_code   0
 set version     0
-
-print_header $test_id
 
 #
 # Report the salloc version number
@@ -49,7 +42,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		set exit_code 1
 	}
 	eof {
@@ -58,10 +51,8 @@ expect {
 }
 
 if {$version != 1} {
-	send_user "\nFAILURE: Did not get proper salloc version number\n"
-	set exit_code 1
+	fail "Did not get proper salloc version number"
 }
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

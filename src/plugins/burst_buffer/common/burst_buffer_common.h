@@ -66,7 +66,6 @@ typedef struct bb_config {
 	uid_t   *allow_users;
 	char    *allow_users_str;
 	char    *create_buffer;
-	bool	debug_flag;
 	char	*default_pool;
 	uid_t   *deny_users;
 	char    *deny_users_str;
@@ -155,6 +154,10 @@ typedef struct bb_job {
 	uint32_t   job_id;
 	char      *job_pool;	/* Pool in which to create job buffers */
 	uint32_t   magic;
+	int memfd;		/* memfd descriptor for symbol-replaced
+				 * burst-buffer script */
+	char *memfd_path;	/* path to memfd file */
+	bool need_symbol_replacement; /* '%' characters found in script */
 	struct bb_job *next;
 	char      *partition;	/* Associated partition (for limits) */
 	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
@@ -178,7 +181,7 @@ typedef struct bb_job {
 typedef struct bb_job_queue_rec {
 	uint64_t bb_size;	/* Used by generic plugin only */
 	bb_job_t *bb_job;	/* Used by cray plugin only */
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 } bb_job_queue_rec_t;
 
 /* Used for building queue of job preemption candidates */
@@ -223,14 +226,14 @@ extern void bb_alloc_cache(bb_state_t *state_ptr);
  * Return a pointer to that record.
  * Use bb_free_alloc_buf() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
-				    struct job_record *job_ptr,
+				    job_record_t *job_ptr,
 				    bb_job_t *bb_job);
 
 /* Allocate a burst buffer record for a job and increase the job priority
  * if so configured.
  * Use bb_free_alloc_buf() to purge the returned record. */
-extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
-				struct job_record *job_ptr, bb_job_t *bb_job);
+extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr, job_record_t *job_ptr,
+				bb_job_t *bb_job);
 
 /* Allocate a named burst buffer record for a specific user.
  * Return a pointer to that record.
@@ -249,7 +252,7 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini);
 /* Find a per-job burst buffer record for a specific job.
  * If not found, return NULL. */
 extern bb_alloc_t *bb_find_alloc_rec(bb_state_t *state_ptr,
-				     struct job_record *job_ptr);
+				     job_record_t *job_ptr);
 
 /* Find a burst buffer record by name
  * bb_name IN - Buffer's name
@@ -299,6 +302,12 @@ extern void bb_job_queue_del(void *x);
 /* Sort job queue by expected start time */
 extern int bb_job_queue_sort(void *x, void *y);
 
+/*
+ * Returns the script, or a symbol-replaced version of the script,
+ * that can be used as an argument to exec().
+ */
+char *bb_handle_job_script(job_record_t *job_ptr, bb_job_t *bb_job);
+
 /* Load and process configuration parameters */
 extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type);
 
@@ -346,8 +355,8 @@ extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size, char *pool,
  * bb_alloc IN - Pointer to persistent burst buffer state info
  * state_ptr IN - Pointer to burst_buffer plugin state info
  */
-extern int bb_post_persist_create(struct job_record *job_ptr,
-				  bb_alloc_t *bb_alloc, bb_state_t *state_ptr);
+extern int bb_post_persist_create(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
+				  bb_state_t *state_ptr);
 
 /* Log deletion of a persistent burst buffer in the database */
 extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr);

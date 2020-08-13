@@ -50,6 +50,8 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/data.h"
+
 #define DEFAULT_IMMEDIATE	1
 #define DEFAULT_BELL_DELAY	10
 #define SRUN_MAX_THREADS	60
@@ -77,8 +79,6 @@ enum {
 	LONG_OPT_BLRTS_IMAGE,
 	LONG_OPT_BURST_BUFFER_FILE,
 	LONG_OPT_BURST_BUFFER_SPEC,
-	LONG_OPT_CHECKPOINT,
-	LONG_OPT_CHECKPOINT_DIR,
 	LONG_OPT_CLUSTER,
 	LONG_OPT_CLUSTER_CONSTRAINT,
 	LONG_OPT_COMMENT,
@@ -92,6 +92,7 @@ enum {
 	LONG_OPT_DEADLINE,
 	LONG_OPT_DEBUGGER_TEST,
 	LONG_OPT_DELAY_BOOT,
+	LONG_OPT_ENVIRONMENT, /* only for data */
 	LONG_OPT_EPILOG,
 	LONG_OPT_EXCLUSIVE,
 	LONG_OPT_EXPORT,
@@ -137,7 +138,7 @@ enum {
 	LONG_OPT_NTASKSPERNODE,
 	LONG_OPT_NTASKSPERSOCKET,
 	LONG_OPT_OPEN_MODE,
-	LONG_OPT_PACK_GROUP,
+	LONG_OPT_HET_GROUP,
 	LONG_OPT_PARSABLE,
 	LONG_OPT_POWER,
 	LONG_OPT_PRIORITY,
@@ -150,7 +151,6 @@ enum {
 	LONG_OPT_REBOOT,
 	LONG_OPT_REQUEUE,
 	LONG_OPT_RESERVATION,
-	LONG_OPT_RESTART_DIR,
 	LONG_OPT_RESV_PORTS,
 	LONG_OPT_SIGNAL,
 	LONG_OPT_SLURMD_DEBUG,
@@ -181,7 +181,7 @@ enum {
 /*
  * options only processed by salloc
  */
-typedef struct salloc_opt {
+typedef struct {
 	bell_flag_t bell;		/* --bell, --no-bell		*/
 	int kill_command_signal;	/* --kill-command		*/
 	bool no_shell;			/* --no-shell			*/
@@ -191,14 +191,13 @@ typedef struct salloc_opt {
 /*
  * options only processed by sbatch
  */
-typedef struct sbatch_opt {
+typedef struct {
 	/* batch script argv and argc, if provided on the command line */
 	int script_argc;
 	char **script_argv;
 
 	char *array_inx;		/* --array			*/
 	char *batch_features;		/* --batch			*/
-	int ckpt_interval;		/* --checkpoint (int minutes)	*/
 	char *export_env;		/* --export			*/
 	char *export_file;		/* --export-file=file		*/
 	bool ignore_pbs;		/* --ignore-pbs			*/
@@ -219,19 +218,14 @@ typedef struct sbatch_opt {
 /*
  * options only processed by srun
  */
-typedef struct srun_opt {
+typedef struct {
 	int argc;			/* length of argv array		*/
 	char **argv;			/* left over on command line	*/
-
-	char *ifname;			/* input file name		*/
-	char *ofname;			/* output file name		*/
-	char *efname;			/* error file name		*/
 
 	uint16_t accel_bind_type;	/* --accel-bind			*/
 	char *alloc_nodelist;		/* grabbed from the environment	*/
 	char *bcast_file;		/* --bcast, copy executable to compute nodes */
 	bool bcast_flag;		/* --bcast, copy executable to compute nodes */
-	int ckpt_interval;		/* --checkpoint, in minutes	*/
 	char *cmd_name;			/* name of command to execute	*/
 	uint16_t compress;		/* --compress (for --bcast option) */
 	bool core_spec_set;		/* core_spec explicitly set	*/
@@ -253,9 +247,9 @@ typedef struct srun_opt {
 	int32_t multi_prog_cmds;	/* number of commands in multi prog file */
 	bool no_alloc;			/* --no-allocate		*/
 	uint8_t open_mode;		/* --open-mode=append|truncate	*/
-	char *pack_group;		/* --pack-group			*/
-	bitstr_t *pack_grp_bits;	/* --pack-group in bitmap form	*/
-	int pack_step_cnt;		/* Total count of pack groups to launch */
+	char *het_group;		/* --het-group			*/
+	bitstr_t *het_grp_bits;		/* --het-group in bitmap form	*/
+	int het_step_cnt;		/* Total count of het groups to launch */
 	bool parallel_debug;		/* srun controlled by debugger	*/
 	bool preserve_env;		/* --preserve-env		*/
 	char *prolog;			/* --prolog			*/
@@ -263,7 +257,6 @@ typedef struct srun_opt {
 	bool pty;			/* --pty			*/
 	bool quit_on_intr;		/* --quit-on-interrupt		*/
 	int relative;			/* --relative			*/
-	char *restart_dir;		/* --restart			*/
 	int resv_port_cnt;		/* --resv_ports			*/
 	int slurmd_debug;		/* --slurmd-debug		*/
 	char *task_epilog;		/* --task-epilog		*/
@@ -273,10 +266,18 @@ typedef struct srun_opt {
 	bool unbuffered;		/* --unbuffered			*/
 } srun_opt_t;
 
-typedef struct slurm_options {
+typedef struct {
+	bool set;			/* Has the option been set */
+	bool set_by_env;		/* Has the option been set by env var */
+	bool set_by_data;		/* Has the option been set by data_t */
+} slurm_opt_state_t;
+
+typedef struct {
 	salloc_opt_t *salloc_opt;
 	sbatch_opt_t *sbatch_opt;
 	srun_opt_t *srun_opt;
+
+	slurm_opt_state_t *state;
 
 	void (*help_func)(void);	/* Print --help info		*/
 	void (*usage_func)(void);	/* Print --usage info		*/
@@ -356,6 +357,7 @@ typedef struct slurm_options {
 	bool contiguous;		/* --contiguous			*/
 	char *nodefile;			/* --nodefile			*/
 	char *nodelist;			/* --nodelist=node1,node2,...	*/
+	char **environment;		/* job environment     		*/
 	char *exclude;			/* --exclude=node1,node2,...	*/
 
 	bool reboot;			/* --reboot			*/
@@ -381,6 +383,9 @@ typedef struct slurm_options {
 	char *mcs_label;		/* mcs label			*/
 	time_t deadline;		/* ---deadline			*/
 	uint32_t delay_boot;		/* --delay-boot			*/
+	uint32_t step_het_comp_cnt;     /* How many components are in this het
+					 * step that is part of a non-hetjob. */
+	char *step_het_grps;		/* what het groups are used by step */
 	char *tres_bind;		/* derived from gpu_bind	*/
 	char *tres_freq;		/* derived from gpu_freq	*/
 	uint16_t x11;			/* --x11			*/
@@ -400,13 +405,26 @@ extern struct option *slurm_option_table_create(slurm_opt_t *opt,
 extern void slurm_option_table_destroy(struct option *optz);
 
 /*
- * Warning: this will permute the state of a global common_options table,
- * and thus is not thread-safe. The expectation is that it is called from
- * within a single thread in salloc/sbatch/srun, and that this restriction
- * should not be problematic. If it is, please refactor.
+ * Process individual argument for the current job component
+ * IN opt - current component
+ * IN optval - argument identifier
+ * IN arg - argument value
+ * IN set_by_env - flag if set by environment (and not cli)
+ * IN early_pass - early vs. late pass for HetJob option inheritance
+ * RET SLURM_SUCCESS or error
  */
 extern int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 				bool set_by_env, bool early_pass);
+
+/*
+ * Process incoming single component of Job data entry
+ * IN opt - options to populate from job chunk
+ * IN job - data containing job request
+ * IN/OUT errors - data dictionary to populate with detailed errors
+ * RET SLURM_SUCCESS or error
+ */
+extern int slurm_process_option_data(slurm_opt_t *opt, int optval,
+				     const data_t *arg, data_t *errors);
 
 /*
  * Print all options that have been set through slurm_process_option()
@@ -420,14 +438,26 @@ extern void slurm_print_set_options(slurm_opt_t *opt);
 extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass);
 
 /*
+ * Free all memory associated with opt members
+ * Note: assumes that opt, opt->salloc_opt, opt->sbatch_opt, and
+ * opt->srun_opt should not be xfreed.
+ */
+extern void slurm_free_options_members(slurm_opt_t *opt);
+
+/*
  * Was the option set by a cli argument?
  */
-extern bool slurm_option_set_by_cli(int optval);
+extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval);
 
 /*
  * Was the option set by an env var?
  */
-extern bool slurm_option_set_by_env(int optval);
+extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval);
+
+/*
+ * Was the option set by an data_t value?
+ */
+extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval);
 
 /*
  * Get option value by common option name.
@@ -463,5 +493,17 @@ extern bool slurm_option_reset(slurm_opt_t *opt, const char *name);
  */
 extern bool slurm_option_get_next_set(slurm_opt_t *opt, char **name,
 				      char **value, size_t *state);
+
+/*
+ * Validate that the three memory options (--mem, --mem-per-cpu, --mem-per-gpu)
+ * and their associated environment variables are set mutually exclusively.
+ *
+ * This will fatal() if multiple CLI options are specified simultaneously.
+ * If any of the CLI options are specified, the other options are reset to
+ * clear anything that may have been set through the environment.
+ * Otherwise, if multiple environment variables are set simultaneously,
+ * this will fatal().
+ */
+extern void validate_memory_options(slurm_opt_t *opt);
 
 #endif	/* _SLURM_OPT_H_ */

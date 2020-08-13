@@ -398,8 +398,6 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * PREEMPT_MODE_REQUEUE     0x0002
 
-=item * PREEMPT_MODE_CHECKPOINT  0x0004
-
 =item * PREEMPT_MODE_CANCEL      0x0008
 
 =item * PREEMPT_MODE_GANG        0x8000
@@ -805,8 +803,6 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * CPU_BIND_LDMASK             0x800
 
-=item * CPU_BIND_CPUSETS            0x8000
-
 =back
 
 =head3 Memory bind type
@@ -1008,8 +1004,6 @@ head2 SLURM ERRNO
 
 =item * ESLURM_INVALID_AUTHTYPE_CHANGE                  2030
 
-=item * ESLURM_INVALID_CHECKPOINT_TYPE_CHANGE           2031
-
 =item * ESLURM_INVALID_SCHEDTYPE_CHANGE                 2032
 
 =item * ESLURM_INVALID_SELECTTYPE_CHANGE                2033
@@ -1194,7 +1188,7 @@ head2 SLURM ERRNO
 
 =back
 
-=head3 socket specific SLURM communications error
+=head3 socket specific Slurm communications error
 
 =over 2
 
@@ -1248,7 +1242,7 @@ Slurm
 
 =head1 AUTHOR
 
-This library is created by Hongjia Cao, E<lt>hjcao(AT)nudt.edu.cnE<gt> and Danny Auble, E<lt>da(AT)llnl.govE<gt>. It is distributed with SLURM.
+This library is created by Hongjia Cao, E<lt>hjcao(AT)nudt.edu.cnE<gt> and Danny Auble, E<lt>da(AT)llnl.govE<gt>. It is distributed with Slurm.
 
 =head1 COPYRIGHT AND LICENSE
 

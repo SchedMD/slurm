@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of MPICH2 task spawn logic
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,27 +28,22 @@
 ############################################################################
 source ./globals
 
-set test_id            "1.94"
 set exit_code          0
 set file_in            "test$test_id.input"
 set file_out           "test$test_id.output"
 set file_err           "test$test_id.error"
-set master_prog        "test$test_id.master"
-set slave_prog         "test$test_id.slave"
+set server_prog        "test$test_id.server"
+set client_prog        "test$test_id.client"
 set job_id             0
-
-print_header $test_id
 
 #
 # Test for existence of mpi compiler
 #
 if {[info exists mpicc] == 0} {
-	send_user "\nWARNING: mpicc not defined, can't perform mpi testing\n"
-	exit 0
+	skip "Mpicc not defined, can't perform mpi testing"
 }
 if {[file executable $mpicc] == 0} {
-	send_user "\nWARNING: $mpicc does not exists\n"
-	exit 0
+	skip "$mpicc does not exists"
 }
 #
 # Test is only works with mpi/pmi2 plugin.
@@ -67,7 +57,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -76,18 +66,17 @@ expect {
 }
 log_user 1
 if {$invalid == 1} {
-	send_user "\nWARNING: test compatible only with MpiDefault=pmi2\n"
-	exit $exit_code
+	skip "Test compatible only with MpiDefault=pmi2"
 }
 
 #
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $file_in $file_out $file_err
-exec $bin_rm -f $master_prog ${master_prog}.o
-exec $bin_rm -f $slave_prog  ${slave_prog}.o
-exec $mpicc -o $master_prog  ${master_prog}.c
-exec $mpicc -o $slave_prog   ${slave_prog}.c
+exec $bin_rm -f $server_prog ${server_prog}.o
+exec $bin_rm -f $client_prog  ${client_prog}.o
+exec $mpicc -o $server_prog  ${server_prog}.c
+exec $mpicc -o $client_prog  ${client_prog}.c
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -96,7 +85,7 @@ file delete $file_out $file_err
 # Build input script file
 #
 make_bash_script $file_in "
-  $srun -n1 --mem=0 $master_prog $slave_prog
+  $srun -n1 --mem=0 $server_prog $client_prog
 "
 
 #
@@ -115,11 +104,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $sbatch_pid
 		set exit_code 1
 	}
@@ -129,22 +117,20 @@ expect {
 }
 
 if {$no_start != 0} {
-	send_user "\nWARNING: partition too small for test\n"
 	if {$job_id != 0} {
 		cancel_job $job_id
 	}
-	exit 0
+	skip "Partition too small for test"
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+	fail "Batch submit failure"
 }
 
 #
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	set exit_code 1
 }
 
@@ -159,7 +145,7 @@ if {[wait_for_file $file_out] == 0} {
 	set rank_sum 0
 	spawn $bin_cat $file_out
 	expect {
-		-re "Rank.($number). on $alpha_numeric_under just received msg from Rank ($number)" {
+		-re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
 			incr rank_sum $expect_out(1,string)
 			incr rank_sum $expect_out(2,string)
 			incr matches
@@ -170,16 +156,13 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$matches == 0} {
-		send_user "\nFAILURE: No MPI communications occurred\n"
-		send_user "  The version of MPI you are using may be incompatible "
-		send_user "with the configured switch\n"
-		send_user "  Core files may be present from failed MPI tasks\n\n"
+		log_error "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
 		set exit_code 1
 	} elseif {$matches != $expected_msg} {
-		send_user "\nFAILURE: unexpected output ($matches of $expected_msg)\n"
+		log_error "Unexpected output ($matches of $expected_msg)"
 		set exit_code 1
 	} elseif {$rank_sum != $expected_sum} {
-		send_user "\nFAILURE: Invalid rank values ($rank_sum != $expected_sum)\n"
+		log_error "Invalid rank values ($rank_sum != $expected_sum)"
 		set exit_code 1
 	}
 } else {
@@ -188,9 +171,8 @@ if {[wait_for_file $file_out] == 0} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
-	exec $bin_rm -f $master_prog ${master_prog}.o
-	exec $bin_rm -f $slave_prog  ${slave_prog}.o
-	send_user "\nSUCCESS\n"
+	exec $bin_rm -f $server_prog ${server_prog}.o
+	exec $bin_rm -f $client_prog ${client_prog}.o
 } else {
 	set matches 0
 	spawn head $file_err
@@ -204,12 +186,12 @@ if {$exit_code == 0} {
 		}
 	}
 	if {$matches != 0} {
-		send_user "WARNING: If using MVAPICH then\n"
-		send_user "         Configure \"PropagateResourceLimitsExcept=MEMLOCK\"\n"
-		send_user "         Also start slurmd with \"ulimit -l unlimited\"\n"
+		log_warn "If using MVAPICH thenc onfigure \"PropagateResourceLimitsExcept=MEMLOCK\". Also start slurmd with \"ulimit -l unlimited\""
 	} else {
-		send_user "Check contents of $file_err\n"
+		log_debug "Check contents of $file_err"
 	}
 }
 
-exit $exit_code
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

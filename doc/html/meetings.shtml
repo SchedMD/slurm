@@ -1,16 +1,29 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Meetings</h1>
+
+<p><b>Slurm User Group Meeting 2020</b><br>
+15 September 2020<br>
+Online<br>
+Host: <a href="https://www.schedmd.com/">SchedMD</a></p>
+<p>The Slurm User Group Meeting (SLUG'20) this fall will be moving online, and will not be hosted in-person at Harvard as scheduled, due to uncertainty around scheduling events caused by COVID-19.</p>
+
+<p>In lieu of an in-person meeting, SchedMD will broadcast a select set of presentations on Tuesday, September 15th, 2020. The agenda will be announced later this summer, but ask you to hold the date for this virtual SLUG meeting.</p>
+
+<p>Due to this change in format and compressed schedule, we will not be issuing a call for presentations this year. We expect to resume a normal program for SLUG'21.</p>
+
+<!--
+<p><a href="slurm_ug_agenda.html">Meeting agenda, registration information, etc.</a></p>
+-->
+<!--<p><a href="slurm_ug_agenda.html#hotels">Meeting hotels</a></p>-->
+
+<br>
+<h2>Previous Meetings</h2>
+
 <p><b>Slurm User Group Meeting 2019</b><br>
 17-18 September 2019<br>
 Salt Lake City, Utah, USA<br>
 Host: <a href="https://www.chpc.utah.edu/">University of Utah</a></p>
-<!-- <p><a href="slurm_ug_cfp.html">Call for Abstracts: Due 29 June 2018</a></p>-->
-<!-- <p><a href="slurm_ug_agenda.html">Meeting agenda, registration information, etc.</a></p> -->
-<!-- <p><a href="slurm_ug_agenda.html#hotels">Meeting hotels</a></p> -->
-
-<br>
-<h2>Previous Meetings</h2>
 
 <p><b>Slurm User Group Meeting 2018</b><br>
 25-26 September 2018<br>
@@ -57,6 +70,6 @@ Host: Bull</p>
 Paris, France<br>
 Host: CEA</p>
 
-<p style="text-align:center;">Last modified 30 May 2018</p>
+<p style="text-align:center;">Last modified 15 June 2020</p>
 
 <!--#include virtual="footer.txt"-->

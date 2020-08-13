@@ -130,25 +130,22 @@ extern void slurm_print_topo_info_msg(
 extern void slurm_print_topo_record(FILE * out, topo_info_t *topo_ptr,
 				    int one_liner)
 {
-	char *env, *line = NULL;
-	int max_len = 0, len;
-
-	if ((env = getenv("SLURM_TOPO_LEN")))
-		max_len = atoi(env);
+	char *env, *line = NULL, *pos = NULL;
 
 	/****** Line 1 ******/
-	len = xstrfmtcat(line, "SwitchName=%s Level=%u LinkSpeed=%u",
-			 topo_ptr->name, topo_ptr->level, topo_ptr->link_speed);
+	xstrfmtcatat(line, &pos, "SwitchName=%s Level=%u LinkSpeed=%u",
+		   topo_ptr->name, topo_ptr->level, topo_ptr->link_speed);
 
 	if (topo_ptr->nodes)
-		len += xstrfmtcat(line, " Nodes=%s", topo_ptr->nodes);
+		xstrfmtcatat(line, &pos, " Nodes=%s", topo_ptr->nodes);
 
 	if (topo_ptr->switches)
-		len += xstrfmtcat(line, " Switches=%s", topo_ptr->switches);
+		xstrfmtcatat(line, &pos, " Switches=%s", topo_ptr->switches);
 
-	if ((max_len > 0) && (len > max_len))
-		line[max_len] = '\0';
+	if ((env = getenv("SLURM_TOPO_LEN")))
+		fprintf(out, "%.*s\n", atoi(env), line);
+	else
+		fprintf(out, "%s\n", line);
 
-	fprintf(out, "%s\n", line);
 	xfree(line);
 }

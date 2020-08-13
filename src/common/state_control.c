@@ -37,6 +37,7 @@
 #include <ctype.h>
 #include <limits.h>	/* For LONG_MAX */
 #include "src/common/state_control.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/working_cluster.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -127,7 +128,7 @@ extern int state_control_corecnt_supported(void)
 }
 
 extern int state_control_parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr,
-					    char *val, int *free_tres_corecnt,
+					    char *val, uint32_t *res_free_flags,
 					    bool from_tres, char **err_msg)
 {
 	char *endptr = NULL, *core_cnt, *tok, *ptrptr = NULL;
@@ -137,7 +138,7 @@ extern int state_control_parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr,
 	 * CoreCnt and TRES=cpu= might appear within the same request,
 	 * so we free the first and realloc the second.
 	 */
-	if (*free_tres_corecnt)
+	if (*res_free_flags & RESV_FREE_STR_TRES_CORE)
 		xfree(resv_msg_ptr->core_cnt);
 
 	core_cnt = xstrdup(val);
@@ -145,7 +146,7 @@ extern int state_control_parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr,
 	while (tok) {
 		xrealloc(resv_msg_ptr->core_cnt,
 			 sizeof(uint32_t) * (node_inx + 2));
-		*free_tres_corecnt = 1;
+		*res_free_flags |= RESV_FREE_STR_TRES_CORE;
 		resv_msg_ptr->core_cnt[node_inx] =
 			strtol(tok, &endptr, 10);
 		if ((endptr == NULL) ||
@@ -174,7 +175,7 @@ extern int state_control_parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr,
 }
 
 extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-			      int *free_tres_nodecnt, bool from_tres,
+			      uint32_t *res_free_flags, bool from_tres,
 			      char **err_msg)
 {
 	char *endptr = NULL, *node_cnt, *tok, *ptrptr = NULL;
@@ -186,7 +187,7 @@ extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 	 * NodeCnt and TRES=node= might appear within the same request,
 	 * so we free the first and realloc the second.
 	 */
-	if (*free_tres_nodecnt)
+	if (*res_free_flags & RESV_FREE_STR_TRES_NODE)
 		xfree(resv_msg_ptr->node_cnt);
 
 	node_cnt = xstrdup(val);
@@ -194,7 +195,7 @@ extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 	while (tok) {
 		xrealloc(resv_msg_ptr->node_cnt,
 			 sizeof(uint32_t) * (node_inx + 2));
-		*free_tres_nodecnt = 1;
+		*res_free_flags |= RESV_FREE_STR_TRES_NODE;
 		/*
 		 * Use temporary variable to check for negative or huge values
 		 * since resv_msg_ptr->node_cnt is uint32_t.
@@ -245,10 +246,7 @@ extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 
 extern int state_control_parse_resv_tres(char *val,
 					 resv_desc_msg_t *resv_msg_ptr,
-					 int *free_tres_license,
-					 int *free_tres_bb,
-					 int *free_tres_corecnt,
-					 int *free_tres_nodecnt,
+					 uint32_t *res_free_flags,
 					 char **err_msg)
 {
 	int i, ret, len;
@@ -258,11 +256,6 @@ extern int state_control_parse_resv_tres(char *val,
 		*value_str = NULL, *name = NULL, *compound = NULL,
 		*tmp = NULL;
 	bool discard, first;
-
-	*free_tres_license = 0;
-	*free_tres_bb = 0;
-	*free_tres_corecnt = 0;
-	*free_tres_nodecnt = 0;
 
 	token = strtok_r(val, ",", &saveptr1);
 	while (token) {
@@ -350,7 +343,7 @@ extern int state_control_parse_resv_tres(char *val,
 		}
 		ret = state_control_parse_resv_corecnt(resv_msg_ptr,
 						       tres_corecnt,
-						       free_tres_corecnt, true,
+						       res_free_flags, true,
 						       err_msg);
 		xfree(tres_corecnt);
 		if (ret != SLURM_SUCCESS)
@@ -359,7 +352,7 @@ extern int state_control_parse_resv_tres(char *val,
 
 	if (tres_nodecnt && tres_nodecnt[0] != '\0') {
 		ret = parse_resv_nodecnt(resv_msg_ptr, tres_nodecnt,
-					 free_tres_nodecnt, true, err_msg);
+					 res_free_flags, true, err_msg);
 		xfree(tres_nodecnt);
 		if (ret != SLURM_SUCCESS)
 			goto error;
@@ -367,12 +360,12 @@ extern int state_control_parse_resv_tres(char *val,
 
 	if (tres_license && tres_license[0] != '\0') {
 		resv_msg_ptr->licenses = tres_license;
-		*free_tres_license = 1;
+		*res_free_flags |= RESV_FREE_STR_TRES_LIC;
 	}
 
 	if (tres_bb && tres_bb[0] != '\0') {
 		resv_msg_ptr->burst_buffer = tres_bb;
-		*free_tres_bb = 1;
+		*res_free_flags |= RESV_FREE_STR_TRES_BB;
 	}
 
 	xfree(tmp);

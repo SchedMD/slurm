@@ -20,8 +20,8 @@ each compute node and a central <b>slurmctld</b> daemon running on a management 
 The <b>slurmd</b> daemons provide fault-tolerant hierarchical communications.
 The user commands include: <b>sacct</b>, <b>salloc</b>, <b>sattach</b>,
 <b>sbatch</b>, <b>sbcast</b>, <b>scancel</b>, <b>scontrol</b>,
-<b>sinfo</b>, <b>smap</b>, <b>squeue</b>, <b>srun</b>, <b>strigger</b>
-and <b>sview</b>.
+<b>sinfo</b>, <b>sprio</b>, <b>squeue</b>, <b>srun</b>,
+<b>sshare</b>, <b>sstat</b>, <b>strigger</b> and <b>sview</b>.
 All of the commands can run anywhere in the cluster.</p>
 
 <div class="figure">
@@ -87,9 +87,8 @@ commands can only be executed as user root.</p>
 and nodes managed by Slurm. It has a wide variety of filtering, sorting, and formatting
 options.</p>
 
-<p><span class="commandline"><b>smap</b></span> reports state information for
-jobs, partitions, and nodes managed by Slurm, but graphically displays the
-information to reflect network topology.</p>
+<p><span class="commandline"><b>sprio</b></span> is used to display a detailed
+view of the components affecting a job's priority.</p>
 
 <p><span class="commandline"><b>squeue</b></span> reports the state of jobs or
 job steps. It has a wide variety of filtering, sorting, and formatting options.
@@ -105,6 +104,13 @@ specific node characteristics (so much memory, disk space, certain required
 features, etc.).
 A job can contain multiple job steps executing sequentially or in parallel on
 independent or shared resources within the job's node allocation.</p>
+
+<p><span class="commandline"><b>sshare</b></span> displays detailed information
+about fairshare usage on the cluster. Note that this is only viable when using
+the priority/multifactor plugin.</p>
+
+<p><span class="commandline"><b>sstat</b></span> is used to get information
+about the resources utilized by a running job or job step.</p>
 
 <p><span class="commandline"><b>strigger</b></span> is used to set, get or
 view event triggers. Event triggers include things such as nodes going down
@@ -132,7 +138,7 @@ The <i>*</i> following the state <i>down</i> indicate the nodes are
 not responding. Note the use of a concise expression for node
 name specification with a common prefix <i>adev</i> and numeric
 ranges or specific numbers identified. This format allows for
-very clusters to be easily managed.
+very large clusters to be easily managed.
 The <span class="commandline">sinfo</span> command
 has many options to easily let you view the information of interest
 to you in whatever format you prefer.
@@ -384,6 +390,6 @@ with Slurm are provided below.
 <li><a href="mpi_guide.html#open_mpi">Open MPI</a></li>
 </ul></p>
 
-<p style="text-align:center;">Last modified 14 September 2017</p>
+<p style="text-align:center;">Last modified 19 November 2019</p>
 
 <!--#include virtual="footer.txt"-->

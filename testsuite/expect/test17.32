@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of --overcommit option.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,13 +28,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "17.32"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set job_id      0
-
-print_header $test_id
 
 #
 # Submit a slurm job that will print slurm env vars and execute 'id'
@@ -59,12 +52,12 @@ expect {
 		exp_continue
 	}
 	-re "Batch job submission failed" {
-		send_user "\nNo worries, error not unexpected\n"
+		log_debug "No worries, error not unexpected"
 		set no_run 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -76,7 +69,7 @@ expect {
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	log_error "Waiting for job to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -104,18 +97,14 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: Did not set desired allocation env vars: "
-	send_user "($matches != 2)\n"
-	set exit_code 1
+	fail "Did not set desired allocation env vars: ($matches != 2)"
 }
 if {$tasks != $task_cnt} {
-	send_user "\nFAILURE: Did not get proper number of tasks: "
-	send_user "($tasks != $task_cnt)\n"
-	set exit_code 1
+	fail "Did not get proper number of tasks: ($tasks != $task_cnt)"
 }
 
 if {$exit_code == 0} {
 	file delete $file_in $file_out
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

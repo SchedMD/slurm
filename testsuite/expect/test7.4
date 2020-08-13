@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Test of TotalView operation with srun, with and without bulk
 #          transfer.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2004-2007 The Regents of the University of California.
 # Copyright (C) 2008-2011 Lawrence Livermore National Security.
@@ -46,7 +41,6 @@
 ############################################################################
 source ./globals
 
-set test_id       "7.4"
 set exit_code     0
 set test_prog     "test$test_id.prog"
 
@@ -54,37 +48,30 @@ set test_prog     "test$test_id.prog"
 set bulk "dset TV::bulk_launch_enabled true; dset TV::bulk_launch_tmpfile1_host_lines %R; dset TV::bulk_launch_string {$srun --jobid=%J -N%N -n%N -w`awk -F. \'BEGIN {ORS=\",\"} {if (NR==%N) ORS=\"\"; print \$1}\' %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
 set no_bulk       "dset TV::bulk_launch_enabled false"
 
-print_header $test_id
-
 #
 # Put desired Slurm install directory at head of search path for bulk launch
 # command to work (runs "srun" without path)
 #
 set env(PATH) "$slurm_dir/bin:$env(PATH)"
-send_user "\n $env(PATH)\n"
+log_debug "$env(PATH)"
 
 #
 # Test for existence of mpi compiler and totalview
 #
 if {[info exists mpicc] == 0} {
-	send_user "\nWARNING: mpicc not defined, can't perform mpi testing\n"
-	exit 0
+	skip "mpicc not defined, can't perform mpi testing"
 }
 if {[file executable $mpicc] == 0} {
-	send_user "\nWARNING: $mpicc does not exists\n"
-	exit 0
+	skip "$mpicc does not exists"
 }
 if {[info exists totalviewcli] == 0} {
-	send_user "\nWARNING: totalviewcli not defined, can't perform mpi testing\n"
-	exit 0
+	skip "totalviewcli not defined, can't perform mpi testing"
 }
 if {[file executable $totalviewcli] == 0} {
-	send_user "\nWARNING: $totalviewcli does not exists\n"
-	exit 0
+	skip "$totalviewcli does not exists"
 }
 if {[test_front_end] != 0} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit 0
+    skip "This test is incompatible with front-end systems"
 }
 
 #
@@ -99,13 +86,13 @@ exec $mpicc -o $test_prog ${test_prog}.c
 set matches 0
 set no_capability 0
 set timeout $max_job_delay
-send_user "======================================================================\n"
-send_user "=======================  Run without bulk transfer ===================\n"
-send_user "======================================================================\n"
+log_info "======================================================================"
+log_info "=======================  Run without bulk transfer ==================="
+log_info "======================================================================"
 spawn $totalviewcli -verbosity info -e $no_bulk $srun -a --input=none -n4 -N1-2 -O -t1 $test_prog
 expect {
 	-re "All licenses are currently in use" {
-		send_user "\nWARNING: We can not run this test now\n"
+		log_warn "We can not run this test now"
 		incr no_capability
 		exp_continue
 	}
@@ -120,8 +107,7 @@ expect {
 		exp_continue
 	}
 	-re "cannot open shared object" {
-		send_user "\nWARNING: Set LD_LIBRARY_PATH environment variable "
-		send_user "to include this object's directory\n"
+		log_warn "Set LD_LIBRARY_PATH environment variable to include this object's directory"
 		exp_continue
 	}
 	-re "Do you want to stop the job now?.*:" {
@@ -154,11 +140,11 @@ expect {
 		exp_continue
 	}
 	-re "Could not open breakpoint file" {
-		send_user "\nNOTE: Breakpoint file error is expected due to known Totalview bug\n"
+		log_debug "NOTE: Breakpoint file error is expected due to known Totalview bug"
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: totalviewcli not responding\n"
+		log_error "totalviewcli not responding"
 		set exit_code 1
 	}
 	eof {
@@ -166,15 +152,13 @@ expect {
 	}
 }
 if {$no_capability != 0} {
-	send_user "\nWARNING: Unable to run test with present configuration\n"
-	exit 0
+	skip "Unable to run test with present configuration"
 }
 if {$matches != 12} {
-	send_user "\nFAILURE: totalviewcli operation matches $matches of 12\n"
-	send_user "Remove your ~/.totalview directory and try again\n"
+	log_error "totalviewcli operation matches $matches of 12. Remove your ~/.totalview directory and try again"
 	set exit_code 1
 } else {
-	send_user "\nSo far, so good...\n\n\n"
+	log_debug "So far, so good.."
 }
 
 #
@@ -182,13 +166,13 @@ if {$matches != 12} {
 #
 set matches 0
 set no_capability 0
-send_user "======================================================================\n"
-send_user "=====================  Run with bulk transfer ========================\n"
-send_user "======================================================================\n"
+log_info "======================================================================"
+log_info "=====================  Run with bulk transfer ========================"
+log_info "======================================================================"
 spawn $totalviewcli -verbosity info -e $bulk $srun -a --input=none -n4 -N1-2 -O -t1 $test_prog
 expect {
 	-re "All licenses are currently in use" {
-		send_user "\nWARNING: We can not run this test now\n"
+		log_warn "We can not run this test now"
 		incr no_capability
 		exp_continue
 	}
@@ -203,8 +187,7 @@ expect {
 		exp_continue
 	}
 	-re "cannot open shared object" {
-		send_user "\nWARNING: Set LD_LIBRARY_PATH environment variable "
-		send_user "to include this object's directory\n"
+		log_warn "Set LD_LIBRARY_PATH environment variable to include this object's directory"
 		exp_continue
 	}
 	-re "Do you want to stop the job now?.*:" {
@@ -237,11 +220,11 @@ expect {
 		exp_continue
 	}
 	-re "Could not open breakpoint file" {
-		send_user "\nNOTE: Breakpoint file error is expected due to known Totalview bug\n"
+		log_debug "Breakpoint file error is expected due to known Totalview bug"
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: totalviewcli not responding\n"
+		log_error "totalviewcli not responding"
 		set exit_code 1
 	}
 	eof {
@@ -249,17 +232,14 @@ expect {
 	}
 }
 if {$no_capability != 0} {
-	send_user "\nWARNING: Unable to run test with present configuration\n"
-	exit 0
+	skip "Unable to run test with present configuration"
 }
 if {$matches != 12} {
-	send_user "\nFAILURE: totalviewcli operation matches $matches of 12\n"
-	send_user "Remove your ~/.totalview directory and try again\n"
-	set exit_code 1
+	fail "totalviewcli operation matches $matches of 12. Remove your ~/.totalview directory and try again"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $test_prog ${test_prog}.o ${test_prog}.TVD.v3breakpoints ${test_prog}.TVD.v3breakpoints~
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

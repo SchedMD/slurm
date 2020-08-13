@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of task distribution support on multi-core systems.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "WARNING: ..." with an explanation of why the test can't be made, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2005-2007 The Regents of the University of California.
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -34,25 +29,19 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.92"
 set exit_code   0
 set file_bash   "test$test_id.bash"
 set job_id      0
 set prompt      "PROMPT: "
 
-print_header $test_id
-
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+        skip "This test is incompatible with front-end systems"
 }
 
 # find out if we have enough nodes to test functionality
-set partition [default_partition]
-set node_count [get_node_cnt_in_part $partition]
+set node_count [get_node_cnt_in_part]
 if { $node_count < 2 } {
-	send_user "WARNING: Insufficient nodes in default partition ($node_count < 2)\n"
-	exit $exit_code
+	skip "Insufficient nodes in default partition ($node_count < 2)"
 }
 
 make_bash_script $file_bash {
@@ -72,9 +61,8 @@ expect {
 		exp_continue
 	}
 	-re "(configuration is not available|Unable to submit batch job|Node count specification invalid|More processors requested than permitted)" {
-		send_user "\nWARNING: can't test srun task distribution\n"
 		file delete $file_bash
-		exit 0
+		skip "Can't test srun task distribution"
 	}
 	-re "\"$prompt" {
 		# skip this, just echo of setting prompt"
@@ -84,14 +72,12 @@ expect {
 		send "$srun -l -c1 ./$file_bash | $bin_sort -V\r"
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
 		slow_kill $salloc_pid
-		exit 1
+		fail "salloc not responding"
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: salloc failure\n"
-	exit 1
+	fail "salloc failure"
 }
 
 #############################################################################
@@ -114,29 +100,25 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: some error occurred\n"
+		log_error "Some error occurred"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding "
-		send_user "or failure to recognize prompt\n"
 		slow_kill $salloc_pid
-		exit 1
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $prompt
 }
 
 if {$node_cnt != 2} {
-	send_user "\nWARNING: need 2 nodes to perform test\n"
 	file delete $file_bash
-	exit $exit_code
+	skip "Need 2 nodes to perform test"
 }
 
 if {$task_cnt < (2 * $node_cnt)} {
-        send_user "\nWARNING: need at least 2 CPUs per node, test is not applicable\n"
 	file delete $file_bash
-        exit $exit_code
+    skip "Need at least 2 CPUs per node, test is not applicable"
 }
 
 #############################################################################
@@ -155,8 +137,7 @@ expect {
 		incr this_cnt 1
 		if {$prev_node != $this_node} {
 			if {$prev_node > $this_node } {
-				send_user "\nFAILURE: incorrect distribution "
-				send_user " $this_node, $prev_node\n"
+				log_error "incorrect distribution $this_node, $prev_node"
 				set exit_code 1
 			}
 			set prev_node $this_node
@@ -167,23 +148,22 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: some error occurred\n"
+		log_error "Some error occurred"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding "
-		send_user "or failure to recognize prompt\n"
+		log_error "srun not responding or failure to recognize prompt"
 		set exit_code 1
 	}
 	-re $prompt
 }
 if {$prev_node > $this_node } {
-	send_user "\nFAILURE: incorrect final distribution\n"
+	log_error "Incorrect final distribution"
 	set exit_code 1
 }
 if {$this_cnt != $task_cnt} {
-	send_user "\nFAILURE: task count inconsistency ($this_cnt,$task_cnt)\n"
+	log_error "Task count inconsistency ($this_cnt,$task_cnt)"
 	set exit_code 1
 }
 
@@ -205,8 +185,7 @@ expect {
 		incr this_cnt 1
 		if {$prev_node != $this_node} {
 			if {$prev_cnt != $block_size } {
-				send_user "\nFAILURE: incorrect distribution "
-				send_user " $this_node, $prev_node, $prev_cnt\n"
+				log_error "incorrect distribution $this_node, $prev_node, $prev_cnt"
 				set exit_code 1
 			}
 			set prev_node $this_node
@@ -217,23 +196,22 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: some error occurred\n"
+		log_error "Some error occurred"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding "
-		send_user "or failure to recognize prompt\n"
+		log_error "srun not responding or failure to recognize prompt"
 		set exit_code 1
 	}
 	-re $prompt
 }
 if {$prev_cnt != $block_size} {
-	send_user "\nFAILURE: incorrect final distribution\n"
+	log_error "Incorrect final distribution"
 	set exit_code 1
 }
 if {$this_cnt != $task_cnt} {
-	send_user "\nFAILURE: task count inconsistency ($this_cnt,$task_cnt)\n"
+	log_error "Task count inconsistency ($this_cnt,$task_cnt)"
 	set exit_code 1
 }
 
@@ -257,8 +235,7 @@ expect {
 			incr prev_cnt 1
 		} else {
 			if {$prev_node == -1 && $prev_cnt > $block_size } {
-				send_user "\nFAILURE: incorrect distribution "
-				send_user "(nodeid:$prev_node task_cnt:$prev_cnt)\n"
+				log_error "incorrect distribution (nodeid:$prev_node task_cnt:$prev_cnt)"
 				set exit_code 1
 			}
 			set prev_node $this_node
@@ -267,24 +244,22 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: some error occurred\n"
+		log_error "Some error occurred"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding "
-		send_user "or failure to recognize prompt\n"
+		log_error "srun not responding or failure to recognize prompt"
 		set exit_code 1
 	}
 	-re $prompt
 }
 if {$prev_cnt > $block_size} {
-	send_user "\nFAILURE: incorrect final distribution "
-	send_user "(nodeid:$prev_node task_cnt:$prev_cnt)\n"
+	log_error "Incorrect final distribution (nodeid:$prev_node task_cnt:$prev_cnt)"
 	set exit_code 1
 }
 if {$this_cnt != $task_cnt} {
-	send_user "\nFAILURE: task count inconsistency ($this_cnt,$task_cnt)\n"
+	log_error "Task count inconsistency ($this_cnt,$task_cnt)"
 	set exit_code 1
 }
 
@@ -295,12 +270,11 @@ if {$this_cnt != $task_cnt} {
 send "exit\r"
 expect {
 	-re "error" {
-		send_user "\nFAILURE: some error occurred\n"
+		log_error "Some error occurred"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding "
-		send_user "or failure to recognize prompt\n"
+		log_error "salloc not responding or failure to recognize prompt"
 		slow_kill $salloc_pid
 		set exit_code 1
 	}
@@ -309,11 +283,7 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
-	send_user "\nNOTE: This test can fail if the node configuration in slurm.conf \n"
-	send_user "  (sockets, cores, threads) differs from the actual configuration\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code). This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration"
 }
 file delete $file_bash
-exit $exit_code

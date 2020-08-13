@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate salloc --exclusive with -n will give all cpus on node
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -30,24 +26,23 @@
 ############################################################################
 source ./globals
 
-set test_id        15.27
 set job_id         0
 set nodes          ""
 set cputot         0
 set scontrol_cpu   0
 set sacct_cpu      0
+set gpu_tot        0
+set job_tres_cnt   0
 set exit_code      0
-
-print_header $test_id
 
 proc check_alloc { } {
 	global scontrol salloc sacct cputot scontrol_cpu sacct_cpu nodes
-	global job_id number alpha_numeric_nodelist
+	global job_id number re_word_str
 
 	set node_name $nodes
 	spawn $scontrol show job $job_id
 	expect {
-		-re "NodeList=($alpha_numeric_nodelist)" {
+		-re "NodeList=($re_word_str)" {
 			set node_name $expect_out(1,string)
 			exp_continue
 		}
@@ -56,7 +51,7 @@ proc check_alloc { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -65,8 +60,7 @@ proc check_alloc { } {
 	}
 
 	if {$scontrol_cpu == 0} {
-		send_user "\nFAILURE: number of cpus is invalid\n"
-		exit 1
+		fail "Number of cpus is invalid"
 	}
 
 	# Wait a bit for sacct to populate
@@ -79,7 +73,7 @@ proc check_alloc { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct is not responding\n"
+			log_error "sacct is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -88,8 +82,7 @@ proc check_alloc { } {
 	}
 
 	if {$sacct_cpu == 0} {
-		send_user "\nFAILURE: number of cpus is invalid\n"
-		exit 1
+		fail "Number of cpus is invalid"
 	}
 
 	spawn $scontrol show node $node_name
@@ -99,7 +92,7 @@ proc check_alloc { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
+			log_error "scontrol is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -108,24 +101,25 @@ proc check_alloc { } {
 	}
 
 	if {$cputot != $scontrol_cpu} {
-		send_user "\nFAILURE: scontrol reported $scontrol_cpu cpus "
-		send_user "where used by job $job_id when it should have used "
-		send_user "$cputot cpus\n"
+		log_error "scontrol reported $scontrol_cpu cpus were used by job $job_id when it should have used cputot cpus"
 		set exit_code 1
 	}
 
 	if {$cputot != $sacct_cpu} {
-		send_user "\nFAILURE: sacct reported $sacct_cpu cpus where "
-		send_user "used by job $job_id when it should have used $cputot"
-		send_user "cpus\n"
+		log_error "sacct reported $sacct_cpu cpus were used by job $job_id when it should have used $cputot cpus"
 		set exit_code 1
 	}
 }
 
 if {[test_using_slurmdbd] == 0 } {
-	send_user "\nWARNING: Test invalid with slurmdbd\n"
-	exit 0
+	skip "Test invalid with slurmdbd"
 }
+
+set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:2"
+}
+set gpu_tot [dict get [get_gres_count "gpu" $node_name] $node_name]
 
 spawn $salloc -t1 -n1 --exclusive $srun -l $bin_printenv SLURMD_NODENAME
 expect {
@@ -133,12 +127,12 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric_nodelist)" {
+	-re "($number): ($re_word_str)" {
 		set nodes $expect_out(2,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc is not responding\n"
+		log_error "salloc is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -148,18 +142,18 @@ expect {
 
 check_alloc
 
-spawn $salloc -t1 -n1 --mem-per-node=100 --exclusive $srun -l $bin_printenv SLURMD_NODENAME
+spawn $salloc -t1 -n1 --mem=100 --exclusive $srun -l $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric_nodelist)" {
+	-re "($number): ($re_word_str)" {
 		set nodes $expect_out(2,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc is not responding\n"
+		log_error "salloc is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -169,7 +163,41 @@ expect {
 
 check_alloc
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+#
+# Verify that all GPUs are allocated with the --exclusive flag
+#
+set job_id 0
+
+spawn $salloc -t1 -n1 -w $node_name --gres=gpu --exclusive $srun -l $bin_printenv SLURMD_NODENAME
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		log_error "salloc not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
 }
-exit $exit_code
+
+set job_gpu_cnt [get_job_gpu_cnt $job_id]
+
+if {$gpu_tot != $job_gpu_cnt} {
+	log_error "Job didn't allocate all GPUs ($gpu_tot != $job_gpu_cnt)"
+	set exit_code 1
+} else {
+	log_info "Node GPU count matches Job GPU count ($gpu_tot == $job_gpu_cnt)"
+}
+
+if {[wait_for_job $job_id "DONE"] != 0} {
+	log_error "job wasn't able to complete\n"
+	cancel_job $job_id
+	set exit_code 1
+}
+
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

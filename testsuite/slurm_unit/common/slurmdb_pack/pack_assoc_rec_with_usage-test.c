@@ -107,7 +107,7 @@ START_TEST(pack_1702_assoc_rec)
 	pack_arwu->parent_acct             = xstrdup("Parmenides");
 	pack_arwu->parent_id               = 8;
 	pack_arwu->partition               = xstrdup("Parmenides");
-	pack_arwu->qos_list                = list_create(slurm_destroy_char);
+	pack_arwu->qos_list                = list_create(xfree_ptr);
 	pack_arwu->rgt                     = 9;
 	pack_arwu->shares_raw              = 1;
 	pack_arwu->uid                     = 2;
@@ -221,10 +221,10 @@ END_TEST
  * TEST SUITE                                                                *
  ****************************************************************************/
 
-Suite* suite(SRunner *sr)
+Suite *suite(SRunner *sr)
 {
-	Suite* s = suite_create("Pack slurmdb_assoc_rec_t");
-	TCase* tc_core = tcase_create("Pack slurmdb_assoc_rec_t");
+	Suite *s = suite_create("Pack slurmdb_assoc_rec_t");
+	TCase *tc_core = tcase_create("Pack slurmdb_assoc_rec_t");
 	tcase_add_test(tc_core, invalid_protocol);
 
 #ifndef NDEBUG
@@ -244,7 +244,7 @@ Suite* suite(SRunner *sr)
 int main(void)
 {
     int number_failed;
-    SRunner* sr = srunner_create(NULL);
+    SRunner *sr = srunner_create(NULL);
     //srunner_set_fork_status(sr, CK_NOFORK);
     srunner_add_suite(sr, suite(sr));
 

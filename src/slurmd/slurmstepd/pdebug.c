@@ -129,7 +129,7 @@ pdebug_stop_current(stepd_step_rec_t *job)
 		error("ptrace: %m");
 }
 
-/* Check if this PID should be woken for TotalView partitial attach */
+/* Check if this PID should be woken for TotalView partial attach */
 static int _being_traced(pid_t pid)
 {
 	FILE *fp = NULL;

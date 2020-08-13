@@ -4,10 +4,6 @@
 #          Validate that srun -N uses the MaxNode and GrpNode limit in
 #          QoS and that the first limit on the GrpNode and MaxNode
 #          limit is used in an association.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -33,7 +29,6 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "1.74"
 set node_cnt    0
 set cluster     [get_cluster_name]
 set node_name   ""
@@ -50,21 +45,15 @@ array set mod_acct_vals {}
 array set mod_acct_assoc_vals {}
 set mod_acct_assoc_vals(qos) $qos
 
-print_header $test_id
-
 if { [test_using_slurmdbd] == 0 } {
-	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
-	exit $exit_code
+	skip "This test can't be run without AccountStorageType=slurmdbd"
 } elseif { [test_enforce_limits] == 0 } {
-	send_user "\nWARNING: This test can't be run without AccountingStorageEnforce=limits\n"
-	exit $exit_code
+	skip "This test can't be run without AccountingStorageEnforce=limits"
 } elseif { [test_enforce_qos_set] == 0 } {
-	send_user "\nWARNING: This test can't be run without AccountingStorageEnforce=qos\n"
-	exit $exit_code
+	skip "This test can't be run without AccountingStorageEnforce=qos"
 }
 if {[string compare [check_accounting_admin_level] "Administrator"]} {
-	send_user "\nThis test can't be run without being an Accounting administrator.\n"
-	exit $exit_code
+	skip "This test can't be run without being an Accounting administrator"
 }
 
 set user [get_my_user_name]
@@ -73,7 +62,7 @@ proc cleanup { } {
 	global acct acct_c1 acct_c2 exit_code qos
 	remove_acct "" "$acct,$acct_c1,$acct_c2"
 	if {[remove_qos "$qos"] != 0} {
-		send_user "\nWARNING: not authorized to perform this test\n"
+		log_warn "Not authorized to perform this test"
 		set $exit_code 1
 	}
 }
@@ -105,7 +94,7 @@ proc srun_test {exp_cnt account} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE srun is not responding\n"
+			log_error "srun is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -114,18 +103,18 @@ proc srun_test {exp_cnt account} {
 	}
 	if {$job_id == 0} {
 		if {$exp_cnt != 0} {
-			send_user "\nFAILURE: did not get job id\n"
+			log_error "Did not get job id"
 			set exit_code 1
 		}
 	} else {
 		if {[wait_for_job $job_id DONE] != 0} {
-			send_user "\nFAILURE: waiting for job $job_id to complete\n"
+			log_error "Waiting for job $job_id to complete"
 			set exit_code 1
 		}
 	}
 
 	if {$count != $exp_cnt} {
-		send_user "\nFAILURE: incorrect number of tasks were run ($count != $exp_cnt)\n"
+		log_error "Incorrect number of tasks were run ($count != $exp_cnt)"
 		set exit_code 1
 	}
 }
@@ -143,13 +132,13 @@ proc add_child {parent child maxnode grpnode} {
 	set user_req(account) $child
 
 	if { [add_acct $child [array get acct_req]] } {
-		send_user "\nFAILURE: child account was not added\n"
+		log_error "Child account was not added"
 		incr exit_code
 		return 1
 	}
 
 	if { [add_user $user [array get user_req]] } {
-		send_user "\nFAILURE: user was not added to child account\n"
+		log_error "User was not added to child account"
 		incr exit_code
 		return 1
 	}
@@ -160,51 +149,41 @@ proc add_child {parent child maxnode grpnode} {
 cleanup
 
 # Setup
-set partition [default_partition]
-set node_cnt [available_nodes $partition "idle,alloc,comp"]
+set node_cnt [available_nodes "idle,alloc,comp"]
 if {$node_cnt < 3} {
-	send_user "\nWARNING: partition $partition has too few nodes ($node_cnt < 3)\n"
-	exit $exit_code
+	skip "Default partition has too few nodes ($node_cnt < 3)"
 }
 
 # Wait for 3 nodes to be in idle state
-if {[wait_for_node $partition idle 3]} {
-	send_user "\nWARNING: partition $partition lacks 3 idle nodes\n"
-	exit $exit_code
+if {[wait_for_node idle 3]} {
+	skip "Default Partition lacks 3 idle nodes"
 }
-set node_cnt [available_nodes $partition idle]
+set node_cnt [available_nodes idle]
 
 # Add parent account (off root)
 if {[add_child "root" $acct -1 -1]} {
-	cleanup
-	exit 1
+	fail "Unable to add child account ($acct)"
 }
 
 # Now run test using MaxNode limits of the qos
 if {[add_qos $qos ""]} {
-	send_user "\nFAILURE: qos was not added\n"
-	cleanup
-	exit 1
+	fail "Qos ($qos) was not added"
 }
 
 # Add child account
 if {[add_child $acct $acct_c1 [expr $node_cnt - 1] -1]} {
-	cleanup
-	exit 1
+	fail "Unable to add child account ($acct)"
 }
 
 # Add another child account
 if {[add_child $acct_c1 $acct_c2 [expr $node_cnt - 2] -1]} {
-	cleanup
-	exit 1
+	fail "Unable to add child account ($acct_c2)"
 }
 
-send_user "############################# Test QoS Limits #################################\n"
+log_info "############################# Test QoS Limits #################################"
 
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
-	send_user "\nFAILURE: account was not modified\n"
-	cleanup
-	exit 1
+	fail "Account was not modified"
 }
 # base line test
 srun_test $node_cnt $acct
@@ -219,18 +198,14 @@ srun_test [expr $node_cnt-1] $acct
 # now make sure the maxnodes of the QOS overrides the association
 set mod_acct_assoc_vals(maxnodes) 1
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
-	send_user "\nFAILURE: account was not modified\n"
-	cleanup
-	exit 1
+	fail "Account was not modified"
 }
 srun_test [expr $node_cnt-1] $acct
 
 # Reset acct maxnodes
 set mod_acct_assoc_vals(maxnodes) -1
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
-	send_user "\nFAILURE: account was not modified\n"
-	cleanup
-	exit 1
+	fail "Account was not modified"
 }
 
 # Now run test using GrpNode limits of qos
@@ -243,9 +218,7 @@ srun_test [expr $node_cnt-1] $acct
 # now make sure the grpnodes of the QOS overrides the association
 set mod_acct_assoc_vals(grpnodes) 1
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
-	send_user "\nFAILURE: account was not modified\n"
-	cleanup
-	exit 1
+	fail "Account was not modified"
 }
 srun_test [expr $node_cnt-1] $acct
 
@@ -255,32 +228,26 @@ set mod_acct_assoc_vals(grpnodes) -1
 set mod_acct_assoc_vals(maxnodes) 1
 
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
-	send_user "\nFAILURE: account was not modified\n"
-	cleanup
-	exit 1
+	fail "Account was not modified"
 }
 srun_test 1 $acct
 set mod_acct_assoc_vals(maxnodes) -1
 
 
-send_user "##################### Test limits based on associations #####################\n"
+log_info "##################### Test limits based on associations #####################"
 
 #
 # MaxNodes Limit
 #
-send_user "\nTesting Association MaxNode Limits\n"
+log_info "Testing Association MaxNode Limits"
 
 set mod_qos_vals(GrpNodes) -1
 if {[mod_qos $qos [array get mod_qos_vals]]} {
-	send_user "\nFAILURE: QOS was not modified\n"
-	cleanup
-	exit 1
+	fail "QOS was not modified"
 }
 # reset
 if {[mod_acct $acct  [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]]} {
-	send_user "\nFAILURE: account was not modified\n"
-	cleanup
-	exit 1
+	fail "Account was not modified"
 }
 
 # Run srun test on parent and child accounts
@@ -293,7 +260,7 @@ srun_test [expr $node_cnt - 2] $acct_c2
 #
 # GrpNodes Limit
 #
-send_user "\nTesting GrpNode Limits\n"
+log_info "Testing GrpNode Limits"
 
 # Modify child with GrpNode
 set mod_acct_assoc_vals(MaxNode) -1
@@ -314,10 +281,6 @@ srun_test [expr $node_cnt - 2] $acct_c2
 
 cleanup
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
-	send_user "\nFAILURE\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors"
 }
-exit $exit_code
-

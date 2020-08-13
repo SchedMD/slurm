@@ -33,7 +33,7 @@ START_TEST(pack_null_req)
 END_TEST
 #endif
 
-START_TEST(pack_1702_req_null_ptrs)
+START_TEST(pack_back2_req_null_ptrs)
 {
 	int rc;
 	Buf buf = init_buf(1024);
@@ -59,7 +59,7 @@ START_TEST(pack_1702_req_null_ptrs)
 	unpack_req = (job_alloc_info_msg_t *)msg.data;
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert(unpack_req);
-	ck_assert(!unpack_req->req_cluster); /* >= 17.11 */
+	ck_assert(!unpack_req->req_cluster);
 	ck_assert_uint_eq(unpack_req->job_id, pack_req.job_id);
 
 	free_buf(buf);
@@ -67,7 +67,7 @@ START_TEST(pack_1702_req_null_ptrs)
 }
 END_TEST
 
-START_TEST(pack_1702_req)
+START_TEST(pack_back2_req)
 {
 	int rc;
 	Buf buf = init_buf(1024);
@@ -94,7 +94,7 @@ START_TEST(pack_1702_req)
 	unpack_req = (job_alloc_info_msg_t *)msg.data;
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert(unpack_req);
-	ck_assert(!unpack_req->req_cluster); /* >= 17.11 */
+	//ck_assert(!unpack_req->req_cluster); /* >= 17.11 */
 	ck_assert_uint_eq(unpack_req->job_id, pack_req.job_id);
 
 	free_buf(buf);
@@ -103,7 +103,7 @@ START_TEST(pack_1702_req)
 }
 END_TEST
 
-START_TEST(pack_1711_req_null_ptrs)
+START_TEST(pack_back1_req_null_ptrs)
 {
 	int rc;
 	Buf buf = init_buf(1024);
@@ -136,7 +136,7 @@ START_TEST(pack_1711_req_null_ptrs)
 }
 END_TEST
 
-START_TEST(pack_1711_req)
+START_TEST(pack_back1_req)
 {
 	int rc;
 	Buf buf = init_buf(1024);
@@ -177,10 +177,10 @@ END_TEST
  * TEST SUITE                                                                *
  ****************************************************************************/
 
-Suite* suite(SRunner *sr)
+Suite *suite(SRunner *sr)
 {
-	Suite* s = suite_create("Pack job_alloc_info_msg_t");
-	TCase* tc_core = tcase_create("Pack pack_job_alloc_info_msg_t");
+	Suite *s = suite_create("Pack job_alloc_info_msg_t");
+	TCase *tc_core = tcase_create("Pack pack_job_alloc_info_msg_t");
 	tcase_add_test(tc_core, invalid_protocol);
 #ifdef NDEBUG
        printf("Can't perform pack_null_req test with NDEBUG set.\n");
@@ -188,10 +188,10 @@ Suite* suite(SRunner *sr)
        if (srunner_fork_status(sr) != CK_NOFORK)
                tcase_add_test_raise_signal(tc_core, pack_null_req, SIGABRT);
 #endif
-	tcase_add_test(tc_core, pack_1702_req_null_ptrs);
-	tcase_add_test(tc_core, pack_1702_req);
-	tcase_add_test(tc_core, pack_1711_req_null_ptrs);
-	tcase_add_test(tc_core, pack_1711_req);
+	tcase_add_test(tc_core, pack_back2_req_null_ptrs);
+	tcase_add_test(tc_core, pack_back2_req);
+	tcase_add_test(tc_core, pack_back1_req_null_ptrs);
+	tcase_add_test(tc_core, pack_back1_req);
 	suite_add_tcase(s, tc_core);
 	return s;
 }
@@ -203,7 +203,7 @@ Suite* suite(SRunner *sr)
 int main(void)
 {
 	int number_failed;
-	SRunner* sr = srunner_create(NULL);
+	SRunner *sr = srunner_create(NULL);
 	//srunner_set_fork_status(sr, CK_NOFORK);
 	srunner_add_suite(sr, suite(sr));
 

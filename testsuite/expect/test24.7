@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test normalized factors
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2019 SchedMD LLC.
 # Written by Brian Christiansen <brian@schedmd.com>
@@ -30,10 +26,8 @@
 source ./globals
 source ./globals_accounting
 
-set test_id     "24.7"
 set exit_code   0
 set timeout	60
-print_header	$test_id
 
 set ta1         "test$test_id-account.1"
 set ta2         "test$test_id-account.2"
@@ -61,12 +55,10 @@ set user [get_my_user_name]
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	log_warn "This test can't be run without a usable AccountStorageType"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 if { [string compare [priority_type] multifactor] } {
-	log_warn "This test can't be run without a usable PriorityType"
-	exit 0
+	skip "This test can't be run without a usable PriorityType"
 }
 
 #
@@ -74,8 +66,7 @@ if { [string compare [priority_type] multifactor] } {
 #
 set select_type_params [get_select_type_params ""]
 if { [string first "CR_ONE_TASK_PER_CORE" $select_type_params] != -1 } {
-	log_warn "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
-	exit 0
+	skip "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
 proc clean_assocs {} {
@@ -88,7 +79,8 @@ proc clean_assocs {} {
 }
 
 proc end_it { exit_code } {
-	global test_id jobid1 jobid2 jobid3 jobid4 jobid5 bin_cp config_path cwd
+	global test_id jobid1 jobid2 jobid3 jobid4 jobid5 bin_cp
+	global config_file test_id cwd
 
 	if {$jobid1} {
 		cancel_job $jobid1
@@ -108,14 +100,13 @@ proc end_it { exit_code } {
 
 	clean_assocs
 
-	log_info "Changing slurm.conf back"
-	exec $bin_cp -v $cwd/slurm.conf.orig $config_path/slurm.conf
+	restore_conf $config_file
 	reconfigure
 
-	if {$exit_code == 0} {
-		print_success $test_id
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
-	exit $exit_code
+	pass
 }
 
 
@@ -235,7 +226,7 @@ proc update_job { jobid prio {error ""} } {
 
 	set matches 0
 
-	spawn $scontrol update jobid=$jobid sitefactor=$prio
+	spawn $scontrol update jobid=$jobid priority=$prio
 	set tmp_re ".*"
 	if {$error != ""} {
 		set tmp_re $error
@@ -258,7 +249,6 @@ proc update_job { jobid prio {error ""} } {
 		end_it 1
 	}
 }
-
 
 proc create_part { name nodes prio } {
 	global scontrol
@@ -329,14 +319,10 @@ if {[info exists env(SPRIO_FORMAT)]} {
 }
 
 set config_path [get_conf_path]
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+fail_on_error "Unable to get config path"
+set config_file $config_path/slurm.conf
 
-copy_conf $config_path $cwd
-if { $exit_code != 0 } {
-	exit $exit_code
-}
+save_conf $config_file
 
 set weight 4000000
 set weight_half [expr $weight / 2]
@@ -345,8 +331,8 @@ set weight_half [expr $weight / 2]
 set part_weight 60000
 set part_weight_half [expr $part_weight / 2]
 
-exec $bin_sed -i "s/^\\(PriorityWeight.*\\)/#\\1/Ig" $config_path/slurm.conf
-exec $bin_sed -i "s/^\\(PriorityFlags.*\\)/#\\1/Ig" $config_path/slurm.conf
+exec $bin_sed -i "s/^\\(PriorityWeight.*\\)/#\\1/Ig" $config_file
+exec $bin_sed -i "s/^\\(PriorityFlags.*\\)/#\\1/Ig" $config_file
 set prio_conf "
 PriorityWeightAssoc     = $weight
 PriorityWeightJobSize   = 1
@@ -354,11 +340,11 @@ PriorityWeightPartition = $part_weight
 PriorityWeightQOS       = $weight
 PriorityWeightTRES=cpu=$weight
 "
-exec $bin_echo $prio_conf >> $config_path/slurm.conf
+exec $bin_echo $prio_conf >> $config_file
 reconfigure
 
 
-set idle_node [get_idle_node_in_part [default_partition]]
+set idle_node [get_idle_node_in_part]
 if {$idle_node == ""} {
 	log_error "no idle nodes"
 	end_it 1
@@ -459,5 +445,13 @@ update_part $p1 "priorityjobfactor=$part_weight"
 set jobid5 [sub_job "-n$cpu_cnt_half -p$p2 -A$ta2 --qos=$tq2" PENDING]
 sprio_args "-j $jobid5 -o \"%.15i %10B %10P %10Q %12T\"" "$jobid5\\s+$weight_half\\s+$part_weight_half\\s+$weight_half\\s+cpu=$weight_half" 1
 sprio_args "-n -j $jobid5 -o \"%.15i %10b %10p %10q %12t\"" "$jobid5\\s+0\\.50+\\s+0\\.50+\\s+0\\.50+\\s+cpu=0\\.5+" 1
+
+log_info "test4"
+# test setting priority directly on a job
+set jobid5 [sub_job "-n$cpu_cnt_half -p$p2 -A$ta2 --qos=$tq2" PENDING]
+update_job $jobid5 999
+
+sprio_args "-j $jobid5 -o \"%.15i %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10Q %.11N %.20T\"" "$jobid5\\s+999\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0" 1
+sprio_args "-n -j $jobid5 -o \"%.15i %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10Q %.11N %.20T\"" "$jobid5\\s+999\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0" 1
 
 end_it 0

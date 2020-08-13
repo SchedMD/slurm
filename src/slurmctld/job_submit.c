@@ -56,12 +56,10 @@
 #include "src/slurmctld/locks.h"
 
 typedef struct slurm_submit_ops {
-	int		(*submit)	( struct job_descriptor *job_desc,
-					  uint32_t submit_uid,
-					  char **err_msg );
-	int		(*modify)	( struct job_descriptor *job_desc,
-					  struct job_record *job_ptr,
-					  uint32_t submit_uid );
+	int (*submit)(job_desc_msg_t *job_desc, uint32_t submit_uid,
+		      char **err_msg);
+	int (*modify)(job_desc_msg_t *job_desc, job_record_t *job_ptr,
+		      uint32_t submit_uid);
 } slurm_submit_ops_t;
 
 /*
@@ -98,7 +96,7 @@ extern int job_submit_plugin_init(void)
 	if (g_context_cnt >= 0)
 		goto fini;
 
-	submit_plugin_list = slurm_get_job_submit_plugins();
+	submit_plugin_list = xstrdup(slurm_conf.job_submit_plugins);
 	g_context_cnt = 0;
 	if ((submit_plugin_list == NULL) || (submit_plugin_list[0] == '\0'))
 		goto fini;
@@ -181,26 +179,25 @@ fini:	slurm_mutex_unlock(&g_context_lock);
 extern int job_submit_plugin_reconfig(void)
 {
 	int rc = SLURM_SUCCESS;
-	char *plugin_names = slurm_get_job_submit_plugins();
 	bool plugin_change;
 
-	if (!plugin_names && !submit_plugin_list)
+	if (!slurm_conf.job_submit_plugins && !submit_plugin_list)
 		return rc;
 
 	slurm_mutex_lock(&g_context_lock);
-	if (xstrcmp(plugin_names, submit_plugin_list))
+	if (xstrcmp(slurm_conf.job_submit_plugins, submit_plugin_list))
 		plugin_change = true;
 	else
 		plugin_change = false;
 	slurm_mutex_unlock(&g_context_lock);
 
 	if (plugin_change) {
-		info("JobSubmitPlugins changed to %s", plugin_names);
+		info("JobSubmitPlugins changed to %s",
+		     slurm_conf.job_submit_plugins);
 		rc = job_submit_plugin_fini();
 		if (rc == SLURM_SUCCESS)
 			rc = job_submit_plugin_init();
 	}
-	xfree(plugin_names);
 
 	return rc;
 }
@@ -213,7 +210,7 @@ extern int job_submit_plugin_reconfig(void)
  * IN submit_uid - User issuing job submit request
  * OUT err_msg - Custom error message to the user, caller to xfree results
  */
-extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
+extern int job_submit_plugin_submit(job_desc_msg_t *job_desc,
 				    uint32_t submit_uid, char **err_msg)
 {
 	DEF_TIMERS;
@@ -248,8 +245,8 @@ extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
  * If any plugin function returns anything other than SLURM_SUCCESS
  * then stop and forward it's return value.
  */
-extern int job_submit_plugin_modify(struct job_descriptor *job_desc,
-				    struct job_record *job_ptr,
+extern int job_submit_plugin_modify(job_desc_msg_t *job_desc,
+				    job_record_t *job_ptr,
 				    uint32_t submit_uid)
 {
 	DEF_TIMERS;

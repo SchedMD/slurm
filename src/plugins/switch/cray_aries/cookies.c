@@ -78,7 +78,6 @@ static bool lease_extender_running = false;
 static void _add_cookie(int32_t cookie_id);
 static void _remove_cookie(int32_t cookie_id);
 static void *_lease_extender(void *args);
-static bool _in_slurmctld(void);
 
 /*
  * Start the thread to extend cookie leases.
@@ -86,7 +85,7 @@ static bool _in_slurmctld(void);
 extern int start_lease_extender(void)
 {
 	// Start lease extender in the slurmctld
-	if (!_in_slurmctld())
+	if (!running_in_slurmctld())
 		return SLURM_SUCCESS;
 
 	slurm_thread_create_detached(NULL, _lease_extender, NULL);
@@ -100,7 +99,7 @@ extern int start_lease_extender(void)
 extern int cleanup_lease_extender(void)
 {
 	// Cleanup lease extender in the slurmctld
-	if (!_in_slurmctld())
+	if (!running_in_slurmctld())
 		return SLURM_SUCCESS;
 
 	lease_extender_running = false;
@@ -127,7 +126,7 @@ extern int lease_cookies(slurm_cray_jobinfo_t *job, int32_t *nodes,
 	int32_t *cookie_ids = NULL;
 	char **cookies = NULL;
 
-	if (!_in_slurmctld())
+	if (!running_in_slurmctld())
 		return SLURM_SUCCESS;
 
 	/*
@@ -181,7 +180,7 @@ extern int track_cookies(slurm_cray_jobinfo_t *job)
 {
 	uint32_t i;
 
-	if (!_in_slurmctld())
+	if (!running_in_slurmctld())
 		return SLURM_SUCCESS;
 
 	// Add cookies to the list
@@ -200,7 +199,7 @@ extern int release_cookies(slurm_cray_jobinfo_t *job)
 	int rc;
 	char *err_msg = NULL;
 
-	if (!_in_slurmctld())
+	if (!running_in_slurmctld())
 		return SLURM_SUCCESS;
 
 	// Remove cookies from the list
@@ -285,8 +284,12 @@ static void _remove_cookie(int32_t cookie_id)
 		}
 	}
 	if (!found) {
-		CRAY_INFO("Cookie %"PRId32" not found in tracked cookie list",
-			  cookie_id);
+		/*
+		 * For a hetstep we release the same cookies multiple times, so
+		 * they will not exist after the first time they are released.
+		 */
+		CRAY_DEBUG("Cookie %"PRId32" not found in tracked cookie list",
+			   cookie_id);
 	}
 
 	// Unlock the mutex
@@ -328,19 +331,6 @@ static void *_lease_extender(void *args)
 		sleep(COOKIE_LEASE_INTERVAL);
 	}
 	return NULL;
-}
-
-static bool _in_slurmctld(void)
-{
-	static bool set = false;
-	static bool run = false;
-
-	if (!set) {
-		set = 1;
-		run = run_in_daemon("slurmctld");
-	}
-
-	return run;
 }
 
 #endif

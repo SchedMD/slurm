@@ -1,43 +1,37 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose:  Test of SLURM functionality
+# Purpose:  Test of Slurm functionality
 #           Test MPS resource limits with various allocation options
 #
 # Requires: AccountingStorageEnforce=limits
 #           AccountingStorageTRES=gres/mps
 #           SelectType=select/cons_tres
 #           Administrator permissions
-#
-# Output:   "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#           "FAILURE: ..." otherwise with an explanation of the failure, OR
-#           anything else indicates a failure mode that must be investigated.
-#
 ############################################################################
 # Copyright (C) 2018 SchedMD LLC
 # Written by Morris Jette
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 ############################################################################
 source ./globals
 source ./globals_accounting
 
-set test_id        "40.4"
 set acct           "test$test_id\_acct"
 set cluster        [get_cluster_name]
 set exit_code      0
@@ -57,13 +51,13 @@ proc setup { mps_limit } {
 	set user_req(account) $acct
 
 	if { [add_acct $acct [array get acct_req]] } {
-		send_user "\nFAILURE: child account was not added\n"
+		log_error "Child account was not added"
 		incr exit_code
 		return 1
 	}
 
 	if { [add_user $user [array get user_req]] } {
-		send_user "\nFAILURE: user was not added to child account\n"
+		log_error "User was not added to child account"
 		incr exit_code
 		return 1
 	}
@@ -77,55 +71,43 @@ proc cleanup { } {
 	remove_acct "" $acct
 }
 
-print_header $test_id
-
 set store_tres [string tolower [get_acct_store_tres]]
 set store_mps [string first "gres/mps:" $store_tres]
 if {$store_mps != -1} {
-	send_user "\nWARNING: This test requires homogeneous MPS accounting (NO Type)\n"
-	exit $exit_code
+	skip "This test requires homogeneous MPS accounting (NO Type)"
 }
 set store_mps [string first "gres/mps" $store_tres]
 if {$store_mps == -1} {
-	send_user "\nWARNING: This test requires accounting for MPS\n"
-	exit $exit_code
+	skip "This test requires accounting for MPS"
 } elseif { [test_using_slurmdbd] == 0 } {
-	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
-	exit $exit_code
+	skip "This test can't be run without AccountStorageType=slurmdbd"
 } elseif { [test_enforce_limits] == 0 } {
-	send_user "\nWARNING: This test can't be run without AccountingStorageEnforce=limits\n"
-	exit $exit_code
+	skip "This test can't be run without AccountingStorageEnforce=limits"
 } elseif {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 } elseif {[string compare [check_accounting_admin_level] "Administrator"]} {
-	send_user "\nThis test can't be run without being an Accounting administrator.\n"
-	exit $exit_code
+	skip "This test can't be run without being an Accounting administrator"
 }
 
 if {[test_cons_tres]} {
-	send_user "\nValid configuration, using select/cons_tres\n"
+	log_debug "Valid configuration, using select/cons_tres"
 } else {
-	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-	exit 0
+	skip "This test is only compatible with select/cons_tres"
 }
 
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
-send_user "\nDefault partition node count is $nb_nodes\n"
+set nb_nodes [get_node_cnt_in_part]
+log_debug "Default partition node count is $nb_nodes"
 if {$nb_nodes > 1} {
 	set nb_nodes 2
 }
-set mps_cnt [get_mps_count $nb_nodes]
+set mps_cnt [get_highest_mps_count $nb_nodes]
 if {$mps_cnt < 0} {
-	send_user "\nFAILURE: Error getting MPS count\n"
-	exit 1
+	fail "Error getting MPS count"
 }
 if {$mps_cnt < 100} {
-	send_user "\nWARNING: This test requires 100 or more MPS per node in the default partition\n"
-	exit 0
+	skip "This test requires 100 or more MPS per gpu in the default partition"
 }
-send_user "MPS count is $mps_cnt\n"
+log_debug "MPS count is $mps_cnt"
 
 # Remove any vestigial test account
 cleanup
@@ -138,8 +120,7 @@ if {$mps_limit > 8} {
 	incr mps_limit -1
 }
 if {[setup $mps_limit]} {
-	cleanup
-	exit 1
+	fail "Failure in setup ($mps_limit)"
 }
 
 make_bash_script $file_in "
@@ -149,7 +130,7 @@ make_bash_script $file_in "
 #
 # Test --gres=mps option by job (first job over limit, second job under limit)
 #
-send_user "\n\nTEST 1: --gres=mps option by job (first job over limit, second job under limit)\n"
+log_info "TEST 1: --gres=mps option by job (first job over limit, second job under limit)"
 
 set timeout $max_job_delay
 exec $bin_rm -f $file_out1  $file_out2
@@ -167,7 +148,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -175,7 +156,7 @@ expect {
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: job not submitted\n"
+	log_error "Job not submitted"
 	set exit_code 1
 }
 
@@ -187,7 +168,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -195,12 +176,12 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	send_user "\nFAILURE: job not submitted\n"
+	log_error "Job not submitted"
 	set exit_code 1
 }
 
 if {[wait_for_job $job_id2 "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id2 did not complete\n"
+	log_error "Job $job_id2 did not complete"
 	cancel_job $job_id2
 	set exit_code 1
 }
@@ -217,7 +198,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -225,22 +206,16 @@ expect {
 	}
 }
 if {$match != 2} {
-	send_user "\nFAILURE: job $job_id1 state is bad\n"
+	log_error "Job $job_id1 state is bad"
 	set exit_code 1
 }
 cancel_job $job_id1
 if {$exit_code != 0} {
-	cleanup
-	exit $exit_code
+	fail "Unable to cancel job ($job_id1)"
 }
-
-#
-# Remove any vestigial test account
-#
-cleanup
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out1 $file_out2
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

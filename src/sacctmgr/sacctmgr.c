@@ -49,7 +49,6 @@
 char *command_name;
 int exit_code;		/* sacctmgr's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
-int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int readonly_flag;      /* make it so you can only run list commands */
@@ -65,6 +64,7 @@ List g_tres_list = NULL;
 /* by default, normalize all usernames to lower case */
 bool user_case_norm = true;
 bool tree_display = 0;
+bool have_db_conn = false;
 
 static void	_add_it(int argc, char **argv);
 static void	_archive_it(int argc, char **argv);
@@ -79,11 +79,9 @@ static void	_usage(void);
 
 int main(int argc, char **argv)
 {
-	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count;
-	char **input_fields;
+	int error_code = SLURM_SUCCESS, opt_char;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int local_exit_code = 0;
-	char *temp = NULL;
 	int option_index;
 	uint16_t persist_conn_flags = 0;
 
@@ -107,7 +105,6 @@ int main(int argc, char **argv)
 	rollback_flag     = 1;
 	exit_code         = 0;
 	exit_flag         = 0;
-	input_field_count = 0;
 	quiet_flag        = 0;
 	readonly_flag     = 0;
 	verbosity         = 0;
@@ -168,17 +165,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (argc > MAX_INPUT_FIELDS)	/* bogus input, but continue anyway */
-		input_words = argc;
-	else
-		input_words = 128;
-	input_fields = (char **) xmalloc (sizeof (char *) * input_words);
-	if (optind < argc) {
-		for (i = optind; i < argc; i++) {
-			input_fields[input_field_count++] = argv[i];
-		}
-	}
-
 	if (verbosity) {
 		opts.stderr_level += verbosity;
 		opts.prefix_level = 1;
@@ -186,63 +172,54 @@ int main(int argc, char **argv)
 	}
 
 	/* Check to see if we are running a supported accounting plugin */
-	temp = slurm_get_accounting_storage_type();
-	if (xstrcasecmp(temp, "accounting_storage/slurmdbd")
-	   && xstrcasecmp(temp, "accounting_storage/mysql")) {
-		fprintf (stderr, "You are not running a supported "
-			 "accounting_storage plugin\n(%s).\n"
-			 "Only 'accounting_storage/slurmdbd' "
-			 "and 'accounting_storage/mysql' are supported.\n",
-			temp);
-		xfree(temp);
+	if (!slurm_with_slurmdbd()) {
+		fprintf(stderr,
+		        "You are not running a supported accounting_storage plugin\n"
+		        "Only 'accounting_storage/slurmdbd' is supported.\n");
 		exit(1);
 	}
-	xfree(temp);
 
 	errno = 0;
-	db_conn = slurmdb_connection_get2(&persist_conn_flags);
+	db_conn = slurmdb_connection_get(&persist_conn_flags);
 
-	if (errno != SLURM_SUCCESS) {
-		int tmp_errno = errno;
-		if ((input_field_count == 2) &&
-		   (!xstrncasecmp(argv[2], "Configuration", strlen(argv[1]))) &&
-		   ((!xstrncasecmp(argv[1], "list", strlen(argv[0]))) ||
-		    (!xstrncasecmp(argv[1], "show", strlen(argv[0]))))) {
-			if (tmp_errno == ESLURM_DB_CONNECTION) {
-				tmp_errno = 0;
-				sacctmgr_list_config(true);
-			} else
-				sacctmgr_list_config(false);
-		}
-		errno = tmp_errno;
-		if (errno)
-			error("Problem talking to the database: %m");
-		exit(1);
-	}
+	if (!errno)
+		have_db_conn = true;
+
 	my_uid = getuid();
 
 	if (persist_conn_flags & PERSIST_FLAG_P_USER_CASE)
 		user_case_norm = false;
 
-	if (input_field_count)
-		exit_flag = 1;
-	else
-		error_code = _get_command (&input_field_count, input_fields);
-	while (error_code == SLURM_SUCCESS) {
-		error_code = _process_command (input_field_count,
-					       input_fields);
-		if (error_code || exit_flag)
-			break;
-		error_code = _get_command (&input_field_count, input_fields);
-		/* This is here so if someone made a mistake we allow
-		 * them to fix it and let the process happen since there
-		 * are checks for global exit_code we need to reset it.
-		 */
-		if (exit_code) {
-			local_exit_code = exit_code;
-			exit_code = 0;
+
+	/* We are only running a single command and exiting */
+	if (optind < argc)
+		error_code = _process_command(argc - optind, argv + optind);
+	else {
+		/* We are running interactively multiple commands */
+		int input_field_count = 0;
+		char **input_fields = xcalloc(MAX_INPUT_FIELDS, sizeof(char *));
+		while (error_code == SLURM_SUCCESS) {
+			error_code = _get_command(
+				&input_field_count, input_fields);
+			if (error_code || exit_flag)
+				break;
+
+			error_code = _process_command(
+				input_field_count, input_fields);
+			/* This is here so if someone made a mistake we allow
+			 * them to fix it and let the process happen since there
+			 * are checks for global exit_code we need to reset it.
+			 */
+			if (exit_code) {
+				local_exit_code = exit_code;
+				exit_code = 0;
+			}
+			if (exit_flag)
+				break;
 		}
+		xfree(input_fields);
 	}
+
 	/* readline library writes \n when echoes the input string, it does
 	 * not when it sees the EOF, so in that case we have to print it to
 	 * align the terminal prompt.
@@ -342,7 +319,7 @@ static int _get_command (int *argc, char **argv)
 			exit_code = 1;
 			fprintf (stderr,
 				 "%s: can not process over %d words\n",
-				 command_name, input_words);
+				 command_name, MAX_INPUT_FIELDS-1);
 			return E2BIG;
 		}
 		argv[(*argc)++] = &in_line[i];
@@ -556,6 +533,11 @@ static void _add_it(int argc, char **argv)
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
 
+	if (!have_db_conn) {
+		exit_code = 1;
+		return;
+	}
+
 	if (readonly_flag) {
 		exit_code = 1;
 		fprintf(stderr, "Can't run this command in readonly mode.\n");
@@ -610,6 +592,11 @@ static void _archive_it(int argc, char **argv)
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
 
+	if (!have_db_conn) {
+		exit_code = 1;
+		return;
+	}
+
 	if (readonly_flag) {
 		exit_code = 1;
 		fprintf(stderr, "Can't run this command in readonly mode.\n");
@@ -651,6 +638,11 @@ static void _clear_it(int argc, char **argv)
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
 
+	if (!have_db_conn) {
+		exit_code = 1;
+		return;
+	}
+
 	if (!argv[0])
 		goto helpme;
 
@@ -688,6 +680,13 @@ static void _show_it(int argc, char **argv)
 		goto helpme;
 
 	command_len = strlen(argv[0]);
+	if (!have_db_conn &&
+	    xstrncasecmp(argv[0], "Configuration",
+			 MAX(command_len, 2))) {
+		exit_code = 1;
+		return;
+	}
+
 
 	/* reset the connection to get the most recent stuff */
 	slurmdb_connection_commit(db_conn, 0);
@@ -704,7 +703,7 @@ static void _show_it(int argc, char **argv)
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
 	} else if (xstrncasecmp(argv[0], "Configuration",
 				MAX(command_len, 2)) == 0) {
-		error_code = sacctmgr_list_config(true);
+		error_code = sacctmgr_list_config();
 	} else if (xstrncasecmp(argv[0], "Events",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_event((argc - 1), &argv[1]);
@@ -764,6 +763,11 @@ static void _modify_it(int argc, char **argv)
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
 
+	if (!have_db_conn) {
+		exit_code = 1;
+		return;
+	}
+
 	if (readonly_flag) {
 		exit_code = 1;
 		fprintf(stderr, "Can't run this command in readonly mode.\n");
@@ -818,6 +822,11 @@ static void _delete_it(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
+
+	if (!have_db_conn) {
+		exit_code = 1;
+		return;
+	}
 
 	if (readonly_flag) {
 		exit_code = 1;
@@ -994,8 +1003,10 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             (where options) Names=                         \n\
        delete federation  - Names=                                         \n\
                                                                            \n\
-       modify job         - (set options) DerivedExitCode=, Comment=       \n\
-                            (where options) JobID=, Cluster=               \n\
+       modify job         - (set options) DerivedExitCode=, Comment=,      \n\
+                            NewWCKey=                                      \n\
+                            (where options) JobID=, Cluster=, EndTime=,    \n\
+                            StartTime=, WCKey=, User=                      \n\
                                                                            \n\
        list qos           - Descriptions=, Format=, Id=, Names=,           \n\
                             PreemptMode=, and WithDeleted                  \n\

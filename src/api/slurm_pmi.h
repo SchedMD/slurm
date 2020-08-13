@@ -49,15 +49,44 @@
 #define PMI_MAX_KVSNAME_LEN 256	/* Maximum size of KVS name */
 #define PMI_MAX_VAL_LEN     1024 /* Maximum size of a PMI value */
 
+/*
+ * The following functions MUST NOT change signature. They define the ABI for
+ * libslurm_pmi which is intentionally unversioned, and only use for PMI1
+ * support.
+ *
+ * These are for use through libslurm_pmi.so, which is an unversioned copy of
+ * libslurm designed to work around static linking issues with OpenMPI.
+ *
+ * When OpenMPI statically links against libpmi.so (as provided by Slurm),
+ * it inherits a dependency on libslurm_pmi.so, and the slurm_pmi_* symbols
+ * needed for libpmi to run. By making this a separate unversioned library,
+ * when Slurm is upgraded between releases the existing OpenMPI installs will
+ * no longer need to be recompiled.
+ *
+ * For 20.02 and older, libpmi.so links to libslurm.so.<version> which is
+ * only installed for each given release, and will be removed by RPM or
+ * other package managers. Thus breaking any OpenMPI version that statically
+ * linked against our libpmi.so as they inherited the libslurm.so.<version>
+ * dependency. By providing an unversioned libslurm_pmi.so, we avoid that
+ * issue in 20.11 and up. As long as the slurm_pmi_* ABI remains unchanged
+ * this should work without issue.
+ */
+
 /* Transmit PMI Keyval space data */
-int slurm_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
-		int pmi_rank, int pmi_size);
+extern int slurm_pmi_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
+				       int pmi_rank, int pmi_size);
 
 /* Wait for barrier and get full PMI Keyval space data */
-int  slurm_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
-		int pmi_rank, int pmi_size);
+extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
+				      int pmi_rank, int pmi_size);
+
+extern void slurm_pmi_free_kvs_comm_set(kvs_comm_set_t *msg);
 
 /* Finalization processing */
-void slurm_pmi_finalize(void);
+extern void slurm_pmi_finalize(void);
+
+/* Wrapper for slurm_kill_job_step(). */
+extern int slurm_pmi_kill_job_step(uint32_t job_id, uint32_t step_id,
+				   uint16_t signal);
 
 #endif

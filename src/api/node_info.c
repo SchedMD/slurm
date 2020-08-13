@@ -184,11 +184,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	uint64_t alloc_memory;
 	char *node_alloc_tres = NULL;
 	char *line_end = (one_liner) ? " " : "\n   ";
-	slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
-
-	if (slurm_load_ctl_conf((time_t) NULL, &slurm_ctl_conf_ptr)
-	    != SLURM_SUCCESS)
-		fatal("Cannot load slurmctld conf file");
 
 	if (my_state & NODE_STATE_CLOUD) {
 		my_state &= (~NODE_STATE_CLOUD);
@@ -291,13 +286,17 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 			line_used = true;
 		}
 
-		if (node_ptr->port != slurm_get_slurmd_port()) {
+		if (node_ptr->bcast_address) {
+			xstrfmtcat(out, "BcastAddr=%s ", node_ptr->bcast_address);
+			line_used = true;
+		}
+
+		if (node_ptr->port != slurm_conf.slurmd_port) {
 			xstrfmtcat(out, "Port=%u ", node_ptr->port);
 			line_used = true;
 		}
 
-		if (node_ptr->version &&
-		    xstrcmp(node_ptr->version, slurm_ctl_conf_ptr->version)) {
+		if (node_ptr->version) {
 			xstrfmtcat(out, "Version=%s", node_ptr->version);
 			line_used = true;
 		}
@@ -482,7 +481,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	else
 		xstrcat(out, "\n\n");
 
-	slurm_free_ctl_conf(slurm_ctl_conf_ptr);
 	return out;
 }
 
@@ -691,9 +689,10 @@ extern int slurm_load_node(time_t update_time, node_info_msg_t **resp,
 	int rc;
 
 	if (working_cluster_rec)
-		cluster_name = xstrdup(working_cluster_rec->name);
+		cluster_name = working_cluster_rec->name;
 	else
-		cluster_name = slurm_get_cluster_name();
+		cluster_name = slurm_conf.cluster_name;
+
 	if ((show_flags & SHOW_FEDERATION) && !(show_flags & SHOW_LOCAL) &&
 	    (slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
 	    cluster_in_federation(ptr, cluster_name)) {
@@ -724,7 +723,6 @@ extern int slurm_load_node(time_t update_time, node_info_msg_t **resp,
 
 	if (ptr)
 		slurm_destroy_federation_rec(ptr);
-	xfree(cluster_name);
 
 	return rc;
 }
@@ -797,9 +795,10 @@ extern int slurm_load_node_single2(node_info_msg_t **resp, char *node_name,
 }
 
 /*
- * slurm_get_node_energy_n - issue RPC to get the energy data of all
+ * slurm_get_node_energy - issue RPC to get the energy data of all
  * configured sensors on the target machine
  * IN  host  - name of node to query, NULL if localhost
+ * IN  context_id - specific plugin to query.
  * IN  delta - Use cache if data is newer than this in seconds
  * OUT sensors_cnt - number of sensors
  * OUT energy - array of acct_gather_energy_t structures on success or
@@ -807,7 +806,8 @@ extern int slurm_load_node_single2(node_info_msg_t **resp, char *node_name,
  * RET 0 on success or a slurm error code
  * NOTE: free the response using xfree
  */
-extern int slurm_get_node_energy(char *host, uint16_t delta,
+extern int slurm_get_node_energy(char *host, uint16_t context_id,
+				 uint16_t delta,
 				 uint16_t *sensor_cnt,
 				 acct_gather_energy_t **energy)
 {
@@ -828,14 +828,14 @@ extern int slurm_get_node_energy(char *host, uint16_t delta,
 	slurm_msg_t_init(&resp_msg);
 
 	if (host)
-		slurm_conf_get_addr(host, &req_msg.address);
+		slurm_conf_get_addr(host, &req_msg.address, req_msg.flags);
 	else if (cluster_flags & CLUSTER_FLAG_MULTSD) {
 		if ((this_addr = getenv("SLURMD_NODENAME"))) {
-			slurm_conf_get_addr(this_addr, &req_msg.address);
+			slurm_conf_get_addr(this_addr, &req_msg.address,
+					    req_msg.flags);
 		} else {
 			this_addr = "localhost";
-			slurm_set_addr(&req_msg.address,
-				       (uint16_t)slurm_get_slurmd_port(),
+			slurm_set_addr(&req_msg.address, slurm_conf.slurmd_port,
 				       this_addr);
 		}
 	} else {
@@ -847,13 +847,13 @@ extern int slurm_get_node_energy(char *host, uint16_t delta,
 		this_addr = slurm_conf_get_nodeaddr(this_host);
 		if (this_addr == NULL)
 			this_addr = xstrdup("localhost");
-		slurm_set_addr(&req_msg.address,
-			       (uint16_t)slurm_get_slurmd_port(),
+		slurm_set_addr(&req_msg.address, slurm_conf.slurmd_port,
 			       this_addr);
 		xfree(this_addr);
 	}
 
 	memset(&req, 0, sizeof(req));
+	req.context_id   = context_id;
 	req.delta        = delta;
 	req_msg.msg_type = REQUEST_ACCT_GATHER_ENERGY;
 	req_msg.data     = &req;

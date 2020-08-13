@@ -3,11 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Confirms that the sbatch --array option is submitted and
 #          scancel cancels the job array.
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -32,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "28.1"
 set exit_code   0
 set file_script "test$test_id.sh"
 set file_in     "test$test_id.input"
@@ -42,32 +36,29 @@ set job_id      ""
 set min_task_id 5
 set max_task_id 8
 
-print_header $test_id
-
 set array_size  [get_array_config]
 if {$array_size < $min_task_id} {
-	send_user "\nWARNING: MaxArraySize is too small\n"
-	exit 0
+	skip "MaxArraySize is too small"
 }
 if {$array_size > $max_task_id} {
 	set array_size $max_task_id
 }
 
 proc scontrol_check { job_id } {
-	global scontrol alpha_numeric_under array_id exit_code
+	global scontrol re_word_str array_id exit_code
 
 	spawn $scontrol show job $job_id
 	expect {
-		-re "JobState=($alpha_numeric_under)" {
+		-re "JobState=($re_word_str)" {
 			set tmp $expect_out(1,string)
 			if {[string compare $tmp "CANCELLED"]} {
-				send_user "\nFAILURE: Job was not cancelled\n"
+				log_error "Job was not cancelled"
 				set exit_code 1
 			}
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -86,14 +77,14 @@ proc multi_squeue_check {job_id} {
 		-re "$job_id\_($number\)" {
 			set array_id $expect_out(1,string)
 			if {$array_id != $array_in} {
-				send_user "\nFAILURE: array IDs do not match $array_id != $array_in\n"
+				log_error "Array IDs do not match $array_id != $array_in"
 				set exit_code 1
 			}
 			incr array_in
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: squeue is not responding\n"
+			log_error "squeue is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -115,7 +106,7 @@ proc multi_scontrol_check { job_id } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -134,15 +125,14 @@ spawn $sbatch -N1 --array=0-[expr $array_size - 1] --begin=midnight --input=$fil
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		send_user "\njob $job_id was submitted\n"
+		log_debug "Job $job_id was submitted"
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
-		exit 1
+		fail "sbatch did not submit jobs"
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -153,14 +143,14 @@ expect {
 # checks all the job array indexes
 set task_cnt [multi_scontrol_check $job_id]
 if {$task_cnt != $array_size} {
-	send_user "\nFAILURE: job count found by scontrol bad ($task_cnt != $array_size)\n"
+	log_error "Job count found by scontrol bad ($task_cnt != $array_size)"
 	set exit_code
 }
 
 # uses squeue to check for the jobs
 set job_cnt [multi_squeue_check $job_id]
 if {$job_cnt != $array_size} {
-	send_user "\nFAILURE: job count found by squeue bad ($job_cnt != $array_size)\n"
+	log_error "Job count found by squeue bad ($job_cnt != $array_size)"
 	set exit_code 1
 }
 
@@ -171,7 +161,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -189,7 +179,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		log_error "scancel not responding"
 		set exit_code 1
 	}
 	eof {
@@ -202,6 +192,6 @@ scontrol_check $job_id
 
 if {$exit_code == 0} {
 	file delete $file_in $file_out $file_script
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

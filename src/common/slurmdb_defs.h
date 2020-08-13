@@ -161,6 +161,8 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list);
 extern char *get_classification_str(uint16_t classification);
 extern uint16_t str_2_classification(char *classification);
 
+extern const char *rollup_interval_to_string(int interval);
+
 extern char *slurmdb_problem_str_get(uint16_t problem);
 extern uint16_t str_2_slurmdb_problem(char *problem);
 
@@ -179,11 +181,6 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 extern slurmdb_report_cluster_rec_t *slurmdb_cluster_rec_2_report(
 	slurmdb_cluster_rec_t *cluster);
 
-/* OUT: job_id_str - filled in with the id of the job/array
- * RET: job_id_str */
-extern char *slurmdb_get_selected_step_id(
-	char *job_id_str, int len,
-	slurmdb_selected_step_t *selected_step);
 /* OUT: out - copy grp/max/qos limits from in
  * IN:  in  - what to copy from
  */
@@ -294,5 +291,14 @@ extern char *slurmdb_ave_tres_usage(char *tres_string, int tasks);
 extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec);
 
 extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond);
+extern int slurmdb_job_sort_by_submit_time(void *v1, void *v2);
 
+/*
+ * Merge bitmap2 into bitmap1 creating it if it doesn't exist.
+ * Also add counts from job_cnt2 (if NULL then just add 1) to job_cnt1.
+ */
+extern void slurmdb_merge_grp_node_usage(bitstr_t **grp_node_bitmap1,
+					 uint16_t **grp_node_job_cnt1,
+					 bitstr_t *grp_node_bitmap2,
+					 uint16_t *grp_node_job_cnt2);
 #endif

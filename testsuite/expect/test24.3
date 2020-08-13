@@ -4,10 +4,6 @@
 #           failure of this test but a success of test24.3 is indicative
 #           of a problem with SLURMDB_FS_USE_PARENT.
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # Note:    This script generates and then deletes files in the working
 #          directory named test24.3.prog
 ############################################################################
@@ -39,17 +35,13 @@
 ############################################################################
 source ./globals
 
-set test_id     "24.3"
 set exit_code   0
 set test_prog   "test$test_id.prog"
 set matches     0
 
-print_header $test_id
-
 set damp [get_fs_damping_factor]
 if {$damp != 1} {
-	send_user "Unable to run with FairShareDampeningFactor=$damp (must be 1)\n"
-	exit 0
+	skip "Unable to run with FairShareDampeningFactor=$damp (must be 1)"
 }
 
 #
@@ -57,20 +49,20 @@ if {$damp != 1} {
 #
 file delete $test_prog
 
-send_user "build_dir is $build_dir\n"
-send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o ${build_dir}/src/slurmctld/locks.o  ${build_dir}/src/sshare/process.o -ldl -lm -export-dynamic \n"
-exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o ${build_dir}/src/slurmctld/locks.o ${build_dir}/src/sshare/process.o -ldl -lm -export-dynamic
-exec $bin_chmod 700 $test_prog
+compile_against_libslurm ${test_prog} 1 "-ldl -lm -export-dynamic \
+					 ${build_dir}/src/slurmctld/locks.o \
+					 ${build_dir}/src/sshare/process.o"
+fail_on_error "Cannot compile test program"
 
 # Usage: test24.3.prog
 spawn ./$test_prog
 expect {
 	"No last decay" {
-		send_user "This error is expected.  No worries.\n"
+		log_debug "This error is expected. No worries"
 		exp_continue
 	}
 	"error: Can't save decay state" {
-		send_user "This error is expected.  No worries.\n"
+		log_debug "This error is expected. No worries"
 		exp_continue
 	}
 
@@ -164,7 +156,7 @@ expect {
 	}
 
 	timeout {
-		send_user "\nFAILURE: spawn IO not responding\n"
+		log_error "spawn IO not responding"
 		cancel_job $job_id
 		set exit_code 1
 	}
@@ -174,12 +166,11 @@ expect {
 }
 
 if {$matches != 22} {
-	send_user "\nFAILURE: we didn't get the correct priorities from the plugin ($matches != 22)\n"
-	set exit_code 1
+	fail "We didn't get the correct priorities from the plugin ($matches != 22)"
 }
 
 if {$exit_code == 0} {
 	file delete $test_prog
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "February 2019" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "July 2020" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -90,60 +90,9 @@ written.
 
 .TP
 \fBcancel_reboot \fI<NodeList>\fP
-Cancel pending reboots on nodes.
-
-.TP
-\fBcheckpoint\fP \fICKPT_OP\fP \fIID\fP
-Perform a checkpoint activity on the job step(s) with the specified identification.
-\fIID\fP can be used to identify a specific job (e.g. "<job_id>",
-which applies to all of its existing steps)
-or a specific job step (e.g. "<job_id>.<step_id>").
-Acceptable values for \fICKPT_OP\fP include:
-.RS
-.TP 12
-\fIable\fP
-Test if presently not disabled, report start time if checkpoint in progress
-.TP
-\fIcreate\fP
-Create a checkpoint and continue the job or job step
-.TP
-\fIdisable\fP
-Disable future checkpoints
-.TP
-\fIenable\fP
-Enable future checkpoints
-.TP
-\fIerror\fP
-Report the result for the last checkpoint request, error code and message
-.TP
-\fIrestart\fP
-Restart execution of the previously checkpointed job or job step
-.TP
-\fIrequeue\fP
-Create a checkpoint and requeue the batch job, combines vacate
-and restart operations
-.TP
-\fIvacate\fP
-Create a checkpoint and terminate the job or job step
-.RE
-Acceptable values for \fICKPT_OP\fP include:
-.RS
-.TP 20
-\fIMaxWait=<seconds>\fP
-Maximum time for checkpoint to be written.
-Default value is 10 seconds.
-Valid with \fIcreate\fP and \fIvacate\fP options only.
-.TP
-\fIImageDir=<directory_name>\fP
-Location of checkpoint file.
-Valid with \fIcreate\fP, \fIvacate\fP and \fIrestart\fP options only.
-This value takes precedent over any \-\-checkpoint\-dir value specified
-at job submission time.
-.TP
-\fIStickToNodes\fP
-If set, resume job on the same nodes are previously used.
-Valid with the \fIrestart\fP option only.
-.RE
+Cancel pending reboots on nodes. If the node reason is "Reboot ASAP" (the
+default reason set by reboot's \fIASAP\fP keyword), then the DRAIN state
+flag will be removed and the node reason will be cleared.
 
 .TP
 \fBcluster\fR \fICLUSTER_NAME\fP
@@ -182,7 +131,7 @@ Display a description of scontrol options and commands.
 
 .TP
 \fBhold\fP \fIjob_list\fP
-Prevent a pending job from being started (sets it's priority to 0).
+Prevent a pending job from being started (sets its priority to 0).
 Use the \fIrelease\fP command to permit the job to be scheduled.
 The job_list argument is a comma separated list of job IDs OR
 "jobname=" with the job's name, which will attempt to hold all jobs having
@@ -249,10 +198,11 @@ as "DOWN", then the node will remain in a down state after rebooting. If
 when the node registers and the node reason will be cleared.
 Resuming nodes will be considered as available in
 backfill future scheduling and won't be replaced by idle nodes in a reservation.
-When using the "nextstate" and "reason" options together the reason will be
-appended with "reboot issued" when the reboot is issued and "reboot complete"
-when the node registers with a "nextstate" of "DOWN".
 The "reason" option sets each node's reason to a user-defined message.
+A default reason of "reboot requested" is set if no other reason is set on the
+node.
+The reason will be appended with "reboot issued" when the reboot is issued and
+"reboot complete" when the node registers and has a "nextstate" of "DOWN".
 You must specify either a list of nodes or that ALL nodes are to be rebooted.
 NOTE: By default, this command does not prevent additional jobs from being
 scheduled on any nodes before reboot.
@@ -270,12 +220,12 @@ Instruct all Slurm daemons to re\-read the configuration file.
 This command does not restart the daemons.
 This mechanism would be used to modify configuration parameters (Epilog,
 Prolog, SlurmctldLogFile, SlurmdLogFile, etc.).
-The Slurm controller (slurmctld) forwards the request all other daemons
+The Slurm controller (slurmctld) forwards the request to all other daemons
 (slurmd daemon on each compute node). Running jobs continue execution.
 Most configuration parameters can be changed by just running this command,
 however, Slurm daemons should be shutdown and restarted if any of these
-parameters are to be changed: AuthType, BackupAddr, BackupController,
-ControlAddr, ControlMach, PluginDir, StateSaveLocation, SlurmctldPort
+parameters are to be changed: AuthType, ControlMach, PluginDir,
+StateSaveLocation, SlurmctldHost, SlurmctldPort,
 or SlurmdPort. The slurmctld daemon and all slurmd daemons must be
 restarted if nodes are added to or removed from the cluster.
 
@@ -380,7 +330,7 @@ Display the state of the specified entity with the specified identification.
 \fIENTITY\fP may be \fIaliases\fP, \fIassoc_mgr\fP, \fIbbstat\fP,
 \fIburstbuffer\fP, \fIconfig\fP, \fIdaemons\fP, \fIdwstat\fP,
 \fIfederation\fP, \fIfrontend\fP, \fIjob\fP, \fInode\fP,
-\fIpartition\fP, \fIpowercap\fP, \fIreservation\fP, \fIslurmd\fP, \fIstep\fP,
+\fIpartition\fP, \fIreservation\fP, \fIslurmd\fP, \fIstep\fP,
 \fItopology\fP, \fIhostlist\fP, \fIhostlistsorted\fP or \fIhostnames\fP
 \fIID\fP can be used to identify a specific element of the identified
 entity: job ID, node name, partition name, reservation name, or job step ID for
@@ -480,8 +430,16 @@ users by the system administrator by including the option "enable_user_top" in
 the SchedulerParameters configuration parameter.
 
 .TP
+\fBtoken\fP [lifespan=<lifespan>] [username=<username>]
+Return an auth token which can be used to support JWT authentication if
+\fIAuthAltTypes=auth/jwt\fP has been enabled on the system.
+Supports two optional arguments. \fBlifespan=\fP may be used to specify
+the token's lifespan. \fBusername\fP (only available to SlurmUser/root)
+may be used to request a token for a different username. 
+
+.TP
 \fBuhold\fP \fIjob_list\fP
-Prevent a pending job from being started (sets it's priority to 0).
+Prevent a pending job from being started (sets its priority to 0).
 The job_list argument is a space separated list of job IDs or job names.
 Use the \fIrelease\fP command to permit the job to be scheduled.
 This command is designed for a system administrator to hold a job so that
@@ -490,7 +448,7 @@ system administrator (also see the \fBhold\fP command).
 
 .TP
 \fBupdate\fP \fISPECIFICATION\fP
-Update job, step, node, partition, powercapping or reservation configuration per
+Update job, step, node, partition, or reservation configuration per
 the supplied specification. \fISPECIFICATION\fP is in the same format as the
 Slurm configuration file and the output of the \fIshow\fP command described 
 above. It may be desirable to execute the \fIshow\fP command (described above)
@@ -513,6 +471,9 @@ some termination state. This option is particularly useful in the Slurm Prolog
 or in the batch script itself if nodes are powered down and restarted
 automatically as needed.
 
+\fBNOTE:\fP Don't use scontrol wait_job in PrologCtld or Prolog with
+PrologFlags=Alloc as this will result in deadlock.
+
 .TP
 \fBwrite batch_script\fP \fIjob_id optional_filename\fP
 Write the batch script for a given job_id to a file or to stdout. The file will
@@ -522,10 +483,11 @@ The batch script can only be retrieved by an admin or operator, or by the
 owner of the job.
 
 .TP
-\fBwrite config\fP
+\fBwrite config\fP \fIoptional_filename\fP
 Write the current configuration to a file with the naming convention of
 "slurm.conf.<datetime>" in the same directory as the original slurm.conf
-file.
+file.  If a filename is given that file location with a .<datetime> suffix is
+created.
 
 .TP
 \fBINTERACTIVE COMMANDS\fR
@@ -655,7 +617,7 @@ The specified deadline must be later than the current time.
 Only pending jobs can have the deadline updated.
 Only the Slurm administrator or root can change this parameter.
 .TP
-\fBDelayBoot\fP=<time_spec>
+\fIDelayBoot\fP=<time_spec>
 Change the time to decide whether to reboot nodes in order to satisfy job's
 feature specification if the job has been eligible to run for less than this
 time period. See salloc/sbatch man pages option \-\-delay\-boot.
@@ -673,7 +635,7 @@ different  users.
 .TP
 \fBafter:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have begun
-execution.
+execution or been canceled.
 .TP
 \fBafterany:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated.
@@ -757,6 +719,22 @@ Either \fIJobId\fP or \fIJobName\fP is required.
 Specification of licenses (or other resources available on all nodes
 of the cluster) as described in salloc/sbatch/srun man pages.
 .TP
+\fIMailType\fP=<types>
+Set the mail event types. Valid type values are NONE, BEGIN, END, FAIL,
+REQUEUE, ALL (equivalent to BEGIN, END, FAIL, REQUEUE, and STAGE_OUT),
+STAGE_OUT (burst buffer stage out and teardown completed), TIME_LIMIT,
+TIME_LIMIT_90 (reached 90 percent of time limit), TIME_LIMIT_80 (reached 80
+percent of time limit), TIME_LIMIT_50 (reached 50 percent of time limit) and
+ARRAY_TASKS (send emails for each array task). Multiple type values may be
+specified in a comma separated list. Unless the ARRAY_TASKS option is
+specified, mail notifications on job BEGIN, END and FAIL apply to a job array
+as a whole rather than generating individual email messages for each task in
+the job array.
+.TP
+\fIMailUser\fP=<name>
+Set the user to receive email notification of state changes. A blank string
+will set the mail user to the default which is the submitting user.
+.TP
 \fIMinCPUsNode\fP=<count>
 Set the job's minimum number of CPUs per node to the specified value.
 .TP
@@ -772,7 +750,7 @@ Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 Set the job's minimum temporary disk space required per node to the specified value.
 Only the Slurm administrator or root can change this parameter.
 .TP
-\fTimeMin\fP=<timespec>
+\fITimeMin\fP=<timespec>
 Change TimeMin value which specifies the minimum time limit minutes of the job.
 .TP
 \fIJobName\fP=<name>
@@ -792,7 +770,7 @@ value increases the priority, otherwise decreases it. The adjustment range is
 +/\- 2147483645. Only privileged users can specify a negative adjustment.
 .TP
 \fINodeList\fP=<nodes>
-Change the nodes allocated to a running job to shrink it's size.
+Change the nodes allocated to a running job to shrink its size.
 The specified list of nodes must be a subset of the nodes currently
 allocated to the job. Multiple node names may be specified using
 simple node range expressions (e.g. "lx[10\-20]"). After a job's allocation
@@ -838,7 +816,7 @@ Only the Slurm administrator or root can increase job's priority.
 Set the job's QOS (Quality Of Service) to the specified value.
 Value may be cleared with blank data value, "QOS=".
 .TP
-\fBReboot\fP=<yes|no>
+\fIReboot\fP=<yes|no>
 Set the job's flag that specifies whether to force the allocated nodes to reboot
 before starting the job. This is only supported with some system configurations
 and therefore it could be silently ignored.
@@ -872,7 +850,7 @@ Set the job's reservation to the specified value.
 Value may be cleared with blank data value, "ReservationName=".
 .TP
 \fIResetAccrueTime\fP
-Reset the job's accrue time value to 0 meaning it will loose any time
+Reset the job's accrue time value to 0 meaning it will lose any time
 previously accrued for priority.  Helpful if you have a large queue of jobs
 already in the queue and want to start limiting how many jobs can accrue time
 without waiting for the queue to flush out.
@@ -958,6 +936,8 @@ precede the time and equal sign with a "+" or "\-" to increment or decrement the
 current time limit (e.g. "TimeLimit+=30"). In order to increment or decrement
 the current time limit, the \fIJobId\fP specification must precede the
 \fITimeLimit\fP specification.
+Note that incrementing or decrementing the time limit for a job array is only
+allowed before the job array has been split into more than one job record.
 Only the Slurm administrator or root can increase job's TimeLimit.
 
 .TP
@@ -968,6 +948,12 @@ Either a user name or numeric ID (UID), may be specified.
 .TP
 \fIWCKey\fP=<key>
 Set the job's workload characterization key to the specified value.
+
+.TP
+\fIWorkDir\fP=<directory_name>
+Set the job's working directory to the specified value. Note that this may
+only be set for jobs in the PENDING state, and that jobs may fail to launch
+if they rely on relative paths to the originally submitted WorkDir.
 
 .TP
 \fBSPECIFICATIONS FOR SHOW COMMAND, JOBS\fR
@@ -1162,7 +1148,9 @@ restart of the slurmctld daemon with the \fI\-R\fR option and state files
 preserved or slurmctld's receipt of a SIGHUP.
 Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
-Also see \fIActiveFeatures\fP.
+
+\fBNote\fR: Available features being removed via \fBscontrol\fR must not be
+active (i.e. remove them from \fIActiveFeatures\fP first).
 
 .TP
 \fICpuBind\fP=<node>
@@ -1193,6 +1181,28 @@ Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
+\fINodeAddr\fP=<node address>
+Name that a node should be referred to in establishing a communications path.
+This name will be used as an argument to the gethostbyname() function for
+identification. If a node range expression is used to designate multiple nodes,
+they must exactly match the entries in the \fINodeName\fP
+(e.g. "NodeName=lx[0\-7] NodeAddr=elx[0\-7]"). \fINodeAddr\fP may also contain
+IP addresses.
+
+.TP
+\fINodeHostname\fP=<node hostname>
+Typically this would be the string that "/bin/hostname \-s" returns.
+It may also be the fully qualified domain name as returned by
+"/bin/hostname \-f" (e.g. "foo1.bar.com"), or any valid domain name associated
+with the host through the host database (/etc/hosts) or DNS, depending on the
+resolver settings. Note that if the short form of the hostname is not used, it
+may prevent use of hostlist expressions (the numeric portion in brackets must be
+at the end of the string). A node range expression can be used to specify a set
+of nodes. If an expression is used, the number of nodes identified by
+\fINodeHostname\fP must be identical to the number of nodes identified by
+\fINodeName\fP.
+
+.TP
 \fIReason\fP=<reason>
 Identify the reason the node is in a "DOWN", "DRAINED", "DRAINING",
 "FAILING" or "FAIL" state.
@@ -1210,7 +1220,7 @@ If a node is in a "MIXED" state it usually means the node is in
 multiple states.  For instance if only part of the node is "ALLOCATED"
 and the rest of the node is "IDLE" the state will be "MIXED".
 If you want to remove a node from service, you typically want to set
-it's state to "DRAIN".
+its state to "DRAIN".
 "CANCEL_REBOOT" cancels a pending reboot on the node (same as "scontrol
 cancel_reboot <node>").
 "FAILING" is similar to "DRAIN" except that some applications will
@@ -1359,7 +1369,7 @@ Use quotes to enclose a reason having more than one word.
 Identify the state to be assigned to the front end node. Possible values are
 "DOWN", "DRAIN" or "RESUME".
 If you want to remove a front end node from service, you typically want to set
-it's state to "DRAIN".
+its state to "DRAIN".
 "RESUME" is not an actual node state, but will return a "DRAINED", "DRAINING",
 or "DOWN" front end node to service, either "IDLE" or "ALLOCATED" state as
 appropriate.
@@ -1483,7 +1493,10 @@ have already begun execution.
 Set the minimum number of nodes which will be allocated to any single job
 in the partition.
 Changing the \fIMinNodes\fP of a partition has no effect upon jobs that
-have already begun execution.
+have already begun execution. Increasing this value may prevent pending jobs
+from starting, even if they were submitted without -N/--nodes specification.
+If you do get in that situation, updating the \fIMinNodes\fP value of a
+pending job using the scontrol command will allow that job to be scheduled.
 
 .TP
 \fINodes\fP=<name>
@@ -1527,7 +1540,7 @@ Identify the partition to be updated. This specification is required.
 Reset the mechanism used to preempt jobs in this partition if \fIPreemptType\fP
 is configured to \fIpreempt/partition_prio\fP. The default preemption mechanism
 is specified by the cluster\-wide \fIPreemptMode\fP configuration parameter.
-Possible values are "OFF", "CANCEL", "CHECKPOINT", "REQUEUE" and "SUSPEND".
+Possible values are "OFF", "CANCEL", "REQUEUE" and "SUSPEND".
 
 .TP
 \fIPriority\fP=<count>
@@ -1610,18 +1623,6 @@ when calculating fairshare and when enforcing the TRES billing limit on jobs.
 Updates affect new jobs and not existing jobs.
 See the slurm.conf man page for more information.
 
-
-.TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, POWERCAP\fR
-
-.TP
-\fIPowerCap\fP=<count>
-Set the amount of watts the cluster is limited to.
-Specify a number, "INFINITE" to enable the power capping logic without
-power restriction or "0" to disable the power capping logic.
-Update slurm.conf with any changes meant to be persistent across normal
-restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
-
 .TP
 \fBSPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, RESERVATIONS\fR
 .TP
@@ -1638,9 +1639,9 @@ For create, if you do not want to give a reservation name, use
 List of accounts permitted to use the reserved nodes, for example
 "Accounts=physcode1,physcode2".
 A user in any of the accounts may use the reserved nodes.
-A new reservation must specify Users and/or Accounts.
-If both Users and Accounts are specified, a job must match both in order to
-use the reservation.
+A new reservation must specify Users or Groups and/or Accounts.
+If both Users/Groups and Accounts are specified, a job must match both in order
+to use the reservation.
 Accounts can also be denied access to reservations by preceding all of the
 account names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "Accounts=-physcode1,-physcode2" or "Accounts-=physcode1,physcode2"
@@ -1656,7 +1657,7 @@ not possible to also explicitly specify allowed accounts.
 Specification of burst buffer resources which are to be reserved.
 "buffer_spec" consists of four elements:
 [plugin:][type:]#[units]
-"plugin" is the burst buffer plugin name, currently either "datawar" or
+"plugin" is the burst buffer plugin name, currently either "datawarp" or
 "generic".
 If no plugin is specified, the reservation applies to all configured burst
 buffer plugins.
@@ -1677,8 +1678,9 @@ This is because the CRAY API for managing DataWarps supports both formats.
 
 .TP
 \fICoreCnt\fP=<num>
-This option is only supported when SelectType=select/cons_res. Identify number
-of cores to be reserved. If NodeCnt is used without the FIRST_CORES flag, this
+This option is only supported when \fISelectType=select/cons_res\fP or
+\fIselect/cons_tres\fP. Identify number of cores to be reserved.
+If NodeCnt is used without the FIRST_CORES flag, this
 is the total number of cores to reserve where cores per node is CoreCnt/NodeCnt.
 If a nodelist is used, or if NodeCnt is used with the FIRST_CORES flag, this
 should be an array of core numbers by node: Nodes=node[1\-5] CoreCnt=2,2,3,3,4
@@ -1697,6 +1699,16 @@ If a reservation includes Licenses, but no NodeCnt or Nodes, then the option
 \fIFlags=LICENSE_ONLY\fP must also be specified.
 Jobs using this reservation are not restricted to these licenses, but may
 use these reserved licenses plus any which are generally available.
+
+.TP
+\fIMaxStartDelay\fP[=<timespec>]
+Change MaxStartDelay value which specifies the maximum time an eligible job not
+requesting this reservation can delay a job requesting it. Default is none.
+Valid formats are minutes, minutes:seconds,
+hours:minutes:seconds, days\-hours, days\-hours:minutes,
+days\-hours:minutes:seconds.  Time resolution is one minute and
+second values are rounded up to the next minute. Output format is always
+[days\-]hours:minutes:seconds.
 
 .TP
 \fINodeCnt\fP=<num>[,num,...]
@@ -1797,8 +1809,12 @@ See \fIANY_NODES\fR.
 .TP
 \fIMAINT\fR
 Maintenance mode, receives special accounting treatment.
-This partition is permitted to use resources that are already in another
+This reservation is permitted to use resources that are already in another
 reservation.
+.TP
+\fIMAGNETIC\fR
+This flag allows jobs to be considered for this reservation even if they didn't
+request it.
 .TP
 \fINO_HOLD_JOBS_AFTER\fR
 By default, when a reservation ends the reservation request will be removed from
@@ -1812,13 +1828,16 @@ reservation.
 .TP
 \fIPART_NODES\fR
 This flag can be used to reserve all nodes within the specified
-partition.  PartitionName and Nodes=ALL must be specified or
-this option is ignored.
+partition.  PartitionName and Nodes=ALL must be specified with this flag.
 .TP
-\fIPURGE_COMP\fR
-Purge the reservation once the last associated job has completed.
-Once the reservation has been created, it must be populated within 5 minutes
-of its start time or it will be purged before any jobs have been run.
+\fIPURGE_COMP\fR[=<timespec>]
+Purge the reservation if it is ever idle for timespec (no jobs associated with
+it).  If timespec isn't given then 5 minutes is the default.
+Valid timespec formats are minutes, minutes:seconds,
+hours:minutes:seconds, days\-hours, days\-hours:minutes,
+days\-hours:minutes:seconds.  Time resolution is one minute and
+second values are rounded up to the next minute. Output format is always
+[days\-]hours:minutes:seconds.
 .TP
 \fIREPLACE\fR
 Nodes which are DOWN, DRAINED, or allocated to jobs are automatically
@@ -1827,6 +1846,9 @@ This option can be used to maintain a constant number of idle resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify
 specific nodes to be included in the reservation.
+
+\fBNOTE\fR: Removing a node from the cluster while in a reservation with the
+\fIREPLACE\fR flag will not cause it to be replaced.
 .TP
 \fIREPLACE_DOWN\fR
 Nodes which are DOWN or DRAINED are automatically replenished using idle resources.
@@ -1834,6 +1856,9 @@ This option can be used to maintain a constant sized pool of resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify
 specific nodes to be included in the reservation.
+
+\fBNOTE\fR: Removing a node from the cluster while in a reservation with the
+\fIREPLACE_DOWN\fR flag will not cause it to be replaced.
 .TP
 \fISPEC_NODES\fR
 Reservation is for specific nodes (output only)
@@ -1846,7 +1871,7 @@ and one goes down the reservation will select a new node to fill the spot.
 \fITIME_FLOAT\fR
 The reservation start time is relative to the current time and moves forward
 through time (e.g. a StartTime=now+10minutes will always be 10 minutes in the
-future).
+future). Repeating (e.g. DAILY) floating reservations are not supported.
 .TP
 \fIWEEKDAY\fR
 Repeat the reservation at the same time on every weekday (Monday, Tuesday,
@@ -1874,12 +1899,31 @@ advanced reservation should include 4 nodes with ALL of the features "knl",
 Value may be cleared with blank data value, "Features=".
 
 .TP
+\fIGroups\fP=<group list>
+List of groups permitted to use the reserved nodes, for example
+"Group=bio,chem".
+A new reservation must specify Users or Groups and/or Accounts.
+If both Users/Groups and Accounts are specified, a job must match both in order
+to use the reservation.
+Unlike users groups do not allow denied access to reservations.
+You can add or remove individual groups from an existing reservation by
+using the update command and adding a '+' or '\-' sign before the '=' sign.
+NOTE: Groups and Users are mutually exclusive in reservations, if you want to
+switch between the 2 you must update the reservation with a group='' or user=''
+and fill in the opposite with the appropriate setting.
+
+.TP
+\fISkip\fR
+Used on a reoccurring reservation, skip to the next reservation iteration.
+\fBNOTE\fR: Only available for update.
+
+.TP
 \fIUsers\fP=<user list>
 List of users permitted to use the reserved nodes, for example
 "User=jones1,smith2".
-A new reservation must specify Users and/or Accounts.
-If both Users and Accounts are specified, a job must match both in order to
-use the reservation.
+A new reservation must specify Users or Groups and/or Accounts.
+If both Users/Groups and Accounts are specified, a job must match both in order
+to use the reservation.
 Users can also be denied access to reservations by preceding all of the
 user names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "User=-jones1,-smith2" or "User-=jones1,smith2"
@@ -1889,6 +1933,9 @@ using the update command and adding a '+' or '\-' sign before the '=' sign.
 If users are denied access to a reservation (user name preceded by a '\-'),
 then all other users are implicitly allowed to use the reservation and it is
 not possible to also explicitly specify allowed users.
+NOTE: Groups and Users are mutually exclusive in reservations, if you want to
+switch between the 2 you must update the reservation with a group='' or user=''
+and fill in the opposite with the appropriate setting.
 
 .TP
 \fITRES\fP=<tres_spec>
@@ -1918,27 +1965,23 @@ Licenses and BurstBuffer parameters respectively.  Also CPU represents
 CoreCnt, in a reservation and will be adjusted if you have threads per
 core on your nodes.
 
-.TP
-\fBSPECIFICATIONS FOR SHOW COMMAND, LAYOUTS\fR
-.PP
-Without options, lists all configured layouts. With a layout specified,
-shows entities with following options:
+Note that a reservation that contains nodes or cores is associated with
+one partition, and can't span resources over multiple partitions.
+The only exception from this is when
+the reservation is created with explicitly requested nodes.
 
-.TP
-\fIKey\fP=<value>
-Keys/Values to update for the entities. The format must respect the layout.d
-configuration files. Key=Type cannot be updated. One Key/Value is required,
-several can be set.
-.TP
-\fIEntity\fP=<value>
-Entities to show, default is not used. Can be set to "*".
-.TP
-\fIType\fP=<value>
-Type of entities to show, default is not used.
-.TP
-\fInolayout\fP
-If not used, only entities with defining the tree are shown.
-With the option, only leaves are shown.
+.SH "PERFORMANCE"
+.PP
+Executing \fBscontrol\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBscontrol\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBscontrol\fR or other Slurm client commands that send remote
+procedure calls to \fBslurmctld\fR from loops in shell scripts or other
+programs. Ensure that programs limit calls to \fBscontrol\fR to the minimum
+necessary for the information you are trying to gather.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP
@@ -1975,6 +2018,10 @@ Same as \fB\-\-clusters\fR
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
 .TP
+\fBSLURM_CONF_OUT\fR
+When running 'write config', the location of the Slurm configuration file to be
+written.
+.TP
 \fBSLURM_TIME_FORMAT\fR
 Specify the format used to report time stamps. A value of \fIstandard\fR, the
 default value, generates output in the form "year\-month\-dateThour:minute:second".
@@ -1995,7 +2042,7 @@ default value is unlimited.
 
 .SH "AUTHORIZATION"
 
-When using the Slurm db, users who have AdminLevel's defined (Operator
+When using SlurmDBD, users who have an AdminLevel defined (Operator
 or Admin) and users who are account coordinators are given the
 authority to view and modify jobs, reservations, nodes, etc., as
 defined in the following table \- regardless of whether a PrivateData
@@ -2144,7 +2191,6 @@ details.
 /etc/slurm.conf
 .SH "SEE ALSO"
 \fBscancel\fR(1), \fBsinfo\fR(1), \fBsqueue\fR(1),
-\fBslurm_checkpoint\fR (3),
 \fBslurm_create_partition\fR (3),
 \fBslurm_delete_partition\fR (3),
 \fBslurm_load_ctl_conf\fR (3),

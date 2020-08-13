@@ -1,25 +1,13 @@
 man3_MANS = slurm_hostlist_create.3 \
 	slurm_hostlist_destroy.3 \
 	slurm_hostlist_shift.3 \
-	slurm_allocate_pack_job_blocking.3 \
+	slurm_allocate_het_job_blocking.3 \
 	slurm_allocate_resources.3 \
 	slurm_allocate_resources_blocking.3 \
 	slurm_allocation_lookup.3 \
 	slurm_allocation_msg_thr_create.3 \
 	slurm_allocation_msg_thr_destroy.3 \
 	slurm_api_version.3 \
-	slurm_checkpoint.3 \
-	slurm_checkpoint_able.3 \
-	slurm_checkpoint_complete.3 \
-	slurm_checkpoint_create.3 \
-	slurm_checkpoint_disable.3 \
-	slurm_checkpoint_enable.3 \
-	slurm_checkpoint_error.3 \
-	slurm_checkpoint_failed.3 \
-	slurm_checkpoint_restart.3 \
-	slurm_checkpoint_task_complete.3 \
-	slurm_checkpoint_tasks.3 \
-	slurm_checkpoint_vacate.3 \
 	slurm_clear_trigger.3 \
 	slurm_complete_job.3 \
 	slurm_confirm_allocation.3 \
@@ -47,7 +35,6 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_get_errno.3 \
 	slurm_get_job_steps.3 \
 	slurm_get_rem_time.3 \
-	slurm_get_select_jobinfo.3 \
 	slurm_get_triggers.3 \
 	slurm_init_update_front_end_msg.3 \
 	slurm_init_job_desc_msg.3 \
@@ -78,8 +65,8 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_load_reservations.3 \
 	slurm_load_slurmd_status.3 \
 	slurm_notify_job.3 \
-	slurm_pack_job_lookup.3 \
-	slurm_pack_job_will_run.3 \
+	slurm_het_job_lookup.3 \
+	slurm_het_job_will_run.3 \
 	slurm_perror.3 \
 	slurm_pid2jobid.3 \
 	slurm_ping.3 \
@@ -140,5 +127,3 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_update_partition.3 \
 	slurm_update_reservation.3 \
 	slurm_update_step.3
-
-EXTRA_DIST = $(man3_MANS)

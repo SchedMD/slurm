@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test change to maximum running task count in a job array.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2015 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -30,18 +26,14 @@
 ############################################################################
 source ./globals
 
-set test_id       "28.10"
 set exit_code     0
 set array_size    4
 set file_script   "test$test_id.sh"
 set job_id        0
 set task_limit    1
 
-print_header $test_id
-
 if {[get_array_config] < [expr $array_size + 1]} {
-	send_user "\nWARNING: MaxArraySize is too small\n"
-	exit 0
+	skip "MaxArraySize is too small"
 }
 
 # Submit a job array with 4 elements
@@ -54,11 +46,11 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		send_user "\nFAILURE: sbatch did not submit jobs\n"
+		log_error "sbatch did not submit jobs"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		log_error "sbatch not responding"
 		set exit_code 1
 	}
 	eof {
@@ -66,14 +58,12 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch did not submit jobs\n"
-	exit 1
+	fail "sbatch did not submit jobs"
 }
 
 if {[wait_for_job ${job_id}_0 "RUNNING"] != 0} {
-	send_user "\nFAILURE: waiting for job to start\n"
 	cancel_job $job_id
-	exit 1
+	fail "Waiting for job to start"
 }
 
 set inx 0
@@ -88,7 +78,7 @@ while { $inx < 10 } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			log_error "scontrol not responding"
 			set exit_code 1
 		}
 		eof {
@@ -96,10 +86,10 @@ while { $inx < 10 } {
 		}
 	}
 	if {$run_count > $task_limit} {
-		send_user "\nFAILURE: too many tasks in the job array are running ($run_count > $task_limit)\n"
+		log_error "Too many tasks in the job array are running ($run_count > $task_limit)"
 		set exit_code 1
 	}
-	send_user "\n+++ $run_count running tasks +++\n"
+	log_debug "+++ $run_count running tasks +++"
 	if {$run_count == 0} {
 		break
 	}
@@ -108,7 +98,7 @@ while { $inx < 10 } {
 		spawn $scontrol update jobid=$job_id arraytaskthrottle $task_limit
 		expect {
 			timeout {
-				send_user "\nFAILURE: scontrol not responding\n"
+				log_error "scontrol not responding"
 				set exit_code 1
 			}
 			eof {
@@ -120,11 +110,11 @@ while { $inx < 10 } {
 }
 
 if {[cancel_job $job_id] != 0} {
-	set exit_code 1
+	fail "Unable to cancel job ($job_id)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_script
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

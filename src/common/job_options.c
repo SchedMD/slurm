@@ -48,11 +48,9 @@
 
 #define JOB_OPTIONS_PACK_TAG "job_options"
 
-struct job_options {
-#ifndef NDEBUG
 #define JOB_OPTIONS_MAGIC 0xa1a2a3a4
+struct job_options {
 	int magic;
-#endif  /* !NDEBUG */
 	List options;
 	ListIterator iterator;
 };
@@ -113,7 +111,7 @@ job_options_t job_options_create (void)
 {
 	job_options_t j = xmalloc (sizeof (*j));
 
-	xassert (j->magic = JOB_OPTIONS_MAGIC);
+	j->magic = JOB_OPTIONS_MAGIC;
 
 	j->options = list_create ((ListDelF) job_option_info_destroy);
 	j->iterator = list_iterator_create (j->options);
@@ -131,7 +129,7 @@ void job_options_destroy (job_options_t opts)
 
 	FREE_NULL_LIST (opts->options);
 
-	xassert (opts->magic = ~JOB_OPTIONS_MAGIC);
+	opts->magic = ~JOB_OPTIONS_MAGIC;
 	xfree (opts);
 	return;
 }

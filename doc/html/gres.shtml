@@ -33,9 +33,8 @@ For more details, see <a href="slurm.conf.html#OPT_GresTypes">GresTypes</a> and 
 </P>
 
 <P>Note that the GRES specification for each node works in the same fashion
-as the other resources managed. Depending upon the value of the
-<I>FastSchedule</I> parameter, nodes which are found to have fewer resources
-than configured will be placed in a DOWN state.</P>
+as the other resources managed. Nodes which are found to have fewer resources
+than configured will be placed in a DRAIN state.</P>
 
 <P>Snippet from an example <I>slurm.conf</I> file:</P>
 <PRE>
@@ -48,12 +47,28 @@ NodeName=tux[0-7] Gres=gpu:tesla:2,gpu:kepler:2,mps:400,bandwidth:lustre:no_cons
 file describing which resources are available on the node, their count,
 associated device files and cores which should be used with those resources.</P>
 
-<P>In the case of GPUs, if AutoDetect=nvml in <I>gres.conf</I> and the NVML
-library is installed on the node and was present during Slurm
-configuration, the missing configuration details will be automatically gathered
-using the NVML library.
-Configuration information about all other generic resource must explicitly be
-described in the <I>gres.conf</I> file.
+<p>There are cases where you may want to define a Generic Resource on a node
+without specifying a quantity of that GRES. For example, the filesystem type
+of a node doesn't decrease in value as jobs run on that node.
+You can use the <b>no_consume</b> flag to allow users to request a GRES
+without having a defined count that gets used as it is requested.</p>
+
+<P>If <i>AutoDetect=nvml</i> is set in <I>gres.conf</I>,
+and the <i>NVIDIA Management Library</i> (NVML) is installed on the node and was
+found during Slurm configuration, configuration details will automatically be
+filled in for any system-detected NVIDIA GPU. This removes the need to
+explicitly configure GPUs in gres.conf, though the <i>Gres=</i> line in
+slurm.conf is still required in order to tell slurmctld how many GRES to expect.
+</P>
+
+<P>By default, all system-detected devices are added to the node.
+However, if <i>Type</i> and <i>File</i> in gres.conf match a GPU on
+the system, any other properties explicitly specified (e.g.
+<i>Cores</i> or <i>Links</i>) can be double-checked against it.
+If the system-detected GPU differs from its matching GPU configuration, then the
+GPU is omitted from the node with an error.
+This allows <i>gres.conf</i> to serve as an optional sanity check and notifies
+administrators of any unexpected changes in GPU properties.
 </P>
 
 <P>
@@ -73,8 +88,18 @@ Name=mps Count=200  File=/dev/nvidia0
 Name=mps Count=200  File=/dev/nvidia1
 Name=mps Count=100  File=/dev/nvidia2
 Name=mps Count=100  File=/dev/nvidia3
-Name=bandwidth Type=lustre Count=4G
+Name=bandwidth Type=lustre Count=4G Flags=CountOnly
 </PRE>
+
+<p> In this example, since <i>AutoDetect=nvml</i> is specified, <i>Cores</i>
+for each GPU will be checked against a corresponding GPU found on the system
+matching the <i>Type</i> and <i>File</i> specified.
+Since <i>Links</i> is not specified, it will be automatically filled in
+according to what is found on the system.
+If a matching system GPU is not found, no validation takes place and the GPU is
+assumed to be as the configuration says.
+</p>
+
 <!-------------------------------------------------------------------------->
 <a id="Running_Jobs"></a>
 <h2>Running Jobs</h2>
@@ -84,13 +109,13 @@ requested at job submit time using the options:</P>
 <DL>
 <DT><I>--gres</I></DT>
 <DD>Generic resources required per node</DD>
-<DT><I>--gpu</I></DT>
+<DT><I>--gpus</I></DT>
 <DD>GPUs required per job</DD>
-<DT><I>--gpu-per-node</I></DT>
+<DT><I>--gpus-per-node</I></DT>
 <DD>GPUs required per node. Equivalent to the <I>--gres</I> option for GPUs.</DD>
-<DT><I>--gpu-per-socket</I></DT>
+<DT><I>--gpus-per-socket</I></DT>
 <DD>GPUs required per socket. Requires the job to specify a task socket.</DD>
-<DT><I>--gpu-per-task</I></DT>
+<DT><I>--gpus-per-task</I></DT>
 <DD>GPUs required per task. Requires the job to specify a task count.</DD>
 </DL>
 
@@ -204,7 +229,7 @@ For more information see the
 <a href="prolog_epilog.html">Prolog and Epilog Guide</a>.</p>
 
 <p>When possible, Slurm automatically determines the GPUs on the system using
-NVIDIA's NVML library. The NVML library (which powers the
+NVML. NVML (which powers the
 <code class="commandline">nvidia-smi</code> tool) numbers GPUs in order by their
 PCI bus IDs. For this numbering to match the numbering reported by CUDA, the
 <code class="commandline">CUDA_DEVICE_ORDER</code> environmental variable must
@@ -332,7 +357,7 @@ It also records the GPU device ID in a local file.
 If a job is allocated gres/gpu resources then the Prolog will have the
 <code class="commandline">CUDA_VISIBLE_DEVICES</code> and
 <code class="commandline">SLURM_JOB_UID</code> environment variables set
-(no CUDA_MPS_ACTIVE_THREAD_PERCENTAGE).
+(no <code class="commandline">CUDA_MPS_ACTIVE_THREAD_PERCENTAGE</code>).
 The Prolog should then terminate any MPS server associated with that GPU.
 It may be necessary to modify this script as needed for the local environment.
 For more information see the
@@ -363,11 +388,19 @@ GPUs then trigger the starting of an MPS server based upon comments in the job.
 For example, if a job is allocated whole GPUs then search for a comment of
 "mps-per-gpu" or "mps-per-node" in the job (using the "scontrol show job"
 command) and use that as a basis for starting one MPS daemon per GPU or across
-all GPUs repectively.</p>
+all GPUs respectively.</p>
 
 <p>Please consult the
 <a href="https://docs.nvidia.com/deploy/pdf/CUDA_Multi_Process_Service_Overview.pdf">
 NVIDIA Multi-Process Service documentation</a> for more information about MPS.</p>
+
+<p>
+Note that a vulnerability exists in previous versions of the NVIDIA driver that
+may affect users when sharing GPUs. More information can be found in
+<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-6260">
+CVE-2018-6260</a> and in the
+<a href="https://nvidia.custhelp.com/app/answers/detail/a_id/4772">
+Security Bulletin: NVIDIA GPU Display Driver - February 2019</a>.</p>
 
 <!-------------------------------------------------------------------------->
 <a id="MIC_Management"></a>
@@ -397,6 +430,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 12 April 2019</p>
+<p style="text-align: center;">Last modified 23 July 2020</p>
 
 <!--#include virtual="footer.txt"-->

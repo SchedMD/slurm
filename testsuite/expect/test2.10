@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate scontrol oneliner mode (--oneliner option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,10 +28,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "2.10"
 set exit_code   0
-
-print_header $test_id
 
 #
 # Report all slurm nodes, multi-line (default) mode
@@ -48,7 +41,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -56,7 +49,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol show node command failed\n"
+	log_error "scontrol show node command failed"
 	set exit_code 1
 }
 
@@ -71,7 +64,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -79,11 +72,9 @@ expect {
 	}
 }
 if {$matches != 0} {
-	send_user "\nFAILURE: scontrol --oneliner mode failed\n"
-	set exit_code 1
+	fail "scontrol --oneliner mode failed"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

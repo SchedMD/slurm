@@ -7,7 +7,8 @@ https://www.schedmd.com/downloads.php</a>.<br>
 Slurm has also been packaged for
 <a href="https://packages.debian.org/search?keywords=slurm-wlm">Debian</a> and
 <a href="http://packages.ubuntu.com/search?keywords=slurm-wlm">Ubuntu</a>
-(named <i>slurm-wlm</i> or <i>slurm-llnl</i> depending upon the version) and
+(named <i>slurm-wlm</i> or <i>slurm-llnl</i> depending upon the version),
+<a href="https://apps.fedoraproject.org/packages/slurm">Fedora</a>, and
 <a href="http://www.pkgsrc.org">NetBSD</a> (in pkgsrc) and
 <a href="http://www.freshports.org/sysutils/slurm-wlm/">FreeBSD</a>.</p>
 
@@ -42,14 +43,6 @@ to non-interactive applications, like batch systems (Slurm, LSF, Torque, etc.).
 It includes a plugin for the Slurm workload manager. AUKS is not used as
 an authentication plugin by the Slurm code itself, but provides a mechanism
 for the application to manage Kerberos V credentials.</li>
-</ul><br>
-
-<li><b>Checkpoint/Restart</b></li>
-<ul>
-<li><a href="http://dmtcp.sourceforge.net/">
-<b>DMTCP (Distributed MultiThreaded CheckPointing)</a></b></li>
-<li><a href="https://computation.llnl.gov/project/scr/">
-<b>Scalable Checkpoint/Restart (SCR) for MPI</a></b></li>
 </ul><br>
 
 <li><b>Databases</b> can be used to store accounting information.
@@ -100,8 +93,9 @@ and "rack[0-3]_blade[0-63]" are not supported).</li><br>
 <li><b>Interactive Script</b><br>
 A wrapper script that makes it very simple to get an interactive shell on a
 cluster. Download the code from:<br>
-<a href="https://github.com/alanorth/hpc_infrastructure_scripts/blob/master/slurm/interactive">
-https://github.com/alanorth/hpc_infrastructure_scripts/blob/master/slurm/interactive</a></li><br>
+<a href="https://github.com/ilri/hpc-infrastructure-scripts/blob/master/slurm/interactive">
+https://github.com/ilri/hpc-infrastructure-scripts/blob/master/slurm/interactive
+</a></li><br>
 
 <li><b>Interconnect</b> plugins (Switch plugin)</li>
 <ul>
@@ -178,12 +172,6 @@ probably do not want to recommend.
 <li><a href="http://pypi.python.org/pypi/slurchemy">slurchemy</a> provides
 SQL Alchemy bindings for your slurmdbd database.</li>
 -->
-
-<li><a href="http://www.lua.org/">Lua</a> may be used to implement a
-Slurm process tracking plugin.
-The Lua script available in <i>contribs/lua/protrack.lua</i>
-implements containers using CPUSETs.
-</ul><br>
 
 <li><b>SPANK Plugins</b><br>
 SPANK provides a very generic interface for stackable plug-ins which
@@ -344,7 +332,7 @@ easy and elegantly manner.
 </ul></li><br>
 
 <li><a name="json"><b>JSON</b></a><br>
-Some Slurm plugins (burst_buffer/datawarp and power/cray) plugins
+Some Slurm plugins (burst_buffer/datawarp and power/cray_aries) plugins
 parse JSON format data.
 These plugins are designed to make use of the JSON-C library for this purpose.
 Instructions for the build are as follows:
@@ -391,6 +379,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 7 March 2019</p>
+<p style="text-align:center;">Last modified 17 June 2020</p>
 
 <!--#include virtual="footer.txt"-->

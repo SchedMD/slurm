@@ -3,8 +3,8 @@ use ExtUtils::MakeMaker;
 
 
 if (!(-e "@prefix@/lib/libslurm.so") && !(-e "@top_builddir@/src/api/.libs/libslurm.so")) {
-	die("I can't seem to find the library files I need in your SLURM installation.
-Please check that you have SLURM installation has at least one of the
+	die("I can't seem to find the library files I need in your Slurm installation.
+Please check that you have Slurm installation has at least one of the
 following link(s):
 
    @top_builddir@/src/api/.libs/libslurm.so

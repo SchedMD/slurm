@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test for proper handling of different rank end times
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Morris <jette@schedmd.com>
@@ -29,39 +25,35 @@
 ############################################################################
 source ./globals
 
-set test_id	"38.15"
 set exit_code	0
 set file_in	"test$test_id.input"
 set prompt	"PROMPT: "
 set timeout	60
 
-print_header $test_id
-
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+    skip "This test is incompatible with front-end systems"
 }
-if {[test_pack_step] == 0} {
-	send_user "\nWARNING: heterogeneous steps not currently supported\n"
-	exit $exit_code
+if {[test_hetjob_step] == 0} {
+	skip "Heterogeneous steps not currently supported"
 }
 
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
+set nb_nodes [get_node_cnt_in_part]
 if {$nb_nodes < 3} {
-	send_user "\nWARNING: Need 3 or more nodes in default partition\n"
-	exit $exit_code
+	skip "Need 3 or more nodes in default partition"
 }
 
 proc end_it { exit_code } {
-	global pack_job_id scancel
-	if {$pack_job_id > 0} {
-		exec $scancel $pack_job_id
+	global het_job_id scancel
+	if {$het_job_id > 0} {
+		exec $scancel $het_job_id
 	}
-	exit $exit_code
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	}
+	pass
 }
 
-set pack_job_id 0
+set het_job_id 0
 set component(0) 0
 set matches 0
 set index 0
@@ -69,7 +61,7 @@ set timeout $max_job_delay
 spawn $salloc -t1 -N1 : -N1 : -N1 $bin_bash
 expect {
 	-re "job ($number) has been allocated resources" {
-		set pack_job_id $expect_out(1,string)
+		set het_job_id $expect_out(1,string)
 		send "export PS1=\"$prompt\"\r"
 		exp_continue
 	}
@@ -78,18 +70,18 @@ expect {
 		exp_continue
 	}
 	-re "$prompt" {
-		#send_user "Job initiated\n"
+		#log_debug "Job initiated"
 	}
 	timeout {
-		log_error "salloc : allocation not granted in $timeout seconds\n"
+		log_error "salloc: allocation not granted in $timeout seconds"
 		end_it 1
 	}
 	eof {
 		wait
 	}
 }
-if {$pack_job_id == 0} {
-	log_error "salloc failure\n"
+if {$het_job_id == 0} {
+	log_error "salloc failure"
 	end_it 1
 }
 
@@ -97,22 +89,21 @@ make_bash_script $file_in "
 #!/usr/bin/env bash
 sleep_time=`expr 3 - \$SLURM_PROCID`
 sleep \$sleep_time
-env | grep SLURMD
+env | grep SLURMD_NODENAME
 "
 
 set matches 0
-send "$srun --label --mpi=none --pack-group=0-2 $file_in\r"
+send "$srun --label --mpi=none --het-group=0-2 $file_in\r"
 expect {
-	-re "($number): SLURMD" {
+	-re "($number): SLURMD_NODENAME" {
 		incr matches
 		exp_continue
 	}
 	-re "$prompt" {
-		send_user "\n\n"
 		#break
 	}
 	timeout {
-		log_error "srun not responding\n"
+		log_error "srun not responding"
 		end_it 1
 	}
 	eof {
@@ -120,7 +111,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	log_error "srun output failure ($matches != 3)\n"
+	log_error "srun output failure ($matches != 3)"
 	end_it 1
 }
 
@@ -128,22 +119,21 @@ make_bash_script $file_in "
 #!/usr/bin/env bash
 sleep_time=`expr \$SLURM_PROCID`
 sleep \$sleep_time
-env | grep SLURMD
+env | grep SLURMD_NODENAME
 "
 
 set matches 0
-send "$srun --label --mpi=none --pack-group=0-2 $file_in\r"
+send "$srun --label --mpi=none --het-group=0-2 $file_in\r"
 expect {
-	-re "($number): SLURMD" {
+	-re "($number): SLURMD_NODENAME" {
 		incr matches
 		exp_continue
 	}
 	-re "$prompt" {
-		send_user "\n\n"
 		#break
 	}
 	timeout {
-		log_error "srun not responding\n"
+		log_error "srun not responding"
 		end_it 1
 	}
 	eof {
@@ -151,14 +141,14 @@ expect {
 	}
 }
 if {$matches != 3} {
-	log_error "srun output failure ($matches != 3)\n"
+	log_error "srun output failure ($matches != 3)"
 	end_it 1
 }
 
 send "exit\r"
 expect {
 	timeout {
-		log_error "srun not responding\n"
+		log_error "srun not responding"
 		end_it 1
 	}
 	eof {
@@ -167,5 +157,4 @@ expect {
 }
 
 exec $bin_rm -f $file_in
-send_user "\nSUCCESS\n"
 end_it 0

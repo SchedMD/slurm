@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of salloc verbose mode (-v option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,12 +28,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.6"
 set exit_code   0
 set tasks       0
 set verbosity   0
-
-print_header $test_id
 
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
@@ -67,11 +60,10 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -83,11 +75,10 @@ expect {
 	}
 }
 if {$verbosity != 2} {
-	send_user "\nFAILURE: Did not report job id with verbosity on\n"
+	log_error "Did not report job id with verbosity on"
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

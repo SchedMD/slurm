@@ -148,8 +148,7 @@ static void _opt_default()
 	static slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	uid_t uid = getuid();
 
-	opt.user = uid_to_string(uid);
-	if (xstrcmp(opt.user, "nobody") == 0)
+	if (!(opt.user = uid_to_string_or_null(uid)))
 		fatal("Invalid user id: %u", uid);
 
 	opt.uid = uid;

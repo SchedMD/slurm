@@ -20,7 +20,7 @@ abbreviation for the type of node selection algorithm. We recommend, for example
 memory, etc. within nodes. This plugin is recommended for systems with
 many non-parallel programs sharing nodes. For more information see
 <a href=cons_res.html>Consumable Resources in Slurm</a>.</li>
-<li><b>cray</b> &mdash; Cray XE and XT system node selector. Note that this
+<li><b>cray_aries</b> &mdash; Cray XE and XT system node selector. Note that this
 plugin not only selects the nodes for a job, but performs some initialization
 and termination functions for the job. This plugin also serves as a wrapper
 for the <i>select/linear</i> plugin which enforces various limits and
@@ -147,7 +147,7 @@ the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
 <h3>State Initialization Functions</h3>
 
-<p class="commandline">int select_p_node_init (struct node_record *node_ptr, int node_cnt);</p>
+<p class="commandline">int select_p_node_init(node_record_t *node_ptr, int node_cnt);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the initialization of the
 node record data structure. This function is called by the slurmctld daemon
 when the node records are initially established and again when any nodes are
@@ -224,7 +224,7 @@ previously allocated for select plugin specific information about a node.</p>
 <span class="commandline"> nodeinfo</span>&nbsp; &nbsp;&nbsp;(input/output) The buffer to be freed.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
 
-<p class="commandline">int int select_p_select_nodeinfo_set(struct job_record *job_ptr);</p>
+<p class="commandline">int int select_p_select_nodeinfo_set(job_record_t *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Reset select plugin specific
 information about a job. Called by slurmctld daemon after that job's state has
 been restored (at startup) or job has been scheduled.</p>
@@ -265,7 +265,7 @@ but actually registered with 2GB of memory.</p>
 of the node in reference to the entire system.<br>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
 
-<p class="commandline">bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)</p>
+<p class="commandline">bool select_p_node_ranking(node_record_t *node_ptr, int node_cnt)</p>
 <p style="margin-left:.2in"><b>Description</b>: This function is called by the slurmctld
 daemon at start time to set node rank information for recording the nodes to
 optimize application performance. </p>
@@ -277,7 +277,7 @@ of nodes configured on the system.</p>
 <p style="margin-left:.2in"><b>Returns</b>: true if node rank information has
 been set.</p>
 
-<p class="commandline">int select_p_update_node_state (struct node_record *node_ptr);</p>
+<p class="commandline">int select_p_update_node_state(node_record_t *node_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: push a node state change
 into the plugin. The index should be the index from the slurmctld of
 the entire system.</p>
@@ -398,7 +398,7 @@ to the select plugin specific information about a job.<br>
 <p style="margin-left:.2in"><b>Returns</b>: Pointer to a string on success or NULL on failure.
 Call xfree() to release the memory allocated for the return value.</p>
 
-<p class="commandline">int select_p_job_test (struct job_record *job_ptr,
+<p class="commandline">int select_p_job_test(job_record_t *job_ptr,
 bitstr_t *bitmap, uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes, uint32_t mode,
 List preemption_candidates, List *preempted_jobs, bitstr_t *exc_core_bitmap);</p>
 <p style="margin-left:.2in"><b>Description</b>: Given a job's scheduling requirement
@@ -452,7 +452,7 @@ bitmap of cores held for advanced reservations.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR .</p>
 
-<p class="commandline">int select_p_job_begin (struct job_record *job_ptr);</p>
+<p class="commandline">int select_p_job_begin(job_record_t *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the initiation of the specified job
 is about to begin. This function is called immediately after
 <span class="commandline">select_p_job_test()</span> successfully completes for this job.
@@ -465,7 +465,7 @@ nodes which have already been selected for this job to use.</p>
 the plugin should return SLURM_ERROR, which causes the job to be requeued for
 later execution.</p>
 
-<p class="commandline">int select_p_job_ready (struct job_record *job_ptr);</p>
+<p class="commandline">int select_p_job_ready(job_record_t *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Test if resources are configured
 and ready for job execution.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
@@ -476,7 +476,7 @@ nodes which have already been selected for this job to use. </p>
 <p style="margin-left:.2in"><b>Returns</b>: 1 if the job may begin execution,
 0 otherwise.</p>
 
-<p class="commandline">int select_p_job_fini (struct job_record *job_ptr);</p>
+<p class="commandline">int select_p_job_fini(job_record_t *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the termination of the
 specified job. This function is called as the termination process for the
 job begins (prior to killing the tasks).</p>
@@ -488,7 +488,7 @@ nodes which were selected for this job to use.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
-<p class="commandline">int select_p_job_signal (struct job_record *job_ptr,
+<p class="commandline">int select_p_job_signal(job_record_t *job_ptr,
 int signal);</p>
 <p style="margin-left:.2in"><b>Description</b>: Signal the specified job.
 This is needed for architectures where the job steps are launched by a
@@ -502,7 +502,7 @@ be sent to the job.</p>
 failure, the plugin should return a Slurm error code.</p>
 
 
-<p class="commandline">int select_p_job_mem_confirm (struct job_record *job_ptr);</p>
+<p class="commandline">int select_p_job_mem_confirm(job_record_t *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Confirm that a job's memory
 allocation is still valid after a node is restarted. This is an issue if the
 job is allocated all of the memory on a node and that node is restarted with a
@@ -515,7 +515,7 @@ to the job to be validated.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
 failure, the plugin should return a Slurm error code.</p>
 
-<p class="commandline">int select_p_job_suspend (struct job_record *job_ptr,
+<p class="commandline">int select_p_job_suspend(job_record_t *job_ptr,
 bool indf_susp);</p>
 <p style="margin-left:.2in"><b>Description</b>: Suspend the specified job.
 Release resources for use by other jobs.</p>
@@ -531,7 +531,7 @@ scheduling.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
 failure, the plugin should return a Slurm error code.</p>
 
-<p class="commandline">int select_p_job_resume (struct job_record *job_ptr,
+<p class="commandline">int select_p_job_resume(job_record_t *job_ptr,
 bool indf_susp);</p>
 <p style="margin-left:.2in"><b>Description</b>: Resume the specified job
 which was previously suspended.</p>
@@ -553,8 +553,8 @@ select plugin to expand jobs.</p>
 <p style="margin-left:.2in"><b>Returns</b>: True if job expansion is
 supported, otherwise false.</p>
 
-<p class="commandline">int select_p_job_expand (struct job_record *from_job_ptr,
-struct job_record *to_job_ptr);</p>
+<p class="commandline">int select_p_job_expand(job_record_t *from_job_ptr,
+job_record_t *to_job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Transfer all resources
 currently allocated to one job to another job. One job is left with no
 allocated resources and the other job is left with the resources previously
@@ -567,8 +567,8 @@ to the job getting all of the resources previously either job.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
 failure, the plugin should return a Slurm error code.</p>
 
-<p class="commandline">int select_p_job_resized (struct job_record *job_ptr,
-struct node_record *node_ptr);</p>
+<p class="commandline">int select_p_job_resized(job_record_t *job_ptr,
+node_record_t *node_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Remove the specified node
 from the job's allocation.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -583,7 +583,7 @@ failure, the plugin should return a Slurm error code.</p>
 
 <h3>Step-Specific Functions</h3>
 
-<p class="commandline">bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
+<p class="commandline">bitstr_t *select_p_step_pick_nodes(job_record_t *job_ptr,
 select_jobinfo_t *step_jobinfo, uint32_t node_count)</p>
 <p style="margin-left:.2in"><b>Description</b>: If the select plugin needs to
 select nodes for a job step, then do so here.<br>
@@ -603,13 +603,13 @@ bitmap of the nodes allocated to the job step, otherwise return NULL and the
 logic within the slurmctld daemon will select the nodes to be allocated to
 the job step.</p>
 
-<p class="commandline">int select_p_step_finish(struct step_record *step_ptr, bool killing_step)</p>
+<p class="commandline">int select_p_step_finish(step_record_t *step_ptr, bool killing_step)</p>
 <p style="margin-left:.2in"><b>Description</b>: Note that a job step is completing execution</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> step_ptr</span>&nbsp; &nbsp;&nbsp;(input)
 Pointer to the step which has completed execution.<br>
 <span class="commandline"> killing_step</span>&nbsp; &nbsp;&nbsp;(input)
-True if we are begining the termination of the step (for example, when SIGKILL is being sent);
+True if we are beginning the termination of the step (for example, when SIGKILL is being sent);
 False if the termination of the step has completed (all processes have exited).</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
@@ -641,7 +641,7 @@ be used for an advanced reservation.</p>
 <h3>Get Information Functions</h3>
 
 <p class="commandline">int select_p_get_info_from_plugin(enum select_plugindata_info dinfo,
-struct job_record *job_ptr, void *data);</p>
+job_record_t *job_ptr, void *data);</p>
 <p style="margin-left:.2in"><b>Description</b>: Get plugin-specific information
 about a job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -674,6 +674,6 @@ Only used by Cray ALPS at present.
 elements in each dimension of the system size.</p>
 
 
-<p style="text-align:center;">Last modified 14 June 2018</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of srun --open-mode (truncate or append) option.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.17"
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
@@ -41,8 +36,6 @@ set login_grp_info       ""
 set got_job_grps         0
 set got_login_grps       0
 set got_sleep_err        0
-
-print_header $test_id
 
 #
 # Delete left-over stdin/out/err files
@@ -70,11 +63,10 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun --input=$file_in --output=$file_out --error=$file_err --open-mode=t -t1 $bin_bash]
 expect {
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -87,7 +79,7 @@ if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
 		-re "INITIAL_VALUE" {
-			send_user "\nFAILURE: stdout file not truncated\n"
+			log_error "Stdout file not truncated"
 			set exit_code 1
 		}
 		-re "$login_grp_info" {
@@ -101,7 +93,7 @@ if {[wait_for_file $file_out] == 0} {
 }
 
 if {$got_job_grps != 1} {
-	send_user "\nFAILURE: User and group ID info missing from stdout\n"
+	log_error "User and group ID info missing from stdout"
 	set exit_code 1
 }
 
@@ -112,11 +104,11 @@ if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
 		-re "INITIAL_VALUE" {
-			send_user "\nFAILURE: stderr file not truncated\n"
+			log_error "stderr file not truncated"
 			set exit_code 1
 		}
 		-re "$sleep_error_message" {
-			send_user "\nNo worries, this error is expected\n"
+			log_debug "No worries, this error is expected"
 			incr got_sleep_err
 			exp_continue
 		}
@@ -130,14 +122,13 @@ if {[wait_for_file $file_err] == 0} {
 	}
 }
 if {$got_sleep_err != 1} {
-	send_user "\nFAILURE: Unexpected stderr contents\n"
+	log_error "Unexpected stderr contents"
 	set exit_code 1
 }
 
 if {$exit_code != 0} {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-
 
 #
 # Spawn a shell via srun that uses stdin/out/err in append mode
@@ -147,11 +138,10 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun --input=$file_in --output=$file_out --error=$file_err --open-mode=a -t1 $bin_bash]
 expect {
 	-re "Unable to contact" {
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -174,7 +164,7 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$got_job_grps != 2} {
-	send_user "\nFAILURE: User and group ID info missing from stdout\n"
+	log_error "User and group ID info missing from stdout"
 	set exit_code 1
 }
 
@@ -186,7 +176,7 @@ if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
 		-re "$sleep_error_message" {
-			send_user "\nNo worries, this error is expected\n"
+			log_debug "No worries, this error is expected"
 			incr got_sleep_err
 			exp_continue
 		}
@@ -200,13 +190,13 @@ if {[wait_for_file $file_err] == 0} {
 	}
 }
 if {$got_sleep_err != 2} {
-	send_user "\nFAILURE: Unexpected stderr contents\n"
+	log_error "Unexpected stderr contents"
 	set exit_code 1
 }
 
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

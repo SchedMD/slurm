@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr modify limits for nested accounts with multiple users
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2017 SchedMD LLC.
 # Written by Marshall Garey <marshall@schedmd.com>
@@ -30,7 +26,6 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "21.38"
 set exit_code   0
 set tc1         "test$test_id-cluster-1"
 set ta1         "test$test_id-account.1"
@@ -108,20 +103,17 @@ proc _clean_exit { exit_code } {
 	incr exit_code [remove_user "" "" "$tu1,$tu2"]
 	incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
 	incr exit_code [remove_cluster "$tc1"]
-	if {$exit_code == 0} {
-		print_success $test_id
-	} else {
-		send_user "\nFAILURE\n"
+	if {$exit_code != 0} {
+		fail "Test failed due to previous errors"
 	}
-	exit $exit_code
+	pass
 }
 
 #
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 # Make sure we have a clean system
@@ -129,8 +121,7 @@ remove_user "" "" "$tu1,$tu2"
 remove_acct "" "$ta1,$ta2"
 remove_cluster "$tc1"
 if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
-	exit $exit_code
+	skip "Not authorized to perform this test"
 }
 
 # Add the cluster
@@ -169,7 +160,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"]
 expect {
 	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		log_error "There was a problem with the sacctmgr command"
 		incr exit_code
 	}
 	-re "(($ta1|$ta2|$ta3)\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1\\|$prio1)" {
@@ -177,7 +168,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code
 	}
@@ -186,7 +177,7 @@ expect {
 	}
 }
 if {$matches != 9} {
-	send_user "\nFAILURE:  Account modification 1 incorrect with only $matches out of 9.\n\n"
+	log_error "Account modification 1 incorrect with only $matches out of 9"
 	incr exit_code
 	[_clean_exit $exit_code]
 }
@@ -202,7 +193,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"]
 expect {
 	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr list assoc command\n"
+		log_error "There was a problem with the sacctmgr list assoc command"
 		incr exit_code
 	}
 	-re "(($ta1|$ta3)\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1\\|$prio1)|($ta2\\|($tu1|$tu2){0,6}\\|cpu=$cpusval2\\|$prio2)" {
@@ -210,7 +201,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE:sacctmgr list associations not responding\n\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code
 		[_clean_exit $exit_code]
@@ -220,7 +211,7 @@ expect {
 	}
 }
 if {$matches != 9} {
-	send_user "\nFAILURE:  Account modification 2 incorrect with only $matches out of 9.\n\n"
+	log_error "Account modification 2 incorrect with only $matches out of 9"
 	incr exit_code
 	[_clean_exit $exit_code]
 }
@@ -236,7 +227,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres"]
 expect {
 	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr list assoc command\n"
+		log_error "There was a problem with the sacctmgr list assoc command"
 		incr exit_code
 	}
 	-re "($ta1\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1)|($ta2\\|($tu1|$tu2){0,6}\\|cpu=$cpusval2,node=$nodesval)|($ta3\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1,node=$nodesval)" {
@@ -244,7 +235,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE:sacctmgr list associations not responding\n\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code
 	}
@@ -253,7 +244,7 @@ expect {
 	}
 }
 if {$matches != 9} {
-	send_user "\nFAILURE:  Account modification 3 incorrect with only $matches out of 9.\n\n"
+	log_error "Account modification 3 incorrect with only $matches out of 9"
 	incr exit_code
 	[_clean_exit $exit_code]
 }
@@ -275,7 +266,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"]
 expect {
 	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr list assoc command\n"
+		log_error "There was a problem with the sacctmgr list assoc command"
 		incr exit_code
 	}
 	-re "(($ta1|$ta3)\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1\\|$prio1)|($ta2\\|($tu1){0,6}\\|cpu=$cpusval3\\|$prio3)|($ta2\\|($tu2){0,6}\\|cpu=$cpusval2\\|$prio2)" {
@@ -283,7 +274,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE:sacctmgr list associations not responding\n\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code
 	}
@@ -292,7 +283,7 @@ expect {
 	}
 }
 if {$matches != 9} {
-	send_user "\nFAILURE:  Account modification 4 incorrect with only $matches out of 9.\n\n"
+	log_error "Account modification 4 incorrect with only $matches out of 9"
 	incr exit_code
 	[_clean_exit $exit_code]
 }
@@ -311,7 +302,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"]
 expect {
 	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr list assoc command\n"
+		log_error "There was a problem with the sacctmgr list assoc command"
 		incr exit_code
 	}
 	-re "(($ta1|$ta3)\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1\\|$prio1)|($ta2\\|($tu1|$tu2){0,6}\\|cpu=$cpusval2\\|$prio2)" {
@@ -319,7 +310,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE:sacctmgr list associations not responding\n\n"
+		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
 		incr exit_code
 	}
@@ -328,7 +319,7 @@ expect {
 	}
 }
 if {$matches != 9} {
-	send_user "\nFAILURE:  Account modification 5 incorrect with only $matches out of 9.\n\n"
+	log_error "Account modification 5 incorrect with only $matches out of 9"
 	incr exit_code
 	[_clean_exit $exit_code]
 }

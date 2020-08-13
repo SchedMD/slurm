@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test of running non-existent job, confirm timely termination.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,14 +28,10 @@
 ############################################################################
 source ./globals
 
-set test_id              "15.18"
 set exit_code            0
 
-print_header $test_id
-
 if {[test_front_end] != 0 && [test_super_user] == 0} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
+	skip "This test is incompatible with front-end systems"
 }
 
 #
@@ -55,12 +47,12 @@ expect {
 		exp_continue
 	}
 	-re "Unable to exec command|Unable to find command" {
-		send_user "\nNo worries, this error is expected\n"
+		log_debug "No worries, this error is expected"
 		set matches 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
+		log_error "salloc not responding"
 		if {$job_id != 0} {
 			cancel_job $job_id
 		}
@@ -72,11 +64,9 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: unexpected output from bad job name\n"
-	set exit_code 1
+	fail "Unexpected output from bad job name"
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

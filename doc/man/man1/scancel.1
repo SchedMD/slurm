@@ -1,4 +1,4 @@
-.TH scancel "1" "Slurm Commands" "June 2018" "Slurm Commands"
+.TH scancel "1" "Slurm Commands" "July 2020" "Slurm Commands"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
@@ -16,7 +16,7 @@ job array element will be cancelled.
 If the job ID of a job array is specified without an array ID value then all
 job array elements will be cancelled.
 While a heterogeneous job is in pending state, only the entire job can be
-cancelled rather than it's individual components.
+cancelled rather than its individual components.
 A request to cancel an individual component of a heterogeneous job not in
 pending state will return an error.
 After the job has begun execution, the individual component can be cancelled.
@@ -32,18 +32,24 @@ Restrict the scancel operation to jobs under this charge account.
 
 .TP
 \fB\-b\fR, \fB\-\-batch\fR
-Signal only the batch step (the shell script), but not any other steps
-nor any children of the shell script. This is useful when the shell
-script has to trap the signal and take some application defined action.
-This is not applicable if \fIstep_id\fR is specified.
+By default, signals other than SIGKILL are not sent to the batch step (the shell
+script). With this option \fBscancel\fR signals only the batch step, but not
+any other steps.
+This is useful when the shell script has to trap the signal and take some
+application defined action.
+Note that most shells cannot handle signals while a command is running (child
+process of the batch step), the shell use to wait wait until the command ends to
+then handle the signal. Children of the batch step are not signaled with this
+option, use \fB\-f\fR, \fB\-\-full\fR instead.
+NOTE: If used with \fB\-f\fR, \fB\-\-full\fR, this option ignored.
+NOTE: This option is not applicable if \fIstep_id\fR is specified.
 NOTE: The shell itself may exit upon receipt of many signals.
 You may avoid this by explicitly trap signals within the shell
 script (e.g. "trap <arg> <signals>"). See the shell documentation
 for details.
-Also see the \fB\-f\fR, \fB\-\-full\fR option.
 
 .TP
-\fB-\-ctld\fR
+\fB\-\-ctld\fR
 Send the job signal request to the slurmctld daemon rather than directly to the
 slurmd daemons. This increases overhead, but offers better fault tolerance.
 This is the default behavior on architectures using front end nodes (e.g.
@@ -51,10 +57,15 @@ Cray ALPS computers) or when the \fB\-\-clusters\fR option is used.
 
 .TP
 \fB\-f\fR, \fB\-\-full\fR
-Signal all steps associated with the job including any batch step (the shell
-script plus all of its child processes).
-By default, signals other than SIGKILL are not sent to the batch step.
-Also see the \fB\-b\fR, \fB\-\-batch\fR option.
+By default, signals other than SIGKILL are not sent to the batch step (the shell
+script). With this option \fBscancel\fR signals also the batch script and its
+children processes.
+Most shells cannot handle signals while a command is running (child process of
+the batch step), the shell use to wait until the command ends to then
+handle the signal. Unlike \fB\-b\fR, \fB\-\-batch\fR, children of the batch step
+are also signaled with this option.
+NOTE: srun steps are also children of the batch step, so steps are also signaled
+with this option.
 
 .TP
 \fB\-\-help\fR
@@ -70,7 +81,7 @@ Interactive mode. Confirm each job_id.step_id before performing the cancel opera
 
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
-Clusters to issue commands to.
+Cluster to issue commands to. Implies \fB\-\-ctld\fR.
 Note that the SlurmDBD must be up for this option to work properly.
 
 .TP
@@ -166,6 +177,19 @@ When \fB\-\-batch\fR is not used but \fB\-\-signal\fR is used,
 then all job steps will be signaled, but the batch script itself
 will not be signaled.
 
+.SH "PERFORMANCE"
+.PP
+Executing \fBscancel\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBscancel\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBscancel\fR or other Slurm client commands that send remote
+procedure calls to \fBslurmctld\fR from loops in shell scripts or other
+programs. Ensure that programs limit calls to \fBscancel\fR to the minimum
+necessary for the information you are trying to gather.
+
 .SH "ENVIRONMENT VARIABLES"
 .PP
 Some \fBscancel\fR options may be set via environment variables. These
@@ -213,6 +237,9 @@ environment variables, along with their corresponding options, are listed below.
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.TP
+\fBSLURM_CLUSTERS\fR
+\fB\-M\fR, \fB\-\-clusters\fR
 
 .SH "NOTES"
 .LP
@@ -239,9 +266,9 @@ may then be used for post processing.
 
 .SH "AUTHORIZATION"
 
-When using the Slurm db, users who have AdminLevel's defined (Operator
+When using SlurmDBD, users who have an AdminLevel defined (Operator
 or Admin) and users who are account coordinators are given the
-authority to invoke scancel on other user's jobs.
+authority to invoke scancel on other users jobs.
 
 .SH "EXAMPLES"
 .TP

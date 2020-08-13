@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test that scontrol show license is sorted
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2015 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -31,13 +26,10 @@
 ############################################################################
 source ./globals
 
-set test_id         "3.16"
 set exit_code       0
 set lic_a           "lic_a_test$test_id"
 set lic_b           "lic_b_test$test_id"
 set lic_c           "lic_c_test$test_id"
-
-print_header $test_id
 
 set cluster [get_cluster_name]
 
@@ -54,7 +46,7 @@ proc add_lic { license } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not reponding\n"
+			log_error "sacctmgr is not reponding"
 			set exit_code 1
 		}
 		eof {
@@ -63,7 +55,7 @@ proc add_lic { license } {
 	}
 
 	if {$added != 1} {
-		send_user "\nFAILURE: sacctmgr did not add license: $license\n"
+		log_error "sacctmgr did not add license: $license"
 		set exit_code 1
 	}
 }
@@ -80,7 +72,7 @@ proc delete_lic { license } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			log_error "sacctmgr is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -89,20 +81,15 @@ proc delete_lic { license } {
 	}
 
 	if { $deleted != 1 } {
-		send_user "\nFailure: sacctmgr could not delete "
-		send_user "license: $license\n"
+		log_error "sacctmgr could not delete license: $license"
 		set exit_code 1
 	}
 }
 
-print_header $test_id
-
 if { [test_using_slurmdbd] == 0 } {
-        send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
-        exit $exit_code
+        skip "This test can't be run without AccountStorageType=slurmdbd"
 } elseif { [test_super_user] == 0} {
-        send_user "\nWARNING: This test can't be run without superuser permissions\n"
-        exit $exit_code
+        skip "This test can't be run without superuser permissions"
 }
 
 # Add the licenses in random order
@@ -126,7 +113,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -135,15 +122,13 @@ expect {
 }
 
 if { $match != 3 } {
-	send_user "\nFAILURE: licenses are not sorted\n"
-	set exit_code 1
+	fail "Licenses are not sorted"
 }
 
 delete_lic $lic_a
 delete_lic $lic_b
 delete_lic $lic_c
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

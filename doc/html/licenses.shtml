@@ -13,13 +13,13 @@ that are not tied to a specific host but are associated with the entire cluster.
 <ul>
 <li><b>Local Licenses:</b>
 Local licenses are local to the cluster using the
-<it>slurm.conf</it> in which they are configured.
+<i>slurm.conf</i> in which they are configured.
 </li>
 <li><b>Remote Licenses:</b>
 Remote licenses are served by the database and are configured using the
-<it>sacctmgr</it> command. Remote licenses are dynamic in nature as upon running
-the <it>sacctmgr</it> the <it>slurmdbd</it> updates all clusters the licenses
-are assigned to.
+<i>sacctmgr</i> command. Remote licenses are dynamic in nature as upon running
+the <i>sacctmgr</i> command, the <i>slurmdbd</i> updates all clusters the
+licenses are assigned to.
 </li>
 </ul>
 
@@ -67,7 +67,7 @@ licenses to cluster "pdf" and the remaining 30% to cluster "fluid".</p>
 
 <h3>Configuring Slurm for the use case</h3>
 <p>Here we assume that both clusters have been configured correctly in the
-<it>slurmdbd</it> using the <it>sacctmgr</i> command.</p>
+<i>slurmdbd</i> using the <i>sacctmgr</i> command.</p>
 <pre>
 $ sacctmgr show clusters format=cluster,controlhost
    Cluster     ControlHost
@@ -133,7 +133,7 @@ $ sacctmgr add resource name=matlab server=rlm_host
 </pre>
 
 
-<p>The <it>sacctmgr</it> command will now display the grand total
+<p>The <i>sacctmgr</i> command will now display the grand total
 of licenses.
 <pre>
 $ sacctmgr show resource
@@ -152,7 +152,7 @@ $sacctmgr show resource withclusters
 </pre>
 
 <p>The configured licenses are now visible on both clusters using the
-<it>scontrol</it> command.
+<i>scontrol</i> command.
 <pre>
 $ scontrol show lic
 LicenseName=matlab@rlm_host
@@ -220,15 +220,15 @@ $ sacctmgr show resource withclusters
 
 
 <h2>Dynamic licenses</h2>
-<p>When the license counter and percentage is updated using the <it>sacctmgr</it>
+<p>When the license counter and percentage is updated using the <i>sacctmgr</i>
 command, the values are updated in the database and the updated values are sent
 to the slurmctld daemon.
 It is possible for sites to write a script that detects global license counter
 changes due to new licenses being added, or old licenses being removed, and
 updates Slurm. Should the license count decrease, the running jobs will not be
-affected only the dispatch of new job will reflect the new license count.</p>
+affected, only the dispatch of new jobs will reflect the new license count.</p>
 
 
-<p style="text-align:center;">Last modified 2 February 2015</p>
+<p style="text-align:center;">Last modified 25 June 2019</p>
 
 <!--#include virtual="footer.txt"-->

@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of TotalView termination logic for srun.
 #
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
-#
 # Note:    This script generates and then deletes files in the working directory
 #          named test7.5.prog
 ############################################################################
@@ -35,15 +31,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "7.5"
 set exit_code   0
 set file_prog   "test$test_id.prog"
 set matches     0
 set fini_cnt    0
 set usr1cnt     0
 set usr2cnt     0
-
-print_header $test_id
 
 #
 # Delete left-over program and rebuild it
@@ -75,28 +68,28 @@ expect {
 		# sleep to make sure the process is actually running
 		exec $bin_sleep 1
 		exec $bin_kill -TERM $srun_pid
-		send_user "\nSent SIGTERM\n"
+		log_debug "Sent SIGTERM"
 		exp_continue
 	}
 	-re "Received signal" {
-		send_user "\nFAILURE: unexpected signal processed\n"
+		log_error "Unexpected signal processed"
 		set exit_code 1
-		send_user "\nSent SIGTERM\n"
+		log_debug "Sent SIGTERM"
 		exp_continue
 	}
 	-re "WAITING" {
-		send_user "\nFAILURE: job not stopped in debugger mode\n"
+		log_error "Job not stopped in debugger mode"
 		set exit_code 1
-		send_user "\nSent SIGTERM\n"
+		log_debug "Sent SIGTERM"
 		exp_continue
 	}
 	-re "TIME LIMIT" {
-		send_user "\nFAILURE: job not terminated with SIGINT\n"
+		log_error "Job not terminated with SIGINT"
 		set exit_code 1
 		exp_continue
 	}
 	-re "error.*not running" {
-		send_user "\nDon't worry about the error...\n"
+		log_debug "Don't worry about the error.."
 		exp_continue
 	}
 	-re "FINI" {
@@ -104,28 +97,28 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
 	eof {
-		send_user "\nEOF\n"
+		log_debug "EOF"
 		wait
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: srun failed to initialize properly ($matches != 1)\n"
+	log_error "srun failed to initialize properly ($matches != 1)"
 	set exit_code 1
 }
 if {$fini_cnt > 0} {
-	send_user "\nFAILURE: srun failed to terminate properly ($fini_cnt > 0)\n"
+	log_error "srun failed to terminate properly ($fini_cnt > 0)"
 	set exit_code 1
 }
 
 if {$exit_code == 0} {
-	send_user "\n\nSo far, so good\n\n"
+	log_debug "So far, so good"
 } else {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 #
@@ -141,28 +134,28 @@ expect {
 		exec $bin_sleep 1
 		exec $bin_kill -INT $srun_pid
 		exec $bin_kill -INT $srun_pid
-		send_user "\nSent SIGINT * 2\n"
+		log_debug "Sent SIGINT * 2"
 		exp_continue
 	}
 	-re "Received signal" {
-		send_user "\nFAILURE: unexpected signal processed\n"
+		log_error "Unexpected signal processed"
 		set exit_code 1
-		send_user "\nSent SIGTERM\n"
+		log_debug "Sent SIGTERM"
 		exp_continue
 	}
 	-re "WAITING" {
-		send_user "\nFAILURE: job not stopped in debugger mode\n"
+		log_error "Job not stopped in debugger mode"
 		set exit_code 1
-		send_user "\nSent SIGTERM\n"
+		log_debug "Sent SIGTERM"
 		exp_continue
 	}
 	-re "TIME LIMIT" {
-		send_user "\nFAILURE: job not terminated with SIGINT\n"
+		log_error "Job not terminated with SIGINT"
 		set exit_code 1
 		exp_continue
 	}
 	-re "error.*not running" {
-		send_user "\nDon't worry about the error...\n"
+		log_debug "Don't worry about the error.."
 		exp_continue
 	}
 	-re "FINI" {
@@ -170,22 +163,20 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
 	eof {
-		send_user "\nEOF\n"
+		log_debug "EOF"
 		wait
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: srun failed to initialize properly ($matches != 1)\n"
-	set exit_code 1
+	fail "srun failed to initialize properly ($matches != 1)"
 }
 if {$fini_cnt > 0} {
-	send_user "\nFAILURE: srun failed to terminate properly ($fini_cnt > 0)\n"
-	set exit_code 1
+	fail "srun failed to terminate properly ($fini_cnt > 0)"
 }
 
 #
@@ -193,6 +184,6 @@ if {$fini_cnt > 0} {
 #
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_prog
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

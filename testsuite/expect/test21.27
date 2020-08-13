@@ -2,11 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          sacctmgr show problems
-#
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set test_id     "21.27"
 set tc1		"test$test_id-cluster-1"
 set tc2		"test$test_id-cluster-2"
 set ta1		"test$test_id-account.1"
@@ -46,19 +40,15 @@ set tu3		mysql
 set access_err  0
 set timeout     120
 
-print_header $test_id
-
 #
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	skip "This test can't be run without a usable AccountStorageType"
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin.\n"
-	exit 0
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
 #
@@ -66,8 +56,8 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 #
 spawn $sacctmgr -i delete user $tu1,$tu2,$tu3
 expect {
-	 timeout {
-		send_user "\nFAILURE: sacctmgr delete user not responding\n"
+	timeout {
+		log_error "sacctmgr delete user not responding"
 		set exit_code 1
 	}
 	eof {
@@ -78,7 +68,7 @@ expect {
 spawn $sacctmgr -i delete account $ta1,$ta2,$ta3
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr delete account not responding\n"
+		log_error "sacctmgr delete account not responding"
 		set exit_code 1
 	}
 	eof {
@@ -89,7 +79,7 @@ expect {
 spawn $sacctmgr -i delete cluster $tc1,$tc2
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr delete cluster not responding\n"
+		log_error "sacctmgr delete cluster not responding"
 		set exit_code 1
 	}
 	eof {
@@ -104,7 +94,7 @@ expect {
 spawn $sacctmgr -i add cluster $tc1
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add cluster not responding\n"
+		log_error "sacctmgr add cluster not responding"
 		set exit_code 1
 	}
 	eof {
@@ -115,7 +105,7 @@ expect {
 spawn $sacctmgr -i add account $ta1 cluster=$tc1
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add account $ta1 not responding\n"
+		log_error "sacctmgr add account $ta1 not responding"
 		set exit_code 1
 	}
 	eof {
@@ -126,7 +116,7 @@ expect {
 spawn $sacctmgr -i add account $ta2 parent=$ta1 cluster=$tc1
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add account $ta2 not responding\n"
+		log_error "sacctmgr add account $ta2 not responding"
 		set exit_code 1
 	}
 	eof {
@@ -137,7 +127,7 @@ expect {
 spawn $sacctmgr -i add user $tu1 account=$ta1 cluster=$tc1
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add user $tu1 not responding\n"
+		log_error "sacctmgr add user $tu1 not responding"
 		set exit_code 1
 	}
 	eof {
@@ -148,7 +138,7 @@ expect {
 spawn $sacctmgr -i add user $tu2 account=$ta1 cluster=$tc1
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add user $tu2 not responding\n"
+		log_error "sacctmgr add user $tu2 not responding"
 		set exit_code 1
 	}
 	eof {
@@ -159,7 +149,7 @@ expect {
 spawn $sacctmgr -i add user $tu3 account=$ta2 cluster=$tc1
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add user $tu3 not responding\n"
+		log_error "sacctmgr add user $tu3 not responding"
 		set exit_code 1
 	}
 	eof {
@@ -170,7 +160,7 @@ expect {
 spawn $sacctmgr -i delete cluster $tc1
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr delete cluster $tc1  not responding\n"
+		log_error "sacctmgr delete cluster $tc1  not responding"
 		set exit_code 1
 	}
 	eof {
@@ -181,7 +171,7 @@ expect {
 spawn $sacctmgr -i add cluster $tc2
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add cluster $tc2  not responding\n"
+		log_error "sacctmgr add cluster $tc2  not responding"
 		set exit_code 1
 	}
 	eof {
@@ -192,7 +182,7 @@ expect {
 spawn $sacctmgr -i add account $ta3 cluster=$tc2
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add account $ta3  not responding\n"
+		log_error "sacctmgr add account $ta3  not responding"
 		set exit_code 1
 	}
 	eof {
@@ -203,7 +193,7 @@ expect {
 spawn $sacctmgr show problem
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr show problem  not responding\n"
+		log_error "sacctmgr show problem  not responding"
 		set exit_code 1
 	}
 	eof {
@@ -247,7 +237,7 @@ expect {
 		}
 
 		timeout {
-			send_user "\nFAILURE: sacctmgr show not  responding\n"
+			log_error "sacctmgr show not responding"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -257,7 +247,7 @@ expect {
 	}
 
 	if {$matches != 6} {
-		send_user "\nFAILURE: sacctmgr found $matches of 6 problems\n"
+		log_error "sacctmgr found $matches of 6 problems"
 		incr exit_code 1
 	}
 
@@ -268,7 +258,7 @@ expect {
 spawn $sacctmgr -i delete user $tu1,$tu2,$tu3
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr delete users not responding\n"
+		log_error "sacctmgr delete users not responding"
 		set exit_code 1
 	}
 	eof {
@@ -278,7 +268,7 @@ expect {
 spawn $sacctmgr -i delete account $ta1,$ta2,$ta3
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr delete accounts not responding\n"
+		log_error "sacctmgr delete accounts not responding"
 		set exit_code 1
 	}
 	eof {
@@ -288,7 +278,7 @@ expect {
 spawn $sacctmgr -i delete cluster $tc1,$tc2
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr delete clusters not responding\n"
+		log_error "sacctmgr delete clusters not responding"
 		set exit_code 1
 	}
 	eof {
@@ -296,9 +286,6 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	print_success $test_id
-} else {
-	send_user "\nFAILURE\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors"
 }
-exit $exit_code

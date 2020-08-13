@@ -15,7 +15,7 @@ and operation alongside
 
 <p>The plugins are meant to set and update the
 <span class="commandline">site_factor</span> value in the
-<span class="commandline">struct job_record</span> corresponding to a given job.
+<span class="commandline">job_record_t</span> corresponding to a given job.
 Note that the <span class="commandline">site_factor</span> itself is an
 unsigned integer, but uses <span class="commandline">NICE_OFFSET</span> as
 an offset to allow the value to be positive or negative. The plugin itself
@@ -74,7 +74,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 configuration. Called whenever slurmctld is reconfigured.</p>
 <p style="margin-left:.2in"><b>Returns</b>: void</p>
 
-<p class="commandline">void site_factor_p_set(struct job_record *job_ptr)</p>
+<p class="commandline">void site_factor_p_set(job_record_t *job_ptr)</p>
 <p style="margin-left:.2in"><b>Description</b>: Sets the site_priority of the job, if desired.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline">job_ptr</span> (input) pointer to the job record.</p>
@@ -99,6 +99,6 @@ value is left to the site_factor plugin itself.</dd>
 <span class="commandline">site_factor_p_update()</span></dd>
 </dl>
 
-<p style="text-align:center;">Last modified 24 April 2019</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

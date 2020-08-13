@@ -3,10 +3,6 @@
 # Purpose: Test of Slurm functionality
 #          Test that an srun program can move from the foreground to the
 #          background.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -31,15 +27,12 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.68"
 set file_in     "test$test_id.bash"
 set test_timer  "test$test_id.test_timer"
 set test_srun   "test$test_id.test_srun"
 set stop_srun   "test$test_id.stop_srun"
 set job_id      0
 set exit_code   0
-
-print_header $test_id
 
 #remove any remaining files
 exec $bin_rm -f $test_timer $test_srun $file_in $stop_srun
@@ -48,26 +41,34 @@ make_bash_script $test_timer "
 for i in \{1..10\}
 do
 	echo \"time \$i\"
-	sleep 5
+	sleep 3
 done
 echo \"Test finished\"
 "
 
 make_bash_script $stop_srun "
-$bin_sleep 15
-srun_proc=\$(ps -C srun -o pid=)
-echo \"sending job to the background, pid=\$srun_proc\"
+$bin_sleep 10
+srun_proc=\$1
+echo \"suspending job, pid=\$srun_proc\"
 kill -s stop \$srun_proc
 "
 
 make_bash_script $test_srun "
 set -m
-./$stop_srun &
-$srun -v -t1 ./$test_timer
+$srun -v -t1 ./$test_timer &
+./$stop_srun \$! &
+wait
+echo \"sending job to the background\"
 bg
-$bin_sleep 25
+if \[ \$? != 0 \]; then
+	echo \"BG Failed\"
+fi
+$bin_sleep 10
 echo \"sending job to foreground\"
 fg
+if \[ \$? != 0 \]; then
+	echo \"FG Failed\"
+fi
 "
 
 make_bash_script $file_in "
@@ -84,7 +85,7 @@ spawn bash -i $file_in
 expect {
 	-re "sending job to the background" {
 		if {$time_num == 0} {
-			send_user "\nFAILURE: srun is not generating output\n"
+			log_error "srun is not generating output"
 			set exit_code 1
 		}
 		set bg_time_num $time_num
@@ -93,7 +94,7 @@ expect {
 	}
 	-re "sending job to foreground" {
 		if {$time_num == $bg_time_num} {
-			send_user "\nFAILURE: srun is not progressing ($time_num == $bg_time_num)\n"
+			log_error "srun is not progressing ($time_num == $bg_time_num)"
 			set exit_code 1
 		}
 		set fg_match 1
@@ -107,8 +108,18 @@ expect {
 		set fini_match 1
 		exp_continue
 	}
+	-re "BG Failed" {
+		log_error "Failed to find suspended srun job in background"
+		set exit_code 1
+		exp_continue
+	}
+	-re "FG Failed" {
+		log_error "Failed to find background srun job to put in foreground"
+		set exit_code 1
+		exp_continue
+	}
 	timeout {
-		send_user "\nFAILURE: srun is not responding\n"
+		log_error "srun is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -117,27 +128,20 @@ expect {
 }
 
 if {$fg_match != 1} {
-	send_user "\nFAILURE: srun was not sent to the foreground\n"
-	set exit_code 1
+	fail "srun was not sent to the foreground"
 }
 if {$bg_match != 1} {
-	send_user "\nFAILURE: srun was not sent to the background\n"
-	set exit_code 1
+	fail "srun was not sent to the background"
 }
 if {$time_num != 10} {
-	send_user "\nFAILURE: srun is not generating output ($time_num != 10)\n"
-	set exit_code 1
+	fail "srun is not generating output ($time_num != 10)"
 }
 if {$fini_match != 1} {
-	send_user "\nFAILURE: srun did not finish the program submitted\n"
-	set exit_code 1
+	fail "srun did not finish the program submitted"
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $test_timer $test_srun $file_in $stop_srun
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
-
-
-

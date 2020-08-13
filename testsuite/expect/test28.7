@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Confirms job array dependencies.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -30,16 +26,12 @@
 ############################################################################
 source ./globals
 
-set test_id       "28.7"
 set exit_code     0
 set array_size    3
 set top_array_task_id [expr $array_size - 1]
 
-print_header $test_id
-
 if {$array_size > [get_array_config]} {
-	send_user "\nWARNING: MaxArraySize is too small\n"
-	exit 0
+	skip "MaxArraySize is too small"
 }
 
 #
@@ -53,7 +45,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -61,8 +53,7 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 #
@@ -77,7 +68,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -86,13 +77,13 @@ expect {
 	}
 }
 if {$match_job_state != 1} {
-	send_user "\nFAILURE: Dependent job not completed\n"
+	log_error "Dependent job not completed"
 	set exit_code 1
 }
 if {$exit_code != 0} {
-	exit $exit_code
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-send_user "\nSo far, so good\n\n\n"
+log_debug "So far, so good"
 
 #
 # Submit a job array for second dependency test
@@ -105,7 +96,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -113,8 +104,7 @@ expect {
 	}
 }
 if { $job_id == 0 } {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	exit 1
+	fail "sbatch did not submit job"
 }
 
 #
@@ -129,7 +119,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		log_error "srun not responding"
 		slow_kill $srun_pid
 		set exit_code 1
 	}
@@ -138,12 +128,10 @@ expect {
 	}
 }
 if {$match_job_state != $array_size} {
-	send_user "\nFAILURE: Dependent job not completed ($match_job_state != $array_size)\n"
-	set exit_code 1
+	fail "Dependent job not completed ($match_job_state != $array_size)"
 }
 
 cancel_job $job_id
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

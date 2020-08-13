@@ -163,6 +163,7 @@ struct sinfo_parameters {
 	uint32_t cluster_flags;
 	uint32_t convert_flags;
 	bool dead_nodes;
+	bool def_format;
 	bool exact_match;
 	bool federation_flag;
 	bool filtering;

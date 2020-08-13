@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validates that sgather -v (verbose option).
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011-2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -30,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set test_id       "32.11"
 set job_id        0
 set hostname      ""
 set file_in       "test${test_id}.in"
@@ -39,24 +34,18 @@ set sgather_tmp   "/tmp/test${test_id}"
 set sgather_out   "test${test_id}_sgather.out"
 set exit_code     0
 
-print_header $test_id
-
 if {[file executable $sgather] == 0} {
-	send_user "\nWARINING $sgather does not exist\n"
-	exit 0
+	skip "$sgather does not exist"
 }
 
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\m"
-	exit 0
+	skip "This test is incompatible with front-end systems"
 }
 if {[test_multiple_slurmd] != 0} {
-	send_user "\nWARNING: This test is incompatible with multiple slurmd systems\n"
-	exit 0
+	skip "This test is incompatible with multiple slurmd systems"
 }
 if {[slurmd_user_root] == 0} {
-	send_user "\nWARNING: This test is incompatible with SlurmdUser != root\n"
-	exit 0
+	skip "This test is incompatible with SlurmdUser != root"
 }
 
 #
@@ -86,7 +75,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
+		log_error "sbatch is not responding"
 		set exit_code 1
 	}
 	eof {
@@ -94,12 +83,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch job was not submitted\n"
-	exit 1
+	fail "Batch job was not submitted"
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	log_error "Error waiting for job $job_id to complete"
 	cancel_job $job_id
 	set exit_code 1
 }
@@ -131,7 +119,7 @@ if {[wait_for_file $file_out] == 0} {
 			exp_continue
 		}
 		-re "No such file or directory" {
-			send_user "\nError is expected. No worries.\n"
+			log_debug "Error is expected. No worries"
 			incr rm_cnt
 			exp_continue
 		}
@@ -141,20 +129,17 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$verbose != 1} {
-	send_user "\nFAILURE: Failed to honor verbose option ($verbose != 1)\n"
-	set exit_code 1
+	fail "Failed to honor verbose option ($verbose != 1)"
 }
 if {$file_cnt != $node_cnt} {
-	send_user "\nFAILURE: Failed to gather files from all allocated nodes ($file_cnt != $node_cnt)\n"
-	set exit_code 1
+	fail "Failed to gather files from all allocated nodes ($file_cnt != $node_cnt)"
 }
 if {$rm_cnt != $node_cnt} {
-	send_user "\nFAILURE: Failed to remove gathered files from all allocated nodes ($rm_cnt != $node_cnt)\n"
-	set exit_code 1
+	fail "Failed to remove gathered files from all allocated nodes ($rm_cnt != $node_cnt)"
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
-	send_user "\nSUCCESS\n"
+} else {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code

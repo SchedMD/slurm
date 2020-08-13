@@ -57,8 +57,7 @@
 #include "tree.h"
 
 typedef struct pmi2_job_info {
-	uint32_t jobid;  /* Current Slurm job id                      */
-	uint32_t stepid; /* Current step id (or NO_VAL)               */
+	slurm_step_id_t step_id; /* Current step id struct            */
 	uint32_t nnodes; /* number of nodes in current job step       */
 	uint32_t nodeid; /* relative position of this node in job     */
 	uint32_t ntasks; /* total number of tasks in current job      */

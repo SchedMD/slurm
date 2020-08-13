@@ -2,10 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Verify that auth/munge credential is properly validated.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2012 SchedMD LLC.
 # Written by Morris Jette <jette@schedmd.com>
@@ -30,10 +26,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "7.16"
 set exit_code   0
-
-print_header $test_id
 
 #
 # Try to get allocation with bad credential
@@ -51,14 +44,13 @@ proc alloc_job { } {
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nError is expected, no worries.\n"
+			log_debug "Error is expected, no worries"
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding\n"
 			slow_kill [expr 0 - $salloc_pid]
 			cancel_job $job_id
-			exit 1
+			fail "salloc not responding"
 		}
 		eof {
 			wait
@@ -79,7 +71,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		log_error "scontrol not responding"
 		set exit_code 1
 	}
 	eof {
@@ -88,26 +80,20 @@ expect {
 }
 log_user 1
 if {$auth_munge == 0} {
-	send_user "\nWARNING: not running auth/munge, test is not applicable\n"
-	exit $exit_code
+	skip "Not running auth/munge, test is not applicable"
 }
 
 set job_id [alloc_job]
 if {$job_id != 0} {
-	send_user "\nWARNING: Allocation granted with bad Munge credential\n"
-	send_user "WARNING: This happens rarely, when the Slurm test modifies a byte that Munge does not use\n"
-	send_user "WARNING: Try one more time...\n"
+	log_warn "Allocation granted with bad Munge credential. This happens rarely, when the Slurm test modifies a byte that Munge does not use. Try one more time.."
 	sleep 1
 	set job_id [alloc_job]
 	if {$job_id != 0} {
-		send_user "\nFAILURE: Allocation granted with bad Munge credential\n"
-		send_user "FAILURE: This happens rarely, when the Slurm test modifies a byte that Munge does not use\n"
-		exit 1
+		fail "Allocation granted with bad Munge credential. This happens rarely, when the Slurm test modifies a byte that Munge does not use"
 	}
 }
 
-if { $exit_code == 0 } {
-	send_user "\nSUCCESS\n"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-exit $exit_code
 

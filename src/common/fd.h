@@ -112,4 +112,42 @@ extern int wait_fd_readable(int fd, int time_limit);
 /* Wait for a file descriptor to be readable (up to time_limit seconds).
  * Return 0 when readable or -1 on error */
 
+/*
+ * fsync() then close() a file.
+ * Execute fsync() and close() multiple times if necessary and log failures
+ * RET 0 on success or -1 on error
+ */
+extern int fsync_and_close(int fd, const char *file_type);
+
+/*
+ * Sets err to socket error
+ * or returns SLURM_ERROR on error
+ * */
+int fd_get_socket_error(int fd, int *err);
+
+/*
+ * Attempt to resolve file descriptor path
+ * IN fd - open file descriptor to resolve
+ * RET ptr to string (must xfree()) or NULL on failure
+ */
+extern char *fd_resolve_path(int fd);
+
+/*
+ * Set inline Out of Band (OOB) data on socket fd
+ */
+extern void fd_set_oob(int fd, int value);
+
+/*
+ * Dump poll() revents flags to string
+ * IN revents - revents from poll fds array entry
+ * RET string with flags (must xfree())
+ */
+extern char *poll_revents_to_str(const short revents);
+
+/*
+ * Pass an open fd back over a pipe to the parent process.
+ */
+extern void send_fd_over_pipe(int socket, int fd);
+extern int receive_fd_over_pipe(int socket);
+
 #endif /* !_FD_H */

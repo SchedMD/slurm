@@ -4,10 +4,6 @@
 #          Test federated sreport functionality
 #          Use sreport to get cluster usage for the second hour from
 #          configuration set up in test22.1.
-#
-# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
-#          "FAILURE: ..." otherwise with an explanation of the failure, OR
-#          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2008 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -80,15 +76,14 @@ proc inc22_1_fed {} {
 	set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]]
 	set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
 
-	send_user "\nregexes\n"
-	send_user "$cluster.$idle.$down.$alloc.$resv.$reported.\n\n"
+	log_debug "Regexes cluster.$idle.$down.$alloc.$resv.$reported"
 
-	send_user "\nTesting sreport for second hour (Within: inc22.1.fed)\n"
+	log_info "Testing sreport for second hour (Within: inc22.1.fed)"
 	set matches 0
 	spawn $sreport --federation cluster utilization  start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,reported
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.fed)\n"
+			log_error "There was a problem with the sacctmgr command (Within: inc22.1.fed)"
 		    	incr exit_code 1
 		}
 		-re "$cluster.$idle.$down.$alloc.$resv.$reported." {
@@ -96,7 +91,7 @@ proc inc22_1_fed {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc22.1.fed)\n"
+			log_error "sacctmgr archive load not responding (Within: inc22.1.fed)"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -106,8 +101,7 @@ proc inc22_1_fed {} {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sreport didn't give good info 9 $matches. (Within: inc22.1.fed)\n"
-		send_user "we are looking for $cluster.$idle.$down.$alloc.$resv.$reported. (Within inc22.1.fed)\n"
+		log_error "sreport didn't give good info 9 $matches. We are looking for $cluster.$idle.$down.$alloc.$resv.$reported. (Within inc22.1.fed)"
 		incr exit_code 1
 	}
 
@@ -120,7 +114,7 @@ proc inc22_1_fed {} {
 	spawn $sreport --federation cluster AccountUtilizationByUser  start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.fed)\n"
+			log_error "There was a problem with the sacctmgr command (Within: inc22.1.fed)"
 			incr exit_code 1
 		}
 		-re "$cluster.root..$alloc." {
@@ -136,7 +130,7 @@ proc inc22_1_fed {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc22.1.fed)\n"
+			log_error "sacctmgr archive load not responding (Within: inc22.1.fed)"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -146,7 +140,7 @@ proc inc22_1_fed {} {
 	}
 
 	if {$matches != 3} {
-		send_user "\nFAILURE:  sreport didn't give good info 11. (Within: inc22.1.fed)\n"
+		log_error "sreport didn't give good info 11. (Within: inc22.1.fed)"
 		incr exit_code 1
 	}
 
@@ -159,7 +153,7 @@ proc inc22_1_fed {} {
 	spawn $sreport --federation cluster UserUtilizationByWckey  start=$start_str end=$end_str -tsecper -p -n
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.fed)\n"
+			log_error "There was a problem with the sacctmgr command (Within: inc22.1.fed)"
 			incr exit_code 1
 		}
 		-re "$cluster.$user1..$wckey1.$alloc." {
@@ -167,7 +161,7 @@ proc inc22_1_fed {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc22.1.fed)\n"
+			log_error "sacctmgr archive load not responding (Within: inc22.1.fed)"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -177,8 +171,7 @@ proc inc22_1_fed {} {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sreport didn't give good info 12. (Within: inc22.1.fed)\n"
-		send_user "we are looking for $cluster.$user1.$wckey1.$alloc. (Within inc22.1.fed)\n"
+		log_error "sreport didn't give good info 12. (Within: inc22.1.fed). We are looking for $cluster.$user1.$wckey1.$alloc. (Within inc22.1.fed)"
 		incr exit_code 1
 	}
 
@@ -191,7 +184,7 @@ proc inc22_1_fed {} {
 	spawn $sreport --federation cluster WckeyUtilizationByUser  start=$start_str end=$end_str -tsecper -p -n
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.fed)\n"
+			log_error "There was a problem with the sacctmgr command (Within: inc22.1.fed)"
 			incr exit_code 1
 		}
 		-re "$cluster.$wckey1...$alloc." {
@@ -203,7 +196,7 @@ proc inc22_1_fed {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc22.1.fed)\n"
+			log_error "sacctmgr archive load not responding (Within: inc22.1.fed)"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -213,7 +206,7 @@ proc inc22_1_fed {} {
 	}
 
 	if {$matches != 2} {
-		send_user "\nFAILURE:  sreport didn't give good info 13. (Within: inc22.1.fed)\n"
+		log_error "sreport didn't give good info 13. (Within: inc22.1.fed)"
 		incr exit_code 1
 	}
 
@@ -226,7 +219,7 @@ proc inc22_1_fed {} {
 	spawn $sreport --federation user top  start=$start_str end=$end_str -tsecper -p -n
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.fed)\n"
+			log_error "There was a problem with the sacctmgr command (Within: inc22.1.fed)"
 			incr exit_code 1
 		}
 		-re "$cluster.$user1..$account1.$alloc.$idle." {
@@ -234,7 +227,7 @@ proc inc22_1_fed {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc22.1.fed)\n"
+			log_error "sacctmgr archive load not responding (Within: inc22.1.fed)"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -244,8 +237,7 @@ proc inc22_1_fed {} {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sreport didn't give good info 14. (Within: inc22.1.fed)\n"
-		send_user "We expected $cluster.$user1..$account1.$alloc.$idle. \n"
+		log_error "sreport didn't give good info 14. (Within: inc22.1.fed). We expected $cluster.$user1..$account1.$alloc.$idle"
 		incr exit_code 1
 	}
 
@@ -258,7 +250,7 @@ proc inc22_1_fed {} {
 	spawn $sreport --federation job size AcctAsParent grouping=2,4  start=$start_str end=$end_str -tsec -p -n
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.fed)\n"
+			log_error "There was a problem with the sacctmgr command (Within: inc22.1.fed)"
 			incr exit_code 1
 		}
 		-re "$cluster.$account1.0.$alloc_sec.0.100\\.00%." {
@@ -266,7 +258,7 @@ proc inc22_1_fed {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc22.1.fed)\n"
+			log_error "sacctmgr archive load not responding (Within: inc22.1.fed)"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -276,7 +268,7 @@ proc inc22_1_fed {} {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sreport didn't give good info 15 $matches. (Within: inc22.1.fed)\n"
+		log_error "sreport didn't give good info 15 $matches. (Within: inc22.1.fed)"
 		incr exit_code 1
 	}
 
@@ -289,7 +281,7 @@ proc inc22_1_fed {} {
 	spawn $sreport --federation job sizesbywckey grouping=2,4  start=$start_str end=$end_str -tsec -p -n
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.fed)\n"
+			log_error "There was a problem with the sacctmgr command (Within: inc22.1.fed)"
 			incr exit_code 1
 		}
 		-re "$cluster.$wckey1.0.$wckey_alloc_sec.0.100\\.00%." {
@@ -297,7 +289,7 @@ proc inc22_1_fed {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc22.1.fed)\n"
+			log_error "sacctmgr archive load not responding (Within: inc22.1.fed)"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -307,10 +299,9 @@ proc inc22_1_fed {} {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sreport didn't give good info 16 $matches. (Within: inc22.1.fed)\n"
+		log_error "sreport didn't give good info 16 $matches. (Within: inc22.1.fed)"
 		incr exit_code 1
 	}
 
 	return $exit_code
-
 }

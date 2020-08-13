@@ -68,7 +68,7 @@ static int _get_int(const char *my_str)
 	return value;
 }
 
-extern int _process_tbl(s_p_hashtbl_t *tbl)
+static int _process_tbl(s_p_hashtbl_t *tbl)
 {
 	int rc = 0;
 
@@ -115,6 +115,8 @@ extern int acct_gather_conf_init(void)
 	xrealloc(full_options,
 		 ((full_options_cnt + 1) * sizeof(s_p_options_t)));
 
+	tbl = s_p_hashtbl_create(full_options);
+
 	/**************************************************/
 
 	/* Get the acct_gather.conf path and validate the file */
@@ -124,7 +126,6 @@ extern int acct_gather_conf_init(void)
 	} else {
 		debug2("Reading acct_gather.conf file %s", conf_path);
 
-		tbl = s_p_hashtbl_create(full_options);
 		if (s_p_parse_file(tbl, NULL, conf_path, false) ==
 		    SLURM_ERROR) {
 			fatal("Could not open/read/parse acct_gather.conf file "
@@ -297,9 +298,8 @@ extern int acct_gather_check_acct_freq_task(uint64_t job_mem_lim,
 	static uint32_t acct_freq_task = NO_VAL;
 
 	if (acct_freq_task == NO_VAL) {
-		char *acct_freq = slurm_get_jobacct_gather_freq();
-		int i = acct_gather_parse_freq(PROFILE_TASK, acct_freq);
-		xfree(acct_freq);
+		int i = acct_gather_parse_freq(PROFILE_TASK,
+					       slurm_conf.job_acct_gather_freq);
 
 		/* If the value is -1 lets set the freq to something
 		   really high so we don't check this again.

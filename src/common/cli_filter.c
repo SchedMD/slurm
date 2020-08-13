@@ -50,6 +50,7 @@
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/timers.h"
@@ -67,15 +68,14 @@ typedef struct cli_filter_ops {
  * Must be synchronized with cli_filter_ops_t above.
  */
 static const char *syms[] = {
-	"setup_defaults",
-	"pre_submit",
-	"post_submit"
+	"cli_filter_p_setup_defaults",
+	"cli_filter_p_pre_submit",
+	"cli_filter_p_post_submit"
 };
 
 static int g_context_cnt = -1;
 static cli_filter_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
-static char *clifilter_plugin_list = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
@@ -84,12 +84,12 @@ static bool init_run = false;
  *
  * Returns a SLURM errno.
  */
-extern int cli_filter_plugin_init(void)
+extern int cli_filter_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *last = NULL, *names;
 	char *plugin_type = "cli_filter";
-	char *type;
+	char *type, *plugin_list;
 
 	if (init_run && (g_context_cnt >= 0))
 		return rc;
@@ -98,12 +98,11 @@ extern int cli_filter_plugin_init(void)
 	if (g_context_cnt >= 0)
 		goto fini;
 
-	clifilter_plugin_list = slurm_get_cli_filter_plugins();
 	g_context_cnt = 0;
-	if ((clifilter_plugin_list == NULL) || (clifilter_plugin_list[0] == '\0'))
+	if (!slurm_conf.cli_filter_plugins || !slurm_conf.cli_filter_plugins[0])
 		goto fini;
 
-	names = clifilter_plugin_list;
+	names = plugin_list = xstrdup(slurm_conf.cli_filter_plugins);
 	while ((type = strtok_r(names, ",", &last))) {
 		xrecalloc(ops, g_context_cnt + 1, sizeof(cli_filter_ops_t));
 		xrecalloc(g_context, g_context_cnt + 1,
@@ -127,13 +126,14 @@ extern int cli_filter_plugin_init(void)
 		g_context_cnt++;
 		names = NULL; /* for next strtok_r() iteration */
 	}
+	xfree(plugin_list);
 	init_run = true;
 
 fini:
 	slurm_mutex_unlock(&g_context_lock);
 
 	if (rc != SLURM_SUCCESS)
-		cli_filter_plugin_fini();
+		cli_filter_fini();
 
 	return rc;
 }
@@ -143,7 +143,7 @@ fini:
  *
  * Returns a SLURM errno.
  */
-extern int cli_filter_plugin_fini(void)
+extern int cli_filter_fini(void)
 {
 	int i, j, rc = SLURM_SUCCESS;
 
@@ -161,7 +161,6 @@ extern int cli_filter_plugin_fini(void)
 	}
 	xfree(ops);
 	xfree(g_context);
-	xfree(clifilter_plugin_list);
 	g_context_cnt = -1;
 
 fini:
@@ -175,13 +174,16 @@ fini:
  **************************************************************************
  */
 
-extern int cli_filter_plugin_setup_defaults(slurm_opt_t *opt, bool early)
+extern int cli_filter_g_setup_defaults(slurm_opt_t *opt, bool early)
 {
 	DEF_TIMERS;
 	int i, rc;
 
 	START_TIMER;
-	rc = cli_filter_plugin_init();
+
+	if ((rc = cli_filter_init()) != SLURM_SUCCESS)
+	    return rc;
+
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].setup_defaults))(opt, early);
@@ -191,13 +193,16 @@ extern int cli_filter_plugin_setup_defaults(slurm_opt_t *opt, bool early)
 	return rc;
 }
 
-extern int cli_filter_plugin_pre_submit(slurm_opt_t *opt, int offset)
+extern int cli_filter_g_pre_submit(slurm_opt_t *opt, int offset)
 {
 	DEF_TIMERS;
 	int i, rc;
 
 	START_TIMER;
-	rc = cli_filter_plugin_init();
+
+	if ((rc = cli_filter_init()) != SLURM_SUCCESS)
+	    return rc;
+
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].pre_submit))(opt, offset);
@@ -207,14 +212,17 @@ extern int cli_filter_plugin_pre_submit(slurm_opt_t *opt, int offset)
 	return rc;
 }
 
-extern void cli_filter_plugin_post_submit(int offset, uint32_t jobid,
-					  uint32_t stepid)
+extern void cli_filter_g_post_submit(int offset, uint32_t jobid,
+				     uint32_t stepid)
 {
 	DEF_TIMERS;
 	int i, rc;
 
 	START_TIMER;
-	rc = cli_filter_plugin_init();
+
+	if ((rc = cli_filter_init()) != SLURM_SUCCESS)
+	    return;
+
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		(*(ops[i].post_submit))(offset, jobid, stepid);
