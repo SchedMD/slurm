@@ -540,13 +540,23 @@ static int _queue_magnetic_resv(void *x, void *key)
 	return 0;
 }
 
+static int _find_job_with_resv_ptr(void *x, void *key)
+{
+	job_record_t *job_ptr = (job_record_t *) x;
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) key;
+
+	if (job_ptr->resv_id == resv_ptr->resv_id)
+		return 1;
+	return 0;
+}
+
 static int _find_running_job_with_resv_ptr(void *x, void *key)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) key;
 
 	if ((!IS_JOB_FINISHED(job_ptr)) &&
-	    (job_ptr->resv_id == resv_ptr->resv_id))
+	    _find_job_with_resv_ptr(job_ptr, resv_ptr))
 		return 1;
 	return 0;
 }
