@@ -296,7 +296,14 @@ of "rack1" and four nodes must be allocated from nodes with the feature
 modes. For example, while "\fB\-\-constraint=[(knl&quad)*2&(knl&hemi)*4]"\fR is
 not supported, "\fB\-\-constraint=[haswell*2&(knl&hemi)*4]"\fR is supported.
 Specification of multiple KNL modes requires the use of a heterogeneous job.
-
+.TP
+\fBBrackets\fR
+Brackets can be used to indicate that you are looking for a set of nodes with
+the different requirements contained within the brackets. For example,
+\fB--constraint="[(rack1|rack2)*1&(rack3)*2]"\fR will get you one node with
+either the "rack1" or "rack2" features and two nodes with the "rack3" feature.
+The same request without the brackets will try to find a single node that
+meets those requirements.
 .TP
 \fBParenthesis\fR
 Parenthesis can be used to group like node features together. For example
