@@ -1911,13 +1911,13 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			job_record_t *next_job_ptr = NULL;
 			int overlap, rm_job_cnt = 0;
 
+			bit_or(node_bitmap, orig_map);
 			while (true) {
 				tmp_job_ptr = list_next(job_iterator);
 				if (!tmp_job_ptr) {
 					more_jobs = false;
 					break;
 				}
-				bit_or(node_bitmap, orig_map);
 				if (slurm_conf.debug_flags &
 				    DEBUG_FLAG_SELECT_TYPE) {
 					overlap = bit_overlap(node_bitmap,
