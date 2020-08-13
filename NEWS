@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- scontrol - Fix exit code when creating/updating reservations with wrong
     Flags.
  -- When a GRES has a no_consume flag, report 0 for allocated.
+ -- Fix cgroup cleanup by jobacct_gather/cgroup.
 
 * Changes in Slurm 20.02.4
 ==========================
