@@ -3380,7 +3380,6 @@ update_failure:
 	/* Restore backup reservation data */
 	_restore_resv(resv_ptr, resv_backup);
 	_del_resv_rec(resv_backup);
-	info("returning %d", error_code);
 	return error_code;
 }
 
