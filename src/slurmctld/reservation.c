@@ -599,6 +599,40 @@ static int _find_resv_name(void *x, void *key)
 		return 1;	/* match */
 }
 
+static int _foreach_clear_job_resv(void *x, void *key)
+{
+	job_record_t *job_ptr = (job_record_t *) x;
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) key;
+
+	if (!_find_job_with_resv_ptr(job_ptr, resv_ptr))
+		return 0;
+
+	if (!IS_JOB_FINISHED(job_ptr)) {
+		info("%pJ linked to defunct reservation %s, clearing that reservation",
+		     job_ptr, resv_ptr->name);
+	}
+
+	job_ptr->resv_id = 0;
+	job_ptr->resv_ptr = NULL;
+	xfree(job_ptr->resv_name);
+
+	if (!(resv_ptr->flags & RESERVE_FLAG_NO_HOLD_JOBS) &&
+	    IS_JOB_PENDING(job_ptr) &&
+	    (job_ptr->state_reason != WAIT_HELD)) {
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = WAIT_RESV_DELETED;
+		job_ptr->job_state |= JOB_RESV_DEL_HOLD;
+		xstrfmtcat(job_ptr->state_desc,
+			   "Reservation %s was deleted",
+			   resv_ptr->name);
+		debug("%s: Holding %pJ, reservation %s was deleted",
+		      __func__, job_ptr, resv_ptr->name);
+		job_ptr->priority = 0;	/* Hold job */
+	}
+
+	return 0;
+}
+
 static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 {
 
@@ -3407,35 +3441,7 @@ static bool _is_resv_used(slurmctld_resv_t *resv_ptr)
 /* Clear the reservation pointers for jobs referencing a defunct reservation */
 static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 {
-	ListIterator job_iterator;
-	job_record_t *job_ptr;
-
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (job_ptr->resv_ptr != resv_ptr)
-			continue;
-		if (!IS_JOB_FINISHED(job_ptr)) {
-			info("%pJ linked to defunct reservation %s, clearing that reservation",
-			     job_ptr, job_ptr->resv_name);
-		}
-		job_ptr->resv_id = 0;
-		job_ptr->resv_ptr = NULL;
-		xfree(job_ptr->resv_name);
-		if (!(resv_ptr->flags & RESERVE_FLAG_NO_HOLD_JOBS) &&
-		    IS_JOB_PENDING(job_ptr) &&
-		    (job_ptr->state_reason != WAIT_HELD)) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_RESV_DELETED;
-			job_ptr->job_state |= JOB_RESV_DEL_HOLD;
-			xstrfmtcat(job_ptr->state_desc,
-				   "Reservation %s was deleted",
-				    resv_ptr->name);
-			debug("%s: Holding %pJ, reservation %s was deleted",
-			      __func__, job_ptr, resv_ptr->name);
-			job_ptr->priority = 0;	/* Hold job */
-		}
-	}
-	list_iterator_destroy(job_iterator);
+	list_for_each(job_list, _foreach_clear_job_resv, resv_ptr);
 }
 
 static bool _match_user_assoc(char *assoc_str, List assoc_list, bool deny)
