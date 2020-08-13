@@ -1918,12 +1918,19 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 					break;
 				}
 				bit_or(node_bitmap, orig_map);
-				overlap = bit_overlap(node_bitmap,
-						      tmp_job_ptr->node_bitmap);
+				if (slurm_conf.debug_flags &
+				    DEBUG_FLAG_SELECT_TYPE) {
+					overlap = bit_overlap(node_bitmap,
+					                      tmp_job_ptr->
+					                      node_bitmap);
+					info("%pJ: overlap=%d", tmp_job_ptr,
+					      overlap);
+				} else
+					overlap = bit_overlap_any(node_bitmap,
+					                          tmp_job_ptr->
+					                          node_bitmap);
 				if (overlap == 0)  /* job has no usable nodes */
 					continue;  /* skip it */
-				debug2("%pJ: overlap=%d",
-				       tmp_job_ptr, overlap);
 				if (!end_time) {
 					time_t delta = 0;
 
