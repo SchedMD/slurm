@@ -29,8 +29,9 @@
 source ./globals
 
 set debug_get   0
-set debug_set   4
+set debug_set "error"
 set exit_code   0
+set debug_expected "verbose"
 
 if {[test_launch_test_exec]} {
 	skip "This test is incompatible with LaunchParameters=test_exec"
@@ -40,11 +41,10 @@ if {[test_launch_test_exec]} {
 # Submit a slurm job that will bogus executable
 # Debug debug level is 2, value set with --debug has that offset
 #
-set debug_offset [expr $debug_set - 2]
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 --slurmd-debug=$debug_offset -t1 /invalid_executable ]
+set srun_pid [spawn $srun -N1 --slurmd-debug=$debug_set -t1 /invalid_executable ]
 expect {
-	-re "debug level = ($number)" {
+	-re "debug level is \'($re_word_str)\'" {
 		set debug_get $expect_out(1,string)
 		exp_continue
 	}
@@ -55,8 +55,8 @@ expect {
 	}
 }
 
-if {$debug_get != $debug_set} {
-	fail "Did not log at proper level ($debug_get != $debug_set)"
+if {$debug_get != $debug_expected} {
+	fail "Did not log at proper level ($debug_get != $debug_expected)"
 }
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
