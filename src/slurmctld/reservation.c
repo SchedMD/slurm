@@ -138,14 +138,6 @@ typedef struct constraint_slot {
 	uint32_t value;
 } constraint_slot_t;
 
-typedef struct {
-	resv_desc_msg_t *resv_desc_ptr;
-	time_t now;
-	bitstr_t *node_bitmap;
-	bitstr_t **core_bitmap;
-	bool filter_overlap; /* true to remove nodes that overlap */
-} filter_resv_args_t;
-
 /*
  * the associated functions are the following
  */
@@ -4424,31 +4416,26 @@ static int _have_xor_feature(void *x, void *key)
  * Filter out nodes and cores from reservation based on existing
  * reservations.
  */
-int _filter_resv(void *x, void *arg)
+static void _filter_resv(resv_desc_msg_t *resv_desc_ptr,
+			 slurmctld_resv_t *resv_ptr, bitstr_t *node_bitmap,
+			 bitstr_t **core_bitmap, bool filter_overlap)
 {
-	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
-	filter_resv_args_t *args = (filter_resv_args_t *) arg;
-	bitstr_t *node_bitmap = args->node_bitmap;
-	bitstr_t **core_bitmap = args->core_bitmap;
-
-	if (!args->filter_overlap &&
+	if (!filter_overlap &&
 	    ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
 	    (resv_ptr->flags & RESERVE_FLAG_OVERLAP))) {
 		log_flag(RESERVATION, "%s: skipping reservation %s filter for reservation %s",
-			 __func__, resv_ptr->name, args->resv_desc_ptr->name);
-		return 0;
+			 __func__, resv_ptr->name, resv_desc_ptr->name);
+		return;
 	}
-	if (resv_ptr->end_time <= args->now)
-		(void)_advance_resv_time(resv_ptr);
 	if (resv_ptr->node_bitmap == NULL) {
 		log_flag(RESERVATION, "%s: reservation %s has no nodes to filter for reservation %s",
-			 __func__, resv_ptr->name, args->resv_desc_ptr->name);
-		return 0;
+			 __func__, resv_ptr->name, resv_desc_ptr->name);
+		return;
 	}
-	if (!_resv_time_overlap(args->resv_desc_ptr, resv_ptr)) {
+	if (!_resv_time_overlap(resv_desc_ptr, resv_ptr)) {
 		log_flag(RESERVATION, "%s: reservation %s does not overlap in time to filter for reservation %s",
-			 __func__, resv_ptr->name, args->resv_desc_ptr->name);
-		return 0;
+			  __func__, resv_ptr->name, resv_desc_ptr->name);
+		return;
 	}
 	if (!resv_ptr->core_bitmap &&
 	    !(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
@@ -4465,7 +4452,7 @@ int _filter_resv(void *x, void *arg)
 
 			log_flag(RESERVATION, "%s: reservation %s filtered nodes:%s from reservation %s nodes:%s",
 				 __func__, resv_ptr->name, nodes[0],
-				 args->resv_desc_ptr->name, nodes[1]);
+				 resv_desc_ptr->name, nodes[1]);
 
 			xfree(nodes[0]);
 			xfree(nodes[1]);
@@ -4481,15 +4468,13 @@ int _filter_resv(void *x, void *arg)
 
 			log_flag(RESERVATION, "%s: reservation %s filtered cores:%s from reservation %s cores:%s",
 				 __func__, resv_ptr->name, cores[0],
-				 args->resv_desc_ptr->name, cores[1]);
+				 resv_desc_ptr->name, cores[1]);
 
 			xfree(cores[0]);
 			xfree(cores[1]);
 		}
 		bit_or(*core_bitmap, resv_ptr->core_bitmap);
 	}
-
-	return 0;
 }
 
 /*
@@ -4505,16 +4490,14 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			 part_record_t **part_ptr, bitstr_t **resv_bitmap,
 			 bitstr_t **core_bitmap)
 {
+	slurmctld_resv_t *resv_ptr;
 	bitstr_t *node_bitmaps[MAX_BITMAPS] = {0};
 	bitstr_t *core_bitmaps[MAX_BITMAPS] = {0};
 	int max_bitmap = SELECT_ALL_RSVD;
-	filter_resv_args_t filter_args = {
-		.resv_desc_ptr = resv_desc_ptr,
-		.now = time(NULL),
-	};
-
+	time_t now = time(NULL);
 	int rc = SLURM_SUCCESS;
 	bool have_xand = false;
+	ListIterator itr;
 
 	if (*part_ptr == NULL) {
 		*part_ptr = default_part_loc;
@@ -4554,19 +4537,26 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				bit_copy(core_bitmaps[SELECT_ALL_RSVD]);
 	}
 
-	filter_args.node_bitmap = node_bitmaps[SELECT_NOT_RSVD];
-	filter_args.core_bitmap = &core_bitmaps[SELECT_NOT_RSVD];
-	filter_args.filter_overlap = true;
+	/*
+	 * Filter bitmaps based on selection types.
+	 * This needs to be an iterator since _advance_resv_time() may
+	 * eventually call _generate_resv_id() which will deadlock the
+	 * resv_list lock.
+	 */
+	itr = list_iterator_create(resv_list);
+	while ((resv_ptr = list_next(itr))) {
+		if (resv_ptr->end_time <= now)
+			(void)_advance_resv_time(resv_ptr);
 
-	if (list_for_each(resv_list, _filter_resv, &filter_args) < 0)
-		fatal_abort("%s: unexpected error", __func__);
+		_filter_resv(resv_desc_ptr, resv_ptr,
+			     node_bitmaps[SELECT_NOT_RSVD],
+			     &core_bitmaps[SELECT_NOT_RSVD], true);
 
-	filter_args.node_bitmap = node_bitmaps[SELECT_OVR_RSVD];
-	filter_args.core_bitmap = &core_bitmaps[SELECT_OVR_RSVD];
-	filter_args.filter_overlap = false;
-
-	if (list_for_each(resv_list, _filter_resv, &filter_args) < 0)
-		fatal_abort("%s: unexpected error", __func__);
+		_filter_resv(resv_desc_ptr, resv_ptr,
+			     node_bitmaps[SELECT_OVR_RSVD],
+			     &core_bitmaps[SELECT_OVR_RSVD], true);
+	}
+	list_iterator_destroy(itr);
 
 	if (!(resv_desc_ptr->flags & RESERVE_FLAG_MAINT) &&
 	    !(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)) {
