@@ -1,32 +1,22 @@
-sudo: required
-language: c
-dist: trusty
-addons:
-  mariadb: '10.1'
-  apt:
-    packages:
-    - cmake
-    - libmunge-dev
-    - liblua5.2-dev
-    - munge
-    - expect
-    - libhwloc-dev
-    - libnuma1
-    - libnuma-dev
-    - libpam-dev
-    - libhwloc-dev
-    - gdb
-    - valgrind
-    - libfreeipmi-dev
-    - man2html
-compiler:
-  - clang
-  - gcc
-cache: ccache
-before_script:
-  - export PATH=/usr/lib/ccache:$PATH
-  - sudo mount -t tmpfs -o size=1024m tmpfs /tmp
+services:
+  - docker
+
+before_install:
+  - docker build -f Dockerfile.ubuntu -t verilator-ubuntu .
+#  - docker build -f Dockerfile.centos -t verilator-centos .
+
 script:
-  - ./configure --enable-multiple-slurmd --prefix=/tmp/slurm/ > /dev/null
-  - make -j > /dev/null
-  - make -j install > /dev/null
+  - docker run --rm -e PACKAGE_VERSION=${TRAVIS_TAG:-0.0-UNTAGGED} -v $PWD:/usr/src/app verilator-ubuntu ./build-deb.sh
+#  - docker run --rm -e PACKAGE_VERSION=${TRAVIS_TAG:-0.0-UNTAGGED} -v $PWD:/usr/src/app verilator-centos ./build-rpm.sh
+
+deploy:
+  provider: releases
+  api_key:
+    secure: "jr4NxwYNXdG7GfPbTwoIXUeY7NxPFbKfo29CW8tt67dBI+clIN/EhNJKQ05qtS5gvmGamVQxhD5rZ0g2Fb7crJSk3oI6196WcYLTNDvp2pl+IanYyPYRucQdAxwd7L0/uyaz9E74IGfr3tlzzDqvlUhOWEZC6cGiIHL0t2Fi6YRpMzes7o/E4T2TvzRvSs/mqYP4sWpeUjK7NjXjqlbHhOPEGxfTwgY+lglPRmNo4A1nYJK7Kv7uGQJ675ye6aF643uX15W/uwetdEUoa08ObF7GiIsLdiv7NXAZgohoqBXeqoRuax+Xc0af4xn+lD0ix4sFxTqOR/XXawjEeVCpQtFI4knTkMIwyDr78EabLu7efxvBaeIwT3ZPET0ayOLMfFUf0SG7pPMIkrmY8T4TVR2mwzodncn4Ym/rKg1HClI3Pf58B1/+fgnAmqbHfW4KFNrVzBd2/2F4Xz0GCZAB9OoeBmQb044Ixy7ccX/zVgcypLkrY/4mWjx7IMBHC4P8Xpepz7jheWZfBr+HS/aD3U6ErjOkELK/EbECKtO/NBEEQj2KanPsmHU4HhdexhIu1KYyjoq+1p8oczZb5uD4BgwprRZhVNJXlV71G5Rrz5DFT6U0MHkLWJe5QiZtZE+WPRAMrtJWTXFjjDSmEGyNlI10R/qvFiB09LTXDmtPH1Q="
+  file:
+    - slurm_${TRAVIS_TAG}_amd64.deb
+    - slurm_${TRAVIS_TAG}.x86_64.rpm
+  skip_cleanup: true
+  on:
+    repo: sifive/slurm
+    tags: true
