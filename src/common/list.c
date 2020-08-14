@@ -846,7 +846,12 @@ list_find (ListIterator i, ListFindF f, void *key)
 	xassert(key != NULL);
 	xassert(i->magic == LIST_ITR_MAGIC);
 
-	while ((v = list_next(i)) && !f(v,key)) {;}
+	slurm_mutex_lock(&i->list->mutex);
+	xassert(i->list->magic == LIST_MAGIC);
+
+	while ((v = _list_next_locked(i)) && !f(v, key)) {;}
+
+	slurm_mutex_unlock(&i->list->mutex);
 
 	return v;
 }
