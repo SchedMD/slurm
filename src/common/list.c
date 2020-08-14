@@ -766,26 +766,34 @@ list_iterator_destroy (ListIterator i)
 	list_iterator_free(i);
 }
 
-/* list_next()
- */
-void *
-list_next (ListIterator i)
+static void * _list_next_locked(ListIterator i)
 {
 	ListNode p;
-
-	xassert(i != NULL);
-	xassert(i->magic == LIST_ITR_MAGIC);
-	slurm_mutex_lock(&i->list->mutex);
-	xassert(i->list->magic == LIST_MAGIC);
 
 	if ((p = i->pos))
 		i->pos = p->next;
 	if (*i->prev != p)
 		i->prev = &(*i->prev)->next;
 
+	return (p ? p->data : NULL);
+}
+
+/* list_next()
+ */
+void *list_next (ListIterator i)
+{
+	void *rc;
+
+	xassert(i != NULL);
+	xassert(i->magic == LIST_ITR_MAGIC);
+	slurm_mutex_lock(&i->list->mutex);
+	xassert(i->list->magic == LIST_MAGIC);
+
+	rc = _list_next_locked(i);
+
 	slurm_mutex_unlock(&i->list->mutex);
 
-	return (p ? p->data : NULL);
+	return rc;
 }
 
 /* list_peek_next()
