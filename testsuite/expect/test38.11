@@ -34,6 +34,7 @@ set hostlist   ""
 set node1      ""
 set node2      ""
 set prompt	"PROMPT: "
+set pack_job_id 0
 
 proc cleanup { } {
 	global pack_job_id scancel
@@ -51,6 +52,9 @@ if {[test_front_end] != 0} {
 	skip "This test requires that the SlurmdUser be root"
 } elseif {[get_node_cnt] < 2} {
 	skip "This test requires that the configuration has at least 2 nodes"
+}
+if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
+	skip "This test requires SchedulerType = sched/backfill"
 }
 
 set def_part [default_partition]
@@ -73,7 +77,6 @@ if {![string compare $node1 ""] || ![string compare $node2 ""]} {
 	skip "Did not find at least 2 idle nodes"
 }
 
-set pack_job_id 0
 set matches 0
 set index 0
 set timeout $max_job_delay

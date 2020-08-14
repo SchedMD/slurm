@@ -30,6 +30,9 @@ set exit_code	0
 set file_out    test${test_id}.output
 set pack_job_id	0
 
+if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
+	skip "This test requires SchedulerType = sched/backfill"
+}
 if {[test_pack_step] == 0} {
 	skip "Heterogeneous steps not currently supported"
 }

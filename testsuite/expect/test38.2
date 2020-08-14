@@ -33,6 +33,10 @@ set exit_code    0
 set file_in      "test$test_id.in"
 set file_out     "test$test_id.out"
 
+if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
+	skip "This test requires SchedulerType = sched/backfill"
+}
+
 # find out if we have enough nodes to test functionality
 set node_count [get_node_cnt_in_part]
 if { $node_count < 3 } {
