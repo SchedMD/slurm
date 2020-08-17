@@ -75,21 +75,6 @@ function get_select_type_params()
   }
 }
 
-// When generating TaskPluginParam return the parameters that
-// correspond to the checked task_plugin
-function get_task_plugin_param()
-{
-  for (var i=0; i<document.config.task_plugin.length; i++) {
-    if (document.config.task_plugin[i].checked) {
-       if (document.config.task_plugin[i].value == "affinity") {
-	 return "TaskPluginParam=" +
-		get_radio_value(document.config.task_plugin_param)
-       }
-    }
-  }
-  return "#TaskPluginParam="
-}
-
 function hide_box()
 {
    var popup = document.getElementById('out_box');
@@ -153,7 +138,6 @@ function displayfile()
    "SwitchType=switch/" + get_radio_value(document.config.switch_type) + "<br>" +
    get_field("TaskEpilog",document.config.task_epilog) + "<br>" +
    "TaskPlugin=task/" + get_radio_value(document.config.task_plugin) + "<br>" +
-   get_task_plugin_param() + "<br>" +
    get_field("TaskProlog",document.config.task_prolog) + "<br>" +
    "#TopologyPlugin=topology/tree <br>" +
    "#TmpFS=/tmp <br>" +
