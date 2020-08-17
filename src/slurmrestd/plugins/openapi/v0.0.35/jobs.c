@@ -581,10 +581,8 @@ static job_desc_msg_t *_parse_job_desc(const data_t *job, data_t *errors,
 	}
 
 	slurm_init_job_desc_msg(req);
-	if (!update_only) {
+	if (!update_only)
 		req->task_dist = SLURM_DIST_UNKNOWN;
-		req->open_mode = OPEN_MODE_APPEND;
-	}
 
 	if (_fill_job_desc_from_sbatch_opts(&opt, req)) {
 		rc = SLURM_ERROR;

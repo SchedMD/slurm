@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Set new job environment for SLURM_JOB_NAME, SLURM_OPEN_MODE,
     SLURM_JOB_DEPENDENCY, SLURM_PROFILE, SLURM_ACCTG_FREQ, SLURM_NETWORK and
     SLURM_CPU_FREQ_REQ to match sbatch.
+ -- slurmrestd - Avoid defaulting open_mode to append for job submission.
 
 * Changes in Slurm 20.11.0rc2
 ==============================
