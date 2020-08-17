@@ -385,6 +385,10 @@ test7.19   Test sbatch/srun/salloc path resolving
 test7.20   Test lua JobSubmitPlugin
 test7.21   Test spank plugins that link against libslurm
 
+test8.#    Testing of advanced reservation functionality.
+=========================================================
+test8.12   Test reservation with flags=FLEX
+
 test9.#    System stress testing. Exercises all commands and daemons.
 =====================================================================
 test9.1    Stress test of stdin broadcast.
