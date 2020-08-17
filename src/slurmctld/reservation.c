@@ -2824,8 +2824,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 
 	/* If name == NULL or empty string, then generate a name. */
 	if (resv_desc_ptr->name && (resv_desc_ptr->name[0] != '\0')) {
-		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
-				_find_resv_name, resv_desc_ptr->name);
+		resv_ptr = find_resv_name(resv_desc_ptr->name);
 		if (resv_ptr) {
 			info("Reservation request name duplication (%s)",
 			     resv_desc_ptr->name);
@@ -2836,9 +2835,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		xfree(resv_desc_ptr->name);
 		while (1) {
 			_generate_resv_name(resv_desc_ptr);
-			resv_ptr = (slurmctld_resv_t *)
-					list_find_first (resv_list,
-					_find_resv_name, resv_desc_ptr->name);
+			resv_ptr = find_resv_name(resv_desc_ptr->name);
 			if (!resv_ptr)
 				break;
 			rc = _generate_resv_id();	/* makes new suffix */
@@ -2966,8 +2963,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (!resv_desc_ptr->name)
 		return ESLURM_RESERVATION_INVALID;
 
-	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
-			_find_resv_name, resv_desc_ptr->name);
+	resv_ptr = find_resv_name(resv_desc_ptr->name);
 	if (!resv_ptr)
 		return ESLURM_RESERVATION_INVALID;
 
@@ -7076,7 +7072,7 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 	    != SLURM_SUCCESS)
 		goto end_it;
 
-	resv_ptr = list_find_first(resv_list, _find_resv_name, resv_name);
+	resv_ptr = find_resv_name(resv_name);
 
 	if (resv_ptr &&
 	    _validate_user_access(resv_ptr, assoc_list, uid))
