@@ -2076,9 +2076,14 @@ If the number of reserved ports is zero then no ports is reserved.
 Used for OpenMPI. This option applies to job and step allocations.
 
 .TP
-\fB\-\-reservation\fR=<\fIname\fR>
-Allocate resources for the job from the named reservation. This option applies
-to job allocations.
+\fB\-\-reservation\fR=<\fIreservation_names\fR>
+Allocate resources for the job from the named reservation. If the job can use
+more than one reservation, specify their names in a comma separate list and the
+one offering earliest initiation. Each reservation will be considered in the
+order it was requested.
+All reservations will be listed in scontrol/squeue through the life of the job.
+In accounting the first reservation will be seen and after the job starts the
+reservation used will replace it.
 
 .TP
 \fB\-s\fR, \fB\-\-oversubscribe\fR

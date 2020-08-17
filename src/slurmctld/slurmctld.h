@@ -808,6 +808,9 @@ struct job_record {
 	uint16_t restart_cnt;		/* count of restarts */
 	time_t resize_time;		/* time of latest size change */
 	uint32_t resv_id;		/* reservation ID */
+	List resv_list;                 /* Filled in if the job is requesting
+					 * more than one reservation,
+					 * DON'T PACK. */
 	char *resv_name;		/* reservation name */
 	struct slurmctld_resv *resv_ptr;/* reservation structure pointer */
 	uint32_t requid;	    	/* requester user ID */

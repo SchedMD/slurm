@@ -1707,7 +1707,10 @@ static int _attempt_backfill(void)
 		bf_job_priority  = job_queue_rec->priority;
 		bf_array_task_id = job_queue_rec->array_task_id;
 
-		job_queue_rec_magnetic_resv(job_queue_rec);
+		if (job_ptr->resv_list)
+			job_queue_rec_resv_list(job_queue_rec);
+		else
+			job_queue_rec_magnetic_resv(job_queue_rec);
 		xfree(job_queue_rec);
 		if (slurmctld_config.shutdown_time ||
 		    (difftime(time(NULL),orig_sched_start) >= bf_max_time)){

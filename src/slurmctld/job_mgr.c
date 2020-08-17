@@ -4651,6 +4651,34 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 			rc = best_rc;
 		else if (part_limits_rc == WAIT_PART_DOWN)
 			rc = ESLURM_PARTITION_DOWN;
+	} else if (job_ptr->resv_list) {
+		slurmctld_resv_t *resv_ptr;
+		iter = list_iterator_create(job_ptr->resv_list);
+		while ((resv_ptr = list_next(iter))) {
+			job_ptr->resv_ptr = resv_ptr;
+			job_ptr->resv_id = resv_ptr->resv_id;
+			if ((job_ptr->bit_flags & JOB_PART_ASSIGNED) &&
+			    resv_ptr->part_ptr)
+				job_ptr->part_ptr = resv_ptr->part_ptr;
+
+			debug2("Try %pJ on next reservation %s",
+			       job_ptr, resv_ptr->name);
+
+			if (_select_nodes_parts_resvs(job_ptr,
+						      &test_only,
+						      select_node_bitmap,
+						      err_msg,
+						      &best_rc,
+						      &part_limits_rc) !=
+			    SLURM_SUCCESS)
+				break;
+		}
+		list_iterator_destroy(iter);
+		if (best_rc != -1)
+			rc = best_rc;
+		else if (part_limits_rc == WAIT_PART_DOWN)
+			rc = ESLURM_PARTITION_DOWN;
+
 	} else {
 		part_limits_rc = job_limits_check(&job_ptr, false);
 		if (part_limits_rc == WAIT_NO_REASON) {
@@ -9203,6 +9231,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->priority_array);
 	slurm_destroy_priority_factors_object(job_ptr->prio_factors);
 	xfree(job_ptr->resp_host);
+	FREE_NULL_LIST(job_ptr->resv_list);
 	xfree(job_ptr->resv_name);
 	xfree(job_ptr->sched_nodes);
 	for (i = 0; i < job_ptr->spank_job_env_size; i++)
@@ -11292,6 +11321,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	slurmdb_assoc_rec_t *new_assoc_ptr = NULL, *use_assoc_ptr = NULL;
 	slurmdb_qos_rec_t *new_qos_ptr = NULL, *use_qos_ptr = NULL;
 	slurmctld_resv_t *new_resv_ptr = NULL;
+	List new_resv_list = NULL;
 	uint32_t user_site_factor;
 
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
@@ -11696,6 +11726,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			memcpy(&tmp_job_rec, job_ptr, sizeof(job_record_t));
 			tmp_job_rec.resv_name = xstrdup(job_specs->reservation);
 			tmp_job_rec.resv_ptr = NULL;
+			tmp_job_rec.resv_list = NULL;
 			tmp_job_rec.part_ptr = use_part_ptr;
 			tmp_job_rec.qos_ptr = use_qos_ptr;
 			tmp_job_rec.assoc_ptr = use_assoc_ptr;
@@ -11707,6 +11738,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			 * failure will be NULL.
 			 */
 			new_resv_ptr = tmp_job_rec.resv_ptr;
+			new_resv_list = tmp_job_rec.resv_list;
 
 			/*
 			 * Make sure this job isn't using a partition or QOS
@@ -12130,14 +12162,20 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	}
 
 	if (new_resv_ptr) {
+		FREE_NULL_LIST(job_ptr->resv_list);
+		xfree(job_ptr->resv_name);
 		job_ptr->resv_name = xstrdup(new_resv_ptr->name);
+		job_ptr->resv_list = new_resv_list;
+		job_ptr->resv_id = new_resv_ptr->resv_id;
 		job_ptr->resv_ptr = new_resv_ptr;
+
 		sched_info("%s: setting reservation to %s for %pJ", __func__,
 			   job_ptr->resv_name, job_ptr);
 		update_accounting = true;
 	} else if (job_specs->reservation &&
 		   job_specs->reservation[0] == '\0' &&
 		   job_ptr->resv_name) {
+		FREE_NULL_LIST(job_ptr->resv_list);
 		xfree(job_ptr->resv_name);
 		job_ptr->resv_id    = 0;
 		job_ptr->resv_ptr   = NULL;

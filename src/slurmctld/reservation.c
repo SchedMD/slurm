@@ -3919,17 +3919,16 @@ static void _validate_all_reservations(void)
 	/* Validate all job reservation pointers */
 	iter = list_iterator_create(job_list);
 	while ((job_ptr = list_next(iter))) {
+		int rc = SLURM_SUCCESS;
+
 		if (job_ptr->resv_name == NULL)
 			continue;
 
 		if ((job_ptr->resv_ptr == NULL) ||
-		    (job_ptr->resv_ptr->magic != RESV_MAGIC)) {
-			job_ptr->resv_ptr = (slurmctld_resv_t *)
-					list_find_first(resv_list,
-							_find_resv_name,
-							job_ptr->resv_name);
-		}
-		if (!job_ptr->resv_ptr) {
+		    (job_ptr->resv_ptr->magic != RESV_MAGIC))
+			rc = validate_job_resv(job_ptr);
+
+		if (!job_ptr->resv_ptr || (rc != SLURM_SUCCESS)) {
 			error("%pJ linked to defunct reservation %s",
 			       job_ptr, job_ptr->resv_name);
 			job_ptr->resv_id = 0;
@@ -4291,6 +4290,72 @@ unpack_error:
 	return EFAULT;
 }
 
+static int _validate_job_resv_internal(job_record_t *job_ptr,
+				      slurmctld_resv_t *resv_ptr)
+{
+	int rc = _valid_job_access_resv(job_ptr, resv_ptr);
+
+	if (rc == SLURM_SUCCESS) {
+		resv_ptr->idle_start_time = 0;
+		_validate_node_choice(resv_ptr);
+	}
+
+	return rc;
+}
+
+/*
+ * get_resv_list - find record for named reservation(s)
+ * IN name - reservation name(s) in a comma separated char
+ * OUT err_part - The first invalid reservation name.
+ * RET List of pointers to the reservations or NULL if not found
+ * NOTE: Caller must free the returned list
+ * NOTE: Caller must free err_part
+ */
+static int _get_resv_list(job_record_t *job_ptr, char **err_resv)
+{
+	slurmctld_resv_t *resv_ptr;
+	char *token, *last = NULL, *tmp_name;
+	int rc = SLURM_SUCCESS;
+
+	xassert(job_ptr);
+
+	if (!xstrchr(job_ptr->resv_name, ','))
+		return rc;
+
+	tmp_name = xstrdup(job_ptr->resv_name);
+	token = strtok_r(tmp_name, ",", &last);
+	while (token) {
+		resv_ptr = find_resv_name(token);
+		if (resv_ptr) {
+			rc = _validate_job_resv_internal(job_ptr, resv_ptr);
+			if (rc != SLURM_SUCCESS) {
+				FREE_NULL_LIST(job_ptr->resv_list);
+				xfree(*err_resv);
+				*err_resv = xstrdup(token);
+				break;
+			}
+
+			if (!job_ptr->resv_list)
+				job_ptr->resv_list = list_create(NULL);
+			if (!list_find_first(job_ptr->resv_list, _find_resv_ptr,
+					     resv_ptr))
+				list_append(job_ptr->resv_list, resv_ptr);
+		} else {
+			FREE_NULL_LIST(job_ptr->resv_list);
+			rc = ESLURM_RESERVATION_INVALID;
+			if (err_resv) {
+				xfree(*err_resv);
+				*err_resv = xstrdup(token);
+			}
+			break;
+		}
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_name);
+
+	return rc;
+}
+
 /*
  * Determine if a job request can use the specified reservations
  *
@@ -4314,16 +4379,31 @@ extern int validate_job_resv(job_record_t *job_ptr)
 	if (!resv_list)
 		return ESLURM_RESERVATION_INVALID;
 
-	/* Find the named reservation */
-	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
-			_find_resv_name, job_ptr->resv_name);
-	rc = _valid_job_access_resv(job_ptr, resv_ptr);
-	if (rc == SLURM_SUCCESS) {
-		job_ptr->resv_id    = resv_ptr->resv_id;
-		job_ptr->resv_ptr   = resv_ptr;
-		resv_ptr->idle_start_time = 0;
-		_validate_node_choice(resv_ptr);
+	/* Check to see if we have multiple reservations requested */
+	if (xstrchr(job_ptr->resv_name, ',')) {
+		char *tmp_str = NULL;
+
+		rc = _get_resv_list(job_ptr, &tmp_str);
+		if (tmp_str) {
+			error("%pJ requested reservation (%s): %s",
+			      job_ptr, tmp_str, slurm_strerror(rc));
+			xfree(tmp_str);
+		} else /* grab the first on the list to use */
+			resv_ptr = list_peek(job_ptr->resv_list);
+	} else {
+		/* Find the named reservation */
+		resv_ptr = find_resv_name(job_ptr->resv_name);
+		rc = _validate_job_resv_internal(job_ptr, resv_ptr);
 	}
+
+	if (resv_ptr) {
+		job_ptr->resv_id  = resv_ptr->resv_id;
+		job_ptr->resv_ptr = resv_ptr;
+	} else {
+		job_ptr->resv_id = 0;
+		job_ptr->resv_ptr = NULL;
+	}
+
 	return rc;
 }
 
@@ -5453,9 +5533,13 @@ extern int job_test_resv_now(job_record_t *job_ptr)
 	if (job_ptr->resv_name == NULL)
 		return SLURM_SUCCESS;
 
-	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
-			_find_resv_name, job_ptr->resv_name);
-	job_ptr->resv_ptr = resv_ptr;
+	if (!job_ptr->resv_ptr) {
+		rc = validate_job_resv(job_ptr);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	}
+	resv_ptr = job_ptr->resv_ptr;
+
 	rc = _valid_job_access_resv(job_ptr, resv_ptr);
 	if (rc != SLURM_SUCCESS)
 		return rc;
@@ -5494,8 +5578,12 @@ extern void job_claim_resv(job_record_t *job_ptr)
 	if (job_ptr->resv_name == NULL)
 		return;
 
-	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
-			_find_resv_name, job_ptr->resv_name);
+	if (!job_ptr->resv_ptr)
+		/* Don't check for error here, we are ok ignoring it */
+		(void)validate_job_resv(job_ptr);
+
+	resv_ptr = job_ptr->resv_ptr;
+
 	if (!resv_ptr ||
 	    (!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) &&
 	     (resv_ptr->node_cnt > 1)) ||
@@ -6093,9 +6181,13 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 	*node_bitmap = (bitstr_t *) NULL;
 
 	if (job_ptr->resv_name) {
-		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
-				_find_resv_name, job_ptr->resv_name);
-		job_ptr->resv_ptr = resv_ptr;
+		if (!job_ptr->resv_ptr) {
+			rc2 = validate_job_resv(job_ptr);
+			if (rc2 != SLURM_SUCCESS)
+				return rc2;
+		}
+		resv_ptr = job_ptr->resv_ptr;
+
 		rc2 = _valid_job_access_resv(job_ptr, resv_ptr);
 		if (rc2 != SLURM_SUCCESS)
 			return rc2;

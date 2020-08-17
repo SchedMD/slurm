@@ -206,6 +206,21 @@ static double _get_system_usage(void)
 	return sys_usage_per;
 }
 
+static int _queue_resv_list(void *x, void *key)
+{
+	job_queue_req_t *job_queue_req = (job_queue_req_t *) key;
+
+	job_queue_req->resv_ptr = (slurmctld_resv_t *) x;
+
+	if ((job_queue_req->job_ptr->bit_flags & JOB_PART_ASSIGNED) &&
+	    job_queue_req->resv_ptr->part_ptr)
+		job_queue_req->part_ptr = job_queue_req->resv_ptr->part_ptr;
+
+	job_queue_append_internal(job_queue_req);
+
+	return 0;
+}
+
 static void _job_queue_append(List job_queue, job_record_t *job_ptr,
 			      part_record_t *part_ptr, uint32_t prio)
 {
@@ -214,8 +229,19 @@ static void _job_queue_append(List job_queue, job_record_t *job_ptr,
 					  .part_ptr = part_ptr,
 					  .prio = prio };
 
+	/* We have multiple reservations, process and end here */
+	if (job_ptr->resv_list) {
+		list_for_each(job_ptr->resv_list, _queue_resv_list,
+			      &job_queue_req);
+		return;
+	}
+
 	job_queue_append_internal(&job_queue_req);
 
+	/*
+	 * This means we requested a specific reservation, don't do any magnetic
+	 * ones
+	 */
 	if (job_ptr->resv_name)
 		return;
 
@@ -377,6 +403,24 @@ extern void job_queue_rec_magnetic_resv(job_queue_rec_t *job_queue_rec)
 	job_ptr->resv_name = xstrdup(job_ptr->resv_ptr->name);
 	job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
 	job_queue_rec->job_ptr->bit_flags |= JOB_MAGNETIC;
+}
+
+extern void job_queue_rec_resv_list(job_queue_rec_t *job_queue_rec)
+{
+	job_record_t *job_ptr;
+
+	if (!job_queue_rec->resv_ptr)
+		return;
+
+	xassert(job_queue_rec->job_ptr);
+
+	job_ptr = job_queue_rec->job_ptr;
+	job_ptr->resv_ptr = job_queue_rec->resv_ptr;
+	/*
+	 * Do not set the name since we have multiple and we don't want to
+	 * overwrite it.
+	 */
+	job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
 }
 
 /*
@@ -1394,7 +1438,10 @@ next_part:
 			part_ptr = job_queue_rec->part_ptr;
 			job_ptr->priority = job_queue_rec->priority;
 
-			job_queue_rec_magnetic_resv(job_queue_rec);
+			if (job_ptr->resv_list)
+				job_queue_rec_resv_list(job_queue_rec);
+			else
+				job_queue_rec_magnetic_resv(job_queue_rec);
 			xfree(job_queue_rec);
 
 			if (!avail_front_end(job_ptr)) {
@@ -2198,7 +2245,13 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 				job_ptr->qos_ptr->description);
 	}
 	launch_msg_ptr->account = xstrdup(job_ptr->account);
-	launch_msg_ptr->resv_name = xstrdup(job_ptr->resv_name);
+
+	/*
+	 * Use resv_ptr->name instead of job_ptr->resv_name as the job
+	 * could contain multiple reservation names.
+	 */
+	if (job_ptr->resv_ptr)
+		launch_msg_ptr->resv_name = xstrdup(job_ptr->resv_ptr->name);
 
 	xassert(!fail_why);
 	return launch_msg_ptr;
@@ -2371,11 +2424,11 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 				"SLURM_JOB_QOS",
 				het_job_offset, "%s", qos_name);
 		}
-		if (het_job->resv_name) {
+		if (het_job->resv_ptr) {
 			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_JOB_RESERVATION",
-				het_job_offset, "%s", het_job->resv_name);
+				het_job_offset, "%s", het_job->resv_ptr->name);
 		}
 		if (het_job->details)
 			tmp_mem = het_job->details->pn_min_memory;

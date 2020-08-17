@@ -79,6 +79,12 @@ extern int build_feature_list(job_record_t *job_ptr);
 extern void job_queue_rec_magnetic_resv(job_queue_rec_t *job_queue_rec);
 
 /*
+ * If a job requested multiple reservations to potentially run in queue
+ * them now.
+ */
+extern void job_queue_rec_resv_list(job_queue_rec_t *job_queue_rec);
+
+/*
  * build_job_queue - build (non-priority ordered) list of pending jobs
  * IN clear_start - if set then clear the start_time for pending jobs
  * IN backfill - true if running backfill scheduler, enforce min time limit

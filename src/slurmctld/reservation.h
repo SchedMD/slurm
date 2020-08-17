@@ -239,4 +239,14 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid);
 
 extern void reservation_update_groups(int force);
 
+/*
+ * get_resv_list - find record for named reservation(s)
+ * IN name - reservation name(s) in a comma separated char
+ * OUT err_part - The first invalid reservation name.
+ * RET List of pointers to the reservations or NULL if not found
+ * NOTE: Caller must free the returned list
+ * NOTE: Caller must free err_part
+ */
+extern List get_resv_list(char *name, char **err_resv);
+
 #endif /* !_RESERVATION_H */

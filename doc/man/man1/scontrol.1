@@ -1763,7 +1763,10 @@ second values are rounded up to the next minute. Output format is always
 
 .TP
 \fIPartitionName\fP=<name>
-Identify the partition to be reserved.
+Partition used to reserve nodes from. Jobs will be allowed to use this
+reservation even if running in a different partition. There only needs to be
+overlapping nodes from that different partition and the nodes used in the
+reservation.
 
 .TP
 \fIFlags\fP=<flags>

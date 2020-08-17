@@ -60,6 +60,7 @@ documents those changes that are of interest to users and administrators.
  -- Add 'scontrol update res=name skip' to skip the current/next reoccurring
     reservation.
  -- Add ability for reservations to be accessed by Linux Groups.
+ -- Let users submit to multiple reservations as they can partitions.
 
 * Changes in Slurm 20.02.5
 ==========================
