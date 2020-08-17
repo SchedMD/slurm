@@ -4423,17 +4423,20 @@ static void _filter_resv(resv_desc_msg_t *resv_desc_ptr,
 	if (!filter_overlap &&
 	    ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
 	    (resv_ptr->flags & RESERVE_FLAG_OVERLAP))) {
-		log_flag(RESERVATION, "%s: skipping reservation %s filter for reservation %s",
+		log_flag(RESERVATION,
+			 "%s: skipping reservation %s filter for reservation %s",
 			 __func__, resv_ptr->name, resv_desc_ptr->name);
 		return;
 	}
 	if (resv_ptr->node_bitmap == NULL) {
-		log_flag(RESERVATION, "%s: reservation %s has no nodes to filter for reservation %s",
+		log_flag(RESERVATION,
+			 "%s: reservation %s has no nodes to filter for reservation %s",
 			 __func__, resv_ptr->name, resv_desc_ptr->name);
 		return;
 	}
 	if (!_resv_time_overlap(resv_desc_ptr, resv_ptr)) {
-		log_flag(RESERVATION, "%s: reservation %s does not overlap in time to filter for reservation %s",
+		log_flag(RESERVATION,
+			 "%s: reservation %s does not overlap in time to filter for reservation %s",
 			  __func__, resv_ptr->name, resv_desc_ptr->name);
 		return;
 	}
@@ -4450,7 +4453,8 @@ static void _filter_resv(resv_desc_msg_t *resv_desc_ptr,
 				bitmap2node_name(node_bitmap)
 			};
 
-			log_flag(RESERVATION, "%s: reservation %s filtered nodes:%s from reservation %s nodes:%s",
+			log_flag(RESERVATION,
+				 "%s: reservation %s filtered nodes:%s from reservation %s nodes:%s",
 				 __func__, resv_ptr->name, nodes[0],
 				 resv_desc_ptr->name, nodes[1]);
 
@@ -4466,7 +4470,8 @@ static void _filter_resv(resv_desc_msg_t *resv_desc_ptr,
 				bit_fmt_full(*core_bitmap)
 			};
 
-			log_flag(RESERVATION, "%s: reservation %s filtered cores:%s from reservation %s cores:%s",
+			log_flag(RESERVATION,
+				 "%s: reservation %s filtered cores:%s from reservation %s cores:%s",
 				 __func__, resv_ptr->name, cores[0],
 				 resv_desc_ptr->name, cores[1]);
 
