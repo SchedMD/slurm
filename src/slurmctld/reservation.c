@@ -3875,9 +3875,8 @@ extern void validate_all_reservations(bool run_now)
 		slurmctld_lock_t lock = {
 			.conf = READ_LOCK,
 			.job = WRITE_LOCK,
-			.node = READ_LOCK,
+			.node = WRITE_LOCK,
 			.part = READ_LOCK,
-			.fed = READ_LOCK,
 		};
 		lock_slurmctld(lock);
 		_validate_all_reservations();
@@ -3894,6 +3893,9 @@ static void _validate_all_reservations(void)
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
 	job_record_t *job_ptr;
+
+	/* Make sure we have node write locks. */
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	log_flag(RESERVATION, "%s: validating %u reservations and %u jobs",
 		 __func__, list_count(resv_list), list_count(job_list));
