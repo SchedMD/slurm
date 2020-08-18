@@ -162,15 +162,14 @@ static int _add_preemptable_job(void *x, void *arg)
 	if (candidate->het_job_id && !candidate->het_job_list)
 		return 0;
 
+	if (_is_job_preempt_exempt(candidate, preemptor))
+		return 0;
 	/*
 	 * We have to check the entire bitmap space here before we can check
 	 * each part of a hetjob in _is_job_preempt_exempt()
 	 */
 	if (!job_overlap_and_running(preemptor->part_ptr->node_bitmap,
 				     candidate))
-		return 0;
-
-	if (_is_job_preempt_exempt(candidate, preemptor))
 		return 0;
 
 	/* This job is a preemption candidate */
