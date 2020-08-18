@@ -234,6 +234,7 @@ extern void job_resv_check(void);
 extern bool job_borrow_from_resv_check(job_record_t *job_ptr,
 				       job_record_t *preemptor_ptr);
 
+extern bool job_uses_max_start_delay_resv(job_record_t *job_ptr);
 
 extern void job_resv_append_magnetic(job_queue_req_t *job_queue_req);
 

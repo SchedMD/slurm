@@ -7145,9 +7145,7 @@ extern bool job_borrow_from_resv_check(job_record_t *job_ptr,
 	 * If this job is running in a reservation, but not belonging to the
 	 * reservation directly.
 	 */
-	if (preemptor_ptr->resv_ptr &&
-	    preemptor_ptr->resv_ptr->max_start_delay &&
-	    preemptor_ptr->resv_ptr->node_bitmap &&
+	if (job_uses_max_start_delay_resv(preemptor_ptr) &&
 	    (job_ptr->warn_flags & KILL_JOB_RESV) &&
 	    job_ptr->node_bitmap &&
 	    bit_overlap_any(job_ptr->node_bitmap,
@@ -7156,6 +7154,13 @@ extern bool job_borrow_from_resv_check(job_record_t *job_ptr,
 	return false;
 }
 
+extern bool job_uses_max_start_delay_resv(job_record_t *job_ptr)
+{
+	if (job_ptr->resv_ptr && job_ptr->resv_ptr->max_start_delay &&
+	    job_ptr->resv_ptr->node_bitmap)
+		return true;
+	return false;
+}
 static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 			     uint32_t flags, bool reset_all)
 {
