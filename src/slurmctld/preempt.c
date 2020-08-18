@@ -293,7 +293,9 @@ extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
 	}
 
 	/* Build an array of pointers to preemption candidates */
-	list_for_each(job_list, _add_preemptable_job, &candidates);
+	if (slurm_preemption_enabled() ||
+	    job_uses_max_start_delay_resv(job_ptr))
+		list_for_each(job_list, _add_preemptable_job, &candidates);
 
 	if (candidates.preemptee_job_list && youngest_order)
 		list_sort(candidates.preemptee_job_list, _sort_by_youngest);
