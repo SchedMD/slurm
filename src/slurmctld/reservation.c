@@ -3599,10 +3599,7 @@ extern int dump_all_resv_state(void)
 	/* Locks: Read node */
 	slurmctld_lock_t resv_read_lock = {
 		.conf = READ_LOCK,
-		.job = NO_LOCK,
 		.node = READ_LOCK,
-		.part = NO_LOCK,
-		.fed = NO_LOCK,
 	};
 	Buf buffer = init_buf(BUF_SIZE);
 	DEF_TIMERS;
@@ -6473,8 +6470,6 @@ static void *_update_resv_jobs(void *arg)
 		.conf = READ_LOCK,
 		.job = WRITE_LOCK,
 		.node = READ_LOCK,
-		.part = NO_LOCK,
-		.fed = NO_LOCK,
 	};
 
 	lock_slurmctld(job_write_lock);
@@ -6764,11 +6759,8 @@ extern int send_resvs_to_accounting(int db_rc)
 	ListIterator itr = NULL;
 	slurmctld_resv_t *resv_ptr;
 	slurmctld_lock_t node_write_lock = {
-		.conf = NO_LOCK,
-		.job = NO_LOCK,
 		.node = WRITE_LOCK,
 		.part = READ_LOCK,
-		.fed = NO_LOCK,
 	};
 
 	if (!resv_list)
@@ -6913,11 +6905,8 @@ extern void update_assocs_in_resvs(void)
 	slurmctld_resv_t *resv_ptr = NULL;
 	ListIterator  iter = NULL;
 	slurmctld_lock_t node_write_lock = {
-		.conf = NO_LOCK,
-		.job = NO_LOCK,
 		.node = WRITE_LOCK,
 		.part = READ_LOCK,
-		.fed = NO_LOCK,
 	};
 
 	if (!resv_list) {
