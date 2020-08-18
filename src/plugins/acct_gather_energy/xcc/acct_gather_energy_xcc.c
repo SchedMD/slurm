@@ -996,7 +996,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 	_reset_slurm_ipmi_conf(&slurm_ipmi_conf);
 
 	if (tbl) {
-		/* ipmi initialisation parameters */
+		/* ipmi initialization parameters */
 		s_p_get_uint32(&slurm_ipmi_conf.authentication_type,
 			       "EnergyIPMIAuthenticationType", tbl);
 		(void) s_p_get_boolean(&(slurm_ipmi_conf.adjustment),

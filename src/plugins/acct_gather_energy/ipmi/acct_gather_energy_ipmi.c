@@ -622,7 +622,7 @@ static int _thread_init(void)
 			}
 		}
 		if (slurm_ipmi_conf.reread_sdr_cache)
-			//IPMI cache is reread only on initialisation
+			//IPMI cache is reread only on initialization
 			//This option need a big EnergyIPMITimeout
 			sensor_reading_flags ^=
 				IPMI_MONITORING_SENSOR_READING_FLAGS_REREAD_SDR_CACHE;
@@ -1218,7 +1218,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
 
 	if (tbl) {
-		/* ipmi initialisation parameters */
+		/* ipmi initialization parameters */
 		s_p_get_uint32(&slurm_ipmi_conf.driver_type,
 			       "EnergyIPMIDriverType", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.disable_auto_probe,
