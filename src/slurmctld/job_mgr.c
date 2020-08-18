@@ -6220,6 +6220,7 @@ static int _get_job_parts(job_desc_msg_t *job_desc, part_record_t **part_pptr,
 		}
 		part_ptr = default_part_loc;
 		job_desc->partition = xstrdup(part_ptr->name);
+		job_desc->bitflags |= JOB_PART_ASSIGNED;
 	}
 
 	/* Change partition pointer(s) to alternates as needed */
@@ -12080,6 +12081,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	if (new_part_ptr) {
 		/* Change partition */
 		job_ptr->part_ptr = new_part_ptr;
+		job_ptr->bit_flags &= ~JOB_PART_ASSIGNED;
+
 		FREE_NULL_LIST(job_ptr->part_ptr_list);
 		job_ptr->part_ptr_list = part_ptr_list;
 		part_ptr_list = NULL;	/* nothing to free */

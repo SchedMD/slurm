@@ -590,6 +590,8 @@ extern List build_job_queue(bool clear_start, bool backfill)
 				job_ptr->part_ptr = part_ptr;
 				error("partition pointer reset for %pJ, part %s",
 				      job_ptr, job_ptr->partition);
+				job_ptr->bit_flags |= JOB_PART_ASSIGNED;
+
 			}
 			if (!_job_runnable_test2(job_ptr, backfill))
 				continue;
