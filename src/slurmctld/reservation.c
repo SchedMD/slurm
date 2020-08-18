@@ -545,7 +545,7 @@ static int _find_job_with_resv_ptr(void *x, void *key)
 	job_record_t *job_ptr = (job_record_t *) x;
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) key;
 
-	if (job_ptr->resv_id == resv_ptr->resv_id)
+	if (job_ptr->resv_ptr == resv_ptr)
 		return 1;
 	return 0;
 }
