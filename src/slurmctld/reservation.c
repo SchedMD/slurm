@@ -3851,13 +3851,6 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 
 extern void validate_all_reservations(bool run_now)
 {
-	slurmctld_lock_t lock = {
-		.conf = READ_LOCK,
-		.job = WRITE_LOCK,
-		.node = READ_LOCK,
-		.part = READ_LOCK,
-		.fed = READ_LOCK,
-	};
 	static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 	static uint32_t requests = 0;
 	bool run;
@@ -3879,6 +3872,13 @@ extern void validate_all_reservations(bool run_now)
 	slurm_mutex_unlock(&mutex);
 
 	if (run) {
+		slurmctld_lock_t lock = {
+			.conf = READ_LOCK,
+			.job = WRITE_LOCK,
+			.node = READ_LOCK,
+			.part = READ_LOCK,
+			.fed = READ_LOCK,
+		};
 		lock_slurmctld(lock);
 		_validate_all_reservations();
 		unlock_slurmctld(lock);
