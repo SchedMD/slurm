@@ -155,8 +155,10 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			} else {
 				f = parse_resv_flags(val, msg, resv_msg_ptr);
 			}
-			if (f == INFINITE64)
+			if (f == INFINITE64) {
+				exit_code = 1;
 				return SLURM_ERROR;
+			}
 		} else if (!xstrncasecmp(tag, "Groups", MAX(taglen, 1))) {
 			if (resv_msg_ptr->groups) {
 				exit_code = 1;
@@ -344,13 +346,13 @@ extern int
 scontrol_update_res(int argc, char **argv)
 {
 	resv_desc_msg_t resv_msg;
-	int err, ret = 0;
+	int ret = 0;
 	uint32_t res_free_flags = 0;
 
 	slurm_init_resv_desc_msg (&resv_msg);
-	err = _parse_res_options(argc, argv, "No reservation update.",
+	ret = _parse_res_options(argc, argv, "No reservation update.",
 				 &resv_msg, &res_free_flags);
-	if (err)
+	if (ret)
 		goto SCONTROL_UPDATE_RES_CLEANUP;
 
 	if (resv_msg.name == NULL) {
@@ -359,8 +361,8 @@ scontrol_update_res(int argc, char **argv)
 		goto SCONTROL_UPDATE_RES_CLEANUP;
 	}
 
-	err = slurm_update_reservation(&resv_msg);
-	if (err) {
+	ret = slurm_update_reservation(&resv_msg);
+	if (ret) {
 		exit_code = 1;
 		slurm_perror("Error updating the reservation");
 		ret = slurm_get_errno();
@@ -389,13 +391,13 @@ scontrol_create_res(int argc, char **argv)
 	resv_desc_msg_t resv_msg;
 	char *new_res_name = NULL;
 	uint32_t res_free_flags = 0;
-	int err, ret = 0;
+	int ret = 0;
 
 	slurm_init_resv_desc_msg (&resv_msg);
-	err = _parse_res_options(argc, argv, "No reservation created.",
+	ret = _parse_res_options(argc, argv, "No reservation created.",
 				 &resv_msg, &res_free_flags);
 
-	if (err)
+	if (ret)
 		goto SCONTROL_CREATE_RES_CLEANUP;
 
 	if (resv_msg.start_time == (time_t)NO_VAL) {
