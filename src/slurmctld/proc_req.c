@@ -3502,7 +3502,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 			step_layout = slurm_step_layout_copy(
 				step_ptr->step_layout);
 
-		/* break if don't need to look for futher het_steps */
+		/* break if don't need to look for further het_steps */
 		if (step_ptr->step_id.step_het_comp == NO_VAL)
 			break;
 		/*

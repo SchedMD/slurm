@@ -949,7 +949,7 @@ static void _init_grp_used_tres_run_secs(time_t last_ran)
 /* If the job is running then apply decay to the job.
  *
  * Return 0 if we don't need to process the job any further, 1 if
- * futher processing is needed.
+ * further processing is needed.
  */
 static int _apply_new_usage(job_record_t *job_ptr, time_t start_period,
 			    time_t end_period, bool adjust_for_end)
