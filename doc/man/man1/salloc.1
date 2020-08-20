@@ -2010,7 +2010,8 @@ line (See the \fBsalloc\fR man page for more examples):
 .IP
 salloc \-N5 srun \-n10 myprogram
 .LP
-+To create a heterogeneous job with 3 components, each allocating a unique set of nodes:
+To create a heterogeneous job with 3 components, each allocating a unique set
+of nodes:
 .IP
 salloc -w node[2-3] : -w node4 : -w node[5-7] bash
 .br
