@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix segfault in slurmctld if group resolution fails during job credential
     creation.
  -- sacctmgr - Honor PreserveCaseUser when creating users with load command.
+ -- Avoid attempting to schedule jobs on magnetic reservations when they aren't
+    allowed.
 
 * Changes in Slurm 20.02.5
 ==========================

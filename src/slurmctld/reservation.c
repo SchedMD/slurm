@@ -499,7 +499,9 @@ static int _queue_prom_resv(void *x, void *key)
 
 	xassert(resv_ptr->magic == RESV_MAGIC);
 
-	if (!(resv_ptr->flags & RESERVE_FLAG_PROM))
+	if (!(resv_ptr->flags & RESERVE_FLAG_PROM) ||
+	    (_valid_job_access_resv(job_queue_req->job_ptr, resv_ptr) !=
+	     SLURM_SUCCESS))
 		return 0;
 
 	job_queue_req->resv_ptr = resv_ptr;
