@@ -363,12 +363,12 @@ $ scontrol create reservation user=operator nodes=tux8 \
 <p>Slurm can create an advanced reservation for which nodes which are allocated
 to jobs are automatically replaced with new idle nodes.
 The effect of this is to always maintain a constant size pool of resources.
-This is accomplished by using a "replace" flag as shown in the example below.
-This option is not supported for reservations
-of individual cores which span more than one node rather than full nodes 
-(e.g. a 1 core reservation on node "tux1" will be moved if node "tux1" goes
-down, but a reservation containing 2 cores on node "tux1" and 3 cores on "tux2"
-will not be moved node "tux1" goes down).</p>
+This is accomplished by using the <b>REPLACE</b> flag as shown in the example
+below. This option is not supported for reservations specifying cores which
+span more than one node, rather than full nodes. (E.g. a 1 core reservation on
+node "tux1" will be moved if node "tux1" goes down, but a reservation
+containing 2 cores on node "tux1" and 3 cores on "tux2" will not be moved if
+"tux1" goes down.)</p>
 <pre>
 $ scontrol create reservation starttime=now duration=60 \
   users=foo nodecnt=2 flags=replace
@@ -407,6 +407,66 @@ JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST(REASON)
    98     debug   tmp   foo  R  0:07      1 tux1
 </pre>
 
+<p><b>NOTE</b>: If you want the reservation to maintain the size you specify,
+but not grow as the reservation is used you can use the <b>REPLACE_DOWN</b>
+flag. Nodes that are DOWN or DRAINED will be replaced, but not nodes that
+have jobs running on them.
+
+<h2>FLEX Reservations</h2>
+
+<p>By default, jobs that run in reservations must fit within the time and
+size constraints of the reserved resources. With the <b>FLEX</b> flag jobs
+are able to start before the reservation begins or continue after it ends.
+They are also able to use the reserved node(s) along with additional nodes if
+required and available.
+
+<p>The default behavior for jobs that request a reservation is that they must
+be able to run within the confines (time and space) of that reservation.
+The following example shows that the <b>FLEX</b> flag allows the job to run
+before the reservation starts, after it ends, and on a node outside
+of the reservation.</p>
+<pre>
+$ scontrol create reservation user=user1 nodes=node01 starttime=now+10minutes duration=10 flags=flex
+Reservation created: user1_831
+
+$ sbatch -wnode0[1-2] -t30:00 --reservation=user1_831 test.job
+Submitted batch job 57996
+
+$ squeue
+             JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+             57996     debug sleepjob    user1  R       0:08      2 node[01-02]
+</pre>
+
+<h2>Magnetic Reservations</h2>
+
+<p>The default behavior for reservations is that jobs must request a
+reservation in order to run in it. The <b>MAGNETIC</b> flag allows you to
+create a reservation that will allow jobs to run in it without requiring that
+they specify the name of the reservation. The reservation will only "attract"
+jobs that meet the access control requirements.</p>
+
+<p>The following example shows a reservation created on node05. The user
+specified as being able to access the reservation then submits a job and
+the job starts on the reserved node.</p>
+<pre>
+$ scontrol create reservation user=user1 nodes=node05 starttime=now duration=10 flags=magnetic
+Reservation created: user1_850
+
+$ scontrol show res
+ReservationName=user1_850 StartTime=2020-07-29T13:44:13 EndTime=2020-07-29T13:54:13 Duration=00:10:00
+   Nodes=node05 NodeCnt=1 CoreCnt=12 Features=(null) PartitionName=(null) Flags=SPEC_NODES,MAGNETIC
+   TRES=cpu=12
+   Users=user1 Accounts=(null) Licenses=(null) State=ACTIVE BurstBuffer=(null) Watts=n/a
+   MaxStartDelay=(null)
+
+$ sbatch -N1 -t5:00 test.job
+Submitted batch job 62297
+
+$ squeue
+             JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+             62297     debug sleepjob    user1  R       0:04      1 node05
+</pre>
+
 <h2>Reservation Purging After Last Job</h2>
 
 <p>A reservation may be automatically purged after the last associated job
@@ -439,7 +499,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 23 September 2019</p>
+<p style="text-align: center;">Last modified 20 August 2020</p>
 
 <!--#include virtual="footer.txt"-->
 
