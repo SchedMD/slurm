@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- sacctmgr - Honor PreserveCaseUser when creating users with load command.
  -- Avoid attempting to schedule jobs on magnetic reservations when they aren't
     allowed.
+ -- Always make sure we clear the magnetic flag from a job.
 
 * Changes in Slurm 20.02.5
 ==========================
