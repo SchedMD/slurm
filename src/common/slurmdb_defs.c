@@ -3875,9 +3875,9 @@ extern int slurmdb_sort_tres_by_id_asc(void *v1, void *v2)
 
 /* This only works on a simple id=count list, not on a formatted list */
 extern void slurmdb_tres_list_from_string(
-	List *tres_list, char *tres, uint32_t flags)
+	List *tres_list, const char *tres, uint32_t flags)
 {
-	char *tmp_str = tres;
+	const char *tmp_str = tres;
 	int id;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;

@@ -227,7 +227,7 @@ extern int slurmdb_sort_tres_by_id_asc(void *v1, void *v2);
  *                                      TRES_STR_FLAG_SORT_ID
  */
 extern void slurmdb_tres_list_from_string(
-	List *tres_list, char *tres, uint32_t flags);
+	List *tres_list, const char *tres, uint32_t flags);
 
 /* combine a name array and count array into a string */
 extern char *slurmdb_make_tres_string_from_arrays(char **tres_names,
