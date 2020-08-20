@@ -1,6 +1,6 @@
 # Makefile for accounting gather energy plugins
 
-SUBDIRS = cray_aries rapl ibmaem ipmi none xcc
+SUBDIRS = ibmaem ipmi none pm_counters rapl xcc
 
 if BUILD_RSMI
 SUBDIRS += rsmi

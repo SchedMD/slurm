@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  acct_gather_energy_cray_aries.c - slurm energy accounting plugin for
- *                                    Cray/Aries.
+ *  acct_gather_energy_pm_counters.c -
+ *  slurm energy accounting plugin for HPE Cray pm_counters interface
  *****************************************************************************
  *  Copyright (C) 2015 SchedMD LLC
  *  Written by Danny Auble <da@schedmd.com> who borrowed from the rapl
@@ -37,7 +37,7 @@
  *
 \*****************************************************************************/
 
-/*   acct_gather_energy_cray_aries
+/*   acct_gather_energy_pm_counters_
  * This plugin does not initiate a node-level thread.
  * It will be used to get energy values from the cray bmc when available
  */
@@ -72,8 +72,8 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[] = "AcctGatherEnergy Cray/Aries plugin";
-const char plugin_type[] = "acct_gather_energy/cray_aries";
+const char plugin_name[] = "AcctGatherEnergy pm_counters plugin";
+const char plugin_type[] = "acct_gather_energy/pm_counters";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static acct_gather_energy_t *local_energy = NULL;

@@ -51,6 +51,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Removed MsgAggregationParams.
  -- Removed Layouts.
  -- Remove switch/generic plugin.
+ -- The acct_gather_energy/cray_aries plugin has been renamed to
+    acct_gather_energy/pm_counters.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

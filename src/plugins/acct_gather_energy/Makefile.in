@@ -199,7 +199,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = cray_aries rapl ibmaem ipmi none xcc rsmi
+DIST_SUBDIRS = ibmaem ipmi none pm_counters rapl xcc rsmi
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -455,7 +455,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = cray_aries rapl ibmaem ipmi none xcc $(am__append_1)
+SUBDIRS = ibmaem ipmi none pm_counters rapl xcc $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:
