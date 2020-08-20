@@ -135,7 +135,7 @@ typedef struct slurm_gres_ops {
 	List            (*get_devices)		( void );
 	void            (*step_hardware_init)	( bitstr_t *, char * );
 	void            (*step_hardware_fini)	( void );
-	gres_epilog_info_t * (*epilog_build_env) ( List job_gres_list );
+	gres_epilog_info_t *(*epilog_build_env)(gres_job_state_t *gres_job_ptr);
 	void            (*epilog_set_env)	( char ***epilog_env_ptr,
 						gres_epilog_info_t *epilog_info,
 						int node_inx );

@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "April 2020" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "August 2020" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -21,6 +21,12 @@ omitted from the gres.conf file and only the configuration information in the
 slurm.conf file will be used.
 The gres.conf file may be omitted completely if the configuration information
 in the slurm.conf file fully describes all GRES.
+
+.LP
+If using the \fBgres.conf\fR file to describe the resources available to nodes,
+the first parameter on the line should be \fBNodeName\fR. If configuring
+Generic Resources without specifying nodes, the first parameter on the line
+should be \fBName\fR.
 
 .LP
 Parameter names are case insensitive.
