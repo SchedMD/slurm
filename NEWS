@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix "squeue -S P" not sorting by partition name.
  -- Fix segfault in slurmctld if group resolution fails during job credential
     creation.
+ -- sacctmgr - Honor PreserveCaseUser when creating users with load command.
 
 * Changes in Slurm 20.02.5
 ==========================
