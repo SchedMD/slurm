@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
  -- pam_slurm - explicitly initialize slurm config to support configless mode.
  -- scontrol - Fix exit code when creating/updating reservations with wrong
     Flags.
+ -- When a GRES has a no_consume flag, report 0 for allocated.
 
 * Changes in Slurm 20.02.4
 ==========================

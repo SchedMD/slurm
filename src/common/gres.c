@@ -10199,8 +10199,10 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	xassert(job_gres_ptr);
 	xassert(node_gres_ptr);
 
-	if (node_gres_ptr->no_consume)
+	if (node_gres_ptr->no_consume) {
+		job_gres_ptr->total_gres = NO_CONSUME_VAL64;
 		return SLURM_SUCCESS;
+	}
 
 	if (_shared_gres(plugin_id)) {
 		shared_gres = true;
@@ -10654,7 +10656,9 @@ static void _job_select_whole_node_internal(
 	 * Add the total_gres here but no count, that will be done after
 	 * allocation.
 	 */
-	if (type_inx != -1)
+	if (node_state_ptr->no_consume) {
+		job_state_ptr->total_gres = NO_CONSUME_VAL64;
+	} else if (type_inx != -1)
 		job_state_ptr->total_gres +=
 			node_state_ptr->type_cnt_avail[type_inx];
 	else
@@ -13691,7 +13695,10 @@ extern int gres_plugin_job_count(List gres_list, int arr_len,
 		xassert(job_gres_state_ptr);
 
 		gres_count_ids[ix]  = job_gres_ptr->plugin_id;
-		gres_count_vals[ix] = job_gres_state_ptr->total_gres;
+		if (job_gres_state_ptr->total_gres == NO_CONSUME_VAL64)
+			gres_count_vals[ix] = 0;
+		else
+			gres_count_vals[ix] = job_gres_state_ptr->total_gres;
 		if (++ix >= arr_len)
 			break;
 	}
@@ -13722,6 +13729,8 @@ extern char *gres_plugin_job_alloc_count(List gres_list)
 	job_gres_iter = list_iterator_create(gres_list);
 	while ((job_gres_ptr = (gres_state_t*) list_next(job_gres_iter))) {
 		gres_job_state_t *job_gres_state_ptr;
+		uint64_t total_gres;
+
 		job_gres_data = job_gres_ptr->gres_data;
 		job_gres_state_ptr = (gres_job_state_t *) job_gres_data;
 		if (!job_gres_state_ptr) {
@@ -13736,13 +13745,18 @@ extern char *gres_plugin_job_alloc_count(List gres_list)
 			gres_name = gres_context[i].gres_name;
 		}
 
+		if (job_gres_state_ptr->total_gres == NO_CONSUME_VAL64)
+			total_gres = 0;
+		else
+			total_gres = job_gres_state_ptr->total_gres;
+
 		if (job_gres_state_ptr->type_name) {
 			xstrfmtcat(gres_alloc, "%s%s:%s:%"PRIu64, sep,
 				   gres_name, job_gres_state_ptr->type_name,
-				   job_gres_state_ptr->total_gres);
+				   total_gres);
 		} else {
 			xstrfmtcat(gres_alloc, "%s%s:%"PRIu64, sep, gres_name,
-				   job_gres_state_ptr->total_gres);
+				   total_gres);
 		}
 		sep = ",";
 	}
@@ -14248,6 +14262,10 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 			continue;
 		}
 
+		/* If we are no_consume, print a 0 */
+		if (count == NO_CONSUME_VAL64)
+			count = 0;
+
 		tres_rec = assoc_mgr_find_tres_rec(&tres_req);
 
 		if (tres_rec &&
@@ -14398,7 +14416,10 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 		 * 2 GPUs.
 		 */
 		if ((tres_pos = assoc_mgr_find_tres_pos(&tres_rec,true)) != -1){
-			tres_cnt[tres_pos] += count;
+			if (count == NO_CONSUME_VAL64)
+				tres_cnt[tres_pos] = NO_CONSUME_VAL64;
+			else
+				tres_cnt[tres_pos] += count;
 			set_total = true;
 		}
 
