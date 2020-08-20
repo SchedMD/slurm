@@ -91,5 +91,10 @@ extern int slurm_step_layout_destroy(slurm_step_layout_t *step_layout);
 extern int slurm_step_layout_host_id (slurm_step_layout_t *s, int taskid);
 extern char *slurm_step_layout_host_name (slurm_step_layout_t *s, int hostid);
 
+/*
+ * Convert task_dist to string
+ * IN task_dist - task distribution to convert to string
+ * RET string (must xfree()) or NULL (on error)
+ */
 extern char *slurm_step_layout_type_name(task_dist_states_t task_dist);
 #endif /* !_SLURM_STEP_LAYOUT_H */

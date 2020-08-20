@@ -1118,28 +1118,32 @@ extern void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_LAYOUT:
+		{
+			char *name = NULL;
+
 			switch(type) {
 			case JOB:
 				/* below really should be step.  It is
 				   not a typo */
 				if (!job->track_steps)
-					tmp_char = slurm_step_layout_type_name(
+					name = slurm_step_layout_type_name(
 						step->task_dist);
 				break;
 			case JOBSTEP:
-				tmp_char = slurm_step_layout_type_name(
+				name = slurm_step_layout_type_name(
 					step->task_dist);
 				break;
 			case JOBCOMP:
 				break;
 			default:
-				tmp_char = NULL;
+				/* no-op */
 				break;
 			}
-			field->print_routine(field,
-					     tmp_char,
+			field->print_routine(field, name,
 					     (curr_inx == field_count));
+			xfree(name);
 			break;
+		}
 		case PRINT_MAXDISKREAD:
 			tmp_uint64 = _get_tres_cnt(
 				type, object, TRES_FS_DISK, 0);

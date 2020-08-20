@@ -223,8 +223,13 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	} else {
 		xstrcat(out, "CPUFreqReq=Default");
 	}
-	xstrfmtcat(out, " Dist=%s",
-		   slurm_step_layout_type_name(job_step_ptr->task_dist));
+
+	if (job_step_ptr->task_dist) {
+		char *name =
+			slurm_step_layout_type_name(job_step_ptr->task_dist);
+		xstrfmtcat(out, " Dist=%s", name);
+		xfree(name);
+	}
 
 	/****** Line 7 ******/
 	xstrcat(out, line_end);
