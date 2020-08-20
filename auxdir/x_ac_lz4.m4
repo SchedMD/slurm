@@ -17,9 +17,9 @@ AC_DEFUN([X_AC_LZ4],
 [AC_MSG_CHECKING(if lz4 is installed)
 lz4_places="/usr/local /usr /opt/local /sw"
 AC_ARG_WITH([lz4],
-[  --with-lz4=DIR     root directory path of lz4 installation @<:@defaults to
-                      /usr/local or /usr if not found in /usr/local@:>@
-   --without-lz4      to disable lz4 usage completely],
+[  --with-lz4=DIR          root directory path of lz4 installation @<:@defaults to
+                          to /usr/local or /usr if not found in /usr/local@:>@
+   --without-lz4          to disable lz4 usage completely],
 [if test "$withval" != no ; then
   AC_MSG_RESULT(yes)
   if test -d "$withval"
