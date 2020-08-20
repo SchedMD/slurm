@@ -263,7 +263,7 @@ For example, \fB\-\-constraint="intel"\fR
 \fBNode Count\fR
 A request can specify the number of nodes needed with some feature
 by appending an asterisk and count after the feature name.
-For example "\fB\-\-nodes=16 \-\-constraint=graphics*4 ..."\fR
+For example, \fB\-\-nodes=16 \-\-constraint="graphics*4 ..."\fR
 indicates that the job requires 16 nodes and that at least four of those
 nodes must have the feature "graphics."
 .TP
@@ -280,37 +280,46 @@ For example, \fB\-\-constraint="intel|amd"\fR
 \fBMatching OR\fR
 If only one of a set of possible options should be used for all allocated
 nodes, then use the OR operator and enclose the options within square brackets.
-For example: "\fB\-\-constraint=[rack1|rack2|rack3|rack4]"\fR might
+For example, \fB\-\-constraint="[rack1|rack2|rack3|rack4]"\fR might
 be used to specify that all nodes must be allocated on a single rack of
 the cluster, but any of those four racks can be used.
 .TP
 \fBMultiple Counts\fR
 Specific counts of multiple resources may be specified by using the AND
 operator and enclosing the options within square brackets.
-For example: "\fB\-\-constraint=[rack1*2&rack2*4]"\fR might
+For example, \fB\-\-constraint="[rack1*2&rack2*4]"\fR might
 be used to specify that two nodes must be allocated from nodes with the feature
 of "rack1" and four nodes must be allocated from nodes with the feature
 "rack2".
 
 \fBNOTE:\fR This construct does not support multiple Intel KNL NUMA or MCDRAM
-modes. For example, while "\fB\-\-constraint=[(knl&quad)*2&(knl&hemi)*4]"\fR is
-not supported, "\fB\-\-constraint=[haswell*2&(knl&hemi)*4]"\fR is supported.
+modes. For example, while \fB\-\-constraint="[(knl&quad)*2&(knl&hemi)*4]"\fR is
+not supported, \fB\-\-constraint="[haswell*2&(knl&hemi)*4]"\fR is supported.
 Specification of multiple KNL modes requires the use of a heterogeneous job.
-
+.TP
+\fBBrackets\fR
+Brackets can be used to indicate that you are looking for a set of nodes with
+the different requirements contained within the brackets. For example,
+\fB--constraint="[(rack1|rack2)*1&(rack3)*2]"\fR will get you one node with
+either the "rack1" or "rack2" features and two nodes with the "rack3" feature.
+The same request without the brackets will try to find a single node that
+meets those requirements.
 .TP
 \fBParenthesis\fR
-Parenthesis can be used to group like node features together. For example
-"\fB\-\-constraint=[(knl&snc4&flat)*4&haswell*1]"\fR might be used to specify
+Parenthesis can be used to group like node features together. For example,
+\fB\-\-constraint="[(knl&snc4&flat)*4&haswell*1]"\fR might be used to specify
 that four nodes with the features "knl", "snc4" and "flat" plus one node with
 the feature "haswell" are required. All options within parenthesis should be
 grouped with AND (e.g. "&") operands.
 .RE
 
+.RS
 \fBWARNING\fR: When srun is executed from within salloc or sbatch,
 the constraint value can only contain a single feature name. None of the
 other operators are currently supported for job steps.
 .br
 This option applies to job and step allocations.
+.RE
 
 .TP
 \fB\-\-contiguous\fR
