@@ -1756,6 +1756,12 @@ static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 			bit_set(resv_ptr->core_bitmap, c);
 			core_set++;
 		}
+		if (core_set < resv_ptr->core_resrcs->cpus[node_inx]) {
+			error("Unable to restore reservation %s on node_inx %d of nodes %s. Probably node configuration changed",
+			      resv_ptr->name, node_inx,
+			      resv_ptr->core_resrcs->nodes);
+			return SLURM_ERROR;
+		}
 	}
 
 	return SLURM_SUCCESS;
