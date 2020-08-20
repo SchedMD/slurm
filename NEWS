@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Avoid attempting to schedule jobs on magnetic reservations when they aren't
     allowed.
  -- Always make sure we clear the magnetic flag from a job.
+ -- In backfill avoid NULL pointer dereference.
 
 * Changes in Slurm 20.02.5
 ==========================
