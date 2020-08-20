@@ -580,7 +580,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/slurmctld/nonstop/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/cray_aries/Makefile
-		 src/plugins/switch/generic/Makefile
 		 src/plugins/switch/none/Makefile
 		 src/plugins/mpi/Makefile
 		 src/plugins/mpi/cray_shasta/Makefile

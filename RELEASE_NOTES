@@ -50,6 +50,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Removed "cpusets" option from TaskPluginParam. Please use task/cgroup.
  -- Removed MsgAggregationParams.
  -- Removed Layouts.
+ -- Remove switch/generic plugin.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
