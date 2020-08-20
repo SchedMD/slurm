@@ -2383,7 +2383,8 @@ host3
 host4
 
 .LP
-To create a heterogeneous job with 3 components, each allocating a unique set of nodes:
+To create a heterogeneous job with 3 components, each allocating a unique set
+of nodes:
 .IP
 sbatch -w node[2-3] : -w node4 : -w node[5-7] work.bash
 .br
