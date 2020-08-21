@@ -261,7 +261,7 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 		*query = parse_yaml(args->body);
 		break;
 	default:
-		fatal_abort("%s:  unknown read mime type", __func__);
+		fatal_abort("%s: unknown read mime type", __func__);
 	}
 
 	if (!query)
