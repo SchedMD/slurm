@@ -235,6 +235,8 @@ extern rest_auth_context_t *rest_auth_context_new(void)
 
 extern int rest_auth_context_apply(rest_auth_context_t *context)
 {
+	_check_magic(context);
+
 	if (!context->plugin_id)
 		return ESLURM_AUTH_CRED_INVALID;
 
