@@ -557,6 +557,23 @@ extern data_t *data_set_string(data_t *data, const char *value)
 	return data;
 }
 
+extern data_t *data_set_string_own(data_t *data, char *value)
+{
+	_check_magic(data);
+
+	if (!data || !value)
+		return NULL;
+
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to string: %s",
+		 __func__, (uintptr_t) data, value);
+
+	data->type = DATA_TYPE_STRING;
+	/* take ownership of string */
+	data->data.string_u = value;
+
+	return data;
+}
+
 extern data_t *data_set_dict(data_t *data)
 {
 	_check_magic(data);

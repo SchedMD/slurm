@@ -204,6 +204,14 @@ extern data_t *data_set_int(data_t *data, int64_t value);
 extern data_t *data_set_string(data_t *data, const char *value);
 
 /*
+ * Set data to string type with given value.
+ * IN data structure to modify
+ * IN value value to set (takes ownership of value and will xfree())
+ * RET data ptr or NULL on error
+ */
+extern data_t *data_set_string_own(data_t *data, char *value);
+
+/*
  * Detect data type and if possible, change to correct type.
  * WARNING: command is currently only useful for to/from DATA_TYPE_STRING.
  * WARNING: Does not work on dict or list types
