@@ -152,7 +152,7 @@ static int _dump_node(data_t *p, node_info_t *node)
 
 static int _op_handler_nodes(const char *context_id,
 			     http_request_method_t method, data_t *parameters,
-			     data_t *query, int tag, data_t *resp)
+			     data_t *query, int tag, data_t *resp, void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *d = data_set_dict(resp);

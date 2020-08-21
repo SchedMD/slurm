@@ -58,7 +58,8 @@ typedef int (*operation_handler_t)(
 	data_t *parameters, /* openapi parameters */
 	data_t *query, /* query sent by client */
 	int tag, /* tag associated with path */
-	data_t *resp /* data to populate with response */
+	data_t *resp, /* data to populate with response */
+	void *auth /* authentication context */
 );
 
 /*

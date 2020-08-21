@@ -343,7 +343,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	const char *body = NULL;
 
 	rc = callback(args->context->con->name, args->method, params, query,
-		      callback_tag, resp);
+		      callback_tag, resp, args->context->auth);
 
 	if (data_get_type(resp) == DATA_TYPE_NULL) {
 		rc = _operations_router_reject(
