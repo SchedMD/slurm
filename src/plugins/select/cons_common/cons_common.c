@@ -1537,8 +1537,6 @@ extern int select_p_job_mem_confirm(job_record_t *job_ptr)
 
 	xassert(job_ptr);
 
-	if (!(job_ptr->bit_flags & NODE_MEM_CALC))
-		return SLURM_SUCCESS;
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->job_resrcs == NULL) ||
 	    (job_ptr->job_resrcs->node_bitmap == NULL) ||
