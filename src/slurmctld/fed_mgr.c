@@ -2762,7 +2762,7 @@ static void _add_missing_fed_job_info()
 extern int fed_mgr_init(void *db_conn)
 {
 	int rc = SLURM_SUCCESS;
-	uint64_t tmp;
+	uint64_t tmp = 0;
 	slurmdb_federation_cond_t fed_cond;
 	List fed_list;
 	slurmdb_federation_rec_t *fed = NULL, *state_fed = NULL;
