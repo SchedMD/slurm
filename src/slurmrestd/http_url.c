@@ -213,8 +213,9 @@ extern data_t *parse_url_query(const char *query, bool convert_types)
 		/* account for last entry not having a value */
 		rc = _handle_new_key_char(d, &key, &buffer, convert_types);
 
-	xassert(buffer == NULL);
-	xassert(key == NULL);
+	xassert(rc || !buffer);
+	xassert(rc || !key);
+
 	xfree(buffer);
 	xfree(key);
 
