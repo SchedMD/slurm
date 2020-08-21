@@ -458,3 +458,13 @@ cleanup:
 
 	return rc;
 }
+
+extern void *get_operation_db_conn(operations_auth_t *auth)
+{
+	xassert(auth->magic == AUTH_MAGIC);
+
+	if (!auth || !auth->context)
+		return NULL;
+
+	return rest_auth_context_get_db_conn(auth->context);
+}

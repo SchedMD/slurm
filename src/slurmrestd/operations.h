@@ -103,4 +103,11 @@ extern int unbind_operation_handler(operation_handler_t callback);
  */
 extern int operations_router(on_http_request_args_t *args);
 
+/*
+ * Retrieves db_conn from auth context handed by operation_handler_t
+ *
+ * RET non-null pointer or NULL on failure
+ */
+extern void *get_operation_db_conn(operations_auth_t *auth);
+
 #endif /* SLURMRESTD_OPERATIONS_H */
