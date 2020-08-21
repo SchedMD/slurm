@@ -2719,15 +2719,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			     (node_ptr->boot_time <
 			      node_ptr->last_response)))) {
 			node_flags &= (~NODE_STATE_REBOOT);
-			if (xstrstr(node_ptr->reason, "Reboot ASAP") &&
-			    (node_ptr->next_state == NO_VAL)) {
-				if (node_ptr->next_state != NODE_STATE_DOWN) {
-					xfree(node_ptr->reason);
-					node_ptr->reason_time = 0;
-					node_ptr->reason_uid = 0;
-				}
-				node_flags &= (~NODE_STATE_DRAIN);
-			}
 			if (node_ptr->next_state != NO_VAL)
 				node_flags &= (~NODE_STATE_DRAIN);
 
