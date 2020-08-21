@@ -8056,7 +8056,6 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 							break;
 					}
 				}
-				continue;
 			}
 
 			avail_cores_tot += avail_cores_per_sock[s];
