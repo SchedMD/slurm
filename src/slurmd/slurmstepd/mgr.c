@@ -1114,7 +1114,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	step_complete.rank = job->nodeid;
 	acct_gather_profile_endpoll();
 	acct_gather_profile_g_node_step_end();
-	acct_gather_profile_fini();
 
 	/* Call the other plugins to clean up
 	 * the cgroup hierarchy.
@@ -1123,6 +1122,14 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	step_terminate_monitor_start(job);
 	proctrack_g_signal(job->cont_id, SIGKILL);
 	proctrack_g_wait(job->cont_id);
+	/*
+	 * This function below calls jobacct_gather_fini(). For the case of
+	 * jobacct_gather/cgroup, it ends up doing the cgroup hierarchy cleanup
+	 * in here, and it should happen after the SIGKILL above so that all
+	 * children processes from the step are gone.
+	 */
+	acct_gather_profile_fini();
+
 	step_terminate_monitor_stop();
 
 	task_g_post_step(job);
@@ -1299,8 +1306,6 @@ job_manager(stepd_step_rec_t *job)
 	_wait_for_all_tasks(job);
 	acct_gather_profile_endpoll();
 	acct_gather_profile_g_node_step_end();
-	acct_gather_profile_fini();
-
 	_set_job_state(job, SLURMSTEPD_STEP_ENDING);
 
 fail3:
@@ -1329,9 +1334,18 @@ fail2:
 	}
 	step_terminate_monitor_stop();
 	if (!job->batch) {
+		/* This sends a SIGKILL to the pgid */
 		if (switch_g_job_postfini(job) < 0)
 			error("switch_g_job_postfini: %m");
 	}
+
+	/*
+	 * This function below calls jobacct_gather_fini(). For the case of
+	 * jobacct_gather/cgroup, it ends up doing the cgroup hierarchy cleanup
+	 * in here, and it should happen after the SIGKILL above so that all
+	 * children processes from the step are gone.
+	 */
+	acct_gather_profile_fini();
 
 	/*
 	 * Wait for io thread to complete (if there is one)
