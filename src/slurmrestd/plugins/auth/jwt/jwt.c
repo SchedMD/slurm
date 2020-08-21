@@ -39,6 +39,7 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 
 #include "src/common/data.h"
 #include "src/common/log.h"
@@ -81,8 +82,11 @@ const char plugin_type[] = "rest_auth/jwt";
 const uint32_t plugin_id = 100;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+#define MAGIC 0x221abee1
 typedef struct {
+	int magic;
 	char *token;
+	void *db_conn;
 } plugin_data_t;
 
 extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
@@ -121,6 +125,7 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 	xassert(!ctxt->plugin_id);
 
 	ctxt->plugin_data = data = xmalloc(sizeof(*data));
+	xassert(data->magic = MAGIC);
 	ctxt->user_name = xstrdup(user_name);
 	data->token = xstrdup(key);
 
@@ -131,6 +136,7 @@ extern int slurm_rest_auth_p_apply(rest_auth_context_t *context)
 {
 	plugin_data_t *data = context->plugin_data;
 
+	xassert(data->magic == MAGIC);
 	xassert(context->plugin_id == plugin_id);
 
 	return g_slurm_auth_thread_config(data->token, context->user_name);
@@ -139,9 +145,40 @@ extern int slurm_rest_auth_p_apply(rest_auth_context_t *context)
 extern void slurm_rest_auth_p_free(rest_auth_context_t *context)
 {
 	plugin_data_t *data = context->plugin_data;
+	xassert(data->magic == MAGIC);
 	xassert(context->plugin_id == plugin_id);
+	xassert((data->magic = ~MAGIC));
+
+	if (data->db_conn)
+		slurmdb_connection_close(&data->db_conn);
+
 	xfree(data->token);
 	xfree(context->plugin_data);
+}
+
+extern void *slurm_rest_auth_p_get_db_conn(rest_auth_context_t *context)
+{
+	plugin_data_t *data = context->plugin_data;
+	xassert(context->plugin_id == plugin_id);
+	xassert(data->magic == MAGIC);
+
+	if (slurm_rest_auth_p_apply(context))
+		return NULL;
+
+	if (data->db_conn)
+		return data->db_conn;
+
+	errno = 0;
+	data->db_conn = slurmdb_connection_get(NULL);
+
+	if (!errno && data->db_conn)
+		return data->db_conn;
+
+	error("%s: unable to connect to slurmdbd: %m",
+	      __func__);
+	data->db_conn = NULL;
+
+	return NULL;
 }
 
 extern void slurm_rest_auth_p_init(void)

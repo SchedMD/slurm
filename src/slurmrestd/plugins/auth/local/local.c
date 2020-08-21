@@ -44,6 +44,7 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 
 #include "src/common/data.h"
 #include "src/common/log.h"
@@ -85,6 +86,39 @@ const char plugin_name[] = "REST auth/local";
 const char plugin_type[] = "rest_auth/local";
 const uint32_t plugin_id = 101;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+extern int slurm_rest_auth_p_apply(rest_auth_context_t *context);
+
+#define MAGIC 0xd11abee2
+typedef struct {
+	int magic;
+	void *db_conn;
+} plugin_data_t;
+
+extern void *slurm_rest_auth_p_get_db_conn(rest_auth_context_t *context)
+{
+	plugin_data_t *data = context->plugin_data;
+	xassert(data->magic == MAGIC);
+	xassert(context->plugin_id == plugin_id);
+
+	if (slurm_rest_auth_p_apply(context))
+		return NULL;
+
+	if (data->db_conn)
+		return data->db_conn;
+
+	errno = 0;
+	data->db_conn = slurmdb_connection_get(NULL);
+
+	if (!errno)
+		return data->db_conn;
+
+	error("%s: unable to connect to slurmdbd: %m",
+	      __func__);
+	data->db_conn = NULL;
+
+	return NULL;
+}
 
 static int _auth_socket(on_http_request_args_t *args,
 			rest_auth_context_t *ctxt,
@@ -137,9 +171,12 @@ static int _auth_socket(on_http_request_args_t *args,
 		return ESLURM_AUTH_CRED_INVALID;
 	}
 
-	if (ctxt->user_name)
+	if (ctxt->user_name) {
+		plugin_data_t *data = xmalloc(sizeof(*data));
+		xassert((data->magic = MAGIC));
+		ctxt->plugin_data = data;
 		return SLURM_SUCCESS;
-	else
+	} else
 		return ESLURM_USER_ID_MISSING;
 }
 
@@ -196,9 +233,12 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 
 			ctxt->user_name = uid_to_string_or_null(status.st_uid);
 
-			if (ctxt->user_name)
+			if (ctxt->user_name) {
+				plugin_data_t *data = xmalloc(sizeof(*data));
+				xassert(data->magic = MAGIC);
+				ctxt->plugin_data = data;
 				return SLURM_SUCCESS;
-			else
+			} else
 				return ESLURM_USER_ID_MISSING;
 		}
 
@@ -218,19 +258,24 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 
 extern int slurm_rest_auth_p_apply(rest_auth_context_t *context)
 {
+	plugin_data_t *data = context->plugin_data;
+	xassert(data->magic == MAGIC);
 	xassert(context->plugin_id == plugin_id);
 
-	/* nothing to do for local */
-
-	return SLURM_SUCCESS;
+	return g_slurm_auth_thread_config(NULL, context->user_name);
 }
 
 extern void slurm_rest_auth_p_free(rest_auth_context_t *context)
 {
-	xassert(!context->plugin_data);
+	plugin_data_t *data = context->plugin_data;
+	xassert(data->magic == MAGIC);
 	xassert(context->plugin_id == plugin_id);
+	xassert((data->magic = ~MAGIC));
 
-	/* nothing to do for local */
+	if (data->db_conn)
+		slurmdb_connection_close(&data->db_conn);
+
+	xfree(context->plugin_data);
 }
 
 extern void slurm_rest_auth_p_init(void)

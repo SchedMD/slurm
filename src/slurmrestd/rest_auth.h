@@ -83,6 +83,13 @@ extern int rest_authenticate_http_request(on_http_request_args_t *args);
 extern int rest_auth_context_apply(rest_auth_context_t *context);
 
 /*
+ * Retrieve db_conn for slurmdbd calls.
+ * WARNING: pointer will be invalidated by next rest_auth_context_free()
+ * RET NULL on error or db_conn pointer
+ */
+extern void *rest_auth_context_get_db_conn(rest_auth_context_t *context);
+
+/*
  * Clear current auth context
  * will fatal on error
  */

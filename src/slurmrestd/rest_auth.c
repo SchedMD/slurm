@@ -58,6 +58,7 @@ typedef struct {
 	int (*init)(void);
 	int (*fini)(void);
 	int (*auth)(on_http_request_args_t *args, rest_auth_context_t *ctxt);
+	void *(*db_conn)(rest_auth_context_t *context);
 	int (*apply)(rest_auth_context_t *context);
 	void (*free)(rest_auth_context_t *context);
 } slurm_rest_auth_ops_t;
@@ -69,6 +70,7 @@ static const char *syms[] = {
 	"slurm_rest_auth_p_init",
 	"slurm_rest_auth_p_fini",
 	"slurm_rest_auth_p_authenticate",
+	"slurm_rest_auth_p_get_db_conn",
 	"slurm_rest_auth_p_apply",
 	"slurm_rest_auth_p_free", /* release contents of plugin_data */
 };
@@ -250,6 +252,20 @@ extern int rest_auth_context_apply(rest_auth_context_t *context)
 extern void rest_auth_context_clear(void)
 {
 	g_slurm_auth_thread_clear();
+}
+
+extern void *rest_auth_context_get_db_conn(rest_auth_context_t *context)
+{
+	_check_magic(context);
+
+	if (!context || !context->plugin_id)
+		return NULL;
+
+	for (int i = 0; (g_context_cnt > 0) && (i < g_context_cnt); i++)
+		if (context->plugin_id == plugin_ids[i])
+			return (*(ops[i].db_conn))(context);
+
+	return NULL;
 }
 
 extern void rest_auth_context_free(rest_auth_context_t *context)

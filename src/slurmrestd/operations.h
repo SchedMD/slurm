@@ -47,6 +47,9 @@
 extern int init_operations(void);
 extern void destroy_operations(void);
 
+/* opaque type for auth */
+typedef struct operations_auth_s operations_auth_t;
+
 /*
  * Callback from operations manager.
  * we are not passing any http information to make this generic.
@@ -59,7 +62,7 @@ typedef int (*operation_handler_t)(
 	data_t *query, /* query sent by client */
 	int tag, /* tag associated with path */
 	data_t *resp, /* data to populate with response */
-	void *auth /* authentication context */
+	operations_auth_t *auth /* authentication context */
 );
 
 /*

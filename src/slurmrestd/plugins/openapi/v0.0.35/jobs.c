@@ -1139,7 +1139,7 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 static int _op_handler_jobs(const char *context_id,
 			    http_request_method_t method,
 			    data_t *parameters, data_t *query, int tag,
-			    data_t *resp, void *auth)
+			    data_t *resp, operations_auth_t *auth)
 {
 	int rc = SLURM_SUCCESS;
 	job_info_msg_t *job_info_ptr = NULL;
@@ -1265,7 +1265,7 @@ static int _handle_job_post(const char *context_id,
 
 static int _op_handler_job(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth)
+			   data_t *resp, operations_auth_t *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *data_jobid;
@@ -1452,7 +1452,8 @@ static int _op_handler_submit_job(const char *context_id,
 				  http_request_method_t method,
 				  data_t *parameters,
 				  data_t *query,
-				  int tag, data_t *resp, void *auth)
+				  int tag, data_t *resp,
+				  operations_auth_t *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = data_set_list(

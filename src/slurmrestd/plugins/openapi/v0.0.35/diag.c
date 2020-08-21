@@ -60,7 +60,7 @@ typedef enum {
 static int _op_handler_diag(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
 			    data_t *query, int tag, data_t *resp_ptr,
-			    void *auth)
+			    operations_auth_t *auth)
 {
 	int rc;
 	stats_info_response_msg_t *resp = NULL;
@@ -163,7 +163,7 @@ cleanup:
 static int _op_handler_ping(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
 			    data_t *query, int tag, data_t *resp_ptr,
-			    void *auth)
+			    operations_auth_t *auth)
 {
 	//based on _print_ping() from scontrol
 	int rc = SLURM_SUCCESS;
