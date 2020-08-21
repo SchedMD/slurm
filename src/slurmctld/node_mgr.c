@@ -2723,8 +2723,9 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			if (node_ptr->next_state != NO_VAL)
 				node_flags &= (~NODE_STATE_DRAIN);
 
-			if (node_ptr->next_state == NODE_STATE_DOWN) {
-				node_ptr->node_state = node_ptr->next_state |
+			if ((node_ptr->next_state & NODE_STATE_BASE) ==
+			    NODE_STATE_DOWN) {
+				node_ptr->node_state = NODE_STATE_DOWN |
 						       node_flags;
 				if (node_ptr->reason) {
 					xstrcat(node_ptr->reason,
