@@ -72,6 +72,8 @@ documents those changes that are of interest to users and administrators.
     Flags.
  -- When a GRES has a no_consume flag, report 0 for allocated.
  -- Fix cgroup cleanup by jobacct_gather/cgroup.
+ -- When creating reservations/jobs don't allow counts on a feature unless
+    using an XOR.
 
 * Changes in Slurm 20.02.4
 ==========================
