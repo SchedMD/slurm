@@ -90,9 +90,8 @@ written.
 
 .TP
 \fBcancel_reboot \fI<NodeList>\fP
-Cancel pending reboots on nodes. If the node reason is "Reboot ASAP" (the
-default reason set by reboot's \fIASAP\fP keyword), then the DRAIN state
-flag will be removed and the node reason will be cleared.
+Cancel pending reboots on nodes. The node will be undrain'ed and the reason
+cleared if the node was drained by an ASAP reboot.
 
 .TP
 \fBcluster\fR \fICLUSTER_NAME\fP
@@ -185,8 +184,8 @@ Each node will have the "REBOOT" flag added to its node state.
 After a node reboots and the slurmd daemon starts up again, the
 HealthCheckProgram will run once. Then, the slurmd daemon will register
 itself with the slurmctld daemon and the "REBOOT" flag will be cleared.
-If the node reason is "Reboot ASAP", Slurm will clear the node's "DRAIN"
-state flag as well.
+The node's "DRAIN" state flag will be cleared if the reboot was "ASAP",
+nextstate=resume or down.
 The "ASAP" option adds the "DRAIN" flag to each node's state, preventing
 additional jobs from running on the node so it can be
 rebooted and returned to service "As Soon As Possible" (i.e. ASAP).
@@ -195,7 +194,7 @@ isn't specified.
 If the "nextstate" option is specified
 as "DOWN", then the node will remain in a down state after rebooting. If
 "nextstate" is specified as "RESUME", then the nodes will resume as normal
-when the node registers and the node reason will be cleared.
+and the node's reason and "DRAIN" state will be cleared.
 Resuming nodes will be considered as available in
 backfill future scheduling and won't be replaced by idle nodes in a reservation.
 The "reason" option sets each node's reason to a user-defined message.
