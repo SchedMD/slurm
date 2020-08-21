@@ -1626,8 +1626,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 					node_ptr->node_state &=
 						(~NODE_STATE_REBOOT);
 					state_val = base_state;
-					if (!xstrcmp(node_ptr->reason,
-					             "Reboot ASAP"))
+					if ((node_ptr->next_state &
+					     NODE_STATE_FLAGS) &
+					    NODE_STATE_UNDRAIN)
 						_undo_reboot_asap(node_ptr);
 				} else {
 					info("REBOOT on node %s already in progress -- unable to cancel",
