@@ -74,6 +74,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix cgroup cleanup by jobacct_gather/cgroup.
  -- When creating reservations/jobs don't allow counts on a feature unless
     using an XOR.
+ -- Improve number of boards discovery
 
 * Changes in Slurm 20.02.4
 ==========================
