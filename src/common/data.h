@@ -272,9 +272,9 @@ extern int64_t data_get_int(const data_t *data);
 extern int data_get_int_converted(const data_t *d, int64_t *ptr_buffer);
 
 /*
- * Get data as string and force conversion if possible.
+ * Get data as string
  * IN data data to convert into a string
- * RET data converted to string or NULL on failure
+ * RET data string or NULL on failure
  */
 extern const char *data_get_string(const data_t *data);
 
