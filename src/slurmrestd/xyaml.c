@@ -781,7 +781,7 @@ static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter)
 		return count >= 0 ? SLURM_SUCCESS : SLURM_ERROR;
 	}
 	case DATA_TYPE_STRING:
-		return _emit_string(data_get_string(d), emitter);
+		return _emit_string(data_get_string_const(d), emitter);
 	default:
 		xassert(false);
 	};

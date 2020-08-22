@@ -819,7 +819,18 @@ int64_t data_get_int(const data_t *data)
 	return data->data.int_u;
 }
 
-const char *data_get_string(const data_t *data)
+extern char *data_get_string(data_t *data)
+{
+	_check_magic(data);
+
+	if (!data)
+		return NULL;
+
+	xassert(data->type == DATA_TYPE_STRING);
+	return data->data.string_u;
+}
+
+extern const char *data_get_string_const(const data_t *data)
 {
 	_check_magic(data);
 
@@ -847,7 +858,7 @@ int data_get_string_converted(const data_t *d, char **buffer)
 			_buffer = xstrdup(data_get_string(dclone));
 		FREE_NULL_DATA(dclone);
 	} else
-		_buffer = xstrdup(data_get_string(d));
+		_buffer = xstrdup(data_get_string_const(d));
 
 	if (_buffer) {
 		*buffer = _buffer;
@@ -1528,7 +1539,8 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 		return (data_get_type(b) == DATA_TYPE_NULL);
 	case DATA_TYPE_STRING:
 		// TODO: should we have a case insensitive compare?
-		return !xstrcmp(data_get_string(a), data_get_string(b));
+		return !xstrcmp(data_get_string_const(a),
+				data_get_string_const(b));
 	case DATA_TYPE_BOOL:
 		return (data_get_bool(a) == data_get_bool(b));
 	case DATA_TYPE_INT_64:
@@ -1622,7 +1634,7 @@ data_t *data_copy(data_t *dest, const data_t *src)
 
 	switch (data_get_type(src)) {
 	case DATA_TYPE_STRING:
-		return data_set_string(dest, data_get_string(src));
+		return data_set_string(dest, data_get_string_const(src));
 	case DATA_TYPE_BOOL:
 		return data_set_bool(dest, data_get_bool(src));
 	case DATA_TYPE_INT_64:

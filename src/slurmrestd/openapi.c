@@ -308,7 +308,7 @@ static data_for_each_cmd_t _match_server_override(const data_t *data,
 		fatal("%s: server %s lacks url field required per OASv3.0.3 section 4.7.5",
 		      __func__, dump_json(data, 0));
 
-	spath = parse_url_path(data_get_string(surl), true, true);
+	spath = parse_url_path(data_get_string_const(surl), true, true);
 
 	if (_match_server_path(spath, fargs[1], fargs[0])) {
 		fargs[2] = data;
@@ -372,7 +372,7 @@ static data_for_each_cmd_t _match_server_path_string(const data_t *data,
 		fatal("%s: server %s lacks url field required per OASv3.0.3 section 4.7.5",
 		      __func__, dump_json(data, 0));
 
-	args->server_path = spath = parse_url_path(data_get_string(surl),
+	args->server_path = spath = parse_url_path(data_get_string_const(surl),
 						   true, true);
 
 	if ((data_dict_for_each_const(args->path_list, _match_path_string, arg)
@@ -428,7 +428,7 @@ static data_for_each_cmd_t _populate_parameters(const data_t *data, void *arg)
 	const char *key = NULL;
 	const data_t *dname = data_key_get_const(data, "name");
 
-	if (!dname || !(key = data_get_string(dname)) || !key[0]) {
+	if (!dname || !(key = data_get_string_const(dname)) || !key[0]) {
 		/* parameter doesn't have a name! */
 		return DATA_FOR_EACH_FAIL;
 	}
@@ -663,10 +663,10 @@ static data_for_each_cmd_t _match_path(const data_t *data, void *y)
 		if (data_get_type(data) != DATA_TYPE_STRING)
 			return DATA_FOR_EACH_FAIL;
 
-		match = !xstrcmp(data_get_string(data), entry->entry);
+		match = !xstrcmp(data_get_string_const(data), entry->entry);
 
 		debug5("%s: string attempt match %s to %s: %s",
-		       __func__, entry->entry, data_get_string(data),
+		       __func__, entry->entry, data_get_string_const(data),
 		       (match ? "SUCCESS" : "FAILURE"));
 
 		if (!match)
