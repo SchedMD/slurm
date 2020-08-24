@@ -356,8 +356,9 @@ extern int rest_auth_context_apply(rest_auth_context_t *context)
 	} else if (context->type == AUTH_TYPE_USER_PSK) {
 		rc = g_slurm_auth_thread_config(context->token,
 						context->user_name);
-		error("%s: AUTH_TYPE_USER_PSK failed: %s",
-		      __func__, slurm_strerror(rc));
+		if (rc)
+			error("%s: AUTH_TYPE_USER_PSK failed: %s",
+			      __func__, slurm_strerror(rc));
 	} else
 		fatal_abort("%s: invalid auth type", __func__);
 
