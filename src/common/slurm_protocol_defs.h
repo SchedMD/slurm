@@ -729,6 +729,7 @@ typedef struct job_step_specs {
 	char *exc_nodes;	/* comma separated list of nodes excluded
 				 * from step's allocation, default NONE */
 	char *features;		/* required node features, default NONE */
+	uint32_t flags;         /* various flags from step_spec_flags_t */
 	char *host;		/* host to contact initiating srun */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */

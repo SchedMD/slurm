@@ -2411,6 +2411,7 @@ extern void _pack_job_step_create_request_msg(
 		pack16(msg->immediate, buffer);
 		pack16(msg->resv_port_cnt, buffer);
 		pack32(msg->srun_pid, buffer);
+		pack32(msg->flags, buffer);
 
 		packstr(msg->host, buffer);
 		packstr(msg->name, buffer);
@@ -2515,6 +2516,7 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpack16(&tmp_ptr->immediate, buffer);
 		safe_unpack16(&tmp_ptr->resv_port_cnt, buffer);
 		safe_unpack32(&tmp_ptr->srun_pid, buffer);
+		safe_unpack32(&tmp_ptr->flags, buffer);
 
 		safe_unpackstr_xmalloc(&tmp_ptr->host, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);

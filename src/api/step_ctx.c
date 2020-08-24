@@ -127,6 +127,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->exclusive  = step_params->exclusive;
 	step_req->exc_nodes = xstrdup(step_params->exc_nodes);
 	step_req->features = xstrdup(step_params->features);
+	step_req->flags = step_params->flags;
 	step_req->immediate  = step_params->immediate;
 	step_req->max_nodes = step_params->max_nodes;
 	step_req->mem_per_tres = xstrdup(step_params->mem_per_tres);
