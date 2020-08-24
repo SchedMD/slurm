@@ -565,9 +565,10 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	       step_spec->host, step_spec->port, step_spec->srun_pid,
 	       step_spec->name, step_spec->network,
 	       (step_spec->flags & SSF_EXCLUSIVE) ? "yes" : "no");
-	debug3("   mem_per_%s=%"PRIu64" resv_port_cnt=%u immediate=%u"
-	       " no_kill=%u", mem_type, mem_value, step_spec->resv_port_cnt,
-	       step_spec->immediate, step_spec->no_kill);
+	debug3("   mem_per_%s=%"PRIu64" resv_port_cnt=%u immediate=%u no_kill=%s",
+	       mem_type, mem_value, step_spec->resv_port_cnt,
+	       step_spec->immediate,
+	       (step_spec->flags & SSF_NO_KILL) ? "yes" : "no");
 	debug3("   overcommit=%d time_limit=%u",
 	       step_spec->overcommit, step_spec->time_limit);
 
@@ -2542,8 +2543,6 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 
 	cpus_per_task = _calc_cpus_per_task(step_specs, job_ptr);
 
-	if (step_specs->no_kill > 1)
-		step_specs->no_kill = 1;
 	_copy_job_tres_to_step(step_specs, job_ptr);
 	i = gres_plugin_step_state_validate(step_specs->cpus_per_tres,
 					    step_specs->tres_per_step,
@@ -2681,7 +2680,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->cpu_count = orig_cpu_count;
 	step_ptr->exit_code = NO_VAL;
 	step_ptr->exclusive = (step_specs->flags & SSF_EXCLUSIVE) ? 1 : 0;
-	step_ptr->no_kill   = step_specs->no_kill;
+	step_ptr->no_kill = (step_specs->flags & SSF_NO_KILL) ? 1 : 0;
 	step_ptr->ext_sensors = ext_sensors_alloc();
 
 	step_ptr->cpus_per_tres = xstrdup(step_specs->cpus_per_tres);

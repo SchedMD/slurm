@@ -133,7 +133,6 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->min_nodes = step_params->min_nodes;
 	step_req->name = xstrdup(step_params->name);
 	step_req->network = xstrdup(step_params->network);
-	step_req->no_kill = step_params->no_kill;
 	step_req->node_list = xstrdup(step_params->node_list);
 	step_req->num_tasks = step_params->task_count;
 	step_req->overcommit = step_params->overcommit ? 1 : 0;

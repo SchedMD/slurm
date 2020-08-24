@@ -2421,7 +2421,6 @@ extern void _pack_job_step_create_request_msg(
 		pack32(msg->step_het_comp_cnt, buffer);
 		packstr(msg->step_het_grps, buffer);
 
-		pack8(msg->no_kill, buffer);
 		pack8(msg->overcommit, buffer);
 
 		packstr(msg->cpus_per_tres, buffer);
@@ -2464,7 +2463,8 @@ extern void _pack_job_step_create_request_msg(
 		packnull(buffer); /* was ckpt_dir */
 		packstr(msg->features, buffer);
 
-		pack8(msg->no_kill, buffer);
+		tmp8 = (msg->flags & SSF_NO_KILL) ? 1 : 0;
+		pack8(tmp8, buffer);
 		pack8(msg->overcommit, buffer);
 
 		packstr(msg->cpus_per_tres, buffer);
@@ -2532,7 +2532,6 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpackstr_xmalloc(&tmp_ptr->step_het_grps, &uint32_tmp,
 				       buffer);
 
-		safe_unpack8(&tmp_ptr->no_kill, buffer);
 		safe_unpack8(&tmp_ptr->overcommit, buffer);
 
 		safe_unpackstr_xmalloc(&tmp_ptr->cpus_per_tres, &uint32_tmp,
@@ -2600,7 +2599,9 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp,
 				       buffer);
 
-		safe_unpack8(&tmp_ptr->no_kill, buffer);
+		safe_unpack8((uint8_t *)&uint16_tmp, buffer);
+		if (uint16_tmp)
+			tmp_ptr->flags |= SSF_NO_KILL;
 		safe_unpack8(&tmp_ptr->overcommit, buffer);
 
 		safe_unpackstr_xmalloc(&tmp_ptr->cpus_per_tres, &uint32_tmp,
