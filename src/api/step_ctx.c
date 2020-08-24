@@ -124,7 +124,6 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->cpu_freq_max = step_params->cpu_freq_max;
 	step_req->cpu_freq_gov = step_params->cpu_freq_gov;
 	step_req->cpus_per_tres = xstrdup(step_params->cpus_per_tres);
-	step_req->exclusive  = step_params->exclusive;
 	step_req->exc_nodes = xstrdup(step_params->exc_nodes);
 	step_req->features = xstrdup(step_params->features);
 	step_req->flags = step_params->flags;

@@ -561,9 +561,10 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	       step_spec->task_dist, step_spec->plane_size);
 	debug3("   node_list=%s  constraints=%s",
 	       step_spec->node_list, step_spec->features);
-	debug3("   host=%s port=%u srun_pid=%u name=%s network=%s exclusive=%u",
+	debug3("   host=%s port=%u srun_pid=%u name=%s network=%s exclusive=%s",
 	       step_spec->host, step_spec->port, step_spec->srun_pid,
-	       step_spec->name, step_spec->network, step_spec->exclusive);
+	       step_spec->name, step_spec->network,
+	       (step_spec->flags & SSF_EXCLUSIVE) ? "yes" : "no");
 	debug3("   mem_per_%s=%"PRIu64" resv_port_cnt=%u immediate=%u"
 	       " no_kill=%u", mem_type, mem_value, step_spec->resv_port_cnt,
 	       step_spec->immediate, step_spec->no_kill);
@@ -1107,7 +1108,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	 * Exclusive mode:
 	 * Do not use nodes with insufficient CPUs, memory or GRES.
 	 */
-	if (step_spec->exclusive) {
+	if (step_spec->flags & SSF_EXCLUSIVE) {
 		int avail_cpus, avail_tasks, total_cpus, total_tasks, node_inx;
 		uint64_t avail_mem, total_mem;
 		uint32_t nodes_picked_cnt = 0;
@@ -2524,7 +2525,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	orig_cpu_count =  step_specs->cpu_count;
 
 	if (step_specs->overcommit) {
-		if (step_specs->exclusive) {
+		if (step_specs->flags & SSF_EXCLUSIVE) {
 			/*
 			 * Not really a legitimate combination,
 			 * try to exclusively allocate one CPU per task
@@ -2679,7 +2680,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->pn_min_memory = step_specs->pn_min_memory;
 	step_ptr->cpu_count = orig_cpu_count;
 	step_ptr->exit_code = NO_VAL;
-	step_ptr->exclusive = step_specs->exclusive;
+	step_ptr->exclusive = (step_specs->flags & SSF_EXCLUSIVE) ? 1 : 0;
 	step_ptr->no_kill   = step_specs->no_kill;
 	step_ptr->ext_sensors = ext_sensors_alloc();
 

@@ -1040,6 +1040,11 @@ enum ctx_keys {
 #define X11_FORWARD_FIRST	0x0004	/* only the first node */
 #define X11_FORWARD_LAST	0x0008	/* only the last node */
 
+typedef enum {
+	SSF_NONE = 0, /* No flags set */
+	SSF_EXCLUSIVE = 1 << 0, /* CPUs not shared with other steps */
+} step_spec_flags_t;
+
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
 \*****************************************************************************/
@@ -1899,7 +1904,6 @@ typedef struct {
 	uint32_t cpu_freq_max;	/* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;	/* cpu frequency governor */
 	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
-	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
 	char *exc_nodes;	/* comma separated list of nodes excluded
 				 * from step's allocation, default NONE */
 	char *features;		/* required node features, default NONE */
