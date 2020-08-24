@@ -773,16 +773,6 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 		data_set_string(data_list_append(bitflags), "JOB_MEM_SET");
 	if (job->bitflags & JOB_RESIZED)
 		data_set_string(data_list_append(bitflags), "JOB_RESIZED");
-	if (job->bitflags & X11_FORWARD_ALL)
-		data_set_string(data_list_append(bitflags), "X11_FORWARD_ALL");
-	if (job->bitflags & X11_FORWARD_BATCH)
-		data_set_string(data_list_append(bitflags),
-				"X11_FORWARD_BATCH");
-	if (job->bitflags & X11_FORWARD_FIRST)
-		data_set_string(data_list_append(bitflags),
-				"X11_FORWARD_FIRST");
-	if (job->bitflags & X11_FORWARD_LAST)
-		data_set_string(data_list_append(bitflags), "X11_FORWARD_LAST");
 	/* boards_per_node intentionally omitted */
 	data_set_string(data_key_set(jd, "burst_buffer"), job->burst_buffer);
 	data_set_string(data_key_set(jd, "burst_buffer_state"),
