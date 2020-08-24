@@ -1025,9 +1025,6 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 
 			/* set up for the next one */
 			socket_last_pu[s]++;
-			/* skip unrequested threads */
-			if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
-				socket_last_pu[s] += hw_threads - 1;
 
 			if (!bit_test(avail_map, bit))
 				continue;
@@ -1039,6 +1036,9 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			if ((req->threads_per_core != NO_VAL16) &&
 			    (core_threads[core_inx] >= req->threads_per_core))
 				continue;
+			/* skip unrequested threads */
+			if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
+				socket_last_pu[s] += hw_threads - 1;
 
 			if (!masks[taskcount])
 				masks[taskcount] =
