@@ -1035,6 +1035,7 @@ enum ctx_keys {
 					 * magnetic reservation */
 #define JOB_PART_ASSIGNED  0x80000000   /* Job didn't request a partition */
 
+/* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
 #define X11_FORWARD_BATCH	0x0002  /* only the batch node */
 #define X11_FORWARD_FIRST	0x0004	/* only the first node */
