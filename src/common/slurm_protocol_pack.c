@@ -2421,8 +2421,6 @@ extern void _pack_job_step_create_request_msg(
 		pack32(msg->step_het_comp_cnt, buffer);
 		packstr(msg->step_het_grps, buffer);
 
-		pack8(msg->overcommit, buffer);
-
 		packstr(msg->cpus_per_tres, buffer);
 		packstr(msg->mem_per_tres, buffer);
 		packstr(msg->tres_bind, buffer);
@@ -2465,7 +2463,8 @@ extern void _pack_job_step_create_request_msg(
 
 		tmp8 = (msg->flags & SSF_NO_KILL) ? 1 : 0;
 		pack8(tmp8, buffer);
-		pack8(msg->overcommit, buffer);
+		tmp8 = (msg->flags & SSF_OVERCOMMIT) ? 1 : 0;
+		pack8(tmp8, buffer);
 
 		packstr(msg->cpus_per_tres, buffer);
 		packstr(msg->mem_per_tres, buffer);
@@ -2531,8 +2530,6 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpack32(&tmp_ptr->step_het_comp_cnt, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->step_het_grps, &uint32_tmp,
 				       buffer);
-
-		safe_unpack8(&tmp_ptr->overcommit, buffer);
 
 		safe_unpackstr_xmalloc(&tmp_ptr->cpus_per_tres, &uint32_tmp,
 				       buffer);
@@ -2602,7 +2599,9 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpack8((uint8_t *)&uint16_tmp, buffer);
 		if (uint16_tmp)
 			tmp_ptr->flags |= SSF_NO_KILL;
-		safe_unpack8(&tmp_ptr->overcommit, buffer);
+		safe_unpack8((uint8_t *)&uint16_tmp, buffer);
+		if (uint16_tmp)
+			tmp_ptr->flags |= SSF_OVERCOMMIT;
 
 		safe_unpackstr_xmalloc(&tmp_ptr->cpus_per_tres, &uint32_tmp,
 				       buffer);

@@ -744,8 +744,6 @@ typedef struct job_step_specs {
 	char *mem_per_tres;	/* semicolon delimited list of TRES=# values */
 	char *node_list;	/* list of required nodes */
 	uint32_t num_tasks;	/* number of tasks required */
-	uint8_t overcommit;     /* flag, 1 to allow overcommit of processors,
-				   0 to disallow overcommit. default is 0 */
 	uint16_t plane_size;	/* plane size when task_dist =
 				   SLURM_DIST_PLANE */
 	uint16_t port;		/* port to contact initiating srun */

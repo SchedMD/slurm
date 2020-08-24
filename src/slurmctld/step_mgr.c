@@ -569,8 +569,9 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	       mem_type, mem_value, step_spec->resv_port_cnt,
 	       step_spec->immediate,
 	       (step_spec->flags & SSF_NO_KILL) ? "yes" : "no");
-	debug3("   overcommit=%d time_limit=%u",
-	       step_spec->overcommit, step_spec->time_limit);
+	debug3("   overcommit=%s time_limit=%u",
+	       (step_spec->flags & SSF_OVERCOMMIT) ? "yes" : "no",
+	       step_spec->time_limit);
 
 	if (step_spec->cpus_per_tres)
 		debug3("   CPUs_per_TRES=%s", step_spec->cpus_per_tres);
@@ -2525,13 +2526,13 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	 */
 	orig_cpu_count =  step_specs->cpu_count;
 
-	if (step_specs->overcommit) {
+	if (step_specs->flags & SSF_OVERCOMMIT) {
 		if (step_specs->flags & SSF_EXCLUSIVE) {
 			/*
 			 * Not really a legitimate combination,
 			 * try to exclusively allocate one CPU per task
 			 */
-			step_specs->overcommit = 0;
+			step_specs->flags &= ~SSF_OVERCOMMIT;
 			step_specs->cpu_count = step_specs->num_tasks;
 		} else
 			step_specs->cpu_count = 0;

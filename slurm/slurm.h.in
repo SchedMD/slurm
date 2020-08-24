@@ -1044,6 +1044,8 @@ typedef enum {
 	SSF_NONE = 0, /* No flags set */
 	SSF_EXCLUSIVE = 1 << 0, /* CPUs not shared with other steps */
 	SSF_NO_KILL = 1 << 1, /* Don't kill step on node failure */
+	SSF_OVERCOMMIT = 1 << 2, /* Allow the step allocation of more tasks
+				  * to a node than available processors. */
 } step_spec_flags_t;
 
 /*****************************************************************************\
@@ -1923,10 +1925,6 @@ typedef struct {
 				 * default=0 */
 	char *mem_per_tres;	/* semicolon delimited list of TRES=# values */
 	char *node_list;	/* list of required nodes */
-	bool overcommit;	/* "true" to allow the allocation of more tasks
-				 * to a node than available processors,
-				 * "false" to accept at most one task per
-				 * processor. "false" by default. */
 	uint16_t plane_size;	/* plane size when task_dist =
 				 * SLURM_DIST_PLANE */
 	uint16_t relative;	/* first node to use of job's allocation */

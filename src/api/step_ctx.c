@@ -135,7 +135,6 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->network = xstrdup(step_params->network);
 	step_req->node_list = xstrdup(step_params->node_list);
 	step_req->num_tasks = step_params->task_count;
-	step_req->overcommit = step_params->overcommit ? 1 : 0;
 	step_req->plane_size = step_params->plane_size;
 	step_req->pn_min_memory = step_params->pn_min_memory;
 	step_req->relative = step_params->relative;
