@@ -38,12 +38,7 @@ set exit_code	0
 
 # account options
 array set acct_1 {}
-set acct(Organization)  "Account_Org_A1"
-set acct(Description)   "Test_Account_A1"
-set acct(Qos) $tq1
 array set acct_2 {}
-set acct(Organization)  "Account_Org_A2"
-set acct(Description)   "Test_Account_A2"
 
 # user options
 array set user_req_1 {}
@@ -55,9 +50,7 @@ set user_req_2(Qos) "$tq1,$tq2"
 
 # qos options
 array set qos_1 {}
-set qos_1(Description)   "test qos 1"
 array set qos_2 {}
-set qos_1(Description)   "test qos 2"
 
 set access_err  0
 
