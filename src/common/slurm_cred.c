@@ -930,7 +930,7 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 		goto error;
 	}
 
-	slurm_cred_handle_reissue(ctx, cred);
+	slurm_cred_handle_reissue(ctx, cred, true);
 
 	if (_credential_revoked(ctx, cred)) {
 		slurm_seterrno(ESLURMD_CREDENTIAL_REVOKED);
@@ -1880,9 +1880,14 @@ _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 }
 
 extern void
-slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
+slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred, bool locked)
 {
-	job_state_t  *j = _find_job_state(ctx, cred->jobid);
+	job_state_t  *j;
+
+	if (!locked)
+		slurm_mutex_lock(&ctx->mutex);
+
+	j = _find_job_state(ctx, cred->jobid);
 
 	if (j != NULL && j->revoked && (cred->ctime > j->revoked)) {
 		/* The credential has been reissued.  Purge the
@@ -1896,6 +1901,8 @@ slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 		j->expiration = 0;
 		_clear_expired_job_states(ctx);
 	}
+	if (!locked)
+		slurm_mutex_unlock(&ctx->mutex);
 }
 
 extern bool

@@ -2341,7 +2341,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		goto done;
 	}
 
-	slurm_cred_handle_reissue(conf->vctx, req->cred);
+	slurm_cred_handle_reissue(conf->vctx, req->cred, false);
 	if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		error("Job %u already killed, do not launch batch job",
 		      req->job_id);
