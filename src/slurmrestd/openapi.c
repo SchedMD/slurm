@@ -821,7 +821,10 @@ extern int init_openapi(const plugin_handle_t *plugin_handles,
 			fatal("Incomplete plugin detected");
 
 		spec[g_context_cnt] = (*(ops[g_context_cnt].get_oas))();
-		xassert(spec[g_context_cnt]);
+		if (!spec[g_context_cnt])
+			fatal_abort("%s: unable to load OpenAPI spec",
+				    __func__);
+
 
 		g_context_cnt++;
 	}
