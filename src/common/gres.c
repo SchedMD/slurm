@@ -8152,7 +8152,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		 */
 		req_cores = *max_tasks_this_node;
 		if (mc_ptr->cpus_per_task) {
-			int threads_per_core, cores_per_task;
+			int threads_per_core;
 
 			if (mc_ptr->threads_per_core)
 				threads_per_core =
@@ -8160,12 +8160,12 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					    mc_ptr->threads_per_core);
 			else
 				threads_per_core = cpus_per_core;
-			/* round up by full threads per core */
-			cores_per_task = mc_ptr->cpus_per_task;
-			cores_per_task += threads_per_core - 1;
-			cores_per_task /= threads_per_core;
 
-			req_cores *= cores_per_task;
+			req_cores *= mc_ptr->cpus_per_task;
+
+			/* round up by full threads per core */
+			req_cores += threads_per_core - 1;
+			req_cores /= threads_per_core;
 
 			log_flag(GRES, "%s: settings required_cores=%d by max_tasks_this_node=%d cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",
 				 __func__, req_cores,
