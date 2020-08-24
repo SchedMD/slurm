@@ -1908,15 +1908,19 @@ slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred, bool locked)
 extern bool
 slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 {
-	job_state_t  *j = _find_job_state(ctx, cred->jobid);
+	job_state_t  *j;
+	bool rc = false;
 
-	if ((j == NULL) || (j->revoked == (time_t)0))
-		return false;
+	slurm_mutex_lock(&ctx->mutex);
 
-	if (cred->ctime <= j->revoked)
-		return true;
+	j = _find_job_state(ctx, cred->jobid);
 
-	return false;
+	if (j && (j->revoked != (time_t)0) && (cred->ctime <= j->revoked))
+		rc = true;
+
+	slurm_mutex_unlock(&ctx->mutex);
+
+	return rc;
 }
 
 static bool
