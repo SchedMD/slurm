@@ -75,6 +75,7 @@ documents those changes that are of interest to users and administrators.
  -- When creating reservations/jobs don't allow counts on a feature unless
     using an XOR.
  -- Improve number of boards discovery
+ -- Fix updating a reservation NodeCnt on a zero-count reservation.
 
 * Changes in Slurm 20.02.4
 ==========================
