@@ -46,7 +46,7 @@ typedef struct {
 	struct job_resources *tmpjobs;
 } sort_support_t;
 
-/* Sort jobs by start time, then size (CPU count) */
+/* Sort jobs by first set core, then size (CPU count) */
 static int _compare_support(const void *v1, const void *v2)
 {
 	sort_support_t *s1, *s2;
