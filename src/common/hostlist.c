@@ -163,7 +163,7 @@ typedef struct {
 } hostname_t;
 
 /* hostrange type: A single prefix with `hi' and `lo' numeric suffix values */
-struct hostrange_components {
+typedef struct {
 	char *prefix;        /* alphanumeric prefix: */
 
 	/* beginning (lo) and end (hi) of suffix range */
@@ -175,9 +175,7 @@ struct hostrange_components {
 
 	/* If singlehost is 1, `lo' and `hi' are invalid */
 	unsigned singlehost:1;
-};
-
-typedef struct hostrange_components *hostrange_t;
+} hostrange_t;
 
 /* The hostlist type: An array based list of hostrange_t's */
 #define HOSTLIST_MAGIC 57005
@@ -195,7 +193,7 @@ struct hostlist {
 	int nhosts;
 
 	/* pointer to hostrange array */
-	hostrange_t *hr;
+	hostrange_t **hr;
 
 	/* list of iterators */
 	struct hostlist_iterator *ilist;
@@ -219,7 +217,7 @@ struct hostlist_iterator {
 	int idx;
 
 	/* current hostrange object in list hl, i.e. hl->hr[idx] */
-	hostrange_t hr;
+	hostrange_t *hr;
 
 	/* current depth we've traversed into range hr */
 	int depth;
@@ -295,37 +293,35 @@ static void hostname_destroy(hostname_t *);
 static int hostname_suffix_is_valid(hostname_t *);
 static int hostname_suffix_width(hostname_t *);
 
-static hostrange_t   hostrange_new(void);
-static hostrange_t   hostrange_create_single(const char *);
-static hostrange_t   hostrange_create(char *, unsigned long, unsigned long,
-				      int);
-static unsigned long hostrange_count(hostrange_t);
-static hostrange_t   hostrange_copy(hostrange_t);
-static void          hostrange_destroy(hostrange_t);
-static hostrange_t   hostrange_delete_host(hostrange_t, unsigned long);
-static int           hostrange_cmp(hostrange_t, hostrange_t);
-static int           hostrange_prefix_cmp(hostrange_t, hostrange_t);
-static int           hostrange_within_range(hostrange_t, hostrange_t);
-static int           hostrange_width_combine(hostrange_t, hostrange_t);
-static int           hostrange_empty(hostrange_t);
-static char *        hostrange_pop(hostrange_t);
-static char *        hostrange_shift(hostrange_t, int);
-static int           hostrange_join(hostrange_t, hostrange_t);
-static hostrange_t   hostrange_intersect(hostrange_t, hostrange_t);
-static int           hostrange_hn_within(hostrange_t, hostname_t *, int);
-static size_t        hostrange_to_string(hostrange_t hr, size_t, char *,
-					 char *, int);
-static size_t        hostrange_numstr(hostrange_t, size_t, char *, int);
+static hostrange_t *hostrange_new(void);
+static hostrange_t *hostrange_create_single(const char *);
+static hostrange_t *hostrange_create(char *, unsigned long, unsigned long, int);
+static unsigned long hostrange_count(hostrange_t *);
+static hostrange_t *hostrange_copy(hostrange_t *);
+static void hostrange_destroy(hostrange_t *);
+static hostrange_t *hostrange_delete_host(hostrange_t *, unsigned long);
+static int hostrange_cmp(hostrange_t *, hostrange_t *);
+static int hostrange_prefix_cmp(hostrange_t *, hostrange_t *);
+static int hostrange_within_range(hostrange_t *, hostrange_t *);
+static int hostrange_width_combine(hostrange_t *, hostrange_t *);
+static int hostrange_empty(hostrange_t *);
+static char *hostrange_pop(hostrange_t *);
+static char *hostrange_shift(hostrange_t *, int);
+static int hostrange_join(hostrange_t *, hostrange_t *);
+static hostrange_t *hostrange_intersect(hostrange_t *, hostrange_t *);
+static int hostrange_hn_within(hostrange_t *, hostname_t *, int);
+static size_t hostrange_to_string(hostrange_t *hr, size_t, char *, char *, int);
+static size_t hostrange_numstr(hostrange_t *, size_t, char *, int);
 
 static hostlist_t  hostlist_new(void);
 static hostlist_t _hostlist_create_bracketed(const char *, char *,
 					     char *, int);
 static int         hostlist_resize(hostlist_t, size_t);
 static int         hostlist_expand(hostlist_t);
-static int         hostlist_push_range(hostlist_t, hostrange_t);
+static int hostlist_push_range(hostlist_t, hostrange_t *);
 static int         hostlist_push_hr(hostlist_t, char *, unsigned long,
                                     unsigned long, int);
-static int         hostlist_insert_range(hostlist_t, hostrange_t, int);
+static int hostlist_insert_range(hostlist_t, hostrange_t *, int);
 static void        hostlist_delete_range(hostlist_t, int n);
 static void        hostlist_coalesce(hostlist_t hl);
 static void        hostlist_collapse(hostlist_t hl);
@@ -599,9 +595,9 @@ static int hostname_suffix_width(hostname_t *hn)
 
 /* allocate a new hostrange object
  */
-static hostrange_t hostrange_new(void)
+static hostrange_t *hostrange_new(void)
 {
-	hostrange_t new = (hostrange_t) malloc(sizeof(*new));
+	hostrange_t *new = malloc(sizeof(*new));
 	if (!new)
 		out_of_memory("hostrange create");
 	return new;
@@ -610,9 +606,9 @@ static hostrange_t hostrange_new(void)
 /* Create a hostrange_t containing a single host without a valid suffix
  * hr->prefix will represent the entire hostname.
  */
-static hostrange_t hostrange_create_single(const char *prefix)
+static hostrange_t *hostrange_create_single(const char *prefix)
 {
-	hostrange_t new;
+	hostrange_t *new;
 
 	xassert(prefix);
 
@@ -638,10 +634,10 @@ error1:
 
 /* Create a hostrange object with a prefix, hi, lo, and format width
  */
-static hostrange_t
-hostrange_create(char *prefix, unsigned long lo, unsigned long hi, int width)
+static hostrange_t *hostrange_create(char *prefix, unsigned long lo,
+				     unsigned long hi, int width)
 {
-	hostrange_t new;
+	hostrange_t *new;
 
 	xassert(prefix);
 
@@ -668,7 +664,7 @@ error1:
 
 /* Return the number of hosts stored in the hostrange object
  */
-static unsigned long hostrange_count(hostrange_t hr)
+static unsigned long hostrange_count(hostrange_t *hr)
 {
 	xassert(hr);
 	if (hr->singlehost)
@@ -679,7 +675,7 @@ static unsigned long hostrange_count(hostrange_t hr)
 
 /* Copy a hostrange object
  */
-static hostrange_t hostrange_copy(hostrange_t hr)
+static hostrange_t *hostrange_copy(hostrange_t *hr)
 {
 	xassert(hr);
 
@@ -693,7 +689,7 @@ static hostrange_t hostrange_copy(hostrange_t hr)
 
 /* free memory allocated by the hostrange object
  */
-static void hostrange_destroy(hostrange_t hr)
+static void hostrange_destroy(hostrange_t *hr)
 {
 	if (hr == NULL)
 		return;
@@ -708,9 +704,9 @@ static void hostrange_destroy(hostrange_t hr)
  * highest or lowest host is deleted from a range, NULL is returned
  * and the hostrange hr is adjusted properly.
  */
-static hostrange_t hostrange_delete_host(hostrange_t hr, unsigned long n)
+static hostrange_t *hostrange_delete_host(hostrange_t *hr, unsigned long n)
 {
-	hostrange_t new = NULL;
+	hostrange_t *new = NULL;
 
 	xassert(hr);
 	xassert((n >= hr->lo) && (n <= hr->hi));
@@ -741,7 +737,7 @@ extern int hostlist_cmp_first(hostlist_t hl1, hostlist_t hl2)
  *       sort based on lowest suffix in range
  *    else
  *       sort based on width                     */
-static int hostrange_cmp(hostrange_t h1, hostrange_t h2)
+static int hostrange_cmp(hostrange_t *h1, hostrange_t *h2)
 {
 	int retval;
 
@@ -762,7 +758,7 @@ static int hostrange_cmp(hostrange_t h1, hostrange_t h2)
  *          UNLESS, either h1 or h2 (NOT both) do not have a valid suffix.
  *
  *    > 0   if h1's prefix is greater than h2's OR h1 == NULL. */
-static int hostrange_prefix_cmp(hostrange_t h1, hostrange_t h2)
+static int hostrange_prefix_cmp(hostrange_t *h1, hostrange_t *h2)
 {
 	int retval;
 	if (h1 == NULL)
@@ -783,7 +779,7 @@ static int hostrange_prefix_cmp(hostrange_t h1, hostrange_t h2)
  *  (XXX: Should incompatible widths be placed in the same bracketed list?
  *        There's no good reason not to, except maybe aesthetics)
  */
-static int hostrange_within_range(hostrange_t h1, hostrange_t h2)
+static int hostrange_within_range(hostrange_t *h1, hostrange_t *h2)
 {
 	if (hostrange_prefix_cmp(h1, h2) == 0)
 		return h1->singlehost || h2->singlehost ? 0 : 1;
@@ -797,7 +793,7 @@ static int hostrange_within_range(hostrange_t h1, hostrange_t h2)
  *  1 if widths can safely be combined
  *  0 if widths cannot be safely combined
  */
-static int hostrange_width_combine(hostrange_t h0, hostrange_t h1)
+static int hostrange_width_combine(hostrange_t *h0, hostrange_t *h1)
 {
 	xassert(h0 && h1);
 
@@ -807,7 +803,7 @@ static int hostrange_width_combine(hostrange_t h0, hostrange_t h1)
 
 /* Return true if hostrange hr contains no hosts, i.e. hi < lo
  */
-static int hostrange_empty(hostrange_t hr)
+static int hostrange_empty(hostrange_t *hr)
 {
 	xassert(hr);
 	return ((hr->hi < hr->lo) || (hr->hi == (unsigned long) -1));
@@ -818,7 +814,7 @@ static int hostrange_empty(hostrange_t hr)
  *
  * Returns NULL if malloc fails OR there are no more hosts left
  */
-static char *hostrange_pop(hostrange_t hr)
+static char *hostrange_pop(hostrange_t *hr)
 {
 	size_t size = 0;
 	char *host = NULL;
@@ -859,7 +855,7 @@ static char *hostrange_pop(hostrange_t hr)
 }
 
 /* Same as hostrange_pop(), but remove host from start of range */
-static char *hostrange_shift(hostrange_t hr, int dims)
+static char *hostrange_shift(hostrange_t *hr, int dims)
 {
 	size_t size = 0;
 	char *host = NULL;
@@ -914,7 +910,7 @@ static char *hostrange_shift(hostrange_t hr, int dims)
  * it is assumed that h1->lo <= h2->lo, i.e. hr1 <= hr2
  *
  */
-static int hostrange_join(hostrange_t h1, hostrange_t h2)
+static int hostrange_join(hostrange_t *h1, hostrange_t *h2)
 {
 	int duplicated = -1;
 
@@ -947,9 +943,9 @@ static int hostrange_join(hostrange_t h1, hostrange_t h2)
  *
  * It is assumed that h1 <= h2 (i.e. h1->lo <= h2->lo)
  */
-static hostrange_t hostrange_intersect(hostrange_t h1, hostrange_t h2)
+static hostrange_t *hostrange_intersect(hostrange_t *h1, hostrange_t *h2)
 {
-	hostrange_t new = NULL;
+	hostrange_t *new = NULL;
 
 	xassert(h1 && h2);
 
@@ -974,7 +970,7 @@ static hostrange_t hostrange_intersect(hostrange_t h1, hostrange_t h2)
 /* return 1 if hostname hn is within the hostrange hr
  *        0 if not.
  */
-static int hostrange_hn_within(hostrange_t hr, hostname_t *hn, int dims)
+static int hostrange_hn_within(hostrange_t *hr, hostname_t *hn, int dims)
 {
 	if (hr->singlehost) {
 		/*
@@ -1081,9 +1077,8 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t *hn, int dims)
 /* copy a string representation of the hostrange hr into buffer buf,
  * writing at most n chars including NUL termination
  */
-static size_t
-hostrange_to_string(hostrange_t hr, size_t n, char *buf,
-		    char *separator, int dims)
+static size_t hostrange_to_string(hostrange_t *hr, size_t n, char *buf,
+				  char *separator, int dims)
 {
 	unsigned long i;
 	int ret, len = 0;
@@ -1139,7 +1134,7 @@ truncated:
  * writing at most n chars including NUL termination. The width argument
  * controls the number of leading zeroes.
  */
-static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf, int width)
+static size_t hostrange_numstr(hostrange_t *hr, size_t n, char *buf, int width)
 {
 	int len = 0;
 	int dims = slurmdb_setup_cluster_name_dims();
@@ -1209,7 +1204,7 @@ static hostlist_t hostlist_new(void)
 	new->magic = HOSTLIST_MAGIC;
 	slurm_mutex_init(&new->mutex);
 
-	new->hr = (hostrange_t *) malloc(HOSTLIST_CHUNK * sizeof(hostrange_t));
+	new->hr = malloc(HOSTLIST_CHUNK * sizeof(hostrange_t));
 	if (!new->hr)
 		goto fail2;
 
@@ -1245,7 +1240,7 @@ static int hostlist_resize(hostlist_t hl, size_t newsize)
 	xassert(hl->magic == HOSTLIST_MAGIC);
 	oldsize = hl->size;
 	hl->size = newsize;
-	hl->hr = realloc((void *) hl->hr, hl->size*sizeof(hostrange_t));
+	hl->hr = realloc((void *) hl->hr, hl->size*sizeof(hostrange_t *));
 	if (!(hl->hr))
 		return 0;
 
@@ -1270,9 +1265,9 @@ static int hostlist_expand(hostlist_t hl)
  * Returns the number of hosts successfully pushed onto hl
  * or -1 if there was an error allocating memory
  */
-static int hostlist_push_range(hostlist_t hl, hostrange_t hr)
+static int hostlist_push_range(hostlist_t hl, hostrange_t *hr)
 {
-	hostrange_t tail;
+	hostrange_t *tail;
 	int retval;
 
 	xassert(hr);
@@ -1289,7 +1284,7 @@ static int hostlist_push_range(hostlist_t hl, hostrange_t hr)
 	    && hostrange_width_combine(tail, hr)) {
 		tail->hi = hr->hi;
 	} else {
-		hostrange_t new = hostrange_copy(hr);
+		hostrange_t *new = hostrange_copy(hr);
 		if (new == NULL)
 			goto error;
 		hl->hr[hl->nranges++] = new;
@@ -1315,7 +1310,7 @@ static int
 hostlist_push_hr(hostlist_t hl, char *prefix, unsigned long lo,
 		 unsigned long hi, int width)
 {
-	hostrange_t hr = hostrange_create(prefix, lo, hi, width);
+	hostrange_t *hr = hostrange_create(prefix, lo, hi, width);
 	int retval = hostlist_push_range(hl, hr);
 	hostrange_destroy(hr);
 	return retval;
@@ -1324,10 +1319,10 @@ hostlist_push_hr(hostlist_t hl, char *prefix, unsigned long lo,
 /* Insert a range object hr into position n of the hostlist hl
  * Assumes that hl->mutex is already held by calling process
  */
-static int hostlist_insert_range(hostlist_t hl, hostrange_t hr, int n)
+static int hostlist_insert_range(hostlist_t hl, hostrange_t *hr, int n)
 {
 	int i;
-	hostrange_t tmp;
+	hostrange_t *tmp;
 	hostlist_iterator_t hli;
 
 	xassert(hl && hr);
@@ -1345,7 +1340,7 @@ static int hostlist_insert_range(hostlist_t hl, hostrange_t hr, int n)
 
 	/* push remaining hostrange entries up */
 	for (i = n + 1; i < hl->nranges + 1; i++) {
-		hostrange_t last = hl->hr[i];
+		hostrange_t *last = hl->hr[i];
 		hl->hr[i] = tmp;
 		tmp = last;
 	}
@@ -1366,7 +1361,7 @@ static int hostlist_insert_range(hostlist_t hl, hostrange_t hr, int n)
 static void hostlist_delete_range(hostlist_t hl, int n)
 {
 	int i;
-	hostrange_t old;
+	hostrange_t *old;
 
 	xassert(hl);
 	xassert(hl->magic == HOSTLIST_MAGIC);
@@ -1959,7 +1954,7 @@ int hostlist_push(hostlist_t hl, const char *hosts)
 
 int hostlist_push_host_dims(hostlist_t hl, const char *str, int dims)
 {
-	hostrange_t hr;
+	hostrange_t *hr;
 	hostname_t *hn;
 
 	if (!str || !hl)
@@ -2018,7 +2013,7 @@ char *hostlist_pop(hostlist_t hl)
 
 	LOCK_HOSTLIST(hl);
 	if (hl->nhosts > 0) {
-		hostrange_t hr = hl->hr[hl->nranges - 1];
+		hostrange_t *hr = hl->hr[hl->nranges - 1];
 		host = hostrange_pop(hr);
 		hl->nhosts--;
 		if (hostrange_empty(hr)) {
@@ -2070,7 +2065,7 @@ char *hostlist_shift_dims(hostlist_t hl, int dims)
 	LOCK_HOSTLIST(hl);
 
 	if (hl->nhosts > 0) {
-		hostrange_t hr = hl->hr[0];
+		hostrange_t *hr = hl->hr[0];
 
 		host = hostrange_shift(hr, dims);
 		hl->nhosts--;
@@ -2098,7 +2093,7 @@ char *hostlist_pop_range(hostlist_t hl)
 	int i;
 	char *buf;
 	hostlist_t hltmp;
-	hostrange_t tail;
+	hostrange_t *tail;
 
 	if (!hl)
 		return NULL;
@@ -2131,7 +2126,7 @@ int hostlist_pop_range_values(
 	hostlist_t hl, unsigned long *lo, unsigned long *hi)
 {
 	int i;
-	hostrange_t tail;
+	hostrange_t *tail;
 
 	if (!hl || !lo || !hi)
 		return 0;
@@ -2242,8 +2237,7 @@ int hostlist_delete_host(hostlist_t hl, const char *hostname)
 }
 
 
-static char *
-_hostrange_string(hostrange_t hr, int depth)
+static char *_hostrange_string(hostrange_t *hr, int depth)
 {
 	char buf[MAXHOSTNAMELEN + 16];
 	const int size = sizeof(buf);
@@ -2312,11 +2306,11 @@ int hostlist_delete_nth(hostlist_t hl, int n)
 
 	for (i = 0; i < hl->nranges; i++) {
 		int num_in_range = hostrange_count(hl->hr[i]);
-		hostrange_t hr = hl->hr[i];
+		hostrange_t *hr = hl->hr[i];
 
 		if (n <= (num_in_range - 1 + count)) {
 			unsigned long num = hr->lo + n - count;
-			hostrange_t new;
+			hostrange_t *new;
 
 			if (hr->singlehost) { /* this wasn't a range */
 				hostlist_delete_range(hl, i);
@@ -2393,9 +2387,9 @@ int hostlist_find(hostlist_t hl, const char *hostname)
  */
 int _cmp(const void *hr1, const void *hr2)
 {
-	hostrange_t *h1 = (hostrange_t *) hr1;
-	hostrange_t *h2 = (hostrange_t *) hr2;
-	return hostrange_cmp((hostrange_t) * h1, (hostrange_t) * h2);
+	hostrange_t **h1 = (hostrange_t **) hr1;
+	hostrange_t **h2 = (hostrange_t **) hr2;
+	return hostrange_cmp((hostrange_t *) *h1, (hostrange_t *) *h2);
 }
 
 
@@ -2409,7 +2403,7 @@ void hostlist_sort(hostlist_t hl)
 		return;
 	}
 
-	qsort(hl->hr, hl->nranges, sizeof(hostrange_t), &_cmp);
+	qsort(hl->hr, hl->nranges, sizeof(hostrange_t *), &_cmp);
 
 	/* reset all iterators */
 	for (i = hl->ilist; i; i = i->next)
@@ -2431,8 +2425,8 @@ static void hostlist_collapse(hostlist_t hl)
 
 	LOCK_HOSTLIST(hl);
 	for (i = hl->nranges - 1; i > 0; i--) {
-		hostrange_t hprev = hl->hr[i - 1];
-		hostrange_t hnext = hl->hr[i];
+		hostrange_t *hprev = hl->hr[i - 1];
+		hostrange_t *hnext = hl->hr[i];
 
 		if (hprev->hi == hnext->lo - 1 &&
 		    hostrange_prefix_cmp(hprev, hnext) == 0 &&
@@ -2450,7 +2444,7 @@ static void hostlist_collapse(hostlist_t hl)
 static void hostlist_coalesce(hostlist_t hl)
 {
 	int i, j;
-	hostrange_t new;
+	hostrange_t *new;
 
 	LOCK_HOSTLIST(hl);
 
@@ -2459,8 +2453,8 @@ static void hostlist_coalesce(hostlist_t hl)
 		new = hostrange_intersect(hl->hr[i - 1], hl->hr[i]);
 
 		if (new) {
-			hostrange_t hprev = hl->hr[i - 1];
-			hostrange_t hnext = hl->hr[i];
+			hostrange_t *hprev = hl->hr[i - 1];
+			hostrange_t *hnext = hl->hr[i];
 			j = i;
 
 			if (new->hi < hprev->hi)
@@ -2473,9 +2467,9 @@ static void hostlist_coalesce(hostlist_t hl)
 				hostlist_delete_range(hl, i);
 
 			while (new->lo <= new->hi) {
-				hostrange_t hr = hostrange_create( new->prefix,
+				hostrange_t *hr = hostrange_create(new->prefix,
 								   new->lo, new->lo,
-								   new->width );
+								   new->width);
 
 				if (new->lo > hprev->hi)
 					hostlist_insert_range(hl, hr, j++);
@@ -2525,7 +2519,7 @@ void hostlist_uniq(hostlist_t hl)
 		UNLOCK_HOSTLIST(hl);
 		return;
 	}
-	qsort(hl->hr, hl->nranges, sizeof(hostrange_t), &_cmp);
+	qsort(hl->hr, hl->nranges, sizeof(hostrange_t *), &_cmp);
 
 	while (i < hl->nranges) {
 		if (_attempt_range_join(hl, i) < 0) /* No range join occurred */
@@ -2616,8 +2610,8 @@ void hostlist_parse_int_to_array(int in, int *out, int dims, int base)
 /* return true if a bracket is needed for the range at i in hostlist hl */
 static int _is_bracket_needed(hostlist_t hl, int i)
 {
-	hostrange_t h1 = hl->hr[i];
-	hostrange_t h2 = i < hl->nranges - 1 ? hl->hr[i + 1] : NULL;
+	hostrange_t *h1 = hl->hr[i];
+	hostrange_t *h2 = i < hl->nranges - 1 ? hl->hr[i + 1] : NULL;
 	return hostrange_count(h1) > 1 || hostrange_within_range(h1, h2);
 }
 
@@ -2633,7 +2627,7 @@ static int
 _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf,
 		    int brackets)
 {
-	hostrange_t *hr = hl->hr;
+	hostrange_t **hr = hl->hr;
 	int i = *start;
 	int m, len = 0;
 	int bracket_needed = brackets ? _is_bracket_needed(hl, i) : 0;
@@ -3333,7 +3327,7 @@ static void _iterator_advance(hostlist_iterator_t i)
 static void _iterator_advance_range(hostlist_iterator_t i)
 {
 	int nr, j;
-	hostrange_t *hr;
+	hostrange_t **hr;
 	xassert(i);
 	xassert(i->magic == HOSTLIST_ITR_MAGIC);
 
@@ -3433,7 +3427,7 @@ char *hostlist_next_range(hostlist_iterator_t i)
 
 int hostlist_remove(hostlist_iterator_t i)
 {
-	hostrange_t new;
+	hostrange_t *new;
 
 	xassert(i);
 	xassert(i->magic == HOSTLIST_ITR_MAGIC);
@@ -3506,7 +3500,7 @@ void hostset_destroy(hostset_t set)
  * Assumes that the set->hl lock is already held
  * Updates hl->nhosts
  */
-static int hostset_insert_range(hostset_t set, hostrange_t hr)
+static int hostset_insert_range(hostset_t set, hostrange_t *hr)
 {
 	int i = 0;
 	int inserted = 0;
