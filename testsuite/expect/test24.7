@@ -66,7 +66,7 @@ if { [string compare [priority_type] multifactor] } {
 #
 set select_type_params [get_select_type_params ""]
 if { [string first "CR_ONE_TASK_PER_CORE" $select_type_params] != -1 } {
-	skip "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
+	skip "This test can't be run with SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
 proc clean_assocs {} {
@@ -78,7 +78,7 @@ proc clean_assocs {} {
 	remove_qos $tq2
 }
 
-proc end_it { exit_code } {
+proc cleanup { } {
 	global test_id jobid1 jobid2 jobid3 jobid4 jobid5 bin_cp
 	global config_file test_id cwd
 
@@ -102,11 +102,6 @@ proc end_it { exit_code } {
 
 	restore_conf $config_file
 	reconfigure
-
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
 }
 
 
@@ -125,8 +120,7 @@ proc part_cpu_cnt { partition } {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
-			end_it 1
+			fail "sinfo not responding"
 		}
 		eof {
 			wait
@@ -150,8 +144,7 @@ proc sub_job { args state } {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -159,13 +152,11 @@ proc sub_job { args state } {
 	}
 
 	if {$jobid == 0} {
-		log_error "did not get sbatch jobid"
-		end_it 1
+		fail "Did not get sbatch jobid"
 	}
 
 	if {[wait_for_job $jobid $state] != 0} {
-		log_error "error starting job $jobid"
-		end_it 1
+		fail "Error starting job $jobid"
 	}
 
 	return $jobid
@@ -182,8 +173,7 @@ proc sprio_args { args regex match_cnt } {
 			exp_continue
 		}
 		timeout {
-			log_error "sprio not responding"
-			end_it 1
+			fail "sprio not responding"
 		}
 		eof {
 			wait
@@ -191,8 +181,7 @@ proc sprio_args { args regex match_cnt } {
 	}
 
 	if {$matches != $match_cnt} {
-		log_error "sprio $args failed to match '$regex' $match_cnt times"
-		end_it 1
+		fail "sprio $args failed to match '$regex' $match_cnt times"
 	}
 }
 
@@ -207,8 +196,7 @@ proc scontrol { args regex match_cnt } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			end_it 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -216,8 +204,7 @@ proc scontrol { args regex match_cnt } {
 	}
 
 	if {$matches != $match_cnt} {
-		log_error "scontrol $args failed to match '$regex' $match_cnt times"
-		end_it 1
+		fail "scontrol $args failed to match '$regex' $match_cnt times"
 	}
 }
 
@@ -236,8 +223,7 @@ proc update_job { jobid prio {error ""} } {
 			incr matches
 		}
 		timeout {
-			log_error "scontrol not responding"
-			end_it 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -245,8 +231,7 @@ proc update_job { jobid prio {error ""} } {
 	}
 
 	if {($error != "") && !$matches} {
-		log_error "didn't get expected error '$error'"
-		end_it 1
+		fail "Didn't get expected error '$error'"
 	}
 }
 
@@ -257,12 +242,10 @@ proc create_part { name nodes prio } {
 	spawn $scontrol create partitionname=$name priorityjobfactor=$prio nodes=$nodes
 	expect {
 		-re "error" {
-			log_error "scontrol found error"
-			end_it 1
+			fail "scontrol found error"
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			end_it 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -277,8 +260,7 @@ proc create_part { name nodes prio } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			end_it 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -286,8 +268,7 @@ proc create_part { name nodes prio } {
 	}
 
 	if {$found == 0} {
-		log_error "scontrol did not create partition $name"
-		end_it 1
+		fail "scontrol did not create partition $name"
 	}
 }
 
@@ -300,12 +281,10 @@ proc update_part { name args } {
 	spawn {*}$cmd
 	expect {
 		-re "error" {
-			log_error "scontrol found error"
-			end_it 1
+			fail "scontrol found error"
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			end_it 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -347,8 +326,7 @@ reconfigure
 
 set idle_node [get_idle_node_in_part]
 if {$idle_node == ""} {
-	log_error "no idle nodes"
-	end_it 1
+	fail "No idle nodes"
 }
 log_info "idle: $idle_node"
 create_part $p1 $idle_node $part_weight
@@ -365,28 +343,28 @@ clean_assocs
 array set qos_req {}
 set qos_req(priority) $weight
 if {[add_qos $tq1 [array get qos_req]]} {
-	end_it 1
+	fail "Unable to create qos $tq1"
 }
 set qos_req(priority) $weight_half
 if {[add_qos $tq2 [array get qos_req]]} {
-	end_it 1
+	fail "Unable to create qos $tq2"
 }
 
 array set acct_req {}
 set acct_req(qos) "$tq1,$tq2"
 set acct_req(priority) $weight
 if {[add_acct $ta1 [array get acct_req]]} {
-	end_it 1
+	fail "Unable to create account $ta1"
 }
 set acct_req(priority) $weight_half
 if {[add_acct $ta2 [array get acct_req]]} {
-	end_it 1
+	fail "Unable to create account $ta2"
 }
 
 array set user_req {}
 set user_req(account) "$ta1,$ta2"
 if {[add_user $user [array get user_req]]} {
-	end_it 1
+	fail "Unable to add user $user"
 }
 
 log_info "test1"
@@ -413,10 +391,10 @@ array set acct_mod_acct_vals {}
 array set acct_mod_assoc_vals {}
 set acct_mod_assoc_vals(priority) $weight_half
 if {[mod_acct $ta1 [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]] } {
-	end_it 1
+	fail "Unable to modify account $ta1"
 }
 if {[mod_qos $tq1 [array get acct_mod_assoc_vals]] } {
-	end_it 1
+	fail "Unable to modify qos $tq1"
 }
 
 scontrol "show assoc account=$ta1 flags=assoc" "(Account=$ta1 UserName= Partition= Priority=$weight_half)|(Account=$ta1 UserName=$user\\S+ Partition= Priority=$weight_half)" 2
@@ -436,10 +414,10 @@ array set acct_mod_acct_vals {}
 array set acct_mod_assoc_vals {}
 set acct_mod_assoc_vals(priority) $weight
 if {[mod_acct $ta1 [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]] } {
-	end_it 1
+	fail "Unable to modify account $ta1"
 }
 if {[mod_qos $tq1 [array get acct_mod_assoc_vals]] } {
-	end_it 1
+	fail "Unable to modify qos $tq1"
 }
 
 scontrol "show assoc account=$ta1 flags=assoc" "(Account=$ta1 UserName= Partition= Priority=$weight)|(Account=$ta1 UserName=$user\\S+ Partition= Priority=$weight)" 2
@@ -450,5 +428,3 @@ update_part $p1 "priorityjobfactor=$part_weight"
 set jobid5 [sub_job "-n$cpu_cnt_half -p$p2 -A$ta2 --qos=$tq2" PENDING]
 sprio_args "-j $jobid5 -o \"%.15i %10B %10P %10Q %12T\"" "$jobid5\\s+$weight_half\\s+$part_weight_half\\s+$weight_half\\s+cpu=$weight_half" 1
 sprio_args "-n -j $jobid5 -o \"%.15i %10b %10p %10q %12t\"" "$jobid5\\s+0\\.50+\\s+0\\.50+\\s+0\\.50+\\s+cpu=0\\.5+" 1
-
-end_it 0
