@@ -152,7 +152,7 @@ do {						\
 /* ----[ Internal Data Structures ]---- */
 
 /* hostname type: A convenience structure used in parsing single hostnames */
-struct hostname_components {
+typedef struct {
 	char *hostname;         /* cache of initialized hostname        */
 	char *prefix;           /* hostname prefix                      */
 	unsigned long num;      /* numeric suffix                       */
@@ -160,9 +160,7 @@ struct hostname_components {
 	/* string representation of numeric suffix
 	 * points into `hostname'                                       */
 	char *suffix;
-};
-
-typedef struct hostname_components *hostname_t;
+} hostname_t;
 
 /* hostrange type: A single prefix with `hi' and `lo' numeric suffix values */
 struct hostrange_components {
@@ -292,10 +290,10 @@ static int    _zero_padded(unsigned long, int);
 static int    _width_equiv(unsigned long, int *, unsigned long, int *);
 
 static int           host_prefix_end(const char *, int dims);
-static hostname_t    hostname_create(const char *);
-static void          hostname_destroy(hostname_t);
-static int           hostname_suffix_is_valid(hostname_t);
-static int           hostname_suffix_width(hostname_t);
+static hostname_t *hostname_create(const char *);
+static void hostname_destroy(hostname_t *);
+static int hostname_suffix_is_valid(hostname_t *);
+static int hostname_suffix_width(hostname_t *);
 
 static hostrange_t   hostrange_new(void);
 static hostrange_t   hostrange_create_single(const char *);
@@ -314,7 +312,7 @@ static char *        hostrange_pop(hostrange_t);
 static char *        hostrange_shift(hostrange_t, int);
 static int           hostrange_join(hostrange_t, hostrange_t);
 static hostrange_t   hostrange_intersect(hostrange_t, hostrange_t);
-static int           hostrange_hn_within(hostrange_t, hostname_t, int);
+static int           hostrange_hn_within(hostrange_t, hostname_t *, int);
 static size_t        hostrange_to_string(hostrange_t hr, size_t, char *,
 					 char *, int);
 static size_t        hostrange_numstr(hostrange_t, size_t, char *, int);
@@ -495,9 +493,9 @@ static int host_prefix_end(const char *hostname, int dims)
 	return idx;
 }
 
-static hostname_t hostname_create_dims(const char *hostname, int dims)
+static hostname_t *hostname_create_dims(const char *hostname, int dims)
 {
-	hostname_t hn = NULL;
+	hostname_t *hn = NULL;
 	char *p;
 	int idx = 0;
 	int hostlist_base;
@@ -508,7 +506,7 @@ static hostname_t hostname_create_dims(const char *hostname, int dims)
 		dims = slurmdb_setup_cluster_name_dims();
 	hostlist_base = hostlist_get_base(dims);
 
-	if (!(hn = (hostname_t) malloc(sizeof(*hn))))
+	if (!(hn = malloc(sizeof(*hn))))
   		out_of_memory("hostname create");
 
 	idx = host_prefix_end(hostname, dims);
@@ -556,7 +554,7 @@ static hostname_t hostname_create_dims(const char *hostname, int dims)
 /*
  * create a hostname_t object from a string hostname
  */
-static hostname_t hostname_create(const char *hostname)
+static hostname_t *hostname_create(const char *hostname)
 {
 	int dims = slurmdb_setup_cluster_name_dims();
 
@@ -565,7 +563,7 @@ static hostname_t hostname_create(const char *hostname)
 
 /* free a hostname object
  */
-static void hostname_destroy(hostname_t hn)
+static void hostname_destroy(hostname_t *hn)
 {
 	if (hn == NULL)
 		return;
@@ -579,7 +577,7 @@ static void hostname_destroy(hostname_t hn)
 
 /* return true if the hostname has a valid numeric suffix
  */
-static int hostname_suffix_is_valid(hostname_t hn)
+static int hostname_suffix_is_valid(hostname_t *hn)
 {
 	if (!hn)
 		return false;
@@ -588,7 +586,7 @@ static int hostname_suffix_is_valid(hostname_t hn)
 
 /* return the width (in characters) of the numeric part of the hostname
  */
-static int hostname_suffix_width(hostname_t hn)
+static int hostname_suffix_width(hostname_t *hn)
 {
 	if (!hn)
 		return -1;
@@ -976,7 +974,7 @@ static hostrange_t hostrange_intersect(hostrange_t h1, hostrange_t h2)
 /* return 1 if hostname hn is within the hostrange hr
  *        0 if not.
  */
-static int hostrange_hn_within(hostrange_t hr, hostname_t hn, int dims)
+static int hostrange_hn_within(hostrange_t hr, hostname_t *hn, int dims)
 {
 	if (hr->singlehost) {
 		/*
@@ -1962,7 +1960,7 @@ int hostlist_push(hostlist_t hl, const char *hosts)
 int hostlist_push_host_dims(hostlist_t hl, const char *str, int dims)
 {
 	hostrange_t hr;
-	hostname_t hn;
+	hostname_t *hn;
 
 	if (!str || !hl)
 		return 0;
@@ -2355,7 +2353,7 @@ int hostlist_count(hostlist_t hl)
 int hostlist_find_dims(hostlist_t hl, const char *hostname, int dims)
 {
 	int i, count, ret = -1;
-	hostname_t hn;
+	hostname_t *hn;
 
 	if (!hostname || !hl)
 		return -1;
@@ -3583,7 +3581,7 @@ static int hostset_find_host(hostset_t set, const char *host)
 {
 	int i;
 	int retval = 0;
-	hostname_t hn;
+	hostname_t *hn;
 	LOCK_HOSTLIST(set->hl);
 	hn = hostname_create(host);
 	for (i = 0; i < set->hl->nranges; i++) {
