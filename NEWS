@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - provide an explicit error messages when PSK auth fails.
  -- cons_tres - fix job requesting single gres per-node getting two or more
     nodes with less CPUs than requested per-task.
+ -- cons_tres - fix calculation of cores when using gres and cpus-per-task.
 
 * Changes in Slurm 20.02.4
 ==========================
