@@ -384,7 +384,7 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		/* "gres" replaced by "tres_per_node" in v18.08 */
 		lua_pushstring(L, job_ptr->tres_per_node);
 	} else if (!xstrcmp(name, "gres_req")) {
-		lua_pushstring(L, job_ptr->gres_req);
+		lua_pushstring(L, job_ptr->tres_fmt_req_str);
 	} else if (!xstrcmp(name, "gres_used")) {
 		lua_pushstring(L, job_ptr->gres_used);
 	} else if (!xstrcmp(name, "group_id")) {
@@ -557,6 +557,10 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushstring(L, job_ptr->tres_alloc_str);
 	} else if (!xstrcmp(name, "tres_bind")) {
 		lua_pushstring(L, job_ptr->tres_bind);
+	} else if (!xstrcmp(name, "tres_fmt_alloc_str")) {
+		lua_pushstring(L, job_ptr->tres_fmt_alloc_str);
+	} else if (!xstrcmp(name, "tres_fmt_req_str")) {
+		lua_pushstring(L, job_ptr->tres_fmt_req_str);
 	} else if (!xstrcmp(name, "tres_freq")) {
 		lua_pushstring(L, job_ptr->tres_freq);
 	} else if (!xstrcmp(name, "tres_per_job")) {
@@ -567,6 +571,8 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushstring(L, job_ptr->tres_per_socket);
 	} else if (!xstrcmp(name, "tres_per_task")) {
 		lua_pushstring(L, job_ptr->tres_per_task);
+	} else if (!xstrcmp(name, "tres_req_str")) {
+		lua_pushstring(L, job_ptr->tres_req_str);
 	} else if (!xstrcmp(name, "user_id")) {
 		lua_pushnumber(L, job_ptr->user_id);
 	} else if (!xstrcmp(name, "user_name")) {
