@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(CRAY_TASK_CPPFLAGS)
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(CRAY_TASK_CPPFLAGS)
 
 pkglib_LTLIBRARIES = task_cray_aries.la
 

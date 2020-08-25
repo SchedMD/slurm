@@ -6,7 +6,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 # Do not put a link to common here.  src/common contains an mpi.h which
 # hdf5 could of been installed with a link to the generic mpi.h.
-AM_CPPFLAGS = -I$(top_srcdir) $(HDF5_CPPFLAGS)
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) $(HDF5_CPPFLAGS)
 
 # cpu/core energy accounting plugin.
 HDF5_SOURCES = acct_gather_profile_hdf5.c

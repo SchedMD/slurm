@@ -6,7 +6,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 if WITH_JSON_PARSER
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(DATAWARP_CPPFLAGS) $(JSON_CPPFLAGS)
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(DATAWARP_CPPFLAGS) $(JSON_CPPFLAGS)
 
 pkglib_LTLIBRARIES = node_features_knl_cray.la
 node_features_knl_cray_la_SOURCES = node_features_knl_cray.c

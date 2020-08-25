@@ -6,7 +6,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 if WITH_JSON_PARSER
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
 
 pkglib_LTLIBRARIES = power_cray_aries.la
 power_cray_aries_la_SOURCES = power_cray_aries.c
