@@ -230,18 +230,13 @@ void *_forward_thread(void *arg)
 		}
 
 		if (fwd_msg->header.forward.cnt > 0) {
-			static int message_timeout = -1;
-			if (message_timeout < 0)
-				message_timeout =
-					slurm_conf.msg_timeout * 1000;
 			if (!fwd_msg->header.forward.tree_width)
 				fwd_msg->header.forward.tree_width =
 					slurm_conf.tree_width;
 			steps = (fwd_msg->header.forward.cnt+1) /
 					fwd_msg->header.forward.tree_width;
-			fwd_msg->timeout = (message_timeout*steps);
-			/* info("got %d * %d = %d", message_timeout, */
-			/*      steps, fwd_msg->timeout); */
+			fwd_msg->timeout =
+				slurm_conf.msg_timeout * 1000 * steps;
 			steps++;
 			fwd_msg->timeout += (start_timeout*steps);
 			/* info("now  + %d*%d = %d", start_timeout, */
