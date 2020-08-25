@@ -87,6 +87,7 @@ static void _swap_rows(part_row_data_t *a, part_row_data_t *b)
 static void _reset_part_row_bitmap(part_row_data_t *r_ptr)
 {
 	clear_core_array(r_ptr->row_bitmap);
+	r_ptr->row_set_count = 0;
 }
 
 /*
@@ -517,6 +518,7 @@ extern part_row_data_t *part_data_dup_row(part_row_data_t *orig_row,
 				new_row[i].row_bitmap[n] =
 					bit_copy(orig_row[i].row_bitmap[n]);
 			}
+			new_row[i].row_set_count = orig_row[i].row_set_count;
 		}
 		if (new_row[i].job_list_size == 0)
 			continue;

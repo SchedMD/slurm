@@ -102,6 +102,7 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 			return 1;
 		core_array = build_core_array();
 		r_ptr->row_bitmap = core_array;
+		r_ptr->row_set_count = 0;
 		for (int i = 0; i < core_array_size; i++)
 			core_array[i] = _create_core_bitmap(i);
 	} else
@@ -140,10 +141,12 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 			case HANDLE_JOB_RES_ADD:
 				bit_nset(use_core_array,
 					 core_begin, core_end-1);
+				r_ptr->row_set_count += (core_end - core_begin);
 				break;
 			case HANDLE_JOB_RES_REM:
 				bit_nclear(use_core_array,
 					   core_begin, core_end-1);
+				r_ptr->row_set_count -= (core_end - core_begin);
 				break;
 			case HANDLE_JOB_RES_TEST:
 				if (is_cons_tres) {
@@ -172,9 +175,11 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 			switch (type) {
 			case HANDLE_JOB_RES_ADD:
 				bit_set(use_core_array, core_begin + c);
+			        r_ptr->row_set_count++;
 				break;
 			case HANDLE_JOB_RES_REM:
 				bit_clear(use_core_array, core_begin + c);
+				r_ptr->row_set_count--;
 				break;
 			case HANDLE_JOB_RES_TEST:
 				if (bit_test(use_core_array, core_begin + c))

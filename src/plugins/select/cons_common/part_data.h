@@ -49,6 +49,7 @@ typedef struct {
 					 * In cons_res only the first ptr is
 					 * used.
 					 */
+	uint32_t row_set_count;
 } part_row_data_t;
 
 /* partition core allocation bitmap arrays (1 bitmap per node) */
