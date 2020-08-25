@@ -380,8 +380,8 @@ void spank_log(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 #define log_flag(flag, fmt, ...)					\
 	do {								\
 		if (slurm_conf.debug_flags & DEBUG_FLAG_##flag)		\
-			log_var(LOG_LEVEL_VERBOSE, #flag ": " fmt,	\
-				##__VA_ARGS__);				\
+			format_print(LOG_LEVEL_VERBOSE, #flag ": " fmt,	\
+				     ##__VA_ARGS__);			\
 	} while (0)
 
 #endif /* !_LOG_H */
