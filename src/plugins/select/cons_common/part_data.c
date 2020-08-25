@@ -464,34 +464,19 @@ extern part_res_record_t *part_data_dup_res(
 /* sort the rows of a partition from "most allocated" to "least allocated" */
 extern void part_data_sort_res(part_res_record_t *p_ptr)
 {
-	uint32_t i, j, b, n, r;
-	uint32_t *a;
+	uint32_t i, j;
 
 	if (!p_ptr->row)
 		return;
 
-	a = xcalloc(p_ptr->num_rows, sizeof(uint32_t));
-	for (r = 0; r < p_ptr->num_rows; r++) {
-		if (!p_ptr->row[r].row_bitmap)
-			continue;
-
-		for (n = 0; n < core_array_size; n++) {
-			if (!p_ptr->row[r].row_bitmap[n])
-				continue;
-			a[r] += bit_set_count(p_ptr->row[r].row_bitmap[n]);
-		}
-	}
 	for (i = 0; i < p_ptr->num_rows; i++) {
 		for (j = i + 1; j < p_ptr->num_rows; j++) {
-			if (a[j] > a[i]) {
-				b = a[j];
-				a[j] = a[i];
-				a[i] = b;
+			if (p_ptr->row[j].row_set_count >
+			    p_ptr->row[i].row_set_count) {
 				_swap_rows(&(p_ptr->row[i]), &(p_ptr->row[j]));
 			}
 		}
 	}
-	xfree(a);
 
 	return;
 }
