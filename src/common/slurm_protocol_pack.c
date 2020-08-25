@@ -256,10 +256,6 @@ static void _pack_assoc_shares_object(void *in, uint32_t tres_cnt, Buf buffer,
 		packdouble(object->level_fs, buffer);
 
 		pack16(object->user, buffer);
-
-	} else {
-		error("_pack_assoc_shares_object: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -333,9 +329,6 @@ _pack_network_callerid_msg(network_callerid_msg_t *msg, Buf buffer,
 		pack32(msg->port_src, buffer);
 		pack32(msg->port_dst,	buffer);
 		pack32((uint32_t)msg->af, buffer);
-	} else {
-		error("_pack_network_callerid_msg: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -400,9 +393,6 @@ static void _pack_network_callerid_resp_msg(network_callerid_resp_t *msg,
 		pack32(msg->job_id,		buffer);
 		pack32(msg->return_code,	buffer);
 		packstr(msg->node_name,		buffer);
-	} else {
-		error("_pack_network_callerid_resp_msg: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -902,9 +892,6 @@ _pack_update_front_end_msg(update_front_end_msg_t * msg, Buf buffer,
 		pack32(msg->node_state, buffer);
 		packstr(msg->reason, buffer);
 		pack32(msg->reason_uid, buffer);
-	} else {
-		error("_pack_update_front_end_msg: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -957,9 +944,6 @@ _pack_update_node_msg(update_node_msg_t * msg, Buf buffer,
 		packstr(msg->reason, buffer);
 		pack32(msg->reason_uid, buffer);
 		pack32(msg->weight, buffer);
-	} else {
-		error("_pack_update_node_msg: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -1196,9 +1180,6 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		}
 		acct_gather_energy_pack(msg->energy, buffer, protocol_version);
 		packstr(msg->version, buffer);
-	} else {
-		error("_pack_node_registration_status_msg: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -1411,9 +1392,6 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		} else {
 			pack8(0, buffer);
 		}
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -1574,9 +1552,6 @@ _pack_submit_response_msg(submit_response_msg_t * msg, Buf buffer,
 		pack_old_step_id(msg->step_id, buffer);
 		pack32(msg->error_code, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported", __func__,
-		      protocol_version);
 	}
 }
 
@@ -1850,9 +1825,6 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 		pack16(msg-> priority_tier, buffer);
 		packstr(msg->qos_char,     buffer);
 		pack16(msg-> state_up,     buffer);
-	} else {
-		error("%s: protocol_version %hu not supported", __func__,
-		      protocol_version);
 	}
 }
 
@@ -2034,9 +2006,6 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, Buf buffer,
 		packstr(msg->users,        buffer);
 		packstr(msg->accounts,     buffer);
 		packstr(msg->burst_buffer, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -2219,9 +2188,6 @@ _pack_delete_partition_msg(delete_part_msg_t * msg, Buf buffer,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -2261,9 +2227,6 @@ _pack_resv_name_msg(reservation_name_msg_t * msg, Buf buffer,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name, buffer);
-	} else {
-		error("_pack_resv_name_msg: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -2464,9 +2427,6 @@ extern void _pack_job_step_create_request_msg(
 		packstr(msg->tres_per_node, buffer);
 		packstr(msg->tres_per_socket, buffer);
 		packstr(msg->tres_per_task, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__,  protocol_version);
 	}
 
 }
@@ -2671,9 +2631,6 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer, uint16_t protocol_version)
 		pack_time(msg->start_time, buffer);
 		pack_old_step_id(msg->step_id.step_id, buffer);
 		pack_time(msg->time, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -2830,9 +2787,6 @@ extern void _pack_job_step_create_response_msg(
 		switch_g_pack_jobinfo(msg->switch_job, buffer,
 				      protocol_version);
 		pack16(msg->use_protocol_ver, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -4840,9 +4794,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		pack16(build_ptr->wait_time, buffer);
 		packstr(build_ptr->x11_params, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported", __func__,
-		      protocol_version);
 	}
 }
 
@@ -6142,9 +6093,6 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
 		} else {
 			pack16(0, buffer);
 		}
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -6254,9 +6202,6 @@ static void _pack_dep_msg(dep_msg_t *dep_msg, Buf buffer,
 		pack32(dep_msg->job_id, buffer);
 		packstr(dep_msg->job_name, buffer);
 		pack32(dep_msg->user_id, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -6322,9 +6267,6 @@ extern void pack_dep_list(List dep_list, Buf buffer, uint16_t protocol_version)
 			pack64(dep_ptr->singleton_bits, buffer);
 		}
 		list_iterator_destroy(itr);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -6374,9 +6316,6 @@ static void _pack_dep_update_origin_msg(dep_update_origin_msg_t *msg,
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		pack_dep_list(msg->depend_list, buffer, protocol_version);
 		pack32(msg->job_id, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -6572,9 +6511,6 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->tres_per_node, buffer);
 		packstr(job_desc_ptr->tres_per_socket, buffer);
 		packstr(job_desc_ptr->tres_per_task, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 
 	if (job_desc_ptr->script_buf)
@@ -6871,9 +6807,6 @@ _pack_job_alloc_info_msg(job_alloc_info_msg_t *job_desc_ptr, Buf buffer,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job_desc_ptr->job_id, buffer);
 		packstr(job_desc_ptr->req_cluster, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -7179,9 +7112,6 @@ _pack_reroute_msg(reroute_msg_t * msg, Buf buffer, uint16_t protocol_version)
 						 protocol_version, buffer);
 		} else
 			pack8(0, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -7243,9 +7173,6 @@ _pack_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg,
 		for (i = 0; i < msg->num_io_port; i++)
 			pack16((uint16_t)msg->io_port[i], buffer);
 		slurm_cred_pack(msg->cred, buffer, protocol_version);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -7395,9 +7322,6 @@ _pack_task_exit_msg(task_exit_msg_t * msg, Buf buffer,
 		pack32_array(msg->task_id_list,
 			     msg->num_tasks, buffer);
 		pack_step_id(&msg->step_id, buffer, protocol_version);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -7464,9 +7388,6 @@ _pack_launch_tasks_response_msg(launch_tasks_response_msg_t * msg, Buf buffer,
 		pack32(msg->count_of_pids, buffer);
 		pack32_array(msg->local_pids, msg->count_of_pids, buffer);
 		pack32_array(msg->task_ids, msg->count_of_pids, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported", __func__,
-		      protocol_version);
 	}
 }
 
@@ -7507,9 +7428,6 @@ _unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **msg_ptr,
 		safe_unpack32_array(&msg->task_ids, &uint32_tmp, buffer);
 		if (msg->count_of_pids != uint32_tmp)
 			goto unpack_error;
-	} else {
-		error("%s: protocol_version %hu not supported", __func__,
-		      protocol_version);
 	}
 
 	return SLURM_SUCCESS;
@@ -7730,9 +7648,6 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr(msg->x11_magic_cookie, buffer);
 		packstr(msg->x11_target, buffer);
 		pack16(msg->x11_target_port, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -8117,9 +8032,6 @@ _pack_cancel_tasks_msg(signal_tasks_msg_t *msg, Buf buffer,
 		pack16(msg->flags, buffer);
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		pack16(msg->signal, buffer);
-	} else {
-		error("_pack_cancel_tasks_msg: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -8252,9 +8164,6 @@ _pack_job_step_kill_msg(job_step_kill_msg_t * msg, Buf buffer,
 		packstr(msg->sibling, buffer);
 		pack16((uint16_t)msg->signal, buffer);
 		pack16((uint16_t)msg->flags, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -8338,9 +8247,6 @@ _pack_update_job_step_msg(step_update_request_msg_t * msg, Buf buffer,
 		pack_time(msg->start_time, buffer);
 		pack_old_step_id(msg->step_id, buffer);
 		pack32(msg->time_limit, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -8566,9 +8472,6 @@ _pack_complete_batch_script_msg(
 		pack32(msg->slurm_rc, buffer);
 		pack32(msg->user_id, buffer);
 		packstr(msg->node_name, buffer);
-	} else {
-		error("_pack_complete_batch_script_msg: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -8696,9 +8599,7 @@ _pack_step_complete_msg(step_complete_msg_t * msg, Buf buffer,
 		pack32((uint32_t)msg->step_rc, buffer);
 		jobacctinfo_pack(msg->jobacct, protocol_version,
 				 PROTOCOL_TYPE_SLURM, buffer);
-	} else
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
+	}
 }
 
 static int
@@ -8771,10 +8672,6 @@ _pack_job_info_request_msg(job_info_request_msg_t * msg, Buf buffer,
 				pack32(*uint32_ptr, buffer);
 			list_iterator_destroy(itr);
 		}
-
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -8966,9 +8863,7 @@ _pack_job_step_info_req_msg(job_step_info_request_msg_t * msg, Buf buffer,
 		pack_time(msg->last_update, buffer);
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		pack16((uint16_t)msg->show_flags, buffer);
-	} else
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
+	}
 }
 
 static int
@@ -9424,9 +9319,6 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 		pack32(msg->profile, buffer);
 		packstr(msg->tres_bind, buffer);
 		packstr(msg->tres_freq, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported", __func__,
-		      protocol_version);
 	}
 
 	if (msg->script_buf)
@@ -9728,9 +9620,6 @@ static void _pack_config_request_msg(config_request_msg_t *msg,
 
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		pack32(msg->flags, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -9774,9 +9663,6 @@ extern void pack_config_response_msg(config_response_msg_t *msg,
 		packstr(msg->topology_config, buffer);
 		packstr(msg->xtra_config, buffer);
 		packstr(msg->slurmd_spooldir, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -9836,9 +9722,7 @@ _pack_srun_exec_msg(srun_exec_msg_t * msg, Buf buffer,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		packstr_array(msg->argv, msg->argc, buffer);
-	} else
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
+	}
 }
 
 static int
@@ -9886,9 +9770,6 @@ static void _pack_net_forward_msg(net_forward_msg_t *msg,
 		pack32(msg->flags, buffer);
 		pack16(msg->port, buffer);
 		packstr(msg->target, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -9929,9 +9810,7 @@ _pack_srun_ping_msg(srun_ping_msg_t * msg, Buf buffer,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(NO_VAL, buffer);
-	} else
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
+	}
 }
 
 static int
@@ -9973,10 +9852,7 @@ _pack_srun_node_fail_msg(srun_node_fail_msg_t * msg, Buf buffer,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		packstr(msg->nodelist, buffer);
-	} else
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
-
+	}
 }
 
 static int
@@ -10026,9 +9902,7 @@ _pack_srun_step_missing_msg(srun_step_missing_msg_t * msg, Buf buffer,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		packstr(msg->nodelist, buffer);
-	} else
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
+	}
 }
 
 static int
@@ -10169,9 +10043,7 @@ _pack_srun_timeout_msg(srun_timeout_msg_t * msg, Buf buffer,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		pack_time(msg->timeout, buffer);
-	} else
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
+	}
 }
 
 static int
@@ -10572,9 +10444,6 @@ static void _pack_trigger_msg(trigger_info_msg_t *msg, Buf buffer,
 			pack32(msg->trigger_array[i].user_id, buffer);
 			packstr(msg->trigger_array[i].program, buffer);
 		}
-	} else {
-		error("_pack_trigger_msg: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -10651,9 +10520,6 @@ static void _pack_kvs_rec(struct kvs_comm *msg_ptr, Buf buffer,
 			packstr(msg_ptr->kvs_keys[i], buffer);
 			packstr(msg_ptr->kvs_values[i], buffer);
 		}
-	} else {
-		error("_pack_kvs_rec: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 static int  _unpack_kvs_rec(struct kvs_comm **msg_ptr, Buf buffer,
@@ -10794,9 +10660,6 @@ pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer,
 		pack16(multi_core->ntasks_per_socket, buffer);
 		pack16(multi_core->ntasks_per_core,   buffer);
 		pack16(multi_core->plane_size,        buffer);
-	} else {
-		error("pack_multi_core_data: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -10863,9 +10726,6 @@ static void _pack_slurmd_status(slurmd_status_t *msg, Buf buffer,
 		packstr(msg->slurmd_logfile, buffer);
 		packstr(msg->step_list, buffer);
 		packstr(msg->version, buffer);
-	} else {
-		error("_pack_slurmd_status: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -10928,9 +10788,7 @@ static void _pack_job_notify(job_notify_msg_t *msg, Buf buffer,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		packstr(msg->message, buffer);
-	} else
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
+	}
 }
 
 static int  _unpack_job_notify(job_notify_msg_t **msg_ptr, Buf buffer,
@@ -11051,9 +10909,6 @@ _pack_will_run_response_msg(will_run_response_msg_t *msg, Buf buffer,
 		pack32(msg->proc_cnt, buffer);
 		pack_time(msg->start_time, buffer);
 		packdouble(msg->sys_usage_per, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -11221,9 +11076,6 @@ static void _pack_stats_request_msg(stats_info_request_msg_t *msg, Buf buffer,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg->command_id, buffer);
-	} else {
-		error("_pack_stats_request_msg: protocol_version "
-		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -11684,9 +11536,6 @@ _pack_event_log_msg(slurm_event_log_msg_t *msg, Buf buffer,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg->level, buffer);
 		packstr(msg->string, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
 	}
 }
 
@@ -11736,9 +11585,6 @@ static void _pack_buf_list_msg(ctld_list_msg_t *msg, Buf buffer,
 				buffer);
 		}
 		list_iterator_destroy(iter);
-	} else {
-		error("%s: protocol_version %hu not supported", __func__,
-		      protocol_version);
 	}
 }
 
@@ -13239,9 +13085,7 @@ extern void pack_step_id(slurm_step_id_t *msg, Buf buffer,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack_old_step_id(msg->step_id, buffer);
-	} else
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
+	}
 }
 
 extern int unpack_step_id_members(slurm_step_id_t *msg, Buf buffer,
