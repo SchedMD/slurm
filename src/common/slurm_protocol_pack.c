@@ -100,13 +100,6 @@ static int _unpack_job_step_pids(job_step_pids_t **msg, Buf buffer,
 static int _unpack_job_info_members(job_info_t * job, Buf buffer,
 				    uint16_t protocol_version);
 
-static void _pack_slurm_addr_array(slurm_addr_t * slurm_address,
-				   uint32_t size_val, Buf buffer,
-				   uint16_t protocol_version);
-static int _unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
-				    uint32_t * size_val, Buf buffer,
-				    uint16_t protocol_version);
-
 static void _pack_ret_list(List ret_list, uint16_t size_val, Buf buffer,
 			   uint16_t protocol_version);
 static int _unpack_ret_list(List *ret_list, uint16_t size_val, Buf buffer,
@@ -1385,8 +1378,8 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		/* pack node_addr after node_cnt -- need it for unpacking */
 		if (msg->node_addr && msg->node_cnt > 0) {
 			pack8(1, buffer); /* non-null node_addr */
-			_pack_slurm_addr_array(msg->node_addr, msg->node_cnt,
-					       buffer, protocol_version);
+			slurm_pack_slurm_addr_array(msg->node_addr,
+						    msg->node_cnt, buffer);
 		} else {
 			pack8(0, buffer);
 		}
@@ -1454,9 +1447,8 @@ _unpack_resource_allocation_response_msg(
 		/* unpack node_addr after node_cnt -- need it to unpack */
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
-			if (_unpack_slurm_addr_array(&(tmp_ptr->node_addr),
-						     &uint32_tmp, buffer,
-						     protocol_version))
+			if (slurm_unpack_slurm_addr_array(&tmp_ptr->node_addr,
+							  &uint32_tmp, buffer))
 				goto unpack_error;
 			if (uint32_tmp != tmp_ptr->node_cnt)
 				goto unpack_error;
@@ -1523,8 +1515,8 @@ _pack_job_sbcast_cred_msg(job_sbcast_cred_msg_t * msg, Buf buffer,
 
 	pack32(msg->node_cnt, buffer);
 	if (msg->node_cnt > 0)
-		_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer,
-				       protocol_version);
+		slurm_pack_slurm_addr_array(msg->node_addr, msg->node_cnt,
+					    buffer);
 	pack_sbcast_cred(msg->sbcast_cred, buffer, protocol_version);
 }
 
@@ -1546,9 +1538,8 @@ _unpack_job_sbcast_cred_msg(job_sbcast_cred_msg_t ** msg, Buf buffer,
 
 	safe_unpack32(&tmp_ptr->node_cnt, buffer);
 	if (tmp_ptr->node_cnt > 0) {
-		if (_unpack_slurm_addr_array(&(tmp_ptr->node_addr),
-					     &uint32_tmp, buffer,
-					     protocol_version))
+		if (slurm_unpack_slurm_addr_array(&tmp_ptr->node_addr,
+						  &uint32_tmp, buffer))
 			goto unpack_error;
 		if (uint32_tmp != tmp_ptr->node_cnt)
 			goto unpack_error;
@@ -9225,23 +9216,6 @@ unpack_error:
 	*msg = NULL;
 	return SLURM_ERROR;
 }
-
-static void
-_pack_slurm_addr_array(slurm_addr_t * slurm_address,
-		       uint32_t size_val, Buf buffer,
-		       uint16_t protocol_version)
-{
-	slurm_pack_slurm_addr_array(slurm_address, size_val, buffer);
-}
-
-static int
-_unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
-			 uint32_t * size_val, Buf buffer,
-			 uint16_t protocol_version)
-{
-	return slurm_unpack_slurm_addr_array(slurm_address, size_val, buffer);
-}
-
 
 static void
 _pack_ret_list(List ret_list,
