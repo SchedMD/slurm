@@ -25,6 +25,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
+source ./globals_accounting
 
 set exit_code   0
 set user        ""
@@ -38,11 +39,22 @@ set file_in     "test$test_id\_sc"
 set nodes       [available_nodes idle]
 set job_id      0
 
+# job states
+set done_state      "DONE"
+set pending_state   "PENDING"
+set preempted_state "PREEMPTED"
+set running_state   "RUNNING"
+
+set eligible_now_job_directive "EligibleTime=now"
+
 if {[test_preempttype_qos] == 0} {
 	skip "This test requires that PreemptType=preempt/qos"
 }
 if {[test_using_slurmdbd] == 0} {
 	skip "This test requires use of Slurmdbd"
+}
+if {$nodes < 2} {
+	skip "Not enough available nodes ($nodes < 2)"
 }
 
 set min_job_age [get_min_job_age]
@@ -50,12 +62,12 @@ if {$min_job_age < 10} {
 	skip "MinJobAge configured too low for this test ($min_job_age < 10)"
 }
 
-proc acct_setup { acct_name qos_name pre_qos pre_type } {
+proc acct_setup { acct_name qos_name pre_qos pre_mode } {
 
 	global user nodes sacctmgr exit_code
 
 	set added 0
-	spawn $sacctmgr -i create qos $qos_name preempt=$pre_qos preemptmode=$pre_type maxnodes=$nodes
+	spawn $sacctmgr -i create qos $qos_name preempt=$pre_qos preemptmode=$pre_mode maxnodes=$nodes
 	expect {
 		-re "Adding QOS" {
 			incr added 1
@@ -105,38 +117,17 @@ proc acct_setup { acct_name qos_name pre_qos pre_type } {
 	}
 }
 
-proc mod_qos { qos_name pre_type } {
-
-	global sacctmgr exit_code
-
-	set mod 0
-	spawn $sacctmgr -i mod qos where name=$qos_name set preemptmode=$pre_type
-	expect {
-		-re "Modified qos" {
-			set mod 1
-			exp_continue
-		}
-		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if { $mod != 1 } {
-		log_error "Qos $qos_name was not modified"
-		set exit_code 1
-	}
-}
-
-proc sub_job { acct } {
+proc sub_job { acct1 {het_job false} } {
 
 	global nodes file_in sbatch number exit_code
 
 	set job_id 0
-	spawn $sbatch -o/dev/null --exclusive -N$nodes -A$acct $file_in
+	if { $het_job } {
+		set nodesless1 [expr $nodes - 1]
+		spawn $sbatch -o/dev/null --exclusive -N1 -A$acct1 : -N$nodesless1 -A$acct1 $file_in
+	} else {
+		spawn $sbatch -o/dev/null --exclusive -N$nodes -A$acct1 $file_in
+	}
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -161,6 +152,7 @@ proc sub_job { acct } {
 proc clean_up { rc } {
 
 	global acct_1 acct_2 qos_1 qos_2 qos_1_id qos_2_id sacctmgr exit_code
+	global user
 
 	set cleanacct(0) $acct_1
 	set cleanacct(1) $acct_2
@@ -172,6 +164,7 @@ proc clean_up { rc } {
 	wait_for_account_done $acct_1,$acct_2
 
 	for {set i 0} {$i<2} {incr i 1} {
+		run_command "$sacctmgr -i remove user $user where account=$cleanacct($i)"
 		spawn $sacctmgr delete -i account $cleanacct($i)
 		expect {
 			-re "(Deleting accounts|Nothing deleted)"  {
@@ -217,67 +210,99 @@ make_bash_script $file_in "sleep 30"
 
 set user [get_my_user_name]
 
+# preempt modes to test
+set preempt_mode_cancel  "cancel"
+set preempt_mode_requeue "requeue"
+set preempt_mode_list "$preempt_mode_cancel $preempt_mode_requeue"
 
-###################### Test preempt cancel ######################
+# job types to test for each mode
+set job_type_batch "batch"
+set job_type_het   "het"
+set job_type_list "$job_type_batch $job_type_het"
+
 log_info "**** Cleanup from previous run ****"
 clean_up 0
 
-log_info "*** TEST PREEMPT CANCEL ***"
-
-acct_setup $acct_1 $qos_1 "" cancel
+acct_setup $acct_1 $qos_1 "" $preempt_mode_cancel
 acct_setup $acct_2 $qos_2 $qos_1 cluster
 
-set qos_1_id [sub_job $acct_1]
-if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
-	log_error "Job $qos_1_id failed to start"
-	clean_up 1
+foreach preempt_mode $preempt_mode_list {
+	foreach job_type $job_type_list {
+		set mode_type_string [string toupper "$preempt_mode $job_type"]
+		log_info "*** TEST PREEMPT $mode_type_string JOB ***"
+
+		set mod_qos_vals(preemptmode) $preempt_mode
+		mod_qos $qos_1 [array get mod_qos_vals]
+
+		if { $job_type == $job_type_batch } {
+			set have_het_job 0
+		} else {
+			set have_het_job 1
+		}
+
+		set qos_1_id [sub_job $acct_1 $have_het_job]
+		if { [wait_for_job $qos_1_id $running_state $have_het_job] } {
+			log_error "Job $qos_1_id failed to start"
+			clean_up 1
+		}
+
+		set qos_2_id [sub_job $acct_2]
+		if { [wait_for_job $qos_2_id $running_state] } {
+			log_error "Job $qos_2_id failed to start"
+			clean_up 1
+		}
+
+		if { $preempt_mode == $preempt_mode_cancel } {
+			set jobs_ok 0
+			wait_for { $jobs_ok > 0 } {
+				set jobs_ok [check_job_state $qos_1_id $preempted_state $have_het_job]
+			}
+			if {$have_het_job} {
+				assert_or_fail {$jobs_ok == 2} "HetJob $qos_1_id was not on $preempted_state ($jobs_ok != 2)"
+			} else {
+				assert_or_fail {$jobs_ok == 1} "Job $qos_1_id was not on $preempted_state"
+			}
+		} else {
+			# requeue state
+			set jobs_ok 0
+			wait_for { $jobs_ok > 0 } {
+				set jobs_ok [check_job_state $qos_1_id $pending_state $have_het_job]
+			}
+			if {$have_het_job} {
+				assert_or_fail {$jobs_ok == 2} "HetJob $qos_1_id was not on $pending_state ($jobs_ok != 2)"
+			} else {
+				assert_or_fail {$jobs_ok == 1} "Job $qos_1_id was not on $pending_state"
+			}
+
+			# make job eligible to run now to avoid delay
+			run_command "$scontrol update job $qos_2_id $eligible_now_job_directive"
+			if { [wait_for_job $qos_2_id $done_state] != 0} {
+				log_error "Job $qos_2_id failed to complete"
+				clean_up 1
+			}
+			# Wait for requeued job to restart
+
+			# make job eligible to run now to avoid delay
+			run_command "$scontrol update job $qos_1_id $eligible_now_job_directive"
+			if { [wait_for_job $qos_1_id $running_state $have_het_job] } {
+				log_error "Job $qos_1_id failed to start"
+				clean_up 1
+			}
+
+			set jobs_ok 0
+			wait_for { $jobs_ok > 0 } {
+				set jobs_ok [check_job_state $qos_1_id $running_state $have_het_job]
+			}
+			if {$have_het_job} {
+				assert_or_fail {$jobs_ok == 2} "HetJob $qos_1_id was not on $running_state ($jobs_ok != 2)"
+			} else {
+				assert_or_fail {$jobs_ok == 1} "Job $qos_1_id was not on $running_state"
+			}
+		}
+
+		wait_for_account_done $acct_1,$acct_2
+	}
 }
-
-set qos_2_id [sub_job $acct_2]
-if { [wait_for_job $qos_2_id "RUNNING"] != 0} {
-	log_error "Job $qos_2_id failed to start"
-	clean_up 1
-}
-
-sleep 2
-check_job_state $qos_1_id PREEMPTED
-
-wait_for_account_done $acct_1,$acct_2
-
-###################### Test preempt requeue ######################
-log_info "*** TEST PREEMPT REQUEUE ***"
-
-mod_qos $qos_1 requeue
-
-set qos_1_id [sub_job $acct_1]
-if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
-	log_error "Job $qos_1_id failed to start"
-	clean_up 1
-}
-
-set qos_2_id [sub_job $acct_2]
-if { [wait_for_job $qos_2_id "RUNNING"] != 0} {
-	log_error "Job $qos_2_id failed to start"
-	clean_up 1
-}
-
-sleep 2
-check_job_state $qos_1_id PENDING
-
-# Wait for requeued job to restart
-if { [wait_for_job $qos_2_id "DONE"] != 0} {
-	clean_up 0
-	fail "Job $qos_2_id failed to complete"
-}
-if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
-	clean_up 0
-	fail "Job $qos_1_id failed to start"
-}
-
-sleep 2
-check_job_state $qos_1_id "RUNNING"
-
-wait_for_account_done $acct_1,$acct_2
 
 clean_up 0
 
