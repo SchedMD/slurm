@@ -354,6 +354,12 @@ log_info "idle: $idle_node"
 create_part $p1 $idle_node $part_weight
 create_part $p2 $idle_node $part_weight_half
 
+set cpu_cnt [part_cpu_cnt $p1]
+if {[expr fmod($cpu_cnt, 2)] != 0} {
+	skip "This test requires an even number of cpus per node ($idle_node has $cpu_cnt cpus)"
+}
+set cpu_cnt_half [expr $cpu_cnt / 2]
+
 clean_assocs
 
 array set qos_req {}
@@ -389,8 +395,6 @@ scontrol "show assoc account=$ta2 flags=assoc" "(Account=$ta2 UserName= Partitio
 scontrol "show assoc qos=$tq1 flags=qos" "Priority=$weight" 1
 scontrol "show assoc qos=$tq2 flags=qos" "Priority=$weight_half" 1
 
-set cpu_cnt [part_cpu_cnt $p1]
-set cpu_cnt_half [expr $cpu_cnt / 2]
 set jobid1 [sub_job "-n$cpu_cnt -p$p1 -A$ta1 --qos=$tq1" RUNNING]
 set jobid2 [sub_job "-n$cpu_cnt -p$p1 -A$ta1 --qos=$tq1" PENDING]
 set jobid3 [sub_job "-n$cpu_cnt_half -p$p2 -A$ta2 --qos=$tq2" PENDING]
