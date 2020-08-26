@@ -151,13 +151,13 @@ extern diag_stats_t slurmctld_diag_stats;
 static __thread bool drop_priv = false;
 #endif
 
-extern void record_rpc_stats(uint16_t msg_type, uid_t rpc_uid, long delta)
+extern void record_rpc_stats(slurm_msg_t *msg, long delta)
 {
 	slurm_mutex_lock(&rpc_mutex);
 	for (int i = 0; i < RPC_TYPE_SIZE; i++) {
 		if (rpc_type_id[i] == 0)
-			rpc_type_id[i] = msg_type;
-		else if (rpc_type_id[i] != msg_type)
+			rpc_type_id[i] = msg->msg_type;
+		else if (rpc_type_id[i] != msg->msg_type)
 			continue;
 		rpc_type_cnt[i]++;
 		rpc_type_time[i] += delta;
@@ -165,8 +165,8 @@ extern void record_rpc_stats(uint16_t msg_type, uid_t rpc_uid, long delta)
 	}
 	for (int i = 0; i < RPC_USER_SIZE; i++) {
 		if ((rpc_user_id[i] == 0) && (i != 0))
-			rpc_user_id[i] = rpc_uid;
-		else if (rpc_user_id[i] != rpc_uid)
+			rpc_user_id[i] = msg->auth_uid;
+		else if (rpc_user_id[i] != msg->auth_uid)
 			continue;
 		rpc_user_cnt[i]++;
 		rpc_user_time[i] += delta;
@@ -6250,5 +6250,5 @@ void slurmctld_req(slurm_msg_t *msg)
 	}
 
 	END_TIMER;
-	record_rpc_stats(msg->msg_type, msg->auth_uid, DELTA_TIMER);
+	record_rpc_stats(msg, DELTA_TIMER);
 }

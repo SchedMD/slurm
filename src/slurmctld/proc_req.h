@@ -53,7 +53,7 @@ void slurmctld_req(slurm_msg_t *msg);
 /*
  * Update slurmctld stats structure with time spent processing an rpc.
  */
-extern void record_rpc_stats(uint16_t msg_type, uid_t rpc_uid, long delta);
+extern void record_rpc_stats(slurm_msg_t *msg, long delta);
 
 /*
  * Initialize a response slurm_msg_t to an inbound msg,
