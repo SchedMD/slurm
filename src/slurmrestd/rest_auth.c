@@ -74,7 +74,7 @@ static const char *syms[] = {
 };
 
 static slurm_rest_auth_ops_t *ops;
-static uint32_t *plugin_ids;
+static uint32_t *plugin_ids = NULL;
 static int g_context_cnt = -1;
 static plugin_context_t **g_context = NULL;
 
@@ -105,6 +105,7 @@ extern void destroy_rest_auth(void)
 					    __func__);
 	}
 	xfree(ops);
+	xfree(plugin_ids);
 	xfree(g_context);
 	g_context_cnt = -1;
 
