@@ -725,10 +725,10 @@ typedef struct job_step_specs {
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
-	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
 	char *exc_nodes;	/* comma separated list of nodes excluded
 				 * from step's allocation, default NONE */
 	char *features;		/* required node features, default NONE */
+	uint32_t flags;         /* various flags from step_spec_flags_t */
 	char *host;		/* host to contact initiating srun */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
@@ -742,11 +742,8 @@ typedef struct job_step_specs {
 	uint32_t max_nodes;	/* maximum number of nodes usable by job,
 				 * default=0 */
 	char *mem_per_tres;	/* semicolon delimited list of TRES=# values */
-	uint8_t no_kill;	/* 1 if no kill on node failure */
 	char *node_list;	/* list of required nodes */
 	uint32_t num_tasks;	/* number of tasks required */
-	uint8_t overcommit;     /* flag, 1 to allow overcommit of processors,
-				   0 to disallow overcommit. default is 0 */
 	uint16_t plane_size;	/* plane size when task_dist =
 				   SLURM_DIST_PLANE */
 	uint16_t port;		/* port to contact initiating srun */

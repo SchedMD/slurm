@@ -2361,10 +2361,10 @@ extern void _pack_job_step_create_request_msg(
 		pack32(msg->task_dist, buffer);
 		pack16(msg->plane_size, buffer);
 		pack16(msg->port, buffer);
-		pack16(msg->exclusive, buffer);
 		pack16(msg->immediate, buffer);
 		pack16(msg->resv_port_cnt, buffer);
 		pack32(msg->srun_pid, buffer);
+		pack32(msg->flags, buffer);
 
 		packstr(msg->host, buffer);
 		packstr(msg->name, buffer);
@@ -2375,9 +2375,6 @@ extern void _pack_job_step_create_request_msg(
 		pack32(msg->step_het_comp_cnt, buffer);
 		packstr(msg->step_het_grps, buffer);
 
-		pack8(msg->no_kill, buffer);
-		pack8(msg->overcommit, buffer);
-
 		packstr(msg->cpus_per_tres, buffer);
 		packstr(msg->mem_per_tres, buffer);
 		packstr(msg->tres_bind, buffer);
@@ -2387,6 +2384,7 @@ extern void _pack_job_step_create_request_msg(
 		packstr(msg->tres_per_socket, buffer);
 		packstr(msg->tres_per_task, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint8_t tmp8;
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		pack32(msg->user_id, buffer);
 		pack32(msg->min_nodes, buffer);
@@ -2404,7 +2402,8 @@ extern void _pack_job_step_create_request_msg(
 		pack16(msg->plane_size, buffer);
 		pack16(msg->port, buffer);
 		pack16(0, buffer); /* was ckpt_interval */
-		pack16(msg->exclusive, buffer);
+		tmp8 = (msg->flags & SSF_EXCLUSIVE) ? 1 : 0;
+		pack16((uint16_t)tmp8, buffer);
 		pack16(msg->immediate, buffer);
 		pack16(msg->resv_port_cnt, buffer);
 		pack32(msg->srun_pid, buffer);
@@ -2416,8 +2415,10 @@ extern void _pack_job_step_create_request_msg(
 		packnull(buffer); /* was ckpt_dir */
 		packstr(msg->features, buffer);
 
-		pack8(msg->no_kill, buffer);
-		pack8(msg->overcommit, buffer);
+		tmp8 = (msg->flags & SSF_NO_KILL) ? 1 : 0;
+		pack8(tmp8, buffer);
+		tmp8 = (msg->flags & SSF_OVERCOMMIT) ? 1 : 0;
+		pack8(tmp8, buffer);
 
 		packstr(msg->cpus_per_tres, buffer);
 		packstr(msg->mem_per_tres, buffer);
@@ -2462,10 +2463,10 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpack32(&tmp_ptr->task_dist, buffer);
 		safe_unpack16(&tmp_ptr->plane_size, buffer);
 		safe_unpack16(&tmp_ptr->port, buffer);
-		safe_unpack16(&tmp_ptr->exclusive, buffer);
 		safe_unpack16(&tmp_ptr->immediate, buffer);
 		safe_unpack16(&tmp_ptr->resv_port_cnt, buffer);
 		safe_unpack32(&tmp_ptr->srun_pid, buffer);
+		safe_unpack32(&tmp_ptr->flags, buffer);
 
 		safe_unpackstr_xmalloc(&tmp_ptr->host, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
@@ -2480,9 +2481,6 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpack32(&tmp_ptr->step_het_comp_cnt, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->step_het_grps, &uint32_tmp,
 				       buffer);
-
-		safe_unpack8(&tmp_ptr->no_kill, buffer);
-		safe_unpack8(&tmp_ptr->overcommit, buffer);
 
 		safe_unpackstr_xmalloc(&tmp_ptr->cpus_per_tres, &uint32_tmp,
 				       buffer);
@@ -2522,7 +2520,10 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpack16(&tmp_ptr->plane_size, buffer);
 		safe_unpack16(&tmp_ptr->port, buffer);
 		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
-		safe_unpack16(&tmp_ptr->exclusive, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was exclusive */
+		if (uint16_tmp)
+			tmp_ptr->flags |= SSF_EXCLUSIVE;
+
 		safe_unpack16(&tmp_ptr->immediate, buffer);
 		safe_unpack16(&tmp_ptr->resv_port_cnt, buffer);
 		safe_unpack32(&tmp_ptr->srun_pid, buffer);
@@ -2546,8 +2547,12 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp,
 				       buffer);
 
-		safe_unpack8(&tmp_ptr->no_kill, buffer);
-		safe_unpack8(&tmp_ptr->overcommit, buffer);
+		safe_unpack8((uint8_t *)&uint16_tmp, buffer);
+		if (uint16_tmp)
+			tmp_ptr->flags |= SSF_NO_KILL;
+		safe_unpack8((uint8_t *)&uint16_tmp, buffer);
+		if (uint16_tmp)
+			tmp_ptr->flags |= SSF_OVERCOMMIT;
 
 		safe_unpackstr_xmalloc(&tmp_ptr->cpus_per_tres, &uint32_tmp,
 				       buffer);

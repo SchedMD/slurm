@@ -242,7 +242,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	job->ctx_params.cpu_freq_max = opt_local->cpu_freq_max;
 	job->ctx_params.cpu_freq_gov = opt_local->cpu_freq_gov;
 	job->ctx_params.relative = (uint16_t)srun_opt->relative;
-	job->ctx_params.exclusive = (uint16_t)srun_opt->exclusive;
+	if (srun_opt->exclusive)
+		job->ctx_params.flags |= SSF_EXCLUSIVE;
 	if (opt_local->immediate == 1)
 		job->ctx_params.immediate = (uint16_t)opt_local->immediate;
 	if (opt_local->time_limit != NO_VAL)
@@ -297,12 +298,14 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		break;
 
 	}
-	job->ctx_params.overcommit = opt_local->overcommit ? 1 : 0;
+	if (opt_local->overcommit)
+		job->ctx_params.flags |= SSF_OVERCOMMIT;
 	job->ctx_params.node_list = opt_local->nodelist;
 	job->ctx_params.exc_nodes = opt_local->exclude;
 
 	job->ctx_params.network = opt_local->network;
-	job->ctx_params.no_kill = opt_local->no_kill;
+	if (opt_local->no_kill)
+		job->ctx_params.flags |= SSF_NO_KILL;
 	if (slurm_option_set_by_cli(opt_local, 'J'))
 		job->ctx_params.name = opt_local->job_name;
 	else if (srun_opt->cmd_name)
