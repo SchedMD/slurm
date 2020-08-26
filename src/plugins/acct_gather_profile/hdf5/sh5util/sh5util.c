@@ -65,6 +65,8 @@
 #include "../hdf5_api.h"
 #include "sh5util.h"
 
+const char plugin_type[] = "";
+
 #define MAX_PROFILE_PATH 1024
 // #define MAX_ATTR_NAME 64
 #define MAX_GROUP_NAME 64

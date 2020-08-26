@@ -282,6 +282,8 @@ int	error(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	slurm_info(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	slurm_verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 
+extern const char plugin_type[];
+
 #ifdef SLURM_PLUGIN_DEBUG
 /*
  * Print plugins with the plugin_type and func

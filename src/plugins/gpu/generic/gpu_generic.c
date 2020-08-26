@@ -66,7 +66,7 @@
  * (major.minor.micro combined into a single number).
  */
 const char	*plugin_name		= "GPU Generic plugin";
-const char	*plugin_type		= "gpu/generic";
+const char	plugin_type[]		= "gpu/generic";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
 extern int init(void)

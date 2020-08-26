@@ -97,7 +97,7 @@ static bitstr_t	*saved_gpus = NULL;
  * (major.minor.micro combined into a single number).
  */
 const char	*plugin_name		= "GPU NVML plugin";
-const char	*plugin_type		= "gpu/nvml";
+const char	plugin_type[]		= "gpu/nvml";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
 
