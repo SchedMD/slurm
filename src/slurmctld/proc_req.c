@@ -5964,7 +5964,6 @@ void slurmctld_req(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	bool run_scheduler = false;
-	uint32_t rpc_uid;
 
 	if (msg->conn_fd >= 0)
 		fd_set_nonblocking(msg->conn_fd);
@@ -5974,12 +5973,9 @@ void slurmctld_req(slurm_msg_t *msg)
 		drop_priv = true;
 #endif
 
-	/* Validate the credential */
-	if (g_slurm_auth_verify(msg->auth_cred, slurm_conf.authinfo)) {
-		error("Bad authentication: %m");
-		return;
-	}
-	rpc_uid = (uint32_t) g_slurm_auth_get_uid(msg->auth_cred);
+	if (!msg->auth_uid_set)
+		fatal("%s: received message without previously validated auth",
+		      __func__);
 
 	/* Debug the protocol layer.
 	 */
@@ -5989,17 +5985,17 @@ void slurmctld_req(slurm_msg_t *msg)
 		if (msg->conn) {
 			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
 			     __func__, p, msg->conn->cluster_name,
-			     msg->conn->rem_host, rpc_uid);
+			     msg->conn->rem_host, msg->auth_uid);
 		} else {
 			slurm_addr_t cli_addr;
 			(void) slurm_get_peer_addr(msg->conn_fd, &cli_addr);
 			info("%s: received opcode %s from %pA uid %u",
-			     __func__, p, &cli_addr, rpc_uid);
+			     __func__, p, &cli_addr, msg->auth_uid);
 		}
 	}
 
 	debug2("Processing RPC: %s from UID=%u",
-	       rpc_num2string(msg->msg_type), rpc_uid);
+	       rpc_num2string(msg->msg_type), msg->auth_uid);
 
 	switch (msg->msg_type) {
 	case REQUEST_RESOURCE_ALLOCATION:
@@ -6051,7 +6047,7 @@ void slurmctld_req(slurm_msg_t *msg)
 		_slurm_rpc_epilog_complete(msg, &run_scheduler, 0);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
-		_slurm_rpc_job_step_kill(rpc_uid, msg);
+		_slurm_rpc_job_step_kill(msg->auth_uid, msg);
 		break;
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
 		_slurm_rpc_complete_job_allocation(msg);
@@ -6072,13 +6068,13 @@ void slurmctld_req(slurm_msg_t *msg)
 		_slurm_rpc_job_will_run(msg);
 		break;
 	case REQUEST_SIB_JOB_LOCK:
-		_slurm_rpc_sib_job_lock(rpc_uid, msg);
+		_slurm_rpc_sib_job_lock(msg->auth_uid, msg);
 		break;
 	case REQUEST_SIB_JOB_UNLOCK:
-		_slurm_rpc_sib_job_unlock(rpc_uid, msg);
+		_slurm_rpc_sib_job_unlock(msg->auth_uid, msg);
 		break;
 	case REQUEST_CTLD_MULT_MSG:
-		_proc_multi_msg(rpc_uid, msg);
+		_proc_multi_msg(msg->auth_uid, msg);
 		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		_slurm_rpc_node_registration(msg, 0);
@@ -6254,5 +6250,5 @@ void slurmctld_req(slurm_msg_t *msg)
 	}
 
 	END_TIMER;
-	record_rpc_stats(msg->msg_type, rpc_uid, DELTA_TIMER);
+	record_rpc_stats(msg->msg_type, msg->auth_uid, DELTA_TIMER);
 }
