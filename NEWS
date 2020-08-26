@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- cons_tres - fix job not getting access to socket without GPU or with less
     than --gpus-per-socket when not enough cpus available on required socket
     and not using --gres-flags=enforce binding.
+ -- Fix HDF5 type version build error.
 
 * Changes in Slurm 20.02.4
 ==========================
@@ -383,6 +384,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 19.05.8
 ==========================
  -- sbatch - handle --uid/--gid in #SBATCH directives properly.
+ -- Fix HDF5 type version build error.
 
 * Changes in Slurm 19.05.7
 ==========================
