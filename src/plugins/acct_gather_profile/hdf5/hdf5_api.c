@@ -48,6 +48,7 @@
 
 // FIXME: We need to make it so we can use deprecated symbols.
 #undef H5_NO_DEPRECATED_SYMBOLS
+#define H5O_info_t_vers 1
 #define H5Oget_info_vers 1
 
 #include "hdf5_api.h"
