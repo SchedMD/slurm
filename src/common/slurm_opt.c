@@ -4766,6 +4766,16 @@ static slurm_cli_opt_t slurm_opt_wckey = {
 	.reset_func = arg_reset_wckey,
 };
 
+COMMON_SRUN_BOOL_OPTION(whole);
+static slurm_cli_opt_t slurm_opt_whole = {
+	.name = "whole",
+	.has_arg = no_argument,
+	.val = LONG_OPT_WHOLE,
+	.set_func_srun = arg_set_whole,
+	.get_func = arg_get_whole,
+	.reset_func = arg_reset_whole,
+};
+
 COMMON_SBATCH_STRING_OPTION(wrap);
 static slurm_cli_opt_t slurm_opt_wrap = {
 	.name = "wrap",
@@ -4952,6 +4962,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_wait_all_nodes,
 	&slurm_opt_wait_srun,
 	&slurm_opt_wckey,
+	&slurm_opt_whole,
 	&slurm_opt_wrap,
 	&slurm_opt_x11,
 	NULL /* END */

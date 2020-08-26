@@ -2357,6 +2357,13 @@ Specify wckey to be used with job.  If TrackWCKey=no (default) in the
 slurm.conf this value is ignored. This option applies to job allocations.
 
 .TP
+\fB\-\-whole\fR
+Allow step access to all resources of a node in a job allocation.  This will
+allocate all resources on a node allocated the step. No other parallel step will
+have access to those unless \-\-overlap is used. This option applies to step
+allocations.
+
+.TP
 \fB\-X\fR, \fB\-\-disable\-status\fR
 Disable the display of task status when srun receives a single SIGINT
 (Ctrl\-C). Instead immediately forward the SIGINT to the running job.

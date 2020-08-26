@@ -58,6 +58,11 @@ HIGHLIGHTS
     no other parallel step will be allowed to run on the same resources at
     the same time.  To get the previous default behavior which allowed
     parallel steps to share all resources use the new srun '--overlap' option.
+ -- In conjunction to --exclusive behavior being the default for a step there
+    is also another option for step management, --whole, which will allow a
+    step access to all resources of a node in a job allocation.  This will
+    allocate all resources on a node allocated the step. No other parallel
+    step will have access to those unless \-\-overlap is used.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

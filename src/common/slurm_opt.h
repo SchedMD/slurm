@@ -174,6 +174,7 @@ enum {
 	LONG_OPT_USE_MIN_NODES,
 	LONG_OPT_WAIT_ALL_NODES,
 	LONG_OPT_WCKEY,
+	LONG_OPT_WHOLE,
 	LONG_OPT_WRAP,
 	LONG_OPT_X11,
 	LONG_OPT_ENUM_END
@@ -265,6 +266,7 @@ typedef struct {
 	bool test_exec;			/* test_exec set		*/
 	bool test_only;			/* --test-only			*/
 	bool unbuffered;		/* --unbuffered			*/
+	bool whole;			/* --whole			*/
 } srun_opt_t;
 
 typedef struct {

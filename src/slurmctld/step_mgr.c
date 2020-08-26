@@ -968,7 +968,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt = 0;
 	int cpu_cnt, i, max_rem_nodes;
 	int mem_blocked_nodes = 0, mem_blocked_cpus = 0;
-	int job_blocked_cpus = 0;
+	int job_blocked_nodes = 0, job_blocked_cpus = 0;
 	ListIterator step_iterator;
 	step_record_t *step_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
@@ -1147,6 +1147,17 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			if (step_spec->flags & SSF_EXCLUSIVE) {
 				total_cpus -= job_resrcs_ptr->
 					cpus_used[node_inx];
+				/*
+				 * If whole is given and
+				 * job_resrcs_ptr->cpus_used[node_inx]
+				 * we can't use this node.
+				 */
+				if ((step_spec->flags & SSF_WHOLE) &&
+				    job_resrcs_ptr->cpus_used[node_inx])
+					total_cpus = 0;
+				else
+					total_cpus -= job_resrcs_ptr->
+						cpus_used[node_inx];
 			}
 
 			if (!total_cpus)
@@ -1447,12 +1458,27 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					job_resrcs_ptr->cpus[node_inx];
 
 				if (step_spec->flags & SSF_EXCLUSIVE) {
-					job_blocked_cpus +=
-						job_resrcs_ptr->
-						cpus_used[node_inx];
-					usable_cpu_cnt[i] -=
-						job_resrcs_ptr->
-						cpus_used[node_inx];
+					/*
+					 * If whole is given and
+					 * job_resrcs_ptr->cpus_used[node_inx]
+					 * we can't use this node.
+					 */
+					if ((step_spec->flags & SSF_WHOLE) &&
+					    job_resrcs_ptr->
+					    cpus_used[node_inx]) {
+						job_blocked_cpus +=
+							job_resrcs_ptr->
+							cpus[node_inx];
+						usable_cpu_cnt[i] = 0;
+						job_blocked_nodes++;
+					} else {
+						job_blocked_cpus +=
+							job_resrcs_ptr->
+							cpus_used[node_inx];
+						usable_cpu_cnt[i] -=
+							job_resrcs_ptr->
+							cpus_used[node_inx];
+					}
 				}
 			}
 
@@ -1514,7 +1540,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						ESLURM_TOO_MANY_REQUESTED_CPUS;
 				} else if ((mem_blocked_cpus > 0) ||
 					   (step_spec->min_nodes <=
-					    (pick_node_cnt+mem_blocked_nodes))){
+					    (pick_node_cnt + mem_blocked_nodes +
+					     job_blocked_nodes))) {
 					*return_code = ESLURM_NODES_BUSY;
 				} else if (!bit_super_set(job_ptr->node_bitmap,
 							  up_node_bitmap)) {
@@ -1532,7 +1559,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 			} else if ((mem_blocked_cpus > 0) ||
 				   (step_spec->min_nodes <=
-				    (nodes_picked_cnt + mem_blocked_nodes))) {
+				    (nodes_picked_cnt + mem_blocked_nodes +
+				     job_blocked_nodes))) {
 				*return_code = ESLURM_NODES_BUSY;
 			} else if (!bit_super_set(job_ptr->node_bitmap,
 						  up_node_bitmap)) {
@@ -1711,14 +1739,16 @@ static void _pick_step_cores(step_record_t *step_ptr,
 				  &sockets, &cores))
 		fatal("get_job_resources_cnt");
 
-	if (task_cnt == (cores * sockets))
+	if ((step_ptr->flags & SSF_WHOLE) || task_cnt == (cores * sockets)) {
 		use_all_cores = true;
-	else
+		cpu_cnt = job_resrcs_ptr->cpus[job_node_inx];
+	} else {
 		use_all_cores = false;
 
-	if (step_ptr->cpus_per_task > 0) {
-		cpu_cnt *= step_ptr->cpus_per_task + cpus_per_core - 1;
-		cpu_cnt	/= cpus_per_core;
+		if (step_ptr->cpus_per_task > 0) {
+			cpu_cnt *= step_ptr->cpus_per_task + cpus_per_core - 1;
+			cpu_cnt	/= cpus_per_core;
+		}
 	}
 
 	/* select idle cores first */
@@ -1822,8 +1852,7 @@ extern void step_alloc_lps(step_record_t *step_ptr)
 	if (step_ptr->core_bitmap_job) {
 		/* "scontrol reconfig" of live system */
 		pick_step_cores = false;
-	} else if (!(step_ptr->flags & SSF_EXCLUSIVE) ||
-		   (step_ptr->cpu_count == job_ptr->total_cpus)) {
+	} else if (step_ptr->cpu_count == job_ptr->total_cpus) {
 		/*
 		 * Step uses all of job's cores
 		 * Just copy the bitmap to save time
@@ -1856,8 +1885,21 @@ extern void step_alloc_lps(step_record_t *step_ptr)
 		 * NOTE: The --overcommit option can result in
 		 * cpus_used[] having a higher value than cpus[]
 		 */
-		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
-			     step_ptr->cpus_per_task;
+
+		/*
+		 * If whole allocate all cpus here instead of just the ones
+		 * requested
+		 */
+		if (step_ptr->flags & SSF_WHOLE) {
+			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
+			if (first_step_node)
+				step_ptr->cpu_count = 0;
+			step_ptr->cpu_count += cpus_alloc;
+		} else
+			cpus_alloc =
+				step_ptr->step_layout->tasks[step_node_inx] *
+				step_ptr->cpus_per_task;
+
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
 		gres_plugin_step_alloc(step_ptr->gres_list, job_ptr->gres_list,
 				job_node_inx, first_step_node,
@@ -1866,6 +1908,7 @@ extern void step_alloc_lps(step_record_t *step_ptr)
 				step_ptr->step_id.step_id);
 		first_step_node = false;
 		rem_nodes--;
+
 		if (step_ptr->pn_min_memory && _is_mem_resv()) {
 			if (step_ptr->pn_min_memory & MEM_PER_CPU) {
 				uint64_t mem_use = step_ptr->pn_min_memory;
@@ -1984,8 +2027,11 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("_step_dealloc_lps: node index bad");
-		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
-			     step_ptr->cpus_per_task;
+		if (step_ptr->flags & SSF_WHOLE)
+			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
+		else
+			cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
+				step_ptr->cpus_per_task;
 		if (job_resrcs_ptr->cpus_used[job_node_inx] >= cpus_alloc) {
 			job_resrcs_ptr->cpus_used[job_node_inx] -= cpus_alloc;
 		} else {
@@ -2368,6 +2414,8 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	cpus_per_task = _calc_cpus_per_task(step_specs, job_ptr);
 
 	_copy_job_tres_to_step(step_specs, job_ptr);
+
+	/* If whole is given we probably need to copy tres_per_* from the job */
 	i = gres_plugin_step_state_validate(step_specs->cpus_per_tres,
 					    step_specs->tres_per_step,
 					    step_specs->tres_per_node,
