@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 19.05.8
 ==========================
  -- sbatch - handle --uid/--gid in #SBATCH directives properly.
+ -- Fix HDF5 type version build error.
 
 * Changes in Slurm 19.05.7
 ==========================
