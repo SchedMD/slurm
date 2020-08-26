@@ -1036,7 +1036,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 		goto send_msg;
 	}
 
-	sched_debug2("Processing RPC: REQUEST_HET_JOB_ALLOCATION from uid=%d",
+	sched_debug3("Processing RPC: REQUEST_HET_JOB_ALLOCATION from uid=%u",
 		     uid);
 
 	/*
@@ -1283,7 +1283,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		goto send_msg;
 	}
 
-	sched_debug2("Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%d",
+	sched_debug3("Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%u",
 		     uid);
 
 	_set_hostname(msg, job_desc_msg);
@@ -1964,9 +1964,8 @@ static void _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg)
 	job_step_kill_msg_t *job_step_kill_msg =
 		(job_step_kill_msg_t *) msg->data;
 
-	log_flag(STEPS, "Processing RPC: REQUEST_CANCEL_JOB_STEP %ps uid=%u",
-		 &job_step_kill_msg->step_id,
-		 uid);
+	log_flag(STEPS, "Processing RPC details: REQUEST_CANCEL_JOB_STEP %ps",
+		 &job_step_kill_msg->step_id);
 	_throttle_start(&active_rpc_cnt);
 
 	error_code = kill_job_step(job_step_kill_msg, uid);
@@ -1993,9 +1992,8 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 
 	/* init */
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_COMPLETE_JOB_ALLOCATION from "
-	       "uid=%u, JobId=%u rc=%d",
-	       uid, comp_msg->job_id, comp_msg->job_rc);
+	debug3("Processing RPC details: REQUEST_COMPLETE_JOB_ALLOCATION for JobId=%u rc=%d",
+	       comp_msg->job_id, comp_msg->job_rc);
 
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
@@ -2049,7 +2047,7 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
 
 	/* init */
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_COMPLETE_PROLOG from JobId=%u",
+	debug3("Processing RPC details: REQUEST_COMPLETE_PROLOG from JobId=%u",
 	       comp_msg->job_id);
 
 	lock_slurmctld(job_write_lock);
@@ -2093,9 +2091,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 
 	/* init */
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_COMPLETE_BATCH_SCRIPT from "
-	       "uid=%u JobId=%u",
-	       uid, comp_msg->job_id);
+	debug3("Processing RPC details: REQUEST_COMPLETE_BATCH_SCRIPT for JobId=%u",
+	       comp_msg->job_id);
 
 	if (!validate_slurm_user(uid)) {
 		error("A non superuser %u tried to complete batch JobId=%u",
@@ -2281,8 +2278,8 @@ static void  _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	START_TIMER;
-	debug3("Processing RPC: REQUEST_BATCH_SCRIPT from uid=%d for JobId=%u",
-	       uid, job_id_msg->job_id);
+	debug3("Processing RPC details: REQUEST_BATCH_SCRIPT for JobId=%u",
+	       job_id_msg->job_id);
 	lock_slurmctld(job_read_lock);
 
 	if ((job_ptr = find_job_record(job_id_msg->job_id))) {
@@ -2331,9 +2328,6 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	START_TIMER;
-	log_flag(STEPS, "Processing RPC: REQUEST_JOB_STEP_CREATE from uid=%d",
-		 uid);
-
 	dump_step_desc(req_step_msg);
 	if (uid && (uid != req_step_msg->user_id)) {
 		error("Security violation, JOB_STEP_CREATE RPC from uid=%d "
@@ -2449,9 +2443,6 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	START_TIMER;
-	log_flag(STEPS, "Processing RPC: REQUEST_JOB_STEP_INFO from uid=%u",
-		 uid);
-
 	lock_slurmctld(job_read_lock);
 
 	if ((request->last_update - 1) >= last_job_update) {
@@ -3165,11 +3156,12 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	START_TIMER;
-	info("Processing RPC: REQUEST_RECONFIGURE from uid=%d", uid);
 	if (!validate_super_user(uid)) {
 		error("Security violation, RECONFIGURE RPC from uid=%d", uid);
 		error_code = ESLURM_USER_ID_MISSING;
-	}
+	} else
+		info("Processing Reconfiguration Request");
+
 	if (in_progress || slurmctld_config.shutdown_time) {
 		error_code = EINPROGRESS;
 		debug5("%s: already in progress: skipping", __func__);
@@ -3366,9 +3358,9 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 
 	/* init */
 	START_TIMER;
-	log_flag(STEPS, "Processing RPC: REQUEST_STEP_COMPLETE for %ps nodes %u-%u rc=%u uid=%u",
-		 &req->step_id,
-		 req->range_first, req->range_last, req->step_rc, uid);
+	log_flag(STEPS, "Processing RPC details: REQUEST_STEP_COMPLETE for %ps nodes %u-%u rc=%u",
+		 &req->step_id, req->range_first, req->range_last,
+		 req->step_rc);
 
 	if (!running_composite) {
 		_throttle_start(&active_rpc_cnt);
@@ -3511,9 +3503,6 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 	int rc;
 
 	START_TIMER;
-	log_flag(STEPS, "Processing RPC: REQUEST_STEP_UPDATE, from uid=%u",
-		 uid);
-
 	lock_slurmctld(job_write_lock);
 	rc = update_step(req, uid);
 	unlock_slurmctld(job_write_lock);
@@ -4587,8 +4576,7 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 	default:
 		op = "unknown";
 	}
-	info("Processing RPC: REQUEST_SUSPEND(%s) from uid=%u",
-	     op, (unsigned int) uid);
+	debug3("Processing RPC details: REQUEST_SUSPEND(%s)", op);
 
 	/* Get the job id part of the jobid. It could be an array id. Currently
 	 * in a federation, job arrays only run on the origin cluster so we just
@@ -5407,7 +5395,7 @@ inline static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
 		return;
 	}
 
-	debug2("Processing RPC: REQUEST_STATS_INFO (command: %u)",
+	debug3("Processing RPC details: REQUEST_STATS_INFO command=%u",
 	       request_msg->command_id);
 
 	response_init(&response_msg, msg);
