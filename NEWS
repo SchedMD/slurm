@@ -77,6 +77,12 @@ documents those changes that are of interest to users and administrators.
  -- Improve number of boards discovery
  -- Fix updating a reservation NodeCnt on a zero-count reservation.
  -- slurmrestd - provide an explicit error messages when PSK auth fails.
+ -- cons_tres - fix job requesting single gres per-node getting two or more
+    nodes with less CPUs than requested per-task.
+ -- cons_tres - fix calculation of cores when using gres and cpus-per-task.
+ -- cons_tres - fix job not getting access to socket without GPU or with less
+    than --gpus-per-socket when not enough cpus available on required socket
+    and not using --gres-flags=enforce binding.
 
 * Changes in Slurm 20.02.4
 ==========================
