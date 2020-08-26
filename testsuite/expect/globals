@@ -6305,9 +6305,9 @@ proc in_fed {} {
 ################################################################
 
 proc check_job_state { job state {het_job 0}} {
-
 	global scontrol exit_code
 
+	set rc 0
 	set jid_list ""
 	if { $het_job } {
 		set jid_list [get_het_job_ids $job 1]
@@ -6334,15 +6334,16 @@ proc check_job_state { job state {het_job 0}} {
 			}
 		}
 
+		incr rc $state_match
 		if {$state_match != 1} {
 			log_error "job $jid should be in $state state, but is not"
 			set exit_code 1
 			break
 		}
 	}
+
+	return $rc
 }
-
-
 
 
 ################################################################
