@@ -602,7 +602,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 
 		if (exc_core_bitmap) {
 			bit_fmt(str, (sizeof(str) - 1), exc_core_bitmap);
-			debug2("%s exclude core bitmap: %s", __func__, str);
+			debug2("exclude core bitmap: %s", str);
 		}
 
 		rc = select_g_job_test(job_ptr, *avail_bitmap, min_nodes,
@@ -1009,7 +1009,7 @@ extern void *backfill_agent(void *args)
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "bckfl", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "backfill");
+		error("cannot set my name to %s %m", "backfill");
 	}
 #endif
 	_load_config();
@@ -1111,7 +1111,7 @@ static int _yield_locks(int64_t usec)
 			slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 			break;
 		}
-		verbose("backfill: continuing to yield locks, %d RPCs pending",
+		verbose("continuing to yield locks, %d RPCs pending",
 			slurmctld_config.server_thread_count);
 		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 	}
@@ -1602,8 +1602,7 @@ static int _attempt_backfill(void)
 	job_start_cnt = 0;
 
 	if (!fed_mgr_sibs_synced()) {
-		info("backfill: %s returning, federation siblings not synced yet",
-		     __func__);
+		info("returning, federation siblings not synced yet");
 		return SLURM_SUCCESS;
 	}
 
@@ -1611,9 +1610,9 @@ static int _attempt_backfill(void)
 
 	START_TIMER;
 	if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)
-		info("backfill: beginning");
+		info("beginning");
 	else
-		debug("backfill: beginning");
+		debug("beginning");
 	sched_start = orig_sched_start = now = time(NULL);
 	gettimeofday(&start_tv, NULL);
 
@@ -1621,13 +1620,13 @@ static int _attempt_backfill(void)
 	job_test_count = list_count(job_queue);
 	if (job_test_count == 0) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)
-			info("backfill: no jobs to backfill");
+			info("no jobs to backfill");
 		else
-			debug("backfill: no jobs to backfill");
+			debug("no jobs to backfill");
 		FREE_NULL_LIST(job_queue);
 		return 0;
 	} else
-		debug("backfill: %u jobs to backfill", job_test_count);
+		debug("%u jobs to backfill", job_test_count);
 
 	list_for_each(job_list, _clear_job_estimates, NULL);
 
@@ -1727,7 +1726,7 @@ static int _attempt_backfill(void)
 		if (many_rpcs || (slurm_delta_tv(&start_tv) >= yield_interval)) {
 			if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
-				info("backfill: yielding locks after testing "
+				info("yielding locks after testing "
 				     "%u(%d) jobs, %s",
 				     slurmctld_diag_stats.bf_last_depth,
 				     job_test_count, TIME_STR);
@@ -1799,7 +1798,7 @@ static int _attempt_backfill(void)
 				!bit_test(job_ptr->assoc_ptr->usage->valid_qos,
 					  job_ptr->qos_id))
 			    && !job_ptr->limit_set.qos) {
-				debug("backfill: %pJ has invalid QOS",
+				debug("%pJ has invalid QOS",
 				      job_ptr);
 				assoc_mgr_unlock(&locks);
 				job_fail_qos(job_ptr, __func__);
@@ -2058,7 +2057,7 @@ next_task:
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
-				info("backfill: yielding locks after testing "
+				info("yielding locks after testing "
 				     "%u(%d) jobs tested, %u time slots, %s",
 				     slurmctld_diag_stats.bf_last_depth,
 				     job_test_count, test_time_count, TIME_STR);
@@ -2208,7 +2207,7 @@ next_task:
 		bit_not(resv_bitmap);
 
 		/* this is the time consuming operation */
-		debug2("backfill: entering _try_sched for %pJ.",
+		debug2("entering _try_sched for %pJ.",
 		       job_ptr);
 
 		if (!already_counted) {
@@ -2251,7 +2250,7 @@ next_task:
 			 * available after node reboot */
 			bitstr_t *tmp_core_bitmap = NULL;
 			bitstr_t *tmp_node_bitmap = NULL;
-			debug2("backfill: entering _try_sched for %pJ. Need to use features which can be made available after node reboot",
+			debug2("entering _try_sched for %pJ. Need to use features which can be made available after node reboot",
 			       job_ptr);
 			/* Determine impact of any advance reservations */
 			resv_end = 0;
@@ -2437,9 +2436,7 @@ skip_start:
 					time_limit = job_ptr->time_limit;
 				}
 			} else if (rc == SLURM_SUCCESS) {
-				error("%s: start_time of 0 on successful "
-				      "backfill. This shouldn't happen. :)",
-				      __func__);
+				error("start_time of 0 on successful backfill. This shouldn't happen. :)");
 			}
 
 			if ((rc == ESLURM_RESERVATION_BUSY) ||
@@ -2766,14 +2763,14 @@ skip_start:
 	_do_diag_stats(&bf_time1, &bf_time2, node_space_recs);
 	if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {
 		END_TIMER;
-		info("backfill: completed testing %u(%d) jobs, %s",
+		info("completed testing %u(%d) jobs, %s",
 		     slurmctld_diag_stats.bf_last_depth,
 		     job_test_count, TIME_STR);
 	}
 
 	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 	if (slurmctld_config.server_thread_count >= 150) {
-		info("backfill: %d pending RPCs at cycle end, consider "
+		info("%d pending RPCs at cycle end, consider "
 		     "configuring max_rpc_cnt",
 		     slurmctld_config.server_thread_count);
 	}
@@ -2819,7 +2816,7 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 	if (rc == SLURM_SUCCESS) {
 		/* job initiated */
 		last_job_update = time(NULL);
-		info("backfill: Started %pJ in %s on %s",
+		info("Started %pJ in %s on %s",
 		     job_ptr, job_ptr->part_ptr->name, job_ptr->nodes);
 		power_g_job_start(job_ptr);
 		if (job_ptr->batch_flag == 0)
@@ -2840,12 +2837,12 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 		/* This happens when a job has sharing disabled and
 		 * a selected node is still completing some job,
 		 * which should be a temporary situation. */
-		verbose("backfill: Failed to start %pJ with %s avail: %s",
+		verbose("Failed to start %pJ with %s avail: %s",
 			job_ptr, node_list, slurm_strerror(rc));
 		xfree(node_list);
 		fail_jobid = job_ptr->job_id;
 	} else {
-		debug3("backfill: Failed to start %pJ: %s",
+		debug3("Failed to start %pJ: %s",
 		       job_ptr, slurm_strerror(rc));
 	}
 
@@ -2922,7 +2919,7 @@ static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 	job_time_adj_resv(job_ptr);
 
 	if (orig_time_limit != job_ptr->time_limit) {
-		info("backfill: %pJ time limit changed from %u to %u",
+		info("%pJ time limit changed from %u to %u",
 		     job_ptr, orig_time_limit, job_ptr->time_limit);
 	}
 }

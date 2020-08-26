@@ -403,13 +403,13 @@ static int _merge_lists(List gres_conf_list, List gpu_conf_list,
 
 extern int init(void)
 {
-	debug("%s: %s loaded", __func__, plugin_name);
+	debug("loaded");
 
 	return SLURM_SUCCESS;
 }
 extern int fini(void)
 {
-	debug("%s: unloading %s", __func__, plugin_name);
+	debug("unloading");
 	FREE_NULL_LIST(gres_devices);
 	FREE_NULL_LIST(mps_info);
 
@@ -556,7 +556,7 @@ static uint64_t _get_dev_count(int global_id)
 	uint64_t count = NO_VAL64;
 
 	if (!mps_info) {
-		error("%s: mps_info is NULL", __func__);
+		error("mps_info is NULL");
 		return 100;
 	}
 	itr = list_iterator_create(mps_info);
@@ -568,8 +568,8 @@ static uint64_t _get_dev_count(int global_id)
 	}
 	list_iterator_destroy(itr);
 	if (count == NO_VAL64) {
-		error("%s: Could not find gres/mps count for device ID %d",
-		      __func__,  global_id);
+		error("Could not find gres/mps count for device ID %d",
+		      global_id);
 		return 100;
 	}
 
@@ -621,7 +621,7 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
 				    perc_str);
 	} else if (gres_per_node) {
-		error("%s: mps_info list is NULL", __func__);
+		error("mps_info list is NULL");
 		snprintf(perc_str, sizeof(perc_str), "%"PRIu64, gres_per_node);
 		env_array_overwrite(env_ptr,
 				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
@@ -746,7 +746,7 @@ extern void recv_stepd(Buf buffer)
 	return;
 
 unpack_error:
-	error("%s: failed", __func__);
+	error("failed");
 	xfree(mps_ptr);
 	return;
 }
@@ -858,7 +858,7 @@ extern void epilog_set_env(char ***epilog_env_ptr,
 		return;
 
 	if (node_inx > epilog_info->node_cnt) {
-		error("%s: %s: bad node index (%d > %u)", plugin_type, __func__,
+		error("bad node index (%d > %u)",
 		      node_inx, epilog_info->node_cnt);
 		return;
 	}

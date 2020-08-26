@@ -1001,7 +1001,6 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 	uint32_t cume_cores = 0;
 	int i;
 
-	info("%s: %s", plugin_type, __func__);
 	if (!(slurm_conf.select_type_param & (CR_CPU | CR_CORE | CR_SOCKET))) {
 		fatal("Invalid SelectTypeParameters: %s (%u), "
 		      "You need at least CR_(CPU|CORE|SOCKET)*",
@@ -1185,8 +1184,8 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	xassert(to_job_ptr->details);
 
 	if (from_job_ptr->job_id == to_job_ptr->job_id) {
-		error("%s: %s: attempt to merge %pJ with self",
-		      plugin_type, __func__, from_job_ptr);
+		error("attempt to merge %pJ with self",
+		      from_job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -1195,8 +1194,8 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	    (from_job_resrcs_ptr->cpus == NULL) ||
 	    (from_job_resrcs_ptr->core_bitmap == NULL) ||
 	    (from_job_resrcs_ptr->node_bitmap == NULL)) {
-		error("%s: %s: %pJ lacks a job_resources struct",
-		      plugin_type, __func__, from_job_ptr);
+		error("%pJ lacks a job_resources struct",
+		      from_job_ptr);
 		return SLURM_ERROR;
 	}
 	to_job_resrcs_ptr = to_job_ptr->job_resrcs;
@@ -1204,22 +1203,22 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	    (to_job_resrcs_ptr->cpus == NULL) ||
 	    (to_job_resrcs_ptr->core_bitmap == NULL) ||
 	    (to_job_resrcs_ptr->node_bitmap == NULL)) {
-		error("%s: %s: %pJ lacks a job_resources struct",
-		      plugin_type, __func__, to_job_ptr);
+		error("%pJ lacks a job_resources struct",
+		      to_job_ptr);
 		return SLURM_ERROR;
 	}
 
 	if (is_cons_tres) {
 		if (to_job_ptr->gres_list) {
 			/* Can't reset gres/mps fields today */
-			error("%s: %s: %pJ has allocated GRES",
-			      plugin_type, __func__, to_job_ptr);
+			error("%pJ has allocated GRES",
+			      to_job_ptr);
 			return SLURM_ERROR;
 		}
 		if (from_job_ptr->gres_list) {
 			/* Can't reset gres/mps fields today */
-			error("%s: %s: %pJ has allocated GRES",
-			      plugin_type, __func__, from_job_ptr);
+			error("%pJ has allocated GRES",
+			      from_job_ptr);
 			return SLURM_ERROR;
 		}
 	}
@@ -1402,13 +1401,13 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 	xassert(job_ptr->magic == JOB_MAGIC);
 
 	if (!job || !job->core_bitmap) {
-		error("%s: %s: %pJ has no job_resrcs info",
-		      plugin_type, __func__, job_ptr);
+		error("%pJ has no job_resrcs info",
+		      job_ptr);
 		return SLURM_ERROR;
 	}
 
-	debug3("%s: %s: %pJ node %s",
-	       plugin_type, __func__, job_ptr, node_ptr->name);
+	debug3("%pJ node %s",
+	       job_ptr, node_ptr->name);
 	if (job_ptr->start_time < slurmctld_config.boot_time)
 		old_job = true;
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)
@@ -1430,8 +1429,8 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 		}
 
 		if (job->cpus[n] == 0) {
-			info("%s: %s: attempt to remove node %s from %pJ again",
-			     plugin_type, __func__, node_ptr->name, job_ptr);
+			info("attempt to remove node %s from %pJ again",
+			     node_ptr->name, job_ptr);
 			return SLURM_SUCCESS;
 		}
 
@@ -1445,9 +1444,8 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 		gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 		if (node_usage[i].alloc_memory < job->memory_allocated[n]) {
-			error("%s: %s: node %s memory is underallocated (%"PRIu64"-%"PRIu64") for %pJ",
-			      plugin_type,
-			      __func__, node_ptr->name,
+			error("node %s memory is underallocated (%"PRIu64"-%"PRIu64") for %pJ",
+			      node_ptr->name,
 			      node_usage[i].alloc_memory,
 			      job->memory_allocated[n], job_ptr);
 			node_usage[i].alloc_memory = 0;
@@ -1464,8 +1462,8 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 
 	/* subtract cores, reconstruct rows with remaining jobs */
 	if (!job_ptr->part_ptr) {
-		error("%s: %s: removed %pJ does not have a partition assigned",
-		      plugin_type, __func__, job_ptr);
+		error("removed %pJ does not have a partition assigned",
+		      job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -1474,8 +1472,8 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 			break;
 	}
 	if (!p_ptr) {
-		error("%s: %s: removed %pJ could not find part %s",
-		      plugin_type, __func__, job_ptr, job_ptr->part_ptr->name);
+		error("removed %pJ could not find part %s",
+		      job_ptr, job_ptr->part_ptr->name);
 		return SLURM_ERROR;
 	}
 
@@ -1489,8 +1487,8 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 		for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
 			if (p_ptr->row[i].job_list[j] != job)
 				continue;
-			debug3("%s: %s: found %pJ in part %s row %u",
-			       plugin_type, __func__, job_ptr,
+			debug3("found %pJ in part %s row %u",
+			       job_ptr,
 			       p_ptr->part_ptr->name, i);
 			/* found job - we're done, don't actually remove */
 			n = 1;
@@ -1499,8 +1497,8 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 		}
 	}
 	if (n == 0) {
-		error("%s: %s: could not find %pJ in partition %s",
-		      plugin_type, __func__, job_ptr, p_ptr->part_ptr->name);
+		error("could not find %pJ in partition %s",
+		      job_ptr, p_ptr->part_ptr->name);
 		return SLURM_ERROR;
 	}
 
@@ -1515,7 +1513,7 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 	if (node_usage[node_inx].node_state >= job->node_req) {
 		node_usage[node_inx].node_state -= job->node_req;
 	} else {
-		error("%s: %s: node_state miscount", plugin_type, __func__);
+		error("node_state miscount");
 		node_usage[node_inx].node_state = NODE_CR_AVAILABLE;
 	}
 
@@ -1568,7 +1566,7 @@ extern int select_p_job_fini(job_record_t *job_ptr)
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-	log_flag(SELECT_TYPE, "%s: %s: %pJ", plugin_type, __func__, job_ptr);
+	log_flag(SELECT_TYPE, "%pJ", job_ptr);
 
 	job_res_rm_job(select_part_record, select_node_usage,
 		       job_ptr, 0, true, NULL);
@@ -1585,11 +1583,11 @@ extern int select_p_job_suspend(job_record_t *job_ptr, bool indf_susp)
 	xassert(job_ptr->magic == JOB_MAGIC);
 
 	if (indf_susp)
-		log_flag(SELECT_TYPE, "%s: %s: %pJ indf_susp",
-			 plugin_type, __func__, job_ptr);
+		log_flag(SELECT_TYPE, "%pJ indf_susp",
+			 job_ptr);
 	else
-		log_flag(SELECT_TYPE, "%s: %s: %pJ",
-			 plugin_type, __func__, job_ptr);
+		log_flag(SELECT_TYPE, "%pJ",
+			 job_ptr);
 
 	if (!indf_susp)
 		return SLURM_SUCCESS;
@@ -1605,11 +1603,11 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	xassert(job_ptr->magic == JOB_MAGIC);
 
 	if (indf_susp)
-		log_flag(SELECT_TYPE, "%s: %s: %pJ indf_susp",
-			 plugin_type, __func__, job_ptr);
+		log_flag(SELECT_TYPE, "%pJ indf_susp",
+			 job_ptr);
 	else
-		log_flag(SELECT_TYPE, "%s: %s: %pJ",
-			 plugin_type, __func__, job_ptr);
+		log_flag(SELECT_TYPE, "%pJ",
+			 job_ptr);
 
 	if (!indf_susp)
 		return SLURM_SUCCESS;
@@ -1648,7 +1646,7 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 		 * We should never get here,
 		 * but avoid abort with bad data structures
 		 */
-		error("%s: nodeinfo is NULL", __func__);
+		error("nodeinfo is NULL");
 		nodeinfo_empty = xmalloc(sizeof(select_nodeinfo_t));
 		nodeinfo = nodeinfo_empty;
 	}
@@ -1677,7 +1675,7 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 {
 	if (nodeinfo) {
 		if (nodeinfo->magic != nodeinfo_magic) {
-			error("%s: nodeinfo magic bad", __func__);
+			error("nodeinfo magic bad");
 			return EINVAL;
 		}
 		xfree(nodeinfo->tres_alloc_cnt);
@@ -1708,7 +1706,7 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	error("%s: error unpacking here", __func__);
+	error("error unpacking here");
 	select_p_select_nodeinfo_free(nodeinfo_ptr);
 	*nodeinfo = NULL;
 
@@ -1731,7 +1729,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	 * the last time we set things up.
 	 */
 	if (last_set_all && (last_node_update < last_set_all)) {
-		debug2("%s: Node data hasn't changed since %ld", __func__,
+		debug2("Node data hasn't changed since %ld",
 		       (long)last_set_all);
 		return SLURM_NO_CHANGE_IN_DATA;
 	}
@@ -1770,8 +1768,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 					     SELECT_NODEDATA_PTR, 0,
 					     (void *)&nodeinfo);
 		if (!nodeinfo) {
-			error("%s: no nodeinfo returned from structure",
-			      __func__);
+			error("no nodeinfo returned from structure");
 			continue;
 		}
 
@@ -1891,12 +1888,12 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
 	if (nodeinfo == NULL) {
-		error("%s: nodeinfo not set", __func__);
+		error("nodeinfo not set");
 		return SLURM_ERROR;
 	}
 
 	if (nodeinfo->magic != nodeinfo_magic) {
-		error("%s: jobinfo magic bad", __func__);
+		error("jobinfo magic bad");
 		return SLURM_ERROR;
 	}
 
@@ -1920,7 +1917,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		*tmp_double = nodeinfo->tres_alloc_weighted;
 		break;
 	default:
-		error("%s: Unsupported option %d", __func__, dinfo);
+		error("Unsupported option %d", dinfo);
 		rc = SLURM_ERROR;
 		break;
 	}
@@ -2014,7 +2011,7 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 		*tmp_32 = is_cons_tres ? 1 : 0;
 		break;
 	default:
-		error("%s: info type %d invalid", __func__, info);
+		error("info type %d invalid", info);
 		rc = SLURM_ERROR;
 		break;
 	}
@@ -2024,7 +2021,7 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 extern int select_p_update_node_config(int index)
 {
 	if (index >= select_node_cnt) {
-		error("%s: index too large (%d > %d)", __func__, index,
+		error("index too large (%d > %d)", index,
 		      select_node_cnt);
 		return SLURM_ERROR;
 	}
@@ -2298,7 +2295,7 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 			best_fit_inx = j;
 	}
 	if (best_fit_inx == -1) {
-		debug("%s: could not find resources for reservation", __func__);
+		debug("could not find resources for reservation");
 		goto fini;
 	}
 

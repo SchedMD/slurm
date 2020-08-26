@@ -69,7 +69,7 @@ static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
 	int nmax = numa_max_node();
 	if (nmax > 0)
 		nnid = ldom % (nmax+1);
-	debug3("task/affinity: binding to NUMA node %d", nnid);
+	debug3("binding to NUMA node %d", nnid);
 	maxcpus = conf->sockets * conf->cores * conf->threads;
 	for (c = 0; c < maxcpus; c++) {
 		if (slurm_get_numa_node(c) == nnid)

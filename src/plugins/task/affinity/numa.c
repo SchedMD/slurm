@@ -262,8 +262,8 @@ extern uint16_t slurm_get_numa_node(uint16_t cpuid)
 
 	collective = numa_allocate_cpumask();
 	if (maxcpus > collective->size) {
-		error("%s: Size mismatch!!!! %d %lu",
-		      __func__, maxcpus, collective->size);
+		error("Size mismatch!!!! %d %lu",
+		      maxcpus, collective->size);
 		numa_free_cpumask(collective);
 		return 0;
 	}
@@ -276,7 +276,7 @@ extern uint16_t slurm_get_numa_node(uint16_t cpuid)
 		 */
 		if (numa_node_to_cpus(nnid, collective->maskp,
 				      collective->size / 8)) {
-			error("%s: numa_node_to_cpus: %m", __func__);
+			error("numa_node_to_cpus: %m");
 			numa_free_cpumask(collective);
 			return 0;
 		}

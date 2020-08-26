@@ -101,7 +101,7 @@ extern int task_cgroup_devices_init(void)
 	cgroup_allowed_devices_file[0] = '\0';
 
 	if (get_procs(&cpunum) != 0) {
-		error("task/cgroup: unable to get a number of CPU");
+		error("unable to get a number of CPU");
 		goto error;
 	}
 
@@ -110,7 +110,7 @@ extern int task_cgroup_devices_init(void)
 	cg_conf = xcgroup_get_slurm_cgroup_conf();
 
 	if ((strlen(cg_conf->allowed_devices_file) + 1) >= PATH_MAX) {
-		error("task/cgroup: device file path length exceeds limit: %s",
+		error("device file path length exceeds limit: %s",
 		      cg_conf->allowed_devices_file);
 		slurm_mutex_unlock(&xcgroup_config_read_mutex);
 		goto error;
@@ -119,13 +119,13 @@ extern int task_cgroup_devices_init(void)
 	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 	if (xcgroup_ns_create(&devices_ns, "", "devices")
 	    != XCGROUP_SUCCESS ) {
-		error("task/cgroup: unable to create devices namespace");
+		error("unable to create devices namespace");
 		goto error;
 	}
 
 	file = fopen(cgroup_allowed_devices_file, "r");
 	if (!file) {
-		debug("task/cgroup: unable to open %s: %m",
+		debug("unable to open %s: %m",
 		      cgroup_allowed_devices_file);
 	} else
 		fclose(file);
@@ -157,21 +157,21 @@ extern int task_cgroup_devices_fini(void)
 					       "devices step");
 
 			if (xcgroup_delete(&step_devices_cg) != SLURM_SUCCESS)
-                                debug2("task/cgroup: unable to remove step "
+                                debug2("unable to remove step "
                                        "devices : %m");
                         if (xcgroup_delete(&job_devices_cg) != XCGROUP_SUCCESS)
-                                debug2("task/cgroup: not removing "
+                                debug2("not removing "
                                        "job devices : %m");
                         if (xcgroup_delete(&user_devices_cg)
 			    != XCGROUP_SUCCESS)
-                                debug2("task/cgroup: not removing "
+                                debug2("not removing "
                                        "user devices : %m");
                         xcgroup_unlock(&devices_cg);
                 } else
-                        error("task/cgroup: unable to lock root devices : %m");
+                        error("unable to lock root devices : %m");
                 xcgroup_destroy(&devices_cg);
         } else
-                error("task/cgroup: unable to create root devices : %m");
+                error("unable to create root devices : %m");
 
 	if ( user_cgroup_path[0] != '\0' )
 		xcgroup_destroy(&user_devices_cg);
@@ -339,7 +339,7 @@ static void _calc_device_major(char *dev_path[PATH_MAX],
 	int k;
 
 	if (lines > PATH_MAX) {
-		error("task/cgroup: more devices configured than table size "
+		error("more devices configured than table size "
 		      "(%d > %d)", lines, PATH_MAX);
 		lines = PATH_MAX;
 	}

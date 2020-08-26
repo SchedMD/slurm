@@ -160,10 +160,10 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("DEBUG: %s (before):", __func__);
+		info("DEBUG: (before):");
 		part_data_dump_res(p_ptr);
 	}
-	debug3("%s: %s reshuffling %u jobs", plugin_type, __func__, num_jobs);
+	debug3("reshuffling %u jobs", num_jobs);
 
 	/* make a copy, in case we cannot do better than this */
 	orig_row = part_data_dup_row(p_ptr->row, p_ptr->num_rows);
@@ -241,10 +241,10 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 		 * algorithm couldn't improve apon the existing layout.
 		 * Thus, we'll restore the original layout here
 		 */
-		debug3("%s: %s: dangling job found", plugin_type, __func__);
+		debug3("dangling job found");
 
 		if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-			info("DEBUG: %s (post-algorithm):", __func__);
+			info("DEBUG: (post-algorithm):");
 			part_data_dump_res(p_ptr);
 		}
 
@@ -265,7 +265,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("DEBUG: %s (after):", __func__);
+		info("DEBUG: (after):");
 		part_data_dump_res(p_ptr);
 	}
 

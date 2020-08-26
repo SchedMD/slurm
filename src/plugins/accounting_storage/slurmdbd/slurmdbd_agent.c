@@ -136,7 +136,7 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 	memset(&resp, 0, sizeof(persist_msg_t));
 	if ((rc = unpack_slurmdbd_msg(&resp, slurmdbd_conn->version, buffer))
 	    != SLURM_SUCCESS) {
-		error("%s: unpack message error", __func__);
+		error("unpack message error");
 		return rc;
 	}
 
@@ -145,26 +145,26 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 		id_msg = resp.data;
 		rc = id_msg->return_code;
 
-		log_flag(PROTOCOL, "%s: msg_type:DBD_ID_RC return_code:%s JobId=%u db_index=%"PRIu64,
-			 __func__, slurm_strerror(rc), id_msg->job_id,
+		log_flag(PROTOCOL, "msg_type:DBD_ID_RC return_code:%s JobId=%u db_index=%"PRIu64,
+			 slurm_strerror(rc), id_msg->job_id,
 			 id_msg->db_index);
 
 		slurmdbd_free_id_rc_msg(id_msg);
 		if (rc != SLURM_SUCCESS)
-			error("slurmdbd: DBD_ID_RC is %d", rc);
+			error("DBD_ID_RC is %d", rc);
 		break;
 	case PERSIST_RC:
 		msg = resp.data;
 		rc = msg->rc;
 
-		log_flag(PROTOCOL, "%s: msg_type:PERSIST_RC return_code:%s ret_info:%hu flags=%#x comment:%s",
-			 __func__, slurm_strerror(rc), msg->ret_info,
+		log_flag(PROTOCOL, "msg_type:PERSIST_RC return_code:%s ret_info:%hu flags=%#x comment:%s",
+			 slurm_strerror(rc), msg->ret_info,
 			 msg->flags, msg->comment);
 
 		if (rc != SLURM_SUCCESS) {
 			if (msg->ret_info == DBD_REGISTER_CTLD &&
 			    slurm_conf.accounting_storage_enforce) {
-				error("slurmdbd: PERSIST_RC is %d from "
+				error("PERSIST_RC is %d from "
 				      "%s(%u): %s",
 				      rc,
 				      slurmdbd_msg_type_2_str(
@@ -176,7 +176,7 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 				      "enforce associations, or no "
 				      "jobs will ever run.");
 			} else
-				debug("slurmdbd: PERSIST_RC is %d from "
+				debug("PERSIST_RC is %d from "
 				      "%s(%u): %s",
 				      rc,
 				      slurmdbd_msg_type_2_str(
@@ -187,7 +187,7 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 		slurm_persist_free_rc_msg(msg);
 		break;
 	default:
-		error("slurmdbd: bad message type %d != PERSIST_RC", msg_type);
+		error("bad message type %d != PERSIST_RC", msg_type);
 	}
 
 	return rc;
@@ -226,7 +226,7 @@ static int _handle_mult_rc_ret(void)
 			    &list_msg, slurmdbd_conn->version,
 			    DBD_GOT_MULT_MSG, buffer)
 		    != SLURM_SUCCESS) {
-			error("slurmdbd: unpack message error");
+			error("unpack message error");
 			break;
 		}
 
@@ -244,7 +244,7 @@ static int _handle_mult_rc_ret(void)
 				if ((b = list_dequeue(agent_list))) {
 					free_buf(b);
 				} else {
-					error("slurmdbd: DBD_GOT_MULT_MSG "
+					error("DBD_GOT_MULT_MSG "
 					      "unpack message error");
 				}
 			}
@@ -261,7 +261,7 @@ static int _handle_mult_rc_ret(void)
 			if (rc != SLURM_SUCCESS) {
 				if (msg->ret_info == DBD_REGISTER_CTLD &&
 				    slurm_conf.accounting_storage_enforce) {
-					error("slurmdbd: PERSIST_RC is %d from "
+					error("PERSIST_RC is %d from "
 					      "%s(%u): %s",
 					      rc,
 					      slurmdbd_msg_type_2_str(
@@ -273,7 +273,7 @@ static int _handle_mult_rc_ret(void)
 					      "enforce associations, or no "
 					      "jobs will ever run.");
 				} else
-					debug("slurmdbd: PERSIST_RC is %d from "
+					debug("PERSIST_RC is %d from "
 					      "%s(%u): %s",
 					      rc,
 					      slurmdbd_msg_type_2_str(
@@ -283,10 +283,10 @@ static int _handle_mult_rc_ret(void)
 			}
 			slurm_persist_free_rc_msg(msg);
 		} else
-			error("slurmdbd: unpack message error");
+			error("unpack message error");
 		break;
 	default:
-		error("slurmdbd: bad message type %d != PERSIST_RC", msg_type);
+		error("bad message type %d != PERSIST_RC", msg_type);
 	}
 
 unpack_error:
@@ -309,11 +309,11 @@ static Buf _load_dbd_rec(int fd)
 	if (rd_size == 0)
 		return (Buf) NULL;
 	if (rd_size != size) {
-		error("slurmdbd: state recover error: %m");
+		error("state recover error: %m");
 		return (Buf) NULL;
 	}
 	if (msg_size > MAX_DBD_MSG_LEN) {
-		error("slurmdbd: state recover error, msg_size=%u", msg_size);
+		error("state recover error, msg_size=%u", msg_size);
 		return (Buf) NULL;
 	}
 
@@ -329,7 +329,7 @@ static Buf _load_dbd_rec(int fd)
 		} else if ((rd_size == -1) && (errno == EINTR))
 			continue;
 		else {
-			error("slurmdbd: state recover error: %m");
+			error("state recover error: %m");
 			free_buf(buffer);
 			return (Buf) NULL;
 		}
@@ -338,7 +338,7 @@ static Buf _load_dbd_rec(int fd)
 	size = sizeof(magic);
 	rd_size = read(fd, &magic, size);
 	if ((rd_size != size) || (magic != DBD_MAGIC)) {
-		error("slurmdbd: state recover error");
+		error("state recover error");
 		free_buf(buffer);
 		return (Buf) NULL;
 	}
@@ -358,10 +358,10 @@ static void _load_dbd_state(void)
 	if (fd < 0) {
 		/* don't print an error message if there is no file */
 		if (errno == ENOENT)
-			debug4("slurmdbd: There is no state save file to "
+			debug4("There is no state save file to "
 			       "open by name %s", dbd_fname);
 		else
-			error("slurmdbd: Opening state save file %s: %m",
+			error("Opening state save file %s: %m",
 			      dbd_fname);
 	} else {
 		char *ver_str = NULL;
@@ -415,13 +415,13 @@ static void _load_dbd_state(void)
 				continue;
 			}
 			if (!list_enqueue(agent_list, buffer))
-				fatal("slurmdbd: list_enqueue, no memory");
+				fatal("list_enqueue, no memory");
 			recovered++;
 			buffer = NULL;
 		}
 
 	end_it:
-		verbose("slurmdbd: recovered %d pending RPCs", recovered);
+		verbose("recovered %d pending RPCs", recovered);
 		(void) close(fd);
 	}
 	xfree(dbd_fname);
@@ -437,7 +437,7 @@ static int _save_dbd_rec(int fd, Buf buffer)
 	size = sizeof(msg_size);
 	wrote = write(fd, &msg_size, size);
 	if (wrote != size) {
-		error("slurmdbd: state save error: %m");
+		error("state save error: %m");
 		return SLURM_ERROR;
 	}
 
@@ -450,7 +450,7 @@ static int _save_dbd_rec(int fd, Buf buffer)
 		} else if ((wrote == -1) && (errno == EINTR))
 			continue;
 		else {
-			error("slurmdbd: state save error: %m");
+			error("state save error: %m");
 			return SLURM_ERROR;
 		}
 	}
@@ -458,7 +458,7 @@ static int _save_dbd_rec(int fd, Buf buffer)
 	size = sizeof(magic);
 	wrote = write(fd, &magic, size);
 	if (wrote != size) {
-		error("slurmdbd: state save error: %m");
+		error("state save error: %m");
 		return SLURM_ERROR;
 	}
 
@@ -477,7 +477,7 @@ static void _save_dbd_state(void)
 	(void) unlink(dbd_fname);	/* clear save state */
 	fd = open(dbd_fname, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	if (fd < 0) {
-		error("slurmdbd: Creating state save file %s", dbd_fname);
+		error("Creating state save file %s", dbd_fname);
 	} else if (list_count(agent_list)) {
 		char curr_ver_str[10];
 		snprintf(curr_ver_str, sizeof(curr_ver_str),
@@ -519,10 +519,10 @@ static void _save_dbd_state(void)
 
 end_it:
 	if (fd >= 0) {
-		verbose("slurmdbd: saved %d pending RPCs", wrote);
+		verbose("saved %d pending RPCs", wrote);
 		rc = fsync_and_close(fd, "dbd.messages");
 		if (rc)
-			error("slurmdbd: error from fsync_and_close");
+			error("error from fsync_and_close");
 	}
 	xfree(dbd_fname);
 }
@@ -552,7 +552,7 @@ static int _purge_step_req(void)
 		}
 	}
 	list_iterator_destroy(iter);
-	info("slurmdbd: purge %d step records", purged);
+	info("purge %d step records", purged);
 	return purged;
 }
 
@@ -580,7 +580,7 @@ static int _purge_job_start_req(void)
 		}
 	}
 	list_iterator_destroy(iter);
-	info("slurmdbd: purge %d job start records", purged);
+	info("purge %d job start records", purged);
 	return purged;
 }
 
@@ -591,7 +591,7 @@ static void _max_dbd_msg_action(uint32_t *msg_cnt)
 			return;
 
 		_save_dbd_state();
-		fatal("slurmdbd: agent queue is full (%u), not continuing until slurmdbd is able to process messages.",
+		fatal("agent queue is full (%u), not continuing until slurmdbd is able to process messages.",
 		      *msg_cnt);
 	}
 
@@ -676,7 +676,7 @@ again:
 
 	if ((!need_db && (rc == ESLURM_DB_CONNECTION)) ||
 	    (rc == SLURM_SUCCESS)) {
-		debug("slurmdbd: Sent PersistInit msg");
+		debug("Sent PersistInit msg");
 		/* clear errno (checked after this for
 		   errors)
 		*/
@@ -689,7 +689,7 @@ again:
 		/* This means errno was already set correctly */
 		if (rc != SLURM_ERROR)
 			errno = rc;
-		error("slurmdbd: Sending PersistInit msg: %m");
+		error("Sending PersistInit msg: %m");
 	}
 }
 
@@ -728,7 +728,7 @@ static void _print_agent_list_msg_types(void)
 	if ((processed = list_for_each_max(agent_list, &max_msgs,
 					   _print_agent_list_msg_type,
 					   mlist, true)) < 0) {
-		error("%s: unable to create msg type list", __func__);
+		error("unable to create msg type list");
 		xfree(mlist);
 		return;
 	}
@@ -737,8 +737,8 @@ static void _print_agent_list_msg_types(void)
 	if (max_msgs)
 		xstrcat(mlist, ", ...");
 
-	info("%s: slurmdbd agent_count=%d msg_types_agent_list:%s",
-	     __func__, (processed + max_msgs), mlist);
+	info("slurmdbd agent_count=%d msg_types_agent_list:%s",
+	     (processed + max_msgs), mlist);
 
 	xfree(mlist);
 }
@@ -764,15 +764,15 @@ static void *_agent(void *x)
 	xsignal(SIGUSR1, _sig_handler);
 	xsignal_unblock(sigarray);
 
-	log_flag(AGENT, "%s: slurmdbd agent_count=%d with msg_type=%s",
-		 __func__, list_count(agent_list),
+	log_flag(AGENT, "slurmdbd agent_count=%d with msg_type=%s",
+		 list_count(agent_list),
 		 slurmdbd_msg_type_2_str(list_req.msg_type, 1));
 
 	while (*slurmdbd_conn->shutdown == 0) {
 		slurm_mutex_lock(&slurmdbd_lock);
 		if (halt_agent) {
-			log_flag(AGENT, "%s: slurmdbd agent halt with agent_count=%d",
-				 __func__, list_count(agent_list));
+			log_flag(AGENT, "slurmdbd agent halt with agent_count=%d",
+				 list_count(agent_list));
 
 			slurm_cond_wait(&slurmdbd_cond, &slurmdbd_lock);
 		}
@@ -785,8 +785,8 @@ static void *_agent(void *x)
 			if (slurmdbd_conn->fd < 0) {
 				fail_time = time(NULL);
 
-				log_flag(AGENT, "%s: slurmdbd disconnected with agent_count=%d",
-					 __func__, list_count(agent_list));
+				log_flag(AGENT, "slurmdbd disconnected with agent_count=%d",
+					 list_count(agent_list));
 			}
 		}
 
@@ -797,8 +797,8 @@ static void *_agent(void *x)
 			slurm_mutex_unlock(&slurmdbd_lock);
 			_max_dbd_msg_action(&cnt);
 			END_TIMER2("slurmdbd agent: sleep");
-			log_flag(AGENT, "%s: slurmdbd agent sleeping with agent_count=%d",
-				 __func__, list_count(agent_list));
+			log_flag(AGENT, "slurmdbd agent sleeping with agent_count=%d",
+				 list_count(agent_list));
 			abs_time.tv_sec  = time(NULL) + 10;
 			abs_time.tv_nsec = 0;
 			slurm_cond_timedwait(&agent_cond, &agent_lock,
@@ -807,7 +807,7 @@ static void *_agent(void *x)
 			continue;
 		} else if (((cnt > 0) && ((cnt % 100) == 0)) ||
 		           (slurm_conf.debug_flags & DEBUG_FLAG_AGENT))
-			info("slurmdbd: agent_count:%d", cnt);
+			info("agent_count:%d", cnt);
 		/* Leave item on the queue until processing complete */
 		if (agent_list) {
 			int handle_agent_count = 1000;
@@ -856,7 +856,7 @@ static void *_agent(void *x)
 				END_TIMER2("slurmdbd agent: shutdown");
 				break;
 			}
-			error("slurmdbd: Failure sending message: %d: %m", rc);
+			error("Failure sending message: %d: %m", rc);
 		} else if (list_msg.my_list) {
 			rc = _handle_mult_rc_ret();
 		} else {
@@ -867,7 +867,7 @@ static void *_agent(void *x)
 					END_TIMER2("slurmdbd agent: EAGAIN on shutdown");
 					break;
 				}
-				error("slurmdbd: Failure with "
+				error("Failure with "
 				      "message need to resend: %d: %m", rc);
 			}
 		}
@@ -905,8 +905,8 @@ static void *_agent(void *x)
 			fail_time = time(NULL);
 
 			if (slurm_conf.debug_flags & DEBUG_FLAG_AGENT) {
-				info("%s: slurmdbd agent failed with rc:%d",
-				     __func__, rc);
+				info("slurmdbd agent failed with rc:%d",
+				     rc);
 				_print_agent_list_msg_types();
 			}
 		}
@@ -917,8 +917,8 @@ static void *_agent(void *x)
 	slurm_mutex_lock(&agent_lock);
 	_save_dbd_state();
 
-	log_flag(AGENT, "%s: slurmdbd agent ending with agent_count=%d",
-		 __func__, list_count(agent_list));
+	log_flag(AGENT, "slurmdbd agent ending with agent_count=%d",
+		 list_count(agent_list));
 
 	FREE_NULL_LIST(agent_list);
 	slurm_mutex_unlock(&agent_lock);
@@ -961,8 +961,8 @@ static void _shutdown_agent(void)
 		 * Cancel it and join before returning or we could remove
 		 * and leave the agent without valid data */
 		if (pthread_kill(agent_tid, 0) == 0) {
-			error("slurmdbd: agent failed to shutdown gracefully");
-			error("slurmdbd: unable to save pending requests");
+			error("agent failed to shutdown gracefully");
+			error("unable to save pending requests");
 			pthread_cancel(agent_tid);
 		}
 		pthread_join(agent_tid,  NULL);
@@ -1026,9 +1026,9 @@ extern int close_slurmdbd_conn(void)
 	 */
 	if (!slurmdbd_shutdown) {
 		if (_send_fini_msg() != SLURM_SUCCESS)
-			error("slurmdbd: Sending fini msg: %m");
+			error("Sending fini msg: %m");
 		else
-			debug("slurmdbd: Sent fini msg");
+			debug("Sent fini msg");
 	}
 
 	slurm_mutex_lock(&slurmdbd_lock);
@@ -1085,7 +1085,7 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 	rc = slurm_persist_send_msg(use_conn, buffer);
 	free_buf(buffer);
 	if (rc != SLURM_SUCCESS) {
-		error("slurmdbd: Sending message type %s: %d: %s",
+		error("Sending message type %s: %d: %s",
 		      slurmdbd_msg_type_2_str(req->msg_type, 1), rc,
 		      slurm_strerror(rc));
 		goto end_it;
@@ -1093,7 +1093,7 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 
 	buffer = slurm_persist_recv_msg(use_conn);
 	if (buffer == NULL) {
-		error("slurmdbd: Getting response to message type: %s",
+		error("Getting response to message type: %s",
 		      slurmdbd_msg_type_2_str(req->msg_type, 1));
 		rc = SLURM_ERROR;
 		goto end_it;
@@ -1109,8 +1109,8 @@ end_it:
 	slurm_cond_signal(&slurmdbd_cond);
 	slurm_mutex_unlock(&slurmdbd_lock);
 
-	log_flag(PROTOCOL, "%s: msg_type:%s protocol_version:%hu return_code:%d response_msg_type:%s",
-		 __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
+	log_flag(PROTOCOL, "msg_type:%s protocol_version:%hu return_code:%d response_msg_type:%s",
+		 slurmdbd_msg_type_2_str(req->msg_type, 1),
 		 rpc_version, rc, slurmdbd_msg_type_2_str(resp->msg_type, 1));
 
 	return rc;
@@ -1134,7 +1134,7 @@ extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 	if (rc != SLURM_SUCCESS) {
 		;	/* error message already sent */
 	} else if (resp.msg_type != PERSIST_RC) {
-		error("slurmdbd: response is not type PERSIST_RC: %s(%u)",
+		error("response is not type PERSIST_RC: %s(%u)",
 		      slurmdbd_msg_type_2_str(resp.msg_type, 1),
 		      resp.msg_type);
 		rc = SLURM_ERROR;
@@ -1151,7 +1151,7 @@ extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 			if (!req->conn &&
 			    (msg->ret_info == DBD_REGISTER_CTLD) &&
 			    slurm_conf.accounting_storage_enforce) {
-				error("slurmdbd: Issue with call "
+				error("Issue with call "
 				      "%s(%u): %u(%s)",
 				      slurmdbd_msg_type_2_str(
 					      msg->ret_info, 1),
@@ -1162,7 +1162,7 @@ extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 				      "enforce associations, or no "
 				      "jobs will ever run.");
 			} else
-				debug("slurmdbd: Issue with call "
+				debug("Issue with call "
 				      "%s(%u): %u(%s)",
 				      slurmdbd_msg_type_2_str(
 					      msg->ret_info, 1),
@@ -1172,8 +1172,8 @@ extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 		slurm_persist_free_rc_msg(msg);
 	}
 
-	log_flag(PROTOCOL, "%s: msg_type:%s protocol_version:%hu return_code:%d",
-		 __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
+	log_flag(PROTOCOL, "msg_type:%s protocol_version:%hu return_code:%d",
+		 slurmdbd_msg_type_2_str(req->msg_type, 1),
 		 rpc_version, rc);
 
 	return rc;
@@ -1192,8 +1192,8 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req)
 	xassert(running_in_slurmctld());
 	xassert(slurm_conf.max_dbd_msgs);
 
-	log_flag(PROTOCOL, "%s: msg_type:%s protocol_version:%hu agent_count:%d",
-		 __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
+	log_flag(PROTOCOL, "msg_type:%s protocol_version:%hu agent_count:%d",
+		 slurmdbd_msg_type_2_str(req->msg_type, 1),
 		 rpc_version, list_count(agent_list));
 
 	buffer = slurm_persist_msg_pack(
@@ -1215,7 +1215,7 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req)
 	    (difftime(time(NULL), syslog_time) > 120)) {
 		/* Record critical error every 120 seconds */
 		syslog_time = time(NULL);
-		error("slurmdbd: agent queue filling (%u), MaxDBDMsgs=%u, RESTART SLURMDBD NOW",
+		error("agent queue filling (%u), MaxDBDMsgs=%u, RESTART SLURMDBD NOW",
 		      cnt, slurm_conf.max_dbd_msgs);
 		syslog(LOG_CRIT, "*** RESTART SLURMDBD NOW ***");
 		(slurmdbd_conn->trigger_callbacks.dbd_fail)();
@@ -1228,7 +1228,7 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req)
 		if (list_enqueue(agent_list, buffer) == NULL)
 			fatal("list_enqueue: memory allocation failure");
 	} else {
-		error("slurmdbd: agent queue is full (%u), discarding %s:%u request",
+		error("agent queue is full (%u), discarding %s:%u request",
 		      cnt,
 		      slurmdbd_msg_type_2_str(req->msg_type, 1),
 		      req->msg_type);

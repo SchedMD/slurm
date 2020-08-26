@@ -477,7 +477,7 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 
 	if (bit_set_count(node_bitmap) < min_nodes) {
 #if _DEBUG
-		info("%s: AvailNodes < MinNodes (%u < %u)", __func__,
+		info("AvailNodes < MinNodes (%u < %u)",
 		     bit_set_count(node_bitmap), min_nodes);
 #endif
 		return NULL;
@@ -656,16 +656,14 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			} else
 				free_mem = 0;
 			if (free_mem < min_mem) {
-				debug3("%s: %s: Not considering node %s, free_mem < min_mem (%"PRIu64" < %"PRIu64") for %pJ",
-				       plugin_type, __func__,
+				debug3("Not considering node %s, free_mem < min_mem (%"PRIu64" < %"PRIu64") for %pJ",
 				       node_ptr->name,
 				       free_mem, min_mem, job_ptr);
 				goto clear_bit;
 			}
 		} else if (cr_type & CR_MEMORY) {   /* --mem=0 for all memory */
 			if (node_usage[i].alloc_memory) {
-				debug3("%s: %s: Not considering node %s, allocated memory = %"PRIu64" and all memory requested for %pJ",
-				       plugin_type, __func__,
+				debug3("Not considering node %s, allocated memory = %"PRIu64" and all memory requested for %pJ",
 				       node_ptr->name,
 				       node_usage[i].alloc_memory, job_ptr);
 				goto clear_bit;
@@ -677,9 +675,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			if (is_cons_tres) {
 				if (exc_cores[i] &&
 				    (bit_ffs(exc_cores[i]) != -1)) {
-					debug3("%s: %s: node %s exclusive",
-					       plugin_type,
-					       __func__,
+					debug3("node %s exclusive",
 					       node_ptr->name);
 					goto clear_bit;
 				}
@@ -689,8 +685,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 				     j++) {
 					if (bit_test(*exc_cores, j))
 						continue;
-					debug3("%s: %s: _vns: node %s exc",
-					       plugin_type, __func__,
+					debug3("_vns: node %s exc",
 					       node_ptr->name);
 					goto clear_bit;
 				}
@@ -711,23 +706,23 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 		if (gres_cpus != NO_VAL)
 			gres_cpus *= select_node_record[i].vpus;
 		if (gres_cpus == 0) {
-			debug3("%s: %s: node %s lacks GRES",
-			       plugin_type, __func__, node_ptr->name);
+			debug3("node %s lacks GRES",
+			       node_ptr->name);
 			goto clear_bit;
 		}
 
 		/* exclusive node check */
 		if (node_usage[i].node_state >= NODE_CR_RESERVED) {
-			debug3("%s: %s: node %s in exclusive use",
-			       plugin_type, __func__, node_ptr->name);
+			debug3("node %s in exclusive use",
+			       node_ptr->name);
 			goto clear_bit;
 
 			/* non-resource-sharing node check */
 		} else if (node_usage[i].node_state >= NODE_CR_ONE_ROW) {
 			if ((job_node_req == NODE_CR_RESERVED) ||
 			    (job_node_req == NODE_CR_AVAILABLE)) {
-				debug3("%s: %s: node %s non-sharing",
-				       plugin_type, __func__, node_ptr->name);
+				debug3("node %s non-sharing",
+				       node_ptr->name);
 				goto clear_bit;
 			}
 			/*
@@ -736,8 +731,8 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			 */
 			if (_is_node_busy(cr_part_ptr, i, 1,
 					  job_ptr->part_ptr, qos_preemptor)) {
-				debug3("%s: %s: node %s sharing?",
-				       plugin_type, __func__, node_ptr->name);
+				debug3("node %s sharing?",
+				       node_ptr->name);
 				goto clear_bit;
 			}
 
@@ -747,8 +742,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 				if (_is_node_busy(cr_part_ptr, i, 0,
 						  job_ptr->part_ptr,
 						  qos_preemptor)) {
-					debug3("%s: %s: node %s busy",
-					       plugin_type, __func__,
+					debug3("node %s busy",
 					       node_ptr->name);
 					goto clear_bit;
 				}
@@ -760,8 +754,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 				if (_is_node_busy(cr_part_ptr, i, 1,
 						  job_ptr->part_ptr,
 						  qos_preemptor)) {
-					debug3("%s: %s: node %s vbusy",
-					       plugin_type, __func__,
+					debug3("node %s vbusy",
 					       node_ptr->name);
 					goto clear_bit;
 				}
@@ -875,8 +868,8 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	} else if (exc_cores && *exc_cores)
 		exc_core_bitmap = *exc_cores;
 
-	log_flag(SELECT_TYPE, "%s: %s: evaluating %pJ on %u nodes",
-	         plugin_type, __func__, job_ptr, bit_set_count(node_bitmap));
+	log_flag(SELECT_TYPE, "evaluating %pJ on %u nodes",
+	         job_ptr, bit_set_count(node_bitmap));
 
 	orig_node_map = bit_copy(node_bitmap);
 	avail_cores = common_mark_avail_cores(
@@ -903,8 +896,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		FREE_NULL_BITMAP(orig_node_map);
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
-		log_flag(SELECT_TYPE, "%s: %s: test 0 fail: insufficient resources",
-		         plugin_type, __func__);
+		log_flag(SELECT_TYPE, "test 0 fail: insufficient resources");
 		return SLURM_ERROR;
 	} else if (test_only) {
 		xfree(tres_mc_ptr);
@@ -912,8 +904,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
-		log_flag(SELECT_TYPE, "%s: %s: test 0 pass: test_only",
-		         plugin_type, __func__);
+		log_flag(SELECT_TYPE, "test 0 pass: test_only");
 		return SLURM_SUCCESS;
 	} else if (!job_ptr->best_switch) {
 		xfree(tres_mc_ptr);
@@ -921,8 +912,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
-		log_flag(CPU_BIND, "%s: %s: test 0 fail: waiting for switches",
-		         plugin_type, __func__);
+		log_flag(CPU_BIND, "test 0 fail: waiting for switches");
 		return SLURM_ERROR;
 	}
 	if (cr_type == CR_MEMORY) {
@@ -933,8 +923,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		goto alloc_job;
 	}
 
-	log_flag(SELECT_TYPE, "%s: %s: test 0 pass - job fits on given resources",
-	         plugin_type, __func__);
+	log_flag(SELECT_TYPE, "test 0 pass - job fits on given resources");
 	_free_avail_res_array(avail_res_array);
 
 	/*
@@ -1030,8 +1019,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 					prefer_alloc_nodes, tres_mc_ptr);
 	if (avail_res_array && job_ptr->best_switch) {
 		/* job fits! We're done. */
-		log_flag(SELECT_TYPE, "%s: %s: test 1 pass - idle resources found",
-		         plugin_type, __func__);
+		log_flag(SELECT_TYPE, "test 1 pass - idle resources found");
 		goto alloc_job;
 	}
 	_free_avail_res_array(avail_res_array);
@@ -1045,12 +1033,10 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		 * job preemption removes jobs from simulated resource
 		 * allocation map before this point.
 		 */
-		log_flag(SELECT_TYPE, "%s: %s: test 1 fail - no idle resources available",
-		         plugin_type, __func__);
+		log_flag(SELECT_TYPE, "test 1 fail - no idle resources available");
 		goto alloc_job;
 	}
-	log_flag(SELECT_TYPE, "%s: %s: test 1 fail - not enough idle resources",
-	         plugin_type, __func__);
+	log_flag(SELECT_TYPE, "test 1 fail - not enough idle resources");
 
 	/*** Step 2 ***/
 	for (jp_ptr = cr_part_ptr; jp_ptr; jp_ptr = jp_ptr->next) {
@@ -1058,8 +1044,8 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			break;
 	}
 	if (!jp_ptr) {
-		error("%s %s: could not find partition for %pJ",
-		      plugin_type, __func__, job_ptr);
+		error("could not find partition for %pJ",
+		      job_ptr);
 		goto alloc_job;
 	}
 
@@ -1074,16 +1060,14 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		 * Remove from avail_cores resources allocated to jobs which
 		 * this job can not preempt
 		 */
-		log_flag(SELECT_TYPE, "%s: %s: looking for higher-priority or PREEMPT_MODE_OFF part's to remove from avail_cores",
-		         plugin_type, __func__);
+		log_flag(SELECT_TYPE, "looking for higher-priority or PREEMPT_MODE_OFF part's to remove from avail_cores");
 
 		for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
 			if ((p_ptr->part_ptr->priority_tier <=
 			     jp_ptr->part_ptr->priority_tier) &&
 			    (p_ptr->part_ptr->preempt_mode !=
 			     PREEMPT_MODE_OFF)) {
-				log_flag(SELECT_TYPE, "%s: %s: continuing on part: %s",
-				         plugin_type, __func__,
+				log_flag(SELECT_TYPE, "continuing on part: %s",
 				         p_ptr->part_ptr->name);
 				continue;
 			}
@@ -1115,13 +1099,11 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		 * job needs resources that are currently in use by
 		 * higher-priority jobs, so fail for now
 		 */
-		log_flag(SELECT_TYPE, "%s: %s: test 2 fail - resources busy with higher priority jobs",
-		         plugin_type, __func__);
+		log_flag(SELECT_TYPE, "test 2 fail - resources busy with higher priority jobs");
 		goto alloc_job;
 	}
 	_free_avail_res_array(avail_res_array);
-	log_flag(SELECT_TYPE, "%s: %s: test 2 pass - available resources for this priority",
-	         plugin_type, __func__);
+	log_flag(SELECT_TYPE, "test 2 pass - available resources for this priority");
 
 	/*** Step 3 ***/
 	bit_copybits(node_bitmap, orig_node_map);
@@ -1161,8 +1143,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		 * To the extent possible, remove from consideration resources
 		 * which are allocated to jobs in lower priority partitions.
 		 */
-		log_flag(SELECT_TYPE, "%s: %s: test 3 pass - found resources",
-		         plugin_type, __func__);
+		log_flag(SELECT_TYPE, "test 3 pass - found resources");
 		for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
 			if (p_ptr->part_ptr->priority_tier >=
 			    jp_ptr->part_ptr->priority_tier)
@@ -1192,8 +1173,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				FREE_NULL_BITMAP(node_bitmap_tmp2);
 				break;
 			}
-			log_flag(SELECT_TYPE, "%s: %s: remove low-priority partition %s",
-			         plugin_type, __func__,
+			log_flag(SELECT_TYPE, "remove low-priority partition %s",
 			         p_ptr->part_ptr->name);
 			free_core_array(&free_cores);
 			free_cores      = free_cores_tmp;
@@ -1208,8 +1188,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		}
 		goto alloc_job;
 	}
-	log_flag(SELECT_TYPE, "%s: %s: test 3 fail - not enough idle resources in same priority",
-	         plugin_type, __func__);
+	log_flag(SELECT_TYPE, "test 3 fail - not enough idle resources in same priority");
 
 	/*** Step 4 ***/
 	/*
@@ -1239,8 +1218,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 						prefer_alloc_nodes,
 						tres_mc_ptr);
 		if (avail_res_array)
-			log_flag(SELECT_TYPE, "%s: %s: test 4 pass - first row found",
-			         plugin_type, __func__);
+			log_flag(SELECT_TYPE, "test 4 pass - first row found");
 		goto alloc_job;
 	}
 
@@ -1269,12 +1247,12 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 						prefer_alloc_nodes,
 						tres_mc_ptr);
 		if (avail_res_array) {
-			log_flag(SELECT_TYPE, "%s: %s: test 4 pass - row %i",
-			         plugin_type, __func__, i);
+			log_flag(SELECT_TYPE, "test 4 pass - row %i",
+			         i);
 			break;
 		}
-		log_flag(SELECT_TYPE, "%s: %s: test 4 fail - row %i",
-		         plugin_type, __func__, i);
+		log_flag(SELECT_TYPE, "test 4 fail - row %i",
+		         i);
 	}
 
 	if ((i < c) && !jp_ptr->row[i].row_bitmap) {
@@ -1282,8 +1260,8 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		free_core_array(&free_cores);
 		free_cores = copy_core_array(avail_cores);
 		bit_copybits(node_bitmap, orig_node_map);
-		log_flag(SELECT_TYPE, "%s: %s: test 4 trying empty row %i",
-		         plugin_type, __func__, i);
+		log_flag(SELECT_TYPE, "test 4 trying empty row %i",
+		         i);
 		avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
 						req_nodes, node_bitmap,
 						free_cores, node_usage, cr_type,
@@ -1295,8 +1273,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 	if (!avail_res_array) {
 		/* job can't fit into any row, so exit */
-		log_flag(SELECT_TYPE, "%s: %s: test 4 fail - busy partition",
-		         plugin_type, __func__);
+		log_flag(SELECT_TYPE, "test 4 fail - busy partition");
 		goto alloc_job;
 	}
 
@@ -1330,8 +1307,7 @@ alloc_job:
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
-		log_flag(SELECT_TYPE, "%s: %s: exiting with no allocation",
-		         plugin_type, __func__);
+		log_flag(SELECT_TYPE, "exiting with no allocation");
 		return SLURM_ERROR;
 	}
 
@@ -1359,8 +1335,8 @@ alloc_job:
 		return error_code;
 	}
 
-	log_flag(SELECT_TYPE, "%s: %s: distributing %pJ",
-	         plugin_type, __func__, job_ptr);
+	log_flag(SELECT_TYPE, "distributing %pJ",
+	         job_ptr);
 
 	/** create the struct_job_res  **/
 	n = bit_set_count(node_bitmap);
@@ -1375,8 +1351,8 @@ alloc_job:
 			cpu_count[j++] = avail_res_array[i]->avail_cpus;
 	}
 	if (j != n) {
-		error("%s: %s: problem building cpu_count array (%d != %d)",
-		      plugin_type, __func__, j, n);
+		error("problem building cpu_count array (%d != %d)",
+		      j, n);
 	}
 
 	job_res                   = create_job_resources();
@@ -1446,8 +1422,7 @@ alloc_job:
 			if (!bit_test(use_free_cores, j))
 				continue;
 			if (c >= c_size) {
-				error("%s: %s core_bitmap index error on node %s (NODE_INX:%d, C_SIZE:%u)",
-				      plugin_type, __func__,
+				error("core_bitmap index error on node %s (NODE_INX:%d, C_SIZE:%u)",
 				      select_node_record[n].node_ptr->name,
 				      n, c_size);
 				drain_nodes(select_node_record[n].node_ptr->name,
@@ -1474,8 +1449,8 @@ alloc_job:
 	if (details_ptr->overcommit && details_ptr->num_tasks)
 		job_res->ncpus = MIN(total_cpus, details_ptr->num_tasks);
 
-	log_flag(SELECT_TYPE, "%s: %s: %pJ ncpus %u cbits %u/%u nbits %u",
-	         plugin_type, __func__, job_ptr, job_res->ncpus,
+	log_flag(SELECT_TYPE, "%pJ ncpus %u cbits %u/%u nbits %u",
+	         job_ptr, job_res->ncpus,
 	         count_core_array_set(free_cores), c_alloc, job_res->nhosts);
 	free_core_array(&free_cores);
 
@@ -1624,8 +1599,8 @@ alloc_job:
 				needed_mem = avail_mem;
 				if (!test_only &&
 				    (node_usage[i].alloc_memory > 0)) {
-					log_flag(SELECT_TYPE, "%s: node %s has already alloc_memory=%"PRIu64". %pJ can't allocate all node memory",
-					         __func__, nodename,
+					log_flag(SELECT_TYPE, "node %s has already alloc_memory=%"PRIu64". %pJ can't allocate all node memory",
+					         nodename,
 					         node_usage[i].alloc_memory,
 					         job_ptr);
 					error_code = SLURM_ERROR;
@@ -1636,8 +1611,8 @@ alloc_job:
 			}
 			if (!test_only && save_mem) {
 				if (node_usage[i].alloc_memory > avail_mem) {
-					error("%s: node %s memory is already overallocated (%"PRIu64" > %"PRIu64"). %pJ can't allocate any node memory",
-					      __func__, nodename,
+					error("node %s memory is already overallocated (%"PRIu64" > %"PRIu64"). %pJ can't allocate any node memory",
+					      nodename,
 					      node_usage[i].alloc_memory,
 					      avail_mem, job_ptr);
 					error_code = SLURM_ERROR;
@@ -1646,8 +1621,8 @@ alloc_job:
 				avail_mem -= node_usage[i].alloc_memory;
 			}
 			if (needed_mem > avail_mem) {
-				log_flag(SELECT_TYPE, "%s: %pJ would overallocate node %s memory (%"PRIu64" > %"PRIu64")",
-				         __func__, job_ptr, nodename,
+				log_flag(SELECT_TYPE, "%pJ would overallocate node %s memory (%"PRIu64" > %"PRIu64")",
+				         job_ptr, nodename,
 				         needed_mem, avail_mem);
 				error_code = SLURM_ERROR;
 				break;
@@ -1831,8 +1806,8 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		    !IS_JOB_SUSPENDED(tmp_job_ptr))
 			continue;
 		if (tmp_job_ptr->end_time == 0) {
-			error("%s: %s: Active %pJ has zero end_time",
-			      plugin_type, __func__, tmp_job_ptr);
+			error("Active %pJ has zero end_time",
+			      tmp_job_ptr);
 			continue;
 		}
 		if (tmp_job_ptr->node_bitmap == NULL) {
@@ -1840,8 +1815,8 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			 * This should indicate a requeued job was cancelled
 			 * while NHC was running
 			 */
-			error("%s: %s: %pJ has NULL node_bitmap",
-			      plugin_type, __func__, tmp_job_ptr);
+			error("%pJ has NULL node_bitmap",
+			      tmp_job_ptr);
 			continue;
 		}
 		if (!_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
@@ -1912,8 +1887,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 						      tmp_job_ptr->node_bitmap);
 				if (overlap == 0)  /* job has no usable nodes */
 					continue;  /* skip it */
-				debug2("%s: %s, %pJ: overlap=%d",
-				       plugin_type, __func__,
+				debug2("%pJ: overlap=%d",
 				       tmp_job_ptr, overlap);
 				if (!end_time) {
 					time_t delta = 0;
@@ -2238,8 +2212,8 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		job_ptr->details->core_spec = NO_VAL16;
 	if ((job_ptr->details->core_spec != NO_VAL16) &&
 	    (job_ptr->details->whole_node != 1)) {
-		info("%s: %s: Setting Exclusive mode for %pJ with CoreSpec=%u",
-		     plugin_type, __func__, job_ptr,
+		info("Setting Exclusive mode for %pJ with CoreSpec=%u",
+		     job_ptr,
 		     job_ptr->details->core_spec);
 		job_ptr->details->whole_node = 1;
 	}
@@ -2262,13 +2236,13 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			alloc_mode = "Test_Only";
 		else if (mode == SELECT_MODE_RUN_NOW)
 			alloc_mode = "Run_Now";
-		info("%s: %s: %pJ node_mode:%s alloc_mode:%s",
-		     plugin_type, __func__, job_ptr, node_mode, alloc_mode);
+		info("%pJ node_mode:%s alloc_mode:%s",
+		     job_ptr, node_mode, alloc_mode);
 
 		core_array_log("node_list & exc_cores", node_bitmap, exc_cores);
 
-		info("%s: %s: nodes: min:%u max:%u requested:%u avail:%u",
-		     plugin_type, __func__, min_nodes, max_nodes, req_nodes,
+		info("nodes: min:%u max:%u requested:%u avail:%u",
+		     min_nodes, max_nodes, req_nodes,
 		     bit_set_count(node_bitmap));
 		node_data_dump();
 	}
@@ -2290,8 +2264,8 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			      preemptee_job_list, exc_cores);
 	} else {
 		/* Should never get here */
-		error("%s: %s: Mode %d is invalid",
-		      plugin_type, __func__, mode);
+		error("Mode %d is invalid",
+		      mode);
 		return EINVAL;
 	}
 
@@ -2299,7 +2273,7 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	    (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)) {
 		if (job_ptr->job_resrcs) {
 			if (rc != SLURM_SUCCESS) {
-				info("%s: %s: error:%s", plugin_type, __func__,
+				info("error:%s",
 				     slurm_strerror(rc));
 			}
 			log_job_resources(job_ptr);
@@ -2307,8 +2281,8 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				gres_plugin_job_state_log(job_ptr->gres_list,
 							  job_ptr->job_id);
 		} else {
-			info("%s: %s: no job_resources info for %pJ rc=%d",
-			     plugin_type, __func__, job_ptr, rc);
+			info("no job_resources info for %pJ rc=%d",
+			     job_ptr, rc);
 		}
 	}
 

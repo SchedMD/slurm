@@ -129,8 +129,8 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 		if (job_resrcs_ptr->whole_node == 1) {
 			if (!use_core_array) {
 				if (type != HANDLE_JOB_RES_TEST)
-					error("%s: %s: core_array for node %d is NULL %d",
-					      plugin_type, __func__, i, type);
+					error("core_array for node %d is NULL %d",
+					      i, type);
 				continue;	/* Move to next node */
 			}
 
@@ -163,8 +163,8 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 				continue;
 			if (!use_core_array) {
 				if (type != HANDLE_JOB_RES_TEST)
-					error("%s: %s: core_array for node %d is NULL %d",
-					      plugin_type, __func__, i, type);
+					error("core_array for node %d is NULL %d",
+					      i, type);
 				continue;	/* Move to next node */
 			}
 			switch (type) {
@@ -282,12 +282,12 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 	bitstr_t *core_bitmap;
 
 	if (!job || !job->core_bitmap) {
-		error("%s: %s: %pJ has no job_resrcs info",
-		      plugin_type, __func__, job_ptr);
+		error("%pJ has no job_resrcs info",
+		      job_ptr);
 		return SLURM_ERROR;
 	}
 
-	debug3("%s: %s: %pJ action:%d ", plugin_type, __func__, job_ptr,
+	debug3("%pJ action:%d ", job_ptr,
 	       action);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)
@@ -341,9 +341,9 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 				job->memory_allocated[n];
 			if ((select_node_usage[i].alloc_memory >
 			     select_node_record[i].real_memory)) {
-				error("%s: %s: node %s memory is "
+				error("node %s memory is "
 				      "overallocated (%"PRIu64") for %pJ",
-				      plugin_type, __func__, node_ptr->name,
+				      node_ptr->name,
 				      select_node_usage[i].alloc_memory,
 				      job_ptr);
 			}
@@ -369,8 +369,8 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 				part_name = job_ptr->part_ptr->name;
 			else
 				part_name = job_ptr->partition;
-			error("%s: %s: could not find partition %s",
-			      plugin_type, __func__, part_name);
+			error("could not find partition %s",
+			      part_name);
 			return SLURM_ERROR;
 		}
 		if (!p_ptr->row) {
@@ -382,8 +382,8 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			if (!job_res_fit_in_row(job, &(p_ptr->row[i])))
 				continue;
-			debug3("%s: %s: adding %pJ to part %s row %u",
-			       plugin_type, __func__, job_ptr,
+			debug3("adding %pJ to part %s row %u",
+			       job_ptr,
 			       p_ptr->part_ptr->name, i);
 			part_data_add_job_to_row(job, &(p_ptr->row[i]));
 			break;
@@ -394,9 +394,9 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 			 * are already in use by some other job. Typically due
 			 * to manually resuming a job.
 			 */
-			error("%s: %s: job overflow: "
+			error("job overflow: "
 			      "could not find idle resources for %pJ",
-			      plugin_type, __func__, job_ptr);
+			      job_ptr);
 			/* No row available to record this job */
 		}
 		/* update the node state */
@@ -410,7 +410,7 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 			}
 		}
 		if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-			info("DEBUG: %s (after):", __func__);
+			info("DEBUG: (after):");
 			part_data_dump_res(p_ptr);
 		}
 	}
@@ -448,25 +448,24 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 		 * Ignore job removal until select/cons_tres data structures
 		 * values are set by select_p_reconfigure()
 		 */
-		info("%s: %s: plugin still initializing",
-		     plugin_type, __func__);
+		info("plugin still initializing");
 		return SLURM_SUCCESS;
 	}
 	if (!job || !job->core_bitmap) {
 		if (job_ptr->details && (job_ptr->details->min_nodes == 0))
 			return SLURM_SUCCESS;
-		error("%s: %s: %pJ has no job_resrcs info",
-		      plugin_type, __func__, job_ptr);
+		error("%pJ has no job_resrcs info",
+		      job_ptr);
 		return SLURM_ERROR;
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("%s: %s: %pJ action %d", plugin_type, __func__,
+		info("%pJ action %d",
 		     job_ptr, action);
 		log_job_resources(job_ptr);
 		_log_tres_state(node_usage, part_record_ptr);
 	} else {
-		debug3("%s: %s: %pJ action %d", plugin_type, __func__,
+		debug3("%pJ action %d",
 		       job_ptr, action);
 	}
 	if (job_ptr->start_time < slurmctld_config.boot_time)
@@ -502,10 +501,10 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 		if (action != 2) {
 			if (node_usage[i].alloc_memory <
 			    job->memory_allocated[n]) {
-				error("%s: %s: node %s memory is "
+				error("node %s memory is "
 				      "under-allocated (%"PRIu64"-%"PRIu64") "
 				      "for %pJ",
-				      plugin_type, __func__, node_ptr->name,
+				      node_ptr->name,
 				      node_usage[i].alloc_memory,
 				      job->memory_allocated[n],
 				      job_ptr);
@@ -523,8 +522,8 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 		part_res_record_t *p_ptr;
 
 		if (!job_ptr->part_ptr) {
-			error("%s: %s: removed %pJ does not have a partition assigned",
-			      plugin_type, __func__, job_ptr);
+			error("removed %pJ does not have a partition assigned",
+			      job_ptr);
 			return SLURM_ERROR;
 		}
 
@@ -533,8 +532,8 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 				break;
 		}
 		if (!p_ptr) {
-			error("%s: %s: removed %pJ could not find part %s",
-			      plugin_type, __func__, job_ptr,
+			error("removed %pJ could not find part %s",
+			      job_ptr,
 			      job_ptr->part_ptr->name);
 			return SLURM_ERROR;
 		}
@@ -549,8 +548,8 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
 				if (p_ptr->row[i].job_list[j] != job)
 					continue;
-				debug3("%s: %s: removed %pJ from part %s row %u",
-				       plugin_type, __func__, job_ptr,
+				debug3("removed %pJ from part %s row %u",
+				       job_ptr,
 				       p_ptr->part_ptr->name, i);
 				for ( ; j < p_ptr->row[i].num_jobs-1; j++) {
 					p_ptr->row[i].job_list[j] =
@@ -586,8 +585,8 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 						job->node_req;
 				} else {
 					node_ptr = node_record_table_ptr + i;
-					error("%s: %s: node_state mis-count (%pJ job_cnt:%u node:%s node_cnt:%u)",
-					      plugin_type, __func__, job_ptr,
+					error("node_state mis-count (%pJ job_cnt:%u node:%s node_cnt:%u)",
+					      job_ptr,
 					      job->node_req, node_ptr->name,
 					      node_usage[i].node_state);
 					node_usage[i].node_state =
@@ -597,7 +596,7 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 		}
 	}
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("%s: %s: %pJ finished", plugin_type, __func__, job_ptr);
+		info("%pJ finished", job_ptr);
 		_log_tres_state(node_usage, part_record_ptr);
 	}
 

@@ -219,7 +219,7 @@ extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
 		if (!core_array[i])
 			continue;
 		bit_fmt(tmp, sizeof(tmp), core_array[i]);
-		error("%s: %s: OUT core bitmap[%d] %s", plugin_type, __func__,
+		error("OUT core bitmap[%d] %s",
 		      i, tmp);
 	}
 #endif
@@ -245,7 +245,7 @@ extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
 
 #if _DEBUG
 	bit_fmt(tmp, sizeof(tmp), core_bitmap);
-	error("%s: %s: IN core bitmap %s", plugin_type, __func__, tmp);
+	error("IN core bitmap %s", tmp);
 #endif
 
 	return core_bitmap;
@@ -264,7 +264,7 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 
 #if _DEBUG
 	bit_fmt(tmp, sizeof(tmp), core_bitmap);
-	error("%s: %s: IN core bitmap %s", plugin_type, __func__, tmp);
+	error("IN core bitmap %s", tmp);
 #endif
 
 	i_first = bit_ffs(core_bitmap);
@@ -292,8 +292,8 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 		}
 		if (j >= select_node_cnt) {
 			bit_fmt(tmp, sizeof(tmp), core_bitmap);
-			error("%s: %s: error translating core bitmap %s",
-			      plugin_type, __func__, tmp);
+			error("error translating core bitmap %s",
+			      tmp);
 			break;
 		}
 		/* Copy all core bitmaps for this node here */
@@ -313,7 +313,7 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 		if (!core_array[i])
 			continue;
 		bit_fmt(tmp, sizeof(tmp), core_array[i]);
-		error("%s: %s: OUT core bitmap[%d] %s", plugin_type, __func__,
+		error("OUT core bitmap[%d] %s",
 		      i, tmp);
 	}
 #endif

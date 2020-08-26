@@ -390,8 +390,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	List gres_list_conf_single, gres_list_gpu = NULL, gres_list_non_gpu;
 
 	if (gres_list_conf == NULL) {
-		error("%s: gres_list_conf is NULL. This shouldn't happen",
-		      __func__);
+		error("gres_list_conf is NULL. This shouldn't happen");
 		return;
 	}
 
@@ -414,8 +413,8 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 
 		// Just move this GRES record if it's not a GPU GRES
 		if (xstrcasecmp(gres_record->name, "gpu")) {
-			debug2("%s: preserving original `%s` GRES record",
-			       __func__, gres_record->name);
+			debug2("preserving original `%s` GRES record",
+			       gres_record->name);
 			add_gres_to_list(gres_list_non_gpu,
 					 gres_record->name,
 					 gres_record->count,
@@ -687,8 +686,8 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 
 		cpu_aff_mac_bitstr = bit_alloc(cpu_count);
 		if (bit_unfmt(cpu_aff_mac_bitstr, cpu_range))
-			fatal("%s: bit_unfmt() failed for CPU range: %s",
-			      __func__, cpu_range);
+			fatal("bit_unfmt() failed for CPU range: %s",
+			      cpu_range);
 
 		// Add the GPU specified by the parsed line
 		add_gres_to_list(gres_list_system, "gpu", 1, cpu_count,
@@ -731,13 +730,13 @@ static List _get_system_gpu_list_fake(void)
 
 extern int init(void)
 {
-	debug("%s: %s loaded", __func__, plugin_name);
+	debug("loaded");
 
 	return SLURM_SUCCESS;
 }
 extern int fini(void)
 {
-	debug("%s: unloading %s", __func__, plugin_name);
+	debug("unloading");
 	gpu_plugin_fini();
 	FREE_NULL_LIST(gres_devices);
 
@@ -951,7 +950,7 @@ extern void epilog_set_env(char ***epilog_env_ptr,
 		return;
 
 	if (node_inx > epilog_info->node_cnt) {
-		error("%s: %s: bad node index (%d > %u)", plugin_type, __func__,
+		error("bad node index (%d > %u)",
 		      node_inx, epilog_info->node_cnt);
 		return;
 	}

@@ -53,8 +53,8 @@ static bool _at_tpn_limit(const uint32_t n, const job_record_t *job_ptr,
 
 	if (log_error || (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE))
 		log_var(log_lvl,
-			"%s: %s over tasks_per_node for %pJ node:%u task_per_node:%d max:%" PRIu16,
-			__func__, tag, job_ptr, n, job_res->tasks_per_node[n],
+			"%s over tasks_per_node for %pJ node:%u task_per_node:%d max:%" PRIu16,
+			tag, job_ptr, n, job_res->tasks_per_node[n],
 			job_ptr->details->ntasks_per_node);
 
 	return true;
@@ -99,8 +99,8 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	else if (!job_res->nhosts)
 		err_msg = "job_res->nhosts is zero";
 	if (err_msg) {
-		error("%s: %s: Invalid allocation for %pJ: %s",
-		      plugin_type, __func__, job_ptr, err_msg);
+		error("Invalid allocation for %pJ: %s",
+		      job_ptr, err_msg);
 		return SLURM_ERROR;
 	}
 
@@ -137,8 +137,8 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	 * CPUs than cpus_per_task or didn't specify the number.
 	 */
 	if (!maxtasks) {
-		error("%s: %s: changing task count from 0 to 1 for %pJ",
-		      plugin_type, __func__, job_ptr);
+		error("changing task count from 0 to 1 for %pJ",
+		      job_ptr);
 		maxtasks = 1;
 	}
 	if (job_ptr->details->cpus_per_task == 0)
@@ -208,8 +208,8 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 			 * come into play because maxtasks should never be
 			 * greater than the total number of available CPUs
 			 */
-			error("%s: %s: oversubscribe for %pJ",
-			      plugin_type, __func__, job_ptr);
+			error("oversubscribe for %pJ",
+			      job_ptr);
 			log_over_subscribe = false;	/* Log once per job */;
 		}
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
@@ -274,8 +274,8 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 		}
 		if (!more_tres_tasks) {
 			if (!test_tres_tasks) {
-				error("%s: failed to find additional placement for task %u for %pJ",
-				      __func__, tid, job_ptr);
+				error("failed to find additional placement for task %u for %pJ",
+				      tid, job_ptr);
 				return SLURM_ERROR;
 			} else
 				test_tres_tasks = false;

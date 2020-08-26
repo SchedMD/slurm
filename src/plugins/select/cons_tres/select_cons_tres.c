@@ -127,8 +127,8 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 	if (*exc_cores == NULL) {	/* Exclude no cores by default */
 #if _DEBUG
 		bit_fmt(tmp, sizeof(tmp), avail_node_bitmap);
-		info("%s: avail_nodes:%s", __func__, tmp);
-		info("%s: exc_cores: NULL", __func__);
+		info("avail_nodes:%s", tmp);
+		info("exc_cores: NULL");
 #endif
 		c = select_node_record[select_node_cnt-1].cume_cores;
 		tmp_core_bitmap = bit_alloc(c);
@@ -139,12 +139,12 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 #if _DEBUG
 		tmp_cores = *exc_cores;
 		bit_fmt(tmp, sizeof(tmp), avail_node_bitmap);
-		info("%s: avail_nodes:%s", __func__, tmp);
+		info("avail_nodes:%s", tmp);
 		for (i = 0; i < select_node_cnt; i++) {
 			if (!tmp_cores[i])
 				continue;
 			bit_fmt(tmp, sizeof(tmp), tmp_cores[i]);
-			info("%s: exc_cores[%d]: %s", __func__, i, tmp);
+			info("exc_cores[%d]: %s", i, tmp);
 		}
 #endif
 		/*
@@ -185,8 +185,7 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 	}
 
 	if (!fini) {
-		info("%s: %s: reservation request can not be satisfied",
-		     plugin_type, __func__);
+		info("reservation request can not be satisfied");
 		FREE_NULL_BITMAP(picked_node_bitmap);
 		free_core_array(&avail_cores);
 	} else {
@@ -197,7 +196,7 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 			if (!avail_cores[i])
 				continue;
 			bit_fmt(tmp, sizeof(tmp), avail_cores[i]);
-			error("%s: selected cores[%d] %s", __func__, i, tmp);
+			error("selected cores[%d] %s", i, tmp);
 		}
 #endif
 	}
@@ -256,30 +255,29 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 	}
 #if _DEBUG
 	if (cores_per_node) {
-		info("%s: %s: Reservations requires %d cores (%u each on %u nodes, plus %d)",
-		     plugin_type, __func__, total_core_cnt, cores_per_node,
+		info("Reservations requires %d cores (%u each on %u nodes, plus %d)",
+		     total_core_cnt, cores_per_node,
 		     node_cnt, extra_cores_needed);
 	} else if (single_core_cnt) {
-		info("%s: %s: Reservations requires %d cores total",
-		     plugin_type, __func__, total_core_cnt);
+		info("Reservations requires %d cores total",
+		     total_core_cnt);
 	} else if (core_cnt && core_cnt[0]) {
-		info("%s: %s: Reservations requires %d cores with %d cores on first node",
-		     plugin_type, __func__, total_core_cnt, core_cnt[0]);
+		info("Reservations requires %d cores with %d cores on first node",
+		     total_core_cnt, core_cnt[0]);
 	} else {
-		info("%s: %s: Reservations requires %u nodes total",
-		     plugin_type, __func__, node_cnt);
+		info("Reservations requires %u nodes total",
+		     node_cnt);
 	}
 #endif
 
 	picked_node_bitmap = bit_alloc(select_node_cnt);
 	if (core_cnt) { /* Reservation is using partial nodes */
-		debug2("%s: %s: Reservation is using partial nodes",
-		       plugin_type, __func__);
+		debug2("Reservation is using partial nodes");
 		if (*exc_cores == NULL) {      /* Exclude no cores by default */
 #if _DEBUG
 			bit_fmt(tmp, sizeof(tmp), avail_node_bitmap);
-			info("%s: avail_nodes:%s", __func__, tmp);
-			info("%s: exc_cores: NULL", __func__);
+			info("avail_nodes:%s", tmp);
+			info("exc_cores: NULL");
 #endif
 			c = select_node_record[select_node_cnt-1].cume_cores;
 			tmp_core_bitmap = bit_alloc(c);
@@ -290,12 +288,12 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 #if _DEBUG
 			tmp_cores = *exc_cores;
 			bit_fmt(tmp, sizeof(tmp), avail_node_bitmap);
-			info("%s: avail_nodes:%s", __func__, tmp);
+			info("avail_nodes:%s", tmp);
 			for (i = 0; i < select_node_cnt; i++) {
 				if (!tmp_cores[i])
 					continue;
 				bit_fmt(tmp, sizeof(tmp), tmp_cores[i]);
-				info("%s: exc_cores[%d]: %s", __func__, i, tmp);
+				info("exc_cores[%d]: %s", i, tmp);
 			}
 #endif
 			/*
@@ -370,8 +368,7 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 		}
 
 		if (!fini) {
-			info("%s: %s: reservation request can not be satisfied",
-			     plugin_type, __func__);
+			info("reservation request can not be satisfied");
 			FREE_NULL_BITMAP(picked_node_bitmap);
 			free_core_array(&avail_cores);
 		} else {
@@ -395,13 +392,12 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 		}
 
 		if (node_cnt) {
-			info("%s: %s: Reservation request can not be satisfied",
-			     plugin_type, __func__);
+			info("Reservation request can not be satisfied");
 			FREE_NULL_BITMAP(picked_node_bitmap);
 		} else {
 			bit_fmt(str, sizeof(str), picked_node_bitmap);
-			debug2("%s: %s: Sequential pick using nodemap: %s",
-			       plugin_type, __func__, str);
+			debug2("Sequential pick using nodemap: %s",
+			       str);
 		}
 	}
 
@@ -476,7 +472,7 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t **exc_cores;
 
 	xassert(node_bitmap);
-	debug2("%s: %s: evaluating %pJ", plugin_type, __func__, job_ptr);
+	debug2("evaluating %pJ", job_ptr);
 	if (!job_ptr->details)
 		return EINVAL;
 
@@ -493,8 +489,7 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			if (!exc_cores[i])
 				continue;
 			bit_fmt(tmp, sizeof(tmp), exc_cores[i]);
-			error("%s: %s: IN exc_cores[%d] %s", plugin_type,
-			      __func__, i, tmp);
+			error("IN exc_cores[%d] %s", i, tmp);
 		}
 	}
 #endif
