@@ -505,7 +505,7 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 	csize = bit_size(job_res->core_bitmap);
 
 
-	for (c = 0, i = 0, n = n_first; n < n_last; n++) {
+	for (c = 0, i = 0, n = n_first; n <= n_last; n++) {
 		if (!bit_test(job_res->node_bitmap, n))
 			continue;
 
@@ -897,7 +897,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 	}
 
 	csize = bit_size(core_map);
-	for (c = 0, i = 0, n = n_first; n < n_last; n++) {
+	for (c = 0, i = 0, n = n_first; n <= n_last; n++) {
 		if (bit_test(job_res->node_bitmap, n) == 0)
 			continue;
 		sockets = select_node_record[n].sockets;
