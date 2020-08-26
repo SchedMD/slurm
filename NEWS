@@ -68,6 +68,9 @@ documents those changes that are of interest to users and administrators.
  -- The JobCompLoc URL endpoint when the JobCompType=jobcomp/elasticsearch
     plugin is enabled is now fully configurable and the plugin no longer appends
     a hardcoded "/slurm/jobcomp" index and type suffix to it.
+ -- Add check to the reservation create/update logic to prevent an inconsistent
+    state without nodes and with no ANY_NODES flag with either Licenses,
+    BurstBuffer and/or Watts.
 
 * Changes in Slurm 20.02.6
 ==========================

@@ -2818,6 +2818,22 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		goto bad_parse;
 	}
 
+	/*
+	 * A reservation without nodes/cores should only be possible if the flag
+	 * ANY_NODES is set and it has at least one of licenses, burst buffer
+	 * and/or watts. So test this here after the checks for the involved
+	 * options.
+	 */
+	if ((resv_desc_ptr->flags & RESERVE_FLAG_ANY_NODES) &&
+	    !total_node_cnt && !core_bitmap && !resv_desc_ptr->burst_buffer &&
+	    (!license_list || list_is_empty(license_list)) &&
+	    (!resv_desc_ptr->resv_watts ||
+	     resv_desc_ptr->resv_watts == NO_VAL)) {
+		info("%s: reservations without nodes and with ANY_NODES flag are expected to be one of Licenses, BurstBuffer and/or Watts", __func__);
+		rc = ESLURM_RESERVATION_INVALID;
+		goto bad_parse;
+	}
+
 	rc = _generate_resv_id();
 	if (rc != SLURM_SUCCESS)
 		goto bad_parse;
@@ -3402,6 +3418,28 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	/* This needs to be after checks for both account and user changes */
 	if ((error_code = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
 		goto update_failure;
+
+	/*
+	 * A reservation without nodes/cores should only be possible if the flag
+	 * ANY_NODES is set and it has at least one of licenses, burst buffer
+	 * and/or watts. So test this here after the checks for the involved
+	 * options.
+	 */
+	if (!resv_ptr->node_bitmap || (bit_ffs(resv_ptr->node_bitmap)) == -1) {
+		if ((resv_ptr->flags & RESERVE_FLAG_ANY_NODES) == 0) {
+			info("%s: reservations without nodes are only expected with ANY_NODES flag", __func__);
+			error_code = ESLURM_RESERVATION_INVALID;
+			goto update_failure;
+		} else if ((resv_ptr->resv_watts == NO_VAL ||
+			   !resv_ptr->resv_watts) &&
+			   (!resv_ptr->license_list ||
+			    list_is_empty(resv_ptr->license_list)) &&
+			   !resv_ptr->burst_buffer) {
+			info("%s: reservations without nodes and with ANY_NODES flag are expected to be one of Licenses, BurstBuffer and/or Watts", __func__);
+			error_code = ESLURM_RESERVATION_INVALID;
+			goto update_failure;
+		}
+	}
 
 	_set_tres_cnt(resv_ptr, resv_backup);
 
