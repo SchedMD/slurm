@@ -4638,7 +4638,6 @@ static void _epilog_complete_msg_setup(
 
 /*
  *  Send epilog complete message to currently active controller.
- *  If enabled, use message aggregation.
  *   Returns SLURM_SUCCESS if message sent successfully,
  *           SLURM_ERROR if epilog complete message fails to be sent.
  */
