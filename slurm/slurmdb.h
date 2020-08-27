@@ -515,7 +515,7 @@ typedef struct slurmdb_assoc_rec {
 				    */
 	uint32_t max_submit_jobs;  /* max number of jobs that can be
 				      submitted by association */
-	char *max_tres_mins_pj;    /* max number of cpu seconds this
+	char *max_tres_mins_pj;    /* max number of cpu minutes this
 				    * association can have per job */
 	uint64_t *max_tres_mins_ctld; /* max_tres_mins broken out in an array
 				       * based off the ordering of the
@@ -921,7 +921,7 @@ typedef struct {
 					submit with this qos at once */
 	uint32_t max_submit_jobs_pu; /* max number of jobs a user can
 					submit with this qos at once */
-	char *max_tres_mins_pj;    /* max number of tres seconds this
+	char *max_tres_mins_pj;    /* max number of tres minutes this
 				    * qos can have per job */
 	uint64_t *max_tres_mins_pj_ctld; /* max_tres_mins broken out in an array
 					  * based off the ordering of the
