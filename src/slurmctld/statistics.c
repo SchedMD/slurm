@@ -56,7 +56,7 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 	int agent_queue_size;
 	int agent_count;
 	int agent_thread_count;
-	int slurmdbd_queue_size;
+	int slurmdbd_queue_size = 0;
 	time_t now = time(NULL);
 
 	buffer_ptr[0] = NULL;

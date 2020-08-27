@@ -86,6 +86,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix HDF5 type version build error.
  -- Fix creation of CoreCnt only reservations when the first node isn't
     available.
+ -- Fix wrong DBD Agent queue size in sdiag when using accounting_storage/none.
 
 * Changes in Slurm 20.02.4
 ==========================
