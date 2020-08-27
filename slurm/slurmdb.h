@@ -888,7 +888,7 @@ typedef struct {
 				 * at one time */
 	uint32_t grp_submit_jobs; /* max number of jobs this qos can submit at
 				   * one time */
-	char *grp_tres;            /* max number of tres ths qos can
+	char *grp_tres;            /* max number of tres this qos can
 				    * allocate at one time */
 	uint64_t *grp_tres_ctld;   /* grp_tres broken out in an array
 				    * based off the ordering of the total
