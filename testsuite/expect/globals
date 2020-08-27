@@ -5978,7 +5978,7 @@ proc test_pack_step { } {
 	set minor 0
 	spawn $scontrol -V
 	expect {
-		-re " ($number).($number).($number)" {
+		-re " ($number)\.($number)\.($number)" {
 			set version_major $expect_out(1,string)
 			set version_minor $expect_out(2,string)
 			exp_continue
@@ -6802,7 +6802,7 @@ proc get_conf_path { } {
 	log_user 0
 	spawn $scontrol show config
 	expect {
-		-re "SLURM_CONF.*= (/.*)/($re_word_str).*SLURM_VERSION" {
+		-re "SLURM_CONF.*= (/.*)/($re_word_str)${eol}SLURM_VERSION" {
 			set config_path $expect_out(1,string)
 			set got_config 1
 			exp_continue

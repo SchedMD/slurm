@@ -120,7 +120,7 @@ set step_cnt 0
 if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
-		-re "($job_id).($number)" {
+		-re "($job_id)\.($number)" {
 			incr step_cnt
 			exp_continue
 		}
