@@ -84,6 +84,8 @@ documents those changes that are of interest to users and administrators.
     than --gpus-per-socket when not enough cpus available on required socket
     and not using --gres-flags=enforce binding.
  -- Fix HDF5 type version build error.
+ -- Fix creation of CoreCnt only reservations when the first node isn't
+    available.
 
 * Changes in Slurm 20.02.4
 ==========================

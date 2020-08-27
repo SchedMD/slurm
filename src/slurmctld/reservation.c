@@ -5268,7 +5268,7 @@ static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 	job_record_t *job_ptr;
 	bitstr_t *orig_bitmap = NULL, *save_bitmap = NULL;
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap = NULL;
-	int total_node_cnt, requested_node_cnt;
+	int total_node_cnt;
 	bitstr_t *orig_avail_bitmap = NULL, *orig_core_bitmap = NULL;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
@@ -5325,18 +5325,8 @@ static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 	}
 	list_iterator_destroy(job_iterator);
 
-	/*
-	 * Save the number of requested nodes. If node_cnt wasn't specified and
-	 * a node_list was passed instead, node_cnt will be 0, and
-	 * total_node_cnt will hold the number of requested nodes. If node_cnt
-	 * was specified, then that is the number of requested nodes.
-	 * We want to know if the number of available nodes (total_node_cnt
-	 * after total_node_cnt = bit_set_count(avail_bitmap)) is at least as
-	 * many as the number of requested nodes.
-	 */
-	requested_node_cnt = node_cnt ? node_cnt : total_node_cnt;
 	total_node_cnt = bit_set_count(avail_bitmap);
-	if (total_node_cnt >= requested_node_cnt) {
+	if (total_node_cnt >= node_cnt) {
 		/*
 		 * NOTE: select_g_resv_test() does NOT preserve avail_bitmap,
 		 * so we do that here and other calls to that function.
