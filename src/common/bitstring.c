@@ -98,15 +98,6 @@
 } while (0)
 
 /*
- * external macros
- */
-
-/* allocate a bitstring on the stack */
-/* XXX bit_decl does not check if nbits overflows word 1 */
-#define	bit_decl(name, nbits) \
-	(name)[_bitstr_words(nbits)] = { BITSTR_MAGIC_STACK, (nbits) }
-
-/*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
  * for details.
  */
