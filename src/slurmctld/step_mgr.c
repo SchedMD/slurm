@@ -70,6 +70,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/port_mgr.h"
@@ -4782,6 +4783,7 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 {
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
+	char *host = NULL;
 
 	if (job_ptr_in->het_job_id) {
 		job_ptr = find_job_record(job_ptr_in->het_job_id);
@@ -4795,8 +4797,21 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 
 	step_ptr = _create_step_record(job_ptr, 0);
 
+#ifdef HAVE_FRONT_END
+	front_end_record_t *front_end_ptr =
+				find_front_end_record(job_ptr->batch_host);
+	if (front_end_ptr && front_end_ptr->name)
+		host = front_end_ptr->name;
+	else {
+		error("%s: could not find front-end node for %pJ",__func__,
+		      job_ptr);
+		host = job_ptr->batch_host;
+	}
+#else
+		host = job_ptr->batch_host;
+#endif
 	step_ptr->step_layout = fake_slurm_step_layout_create(
-		job_ptr->batch_host, NULL, NULL, 1, 1);
+		host, NULL, NULL, 1, 1);
 	step_ptr->ext_sensors = ext_sensors_alloc();
 	step_ptr->name = xstrdup("batch");
 	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
@@ -4807,11 +4822,13 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	step_ptr->step_id.step_het_comp = NO_VAL;
 	step_ptr->batch_step = 1;
 
+#ifndef HAVE_FRONT_END
 	if (node_name2bitmap(job_ptr->batch_host, false,
 			     &step_ptr->step_node_bitmap)) {
 		error("%s: %pJ has invalid node list (%s)",
 		      __func__, job_ptr, job_ptr->batch_host);
 	}
+#endif
 
 	step_ptr->time_last_active = time(NULL);
 	step_set_alloc_tres(step_ptr, 1, false, false);
