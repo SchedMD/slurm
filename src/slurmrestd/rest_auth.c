@@ -73,7 +73,7 @@ static const char *syms[] = {
 	"slurm_rest_auth_p_free", /* release contents of plugin_data */
 };
 
-static slurm_rest_auth_ops_t *ops;
+static slurm_rest_auth_ops_t *ops = NULL;
 static uint32_t *plugin_ids = NULL;
 static int g_context_cnt = -1;
 static plugin_context_t **g_context = NULL;
