@@ -38,7 +38,7 @@ set file_out       "test$test_id.output"
 # NOTE: AllocGRES and ReqGRES values for all steps (including batch step)
 #	are reported based upon the job specification
 #
-proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
+proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 	global re_word_str number
 	global bin_cat bin_rm bin_grep exit_code file_out sacct
 
@@ -63,10 +63,18 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 		set match 0
 		spawn $bin_grep $job_id.0 $file_out
 		expect {
-			-re "gpu:($number)" {
+			-re "\[^:\]gpu:($number)" {
 				incr match
 				if {$expect_out(1,string) != $job_gpus} {
 					log_error "Bad step GPU count reported by sacct ($expect_out(1,string) != $step_gpus)"
+					set exit_code 1
+				}
+				exp_continue
+			}
+			-re ":gpu:($number)" {
+				incr match
+				if {$expect_out(1,string) != $req_gpus} {
+					log_error "Bad step GPU count reported by sacct ($expect_out(1,string) != $req_gpus)"
 					set exit_code 1
 				}
 				exp_continue
@@ -101,10 +109,18 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 	set match 0
 	spawn $bin_grep $job_id.batch $file_out
 	expect {
-		-re "gpu:($number)" {
+		-re "\[^:\]gpu:($number)" {
 			incr match
 			if {$expect_out(1,string) != $job_gpus} {
 				log_error "Bad batch GPU count reported by sacct ($expect_out(1,string) != $job_gpus)"
+				set exit_code 1
+			}
+			exp_continue
+		}
+		-re ":gpu:($number)" {
+			incr match
+			if {$expect_out(1,string) != $req_gpus} {
+				log_error "Bad batch GPU count reported by sacct ($expect_out(1,string) != $req_gpus)"
 				set exit_code 1
 			}
 			exp_continue
@@ -120,10 +136,18 @@ proc test_acct { job_id job_gpus step_gpus have_gpu_types } {
 	set match 0
 	spawn $bin_grep $job_id| $file_out
 	expect {
-		-re "gpu:($number)" {
+		-re "\[^:\]gpu:($number)" {
 			incr match
 			if {$expect_out(1,string) != $job_gpus} {
 				log_error "Bad job GPU count reported by sacct ($expect_out(1,string) != $job_gpus)"
+				set exit_code 1
+			}
+			exp_continue
+		}
+		-re ":gpu:($number)" {
+			incr match
+			if {$expect_out(1,string) != $req_gpus} {
+				log_error "Bad job GPU count reported by sacct ($expect_out(1,string) != $req_gpus)"
 				set exit_code 1
 			}
 			exp_continue
@@ -252,7 +276,8 @@ set target [expr $nb_nodes * 2]
 exec $bin_rm -f $file_out
 set job_id 0
 set timeout $max_job_delay
-spawn $sbatch --gres=craynetwork:0 --gpus-per-node=2 -N$nb_nodes -t1 -o $file_out -J "test$test_id" ./$file_in1
+set req_gpus 2
+spawn $sbatch --gres=craynetwork:0 --gpus-per-node=$req_gpus -N$nb_nodes -t1 -o $file_out -J "test$test_id" ./$file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -302,7 +327,7 @@ if {$match != $target} {
 	log_error "Failed to account for proper GPU count ($match != $target)"
 	set exit_code 1
 }
-test_acct $job_id $target -1 $have_gpu_types
+test_acct $job_id $target -1 $req_gpus $have_gpu_types
 
 #
 # Test --gpus option by job
@@ -340,7 +365,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 }
 
 test_out_file $file_out $target
-test_acct $job_id $target -1 $have_gpu_types
+test_acct $job_id $target -1 $target $have_gpu_types
 
 #
 # Test --gpus-per-task option by job
@@ -356,7 +381,8 @@ if {$cpus_per_node >= 2 && $nb_nodes >= 2} {
 	set nb_tasks 1
 }
 set job_id 0
-spawn $sbatch --gres=craynetwork:0 --gpus-per-task=1 -N$nb_nodes -n$nb_tasks -t1 -o $file_out -J "test$test_id" ./$file_in1
+set req_gpus 1
+spawn $sbatch --gres=craynetwork:0 --gpus-per-task=$req_gpus -N$nb_nodes -n$nb_tasks -t1 -o $file_out -J "test$test_id" ./$file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -380,7 +406,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 }
 
 test_out_file $file_out $nb_tasks
-test_acct $job_id $nb_tasks -1 $have_gpu_types
+test_acct $job_id $nb_tasks -1 $req_gpus $have_gpu_types
 
 #
 # Test --gpus-per-socket option by job
@@ -397,7 +423,8 @@ if {$sockets_with_gpus >= 2} {
 	set cpus_per_task 1
 }
 set job_id 0
-spawn $sbatch --gres=craynetwork:0 --gpus-per-socket=1 -N$nb_nodes  --ntasks=$nb_nodes --sockets-per-node=$nb_sockets --cpus-per-task=$cpus_per_task -t1 -o $file_out -J "test$test_id" ./$file_in1
+set req_gpus 1
+spawn $sbatch --gres=craynetwork:0 --gpus-per-socket=$req_gpus -N$nb_nodes  --ntasks=$nb_nodes --sockets-per-node=$nb_sockets --cpus-per-task=$cpus_per_task -t1 -o $file_out -J "test$test_id" ./$file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -422,7 +449,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 
 set target [expr $nb_nodes * $nb_sockets]
 test_out_file $file_out $target
-test_acct $job_id $target -1 $have_gpu_types
+test_acct $job_id $target -1 $req_gpus $have_gpu_types
 
 #
 # Test --gpus-per-node option by step
@@ -443,7 +470,8 @@ set target [expr $nb_nodes * 2]
 exec $bin_rm -f $file_out
 set job_id 0
 set timeout $max_job_delay
-spawn $sbatch --gres=craynetwork:0 --gpus-per-node=2 -N$nb_nodes -t1 -o $file_out -J "test$test_id" ./$file_in1
+set req_gpus 2
+spawn $sbatch --gres=craynetwork:0 --gpus-per-node=$req_gpus -N$nb_nodes -t1 -o $file_out -J "test$test_id" ./$file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -468,7 +496,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 
 set target [expr $nb_nodes * 2]
 test_out_file $file_out $target
-test_acct $job_id $target $target $have_gpu_types
+test_acct $job_id $target $target $req_gpus $have_gpu_types
 
 #
 # Test --gpus option by step
@@ -506,7 +534,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 }
 
 test_out_file $file_out $target
-test_acct $job_id $target $target $have_gpu_types
+test_acct $job_id $target $target $target $have_gpu_types
 
 #
 # Test --gpus-per-task option by step
@@ -522,7 +550,8 @@ if {$cpus_per_node >= 2 && $nb_nodes >= 2} {
 	set nb_tasks 1
 }
 set job_id 0
-spawn $sbatch --gres=craynetwork:0 --gpus-per-task=1 -N$nb_nodes -n$nb_tasks -t1 -o $file_out -J "test$test_id" ./$file_in1
+set req_gpus 1
+spawn $sbatch --gres=craynetwork:0 --gpus-per-task=$req_gpus -N$nb_nodes -n$nb_tasks -t1 -o $file_out -J "test$test_id" ./$file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -546,7 +575,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 }
 
 test_out_file $file_out $nb_tasks
-test_acct $job_id $nb_tasks $nb_tasks $have_gpu_types
+test_acct $job_id $nb_tasks $nb_tasks $req_gpus $have_gpu_types
 
 #
 # Test --gpus-per-socket option by step
@@ -563,7 +592,8 @@ if {$sockets_with_gpus >= 2} {
 	set cpus_per_task 1
 }
 set job_id 0
-spawn $sbatch --gres=craynetwork:0 --gpus-per-socket=1 -N$nb_nodes  --ntasks=$nb_nodes --sockets-per-node=$nb_sockets --cpus-per-task=$cpus_per_task -t1 -o $file_out -J "test$test_id" ./$file_in1
+set req_gpus 1
+spawn $sbatch --gres=craynetwork:0 --gpus-per-socket=$req_gpus -N$nb_nodes  --ntasks=$nb_nodes --sockets-per-node=$nb_sockets --cpus-per-task=$cpus_per_task -t1 -o $file_out -J "test$test_id" ./$file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -588,7 +618,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 
 set target [expr $nb_nodes * $nb_sockets]
 test_out_file $file_out $target
-test_acct $job_id $target $target $have_gpu_types
+test_acct $job_id $target $target $req_gpus $have_gpu_types
 
 #
 # Test --gpus-per-task option by step
@@ -616,7 +646,8 @@ make_bash_script $file_in1 "
 	exit 0"
 
 set job_id 0
-spawn $sbatch --gres=craynetwork:0 --gpus-per-task=1 -N$nb_nodes -n$job_tasks -t1 -o $file_out -J "test$test_id" ./$file_in1
+set req_gpus 1
+spawn $sbatch --gres=craynetwork:0 --gpus-per-task=$req_gpus -N$nb_nodes -n$job_tasks -t1 -o $file_out -J "test$test_id" ./$file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -640,7 +671,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 }
 
 test_out_file $file_out $step_tasks
-test_acct $job_id $job_tasks $step_tasks $have_gpu_types
+test_acct $job_id $job_tasks $step_tasks $req_gpus $have_gpu_types
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2 $file_out
