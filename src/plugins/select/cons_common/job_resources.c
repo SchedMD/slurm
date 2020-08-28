@@ -332,9 +332,7 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 			gres_plugin_node_state_log(node_gres_list,
 						   node_ptr->name);
 			FREE_NULL_BITMAP(core_bitmap);
-		}
 
-		if (action != 2) {
 			if (job->memory_allocated[n] == 0)
 				continue;	/* node lost by job resizing */
 			select_node_usage[i].alloc_memory +=
@@ -496,9 +494,7 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 						node_ptr->name, old_job,
 						job_ptr->user_id, job_fini);
 			gres_plugin_node_state_log(gres_list, node_ptr->name);
-		}
 
-		if (action != 2) {
 			if (node_usage[i].alloc_memory <
 			    job->memory_allocated[n]) {
 				error("node %s memory is "
