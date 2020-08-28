@@ -299,7 +299,7 @@ if {[info exists env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)]} {
 # Other common variables
 set re_word_str          "\\S+"
 set digit                "\\d"
-set end_of_line          "\[\r\n\]"
+set eol                  "\r?\n"
 set float                "\\d+\\.?\\d*"
 set number               "\\d+"
 set format_time          "\\d+\\:\\d+\\:\\d+"
@@ -6795,7 +6795,7 @@ proc get_acct_store_tres { } {
 ################################################################
 
 proc get_conf_path { } {
-	global scontrol re_word_str exit_code
+	global scontrol re_word_str eol exit_code
 
 	set config_path ""
 	set got_config 0

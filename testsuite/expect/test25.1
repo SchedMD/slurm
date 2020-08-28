@@ -107,7 +107,7 @@ proc sub_job { cpu_cnt } {
 ################################################################
 
 proc sprio_opt { soption } {
-	global number sprio exit_code
+	global number eol sprio exit_code
 	set debug       0
 	set matches     0
 	set not_support 0
@@ -171,7 +171,7 @@ proc sprio_opt { soption } {
 				set not_support 1
 				exp_continue
 			}
-			-re "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .-p partitions.\r\n   .--federation. .--local. .--sibling. .--usage. .-hlnvVw." {
+			-re "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .-p partitions.$eol   .--federation. .--local. .--sibling. .--usage. .-hlnvVw." {
 				if {$debug} {log_debug "Match5"}
 				incr matches
 				exp_continue

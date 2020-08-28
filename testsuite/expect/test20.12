@@ -82,11 +82,11 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name
 	set matches 0
 	spawn $bin_cat $file_out
 	expect {
-		"$variable1_name=$variable1_expect_val\r\n" {
+		"${variable1_name}=${variable1_expect_val}" {
 			incr matches
 			exp_continue
 		}
-		"$variable2_name=$variable2_expect_val\r\n" {
+		"${variable2_name}=${variable2_expect_val}" {
 			incr matches
 			exp_continue
 		}

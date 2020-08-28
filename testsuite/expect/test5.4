@@ -123,7 +123,7 @@ set format "--format=jid=%i uid=%U"
 set have_job_ids 0
 spawn $squeue $format
 expect {
-	-re "($end_of_line)jid=($number) uid=($number)" {
+	-re "($eol)jid=($number) uid=($number)" {
 		if {$expect_out(2,string) == $job_id1} {
 			incr have_job_ids
 		}
@@ -159,7 +159,7 @@ set env(SQUEUE_FORMAT) "JID=%i UID=%U"
 set have_job_ids 0
 spawn $squeue
 expect {
-	-re "($end_of_line)JID=($number) UID=($number)" {
+	-re "($eol)JID=($number) UID=($number)" {
 		if {$expect_out(2,string) == $job_id1} {
 			incr have_job_ids
 		}
@@ -195,7 +195,7 @@ spawn $squeue --iterate=5 --steps
 set iteration  0
 set step_found 0
 expect {
-	-re "($end_of_line) *($job_id1.$step_id) " {
+	-re "($eol) *($job_id1.$step_id) " {
 		set step_found 1
 		set squeue_pid [exp_pid]
 		exec $bin_kill -TERM $squeue_pid

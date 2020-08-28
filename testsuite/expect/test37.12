@@ -51,8 +51,6 @@ set my_squeue "${fed_slurm_base}/$fedc1/bin/squeue"
 set min_job_age [expr {[get_min_job_age] + 65}]
 set file_in2         "test$test_id.in2"
 
-set eol "\r\n"
-
 #
 # Check accounting config and bail if not found.
 #

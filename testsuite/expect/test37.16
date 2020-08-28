@@ -52,8 +52,6 @@ set my_srun      "${fed_slurm_base}/$fedc2/bin/srun"
 set my_sacct     "${fed_slurm_base}/$fedc1/bin/sacct"
 set my_scontrol  "${fed_slurm_base}/$fedc1/bin/scontrol"
 
-set eol "\r\n"
-
 #
 # Check accounting config and bail if not found.
 #

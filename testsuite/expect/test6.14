@@ -95,7 +95,7 @@ for {set ii 0} {$ii < $num_procs} {incr ii} {
 
 spawn $squeue -h -t running -n $test_name  -o "%10i %40N"
 expect {
-	-re "($number) *($re_word_str) *\r\n" {
+	-re "($number) *($re_word_str) *$eol" {
 		set job_id $expect_out(1,string)
 		set node_name $expect_out(2,string)
 

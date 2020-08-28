@@ -94,7 +94,7 @@ if {[wait_for_file $file_out] != 0} {
 set index 0
 spawn $bin_cat $file_out
 expect {
-	-re "^($number)\r\n" {
+	-re "^($number)$eol" {
 		incr index
 		if {$index == 1} {set num_nodes_test1 $expect_out(1,string)}
 		if {$index == 2} {set num_nodes_test2 $expect_out(1,string)}
@@ -108,7 +108,7 @@ expect {
 	# Checking for it here will skip over the warning so we can get the
 	# real value.  I would say this is a bug in expect, but without this
 	# check we don't always get what we need.
-	-re "Step created for job $number\r\n" {
+	-re "Step created for job $number$eol" {
 		exp_continue
 	}
 	eof {
