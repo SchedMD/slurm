@@ -33,6 +33,8 @@
 
 #include <inttypes.h>
 
+#include "slurm/slurm.h"
+
 #include "src/common/hostlist.h"
 #include "src/common/pack.h"
 
