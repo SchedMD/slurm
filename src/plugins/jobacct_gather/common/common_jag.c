@@ -80,9 +80,9 @@ static int energy_profile = ENERGY_DATA_NODE_ENERGY_UP;
 static int _find_prec(void *x, void *key)
 {
 	jag_prec_t *prec = (jag_prec_t *) x;
-	struct jobacctinfo *jobacct = (struct jobacctinfo *) key;
+	pid_t pid = *(pid_t *) key;
 
-	if (prec->pid == jobacct->pid)
+	if (prec->pid == pid)
 		return 1;
 
 	return 0;
@@ -959,7 +959,8 @@ extern void jag_common_poll_data(
 	while ((jobacct = list_next(itr))) {
 		double cpu_calc;
 		double last_total_cputime;
-		if (!(prec = list_find_first(prec_list, _find_prec, jobacct)))
+		if (!(prec = list_find_first(prec_list, _find_prec,
+					     &jobacct->pid)))
 			continue;
 
 		/*
