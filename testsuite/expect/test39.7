@@ -116,11 +116,8 @@ if {[test_cons_tres]} {
 }
 
 set gpu_cnt [get_highest_gres_count 1 "gpu"]
-if {$gpu_cnt < 0} {
-	fail "Error getting GPU count"
-}
 if {$gpu_cnt < 1} {
-	skip "This test requires 1 or more GPUs in the default partition"
+	skip "This test requires 1 or more GPUs on 1 node of the default partition"
 }
 
 set node_name [get_nodes_by_request "--gres=gpu:1 -n1 -t1"]
