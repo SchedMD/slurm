@@ -4796,8 +4796,10 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 			log_flag(GRES, "Failed to validate job spec, gres_per_job < min_nodes (-N)");
 			return -1;
 		}
-		if (job_gres_data->gres_per_job < *max_nodes)
+		if ((*max_nodes != NO_VAL) &&
+		    (job_gres_data->gres_per_job < *max_nodes)) {
 			*max_nodes = job_gres_data->gres_per_job;
+		}
 	}
 
 	return 0;

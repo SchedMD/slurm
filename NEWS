@@ -382,6 +382,8 @@ documents those changes that are of interest to users and administrators.
     CVE-2020-27745.
  -- X11 forwarding - fix potential leak of the magic cookie when sent as an
     argument to the xauth command. CVE-2020-27746.
+ -- Fix situation when --gpus is given but not max nodes (-N1-1) in a job
+    allocation.
 
 * Changes in Slurm 20.02.5
 ==========================
