@@ -2208,19 +2208,23 @@ NOTE: The \fBJobContainerType\fR applies to a job allocation, while
 \fBProctrackType\fR applies to job steps.
 Acceptable values at present include:
 .RS
-.TP 20
+.TP
 \fBproctrack/cgroup\fR
-which uses linux cgroups to constrain and track processes, and is the default.
-NOTE: see "man cgroup.conf" for configuration details
+Uses linux cgroups to constrain and track processes, and is the default
+for systems with cgroup support.
+.br
+\fBNOTE\fR: see "man cgroup.conf" for configuration details.
 .TP
 \fBproctrack/cray_aries\fR
-which uses Cray proprietary process tracking
+Uses Cray proprietary process tracking.
 .TP
 \fBproctrack/linuxproc\fR
-which uses linux process tree using parent process IDs.
+Uses linux process tree using parent process IDs.
 .TP
 \fBproctrack/pgid\fR
-which uses process group IDs
+Uses Process Group IDs.
+.br
+\fBNOTE\fR: This is the default for the BSD family.
 .RE
 
 .TP
