@@ -43,7 +43,18 @@
 #include "src/common/bitstring.h"
 #include "src/common/job_resources.h"
 
+typedef enum {
+	JOB_RES_ACTION_NORMAL, /* add/remove cores, memory + GRES
+				* (starting/ending new job) */
+	JOB_RES_ACTION_SUSPEND, /* add/remove memory + GRES (suspended job at
+				 * restart/terminated) */
+	JOB_RES_ACTION_RESUME, /* add/remove cores (suspended job is
+				* resumed/terminated) */
+} job_res_job_action_t;
+
 extern bool select_state_initializing;
+
+extern char *job_res_job_action_string(job_res_job_action_t action);
 
 /*
  * Add job resource allocation to record of resources allocated to all nodes
@@ -80,22 +91,28 @@ extern int job_res_fit_in_row(job_resources_t *job_resrcs_ptr,
  * - add 'struct job_resources' resources to 'part_res_record_t'
  * - add job's memory requirements to 'node_res_record_t'
  *
- * if action = 0 then add cores, memory + GRES (starting new job)
- * if action = 1 then add memory + GRES (adding suspended job at restart)
- * if action = 2 then only add cores (suspended job is resumed)
+ * if action = JOB_RES_ACTION_NORMAL then add cores, memory + GRES
+ *             (starting new job)
+ * if action = JOB_RES_ACTION_SUSPEND then add memory + GRES
+ *             (adding suspended job at restart)
+ * if action = JOB_RES_ACTION_RESUME then only add cores
+ *             (suspended job is resumed)
  *
  * See also: job_res_rm_job()
  */
-extern int job_res_add_job(job_record_t *job_ptr, int action);
+extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action);
 
 /*
  * Deallocate resources previously allocated to the given job
  * - subtract 'struct job_resources' resources from 'part_res_record_t'
  * - subtract job's memory requirements from 'node_res_record_t'
  *
- * if action = 0 then subtract cores, memory + GRES (running job was terminated)
- * if action = 1 then subtract memory + GRES (suspended job was terminated)
- * if action = 2 then only subtract cores (job is suspended)
+ * if action = JOB_RES_ACTION_NORMAL then subtract cores, memory + GRES
+ *             (running job was terminated)
+ * if action = JOB_RES_ACTION_SUSPEND then subtract memory + GRES
+ *             (suspended job was terminated)
+ * if action = JOB_RES_ACTION_RESUME then only subtract cores
+ *             (job is suspended)
  * IN: job_fini - job fully terminating on this node (not just a test)
  *
  * RET SLURM_SUCCESS or error code
@@ -104,7 +121,8 @@ extern int job_res_add_job(job_record_t *job_ptr, int action);
  */
 extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			  node_use_record_t *node_usage,
-			  job_record_t *job_ptr, int action, bool job_fini,
+			  job_record_t *job_ptr, job_res_job_action_t action,
+			  bool job_fini,
 			  bitstr_t *node_map);
 
 #endif /* _CONS_COMMON_JOB_RES_H */

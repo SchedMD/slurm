@@ -1224,9 +1224,9 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	}
 
 	(void) job_res_rm_job(select_part_record, select_node_usage,
-			      from_job_ptr, 0, true, NULL);
+			      from_job_ptr, JOB_RES_ACTION_NORMAL, true, NULL);
 	(void) job_res_rm_job(select_part_record, select_node_usage,
-			      to_job_ptr, 0, true, NULL);
+			      to_job_ptr, JOB_RES_ACTION_NORMAL, true, NULL);
 
 	if (to_job_resrcs_ptr->core_bitmap_used) {
 		i = bit_size(to_job_resrcs_ptr->core_bitmap_used);
@@ -1382,7 +1382,7 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	xfree(from_job_resrcs_ptr->nodes);
 	from_job_resrcs_ptr->nodes = xstrdup("");
 
-	(void) job_res_add_job(to_job_ptr, 0);
+	(void) job_res_add_job(to_job_ptr, JOB_RES_ACTION_NORMAL);
 
 	return SLURM_SUCCESS;
 }
@@ -1569,7 +1569,7 @@ extern int select_p_job_fini(job_record_t *job_ptr)
 	log_flag(SELECT_TYPE, "%pJ", job_ptr);
 
 	job_res_rm_job(select_part_record, select_node_usage,
-		       job_ptr, 0, true, NULL);
+		       job_ptr, JOB_RES_ACTION_NORMAL, true, NULL);
 
 	return SLURM_SUCCESS;
 }
@@ -1593,7 +1593,7 @@ extern int select_p_job_suspend(job_record_t *job_ptr, bool indf_susp)
 		return SLURM_SUCCESS;
 
 	return job_res_rm_job(select_part_record, select_node_usage,
-			      job_ptr, 2, false, NULL);
+			      job_ptr, JOB_RES_ACTION_RESUME, false, NULL);
 }
 
 /* See NOTE with select_p_job_suspend() above */
@@ -1612,7 +1612,7 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	if (!indf_susp)
 		return SLURM_SUCCESS;
 
-	return job_res_add_job(job_ptr, 2);
+	return job_res_add_job(job_ptr, JOB_RES_ACTION_RESUME);
 }
 
 extern bitstr_t *select_p_step_pick_nodes(job_record_t *job_ptr,
@@ -1861,12 +1861,12 @@ extern int select_p_select_nodeinfo_set(job_record_t *job_ptr)
 	xassert(job_ptr->magic == JOB_MAGIC);
 
 	if (IS_JOB_RUNNING(job_ptr))
-		rc = job_res_add_job(job_ptr, 0);
+		rc = job_res_add_job(job_ptr, JOB_RES_ACTION_NORMAL);
 	else if (IS_JOB_SUSPENDED(job_ptr)) {
 		if (job_ptr->priority == 0)
-			rc = job_res_add_job(job_ptr, 1);
+			rc = job_res_add_job(job_ptr, JOB_RES_ACTION_SUSPEND);
 		else	/* Gang schedule suspend */
-			rc = job_res_add_job(job_ptr, 0);
+			rc = job_res_add_job(job_ptr, JOB_RES_ACTION_NORMAL);
 	} else
 		return SLURM_SUCCESS;
 
@@ -2081,13 +2081,15 @@ extern int select_p_reconfigure(void)
 	while ((job_ptr = list_next(job_iterator))) {
 		if (IS_JOB_RUNNING(job_ptr)) {
 			/* add the job */
-			job_res_add_job(job_ptr, 0);
+			job_res_add_job(job_ptr, JOB_RES_ACTION_NORMAL);
 		} else if (IS_JOB_SUSPENDED(job_ptr)) {
 			/* add the job in a suspended state */
 			if (job_ptr->priority == 0)
-				(void) job_res_add_job(job_ptr, 1);
+				(void) job_res_add_job(job_ptr,
+						       JOB_RES_ACTION_SUSPEND);
 			else	/* Gang schedule suspend */
-				(void) job_res_add_job(job_ptr, 0);
+				(void) job_res_add_job(job_ptr,
+						       JOB_RES_ACTION_NORMAL);
 		}
 	}
 	list_iterator_destroy(job_iterator);

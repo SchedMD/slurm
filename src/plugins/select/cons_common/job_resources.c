@@ -217,6 +217,24 @@ static void _log_tres_state(node_use_record_t *node_usage,
 #endif
 }
 
+extern char *job_res_job_action_string(job_res_job_action_t action)
+{
+	switch (action) {
+	case JOB_RES_ACTION_NORMAL:
+		return "normal";
+		break;
+	case JOB_RES_ACTION_SUSPEND:
+		return "suspend";
+		break;
+	case JOB_RES_ACTION_RESUME:
+		return "resume";
+		break;
+	default:
+		return "unknown";
+	}
+	return "error";
+}
+
 /*
  * Add job resource allocation to record of resources allocated to all nodes
  * IN job_resrcs_ptr - resources allocated to a job
@@ -266,13 +284,16 @@ extern int job_res_fit_in_row(job_resources_t *job_resrcs_ptr,
  * - add 'struct job_resources' resources to 'part_res_record_t'
  * - add job's memory requirements to 'node_res_record_t'
  *
- * if action = 0 then add cores, memory + GRES (starting new job)
- * if action = 1 then add memory + GRES (adding suspended job at restart)
- * if action = 2 then only add cores (suspended job is resumed)
+ * if action = JOB_RES_ACTION_NORMAL then add cores, memory + GRES
+ *             (starting new job)
+ * if action = JOB_RES_ACTION_SUSPEND then add memory + GRES
+ *             (adding suspended job at restart)
+ * if action = JOB_RES_ACTION_RESUME then only add cores
+ *             (suspended job is resumed)
  *
  * See also: job_res_rm_job()
  */
-extern int job_res_add_job(job_record_t *job_ptr, int action)
+extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 {
 	struct job_resources *job = job_ptr->job_resrcs;
 	node_record_t *node_ptr;
@@ -287,8 +308,8 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 		return SLURM_ERROR;
 	}
 
-	debug3("%pJ action:%d ", job_ptr,
-	       action);
+	debug3("%pJ action:%s", job_ptr,
+	       job_res_job_action_string(action));
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		log_job_resources(job_ptr);
@@ -307,7 +328,7 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 			continue;  /* node removed by job resize */
 
 		node_ptr = select_node_record[i].node_ptr;
-		if (action != 2) {
+		if (action != JOB_RES_ACTION_RESUME) {
 			if (select_node_usage[i].gres_list)
 				node_gres_list = select_node_usage[i].gres_list;
 			else
@@ -348,7 +369,7 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 		}
 	}
 
-	if (action != 2) {
+	if (action != JOB_RES_ACTION_RESUME) {
 		gres_build_job_details(job_ptr->gres_list,
 				       &job_ptr->gres_detail_cnt,
 				       &job_ptr->gres_detail_str,
@@ -356,7 +377,7 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 	}
 
 	/* add cores */
-	if (action != 1) {
+	if (action != JOB_RES_ACTION_SUSPEND) {
 		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
 			if (p_ptr->part_ptr == job_ptr->part_ptr)
 				break;
@@ -420,9 +441,12 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
  * - subtract 'struct job_resources' resources from 'part_res_record_t'
  * - subtract job's memory requirements from 'node_res_record_t'
  *
- * if action = 0 then subtract cores, memory + GRES (running job was terminated)
- * if action = 1 then subtract memory + GRES (suspended job was terminated)
- * if action = 2 then only subtract cores (job is suspended)
+ * if action = JOB_RES_ACTION_NORMAL then subtract cores, memory + GRES
+ *             (running job was terminated)
+ * if action = JOB_RES_ACTION_SUSPEND then subtract memory + GRES
+ *             (suspended job was terminated)
+ * if action = JOB_RES_ACTION_RESUME then only subtract cores
+ *             (job is suspended)
  * IN: job_fini - job fully terminating on this node (not just a test)
  *
  * RET SLURM_SUCCESS or error code
@@ -431,7 +455,8 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
  */
 extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			  node_use_record_t *node_usage,
-			  job_record_t *job_ptr, int action, bool job_fini,
+			  job_record_t *job_ptr, job_res_job_action_t action,
+			  bool job_fini,
 			  bitstr_t *node_map)
 {
 	struct job_resources *job = job_ptr->job_resrcs;
@@ -458,13 +483,13 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("%pJ action %d",
-		     job_ptr, action);
+		info("%pJ action:%s",
+		     job_ptr, job_res_job_action_string(action));
 		log_job_resources(job_ptr);
 		_log_tres_state(node_usage, part_record_ptr);
 	} else {
-		debug3("%pJ action %d",
-		       job_ptr, action);
+		debug3("%pJ action:%s",
+		       job_ptr, job_res_job_action_string(action));
 	}
 	if (job_ptr->start_time < slurmctld_config.boot_time)
 		old_job = true;
@@ -484,7 +509,7 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			continue;  /* node lost by job resize */
 
 		node_ptr = node_record_table_ptr + i;
-		if (action != 2) {
+		if (action != JOB_RES_ACTION_RESUME) {
 			if (node_usage[i].gres_list)
 				gres_list = node_usage[i].gres_list;
 			else
@@ -512,8 +537,11 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 		}
 	}
 
-	/* subtract cores */
-	if (action != 1) {
+	/*
+	 * Subtract cores JOB_RES_ACTION_SUSPEND isn't used at this moment, but
+	 * we will keep this check just to be clear what we are doing.
+	 */
+	if (action != JOB_RES_ACTION_SUSPEND) {
 		/* reconstruct rows with remaining jobs */
 		part_res_record_t *p_ptr;
 
