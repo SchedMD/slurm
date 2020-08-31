@@ -94,6 +94,7 @@ static bool use_devices = false;
  */
 extern int init (void)
 {
+	int rc = SLURM_SUCCESS;
 	slurm_cgroup_conf_t *cg_conf;
 
 	/* read cgroup configuration */
@@ -111,28 +112,37 @@ extern int init (void)
 
 	/* enable subsystems based on conf */
 	if (use_cpuset) {
-		if (task_cgroup_cpuset_init() != SLURM_SUCCESS) {
-			return SLURM_ERROR;
+		if ((rc = task_cgroup_cpuset_init())) {
+			error("failure enabling core enforcement: %s",
+			      slurm_strerror(rc));
+			return rc;
+		} else {
+			debug("core enforcement enabled");
 		}
-		debug("core enforcement enabled");
 	}
 
 	if (use_memory) {
-		if (task_cgroup_memory_init() != SLURM_SUCCESS) {
-			return SLURM_ERROR;
+		if ((rc = task_cgroup_memory_init())) {
+			error("failure enabling memory enforcement: %s",
+			      slurm_strerror(rc));
+			return rc;
+		} else {
+			debug("memory enforcement enabled");
 		}
-		debug("memory enforcement enabled");
 	}
 
 	if (use_devices) {
-		if (task_cgroup_devices_init() != SLURM_SUCCESS) {
-			return SLURM_ERROR;
+		if ((rc = task_cgroup_devices_init())) {
+			error("failure enabling device enforcement: %s",
+			      slurm_strerror(rc));
+			return rc;
+		} else {
+			debug("device enforcement enabled");
 		}
-		debug("device enforcement enabled");
 	}
 
-	debug("%s: loaded", plugin_type);
-	return SLURM_SUCCESS;
+	debug("successfully loaded");
+	return rc;
 }
 
 /*
