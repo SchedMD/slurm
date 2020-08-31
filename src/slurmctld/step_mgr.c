@@ -3683,6 +3683,7 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 {
 	uint64_t cpu_count = 1, mem_count = 1;
 	char *tmp_tres_str = NULL;
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	xassert(step_ptr);
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
@@ -3727,6 +3728,9 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 		   TRES_MEM, mem_count,
 		   TRES_NODE, node_count);
 
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+
 	if ((tmp_tres_str = gres_2_tres_str(step_ptr->gres_list, 0, true))) {
 		xstrfmtcat(step_ptr->tres_alloc_str, "%s%s",
 			   step_ptr->tres_alloc_str ? "," : "",
@@ -3734,19 +3738,14 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 		xfree(tmp_tres_str);
 	}
 
-	if (make_formatted) {
-		assoc_mgr_lock_t locks = { .tres = READ_LOCK };
-		if (!assoc_mgr_locked)
-			assoc_mgr_lock(&locks);
-
+	if (make_formatted)
 		step_ptr->tres_fmt_alloc_str =
 			slurmdb_make_tres_string_from_simple(
 				step_ptr->tres_alloc_str, assoc_mgr_tres_list,
 				NO_VAL, CONVERT_NUM_UNIT_EXACT, 0, NULL);
 
-		if (!assoc_mgr_locked)
-			assoc_mgr_unlock(&locks);
-	}
+	if (!assoc_mgr_locked)
+		assoc_mgr_unlock(&locks);
 
 	return;
 }
