@@ -31,11 +31,8 @@ source ./globals
 
 set exit_code   0
 
-if { [test_front_end] } {
+if {[test_front_end]} {
 	skip "This test is incompatible with front end systems"
-}
-if {[test_front_end] != 0} {
-	skip "This test is incompatible with front-end systems"
 }
 
 # find out if we have enough nodes to test functionality
