@@ -208,23 +208,24 @@ extern int task_p_slurmd_resume_job (uint32_t job_id)
  */
 extern int task_p_pre_setuid (stepd_step_rec_t *job)
 {
+	int rc[3] = {0};
 
 	if (use_cpuset) {
 		/* we create the cpuset container as we are still root */
-		task_cgroup_cpuset_create(job);
+		rc[0] = task_cgroup_cpuset_create(job);
 	}
 
 	if (use_memory) {
 		/* we create the memory container as we are still root */
-		task_cgroup_memory_create(job);
+		rc[1] = task_cgroup_memory_create(job);
 	}
 
 	if (use_devices) {
-		task_cgroup_devices_create(job);
+		rc[2] = task_cgroup_devices_create(job);
 		/* here we should create the devices container as we are root */
 	}
 
-	return SLURM_SUCCESS;
+	return MAX(rc[0], MAX(rc[1], rc[2]));
 }
 
 /*
