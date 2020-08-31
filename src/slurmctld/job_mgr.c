@@ -1525,7 +1525,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				   .qos = READ_LOCK,
 				   .tres = READ_LOCK,
 				   .user = READ_LOCK };
-	void *tmp_ptr;
+	char *tmp_ptr = NULL;
 
 	memset(&limit_set, 0, sizeof(limit_set));
 	limit_set.tres = xcalloc(slurmctld_tres_cnt, sizeof(uint16_t));
@@ -1892,9 +1892,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
 		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(tmp_ptr, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr, &name_len, buffer);
 		xfree(tmp_ptr);
-		safe_unpackstr_xmalloc(tmp_ptr, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr, &name_len, buffer);
 		xfree(tmp_ptr);
 		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
@@ -2120,9 +2120,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
 		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(tmp_ptr, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr, &name_len, buffer);
 		xfree(tmp_ptr);
-		safe_unpackstr_xmalloc(tmp_ptr, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr, &name_len, buffer);
 		xfree(tmp_ptr);
 		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
