@@ -1809,6 +1809,29 @@ static void _sync_node_weight(struct node_set *node_set_ptr, int node_set_size)
 	}
 }
 
+static int _bit_or_cond_internal(void *x, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *)x;
+	bitstr_t *bitmap = (bitstr_t *)arg;
+
+	if (!IS_JOB_RUNNING(job_ptr) || job_ptr->details->share_res ||
+	    !job_ptr->job_resrcs)
+		return 0;
+
+	bit_or(bitmap, job_ptr->job_resrcs->node_bitmap);
+
+	return 0;
+}
+
+static void _bit_or_cond(job_record_t *job_ptr, bitstr_t *bitmap)
+{
+	if (!job_ptr->het_job_list)
+		_bit_or_cond_internal(job_ptr, bitmap);
+	else
+		list_for_each_nobreak(job_ptr->het_job_list,
+				      _bit_or_cond_internal, bitmap);
+}
+
 /*
  * _pick_best_nodes - from a weight order list of all nodes satisfying a
  *	job's specifications, select the "best" for use
@@ -2171,14 +2194,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				job_record_t *tmp_job_ptr = NULL;
 				ListIterator job_iterator;
 				job_iterator = list_iterator_create(preemptee_candidates);
-				while ((tmp_job_ptr = list_next(job_iterator))) {
-					if (!IS_JOB_RUNNING(tmp_job_ptr) ||
-					    tmp_job_ptr->details->share_res ||
-					    !tmp_job_ptr->job_resrcs)
-						continue;
-					bit_or(avail_bitmap,
-					       tmp_job_ptr->job_resrcs->node_bitmap);
-				}
+				while ((tmp_job_ptr = list_next(job_iterator)))
+					_bit_or_cond(tmp_job_ptr, avail_bitmap);
 				list_iterator_destroy(job_iterator);
 				bit_and(avail_bitmap, avail_node_bitmap);
 				bit_and(avail_bitmap, total_bitmap);
@@ -2217,6 +2234,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			xfree(tmp_str2);
 }
 #endif
+
 			if (pick_code == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(backup_bitmap);
 				if (bit_set_count(avail_bitmap) > max_nodes) {
