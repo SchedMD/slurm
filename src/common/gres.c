@@ -14231,6 +14231,73 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 	return tres_str;
 }
 
+
+/* Given a job's GRES data structure, return a simple tres string of gres
+ * allocated on the node_inx requested
+ * IN job_gres_list  - job's GRES data structure
+ * IN node_inx - position of node in job_state_ptr->gres_cnt_node_alloc
+ * IN locked - if the assoc_mgr tres read locked is locked or not
+ *
+ * RET - simple string containing gres this job is allocated on the node
+ * requested.
+ */
+extern char *gres_job_gres_on_node_as_tres(List job_gres_list,
+					   int node_inx,
+					   bool locked)
+{
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	char *tres_str = NULL;
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+
+	(void) gres_plugin_init();
+
+	if (!job_gres_list)	/* No GRES allocated */
+		return NULL;
+
+	/* must be locked first before gres_contrex_lock!!! */
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	slurm_mutex_lock(&gres_context_lock);
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = list_next(job_gres_iter))) {
+		uint64_t count;
+		gres_job_state_t *job_state_ptr =
+			(gres_job_state_t *)job_gres_ptr->gres_data;
+		if (!job_state_ptr->gres_bit_alloc)
+			continue;
+
+		if (node_inx > job_state_ptr->node_cnt)
+			break;
+
+		if (!job_state_ptr->gres_name) {
+			debug("%s: couldn't find name", __func__);
+			continue;
+		}
+
+		/* If we are no_consume, print a 0 */
+		if (job_state_ptr->total_gres == NO_CONSUME_VAL64)
+			count = 0;
+		else if (job_state_ptr->gres_cnt_node_alloc[node_inx])
+			count = job_state_ptr->gres_cnt_node_alloc[node_inx];
+		else /* If this gres isn't on the node skip it */
+			continue;
+		_gres_2_tres_str_internal(&tres_str,
+					  job_state_ptr->gres_name,
+					  job_state_ptr->type_name,
+					  count, true);
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	slurm_mutex_unlock(&gres_context_lock);
+
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+
+	return tres_str;
+}
+
 /* Fill in job/node TRES arrays with allocated GRES. */
 static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 			       List gres_list,

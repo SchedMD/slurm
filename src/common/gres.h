@@ -1356,6 +1356,18 @@ extern uint32_t gres_get_autodetect_flags(void);
  */
 extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked);
 
+/* Given a job's GRES data structure, return a simple tres string of gres
+ * allocated on the node_inx requested
+ * IN job_gres_list  - job's GRES data structure
+ * IN node_inx - position of node in job_state_ptr->gres_cnt_node_alloc
+ *
+ * RET - simple string containing gres this job is allocated on the node
+ * requested.
+ */
+extern char *gres_job_gres_on_node_as_tres(List job_gres_list,
+					   int node_inx,
+					   bool locked);
+
 /* Fill in the job allocated tres_cnt based off the gres_list and node_cnt
  * IN gres_list - filled in with gres_job_state_t's
  * IN node_cnt - number of nodes in the job

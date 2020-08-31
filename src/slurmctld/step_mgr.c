@@ -3713,6 +3713,9 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 		if (step_ptr->job_ptr->job_resrcs->memory_allocated)
 			mem_count = step_ptr->job_ptr->job_resrcs->
 				memory_allocated[0];
+
+		tmp_tres_str = gres_job_gres_on_node_as_tres(
+			step_ptr->job_ptr->gres_list, 0, true);
 	} else {
 		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
 			cpu_count = (uint64_t)step_ptr->job_ptr->total_cpus;
