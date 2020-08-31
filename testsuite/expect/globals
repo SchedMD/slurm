@@ -1449,7 +1449,7 @@ proc wait_for_account_done { accounts } {
 		expect {
 			-re "Account=($re_word_str)" {
 				set found 1
-				exp_continue;
+				exp_continue
 			}
 			eof {
 				wait
@@ -1458,7 +1458,7 @@ proc wait_for_account_done { accounts } {
 
 		if { !$found } {
 			log_debug "Account(s) $accounts is/are empty"
-			break;
+			break
 		}
 
 		if { $my_delay > $max_job_state_delay } {
@@ -1522,7 +1522,7 @@ proc wait_for_part_done { part } {
 		expect {
 			-re "Part=($re_word_str)" {
 				set found 1
-				exp_continue;
+				exp_continue
 			}
 			eof {
 				wait
@@ -1531,7 +1531,7 @@ proc wait_for_part_done { part } {
 
 		if { !$found } {
 			log_debug "Partition $part is empty"
-			break;
+			break
 		}
 
 		if { $my_delay > $max_job_state_delay } {

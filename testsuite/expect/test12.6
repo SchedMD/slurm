@@ -157,9 +157,9 @@ while {$fd > 0 && [gets $fd line] != -1} {
 		}
 
 		if {$exit_code} {
-			break;
+			break
 		}
-		continue;
+		continue
 	}
 
 	set et [lindex $tokens $et_col]
@@ -167,7 +167,7 @@ while {$fd > 0 && [gets $fd line] != -1} {
 	set last_et $et
 
 	if { $lno == 2 } {
-		continue;
+		continue
 	}
 
 	if {$cur_et < $task_freq} {

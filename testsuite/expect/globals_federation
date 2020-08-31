@@ -48,7 +48,7 @@ proc test_federation_setup { } {
 	    ![string compare $fedc1 ""] ||
 	    ![string compare $fedc2 ""] ||
 	    ![string compare $fedc3 ""]} {
-		set rc 1;
+		set rc 1
 	}
 
 	return $rc
@@ -123,11 +123,11 @@ proc setup_federation { fed_name } {
 		if {!$rc && $matches != 5} {
 			log_error "Failed to add $cluster to federation"
 			set rc 1
-			break;
+			break
 		}
 
 		if {$count > 1} {
-			sleep 5;
+			sleep 5
 		}
 	}
 	return $rc

@@ -210,7 +210,7 @@ expect {
 	}
 	-re "$srun" {
 		# just so we don't grab the srun call
-		exp_continue;
+		exp_continue
 	}
 	-re $prompt
 }
@@ -237,7 +237,7 @@ expect {
 	}
 	-re "$srun" {
 		# just so we don't grab the srun call
-		exp_continue;
+		exp_continue
 	}
 	-re $prompt
 }
@@ -282,7 +282,7 @@ while {$this_cnt <= $num_sockets} {
 		}
 		-re "$srun" {
 			# just so we don't grab the srun call
-			exp_continue;
+			exp_continue
 		}
 		-re $prompt
 	}
@@ -335,7 +335,7 @@ while {$this_cnt <= $num_cores} {
 		}
 		-re "$srun" {
 			# just so we don't grab the srun call
-			exp_continue;
+			exp_continue
 		}
 		-re $prompt
 	}
@@ -388,7 +388,7 @@ while {$this_cnt <= $num_threads} {
 		}
 		-re "$srun" {
 			# just so we don't grab the srun call
-			exp_continue;
+			exp_continue
 		}
 		-re $prompt
 	}
@@ -440,7 +440,7 @@ while {$this_cnt <= $task_cnt} {
 		}
 		-re "$srun" {
 			# just so we don't grab the srun call
-			exp_continue;
+			exp_continue
 		}
 		-re $prompt
 	}
@@ -480,7 +480,7 @@ expect {
 	}
 	-re "$srun" {
 		# just so we don't grab the srun call
-		exp_continue;
+		exp_continue
 	}
 	-re $prompt
 }

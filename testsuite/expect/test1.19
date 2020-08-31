@@ -106,7 +106,7 @@ expect {
 	-re "exit code $number" {
 		log_debug "This error is expected, no worries"
 		set srun_exit 1
-		exp_continue;
+		exp_continue
 	}
 	timeout {
 		slow_kill $srun_pid
@@ -242,7 +242,7 @@ expect {
 	-re "error" {
 		log_debug "Do not worry this error is expected"
 		set srun_exit 1
-		exp_continue;
+		exp_continue
 	}
 	timeout {
 		slow_kill $srun_pid

@@ -1981,7 +1981,7 @@ proc get_assoc_id {user acct cluster} {
 				set new_id $expect_out(1,string)
 				log_error "For some reason we already have an association id $id but just got $new_id for $user, $acct, $cluster."
 				set id -1
-				exp_continue;
+				exp_continue
 			}
 			set id $expect_out(1,string)
 			exp_continue
