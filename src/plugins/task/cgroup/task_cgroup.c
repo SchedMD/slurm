@@ -261,6 +261,7 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
  */
 extern int task_p_pre_launch (stepd_step_rec_t *job)
 {
+	int rc = SLURM_SUCCESS;
 
 	if (use_cpuset) {
 		slurm_cgroup_conf_t *cg_conf;
@@ -271,12 +272,12 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 
 		/* set affinity if requested */
 		if (cg_conf->task_affinity)
-			task_cgroup_cpuset_set_task_affinity(job);
+			rc = task_cgroup_cpuset_set_task_affinity(job);
 
 		slurm_mutex_unlock(&xcgroup_config_read_mutex);
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
