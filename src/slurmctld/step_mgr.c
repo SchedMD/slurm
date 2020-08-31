@@ -3691,6 +3691,17 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 	xfree(step_ptr->tres_alloc_str);
 	xfree(step_ptr->tres_fmt_alloc_str);
 
+	if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) &&
+	    step_ptr->job_ptr->tres_alloc_str) {
+		/* get the tres from the whole job */
+		step_ptr->tres_alloc_str =
+			xstrdup(step_ptr->job_ptr->tres_alloc_str);
+		if (make_formatted)
+			step_ptr->tres_fmt_alloc_str =
+				xstrdup(step_ptr->job_ptr->tres_fmt_alloc_str);
+		return;
+	}
+
 	if ((step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) &&
 	    step_ptr->job_ptr->job_resrcs) {
 		/* get the cpus and memory on the first node */
@@ -3699,15 +3710,6 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 		if (step_ptr->job_ptr->job_resrcs->memory_allocated)
 			mem_count = step_ptr->job_ptr->job_resrcs->
 				memory_allocated[0];
-	} else if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) &&
-		   step_ptr->job_ptr->tres_alloc_str) {
-		/* get the tres from the whole job */
-		step_ptr->tres_alloc_str =
-			xstrdup(step_ptr->job_ptr->tres_alloc_str);
-		if (make_formatted)
-			step_ptr->tres_fmt_alloc_str =
-				xstrdup(step_ptr->job_ptr->tres_fmt_alloc_str);
-		return;
 	} else {
 		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
 			cpu_count = (uint64_t)step_ptr->job_ptr->total_cpus;
