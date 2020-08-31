@@ -272,11 +272,11 @@ make_bash_script $file_in1 "
 
 log_info "TEST 1: --gpus-per-node option by job"
 
-set target [expr $nb_nodes * 2]
+set req_gpus 2
+set target [expr $nb_nodes * $req_gpus]
 exec $bin_rm -f $file_out
 set job_id 0
 set timeout $max_job_delay
-set req_gpus 2
 spawn $sbatch --gres=craynetwork:0 --gpus-per-node=$req_gpus -N$nb_nodes -t1 -o $file_out -J "test$test_id" ./$file_in1
 expect {
 	-re "Submitted batch job ($number)" {
@@ -322,7 +322,6 @@ expect {
 		wait
 	}
 }
-set target [expr $nb_nodes * 2]
 if {$match != $target} {
 	log_error "Failed to account for proper GPU count ($match != $target)"
 	set exit_code 1
@@ -466,11 +465,11 @@ make_bash_script $file_in2 "
 
 log_info "TEST 5: --gpus-per-node option by step"
 
-set target [expr $nb_nodes * 2]
+set req_gpus 2
+set target [expr $nb_nodes * $req_gpus]
 exec $bin_rm -f $file_out
 set job_id 0
 set timeout $max_job_delay
-set req_gpus 2
 spawn $sbatch --gres=craynetwork:0 --gpus-per-node=$req_gpus -N$nb_nodes -t1 -o $file_out -J "test$test_id" ./$file_in1
 expect {
 	-re "Submitted batch job ($number)" {
@@ -494,7 +493,6 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 	fail "Job $job_id did not complete"
 }
 
-set target [expr $nb_nodes * 2]
 test_out_file $file_out $target
 test_acct $job_id $target $target $req_gpus $have_gpu_types
 
