@@ -3702,6 +3702,9 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 		return;
 	}
 
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+
 	if ((step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) &&
 	    step_ptr->job_ptr->job_resrcs) {
 		/* get the cpus and memory on the first node */
@@ -3721,6 +3724,7 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 			mem_count *= cpu_count;
 		} else
 			mem_count *= node_count;
+		tmp_tres_str = gres_2_tres_str(step_ptr->gres_list, 0, true);
 	}
 
 	xstrfmtcat(step_ptr->tres_alloc_str,
@@ -3730,10 +3734,7 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 		   TRES_MEM, mem_count,
 		   TRES_NODE, node_count);
 
-	if (!assoc_mgr_locked)
-		assoc_mgr_lock(&locks);
-
-	if ((tmp_tres_str = gres_2_tres_str(step_ptr->gres_list, 0, true))) {
+	if (tmp_tres_str) {
 		xstrfmtcat(step_ptr->tres_alloc_str, "%s%s",
 			   step_ptr->tres_alloc_str ? "," : "",
 			   tmp_tres_str);
