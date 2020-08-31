@@ -306,8 +306,7 @@ extern int task_p_post_term (stepd_step_rec_t *job, stepd_step_task_info_t *task
  */
 extern int task_p_post_step (stepd_step_rec_t *job)
 {
-	fini();
-	return SLURM_SUCCESS;
+	return fini();
 }
 
 extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns) {
