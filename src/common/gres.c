@@ -14105,18 +14105,13 @@ extern uint32_t gres_get_autodetect_flags(void)
 	return autodetect_flags;
 }
 
-extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
+static void _gres_2_tres_str_internal(char **tres_str,
+				      char *gres_name, char *gres_type,
+				      uint64_t count, bool find_other_types)
 {
-	ListIterator itr;
 	slurmdb_tres_rec_t *tres_rec;
-	gres_state_t *gres_state_ptr;
-	int i;
-	uint64_t count;
-	char *col_name = NULL;
-	char *tres_str = NULL;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_req;
-	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	/* we only need to init this once */
 	if (first_run) {
@@ -14124,6 +14119,65 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 		memset(&tres_req, 0, sizeof(slurmdb_tres_rec_t));
 		tres_req.type = "gres";
 	}
+
+	xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
+	xassert(gres_name);
+	xassert(tres_str);
+
+	tres_req.name = gres_name;
+	tres_rec = assoc_mgr_find_tres_rec(&tres_req);
+
+	if (tres_rec &&
+	    slurmdb_find_tres_count_in_string(
+		    *tres_str, tres_rec->id) == INFINITE64)
+		/* New gres */
+		xstrfmtcat(*tres_str, "%s%u=%"PRIu64,
+			   *tres_str ? "," : "",
+			   tres_rec->id, count);
+
+	if (!find_other_types)
+		return;
+
+	if (gres_type) {
+		/*
+		 * Now let's put of the : name TRES if we are
+		 * tracking it as well.  This would be handy
+		 * for GRES like "gpu:tesla", where you might
+		 * want to track both as TRES.
+		 */
+		tres_req.name = xstrdup_printf("%s:%s", gres_name, gres_type);
+		tres_rec = assoc_mgr_find_tres_rec(&tres_req);
+		xfree(tres_req.name);
+	} else {
+		/*
+		 * Job allocated GRES without "type"
+		 * specification, but Slurm is only accounting
+		 * for this GRES by specific "type", so pick
+		 * some valid "type" to get some accounting.
+		 * Although the reported "type" may not be
+		 * accurate, it is better than nothing...
+		 */
+		tres_rec = assoc_mgr_find_tres_rec2(&tres_req);
+	}
+
+	if (tres_rec &&
+	    slurmdb_find_tres_count_in_string(
+		    *tres_str, tres_rec->id) == INFINITE64)
+		/* New GRES */
+		xstrfmtcat(*tres_str, "%s%u=%"PRIu64,
+			   *tres_str ? "," : "",
+			   tres_rec->id, count);
+}
+
+extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
+{
+	ListIterator itr;
+	gres_state_t *gres_state_ptr;
+	int i;
+	uint64_t count;
+	char *col_name = NULL;
+	char *tres_str = NULL;
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	if (!gres_list)
 		return NULL;
@@ -14135,6 +14189,7 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 	slurm_mutex_lock(&gres_context_lock);
 	itr = list_iterator_create(gres_list);
 	while ((gres_state_ptr = list_next(itr))) {
+		char *gres_name = NULL;
 		if (is_job) {
 			gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
 				gres_state_ptr->gres_data;
@@ -14150,12 +14205,12 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 		for (i = 0; i < gres_context_cnt; i++) {
 			if (gres_context[i].plugin_id ==
 			    gres_state_ptr->plugin_id) {
-				tres_req.name = gres_context[i].gres_name;
+				gres_name = gres_context[i].gres_name;
 				break;
 			}
 		}
 
-		if (!tres_req.name) {
+		if (!gres_name) {
 			debug("%s: couldn't find name", __func__);
 			continue;
 		}
@@ -14164,59 +14219,8 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 		if (count == NO_CONSUME_VAL64)
 			count = 0;
 
-		tres_rec = assoc_mgr_find_tres_rec(&tres_req);
-
-		if (tres_rec &&
-		    slurmdb_find_tres_count_in_string(
-			    tres_str, tres_rec->id) == INFINITE64)
-			/* New gres */
-			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
-				   tres_str ? "," : "",
-				   tres_rec->id, count);
-
-		if (i < gres_context_cnt) {
-			if (col_name) {
-				/*
-				 * Now let's put of the : name TRES if we are
-				 * tracking it as well.  This would be handy
-				 * for GRES like "gpu:tesla", where you might
-				 * want to track both as TRES.
-				 */
-				tres_req.name = xstrdup_printf(
-					"%s%s",
-					gres_context[i].gres_name_colon,
-					col_name);
-				tres_rec = assoc_mgr_find_tres_rec(&tres_req);
-				xfree(tres_req.name);
-				if (tres_rec &&
-				    slurmdb_find_tres_count_in_string(
-					    tres_str, tres_rec->id) == INFINITE64)
-					/* New GRES */
-					xstrfmtcat(tres_str, "%s%u=%"PRIu64,
-						   tres_str ? "," : "",
-						   tres_rec->id, count);
-			} else {
-				/*
-				 * Job allocated GRES without "type"
-				 * specification, but Slurm is only accounting
-				 * for this GRES by specific "type", so pick
-				 * some valid "type" to get some accounting.
-				 * Although the reported "type" may not be
-				 * accurate, it is better than nothing...
-				 */
-				tres_req.name = xstrdup_printf(
-					"%s", gres_context[i].gres_name);
-				tres_rec = assoc_mgr_find_tres_rec2(&tres_req);
-				xfree(tres_req.name);
-				if (tres_rec &&
-				    slurmdb_find_tres_count_in_string(
-					    tres_str, tres_rec->id) == INFINITE64)
-					/* New GRES */
-					xstrfmtcat(tres_str, "%s%u=%"PRIu64,
-						   tres_str ? "," : "",
-						   tres_rec->id, count);
-			}
-		}
+		_gres_2_tres_str_internal(&tres_str, gres_name, col_name, count,
+					  (i < gres_context_cnt));
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&gres_context_lock);
