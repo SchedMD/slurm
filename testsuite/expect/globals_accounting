@@ -49,12 +49,12 @@ set timeout 60
 proc add_cluster { name clus_req_in } {
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	array set clus_req $clus_req_in
 	if { ![string length $name] } {
 		log_error "We need a name to add"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set command "$name"
@@ -72,22 +72,22 @@ proc add_cluster { name clus_req_in } {
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Adding Cluster" {
@@ -97,7 +97,7 @@ proc add_cluster { name clus_req_in } {
 		timeout {
 			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -106,12 +106,12 @@ proc add_cluster { name clus_req_in } {
 
 	if {$matches != 1} {
 		log_error "sacctmgr had a problem adding clusters got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	if { ![check_acct_associations] } {
 		log_error "Our associations don't line up"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	return $exit_code
@@ -124,13 +124,13 @@ proc add_cluster { name clus_req_in } {
 proc remove_cluster {name} {
 	global access_err sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	set nothing 0
 
 	if { ![string length $name] } {
 		log_error "we need a name to remove"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set my_pid [eval spawn $sacctmgr -i delete cluster $name]
@@ -141,22 +141,22 @@ proc remove_cluster {name} {
 		}
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Deleting clusters" {
@@ -171,23 +171,23 @@ proc remove_cluster {name} {
 		timeout {
 			log_error "sacctmgr delete not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
 		}
 	}
 	if {$access_err != 0} {
-		return 1
+		return $::RETURN_ERROR
 	}
 	if {$matches != 1} {
 		log_error "sacctmgr had a problem deleting cluster got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 	if { !$nothing } {
 		if { ![check_acct_associations] } {
 			log_error "Our associations don't line up"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 		}
 	}
 
@@ -198,12 +198,12 @@ proc remove_cluster {name} {
 proc mod_cluster { name clus_req_in } {
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	array set clus_req $clus_req_in
 	if { ![string length $name] } {
 		log_error "We need a name to add"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set command ""
@@ -223,22 +223,22 @@ proc mod_cluster { name clus_req_in } {
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Modified cluster" {
@@ -248,7 +248,7 @@ proc mod_cluster { name clus_req_in } {
 		timeout {
 			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -257,12 +257,12 @@ proc mod_cluster { name clus_req_in } {
 
 	if {$matches != 1} {
 		log_error "sacctmgr had a problem adding clusters. Got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	if { ![check_acct_associations] } {
 		log_error "Our associations don't line up"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	return $exit_code
@@ -275,12 +275,12 @@ proc mod_cluster { name clus_req_in } {
 proc add_acct { name acct_req_in } {
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	array set acct_req $acct_req_in
 	if { ![string length $name] } {
 		log_error "We need a name to add"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set command "name=$name"
@@ -300,22 +300,22 @@ proc add_acct { name acct_req_in } {
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Adding Account" {
@@ -329,7 +329,7 @@ proc add_acct { name acct_req_in } {
 		timeout {
 			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -338,12 +338,12 @@ proc add_acct { name acct_req_in } {
 
 	if {$matches != 2} {
 		log_error "sacctmgr had a problem adding account. Got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	if { ![check_acct_associations] } {
 		log_error "Our associations don't line up"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 	return $exit_code
 }
@@ -355,14 +355,14 @@ proc add_acct { name acct_req_in } {
 proc remove_acct { cluster name } {
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	set nothing 1
 	set check "Deleting account"
 
 	if { ![string length $name] } {
 		log_error "We need a name to remove"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set command "name=$name"
@@ -376,22 +376,22 @@ proc remove_acct { cluster name } {
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "$check" {
@@ -406,7 +406,7 @@ proc remove_acct { cluster name } {
 		timeout {
 			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -415,13 +415,13 @@ proc remove_acct { cluster name } {
 
 	if {$matches != 1} {
 		log_error "sacctmgr had a problem deleting account. Got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	if { !$nothing } {
 		if { ![check_acct_associations] } {
 			log_error "Our associations don't line up"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 		}
 	}
 
@@ -454,7 +454,7 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set valid_array 1
 	set matches 0
 	set expected 0
@@ -466,7 +466,7 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 
 	if { ![string length $name] } {
 		log_error "We need a name to modify"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	#set up the where
@@ -517,22 +517,22 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Modified accounts" {
@@ -546,7 +546,7 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 		timeout {
 			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -555,12 +555,12 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 
 	if {$matches != $expected} {
 		log_error "sacctmgr had a problem modifying account. got $matches needed $expected"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	if { ![check_acct_associations] } {
 		log_error "Our associations don't line up"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 	return $exit_code
 }
@@ -572,12 +572,12 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 proc add_user { name user_req_in } {
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	array set user_req $user_req_in
 	if { ![string length $name] } {
 		log_error "We need a name to add"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set command "user=$name"
@@ -597,22 +597,22 @@ proc add_user { name user_req_in } {
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Adding User" {
@@ -630,7 +630,7 @@ proc add_user { name user_req_in } {
 		timeout {
 			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -639,12 +639,12 @@ proc add_user { name user_req_in } {
 
 	if {!$matches} {
 		log_error "sacctmgr had a problem adding user. Got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	if { ![check_acct_associations] } {
 		log_error "Our associations don't line up"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 	return $exit_code
 
@@ -657,14 +657,14 @@ proc add_user { name user_req_in } {
 proc remove_user { cluster acct user } {
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	set nothing 1
 	set check "Deleting user"
 
 	if { ![string length $user] } {
 		log_error "We need a name to remove"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set command "$user"
@@ -683,22 +683,22 @@ proc remove_user { cluster acct user } {
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "$check" {
@@ -713,7 +713,7 @@ proc remove_user { cluster acct user } {
 		timeout {
 			log_error "sacctmgr delete not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -722,13 +722,13 @@ proc remove_user { cluster acct user } {
 
 	if {$matches != 1} {
 		log_error "sacctmgr had a problem deleting user. Got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	if { !$nothing } {
 		if { ![check_acct_associations] } {
 			log_error "Our associations don't line up"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 		}
 	}
 
@@ -761,7 +761,7 @@ proc remove_user { cluster acct user } {
 proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	set expected 0
 	set acct_stuff 0
@@ -772,7 +772,7 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 
 	if { ![string length $name] } {
 		log_error "We need a name to modify"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	#set up the where
@@ -825,22 +825,22 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Modified user associations" {
@@ -854,7 +854,7 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 		timeout {
 			log_error "sacctmgr modify not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -863,12 +863,12 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 
 	if {$matches != $expected} {
 		log_error "sacctmgr had a problem modifying user. Got $matches needed $expected"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	if { ![check_acct_associations] } {
 		log_error "Our associations don't line up"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 	return $exit_code
 }
@@ -880,13 +880,13 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 proc add_qos {name qos_req_in} {
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	array set qos_req $qos_req_in
 
 	if { ![string length $name] } {
 		log_error "Need name of qos to add"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set command "$name"
@@ -902,22 +902,22 @@ proc add_qos {name qos_req_in} {
 	expect {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting qos's from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Adding QOS" {
@@ -927,7 +927,7 @@ proc add_qos {name qos_req_in} {
 		timeout {
 			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -936,12 +936,12 @@ proc add_qos {name qos_req_in} {
 
 	if {$matches != 1} {
 		log_error "sacctmgr had a problem adding QoS got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	if { ![check_acct_associations] } {
 		log_error "Our associations don't line up"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	return $exit_code
@@ -955,7 +955,7 @@ proc mod_qos { qos_name qos_mod_val_in} {
 
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	set expected 0
 	set wcommand "where name=$qos_name"
@@ -964,7 +964,7 @@ proc mod_qos { qos_name qos_mod_val_in} {
 
 	if { ![string length $qos_name] } {
 		log_error "We need a name to modify"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	foreach desc [array names qos_mod_vals] {
@@ -986,7 +986,7 @@ proc mod_qos { qos_name qos_mod_val_in} {
 		timeout {
 			log_error "sacctmgr not responding"
 			slow_kill $my_pid
-			set exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -994,7 +994,7 @@ proc mod_qos { qos_name qos_mod_val_in} {
 	}
 	if {$change_cnt==0} {
 		log_error "sacctmgr did not change qos $qos_name"
-		set exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 	return $exit_code
 }
@@ -1006,13 +1006,13 @@ proc mod_qos { qos_name qos_mod_val_in} {
 proc remove_qos {name} {
 	global access_err sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	set nothing 0
 
 	if { ![string length $name] } {
 		log_error "We need a name to remove"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set my_pid [eval spawn $sacctmgr -i delete qos $name]
@@ -1022,23 +1022,23 @@ proc remove_qos {name} {
 			exp_continue
 		}
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
-			log_error "there was a problem with the sacctmgr command"
-			incr exit_code 1
+			log_error "There was a problem with the sacctmgr command"
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Deleting QOS" {
@@ -1053,23 +1053,23 @@ proc remove_qos {name} {
 		timeout {
 			log_error "sacctmgr delete not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
 		}
 	}
 	if {$access_err != 0} {
-		return 1
+		return $::RETURN_ERROR
 	}
 	if {$matches != 1} {
 		log_error "sacctmgr had a problem deleting QoS got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 	if { !$nothing } {
 		if { ![check_acct_associations] } {
 			log_error "Our associations don't line up"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 		}
 	}
 
@@ -1083,12 +1083,12 @@ proc remove_qos {name} {
 proc add_coor { accounts names } {
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 
 	if { ![string length $names] } {
 		log_error "We need a name to add"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set command "$names"
@@ -1105,22 +1105,22 @@ proc add_coor { accounts names } {
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Adding Coordinator" {
@@ -1134,7 +1134,7 @@ proc add_coor { accounts names } {
 		timeout {
 			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -1143,12 +1143,12 @@ proc add_coor { accounts names } {
 
 	if {$matches != 1} {
 		log_error "sacctmgr had a problem adding coordinator. Got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	if { ![check_acct_associations] } {
 		log_error "Our associations don't line up"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 	return $exit_code
 }
@@ -1160,14 +1160,14 @@ proc add_coor { accounts names } {
 proc remove_coor { accounts names } {
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	set nothing 1
 	set check "Deleting coordinator"
 
 	if { ![string length $name] } {
 		log_error "We need a name to remove"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set command "$names"
@@ -1180,22 +1180,22 @@ proc remove_coor { accounts names } {
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "$check" {
@@ -1210,7 +1210,7 @@ proc remove_coor { accounts names } {
 		timeout {
 			log_error "sacctmgr delete not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -1219,13 +1219,13 @@ proc remove_coor { accounts names } {
 
 	if {$matches != 1} {
 		log_error "sacctmgr had a problem deleting coordinator. Got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	if { !$nothing } {
 		if { ![check_acct_associations] } {
 			log_error "Our associations don't line up"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 		}
 	}
 
@@ -1239,12 +1239,12 @@ proc archive_load { file } {
 	# Use sacctmgr to load info
 	#
 	set matches 0
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set my_pid [spawn $sacctmgr -i -n archive load $file]
 	expect {
 		-re "There was a problem" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "SUCCESS" {
@@ -1254,7 +1254,7 @@ proc archive_load { file } {
 		timeout {
 			log_error "sacctmgr archive load not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -1263,7 +1263,7 @@ proc archive_load { file } {
 
 	if {$matches != 1} {
 		log_error "sacctmgr didn't load archive correctly"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 	return $exit_code
 }
@@ -1275,14 +1275,14 @@ proc archive_load { file } {
 proc add_resource {name res_limits} {
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	set command "name=$name"
 	array set res_req $res_limits
 
 	if { ![string length $name] } {
 		log_error "Need name of res to add"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	foreach option [array names res_req] {
@@ -1296,17 +1296,17 @@ proc add_resource {name res_limits} {
 	expect {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting system resources from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Adding Resource" {
@@ -1316,7 +1316,7 @@ proc add_resource {name res_limits} {
 		timeout {
 			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -1325,7 +1325,7 @@ proc add_resource {name res_limits} {
 
 	if {$matches != 1} {
 		log_error "sacctmgr had a problem adding system resource. Got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	return $exit_code
@@ -1338,14 +1338,12 @@ proc add_resource {name res_limits} {
 proc add_clus_res {name allowed} {
 	global sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
-
-
 
 	if { ![string length $name] } {
 		log_error "Need name of clus_res to add"
-		return 1
+		return $::RETURN_ERROR
 	}
 	set command "name=$name"
 
@@ -1357,17 +1355,17 @@ proc add_clus_res {name allowed} {
 	expect {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting cluster resources from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Adding cluster resource(s)" {
@@ -1377,7 +1375,7 @@ proc add_clus_res {name allowed} {
 		timeout {
 			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -1386,7 +1384,7 @@ proc add_clus_res {name allowed} {
 
 	if {$matches != 1} {
 		log_error "sacctmgr had a problem adding cluster resource got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	return $exit_code
@@ -1399,13 +1397,13 @@ proc add_clus_res {name allowed} {
 proc remove_res {name} {
 	global access_err sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	set nothing 0
 
 	if { ![string length $name] } {
 		log_error "We need a name to remove"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set my_pid [eval spawn $sacctmgr -i delete res $name]
@@ -1416,17 +1414,17 @@ proc remove_res {name} {
 		}
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re " Deleting system resource" {
@@ -1440,7 +1438,7 @@ proc remove_res {name} {
 		timeout {
 			log_error "sacctmgr delete not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -1450,7 +1448,7 @@ proc remove_res {name} {
 		return $exit_code
 	}
 	if {$access_err != 0} {
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	return $exit_code
@@ -1463,13 +1461,13 @@ proc remove_res {name} {
 proc remove_clus_res {name} {
 	global access_err sacctmgr timeout
 
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	set matches 0
 	set nothing 0
 
 	if { ![string length $name] } {
 		log_error "We need a name to remove"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set my_pid [eval spawn $sacctmgr -i delete clus_res $name]
@@ -1480,17 +1478,17 @@ proc remove_clus_res {name} {
 		}
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Deleting cluster resource" {
@@ -1505,18 +1503,18 @@ proc remove_clus_res {name} {
 		timeout {
 			log_error "sacctmgr delete not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
 		}
 	}
 	if {$access_err != 0} {
-		return 1
+		return $::RETURN_ERROR
 	}
 	if {$matches != 1} {
 		log_error "sacctmgr had a problem deleting cluster resource. Got $matches"
-		incr exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	return $exit_code
@@ -1641,7 +1639,7 @@ proc check_assoc_limit { assoc type name assoc_val } {
 #	reset_account_usage cluster account
 #
 # RETURN VALUE
-#	1 if usage reset was successful, 0 otherwise
+#	0 if usage reset was successful, non-zero otherwise
 #
 ################################################################
 
@@ -1656,13 +1654,13 @@ proc reset_account_usage { cluster acct } {
 	expect {
 		-re "error:" {
 			log_error "Something went wrong with sacctmgr command"
-			set exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		timeout {
 			log_error "sacctmgr not responding"
 			slow_kill $my_pid
-			set exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -1680,7 +1678,7 @@ proc reset_account_usage { cluster acct } {
 #	reset_qos_usage cluster qos
 #
 # RETURN VALUE
-#	1 if successful, 0 otherwise
+#	0 if successful, non-zero otherwise
 #
 ################################################################
 
@@ -1695,13 +1693,13 @@ proc reset_qos_usage { cluster qos } {
 	expect {
 		-re "error:" {
 			log_error "Something went wrong with sacctmgr command"
-			set exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		timeout {
 			log_error "sacctmgr not responding"
 			slow_kill $my_pid
-			set exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -1897,12 +1895,12 @@ proc mod_resource {name mod_limits} {
 
 	global sacctmgr
 	set commands ""
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	array set res_mod_req $mod_limits
 
 	if { ![string length $name] } {
 		log_error "We need a name to check"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	foreach option [array names res_mod_req] {
@@ -1923,7 +1921,7 @@ proc mod_resource {name mod_limits} {
 		timeout {
 			log_error "sacctmgr is not responding"
 			slow_kill $my_pid
-			set exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -1932,7 +1930,7 @@ proc mod_resource {name mod_limits} {
 	log_user 1
 
 	if {$match == 1} {
-		set exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	return $exit_code

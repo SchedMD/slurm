@@ -57,7 +57,7 @@ proc test_federation_setup { } {
 
 proc setup_federation { fed_name } {
 	global sacctmgr fedc1 fedc2 fedc3 eol
-	set rc 0
+	set rc $::RETURN_SUCCESS
 
 	set my_pid [spawn $sacctmgr -i add federation $fed_name]
 	set matches 0
@@ -73,7 +73,7 @@ proc setup_federation { fed_name } {
 		timeout {
 			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			set rc 1
+			set rc $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -81,8 +81,7 @@ proc setup_federation { fed_name } {
 	}
 	if {!$rc && $matches != 2} {
 		log_error "Failed to create federation"
-		set rc 1
-		return $rc
+		return $::RETURN_ERROR
 	}
 
 	set count 0
@@ -114,7 +113,7 @@ proc setup_federation { fed_name } {
 			timeout {
 				log_error "sacctmgr add not responding"
 				slow_kill $my_pid
-				set rc 1
+				set rc $::RETURN_TIMEOUT
 			}
 			eof {
 				wait
@@ -122,7 +121,7 @@ proc setup_federation { fed_name } {
 		}
 		if {!$rc && $matches != 5} {
 			log_error "Failed to add $cluster to federation"
-			set rc 1
+			set rc $::RETURN_ERROR
 			break
 		}
 
@@ -183,29 +182,29 @@ proc test_all_up {} {
 proc delete_federations { names } {
 	global sacctmgr
 	set matches 0
-	set rc 0
+	set rc $::RETURN_SUCCESS
 	set object "federation"
 	set my_pid [spawn $sacctmgr -i delete $object $names]
 	expect {
 		-re "privilege to perform this action" {
 			log_error "Don't have privileges"
-			incr rc
+			set rc $::RETURN_ERROR
 		}
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
-			incr rc
+			set rc $::RETURN_ERROR
 		}
 		-re "Problem getting" {
 			log_error "There was a problem getting information from the database"
-			incr rc
+			set rc $::RETURN_ERROR
 		}
 		-re "Problem adding" {
 			log_error "There was an unknown problem"
-			incr rc
+			set rc $::RETURN_ERROR
 		}
 		-re "No associations" {
 			log_error "Your command didn't return anything"
-			incr rc
+			set rc $::RETURN_ERROR
 		}
 		-re "Deleting $object" {
 			incr matches
@@ -218,7 +217,7 @@ proc delete_federations { names } {
 		timeout {
 			log_error "sacctmgr delete not responding"
 			slow_kill $my_pid
-			incr rc
+			set rc $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -227,7 +226,6 @@ proc delete_federations { names } {
 
 	if {!$rc && $matches != 1} {
 		log_error "sacctmgr had a problem deleting $object. Got $matches"
-		incr rc
 	}
 
 	return $rc
@@ -274,12 +272,12 @@ proc get_clusterfed_info { fed_name } {
 # Add a single cluster to the given federation.
 # IN:  cname    - name of cluster to add to federation.
 # IN:  fed_name - name of federation to add cluster to.
-# RET: returns 0 on sucess, 1 on failure.
+# RET: RETURN_SUCCESS, or non-zero on error.
 #
 proc add_cluster_to_fed {cname fed_name} {
 	global sacctmgr eol
 
-	set rc 0
+	set rc $::RETURN_SUCCESS
 	set matches 0
 	set my_pid [spawn $sacctmgr -i modify federation $fed_name set clusters+=$cname]
 	expect {
@@ -302,7 +300,7 @@ proc add_cluster_to_fed {cname fed_name} {
 		timeout {
 			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			set rc 1
+			set rc $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -310,7 +308,7 @@ proc add_cluster_to_fed {cname fed_name} {
 	}
 	if {$rc || $matches != 4} {
 		log_error "$matches failed to add $cname to $fed_name"
-		set $rc 1
+		set $rc $::RETURN_ERROR
 	}
 
 	return $rc
@@ -321,12 +319,12 @@ proc add_cluster_to_fed {cname fed_name} {
 # Remove a single cluster from the given federation.
 # IN:  cname    - name of cluster to remove from the federation.
 # IN:  fed_name - name of federation to remove cluster from.
-# RET: returns 0 on sucess, 1 on failure.
+# RET: RETURN_SUCCESS, or non-zero on error.
 #
 proc remove_cluster_from_fed {cname fed_name} {
 	global sacctmgr eol
 
-	set rc 0
+	set rc $::RETURN_SUCCESS
 	set matches 0
 	set my_pid [spawn $sacctmgr -i modify federation $fed_name set clusters-=$cname]
 	expect {
@@ -349,7 +347,7 @@ proc remove_cluster_from_fed {cname fed_name} {
 		timeout {
 			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			set rc 1
+			set rc $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -357,7 +355,7 @@ proc remove_cluster_from_fed {cname fed_name} {
 	}
 	if {$rc || $matches != 4} {
 		log_error "Failed to remove $cname from $fed_name"
-		set $rc 1
+		set $rc $::RETURN_ERROR
 	}
 
 	return $rc

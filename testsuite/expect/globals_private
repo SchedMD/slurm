@@ -62,7 +62,7 @@ set _global_bkp_noexist  {}
 #			SUSPENDED job is suspended
 #
 # RETURN VALUE
-#	A non-zero return code indicates a failure.
+#	RETURN_SUCCESS, or non-zero on error.
 #
 # NOTE: We sleep for two seconds before replying that a job is
 # done to give time for I/O completion (stdout/stderr files)
@@ -98,13 +98,13 @@ proc _wait_for_single_job args {
 		"SUSPENDED" {}
 		default {
 			log_warn "Invalid desired state: $desired_state"
-			return 1
+			return $::RETURN_ERROR
 		}
 	}
 
 	if {$job_id == 0} {
 		log_warn "Invalid job ID: $job_id"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	set my_delay    0
@@ -130,7 +130,7 @@ proc _wait_for_single_job args {
 				if {[string compare $desired_state "DONE"] == 0} {
 					log_debug "Job $job_id is DONE ($state)"
 					sleep 2
-					return 0
+					return $::RETURN_SUCCESS
 				}
 				if {[string compare $desired_state "RUNNING"] == 0} {
 					log_debug "Job $job_id is $state, but we wanted RUNNING"
@@ -138,33 +138,33 @@ proc _wait_for_single_job args {
 				if {[string compare $desired_state "SUSPENDED"] == 0} {
 					log_debug "Job $job_id is $state, but we wanted SUSPENDED"
 				}
-				return 1
+				return $::RETURN_ERROR
 			}
 			"PENDING" {
 				if {[string compare $desired_state "PENDING"] == 0} {
 					log_debug "Job $job_id is PENDING"
-					return 0
+					return $::RETURN_SUCCESS
 				}
 				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"RUNNING" {
 				if {[string compare $desired_state "RUNNING"] == 0} {
 					log_debug "Job $job_id is RUNNING"
-					return 0
+					return $::RETURN_SUCCESS
 				}
 				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"SPECIAL_EXIT" {
 				if {[string compare $desired_state "SPECIAL_EXIT"] == 0} {
 					log_debug "Job $job_id is SPECIAL_EXIT"
-					return 0
+					return $::RETURN_SUCCESS
 				}
 				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"SUSPENDED" {
 				if {[string compare $desired_state "SUSPENDED"] == 0} {
 					log_debug "Job $job_id is SUSPENDED"
-					return 0
+					return $::RETURN_SUCCESS
 				}
 				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
@@ -175,7 +175,7 @@ proc _wait_for_single_job args {
 
 		if { $my_delay > $timeout } {
 			log_warn "Timeout waiting for job state $desired_state"
-			return 1
+			return $::RETURN_TIMEOUT
 		}
 
 		exec sleep $poll_interval
