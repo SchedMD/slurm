@@ -361,17 +361,19 @@ extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns) {
  */
 extern int task_p_add_pid (pid_t pid)
 {
+	int rc[3] = {0};
+
 	if (use_cpuset) {
-		task_cgroup_cpuset_add_pid(pid);
+		rc[0] = task_cgroup_cpuset_add_pid(pid);
 	}
 
 	if (use_memory) {
-		task_cgroup_memory_add_pid(pid);
+		rc[1] = task_cgroup_memory_add_pid(pid);
 	}
 
 	if (use_devices) {
-		task_cgroup_devices_add_pid(pid);
+		rc[2] = task_cgroup_devices_add_pid(pid);
 	}
 
-	return SLURM_SUCCESS;
+	return MAX(rc[0], MAX(rc[1], rc[2]));
 }
