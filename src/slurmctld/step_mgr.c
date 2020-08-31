@@ -1932,7 +1932,10 @@ extern void step_alloc_lps(step_record_t *step_ptr)
 			if (!_use_one_thread_per_core(job_ptr)) {
 				multi_core_data_t *mc_ptr;
 				mc_ptr = job_ptr->details->mc_ptr;
-				if (mc_ptr->threads_per_core != NO_VAL16)
+				if (step_ptr->threads_per_core != NO_VAL16)
+					cpus_per_core =
+						step_ptr->threads_per_core;
+				else if (mc_ptr->threads_per_core != NO_VAL16)
 					cpus_per_core =
 						mc_ptr->threads_per_core;
 				else {
@@ -2565,6 +2568,8 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->tres_per_socket = xstrdup(step_specs->tres_per_socket);
 	step_ptr->tres_per_task = xstrdup(step_specs->tres_per_task);
 
+	step_ptr->threads_per_core = step_specs->threads_per_core;
+
 	/*
 	 * step's name and network default to job's values if not
 	 * specified in the step specification
@@ -2906,7 +2911,10 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 				uint16_t threads_per_core;
 				multi_core_data_t *mc_ptr;
 				mc_ptr = job_ptr->details->mc_ptr;
-				if (mc_ptr->threads_per_core != NO_VAL16)
+				if (step_ptr->threads_per_core != NO_VAL16)
+					threads_per_core =
+						step_ptr->threads_per_core;
+				else if (mc_ptr->threads_per_core != NO_VAL16)
 					threads_per_core =
 						mc_ptr->threads_per_core;
 				else

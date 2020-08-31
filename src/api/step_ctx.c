@@ -146,6 +146,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	       sizeof(step_req->step_id));
 
 	step_req->task_dist = step_params->task_dist;
+	step_req->threads_per_core = step_params->threads_per_core;
 	step_req->tres_bind = xstrdup(step_params->tres_bind);
 	step_req->tres_freq = xstrdup(step_params->tres_freq);
 	step_req->tres_per_step = xstrdup(step_params->tres_per_step);
@@ -688,4 +689,6 @@ extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 	} else {
 		ptr->step_id.job_id = NO_VAL;
 	}
+
+	ptr->threads_per_core = NO_VAL16;
 }

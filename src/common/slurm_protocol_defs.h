@@ -771,6 +771,7 @@ typedef struct job_step_specs {
 	uint32_t task_dist;	/* see enum task_dist_state in slurm.h */
 	uint32_t time_limit;	/* maximum run time in minutes, default is
 				 * partition limit */
+	uint16_t threads_per_core; /* step requested threads-per-core */
 	char *tres_bind;	/* Task to TRES binding directives */
 	char *tres_freq;	/* TRES frequency directives */
 	char *tres_per_step;	/* semicolon delimited list of TRES=# values */

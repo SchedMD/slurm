@@ -348,6 +348,9 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 			   opt.mem_per_gpu);
 	}
 
+	if (opt_local->threads_per_core != NO_VAL)
+		job->ctx_params.threads_per_core = opt.threads_per_core;
+
 	debug("requesting job %u, user %u, nodes %u including (%s)",
 	      job->ctx_params.step_id.job_id, job->ctx_params.uid,
 	      job->ctx_params.min_nodes, job->ctx_params.node_list);

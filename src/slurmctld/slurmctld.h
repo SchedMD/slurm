@@ -973,6 +973,7 @@ typedef struct {
 					 * implicitly the same as suspend_time
 					 * in the job record */
 	dynamic_plugin_data_t *switch_job; /* switch context, opaque */
+	uint16_t threads_per_core;	/* step threads-per-core */
 	time_t time_last_active;	/* time step was last found on node */
 	time_t tot_sus_time;		/* total time in suspended state */
 	char *tres_alloc_str;           /* simple TRES string for step */

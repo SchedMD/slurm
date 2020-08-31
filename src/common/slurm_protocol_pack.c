@@ -2498,6 +2498,7 @@ extern void _pack_job_step_create_request_msg(
 		pack32(msg->num_tasks, buffer);
 		pack64(msg->pn_min_memory, buffer);
 		pack32(msg->time_limit, buffer);
+		pack16(msg->threads_per_core, buffer);
 
 		pack16(msg->relative, buffer);
 		pack32(msg->task_dist, buffer);
@@ -2600,6 +2601,7 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpack32(&tmp_ptr->num_tasks, buffer);
 		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
 		safe_unpack32(&tmp_ptr->time_limit, buffer);
+		safe_unpack16(&tmp_ptr->threads_per_core, buffer);
 
 		safe_unpack16(&tmp_ptr->relative, buffer);
 		safe_unpack32(&tmp_ptr->task_dist, buffer);
