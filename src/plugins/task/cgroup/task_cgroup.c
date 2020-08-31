@@ -151,18 +151,21 @@ extern int init (void)
  */
 extern int fini (void)
 {
+	int rc[3] = {0};
 
 	if (use_cpuset) {
-		task_cgroup_cpuset_fini();
-	}
-	if (use_memory) {
-		task_cgroup_memory_fini();
-	}
-	if (use_devices) {
-		task_cgroup_devices_fini();
+		rc[0] = task_cgroup_cpuset_fini();
 	}
 
-	return SLURM_SUCCESS;
+	if (use_memory) {
+		rc[1] = task_cgroup_memory_fini();
+	}
+
+	if (use_devices) {
+		rc[2] = task_cgroup_devices_fini();
+	}
+
+	return MAX(rc[0], MAX(rc[1], rc[2]));
 }
 
 /*
