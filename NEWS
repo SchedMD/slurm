@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- Convert logging in account_gather/common to DEBUG_FLAG_JAG.
  -- Add more logging for jag_common_poll_data() when prec_extra() called.
  -- slurmrestd/v0.0.37 - add API to fetch reservation(s) info.
+ -- Catch more errors in task/cgroup initalization and cleanup to avoid allowing
+    jobs to start when cgroups failure to configure correctly.
 
 * Changes in Slurm 20.11.4
 ==========================
