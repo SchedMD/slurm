@@ -563,6 +563,11 @@ int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
 		return SLURM_ERROR;
 
 	path = _cgroup_procs_readable_path(cg);
+	if (!path) {
+		error("%s: invalid NULL path from cgroup %s",
+		      __func__, cg->name);
+		return XCGROUP_ERROR;
+	}
 
 	fstatus = _file_read_uint32s(path, (uint32_t**)pids, npids);
 	if (fstatus != XCGROUP_SUCCESS)
