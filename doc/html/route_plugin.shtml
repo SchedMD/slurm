@@ -104,30 +104,6 @@ Reset internal state during reconfigure.
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
-<p class="commandline">
-extern slurm_addr_t* route_g_next_collector ( bool *is_collector );
-<p style="margin-left:.2in"><b>Description</b>:<br>
-get address of parent in message tree.
-<p style="margin-left:.2in"><b>Arguments</b>: <br>
-<span class="commandline">is_collector (out) flag indication this node
-is a collector.
-</span>
-<p style="margin-left:.2in"><b>Returns</b>: <br>
-<span class="commandline">slurm_addr_t*</span>
-address of node to send messages to be aggregated <br>
-<span class="commandline">NULL</span> if not set.
-
-<p class="commandline">
-extern slurm_addr_t* route_g_next_collector_backup ( void );
-<p style="margin-left:.2in"><b>Description</b>:<br>
-get address of parent's backup in message tree.
-<p style="margin-left:.2in"><b>Returns</b>: <br>
-<span class="commandline">slurm_addr_t*</span>
-address of node to send messages to be aggregated when primary collector
-is down. <br>
-<span class="commandline">NULL</span> if not set.
-
-
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 01 September 2020</p>
 
 <!--#include virtual="footer.txt"-->
