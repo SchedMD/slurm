@@ -88,32 +88,34 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 		}
 	}
 
-	set match 0
-	spawn $bin_grep $job_id.batch $file_out
-	expect {
-		-re "\[^:\]gpu:($number)" {
-			incr match
-			if {$expect_out(1,string) != $job_gpus} {
-				log_error "Bad batch GPU count reported by sacct ($expect_out(1,string) != $job_gpus)"
-				set exit_code 1
-			}
-			exp_continue
-		}
-		-re ":gpu:($number)" {
-			incr match
-			if {$expect_out(1,string) != $req_gpus} {
-				log_error "Bad batch GPU count reported by sacct ($expect_out(1,string) != $req_gpus)"
-				set exit_code 1
-			}
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$match != 2} {
-		log_error "Missing batch GPU count report from sacct ($match != 2)"
-	}
+	# set match 0
+	# spawn $bin_grep $job_id.batch $file_out
+	# expect {
+	# 	-re "gres/gpu=($number)" {
+	# 		incr match
+	# 		if {$expect_out(1,string) != $batch_gpus} {
+	# 			log_error "Bad batch GPU count reported by sacct ($expect_out(1,string) != $job_gpus)"
+	# 			set exit_code 1
+	# 		}
+	# 		exp_continue
+	# 	}
+	# 	-re "gres/gpu:($re_word_str)=($number)" {
+	# 		if {$have_gpu_types != 0} {
+	# 			incr match
+	# 			if {$expect_out(2,string) != $batch_gpus} {
+	# 				log_error "Bad batch GPU count reported by sacct ($expect_out(2,string) != $job_gpus)"
+	# 				set exit_code 1
+	# 			}
+	# 		}
+	# 		exp_continue
+	# 	}
+	# 	eof {
+	# 		wait
+	# 	}
+	# }
+	# if {$match != 2} {
+	# 	log_error "Missing batch GPU count report from sacct ($match != 2)"
+	# }
 
 	set match 0
 	spawn $bin_grep $job_id| $file_out
