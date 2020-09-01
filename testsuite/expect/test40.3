@@ -49,7 +49,7 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 	sleep 2
 	log_debug "Job $job_id Expected job MPS:$job_mps  Step MPS:$step_mps"
 	exec $bin_rm -f $file_out
-	exec >$file_out $sacct --job=$job_id --parsable2 --start=today -o JobID,AllocGRES,ReqGRES,AllocTRES
+	exec >$file_out $sacct --job=$job_id --parsable2 --start=today -o JobID,ReqTRES,AllocTRES
 
 	spawn $bin_cat $file_out
 	expect {
@@ -63,22 +63,6 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 		set match 0
 		spawn $bin_grep $job_id.0 $file_out
 		expect {
-			-re "\[^:\]mps:($number)" {
-				incr match
-				if {$expect_out(1,string) != $job_mps} {
-					log_error "Bad step MPS count reported by sacct ($expect_out(1,string) != $step_mps)"
-					set exit_code 1
-				}
-				exp_continue
-			}
-			-re ":mps:($number)" {
-				incr match
-				if {$expect_out(1,string) != $req_mps} {
-					log_error "Bad step MPS count reported by sacct ($expect_out(1,string) != $req_mps)"
-					set exit_code 1
-				}
-				exp_continue
-			}
 			-re "gres/mps=($number)" {
 				incr match
 				if {$expect_out(1,string) != $step_mps} {
@@ -101,8 +85,8 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 				wait
 			}
 		}
-		if {$match != 3} {
-			log_error "Missing step MPS count report from sacct ($match != 3)"
+		if {$match != 1} {
+			log_error "Missing step MPS count report from sacct ($match != 1)"
 		}
 	}
 
@@ -136,22 +120,6 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 	set match 0
 	spawn $bin_grep $job_id| $file_out
 	expect {
-		-re "\[^:\]mps:($number)" {
-			incr match
-			if {$expect_out(1,string) != $job_mps} {
-				log_error "Bad job MPS count reported by sacct ($expect_out(1,string) != $job_mps)"
-				set exit_code 1
-			}
-			exp_continue
-		}
-		-re ":mps:($number)" {
-			incr match
-			if {$expect_out(1,string) != $req_mps} {
-				log_error "Bad job MPS count reported by sacct ($expect_out(1,string) != $req_mps)"
-				set exit_code 1
-			}
-			exp_continue
-		}
 		-re "gres/mps=($number)" {
 			incr match
 			if {$expect_out(1,string) != $job_mps} {
@@ -174,8 +142,8 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 			wait
 		}
 	}
-	if {$match != 3} {
-		log_error "Missing job MPS count report from sacct ($match != 3)"
+	if {$match != 2} {
+		log_error "Missing job MPS count report from sacct ($match != 2)"
 	}
 	exec $bin_rm -f $file_out
 	log_user 1
