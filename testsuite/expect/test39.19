@@ -84,7 +84,7 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 			}
 		}
 		if {$match != 1} {
-			log_error "Missing step GPU count report from sacct ($match != 2)"
+			log_error "Missing step GPU count report from sacct ($match != 1)"
 		}
 	}
 
