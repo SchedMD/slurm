@@ -176,7 +176,7 @@ proc check_rc { exit_code } {
 }
 
 proc test_bin_pass { num bin args het_job count } {
-	global job_name salloc ta1 tq2 srun number is_skip
+	global job_name salloc ta1 tq2 srun number eol is_skip
 
 	set got_init 0
 	set got_sub1 0
@@ -189,31 +189,31 @@ proc test_bin_pass { num bin args het_job count } {
 	eval spawn $bin [join $args " "]
 	set pid [exp_pid]
 	expect {
-		-re "^(srun|salloc|sbatch): error: .*: Requested operation not supported on this system\r\n" {
+		-re "^(srun|salloc|sbatch): error: .*: Requested operation not supported on this system$eol" {
 			if { $het_job && $is_builtin } {
 				log_warn "Hetjobs are not supported with sched/builtin this failure is expected"
 				set is_skip 1
 				return 0
 			}
 		}
-		-re "^(srun|salloc|sbatch): initialized\r\n" {
+		-re "^(srun|salloc|sbatch): initialized$eol" {
 			incr got_init
 			exp_continue
 		}
 		# salloc: 0: submit1
-		-re "^(srun|salloc|sbatch): ($number: |)submit1\r\n" {
+		-re "^(srun|salloc|sbatch): ($number: |)submit1$eol" {
 			if {!$het_job || $expect_out(2,string) != ""} {
 				incr got_sub1
 			}
 			exp_continue
 		}
-		-re "^(srun|salloc|sbatch): ($number: |)submit2\r\n" {
+		-re "^(srun|salloc|sbatch): ($number: |)submit2$eol" {
 			if {!$het_job || $expect_out(2,string) != ""} {
 				incr got_sub2
 			}
 			exp_continue
 		}
-		-re "^(srun|salloc|sbatch): ($number: |)submit3\r\n" {
+		-re "^(srun|salloc|sbatch): ($number: |)submit3$eol" {
 			if {!$het_job || $expect_out(2,string) != ""} {
 				incr got_sub3
 			}
@@ -241,7 +241,7 @@ proc test_bin_pass { num bin args het_job count } {
 }
 
 proc test_bin_fail { num bin args het_job count } {
-	global job_name ta1 tq1 tq2 srun number is_skip
+	global job_name ta1 tq1 tq2 srun number eol is_skip
 
 	set got_init 0
 	set got_sub1 0
@@ -254,32 +254,32 @@ proc test_bin_fail { num bin args het_job count } {
 	eval spawn $bin [join $args " "]
 	set pid [exp_pid]
 	expect {
-		-re "^(srun|salloc|sbatch): error: .*: Requested operation not supported on this system\r\n" {
+		-re "^(srun|salloc|sbatch): error: .*: Requested operation not supported on this system$eol" {
 			if { $het_job && $is_builtin } {
 				log_warn "Hetjobs are not supported with sched/builtin this failure is expected"
 				set is_skip 1
 				return 0
 			}
 		}
-		-re "^(srun|salloc|sbatch): error: initialized\r\n" {
+		-re "^(srun|salloc|sbatch): error: initialized$eol" {
 			incr got_init
 			exp_continue
 		}
 		#srun: error: submit1\r\n
 		#salloc: error: 0: submit1\r\n
-		-re "^(srun|salloc|sbatch): error: ($number: |)submit1\r\n" {
+		-re "^(srun|salloc|sbatch): error: ($number: |)submit1$eol" {
 			if {!$het_job || $expect_out(2,string) != ""} {
 				incr got_sub1
 			}
 			exp_continue
 		}
-		-re "^(srun|salloc|sbatch): error: ($number: |)submit2\r\n" {
+		-re "^(srun|salloc|sbatch): error: ($number: |)submit2$eol" {
 			if {!$het_job || $expect_out(2,string) != ""} {
 				incr got_sub2
 			}
 			exp_continue
 		}
-		-re "^(srun|salloc|sbatch): error: ($number: |)submit3\r\n" {
+		-re "^(srun|salloc|sbatch): error: ($number: |)submit3$eol" {
 			if {!$het_job || $expect_out(2,string) != ""} {
 				incr got_sub3
 			}
@@ -344,7 +344,7 @@ set config_dir ""
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "SLURM_CONF *= (\\S+)$end_of_line" {
+	-re "SLURM_CONF *= (\\S+)$eol" {
 		set config_dir [file dirname $expect_out(1,string)]
 		exp_continue
 	}

@@ -49,8 +49,6 @@ set my_sbatch    "${fed_slurm_base}/$fedc1/bin/sbatch"
 set my_squeue    "${fed_slurm_base}/$fedc1/bin/squeue"
 set my_scontrol  "${fed_slurm_base}/$fedc1/bin/scontrol"
 
-set eol "\r\n"
-
 #
 # Check accounting config and bail if not found.
 #

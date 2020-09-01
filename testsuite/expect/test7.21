@@ -88,7 +88,7 @@ set config_dir ""
 set ctld_slurm_ver ""
 spawn $scontrol show config
 expect {
-	-re "SLURM_CONF.*= (.*)/slurm.conf.*SLURM_VERSION *= ($float)" {
+	-re "SLURM_CONF.*= (/.*)/${re_word_str}${eol}SLURM_VERSION *= ($float)" {
 		set config_dir $expect_out(1,string)
 		set ctld_slurm_ver $expect_out(2,string)
 		exp_continue

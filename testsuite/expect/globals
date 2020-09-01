@@ -298,7 +298,7 @@ if {[info exists env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)]} {
 # Other common variables
 set re_word_str          "\\S+"
 set digit                "\\d"
-set end_of_line          "\[\r\n\]"
+set eol                  "\r?\n"
 set float                "\\d+\\.?\\d*"
 set number               "\\d+"
 set format_time          "\\d+\\:\\d+\\:\\d+"
@@ -5987,7 +5987,7 @@ proc test_hetjob_step { } {
 	set minor 0
 	spawn $scontrol -V
 	expect {
-		-re " ($number).($number).($number)" {
+		-re " ($number)\.($number)\.($number)" {
 			set version_major $expect_out(1,string)
 			set version_minor $expect_out(2,string)
 			exp_continue
@@ -6805,14 +6805,14 @@ proc get_acct_store_tres { } {
 ################################################################
 
 proc get_conf_path { } {
-	global scontrol re_word_str exit_code
+	global scontrol re_word_str eol exit_code
 
 	set config_path ""
 	set got_config 0
 	log_user 0
 	spawn $scontrol show config
 	expect {
-		-re "SLURM_CONF.*= (/.*)/($re_word_str).*SLURM_VERSION" {
+		-re "SLURM_CONF.*= (/.*)/($re_word_str)${eol}SLURM_VERSION" {
 			set config_path $expect_out(1,string)
 			set got_config 1
 			exp_continue
