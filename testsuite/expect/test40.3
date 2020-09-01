@@ -38,7 +38,7 @@ set file_out       "test$test_id.output"
 # NOTE: AllocGRES and ReqGRES values for all steps (including batch step)
 #	are reported based upon the job specification
 #
-proc test_acct { job_id job_mps step_mps have_mps_types } {
+proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 	global re_word_str number
 	global bin_cat bin_rm bin_grep exit_code file_out sacct
 
@@ -63,10 +63,18 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 		set match 0
 		spawn $bin_grep $job_id.0 $file_out
 		expect {
-			-re "mps:($number)" {
+			-re "\[^:\]mps:($number)" {
 				incr match
 				if {$expect_out(1,string) != $job_mps} {
 					log_error "Bad step MPS count reported by sacct ($expect_out(1,string) != $step_mps)"
+					set exit_code 1
+				}
+				exp_continue
+			}
+			-re ":mps:($number)" {
+				incr match
+				if {$expect_out(1,string) != $req_mps} {
+					log_error "Bad step MPS count reported by sacct ($expect_out(1,string) != $req_mps)"
 					set exit_code 1
 				}
 				exp_continue
@@ -101,10 +109,18 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 	set match 0
 	spawn $bin_grep $job_id.batch $file_out
 	expect {
-		-re "mps:($number)" {
+		-re "\[^:\]mps:($number)" {
 			incr match
 			if {$expect_out(1,string) != $job_mps} {
 				log_error "Bad batch MPS count reported by sacct ($expect_out(1,string) != $job_mps)"
+				set exit_code 1
+			}
+			exp_continue
+		}
+		-re ":mps:($number)" {
+			incr match
+			if {$expect_out(1,string) != $req_mps} {
+				log_error "Bad batch MPS count reported by sacct ($expect_out(1,string) != $req_mps)"
 				set exit_code 1
 			}
 			exp_continue
@@ -120,10 +136,18 @@ proc test_acct { job_id job_mps step_mps have_mps_types } {
 	set match 0
 	spawn $bin_grep $job_id| $file_out
 	expect {
-		-re "mps:($number)" {
+		-re "\[^:\]mps:($number)" {
 			incr match
 			if {$expect_out(1,string) != $job_mps} {
 				log_error "Bad job MPS count reported by sacct ($expect_out(1,string) != $job_mps)"
+				set exit_code 1
+			}
+			exp_continue
+		}
+		-re ":mps:($number)" {
+			incr match
+			if {$expect_out(1,string) != $req_mps} {
+				log_error "Bad job MPS count reported by sacct ($expect_out(1,string) != $req_mps)"
 				set exit_code 1
 			}
 			exp_continue
@@ -225,11 +249,12 @@ make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID} | grep mps
 	exit 0"
 
-set target [expr $nb_nodes * 49]
+set req_mps 49
+set target [expr $nb_nodes * $req_mps]
 exec $bin_rm -f $file_out
 set job_id 0
 set timeout $max_job_delay
-spawn $sbatch --gres=craynetwork:0 --gres=mps:49 -N$nb_nodes -t1 -o $file_out -J "test$test_id" ./$file_in1
+spawn $sbatch --gres=craynetwork:0 --gres=mps:$req_mps -N$nb_nodes -t1 -o $file_out -J "test$test_id" ./$file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -278,7 +303,7 @@ if {$match != $target} {
 	log_error "Failed to account for proper MPS count ($match != $target)"
 	set exit_code 1
 }
-test_acct $job_id $target -1 $have_mps_types
+test_acct $job_id $target -1 $req_mps $have_mps_types
 
 #
 # Test --gres=mps option by step
@@ -295,11 +320,12 @@ make_bash_script $file_in2 "
 
 log_info "TEST 2: --gres=mps option by step"
 
-set target [expr $nb_nodes * 51]
+set req_mps 51
+set target [expr $nb_nodes * $req_mps]
 exec $bin_rm -f $file_out
 set job_id 0
 set timeout $max_job_delay
-spawn $sbatch --gres=craynetwork:0 --gres=mps:51 -N$nb_nodes -t1 -o $file_out -J "test$test_id" ./$file_in1
+spawn $sbatch --gres=craynetwork:0 --gres=mps:$req_mps -N$nb_nodes -t1 -o $file_out -J "test$test_id" ./$file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -323,7 +349,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 }
 
 test_out_file $file_out $target
-test_acct $job_id $target $target $have_mps_types
+test_acct $job_id $target $target $req_mps $have_mps_types
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2 $file_out
