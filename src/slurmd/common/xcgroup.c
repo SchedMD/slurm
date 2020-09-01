@@ -1176,52 +1176,39 @@ int _file_read_uint64s(char* file_path, uint64_t** pvalues, int* pnb)
 
 int _file_write_uint32s(char* file_path, uint32_t* values, int nb)
 {
-	int fstatus;
 	int rc;
 	int fd;
 	char tstr[256];
-	uint32_t value;
-	int i;
 
 	/* open file for writing */
-	fd = open(file_path, O_WRONLY, 0700);
-	if (fd < 0) {
-		debug2("%s: unable to open '%s' for writing : %m",
+	if ((fd = open(file_path, O_WRONLY, 0700)) < 0) {
+		error("%s: unable to open '%s' for writing: %m",
 			__func__, file_path);
 		return XCGROUP_ERROR;
 	}
 
 	/* add one value per line */
-	fstatus = XCGROUP_SUCCESS;
-	for (i=0 ; i < nb ; i++) {
+	for (int i = 0; i < nb; i++) {
+		uint32_t value = values[i];
 
-		value = values[i];
+		if (snprintf(tstr, sizeof(tstr), "%u", value) < 0)
+			fatal("%s: unable to build %u string value",
+			      __func__, value);
 
-		rc = snprintf(tstr, sizeof(tstr), "%u", value);
-		if (rc < 0) {
-			debug2("unable to build %u string value, skipping",
-			       value);
-			fstatus = XCGROUP_ERROR;
-			continue;
-		}
-
-		do {
-			rc = write(fd, tstr, strlen(tstr)+1);
-		}
-		while (rc < 0 && errno == EINTR);
-		if (rc < 1) {
-			debug2("%s: unable to add value '%s' to file '%s' : %m",
-				__func__, tstr, file_path);
-			if (errno != ESRCH)
-				fstatus = XCGROUP_ERROR;
-		}
-
+		/* write terminating NUL byte */
+		safe_write(fd, tstr, strlen(tstr) + 1);
 	}
 
 	/* close file */
 	close(fd);
+	return XCGROUP_SUCCESS;
 
-	return fstatus;
+rwfail:
+	rc = errno;
+	error("%s: write pid %s to %s failed: %m",
+	      __func__, tstr, file_path);
+	close(fd);
+	return rc;;
 }
 
 int _file_read_uint32s(char* file_path, uint32_t** pvalues, int* pnb)
