@@ -4,111 +4,26 @@
 
 <p>The Slurm User Group Meeting (SLUG'20) this fall will be moving online, and will not be hosted in-person at Harvard as scheduled, due to uncertainty around scheduling events caused by COVID-19.</p>
 
-<p>In lieu of an in-person meeting, SchedMD will broadcast a select set of presentations on Tuesday, September 15th, 2020. The agenda will be announced later this summer, but ask you to hold the date for this virtual SLUG meeting.</p>
-
-<p>Due to this change in format and compressed schedule, we will not be issuing a call for presentations this year. We expect to resume a normal program for SLUG'21.</p>
-
-<!--
-<a name="registration"><h2>Registration</h2></a>
-
-<p>The meeting cost is:
-<ul>
-<li>$325 per person for early registration by 1 July 2020</li>
-<li>$400 per person for standard registration by 15 August 2020</li>
-<li>$700 per person for late registration by 31 August 2020</li>
-</ul></p>
-<p>This includes presentations, tutorials, lunch and snacks on both days,
-plus dinner on Tuesday evening.</p>
-<p>This year, there is an additional option of attending a one-day Slurm
-Boot Camp on 14 September. This boot camp is designed for system administrators
-who are relatively new to Slurm or those who want to review the basics of Slurm,
-and include registration for the Slurm User Group Meeting as well.
-<p><a href="https://slug20.eventbrite.com/">Register here.</a></p>
--->
-<!--
-<a name="hotel"><h1>Hotel Accomodations</h1></a>
-
-<p>A block of rooms have been reserved a the University Guest House for those
-attending. The University Guest house is conveniently located next to the
-conference meeting room. You can reserve a room at the Guest House by calling
-+1-888-416-4075 by August 16, 2019. Please mention the group name
-"Slurm User Group 2019" in order to receive a discounted room rate.
-Online reservations can be made
-<a href="https://www.universityguesthouse.com/University-Guest-House">here.</a>
-</p>
-
-<!--
-<a name="agenda"><h2>Agenda</h2></a>
+<p>In lieu of an in-person meeting, SchedMD will broadcast a select set of presentations on Tuesday, September 15th, 2020. Links to the broadcasts will be added here when available. Updates will be sent to the slurm-announce and slurm-users mailing lists.</p>
 
 <a name="schedule"><h2>Schedule</h2></a>
 
-<h2>Tuesday, 17 September 2019</h2>
-
+<h3>All times are US Mountain Daylight Time (UTC-6)</h3>
+<h2>Tuesday, 15 September 2020</h2>
 <table width="100%" border=1 cellspacing=0 cellpadding=4>
 
 <tr>
   <th width="10%">Time</th>
-  <th width="15%">Theme</th>
   <th width="30%">Speaker</th>
   <th width="45%">Title</th>
  </tr>
 
-<tr><td bgcolor="#F0F1C9">08:30 - 09:00</td><td colspan="3" bgcolor="#F0F1C9">Registration </td></tr>
-<tr><td nowrap>09:00 - 09:20</td><td>Welcome</td><td>Auble (SchedMD)</td><td>Welcome</td></tr>
-<tr><td nowrap>09:20 - 10:00</td><td>Technical</td><td>Christiansen (SchedMD)</td><td>TRES</td></tr>
-<tr><td nowrap>10:00 - 10:40</td><td>Technical</td><td>Vizino (SchedMD)</td><td>GPUs and cons_tres</td></tr>
-<tr><td nowrap bgcolor="#F0F1C9">10:40 - 11:00</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>11:00 - 11:20</td><td>Site Report</td><td>Fullop</td><td>LANL</td></tr>
-<tr><td nowrap>11:20 - 12:00</td><td>Technical</td><td>Garey (SchedMD)</td><td>cgroups and pam_slurm_adopt</td></tr>
-<tr><td nowrap bgcolor="#F0F1C9">12:00 - 13:00</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
-<tr><td nowrap>13:00 - 13:20</td><td>Site Report</td><td>Byun</td><td>MIT</td></tr>
-<tr><td nowrap>13:20 - 14:20</td><td>Panel</td><td>Auble, Wickberg (SchedMD)</td><td>Community discussion: Containers, OCI, Kubernetes, ...</td></tr>
-<tr><td nowrap>14:20 - 15:00</td><td>Technical</td><td>Hoopes (SchedMD)</td><td>Priority Scheduling and Fair Tree</td></tr>
-<tr><td nowrap bgcolor="#F0F1C9">15:00 - 15:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>15:20 - 15:40</td><td>Technical</td><td>Yeager</td><td>NVIDIA</td></tr>
-<tr><td nowrap>15:40 - 16:20</td><td>Technical</td><td>Rini (SchedMD)</td><td>REST API</td></tr>
-<tr><td nowrap>16:20 - 16:40</td><td>Technical</td><td>Gaur</td><td>NERSC</td></tr>
-
-<tr>
-  <td bgcolor="#F0F1C9">18:00 - 20:00</td>
-  <td bgcolor="#F0F1C9">Dinner</td>
-  <td bgcolor="#F0F1C9"><a href="https://squatters.com/salt-lake-city/location.aspx">Squatters Pub (SLC)</a></td>
-  <td bgcolor="#F0F1C9">147 West Broadway, Salt Lake City, UT 84101</td>
-</tr>
+<tr><td nowrap>9:00 - 9:50</td><td>Booth (SchedMD)</td><td>Field Notes 4: From The Frontlines of Slurm Support</td></tr>
+<tr><td nowrap>10:00 - 10:25</td><td>Christiansen (SchedMD)</td><td>Cloud and Stuff</td></tr>
+<tr><td nowrap>10:30 - 10:50</td><td>Rini (SchedMD)</td><td>REST API</td></tr>
+<tr><td nowrap>11:00 - 11:50</td><td>Wickberg (SchedMD)</td><td>Slurm 20.11 and Beyond, Open Q+A</td></tr>
 </table>
 
-<h2>Wednesday, 18 September 2019</h2>
-
-<table width="100%" border=1 cellspacing=0 cellpadding=4>
-
-  <tr>
-    <th width="10%">Time</th>
-    <th width="15%">Theme</th>
-    <th width="30%">Speaker</th>
-    <th width="45%">Title</th>
-  </tr>
-
-<tr><td nowrap>09:00 - 09:20</td><td>Site Report</td><td>Diakhate</td><td>CEA</td></tr>
-<tr><td nowrap>09:20 - 09:40</td><td>Technical</td><td>Gardner (SchedMD)</td><td>High Throughput Computing</td></tr>
-<tr><td nowrap>09:40 - 10:00</td><td>Site Report</td><td>Cavalotti</td><td>Stanford</td></tr>
-<tr><td nowrap>10:00 - 10:40</td><td>Technical</td><td>TBD (Google), Christiansen (SchedMD)</td><td>Google Compute Platform</td></tr>
-<tr><td nowrap bgcolor="#F0F1C9">10:40 - 11:00</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>11:00 - 11:40</td><td>Site Report</td><td>Peltz</td><td>ORNL</td></tr>
-<tr><td nowrap>11:40 - 12:00</td><td>Technical</td><td>Dobson</td><td>LANL</td></tr>
-<tr><td nowrap bgcolor="#F0F1C9">12:00 - 13:00</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
-<tr><td nowrap>13:00 - 13:20</td><td>Site Report</td><td>Samuel</td><td>NERSC</td></tr>
-<tr><td nowrap>13:20 - 14:00</td><td>Technical</td><td>Booth and Gil (SchedMD)</td><td>Troubleshooting</td></tr>
-<tr><td nowrap>14:00 - 14:20</td><td>Site Report</td><td>Nielsen</td><td>DTU</td></tr>
-<tr><td nowrap>14:20 - 14:40</td><td>Technical</td><td>Calegari (Atos)</td><td></td></tr>
-<tr><td nowrap>14:40 - 15:00</td><td>Technical</td><td>Wickberg (SchedMD)</td><td>Slurm 19.05 Release Review</td></tr>
-<tr><td nowrap bgcolor="#F0F1C9">15:00 - 15:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>15:20 - 15:40</td><td>Technical</td><td>Wickberg (SchedMD)</td><td>Slurm 20.02 Release and Roadmap</td></tr>
-<tr><td nowrap>15:40 - 16:20</td><td>Technical</td><td>Wickberg (SchedMD)</td><td>Field Notes From A Madman</td></tr>
-<tr><td nowrap>16:20 - 16:40</td><td>Closing</td><td>Auble (SchedMD)</td><td>Closing Remarks</td></tr>
-
-</table>
--->
-
-<p style="text-align:center;">Last modified 15 June 2020</p>
+<p style="text-align:center;">Last modified 28 August 2020</p>
 
 <!--#include virtual="footer.txt"-->
