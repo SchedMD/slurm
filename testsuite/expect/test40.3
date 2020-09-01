@@ -90,32 +90,32 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 		}
 	}
 
-	set match 0
-	spawn $bin_grep $job_id.batch $file_out
-	expect {
-		-re "\[^:\]mps:($number)" {
-			incr match
-			if {$expect_out(1,string) != $job_mps} {
-				log_error "Bad batch MPS count reported by sacct ($expect_out(1,string) != $job_mps)"
-				set exit_code 1
-			}
-			exp_continue
-		}
-		-re ":mps:($number)" {
-			incr match
-			if {$expect_out(1,string) != $req_mps} {
-				log_error "Bad batch MPS count reported by sacct ($expect_out(1,string) != $req_mps)"
-				set exit_code 1
-			}
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$match != 2} {
-		log_error "Missing batch MPS count report from sacct ($match != 2)"
-	}
+	# set match 0
+	# spawn $bin_grep $job_id.batch $file_out
+	# expect {
+	# 	-re "\[^:\]mps:($number)" {
+	# 		incr match
+	# 		if {$expect_out(1,string) != $job_mps} {
+	# 			log_error "Bad batch MPS count reported by sacct ($expect_out(1,string) != $job_mps)"
+	# 			set exit_code 1
+	# 		}
+	# 		exp_continue
+	# 	}
+	# 	-re ":mps:($number)" {
+	# 		incr match
+	# 		if {$expect_out(1,string) != $req_mps} {
+	# 			log_error "Bad batch MPS count reported by sacct ($expect_out(1,string) != $req_mps)"
+	# 			set exit_code 1
+	# 		}
+	# 		exp_continue
+	# 	}
+	# 	eof {
+	# 		wait
+	# 	}
+	# }
+	# if {$match != 2} {
+	# 	log_error "Missing batch MPS count report from sacct ($match != 2)"
+	# }
 
 	set match 0
 	spawn $bin_grep $job_id| $file_out
