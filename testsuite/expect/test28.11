@@ -128,25 +128,17 @@ expect {
 fail_on_error "Error submitting job"
 
 # Wait enough time for the jobs to be in the controller
-$bin_sleep 1
 set count 0
 set count_exp 2
 log_info "Verifying the jobs correctly requested the feature $node_feature"
-spawn $scontrol show job $job_id
-expect {
-	-re "Features=$node_feature" {
-		incr count
-		exp_continue
-	}
-	timeout {
-		log_error "scontrol timed out"
-		set exit_code 1
-	}
-	eof {
-		wait
+wait_for { $count == $count_exp } {
+	set count 0
+	dict for {jobId job_dict} [get_jobs $job_id] {
+		if {[dict get $job_dict "Features"] eq "$node_feature"} {
+			incr count
+		}
 	}
 }
-
 assert_or_fail { $count == $count_exp } [format "Expected each of the %s jobs to have features=%s, but got %s" \
                                                 $count_exp $node_feature $count]
 
