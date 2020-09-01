@@ -35,8 +35,6 @@ set file_out       "test$test_id.output"
 # Validate the job, batch step and step 0 of a job have the proper GPU counts
 # No step to test if step_gpus == -1
 #
-# NOTE: AllocGRES and ReqGRES values for all steps (including batch step)
-#	are reported based upon the job specification
 #
 proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 	global re_word_str number
@@ -49,7 +47,7 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 	sleep 2
 	log_debug "Job $job_id Expected job GPUs:$job_gpus  Step GPUs:$step_gpus"
 	exec $bin_rm -f $file_out
-	exec >$file_out $sacct --job=$job_id --parsable2 --start=today -o JobID,AllocGRES,ReqGRES,AllocTRES
+	exec >$file_out $sacct --job=$job_id --parsable2 --start=today -o JobID,ReqTRES,AllocTRES
 
 	spawn $bin_cat $file_out
 	expect {
@@ -63,22 +61,6 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 		set match 0
 		spawn $bin_grep $job_id.0 $file_out
 		expect {
-			-re "\[^:\]gpu:($number)" {
-				incr match
-				if {$expect_out(1,string) != $job_gpus} {
-					log_error "Bad step GPU count reported by sacct ($expect_out(1,string) != $step_gpus)"
-					set exit_code 1
-				}
-				exp_continue
-			}
-			-re ":gpu:($number)" {
-				incr match
-				if {$expect_out(1,string) != $req_gpus} {
-					log_error "Bad step GPU count reported by sacct ($expect_out(1,string) != $req_gpus)"
-					set exit_code 1
-				}
-				exp_continue
-			}
 			-re "gres/gpu=($number)" {
 				incr match
 				if {$expect_out(1,string) != $step_gpus} {
@@ -101,8 +83,8 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 				wait
 			}
 		}
-		if {$match != 3} {
-			log_error "Missing step GPU count report from sacct ($match != 3)"
+		if {$match != 1} {
+			log_error "Missing step GPU count report from sacct ($match != 2)"
 		}
 	}
 
@@ -136,22 +118,6 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 	set match 0
 	spawn $bin_grep $job_id| $file_out
 	expect {
-		-re "\[^:\]gpu:($number)" {
-			incr match
-			if {$expect_out(1,string) != $job_gpus} {
-				log_error "Bad job GPU count reported by sacct ($expect_out(1,string) != $job_gpus)"
-				set exit_code 1
-			}
-			exp_continue
-		}
-		-re ":gpu:($number)" {
-			incr match
-			if {$expect_out(1,string) != $req_gpus} {
-				log_error "Bad job GPU count reported by sacct ($expect_out(1,string) != $req_gpus)"
-				set exit_code 1
-			}
-			exp_continue
-		}
 		-re "gres/gpu=($number)" {
 			incr match
 			if {$expect_out(1,string) != $job_gpus} {
@@ -174,8 +140,8 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 			wait
 		}
 	}
-	if {$match != 3} {
-		log_error "Missing job GPU count report from sacct ($match != 3)"
+	if {$match != 2} {
+		log_error "Missing job GPU count report from sacct ($match != 2)"
 	}
 	exec $bin_rm -f $file_out
 	log_user 1
@@ -185,8 +151,6 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 # Validate the job, batch step and step 0 of a job have the proper GPU counts
 # No step to test if step_gpus == -1
 #
-# NOTE: AllocGRES and ReqGRES values for all steps (including batch step)
-#	are reported based upon the job specification
 #
 proc test_out_file { file_out target } {
 	global re_word_str number bin_cat exit_code
