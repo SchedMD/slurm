@@ -157,7 +157,6 @@ static void _rpc_batch_job(slurm_msg_t *msg);
 static void _rpc_prolog(slurm_msg_t *msg);
 static void _rpc_job_notify(slurm_msg_t *);
 static void _rpc_signal_tasks(slurm_msg_t *);
-static void _rpc_complete_batch(slurm_msg_t *);
 static void _rpc_terminate_tasks(slurm_msg_t *);
 static void _rpc_timelimit(slurm_msg_t *);
 static void _rpc_reattach_tasks(slurm_msg_t *);
@@ -314,9 +313,6 @@ slurmd_req(slurm_msg_t *msg)
 	case REQUEST_TERMINATE_JOB:
 		last_slurmctld_msg = time(NULL);
 		_rpc_terminate_job(msg);
-		break;
-	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		_rpc_complete_batch(msg);
 		break;
 	case REQUEST_SHUTDOWN:
 		_rpc_shutdown(msg);
@@ -5024,60 +5020,6 @@ _rpc_abort_job(slurm_msg_t *msg)
 	if (container_g_delete(jobid))
 		error("container_g_delete(%u): %m", req->step_id.job_id);
 	_launch_complete_rm(req->step_id.job_id);
-}
-
-/*
- * This complete batch RPC came from slurmstepd because we have message
- * aggregation configured. Terminate the job here and forward the batch
- * completion RPC to slurmctld.
- */
-static void
-_rpc_complete_batch(slurm_msg_t *msg)
-{
-	int		i, rc, msg_rc;
-	slurm_msg_t	resp_msg;
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
-	complete_batch_script_msg_t *req = msg->data;
-
-	if (!_slurm_authorized_user(uid)) {
-		error("Security violation: complete_batch(%u) from uid %d",
-		      req->job_id, uid);
-		if (msg->conn_fd >= 0)
-			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		return;
-	}
-
-	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-
-	for (i = 0; i <= MAX_RETRY; i++) {
-		slurm_msg_t req_msg;
-		slurm_msg_t_init(&req_msg);
-		req_msg.msg_type = msg->msg_type;
-		req_msg.data = msg->data;
-		msg_rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
-							working_cluster_rec);
-
-		if (msg_rc == SLURM_SUCCESS)
-			break;
-
-		info("Retrying job complete RPC for job %u", req->job_id);
-		sleep(RETRY_DELAY);
-	}
-	if (i > MAX_RETRY) {
-		error("Unable to send job complete message: %m");
-		return;
-	}
-
-	if (resp_msg.msg_type == RESPONSE_SLURM_RC) {
-		last_slurmctld_msg = time(NULL);
-		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);
-		if (rc) {
-			error("complete_batch for job %u: %s", req->job_id,
-			      slurm_strerror(rc));
-		}
-		return;
-	}
 }
 
 static void
