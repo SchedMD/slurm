@@ -3707,6 +3707,19 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 
 	if ((step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) &&
 	    step_ptr->job_ptr->job_resrcs) {
+		/*
+		 * FIXME: This is hardcoded to be the first node in the
+		 * allocation, but we should probably be looking at the
+		 * batch_host instead.  The amount of effort involved here was
+		 * too much for the time we had.  Since the batch host is almost
+		 * always the first node in the allocation and most allocations
+		 * are homogeneous to start with this is more of a nice thing to
+		 * have instead of a real issue.  The fact that the batch step
+		 * didn't ever have GRES on the TRES before 20.11 seems to make
+		 * me think people don't care in the first place.  I am sure one
+		 * will care in the future though hence this short comment ;).
+		 */
+
 		/* get the cpus and memory on the first node */
 		if (step_ptr->job_ptr->job_resrcs->cpus)
 			cpu_count = step_ptr->job_ptr->job_resrcs->cpus[0];
