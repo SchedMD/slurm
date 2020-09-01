@@ -1297,35 +1297,26 @@ int _file_read_uint32s(char* file_path, uint32_t** pvalues, int* pnb)
 
 int _file_write_content(char* file_path, char* content, size_t csize)
 {
-	int fstatus;
-	int rc;
 	int fd;
 
 	/* open file for writing */
-	fd = open(file_path, O_WRONLY, 0700);
-	if (fd < 0) {
-		debug2("%s: unable to open '%s' for writing : %m",
+	if ((fd = open(file_path, O_WRONLY, 0700)) < 0) {
+		error("%s: unable to open '%s' for writing: %m",
 			__func__, file_path);
 		return XCGROUP_ERROR;
 	}
 
-	/* write content */
-	do {
-		rc = write(fd, content, csize);
-	} while (rc < 0 && errno == EINTR);
-
-	/* check read size */
-	if (rc < csize) {
-		debug2("%s: unable to write %lu bytes to file '%s' : %m",
-			__func__, (long unsigned int) csize, file_path);
-		fstatus = XCGROUP_ERROR;
-	} else
-		fstatus = XCGROUP_SUCCESS;
+	safe_write(fd, content, csize);
 
 	/* close file */
 	close(fd);
+	return XCGROUP_SUCCESS;
 
-	return fstatus;
+rwfail:
+	error("%s: unable to write %zu bytes to cgroup %s: %m",
+	      __func__, csize, file_path);
+	close(fd);
+	return XCGROUP_ERROR;
 }
 
 int _file_read_content(char* file_path, char** content, size_t *csize)
