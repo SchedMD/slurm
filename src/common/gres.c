@@ -2002,7 +2002,7 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 	if (cpu_cnt == 0) {
 		error("%s: Invalid cpu_cnt of 0 for node %s",
 		      __func__, node_name);
-		return SLURM_ERROR;
+		return ESLURM_INVALID_CPU_COUNT;
 	}
 
 	rc = gres_plugin_init();
