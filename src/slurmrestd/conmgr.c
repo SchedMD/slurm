@@ -1785,6 +1785,7 @@ static int _create_socket(void *x, void *arg)
 		 * end of this loop
 		 */
 		int fd;
+		int one = 1;
 		fd = socket(addr->ai_family, addr->ai_socktype,
 			    addr->ai_protocol);
 		if (fd < 0)
@@ -1795,8 +1796,8 @@ static int _create_socket(void *x, void *arg)
 		 * activate socket reuse to avoid annoying timing issues
 		 * with daemon restarts
 		 */
-		if (setsockopt(fd, addr->ai_socktype, SO_REUSEADDR, &(int){ 1 },
-			       sizeof(int)))
+		if (setsockopt(fd, addr->ai_socktype, SO_REUSEADDR,
+			       &one, sizeof(one)))
 			fatal("%s: [%s] setsockopt(SO_REUSEADDR) failed: %m",
 			      __func__, addrinfo_to_string(addr));
 
