@@ -761,13 +761,6 @@ static bool _filter_out(node_info_t *node_ptr)
 					match = true;
 					break;
 				}
-			} else if (*node_state == NODE_STATE_IDLE) {
-				base_state = node_ptr->node_state &
-					(~NODE_STATE_NO_RESPOND);
-				if (base_state == NODE_STATE_IDLE) {
-					match = true;
-					break;
-				}
 			} else {
 				base_state =
 					node_ptr->node_state & NODE_STATE_BASE;
