@@ -71,6 +71,8 @@ documents those changes that are of interest to users and administrators.
  -- Add check to the reservation create/update logic to prevent an inconsistent
     state without nodes and with no ANY_NODES flag with either Licenses,
     BurstBuffer and/or Watts.
+ -- slurmrestd - allow the host to be optional when specifying the address to
+    listen on.
 
 * Changes in Slurm 20.02.6
 ==========================

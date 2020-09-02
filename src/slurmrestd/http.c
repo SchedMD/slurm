@@ -36,6 +36,7 @@
 
 #include "config.h"
 
+#include <ctype.h>
 #include <http_parser.h>
 #include <limits.h>
 #include <sys/socket.h>
@@ -685,6 +686,26 @@ extern parsed_host_port_t *parse_host_port(const char *str)
 		return NULL;
 	}
 
+	/* Allow :::PORT and :PORT to default to in6addr_any */
+	if (str[0] == ':') {
+		char *pstr = xstrdup(str);
+		pstr[0] = ' ';
+
+		if (pstr[1] == ':' && pstr[2] == ':') {
+			pstr[1] = ' ';
+			pstr[2] = ' ';
+		}
+
+		/* remove any whitespace */
+		xstrtrim(pstr);
+
+		parsed = xmalloc(sizeof(*parsed));
+		parsed->host = xstrdup("::");
+		parsed->port = pstr;
+		return parsed;
+	}
+
+	/* Only useful for RFC3986 addresses */
 	_http_parser_url_init(&url);
 
 	if (http_parser_parse_url(str, strlen(str), true, &url)) {

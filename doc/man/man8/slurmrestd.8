@@ -3,7 +3,7 @@
 .SH "NAME"
 slurmrestd \- Interface to Slurm via REST API.
 .SH "SYNOPSIS"
-\fBslurmrestd\fR [\fIOPTIONS\fR...] [(host:port)|(unix:/path/to/socket)]...
+\fBslurmrestd\fR [\fIOPTIONS\fR...] <\fI[host]:port\fR|\fIunix:/path/to/socket\fR>
 .SH "DESCRIPTION"
 \fBslurmrestd\fR is REST API interface for Slurm. It can be used in two modes:
 
@@ -19,10 +19,11 @@ host:port pair or UNIX socket.
 .SH "OPTIONS"
 
 .TP
-\fB[host:port]\fR
+\fB[host]:port\fR
 Hostname and port to listen against. Host may be (IPv4/IPv6) IP or a resolvable
 hostname. Hostnames are only looked up at startup and do not change for the
-life of the process.
+life of the process. Host is optional; if not provided slurmrestd will listen on
+all network interfaces.
 .TP
 \fBunix:/path/to/socket\fR
 Listen on local UNIX socket. Must have permission to create socket in
