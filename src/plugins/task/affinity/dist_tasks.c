@@ -1013,6 +1013,9 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 					memset(core_tasks, 0,
 					       (sizeof(int) *
 					        hw_sockets * hw_cores));
+					memset(core_threads, 0,
+					       (sizeof(int) *
+					        hw_sockets * hw_cores));
 					memset(socket_last_pu, 0,
 					       (sizeof(int) * hw_sockets));
 				}
@@ -1190,6 +1193,8 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 		if (taskcount > 0) {
 			/* Clear counters to over-subscribe, if necessary */
 			memset(core_tasks, 0,
+			       (sizeof(int) * hw_sockets * hw_cores));
+			memset(core_threads, 0,
 			       (sizeof(int) * hw_sockets * hw_cores));
 			memset(socket_tasks, 0,
 			       (sizeof(int) * hw_sockets));
