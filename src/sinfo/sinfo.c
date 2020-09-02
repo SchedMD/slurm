@@ -724,32 +724,29 @@ static bool _filter_out(node_info_t *node_ptr)
 
 		iterator = list_iterator_create(params.state_list);
 		while ((node_state = list_next(iterator))) {
+			match = false;
 			tmp_node_ptr->node_state = *node_state;
 			if (*node_state == NODE_STATE_DRAIN) {
 				/* We search for anything that has the
 				 * drain flag set */
 				if (IS_NODE_DRAIN(node_ptr)) {
 					match = true;
-					break;
 				}
 			} else if (IS_NODE_DRAINING(tmp_node_ptr)) {
 				/* We search for anything that gets mapped to
 				 * DRAINING in node_state_string */
 				if (IS_NODE_DRAINING(node_ptr)) {
 					match = true;
-					break;
 				}
 			} else if (IS_NODE_DRAINED(tmp_node_ptr)) {
 				/* We search for anything that gets mapped to
 				 * DRAINED in node_state_string */
 				if (IS_NODE_DRAINED(node_ptr)) {
 					match = true;
-					break;
 				}
 			} else if (*node_state & NODE_STATE_FLAGS) {
 				if (*node_state & node_ptr->node_state) {
 					match = true;
-					break;
 				}
 			} else if (*node_state == NODE_STATE_ALLOCATED) {
 				slurm_get_select_nodeinfo(
@@ -759,16 +756,19 @@ static bool _filter_out(node_info_t *node_ptr)
 					&cpus);
 				if (cpus) {
 					match = true;
-					break;
 				}
 			} else {
 				base_state =
 					node_ptr->node_state & NODE_STATE_BASE;
 				if (base_state == *node_state) {
 					match = true;
-					break;
 				}
 			}
+
+			if (!params.state_list_and && match)
+				break;
+			if (params.state_list_and && !match)
+				break;
 		}
 		list_iterator_destroy(iterator);
 		if (!match)

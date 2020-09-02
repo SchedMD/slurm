@@ -84,6 +84,7 @@ documents those changes that are of interest to users and administrators.
  -- SlurmctldParameters=power_save[_min]_interval - Configure how often the
     power save module looks to do work.
  -- Add CLOUD state to sinfo --state filter list.
+ -- Add ability for sinfo state filtering to require all listed states.
 
 * Changes in Slurm 20.02.6
 ==========================
