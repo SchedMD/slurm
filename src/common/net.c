@@ -259,10 +259,11 @@ extern char *sockaddr_to_string(const struct sockaddr *addr, socklen_t addrlen)
 	} else if (rc) {
 		error("Unable to get address: %s", gai_strerror(rc));
 	} else {
+		/* construct RFC3986 host port pair */
 		if (host[0] != '\0' && serv[0] != '\0')
-			xstrfmtcat(resp, "%s:%s", host, serv);
+			xstrfmtcat(resp, "[%s]:%s", host, serv);
 		else if (serv[0] != '\0')
-			xstrfmtcat(resp, "*:%s", serv);
+			xstrfmtcat(resp, "[::]:%s", serv);
 	}
 
 	return resp;

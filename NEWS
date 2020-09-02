@@ -74,6 +74,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - allow the host to be optional when specifying the address to
     listen on.
  -- slurmrestd - Log numerical service name when referencing host port pairs.
+ -- slurmrestd - Log host port information in RFC3986 format.
 
 * Changes in Slurm 20.02.6
 ==========================
