@@ -252,7 +252,8 @@ extern char *sockaddr_to_string(const struct sockaddr *addr, socklen_t addrlen)
 	}
 
 	resp = xmalloc(NI_MAXHOST + NI_MAXSERV);
-	rc = getnameinfo(addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, 0);
+	rc = getnameinfo(addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV,
+			 NI_NUMERICSERV);
 	if (rc == EAI_SYSTEM) {
 		error("Unable to get address: %m");
 	} else if (rc) {
