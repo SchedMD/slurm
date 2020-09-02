@@ -40,7 +40,7 @@ set other_part_name  ""
 #
 spawn $sinfo --summarize
 expect {
-	-re "($end_of_line)($re_word_str) *up" {
+	-re "($eol)($re_word_str) *up" {
 		set last [string last "*" $expect_out(2,string)]
 		if { $last != -1 } {
 			set def_part_name   [string range $expect_out(2,string)	0 [expr $last-1]]

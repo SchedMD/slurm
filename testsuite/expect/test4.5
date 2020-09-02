@@ -164,7 +164,7 @@ if {[wait_for_job $tmp_id "RUNNING"] != 0} {
 
 spawn $sinfo --Node --node=$node_list(0),$node_list(1) --long --exact --state=allocated -p$partition
 expect {
-	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
+	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		if ([string compare $expect_out(5,string) "allocated"]) {
 			incr mismatches
 		}
@@ -200,7 +200,7 @@ change_state drain $node_list(6),$node_list(7)
 log_info "Testing IDLE state"
 spawn $sinfo --Node --node=$node_list(2),$node_list(3) --long --exact --state=idle -p$partition
 expect {
-	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
+	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		if ([string compare $expect_out(5,string) "idle"]) {
 			incr mismatches
 		}
@@ -228,7 +228,7 @@ expect {
 log_info "Testing DOWN state"
 spawn $sinfo --Node --node=$node_list(4),$node_list(5) --long --exact --state=down -p$partition
 expect {
-	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
+	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		if ([string compare $expect_out(5,string) "down"]) {
 			incr mismatches
 		}
@@ -256,7 +256,7 @@ expect {
 log_info "Testing DRAIN state"
 spawn $sinfo --Node --node=$node_list(6),$node_list(7) --long --exact --state=drain -p$partition
 expect {
-	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
+	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		if ([string compare $expect_out(5,string) "drained"]) {
 			incr mismatches
 		}

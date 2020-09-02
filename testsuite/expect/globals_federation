@@ -41,9 +41,6 @@ cset fedc1 		""
 cset fedc2 		""
 cset fedc3 		""
 
-set eol "\r\n"
-
-
 proc test_federation_setup { } {
 	global fed_slurm_base fedc1 fedc2 fedc3
 	set rc 0

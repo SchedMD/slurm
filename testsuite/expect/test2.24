@@ -91,7 +91,7 @@ log_user 1
 #
 spawn $scontrol write config
 expect {
-	-re "(/.*)/*($re_word_str)*\r\n" {
+	-re "(/.*)/*($re_word_str)*$eol" {
 		set new_conf $expect_out(1,string)
 		exp_continue
 	}

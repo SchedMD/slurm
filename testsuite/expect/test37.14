@@ -56,8 +56,6 @@ set jid(0) 0
 set jid(1) 0
 set jid(2) 0
 
-set eol "\r\n"
-
 #
 # Check accounting config and bail if not found.
 #
