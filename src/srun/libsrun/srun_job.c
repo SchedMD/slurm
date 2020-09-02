@@ -1585,7 +1585,6 @@ cleanup:
 		*global_rc = 128 + WTERMSIG(*global_rc);
 
 	mpir_cleanup();
-	log_fini();
 }
 
 void
