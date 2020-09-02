@@ -501,6 +501,8 @@ _node_state_list (void)
 	xstrcat(all_states,
 		",DRAIN,DRAINED,DRAINING,NO_RESPOND,RESERVED,PERFCTRS");
 	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_CLOUD));
+	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_COMPLETING));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_POWERING_DOWN));
@@ -579,6 +581,8 @@ _node_state_id (char *str)
 		return NODE_STATE_MAINT;
 	if (_node_state_equal (NODE_STATE_REBOOT, str))
 		return NODE_STATE_REBOOT;
+	if (_node_state_equal(NODE_STATE_CLOUD, str))
+		return NODE_STATE_CLOUD;
 
 	return (-1);
 }

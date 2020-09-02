@@ -83,6 +83,7 @@ documents those changes that are of interest to users and administrators.
     NodeAddr and NodeHostname set from slurmd registration.
  -- SlurmctldParameters=power_save[_min]_interval - Configure how often the
     power save module looks to do work.
+ -- Add CLOUD state to sinfo --state filter list.
 
 * Changes in Slurm 20.02.6
 ==========================
