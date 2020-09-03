@@ -35,6 +35,9 @@ set file_in3         "test$test_id.input3"
 set file_out1        "test$test_id.output1"
 set file_out2        "test$test_id.output2"
 
+# Bug 9701: disabling test until bug 6252 is fixed
+skip "Test disabled until bug 6252 is fixed"
+
 if {![test_scheduler_params "permit_job_expansion"]} {
     skip "This test is only compatible with SchedulerParameters=permit_job_expansion"
 }
