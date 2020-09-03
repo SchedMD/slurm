@@ -36,8 +36,6 @@ set prompt      "PROMPT: "
 
 if {[test_front_end]} {
 	skip "This test is incompatible with front-end systems"
-} elseif {[test_multiple_slurmd] != 0} {
-	skip "This test is incompatible with multiple slurmd systems"
 }
 
 # find out if we have enough nodes to test functionality
