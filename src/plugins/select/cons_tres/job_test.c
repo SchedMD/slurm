@@ -1554,7 +1554,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
 			if (avail_cpus == 0) {
-				debug2("%pJ insufficient resources on required node",
+				log_flag(SELECT_TYPE, "%pJ insufficient resources on required node",
 				       job_ptr);
 				rc = SLURM_ERROR;
 				goto fini;
@@ -1762,7 +1762,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		xfree(gres_str);
 	}
 	if (!sufficient) {
-		info("insufficient resources currently available for %pJ",
+		log_flag(SELECT_TYPE, "insufficient resources currently available for %pJ",
 		      job_ptr);
 		rc = SLURM_ERROR;
 		goto fini;
@@ -2402,7 +2402,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		xfree(gres_str);
 	}
 	if (!sufficient) {
-		info("insufficient resources currently available for %pJ",
+		log_flag(SELECT_TYPE, "insufficient resources currently available for %pJ",
 		      job_ptr);
 		rc = SLURM_ERROR;
 		goto fini;
