@@ -5198,6 +5198,8 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 				cnt *= ((*num_tasks + *ntasks_per_socket - 1) /
 				        *ntasks_per_socket);
 			}
+			job_gres_data->total_gres =
+				MAX(job_gres_data->total_gres, cnt);
 		}
 	}
 	if (tres_per_task) {
