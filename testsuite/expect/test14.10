@@ -47,6 +47,12 @@ set hostlist [get_nodes_by_request "-N2"]
 if {[llength $hostlist] != 2} {
 	skip "Did not find at least 2 nodes to submit jobs"
 }
+
+proc cleanup {} {
+	global bin_rm file_in1 file_in2
+	run_command "$bin_rm -rf $file_in1 $file_in2"
+}
+
 set node1    [lindex $hostlist 0]
 set node2    [lindex $hostlist 1]
 set hostlist [join $hostlist ","]
@@ -87,7 +93,6 @@ expect {
 		fail "Unable to delete/create file, check permissions"
 	}
 	-re "(configuration is not available|Unable to submit batch job|Node count specification invalid|More processors requested than permitted)" {
-		exec $bin_rm -rf $file_in1 $file_in2
 		skip "Can't run this test"
 	}
 	-re "cannot create directory" {
@@ -126,8 +131,6 @@ if {$matches != 2} {
 	fail "sbcast did not copy the file to the correct nodes ($matches != 2)"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -rf $file_in1 $file_in2
-} else {
+if {$exit_code} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
