@@ -1036,7 +1036,8 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			if ((req->ntasks_per_core != 0) &&
 			    (core_tasks[core_inx] >= req->ntasks_per_core))
 				continue;
-			if ((req->threads_per_core != NO_VAL16) &&
+			if (req->threads_per_core &&
+			    (req->threads_per_core != NO_VAL16) &&
 			    (core_threads[core_inx] >= req->threads_per_core))
 				continue;
 			/* skip unrequested threads */
@@ -1216,7 +1217,8 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			if ((req->ntasks_per_socket != 0) &&
 			    (socket_tasks[sock_inx] >= req->ntasks_per_socket))
 				continue;
-			if ((req->threads_per_core != NO_VAL16) &&
+			if (req->threads_per_core &&
+			    (req->threads_per_core != NO_VAL16) &&
 			    (core_threads[core_inx] >= req->threads_per_core))
 				continue;
 
