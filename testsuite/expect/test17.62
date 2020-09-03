@@ -36,11 +36,14 @@ set stderr        "/tmp/err"
 set job_id        0
 set node_list     [get_idle_node_in_part $partition]
 
+# Default for LSF is KB, but Slurm is in MB
+# Check values in MB, but set them in KB in the batch script.
 if {[test_select_type_params "MEMORY"]} {
-	set job_mem  100
+	set job_mem 4
 } else {
-	set job_mem  1
+	set job_mem 1
 }
+set job_mem_kb "[expr $job_mem * 1024]"
 
 array set check_list { }
 set check_list(JobName)      $job_name
@@ -55,7 +58,7 @@ make_bash_script $file_in "
 
 #BSUB -o$stdout -e$stderr
 #BSUB -m\"$node_list\"
-#BSUB -J$job_name -M$job_mem
+#BSUB -J$job_name -M$job_mem_kb
 #BSUB -W$job_time -x -q$partition
 sleep 10
 "
