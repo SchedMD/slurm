@@ -41,31 +41,15 @@ if {[test_front_end] != 0} {
 	skip "This test is incompatible with front-end systems"
 } elseif {[slurmd_user_root] == 0} {
 	skip "This test requires that the SlurmdUser be root"
-} elseif {[get_node_cnt] < 2} {
-	skip "This test requires that the configuration has at least 2 nodes"
 }
 
-spawn $bin_bash -c "exec $scontrol show hostnames \$($sinfo -tidle -h -o%N) | head -n2 |tr \'\n\' ' ' "
-expect {
-	-re "($re_word_str) ($re_word_str)" {
-		set node1 $expect_out(1,string)
-		set node2 $expect_out(2,string)
-		exp_continue
-	}
-	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
+set hostlist [get_nodes_by_request "-N2"]
+if {[llength $hostlist] != 2} {
+	skip "Did not find at least 2 nodes to submit jobs"
 }
-if {![string compare $node1 ""] || ![string compare $node2 ""]} {
-	skip "Did not find at least 2 idle nodes"
-}
-
-set hostlist "$node1,$node2"
-
+set node1    [lindex $hostlist 0]
+set node2    [lindex $hostlist 1]
+set hostlist [join $hostlist ","]
 
 make_bash_script $file_in1 "
 $srun $bin_rm -f /tmp/$node1/test$test_id\_file
