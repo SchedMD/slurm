@@ -50,7 +50,7 @@ set test_node   ""
 # Total cpus in test node
 set totcpus     0
 set nthreads    0
-set acct        test_acct
+set acct        "$test_id\_test_acct"
 set user_name   ""
 set qosname     name
 set qostest     "$test_id\_qostest"
