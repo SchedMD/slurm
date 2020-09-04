@@ -84,8 +84,6 @@ strong_alias(s_p_get_boolean,		slurm_s_p_get_boolean);
 strong_alias(s_p_dump_values,		slurm_s_p_dump_values);
 strong_alias(transfer_s_p_options,	slurm_transfer_s_p_options);
 
-#define BUFFER_SIZE 4096
-
 #define CONF_HASH_LEN 173
 
 static char *keyvalue_pattern =

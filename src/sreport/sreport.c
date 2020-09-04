@@ -49,7 +49,6 @@
 #include "src/common/proc_args.h"
 #include "src/common/strlcpy.h"
 
-#define BUFFER_SIZE		4096
 #define OPT_LONG_LOCAL		0x101
 #define OPT_LONG_FEDR		0x102
 

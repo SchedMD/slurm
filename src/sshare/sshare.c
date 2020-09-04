@@ -42,7 +42,6 @@
 #include <grp.h>
 
 
-#define BUFFER_SIZE 4096
 #define OPT_LONG_HELP  0x100
 #define OPT_LONG_USAGE 0x101
 
