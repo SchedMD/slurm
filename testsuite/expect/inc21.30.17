@@ -54,7 +54,16 @@ proc check_timelimit { job } {
 }
 
 proc inc21_30_17 { } {
-	global salloc srun acct bin_sleep number maxwall_num exit_code
+	global salloc srun acct bin_sleep number maxwall_num exit_code skips
+
+	# If the partition has DefaultTime set it will mess up this test.
+	# Since there is currently no way to use scontrol to change default
+	# time to "none" just skip this subtest.
+	if { [get_partition_default_time_limit ""] != -1 } {
+		log_warn "SKIP: Default partition has a default time limit set, cannot run inc21.30.17"
+		incr skips
+		return
+	}
 
 	log_info "Starting Qos/Parent MaxWall applied to job without -t test (Within: inc21.31.17)"
 	set job_id 0
