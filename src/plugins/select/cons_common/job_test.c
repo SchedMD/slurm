@@ -1706,12 +1706,6 @@ static int _wrapper_job_res_rm_job(void *x, void *arg)
 			     job_ptr, wargs->action, wargs->job_fini,
 			     wargs->node_map);
 
-	/*
-	 * We might not had overlapped the main hetjob component partition, but
-	 * we might need these nodes.
-	 */
-	bit_or(wargs->node_map, job_ptr->node_bitmap);
-
 	return 0;
 }
 
@@ -1755,7 +1749,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 {
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
-	job_record_t *tmp_job_ptr;
+	job_record_t *tmp_job_ptr, *job_ptr_preempt = NULL;
 	List cr_job_list;
 	ListIterator job_iterator, preemptee_iterator;
 	bitstr_t *orig_map;
@@ -1819,10 +1813,29 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			      tmp_job_ptr);
 			continue;
 		}
-		if (!_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
+		/*
+		 * For hetjobs, only the leader component is potentially added
+		 * to the preemptee_candidates. If the leader is preemptable,
+		 * it will be removed in the else statement alongside all of the
+		 * rest of the components. For such case, we don't want to
+		 * append non-leaders to cr_job_list, otherwise we would be
+		 * double deallocating them (once in this else statement and
+		 * twice later in the simulation of jobs removal).
+		 */
+		job_ptr_preempt = tmp_job_ptr;
+		if (tmp_job_ptr->het_job_id) {
+			job_ptr_preempt =
+				find_job_record(tmp_job_ptr->het_job_id);
+			if (!job_ptr_preempt) {
+				error("%s: %pJ HetJob leader not found",
+				      __func__, tmp_job_ptr);
+				continue;
+			}
+		}
+		if (!_is_preemptable(job_ptr_preempt, preemptee_candidates)) {
 			/* Queue job for later removal from data structures */
 			list_append(cr_job_list, tmp_job_ptr);
-		} else {
+		} else if (tmp_job_ptr == job_ptr_preempt) {
 			uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
 			if (mode == PREEMPT_MODE_OFF)
 				continue;
