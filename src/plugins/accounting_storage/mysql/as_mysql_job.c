@@ -49,8 +49,6 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_time.h"
 
-#define BUFFER_SIZE 4096
-
 typedef struct {
 	char *cluster;
 	uint32_t new;
@@ -1141,7 +1139,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 	int tasks = 0, nodes = 0, task_dist = 0;
 	int rc = SLURM_SUCCESS;
 	char temp_bit[BUF_SIZE];
-	char node_list[BUFFER_SIZE];
+	char *node_list = NULL;
 	char *node_inx = NULL;
 	time_t start_time, submit_time;
 	char *query = NULL;
@@ -1171,8 +1169,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 			tasks = step_ptr->job_ptr->details->num_tasks;
 		else
 			tasks = step_ptr->cpu_count;
-		snprintf(node_list, BUFFER_SIZE, "%s",
-			 step_ptr->job_ptr->nodes);
+		node_list = step_ptr->job_ptr->nodes;
 		nodes = step_ptr->step_layout->node_cnt;
 		task_dist = step_ptr->step_layout->task_dist;
 		node_inx = step_ptr->network;
@@ -1185,7 +1182,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		 * We overload tres_per_node with the node name of where the
 		 * script was running.
 		 */
-		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->tres_per_node);
+		node_list = step_ptr->tres_per_node;
 		nodes = tasks = 1;
 		if (!step_ptr->tres_alloc_str)
 			xstrfmtcat(step_ptr->tres_alloc_str,
@@ -1194,8 +1191,6 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 				   TRES_CPU, 1,
 				   TRES_NODE, 1);
 	} else {
-		char *temp_nodes = NULL;
-
 		if (step_ptr->step_node_bitmap) {
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					   step_ptr->step_node_bitmap);
@@ -1220,15 +1215,13 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 			}
 
 			nodes = step_ptr->job_ptr->total_nodes;
-			temp_nodes = step_ptr->job_ptr->nodes;
+			node_list = step_ptr->job_ptr->nodes;
 		} else {
 			tasks = step_ptr->step_layout->task_cnt;
 			nodes = step_ptr->step_layout->node_cnt;
 			task_dist = step_ptr->step_layout->task_dist;
-			temp_nodes = step_ptr->step_layout->node_list;
+			node_list = step_ptr->step_layout->node_list;
 		}
-
-		snprintf(node_list, BUFFER_SIZE, "%s", temp_nodes);
 	}
 
 	if (!step_ptr->job_ptr->db_index) {

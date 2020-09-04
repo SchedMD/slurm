@@ -61,8 +61,6 @@
 #include "as_ext_dbd.h"
 #include "slurmdbd_agent.h"
 
-#define BUFFER_SIZE 4096
-
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
@@ -2695,24 +2693,21 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 {
 	uint32_t tasks = 0, nodes = 0, task_dist = 0;
-	char node_list[BUFFER_SIZE];
+	char *node_list = NULL;
 	persist_msg_t msg = {0};
 	dbd_step_start_msg_t req;
 	char temp_bit[BUF_SIZE];
-	char *temp_nodes = NULL;
 
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		tasks = step_ptr->job_ptr->total_cpus;
 		nodes = step_ptr->job_ptr->total_nodes;
-		temp_nodes = step_ptr->job_ptr->nodes;
+		node_list = step_ptr->job_ptr->nodes;
 	} else {
 		tasks = step_ptr->step_layout->task_cnt;
 		nodes = step_ptr->step_layout->node_cnt;
 		task_dist = step_ptr->step_layout->task_dist;
-		temp_nodes = step_ptr->step_layout->node_list;
+		node_list = step_ptr->step_layout->node_list;
 	}
-
-	snprintf(node_list, BUFFER_SIZE, "%s", temp_nodes);
 
 	if (!step_ptr->job_ptr->db_index
 	    && (!step_ptr->job_ptr->details
