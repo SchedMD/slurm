@@ -459,8 +459,9 @@ This option is for all daemons/clients except for the slurmctld.
 
 .TP
 \fBCompleteWait\fR
-The time, in seconds, given for a job to remain in COMPLETING state
-before any additional jobs are scheduled.
+The time to wait, in seconds, when any job is in the COMPLETING state
+before any additional jobs are scheduled. This is to attempt to keep jobs on
+nodes that were recently in use, with the goal of preventing fragmentation.
 If set to zero, pending jobs will be started as soon as possible.
 Since a COMPLETING job's resources are released for use by other
 jobs as soon as the \fBEpilog\fR completes on each individual node,
@@ -472,6 +473,9 @@ plus two is recommended.
 In that case, setting \fBKillWait\fR to a small value may be beneficial.
 The default value of \fBCompleteWait\fR is zero seconds.
 The value may not exceed 65533.
+
+\fBNOTE\fR: Setting \fBreduce_completing_frag\fR affects the behavior
+of \fBCompleteWait\fR.
 
 .TP
 \fBControlAddr\fR
@@ -3085,15 +3089,20 @@ preempt/partition_prio or preempt/qos plugins.)
 .TP
 \fBreduce_completing_frag\fR
 This option is used to control how scheduling of resources is performed when
-jobs are in completing state, which influences potential fragmentation.
-If the option is not set then no jobs will be started in any partition when
-any job is in completing state.
-If the option is set then no jobs will be started in any individual partition
-that has a job in completing state.
+jobs are in the COMPLETING state, which influences potential fragmentation.
+If this option is not set then no jobs will be started in any partition when
+any job is in the COMPLETING state for less than \fBCompleteWait\fR seconds.
+If this option is set then no jobs will be started in any individual partition
+that has a job in COMPLETING state for less than \fBCompleteWait\fR seconds.
 In addition, no jobs will be started in any partition with nodes that overlap
 with any nodes in the partition of the completing job.
 This option is to be used in conjunction with \fBCompleteWait\fR.
-NOTE: \fBCompleteWait\fR must be set for this to work.
+
+\fBNOTE\fR: \fBCompleteWait\fR must be set in order for this to work. If
+\fBCompleteWait=0\fR then this option does nothing.
+
+\fBNOTE\fR: \fBreduce_completing_frag\fR only affects the main scheduler, not
+the backfill scheduler.
 .TP
 \fBrequeue_setup_env_fail\fR
 By default if a job environment setup fails the job keeps running with
