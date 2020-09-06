@@ -94,6 +94,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix wrong bit_or() messing potential preemptor jobs node bitmap, causing
     bad node deallocations and even allocation of nodes from other partitions.
  -- Fix double-deallocation of preempted non-leader hetjob components.
+ -- slurmdbd - prevent truncation of the step nodelists over 4095.
 
 * Changes in Slurm 20.02.4
 ==========================
