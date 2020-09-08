@@ -46,6 +46,7 @@
 #include <unistd.h>
 
 #include "src/common/log.h"
+#include "src/common/parse_time.h"
 #include "src/common/xstring.h"
 #include "src/lua/slurm_lua.h"
 
@@ -148,9 +149,17 @@ static int _log_lua_error(lua_State *L)
 	return (0);
 }
 
+static int _time_str2mins(lua_State *L) {
+	const char *time = lua_tostring(L, -1);
+	int minutes = time_str2mins(time);
+	lua_pushnumber(L, minutes);
+	return 1;
+}
+
 static const struct luaL_Reg slurm_functions [] = {
 	{ "log", _log_lua_msg },
 	{ "error", _log_lua_error },
+	{ "time_str2mins", _time_str2mins},
 	{ NULL, NULL }
 };
 
