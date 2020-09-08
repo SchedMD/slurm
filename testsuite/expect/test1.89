@@ -39,21 +39,20 @@ if {![test_cpu_affinity_or_cgroup]} {
 }
 log_info "Task affinity plugin installed"
 
-set force 0
-log_user 0
-spawn $scontrol show partition [default_partition]
-expect {
-	-re "OverSubscribe=FORCE" {
-		set force 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-if {$force == 1} {
+set show_partition_output [run_command_output -fail "$scontrol show partition [default_partition]"]
+if [regexp {OverSubscribe=FORCE} $show_partition_output] {
 	skip "This test is not compatible with OverSubscribe=FORCE"
+}
+
+set node_name [get_nodes_by_request "-N1 --exclusive -t5"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least -N1 --exclusive -t5"
+}
+if {[get_node_param $node_name "CoreSpecCount"] != "MISSING"} {
+	skip "This test is incompatible with nodes that have a CoreSpecCount (e.g. $node_name)"
+}
+if {[get_node_param $node_name "CPUSpecList"] != "MISSING"} {
+	skip "This test is incompatible with nodes that have a CPUSpecList (e.g. $node_name)"
 }
 
 #
@@ -67,7 +66,7 @@ exec $bin_chmod 700 $file_prog
 # Create an allocation
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 --exclusive -t5 $bin_bash]
+set salloc_pid [spawn $salloc -N1 --exclusive -t5 -w $node_name $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
