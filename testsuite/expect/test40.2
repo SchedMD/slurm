@@ -42,7 +42,8 @@ if {[test_cons_tres]} {
 	skip "This test is only compatible with select/cons_tres"
 }
 
-if {[llength [get_nodes_by_request "--gres=mps:100 -t1"]] == 0} {
+set node_with_mps [get_nodes_by_request "--gres=mps:100 -t1"]
+if {[llength $node_with_mps] != 1} {
 	skip "This test requires being able to submit job with --gres=mps:100"
 }
 
@@ -68,7 +69,7 @@ set host "unknown"
 set matches 0
 set percentage -1
 set target_job  [expr $mps_cnt / 2]
-set srun_pid [spawn $srun --gres=mps:$target_job -n1 -t1 -J "test$test_id" $file_in1]
+set srun_pid [spawn $srun --gres=mps:$target_job -w $node_with_mps -n1 -t1 -J "test$test_id" $file_in1]
 expect {
 	-re "HOST:($re_word_str)" {
 		incr matches
@@ -121,7 +122,7 @@ $bin_date
 exit 0"
 exec $bin_rm -f $file_out1
 set job_id 0
-set sbatch_pid [spawn $sbatch --gres=mps:$target_job -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
+set sbatch_pid [spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -185,7 +186,7 @@ if {$match != 3} {
 #
 log_info "==== TEST 3 ===="
 set match 0
-set salloc_pid [spawn $salloc --gres=mps:$target_job -n1 -t1 -J "test$test_id" ./$file_in2]
+set salloc_pid [spawn $salloc --gres=mps:$target_job -w $node_with_mps -n1 -t1 -J "test$test_id" ./$file_in2]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number) CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
 		if {$expect_out(1,string) != 0} {
@@ -243,7 +244,7 @@ $bin_date
 exit 0"
 exec $bin_rm -f $file_out1
 set job_id 0
-set sbatch_pid [spawn $sbatch --gres=mps:$target_job -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
+set sbatch_pid [spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -326,7 +327,7 @@ $srun --mem=0 --gres=mps:$target_step $file_in1
 exit 0"
 exec $bin_rm -f $file_out1
 set job_id 0
-set sbatch_pid [spawn $sbatch --gres=mps:$target_job -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
+set sbatch_pid [spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -434,7 +435,7 @@ if {[test_front_end] == 0} {
 
 	exec $bin_rm -f $file_out1 $file_out2
 	set job_id1 0
-	set sbatch_pid [spawn $sbatch --gres=gpu:1 -n1 -t1 -o $file_out1 -J "test$test_id" $file_in1]
+	set sbatch_pid [spawn $sbatch --gres=gpu:1 -w $node_with_mps -n1 -t1 -o $file_out1 -J "test$test_id" $file_in1]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id1 $expect_out(1,string)
