@@ -1135,9 +1135,9 @@ proc kill_srun {  } {
 #	-timeout <float_number>
 #		time in seconds to wait for the command to complete before
 #		timing out (default is 60.0)
-#	-pollinterval <floa_number>
+#	-pollinterval <float_number>
 #		time in seconds between each loop execution and condition check
-#		(defaults to 1.0)
+#		(default is 1.0)
 #
 # ARGUMENTS
 #	condition
@@ -1150,8 +1150,9 @@ proc kill_srun {  } {
 #	false if the timeout occurs before the condition is met
 #
 ################################################################
+
 proc wait_for args {
-	set timeout 60
+	set timeout       60
 	set poll_interval 1
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
@@ -1198,6 +1199,7 @@ proc wait_for args {
 		}
 	}
 }
+
 
 ################################################################
 #
@@ -1316,15 +1318,14 @@ proc wait_for_file { file_name } {
 	for {set my_delay 0} {$my_delay <= $max_file_delay} \
 	                     {set my_delay [expr $my_delay + $testsuite_poll_interval]} {
 		if {[file exists $file_name]} {
-#			Add small delay for I/O buffering
+			# Add small delay for I/O buffering
 			exec $bin_sleep 1
 			return 0
 		}
 		exec $bin_sleep $testsuite_poll_interval
-#
-#		Expect may fail to load current NFS info.
-#		Use the ls command to load current info.
-#
+
+		# Expect may fail to load current NFS info.
+		# Use the ls command to load current info.
 		set slash_pos [string last $file_name "/"]
 		if {$slash_pos < 1} {
 			set dir_name "."
