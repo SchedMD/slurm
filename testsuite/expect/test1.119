@@ -1,0 +1,204 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test --ntasks-per-gpu
+############################################################################
+# Copyright (C) 2020 SchedMD LLC
+# Written by Michael Hinton <hinton@schedmd.com>
+# Written by Albert Gil <albert.gil@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in  "$test_name.input"
+set file_out "$test_name.output"
+set job_list ""
+
+if {[get_config_param "FrontendName"] ne "MISSING"} {
+	skip "This test is incompatible with front end systems"
+}
+
+set nodes [get_nodes_by_request "--gres=gpu:2 -N2"]
+if {[llength $nodes] != 2} {
+	skip "This test requires 2 or more GPUs on at least 2 nodes in the default partition"
+}
+
+if {![check_config_select "cons_tres"]} {
+	skip "This test is only compatible with select/cons_tres"
+}
+
+# For now, only test constrained devices
+if {[expr {[get_config_param "ConstrainDevices"] ne "yes"}]} {
+	skip "This test requires devices to be constrained by cgroups"
+}
+
+
+################################################################################
+# Cleanup
+################################################################################
+
+proc cleanup {} {
+	global bin_rm file_in file_out job_list
+	exec $bin_rm -f $file_in $file_out
+	cancel_job $job_list
+}
+
+
+################################################################################
+# Test --ntasks-per-gpu in srun
+################################################################################
+
+# Assumes 2 GPUs
+proc test_srun {expected_tot expected_gpu srun_args {srun_env ""}} {
+	global srun
+
+	set match 0
+	set match0 0
+	set match1 0
+
+	if {$srun_env != ""} {
+		set output [run_command_output "env $srun_env $srun $srun_args -t1 printenv CUDA_VISIBLE_DEVICES"]
+	} else {
+		set output [run_command_output "$srun $srun_args -t1 printenv CUDA_VISIBLE_DEVICES"]
+	}
+
+	foreach line [split $output "\n"] {
+		if {[regexp {0} $line {} {}] == 1} {
+			incr match0
+			incr match
+		}
+		if {[regexp {1} $line {} {}] == 1} {
+			incr match1
+			incr match
+		}
+	}
+
+	subtest {$match0 == $expected_gpu} "GPU 0 should be bound to $expected_gpu" "$match0 != $expected_gpu"
+	subtest {$match1 == $expected_gpu} "GPU 1 should be bound to $expected_gpu" "$match1 != $expected_gpu"
+	subtest {$match  == $expected_tot} "Total bounds should be $expected_tot"   "$match  != $expected_tot"
+}
+
+
+################################################################################
+# Test sbatch + srun
+################################################################################
+
+proc test_sbatch {expected_tasks args {env ""}} {
+	global sbatch srun file_in file_out test_name number
+	global bin_cat job_list
+
+	set job_id 0
+	set match 0
+	set match0 0
+	set match1 0
+
+	set job_id [submit_job -fail -env $env "$args -t1 -o $file_out -J $test_name ./$file_in"]
+	lappend job_list $job_id
+
+	if {[wait_for_job $job_id "DONE"] != 0} {
+		fail "Job $job_id did not complete"
+	}
+	if {[wait_for_file $file_out] != 0} {
+		fail "No output file"
+	}
+	set output [run_command_output -fail "$bin_cat $file_out"]
+	set match  [regexp -all {[0|1]} $output]
+	subtest {$match == $expected_tasks} "Number of tasks bound to 1 GPU should be $expected_tasks" "$match != $expected_tasks"
+}
+
+
+################################################################################
+# Test invalid argument combinations
+################################################################################
+
+proc test_invalid {cmd args {env ""}} {
+	global srun file_in file_out test_name number
+	global bin_cat job_list
+
+	set job_id 0
+	set env_str ""
+
+	if {$env != ""} {
+		set env_str " and env \"$env\""
+	}
+
+	if {$cmd == "sbatch"} {
+		set job_id [submit_job -xfail -env $env "$args -t1 -o $file_out --wrap='sleep 30'"]
+		subtest {$job_id == 0} "sbatch should have failed due to invalid argument combination: $args$env_str" "$job_id != 0"
+		lappend job_list $job_id
+	} elseif {$cmd == "srun"} {
+		set exit_code 0
+		if {$env != ""} {
+			set exit_code [run_command_status "env $env $srun $args -t1 sleep 30"]
+		} else {
+			set exit_code [run_command_status "$srun $args -t1 sleep 30"]
+		}
+		subtest {$exit_code == 1} "srun should have failed due to invalid argument combination: $args$env_str" "$job_id != 0"
+	} else {
+		fail "`$cmd` is invalid"
+	}
+}
+
+# Create the sbatch script
+make_bash_script $file_in "
+$srun printenv CUDA_VISIBLE_DEVICES
+"
+
+# Tests 1.*
+# Allocate tasks to fill up the # of GPUs specified for the job
+testproc test_srun 4 2 "-N1 --gpus=2 --ntasks-per-gpu=2"
+testproc test_srun 4 2 "-N1 --gpus-per-node=2 --ntasks-per-gpu=2"
+testproc test_srun 4 2 "-N1 --gres=gpu:2 --ntasks-per-gpu=2"
+# Allocate GPUs to fill up the # of tasks specified for the job
+testproc test_srun 4 2 "-N1 -n4 --ntasks-per-gpu=2"
+
+# Test env
+testproc test_srun 4 2 "-N1 --gpus=2" "SLURM_NTASKS_PER_GPU=2"
+testproc test_srun 4 2 "-N1 -n4" "SLURM_NTASKS_PER_GPU=2"
+
+# Test ntasks-per-tres as well (but leave undocumented in favor of ntasks-per-gpu)
+testproc test_srun 4 2 "-N1 -n4 --ntasks-per-tres=2"
+testproc test_srun 4 2 "-N1 --gpus=2 --ntasks-per-tres=2"
+testproc test_srun 4 2 "-N1 -n4" "SLURM_NTASKS_PER_TRES=2"
+testproc test_srun 4 2 "-N1 --gpus=2" "SLURM_NTASKS_PER_TRES=2"
+
+# Tests 2.*
+
+# Note: sbatch does not take any input envs for --ntasks-per-[gpu|tres]
+
+testproc test_sbatch 4 "-N2 --ntasks-per-gpu=2 --gres=gpu:1"
+testproc test_sbatch 4 "-N1 --ntasks-per-gpu=2 --gres=gpu:2"
+
+# Test (undocumented) ntasks-per-tres options
+testproc test_sbatch 4 "-N2 --ntasks-per-tres=2 --gres=gpu:1"
+testproc test_sbatch 4 "-N1 --ntasks-per-tres=2 --gres=gpu:2"
+
+# Test invalid argument combinations
+testproc test_invalid "sbatch" "--ntasks-per-gpu=2 --gpus-per-task=2"
+testproc test_invalid "sbatch" "--ntasks-per-gpu=2 --gpus-per-socket=2 --sockets-per-node=1"
+testproc test_invalid "sbatch" "--ntasks-per-gpu=2 --ntasks-per-node=2"
+testproc test_invalid "sbatch" "--ntasks-per-gpu=2 --ntasks-per-tres=2"
+testproc test_invalid "srun" "--ntasks-per-gpu=2 --gpus-per-task=2"
+testproc test_invalid "srun" "--ntasks-per-gpu=2 --gpus-per-socket=2 --sockets-per-node=1"
+testproc test_invalid "srun" "--ntasks-per-gpu=2 --ntasks-per-node=2"
+testproc test_invalid "srun" "--ntasks-per-gpu=2 --ntasks-per-tres=2"
+
+# Note that sbatch/salloc don't do input envs - only srun does
+testproc test_invalid "srun" "--ntasks-per-gpu=2" "SLURM_NTASKS_PER_TRES=2"
+testproc test_invalid "srun" "--ntasks-per-tres=2" "SLURM_NTASKS_PER_GPU=2"
