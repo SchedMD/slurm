@@ -235,22 +235,6 @@ cset bin_wc	"wc"
 cset max_job_delay 120
 
 #
-# Files must be propagated between nodes within this number of seconds.
-# The delay may be due to NFS.
-#
-cset max_file_delay 90
-
-#
-# Desired job state must be reached within this number of seconds.
-#
-cset max_job_state_delay 360
-
-#
-# Max number of iterations that wait_for_all_jobs can use
-#
-cset wait_for_all_jobs_iterations 600
-
-#
 # Specify the maximum number of tasks to use in the stress tests.
 #
 cset max_stress_tasks 4
@@ -265,12 +249,6 @@ set ::env(LANG)          "en_US.UTF-8"
 
 # Testsuite level variables
 cset testsuite_shared_dir "[$bin_pwd]"
-
-#
-# The poll interval (how many seconds to sleep between polls in functions like
-# wait_for_file and wait_for_job)
-#
-cset testsuite_poll_interval 1
 
 # Testsuite log variables
 cset testsuite_log_level $LOG_LEVEL_DEBUG
@@ -1207,11 +1185,19 @@ proc wait_for args {
 #	wait_for_command - waits for command output to match a pattern
 #
 # SYNOPSIS
-#	wait_for_command command args regex ?matches_in? ?or_more? ?matches_out? ?max_delay?
+#	wait_for_command ?options? command args regex ?matches_in? ?or_more? ?matches_out?
 #
 # DESCRIPTION
-#	Executes a command every testsuite_poll_interval until a regex
-#	pattern is matched in the output, or timeout after max_delay.
+#	Executes a command every poll interval until a regex
+#	pattern is matched in the output, or until timeout.
+#
+# OPTIONS
+#	-timeout <integer_number>
+#		time in seconds to wait for the command to complete before
+#		timing out (default is 120)
+#	-pollinterval <integer_number>
+#		time in seconds between each loop execution and condition check
+#		(default is 1)
 #
 # ARGUMENTS
 #	command
@@ -1230,9 +1216,6 @@ proc wait_for args {
 #		The upvar (a variable name to "pass by reference" in TCL)
 #		to set/return the number of matches found.
 #		Useful if or_more is 1 and the caller wants the	matches found.
-#	max_delay
-#		The timeout seconds to execute the command and wait on the
-#		output before giving up. Defaults to global max_command_delay.
 #
 # RETURN VALUE
 #	0 on success and 1 on failure. On failure, an error is logged to
@@ -1241,19 +1224,44 @@ proc wait_for args {
 #
 ################################################################
 
-proc wait_for_command { command args regex {matches_in 1} {or_more 0}
-                        {matches_out ""} {max_delay 120} } {
-	global bin_sleep testsuite_poll_interval
+proc wait_for_command args {
+	global bin_sleep
+
+	set timeout       120
+	set poll_interval 1
+	set matches_in    1
+	set or_more       0
+	set matches_out   ""
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - poll_interval]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count < 3} {
+		fail "Too few arguments ($argument_count): $args"
+	} else {
+		lassign $args command arguments regex
+	}
+	if {$argument_count >= 4} { set matches_in [lindex $args 3] }
+	if {$argument_count >= 5} { set or_more [lindex $args 4] }
+	if {$argument_count == 6} { set matches_out [lindex $args 5] }
+	if {$argument_count > 6} {
+		fail "Too many arguments ($argument_count): $args"
+	}
 
 	if {$matches_out != ""} {
 		upvar $matches_out matches
 	}
 
 	set delay 0
-	while {$delay < $max_delay} {
+	while {$delay < $timeout} {
 		set matches 0
 		# `{*}` breaks apart a string into individual pieces
-		spawn $command {*}$args
+		spawn $command {*}$arguments
 		expect {
 			-re $regex {
 				incr matches
@@ -1276,8 +1284,8 @@ proc wait_for_command { command args regex {matches_in 1} {or_more 0}
 		}
 
 		log_debug "Polled $matches matches of '$regex', but expecting $matches_in"
-		exec $bin_sleep $testsuite_poll_interval
-		incr delay $testsuite_poll_interval
+		exec $bin_sleep $poll_interval
+		incr delay $poll_interval
 
 	}
 	if {$or_more == 1} {
@@ -1287,7 +1295,7 @@ proc wait_for_command { command args regex {matches_in 1} {or_more 0}
 	} else {
 		set match_str "exactly $matches_in times"
 	}
-	log_error "Failed to match regex `$regex` $match_str after $max_delay seconds for command `$command $args`."
+	log_error "Failed to match regex `$regex` $match_str after $timeout seconds for command `$command $arguments`."
 	# Return failure
 	return 1
 }
@@ -1299,30 +1307,53 @@ proc wait_for_command { command args regex {matches_in 1} {or_more 0}
 #	wait_for_file - waits for a file to exist with non-zero size
 #
 # SYNOPSIS
-#	wait_for_file file_name
+#	wait_for_file ?options? file_name
+#
+# OPTIONS
+#	-timeout <integer_number>
+#		time in seconds to wait for the file to exist before
+#		timing out (default is 90)
+#	-pollinterval <integer_number>
+#		time in seconds between each file existence test (default is 1)
 #
 # DESCRIPTION
 #	Wait for the specified file to exist and have a non-zero size.
 #	Note that if JobFileAppend=0 is configured, a file can exist and
-#	be purged then be re-created. Polls every $testsuite_poll_interval
-#	seconds.
+#	be purged then be re-created.
 #
 # RETURN VALUE
 #	A non-zero return code indicates a failure.
 #
 ################################################################
 
-proc wait_for_file { file_name } {
-	global bin_sleep max_file_delay testsuite_poll_interval
+proc wait_for_file args {
+	global bin_sleep
 
-	for {set my_delay 0} {$my_delay <= $max_file_delay} \
-	                     {set my_delay [expr $my_delay + $testsuite_poll_interval]} {
+	set timeout       90
+	set poll_interval 1
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - poll_interval]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count != 1} {
+		fail "Invalid number of arguments ($argument_count): $args"
+	} else {
+		lassign $args file_name
+	}
+
+	for {set my_delay 0} {$my_delay <= $timeout} \
+	                     {set my_delay [expr $my_delay + $poll_interval]} {
 		if {[file exists $file_name]} {
 			# Add small delay for I/O buffering
 			exec $bin_sleep 1
 			return 0
 		}
-		exec $bin_sleep $testsuite_poll_interval
+		exec $bin_sleep $poll_interval
 
 		# Expect may fail to load current NFS info.
 		# Use the ls command to load current info.
@@ -1346,10 +1377,17 @@ proc wait_for_file { file_name } {
 #	wait_for_job - waits for job to be in desired state
 #
 # SYNOPSIS
-#	wait_for_job job_id desired_state ?het_job?
+#	wait_for_job ?options? job_id desired_state ?het_job?
 #
 # DESCRIPTION
 #	Wait for job to be in desired state. Can handle het job components.
+#
+# OPTIONS
+#	-timeout <integer_number>
+#		time in seconds to wait for the job to be in the desired state
+#		before timing out (default is 90)
+#	-pollinterval <integer_number>
+#		time in seconds between each job state check (default is 1)
 #
 # ARGUMENTS
 #	job_id
@@ -1374,22 +1412,44 @@ proc wait_for_file { file_name } {
 #
 ################################################################
 
-proc wait_for_job { job_id desired_state {het_job 0}} {
-	set jid_list ""
+proc wait_for_job args {
+
+	set options  [list]
+	set het_job  0
+
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-* {
+				lappend options {*}[lrange $args 0 1]
+				set args [lrange $args 2 end]
+			}
+			default break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count < 2} {
+		fail "Too few arguments ($argument_count): $args"
+	} elseif {$argument_count > 3}  {
+		fail "Too many arguments ($argument_count): $args"
+	} else {
+		lassign $args job_id desired_state
+	}
+	if {$argument_count == 3} { set hetjob [lindex $args 2] }
 
 	if { $het_job } {
 		# get component job ids
 		set jid_list [get_het_job_ids $job_id 1]
 	}
 
-	set rc 0
+	set rc       0
+	set jid_list ""
 	if { $jid_list == "" } {
 		# non-het job
 		set jid_list $job_id
 	}
 
 	foreach jid $jid_list {
-		set rc [_wait_for_single_job $jid $desired_state]
+		set rc [_wait_for_single_job {*}$options $jid $desired_state]
 		if { $rc } {
 			# bail out on first failure
 			break
@@ -1405,11 +1465,21 @@ proc wait_for_job { job_id desired_state {het_job 0}} {
 #	wait_for_account_done - cancels and waits on jobs in specified accounts
 #
 # SYNOPSIS
-#	wait_for_account_done accounts
+#	wait_for_account_done ?options? accounts
 #
 # DESCRIPTION
 #	Cancel jobs on and wait for them to be finished in account(s) given.
-#	Polls every $testsuite_poll_interval seconds.
+#
+# OPTIONS
+#	-timeout <integer_number>
+#		time in seconds to wait for the jobs to be finished before
+#		timing out (default is 360)
+#	-pollinterval <integer_number>
+#		time in seconds between each job state check (default is 1)
+#
+# ARGUMENTS
+#	accounts
+#		Comma-delimited list of accounts
 #
 # RETURN VALUE
 #	A non-zero return code indicates a failure.
@@ -1420,8 +1490,25 @@ proc wait_for_job { job_id desired_state {het_job 0}} {
 #
 ################################################################
 
-proc wait_for_account_done { accounts } {
-	global scancel squeue max_job_state_delay re_word_str testsuite_poll_interval
+proc wait_for_account_done args {
+	global scancel squeue re_word_str
+
+	set timeout       360
+	set poll_interval 1
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - poll_interval]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count != 1} {
+		fail "Invalid number of arguments ($argument_count): $args"
+	} else {
+		lassign $args accounts
+	}
 
 	if { $accounts == "" } {
 		log_error "No account given"
@@ -1461,14 +1548,14 @@ proc wait_for_account_done { accounts } {
 			break
 		}
 
-		if { $my_delay > $max_job_state_delay } {
+		if { $my_delay > $timeout } {
 			log_error "Timeout waiting for account(s) '$accounts' to be finished"
 			log_user 1
 			return 1
 		}
 
-		exec sleep $testsuite_poll_interval
-		set my_delay [expr $my_delay + $testsuite_poll_interval]
+		exec sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
 	}
 	log_user 1
 	return 0
@@ -1481,11 +1568,21 @@ proc wait_for_account_done { accounts } {
 #	wait_for_part_done - cancels and waits on jobs in specified partition
 #
 # SYNOPSIS
-#	wait_for_part_done partition
+#	wait_for_part_done ?options? partition
 #
 # DESCRIPTION
 #	Cancel jobs on and wait for them to be finished in partition given.
-#	Polls every $testsuite_poll_interval seconds.
+#
+# OPTIONS
+#	-timeout <integer_number>
+#		time in seconds to wait for the jobs to be finished before
+#		timing out (default is 360)
+#	-pollinterval <integer_number>
+#		time in seconds between each job state check (default is 1)
+#
+# ARGUMENTS
+#	partition
+#		partition name
 #
 # RETURN VALUE
 #	A non-zero return code indicates a failure.
@@ -1496,16 +1593,33 @@ proc wait_for_account_done { accounts } {
 #
 ################################################################
 
-proc wait_for_part_done { part } {
-	global scancel squeue max_job_state_delay re_word_str testsuite_poll_interval
+proc wait_for_part_done args {
+	global scancel squeue re_word_str
 
-	if { $part == "" } {
+	set timeout       360
+	set poll_interval 1
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - poll_interval]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count != 1} {
+		fail "Invalid number of arguments ($argument_count): $args"
+	} else {
+		lassign $args partition
+	}
+
+	if { $partition == "" } {
 		log_error "No partition given"
 		return 1
 	}
 
 	log_user 0
-	spawn $scancel -p $part
+	spawn $scancel -p $partition
 	expect {
 		timeout {
 			log_error "No response from scancel"
@@ -1518,7 +1632,7 @@ proc wait_for_part_done { part } {
 	set my_delay    0
 	while 1 {
 		set found 0
-		spawn $squeue -o Part=%P -h -p$part
+		spawn $squeue -o Part=%P -h -p$partition
 		expect {
 			-re "Part=($re_word_str)" {
 				set found 1
@@ -1530,18 +1644,18 @@ proc wait_for_part_done { part } {
 		}
 
 		if { !$found } {
-			log_debug "Partition $part is empty"
+			log_debug "Partition $partition is empty"
 			break
 		}
 
-		if { $my_delay > $max_job_state_delay } {
+		if { $my_delay > $timeout } {
 			log_error "Timeout waiting for partition '$partition' to be finished"
 			log_user 1
 			return 1
 		}
 
-		exec sleep $testsuite_poll_interval
-		set my_delay [expr $my_delay + $testsuite_poll_interval]
+		exec sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
 	}
 	log_user 1
 	return 0
@@ -1554,20 +1668,48 @@ proc wait_for_part_done { part } {
 #	wait_for_step - waits for a job step to be found
 #
 # SYNOPSIS
-#	wait_for_step step_id
+#	wait_for_step ?options? step_id
 #
 # DESCRIPTION
 #	Wait for a job step to be found.
-#	Polls every $testsuite_poll_interval seconds.
+#
+# OPTIONS
+#	-timeout <integer_number>
+#		time in seconds to wait for the job step to be found before
+#		timing out (default is 360)
+#	-pollinterval <integer_number>
+#		time in seconds between each step existence check (default is 1)
+#
+# ARGUMENTS
+#	step_id
+#		job step id
 #
 # RETURN VALUE
 #	A non-zero return code indicates a failure.
 #
 ################################################################
 
-proc wait_for_step { step_id } {
-	global scontrol max_job_state_delay testsuite_poll_interval
-	set my_delay    0
+proc wait_for_step args {
+	global scontrol
+
+	set timeout       360
+	set poll_interval 1
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - poll_interval]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count != 1} {
+		fail "Invalid number of arguments ($argument_count): $args"
+	} else {
+		lassign $args step_id
+	}
+
+	set my_delay 0
 	while 1 {
 		set fd [open "|$scontrol -o show step $step_id"]
 		gets $fd line
@@ -1578,14 +1720,14 @@ proc wait_for_step { step_id } {
 		if {[regexp {MidplaneList=} $line foo] == 1} {
 			return 0
 		}
-		if { $my_delay > $max_job_state_delay } {
+		if { $my_delay > $timeout } {
 			log_error "Timeout waiting for job step"
 			return 1
 		}
 
-		log_debug "Step $step_id not done yet. Waiting for $testsuite_poll_interval seconds"
-		exec sleep $testsuite_poll_interval
-		set my_delay [expr $my_delay + $testsuite_poll_interval]
+		log_debug "Step $step_id not done yet. Waiting for $poll_interval seconds"
+		exec sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
 	}
 }
 
@@ -1596,75 +1738,82 @@ proc wait_for_step { step_id } {
 #	wait_for_all_jobs - waits for jobs to finish having a specified name
 #
 # SYNOPSIS
-#	wait_for_all_jobs job_name
+#	wait_for_all_jobs ?options? job_name
 #
 # DESCRIPTION
-#	Wait for previously submitted Slurm jobs to finish of a
-#	certain name. Iterates every $testsuite_poll_interval seconds.
+#	Wait for previously submitted Slurm jobs to finish of a certain name.
+#
+# OPTIONS
+#	-timeout <integer_number>
+#		time in seconds to wait for the jobs to finish before
+#		timing out (default is 30)
+#	-pollinterval <integer_number>
+#		time in seconds between each job state check (default is 1)
 #
 # ARGUMENTS
 #	job_name
 #		The name of job to wait for
 #
 # RETURN VALUE
-#	-1 on failure, 0 if all jobs are done, and the remaining job count
-#	if not all jobs are done after $wait_for_all_jobs_iterations
-#	iterations.
+#	0 if all jobs with the specified name are finished,
+#	or non-zero otherwise.
+#	If jobs are not completed after timeout, they are cancelled.
 #
 ################################################################
 
-proc wait_for_all_jobs { job_name } {
-	global scancel squeue bin_sleep wait_for_all_jobs_iterations testsuite_poll_interval
+proc wait_for_all_jobs args {
+	global scancel squeue
 
-	set matches 0
-	set timeout 30
+	set timeout         30
+	set poll_interval   1
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - poll_interval]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count != 1} {
+		fail "Invalid number of arguments ($argument_count): $args"
+	} else {
+		lassign $args job_name
+	}
 
 	log_debug "Waiting for all jobs to terminate"
-	for {set inx 0} {$inx < $wait_for_all_jobs_iterations} {incr inx} {
+	set jobs_found   -1
+	set jobs_desired  0
+
+	wait_for -timeout $timeout -pollinterval $poll_interval {$jobs_found == $jobs_desired} {
+		set jobs_found 0
 		log_user 0
-		set matches 0
-		spawn $squeue -o %j
+		spawn $squeue -o %j -n $job_name
 		expect {
 			-re "$job_name" {
-				incr matches
+				incr jobs_found
 				exp_continue
 			}
-			-re "error" {
-				set matches -1
-			}
 			timeout {
-				log_warn "No response from squeue"
-				set matches -1
+				fail "No response from squeue"
 			}
 			eof {
 				wait
 			}
 		}
 		log_user 1
-		if {$matches == 0} {
-			log_debug "All jobs complete"
-			break
-		}
-		if {$matches > 0} {
-			log_debug "Still $matches jobs remaining"
-			exec sleep $testsuite_poll_interval
-		}
-		if {$matches == -1} {
-			break
+		if {$jobs_found != $jobs_desired} {
+			log_debug "Still $jobs_found jobs remaining"
 		}
 	}
-	if {$matches != 0} {
-		spawn $scancel -n $job_name
-		expect {
-			timeout {
-				log_warn "No response from scancel"
-			}
-			eof {
-				wait
-			}
-		}
+	if {$jobs_found == $jobs_desired} {
+		log_debug "All jobs complete"
+		return 0
+	} else {
+		log_debug "Cancelling uncompleted jobs"
+		run_command "$scancel -n $job_name"
+		return 1
 	}
-	return $matches
 }
 
 
@@ -1674,11 +1823,18 @@ proc wait_for_all_jobs { job_name } {
 #	wait_job_reason - waits for a desired job state and reason
 #
 # SYNOPSIS
-#	wait_job_reason job_id ?desired_state? ?desired_reason_list?
+#	wait_job_reason ?options? job_id ?desired_state? ?desired_reason_list?
 #
 # DESCRIPTION
 #	Wait until the job is in desired state and reason is one
-#	of the desired ones. Or to max_job_state_delay.
+#	of the desired ones or until the timeout.
+#
+# OPTIONS
+#	-timeout <integer_number>
+#		time in seconds to wait for the job state and reason before
+#		timing out (default is 360)
+#	-pollinterval <integer_number>
+#		time in seconds between each job state check (default is 1)
 #
 # ARGUMENTS
 #	job_id
@@ -1695,11 +1851,35 @@ proc wait_for_all_jobs { job_name } {
 #
 ################################################################
 
-proc wait_job_reason { job_id {desired_state "PENDING"}
-		       {desired_reason_list ""} } {
-	global scontrol re_word_str max_job_state_delay testsuite_poll_interval
+proc wait_job_reason args {
+	global scontrol re_word_str
+
 	set final_state "COMPLETED CANCELLED FAILED TIMEOUT DEADLINE
 	                 OUT_OF_MEMORY"
+
+	set timeout       360
+	set poll_interval 1
+	set desired_state "PENDING"
+	set desired_reason_list ""
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - poll_interval]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count < 1} {
+		fail "Too few arguments ($argument_count): $args"
+	} else {
+		lassign $args job_id
+	}
+	if {$argument_count >= 2} { set desired_state [lindex $args 1] }
+	if {$argument_count == 3} { set desired_reason_list [lindex $args 2] }
+	if {$argument_count > 3} {
+		fail "Too many arguments ($argument_count): $args"
+	}
 
 	set log_user_prev [log_user -info]
 	log_user 0
@@ -1746,20 +1926,20 @@ proc wait_job_reason { job_id {desired_state "PENDING"}
 		}
 
 		# Check if this was the last poll
-		if {$my_delay > $max_job_state_delay} {
+		if {$my_delay > $timeout} {
 			log_error "Timeout"
 			set rc 1
 			break
 		}
-		set remamining_sec [expr $max_job_state_delay - $my_delay]
+		set remamining_sec [expr $timeout - $my_delay]
 		log_debug [format "Job in state/reason '%s' / '%s' instead of the desired '%s' / '%s'." \
 		                  $job_state $job_reason \
 		                  $desired_state $desired_reason_list]
 		log_debug [format "Polling again in %ss, %ss to timeout." \
-		                  $testsuite_poll_interval $remamining_sec]
+		                  $poll_interval $remamining_sec]
 
-		sleep $testsuite_poll_interval
-		set my_delay [expr $my_delay + $testsuite_poll_interval]
+		sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
 	}
 
 	log_user $log_user_prev
@@ -4896,21 +5076,58 @@ proc job_submit_all_partitions { } {
 #	wait_for_node - waits for nodes in a partition to reach a certain state
 #
 # SYNOPSIS
-#	wait_for_node state num_nodes partition
+#	wait_for_node ?options? state num_nodes ?partition?
 #
 # DESCRIPTION
-#	Wait for a certain number of nodes in a partition to
-#	reach a certain state. Polls every $testsuite_poll_interval
-#	seconds. If the partition argument is empty, the default
-#	partition will be used.
+#	Wait for a certain number of nodes in a partition to reach a certain
+#	state.
+#
+# OPTIONS
+#	-timeout <integer_number>
+#		time in seconds to wait for the node state before
+#		timing out (default is 3)
+#	-pollinterval <integer_number>
+#		time in seconds between each node state check (default is 1)
+#
+# ARGUMENTS
+#	state
+#		The node state to wait for
+#	num_nodes
+#		The number of nodes we want to be in the specified state
+#	partition
+#		Partition name (the default partition is used if not specified)
 #
 # RETURN VALUE
 #	Returns: 1 on failure.
 #
 ################################################################
 
-proc wait_for_node {state num_nodes {partition ""} } {
-	global sinfo number testsuite_poll_interval
+proc wait_for_node args {
+	global sinfo number
+
+	set partition     ""
+	set timeout       3
+	set poll_interval 1
+	set desired_state "PENDING"
+	set desired_reason_list ""
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - poll_interval]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count < 2} {
+		fail "Too few arguments ($argument_count): $args"
+	} else {
+		lassign $args state num_nodes
+	}
+	if {$argument_count == 3} { set partition [lindex $args 2] }
+	if {$argument_count > 3} {
+		fail "Too many arguments ($argument_count): $args"
+	}
 
 	set wait_time 0
 	set done      0
@@ -4921,7 +5138,7 @@ proc wait_for_node {state num_nodes {partition ""} } {
 		set partition [default_partition]
 	}
 
-	while {$done != 1 && $wait_time < 3} {
+	while {$done != 1 && $wait_time < $timeout} {
 
 		log_user 0
 		spawn $sinfo --noheader --partition $partition --state $state --format %D
@@ -4944,7 +5161,7 @@ proc wait_for_node {state num_nodes {partition ""} } {
 			set done 1
 		} else {
 			log_debug "Partition $partition has $cnt nodes idle and we want $num_nodes"
-			sleep $testsuite_poll_interval
+			sleep $poll_interval
 			incr wait_time 1
 		}
 	}

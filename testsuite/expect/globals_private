@@ -37,11 +37,17 @@ set _global_bkp_noexist  {}
 #	_wait_for_single_job - waits for a job to reach the desired state
 #
 # SYNOPSIS
-#	_wait_for_single_job job_id desired_state
+#	_wait_for_single_job ?options? job_id desired_state
 #
 # DESCRIPTION
-#	Wait for a previously submitted Slurm job to reach
-#	the desired state. Polls every $testsuite_poll_interval seconds.
+#	Wait for a previously submitted Slurm job to reach the desired state.
+#
+# OPTIONS
+#	-timeout <integer_number>
+#		time in seconds to wait for the job to be in the desired state
+#		before timing out (default is 360)
+#	-pollinterval <integer_number>
+#		time in seconds between each job state check (default is 1)
 #
 # ARGUMENTS
 #	job_id
@@ -63,8 +69,25 @@ set _global_bkp_noexist  {}
 #
 ################################################################
 
-proc _wait_for_single_job { job_id desired_state } {
-	global scontrol max_job_state_delay testsuite_poll_interval
+proc _wait_for_single_job args {
+	global scontrol
+
+	set timeout       360
+	set poll_interval 1
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - poll_interval]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count != 2} {
+		fail "Invalid number of arguments ($argument_count): $args"
+	} else {
+		lassign $args job_id desired_state
+	}
 
 	# First verify that desired_state is supported
 	switch $desired_state {
@@ -150,12 +173,12 @@ proc _wait_for_single_job { job_id desired_state } {
 			}
 		}
 
-		if { $my_delay > $max_job_state_delay } {
+		if { $my_delay > $timeout } {
 			log_warn "Timeout waiting for job state $desired_state"
 			return 1
 		}
 
-		exec sleep $testsuite_poll_interval
-		set my_delay [expr $my_delay + $testsuite_poll_interval]
+		exec sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
 	}
 }

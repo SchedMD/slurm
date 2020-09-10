@@ -48,7 +48,6 @@ exit 0"
 
 make_bash_script $script_child "$scontrol show job \$1"
 
-incr max_job_state_delay 300
 set job_id_use 0
 spawn $sbatch -t1 -N1 --output=$output_parent $script_parent
 expect {
@@ -68,11 +67,11 @@ expect {
 if {$job_id_parent == 0} {
 	log_error "Job did not launch"
 	set exit_code 1
-} elseif {[wait_for_job $job_id_parent "DONE"] != 0} {
+} elseif {[wait_for_job -timeout 660 $job_id_parent "DONE"] != 0} {
 	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id_parent
-} elseif {[wait_for_file $output_child] != 0} {
+} elseif {[wait_for_file -timeout 660 $output_child] != 0} {
 	set exit_code 1
 }
 if {$exit_code != 0} {

@@ -32,7 +32,6 @@ configure several testsuite variables, for example:
 
 slurm_dir:                    slurm installation directory (prefix) [/usr]
 build_dir:                    slurm build directory [../..]
-max_file_delay:               maximum file propogation delay (e.g. nfs) [90]
 testsuite_cleanup_on_failure: run cleanup and remove test_dir on failure [false]
 testsuite_shared_dir:         cluster-wide shared directory [.]
 testsuite_log_level:          logging threshold [$LOG_LEVEL_DEBUG]

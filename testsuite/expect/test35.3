@@ -101,7 +101,6 @@ $scontrol show burst
 exit 0"
 }
 
-incr max_job_state_delay 300
 set job_id 0
 spawn $sbatch -t1 -N1 --output=$output_use --array=1-${array_end} $script_use
 expect {
@@ -121,7 +120,7 @@ expect {
 if {$job_id == 0} {
 	log_error "Job did not launch"
 	set exit_code 1
-} elseif {[wait_for_job $job_id "DONE"] != 0} {
+} elseif {[wait_for_job -timeout 660 $job_id "DONE"] != 0} {
 	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id
@@ -130,7 +129,7 @@ if {$job_id == 0} {
 for {set cnt 1} {$cnt<=$array_end} {incr cnt} {
 	set job_array_id "${job_id}_${cnt}"
 	set output_file "test${test_id}-${job_array_id}.output"
-	if {[wait_for_file $output_file] != 0} {
+	if {[wait_for_file -timeout 660 $output_file] != 0} {
 		log_error "Output file was not created or not the correct format. $output_file not found"
 		set exit_code 1
 	} elseif {[find_bb_jobid $output_file $job_array_id] == 0} {

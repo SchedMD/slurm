@@ -407,11 +407,17 @@ proc modify_federation_flags {fed_name mode flags} {
 #	wait_for_fed_job - waits for a job to reach the desired state
 #
 # SYNOPSIS
-#	wait_for_fed_job job_id desired_state clusters
+#	wait_for_fed_job ?options? job_id desired_state clusters
 #
 # DESCRIPTION
-#	Wait for a previously submitted Slurm job to reach
-#	the desired state. Polls every $testsuite_poll_interval seconds.
+#	Wait for a previously submitted Slurm job to reach the desired state.
+#
+# OPTIONS
+#	-timeout <integer_number>
+#		time in seconds to wait for the job to be in the desired state
+#		before timing out (default is 360)
+#	-pollinterval <integer_number>
+#		time in seconds between each job state check (default is 1)
 #
 # ARGUMENTS
 #	job_id
@@ -423,6 +429,9 @@ proc modify_federation_flags {fed_name mode flags} {
 #			PENDING job is pending
 #			RUNNING job is running
 #			SUSPENDED job is suspended
+#	clusters
+#		The list of clusters to wait for. If empty "" the default
+#		clusters of fedc1, fedc2 and fedc3 will be used.
 #
 # RETURN VALUE
 #	The name of the first cluster on which the job is found
@@ -434,8 +443,25 @@ proc modify_federation_flags {fed_name mode flags} {
 #
 ################################################################
 
-proc wait_for_fed_job { job_id desired_state clusters } {
-	global scontrol max_job_state_delay fedc1 fedc2 fedc3 testsuite_poll_interval
+proc wait_for_fed_job args {
+	global scontrol fedc1 fedc2 fedc3
+
+	set timeout       360
+	set poll_interval 1
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - poll_interval]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count != 3} {
+		fail "Invalid number of arguments ($argument_count): $args"
+	} else {
+		lassign $args job_id desired_state clusters
+	}
 
 	# First verify that desired_state is supported
 	switch $desired_state {
@@ -538,12 +564,12 @@ proc wait_for_fed_job { job_id desired_state clusters } {
 			}
 		}
 
-		if { $my_delay > $max_job_state_delay } {
+		if { $my_delay > $timeout } {
 			log_error "Timeout waiting for job state $desired_state"
 			return ""
 		}
 
-		exec sleep $testsuite_poll_interval
-		set my_delay [expr $my_delay + $testsuite_poll_interval]
+		exec sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
 	}
 }
