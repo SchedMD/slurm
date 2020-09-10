@@ -446,13 +446,13 @@ proc wait_for_fed_job { job_id desired_state clusters } {
 		"SUSPENDED" {}
 		"SPECIAL_EXIT" {}
 		default {
-			log_error "wait_for_job with invalid state: $desired_state"
+			log_error "Invalid desired state: $desired_state"
 			return ""
 		}
 	}
 
 	if {$job_id == 0} {
-		log_error "wait_for_job with invalid job ID: $job_id"
+		log_error "Invalid job ID: $job_id"
 		return ""
 	}
 
@@ -462,11 +462,11 @@ proc wait_for_fed_job { job_id desired_state clusters } {
 	if {[string compare $clusters ""]} {
 		set spec_clusters [split $clusters ","]
 	}
-	log_info "checking for job '$job_id' in state '$desired_state' on [join $spec_clusters ,]"
+	log_debug "Checking for job '$job_id' in state '$desired_state' on [join $spec_clusters ,]"
 
 	while 1 {
 		foreach cluster $spec_clusters {
-			log_info "checking $cluster"
+			log_debug "Checking $cluster"
 			set fd [open "|$scontrol -M$cluster --local -a -o show job $job_id"]
 			gets $fd line
 			catch {close $fd}
@@ -485,7 +485,7 @@ proc wait_for_fed_job { job_id desired_state clusters } {
 				"PREEMPTED" -
 				"COMPLETED" {
 					if {[string compare $desired_state "DONE"] == 0} {
-						log_info "Job $job_id is DONE ($state) on $cluster"
+						log_debug "Job $job_id is DONE ($state) on $cluster"
 						sleep 2
 						return $cluster
 					}
@@ -499,41 +499,41 @@ proc wait_for_fed_job { job_id desired_state clusters } {
 				}
 				"PENDING" {
 					if {[string compare $desired_state "PENDING"] == 0} {
-						log_info "Job $job_id is PENDING on $cluster"
+						log_debug "Job $job_id is PENDING on $cluster"
 						return $cluster
 					}
 					log_warn "Job $job_id is in state $state, but desired state $desired_state"
 				}
 				"REVOKED" {
 					if {[string compare $desired_state "REVOKED"] == 0} {
-						log_info "Job $job_id is REVOKED on $cluster"
+						log_debug "Job $job_id is REVOKED on $cluster"
 						return $cluster
 					}
 					log_warn "Job $job_id is in state $state, but desired state $desired_state"
 				}
 				"RUNNING" {
 					if {[string compare $desired_state "RUNNING"] == 0} {
-						log_info "Job $job_id is RUNNING on $cluster"
+						log_debug "Job $job_id is RUNNING on $cluster"
 						return $cluster
 					}
 					log_warn "Job $job_id is in state $state, but desired state $desired_state"
 				}
 				"SPECIAL_EXIT" {
 					if {[string compare $desired_state "SPECIAL_EXIT"] == 0} {
-						log_info "Job $job_id is SPECIAL_EXIT on $cluster"
+						log_debug "Job $job_id is SPECIAL_EXIT on $cluster"
 						return $cluster
 					}
 					log_warn "Job $job_id is in state $state, but desired state $desired_state"
 				}
 				"SUSPENDED" {
 					if {[string compare $desired_state "SUSPENDED"] == 0} {
-						log_info "Job $job_id is SUSPENDED on $cluster"
+						log_debug "Job $job_id is SUSPENDED on $cluster"
 						return $cluster
 					}
 					log_warn "Job $job_id is in state $state, but desired state $desired_state"
 				}
 				default {
-					log_info "Job $job_id is in state $state. Desired state was $desired_state"
+					log_debug "Job $job_id is in state $state. Desired state was $desired_state"
 				}
 			}
 		}
