@@ -66,6 +66,9 @@ documents those changes that are of interest to users and administrators.
  -- Removed gres_alloc and gres_req from job_record_t.Tres should be used
     instead.
 
+* Changes in Slurm 20.02.6
+==========================
+
 * Changes in Slurm 20.02.5
 ==========================
  -- Fix leak of TRESRunMins when job time is changed with --time-min
