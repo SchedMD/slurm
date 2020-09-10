@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
     correctly.
  -- Fix regression in 20.02.5 where you couldn't request contraints with a
     simple & and a count.
+ -- Limit the number of threads for servicing emails.
 
 * Changes in Slurm 20.02.5
 ==========================

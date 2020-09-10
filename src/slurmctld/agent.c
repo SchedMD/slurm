@@ -214,6 +214,7 @@ static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
 static int agent_cnt = 0;
 static int agent_thread_cnt = 0;
+static int mail_thread_cnt = 0;
 static uint16_t message_timeout = NO_VAL16;
 
 static pthread_mutex_t pending_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -1679,11 +1680,13 @@ static void _agent_retry(int min_wait, bool mail_too)
 	} else if (mail_too) {
 		slurm_mutex_lock(&agent_cnt_mutex);
 		slurm_mutex_lock(&mail_mutex);
-		while (mail_list && (agent_thread_cnt < MAX_SERVER_THREADS)) {
+		while (mail_list && (agent_thread_cnt < MAX_SERVER_THREADS) &&
+		       (mail_thread_cnt < MAX_MAIL_THREADS)) {
 			mi = (mail_info_t *) list_dequeue(mail_list);
 			if (!mi)
 				break;
 
+			mail_thread_cnt++;
 			agent_thread_cnt++;
 			slurm_thread_create_detached(NULL, _mail_proc, mi);
 		}
@@ -1910,10 +1913,16 @@ static void *_mail_proc(void *arg)
 	}
 	_mail_free(mi);
 	slurm_mutex_lock(&agent_cnt_mutex);
+	slurm_mutex_lock(&mail_mutex);
 	if (agent_thread_cnt)
 		agent_thread_cnt--;
 	else
 		error("agent_thread_cnt underflow");
+	if (mail_thread_cnt)
+		mail_thread_cnt--;
+	else
+		error("mail_thread_cnt underflow");
+	slurm_mutex_unlock(&mail_mutex);
 	slurm_mutex_unlock(&agent_cnt_mutex);
 
 	return (void *) NULL;
