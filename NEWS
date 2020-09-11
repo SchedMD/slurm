@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect memory handling of mail_user when updating mail_type=none.
  -- Handle mail_user and mail_type independently.
  -- Fix thread-safety issue with assoc_mgr_get_admin_level().
+ -- Ignore step features if equal to job features
 
 * Changes in Slurm 20.02.5
 ==========================
