@@ -65,7 +65,7 @@ proc _submit_jobs { job_name test_file } {
 		set jobs_rem [expr $jobs_rem - $job_blocks]
 	}
 	log_user 1
-	if {[wait_for_all_jobs $job_name] != 0} {
+	if {[wait_for_all_jobs -timeout 600 $job_name] != 0} {
 		fail "Some submitted jobs failed to terminate"
 	}
 }

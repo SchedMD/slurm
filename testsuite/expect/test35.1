@@ -72,7 +72,6 @@ $scontrol show burst"
 # Remove any vestigial buffer
 #
 log_debug "Clean up vestigial burst buffer"
-incr max_job_state_delay 300
 set job_id 0
 spawn $sbatch -t1 -N1 --output=/dev/null $script_rm
 expect {
@@ -92,7 +91,7 @@ if {$job_id == 0} {
 	log_error "Job did not launch"
 	set exit_code 1
 }
-if {[wait_for_job $job_id "DONE"] != 0} {
+if {[wait_for_job -timeout 660 $job_id "DONE"] != 0} {
 	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id
@@ -138,7 +137,7 @@ expect {
 if {$job_id_mk == 0} {
 	log_error "Job did not launch"
 	set exit_code 1
-} elseif {[wait_for_job $job_id_mk "DONE"] != 0} {
+} elseif {[wait_for_job -timeout 660 $job_id_mk "DONE"] != 0} {
 	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id_mk
@@ -147,16 +146,16 @@ if {$job_id_mk == 0} {
 if {$job_id_use == 0} {
 	log_error "Job did not launch"
 	set exit_code 1
-} elseif {[wait_for_job $job_id_use "DONE"] != 0} {
+} elseif {[wait_for_job -timeout 660 $job_id_use "DONE"] != 0} {
 	log_error "Job did not complete"
 	set exit_code 1
 	cancel_job $job_id_use
-} elseif {[wait_for_file $output_use] != 0} {
+} elseif {[wait_for_file -timeout 660 $output_use] != 0} {
 	set exit_code 1
 } elseif {[find_bb_name $output_use test$test_id] == 0} {
 	log_error "Job using burst buffer ran before creation"
 	set exit_code 1
-} elseif {[wait_for_file $output_mk] != 0} {
+} elseif {[wait_for_file -timeout 660 $output_mk] != 0} {
 	set exit_code 1
 } elseif {[find_bb_name $output_mk test$test_id] == 0} {
 	log_error "Job creating burst buffer failed to do so"
@@ -183,10 +182,10 @@ expect {
 }
 if {$job_id_rm == 0} {
 	fail "Job did not launch"
-} elseif {[wait_for_job $job_id_rm "DONE"] != 0} {
+} elseif {[wait_for_job -timeout 660 $job_id_rm "DONE"] != 0} {
 	cancel_job $job_id_rm
 	fail "Job did not complete"
-} elseif {[wait_for_file $output_rm] != 0} {
+} elseif {[wait_for_file -timeout 660 $output_rm] != 0} {
 	fail "Failed withing for file ($output_rm)"
 } elseif {[find_bb_name $output_rm test$test_id] != 0} {
 	fail "Job deleting burst buffer failed to do so"

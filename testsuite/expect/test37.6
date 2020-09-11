@@ -186,7 +186,7 @@ proc cleanup { } {
 	exec $bin_rm -f $file_in
 	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
 
-	return [delete_federations $fed_name];
+	return [delete_federations $fed_name]
 }
 
 proc end_it { exit_code } {

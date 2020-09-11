@@ -60,7 +60,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 
 proc cleanup { } {
 	global fed_name
-	return [delete_federations $fed_name];
+	return [delete_federations $fed_name]
 }
 
 proc end_it { exit_code } {

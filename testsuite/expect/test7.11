@@ -336,7 +336,7 @@ if {[wait_for_file $file_out] == 0} {
 			} elseif {[string equal "srun: opt_arg_srun=5" $substr]} {
 				incr matches_srun
 			}
-			exp_continue;
+			exp_continue
 		}
 		-re "slurm_spank_local_user_init" {
 			incr matches

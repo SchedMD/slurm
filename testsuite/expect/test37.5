@@ -91,7 +91,7 @@ proc cleanup { } {
 	exec $bin_rm -f $long_script $complete_script $fail_script \
 			$exit_script $exithold_script $file_out
 
-	return [delete_federations $fed_name];
+	return [delete_federations $fed_name]
 }
 
 proc end_it { exit_code } {

@@ -73,7 +73,7 @@ proc multi_socket_gres { gres_string } {
 			for {incr char_inx} {$char_inx < $len} {incr char_inx} {
 				set gres_char [string index $gres_string $char_inx]
 				if {[string match ")" $gres_char]} {
-					break;
+					break
 				}
 				if {[string match "-" $gres_char] || [string match "," $gres_char]} {
 					return 1
