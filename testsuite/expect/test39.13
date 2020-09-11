@@ -30,6 +30,7 @@ set exit_code      0
 set file_in1       "test$test_id.input1"
 set file_in2       "test$test_id.input2"
 set file_out       "test$test_id.output"
+set job_list       ""
 set number_commas  "\[0-9_,\]+"
 
 proc cleanup {} {
@@ -120,18 +121,17 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 		set exit_code 1
 		set tot_gpus [expr $inx - 1]
 		break
+	} else {
+		lappend job_list $job_id
 	}
 }
 
-#
-# Check the output file contents to identify allocated GPUs
-#
-# Try to avoid possibly huge delays here when tot_gpus is large
-# Perform large delay at the start and small delays for each job's output
-#
-if {$tot_gpus > 4} {
-	sleep 70
+foreach job_id $job_list {
+	if {[wait_for_job $job_id "DONE"]} {
+		fail "Job $job_id not end"
+	}
 }
+
 for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	set ofile ${file_out}.${inx}
 	if {[wait_for_file -timeout 20 $ofile] != 0} {
