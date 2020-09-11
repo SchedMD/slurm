@@ -119,7 +119,7 @@ proc inc3_11_9 {} {
 
 	# Make a reservation using 1 core per node in first 5 nodes
 	if {$num_nodes < 5} {
-		log_warn "Insufficient node count for remaining test (Within: inc3.11.9)";
+		log_warn "Insufficient node count for remaining test (Within: inc3.11.9)"
 		cancel_job $job_id
 		return
 	}
@@ -207,7 +207,7 @@ proc inc3_11_9 {} {
 
 	cancel_job $job_id
 
-	log_info "Let's check overlapping reservations (Within: inc3.11.9)";
+	log_info "Let's check overlapping reservations (Within: inc3.11.9)"
 
 	set core_res_num   [ expr $cores_per_node / 2 ]
 	set total_core_res   [ expr $core_res_num * $node_count ]

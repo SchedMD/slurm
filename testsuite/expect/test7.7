@@ -32,11 +32,10 @@ set file_in    "test$test_id.input"
 set file_out   "test$test_id.output"
 set job_name   "test$test_id"
 set job_id      0
-set max_job_state_delay 10
 
 proc test_alloc_size { task_cnt } {
 	global bin_cat bin_rm file_in file_out sbatch job_name number
-	global alloc_unit_num exit_code max_tasks max_job_state_delay
+	global alloc_unit_num exit_code max_tasks
 
 	exec $bin_rm -f $file_out
 	set job_id 0
@@ -54,13 +53,13 @@ proc test_alloc_size { task_cnt } {
 			wait
 		}
 	}
-	if {[wait_for_job $job_id "DONE"] != 0} {
+	if {[wait_for_job -timeout 10 $job_id "DONE"] != 0} {
 		log_warn "Job $job_id did not complete"
 		cancel_job $job_id
 		set max_tasks $task_cnt
 		return
 	}
-	if {[wait_for_file $file_out] != 0} {
+	if {[wait_for_file -timeout 10 $file_out] != 0} {
 		log_error "No output file"
 		set exit_code 1
 		return

@@ -190,7 +190,7 @@ expect {
 	}
 	-re "IT_RAN" {
 		incr matches
-		exp_continue;
+		exp_continue
 	}
 	eof {
 		wait
@@ -267,7 +267,7 @@ expect {
 	}
 	-re "IT_RAN" {
 		incr matches
-		exp_continue;
+		exp_continue
 	}
 	eof {
 		wait

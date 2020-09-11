@@ -51,7 +51,7 @@ expect {
 	}
 	-re "Job aborted due to signal"  {
 		set abort_flag 1
-		exp_continue;
+		exp_continue
 	}
 	timeout {
 		log_error "salloc not responding"

@@ -96,7 +96,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding";
+		log_error "scontrol is not responding"
 		set exit_code 1
 	}
 	eof {

@@ -85,7 +85,7 @@ proc cancel_job { job_id clusters } {
 	wait_for_fed_job $job_id "DONE" $clusters
 }
 
-proc cleanup { rc } {
+proc cleanup {} {
 	global bin_rm file_in_long file_in_short fed_name test_id
 
 	delete_federations $fed_name

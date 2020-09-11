@@ -37,11 +37,17 @@ set _global_bkp_noexist  {}
 #	_wait_for_single_job - waits for a job to reach the desired state
 #
 # SYNOPSIS
-#	_wait_for_single_job job_id desired_state
+#	_wait_for_single_job ?options? job_id desired_state
 #
 # DESCRIPTION
-#	Wait for a previously submitted Slurm job to reach
-#	the desired state. Polls every $testsuite_poll_interval seconds.
+#	Wait for a previously submitted Slurm job to reach the desired state.
+#
+# OPTIONS
+#	-timeout <integer_number>
+#		time in seconds to wait for the job to be in the desired state
+#		before timing out (default is 360)
+#	-pollinterval <integer_number>
+#		time in seconds between each job state check (default is 1)
 #
 # ARGUMENTS
 #	job_id
@@ -56,15 +62,32 @@ set _global_bkp_noexist  {}
 #			SUSPENDED job is suspended
 #
 # RETURN VALUE
-#	A non-zero return code indicates a failure.
+#	RETURN_SUCCESS, or non-zero on error.
 #
 # NOTE: We sleep for two seconds before replying that a job is
 # done to give time for I/O completion (stdout/stderr files)
 #
 ################################################################
 
-proc _wait_for_single_job { job_id desired_state } {
-	global scontrol max_job_state_delay testsuite_poll_interval
+proc _wait_for_single_job args {
+	global scontrol
+
+	set timeout       360
+	set poll_interval 1
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - poll_interval]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count != 2} {
+		fail "Invalid number of arguments ($argument_count): $args"
+	} else {
+		lassign $args job_id desired_state
+	}
 
 	# First verify that desired_state is supported
 	switch $desired_state {
@@ -74,14 +97,14 @@ proc _wait_for_single_job { job_id desired_state } {
 		"SPECIAL_EXIT" {}
 		"SUSPENDED" {}
 		default {
-			log_warn "wait_for_single_job with invalid state: $desired_state"
-			return 1
+			log_warn "Invalid desired state: $desired_state"
+			return $::RETURN_ERROR
 		}
 	}
 
 	if {$job_id == 0} {
-		log_warn "wait_for_single_job with invalid job ID: $job_id"
-		return 1
+		log_warn "Invalid job ID: $job_id"
+		return $::RETURN_ERROR
 	}
 
 	set my_delay    0
@@ -105,57 +128,57 @@ proc _wait_for_single_job { job_id desired_state } {
 			"PREEMPTED" -
 			"TIMEOUT" {
 				if {[string compare $desired_state "DONE"] == 0} {
-					log_info "Job $job_id is DONE ($state)"
+					log_debug "Job $job_id is DONE ($state)"
 					sleep 2
-					return 0
+					return $::RETURN_SUCCESS
 				}
 				if {[string compare $desired_state "RUNNING"] == 0} {
-					log_info "Job $job_id is $state, but we wanted RUNNING"
+					log_debug "Job $job_id is $state, but we wanted RUNNING"
 				}
 				if {[string compare $desired_state "SUSPENDED"] == 0} {
-					log_info "Job $job_id is $state, but we wanted SUSPENDED"
+					log_debug "Job $job_id is $state, but we wanted SUSPENDED"
 				}
-				return 1
+				return $::RETURN_ERROR
 			}
 			"PENDING" {
 				if {[string compare $desired_state "PENDING"] == 0} {
-					log_info "Job $job_id is PENDING"
-					return 0
+					log_debug "Job $job_id is PENDING"
+					return $::RETURN_SUCCESS
 				}
-				log_info "Job $job_id is in state $state, desire $desired_state"
+				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"RUNNING" {
 				if {[string compare $desired_state "RUNNING"] == 0} {
-					log_info "Job $job_id is RUNNING"
-					return 0
+					log_debug "Job $job_id is RUNNING"
+					return $::RETURN_SUCCESS
 				}
-				log_info "Job $job_id is in state $state, desire $desired_state"
+				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"SPECIAL_EXIT" {
 				if {[string compare $desired_state "SPECIAL_EXIT"] == 0} {
-					log_info "Job $job_id is SPECIAL_EXIT"
-					return 0
+					log_debug "Job $job_id is SPECIAL_EXIT"
+					return $::RETURN_SUCCESS
 				}
-				log_info "Job $job_id is in state $state, desire $desired_state"
+				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"SUSPENDED" {
 				if {[string compare $desired_state "SUSPENDED"] == 0} {
-					log_info "Job $job_id is SUSPENDED"
-					return 0
+					log_debug "Job $job_id is SUSPENDED"
+					return $::RETURN_SUCCESS
 				}
-				log_info "Job $job_id is in state $state, desire $desired_state"
+				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			default {
-				log_info "Job $job_id is in state $state, desire $desired_state"
+				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 		}
 
-		if { $my_delay > $max_job_state_delay } {
+		if { $my_delay > $timeout } {
 			log_warn "Timeout waiting for job state $desired_state"
-			return 1
+			return $::RETURN_TIMEOUT
 		}
 
-		exec sleep $testsuite_poll_interval
-		set my_delay [expr $my_delay + $testsuite_poll_interval]
+		exec sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
 	}
 }
