@@ -14,6 +14,14 @@ config files will be pulled to the node. This slurmctld can be identified by
 either an explicit option, or &mdash; preferably &mdash; through DNS SRV
 records defined within the cluster itself.</p>
 
+<p>If you have a login node you will be running client commands
+from, those client commands will have to use the DNS record to get the
+configuration information from the controller when they run.
+If you expect to have a lot of traffic from a login node, this
+can generate a lot of requests for the configuration files. In cases like
+this, you may want to consider running slurmd on the machine so it can
+manage the configuration files, but not allowing it to run jobs.</p>
+
 <h2><a name="INSTALLATION">Installation</a></h2>
 
 <p>There are no extra steps required to install this feature. It is built in
@@ -105,6 +113,6 @@ is as follows:
 </ul>
 </p>
 
-<p style="text-align:center;">Last modified 11 May 2020</p>
+<p style="text-align:center;">Last modified 11 September 2020</p>
 
 <!--#include virtual="footer.txt"-->
