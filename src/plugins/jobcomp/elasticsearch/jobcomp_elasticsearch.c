@@ -131,7 +131,6 @@ struct job_node {
 };
 
 char *save_state_file = "elasticsearch_state";
-char *index_type = "/slurm/jobcomp";
 char *log_url = NULL;
 
 static pthread_cond_t location_cond = PTHREAD_COND_INITIALIZER;
@@ -970,11 +969,7 @@ extern int slurm_jobcomp_set_location(char *location)
 		return SLURM_ERROR;
 	}
 
-	/* Strip any trailing slashes. */
-	while (location[strlen(location) - 1] == '/')
-		location[strlen(location) - 1] = '\0';
-
-	log_url = xstrdup_printf("%s%s", location, index_type);
+	log_url = xstrdup(location);
 
 	curl_global_init(CURL_GLOBAL_ALL);
 	curl_handle = curl_easy_init();

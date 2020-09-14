@@ -56,16 +56,23 @@ to <b>jobcomp/elasticsearch</b>.
 </li>
 <li>
 <a href="slurm.conf.html#OPT_JobCompLoc"><b>JobCompLoc</b></a> should be set to
-the Elasticsearch server URL, including the port number after the semicolon
-"<b>:</b>".
-<pre>JobCompLoc=http://&lt;elasticserver&gt;:&lt;port&gt;</pre>
-The plugin will remove any trailing slashes from that URL, and append
-<b>/slurm/jobcomp</b> at the end. The first part of the path &mdash;
-<b>slurm</b> &mdash; defines the Elasticsearch <i>index</i> name and the second
-&mdash; <b>jobcomp</b> &mdash; is the <i>index type</i> name. Since
-Elasticsearch 8.0 the APIs that accept types are removed. Future versions of
-Slurm will allow this option to specify a fully configured URL endpoint.
-These concepts are further described in the Elasticsearch documentation.
+the Elasticsearch server URL endpoint (including the port number and the target
+index).
+<pre>JobCompLoc=&lt;host&gt;:&lt;port&gt;/&lt;target&gt;/_doc</pre>
+
+<p>NOTE: Since Elasticsearch 8.0 the APIs that accept types are removed, thereby
+moving to a typeless mode. The Slurm elasticsearch plugin in versions prior to
+20.11 removed any trailing slashes from this option URL and appended a hardcoded
+<b>/slurm/jobcomp</b> suffix representing the <i>/index/type</i> respectively.
+Starting from Slurm 20.11 the URL is fully configurable and handed as-is without
+modification to the libcurl library functions. In addition, this also allows
+users to index data from different clusters to the same server but to different
+indices.</p>
+
+<p>NOTE: The Elasticsearch official documentation provides detailed information
+around these concepts, the type to typeless deprecation transition as well as
+reindex API references on how to copy data from one index to another if needed.
+</p>
 </li>
 <li>
 <a href="slurm.conf.html#OPT_JobCompParams"><b>JobCompParams</b></a> should be
@@ -101,8 +108,7 @@ layer to analyze the data.
 <a href="https://www.elastic.co/products/kibana"><b>Kibana</b></a> is a
 recommended open-source data visualization plugin for Elasticsearch.
 Once installed, an Elasticsearch <i>index</i> name or pattern has to be
-configured to instruct Kibana to retrieve the data. The appropriate index for
-Slurm is either <b>slurm</b> or <b>slurm*</b>. Once data is loaded it is
+configured to instruct Kibana to retrieve the data. Once data is loaded it is
 possible to create tables where each row is a finished job, ordered by
 any column you choose &mdash; the @end_time timestamp is suggested &mdash; and
 any dashboards, graphs, or other analysis of interest.
@@ -113,8 +119,8 @@ any dashboards, graphs, or other analysis of interest.
 tool to perform REST requests against Elasticsearch directly. Some of the
 following examples using the <b>curl</b> tool may be useful.</p>
 
-<p>Query information about the <b>slurm</b> <i>index</i>, including the document
-count (which should be one per job indexed):</p>
+<p>Query information assuming a <b>slurm</b> <i>index</i> name, including the
+document count (which should be one per job indexed):</p>
 <pre>
 $ curl -XGET http://localhost:9200/_cat/indices/slurm?v
 health status index uuid                   pri rep docs.count docs.deleted store.size pri.store.size

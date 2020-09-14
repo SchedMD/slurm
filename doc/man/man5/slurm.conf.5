@@ -1177,15 +1177,11 @@ Also see \fBDefaultStorageHost\fR.
 The fully qualified file name where job completion records are written
 when the \fBJobCompType\fR is "jobcomp/filetxt" or the database where
 job completion records are stored when the \fBJobCompType\fR is a
-database, or an url with format http://yourelasticserver:port when
-\fBJobCompType\fR is "jobcomp/elasticsearch".
-NOTE: when you specify a URL for Elasticsearch, Slurm will remove any trailing
-slashes "/" from the configured URL and append "/slurm/jobcomp", which are the
-Elasticsearch index name type respectively. Since Elasticsearch 8.0 the APIs
-that accept types are removed. Future versions of Slurm will allow this option
-to specify a fully configured URL endpoint.
+database, or a complete URL endpoint with format <host>:<port>/<target>/_doc
+when \fBJobCompType\fR is "jobcomp/elasticsearch" like i.e.
+"localhost:9200/slurm/_doc".
 NOTE: More information is available at the Slurm web site
-( https://slurm.schedmd.com/elasticsearch.html ).
+<https://slurm.schedmd.com/elasticsearch.html>.
 Also see \fBDefaultStorageLoc\fR.
 
 .TP

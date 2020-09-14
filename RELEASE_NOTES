@@ -56,6 +56,9 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Remove switch/generic plugin.
  -- The acct_gather_energy/cray_aries plugin has been renamed to
     acct_gather_energy/pm_counters.
+ -- The JobCompLoc URL endpoint when the JobCompType=jobcomp/elasticsearch
+    plugin is enabled is now fully configurable and the plugin no longer appends
+    a hardcoded "/slurm/jobcomp" index and type suffix to it.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

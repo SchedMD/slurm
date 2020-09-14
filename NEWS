@@ -65,6 +65,9 @@ documents those changes that are of interest to users and administrators.
  -- Rename acct_gather_energy/cray_aries to acct_gather_energy/pm_counters.
  -- Removed gres_alloc and gres_req from job_record_t.Tres should be used
     instead.
+ -- The JobCompLoc URL endpoint when the JobCompType=jobcomp/elasticsearch
+    plugin is enabled is now fully configurable and the plugin no longer appends
+    a hardcoded "/slurm/jobcomp" index and type suffix to it.
 
 * Changes in Slurm 20.02.6
 ==========================
