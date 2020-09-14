@@ -62,7 +62,9 @@ the Elasticsearch server URL, including the port number after the semicolon
 The plugin will remove any trailing slashes from that URL, and append
 <b>/slurm/jobcomp</b> at the end. The first part of the path &mdash;
 <b>slurm</b> &mdash; defines the Elasticsearch <i>index</i> name and the second
-&mdash; <b>jobcomp</b> &mdash; is the <i>index type</i> name.
+&mdash; <b>jobcomp</b> &mdash; is the <i>index type</i> name. Since
+Elasticsearch 8.0 the APIs that accept types are removed. Future versions of
+Slurm will allow this option to specify a fully configured URL endpoint.
 These concepts are further described in the Elasticsearch documentation.
 </li>
 <li>

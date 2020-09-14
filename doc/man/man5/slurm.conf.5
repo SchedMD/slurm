@@ -1163,7 +1163,9 @@ database, or an url with format http://yourelasticserver:port when
 \fBJobCompType\fR is "jobcomp/elasticsearch".
 NOTE: when you specify a URL for Elasticsearch, Slurm will remove any trailing
 slashes "/" from the configured URL and append "/slurm/jobcomp", which are the
-Elasticsearch index name (slurm) and mapping (jobcomp).
+Elasticsearch index name type respectively. Since Elasticsearch 8.0 the APIs
+that accept types are removed. Future versions of Slurm will allow this option
+to specify a fully configured URL endpoint.
 NOTE: More information is available at the Slurm web site
 ( https://slurm.schedmd.com/elasticsearch.html ).
 Also see \fBDefaultStorageLoc\fR.
