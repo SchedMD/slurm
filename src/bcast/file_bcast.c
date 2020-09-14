@@ -192,6 +192,7 @@ static int _file_bcast(struct bcast_parameters *params,
 	slurm_msg_t_init(&msg);
 	msg.data = bcast_msg;
 	msg.flags = USE_BCAST_NETWORK;
+	msg.forward.tree_width = params->fanout;
 	msg.msg_type = REQUEST_FILE_BCAST;
 
 	ret_list = slurm_send_recv_msgs(sbcast_cred->node_list, &msg,

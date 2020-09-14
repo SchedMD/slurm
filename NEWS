@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.02.6
 ==========================
+ -- Fix sbcast --fanout option.
 
 * Changes in Slurm 20.02.5
 ==========================
