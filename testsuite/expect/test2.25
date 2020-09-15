@@ -116,7 +116,7 @@ set test_user [get_my_user_name]
 if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
 	# Add test Account
 	set acct_added 0
-	set cluster [get_cluster_name]
+	set cluster [get_config_param "ClusterName"]
 	spawn $sacctmgr add -i account $test_acct cluster=$cluster
 	expect {
 		-re "Adding Account" {

@@ -39,7 +39,7 @@ set exit_code   0
 set test_prog   "test$test_id.prog"
 set matches     0
 
-set damp [get_fs_damping_factor]
+set damp [get_config_param "FairShareDampeningFactor"]
 if {$damp != 1} {
 	skip "Unable to run with FairShareDampeningFactor=$damp (must be 1)"
 }

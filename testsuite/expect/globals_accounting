@@ -1647,7 +1647,7 @@ proc reset_account_usage { cluster acct } {
 	global sacctmgr exit_code
 
 	if { ![string compare $cluster ""] } {
-		set cluster [get_cluster_name]
+		set cluster [get_config_param "ClusterName"]
 	}
 
 	set my_pid [eval spawn $sacctmgr -i mod account $acct cluster=$cluster set RawUsage=0]
@@ -1686,7 +1686,7 @@ proc reset_qos_usage { cluster qos } {
 	global sacctmgr exit_code
 
 	if { ![string compare $cluster ""] } {
-		set cluster [get_cluster_name]
+		set cluster [get_config_param "ClusterName"]
 	}
 
 	set my_pid [eval spawn $sacctmgr -i mod qos $qos cluster=$cluster set RawUsage=0]

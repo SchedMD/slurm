@@ -30,7 +30,7 @@ source ./globals
 source ./globals_accounting
 
 set node_cnt    0
-set cluster     [get_cluster_name]
+set cluster     [get_config_param "ClusterName"]
 set node_name   ""
 set user        ""
 set acct        "test$test_id\_acct"

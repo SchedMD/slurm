@@ -44,7 +44,7 @@ if {![param_contains [get_affinity_types] "affinity"]} {
 }
 log_debug "Task affinity plugin installed"
 
-set task_params [string tolower [get_affinity_params]]
+set task_params [string tolower [get_config_param "TaskPluginParam"]]
 if {[string first $task_params "boards"]  != -1 ||
     [string first $task_params "sockets"] != -1 ||
     [string first $task_params "cores"]   != -1} {

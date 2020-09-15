@@ -92,7 +92,7 @@ reconfigure
 fail_on_error "Not able to reconfigure"
 
 # Verify that MinJobAge was set
-set min_job_age [get_min_job_age]
+regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
 assert_or_fail {$min_job_age == 10} "Failed to set MinJobAge"
 
 set node_feature [get_single_node_feature]

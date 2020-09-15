@@ -37,7 +37,7 @@ set exit_code   0
 set host_0      ""
 set timeout $max_job_delay
 set node_cnt 1-64
-set task_num [get_max_tasks]
+set task_num [get_config_param "MaxTasksPerNode"]
 
 set srun_pid [spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_printenv SLURMD_NODENAME]
 expect {

@@ -33,7 +33,7 @@ source ./globals
 source ./globals_accounting
 
 set acct           "test$test_id\_acct"
-set cluster        [get_cluster_name]
+set cluster        [get_config_param "ClusterName"]
 set exit_code      0
 set file_in        "test$test_id.input"
 set file_out1      "test$test_id.output1"
@@ -72,7 +72,7 @@ proc cleanup { } {
 	remove_acct "" $acct
 }
 
-set store_tres [string tolower [get_acct_store_tres]]
+set store_tres [string tolower [get_config_param "AccountingStorageTRES"]]
 set store_mps [string first "gres/gpu:" $store_tres]
 if {$store_mps != -1} {
 	skip "This test requires homogeneous GPU accounting (NO Type)"

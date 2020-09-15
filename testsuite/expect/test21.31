@@ -118,7 +118,7 @@ if { $exit_code } {
 #
 # get name of this cluster
 #
-set cluster [get_cluster_name]
+set cluster [get_config_param "ClusterName"]
 set resource1(cluster) "$cluster,$tc2"
 
 #

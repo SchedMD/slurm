@@ -29,7 +29,7 @@ source ./globals_accounting
 
 set sql_query        "test$test_id\-query.sql"
 set sql_query_rem    "test$test_id\-query-rem.sql"
-set cluster          [get_cluster_name]
+set cluster          [get_config_param "ClusterName"]
 set account          "test$test_id\_acct"
 set user             "test$test_id\_user"
 set config_dir       ""

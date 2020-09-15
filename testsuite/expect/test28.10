@@ -32,7 +32,7 @@ set file_script   "test$test_id.sh"
 set job_id        0
 set task_limit    1
 
-if {[get_array_config] < [expr $array_size + 1]} {
+if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
 	skip "MaxArraySize is too small"
 }
 

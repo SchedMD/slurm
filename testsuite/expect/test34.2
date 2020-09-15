@@ -45,7 +45,7 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 	skip "This test requires use of Slurmdbd"
 }
 
-set min_job_age [get_min_job_age]
+regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
 if {$min_job_age < 10} {
 	skip "MinJobAge configured too low for this test ($min_job_age < 10)"
 }

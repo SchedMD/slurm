@@ -201,7 +201,7 @@ expect {
 }
 if {$found_job == 0} {
 	if {$purged_job == 1} {
-		set min_job_age [get_min_job_age]
+		regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
 	}
 	if {$purged_job == 1 && $min_job_age < 60} {
 		log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"

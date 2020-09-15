@@ -189,7 +189,7 @@ cleanup
 
 set user_name [get_my_user_name]
 set node_name [get_idle_node_in_part]
-set cluster_name [get_cluster_name]
+set cluster_name [get_config_param "ClusterName"]
 
 # NOTE: acct_good should always work and
 # acct_bad should always cause an error

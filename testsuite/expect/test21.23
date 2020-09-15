@@ -54,7 +54,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 
 set accounting_storage_type [get_config_param "AccountingStorageType"]
 
-set cn [get_cluster_name]
+set cn [get_config_param "ClusterName"]
 
 #
 # Identify the user and his current default account

@@ -97,7 +97,7 @@ if {$available < 2} {
     skip "Not enough nodes currently available ($available avail, 2 needed)"
 }
 
-remove_acct [get_cluster_name] $test_acct
+remove_acct [get_config_param "ClusterName"] $test_acct
 
 # Run a job to get a usable node to test
 set tmp_sc  "tmp_sc"

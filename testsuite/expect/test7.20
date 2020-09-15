@@ -44,7 +44,7 @@ array set acct_1 {}
 set acct_1(Organization)  "Account_Org_A1"
 set acct_1(Description)   "Test_Account_A1"
 set acct_1(Qos) $tq1
-set acct_1(Cluster) [get_cluster_name]
+set acct_1(Cluster) [get_config_param "ClusterName"]
 
 # user options
 array set user_req_1 {}

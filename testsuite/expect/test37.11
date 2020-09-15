@@ -47,7 +47,8 @@ set user_name   ""
 set srun_job_cnt 0
 set my_sbatch "${fed_slurm_base}/$fedc1/bin/sbatch"
 set my_sacct "${fed_slurm_base}/$fedc1/bin/sacct"
-set min_job_age [expr {[get_min_job_age] + 65}]
+regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
+set min_job_age [expr {$min_job_age + 65}]
 set file_in          "test$test_id.in"
 
 #

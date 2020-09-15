@@ -26,7 +26,7 @@
 ############################################################################
 source ./globals_accounting
 
-set cluster             [get_cluster_name]
+set cluster             [get_config_param "ClusterName"]
 set partition           [default_partition]
 set qos_prefix          "${test_name}_qos_"
 set test_acct           "${test_name}_acct"

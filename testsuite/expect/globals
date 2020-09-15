@@ -311,46 +311,6 @@ set RETURN_TIMEOUT 2
 ################################################################
 #
 # NAME
-#	get_test_name - gets the name of the invoking source script
-#
-# SYNOPSIS
-#	get_test_name
-#
-# RETURN VALUE
-#	The name of the originally called script
-#
-################################################################
-
-proc get_test_name { } {
-
-	set test_name unknown
-	set frame_level 1
-	while { $frame_level <= [info frame] } {
-		if { [dict get [info frame $frame_level] type] == "source" } {
-			set test_name [file tail [dict get [info frame $frame_level] file]]
-			break
-		}
-		incr frame_level
-	}
-
-	return $test_name
-}
-
-
-#
-# Name of the originally invoked test script, e.g. test1.1
-#
-set test_name [get_test_name]
-
-#
-# Suffix of the test script, e.g. 1.1
-#
-set test_id   [string map {test ""} $test_name]
-
-
-################################################################
-#
-# NAME
 #	fail - fails a test
 #
 # SYNOPSIS
@@ -2117,39 +2077,6 @@ proc get_affinity_types { } {
 ################################################################
 #
 # NAME
-#	get_affinity_params - gets the task plugin parameters
-#
-# SYNOPSIS
-#	get_affinity_params
-#
-# RETURN VALUE
-#	Returns value of TaskPluginParam
-#
-################################################################
-
-proc get_affinity_params { } {
-	global scontrol re_word_str
-
-	log_user 0
-	set params ""
-	spawn $scontrol show config
-	expect {
-		-re "TaskPluginParam *= ($re_word_str)" {
-			set params $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $params
-}
-
-
-################################################################
-#
-# NAME
 #	get_mps_count_by_index - gets the count of a specific gres/mps device
 #
 # SYNOPSIS
@@ -2184,78 +2111,6 @@ proc get_mps_count_by_index { index hostname } {
 ################################################################
 #
 # NAME
-#	get_bb_emulate - determines if Cray burst buffers API is emulated
-#
-# SYNOPSIS
-#	get_bb_emulate
-#
-# DESCRIPTION
-#	Determine if Cray burst buffers API is emulated
-#
-# RETURN VALUE
-#	1 if true, 0 if false
-#
-################################################################
-
-proc get_bb_emulate { } {
-	global scontrol
-
-	log_user 0
-	set bb_emulate 0
-	spawn $scontrol show burst
-	expect {
-		-re "EmulateCray" {
-			set bb_emulate 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $bb_emulate
-}
-
-
-################################################################
-#
-# NAME
-#	get_bb_persistent - determines if persistent burst buffers can be created by users
-#
-# SYNOPSIS
-#	get_bb_persistent
-#
-# DESCRIPTION
-#	Determine if persistent burst buffers can be created by users
-#
-# RETURN VALUE
-#	1 if true, 0 if false
-#
-################################################################
-
-proc get_bb_persistent { } {
-	global scontrol
-
-	log_user 0
-	set bb_persistent 0
-	spawn $scontrol show burst
-	expect {
-		-re "EnablePersistent" {
-			set bb_persistent 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $bb_persistent
-}
-
-
-################################################################
-#
-# NAME
 #	get_bb_types - gets the burst buffer plugins running with task/ stripped
 #
 # SYNOPSIS
@@ -2279,7 +2134,7 @@ proc get_bb_types { } {
 				set task_found [lsearch $parts "burst_buffer"]
 				if { $task_found == -1 } break
 				set parts [lreplace $parts $task_found $task_found]
-			}
+		}
 			set bb_types [join $parts ","]
 			exp_continue
 		}
@@ -2290,40 +2145,6 @@ proc get_bb_types { } {
 
 	log_user 1
 	return $bb_types
-}
-
-
-################################################################
-#
-# NAME
-#	get_cpu_governors - gets the CpuFreqGovernor configuration parameter
-#
-# SYNOPSIS
-#	get_cpu_governors
-#
-# RETURN VALUE
-#	Returns comma separated list of available CPU governor's
-#
-################################################################
-
-proc get_cpu_governors { } {
-	global scontrol re_word_str
-
-	log_user 0
-	set governors ""
-	spawn $scontrol show config
-	expect {
-		-re "CpuFreqGovernors *= ($re_word_str)" {
-			set governors $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-
-	log_user 1
-	return $governors
 }
 
 
@@ -2363,46 +2184,6 @@ proc priority_type {} {
 	}
 
 	return $name
-}
-
-
-################################################################
-#
-# NAME
-#	get_min_job_age - determines the MinJobAge
-#
-# SYNOPSIS
-#	get_min_job_age
-#
-# DESCRIPTION
-#	Use scontrol to determine the MinJobAge
-#
-# RETURN VALUE
-#	MinJobAge value
-#
-################################################################
-
-proc get_min_job_age {} {
-	global scontrol number
-
-	set age 0
-	log_user 0
-	spawn $scontrol show config
-	expect {
-		-re "MinJobAge *= ($number)" {
-			set age $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	if {$age == 0} {
-		log_error "Could not identify the MinJobAge"
-	}
-	return $age
 }
 
 
@@ -2469,40 +2250,6 @@ proc get_cycle_count { } {
 		return 2
 	}
 	return 100
-}
-
-
-################################################################
-#
-# NAME
-#	get_select_type - determine which select plugin is being used
-#
-# SYNOPSIS
-#	get_select_type
-#
-# RETURN VALUE
-#	Returns name of select plugin
-#
-################################################################
-
-proc get_select_type { } {
-	global scontrol bin_bash bin_grep re_word_str
-
-	log_user 0
-	set type ""
-	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
-	expect {
-		-re "select/($re_word_str)" {
-			set type $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $type
 }
 
 
@@ -3180,45 +2927,6 @@ proc get_job_acct_freq { } {
 ################################################################
 #
 # NAME
-#	get_job_acct_type - gets the value of JobAcctGatherType
-#
-# SYNOPSIS
-#	get_job_acct_type
-#
-# RETURN VALUE
-#	JobAcctGatherType value
-#
-################################################################
-
-proc get_job_acct_type { } {
-	global scontrol re_word_str
-
-	log_user 0
-	set gather_type "none"
-
-	spawn $scontrol show config
-	expect {
-		-re "JobAcctGatherType *= jobacct_gather/($re_word_str)" {
-			set gather_type $expect_out(1,string)
-			exp_continue
-		}
-		-re "JobAcctGatherType *= ($re_word_str)" {
-			set gather_type $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-
-	log_user 1
-	return $gather_type
-}
-
-
-################################################################
-#
-# NAME
 #	check_accounting_admin_level - gets the admin_level for the current user
 #
 # SYNOPSIS
@@ -3268,46 +2976,6 @@ proc check_accounting_admin_level { } {
 
 	log_user 1
 	return $admin_level
-}
-
-
-################################################################
-#
-# NAME
-#	get_cluster_name - gets the cluster name
-#
-# SYNOPSIS
-#	get_cluster_name
-#
-# RETURN VALUE
-#	name of the cluster
-#
-################################################################
-
-proc get_cluster_name { } {
-	global scontrol re_word_str exit_code
-	#
-	# Use scontrol to find the cluster name
-	#
-	log_user 0
-	set cluster_name ""
-	set scon_pid [spawn -noecho $scontrol show config]
-	expect {
-		-re "ClusterName *= ($re_word_str)" {
-			set cluster_name $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			slow_kill $scon_pid
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	log_user 1
-	return $cluster_name
 }
 
 
@@ -3366,45 +3034,6 @@ proc get_control_machine { } {
 
 	log_user 1
 	return $control_machine
-}
-
-
-################################################################
-#
-# NAME
-#	get_node_cnt - determines how many nodes are on the system
-#
-# SYNOPSIS
-#	get_node_cnt
-#
-# RETURN VALUE
-#	Returns count of nodes on system or 0 if unknown
-#
-################################################################
-
-proc get_node_cnt { } {
-	global scontrol exit_code
-
-	log_user 0
-	set node_cnt 0
-	set scon_pid [spawn -noecho $scontrol show nodes]
-	expect {
-		-re "NodeName=" {
-			incr node_cnt
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			slow_kill $scon_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $node_cnt
 }
 
 
@@ -3592,78 +3221,6 @@ proc change_subbp_state { node ionodes state } {
 }
 
 
-################################################################
-#
-# NAME
-#	get_array_config - determines the MaxArraySize
-#
-# SYNOPSIS
-#	get_array_config
-#
-# DESCRIPTION
-#	Use scontrol to determine the MaxArraySize
-#
-# RETURN VALUE
-#	MaxArraySize value
-#
-################################################################
-
-proc get_array_config { } {
-	global scontrol number
-
-	log_user 0
-	set array_size 1
-	spawn $scontrol show config
-	expect {
-		-re "MaxArraySize *= ($number)" {
-			set array_size $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $array_size
-}
-
-
-################################################################
-#
-# NAME
-#	get_max_tasks - determines the MaxTasksPerNode
-#
-# SYNOPSIS
-#	get_max_tasks
-#
-# DESCRIPTION
-#	Use scontrol to determine the MaxTasksPerNode
-#
-# RETURN VALUE
-#	MaxTasksPerNode value
-#
-################################################################
-
-proc get_max_tasks { } {
-	global scontrol number
-
-	log_user 0
-	set max_tasks 1
-	spawn $scontrol show config
-	expect {
-		-re "MaxTasksPerNode *= ($number)" {
-			set max_tasks $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $max_tasks
-}
-
-
 #################################################
 #
 # NAME
@@ -3770,48 +3327,6 @@ proc check_node_mem { } {
 	}
 	log_user 1
 
-}
-
-
-################################################################
-#
-# NAME
-#	get_fs_damping_factor - gets FairShareDampeningFactor configuration parameter
-#
-# SYNOPSIS
-#	get_fs_damping_factor
-#
-# DESCRIPTION
-#	get FairShareDampeningFactor configuration parameter
-#
-# RETURN VALUE
-#	Returns FairShareDampeningFactor
-#
-################################################################
-
-proc get_fs_damping_factor { } {
-	global scontrol number exit_code
-
-	log_user 0
-	set damp 1
-	set scon_pid [spawn -noecho $scontrol show config]
-	expect {
-		-re "FairShareDampeningFactor *= ($number)" {
-			set damp $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			slow_kill $scon_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $damp
 }
 
 
@@ -4002,40 +3517,6 @@ proc wait_for_node args {
 	}
 
 	return $rt
-}
-
-
-#####################################################################
-#
-# NAME
-#	get_srun_ports - determines the SrunPortRange
-#
-# SYNOPSIS
-#	get_srun_ports
-#
-# RETURN VALUE
-#	the SrunPortRange
-#
-#####################################################################
-
-proc get_srun_ports { } {
-
-	global scontrol re_word_str bin_grep bin_bash number
-	log_user 0
-	set ports 0
-	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SrunPortRange"
-	expect {
-		-re "SrunPortRange *=* ($re_word_str)" {
-			set ports $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $ports
 }
 
 
@@ -4650,123 +4131,6 @@ proc stop_root_user {} {
 	}
 
 	return $uid
-}
-
-
-################################################################
-#
-# NAME
-#	get_requeue_exit - gets RequeueExit configuration parameter
-#
-# SYNOPSIS
-#	get_requeue_exit
-#
-# RETURN VALUE
-#	Returns RequeueExit number
-#
-################################################################
-
-proc get_requeue_exit { } {
-	global scontrol number exit_code
-
-	log_user 0
-	set re 0
-	set scon_pid [spawn -noecho $scontrol show config]
-	expect {
-		-re "RequeueExit *= ($number)" {
-			set re $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			slow_kill $scon_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $re
-}
-
-
-################################################################
-#
-# NAME
-#	get_requeue_exit_hold - gets RequeueExitHold configuration parameter
-#
-# SYNOPSIS
-#	get_requeue_exit_hold
-#
-# RETURN VALUE
-#	Returns RequeueExitHold number
-#
-################################################################
-
-proc get_requeue_exit_hold { } {
-	global scontrol number exit_code
-
-	log_user 0
-	set re 0
-	set scon_pid [spawn -noecho $scontrol show config]
-	expect {
-		-re "RequeueExitHold *= ($number)" {
-			set re $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			slow_kill $scon_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $re
-}
-
-
-################################################################
-#
-# NAME
-#	get_prolog - gets Prolog configuration parameter
-#
-# SYNOPSIS
-#	get_prolog
-#
-# RETURN VALUE
-#	Returns Prolog parameter
-#
-################################################################
-
-proc get_prolog { } {
-	global scontrol re_word_str exit_code
-
-	log_user 0
-	set prolog 0
-	set scon_pid [spawn -noecho $scontrol show config]
-	expect {
-		-re "^Prolog *= ($re_word_str)" {
-			set re $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			slow_kill $scon_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $prolog
 }
 
 
@@ -5481,41 +4845,6 @@ proc get_mps_node_count { } {
 ################################################################
 #
 # NAME
-#	get_over_time_limit - returns the value of OverTimeLimit
-#
-# SYNOPSIS
-#	get_over_time_limit
-#
-# RETURN VALUE
-#	Returns the value of OverTimeLimit in slurm.conf
-#
-################################################################
-
-proc get_over_time_limit {} {
-	global number scontrol exit_code
-	set ret 0
-	log_user 0
-	spawn $scontrol show config
-	expect {
-		-re "OverTimeLimit *= *($number) min" {
-			set ret $expect_out(1,string)
-		}
-		timeout {
-			log_error "scontrol not responding"
-			incr exit_code
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $ret
-}
-
-
-################################################################
-#
-# NAME
 #	cuda_count - determines the count of allocated GPUs
 #
 # SYNOPSIS
@@ -5555,42 +4884,6 @@ proc cuda_count { cuda_string } {
 		return -1
 	}
 	return $cuda_count
-}
-
-
-################################################################
-#
-# NAME
-#	get_acct_store_tres - gets the configured value of AccountingStorageTRES
-#
-# SYNOPSIS
-#	get_acct_store_tres
-#
-# DESCRIPTION
-#	Get the configured value of AccountingStorageTRES
-#
-# RETURN VALUE
-#	Returns the configured value of AccountingStorageTRES
-#
-################################################################
-
-proc get_acct_store_tres { } {
-	global scontrol re_word_str
-
-	log_user 0
-	set store_tres ""
-	spawn $scontrol show config
-	expect {
-		-re "AccountingStorageTRES *= ($re_word_str)" {
-			set store_tres $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $store_tres
 }
 
 

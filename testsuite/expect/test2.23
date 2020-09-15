@@ -30,7 +30,7 @@ set script             "test$test_id\.bash"
 set job_id             0
 set exit_code          0
 
-set min_age [get_min_job_age]
+regexp "($number)" [get_config_param "MinJobAge"] {} min_age
 if {$min_age < 10} {
 	skip "MinJobAge too low for this test ($min_age < 10)"
 }
