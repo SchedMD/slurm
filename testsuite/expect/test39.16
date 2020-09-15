@@ -64,7 +64,12 @@ if {$cpus_per_node < 2} {
 	skip "This test requires 2 or more CPUs per node in the default partition"
 }
 if {$gpu_cnt > $cpus_per_node} {
-	set gpu_cnt $cpus_per_node
+	log_warn "This test needs CPUs >= GPUs in the node. On current configuration it will only test the expected error."
+}
+
+proc cleanup {} {
+	global bin_rm file_in
+	exec $bin_rm -f $file_in
 }
 
 #
@@ -79,11 +84,16 @@ fi
 exit 0"
 
 set match 0
+set res_alloc_error 0
 set timeout $max_job_delay
 set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-task=1 --nodes=$nb_nodes --exclusive --ntasks=$nb_tasks -t1 -J "test$test_id" -l ./$file_in]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	-re "Requested node configuration is not available" {
+		incr res_alloc_error
 		exp_continue
 	}
 	timeout {
@@ -95,12 +105,23 @@ expect {
 		wait
 	}
 }
-if {$match != $nb_tasks} {
-	fail "srun --gpus-per-task with --exclusive failure ($match != $nb_tasks)"
+if {$gpu_cnt > $cpus_per_node} {
+	if {$res_alloc_error} {
+		log_info "This error is expected since GPUs ($gpu_cnt) > CPUs ($cpus_per_node)"
+	} else {
+		fail "Requested node configuration shouldn't be available"
+	}
+} else {
+	if {$match == $nb_tasks} {
+		log_info "Number of devices correct ($match)"
+	} else {
+		fail "srun --gpus-per-task with --exclusive failure ($match != $nb_tasks)"
+	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
+if {$gpu_cnt > $cpus_per_node} {
+	skip "System has more GPUs than CPUs, test is only checking an expected error"
 }
