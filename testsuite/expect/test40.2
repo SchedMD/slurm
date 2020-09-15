@@ -27,6 +27,7 @@
 source ./globals
 
 set exit_code   0
+set skips       0
 set file_in1   "test$test_id.input1"
 set file_in2   "test$test_id.input2"
 set file_out1  "test$test_id.output1"
@@ -386,7 +387,13 @@ $bin_sleep 5
 exit 0"
 set match 0
 set hostname "NO_VAL"
-set srun_pid [spawn $srun --gres=mps:$target_job -N$node_cnt -t1 -J "test$test_id" $file_in1]
+set subtest6_nodes [get_nodes_by_request "--gres=mps:$target_job -N$node_cnt -t1"]
+if {[llength $subtest6_nodes] != $node_cnt} {
+	log_warn "SKIP: Subtest 6 requires being able to submit job with --gres=mps:$target_job -N$node_cnt"
+	incr skips
+}
+
+set srun_pid [spawn $srun --gres=mps:$target_job -N$node_cnt -w[join $subtest6_nodes ","] -t1 -J "test$test_id" $file_in1]
 expect {
 	-re "HOST:($re_word_str)" {
 		incr match
@@ -417,7 +424,10 @@ if {$match != $node_cnt} {
 # Make sure that gres/gpu and gres/mps jobs either do not share the same GPU
 # or run at different times
 #
-if {[test_front_end] == 0} {
+if {[test_front_end]} {
+	log_warn "SKIP: Subtest 7 doesn't work with front_end"
+	incr skips
+} else {
 	log_info "==== TEST 7 ===="
 	set target_job [expr $mps_cnt / 2]
 	make_bash_script $file_in1 "
@@ -549,4 +559,7 @@ if {[test_front_end] == 0} {
 #
 if {$failure_count != 0} {
 	fail "Test failed due to previous errors (\$failure_count = $failure_count)"
+}
+if {$skips != 0} {
+	skip "Some subtest was skipped ($skips)"
 }
