@@ -4,6 +4,22 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<h2>Presentations from Slurm User Group Meeting, September 2020</h2>
+<ul>
+<li><a href="SLUG20/Field_Notes.pdf">Field Notes 4: From The Frontlines of Slurm Support</a>,
+Jason Booth, SchedMD</li>
+
+<li><a href="SLUG20/Cloud_and_Stuff.pdf">Cloud and Stuff</a>,
+Brian Christiansen, SchedMD</li>
+
+<li><a href="SLUG20/REST_API.pdf">REST API</a>,
+Nathan Rini, SchedMD</li>
+
+<li><a href="SLUG20/Roadmap.pdf">Slurm 20.11 and Beyond</a>,
+Tim Wickberg, SchedMD</li>
+
+</ul>
+
 <h2>Presentations from PEARC HPCSYSPROS Workshop, August 2020</h2>
 <ul>
 <li><a href="PEARC20/REST_API.pdf">REST API</a>, Nathan Rini, SchedMD</li>
@@ -1045,6 +1061,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 15 October 2019</p>
+<p style="text-align:center;">Last modified 15 September 2020</p>
 
 <!--#include virtual="footer.txt"-->
