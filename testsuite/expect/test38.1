@@ -30,6 +30,10 @@
 source ./globals
 source ./globals_het_jobs
 
+if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
+	skip "This test requires SchedulerType = sched/backfill"
+}
+
 set exit_code    0
 set file_in      "test$test_id.in"
 set job_id       0

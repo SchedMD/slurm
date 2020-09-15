@@ -42,6 +42,9 @@ if { [test_account_storage] == 0 } {
 if {[test_front_end]} {
         skip "This test is incompatible with front-end systems"
 }
+if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
+	skip "This test requires SchedulerType = sched/backfill"
+}
 
 set nb_nodes [get_node_cnt_in_part]
 if {$nb_nodes < 3} {
