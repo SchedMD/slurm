@@ -30,6 +30,10 @@ set exit_code	0
 set matches	0
 set het_job_id	0
 
+if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
+	skip "This test requires SchedulerType = sched/backfill"
+}
+
 set sbatch_pid [spawn $sbatch -a 0-1 -t1 -N1 -o /dev/null : -N1 --wrap "date"]
 expect {
 	-re "Submitted batch job ($number)" {
