@@ -111,6 +111,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow use of a target directory with "srun --bcast", and change the default
     filename to include the node name as well.
  -- Set -fno-omit-frame-pointer compiler flag.
+ -- Add --mail-type=INVALID_DEPEND option to salloc, sbatch, and srun.
 
 * Changes in Slurm 20.02.6
 ==========================

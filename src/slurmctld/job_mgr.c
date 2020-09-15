@@ -10716,6 +10716,10 @@ void handle_invalid_dependency(job_record_t *job_ptr)
 {
 	job_ptr->state_reason = WAIT_DEP_INVALID;
 	xfree(job_ptr->state_desc);
+
+	if (job_ptr->mail_type & MAIL_INVALID_DEPEND)
+		mail_job_info(job_ptr, MAIL_INVALID_DEPEND);
+
 	if (job_ptr->bit_flags & KILL_INV_DEP) {
 		_kill_dependent(job_ptr);
 	} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {

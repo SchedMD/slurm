@@ -76,6 +76,7 @@ HIGHLIGHTS
     CommunicationParameters. IPv4 support can be disabled with DisableIPv4.
  -- Allow use of a target directory with "srun --bcast", and change the default
     filename to include the node name as well.
+ -- Added a new --mail-type=INVALID_DEPEND option to salloc, sbatch, and srun.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

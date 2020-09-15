@@ -256,6 +256,8 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "INFINITE");
 	lua_pushnumber(L, INFINITE64);
 	lua_setfield(L, -2, "INFINITE64");
+	lua_pushnumber(L, MAIL_INVALID_DEPEND);
+	lua_setfield(L, -2, "MAIL_INVALID_DEPEND");
 	lua_pushnumber(L, MAIL_JOB_BEGIN);
 	lua_setfield(L, -2, "MAIL_JOB_BEGIN");
 	lua_pushnumber(L, MAIL_JOB_END);

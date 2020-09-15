@@ -250,6 +250,7 @@ enum job_states {
 #define MAIL_JOB_STAGE_OUT 0x0100	/* Notify on completion of burst buffer
 					 * stage out */
 #define MAIL_ARRAY_TASKS   0x0200	/* Send emails for each array task */
+#define MAIL_INVALID_DEPEND 0x0400	/* Notify on job invalid dependency */
 
 /*
  * job_array_struct_t array_flags definitions. ARRAY_TASK_REQUEUED could be

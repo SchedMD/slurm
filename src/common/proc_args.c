@@ -916,11 +916,14 @@ uint16_t parse_mail_type(const char *arg)
 			rc |= MAIL_JOB_END;
 		else if (xstrcasecmp(tok, "FAIL") == 0)
 			rc |= MAIL_JOB_FAIL;
+		else if (xstrcasecmp(tok, "INVALID_DEPEND") == 0)
+			rc |= MAIL_INVALID_DEPEND;
 		else if (xstrcasecmp(tok, "REQUEUE") == 0)
 			rc |= MAIL_JOB_REQUEUE;
 		else if (xstrcasecmp(tok, "ALL") == 0)
-			rc |= MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL |
-			      MAIL_JOB_REQUEUE | MAIL_JOB_STAGE_OUT;
+			rc |= MAIL_INVALID_DEPEND | MAIL_JOB_BEGIN |
+			      MAIL_JOB_END | MAIL_JOB_FAIL | MAIL_JOB_REQUEUE |
+			      MAIL_JOB_STAGE_OUT;
 		else if (!xstrcasecmp(tok, "STAGE_OUT"))
 			rc |= MAIL_JOB_STAGE_OUT;
 		else if (xstrcasecmp(tok, "TIME_LIMIT") == 0)
@@ -952,6 +955,11 @@ char *print_mail_type(const uint16_t type)
 		if (buf[0])
 			strcat(buf, ",");
 		strcat(buf, "ARRAY_TASKS");
+	}
+	if (type & MAIL_INVALID_DEPEND) {
+		if (buf[0])
+			strcat(buf, ",");
+		strcat(buf, "INVALID_DEPEND");
 	}
 	if (type & MAIL_JOB_BEGIN) {
 		if (buf[0])

@@ -1902,6 +1902,8 @@ static void *_mail_proc(void *arg)
 
 static char *_mail_type_str(uint16_t mail_type)
 {
+	if (mail_type == MAIL_INVALID_DEPEND)
+		return "Invalid dependency";
 	if (mail_type == MAIL_JOB_BEGIN)
 		return "Began";
 	if (mail_type == MAIL_JOB_END)
