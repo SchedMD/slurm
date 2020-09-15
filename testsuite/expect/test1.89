@@ -55,6 +55,11 @@ if {[get_node_param $node_name "CPUSpecList"] != "MISSING"} {
 	skip "This test is incompatible with nodes that have a CPUSpecList (e.g. $node_name)"
 }
 
+proc cleanup {} {
+	global bin_rm file_prog
+	exec $bin_rm -f $file_prog
+}
+
 #
 # Build a test program to report affinity by task
 #
@@ -517,8 +522,6 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_prog
-} else {
+if {$exit_code} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code). This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration or if OverSubscribe=FORCE for the default partition"
 }
