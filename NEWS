@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid possible double init race condition in assoc_mgr_lock().
  -- Add missing locks in slurm_cred_handle_reissue().
  -- Add missing locks in slurm_cred_revoked().
+ -- Fix slurmctld segfault due to tight reconfigure RPC requests by serializing
+    the RPC handler processing logic.
 
 * Changes in Slurm 20.02.5
 ==========================
