@@ -33,7 +33,6 @@ set job_id     0
 set hostlist   ""
 set node1      ""
 set node2      ""
-set prompt	"PROMPT: "
 set pack_job_id 0
 
 proc cleanup { } {
@@ -84,14 +83,14 @@ spawn $salloc -t2 -N1 : -N1 $bin_bash
 expect {
 	-re "job ($number) has been allocated resources" {
 		set pack_job_id $expect_out(1,string)
-		send "export PS1=\"$prompt\"\r"
+		send "$reset_bash_prompt\r"
 		exp_continue
 	}
-	-re "\"$prompt" {
-		# skip this, just echo of setting prompt"
+	-re "\"$test_prompt\"" {
+		# skip this, just echo of setting test_prompt
 		exp_continue
 	}
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#log_debug "Job initiated"
 	}
 	timeout {
@@ -188,7 +187,7 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#log_debug "Job initiated"
 	}
 	timeout {

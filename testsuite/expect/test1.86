@@ -32,7 +32,6 @@ source ./globals
 
 set exit_code   0
 set file_in     "test$test_id.input"
-set prompt      "PROMPT: "
 
 if {[test_front_end]} {
 	skip "This test is incompatible with front-end systems"
@@ -48,7 +47,7 @@ if { $node_count < 2 } {
 # Build input script file
 #
 make_bash_script $file_in "
-  export PS1=\"$prompt\"
+  $reset_bash_prompt
   $bin_bash --norc
 "
 
@@ -77,7 +76,7 @@ expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
-	"$prompt" {
+	"$test_prompt" {
 		log_debug "Job initiated"
 	}
 	timeout {
@@ -111,7 +110,7 @@ expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
-	"$prompt" {
+	"$test_prompt" {
 		log_debug "srun completed"
 	}
 	timeout {
@@ -156,7 +155,7 @@ expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
-	"$prompt" {
+	"$test_prompt" {
 		log_debug "srun completed"
 	}
 	timeout {
@@ -190,7 +189,7 @@ expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
-	"$prompt" {
+	"$test_prompt" {
 		log_debug "srun completed"
 	}
 	timeout {
@@ -228,7 +227,7 @@ expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
-	"$prompt" {
+	"$test_prompt" {
 		log_debug "srun completed"
 	}
 	timeout {
@@ -262,7 +261,7 @@ expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
-	"$prompt" {
+	"$test_prompt" {
 		log_debug "srun completed"
 	}
 	timeout {
@@ -297,7 +296,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	"$prompt" {
+	"$test_prompt" {
 		log_debug "srun completed"
 	}
 	timeout {
@@ -329,7 +328,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	"$prompt" {
+	"$test_prompt" {
 		log_debug "srun completed"
 	}
 	timeout {
@@ -370,7 +369,7 @@ expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
-	"$prompt" {
+	"$test_prompt" {
 		log_debug "srun completed"
 	}
 	timeout {
@@ -403,7 +402,7 @@ expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
-	"$prompt" {
+	"$test_prompt" {
 		log_debug "srun completed"
 	}
 	timeout {
@@ -430,7 +429,7 @@ expect {
 		set exit_code   1
 		exp_continue
 	}
-	"$prompt" {
+	"$test_prompt" {
 		log_debug "srun completed"
 	}
 	timeout {

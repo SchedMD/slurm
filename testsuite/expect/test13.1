@@ -74,9 +74,11 @@ set matches 0
 set srun_pid [spawn $salloc -N1 --verbose -t2 $bin_bash]
 expect -re "Granted job allocation ($number)"
 set job_id $expect_out(1,string)
+send "$reset_bash_prompt\r"
+expect -re "\"$test_prompt\""
 
 # start initial job step to claim some switch windows
-expect -re $prompt
+expect -re $test_prompt
 send "$srun -N1 -O -n$windows_used $bin_sleep $step_delay &\r"
 
 # start more job steps to check see if any switch window conflicts occur
@@ -87,7 +89,7 @@ for {set inx 0} {$inx < $windows_iterations} {incr inx} {
                         set exit_code 1
                         exp_continue
                 }
-		-re $prompt {
+		-re $test_prompt {
 			log_debug "Spawning step $inx"
 			send "$srun -N1 -O -n$windows_used true\r"
 		}
@@ -102,7 +104,7 @@ for {set inx 0} {$inx < $windows_iterations} {incr inx} {
 }
 
 # wait for initial job step to complete
-expect -re $prompt
+expect -re $test_prompt
 log_debug "(sleeping for $step_delay seconds, for job step zero to complete)"
 exec $bin_sleep $step_delay
 send "exit\r"

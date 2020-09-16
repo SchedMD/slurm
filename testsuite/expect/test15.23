@@ -61,9 +61,14 @@ expect {
 	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
+		send "$reset_bash_prompt\r"
 		exp_continue
 	}
-	-re $prompt {
+	-re "\"$test_prompt\"" {
+		# skip this, just echo of setting test_prompt
+		exp_continue
+	}
+	-re $test_prompt {
 		#log_debug "Job initiated"
 	}
 	timeout {
@@ -99,7 +104,7 @@ expect {
 		}
 		exp_continue
 	}
-	-re $prompt {
+	-re $test_prompt {
 		send "exit\r"
 		exp_continue
 	}

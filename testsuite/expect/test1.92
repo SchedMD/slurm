@@ -32,7 +32,6 @@ source ./globals
 set exit_code   0
 set file_bash   "test$test_id.bash"
 set job_id      0
-set prompt      "PROMPT: "
 
 if {[test_front_end]} {
         skip "This test is incompatible with front-end systems"
@@ -56,7 +55,7 @@ set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N2 --ntasks-per-node=2 --verbose -t2 $bin_bash]
 expect {
 	-re "salloc: Granted job allocation ($number)" {
-		send "export PS1=\"$prompt\"\r"
+		send "$reset_bash_prompt\r"
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
@@ -64,11 +63,11 @@ expect {
 		file delete $file_bash
 		skip "Can't test srun task distribution"
 	}
-	-re "\"$prompt" {
-		# skip this, just echo of setting prompt"
+	-re "\"$test_prompt\"" {
+		# skip this, just echo of setting test_prompt
 		exp_continue
 	}
-	-re $prompt {
+	-re $test_prompt {
 		send "$srun -l -c1 ./$file_bash | $bin_sort -V\r"
 	}
 	timeout {
@@ -108,7 +107,7 @@ expect {
 		slow_kill $salloc_pid
 		fail "salloc not responding or failure to recognize prompt"
 	}
-	-re $prompt
+	-re $test_prompt
 }
 
 if {$node_cnt != 2} {
@@ -156,7 +155,7 @@ expect {
 		log_error "srun not responding or failure to recognize prompt"
 		set exit_code 1
 	}
-	-re $prompt
+	-re $test_prompt
 }
 if {$prev_node > $this_node } {
 	log_error "Incorrect final distribution"
@@ -204,7 +203,7 @@ expect {
 		log_error "srun not responding or failure to recognize prompt"
 		set exit_code 1
 	}
-	-re $prompt
+	-re $test_prompt
 }
 if {$prev_cnt != $block_size} {
 	log_error "Incorrect final distribution"
@@ -252,7 +251,7 @@ expect {
 		log_error "srun not responding or failure to recognize prompt"
 		set exit_code 1
 	}
-	-re $prompt
+	-re $test_prompt
 }
 if {$prev_cnt > $block_size} {
 	log_error "Incorrect final distribution (nodeid:$prev_node task_cnt:$prev_cnt)"

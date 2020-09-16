@@ -26,7 +26,6 @@
 source ./globals
 
 set exit_code	0
-set prompt	"PROMPT: "
 set file_in	"test$test_id.bash"
 set file_out	"test$test_id.out"
 set timeout	60
@@ -74,14 +73,14 @@ spawn $salloc -t2 -N1 : -N1 $bin_bash
 expect {
 	-re "job ($number) has been allocated resources" {
 		set pack_job_id $expect_out(1,string)
-		send "export PS1=\"$prompt\"\r"
+		send "$reset_bash_prompt\r"
 		exp_continue
 	}
-	-re "\"$prompt" {
-		# skip this, just echo of setting prompt"
+	-re "\"$test_prompt\"" {
+		# skip this, just echo of setting test_prompt
 		exp_continue
 	}
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#log_debug "Job initiated"
 	}
 	timeout {
@@ -109,7 +108,7 @@ expect {
 		incr index
 		exp_continue
 	}
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#break
 	}
 	timeout {
@@ -127,7 +126,7 @@ log_info "Test environment variables needed by MPI"
 set matches 0
 send "$srun --label --mpi=none --pack-group=0,1 -l -o$file_out $file_in\r"
 expect {
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#break
 	}
 	timeout {
@@ -162,7 +161,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#break
 	}
 	timeout {
@@ -185,7 +184,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#break
 	}
 	timeout {
