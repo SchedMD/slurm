@@ -792,7 +792,7 @@ static int _sort_job_by_partition(void *void1, void *void2)
 	int diff;
 	char *val1 = NULL, *val2 = NULL;
 
-	_get_part_name_info_from_void(&val1, &val1, void1, void2);
+	_get_part_name_info_from_void(&val1, &val2, void1, void2);
 
 	diff = xstrcmp(val1, val2);
 

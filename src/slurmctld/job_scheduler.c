@@ -3701,19 +3701,19 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 		}
 
 		/* New format, <test>:job_ID */
-		if (xstrncasecmp(tok, "afternotok", 10) == 0)
+		if (!xstrncasecmp(tok, "afternotok:", 11))
 			depend_type = SLURM_DEPEND_AFTER_NOT_OK;
-		else if (xstrncasecmp(tok, "aftercorr", 9) == 0)
+		else if (!xstrncasecmp(tok, "aftercorr:", 10))
 			depend_type = SLURM_DEPEND_AFTER_CORRESPOND;
-		else if (xstrncasecmp(tok, "afterany", 8) == 0)
+		else if (!xstrncasecmp(tok, "afterany:", 9))
 			depend_type = SLURM_DEPEND_AFTER_ANY;
-		else if (xstrncasecmp(tok, "afterok", 7) == 0)
+		else if (!xstrncasecmp(tok, "afterok:", 8))
 			depend_type = SLURM_DEPEND_AFTER_OK;
-		else if (xstrncasecmp(tok, "afterburstbuffer", 10) == 0)
+		else if (!xstrncasecmp(tok, "afterburstbuffer:", 11))
 			depend_type = SLURM_DEPEND_BURST_BUFFER;
-		else if (xstrncasecmp(tok, "after", 5) == 0)
+		else if (!xstrncasecmp(tok, "after:", 6))
 			depend_type = SLURM_DEPEND_AFTER;
-		else if (xstrncasecmp(tok, "expand", 6) == 0) {
+		else if (!xstrncasecmp(tok, "expand:", 7)) {
 			if (!permit_job_expansion()) {
 				rc = ESLURM_NOT_SUPPORTED;
 				break;
