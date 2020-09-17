@@ -2278,13 +2278,11 @@ static void _split_node_config(node_record_t *node_ptr,
 /*
  * validate_node_specs - validate the node's specifications as valid,
  *	if not set state to down, in any case update last_response
- * IN reg_msg - node registration message
- * IN protocol_version - Version of Slurm on this node
+ * IN slurm_msg - get node registration message it
  * OUT newly_up - set if node newly brought into service
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  */
-extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
-			       uint16_t protocol_version, bool *newly_up)
+extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 {
 	int error_code, i, node_inx;
 	config_record_t *config_ptr;
@@ -2303,6 +2301,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
+	slurm_node_registration_status_msg_t *reg_msg =
+		(slurm_node_registration_status_msg_t *)slurm_msg->data;
+
 	node_ptr = find_node_record(reg_msg->node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
@@ -2312,7 +2313,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	config_ptr = node_ptr->config_ptr;
 	error_code = SLURM_SUCCESS;
 
-	node_ptr->protocol_version = protocol_version;
+	node_ptr->protocol_version = slurm_msg->protocol_version;
 	xfree(node_ptr->version);
 	node_ptr->version = reg_msg->version;
 	reg_msg->version = NULL;

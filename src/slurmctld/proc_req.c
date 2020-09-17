@@ -2763,9 +2763,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg,
 		    (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RESP))
 			_find_avail_future_node(msg);
 		validate_jobs_on_node(node_reg_stat_msg);
-		error_code = validate_node_specs(node_reg_stat_msg,
-						 msg->protocol_version,
-						 &newly_up);
+		error_code = validate_node_specs(msg, &newly_up);
 #endif
 		if (!running_composite)
 			unlock_slurmctld(job_write_lock);
