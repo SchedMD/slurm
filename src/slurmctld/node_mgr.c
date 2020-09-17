@@ -66,6 +66,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_acct_gather_energy.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_mcs.h"
@@ -76,6 +77,7 @@
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
+#include "src/slurmctld/power_save.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
@@ -1312,8 +1314,19 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
 				node_ptr->node_state &= (~NODE_STATE_REBOOT);
-				node_ptr->node_state &=
-					(~NODE_STATE_POWERING_DOWN);
+
+				if (IS_NODE_POWERING_DOWN(node_ptr)) {
+					node_ptr->node_state &=
+						(~NODE_STATE_POWERING_DOWN);
+
+					if (IS_NODE_CLOUD(node_ptr) &&
+					    cloud_reg_addrs)
+						set_node_comm_name(
+							node_ptr,
+							xstrdup(node_ptr->name),
+							xstrdup(node_ptr->name));
+				}
+
 				if (IS_NODE_DOWN(node_ptr)) {
 					state_val = NODE_STATE_IDLE;
 #ifndef HAVE_FRONT_END
@@ -2278,13 +2291,11 @@ static void _split_node_config(node_record_t *node_ptr,
 /*
  * validate_node_specs - validate the node's specifications as valid,
  *	if not set state to down, in any case update last_response
- * IN reg_msg - node registration message
- * IN protocol_version - Version of Slurm on this node
+ * IN slurm_msg - get node registration message it
  * OUT newly_up - set if node newly brought into service
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  */
-extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
-			       uint16_t protocol_version, bool *newly_up)
+extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 {
 	int error_code, i, node_inx;
 	config_record_t *config_ptr;
@@ -2303,6 +2314,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
+	slurm_node_registration_status_msg_t *reg_msg =
+		(slurm_node_registration_status_msg_t *)slurm_msg->data;
+
 	node_ptr = find_node_record(reg_msg->node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
@@ -2312,7 +2326,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	config_ptr = node_ptr->config_ptr;
 	error_code = SLURM_SUCCESS;
 
-	node_ptr->protocol_version = protocol_version;
+	node_ptr->protocol_version = slurm_msg->protocol_version;
 	xfree(node_ptr->version);
 	node_ptr->version = reg_msg->version;
 	reg_msg->version = NULL;
@@ -2725,6 +2739,27 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	node_ptr->boot_req_time = (time_t) 0;
 
 	*newly_up = (!orig_node_avail && bit_test(avail_node_bitmap, node_inx));
+
+	if (!error_code && IS_NODE_CLOUD(node_ptr) && cloud_reg_addrs) {
+		slurm_addr_t addr;
+		char *comm_name = NULL, *hostname = NULL;
+
+		/* Get IP of slurmd */
+		if (slurm_msg->conn_fd >= 0 &&
+		    !slurm_get_peer_addr(slurm_msg->conn_fd, &addr)) {
+			uint16_t port = 0;
+			comm_name = xmalloc(INET_ADDRSTRLEN);
+			slurm_get_ip_str(&addr, &port, comm_name,
+					 INET_ADDRSTRLEN);
+		}
+
+		hostname = g_slurm_auth_get_host(slurm_msg->auth_cred);
+
+		set_node_comm_name(
+			node_ptr,
+			comm_name ? comm_name : hostname,
+			hostname);
+	}
 
 	return error_code;
 }

@@ -96,6 +96,8 @@ time_t last_log = (time_t) 0, last_work_scan = (time_t) 0;
 uint16_t slurmd_timeout;
 static bool idle_on_node_suspend = false;
 
+bool cloud_reg_addrs = false;
+
 typedef struct exc_node_partital {
 	int exc_node_cnt;
 	bitstr_t *exc_node_cnt_bitmap;
@@ -410,6 +412,13 @@ static void _do_power_work(time_t now)
 		    (node_ptr->last_response < now)) {
 
 			node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
+
+			if (IS_NODE_CLOUD(node_ptr) && cloud_reg_addrs) {
+				/* Reset hostname and addr to node's name. */
+				set_node_comm_name(node_ptr,
+						   xstrdup(node_ptr->name),
+						   xstrdup(node_ptr->name));
+			}
 
 			if (!IS_NODE_DOWN(node_ptr) &&
 			    !IS_NODE_DRAIN(node_ptr) &&
@@ -867,6 +876,8 @@ static int _init_power_config(void)
 	if (slurm_conf.suspend_exc_parts)
 		exc_parts = xstrdup(slurm_conf.suspend_exc_parts);
 
+	cloud_reg_addrs = xstrcasestr(slurm_conf.slurmctld_params,
+				      "cloud_reg_addrs");
 	idle_on_node_suspend = xstrcasestr(slurm_conf.slurmctld_params,
 					   "idle_on_node_suspend");
 

@@ -50,6 +50,8 @@ HIGHLIGHTS
  -- Dynamic Future Nodes - slurmds started with -F[<feature>] will be
     associated with a nodename in Slurm that matches the same hardware
     configuration.
+ -- SlurmctldParameters=cloud_reg_addrsa - Cloud nodes automatically get
+    NodeAddr and NodeHostname set from slurmd registration.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

@@ -43,6 +43,9 @@
 #ifndef _HAVE_POWER_SAVE_H
 #define _HAVE_POWER_SAVE_H
 
+/* Global Variables */
+extern bool cloud_reg_addrs;
+
 /*
  * config_power_mgr - Read power management configuration
  */

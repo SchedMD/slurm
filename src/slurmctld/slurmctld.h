@@ -2553,14 +2553,12 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 /*
  * validate_node_specs - validate the node's specifications as valid,
  *	if not set state to down, in any case update last_response
- * IN reg_msg - node registration message
- * IN protocol_version - Version of Slurm on this node
+ * IN slurm_msg - get node registration message it
  * OUT newly_up - set if node newly brought into service
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  * NOTE: READ lock_slurmctld config before entry
  */
-extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
-			       uint16_t protocol_version, bool *newly_up);
+extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up);
 
 /*
  * validate_nodes_via_front_end - validate all nodes on a cluster as having
