@@ -3553,6 +3553,15 @@ Mark nodes as idle, regardless of current state, when suspending nodes with
 \fISuspendProgram\fB so that nodes will be eligible to be resumed at a later
 time.
 .TP
+\fBpower_save_interval\fR
+How often the power_save thread looks to resume and suspend nodes. The
+power_save thread will do work sooner if there are node state changes. Default
+is 10 seconds.
+.TP
+\fBpower_save_min_interval\fR
+How often the power_save thread, at a minimun, looks to resume and suspend
+nodes. Default is 0.
+.TP
 \fBmax_dbd_msg_action\fR
 Action used once MaxDBDMsgs is reached, options are 'discard' (default) and 'exit'.
 

@@ -95,6 +95,8 @@ time_t last_config = (time_t) 0;
 time_t last_log = (time_t) 0, last_work_scan = (time_t) 0;
 uint16_t slurmd_timeout;
 static bool idle_on_node_suspend = false;
+static uint16_t power_save_interval = 10;
+static uint16_t power_save_min_interval = 0;
 
 bool cloud_reg_addrs = false;
 
@@ -855,6 +857,7 @@ static void _clear_power_config(void)
  */
 static int _init_power_config(void)
 {
+	char *tmp_ptr;
 	last_config = slurm_conf.last_update;
 	last_work_scan  = 0;
 	last_log	= 0;
@@ -880,6 +883,18 @@ static int _init_power_config(void)
 				      "cloud_reg_addrs");
 	idle_on_node_suspend = xstrcasestr(slurm_conf.slurmctld_params,
 					   "idle_on_node_suspend");
+	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
+				   "power_save_interval="))) {
+		power_save_interval =
+			strtol(tmp_ptr + strlen("power_save_interval="), NULL,
+			       10);
+	}
+	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
+				   "power_save_min_interval="))) {
+		power_save_min_interval =
+			strtol(tmp_ptr + strlen("power_save_min_interval="),
+			       NULL, 10);
+	}
 
 	if (idle_time < 0) {	/* not an error */
 		debug("power_save module disabled, SuspendTime < 0");
@@ -1054,12 +1069,9 @@ static void *_init_power_save(void *arg)
 		if (boot_time == 0)
 			boot_time = now;
 
-		/*
-		 * Only run every 10 seconds or after a node state change,
-		 * whichever happens first
-		 */
-		if ((last_node_update >= last_power_scan) ||
-		    (now >= (last_power_scan + 10))) {
+		if ((now >= (last_power_scan + power_save_min_interval)) &&
+		    ((last_node_update >= last_power_scan) ||
+		     (now >= (last_power_scan + power_save_interval)))) {
 			lock_slurmctld(node_write_lock);
 			_do_power_work(now);
 			unlock_slurmctld(node_write_lock);
