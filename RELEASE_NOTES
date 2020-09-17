@@ -87,6 +87,9 @@ HIGHLIGHTS
  -- Enable -lnodes=#:gpus=# in #PBS/qsub -l nodes syntax.
  -- Any user >= Operator can see any hidden partition by default, as SlurmUser
     or root already did.
+ -- select/linear will now allocate up to nodes RealMemory when configured with
+    SelectTypeParameters=CR_Memory and --mem=0 specified. Previous behavior was
+    no memory accouted and no memory limits implied to job.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

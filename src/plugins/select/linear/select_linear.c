@@ -468,7 +468,7 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 	int i, j, k;
 	int first_bit, last_bit;
 	uint32_t node_cpus, total_cpus = 0, node_cnt;
-	uint64_t job_memory_cpu = 0, job_memory_node = 0;
+	uint64_t job_memory_cpu = 0, job_memory_node = 0, min_mem = 0;
 	job_resources_t *job_resrcs_ptr;
 
 	if (job_ptr->details->pn_min_memory  && (cr_type & CR_MEMORY)) {
@@ -513,6 +513,14 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 		} else if (job_memory_cpu) {
 			job_resrcs_ptr->memory_allocated[j] =
 				job_memory_cpu * node_cpus;
+		} else if (cr_type & CR_MEMORY) {
+			job_resrcs_ptr->memory_allocated[j] =
+				node_record_table_ptr[i].config_ptr->
+				real_memory;
+			if (!min_mem ||
+			    (min_mem > job_resrcs_ptr->memory_allocated[j])) {
+				min_mem = job_resrcs_ptr->memory_allocated[j];
+			}
 		}
 
 		if (set_job_resources_node(job_resrcs_ptr, j)) {
@@ -521,6 +529,9 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 		}
 		j++;
 	}
+	if (cr_type & CR_MEMORY && !job_ptr->details->pn_min_memory)
+		job_ptr->details->pn_min_memory = min_mem;
+
 	if (job_resrcs_ptr->ncpus != total_cpus) {
 		error("_build_select_struct: ncpus mismatch %u != %u",
 		      job_resrcs_ptr->ncpus, total_cpus);
@@ -605,6 +616,10 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 			count++;
 			continue;	/* No need to test other resources */
 		}
+
+		if (!job_memory_cpu && !job_memory_node &&
+		    (cr_type & CR_MEMORY))
+			job_memory_node = node_ptr->config_ptr->real_memory;
 
 		if (job_memory_cpu || job_memory_node) {
 			alloc_mem = cr_ptr->nodes[i].alloc_memory;
@@ -2245,7 +2260,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 	int i, i_first, i_last, node_offset, rc = SLURM_SUCCESS;
 	struct part_cr_record *part_cr_ptr;
 	job_resources_t *job_resrcs_ptr;
-	uint64_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
+	uint64_t job_memory = 0, job_memory_cpu = 0, job_memory_node = 0;
 	bool exclusive, is_job_running;
 	uint16_t cpu_cnt;
 	node_record_t *node_ptr;
@@ -2298,8 +2313,11 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 		cpu_cnt = node_ptr->config_ptr->cpus;
 		if (job_memory_cpu)
 			job_memory = job_memory_cpu * cpu_cnt;
-		else
+		else if (job_memory_node)
 			job_memory = job_memory_node;
+		else if (cr_type & CR_MEMORY)
+			job_memory = node_ptr->config_ptr->real_memory;
+
 		if (cr_ptr->nodes[i].alloc_memory >= job_memory)
 			cr_ptr->nodes[i].alloc_memory -= job_memory;
 		else {
@@ -2641,7 +2659,7 @@ static int _rm_job_from_one_node(job_record_t *job_ptr, node_record_t *node_ptr,
 {
 	int i, node_inx, node_offset;
 	job_resources_t *job_resrcs_ptr;
-	uint64_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
+	uint64_t job_memory = 0, job_memory_cpu = 0, job_memory_node = 0;
 	int first_bit;
 	uint16_t cpu_cnt;
 	List gres_list;
@@ -2698,8 +2716,11 @@ static int _rm_job_from_one_node(job_record_t *job_ptr, node_record_t *node_ptr,
 	cpu_cnt = node_ptr->config_ptr->cpus;
 	if (job_memory_cpu)
 		job_memory = job_memory_cpu * cpu_cnt;
-	else
+	else if (job_memory_node)
 		job_memory = job_memory_node;
+	else if (cr_type & CR_MEMORY)
+		job_memory = node_ptr->config_ptr->real_memory;
+
 	if (cr_ptr->nodes[node_inx].alloc_memory >= job_memory)
 		cr_ptr->nodes[node_inx].alloc_memory -= job_memory;
 	else {
@@ -2781,8 +2802,12 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 		if (job_memory_cpu) {
 			cr_ptr->nodes[i].alloc_memory += job_memory_cpu *
 				cpu_cnt;
-		} else
+		} else if (job_memory_node) {
 			cr_ptr->nodes[i].alloc_memory += job_memory_node;
+		} else if (cr_type & CR_MEMORY) {
+			cr_ptr->nodes[i].alloc_memory +=
+				node_ptr->config_ptr->real_memory;
+		}
 
 		if (alloc_all) {
 			if (cr_ptr->nodes[i].gres_list)
@@ -3045,6 +3070,9 @@ static void _init_node_cr(void)
 			if (exclusive)
 				cr_ptr->nodes[i].exclusive_cnt++;
 			if (job_memory_cpu == 0) {
+				if (!job_memory_node && (cr_type & CR_MEMORY))
+					job_memory_node = node_ptr->config_ptr->
+						real_memory;
 				cr_ptr->nodes[i].alloc_memory +=
 					job_memory_node;
 			} else {
