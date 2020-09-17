@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
     allowed.
  -- Always make sure we clear the magnetic flag from a job.
  -- In backfill avoid NULL pointer dereference.
+ -- Fix Segfault at end of slurmctld if you have a magnetic reservation and
+    you shutdown the slurmctld.
 
 * Changes in Slurm 20.02.5
 ==========================

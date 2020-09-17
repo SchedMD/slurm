@@ -439,7 +439,12 @@ static void _del_resv_rec(void *x)
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
 
 	if (resv_ptr) {
-		if (resv_ptr->flags & RESERVE_FLAG_PROM)
+		/*
+		 * If shutting down prom_resv_list is already freed, meaning we
+		 * don't need to remove anything from it.
+		 */
+		if (prom_resv_list &&
+		    (resv_ptr->flags & RESERVE_FLAG_PROM))
 			(void)list_remove_first(
 				prom_resv_list, _find_resv_ptr, resv_ptr);
 
