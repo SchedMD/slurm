@@ -235,7 +235,7 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 
 extern char *sockaddr_to_string(const struct sockaddr *addr, socklen_t addrlen)
 {
-	int rc;
+	int rc, prev_errno = errno;
 	char *resp = NULL;
 	char host[NI_MAXHOST] = { 0 };
 	char serv[NI_MAXSERV] = { 0 };
@@ -266,6 +266,11 @@ extern char *sockaddr_to_string(const struct sockaddr *addr, socklen_t addrlen)
 			xstrfmtcat(resp, "[::]:%s", serv);
 	}
 
+	/*
+	 * Avoid clobbering errno as this function is likely to be used for
+	 * error logging, and stepping on errno prevents %m from working.
+	 */
+	errno = prev_errno;
 	return resp;
 }
 
