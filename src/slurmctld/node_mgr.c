@@ -405,7 +405,8 @@ extern int load_all_node_state ( bool state_only )
 			       node_name);
 		} else if (state_only) {
 			uint32_t orig_flags;
-			if (IS_NODE_CLOUD(node_ptr)) {
+			if (IS_NODE_CLOUD(node_ptr) ||
+			    (node_state & NODE_STATE_DYNAMIC)) {
 				if ((!power_save_mode) &&
 				    ((node_state & NODE_STATE_POWER_SAVE) ||
 	 			     (node_state & NODE_STATE_POWER_UP))) {
@@ -514,7 +515,8 @@ extern int load_all_node_state ( bool state_only )
 				else
 					hs = hostset_create(node_name);
 			}
-			if (IS_NODE_CLOUD(node_ptr) &&
+			if ((IS_NODE_CLOUD(node_ptr) ||
+			    (node_state & NODE_STATE_DYNAMIC)) &&
 			    comm_name && node_hostname) {
 				/* Recover NodeAddr and NodeHostName */
 				set_node_comm_name(node_ptr,
@@ -1373,6 +1375,16 @@ int update_node ( update_node_msg_t * update_node_msg )
 				if (state_val == NODE_STATE_FUTURE) {
 					node_ptr->node_state = NODE_STATE_FUTURE
 							       | node_flags;
+					if (IS_NODE_DYNAMIC(node_ptr)) {
+						node_ptr->node_state &=
+							(~NODE_STATE_DYNAMIC);
+
+						/* Reset comm and hostname */
+						set_node_comm_name(
+							node_ptr,
+							xstrdup(node_ptr->name),
+							xstrdup(node_ptr->name));
+					}
 					bit_set(future_node_bitmap, node_inx);
 				}
 			} else if (state_val == NODE_STATE_IDLE) {

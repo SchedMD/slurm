@@ -631,6 +631,14 @@ _init_from_slurmd(int sock, char **argv,
 	/* Receive GRES information from slurmd */
 	gres_plugin_recv_stepd(sock, msg);
 
+	/*
+	 * Read slurmd node name - may be dictated by slurmctld due to
+	 * Dynamic Future node mapping.
+	 */
+	safe_read(sock, &len, sizeof(int));
+	conf->node_name = xmalloc(len);
+	safe_read(sock, conf->node_name, len);
+
 	_set_job_log_prefix(&step_id);
 
 	if (!conf->hwloc_xml) {

@@ -596,10 +596,8 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg->data)->return_code;
-		slurm_free_return_code_msg(resp_msg->data);
 		if (rc)
 			slurm_seterrno(rc);
-		resp = NULL;
 		break;
 	default:
 		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
@@ -637,6 +635,11 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 
 		/* assoc_mgr_post_tres_list will destroy the list */
 		resp->tres_list = NULL;
+
+		if (resp->node_name) {
+			xfree(conf->node_name);
+			conf->node_name = resp->node_name;
+		}
 	}
 }
 
@@ -673,10 +676,8 @@ send_registration_msg(uint32_t status, bool startup)
 	}
 
 	_handle_node_reg_resp(&resp_msg);
-	if (resp_msg.msg_type != RESPONSE_SLURM_RC) {
-		/* RESPONSE_SLURM_RC freed by _handle_node_reg_resp() */
-		slurm_free_msg_data(resp_msg.msg_type, resp_msg.data);
-	}
+	slurm_free_msg_data(resp_msg.msg_type, resp_msg.data);
+
 	if (errno) {
 		ret_val = errno;
 		errno = 0;
@@ -700,6 +701,9 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	static bool first_msg = true;
 	static time_t slurmd_start_time = 0;
 	Buf gres_info;
+
+	msg->dynamic = conf->dynamic;
+	msg->dynamic_feature = xstrdup(conf->dynamic_feature);
 
 	msg->node_name   = xstrdup (conf->node_name);
 	msg->version     = xstrdup(SLURM_VERSION_STRING);
@@ -881,6 +885,13 @@ _read_config(void)
 	/* node_name may already be set from a command line parameter */
 	if (conf->node_name == NULL)
 		conf->node_name = slurm_conf_get_nodename(conf->hostname);
+
+	if ((conf->node_name == NULL) && conf->dynamic) {
+		char hostname[MAX_SLURM_NAME];
+		if (!gethostname(hostname, MAX_SLURM_NAME))
+			conf->node_name = xstrdup(hostname);
+	}
+
 	/*
 	 * If we didn't match the form of the hostname already stored in
 	 * conf->hostname, check to see if we match any valid aliases
@@ -902,7 +913,10 @@ _read_config(void)
 
 	_massage_pathname(&conf->logfile);
 
-	conf->port = slurm_conf_get_port(conf->node_name);
+	if (conf->dynamic)
+		conf->port = cf->slurmd_port;
+	else
+		conf->port = slurm_conf_get_port(conf->node_name);
 	slurm_conf_get_cpus_bsct(conf->node_name,
 				 &conf->conf_cpus, &conf->conf_boards,
 				 &conf->conf_sockets, &conf->conf_cores,
@@ -969,7 +983,13 @@ _read_config(void)
 	 * for scheduling before these nodes check in.
 	 */
 	config_overrides = cf->conf_flags & CTL_CONF_OR;
-	if (!config_overrides && (conf->actual_cpus < conf->conf_cpus)) {
+	if (conf->dynamic) {
+		conf->cpus    = conf->actual_cpus;
+		conf->boards  = conf->actual_boards;
+		conf->sockets = conf->actual_sockets;
+		conf->cores   = conf->actual_cores;
+		conf->threads = conf->actual_threads;
+	} else if (!config_overrides && (conf->actual_cpus < conf->conf_cpus)) {
 		conf->cpus    = conf->actual_cpus;
 		conf->boards  = conf->actual_boards;
 		conf->sockets = conf->actual_sockets;
@@ -1242,6 +1262,7 @@ _init_conf(void)
 	conf->debug_level = LOG_LEVEL_INFO;
 	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
 	conf->print_gres   = false;
+	conf->dynamic = false;
 
 	slurm_mutex_init(&conf->config_mutex);
 
@@ -1263,6 +1284,7 @@ _destroy_conf(void)
 		xfree(conf->conf_server);
 		xfree(conf->conf_cache);
 		xfree(conf->cpu_spec_list);
+		xfree(conf->dynamic_feature);
 		xfree(conf->hostname);
 		if (conf->hwloc_xml) {
 			/*
@@ -1357,7 +1379,7 @@ static void _print_gres(void)
 static void
 _process_cmdline(int ac, char **av)
 {
-	static char *opt_string = "bcCd:Df:GhL:Mn:N:vV";
+	static char *opt_string = "bcCd:Df:F::GhL:Mn:N:vV";
 	int c;
 	char *tmp_char;
 
@@ -1396,6 +1418,10 @@ _process_cmdline(int ac, char **av)
 		case 'f':
 			xfree(conf->conffile);
 			conf->conffile = xstrdup(optarg);
+			break;
+		case 'F':
+			conf->dynamic = true;
+			conf->dynamic_feature = xstrdup(optarg);
 			break;
 		case 'G':
 			conf->print_gres = true;
@@ -2027,6 +2053,7 @@ Usage: %s [OPTIONS]\n\
    -d stepd                   Pathname to the slurmstepd program.\n\
    -D                         Run daemon in foreground.\n\
    -f config                  Read configuration from the specified file.\n\
+   -F[feature]                Start as Dynamic Future node w/optional Feature.\n\
    -G                         Print node's GRES configuration and exit.\n\
    -h                         Print this help message.\n\
    -L logfile                 Log messages to the file `logfile'.\n\

@@ -47,6 +47,9 @@ HIGHLIGHTS
  -- setting of number of Sockets per node was standardized for configuration
     line with and without Boards=. Specifically in case of Boards=1 and #CPUs
     given the default value of Sockets will be set to #CPUs / #Cores / #Threads.
+ -- Dynamic Future Nodes - slurmds started with -F[<feature>] will be
+    associated with a nodename in Slurm that matches the same hardware
+    configuration.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

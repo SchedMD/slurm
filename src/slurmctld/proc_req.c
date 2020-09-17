@@ -2625,6 +2625,89 @@ static void _slurm_rpc_event_log(slurm_msg_t * msg)
 	slurm_send_rc_msg(msg, error_code);
 }
 
+static bool _node_has_feature(node_record_t *node_ptr, char *feature)
+{
+	node_feature_t *node_feature;
+
+	if ((node_feature = list_find_first(active_feature_list,
+					    list_find_feature, feature))) {
+		int node_inx = node_ptr - node_record_table_ptr;
+		if (bit_test(node_feature->node_bitmap, node_inx))
+		    return true;
+	}
+
+	return false;
+}
+
+/*
+ * Find available future node to associate slurmd with.
+ *
+ * Sets reg_msg->node_name to found node_name so subsequent calls to
+ * find the node work.
+ */
+static void _find_avail_future_node(slurm_msg_t *msg)
+{
+	node_record_t *node_ptr;
+
+	slurm_node_registration_status_msg_t *reg_msg =
+		(slurm_node_registration_status_msg_t *)msg->data;
+
+	node_ptr = find_node_record2(reg_msg->node_name);
+	if (node_ptr == NULL) {
+		int i;
+
+		node_ptr = node_record_table_ptr;
+		for (i = 0; i < node_record_count; i++, node_ptr++) {
+			slurm_addr_t addr;
+			char *comm_name = NULL;
+
+			if (!IS_NODE_FUTURE(node_ptr))
+			    continue;
+
+			if (reg_msg->dynamic_feature &&
+			    !_node_has_feature(
+				node_ptr,reg_msg->dynamic_feature))
+				continue;
+			else if ((node_ptr->cpus != reg_msg->cpus) ||
+				 (node_ptr->boards != reg_msg->boards) ||
+				 (node_ptr->tot_sockets != reg_msg->sockets) ||
+				 (node_ptr->cores != reg_msg->cores) ||
+				 (node_ptr->threads != reg_msg->threads))
+				continue;
+
+			/* Get IP of slurmd */
+			if (msg->conn_fd >= 0 &&
+			    !slurm_get_peer_addr(msg->conn_fd, &addr)) {
+				uint16_t port = 0;
+				comm_name = xmalloc(INET_ADDRSTRLEN);
+				slurm_get_ip_str(&addr, &port, comm_name,
+						 INET_ADDRSTRLEN);
+			}
+
+			set_node_comm_name(
+				node_ptr,
+				comm_name ? comm_name :
+					    xstrdup(reg_msg->node_name),
+				xstrdup(reg_msg->node_name));
+
+			node_ptr->node_state |= NODE_STATE_DYNAMIC;
+
+			bit_clear(future_node_bitmap,
+				  node_ptr - node_record_table_ptr);
+
+			break;
+		}
+	}
+
+	/*
+	 * We always need to send the hostname back to the slurmd. In
+	 * case the slurmd already registered and we found the node_ptr
+	 * by the node_hostname.
+	 */
+	xfree(reg_msg->node_name);
+	reg_msg->node_name = xstrdup(node_ptr->name);
+}
+
 /* _slurm_rpc_node_registration - process RPC to determine if a node's
  *	actual configuration satisfies the configured specification */
 static void _slurm_rpc_node_registration(slurm_msg_t * msg,
@@ -2672,6 +2755,13 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg,
 							  msg->protocol_version,
 							  &newly_up);
 #else
+		/*
+		 * We only send back the node's name back when it wants a resp.
+		 * Subsequent slurmd registrations will have the new node_name.
+		 */
+		if (node_reg_stat_msg->dynamic &&
+		    (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RESP))
+			_find_avail_future_node(msg);
 		validate_jobs_on_node(node_reg_stat_msg);
 		error_code = validate_node_specs(node_reg_stat_msg,
 						 msg->protocol_version,
@@ -2716,6 +2806,9 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg,
 			 * it for us if it isn't here.
 			 */
 			//resp->tres_list = assoc_mgr_tres_list;
+
+			if (node_reg_stat_msg->dynamic)
+				resp->node_name = node_reg_stat_msg->node_name;
 
 			slurm_send_msg(msg, RESPONSE_NODE_REGISTRATION, resp);
 		} else

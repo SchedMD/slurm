@@ -1138,6 +1138,9 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		}
 		acct_gather_energy_pack(msg->energy, buffer, protocol_version);
 		packstr(msg->version, buffer);
+
+		packbool(msg->dynamic, buffer);
+		packstr(msg->dynamic_feature, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(msg->timestamp, buffer);
 		pack_time(msg->slurmd_start_time, buffer);
@@ -1258,6 +1261,10 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&node_reg_ptr->version,
+				       &uint32_tmp, buffer);
+
+		safe_unpackbool(&node_reg_ptr->dynamic, buffer);
+		safe_unpackstr_xmalloc(&node_reg_ptr->dynamic_feature,
 				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
@@ -6987,6 +6994,8 @@ static void _pack_node_reg_resp(
 
 		if (pack_list == assoc_mgr_tres_list)
 			assoc_mgr_unlock(&locks);
+
+		packstr(msg->node_name, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg && msg->tres_list)
 			pack_list = msg->tres_list;
@@ -7009,6 +7018,7 @@ static int _unpack_node_reg_resp(
 	slurm_node_reg_resp_msg_t **msg,
 	Buf buffer, uint16_t protocol_version)
 {
+	uint32_t uint32_tmp;
 	slurm_node_reg_resp_msg_t *msg_ptr;
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
@@ -7020,6 +7030,9 @@ static int _unpack_node_reg_resp(
 				      slurmdb_destroy_tres_rec, buffer,
 				      protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
+
+		safe_unpackstr_xmalloc(&msg_ptr->node_name, &uint32_tmp,
+				       buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		xassert(msg);
 		msg_ptr = xmalloc(sizeof(slurm_node_reg_resp_msg_t));
