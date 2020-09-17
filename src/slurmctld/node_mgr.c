@@ -66,6 +66,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_acct_gather_energy.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_mcs.h"
@@ -76,6 +77,7 @@
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
+#include "src/slurmctld/power_save.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
@@ -1312,8 +1314,19 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
 				node_ptr->node_state &= (~NODE_STATE_REBOOT);
-				node_ptr->node_state &=
-					(~NODE_STATE_POWERING_DOWN);
+
+				if (IS_NODE_POWERING_DOWN(node_ptr)) {
+					node_ptr->node_state &=
+						(~NODE_STATE_POWERING_DOWN);
+
+					if (IS_NODE_CLOUD(node_ptr) &&
+					    cloud_reg_addrs)
+						set_node_comm_name(
+							node_ptr,
+							xstrdup(node_ptr->name),
+							xstrdup(node_ptr->name));
+				}
+
 				if (IS_NODE_DOWN(node_ptr)) {
 					state_val = NODE_STATE_IDLE;
 #ifndef HAVE_FRONT_END
@@ -2726,6 +2739,27 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	node_ptr->boot_req_time = (time_t) 0;
 
 	*newly_up = (!orig_node_avail && bit_test(avail_node_bitmap, node_inx));
+
+	if (!error_code && IS_NODE_CLOUD(node_ptr) && cloud_reg_addrs) {
+		slurm_addr_t addr;
+		char *comm_name = NULL, *hostname = NULL;
+
+		/* Get IP of slurmd */
+		if (slurm_msg->conn_fd >= 0 &&
+		    !slurm_get_peer_addr(slurm_msg->conn_fd, &addr)) {
+			uint16_t port = 0;
+			comm_name = xmalloc(INET_ADDRSTRLEN);
+			slurm_get_ip_str(&addr, &port, comm_name,
+					 INET_ADDRSTRLEN);
+		}
+
+		hostname = g_slurm_auth_get_host(slurm_msg->auth_cred);
+
+		set_node_comm_name(
+			node_ptr,
+			comm_name ? comm_name : hostname,
+			hostname);
+	}
 
 	return error_code;
 }

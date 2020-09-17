@@ -3535,6 +3535,11 @@ slurm.conf, Slurm will tell the client command, after waiting for all nodes to
 boot, each node's ip address. However, in environments where the nodes are in
 DNS, this step can be avoided by configuring this option.
 .TP
+\fBcloud_reg_addrs\fR
+When a cloud node registers, the node's NodeAddr and NodeHostName will
+automatically be set. They will be reset back to the nodename after powering
+off.
+.TP
 \fBenable_configless\fR
 Permit "configless" operation by the slurmd, slurmstepd, and user commands.
 When enabled the slurmd will be permitted to retrieve config files from the
