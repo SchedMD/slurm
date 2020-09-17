@@ -2482,6 +2482,50 @@ extern uint16_t slurm_conf_get_port(const char *node_name)
 }
 
 /*
+ * Update p's hostname and update host_to_node_hashtbl.
+ */
+static void _reset_hostname(names_ll_t *p, char *node_hostname)
+{
+	int old_hostname_idx, new_hostname_idx;
+	names_ll_t *p_curr, *p_prev = NULL;
+
+	old_hostname_idx = _get_hash_idx(p->hostname);
+	new_hostname_idx = _get_hash_idx(node_hostname);
+
+	/* reset hostname */
+	xfree(p->hostname);
+	p->hostname = xstrdup(node_hostname);
+
+	if (old_hostname_idx == new_hostname_idx)
+		return;
+
+	/* remove old link */
+	p_curr = host_to_node_hashtbl[old_hostname_idx];
+	while (p_curr) {
+		if (p_curr == p) {
+			if (p_prev)
+				p_prev->next_hostname = p_curr->next_hostname;
+			else
+				host_to_node_hashtbl[old_hostname_idx] =
+					p_curr->next_hostname;
+			break;
+		}
+		p_prev = p_curr;
+		p_curr = p_curr->next_hostname;
+	}
+
+	/* add new link */
+	p->next_hostname = NULL;
+	if ((p_curr = host_to_node_hashtbl[new_hostname_idx])) {
+		while (p_curr->next_hostname)
+			p_curr = p_curr->next_hostname;
+		p_curr->next_hostname = p;
+	} else {
+		host_to_node_hashtbl[new_hostname_idx] = p;
+	}
+}
+
+/*
  * slurm_reset_alias - Reset the address and hostname of a specific node name
  */
 extern void slurm_reset_alias(char *node_name, char *node_addr,
@@ -2503,8 +2547,7 @@ extern void slurm_reset_alias(char *node_name, char *node_addr,
 				p->addr_initialized = false;
 			}
 			if (node_hostname) {
-				xfree(p->hostname);
-				p->hostname = xstrdup(node_hostname);
+				_reset_hostname(p, node_hostname);
 			}
 			break;
 		}
