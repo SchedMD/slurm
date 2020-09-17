@@ -2767,4 +2767,10 @@ extern void slurm_rpc_control_status(slurm_msg_t *msg, time_t control_time);
 extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id);
 extern void prep_epilog_slurmctld_callback(int rc, uint32_t job_id);
 
+/*
+ * Set node's comm_name and hostname.
+ */
+extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
+			       char *hostname);
+
 #endif /* !_HAVE_SLURMCTLD_H */

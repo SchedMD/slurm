@@ -186,6 +186,9 @@ extern void allocate_nodes(job_record_t *job_ptr)
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
 
+		if (IS_NODE_DYNAMIC(node_ptr))
+			has_cloud = true;
+
 		if (IS_NODE_CLOUD(node_ptr)) {
 			has_cloud = true;
 			if (IS_NODE_POWER_SAVE(node_ptr))
@@ -222,7 +225,7 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
 
-		if (IS_NODE_CLOUD(node_ptr)) {
+		if (IS_NODE_DYNAMIC(node_ptr) || IS_NODE_CLOUD(node_ptr)) {
 			if (IS_NODE_POWER_SAVE(node_ptr)) {
 				xfree(job_ptr->alias_list);
 				job_ptr->alias_list = xstrdup("TBD");

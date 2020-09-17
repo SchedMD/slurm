@@ -1942,16 +1942,15 @@ static int _restore_node_state(int recover,
 				hs = hostset_create(node_ptr->name);
 		}
 
-		if (IS_NODE_CLOUD(node_ptr) && !IS_NODE_POWER_SAVE(node_ptr)) {
+		if (IS_NODE_DYNAMIC(node_ptr) ||
+		    (IS_NODE_CLOUD(node_ptr) &&
+		     !IS_NODE_POWER_SAVE(node_ptr))) {
 			/* Preserve NodeHostname + NodeAddr set by scontrol */
-			xfree(node_ptr->comm_name);
-			node_ptr->comm_name = old_node_ptr->comm_name;
+			set_node_comm_name(node_ptr,
+					   old_node_ptr->comm_name,
+					   old_node_ptr->node_hostname);
 			old_node_ptr->comm_name = NULL;
-			xfree(node_ptr->node_hostname);
-			node_ptr->node_hostname = old_node_ptr->node_hostname;
 			old_node_ptr->node_hostname = NULL;
-			slurm_reset_alias(node_ptr->name, node_ptr->comm_name,
-					  node_ptr->node_hostname);
 		}
 
 		node_ptr->last_response = old_node_ptr->last_response;

@@ -144,6 +144,8 @@
 	 && (IS_NODE_ALLOCATED(_X) || IS_NODE_MIXED(_X)))
 #define IS_NODE_DRAINED(_X)		\
 	(IS_NODE_DRAIN(_X) && !IS_NODE_DRAINING(_X))
+#define IS_NODE_DYNAMIC(_X)		\
+	(_X->node_state & NODE_STATE_DYNAMIC)
 #define IS_NODE_COMPLETING(_X)	\
 	(_X->node_state & NODE_STATE_COMPLETING)
 #define IS_NODE_NO_RESPOND(_X)		\
@@ -1215,6 +1217,8 @@ typedef struct slurm_node_registration_status_msg {
 	uint16_t cores;
 	uint16_t cpus;
 	uint32_t cpu_load;	/* CPU load * 100 */
+	bool dynamic;		/* dynamic registration */
+	char *dynamic_feature;	/* dynamic registration feature */
 	uint16_t flags;	        /* Flags from the slurmd SLURMD_REG_FLAG_* */
 	uint64_t free_mem;	/* Free memory in MiB */
 	char *cpu_spec_list;	/* list of specialized CPUs */
@@ -1242,6 +1246,7 @@ typedef struct slurm_node_registration_status_msg {
 } slurm_node_registration_status_msg_t;
 
 typedef struct slurm_node_reg_resp_msg {
+	char *node_name;
 	List tres_list;
 } slurm_node_reg_resp_msg_t;
 

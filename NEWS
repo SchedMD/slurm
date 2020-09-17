@@ -76,6 +76,9 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Log numerical service name when referencing host port pairs.
  -- slurmrestd - Log host port information in RFC3986 format.
  -- sview - Remove (long-broken) batch job submission option.
+ -- Dynamic Future Nodes - slurmds started with -F[<feature>] will be
+    associated with a nodename in Slurm that matches the same hardware
+    configuration.
 
 * Changes in Slurm 20.02.6
 ==========================
