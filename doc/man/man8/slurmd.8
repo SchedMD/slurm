@@ -1,4 +1,4 @@
-.TH slurmd "8" "Slurm Daemon" "March 2020" "Slurm Daemon"
+.TH slurmd "8" "Slurm Daemon" "September 2020" "Slurm Daemon"
 
 .SH "NAME"
 slurmd \- The compute node daemon for Slurm.
@@ -123,6 +123,12 @@ specifically tell each of them to use it. If you desire changing
 communication ports, the location of the temporary file system, or
 other parameters used by other Slurm components, change the common
 configuration file, \fBslurm.conf\fR.
+
+If you are using configless mode with a login node that runs a lot of client
+commands, you may consider running \fBslurmd\fR on that machine so it can
+manage a cached version of the configuration files. Otherwise, each client
+command will use the DNS record to contact the controller and get the
+configuration information, which could place additional load on the controller.
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.

@@ -37,7 +37,7 @@ you will need to build and install MUNGE, available from
 
 <li><b>Authentication</b> tools for users that work with Slurm.</li>
 <ul>
-<li><a href="http://sourceforge.net/projects/auks/">AUKS</a><br>
+<li><a href="https://github.com/hautreux/auks">AUKS</a><br>
 AUKS is an utility designed to ease Kerberos V credential support addition
 to non-interactive applications, like batch systems (Slurm, LSF, Torque, etc.).
 It includes a plugin for the Slurm workload manager. AUKS is not used as
@@ -379,6 +379,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 17 June 2020</p>
+<p style="text-align:center;">Last modified 9 September 2020</p>
 
 <!--#include virtual="footer.txt"-->
