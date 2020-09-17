@@ -419,15 +419,11 @@ extern int load_all_node_state ( bool state_only )
 				}
 				if (comm_name && node_hostname) {
 					/* Recover NodeAddr and NodeHostName */
-					xfree(node_ptr->comm_name);
-					node_ptr->comm_name = comm_name;
-					comm_name = NULL;  /* Nothing to free */
-					xfree(node_ptr->node_hostname);
-					node_ptr->node_hostname = node_hostname;
-					node_hostname = NULL;  /* Nothing to free */
-					slurm_reset_alias(node_ptr->name,
-							  node_ptr->comm_name,
-							  node_ptr->node_hostname);
+					set_node_comm_name(node_ptr,
+							   comm_name,
+							   node_hostname);
+					comm_name = NULL;
+					node_hostname = NULL;
 				}
 				node_ptr->node_state    = node_state;
 			} else if (IS_NODE_UNKNOWN(node_ptr)) {
@@ -521,15 +517,11 @@ extern int load_all_node_state ( bool state_only )
 			if (IS_NODE_CLOUD(node_ptr) &&
 			    comm_name && node_hostname) {
 				/* Recover NodeAddr and NodeHostName */
-				xfree(node_ptr->comm_name);
-				node_ptr->comm_name = comm_name;
-				comm_name = NULL;	/* Nothing to free */
-				xfree(node_ptr->node_hostname);
-				node_ptr->node_hostname = node_hostname;
-				node_hostname = NULL;	/* Nothing to free */
-				slurm_reset_alias(node_ptr->name,
-						  node_ptr->comm_name,
-						  node_ptr->node_hostname);
+				set_node_comm_name(node_ptr,
+						   comm_name,
+						   node_hostname);
+				comm_name = NULL;
+				node_hostname = NULL;
 			}
 			node_ptr->node_state    = node_state;
 			xfree(node_ptr->reason);
@@ -4028,4 +4020,18 @@ extern bool waiting_for_node_boot(struct node_record *node_ptr)
 	}
 
 	return false;
+}
+
+extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
+			       char *hostname)
+{
+	xfree(node_ptr->comm_name);
+	node_ptr->comm_name = comm_name;
+
+	xfree(node_ptr->node_hostname);
+	node_ptr->node_hostname = hostname;
+
+	slurm_reset_alias(node_ptr->name,
+			  node_ptr->comm_name,
+			  node_ptr->node_hostname);
 }
