@@ -629,8 +629,10 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	slurm_mutex_lock(&ctx->mutex);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 	xassert(ctx->type == SLURM_CRED_CREATOR);
-	if (_slurm_cred_sign(ctx, cred, protocol_version) < 0)
+	if (_slurm_cred_sign(ctx, cred, protocol_version) < 0) {
+		slurm_mutex_unlock(&ctx->mutex);
 		goto fail;
+	}
 
 	slurm_mutex_unlock(&ctx->mutex);
 	slurm_mutex_unlock(&cred->mutex);
@@ -638,7 +640,6 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	return cred;
 
 fail:
-	slurm_mutex_unlock(&ctx->mutex);
 	slurm_mutex_unlock(&cred->mutex);
 	slurm_cred_destroy(cred);
 	return NULL;
