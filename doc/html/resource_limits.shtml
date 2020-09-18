@@ -335,6 +335,13 @@ provide the ability to impose limits on a per-user basis.  The
 control the workload any individual may place on a cluster in order to
 achieve some balance between users.</p>
 
+<p>When assigning limits to a QOS to use for a Partition QOS,
+keep in mind that those limits are enforced at the QOS level, not
+individually for each partition.  For example, if a QOS has a
+<b>GrpTRES=cpu=20</b> limit defined and the QOS is assigned to two
+unique partitions, users will be limited to 20 CPUs for the QOS
+rather than being allowed 20 CPUs for each partition.</p>
+
 <p>Fair-share scheduling is based upon the hierarchical bank account
 data maintained in the Slurm database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
@@ -391,6 +398,6 @@ end
   See <a href="tres.html">Trackable Resources TRES</a> for details.
 </p>
 
-<p style="text-align: center;">Last modified 21 August 2020</p>
+<p style="text-align: center;">Last modified 18 September 2020</p>
 
 </ul></body></html>
