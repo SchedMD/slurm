@@ -193,9 +193,11 @@ list) as in the following examples: </p>
   denied until previous jobs complete from this group.
 </li>
 
-<li><b>GrpWall=</b> The maximum wall clock time any job submitted to
-  this group can run for.  If this limit is reached submission requests
-  will be denied.  This usage is decayed (at a rate of
+<li><b>GrpWall=</b> The maximum wall clock time running jobs are able
+  to be allocated in aggregate for a QOS or an association and its children.
+  If this limit is reached, future jobs in this QOS or association will be
+  queued until they are able to run inside the limit.
+  This usage is decayed (at a rate of
   PriorityDecayHalfLife).  It can also be reset (according to
   PriorityUsageResetPeriod) in order to allow jobs to run against the
   association tree or QOS again.  QOS that have the NoDecay flag set
@@ -222,7 +224,8 @@ list) as in the following examples: </p>
   the job will be denied at submission.
 </li>
 
-<li><b>MinPrioThreshold=</b> Used to override bf_min_prio_reserve.
+<li><b>MinPrioThreshold=</b> Minimum priority required to reserve resources
+  in the given association/QOS. Used to override bf_min_prio_reserve.
   See <a href="slurm.conf.html#OPT_bf_min_prio_reserve=#">
   bf_min_prio_reserve</a> for details.
 </li>
@@ -332,6 +335,13 @@ provide the ability to impose limits on a per-user basis.  The
 control the workload any individual may place on a cluster in order to
 achieve some balance between users.</p>
 
+<p>When assigning limits to a QOS to use for a Partition QOS,
+keep in mind that those limits are enforced at the QOS level, not
+individually for each partition.  For example, if a QOS has a
+<b>GrpTRES=cpu=20</b> limit defined and the QOS is assigned to two
+unique partitions, users will be limited to 20 CPUs for the QOS
+rather than being allowed 20 CPUs for each partition.</p>
+
 <p>Fair-share scheduling is based upon the hierarchical bank account
 data maintained in the Slurm database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
@@ -376,17 +386,18 @@ end
   model.
 </p>
 <p>It is also advisable to set <b>AccountingStorageTRES</b> for both generic
-  and specific gres types, otherwise requests that ask for generic only gpus
-  won't be accounted for. Set this for example to:
-<p/>
-<p>
-  <i>AccountingStorageTRES=gres/gpu,gres/gpu:tesla</i>
-<p/>
+  and specific gres types, otherwise requests that ask for the generic instance
+  of a gres won't be accounted for. For example, to track generic GPUs and
+  Tesla GPUs, you would set this in your slurm.conf:
+</p>
+<pre>
+  AccountingStorageTRES=gres/gpu,gres/gpu:tesla
+</pre>
 
 <p>
   See <a href="tres.html">Trackable Resources TRES</a> for details.
 </p>
 
-<p style="text-align: center;">Last modified 8 April 2020</p>
+<p style="text-align: center;">Last modified 18 September 2020</p>
 
 </ul></body></html>

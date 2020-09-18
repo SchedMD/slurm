@@ -332,7 +332,8 @@ jobs in higher priority queues.</li>
 <b>SelectType</b> configuration parameter.
 If you want to execute multiple jobs per node, but track and manage allocation
 of the processors, memory and other resources, the <i>cons_res</i> (consumable
-resources) plugin is recommended.
+resources) or <i>cons_tres</i> (consumable trackable resources) plugins are
+recommended.
 For more information, please see
 <a href="cons_res.html">Consumable Resources in Slurm</a>.</p>
 
@@ -698,8 +699,9 @@ slurmd daemons on compute nodes are not down for longer than SlurmdTimeout.
 The recommended upgrade order is as follows:</p>
 <ol>
 <li>Shutdown the slurmdbd daemon</li>
-<li>Dump the Slurm database using mysqldump (in case of any possible failure)
-    and increase innodb_buffer_size in my.cnf to 128M</li>
+<li>Backup the Slurm database using mysqldump in case of any possible
+    failure (you may want to take this opportunity to verify that the
+    innodb_buffer_pool_size in my.cnf is at least 128M)</li>
 <li>Upgrade the slurmdbd daemon</li>
 <li>Restart the slurmdbd daemon</li>
 <li>Increase configured SlurmdTimeout and SlurmctldTimeout values and
@@ -742,6 +744,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 5 June 2020</p>
+<p style="text-align:center;">Last modified 18 September 2020</p>
 
 <!--#include virtual="footer.txt"-->

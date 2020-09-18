@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "July 2020" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "August 2020" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -180,15 +180,21 @@ Select jobs in any state before the specified time.  If states are
 given with the \-s option return jobs in this state before this period.
 See the \fBDEFAULT TIME WINDOW\fR for more details.
 
-Valid time formats are...
-.sp
-HH:MM[:SS] [AM|PM]
+Valid time formats are:
 .br
-MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+HH:MM[:SS][AM|PM]
 .br
-MM/DD[/YY]\-HH:MM[:SS]
+MMDD[YY][\-HH:MM[:SS]]
+.br
+MM.DD[.YY][\-HH:MM[:SS]]
+.br
+MM/DD[/YY][\-HH:MM[:SS]]
 .br
 YYYY\-MM\-DD[THH:MM[:SS]]
+.br
+today, midnight, noon, fika (3 PM), teatime (4 PM)
+.br
+now
 .IP
 
 .TP
@@ -385,15 +391,21 @@ only jobs in this state at this time will be returned. If the '\-j' option is
 used, then the default time is Unix Epoch 0. See the \fBDEFAULT TIME WINDOW\fR
 for more details.
 
-Valid time formats are...
-.sp
-HH:MM[:SS] [AM|PM]
+Valid time formats are:
 .br
-MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+HH:MM[:SS][AM|PM]
 .br
-MM/DD[/YY]\-HH:MM[:SS]
+MMDD[YY][\-HH:MM[:SS]]
+.br
+MM.DD[.YY][\-HH:MM[:SS]]
+.br
+MM/DD[/YY][\-HH:MM[:SS]]
 .br
 YYYY\-MM\-DD[THH:MM[:SS]]
+.br
+today, midnight, noon, fika (3 PM), teatime (4 PM)
+.br
+now
 
 .TP
 \f3\-T\fP\f3,\fP \f3\-\-truncate\fP
